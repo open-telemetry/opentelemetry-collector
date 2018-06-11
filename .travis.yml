@@ -1,0 +1,12 @@
+language: go
+
+go:
+  - 1.10.x
+
+before_script:
+  - GO_FILES=$(find . -iname '*.go' | grep -v /vendor/)  # All the .go files, excluding vendor/ if any
+
+script:
+  - if [ -n "$(gofmt -s -l $GO_FILES)" ]; then echo "gofmt the following files:"; gofmt -s -l $GO_FILES; exit 1; fi
+  - go test -v -race ./...            # Run all the tests with the race detector enabled
+  - 'if [[ $TRAVIS_GO_VERSION = 1.8* ]]; then ! golint ./... | grep -vE "(_mock|_string|\.pb)\.go:"; fi'
