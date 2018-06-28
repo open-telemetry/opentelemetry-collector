@@ -19,7 +19,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"sync"
@@ -65,8 +64,7 @@ func (e *Exporter) lookup() {
 	}()
 
 	debugPrintf("Looking for the endpoint file")
-	file := internal.DefaultEndpointFile()
-	ep, err := ioutil.ReadFile(file)
+	service, err := internal.ParseEndpointFile()
 	if os.IsNotExist(err) {
 		e.deleteClient()
 		debugPrintf("Endpoint file doesn't exist; disabling exporting")
@@ -81,7 +79,7 @@ func (e *Exporter) lookup() {
 	oldendpoint := e.clientEndpoint
 	e.clientMu.Unlock()
 
-	endpoint := string(ep)
+	endpoint := service.Endpoint
 	if oldendpoint == endpoint {
 		debugPrintf("Endpoint hasn't changed, doing nothing")
 		return

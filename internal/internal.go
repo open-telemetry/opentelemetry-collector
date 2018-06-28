@@ -15,15 +15,54 @@
 package internal
 
 import (
+	"encoding/json"
+	"io/ioutil"
 	"os"
 	"os/user"
 	"path/filepath"
 	"runtime"
 )
 
-// DefaultEndpointFile is the location where the
+// Service contains metadata about the exporter service.
+type Service struct {
+	Endpoint string `json:"endpoint"`
+}
+
+// WriteToEndpointFile writes service metadata to
+// canonical endpoint file.
+func (s *Service) WriteToEndpointFile() (path string, err error) {
+	data, err := json.Marshal(s)
+	if err != nil {
+		return "", err
+	}
+	path = defaultEndpointFile()
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		return "", err
+	}
+	if err := ioutil.WriteFile(path, data, 0755); err != nil {
+		return "", err
+	}
+	return path, nil
+}
+
+// ParseEndpointFile reads and parses the canonical endpoint
+// file for metadata.
+func ParseEndpointFile() (*Service, error) {
+	file := defaultEndpointFile()
+	data, err := ioutil.ReadFile(file)
+	if err != nil {
+		return nil, err
+	}
+	var s Service
+	if err := json.Unmarshal(data, &s); err != nil {
+		return nil, err
+	}
+	return &s, nil
+}
+
+// defaultEndpointFile is the location where the
 // endpoint file is at on the current platform.
-func DefaultEndpointFile() string {
+func defaultEndpointFile() string {
 	const f = "opencensus.endpoint"
 	if runtime.GOOS == "windows" {
 		return filepath.Join(os.Getenv("APPDATA"), "opencensus", f)
