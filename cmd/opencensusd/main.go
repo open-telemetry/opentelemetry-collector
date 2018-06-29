@@ -20,12 +20,14 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net"
 	"os"
 	"os/signal"
 
 	pb "github.com/census-instrumentation/opencensus-proto/gen-go/exporterproto"
+	"github.com/census-instrumentation/opencensus-service/cmd/opencensusd/exporter"
 	"github.com/census-instrumentation/opencensus-service/internal"
 	"google.golang.org/grpc"
 )
@@ -34,7 +36,12 @@ func main() {
 	listen := flag.String("listen", "127.0.0.1:", "")
 	flag.Parse()
 
-	configureExporters()
+	const configFile = "config.yaml"
+	conf, err := ioutil.ReadFile(configFile)
+	if err != nil {
+		log.Fatalf("Cannot read the %v file: %v", configFile, err)
+	}
+	exporter.Parse(conf)
 
 	ls, err := net.Listen("tcp", *listen)
 	if err != nil {
@@ -54,8 +61,8 @@ func main() {
 	signal.Notify(c, os.Interrupt)
 	go func() {
 		<-c
-		// Flush all of the exporters.
-		flush()
+		// Close all of the exporters.
+		exporter.CloseAll()
 
 		os.Remove(endpointFile)
 		os.Exit(0)
@@ -82,7 +89,7 @@ func (s *server) ExportSpan(stream pb.Export_ExportSpanServer) error {
 
 		for _, s := range in.Spans {
 			sd := protoToSpanData(s)
-			exportSpanData(sd)
+			exporter.ExportSpan(sd)
 		}
 	}
 }
