@@ -24,6 +24,7 @@ import (
 	"sync"
 	"time"
 
+	"go.opencensus.io/stats/view"
 	"go.opencensus.io/trace"
 	"google.golang.org/grpc"
 
@@ -111,6 +112,10 @@ func (e *Exporter) onError(err error) {
 	log.Printf("Exporter fail: %v", err)
 }
 
+func (e *Exporter) ExportView(vd *view.Data) {
+	// TODO(jbd): Add stats/metrics exporter.
+}
+
 // ExportSpan exports span data to the exporter daemon.
 func (e *Exporter) ExportSpan(sd *trace.SpanData) {
 	e.initOnce.Do(e.init)
@@ -171,5 +176,3 @@ func debugPrintf(msg string, arg ...interface{}) {
 		fmt.Println()
 	}
 }
-
-// TODO(jbd): Add stats/metrics exporter.

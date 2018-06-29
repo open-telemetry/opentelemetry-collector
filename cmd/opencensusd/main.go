@@ -34,12 +34,15 @@ func main() {
 	listen := flag.String("listen", "127.0.0.1:", "")
 	flag.Parse()
 
+	configureExporters()
+
 	ls, err := net.Listen("tcp", *listen)
 	if err != nil {
 		log.Fatalf("Cannot listen: %v", err)
 	}
 
 	service := &internal.Service{
+		// TODO(jbd): Do not rely on the stringifier.
 		Endpoint: ls.Addr().String(),
 	}
 	endpointFile, err := service.WriteToEndpointFile()
@@ -51,6 +54,9 @@ func main() {
 	signal.Notify(c, os.Interrupt)
 	go func() {
 		<-c
+		// Flush all of the exporters.
+		flush()
+
 		os.Remove(endpointFile)
 		os.Exit(0)
 	}()
@@ -73,8 +79,11 @@ func (s *server) ExportSpan(stream pb.Export_ExportSpanServer) error {
 		if err != nil {
 			return err
 		}
-		// TODO(jbd): Implement.
-		fmt.Println(in)
+
+		for _, s := range in.Spans {
+			sd := protoToSpanData(s)
+			exportSpanData(sd)
+		}
 	}
 }
 
@@ -91,5 +100,3 @@ func (s *server) ExportMetrics(stream pb.Export_ExportMetricsServer) error {
 		fmt.Println(in)
 	}
 }
-
-// TODO(jbd): Implement exporting to a backend.

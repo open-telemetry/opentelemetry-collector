@@ -1,0 +1,64 @@
+description = 'Opencensus Proto'
+
+apply plugin: 'idea'
+apply plugin: 'java'
+apply plugin: 'com.google.protobuf'
+
+repositories {
+    maven { url "https://plugins.gradle.org/m2/" }
+}
+
+def protobufVersion = '3.5.1'
+def protocVersion = '3.5.1'
+
+buildscript {
+    repositories {
+        maven { url "https://plugins.gradle.org/m2/" }
+    }
+    dependencies {
+        classpath "com.google.protobuf:protobuf-gradle-plugin:0.8.5"
+    }
+}
+
+sourceSets {
+    main {
+        proto {
+            // In addition to the default 'src/main/proto'
+            srcDir 'opencensus/proto/stats'
+            srcDir 'opencensus/proto/stats/metrics'
+            srcDir 'opencensus/proto/trace'
+        }
+    }
+}
+
+dependencies {
+    compile "com.google.protobuf:protobuf-java:${protobufVersion}"
+}
+
+protobuf {
+    protoc {
+        // The artifact spec for the Protobuf Compiler
+        artifact = "com.google.protobuf:protoc:${protocVersion}"
+    }
+
+    generatedFilesBaseDir = "$projectDir/gen_gradle/src"
+}
+
+// Disable all java warnings for proto generated files build
+compileJava {
+    options.compilerArgs += ["-Xlint:none"]
+    options.encoding = "UTF-8"
+}
+
+clean {
+    delete protobuf.generatedFilesBaseDir
+}
+
+// IntelliJ complains that the generated classes are not found, ask IntelliJ to include the
+// generated Java directories as source folders.
+idea {
+    module {
+        sourceDirs += file("${protobuf.generatedFilesBaseDir}/main/java");
+        // If you have additional sourceSets and/or codegen plugins, add all of them
+    }
+}

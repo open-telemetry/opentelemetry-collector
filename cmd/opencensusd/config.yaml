@@ -1,0 +1,6 @@
+stackdriver:
+  project: "project-id"
+  enableTraces: true
+
+zipkin:
+  endpoint: "http://localhost:9411/api/v2/spans"
