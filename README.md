@@ -33,3 +33,37 @@ implement support for each backend.
 default sampling rate. It might be a problem at troubleshooting time. 
 We are planning to address this problem in the future.
 
+## Usage
+
+First, install opencensusd if you haven't.
+
+```
+$ go get github.com/census-instrumentation/opencensus-service/cmd/opencensusd
+```
+
+Create a config.yaml file in the current directory and modify
+it with the exporter configuration. For example, following
+configuration exports both to Stackdriver and Zipkin.
+
+
+config.yaml:
+
+```
+stackdriver:
+  project: "your-project-id"
+  enableTraces: true
+
+zipkin:
+  endpoint: "http://localhost:9411/api/v2/spans"
+```
+
+Run the example application that collects traces and exports
+to the daemon if it is running.
+
+```
+$ go run "$(go env GOPATH)/src/github.com/census-instrumentation/opencensus-service/example/main.go"
+```
+
+You should be able to see the traces in Stackdriver and Zipkin.
+If you stop the opencensusd, example application will stop exporting.
+If you run it again, it will start exporting again.
