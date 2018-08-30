@@ -25,7 +25,7 @@ sourceSets {
         proto {
             // In addition to the default 'src/main/proto'
             srcDir 'opencensus/proto/stats'
-            srcDir 'opencensus/proto/stats/metrics'
+            srcDir 'opencensus/proto/metrics'
             srcDir 'opencensus/proto/trace'
         }
     }

@@ -28,8 +28,8 @@ import (
 	"go.opencensus.io/trace"
 	"google.golang.org/grpc"
 
-	"github.com/census-instrumentation/opencensus-proto/gen-go/exporterproto"
-	"github.com/census-instrumentation/opencensus-proto/gen-go/traceproto"
+	exporterpb "github.com/census-instrumentation/opencensus-proto/gen-go/exporter/v1"
+	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/internal"
 	"github.com/golang/protobuf/ptypes/timestamp"
 )
@@ -47,7 +47,7 @@ type Exporter struct {
 
 	clientMu       sync.Mutex
 	clientEndpoint string
-	spanClient     exporterproto.Export_ExportSpanClient
+	spanClient     exporterpb.Export_ExportSpanClient
 }
 
 func (e *Exporter) init() {
@@ -96,7 +96,7 @@ func (e *Exporter) lookup() {
 	e.clientMu.Lock()
 	defer e.clientMu.Unlock()
 
-	client := exporterproto.NewExportClient(conn)
+	client := exporterpb.NewExportClient(conn)
 	e.spanClient, err = client.ExportSpan(context.Background())
 	if err != nil {
 		e.onError(err)
@@ -129,11 +129,11 @@ func (e *Exporter) ExportSpan(sd *trace.SpanData) {
 	}
 
 	debugPrintf("Exporting span [%v]", sd.SpanContext)
-	s := &traceproto.Span{
+	s := &tracepb.Span{
 		TraceId:      sd.SpanContext.TraceID[:],
 		SpanId:       sd.SpanContext.SpanID[:],
 		ParentSpanId: sd.ParentSpanID[:],
-		Name: &traceproto.TruncatableString{
+		Name: &tracepb.TruncatableString{
 			Value: sd.Name,
 		},
 		StartTime: &timestamp.Timestamp{
@@ -147,8 +147,8 @@ func (e *Exporter) ExportSpan(sd *trace.SpanData) {
 		// TODO(jbd): Add attributes and others.
 	}
 
-	if err := spanClient.Send(&exporterproto.ExportSpanRequest{
-		Spans: []*traceproto.Span{s},
+	if err := spanClient.Send(&exporterpb.ExportSpanRequest{
+		Spans: []*tracepb.Span{s},
 	}); err != nil {
 		if err == io.EOF {
 			debugPrintf("Connection is unavailable; will try to reconnect in a minute")

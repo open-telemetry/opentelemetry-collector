@@ -26,7 +26,7 @@ import (
 	"os"
 	"os/signal"
 
-	pb "github.com/census-instrumentation/opencensus-proto/gen-go/exporterproto"
+	pb "github.com/census-instrumentation/opencensus-proto/gen-go/exporter/v1"
 	"github.com/census-instrumentation/opencensus-service/cmd/opencensusd/exporter"
 	"github.com/census-instrumentation/opencensus-service/internal"
 	"google.golang.org/grpc"

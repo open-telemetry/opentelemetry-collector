@@ -14,6 +14,21 @@
 
 workspace(name = "opencensus_proto")
 
+# Import gRPC git repo so that we can load java_grpc_library build.
+git_repository(
+    name = "grpc_java",
+    remote = "https://github.com/grpc/grpc-java.git",
+    tag = "v1.10.1",
+)
+
+load("@grpc_java//:repositories.bzl", "grpc_java_repositories")
+
+grpc_java_repositories(
+    # Omit to avoid conflicts.
+    omit_com_google_protobuf=True,
+    omit_com_google_protobuf_nano_protobuf_javanano=True,
+)
+
 # proto_library rules implicitly depend on @com_google_protobuf//:protoc,
 # which is the proto-compiler.
 # This statement defines the @com_google_protobuf repo.
