@@ -17,7 +17,7 @@ package exporter
 import (
 	"log"
 
-	"go.opencensus.io/exporter/stackdriver"
+	"contrib.go.opencensus.io/exporter/stackdriver"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/trace"
 	yaml "gopkg.in/yaml.v2"
