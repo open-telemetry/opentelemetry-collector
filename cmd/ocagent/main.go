@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Program opencensusd collects OpenCensus stats and traces
+// Program ocagent collects OpenCensus stats and traces
 // to export to a configured backend.
 package main
 
@@ -27,7 +27,7 @@ import (
 	"os/signal"
 
 	pb "github.com/census-instrumentation/opencensus-proto/gen-go/exporter/v1"
-	"github.com/census-instrumentation/opencensus-service/cmd/opencensusd/exporter"
+	"github.com/census-instrumentation/opencensus-service/cmd/ocagent/exporter"
 	"github.com/census-instrumentation/opencensus-service/internal"
 	"google.golang.org/grpc"
 )

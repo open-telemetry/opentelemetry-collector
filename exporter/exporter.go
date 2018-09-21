@@ -169,7 +169,7 @@ func (e *Exporter) deleteClient() {
 func debugPrintf(msg string, arg ...interface{}) {
 	if debug {
 		if len(arg) > 0 {
-			fmt.Printf(msg, arg)
+			fmt.Printf(msg, arg...)
 		} else {
 			fmt.Printf(msg)
 		}
