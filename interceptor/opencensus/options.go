@@ -36,3 +36,18 @@ func (sfd *spanBufferPeriod) WithOCInterceptor(oci *OCInterceptor) {
 func WithSpanBufferPeriod(period time.Duration) OCOption {
 	return &spanBufferPeriod{period: period}
 }
+
+type spanBufferCount int
+
+var _ OCOption = (*spanBufferCount)(nil)
+
+func (spc spanBufferCount) WithOCInterceptor(oci *OCInterceptor) {
+	oci.spanBufferCount = int(spc)
+}
+
+// WithSpanBufferCount is an option that allows one to configure
+// the number of spans that are buffered before the OCInterceptor
+// send them to its SpanReceiver.
+func WithSpanBufferCount(count int) OCOption {
+	return spanBufferCount(count)
+}

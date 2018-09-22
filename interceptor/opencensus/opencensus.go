@@ -30,6 +30,7 @@ import (
 type OCInterceptor struct {
 	spanSink         spanreceiver.SpanReceiver
 	spanBufferPeriod time.Duration
+	spanBufferCount  int
 }
 
 func New(sr spanreceiver.SpanReceiver, opts ...OCOption) (*OCInterceptor, error) {
@@ -90,8 +91,14 @@ func (oci *OCInterceptor) Export(tes agenttracepb.TraceService_ExportServer) err
 	if spanBufferPeriod <= 0 {
 		spanBufferPeriod = 2 * time.Second // Arbitrary value
 	}
+	spanBufferCount := oci.spanBufferCount
+	if spanBufferCount <= 0 {
+		// TODO: (@odeke-em) provide an option to disable any buffering
+		spanBufferCount = 50 // Arbitrary value
+	}
+
 	traceBundler.DelayThreshold = spanBufferPeriod
-	traceBundler.BundleCountThreshold = 50 // Arbitrary value
+	traceBundler.BundleCountThreshold = spanBufferCount
 
 	for {
 		recv, err := tes.Recv()
