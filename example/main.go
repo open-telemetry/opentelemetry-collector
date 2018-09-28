@@ -17,14 +17,19 @@ package main
 
 import (
 	"context"
+	"log"
 	"time"
 
-	"github.com/census-instrumentation/opencensus-service/exporter"
+	"contrib.go.opencensus.io/exporter/ocagent"
 	"go.opencensus.io/trace"
 )
 
 func main() {
-	trace.RegisterExporter(&exporter.Exporter{})
+	oce, err := ocagent.NewExporter()
+	if err != nil {
+		log.Fatalf("Failed to create ocagent-exporter: %v", err)
+	}
+	trace.RegisterExporter(oce)
 	trace.ApplyConfig(trace.Config{
 		DefaultSampler: trace.AlwaysSample(),
 	})
