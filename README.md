@@ -186,4 +186,92 @@ backend (e.g Jaeger Thrift Span), and then push them to corresponding backend or
 
 ## OpenCensus Collector
 
-TODO: add content about Collector.
+The OpenCensus Collector is a component that runs “nearby” (e.g. in the same
+VPC, AZ, etc.) a user’s application components and receives trace spans and
+metrics emitted by the OpenCensus Agent or tasks instrumented with OpenCensus
+instrumentation (or other supported protocols/libraries). The received spans
+and metrics could be emitted directly by clients in instrumented tasks, or
+potentially routed via intermediate proxy sidecar/daemon agents (such as the
+OpenCensus Agent). The collector provides a central egress point for exporting
+traces and metrics to one or more tracing and metrics backends, with buffering
+and retries as well as advanced aggregation, filtering and annotation
+capabilities.
+
+The collector is extensible enabling it to support a range of out-of-the-box
+(and custom) capabilities such as:
+
+* Retroactive (tail-based) sampling of traces
+* Cluster-wide z-pages
+* Filtering of traces and metrics
+* Aggregation of traces and metrics
+* Decoration with meta-data from infrastructure provider (e.g. k8s master)
+* much more ...
+
+The collector also serves as a control plane for agents/clients by supplying
+them updated configuration (e.g. trace sampling policies), and reporting
+agent/client health information/inventory metadata to downstream exporters.
+
+### Architecture Overview
+
+The OpenCensus Collector runs as a standalone instance and receives spans and
+metrics exporterd by one or more OpenCensus Agents or Libraries, or by
+tasks/agents that emit in one of the supported protocols. The Collector is
+configured to send data to the configured exporter(s). The following figure
+summarizes the deployment architecture:
+
+![OpenCensus Collector Architecture](image/collector-architecture.png "OpenCensus Collector Architecture")
+
+The OpenCensus Collector can also be deployed in other configurations, such as
+receiving data from other agents or clients in one of the formats supported by
+its interceptors.
+
+### Usage
+
+First, install the collector if you haven't.
+
+```
+$ go get github.com/census-instrumentation/opencensus-service/cmd/occollector
+```
+
+Create a config.yaml file in the current directory and modify
+it with the collector exporter configuration.
+
+config.yaml:
+
+```
+omnition:
+  tenant: "your-api-key"
+```
+
+Next, install ocagent if you haven't.
+
+```
+$ go get github.com/census-instrumentation/opencensus-service/cmd/ocagent
+```
+
+Create a config.yaml file in the current directory and modify
+it with the collector exporter configuration.
+
+config.yaml:
+
+```
+collector:
+  endpoint: "https://collector.local"
+```
+
+Run the example application that collects traces and exports
+to the daemon if it is running.
+
+```
+$ go run "$(go env GOPATH)/src/github.com/census-instrumentation/opencensus-service/example/main.go"
+```
+
+Run ocagent:
+
+```
+$ ocagent
+```
+
+You should be able to see the traces in the configured tracing backend.
+If you stop the ocagent, example application will stop exporting.
+If you run it again, it will start exporting again.
