@@ -16,7 +16,6 @@ package ocinterceptor
 
 import (
 	"errors"
-	"fmt"
 	"time"
 
 	"google.golang.org/api/support/bundler"
@@ -58,28 +57,19 @@ type spansAndNode struct {
 	node  *commonpb.Node
 }
 
+var errTraceExportProtocolViolation = errors.New("protocol violation: Export's first message must have a Node")
+
 // Export is the gRPC method that receives streamed traces from
 // OpenCensus-traceproto compatible libraries/applications.
 func (oci *OCInterceptor) Export(tes agenttracepb.TraceService_ExportServer) error {
-	// Firstly we MUST receive the node identifier to initiate
-	// the service and start accepting exported spans.
-	const maxTraceInitRetries = 15 // Arbitrary value
-
-	var initiatingNode *commonpb.Node
-	for i := 0; i < maxTraceInitRetries; i++ {
-		recv, err := tes.Recv()
-		if err != nil {
-			return err
-		}
-
-		if nd := recv.Node; nd != nil {
-			initiatingNode = nd
-			break
-		}
+	// The first message MUST have a non-nil Node.
+	firstMessage, err := tes.Recv()
+	if err != nil {
+		return err
 	}
 
-	if initiatingNode == nil {
-		return fmt.Errorf("failed to receive a non-nil initiating Node even after %d retries", maxTraceInitRetries)
+	if firstMessage.Node == nil {
+		return errTraceExportProtocolViolation
 	}
 
 	// Now that we've got the node, we can start to receive streamed up spans.
@@ -98,7 +88,14 @@ func (oci *OCInterceptor) Export(tes agenttracepb.TraceService_ExportServer) err
 	traceBundler.DelayThreshold = spanBufferPeriod
 	traceBundler.BundleCountThreshold = spanBufferCount
 
-	var lastNonNilNode *commonpb.Node = initiatingNode
+	var lastNonNilNode *commonpb.Node = firstMessage.Node
+
+	// If the firstMessage has spans, we MUST add them
+	// See https://github.com/census-instrumentation/opencensus-service/issues/51
+	if len(firstMessage.Spans) > 0 {
+		firstPayload := &spansAndNode{node: lastNonNilNode, spans: firstMessage.Spans}
+		traceBundler.Add(firstPayload, len(firstPayload.spans))
+	}
 
 	for {
 		recv, err := tes.Recv()
