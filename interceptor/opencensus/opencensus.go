@@ -53,6 +53,11 @@ func (oci *OCInterceptor) Config(tcs agenttracepb.TraceService_ConfigServer) err
 	return errUnimplemented
 }
 
+type spansAndNode struct {
+	spans []*tracepb.Span
+	node  *commonpb.Node
+}
+
 // Export is the gRPC method that receives streamed traces from
 // OpenCensus-traceproto compatible libraries/applications.
 func (oci *OCInterceptor) Export(tes agenttracepb.TraceService_ExportServer) error {
@@ -60,7 +65,7 @@ func (oci *OCInterceptor) Export(tes agenttracepb.TraceService_ExportServer) err
 	// the service and start accepting exported spans.
 	const maxTraceInitRetries = 15 // Arbitrary value
 
-	var node *commonpb.Node
+	var initiatingNode *commonpb.Node
 	for i := 0; i < maxTraceInitRetries; i++ {
 		recv, err := tes.Recv()
 		if err != nil {
@@ -68,25 +73,18 @@ func (oci *OCInterceptor) Export(tes agenttracepb.TraceService_ExportServer) err
 		}
 
 		if nd := recv.Node; nd != nil {
-			node = nd
+			initiatingNode = nd
 			break
 		}
 	}
 
-	if node == nil {
-		return fmt.Errorf("failed to receive a non-nil Node even after %d retries", maxTraceInitRetries)
+	if initiatingNode == nil {
+		return fmt.Errorf("failed to receive a non-nil initiating Node even after %d retries", maxTraceInitRetries)
 	}
 
 	// Now that we've got the node, we can start to receive streamed up spans.
 	// The bundler will receive batches of spans i.e. []*tracepb.Span
-	traceBundler := bundler.NewBundler(([]*tracepb.Span)(nil), func(payload interface{}) {
-		listOfSpanLists := payload.([][]*tracepb.Span)
-		flattenedListOfSpans := make([]*tracepb.Span, 0, len(listOfSpanLists)) // In the best case, each spanList has 1 span
-		for _, listOfSpans := range listOfSpanLists {
-			flattenedListOfSpans = append(flattenedListOfSpans, listOfSpans...)
-		}
-		oci.spanSink.ReceiveSpans(node, flattenedListOfSpans...)
-	})
+	traceBundler := bundler.NewBundler((*spansAndNode)(nil), oci.batchSpanExporting)
 	spanBufferPeriod := oci.spanBufferPeriod
 	if spanBufferPeriod <= 0 {
 		spanBufferPeriod = 2 * time.Second // Arbitrary value
@@ -100,13 +98,32 @@ func (oci *OCInterceptor) Export(tes agenttracepb.TraceService_ExportServer) err
 	traceBundler.DelayThreshold = spanBufferPeriod
 	traceBundler.BundleCountThreshold = spanBufferCount
 
+	var lastNonNilNode *commonpb.Node = initiatingNode
+
 	for {
 		recv, err := tes.Recv()
 		if err != nil {
 			return err
 		}
 
-		// Otherwise add these spans to the bundler
-		traceBundler.Add(recv.Spans, len(recv.Spans))
+		// If a Node has been sent from downstream, save and use it.
+		node := recv.Node
+		if node != nil {
+			lastNonNilNode = node
+		}
+
+		// Otherwise add them to the bundler.
+		bundlerPayload := &spansAndNode{node: lastNonNilNode, spans: recv.Spans}
+		traceBundler.Add(bundlerPayload, len(bundlerPayload.spans))
+	}
+}
+
+func (oci *OCInterceptor) batchSpanExporting(payload interface{}) {
+	spnL := payload.([]*spansAndNode)
+	// TODO: (@odeke-em) investigate if it is necessary
+	// to group nodes with their respective spans during
+	// spansAndNode list unfurling then send spans grouped per node
+	for _, spn := range spnL {
+		oci.spanSink.ReceiveSpans(spn.node, spn.spans...)
 	}
 }
