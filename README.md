@@ -25,12 +25,12 @@ Allows open source binary projects (e.g. web servers like Caddy or Istio Mixer)
 to adopt OpenCensus without having to link any exporters into their binary.
 * Easier to scale the exporter development. Not every language has to
 implement support for each backend.
-* Custom daemons containing only the required exporters compiled in can be created. 
+* Custom daemons containing only the required exporters compiled in can be created.
 
 ## Future goals
 * Providing cluster-wide collections and cluster-wide z-pages.
 * Currently we provide no ways to push configuration changes such as the
-default sampling rate. It might be a problem at troubleshooting time. 
+default sampling rate. It might be a problem at troubleshooting time.
 We are planning to address this problem in the future.
 
 ## Usage
@@ -114,7 +114,7 @@ receiving configuration updates from Agent.
 
 ### Communication
 
-Communication between Library and Agent should user a bi-directional gRPC stream. Library should
+Communication between Library and Agent should use a bi-directional gRPC stream. Library should
 initiate the connection, since there’s only one dedicated port for Agent, while there could be
 multiple processes with Library running.
 By default, Agent is available on port 55678.
@@ -122,9 +122,12 @@ By default, Agent is available on port 55678.
 ### Protocol Workflow
 
 1. Library will try to directly establish connections for Config and Export streams.
-2. As the first message in each stream, Library must sent its identifier. Each identifier should
-uniquely identify Library within the VM/container. Identifier is no longer needed once the streams
-are established.
+2. As the first message in each stream, Library must send its identifier. Each identifier should
+uniquely identify Library within the VM/container. If there is no identifier in the first message,
+Agent should drop the whole message and return an error to the client. In addition, the first
+message MAY contain additional data (such as `Span`s). As long as it has a valid identifier
+assoicated, Agent should handle the data properly, as if they were sent in a subsequent message.
+Identifier is no longer needed once the streams are established.
 3. If streams were disconnected and retries failed, the Library identifier would be considered
 expired on Agent side. Library needs to start a new connection with a unique identifier
 (MAY be different than the previous one).
