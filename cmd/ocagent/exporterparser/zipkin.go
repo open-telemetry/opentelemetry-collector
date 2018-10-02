@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package exporter
+package exporterparser
 
 import (
 	"log"
@@ -26,8 +26,10 @@ import (
 )
 
 type zipkinConfig struct {
-	Zipkin struct {
-		Endpoint string `yaml:"endpoint,omitempty"`
+	Zipkin *struct {
+		ServiceName      string `yaml:"service_name,omitempty"`
+		Endpoint         string `yaml:"endpoint,omitempty"`
+		LocalEndpointURI string `yaml:"local_endpoint,omitempty"`
 	} `yaml:"zipkin,omitempty"`
 }
 
@@ -38,18 +40,33 @@ func (z *zipkinExporter) MakeExporters(config []byte) (se view.Exporter, te trac
 	if err := yaml.Unmarshal(config, &c); err != nil {
 		log.Fatalf("Cannot unmarshal data: %v", err)
 	}
-	if endpoint := c.Zipkin.Endpoint; endpoint != "" {
-		// TODO(jbd): Propagate service name, hostport and more metadata from each node.
-		localEndpoint, err := openzipkin.NewEndpoint("", "")
-		if err != nil {
-			log.Fatalf("Cannot configure Zipkin exporter: %v", err)
-		}
-		reporter := http.NewReporter(endpoint)
-		te = zipkin.NewExporter(reporter, localEndpoint)
-		closer = func() {
-			if err := reporter.Close(); err != nil {
-				log.Printf("Cannot close the Zipkin reporter: %v\n", err)
-			}
+	if c.Zipkin == nil {
+		return nil, nil, nil
+	}
+	zc := c.Zipkin
+	endpoint := "http://localhost:9411/api/v2/spans"
+	if zc.Endpoint != "" {
+		endpoint = zc.Endpoint
+	}
+	serviceName := ""
+	if zc.ServiceName != "" {
+		serviceName = zc.ServiceName
+	}
+	localEndpointURI := "192.168.1.5:5454"
+	if zc.LocalEndpointURI != "" {
+		localEndpointURI = zc.LocalEndpointURI
+	}
+	// TODO(jbd): Propagate hostport and more metadata from each node.
+	localEndpoint, err := openzipkin.NewEndpoint(serviceName, localEndpointURI)
+	if err != nil {
+		log.Fatalf("Cannot configure Zipkin exporter: %v", err)
+	}
+
+	reporter := http.NewReporter(endpoint)
+	te = zipkin.NewExporter(reporter, localEndpoint)
+	closer = func() {
+		if err := reporter.Close(); err != nil {
+			log.Printf("Cannot close the Zipkin reporter: %v\n", err)
 		}
 	}
 	return se, te, closer

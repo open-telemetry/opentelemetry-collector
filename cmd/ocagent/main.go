@@ -19,91 +19,77 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"net"
 	"os"
 	"os/signal"
+	"time"
 
-	pb "github.com/census-instrumentation/opencensus-proto/gen-go/exporter/v1"
-	"github.com/census-instrumentation/opencensus-service/cmd/ocagent/exporter"
-	"github.com/census-instrumentation/opencensus-service/internal"
 	"google.golang.org/grpc"
+
+	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
+	"github.com/census-instrumentation/opencensus-service/cmd/ocagent/exporterparser"
+	"github.com/census-instrumentation/opencensus-service/exporter"
+	"github.com/census-instrumentation/opencensus-service/interceptor/opencensus"
+	"github.com/census-instrumentation/opencensus-service/spanreceiver"
 )
 
 func main() {
-	listen := flag.String("listen", "127.0.0.1:", "")
+	ocInterceptorPort := flag.Int("oci-port", 55678, "The port on which the OpenCensus interceptor is run")
 	flag.Parse()
 
-	const configFile = "config.yaml"
-	conf, err := ioutil.ReadFile(configFile)
+	exportersYAMLConfigFile := flag.String("exporters-yaml", "config.yaml", "The YAML file with the configurations for the various exporters")
+
+	yamlBlob, err := ioutil.ReadFile(*exportersYAMLConfigFile)
 	if err != nil {
-		log.Fatalf("Cannot read the %v file: %v", configFile, err)
+		log.Fatalf("Cannot read the YAML file %v error: %v", exportersYAMLConfigFile, err)
 	}
-	exporter.Parse(conf)
+	traceExporters, _, closeFns := exporterparser.ExportersFromYAMLConfig(yamlBlob)
 
-	ls, err := net.Listen("tcp", *listen)
+	commonSpanReceiver := exporter.OCExportersToTraceExporter(traceExporters...)
+
+	// Add other interceptors here as they are implemented
+	ocInterceptorDoneFn, err := runOCInterceptor(*ocInterceptorPort, commonSpanReceiver)
 	if err != nil {
-		log.Fatalf("Cannot listen: %v", err)
+		log.Fatal(err)
 	}
 
-	service := &internal.Service{
-		// TODO(jbd): Do not rely on the stringifier.
-		Endpoint: ls.Addr().String(),
-	}
-	endpointFile, err := service.WriteToEndpointFile()
-	if err != nil {
-		log.Fatalf("Cannot write to the endpoint file: %v", err)
-	}
+	closeFns = append(closeFns, ocInterceptorDoneFn)
 
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
-	go func() {
-		<-c
-		// Close all of the exporters.
-		exporter.CloseAll()
-
-		os.Remove(endpointFile)
-		os.Exit(0)
+	// Always cleanup finally
+	defer func() {
+		for _, closeFn := range closeFns {
+			if closeFn != nil {
+				closeFn()
+			}
+		}
 	}()
 
-	s := grpc.NewServer()
-	pb.RegisterExportServer(s, &server{})
-	if err := s.Serve(ls); err != nil {
-		log.Fatalf("Failed to serve: %v", err)
-	}
+	signalsChan := make(chan os.Signal)
+	signal.Notify(signalsChan, os.Interrupt)
+
+	// Wait for the closing signal
+	<-signalsChan
 }
 
-type server struct{}
-
-func (s *server) ExportSpan(stream pb.Export_ExportSpanServer) error {
-	for {
-		in, err := stream.Recv()
-		if err == io.EOF {
-			return nil
-		}
-		if err != nil {
-			return err
-		}
-
-		for _, s := range in.Spans {
-			sd := protoToSpanData(s)
-			exporter.ExportSpan(sd)
-		}
+func runOCInterceptor(ocInterceptorPort int, sr spanreceiver.SpanReceiver) (doneFn func(), err error) {
+	oci, err := ocinterceptor.New(sr, ocinterceptor.WithSpanBufferPeriod(800*time.Millisecond))
+	if err != nil {
+		return nil, fmt.Errorf("Failed to create the OpenCensus interceptor: %v", err)
 	}
-}
 
-func (s *server) ExportMetrics(stream pb.Export_ExportMetricsServer) error {
-	for {
-		in, err := stream.Recv()
-		if err == io.EOF {
-			return nil
-		}
-		if err != nil {
-			return err
-		}
-		// TODO(jbd): Implement.
-		fmt.Println(in)
+	addr := fmt.Sprintf("localhost:%d", ocInterceptorPort)
+	ln, err := net.Listen("tcp", addr)
+	if err != nil {
+		return nil, fmt.Errorf("Cannot bind to address %q: %v", addr, err)
 	}
+	srv := grpc.NewServer()
+	agenttracepb.RegisterTraceServiceServer(srv, oci)
+	go func() {
+		log.Printf("Running OpenCensus interceptor as a gRPC service at %q", addr)
+		_ = srv.Serve(ln)
+	}()
+	doneFn = func() { _ = ln.Close() }
+	return doneFn, nil
 }

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package exporter
+package exporterparser
 
 import (
 	"log"
@@ -24,23 +24,22 @@ import (
 )
 
 type dataDogConfig struct {
-	Datadog struct {
+	Datadog *struct {
 		// Namespace specifies the namespaces to which metric keys are appended.
 		Namespace string `yaml:"namespace,omitempty"`
 
 		// TraceAddr specifies the host[:port] address of the Datadog Trace Agent.
 		// It defaults to localhost:8126.
-		TraceAddr string `yaml:"traceAddr,omitempty"`
+		TraceAddr string `yaml:"trace_addr,omitempty"`
 
 		// MetricsAddr specifies the host[:port] address for DogStatsD. It defaults
 		// to localhost:8125.
-		MetricsAddr string `yaml:"metricsAddr,omitempty"`
+		MetricsAddr string `yaml:"metrics_addr,omitempty"`
 
 		// Tags specifies a set of global tags to attach to each metric.
 		Tags []string `yaml:"tags,omitempty"`
 
-		EnableMetrics bool `yaml:"enableMetrics,omitempty"`
-		EnableTraces  bool `yaml:"enableTraces,omitempty"`
+		EnableTracing bool `yaml:"enable_tracing,omitempty"`
 	} `yaml:"datadog,omitempty"`
 }
 
@@ -51,21 +50,22 @@ func (d *datadogExporter) MakeExporters(config []byte) (se view.Exporter, te tra
 	if err := yaml.Unmarshal(config, &c); err != nil {
 		log.Fatalf("Cannot unmarshal data: %v", err)
 	}
-	if c := c.Datadog; c.EnableMetrics || c.EnableTraces {
-		// TODO(jbd): Create new exporter for each service name.
-		de := datadog.NewExporter(datadog.Options{
-			Namespace: c.Namespace,
-			TraceAddr: c.TraceAddr,
-			StatsAddr: c.MetricsAddr,
-			Tags:      c.Tags,
-		})
-		if c.EnableMetrics {
-			se = de
-		}
-		if c.EnableTraces {
-			te = de
-		}
-		closer = de.Stop
+
+	dc := c.Datadog
+	if dc == nil {
+		return nil, nil, nil
 	}
-	return se, te, closer
+	if !dc.EnableTracing {
+		return nil, nil, nil
+	}
+
+	// TODO(jbd): Create new exporter for each service name.
+	de := datadog.NewExporter(datadog.Options{
+		Namespace: dc.Namespace,
+		TraceAddr: dc.TraceAddr,
+		StatsAddr: dc.MetricsAddr,
+		Tags:      dc.Tags,
+	})
+	closer = de.Stop
+	return nil, de, closer
 }

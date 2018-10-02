@@ -12,19 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package exporter
+// This package provides support for parsing and creating the
+// respective exporters given a YAML configuration payload.
+// For now it currently only provides statically imported OpenCensus
+// exporters like:
+//  * Stackdriver Tracing and Monitoring
+//  * DataDog
+//  * Zipkin
+
+package exporterparser
 
 import (
+	"sync"
+
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/trace"
 )
 
 var (
-	exporters []Exporter
-
-	statsExporters []view.Exporter
-	traceExporters []trace.Exporter
-	closers        []func()
+	exportersMu sync.Mutex
+	exporters   []Exporter
 )
 
 func init() {
@@ -37,16 +44,17 @@ type Exporter interface {
 	MakeExporters(config []byte) (se view.Exporter, te trace.Exporter, closer func())
 }
 
-// RegisterExporter allows users to export additional exporters
-// before configuration is parsed. RegisterExporter should be called
-// before Parse.
+// RegisterExporter allows users to dyanmically add additional exporters
+// before the configuration is parsed. RegisterExporter should be called
+// before ExportersFromYAMLConfig.
 func RegisterExporter(e Exporter) {
+	exportersMu.Lock()
 	exporters = append(exporters, e)
+	exportersMu.Unlock()
 }
 
-// Parse parses the config yaml payload and configures
-// the exporters accordingly.
-func Parse(config []byte) {
+// ExportersFromYAMLConfig parses the config yaml payload and returns the respective exporters
+func ExportersFromYAMLConfig(config []byte) (traceExporters []trace.Exporter, statsExporters []view.Exporter, closeFns []func()) {
 	for _, e := range exporters {
 		se, te, closer := e.MakeExporters(config)
 		if se != nil {
@@ -56,26 +64,8 @@ func Parse(config []byte) {
 			traceExporters = append(traceExporters, te)
 		}
 		if closer != nil {
-			closers = append(closers, closer)
+			closeFns = append(closeFns, closer)
 		}
 	}
-}
-
-// ExportView exports the view data to all registered view exporters.
-func ExportView(vs *view.Data) {
-	// TODO(jbd): Implement.
-}
-
-// ExportSpan exports the span data to all registered trace exporters.
-func ExportSpan(sd *trace.SpanData) {
-	for _, exporter := range traceExporters {
-		exporter.ExportSpan(sd)
-	}
-}
-
-// CloseAll closes all of the exporters.
-func CloseAll() {
-	for _, fn := range closers {
-		fn()
-	}
+	return
 }
