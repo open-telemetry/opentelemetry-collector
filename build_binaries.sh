@@ -36,7 +36,8 @@ fi
 
 function build() {
     GOOS="$1"
-    CMD="GOOS=$GOOS go build -o bin/ocagent_$GOOS ./cmd/ocagent"
+    LDFLAGS="\"-X github.com/census-instrumentation/opencensus-service/internal/version.GitHash=`git rev-parse --short HEAD`\""
+    CMD="GOOS=$GOOS go build -ldflags $LDFLAGS -o bin/ocagent_$GOOS ./cmd/ocagent"
     echo $CMD
     eval $CMD
 }
