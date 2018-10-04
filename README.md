@@ -1,5 +1,9 @@
 # OpenCensus Service
 
+[![Build Status][travis-image]][travis-url]
+[![GoDoc][godoc-image]][godoc-url]
+[![Gitter chat][gitter-image]][gitter-url]
+
 OpenCensus Service is an experimental component that can collect traces
 and metrics from processes instrumented by OpenCensus or other
 monitoring/tracing libraries (Jaeger, Prometheus, etc.), do the
@@ -284,3 +288,10 @@ $ ocagent
 You should be able to see the traces in the configured tracing backend.
 If you stop the ocagent, example application will stop exporting.
 If you run it again, it will start exporting again.
+
+[travis-image]: https://travis-ci.org/census-instrumentation/opencensus-service.svg?branch=master
+[travis-url]: https://travis-ci.org/census-instrumentation/opencensus-service
+[godoc-image]: https://godoc.org/github.com/census-instrumentation/opencensus-service?status.svg
+[godoc-url]: https://godoc.org/github.com/census-instrumentation/opencensus-service
+[gitter-image]: https://badges.gitter.im/census-instrumentation/lobby.svg
+[gitter-url]: https://gitter.im/census-instrumentation/lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
