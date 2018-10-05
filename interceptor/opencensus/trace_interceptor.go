@@ -25,6 +25,7 @@ import (
 
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/interceptor"
+	"github.com/census-instrumentation/opencensus-service/internal"
 	"github.com/census-instrumentation/opencensus-service/spanreceiver"
 )
 
@@ -86,9 +87,7 @@ func (ocih *ocInterceptorHandler) startInternal(ctx context.Context, sr spanrece
 		return err
 	}
 
-	// TODO: (@odeke-em) in the future, also add OpenCensus
-	// stats handlers to start this gPRC server.
-	srv := grpc.NewServer()
+	srv := internal.GRPCServerWithObservabilityEnabled()
 
 	agenttracepb.RegisterTraceServiceServer(srv, oci)
 	go func() {

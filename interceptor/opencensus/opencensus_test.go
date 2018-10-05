@@ -38,6 +38,7 @@ import (
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/interceptor/opencensus"
+	"github.com/census-instrumentation/opencensus-service/internal"
 	"github.com/census-instrumentation/opencensus-service/spanreceiver"
 	"go.opencensus.io/trace"
 	"go.opencensus.io/trace/tracestate"
@@ -483,7 +484,7 @@ func ocInterceptorOnGRPCServer(t *testing.T, sr spanreceiver.SpanReceiver, opts 
 	}
 
 	// Now run it as a gRPC server
-	srv := grpc.NewServer()
+	srv := internal.GRPCServerWithObservabilityEnabled()
 	agenttracepb.RegisterTraceServiceServer(srv, oci)
 	go func() {
 		_ = srv.Serve(ln)

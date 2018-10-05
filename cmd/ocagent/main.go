@@ -26,13 +26,14 @@ import (
 	"os/signal"
 	"time"
 
-	"google.golang.org/grpc"
-
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/cmd/ocagent/exporterparser"
 	"github.com/census-instrumentation/opencensus-service/exporter"
 	"github.com/census-instrumentation/opencensus-service/interceptor/opencensus"
+	"github.com/census-instrumentation/opencensus-service/internal"
 	"github.com/census-instrumentation/opencensus-service/spanreceiver"
+	"go.opencensus.io/plugin/ocgrpc"
+	"go.opencensus.io/stats/view"
 )
 
 func main() {
@@ -84,7 +85,14 @@ func runOCInterceptor(ocInterceptorPort int, sr spanreceiver.SpanReceiver) (done
 	if err != nil {
 		return nil, fmt.Errorf("Cannot bind to address %q: %v", addr, err)
 	}
-	srv := grpc.NewServer()
+	srv := internal.GRPCServerWithObservabilityEnabled()
+	if err := view.Register(internal.AllViews...); err != nil {
+		return nil, fmt.Errorf("Failed to register internal.AllViews: %v", err)
+	}
+	if err := view.Register(ocgrpc.DefaultServerViews...); err != nil {
+		return nil, fmt.Errorf("Failed to register ocgrpc.DefaultServerViews: %v", err)
+	}
+
 	agenttracepb.RegisterTraceServiceServer(srv, oci)
 	go func() {
 		log.Printf("Running OpenCensus interceptor as a gRPC service at %q", addr)
