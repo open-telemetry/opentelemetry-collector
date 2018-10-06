@@ -97,7 +97,7 @@ type logSpanReceiver int
 
 var _ spanreceiver.SpanReceiver = (*logSpanReceiver)(nil)
 
-func (lsr *logSpanReceiver) ReceiveSpans(node *commonpb.Node, spans ...*tracepb.Span) (*spanreceiver.Acknowledgement, error) {
+func (lsr *logSpanReceiver) ReceiveSpans(ctx context.Context, node *commonpb.Node, spans ...*tracepb.Span) (*spanreceiver.Acknowledgement, error) {
 	spansBlob, _ := json.MarshalIndent(spans, " ", "  ")
 	log.Printf("\n****\nNode: %#v\nSpans: %s\n****\n", node, spansBlob)
 

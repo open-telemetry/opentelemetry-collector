@@ -444,7 +444,7 @@ func newSpanAppender() *spanAppender {
 
 var _ spanreceiver.SpanReceiver = (*spanAppender)(nil)
 
-func (sa *spanAppender) ReceiveSpans(node *commonpb.Node, spans ...*tracepb.Span) (*spanreceiver.Acknowledgement, error) {
+func (sa *spanAppender) ReceiveSpans(ctx context.Context, node *commonpb.Node, spans ...*tracepb.Span) (*spanreceiver.Acknowledgement, error) {
 	sa.Lock()
 	defer sa.Unlock()
 

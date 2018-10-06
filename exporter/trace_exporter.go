@@ -15,6 +15,8 @@
 package exporter
 
 import (
+	"context"
+
 	"go.opencensus.io/trace"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
@@ -56,7 +58,7 @@ func (tse *toOCExportersTransformer) ExportSpanData(node *commonpb.Node, spanDat
 	return nil
 }
 
-func (tse *toOCExportersTransformer) ReceiveSpans(node *commonpb.Node, spans ...*tracepb.Span) (*spanreceiver.Acknowledgement, error) {
+func (tse *toOCExportersTransformer) ReceiveSpans(ctx context.Context, node *commonpb.Node, spans ...*tracepb.Span) (*spanreceiver.Acknowledgement, error) {
 	// Firstly transform them into spanData.
 	spanDataList := make([]*trace.SpanData, 0, len(spans))
 	for _, span := range spans {

@@ -15,6 +15,7 @@
 package ocinterceptor
 
 import (
+	"context"
 	"errors"
 	"time"
 
@@ -115,7 +116,8 @@ func (oci *OCInterceptor) batchSpanExporting(payload interface{}) {
 	// TODO: (@odeke-em) investigate if it is necessary
 	// to group nodes with their respective spans during
 	// spansAndNode list unfurling then send spans grouped per node
+	ctx := context.Background()
 	for _, spn := range spnL {
-		oci.spanSink.ReceiveSpans(spn.node, spn.spans...)
+		oci.spanSink.ReceiveSpans(ctx, spn.node, spn.spans...)
 	}
 }

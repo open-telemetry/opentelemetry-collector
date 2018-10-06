@@ -15,13 +15,15 @@
 package spanreceiver
 
 import (
+	"context"
+
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 )
 
 // SpanReceiver is an interface that receives spans from a Node identifier.
 type SpanReceiver interface {
-	ReceiveSpans(node *commonpb.Node, spans ...*tracepb.Span) (*Acknowledgement, error)
+	ReceiveSpans(ctx context.Context, node *commonpb.Node, spans ...*tracepb.Span) (*Acknowledgement, error)
 }
 
 type Acknowledgement struct {
