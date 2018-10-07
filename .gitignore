@@ -1,0 +1,5 @@
+bin/
+
+# Miscellaneous files
+*.sw[op]
+*.DS_Store
