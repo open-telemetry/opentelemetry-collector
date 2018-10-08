@@ -74,7 +74,7 @@ For developers/maintainers of other libraries: Agent can also be extended to acc
 other tracing/monitoring libraries, such as Zipkin, Prometheus, etc. This is done by adding specific
 interceptors. See [Interceptors](#interceptors) for details.
 
-![agent-architecture](image/agent-architecture.png)
+![agent-architecture](https://user-images.githubusercontent.com/10536136/46637068-6557c900-cb0f-11e8-9fbc-965af5aee080.png)
 
 To support Agent, Library should have “agent exporters”, similar to the existing exporters to
 other backends. There should be 3 separate agent exporters for tracing/stats/metrics
@@ -105,7 +105,7 @@ expired on Agent side. Library needs to start a new connection with a unique ide
 
 This section describes the in-process implementation details of OC-Agent.
 
-![agent-implementation](image/agent-implementation.png)
+![agent-implementation](https://user-images.githubusercontent.com/10536136/46637069-65f05f80-cb0f-11e8-99e1-3cbb368e9dbc.png)
 
 Note: Red arrows represent RPCs or HTTP requests. Black arrows represent local method
 invocations.
@@ -232,7 +232,7 @@ tasks/agents that emit in one of the supported protocols. The Collector is
 configured to send data to the configured exporter(s). The following figure
 summarizes the deployment architecture:
 
-![OpenCensus Collector Architecture](image/collector-architecture.png "OpenCensus Collector Architecture")
+![OpenCensus Collector Architecture](https://user-images.githubusercontent.com/10536136/46637070-65f05f80-cb0f-11e8-96e6-bc56468486b3.png "OpenCensus Collector Architecture")
 
 The OpenCensus Collector can also be deployed in other configurations, such as
 receiving data from other agents or clients in one of the formats supported by
