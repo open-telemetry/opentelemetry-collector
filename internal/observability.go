@@ -50,6 +50,13 @@ var AllViews = []*view.View{
 	ViewReceivedSpansInterceptor,
 }
 
+// ContextWithInterceptorName adds the tag "opencensus_interceptor" and the name of the
+// interceptor as the value, and returns the newly created context.
+func ContextWithInterceptorName(ctx context.Context, interceptorName string) context.Context {
+	ctx, _ = tag.New(ctx, tag.Upsert(tagKeyInterceptorName, interceptorName))
+	return ctx
+}
+
 // NewReceivedSpansRecorderStreaming creates a function that uses a context created
 // from the name of the interceptor to record the number of the spans received
 // by the interceptor.
@@ -58,7 +65,7 @@ func NewReceivedSpansRecorderStreaming(lifetimeCtx context.Context, interceptorN
 	// the context doesn't change, so it is more useful for avoid expensively adding
 	// keys on each invocation. We can create the context once and then reuse it
 	// when recording measurements.
-	ctx, _ := tag.New(lifetimeCtx, tag.Upsert(tagKeyInterceptorName, interceptorName))
+	ctx := ContextWithInterceptorName(lifetimeCtx, interceptorName)
 
 	return func(ni *commonpb.Node, spans []*tracepb.Span) {
 		// TODO: (@odeke-em) perhaps also record information from the node?

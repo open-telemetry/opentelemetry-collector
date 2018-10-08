@@ -15,6 +15,8 @@
 package ocinterceptor_test
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"strings"
@@ -29,6 +31,7 @@ import (
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
+	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/interceptor/opencensus"
 	"github.com/census-instrumentation/opencensus-service/internal"
 )
@@ -52,9 +55,21 @@ func TestEnsureRecordedMetrics(t *testing.T) {
 		t.Fatalf("Failed to create the ocagent-exporter: %v", err)
 	}
 	trace.RegisterExporter(oce)
+
+	metricsReportingPeriod := 5 * time.Millisecond
+	view.SetReportingPeriod(metricsReportingPeriod)
+	// On exit, revert the metrics reporting period.
+
 	defer func() {
 		oce.Stop()
+
+		// Pause for a bit before exiting to give OpenCensus-Go trace
+		// some time to export any remaining traces, before we unregister
+		// the exporter.
+		<-time.After(5 * metricsReportingPeriod)
+
 		trace.UnregisterExporter(oce)
+		view.SetReportingPeriod(60 * time.Second)
 	}()
 
 	// Now for the stats exporter
@@ -62,11 +77,6 @@ func TestEnsureRecordedMetrics(t *testing.T) {
 		t.Fatalf("Failed to register all views: %v", err)
 	}
 	defer view.Unregister(internal.AllViews...)
-
-	metricsReportingPeriod := 5 * time.Millisecond
-	view.SetReportingPeriod(metricsReportingPeriod)
-	// On exit, revert the metrics reporting period.
-	defer view.SetReportingPeriod(60 * time.Second)
 
 	cme := newCountMetricsExporter()
 	view.RegisterExporter(cme)
@@ -147,6 +157,107 @@ func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
 	}
 	<-time.After(time.Duration(n) * metricsReportingPeriod)
 	checkCountMetricsExporterResults(t, cme, n, 0)
+}
+
+type testOCTraceExporter struct {
+	mu       sync.Mutex
+	spanData []*trace.SpanData
+}
+
+func (tote *testOCTraceExporter) ExportSpan(sd *trace.SpanData) {
+	tote.mu.Lock()
+	defer tote.mu.Unlock()
+
+	tote.spanData = append(tote.spanData, sd)
+}
+
+func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
+	// Always sample for the purpose of examining all the spans in this test.
+	trace.ApplyConfig(trace.Config{DefaultSampler: trace.AlwaysSample()})
+
+	// TODO: File an issue with OpenCensus-Go to ask for a method to retrieve
+	// the default sampler because the current method of blindly changing the
+	// global sampler makes testing hard.
+	// Denoise this test by setting the sampler to never sample
+	defer trace.ApplyConfig(trace.Config{DefaultSampler: trace.NeverSample()})
+
+	ocSpansSaver := new(testOCTraceExporter)
+	trace.RegisterExporter(ocSpansSaver)
+	defer trace.UnregisterExporter(ocSpansSaver)
+
+	spanSink := newSpanAppender()
+	spansBufferPeriod := 10 * time.Millisecond
+	_, port, doneFn := ocInterceptorOnGRPCServer(t, spanSink, ocinterceptor.WithSpanBufferPeriod(spansBufferPeriod))
+	defer doneFn()
+
+	traceSvcClient, traceSvcDoneFn, err := makeTraceServiceClient(port)
+	if err != nil {
+		t.Fatalf("Failed to create the trace service client: %v", err)
+	}
+	defer traceSvcDoneFn()
+
+	n := 5
+	for i := 0; i <= n; i++ {
+		sl := []*tracepb.Span{{TraceId: []byte("abcdefghijklmnop"), SpanId: []byte{byte(i + 1), 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08}}}
+		_ = traceSvcClient.Send(&agenttracepb.ExportTraceServiceRequest{Spans: sl, Node: &commonpb.Node{}})
+	}
+
+	// Give it enough time to process the streamed spans.
+	<-time.After(spansBufferPeriod * 2)
+
+	// End the gRPC service to complete the RPC trace so that we
+	// can examine the RPC trace as well.
+	traceSvcDoneFn()
+
+	// Give it some more time to complete the RPC trace and export its spanData.
+	<-time.After(spansBufferPeriod * 2)
+
+	// Inspection time!
+	ocSpansSaver.mu.Lock()
+	defer ocSpansSaver.mu.Unlock()
+
+	if len(ocSpansSaver.spanData) == 0 {
+		t.Fatal("Unfortunately did not receive an exported span data. Please check this library's implementation or go.opencensus.io/trace")
+	}
+
+	gotSpanData := ocSpansSaver.spanData[:]
+	if g, w := len(gotSpanData), 2; g != w {
+		blob, _ := json.MarshalIndent(gotSpanData, "  ", " ")
+		t.Fatalf("Spandata count: Got %d Want %d\n\nData: %s", g, w, blob)
+	}
+
+	interceptorSpanData := gotSpanData[0]
+	if g, w := len(interceptorSpanData.Links), 1; g != w {
+		t.Fatalf("Links count: Got %d Want %d\nGotSpanData: %#v", g, w, interceptorSpanData)
+	}
+
+	rpcSpanData := gotSpanData[1]
+
+	// Ensure that the link matches up exactly!
+	wantLink := trace.Link{
+		SpanID:  rpcSpanData.SpanID,
+		TraceID: rpcSpanData.TraceID,
+		Type:    trace.LinkTypeParent,
+	}
+	if g, w := interceptorSpanData.Links[0], wantLink; !reflect.DeepEqual(g, w) {
+		t.Errorf("Link:\nGot: %#v\nWant: %#v\n", g, w)
+	}
+	if g, w := interceptorSpanData.Name, "OpenCensusInterceptor.Export"; g != w {
+		t.Errorf("InterceptorExport span's SpanData.Name:\nGot:  %q\nWant: %q\n", g, w)
+	}
+
+	// And then for the interceptorSpanData itself, it SHOULD NOT
+	// have a ParentID, so let's enforce all the conditions below:
+	// 1. That it doesn't have the RPC spanID as its ParentSpanID
+	// 2. That it actually has no ParentSpanID i.e. has a blank SpanID
+	if g, w := interceptorSpanData.ParentSpanID[:], rpcSpanData.SpanID[:]; bytes.Equal(g, w) {
+		t.Errorf("InterceptorSpanData.ParentSpanID unfortunately was linked to the RPC span\nGot:  %x\nWant: %x", g, w)
+	}
+
+	var blankSpanID trace.SpanID
+	if g, w := interceptorSpanData.ParentSpanID[:], blankSpanID[:]; !bytes.Equal(g, w) {
+		t.Errorf("InterceptorSpanData unfortunately has a parent and isn't NULL\nGot:  %x\nWant: %x", g, w)
+	}
 }
 
 func checkCountMetricsExporterResults(t *testing.T, cme *countMetricsExporter, n int, wantAllCountsToBe int64) {

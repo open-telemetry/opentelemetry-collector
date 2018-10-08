@@ -21,6 +21,8 @@ import (
 
 	"google.golang.org/api/support/bundler"
 
+	"go.opencensus.io/trace"
+
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
@@ -61,11 +63,18 @@ type spansAndNode struct {
 
 var errTraceExportProtocolViolation = errors.New("protocol violation: Export's first message must have a Node")
 
+const interceptorName = "opencensus"
+
 // Export is the gRPC method that receives streamed traces from
 // OpenCensus-traceproto compatible libraries/applications.
 func (oci *OCInterceptor) Export(tes agenttracepb.TraceService_ExportServer) error {
 	// The bundler will receive batches of spans i.e. []*tracepb.Span
-	traceBundler := bundler.NewBundler((*spansAndNode)(nil), oci.batchSpanExporting)
+	// We need to ensure that it propagates the interceptor name as a tag
+	ctxWithInterceptorName := internal.ContextWithInterceptorName(tes.Context(), interceptorName)
+	traceBundler := bundler.NewBundler((*spansAndNode)(nil), func(payload interface{}) {
+		oci.batchSpanExporting(ctxWithInterceptorName, payload)
+	})
+
 	spanBufferPeriod := oci.spanBufferPeriod
 	if spanBufferPeriod <= 0 {
 		spanBufferPeriod = 2 * time.Second // Arbitrary value
@@ -90,7 +99,7 @@ func (oci *OCInterceptor) Export(tes agenttracepb.TraceService_ExportServer) err
 		return errTraceExportProtocolViolation
 	}
 
-	spansMetricsFn := internal.NewReceivedSpansRecorderStreaming(tes.Context(), "opencensus")
+	spansMetricsFn := internal.NewReceivedSpansRecorderStreaming(tes.Context(), interceptorName)
 
 	processReceivedSpans := func(ni *commonpb.Node, spans []*tracepb.Span) {
 		// Firstly, we'll add them to the bundler.
@@ -120,12 +129,31 @@ func (oci *OCInterceptor) Export(tes agenttracepb.TraceService_ExportServer) err
 	}
 }
 
-func (oci *OCInterceptor) batchSpanExporting(payload interface{}) {
+func (oci *OCInterceptor) batchSpanExporting(longLivedRPCCtx context.Context, payload interface{}) {
 	spnL := payload.([]*spansAndNode)
+	if len(spnL) == 0 {
+		return
+	}
+
+	// Trace this method
+	ctx, span := trace.StartSpan(context.Background(), "OpenCensusInterceptor.Export")
+	defer span.End()
+
 	// TODO: (@odeke-em) investigate if it is necessary
 	// to group nodes with their respective spans during
 	// spansAndNode list unfurling then send spans grouped per node
-	ctx := context.Background()
+
+	// If the starting RPC has a parent span, then add it as a parent link.
+	parentSpanFromRPC := trace.FromContext(longLivedRPCCtx)
+	if parentSpanFromRPC != nil {
+		psc := parentSpanFromRPC.SpanContext()
+		span.AddLink(trace.Link{
+			SpanID:  psc.SpanID,
+			TraceID: psc.TraceID,
+			Type:    trace.LinkTypeParent,
+		})
+	}
+
 	for _, spn := range spnL {
 		oci.spanSink.ReceiveSpans(ctx, spn.node, spn.spans...)
 	}
