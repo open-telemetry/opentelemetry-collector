@@ -37,21 +37,26 @@ import (
 )
 
 func main() {
-	ocInterceptorPort := flag.Int("oci-port", 55678, "The port on which the OpenCensus interceptor is run")
-	flag.Parse()
-
 	exportersYAMLConfigFile := flag.String("exporters-yaml", "config.yaml", "The YAML file with the configurations for the various exporters")
+	flag.Parse()
 
 	yamlBlob, err := ioutil.ReadFile(*exportersYAMLConfigFile)
 	if err != nil {
 		log.Fatalf("Cannot read the YAML file %v error: %v", exportersYAMLConfigFile, err)
 	}
+	ownConfig, err := parseOCAgentConfig(yamlBlob)
+	if err != nil {
+		log.Fatalf("Failed to parse own configuration %v error: %v", exportersYAMLConfigFile, err)
+	}
+
+	ocInterceptorAddr := ownConfig.openCensusInterceptorAddressOrDefault()
+
 	traceExporters, _, closeFns := exporterparser.ExportersFromYAMLConfig(yamlBlob)
 
 	commonSpanReceiver := exporter.OCExportersToTraceExporter(traceExporters...)
 
 	// Add other interceptors here as they are implemented
-	ocInterceptorDoneFn, err := runOCInterceptor(*ocInterceptorPort, commonSpanReceiver)
+	ocInterceptorDoneFn, err := runOCInterceptor(ocInterceptorAddr, commonSpanReceiver)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -74,13 +79,12 @@ func main() {
 	<-signalsChan
 }
 
-func runOCInterceptor(ocInterceptorPort int, sr spanreceiver.SpanReceiver) (doneFn func(), err error) {
+func runOCInterceptor(addr string, sr spanreceiver.SpanReceiver) (doneFn func(), err error) {
 	oci, err := ocinterceptor.New(sr, ocinterceptor.WithSpanBufferPeriod(800*time.Millisecond))
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create the OpenCensus interceptor: %v", err)
 	}
 
-	addr := fmt.Sprintf("localhost:%d", ocInterceptorPort)
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
 		return nil, fmt.Errorf("Cannot bind to address %q: %v", addr, err)

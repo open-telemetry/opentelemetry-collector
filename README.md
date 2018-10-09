@@ -160,18 +160,21 @@ backend (e.g Jaeger Thrift Span), and then push them to corresponding backend or
 
 First, install ocagent if you haven't.
 
-```
+```shell
 $ go get github.com/census-instrumentation/opencensus-service/cmd/ocagent
 ```
 
+### Configuration file
+
 Create a config.yaml file in the current directory and modify
-it with the exporter configuration. For example, following
-configuration exports both to Stackdriver and Zipkin.
+it with the exporter and interceptor configurations.
 
 
-config.yaml:
+#### Exporters
 
-```
+For example, to allow trace exporting to Stackdriver and Zipkin:
+
+```yaml
 stackdriver:
   project: "your-project-id"
   enableTraces: true
@@ -180,22 +183,37 @@ zipkin:
   endpoint: "http://localhost:9411/api/v2/spans"
 ```
 
-Run the example application that collects traces and exports
-to the daemon if it is running.
+#### Interceptors
 
-```
-$ go run "$(go env GOPATH)/src/github.com/census-instrumentation/opencensus-service/example/main.go"
+To modify the address that the OpenCensus interceptor runs on, please use the
+YAML field name `opencensus_interceptor` and it takes fields like `address`.
+For example:
+
+```yaml
+opencensus_interceptor:
+    address: "localhost:55678"
 ```
 
-Run ocagent:
+### Running an end-to-end example/demo
 
-```
+Run the example application that collects traces and exports them
+to the daemon.
+
+Firstly run ocagent:
+
+```shell
 $ ocagent
 ```
 
+Next run the demo application:
+
+```shell
+$ go run "$(go env GOPATH)/src/github.com/census-instrumentation/opencensus-service/example/main.go"
+```
+
 You should be able to see the traces in Stackdriver and Zipkin.
-If you stop the ocagent, example application will stop exporting.
-If you run it again, it will start exporting again.
+If you stop the ocagent, the example application will stop exporting.
+If you run it again, exporting will resume.
 
 ## OpenCensus Collector
 
@@ -281,8 +299,9 @@ $ go run "$(go env GOPATH)/src/github.com/census-instrumentation/opencensus-serv
 
 Run ocagent:
 
-```
+```shell
 $ ocagent
+2018/10/08 21:38:00 Running OpenCensus interceptor as a gRPC service at "127.0.0.1:55678"
 ```
 
 You should be able to see the traces in the configured tracing backend.
