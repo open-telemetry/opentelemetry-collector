@@ -26,7 +26,7 @@ import (
 )
 
 type TraceExporter interface {
-	ExportSpanData(node *commonpb.Node, spandata ...*trace.SpanData) error
+	ExportSpanData(ctx context.Context, node *commonpb.Node, spandata ...*trace.SpanData) error
 }
 
 type toOCExportersTransformer struct {
@@ -49,7 +49,7 @@ func OCExportersToTraceExporter(ocTraceExporters ...trace.Exporter) TraceExporte
 var _ TraceExporter = (*toOCExportersTransformer)(nil)
 var _ spanreceiver.SpanReceiver = (*toOCExportersTransformer)(nil)
 
-func (tse *toOCExportersTransformer) ExportSpanData(node *commonpb.Node, spanData ...*trace.SpanData) error {
+func (tse *toOCExportersTransformer) ExportSpanData(ctx context.Context, node *commonpb.Node, spanData ...*trace.SpanData) error {
 	for _, sd := range spanData {
 		for _, traceExp := range tse.ocTraceExporters {
 			traceExp.ExportSpan(sd)
@@ -72,7 +72,7 @@ func (tse *toOCExportersTransformer) ReceiveSpans(ctx context.Context, node *com
 	// before they get sent to the various exporters.
 
 	// Now invoke ExportSpanData.
-	err := tse.ExportSpanData(node, spanDataList...)
+	err := tse.ExportSpanData(ctx, node, spanDataList...)
 	nSaved := len(spanDataList)
 	ack := &spanreceiver.Acknowledgement{
 		SavedSpans:   uint64(nSaved),
