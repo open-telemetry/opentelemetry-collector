@@ -47,7 +47,8 @@ func Example_endToEndExporting() {
 }
 
 func runClientApplications(port uint16) error {
-	oce, err := ocagent.NewExporter(ocagent.WithPort(port), ocagent.WithInsecure())
+	address := fmt.Sprintf("localhost:%d", port)
+	oce, err := ocagent.NewExporter(ocagent.WithAddress(address), ocagent.WithInsecure())
 	if err != nil {
 		return err
 	}
@@ -98,8 +99,8 @@ func runServer() (port uint16, closeFn func()) {
 	}
 
 	je, err := jaeger.NewExporter(jaeger.Options{
-		CollectorEndpoint: "http://localhost:14268/api/traces",
-		ServiceName:       "plumbing-demo",
+		Endpoint:    "http://localhost:14268/api/traces",
+		ServiceName: "plumbing-demo",
 	})
 	if err != nil {
 		log.Fatalf("Failed to start Jaeger Trace exporter: %v", err)

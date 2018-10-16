@@ -51,7 +51,8 @@ func TestOCInterceptor_endToEnd(t *testing.T) {
 	defer doneFn()
 
 	// Now the opencensus-agent exporter.
-	oce, err := ocagent.NewExporter(ocagent.WithPort(uint16(port)), ocagent.WithInsecure())
+	address := fmt.Sprintf("localhost:%d", port)
+	oce, err := ocagent.NewExporter(ocagent.WithAddress(address), ocagent.WithInsecure())
 	if err != nil {
 		t.Fatalf("Failed to create the ocagent-exporter: %v", err)
 	}
