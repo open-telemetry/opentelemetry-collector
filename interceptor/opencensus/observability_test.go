@@ -104,7 +104,7 @@ func TestEnsureRecordedMetrics(t *testing.T) {
 
 	// Give them some time to be exported.
 	// say n * metricsReportingPeriod
-	<-time.After(time.Duration(n) * metricsReportingPeriod)
+	<-time.After(time.Duration(n+1) * metricsReportingPeriod)
 	oce.Flush()
 
 	checkCountMetricsExporterResults(t, cme, n, 1)
@@ -273,10 +273,31 @@ func checkCountMetricsExporterResults(t *testing.T, cme *countMetricsExporter, n
 	wantTags := map[tag.Key][]string{
 		wantTagKey: wantValues,
 	}
-
 	gotTags := cme.tags
-	if !reflect.DeepEqual(gotTags, wantTags) {
+
+	if len(gotTags) != len(wantTags) {
 		t.Errorf("\nGotTags:\n\t%#v\n\nWantTags:\n\t%#v\n", gotTags, wantTags)
+	} else {
+		for gotTagKey, gotTagValues := range gotTags {
+			wantValues := wantTags[gotTagKey]
+			if g, w := len(gotTagValues), len(wantValues); g < w {
+				t.Errorf("%s Got less tags than expected %d vs %d\nGot:\n\t%#v\nWant:\n\t%#v\n",
+					gotTagKey, g, w, gotTagValues, wantValues)
+				continue
+			}
+
+			// Because the test for exported metrics depends on precise timings of the results of
+			// a non-deterministic global OpenCensus stats worker, the best that we can do here
+			// is to compare and ensure that we got at least len(wantValues) that all match.
+			// In cases such as with: -race enabled(which slows the program down), we'll get an
+			// extra key or so, as per:
+			//      https://travis-ci.org/census-instrumentation/opencensus-service/builds/442325321
+			// Hence why we'll just compare at most len(wantValues) in case the worker's export time
+			// exceeded that of the timings here.
+			if g, w := gotTagValues[:len(wantValues)], wantValues; !reflect.DeepEqual(g, w) {
+				t.Errorf("\nGotTags:\n\t%#v\n\nWantTags:\n\t%#v\n", gotTags, wantTags)
+			}
+		}
 	}
 
 	// The only data types we are expecting are:
