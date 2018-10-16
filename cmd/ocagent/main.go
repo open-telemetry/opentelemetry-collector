@@ -37,22 +37,21 @@ import (
 )
 
 func main() {
-	exportersYAMLConfigFile := flag.String("exporters-yaml", "config.yaml", "The YAML file with the configurations for the various exporters")
+	var configYAMLFile string
+	flag.StringVar(&configYAMLFile, "config", "config.yaml", "The YAML file with the configurations for the various exporters")
 	flag.Parse()
 
-	yamlBlob, err := ioutil.ReadFile(*exportersYAMLConfigFile)
+	yamlBlob, err := ioutil.ReadFile(configYAMLFile)
 	if err != nil {
-		log.Fatalf("Cannot read the YAML file %v error: %v", exportersYAMLConfigFile, err)
+		log.Fatalf("Cannot read the YAML file %v error: %v", configYAMLFile, err)
 	}
-	ownConfig, err := parseOCAgentConfig(yamlBlob)
+	agentConfig, err := parseOCAgentConfig(yamlBlob)
 	if err != nil {
-		log.Fatalf("Failed to parse own configuration %v error: %v", exportersYAMLConfigFile, err)
+		log.Fatalf("Failed to parse own configuration %v error: %v", configYAMLFile, err)
 	}
 
-	ocInterceptorAddr := ownConfig.openCensusInterceptorAddressOrDefault()
-
+	ocInterceptorAddr := agentConfig.ocInterceptorAddress()
 	traceExporters, _, closeFns := exporterparser.ExportersFromYAMLConfig(yamlBlob)
-
 	commonSpanReceiver := exporter.OCExportersToTraceExporter(traceExporters...)
 
 	// Add other interceptors here as they are implemented
@@ -99,8 +98,10 @@ func runOCInterceptor(addr string, sr spanreceiver.SpanReceiver) (doneFn func(),
 
 	agenttracepb.RegisterTraceServiceServer(srv, oci)
 	go func() {
+		if err := srv.Serve(ln); err != nil {
+			log.Fatalf("Failed to run OpenCensus interceptor: %v", err)
+		}
 		log.Printf("Running OpenCensus interceptor as a gRPC service at %q", addr)
-		_ = srv.Serve(ln)
 	}()
 	doneFn = func() { _ = ln.Close() }
 	return doneFn, nil

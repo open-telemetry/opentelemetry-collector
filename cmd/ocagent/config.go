@@ -20,26 +20,26 @@ import (
 
 const defaultOCInterceptorAddress = "localhost:55678"
 
-type topLevelConfig struct {
-	OpenCensusInterceptorConfig *config `yaml:"opencensus_interceptor"`
+type config struct {
+	OpenCensusInterceptorConfig *interceptorConfig `yaml:"opencensus_interceptor"`
 }
 
-type config struct {
+type interceptorConfig struct {
 	// The address to which the OpenCensus interceptor will be bound and run on.
 	Address string `yaml:"address"`
 }
 
-func (tcfg *topLevelConfig) openCensusInterceptorAddressOrDefault() string {
-	if tcfg == nil || tcfg.OpenCensusInterceptorConfig == nil || tcfg.OpenCensusInterceptorConfig.Address == "" {
+func (c *config) ocInterceptorAddress() string {
+	if c == nil || c.OpenCensusInterceptorConfig == nil || c.OpenCensusInterceptorConfig.Address == "" {
 		return defaultOCInterceptorAddress
 	}
-	return tcfg.OpenCensusInterceptorConfig.Address
+	return c.OpenCensusInterceptorConfig.Address
 }
 
-func parseOCAgentConfig(yamlBlob []byte) (*topLevelConfig, error) {
-	cfg := new(topLevelConfig)
-	if err := yaml.Unmarshal(yamlBlob, cfg); err != nil {
+func parseOCAgentConfig(yamlBlob []byte) (*config, error) {
+	var cfg config
+	if err := yaml.Unmarshal(yamlBlob, &cfg); err != nil {
 		return nil, err
 	}
-	return cfg, nil
+	return &cfg, nil
 }
