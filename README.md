@@ -4,6 +4,27 @@
 [![GoDoc][godoc-image]][godoc-url]
 [![Gitter chat][gitter-image]][gitter-url]
 
+# Table of contents
+- [Introduction](#introduction)
+- [Goals](#goals)
+- [OpenCensus Agent](#opencensus-agent)
+    - [Architecture overview](#agent-architecture-overview)
+    - [Communication](#agent-communication)
+    - [Protocol Workflow](#agent-protocol-workflow)
+    - [Implementation details of Agent server](#agent-implementation-details-of-agent-server)
+        - [Interceptors](#agent-impl-interceptors)
+        - [Agent Core](#agent-impl-agent-core)
+        - [Exporters](#agent-impl-exporters)
+    - [Usage](#agent-usage)
+    - [Configuration file](#agent-configuration-file)
+        - [Exporters](#agent-config-exporters)
+        - [Interceptors](#agent-config-interceptors)
+        - [End-to-end example](#agent-config-end-to-end-example)
+- [OpenCensus Collector](#opencensus-collector)
+    - [Architecture overview](#collector-architecture-overview)
+    - [Usage](#collector-usage)
+
+## Introduction
 OpenCensus Service is an experimental component that can collect traces
 and metrics from processes instrumented by OpenCensus or other
 monitoring/tracing libraries (Jaeger, Prometheus, etc.), do the
@@ -45,7 +66,7 @@ implement support for each backend.
 
 ## OpenCensus Agent
 
-### Architecture Overview
+### <a name="agent-architecture-overview"></a>Architecture Overview
 
 On a typical VM/container, there are user applications running in some processes/pods with
 OpenCensus Library (Library). Previously, Library did all the recording, collecting, sampling and
@@ -81,14 +102,14 @@ other backends. There should be 3 separate agent exporters for tracing/stats/met
 respectively. Agent exporters will be responsible for sending spans/stats/metrics and (possibly)
 receiving configuration updates from Agent.
 
-### Communication
+### <a name="agent-communication"></a>Communication
 
 Communication between Library and Agent should use a bi-directional gRPC stream. Library should
 initiate the connection, since there’s only one dedicated port for Agent, while there could be
 multiple processes with Library running.
 By default, Agent is available on port 55678.
 
-### Protocol Workflow
+### <a name="agent-protocol-workflow"></a>Protocol Workflow
 
 1. Library will try to directly establish connections for Config and Export streams.
 2. As the first message in each stream, Library must send its identifier. Each identifier should
@@ -101,7 +122,7 @@ Identifier is no longer needed once the streams are established.
 expired on Agent side. Library needs to start a new connection with a unique identifier
 (MAY be different than the previous one).
 
-### Implementation details of Agent Server
+### <a name="agent-protocol-implementation-details-of-agent-server"></a>Implementation details of Agent Server
 
 This section describes the in-process implementation details of OC-Agent.
 
@@ -120,7 +141,7 @@ from outside.
 3. The exporters to different monitoring backends or collector services, such as
 Omnition Collector, Stackdriver Trace, Jaeger, Zipkin, etc.
 
-#### Interceptors
+#### <a name="agent-impl-interceptors"></a>Interceptors
 
 Each interceptor can be connected with multiple instrumentation libraries. The
 communication protocol between interceptors and libraries is the one we described in the
@@ -129,7 +150,7 @@ corresponding interceptor, the first message it sends must have the `Node` ident
 interceptor will then cache the `Node` for each library, and `Node` is not required for
 the subsequent messages from libraries.
 
-#### Agent Core
+#### <a name="agent-impl-core"></a>Agent Core
 
 Most functionalities of Agent are in Agent Core. Agent Core's responsibilies include:
 
@@ -150,13 +171,13 @@ language and implementation of the Config service protocol, Agent Core MAY eithe
 store a list of active Config streams (e.g gRPC-Java), or a list of last active time for
 streams that cannot be kept alive all the time (e.g gRPC-Python).
 
-#### Exporters
+#### <a name="agent-impl-exporters"></a>Exporters
 
 Once in a while, Agent Core will push `SpanProto` with `Node` to each exporter. After
 receiving them, each exporter will translate `SpanProto` to the format supported by the
 backend (e.g Jaeger Thrift Span), and then push them to corresponding backend or service.
 
-### Usage
+### <a name="agent-usage"></a>Usage
 
 First, install ocagent if you haven't.
 
@@ -164,13 +185,13 @@ First, install ocagent if you haven't.
 $ go get github.com/census-instrumentation/opencensus-service/cmd/ocagent
 ```
 
-### Configuration file
+### <a name="agent-configuration-file"></a>Configuration file
 
 Create a config.yaml file in the current directory and modify
 it with the exporter and interceptor configurations.
 
 
-#### Exporters
+#### <a name="agent-config-exporters"></a>Exporters
 
 For example, to allow trace exporting to Stackdriver and Zipkin:
 
@@ -183,7 +204,7 @@ zipkin:
   endpoint: "http://localhost:9411/api/v2/spans"
 ```
 
-#### Interceptors
+#### <a name="agent-config-interceptors"></a>Interceptors
 
 To modify the address that the OpenCensus interceptor runs on, please use the
 YAML field name `opencensus_interceptor` and it takes fields like `address`.
@@ -194,7 +215,7 @@ opencensus_interceptor:
     address: "localhost:55678"
 ```
 
-### Running an end-to-end example/demo
+### <a name="agent-config-end-to-end-example"></a>Running an end-to-end example/demo
 
 Run the example application that collects traces and exports them
 to the daemon.
@@ -242,7 +263,7 @@ The collector also serves as a control plane for agents/clients by supplying
 them updated configuration (e.g. trace sampling policies), and reporting
 agent/client health information/inventory metadata to downstream exporters.
 
-### Architecture Overview
+### <a name="collector-architecture-overview"></a>Architecture Overview
 
 The OpenCensus Collector runs as a standalone instance and receives spans and
 metrics exporterd by one or more OpenCensus Agents or Libraries, or by
@@ -256,7 +277,7 @@ The OpenCensus Collector can also be deployed in other configurations, such as
 receiving data from other agents or clients in one of the formats supported by
 its interceptors.
 
-### Usage
+### <a name="collector-usage"></a>Usage
 
 First, install the collector if you haven't.
 
