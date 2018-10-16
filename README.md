@@ -15,11 +15,13 @@
         - [Interceptors](#agent-impl-interceptors)
         - [Agent Core](#agent-impl-agent-core)
         - [Exporters](#agent-impl-exporters)
+    - [Building binaries](#agent-building-binaries)
     - [Usage](#agent-usage)
     - [Configuration file](#agent-configuration-file)
         - [Exporters](#agent-config-exporters)
         - [Interceptors](#agent-config-interceptors)
         - [End-to-end example](#agent-config-end-to-end-example)
+    - [Docker image](#agent-docker-image)
 - [OpenCensus Collector](#opencensus-collector)
     - [Architecture overview](#collector-architecture-overview)
     - [Usage](#collector-usage)
@@ -177,6 +179,32 @@ Once in a while, Agent Core will push `SpanProto` with `Node` to each exporter. 
 receiving them, each exporter will translate `SpanProto` to the format supported by the
 backend (e.g Jaeger Thrift Span), and then push them to corresponding backend or service.
 
+### <a name="building-binaries"></a>Building binaries
+
+Please run file `build_binaries.sh` in the root of this repository, with argument `binaries` or any of:
+* linux
+* darwin
+* windows
+
+which will then place the binaries in the directory `bin` which is in your current working directory
+```shell
+$ ./build_binaries.sh binaries
+
+GOOS=darwin go build -ldflags "-X github.com/census-instrumentation/opencensus-service/internal/version.GitHash=8e102b4" -o bin/ocagent_darwin ./cmd/ocagent
+GOOS=linux go build -ldflags "-X github.com/census-instrumentation/opencensus-service/internal/version.GitHash=8e102b4" -o bin/ocagent_linux ./cmd/ocagent
+GOOS=windows go build -ldflags "-X github.com/census-instrumentation/opencensus-service/internal/version.GitHash=8e102b4" -o bin/ocagent_windows ./cmd/ocagent
+```
+which should then create binaries inside `bin/` that have a version command attached to them such as
+```shell
+$ ./bin/ocagent_darwin version
+
+Version      0.0.1
+GitHash      8e102b4
+Goversion    devel +7f3313133e Mon Oct 15 22:11:26 2018 +0000
+OS           darwin
+Architecture amd64
+```
+
 ### <a name="agent-usage"></a>Usage
 
 First, install ocagent if you haven't.
@@ -235,6 +263,25 @@ $ go run "$(go env GOPATH)/src/github.com/census-instrumentation/opencensus-serv
 You should be able to see the traces in Stackdriver and Zipkin.
 If you stop the ocagent, the example application will stop exporting.
 If you run it again, exporting will resume.
+
+### <a name="agent-docker-image"></a>Docker image
+
+With your configuration file from above in [Agent configuration file](#agent-configuration-file),
+the Docker image can be created by running:
+
+```shell
+./build_binaries.sh docker <image_version>
+```
+
+For example, to create a Docker image of the agent, tagged `v1.0.0`:
+```shell
+./build_binaries.sh docker v1.0.0
+```
+
+and then the Docker image `v1.0.0` of the agent can be started  by
+```shell
+docker run -v $(pwd)/config.yaml:/config.yaml  -p 55678:55678  ocagent:v1.0.0
+```
 
 ## OpenCensus Collector
 
