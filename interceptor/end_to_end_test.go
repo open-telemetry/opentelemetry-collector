@@ -18,7 +18,6 @@ import (
 	"context"
 	"encoding/json"
 	"log"
-	"testing"
 	"time"
 
 	"contrib.go.opencensus.io/exporter/ocagent"
@@ -31,7 +30,7 @@ import (
 	"github.com/census-instrumentation/opencensus-service/spanreceiver"
 )
 
-func TestNewInterceptor_endToEnd(t *testing.T) {
+func Example_endToEnd() {
 	// This is what the cmd/ocagent code would look like this.
 	// A trace interceptor as per the trace interceptor
 	// configs that have been parsed.
@@ -58,7 +57,7 @@ func TestNewInterceptor_endToEnd(t *testing.T) {
 			_ = ti.StopTraceInterception(context.Background())
 		}
 	}()
-	t.Log("Done starting the trace interceptor")
+	log.Println("Done starting the trace interceptor")
 	// We are done with the agent-core
 
 	// Now this code would exist in the client application e.g. client code.
@@ -74,7 +73,7 @@ func TestNewInterceptor_endToEnd(t *testing.T) {
 	// For demo purposes we are always sampling
 	trace.ApplyConfig(trace.Config{DefaultSampler: trace.AlwaysSample()})
 
-	t.Log("Starting loop")
+	log.Println("Starting loop")
 	ctx, span := trace.StartSpan(context.Background(), "ClientLibrarySpan")
 	for i := 0; i < 10; i++ {
 		_, span := trace.StartSpan(ctx, "ChildSpan")
