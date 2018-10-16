@@ -15,14 +15,16 @@
 package exporterparser
 
 import (
+	"context"
 	"log"
 
 	openzipkin "github.com/openzipkin/zipkin-go"
 	"github.com/openzipkin/zipkin-go/reporter/http"
 	"go.opencensus.io/exporter/zipkin"
-	"go.opencensus.io/stats/view"
 	"go.opencensus.io/trace"
-	yaml "gopkg.in/yaml.v2"
+
+	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	"github.com/census-instrumentation/opencensus-service/exporter"
 )
 
 type zipkinConfig struct {
@@ -33,13 +35,16 @@ type zipkinConfig struct {
 	} `yaml:"zipkin,omitempty"`
 }
 
-type zipkinExporter struct{}
+type zipkinExporter struct {
+	exporter *zipkin.Exporter
+}
 
-func (z *zipkinExporter) MakeExporters(config []byte) (se view.Exporter, te trace.Exporter, closer func()) {
+func ZipkinExportersFromYAML(config []byte) (tes []exporter.TraceExporter, doneFns []func() error, err error) {
 	var c zipkinConfig
-	if err := yaml.Unmarshal(config, &c); err != nil {
-		log.Fatalf("Cannot unmarshal data: %v", err)
+	if err := yamlUnmarshal(config, &c); err != nil {
+		return nil, nil, err
 	}
+
 	if c.Zipkin == nil {
 		return nil, nil, nil
 	}
@@ -63,11 +68,15 @@ func (z *zipkinExporter) MakeExporters(config []byte) (se view.Exporter, te trac
 	}
 
 	reporter := http.NewReporter(endpoint)
-	te = zipkin.NewExporter(reporter, localEndpoint)
-	closer = func() {
-		if err := reporter.Close(); err != nil {
-			log.Printf("Cannot close the Zipkin reporter: %v\n", err)
-		}
-	}
-	return se, te, closer
+	ze := zipkin.NewExporter(reporter, localEndpoint)
+	tes = append(tes, &zipkinExporter{exporter: ze})
+	doneFns = append(doneFns, reporter.Close)
+	return
+}
+
+func (ze *zipkinExporter) ExportSpanData(ctx context.Context, node *commonpb.Node, spandata ...*trace.SpanData) error {
+	// TODO: Examine "contrib.go.opencensus.io/exporter/zipkin" to see
+	// if trace.ExportSpan was constraining and if perhaps the Zipkin
+	// upload can use the context and information from the Node.
+	return exportSpans(ze.exporter, spandata)
 }

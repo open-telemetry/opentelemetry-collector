@@ -15,12 +15,13 @@
 package exporterparser
 
 import (
-	"log"
+	"context"
 
 	datadog "github.com/DataDog/opencensus-go-exporter-datadog"
-	"go.opencensus.io/stats/view"
 	"go.opencensus.io/trace"
-	yaml "gopkg.in/yaml.v2"
+
+	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	"github.com/census-instrumentation/opencensus-service/exporter"
 )
 
 type dataDogConfig struct {
@@ -43,12 +44,14 @@ type dataDogConfig struct {
 	} `yaml:"datadog,omitempty"`
 }
 
-type datadogExporter struct{}
+type datadogExporter struct {
+	exporter *datadog.Exporter
+}
 
-func (d *datadogExporter) MakeExporters(config []byte) (se view.Exporter, te trace.Exporter, closer func()) {
+func DatadogTraceExportersFromYAML(config []byte) (tes []exporter.TraceExporter, doneFns []func() error, err error) {
 	var c dataDogConfig
-	if err := yaml.Unmarshal(config, &c); err != nil {
-		log.Fatalf("Cannot unmarshal data: %v", err)
+	if err := yamlUnmarshal(config, &c); err != nil {
+		return nil, nil, err
 	}
 
 	dc := c.Datadog
@@ -66,6 +69,17 @@ func (d *datadogExporter) MakeExporters(config []byte) (se view.Exporter, te tra
 		StatsAddr: dc.MetricsAddr,
 		Tags:      dc.Tags,
 	})
-	closer = de.Stop
-	return nil, de, closer
+	doneFns = append(doneFns, func() error {
+		de.Stop()
+		return nil
+	})
+	tes = append(tes, &datadogExporter{exporter: de})
+	return
+}
+
+func (dde *datadogExporter) ExportSpanData(ctx context.Context, node *commonpb.Node, spandata ...*trace.SpanData) error {
+	// TODO: Examine the Datadog exporter to see
+	// if trace.ExportSpan was constraining and if perhaps the
+	// upload can use the context and information from the Node.
+	return exportSpans(dde.exporter, spandata)
 }

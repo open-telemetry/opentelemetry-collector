@@ -25,7 +25,7 @@ import (
 )
 
 func main() {
-	oce, err := ocagent.NewExporter()
+	oce, err := ocagent.NewExporter(ocagent.WithInsecure())
 	if err != nil {
 		log.Fatalf("Failed to create ocagent-exporter: %v", err)
 	}

@@ -26,7 +26,6 @@ import (
 	"time"
 
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
-	"github.com/census-instrumentation/opencensus-service/cmd/ocagent/exporterparser"
 	"github.com/census-instrumentation/opencensus-service/exporter"
 	"github.com/census-instrumentation/opencensus-service/interceptor/opencensus"
 	"github.com/census-instrumentation/opencensus-service/internal"
@@ -53,10 +52,10 @@ func runOCAgent() {
 	if err != nil {
 		log.Fatalf("Failed to parse own configuration %v error: %v", configYAMLFile, err)
 	}
-
 	ocInterceptorAddr := agentConfig.ocInterceptorAddress()
-	traceExporters, _, closeFns := exporterparser.ExportersFromYAMLConfig(yamlBlob)
-	commonSpanReceiver := exporter.OCExportersToTraceExporter(traceExporters...)
+
+	traceExporters, closeFns := exportersFromYAMLConfig(yamlBlob)
+	commonSpanReceiver := exporter.MultiTraceExporters(traceExporters...)
 
 	// Add other interceptors here as they are implemented
 	ocInterceptorDoneFn, err := runOCInterceptor(ocInterceptorAddr, commonSpanReceiver)
@@ -82,7 +81,7 @@ func runOCAgent() {
 	<-signalsChan
 }
 
-func runOCInterceptor(addr string, sr spanreceiver.SpanReceiver) (doneFn func(), err error) {
+func runOCInterceptor(addr string, sr spanreceiver.SpanReceiver) (doneFn func() error, err error) {
 	oci, err := ocinterceptor.New(sr, ocinterceptor.WithSpanBufferPeriod(800*time.Millisecond))
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create the OpenCensus interceptor: %v", err)
@@ -102,11 +101,11 @@ func runOCInterceptor(addr string, sr spanreceiver.SpanReceiver) (doneFn func(),
 
 	agenttracepb.RegisterTraceServiceServer(srv, oci)
 	go func() {
+		log.Printf("Running OpenCensus interceptor as a gRPC service at %q", addr)
 		if err := srv.Serve(ln); err != nil {
 			log.Fatalf("Failed to run OpenCensus interceptor: %v", err)
 		}
-		log.Printf("Running OpenCensus interceptor as a gRPC service at %q", addr)
 	}()
-	doneFn = func() { _ = ln.Close() }
+	doneFn = ln.Close
 	return doneFn, nil
 }

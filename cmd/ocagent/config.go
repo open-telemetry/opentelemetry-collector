@@ -15,7 +15,12 @@
 package main
 
 import (
+	"log"
+
 	yaml "gopkg.in/yaml.v2"
+
+	"github.com/census-instrumentation/opencensus-service/exporter"
+	"github.com/census-instrumentation/opencensus-service/exporter/exporterparser"
 )
 
 const defaultOCInterceptorAddress = "localhost:55678"
@@ -42,4 +47,34 @@ func parseOCAgentConfig(yamlBlob []byte) (*config, error) {
 		return nil, err
 	}
 	return &cfg, nil
+}
+
+type exporterParser func(yamlConfig []byte) (te []exporter.TraceExporter, err error)
+
+// exportersFromYAMLConfig parses the config yaml payload and returns the respective exporters
+func exportersFromYAMLConfig(config []byte) (traceExporters []exporter.TraceExporter, doneFns []func() error) {
+	parseFns := []struct {
+		name string
+		fn   func([]byte) ([]exporter.TraceExporter, []func() error, error)
+	}{
+		{name: "datadog", fn: exporterparser.DatadogTraceExportersFromYAML},
+		{name: "stackdriver", fn: exporterparser.StackdriverTraceExportersFromYAML},
+		{name: "zipkin", fn: exporterparser.ZipkinExportersFromYAML},
+	}
+
+	for _, cfg := range parseFns {
+		tes, tesDoneFns, err := cfg.fn(config)
+		if err != nil {
+			log.Fatalf("Failed to create config for %q: %v", cfg.name, err)
+		}
+		for _, te := range tes {
+			if te != nil {
+				traceExporters = append(traceExporters, te)
+			}
+		}
+		for _, doneFn := range tesDoneFns {
+			doneFns = append(doneFns, doneFn)
+		}
+	}
+	return
 }

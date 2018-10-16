@@ -80,3 +80,34 @@ func (tse *toOCExportersTransformer) ReceiveSpans(ctx context.Context, node *com
 	}
 	return ack, err
 }
+
+func MultiTraceExporters(tes ...TraceExporter) TraceExporterSpanReceiver {
+	return traceExporters(tes)
+}
+
+type traceExporters []TraceExporter
+
+func (tes traceExporters) ExportSpanData(ctx context.Context, node *commonpb.Node, spandata ...*trace.SpanData) error {
+	for _, te := range tes {
+		_ = te.ExportSpanData(ctx, node, spandata...)
+	}
+	return nil
+}
+
+func (tes traceExporters) ReceiveSpans(ctx context.Context, node *commonpb.Node, spans ...*tracepb.Span) (*spanreceiver.Acknowledgement, error) {
+	spanDataList := make([]*trace.SpanData, 0, len(spans))
+	for _, span := range spans {
+		spanData, _ := tracetranslator.ProtoSpanToOCSpanData(span)
+		if spanData != nil {
+			spanDataList = append(spanDataList, spanData)
+		}
+	}
+
+	err := tes.ExportSpanData(ctx, node, spanDataList...)
+	nSaved := len(spanDataList)
+	ack := &spanreceiver.Acknowledgement{
+		SavedSpans:   uint64(nSaved),
+		DroppedSpans: uint64(len(spans) - nSaved),
+	}
+	return ack, err
+}
