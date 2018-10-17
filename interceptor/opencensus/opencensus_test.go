@@ -44,6 +44,8 @@ import (
 )
 
 func TestOCInterceptor_endToEnd(t *testing.T) {
+	t.Skip("This test is flaky due to timing slowdown due to -race. Will reenable in the future")
+
 	sappender := newSpanAppender()
 
 	_, port, doneFn := ocInterceptorOnGRPCServer(t, sappender, ocinterceptor.WithSpanBufferPeriod(100*time.Millisecond))
