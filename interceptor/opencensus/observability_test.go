@@ -44,6 +44,8 @@ import (
 // test is to ensure exactness, but with the mentioned views registered, the
 // output will be quite noisy.
 func TestEnsureRecordedMetrics(t *testing.T) {
+	t.Skip("Depends on precising timing in OpenCensus-Go's stats worker but that timing is thrown off by slower -race binaries")
+
 	sappender := newSpanAppender()
 
 	_, port, doneFn := ocInterceptorOnGRPCServer(t, sappender, ocinterceptor.WithSpanBufferPeriod(2*time.Millisecond))
