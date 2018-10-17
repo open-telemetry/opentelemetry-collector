@@ -21,27 +21,19 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/golang/protobuf/ptypes/wrappers"
 
 	"go.opencensus.io/trace"
 	"go.opencensus.io/trace/tracestate"
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/census-instrumentation/opencensus-service/internal"
 	tracetranslator "github.com/census-instrumentation/opencensus-service/translator/trace"
 )
 
 func TestProtoSpanToOCSpanData_endToEnd(t *testing.T) {
 	// The goal of this test is to ensure that each
 	// tracepb.Span is transformed to its *trace.SpanData correctly!
-
-	timeToTimestamp := func(t time.Time) *timestamp.Timestamp {
-		nanoTime := t.UnixNano()
-		return &timestamp.Timestamp{
-			Seconds: nanoTime / 1e9,
-			Nanos:   int32(nanoTime % 1e9),
-		}
-	}
 
 	endTime := time.Now().Round(time.Second)
 	startTime := endTime.Add(-90 * time.Second)
@@ -52,8 +44,8 @@ func TestProtoSpanToOCSpanData_endToEnd(t *testing.T) {
 		ParentSpanId: []byte{0xEF, 0xEE, 0xED, 0xEC, 0xEB, 0xEA, 0xE9, 0xE8},
 		Name:         &tracepb.TruncatableString{Value: "End-To-End Here"},
 		Kind:         tracepb.Span_SERVER,
-		StartTime:    timeToTimestamp(startTime),
-		EndTime:      timeToTimestamp(endTime),
+		StartTime:    internal.TimeToTimestamp(startTime),
+		EndTime:      internal.TimeToTimestamp(endTime),
 		Status: &tracepb.Status{
 			Code:    13,
 			Message: "This is not a drill!",
@@ -62,7 +54,7 @@ func TestProtoSpanToOCSpanData_endToEnd(t *testing.T) {
 		TimeEvents: &tracepb.Span_TimeEvents{
 			TimeEvent: []*tracepb.Span_TimeEvent{
 				{
-					Time: timeToTimestamp(startTime),
+					Time: internal.TimeToTimestamp(startTime),
 					Value: &tracepb.Span_TimeEvent_MessageEvent_{
 						MessageEvent: &tracepb.Span_TimeEvent_MessageEvent{
 							Type: tracepb.Span_TimeEvent_MessageEvent_SENT, UncompressedSize: 1024, CompressedSize: 512,
@@ -70,7 +62,7 @@ func TestProtoSpanToOCSpanData_endToEnd(t *testing.T) {
 					},
 				},
 				{
-					Time: timeToTimestamp(endTime),
+					Time: internal.TimeToTimestamp(endTime),
 					Value: &tracepb.Span_TimeEvent_MessageEvent_{
 						MessageEvent: &tracepb.Span_TimeEvent_MessageEvent{
 							Type: tracepb.Span_TimeEvent_MessageEvent_RECEIVED, UncompressedSize: 1024, CompressedSize: 1000,

@@ -21,6 +21,9 @@ import (
 	"os/user"
 	"path/filepath"
 	"runtime"
+	"time"
+
+	"github.com/golang/protobuf/ptypes/timestamp"
 )
 
 // Service contains metadata about the exporter service.
@@ -80,4 +83,12 @@ func guessUnixHomeDir() string {
 		return u.HomeDir
 	}
 	return ""
+}
+
+func TimeToTimestamp(t time.Time) *timestamp.Timestamp {
+	nanoTime := t.UnixNano()
+	return &timestamp.Timestamp{
+		Seconds: nanoTime / 1e9,
+		Nanos:   int32(nanoTime % 1e9),
+	}
 }

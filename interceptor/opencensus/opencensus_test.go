@@ -30,7 +30,6 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"google.golang.org/grpc"
 
 	"contrib.go.opencensus.io/exporter/ocagent"
@@ -124,8 +123,8 @@ func TestOCInterceptor_endToEnd(t *testing.T) {
 			ParentSpanId: serverSpanData.ParentSpanID[:],
 			Name:         &tracepb.TruncatableString{Value: "ServerSpan"},
 			Kind:         tracepb.Span_SERVER,
-			StartTime:    timeToTimestamp(serverSpanData.StartTime),
-			EndTime:      timeToTimestamp(serverSpanData.EndTime),
+			StartTime:    internal.TimeToTimestamp(serverSpanData.StartTime),
+			EndTime:      internal.TimeToTimestamp(serverSpanData.EndTime),
 			Status:       &tracepb.Status{Code: int32(serverSpanData.Status.Code), Message: serverSpanData.Status.Message},
 			Tracestate:   &tracepb.Span_Tracestate{},
 			Links: &tracepb.Span_Links{
@@ -144,8 +143,8 @@ func TestOCInterceptor_endToEnd(t *testing.T) {
 			ParentSpanId: clientSpanData.ParentSpanID[:],
 			Name:         &tracepb.TruncatableString{Value: "ClientSpan"},
 			Kind:         tracepb.Span_CLIENT,
-			StartTime:    timeToTimestamp(clientSpanData.StartTime),
-			EndTime:      timeToTimestamp(clientSpanData.EndTime),
+			StartTime:    internal.TimeToTimestamp(clientSpanData.StartTime),
+			EndTime:      internal.TimeToTimestamp(clientSpanData.EndTime),
 			Status:       &tracepb.Status{Code: int32(clientSpanData.Status.Code), Message: clientSpanData.Status.Message},
 		},
 	}
@@ -511,13 +510,5 @@ func (sa *spanAppender) forEachEntry(fn func(*commonpb.Node, []*tracepb.Span)) {
 
 	for node, spans := range sa.spansPerNode {
 		fn(node, spans)
-	}
-}
-
-func timeToTimestamp(t time.Time) *timestamp.Timestamp {
-	nanoTime := t.UnixNano()
-	return &timestamp.Timestamp{
-		Seconds: nanoTime / 1e9,
-		Nanos:   int32(nanoTime % 1e9),
 	}
 }
