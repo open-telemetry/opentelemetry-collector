@@ -103,13 +103,13 @@ func (oci *OCInterceptor) Export(tes agenttracepb.TraceService_ExportServer) err
 
 	processReceivedSpans := func(ni *commonpb.Node, spans []*tracepb.Span) {
 		// Firstly, we'll add them to the bundler.
-		if len(recv.Spans) > 0 {
-			bundlerPayload := &spansAndNode{node: ni, spans: recv.Spans}
+		if len(spans) > 0 {
+			bundlerPayload := &spansAndNode{node: ni, spans: spans}
 			traceBundler.Add(bundlerPayload, len(bundlerPayload.spans))
 		}
 
 		// We MUST unconditionally record metrics from this reception.
-		spansMetricsFn(ni, recv.Spans)
+		spansMetricsFn(ni, spans)
 	}
 
 	var lastNonNilNode *commonpb.Node
