@@ -23,10 +23,14 @@ import (
 	"github.com/census-instrumentation/opencensus-service/exporter/exporterparser"
 )
 
-const defaultOCInterceptorAddress = "localhost:55678"
+const (
+	defaultOCInterceptorAddress = "localhost:55678"
+	defaultZPagesPort           = 55679
+)
 
 type config struct {
 	OpenCensusInterceptorConfig *interceptorConfig `yaml:"opencensus_interceptor"`
+	ZPagesConfig                *zPagesConfig      `yaml:"zpages"`
 }
 
 type interceptorConfig struct {
@@ -34,11 +38,34 @@ type interceptorConfig struct {
 	Address string `yaml:"address"`
 }
 
+type zPagesConfig struct {
+	Disabled bool `yaml:"disabled"`
+	Port     int  `yaml:"port"`
+}
+
 func (c *config) ocInterceptorAddress() string {
 	if c == nil || c.OpenCensusInterceptorConfig == nil || c.OpenCensusInterceptorConfig.Address == "" {
 		return defaultOCInterceptorAddress
 	}
 	return c.OpenCensusInterceptorConfig.Address
+}
+
+func (c *config) zPagesDisabled() bool {
+	if c == nil {
+		return true
+	}
+	return c.ZPagesConfig != nil && c.ZPagesConfig.Disabled
+}
+
+func (c *config) zPagesPort() (int, bool) {
+	if c.zPagesDisabled() {
+		return -1, false
+	}
+	port := defaultZPagesPort
+	if c != nil && c.ZPagesConfig != nil && c.ZPagesConfig.Port > 0 {
+		port = c.ZPagesConfig.Port
+	}
+	return port, true
 }
 
 func parseOCAgentConfig(yamlBlob []byte) (*config, error) {

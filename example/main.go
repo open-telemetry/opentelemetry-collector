@@ -18,6 +18,7 @@ package main
 import (
 	"context"
 	"log"
+	"math/rand"
 	"time"
 
 	"contrib.go.opencensus.io/exporter/ocagent"
@@ -34,9 +35,10 @@ func main() {
 		DefaultSampler: trace.AlwaysSample(),
 	})
 
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 	for {
 		_, span := trace.StartSpan(context.Background(), "foo")
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(time.Duration(rng.Int63n(1000)) * time.Millisecond)
 		span.End()
 	}
 }

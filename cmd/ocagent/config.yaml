@@ -7,3 +7,6 @@ stackdriver:
 
 zipkin:
   endpoint: "http://localhost:9411/api/v2/spans"
+
+zpages:
+  port: 55679

@@ -154,7 +154,13 @@ func (oci *OCInterceptor) batchSpanExporting(longLivedRPCCtx context.Context, pa
 		})
 	}
 
+	nSpans := int64(0)
 	for _, spn := range spnL {
 		oci.spanSink.ReceiveSpans(ctx, spn.node, spn.spans...)
+		nSpans += int64(len(spn.spans))
 	}
+
+	span.Annotate([]trace.Attribute{
+		trace.Int64Attribute("num_spans", nSpans),
+	}, "")
 }

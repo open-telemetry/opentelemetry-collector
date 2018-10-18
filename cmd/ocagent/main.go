@@ -21,6 +21,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"time"
@@ -32,6 +33,7 @@ import (
 	"github.com/census-instrumentation/opencensus-service/spanreceiver"
 	"go.opencensus.io/plugin/ocgrpc"
 	"go.opencensus.io/stats/view"
+	"go.opencensus.io/zpages"
 )
 
 var configYAMLFile string
@@ -65,6 +67,13 @@ func runOCAgent() {
 
 	closeFns = append(closeFns, ocInterceptorDoneFn)
 
+	// If zPages are enabled, run them
+	zPagesPort, zPagesEnabled := agentConfig.zPagesPort()
+	if zPagesEnabled {
+		zCloseFn := runZPages(zPagesPort)
+		closeFns = append(closeFns, zCloseFn)
+	}
+
 	// Always cleanup finally
 	defer func() {
 		for _, closeFn := range closeFns {
@@ -79,6 +88,27 @@ func runOCAgent() {
 
 	// Wait for the closing signal
 	<-signalsChan
+}
+
+func runZPages(port int) func() error {
+	// And enable zPages too
+	zPagesMux := http.NewServeMux()
+	zpages.Handle(zPagesMux, "/debug")
+
+	addr := fmt.Sprintf(":%d", port)
+	ln, err := net.Listen("tcp", addr)
+	if err != nil {
+		log.Fatalf("Failed to bind to run zPages on %q: %v", addr, err)
+	}
+
+	go func() {
+		log.Printf("Running zPages at %q", addr)
+		if err := http.Serve(ln, zPagesMux); err != nil {
+			log.Fatalf("Failed to serve zPages: %v", err)
+		}
+	}()
+
+	return ln.Close
 }
 
 func runOCInterceptor(addr string, sr spanreceiver.SpanReceiver) (doneFn func() error, err error) {
@@ -102,9 +132,11 @@ func runOCInterceptor(addr string, sr spanreceiver.SpanReceiver) (doneFn func() 
 	agenttracepb.RegisterTraceServiceServer(srv, oci)
 	go func() {
 		log.Printf("Running OpenCensus interceptor as a gRPC service at %q", addr)
-		if err := srv.Serve(ln); err != nil {
-			log.Fatalf("Failed to run OpenCensus interceptor: %v", err)
-		}
+
+		// Not using log.Fatalf(srv.Serve(ln)) because CTRL-C will close the listener as the user requested
+		// and that log.Fatalf will produce an unrelated but misleading error:
+		//     "Failed to run OpenCensus interceptor: accept tcp 127.0.0.1:55678: use of closed network connection"
+		_ = srv.Serve(ln)
 	}()
 	doneFn = ln.Close
 	return doneFn, nil
