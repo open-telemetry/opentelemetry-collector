@@ -17,7 +17,7 @@ package ocinterceptor
 import "time"
 
 type OCOption interface {
-	WithOCInterceptor(*OCInterceptor)
+	WithInterceptor(*Interceptor)
 }
 
 type spanBufferPeriod struct {
@@ -26,12 +26,12 @@ type spanBufferPeriod struct {
 
 var _ OCOption = (*spanBufferPeriod)(nil)
 
-func (sfd *spanBufferPeriod) WithOCInterceptor(oci *OCInterceptor) {
+func (sfd *spanBufferPeriod) WithInterceptor(oci *Interceptor) {
 	oci.spanBufferPeriod = sfd.period
 }
 
 // WithSpanBufferPeriod is an option that allows one to configure
-// the period that spans are buffered for before the OCInterceptor
+// the period that spans are buffered for before the Interceptor
 // sends them to its SpanReceiver.
 func WithSpanBufferPeriod(period time.Duration) OCOption {
 	return &spanBufferPeriod{period: period}
@@ -41,12 +41,12 @@ type spanBufferCount int
 
 var _ OCOption = (*spanBufferCount)(nil)
 
-func (spc spanBufferCount) WithOCInterceptor(oci *OCInterceptor) {
+func (spc spanBufferCount) WithInterceptor(oci *Interceptor) {
 	oci.spanBufferCount = int(spc)
 }
 
 // WithSpanBufferCount is an option that allows one to configure
-// the number of spans that are buffered before the OCInterceptor
+// the number of spans that are buffered before the Interceptor
 // send them to its SpanReceiver.
 func WithSpanBufferCount(count int) OCOption {
 	return spanBufferCount(count)

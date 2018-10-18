@@ -43,7 +43,7 @@ import (
 	"go.opencensus.io/trace/tracestate"
 )
 
-func TestOCInterceptor_endToEnd(t *testing.T) {
+func TestInterceptor_endToEnd(t *testing.T) {
 	t.Skip("This test is flaky due to timing slowdown due to -race. Will reenable in the future")
 
 	sappender := newSpanAppender()
@@ -163,7 +163,7 @@ func TestOCInterceptor_endToEnd(t *testing.T) {
 }
 
 // Issue #43. Export should support node multiplexing.
-// The goal is to ensure that OCInterceptor can always support
+// The goal is to ensure that Interceptor can always support
 // a passthrough mode where it initiates Export normally by firstly
 // receiving the initiator node. However ti should still be able to
 // accept nodes from downstream sources, but if a node isn't specified in
@@ -456,7 +456,7 @@ func (sa *spanAppender) ReceiveSpans(ctx context.Context, node *commonpb.Node, s
 	return &spanreceiver.Acknowledgement{SavedSpans: uint64(len(spans))}, nil
 }
 
-func ocInterceptorOnGRPCServer(t *testing.T, sr spanreceiver.SpanReceiver, opts ...ocinterceptor.OCOption) (oci *ocinterceptor.OCInterceptor, port int, done func()) {
+func ocInterceptorOnGRPCServer(t *testing.T, sr spanreceiver.SpanReceiver, opts ...ocinterceptor.OCOption) (oci *ocinterceptor.Interceptor, port int, done func()) {
 	ln, err := net.Listen("tcp", ":0")
 	if err != nil {
 		t.Fatalf("Failed to find an available address to run the gRPC server: %v", err)
@@ -482,7 +482,7 @@ func ocInterceptorOnGRPCServer(t *testing.T, sr spanreceiver.SpanReceiver, opts 
 
 	oci, err = ocinterceptor.New(sr, opts...)
 	if err != nil {
-		t.Fatalf("Failed to create the OCInterceptor: %v", err)
+		t.Fatalf("Failed to create the Interceptor: %v", err)
 	}
 
 	// Now run it as a gRPC server

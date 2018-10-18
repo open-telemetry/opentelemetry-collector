@@ -30,28 +30,28 @@ import (
 	"github.com/census-instrumentation/opencensus-service/spanreceiver"
 )
 
-type OCInterceptor struct {
+type Interceptor struct {
 	spanSink         spanreceiver.SpanReceiver
 	spanBufferPeriod time.Duration
 	spanBufferCount  int
 }
 
-func New(sr spanreceiver.SpanReceiver, opts ...OCOption) (*OCInterceptor, error) {
+func New(sr spanreceiver.SpanReceiver, opts ...OCOption) (*Interceptor, error) {
 	if sr == nil {
 		return nil, errors.New("needs a non-nil spanReceiver")
 	}
-	oci := &OCInterceptor{spanSink: sr}
+	oci := &Interceptor{spanSink: sr}
 	for _, opt := range opts {
-		opt.WithOCInterceptor(oci)
+		opt.WithInterceptor(oci)
 	}
 	return oci, nil
 }
 
-var _ agenttracepb.TraceServiceServer = (*OCInterceptor)(nil)
+var _ agenttracepb.TraceServiceServer = (*Interceptor)(nil)
 
 var errUnimplemented = errors.New("unimplemented")
 
-func (oci *OCInterceptor) Config(tcs agenttracepb.TraceService_ConfigServer) error {
+func (oci *Interceptor) Config(tcs agenttracepb.TraceService_ConfigServer) error {
 	// TODO: Implement when we define the config receiver/sender.
 	return errUnimplemented
 }
@@ -67,7 +67,7 @@ const interceptorName = "opencensus"
 
 // Export is the gRPC method that receives streamed traces from
 // OpenCensus-traceproto compatible libraries/applications.
-func (oci *OCInterceptor) Export(tes agenttracepb.TraceService_ExportServer) error {
+func (oci *Interceptor) Export(tes agenttracepb.TraceService_ExportServer) error {
 	// The bundler will receive batches of spans i.e. []*tracepb.Span
 	// We need to ensure that it propagates the interceptor name as a tag
 	ctxWithInterceptorName := internal.ContextWithInterceptorName(tes.Context(), interceptorName)
@@ -129,7 +129,7 @@ func (oci *OCInterceptor) Export(tes agenttracepb.TraceService_ExportServer) err
 	}
 }
 
-func (oci *OCInterceptor) batchSpanExporting(longLivedRPCCtx context.Context, payload interface{}) {
+func (oci *Interceptor) batchSpanExporting(longLivedRPCCtx context.Context, payload interface{}) {
 	spnL := payload.([]*spansAndNode)
 	if len(spnL) == 0 {
 		return
