@@ -28,11 +28,9 @@ import (
 )
 
 type zipkinConfig struct {
-	Zipkin *struct {
-		ServiceName      string `yaml:"service_name,omitempty"`
-		Endpoint         string `yaml:"endpoint,omitempty"`
-		LocalEndpointURI string `yaml:"local_endpoint,omitempty"`
-	} `yaml:"zipkin,omitempty"`
+	ServiceName      string `yaml:"service_name,omitempty"`
+	Endpoint         string `yaml:"endpoint,omitempty"`
+	LocalEndpointURI string `yaml:"local_endpoint,omitempty"`
 }
 
 type zipkinExporter struct {
@@ -40,15 +38,22 @@ type zipkinExporter struct {
 }
 
 func ZipkinExportersFromYAML(config []byte) (tes []exporter.TraceExporter, doneFns []func() error, err error) {
-	var c zipkinConfig
-	if err := yamlUnmarshal(config, &c); err != nil {
+	var cfg struct {
+		Exporters *struct {
+			Zipkin *zipkinConfig `yaml:"zipkin"`
+		} `yaml:"exporters"`
+	}
+	if err := yamlUnmarshal(config, &cfg); err != nil {
 		return nil, nil, err
 	}
-
-	if c.Zipkin == nil {
+	if cfg.Exporters == nil {
 		return nil, nil, nil
 	}
-	zc := c.Zipkin
+
+	zc := cfg.Exporters.Zipkin
+	if zc == nil {
+		return nil, nil, nil
+	}
 	endpoint := "http://localhost:9411/api/v2/spans"
 	if zc.Endpoint != "" {
 		endpoint = zc.Endpoint

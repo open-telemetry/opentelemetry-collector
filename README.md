@@ -261,12 +261,13 @@ it with the exporter and interceptor configurations.
 For example, to allow trace exporting to Stackdriver and Zipkin:
 
 ```yaml
-stackdriver:
-  project: "your-project-id"
-  enable_traces: true
+exporters:
+    stackdriver:
+        project: "your-project-id"
+        enable_traces: true
 
-zipkin:
-  endpoint: "http://localhost:9411/api/v2/spans"
+    zipkin:
+        endpoint: "http://localhost:9411/api/v2/spans"
 ```
 
 #### <a name="agent-config-interceptors"></a>Interceptors

@@ -1,12 +1,14 @@
-opencensus_interceptor:
-  address: "127.0.0.1:55678"
+interceptors:
+    opencensus:
+        address: "127.0.0.1:55678"
 
-stackdriver:
-  project: "project-id"
-  enable_tracing: true
+exporters:
+    stackdriver:
+        project: "project-id"
+        enable_tracing: true
 
-zipkin:
-  endpoint: "http://localhost:9411/api/v2/spans"
+    zipkin:
+        endpoint: "http://localhost:9411/api/v2/spans"
 
 zpages:
-  port: 55679
+    port: 55679

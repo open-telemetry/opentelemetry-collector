@@ -24,24 +24,22 @@ import (
 	"github.com/census-instrumentation/opencensus-service/exporter"
 )
 
-type dataDogConfig struct {
-	Datadog *struct {
-		// Namespace specifies the namespaces to which metric keys are appended.
-		Namespace string `yaml:"namespace,omitempty"`
+type datadogConfig struct {
+	// Namespace specifies the namespaces to which metric keys are appended.
+	Namespace string `yaml:"namespace,omitempty"`
 
-		// TraceAddr specifies the host[:port] address of the Datadog Trace Agent.
-		// It defaults to localhost:8126.
-		TraceAddr string `yaml:"trace_addr,omitempty"`
+	// TraceAddr specifies the host[:port] address of the Datadog Trace Agent.
+	// It defaults to localhost:8126.
+	TraceAddr string `yaml:"trace_addr,omitempty"`
 
-		// MetricsAddr specifies the host[:port] address for DogStatsD. It defaults
-		// to localhost:8125.
-		MetricsAddr string `yaml:"metrics_addr,omitempty"`
+	// MetricsAddr specifies the host[:port] address for DogStatsD. It defaults
+	// to localhost:8125.
+	MetricsAddr string `yaml:"metrics_addr,omitempty"`
 
-		// Tags specifies a set of global tags to attach to each metric.
-		Tags []string `yaml:"tags,omitempty"`
+	// Tags specifies a set of global tags to attach to each metric.
+	Tags []string `yaml:"tags,omitempty"`
 
-		EnableTracing bool `yaml:"enable_tracing,omitempty"`
-	} `yaml:"datadog,omitempty"`
+	EnableTracing bool `yaml:"enable_tracing,omitempty"`
 }
 
 type datadogExporter struct {
@@ -49,12 +47,19 @@ type datadogExporter struct {
 }
 
 func DatadogTraceExportersFromYAML(config []byte) (tes []exporter.TraceExporter, doneFns []func() error, err error) {
-	var c dataDogConfig
-	if err := yamlUnmarshal(config, &c); err != nil {
+	var cfg struct {
+		Exporters *struct {
+			Datadog *datadogConfig `yaml:"datadog"`
+		} `yaml:"exporters"`
+	}
+	if err := yamlUnmarshal(config, &cfg); err != nil {
 		return nil, nil, err
 	}
+	if cfg.Exporters == nil {
+		return nil, nil, nil
+	}
 
-	dc := c.Datadog
+	dc := cfg.Exporters.Datadog
 	if dc == nil {
 		return nil, nil, nil
 	}

@@ -23,14 +23,36 @@ import (
 	"github.com/census-instrumentation/opencensus-service/exporter/exporterparser"
 )
 
+// We expect the configuration.yaml file to look like this:
+//
+//  interceptors:
+//      opencensus:
+//          port: <port>
+//      zipkin:
+//          reporter: <address>
+//
+//  exporters:
+//      stackdriver:
+//          project: <project_id>
+//          enable_tracing: true
+//      zipkin:
+//          endpoint: "http://localhost:9411/api/v2/spans"
+//
+//  zpages:
+//      port: 55679
+
 const (
 	defaultOCInterceptorAddress = "localhost:55678"
 	defaultZPagesPort           = 55679
 )
 
 type config struct {
-	OpenCensusInterceptorConfig *interceptorConfig `yaml:"opencensus_interceptor"`
-	ZPagesConfig                *zPagesConfig      `yaml:"zpages"`
+	Interceptors *interceptors `yaml:"interceptors"`
+	ZPages       *zPagesConfig `yaml:"zpages"`
+}
+
+type interceptors struct {
+	OpenCensusInterceptor *interceptorConfig `yaml:"opencensus"`
 }
 
 type interceptorConfig struct {
@@ -44,17 +66,21 @@ type zPagesConfig struct {
 }
 
 func (c *config) ocInterceptorAddress() string {
-	if c == nil || c.OpenCensusInterceptorConfig == nil || c.OpenCensusInterceptorConfig.Address == "" {
+	if c == nil || c.Interceptors == nil {
 		return defaultOCInterceptorAddress
 	}
-	return c.OpenCensusInterceptorConfig.Address
+	inCfg := c.Interceptors
+	if inCfg.OpenCensusInterceptor == nil || inCfg.OpenCensusInterceptor.Address == "" {
+		return defaultOCInterceptorAddress
+	}
+	return inCfg.OpenCensusInterceptor.Address
 }
 
 func (c *config) zPagesDisabled() bool {
 	if c == nil {
 		return true
 	}
-	return c.ZPagesConfig != nil && c.ZPagesConfig.Disabled
+	return c.ZPages != nil && c.ZPages.Disabled
 }
 
 func (c *config) zPagesPort() (int, bool) {
@@ -62,8 +88,8 @@ func (c *config) zPagesPort() (int, bool) {
 		return -1, false
 	}
 	port := defaultZPagesPort
-	if c != nil && c.ZPagesConfig != nil && c.ZPagesConfig.Port > 0 {
-		port = c.ZPagesConfig.Port
+	if c != nil && c.ZPages != nil && c.ZPages.Port > 0 {
+		port = c.ZPages.Port
 	}
 	return port, true
 }
@@ -94,10 +120,19 @@ func exportersFromYAMLConfig(config []byte) (traceExporters []exporter.TraceExpo
 		if err != nil {
 			log.Fatalf("Failed to create config for %q: %v", cfg.name, err)
 		}
+		nonNilExporters := 0
 		for _, te := range tes {
 			if te != nil {
 				traceExporters = append(traceExporters, te)
+				nonNilExporters += 1
 			}
+		}
+		if nonNilExporters > 0 {
+			pluralization := "exporter"
+			if nonNilExporters > 1 {
+				pluralization = "exporters"
+			}
+			log.Printf("%q trace-%s enabled", cfg.name, pluralization)
 		}
 		for _, doneFn := range tesDoneFns {
 			doneFns = append(doneFns, doneFn)

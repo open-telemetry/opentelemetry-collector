@@ -26,10 +26,8 @@ import (
 )
 
 type stackdriverConfig struct {
-	Stackdriver *struct {
-		ProjectID     string `yaml:"project,omitempty"`
-		EnableTracing bool   `yaml:"enable_tracing,omitempty"`
-	} `yaml:"stackdriver,omitempty"`
+	ProjectID     string `yaml:"project,omitempty"`
+	EnableTracing bool   `yaml:"enable_tracing,omitempty"`
 }
 
 type stackdriverExporter struct {
@@ -39,12 +37,18 @@ type stackdriverExporter struct {
 var _ exporter.TraceExporter = (*stackdriverExporter)(nil)
 
 func StackdriverTraceExportersFromYAML(config []byte) (tes []exporter.TraceExporter, doneFns []func() error, err error) {
-	var c stackdriverConfig
-	if err := yamlUnmarshal(config, &c); err != nil {
+	var cfg struct {
+		Exporters *struct {
+			Stackdriver *stackdriverConfig `yaml:"stackdriver"`
+		} `yaml:"exporters"`
+	}
+	if err := yamlUnmarshal(config, &cfg); err != nil {
 		return nil, nil, err
 	}
-
-	sc := c.Stackdriver
+	if cfg.Exporters == nil {
+		return nil, nil, nil
+	}
+	sc := cfg.Exporters.Stackdriver
 	if sc == nil {
 		return nil, nil, nil
 	}
