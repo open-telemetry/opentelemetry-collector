@@ -226,7 +226,7 @@ For example, to allow trace exporting to Stackdriver and Zipkin:
 ```yaml
 stackdriver:
   project: "your-project-id"
-  enableTraces: true
+  enable_traces: true
 
 zipkin:
   endpoint: "http://localhost:9411/api/v2/spans"
