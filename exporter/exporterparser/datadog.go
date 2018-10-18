@@ -81,5 +81,5 @@ func (dde *datadogExporter) ExportSpanData(ctx context.Context, node *commonpb.N
 	// TODO: Examine the Datadog exporter to see
 	// if trace.ExportSpan was constraining and if perhaps the
 	// upload can use the context and information from the Node.
-	return exportSpans(dde.exporter, spandata)
+	return exportSpans(ctx, node, "datadog", dde.exporter, spandata)
 }

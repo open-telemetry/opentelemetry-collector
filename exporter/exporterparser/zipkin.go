@@ -78,5 +78,5 @@ func (ze *zipkinExporter) ExportSpanData(ctx context.Context, node *commonpb.Nod
 	// TODO: Examine "contrib.go.opencensus.io/exporter/zipkin" to see
 	// if trace.ExportSpan was constraining and if perhaps the Zipkin
 	// upload can use the context and information from the Node.
-	return exportSpans(ze.exporter, spandata)
+	return exportSpans(ctx, node, "zipkin", ze.exporter, spandata)
 }

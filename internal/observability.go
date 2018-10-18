@@ -27,6 +27,7 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
+	"go.opencensus.io/trace"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
@@ -92,10 +93,10 @@ func NewReceivedSpansRecorderStreaming(lifetimeCtx context.Context, interceptorN
 // NewExportedSpansRecorder creates a helper function that'll add the name of the
 // creating exporter as a tag value in the context that will be used to count the
 // the number of spans exported.
-func NewExportedSpansRecorder(exporterName string) func(context.Context, *commonpb.Node, []*tracepb.Span) {
-	return func(ctx context.Context, ni *commonpb.Node, spans []*tracepb.Span) {
+func NewExportedSpansRecorder(exporterName string) func(context.Context, *commonpb.Node, []*trace.SpanData) {
+	return func(ctx context.Context, ni *commonpb.Node, spandata []*trace.SpanData) {
 		ctx, _ = tag.New(ctx, tag.Upsert(tagKeyExporterName, exporterName))
-		stats.Record(ctx, mExportedSpans.M(int64(len(spans))))
+		stats.Record(ctx, mExportedSpans.M(int64(len(spandata))))
 	}
 }
 

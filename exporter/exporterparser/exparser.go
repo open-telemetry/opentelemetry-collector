@@ -22,16 +22,25 @@
 package exporterparser
 
 import (
+	"context"
 	"fmt"
 
 	"go.opencensus.io/trace"
 	yaml "gopkg.in/yaml.v2"
+
+	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	"github.com/census-instrumentation/opencensus-service/internal"
 )
 
-func exportSpans(te trace.Exporter, spandata []*trace.SpanData) error {
+func exportSpans(ctx context.Context, node *commonpb.Node, exporterName string, te trace.Exporter, spandata []*trace.SpanData) error {
 	for _, sd := range spandata {
 		te.ExportSpan(sd)
 	}
+
+	// And finally record metrics on the number of exported spans.
+	nSpansCounter := internal.NewExportedSpansRecorder(exporterName)
+	nSpansCounter(ctx, node, spandata)
+
 	return nil
 }
 
