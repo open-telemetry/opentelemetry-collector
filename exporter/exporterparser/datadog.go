@@ -40,7 +40,7 @@ type dataDogConfig struct {
 		// Tags specifies a set of global tags to attach to each metric.
 		Tags []string `yaml:"tags,omitempty"`
 
-		EnableTracing bool `yaml:"enable_tracing,omitempty"`
+		EnableTracing bool `yaml:"enableTraces,omitempty"`
 	} `yaml:"datadog,omitempty"`
 }
 

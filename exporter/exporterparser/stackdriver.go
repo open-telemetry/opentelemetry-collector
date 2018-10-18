@@ -28,7 +28,7 @@ import (
 type stackdriverConfig struct {
 	Stackdriver *struct {
 		ProjectID     string `yaml:"project,omitempty"`
-		EnableTracing bool   `yaml:"enable_tracing,omitempty"`
+		EnableTracing bool   `yaml:"enableTraces,omitempty"`
 	} `yaml:"stackdriver,omitempty"`
 }
 
