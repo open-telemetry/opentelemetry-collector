@@ -456,7 +456,7 @@ func (sa *spanAppender) ReceiveSpans(ctx context.Context, node *commonpb.Node, s
 	return &spanreceiver.Acknowledgement{SavedSpans: uint64(len(spans))}, nil
 }
 
-func ocInterceptorOnGRPCServer(t *testing.T, sr spanreceiver.SpanReceiver, opts ...ocinterceptor.OCOption) (oci *ocinterceptor.Interceptor, port int, done func()) {
+func ocInterceptorOnGRPCServer(t *testing.T, sr spanreceiver.SpanReceiver, opts ...ocinterceptor.Option) (oci *ocinterceptor.Interceptor, port int, done func()) {
 	ln, err := net.Listen("tcp", ":0")
 	if err != nil {
 		t.Fatalf("Failed to find an available address to run the gRPC server: %v", err)

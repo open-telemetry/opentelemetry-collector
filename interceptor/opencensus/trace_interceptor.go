@@ -30,11 +30,11 @@ import (
 )
 
 // New will create a handle that runs an OCInterceptor at the provided address
-func NewTraceInterceptor(port int, opts ...OCOption) (interceptor.TraceInterceptor, error) {
+func NewTraceInterceptor(port int, opts ...Option) (interceptor.TraceInterceptor, error) {
 	return &ocInterceptorHandler{srvPort: port, interceptorOptions: opts}, nil
 }
 
-func NewTraceInterceptorOnDefaultPort(opts ...OCOption) (interceptor.TraceInterceptor, error) {
+func NewTraceInterceptorOnDefaultPort(opts ...Option) (interceptor.TraceInterceptor, error) {
 	return &ocInterceptorHandler{srvPort: defaultOCInterceptorPort, interceptorOptions: opts}, nil
 }
 
@@ -42,7 +42,7 @@ type ocInterceptorHandler struct {
 	mu      sync.RWMutex
 	srvPort int
 
-	interceptorOptions []OCOption
+	interceptorOptions []Option
 
 	ln         net.Listener
 	grpcServer *grpc.Server

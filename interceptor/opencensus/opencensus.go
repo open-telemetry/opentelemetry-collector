@@ -36,7 +36,7 @@ type Interceptor struct {
 	spanBufferCount  int
 }
 
-func New(sr spanreceiver.SpanReceiver, opts ...OCOption) (*Interceptor, error) {
+func New(sr spanreceiver.SpanReceiver, opts ...Option) (*Interceptor, error) {
 	if sr == nil {
 		return nil, errors.New("needs a non-nil spanReceiver")
 	}
