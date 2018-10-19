@@ -57,6 +57,7 @@ func ProtoSpanToOCSpanData(span *tracepb.Span) (*trace.SpanData, error) {
 		Status:          protoStatusToOCStatus(span.Status),
 		SpanKind:        protoSpanKindToOCSpanKind(span.Kind),
 		MessageEvents:   protoTimeEventsToOCMessageEvents(span.TimeEvents),
+		Annotations:     protoTimeEventsToOCAnnotations(span.TimeEvents),
 		HasRemoteParent: protoSameProcessAsParentToOCHasRemoteParent(span.SameProcessAsParentSpan),
 	}
 
@@ -173,26 +174,103 @@ func protoTimeEventsToOCMessageEvents(tes *tracepb.Span_TimeEvents) []trace.Mess
 
 	ocmes := make([]trace.MessageEvent, 0, len(tes.TimeEvent))
 	for _, te := range tes.TimeEvent {
-		if te == nil {
+		if te == nil || te.Value == nil {
 			continue
 		}
-		var ocme trace.MessageEvent
-		switch typ := te.Value.(type) {
-		case *tracepb.Span_TimeEvent_MessageEvent_:
-			me := typ.MessageEvent
-			// TODO: (@odeke-em) file an issue with OpenCensus-Go to ask why
-			// they have these attributes as int64 yet the proto definitions
-			// are uint64, this could be a potential loss of precision particularly
-			// in very high traffic systems.
-			ocme.MessageID = int64(me.Id)
-			ocme.UncompressedByteSize = int64(me.UncompressedSize)
-			ocme.CompressedByteSize = int64(me.CompressedSize)
-			ocme.EventType = protoMessageEventTypeToOCEventType(me.Type)
-			ocme.Time = timestampToTime(te.Time)
+		tme, ok := te.Value.(*tracepb.Span_TimeEvent_MessageEvent_)
+		if !ok || tme == nil {
+			continue
 		}
+		me := tme.MessageEvent
+		var ocme trace.MessageEvent
+		// TODO: (@odeke-em) file an issue with OpenCensus-Go to ask why
+		// they have these attributes as int64 yet the proto definitions
+		// are uint64, this could be a potential loss of precision particularly
+		// in very high traffic systems.
+		ocme.MessageID = int64(me.Id)
+		ocme.UncompressedByteSize = int64(me.UncompressedSize)
+		ocme.CompressedByteSize = int64(me.CompressedSize)
+		ocme.EventType = protoMessageEventTypeToOCEventType(me.Type)
+		ocme.Time = timestampToTime(te.Time)
 		ocmes = append(ocmes, ocme)
 	}
+
+	// For the purposes of rigorous equality during comparisons and tests,
+	// the absence of message events should return nil instead of []
+	if len(ocmes) == 0 {
+		return nil
+	}
 	return ocmes
+}
+
+func protoTimeEventsToOCAnnotations(tes *tracepb.Span_TimeEvents) []trace.Annotation {
+	if tes == nil || len(tes.TimeEvent) == 0 {
+		return nil
+	}
+
+	ocanns := make([]trace.Annotation, 0, len(tes.TimeEvent))
+	for _, te := range tes.TimeEvent {
+		if te == nil || te.Value == nil {
+			continue
+		}
+		tann, ok := te.Value.(*tracepb.Span_TimeEvent_Annotation_)
+		if !ok || tann == nil {
+			continue
+		}
+		me := tann.Annotation
+		var ocann trace.Annotation
+		// TODO: (@odeke-em) file an issue with OpenCensus-Go to ask why
+		// they have these attributes as int64 yet the proto definitions
+		// are uint64, this could be a potential loss of precision particularly
+		// in very high traffic systems.
+		ocann.Time = timestampToTime(te.Time)
+		ocann.Message = me.Description.GetValue()
+		ocann.Attributes = protoSpanAttributesToOCAttributes(me.Attributes)
+		ocanns = append(ocanns, ocann)
+	}
+
+	// For the purposes of rigorous equality during comparisons and tests,
+	// the absence of annotations should return nil instead of []
+	if len(ocanns) == 0 {
+		return nil
+	}
+	return ocanns
+}
+
+func protoSpanAttributesToOCAttributes(sa *tracepb.Span_Attributes) map[string]interface{} {
+	if sa == nil || len(sa.AttributeMap) == 0 {
+		return nil
+	}
+
+	amap := make(map[string]interface{})
+	for pkey, pattr := range sa.AttributeMap {
+		var value interface{} = ""
+
+		if pattr != nil && pattr.Value != nil {
+			switch typ := pattr.Value.(type) {
+			case *tracepb.AttributeValue_BoolValue:
+				value = typ.BoolValue
+
+			case *tracepb.AttributeValue_DoubleValue:
+				value = typ.DoubleValue
+
+			case *tracepb.AttributeValue_IntValue:
+				value = typ.IntValue
+
+			case *tracepb.AttributeValue_StringValue:
+				value = typ.StringValue.GetValue()
+			}
+		}
+
+		amap[pkey] = value
+	}
+
+	// For the purposes of rigorous equality during comparisons and
+	// tests, the absence of attributes should return nil instead of []
+	if len(amap) == 0 {
+		return nil
+	}
+	return amap
 }
 
 func protoMessageEventTypeToOCEventType(st tracepb.Span_TimeEvent_MessageEvent_Type) trace.MessageEventType {
