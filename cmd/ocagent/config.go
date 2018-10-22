@@ -113,6 +113,7 @@ func exportersFromYAMLConfig(config []byte) (traceExporters []exporter.TraceExpo
 		{name: "datadog", fn: exporterparser.DatadogTraceExportersFromYAML},
 		{name: "stackdriver", fn: exporterparser.StackdriverTraceExportersFromYAML},
 		{name: "zipkin", fn: exporterparser.ZipkinExportersFromYAML},
+		{name: "jaeger", fn: exporterparser.JaegerExportersFromYAML},
 	}
 
 	for _, cfg := range parseFns {
