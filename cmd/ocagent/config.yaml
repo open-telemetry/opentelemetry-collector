@@ -2,6 +2,9 @@ interceptors:
     opencensus:
         address: "127.0.0.1:55678"
 
+    zipkin:
+        address: "localhost:9411"
+
 exporters:
     stackdriver:
         project: "project-id"

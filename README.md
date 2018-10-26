@@ -22,6 +22,8 @@
     - [Configuration file](#agent-configuration-file)
         - [Exporters](#agent-config-exporters)
         - [Interceptors](#agent-config-interceptors)
+            - [OpenCensus](#details-interceptors-opencensus)
+            - [Zipkin](#details-interceptors-zipkin)
         - [End-to-end example](#agent-config-end-to-end-example)
     - [Docker image](#agent-docker-image)
 - [OpenCensus Collector](#opencensus-collector)
@@ -271,14 +273,36 @@ exporters:
 ```
 
 #### <a name="agent-config-interceptors"></a>Interceptors
+As previously mentioned, the agent provides a couple of interceptors
 
-To modify the address that the OpenCensus interceptor runs on, please use the
-YAML field name `opencensus_interceptor` and it takes fields like `address`.
+#### <a name="details-interceptors-opencensus"> OpenCensus
+
+This interceptor receives spans from OpenCensus instrumented applications and translates them into the internal span types that
+are then sent to the collector/exporters.
+
+Its address can be configured in the YAML configuration file under section "intercpetors", subsection "opencensus" and field "address".
+
 For example:
-
 ```yaml
-opencensus_interceptor:
-    address: "localhost:55678"
+interceptors:
+    opencensus:
+        address: "127.0.0.1:55678"
+```
+
+By default this interceptor is ALWAYS started since it is the point of the "OpenCensus agent"
+
+#### <a name="details-interceptors-zipkin"> Zipkin
+
+This interceptor receives spans from Zipkin "/v2" API HTTP uploads and translates them into the internal span types that are then
+sent to the collector/exporters.
+
+Its address can be configured in the YAML configuration file under section "intercpetors", subsection "zipkin" and field "address".
+
+For example:
+```yaml
+interceptors:
+    zipkin:
+        address: "localhost:9411"
 ```
 
 ### <a name="agent-config-end-to-end-example"></a>Running an end-to-end example/demo

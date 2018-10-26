@@ -15,7 +15,12 @@
 package main
 
 import (
+	"fmt"
 	"log"
+	"net"
+	"net/url"
+	"reflect"
+	"strings"
 
 	yaml "gopkg.in/yaml.v2"
 
@@ -52,7 +57,8 @@ type config struct {
 }
 
 type interceptors struct {
-	OpenCensusInterceptor *interceptorConfig `yaml:"opencensus"`
+	OpenCensus *interceptorConfig `yaml:"opencensus"`
+	Zipkin     *interceptorConfig `yaml:"zipkin"`
 }
 
 type interceptorConfig struct {
@@ -70,10 +76,10 @@ func (c *config) ocInterceptorAddress() string {
 		return defaultOCInterceptorAddress
 	}
 	inCfg := c.Interceptors
-	if inCfg.OpenCensusInterceptor == nil || inCfg.OpenCensusInterceptor.Address == "" {
+	if inCfg.OpenCensus == nil || inCfg.OpenCensus.Address == "" {
 		return defaultOCInterceptorAddress
 	}
-	return inCfg.OpenCensusInterceptor.Address
+	return inCfg.OpenCensus.Address
 }
 
 func (c *config) zPagesDisabled() bool {
@@ -94,6 +100,24 @@ func (c *config) zPagesPort() (int, bool) {
 	return port, true
 }
 
+func (c *config) zipkinInterceptorEnabled() bool {
+	if c == nil {
+		return false
+	}
+	return c.Interceptors != nil && c.Interceptors.Zipkin != nil
+}
+
+func (c *config) zipkinInterceptorAddress() string {
+	if c == nil || c.Interceptors == nil {
+		return exporterparser.DefaultZipkinEndpointHostPort
+	}
+	inCfg := c.Interceptors
+	if inCfg.Zipkin == nil || inCfg.Zipkin.Address == "" {
+		return exporterparser.DefaultZipkinEndpointHostPort
+	}
+	return inCfg.Zipkin.Address
+}
+
 func parseOCAgentConfig(yamlBlob []byte) (*config, error) {
 	var cfg config
 	if err := yaml.Unmarshal(yamlBlob, &cfg); err != nil {
@@ -102,7 +126,72 @@ func parseOCAgentConfig(yamlBlob []byte) (*config, error) {
 	return &cfg, nil
 }
 
-type exporterParser func(yamlConfig []byte) (te []exporter.TraceExporter, err error)
+// The goal of this function is to catch logical errors such as
+// if the Zipkin interceptor port conflicts with that of the exporter
+// lest we'll have a self DOS because spans will be exported "out" from
+// the exporter, yet be received from the interceptor, then sent back out
+// and back in a never ending loop.
+func (c *config) checkLogicalConflicts(blob []byte) error {
+	var cfg struct {
+		Exporters *struct {
+			Zipkin *exporterparser.ZipkinConfig `yaml:"zipkin"`
+		} `yaml:"exporters"`
+	}
+	if err := yaml.Unmarshal(blob, &cfg); err != nil {
+		return err
+	}
+
+	if cfg.Exporters == nil || cfg.Exporters.Zipkin == nil {
+		return nil
+	}
+
+	zc := cfg.Exporters.Zipkin
+
+	zExporterAddr := zc.EndpointURL()
+	zExporterURL, err := url.Parse(zExporterAddr)
+	if err != nil {
+		return fmt.Errorf("parsing ZipkinExporter address %q got error: %v", zExporterAddr, err)
+	}
+
+	zInterceptorHostPort := c.zipkinInterceptorAddress()
+
+	zExporterHostPort := zExporterURL.Host
+	if zInterceptorHostPort == zExporterHostPort {
+		return fmt.Errorf("ZipkinExporter address (%q) is the same as the interceptor address (%q)",
+			zExporterHostPort, zInterceptorHostPort)
+	}
+	zExpHost, zExpPort, _ := net.SplitHostPort(zExporterHostPort)
+	zInterceptorHost, zInterceptorPort, _ := net.SplitHostPort(zExporterHostPort)
+	if eqHosts(zExpHost, zInterceptorHost) && zExpPort == zInterceptorPort {
+		return fmt.Errorf("ZipkinExporter address (%q) aka (%s on port %s)\nis the same as the interceptor address (%q) aka (%s on port %s)",
+			zExporterHostPort, zExpHost, zExpPort, zInterceptorHostPort, zInterceptorHost, zInterceptorPort)
+	}
+
+	// Otherwise, now let's resolve the IPs and ensure that they aren't the same
+	zExpIPAddr, _ := net.ResolveIPAddr("ip", zExpHost)
+	zInterceptorIPAddr, _ := net.ResolveIPAddr("ip", zInterceptorHost)
+	if zExpIPAddr != nil && zInterceptorIPAddr != nil && reflect.DeepEqual(zExpIPAddr, zInterceptorIPAddr) {
+		return fmt.Errorf("ZipkinExporter address (%q) aka (%+v)\nis the same as the\ninterceptor address (%q) aka (%+v)",
+			zExporterHostPort, zExpIPAddr, zInterceptorHostPort, zInterceptorIPAddr)
+	}
+	return nil
+}
+
+func eqHosts(host1, host2 string) bool {
+	if host1 == host2 {
+		return true
+	}
+	return eqLocalHost(host1) && eqLocalHost(host2)
+}
+
+func eqLocalHost(host string) bool {
+	switch strings.ToLower(host) {
+	case "", "localhost", "127.0.0.1":
+		return true
+	default:
+		return false
+	}
+}
 
 // exportersFromYAMLConfig parses the config yaml payload and returns the respective exporters
 func exportersFromYAMLConfig(config []byte) (traceExporters []exporter.TraceExporter, doneFns []func() error) {
@@ -128,6 +217,7 @@ func exportersFromYAMLConfig(config []byte) (traceExporters []exporter.TraceExpo
 				nonNilExporters += 1
 			}
 		}
+
 		if nonNilExporters > 0 {
 			pluralization := "exporter"
 			if nonNilExporters > 1 {

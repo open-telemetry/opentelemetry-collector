@@ -16,7 +16,8 @@ package exporterparser
 
 import (
 	"context"
-	"log"
+	"fmt"
+	"sync"
 
 	openzipkin "github.com/openzipkin/zipkin-go"
 	"github.com/openzipkin/zipkin-go/reporter/http"
@@ -27,20 +28,52 @@ import (
 	"github.com/census-instrumentation/opencensus-service/exporter"
 )
 
-type zipkinConfig struct {
+type ZipkinConfig struct {
 	ServiceName      string `yaml:"service_name,omitempty"`
 	Endpoint         string `yaml:"endpoint,omitempty"`
 	LocalEndpointURI string `yaml:"local_endpoint,omitempty"`
 }
 
+// zipkinExporter is a multiplexing exporter that spawns a new OpenCensus-Go Zipkin
+// exporter per unique node encountered. This is because serviceNames per node define
+// unique services, alongside their IPs. Also it is useful to intercept traffic from
+// Zipkin servers and then transform them back to the final form when creating an
+// OpenCensus spandata.
 type zipkinExporter struct {
-	exporter *zipkin.Exporter
+	// mu protects the fields below
+	mu sync.Mutex
+
+	defaultExporter         *zipkin.Exporter
+	defaultServiceName      string
+	defaultLocalEndpointURI string
+
+	endpointURI string
+
+	// The goal of this map is to multiplex and route
+	// different serviceNames with various exporters
+	serviceNameToExporter map[string]*zipkin.Exporter
+
+	shutdownFns []func() error
+}
+
+const (
+	DefaultZipkinEndpointHostPort = "localhost:9411"
+	DefaultZipkinEndpointURL      = "http://" + DefaultZipkinEndpointHostPort + "/api/v2/spans"
+)
+
+func (zc *ZipkinConfig) EndpointURL() string {
+	// If no endpoint was set, use the default Zipkin reporter URI.
+	endpoint := DefaultZipkinEndpointURL
+	if zc != nil && zc.Endpoint != "" {
+		endpoint = zc.Endpoint
+	}
+	return endpoint
 }
 
 func ZipkinExportersFromYAML(config []byte) (tes []exporter.TraceExporter, doneFns []func() error, err error) {
 	var cfg struct {
 		Exporters *struct {
-			Zipkin *zipkinConfig `yaml:"zipkin"`
+			Zipkin *ZipkinConfig `yaml:"zipkin"`
 		} `yaml:"exporters"`
 	}
 	if err := yamlUnmarshal(config, &cfg); err != nil {
@@ -54,10 +87,7 @@ func ZipkinExportersFromYAML(config []byte) (tes []exporter.TraceExporter, doneF
 	if zc == nil {
 		return nil, nil, nil
 	}
-	endpoint := "http://localhost:9411/api/v2/spans"
-	if zc.Endpoint != "" {
-		endpoint = zc.Endpoint
-	}
+
 	serviceName := ""
 	if zc.ServiceName != "" {
 		serviceName = zc.ServiceName
@@ -66,22 +96,99 @@ func ZipkinExportersFromYAML(config []byte) (tes []exporter.TraceExporter, doneF
 	if zc.LocalEndpointURI != "" {
 		localEndpointURI = zc.LocalEndpointURI
 	}
-	// TODO(jbd): Propagate hostport and more metadata from each node.
-	localEndpoint, err := openzipkin.NewEndpoint(serviceName, localEndpointURI)
+	endpoint := zc.EndpointURL()
+	zle, err := newZipkinExporter(endpoint, serviceName, localEndpointURI)
 	if err != nil {
-		log.Fatalf("Cannot configure Zipkin exporter: %v", err)
+		return nil, nil, fmt.Errorf("Cannot configure Zipkin exporter: %v", err)
 	}
-
-	reporter := http.NewReporter(endpoint)
-	ze := zipkin.NewExporter(reporter, localEndpoint)
-	tes = append(tes, &zipkinExporter{exporter: ze})
-	doneFns = append(doneFns, reporter.Close)
+	tes = append(tes, zle)
+	doneFns = append(doneFns, zle.stop)
 	return
 }
 
+func newZipkinExporter(finalEndpointURI, defaultServiceName, defaultLocalEndpointURI string) (*zipkinExporter, error) {
+	localEndpoint, err := openzipkin.NewEndpoint(defaultServiceName, defaultLocalEndpointURI)
+	if err != nil {
+		return nil, err
+	}
+	reporter := http.NewReporter(finalEndpointURI)
+	defaultExporter := zipkin.NewExporter(reporter, localEndpoint)
+	zle := &zipkinExporter{
+		endpointURI:             finalEndpointURI,
+		defaultExporter:         defaultExporter,
+		defaultServiceName:      defaultServiceName,
+		defaultLocalEndpointURI: defaultLocalEndpointURI,
+		serviceNameToExporter:   make(map[string]*zipkin.Exporter),
+	}
+
+	// Ensure that we add the default reporter's Close functions
+	zle.shutdownFns = append(zle.shutdownFns, reporter.Close)
+
+	return zle, nil
+}
+
+// exporterForNode firstly tries to find a memoize OpenCensus-Go Zipkin exporter
+// appropriate for this node. If it doesn't find any, it returns the default exporter
+// that was created at start-time.
+func (ze *zipkinExporter) exporterForNode(node *commonpb.Node) *zipkin.Exporter {
+	ze.mu.Lock()
+	defer ze.mu.Unlock()
+
+	if node == nil {
+		return ze.defaultExporter
+	}
+
+	serviceName := node.ServiceInfo.GetName()
+	if serviceName == "" {
+		serviceName = ze.defaultServiceName
+	}
+
+	// Make the unique key for this local endpoint/node: "serviceName" + "ipv4" + "ipv6" + "port"
+	key := serviceName + node.Attributes["ipv4"] + node.Attributes["ipv6"] + node.Attributes["port"]
+	if key == "" {
+		return ze.defaultExporter
+	}
+
+	// Try looking up if we already created the exporter.
+	if exp, ok := ze.serviceNameToExporter[key]; ok && exp != nil {
+		return exp
+	}
+
+	localEndpointURI := ze.defaultLocalEndpointURI
+	if ipv4 := node.Attributes["ipv4"]; ipv4 != "" {
+		localEndpointURI = ipv4
+	} else if ipv6 := node.Attributes["ipv6"]; ipv6 != "" {
+		localEndpointURI = ipv6
+	}
+
+	// Otherwise freshly create that Zipkin Exporter.
+	localEndpoint, err := openzipkin.NewEndpoint(serviceName, localEndpointURI)
+	if err != nil {
+		return ze.defaultExporter
+	}
+
+	reporter := http.NewReporter(ze.endpointURI)
+	exporter := zipkin.NewExporter(reporter, localEndpoint)
+
+	// Now memoize the created exporter for later use.
+	ze.serviceNameToExporter[key] = exporter
+	ze.shutdownFns = append(ze.shutdownFns, reporter.Close)
+
+	return exporter
+}
+
+func (ze *zipkinExporter) stop() error {
+	ze.mu.Lock()
+	defer ze.mu.Unlock()
+
+	for _, shutdownFn := range ze.shutdownFns {
+		_ = shutdownFn()
+	}
+
+	return nil
+}
+
 func (ze *zipkinExporter) ExportSpanData(ctx context.Context, node *commonpb.Node, spandata ...*trace.SpanData) error {
-	// TODO: Examine "contrib.go.opencensus.io/exporter/zipkin" to see
-	// if trace.ExportSpan was constraining and if perhaps the Zipkin
-	// upload can use the context and information from the Node.
-	return exportSpans(ctx, node, "zipkin", ze.exporter, spandata)
+	exporter := ze.exporterForNode(node)
+	return exportSpans(ctx, node, "zipkin", exporter, spandata)
 }

@@ -107,3 +107,21 @@ func GRPCServerWithObservabilityEnabled(extraOpts ...grpc.ServerOption) *grpc.Se
 	opts := append(extraOpts, grpc.StatsHandler(&ocgrpc.ServerHandler{}))
 	return grpc.NewServer(opts...)
 }
+
+// SetParentLink tries to retrieve a span from sideCtx and if one exists
+// sets its SpanID, TraceID as a link in the span provided. It returns
+// true only if it retrieved a parent span from the context.
+func SetParentLink(sideCtx context.Context, span *trace.Span) bool {
+	parentSpanFromRPC := trace.FromContext(sideCtx)
+	if parentSpanFromRPC == nil {
+		return false
+	}
+
+	psc := parentSpanFromRPC.SpanContext()
+	span.AddLink(trace.Link{
+		SpanID:  psc.SpanID,
+		TraceID: psc.TraceID,
+		Type:    trace.LinkTypeParent,
+	})
+	return true
+}
