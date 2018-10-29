@@ -16,22 +16,28 @@ package exporterparser
 
 import (
 	"context"
+	"encoding/binary"
 	"fmt"
+	"strconv"
 	"sync"
+	"time"
+
+	"go.opencensus.io/trace"
 
 	openzipkin "github.com/openzipkin/zipkin-go"
-	"github.com/openzipkin/zipkin-go/reporter/http"
-	"go.opencensus.io/exporter/zipkin"
-	"go.opencensus.io/trace"
+	zipkinmodel "github.com/openzipkin/zipkin-go/model"
+	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
+	zipkinhttp "github.com/openzipkin/zipkin-go/reporter/http"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	"github.com/census-instrumentation/opencensus-service/exporter"
 )
 
 type ZipkinConfig struct {
-	ServiceName      string `yaml:"service_name,omitempty"`
-	Endpoint         string `yaml:"endpoint,omitempty"`
-	LocalEndpointURI string `yaml:"local_endpoint,omitempty"`
+	ServiceName      string         `yaml:"service_name,omitempty"`
+	Endpoint         string         `yaml:"endpoint,omitempty"`
+	LocalEndpointURI string         `yaml:"local_endpoint,omitempty"`
+	UploadPeriod     *time.Duration `yaml:"upload_period,omitempty"`
 }
 
 // zipkinExporter is a multiplexing exporter that spawns a new OpenCensus-Go Zipkin
@@ -43,17 +49,11 @@ type zipkinExporter struct {
 	// mu protects the fields below
 	mu sync.Mutex
 
-	defaultExporter         *zipkin.Exporter
 	defaultServiceName      string
 	defaultLocalEndpointURI string
 
 	endpointURI string
-
-	// The goal of this map is to multiplex and route
-	// different serviceNames with various exporters
-	serviceNameToExporter map[string]*zipkin.Exporter
-
-	shutdownFns []func() error
+	reporter    zipkinreporter.Reporter
 }
 
 const (
@@ -97,7 +97,11 @@ func ZipkinExportersFromYAML(config []byte) (tes []exporter.TraceExporter, doneF
 		localEndpointURI = zc.LocalEndpointURI
 	}
 	endpoint := zc.EndpointURL()
-	zle, err := newZipkinExporter(endpoint, serviceName, localEndpointURI)
+	var uploadPeriod time.Duration
+	if zc.UploadPeriod != nil && *zc.UploadPeriod > 0 {
+		uploadPeriod = *zc.UploadPeriod
+	}
+	zle, err := newZipkinExporter(endpoint, serviceName, localEndpointURI, uploadPeriod)
 	if err != nil {
 		return nil, nil, fmt.Errorf("Cannot configure Zipkin exporter: %v", err)
 	}
@@ -106,89 +110,281 @@ func ZipkinExportersFromYAML(config []byte) (tes []exporter.TraceExporter, doneF
 	return
 }
 
-func newZipkinExporter(finalEndpointURI, defaultServiceName, defaultLocalEndpointURI string) (*zipkinExporter, error) {
-	localEndpoint, err := openzipkin.NewEndpoint(defaultServiceName, defaultLocalEndpointURI)
-	if err != nil {
-		return nil, err
+func newZipkinExporter(finalEndpointURI, defaultServiceName, defaultLocalEndpointURI string, uploadPeriod time.Duration) (*zipkinExporter, error) {
+	var opts []zipkinhttp.ReporterOption
+	if uploadPeriod > 0 {
+		opts = append(opts, zipkinhttp.BatchInterval(uploadPeriod))
 	}
-	reporter := http.NewReporter(finalEndpointURI)
-	defaultExporter := zipkin.NewExporter(reporter, localEndpoint)
+	reporter := zipkinhttp.NewReporter(finalEndpointURI, opts...)
 	zle := &zipkinExporter{
 		endpointURI:             finalEndpointURI,
-		defaultExporter:         defaultExporter,
 		defaultServiceName:      defaultServiceName,
 		defaultLocalEndpointURI: defaultLocalEndpointURI,
-		serviceNameToExporter:   make(map[string]*zipkin.Exporter),
+		reporter:                reporter,
 	}
-
-	// Ensure that we add the default reporter's Close functions
-	zle.shutdownFns = append(zle.shutdownFns, reporter.Close)
-
 	return zle, nil
 }
 
-// exporterForNode firstly tries to find a memoize OpenCensus-Go Zipkin exporter
-// appropriate for this node. If it doesn't find any, it returns the default exporter
-// that was created at start-time.
-func (ze *zipkinExporter) exporterForNode(node *commonpb.Node) *zipkin.Exporter {
-	ze.mu.Lock()
-	defer ze.mu.Unlock()
-
+func zipkinEndpointFromNode(node *commonpb.Node, serviceName string, endpointType zipkinDirection) (*zipkinmodel.Endpoint, error) {
 	if node == nil {
-		return ze.defaultExporter
+		return nil, nil
 	}
 
-	serviceName := node.ServiceInfo.GetName()
-	if serviceName == "" {
-		serviceName = ze.defaultServiceName
+	// The data in the Attributes map was saved in the format
+	// {
+	//      "ipv4": "192.168.99.101",
+	//      "port": "9000",
+	//      "serviceName": "backend",
+	// }
+	attributes := node.Attributes
+
+	var endpointURI string
+
+	ipv6Selected := false
+	if ipv4 := attributes[endpointType.ipv4Key()]; ipv4 != "" {
+		endpointURI = ipv4
+	} else if ipv6 := attributes[endpointType.ipv6Key()]; ipv6 != "" {
+		// In this case for ipv6 address when combining with a port,
+		// we need them enclosed in square brackets as per
+		//    https://golang.org/pkg/net/#SplitHostPort
+		endpointURI = fmt.Sprintf("[%s]", ipv6)
+		ipv6Selected = true
 	}
 
-	// Make the unique key for this local endpoint/node: "serviceName" + "ipv4" + "ipv6" + "port"
-	key := serviceName + node.Attributes["ipv4"] + node.Attributes["ipv6"] + node.Attributes["port"]
-	if key == "" {
-		return ze.defaultExporter
+	port := attributes[endpointType.portKey()]
+	if port != "" {
+		endpointURI += ":" + port
+	} else if ipv6Selected { // net.SplitHostPort requires a port of ipv6 values
+		endpointURI += ":" + "0"
 	}
-
-	// Try looking up if we already created the exporter.
-	if exp, ok := ze.serviceNameToExporter[key]; ok && exp != nil {
-		return exp
-	}
-
-	localEndpointURI := ze.defaultLocalEndpointURI
-	if ipv4 := node.Attributes["ipv4"]; ipv4 != "" {
-		localEndpointURI = ipv4
-	} else if ipv6 := node.Attributes["ipv6"]; ipv6 != "" {
-		localEndpointURI = ipv6
-	}
-
-	// Otherwise freshly create that Zipkin Exporter.
-	localEndpoint, err := openzipkin.NewEndpoint(serviceName, localEndpointURI)
-	if err != nil {
-		return ze.defaultExporter
-	}
-
-	reporter := http.NewReporter(ze.endpointURI)
-	exporter := zipkin.NewExporter(reporter, localEndpoint)
-
-	// Now memoize the created exporter for later use.
-	ze.serviceNameToExporter[key] = exporter
-	ze.shutdownFns = append(ze.shutdownFns, reporter.Close)
-
-	return exporter
+	return openzipkin.NewEndpoint(serviceName, endpointURI)
 }
 
 func (ze *zipkinExporter) stop() error {
 	ze.mu.Lock()
 	defer ze.mu.Unlock()
 
-	for _, shutdownFn := range ze.shutdownFns {
-		_ = shutdownFn()
-	}
-
-	return nil
+	return ze.reporter.Close()
 }
 
 func (ze *zipkinExporter) ExportSpanData(ctx context.Context, node *commonpb.Node, spandata ...*trace.SpanData) error {
-	exporter := ze.exporterForNode(node)
-	return exportSpans(ctx, node, "zipkin", exporter, spandata)
+	for _, sd := range spandata {
+		zs, err := ze.zipkinSpan(node, sd)
+		if err == nil {
+			// ze.reporter can get closed in the midst of a Send
+			// so avoid a read/write during that mutation.
+			ze.mu.Lock()
+			ze.reporter.Send(zs)
+			ze.mu.Unlock()
+		}
+	}
+	return nil
+}
+
+// This code from down below is mostly copied from
+// https://github.com/census-instrumentation/opencensus-go/blob/96e75b88df843315da521168a0e3b11792088728/exporter/zipkin/zipkin.go#L57-L194
+// but that is because the Zipkin Go exporter requires process to change
+// and was designed without taking into account that LocalEndpoint and RemoteEndpoint
+// are per-span-Node attributes instead of global/system variables.
+// The alternative is to create a single exporter for every single combination
+// but this wastes resources i.e. an HTTP client for every single combination
+// but also requires the exporter to be changed entirely as per
+// https://github.com/census-instrumentation/opencensus-go/issues/959
+//
+// TODO: (@odeke-em) whenever we come to consensus with the OpenCensus-Go repository
+// on the Zipkin exporter and they have the same logic, then delete all the code
+// below here to allow per-span configuration changes.
+
+const (
+	statusCodeTagKey        = "error"
+	statusDescriptionTagKey = "opencensus.status_description"
+)
+
+var (
+	sampledTrue    = true
+	canonicalCodes = [...]string{
+		"OK",
+		"CANCELLED",
+		"UNKNOWN",
+		"INVALID_ARGUMENT",
+		"DEADLINE_EXCEEDED",
+		"NOT_FOUND",
+		"ALREADY_EXISTS",
+		"PERMISSION_DENIED",
+		"RESOURCE_EXHAUSTED",
+		"FAILED_PRECONDITION",
+		"ABORTED",
+		"OUT_OF_RANGE",
+		"UNIMPLEMENTED",
+		"INTERNAL",
+		"UNAVAILABLE",
+		"DATA_LOSS",
+		"UNAUTHENTICATED",
+	}
+)
+
+func canonicalCodeString(code int32) string {
+	if code < 0 || int(code) >= len(canonicalCodes) {
+		return "error code " + strconv.FormatInt(int64(code), 10)
+	}
+	return canonicalCodes[code]
+}
+
+func convertTraceID(t trace.TraceID) zipkinmodel.TraceID {
+	return zipkinmodel.TraceID{
+		High: binary.BigEndian.Uint64(t[:8]),
+		Low:  binary.BigEndian.Uint64(t[8:]),
+	}
+}
+
+func convertSpanID(s trace.SpanID) zipkinmodel.ID {
+	return zipkinmodel.ID(binary.BigEndian.Uint64(s[:]))
+}
+
+func spanKind(s *trace.SpanData) zipkinmodel.Kind {
+	switch s.SpanKind {
+	case trace.SpanKindClient:
+		return zipkinmodel.Client
+	case trace.SpanKindServer:
+		return zipkinmodel.Server
+	}
+	return zipkinmodel.Undetermined
+}
+
+func (ze *zipkinExporter) serviceNameOrDefault(node *commonpb.Node) string {
+	// ze.defaultServiceName should never change
+	defaultServiceName := ze.defaultServiceName
+
+	if node == nil || node.ServiceInfo == nil {
+		return defaultServiceName
+	}
+
+	if node.ServiceInfo.Name == "" {
+		return defaultServiceName
+	}
+
+	return node.ServiceInfo.Name
+}
+
+type zipkinDirection bool
+
+const (
+	isLocalEndpoint  zipkinDirection = true
+	isRemoteEndpoint zipkinDirection = false
+)
+
+func (d zipkinDirection) ipv6Key() string {
+	if d == isLocalEndpoint {
+		return "ipv6"
+	}
+	return "zipkin.remoteEndpoint.ipv6"
+}
+
+func (d zipkinDirection) portKey() string {
+	if d == isLocalEndpoint {
+		return "port"
+	}
+	return "zipkin.remoteEndpoint.port"
+}
+
+func (d zipkinDirection) ipv4Key() string {
+	if d == isLocalEndpoint {
+		return "ipv4"
+	}
+	return "zipkin.remoteEndpoint.ipv4"
+}
+
+const zipkinRemoteEndpointKey = "zipkin.remoteEndpoint.serviceName"
+
+func (ze *zipkinExporter) zipkinSpan(node *commonpb.Node, s *trace.SpanData) (zc zipkinmodel.SpanModel, err error) {
+	localEndpointServiceName := ze.serviceNameOrDefault(node)
+	localEndpoint, err := zipkinEndpointFromNode(node, localEndpointServiceName, isLocalEndpoint)
+	if err != nil {
+		return zc, err
+	}
+
+	remoteServiceName := node.Attributes[zipkinRemoteEndpointKey]
+	remoteEndpoint, _ := zipkinEndpointFromNode(node, remoteServiceName, isRemoteEndpoint)
+
+	sc := s.SpanContext
+	z := zipkinmodel.SpanModel{
+		SpanContext: zipkinmodel.SpanContext{
+			TraceID: convertTraceID(sc.TraceID),
+			ID:      convertSpanID(sc.SpanID),
+			Sampled: &sampledTrue,
+		},
+		Kind:           spanKind(s),
+		Name:           s.Name,
+		Timestamp:      s.StartTime,
+		Shared:         false,
+		LocalEndpoint:  localEndpoint,
+		RemoteEndpoint: remoteEndpoint,
+	}
+
+	if s.ParentSpanID != (trace.SpanID{}) {
+		id := convertSpanID(s.ParentSpanID)
+		z.ParentID = &id
+	}
+
+	if s, e := s.StartTime, s.EndTime; !s.IsZero() && !e.IsZero() {
+		z.Duration = e.Sub(s)
+	}
+
+	// construct Tags from s.Attributes and s.Status.
+	if len(s.Attributes) != 0 {
+		m := make(map[string]string, len(s.Attributes)+2)
+		for key, value := range s.Attributes {
+			switch v := value.(type) {
+			case string:
+				m[key] = v
+			case bool:
+				if v {
+					m[key] = "true"
+				} else {
+					m[key] = "false"
+				}
+			case int64:
+				m[key] = strconv.FormatInt(v, 10)
+			}
+		}
+		z.Tags = m
+	}
+	if s.Status.Code != 0 || s.Status.Message != "" {
+		if z.Tags == nil {
+			z.Tags = make(map[string]string, 2)
+		}
+		if s.Status.Code != 0 {
+			z.Tags[statusCodeTagKey] = canonicalCodeString(s.Status.Code)
+		}
+		if s.Status.Message != "" {
+			z.Tags[statusDescriptionTagKey] = s.Status.Message
+		}
+	}
+
+	// construct Annotations from s.Annotations and s.MessageEvents.
+	if len(s.Annotations) != 0 || len(s.MessageEvents) != 0 {
+		z.Annotations = make([]zipkinmodel.Annotation, 0, len(s.Annotations)+len(s.MessageEvents))
+		for _, a := range s.Annotations {
+			z.Annotations = append(z.Annotations, zipkinmodel.Annotation{
+				Timestamp: a.Time,
+				Value:     a.Message,
+			})
+		}
+		for _, m := range s.MessageEvents {
+			a := zipkinmodel.Annotation{
+				Timestamp: m.Time,
+			}
+			switch m.EventType {
+			case trace.MessageEventTypeSent:
+				a.Value = "SENT"
+			case trace.MessageEventTypeRecv:
+				a.Value = "RECV"
+			default:
+				a.Value = "<?>"
+			}
+			z.Annotations = append(z.Annotations, a)
+		}
+	}
+
+	return z, nil
 }

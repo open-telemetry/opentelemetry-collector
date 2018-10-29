@@ -17,7 +17,6 @@ package zipkininterceptor
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -62,9 +61,11 @@ func TestConvertSpansToTraceSpans(t *testing.T) {
 			Name: "frontend",
 		},
 		Attributes: map[string]string{
-			"ipv6": "7::80:807f",
-			"zipkin.remoteEndpoint.ipv4": "192.168.99.101",
-			"zipkin.remoteEndpoint.port": "9000",
+			"ipv6":                              "7::80:807f",
+			"serviceName":                       "frontend",
+			"zipkin.remoteEndpoint.serviceName": "backend",
+			"zipkin.remoteEndpoint.ipv4":        "192.168.99.101",
+			"zipkin.remoteEndpoint.port":        "9000",
 		},
 	}
 	if g, w := req.Node, wantNode; !reflect.DeepEqual(g, w) {
@@ -170,9 +171,11 @@ func TestConversionRoundtrip(t *testing.T) {
 			Node: &commonpb.Node{
 				ServiceInfo: &commonpb.ServiceInfo{Name: "frontend"},
 				Attributes: map[string]string{
-					"ipv6": "7::80:807f",
-					"zipkin.remoteEndpoint.ipv4": "192.168.99.101",
-					"zipkin.remoteEndpoint.port": "9000",
+					"ipv6":                              "7::80:807f",
+					"serviceName":                       "frontend",
+					"zipkin.remoteEndpoint.serviceName": "backend",
+					"zipkin.remoteEndpoint.ipv4":        "192.168.99.101",
+					"zipkin.remoteEndpoint.port":        "9000",
 				},
 			},
 
@@ -220,6 +223,21 @@ func TestConversionRoundtrip(t *testing.T) {
 						},
 					},
 				},
+			},
+		},
+		{
+			Node: &commonpb.Node{
+				ServiceInfo: &commonpb.ServiceInfo{Name: "frontend"},
+				Attributes: map[string]string{
+					"ipv6":                              "7::80:807f",
+					"serviceName":                       "frontend",
+					"zipkin.remoteEndpoint.serviceName": "frontend",
+					"zipkin.remoteEndpoint.ipv4":        "192.168.99.101",
+					"zipkin.remoteEndpoint.port":        "9000",
+				},
+			},
+
+			Spans: []*tracepb.Span{
 				{
 					TraceId:      []byte{0x4d, 0x1e, 0x00, 0xc0, 0xdb, 0x90, 0x10, 0xdb, 0x86, 0x15, 0x4a, 0x4b, 0xa6, 0xe9, 0x13, 0x85},
 					SpanId:       []byte{0x4d, 0x1e, 0x00, 0xc0, 0xdb, 0x90, 0x10, 0xdb},
@@ -326,7 +344,6 @@ func TestConversionRoundtrip(t *testing.T) {
   "duration": 207000,
   "localEndpoint": {
     "serviceName": "frontend",
-    "ipv4": "0.0.0.0",
     "ipv6": "7::80:807f"
   },
   "annotations": [
@@ -343,8 +360,8 @@ func TestConversionRoundtrip(t *testing.T) {
     "http.path": "/api",
     "clnt/finagle.version": "6.45.0"
   }
-},
-{
+}]
+[{
   "traceId": "4d1e00c0db9010db86154a4ba6e91385",
   "parentId": "86154a4ba6e91386",
   "id": "4d1e00c0db9010db",
@@ -354,7 +371,6 @@ func TestConversionRoundtrip(t *testing.T) {
   "duration": 207000,
   "localEndpoint": {
     "serviceName": "frontend",
-    "ipv4": "0.0.0.0",
     "ipv6": "7::80:807f"
   },
   "annotations": [
@@ -385,20 +401,11 @@ func TestConversionRoundtrip(t *testing.T) {
 		// vs
 		//    [{"duration":207000,"timestamp":1472470996199000}]
 		// we should resort to an xorCheckSum
-		gs, ws := anagramSignature(gj), anagramSignature(wj)
+		gs, ws := internal.AnagramicSignature(gj), internal.AnagramicSignature(wj)
 		if gs != ws {
 			t.Errorf("The roundtrip JSON doesn't match the JSON that we want\nGot:\n%s\nWant:\n%s", gj, wj)
 		}
 	}
-}
-
-func anagramSignature(ss string) string {
-	mp := make(map[rune]int64)
-	for _, s := range ss {
-		mp[s] += 1
-	}
-	blob, _ := json.Marshal(mp)
-	return string(blob)
 }
 
 type noopSink int

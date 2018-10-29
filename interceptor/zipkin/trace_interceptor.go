@@ -255,14 +255,17 @@ func zipkinEndpointIntoAttributes(ep *zipkinmodel.Endpoint, into map[string]stri
 	if into == nil {
 		into = make(map[string]string)
 	}
-	if !ep.IPv4.Equal(blankIP) {
+	if ep.IPv4 != nil && !ep.IPv4.Equal(blankIP) {
 		into[prefixFunc("ipv4")] = ep.IPv4.String()
 	}
-	if !ep.IPv6.Equal(blankIP) {
+	if ep.IPv6 != nil && !ep.IPv6.Equal(blankIP) {
 		into[prefixFunc("ipv6")] = ep.IPv6.String()
 	}
 	if ep.Port > 0 {
 		into[prefixFunc("port")] = fmt.Sprintf("%d", ep.Port)
+	}
+	if serviceName := ep.ServiceName; serviceName != "" {
+		into[prefixFunc("serviceName")] = serviceName
 	}
 	return into
 }
@@ -337,7 +340,6 @@ func zipkinAnnotationsToProtoTimeEvents(zas []zipkinmodel.Annotation) *tracepb.S
 	tevs := make([]*tracepb.Span_TimeEvent, 0, len(zas))
 	for _, za := range zas {
 		if tev := zipkinAnnotationToProtoAnnotation(za); tev != nil {
-			//fmt.Printf("\n\nzas: %+v\ntev: %+v\n", za, tev)
 			tevs = append(tevs, tev)
 		}
 	}
