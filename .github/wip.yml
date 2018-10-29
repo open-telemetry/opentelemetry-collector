@@ -1,0 +1,9 @@
+locations:
+- title
+- label_name
+- commit_subject
+terms:
+- do not merge
+- do not review
+- wip
+
