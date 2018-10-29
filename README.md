@@ -124,9 +124,16 @@ Agent should drop the whole message and return an error to the client. In additi
 message MAY contain additional data (such as `Span`s). As long as it has a valid identifier
 assoicated, Agent should handle the data properly, as if they were sent in a subsequent message.
 Identifier is no longer needed once the streams are established.
-3. If streams were disconnected and retries failed, the Library identifier would be considered
-expired on Agent side. Library needs to start a new connection with a unique identifier
-(MAY be different than the previous one).
+3. On Library side, if connection to Agent failed, Library should retry indefintely. (Reason:
+consider environments where the running applications are already instrumented with OpenCensus
+Library but Agent is not deployed yet. Sometime in the future, we can simply roll out the Agent
+to those environments and Library would automatically connect to Agent with indefinite retries.
+Zero changes are required to the applications.) Depending on the language and implementation,
+retry can be done in either background or a daemon thread. Retry should be performed at a fixed
+frequency (rather than exponential backoff) to have a deterministic expected connect time.
+4. On Agent side, if an established stream were disconnected, the identifier of the
+corresponding Library would be considered expired. Library needs to start a new connection with
+a unique identifier (MAY be different than the previous one).
 
 ### <a name="agent-protocol-implementation-details-of-agent-server"></a>Implementation details of Agent Server
 
