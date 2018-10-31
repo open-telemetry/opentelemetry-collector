@@ -28,7 +28,7 @@ import (
 	"github.com/census-instrumentation/opencensus-service/exporter"
 	"github.com/census-instrumentation/opencensus-service/exporter/exporterparser"
 	"github.com/census-instrumentation/opencensus-service/interceptor/zipkin"
-	"github.com/census-instrumentation/opencensus-service/internal"
+	"github.com/census-instrumentation/opencensus-service/internal/testutils"
 )
 
 // This function tests that Zipkin spans that are intercepted then processed roundtrip
@@ -84,10 +84,7 @@ exporters:
 	<-time.After(100 * time.Millisecond)
 
 	// We expect back the exact JSON that was intercepted
-	// Obviously with spaces stripped out and as an anagram
-	// because the serializers are different and deserialization
-	// occurs in different orders.
-	want := `
+	want := testutils.GenerateNormalizedJSON(`
 [{
   "traceId": "4d1e00c0db9010db86154a4ba6e91385","parentId": "86154a4ba6e91385","id": "4d1e00c0db9010db",
   "kind": "CLIENT","name": "get",
@@ -105,28 +102,19 @@ exporters:
   "kind": "SERVER","name": "put",
   "timestamp": 1472470996199000,"duration": 207000,
   "localEndpoint": {"serviceName": "frontend","ipv6": "7::80:807f"},
-  "remoteEndpoint": {"serviceName": "frontend""ipv4": "192.168.99.101","port": 9000,},
+  "remoteEndpoint": {"serviceName": "frontend", "ipv4": "192.168.99.101","port": 9000},
   "annotations": [
     {"timestamp": 1472470996238000,"value": "foo"},
     {"timestamp": 1472470996403000,"value": "bar"}
   ],
   "tags": {"http.path": "/api","clnt/finagle.version": "6.45.0"}
-}]`
+}]`)
 
 	// Finally we need to inspect the output
-	got, _ := ioutil.ReadAll(cb)
-	if string(got) != want {
-		stripSpaces := func(s string) string {
-			ss := strings.Replace(s, "\n", "", -1)
-			ss = strings.Replace(ss, "\t", "", -1)
-			return strings.Replace(ss, " ", "", -1)
-		}
-
-		gs := stripSpaces(string(got))
-		ws := stripSpaces(want)
-		if g, w := internal.AnagramicSignature(gs), internal.AnagramicSignature(ws); g != w {
-			t.Errorf("RoundTrip result do not match:\nGot\n\t%s\nSignature: %s\n\nWant\n\t%s\nSignature: %s\n", got, g, ws, w)
-		}
+	gotBytes, _ := ioutil.ReadAll(cb)
+	got := testutils.GenerateNormalizedJSON(string(gotBytes))
+	if got != want {
+		t.Errorf("RoundTrip result do not match:\nGot\n %s\n\nWant\n: %s\n", got, want)
 	}
 }
 

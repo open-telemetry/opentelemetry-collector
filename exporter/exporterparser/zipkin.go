@@ -138,12 +138,19 @@ func zipkinEndpointFromNode(node *commonpb.Node, serviceName string, endpointTyp
 	// }
 	attributes := node.Attributes
 
+	var ipv4Key, ipv6Key, portKey string
+	if endpointType == isLocalEndpoint {
+		ipv4Key, ipv6Key, portKey = "ipv4", "ipv6", "port"
+	} else {
+		ipv4Key, ipv6Key, portKey = "zipkin.remoteEndpoint.ipv4", "zipkin.remoteEndpoint.ipv6", "zipkin.remoteEndpoint.port"
+	}
+
 	var endpointURI string
 
 	ipv6Selected := false
-	if ipv4 := attributes[endpointType.ipv4Key()]; ipv4 != "" {
+	if ipv4 := attributes[ipv4Key]; ipv4 != "" {
 		endpointURI = ipv4
-	} else if ipv6 := attributes[endpointType.ipv6Key()]; ipv6 != "" {
+	} else if ipv6 := attributes[ipv6Key]; ipv6 != "" {
 		// In this case for ipv6 address when combining with a port,
 		// we need them enclosed in square brackets as per
 		//    https://golang.org/pkg/net/#SplitHostPort
@@ -151,7 +158,7 @@ func zipkinEndpointFromNode(node *commonpb.Node, serviceName string, endpointTyp
 		ipv6Selected = true
 	}
 
-	port := attributes[endpointType.portKey()]
+	port := attributes[portKey]
 	if port != "" {
 		endpointURI += ":" + port
 	} else if ipv6Selected { // net.SplitHostPort requires a port of ipv6 values
@@ -272,27 +279,6 @@ const (
 	isLocalEndpoint  zipkinDirection = true
 	isRemoteEndpoint zipkinDirection = false
 )
-
-func (d zipkinDirection) ipv6Key() string {
-	if d == isLocalEndpoint {
-		return "ipv6"
-	}
-	return "zipkin.remoteEndpoint.ipv6"
-}
-
-func (d zipkinDirection) portKey() string {
-	if d == isLocalEndpoint {
-		return "port"
-	}
-	return "zipkin.remoteEndpoint.port"
-}
-
-func (d zipkinDirection) ipv4Key() string {
-	if d == isLocalEndpoint {
-		return "ipv4"
-	}
-	return "zipkin.remoteEndpoint.ipv4"
-}
 
 const zipkinRemoteEndpointKey = "zipkin.remoteEndpoint.serviceName"
 

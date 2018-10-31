@@ -23,7 +23,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
-	"strings"
 	"testing"
 	"time"
 
@@ -35,6 +34,7 @@ import (
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/internal"
+	"github.com/census-instrumentation/opencensus-service/internal/testutils"
 	"github.com/census-instrumentation/opencensus-service/spanreceiver"
 	"github.com/census-instrumentation/opencensus-service/translator/trace"
 )
@@ -389,22 +389,9 @@ func TestConversionRoundtrip(t *testing.T) {
   }
 }]`
 
-	fmtForComparison := func(s string) string {
-		ss := strings.Replace(s, "\n", "", -1)
-		return strings.Replace(ss, " ", "", -1)
-	}
-	// Just compressing the input and output since their JSON serializations vary, i.e. might have spaces or not
-	gj, wj := fmtForComparison(buf.String()), fmtForComparison(wantFinalJSON)
+	gj, wj := testutils.GenerateNormalizedJSON(buf.String()), testutils.GenerateNormalizedJSON(wantFinalJSON)
 	if gj != wj {
-		// Since the field might be in ruffled order e.g:
-		//    [{"timestamp":1472470996199000,"duration":207000}]
-		// vs
-		//    [{"duration":207000,"timestamp":1472470996199000}]
-		// we should resort to an xorCheckSum
-		gs, ws := internal.AnagramicSignature(gj), internal.AnagramicSignature(wj)
-		if gs != ws {
-			t.Errorf("The roundtrip JSON doesn't match the JSON that we want\nGot:\n%s\nWant:\n%s", gj, wj)
-		}
+		t.Errorf("The roundtrip JSON doesn't match the JSON that we want\nGot:\n%s\nWant:\n%s", gj, wj)
 	}
 }
 
