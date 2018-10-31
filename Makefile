@@ -35,8 +35,15 @@ fmt:
 agent:
 	CGO_ENABLED=0 go build -o ./bin/ocagent_$(GOOS) $(BUILD_INFO) ./cmd/ocagent
 
-.PHONY: agent-all-sys
-agent-all-platforms:
-	GOOS=darwin $(MAKE) agent
-	GOOS=linux $(MAKE) agent
-	GOOS=windows $(MAKE) agent
+.PHONY: collector
+collector:
+	CGO_ENABLED=0 go build -o ./bin/occollector_$(GOOS) $(BUILD_INFO) ./cmd/occollector
+
+.PHONY: binaries
+binaries: agent collector
+
+.PHONY: binaries-all-sys
+binaries-all-sys:
+	GOOS=darwin $(MAKE) binaries
+	GOOS=linux $(MAKE) binaries
+	GOOS=windows $(MAKE) binaries
