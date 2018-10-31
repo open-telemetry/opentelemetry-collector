@@ -226,7 +226,7 @@ OpenCensus interceptor's traces in your browser should produce something like th
 
 ![zPages](https://user-images.githubusercontent.com/4898263/47132981-892bb500-d25b-11e8-980c-08f0115ba72e.png)
 
-### <a name="building-binaries"></a>Building binaries
+### <a name="agent-building-binaries"></a>Building binaries
 
 Please run file `build_binaries.sh` in the root of this repository, with argument `binaries` or any of:
 * linux
