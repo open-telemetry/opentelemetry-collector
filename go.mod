@@ -16,7 +16,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af // indirect
 	github.com/kr/pretty v0.1.0 // indirect
-	github.com/openzipkin/zipkin-go v0.1.2
+	github.com/openzipkin/zipkin-go v0.1.3
 	github.com/philhofer/fwd v1.0.0 // indirect
 	github.com/pkg/errors v0.8.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect

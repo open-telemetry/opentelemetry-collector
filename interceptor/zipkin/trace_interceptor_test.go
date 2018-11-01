@@ -39,14 +39,14 @@ import (
 	"github.com/census-instrumentation/opencensus-service/translator/trace"
 )
 
-func TestConvertSpansToTraceSpans(t *testing.T) {
+func TestConvertSpansToTraceSpans_json(t *testing.T) {
 	// Using Adrian Cole's sample at https://gist.github.com/adriancole/e8823c19dfed64e2eb71
 	blob, err := ioutil.ReadFile("./testdata/sample1.json")
 	if err != nil {
 		t.Fatalf("Failed to read sample JSON file: %v", err)
 	}
 	zi := new(ZipkinInterceptor)
-	reqs, err := zi.parseAndConvertToTraceSpans(blob)
+	reqs, err := zi.parseAndConvertToTraceSpans(blob, nil)
 	if err != nil {
 		t.Fatalf("Failed to parse convert Zipkin spans in JSON to Trace spans: %v", err)
 	}
@@ -161,7 +161,7 @@ func TestConversionRoundtrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create the Zipkin interceptor: %v", err)
 	}
-	ereqs, err := zi.parseAndConvertToTraceSpans(interceptorInputJSON)
+	ereqs, err := zi.parseAndConvertToTraceSpans(interceptorInputJSON, nil)
 	if err != nil {
 		t.Fatalf("Failed to parse and convert interceptor JSON: %v", err)
 	}
