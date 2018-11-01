@@ -47,7 +47,7 @@ import (
 //      port: 55679
 
 const (
-	defaultOCInterceptorAddress = "localhost:55678"
+	defaultOCInterceptorAddress = ":55678"
 	defaultZPagesPort           = 55679
 )
 

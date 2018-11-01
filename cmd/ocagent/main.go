@@ -121,14 +121,15 @@ func runZPages(port int) func() error {
 		log.Fatalf("Failed to bind to run zPages on %q: %v", addr, err)
 	}
 
+	srv := http.Server{Handler: zPagesMux}
 	go func() {
 		log.Printf("Running zPages at %q", addr)
-		if err := http.Serve(ln, zPagesMux); err != nil {
+		if err := srv.Serve(ln); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Failed to serve zPages: %v", err)
 		}
 	}()
 
-	return ln.Close
+	return srv.Close
 }
 
 func runOCInterceptor(addr string, sr spanreceiver.SpanReceiver) (doneFn func() error, err error) {
@@ -152,13 +153,14 @@ func runOCInterceptor(addr string, sr spanreceiver.SpanReceiver) (doneFn func() 
 	agenttracepb.RegisterTraceServiceServer(srv, oci)
 	go func() {
 		log.Printf("Running OpenCensus interceptor as a gRPC service at %q", addr)
-
-		// Not using log.Fatalf(srv.Serve(ln)) because CTRL-C will close the listener as the user requested
-		// and that log.Fatalf will produce an unrelated but misleading error:
-		//     "Failed to run OpenCensus interceptor: accept tcp 127.0.0.1:55678: use of closed network connection"
-		_ = srv.Serve(ln)
+		if err := srv.Serve(ln); err != nil {
+			log.Fatalf("Failed to run OpenCensus interceptor: %v", err)
+		}
 	}()
-	doneFn = ln.Close
+	doneFn = func() error {
+		srv.Stop()
+		return nil
+	}
 	return doneFn, nil
 }
 

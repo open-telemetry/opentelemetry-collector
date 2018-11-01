@@ -21,9 +21,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
-	"sync"
 	"testing"
-	"time"
 
 	"github.com/census-instrumentation/opencensus-service/exporter"
 	"github.com/census-instrumentation/opencensus-service/exporter/exporterparser"
@@ -41,10 +39,12 @@ import (
 //
 // The rest of the fields should match up exactly
 func TestZipkinExportersFromYAML_roundtripJSON(t *testing.T) {
-	cb := newConcurrentBuffer()
+	responseReady := make(chan bool)
+	buf := new(bytes.Buffer)
 	cst := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		io.Copy(cb, r.Body)
+		io.Copy(buf, r.Body)
 		r.Body.Close()
+		responseReady <- true
 	}))
 	defer cst.Close()
 
@@ -79,9 +79,8 @@ exporters:
 	req, _ := http.NewRequest("POST", "https://tld.org/", strings.NewReader(zipkinSpansJSONJavaLibrary))
 	responseWriter := httptest.NewRecorder()
 	zi.ServeHTTP(responseWriter, req)
-	// Just for 100X longer than the Zipkin reporting period
-	// because -race slows things down a lot.
-	<-time.After(100 * time.Millisecond)
+	// Wait for the server to write the response.
+	<-responseReady
 
 	// We expect back the exact JSON that was intercepted
 	want := testutils.GenerateNormalizedJSON(`
@@ -111,36 +110,11 @@ exporters:
 }]`)
 
 	// Finally we need to inspect the output
-	gotBytes, _ := ioutil.ReadAll(cb)
+	gotBytes, _ := ioutil.ReadAll(buf)
 	got := testutils.GenerateNormalizedJSON(string(gotBytes))
 	if got != want {
 		t.Errorf("RoundTrip result do not match:\nGot\n %s\n\nWant\n: %s\n", got, want)
 	}
-}
-
-type concurrentBuffer struct {
-	mu  sync.Mutex
-	buf *bytes.Buffer
-}
-
-func newConcurrentBuffer() *concurrentBuffer {
-	return &concurrentBuffer{
-		buf: new(bytes.Buffer),
-	}
-}
-
-func (cb *concurrentBuffer) Write(b []byte) (int, error) {
-	cb.mu.Lock()
-	defer cb.mu.Unlock()
-
-	return cb.buf.Write(b)
-}
-
-func (cb *concurrentBuffer) Read(b []byte) (int, error) {
-	cb.mu.Lock()
-	defer cb.mu.Unlock()
-
-	return cb.buf.Read(b)
 }
 
 const zipkinSpansJSONJavaLibrary = `

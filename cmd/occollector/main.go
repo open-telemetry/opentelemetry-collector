@@ -42,7 +42,7 @@ import (
 )
 
 const (
-	defaultOCAddress = "localhost:55678"
+	defaultOCAddress = ":55678"
 )
 
 func main() {
@@ -103,7 +103,12 @@ func runOCServerWithInterceptor(addr string, logger *zap.Logger) (func() error, 
 		}
 	}()
 
-	return lis.Close, nil
+	closeFn := func() error {
+		grpcSrv.Stop()
+		return nil
+	}
+
+	return closeFn, nil
 }
 
 type fakeSpanReceiver struct {
