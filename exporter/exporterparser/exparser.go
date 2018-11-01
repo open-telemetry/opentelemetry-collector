@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// This package provides support for parsing and creating the
+// Package exporterparser provides support for parsing and creating the
 // respective exporters given a YAML configuration payload.
 // For now it currently only provides statically imported OpenCensus
 // exporters like:

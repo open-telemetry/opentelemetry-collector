@@ -26,6 +26,8 @@ type MetricsReceiver interface {
 	ReceiveMetrics(ctx context.Context, node *commonpb.Node, metrics ...*metricpb.Metric) (*Acknowledgement, error)
 }
 
+// Acknowledgement struct reports the number of saved and dropped spans in a
+// ReceiveSpans call.
 type Acknowledgement struct {
 	SavedMetrics   uint64
 	DroppedMetrics uint64

@@ -28,6 +28,11 @@ import (
 //
 // For example it could be Zipkin data source which translates
 // Zipkin spans into *tracepb.Span-s.
+//
+// StartTraceInterception tells the interceptor to start its processing.
+//
+// StopTraceInterception tells the interceptor that should stop interception,
+// giving it a chance to perform any necessary clean-up.
 type TraceInterceptor interface {
 	StartTraceInterception(ctx context.Context, destination spanreceiver.SpanReceiver) error
 	StopTraceInterception(ctx context.Context) error

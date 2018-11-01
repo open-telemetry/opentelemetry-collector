@@ -75,7 +75,7 @@ func TestConvertSpansToTraceSpans(t *testing.T) {
 	nonNilSpans := 0
 	for _, span := range req.Spans {
 		if span != nil {
-			nonNilSpans += 1
+			nonNilSpans++
 		}
 	}
 	// Expecting 9 non-nil spans

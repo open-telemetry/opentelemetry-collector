@@ -46,6 +46,8 @@ type datadogExporter struct {
 	exporter *datadog.Exporter
 }
 
+// DatadogTraceExportersFromYAML parses the yaml bytes and returns an exporter.TraceExporter targeting
+// Datadog according to the configuration settings.
 func DatadogTraceExportersFromYAML(config []byte) (tes []exporter.TraceExporter, doneFns []func() error, err error) {
 	var cfg struct {
 		Exporters *struct {

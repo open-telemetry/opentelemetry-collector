@@ -25,6 +25,10 @@ import (
 	tracetranslator "github.com/census-instrumentation/opencensus-service/translator/trace"
 )
 
+// TraceExporter is a interface that receives OpenCensus data, converts it as needed, and
+// sends it to different destinations.
+//
+// ExportSpanData receives OpenCensus data for processing by the exporter.
 type TraceExporter interface {
 	ExportSpanData(ctx context.Context, node *commonpb.Node, spandata ...*trace.SpanData) error
 }
@@ -33,12 +37,15 @@ type toOCExportersTransformer struct {
 	ocTraceExporters []trace.Exporter
 }
 
+// TraceExporterSpanReceiver is a interface connecting a spanreceiver.SpanReceiver and
+// a exporter.TraceExporter. The receiver gets data in different serialization formats,
+// transforms it to OpenCensus in memory data and sends it to the exporter.
 type TraceExporterSpanReceiver interface {
 	TraceExporter
 	spanreceiver.SpanReceiver
 }
 
-// OCExportersToTraceExporterSpanReceiver is a convenience function that transforms
+// OCExportersToTraceExporter is a convenience function that transforms
 // traditional OpenCensus trace.Exporter-s into an opencensus-service TraceExporter.
 // The resulting TraceExporter ignores the passed in node. To make use of the node,
 // please create a custom TraceExporter.
@@ -81,12 +88,14 @@ func (tse *toOCExportersTransformer) ReceiveSpans(ctx context.Context, node *com
 	return ack, err
 }
 
+// MultiTraceExporters wraps multiple trace exporters in a single one.
 func MultiTraceExporters(tes ...TraceExporter) TraceExporterSpanReceiver {
 	return traceExporters(tes)
 }
 
 type traceExporters []TraceExporter
 
+// ExportSpanData exports the span data to all trace exporters wrapped by the current one.
 func (tes traceExporters) ExportSpanData(ctx context.Context, node *commonpb.Node, spandata ...*trace.SpanData) error {
 	for _, te := range tes {
 		_ = te.ExportSpanData(ctx, node, spandata...)
@@ -94,6 +103,8 @@ func (tes traceExporters) ExportSpanData(ctx context.Context, node *commonpb.Nod
 	return nil
 }
 
+// ReceiveSpans receives the span data in the protobuf format, translates it, and forwards the transformed
+// span data to all trace exporters wrapped by the current one.
 func (tes traceExporters) ReceiveSpans(ctx context.Context, node *commonpb.Node, spans ...*tracepb.Span) (*spanreceiver.Acknowledgement, error) {
 	spanDataList := make([]*trace.SpanData, 0, len(spans))
 	for _, span := range spans {

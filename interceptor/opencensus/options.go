@@ -16,6 +16,9 @@ package ocinterceptor
 
 import "time"
 
+// Option interface defines for configuration settings to be applied to interceptors.
+//
+// WithInterceptor applies the configuration to the given interceptor.
 type Option interface {
 	WithInterceptor(*Interceptor)
 }

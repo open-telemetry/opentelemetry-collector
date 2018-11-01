@@ -40,6 +40,7 @@ import (
 	"github.com/census-instrumentation/opencensus-service/spanreceiver"
 )
 
+// ZipkinInterceptor type is used to handle spans received in the Zipkin format.
 type ZipkinInterceptor struct {
 	spanSink spanreceiver.SpanReceiver
 }
@@ -47,10 +48,12 @@ type ZipkinInterceptor struct {
 var _ interceptor.TraceInterceptor = (*ZipkinInterceptor)(nil)
 var _ http.Handler = (*ZipkinInterceptor)(nil)
 
+// New creates a new zipkinginterceptor.ZipkinInterceptor reference.
 func New(sr spanreceiver.SpanReceiver) (*ZipkinInterceptor, error) {
 	return &ZipkinInterceptor{spanSink: sr}, nil
 }
 
+// StartTraceInterception tells the interceptor to start its processing.
 func (zi *ZipkinInterceptor) StartTraceInterception(ctx context.Context, spanSink spanreceiver.SpanReceiver) error {
 	zi.spanSink = spanSink
 	return nil
@@ -97,6 +100,8 @@ func (zi *ZipkinInterceptor) parseAndConvertToTraceSpans(jsonBlob []byte) (reqs 
 	return reqs, nil
 }
 
+// StopTraceInterception tells the interceptor that should stop interception,
+// giving it a chance to perform any necessary clean-up.
 func (zi *ZipkinInterceptor) StopTraceInterception(ctx context.Context) error {
 	return nil
 }

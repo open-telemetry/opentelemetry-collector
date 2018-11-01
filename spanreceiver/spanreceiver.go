@@ -26,6 +26,8 @@ type SpanReceiver interface {
 	ReceiveSpans(ctx context.Context, node *commonpb.Node, spans ...*tracepb.Span) (*Acknowledgement, error)
 }
 
+// Acknowledgement struct reports the number of saved and dropped spans in a
+// ReceiveSpans call.
 type Acknowledgement struct {
 	SavedSpans   uint64
 	DroppedSpans uint64

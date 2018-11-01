@@ -45,6 +45,7 @@ var itemsDistribution = view.Distribution(
 	100, 150, 200, 250, 300, 450, 500, 600, 700, 800, 900, 1000, 1200, 1400, 1600, 1800, 2000,
 )
 
+// ViewReceivedSpansInterceptor defines the view for the received spans metric.
 var ViewReceivedSpansInterceptor = &view.View{
 	Name:        "oc.io/interceptor/received_spans",
 	Description: "The number of spans received by the interceptor",
@@ -54,6 +55,8 @@ var ViewReceivedSpansInterceptor = &view.View{
 }
 
 var mExportedSpans = stats.Int64("oc.io/interceptor/exported_spans", "Counts the number of exported spans", "1")
+
+// ViewExportedSpans defines the view for exported spans metric.
 var ViewExportedSpans = &view.View{
 	Name:        "oc.io/interceptor/exported_spans",
 	Description: "Tracks the number of exported spans",
@@ -62,6 +65,7 @@ var ViewExportedSpans = &view.View{
 	TagKeys:     []tag.Key{tagKeyExporterName},
 }
 
+// AllViews has the views for the metrics provided by the agent.
 var AllViews = []*view.View{
 	ViewReceivedSpansInterceptor,
 	ViewExportedSpans,

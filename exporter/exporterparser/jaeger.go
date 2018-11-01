@@ -35,7 +35,8 @@ type jaegerExporter struct {
 	exporter *jaeger.Exporter
 }
 
-// JaegerExportersFromYAML reads any configured jaeger exporters from a yaml config
+// JaegerExportersFromYAML parses the yaml bytes and returns an exporter.TraceExporter targeting
+// Jaeger according to the configuration settings.
 func JaegerExportersFromYAML(config []byte) (tes []exporter.TraceExporter, doneFns []func() error, err error) {
 	var cfg struct {
 		Exporters *struct {

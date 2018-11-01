@@ -23,9 +23,11 @@ import (
 // Please increment this value per release.
 const version = "0.0.1"
 
-// This variable will be replaced at link time after `make` has been run.
-var GitHash string = "<NOT PROPERLY GENERATED>"
+// GitHash variable will be replaced at link time after `make` has been run.
+var GitHash = "<NOT PROPERLY GENERATED>"
 
+// Info returns a formatted string, with linebreaks, intended to be displayed
+// on stdout.
 func Info() string {
 	buf := new(bytes.Buffer)
 	rows := [][2]string{

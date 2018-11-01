@@ -3,6 +3,7 @@ ALL_SRC := $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 GOTEST_OPT?=-v -race
 GOTEST=go test
 GOFMT=gofmt
+GOLINT=golint
 GOOS=$(shell go env GOOS)
 
 GIT_SHA=$(shell git rev-parse --short HEAD)
@@ -12,7 +13,7 @@ BUILD_INFO=-ldflags "-X $(BUILD_INFO_IMPORT_PATH).GitHash=$(GIT_SHA)"
 .DEFAULT_GOAL := default_goal
 
 .PHONY: default_goal
-default_goal: fmt test
+default_goal: fmt lint test
 
 .PHONY: test
 test:
@@ -26,6 +27,19 @@ fmt:
 		echo "$$FMTOUT\n"; \
 		exit 1; \
 	fi
+
+.PHONY: lint
+lint:
+	@LINTOUT=`$(GOLINT) ./... 2>&1`; \
+	if [ "$$LINTOUT" ]; then \
+		echo "$(GOLINT) FAILED => clean the following lint errors:\n"; \
+		echo "$$LINTOUT\n"; \
+		exit 1; \
+	fi
+
+.PHONY: install-tools
+install-tools:
+	go get -u golang.org/x/lint/golint
 
 .PHONY: agent
 agent:

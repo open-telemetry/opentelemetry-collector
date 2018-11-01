@@ -33,6 +33,7 @@ import (
 	"github.com/census-instrumentation/opencensus-service/exporter"
 )
 
+// ZipkinConfig holds the configuration of a Zipkin exporter.
 type ZipkinConfig struct {
 	ServiceName      string         `yaml:"service_name,omitempty"`
 	Endpoint         string         `yaml:"endpoint,omitempty"`
@@ -56,11 +57,13 @@ type zipkinExporter struct {
 	reporter    zipkinreporter.Reporter
 }
 
+// Default values for Zipkin endpoint.
 const (
 	DefaultZipkinEndpointHostPort = "localhost:9411"
 	DefaultZipkinEndpointURL      = "http://" + DefaultZipkinEndpointHostPort + "/api/v2/spans"
 )
 
+// EndpointURL returns the endpoint URL of the Zipkin configuration.
 func (zc *ZipkinConfig) EndpointURL() string {
 	// If no endpoint was set, use the default Zipkin reporter URI.
 	endpoint := DefaultZipkinEndpointURL
@@ -70,6 +73,8 @@ func (zc *ZipkinConfig) EndpointURL() string {
 	return endpoint
 }
 
+// ZipkinExportersFromYAML parses the yaml bytes and returns an exporter.TraceExporter targeting
+// Zipkin according to the configuration settings.
 func ZipkinExportersFromYAML(config []byte) (tes []exporter.TraceExporter, doneFns []func() error, err error) {
 	var cfg struct {
 		Exporters *struct {

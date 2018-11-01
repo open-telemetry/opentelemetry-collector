@@ -29,11 +29,12 @@ import (
 	"github.com/census-instrumentation/opencensus-service/spanreceiver"
 )
 
-// New will create a handle that runs an OCInterceptor at the provided address
+// NewTraceInterceptor will create a handle that runs an OCInterceptor at the provided port.
 func NewTraceInterceptor(port int, opts ...Option) (interceptor.TraceInterceptor, error) {
 	return &ocInterceptorHandler{srvPort: port, interceptorOptions: opts}, nil
 }
 
+// NewTraceInterceptorOnDefaultPort will create a handle that runs an OCInterceptor at the default port.
 func NewTraceInterceptorOnDefaultPort(opts ...Option) (interceptor.TraceInterceptor, error) {
 	return &ocInterceptorHandler{srvPort: defaultOCInterceptorPort, interceptorOptions: opts}, nil
 }
@@ -57,7 +58,7 @@ var errAlreadyStarted = errors.New("already started")
 
 // StartTraceInterception starts a gRPC server with an OpenCensus interceptor running
 func (ocih *ocInterceptorHandler) StartTraceInterception(ctx context.Context, sr spanreceiver.SpanReceiver) error {
-	var err error = errAlreadyStarted
+	var err = errAlreadyStarted
 	ocih.startOnce.Do(func() {
 		err = ocih.startInternal(ctx, sr)
 	})
@@ -102,7 +103,7 @@ func (ocih *ocInterceptorHandler) startInternal(ctx context.Context, sr spanrece
 var errAlreadyStopped = errors.New("already stopped")
 
 func (ocih *ocInterceptorHandler) StopTraceInterception(ctx context.Context) error {
-	var err error = errAlreadyStopped
+	var err = errAlreadyStopped
 	ocih.stopOnce.Do(func() {
 		ocih.mu.Lock()
 		defer ocih.mu.Unlock()

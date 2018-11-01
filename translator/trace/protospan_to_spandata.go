@@ -12,9 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/*
-Package trace defines translators from Trace proto spans to OpenCensus Go spanData
-*/
+// Package tracetranslator defines translators from Trace proto spans to OpenCensus Go spanData.
 package tracetranslator
 
 import (
@@ -31,6 +29,7 @@ import (
 
 var errNilSpan = errors.New("expected a non-nil span")
 
+// ProtoSpanToOCSpanData transforms a protobuf span into the equivalent trace.SpanData one.
 func ProtoSpanToOCSpanData(span *tracepb.Span) (*trace.SpanData, error) {
 	if span == nil {
 		return nil, errNilSpan
@@ -244,7 +243,7 @@ func protoSpanAttributesToOCAttributes(sa *tracepb.Span_Attributes) map[string]i
 
 	amap := make(map[string]interface{})
 	for pkey, pattr := range sa.AttributeMap {
-		var value interface{} = ""
+		var value interface{}
 
 		if pattr != nil && pattr.Value != nil {
 			switch typ := pattr.Value.(type) {

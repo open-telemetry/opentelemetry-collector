@@ -214,7 +214,7 @@ func exportersFromYAMLConfig(config []byte) (traceExporters []exporter.TraceExpo
 		for _, te := range tes {
 			if te != nil {
 				traceExporters = append(traceExporters, te)
-				nonNilExporters += 1
+				nonNilExporters++
 			}
 		}
 

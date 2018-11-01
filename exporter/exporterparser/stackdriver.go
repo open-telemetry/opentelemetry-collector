@@ -36,6 +36,8 @@ type stackdriverExporter struct {
 
 var _ exporter.TraceExporter = (*stackdriverExporter)(nil)
 
+// StackdriverTraceExportersFromYAML parses the yaml bytes and returns an exporter.TraceExporter targeting
+// Stackdriver according to the configuration settings.
 func StackdriverTraceExportersFromYAML(config []byte) (tes []exporter.TraceExporter, doneFns []func() error, err error) {
 	var cfg struct {
 		Exporters *struct {

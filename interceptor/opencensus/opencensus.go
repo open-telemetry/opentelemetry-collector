@@ -30,12 +30,14 @@ import (
 	"github.com/census-instrumentation/opencensus-service/spanreceiver"
 )
 
+// Interceptor is the type used to handle spans from OpenCensus exporters.
 type Interceptor struct {
 	spanSink         spanreceiver.SpanReceiver
 	spanBufferPeriod time.Duration
 	spanBufferCount  int
 }
 
+// New creates a new opencensus.Interceptor reference.
 func New(sr spanreceiver.SpanReceiver, opts ...Option) (*Interceptor, error) {
 	if sr == nil {
 		return nil, errors.New("needs a non-nil spanReceiver")
@@ -51,6 +53,7 @@ var _ agenttracepb.TraceServiceServer = (*Interceptor)(nil)
 
 var errUnimplemented = errors.New("unimplemented")
 
+// Config handles configuration messages.
 func (oci *Interceptor) Config(tcs agenttracepb.TraceService_ConfigServer) error {
 	// TODO: Implement when we define the config receiver/sender.
 	return errUnimplemented
