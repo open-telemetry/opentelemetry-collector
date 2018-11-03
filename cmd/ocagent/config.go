@@ -141,7 +141,7 @@ func (c *config) checkLogicalConflicts(blob []byte) error {
 		return err
 	}
 
-	if cfg.Exporters == nil || cfg.Exporters.Zipkin == nil {
+	if cfg.Exporters == nil || cfg.Exporters.Zipkin == nil || !c.zipkinInterceptorEnabled() {
 		return nil
 	}
 
