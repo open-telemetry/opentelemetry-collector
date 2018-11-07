@@ -24,26 +24,26 @@ import (
 	"google.golang.org/grpc"
 
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
-	"github.com/census-instrumentation/opencensus-service/interceptor"
 	"github.com/census-instrumentation/opencensus-service/internal"
+	"github.com/census-instrumentation/opencensus-service/receiver"
 	"github.com/census-instrumentation/opencensus-service/spanreceiver"
 )
 
-// NewTraceInterceptor will create a handle that runs an OCInterceptor at the provided port.
-func NewTraceInterceptor(port int, opts ...Option) (interceptor.TraceInterceptor, error) {
-	return &ocInterceptorHandler{srvPort: port, interceptorOptions: opts}, nil
+// NewTraceReceiver will create a handle that runs an OCReceiver at the provided port.
+func NewTraceReceiver(port int, opts ...Option) (receiver.TraceReceiver, error) {
+	return &ocReceiverHandler{srvPort: port, receiverOptions: opts}, nil
 }
 
-// NewTraceInterceptorOnDefaultPort will create a handle that runs an OCInterceptor at the default port.
-func NewTraceInterceptorOnDefaultPort(opts ...Option) (interceptor.TraceInterceptor, error) {
-	return &ocInterceptorHandler{srvPort: defaultOCInterceptorPort, interceptorOptions: opts}, nil
+// NewTraceReceiverOnDefaultPort will create a handle that runs an OCReceiver at the default port.
+func NewTraceReceiverOnDefaultPort(opts ...Option) (receiver.TraceReceiver, error) {
+	return &ocReceiverHandler{srvPort: defaultOCReceiverPort, receiverOptions: opts}, nil
 }
 
-type ocInterceptorHandler struct {
+type ocReceiverHandler struct {
 	mu      sync.RWMutex
 	srvPort int
 
-	interceptorOptions []Option
+	receiverOptions []Option
 
 	ln         net.Listener
 	grpcServer *grpc.Server
@@ -52,12 +52,12 @@ type ocInterceptorHandler struct {
 	startOnce sync.Once
 }
 
-var _ interceptor.TraceInterceptor = (*ocInterceptorHandler)(nil)
+var _ receiver.TraceReceiver = (*ocReceiverHandler)(nil)
 
 var errAlreadyStarted = errors.New("already started")
 
-// StartTraceInterception starts a gRPC server with an OpenCensus interceptor running
-func (ocih *ocInterceptorHandler) StartTraceInterception(ctx context.Context, sr spanreceiver.SpanReceiver) error {
+// StartTraceReception starts a gRPC server with an OpenCensus receiver running
+func (ocih *ocReceiverHandler) StartTraceReception(ctx context.Context, sr spanreceiver.SpanReceiver) error {
 	var err = errAlreadyStarted
 	ocih.startOnce.Do(func() {
 		err = ocih.startInternal(ctx, sr)
@@ -66,20 +66,20 @@ func (ocih *ocInterceptorHandler) StartTraceInterception(ctx context.Context, sr
 	return err
 }
 
-const defaultOCInterceptorPort = 55678
+const defaultOCReceiverPort = 55678
 
-func (ocih *ocInterceptorHandler) startInternal(ctx context.Context, sr spanreceiver.SpanReceiver) error {
+func (ocih *ocReceiverHandler) startInternal(ctx context.Context, sr spanreceiver.SpanReceiver) error {
 	ocih.mu.Lock()
 	defer ocih.mu.Unlock()
 
-	oci, err := New(sr, ocih.interceptorOptions...)
+	oci, err := New(sr, ocih.receiverOptions...)
 	if err != nil {
 		return err
 	}
 
 	port := ocih.srvPort
 	if port <= 0 {
-		port = defaultOCInterceptorPort
+		port = defaultOCReceiverPort
 	}
 
 	addr := fmt.Sprintf("localhost:%d", port)
@@ -102,7 +102,7 @@ func (ocih *ocInterceptorHandler) startInternal(ctx context.Context, sr spanrece
 
 var errAlreadyStopped = errors.New("already stopped")
 
-func (ocih *ocInterceptorHandler) StopTraceInterception(ctx context.Context) error {
+func (ocih *ocReceiverHandler) StopTraceReception(ctx context.Context) error {
 	var err = errAlreadyStopped
 	ocih.stopOnce.Do(func() {
 		ocih.mu.Lock()

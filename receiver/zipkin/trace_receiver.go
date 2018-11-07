@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package zipkininterceptor
+package zipkinreceiver
 
 import (
 	"compress/gzip"
@@ -36,31 +36,31 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/census-instrumentation/opencensus-service/interceptor"
 	"github.com/census-instrumentation/opencensus-service/internal"
+	"github.com/census-instrumentation/opencensus-service/receiver"
 	"github.com/census-instrumentation/opencensus-service/spanreceiver"
 )
 
-// ZipkinInterceptor type is used to handle spans received in the Zipkin format.
-type ZipkinInterceptor struct {
+// ZipkinReceiver type is used to handle spans received in the Zipkin format.
+type ZipkinReceiver struct {
 	spanSink spanreceiver.SpanReceiver
 }
 
-var _ interceptor.TraceInterceptor = (*ZipkinInterceptor)(nil)
-var _ http.Handler = (*ZipkinInterceptor)(nil)
+var _ receiver.TraceReceiver = (*ZipkinReceiver)(nil)
+var _ http.Handler = (*ZipkinReceiver)(nil)
 
-// New creates a new zipkinginterceptor.ZipkinInterceptor reference.
-func New(sr spanreceiver.SpanReceiver) (*ZipkinInterceptor, error) {
-	return &ZipkinInterceptor{spanSink: sr}, nil
+// New creates a new zipkingreceiver.ZipkinReceiver reference.
+func New(sr spanreceiver.SpanReceiver) (*ZipkinReceiver, error) {
+	return &ZipkinReceiver{spanSink: sr}, nil
 }
 
-// StartTraceInterception tells the interceptor to start its processing.
-func (zi *ZipkinInterceptor) StartTraceInterception(ctx context.Context, spanSink spanreceiver.SpanReceiver) error {
+// StartTraceReception tells the receiver to start its processing.
+func (zi *ZipkinReceiver) StartTraceReception(ctx context.Context, spanSink spanreceiver.SpanReceiver) error {
 	zi.spanSink = spanSink
 	return nil
 }
 
-func (zi *ZipkinInterceptor) parseAndConvertToTraceSpans(blob []byte, hdr http.Header) (reqs []*agenttracepb.ExportTraceServiceRequest, err error) {
+func (zi *ZipkinReceiver) parseAndConvertToTraceSpans(blob []byte, hdr http.Header) (reqs []*agenttracepb.ExportTraceServiceRequest, err error) {
 	var zipkinSpans []*zipkinmodel.SpanModel
 
 	// This flag's reference is from:
@@ -116,16 +116,16 @@ func (zi *ZipkinInterceptor) parseAndConvertToTraceSpans(blob []byte, hdr http.H
 	return reqs, nil
 }
 
-func (zi *ZipkinInterceptor) deserializeFromJSON(jsonBlob []byte, debugWasSet bool) (zs []*zipkinmodel.SpanModel, err error) {
+func (zi *ZipkinReceiver) deserializeFromJSON(jsonBlob []byte, debugWasSet bool) (zs []*zipkinmodel.SpanModel, err error) {
 	if err = json.Unmarshal(jsonBlob, &zs); err != nil {
 		return nil, err
 	}
 	return zs, nil
 }
 
-// StopTraceInterception tells the interceptor that should stop interception,
+// StopTraceReception tells the receiver that should stop reception,
 // giving it a chance to perform any necessary clean-up.
-func (zi *ZipkinInterceptor) StopTraceInterception(ctx context.Context) error {
+func (zi *ZipkinReceiver) StopTraceReception(ctx context.Context) error {
 	return nil
 }
 
@@ -165,11 +165,11 @@ func zlibUncompressedbody(r io.Reader) io.Reader {
 	return zr
 }
 
-// The ZipkinInterceptor receives spans from endpoint /api/v2 as JSON,
+// The ZipkinReceiver receives spans from endpoint /api/v2 as JSON,
 // unmarshals them and sends them along to the spanreceiver.
-func (zi *ZipkinInterceptor) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (zi *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Trace this method
-	ctx, span := trace.StartSpan(context.Background(), "ZipkinInterceptor.Export")
+	ctx, span := trace.StartSpan(context.Background(), "ZipkinReceiver.Export")
 	defer span.End()
 
 	// If the starting RPC has a parent span, then add it as a parent link.

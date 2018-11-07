@@ -24,7 +24,7 @@ import (
 
 func init() {
 	rootCmd.AddCommand(versionCmd)
-	rootCmd.PersistentFlags().IntVarP(&ocInterceptorPort, "oci-port", "p", 55678, "The port on which the OpenCensus interceptor is run")
+	rootCmd.PersistentFlags().IntVarP(&ocReceiverPort, "oci-port", "p", 55678, "The port on which the OpenCensus receiver is run")
 	rootCmd.PersistentFlags().StringVarP(&configYAMLFile, "config", "c", "config.yaml", "The YAML file with the configurations for the agent and various exporters")
 }
 

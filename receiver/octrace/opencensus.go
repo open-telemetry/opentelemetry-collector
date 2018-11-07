@@ -30,31 +30,31 @@ import (
 	"github.com/census-instrumentation/opencensus-service/spanreceiver"
 )
 
-// Interceptor is the type used to handle spans from OpenCensus exporters.
-type Interceptor struct {
+// Receiver is the type used to handle spans from OpenCensus exporters.
+type Receiver struct {
 	spanSink         spanreceiver.SpanReceiver
 	spanBufferPeriod time.Duration
 	spanBufferCount  int
 }
 
-// New creates a new opencensus.Interceptor reference.
-func New(sr spanreceiver.SpanReceiver, opts ...Option) (*Interceptor, error) {
+// New creates a new opencensus.Receiver reference.
+func New(sr spanreceiver.SpanReceiver, opts ...Option) (*Receiver, error) {
 	if sr == nil {
 		return nil, errors.New("needs a non-nil spanReceiver")
 	}
-	oci := &Interceptor{spanSink: sr}
+	oci := &Receiver{spanSink: sr}
 	for _, opt := range opts {
-		opt.WithInterceptor(oci)
+		opt.WithReceiver(oci)
 	}
 	return oci, nil
 }
 
-var _ agenttracepb.TraceServiceServer = (*Interceptor)(nil)
+var _ agenttracepb.TraceServiceServer = (*Receiver)(nil)
 
 var errUnimplemented = errors.New("unimplemented")
 
 // Config handles configuration messages.
-func (oci *Interceptor) Config(tcs agenttracepb.TraceService_ConfigServer) error {
+func (oci *Receiver) Config(tcs agenttracepb.TraceService_ConfigServer) error {
 	// TODO: Implement when we define the config receiver/sender.
 	return errUnimplemented
 }
@@ -66,16 +66,16 @@ type spansAndNode struct {
 
 var errTraceExportProtocolViolation = errors.New("protocol violation: Export's first message must have a Node")
 
-const interceptorName = "opencensus"
+const receiverName = "opencensus"
 
 // Export is the gRPC method that receives streamed traces from
 // OpenCensus-traceproto compatible libraries/applications.
-func (oci *Interceptor) Export(tes agenttracepb.TraceService_ExportServer) error {
+func (oci *Receiver) Export(tes agenttracepb.TraceService_ExportServer) error {
 	// The bundler will receive batches of spans i.e. []*tracepb.Span
-	// We need to ensure that it propagates the interceptor name as a tag
-	ctxWithInterceptorName := internal.ContextWithInterceptorName(tes.Context(), interceptorName)
+	// We need to ensure that it propagates the receiver name as a tag
+	ctxWithReceiverName := internal.ContextWithReceiverName(tes.Context(), receiverName)
 	traceBundler := bundler.NewBundler((*spansAndNode)(nil), func(payload interface{}) {
-		oci.batchSpanExporting(ctxWithInterceptorName, payload)
+		oci.batchSpanExporting(ctxWithReceiverName, payload)
 	})
 
 	spanBufferPeriod := oci.spanBufferPeriod
@@ -102,7 +102,7 @@ func (oci *Interceptor) Export(tes agenttracepb.TraceService_ExportServer) error
 		return errTraceExportProtocolViolation
 	}
 
-	spansMetricsFn := internal.NewReceivedSpansRecorderStreaming(tes.Context(), interceptorName)
+	spansMetricsFn := internal.NewReceivedSpansRecorderStreaming(tes.Context(), receiverName)
 
 	processReceivedSpans := func(ni *commonpb.Node, spans []*tracepb.Span) {
 		// Firstly, we'll add them to the bundler.
@@ -132,14 +132,14 @@ func (oci *Interceptor) Export(tes agenttracepb.TraceService_ExportServer) error
 	}
 }
 
-func (oci *Interceptor) batchSpanExporting(longLivedRPCCtx context.Context, payload interface{}) {
+func (oci *Receiver) batchSpanExporting(longLivedRPCCtx context.Context, payload interface{}) {
 	spnL := payload.([]*spansAndNode)
 	if len(spnL) == 0 {
 		return
 	}
 
 	// Trace this method
-	ctx, span := trace.StartSpan(context.Background(), "OpenCensusInterceptor.Export")
+	ctx, span := trace.StartSpan(context.Background(), "OpenCensusReceiver.Export")
 	defer span.End()
 
 	// TODO: (@odeke-em) investigate if it is necessary

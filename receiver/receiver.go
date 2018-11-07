@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package interceptor
+package receiver
 
 import (
 	"context"
@@ -21,31 +21,31 @@ import (
 	"github.com/census-instrumentation/opencensus-service/spanreceiver"
 )
 
-// A TraceInterceptor is an "arbitrary data"-to-"trace proto span" converter.
+// A TraceReceiver is an "arbitrary data"-to-"trace proto span" converter.
 // Its purpose is to translate data from the wild into trace proto accompanied
 // by a *commonpb.Node to uniquely identify where that data comes from.
-// TraceInterceptor feeds a spanreceiver.SpanReceiver with data.
+// TraceReceiver feeds a spanreceiver.SpanReceiver with data.
 //
 // For example it could be Zipkin data source which translates
 // Zipkin spans into *tracepb.Span-s.
 //
-// StartTraceInterception tells the interceptor to start its processing.
+// StartTraceReception tells the receiver to start its processing.
 //
-// StopTraceInterception tells the interceptor that should stop interception,
+// StopTraceReception tells the receiver that should stop reception,
 // giving it a chance to perform any necessary clean-up.
-type TraceInterceptor interface {
-	StartTraceInterception(ctx context.Context, destination spanreceiver.SpanReceiver) error
-	StopTraceInterception(ctx context.Context) error
+type TraceReceiver interface {
+	StartTraceReception(ctx context.Context, destination spanreceiver.SpanReceiver) error
+	StopTraceReception(ctx context.Context) error
 }
 
-// A MetricsInterceptor is an "arbitrary data"-to-"metric proto" converter.
+// A MetricsReceiver is an "arbitrary data"-to-"metric proto" converter.
 // Its purpose is to translate data from the wild into metric proto accompanied
 // by a *commonpb.Node to uniquely identify where that data comes from.
-// MetricsInterceptor feeds a metricsreceiver.MetricsReceiver with data.
+// MetricsReceiver feeds a metricsreceiver.MetricsReceiver with data.
 //
 // For example it could be Prometheus data source which translates
 // Prometheus metrics into *metricpb.Metric-s.
-type MetricsInterceptor interface {
-	StartMetricsInterception(ctx context.Context, destination metricsreceiver.MetricsReceiver) error
-	StopMetricsInterception(ctx context.Context) error
+type MetricsReceiver interface {
+	StartMetricsReception(ctx context.Context, destination metricsreceiver.MetricsReceiver) error
+	StopMetricsReception(ctx context.Context) error
 }

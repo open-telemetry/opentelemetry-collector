@@ -30,7 +30,7 @@ import (
 
 // We expect the configuration.yaml file to look like this:
 //
-//  interceptors:
+//  receivers:
 //      opencensus:
 //          port: <port>
 //      zipkin:
@@ -47,22 +47,22 @@ import (
 //      port: 55679
 
 const (
-	defaultOCInterceptorAddress = ":55678"
-	defaultZPagesPort           = 55679
+	defaultOCReceiverAddress = ":55678"
+	defaultZPagesPort        = 55679
 )
 
 type config struct {
-	Interceptors *interceptors `yaml:"interceptors"`
-	ZPages       *zPagesConfig `yaml:"zpages"`
+	Receivers *receivers    `yaml:"receivers"`
+	ZPages    *zPagesConfig `yaml:"zpages"`
 }
 
-type interceptors struct {
-	OpenCensus *interceptorConfig `yaml:"opencensus"`
-	Zipkin     *interceptorConfig `yaml:"zipkin"`
+type receivers struct {
+	OpenCensus *receiverConfig `yaml:"opencensus"`
+	Zipkin     *receiverConfig `yaml:"zipkin"`
 }
 
-type interceptorConfig struct {
-	// The address to which the OpenCensus interceptor will be bound and run on.
+type receiverConfig struct {
+	// The address to which the OpenCensus receiver will be bound and run on.
 	Address string `yaml:"address"`
 }
 
@@ -71,13 +71,13 @@ type zPagesConfig struct {
 	Port     int  `yaml:"port"`
 }
 
-func (c *config) ocInterceptorAddress() string {
-	if c == nil || c.Interceptors == nil {
-		return defaultOCInterceptorAddress
+func (c *config) ocReceiverAddress() string {
+	if c == nil || c.Receivers == nil {
+		return defaultOCReceiverAddress
 	}
-	inCfg := c.Interceptors
+	inCfg := c.Receivers
 	if inCfg.OpenCensus == nil || inCfg.OpenCensus.Address == "" {
-		return defaultOCInterceptorAddress
+		return defaultOCReceiverAddress
 	}
 	return inCfg.OpenCensus.Address
 }
@@ -100,18 +100,18 @@ func (c *config) zPagesPort() (int, bool) {
 	return port, true
 }
 
-func (c *config) zipkinInterceptorEnabled() bool {
+func (c *config) zipkinReceiverEnabled() bool {
 	if c == nil {
 		return false
 	}
-	return c.Interceptors != nil && c.Interceptors.Zipkin != nil
+	return c.Receivers != nil && c.Receivers.Zipkin != nil
 }
 
-func (c *config) zipkinInterceptorAddress() string {
-	if c == nil || c.Interceptors == nil {
+func (c *config) zipkinReceiverAddress() string {
+	if c == nil || c.Receivers == nil {
 		return exporterparser.DefaultZipkinEndpointHostPort
 	}
-	inCfg := c.Interceptors
+	inCfg := c.Receivers
 	if inCfg.Zipkin == nil || inCfg.Zipkin.Address == "" {
 		return exporterparser.DefaultZipkinEndpointHostPort
 	}
@@ -127,9 +127,9 @@ func parseOCAgentConfig(yamlBlob []byte) (*config, error) {
 }
 
 // The goal of this function is to catch logical errors such as
-// if the Zipkin interceptor port conflicts with that of the exporter
+// if the Zipkin receiver port conflicts with that of the exporter
 // lest we'll have a self DOS because spans will be exported "out" from
-// the exporter, yet be received from the interceptor, then sent back out
+// the exporter, yet be received from the receiver, then sent back out
 // and back in a never ending loop.
 func (c *config) checkLogicalConflicts(blob []byte) error {
 	var cfg struct {
@@ -141,7 +141,7 @@ func (c *config) checkLogicalConflicts(blob []byte) error {
 		return err
 	}
 
-	if cfg.Exporters == nil || cfg.Exporters.Zipkin == nil || !c.zipkinInterceptorEnabled() {
+	if cfg.Exporters == nil || cfg.Exporters.Zipkin == nil || !c.zipkinReceiverEnabled() {
 		return nil
 	}
 
@@ -153,26 +153,26 @@ func (c *config) checkLogicalConflicts(blob []byte) error {
 		return fmt.Errorf("parsing ZipkinExporter address %q got error: %v", zExporterAddr, err)
 	}
 
-	zInterceptorHostPort := c.zipkinInterceptorAddress()
+	zReceiverHostPort := c.zipkinReceiverAddress()
 
 	zExporterHostPort := zExporterURL.Host
-	if zInterceptorHostPort == zExporterHostPort {
-		return fmt.Errorf("ZipkinExporter address (%q) is the same as the interceptor address (%q)",
-			zExporterHostPort, zInterceptorHostPort)
+	if zReceiverHostPort == zExporterHostPort {
+		return fmt.Errorf("ZipkinExporter address (%q) is the same as the receiver address (%q)",
+			zExporterHostPort, zReceiverHostPort)
 	}
 	zExpHost, zExpPort, _ := net.SplitHostPort(zExporterHostPort)
-	zInterceptorHost, zInterceptorPort, _ := net.SplitHostPort(zExporterHostPort)
-	if eqHosts(zExpHost, zInterceptorHost) && zExpPort == zInterceptorPort {
-		return fmt.Errorf("ZipkinExporter address (%q) aka (%s on port %s)\nis the same as the interceptor address (%q) aka (%s on port %s)",
-			zExporterHostPort, zExpHost, zExpPort, zInterceptorHostPort, zInterceptorHost, zInterceptorPort)
+	zReceiverHost, zReceiverPort, _ := net.SplitHostPort(zExporterHostPort)
+	if eqHosts(zExpHost, zReceiverHost) && zExpPort == zReceiverPort {
+		return fmt.Errorf("ZipkinExporter address (%q) aka (%s on port %s)\nis the same as the receiver address (%q) aka (%s on port %s)",
+			zExporterHostPort, zExpHost, zExpPort, zReceiverHostPort, zReceiverHost, zReceiverPort)
 	}
 
 	// Otherwise, now let's resolve the IPs and ensure that they aren't the same
 	zExpIPAddr, _ := net.ResolveIPAddr("ip", zExpHost)
-	zInterceptorIPAddr, _ := net.ResolveIPAddr("ip", zInterceptorHost)
-	if zExpIPAddr != nil && zInterceptorIPAddr != nil && reflect.DeepEqual(zExpIPAddr, zInterceptorIPAddr) {
-		return fmt.Errorf("ZipkinExporter address (%q) aka (%+v)\nis the same as the\ninterceptor address (%q) aka (%+v)",
-			zExporterHostPort, zExpIPAddr, zInterceptorHostPort, zInterceptorIPAddr)
+	zReceiverIPAddr, _ := net.ResolveIPAddr("ip", zReceiverHost)
+	if zExpIPAddr != nil && zReceiverIPAddr != nil && reflect.DeepEqual(zExpIPAddr, zReceiverIPAddr) {
+		return fmt.Errorf("ZipkinExporter address (%q) aka (%+v)\nis the same as the\nreceiver address (%q) aka (%+v)",
+			zExporterHostPort, zExpIPAddr, zReceiverHostPort, zReceiverIPAddr)
 	}
 	return nil
 }

@@ -28,9 +28,9 @@ import (
 
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/exporter"
-	"github.com/census-instrumentation/opencensus-service/interceptor/octrace"
-	"github.com/census-instrumentation/opencensus-service/interceptor/zipkin"
 	"github.com/census-instrumentation/opencensus-service/internal"
+	"github.com/census-instrumentation/opencensus-service/receiver/octrace"
+	"github.com/census-instrumentation/opencensus-service/receiver/zipkin"
 	"github.com/census-instrumentation/opencensus-service/spanreceiver"
 	"go.opencensus.io/plugin/ocgrpc"
 	"go.opencensus.io/stats/view"
@@ -38,7 +38,7 @@ import (
 )
 
 var configYAMLFile string
-var ocInterceptorPort int
+var ocReceiverPort int
 
 const zipkinRoute = "/api/v2/spans"
 
@@ -59,23 +59,23 @@ func runOCAgent() {
 	}
 
 	// Ensure that we check and catch any logical errors with the
-	// configuration e.g. if an interceptor shares the same address
+	// configuration e.g. if an receiver shares the same address
 	// as an exporter which would cause a self DOS and waste resources.
 	if err := agentConfig.checkLogicalConflicts(yamlBlob); err != nil {
 		log.Fatalf("Configuration logical error: %v", err)
 	}
 
-	ocInterceptorAddr := agentConfig.ocInterceptorAddress()
+	ocReceiverAddr := agentConfig.ocReceiverAddress()
 
 	traceExporters, closeFns := exportersFromYAMLConfig(yamlBlob)
 	commonSpanReceiver := exporter.MultiTraceExporters(traceExporters...)
 
-	// Add other interceptors here as they are implemented
-	ocInterceptorDoneFn, err := runOCInterceptor(ocInterceptorAddr, commonSpanReceiver)
+	// Add other receivers here as they are implemented
+	ocReceiverDoneFn, err := runOCReceiver(ocReceiverAddr, commonSpanReceiver)
 	if err != nil {
 		log.Fatal(err)
 	}
-	closeFns = append(closeFns, ocInterceptorDoneFn)
+	closeFns = append(closeFns, ocReceiverDoneFn)
 
 	// If zPages are enabled, run them
 	zPagesPort, zPagesEnabled := agentConfig.zPagesPort()
@@ -84,14 +84,14 @@ func runOCAgent() {
 		closeFns = append(closeFns, zCloseFn)
 	}
 
-	// If the Zipkin interceptor is enabled, then run it
-	if agentConfig.zipkinInterceptorEnabled() {
-		zipkinInterceptorAddr := agentConfig.zipkinInterceptorAddress()
-		zipkinInterceptorDoneFn, err := runZipkinInterceptor(zipkinInterceptorAddr, commonSpanReceiver)
+	// If the Zipkin receiver is enabled, then run it
+	if agentConfig.zipkinReceiverEnabled() {
+		zipkinReceiverAddr := agentConfig.zipkinReceiverAddress()
+		zipkinReceiverDoneFn, err := runZipkinReceiver(zipkinReceiverAddr, commonSpanReceiver)
 		if err != nil {
 			log.Fatal(err)
 		}
-		closeFns = append(closeFns, zipkinInterceptorDoneFn)
+		closeFns = append(closeFns, zipkinReceiverDoneFn)
 	}
 
 	// Always cleanup finally
@@ -132,10 +132,10 @@ func runZPages(port int) func() error {
 	return srv.Close
 }
 
-func runOCInterceptor(addr string, sr spanreceiver.SpanReceiver) (doneFn func() error, err error) {
+func runOCReceiver(addr string, sr spanreceiver.SpanReceiver) (doneFn func() error, err error) {
 	oci, err := octrace.New(sr, octrace.WithSpanBufferPeriod(800*time.Millisecond))
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create the OpenCensus interceptor: %v", err)
+		return nil, fmt.Errorf("Failed to create the OpenCensus receiver: %v", err)
 	}
 
 	ln, err := net.Listen("tcp", addr)
@@ -152,9 +152,9 @@ func runOCInterceptor(addr string, sr spanreceiver.SpanReceiver) (doneFn func() 
 
 	agenttracepb.RegisterTraceServiceServer(srv, oci)
 	go func() {
-		log.Printf("Running OpenCensus interceptor as a gRPC service at %q", addr)
+		log.Printf("Running OpenCensus receiver as a gRPC service at %q", addr)
 		if err := srv.Serve(ln); err != nil {
-			log.Fatalf("Failed to run OpenCensus interceptor: %v", err)
+			log.Fatalf("Failed to run OpenCensus receiver: %v", err)
 		}
 	}()
 	doneFn = func() error {
@@ -164,23 +164,23 @@ func runOCInterceptor(addr string, sr spanreceiver.SpanReceiver) (doneFn func() 
 	return doneFn, nil
 }
 
-func runZipkinInterceptor(addr string, sr spanreceiver.SpanReceiver) (doneFn func() error, err error) {
-	zi, err := zipkininterceptor.New(sr)
+func runZipkinReceiver(addr string, sr spanreceiver.SpanReceiver) (doneFn func() error, err error) {
+	zi, err := zipkinreceiver.New(sr)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create the Zipkin interceptor: %v", err)
+		return nil, fmt.Errorf("Failed to create the Zipkin receiver: %v", err)
 	}
 
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
-		return nil, fmt.Errorf("Cannot bind Zipkin interceptor to address %q: %v", addr, err)
+		return nil, fmt.Errorf("Cannot bind Zipkin receiver to address %q: %v", addr, err)
 	}
 	mux := http.NewServeMux()
 	mux.Handle(zipkinRoute, zi)
 	go func() {
 		fullAddr := addr + zipkinRoute
-		log.Printf("Running the Zipkin interceptor at %q", fullAddr)
+		log.Printf("Running the Zipkin receiver at %q", fullAddr)
 		if err := http.Serve(ln, mux); err != nil {
-			log.Fatalf("Failed to serve the Zipkin interceptor: %v", err)
+			log.Fatalf("Failed to serve the Zipkin receiver: %v", err)
 		}
 	}()
 

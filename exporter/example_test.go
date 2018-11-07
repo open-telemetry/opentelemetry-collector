@@ -32,7 +32,7 @@ import (
 
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/exporter"
-	"github.com/census-instrumentation/opencensus-service/interceptor/octrace"
+	"github.com/census-instrumentation/opencensus-service/receiver/octrace"
 )
 
 func Example_endToEndExporting() {
@@ -109,11 +109,11 @@ func runServer() (port uint16, closeFn func()) {
 	// After each of the exporters have been created, create the common spanreceiver.
 	commonSpanReceiver := exporter.OCExportersToTraceExporter(sde, je)
 
-	// Now run the OCInterceptor which will receive traces from the client applications
+	// Now run the octrace receiver which will receive traces from the client applications
 	// in the various languages instrumented with OpenCensus.
 	oci, err := octrace.New(commonSpanReceiver, octrace.WithSpanBufferPeriod(100*time.Millisecond))
 	if err != nil {
-		log.Fatalf("Failed to create the OpenCensus interceptor: %v", err)
+		log.Fatalf("Failed to create the OpenCensus receiver: %v", err)
 	}
 
 	port = 55679

@@ -16,11 +16,11 @@ package octrace
 
 import "time"
 
-// Option interface defines for configuration settings to be applied to interceptors.
+// Option interface defines for configuration settings to be applied to receivers.
 //
-// WithInterceptor applies the configuration to the given interceptor.
+// WithReceiver applies the configuration to the given receiver.
 type Option interface {
-	WithInterceptor(*Interceptor)
+	WithReceiver(*Receiver)
 }
 
 type spanBufferPeriod struct {
@@ -29,12 +29,12 @@ type spanBufferPeriod struct {
 
 var _ Option = (*spanBufferPeriod)(nil)
 
-func (sfd *spanBufferPeriod) WithInterceptor(oci *Interceptor) {
+func (sfd *spanBufferPeriod) WithReceiver(oci *Receiver) {
 	oci.spanBufferPeriod = sfd.period
 }
 
 // WithSpanBufferPeriod is an option that allows one to configure
-// the period that spans are buffered for before the Interceptor
+// the period that spans are buffered for before the Receiver
 // sends them to its SpanReceiver.
 func WithSpanBufferPeriod(period time.Duration) Option {
 	return &spanBufferPeriod{period: period}
@@ -44,12 +44,12 @@ type spanBufferCount int
 
 var _ Option = (*spanBufferCount)(nil)
 
-func (spc spanBufferCount) WithInterceptor(oci *Interceptor) {
+func (spc spanBufferCount) WithReceiver(oci *Receiver) {
 	oci.spanBufferCount = int(spc)
 }
 
 // WithSpanBufferCount is an option that allows one to configure
-// the number of spans that are buffered before the Interceptor
+// the number of spans that are buffered before the Receiver
 // send them to its SpanReceiver.
 func WithSpanBufferCount(count int) Option {
 	return spanBufferCount(count)

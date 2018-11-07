@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package zipkininterceptor
+package zipkinreceiver
 
 import (
 	"bytes"
@@ -45,7 +45,7 @@ func TestConvertSpansToTraceSpans_json(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to read sample JSON file: %v", err)
 	}
-	zi := new(ZipkinInterceptor)
+	zi := new(ZipkinReceiver)
 	reqs, err := zi.parseAndConvertToTraceSpans(blob, nil)
 	if err != nil {
 		t.Fatalf("Failed to parse convert Zipkin spans in JSON to Trace spans: %v", err)
@@ -86,11 +86,11 @@ func TestConvertSpansToTraceSpans_json(t *testing.T) {
 
 func TestConversionRoundtrip(t *testing.T) {
 	// The goal is to convert from:
-	// 1. Original Zipkin JSON as that's the format that Zipkin interceptors will receive
+	// 1. Original Zipkin JSON as that's the format that Zipkin receivers will receive
 	// 2. Into TraceProtoSpans
 	// 3. Into SpanData
 	// 4. Back into Zipkin JSON (in this case the Zipkin exporter has been configured)
-	interceptorInputJSON := []byte(`
+	receiverInputJSON := []byte(`
 [{
   "traceId": "4d1e00c0db9010db86154a4ba6e91385",
   "parentId": "86154a4ba6e91385",
@@ -159,11 +159,11 @@ func TestConversionRoundtrip(t *testing.T) {
 	sink := new(noopSink)
 	zi, err := New(sink)
 	if err != nil {
-		t.Fatalf("Failed to create the Zipkin interceptor: %v", err)
+		t.Fatalf("Failed to create the Zipkin receiver: %v", err)
 	}
-	ereqs, err := zi.parseAndConvertToTraceSpans(interceptorInputJSON, nil)
+	ereqs, err := zi.parseAndConvertToTraceSpans(receiverInputJSON, nil)
 	if err != nil {
-		t.Fatalf("Failed to parse and convert interceptor JSON: %v", err)
+		t.Fatalf("Failed to parse and convert receiver JSON: %v", err)
 	}
 
 	wantProtoRequests := []*agenttracepb.ExportTraceServiceRequest{

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package zipkininterceptor
+package zipkinreceiver
 
 import (
 	"net/http"
@@ -99,7 +99,7 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to protobuf serialize payload: %v", err)
 	}
-	zi := new(ZipkinInterceptor)
+	zi := new(ZipkinReceiver)
 	hdr := make(http.Header)
 	hdr.Set("Content-Type", "application/x-protobuf")
 

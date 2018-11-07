@@ -43,7 +43,7 @@ type ZipkinConfig struct {
 
 // zipkinExporter is a multiplexing exporter that spawns a new OpenCensus-Go Zipkin
 // exporter per unique node encountered. This is because serviceNames per node define
-// unique services, alongside their IPs. Also it is useful to intercept traffic from
+// unique services, alongside their IPs. Also it is useful to receive traffic from
 // Zipkin servers and then transform them back to the final form when creating an
 // OpenCensus spandata.
 type zipkinExporter struct {

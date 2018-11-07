@@ -9,7 +9,7 @@ OpenCensus Collector.
     - [Communication](#agent-communication)
     - [Protocol Workflow](#agent-protocol-workflow)
     - [Implementation details of Agent server](#agent-implementation-details-of-agent-server)
-        - [Interceptors](#agent-impl-interceptors)
+        - [Receivers](#agent-impl-receivers)
         - [Agent Core](#agent-impl-agent-core)
         - [Exporters](#agent-impl-exporters)
 - [OpenCensus Collector](#opencensus-collector)
@@ -46,7 +46,7 @@ able to send raw measurements and have Agent do the aggregation.
 
 For developers/maintainers of other libraries: Agent can also be extended to accept spans/stats/metrics from
 other tracing/monitoring libraries, such as Zipkin, Prometheus, etc. This is done by adding specific
-interceptors. See [Interceptors](#interceptors) for details.
+recevers. See [Receivers](#receivers) for details.
 
 To support Agent, Library should have “agent exporters”, similar to the existing exporters to
 other backends. There should be 3 separate agent exporters for tracing/stats/metrics
@@ -92,34 +92,34 @@ invocations.
 
 The Agent consists of three main parts:
 
-1. The interceptors of different instrumentation libraries, such as OpenCensus, Zipkin,
-Istio Mixer, Prometheus client, etc. Interceptors act as the “frontend” or “gateway” of
+1. The receivers of different instrumentation libraries, such as OpenCensus, Zipkin,
+Istio Mixer, Prometheus client, etc. Receivers act as the “frontend” or “gateway” of
 Agent. In addition, there MAY be one special receiver for receiving configuration updates
 from outside.
 2. The core Agent module. It acts as the “brain” or “dispatcher” of Agent.
 3. The exporters to different monitoring backends or collector services, such as
 Omnition Collector, Stackdriver Trace, Jaeger, Zipkin, etc.
 
-#### <a name="agent-impl-interceptors"></a>Interceptors
+#### <a name="agent-impl-receivers"></a>Receivers
 
-Each interceptor can be connected with multiple instrumentation libraries. The
-communication protocol between interceptors and libraries is the one we described in the
+Each receiver can be connected with multiple instrumentation libraries. The
+communication protocol between receivers and libraries is the one we described in the
 proto files (for example trace_service.proto). When a library opens the connection with the
-corresponding interceptor, the first message it sends must have the `Node` identifier. The
-interceptor will then cache the `Node` for each library, and `Node` is not required for
+corresponding receiver, the first message it sends must have the `Node` identifier. The
+receiver will then cache the `Node` for each library, and `Node` is not required for
 the subsequent messages from libraries.
 
 #### <a name="agent-impl-core"></a>Agent Core
 
 Most functionalities of Agent are in Agent Core. Agent Core's responsibilies include:
 
-1. Accept `SpanProto` from each interceptor. Note that the `SpanProto`s that are sent to
+1. Accept `SpanProto` from each receiver. Note that the `SpanProto`s that are sent to
 Agent Core must have `Node` associated, so that Agent Core can differentiate and group
 `SpanProto`s by each `Node`.
 2. Store and batch `SpanProto`s.
-3. Augment the `SpanProto` or `Node` sent from the interceptor.
+3. Augment the `SpanProto` or `Node` sent from the receiver.
 For example, in a Kubernetes container, Agent Core can detect the namespace, pod id
-and container name and then add them to its record of Node from interceptor
+and container name and then add them to its record of Node from receiver
 4. For some configured period of time, Agent Core will push `SpanProto`s (grouped by
 `Node`s) to Exporters.
 5. Display the currently stored `SpanProto`s on local zPages.
@@ -150,4 +150,4 @@ summarizes the deployment architecture:
 
 The OpenCensus Collector can also be deployed in other configurations, such as
 receiving data from other agents or clients in one of the formats supported by
-its interceptors.
+its receivers.

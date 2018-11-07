@@ -17,7 +17,7 @@ RUN apk update && apk upgrade && \
 
 COPY --from=builder /ocagent /ocagent
 
-# Expose the OpenCensus interceptor port.
+# Expose the OpenCensus receiver port.
 EXPOSE 55678/tcp
 
 CMD ["/ocagent"]

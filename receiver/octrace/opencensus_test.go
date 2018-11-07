@@ -36,19 +36,19 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/census-instrumentation/opencensus-service/interceptor/octrace"
 	"github.com/census-instrumentation/opencensus-service/internal"
+	"github.com/census-instrumentation/opencensus-service/receiver/octrace"
 	"github.com/census-instrumentation/opencensus-service/spanreceiver"
 	"go.opencensus.io/trace"
 	"go.opencensus.io/trace/tracestate"
 )
 
-func TestInterceptor_endToEnd(t *testing.T) {
+func TestReceiver_endToEnd(t *testing.T) {
 	t.Skip("This test is flaky due to timing slowdown due to -race. Will reenable in the future")
 
 	sappender := newSpanAppender()
 
-	_, port, doneFn := ocInterceptorOnGRPCServer(t, sappender, octrace.WithSpanBufferPeriod(100*time.Millisecond))
+	_, port, doneFn := ocReceiverOnGRPCServer(t, sappender, octrace.WithSpanBufferPeriod(100*time.Millisecond))
 	defer doneFn()
 
 	// Now the opencensus-agent exporter.
@@ -163,7 +163,7 @@ func TestInterceptor_endToEnd(t *testing.T) {
 }
 
 // Issue #43. Export should support node multiplexing.
-// The goal is to ensure that Interceptor can always support
+// The goal is to ensure that Receiver can always support
 // a passthrough mode where it initiates Export normally by firstly
 // receiving the initiator node. However ti should still be able to
 // accept nodes from downstream sources, but if a node isn't specified in
@@ -171,7 +171,7 @@ func TestInterceptor_endToEnd(t *testing.T) {
 func TestExportMultiplexing(t *testing.T) {
 	spanSink := newSpanAppender()
 
-	_, port, doneFn := ocInterceptorOnGRPCServer(t, spanSink, octrace.WithSpanBufferPeriod(90*time.Millisecond))
+	_, port, doneFn := ocReceiverOnGRPCServer(t, spanSink, octrace.WithSpanBufferPeriod(90*time.Millisecond))
 	defer doneFn()
 
 	traceClient, traceClientDoneFn, err := makeTraceServiceClient(port)
@@ -290,7 +290,7 @@ func TestExportMultiplexing(t *testing.T) {
 func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 	spanSink := newSpanAppender()
 
-	_, port, doneFn := ocInterceptorOnGRPCServer(t, spanSink, octrace.WithSpanBufferPeriod(90*time.Millisecond))
+	_, port, doneFn := ocReceiverOnGRPCServer(t, spanSink, octrace.WithSpanBufferPeriod(90*time.Millisecond))
 	defer doneFn()
 
 	traceClient, traceClientDoneFn, err := makeTraceServiceClient(port)
@@ -358,7 +358,7 @@ func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 func TestExportProtocolConformation_spansInFirstMessage(t *testing.T) {
 	spanSink := newSpanAppender()
 
-	_, port, doneFn := ocInterceptorOnGRPCServer(t, spanSink, octrace.WithSpanBufferPeriod(70*time.Millisecond))
+	_, port, doneFn := ocReceiverOnGRPCServer(t, spanSink, octrace.WithSpanBufferPeriod(70*time.Millisecond))
 	defer doneFn()
 
 	traceClient, traceClientDoneFn, err := makeTraceServiceClient(port)
@@ -456,7 +456,7 @@ func (sa *spanAppender) ReceiveSpans(ctx context.Context, node *commonpb.Node, s
 	return &spanreceiver.Acknowledgement{SavedSpans: uint64(len(spans))}, nil
 }
 
-func ocInterceptorOnGRPCServer(t *testing.T, sr spanreceiver.SpanReceiver, opts ...octrace.Option) (oci *octrace.Interceptor, port int, done func()) {
+func ocReceiverOnGRPCServer(t *testing.T, sr spanreceiver.SpanReceiver, opts ...octrace.Option) (oci *octrace.Receiver, port int, done func()) {
 	ln, err := net.Listen("tcp", ":0")
 	if err != nil {
 		t.Fatalf("Failed to find an available address to run the gRPC server: %v", err)
@@ -482,7 +482,7 @@ func ocInterceptorOnGRPCServer(t *testing.T, sr spanreceiver.SpanReceiver, opts 
 
 	oci, err = octrace.New(sr, opts...)
 	if err != nil {
-		t.Fatalf("Failed to create the Interceptor: %v", err)
+		t.Fatalf("Failed to create the Receiver: %v", err)
 	}
 
 	// Now run it as a gRPC server

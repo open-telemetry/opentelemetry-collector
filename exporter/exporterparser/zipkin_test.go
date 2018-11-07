@@ -25,11 +25,11 @@ import (
 
 	"github.com/census-instrumentation/opencensus-service/exporter"
 	"github.com/census-instrumentation/opencensus-service/exporter/exporterparser"
-	"github.com/census-instrumentation/opencensus-service/interceptor/zipkin"
 	"github.com/census-instrumentation/opencensus-service/internal/testutils"
+	"github.com/census-instrumentation/opencensus-service/receiver/zipkin"
 )
 
-// This function tests that Zipkin spans that are intercepted then processed roundtrip
+// This function tests that Zipkin spans that are received then processed roundtrip
 // back to almost the same JSON with differences:
 // a) Go's net.IP.String intentional shortens 0s with "::" but also converts to hex values
 //    so
@@ -69,20 +69,20 @@ exporters:
 
 	zexp := exporter.MultiTraceExporters(tes...)
 
-	// Run the Zipkin interceptor to "receive spans upload from a client application"
-	zi, err := zipkininterceptor.New(zexp)
+	// Run the Zipkin receiver to "receive spans upload from a client application"
+	zi, err := zipkinreceiver.New(zexp)
 	if err != nil {
-		t.Fatalf("Failed to create a new Zipkin interceptor: %v", err)
+		t.Fatalf("Failed to create a new Zipkin receiver: %v", err)
 	}
 
-	// Let the interceptor receive "uploaded Zipkin spans from a Java client application"
+	// Let the receiver receive "uploaded Zipkin spans from a Java client application"
 	req, _ := http.NewRequest("POST", "https://tld.org/", strings.NewReader(zipkinSpansJSONJavaLibrary))
 	responseWriter := httptest.NewRecorder()
 	zi.ServeHTTP(responseWriter, req)
 	// Wait for the server to write the response.
 	<-responseReady
 
-	// We expect back the exact JSON that was intercepted
+	// We expect back the exact JSON that was received
 	want := testutils.GenerateNormalizedJSON(`
 [{
   "traceId": "4d1e00c0db9010db86154a4ba6e91385","parentId": "86154a4ba6e91385","id": "4d1e00c0db9010db",

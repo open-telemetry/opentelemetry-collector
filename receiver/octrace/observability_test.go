@@ -32,8 +32,8 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/census-instrumentation/opencensus-service/interceptor/octrace"
 	"github.com/census-instrumentation/opencensus-service/internal"
+	"github.com/census-instrumentation/opencensus-service/receiver/octrace"
 )
 
 // Ensure that if we add a metrics exporter that our target metrics
@@ -48,7 +48,7 @@ func TestEnsureRecordedMetrics(t *testing.T) {
 
 	sappender := newSpanAppender()
 
-	_, port, doneFn := ocInterceptorOnGRPCServer(t, sappender, octrace.WithSpanBufferPeriod(2*time.Millisecond))
+	_, port, doneFn := ocReceiverOnGRPCServer(t, sappender, octrace.WithSpanBufferPeriod(2*time.Millisecond))
 	defer doneFn()
 
 	// Now the opencensus-agent exporter.
@@ -119,7 +119,7 @@ func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
 	)
 	sappender := newSpanAppender()
 
-	_, port, doneFn := ocInterceptorOnGRPCServer(t, sappender, octrace.WithSpanBufferPeriod(2*time.Millisecond))
+	_, port, doneFn := ocReceiverOnGRPCServer(t, sappender, octrace.WithSpanBufferPeriod(2*time.Millisecond))
 	defer doneFn()
 
 	// Now the opencensus-agent exporter.
@@ -191,7 +191,7 @@ func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
 
 	spanSink := newSpanAppender()
 	spansBufferPeriod := 10 * time.Millisecond
-	_, port, doneFn := ocInterceptorOnGRPCServer(t, spanSink, octrace.WithSpanBufferPeriod(spansBufferPeriod))
+	_, port, doneFn := ocReceiverOnGRPCServer(t, spanSink, octrace.WithSpanBufferPeriod(spansBufferPeriod))
 	defer doneFn()
 
 	traceSvcClient, traceSvcDoneFn, err := makeTraceServiceClient(port)
@@ -230,9 +230,9 @@ func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
 		t.Fatalf("Spandata count: Got %d Want %d\n\nData: %s", g, w, blob)
 	}
 
-	interceptorSpanData := gotSpanData[0]
-	if g, w := len(interceptorSpanData.Links), 1; g != w {
-		t.Fatalf("Links count: Got %d Want %d\nGotSpanData: %#v", g, w, interceptorSpanData)
+	receiverSpanData := gotSpanData[0]
+	if g, w := len(receiverSpanData.Links), 1; g != w {
+		t.Fatalf("Links count: Got %d Want %d\nGotSpanData: %#v", g, w, receiverSpanData)
 	}
 
 	rpcSpanData := gotSpanData[1]
@@ -243,24 +243,24 @@ func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
 		TraceID: rpcSpanData.TraceID,
 		Type:    trace.LinkTypeParent,
 	}
-	if g, w := interceptorSpanData.Links[0], wantLink; !reflect.DeepEqual(g, w) {
+	if g, w := receiverSpanData.Links[0], wantLink; !reflect.DeepEqual(g, w) {
 		t.Errorf("Link:\nGot: %#v\nWant: %#v\n", g, w)
 	}
-	if g, w := interceptorSpanData.Name, "OpenCensusInterceptor.Export"; g != w {
-		t.Errorf("InterceptorExport span's SpanData.Name:\nGot:  %q\nWant: %q\n", g, w)
+	if g, w := receiverSpanData.Name, "OpenCensusReceiver.Export"; g != w {
+		t.Errorf("ReceiverExport span's SpanData.Name:\nGot:  %q\nWant: %q\n", g, w)
 	}
 
-	// And then for the interceptorSpanData itself, it SHOULD NOT
+	// And then for the receiverSpanData itself, it SHOULD NOT
 	// have a ParentID, so let's enforce all the conditions below:
 	// 1. That it doesn't have the RPC spanID as its ParentSpanID
 	// 2. That it actually has no ParentSpanID i.e. has a blank SpanID
-	if g, w := interceptorSpanData.ParentSpanID[:], rpcSpanData.SpanID[:]; bytes.Equal(g, w) {
-		t.Errorf("InterceptorSpanData.ParentSpanID unfortunately was linked to the RPC span\nGot:  %x\nWant: %x", g, w)
+	if g, w := receiverSpanData.ParentSpanID[:], rpcSpanData.SpanID[:]; bytes.Equal(g, w) {
+		t.Errorf("ReceiverSpanData.ParentSpanID unfortunately was linked to the RPC span\nGot:  %x\nWant: %x", g, w)
 	}
 
 	var blankSpanID trace.SpanID
-	if g, w := interceptorSpanData.ParentSpanID[:], blankSpanID[:]; !bytes.Equal(g, w) {
-		t.Errorf("InterceptorSpanData unfortunately has a parent and isn't NULL\nGot:  %x\nWant: %x", g, w)
+	if g, w := receiverSpanData.ParentSpanID[:], blankSpanID[:]; !bytes.Equal(g, w) {
+		t.Errorf("ReceiverSpanData unfortunately has a parent and isn't NULL\nGot:  %x\nWant: %x", g, w)
 	}
 }
 
@@ -268,8 +268,8 @@ func checkCountMetricsExporterResults(t *testing.T, cme *countMetricsExporter, n
 	cme.mu.Lock()
 	defer cme.mu.Unlock()
 
-	// The only tags that we are expecting are "opencensus_interceptor": "opencensus" * n
-	wantTagKey, _ := tag.NewKey("opencensus_interceptor")
+	// The only tags that we are expecting are "opencensus_receiver": "opencensus" * n
+	wantTagKey, _ := tag.NewKey("opencensus_receiver")
 	valuesPlusBlank := strings.Split(strings.Repeat("opencensus,opencensus,", n/2), ",")
 	wantValues := valuesPlusBlank[:len(valuesPlusBlank)-1]
 	wantTags := map[tag.Key][]string{

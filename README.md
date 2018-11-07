@@ -12,9 +12,9 @@
     - [Usage](#agent-usage)
     - [Configuration file](#agent-configuration-file)
         - [Exporters](#agent-config-exporters)
-        - [Interceptors](#agent-config-interceptors)
-            - [OpenCensus](#details-interceptors-opencensus)
-            - [Zipkin](#details-interceptors-zipkin)
+        - [Receivers](#agent-config-receivers)
+            - [OpenCensus](#details-receivers-opencensus)
+            - [Zipkin](#details-receivers-zipkin)
         - [End-to-end example](#agent-config-end-to-end-example)
     - [Diagnostics](#agent-diagnostics)
         - [zPages](#agent-zpages)
@@ -106,7 +106,7 @@ $ go get github.com/census-instrumentation/opencensus-service/cmd/ocagent
 ### <a name="agent-configuration-file"></a>Configuration file
 
 Create a config.yaml file in the current directory and modify
-it with the exporter and interceptor configurations.
+it with the exporter and receiver configurations.
 
 
 #### <a name="agent-config-exporters"></a>Exporters
@@ -123,35 +123,35 @@ exporters:
         endpoint: "http://localhost:9411/api/v2/spans"
 ```
 
-#### <a name="agent-config-interceptors"></a>Interceptors
-Agent provides a couple of interceptors that receive spans from instrumentation libraries.
+#### <a name="agent-config-receivers"></a>Receivers
+Agent provides a couple of receivers that receive spans from instrumentation libraries.
 
-#### <a name="details-interceptors-opencensus"></a>OpenCensus
+#### <a name="details-receivers-opencensus"></a>OpenCensus
 
-This interceptor receives spans from OpenCensus instrumented applications and translates them into the internal span types that
+This receiver receives spans from OpenCensus instrumented applications and translates them into the internal span types that
 are then sent to the collector/exporters.
 
 Its address can be configured in the YAML configuration file under section "intercpetors", subsection "opencensus" and field "address".
 
 For example:
 ```yaml
-interceptors:
+receivers:
     opencensus:
         address: "127.0.0.1:55678"
 ```
 
-By default this interceptor is ALWAYS started since it is the point of the "OpenCensus agent"
+By default this receiver is ALWAYS started since it is the point of the "OpenCensus agent"
 
-#### <a name="details-interceptors-zipkin"></a>Zipkin
+#### <a name="details-receivers-zipkin"></a>Zipkin
 
-This interceptor receives spans from Zipkin "/v2" API HTTP uploads and translates them into the internal span types that are then
+This receiver receives spans from Zipkin "/v2" API HTTP uploads and translates them into the internal span types that are then
 sent to the collector/exporters.
 
 Its address can be configured in the YAML configuration file under section "intercpetors", subsection "zipkin" and field "address".
 
 For example:
 ```yaml
-interceptors:
+receivers:
     zipkin:
         address: "localhost:9411"
 ```
@@ -208,7 +208,7 @@ zpages:
 ```
 
 and for example navigating to http://localhost:55679/debug/tracez to debug the
-OpenCensus interceptor's traces in your browser should produce something like this
+OpenCensus receiver's traces in your browser should produce something like this
 
 ![zPages](https://user-images.githubusercontent.com/4898263/47132981-892bb500-d25b-11e8-980c-08f0115ba72e.png)
 
@@ -303,7 +303,7 @@ Run ocagent:
 
 ```shell
 $ ocagent
-2018/10/08 21:38:00 Running OpenCensus interceptor as a gRPC service at "127.0.0.1:55678"
+2018/10/08 21:38:00 Running OpenCensus receiver as a gRPC service at "127.0.0.1:55678"
 ```
 
 You should be able to see the traces in the configured tracing backend.
