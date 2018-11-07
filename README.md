@@ -161,10 +161,13 @@ receivers:
 Run the example application that collects traces and exports them
 to the daemon.
 
-Firstly run ocagent:
+Create an [Agent configuration file](#agent-configuration-file) as described above.
+
+Build the agent, see [Building binaries](#agent-building-binaries),
+and start it:
 
 ```shell
-$ ocagent
+$ ./bin/ocagent_$(go env GOOS)
 ```
 
 Next run the demo application:
@@ -214,8 +217,9 @@ OpenCensus receiver's traces in your browser should produce something like this
 
 ### <a name="agent-docker-image"></a>Docker image
 
-With your configuration file from above in [Agent configuration file](#agent-configuration-file),
-the Docker image can be created by running:
+For a Docker image for experimentation (based on Alpine) get your 
+[Agent configuration file](#agent-configuration-file) as described above,
+and run:
 
 ```shell
 ./build_binaries.sh docker <image_version>
@@ -230,6 +234,8 @@ and then the Docker image `v1.0.0` of the agent can be started  by
 ```shell
 docker run -v $(pwd)/config.yaml:/config.yaml  -p 55678:55678  ocagent:v1.0.0
 ```
+
+A Docker scratch image can be built with make by targeting `docker-agent`.
 
 ## OpenCensus Collector
 
@@ -260,55 +266,23 @@ agent/client health information/inventory metadata to downstream exporters.
 
 ### <a name="collector-usage"></a>Usage
 
-First, install the collector if you haven't.
+The collector is in its initial development stages. It can be run directly
+from sources, binary, or a Docker image.
 
+1. Run from sources:
 ```
-$ go get github.com/census-instrumentation/opencensus-service/cmd/occollector
+$ go run github.com/census-instrumentation/opencensus-service/cmd/occollector
 ```
-
-Create a config.yaml file in the current directory and modify
-it with the collector exporter configuration.
-
-config.yaml:
-
+2. Run from binary (from the root of your repo):
 ```
-omnition:
-  tenant: "your-api-key"
+$ make collector
+$ ./bin/occollector_$($GOOS)
 ```
-
-Next, install ocagent if you haven't.
-
+3. Build a Docker scratch image and use the appropria Docker command for your scenario:
 ```
-$ go get github.com/census-instrumentation/opencensus-service/cmd/ocagent
+$ make docker-collector
+$ docker run --rm -it -p 55678:55678 occollector
 ```
-
-Create a config.yaml file in the current directory and modify
-it with the collector exporter configuration.
-
-config.yaml:
-
-```
-collector:
-  endpoint: "https://collector.local"
-```
-
-Run the example application that collects traces and exports
-to the daemon if it is running.
-
-```
-$ go run "$(go env GOPATH)/src/github.com/census-instrumentation/opencensus-service/example/main.go"
-```
-
-Run ocagent:
-
-```shell
-$ ocagent
-2018/10/08 21:38:00 Running OpenCensus receiver as a gRPC service at "127.0.0.1:55678"
-```
-
-You should be able to see the traces in the configured tracing backend.
-If you stop the ocagent, example application will stop exporting.
-If you run it again, it will start exporting again.
 
 [travis-image]: https://travis-ci.org/census-instrumentation/opencensus-service.svg?branch=master
 [travis-url]: https://travis-ci.org/census-instrumentation/opencensus-service
