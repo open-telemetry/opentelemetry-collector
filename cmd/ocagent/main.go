@@ -28,7 +28,7 @@ import (
 
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/exporter"
-	"github.com/census-instrumentation/opencensus-service/interceptor/opencensus"
+	"github.com/census-instrumentation/opencensus-service/interceptor/octrace"
 	"github.com/census-instrumentation/opencensus-service/interceptor/zipkin"
 	"github.com/census-instrumentation/opencensus-service/internal"
 	"github.com/census-instrumentation/opencensus-service/spanreceiver"
@@ -133,7 +133,7 @@ func runZPages(port int) func() error {
 }
 
 func runOCInterceptor(addr string, sr spanreceiver.SpanReceiver) (doneFn func() error, err error) {
-	oci, err := ocinterceptor.New(sr, ocinterceptor.WithSpanBufferPeriod(800*time.Millisecond))
+	oci, err := octrace.New(sr, octrace.WithSpanBufferPeriod(800*time.Millisecond))
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create the OpenCensus interceptor: %v", err)
 	}

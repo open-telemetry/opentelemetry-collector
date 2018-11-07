@@ -12,6 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package ocinterceptor is the logic for receiving OpenCensus trace protobuf defined spans from
+// Package octrace is the logic for receiving OpenCensus trace protobuf defined spans from
 // already instrumented applications and then passing them onto a spanreceiver instance.
-package ocinterceptor
+package octrace

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ocinterceptor_test
+package octrace_test
 
 import (
 	"bytes"
@@ -32,7 +32,7 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/census-instrumentation/opencensus-service/interceptor/opencensus"
+	"github.com/census-instrumentation/opencensus-service/interceptor/octrace"
 	"github.com/census-instrumentation/opencensus-service/internal"
 )
 
@@ -48,7 +48,7 @@ func TestEnsureRecordedMetrics(t *testing.T) {
 
 	sappender := newSpanAppender()
 
-	_, port, doneFn := ocInterceptorOnGRPCServer(t, sappender, ocinterceptor.WithSpanBufferPeriod(2*time.Millisecond))
+	_, port, doneFn := ocInterceptorOnGRPCServer(t, sappender, octrace.WithSpanBufferPeriod(2*time.Millisecond))
 	defer doneFn()
 
 	// Now the opencensus-agent exporter.
@@ -119,7 +119,7 @@ func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
 	)
 	sappender := newSpanAppender()
 
-	_, port, doneFn := ocInterceptorOnGRPCServer(t, sappender, ocinterceptor.WithSpanBufferPeriod(2*time.Millisecond))
+	_, port, doneFn := ocInterceptorOnGRPCServer(t, sappender, octrace.WithSpanBufferPeriod(2*time.Millisecond))
 	defer doneFn()
 
 	// Now the opencensus-agent exporter.
@@ -191,7 +191,7 @@ func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
 
 	spanSink := newSpanAppender()
 	spansBufferPeriod := 10 * time.Millisecond
-	_, port, doneFn := ocInterceptorOnGRPCServer(t, spanSink, ocinterceptor.WithSpanBufferPeriod(spansBufferPeriod))
+	_, port, doneFn := ocInterceptorOnGRPCServer(t, spanSink, octrace.WithSpanBufferPeriod(spansBufferPeriod))
 	defer doneFn()
 
 	traceSvcClient, traceSvcDoneFn, err := makeTraceServiceClient(port)

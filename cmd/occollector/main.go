@@ -32,7 +32,7 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/census-instrumentation/opencensus-service/interceptor/opencensus"
+	"github.com/census-instrumentation/opencensus-service/interceptor/octrace"
 	"github.com/census-instrumentation/opencensus-service/spanreceiver"
 
 	"go.opencensus.io/plugin/ocgrpc"
@@ -91,7 +91,7 @@ func runOCServerWithInterceptor(addr string, logger *zap.Logger) (func() error, 
 		logger: logger,
 	}
 
-	oci, err := ocinterceptor.New(sr, ocinterceptor.WithSpanBufferPeriod(800*time.Millisecond))
+	oci, err := octrace.New(sr, octrace.WithSpanBufferPeriod(800*time.Millisecond))
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create the OpenCensus interceptor: %v", err)
 	}

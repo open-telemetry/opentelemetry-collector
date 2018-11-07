@@ -26,7 +26,7 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/interceptor"
-	ocinterceptor "github.com/census-instrumentation/opencensus-service/interceptor/opencensus"
+	octrace "github.com/census-instrumentation/opencensus-service/interceptor/octrace"
 	"github.com/census-instrumentation/opencensus-service/spanreceiver"
 )
 
@@ -34,7 +34,7 @@ func Example_endToEnd() {
 	// This is what the cmd/ocagent code would look like this.
 	// A trace interceptor as per the trace interceptor
 	// configs that have been parsed.
-	tin, err := ocinterceptor.NewTraceInterceptorOnDefaultPort()
+	tin, err := octrace.NewTraceInterceptorOnDefaultPort()
 	if err != nil {
 		log.Fatalf("Failed to create trace interceptor: %v", err)
 	}
