@@ -33,7 +33,7 @@ import (
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/receiver/octrace"
-	"github.com/census-instrumentation/opencensus-service/spanreceiver"
+	"github.com/census-instrumentation/opencensus-service/spansink"
 
 	"go.opencensus.io/plugin/ocgrpc"
 	"go.opencensus.io/stats/view"
@@ -87,7 +87,7 @@ func runOCServerWithReceiver(addr string, logger *zap.Logger) (func() error, err
 		return nil, fmt.Errorf("Cannot bind tcp listener to address %q: %v", addr, err)
 	}
 
-	sr := &fakeSpanReceiver{
+	sr := &fakeSpanSink{
 		logger: logger,
 	}
 
@@ -111,12 +111,12 @@ func runOCServerWithReceiver(addr string, logger *zap.Logger) (func() error, err
 	return closeFn, nil
 }
 
-type fakeSpanReceiver struct {
+type fakeSpanSink struct {
 	logger *zap.Logger
 }
 
-func (sr *fakeSpanReceiver) ReceiveSpans(ctx context.Context, node *commonpb.Node, spans ...*tracepb.Span) (*spanreceiver.Acknowledgement, error) {
-	ack := &spanreceiver.Acknowledgement{
+func (sr *fakeSpanSink) ReceiveSpans(ctx context.Context, node *commonpb.Node, spans ...*tracepb.Span) (*spansink.Acknowledgement, error) {
+	ack := &spansink.Acknowledgement{
 		SavedSpans: uint64(len(spans)),
 	}
 

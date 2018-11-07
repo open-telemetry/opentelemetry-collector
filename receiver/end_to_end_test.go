@@ -27,7 +27,7 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/receiver"
 	octrace "github.com/census-instrumentation/opencensus-service/receiver/octrace"
-	"github.com/census-instrumentation/opencensus-service/spanreceiver"
+	"github.com/census-instrumentation/opencensus-service/spansink"
 )
 
 func Example_endToEnd() {
@@ -44,7 +44,7 @@ func Example_endToEnd() {
 
 	// Once we have the span receiver which will connect to the
 	// various exporter pipeline i.e. *tracepb.Span->OpenCensus.SpanData
-	lsr := new(logSpanReceiver)
+	lsr := new(logSpanSink)
 	for _, tr := range trl {
 		if err := tr.StartTraceReception(context.Background(), lsr); err != nil {
 			log.Fatalf("Failed to start trace receiver: %v", err)
@@ -92,13 +92,13 @@ func Example_endToEnd() {
 	<-time.After(5 * time.Second)
 }
 
-type logSpanReceiver int
+type logSpanSink int
 
-var _ spanreceiver.SpanReceiver = (*logSpanReceiver)(nil)
+var _ spansink.Sink = (*logSpanSink)(nil)
 
-func (lsr *logSpanReceiver) ReceiveSpans(ctx context.Context, node *commonpb.Node, spans ...*tracepb.Span) (*spanreceiver.Acknowledgement, error) {
+func (lsr *logSpanSink) ReceiveSpans(ctx context.Context, node *commonpb.Node, spans ...*tracepb.Span) (*spansink.Acknowledgement, error) {
 	spansBlob, _ := json.MarshalIndent(spans, " ", "  ")
 	log.Printf("\n****\nNode: %#v\nSpans: %s\n****\n", node, spansBlob)
 
-	return &spanreceiver.Acknowledgement{SavedSpans: uint64(len(spans))}, nil
+	return &spansink.Acknowledgement{SavedSpans: uint64(len(spans))}, nil
 }

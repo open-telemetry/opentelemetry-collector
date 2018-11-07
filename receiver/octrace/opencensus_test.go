@@ -38,7 +38,7 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/internal"
 	"github.com/census-instrumentation/opencensus-service/receiver/octrace"
-	"github.com/census-instrumentation/opencensus-service/spanreceiver"
+	"github.com/census-instrumentation/opencensus-service/spansink"
 	"go.opencensus.io/trace"
 	"go.opencensus.io/trace/tracestate"
 )
@@ -445,18 +445,18 @@ func newSpanAppender() *spanAppender {
 	return &spanAppender{spansPerNode: make(map[*commonpb.Node][]*tracepb.Span)}
 }
 
-var _ spanreceiver.SpanReceiver = (*spanAppender)(nil)
+var _ spansink.Sink = (*spanAppender)(nil)
 
-func (sa *spanAppender) ReceiveSpans(ctx context.Context, node *commonpb.Node, spans ...*tracepb.Span) (*spanreceiver.Acknowledgement, error) {
+func (sa *spanAppender) ReceiveSpans(ctx context.Context, node *commonpb.Node, spans ...*tracepb.Span) (*spansink.Acknowledgement, error) {
 	sa.Lock()
 	defer sa.Unlock()
 
 	sa.spansPerNode[node] = append(sa.spansPerNode[node], spans...)
 
-	return &spanreceiver.Acknowledgement{SavedSpans: uint64(len(spans))}, nil
+	return &spansink.Acknowledgement{SavedSpans: uint64(len(spans))}, nil
 }
 
-func ocReceiverOnGRPCServer(t *testing.T, sr spanreceiver.SpanReceiver, opts ...octrace.Option) (oci *octrace.Receiver, port int, done func()) {
+func ocReceiverOnGRPCServer(t *testing.T, sr spansink.Sink, opts ...octrace.Option) (oci *octrace.Receiver, port int, done func()) {
 	ln, err := net.Listen("tcp", ":0")
 	if err != nil {
 		t.Fatalf("Failed to find an available address to run the gRPC server: %v", err)

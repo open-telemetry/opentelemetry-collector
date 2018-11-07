@@ -17,14 +17,14 @@ package receiver
 import (
 	"context"
 
-	"github.com/census-instrumentation/opencensus-service/metricsreceiver"
-	"github.com/census-instrumentation/opencensus-service/spanreceiver"
+	"github.com/census-instrumentation/opencensus-service/metricsink"
+	"github.com/census-instrumentation/opencensus-service/spansink"
 )
 
 // A TraceReceiver is an "arbitrary data"-to-"trace proto span" converter.
 // Its purpose is to translate data from the wild into trace proto accompanied
 // by a *commonpb.Node to uniquely identify where that data comes from.
-// TraceReceiver feeds a spanreceiver.SpanReceiver with data.
+// TraceReceiver feeds a spansink.Sink with data.
 //
 // For example it could be Zipkin data source which translates
 // Zipkin spans into *tracepb.Span-s.
@@ -34,18 +34,18 @@ import (
 // StopTraceReception tells the receiver that should stop reception,
 // giving it a chance to perform any necessary clean-up.
 type TraceReceiver interface {
-	StartTraceReception(ctx context.Context, destination spanreceiver.SpanReceiver) error
+	StartTraceReception(ctx context.Context, destination spansink.Sink) error
 	StopTraceReception(ctx context.Context) error
 }
 
 // A MetricsReceiver is an "arbitrary data"-to-"metric proto" converter.
 // Its purpose is to translate data from the wild into metric proto accompanied
 // by a *commonpb.Node to uniquely identify where that data comes from.
-// MetricsReceiver feeds a metricsreceiver.MetricsReceiver with data.
+// MetricsReceiver feeds a metricsink.Sink with data.
 //
 // For example it could be Prometheus data source which translates
 // Prometheus metrics into *metricpb.Metric-s.
 type MetricsReceiver interface {
-	StartMetricsReception(ctx context.Context, destination metricsreceiver.MetricsReceiver) error
+	StartMetricsReception(ctx context.Context, destination metricsink.Sink) error
 	StopMetricsReception(ctx context.Context) error
 }

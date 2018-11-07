@@ -21,7 +21,7 @@ import (
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/census-instrumentation/opencensus-service/spanreceiver"
+	"github.com/census-instrumentation/opencensus-service/spansink"
 	tracetranslator "github.com/census-instrumentation/opencensus-service/translator/trace"
 )
 
@@ -37,24 +37,24 @@ type toOCExportersTransformer struct {
 	ocTraceExporters []trace.Exporter
 }
 
-// TraceExporterSpanReceiver is a interface connecting a spanreceiver.SpanReceiver and
-// a exporter.TraceExporter. The receiver gets data in different serialization formats,
+// TraceExporterSink is a interface connecting a spansink.Sink and
+// an exporter.TraceExporter. The receiver gets data in different serialization formats,
 // transforms it to OpenCensus in memory data and sends it to the exporter.
-type TraceExporterSpanReceiver interface {
+type TraceExporterSink interface {
 	TraceExporter
-	spanreceiver.SpanReceiver
+	spansink.Sink
 }
 
 // OCExportersToTraceExporter is a convenience function that transforms
 // traditional OpenCensus trace.Exporter-s into an opencensus-service TraceExporter.
 // The resulting TraceExporter ignores the passed in node. To make use of the node,
 // please create a custom TraceExporter.
-func OCExportersToTraceExporter(ocTraceExporters ...trace.Exporter) TraceExporterSpanReceiver {
+func OCExportersToTraceExporter(ocTraceExporters ...trace.Exporter) TraceExporterSink {
 	return &toOCExportersTransformer{ocTraceExporters: ocTraceExporters}
 }
 
 var _ TraceExporter = (*toOCExportersTransformer)(nil)
-var _ spanreceiver.SpanReceiver = (*toOCExportersTransformer)(nil)
+var _ spansink.Sink = (*toOCExportersTransformer)(nil)
 
 func (tse *toOCExportersTransformer) ExportSpanData(ctx context.Context, node *commonpb.Node, spanData ...*trace.SpanData) error {
 	for _, sd := range spanData {
@@ -65,7 +65,7 @@ func (tse *toOCExportersTransformer) ExportSpanData(ctx context.Context, node *c
 	return nil
 }
 
-func (tse *toOCExportersTransformer) ReceiveSpans(ctx context.Context, node *commonpb.Node, spans ...*tracepb.Span) (*spanreceiver.Acknowledgement, error) {
+func (tse *toOCExportersTransformer) ReceiveSpans(ctx context.Context, node *commonpb.Node, spans ...*tracepb.Span) (*spansink.Acknowledgement, error) {
 	// Firstly transform them into spanData.
 	spanDataList := make([]*trace.SpanData, 0, len(spans))
 	for _, span := range spans {
@@ -81,7 +81,7 @@ func (tse *toOCExportersTransformer) ReceiveSpans(ctx context.Context, node *com
 	// Now invoke ExportSpanData.
 	err := tse.ExportSpanData(ctx, node, spanDataList...)
 	nSaved := len(spanDataList)
-	ack := &spanreceiver.Acknowledgement{
+	ack := &spansink.Acknowledgement{
 		SavedSpans:   uint64(nSaved),
 		DroppedSpans: uint64(len(spans) - nSaved),
 	}
@@ -89,7 +89,7 @@ func (tse *toOCExportersTransformer) ReceiveSpans(ctx context.Context, node *com
 }
 
 // MultiTraceExporters wraps multiple trace exporters in a single one.
-func MultiTraceExporters(tes ...TraceExporter) TraceExporterSpanReceiver {
+func MultiTraceExporters(tes ...TraceExporter) TraceExporterSink {
 	return traceExporters(tes)
 }
 
@@ -105,7 +105,7 @@ func (tes traceExporters) ExportSpanData(ctx context.Context, node *commonpb.Nod
 
 // ReceiveSpans receives the span data in the protobuf format, translates it, and forwards the transformed
 // span data to all trace exporters wrapped by the current one.
-func (tes traceExporters) ReceiveSpans(ctx context.Context, node *commonpb.Node, spans ...*tracepb.Span) (*spanreceiver.Acknowledgement, error) {
+func (tes traceExporters) ReceiveSpans(ctx context.Context, node *commonpb.Node, spans ...*tracepb.Span) (*spansink.Acknowledgement, error) {
 	spanDataList := make([]*trace.SpanData, 0, len(spans))
 	for _, span := range spans {
 		spanData, _ := tracetranslator.ProtoSpanToOCSpanData(span)
@@ -116,7 +116,7 @@ func (tes traceExporters) ReceiveSpans(ctx context.Context, node *commonpb.Node,
 
 	err := tes.ExportSpanData(ctx, node, spanDataList...)
 	nSaved := len(spanDataList)
-	ack := &spanreceiver.Acknowledgement{
+	ack := &spansink.Acknowledgement{
 		SavedSpans:   uint64(nSaved),
 		DroppedSpans: uint64(len(spans) - nSaved),
 	}

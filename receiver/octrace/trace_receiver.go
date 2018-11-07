@@ -26,7 +26,7 @@ import (
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/internal"
 	"github.com/census-instrumentation/opencensus-service/receiver"
-	"github.com/census-instrumentation/opencensus-service/spanreceiver"
+	"github.com/census-instrumentation/opencensus-service/spansink"
 )
 
 // NewTraceReceiver will create a handle that runs an OCReceiver at the provided port.
@@ -57,7 +57,7 @@ var _ receiver.TraceReceiver = (*ocReceiverHandler)(nil)
 var errAlreadyStarted = errors.New("already started")
 
 // StartTraceReception starts a gRPC server with an OpenCensus receiver running
-func (ocih *ocReceiverHandler) StartTraceReception(ctx context.Context, sr spanreceiver.SpanReceiver) error {
+func (ocih *ocReceiverHandler) StartTraceReception(ctx context.Context, sr spansink.Sink) error {
 	var err = errAlreadyStarted
 	ocih.startOnce.Do(func() {
 		err = ocih.startInternal(ctx, sr)
@@ -68,7 +68,7 @@ func (ocih *ocReceiverHandler) StartTraceReception(ctx context.Context, sr spanr
 
 const defaultOCReceiverPort = 55678
 
-func (ocih *ocReceiverHandler) startInternal(ctx context.Context, sr spanreceiver.SpanReceiver) error {
+func (ocih *ocReceiverHandler) startInternal(ctx context.Context, sr spansink.Sink) error {
 	ocih.mu.Lock()
 	defer ocih.mu.Unlock()
 

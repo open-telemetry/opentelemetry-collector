@@ -38,24 +38,24 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/internal"
 	"github.com/census-instrumentation/opencensus-service/receiver"
-	"github.com/census-instrumentation/opencensus-service/spanreceiver"
+	"github.com/census-instrumentation/opencensus-service/spansink"
 )
 
 // ZipkinReceiver type is used to handle spans received in the Zipkin format.
 type ZipkinReceiver struct {
-	spanSink spanreceiver.SpanReceiver
+	spanSink spansink.Sink
 }
 
 var _ receiver.TraceReceiver = (*ZipkinReceiver)(nil)
 var _ http.Handler = (*ZipkinReceiver)(nil)
 
 // New creates a new zipkingreceiver.ZipkinReceiver reference.
-func New(sr spanreceiver.SpanReceiver) (*ZipkinReceiver, error) {
+func New(sr spansink.Sink) (*ZipkinReceiver, error) {
 	return &ZipkinReceiver{spanSink: sr}, nil
 }
 
 // StartTraceReception tells the receiver to start its processing.
-func (zi *ZipkinReceiver) StartTraceReception(ctx context.Context, spanSink spanreceiver.SpanReceiver) error {
+func (zi *ZipkinReceiver) StartTraceReception(ctx context.Context, spanSink spansink.Sink) error {
 	zi.spanSink = spanSink
 	return nil
 }
@@ -166,7 +166,7 @@ func zlibUncompressedbody(r io.Reader) io.Reader {
 }
 
 // The ZipkinReceiver receives spans from endpoint /api/v2 as JSON,
-// unmarshals them and sends them along to the spanreceiver.
+// unmarshals them and sends them along to the spansink.Sink.
 func (zi *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Trace this method
 	ctx, span := trace.StartSpan(context.Background(), "ZipkinReceiver.Export")

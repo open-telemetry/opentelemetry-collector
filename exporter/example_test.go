@@ -106,12 +106,12 @@ func runServer() (port uint16, closeFn func()) {
 		log.Fatalf("Failed to start Jaeger Trace exporter: %v", err)
 	}
 
-	// After each of the exporters have been created, create the common spanreceiver.
-	commonSpanReceiver := exporter.OCExportersToTraceExporter(sde, je)
+	// After each of the exporters have been created, create the common spansink.Sink.
+	commonSpanSink := exporter.OCExportersToTraceExporter(sde, je)
 
 	// Now run the octrace receiver which will receive traces from the client applications
 	// in the various languages instrumented with OpenCensus.
-	oci, err := octrace.New(commonSpanReceiver, octrace.WithSpanBufferPeriod(100*time.Millisecond))
+	oci, err := octrace.New(commonSpanSink, octrace.WithSpanBufferPeriod(100*time.Millisecond))
 	if err != nil {
 		log.Fatalf("Failed to create the OpenCensus receiver: %v", err)
 	}

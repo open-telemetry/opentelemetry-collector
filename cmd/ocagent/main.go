@@ -31,7 +31,7 @@ import (
 	"github.com/census-instrumentation/opencensus-service/internal"
 	"github.com/census-instrumentation/opencensus-service/receiver/octrace"
 	"github.com/census-instrumentation/opencensus-service/receiver/zipkin"
-	"github.com/census-instrumentation/opencensus-service/spanreceiver"
+	"github.com/census-instrumentation/opencensus-service/spansink"
 	"go.opencensus.io/plugin/ocgrpc"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/zpages"
@@ -68,10 +68,10 @@ func runOCAgent() {
 	ocReceiverAddr := agentConfig.ocReceiverAddress()
 
 	traceExporters, closeFns := exportersFromYAMLConfig(yamlBlob)
-	commonSpanReceiver := exporter.MultiTraceExporters(traceExporters...)
+	commonSpanSink := exporter.MultiTraceExporters(traceExporters...)
 
 	// Add other receivers here as they are implemented
-	ocReceiverDoneFn, err := runOCReceiver(ocReceiverAddr, commonSpanReceiver)
+	ocReceiverDoneFn, err := runOCReceiver(ocReceiverAddr, commonSpanSink)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -87,7 +87,7 @@ func runOCAgent() {
 	// If the Zipkin receiver is enabled, then run it
 	if agentConfig.zipkinReceiverEnabled() {
 		zipkinReceiverAddr := agentConfig.zipkinReceiverAddress()
-		zipkinReceiverDoneFn, err := runZipkinReceiver(zipkinReceiverAddr, commonSpanReceiver)
+		zipkinReceiverDoneFn, err := runZipkinReceiver(zipkinReceiverAddr, commonSpanSink)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -132,7 +132,7 @@ func runZPages(port int) func() error {
 	return srv.Close
 }
 
-func runOCReceiver(addr string, sr spanreceiver.SpanReceiver) (doneFn func() error, err error) {
+func runOCReceiver(addr string, sr spansink.Sink) (doneFn func() error, err error) {
 	oci, err := octrace.New(sr, octrace.WithSpanBufferPeriod(800*time.Millisecond))
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create the OpenCensus receiver: %v", err)
@@ -164,7 +164,7 @@ func runOCReceiver(addr string, sr spanreceiver.SpanReceiver) (doneFn func() err
 	return doneFn, nil
 }
 
-func runZipkinReceiver(addr string, sr spanreceiver.SpanReceiver) (doneFn func() error, err error) {
+func runZipkinReceiver(addr string, sr spansink.Sink) (doneFn func() error, err error) {
 	zi, err := zipkinreceiver.New(sr)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create the Zipkin receiver: %v", err)

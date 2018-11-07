@@ -12,23 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package spanreceiver
+package metricsink
 
 import (
 	"context"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	metricpb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 )
 
-// SpanReceiver is an interface that receives spans from a Node identifier.
-type SpanReceiver interface {
-	ReceiveSpans(ctx context.Context, node *commonpb.Node, spans ...*tracepb.Span) (*Acknowledgement, error)
+// Sink is an interface that receives metrics from a Node identifier.
+type Sink interface {
+	ReceiveMetrics(ctx context.Context, node *commonpb.Node, metrics ...*metricpb.Metric) (*Acknowledgement, error)
 }
 
 // Acknowledgement struct reports the number of saved and dropped spans in a
 // ReceiveSpans call.
 type Acknowledgement struct {
-	SavedSpans   uint64
-	DroppedSpans uint64
+	SavedMetrics   uint64
+	DroppedMetrics uint64
 }

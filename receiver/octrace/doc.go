@@ -13,5 +13,5 @@
 // limitations under the License.
 
 // Package octrace is the logic for receiving OpenCensus trace protobuf defined spans from
-// already instrumented applications and then passing them onto a spanreceiver instance.
+// already instrumented applications and then passing them onto a spansink.Sink instance.
 package octrace

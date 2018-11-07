@@ -27,20 +27,20 @@ import (
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/internal"
-	"github.com/census-instrumentation/opencensus-service/spanreceiver"
+	"github.com/census-instrumentation/opencensus-service/spansink"
 )
 
 // Receiver is the type used to handle spans from OpenCensus exporters.
 type Receiver struct {
-	spanSink         spanreceiver.SpanReceiver
+	spanSink         spansink.Sink
 	spanBufferPeriod time.Duration
 	spanBufferCount  int
 }
 
 // New creates a new opencensus.Receiver reference.
-func New(sr spanreceiver.SpanReceiver, opts ...Option) (*Receiver, error) {
+func New(sr spansink.Sink, opts ...Option) (*Receiver, error) {
 	if sr == nil {
-		return nil, errors.New("needs a non-nil spanReceiver")
+		return nil, errors.New("needs a non-nil spansink.Sink")
 	}
 	oci := &Receiver{spanSink: sr}
 	for _, opt := range opts {
