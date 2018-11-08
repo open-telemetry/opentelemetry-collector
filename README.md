@@ -168,6 +168,7 @@ and start it:
 
 ```shell
 $ ./bin/ocagent_$(go env GOOS)
+$ 2018/10/08 21:38:00 Running OpenCensus receiver as a gRPC service at "127.0.0.1:55678"
 ```
 
 Next run the demo application:
