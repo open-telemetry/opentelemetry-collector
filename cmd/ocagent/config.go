@@ -203,6 +203,7 @@ func exportersFromYAMLConfig(config []byte) (traceExporters []exporter.TraceExpo
 		{name: "stackdriver", fn: exporterparser.StackdriverTraceExportersFromYAML},
 		{name: "zipkin", fn: exporterparser.ZipkinExportersFromYAML},
 		{name: "jaeger", fn: exporterparser.JaegerExportersFromYAML},
+		{name: "kafka", fn: exporterparser.KafkaExportersFromYAML},
 	}
 
 	for _, cfg := range parseFns {

@@ -121,6 +121,11 @@ exporters:
 
     zipkin:
         endpoint: "http://localhost:9411/api/v2/spans"
+
+    kafka:
+        brokers:
+            - "127.0.0.1:9092"
+        topic: "opencensus-spans"
 ```
 
 #### <a name="agent-config-receivers"></a>Receivers
