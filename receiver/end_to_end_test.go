@@ -26,7 +26,7 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/receiver"
-	octrace "github.com/census-instrumentation/opencensus-service/receiver/octrace"
+	"github.com/census-instrumentation/opencensus-service/receiver/opencensus"
 	"github.com/census-instrumentation/opencensus-service/spansink"
 )
 
@@ -34,7 +34,7 @@ func Example_endToEnd() {
 	// This is what the cmd/ocagent code would look like this.
 	// A trace receiver as per the trace receiver
 	// configs that have been parsed.
-	tr, err := octrace.NewTraceReceiverOnDefaultPort()
+	tr, err := opencensus.New("localhost:55678")
 	if err != nil {
 		log.Fatalf("Failed to create trace receiver: %v", err)
 	}

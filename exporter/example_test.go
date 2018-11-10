@@ -19,20 +19,16 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
-	"net"
 	"sync"
 	"time"
-
-	"google.golang.org/grpc"
 
 	"contrib.go.opencensus.io/exporter/ocagent"
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	"go.opencensus.io/exporter/jaeger"
 	"go.opencensus.io/trace"
 
-	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/exporter"
-	"github.com/census-instrumentation/opencensus-service/receiver/octrace"
+	"github.com/census-instrumentation/opencensus-service/receiver/opencensus"
 )
 
 func Example_endToEndExporting() {
@@ -90,7 +86,7 @@ func runClientApplications(port uint16) error {
 	return nil
 }
 
-func runServer() (port uint16, closeFn func()) {
+func runServer() (port uint16, closeFn func() error) {
 	// The first phase will feature how cmd/ocagent will
 	// parse the requested trace OpenCensus exporters.
 	sde, err := stackdriver.NewExporter(stackdriver.Options{ProjectID: "census-demos"})
@@ -106,28 +102,22 @@ func runServer() (port uint16, closeFn func()) {
 		log.Fatalf("Failed to start Jaeger Trace exporter: %v", err)
 	}
 
-	// After each of the exporters have been created, create the common spansink.Sink.
-	commonSpanSink := exporter.OCExportersToTraceExporter(sde, je)
+	port = 55679
+	addr := fmt.Sprintf("localhost:%d", port)
 
-	// Now run the octrace receiver which will receive traces from the client applications
+	// Now run the OpenCensus receiver which will receive traces from the client applications
 	// in the various languages instrumented with OpenCensus.
-	oci, err := octrace.New(commonSpanSink, octrace.WithSpanBufferPeriod(100*time.Millisecond))
+	ocr, err := opencensus.New(addr)
 	if err != nil {
 		log.Fatalf("Failed to create the OpenCensus receiver: %v", err)
 	}
 
-	port = 55679
-	addr := fmt.Sprintf("localhost:%d", port)
-	ln, err := net.Listen("tcp", addr)
-	if err != nil {
-		log.Fatalf("Failed to get an available address: %v", err)
-	}
-	srv := grpc.NewServer()
-	agenttracepb.RegisterTraceServiceServer(srv, oci)
-	go func() {
-		_ = srv.Serve(ln)
-	}()
+	// After each of the exporters have been created, create the common spansink.Sink.
+	commonSpanSink := exporter.OCExportersToTraceExporter(sde, je)
 
-	closeFn = func() { sde.Flush(); je.Flush(); srv.Stop(); _ = ln.Close() }
+	if err := ocr.StartTraceReception(context.Background(), commonSpanSink); err != nil {
+		log.Fatalf("Failed to run the OpenCensus TraceReceiver: %v", err)
+	}
+	closeFn = ocr.Stop
 	return port, closeFn
 }

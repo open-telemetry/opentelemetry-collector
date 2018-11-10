@@ -17,6 +17,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -24,12 +25,10 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"time"
 
-	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/exporter"
 	"github.com/census-instrumentation/opencensus-service/internal"
-	"github.com/census-instrumentation/opencensus-service/receiver/octrace"
+	"github.com/census-instrumentation/opencensus-service/receiver/opencensus"
 	"github.com/census-instrumentation/opencensus-service/receiver/zipkin"
 	"github.com/census-instrumentation/opencensus-service/spansink"
 	"go.opencensus.io/plugin/ocgrpc"
@@ -133,16 +132,10 @@ func runZPages(port int) func() error {
 }
 
 func runOCReceiver(addr string, sr spansink.Sink) (doneFn func() error, err error) {
-	oci, err := octrace.New(sr, octrace.WithSpanBufferPeriod(800*time.Millisecond))
+	ocr, err := opencensus.New(addr)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create the OpenCensus receiver: %v", err)
+		return nil, fmt.Errorf("Failed to create the OpenCensus receiver on address %q: error %v", addr, err)
 	}
-
-	ln, err := net.Listen("tcp", addr)
-	if err != nil {
-		return nil, fmt.Errorf("Cannot bind to address %q: %v", addr, err)
-	}
-	srv := internal.GRPCServerWithObservabilityEnabled()
 	if err := view.Register(internal.AllViews...); err != nil {
 		return nil, fmt.Errorf("Failed to register internal.AllViews: %v", err)
 	}
@@ -150,17 +143,11 @@ func runOCReceiver(addr string, sr spansink.Sink) (doneFn func() error, err erro
 		return nil, fmt.Errorf("Failed to register ocgrpc.DefaultServerViews: %v", err)
 	}
 
-	agenttracepb.RegisterTraceServiceServer(srv, oci)
-	go func() {
-		log.Printf("Running OpenCensus receiver as a gRPC service at %q", addr)
-		if err := srv.Serve(ln); err != nil {
-			log.Fatalf("Failed to run OpenCensus receiver: %v", err)
-		}
-	}()
-	doneFn = func() error {
-		srv.Stop()
-		return nil
+	if err := ocr.StartTraceReception(context.Background(), sr); err != nil {
+		return nil, fmt.Errorf("Failed to start TraceReceiver: %v", err)
 	}
+	log.Printf("Running OpenCensus Trace receiver as a gRPC service at %q", addr)
+	doneFn = ocr.Stop
 	return doneFn, nil
 }
 
