@@ -1,0 +1,67 @@
+{
+    "node": {
+      "identifier": {},
+      "library_info": {},
+      "service_info": {
+        "name": "api"
+      }
+    },
+    "spans": [
+      {
+        "trace_id": "AAAAAAAAAABSlpqJVVcaPw==",
+        "span_id": "AAAAAABkfZg=",
+        "parent_span_id": "AAAAAABoxOM=",
+        "name": {
+          "value": "get"
+        },
+        "start_time": {
+          "seconds": 1485467191,
+          "nanos": 639875000
+        },
+        "end_time": {
+          "seconds": 1485467191,
+          "nanos": 662813000
+        },
+        "attributes": {
+          "attribute_map": {
+            "peer.service": {
+              "Value": {
+                "StringValue": {
+                  "value": "AAAAAAAAMDk="
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "trace_id": "AAAAAAAAAABSlpqJVVcaPw==",
+        "span_id": "AAAAAABkfZk=",
+        "parent_span_id": "AAAAAABoxOM=",
+        "name": {
+          "value": "get"
+        },
+        "start_time": {
+          "seconds": 1485467191,
+          "nanos": 639875000
+        },
+        "end_time": {
+          "seconds": 1485467191,
+          "nanos": 662813000
+        },
+        "links": {
+          "link": [
+            {
+              "trace_id": "AAAAAAAAAABSlpqJVVcaPw==",
+              "span_id": "AAAAAABkfZg=",
+              "type": 1
+            },
+            {
+              "trace_id": "AAAAAAAAAABSlpqJVVcaPw==",
+              "span_id": "AAAAAABoxOM="
+            }
+          ]
+        }
+      }
+    ]
+  }
