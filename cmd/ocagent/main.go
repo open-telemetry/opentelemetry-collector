@@ -26,14 +26,16 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/census-instrumentation/opencensus-service/exporter"
-	"github.com/census-instrumentation/opencensus-service/internal"
-	"github.com/census-instrumentation/opencensus-service/receiver/opencensus"
-	"github.com/census-instrumentation/opencensus-service/receiver/zipkin"
-	"github.com/census-instrumentation/opencensus-service/spansink"
 	"go.opencensus.io/plugin/ocgrpc"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/zpages"
+
+	"github.com/census-instrumentation/opencensus-service/exporter"
+	"github.com/census-instrumentation/opencensus-service/internal"
+	"github.com/census-instrumentation/opencensus-service/receiver/jaeger"
+	"github.com/census-instrumentation/opencensus-service/receiver/opencensus"
+	"github.com/census-instrumentation/opencensus-service/receiver/zipkin"
+	"github.com/census-instrumentation/opencensus-service/spansink"
 )
 
 var configYAMLFile string
@@ -93,6 +95,15 @@ func runOCAgent() {
 		closeFns = append(closeFns, zipkinReceiverDoneFn)
 	}
 
+	if agentConfig.jaegerReceiverEnabled() {
+		collectorHTTPPort, collectorThriftPort := agentConfig.jaegerReceiverPorts()
+		jaegerDoneFn, err := runJaegerReceiver(collectorThriftPort, collectorHTTPPort, commonSpanSink)
+		if err != nil {
+			log.Fatal(err)
+		}
+		closeFns = append(closeFns, jaegerDoneFn)
+	}
+
 	// Always cleanup finally
 	defer func() {
 		for _, closeFn := range closeFns {
@@ -148,6 +159,21 @@ func runOCReceiver(addr string, sr spansink.Sink) (doneFn func() error, err erro
 	}
 	log.Printf("Running OpenCensus Trace receiver as a gRPC service at %q", addr)
 	doneFn = ocr.Stop
+	return doneFn, nil
+}
+
+func runJaegerReceiver(collectorThriftPort, collectorHTTPPort int, sr spansink.Sink) (doneFn func() error, err error) {
+	jtr, err := jaeger.New(context.Background(), collectorThriftPort, collectorHTTPPort)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to create new Jaeger receiver: %v", err)
+	}
+	if err := jtr.StartTraceReception(context.Background(), sr); err != nil {
+		return nil, fmt.Errorf("Failed to start Jaeger receiver: %v", err)
+	}
+	doneFn = func() error {
+		return jtr.StopTraceReception(context.Background())
+	}
+	log.Printf("Running Jaeger receiver with CollectorThriftPort %d CollectHTTPPort %d", collectorThriftPort, collectorHTTPPort)
 	return doneFn, nil
 }
 

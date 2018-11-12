@@ -15,6 +15,7 @@
         - [Receivers](#agent-config-receivers)
             - [OpenCensus](#details-receivers-opencensus)
             - [Zipkin](#details-receivers-zipkin)
+            - [Jaeger](#details-receivers-jaeger)
         - [End-to-end example](#agent-config-end-to-end-example)
     - [Diagnostics](#agent-diagnostics)
         - [zPages](#agent-zpages)
@@ -159,6 +160,21 @@ For example:
 receivers:
     zipkin:
         address: "localhost:9411"
+```
+
+#### <a name="details-receivers-jaeger"></a>Jaeger
+
+This receiver receives spans from Jaeger collector HTTP and Thrift uploads and translates them into the internal span types that are then
+sent to the collector/exporters.
+
+Its address can be configured in the YAML configuration file under section "intercpetors", subsection "jaeger" and fields "collector_http_port", "collector_thrift_port".
+
+For example:
+```yaml
+receivers:
+    jaeger
+        collector_http_port: 14268
+        collector_thrift_port: 14267
 ```
 
 ### <a name="agent-config-end-to-end-example"></a>Running an end-to-end example/demo

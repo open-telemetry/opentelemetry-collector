@@ -59,11 +59,14 @@ type config struct {
 type receivers struct {
 	OpenCensus *receiverConfig `yaml:"opencensus"`
 	Zipkin     *receiverConfig `yaml:"zipkin"`
+	Jaeger     *receiverConfig `yaml:"jaeger"`
 }
 
 type receiverConfig struct {
 	// The address to which the OpenCensus receiver will be bound and run on.
-	Address string `yaml:"address"`
+	Address             string `yaml:"address"`
+	CollectorHTTPPort   int    `yaml:"collector_http_port"`
+	CollectorThriftPort int    `yaml:"collector_thrift_port"`
 }
 
 type zPagesConfig struct {
@@ -107,6 +110,13 @@ func (c *config) zipkinReceiverEnabled() bool {
 	return c.Receivers != nil && c.Receivers.Zipkin != nil
 }
 
+func (c *config) jaegerReceiverEnabled() bool {
+	if c == nil {
+		return false
+	}
+	return c.Receivers != nil && c.Receivers.Jaeger != nil
+}
+
 func (c *config) zipkinReceiverAddress() string {
 	if c == nil || c.Receivers == nil {
 		return exporterparser.DefaultZipkinEndpointHostPort
@@ -116,6 +126,18 @@ func (c *config) zipkinReceiverAddress() string {
 		return exporterparser.DefaultZipkinEndpointHostPort
 	}
 	return inCfg.Zipkin.Address
+}
+
+func (c *config) jaegerReceiverPorts() (collectorPort, thriftPort int) {
+	if c == nil || c.Receivers == nil {
+		return 0, 0
+	}
+	rCfg := c.Receivers
+	if rCfg.Jaeger == nil {
+		return 0, 0
+	}
+	jc := rCfg.Jaeger
+	return jc.CollectorHTTPPort, jc.CollectorThriftPort
 }
 
 func parseOCAgentConfig(yamlBlob []byte) (*config, error) {
