@@ -15,13 +15,18 @@
 package tracetranslator
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"reflect"
 	"testing"
 
 	"github.com/census-instrumentation/opencensus-service/internal/testutils"
 
+	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
+	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 )
 
@@ -74,4 +79,177 @@ func loadFromJSON(file string, obj interface{}) error {
 	}
 
 	return err
+}
+
+// This test ensures that we conservatively allocate, only creating memory when necessary.
+func TestConservativeConversions(t *testing.T) {
+	batches := []*jaeger.Batch{
+		{
+			Process: nil,
+			Spans: []*jaeger.Span{
+				{}, // Blank span
+			},
+		},
+		{
+			Process: &jaeger.Process{
+				ServiceName: "testHere",
+				Tags: []*jaeger.Tag{
+					{
+						Key:   "storage_version",
+						VLong: func() *int64 { v := int64(13); return &v }(),
+						VType: jaeger.TagType_LONG,
+					},
+				},
+			},
+			Spans: []*jaeger.Span{
+				{}, // Blank span
+			},
+		},
+		{
+			Process: &jaeger.Process{
+				ServiceName: "test2",
+			},
+			Spans: []*jaeger.Span{
+				{TraceIdLow: 0, TraceIdHigh: 0},
+				{TraceIdLow: 0x01111111FFFFFFFF, TraceIdHigh: 0x0011121314111111},
+				{
+					OperationName: "HTTP call",
+					TraceIdLow:    0x01111111FFFFFFFF, TraceIdHigh: 0x0011121314111111,
+					Tags: []*jaeger.Tag{
+						{
+							Key:   "http.status_code",
+							VLong: func() *int64 { v := int64(5); return &v }(),
+							VType: jaeger.TagType_LONG,
+						},
+						{
+							Key:   "http.status_message",
+							VStr:  func() *string { v := "cache miss"; return &v }(),
+							VType: jaeger.TagType_STRING,
+						},
+					},
+				},
+				{
+					OperationName: "RPC call",
+					TraceIdLow:    0x01111111FFFFFFFF, TraceIdHigh: 0x0011121314111111,
+					Tags: []*jaeger.Tag{
+						{
+							Key:   "status.code",
+							VLong: func() *int64 { v := int64(13); return &v }(),
+							VType: jaeger.TagType_LONG,
+						},
+						{
+							Key:   "status.message",
+							VStr:  func() *string { v := "proxy crashed"; return &v }(),
+							VType: jaeger.TagType_STRING,
+						},
+					},
+				},
+			},
+		},
+		{
+			Spans: []*jaeger.Span{
+				{
+					OperationName: "ThisOne",
+					TraceIdLow:    0x1001021314151617,
+					TraceIdHigh:   0x100102F3F4F5F6F7,
+					SpanId:        0x1011121314151617,
+					ParentSpanId:  0x10F1F2F3F4F5F6F7,
+					Tags: []*jaeger.Tag{
+						{
+							Key:   "cache_miss",
+							VBool: func() *bool { v := true; return &v }(),
+							VType: jaeger.TagType_BOOL,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	var got []*agenttracepb.ExportTraceServiceRequest
+	for i, batch := range batches {
+		gb, err := JaegerThriftBatchToOCProto(batch)
+		if err != nil {
+			t.Errorf("#%d: Unexpected error: %v", i, err)
+			continue
+		}
+		got = append(got, gb)
+	}
+
+	want := []*agenttracepb.ExportTraceServiceRequest{
+		{},
+		{
+			Node: &commonpb.Node{
+				ServiceInfo: &commonpb.ServiceInfo{Name: "testHere"},
+				LibraryInfo: new(commonpb.LibraryInfo),
+				Identifier:  new(commonpb.ProcessIdentifier),
+				Attributes: map[string]string{
+					"storage_version": "13",
+				},
+			},
+			Spans: []*tracepb.Span{},
+		},
+		{
+			Node: &commonpb.Node{
+				ServiceInfo: &commonpb.ServiceInfo{Name: "test2"},
+				LibraryInfo: new(commonpb.LibraryInfo),
+				Identifier:  new(commonpb.ProcessIdentifier),
+			},
+			Spans: []*tracepb.Span{
+				// The first span should be missing
+				{
+					TraceId: []byte{0x00, 0x11, 0x12, 0x13, 0x14, 0x11, 0x11, 0x11, 0x01, 0x11, 0x11, 0x11, 0xFF, 0xFF, 0xFF, 0xFF},
+				},
+				{
+					Name:    &tracepb.TruncatableString{Value: "HTTP call"},
+					TraceId: []byte{0x00, 0x11, 0x12, 0x13, 0x14, 0x11, 0x11, 0x11, 0x01, 0x11, 0x11, 0x11, 0xFF, 0xFF, 0xFF, 0xFF},
+					// Ensure that the status code was properly translated
+					Status: &tracepb.Status{
+						Code:    5,
+						Message: "cache miss",
+					},
+				},
+				{
+					Name:    &tracepb.TruncatableString{Value: "RPC call"},
+					TraceId: []byte{0x00, 0x11, 0x12, 0x13, 0x14, 0x11, 0x11, 0x11, 0x01, 0x11, 0x11, 0x11, 0xFF, 0xFF, 0xFF, 0xFF},
+					// Ensure that the status code was properly translated
+					Status: &tracepb.Status{
+						Code:    13,
+						Message: "proxy crashed",
+					},
+				},
+			},
+		},
+		{
+			Spans: []*tracepb.Span{
+				{
+					Name:         &tracepb.TruncatableString{Value: "ThisOne"},
+					SpanId:       []byte{0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17},
+					ParentSpanId: []byte{0x10, 0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7},
+					TraceId:      []byte{0x10, 0x01, 0x02, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0x10, 0x01, 0x02, 0x13, 0x14, 0x15, 0x16, 0x17},
+					Attributes: &tracepb.Span_Attributes{
+						AttributeMap: map[string]*tracepb.AttributeValue{
+							"cache_miss": {
+								Value: &tracepb.AttributeValue_BoolValue{
+									BoolValue: true,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	if !reflect.DeepEqual(got, want) {
+		gj, wj := jsonify(got), jsonify(want)
+		if !bytes.Equal(gj, wj) {
+			t.Fatalf("Unsuccessful conversion\nGot:\n\t%v\nWant:\n\t%v", got, want)
+		}
+	}
+}
+
+func jsonify(v interface{}) []byte {
+	jb, _ := json.MarshalIndent(v, "", "   ")
+	return jb
 }

@@ -87,6 +87,9 @@ func guessUnixHomeDir() string {
 
 // TimeToTimestamp converts a time.Time to a timestamp.Timestamp pointer.
 func TimeToTimestamp(t time.Time) *timestamp.Timestamp {
+	if t.IsZero() {
+		return nil
+	}
 	nanoTime := t.UnixNano()
 	return &timestamp.Timestamp{
 		Seconds: nanoTime / 1e9,

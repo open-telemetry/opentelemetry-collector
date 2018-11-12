@@ -18,6 +18,7 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"fmt"
+	"reflect"
 	"strconv"
 	"time"
 
@@ -40,6 +41,10 @@ func JaegerThriftBatchToOCProto(jbatch *jaeger.Batch) (*agenttracepb.ExportTrace
 }
 
 func jProcessToOCProtoNode(p *jaeger.Process) *commonpb.Node {
+	if p == nil {
+		return nil
+	}
+
 	node := &commonpb.Node{
 		Identifier:  &commonpb.ProcessIdentifier{},
 		LibraryInfo: &commonpb.LibraryInfo{},
@@ -47,7 +52,7 @@ func jProcessToOCProtoNode(p *jaeger.Process) *commonpb.Node {
 	}
 
 	pTags := p.GetTags()
-	attribs := make(map[string]string, len(pTags))
+	attribs := make(map[string]string)
 
 	for _, tag := range pTags {
 		// Special treatment for special keys in the tags.
@@ -76,25 +81,36 @@ func jProcessToOCProtoNode(p *jaeger.Process) *commonpb.Node {
 		}
 	}
 
-	node.Attributes = attribs
+	if len(attribs) > 0 {
+		node.Attributes = attribs
+	}
 	return node
+}
+
+var blankJaegerSpan = new(jaeger.Span)
+
+func strToTruncatableString(s string) *tracepb.TruncatableString {
+	if s == "" {
+		return nil
+	}
+	return &tracepb.TruncatableString{Value: s}
 }
 
 func jSpansToOCProtoSpans(jspans []*jaeger.Span) []*tracepb.Span {
 	spans := make([]*tracepb.Span, 0, len(jspans))
 	for _, jspan := range jspans {
-		if jspan == nil {
+		if jspan == nil || reflect.DeepEqual(jspan, blankJaegerSpan) {
 			continue
 		}
 
 		startTime := epochMicrosecondsAsTime(uint64(jspan.StartTime))
-		sKind, sStatus, sAttributes := jtagsToAttributes(jspan.Tags)
+		_, sKind, sStatus, sAttributes := jtagsToAttributes(jspan.Tags)
 		span := &tracepb.Span{
 			TraceId: jTraceIDToOCProtoTraceID(jspan.TraceIdHigh, jspan.TraceIdLow),
 			SpanId:  jSpanIDToOCProtoSpanID(jspan.SpanId),
 			// TODO: Tracestate: Check RFC status and if is applicable,
 			ParentSpanId: jSpanIDToOCProtoSpanID(jspan.ParentSpanId),
-			Name:         &tracepb.TruncatableString{Value: jspan.OperationName},
+			Name:         strToTruncatableString(jspan.OperationName),
 			Kind:         sKind,
 			StartTime:    internal.TimeToTimestamp(startTime),
 			EndTime:      internal.TimeToTimestamp(startTime.Add(time.Duration(jspan.Duration) * time.Microsecond)),
@@ -107,7 +123,6 @@ func jSpansToOCProtoSpans(jspans []*jaeger.Span) []*tracepb.Span {
 
 		spans = append(spans, span)
 	}
-
 	return spans
 }
 
@@ -119,9 +134,13 @@ func jLogsToOCProtoTimeEvents(logs []*jaeger.Log) *tracepb.Span_TimeEvents {
 	timeEvents := make([]*tracepb.Span_TimeEvent, 0, len(logs))
 
 	for _, log := range logs {
-		_, _, attribs := jtagsToAttributes(log.Fields)
-		annotation := &tracepb.Span_TimeEvent_Annotation{
-			Attributes: attribs,
+		description, _, _, attribs := jtagsToAttributes(log.Fields)
+		var annotation *tracepb.Span_TimeEvent_Annotation
+		if attribs != nil {
+			annotation = &tracepb.Span_TimeEvent_Annotation{
+				Description: strToTruncatableString(description),
+				Attributes:  attribs,
+			}
 		}
 		timeEvent := &tracepb.Span_TimeEvent{
 			Time:  internal.TimeToTimestamp(epochMicrosecondsAsTime(uint64(log.Timestamp))),
@@ -162,6 +181,9 @@ func jReferencesToOCProtoLinks(jrefs []*jaeger.SpanRef) *tracepb.Span_Links {
 }
 
 func jTraceIDToOCProtoTraceID(high, low int64) []byte {
+	if high == 0 && low == 0 {
+		return nil
+	}
 	traceID := make([]byte, 16)
 	binary.BigEndian.PutUint64(traceID[:8], uint64(high))
 	binary.BigEndian.PutUint64(traceID[8:], uint64(low))
@@ -169,24 +191,30 @@ func jTraceIDToOCProtoTraceID(high, low int64) []byte {
 }
 
 func jSpanIDToOCProtoSpanID(id int64) []byte {
+	if id == 0 {
+		return nil
+	}
 	spanID := make([]byte, 8)
 	binary.BigEndian.PutUint64(spanID, uint64(id))
 	return spanID
 }
 
-func jtagsToAttributes(tags []*jaeger.Tag) (tracepb.Span_SpanKind, *tracepb.Status, *tracepb.Span_Attributes) {
+func jtagsToAttributes(tags []*jaeger.Tag) (string, tracepb.Span_SpanKind, *tracepb.Status, *tracepb.Span_Attributes) {
 	if tags == nil {
-		return tracepb.Span_SPAN_KIND_UNSPECIFIED, nil, nil
+		return "", tracepb.Span_SPAN_KIND_UNSPECIFIED, nil, nil
 	}
 
 	var sKind tracepb.Span_SpanKind
-	var sStatus *tracepb.Status
 
-	sAttribs := make(map[string]*tracepb.AttributeValue, len(tags))
+	var statusCodePtr *int32
+	var statusMessage string
+	var message string
+
+	sAttribs := make(map[string]*tracepb.AttributeValue)
 
 	for _, tag := range tags {
 		// Take the opportunity to get the "span.kind" per OpenTracing spec, however, keep it also on the attributes.
-		// TODO: Q: Replace any OpenTracing literals by importing github.com/opentracing/opentracing-go/ext?
+		// TODO: (@pjanotti): Replace any OpenTracing literals by importing github.com/opentracing/opentracing-go/ext?
 		switch tag.Key {
 		case "span.kind":
 			switch tag.GetVStr() {
@@ -195,11 +223,19 @@ func jtagsToAttributes(tags []*jaeger.Tag) (tracepb.Span_SpanKind, *tracepb.Stat
 			case "server":
 				sKind = tracepb.Span_SERVER
 			}
-		case "http.status_code": // It is expected to be an int
-			sStatus = &tracepb.Status{
-				Code:    int32(tag.GetVLong()),
-				Message: tag.GetVStr(),
-			}
+
+		case "http.status_code", "status.code": // It is expected to be an int
+			statusCodePtr = new(int32)
+			*statusCodePtr = int32(tag.GetVLong())
+			continue
+
+		case "http.status_message", "status.message":
+			statusMessage = tag.GetVStr()
+			continue
+
+		case "message":
+			message = tag.GetVStr()
+			continue
 		}
 
 		attrib := &tracepb.AttributeValue{}
@@ -233,10 +269,26 @@ func jtagsToAttributes(tags []*jaeger.Tag) (tracepb.Span_SpanKind, *tracepb.Stat
 		sAttribs[tag.Key] = attrib
 	}
 
-	return sKind, sStatus, &tracepb.Span_Attributes{AttributeMap: sAttribs}
+	var sStatus *tracepb.Status
+	if statusCodePtr != nil || statusMessage != "" {
+		statusCode := int32(0)
+		if statusCodePtr != nil {
+			statusCode = *statusCodePtr
+		}
+		sStatus = &tracepb.Status{Message: statusMessage, Code: statusCode}
+	}
+
+	var sAttributes *tracepb.Span_Attributes
+	if len(sAttribs) > 0 {
+		sAttributes = &tracepb.Span_Attributes{AttributeMap: sAttribs}
+	}
+	return message, sKind, sStatus, sAttributes
 }
 
 // epochMicrosecondsAsTime converts microseconds since epoch to time.Time value.
-func epochMicrosecondsAsTime(ts uint64) time.Time {
+func epochMicrosecondsAsTime(ts uint64) (t time.Time) {
+	if ts == 0 {
+		return
+	}
 	return time.Unix(0, int64(ts*1e3)).UTC()
 }
