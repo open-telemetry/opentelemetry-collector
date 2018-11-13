@@ -19,11 +19,12 @@ import (
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricpb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 )
 
 // Sink is an interface that receives metrics from a Node identifier.
 type Sink interface {
-	ReceiveMetrics(ctx context.Context, node *commonpb.Node, metrics ...*metricpb.Metric) (*Acknowledgement, error)
+	ReceiveMetrics(ctx context.Context, node *commonpb.Node, resource *resourcepb.Resource, metrics ...*metricpb.Metric) (*Acknowledgement, error)
 }
 
 // Acknowledgement struct reports the number of saved and dropped spans in a

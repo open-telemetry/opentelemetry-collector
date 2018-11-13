@@ -66,7 +66,7 @@ type spansAndNode struct {
 
 var errTraceExportProtocolViolation = errors.New("protocol violation: Export's first message must have a Node")
 
-const receiverName = "opencensus"
+const receiverName = "opencensus_trace"
 
 // Export is the gRPC method that receives streamed traces from
 // OpenCensus-traceproto compatible libraries/applications.
@@ -139,7 +139,7 @@ func (oci *Receiver) batchSpanExporting(longLivedRPCCtx context.Context, payload
 	}
 
 	// Trace this method
-	ctx, span := trace.StartSpan(context.Background(), "OpenCensusReceiver.Export")
+	ctx, span := trace.StartSpan(context.Background(), "OpenCensusTraceReceiver.Export")
 	defer span.End()
 
 	// TODO: (@odeke-em) investigate if it is necessary

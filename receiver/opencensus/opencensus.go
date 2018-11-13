@@ -26,9 +26,11 @@ import (
 	"github.com/census-instrumentation/opencensus-service/internal"
 	"github.com/census-instrumentation/opencensus-service/metricsink"
 	"github.com/census-instrumentation/opencensus-service/receiver"
+	"github.com/census-instrumentation/opencensus-service/receiver/opencensus/ocmetrics"
 	"github.com/census-instrumentation/opencensus-service/receiver/opencensus/octrace"
 	"github.com/census-instrumentation/opencensus-service/spansink"
 
+	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 )
 
@@ -37,11 +39,13 @@ type ocReceiver struct {
 	ln     net.Listener
 	server *grpc.Server
 
-	traceReceiver *octrace.Receiver
+	traceReceiver   *octrace.Receiver
+	metricsReceiver *ocmetrics.Receiver
 
-	stopOnce               sync.Once
-	startServerOnce        sync.Once
-	startTraceReceiverOnce sync.Once
+	stopOnce                 sync.Once
+	startServerOnce          sync.Once
+	startTraceReceiverOnce   sync.Once
+	startMetricsReceiverOnce sync.Once
 }
 
 // TraceMetricsReceiverStopper is an interface that implements:
@@ -82,15 +86,25 @@ func (ocr *ocReceiver) StartTraceReception(ctx context.Context, ts spansink.Sink
 
 	ocr.startTraceReceiverOnce.Do(func() {
 		ocr.traceReceiver, err = octrace.New(ts)
-		srv := ocr.grpcServer()
-		agenttracepb.RegisterTraceServiceServer(srv, ocr.traceReceiver)
+		if err == nil {
+			srv := ocr.grpcServer()
+			agenttracepb.RegisterTraceServiceServer(srv, ocr.traceReceiver)
+		}
 	})
 	return err
 }
 
 func (ocr *ocReceiver) StartMetricsReception(ctx context.Context, ms metricsink.Sink) error {
-	// Currently a noop: TODO(@odeke-em, @songya): add the metrics receiver here
-	return nil
+	var err = errAlreadyStarted
+
+	ocr.startMetricsReceiverOnce.Do(func() {
+		ocr.metricsReceiver, err = ocmetrics.New(ms)
+		if err == nil {
+			srv := ocr.grpcServer()
+			agentmetricspb.RegisterMetricsServiceServer(srv, ocr.metricsReceiver)
+		}
+	})
+	return err
 }
 
 func (ocr *ocReceiver) grpcServer() *grpc.Server {
