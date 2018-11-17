@@ -53,3 +53,13 @@ $ git checkout -b feature
 $ git commit
 $ git push fork feature
 ```
+
+## General Notes
+
+This project uses go 1.11 and Travis for CI.
+
+Travis CI uses the Makefile with the default target, it is recommended to
+run it before submitting your PR. It runs `gofmt -s` (simplify) and `golint`.
+
+The dependencies are managed with `go mod` if you work with the sources under your
+`$GOPATH` you need to set the environment variable `GO111MODULE=on`.

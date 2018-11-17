@@ -1,0 +1,5 @@
+# Enable receivers with default configuration
+receivers:
+  jaeger: {} 
+  opencensus: {}
+  zipkin: {}

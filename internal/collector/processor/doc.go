@@ -12,21 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Program occollector receives stats and traces from multiple sources and
-// batches them for appropriate forwarding to backends (e.g.: Jaeger or Zipkin)
-// or other layers of occollector. The forwarding can be configured so
-// buffer sizes, number of retries, backoff policy, etc can be ajusted according
-// to specific needs of each deployment.
-package main
-
-import (
-	"log"
-
-	"github.com/census-instrumentation/opencensus-service/cmd/occollector/app/collector"
-)
-
-func main() {
-	if err := collector.Execute(); err != nil {
-		log.Fatalf("Failed to run the collector: %v", err)
-	}
-}
+// Package processor is the central point on the collector processing: it
+// aggregates and performs any operation that applies to all traces in the
+// pipeline. Traces reach it after being converted to the OpenCensus protobuf
+// format.
+package processor

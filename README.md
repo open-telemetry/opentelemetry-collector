@@ -292,18 +292,36 @@ The collector is in its initial development stages. It can be run directly
 from sources, binary, or a Docker image.
 
 1. Run from sources:
-```
+```shell
 $ go run github.com/census-instrumentation/opencensus-service/cmd/occollector
 ```
 2. Run from binary (from the root of your repo):
-```
+```shell
 $ make collector
 $ ./bin/occollector_$($GOOS)
 ```
 3. Build a Docker scratch image and use the appropria Docker command for your scenario:
-```
+```shell
 $ make docker-collector
 $ docker run --rm -it -p 55678:55678 occollector
+```
+
+4. It can be configured via command-line or config file:
+```shell
+OpenCensus Collector
+
+Usage:
+  occollector [flags]
+
+Flags:
+      --add-queued-processor   Flag to wrap one processor with the queued processor (flag will be remove soon, dev helper)
+      --config string          Path to the config file
+  -h, --help                   help for occollector
+      --log-level string       Output level of logs (TRACE, DEBUG, INFO, WARN, ERROR, FATAL) (default "INFO")
+      --noop-processor         Flag to add the no-op processor (combine with log level DEBUG to log incoming spans)
+      --receive-jaeger         Flag to run the Jaeger receiver (i.e.: Jaeger Collector), default settings: {ThriftTChannelPort:14267 ThriftHTTPPort:14268}
+      --receive-oc-trace       Flag to run the OpenCensus trace receiver, default settings: {Port:55678}
+      --receive-zipkin         Flag to run the Zipkin receiver, default settings: {Port:9411}
 ```
 
 [travis-image]: https://travis-ci.org/census-instrumentation/opencensus-service.svg?branch=master
