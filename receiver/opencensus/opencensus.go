@@ -24,11 +24,9 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/census-instrumentation/opencensus-service/internal"
-	"github.com/census-instrumentation/opencensus-service/metricsink"
 	"github.com/census-instrumentation/opencensus-service/receiver"
 	"github.com/census-instrumentation/opencensus-service/receiver/opencensus/ocmetrics"
 	"github.com/census-instrumentation/opencensus-service/receiver/opencensus/octrace"
-	"github.com/census-instrumentation/opencensus-service/spansink"
 
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
@@ -81,7 +79,7 @@ func New(addr string) (TraceMetricsReceiverStopper, error) {
 	return ocr, nil
 }
 
-func (ocr *ocReceiver) StartTraceReception(ctx context.Context, ts spansink.Sink) error {
+func (ocr *ocReceiver) StartTraceReception(ctx context.Context, ts receiver.TraceReceiverSink) error {
 	var err = errAlreadyStarted
 
 	ocr.startTraceReceiverOnce.Do(func() {
@@ -94,7 +92,7 @@ func (ocr *ocReceiver) StartTraceReception(ctx context.Context, ts spansink.Sink
 	return err
 }
 
-func (ocr *ocReceiver) StartMetricsReception(ctx context.Context, ms metricsink.Sink) error {
+func (ocr *ocReceiver) StartMetricsReception(ctx context.Context, ms receiver.MetricsReceiverSink) error {
 	var err = errAlreadyStarted
 
 	ocr.startMetricsReceiverOnce.Do(func() {
@@ -136,8 +134,8 @@ func (ocr *ocReceiver) StopMetricsReception(ctx context.Context) error {
 
 // TraceMetricsSink implements both spansink.Sink and metricsink.Sink.
 type TraceMetricsSink interface {
-	spansink.Sink
-	metricsink.Sink
+	receiver.TraceReceiverSink
+	receiver.MetricsReceiverSink
 }
 
 // Start runs all the receivers/services on it, invoking:

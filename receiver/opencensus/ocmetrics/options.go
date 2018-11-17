@@ -50,7 +50,7 @@ func (mpc metricBufferCount) WithReceiver(oci *Receiver) {
 
 // WithMetricBufferCount is an option that allows one to configure
 // the number of metrics that are buffered before the Receiver
-// send them to its MetricsReceiver.
+// send them to its MetricsReceiverSink.
 func WithMetricBufferCount(count int) Option {
 	return metricBufferCount(count)
 }

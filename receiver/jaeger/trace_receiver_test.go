@@ -31,8 +31,8 @@ import (
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/internal"
+	"github.com/census-instrumentation/opencensus-service/receiver"
 	jaegerreceiver "github.com/census-instrumentation/opencensus-service/receiver/jaeger"
-	"github.com/census-instrumentation/opencensus-service/spansink"
 )
 
 func TestReception(t *testing.T) {
@@ -205,9 +205,9 @@ type concurrentSpanSink struct {
 	traces []*agenttracepb.ExportTraceServiceRequest
 }
 
-var _ spansink.Sink = (*concurrentSpanSink)(nil)
+var _ receiver.TraceReceiverSink = (*concurrentSpanSink)(nil)
 
-func (css *concurrentSpanSink) ReceiveSpans(ctx context.Context, node *commonpb.Node, spans ...*tracepb.Span) (*spansink.Acknowledgement, error) {
+func (css *concurrentSpanSink) ReceiveSpans(ctx context.Context, node *commonpb.Node, spans ...*tracepb.Span) (*receiver.TraceReceiverAcknowledgement, error) {
 	css.mu.Lock()
 	defer css.mu.Unlock()
 
@@ -216,7 +216,7 @@ func (css *concurrentSpanSink) ReceiveSpans(ctx context.Context, node *commonpb.
 		Spans: spans,
 	})
 
-	ack := &spansink.Acknowledgement{
+	ack := &receiver.TraceReceiverAcknowledgement{
 		SavedSpans: uint64(len(spans)),
 	}
 

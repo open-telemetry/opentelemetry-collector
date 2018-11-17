@@ -26,11 +26,10 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/jaegertracing/jaeger/cmd/collector/app"
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
-	"github.com/uber/tchannel-go"
+	tchannel "github.com/uber/tchannel-go"
 	"github.com/uber/tchannel-go/thrift"
 
 	"github.com/census-instrumentation/opencensus-service/receiver"
-	"github.com/census-instrumentation/opencensus-service/spansink"
 	"github.com/census-instrumentation/opencensus-service/translator/trace"
 )
 
@@ -40,7 +39,7 @@ type jReceiver struct {
 	// mu protects the fields of this type
 	mu sync.Mutex
 
-	spanSink spansink.Sink
+	spanSink receiver.TraceReceiverSink
 
 	startOnce sync.Once
 	stopOnce  sync.Once
@@ -88,7 +87,7 @@ func (jr *jReceiver) tchannelAddr() string {
 	return fmt.Sprintf(":%d", port)
 }
 
-func (jr *jReceiver) StartTraceReception(ctx context.Context, spanSink spansink.Sink) error {
+func (jr *jReceiver) StartTraceReception(ctx context.Context, spanSink receiver.TraceReceiverSink) error {
 	jr.mu.Lock()
 	defer jr.mu.Unlock()
 

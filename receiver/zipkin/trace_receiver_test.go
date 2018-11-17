@@ -35,7 +35,7 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/internal"
 	"github.com/census-instrumentation/opencensus-service/internal/testutils"
-	"github.com/census-instrumentation/opencensus-service/spansink"
+	"github.com/census-instrumentation/opencensus-service/receiver"
 	"github.com/census-instrumentation/opencensus-service/translator/trace"
 )
 
@@ -397,8 +397,8 @@ func TestConversionRoundtrip(t *testing.T) {
 
 type noopSink int
 
-var _ spansink.Sink = (*noopSink)(nil)
+var _ receiver.TraceReceiverSink = (*noopSink)(nil)
 
-func (ns *noopSink) ReceiveSpans(ctx context.Context, node *commonpb.Node, spans ...*tracepb.Span) (*spansink.Acknowledgement, error) {
+func (ns *noopSink) ReceiveSpans(ctx context.Context, node *commonpb.Node, spans ...*tracepb.Span) (*receiver.TraceReceiverAcknowledgement, error) {
 	return nil, nil
 }

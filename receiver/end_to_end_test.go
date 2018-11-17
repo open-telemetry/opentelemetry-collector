@@ -27,7 +27,6 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/receiver"
 	"github.com/census-instrumentation/opencensus-service/receiver/opencensus"
-	"github.com/census-instrumentation/opencensus-service/spansink"
 )
 
 func Example_endToEnd() {
@@ -94,11 +93,11 @@ func Example_endToEnd() {
 
 type logSpanSink int
 
-var _ spansink.Sink = (*logSpanSink)(nil)
+var _ receiver.TraceReceiverSink = (*logSpanSink)(nil)
 
-func (lsr *logSpanSink) ReceiveSpans(ctx context.Context, node *commonpb.Node, spans ...*tracepb.Span) (*spansink.Acknowledgement, error) {
+func (lsr *logSpanSink) ReceiveSpans(ctx context.Context, node *commonpb.Node, spans ...*tracepb.Span) (*receiver.TraceReceiverAcknowledgement, error) {
 	spansBlob, _ := json.MarshalIndent(spans, " ", "  ")
 	log.Printf("\n****\nNode: %#v\nSpans: %s\n****\n", node, spansBlob)
 
-	return &spansink.Acknowledgement{SavedSpans: uint64(len(spans))}, nil
+	return &receiver.TraceReceiverAcknowledgement{SavedSpans: uint64(len(spans))}, nil
 }

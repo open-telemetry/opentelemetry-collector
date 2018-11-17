@@ -20,7 +20,7 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/census-instrumentation/opencensus-service/spansink"
+	"github.com/census-instrumentation/opencensus-service/receiver"
 )
 
 type protoProcessorSink struct {
@@ -28,17 +28,17 @@ type protoProcessorSink struct {
 	protoProcessor SpanProcessor
 }
 
-var _ (spansink.Sink) = (*protoProcessorSink)(nil)
+var _ (receiver.TraceReceiverSink) = (*protoProcessorSink)(nil)
 
 // WrapWithSpanSink wraps a processor to be used as a span sink by receivers.
-func WrapWithSpanSink(format string, p SpanProcessor) spansink.Sink {
+func WrapWithSpanSink(format string, p SpanProcessor) receiver.TraceReceiverSink {
 	return &protoProcessorSink{
 		sourceFormat:   format,
 		protoProcessor: p,
 	}
 }
 
-func (ps *protoProcessorSink) ReceiveSpans(ctx context.Context, node *commonpb.Node, spans ...*tracepb.Span) (*spansink.Acknowledgement, error) {
+func (ps *protoProcessorSink) ReceiveSpans(ctx context.Context, node *commonpb.Node, spans ...*tracepb.Span) (*receiver.TraceReceiverAcknowledgement, error) {
 	batch := &agenttracepb.ExportTraceServiceRequest{
 		Node:  node,
 		Spans: spans,
@@ -46,7 +46,7 @@ func (ps *protoProcessorSink) ReceiveSpans(ctx context.Context, node *commonpb.N
 
 	failures, err := ps.protoProcessor.ProcessSpans(batch, ps.sourceFormat)
 
-	ack := &spansink.Acknowledgement{
+	ack := &receiver.TraceReceiverAcknowledgement{
 		SavedSpans:   uint64(len(batch.Spans)) - failures,
 		DroppedSpans: failures,
 	}

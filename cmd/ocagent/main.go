@@ -32,10 +32,10 @@ import (
 
 	"github.com/census-instrumentation/opencensus-service/exporter"
 	"github.com/census-instrumentation/opencensus-service/internal"
+	"github.com/census-instrumentation/opencensus-service/receiver"
 	"github.com/census-instrumentation/opencensus-service/receiver/jaeger"
 	"github.com/census-instrumentation/opencensus-service/receiver/opencensus"
 	"github.com/census-instrumentation/opencensus-service/receiver/zipkin"
-	"github.com/census-instrumentation/opencensus-service/spansink"
 )
 
 var configYAMLFile string
@@ -142,7 +142,7 @@ func runZPages(port int) func() error {
 	return srv.Close
 }
 
-func runOCReceiver(addr string, sr spansink.Sink) (doneFn func() error, err error) {
+func runOCReceiver(addr string, sr receiver.TraceReceiverSink) (doneFn func() error, err error) {
 	ocr, err := opencensus.New(addr)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create the OpenCensus receiver on address %q: error %v", addr, err)
@@ -162,7 +162,7 @@ func runOCReceiver(addr string, sr spansink.Sink) (doneFn func() error, err erro
 	return doneFn, nil
 }
 
-func runJaegerReceiver(collectorThriftPort, collectorHTTPPort int, sr spansink.Sink) (doneFn func() error, err error) {
+func runJaegerReceiver(collectorThriftPort, collectorHTTPPort int, sr receiver.TraceReceiverSink) (doneFn func() error, err error) {
 	jtr, err := jaeger.New(context.Background(), collectorThriftPort, collectorHTTPPort)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create new Jaeger receiver: %v", err)
@@ -177,7 +177,7 @@ func runJaegerReceiver(collectorThriftPort, collectorHTTPPort int, sr spansink.S
 	return doneFn, nil
 }
 
-func runZipkinReceiver(addr string, sr spansink.Sink) (doneFn func() error, err error) {
+func runZipkinReceiver(addr string, sr receiver.TraceReceiverSink) (doneFn func() error, err error) {
 	zi, err := zipkinreceiver.New(sr)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create the Zipkin receiver: %v", err)

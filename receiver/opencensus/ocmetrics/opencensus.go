@@ -28,20 +28,20 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/census-instrumentation/opencensus-service/internal"
-	"github.com/census-instrumentation/opencensus-service/metricsink"
+	"github.com/census-instrumentation/opencensus-service/receiver"
 )
 
 // Receiver is the type used to handle metrics from OpenCensus exporters.
 type Receiver struct {
-	metricSink         metricsink.Sink
+	metricSink         receiver.MetricsReceiverSink
 	metricBufferPeriod time.Duration
 	metricBufferCount  int
 }
 
 // New creates a new ocmetrics.Receiver reference.
-func New(sr metricsink.Sink, opts ...Option) (*Receiver, error) {
+func New(sr receiver.MetricsReceiverSink, opts ...Option) (*Receiver, error) {
 	if sr == nil {
-		return nil, errors.New("needs a non-nil metricsink.Sink")
+		return nil, errors.New("needs a non-nil receiver.MetricsReceiverSink")
 	}
 	ocr := &Receiver{metricSink: sr}
 	for _, opt := range opts {

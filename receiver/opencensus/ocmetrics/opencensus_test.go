@@ -36,7 +36,7 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/census-instrumentation/opencensus-service/internal"
-	"github.com/census-instrumentation/opencensus-service/metricsink"
+	"github.com/census-instrumentation/opencensus-service/receiver"
 	"github.com/census-instrumentation/opencensus-service/receiver/opencensus/ocmetrics"
 )
 
@@ -325,18 +325,18 @@ func newMetricAppender() *metricAppender {
 	return &metricAppender{metricsPerNode: make(map[*commonpb.Node][]*metricspb.Metric)}
 }
 
-var _ metricsink.Sink = (*metricAppender)(nil)
+var _ receiver.MetricsReceiverSink = (*metricAppender)(nil)
 
-func (sa *metricAppender) ReceiveMetrics(ctx context.Context, node *commonpb.Node, resource *resourcepb.Resource, metrics ...*metricspb.Metric) (*metricsink.Acknowledgement, error) {
+func (sa *metricAppender) ReceiveMetrics(ctx context.Context, node *commonpb.Node, resource *resourcepb.Resource, metrics ...*metricspb.Metric) (*receiver.MetricsReceiverAcknowledgement, error) {
 	sa.Lock()
 	defer sa.Unlock()
 
 	sa.metricsPerNode[node] = append(sa.metricsPerNode[node], metrics...)
 
-	return &metricsink.Acknowledgement{SavedMetrics: uint64(len(metrics))}, nil
+	return &receiver.MetricsReceiverAcknowledgement{SavedMetrics: uint64(len(metrics))}, nil
 }
 
-func ocReceiverOnGRPCServer(t *testing.T, sr metricsink.Sink, opts ...ocmetrics.Option) (oci *ocmetrics.Receiver, port int, done func()) {
+func ocReceiverOnGRPCServer(t *testing.T, sr receiver.MetricsReceiverSink, opts ...ocmetrics.Option) (oci *ocmetrics.Receiver, port int, done func()) {
 	ln, err := net.Listen("tcp", ":0")
 	if err != nil {
 		t.Fatalf("Failed to find an available address to run the gRPC server: %v", err)

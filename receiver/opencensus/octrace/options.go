@@ -35,7 +35,7 @@ func (sfd *spanBufferPeriod) WithReceiver(oci *Receiver) {
 
 // WithSpanBufferPeriod is an option that allows one to configure
 // the period that spans are buffered for before the Receiver
-// sends them to its spansink.Sink.
+// sends them to its TraceReceiverSink.
 func WithSpanBufferPeriod(period time.Duration) Option {
 	return &spanBufferPeriod{period: period}
 }
@@ -50,7 +50,7 @@ func (spc spanBufferCount) WithReceiver(oci *Receiver) {
 
 // WithSpanBufferCount is an option that allows one to configure
 // the number of spans that are buffered before the Receiver
-// send them to its spansink.Sink.
+// send them to its TraceReceiverSink.
 func WithSpanBufferCount(count int) Option {
 	return spanBufferCount(count)
 }

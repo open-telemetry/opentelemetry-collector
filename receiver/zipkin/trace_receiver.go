@@ -36,26 +36,26 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+
 	"github.com/census-instrumentation/opencensus-service/internal"
 	"github.com/census-instrumentation/opencensus-service/receiver"
-	"github.com/census-instrumentation/opencensus-service/spansink"
 )
 
 // ZipkinReceiver type is used to handle spans received in the Zipkin format.
 type ZipkinReceiver struct {
-	spanSink spansink.Sink
+	spanSink receiver.TraceReceiverSink
 }
 
 var _ receiver.TraceReceiver = (*ZipkinReceiver)(nil)
 var _ http.Handler = (*ZipkinReceiver)(nil)
 
 // New creates a new zipkingreceiver.ZipkinReceiver reference.
-func New(sr spansink.Sink) (*ZipkinReceiver, error) {
+func New(sr receiver.TraceReceiverSink) (*ZipkinReceiver, error) {
 	return &ZipkinReceiver{spanSink: sr}, nil
 }
 
 // StartTraceReception tells the receiver to start its processing.
-func (zi *ZipkinReceiver) StartTraceReception(ctx context.Context, spanSink spansink.Sink) error {
+func (zi *ZipkinReceiver) StartTraceReception(ctx context.Context, spanSink receiver.TraceReceiverSink) error {
 	zi.spanSink = spanSink
 	return nil
 }
