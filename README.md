@@ -137,7 +137,7 @@ Agent provides a couple of receivers that receive spans from instrumentation lib
 This receiver receives spans from OpenCensus instrumented applications and translates them into the internal span types that
 are then sent to the collector/exporters.
 
-Its address can be configured in the YAML configuration file under section "interceptors", subsection "opencensus" and field "address".
+Its address can be configured in the YAML configuration file under section "receivers", subsection "opencensus" and field "address".
 
 For example:
 ```yaml
@@ -153,7 +153,7 @@ By default this receiver is ALWAYS started since it is the point of the "OpenCen
 This receiver receives spans from Zipkin "/v2" API HTTP uploads and translates them into the internal span types that are then
 sent to the collector/exporters.
 
-Its address can be configured in the YAML configuration file under section "interceptors", subsection "zipkin" and field "address".
+Its address can be configured in the YAML configuration file under section "receivers", subsection "zipkin" and field "address".
 
 For example:
 ```yaml
@@ -167,7 +167,7 @@ receivers:
 This receiver receives spans from Jaeger collector HTTP and Thrift uploads and translates them into the internal span types that are then
 sent to the collector/exporters.
 
-Its address can be configured in the YAML configuration file under section "interceptors", subsection "jaeger" and fields "collector_http_port", "collector_thrift_port".
+Its address can be configured in the YAML configuration file under section "receivers", subsection "jaeger" and fields "collector_http_port", "collector_thrift_port".
 
 For example:
 ```yaml
