@@ -41,7 +41,10 @@ func Run(logger *zap.Logger, v *viper.Viper, spanProc processor.SpanProcessor) (
 	}
 
 	ctx := context.Background()
-	jtr, err := jaeger.New(ctx, rOpts.ThriftTChannelPort, rOpts.ThriftHTTPPort)
+	jtr, err := jaeger.New(ctx, &jaeger.Configuration{
+		CollectorThriftPort: rOpts.ThriftTChannelPort,
+		CollectorHTTPPort:   rOpts.ThriftHTTPPort,
+	})
 	if err != nil {
 		return nil, err
 	}

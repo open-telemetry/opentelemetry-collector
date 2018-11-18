@@ -196,7 +196,14 @@ func runOCReceiver(acfg *config.Config, sr receiver.TraceReceiverSink, mr receiv
 }
 
 func runJaegerReceiver(collectorThriftPort, collectorHTTPPort int, sr receiver.TraceReceiverSink) (doneFn func() error, err error) {
-	jtr, err := jaeger.New(context.Background(), collectorThriftPort, collectorHTTPPort)
+	jtr, err := jaeger.New(context.Background(), &jaeger.Configuration{
+		CollectorThriftPort: collectorThriftPort,
+		CollectorHTTPPort:   collectorHTTPPort,
+
+		// TODO: (@odeke-em, @pjanotti) send a change
+		// to dynamically retrieve the Jaeger Agent's ports
+		// and not use their defaults of 5778, 6831, 6832
+	})
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create new Jaeger receiver: %v", err)
 	}
