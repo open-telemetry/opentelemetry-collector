@@ -18,9 +18,9 @@ import (
 	"context"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/exporter"
 	"go.opencensus.io/exporter/jaeger"
-	"go.opencensus.io/trace"
 )
 
 // Slight modified version of go/src/go.opencensus.io/exporter/jaeger/jaeger.go
@@ -75,9 +75,9 @@ func JaegerExportersFromYAML(config []byte) (tes []exporter.TraceExporter, doneF
 	return
 }
 
-func (je *jaegerExporter) ExportSpanData(ctx context.Context, node *commonpb.Node, spandata ...*trace.SpanData) error {
+func (je *jaegerExporter) ExportSpans(ctx context.Context, node *commonpb.Node, spans ...*tracepb.Span) error {
 	// TODO: Examine "contrib.go.opencensus.io/exporter/jaeger" to see
 	// if trace.ExportSpan was constraining and if perhaps the Jaeger
 	// upload can use the context and information from the Node.
-	return exportSpans(ctx, node, "jaeger", je.exporter, spandata)
+	return exportSpans(ctx, node, "jaeger", je.exporter, spans)
 }

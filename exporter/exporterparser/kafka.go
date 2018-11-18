@@ -19,9 +19,9 @@ import (
 	"fmt"
 
 	"github.com/yancl/opencensus-go-exporter-kafka"
-	"go.opencensus.io/trace"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/exporter"
 )
 
@@ -73,6 +73,6 @@ func KafkaExportersFromYAML(config []byte) (tes []exporter.TraceExporter, doneFn
 	return tes, doneFns, nil
 }
 
-func (kde *kafkaExporter) ExportSpanData(ctx context.Context, node *commonpb.Node, spandata ...*trace.SpanData) error {
-	return exportSpans(ctx, node, "kafka", kde.exporter, spandata)
+func (kde *kafkaExporter) ExportSpans(ctx context.Context, node *commonpb.Node, spans ...*tracepb.Span) error {
+	return exportSpans(ctx, node, "kafka", kde.exporter, spans)
 }

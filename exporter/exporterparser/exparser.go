@@ -23,25 +23,37 @@ package exporterparser
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strings"
 
 	"go.opencensus.io/trace"
 	yaml "gopkg.in/yaml.v2"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/internal"
+	tracetranslator "github.com/census-instrumentation/opencensus-service/translator/trace"
 )
 
-func exportSpans(ctx context.Context, node *commonpb.Node, exporterName string, te trace.Exporter, spandata []*trace.SpanData) error {
-	for _, sd := range spandata {
-		te.ExportSpan(sd)
+func exportSpans(ctx context.Context, node *commonpb.Node, exporterName string, te trace.Exporter, spans []*tracepb.Span) error {
+	var errs []error
+	var goodSpans []*tracepb.Span
+	for _, span := range spans {
+		sd, err := tracetranslator.ProtoSpanToOCSpanData(span)
+		if err == nil {
+			te.ExportSpan(sd)
+			goodSpans = append(goodSpans, span)
+		} else {
+			errs = append(errs, err)
+		}
 	}
 
 	// And finally record metrics on the number of exported spans.
 	nSpansCounter := internal.NewExportedSpansRecorder(exporterName)
-	nSpansCounter(ctx, node, spandata)
+	nSpansCounter(ctx, node, goodSpans)
 
-	return nil
+	return combineErrors(errs)
 }
 
 func yamlUnmarshal(yamlBlob []byte, dest interface{}) error {
@@ -49,4 +61,17 @@ func yamlUnmarshal(yamlBlob []byte, dest interface{}) error {
 		return fmt.Errorf("Cannot YAML unmarshal data: %v", err)
 	}
 	return nil
+}
+
+func combineErrors(errs []error) error {
+	if len(errs) == 0 {
+		return nil
+	}
+
+	// Otherwise
+	buf := new(strings.Builder)
+	for _, err := range errs {
+		fmt.Fprintf(buf, "%v\n", err)
+	}
+	return errors.New(buf.String())
 }

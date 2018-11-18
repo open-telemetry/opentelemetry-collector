@@ -19,9 +19,9 @@ import (
 	"fmt"
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
-	"go.opencensus.io/trace"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/exporter"
 )
 
@@ -79,9 +79,9 @@ func StackdriverTraceExportersFromYAML(config []byte) (tes []exporter.TraceExpor
 	return tes, doneFns, nil
 }
 
-func (sde *stackdriverExporter) ExportSpanData(ctx context.Context, node *commonpb.Node, spandata ...*trace.SpanData) error {
+func (sde *stackdriverExporter) ExportSpans(ctx context.Context, node *commonpb.Node, spans ...*tracepb.Span) error {
 	// TODO: Examine "contrib.go.opencensus.io/exporter/stackdriver" to see
 	// if trace.ExportSpan was constraining and if perhaps the Stackdriver
 	// upload can use the context and information from the Node.
-	return exportSpans(ctx, node, "stackdriver", sde.exporter, spandata)
+	return exportSpans(ctx, node, "stackdriver", sde.exporter, spans)
 }

@@ -97,10 +97,10 @@ func NewReceivedSpansRecorderStreaming(lifetimeCtx context.Context, receiverName
 // NewExportedSpansRecorder creates a helper function that'll add the name of the
 // creating exporter as a tag value in the context that will be used to count the
 // the number of spans exported.
-func NewExportedSpansRecorder(exporterName string) func(context.Context, *commonpb.Node, []*trace.SpanData) {
-	return func(ctx context.Context, ni *commonpb.Node, spandata []*trace.SpanData) {
+func NewExportedSpansRecorder(exporterName string) func(context.Context, *commonpb.Node, []*tracepb.Span) {
+	return func(ctx context.Context, ni *commonpb.Node, spans []*tracepb.Span) {
 		ctx, _ = tag.New(ctx, tag.Upsert(tagKeyExporterName, exporterName))
-		stats.Record(ctx, mExportedSpans.M(int64(len(spandata))))
+		stats.Record(ctx, mExportedSpans.M(int64(len(spans))))
 	}
 }
 
