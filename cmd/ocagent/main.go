@@ -178,25 +178,16 @@ func runJaegerReceiver(collectorThriftPort, collectorHTTPPort int, sr receiver.T
 }
 
 func runZipkinReceiver(addr string, sr receiver.TraceReceiverSink) (doneFn func() error, err error) {
-	zi, err := zipkinreceiver.New(sr)
+	zi, err := zipkinreceiver.New(addr)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create the Zipkin receiver: %v", err)
 	}
 
-	ln, err := net.Listen("tcp", addr)
-	if err != nil {
-		return nil, fmt.Errorf("Cannot bind Zipkin receiver to address %q: %v", addr, err)
+	if err := zi.StartTraceReception(context.Background(), sr); err != nil {
+		return nil, fmt.Errorf("Cannot start Zipkin receiver with address %q: %v", addr, err)
 	}
-	mux := http.NewServeMux()
-	mux.Handle(zipkinRoute, zi)
-	go func() {
-		fullAddr := addr + zipkinRoute
-		log.Printf("Running the Zipkin receiver at %q", fullAddr)
-		if err := http.Serve(ln, mux); err != nil {
-			log.Fatalf("Failed to serve the Zipkin receiver: %v", err)
-		}
-	}()
-
-	doneFn = ln.Close
+	doneFn = func() error {
+		return zi.StopTraceReception(context.Background())
+	}
 	return doneFn, nil
 }

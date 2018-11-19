@@ -27,6 +27,7 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"sync"
 
 	"go.opencensus.io/trace"
 
@@ -43,24 +44,72 @@ import (
 
 // ZipkinReceiver type is used to handle spans received in the Zipkin format.
 type ZipkinReceiver struct {
+	// mu protects the fields of this struct
+	mu sync.Mutex
+
+	// addr is the address onto which the HTTP server will be bound
+	addr string
+
 	spanSink receiver.TraceReceiverSink
+
+	startOnce sync.Once
+	stopOnce  sync.Once
+	server    *http.Server
 }
 
 var _ receiver.TraceReceiver = (*ZipkinReceiver)(nil)
 var _ http.Handler = (*ZipkinReceiver)(nil)
 
-// New creates a new zipkingreceiver.ZipkinReceiver reference.
-func New(sr receiver.TraceReceiverSink) (*ZipkinReceiver, error) {
-	return &ZipkinReceiver{spanSink: sr}, nil
+// New creates a new zipkinreceiver.ZipkinReceiver reference.
+func New(address string) (*ZipkinReceiver, error) {
+	zr := &ZipkinReceiver{addr: address}
+	return zr, nil
 }
 
-// StartTraceReception tells the receiver to start its processing.
-func (zi *ZipkinReceiver) StartTraceReception(ctx context.Context, spanSink receiver.TraceReceiverSink) error {
-	zi.spanSink = spanSink
-	return nil
+const defaultAddress = ":9411"
+
+func (zr *ZipkinReceiver) address() string {
+	addr := zr.addr
+	if addr == "" {
+		addr = defaultAddress
+	}
+	return addr
 }
 
-func (zi *ZipkinReceiver) parseAndConvertToTraceSpans(blob []byte, hdr http.Header) (reqs []*agenttracepb.ExportTraceServiceRequest, err error) {
+var (
+	errAlreadyStarted = errors.New("already started")
+	errAlreadyStopped = errors.New("already stopped")
+)
+
+// StartTraceReception spins up the receiver's HTTP server and makes the receiver start its processing.
+func (zr *ZipkinReceiver) StartTraceReception(ctx context.Context, spanSink receiver.TraceReceiverSink) error {
+	zr.mu.Lock()
+	defer zr.mu.Unlock()
+
+	var err = errAlreadyStarted
+
+	zr.startOnce.Do(func() {
+		ln, lerr := net.Listen("tcp", zr.address())
+		if lerr != nil {
+			err = lerr
+			return
+		}
+
+		server := &http.Server{Handler: zr}
+		go func() {
+			_ = server.Serve(ln)
+		}()
+
+		zr.spanSink = spanSink
+		zr.server = server
+
+		err = nil
+	})
+
+	return err
+}
+
+func (zr *ZipkinReceiver) parseAndConvertToTraceSpans(blob []byte, hdr http.Header) (reqs []*agenttracepb.ExportTraceServiceRequest, err error) {
 	var zipkinSpans []*zipkinmodel.SpanModel
 
 	// This flag's reference is from:
@@ -74,7 +123,7 @@ func (zi *ZipkinReceiver) parseAndConvertToTraceSpans(blob []byte, hdr http.Head
 		zipkinSpans, err = zipkinproto.ParseSpans(blob, debugWasSet)
 
 	default: // By default, we'll assume using JSON
-		zipkinSpans, err = zi.deserializeFromJSON(blob, debugWasSet)
+		zipkinSpans, err = zr.deserializeFromJSON(blob, debugWasSet)
 	}
 
 	if err != nil {
@@ -116,7 +165,7 @@ func (zi *ZipkinReceiver) parseAndConvertToTraceSpans(blob []byte, hdr http.Head
 	return reqs, nil
 }
 
-func (zi *ZipkinReceiver) deserializeFromJSON(jsonBlob []byte, debugWasSet bool) (zs []*zipkinmodel.SpanModel, err error) {
+func (zr *ZipkinReceiver) deserializeFromJSON(jsonBlob []byte, debugWasSet bool) (zs []*zipkinmodel.SpanModel, err error) {
 	if err = json.Unmarshal(jsonBlob, &zs); err != nil {
 		return nil, err
 	}
@@ -124,9 +173,14 @@ func (zi *ZipkinReceiver) deserializeFromJSON(jsonBlob []byte, debugWasSet bool)
 }
 
 // StopTraceReception tells the receiver that should stop reception,
-// giving it a chance to perform any necessary clean-up.
-func (zi *ZipkinReceiver) StopTraceReception(ctx context.Context) error {
-	return nil
+// giving it a chance to perform any necessary clean-up and shutting down
+// its HTTP server.
+func (zr *ZipkinReceiver) StopTraceReception(ctx context.Context) error {
+	var err = errAlreadyStopped
+	zr.stopOnce.Do(func() {
+		err = zr.server.Close()
+	})
+	return err
 }
 
 // processBodyIfNecessary checks the "Content-Encoding" HTTP header and if
@@ -167,7 +221,7 @@ func zlibUncompressedbody(r io.Reader) io.Reader {
 
 // The ZipkinReceiver receives spans from endpoint /api/v2 as JSON,
 // unmarshals them and sends them along to the spansink.Sink.
-func (zi *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Trace this method
 	ctx, span := trace.StartSpan(context.Background(), "ZipkinReceiver.Export")
 	defer span.End()
@@ -182,7 +236,7 @@ func (zi *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		_ = c.Close()
 	}
 	_ = r.Body.Close()
-	ereqs, err := zi.parseAndConvertToTraceSpans(slurp, r.Header)
+	ereqs, err := zr.parseAndConvertToTraceSpans(slurp, r.Header)
 	if err != nil {
 		span.SetStatus(trace.Status{
 			Code:    trace.StatusCodeInvalidArgument,
@@ -195,7 +249,7 @@ func (zi *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	spansMetricsFn := internal.NewReceivedSpansRecorderStreaming(ctx, "zipkin")
 	// Now translate them into tracepb.Span
 	for _, ereq := range ereqs {
-		zi.spanSink.ReceiveSpans(ctx, ereq.Node, ereq.Spans...)
+		zr.spanSink.ReceiveSpans(ctx, ereq.Node, ereq.Spans...)
 		// We MUST unconditionally record metrics from this reception.
 		spansMetricsFn(ereq.Node, ereq.Spans)
 	}

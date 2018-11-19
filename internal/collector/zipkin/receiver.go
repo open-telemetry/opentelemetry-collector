@@ -17,9 +17,8 @@
 package zipkinreceiver
 
 import (
+	"context"
 	"fmt"
-	"net"
-	"net/http"
 	"strconv"
 
 	"github.com/spf13/viper"
@@ -37,30 +36,21 @@ func Run(logger *zap.Logger, v *viper.Viper, spanProc processor.SpanProcessor) (
 		return nil, err
 	}
 
-	// TODO: (@pjanotti) when Zipkin implementation of StartTraceReceiver is working, change this code (this temporarily).
-	ss := processor.WrapWithSpanSink("zipkin", spanProc)
 	addr := ":" + strconv.FormatInt(int64(rOpts.Port), 10)
-	zi, err := zr.New(ss)
+	zi, err := zr.New(addr)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create the Zipkin receiver: %v", err)
 	}
+	ss := processor.WrapWithSpanSink("zipkin", spanProc)
 
-	ln, err := net.Listen("tcp", addr)
-	if err != nil {
-		return nil, fmt.Errorf("Cannot bind Zipkin receiver to address %q: %v", addr, err)
+	if err := zi.StartTraceReception(context.Background(), ss); err != nil {
+		return nil, fmt.Errorf("Cannot start Zipkin receiver to address %q: %v", addr, err)
 	}
-	mux := http.NewServeMux()
-	mux.Handle("/api/v2/spans", zi)
-	go func() {
-		if err := http.Serve(ln, mux); err != nil {
-			logger.Fatal("Failed to serve the Zipkin receiver: %v", zap.Error(err))
-		}
-	}()
 
 	logger.Info("Zipkin receiver is running.", zap.Int("port", rOpts.Port))
 
 	doneFn := func() {
-		ln.Close()
+		zi.StopTraceReception(context.Background())
 	}
 	return doneFn, nil
 }

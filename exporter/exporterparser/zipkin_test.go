@@ -16,6 +16,7 @@ package exporterparser_test
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -67,13 +68,17 @@ exporters:
 		t.Errorf("Number of trace exporters: Got %d Want %d", g, w)
 	}
 
-	zexp := exporter.MultiTraceExporters(tes...)
-
 	// Run the Zipkin receiver to "receive spans upload from a client application"
-	zi, err := zipkinreceiver.New(zexp)
+	zi, err := zipkinreceiver.New(":0")
 	if err != nil {
 		t.Fatalf("Failed to create a new Zipkin receiver: %v", err)
 	}
+
+	zexp := exporter.MultiTraceExporters(tes...)
+	if err := zi.StartTraceReception(context.Background(), zexp); err != nil {
+		t.Fatalf("Failed to start trace reception: %v", err)
+	}
+	defer zi.StopTraceReception(context.Background())
 
 	// Let the receiver receive "uploaded Zipkin spans from a Java client application"
 	req, _ := http.NewRequest("POST", "https://tld.org/", strings.NewReader(zipkinSpansJSONJavaLibrary))

@@ -156,11 +156,7 @@ func TestConversionRoundtrip(t *testing.T) {
   }
 }]`)
 
-	sink := new(noopSink)
-	zi, err := New(sink)
-	if err != nil {
-		t.Fatalf("Failed to create the Zipkin receiver: %v", err)
-	}
+	zi := &ZipkinReceiver{spanSink: new(noopSink)}
 	ereqs, err := zi.parseAndConvertToTraceSpans(receiverInputJSON, nil)
 	if err != nil {
 		t.Fatalf("Failed to parse and convert receiver JSON: %v", err)
