@@ -34,7 +34,7 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal"
 	"github.com/census-instrumentation/opencensus-service/receiver"
 	"github.com/census-instrumentation/opencensus-service/receiver/opencensus/ocmetrics"
@@ -327,13 +327,13 @@ func newMetricAppender() *metricAppender {
 
 var _ receiver.MetricsReceiverSink = (*metricAppender)(nil)
 
-func (sa *metricAppender) ReceiveMetrics(ctx context.Context, node *commonpb.Node, resource *resourcepb.Resource, metrics ...*metricspb.Metric) (*receiver.MetricsReceiverAcknowledgement, error) {
+func (sa *metricAppender) ReceiveMetricsData(ctx context.Context, md data.MetricsData) (*receiver.MetricsReceiverAcknowledgement, error) {
 	sa.Lock()
 	defer sa.Unlock()
 
-	sa.metricsPerNode[node] = append(sa.metricsPerNode[node], metrics...)
+	sa.metricsPerNode[md.Node] = append(sa.metricsPerNode[md.Node], md.Metrics...)
 
-	return &receiver.MetricsReceiverAcknowledgement{SavedMetrics: uint64(len(metrics))}, nil
+	return &receiver.MetricsReceiverAcknowledgement{SavedMetrics: uint64(len(md.Metrics))}, nil
 }
 
 func ocReceiverOnGRPCServer(t *testing.T, sr receiver.MetricsReceiverSink, opts ...ocmetrics.Option) (oci *ocmetrics.Receiver, port int, done func()) {

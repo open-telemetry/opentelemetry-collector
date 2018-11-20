@@ -18,6 +18,7 @@ import (
 	"context"
 
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
+	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/exporter"
 )
 
@@ -33,7 +34,7 @@ func NewTraceExporterProcessor(traceExporters ...exporter.TraceExporter) SpanPro
 }
 
 func (sp *exporterSpanProcessor) ProcessSpans(batch *agenttracepb.ExportTraceServiceRequest, spanFormat string) (uint64, error) {
-	ack, err := sp.tes.ReceiveSpans(context.Background(), batch.Node, batch.Spans...)
+	ack, err := sp.tes.ReceiveTraceData(context.Background(), data.TraceData{Node: batch.Node, Resource: batch.Resource, Spans: batch.Spans})
 	if err != nil {
 		return ack.DroppedSpans, err
 	}

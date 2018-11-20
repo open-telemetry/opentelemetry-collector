@@ -25,7 +25,9 @@ import (
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal"
 	"github.com/census-instrumentation/opencensus-service/receiver"
 )
@@ -59,11 +61,6 @@ func (oci *Receiver) Config(tcs agenttracepb.TraceService_ConfigServer) error {
 	return errUnimplemented
 }
 
-type spansAndNode struct {
-	spans []*tracepb.Span
-	node  *commonpb.Node
-}
-
 var errTraceExportProtocolViolation = errors.New("protocol violation: Export's first message must have a Node")
 
 const receiverName = "opencensus_trace"
@@ -74,7 +71,7 @@ func (oci *Receiver) Export(tes agenttracepb.TraceService_ExportServer) error {
 	// The bundler will receive batches of spans i.e. []*tracepb.Span
 	// We need to ensure that it propagates the receiver name as a tag
 	ctxWithReceiverName := internal.ContextWithReceiverName(tes.Context(), receiverName)
-	traceBundler := bundler.NewBundler((*spansAndNode)(nil), func(payload interface{}) {
+	traceBundler := bundler.NewBundler((*data.TraceData)(nil), func(payload interface{}) {
 		oci.batchSpanExporting(ctxWithReceiverName, payload)
 	})
 
@@ -104,11 +101,11 @@ func (oci *Receiver) Export(tes agenttracepb.TraceService_ExportServer) error {
 
 	spansMetricsFn := internal.NewReceivedSpansRecorderStreaming(tes.Context(), receiverName)
 
-	processReceivedSpans := func(ni *commonpb.Node, spans []*tracepb.Span) {
+	processReceivedSpans := func(ni *commonpb.Node, resource *resourcepb.Resource, spans []*tracepb.Span) {
 		// Firstly, we'll add them to the bundler.
 		if len(spans) > 0 {
-			bundlerPayload := &spansAndNode{node: ni, spans: spans}
-			traceBundler.Add(bundlerPayload, len(bundlerPayload.spans))
+			bundlerPayload := &data.TraceData{Node: ni, Resource: resource, Spans: spans}
+			traceBundler.Add(bundlerPayload, len(bundlerPayload.Spans))
 		}
 
 		// We MUST unconditionally record metrics from this reception.
@@ -116,6 +113,7 @@ func (oci *Receiver) Export(tes agenttracepb.TraceService_ExportServer) error {
 	}
 
 	var lastNonNilNode *commonpb.Node
+	var resource *resourcepb.Resource
 	// Now that we've got the first message with a Node, we can start to receive streamed up spans.
 	for {
 		// If a Node has been sent from downstream, save and use it.
@@ -123,7 +121,13 @@ func (oci *Receiver) Export(tes agenttracepb.TraceService_ExportServer) error {
 			lastNonNilNode = recv.Node
 		}
 
-		processReceivedSpans(lastNonNilNode, recv.Spans)
+		// TODO(songya): differentiate between unset and nil resource. See
+		// https://github.com/census-instrumentation/opencensus-proto/issues/146.
+		if recv.Resource != nil {
+			resource = recv.Resource
+		}
+
+		processReceivedSpans(lastNonNilNode, resource, recv.Spans)
 
 		recv, err = tes.Recv()
 		if err != nil {
@@ -133,8 +137,8 @@ func (oci *Receiver) Export(tes agenttracepb.TraceService_ExportServer) error {
 }
 
 func (oci *Receiver) batchSpanExporting(longLivedRPCCtx context.Context, payload interface{}) {
-	spnL := payload.([]*spansAndNode)
-	if len(spnL) == 0 {
+	tracedata := payload.([]*data.TraceData)
+	if len(tracedata) == 0 {
 		return
 	}
 
@@ -150,9 +154,9 @@ func (oci *Receiver) batchSpanExporting(longLivedRPCCtx context.Context, payload
 	internal.SetParentLink(longLivedRPCCtx, span)
 
 	nSpans := int64(0)
-	for _, spn := range spnL {
-		oci.spanSink.ReceiveSpans(ctx, spn.node, spn.spans...)
-		nSpans += int64(len(spn.spans))
+	for _, td := range tracedata {
+		oci.spanSink.ReceiveTraceData(ctx, *td)
+		nSpans += int64(len(td.Spans))
 	}
 
 	span.Annotate([]trace.Attribute{

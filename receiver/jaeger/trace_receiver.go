@@ -29,6 +29,7 @@ import (
 	tchannel "github.com/uber/tchannel-go"
 	"github.com/uber/tchannel-go/thrift"
 
+	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/receiver"
 	"github.com/census-instrumentation/opencensus-service/translator/trace"
 )
@@ -177,7 +178,7 @@ func (jr *jReceiver) SubmitBatches(ctx thrift.Context, batches []*jaeger.Batch) 
 
 		if err == nil && octrace != nil {
 			ok = true
-			jr.spanSink.ReceiveSpans(ctx, octrace.Node, octrace.Spans...)
+			jr.spanSink.ReceiveTraceData(ctx, data.TraceData{Node: octrace.Node, Spans: octrace.Spans})
 		}
 
 		jbsr = append(jbsr, &jaeger.BatchSubmitResponse{

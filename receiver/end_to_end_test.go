@@ -23,8 +23,7 @@ import (
 	"contrib.go.opencensus.io/exporter/ocagent"
 	"go.opencensus.io/trace"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/receiver"
 	"github.com/census-instrumentation/opencensus-service/receiver/opencensus"
 )
@@ -95,9 +94,9 @@ type logSpanSink int
 
 var _ receiver.TraceReceiverSink = (*logSpanSink)(nil)
 
-func (lsr *logSpanSink) ReceiveSpans(ctx context.Context, node *commonpb.Node, spans ...*tracepb.Span) (*receiver.TraceReceiverAcknowledgement, error) {
-	spansBlob, _ := json.MarshalIndent(spans, " ", "  ")
-	log.Printf("\n****\nNode: %#v\nSpans: %s\n****\n", node, spansBlob)
+func (lsr *logSpanSink) ReceiveTraceData(ctx context.Context, td data.TraceData) (*receiver.TraceReceiverAcknowledgement, error) {
+	spansBlob, _ := json.MarshalIndent(td.Spans, " ", "  ")
+	log.Printf("\n****\nNode: %#v\nSpans: %s\n****\n", td.Node, spansBlob)
 
-	return &receiver.TraceReceiverAcknowledgement{SavedSpans: uint64(len(spans))}, nil
+	return &receiver.TraceReceiverAcknowledgement{SavedSpans: uint64(len(td.Spans))}, nil
 }

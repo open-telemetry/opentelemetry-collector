@@ -27,6 +27,7 @@ import (
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal"
 	"github.com/census-instrumentation/opencensus-service/receiver"
 )
@@ -52,12 +53,6 @@ func New(sr receiver.MetricsReceiverSink, opts ...Option) (*Receiver, error) {
 
 var _ agentmetricspb.MetricsServiceServer = (*Receiver)(nil)
 
-type bundledMetrics struct {
-	metrics  []*metricspb.Metric
-	node     *commonpb.Node
-	resource *resourcepb.Resource
-}
-
 var errMetricsExportProtocolViolation = errors.New("protocol violation: Export's first message must have a Node")
 
 const receiverName = "opencensus_metrics"
@@ -68,7 +63,7 @@ func (ocr *Receiver) Export(mes agentmetricspb.MetricsService_ExportServer) erro
 	// The bundler will receive batches of metrics i.e. []*metricspb.Metric
 	// We need to ensure that it propagates the receiver name as a tag
 	ctxWithReceiverName := internal.ContextWithReceiverName(mes.Context(), receiverName)
-	metricsBundler := bundler.NewBundler((*bundledMetrics)(nil), func(payload interface{}) {
+	metricsBundler := bundler.NewBundler((*data.MetricsData)(nil), func(payload interface{}) {
 		ocr.batchMetricExporting(ctxWithReceiverName, payload)
 	})
 
@@ -123,14 +118,14 @@ func (ocr *Receiver) Export(mes agentmetricspb.MetricsService_ExportServer) erro
 func processReceivedMetrics(ni *commonpb.Node, resource *resourcepb.Resource, metrics []*metricspb.Metric, bundler *bundler.Bundler) {
 	// Firstly, we'll add them to the bundler.
 	if len(metrics) > 0 {
-		bundlerPayload := &bundledMetrics{node: ni, metrics: metrics, resource: resource}
-		bundler.Add(bundlerPayload, len(bundlerPayload.metrics))
+		bundlerPayload := &data.MetricsData{Node: ni, Metrics: metrics, Resource: resource}
+		bundler.Add(bundlerPayload, len(bundlerPayload.Metrics))
 	}
 }
 
 func (ocr *Receiver) batchMetricExporting(longLivedRPCCtx context.Context, payload interface{}) {
-	bms := payload.([]*bundledMetrics)
-	if len(bms) == 0 {
+	mds := payload.([]*data.MetricsData)
+	if len(mds) == 0 {
 		return
 	}
 
@@ -146,9 +141,9 @@ func (ocr *Receiver) batchMetricExporting(longLivedRPCCtx context.Context, paylo
 	internal.SetParentLink(longLivedRPCCtx, span)
 
 	nMetrics := int64(0)
-	for _, bm := range bms {
-		ocr.metricSink.ReceiveMetrics(ctx, bm.node, bm.resource, bm.metrics...)
-		nMetrics += int64(len(bm.metrics))
+	for _, md := range mds {
+		ocr.metricSink.ReceiveMetricsData(ctx, *md)
+		nMetrics += int64(len(md.Metrics))
 	}
 
 	span.Annotate([]trace.Attribute{

@@ -36,6 +36,7 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal"
 	"github.com/census-instrumentation/opencensus-service/receiver"
 	"github.com/census-instrumentation/opencensus-service/receiver/opencensus/octrace"
@@ -447,13 +448,13 @@ func newSpanAppender() *spanAppender {
 
 var _ receiver.TraceReceiverSink = (*spanAppender)(nil)
 
-func (sa *spanAppender) ReceiveSpans(ctx context.Context, node *commonpb.Node, spans ...*tracepb.Span) (*receiver.TraceReceiverAcknowledgement, error) {
+func (sa *spanAppender) ReceiveTraceData(ctx context.Context, td data.TraceData) (*receiver.TraceReceiverAcknowledgement, error) {
 	sa.Lock()
 	defer sa.Unlock()
 
-	sa.spansPerNode[node] = append(sa.spansPerNode[node], spans...)
+	sa.spansPerNode[td.Node] = append(sa.spansPerNode[td.Node], td.Spans...)
 
-	return &receiver.TraceReceiverAcknowledgement{SavedSpans: uint64(len(spans))}, nil
+	return &receiver.TraceReceiverAcknowledgement{SavedSpans: uint64(len(td.Spans))}, nil
 }
 
 func ocReceiverOnGRPCServer(t *testing.T, sr receiver.TraceReceiverSink, opts ...octrace.Option) (oci *octrace.Receiver, port int, done func()) {

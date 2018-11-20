@@ -17,9 +17,8 @@ package processor
 import (
 	"context"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/receiver"
 )
 
@@ -38,10 +37,10 @@ func WrapWithSpanSink(format string, p SpanProcessor) receiver.TraceReceiverSink
 	}
 }
 
-func (ps *protoProcessorSink) ReceiveSpans(ctx context.Context, node *commonpb.Node, spans ...*tracepb.Span) (*receiver.TraceReceiverAcknowledgement, error) {
+func (ps *protoProcessorSink) ReceiveTraceData(ctx context.Context, td data.TraceData) (*receiver.TraceReceiverAcknowledgement, error) {
 	batch := &agenttracepb.ExportTraceServiceRequest{
-		Node:  node,
-		Spans: spans,
+		Node:  td.Node,
+		Spans: td.Spans,
 	}
 
 	failures, err := ps.protoProcessor.ProcessSpans(batch, ps.sourceFormat)

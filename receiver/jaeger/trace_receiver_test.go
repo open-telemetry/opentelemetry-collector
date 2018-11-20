@@ -30,6 +30,7 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal"
 	"github.com/census-instrumentation/opencensus-service/receiver"
 	jaegerreceiver "github.com/census-instrumentation/opencensus-service/receiver/jaeger"
@@ -207,17 +208,17 @@ type concurrentSpanSink struct {
 
 var _ receiver.TraceReceiverSink = (*concurrentSpanSink)(nil)
 
-func (css *concurrentSpanSink) ReceiveSpans(ctx context.Context, node *commonpb.Node, spans ...*tracepb.Span) (*receiver.TraceReceiverAcknowledgement, error) {
+func (css *concurrentSpanSink) ReceiveTraceData(ctx context.Context, td data.TraceData) (*receiver.TraceReceiverAcknowledgement, error) {
 	css.mu.Lock()
 	defer css.mu.Unlock()
 
 	css.traces = append(css.traces, &agenttracepb.ExportTraceServiceRequest{
-		Node:  node,
-		Spans: spans,
+		Node:  td.Node,
+		Spans: td.Spans,
 	})
 
 	ack := &receiver.TraceReceiverAcknowledgement{
-		SavedSpans: uint64(len(spans)),
+		SavedSpans: uint64(len(td.Spans)),
 	}
 
 	return ack, nil

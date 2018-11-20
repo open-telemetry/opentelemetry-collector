@@ -19,6 +19,7 @@ import (
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/receiver"
 )
 
@@ -53,15 +54,15 @@ func (tes traceExporters) ExportSpans(ctx context.Context, node *commonpb.Node, 
 	return nil
 }
 
-// ReceiveSpans receives the span data in the protobuf format, translates it, and forwards the transformed
+// ReceiveTraceData receives the span data in the protobuf format, translates it, and forwards the transformed
 // span data to all trace exporters wrapped by the current one.
-func (tes traceExporters) ReceiveSpans(ctx context.Context, node *commonpb.Node, spans ...*tracepb.Span) (*receiver.TraceReceiverAcknowledgement, error) {
+func (tes traceExporters) ReceiveTraceData(ctx context.Context, td data.TraceData) (*receiver.TraceReceiverAcknowledgement, error) {
 	for _, te := range tes {
-		_ = te.ExportSpans(ctx, node, spans...)
+		_ = te.ExportSpans(ctx, td.Node, td.Spans...)
 	}
 
 	ack := &receiver.TraceReceiverAcknowledgement{
-		SavedSpans: uint64(len(spans)),
+		SavedSpans: uint64(len(td.Spans)),
 	}
 	return ack, nil
 }

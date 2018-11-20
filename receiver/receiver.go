@@ -17,12 +17,8 @@ package receiver
 import (
 	"context"
 
+	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal"
-
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	metricpb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 )
 
 // A TraceReceiver is an "arbitrary data"-to-"trace proto span" converter.
@@ -42,13 +38,13 @@ type TraceReceiver interface {
 	StopTraceReception(ctx context.Context) error
 }
 
-// TraceReceiverSink is an interface that receives spans from a Node identifier.
+// TraceReceiverSink is an interface that receives TraceData.
 type TraceReceiverSink interface {
-	ReceiveSpans(ctx context.Context, node *commonpb.Node, spans ...*tracepb.Span) (*TraceReceiverAcknowledgement, error)
+	ReceiveTraceData(ctx context.Context, tracedata data.TraceData) (*TraceReceiverAcknowledgement, error)
 }
 
 // TraceReceiverAcknowledgement struct reports the number of saved and dropped spans in a
-// ReceiveSpans call.
+// ReceiveTraceData call.
 type TraceReceiverAcknowledgement struct {
 	SavedSpans   uint64
 	DroppedSpans uint64
@@ -66,13 +62,13 @@ type MetricsReceiver interface {
 	StopMetricsReception(ctx context.Context) error
 }
 
-// MetricsReceiverSink is an interface that receives metrics from a Node identifier.
+// MetricsReceiverSink is an interface that receives MetricsData.
 type MetricsReceiverSink interface {
-	ReceiveMetrics(ctx context.Context, node *commonpb.Node, resource *resourcepb.Resource, metrics ...*metricpb.Metric) (*MetricsReceiverAcknowledgement, error)
+	ReceiveMetricsData(ctx context.Context, metricsdata data.MetricsData) (*MetricsReceiverAcknowledgement, error)
 }
 
-// MetricsReceiverAcknowledgement struct reports the number of saved and dropped spans in a
-// ReceiveSpans call.
+// MetricsReceiverAcknowledgement struct reports the number of saved and dropped metrics in a
+// ReceiveMetricsData call.
 type MetricsReceiverAcknowledgement struct {
 	SavedMetrics   uint64
 	DroppedMetrics uint64

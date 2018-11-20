@@ -38,6 +38,7 @@ import (
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 
+	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal"
 	"github.com/census-instrumentation/opencensus-service/receiver"
 )
@@ -247,9 +248,9 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	spansMetricsFn := internal.NewReceivedSpansRecorderStreaming(ctx, "zipkin")
-	// Now translate them into tracepb.Span
+	// Now translate them into TraceData
 	for _, ereq := range ereqs {
-		zr.spanSink.ReceiveSpans(ctx, ereq.Node, ereq.Spans...)
+		zr.spanSink.ReceiveTraceData(ctx, data.TraceData{Node: ereq.Node, Spans: ereq.Spans})
 		// We MUST unconditionally record metrics from this reception.
 		spansMetricsFn(ereq.Node, ereq.Spans)
 	}
