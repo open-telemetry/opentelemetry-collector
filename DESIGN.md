@@ -42,7 +42,7 @@ backends. We MAY also give Agent the ability to push configurations (e.g samplin
 Library. For those languages that cannot do stats aggregation in process, they should also be
 able to send raw measurements and have Agent do the aggregation.
 
-![agent-architecture](https://user-images.githubusercontent.com/10536136/46707027-dae59700-cbec-11e8-80ae-f16a8bdbacf4.png)
+![agent-architecture](https://user-images.githubusercontent.com/10536136/48792454-2a69b900-eca9-11e8-96eb-c65b2b1e4e83.png)
 
 For developers/maintainers of other libraries: Agent can also be extended to accept spans/stats/metrics from
 other tracing/monitoring libraries, such as Zipkin, Prometheus, etc. This is done by adding specific
@@ -85,7 +85,7 @@ a unique identifier (MAY be different than the previous one).
 
 This section describes the in-process implementation details of OC-Agent.
 
-![agent-implementation](https://user-images.githubusercontent.com/10536136/46637069-65f05f80-cb0f-11e8-99e1-3cbb368e9dbc.png)
+![agent-implementation](https://user-images.githubusercontent.com/10536136/48792455-2a69b900-eca9-11e8-9055-a5d906d841b0.png)
 
 Note: Red arrows represent RPCs or HTTP requests. Black arrows represent local method
 invocations.
