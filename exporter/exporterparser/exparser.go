@@ -23,9 +23,7 @@ package exporterparser
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"strings"
 
 	"go.opencensus.io/trace"
 	yaml "gopkg.in/yaml.v2"
@@ -53,7 +51,7 @@ func exportSpans(ctx context.Context, node *commonpb.Node, exporterName string, 
 	nSpansCounter := internal.NewExportedSpansRecorder(exporterName)
 	nSpansCounter(ctx, node, goodSpans)
 
-	return combineErrors(errs)
+	return internal.CombineErrors(errs)
 }
 
 func yamlUnmarshal(yamlBlob []byte, dest interface{}) error {
@@ -61,17 +59,4 @@ func yamlUnmarshal(yamlBlob []byte, dest interface{}) error {
 		return fmt.Errorf("Cannot YAML unmarshal data: %v", err)
 	}
 	return nil
-}
-
-func combineErrors(errs []error) error {
-	if len(errs) == 0 {
-		return nil
-	}
-
-	// Otherwise
-	buf := new(strings.Builder)
-	for _, err := range errs {
-		fmt.Fprintf(buf, "%v\n", err)
-	}
-	return errors.New(buf.String())
 }

@@ -16,11 +16,14 @@ package internal
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/user"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/golang/protobuf/ptypes/timestamp"
@@ -95,4 +98,18 @@ func TimeToTimestamp(t time.Time) *timestamp.Timestamp {
 		Seconds: nanoTime / 1e9,
 		Nanos:   int32(nanoTime % 1e9),
 	}
+}
+
+// CombineErrors converts a list of errors into one error.
+func CombineErrors(errs []error) error {
+	if len(errs) == 0 {
+		return nil
+	}
+
+	// Otherwise
+	buf := new(strings.Builder)
+	for _, err := range errs {
+		fmt.Fprintf(buf, "%v\n", err)
+	}
+	return errors.New(buf.String())
 }

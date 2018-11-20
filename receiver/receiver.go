@@ -17,6 +17,8 @@ package receiver
 import (
 	"context"
 
+	"github.com/census-instrumentation/opencensus-service/internal"
+
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricpb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
@@ -74,4 +76,66 @@ type MetricsReceiverSink interface {
 type MetricsReceiverAcknowledgement struct {
 	SavedMetrics   uint64
 	DroppedMetrics uint64
+}
+
+// MultiTraceReceiver wraps multiple trace receivers in a single one.
+func MultiTraceReceiver(trs ...TraceReceiver) TraceReceiver {
+	return traceReceivers(trs)
+}
+
+type traceReceivers []TraceReceiver
+
+func (trs traceReceivers) StartTraceReception(ctx context.Context, destination TraceReceiverSink) error {
+	var errs []error
+	for _, tr := range trs {
+		err := tr.StartTraceReception(ctx, destination)
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	return internal.CombineErrors(errs)
+}
+
+func (trs traceReceivers) StopTraceReception(ctx context.Context) error {
+	var errs []error
+	for _, tr := range trs {
+		err := tr.StopTraceReception(ctx)
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	return internal.CombineErrors(errs)
+}
+
+// MultiMetricsReceiver wraps multiple metrics receivers in a single one.
+func MultiMetricsReceiver(mrs ...MetricsReceiver) MetricsReceiver {
+	return metricsReceivers(mrs)
+}
+
+type metricsReceivers []MetricsReceiver
+
+func (mrs metricsReceivers) StartMetricsReception(ctx context.Context, destination MetricsReceiverSink) error {
+	var errs []error
+	for _, mr := range mrs {
+		err := mr.StartMetricsReception(ctx, destination)
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	return internal.CombineErrors(errs)
+}
+
+func (mrs metricsReceivers) StopMetricsReception(ctx context.Context) error {
+	var errs []error
+	for _, mr := range mrs {
+		err := mr.StopMetricsReception(ctx)
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	return internal.CombineErrors(errs)
 }
