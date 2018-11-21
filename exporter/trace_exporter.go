@@ -17,8 +17,6 @@ package exporter
 import (
 	"context"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/receiver"
 )
@@ -26,9 +24,9 @@ import (
 // TraceExporter is a interface that receives OpenCensus data, converts it as needed, and
 // sends it to different destinations.
 //
-// ExportSpans receives OpenCensus proto spans for processing by the exporter.
+// ExportSpans receives OpenCensus data.TraceData for processing by the exporter.
 type TraceExporter interface {
-	ExportSpans(ctx context.Context, node *commonpb.Node, spans ...*tracepb.Span) error
+	ExportSpans(ctx context.Context, td data.TraceData) error
 }
 
 // TraceExporterSink is a interface connecting a TraceReceiverSink and
@@ -47,9 +45,9 @@ func MultiTraceExporters(tes ...TraceExporter) TraceExporterSink {
 type traceExporters []TraceExporter
 
 // ExportSpans exports the span data to all trace exporters wrapped by the current one.
-func (tes traceExporters) ExportSpans(ctx context.Context, node *commonpb.Node, spans ...*tracepb.Span) error {
+func (tes traceExporters) ExportSpans(ctx context.Context, td data.TraceData) error {
 	for _, te := range tes {
-		_ = te.ExportSpans(ctx, node, spans...)
+		_ = te.ExportSpans(ctx, td)
 	}
 	return nil
 }
@@ -58,7 +56,7 @@ func (tes traceExporters) ExportSpans(ctx context.Context, node *commonpb.Node, 
 // span data to all trace exporters wrapped by the current one.
 func (tes traceExporters) ReceiveTraceData(ctx context.Context, td data.TraceData) (*receiver.TraceReceiverAcknowledgement, error) {
 	for _, te := range tes {
-		_ = te.ExportSpans(ctx, td.Node, td.Spans...)
+		_ = te.ExportSpans(ctx, td)
 	}
 
 	ack := &receiver.TraceReceiverAcknowledgement{

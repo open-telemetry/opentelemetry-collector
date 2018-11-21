@@ -28,16 +28,16 @@ import (
 	"go.opencensus.io/trace"
 	yaml "gopkg.in/yaml.v2"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal"
 	tracetranslator "github.com/census-instrumentation/opencensus-service/translator/trace"
 )
 
-func exportSpans(ctx context.Context, node *commonpb.Node, exporterName string, te trace.Exporter, spans []*tracepb.Span) error {
+func exportSpans(ctx context.Context, exporterName string, te trace.Exporter, td data.TraceData) error {
 	var errs []error
 	var goodSpans []*tracepb.Span
-	for _, span := range spans {
+	for _, span := range td.Spans {
 		sd, err := tracetranslator.ProtoSpanToOCSpanData(span)
 		if err == nil {
 			te.ExportSpan(sd)
@@ -49,7 +49,7 @@ func exportSpans(ctx context.Context, node *commonpb.Node, exporterName string, 
 
 	// And finally record metrics on the number of exported spans.
 	nSpansCounter := internal.NewExportedSpansRecorder(exporterName)
-	nSpansCounter(ctx, node, goodSpans)
+	nSpansCounter(ctx, td.Node, goodSpans)
 
 	return internal.CombineErrors(errs)
 }

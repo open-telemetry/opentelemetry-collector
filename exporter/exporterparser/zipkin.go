@@ -30,7 +30,7 @@ import (
 	zipkinhttp "github.com/openzipkin/zipkin-go/reporter/http"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/exporter"
 	tracetranslator "github.com/census-instrumentation/opencensus-service/translator/trace"
 )
@@ -181,13 +181,13 @@ func (ze *zipkinExporter) stop() error {
 	return ze.reporter.Close()
 }
 
-func (ze *zipkinExporter) ExportSpans(ctx context.Context, node *commonpb.Node, spans ...*tracepb.Span) error {
-	for _, span := range spans {
+func (ze *zipkinExporter) ExportSpans(ctx context.Context, td data.TraceData) error {
+	for _, span := range td.Spans {
 		sd, err := tracetranslator.ProtoSpanToOCSpanData(span)
 		if err != nil {
 			return err
 		}
-		zs, err := ze.zipkinSpan(node, sd)
+		zs, err := ze.zipkinSpan(td.Node, sd)
 		if err == nil {
 			// ze.reporter can get closed in the midst of a Send
 			// so avoid a read/write during that mutation.

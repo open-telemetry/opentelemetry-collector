@@ -19,8 +19,7 @@ import (
 
 	datadog "github.com/DataDog/opencensus-go-exporter-datadog"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/exporter"
 )
 
@@ -84,9 +83,9 @@ func DatadogTraceExportersFromYAML(config []byte) (tes []exporter.TraceExporter,
 	return
 }
 
-func (dde *datadogExporter) ExportSpans(ctx context.Context, node *commonpb.Node, spans ...*tracepb.Span) error {
+func (dde *datadogExporter) ExportSpans(ctx context.Context, td data.TraceData) error {
 	// TODO: Examine the Datadog exporter to see
 	// if trace.ExportSpan was constraining and if perhaps the
 	// upload can use the context and information from the Node.
-	return exportSpans(ctx, node, "datadog", dde.exporter, spans)
+	return exportSpans(ctx, "datadog", dde.exporter, td)
 }
