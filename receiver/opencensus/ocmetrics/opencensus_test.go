@@ -236,6 +236,10 @@ func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 // metrics should be received and NEVER discarded.
 // See https://github.com/census-instrumentation/opencensus-service/issues/51
 func TestExportProtocolConformation_metricsInFirstMessage(t *testing.T) {
+	t.Skipf("Currently disabled, this test is flaky on Windows. Enable this test when the following are fixed:\nIssue %s\n",
+		"https://github.com/census-instrumentation/opencensus-service/issues/225",
+	)
+
 	metricSink := newMetricAppender()
 
 	_, port, doneFn := ocReceiverOnGRPCServer(t, metricSink, ocmetrics.WithMetricBufferPeriod(70*time.Millisecond))
