@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package config_test
 
 import (
 	"testing"
@@ -20,6 +20,7 @@ import (
 	yaml "gopkg.in/yaml.v2"
 
 	"github.com/census-instrumentation/opencensus-service/exporter/exporterparser"
+	"github.com/census-instrumentation/opencensus-service/internal/config"
 )
 
 // Issue #233: Zipkin receiver and exporter loopback detection
@@ -38,11 +39,11 @@ exporters:
         endpoint: "http://localhost:9411/api/v2/spans"
 `)
 
-	cfg, err := parseOCAgentConfig(regressionYAML)
+	cfg, err := config.ParseOCAgentConfig(regressionYAML)
 	if err != nil {
 		t.Fatalf("Unexpected YAML parse error: %v", err)
 	}
-	if err := cfg.checkLogicalConflicts(regressionYAML); err != nil {
+	if err := cfg.CheckLogicalConflicts(regressionYAML); err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
 

@@ -12,11 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package config
 
 import (
 	"fmt"
-	"log"
 	"net"
 	"net/url"
 	"reflect"
@@ -51,30 +50,54 @@ const (
 	defaultZPagesPort        = 55679
 )
 
-type config struct {
-	Receivers *receivers    `yaml:"receivers"`
-	ZPages    *zPagesConfig `yaml:"zpages"`
+// Config denotes the configuration for the various elements of an agent, that is:
+// * Receivers
+// * ZPages
+// * Exporters
+type Config struct {
+	Receivers *Receivers    `yaml:"receivers"`
+	ZPages    *ZPagesConfig `yaml:"zpages"`
+	Exporters *Exporters    `yaml:"exporters"`
 }
 
-type receivers struct {
-	OpenCensus *receiverConfig `yaml:"opencensus"`
-	Zipkin     *receiverConfig `yaml:"zipkin"`
-	Jaeger     *receiverConfig `yaml:"jaeger"`
+// Receivers denotes configurations for the various telemetry ingesters, such as:
+// * Jaeger
+// * OpenCensus
+// * Zipkin
+type Receivers struct {
+	OpenCensus *ReceiverConfig `yaml:"opencensus"`
+	Zipkin     *ReceiverConfig `yaml:"zipkin"`
+	Jaeger     *ReceiverConfig `yaml:"jaeger"`
 }
 
-type receiverConfig struct {
+// ReceiverConfig is the per-receiver configuration that identifies attributes
+// that a receiver's configuration can have such as:
+// * Address
+// * Various ports
+type ReceiverConfig struct {
 	// The address to which the OpenCensus receiver will be bound and run on.
 	Address             string `yaml:"address"`
 	CollectorHTTPPort   int    `yaml:"collector_http_port"`
 	CollectorThriftPort int    `yaml:"collector_thrift_port"`
 }
 
-type zPagesConfig struct {
+// Exporters denotes the configurations for the various backends
+// that this service exports observability signals to.
+type Exporters struct {
+	Zipkin *exporterparser.ZipkinConfig `yaml:"zipkin"`
+}
+
+// ZPagesConfig denotes the configuration that zPages will be run with.
+type ZPagesConfig struct {
 	Disabled bool `yaml:"disabled"`
 	Port     int  `yaml:"port"`
 }
 
-func (c *config) ocReceiverAddress() string {
+// OpenCensusReceiverAddress is a helper to safely retrieve the address
+// that the OpenCensus receiver will be bound to.
+// If Config is nil or the OpenCensus receiver's configuration is nil, it
+// will return the default of ":55678"
+func (c *Config) OpenCensusReceiverAddress() string {
 	if c == nil || c.Receivers == nil {
 		return defaultOCReceiverAddress
 	}
@@ -85,15 +108,21 @@ func (c *config) ocReceiverAddress() string {
 	return inCfg.OpenCensus.Address
 }
 
-func (c *config) zPagesDisabled() bool {
+// ZPagesDisabled returns true if zPages have not been enabled.
+// It returns true if Config is nil or if ZPages are explicitly disabled.
+func (c *Config) ZPagesDisabled() bool {
 	if c == nil {
 		return true
 	}
 	return c.ZPages != nil && c.ZPages.Disabled
 }
 
-func (c *config) zPagesPort() (int, bool) {
-	if c.zPagesDisabled() {
+// ZPagesPort tries to dereference the port on which zPages will be
+// served.
+// If zPages are disabled, it returns (-1, false)
+// Else if no port is set, it returns the default  55679
+func (c *Config) ZPagesPort() (int, bool) {
+	if c.ZPagesDisabled() {
 		return -1, false
 	}
 	port := defaultZPagesPort
@@ -103,21 +132,29 @@ func (c *config) zPagesPort() (int, bool) {
 	return port, true
 }
 
-func (c *config) zipkinReceiverEnabled() bool {
+// ZipkinReceiverEnabled returns true if Config is non-nil
+// and if the Zipkin receiver configuration is also non-nil.
+func (c *Config) ZipkinReceiverEnabled() bool {
 	if c == nil {
 		return false
 	}
 	return c.Receivers != nil && c.Receivers.Zipkin != nil
 }
 
-func (c *config) jaegerReceiverEnabled() bool {
+// JaegerReceiverEnabled returns true if Config is non-nil
+// and if the Jaeger receiver configuration is also non-nil.
+func (c *Config) JaegerReceiverEnabled() bool {
 	if c == nil {
 		return false
 	}
 	return c.Receivers != nil && c.Receivers.Jaeger != nil
 }
 
-func (c *config) zipkinReceiverAddress() string {
+// ZipkinReceiverAddress is a helper to safely retrieve the address
+// that the Zipkin receiver will run on.
+// If Config is nil or the Zipkin receiver's configuration is nil, it
+// will return the default of "localhost:9411"
+func (c *Config) ZipkinReceiverAddress() string {
 	if c == nil || c.Receivers == nil {
 		return exporterparser.DefaultZipkinEndpointHostPort
 	}
@@ -128,7 +165,9 @@ func (c *config) zipkinReceiverAddress() string {
 	return inCfg.Zipkin.Address
 }
 
-func (c *config) jaegerReceiverPorts() (collectorPort, thriftPort int) {
+// JaegerReceiverPorts is a helper to safely retrieve the address
+// that the Jaeger receiver will run on.
+func (c *Config) JaegerReceiverPorts() (collectorPort, thriftPort int) {
 	if c == nil || c.Receivers == nil {
 		return 0, 0
 	}
@@ -140,30 +179,28 @@ func (c *config) jaegerReceiverPorts() (collectorPort, thriftPort int) {
 	return jc.CollectorHTTPPort, jc.CollectorThriftPort
 }
 
-func parseOCAgentConfig(yamlBlob []byte) (*config, error) {
-	var cfg config
+// ParseOCAgentConfig unmarshals byte content in the YAML file format
+// to  retrieve the configuration that will be used to run the OpenCensus agent.
+func ParseOCAgentConfig(yamlBlob []byte) (*Config, error) {
+	var cfg Config
 	if err := yaml.Unmarshal(yamlBlob, &cfg); err != nil {
 		return nil, err
 	}
 	return &cfg, nil
 }
 
-// The goal of this function is to catch logical errors such as
-// if the Zipkin receiver port conflicts with that of the exporter
+// CheckLogicalConflicts serves to catch logical errors such as
+// if the Zipkin receiver port conflicts with that of the exporter,
 // lest we'll have a self DOS because spans will be exported "out" from
 // the exporter, yet be received from the receiver, then sent back out
 // and back in a never ending loop.
-func (c *config) checkLogicalConflicts(blob []byte) error {
-	var cfg struct {
-		Exporters *struct {
-			Zipkin *exporterparser.ZipkinConfig `yaml:"zipkin"`
-		} `yaml:"exporters"`
-	}
+func (c *Config) CheckLogicalConflicts(blob []byte) error {
+	var cfg Config
 	if err := yaml.Unmarshal(blob, &cfg); err != nil {
 		return err
 	}
 
-	if cfg.Exporters == nil || cfg.Exporters.Zipkin == nil || !c.zipkinReceiverEnabled() {
+	if cfg.Exporters == nil || cfg.Exporters.Zipkin == nil || !c.ZipkinReceiverEnabled() {
 		return nil
 	}
 
@@ -175,7 +212,7 @@ func (c *config) checkLogicalConflicts(blob []byte) error {
 		return fmt.Errorf("parsing ZipkinExporter address %q got error: %v", zExporterAddr, err)
 	}
 
-	zReceiverHostPort := c.zipkinReceiverAddress()
+	zReceiverHostPort := c.ZipkinReceiverAddress()
 
 	zExporterHostPort := zExporterURL.Host
 	if zReceiverHostPort == zExporterHostPort {
@@ -215,8 +252,14 @@ func eqLocalHost(host string) bool {
 	}
 }
 
-// exportersFromYAMLConfig parses the config yaml payload and returns the respective exporters
-func exportersFromYAMLConfig(config []byte) (traceExporters []exporter.TraceExporter, doneFns []func() error) {
+// ExportersFromYAMLConfig parses the config yaml payload and returns the respective exporters
+// from:
+//  + datadog
+//  + stackdriver
+//  + zipkin
+//  + jaeger
+//  + kafka
+func ExportersFromYAMLConfig(config []byte) (traceExporters []exporter.TraceExporter, doneFns []func() error, err error) {
 	parseFns := []struct {
 		name string
 		fn   func([]byte) ([]exporter.TraceExporter, []func() error, error)
@@ -229,10 +272,12 @@ func exportersFromYAMLConfig(config []byte) (traceExporters []exporter.TraceExpo
 	}
 
 	for _, cfg := range parseFns {
-		tes, tesDoneFns, err := cfg.fn(config)
+		tes, tesDoneFns, terr := cfg.fn(config)
 		if err != nil {
-			log.Fatalf("Failed to create config for %q: %v", cfg.name, err)
+			err = fmt.Errorf("Failed to create config for %q: %v", cfg.name, terr)
+			return
 		}
+
 		nonNilExporters := 0
 		for _, te := range tes {
 			if te != nil {
@@ -241,13 +286,6 @@ func exportersFromYAMLConfig(config []byte) (traceExporters []exporter.TraceExpo
 			}
 		}
 
-		if nonNilExporters > 0 {
-			pluralization := "exporter"
-			if nonNilExporters > 1 {
-				pluralization = "exporters"
-			}
-			log.Printf("%q trace-%s enabled", cfg.name, pluralization)
-		}
 		for _, doneFn := range tesDoneFns {
 			doneFns = append(doneFns, doneFn)
 		}

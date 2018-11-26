@@ -32,6 +32,7 @@ import (
 
 	"github.com/census-instrumentation/opencensus-service/exporter"
 	"github.com/census-instrumentation/opencensus-service/internal"
+	"github.com/census-instrumentation/opencensus-service/internal/config"
 	"github.com/census-instrumentation/opencensus-service/receiver"
 	"github.com/census-instrumentation/opencensus-service/receiver/jaeger"
 	"github.com/census-instrumentation/opencensus-service/receiver/opencensus"
@@ -54,7 +55,7 @@ func runOCAgent() {
 	if err != nil {
 		log.Fatalf("Cannot read the YAML file %v error: %v", configYAMLFile, err)
 	}
-	agentConfig, err := parseOCAgentConfig(yamlBlob)
+	agentConfig, err := config.ParseOCAgentConfig(yamlBlob)
 	if err != nil {
 		log.Fatalf("Failed to parse own configuration %v error: %v", configYAMLFile, err)
 	}
@@ -62,16 +63,18 @@ func runOCAgent() {
 	// Ensure that we check and catch any logical errors with the
 	// configuration e.g. if an receiver shares the same address
 	// as an exporter which would cause a self DOS and waste resources.
-	if err := agentConfig.checkLogicalConflicts(yamlBlob); err != nil {
+	if err := agentConfig.CheckLogicalConflicts(yamlBlob); err != nil {
 		log.Fatalf("Configuration logical error: %v", err)
 	}
 
-	ocReceiverAddr := agentConfig.ocReceiverAddress()
-
-	traceExporters, closeFns := exportersFromYAMLConfig(yamlBlob)
+	traceExporters, closeFns, err := config.ExportersFromYAMLConfig(yamlBlob)
+	if err != nil {
+		log.Fatalf("Config: failed to create exporters from YAML: %v", err)
+	}
 	commonSpanSink := exporter.MultiTraceExporters(traceExporters...)
 
 	// Add other receivers here as they are implemented
+	ocReceiverAddr := agentConfig.OpenCensusReceiverAddress()
 	ocReceiverDoneFn, err := runOCReceiver(ocReceiverAddr, commonSpanSink)
 	if err != nil {
 		log.Fatal(err)
@@ -79,15 +82,15 @@ func runOCAgent() {
 	closeFns = append(closeFns, ocReceiverDoneFn)
 
 	// If zPages are enabled, run them
-	zPagesPort, zPagesEnabled := agentConfig.zPagesPort()
+	zPagesPort, zPagesEnabled := agentConfig.ZPagesPort()
 	if zPagesEnabled {
 		zCloseFn := runZPages(zPagesPort)
 		closeFns = append(closeFns, zCloseFn)
 	}
 
 	// If the Zipkin receiver is enabled, then run it
-	if agentConfig.zipkinReceiverEnabled() {
-		zipkinReceiverAddr := agentConfig.zipkinReceiverAddress()
+	if agentConfig.ZipkinReceiverEnabled() {
+		zipkinReceiverAddr := agentConfig.ZipkinReceiverAddress()
 		zipkinReceiverDoneFn, err := runZipkinReceiver(zipkinReceiverAddr, commonSpanSink)
 		if err != nil {
 			log.Fatal(err)
@@ -95,8 +98,8 @@ func runOCAgent() {
 		closeFns = append(closeFns, zipkinReceiverDoneFn)
 	}
 
-	if agentConfig.jaegerReceiverEnabled() {
-		collectorHTTPPort, collectorThriftPort := agentConfig.jaegerReceiverPorts()
+	if agentConfig.JaegerReceiverEnabled() {
+		collectorHTTPPort, collectorThriftPort := agentConfig.JaegerReceiverPorts()
 		jaegerDoneFn, err := runJaegerReceiver(collectorThriftPort, collectorHTTPPort, commonSpanSink)
 		if err != nil {
 			log.Fatal(err)
