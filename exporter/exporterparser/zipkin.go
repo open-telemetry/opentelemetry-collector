@@ -132,6 +132,13 @@ func newZipkinExporter(finalEndpointURI, defaultServiceName, defaultLocalEndpoin
 	return zle, nil
 }
 
+func lookupAttribute(node *commonpb.Node, key string) string {
+	if node == nil {
+		return ""
+	}
+	return node.Attributes[key]
+}
+
 func zipkinEndpointFromNode(node *commonpb.Node, serviceName string, endpointType zipkinDirection) (*zipkinmodel.Endpoint, error) {
 	if node == nil {
 		return nil, nil
@@ -300,7 +307,7 @@ func (ze *zipkinExporter) zipkinSpan(node *commonpb.Node, s *trace.SpanData) (zc
 		return zc, err
 	}
 
-	remoteServiceName := node.Attributes[zipkinRemoteEndpointKey]
+	remoteServiceName := lookupAttribute(node, zipkinRemoteEndpointKey)
 	remoteEndpoint, _ := zipkinEndpointFromNode(node, remoteServiceName, isRemoteEndpoint)
 
 	sc := s.SpanContext

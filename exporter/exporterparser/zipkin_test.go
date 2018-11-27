@@ -112,6 +112,15 @@ exporters:
     {"timestamp": 1472470996403000,"value": "bar"}
   ],
   "tags": {"http.path": "/api","clnt/finagle.version": "6.45.0"}
+},
+{
+  "traceId": "4d1e00c0db9010db86154a4ba6e91385",
+  "parentId": "86154a4ba6e91386",
+  "id": "4d1e00c0db9010db",
+  "kind": "SERVER",
+  "name": "put",
+  "timestamp": 1472470996199000,
+  "duration": 207000
 }]`)
 
 	// Finally we need to inspect the output
@@ -186,5 +195,14 @@ const zipkinSpansJSONJavaLibrary = `
     "http.path": "/api",
     "clnt/finagle.version": "6.45.0"
   }
+},
+{
+  "traceId": "4d1e00c0db9010db86154a4ba6e91385",
+  "parentId": "86154a4ba6e91386",
+  "id": "4d1e00c0db9010db",
+  "kind": "SERVER",
+  "name": "put",
+  "timestamp": 1472470996199000,
+  "duration": 207000
 }]
 `
