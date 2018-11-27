@@ -183,7 +183,7 @@ func (c *config) checkLogicalConflicts(blob []byte) error {
 			zExporterHostPort, zReceiverHostPort)
 	}
 	zExpHost, zExpPort, _ := net.SplitHostPort(zExporterHostPort)
-	zReceiverHost, zReceiverPort, _ := net.SplitHostPort(zExporterHostPort)
+	zReceiverHost, zReceiverPort, _ := net.SplitHostPort(zReceiverHostPort)
 	if eqHosts(zExpHost, zReceiverHost) && zExpPort == zReceiverPort {
 		return fmt.Errorf("ZipkinExporter address (%q) aka (%s on port %s)\nis the same as the receiver address (%q) aka (%s on port %s)",
 			zExporterHostPort, zExpHost, zExpPort, zReceiverHostPort, zReceiverHost, zReceiverPort)
@@ -192,7 +192,7 @@ func (c *config) checkLogicalConflicts(blob []byte) error {
 	// Otherwise, now let's resolve the IPs and ensure that they aren't the same
 	zExpIPAddr, _ := net.ResolveIPAddr("ip", zExpHost)
 	zReceiverIPAddr, _ := net.ResolveIPAddr("ip", zReceiverHost)
-	if zExpIPAddr != nil && zReceiverIPAddr != nil && reflect.DeepEqual(zExpIPAddr, zReceiverIPAddr) {
+	if zExpIPAddr != nil && zReceiverIPAddr != nil && reflect.DeepEqual(zExpIPAddr, zReceiverIPAddr) && zExpPort == zReceiverPort {
 		return fmt.Errorf("ZipkinExporter address (%q) aka (%+v)\nis the same as the\nreceiver address (%q) aka (%+v)",
 			zExporterHostPort, zExpIPAddr, zReceiverHostPort, zReceiverIPAddr)
 	}
