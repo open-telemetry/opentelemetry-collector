@@ -22,12 +22,12 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/census-instrumentation/opencensus-service/internal/testutils"
+	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
+	"github.com/census-instrumentation/opencensus-service/internal/testutils"
 )
 
 func TestJaegerThriftBatchToOCProto(t *testing.T) {
@@ -118,12 +118,12 @@ func TestConservativeConversions(t *testing.T) {
 					Tags: []*jaeger.Tag{
 						{
 							Key:   "http.status_code",
-							VLong: func() *int64 { v := int64(5); return &v }(),
+							VLong: func() *int64 { v := int64(403); return &v }(),
 							VType: jaeger.TagType_LONG,
 						},
 						{
 							Key:   "http.status_message",
-							VStr:  func() *string { v := "cache miss"; return &v }(),
+							VStr:  func() *string { v := "Forbidden"; return &v }(),
 							VType: jaeger.TagType_STRING,
 						},
 					},
@@ -205,8 +205,22 @@ func TestConservativeConversions(t *testing.T) {
 					TraceId: []byte{0x00, 0x11, 0x12, 0x13, 0x14, 0x11, 0x11, 0x11, 0x01, 0x11, 0x11, 0x11, 0xFF, 0xFF, 0xFF, 0xFF},
 					// Ensure that the status code was properly translated
 					Status: &tracepb.Status{
-						Code:    5,
-						Message: "cache miss",
+						Code:    403,
+						Message: "Forbidden",
+					},
+					Attributes: &tracepb.Span_Attributes{
+						AttributeMap: map[string]*tracepb.AttributeValue{
+							"http.status_code": {
+								Value: &tracepb.AttributeValue_IntValue{
+									IntValue: 403,
+								},
+							},
+							"http.status_message": {
+								Value: &tracepb.AttributeValue_StringValue{
+									StringValue: &tracepb.TruncatableString{Value: "Forbidden"},
+								},
+							},
+						},
 					},
 				},
 				{
@@ -216,6 +230,20 @@ func TestConservativeConversions(t *testing.T) {
 					Status: &tracepb.Status{
 						Code:    13,
 						Message: "proxy crashed",
+					},
+					Attributes: &tracepb.Span_Attributes{
+						AttributeMap: map[string]*tracepb.AttributeValue{
+							"status.code": {
+								Value: &tracepb.AttributeValue_IntValue{
+									IntValue: 13,
+								},
+							},
+							"status.message": {
+								Value: &tracepb.AttributeValue_StringValue{
+									StringValue: &tracepb.TruncatableString{Value: "proxy crashed"},
+								},
+							},
+						},
 					},
 				},
 			},

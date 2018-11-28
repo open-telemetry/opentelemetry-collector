@@ -82,6 +82,7 @@ github.com/inconshreveable/mousetrap v1.0.0 h1:Z8tu5sraLXCXIcARxBp/8cbvlwVa7Z1NH
 github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=
 github.com/jaegertracing/jaeger v1.7.0 h1:RVpmOTj7Zb9QRFHI5CYvkYSTR8Cdn/PhM5kBxA4pZBM=
 github.com/jaegertracing/jaeger v1.7.0/go.mod h1:LUWPSnzNPGRubM8pk0inANGitpiMOOxihXx0+53llXI=
+github.com/jaegertracing/jaeger v1.8.0 h1:8nWwXtXFqCVyEPjKczfnB1Yj9s7DmaDHYbqnfNBORMY=
 github.com/jmespath/go-jmespath v0.0.0-20160202185014-0b12d6b521d8 h1:12VvqtR6Aowv3l/EQUlocDHW2Cp4G9WJVH7uyH8QFJE=
 github.com/jmespath/go-jmespath v0.0.0-20160202185014-0b12d6b521d8/go.mod h1:Nht3zPeWKUH0NzdCt2Blrr5ys8VGpn0CEB0cQHVjt7k=
 github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af h1:pmfjZENx5imkbgOkpRUYLnmbU7UEFbjtDA2hxJ1ichM=

@@ -8,7 +8,7 @@ require (
 	github.com/BurntSushi/toml v0.3.1 // indirect
 	github.com/DataDog/datadog-go v0.0.0-20180822151419-281ae9f2d895 // indirect
 	github.com/DataDog/opencensus-go-exporter-datadog v0.0.0-20181026070331-e7c4bd17b329
-	github.com/apache/thrift v0.0.0-20161221203622-b2a4d4ae21c7 // indirect
+	github.com/apache/thrift v0.0.0-20161221203622-b2a4d4ae21c7
 	github.com/aws/aws-sdk-go v1.15.68 // indirect
 	github.com/bmizerany/perks v0.0.0-20141205001514-d9a9656a3a4b // indirect
 	github.com/census-instrumentation/opencensus-proto v0.1.0
@@ -37,7 +37,7 @@ require (
 	github.com/stretchr/testify v1.2.2 // indirect
 	github.com/tinylib/msgp v1.0.2 // indirect
 	github.com/uber-go/atomic v1.3.2 // indirect
-	github.com/uber/jaeger-lib v1.5.0 // indirect
+	github.com/uber/jaeger-lib v1.5.0
 	github.com/uber/tchannel-go v1.10.0
 	github.com/yancl/opencensus-go-exporter-kafka v0.0.0-20181029030031-9c471c1bfbeb
 	go.opencensus.io v0.18.0

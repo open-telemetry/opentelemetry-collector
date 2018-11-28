@@ -163,7 +163,8 @@ func jReferencesToOCProtoLinks(jrefs []*jaeger.SpanRef) *tracepb.Span_Links {
 	for _, jref := range jrefs {
 		var linkType tracepb.Span_Link_Type
 		if jref.RefType == jaeger.SpanRefType_CHILD_OF {
-			linkType = tracepb.Span_Link_CHILD_LINKED_SPAN
+			// Wording on OC for Span_Link_PARENT_LINKED_SPAN: The linked span is a parent of the current span.
+			linkType = tracepb.Span_Link_PARENT_LINKED_SPAN
 		} else {
 			// TODO: SpanRefType_FOLLOWS_FROM doesn't map well to OC, so treat all other cases as unknown
 			linkType = tracepb.Span_Link_TYPE_UNSPECIFIED
@@ -227,15 +228,12 @@ func jtagsToAttributes(tags []*jaeger.Tag) (string, tracepb.Span_SpanKind, *trac
 		case "http.status_code", "status.code": // It is expected to be an int
 			statusCodePtr = new(int32)
 			*statusCodePtr = int32(tag.GetVLong())
-			continue
 
 		case "http.status_message", "status.message":
 			statusMessage = tag.GetVStr()
-			continue
 
 		case "message":
 			message = tag.GetVStr()
-			continue
 		}
 
 		attrib := &tracepb.AttributeValue{}

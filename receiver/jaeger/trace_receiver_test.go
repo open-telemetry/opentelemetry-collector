@@ -91,7 +91,7 @@ func TestReception(t *testing.T) {
 				{
 					TraceID: trace.TraceID{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80},
 					SpanID:  trace.SpanID{0xCF, 0xCE, 0xCD, 0xCC, 0xCB, 0xCA, 0xC9, 0xC8},
-					Type:    trace.LinkTypeChild,
+					Type:    trace.LinkTypeParent,
 				},
 			},
 		},
@@ -111,7 +111,7 @@ func TestReception(t *testing.T) {
 				{
 					TraceID: trace.TraceID{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80},
 					SpanID:  trace.SpanID{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8},
-					Type:    trace.LinkTypeParent,
+					Type:    trace.LinkTypeChild,
 				},
 			},
 		},
@@ -154,12 +154,22 @@ func TestReception(t *testing.T) {
 						Code:    trace.StatusCodeNotFound,
 						Message: "Stale indices",
 					},
+					Attributes: &tracepb.Span_Attributes{
+						AttributeMap: map[string]*tracepb.AttributeValue{
+							"status.code": {
+								Value: &tracepb.AttributeValue_IntValue{IntValue: trace.StatusCodeNotFound},
+							},
+							"status.message": {
+								Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "Stale indices"}},
+							},
+						},
+					},
 					Links: &tracepb.Span_Links{
 						Link: []*tracepb.Span_Link{
 							{
 								TraceId: []byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80},
 								SpanId:  []byte{0xCF, 0xCE, 0xCD, 0xCC, 0xCB, 0xCA, 0xC9, 0xC8},
-								Type:    tracepb.Span_Link_CHILD_LINKED_SPAN,
+								Type:    tracepb.Span_Link_PARENT_LINKED_SPAN,
 							},
 						},
 					},
@@ -174,6 +184,16 @@ func TestReception(t *testing.T) {
 						Code:    trace.StatusCodeInternal,
 						Message: "Frontend crash",
 					},
+					Attributes: &tracepb.Span_Attributes{
+						AttributeMap: map[string]*tracepb.AttributeValue{
+							"status.code": {
+								Value: &tracepb.AttributeValue_IntValue{IntValue: trace.StatusCodeInternal},
+							},
+							"status.message": {
+								Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "Frontend crash"}},
+							},
+						},
+					},
 					Links: &tracepb.Span_Links{
 						Link: []*tracepb.Span_Link{
 							{
@@ -184,7 +204,7 @@ func TestReception(t *testing.T) {
 								// * Child_of
 								// * Follows_from
 								// yet OpenCensus has Parent too but Jaeger uses a zero-value for LinkCHILD.
-								Type: tracepb.Span_Link_CHILD_LINKED_SPAN,
+								Type: tracepb.Span_Link_PARENT_LINKED_SPAN,
 							},
 						},
 					},
