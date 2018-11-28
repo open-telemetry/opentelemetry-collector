@@ -30,6 +30,7 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/zpages"
 
+	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/exporter"
 	"github.com/census-instrumentation/opencensus-service/internal"
 	"github.com/census-instrumentation/opencensus-service/internal/config"
@@ -48,6 +49,14 @@ func main() {
 	if err := rootCmd.Execute(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+type noopMetricsSink int
+
+var _ receiver.MetricsReceiverSink = (*noopMetricsSink)(nil)
+
+func (nms *noopMetricsSink) ReceiveMetricsData(ctx context.Context, metricsdata data.MetricsData) (*receiver.MetricsReceiverAcknowledgement, error) {
+	return &receiver.MetricsReceiverAcknowledgement{}, nil
 }
 
 func runOCAgent() {
@@ -71,11 +80,13 @@ func runOCAgent() {
 	if err != nil {
 		log.Fatalf("Config: failed to create exporters from YAML: %v", err)
 	}
+
 	commonSpanSink := exporter.MultiTraceExporters(traceExporters...)
+	// TODO: (@odeke-em, @songy23) remove this noopMetricsSink once we have metrics exporters.
+	commonMetricsSink := new(noopMetricsSink)
 
 	// Add other receivers here as they are implemented
-	ocReceiverAddr := agentConfig.OpenCensusReceiverAddress()
-	ocReceiverDoneFn, err := runOCReceiver(ocReceiverAddr, commonSpanSink)
+	ocReceiverDoneFn, err := runOCReceiver(agentConfig, commonSpanSink, commonMetricsSink)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -145,7 +156,8 @@ func runZPages(port int) func() error {
 	return srv.Close
 }
 
-func runOCReceiver(addr string, sr receiver.TraceReceiverSink) (doneFn func() error, err error) {
+func runOCReceiver(acfg *config.Config, sr receiver.TraceReceiverSink, mr receiver.MetricsReceiverSink) (doneFn func() error, err error) {
+	addr := acfg.OpenCensusReceiverAddress()
 	ocr, err := opencensus.New(addr)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create the OpenCensus receiver on address %q: error %v", addr, err)
@@ -157,10 +169,32 @@ func runOCReceiver(addr string, sr receiver.TraceReceiverSink) (doneFn func() er
 		return nil, fmt.Errorf("Failed to register ocgrpc.DefaultServerViews: %v", err)
 	}
 
-	if err := ocr.StartTraceReception(context.Background(), sr); err != nil {
-		return nil, fmt.Errorf("Failed to start TraceReceiver: %v", err)
+	ctx := context.Background()
+
+	switch {
+	case acfg.CanRunAllOpenCensusReceivers():
+		if err := ocr.StartTraceReception(ctx, sr); err != nil {
+			return nil, fmt.Errorf("Failed to start OpenCensus Trace receiver: %v", err)
+		}
+		if err := ocr.StartMetricsReception(ctx, mr); err != nil {
+			ocr.Stop()
+			return nil, fmt.Errorf("Failed to start OpenCensus Metrics receiver: %v", err)
+		}
+		log.Printf("Running OpenCensus Trace and Metrics receivers as a gRPC service at %q", addr)
+
+	case acfg.CanRunOpenCensusTraceReceiver():
+		if err := ocr.StartTraceReception(ctx, sr); err != nil {
+			return nil, fmt.Errorf("Failed to start TraceReceiver: %v", err)
+		}
+		log.Printf("Running OpenCensus Trace receiver as a gRPC service at %q", addr)
+
+	case acfg.CanRunOpenCensusMetricsReceiver():
+		if err := ocr.StartMetricsReception(ctx, mr); err != nil {
+			return nil, fmt.Errorf("Failed to start MetricsReceiver: %v", err)
+		}
+		log.Printf("Running OpenCensus Metrics receiver as a gRPC service at %q", addr)
 	}
-	log.Printf("Running OpenCensus Trace receiver as a gRPC service at %q", addr)
+
 	doneFn = ocr.Stop
 	return doneFn, nil
 }

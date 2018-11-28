@@ -79,6 +79,11 @@ type ReceiverConfig struct {
 	Address             string `yaml:"address"`
 	CollectorHTTPPort   int    `yaml:"collector_http_port"`
 	CollectorThriftPort int    `yaml:"collector_thrift_port"`
+
+	// DisableTracing disables trace receiving and is only applicable to trace receivers.
+	DisableTracing bool `yaml:"disable_tracing"`
+	// DisableMetrics disables metrics receiving and is only applicable to metrics receivers.
+	DisableMetrics bool `yaml:"disable_metrics"`
 }
 
 // Exporters denotes the configurations for the various backends
@@ -106,6 +111,24 @@ func (c *Config) OpenCensusReceiverAddress() string {
 		return defaultOCReceiverAddress
 	}
 	return inCfg.OpenCensus.Address
+}
+
+// CanRunAllOpenCensusReceivers returns true if the configuration
+// permits running both the OpenCensus Metrics and Trace receivers.
+func (c *Config) CanRunAllOpenCensusReceivers() bool {
+	return c.CanRunOpenCensusTraceReceiver() && c.CanRunOpenCensusMetricsReceiver()
+}
+
+// CanRunOpenCensusTraceReceiver returns true if the configuration
+// permits running the OpenCensus Trace receiver.
+func (c *Config) CanRunOpenCensusTraceReceiver() bool {
+	return c != nil && c.Receivers != nil && !c.Receivers.OpenCensus.DisableTracing
+}
+
+// CanRunOpenCensusMetricsReceiver returns true if the configuration
+// permits running the OpenCensus Metrics receiver.
+func (c *Config) CanRunOpenCensusMetricsReceiver() bool {
+	return c != nil && c.Receivers != nil && !c.Receivers.OpenCensus.DisableMetrics
 }
 
 // ZPagesDisabled returns true if zPages have not been enabled.
