@@ -113,12 +113,6 @@ func (c *Config) OpenCensusReceiverAddress() string {
 	return inCfg.OpenCensus.Address
 }
 
-// CanRunAllOpenCensusReceivers returns true if the configuration
-// permits running both the OpenCensus Metrics and Trace receivers.
-func (c *Config) CanRunAllOpenCensusReceivers() bool {
-	return c.CanRunOpenCensusTraceReceiver() && c.CanRunOpenCensusMetricsReceiver()
-}
-
 // CanRunOpenCensusTraceReceiver returns true if the configuration
 // permits running the OpenCensus Trace receiver.
 func (c *Config) CanRunOpenCensusTraceReceiver() bool {
