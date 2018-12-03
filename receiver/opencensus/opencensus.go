@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net"
 	"sync"
+	"time"
 
 	"google.golang.org/grpc"
 
@@ -32,7 +33,8 @@ import (
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 )
 
-type ocReceiver struct {
+// Receiver is the type that exposes Trace and Metrics reception.
+type Receiver struct {
 	mu     sync.Mutex
 	ln     net.Listener
 	server *grpc.Server
@@ -46,18 +48,6 @@ type ocReceiver struct {
 	startMetricsReceiverOnce sync.Once
 }
 
-// TraceMetricsReceiverStopper is an interface that implements:
-// * receiver.TraceReceiver
-// * receiver.MetricsReceiver
-// * a Stop() error method
-type TraceMetricsReceiverStopper interface {
-	receiver.TraceReceiver
-	receiver.MetricsReceiver
-	Stop() error
-}
-
-var _ TraceMetricsReceiverStopper = (*ocReceiver)(nil)
-
 var (
 	errAlreadyStarted = errors.New("already started")
 	errAlreadyStopped = errors.New("already stopped")
@@ -68,18 +58,28 @@ const defaultOCReceiverPort = 55678
 // New just creates the OpenCensus receiver services. It is the caller's
 // responsibility to invoke the respective Start*Reception methods as well
 // as the various Stop*Reception methods or simply Stop to end it.
-func New(addr string) (TraceMetricsReceiverStopper, error) {
+func New(addr string) (*Receiver, error) {
 	// TODO: (@odeke-em) use options to enable address binding changes.
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to bind to address %q: error: %v", addr, err)
 	}
-	ocr := &ocReceiver{ln: ln}
+	ocr := &Receiver{ln: ln}
 
 	return ocr, nil
 }
 
-func (ocr *ocReceiver) StartTraceReception(ctx context.Context, ts receiver.TraceReceiverSink) error {
+// StartTraceReception exclusively runs the Trace receiver on the gRPC server.
+// To start both Trace and Metrics receivers/services, please use Start.
+func (ocr *Receiver) StartTraceReception(ctx context.Context, ts receiver.TraceReceiverSink) error {
+	err := ocr.registerTraceReceiver(ts)
+	if err != nil && err != errAlreadyStarted {
+		return err
+	}
+	return ocr.startGRPCServer()
+}
+
+func (ocr *Receiver) registerTraceReceiver(ts receiver.TraceReceiverSink) error {
 	var err = errAlreadyStarted
 
 	ocr.startTraceReceiverOnce.Do(func() {
@@ -89,10 +89,21 @@ func (ocr *ocReceiver) StartTraceReception(ctx context.Context, ts receiver.Trac
 			agenttracepb.RegisterTraceServiceServer(srv, ocr.traceReceiver)
 		}
 	})
+
 	return err
 }
 
-func (ocr *ocReceiver) StartMetricsReception(ctx context.Context, ms receiver.MetricsReceiverSink) error {
+// StartMetricsReception exclusively runs the Metrics receiver on the gRPC server.
+// To start both Trace and Metrics receivers/services, please use Start.
+func (ocr *Receiver) StartMetricsReception(ctx context.Context, ms receiver.MetricsReceiverSink) error {
+	err := ocr.registerMetricsReceiver(ms)
+	if err != nil && err != errAlreadyStarted {
+		return err
+	}
+	return ocr.startGRPCServer()
+}
+
+func (ocr *Receiver) registerMetricsReceiver(ms receiver.MetricsReceiverSink) error {
 	var err = errAlreadyStarted
 
 	ocr.startMetricsReceiverOnce.Do(func() {
@@ -105,48 +116,48 @@ func (ocr *ocReceiver) StartMetricsReception(ctx context.Context, ms receiver.Me
 	return err
 }
 
-func (ocr *ocReceiver) grpcServer() *grpc.Server {
+func (ocr *Receiver) grpcServer() *grpc.Server {
 	ocr.mu.Lock()
 	defer ocr.mu.Unlock()
 
-	ocr.startServerOnce.Do(func() {
+	if ocr.server == nil {
 		ocr.server = internal.GRPCServerWithObservabilityEnabled()
-		go func() {
-			_ = ocr.server.Serve(ocr.ln)
-		}()
-	})
+	}
+
 	return ocr.server
 }
 
-func (ocr *ocReceiver) StopTraceReception(ctx context.Context) error {
+// StopTraceReception is a method to turn off receiving traces. It
+// currently is a noop because we don't yet know if gRPC allows
+// stopping a specific service.
+func (ocr *Receiver) StopTraceReception(ctx context.Context) error {
 	// StopTraceReception is a noop currently.
 	// TODO: (@odeke-em) investigate whether or not gRPC
 	// provides a way to stop specific services.
 	return nil
 }
 
-func (ocr *ocReceiver) StopMetricsReception(ctx context.Context) error {
+// StopMetricsReception is a method to turn off receiving metrics. It
+// currently is a noop because we don't yet know if gRPC allows
+// stopping a specific service.
+func (ocr *Receiver) StopMetricsReception(ctx context.Context) error {
 	// StopMetricsReception is a noop currently.
 	// TODO: (@odeke-em) investigate whether or not gRPC
 	// provides a way to stop specific services.
 	return nil
 }
 
-// TraceMetricsSink implements both spansink.Sink and metricsink.Sink.
-type TraceMetricsSink interface {
-	receiver.TraceReceiverSink
-	receiver.MetricsReceiverSink
-}
-
-// Start runs all the receivers/services on it, invoking:
-// * StartTraceReception
-// * StartMetricsReception
-func (ocr *ocReceiver) Start(ctx context.Context, sink TraceMetricsSink) error {
-	if err := ocr.StartTraceReception(ctx, sink); err != nil && err != errAlreadyStarted {
+// Start runs all the receivers/services namely, Trace and Metrics services.
+func (ocr *Receiver) Start(ctx context.Context, ts receiver.TraceReceiverSink, ms receiver.MetricsReceiverSink) error {
+	if err := ocr.registerTraceReceiver(ts); err != nil && err != errAlreadyStarted {
 		return err
 	}
-	if err := ocr.StartMetricsReception(ctx, sink); err != nil && err != errAlreadyStarted {
+	if err := ocr.registerMetricsReceiver(ms); err != nil && err != errAlreadyStarted {
 		return err
+	}
+
+	if err := ocr.startGRPCServer(); err != nil && err != errAlreadyStarted {
+		return nil
 	}
 
 	// At this point we've successfully started all the services/receivers.
@@ -155,7 +166,7 @@ func (ocr *ocReceiver) Start(ctx context.Context, sink TraceMetricsSink) error {
 }
 
 // Stop stops the underlying gRPC server and all the services running on it.
-func (ocr *ocReceiver) Stop() error {
+func (ocr *Receiver) Stop() error {
 	ocr.mu.Lock()
 	defer ocr.mu.Unlock()
 
@@ -164,6 +175,29 @@ func (ocr *ocReceiver) Stop() error {
 		// TODO: (@odeke-em) should we instead do (*grpc.Server).GracefulStop?
 		ocr.server.Stop()
 		_ = ocr.ln.Close()
+	})
+	return err
+}
+
+func (ocr *Receiver) startGRPCServer() error {
+	err := errAlreadyStarted
+	ocr.startServerOnce.Do(func() {
+		errChan := make(chan error, 1)
+		go func() {
+			errChan <- ocr.server.Serve(ocr.ln)
+		}()
+
+		// Our goal is to heuristically try running the server
+		// and if it returns an error immediately, we reporter that.
+		select {
+		case serr := <-errChan:
+			err = serr
+
+		case <-time.After(1 * time.Second):
+			// No error otherwise returned in the period of 1s.
+			// We can assume that the serve is at least running.
+			err = nil
+		}
 	})
 	return err
 }

@@ -171,14 +171,20 @@ func runOCReceiver(acfg *config.Config, sr receiver.TraceReceiverSink, mr receiv
 
 	ctx := context.Background()
 
-	if acfg.CanRunOpenCensusTraceReceiver() {
+	switch {
+	case acfg.CanRunOpenCensusTraceReceiver() && acfg.CanRunOpenCensusMetricsReceiver():
+		if err := ocr.Start(ctx, sr, mr); err != nil {
+			return nil, fmt.Errorf("Failed to start Trace and Metrics Receivers: %v", err)
+		}
+		log.Printf("Running OpenCensus Trace and Metrics receivers as a gRPC service at %q", addr)
+
+	case acfg.CanRunOpenCensusTraceReceiver():
 		if err := ocr.StartTraceReception(ctx, sr); err != nil {
 			return nil, fmt.Errorf("Failed to start TraceReceiver: %v", err)
 		}
 		log.Printf("Running OpenCensus Trace receiver as a gRPC service at %q", addr)
-	}
 
-	if acfg.CanRunOpenCensusMetricsReceiver() {
+	case acfg.CanRunOpenCensusMetricsReceiver():
 		if err := ocr.StartMetricsReception(ctx, mr); err != nil {
 			return nil, fmt.Errorf("Failed to start MetricsReceiver: %v", err)
 		}
