@@ -43,11 +43,11 @@ install-tools:
 
 .PHONY: agent
 agent:
-	CGO_ENABLED=0 go build -o ./bin/ocagent_$(GOOS) $(BUILD_INFO) ./cmd/ocagent
+	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/ocagent_$(GOOS) $(BUILD_INFO) ./cmd/ocagent
 
 .PHONY: collector
 collector:
-	CGO_ENABLED=0 go build -o ./bin/occollector_$(GOOS) $(BUILD_INFO) ./cmd/occollector
+	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/occollector_$(GOOS) $(BUILD_INFO) ./cmd/occollector
 
 .PHONY: docker-component # Not intended to be used directly
 docker-component: check-component

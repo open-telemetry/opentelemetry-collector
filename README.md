@@ -98,10 +98,18 @@ Architecture amd64
 
 ### <a name="agent-usage"></a>Usage
 
+The minimum Go version required for this project is Go1.11.
+
 First, install ocagent if you haven't.
 
 ```shell
-$ go get github.com/census-instrumentation/opencensus-service/cmd/ocagent
+$ GO111MODULE=on go get github.com/census-instrumentation/opencensus-service/cmd/ocagent
+```
+
+Alternatively you can build ocagent from binary (from the root of your repo):
+
+```shell
+$ make agent
 ```
 
 ### <a name="agent-configuration-file"></a>Configuration file
@@ -291,16 +299,18 @@ agent/client health information/inventory metadata to downstream exporters.
 The collector is in its initial development stages. It can be run directly
 from sources, binary, or a Docker image.
 
+The minimum Go version required for this project is Go1.11.
+
 1. Run from sources:
 ```shell
-$ go run github.com/census-instrumentation/opencensus-service/cmd/occollector
+$ GO111MODULE=on go run github.com/census-instrumentation/opencensus-service/cmd/occollector
 ```
 2. Run from binary (from the root of your repo):
 ```shell
 $ make collector
 $ ./bin/occollector_$($GOOS)
 ```
-3. Build a Docker scratch image and use the appropria Docker command for your scenario:
+3. Build a Docker scratch image and use the appropriate Docker command for your scenario:
 ```shell
 $ make docker-collector
 $ docker run --rm -it -p 55678:55678 occollector
