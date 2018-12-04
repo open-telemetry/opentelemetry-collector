@@ -276,6 +276,7 @@ func eqLocalHost(host string) bool {
 //  + zipkin
 //  + jaeger
 //  + kafka
+//  + ocagent
 func ExportersFromYAMLConfig(config []byte) (traceExporters []exporter.TraceExporter, doneFns []func() error, err error) {
 	parseFns := []struct {
 		name string
@@ -286,6 +287,7 @@ func ExportersFromYAMLConfig(config []byte) (traceExporters []exporter.TraceExpo
 		{name: "zipkin", fn: exporterparser.ZipkinExportersFromYAML},
 		{name: "jaeger", fn: exporterparser.JaegerExportersFromYAML},
 		{name: "kafka", fn: exporterparser.KafkaExportersFromYAML},
+		{name: "ocagent", fn: exporterparser.OcAgentTraceExportersFromYAML},
 	}
 
 	for _, cfg := range parseFns {

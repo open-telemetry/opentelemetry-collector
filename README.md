@@ -135,6 +135,9 @@ exporters:
         brokers:
             - "127.0.0.1:9092"
         topic: "opencensus-spans"
+
+    ocagent:
+        endpoint: "http://localhost:10001"
 ```
 
 #### <a name="agent-config-receivers"></a>Receivers
