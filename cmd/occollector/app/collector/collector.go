@@ -24,12 +24,15 @@ import (
 	"strings"
 	"syscall"
 
+	tchReporter "github.com/jaegertracing/jaeger/cmd/agent/app/reporter/tchannel"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/uber/jaeger-lib/metrics"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/census-instrumentation/opencensus-service/cmd/occollector/app/builder"
+	"github.com/census-instrumentation/opencensus-service/cmd/occollector/app/sender"
 	"github.com/census-instrumentation/opencensus-service/exporter"
 	"github.com/census-instrumentation/opencensus-service/exporter/exporterparser"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/jaeger"
@@ -39,13 +42,12 @@ import (
 )
 
 const (
-	configCfg          = "config"
-	logLevelCfg        = "log-level"
-	jaegerReceiverFlg  = "receive-jaeger"
-	ocReceiverFlg      = "receive-oc-trace"
-	zipkinReceiverFlg  = "receive-zipkin"
-	debugProcessorFlg  = "debug-processor"
-	queuedProcessorFlg = "add-queued-processor" // TODO: (@pjanotti) this is temporary flag until it can be read from config.
+	configCfg         = "config"
+	logLevelCfg       = "log-level"
+	jaegerReceiverFlg = "receive-jaeger"
+	ocReceiverFlg     = "receive-oc-trace"
+	zipkinReceiverFlg = "receive-zipkin"
+	debugProcessorFlg = "debug-processor"
 )
 
 var (
@@ -86,7 +88,6 @@ func init() {
 	rootCmd.Flags().Bool(zipkinReceiverFlg, false,
 		fmt.Sprintf("Flag to run the Zipkin receiver, default settings: %+v", *builder.NewDefaultZipkinReceiverCfg()))
 	rootCmd.Flags().Bool(debugProcessorFlg, false, "Flag to add a debug processor (combine with log level DEBUG to log incoming spans)")
-	rootCmd.Flags().Bool(queuedProcessorFlg, false, "Flag to wrap one processor with the queued processor (flag will be remove soon, dev helper)")
 
 	// TODO: (@pjanotti) add builder options as flags, before calls bellow. Likely it will require code re-org.
 
@@ -138,15 +139,20 @@ func execute() {
 		spanProcessors = append(spanProcessors, processor.NewNoopSpanProcessor(logger))
 	}
 
+	multiProcessorCfg := builder.NewDefaultMultiSpanProcessorCfg().InitFromViper(v)
+	for _, queuedJaegerProcessorCfg := range multiProcessorCfg.Processors {
+		logger.Info("Queued Jaeger Sender Enabled")
+		queuedJaegerProcessor, err := buildQueuedSpanProcessor(logger, queuedJaegerProcessorCfg)
+		if err != nil {
+			logger.Error("Failed to build the queued span processor", zap.Error(err))
+			os.Exit(1)
+		}
+		spanProcessors = append(spanProcessors, queuedJaegerProcessor)
+	}
+
 	if len(spanProcessors) == 0 {
 		logger.Warn("Nothing to do: no processor was enabled. Shutting down.")
 		os.Exit(1)
-	}
-
-	// TODO: (@pjanotti) construct queued processor from config options, for now just to exercise it, wrap one around
-	// the first span processor available.
-	if v.GetBool(queuedProcessorFlg) {
-		spanProcessors[0] = processor.NewQueuedSpanProcessor(spanProcessors[0])
 	}
 
 	// Wraps processors in a single one to be connected to all enabled receivers.
@@ -224,6 +230,53 @@ func createExporters() (doneFns []func(), traceExporters []exporter.TraceExporte
 	}
 
 	return doneFns, traceExporters
+}
+
+func buildQueuedSpanProcessor(logger *zap.Logger, opts *builder.QueuedSpanProcessorCfg) (processor.SpanProcessor, error) {
+	logger.Info("Constructing queue processor with name", zap.String("name", opts.Name))
+
+	// build span batch sender from configured options
+	var spanSender processor.SpanProcessor
+	switch opts.SenderType {
+	case builder.ThriftTChannelSenderType:
+		logger.Info("Initializing thrift-tChannel sender")
+		thriftTChannelSenderOpts := opts.SenderConfig.(*builder.JaegerThriftTChannelSenderCfg)
+		tchrepbuilder := &tchReporter.Builder{
+			CollectorHostPorts: thriftTChannelSenderOpts.CollectorHostPorts,
+			DiscoveryMinPeers:  thriftTChannelSenderOpts.DiscoveryMinPeers,
+			ConnCheckTimeout:   thriftTChannelSenderOpts.DiscoveryConnCheckTimeout,
+		}
+		tchreporter, err := tchrepbuilder.CreateReporter(metrics.NullFactory, logger)
+		if err != nil {
+			logger.Fatal("Cannot create tchannel reporter.", zap.Error(err))
+			return nil, err
+		}
+		spanSender = sender.NewJaegerThriftTChannelSender(tchreporter, logger)
+	case builder.ThriftHTTPSenderType:
+		thriftHTTPSenderOpts := opts.SenderConfig.(*builder.JaegerThriftHTTPSenderCfg)
+		logger.Info("Initializing thrift-HTTP sender",
+			zap.String("url", thriftHTTPSenderOpts.CollectorEndpoint))
+		spanSender = sender.NewJaegerThriftHTTPSender(
+			thriftHTTPSenderOpts.CollectorEndpoint,
+			thriftHTTPSenderOpts.Headers,
+			logger,
+			sender.HTTPTimeout(thriftHTTPSenderOpts.Timeout),
+		)
+	default:
+		logger.Fatal("Unrecognized sender type configured")
+	}
+
+	// build queued span processor with underlying sender
+	queuedSpanProcessor := processor.NewQueuedSpanProcessor(
+		spanSender,
+		processor.Options.WithLogger(logger),
+		processor.Options.WithName(opts.Name),
+		processor.Options.WithNumWorkers(opts.NumWorkers),
+		processor.Options.WithQueueSize(opts.QueueSize),
+		processor.Options.WithRetryOnProcessingFailures(opts.RetryOnFailure),
+		processor.Options.WithBackoffDelay(opts.BackoffDelay),
+	)
+	return queuedSpanProcessor, nil
 }
 
 func createReceivers(spanProcessor processor.SpanProcessor) (closeFns []func()) {

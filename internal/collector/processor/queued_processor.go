@@ -102,11 +102,10 @@ func (sp *queuedSpanProcessor) enqueueSpanBatch(batch *agenttracepb.ExportTraceS
 }
 
 func (sp *queuedSpanProcessor) processItemFromQueue(item *queueItem) {
-	// TODO: @(pjanotti) metrics: startTime := time.Now()
-	// TODO:
 	_, err := sp.sender.ProcessSpans(item.batch, item.spanFormat)
 	if err != nil {
 		batchSize := len(item.batch.Spans)
+		sp.logger.Warn("Sender failed", zap.Error(err), zap.String("spanFormat", item.spanFormat))
 		if !sp.retryOnProcessingFailure {
 			// throw away the batch
 			sp.logger.Error("Failed to process batch, discarding", zap.Int("batch-size", batchSize))

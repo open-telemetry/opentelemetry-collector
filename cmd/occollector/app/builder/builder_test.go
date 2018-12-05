@@ -17,6 +17,7 @@ package builder
 import (
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/spf13/viper"
 )
@@ -66,6 +67,52 @@ func TestReceiversDisabledByPresenceWithDefaultSettings(t *testing.T) {
 	jaegerEnabled, opencensusEnabled, zipkinEnabled := JaegerReceiverEnabled(v, "j"), OpenCensusReceiverEnabled(v, "oc"), ZipkinReceiverEnabled(v, "z")
 	if jaegerEnabled || opencensusEnabled || zipkinEnabled {
 		t.Fatalf("Not all receivers were disabled j:%v oc:%v z:%v", jaegerEnabled, opencensusEnabled, zipkinEnabled)
+	}
+}
+
+func TestMultiAndQueuedSpanProcessorConfig(t *testing.T) {
+	v, err := loadViperFromFile("./testdata/processor_config.yaml")
+	if err != nil {
+		t.Fatalf("Failed to load viper from test file: %v", err)
+	}
+
+	fst := NewDefaultQueuedSpanProcessorCfg()
+	fst.Name = "proc-tchannel"
+	fst.NumWorkers = 13
+	fst.QueueSize = 1300
+	fst.SenderType = ThriftTChannelSenderType
+	fst.SenderConfig = &JaegerThriftTChannelSenderCfg{
+		CollectorHostPorts:        []string{":123", ":321"},
+		DiscoveryMinPeers:         7,
+		DiscoveryConnCheckTimeout: time.Second * 7,
+	}
+	snd := NewDefaultQueuedSpanProcessorCfg()
+	snd.Name = "proc-http"
+	snd.RetryOnFailure = false
+	snd.BackoffDelay = 3 * time.Second
+	snd.SenderType = ThriftHTTPSenderType
+	snd.SenderConfig = &JaegerThriftHTTPSenderCfg{
+		CollectorEndpoint: "https://somedomain.com/api/traces",
+		Headers:           map[string]string{"x-header-key": "00000000-0000-0000-0000-000000000001"},
+		Timeout:           time.Second * 5,
+	}
+
+	wCfg := &MultiSpanProcessorCfg{
+		Processors: []*QueuedSpanProcessorCfg{fst, snd},
+	}
+
+	gCfg := NewDefaultMultiSpanProcessorCfg().InitFromViper(v)
+
+	// Viper sometimes gets these out of order, which is not an issue for production, but
+	// a problem for tests. Enforce that the order matches the expected one.
+	if gCfg.Processors[0].Name == snd.Name {
+		gCfg.Processors[0], gCfg.Processors[1] = gCfg.Processors[1], gCfg.Processors[0]
+	}
+
+	for i := range wCfg.Processors {
+		if !reflect.DeepEqual(*wCfg.Processors[i], *gCfg.Processors[i]) {
+			t.Errorf("Wanted %+v but got %+v", *wCfg.Processors[i], *gCfg.Processors[i])
+		}
 	}
 }
 
