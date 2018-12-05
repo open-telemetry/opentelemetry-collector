@@ -94,11 +94,14 @@ func (jr *jReceiver) StartTraceReception(ctx context.Context, spanSink receiver.
 
 	var err = errAlreadyStarted
 	jr.startOnce.Do(func() {
-		tch, terr := tchannel.NewChannel("recv", new(tchannel.ChannelOptions))
+		tch, terr := tchannel.NewChannel("jaeger-collector", new(tchannel.ChannelOptions))
 		if terr != nil {
 			err = fmt.Errorf("Failed to create NewTChannel: %v", terr)
 			return
 		}
+
+		server := thrift.NewServer(tch)
+		server.Register(jaeger.NewTChanCollectorServer(jr))
 
 		taddr := jr.tchannelAddr()
 		tln, terr := net.Listen("tcp", taddr)
