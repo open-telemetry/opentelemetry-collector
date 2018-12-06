@@ -24,7 +24,7 @@ import (
 	"github.com/census-instrumentation/opencensus-service/exporter"
 )
 
-type ocagentConfig struct {
+type opencensusConfig struct {
 	Endpoint string `yaml:"endpoint,omitempty"`
 	// TODO: add insecure, service name options.
 }
@@ -35,12 +35,12 @@ type ocagentExporter struct {
 
 var _ exporter.TraceExporter = (*ocagentExporter)(nil)
 
-// OcAgentTraceExportersFromYAML parses the yaml bytes and returns an exporter.TraceExporter targeting
-// OcAgent according to the configuration settings.
-func OcAgentTraceExportersFromYAML(config []byte) (tes []exporter.TraceExporter, doneFns []func() error, err error) {
+// OpenCensusTraceExportersFromYAML parses the yaml bytes and returns an exporter.TraceExporter targeting
+// OpenCensus Agent/Collector according to the configuration settings.
+func OpenCensusTraceExportersFromYAML(config []byte) (tes []exporter.TraceExporter, doneFns []func() error, err error) {
 	var cfg struct {
 		Exporters *struct {
-			OcAgent *ocagentConfig `yaml:"ocagent"`
+			OpenCensus *opencensusConfig `yaml:"opencensus"`
 		} `yaml:"exporters"`
 	}
 	if err := yamlUnmarshal(config, &cfg); err != nil {
@@ -49,18 +49,18 @@ func OcAgentTraceExportersFromYAML(config []byte) (tes []exporter.TraceExporter,
 	if cfg.Exporters == nil {
 		return nil, nil, nil
 	}
-	ocac := cfg.Exporters.OcAgent
+	ocac := cfg.Exporters.OpenCensus
 	if ocac == nil {
 		return nil, nil, nil
 	}
 
 	if ocac.Endpoint == "" {
-		return nil, nil, fmt.Errorf("OcAgent config requires an Endpoint")
+		return nil, nil, fmt.Errorf("OpenCensus config requires an Endpoint")
 	}
 
 	sde, serr := ocagent.NewExporter(ocagent.WithAddress(ocac.Endpoint), ocagent.WithInsecure())
 	if serr != nil {
-		return nil, nil, fmt.Errorf("Cannot configure OcAgent Trace exporter: %v", serr)
+		return nil, nil, fmt.Errorf("Cannot configure OpenCensus Trace exporter: %v", serr)
 	}
 
 	tes = append(tes, &ocagentExporter{exporter: sde})

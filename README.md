@@ -136,7 +136,7 @@ exporters:
             - "127.0.0.1:9092"
         topic: "opencensus-spans"
 
-    ocagent:
+    opencensus:
         endpoint: "http://localhost:10001"
 ```
 
