@@ -20,8 +20,8 @@ import (
 	"runtime"
 )
 
-// Please increment this value per release.
-const version = "0.0.1"
+// version variable will be replaced at link time after `make` has been run.
+var version = "latest"
 
 // GitHash variable will be replaced at link time after `make` has been run.
 var GitHash = "<NOT PROPERLY GENERATED>"

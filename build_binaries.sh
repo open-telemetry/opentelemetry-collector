@@ -30,13 +30,20 @@
 
 if [[ $# -lt 1 ]]
 then
-    echo -e "Usage: $0 <cmd>\nwhere <cmd> is any of 'docker' 'binaries' or GOOS such as:\ndarwin\nlinux\nwindows"
+    echo -e "Usage: $0 <cmd> <version>\nwhere <cmd> is any of 'docker' 'binaries' or GOOS such as:\ndarwin\nlinux\nwindows"
     exit
+fi
+
+VERSION="$2"
+if [[ "$VERSION" == "" ]]
+then
+    VERSION="latest"
 fi
 
 function build() {
     GOOS="$1"
-    LDFLAGS="\"-X github.com/census-instrumentation/opencensus-service/internal/version.GitHash=`git rev-parse --short HEAD`\""
+    LDFLAGS="\"-X github.com/census-instrumentation/opencensus-service/internal/version.GitHash=`git rev-parse --short HEAD` \
+        -X github.com/census-instrumentation/opencensus-service/internal/version.version=$VERSION\""
     CMD="GOOS=$GOOS go build -ldflags $LDFLAGS -o bin/ocagent_$GOOS ./cmd/ocagent"
     echo $CMD
     eval $CMD
@@ -50,12 +57,6 @@ function buildAll() {
 
 function dockerBuild() {
     build linux
-    VERSION="$1"
-    if [[ "$VERSION" == "" ]]
-    then
-        VERSION="v0.0.1"
-    fi
-
     CMD="docker build -t ocagent:$VERSION ."
     echo $CMD
     eval $CMD
