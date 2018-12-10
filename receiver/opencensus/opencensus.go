@@ -157,7 +157,7 @@ func (ocr *Receiver) Start(ctx context.Context, ts receiver.TraceReceiverSink, m
 	}
 
 	if err := ocr.startGRPCServer(); err != nil && err != errAlreadyStarted {
-		return nil
+		return err
 	}
 
 	// At this point we've successfully started all the services/receivers.
