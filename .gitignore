@@ -1,5 +1,15 @@
 bin/
 
+# GoLand IDEA
+/.idea/
+
+# VS Code
+.vscode
+
+# Emacs
+*~
+\#*\#
+
 # Miscellaneous files
 *.sw[op]
 *.DS_Store
