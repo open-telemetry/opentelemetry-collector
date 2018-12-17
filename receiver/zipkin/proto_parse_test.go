@@ -104,7 +104,7 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 	hdr.Set("Content-Type", "application/x-protobuf")
 
 	// 3. Get that payload converted to OpenCensus proto spans.
-	reqs, err := zi.parseAndConvertToTraceSpans(protoBlob, hdr)
+	reqs, err := zi.v2ToTraceSpans(protoBlob, hdr)
 	if err != nil {
 		t.Fatalf("Failed to parse convert Zipkin spans in Protobuf to Trace spans: %v", err)
 	}

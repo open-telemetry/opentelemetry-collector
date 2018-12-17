@@ -47,7 +47,7 @@ func TestConvertSpansToTraceSpans_json(t *testing.T) {
 		t.Fatalf("Failed to read sample JSON file: %v", err)
 	}
 	zi := new(ZipkinReceiver)
-	reqs, err := zi.parseAndConvertToTraceSpans(blob, nil)
+	reqs, err := zi.v2ToTraceSpans(blob, nil)
 	if err != nil {
 		t.Fatalf("Failed to parse convert Zipkin spans in JSON to Trace spans: %v", err)
 	}
@@ -158,7 +158,7 @@ func TestConversionRoundtrip(t *testing.T) {
 }]`)
 
 	zi := &ZipkinReceiver{spanSink: new(noopSink)}
-	ereqs, err := zi.parseAndConvertToTraceSpans(receiverInputJSON, nil)
+	ereqs, err := zi.v2ToTraceSpans(receiverInputJSON, nil)
 	if err != nil {
 		t.Fatalf("Failed to parse and convert receiver JSON: %v", err)
 	}
