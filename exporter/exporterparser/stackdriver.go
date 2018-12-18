@@ -17,8 +17,11 @@ package exporterparser
 import (
 	"context"
 	"fmt"
+	"sync"
+	"time"
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
+	"go.opencensus.io/trace"
 
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/exporter"
@@ -28,6 +31,7 @@ type stackdriverConfig struct {
 	ProjectID     string `yaml:"project,omitempty"`
 	EnableTracing bool   `yaml:"enable_tracing,omitempty"`
 	EnableMetrics bool   `yaml:"enable_metrics,omitempty"`
+	MetricPrefix  string `yaml:"metric_prefix,omitempty"`
 }
 
 type stackdriverExporter struct {
@@ -65,20 +69,35 @@ func StackdriverTraceExportersFromYAML(config []byte) (tes []exporter.TraceExpor
 	}
 
 	sde, serr := stackdriver.NewExporter(stackdriver.Options{
-		ProjectID: sc.ProjectID,
+		ProjectID:    sc.ProjectID,
+		MetricPrefix: sc.MetricPrefix,
+
+		// Stackdriver Metrics mandates a minimum of 60 seconds for
+		// reporting metrics. We have to enforce this as per the advisory
+		// at https://cloud.google.com/monitoring/custom-metrics/creating-metrics#writing-ts
+		// which says:
+		//
+		// "If you want to write more than one point to the same time series, then use a separate call
+		//  to the timeSeries.create method for each point. Don't make the calls faster than one time per
+		//  minute. If you are adding data points to different time series, then there is no rate limitation."
+		BundleDelayThreshold: 61 * time.Second,
 	})
 	if serr != nil {
 		return nil, nil, nil, fmt.Errorf("Cannot configure Stackdriver Trace exporter: %v", serr)
 	}
 
-	stexp := &stackdriverExporter{exporter: sde}
+	exp := &stackdriverExporter{
+		exporter: sde,
+	}
+
 	if sc.EnableTracing {
-		tes = append(tes, stexp)
+		tes = append(tes, exp)
 	}
+
 	if sc.EnableMetrics {
-		// TODO: (@odeke-em, @songya23) implement ExportMetrics for Stackdriver.
-		// mes = append(mes, oexp)
+		mes = append(mes, exp)
 	}
+
 	doneFns = append(doneFns, func() error {
 		sde.Flush()
 		return nil
@@ -91,4 +110,30 @@ func (sde *stackdriverExporter) ExportSpans(ctx context.Context, td data.TraceDa
 	// if trace.ExportSpan was constraining and if perhaps the Stackdriver
 	// upload can use the context and information from the Node.
 	return exportSpans(ctx, "stackdriver", sde.exporter, td)
+}
+
+var _ exporter.MetricsExporter = (*stackdriverExporter)(nil)
+
+func (sde *stackdriverExporter) ExportMetricsData(ctx context.Context, md data.MetricsData) error {
+	ctx, span := trace.StartSpan(ctx,
+		"opencensus.service.exporter.stackdriver.ExportMetricsData",
+		trace.WithSampler(trace.NeverSample()))
+	defer span.End()
+
+	var setErrorOnce sync.Once
+
+	for _, metric := range md.Metrics {
+		err := sde.exporter.ExportMetric(ctx, md.Node, md.Resource, metric)
+		if err != nil {
+			setErrorOnce.Do(func() {
+				span.SetStatus(trace.Status{Code: trace.StatusCodeInternal, Message: err.Error()})
+			})
+
+			span.Annotate([]trace.Attribute{
+				trace.StringAttribute("error", err.Error()),
+			}, "Error encountered")
+		}
+	}
+
+	return nil
 }

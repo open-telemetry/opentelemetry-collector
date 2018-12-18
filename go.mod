@@ -3,7 +3,7 @@ module github.com/census-instrumentation/opencensus-service
 require (
 	cloud.google.com/go v0.32.0 // indirect
 	contrib.go.opencensus.io/exporter/ocagent v0.4.2
-	contrib.go.opencensus.io/exporter/stackdriver v0.7.0
+	contrib.go.opencensus.io/exporter/stackdriver v0.9.1
 	git.apache.org/thrift.git v0.0.0-20181101003639-92be4f312b88 // indirect
 	github.com/BurntSushi/toml v0.3.1 // indirect
 	github.com/DataDog/datadog-go v0.0.0-20180822151419-281ae9f2d895 // indirect
@@ -49,7 +49,7 @@ require (
 	github.com/uber/jaeger-lib v1.5.0
 	github.com/uber/tchannel-go v1.10.0
 	github.com/yancl/opencensus-go-exporter-kafka v0.0.0-20181029030031-9c471c1bfbeb
-	go.opencensus.io v0.18.0
+	go.opencensus.io v0.18.1-0.20181204023538-aab39bd6a98b
 	go.uber.org/atomic v1.3.2 // indirect
 	go.uber.org/multierr v1.1.0 // indirect
 	go.uber.org/zap v1.9.1
