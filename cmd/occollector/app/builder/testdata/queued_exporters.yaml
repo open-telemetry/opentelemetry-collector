@@ -1,9 +1,9 @@
-processors:
+ queued-exporters:
   proc-tchannel:
     num-workers: 13
     queue-size: 1300
-    sender-type: thrift-tchannel
-    thrift-tchannel:
+    sender-type: jaeger-thrift-tchannel
+    jaeger-thrift-tchannel:
       collector-host-ports: [ ":123", ":321" ]
       discovery-min-peers: 7
       discovery-conn-check-timeout: 7s
@@ -11,8 +11,8 @@ processors:
   proc-http:
     retry-on-failure: false
     backoff-delay: 3s
-    sender-type: thrift-http
-    thrift-http:
+    sender-type: jaeger-thrift-http
+    jaeger-thrift-http:
       collector-endpoint: https://somedomain.com/api/traces
       headers: { "x-header-key":"00000000-0000-0000-0000-000000000001" }
       timeout: 5s

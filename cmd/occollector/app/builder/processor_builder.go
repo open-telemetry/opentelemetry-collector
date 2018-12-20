@@ -25,9 +25,9 @@ type SenderType string
 
 const (
 	// ThriftTChannelSenderType represents a thrift-format tchannel-transport sender
-	ThriftTChannelSenderType SenderType = "thrift-tchannel"
+	ThriftTChannelSenderType SenderType = "jaeger-thrift-tchannel"
 	// ThriftHTTPSenderType represents a thrift-format http-transport sender
-	ThriftHTTPSenderType = "thrift-http"
+	ThriftHTTPSenderType = "jaeger-thrift-http"
 	// InvalidSenderType represents an invalid sender
 	InvalidSenderType = "invalid"
 )
@@ -131,11 +131,12 @@ func NewDefaultMultiSpanProcessorCfg() *MultiSpanProcessorCfg {
 
 // InitFromViper initializes MultiSpanProcessorCfg with properties from viper
 func (mOpts *MultiSpanProcessorCfg) InitFromViper(v *viper.Viper) *MultiSpanProcessorCfg {
-	procsv := v.Sub("processors")
+	const baseKey = "queued-exporters"
+	procsv := v.Sub(baseKey)
 	if procsv == nil {
 		return mOpts
 	}
-	for procName := range v.GetStringMap("processors") {
+	for procName := range v.GetStringMap(baseKey) {
 		procv := procsv.Sub(procName)
 		procOpts := NewDefaultQueuedSpanProcessorCfg()
 		procOpts.Name = procName

@@ -71,7 +71,7 @@ func TestReceiversDisabledByPresenceWithDefaultSettings(t *testing.T) {
 }
 
 func TestMultiAndQueuedSpanProcessorConfig(t *testing.T) {
-	v, err := loadViperFromFile("./testdata/processor_config.yaml")
+	v, err := loadViperFromFile("./testdata/queued_exporters.yaml")
 	if err != nil {
 		t.Fatalf("Failed to load viper from test file: %v", err)
 	}

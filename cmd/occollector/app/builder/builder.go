@@ -31,9 +31,9 @@ const (
 // JaegerReceiverCfg holds configuration for Jaeger receivers.
 type JaegerReceiverCfg struct {
 	// ThriftTChannelPort is the port that the relay receives on for jaeger thrift tchannel requests
-	ThriftTChannelPort int `mapstructure:"thrift-tchannel-port"`
+	ThriftTChannelPort int `mapstructure:"jaeger-thrift-tchannel-port"`
 	// ThriftHTTPPort is the port that the relay receives on for jaeger thrift http requests
-	ThriftHTTPPort int `mapstructure:"thrift-http-port"`
+	ThriftHTTPPort int `mapstructure:"jaeger-thrift-http-port"`
 }
 
 // JaegerReceiverEnabled checks if the Jaeger receiver is enabled, via a command-line flag, environment
