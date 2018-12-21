@@ -17,10 +17,8 @@ package jaeger_test
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"reflect"
-	"sync"
 	"testing"
 	"time"
 
@@ -30,10 +28,9 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal"
-	"github.com/census-instrumentation/opencensus-service/receiver"
 	jaegerreceiver "github.com/census-instrumentation/opencensus-service/receiver/jaeger"
+	"github.com/census-instrumentation/opencensus-service/receiver/testhelper"
 )
 
 func TestReception(t *testing.T) {
@@ -49,7 +46,7 @@ func TestReception(t *testing.T) {
 	defer jr.StopTraceReception(context.Background())
 	t.Log("Starting")
 
-	sink := new(concurrentSpanSink)
+	sink := new(testhelper.ConcurrentSpanSink)
 	if err := jr.StartTraceReception(context.Background(), sink); err != nil {
 		t.Fatalf("StartTraceReception failed: %v", err)
 	}
@@ -130,7 +127,7 @@ func TestReception(t *testing.T) {
 
 	jexp.Flush()
 
-	got := sink.allTraces()
+	got := sink.AllTraces()
 
 	want := []*agenttracepb.ExportTraceServiceRequest{
 		{
@@ -217,44 +214,9 @@ func TestReception(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(got, want) {
-		gj, wj := toJSON(got), toJSON(want)
+		gj, wj := testhelper.ToJSON(got), testhelper.ToJSON(want)
 		if !bytes.Equal(gj, wj) {
 			t.Errorf("Mismatches responses\nGot:\n\t%v\n\t%s\nWant:\n\t%v\n\t%s", got, gj, want, wj)
 		}
 	}
-}
-
-type concurrentSpanSink struct {
-	mu     sync.Mutex
-	traces []*agenttracepb.ExportTraceServiceRequest
-}
-
-var _ receiver.TraceReceiverSink = (*concurrentSpanSink)(nil)
-
-func (css *concurrentSpanSink) ReceiveTraceData(ctx context.Context, td data.TraceData) (*receiver.TraceReceiverAcknowledgement, error) {
-	css.mu.Lock()
-	defer css.mu.Unlock()
-
-	css.traces = append(css.traces, &agenttracepb.ExportTraceServiceRequest{
-		Node:  td.Node,
-		Spans: td.Spans,
-	})
-
-	ack := &receiver.TraceReceiverAcknowledgement{
-		SavedSpans: uint64(len(td.Spans)),
-	}
-
-	return ack, nil
-}
-
-func (css *concurrentSpanSink) allTraces() []*agenttracepb.ExportTraceServiceRequest {
-	css.mu.Lock()
-	defer css.mu.Unlock()
-
-	return css.traces[:]
-}
-
-func toJSON(v interface{}) []byte {
-	b, _ := json.MarshalIndent(v, "", "  ")
-	return b
 }

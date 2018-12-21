@@ -17,6 +17,7 @@ package octrace
 import (
 	"context"
 	"errors"
+	"io"
 	"time"
 
 	"google.golang.org/api/support/bundler"
@@ -131,6 +132,11 @@ func (oci *Receiver) Export(tes agenttracepb.TraceService_ExportServer) error {
 
 		recv, err = tes.Recv()
 		if err != nil {
+			if err == io.EOF {
+				// Do not return EOF as an error so that grpc-gateway calls get an empty
+				// response with HTTP status code 200 rather than a 500 error with EOF.
+				return nil
+			}
 			return err
 		}
 	}

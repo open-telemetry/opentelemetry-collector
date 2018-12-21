@@ -30,6 +30,7 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/internal"
 	jaegerreceiver "github.com/census-instrumentation/opencensus-service/receiver/jaeger"
+	"github.com/census-instrumentation/opencensus-service/receiver/testhelper"
 )
 
 func TestJaegerAgentUDP_ThriftCompact_6831(t *testing.T) {
@@ -58,7 +59,7 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *jaegerr
 	}
 	defer jr.StopTraceReception(context.Background())
 
-	sink := new(concurrentSpanSink)
+	sink := new(testhelper.ConcurrentSpanSink)
 	if err := jr.StartTraceReception(context.Background(), sink); err != nil {
 		t.Fatalf("StartTraceReception failed: %v", err)
 	}
@@ -142,7 +143,7 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *jaegerr
 		<-time.After(60 * time.Millisecond)
 	}
 
-	got := sink.allTraces()
+	got := sink.AllTraces()
 
 	want := []*agenttracepb.ExportTraceServiceRequest{
 		{
@@ -229,7 +230,7 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *jaegerr
 	}
 
 	if !reflect.DeepEqual(got, want) {
-		gj, wj := toJSON(got), toJSON(want)
+		gj, wj := testhelper.ToJSON(got), testhelper.ToJSON(want)
 		if !bytes.Equal(gj, wj) {
 			t.Errorf("Mismatched responses\nGot:\n\t%v\n\t%s\nWant:\n\t%v\n\t%s", got, gj, want, wj)
 		}
