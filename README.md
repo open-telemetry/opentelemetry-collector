@@ -319,13 +319,15 @@ Usage:
   occollector [flags]
 
 Flags:
-      --config string      Path to the config file
-      --debug-processor    Flag to add a debug processor (combine with log level DEBUG to log incoming spans)
-  -h, --help               Help for occollector
-      --log-level string   Output level of logs (TRACE, DEBUG, INFO, WARN, ERROR, FATAL) (default "INFO")
-      --receive-jaeger     Flag to run the Jaeger receiver (i.e.: Jaeger Collector), default settings: {ThriftTChannelPort:14267 ThriftHTTPPort:14268}
-      --receive-oc-trace   Flag to run the OpenCensus trace receiver, default settings: {Port:55678}
-      --receive-zipkin     Flag to run the Zipkin receiver, default settings: {Port:9411}
+      --config string          Path to the config file
+      --debug-processor        Flag to add a debug processor (combine with log level DEBUG to log incoming spans)
+  -h, --help                   Help for occollector
+      --log-level string       Output level of logs (TRACE, DEBUG, INFO, WARN, ERROR, FATAL) (default "INFO")
+      --metrics-level string   Output level of telemetry metrics (NONE, BASIC, NORMAL, DETAILED) (default "BASIC")
+      --metrics-port uint16    Port exposing collector telemetry. (default 8888)
+      --receive-jaeger         Flag to run the Jaeger receiver (i.e.: Jaeger Collector), default settings: {ThriftTChannelPort:14267 ThriftHTTPPort:14268}
+      --receive-oc-trace       Flag to run the OpenCensus trace receiver, default settings: {Port:55678}
+      --receive-zipkin         Flag to run the Zipkin receiver, default settings: {Port:9411}
 ```
 
 Sample configuration file:

@@ -19,8 +19,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 
@@ -28,6 +30,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/uber/jaeger-lib/metrics"
+	"go.opencensus.io/exporter/prometheus"
+	"go.opencensus.io/stats/view"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -38,12 +42,15 @@ import (
 	"github.com/census-instrumentation/opencensus-service/internal/collector/jaeger"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/opencensus"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/processor"
+	"github.com/census-instrumentation/opencensus-service/internal/collector/telemetry"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/zipkin"
 )
 
 const (
 	configCfg         = "config"
 	logLevelCfg       = "log-level"
+	metricsLevelCfg   = "metrics-level"
+	metricsPortCfg    = "metrics-port"
 	jaegerReceiverFlg = "receive-jaeger"
 	ocReceiverFlg     = "receive-oc-trace"
 	zipkinReceiverFlg = "receive-zipkin"
@@ -79,6 +86,13 @@ func init() {
 	rootCmd.PersistentFlags().String(logLevelCfg, "INFO", "Output level of logs (TRACE, DEBUG, INFO, WARN, ERROR, FATAL)")
 	v.BindPFlag(logLevelCfg, rootCmd.PersistentFlags().Lookup(logLevelCfg))
 
+	rootCmd.PersistentFlags().String(metricsLevelCfg, "BASIC", "Output level of telemetry metrics (NONE, BASIC, NORMAL, DETAILED)")
+	v.BindPFlag(metricsLevelCfg, rootCmd.PersistentFlags().Lookup(metricsLevelCfg))
+
+	// At least until we can use a generic, i.e.: OpenCensus, metrics exporter we default to Prometheus at port 8888, if not otherwise specified.
+	rootCmd.PersistentFlags().Uint16(metricsPortCfg, 8888, "Port exposing collector telemetry.")
+	v.BindPFlag(metricsPortCfg, rootCmd.PersistentFlags().Lookup(metricsPortCfg))
+
 	// local flags
 	rootCmd.Flags().StringVar(&config, configCfg, "", "Path to the config file")
 	rootCmd.Flags().Bool(jaegerReceiverFlg, false,
@@ -108,6 +122,7 @@ func newLogger() (*zap.Logger, error) {
 }
 
 func execute() {
+	var asyncErrorChannel = make(chan error)
 	var signalsChannel = make(chan os.Signal)
 	signal.Notify(signalsChannel, os.Interrupt, syscall.SIGTERM)
 
@@ -115,6 +130,11 @@ func execute() {
 	logger, err = newLogger()
 	if err != nil {
 		log.Fatalf("Failed to get logger: %v", err)
+	}
+
+	telemetryLevel, err := telemetry.ParseLevel(v.GetString(metricsLevelCfg))
+	if err != nil {
+		log.Fatalf("Failed to parse metrics level: %v", err)
 	}
 
 	logger.Info("Starting...")
@@ -161,9 +181,19 @@ func execute() {
 	receiversCloseFns := createReceivers(spanProcessor)
 	closeFns = append(closeFns, receiversCloseFns...)
 
-	logger.Info("Collector is up and running.")
+	err = initTelemetry(telemetryLevel, v.GetInt(metricsPortCfg), asyncErrorChannel, logger)
+	if err != nil {
+		logger.Error("Failed to initialize telemetry", zap.Error(err))
+		os.Exit(1)
+	}
 
-	<-signalsChannel
+	select {
+	case err = <-asyncErrorChannel:
+		logger.Error("Asynchronous error received, terminating process", zap.Error(err))
+	case <-signalsChannel:
+		logger.Info("Received kill signal from OS")
+	}
+
 	logger.Info("Starting shutdown...")
 
 	// TODO: orderly shutdown: first receivers, then flushing pipelines giving
@@ -174,6 +204,41 @@ func execute() {
 	}
 
 	logger.Info("Shutdown complete.")
+}
+
+func initTelemetry(level telemetry.Level, port int, asyncErrorChannel chan<- error, logger *zap.Logger) error {
+	if level == telemetry.None {
+		return nil
+	}
+
+	views := processor.MetricViews(level)
+	views = append(views, processor.QueuedProcessorMetricViews(level)...)
+	if err := view.Register(views...); err != nil {
+		return err
+	}
+
+	// Until we can use a generic metrics exporter, default to Prometheus.
+	opts := prometheus.Options{
+		Namespace: "oc_collector",
+	}
+	pe, err := prometheus.NewExporter(opts)
+	if err != nil {
+		return err
+	}
+
+	view.RegisterExporter(pe)
+
+	logger.Info("Serving Prometheus metrics", zap.Int("port", port))
+	go func() {
+		mux := http.NewServeMux()
+		mux.Handle("/metrics", pe)
+		serveErr := http.ListenAndServe(":"+strconv.Itoa(port), mux)
+		if serveErr != nil && serveErr != http.ErrServerClosed {
+			asyncErrorChannel <- serveErr
+		}
+	}()
+
+	return nil
 }
 
 func createExporters() (doneFns []func(), traceExporters []exporter.TraceExporter) {
