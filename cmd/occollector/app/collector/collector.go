@@ -97,7 +97,7 @@ func init() {
 	rootCmd.Flags().StringVar(&config, configCfg, "", "Path to the config file")
 	rootCmd.Flags().Bool(jaegerReceiverFlg, false,
 		fmt.Sprintf("Flag to run the Jaeger receiver (i.e.: Jaeger Collector), default settings: %+v", *builder.NewDefaultJaegerReceiverCfg()))
-	rootCmd.Flags().Bool(ocReceiverFlg, false,
+	rootCmd.Flags().Bool(ocReceiverFlg, true,
 		fmt.Sprintf("Flag to run the OpenCensus trace receiver, default settings: %+v", *builder.NewDefaultOpenCensusReceiverCfg()))
 	rootCmd.Flags().Bool(zipkinReceiverFlg, false,
 		fmt.Sprintf("Flag to run the Zipkin receiver, default settings: %+v", *builder.NewDefaultZipkinReceiverCfg()))
