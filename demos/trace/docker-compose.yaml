@@ -1,0 +1,49 @@
+version: "2"
+services:
+
+  # Jaeger
+  jaeger-all-in-one:
+    image: jaegertracing/all-in-one:1.8
+    ports:
+      - "16686:16686"
+      - "14268"
+
+  # Zipkin
+  zipkin-all-in-one:
+    image: openzipkin/zipkin:2.11.12
+    ports:
+      - "9411:9411"
+
+  # Collector
+  oc-collector:
+    image: occollector:latest
+    command: ["--config=/etc/oc-collector-config.yaml"]
+    volumes:
+      - ./oc-collector-config.yaml:/etc/oc-collector-config.yaml
+    ports:
+      - "55678"
+      - "8888:8888" # Prometheus metrics
+    depends_on:
+      - jaeger-all-in-one
+      - zipkin-all-in-one
+
+  # Agent
+  oc-agent:
+    image: ocagent:latest
+    command: ["--config=/etc/oc-agent-config.yaml"]
+    volumes:
+      - ./oc-agent-config.yaml:/etc/oc-agent-config.yaml
+    ports:
+      - "14268"
+      - "55678"
+    depends_on:
+      - oc-collector
+
+  # Synthetic load generator
+  synthetic-load-generator:
+    image: omnition/synthetic-load-generator:1.0.6
+    environment:
+      - JAEGER_COLLECTOR_URL=http://oc-agent:14268
+    depends_on:
+      - oc-agent
+

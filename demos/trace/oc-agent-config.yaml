@@ -1,0 +1,9 @@
+receivers:
+  opencensus:
+    address: ":55678"
+  jaeger:
+    collector_http_port: 14268
+
+exporters:
+  opencensus:
+    endpoint: "oc-collector:55678"
