@@ -39,6 +39,7 @@ type datadogConfig struct {
 	Tags []string `yaml:"tags,omitempty"`
 
 	EnableTracing bool `yaml:"enable_tracing,omitempty"`
+	EnableMetrics bool `yaml:"enable_metrics,omitempty"`
 }
 
 type datadogExporter struct {
@@ -47,25 +48,25 @@ type datadogExporter struct {
 
 // DatadogTraceExportersFromYAML parses the yaml bytes and returns an exporter.TraceExporter targeting
 // Datadog according to the configuration settings.
-func DatadogTraceExportersFromYAML(config []byte) (tes []exporter.TraceExporter, doneFns []func() error, err error) {
+func DatadogTraceExportersFromYAML(config []byte) (tes []exporter.TraceExporter, mes []exporter.MetricsExporter, doneFns []func() error, err error) {
 	var cfg struct {
 		Exporters *struct {
 			Datadog *datadogConfig `yaml:"datadog"`
 		} `yaml:"exporters"`
 	}
 	if err := yamlUnmarshal(config, &cfg); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	if cfg.Exporters == nil {
-		return nil, nil, nil
+		return nil, nil, nil, nil
 	}
 
 	dc := cfg.Exporters.Datadog
 	if dc == nil {
-		return nil, nil, nil
+		return nil, nil, nil, nil
 	}
-	if !dc.EnableTracing {
-		return nil, nil, nil
+	if !dc.EnableTracing && !dc.EnableMetrics {
+		return nil, nil, nil, nil
 	}
 
 	// TODO(jbd): Create new exporter for each service name.
@@ -79,7 +80,13 @@ func DatadogTraceExportersFromYAML(config []byte) (tes []exporter.TraceExporter,
 		de.Stop()
 		return nil
 	})
-	tes = append(tes, &datadogExporter{exporter: de})
+
+	dexp := &datadogExporter{exporter: de}
+	tes = append(tes, dexp)
+
+	// TODO: (@odeke-em, @songya23) implement ExportMetrics for Datadog.
+	// mes = append(mes, oexp)
+
 	return
 }
 

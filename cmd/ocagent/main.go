@@ -76,14 +76,13 @@ func runOCAgent() {
 		log.Fatalf("Configuration logical error: %v", err)
 	}
 
-	traceExporters, closeFns, err := config.ExportersFromYAMLConfig(yamlBlob)
+	traceExporters, metricsExporters, closeFns, err := config.ExportersFromYAMLConfig(yamlBlob)
 	if err != nil {
 		log.Fatalf("Config: failed to create exporters from YAML: %v", err)
 	}
 
 	commonSpanSink := exporter.MultiTraceExporters(traceExporters...)
-	// TODO: (@odeke-em, @songy23) remove this noopMetricsSink once we have metrics exporters.
-	commonMetricsSink := new(noopMetricsSink)
+	commonMetricsSink := exporter.MultiMetricsExporters(metricsExporters...)
 
 	// Add other receivers here as they are implemented
 	ocReceiverDoneFn, err := runOCReceiver(agentConfig, commonSpanSink, commonMetricsSink)

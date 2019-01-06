@@ -77,22 +77,22 @@ func (zc *ZipkinConfig) EndpointURL() string {
 
 // ZipkinExportersFromYAML parses the yaml bytes and returns an exporter.TraceExporter targeting
 // Zipkin according to the configuration settings.
-func ZipkinExportersFromYAML(config []byte) (tes []exporter.TraceExporter, doneFns []func() error, err error) {
+func ZipkinExportersFromYAML(config []byte) (tes []exporter.TraceExporter, mes []exporter.MetricsExporter, doneFns []func() error, err error) {
 	var cfg struct {
 		Exporters *struct {
 			Zipkin *ZipkinConfig `yaml:"zipkin"`
 		} `yaml:"exporters"`
 	}
 	if err := yamlUnmarshal(config, &cfg); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	if cfg.Exporters == nil {
-		return nil, nil, nil
+		return nil, nil, nil, nil
 	}
 
 	zc := cfg.Exporters.Zipkin
 	if zc == nil {
-		return nil, nil, nil
+		return nil, nil, nil, nil
 	}
 
 	serviceName := ""
@@ -110,7 +110,7 @@ func ZipkinExportersFromYAML(config []byte) (tes []exporter.TraceExporter, doneF
 	}
 	zle, err := newZipkinExporter(endpoint, serviceName, localEndpointURI, uploadPeriod)
 	if err != nil {
-		return nil, nil, fmt.Errorf("Cannot configure Zipkin exporter: %v", err)
+		return nil, nil, nil, fmt.Errorf("Cannot configure Zipkin exporter: %v", err)
 	}
 	tes = append(tes, zle)
 	doneFns = append(doneFns, zle.stop)

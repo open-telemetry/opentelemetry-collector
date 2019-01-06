@@ -27,6 +27,7 @@ import (
 type stackdriverConfig struct {
 	ProjectID     string `yaml:"project,omitempty"`
 	EnableTracing bool   `yaml:"enable_tracing,omitempty"`
+	EnableMetrics bool   `yaml:"enable_metrics,omitempty"`
 }
 
 type stackdriverExporter struct {
@@ -37,45 +38,52 @@ var _ exporter.TraceExporter = (*stackdriverExporter)(nil)
 
 // StackdriverTraceExportersFromYAML parses the yaml bytes and returns an exporter.TraceExporter targeting
 // Stackdriver according to the configuration settings.
-func StackdriverTraceExportersFromYAML(config []byte) (tes []exporter.TraceExporter, doneFns []func() error, err error) {
+func StackdriverTraceExportersFromYAML(config []byte) (tes []exporter.TraceExporter, mes []exporter.MetricsExporter, doneFns []func() error, err error) {
 	var cfg struct {
 		Exporters *struct {
 			Stackdriver *stackdriverConfig `yaml:"stackdriver"`
 		} `yaml:"exporters"`
 	}
 	if err := yamlUnmarshal(config, &cfg); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	if cfg.Exporters == nil {
-		return nil, nil, nil
+		return nil, nil, nil, nil
 	}
 	sc := cfg.Exporters.Stackdriver
 	if sc == nil {
-		return nil, nil, nil
+		return nil, nil, nil, nil
 	}
-	if !sc.EnableTracing {
-		return nil, nil, nil
+	if !sc.EnableTracing && !sc.EnableMetrics {
+		return nil, nil, nil, nil
 	}
 
 	// TODO:  For each ProjectID, create a different exporter
 	// or at least a unique Stackdriver client per ProjectID.
 	if sc.ProjectID == "" {
-		return nil, nil, fmt.Errorf("Stackdriver config requires a project ID")
+		return nil, nil, nil, fmt.Errorf("Stackdriver config requires a project ID")
 	}
 
 	sde, serr := stackdriver.NewExporter(stackdriver.Options{
 		ProjectID: sc.ProjectID,
 	})
 	if serr != nil {
-		return nil, nil, fmt.Errorf("Cannot configure Stackdriver Trace exporter: %v", serr)
+		return nil, nil, nil, fmt.Errorf("Cannot configure Stackdriver Trace exporter: %v", serr)
 	}
 
-	tes = append(tes, &stackdriverExporter{exporter: sde})
+	stexp := &stackdriverExporter{exporter: sde}
+	if sc.EnableTracing {
+		tes = append(tes, stexp)
+	}
+	if sc.EnableMetrics {
+		// TODO: (@odeke-em, @songya23) implement ExportMetrics for Stackdriver.
+		// mes = append(mes, oexp)
+	}
 	doneFns = append(doneFns, func() error {
 		sde.Flush()
 		return nil
 	})
-	return tes, doneFns, nil
+	return tes, mes, doneFns, nil
 }
 
 func (sde *stackdriverExporter) ExportSpans(ctx context.Context, td data.TraceData) error {

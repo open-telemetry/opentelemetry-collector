@@ -34,23 +34,23 @@ type jaegerExporter struct {
 	exporter *jaeger.Exporter
 }
 
-// JaegerExportersFromYAML parses the yaml bytes and returns an exporter.TraceExporter targeting
+// JaegerExportersFromYAML parses the yaml bytes and returns exporter.TraceExporters targeting
 // Jaeger according to the configuration settings.
-func JaegerExportersFromYAML(config []byte) (tes []exporter.TraceExporter, doneFns []func() error, err error) {
+func JaegerExportersFromYAML(config []byte) (tes []exporter.TraceExporter, mes []exporter.MetricsExporter, doneFns []func() error, err error) {
 	var cfg struct {
 		Exporters *struct {
 			Jaeger *jaegerConfig `yaml:"jaeger"`
 		} `yaml:"exporters"`
 	}
 	if err := yamlUnmarshal(config, &cfg); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	if cfg.Exporters == nil {
-		return nil, nil, nil
+		return nil, nil, nil, nil
 	}
 	jc := cfg.Exporters.Jaeger
 	if jc == nil {
-		return nil, nil, nil
+		return nil, nil, nil, nil
 	}
 
 	// jaeger.NewExporter performs configurqtion validation
@@ -63,7 +63,7 @@ func JaegerExportersFromYAML(config []byte) (tes []exporter.TraceExporter, doneF
 		},
 	})
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	doneFns = append(doneFns, func() error {

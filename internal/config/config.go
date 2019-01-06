@@ -277,10 +277,10 @@ func eqLocalHost(host string) bool {
 //  + jaeger
 //  + kafka
 //  + opencensus
-func ExportersFromYAMLConfig(config []byte) (traceExporters []exporter.TraceExporter, doneFns []func() error, err error) {
+func ExportersFromYAMLConfig(config []byte) (traceExporters []exporter.TraceExporter, metricsExporters []exporter.MetricsExporter, doneFns []func() error, err error) {
 	parseFns := []struct {
 		name string
-		fn   func([]byte) ([]exporter.TraceExporter, []func() error, error)
+		fn   func([]byte) ([]exporter.TraceExporter, []exporter.MetricsExporter, []func() error, error)
 	}{
 		{name: "datadog", fn: exporterparser.DatadogTraceExportersFromYAML},
 		{name: "stackdriver", fn: exporterparser.StackdriverTraceExportersFromYAML},
@@ -291,17 +291,21 @@ func ExportersFromYAMLConfig(config []byte) (traceExporters []exporter.TraceExpo
 	}
 
 	for _, cfg := range parseFns {
-		tes, tesDoneFns, terr := cfg.fn(config)
+		tes, mes, tesDoneFns, terr := cfg.fn(config)
 		if err != nil {
 			err = fmt.Errorf("Failed to create config for %q: %v", cfg.name, terr)
 			return
 		}
 
-		nonNilExporters := 0
 		for _, te := range tes {
 			if te != nil {
 				traceExporters = append(traceExporters, te)
-				nonNilExporters++
+			}
+		}
+
+		for _, me := range mes {
+			if me != nil {
+				metricsExporters = append(metricsExporters, me)
 			}
 		}
 

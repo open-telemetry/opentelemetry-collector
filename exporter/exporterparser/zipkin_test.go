@@ -146,7 +146,7 @@ exporters:
     zipkin:
       upload_period: 1ms
       endpoint: ` + cst.URL
-	tes, doneFns, err := ZipkinExportersFromYAML([]byte(config))
+	tes, _, doneFns, err := ZipkinExportersFromYAML([]byte(config))
 	if err != nil {
 		t.Fatalf("Failed to parse out exporters: %v", err)
 	}

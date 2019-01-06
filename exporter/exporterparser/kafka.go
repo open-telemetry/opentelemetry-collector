@@ -37,7 +37,7 @@ var _ exporter.TraceExporter = (*kafkaExporter)(nil)
 
 // KafkaExportersFromYAML parses the yaml bytes and returns an exporter.TraceExporter targeting
 // Kafka according to the configuration settings.
-func KafkaExportersFromYAML(config []byte) (tes []exporter.TraceExporter, doneFns []func() error, err error) {
+func KafkaExportersFromYAML(config []byte) (tes []exporter.TraceExporter, mes []exporter.MetricsExporter, doneFns []func() error, err error) {
 	var cfg struct {
 		Exporters *struct {
 			Kafka *kafkaConfig `yaml:"kafka"`
@@ -45,14 +45,14 @@ func KafkaExportersFromYAML(config []byte) (tes []exporter.TraceExporter, doneFn
 	}
 
 	if err := yamlUnmarshal(config, &cfg); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	if cfg.Exporters == nil {
-		return nil, nil, nil
+		return nil, nil, nil, nil
 	}
 	kc := cfg.Exporters.Kafka
 	if kc == nil {
-		return nil, nil, nil
+		return nil, nil, nil, nil
 	}
 
 	kde, kerr := kafka.NewExporter(kafka.Options{
@@ -61,7 +61,7 @@ func KafkaExportersFromYAML(config []byte) (tes []exporter.TraceExporter, doneFn
 	})
 
 	if kerr != nil {
-		return nil, nil, fmt.Errorf("Cannot configure Kafka Trace exporter: %v", kerr)
+		return nil, nil, nil, fmt.Errorf("Cannot configure Kafka Trace exporter: %v", kerr)
 	}
 
 	tes = append(tes, &kafkaExporter{exporter: kde})
@@ -69,7 +69,7 @@ func KafkaExportersFromYAML(config []byte) (tes []exporter.TraceExporter, doneFn
 		kde.Flush()
 		return nil
 	})
-	return tes, doneFns, nil
+	return tes, nil, doneFns, nil
 }
 
 func (kde *kafkaExporter) ExportSpans(ctx context.Context, td data.TraceData) error {

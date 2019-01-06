@@ -156,16 +156,19 @@ func execute() {
 
 	var closeFns []func()
 	var spanProcessors []processor.SpanProcessor
-	exportersCloseFns, exporters := createExporters()
+	exportersCloseFns, traceExporters, metricsExporters := createExporters()
 	closeFns = append(closeFns, exportersCloseFns...)
-	if len(exporters) > 0 {
+	if len(traceExporters) > 0 {
 		// Exporters need an extra hop from OC-proto to span data: to workaround that for now
 		// we will use a special processor that transforms the data to a format that they can consume.
 		// TODO: (@pjanotti) we should avoid this step in the long run, its an extra hop just to re-use
 		// the exporters: this can lose node information and it is not ideal for performance and delegates
 		// the retry/buffering to the exporters (that are designed to run within the tracing process).
-		spanProcessors = append(spanProcessors, processor.NewTraceExporterProcessor(exporters...))
+		spanProcessors = append(spanProcessors, processor.NewTraceExporterProcessor(traceExporters...))
 	}
+
+	// TODO: (@pjanotti) make use of metrics exporters
+	_ = metricsExporters
 
 	if v.GetBool(debugProcessorFlg) {
 		spanProcessors = append(spanProcessors, processor.NewNoopSpanProcessor(logger))
@@ -256,11 +259,11 @@ func initTelemetry(level telemetry.Level, port int, asyncErrorChannel chan<- err
 	return nil
 }
 
-func createExporters() (doneFns []func(), traceExporters []exporter.TraceExporter) {
+func createExporters() (doneFns []func(), traceExporters []exporter.TraceExporter, metricsExporters []exporter.MetricsExporter) {
 	// TODO: (@pjanotti) this is slightly modified from agent but in the end duplication, need to consolidate style and visibility.
 	parseFns := []struct {
 		name string
-		fn   func([]byte) ([]exporter.TraceExporter, []func() error, error)
+		fn   func([]byte) ([]exporter.TraceExporter, []exporter.MetricsExporter, []func() error, error)
 	}{
 		{name: "datadog", fn: exporterparser.DatadogTraceExportersFromYAML},
 		{name: "stackdriver", fn: exporterparser.StackdriverTraceExportersFromYAML},
@@ -280,19 +283,25 @@ func createExporters() (doneFns []func(), traceExporters []exporter.TraceExporte
 	}
 
 	for _, cfg := range parseFns {
-		tes, tesDoneFns, err := cfg.fn(cfgBlob)
+		tes, mes, tesDoneFns, err := cfg.fn(cfgBlob)
 		if err != nil {
 			logger.Fatal("Failed to create config for exporter", zap.String("exporter", cfg.name), zap.Error(err))
 		}
 
-		wasEnabled := false
+		var anyTraceExporterEnabled, anyMetricsExporterEnabled bool
+
 		for _, te := range tes {
 			if te != nil {
-				wasEnabled = true
 				traceExporters = append(traceExporters, te)
+				anyTraceExporterEnabled = true
 			}
 		}
-
+		for _, me := range mes {
+			if me != nil {
+				metricsExporters = append(metricsExporters, me)
+				anyMetricsExporterEnabled = true
+			}
+		}
 		for _, tesDoneFn := range tesDoneFns {
 			if tesDoneFn != nil {
 				wrapperFn := func() {
@@ -304,12 +313,16 @@ func createExporters() (doneFns []func(), traceExporters []exporter.TraceExporte
 			}
 		}
 
-		if wasEnabled {
-			logger.Info("Exporter enabled", zap.String("exporter", cfg.name))
+		if anyTraceExporterEnabled {
+			logger.Info("Trace Exporter enabled", zap.String("exporter", cfg.name))
 		}
+		if anyMetricsExporterEnabled {
+			logger.Info("Metrices Exporter enabled", zap.String("exporter", cfg.name))
+		}
+
 	}
 
-	return doneFns, traceExporters
+	return doneFns, traceExporters, metricsExporters
 }
 
 func buildQueuedSpanProcessor(logger *zap.Logger, opts *builder.QueuedSpanProcessorCfg) (processor.SpanProcessor, error) {
