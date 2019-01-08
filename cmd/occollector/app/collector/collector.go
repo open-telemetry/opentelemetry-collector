@@ -27,6 +27,7 @@ import (
 	"syscall"
 
 	tchReporter "github.com/jaegertracing/jaeger/cmd/agent/app/reporter/tchannel"
+	"github.com/jaegertracing/jaeger/pkg/healthcheck"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/uber/jaeger-lib/metrics"
@@ -47,14 +48,15 @@ import (
 )
 
 const (
-	configCfg         = "config"
-	logLevelCfg       = "log-level"
-	metricsLevelCfg   = "metrics-level"
-	metricsPortCfg    = "metrics-port"
-	jaegerReceiverFlg = "receive-jaeger"
-	ocReceiverFlg     = "receive-oc-trace"
-	zipkinReceiverFlg = "receive-zipkin"
-	debugProcessorFlg = "debug-processor"
+	configCfg           = "config"
+	healthCheckHTTPPort = "health-check-http-port"
+	logLevelCfg         = "log-level"
+	metricsLevelCfg     = "metrics-level"
+	metricsPortCfg      = "metrics-port"
+	jaegerReceiverFlg   = "receive-jaeger"
+	ocReceiverFlg       = "receive-oc-trace"
+	zipkinReceiverFlg   = "receive-zipkin"
+	debugProcessorFlg   = "debug-processor"
 )
 
 var (
@@ -88,6 +90,9 @@ func init() {
 
 	rootCmd.PersistentFlags().String(metricsLevelCfg, "BASIC", "Output level of telemetry metrics (NONE, BASIC, NORMAL, DETAILED)")
 	v.BindPFlag(metricsLevelCfg, rootCmd.PersistentFlags().Lookup(metricsLevelCfg))
+
+	rootCmd.PersistentFlags().Int(healthCheckHTTPPort, 13133, "Port on which to run the healthcheck http server.")
+	v.BindPFlag(healthCheckHTTPPort, rootCmd.PersistentFlags().Lookup(healthCheckHTTPPort))
 
 	// At least until we can use a generic, i.e.: OpenCensus, metrics exporter we default to Prometheus at port 8888, if not otherwise specified.
 	rootCmd.PersistentFlags().Uint16(metricsPortCfg, 8888, "Port exposing collector telemetry.")
@@ -139,6 +144,13 @@ func execute() {
 
 	logger.Info("Starting...")
 
+	hc, err := healthcheck.New(
+		healthcheck.Unavailable, healthcheck.Logger(logger),
+	).Serve(v.GetInt(healthCheckHTTPPort))
+	if err != nil {
+		log.Fatalf("Failed to start healthcheck server: %v", err)
+	}
+
 	// Build pipeline from its end: 1st exporters, the OC-proto queue processor, and
 	// finally the receivers.
 
@@ -186,6 +198,9 @@ func execute() {
 		logger.Error("Failed to initialize telemetry", zap.Error(err))
 		os.Exit(1)
 	}
+
+	// mark service as ready to receive traffic.
+	hc.Ready()
 
 	select {
 	case err = <-asyncErrorChannel:

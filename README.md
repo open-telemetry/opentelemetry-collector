@@ -325,6 +325,7 @@ Flags:
       --log-level string       Output level of logs (TRACE, DEBUG, INFO, WARN, ERROR, FATAL) (default "INFO")
       --metrics-level string   Output level of telemetry metrics (NONE, BASIC, NORMAL, DETAILED) (default "BASIC")
       --metrics-port uint16    Port exposing collector telemetry. (default 8888)
+      --health-check-http-port Port exposed to check the health of the opencensus collector service. (default 13133)
       --receive-jaeger         Flag to run the Jaeger receiver (i.e.: Jaeger Collector), default settings: {ThriftTChannelPort:14267 ThriftHTTPPort:14268}
       --receive-oc-trace       Flag to run the OpenCensus trace receiver, default settings: {Port:55678}
       --receive-zipkin         Flag to run the Zipkin receiver, default settings: {Port:9411}
