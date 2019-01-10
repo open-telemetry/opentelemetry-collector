@@ -44,7 +44,7 @@ function build() {
     GOOS="$1"
     LDFLAGS="\"-X github.com/census-instrumentation/opencensus-service/internal/version.GitHash=`git rev-parse --short HEAD` \
         -X github.com/census-instrumentation/opencensus-service/internal/version.version=$VERSION\""
-    CMD="GOOS=$GOOS go build -ldflags $LDFLAGS -o bin/ocagent_$GOOS ./cmd/ocagent"
+    CMD="GO111MODULE=on GOOS=$GOOS go build -ldflags $LDFLAGS -o bin/ocagent_$GOOS ./cmd/ocagent"
     echo $CMD
     eval $CMD
 }
@@ -56,7 +56,6 @@ function buildAll() {
 }
 
 function dockerBuild() {
-    build linux
     CMD="docker build -t ocagent:$VERSION ."
     echo $CMD
     eval $CMD

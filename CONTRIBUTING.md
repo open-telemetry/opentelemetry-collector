@@ -56,7 +56,7 @@ $ git push fork feature
 
 ## General Notes
 
-This project uses go 1.11 and Travis for CI.
+This project uses Go 1.11.4 and Travis for CI.
 
 Travis CI uses the Makefile with the default target, it is recommended to
 run it before submitting your PR. It runs `gofmt -s` (simplify) and `golint`.

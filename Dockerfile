@@ -1,13 +1,11 @@
-FROM golang:1.11-alpine3.7 as builder
+FROM golang:1.11.4-alpine3.7 as builder
 
 RUN apk update && apk upgrade && \
-    apk add --no-cache bash git openssh
+    apk add --no-cache bash git openssh gcc libc-dev
 
 ENV GOPKG github.com/census-instrumentation/opencensus-service
-
 COPY . /go/src/$GOPKG/
 
-RUN go get $GOPKG/...
 RUN cd /go/src/$GOPKG/ && ./build_binaries.sh linux && cp /go/src/$GOPKG/bin/ocagent_linux /ocagent
 
 FROM alpine:3.7

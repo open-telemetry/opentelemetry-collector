@@ -227,7 +227,7 @@ Architecture amd64
 
 The ocagent can be run directly from sources, binary, or a Docker image.
 
-The minimum Go version required for this project is Go1.11.
+The minimum Go version required for this project is Go 1.11.4.
 
 1. Run from sources:
 
@@ -293,7 +293,7 @@ agent/client health information/inventory metadata to downstream exporters.
 
 The collector can be run directly from sources, binary, or a Docker image.
 
-The minimum Go version required for this project is Go1.11.
+The minimum Go version required for this project is Go 1.11.4.
 
 1. Run from sources:
 ```shell
