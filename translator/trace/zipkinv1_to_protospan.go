@@ -194,10 +194,6 @@ type annotationParseResult struct {
 }
 
 func parseZipkinV1Annotations(annotations []*annotation) *annotationParseResult {
-	if len(annotations) == 0 {
-		return nil
-	}
-
 	// Unknown service name works both as a default value and a flag to indicate that a valid endpoint was found.
 	const unknownServiceName = "unknown-service"
 
