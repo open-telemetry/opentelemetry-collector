@@ -145,7 +145,7 @@ please see the [exporter README.md](exporter/exporterparser/README.md).
 ```yaml
 exporters:
   opencensus:
-    endpoint: "http://localhost:10001"
+    endpoint: "localhost:10001"
 
   jaeger:
     collector_endpoint: "http://localhost:14268/api/traces"
@@ -312,23 +312,23 @@ $ docker run --rm -it -p 55678:55678 occollector
 ```
 
 It can be configured via command-line or config file:
-```shell
+```
 OpenCensus Collector
 
 Usage:
   occollector [flags]
 
 Flags:
-      --config string          Path to the config file
-      --debug-processor        Flag to add a debug processor (combine with log level DEBUG to log incoming spans)
-  -h, --help                   Help for occollector
-      --log-level string       Output level of logs (TRACE, DEBUG, INFO, WARN, ERROR, FATAL) (default "INFO")
-      --metrics-level string   Output level of telemetry metrics (NONE, BASIC, NORMAL, DETAILED) (default "BASIC")
-      --metrics-port uint16    Port exposing collector telemetry. (default 8888)
-      --health-check-http-port Port exposed to check the health of the opencensus collector service. (default 13133)
-      --receive-jaeger         Flag to run the Jaeger receiver (i.e.: Jaeger Collector), default settings: {ThriftTChannelPort:14267 ThriftHTTPPort:14268}
-      --receive-oc-trace       Flag to run the OpenCensus trace receiver, default settings: {Port:55678}
-      --receive-zipkin         Flag to run the Zipkin receiver, default settings: {Port:9411}
+      --config string                Path to the config file
+      --debug-processor              Flag to add a debug processor (combine with log level DEBUG to log incoming spans)
+      --health-check-http-port int   Port on which to run the healthcheck http server. (default 13133)
+  -h, --help                         help for occollector
+      --log-level string             Output level of logs (TRACE, DEBUG, INFO, WARN, ERROR, FATAL) (default "INFO")
+      --metrics-level string         Output level of telemetry metrics (NONE, BASIC, NORMAL, DETAILED) (default "BASIC")
+      --metrics-port uint16          Port exposing collector telemetry. (default 8888)
+      --receive-jaeger               Flag to run the Jaeger receiver (i.e.: Jaeger Collector), default settings: {ThriftTChannelPort:14267 ThriftHTTPPort:14268}
+      --receive-oc-trace             Flag to run the OpenCensus trace receiver, default settings: {Port:55678} (default true)
+      --receive-zipkin               Flag to run the Zipkin receiver, default settings: {Port:9411}
 ```
 
 Sample configuration file:
