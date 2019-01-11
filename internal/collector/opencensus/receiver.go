@@ -23,8 +23,6 @@ import (
 	"time"
 
 	"github.com/spf13/viper"
-	"go.opencensus.io/plugin/ocgrpc"
-	"go.opencensus.io/stats/view"
 	"go.uber.org/zap"
 
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
@@ -43,9 +41,11 @@ func Run(logger *zap.Logger, v *viper.Viper, spanProc processor.SpanProcessor) (
 
 	grpcSrv := internal.GRPCServerWithObservabilityEnabled()
 
-	if err := view.Register(ocgrpc.DefaultServerViews...); err != nil {
-		return nil, fmt.Errorf("Failed to register ocgrpc.DefaultServerViews: %v", err)
-	}
+	// Temporarily disabling the grpc metrics since they do not provide good data at this moment,
+	// See https://github.com/census-instrumentation/opencensus-service/issues/287
+	// if err := view.Register(ocgrpc.DefaultServerViews...); err != nil {
+	// 	return nil, fmt.Errorf("Failed to register ocgrpc.DefaultServerViews: %v", err)
+	// }
 
 	lis, err := net.Listen("tcp", ":"+strconv.FormatInt(int64(rOpts.Port), 10))
 	if err != nil {
