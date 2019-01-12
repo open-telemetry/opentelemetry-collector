@@ -56,7 +56,7 @@ func PrometheusExportersFromYAML(config []byte) (tes []exporter.TraceExporter, m
 	if err := yamlUnmarshal(config, &cfg); err != nil {
 		return nil, nil, nil, err
 	}
-	if cfg.Exporters == nil {
+	if cfg.Exporters == nil || cfg.Exporters.Prometheus == nil {
 		return nil, nil, nil, nil
 	}
 

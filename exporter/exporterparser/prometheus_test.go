@@ -72,6 +72,26 @@ exporters:
 	}
 }
 
+func TestPrometheusExporter_nilDoesntCauseCrash(t *testing.T) {
+	config := []byte(`
+exporters:
+    prometheus:`)
+
+	tes, mes, doneFns, err := PrometheusExportersFromYAML(config)
+	if err != nil {
+		t.Errorf("Unexpected parse error: %v", err)
+	}
+	if len(tes) != 0 {
+		t.Errorf("Unexpectedly got back %d > 0 trace exporters", len(tes))
+	}
+	if len(mes) != 0 {
+		t.Errorf("Unexpectedly got back %d > 0 metrics exporters", len(mes))
+	}
+	for _, doneFn := range doneFns {
+		doneFn()
+	}
+}
+
 func TestPrometheusExporter_endToEnd(t *testing.T) {
 	config := []byte(`
 exporters:
