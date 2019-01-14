@@ -35,7 +35,7 @@ import (
 )
 
 func TestGrpcGateway_endToEnd(t *testing.T) {
-	addr := ":35990"
+	addr := ":35993"
 
 	// Set the buffer count to 1 to make it flush the test span immediately.
 	ocr, err := opencensus.New(addr, opencensus.WithTraceReceiverOptions(octrace.WithSpanBufferCount(1)))
@@ -56,6 +56,11 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 	<-time.After(10 * time.Millisecond)
 
 	url := fmt.Sprintf("http://%s/v1/trace", addr)
+
+	// Verify that CORS is not enabled by default, but that it gives an 405
+	// method not allowed error.
+	verifyCorsResp(t, url, "origin.com", 405, false)
+
 	traceJSON := []byte(`
     {
        "node":{"identifier":{"hostName":"testHost"}},
@@ -137,5 +142,75 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 		if !bytes.Equal(gj, wj) {
 			t.Errorf("Mismatched responses\nGot:\n\t%v\n\t%s\nWant:\n\t%v\n\t%s", got, gj, want, wj)
 		}
+	}
+}
+
+func TestGrpcGatewayCors_endToEnd(t *testing.T) {
+	addr := ":35991"
+	corsOrigins := []string{"allowed-*.com"}
+
+	ocr, err := opencensus.New(addr, opencensus.WithCorsOrigins(corsOrigins))
+	if err != nil {
+		t.Fatalf("Failed to create trace receiver: %v", err)
+	}
+	defer ocr.StopTraceReception(context.Background())
+
+	sink := new(testhelper.ConcurrentSpanSink)
+	go func() {
+		if err := ocr.StartTraceReception(context.Background(), sink); err != nil {
+			t.Fatalf("Failed to start trace receiver: %v", err)
+		}
+	}()
+
+	// Wait for the servers to start
+	<-time.After(10 * time.Millisecond)
+
+	url := fmt.Sprintf("http://%s/v1/trace", addr)
+
+	// Verify allowed domain gets responses that allow CORS.
+	verifyCorsResp(t, url, "allowed-origin.com", 200, true)
+
+	// Verify disallowed domain gets responses that disallow CORS.
+	verifyCorsResp(t, url, "disallowed-origin.com", 200, false)
+}
+
+func verifyCorsResp(t *testing.T, url string, origin string, wantStatus int, wantAllowed bool) {
+	req, err := http.NewRequest("OPTIONS", url, nil)
+	if err != nil {
+		t.Fatalf("Error creating trace OPTIONS request: %v", err)
+	}
+	req.Header.Set("Origin", origin)
+	req.Header.Set("Access-Control-Request-Method", "POST")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatalf("Error sending OPTIONS to grpc-gateway server: %v", err)
+	}
+
+	err = resp.Body.Close()
+	if err != nil {
+		t.Errorf("Error closing OPTIONS response body, %v", err)
+	}
+
+	if resp.StatusCode != wantStatus {
+		t.Errorf("Unexpected status from OPTIONS: %v", resp.StatusCode)
+	}
+
+	gotAllowOrigin := resp.Header.Get("Access-Control-Allow-Origin")
+	gotAllowMethods := resp.Header.Get("Access-Control-Allow-Methods")
+
+	wantAllowOrigin := ""
+	wantAllowMethods := ""
+	if wantAllowed {
+		wantAllowOrigin = origin
+		wantAllowMethods = "POST"
+	}
+
+	if gotAllowOrigin != wantAllowOrigin {
+		t.Errorf("Unexpected Access-Control-Allow-Origin: %v", gotAllowOrigin)
+	}
+	if gotAllowMethods != wantAllowMethods {
+		t.Errorf("Unexpected Access-Control-Allow-Methods: %v", gotAllowMethods)
 	}
 }

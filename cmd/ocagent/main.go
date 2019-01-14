@@ -156,7 +156,8 @@ func runZPages(port int) func() error {
 
 func runOCReceiver(acfg *config.Config, sr receiver.TraceReceiverSink, mr receiver.MetricsReceiverSink) (doneFn func() error, err error) {
 	addr := acfg.OpenCensusReceiverAddress()
-	ocr, err := opencensus.New(addr)
+	corsOrigins := acfg.OpenCensusReceiverCorsAllowedOrigins()
+	ocr, err := opencensus.New(addr, opencensus.WithCorsOrigins(corsOrigins))
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create the OpenCensus receiver on address %q: error %v", addr, err)
 	}
