@@ -30,8 +30,10 @@ import (
 	zipkinhttp "github.com/openzipkin/zipkin-go/reporter/http"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/exporter"
+	"github.com/census-instrumentation/opencensus-service/internal"
 	tracetranslator "github.com/census-instrumentation/opencensus-service/translator/trace"
 )
 
@@ -196,6 +198,7 @@ func (ze *zipkinExporter) stop() error {
 }
 
 func (ze *zipkinExporter) ExportSpans(ctx context.Context, td data.TraceData) error {
+	goodSpans := make([]*tracepb.Span, 0, len(td.Spans))
 	for _, span := range td.Spans {
 		sd, err := tracetranslator.ProtoSpanToOCSpanData(span)
 		if err != nil {
@@ -208,8 +211,14 @@ func (ze *zipkinExporter) ExportSpans(ctx context.Context, td data.TraceData) er
 			ze.mu.Lock()
 			ze.reporter.Send(zs)
 			ze.mu.Unlock()
+			goodSpans = append(goodSpans, span)
 		}
 	}
+
+	// And finally record metrics on the number of exported spans.
+	nSpansCounter := internal.NewExportedSpansRecorder("zipkin")
+	nSpansCounter(ctx, td.Node, goodSpans)
+
 	return nil
 }
 

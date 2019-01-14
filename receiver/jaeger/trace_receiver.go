@@ -38,6 +38,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/census-instrumentation/opencensus-service/data"
+	"github.com/census-instrumentation/opencensus-service/internal"
 	"github.com/census-instrumentation/opencensus-service/receiver"
 	"github.com/census-instrumentation/opencensus-service/translator/trace"
 )
@@ -226,6 +227,7 @@ func (jr *jReceiver) stopTraceReceptionLocked(ctx context.Context) error {
 
 func (jr *jReceiver) SubmitBatches(ctx thrift.Context, batches []*jaeger.Batch) ([]*jaeger.BatchSubmitResponse, error) {
 	jbsr := make([]*jaeger.BatchSubmitResponse, 0, len(batches))
+	spansMetricsFn := internal.NewReceivedSpansRecorderStreaming(ctx, "jaeger-collector")
 
 	for _, batch := range batches {
 		octrace, err := tracetranslator.JaegerThriftBatchToOCProto(batch)
@@ -235,6 +237,8 @@ func (jr *jReceiver) SubmitBatches(ctx thrift.Context, batches []*jaeger.Batch) 
 		if err == nil && octrace != nil {
 			ok = true
 			jr.spanSink.ReceiveTraceData(ctx, data.TraceData{Node: octrace.Node, Spans: octrace.Spans})
+			// We MUST unconditionally record metrics from this reception.
+			spansMetricsFn(octrace.Node, octrace.Spans)
 		}
 
 		jbsr = append(jbsr, &jaeger.BatchSubmitResponse{
@@ -263,7 +267,11 @@ func (jr *jReceiver) EmitBatch(batch *jaeger.Batch) error {
 	}
 
 	ctx := context.Background()
+	spansMetricsFn := internal.NewReceivedSpansRecorderStreaming(ctx, "jaeger-agent")
 	_, err = jr.spanSink.ReceiveTraceData(ctx, data.TraceData{Node: octrace.Node, Spans: octrace.Spans})
+	// We MUST unconditionally record metrics from this reception.
+	spansMetricsFn(octrace.Node, octrace.Spans)
+
 	return err
 }
 

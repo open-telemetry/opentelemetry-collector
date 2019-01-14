@@ -40,6 +40,7 @@ import (
 	"github.com/census-instrumentation/opencensus-service/cmd/occollector/app/sender"
 	"github.com/census-instrumentation/opencensus-service/exporter"
 	"github.com/census-instrumentation/opencensus-service/exporter/exporterparser"
+	"github.com/census-instrumentation/opencensus-service/internal"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/jaeger"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/opencensus"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/processor"
@@ -231,6 +232,7 @@ func initTelemetry(level telemetry.Level, port int, asyncErrorChannel chan<- err
 
 	views := processor.MetricViews(level)
 	views = append(views, processor.QueuedProcessorMetricViews(level)...)
+	views = append(views, internal.AllViews...)
 	if err := view.Register(views...); err != nil {
 		return err
 	}

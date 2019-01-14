@@ -251,10 +251,13 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	var ereqs []*agenttracepb.ExportTraceServiceRequest
 
+	var receiverNameTag string
 	if asZipkinv1 {
 		ereqs, err = zr.v1ToTraceSpans(slurp)
+		receiverNameTag = "zipkinV1"
 	} else {
 		ereqs, err = zr.v2ToTraceSpans(slurp, r.Header)
+		receiverNameTag = "zipkinV2"
 	}
 
 	if err != nil {
@@ -266,7 +269,7 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	spansMetricsFn := internal.NewReceivedSpansRecorderStreaming(ctx, "zipkin")
+	spansMetricsFn := internal.NewReceivedSpansRecorderStreaming(ctx, receiverNameTag)
 	// Now translate them into TraceData
 	for _, ereq := range ereqs {
 		zr.spanSink.ReceiveTraceData(ctx, data.TraceData{Node: ereq.Node, Spans: ereq.Spans})
