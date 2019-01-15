@@ -96,6 +96,31 @@
       ],
       "logs": [
         {
+          "timestamp": 1485467191639874,
+          "fields": [
+            {
+              "key": "message.id",
+              "vLong": 0,
+              "vType": "LONG"
+            },
+            {
+              "key": "message.type",
+              "vStr": "SENT",
+              "vType": "STRING"
+            },
+            {
+              "key": "message.compressed_size",
+              "vLong": 512,
+              "vType": "LONG"
+            },
+            {
+              "key": "message.uncompressed_size",
+              "vLong": 1024,
+              "vType": "LONG"
+            }
+          ]
+        },
+        {
           "timestamp": 1485467191639875,
           "fields": [
             {
@@ -112,6 +137,11 @@
               "key": "event",
               "vType": "STRING",
               "vStr": "nothing"
+            },
+            {
+              "key": "description",
+              "vType": "STRING",
+              "vStr": "annotation description"
             }
           ]
         }

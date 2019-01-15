@@ -219,6 +219,14 @@ var ocBatches = []*agenttracepb.ExportTraceServiceRequest{
 				TimeEvents: &tracepb.Span_TimeEvents{
 					TimeEvent: []*tracepb.Span_TimeEvent{
 						{
+							Time: &timestamp.Timestamp{Seconds: 1485467191, Nanos: 639874000},
+							Value: &tracepb.Span_TimeEvent_MessageEvent_{
+								MessageEvent: &tracepb.Span_TimeEvent_MessageEvent{
+									Type: tracepb.Span_TimeEvent_MessageEvent_SENT, UncompressedSize: 1024, CompressedSize: 512,
+								},
+							},
+						},
+						{
 							Time: &timestamp.Timestamp{Seconds: 1485467191, Nanos: 639875000},
 							Value: &tracepb.Span_TimeEvent_Annotation_{
 								Annotation: &tracepb.Span_TimeEvent_Annotation{
@@ -236,6 +244,7 @@ var ocBatches = []*agenttracepb.ExportTraceServiceRequest{
 							Time: &timestamp.Timestamp{Seconds: 1485467191, Nanos: 639875000},
 							Value: &tracepb.Span_TimeEvent_Annotation_{
 								Annotation: &tracepb.Span_TimeEvent_Annotation{
+									Description: &tracepb.TruncatableString{Value: "annotation description"},
 									Attributes: &tracepb.Span_Attributes{
 										AttributeMap: map[string]*tracepb.AttributeValue{
 											"event": {

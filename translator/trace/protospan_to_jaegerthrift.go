@@ -310,9 +310,19 @@ func ocAnnotationToJagerTags(annotation *tracepb.Span_TimeEvent_Annotation) []*j
 		return nil
 	}
 
-	// TODO: (@pjanotti) what about Description? Does it fit as another tag?
+	jTags := ocSpanAttributesToJaegerTags(annotation.Attributes)
 
-	return ocSpanAttributesToJaegerTags(annotation.Attributes)
+	desc := truncableStringToStr(annotation.Description)
+	if desc != "" {
+		jDescTag := &jaeger.Tag{
+			Key:   annotationDescriptionKey,
+			VStr:  &desc,
+			VType: jaeger.TagType_STRING,
+		}
+		jTags = append(jTags, jDescTag)
+	}
+
+	return jTags
 }
 
 func ocMessageEventToJaegerTags(msgEvent *tracepb.Span_TimeEvent_MessageEvent) []*jaeger.Tag {
@@ -320,9 +330,46 @@ func ocMessageEventToJaegerTags(msgEvent *tracepb.Span_TimeEvent_MessageEvent) [
 		return nil
 	}
 
-	// TODO: (@pjanotti) Not clear how to map those to Jaeger, perhaps some OpenTracing tags...
+	jID := int64(msgEvent.Id)
+	idTag := &jaeger.Tag{
+		Key:   messageEventIDKey,
+		VLong: &jID,
+		VType: jaeger.TagType_LONG,
+	}
 
-	return nil
+	msgTypeStr := msgEvent.Type.String()
+	msgType := &jaeger.Tag{
+		Key:   messageEventTypeKey,
+		VStr:  &msgTypeStr,
+		VType: jaeger.TagType_STRING,
+	}
+
+	// Some implementations always have these two fields as zeros.
+	if msgEvent.CompressedSize == 0 && msgEvent.UncompressedSize == 0 {
+		return []*jaeger.Tag{
+			idTag, msgType,
+		}
+	}
+
+	// There is a risk in this cast since we are converting from uint64, but
+	// seems a good compromise since the risk of such large values are small.
+	compSize := int64(msgEvent.CompressedSize)
+	compressedSize := &jaeger.Tag{
+		Key:   messageEventCompressedSizeKey,
+		VLong: &compSize,
+		VType: jaeger.TagType_LONG,
+	}
+
+	uncompSize := int64(msgEvent.UncompressedSize)
+	uncompressedSize := &jaeger.Tag{
+		Key:   messageEventUncompressedSizeKey,
+		VLong: &uncompSize,
+		VType: jaeger.TagType_LONG,
+	}
+
+	return []*jaeger.Tag{
+		idTag, msgType, compressedSize, uncompressedSize,
+	}
 }
 
 func truncableStringToStr(ts *tracepb.TruncatableString) string {
