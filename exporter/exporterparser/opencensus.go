@@ -20,8 +20,10 @@ import (
 
 	"contrib.go.opencensus.io/exporter/ocagent"
 
+	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/exporter"
+	"github.com/census-instrumentation/opencensus-service/internal"
 )
 
 type opencensusConfig struct {
@@ -76,5 +78,16 @@ func OpenCensusTraceExportersFromYAML(config []byte) (tes []exporter.TraceExport
 }
 
 func (sde *ocagentExporter) ExportSpans(ctx context.Context, td data.TraceData) error {
-	return exportSpans(ctx, "ocagent", sde.exporter, td)
+	err := sde.exporter.ExportTraceServiceRequest(
+		&agenttracepb.ExportTraceServiceRequest{
+			Spans: td.Spans,
+			Node:  td.Node,
+		},
+	)
+	if err != nil {
+		return err
+	}
+	nSpansCounter := internal.NewExportedSpansRecorder("ocagent")
+	nSpansCounter(ctx, td.Node, td.Spans)
+	return nil
 }
