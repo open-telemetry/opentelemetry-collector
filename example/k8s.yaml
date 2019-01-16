@@ -1,0 +1,167 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oc-agent-conf
+  labels:
+    app: opencensus
+    component: oc-agent-conf
+data:
+  oc-agent-config: |
+    receivers:
+      opencensus: {}
+#      jaeger: {}
+#      zipkin: {}
+    exporters:
+      opencensus:
+        endpoint: "oc-collector.default.svc.cluster.local:55678" # TODO: Update me
+---
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: oc-agent
+  labels:
+    app: opencensus
+    component: oc-agent
+spec:
+  template:
+    metadata:
+      labels:
+        app: opencensus
+        component: oc-agent
+    spec:
+      containers:
+      - image: omnition/opencensus-agent:1.1.2
+        name: oc-agent
+        resources:
+          limits:
+            cpu: 0.5
+            memory: 500Mi
+        command:
+          - "ocagent_linux"
+          - "--config-file=/conf/oc-agent-config.yaml"
+        ports:
+        - containerPort: 55678
+        - containerPort: 55679
+#        - containerPort: 14267
+#        - containerPort: 14268
+#        - containerPort: 9411
+        volumeMounts:
+        - name: oc-agent-config-vol
+          mountPath: /conf
+      volumes:
+        - configMap:
+            name: oc-agent-conf
+            items:
+              - key: oc-agent-config
+                path: oc-agent-config.yaml
+          name: oc-agent-config-vol
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oc-collector-conf
+  labels:
+    app: opencensus
+    component: oc-collector-conf
+data:
+  oc-collector-config: |
+    receivers:
+      opencensus: {}
+      jaeger: {}
+      zipkin: {}
+# Can only use one exporter
+#    exporters:
+#      jaeger:
+#        collector_endpoint: "http://jaeger.default.svc.cluster.local:14268/api/traces"
+#      zipkin: {}
+    queued-exporters:
+      omnition:
+        num-workers: 20
+        queue-size: 10000
+        retry-on-failure: true
+        sender-type: jaeger-thrift-http
+        jaeger-thrift-http:
+          collector_endpoint: https://ingest.omnition.io/api/traces
+          headers: { "x-omnition-api-key":"00000000-0000-0000-0000-000000000001" } # TODO: Update me
+          timeout: 5s
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: oc-collector
+  labels:
+    app: opencesus
+    component: oc-collector
+spec:
+  ports:
+  - name: opencensus
+    port: 55678
+    protocol: TCP
+    targetPort: 55678
+#  - name: jaeger-tchannel
+#    port: 14267
+#  - name: jaeger-thrift-http
+#    port: 14268
+#  - name: zipkin
+#    port: 9411
+  selector:
+    component: oc-collector
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: oc-collector
+  labels:
+    app: opencensus
+    component: oc-collector
+spec:
+  minReadySeconds: 5
+  progressDeadlineSeconds: 120
+  replicas: 1
+  template:
+    metadata:
+      annotations:
+        prometheus.io/path: "/metrics"
+        prometheus.io/port: "8888"
+        prometheus.io/scrape: "true"
+      labels:
+        app: opencensus
+        component: oc-collector
+    spec:
+      containers:
+      - image: omnition/opencensus-collector:1.1.2
+        name: oc-collector
+        resources:
+          limits:
+            cpu: 1
+            memory: 2Gi
+          requests:
+            cpu: 200m
+            memory: 400Mi
+        command:
+          - "occollector_linux"
+          - "--config-file=/conf/oc-collector-config.yaml"
+        ports:
+        - containerPort: 55678
+#        - containerPort: 14267
+#        - containerPort: 14268
+#        - containerPort: 9411
+        volumeMounts:
+        - name: oc-collector-config-vol
+          mountPath: /conf
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 13133
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 13133
+      volumes:
+        - configMap:
+            name: oc-collector-conf
+            items:
+              - key: oc-collector-config
+                path: oc-collector-config.yaml
+          name: oc-collector-config-vol

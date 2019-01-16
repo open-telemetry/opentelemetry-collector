@@ -4,6 +4,7 @@ This document describes the architecture design and implementation of OpenCensus
 OpenCensus Collector.
 
 # Table of contents
+- [Goals](#goals)
 - [OpenCensus Agent](#opencensus-agent)
     - [Architecture overview](#agent-architecture-overview)
     - [Communication](#agent-communication)
@@ -15,7 +16,19 @@ OpenCensus Collector.
 - [OpenCensus Collector](#opencensus-collector)
     - [Architecture overview](#collector-architecture-overview)
 
-## OpenCensus Agent
+## <a name="goals"></a>Goals
+
+* Allow enabling/configuring of exporters lazily. After deploying code,
+optionally run a daemon on the host and it will read the
+collected data and upload to the configured backend.
+* Binaries can be instrumented without thinking about the exporting story.
+Allows open source binary projects (e.g. web servers like Caddy or Istio Mixer)
+to adopt OpenCensus without having to link any exporters into their binary.
+* Easier to scale the exporter development. Not every language has to
+implement support for each backend.
+* Custom daemons containing only the required exporters compiled in can be created.
+
+## <a name="opencensus-agent"></a>OpenCensus Agent
 
 ### <a name="agent-architecture-overview"></a>Architecture Overview
 
@@ -136,7 +149,7 @@ Once in a while, Agent Core will push `SpanProto` with `Node` to each exporter. 
 receiving them, each exporter will translate `SpanProto` to the format supported by the
 backend (e.g Jaeger Thrift Span), and then push them to corresponding backend or service.
 
-## OpenCensus Collector
+## <a name="opencensus-collector"></a>OpenCensus Collector
 
 ### <a name="collector-architecture-overview"></a>Architecture Overview
 

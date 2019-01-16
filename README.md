@@ -6,11 +6,12 @@
 
 # Table of contents
 - [Introduction](#introduction)
-- [Goals](#goals)
-- [Deployment](#deploy-example)
-    - [Kubernetes](#deploy-k8s)
-    - [Standalone](#deploy-standalone)
-- [Configuration](#config-file)
+- [Deployment](#deploy)
+- [Getting Started](#getting-started)
+    - [Demo](#getting-started-demo)
+    - [Kubernetes](#getting-started-k8s)
+    - [Standalone](#getting-started-standalone)
+- [Configuration](#config)
     - [Receivers](#config-receivers)
     - [Exporters](#config-exporters)
     - [Diagnostics](#config-diagnostics)
@@ -47,26 +48,10 @@ Service will then automatically collect traces and metrics and export to any
 backend of users' choice.
 
 Currently the OpenCensus Service consists of two components,
-[OpenCensus Agent](#opencensus-agent) and [OpenCensus Collector](#opencensus-collector).
-High-level workflow:
+[OpenCensus Agent](#opencensus-agent) and [OpenCensus Collector](#opencensus-collector). For the detailed design specs,
+please see [DESIGN.md](DESIGN.md).
 
-![service-architecture](images/opencensus-service.png)
-
-For the detailed design specs, please see [DESIGN.md](DESIGN.md).
-
-## Goals
-
-* Allow enabling/configuring of exporters lazily. After deploying code,
-optionally run a daemon on the host and it will read the
-collected data and upload to the configured backend.
-* Binaries can be instrumented without thinking about the exporting story.
-Allows open source binary projects (e.g. web servers like Caddy or Istio Mixer)
-to adopt OpenCensus without having to link any exporters into their binary.
-* Easier to scale the exporter development. Not every language has to
-implement support for each backend.
-* Custom daemons containing only the required exporters compiled in can be created.
-
-## <a name="deploy-example"></a>Deployment
+## <a name="deploy"></a>Deployment
 
 The OpenCensus Service can be deployed in a variety of different ways. The OpenCensus
 Agent can be deployed with the application either as a separate process, as a sidecar,
@@ -75,13 +60,24 @@ separately as either a Docker container, VM, or Kubernetes pod.
 
 ![deployment-models](images/opencensus-service-deployment-models.png)
 
-### <a name="deploy-k8s"></a>Kubernetes
+## <a name="getting-started"></a>Getting Started
 
-Coming soon!
+### <a name="getting-started-demo"></a>Demo
 
-### <a name="deploy-standalone"></a>Standalone
+Instructions for setting up an end-to-end demo environment can be found [here](https://github.com/census-instrumentation/opencensus-service/tree/master/demos/trace)
 
-Create an Agent [configuration file](#configuration-file) as described above.
+### <a name="getting-started-k8s"></a>Kubernetes
+
+Apply the [sample YAML](example/k8s.yaml) file:
+
+```shell
+$ kubectl apply -f example/k8s.yaml
+```
+
+### <a name="getting-started-standalone"></a>Standalone
+
+Create an Agent [configuration](#config) file based on the options described below. Please note the Agent
+requires the `opencensus` receiver be enabled. By default, the Agent has no exporters configured.
 
 Build the Agent, see [Building binaries](#agent-building-binaries),
 and start it:
@@ -91,7 +87,8 @@ $ ./bin/ocagent_$(go env GOOS)
 $ 2018/10/08 21:38:00 Running OpenCensus receiver as a gRPC service at "127.0.0.1:55678"
 ```
 
-Create a Collector [configuration file](#configuration-file) as described above.
+Create an Collector [configuration](#config) file based on the options described below. By default, the
+Collector has the `opencensus` receiver enabled, but no exporters.
 
 Build the Collector and start it:
 
@@ -110,15 +107,15 @@ You should be able to see the traces in your exporter(s) of choice.
 If you stop the ocagent, the example application will stop exporting.
 If you run it again, exporting will resume.
 
-## <a name="config-file"></a>Configuration
+## <a name="config"></a>Configuration
 
-The OpenCensus Service (both the Agent and Collector) is configured via a config.yaml file. In general, you need to
+The OpenCensus Service (both the Agent and Collector) is configured via a YAML file. In general, you need to
 configure one or more receivers as well as one or more exporters. In addition, diagnostics can also be configured.
 
 ### <a name="config-receivers"></a>Receivers
 
 A receiver is how you get data into the OpenCensus Service. One or more receivers can be configured. By default,
-the ``opencensus`` receiver is enabled on the OpenCensus Agent while no receivers are enabled on the OpenCensus Collector.
+the `opencensus` receiver is enabled on the Collector and required as a defined receiver for the Agent.
 
 A basic example of all available receivers is provided below. For detailed receiver configuration,
 please see the [receiver README.md](receiver/README.md).
@@ -131,21 +128,21 @@ receivers:
     address: "localhost:9411"
 
   jaeger:
-    collector_thrift_port: 14267
-    collector_http_port: 14268
+    jaeger-thrift-tchannel-port: 14267
+    jaeger-thrift-http-port: 14268
 ```
 
 ### <a name="config-exporters"></a>Exporters
 
 An exporter is how you send data to one or more backends/destinations. One or more exporters can be configured.
-By default, no exporters are configured on the OpenCensus Agent or Collector.
+By default, no exporters are configured on the OpenCensus Service (either the Agent or Collector).
 
 A basic example of all available exporters is provided below. For detailed exporter configuration,
 please see the [exporter README.md](exporter/exporterparser/README.md).
 ```yaml
 exporters:
   opencensus:
-    endpoint: "localhost:10001"
+    endpoint: "localhost:55678"
 
   jaeger:
     collector_endpoint: "http://localhost:14268/api/traces"
@@ -204,11 +201,6 @@ To disable zPages, you can use `disabled` like this:
 zpages:
     disabled: true
 ```
-
-and for example navigating to http://localhost:55679/debug/tracez to debug the
-OpenCensus receiver's traces in your browser should produce something like this
-
-![zPages](https://user-images.githubusercontent.com/4898263/47132981-892bb500-d25b-11e8-980c-08f0115ba72e.png)
 
 ## OpenCensus Agent
 
@@ -272,7 +264,10 @@ For example, to create a Docker image of the agent, tagged `v1.0.0`:
 
 and then the Docker image `v1.0.0` of the agent can be started  by
 ```shell
-docker run -v $(pwd)/config.yaml:/config.yaml  -p 55678:55678  ocagent:v1.0.0
+docker run --rm -it -p 55678:55678 -p 55679:55679 \
+    -v $(pwd)/ocagent-config.yaml:/conf/ocagent-config.yaml \
+    --config=/conf/ocagent-config.yaml \
+    ocagent:v1.0.0
 ```
 
 A Docker scratch image can be built with make by targeting `docker-agent`.
@@ -325,7 +320,10 @@ $ ./bin/occollector_$($GOOS)
 (note: additional ports may be required depending on your receiver configuration):
 ```shell
 $ make docker-collector
-$ docker run --rm -it -p 55678:55678 occollector
+$ docker run --rm -it -p 55678:55678 -p 8888:8888 \
+    -v $(pwd)/occollector-config.yaml:/conf/occollector-config.yaml \
+    --config=/conf/occollector-config.yaml \
+    occollector
 ```
 
 It can be configured via command-line or config file:
@@ -353,7 +351,7 @@ Sample configuration file:
 log-level: DEBUG
 
 receivers:
-  opencensus: {} # Runs OpenCensus receiver with default configuration
+  opencensus: {} # Runs OpenCensus receiver with default configuration (default behavior)
 
 queued-exporters:
   jaeger-sender-test: # A friendly name for the exporter
