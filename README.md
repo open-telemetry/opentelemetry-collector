@@ -162,6 +162,23 @@ exporters:
     endpoint: "http://localhost:9411/api/v2/spans"
 ```
 
+### <a name="config-global"></a> Global 
+
+The collector also takes some global configurations that modify its behavior for all receivers / exporters. One of the configurations
+available is to add Attributes or Tags to all spans passing through this collector. These additional tags can be configured to either overwrite
+attributes if they already exists on the span, or respect the original values. An example of this is provided below.
+```yaml
+global:
+  attributes:
+    overwrite: true
+    values:
+      # values are key value pairs where the value can be an int, float, bool, or string
+      some_string: "hello world"
+      some_int: 1234
+      some_float: 3.14159
+      some_bool: false
+```
+
 ### <a name="config-diagnostics"></a>Diagnostics
 
 zPages is provided for monitoring. Today, the OpenCensus Agent is configured with zPages running by default on port ``55679``.
