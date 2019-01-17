@@ -31,7 +31,7 @@ spec:
         component: oc-agent
     spec:
       containers:
-      - image: omnition/opencensus-agent:1.1.2
+      - image: omnition/opencensus-agent:0.1.0
         name: oc-agent
         resources:
           limits:
@@ -130,7 +130,7 @@ spec:
         component: oc-collector
     spec:
       containers:
-      - image: omnition/opencensus-collector:1.1.2
+      - image: omnition/opencensus-collector:0.1.0
         name: oc-collector
         resources:
           limits:

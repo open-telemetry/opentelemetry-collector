@@ -8,10 +8,11 @@ GOOS=$(shell go env GOOS)
 
 GIT_SHA=$(shell git rev-parse --short HEAD)
 BUILD_INFO_IMPORT_PATH=github.com/census-instrumentation/opencensus-service/internal/version
-BUILD_INFO=-ldflags "-X $(BUILD_INFO_IMPORT_PATH).GitHash=$(GIT_SHA)"
+BUILD_X1=-X $(BUILD_INFO_IMPORT_PATH).GitHash=$(GIT_SHA)
 ifdef VERSION
-BUILD_INFO+=" -X $(BUILD_INFO_IMPORT_PATH).version=$(VERSION)"
+BUILD_X2=-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)
 endif
+BUILD_INFO=-ldflags "${BUILD_X1} ${BUILD_X2}"
 
 .DEFAULT_GOAL := default_goal
 
