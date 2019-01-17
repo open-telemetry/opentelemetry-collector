@@ -3,7 +3,7 @@ receivers:
         address: "127.0.0.1:55678"
 
     zipkin:
-        address: "localhost:9411"
+        address: "127.0.0.1:9411"
 
 exporters:
     stackdriver:
@@ -11,7 +11,7 @@ exporters:
         enable_tracing: true
 
     zipkin:
-        endpoint: "http://localhost:9411/api/v2/spans"
+        endpoint: "http://127.0.0.1:9411/api/v2/spans"
 
 zpages:
     port: 55679

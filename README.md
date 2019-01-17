@@ -122,10 +122,10 @@ please see the [receiver README.md](receiver/README.md).
 ```yaml
 receivers:
   opencensus:
-    address: "localhost:55678"
+    address: "127.0.0.1:55678"
 
   zipkin:
-    address: "localhost:9411"
+    address: "127.0.0.1:9411"
 
   jaeger:
     jaeger-thrift-tchannel-port: 14267
@@ -142,13 +142,13 @@ please see the [exporter README.md](exporter/exporterparser/README.md).
 ```yaml
 exporters:
   opencensus:
-    endpoint: "localhost:55678"
+    endpoint: "127.0.0.1:55678"
 
   jaeger:
-    collector_endpoint: "http://localhost:14268/api/traces"
+    collector_endpoint: "http://127.0.0.1:14268/api/traces"
 
   kafka:
-    brokers: ["localhost:9092"]
+    brokers: ["127.0.0.1:9092"]
     topic: "opencensus-spans"
 
   stackdriver:
@@ -156,7 +156,7 @@ exporters:
     enable_tracing: true
 
   zipkin:
-    endpoint: "http://localhost:9411/api/v2/spans"
+    endpoint: "http://127.0.0.1:9411/api/v2/spans"
 ```
 
 ### <a name="config-global"></a> Global 

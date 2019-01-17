@@ -230,5 +230,6 @@ func runZipkinReceiver(addr string, sr receiver.TraceReceiverSink) (doneFn func(
 	doneFn = func() error {
 		return zi.StopTraceReception(context.Background())
 	}
+	log.Printf("Running Zipkin receiver with address %q", addr)
 	return doneFn, nil
 }
