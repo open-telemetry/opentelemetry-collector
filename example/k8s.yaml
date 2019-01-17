@@ -38,8 +38,8 @@ spec:
             cpu: 0.5
             memory: 500Mi
         command:
-          - "ocagent_linux"
-          - "--config-file=/conf/oc-agent-config.yaml"
+          - "/ocagent_linux"
+          - "--config=/conf/oc-agent-config.yaml"
         ports:
         - containerPort: 55678
         - containerPort: 55679
@@ -140,8 +140,8 @@ spec:
             cpu: 200m
             memory: 400Mi
         command:
-          - "occollector_linux"
-          - "--config-file=/conf/oc-collector-config.yaml"
+          - "/occollector_linux"
+          - "--config=/conf/oc-collector-config.yaml"
         ports:
         - containerPort: 55678
 #        - containerPort: 14267
