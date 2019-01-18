@@ -16,6 +16,28 @@ receivers:
   opencensus:
     address: "127.0.0.1:55678"
 ```
+### Writing with HTTP/JSON 
+
+The OpenCensus receiver for the agent can receive trace export calls via
+HTTP/JSON in addition to gRPC. The HTTP/JSON address is the same as gRPC as the
+protocol is recognized and processed accordingly.
+
+To write traces with HTTP/JSON, `POST` to `[address]/v1/trace`. The JSON message
+format parallels the gRPC protobuf format, see this [OpenApi spec for it](https://github.com/census-instrumentation/opencensus-proto/blob/master/gen-openapi/opencensus/proto/agent/trace/v1/trace_service.swagger.json).
+
+The HTTP/JSON endpoint can also optionally 
+[CORS](https://fetch.spec.whatwg.org/#cors-protocol), which is enabled by
+specifying a list of allowed CORS origins in the `cors_allowed_origins` field:
+
+```yaml
+receivers:
+  opencensus:
+    address: "localhost:55678"
+    cors_allowed_origins:
+    - http://test.com
+    # Origins can have wildcards with *, use * by itself to match any origin.
+    - https://*.example.com  
+```
 
 ### Collector Differences
 (To be fixed via [#135](https://github.com/census-instrumentation/opencensus-service/issues/135))
