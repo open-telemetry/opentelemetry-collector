@@ -27,6 +27,7 @@ import (
 	"time"
 
 	openzipkin "github.com/openzipkin/zipkin-go"
+	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	zhttp "github.com/openzipkin/zipkin-go/reporter/http"
 	"go.opencensus.io/exporter/zipkin"
 
@@ -39,6 +40,75 @@ import (
 	"github.com/census-instrumentation/opencensus-service/receiver"
 	"github.com/census-instrumentation/opencensus-service/translator/trace"
 )
+
+func TestTraceIDConversion(t *testing.T) {
+	longID, _ := zipkinmodel.TraceIDFromHex("01020304050607080102030405060708")
+	shortID, _ := zipkinmodel.TraceIDFromHex("0102030405060708")
+	zeroID, _ := zipkinmodel.TraceIDFromHex("0000000000000000")
+	tests := []struct {
+		name    string
+		id      zipkinmodel.TraceID
+		want    []byte
+		wantErr error
+	}{
+		{
+			name:    "128bit traceID",
+			id:      longID,
+			want:    []byte{1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8},
+			wantErr: nil,
+		},
+		{
+			name:    "64bit traceID",
+			id:      shortID,
+			want:    []byte{0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8},
+			wantErr: nil,
+		},
+		{
+			name:    "zero traceID",
+			id:      zeroID,
+			want:    nil,
+			wantErr: errZeroTraceID,
+		},
+	}
+
+	for _, tc := range tests {
+		got, gotErr := zTraceIDToOCProtoTraceID(tc.id)
+		if tc.wantErr != gotErr {
+			t.Errorf("gotErr=%v wantErr=%v", gotErr, tc.wantErr)
+		}
+		if !reflect.DeepEqual(got, tc.want) {
+			t.Errorf("got=%v want=%v", got, tc.want)
+		}
+	}
+}
+
+func TestShortIDSpanConversion(t *testing.T) {
+	shortID, _ := zipkinmodel.TraceIDFromHex("0102030405060708")
+	if shortID.High != 0 {
+		t.Errorf("wanted 64bit traceID, so TraceID.High must be zero")
+	}
+
+	zc := zipkinmodel.SpanContext{
+		TraceID: shortID,
+		ID:      zipkinmodel.ID(shortID.Low),
+	}
+	zs := zipkinmodel.SpanModel{
+		SpanContext: zc,
+	}
+
+	ocSpan, _, err := zipkinSpanToTraceSpan(&zs)
+	if err != nil {
+		t.Fatalf("unexpected error %v", err)
+	}
+	if len(ocSpan.TraceId) != 16 {
+		t.Fatalf("incorrect OC proto trace id length")
+	}
+
+	want := []byte{0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8}
+	if !reflect.DeepEqual(ocSpan.TraceId, want) {
+		t.Errorf("got=%v want=%v", ocSpan.TraceId, want)
+	}
+}
 
 func TestConvertSpansToTraceSpans_json(t *testing.T) {
 	// Using Adrian Cole's sample at https://gist.github.com/adriancole/e8823c19dfed64e2eb71

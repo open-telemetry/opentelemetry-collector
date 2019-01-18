@@ -18,7 +18,7 @@ import (
 	"compress/gzip"
 	"compress/zlib"
 	"context"
-	"encoding/hex"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -282,9 +282,30 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
 }
 
-var errNilZipkinSpan = errors.New("non-nil Zipkin span expected")
+var (
+	errNilZipkinSpan = errors.New("non-nil Zipkin span expected")
+	errZeroTraceID   = errors.New("trace id is zero")
+	errZeroID        = errors.New("id is zero")
+)
 
-var blankIP net.IP
+func zTraceIDToOCProtoTraceID(zTraceID zipkinmodel.TraceID) ([]byte, error) {
+	if zTraceID.High == 0 && zTraceID.Low == 0 {
+		return nil, errZeroTraceID
+	}
+	traceID := make([]byte, 16)
+	binary.BigEndian.PutUint64(traceID[:8], uint64(zTraceID.High))
+	binary.BigEndian.PutUint64(traceID[8:], uint64(zTraceID.Low))
+	return traceID, nil
+}
+
+func zSpanIDToOCProtoSpanID(id zipkinmodel.ID) ([]byte, error) {
+	if id == 0 {
+		return nil, errZeroID
+	}
+	spanID := make([]byte, 8)
+	binary.BigEndian.PutUint64(spanID, uint64(id))
+	return spanID, nil
+}
 
 func zipkinSpanToTraceSpan(zs *zipkinmodel.SpanModel) (*tracepb.Span, *commonpb.Node, error) {
 	if zs == nil {
@@ -292,18 +313,17 @@ func zipkinSpanToTraceSpan(zs *zipkinmodel.SpanModel) (*tracepb.Span, *commonpb.
 	}
 
 	node := nodeFromZipkinEndpoints(zs)
-
-	traceID, err := hexStrToBytes(zs.TraceID.String())
+	traceID, err := zTraceIDToOCProtoTraceID(zs.TraceID)
 	if err != nil {
 		return nil, node, fmt.Errorf("TraceID: %v", err)
 	}
-	spanID, err := hexStrToBytes(zs.ID.String())
+	spanID, err := zSpanIDToOCProtoSpanID(zs.ID)
 	if err != nil {
 		return nil, node, fmt.Errorf("SpanID: %v", err)
 	}
 	var parentSpanID []byte
 	if zs.ParentID != nil {
-		parentSpanID, err = hexStrToBytes(zs.ParentID.String())
+		parentSpanID, err = zSpanIDToOCProtoSpanID(*zs.ParentID)
 		if err != nil {
 			return nil, node, fmt.Errorf("ParentSpanID: %v", err)
 		}
@@ -355,6 +375,8 @@ func nodeFromZipkinEndpoints(zs *zipkinmodel.SpanModel) *commonpb.Node {
 	}
 	return node
 }
+
+var blankIP net.IP
 
 func zipkinEndpointIntoAttributes(ep *zipkinmodel.Endpoint, into map[string]string, prefixFunc func(string) string) map[string]string {
 	if into == nil {
@@ -418,13 +440,6 @@ var canonicalCodesMap = map[string]int32{
 	"UNAVAILABLE":         14,
 	"DATA_LOSS":           15,
 	"UNAUTHENTICATED":     16,
-}
-
-func hexStrToBytes(hexStr string) ([]byte, error) {
-	if len(hexStr) == 0 {
-		return nil, nil
-	}
-	return hex.DecodeString(hexStr)
 }
 
 func zipkinSpanKindToProtoSpanKind(skind zipkinmodel.Kind) tracepb.Span_SpanKind {
