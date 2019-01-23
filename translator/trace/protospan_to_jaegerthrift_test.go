@@ -112,6 +112,27 @@ func TestInvalidOCProtoIDs(t *testing.T) {
 	}
 }
 
+func TestNilOCProtoNode(t *testing.T) {
+	nilNodeBatch := &agenttracepb.ExportTraceServiceRequest{
+		Spans: []*tracepb.Span{
+			{
+				TraceId: []byte("0123456789abcdef"),
+				SpanId:  []byte("01234567"),
+			},
+		},
+	}
+	got, err := OCProtoToJaegerThrift(nilNodeBatch)
+	if err != nil {
+		t.Fatalf("Failed to translate OC batch to Jaeger Thrift: %v", err)
+	}
+	if got.Process == nil {
+		t.Fatalf("Jaeger requires a non-nil Process field")
+	}
+	if got.Process != unknownProcess {
+		t.Fatalf("got unexpected Jaeger Process field")
+	}
+}
+
 func TestOCProtoToJaegerThrift(t *testing.T) {
 	const numOfFiles = 2
 	for i := 0; i < numOfFiles; i++ {
