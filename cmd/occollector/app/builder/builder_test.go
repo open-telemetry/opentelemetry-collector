@@ -28,7 +28,7 @@ func TestReceiversEnabledByPresenceWithDefaultSettings(t *testing.T) {
 		t.Fatalf("Failed to load viper from test file: %v", err)
 	}
 
-	jaegerEnabled, opencensusEnabled, zipkinEnabled := JaegerReceiverEnabled(v, "j"), OpenCensusReceiverEnabled(v, "oc"), ZipkinReceiverEnabled(v, "z")
+	jaegerEnabled, opencensusEnabled, zipkinEnabled := JaegerReceiverEnabled(v), OpenCensusReceiverEnabled(v), ZipkinReceiverEnabled(v)
 	if !jaegerEnabled || !opencensusEnabled || !zipkinEnabled {
 		t.Fatalf("Some of the expected receivers were not enabled j:%v oc:%v z:%v", jaegerEnabled, opencensusEnabled, zipkinEnabled)
 	}
@@ -64,7 +64,7 @@ func TestReceiversDisabledByPresenceWithDefaultSettings(t *testing.T) {
 		t.Fatalf("Failed to load viper from test file: %v", err)
 	}
 
-	jaegerEnabled, opencensusEnabled, zipkinEnabled := JaegerReceiverEnabled(v, "j"), OpenCensusReceiverEnabled(v, "oc"), ZipkinReceiverEnabled(v, "z")
+	jaegerEnabled, opencensusEnabled, zipkinEnabled := JaegerReceiverEnabled(v), OpenCensusReceiverEnabled(v), ZipkinReceiverEnabled(v)
 	if jaegerEnabled || opencensusEnabled || zipkinEnabled {
 		t.Fatalf("Not all receivers were disabled j:%v oc:%v z:%v", jaegerEnabled, opencensusEnabled, zipkinEnabled)
 	}

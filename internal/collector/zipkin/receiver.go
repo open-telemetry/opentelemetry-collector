@@ -26,11 +26,12 @@ import (
 
 	"github.com/census-instrumentation/opencensus-service/cmd/occollector/app/builder"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/processor"
+	"github.com/census-instrumentation/opencensus-service/receiver"
 	zr "github.com/census-instrumentation/opencensus-service/receiver/zipkin"
 )
 
-// Run starts the Zipkin receiver endpoint.
-func Run(logger *zap.Logger, v *viper.Viper, spanProc processor.SpanProcessor) (func(), error) {
+// Start starts the Zipkin receiver endpoint.
+func Start(logger *zap.Logger, v *viper.Viper, spanProc processor.SpanProcessor) (receiver.TraceReceiver, error) {
 	rOpts, err := builder.NewDefaultZipkinReceiverCfg().InitFromViper(v)
 	if err != nil {
 		return nil, err
@@ -49,8 +50,5 @@ func Run(logger *zap.Logger, v *viper.Viper, spanProc processor.SpanProcessor) (
 
 	logger.Info("Zipkin receiver is running.", zap.Int("port", rOpts.Port))
 
-	doneFn := func() {
-		zi.StopTraceReception(context.Background())
-	}
-	return doneFn, nil
+	return zi, nil
 }

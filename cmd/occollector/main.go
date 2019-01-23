@@ -26,7 +26,7 @@ import (
 )
 
 func main() {
-	if err := collector.Execute(); err != nil {
+	if err := collector.App.Start(); err != nil {
 		log.Fatalf("Failed to run the collector: %v", err)
 	}
 }

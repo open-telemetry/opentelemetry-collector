@@ -30,11 +30,12 @@ import (
 
 	"github.com/census-instrumentation/opencensus-service/cmd/occollector/app/builder"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/processor"
+	"github.com/census-instrumentation/opencensus-service/receiver"
 	"github.com/census-instrumentation/opencensus-service/receiver/jaeger"
 )
 
-// Run starts the Jaeger receiver endpoint.
-func Run(logger *zap.Logger, v *viper.Viper, spanProc processor.SpanProcessor) (func(), error) {
+// Start starts the Jaeger receiver endpoint.
+func Start(logger *zap.Logger, v *viper.Viper, spanProc processor.SpanProcessor) (receiver.TraceReceiver, error) {
 	rOpts, err := builder.NewDefaultJaegerReceiverCfg().InitFromViper(v)
 	if err != nil {
 		return nil, err
@@ -58,9 +59,5 @@ func Run(logger *zap.Logger, v *viper.Viper, spanProc processor.SpanProcessor) (
 		zap.Int("thrift-tchannel-port", rOpts.ThriftTChannelPort),
 		zap.Int("thrift-http-port", rOpts.ThriftHTTPPort))
 
-	closeFn := func() {
-		jtr.StopTraceReception(context.Background())
-	}
-
-	return closeFn, nil
+	return jtr, nil
 }

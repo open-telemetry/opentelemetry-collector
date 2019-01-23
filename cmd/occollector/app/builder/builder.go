@@ -15,6 +15,7 @@
 package builder
 
 import (
+	"flag"
 	"fmt"
 	"strings"
 
@@ -26,7 +27,36 @@ const (
 	jaegerEntry     = "jaeger"
 	opencensusEntry = "opencensus"
 	zipkinEntry     = "zipkin"
+
+	// flags
+	configCfg         = "config"
+	jaegerReceiverFlg = "receive-jaeger"
+	ocReceiverFlg     = "receive-oc-trace"
+	zipkinReceiverFlg = "receive-zipkin"
+	debugProcessorFlg = "debug-processor"
 )
+
+// Flags adds flags related to basic building of the collector application to the given flagset.
+func Flags(flags *flag.FlagSet) {
+	flags.String(configCfg, "", "Path to the config file")
+	flags.Bool(jaegerReceiverFlg, false,
+		fmt.Sprintf("Flag to run the Jaeger receiver (i.e.: Jaeger Collector), default settings: %+v", *NewDefaultJaegerReceiverCfg()))
+	flags.Bool(ocReceiverFlg, true,
+		fmt.Sprintf("Flag to run the OpenCensus trace receiver, default settings: %+v", *NewDefaultOpenCensusReceiverCfg()))
+	flags.Bool(zipkinReceiverFlg, false,
+		fmt.Sprintf("Flag to run the Zipkin receiver, default settings: %+v", *NewDefaultZipkinReceiverCfg()))
+	flags.Bool(debugProcessorFlg, false, "Flag to add a debug processor (combine with log level DEBUG to log incoming spans)")
+}
+
+// GetConfigFile gets the config file from the config file flag.
+func GetConfigFile(v *viper.Viper) string {
+	return v.GetString(configCfg)
+}
+
+// DebugProcessorEnabled returns true if the debug processor is enabled, and false otherwise
+func DebugProcessorEnabled(v *viper.Viper) bool {
+	return v.GetBool(debugProcessorFlg)
+}
 
 // JaegerReceiverCfg holds configuration for Jaeger receivers.
 type JaegerReceiverCfg struct {
@@ -38,8 +68,8 @@ type JaegerReceiverCfg struct {
 
 // JaegerReceiverEnabled checks if the Jaeger receiver is enabled, via a command-line flag, environment
 // variable, or configuration file.
-func JaegerReceiverEnabled(v *viper.Viper, cmdFlag string) bool {
-	return featureEnabled(v, cmdFlag, receiversRoot, jaegerEntry)
+func JaegerReceiverEnabled(v *viper.Viper) bool {
+	return featureEnabled(v, jaegerReceiverFlg, receiversRoot, jaegerEntry)
 }
 
 // NewDefaultJaegerReceiverCfg returns an instance of JaegerReceiverCfg with default values
@@ -64,8 +94,8 @@ type OpenCensusReceiverCfg struct {
 
 // OpenCensusReceiverEnabled checks if the OpenCensus receiver is enabled, via a command-line flag, environment
 // variable, or configuration file.
-func OpenCensusReceiverEnabled(v *viper.Viper, cmdFlag string) bool {
-	return featureEnabled(v, cmdFlag, receiversRoot, opencensusEntry)
+func OpenCensusReceiverEnabled(v *viper.Viper) bool {
+	return featureEnabled(v, ocReceiverFlg, receiversRoot, opencensusEntry)
 }
 
 // NewDefaultOpenCensusReceiverCfg returns an instance of OpenCensusReceiverCfg with default values
@@ -89,8 +119,8 @@ type ZipkinReceiverCfg struct {
 
 // ZipkinReceiverEnabled checks if the Zipkin receiver is enabled, via a command-line flag, environment
 // variable, or configuration file.
-func ZipkinReceiverEnabled(v *viper.Viper, cmdFlag string) bool {
-	return featureEnabled(v, cmdFlag, receiversRoot, zipkinEntry)
+func ZipkinReceiverEnabled(v *viper.Viper) bool {
+	return featureEnabled(v, zipkinReceiverFlg, receiversRoot, zipkinEntry)
 }
 
 // NewDefaultZipkinReceiverCfg returns an instance of ZipkinReceiverCfg with default values
