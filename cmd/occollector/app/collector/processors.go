@@ -26,75 +26,41 @@ import (
 	"github.com/census-instrumentation/opencensus-service/cmd/occollector/app/builder"
 	"github.com/census-instrumentation/opencensus-service/cmd/occollector/app/sender"
 	"github.com/census-instrumentation/opencensus-service/exporter"
-	"github.com/census-instrumentation/opencensus-service/exporter/exporterparser"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/processor"
+	"github.com/census-instrumentation/opencensus-service/internal/config"
 )
 
-func createExporters(v *viper.Viper, logger *zap.Logger) (doneFns []func(), traceExporters []exporter.TraceExporter, metricsExporters []exporter.MetricsExporter) {
+func createExporters(v *viper.Viper, logger *zap.Logger) ([]func(), []exporter.TraceExporter, []exporter.MetricsExporter) {
 	// TODO: (@pjanotti) this is slightly modified from agent but in the end duplication, need to consolidate style and visibility.
-	parseFns := []struct {
-		name string
-		fn   func([]byte) ([]exporter.TraceExporter, []exporter.MetricsExporter, []func() error, error)
-	}{
-		{name: "datadog", fn: exporterparser.DatadogTraceExportersFromYAML},
-		{name: "stackdriver", fn: exporterparser.StackdriverTraceExportersFromYAML},
-		{name: "zipkin", fn: exporterparser.ZipkinExportersFromYAML},
-		{name: "jaeger", fn: exporterparser.JaegerExportersFromYAML},
-		{name: "kafka", fn: exporterparser.KafkaExportersFromYAML},
-	}
 
-	config := builder.GetConfigFile(v)
-	if config == "" {
+	cfg := builder.GetConfigFile(v)
+	if cfg == "" {
 		logger.Info("No config file, exporters can be only configured via the file.")
-		return
+		return nil, nil, nil
 	}
 
-	cfgBlob, err := ioutil.ReadFile(config)
+	cfgBlob, err := ioutil.ReadFile(cfg)
 	if err != nil {
 		logger.Fatal("Cannot read config file for exporters", zap.Error(err))
 	}
 
-	for _, cfg := range parseFns {
-		tes, mes, tesDoneFns, err := cfg.fn(cfgBlob)
-		if err != nil {
-			logger.Fatal("Failed to create config for exporter", zap.String("exporter", cfg.name), zap.Error(err))
-		}
-
-		var anyTraceExporterEnabled, anyMetricsExporterEnabled bool
-
-		for _, te := range tes {
-			if te != nil {
-				traceExporters = append(traceExporters, te)
-				anyTraceExporterEnabled = true
-			}
-		}
-		for _, me := range mes {
-			if me != nil {
-				metricsExporters = append(metricsExporters, me)
-				anyMetricsExporterEnabled = true
-			}
-		}
-		for _, tesDoneFn := range tesDoneFns {
-			if tesDoneFn != nil {
-				wrapperFn := func() {
-					if err := tesDoneFn(); err != nil {
-						logger.Warn("Error when closing exporter", zap.String("exporter", cfg.name), zap.Error(err))
-					}
-				}
-				doneFns = append(doneFns, wrapperFn)
-			}
-		}
-
-		if anyTraceExporterEnabled {
-			logger.Info("Trace Exporter enabled", zap.String("exporter", cfg.name))
-		}
-		if anyMetricsExporterEnabled {
-			logger.Info("Metrices Exporter enabled", zap.String("exporter", cfg.name))
-		}
-
+	traceExporters, metricsExporters, doneFns, err := config.ExportersFromYAMLConfig(logger, cfgBlob)
+	if err != nil {
+		logger.Fatal("Failed to create config for exporters", zap.Error(err))
 	}
 
-	return doneFns, traceExporters, metricsExporters
+	wrappedDoneFns := make([]func(), 0, len(doneFns))
+	for _, doneFn := range doneFns {
+		wrapperFn := func() {
+			if err := doneFn(); err != nil {
+				logger.Warn("Error when closing exporters", zap.Error(err))
+			}
+		}
+
+		wrappedDoneFns = append(wrappedDoneFns, wrapperFn)
+	}
+
+	return wrappedDoneFns, traceExporters, metricsExporters
 }
 
 func buildQueuedSpanProcessor(logger *zap.Logger, opts *builder.QueuedSpanProcessorCfg) (processor.SpanProcessor, error) {

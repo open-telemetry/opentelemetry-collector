@@ -21,6 +21,7 @@ import (
 	"reflect"
 	"strings"
 
+	"go.uber.org/zap"
 	yaml "gopkg.in/yaml.v2"
 
 	"github.com/census-instrumentation/opencensus-service/exporter"
@@ -299,7 +300,7 @@ func eqLocalHost(host string) bool {
 //  + kafka
 //  + opencensus
 //  + prometheus
-func ExportersFromYAMLConfig(config []byte) (traceExporters []exporter.TraceExporter, metricsExporters []exporter.MetricsExporter, doneFns []func() error, err error) {
+func ExportersFromYAMLConfig(logger *zap.Logger, config []byte) ([]exporter.TraceExporter, []exporter.MetricsExporter, []func() error, error) {
 	parseFns := []struct {
 		name string
 		fn   func([]byte) ([]exporter.TraceExporter, []exporter.MetricsExporter, []func() error, error)
@@ -313,28 +314,35 @@ func ExportersFromYAMLConfig(config []byte) (traceExporters []exporter.TraceExpo
 		{name: "prometheus", fn: exporterparser.PrometheusExportersFromYAML},
 	}
 
+	var traceExporters []exporter.TraceExporter
+	var metricsExporters []exporter.MetricsExporter
+	var doneFns []func() error
 	for _, cfg := range parseFns {
-		tes, mes, tesDoneFns, terr := cfg.fn(config)
+		tes, mes, tesDoneFns, err := cfg.fn(config)
 		if err != nil {
-			err = fmt.Errorf("Failed to create config for %q: %v", cfg.name, terr)
-			return
+			err = fmt.Errorf("Failed to create config for %q: %v", cfg.name, err)
+			return nil, nil, nil, err
 		}
 
 		for _, te := range tes {
 			if te != nil {
 				traceExporters = append(traceExporters, te)
+				logger.Info("Trace Exporter enabled", zap.String("exporter", cfg.name))
 			}
 		}
 
 		for _, me := range mes {
 			if me != nil {
 				metricsExporters = append(metricsExporters, me)
+				logger.Info("Metrices Exporter enabled", zap.String("exporter", cfg.name))
 			}
 		}
 
 		for _, doneFn := range tesDoneFns {
-			doneFns = append(doneFns, doneFn)
+			if doneFn != nil {
+				doneFns = append(doneFns, doneFn)
+			}
 		}
 	}
-	return
+	return traceExporters, metricsExporters, doneFns, nil
 }

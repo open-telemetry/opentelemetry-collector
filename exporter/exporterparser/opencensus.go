@@ -24,10 +24,13 @@ import (
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/exporter"
 	"github.com/census-instrumentation/opencensus-service/internal"
+	"github.com/census-instrumentation/opencensus-service/internal/compression"
+	"github.com/census-instrumentation/opencensus-service/internal/compression/grpc"
 )
 
 type opencensusConfig struct {
-	Endpoint string `yaml:"endpoint,omitempty"`
+	Endpoint    string `yaml:"endpoint,omitempty"`
+	Compression string `yaml:"compression,omitempty"`
 	// TODO: add insecure, service name options.
 }
 
@@ -60,7 +63,16 @@ func OpenCensusTraceExportersFromYAML(config []byte) (tes []exporter.TraceExport
 		return nil, nil, nil, fmt.Errorf("OpenCensus config requires an Endpoint")
 	}
 
-	sde, serr := ocagent.NewExporter(ocagent.WithAddress(ocac.Endpoint), ocagent.WithInsecure())
+	opts := []ocagent.ExporterOption{ocagent.WithAddress(ocac.Endpoint), ocagent.WithInsecure()}
+	if ocac.Compression != "" {
+		if compressionKey := grpc.GetGRPCCompressionKey(ocac.Compression); compressionKey != compression.Unsupported {
+			opts = append(opts, ocagent.UseCompressor(compressionKey))
+		} else {
+			return nil, nil, nil, fmt.Errorf("Unsupported compression type: %s", ocac.Compression)
+		}
+	}
+
+	sde, serr := ocagent.NewExporter(opts...)
 	if serr != nil {
 		return nil, nil, nil, fmt.Errorf("Cannot configure OpenCensus Trace exporter: %v", serr)
 	}

@@ -19,6 +19,7 @@ import (
 
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal"
+	_ "github.com/census-instrumentation/opencensus-service/internal/compression/grpc" // load in supported grpc compression encodings
 )
 
 // A TraceReceiver is an "arbitrary data"-to-"trace proto span" converter.

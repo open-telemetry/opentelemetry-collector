@@ -28,6 +28,8 @@ import (
 
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/zpages"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/exporter"
@@ -75,7 +77,15 @@ func runOCAgent() {
 		log.Fatalf("Configuration logical error: %v", err)
 	}
 
-	traceExporters, metricsExporters, closeFns, err := config.ExportersFromYAMLConfig(yamlBlob)
+	// TODO: don't hardcode info level logging
+	conf := zap.NewProductionConfig()
+	conf.Level.SetLevel(zapcore.InfoLevel)
+	logger, err := conf.Build()
+	if err != nil {
+		log.Fatalf("Could not instantiate logger: %v", err)
+	}
+
+	traceExporters, metricsExporters, closeFns, err := config.ExportersFromYAMLConfig(logger, yamlBlob)
 	if err != nil {
 		log.Fatalf("Config: failed to create exporters from YAML: %v", err)
 	}
