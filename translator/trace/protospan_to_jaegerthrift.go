@@ -208,7 +208,14 @@ func ocSpansToJaegerSpans(ocSpans []*tracepb.Span) ([]*jaeger.Span, error) {
 			Logs:      ocTimeEventsToJaegerLogs(ocSpan.TimeEvents),
 		}
 
-		jSpan.Tags = appendJaegerTagFromOCSpanKind(jSpan.Tags, ocSpan.Kind)
+		if ocSpan.Attributes == nil {
+			jSpan.Tags = appendJaegerTagFromOCSpanKind(jSpan.Tags, ocSpan.Kind)
+		} else {
+			if _, ok := ocSpan.Attributes.AttributeMap["span.kind"]; !ok {
+				jSpan.Tags = appendJaegerTagFromOCSpanKind(jSpan.Tags, ocSpan.Kind)
+			}
+		}
+
 		jSpans = append(jSpans, jSpan)
 	}
 
@@ -256,7 +263,6 @@ func ocLinksToJaegerReferences(ocSpanLinks *tracepb.Span_Links) ([]*jaeger.SpanR
 }
 
 func appendJaegerTagFromOCSpanKind(jTags []*jaeger.Tag, ocSpanKind tracepb.Span_SpanKind) []*jaeger.Tag {
-	// We could check if the key is already present but it doesn't seem worth at this point.
 	// TODO: (@pjanotti): Replace any OpenTracing literals by importing github.com/opentracing/opentracing-go/ext?
 	var tagValue string
 	switch ocSpanKind {

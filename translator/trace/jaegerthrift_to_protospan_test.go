@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"reflect"
+	"sort"
 	"testing"
 
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
@@ -29,6 +30,80 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/internal/testutils"
 )
+
+func TestJaegerThriftToOCProto_Roundtrip(t *testing.T) {
+	const numOfFiles = 2
+	for i := 0; i < numOfFiles; i++ {
+		// Jaeger binary tags do not round trip from Jaeger -> OCProto -> Jaeger.
+		// For tests use data without binary tags.
+		thriftFile := fmt.Sprintf("./testdata/thrift_batch_no_binary_tags_%02d.json", i+1)
+		wantJBatch := &jaeger.Batch{}
+		if err := loadFromJSON(thriftFile, wantJBatch); err != nil {
+			t.Errorf("Failed load Jaeger Thrift from %q: %v", thriftFile, err)
+			continue
+		}
+
+		// Remove process tag types that are known to not roundtrip (OC Proto has all of these as strings).
+		cleanTags := make([]*jaeger.Tag, 0, len(wantJBatch.Process.Tags))
+		for _, jTag := range wantJBatch.Process.Tags {
+			if jTag.GetVType() == jaeger.TagType_STRING {
+				cleanTags = append(cleanTags, jTag)
+			}
+		}
+		wantJBatch.Process.Tags = cleanTags
+
+		ocBatch, err := JaegerThriftBatchToOCProto(wantJBatch)
+		if err != nil {
+			t.Errorf("Failed to read to read Jaeger Thrift from %q: %v", thriftFile, err)
+			continue
+		}
+
+		gotJBatch, err := OCProtoToJaegerThrift(ocBatch)
+		if err != nil {
+			t.Errorf("Failed to translate OC batch to Jaeger Thrift: %v", err)
+			continue
+		}
+
+		wantSpanCount, gotSpanCount := len(ocBatch.Spans), len(gotJBatch.Spans)
+		if wantSpanCount != gotSpanCount {
+			t.Errorf("Different number of spans in the batches on pass #%d (want %d, got %d)", i, wantSpanCount, gotSpanCount)
+			continue
+		}
+
+		// Sort tags to help with comparison, not only for jaeger.Process but also on each span.
+		sort.Slice(gotJBatch.Process.Tags, func(i, j int) bool {
+			return gotJBatch.Process.Tags[i].Key < gotJBatch.Process.Tags[j].Key
+		})
+		sort.Slice(wantJBatch.Process.Tags, func(i, j int) bool {
+			return wantJBatch.Process.Tags[i].Key < wantJBatch.Process.Tags[j].Key
+		})
+		var jSpans []*jaeger.Span
+		jSpans = append(jSpans, gotJBatch.Spans...)
+		jSpans = append(jSpans, wantJBatch.Spans...)
+		for _, jSpan := range jSpans {
+			sort.Slice(jSpan.Tags, func(i, j int) bool {
+				return jSpan.Tags[i].Key < jSpan.Tags[j].Key
+			})
+			sort.Slice(jSpan.Logs, func(i, j int) bool {
+				sort.Slice(jSpan.Logs[i].Fields, func(k, l int) bool {
+					return jSpan.Logs[i].Fields[k].Key < jSpan.Logs[i].Fields[l].Key
+				})
+				sort.Slice(jSpan.Logs[j].Fields, func(k, l int) bool {
+					return jSpan.Logs[j].Fields[k].Key < jSpan.Logs[j].Fields[l].Key
+				})
+				return jSpan.Logs[i].Timestamp < jSpan.Logs[j].Timestamp
+			})
+		}
+
+		gjson, _ := json.MarshalIndent(gotJBatch, "", "  ")
+		wjson, _ := json.MarshalIndent(wantJBatch, "", "  ")
+		gjsonStr := testutils.GenerateNormalizedJSON(string(gjson))
+		wjsonStr := testutils.GenerateNormalizedJSON(string(wjson))
+		if gjsonStr != wjsonStr {
+			t.Errorf("OC Proto to Jaeger Thrift failed.\nGot:\n%s\nWant:\n%s\n", gjson, wjson)
+		}
+	}
+}
 
 func TestJaegerThriftBatchToOCProto(t *testing.T) {
 	const numOfFiles = 2
