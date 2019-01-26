@@ -28,7 +28,7 @@ require (
 	github.com/mitchellh/mapstructure v1.1.2 // indirect
 	github.com/opentracing/opentracing-go v1.0.2 // indirect
 	github.com/openzipkin/zipkin-go v0.1.3
-	github.com/orijtech/prometheus-go-metrics-exporter v0.0.1
+	github.com/orijtech/prometheus-go-metrics-exporter v0.0.2
 	github.com/philhofer/fwd v1.0.0 // indirect
 	github.com/pkg/errors v0.8.0
 	github.com/pmezard/go-difflib v1.0.0 // indirect

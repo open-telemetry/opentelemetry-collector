@@ -7,6 +7,7 @@ cloud.google.com/go v0.32.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMT
 contrib.go.opencensus.io/exporter/ocagent v0.3.0 h1:fyqPXp7d+BBV3tXa7EE1CYrObJr7R9jTAOO/AsdcQBg=
 contrib.go.opencensus.io/exporter/ocagent v0.3.0/go.mod h1:0fnkYHF+ORKj7HWzOExKkUHeFX79gXSKUQbpnAM+wzo=
 contrib.go.opencensus.io/exporter/ocagent v0.4.2/go.mod h1:YuG83h+XWwqWjvCqn7vK4KSyLKhThY3+gNGQ37iS2V0=
+contrib.go.opencensus.io/exporter/ocagent v0.4.3/go.mod h1:YuG83h+XWwqWjvCqn7vK4KSyLKhThY3+gNGQ37iS2V0=
 contrib.go.opencensus.io/exporter/stackdriver v0.7.0 h1:pmo1ol3uPcrLmvOET8bEbu5sialRZDDSHqJso0vo28o=
 contrib.go.opencensus.io/exporter/stackdriver v0.7.0/go.mod h1:hNe5qQofPbg6bLQY5wHCvQ7o+2E5P8PkegEuQ+MyRw0=
 contrib.go.opencensus.io/exporter/stackdriver v0.9.1 h1:W6APgQ9we4BH8U8bnq/FvwLKo2WSMHuiMkkS/Slkg30=
@@ -113,6 +114,8 @@ github.com/openzipkin/zipkin-go v0.1.3 h1:36hTtUTQR/vPX7YVJo2PYexSbHdAJiAkDrjuXw
 github.com/openzipkin/zipkin-go v0.1.3/go.mod h1:NtoC/o8u3JlF1lSlyPNswIbeQH9bJTmOf0Erfk+hxe8=
 github.com/orijtech/prometheus-go-metrics-exporter v0.0.1 h1:Wh7eHO8HEduepMno4euif22RKn0Ev6Huxr8uijVeOX0=
 github.com/orijtech/prometheus-go-metrics-exporter v0.0.1/go.mod h1:+Mu9w51Uc2RNKSUTA95d6Pvy8cxFiRX3ANRPlCcnGLA=
+github.com/orijtech/prometheus-go-metrics-exporter v0.0.2 h1:XZGTMsJ8xM4VyrFGwHkdpZNnexxmAzFaq1//gUWqyKE=
+github.com/orijtech/prometheus-go-metrics-exporter v0.0.2/go.mod h1:+Mu9w51Uc2RNKSUTA95d6Pvy8cxFiRX3ANRPlCcnGLA=
 github.com/pelletier/go-toml v1.2.0 h1:T5zMGML61Wp+FlcbWjRDT7yAxhJNAiPPLOFECq181zc=
 github.com/pelletier/go-toml v1.2.0/go.mod h1:5z9KED0ma1S8pY6P1sdut58dfprrGBbd/94hg7ilaic=
 github.com/philhofer/fwd v1.0.0 h1:UbZqGr5Y38ApvM/V/jEljVxwocdweyH+vmYvRPBnbqQ=
