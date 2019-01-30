@@ -88,17 +88,33 @@ func ZipkinV1JSONBatchToOCProto(blob []byte) ([]*agenttracepb.ExportTraceService
 		return nil, errors.WithMessage(err, msgZipkinV1JSONUnmarshalError)
 	}
 
-	// Service to batch maps the service name to the trace request with the corresponding node.
-	svcToBatch := make(map[string]*agenttracepb.ExportTraceServiceRequest)
+	ocSpansAndParsedAnnotations := make([]ocSpanAndParsedAnnotations, 0, len(zSpans))
 	for _, zSpan := range zSpans {
 		ocSpan, parsedAnnotations, err := zipkinV1ToOCSpan(zSpan)
 		if err != nil {
 			// error from internal package function, it already wraps the error to give better context.
 			return nil, err
 		}
+		ocSpansAndParsedAnnotations = append(ocSpansAndParsedAnnotations, ocSpanAndParsedAnnotations{
+			ocSpan:            ocSpan,
+			parsedAnnotations: parsedAnnotations,
+		})
+	}
 
-		req := getOrCreateNodeRequest(svcToBatch, parsedAnnotations.Endpoint)
-		req.Spans = append(req.Spans, ocSpan)
+	return zipkinToOCProtoBatch(ocSpansAndParsedAnnotations)
+}
+
+type ocSpanAndParsedAnnotations struct {
+	ocSpan            *tracepb.Span
+	parsedAnnotations *annotationParseResult
+}
+
+func zipkinToOCProtoBatch(ocSpansAndParsedAnnotations []ocSpanAndParsedAnnotations) ([]*agenttracepb.ExportTraceServiceRequest, error) {
+	// Service to batch maps the service name to the trace request with the corresponding node.
+	svcToBatch := make(map[string]*agenttracepb.ExportTraceServiceRequest)
+	for _, curr := range ocSpansAndParsedAnnotations {
+		req := getOrCreateNodeRequest(svcToBatch, curr.parsedAnnotations.Endpoint)
+		req.Spans = append(req.Spans, curr.ocSpan)
 	}
 
 	batches := make([]*agenttracepb.ExportTraceServiceRequest, 0, len(svcToBatch))
@@ -193,10 +209,10 @@ type annotationParseResult struct {
 	LateAnnotationTime  *timestamp.Timestamp
 }
 
-func parseZipkinV1Annotations(annotations []*annotation) *annotationParseResult {
-	// Unknown service name works both as a default value and a flag to indicate that a valid endpoint was found.
-	const unknownServiceName = "unknown-service"
+// Unknown service name works both as a default value and a flag to indicate that a valid endpoint was found.
+const unknownServiceName = "unknown-service"
 
+func parseZipkinV1Annotations(annotations []*annotation) *annotationParseResult {
 	// Zipkin V1 annotations have a timestamp so they fit well with OC TimeEvent
 	earlyAnnotationTimestamp := int64(math.MaxInt64)
 	lateAnnotationTimestamp := int64(math.MinInt64)
