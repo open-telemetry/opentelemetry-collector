@@ -1,4 +1,4 @@
-// Copyright 2018, OpenCensus Authors
+// Copyright 2019, OpenCensus Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,36 +15,101 @@
 package prometheus
 
 import (
+	"context"
 	"errors"
+	"sync"
 	"time"
 
+	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
+	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/receiver"
+	"github.com/orijtech/promreceiver"
+	"github.com/prometheus/prometheus/config"
 )
 
-// Receiver is the type used to handle metrics from OpenCensus exporters.
-type Receiver struct {
-	metricSink         receiver.MetricsReceiverSink
-	metricBufferPeriod time.Duration
-	metricBufferCount  int
+// Configuration defines the behavior and targets of the Prometheus scrapers.
+type Configuration struct {
+	ScrapeConfig *config.Config `yaml:"config"`
+	BufferPeriod time.Duration  `yaml:"buffer_period"`
+	BufferCount  int            `yaml:"buffer_count"`
 }
 
+// Preceiver is the type that provides Prometheus scraper/receiver functionality.
+type Preceiver struct {
+	startOnce sync.Once
+	recv      *promreceiver.Receiver
+	cfg       *Configuration
+}
+
+var _ receiver.MetricsReceiver = (*Preceiver)(nil)
+
 // New creates a new prometheus.Receiver reference.
-func New(ms receiver.MetricsReceiverSink, opts ...Option) (*Receiver, error) {
-	if ms == nil {
-		return nil, errors.New("needs a non-nil receiver.MetricsReceiverSink")
+func New(cfg *Configuration) (*Preceiver, error) {
+	if cfg == nil || cfg.ScrapeConfig == nil {
+		return nil, errNilScrapeConfig
 	}
-	pr := &Receiver{metricSink: ms}
-	for _, opt := range opts {
-		opt.WithReceiver(pr)
-	}
+	pr := &Preceiver{cfg: cfg}
 	return pr, nil
 }
 
-const receiverName = "prometheus"
+var (
+	errAlreadyStarted         = errors.New("already started the Prometheus receiver")
+	errNilMetricsReceiverSink = errors.New("expecting a non-nil MetricsReceiverSink")
+	errNilScrapeConfig        = errors.New("expecting a non-nil ScrapeConfig")
+)
 
-// Export is the gRPC method that exports streamed metrics from
-// OpenCensus-metricproto compatible libraries/applications to MetricSink.
-func (pr *Receiver) Export() error {
-	// TODO: scrape metrics from Prometheus endpoint and convert to OC metrics.
-	return nil
+// StartMetricsReception is the method that starts Prometheus scraping and it
+// is controlled by having previously defined a Configuration using perhaps New.
+func (pr *Preceiver) StartMetricsReception(ctx context.Context, mrs receiver.MetricsReceiverSink) error {
+	var err = errAlreadyStarted
+	pr.startOnce.Do(func() {
+		if mrs == nil {
+			err = errNilMetricsReceiverSink
+			return
+		}
+
+		tms := &promMetricsReceiverToOpenCensusMetricsReceiver{mrs: mrs}
+		cfg := pr.cfg
+		pr.recv, err = promreceiver.ReceiverFromConfig(
+			context.Background(),
+			tms,
+			cfg.ScrapeConfig,
+			promreceiver.WithBufferPeriod(cfg.BufferPeriod),
+			promreceiver.WithBufferCount(cfg.BufferCount))
+	})
+	return err
+}
+
+// Flush triggers the Flush method on the underlying Prometheus scrapers and instructs
+// them to immediately sned over the metrics they've collected, to the MetricsReceiverSink.
+func (pr *Preceiver) Flush() {
+	pr.recv.Flush()
+}
+
+// StopMetricsReception stops and cancels the underlying Prometheus scrapers.
+func (pr *Preceiver) StopMetricsReception(ctx context.Context) error {
+	pr.Flush()
+	return pr.recv.Cancel()
+}
+
+type promMetricsReceiverToOpenCensusMetricsReceiver struct {
+	mrs receiver.MetricsReceiverSink
+}
+
+var _ promreceiver.MetricsSink = (*promMetricsReceiverToOpenCensusMetricsReceiver)(nil)
+
+var errNilRequest = errors.New("expecting a non-nil request")
+
+// ReceiveMetrics is a converter that enables MetricsReceivers to act as MetricsSink.
+func (pmrtomr *promMetricsReceiverToOpenCensusMetricsReceiver) ReceiveMetrics(ctx context.Context, ereq *agentmetricspb.ExportMetricsServiceRequest) error {
+	if ereq == nil {
+		return errNilRequest
+	}
+
+	_, err := pmrtomr.mrs.ReceiveMetricsData(ctx, data.MetricsData{
+		Node:     ereq.Node,
+		Resource: ereq.Resource,
+		Metrics:  ereq.Metrics,
+	})
+	return err
 }

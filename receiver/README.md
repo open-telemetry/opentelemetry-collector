@@ -102,3 +102,35 @@ receivers:
   zipkin:
     port: 9411
 ```
+
+## Prometheus
+
+This receiver is a drop-in replacement for getting Prometheus to scrape your services. Just like you would write in a
+YAML configuration file before starting Prometheus, such as with:
+```shell
+prometheus --config.file=prom.yaml
+```
+
+you can copy and paste that same configuration under section
+```yaml
+receivers:
+  prometheus:
+    config:
+```
+
+such as:
+```yaml
+receivers:
+    prometheus:
+      config:
+        scrape_configs:
+          - job_name: 'opencensus_service'
+            scrape_interval: 5s
+            static_configs:
+              - targets: ['localhost:8889']
+
+          - job_name: 'jdbc_apps'
+            scrape_interval: 3s
+            static_configs:
+              - targets: ['localhost:9777']
+```

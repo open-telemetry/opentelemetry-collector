@@ -26,6 +26,7 @@ import (
 
 	"github.com/census-instrumentation/opencensus-service/exporter"
 	"github.com/census-instrumentation/opencensus-service/exporter/exporterparser"
+	promreceiver "github.com/census-instrumentation/opencensus-service/receiver/prometheus"
 )
 
 // We expect the configuration.yaml file to look like this:
@@ -33,8 +34,19 @@ import (
 //  receivers:
 //      opencensus:
 //          port: <port>
+//
 //      zipkin:
 //          reporter: <address>
+//
+//      prometheus:
+//          config:
+//             scrape_configs:
+//               - job_name: 'foo_service"
+//                 scrape_interval: 5s
+//                 static_configs:
+//                   - targets: ['localhost:8889']
+//          buffer_count: 10
+//          buffer_period: 5s
 //
 //  exporters:
 //      stackdriver:
@@ -69,14 +81,25 @@ type Config struct {
 }
 
 // Receivers denotes configurations for the various telemetry ingesters, such as:
-// * Jaeger
-// * OpenCensus
-// * Zipkin
+// * Jaeger (traces)
+// * OpenCensus (metrics and traces)
+// * Prometheus (metrics)
+// * Zipkin (traces)
 type Receivers struct {
 	OpenCensus *ReceiverConfig       `yaml:"opencensus"`
 	Zipkin     *ReceiverConfig       `yaml:"zipkin"`
 	Jaeger     *ReceiverConfig       `yaml:"jaeger"`
 	Scribe     *ScribeReceiverConfig `yaml:"zipkin-scribe"`
+
+	// Prometheus contains the Prometheus configurations.
+	// Such as:
+	//      scrape_configs:
+	//          - job_name: "agent"
+	//              scrape_interval: 5s
+	//
+	//          static_configs:
+	//              - targets: ['localhost:9988']
+	Prometheus *promreceiver.Configuration `yaml:"prometheus"`
 }
 
 // ReceiverConfig is the per-receiver configuration that identifies attributes
@@ -217,6 +240,24 @@ func (c *Config) JaegerReceiverEnabled() bool {
 		return false
 	}
 	return c.Receivers != nil && c.Receivers.Jaeger != nil
+}
+
+// PrometheusReceiverEnabled returns true if Config is non-nil
+// and if the Jaeger receiver configuration is also non-nil.
+func (c *Config) PrometheusReceiverEnabled() bool {
+	if c == nil {
+		return false
+	}
+	return c.Receivers != nil && c.Receivers.Prometheus != nil
+}
+
+// PrometheusConfiguration deferences and returns the Prometheus configuration
+// if non-nil.
+func (c *Config) PrometheusConfiguration() *promreceiver.Configuration {
+	if c == nil || c.Receivers == nil {
+		return nil
+	}
+	return c.Receivers.Prometheus
 }
 
 // ZipkinReceiverAddress is a helper to safely retrieve the address

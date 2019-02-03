@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"sync"
 
+	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/receiver"
@@ -55,6 +56,40 @@ func (css *ConcurrentSpanSink) AllTraces() []*agenttracepb.ExportTraceServiceReq
 	defer css.mu.Unlock()
 
 	return css.traces[:]
+}
+
+// ConcurrentMetricsSink acts as a metrics receiver for use in tests.
+type ConcurrentMetricsSink struct {
+	mu      sync.Mutex
+	metrics []*agentmetricspb.ExportMetricsServiceRequest
+}
+
+var _ receiver.MetricsReceiverSink = (*ConcurrentMetricsSink)(nil)
+
+// ReceiveMetricsData stores traces in the span sink for verification in tests.
+func (cms *ConcurrentMetricsSink) ReceiveMetricsData(ctx context.Context, md data.MetricsData) (*receiver.MetricsReceiverAcknowledgement, error) {
+	cms.mu.Lock()
+	defer cms.mu.Unlock()
+
+	cms.metrics = append(cms.metrics, &agentmetricspb.ExportMetricsServiceRequest{
+		Node:     md.Node,
+		Resource: md.Resource,
+		Metrics:  md.Metrics,
+	})
+
+	ack := &receiver.MetricsReceiverAcknowledgement{
+		SavedMetrics: uint64(len(md.Metrics)),
+	}
+
+	return ack, nil
+}
+
+// AllMetrics returns the metrics sent to the test sink.
+func (cms *ConcurrentMetricsSink) AllMetrics() []*agentmetricspb.ExportMetricsServiceRequest {
+	cms.mu.Lock()
+	defer cms.mu.Unlock()
+
+	return cms.metrics[:]
 }
 
 // ToJSON marshals a generic interface to JSON to enable easy comparisons.

@@ -130,6 +130,14 @@ receivers:
   jaeger:
     jaeger-thrift-tchannel-port: 14267
     jaeger-thrift-http-port: 14268
+
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'caching_cluster'
+          scrape_interval: 5s
+          static_configs:
+            - targets: ['localhost:8889']
 ```
 
 ### <a name="config-exporters"></a>Exporters

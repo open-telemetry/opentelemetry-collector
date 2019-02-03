@@ -38,6 +38,7 @@ import (
 	"github.com/census-instrumentation/opencensus-service/receiver"
 	"github.com/census-instrumentation/opencensus-service/receiver/jaeger"
 	"github.com/census-instrumentation/opencensus-service/receiver/opencensus"
+	promreceiver "github.com/census-instrumentation/opencensus-service/receiver/prometheus"
 	"github.com/census-instrumentation/opencensus-service/receiver/zipkin"
 	"github.com/census-instrumentation/opencensus-service/receiver/zipkin/scribe"
 )
@@ -133,6 +134,15 @@ func runOCAgent() {
 			log.Fatal(err)
 		}
 		closeFns = append(closeFns, jaegerDoneFn)
+	}
+
+	// If the Prometheus receiver is enabled, then run it.
+	if agentConfig.PrometheusReceiverEnabled() {
+		promDoneFn, err := runPrometheusReceiver(agentConfig.PrometheusConfiguration(), commonMetricsSink)
+		if err != nil {
+			log.Fatal(err)
+		}
+		closeFns = append(closeFns, promDoneFn)
 	}
 
 	// Always cleanup finally
@@ -266,5 +276,20 @@ func runZipkinScribeReceiver(config *config.ScribeReceiverConfig, sr receiver.Tr
 		return zs.StopTraceReception(context.Background())
 	}
 	log.Printf("Running Zipkin Scribe receiver with %+v", *config)
+	return doneFn, nil
+}
+
+func runPrometheusReceiver(promConfig *promreceiver.Configuration, mr receiver.MetricsReceiverSink) (doneFn func() error, err error) {
+	pmr, err := promreceiver.New(promConfig)
+	if err != nil {
+		return nil, err
+	}
+	if err := pmr.StartMetricsReception(context.Background(), mr); err != nil {
+		return nil, err
+	}
+	doneFn = func() error {
+		return pmr.StopMetricsReception(context.Background())
+	}
+	log.Print("Running Prometheus receiver")
 	return doneFn, nil
 }
