@@ -26,6 +26,7 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -392,7 +393,7 @@ func nodeFromZipkinEndpoints(zs *zipkinmodel.SpanModel) *commonpb.Node {
 		node.ServiceInfo = &commonpb.ServiceInfo{
 			Name: lep.ServiceName,
 		}
-		node.Attributes = zipkinEndpointIntoAttributes(lep, node.Attributes, func(s string) string { return s })
+		node.Attributes = zipkinEndpointIntoAttributes(lep, node.Attributes, isLocalEndpoint)
 	}
 
 	// Retrieve and make use of the remote endpoint
@@ -404,30 +405,44 @@ func nodeFromZipkinEndpoints(zs *zipkinmodel.SpanModel) *commonpb.Node {
 		//      "zipkin.remoteEndpoint.port": "9000"
 		//      "zipkin.remoteEndpoint.serviceName": "backend",
 		// }
-		node.Attributes = zipkinEndpointIntoAttributes(rep, node.Attributes, func(s string) string {
-			return "zipkin.remoteEndpoint." + s
-		})
+		node.Attributes = zipkinEndpointIntoAttributes(rep, node.Attributes, isRemoteEndpoint)
 	}
 	return node
 }
 
+type zipkinDirection bool
+
+const (
+	isLocalEndpoint  zipkinDirection = true
+	isRemoteEndpoint zipkinDirection = false
+)
+
 var blankIP net.IP
 
-func zipkinEndpointIntoAttributes(ep *zipkinmodel.Endpoint, into map[string]string, prefixFunc func(string) string) map[string]string {
+func zipkinEndpointIntoAttributes(ep *zipkinmodel.Endpoint, into map[string]string, endpointType zipkinDirection) map[string]string {
 	if into == nil {
 		into = make(map[string]string)
 	}
+
+	var ipv4Key, ipv6Key, portKey, serviceNameKey string
+	if endpointType == isLocalEndpoint {
+		ipv4Key, ipv6Key = "ipv4", "ipv6"
+		portKey, serviceNameKey = "port", "serviceName"
+	} else {
+		ipv4Key, ipv6Key = "zipkin.remoteEndpoint.ipv4", "zipkin.remoteEndpoint.ipv6"
+		portKey, serviceNameKey = "zipkin.remoteEndpoint.port", "zipkin.remoteEndpoint.serviceName"
+	}
 	if ep.IPv4 != nil && !ep.IPv4.Equal(blankIP) {
-		into[prefixFunc("ipv4")] = ep.IPv4.String()
+		into[ipv4Key] = ep.IPv4.String()
 	}
 	if ep.IPv6 != nil && !ep.IPv6.Equal(blankIP) {
-		into[prefixFunc("ipv6")] = ep.IPv6.String()
+		into[ipv6Key] = ep.IPv6.String()
 	}
 	if ep.Port > 0 {
-		into[prefixFunc("port")] = fmt.Sprintf("%d", ep.Port)
+		into[portKey] = strconv.Itoa(int(ep.Port))
 	}
 	if serviceName := ep.ServiceName; serviceName != "" {
-		into[prefixFunc("serviceName")] = serviceName
+		into[serviceNameKey] = serviceName
 	}
 	return into
 }
