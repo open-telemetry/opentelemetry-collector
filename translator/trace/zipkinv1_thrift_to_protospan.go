@@ -142,10 +142,14 @@ func zipkinV1ThriftBinAnnotationsToOCAttributes(ztBinAnnotations []*zipkincore.B
 		return nil, ""
 	}
 
+	var fallbackServiceName string
 	attributeMap := make(map[string]*tracepb.AttributeValue)
 	for _, binaryAnnotation := range ztBinAnnotations {
 		pbAttrib := &tracepb.AttributeValue{}
 		binAnnotationType := binaryAnnotation.AnnotationType
+		if binaryAnnotation.Host != nil {
+			fallbackServiceName = binaryAnnotation.Host.ServiceName
+		}
 		switch binaryAnnotation.AnnotationType {
 		case zipkincore.AnnotationType_BOOL:
 			isTrue := bytes.Equal(binaryAnnotation.Value, trueByteSlice)
@@ -194,6 +198,10 @@ func zipkinV1ThriftBinAnnotationsToOCAttributes(ztBinAnnotations []*zipkincore.B
 		}
 
 		attributeMap[key] = pbAttrib
+	}
+
+	if localComponent == "" && fallbackServiceName != "" {
+		localComponent = fallbackServiceName
 	}
 
 	attributes = &tracepb.Span_Attributes{

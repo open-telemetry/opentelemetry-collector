@@ -39,6 +39,7 @@ import (
 	"github.com/census-instrumentation/opencensus-service/receiver/jaeger"
 	"github.com/census-instrumentation/opencensus-service/receiver/opencensus"
 	"github.com/census-instrumentation/opencensus-service/receiver/zipkin"
+	"github.com/census-instrumentation/opencensus-service/receiver/zipkin/scribe"
 )
 
 var configYAMLFile string
@@ -115,6 +116,14 @@ func runOCAgent() {
 			log.Fatal(err)
 		}
 		closeFns = append(closeFns, zipkinReceiverDoneFn)
+	}
+
+	if agentConfig.ZipkinScribeReceiverEnabled() {
+		zipkinScribeDoneFn, err := runZipkinScribeReceiver(agentConfig.ZipkinScribeConfig(), commonSpanSink)
+		if err != nil {
+			log.Fatal(err)
+		}
+		closeFns = append(closeFns, zipkinScribeDoneFn)
 	}
 
 	if agentConfig.JaegerReceiverEnabled() {
@@ -241,5 +250,21 @@ func runZipkinReceiver(addr string, sr receiver.TraceReceiverSink) (doneFn func(
 		return zi.StopTraceReception(context.Background())
 	}
 	log.Printf("Running Zipkin receiver with address %q", addr)
+	return doneFn, nil
+}
+
+func runZipkinScribeReceiver(config *config.ScribeReceiverConfig, sr receiver.TraceReceiverSink) (doneFn func() error, err error) {
+	zs, err := scribe.NewReceiver(config.Address, config.Port, config.Category)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to create the Zipkin Scribe receiver: %v", err)
+	}
+
+	if err := zs.StartTraceReception(context.Background(), sr); err != nil {
+		return nil, fmt.Errorf("Cannot start Zipkin Scribe receiver with %v: %v", config, err)
+	}
+	doneFn = func() error {
+		return zs.StopTraceReception(context.Background())
+	}
+	log.Printf("Running Zipkin Scribe receiver with %+v", *config)
 	return doneFn, nil
 }

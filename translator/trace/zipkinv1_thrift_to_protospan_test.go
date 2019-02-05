@@ -49,6 +49,23 @@ func TestZipkinV1ThriftToOCProto(t *testing.T) {
 	}
 }
 
+func BenchmarkZipkinV1ThriftToOCProto(b *testing.B) {
+	blob, err := ioutil.ReadFile("./testdata/zipkin_v1_thrift_single_batch.json")
+	if err != nil {
+		b.Fatalf("failed to load test data: %v", err)
+	}
+
+	var ztSpans []*zipkincore.Span
+	err = json.Unmarshal(blob, &ztSpans)
+	if err != nil {
+		b.Fatalf("failed to unmarshal json into zipkin v1 thrift: %v", err)
+	}
+
+	for n := 0; n < b.N; n++ {
+		ZipkinV1ThriftBatchToOCProto(ztSpans)
+	}
+}
+
 func Test_bytesInt16ToInt64(t *testing.T) {
 	tests := []struct {
 		name    string

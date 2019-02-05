@@ -23,17 +23,19 @@ import (
 )
 
 const (
-	receiversRoot   = "receivers"
-	jaegerEntry     = "jaeger"
-	opencensusEntry = "opencensus"
-	zipkinEntry     = "zipkin"
+	receiversRoot     = "receivers"
+	jaegerEntry       = "jaeger"
+	opencensusEntry   = "opencensus"
+	zipkinEntry       = "zipkin"
+	zipkinScribeEntry = "zipkin-scribe"
 
 	// flags
-	configCfg         = "config"
-	jaegerReceiverFlg = "receive-jaeger"
-	ocReceiverFlg     = "receive-oc-trace"
-	zipkinReceiverFlg = "receive-zipkin"
-	debugProcessorFlg = "debug-processor"
+	configCfg               = "config"
+	jaegerReceiverFlg       = "receive-jaeger"
+	ocReceiverFlg           = "receive-oc-trace"
+	zipkinReceiverFlg       = "receive-zipkin"
+	zipkinScribeReceiverFlg = "receive-zipkin-scribe"
+	debugProcessorFlg       = "debug-processor"
 )
 
 // Flags adds flags related to basic building of the collector application to the given flagset.
@@ -45,6 +47,8 @@ func Flags(flags *flag.FlagSet) {
 		fmt.Sprintf("Flag to run the OpenCensus trace receiver, default settings: %+v", *NewDefaultOpenCensusReceiverCfg()))
 	flags.Bool(zipkinReceiverFlg, false,
 		fmt.Sprintf("Flag to run the Zipkin receiver, default settings: %+v", *NewDefaultZipkinReceiverCfg()))
+	flags.Bool(zipkinScribeReceiverFlg, false,
+		fmt.Sprintf("Flag to run the Zipkin Scribe receiver, default settings: %+v", *NewDefaultZipkinScribeReceiverCfg()))
 	flags.Bool(debugProcessorFlg, false, "Flag to add a debug processor (combine with log level DEBUG to log incoming spans)")
 }
 
@@ -133,6 +137,41 @@ func NewDefaultZipkinReceiverCfg() *ZipkinReceiverCfg {
 
 // InitFromViper returns a ZipkinReceiverCfg according to the configuration.
 func (cfg *ZipkinReceiverCfg) InitFromViper(v *viper.Viper) (*ZipkinReceiverCfg, error) {
+	return cfg, initFromViper(cfg, v, receiversRoot, zipkinEntry)
+}
+
+// ScribeReceiverCfg carries the settings for the Zipkin Scribe receiver.
+type ScribeReceiverCfg struct {
+	// Address is an IP address or a name that can be resolved to a local address.
+	//
+	// It can use a name, but this is not recommended, because it will create
+	// a listener for at most one of the host's IP addresses.
+	//
+	// The default value bind to all available interfaces on the local computer.
+	Address string `mapstructure:"address"`
+	Port    uint16 `mapstructure:"port"`
+	// Category is the string that will be used to identify the scribe log messages
+	// that contain Zipkin spans.
+	Category string `mapstructure:"category"`
+}
+
+// ZipkinScribeReceiverEnabled checks if the Zipkin Scribe receiver is enabled, via a command-line flag, environment
+// variable, or configuration file.
+func ZipkinScribeReceiverEnabled(v *viper.Viper) bool {
+	return featureEnabled(v, zipkinScribeReceiverFlg, receiversRoot, zipkinScribeEntry)
+}
+
+// NewDefaultZipkinScribeReceiverCfg returns an instance of config.ScribeReceiverConfig with default values.
+func NewDefaultZipkinScribeReceiverCfg() *ScribeReceiverCfg {
+	opts := &ScribeReceiverCfg{
+		Port:     9410,
+		Category: "zipkin",
+	}
+	return opts
+}
+
+// InitFromViper returns a ScribeReceiverCfg according to the configuration.
+func (cfg *ScribeReceiverCfg) InitFromViper(v *viper.Viper) (*ScribeReceiverCfg, error) {
 	return cfg, initFromViper(cfg, v, receiversRoot, zipkinEntry)
 }
 

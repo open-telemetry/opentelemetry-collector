@@ -7,6 +7,7 @@ cloud.google.com/go v0.32.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMT
 contrib.go.opencensus.io/exporter/ocagent v0.3.0 h1:fyqPXp7d+BBV3tXa7EE1CYrObJr7R9jTAOO/AsdcQBg=
 contrib.go.opencensus.io/exporter/ocagent v0.3.0/go.mod h1:0fnkYHF+ORKj7HWzOExKkUHeFX79gXSKUQbpnAM+wzo=
 contrib.go.opencensus.io/exporter/ocagent v0.4.2/go.mod h1:YuG83h+XWwqWjvCqn7vK4KSyLKhThY3+gNGQ37iS2V0=
+contrib.go.opencensus.io/exporter/ocagent v0.4.3 h1:QjNm697iO7CZ09IxxSiCUzOhALENIsLsixdPwjV1yGs=
 contrib.go.opencensus.io/exporter/ocagent v0.4.3/go.mod h1:YuG83h+XWwqWjvCqn7vK4KSyLKhThY3+gNGQ37iS2V0=
 contrib.go.opencensus.io/exporter/stackdriver v0.7.0 h1:pmo1ol3uPcrLmvOET8bEbu5sialRZDDSHqJso0vo28o=
 contrib.go.opencensus.io/exporter/stackdriver v0.7.0/go.mod h1:hNe5qQofPbg6bLQY5wHCvQ7o+2E5P8PkegEuQ+MyRw0=
@@ -14,6 +15,7 @@ contrib.go.opencensus.io/exporter/stackdriver v0.9.1 h1:W6APgQ9we4BH8U8bnq/FvwLK
 contrib.go.opencensus.io/exporter/stackdriver v0.9.1/go.mod h1:hNe5qQofPbg6bLQY5wHCvQ7o+2E5P8PkegEuQ+MyRw0=
 git.apache.org/thrift.git v0.0.0-20180902110319-2566ecd5d999 h1:sihTnRgTOUSCQz0iS0pjZuFQy/z7GXCJgSBg3+rZKHw=
 git.apache.org/thrift.git v0.0.0-20180902110319-2566ecd5d999/go.mod h1:fPE2ZNJGynbRyZ4dJvy6G277gSllfV2HJqblrnkyeyg=
+git.apache.org/thrift.git v0.0.0-20181101003639-92be4f312b88 h1:c+lV5k88kQl9zle5Wstbsf1rW2Y9bMfuVyhJeIk5hgM=
 git.apache.org/thrift.git v0.0.0-20181101003639-92be4f312b88/go.mod h1:fPE2ZNJGynbRyZ4dJvy6G277gSllfV2HJqblrnkyeyg=
 github.com/BurntSushi/toml v0.3.1 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
@@ -27,6 +29,7 @@ github.com/Shopify/toxiproxy v2.1.3+incompatible h1:awiJqUYH4q4OmoBiRccJykjd7B+w
 github.com/Shopify/toxiproxy v2.1.3+incompatible/go.mod h1:OXgGpZ6Cli1/URJOF1DMxUHB2q5Ap20/P/eIdh4G0pI=
 github.com/VividCortex/gohistogram v1.0.0 h1:6+hBz+qvs0JOrrNhhmR7lFxo5sINxBCGXrdtl/UvroE=
 github.com/VividCortex/gohistogram v1.0.0/go.mod h1:Pf5mBqqDxYaXu3hDrrU+w6nw50o/4+TcAqDqk/vUH7g=
+github.com/apache/thrift v0.0.0-20161221203622-b2a4d4ae21c7 h1:Fv9bK1Q+ly/ROk4aJsVMeuIwPel4bEnD8EPiI91nZMg=
 github.com/apache/thrift v0.0.0-20161221203622-b2a4d4ae21c7/go.mod h1:cp2SuWMxlEZw2r+iP2GNCdIi4C1qmUzdZFSVb+bacwQ=
 github.com/apache/thrift v0.0.0-20161221203622-b2a4d4ae21c7/go.mod h1:cp2SuWMxlEZw2r+iP2GNCdIi4C1qmUzdZFSVb+bacwQ=
 github.com/aws/aws-sdk-go v1.15.31/go.mod h1:mFuSZ37Z9YOHbQEwBWztmVzqXrEkub65tZoCYDt7FT0=
@@ -107,6 +110,8 @@ github.com/mitchellh/mapstructure v1.0.0 h1:vVpGvMXJPqSDh2VYHF7gsfQj8Ncx+Xw5Y1KH
 github.com/mitchellh/mapstructure v1.0.0/go.mod h1:FVVH3fgwuzCH5S8UJGiWEs2h04kUh9fWfEaFds41c1Y=
 github.com/mitchellh/mapstructure v1.1.2 h1:fmNYVwqnSfB9mZU6OS2O6GsXM+wcskZDuKQzvN1EDeE=
 github.com/mitchellh/mapstructure v1.1.2/go.mod h1:FVVH3fgwuzCH5S8UJGiWEs2h04kUh9fWfEaFds41c1Y=
+github.com/omnition/scribe-go v0.0.0-20190131012523-9e3c68f31124 h1:mJ3GKMlsntao+kIP06AjcDxTQ5M4uG+cFKp8rRLTJG8=
+github.com/omnition/scribe-go v0.0.0-20190131012523-9e3c68f31124/go.mod h1:GnPmaNTr3pdt/V0JmVNVgDq+JEMb/oXxNlsG+pN6gg4=
 github.com/opentracing/opentracing-go v1.0.2 h1:3jA2P6O1F9UOrWVpwrIo17pu01KWvNWg4X946/Y5Zwg=
 github.com/opentracing/opentracing-go v1.0.2/go.mod h1:UkNAQd3GIcIGf0SeVgPpRdFStlNbqXla1AfSYxPUl2o=
 github.com/openzipkin/zipkin-go v0.1.1/go.mod h1:NtoC/o8u3JlF1lSlyPNswIbeQH9bJTmOf0Erfk+hxe8=

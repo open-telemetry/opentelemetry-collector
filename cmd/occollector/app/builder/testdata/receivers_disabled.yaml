@@ -3,3 +3,4 @@ receivers:
   # jaeger: {} 
   # opencensus: {}
   # zipkin: {}
+  # zipkin-scribe: {}

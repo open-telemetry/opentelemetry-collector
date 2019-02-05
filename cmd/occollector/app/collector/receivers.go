@@ -26,6 +26,7 @@ import (
 	"github.com/census-instrumentation/opencensus-service/internal/collector/opencensus"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/processor"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/zipkin"
+	"github.com/census-instrumentation/opencensus-service/internal/collector/zipkin/scribe"
 	"github.com/census-instrumentation/opencensus-service/receiver"
 )
 
@@ -39,6 +40,7 @@ func createReceivers(v *viper.Viper, logger *zap.Logger, spanProcessor processor
 		{"Jaeger", jaegerreceiver.Start, builder.JaegerReceiverEnabled(v)},
 		{"OpenCensus", ocreceiver.Start, builder.OpenCensusReceiverEnabled(v)},
 		{"Zipkin", zipkinreceiver.Start, builder.ZipkinReceiverEnabled(v)},
+		{"Zipkin-Scribe", zipkinscribereceiver.Start, builder.ZipkinScribeReceiverEnabled(v)},
 	}
 
 	var startedTraceReceivers []receiver.TraceReceiver
