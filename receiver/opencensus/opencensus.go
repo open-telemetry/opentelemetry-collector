@@ -189,10 +189,16 @@ func (ocr *Receiver) Stop() error {
 
 	var err = errAlreadyStopped
 	ocr.stopOnce.Do(func() {
-		// TODO: (@odeke-em) should we instead do (*grpc.Server).GracefulStop?
-		ocr.serverGRPC.Stop()
 		_ = ocr.serverHTTP.Close()
+
 		_ = ocr.ln.Close()
+
+		// TODO: @(odeke-em) investigate what utility invoking (*grpc.Server).Stop()
+		// gives us yet we invoke (net.Listener).Close().
+		// Sure (*grpc.Server).Stop() enables proper shutdown but imposes
+		// a painful and artificial wait time that goes into 20+seconds yet most of our
+		// tests and code should be reactive in less than even 1second.
+		// ocr.serverGRPC.Stop()
 	})
 	return err
 }
@@ -231,7 +237,10 @@ func (ocr *Receiver) startServer() error {
 
 			// Start the gRPC and HTTP/JSON (grpc-gateway) servers on the same port.
 			m := cmux.New(ocr.ln)
-			grpcL := m.Match(cmux.HTTP2HeaderField("content-type", "application/grpc"))
+			grpcL := m.Match(
+				cmux.HTTP2HeaderField("content-type", "application/grpc"),
+				cmux.HTTP2HeaderField("content-type", "application/grpc+proto"))
+
 			httpL := m.Match(cmux.Any())
 			go func() {
 				errChan <- ocr.serverGRPC.Serve(grpcL)
