@@ -131,6 +131,23 @@ func Test_hexTraceIDToOCTraceID(t *testing.T) {
 	}
 }
 
+func TestZipkinJSONFallbackToLocalComponent(t *testing.T) {
+	blob, err := ioutil.ReadFile("./testdata/zipkin_v1_local_component.json")
+	if err != nil {
+		t.Fatalf("failed to load test data: %v", err)
+	}
+	reqs, err := ZipkinV1JSONBatchToOCProto(blob)
+	if err != nil {
+		t.Fatalf("failed to translate zipkinv1 to OC proto: %v", err)
+	}
+
+	got := reqs[0].Node.ServiceInfo.Name
+	const want = "myLocalComponent"
+	if got != want {
+		t.Fatalf("got %q for service name, want %q", got, want)
+	}
+}
+
 func TestSingleJSONZipkinV1BatchToOCProto(t *testing.T) {
 	blob, err := ioutil.ReadFile("./testdata/zipkin_v1_single_batch.json")
 	if err != nil {

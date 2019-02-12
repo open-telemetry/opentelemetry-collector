@@ -23,6 +23,29 @@ import (
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 )
 
+func TestZipkinThriftFallbackToLocalComponent(t *testing.T) {
+	blob, err := ioutil.ReadFile("./testdata/zipkin_v1_thrift_local_component.json")
+	if err != nil {
+		t.Fatalf("failed to load test data: %v", err)
+	}
+	var ztSpans []*zipkincore.Span
+	err = json.Unmarshal(blob, &ztSpans)
+	if err != nil {
+		t.Fatalf("failed to unmarshal json into zipkin v1 thrift: %v", err)
+	}
+
+	reqs, err := ZipkinV1ThriftBatchToOCProto(ztSpans)
+	if err != nil {
+		t.Fatalf("failed to translate zipkinv1 thrift to OC proto: %v", err)
+	}
+
+	got := reqs[0].Node.ServiceInfo.Name
+	const want = "myLocalComponent"
+	if got != want {
+		t.Fatalf("got %q for service name, want %q", got, want)
+	}
+}
+
 func TestZipkinV1ThriftToOCProto(t *testing.T) {
 	blob, err := ioutil.ReadFile("./testdata/zipkin_v1_thrift_single_batch.json")
 	if err != nil {
