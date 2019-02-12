@@ -17,6 +17,7 @@ package processor
 import (
 	"context"
 
+	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
@@ -43,9 +44,9 @@ func (sp *debugSpanProcessor) ProcessSpans(batch *agenttracepb.ExportTraceServic
 		sp.logger.Warn("Received batch with nil Node", zap.String("format", spanFormat))
 	}
 
-	statsTags := statsTagsForBatch("debug", serviceNameForBatch(batch), spanFormat)
+	statsTags := StatsTagsForBatch("debug", ServiceNameForBatch(batch), spanFormat)
 	numSpans := len(batch.Spans)
-	stats.RecordWithTags(context.Background(), statsTags, statReceivedBatchCount.M(1), statReceivedSpanCount.M(int64(numSpans)))
+	stats.RecordWithTags(context.Background(), statsTags, StatReceivedBatchCount.M(1), StatReceivedSpanCount.M(int64(numSpans)))
 
 	sp.logger.Debug("debugSpanProcessor", zap.String("originalFormat", spanFormat), zap.Int("#spans", numSpans))
 	return 0, nil
@@ -58,29 +59,29 @@ func NewNoopSpanProcessor(logger *zap.Logger) SpanProcessor {
 
 // Keys and stats for telemetry.
 var (
-	tagSourceFormatKey, _ = tag.NewKey("format")
-	tagServiceNameKey, _  = tag.NewKey("service")
-	tagExporterNameKey, _ = tag.NewKey("exporter")
+	TagSourceFormatKey, _ = tag.NewKey("format")
+	TagServiceNameKey, _  = tag.NewKey("service")
+	TagExporterNameKey, _ = tag.NewKey("exporter")
 
-	statReceivedBatchCount = stats.Int64("batches_received", "counts the number of batches received", stats.UnitDimensionless)
-	statDroppedBatchCount  = stats.Int64("batches_dropped", "counts the number of batches dropped", stats.UnitDimensionless)
+	StatReceivedBatchCount = stats.Int64("batches_received", "counts the number of batches received", stats.UnitDimensionless)
+	StatDroppedBatchCount  = stats.Int64("batches_dropped", "counts the number of batches dropped", stats.UnitDimensionless)
 
-	statReceivedSpanCount = stats.Int64("spans_received", "counts the number of spans received", stats.UnitDimensionless)
-	statDroppedSpanCount  = stats.Int64("spans_dropped", "counts the number of spans dropped", stats.UnitDimensionless)
+	StatReceivedSpanCount = stats.Int64("spans_received", "counts the number of spans received", stats.UnitDimensionless)
+	StatDroppedSpanCount  = stats.Int64("spans_dropped", "counts the number of spans dropped", stats.UnitDimensionless)
 )
 
-// metricTagKeys returns the metric tag keys according to the given telemetry level.
-func metricTagKeys(level telemetry.Level) []tag.Key {
+// MetricTagKeys returns the metric tag keys according to the given telemetry level.
+func MetricTagKeys(level telemetry.Level) []tag.Key {
 	var tagKeys []tag.Key
 	switch level {
 	case telemetry.Detailed:
-		tagKeys = append(tagKeys, tagServiceNameKey)
+		tagKeys = append(tagKeys, TagServiceNameKey)
 		fallthrough
 	case telemetry.Normal:
-		tagKeys = append(tagKeys, tagSourceFormatKey)
+		tagKeys = append(tagKeys, TagSourceFormatKey)
 		fallthrough
 	case telemetry.Basic:
-		tagKeys = append(tagKeys, tagExporterNameKey)
+		tagKeys = append(tagKeys, TagExporterNameKey)
 		break
 	default:
 		return nil
@@ -91,36 +92,36 @@ func metricTagKeys(level telemetry.Level) []tag.Key {
 
 // MetricViews return the metrics views according to given telemetry level.
 func MetricViews(level telemetry.Level) []*view.View {
-	tagKeys := metricTagKeys(level)
+	tagKeys := MetricTagKeys(level)
 	if tagKeys == nil {
 		return nil
 	}
 
 	// There are some metrics enabled, return the views.
 	receivedBatchesView := &view.View{
-		Name:        statReceivedBatchCount.Name(),
-		Measure:     statReceivedBatchCount,
+		Name:        StatReceivedBatchCount.Name(),
+		Measure:     StatReceivedBatchCount,
 		Description: "The number of span batches received.",
 		TagKeys:     tagKeys,
 		Aggregation: view.Count(),
 	}
 	droppedBatchesView := &view.View{
-		Name:        statDroppedBatchCount.Name(),
-		Measure:     statDroppedBatchCount,
+		Name:        StatDroppedBatchCount.Name(),
+		Measure:     StatDroppedBatchCount,
 		Description: "The number of span batches dropped.",
 		TagKeys:     tagKeys,
 		Aggregation: view.Count(),
 	}
 	receivedSpansView := &view.View{
-		Name:        statReceivedSpanCount.Name(),
-		Measure:     statReceivedSpanCount,
+		Name:        StatReceivedSpanCount.Name(),
+		Measure:     StatReceivedSpanCount,
 		Description: "The number of spans received.",
 		TagKeys:     tagKeys,
 		Aggregation: view.Sum(),
 	}
 	droppedSpansView := &view.View{
-		Name:        statDroppedSpanCount.Name(),
-		Measure:     statDroppedSpanCount,
+		Name:        StatDroppedSpanCount.Name(),
+		Measure:     StatDroppedSpanCount,
 		Description: "The number of spans dropped.",
 		TagKeys:     tagKeys,
 		Aggregation: view.Sum(),
@@ -129,25 +130,35 @@ func MetricViews(level telemetry.Level) []*view.View {
 	return []*view.View{receivedBatchesView, droppedBatchesView, receivedSpansView, droppedSpansView}
 }
 
-func serviceNameForBatch(batch *agenttracepb.ExportTraceServiceRequest) string {
+// ServiceNameForNode gets the service name for a specified node. Used for metrics.
+func ServiceNameForNode(node *commonpb.Node) string {
 	var serviceName string
-	if batch.Node == nil {
+	if node == nil {
 		serviceName = "<nil-batch-node>"
-	} else if batch.Node.ServiceInfo == nil {
+	} else if node.ServiceInfo == nil {
 		serviceName = "<nil-service-info>"
-	} else if batch.Node.ServiceInfo.Name == "" {
+	} else if node.ServiceInfo.Name == "" {
 		serviceName = "<empty-service-info-name>"
 	} else {
-		serviceName = batch.Node.ServiceInfo.Name
+		serviceName = node.ServiceInfo.Name
 	}
 	return serviceName
 }
 
-func statsTagsForBatch(processorName, serviceName, spanFormat string) []tag.Mutator {
+// ServiceNameForBatch gets the service name for a specified batch. Used for metrics.
+func ServiceNameForBatch(batch *agenttracepb.ExportTraceServiceRequest) string {
+	if batch == nil {
+		return ""
+	}
+	return ServiceNameForNode(batch.Node)
+}
+
+// StatsTagsForBatch gets the stat tags based on the specified processorName, serviceName, and spanFormat.
+func StatsTagsForBatch(processorName, serviceName, spanFormat string) []tag.Mutator {
 	statsTags := []tag.Mutator{
-		tag.Upsert(tagSourceFormatKey, spanFormat),
-		tag.Upsert(tagServiceNameKey, serviceName),
-		tag.Upsert(tagExporterNameKey, processorName),
+		tag.Upsert(TagSourceFormatKey, spanFormat),
+		tag.Upsert(TagServiceNameKey, serviceName),
+		tag.Upsert(TagExporterNameKey, processorName),
 	}
 
 	return statsTags

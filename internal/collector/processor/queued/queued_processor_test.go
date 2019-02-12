@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package processor
+package queued
 
 import (
 	"sync"
@@ -21,6 +21,7 @@ import (
 
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/census-instrumentation/opencensus-service/internal/collector/processor"
 )
 
 func TestQueueProcessorHappyPath(t *testing.T) {
@@ -60,7 +61,7 @@ type mockConcurrentSpanProcessor struct {
 	spanCount  int32
 }
 
-var _ SpanProcessor = (*mockConcurrentSpanProcessor)(nil)
+var _ processor.SpanProcessor = (*mockConcurrentSpanProcessor)(nil)
 
 func (p *mockConcurrentSpanProcessor) ProcessSpans(batch *agenttracepb.ExportTraceServiceRequest, spanFormat string) (uint64, error) {
 	atomic.AddInt32(&p.batchCount, 1)
