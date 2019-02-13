@@ -61,3 +61,38 @@ exporters:
 		t.Errorf("Exporters.Zipkin.EndpointURL mismatch\nGot: %s\nWant:%s", g, w)
 	}
 }
+
+// Issue #377: If Config.OpenCensus == nil, invoking
+// CanRunOpenCensus{Metrics, Trace}Receiver() would crash.
+func TestOpenCensusTraceReceiverEnabledNoCrash(t *testing.T) {
+	// 1. Test with an in-code struct.
+	cfg := &config.Config{
+		Receivers: &config.Receivers{
+			OpenCensus: nil,
+		},
+	}
+	if cfg.CanRunOpenCensusTraceReceiver() {
+		t.Fatal("CanRunOpenCensusTraceReceiver: Unexpected True for a nil Receiver.OpenCensus")
+	}
+	if cfg.CanRunOpenCensusMetricsReceiver() {
+		t.Fatal("CanRunOpenCensusMetricsReceiver: Unexpected True for a nil Receiver.OpenCensus")
+	}
+
+	// 2. Test with a struct unmarshalled from a configuration file's YAML.
+	regressionYAML := []byte(`
+receivers:
+    zipkin:
+        address: "localhost:9410"`)
+
+	cfg, err := config.ParseOCAgentConfig(regressionYAML)
+	if err != nil {
+		t.Fatalf("Unexpected YAML parse error: %v", err)
+	}
+
+	if cfg.CanRunOpenCensusTraceReceiver() {
+		t.Fatal("yaml.CanRunOpenCensusTraceReceiver: Unexpected True for a nil Receiver.OpenCensus")
+	}
+	if cfg.CanRunOpenCensusMetricsReceiver() {
+		t.Fatal("yaml.CanRunOpenCensusMetricsReceiver: Unexpected True for a nil Receiver.OpenCensus")
+	}
+}

@@ -182,13 +182,15 @@ func (c *Config) OpenCensusReceiverCorsAllowedOrigins() []string {
 // CanRunOpenCensusTraceReceiver returns true if the configuration
 // permits running the OpenCensus Trace receiver.
 func (c *Config) CanRunOpenCensusTraceReceiver() bool {
-	return c != nil && c.Receivers != nil && !c.Receivers.OpenCensus.DisableTracing
+	return c != nil && c.Receivers != nil &&
+		c.Receivers.OpenCensus != nil && !c.Receivers.OpenCensus.DisableTracing
 }
 
 // CanRunOpenCensusMetricsReceiver returns true if the configuration
 // permits running the OpenCensus Metrics receiver.
 func (c *Config) CanRunOpenCensusMetricsReceiver() bool {
-	return c != nil && c.Receivers != nil && !c.Receivers.OpenCensus.DisableMetrics
+	return c != nil && c.Receivers != nil &&
+		c.Receivers.OpenCensus != nil && !c.Receivers.OpenCensus.DisableMetrics
 }
 
 // ZPagesDisabled returns true if zPages have not been enabled.
