@@ -15,7 +15,9 @@
 package builder
 
 import (
+	"encoding/json"
 	"reflect"
+	"sort"
 	"testing"
 	"time"
 
@@ -123,6 +125,88 @@ func TestMultiAndQueuedSpanProcessorConfig(t *testing.T) {
 		if !reflect.DeepEqual(*wCfg.Processors[i], *gCfg.Processors[i]) {
 			t.Errorf("Wanted %+v but got %+v", *wCfg.Processors[i], *gCfg.Processors[i])
 		}
+	}
+}
+
+func TestTailSamplingPoliciesConfiguration(t *testing.T) {
+	v, err := loadViperFromFile("./testdata/sampling_config.yaml")
+	if err != nil {
+		t.Fatalf("Failed to load viper from test file: %v", err)
+	}
+
+	wCfg := NewDefaultSamplingCfg()
+	if wCfg.Mode != NoSampling {
+		t.Fatalf("Default SamplingCfg Mode should be NoSampling")
+	}
+	wCfg.Mode = TailSampling
+	wCfg.Policies = []*PolicyCfg{
+		{
+			Name:      "string-tag-filter1",
+			Type:      StringTagFilter,
+			Exporters: []string{"jaeger1"},
+			Configuration: &StringTagFilterCfg{
+				Tag:    "test",
+				Values: []string{"value 1", "value 2"},
+			},
+		},
+		{
+			Name:      "numeric-tag-filter2",
+			Type:      NumericTagFilter,
+			Exporters: []string{"jaeger2"},
+			Configuration: &NumericTagFilterCfg{
+				Tag:      "http.status_code",
+				MinValue: 400,
+				MaxValue: 999,
+			},
+		},
+		{
+			Name:      "string-tag-filter3",
+			Type:      StringTagFilter,
+			Exporters: []string{"jaeger3"},
+			Configuration: &StringTagFilterCfg{
+				Tag:    "test.different",
+				Values: []string{"key 1", "key 2"},
+			},
+		},
+		{
+			Name:      "numeric-tag-filter4",
+			Type:      NumericTagFilter,
+			Exporters: []string{"jaeger4", "jaeger5"},
+			Configuration: &NumericTagFilterCfg{
+				Tag:      "http.status_code",
+				MinValue: 400,
+				MaxValue: 999,
+			},
+		},
+	}
+
+	gCfg := NewDefaultSamplingCfg().InitFromViper(v)
+	sort.Slice(gCfg.Policies, func(i, j int) bool {
+		if len(gCfg.Policies[i].Exporters) == len(gCfg.Policies[j].Exporters) {
+			return gCfg.Policies[i].Exporters[0] < gCfg.Policies[j].Exporters[0]
+		}
+		return len(gCfg.Policies[i].Exporters) < len(gCfg.Policies[j].Exporters)
+	})
+
+	if !reflect.DeepEqual(gCfg, wCfg) {
+		gb, _ := json.MarshalIndent(gCfg, "", " ")
+		t.Fatalf("Wanted %+v but got %+v\ngot json:\n%s", *wCfg, *gCfg, string(gb))
+	}
+}
+
+func TestTailSamplingConfig(t *testing.T) {
+	v, err := loadViperFromFile("./testdata/sampling_config.yaml")
+	if err != nil {
+		t.Fatalf("Failed to load viper from test file: %v", err)
+	}
+
+	wCfg := NewDefaultTailBasedCfg()
+	wCfg.DecisionWait = 31 * time.Second
+	wCfg.NumTraces = 20001
+
+	gCfg := NewDefaultTailBasedCfg().InitFromViper(v)
+	if !reflect.DeepEqual(gCfg, wCfg) {
+		t.Fatalf("Wanted %+v but got %+v", *wCfg, *gCfg)
 	}
 }
 

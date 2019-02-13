@@ -1,4 +1,4 @@
- queued-exporters:
+queued-exporters:
   proc-tchannel:
     num-workers: 13
     queue-size: 1300

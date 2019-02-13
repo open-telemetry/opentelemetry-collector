@@ -1,0 +1,66 @@
+receivers:
+  jaeger:
+    collector_http_port: 14268
+  opencensus:
+    address: "127.0.0.1:55678"
+queued-exporters:
+  jaeger1:
+    sender-type: jaeger-thrift-http
+    jaeger-thrift-http:
+      collector_endpoint: "http://host.docker.internal:14368/api/traces"
+  jaeger2:
+    sender-type: jaeger-thrift-http
+    jaeger-thrift-http:
+      collector_endpoint: "http://host.docker.internal:14468/api/traces"
+  jaeger3:
+    sender-type: jaeger-thrift-http
+    jaeger-thrift-http:
+      collector_endpoint: "http://host.docker.internal:14368/api/traces"
+  jaeger4:
+    sender-type: jaeger-thrift-http
+    jaeger-thrift-http:
+      collector_endpoint: "http://host.docker.internal:14468/api/traces"
+  jaeger5:
+    sender-type: jaeger-thrift-http
+    jaeger-thrift-http:
+      collector_endpoint: "http://host.docker.internal:14468/api/traces"
+sampling:
+  mode: tail
+  decision-wait: 31s
+  num-traces: 20001
+  policies:
+    string-tag-filter1:
+        exporters: 
+          - jaeger1
+        policy: string-tag-filter
+        configuration:
+          tag: "test"
+          values:
+            - "value 1"
+            - "value 2"
+    numeric-tag-filter2:
+        exporters:
+          - jaeger2
+        policy: numeric-tag-filter
+        configuration:
+          tag: "http.status_code"
+          min-value: 400
+          max-value: 999
+    string-tag-filter3: 
+        exporters: 
+          - jaeger3
+        policy: string-tag-filter
+        configuration:
+          tag: "test.different"
+          values:
+            - "key 1"
+            - "key 2"
+    numeric-tag-filter4:
+        exporters: 
+          - jaeger4
+          - jaeger5
+        policy: numeric-tag-filter
+        configuration:
+          tag: "http.status_code"
+          min-value: 400
+          max-value: 999

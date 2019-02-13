@@ -15,8 +15,10 @@
 package collector
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
+	"time"
 
 	tchReporter "github.com/jaegertracing/jaeger/cmd/agent/app/reporter/tchannel"
 	"github.com/spf13/viper"
@@ -29,6 +31,8 @@ import (
 	"github.com/census-instrumentation/opencensus-service/internal/collector/processor"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/processor/nodebatcher"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/processor/queued"
+	"github.com/census-instrumentation/opencensus-service/internal/collector/processor/tail_sampling"
+	"github.com/census-instrumentation/opencensus-service/internal/collector/sampling"
 	"github.com/census-instrumentation/opencensus-service/internal/config"
 )
 
@@ -145,11 +149,79 @@ func buildQueuedSpanProcessor(
 	return nil, queuedSpanProcessor, nil
 }
 
+func buildSamplingProcessor(cfg *builder.SamplingCfg, nameToSpanProcessor map[string]processor.SpanProcessor, v *viper.Viper, logger *zap.Logger) (processor.SpanProcessor, error) {
+	var policies []*tailsampling.Policy
+	seenExporter := make(map[string]bool)
+	for _, polCfg := range cfg.Policies {
+		policy := &tailsampling.Policy{
+			Name: string(polCfg.Name),
+		}
+
+		// As the number of sampling policies grow this should be changed to a map.
+		switch polCfg.Type {
+		case builder.AlwaysSample:
+			policy.Evaluator = sampling.NewAlwaysSample()
+		case builder.NumericTagFilter:
+			numTagFilterCfg := polCfg.Configuration.(*builder.NumericTagFilterCfg)
+			policy.Evaluator = sampling.NewNumericTagFilter(numTagFilterCfg.Tag, numTagFilterCfg.MinValue, numTagFilterCfg.MaxValue)
+		case builder.StringTagFilter:
+			strTagFilterCfg := polCfg.Configuration.(*builder.StringTagFilterCfg)
+			policy.Evaluator = sampling.NewStringTagFilter(strTagFilterCfg.Tag, strTagFilterCfg.Values)
+		case builder.RateLimiting:
+			rateLimitingCfg := polCfg.Configuration.(*builder.RateLimitingCfg)
+			policy.Evaluator = sampling.NewRateLimiting(rateLimitingCfg.SpansPerSecond)
+		default:
+			return nil, fmt.Errorf("unknown sampling policy %s", polCfg.Name)
+		}
+
+		var policyProcessors []processor.SpanProcessor
+		for _, exporter := range polCfg.Exporters {
+			if _, ok := seenExporter[exporter]; ok {
+				return nil, fmt.Errorf("multiple sampling polices pointing to exporter %q", exporter)
+			}
+			seenExporter[exporter] = true
+
+			policyProcessor, ok := nameToSpanProcessor[exporter]
+			if !ok {
+				return nil, fmt.Errorf("invalid exporter %q for sampling policy %q", exporter, polCfg.Name)
+			}
+
+			policyProcessors = append(policyProcessors, policyProcessor)
+		}
+
+		numPolicyProcessors := len(policyProcessors)
+		switch {
+		case numPolicyProcessors == 1:
+			policy.Destination = policyProcessors[0]
+		case numPolicyProcessors > 1:
+			policy.Destination = processor.NewMultiSpanProcessor(policyProcessors)
+		default:
+			return nil, fmt.Errorf("no exporters for sampling policy %q", polCfg.Name)
+		}
+
+		policies = append(policies, policy)
+	}
+
+	if len(policies) < 1 {
+		return nil, fmt.Errorf("no sampling policies were configured")
+	}
+
+	tailCfg := builder.NewDefaultTailBasedCfg().InitFromViper(v)
+	tailSamplingProcessor, err := tailsampling.NewTailSamplingSpanProcessor(
+		policies,
+		tailCfg.NumTraces,
+		128,
+		tailCfg.DecisionWait,
+		logger)
+	return tailSamplingProcessor, err
+}
+
 func startProcessor(v *viper.Viper, logger *zap.Logger) (processor.SpanProcessor, []func()) {
 	// Build pipeline from its end: 1st exporters, the OC-proto queue processor, and
 	// finally the receivers.
 	var closeFns []func()
 	var spanProcessors []processor.SpanProcessor
+	nameToSpanProcessor := make(map[string]processor.SpanProcessor)
 	exportersCloseFns, traceExporters, metricsExporters := createExporters(v, logger)
 	closeFns = append(closeFns, exportersCloseFns...)
 	if len(traceExporters) > 0 {
@@ -158,14 +230,18 @@ func startProcessor(v *viper.Viper, logger *zap.Logger) (processor.SpanProcessor
 		// TODO: (@pjanotti) we should avoid this step in the long run, its an extra hop just to re-use
 		// the exporters: this can lose node information and it is not ideal for performance and delegates
 		// the retry/buffering to the exporters (that are designed to run within the tracing process).
-		spanProcessors = append(spanProcessors, processor.NewTraceExporterProcessor(traceExporters...))
+		traceExpProc := processor.NewTraceExporterProcessor(traceExporters...)
+		nameToSpanProcessor["exporters"] = traceExpProc
+		spanProcessors = append(spanProcessors, traceExpProc)
 	}
 
 	// TODO: (@pjanotti) make use of metrics exporters
 	_ = metricsExporters
 
 	if builder.DebugProcessorEnabled(v) {
-		spanProcessors = append(spanProcessors, processor.NewNoopSpanProcessor(logger))
+		dbgProc := processor.NewNoopSpanProcessor(logger)
+		nameToSpanProcessor["debug"] = dbgProc
+		spanProcessors = append(spanProcessors, dbgProc)
 	}
 
 	multiProcessorCfg := builder.NewDefaultMultiSpanProcessorCfg().InitFromViper(v)
@@ -176,6 +252,7 @@ func startProcessor(v *viper.Viper, logger *zap.Logger) (processor.SpanProcessor
 			logger.Error("Failed to build the queued span processor", zap.Error(err))
 			os.Exit(1)
 		}
+		nameToSpanProcessor[queuedJaegerProcessorCfg.Name] = queuedJaegerProcessor
 		spanProcessors = append(spanProcessors, queuedJaegerProcessor)
 		closeFns = append(closeFns, doneFns...)
 	}
@@ -183,6 +260,37 @@ func startProcessor(v *viper.Viper, logger *zap.Logger) (processor.SpanProcessor
 	if len(spanProcessors) == 0 {
 		logger.Warn("Nothing to do: no processor was enabled. Shutting down.")
 		os.Exit(1)
+	}
+
+	var tailSamplingProcessor processor.SpanProcessor
+	samplingProcessorCfg := builder.NewDefaultSamplingCfg().InitFromViper(v)
+	if samplingProcessorCfg.Mode == builder.TailSampling {
+		var err error
+		tailSamplingProcessor, err = buildSamplingProcessor(samplingProcessorCfg, nameToSpanProcessor, v, logger)
+		if err != nil {
+			logger.Error("Falied to build the sampling processor", zap.Error(err))
+			os.Exit(1)
+		}
+	} else if builder.DebugTailSamplingEnabled(v) {
+		policy := []*tailsampling.Policy{
+			{
+				Name:        "tail-always-sampling",
+				Evaluator:   sampling.NewAlwaysSample(),
+				Destination: processor.NewMultiSpanProcessor(spanProcessors),
+			},
+		}
+		var err error
+		tailSamplingProcessor, err = tailsampling.NewTailSamplingSpanProcessor(policy, 50000, 128, 10*time.Second, logger)
+		if err != nil {
+			logger.Error("Falied to build the debug tail-sampling processor", zap.Error(err))
+			os.Exit(1)
+		}
+		logger.Info("Debugging tail-sampling with always sample policy (num_traces: 50000; decision_wait: 10s)")
+	}
+
+	if tailSamplingProcessor != nil {
+		// SpanProcessors are going to go all via the tail sampling processor.
+		spanProcessors = []processor.SpanProcessor{tailSamplingProcessor}
 	}
 
 	// Wraps processors in a single one to be connected to all enabled receivers.

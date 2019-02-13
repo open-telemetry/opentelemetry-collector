@@ -20,6 +20,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"runtime"
 	"syscall"
 
 	"github.com/jaegertracing/jaeger/pkg/healthcheck"
@@ -73,7 +74,7 @@ func (app *Application) execute() {
 	var signalsChannel = make(chan os.Signal)
 	signal.Notify(signalsChannel, os.Interrupt, syscall.SIGTERM)
 
-	app.logger.Info("Starting...")
+	app.logger.Info("Starting...", zap.Int("NumCPU", runtime.NumCPU()))
 
 	var err error
 	app.healthCheck, err = newHealthCheck(app.v, app.logger)
