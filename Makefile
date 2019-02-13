@@ -1,6 +1,6 @@
 ALL_SRC := $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 
-GOTEST_OPT?=-v -race
+GOTEST_OPT?=-v -race -timeout 30s
 GOTEST=go test
 GOFMT=gofmt
 GOLINT=golint
