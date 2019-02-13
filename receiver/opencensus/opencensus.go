@@ -189,9 +189,13 @@ func (ocr *Receiver) Stop() error {
 
 	var err = errAlreadyStopped
 	ocr.stopOnce.Do(func() {
-		_ = ocr.serverHTTP.Close()
+		if ocr.serverHTTP != nil {
+			_ = ocr.serverHTTP.Close()
+		}
 
-		_ = ocr.ln.Close()
+		if ocr.ln != nil {
+			_ = ocr.ln.Close()
+		}
 
 		// TODO: @(odeke-em) investigate what utility invoking (*grpc.Server).Stop()
 		// gives us yet we invoke (net.Listener).Close().

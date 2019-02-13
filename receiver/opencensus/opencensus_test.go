@@ -312,3 +312,13 @@ func verifyCorsResp(t *testing.T, url string, origin string, wantStatus int, wan
 		t.Errorf("Unexpected Access-Control-Allow-Methods: %v", gotAllowMethods)
 	}
 }
+
+// Issue #379: Invoking Stop on an unstarted OpenCensus receiver should never crash.
+func TestStopWithoutStartNeverCrashes(t *testing.T) {
+	ocr, err := opencensus.New(":55444")
+	if err != nil {
+		t.Fatalf("Failed to create an OpenCensus receiver: %v", err)
+	}
+	// Stop it before ever invoking Start*.
+	ocr.Stop()
+}
