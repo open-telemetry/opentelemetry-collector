@@ -23,11 +23,11 @@ import (
 	"sync"
 	"time"
 
-	"go.opencensus.io/trace"
-
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
 	zipkinhttp "github.com/openzipkin/zipkin-go/reporter/http"
+	"github.com/spf13/viper"
+	"go.opencensus.io/trace"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
@@ -39,10 +39,10 @@ import (
 
 // ZipkinConfig holds the configuration of a Zipkin exporter.
 type ZipkinConfig struct {
-	ServiceName      string         `yaml:"service_name,omitempty"`
-	Endpoint         string         `yaml:"endpoint,omitempty"`
-	LocalEndpointURI string         `yaml:"local_endpoint,omitempty"`
-	UploadPeriod     *time.Duration `yaml:"upload_period,omitempty"`
+	ServiceName      string         `mapstructure:"service_name,omitempty"`
+	Endpoint         string         `mapstructure:"endpoint,omitempty"`
+	LocalEndpointURI string         `mapstructure:"local_endpoint,omitempty"`
+	UploadPeriod     *time.Duration `mapstructure:"upload_period,omitempty"`
 }
 
 // zipkinExporter is a multiplexing exporter that spawns a new OpenCensus-Go Zipkin
@@ -77,22 +77,17 @@ func (zc *ZipkinConfig) EndpointURL() string {
 	return endpoint
 }
 
-// ZipkinExportersFromYAML parses the yaml bytes and returns an exporter.TraceExporter targeting
+// ZipkinExportersFromViper unmarshals the viper and returns an exporter.TraceExporter targeting
 // Zipkin according to the configuration settings.
-func ZipkinExportersFromYAML(config []byte) (tes []exporter.TraceExporter, mes []exporter.MetricsExporter, doneFns []func() error, err error) {
+func ZipkinExportersFromViper(v *viper.Viper) (tes []exporter.TraceExporter, mes []exporter.MetricsExporter, doneFns []func() error, err error) {
 	var cfg struct {
-		Exporters *struct {
-			Zipkin *ZipkinConfig `yaml:"zipkin"`
-		} `yaml:"exporters"`
+		Zipkin *ZipkinConfig `mapstructure:"zipkin"`
 	}
-	if err := yamlUnmarshal(config, &cfg); err != nil {
+	if err := v.Unmarshal(&cfg); err != nil {
 		return nil, nil, nil, err
 	}
-	if cfg.Exporters == nil {
-		return nil, nil, nil, nil
-	}
 
-	zc := cfg.Exporters.Zipkin
+	zc := cfg.Zipkin
 	if zc == nil {
 		return nil, nil, nil, nil
 	}

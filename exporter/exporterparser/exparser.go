@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package exporterparser provides support for parsing and creating the
-// respective exporters given a YAML configuration payload.
+// respective exporters given a viper configuration.
 // For now it currently only provides statically imported OpenCensus
 // exporters like:
 //  * Stackdriver Tracing and Monitoring
@@ -23,10 +23,8 @@ package exporterparser
 
 import (
 	"context"
-	"fmt"
 
 	"go.opencensus.io/trace"
-	yaml "gopkg.in/yaml.v2"
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/data"
@@ -52,11 +50,4 @@ func exportSpans(ctx context.Context, exporterName string, te trace.Exporter, td
 	nSpansCounter(ctx, td.Node, goodSpans)
 
 	return internal.CombineErrors(errs)
-}
-
-func yamlUnmarshal(yamlBlob []byte, dest interface{}) error {
-	if err := yaml.Unmarshal(yamlBlob, dest); err != nil {
-		return fmt.Errorf("Cannot YAML unmarshal data: %v", err)
-	}
-	return nil
 }

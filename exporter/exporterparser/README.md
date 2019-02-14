@@ -81,6 +81,11 @@ queued-exporters:
       collector-endpoint: "https://ingest.omnition.io"
       headers: { "x-omnition-api-key": "00000000-0000-0000-0000-000000000001" }
       timeout: 5s
+    # Non-sender exporters can now also be used by setting the exporters section in queued-exporters.
+    exporters:
+      opencensus:
+        endpoint: "127.0.0.1:55566"
+        compression: "gzip"
   my-org-jaeger: # A second processor with its own configuration options
     num-workers: 2
     queue-size: 100

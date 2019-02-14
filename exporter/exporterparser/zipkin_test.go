@@ -30,6 +30,7 @@ import (
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 
 	"github.com/census-instrumentation/opencensus-service/exporter"
+	"github.com/census-instrumentation/opencensus-service/internal/config/viperutils"
 	"github.com/census-instrumentation/opencensus-service/internal/testutils"
 	"github.com/census-instrumentation/opencensus-service/receiver/zipkin"
 )
@@ -131,7 +132,7 @@ func TestZipkinEndpointFromNode(t *testing.T) {
 //          "7::80:807f"
 //
 // The rest of the fields should match up exactly
-func TestZipkinExportersFromYAML_roundtripJSON(t *testing.T) {
+func TestZipkinExportersFromViper_roundtripJSON(t *testing.T) {
 	responseReady := make(chan bool)
 	buf := new(bytes.Buffer)
 	cst := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -142,12 +143,12 @@ func TestZipkinExportersFromYAML_roundtripJSON(t *testing.T) {
 	defer cst.Close()
 
 	config := `
-exporters:
-    zipkin:
-      upload_period: 1ms
-      endpoint: ` + cst.URL
-	tes, _, doneFns, err := ZipkinExportersFromYAML([]byte(config))
-	if err != nil {
+zipkin:
+  upload_period: 1ms
+  endpoint: ` + cst.URL
+	v, _ := viperutils.ViperFromYAMLBytes([]byte(config))
+	tes, _, doneFns, err := ZipkinExportersFromViper(v)
+	if len(tes) == 0 || err != nil {
 		t.Fatalf("Failed to parse out exporters: %v", err)
 	}
 	defer func() {

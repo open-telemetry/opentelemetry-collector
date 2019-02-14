@@ -17,38 +17,35 @@ package exporterparser
 import (
 	"context"
 
+	"github.com/spf13/viper"
+	"go.opencensus.io/exporter/jaeger"
+
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/exporter"
-	"go.opencensus.io/exporter/jaeger"
 )
 
 // Slight modified version of go/src/go.opencensus.io/exporter/jaeger/jaeger.go
 type jaegerConfig struct {
-	CollectorEndpoint string `yaml:"collector_endpoint,omitempty"`
-	Username          string `yaml:"username,omitempty"`
-	Password          string `yaml:"password,omitempty"`
-	ServiceName       string `yaml:"service_name,omitempty"`
+	CollectorEndpoint string `mapstructure:"collector_endpoint,omitempty"`
+	Username          string `mapstructure:"username,omitempty"`
+	Password          string `mapstructure:"password,omitempty"`
+	ServiceName       string `mapstructure:"service_name,omitempty"`
 }
 
 type jaegerExporter struct {
 	exporter *jaeger.Exporter
 }
 
-// JaegerExportersFromYAML parses the yaml bytes and returns exporter.TraceExporters targeting
+// JaegerExportersFromViper unmarshals the viper and returns exporter.TraceExporters targeting
 // Jaeger according to the configuration settings.
-func JaegerExportersFromYAML(config []byte) (tes []exporter.TraceExporter, mes []exporter.MetricsExporter, doneFns []func() error, err error) {
+func JaegerExportersFromViper(v *viper.Viper) (tes []exporter.TraceExporter, mes []exporter.MetricsExporter, doneFns []func() error, err error) {
 	var cfg struct {
-		Exporters *struct {
-			Jaeger *jaegerConfig `yaml:"jaeger"`
-		} `yaml:"exporters"`
+		Jaeger *jaegerConfig `mapstructure:"jaeger"`
 	}
-	if err := yamlUnmarshal(config, &cfg); err != nil {
+	if err := v.Unmarshal(&cfg); err != nil {
 		return nil, nil, nil, err
 	}
-	if cfg.Exporters == nil {
-		return nil, nil, nil, nil
-	}
-	jc := cfg.Exporters.Jaeger
+	jc := cfg.Jaeger
 	if jc == nil {
 		return nil, nil, nil, nil
 	}

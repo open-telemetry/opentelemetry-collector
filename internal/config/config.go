@@ -21,6 +21,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	yaml "gopkg.in/yaml.v2"
 
@@ -380,7 +381,7 @@ func eqLocalHost(host string) bool {
 	}
 }
 
-// ExportersFromYAMLConfig parses the config yaml payload and returns the respective exporters
+// ExportersFromViperConfig uses the viper configuration payload to returns the respective exporters
 // from:
 //  + datadog
 //  + stackdriver
@@ -389,25 +390,29 @@ func eqLocalHost(host string) bool {
 //  + kafka
 //  + opencensus
 //  + prometheus
-func ExportersFromYAMLConfig(logger *zap.Logger, config []byte) ([]exporter.TraceExporter, []exporter.MetricsExporter, []func() error, error) {
+func ExportersFromViperConfig(logger *zap.Logger, v *viper.Viper) ([]exporter.TraceExporter, []exporter.MetricsExporter, []func() error, error) {
 	parseFns := []struct {
 		name string
-		fn   func([]byte) ([]exporter.TraceExporter, []exporter.MetricsExporter, []func() error, error)
+		fn   func(*viper.Viper) ([]exporter.TraceExporter, []exporter.MetricsExporter, []func() error, error)
 	}{
-		{name: "datadog", fn: exporterparser.DatadogTraceExportersFromYAML},
-		{name: "stackdriver", fn: exporterparser.StackdriverTraceExportersFromYAML},
-		{name: "zipkin", fn: exporterparser.ZipkinExportersFromYAML},
-		{name: "jaeger", fn: exporterparser.JaegerExportersFromYAML},
-		{name: "kafka", fn: exporterparser.KafkaExportersFromYAML},
-		{name: "opencensus", fn: exporterparser.OpenCensusTraceExportersFromYAML},
-		{name: "prometheus", fn: exporterparser.PrometheusExportersFromYAML},
+		{name: "datadog", fn: exporterparser.DatadogTraceExportersFromViper},
+		{name: "stackdriver", fn: exporterparser.StackdriverTraceExportersFromViper},
+		{name: "zipkin", fn: exporterparser.ZipkinExportersFromViper},
+		{name: "jaeger", fn: exporterparser.JaegerExportersFromViper},
+		{name: "kafka", fn: exporterparser.KafkaExportersFromViper},
+		{name: "opencensus", fn: exporterparser.OpenCensusTraceExportersFromViper},
+		{name: "prometheus", fn: exporterparser.PrometheusExportersFromViper},
 	}
 
 	var traceExporters []exporter.TraceExporter
 	var metricsExporters []exporter.MetricsExporter
 	var doneFns []func() error
+	exportersViper := v.Sub("exporters")
+	if exportersViper == nil {
+		return nil, nil, nil, nil
+	}
 	for _, cfg := range parseFns {
-		tes, mes, tesDoneFns, err := cfg.fn(config)
+		tes, mes, tesDoneFns, err := cfg.fn(exportersViper)
 		if err != nil {
 			err = fmt.Errorf("Failed to create config for %q: %v", cfg.name, err)
 			return nil, nil, nil, err

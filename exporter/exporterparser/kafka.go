@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/spf13/viper"
 	"github.com/yancl/opencensus-go-exporter-kafka"
 
 	"github.com/census-instrumentation/opencensus-service/data"
@@ -25,8 +26,8 @@ import (
 )
 
 type kafkaConfig struct {
-	Brokers []string `yaml:"brokers,omitempty"`
-	Topic   string   `yaml:"topic,omitempty"`
+	Brokers []string `mapstructure:"brokers,omitempty"`
+	Topic   string   `mapstructure:"topic,omitempty"`
 }
 
 type kafkaExporter struct {
@@ -35,22 +36,17 @@ type kafkaExporter struct {
 
 var _ exporter.TraceExporter = (*kafkaExporter)(nil)
 
-// KafkaExportersFromYAML parses the yaml bytes and returns an exporter.TraceExporter targeting
+// KafkaExportersFromViper unmarshals the viper and returns an exporter.TraceExporter targeting
 // Kafka according to the configuration settings.
-func KafkaExportersFromYAML(config []byte) (tes []exporter.TraceExporter, mes []exporter.MetricsExporter, doneFns []func() error, err error) {
+func KafkaExportersFromViper(v *viper.Viper) (tes []exporter.TraceExporter, mes []exporter.MetricsExporter, doneFns []func() error, err error) {
 	var cfg struct {
-		Exporters *struct {
-			Kafka *kafkaConfig `yaml:"kafka"`
-		} `yaml:"exporters"`
+		Kafka *kafkaConfig `mapstructure:"kafka"`
 	}
 
-	if err := yamlUnmarshal(config, &cfg); err != nil {
+	if err := v.Unmarshal(&cfg); err != nil {
 		return nil, nil, nil, err
 	}
-	if cfg.Exporters == nil {
-		return nil, nil, nil, nil
-	}
-	kc := cfg.Exporters.Kafka
+	kc := cfg.Kafka
 	if kc == nil {
 		return nil, nil, nil, nil
 	}

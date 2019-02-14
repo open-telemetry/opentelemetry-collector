@@ -18,6 +18,7 @@ import (
 	"context"
 
 	datadog "github.com/DataDog/opencensus-go-exporter-datadog"
+	"github.com/spf13/viper"
 
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/exporter"
@@ -25,43 +26,38 @@ import (
 
 type datadogConfig struct {
 	// Namespace specifies the namespaces to which metric keys are appended.
-	Namespace string `yaml:"namespace,omitempty"`
+	Namespace string `mapstructure:"namespace,omitempty"`
 
 	// TraceAddr specifies the host[:port] address of the Datadog Trace Agent.
 	// It defaults to localhost:8126.
-	TraceAddr string `yaml:"trace_addr,omitempty"`
+	TraceAddr string `mapstructure:"trace_addr,omitempty"`
 
 	// MetricsAddr specifies the host[:port] address for DogStatsD. It defaults
 	// to localhost:8125.
-	MetricsAddr string `yaml:"metrics_addr,omitempty"`
+	MetricsAddr string `mapstructure:"metrics_addr,omitempty"`
 
 	// Tags specifies a set of global tags to attach to each metric.
-	Tags []string `yaml:"tags,omitempty"`
+	Tags []string `mapstructure:"tags,omitempty"`
 
-	EnableTracing bool `yaml:"enable_tracing,omitempty"`
-	EnableMetrics bool `yaml:"enable_metrics,omitempty"`
+	EnableTracing bool `mapstructure:"enable_tracing,omitempty"`
+	EnableMetrics bool `mapstructure:"enable_metrics,omitempty"`
 }
 
 type datadogExporter struct {
 	exporter *datadog.Exporter
 }
 
-// DatadogTraceExportersFromYAML parses the yaml bytes and returns an exporter.TraceExporter targeting
+// DatadogTraceExportersFromViper unmarshals the viper and returns an exporter.TraceExporter targeting
 // Datadog according to the configuration settings.
-func DatadogTraceExportersFromYAML(config []byte) (tes []exporter.TraceExporter, mes []exporter.MetricsExporter, doneFns []func() error, err error) {
+func DatadogTraceExportersFromViper(v *viper.Viper) (tes []exporter.TraceExporter, mes []exporter.MetricsExporter, doneFns []func() error, err error) {
 	var cfg struct {
-		Exporters *struct {
-			Datadog *datadogConfig `yaml:"datadog"`
-		} `yaml:"exporters"`
+		Datadog *datadogConfig `mapstructure:"datadog,omitempty"`
 	}
-	if err := yamlUnmarshal(config, &cfg); err != nil {
+	if err := v.Unmarshal(&cfg); err != nil {
 		return nil, nil, nil, err
 	}
-	if cfg.Exporters == nil {
-		return nil, nil, nil, nil
-	}
 
-	dc := cfg.Exporters.Datadog
+	dc := cfg.Datadog
 	if dc == nil {
 		return nil, nil, nil, nil
 	}

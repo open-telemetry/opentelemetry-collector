@@ -108,6 +108,7 @@ type QueuedSpanProcessorCfg struct {
 	SenderConfig interface{}
 	// BatchingConfig sets config parameters related to batching
 	BatchingConfig BatchingConfig `mapstructure:"batching"`
+	RawConfig      *viper.Viper
 }
 
 // AttributesCfg holds configuration for attributes that can be added to all spans
@@ -155,6 +156,7 @@ func (qOpts *QueuedSpanProcessorCfg) InitFromViper(v *viper.Viper) *QueuedSpanPr
 		}
 		qOpts.SenderConfig = thsOpts
 	}
+	qOpts.RawConfig = v
 	return qOpts
 }
 
