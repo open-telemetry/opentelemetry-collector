@@ -2,12 +2,67 @@ A variety of exporters are available to the OpenCensus Service (both Agent and C
 
 ## Collector
 
+### Intelligent Sampling
+
+The Collector features intelligent (tail-based) sampling. In addition to different configuration
+options it features a variety of different policies.
+```yaml
+sampling:
+  mode: tail
+  # amount of time from seeing the first span in a trace until making the sampling decision
+  decision-wait: 10s
+  # maximum number of traces kept in the memory
+  num-traces: 10000
+  policies:
+    # user-defined policy name
+    my-rate-limiting:
+      # exporters the policy applies to
+      exporters:
+        - jaeger
+        - omnition
+      policy: rate-limiting
+      configuration:
+        spans-per-second: 1000
+    my-string-tag-filter:
+      exporters:
+        - jaeger
+        - omnition
+      policy: string-tag-filter
+      configuration:
+        tag: tag1
+        values:
+          - value1
+          - value2
+    my-numeric-tag-filter:
+      exporters:
+        - jaeger
+        - omnition
+      policy: numeric-tag-filter
+      configuration:
+        tag: tag1
+        min-value: 0
+        max-value: 100
+    my-always-sample:
+      exporters:
+        - jaeger
+        - omnition
+      policy: always-sample
+```
+
+### Queued Exporters
+
 In addition to the normal `exporters`, the OpenCensus Collector supports a special configuration.
 `queued-exporters` offer bounded buffer retry logic for multiple destinations.
 
 ```yaml
 queued-exporters:
   omnition: # A friendly name for the processor
+    batching:
+      enable: false
+      # sets the time, in seconds, after which a batch will be sent regardless of size
+      timeout: 1
+      # number of spans which after hit, will trigger it to be sent
+      send-batch-size: 8192
     # num-workers is the number of queue workers that will be dequeuing batches and sending them out (default is 10)
     num-workers: 2
     # queue-size is the maximum number of batches allowed in the queue at a given time (default is 5000)

@@ -19,6 +19,8 @@
     - [Building binaries](#agent-building-binaries)
     - [Usage](#agent-usage)
 - [OpenCensus Collector](#opencensus-collector)
+    - [Global Tags](#global-tags)
+    - [Intelligent Sampling](#tail-sampling)
     - [Usage](#collector-usage)
 
 ## Introduction
@@ -167,23 +169,6 @@ exporters:
     endpoint: "http://127.0.0.1:9411/api/v2/spans"
 ```
 
-### <a name="config-global"></a> Global 
-
-The collector also takes some global configurations that modify its behavior for all receivers / exporters. One of the configurations
-available is to add Attributes or Tags to all spans passing through this collector. These additional tags can be configured to either overwrite
-attributes if they already exists on the span, or respect the original values. An example of this is provided below.
-```yaml
-global:
-  attributes:
-    overwrite: true
-    values:
-      # values are key value pairs where the value can be an int, float, bool, or string
-      some_string: "hello world"
-      some_int: 1234
-      some_float: 3.14159
-      some_bool: false
-```
-
 ### <a name="config-diagnostics"></a>Diagnostics
 
 zPages is provided for monitoring. Today, the OpenCensus Agent is configured with zPages running by default on port ``55679``.
@@ -307,6 +292,56 @@ The collector also serves as a control plane for agents/clients by supplying
 them updated configuration (e.g. trace sampling policies), and reporting
 agent/client health information/inventory metadata to downstream exporters.
 
+### <a name="global-tags"></a> Global Tags
+
+The collector also takes some global configurations that modify its behavior for all receivers / exporters. One of the configurations
+available is to add Attributes or Tags to all spans passing through this collector. These additional tags can be configured to either overwrite
+attributes if they already exists on the span, or respect the original values. An example of this is provided below.
+```yaml
+global:
+  attributes:
+    overwrite: true
+    values:
+      # values are key value pairs where the value can be an int, float, bool, or string
+      some_string: "hello world"
+      some_int: 1234
+      some_float: 3.14159
+      some_bool: false
+```
+
+### <a name="tail-sampling"></a>Intelligent Sampling
+
+```yaml
+sampling:
+  mode: tail
+  # amount of time from seeing the first span in a trace until making the sampling decision
+  decision-wait: 10s
+  # maximum number of traces kept in the memory
+  num-traces: 10000
+  policies:
+    # user-defined policy name
+    my-string-tag-filter:
+      # exporters the policy applies to
+      exporters:
+        - jaeger
+        - omnition
+      policy: string-tag-filter
+      configuration:
+        tag: tag1
+        values:
+          - value1
+          - value2
+    my-numeric-tag-filter:
+      exporters:
+        - jaeger
+        - omnition
+      policy: numeric-tag-filter
+      configuration:
+        tag: tag1
+        min-value: 0
+        max-value: 100
+```
+
 ### <a name="collector-usage"></a>Usage
 
 > It is recommended that you use the latest [release](https://github.com/census-instrumentation/opencensus-service/releases).
@@ -364,7 +399,7 @@ receivers:
 queued-exporters:
   jaeger-sender-test: # A friendly name for the exporter
     # num-workers is the number of queue workers that will be dequeuing batches and sending them out (default is 10)
-    num-workers: 2 
+    num-workers: 2
 
     # queue-size is the maximum number of batches allowed in the queue at a given time (default is 5000)
     queue-size: 100
