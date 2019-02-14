@@ -13,5 +13,25 @@
                 "value": "myLocalComponent"
             }
         ]
+    },
+    {
+        "traceId": "0ed2e63cbe71f5a8",
+        "name": "sendOrder",
+        "id": "fe351a053fbcac2f",
+        "parentId": "0ed2e63cbe71f5a8",
+        "timestamp": 1544805927453925,
+        "duration": 3740,
+        "annotations": [],
+        "binaryAnnotations": [
+            {
+                "key": "lc",
+                "value": "myLocalComponent",
+                "endpoint": {
+                    "ipv4": "172.31.0.7",
+                    "port": 0,
+                    "serviceName": "myServiceName"
+                }
+            }
+        ]
     }
 ]

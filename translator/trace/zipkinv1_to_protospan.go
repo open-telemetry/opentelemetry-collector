@@ -175,12 +175,12 @@ func zipkinV1ToOCSpan(zSpan *zipkinV1Span) (*tracepb.Span, *annotationParseResul
 	return ocSpan, parsedAnnotations, nil
 }
 
-func zipkinV1BinAnnotationsToOCAttributes(binAnnotations []*binaryAnnotation) (attributes *tracepb.Span_Attributes, localComponent string) {
+func zipkinV1BinAnnotationsToOCAttributes(binAnnotations []*binaryAnnotation) (attributes *tracepb.Span_Attributes, fallbackServiceName string) {
 	if len(binAnnotations) == 0 {
 		return nil, ""
 	}
 
-	var fallbackServiceName string
+	var localComponent string
 	attributeMap := make(map[string]*tracepb.AttributeValue)
 	for _, binAnnotation := range binAnnotations {
 		if binAnnotation.Endpoint != nil && binAnnotation.Endpoint.ServiceName != "" {
@@ -209,15 +209,15 @@ func zipkinV1BinAnnotationsToOCAttributes(binAnnotations []*binaryAnnotation) (a
 		return nil, ""
 	}
 
-	if localComponent == "" && fallbackServiceName != "" {
-		localComponent = fallbackServiceName
+	if fallbackServiceName == "" {
+		fallbackServiceName = localComponent
 	}
 
 	attributes = &tracepb.Span_Attributes{
 		AttributeMap: attributeMap,
 	}
 
-	return attributes, localComponent
+	return attributes, fallbackServiceName
 }
 
 // annotationParseResult stores the results of examining the original annotations,

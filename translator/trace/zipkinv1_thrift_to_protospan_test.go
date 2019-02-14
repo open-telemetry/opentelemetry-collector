@@ -39,8 +39,20 @@ func TestZipkinThriftFallbackToLocalComponent(t *testing.T) {
 		t.Fatalf("failed to translate zipkinv1 thrift to OC proto: %v", err)
 	}
 
+	if len(reqs) != 2 {
+		t.Fatalf("got %d trace service request(s), want 2", len(reqs))
+	}
+
+	// First span didn't have a host/endpoint to give service name, use the local component.
 	got := reqs[0].Node.ServiceInfo.Name
-	const want = "myLocalComponent"
+	want := "myLocalComponent"
+	if got != want {
+		t.Fatalf("got %q for service name, want %q", got, want)
+	}
+
+	// Second span have a host/endpoint to give service name, do not use local component.
+	got = reqs[1].Node.ServiceInfo.Name
+	want = "myServiceName"
 	if got != want {
 		t.Fatalf("got %q for service name, want %q", got, want)
 	}

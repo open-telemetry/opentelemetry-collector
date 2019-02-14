@@ -137,12 +137,12 @@ func toTranslatorEndpoint(e *zipkincore.Endpoint) *endpoint {
 
 var trueByteSlice = []byte{1}
 
-func zipkinV1ThriftBinAnnotationsToOCAttributes(ztBinAnnotations []*zipkincore.BinaryAnnotation) (attributes *tracepb.Span_Attributes, localComponent string) {
+func zipkinV1ThriftBinAnnotationsToOCAttributes(ztBinAnnotations []*zipkincore.BinaryAnnotation) (attributes *tracepb.Span_Attributes, fallbackServiceName string) {
 	if len(ztBinAnnotations) == 0 {
 		return nil, ""
 	}
 
-	var fallbackServiceName string
+	var localComponent string
 	attributeMap := make(map[string]*tracepb.AttributeValue)
 	for _, binaryAnnotation := range ztBinAnnotations {
 		pbAttrib := &tracepb.AttributeValue{}
@@ -200,14 +200,14 @@ func zipkinV1ThriftBinAnnotationsToOCAttributes(ztBinAnnotations []*zipkincore.B
 		attributeMap[key] = pbAttrib
 	}
 
-	if localComponent == "" && fallbackServiceName != "" {
-		localComponent = fallbackServiceName
+	if fallbackServiceName == "" {
+		fallbackServiceName = localComponent
 	}
 
 	attributes = &tracepb.Span_Attributes{
 		AttributeMap: attributeMap,
 	}
-	return attributes, localComponent
+	return attributes, fallbackServiceName
 }
 
 var errNotEnoughBytes = errors.New("not enough bytes representing the number")
