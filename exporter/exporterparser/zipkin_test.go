@@ -17,6 +17,8 @@ package exporterparser
 import (
 	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
@@ -28,6 +30,7 @@ import (
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
+	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
 
 	"github.com/census-instrumentation/opencensus-service/exporter"
 	"github.com/census-instrumentation/opencensus-service/internal/config/viperutils"
@@ -133,12 +136,10 @@ func TestZipkinEndpointFromNode(t *testing.T) {
 //
 // The rest of the fields should match up exactly
 func TestZipkinExportersFromViper_roundtripJSON(t *testing.T) {
-	responseReady := make(chan bool)
 	buf := new(bytes.Buffer)
 	cst := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		io.Copy(buf, r.Body)
 		r.Body.Close()
-		responseReady <- true
 	}))
 	defer cst.Close()
 
@@ -161,6 +162,11 @@ zipkin:
 		t.Errorf("Number of trace exporters: Got %d Want %d", g, w)
 	}
 
+	// The test requires the spans from zipkinSpansJSONJavaLibrary to be sent in a single batch, use
+	// a mock to ensure that this happens as intended.
+	mzr := newMockZipkinReporter(cst.URL)
+	tes[0].(*zipkinExporter).reporter = mzr
+
 	// Run the Zipkin receiver to "receive spans upload from a client application"
 	zi, err := zipkinreceiver.New(":0")
 	if err != nil {
@@ -177,8 +183,12 @@ zipkin:
 	req, _ := http.NewRequest("POST", "https://tld.org/", strings.NewReader(zipkinSpansJSONJavaLibrary))
 	responseWriter := httptest.NewRecorder()
 	zi.ServeHTTP(responseWriter, req)
-	// Wait for the server to write the response.
-	<-responseReady
+
+	// Use the mock zipkin reporter to ensure all expected spans in a single batch. Since Flush waits for
+	// server response there is no need for further synchronization.
+	if err := mzr.Flush(); err != nil {
+		t.Fatalf("Failed to flush zipkin reporter: %v", err)
+	}
 
 	// We expect back the exact JSON that was received
 	want := testutils.GenerateNormalizedJSON(`
@@ -222,6 +232,59 @@ zipkin:
 	if got != want {
 		t.Errorf("RoundTrip result do not match:\nGot\n %s\n\nWant\n: %s\n", got, want)
 	}
+}
+
+type mockZipkinReporter struct {
+	url    string
+	client *http.Client
+	batch  []*zipkinmodel.SpanModel
+}
+
+var _ (zipkinreporter.Reporter) = (*mockZipkinReporter)(nil)
+
+func (r *mockZipkinReporter) Send(span zipkinmodel.SpanModel) {
+	r.batch = append(r.batch, &span)
+}
+func (r *mockZipkinReporter) Close() error {
+	return nil
+}
+
+func newMockZipkinReporter(url string) *mockZipkinReporter {
+	return &mockZipkinReporter{
+		url:    url,
+		client: &http.Client{},
+	}
+}
+
+func (r *mockZipkinReporter) Flush() error {
+	sendBatch := r.batch
+	r.batch = nil
+
+	if len(sendBatch) == 0 {
+		return nil
+	}
+
+	body, err := json.Marshal(sendBatch)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest("POST", r.url, bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := r.client.Do(req)
+	if err != nil {
+		return err
+	}
+	_ = resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+		return fmt.Errorf("http request failed with status code %d", resp.StatusCode)
+	}
+
+	return nil
 }
 
 const zipkinSpansJSONJavaLibrary = `
