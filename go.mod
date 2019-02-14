@@ -2,7 +2,7 @@ module github.com/census-instrumentation/opencensus-service
 
 require (
 	cloud.google.com/go v0.32.0 // indirect
-	contrib.go.opencensus.io/exporter/ocagent v0.4.3
+	contrib.go.opencensus.io/exporter/ocagent v0.4.4
 	contrib.go.opencensus.io/exporter/stackdriver v0.9.1
 	git.apache.org/thrift.git v0.0.0-20181101003639-92be4f312b88 // indirect
 	github.com/Azure/azure-sdk-for-go v6.0.0-beta+incompatible // indirect
