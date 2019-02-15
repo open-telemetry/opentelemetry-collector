@@ -391,6 +391,7 @@ func eqLocalHost(host string) bool {
 //  + opencensus
 //  + prometheus
 //  + aws-xray
+//  + honeycomb
 func ExportersFromViperConfig(logger *zap.Logger, v *viper.Viper) ([]exporter.TraceExporter, []exporter.MetricsExporter, []func() error, error) {
 	parseFns := []struct {
 		name string
@@ -404,6 +405,7 @@ func ExportersFromViperConfig(logger *zap.Logger, v *viper.Viper) ([]exporter.Tr
 		{name: "opencensus", fn: exporterparser.OpenCensusTraceExportersFromViper},
 		{name: "prometheus", fn: exporterparser.PrometheusExportersFromViper},
 		{name: "aws-xray", fn: exporterparser.AWSXRayTraceExportersFromViper},
+		{name: "honeycomb", fn: exporterparser.HoneycombTraceExportersFromViper},
 	}
 
 	var traceExporters []exporter.TraceExporter
