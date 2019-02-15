@@ -239,7 +239,7 @@ func TestConcurrentBatchAdds(t *testing.T) {
 		t.Errorf("failed to wait for sender %s", err)
 	}
 	if len(sender.spansReceivedByName) != requestCount*spansPerRequest {
-		t.Errorf("Did not receive the correct number of spans. %d != %d", sender.spansReceivedByName, requestCount*spansPerRequest)
+		t.Errorf("Did not receive the correct number of spans. %d != %d", len(sender.spansReceivedByName), requestCount*spansPerRequest)
 	}
 
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
