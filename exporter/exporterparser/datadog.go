@@ -90,5 +90,5 @@ func (dde *datadogExporter) ExportSpans(ctx context.Context, td data.TraceData) 
 	// TODO: Examine the Datadog exporter to see
 	// if trace.ExportSpan was constraining and if perhaps the
 	// upload can use the context and information from the Node.
-	return exportSpans(ctx, "datadog", dde.exporter, td)
+	return ocProtoSpansToOCSpanDataInstrumented(ctx, "datadog", dde.exporter, td)
 }

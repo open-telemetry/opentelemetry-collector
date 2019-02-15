@@ -172,7 +172,7 @@ func (axe *awsXRayExporter) ExportSpans(ctx context.Context, td data.TraceData) 
 	if err != nil {
 		return err
 	}
-	return exportSpans(ctx, "aws-xray", exp, td)
+	return ocProtoSpansToOCSpanDataInstrumented(ctx, "aws-xray", exp, td)
 }
 
 func (axe *awsXRayExporter) getOrMakeExporterByServiceName(serviceName string) (*xray.Exporter, error) {

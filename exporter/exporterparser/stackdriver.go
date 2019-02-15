@@ -105,7 +105,7 @@ func (sde *stackdriverExporter) ExportSpans(ctx context.Context, td data.TraceDa
 	// TODO: Examine "contrib.go.opencensus.io/exporter/stackdriver" to see
 	// if trace.ExportSpan was constraining and if perhaps the Stackdriver
 	// upload can use the context and information from the Node.
-	return exportSpans(ctx, "stackdriver", sde.exporter, td)
+	return ocProtoSpansToOCSpanDataInstrumented(ctx, "stackdriver", sde.exporter, td)
 }
 
 var _ exporter.MetricsExporter = (*stackdriverExporter)(nil)

@@ -75,5 +75,5 @@ func (je *jaegerExporter) ExportSpans(ctx context.Context, td data.TraceData) er
 	// TODO: Examine "contrib.go.opencensus.io/exporter/jaeger" to see
 	// if trace.ExportSpan was constraining and if perhaps the Jaeger
 	// upload can use the context and information from the Node.
-	return exportSpans(ctx, "jaeger", je.exporter, td)
+	return ocProtoSpansToOCSpanDataInstrumented(ctx, "jaeger", je.exporter, td)
 }

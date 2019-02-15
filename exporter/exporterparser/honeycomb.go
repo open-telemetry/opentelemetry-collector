@@ -63,5 +63,5 @@ type honeycombExporter struct {
 }
 
 func (hce *honeycombExporter) ExportSpans(ctx context.Context, td data.TraceData) error {
-	return exportSpans(ctx, "honeycomb", hce.exporter, td)
+	return ocProtoSpansToOCSpanDataInstrumented(ctx, "honeycomb", hce.exporter, td)
 }

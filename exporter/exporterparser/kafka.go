@@ -69,5 +69,5 @@ func KafkaExportersFromViper(v *viper.Viper) (tes []exporter.TraceExporter, mes 
 }
 
 func (kde *kafkaExporter) ExportSpans(ctx context.Context, td data.TraceData) error {
-	return exportSpans(ctx, "kafka", kde.exporter, td)
+	return ocProtoSpansToOCSpanDataInstrumented(ctx, "kafka", kde.exporter, td)
 }

@@ -192,7 +192,18 @@ func (ze *zipkinExporter) stop() error {
 	return ze.reporter.Close()
 }
 
-func (ze *zipkinExporter) ExportSpans(ctx context.Context, td data.TraceData) error {
+func (ze *zipkinExporter) ExportSpans(ctx context.Context, td data.TraceData) (zerr error) {
+	ctx, span := trace.StartSpan(ctx,
+		"opencensus.service.exporter.zipkin.ExportTrace",
+		trace.WithSampler(trace.NeverSample()))
+
+	defer func() {
+		if zerr != nil {
+			span.SetStatus(trace.Status{Code: trace.StatusCodeInternal, Message: zerr.Error()})
+		}
+		span.End()
+	}()
+
 	goodSpans := make([]*tracepb.Span, 0, len(td.Spans))
 	for _, span := range td.Spans {
 		sd, err := tracetranslator.ProtoSpanToOCSpanData(span)

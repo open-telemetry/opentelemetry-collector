@@ -32,7 +32,32 @@ import (
 	tracetranslator "github.com/census-instrumentation/opencensus-service/translator/trace"
 )
 
-func exportSpans(ctx context.Context, exporterName string, te trace.Exporter, td data.TraceData) error {
+// ocProtoSpansToOCSpanDataInstrumented converts
+// OpenCensus Proto TraceData to OpenCensus-Go SpanData.
+// The "Instrumented" suffix serves to document that this
+// function is traced but also has stats for self-observability.
+//
+// This is a bootstrapping mechanism for us to re-use as many of
+// the OpenCensus-Go trace.SpanData exporters which were written
+// by various vendors and contributors. Eventually the goal is to
+// get those exporters converted to directly receive
+// OpenCensus Proto TraceData.
+func ocProtoSpansToOCSpanDataInstrumented(ctx context.Context, exporterName string, te trace.Exporter, td data.TraceData) (aerr error) {
+	ctx, span := trace.StartSpan(ctx,
+		"opencensus.service.exporter."+exporterName+".ExportTrace",
+		trace.WithSampler(trace.NeverSample()))
+
+	span.Annotate([]trace.Attribute{
+		trace.Int64Attribute("n_spans", int64(len(td.Spans))),
+	}, "")
+
+	defer func() {
+		if aerr != nil {
+			span.SetStatus(trace.Status{Code: trace.StatusCodeInternal, Message: aerr.Error()})
+		}
+		span.End()
+	}()
+
 	var errs []error
 	var goodSpans []*tracepb.Span
 	for _, span := range td.Spans {
@@ -44,10 +69,6 @@ func exportSpans(ctx context.Context, exporterName string, te trace.Exporter, td
 			errs = append(errs, err)
 		}
 	}
-
-	// And finally record metrics on the number of exported spans.
-	nSpansCounter := internal.NewExportedSpansRecorder(exporterName)
-	nSpansCounter(ctx, td.Node, goodSpans)
 
 	return internal.CombineErrors(errs)
 }
