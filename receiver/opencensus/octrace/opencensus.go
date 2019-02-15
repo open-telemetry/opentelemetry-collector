@@ -18,9 +18,6 @@ import (
 	"context"
 	"errors"
 	"io"
-	"time"
-
-	"google.golang.org/api/support/bundler"
 
 	"go.opencensus.io/trace"
 
@@ -35,9 +32,7 @@ import (
 
 // Receiver is the type used to handle spans from OpenCensus exporters.
 type Receiver struct {
-	spanSink         receiver.TraceReceiverSink
-	spanBufferPeriod time.Duration
-	spanBufferCount  int
+	spanSink receiver.TraceReceiverSink
 }
 
 // New creates a new opencensus.Receiver reference.
@@ -69,25 +64,8 @@ const receiverName = "opencensus_trace"
 // Export is the gRPC method that receives streamed traces from
 // OpenCensus-traceproto compatible libraries/applications.
 func (oci *Receiver) Export(tes agenttracepb.TraceService_ExportServer) error {
-	// The bundler will receive batches of spans i.e. []*tracepb.Span
 	// We need to ensure that it propagates the receiver name as a tag
 	ctxWithReceiverName := internal.ContextWithReceiverName(tes.Context(), receiverName)
-	traceBundler := bundler.NewBundler((*data.TraceData)(nil), func(payload interface{}) {
-		oci.batchSpanExporting(ctxWithReceiverName, payload)
-	})
-
-	spanBufferPeriod := oci.spanBufferPeriod
-	if spanBufferPeriod <= 0 {
-		spanBufferPeriod = 2 * time.Second // Arbitrary value
-	}
-	spanBufferCount := oci.spanBufferCount
-	if spanBufferCount <= 0 {
-		// TODO: (@odeke-em) provide an option to disable any buffering
-		spanBufferCount = 50 // Arbitrary value
-	}
-
-	traceBundler.DelayThreshold = spanBufferPeriod
-	traceBundler.BundleCountThreshold = spanBufferCount
 
 	// The first message MUST have a non-nil Node.
 	recv, err := tes.Recv()
@@ -98,19 +76,6 @@ func (oci *Receiver) Export(tes agenttracepb.TraceService_ExportServer) error {
 	// Check the condition that the first message has a non-nil Node.
 	if recv.Node == nil {
 		return errTraceExportProtocolViolation
-	}
-
-	spansMetricsFn := internal.NewReceivedSpansRecorderStreaming(tes.Context(), receiverName)
-
-	processReceivedSpans := func(ni *commonpb.Node, resource *resourcepb.Resource, spans []*tracepb.Span) {
-		// Firstly, we'll add them to the bundler.
-		if len(spans) > 0 {
-			bundlerPayload := &data.TraceData{Node: ni, Resource: resource, Spans: spans}
-			traceBundler.Add(bundlerPayload, len(bundlerPayload.Spans))
-		}
-
-		// We MUST unconditionally record metrics from this reception.
-		spansMetricsFn(ni, spans)
 	}
 
 	var lastNonNilNode *commonpb.Node
@@ -128,7 +93,7 @@ func (oci *Receiver) Export(tes agenttracepb.TraceService_ExportServer) error {
 			resource = recv.Resource
 		}
 
-		processReceivedSpans(lastNonNilNode, resource, recv.Spans)
+		go oci.export(ctxWithReceiverName, tes, lastNonNilNode, resource, recv.Spans)
 
 		recv, err = tes.Recv()
 		if err != nil {
@@ -142,9 +107,19 @@ func (oci *Receiver) Export(tes agenttracepb.TraceService_ExportServer) error {
 	}
 }
 
-func (oci *Receiver) batchSpanExporting(longLivedRPCCtx context.Context, payload interface{}) {
-	tracedata := payload.([]*data.TraceData)
-	if len(tracedata) == 0 {
+func (oci *Receiver) export(
+	longLivedCtx context.Context,
+	tes agenttracepb.TraceService_ExportServer,
+	node *commonpb.Node,
+	resource *resourcepb.Resource,
+	spans []*tracepb.Span,
+) {
+	tracedata := data.TraceData{Node: node, Resource: resource, Spans: spans}
+	// We MUST unconditionally record metrics from this reception.
+	spansMetricsFn := internal.NewReceivedSpansRecorderStreaming(tes.Context(), receiverName)
+	spansMetricsFn(tracedata.Node, tracedata.Spans)
+
+	if len(tracedata.Spans) == 0 {
 		return
 	}
 
@@ -157,15 +132,11 @@ func (oci *Receiver) batchSpanExporting(longLivedRPCCtx context.Context, payload
 	// spansAndNode list unfurling then send spans grouped per node
 
 	// If the starting RPC has a parent span, then add it as a parent link.
-	internal.SetParentLink(longLivedRPCCtx, span)
+	internal.SetParentLink(longLivedCtx, span)
 
-	nSpans := int64(0)
-	for _, td := range tracedata {
-		oci.spanSink.ReceiveTraceData(ctx, *td)
-		nSpans += int64(len(td.Spans))
-	}
+	oci.spanSink.ReceiveTraceData(ctx, tracedata)
 
 	span.Annotate([]trace.Attribute{
-		trace.Int64Attribute("num_spans", nSpans),
+		trace.Int64Attribute("num_spans", int64(len(tracedata.Spans))),
 	}, "")
 }

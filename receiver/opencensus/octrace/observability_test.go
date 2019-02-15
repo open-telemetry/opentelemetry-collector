@@ -33,7 +33,6 @@ import (
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/internal"
-	"github.com/census-instrumentation/opencensus-service/receiver/opencensus/octrace"
 )
 
 // Ensure that if we add a metrics exporter that our target metrics
@@ -48,7 +47,7 @@ func TestEnsureRecordedMetrics(t *testing.T) {
 
 	sappender := newSpanAppender()
 
-	_, port, doneFn := ocReceiverOnGRPCServer(t, sappender, octrace.WithSpanBufferPeriod(2*time.Millisecond))
+	_, port, doneFn := ocReceiverOnGRPCServer(t, sappender)
 	defer doneFn()
 
 	// Now the opencensus-agent exporter.
@@ -119,7 +118,7 @@ func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
 	)
 	sappender := newSpanAppender()
 
-	_, port, doneFn := ocReceiverOnGRPCServer(t, sappender, octrace.WithSpanBufferPeriod(2*time.Millisecond))
+	_, port, doneFn := ocReceiverOnGRPCServer(t, sappender)
 	defer doneFn()
 
 	// Now the opencensus-agent exporter.
@@ -191,7 +190,7 @@ func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
 
 	spanSink := newSpanAppender()
 	spansBufferPeriod := 10 * time.Millisecond
-	_, port, doneFn := ocReceiverOnGRPCServer(t, spanSink, octrace.WithSpanBufferPeriod(spansBufferPeriod))
+	_, port, doneFn := ocReceiverOnGRPCServer(t, spanSink)
 	defer doneFn()
 
 	traceSvcClient, traceSvcDoneFn, err := makeTraceServiceClient(port)
@@ -201,7 +200,7 @@ func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
 	defer traceSvcDoneFn()
 
 	n := 5
-	for i := 0; i <= n; i++ {
+	for i := 0; i < n; i++ {
 		sl := []*tracepb.Span{{TraceId: []byte("abcdefghijklmnop"), SpanId: []byte{byte(i + 1), 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08}}}
 		_ = traceSvcClient.Send(&agenttracepb.ExportTraceServiceRequest{Spans: sl, Node: &commonpb.Node{}})
 	}
@@ -225,7 +224,7 @@ func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
 	}
 
 	gotSpanData := ocSpansSaver.spanData[:]
-	if g, w := len(gotSpanData), 2; g != w {
+	if g, w := len(gotSpanData), n+1; g != w {
 		blob, _ := json.MarshalIndent(gotSpanData, "  ", " ")
 		t.Fatalf("Spandata count: Got %d Want %d\n\nData: %s", g, w, blob)
 	}
@@ -235,7 +234,8 @@ func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
 		t.Fatalf("Links count: Got %d Want %d\nGotSpanData: %#v", g, w, receiverSpanData)
 	}
 
-	rpcSpanData := gotSpanData[1]
+	// The rpc span is always last in the list
+	rpcSpanData := gotSpanData[len(gotSpanData)-1]
 
 	// Ensure that the link matches up exactly!
 	wantLink := trace.Link{

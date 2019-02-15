@@ -28,7 +28,6 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	"github.com/census-instrumentation/opencensus-service/receiver/opencensus"
-	"github.com/census-instrumentation/opencensus-service/receiver/opencensus/octrace"
 	"github.com/census-instrumentation/opencensus-service/receiver/testhelper"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
@@ -41,7 +40,7 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 	addr := ":35993"
 
 	// Set the buffer count to 1 to make it flush the test span immediately.
-	ocr, err := opencensus.New(addr, opencensus.WithTraceReceiverOptions(octrace.WithSpanBufferCount(1)))
+	ocr, err := opencensus.New(addr)
 	if err != nil {
 		t.Fatalf("Failed to create trace receiver: %v", err)
 	}
@@ -184,7 +183,7 @@ func TestAcceptAllGRPCProtoAffiliatedContentTypes(t *testing.T) {
 	t.Skip("Currently a flaky test as we need a way to flush all written traces")
 
 	addr := ":35991"
-	ocr, err := opencensus.New(addr, opencensus.WithTraceReceiverOptions(octrace.WithSpanBufferCount(1)))
+	ocr, err := opencensus.New(addr)
 	if err != nil {
 		t.Fatalf("Failed to create trace receiver: %v", err)
 	}

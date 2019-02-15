@@ -17,6 +17,7 @@ package exporterparser
 import (
 	"context"
 	"fmt"
+	"sync/atomic"
 
 	"contrib.go.opencensus.io/exporter/ocagent"
 	"github.com/spf13/viper"
@@ -34,11 +35,17 @@ type opencensusConfig struct {
 	Compression string            `mapstructure:"compression,omitempty"`
 	Headers     map[string]string `mapstructure:"headers,omitempty"`
 	// TODO: add insecure, service name options.
+	NumWorkers int `mapstructure:"num-workers,omitempty"`
 }
 
 type ocagentExporter struct {
-	exporter *ocagent.Exporter
+	counter   uint32
+	exporters []*ocagent.Exporter
 }
+
+const (
+	defaultNumWorkers int = 2
+)
 
 var _ exporter.TraceExporter = (*ocagentExporter)(nil)
 
@@ -57,7 +64,7 @@ func OpenCensusTraceExportersFromViper(v *viper.Viper) (tes []exporter.TraceExpo
 	}
 
 	if ocac.Endpoint == "" {
-		return nil, nil, nil, fmt.Errorf("OpenCensus config requires an Endpoint")
+		return nil, nil, nil, fmt.Errorf("openCensus config requires an Endpoint")
 	}
 
 	opts := []ocagent.ExporterOption{ocagent.WithAddress(ocac.Endpoint), ocagent.WithInsecure()}
@@ -65,35 +72,47 @@ func OpenCensusTraceExportersFromViper(v *viper.Viper) (tes []exporter.TraceExpo
 		if compressionKey := grpc.GetGRPCCompressionKey(ocac.Compression); compressionKey != compression.Unsupported {
 			opts = append(opts, ocagent.UseCompressor(compressionKey))
 		} else {
-			return nil, nil, nil, fmt.Errorf("Unsupported compression type: %s", ocac.Compression)
+			return nil, nil, nil, fmt.Errorf("unsupported compression type: %s", ocac.Compression)
 		}
 	}
 	if len(ocac.Headers) > 0 {
 		opts = append(opts, ocagent.WithHeaders(ocac.Headers))
 	}
 
-	sde, serr := ocagent.NewExporter(opts...)
-	if serr != nil {
-		return nil, nil, nil, fmt.Errorf("Cannot configure OpenCensus Trace exporter: %v", serr)
+	numWorkers := defaultNumWorkers
+	if ocac.NumWorkers > 0 {
+		numWorkers = ocac.NumWorkers
 	}
 
-	oexp := &ocagentExporter{exporter: sde}
+	exporters := make([]*ocagent.Exporter, 0, numWorkers)
+	for exporterIndex := 0; exporterIndex < numWorkers; exporterIndex++ {
+		exporter, serr := ocagent.NewExporter(opts...)
+		if serr != nil {
+			return nil, nil, nil, fmt.Errorf("cannot configure OpenCensus Trace exporter: %v", serr)
+		}
+		exporters = append(exporters, exporter)
+		doneFns = append(doneFns, func() error {
+			exporter.Flush()
+			return nil
+		})
+	}
+
+	oexp := &ocagentExporter{exporters: exporters}
 	tes = append(tes, oexp)
 
 	// TODO: (@odeke-em, @songya23) implement ExportMetrics for OpenCensus.
 	// mes = append(mes, oexp)
-	doneFns = append(doneFns, func() error {
-		sde.Flush()
-		return nil
-	})
 	return tes, mes, doneFns, nil
 }
 
-func (sde *ocagentExporter) ExportSpans(ctx context.Context, td data.TraceData) error {
-	err := sde.exporter.ExportTraceServiceRequest(
+func (oce *ocagentExporter) ExportSpans(ctx context.Context, td data.TraceData) error {
+	// Get an exporter worker round-robin
+	exporter := oce.exporters[atomic.AddUint32(&oce.counter, 1)%uint32(len(oce.exporters))]
+	err := exporter.ExportTraceServiceRequest(
 		&agenttracepb.ExportTraceServiceRequest{
-			Spans: td.Spans,
-			Node:  td.Node,
+			Spans:    td.Spans,
+			Resource: td.Resource,
+			Node:     td.Node,
 		},
 	)
 	if err != nil {

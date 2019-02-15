@@ -14,43 +14,9 @@
 
 package octrace
 
-import "time"
-
 // Option interface defines for configuration settings to be applied to receivers.
 //
 // WithReceiver applies the configuration to the given receiver.
 type Option interface {
 	WithReceiver(*Receiver)
-}
-
-type spanBufferPeriod struct {
-	period time.Duration
-}
-
-var _ Option = (*spanBufferPeriod)(nil)
-
-func (sfd *spanBufferPeriod) WithReceiver(oci *Receiver) {
-	oci.spanBufferPeriod = sfd.period
-}
-
-// WithSpanBufferPeriod is an option that allows one to configure
-// the period that spans are buffered for before the Receiver
-// sends them to its TraceReceiverSink.
-func WithSpanBufferPeriod(period time.Duration) Option {
-	return &spanBufferPeriod{period: period}
-}
-
-type spanBufferCount int
-
-var _ Option = (*spanBufferCount)(nil)
-
-func (spc spanBufferCount) WithReceiver(oci *Receiver) {
-	oci.spanBufferCount = int(spc)
-}
-
-// WithSpanBufferCount is an option that allows one to configure
-// the number of spans that are buffered before the Receiver
-// send them to its TraceReceiverSink.
-func WithSpanBufferCount(count int) Option {
-	return spanBufferCount(count)
 }
