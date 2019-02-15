@@ -169,6 +169,12 @@ exporters:
 
   zipkin:
     endpoint: "http://127.0.0.1:9411/api/v2/spans"
+
+  aws-xray:
+    region: "us-west-2"
+    default_service_name: "verifiability_agent"
+    version: "latest"
+    buffer_size: 200
 ```
 
 ### <a name="config-diagnostics"></a>Diagnostics

@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"os"
 	"time"
 
 	"contrib.go.opencensus.io/exporter/ocagent"
@@ -32,7 +33,7 @@ import (
 func main() {
 	oce, err := ocagent.NewExporter(
 		ocagent.WithInsecure(),
-		ocagent.WithServiceName("example-go"))
+		ocagent.WithServiceName(fmt.Sprintf("example-go-%d", os.Getpid())))
 	if err != nil {
 		log.Fatalf("Failed to create ocagent-exporter: %v", err)
 	}
