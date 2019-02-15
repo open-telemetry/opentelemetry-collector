@@ -145,6 +145,11 @@ func TestZipkinJSONFallbackToLocalComponent(t *testing.T) {
 		t.Fatalf("got %d trace service request(s), want 2", len(reqs))
 	}
 
+	// Ensure the order of nodes
+	sort.Slice(reqs, func(i, j int) bool {
+		return reqs[i].Node.ServiceInfo.Name < reqs[j].Node.ServiceInfo.Name
+	})
+
 	// First span didn't have a host/endpoint to give service name, use the local component.
 	got := reqs[0].Node.ServiceInfo.Name
 	want := "myLocalComponent"
