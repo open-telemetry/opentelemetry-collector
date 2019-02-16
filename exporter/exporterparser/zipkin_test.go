@@ -35,7 +35,7 @@ import (
 	"github.com/census-instrumentation/opencensus-service/exporter"
 	"github.com/census-instrumentation/opencensus-service/internal/config/viperutils"
 	"github.com/census-instrumentation/opencensus-service/internal/testutils"
-	"github.com/census-instrumentation/opencensus-service/receiver/zipkin"
+	"github.com/census-instrumentation/opencensus-service/receiver/zipkinreceiver"
 )
 
 func TestZipkinEndpointFromNode(t *testing.T) {

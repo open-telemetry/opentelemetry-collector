@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jaeger_test
+package jaegerreceiver
 
 import (
 	"bytes"
@@ -29,40 +29,27 @@ import (
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/internal"
-	jaegerreceiver "github.com/census-instrumentation/opencensus-service/receiver/jaeger"
 	"github.com/census-instrumentation/opencensus-service/receiver/testhelper"
 )
 
-func TestJaegerAgentUDP_ThriftCompact_6831(t *testing.T) {
-	port := 6831
-	addrForClient := fmt.Sprintf(":%d", port)
-	testJaegerAgent(t, addrForClient, &jaegerreceiver.Configuration{
-		AgentCompactThriftPort: port,
-	})
-}
-
-func TestJaegerAgentUDP_ThriftBinary_6832(t *testing.T) {
-	t.Skipf("Unfortunately due to Jaeger internal versioning, OpenCensus-Go's Thrift seems to conflict with ours")
-
-	port := 6832
-	addrForClient := fmt.Sprintf(":%d", port)
-	testJaegerAgent(t, addrForClient, &jaegerreceiver.Configuration{
-		AgentBinaryThriftPort: port,
-	})
-}
-
-func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *jaegerreceiver.Configuration) {
+func TestReception(t *testing.T) {
 	// 1. Create the Jaeger receiver aka "server"
-	jr, err := jaegerreceiver.New(context.Background(), receiverConfig)
+	tchannelPort, collectorHTTPPort := 14267, 14268
+	jr, err := New(context.Background(), &Configuration{
+		CollectorThriftPort: tchannelPort,
+		CollectorHTTPPort:   collectorHTTPPort,
+	})
 	if err != nil {
 		t.Fatalf("Failed to create new Jaeger Receiver: %v", err)
 	}
 	defer jr.StopTraceReception(context.Background())
+	t.Log("Starting")
 
 	sink := new(testhelper.ConcurrentSpanSink)
 	if err := jr.StartTraceReception(context.Background(), sink); err != nil {
 		t.Fatalf("StartTraceReception failed: %v", err)
 	}
+	t.Log("StartTraceReception")
 
 	now := time.Unix(1542158650, 536343000).UTC()
 	nowPlus10min := now.Add(10 * time.Minute)
@@ -70,8 +57,6 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *jaegerr
 
 	// 2. Then with a "live application", send spans to the Jaeger exporter.
 	jexp, err := jaeger.NewExporter(jaeger.Options{
-		AgentEndpoint: agentEndpoint,
-		ServiceName:   "TestingAgentUDP",
 		Process: jaeger.Process{
 			ServiceName: "issaTest",
 			Tags: []jaeger.Tag{
@@ -80,6 +65,7 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *jaegerr
 				jaeger.Int64Tag("int64", 1e7),
 			},
 		},
+		CollectorEndpoint: fmt.Sprintf("http://localhost:%d/api/traces", collectorHTTPPort),
 	})
 	if err != nil {
 		t.Fatalf("Failed to create the Jaeger OpenCensus exporter for the live application: %v", err)
@@ -138,10 +124,7 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *jaegerr
 	// Simulate and account for network latency but also the reception process on the server.
 	<-time.After(500 * time.Millisecond)
 
-	for i := 0; i < 10; i++ {
-		jexp.Flush()
-		<-time.After(60 * time.Millisecond)
-	}
+	jexp.Flush()
 
 	got := sink.AllTraces()
 
@@ -232,7 +215,7 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *jaegerr
 	if !reflect.DeepEqual(got, want) {
 		gj, wj := testhelper.ToJSON(got), testhelper.ToJSON(want)
 		if !bytes.Equal(gj, wj) {
-			t.Errorf("Mismatched responses\nGot:\n\t%v\n\t%s\nWant:\n\t%v\n\t%s", got, gj, want, wj)
+			t.Errorf("Mismatches responses\nGot:\n\t%v\n\t%s\nWant:\n\t%v\n\t%s", got, gj, want, wj)
 		}
 	}
 }

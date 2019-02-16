@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package octrace_test
+package octrace
 
 import (
 	"bytes"
@@ -345,8 +345,8 @@ func (cme *countMetricsExporter) ExportView(vd *view.Data) {
 
 	for _, row := range vd.Rows {
 		cme.data[len(cme.data)] = row.Data
-		for _, tag_ := range row.Tags {
-			cme.tags[tag_.Key] = append(cme.tags[tag_.Key], tag_.Value)
+		for _, tag := range row.Tags {
+			cme.tags[tag.Key] = append(cme.tags[tag.Key], tag.Value)
 		}
 	}
 }

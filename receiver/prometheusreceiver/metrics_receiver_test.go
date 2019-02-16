@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package prometheus_test
+package prometheusreceiver
 
 import (
 	"context"
@@ -36,7 +36,6 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	promreceiver "github.com/census-instrumentation/opencensus-service/receiver/prometheus"
 	"github.com/census-instrumentation/opencensus-service/receiver/testhelper"
 	"github.com/golang/protobuf/ptypes/timestamp"
 )
@@ -96,12 +95,12 @@ buffer_count: 2
 
 	host, port, _ := net.SplitHostPort(cstURL.Host)
 
-	config := new(promreceiver.Configuration)
+	config := new(Configuration)
 	if err := yaml.Unmarshal([]byte(yamlConfig), config); err != nil {
 		t.Fatalf("Failed to unmarshal YAML: %v", err)
 	}
 
-	precv, err := promreceiver.New(config)
+	precv, err := New(config)
 	if err != nil {
 		t.Fatalf("Failed to create promreceiver: %v", err)
 	}

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package opencensus_test
+package opencensusreceiver
 
 import (
 	"bytes"
@@ -27,7 +27,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
-	"github.com/census-instrumentation/opencensus-service/receiver/opencensus"
 	"github.com/census-instrumentation/opencensus-service/receiver/testhelper"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
@@ -40,7 +39,7 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 	addr := ":35993"
 
 	// Set the buffer count to 1 to make it flush the test span immediately.
-	ocr, err := opencensus.New(addr)
+	ocr, err := New(addr)
 	if err != nil {
 		t.Fatalf("Failed to create trace receiver: %v", err)
 	}
@@ -151,7 +150,7 @@ func TestGrpcGatewayCors_endToEnd(t *testing.T) {
 	addr := ":35991"
 	corsOrigins := []string{"allowed-*.com"}
 
-	ocr, err := opencensus.New(addr, opencensus.WithCorsOrigins(corsOrigins))
+	ocr, err := New(addr, WithCorsOrigins(corsOrigins))
 	if err != nil {
 		t.Fatalf("Failed to create trace receiver: %v", err)
 	}
@@ -183,7 +182,7 @@ func TestAcceptAllGRPCProtoAffiliatedContentTypes(t *testing.T) {
 	t.Skip("Currently a flaky test as we need a way to flush all written traces")
 
 	addr := ":35991"
-	ocr, err := opencensus.New(addr)
+	ocr, err := New(addr)
 	if err != nil {
 		t.Fatalf("Failed to create trace receiver: %v", err)
 	}
@@ -314,7 +313,7 @@ func verifyCorsResp(t *testing.T, url string, origin string, wantStatus int, wan
 
 // Issue #379: Invoking Stop on an unstarted OpenCensus receiver should never crash.
 func TestStopWithoutStartNeverCrashes(t *testing.T) {
-	ocr, err := opencensus.New(":55444")
+	ocr, err := New(":55444")
 	if err != nil {
 		t.Fatalf("Failed to create an OpenCensus receiver: %v", err)
 	}

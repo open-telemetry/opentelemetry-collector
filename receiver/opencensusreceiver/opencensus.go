@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package opencensus
+package opencensusreceiver
 
 import (
 	"context"
@@ -27,8 +27,8 @@ import (
 
 	"github.com/census-instrumentation/opencensus-service/internal"
 	"github.com/census-instrumentation/opencensus-service/receiver"
-	"github.com/census-instrumentation/opencensus-service/receiver/opencensus/ocmetrics"
-	"github.com/census-instrumentation/opencensus-service/receiver/opencensus/octrace"
+	"github.com/census-instrumentation/opencensus-service/receiver/opencensusreceiver/ocmetrics"
+	"github.com/census-instrumentation/opencensus-service/receiver/opencensusreceiver/octrace"
 	gatewayruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/rs/cors"
 	"github.com/soheilhy/cmux"

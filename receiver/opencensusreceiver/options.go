@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package opencensus
+package opencensusreceiver
 
 import (
-	"github.com/census-instrumentation/opencensus-service/receiver/opencensus/ocmetrics"
-	"github.com/census-instrumentation/opencensus-service/receiver/opencensus/octrace"
+	"github.com/census-instrumentation/opencensus-service/receiver/opencensusreceiver/ocmetrics"
+	"github.com/census-instrumentation/opencensus-service/receiver/opencensusreceiver/octrace"
 )
 
 // Option interface defines for configuration settings to be applied to receivers.

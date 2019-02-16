@@ -37,11 +37,11 @@ import (
 	"github.com/census-instrumentation/opencensus-service/internal/config"
 	"github.com/census-instrumentation/opencensus-service/internal/config/viperutils"
 	"github.com/census-instrumentation/opencensus-service/receiver"
-	"github.com/census-instrumentation/opencensus-service/receiver/jaeger"
-	"github.com/census-instrumentation/opencensus-service/receiver/opencensus"
-	promreceiver "github.com/census-instrumentation/opencensus-service/receiver/prometheus"
-	"github.com/census-instrumentation/opencensus-service/receiver/zipkin"
-	"github.com/census-instrumentation/opencensus-service/receiver/zipkin/scribe"
+	"github.com/census-instrumentation/opencensus-service/receiver/jaegerreceiver"
+	"github.com/census-instrumentation/opencensus-service/receiver/opencensusreceiver"
+	"github.com/census-instrumentation/opencensus-service/receiver/prometheusreceiver"
+	"github.com/census-instrumentation/opencensus-service/receiver/zipkinreceiver"
+	"github.com/census-instrumentation/opencensus-service/receiver/zipkinreceiver/scribe"
 )
 
 var configYAMLFile string
@@ -192,7 +192,7 @@ func runZPages(port int) func() error {
 func runOCReceiver(acfg *config.Config, sr receiver.TraceReceiverSink, mr receiver.MetricsReceiverSink) (doneFn func() error, err error) {
 	addr := acfg.OpenCensusReceiverAddress()
 	corsOrigins := acfg.OpenCensusReceiverCorsAllowedOrigins()
-	ocr, err := opencensus.New(addr, opencensus.WithCorsOrigins(corsOrigins))
+	ocr, err := opencensusreceiver.New(addr, opencensusreceiver.WithCorsOrigins(corsOrigins))
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create the OpenCensus receiver on address %q: error %v", addr, err)
 	}
@@ -232,7 +232,7 @@ func runOCReceiver(acfg *config.Config, sr receiver.TraceReceiverSink, mr receiv
 }
 
 func runJaegerReceiver(collectorThriftPort, collectorHTTPPort int, sr receiver.TraceReceiverSink) (doneFn func() error, err error) {
-	jtr, err := jaeger.New(context.Background(), &jaeger.Configuration{
+	jtr, err := jaegerreceiver.New(context.Background(), &jaegerreceiver.Configuration{
 		CollectorThriftPort: collectorThriftPort,
 		CollectorHTTPPort:   collectorHTTPPort,
 
@@ -285,8 +285,8 @@ func runZipkinScribeReceiver(config *config.ScribeReceiverConfig, sr receiver.Tr
 	return doneFn, nil
 }
 
-func runPrometheusReceiver(promConfig *promreceiver.Configuration, mr receiver.MetricsReceiverSink) (doneFn func() error, err error) {
-	pmr, err := promreceiver.New(promConfig)
+func runPrometheusReceiver(promConfig *prometheusreceiver.Configuration, mr receiver.MetricsReceiverSink) (doneFn func() error, err error) {
+	pmr, err := prometheusreceiver.New(promConfig)
 	if err != nil {
 		return nil, err
 	}

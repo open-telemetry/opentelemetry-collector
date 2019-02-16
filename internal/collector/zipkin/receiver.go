@@ -27,7 +27,7 @@ import (
 	"github.com/census-instrumentation/opencensus-service/cmd/occollector/app/builder"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/processor"
 	"github.com/census-instrumentation/opencensus-service/receiver"
-	zr "github.com/census-instrumentation/opencensus-service/receiver/zipkin"
+	"github.com/census-instrumentation/opencensus-service/receiver/zipkinreceiver"
 )
 
 // Start starts the Zipkin receiver endpoint.
@@ -38,7 +38,7 @@ func Start(logger *zap.Logger, v *viper.Viper, spanProc processor.SpanProcessor)
 	}
 
 	addr := ":" + strconv.FormatInt(int64(rOpts.Port), 10)
-	zi, err := zr.New(addr)
+	zi, err := zipkinreceiver.New(addr)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create the Zipkin receiver: %v", err)
 	}

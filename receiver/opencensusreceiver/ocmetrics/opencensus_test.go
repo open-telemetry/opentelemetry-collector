@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ocmetrics_test
+package ocmetrics
 
 import (
 	"bytes"
@@ -37,7 +37,6 @@ import (
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal"
 	"github.com/census-instrumentation/opencensus-service/receiver"
-	"github.com/census-instrumentation/opencensus-service/receiver/opencensus/ocmetrics"
 )
 
 // TODO: add E2E tests once ocagent implements metric service client.
@@ -51,7 +50,7 @@ import (
 func TestExportMultiplexing(t *testing.T) {
 	metricSink := newMetricAppender()
 
-	_, port, doneFn := ocReceiverOnGRPCServer(t, metricSink, ocmetrics.WithMetricBufferPeriod(90*time.Millisecond))
+	_, port, doneFn := ocReceiverOnGRPCServer(t, metricSink, WithMetricBufferPeriod(90*time.Millisecond))
 	defer doneFn()
 
 	metricsClient, metricsClientDoneFn, err := makeMetricsServiceClient(port)
@@ -170,7 +169,7 @@ func TestExportMultiplexing(t *testing.T) {
 func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 	metricSink := newMetricAppender()
 
-	_, port, doneFn := ocReceiverOnGRPCServer(t, metricSink, ocmetrics.WithMetricBufferPeriod(90*time.Millisecond))
+	_, port, doneFn := ocReceiverOnGRPCServer(t, metricSink, WithMetricBufferPeriod(90*time.Millisecond))
 	defer doneFn()
 
 	metricsClient, metricsClientDoneFn, err := makeMetricsServiceClient(port)
@@ -242,7 +241,7 @@ func TestExportProtocolConformation_metricsInFirstMessage(t *testing.T) {
 
 	metricSink := newMetricAppender()
 
-	_, port, doneFn := ocReceiverOnGRPCServer(t, metricSink, ocmetrics.WithMetricBufferPeriod(70*time.Millisecond))
+	_, port, doneFn := ocReceiverOnGRPCServer(t, metricSink, WithMetricBufferPeriod(70*time.Millisecond))
 	defer doneFn()
 
 	metricsClient, metricsClientDoneFn, err := makeMetricsServiceClient(port)
@@ -340,7 +339,7 @@ func (sa *metricAppender) ReceiveMetricsData(ctx context.Context, md data.Metric
 	return &receiver.MetricsReceiverAcknowledgement{SavedMetrics: uint64(len(md.Metrics))}, nil
 }
 
-func ocReceiverOnGRPCServer(t *testing.T, sr receiver.MetricsReceiverSink, opts ...ocmetrics.Option) (oci *ocmetrics.Receiver, port int, done func()) {
+func ocReceiverOnGRPCServer(t *testing.T, sr receiver.MetricsReceiverSink, opts ...Option) (oci *Receiver, port int, done func()) {
 	ln, err := net.Listen("tcp", ":0")
 	if err != nil {
 		t.Fatalf("Failed to find an available address to run the gRPC server: %v", err)
@@ -364,7 +363,7 @@ func ocReceiverOnGRPCServer(t *testing.T, sr receiver.MetricsReceiverSink, opts 
 		t.Fatalf("Failed to create new agent: %v", err)
 	}
 
-	oci, err = ocmetrics.New(sr, opts...)
+	oci, err = New(sr, opts...)
 	if err != nil {
 		t.Fatalf("Failed to create the Receiver: %v", err)
 	}

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jaeger
+package jaegerreceiver
 
 import (
 	"bytes"
@@ -40,7 +40,7 @@ import (
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal"
 	"github.com/census-instrumentation/opencensus-service/receiver"
-	"github.com/census-instrumentation/opencensus-service/translator/trace"
+	tracetranslator "github.com/census-instrumentation/opencensus-service/translator/trace"
 )
 
 // Configuration defines the behavior and the ports that

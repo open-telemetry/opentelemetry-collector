@@ -27,7 +27,7 @@ import (
 
 	"github.com/census-instrumentation/opencensus-service/exporter"
 	"github.com/census-instrumentation/opencensus-service/exporter/exporterparser"
-	promreceiver "github.com/census-instrumentation/opencensus-service/receiver/prometheus"
+	"github.com/census-instrumentation/opencensus-service/receiver/prometheusreceiver"
 )
 
 // We expect the configuration.yaml file to look like this:
@@ -100,7 +100,7 @@ type Receivers struct {
 	//
 	//          static_configs:
 	//              - targets: ['localhost:9988']
-	Prometheus *promreceiver.Configuration `yaml:"prometheus"`
+	Prometheus *prometheusreceiver.Configuration `yaml:"prometheus"`
 }
 
 // ReceiverConfig is the per-receiver configuration that identifies attributes
@@ -256,7 +256,7 @@ func (c *Config) PrometheusReceiverEnabled() bool {
 
 // PrometheusConfiguration deferences and returns the Prometheus configuration
 // if non-nil.
-func (c *Config) PrometheusConfiguration() *promreceiver.Configuration {
+func (c *Config) PrometheusConfiguration() *prometheusreceiver.Configuration {
 	if c == nil || c.Receivers == nil {
 		return nil
 	}

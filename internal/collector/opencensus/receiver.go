@@ -27,7 +27,7 @@ import (
 	"github.com/census-instrumentation/opencensus-service/cmd/occollector/app/builder"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/processor"
 	"github.com/census-instrumentation/opencensus-service/receiver"
-	"github.com/census-instrumentation/opencensus-service/receiver/opencensus"
+	"github.com/census-instrumentation/opencensus-service/receiver/opencensusreceiver"
 )
 
 // Start starts the OpenCensus receiver endpoint.
@@ -39,7 +39,7 @@ func Start(logger *zap.Logger, v *viper.Viper, spanProc processor.SpanProcessor)
 
 	addr := ":" + strconv.FormatInt(int64(rOpts.Port), 10)
 
-	ocr, err := opencensus.New(addr)
+	ocr, err := opencensusreceiver.New(addr)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create the OpenCensus trace receiver: %v", err)
 	}

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package octrace_test
+package octrace
 
 import (
 	"bytes"
@@ -39,7 +39,6 @@ import (
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal"
 	"github.com/census-instrumentation/opencensus-service/receiver"
-	"github.com/census-instrumentation/opencensus-service/receiver/opencensus/octrace"
 	"go.opencensus.io/trace"
 	"go.opencensus.io/trace/tracestate"
 )
@@ -474,7 +473,7 @@ func (sa *spanAppender) ReceiveTraceData(ctx context.Context, td data.TraceData)
 	return &receiver.TraceReceiverAcknowledgement{SavedSpans: uint64(len(td.Spans))}, nil
 }
 
-func ocReceiverOnGRPCServer(t *testing.T, sr receiver.TraceReceiverSink, opts ...octrace.Option) (oci *octrace.Receiver, port int, done func()) {
+func ocReceiverOnGRPCServer(t *testing.T, sr receiver.TraceReceiverSink, opts ...Option) (oci *Receiver, port int, done func()) {
 	ln, err := net.Listen("tcp", ":0")
 	if err != nil {
 		t.Fatalf("Failed to find an available address to run the gRPC server: %v", err)
@@ -498,7 +497,7 @@ func ocReceiverOnGRPCServer(t *testing.T, sr receiver.TraceReceiverSink, opts ..
 		t.Fatalf("Failed to create new agent: %v", err)
 	}
 
-	oci, err = octrace.New(sr, opts...)
+	oci, err = New(sr, opts...)
 	if err != nil {
 		t.Fatalf("Failed to create the Receiver: %v", err)
 	}

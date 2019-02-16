@@ -31,7 +31,7 @@ import (
 	"github.com/census-instrumentation/opencensus-service/cmd/occollector/app/builder"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/processor"
 	"github.com/census-instrumentation/opencensus-service/receiver"
-	"github.com/census-instrumentation/opencensus-service/receiver/jaeger"
+	"github.com/census-instrumentation/opencensus-service/receiver/jaegerreceiver"
 )
 
 // Start starts the Jaeger receiver endpoint.
@@ -42,7 +42,7 @@ func Start(logger *zap.Logger, v *viper.Viper, spanProc processor.SpanProcessor)
 	}
 
 	ctx := context.Background()
-	jtr, err := jaeger.New(ctx, &jaeger.Configuration{
+	jtr, err := jaegerreceiver.New(ctx, &jaegerreceiver.Configuration{
 		CollectorThriftPort: rOpts.ThriftTChannelPort,
 		CollectorHTTPPort:   rOpts.ThriftHTTPPort,
 	})

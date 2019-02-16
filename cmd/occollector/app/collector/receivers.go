@@ -22,11 +22,11 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/census-instrumentation/opencensus-service/cmd/occollector/app/builder"
-	"github.com/census-instrumentation/opencensus-service/internal/collector/jaeger"
-	"github.com/census-instrumentation/opencensus-service/internal/collector/opencensus"
+	jaegerreceiver "github.com/census-instrumentation/opencensus-service/internal/collector/jaeger"
+	ocreceiver "github.com/census-instrumentation/opencensus-service/internal/collector/opencensus"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/processor"
-	"github.com/census-instrumentation/opencensus-service/internal/collector/zipkin"
-	"github.com/census-instrumentation/opencensus-service/internal/collector/zipkin/scribe"
+	zipkinreceiver "github.com/census-instrumentation/opencensus-service/internal/collector/zipkin"
+	zipkinscribereceiver "github.com/census-instrumentation/opencensus-service/internal/collector/zipkin/scribe"
 	"github.com/census-instrumentation/opencensus-service/receiver"
 )
 
