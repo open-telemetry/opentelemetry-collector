@@ -24,7 +24,8 @@ import (
 
 // Variables related to metrics specific to tail sampling.
 var (
-	tagPolicyKey, _ = tag.NewKey("policy")
+	tagPolicyKey, _  = tag.NewKey("policy")
+	tagSampledKey, _ = tag.NewKey("sampled")
 
 	statDecisionLatencyMicroSec  = stats.Int64("sampling_decision_latency", "Latency (in microseconds) of a given sampling policy", "µs")
 	statOverallDecisionLatencyµs = stats.Int64("sampling_decision_timer_latency", "Latency (in microseconds) of each run of the sampling decision timer", "µs")
@@ -33,6 +34,8 @@ var (
 	statLateSpanArrivalAfterDecision = stats.Int64("sampling_late_span_age", "Time (in seconds) from the sampling decision was taken and the arrival of a late span", "s")
 
 	statPolicyEvaluationErrorCount = stats.Int64("sampling_policy_evaluation_error", "Count of sampling policy evaluation errors", stats.UnitDimensionless)
+
+	statCountTracesSampled = stats.Int64("count_traces_sampled", "Count of traces that were sampled or not", stats.UnitDimensionless)
 
 	statDroppedTooEarlyCount    = stats.Int64("sampling_trace_dropped_too_early", "Count of traces that needed to be dropped the configured wait time", stats.UnitDimensionless)
 	statNewTraceIDReceivedCount = stats.Int64("new_trace_id_received", "Counts the arrival of new traces", stats.UnitDimensionless)
@@ -63,6 +66,7 @@ func SamplingProcessorMetricViews(level telemetry.Level) []*view.View {
 		Description: statOverallDecisionLatencyµs.Description(),
 		Aggregation: latencyDistributionAggregation,
 	}
+
 	traceRemovalAgeView := &view.View{
 		Name:        statTraceRemovalAgeSec.Name(),
 		Measure:     statTraceRemovalAgeSec,
@@ -75,12 +79,23 @@ func SamplingProcessorMetricViews(level telemetry.Level) []*view.View {
 		Description: statLateSpanArrivalAfterDecision.Description(),
 		Aggregation: ageDistributionAggregation,
 	}
+
 	countPolicyEvaluationErrorView := &view.View{
 		Name:        statPolicyEvaluationErrorCount.Name(),
 		Measure:     statPolicyEvaluationErrorCount,
 		Description: statPolicyEvaluationErrorCount.Description(),
 		Aggregation: view.Sum(),
 	}
+
+	sampledTagKeys := []tag.Key{tagPolicyKey, tagSampledKey}
+	countTracesSampledView := &view.View{
+		Name:        statCountTracesSampled.Name(),
+		Measure:     statCountTracesSampled,
+		Description: statCountTracesSampled.Description(),
+		TagKeys:     sampledTagKeys,
+		Aggregation: view.Sum(),
+	}
+
 	countTraceDroppedTooEarlyView := &view.View{
 		Name:        statDroppedTooEarlyCount.Name(),
 		Measure:     statDroppedTooEarlyCount,
@@ -103,10 +118,16 @@ func SamplingProcessorMetricViews(level telemetry.Level) []*view.View {
 	return []*view.View{
 		decisionLatencyView,
 		overallDecisionLatencyView,
+
 		traceRemovalAgeView,
 		lateSpanArrivalView,
+
 		countPolicyEvaluationErrorView,
+
+		countTracesSampledView,
+
 		countTraceDroppedTooEarlyView,
 		countTraceIDArrivalView,
-		trackTracesOnMemorylView}
+		trackTracesOnMemorylView,
+	}
 }
