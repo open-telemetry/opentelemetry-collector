@@ -26,7 +26,15 @@ import (
 	yaml "gopkg.in/yaml.v2"
 
 	"github.com/census-instrumentation/opencensus-service/exporter"
-	"github.com/census-instrumentation/opencensus-service/exporter/exporterparser"
+	"github.com/census-instrumentation/opencensus-service/exporter/awsexporter"
+	"github.com/census-instrumentation/opencensus-service/exporter/datadogexporter"
+	"github.com/census-instrumentation/opencensus-service/exporter/honeycombexporter"
+	"github.com/census-instrumentation/opencensus-service/exporter/jaegerexporter"
+	"github.com/census-instrumentation/opencensus-service/exporter/kafkaexporter"
+	"github.com/census-instrumentation/opencensus-service/exporter/opencensusexporter"
+	"github.com/census-instrumentation/opencensus-service/exporter/prometheusexporter"
+	"github.com/census-instrumentation/opencensus-service/exporter/stackdriverexporter"
+	"github.com/census-instrumentation/opencensus-service/exporter/zipkinexporter"
 	"github.com/census-instrumentation/opencensus-service/receiver/prometheusreceiver"
 )
 
@@ -143,7 +151,7 @@ type ScribeReceiverConfig struct {
 // Exporters denotes the configurations for the various backends
 // that this service exports observability signals to.
 type Exporters struct {
-	Zipkin *exporterparser.ZipkinConfig `yaml:"zipkin"`
+	Zipkin *zipkinexporter.ZipkinConfig `yaml:"zipkin"`
 }
 
 // ZPagesConfig denotes the configuration that zPages will be run with.
@@ -269,11 +277,11 @@ func (c *Config) PrometheusConfiguration() *prometheusreceiver.Configuration {
 // will return the default of "localhost:9411"
 func (c *Config) ZipkinReceiverAddress() string {
 	if c == nil || c.Receivers == nil {
-		return exporterparser.DefaultZipkinEndpointHostPort
+		return zipkinexporter.DefaultZipkinEndpointHostPort
 	}
 	inCfg := c.Receivers
 	if inCfg.Zipkin == nil || inCfg.Zipkin.Address == "" {
-		return exporterparser.DefaultZipkinEndpointHostPort
+		return zipkinexporter.DefaultZipkinEndpointHostPort
 	}
 	return inCfg.Zipkin.Address
 }
@@ -397,15 +405,15 @@ func ExportersFromViperConfig(logger *zap.Logger, v *viper.Viper) ([]exporter.Tr
 		name string
 		fn   func(*viper.Viper) ([]exporter.TraceExporter, []exporter.MetricsExporter, []func() error, error)
 	}{
-		{name: "datadog", fn: exporterparser.DatadogTraceExportersFromViper},
-		{name: "stackdriver", fn: exporterparser.StackdriverTraceExportersFromViper},
-		{name: "zipkin", fn: exporterparser.ZipkinExportersFromViper},
-		{name: "jaeger", fn: exporterparser.JaegerExportersFromViper},
-		{name: "kafka", fn: exporterparser.KafkaExportersFromViper},
-		{name: "opencensus", fn: exporterparser.OpenCensusTraceExportersFromViper},
-		{name: "prometheus", fn: exporterparser.PrometheusExportersFromViper},
-		{name: "aws-xray", fn: exporterparser.AWSXRayTraceExportersFromViper},
-		{name: "honeycomb", fn: exporterparser.HoneycombTraceExportersFromViper},
+		{name: "datadog", fn: datadogexporter.DatadogTraceExportersFromViper},
+		{name: "stackdriver", fn: stackdriverexporter.StackdriverTraceExportersFromViper},
+		{name: "zipkin", fn: zipkinexporter.ZipkinExportersFromViper},
+		{name: "jaeger", fn: jaegerexporter.JaegerExportersFromViper},
+		{name: "kafka", fn: kafkaexporter.KafkaExportersFromViper},
+		{name: "opencensus", fn: opencensusexporter.OpenCensusTraceExportersFromViper},
+		{name: "prometheus", fn: prometheusexporter.PrometheusExportersFromViper},
+		{name: "aws-xray", fn: awsexporter.AWSXRayTraceExportersFromViper},
+		{name: "honeycomb", fn: honeycombexporter.HoneycombTraceExportersFromViper},
 	}
 
 	var traceExporters []exporter.TraceExporter

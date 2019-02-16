@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package exporterparser
+package datadogexporter
 
 import (
 	"context"
@@ -22,6 +22,7 @@ import (
 
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/exporter"
+	"github.com/census-instrumentation/opencensus-service/exporter/exporterparser"
 )
 
 type datadogConfig struct {
@@ -90,5 +91,5 @@ func (dde *datadogExporter) ExportSpans(ctx context.Context, td data.TraceData) 
 	// TODO: Examine the Datadog exporter to see
 	// if trace.ExportSpan was constraining and if perhaps the
 	// upload can use the context and information from the Node.
-	return ocProtoSpansToOCSpanDataInstrumented(ctx, "datadog", dde.exporter, td)
+	return exporterparser.OcProtoSpansToOCSpanDataInstrumented(ctx, "datadog", dde.exporter, td)
 }

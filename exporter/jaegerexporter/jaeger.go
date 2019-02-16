@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package exporterparser
+package jaegerexporter
 
 import (
 	"context"
@@ -22,6 +22,7 @@ import (
 
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/exporter"
+	"github.com/census-instrumentation/opencensus-service/exporter/exporterparser"
 )
 
 // Slight modified version of go/src/go.opencensus.io/exporter/jaeger/jaeger.go
@@ -75,5 +76,5 @@ func (je *jaegerExporter) ExportSpans(ctx context.Context, td data.TraceData) er
 	// TODO: Examine "contrib.go.opencensus.io/exporter/jaeger" to see
 	// if trace.ExportSpan was constraining and if perhaps the Jaeger
 	// upload can use the context and information from the Node.
-	return ocProtoSpansToOCSpanDataInstrumented(ctx, "jaeger", je.exporter, td)
+	return exporterparser.OcProtoSpansToOCSpanDataInstrumented(ctx, "jaeger", je.exporter, td)
 }

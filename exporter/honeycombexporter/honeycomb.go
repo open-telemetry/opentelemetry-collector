@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package exporterparser
+package honeycombexporter
 
 // TODO: (@odeke-em) file an issue at the official Honeycomb repository to
 // ask them to make an exporter that uses OpenCensus-Proto instead of OpenCensus-Go.
@@ -25,6 +25,7 @@ import (
 
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/exporter"
+	"github.com/census-instrumentation/opencensus-service/exporter/exporterparser"
 )
 
 type honeycombConfig struct {
@@ -63,5 +64,5 @@ type honeycombExporter struct {
 }
 
 func (hce *honeycombExporter) ExportSpans(ctx context.Context, td data.TraceData) error {
-	return ocProtoSpansToOCSpanDataInstrumented(ctx, "honeycomb", hce.exporter, td)
+	return exporterparser.OcProtoSpansToOCSpanDataInstrumented(ctx, "honeycomb", hce.exporter, td)
 }

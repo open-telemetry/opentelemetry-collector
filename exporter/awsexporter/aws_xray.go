@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package exporterparser
+package awsexporter
 
 import (
 	"context"
@@ -28,6 +28,7 @@ import (
 
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/exporter"
+	"github.com/census-instrumentation/opencensus-service/exporter/exporterparser"
 )
 
 const defaultVersionForAWSXRayApplications = "latest"
@@ -172,7 +173,7 @@ func (axe *awsXRayExporter) ExportSpans(ctx context.Context, td data.TraceData) 
 	if err != nil {
 		return err
 	}
-	return ocProtoSpansToOCSpanDataInstrumented(ctx, "aws-xray", exp, td)
+	return exporterparser.OcProtoSpansToOCSpanDataInstrumented(ctx, "aws-xray", exp, td)
 }
 
 func (axe *awsXRayExporter) getOrMakeExporterByServiceName(serviceName string) (*xray.Exporter, error) {

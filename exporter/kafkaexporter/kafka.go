@@ -12,17 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package exporterparser
+package kafkaexporter
 
 import (
 	"context"
 	"fmt"
 
 	"github.com/spf13/viper"
-	"github.com/yancl/opencensus-go-exporter-kafka"
+	kafka "github.com/yancl/opencensus-go-exporter-kafka"
 
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/exporter"
+	"github.com/census-instrumentation/opencensus-service/exporter/exporterparser"
 )
 
 type kafkaConfig struct {
@@ -69,5 +70,5 @@ func KafkaExportersFromViper(v *viper.Viper) (tes []exporter.TraceExporter, mes 
 }
 
 func (kde *kafkaExporter) ExportSpans(ctx context.Context, td data.TraceData) error {
-	return ocProtoSpansToOCSpanDataInstrumented(ctx, "kafka", kde.exporter, td)
+	return exporterparser.OcProtoSpansToOCSpanDataInstrumented(ctx, "kafka", kde.exporter, td)
 }

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package exporterparser
+package stackdriverexporter
 
 import (
 	"context"
@@ -26,6 +26,7 @@ import (
 
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/exporter"
+	"github.com/census-instrumentation/opencensus-service/exporter/exporterparser"
 )
 
 type stackdriverConfig struct {
@@ -105,7 +106,7 @@ func (sde *stackdriverExporter) ExportSpans(ctx context.Context, td data.TraceDa
 	// TODO: Examine "contrib.go.opencensus.io/exporter/stackdriver" to see
 	// if trace.ExportSpan was constraining and if perhaps the Stackdriver
 	// upload can use the context and information from the Node.
-	return ocProtoSpansToOCSpanDataInstrumented(ctx, "stackdriver", sde.exporter, td)
+	return exporterparser.OcProtoSpansToOCSpanDataInstrumented(ctx, "stackdriver", sde.exporter, td)
 }
 
 var _ exporter.MetricsExporter = (*stackdriverExporter)(nil)

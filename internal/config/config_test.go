@@ -19,7 +19,7 @@ import (
 
 	yaml "gopkg.in/yaml.v2"
 
-	"github.com/census-instrumentation/opencensus-service/exporter/exporterparser"
+	"github.com/census-instrumentation/opencensus-service/exporter/zipkinexporter"
 	"github.com/census-instrumentation/opencensus-service/internal/config"
 )
 
@@ -53,7 +53,7 @@ exporters:
 
 	var ecfg struct {
 		Exporters *struct {
-			Zipkin *exporterparser.ZipkinConfig `yaml:"zipkin"`
+			Zipkin *zipkinexporter.ZipkinConfig `yaml:"zipkin"`
 		} `yaml:"exporters"`
 	}
 	_ = yaml.Unmarshal(regressionYAML, &ecfg)

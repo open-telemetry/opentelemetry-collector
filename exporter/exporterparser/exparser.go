@@ -32,7 +32,7 @@ import (
 	tracetranslator "github.com/census-instrumentation/opencensus-service/translator/trace"
 )
 
-// ocProtoSpansToOCSpanDataInstrumented converts
+// OcProtoSpansToOCSpanDataInstrumented converts
 // OpenCensus Proto TraceData to OpenCensus-Go SpanData.
 // The "Instrumented" suffix serves to document that this
 // function is traced but also has stats for self-observability.
@@ -42,7 +42,7 @@ import (
 // by various vendors and contributors. Eventually the goal is to
 // get those exporters converted to directly receive
 // OpenCensus Proto TraceData.
-func ocProtoSpansToOCSpanDataInstrumented(ctx context.Context, exporterName string, te trace.Exporter, td data.TraceData) (aerr error) {
+func OcProtoSpansToOCSpanDataInstrumented(ctx context.Context, exporterName string, te trace.Exporter, td data.TraceData) (aerr error) {
 	ctx, span := trace.StartSpan(ctx,
 		"opencensus.service.exporter."+exporterName+".ExportTrace",
 		trace.WithSampler(trace.NeverSample()))
