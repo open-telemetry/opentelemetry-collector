@@ -16,7 +16,6 @@
     - [Exporters](#config-exporters)
     - [Diagnostics](#config-diagnostics)
 - [OpenCensus Agent](#opencensus-agent)
-    - [Building binaries](#agent-building-binaries)
     - [Usage](#agent-usage)
 - [OpenCensus Collector](#opencensus-collector)
     - [Global Tags](#global-tags)
@@ -208,37 +207,11 @@ zpages:
 
 ## OpenCensus Agent
 
-### <a name="agent-building-binaries"></a>Building binaries
-
-> It is recommended that you use the latest [release](https://github.com/census-instrumentation/opencensus-service/releases).
-
-Please run file `build_binaries.sh` in the root of this repository, with argument `binaries` or any of:
-* linux
-* darwin
-* windows
-
-which will then place the binaries in the directory `bin` which is in your current working directory
-```shell
-$ ./build_binaries.sh binaries
-
-GOOS=darwin go build -ldflags "-X github.com/census-instrumentation/opencensus-service/internal/version.GitHash=8e102b4" -o bin/ocagent_darwin ./cmd/ocagent
-GOOS=linux go build -ldflags "-X github.com/census-instrumentation/opencensus-service/internal/version.GitHash=8e102b4" -o bin/ocagent_linux ./cmd/ocagent
-GOOS=windows go build -ldflags "-X github.com/census-instrumentation/opencensus-service/internal/version.GitHash=8e102b4" -o bin/ocagent_windows ./cmd/ocagent
-```
-which should then create binaries inside `bin/` that have a version command attached to them such as
-```shell
-$ ./bin/ocagent_darwin version
-
-Version      0.0.1
-GitHash      8e102b4
-Goversion    devel +7f3313133e Mon Oct 15 22:11:26 2018 +0000
-OS           darwin
-Architecture amd64
-```
-
 ### <a name="agent-usage"></a>Usage
 
 The ocagent can be run directly from sources, binary, or a Docker image.
+
+It is recommended that you use the latest [release](https://github.com/census-instrumentation/opencensus-service/releases).
 
 The minimum Go version required for this project is Go 1.11.4.
 
@@ -257,24 +230,15 @@ $ make agent
 3. Build a Docker scratch image and use the appropriate Docker command for your scenario
 (note: additional ports may be required depending on your receiver configuration):
 
-```shell
-./build_binaries.sh docker <image_version>
-```
+A Docker scratch image can be built with make by targeting `docker-agent`.
 
-For example, to create a Docker image of the agent, tagged `v1.0.0`:
 ```shell
-./build_binaries.sh docker v1.0.0
-```
-
-and then the Docker image `v1.0.0` of the agent can be started  by
-```shell
-docker run --rm -it -p 55678:55678 -p 55679:55679 \
+$ make docker-agent
+$ docker run --rm -it -p 55678:55678 -p 55679:55679 \
     -v $(pwd)/ocagent-config.yaml:/conf/ocagent-config.yaml \
     --config=/conf/ocagent-config.yaml \
-    ocagent:v1.0.0
+    ocagent
 ```
-
-A Docker scratch image can be built with make by targeting `docker-agent`.
 
 ## OpenCensus Collector
 
