@@ -17,8 +17,11 @@ require (
 	github.com/bmizerany/perks v0.0.0-20141205001514-d9a9656a3a4b // indirect
 	github.com/census-instrumentation/opencensus-proto v0.1.0-0.20181214143942-ba49f56771b8
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
+	github.com/facebookgo/ensure v0.0.0-20160127193407-b4ab57deab51 // indirect
 	github.com/facebookgo/limitgroup v0.0.0-20150612190941-6abd8d71ec01 // indirect
 	github.com/facebookgo/muster v0.0.0-20150708232844-fd3d7953fd52 // indirect
+	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
+	github.com/facebookgo/subset v0.0.0-20150612182917-8dac2c3c4870 // indirect
 	github.com/go-logfmt/logfmt v0.4.0 // indirect
 	github.com/gogo/googleapis v1.1.0 // indirect
 	github.com/golang/groupcache v0.0.0-20190129154638-5b532d6fd5ef // indirect
@@ -79,7 +82,7 @@ require (
 	golang.org/x/time v0.0.0-20181108054448-85acf8d2951c // indirect
 	google.golang.org/api v0.0.0-20181102150758-04bb50b6b83d
 	google.golang.org/appengine v1.3.0 // indirect
-	google.golang.org/genproto v0.0.0-20181101192439-c830210a61df // indirect
+	google.golang.org/genproto v0.0.0-20190215211957-bd968387e4aa // indirect
 	google.golang.org/grpc v1.17.0
 	gopkg.in/DataDog/dd-trace-go.v1 v1.4.0 // indirect
 	gopkg.in/alexcesaro/statsd.v2 v2.0.0 // indirect
