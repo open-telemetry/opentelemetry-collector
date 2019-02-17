@@ -23,6 +23,8 @@ import (
 
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	yaml "gopkg.in/yaml.v2"
 
 	"github.com/census-instrumentation/opencensus-service/exporter"
@@ -35,6 +37,7 @@ import (
 	"github.com/census-instrumentation/opencensus-service/exporter/prometheusexporter"
 	"github.com/census-instrumentation/opencensus-service/exporter/stackdriverexporter"
 	"github.com/census-instrumentation/opencensus-service/exporter/zipkinexporter"
+	"github.com/census-instrumentation/opencensus-service/receiver/opencensusreceiver"
 	"github.com/census-instrumentation/opencensus-service/receiver/prometheusreceiver"
 )
 
@@ -131,6 +134,9 @@ type ReceiverConfig struct {
 	DisableTracing bool `yaml:"disable_tracing"`
 	// DisableMetrics disables metrics receiving and is only applicable to metrics receivers.
 	DisableMetrics bool `yaml:"disable_metrics"`
+
+	// TLSCredentials is a (cert_file, key_file) configuration.
+	TLSCredentials *TLSCredentials `yaml:"tls_credentials"`
 }
 
 // ScribeReceiverConfig carries the settings for the Zipkin Scribe receiver.
@@ -191,15 +197,21 @@ func (c *Config) OpenCensusReceiverCorsAllowedOrigins() []string {
 // CanRunOpenCensusTraceReceiver returns true if the configuration
 // permits running the OpenCensus Trace receiver.
 func (c *Config) CanRunOpenCensusTraceReceiver() bool {
-	return c != nil && c.Receivers != nil &&
-		c.Receivers.OpenCensus != nil && !c.Receivers.OpenCensus.DisableTracing
+	return c.openCensusReceiverEnabled() && !c.Receivers.OpenCensus.DisableTracing
 }
 
 // CanRunOpenCensusMetricsReceiver returns true if the configuration
 // permits running the OpenCensus Metrics receiver.
 func (c *Config) CanRunOpenCensusMetricsReceiver() bool {
+	return c.openCensusReceiverEnabled() && !c.Receivers.OpenCensus.DisableMetrics
+}
+
+// openCensusReceiverEnabled returns true if both:
+//    Config.Receivers and Config.Receivers.OpenCensus
+// are non-nil.
+func (c *Config) openCensusReceiverEnabled() bool {
 	return c != nil && c.Receivers != nil &&
-		c.Receivers.OpenCensus != nil && !c.Receivers.OpenCensus.DisableMetrics
+		c.Receivers.OpenCensus != nil
 }
 
 // ZPagesDisabled returns true if zPages have not been enabled.
@@ -314,6 +326,53 @@ func (c *Config) JaegerReceiverPorts() (collectorPort, thriftPort int) {
 	}
 	jc := rCfg.Jaeger
 	return jc.CollectorHTTPPort, jc.CollectorThriftPort
+}
+
+// HasTLSCredentials returns true if TLSCredentials is non-nil
+func (rCfg *ReceiverConfig) HasTLSCredentials() bool {
+	return rCfg != nil && rCfg.TLSCredentials != nil && rCfg.TLSCredentials.nonEmpty()
+}
+
+// OpenCensusReceiverTLSServerCredentials retrieves the TLS credentials
+// from this Config's OpenCensus receiver if any.
+func (c *Config) OpenCensusReceiverTLSServerCredentials() *TLSCredentials {
+	if !c.openCensusReceiverEnabled() {
+		return nil
+	}
+
+	ocrConfig := c.Receivers.OpenCensus
+	if !ocrConfig.HasTLSCredentials() {
+		return nil
+	}
+	return ocrConfig.TLSCredentials
+}
+
+// ToOpenCensusReceiverServerOption checks if the TLS credentials
+// in the form of a certificate file and a key file. If they aren't,
+// it will return opencensusreceiver.WithNoopOption() and a nil error.
+// Otherwise, it will try to retrieve gRPC transport credentials from the file combinations,
+// and create a option, along with any errors encountered while retrieving the credentials.
+func (tlsCreds *TLSCredentials) ToOpenCensusReceiverServerOption() (opt opencensusreceiver.Option, ok bool, err error) {
+	if tlsCreds == nil {
+		return opencensusreceiver.WithNoopOption(), false, nil
+	}
+
+	transportCreds, err := credentials.NewServerTLSFromFile(tlsCreds.CertFile, tlsCreds.KeyFile)
+	if err != nil {
+		return nil, false, err
+	}
+	gRPCCredsOpt := grpc.Creds(transportCreds)
+	return opencensusreceiver.WithGRPCServerOptions(gRPCCredsOpt), true, nil
+}
+
+// OpenCensusReceiverTLSCredentialsServerOption checks if the OpenCensus receiver's Configuration
+// has TLS credentials in the form of a certificate file and a key file. If it doesn't
+// have any, it will return opencensusreceiver.WithNoopOption() and a nil error.
+// Otherwise, it will try to retrieve gRPC transport credentials from the file combinations,
+// and create a option, along with any errors encountered while retrieving the credentials.
+func (c *Config) OpenCensusReceiverTLSCredentialsServerOption() (opt opencensusreceiver.Option, ok bool, err error) {
+	tlsCreds := c.OpenCensusReceiverTLSServerCredentials()
+	return tlsCreds.ToOpenCensusReceiverServerOption()
 }
 
 // ParseOCAgentConfig unmarshals byte content in the YAML file format

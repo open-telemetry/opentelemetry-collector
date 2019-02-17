@@ -37,9 +37,13 @@ func Start(logger *zap.Logger, v *viper.Viper, spanProc processor.SpanProcessor)
 		return nil, err
 	}
 
-	addr := ":" + strconv.FormatInt(int64(rOpts.Port), 10)
+	tlsCredsOption, hasTLSCreds, err := rOpts.TLSCredentials.ToOpenCensusReceiverServerOption()
+	if err != nil {
+		return nil, fmt.Errorf("OpenCensus receiver TLS Credentials: %v", err)
+	}
 
-	ocr, err := opencensusreceiver.New(addr)
+	addr := ":" + strconv.FormatInt(int64(rOpts.Port), 10)
+	ocr, err := opencensusreceiver.New(addr, tlsCredsOption)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create the OpenCensus trace receiver: %v", err)
 	}
@@ -48,7 +52,15 @@ func Start(logger *zap.Logger, v *viper.Viper, spanProc processor.SpanProcessor)
 		return nil, fmt.Errorf("Cannot bind Opencensus receiver to address %q: %v", addr, err)
 	}
 
-	logger.Info("OpenCensus receiver is running.", zap.Int("port", rOpts.Port))
+	if hasTLSCreds {
+		tlsCreds := rOpts.TLSCredentials
+		logger.Info("OpenCensus receiver is running.",
+			zap.Int("port", rOpts.Port),
+			zap.String("cert_file", tlsCreds.CertFile),
+			zap.String("key_file", tlsCreds.KeyFile))
+	} else {
+		logger.Info("OpenCensus receiver is running.", zap.Int("port", rOpts.Port))
+	}
 
 	return ocr, nil
 }

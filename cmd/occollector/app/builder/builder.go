@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/census-instrumentation/opencensus-service/internal/config"
 	"github.com/spf13/viper"
 )
 
@@ -102,6 +103,9 @@ func (cfg *JaegerReceiverCfg) InitFromViper(v *viper.Viper) (*JaegerReceiverCfg,
 type OpenCensusReceiverCfg struct {
 	// Port is the port that the receiver will use
 	Port int `mapstructure:"port"`
+
+	// TLSCredentials is a (cert_file, key_file) configuration.
+	TLSCredentials *config.TLSCredentials `mapstructure:"tls_credentials"`
 }
 
 // OpenCensusReceiverEnabled checks if the OpenCensus receiver is enabled, via a command-line flag, environment

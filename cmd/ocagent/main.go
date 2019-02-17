@@ -102,7 +102,7 @@ func runOCAgent() {
 	commonMetricsSink := exporter.MultiMetricsExporters(metricsExporters...)
 
 	// Add other receivers here as they are implemented
-	ocReceiverDoneFn, err := runOCReceiver(agentConfig, commonSpanSink, commonMetricsSink)
+	ocReceiverDoneFn, err := runOCReceiver(logger, agentConfig, commonSpanSink, commonMetricsSink)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -189,16 +189,24 @@ func runZPages(port int) func() error {
 	return srv.Close
 }
 
-func runOCReceiver(acfg *config.Config, sr receiver.TraceReceiverSink, mr receiver.MetricsReceiverSink) (doneFn func() error, err error) {
+func runOCReceiver(logger *zap.Logger, acfg *config.Config, sr receiver.TraceReceiverSink, mr receiver.MetricsReceiverSink) (doneFn func() error, err error) {
+	tlsCredsOption, hasTLSCreds, err := acfg.OpenCensusReceiverTLSCredentialsServerOption()
+	if err != nil {
+		return nil, fmt.Errorf("OpenCensus receiver TLS Credentials: %v", err)
+	}
 	addr := acfg.OpenCensusReceiverAddress()
 	corsOrigins := acfg.OpenCensusReceiverCorsAllowedOrigins()
-	ocr, err := opencensusreceiver.New(addr, opencensusreceiver.WithCorsOrigins(corsOrigins))
+	ocr, err := opencensusreceiver.New(addr,
+		tlsCredsOption,
+		opencensusreceiver.WithCorsOrigins(corsOrigins))
+
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create the OpenCensus receiver on address %q: error %v", addr, err)
 	}
 	if err := view.Register(internal.AllViews...); err != nil {
 		return nil, fmt.Errorf("Failed to register internal.AllViews: %v", err)
 	}
+
 	// Temporarily disabling the grpc metrics since they do not provide good data at this moment,
 	// See https://github.com/census-instrumentation/opencensus-service/issues/287
 	// if err := view.Register(ocgrpc.DefaultServerViews...); err != nil {
@@ -225,6 +233,13 @@ func runOCReceiver(acfg *config.Config, sr receiver.TraceReceiverSink, mr receiv
 			return nil, fmt.Errorf("Failed to start MetricsReceiver: %v", err)
 		}
 		log.Printf("Running OpenCensus Metrics receiver as a gRPC service at %q", addr)
+	}
+
+	if hasTLSCreds {
+		tlsCreds := acfg.OpenCensusReceiverTLSServerCredentials()
+		logger.Info("OpenCensus receiver with TLS Credentials",
+			zap.String("cert_file", tlsCreds.CertFile),
+			zap.String("key_file", tlsCreds.KeyFile))
 	}
 
 	doneFn = ocr.Stop

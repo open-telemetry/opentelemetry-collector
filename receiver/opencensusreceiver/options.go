@@ -15,6 +15,8 @@
 package opencensusreceiver
 
 import (
+	"google.golang.org/grpc"
+
 	"github.com/census-instrumentation/opencensus-service/receiver/opencensusreceiver/ocmetrics"
 	"github.com/census-instrumentation/opencensus-service/receiver/opencensusreceiver/octrace"
 )
@@ -73,3 +75,28 @@ func (co *corsOrigins) withReceiver(ocr *Receiver) {
 func WithCorsOrigins(origins []string) Option {
 	return &corsOrigins{origins: origins}
 }
+
+var _ Option = (grpcServerOptions)(nil)
+
+type grpcServerOptions []grpc.ServerOption
+
+func (gsvo grpcServerOptions) withReceiver(ocr *Receiver) {
+	ocr.grpcServerOptions = gsvo
+}
+
+// WithGRPCServerOptions allows one to specify the options for starting a gRPC server.
+func WithGRPCServerOptions(gsOpts ...grpc.ServerOption) Option {
+	gsvOpts := grpcServerOptions(gsOpts)
+	return gsvOpts
+}
+
+type noopOption int
+
+var _ Option = (noopOption)(0)
+
+func (noopOpt noopOption) withReceiver(ocr *Receiver) {
+	return
+}
+
+// WithNoopOption returns an option that doesn't mutate the receiver.
+func WithNoopOption() Option { return noopOption(0) }

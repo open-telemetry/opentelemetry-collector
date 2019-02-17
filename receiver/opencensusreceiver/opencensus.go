@@ -39,12 +39,13 @@ import (
 
 // Receiver is the type that exposes Trace and Metrics reception.
 type Receiver struct {
-	mu          sync.Mutex
-	ln          net.Listener
-	serverGRPC  *grpc.Server
-	serverHTTP  *http.Server
-	gatewayMux  *gatewayruntime.ServeMux
-	corsOrigins []string
+	mu                sync.Mutex
+	ln                net.Listener
+	serverGRPC        *grpc.Server
+	serverHTTP        *http.Server
+	gatewayMux        *gatewayruntime.ServeMux
+	corsOrigins       []string
+	grpcServerOptions []grpc.ServerOption
 
 	traceReceiverOpts   []octrace.Option
 	metricsReceiverOpts []ocmetrics.Option
@@ -138,7 +139,7 @@ func (ocr *Receiver) grpcServer() *grpc.Server {
 	defer ocr.mu.Unlock()
 
 	if ocr.serverGRPC == nil {
-		ocr.serverGRPC = internal.GRPCServerWithObservabilityEnabled()
+		ocr.serverGRPC = internal.GRPCServerWithObservabilityEnabled(ocr.grpcServerOptions...)
 	}
 
 	return ocr.serverGRPC
