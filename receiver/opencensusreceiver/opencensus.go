@@ -151,6 +151,7 @@ func (ocr *Receiver) StopTraceReception(ctx context.Context) error {
 	// StopTraceReception is a noop currently.
 	// TODO: (@odeke-em) investigate whether or not gRPC
 	// provides a way to stop specific services.
+	ocr.traceReceiver.Stop()
 	return nil
 }
 

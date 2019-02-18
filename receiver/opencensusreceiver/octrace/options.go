@@ -17,6 +17,12 @@ package octrace
 // Option interface defines for configuration settings to be applied to receivers.
 //
 // WithReceiver applies the configuration to the given receiver.
-type Option interface {
-	WithReceiver(*Receiver)
+type Option func(*Receiver)
+
+// WithWorkerCount sets the number of worker goroutines that will be started
+// for the receiver
+func WithWorkerCount(workerCount int) Option {
+	return func(r *Receiver) {
+		r.numWorkers = workerCount
+	}
 }

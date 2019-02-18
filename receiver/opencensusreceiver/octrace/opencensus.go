@@ -24,15 +24,28 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal"
 	"github.com/census-instrumentation/opencensus-service/receiver"
 )
 
+const (
+	defaultNumWorkers = 4
+
+	messageChannelSize = 64
+)
+
 // Receiver is the type used to handle spans from OpenCensus exporters.
 type Receiver struct {
-	spanSink receiver.TraceReceiverSink
+	spanSink    receiver.TraceReceiverSink
+	numWorkers  int
+	workers     []*receiverWorker
+	messageChan chan *traceDataWithCtx
+}
+
+type traceDataWithCtx struct {
+	data *data.TraceData
+	ctx  context.Context
 }
 
 // New creates a new opencensus.Receiver reference.
@@ -40,11 +53,27 @@ func New(sr receiver.TraceReceiverSink, opts ...Option) (*Receiver, error) {
 	if sr == nil {
 		return nil, errors.New("needs a non-nil receiver.TraceReceiverSink")
 	}
-	oci := &Receiver{spanSink: sr}
-	for _, opt := range opts {
-		opt.WithReceiver(oci)
+
+	messageChan := make(chan *traceDataWithCtx, messageChannelSize)
+	ocr := &Receiver{
+		spanSink:    sr,
+		numWorkers:  defaultNumWorkers,
+		messageChan: messageChan,
 	}
-	return oci, nil
+	for _, opt := range opts {
+		opt(ocr)
+	}
+
+	// Setup and startup worker pool
+	workers := make([]*receiverWorker, 0, ocr.numWorkers)
+	for index := 0; index < ocr.numWorkers; index++ {
+		worker := newReceiverWorker(ocr)
+		go worker.listenOn(messageChan)
+		workers = append(workers, worker)
+	}
+	ocr.workers = workers
+
+	return ocr, nil
 }
 
 var _ agenttracepb.TraceServiceServer = (*Receiver)(nil)
@@ -52,7 +81,7 @@ var _ agenttracepb.TraceServiceServer = (*Receiver)(nil)
 var errUnimplemented = errors.New("unimplemented")
 
 // Config handles configuration messages.
-func (oci *Receiver) Config(tcs agenttracepb.TraceService_ConfigServer) error {
+func (ocr *Receiver) Config(tcs agenttracepb.TraceService_ConfigServer) error {
 	// TODO: Implement when we define the config receiver/sender.
 	return errUnimplemented
 }
@@ -63,9 +92,10 @@ const receiverName = "opencensus_trace"
 
 // Export is the gRPC method that receives streamed traces from
 // OpenCensus-traceproto compatible libraries/applications.
-func (oci *Receiver) Export(tes agenttracepb.TraceService_ExportServer) error {
+func (ocr *Receiver) Export(tes agenttracepb.TraceService_ExportServer) error {
 	// We need to ensure that it propagates the receiver name as a tag
 	ctxWithReceiverName := internal.ContextWithReceiverName(tes.Context(), receiverName)
+	spansMetricsFn := internal.NewReceivedSpansRecorderStreaming(tes.Context(), receiverName)
 
 	// The first message MUST have a non-nil Node.
 	recv, err := tes.Recv()
@@ -93,7 +123,15 @@ func (oci *Receiver) Export(tes agenttracepb.TraceService_ExportServer) error {
 			resource = recv.Resource
 		}
 
-		go oci.export(ctxWithReceiverName, tes, lastNonNilNode, resource, recv.Spans)
+		td := &data.TraceData{
+			Node:     lastNonNilNode,
+			Resource: resource,
+			Spans:    recv.Spans,
+		}
+
+		ocr.messageChan <- &traceDataWithCtx{data: td, ctx: ctxWithReceiverName}
+
+		spansMetricsFn(td.Node, td.Spans)
 
 		recv, err = tes.Recv()
 		if err != nil {
@@ -107,17 +145,45 @@ func (oci *Receiver) Export(tes agenttracepb.TraceService_ExportServer) error {
 	}
 }
 
-func (oci *Receiver) export(
-	longLivedCtx context.Context,
-	tes agenttracepb.TraceService_ExportServer,
-	node *commonpb.Node,
-	resource *resourcepb.Resource,
-	spans []*tracepb.Span,
-) {
-	tracedata := data.TraceData{Node: node, Resource: resource, Spans: spans}
-	// We MUST unconditionally record metrics from this reception.
-	spansMetricsFn := internal.NewReceivedSpansRecorderStreaming(tes.Context(), receiverName)
-	spansMetricsFn(tracedata.Node, tracedata.Spans)
+// Stop the receiver and its workers
+func (ocr *Receiver) Stop() {
+	for _, worker := range ocr.workers {
+		worker.stopListening()
+	}
+}
+
+type receiverWorker struct {
+	receiver *Receiver
+	tes      agenttracepb.TraceService_ExportServer
+	cancel   chan struct{}
+}
+
+func newReceiverWorker(receiver *Receiver) *receiverWorker {
+	return &receiverWorker{
+		receiver: receiver,
+		cancel:   make(chan struct{}),
+	}
+}
+
+func (rw *receiverWorker) listenOn(cn <-chan *traceDataWithCtx) {
+	for {
+		select {
+		case tdWithCtx := <-cn:
+			rw.export(tdWithCtx.ctx, tdWithCtx.data)
+		case <-rw.cancel:
+			return
+		}
+	}
+}
+
+func (rw *receiverWorker) stopListening() {
+	close(rw.cancel)
+}
+
+func (rw *receiverWorker) export(longLivedCtx context.Context, tracedata *data.TraceData) {
+	if tracedata == nil {
+		return
+	}
 
 	if len(tracedata.Spans) == 0 {
 		return
@@ -134,7 +200,7 @@ func (oci *Receiver) export(
 	// If the starting RPC has a parent span, then add it as a parent link.
 	internal.SetParentLink(longLivedCtx, span)
 
-	oci.spanSink.ReceiveTraceData(ctx, tracedata)
+	rw.receiver.spanSink.ReceiveTraceData(ctx, *tracedata)
 
 	span.Annotate([]trace.Attribute{
 		trace.Int64Attribute("num_spans", int64(len(tracedata.Spans))),
