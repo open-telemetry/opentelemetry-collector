@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tracetranslator
+package zipkin
 
 import (
 	"bytes"
@@ -27,10 +27,12 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"github.com/pkg/errors"
+
+	"github.com/census-instrumentation/opencensus-service/translator/trace"
 )
 
-// ZipkinV1ThriftBatchToOCProto converts Zipkin v1 spans to OC Proto.
-func ZipkinV1ThriftBatchToOCProto(zSpans []*zipkincore.Span) ([]*agenttracepb.ExportTraceServiceRequest, error) {
+// V1ThriftBatchToOCProto converts Zipkin v1 spans to OC Proto.
+func V1ThriftBatchToOCProto(zSpans []*zipkincore.Span) ([]*agenttracepb.ExportTraceServiceRequest, error) {
 	ocSpansAndParsedAnnotations := make([]ocSpanAndParsedAnnotations, 0, len(zSpans))
 	for _, zSpan := range zSpans {
 		ocSpan, parsedAnnotations, err := zipkinV1ThriftToOCSpan(zSpan)
@@ -58,11 +60,11 @@ func zipkinV1ThriftToOCSpan(zSpan *zipkincore.Span) (*tracepb.Span, *annotationP
 	// failures on the receivers in general are silent at this moment, so letting them
 	// proceed for now. We should validate the traceID, spanID and parentID are good with
 	// OC proto requirements.
-	traceID := jTraceIDToOCProtoTraceID(traceIDHigh, zSpan.TraceID)
-	spanID := jSpanIDToOCProtoSpanID(zSpan.ID)
+	traceID := tracetranslator.Int64TraceIDToByteTraceID(traceIDHigh, zSpan.TraceID)
+	spanID := tracetranslator.Int64SpanIDToByteSpanID(zSpan.ID)
 	var parentID []byte
 	if zSpan.ParentID != nil {
-		parentID = jSpanIDToOCProtoSpanID(*zSpan.ParentID)
+		parentID = tracetranslator.Int64SpanIDToByteSpanID(*zSpan.ParentID)
 	}
 
 	parsedAnnotations := parseZipkinV1ThriftAnnotations(zSpan.Annotations)

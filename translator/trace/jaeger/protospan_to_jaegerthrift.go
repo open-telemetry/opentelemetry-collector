@@ -12,20 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tracetranslator
+package jaeger
 
 import (
 	"encoding/binary"
 	"errors"
 	"fmt"
 
+	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
+	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/census-instrumentation/opencensus-service/translator/trace"
 )
 
 var (
@@ -326,7 +327,7 @@ func ocAnnotationToJagerTags(annotation *tracepb.Span_TimeEvent_Annotation) []*j
 	desc := truncableStringToStr(annotation.Description)
 	if desc != "" {
 		jDescTag := &jaeger.Tag{
-			Key:   annotationDescriptionKey,
+			Key:   tracetranslator.AnnotationDescriptionKey,
 			VStr:  &desc,
 			VType: jaeger.TagType_STRING,
 		}
@@ -343,14 +344,14 @@ func ocMessageEventToJaegerTags(msgEvent *tracepb.Span_TimeEvent_MessageEvent) [
 
 	jID := int64(msgEvent.Id)
 	idTag := &jaeger.Tag{
-		Key:   messageEventIDKey,
+		Key:   tracetranslator.MessageEventIDKey,
 		VLong: &jID,
 		VType: jaeger.TagType_LONG,
 	}
 
 	msgTypeStr := msgEvent.Type.String()
 	msgType := &jaeger.Tag{
-		Key:   messageEventTypeKey,
+		Key:   tracetranslator.MessageEventTypeKey,
 		VStr:  &msgTypeStr,
 		VType: jaeger.TagType_STRING,
 	}
@@ -366,14 +367,14 @@ func ocMessageEventToJaegerTags(msgEvent *tracepb.Span_TimeEvent_MessageEvent) [
 	// seems a good compromise since the risk of such large values are small.
 	compSize := int64(msgEvent.CompressedSize)
 	compressedSize := &jaeger.Tag{
-		Key:   messageEventCompressedSizeKey,
+		Key:   tracetranslator.MessageEventCompressedSizeKey,
 		VLong: &compSize,
 		VType: jaeger.TagType_LONG,
 	}
 
 	uncompSize := int64(msgEvent.UncompressedSize)
 	uncompressedSize := &jaeger.Tag{
-		Key:   messageEventUncompressedSizeKey,
+		Key:   tracetranslator.MessageEventUncompressedSizeKey,
 		VLong: &uncompSize,
 		VType: jaeger.TagType_LONG,
 	}

@@ -34,7 +34,7 @@ import (
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/exporter"
 	"github.com/census-instrumentation/opencensus-service/internal"
-	tracetranslator "github.com/census-instrumentation/opencensus-service/translator/trace"
+	spandatatranslator "github.com/census-instrumentation/opencensus-service/translator/trace/spandata"
 )
 
 // ZipkinConfig holds the configuration of a Zipkin exporter.
@@ -206,7 +206,7 @@ func (ze *zipkinExporter) ExportSpans(ctx context.Context, td data.TraceData) (z
 
 	goodSpans := make([]*tracepb.Span, 0, len(td.Spans))
 	for _, span := range td.Spans {
-		sd, err := tracetranslator.ProtoSpanToOCSpanData(span)
+		sd, err := spandatatranslator.ProtoSpanToOCSpanData(span)
 		if err != nil {
 			return err
 		}

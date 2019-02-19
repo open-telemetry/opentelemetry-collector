@@ -29,7 +29,7 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal"
-	tracetranslator "github.com/census-instrumentation/opencensus-service/translator/trace"
+	spandatatranslator "github.com/census-instrumentation/opencensus-service/translator/trace/spandata"
 )
 
 // OcProtoSpansToOCSpanDataInstrumented converts
@@ -61,7 +61,7 @@ func OcProtoSpansToOCSpanDataInstrumented(ctx context.Context, exporterName stri
 	var errs []error
 	var goodSpans []*tracepb.Span
 	for _, span := range td.Spans {
-		sd, err := tracetranslator.ProtoSpanToOCSpanData(span)
+		sd, err := spandatatranslator.ProtoSpanToOCSpanData(span)
 		if err == nil {
 			te.ExportSpan(sd)
 			goodSpans = append(goodSpans, span)

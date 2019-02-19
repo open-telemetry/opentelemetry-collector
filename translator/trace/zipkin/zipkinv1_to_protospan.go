@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tracetranslator
+package zipkin
 
 import (
 	"encoding/binary"
@@ -82,8 +82,8 @@ type binaryAnnotation struct {
 	Endpoint *endpoint `json:"endpoint"`
 }
 
-// ZipkinV1JSONBatchToOCProto converts a JSON blob with a list of Zipkin v1 spans to OC Proto.
-func ZipkinV1JSONBatchToOCProto(blob []byte) ([]*agenttracepb.ExportTraceServiceRequest, error) {
+// V1JSONBatchToOCProto converts a JSON blob with a list of Zipkin v1 spans to OC Proto.
+func V1JSONBatchToOCProto(blob []byte) ([]*agenttracepb.ExportTraceServiceRequest, error) {
 	var zSpans []*zipkinV1Span
 	if err := json.Unmarshal(blob, &zSpans); err != nil {
 		return nil, errors.WithMessage(err, msgZipkinV1JSONUnmarshalError)

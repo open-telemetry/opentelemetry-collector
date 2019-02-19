@@ -26,7 +26,7 @@ import (
 	"go.uber.org/zap"
 
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
-	"github.com/census-instrumentation/opencensus-service/translator/trace"
+	jaegertranslator "github.com/census-instrumentation/opencensus-service/translator/trace/jaeger"
 )
 
 // Default timeout for http request in seconds
@@ -86,7 +86,7 @@ func (s *JaegerThriftHTTPSender) ProcessSpans(batch *agenttracepb.ExportTraceSer
 		return 0, fmt.Errorf("Jaeger sender received nil batch")
 	}
 
-	tBatch, err := tracetranslator.OCProtoToJaegerThrift(batch)
+	tBatch, err := jaegertranslator.OCProtoToJaegerThrift(batch)
 	if err != nil {
 		return uint64(len(batch.Spans)), err
 	}

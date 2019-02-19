@@ -16,10 +16,10 @@ package tracetranslator
 
 // Some of the keys used to represent OC proto constructs as tags or annotations in other formats.
 const (
-	annotationDescriptionKey = "description"
+	AnnotationDescriptionKey = "description"
 
-	messageEventIDKey               = "message.id"
-	messageEventTypeKey             = "message.type"
-	messageEventCompressedSizeKey   = "message.compressed_size"
-	messageEventUncompressedSizeKey = "message.uncompressed_size"
+	MessageEventIDKey               = "message.id"
+	MessageEventTypeKey             = "message.type"
+	MessageEventCompressedSizeKey   = "message.compressed_size"
+	MessageEventUncompressedSizeKey = "message.uncompressed_size"
 )

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tracetranslator
+package zipkin
 
 import (
 	"encoding/json"
@@ -136,7 +136,7 @@ func TestZipkinJSONFallbackToLocalComponent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to load test data: %v", err)
 	}
-	reqs, err := ZipkinV1JSONBatchToOCProto(blob)
+	reqs, err := V1JSONBatchToOCProto(blob)
 	if err != nil {
 		t.Fatalf("failed to translate zipkinv1 to OC proto: %v", err)
 	}
@@ -165,12 +165,12 @@ func TestZipkinJSONFallbackToLocalComponent(t *testing.T) {
 	}
 }
 
-func TestSingleJSONZipkinV1BatchToOCProto(t *testing.T) {
+func TestSingleJSONV1BatchToOCProto(t *testing.T) {
 	blob, err := ioutil.ReadFile("./testdata/zipkin_v1_single_batch.json")
 	if err != nil {
 		t.Fatalf("failed to load test data: %v", err)
 	}
-	got, err := ZipkinV1JSONBatchToOCProto(blob)
+	got, err := V1JSONBatchToOCProto(blob)
 	if err != nil {
 		t.Fatalf("failed to translate zipkinv1 to OC proto: %v", err)
 	}
@@ -184,7 +184,7 @@ func TestSingleJSONZipkinV1BatchToOCProto(t *testing.T) {
 	}
 }
 
-func TestMultipleJSONZipkinV1BatchesToOCProto(t *testing.T) {
+func TestMultipleJSONV1BatchesToOCProto(t *testing.T) {
 	blob, err := ioutil.ReadFile("./testdata/zipkin_v1_multiple_batches.json")
 	if err != nil {
 		t.Fatalf("failed to load test data: %v", err)
@@ -203,7 +203,7 @@ func TestMultipleJSONZipkinV1BatchesToOCProto(t *testing.T) {
 			t.Fatalf("failed to marshal interface back to blob: %v", err)
 		}
 
-		g, err := ZipkinV1JSONBatchToOCProto(jsonBatch)
+		g, err := V1JSONBatchToOCProto(jsonBatch)
 		if err != nil {
 			t.Fatalf("failed to translate zipkinv1 to OC proto: %v", err)
 		}

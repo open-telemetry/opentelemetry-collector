@@ -40,7 +40,7 @@ import (
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal"
 	"github.com/census-instrumentation/opencensus-service/receiver"
-	tracetranslator "github.com/census-instrumentation/opencensus-service/translator/trace"
+	jaegertranslator "github.com/census-instrumentation/opencensus-service/translator/trace/jaeger"
 )
 
 // Configuration defines the behavior and the ports that
@@ -230,7 +230,7 @@ func (jr *jReceiver) SubmitBatches(ctx thrift.Context, batches []*jaeger.Batch) 
 	spansMetricsFn := internal.NewReceivedSpansRecorderStreaming(ctx, "jaeger-collector")
 
 	for _, batch := range batches {
-		octrace, err := tracetranslator.JaegerThriftBatchToOCProto(batch)
+		octrace, err := jaegertranslator.ThriftBatchToOCProto(batch)
 		// TODO: (@odeke-em) add this error for Jaeger observability
 		ok := false
 
@@ -260,7 +260,7 @@ func (jr *jReceiver) EmitZipkinBatch(spans []*zipkincore.Span) error {
 // EmitBatch implements cmd/agent/reporter.Reporter and it forwards
 // Jaeger spans received by the Jaeger agent processor.
 func (jr *jReceiver) EmitBatch(batch *jaeger.Batch) error {
-	octrace, err := tracetranslator.JaegerThriftBatchToOCProto(batch)
+	octrace, err := jaegertranslator.ThriftBatchToOCProto(batch)
 	if err != nil {
 		// TODO: (@odeke-em) add this error for Jaeger observability metrics
 		return err

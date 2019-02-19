@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tracetranslator
+package zipkin
 
 import (
 	"encoding/json"
@@ -35,7 +35,7 @@ func TestZipkinThriftFallbackToLocalComponent(t *testing.T) {
 		t.Fatalf("failed to unmarshal json into zipkin v1 thrift: %v", err)
 	}
 
-	reqs, err := ZipkinV1ThriftBatchToOCProto(ztSpans)
+	reqs, err := V1ThriftBatchToOCProto(ztSpans)
 	if err != nil {
 		t.Fatalf("failed to translate zipkinv1 thrift to OC proto: %v", err)
 	}
@@ -64,7 +64,7 @@ func TestZipkinThriftFallbackToLocalComponent(t *testing.T) {
 	}
 }
 
-func TestZipkinV1ThriftToOCProto(t *testing.T) {
+func TestV1ThriftToOCProto(t *testing.T) {
 	blob, err := ioutil.ReadFile("./testdata/zipkin_v1_thrift_single_batch.json")
 	if err != nil {
 		t.Fatalf("failed to load test data: %v", err)
@@ -76,7 +76,7 @@ func TestZipkinV1ThriftToOCProto(t *testing.T) {
 		t.Fatalf("failed to unmarshal json into zipkin v1 thrift: %v", err)
 	}
 
-	got, err := ZipkinV1ThriftBatchToOCProto(ztSpans)
+	got, err := V1ThriftBatchToOCProto(ztSpans)
 	if err != nil {
 		t.Fatalf("failed to translate zipkinv1 thrift to OC proto: %v", err)
 	}
@@ -90,7 +90,7 @@ func TestZipkinV1ThriftToOCProto(t *testing.T) {
 	}
 }
 
-func BenchmarkZipkinV1ThriftToOCProto(b *testing.B) {
+func BenchmarkV1ThriftToOCProto(b *testing.B) {
 	blob, err := ioutil.ReadFile("./testdata/zipkin_v1_thrift_single_batch.json")
 	if err != nil {
 		b.Fatalf("failed to load test data: %v", err)
@@ -103,7 +103,7 @@ func BenchmarkZipkinV1ThriftToOCProto(b *testing.B) {
 	}
 
 	for n := 0; n < b.N; n++ {
-		ZipkinV1ThriftBatchToOCProto(ztSpans)
+		V1ThriftBatchToOCProto(ztSpans)
 	}
 }
 

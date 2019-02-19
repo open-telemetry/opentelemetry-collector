@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tracetranslator
+package jaeger
 
 import (
 	"encoding/json"
@@ -24,15 +24,17 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/census-instrumentation/opencensus-service/internal/testutils"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
+
+	"github.com/census-instrumentation/opencensus-service/internal/testutils"
+	"github.com/census-instrumentation/opencensus-service/translator/trace"
 )
 
 func TestJaegerFromOCProtoTraceIDRoundTrip(t *testing.T) {
 	wl := int64(0x0001020304050607)
 	wh := int64(0x70605040302010FF)
-	gl, gh, err := traceIDBytesToLowAndHigh(jTraceIDToOCProtoTraceID(wh, wl))
+	gl, gh, err := traceIDBytesToLowAndHigh(tracetranslator.Int64TraceIDToByteTraceID(wh, wl))
 	if err != nil {
 		t.Errorf("Error converting from OC trace id: %v", err)
 	}
@@ -43,7 +45,7 @@ func TestJaegerFromOCProtoTraceIDRoundTrip(t *testing.T) {
 
 func TestJaegerFromOCProtoSpanIDRoundTrip(t *testing.T) {
 	w := int64(0x0001020304050607)
-	g, err := ocIDBytesToJaegerID(jSpanIDToOCProtoSpanID(w))
+	g, err := ocIDBytesToJaegerID(tracetranslator.Int64SpanIDToByteSpanID(w))
 	if err != nil {
 		t.Errorf("Error converting from OC span id: %v", err)
 	}

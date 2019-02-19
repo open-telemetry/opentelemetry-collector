@@ -38,7 +38,7 @@ import (
 	"github.com/census-instrumentation/opencensus-service/internal"
 	"github.com/census-instrumentation/opencensus-service/internal/testutils"
 	"github.com/census-instrumentation/opencensus-service/receiver"
-	"github.com/census-instrumentation/opencensus-service/translator/trace"
+	spandatatranslator "github.com/census-instrumentation/opencensus-service/translator/trace/spandata"
 )
 
 func TestTraceIDConversion(t *testing.T) {
@@ -386,7 +386,7 @@ func TestConversionRoundtrip(t *testing.T) {
 		reporterShutdownFns = append(reporterShutdownFns, re.Close)
 
 		for _, span := range treq.Spans {
-			sd, _ := tracetranslator.ProtoSpanToOCSpanData(span)
+			sd, _ := spandatatranslator.ProtoSpanToOCSpanData(span)
 			ze.ExportSpan(sd)
 		}
 	}

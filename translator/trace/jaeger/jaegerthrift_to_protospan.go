@@ -12,26 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tracetranslator
+package jaeger
 
 import (
 	"encoding/base64"
-	"encoding/binary"
 	"fmt"
 	"reflect"
 	"strconv"
 	"time"
 
-	"github.com/census-instrumentation/opencensus-service/internal"
-
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
+
+	"github.com/census-instrumentation/opencensus-service/internal"
+	"github.com/census-instrumentation/opencensus-service/translator/trace"
 )
 
-// JaegerThriftBatchToOCProto converts a single Jaeger Thrift batch of spans to a OC proto batch.
-func JaegerThriftBatchToOCProto(jbatch *jaeger.Batch) (*agenttracepb.ExportTraceServiceRequest, error) {
+// ThriftBatchToOCProto converts a single Jaeger Thrift batch of spans to a OC proto batch.
+func ThriftBatchToOCProto(jbatch *jaeger.Batch) (*agenttracepb.ExportTraceServiceRequest, error) {
 	ocbatch := &agenttracepb.ExportTraceServiceRequest{
 		Node:  jProcessToOCProtoNode(jbatch.GetProcess()),
 		Spans: jSpansToOCProtoSpans(jbatch.GetSpans()),
@@ -106,10 +106,10 @@ func jSpansToOCProtoSpans(jspans []*jaeger.Span) []*tracepb.Span {
 		startTime := epochMicrosecondsAsTime(uint64(jspan.StartTime))
 		_, sKind, sStatus, sAttributes := jtagsToAttributes(jspan.Tags)
 		span := &tracepb.Span{
-			TraceId: jTraceIDToOCProtoTraceID(jspan.TraceIdHigh, jspan.TraceIdLow),
-			SpanId:  jSpanIDToOCProtoSpanID(jspan.SpanId),
+			TraceId: tracetranslator.Int64TraceIDToByteTraceID(jspan.TraceIdHigh, jspan.TraceIdLow),
+			SpanId:  tracetranslator.Int64SpanIDToByteSpanID(jspan.SpanId),
 			// TODO: Tracestate: Check RFC status and if is applicable,
-			ParentSpanId: jSpanIDToOCProtoSpanID(jspan.ParentSpanId),
+			ParentSpanId: tracetranslator.Int64SpanIDToByteSpanID(jspan.ParentSpanId),
 			Name:         strToTruncatableString(jspan.OperationName),
 			Kind:         sKind,
 			StartTime:    internal.TimeToTimestamp(startTime),
@@ -171,33 +171,14 @@ func jReferencesToOCProtoLinks(jrefs []*jaeger.SpanRef) *tracepb.Span_Links {
 		}
 
 		link := &tracepb.Span_Link{
-			TraceId: jTraceIDToOCProtoTraceID(jref.TraceIdHigh, jref.TraceIdLow),
-			SpanId:  jSpanIDToOCProtoSpanID(jref.SpanId),
+			TraceId: tracetranslator.Int64TraceIDToByteTraceID(jref.TraceIdHigh, jref.TraceIdLow),
+			SpanId:  tracetranslator.Int64SpanIDToByteSpanID(jref.SpanId),
 			Type:    linkType,
 		}
 		links = append(links, link)
 	}
 
 	return &tracepb.Span_Links{Link: links}
-}
-
-func jTraceIDToOCProtoTraceID(high, low int64) []byte {
-	if high == 0 && low == 0 {
-		return nil
-	}
-	traceID := make([]byte, 16)
-	binary.BigEndian.PutUint64(traceID[:8], uint64(high))
-	binary.BigEndian.PutUint64(traceID[8:], uint64(low))
-	return traceID
-}
-
-func jSpanIDToOCProtoSpanID(id int64) []byte {
-	if id == 0 {
-		return nil
-	}
-	spanID := make([]byte, 8)
-	binary.BigEndian.PutUint64(spanID, uint64(id))
-	return spanID
 }
 
 func jtagsToAttributes(tags []*jaeger.Tag) (string, tracepb.Span_SpanKind, *tracepb.Status, *tracepb.Span_Attributes) {

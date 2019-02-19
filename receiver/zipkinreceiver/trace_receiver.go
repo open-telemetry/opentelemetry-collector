@@ -42,7 +42,7 @@ import (
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal"
 	"github.com/census-instrumentation/opencensus-service/receiver"
-	"github.com/census-instrumentation/opencensus-service/translator/trace"
+	zipkintranslator "github.com/census-instrumentation/opencensus-service/translator/trace/zipkin"
 )
 
 // ZipkinReceiver type is used to handle spans received in the Zipkin format.
@@ -120,9 +120,9 @@ func (zr *ZipkinReceiver) v1ToTraceSpans(blob []byte, hdr http.Header) (reqs []*
 			return nil, err
 		}
 
-		return tracetranslator.ZipkinV1ThriftBatchToOCProto(zSpans)
+		return zipkintranslator.V1ThriftBatchToOCProto(zSpans)
 	}
-	return tracetranslator.ZipkinV1JSONBatchToOCProto(blob)
+	return zipkintranslator.V1JSONBatchToOCProto(blob)
 }
 
 // deserializeThrift decodes Thrift bytes to a list of spans.

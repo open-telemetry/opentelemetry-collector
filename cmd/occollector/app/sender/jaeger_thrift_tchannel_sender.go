@@ -21,7 +21,7 @@ import (
 
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/processor"
-	"github.com/census-instrumentation/opencensus-service/translator/trace"
+	jaegertranslator "github.com/census-instrumentation/opencensus-service/translator/trace/jaeger"
 )
 
 // JaegerThriftTChannelSender takes span batches and sends them
@@ -47,7 +47,7 @@ func NewJaegerThriftTChannelSender(
 // ProcessSpans sends the received data to the configured Jaeger Thrift end-point.
 func (s *JaegerThriftTChannelSender) ProcessSpans(batch *agenttracepb.ExportTraceServiceRequest, spanFormat string) (uint64, error) {
 	// TODO: (@pjanotti) In case of failure the translation to Jaeger Thrift is going to be remade, cache it somehow.
-	tBatch, err := tracetranslator.OCProtoToJaegerThrift(batch)
+	tBatch, err := jaegertranslator.OCProtoToJaegerThrift(batch)
 	if err != nil {
 		return uint64(len(tBatch.Spans)), err
 	}
