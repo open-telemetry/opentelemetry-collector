@@ -352,16 +352,18 @@ Usage:
   occollector [flags]
 
 Flags:
-      --config string                Path to the config file
-      --debug-processor              Flag to add a debug processor (combine with log level DEBUG to log incoming spans)
-      --health-check-http-port int   Port on which to run the healthcheck http server. (default 13133)
-  -h, --help                         help for occollector
-      --log-level string             Output level of logs (TRACE, DEBUG, INFO, WARN, ERROR, FATAL) (default "INFO")
-      --metrics-level string         Output level of telemetry metrics (NONE, BASIC, NORMAL, DETAILED) (default "BASIC")
-      --metrics-port uint16          Port exposing collector telemetry. (default 8888)
-      --receive-jaeger               Flag to run the Jaeger receiver (i.e.: Jaeger Collector), default settings: {ThriftTChannelPort:14267 ThriftHTTPPort:14268}
-      --receive-oc-trace             Flag to run the OpenCensus trace receiver, default settings: {Port:55678} (default true)
-      --receive-zipkin               Flag to run the Zipkin receiver, default settings: {Port:9411}
+      --config string                 Path to the config file
+      --debug-processor               Flag to add a debug processor (combine with log level DEBUG to log incoming spans)
+      --health-check-http-port uint   Port on which to run the healthcheck http server. (default 13133)
+  -h, --help                          help for occollector
+      --log-level string              Output level of logs (TRACE, DEBUG, INFO, WARN, ERROR, FATAL) (default "INFO")
+      --metrics-level string          Output level of telemetry metrics (NONE, BASIC, NORMAL, DETAILED) (default "BASIC")
+      --metrics-port uint             Port exposing collector telemetry. (default 8888)
+      --receive-jaeger                Flag to run the Jaeger receiver (i.e.: Jaeger Collector), default settings: {ThriftTChannelPort:14267 ThriftHTTPPort:14268}
+      --receive-oc-trace              Flag to run the OpenCensus trace receiver, default settings: {Port:55678} (default true)
+      --receive-zipkin                Flag to run the Zipkin receiver, default settings: {Port:9411}
+      --receive-zipkin-scribe         Flag to run the Zipkin Scribe receiver, default settings: {Address: Port:9410 Category:zipkin}
+      --tail-sampling-always-sample   Flag to use a tail-based sampling processor with an always sample policy, unless tail sampling setting is present on configuration file.
 ```
 
 Sample configuration file:
