@@ -46,7 +46,7 @@ func (sp *debugSpanProcessor) ProcessSpans(batch *agenttracepb.ExportTraceServic
 
 	statsTags := StatsTagsForBatch("debug", ServiceNameForBatch(batch), spanFormat)
 	numSpans := len(batch.Spans)
-	stats.RecordWithTags(context.Background(), statsTags, StatReceivedBatchCount.M(1), StatReceivedSpanCount.M(int64(numSpans)))
+	stats.RecordWithTags(context.Background(), statsTags, StatReceivedSpanCount.M(int64(numSpans)))
 
 	sp.logger.Debug("debugSpanProcessor", zap.String("originalFormat", spanFormat), zap.Int("#spans", numSpans))
 	return 0, nil
@@ -62,9 +62,6 @@ var (
 	TagSourceFormatKey, _ = tag.NewKey("format")
 	TagServiceNameKey, _  = tag.NewKey("service")
 	TagExporterNameKey, _ = tag.NewKey("exporter")
-
-	StatReceivedBatchCount = stats.Int64("batches_received", "counts the number of batches received", stats.UnitDimensionless)
-	StatDroppedBatchCount  = stats.Int64("batches_dropped", "counts the number of batches dropped", stats.UnitDimensionless)
 
 	StatReceivedSpanCount = stats.Int64("spans_received", "counts the number of spans received", stats.UnitDimensionless)
 	StatDroppedSpanCount  = stats.Int64("spans_dropped", "counts the number of spans dropped", stats.UnitDimensionless)
@@ -99,15 +96,15 @@ func MetricViews(level telemetry.Level) []*view.View {
 
 	// There are some metrics enabled, return the views.
 	receivedBatchesView := &view.View{
-		Name:        StatReceivedBatchCount.Name(),
-		Measure:     StatReceivedBatchCount,
+		Name:        "batches_received",
+		Measure:     StatReceivedSpanCount,
 		Description: "The number of span batches received.",
 		TagKeys:     tagKeys,
 		Aggregation: view.Count(),
 	}
 	droppedBatchesView := &view.View{
-		Name:        StatDroppedBatchCount.Name(),
-		Measure:     StatDroppedBatchCount,
+		Name:        "batches_dropped",
+		Measure:     StatDroppedSpanCount,
 		Description: "The number of span batches dropped.",
 		TagKeys:     tagKeys,
 		Aggregation: view.Count(),

@@ -128,7 +128,7 @@ func (sp *queuedSpanProcessor) enqueueSpanBatch(batch *agenttracepb.ExportTraceS
 
 	statsTags := processor.StatsTagsForBatch(sp.name, processor.ServiceNameForBatch(batch), spanFormat)
 	numSpans := len(batch.Spans)
-	stats.RecordWithTags(context.Background(), statsTags, processor.StatReceivedBatchCount.M(1), processor.StatReceivedSpanCount.M(int64(numSpans)))
+	stats.RecordWithTags(context.Background(), statsTags, processor.StatReceivedSpanCount.M(int64(numSpans)))
 
 	addedToQueue := sp.queue.Produce(item)
 	if !addedToQueue {
@@ -192,7 +192,7 @@ func (sp *queuedSpanProcessor) processItemFromQueue(item *queueItem) {
 
 func (sp *queuedSpanProcessor) onItemDropped(item *queueItem, statsTags []tag.Mutator) {
 	numSpans := len(item.batch.Spans)
-	stats.RecordWithTags(context.Background(), statsTags, processor.StatDroppedBatchCount.M(1), processor.StatDroppedSpanCount.M(int64(numSpans)))
+	stats.RecordWithTags(context.Background(), statsTags, processor.StatDroppedSpanCount.M(int64(numSpans)))
 
 	sp.logger.Warn("Span batch dropped",
 		zap.String("processor", sp.name),
