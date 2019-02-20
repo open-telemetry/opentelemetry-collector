@@ -37,7 +37,7 @@ import (
 )
 
 const (
-	initialBatchCapacity     = uint32(1024)
+	initialBatchCapacity     = uint32(512)
 	nodeStatusDead           = uint32(1)
 	batchStatusClosed        = uint32(1)
 	tickerPendingNodesBuffer = 16
@@ -237,13 +237,20 @@ func (nb *nodeBatcher) add(spans []*tracepb.Span) {
 
 // cutBatch cuts the provided batch, and sets a new batch on this nodeBatcher
 func (nb *nodeBatcher) cutBatch(b *batch) {
+	initialCap := b.getCurrentCap()
+	currSize := b.getCurrentItemCount()
+	reducedCap := initialCap >> 1
+	for currSize < reducedCap && reducedCap > initialBatchCapacity {
+		initialCap = reducedCap
+		reducedCap = reducedCap >> 1
+	}
 	// atomic.CompareAndSwapPointer only takes unsafe.Pointer interfaces. We do not use unsafe
 	// to skirt around the golang type system.
 	currBatchPtr := (*unsafe.Pointer)(unsafe.Pointer(&nb.currBatch))
 	swapped := atomic.CompareAndSwapPointer(
 		currBatchPtr,
 		unsafe.Pointer(b),
-		unsafe.Pointer(newBatch(b.getCurrentCap(), nb.sendBatchSize)),
+		unsafe.Pointer(newBatch(initialCap, nb.sendBatchSize)),
 	)
 	// Since we are doing an atomic compare and swap, this batch will only be sent once.
 	if swapped {
