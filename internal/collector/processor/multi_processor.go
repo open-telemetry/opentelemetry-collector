@@ -15,8 +15,7 @@
 package processor
 
 import (
-	"fmt"
-	"strings"
+	"github.com/census-instrumentation/opencensus-service/internal"
 
 	"github.com/spf13/cast"
 
@@ -124,18 +123,5 @@ func (msp *multiSpanProcessor) ProcessSpans(batch *agenttracepb.ExportTraceServi
 			maxFailures = failures
 		}
 	}
-
-	var err error
-	numErrors := len(errors)
-	if numErrors == 1 {
-		err = errors[0]
-	} else if numErrors > 1 {
-		errMsgs := make([]string, numErrors)
-		for _, err := range errors {
-			errMsgs = append(errMsgs, err.Error())
-		}
-		err = fmt.Errorf("[%s]", strings.Join(errMsgs, "; "))
-	}
-
-	return maxFailures, err
+	return maxFailures, internal.CombineErrors(errors)
 }

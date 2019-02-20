@@ -16,7 +16,6 @@ package internal
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -102,14 +101,15 @@ func TimeToTimestamp(t time.Time) *timestamp.Timestamp {
 
 // CombineErrors converts a list of errors into one error.
 func CombineErrors(errs []error) error {
-	if len(errs) == 0 {
-		return nil
+	numErrors := len(errs)
+	if numErrors == 1 {
+		return errs[0]
+	} else if numErrors > 1 {
+		errMsgs := make([]string, numErrors)
+		for _, err := range errs {
+			errMsgs = append(errMsgs, err.Error())
+		}
+		return fmt.Errorf("[%s]", strings.Join(errMsgs, "; "))
 	}
-
-	// Otherwise
-	buf := new(strings.Builder)
-	for _, err := range errs {
-		fmt.Fprintf(buf, "%v\n", err)
-	}
-	return errors.New(buf.String())
+	return nil
 }
