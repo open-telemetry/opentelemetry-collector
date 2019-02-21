@@ -3,6 +3,7 @@
 [![Build Status][travis-image]][travis-url]
 [![GoDoc][godoc-image]][godoc-url]
 [![Gitter chat][gitter-image]][gitter-url]
+[![Coverage Status][codecov-image]][codecov-url]
 
 # Table of contents
 - [Introduction](#introduction)
@@ -406,3 +407,5 @@ queued-exporters:
 [godoc-url]: https://godoc.org/github.com/census-instrumentation/opencensus-service
 [gitter-image]: https://badges.gitter.im/census-instrumentation/lobby.svg
 [gitter-url]: https://gitter.im/census-instrumentation/lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
+[codecov-image]: https://codecov.io/gh/census-instrumentation/opencensus-service/branch/master/graph/badge.svg
+[codecov-url]: https://codecov.io/gh/census-instrumentation/opencensus-service/branch/master/
