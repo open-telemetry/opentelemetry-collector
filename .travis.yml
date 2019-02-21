@@ -11,4 +11,11 @@ env:
 
 install:
   - make install-tools
-  - go get -t -v ./...
+
+script:
+  - make fmt
+  - make lint
+  - make test-with-coverage
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)

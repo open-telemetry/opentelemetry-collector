@@ -1,6 +1,7 @@
 ALL_SRC := $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 
 GOTEST_OPT?=-v -race -timeout 30s
+GOTEST_OPT_WITH_COVERAGE = $(GOTEST_OPT) -coverprofile=coverage.txt -covermode=atomic
 GOTEST=go test
 GOFMT=gofmt
 GOLINT=golint
@@ -22,6 +23,10 @@ default_goal: fmt lint test
 .PHONY: test
 test:
 	$(GOTEST) $(GOTEST_OPT) ./...
+
+.PHONY: test-with-coverage
+test-with-coverage:
+	$(GOTEST) $(GOTEST_OPT_WITH_COVERAGE) ./...
 
 .PHONY: fmt
 fmt:
