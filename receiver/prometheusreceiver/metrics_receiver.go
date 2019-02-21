@@ -22,6 +22,7 @@ import (
 
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	"github.com/census-instrumentation/opencensus-service/data"
+	"github.com/census-instrumentation/opencensus-service/processor"
 	"github.com/census-instrumentation/opencensus-service/receiver"
 	"github.com/orijtech/promreceiver"
 	"github.com/prometheus/prometheus/config"
@@ -60,15 +61,15 @@ var (
 
 // StartMetricsReception is the method that starts Prometheus scraping and it
 // is controlled by having previously defined a Configuration using perhaps New.
-func (pr *Preceiver) StartMetricsReception(ctx context.Context, mrs receiver.MetricsReceiverSink) error {
+func (pr *Preceiver) StartMetricsReception(ctx context.Context, nextProcessor processor.MetricsDataProcessor) error {
 	var err = errAlreadyStarted
 	pr.startOnce.Do(func() {
-		if mrs == nil {
+		if nextProcessor == nil {
 			err = errNilMetricsReceiverSink
 			return
 		}
 
-		tms := &promMetricsReceiverToOpenCensusMetricsReceiver{mrs: mrs}
+		tms := &promMetricsReceiverToOpenCensusMetricsReceiver{nextProcessor: nextProcessor}
 		cfg := pr.cfg
 		pr.recv, err = promreceiver.ReceiverFromConfig(
 			context.Background(),
@@ -81,7 +82,7 @@ func (pr *Preceiver) StartMetricsReception(ctx context.Context, mrs receiver.Met
 }
 
 // Flush triggers the Flush method on the underlying Prometheus scrapers and instructs
-// them to immediately sned over the metrics they've collected, to the MetricsReceiverSink.
+// them to immediately sned over the metrics they've collected, to the MetricsDataProcessor.
 func (pr *Preceiver) Flush() {
 	pr.recv.Flush()
 }
@@ -93,7 +94,7 @@ func (pr *Preceiver) StopMetricsReception(ctx context.Context) error {
 }
 
 type promMetricsReceiverToOpenCensusMetricsReceiver struct {
-	mrs receiver.MetricsReceiverSink
+	nextProcessor processor.MetricsDataProcessor
 }
 
 var _ promreceiver.MetricsSink = (*promMetricsReceiverToOpenCensusMetricsReceiver)(nil)
@@ -106,7 +107,7 @@ func (pmrtomr *promMetricsReceiverToOpenCensusMetricsReceiver) ReceiveMetrics(ct
 		return errNilRequest
 	}
 
-	_, err := pmrtomr.mrs.ReceiveMetricsData(ctx, data.MetricsData{
+	err := pmrtomr.nextProcessor.ProcessMetricsData(ctx, data.MetricsData{
 		Node:     ereq.Node,
 		Resource: ereq.Resource,
 		Metrics:  ereq.Metrics,

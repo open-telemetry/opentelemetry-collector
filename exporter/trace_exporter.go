@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"github.com/census-instrumentation/opencensus-service/data"
-	"github.com/census-instrumentation/opencensus-service/receiver"
+	"github.com/census-instrumentation/opencensus-service/processor"
 )
 
 // TraceExporter is a interface that receives OpenCensus data, converts it as needed, and
@@ -34,7 +34,7 @@ type TraceExporter interface {
 // transforms it to OpenCensus in memory data and sends it to the exporter.
 type TraceExporterSink interface {
 	TraceExporter
-	receiver.TraceReceiverSink
+	processor.TraceDataProcessor
 }
 
 // MultiTraceExporters wraps multiple trace exporters in a single one.
@@ -44,6 +44,9 @@ func MultiTraceExporters(tes ...TraceExporter) TraceExporterSink {
 
 type traceExporters []TraceExporter
 
+var _ TraceExporter = (*traceExporters)(nil)
+var _ processor.TraceDataProcessor = (*traceExporters)(nil)
+
 // ExportSpans exports the span data to all trace exporters wrapped by the current one.
 func (tes traceExporters) ExportSpans(ctx context.Context, td data.TraceData) error {
 	for _, te := range tes {
@@ -52,15 +55,12 @@ func (tes traceExporters) ExportSpans(ctx context.Context, td data.TraceData) er
 	return nil
 }
 
-// ReceiveTraceData receives the span data in the protobuf format, translates it, and forwards the transformed
+// ProcessTraceData receives the span data in the protobuf format, translates it, and forwards the transformed
 // span data to all trace exporters wrapped by the current one.
-func (tes traceExporters) ReceiveTraceData(ctx context.Context, td data.TraceData) (*receiver.TraceReceiverAcknowledgement, error) {
+func (tes traceExporters) ProcessTraceData(ctx context.Context, td data.TraceData) error {
 	for _, te := range tes {
 		_ = te.ExportSpans(ctx, td)
 	}
 
-	ack := &receiver.TraceReceiverAcknowledgement{
-		SavedSpans: uint64(len(td.Spans)),
-	}
-	return ack, nil
+	return nil
 }

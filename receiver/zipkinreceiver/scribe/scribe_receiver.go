@@ -28,6 +28,7 @@ import (
 
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal"
+	"github.com/census-instrumentation/opencensus-service/processor"
 	"github.com/census-instrumentation/opencensus-service/receiver"
 	zipkintranslator "github.com/census-instrumentation/opencensus-service/translator/trace/zipkin"
 )
@@ -65,18 +66,18 @@ func NewReceiver(addr string, port uint16, category string) (receiver.TraceRecei
 	return r, nil
 }
 
-func (r *scribeReceiver) StartTraceReception(ctx context.Context, destination receiver.TraceReceiverSink) error {
+func (r *scribeReceiver) StartTraceReception(ctx context.Context, nextProcessor processor.TraceDataProcessor) error {
 	r.Lock()
 	defer r.Unlock()
 
-	if destination == nil {
+	if nextProcessor == nil {
 		return errors.New("trace reception requires a non-nil destination")
 	}
 
 	err := errAlreadyStarted
 	r.startOnce.Do(func() {
 		err = nil
-		r.collector.traceSink = destination
+		r.collector.nextProcessor = nextProcessor
 		serverSocket, sockErr := thrift.NewTServerSocket(r.addr + ":" + strconv.Itoa(int(r.port)))
 		if sockErr != nil {
 			err = sockErr
@@ -120,7 +121,7 @@ type scribeCollector struct {
 	category            string
 	msgDecoder          *base64.Encoding
 	tBinProtocolFactory *thrift.TBinaryProtocolFactory
-	traceSink           receiver.TraceReceiverSink
+	nextProcessor       processor.TraceDataProcessor
 }
 
 var _ scribe.Scribe = (*scribeCollector)(nil)
@@ -162,7 +163,7 @@ func (sc *scribeCollector) Log(messages []*scribe.LogEntry) (r scribe.ResultCode
 	spansMetricsFn := internal.NewReceivedSpansRecorderStreaming(ctx, "zipkin-scribe")
 
 	for _, ocBatch := range ocBatches {
-		sc.traceSink.ReceiveTraceData(ctx, data.TraceData{Node: ocBatch.Node, Spans: ocBatch.Spans})
+		sc.nextProcessor.ProcessTraceData(ctx, data.TraceData{Node: ocBatch.Node, Spans: ocBatch.Spans})
 		spansMetricsFn(ocBatch.Node, ocBatch.Spans)
 	}
 

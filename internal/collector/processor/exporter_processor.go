@@ -34,9 +34,10 @@ func NewTraceExporterProcessor(traceExporters ...exporter.TraceExporter) SpanPro
 }
 
 func (sp *exporterSpanProcessor) ProcessSpans(batch *agenttracepb.ExportTraceServiceRequest, spanFormat string) (uint64, error) {
-	ack, err := sp.tes.ReceiveTraceData(context.Background(), data.TraceData{Node: batch.Node, Resource: batch.Resource, Spans: batch.Spans})
+	err := sp.tes.ProcessTraceData(context.Background(), data.TraceData{Node: batch.Node, Resource: batch.Resource, Spans: batch.Spans})
 	if err != nil {
-		return ack.DroppedSpans, err
+		// TODO: determine if the number of dropped spans is needed because it was wrong anyway.
+		return 0, err
 	}
 	return 0, nil
 }

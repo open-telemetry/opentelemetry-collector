@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"github.com/census-instrumentation/opencensus-service/data"
-	"github.com/census-instrumentation/opencensus-service/receiver"
+	"github.com/census-instrumentation/opencensus-service/processor"
 )
 
 // MetricsExporter is an interface that receives data.MetricsData, converts it as needed, and
@@ -30,13 +30,13 @@ type MetricsExporter interface {
 }
 
 // MultiMetricsExporters wraps multiple metrics exporters in a single one.
-func MultiMetricsExporters(mes ...MetricsExporter) receiver.MetricsReceiverSink {
+func MultiMetricsExporters(mes ...MetricsExporter) processor.MetricsDataProcessor {
 	return metricsExporters(mes)
 }
 
 type metricsExporters []MetricsExporter
 
-var _ receiver.MetricsReceiverSink = (*metricsExporters)(nil)
+var _ processor.MetricsDataProcessor = (*metricsExporters)(nil)
 
 // ExportMetricsData exports the MetricsData to all exporters wrapped by the current one.
 func (mes metricsExporters) ExportMetricsData(ctx context.Context, md data.MetricsData) error {
@@ -46,15 +46,12 @@ func (mes metricsExporters) ExportMetricsData(ctx context.Context, md data.Metri
 	return nil
 }
 
-// ReceiveTraceData receives the span data in the protobuf format, translates it, and forwards the transformed
+// ProcessMetricsData receives the span data in the protobuf format, translates it, and forwards the transformed
 // span data to all trace exporters wrapped by the current one.
-func (mes metricsExporters) ReceiveMetricsData(ctx context.Context, md data.MetricsData) (*receiver.MetricsReceiverAcknowledgement, error) {
+func (mes metricsExporters) ProcessMetricsData(ctx context.Context, md data.MetricsData) error {
 	for _, me := range mes {
 		_ = me.ExportMetricsData(ctx, md)
 	}
 
-	ack := &receiver.MetricsReceiverAcknowledgement{
-		SavedMetrics: uint64(len(md.Metrics)),
-	}
-	return ack, nil
+	return nil
 }

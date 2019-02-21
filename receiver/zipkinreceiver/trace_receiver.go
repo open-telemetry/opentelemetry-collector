@@ -41,6 +41,7 @@ import (
 
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal"
+	"github.com/census-instrumentation/opencensus-service/processor"
 	"github.com/census-instrumentation/opencensus-service/receiver"
 	zipkintranslator "github.com/census-instrumentation/opencensus-service/translator/trace/zipkin"
 )
@@ -53,7 +54,7 @@ type ZipkinReceiver struct {
 	// addr is the address onto which the HTTP server will be bound
 	addr string
 
-	spanSink receiver.TraceReceiverSink
+	nextProcessor processor.TraceDataProcessor
 
 	startOnce sync.Once
 	stopOnce  sync.Once
@@ -85,7 +86,7 @@ var (
 )
 
 // StartTraceReception spins up the receiver's HTTP server and makes the receiver start its processing.
-func (zr *ZipkinReceiver) StartTraceReception(ctx context.Context, spanSink receiver.TraceReceiverSink) error {
+func (zr *ZipkinReceiver) StartTraceReception(ctx context.Context, nextProcessor processor.TraceDataProcessor) error {
 	zr.mu.Lock()
 	defer zr.mu.Unlock()
 
@@ -103,7 +104,7 @@ func (zr *ZipkinReceiver) StartTraceReception(ctx context.Context, spanSink rece
 			_ = server.Serve(ln)
 		}()
 
-		zr.spanSink = spanSink
+		zr.nextProcessor = nextProcessor
 		zr.server = server
 
 		err = nil
@@ -265,7 +266,7 @@ func zlibUncompressedbody(r io.Reader) io.Reader {
 }
 
 // The ZipkinReceiver receives spans from endpoint /api/v2 as JSON,
-// unmarshals them and sends them along to the spansink.Sink.
+// unmarshals them and sends them along to the nextProcessor.
 func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Trace this method
 	ctx, span := trace.StartSpan(context.Background(), "ZipkinReceiver.Export")
@@ -308,7 +309,7 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	spansMetricsFn := internal.NewReceivedSpansRecorderStreaming(ctx, receiverNameTag)
 	// Now translate them into TraceData
 	for _, ereq := range ereqs {
-		zr.spanSink.ReceiveTraceData(ctx, data.TraceData{Node: ereq.Node, Spans: ereq.Spans})
+		zr.nextProcessor.ProcessTraceData(ctx, data.TraceData{Node: ereq.Node, Spans: ereq.Spans})
 		// We MUST unconditionally record metrics from this reception.
 		spansMetricsFn(ereq.Node, ereq.Spans)
 	}

@@ -39,6 +39,7 @@ import (
 
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal"
+	"github.com/census-instrumentation/opencensus-service/processor"
 	"github.com/census-instrumentation/opencensus-service/receiver"
 	jaegertranslator "github.com/census-instrumentation/opencensus-service/translator/trace/jaeger"
 )
@@ -60,7 +61,7 @@ type jReceiver struct {
 	// mu protects the fields of this type
 	mu sync.Mutex
 
-	spanSink receiver.TraceReceiverSink
+	nextProcessor processor.TraceDataProcessor
 
 	startOnce sync.Once
 	stopOnce  sync.Once
@@ -159,7 +160,7 @@ func (jr *jReceiver) agentBinaryThriftAddr() string {
 	return fmt.Sprintf(":%d", port)
 }
 
-func (jr *jReceiver) StartTraceReception(ctx context.Context, spanSink receiver.TraceReceiverSink) error {
+func (jr *jReceiver) StartTraceReception(ctx context.Context, nextProcessor processor.TraceDataProcessor) error {
 	jr.mu.Lock()
 	defer jr.mu.Unlock()
 
@@ -175,8 +176,8 @@ func (jr *jReceiver) StartTraceReception(ctx context.Context, spanSink receiver.
 			return
 		}
 
-		// Finally set the spanSink, since we never encountered an error.
-		jr.spanSink = spanSink
+		// Finally set the nextProcessor, since we never encountered an error.
+		jr.nextProcessor = nextProcessor
 
 		err = nil
 	})
@@ -236,7 +237,7 @@ func (jr *jReceiver) SubmitBatches(ctx thrift.Context, batches []*jaeger.Batch) 
 
 		if err == nil && octrace != nil {
 			ok = true
-			jr.spanSink.ReceiveTraceData(ctx, data.TraceData{Node: octrace.Node, Spans: octrace.Spans})
+			jr.nextProcessor.ProcessTraceData(ctx, data.TraceData{Node: octrace.Node, Spans: octrace.Spans})
 			// We MUST unconditionally record metrics from this reception.
 			spansMetricsFn(octrace.Node, octrace.Spans)
 		}
@@ -268,7 +269,7 @@ func (jr *jReceiver) EmitBatch(batch *jaeger.Batch) error {
 
 	ctx := context.Background()
 	spansMetricsFn := internal.NewReceivedSpansRecorderStreaming(ctx, "jaeger-agent")
-	_, err = jr.spanSink.ReceiveTraceData(ctx, data.TraceData{Node: octrace.Node, Spans: octrace.Spans})
+	err = jr.nextProcessor.ProcessTraceData(ctx, data.TraceData{Node: octrace.Node, Spans: octrace.Spans})
 	// We MUST unconditionally record metrics from this reception.
 	spansMetricsFn(octrace.Node, octrace.Spans)
 

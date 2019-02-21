@@ -36,7 +36,7 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal"
-	"github.com/census-instrumentation/opencensus-service/receiver"
+	"github.com/census-instrumentation/opencensus-service/processor"
 )
 
 // TODO: add E2E tests once ocagent implements metric service client.
@@ -319,6 +319,7 @@ func nodeToKey(n *commonpb.Node) string {
 	return string(blob)
 }
 
+// TODO: Move this to processortest.
 type metricAppender struct {
 	sync.RWMutex
 	metricsPerNode map[*commonpb.Node][]*metricspb.Metric
@@ -328,18 +329,18 @@ func newMetricAppender() *metricAppender {
 	return &metricAppender{metricsPerNode: make(map[*commonpb.Node][]*metricspb.Metric)}
 }
 
-var _ receiver.MetricsReceiverSink = (*metricAppender)(nil)
+var _ processor.MetricsDataProcessor = (*metricAppender)(nil)
 
-func (sa *metricAppender) ReceiveMetricsData(ctx context.Context, md data.MetricsData) (*receiver.MetricsReceiverAcknowledgement, error) {
+func (sa *metricAppender) ProcessMetricsData(ctx context.Context, md data.MetricsData) error {
 	sa.Lock()
 	defer sa.Unlock()
 
 	sa.metricsPerNode[md.Node] = append(sa.metricsPerNode[md.Node], md.Metrics...)
 
-	return &receiver.MetricsReceiverAcknowledgement{SavedMetrics: uint64(len(md.Metrics))}, nil
+	return nil
 }
 
-func ocReceiverOnGRPCServer(t *testing.T, sr receiver.MetricsReceiverSink, opts ...Option) (oci *Receiver, port int, done func()) {
+func ocReceiverOnGRPCServer(t *testing.T, sr processor.MetricsDataProcessor, opts ...Option) (oci *Receiver, port int, done func()) {
 	ln, err := net.Listen("tcp", ":0")
 	if err != nil {
 		t.Fatalf("Failed to find an available address to run the gRPC server: %v", err)

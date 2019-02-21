@@ -31,12 +31,11 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/exporter"
 	"github.com/census-instrumentation/opencensus-service/internal"
 	"github.com/census-instrumentation/opencensus-service/internal/config"
 	"github.com/census-instrumentation/opencensus-service/internal/config/viperutils"
-	"github.com/census-instrumentation/opencensus-service/receiver"
+	"github.com/census-instrumentation/opencensus-service/processor"
 	"github.com/census-instrumentation/opencensus-service/receiver/jaegerreceiver"
 	"github.com/census-instrumentation/opencensus-service/receiver/opencensusreceiver"
 	"github.com/census-instrumentation/opencensus-service/receiver/prometheusreceiver"
@@ -53,14 +52,6 @@ func main() {
 	if err := rootCmd.Execute(); err != nil {
 		log.Fatal(err)
 	}
-}
-
-type noopMetricsSink int
-
-var _ receiver.MetricsReceiverSink = (*noopMetricsSink)(nil)
-
-func (nms *noopMetricsSink) ReceiveMetricsData(ctx context.Context, metricsdata data.MetricsData) (*receiver.MetricsReceiverAcknowledgement, error) {
-	return &receiver.MetricsReceiverAcknowledgement{}, nil
 }
 
 func runOCAgent() {
@@ -189,7 +180,7 @@ func runZPages(port int) func() error {
 	return srv.Close
 }
 
-func runOCReceiver(logger *zap.Logger, acfg *config.Config, sr receiver.TraceReceiverSink, mr receiver.MetricsReceiverSink) (doneFn func() error, err error) {
+func runOCReceiver(logger *zap.Logger, acfg *config.Config, tdp processor.TraceDataProcessor, mdp processor.MetricsDataProcessor) (doneFn func() error, err error) {
 	tlsCredsOption, hasTLSCreds, err := acfg.OpenCensusReceiverTLSCredentialsServerOption()
 	if err != nil {
 		return nil, fmt.Errorf("OpenCensus receiver TLS Credentials: %v", err)
@@ -217,19 +208,19 @@ func runOCReceiver(logger *zap.Logger, acfg *config.Config, sr receiver.TraceRec
 
 	switch {
 	case acfg.CanRunOpenCensusTraceReceiver() && acfg.CanRunOpenCensusMetricsReceiver():
-		if err := ocr.Start(ctx, sr, mr); err != nil {
+		if err := ocr.Start(ctx, tdp, mdp); err != nil {
 			return nil, fmt.Errorf("Failed to start Trace and Metrics Receivers: %v", err)
 		}
 		log.Printf("Running OpenCensus Trace and Metrics receivers as a gRPC service at %q", addr)
 
 	case acfg.CanRunOpenCensusTraceReceiver():
-		if err := ocr.StartTraceReception(ctx, sr); err != nil {
+		if err := ocr.StartTraceReception(ctx, tdp); err != nil {
 			return nil, fmt.Errorf("Failed to start TraceReceiver: %v", err)
 		}
 		log.Printf("Running OpenCensus Trace receiver as a gRPC service at %q", addr)
 
 	case acfg.CanRunOpenCensusMetricsReceiver():
-		if err := ocr.StartMetricsReception(ctx, mr); err != nil {
+		if err := ocr.StartMetricsReception(ctx, mdp); err != nil {
 			return nil, fmt.Errorf("Failed to start MetricsReceiver: %v", err)
 		}
 		log.Printf("Running OpenCensus Metrics receiver as a gRPC service at %q", addr)
@@ -246,7 +237,7 @@ func runOCReceiver(logger *zap.Logger, acfg *config.Config, sr receiver.TraceRec
 	return doneFn, nil
 }
 
-func runJaegerReceiver(collectorThriftPort, collectorHTTPPort int, sr receiver.TraceReceiverSink) (doneFn func() error, err error) {
+func runJaegerReceiver(collectorThriftPort, collectorHTTPPort int, next processor.TraceDataProcessor) (doneFn func() error, err error) {
 	jtr, err := jaegerreceiver.New(context.Background(), &jaegerreceiver.Configuration{
 		CollectorThriftPort: collectorThriftPort,
 		CollectorHTTPPort:   collectorHTTPPort,
@@ -258,7 +249,7 @@ func runJaegerReceiver(collectorThriftPort, collectorHTTPPort int, sr receiver.T
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create new Jaeger receiver: %v", err)
 	}
-	if err := jtr.StartTraceReception(context.Background(), sr); err != nil {
+	if err := jtr.StartTraceReception(context.Background(), next); err != nil {
 		return nil, fmt.Errorf("Failed to start Jaeger receiver: %v", err)
 	}
 	doneFn = func() error {
@@ -268,13 +259,13 @@ func runJaegerReceiver(collectorThriftPort, collectorHTTPPort int, sr receiver.T
 	return doneFn, nil
 }
 
-func runZipkinReceiver(addr string, sr receiver.TraceReceiverSink) (doneFn func() error, err error) {
+func runZipkinReceiver(addr string, next processor.TraceDataProcessor) (doneFn func() error, err error) {
 	zi, err := zipkinreceiver.New(addr)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create the Zipkin receiver: %v", err)
 	}
 
-	if err := zi.StartTraceReception(context.Background(), sr); err != nil {
+	if err := zi.StartTraceReception(context.Background(), next); err != nil {
 		return nil, fmt.Errorf("Cannot start Zipkin receiver with address %q: %v", addr, err)
 	}
 	doneFn = func() error {
@@ -284,13 +275,13 @@ func runZipkinReceiver(addr string, sr receiver.TraceReceiverSink) (doneFn func(
 	return doneFn, nil
 }
 
-func runZipkinScribeReceiver(config *config.ScribeReceiverConfig, sr receiver.TraceReceiverSink) (doneFn func() error, err error) {
+func runZipkinScribeReceiver(config *config.ScribeReceiverConfig, next processor.TraceDataProcessor) (doneFn func() error, err error) {
 	zs, err := scribe.NewReceiver(config.Address, config.Port, config.Category)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create the Zipkin Scribe receiver: %v", err)
 	}
 
-	if err := zs.StartTraceReception(context.Background(), sr); err != nil {
+	if err := zs.StartTraceReception(context.Background(), next); err != nil {
 		return nil, fmt.Errorf("Cannot start Zipkin Scribe receiver with %v: %v", config, err)
 	}
 	doneFn = func() error {
@@ -300,12 +291,12 @@ func runZipkinScribeReceiver(config *config.ScribeReceiverConfig, sr receiver.Tr
 	return doneFn, nil
 }
 
-func runPrometheusReceiver(promConfig *prometheusreceiver.Configuration, mr receiver.MetricsReceiverSink) (doneFn func() error, err error) {
+func runPrometheusReceiver(promConfig *prometheusreceiver.Configuration, next processor.MetricsDataProcessor) (doneFn func() error, err error) {
 	pmr, err := prometheusreceiver.New(promConfig)
 	if err != nil {
 		return nil, err
 	}
-	if err := pmr.StartMetricsReception(context.Background(), mr); err != nil {
+	if err := pmr.StartMetricsReception(context.Background(), next); err != nil {
 		return nil, err
 	}
 	doneFn = func() error {

@@ -22,8 +22,10 @@ import (
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/data"
-	"github.com/census-instrumentation/opencensus-service/receiver"
+	"github.com/census-instrumentation/opencensus-service/processor"
 )
+
+// TODO: Move this to processortest and use TraceData.
 
 // ConcurrentSpanSink acts as a trace receiver for use in tests.
 type ConcurrentSpanSink struct {
@@ -31,10 +33,10 @@ type ConcurrentSpanSink struct {
 	traces []*agenttracepb.ExportTraceServiceRequest
 }
 
-var _ receiver.TraceReceiverSink = (*ConcurrentSpanSink)(nil)
+var _ processor.TraceDataProcessor = (*ConcurrentSpanSink)(nil)
 
-// ReceiveTraceData stores traces in the span sink for verification in tests.
-func (css *ConcurrentSpanSink) ReceiveTraceData(ctx context.Context, td data.TraceData) (*receiver.TraceReceiverAcknowledgement, error) {
+// ProcessTraceData stores traces for tests.
+func (css *ConcurrentSpanSink) ProcessTraceData(ctx context.Context, td data.TraceData) error {
 	css.mu.Lock()
 	defer css.mu.Unlock()
 
@@ -43,11 +45,7 @@ func (css *ConcurrentSpanSink) ReceiveTraceData(ctx context.Context, td data.Tra
 		Spans: td.Spans,
 	})
 
-	ack := &receiver.TraceReceiverAcknowledgement{
-		SavedSpans: uint64(len(td.Spans)),
-	}
-
-	return ack, nil
+	return nil
 }
 
 // AllTraces returns the traces sent to the test sink.
@@ -64,10 +62,10 @@ type ConcurrentMetricsSink struct {
 	metrics []*agentmetricspb.ExportMetricsServiceRequest
 }
 
-var _ receiver.MetricsReceiverSink = (*ConcurrentMetricsSink)(nil)
+var _ processor.MetricsDataProcessor = (*ConcurrentMetricsSink)(nil)
 
-// ReceiveMetricsData stores traces in the span sink for verification in tests.
-func (cms *ConcurrentMetricsSink) ReceiveMetricsData(ctx context.Context, md data.MetricsData) (*receiver.MetricsReceiverAcknowledgement, error) {
+// ProcessMetricsData stores traces for tests.
+func (cms *ConcurrentMetricsSink) ProcessMetricsData(ctx context.Context, md data.MetricsData) error {
 	cms.mu.Lock()
 	defer cms.mu.Unlock()
 
@@ -77,11 +75,7 @@ func (cms *ConcurrentMetricsSink) ReceiveMetricsData(ctx context.Context, md dat
 		Metrics:  md.Metrics,
 	})
 
-	ack := &receiver.MetricsReceiverAcknowledgement{
-		SavedMetrics: uint64(len(md.Metrics)),
-	}
-
-	return ack, nil
+	return nil
 }
 
 // AllMetrics returns the metrics sent to the test sink.

@@ -17,8 +17,8 @@ package receiver
 import (
 	"context"
 
-	"github.com/census-instrumentation/opencensus-service/data"
 	_ "github.com/census-instrumentation/opencensus-service/internal/compression/grpc" // load in supported grpc compression encodings
+	"github.com/census-instrumentation/opencensus-service/processor"
 )
 
 // A TraceReceiver is an "arbitrary data"-to-"trace proto span" converter.
@@ -34,20 +34,8 @@ import (
 // StopTraceReception tells the receiver that should stop reception,
 // giving it a chance to perform any necessary clean-up.
 type TraceReceiver interface {
-	StartTraceReception(ctx context.Context, destination TraceReceiverSink) error
+	StartTraceReception(ctx context.Context, nextProcessor processor.TraceDataProcessor) error
 	StopTraceReception(ctx context.Context) error
-}
-
-// TraceReceiverSink is an interface that receives TraceData.
-type TraceReceiverSink interface {
-	ReceiveTraceData(ctx context.Context, tracedata data.TraceData) (*TraceReceiverAcknowledgement, error)
-}
-
-// TraceReceiverAcknowledgement struct reports the number of saved and dropped spans in a
-// ReceiveTraceData call.
-type TraceReceiverAcknowledgement struct {
-	SavedSpans   uint64
-	DroppedSpans uint64
 }
 
 // A MetricsReceiver is an "arbitrary data"-to-"metric proto" converter.
@@ -58,18 +46,6 @@ type TraceReceiverAcknowledgement struct {
 // For example it could be Prometheus data source which translates
 // Prometheus metrics into *metricpb.Metric-s.
 type MetricsReceiver interface {
-	StartMetricsReception(ctx context.Context, destination MetricsReceiverSink) error
+	StartMetricsReception(ctx context.Context, nextProcessor processor.MetricsDataProcessor) error
 	StopMetricsReception(ctx context.Context) error
-}
-
-// MetricsReceiverSink is an interface that receives MetricsData.
-type MetricsReceiverSink interface {
-	ReceiveMetricsData(ctx context.Context, metricsdata data.MetricsData) (*MetricsReceiverAcknowledgement, error)
-}
-
-// MetricsReceiverAcknowledgement struct reports the number of saved and dropped metrics in a
-// ReceiveMetricsData call.
-type MetricsReceiverAcknowledgement struct {
-	SavedMetrics   uint64
-	DroppedMetrics uint64
 }

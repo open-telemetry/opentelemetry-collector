@@ -26,7 +26,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/census-instrumentation/opencensus-service/internal"
-	"github.com/census-instrumentation/opencensus-service/receiver"
+	"github.com/census-instrumentation/opencensus-service/processor"
 	"github.com/census-instrumentation/opencensus-service/receiver/opencensusreceiver/ocmetrics"
 	"github.com/census-instrumentation/opencensus-service/receiver/opencensusreceiver/octrace"
 	gatewayruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
@@ -89,15 +89,15 @@ func New(addr string, opts ...Option) (*Receiver, error) {
 
 // StartTraceReception exclusively runs the Trace receiver on the gRPC server.
 // To start both Trace and Metrics receivers/services, please use Start.
-func (ocr *Receiver) StartTraceReception(ctx context.Context, ts receiver.TraceReceiverSink) error {
-	err := ocr.registerTraceReceiver(ts)
+func (ocr *Receiver) StartTraceReception(ctx context.Context, ts processor.TraceDataProcessor) error {
+	err := ocr.registerTraceDataProcessor(ts)
 	if err != nil && err != errAlreadyStarted {
 		return err
 	}
 	return ocr.startServer()
 }
 
-func (ocr *Receiver) registerTraceReceiver(ts receiver.TraceReceiverSink) error {
+func (ocr *Receiver) registerTraceDataProcessor(ts processor.TraceDataProcessor) error {
 	var err = errAlreadyStarted
 
 	ocr.startTraceReceiverOnce.Do(func() {
@@ -113,15 +113,15 @@ func (ocr *Receiver) registerTraceReceiver(ts receiver.TraceReceiverSink) error 
 
 // StartMetricsReception exclusively runs the Metrics receiver on the gRPC server.
 // To start both Trace and Metrics receivers/services, please use Start.
-func (ocr *Receiver) StartMetricsReception(ctx context.Context, ms receiver.MetricsReceiverSink) error {
-	err := ocr.registerMetricsReceiver(ms)
+func (ocr *Receiver) StartMetricsReception(ctx context.Context, ms processor.MetricsDataProcessor) error {
+	err := ocr.registerMetricsDataProcessor(ms)
 	if err != nil && err != errAlreadyStarted {
 		return err
 	}
 	return ocr.startServer()
 }
 
-func (ocr *Receiver) registerMetricsReceiver(ms receiver.MetricsReceiverSink) error {
+func (ocr *Receiver) registerMetricsDataProcessor(ms processor.MetricsDataProcessor) error {
 	var err = errAlreadyStarted
 
 	ocr.startMetricsReceiverOnce.Do(func() {
@@ -167,11 +167,11 @@ func (ocr *Receiver) StopMetricsReception(ctx context.Context) error {
 }
 
 // Start runs all the receivers/services namely, Trace and Metrics services.
-func (ocr *Receiver) Start(ctx context.Context, ts receiver.TraceReceiverSink, ms receiver.MetricsReceiverSink) error {
-	if err := ocr.registerTraceReceiver(ts); err != nil && err != errAlreadyStarted {
+func (ocr *Receiver) Start(ctx context.Context, ts processor.TraceDataProcessor, ms processor.MetricsDataProcessor) error {
+	if err := ocr.registerTraceDataProcessor(ts); err != nil && err != errAlreadyStarted {
 		return err
 	}
-	if err := ocr.registerMetricsReceiver(ms); err != nil && err != errAlreadyStarted {
+	if err := ocr.registerMetricsDataProcessor(ms); err != nil && err != errAlreadyStarted {
 		return err
 	}
 

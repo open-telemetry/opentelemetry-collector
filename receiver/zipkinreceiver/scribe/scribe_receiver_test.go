@@ -30,7 +30,7 @@ import (
 	"github.com/omnition/scribe-go/if/scribe/gen-go/scribe"
 
 	"github.com/census-instrumentation/opencensus-service/data"
-	"github.com/census-instrumentation/opencensus-service/receiver"
+	"github.com/census-instrumentation/opencensus-service/processor"
 )
 
 func TestNonEqualCategoryIsIgnored(t *testing.T) {
@@ -139,6 +139,7 @@ func TestScribeReceiverServer(t *testing.T) {
 	}
 }
 
+// TODO: Move this to processortest.
 type mockTraceSink struct {
 	wg           *sync.WaitGroup
 	receivedData []data.TraceData
@@ -152,12 +153,12 @@ func newMockTraceSink(numReceiveTraceDataCount int) *mockTraceSink {
 	}
 }
 
-var _ receiver.TraceReceiverSink = (*mockTraceSink)(nil)
+var _ processor.TraceDataProcessor = (*mockTraceSink)(nil)
 
-func (m *mockTraceSink) ReceiveTraceData(ctx context.Context, tracedata data.TraceData) (*receiver.TraceReceiverAcknowledgement, error) {
+func (m *mockTraceSink) ProcessTraceData(ctx context.Context, tracedata data.TraceData) error {
 	m.receivedData = append(m.receivedData, tracedata)
 	m.wg.Done()
-	return &receiver.TraceReceiverAcknowledgement{}, nil
+	return nil
 }
 
 func (m *mockTraceSink) Wait() {

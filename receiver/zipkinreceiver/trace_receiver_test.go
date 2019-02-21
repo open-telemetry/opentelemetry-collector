@@ -16,7 +16,6 @@ package zipkinreceiver
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -34,10 +33,9 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal"
 	"github.com/census-instrumentation/opencensus-service/internal/testutils"
-	"github.com/census-instrumentation/opencensus-service/receiver"
+	"github.com/census-instrumentation/opencensus-service/processor/processortest"
 	spandatatranslator "github.com/census-instrumentation/opencensus-service/translator/trace/spandata"
 )
 
@@ -227,7 +225,7 @@ func TestConversionRoundtrip(t *testing.T) {
   }
 }]`)
 
-	zi := &ZipkinReceiver{spanSink: new(noopSink)}
+	zi := &ZipkinReceiver{nextProcessor: processortest.NewNoopTraceDataProcessor()}
 	ereqs, err := zi.v2ToTraceSpans(receiverInputJSON, nil)
 	if err != nil {
 		t.Fatalf("Failed to parse and convert receiver JSON: %v", err)
@@ -460,12 +458,4 @@ func TestConversionRoundtrip(t *testing.T) {
 	if gj != wj {
 		t.Errorf("The roundtrip JSON doesn't match the JSON that we want\nGot:\n%s\nWant:\n%s", gj, wj)
 	}
-}
-
-type noopSink int
-
-var _ receiver.TraceReceiverSink = (*noopSink)(nil)
-
-func (ns *noopSink) ReceiveTraceData(ctx context.Context, td data.TraceData) (*receiver.TraceReceiverAcknowledgement, error) {
-	return nil, nil
 }

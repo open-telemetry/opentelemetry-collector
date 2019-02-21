@@ -29,22 +29,22 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal"
-	"github.com/census-instrumentation/opencensus-service/receiver"
+	"github.com/census-instrumentation/opencensus-service/processor"
 )
 
 // Receiver is the type used to handle metrics from OpenCensus exporters.
 type Receiver struct {
-	metricSink         receiver.MetricsReceiverSink
+	nextProcessor      processor.MetricsDataProcessor
 	metricBufferPeriod time.Duration
 	metricBufferCount  int
 }
 
 // New creates a new ocmetrics.Receiver reference.
-func New(sr receiver.MetricsReceiverSink, opts ...Option) (*Receiver, error) {
-	if sr == nil {
-		return nil, errors.New("needs a non-nil receiver.MetricsReceiverSink")
+func New(nextProcessor processor.MetricsDataProcessor, opts ...Option) (*Receiver, error) {
+	if nextProcessor == nil {
+		return nil, errors.New("needs a non-nil processor.MetricsDataProcessor")
 	}
-	ocr := &Receiver{metricSink: sr}
+	ocr := &Receiver{nextProcessor: nextProcessor}
 	for _, opt := range opts {
 		opt.WithReceiver(ocr)
 	}
@@ -142,7 +142,7 @@ func (ocr *Receiver) batchMetricExporting(longLivedRPCCtx context.Context, paylo
 
 	nMetrics := int64(0)
 	for _, md := range mds {
-		ocr.metricSink.ReceiveMetricsData(ctx, *md)
+		ocr.nextProcessor.ProcessMetricsData(ctx, *md)
 		nMetrics += int64(len(md.Metrics))
 	}
 

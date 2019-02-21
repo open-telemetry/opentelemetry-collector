@@ -24,6 +24,7 @@ import (
 	"go.opencensus.io/trace"
 
 	"github.com/census-instrumentation/opencensus-service/data"
+	"github.com/census-instrumentation/opencensus-service/processor"
 	"github.com/census-instrumentation/opencensus-service/receiver"
 	"github.com/census-instrumentation/opencensus-service/receiver/opencensusreceiver"
 )
@@ -92,11 +93,11 @@ func Example_endToEnd() {
 
 type logSpanSink int
 
-var _ receiver.TraceReceiverSink = (*logSpanSink)(nil)
+var _ processor.TraceDataProcessor = (*logSpanSink)(nil)
 
-func (lsr *logSpanSink) ReceiveTraceData(ctx context.Context, td data.TraceData) (*receiver.TraceReceiverAcknowledgement, error) {
+func (lsr *logSpanSink) ProcessTraceData(ctx context.Context, td data.TraceData) error {
 	spansBlob, _ := json.MarshalIndent(td.Spans, " ", "  ")
 	log.Printf("\n****\nNode: %#v\nSpans: %s\n****\n", td.Node, spansBlob)
 
-	return &receiver.TraceReceiverAcknowledgement{SavedSpans: uint64(len(td.Spans))}, nil
+	return nil
 }

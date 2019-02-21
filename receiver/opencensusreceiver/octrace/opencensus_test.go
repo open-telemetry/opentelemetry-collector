@@ -38,7 +38,7 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal"
-	"github.com/census-instrumentation/opencensus-service/receiver"
+	"github.com/census-instrumentation/opencensus-service/processor"
 	"go.opencensus.io/trace"
 	"go.opencensus.io/trace/tracestate"
 )
@@ -453,6 +453,7 @@ func nodeToKey(n *commonpb.Node) string {
 	return string(blob)
 }
 
+// TODO: Move this to processortest.
 type spanAppender struct {
 	sync.RWMutex
 	spansPerNode map[*commonpb.Node][]*tracepb.Span
@@ -462,18 +463,17 @@ func newSpanAppender() *spanAppender {
 	return &spanAppender{spansPerNode: make(map[*commonpb.Node][]*tracepb.Span)}
 }
 
-var _ receiver.TraceReceiverSink = (*spanAppender)(nil)
+var _ processor.TraceDataProcessor = (*spanAppender)(nil)
 
-func (sa *spanAppender) ReceiveTraceData(ctx context.Context, td data.TraceData) (*receiver.TraceReceiverAcknowledgement, error) {
+func (sa *spanAppender) ProcessTraceData(ctx context.Context, td data.TraceData) error {
 	sa.Lock()
 	defer sa.Unlock()
 
 	sa.spansPerNode[td.Node] = append(sa.spansPerNode[td.Node], td.Spans...)
-
-	return &receiver.TraceReceiverAcknowledgement{SavedSpans: uint64(len(td.Spans))}, nil
+	return nil
 }
 
-func ocReceiverOnGRPCServer(t *testing.T, sr receiver.TraceReceiverSink, opts ...Option) (oci *Receiver, port int, done func()) {
+func ocReceiverOnGRPCServer(t *testing.T, sr processor.TraceDataProcessor, opts ...Option) (oci *Receiver, port int, done func()) {
 	ln, err := net.Listen("tcp", ":0")
 	if err != nil {
 		t.Fatalf("Failed to find an available address to run the gRPC server: %v", err)

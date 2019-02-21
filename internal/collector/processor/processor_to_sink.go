@@ -19,7 +19,7 @@ import (
 
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/data"
-	"github.com/census-instrumentation/opencensus-service/receiver"
+	"github.com/census-instrumentation/opencensus-service/processor"
 )
 
 type protoProcessorSink struct {
@@ -27,28 +27,23 @@ type protoProcessorSink struct {
 	protoProcessor SpanProcessor
 }
 
-var _ (receiver.TraceReceiverSink) = (*protoProcessorSink)(nil)
+var _ (processor.TraceDataProcessor) = (*protoProcessorSink)(nil)
 
 // WrapWithSpanSink wraps a processor to be used as a span sink by receivers.
-func WrapWithSpanSink(format string, p SpanProcessor) receiver.TraceReceiverSink {
+func WrapWithSpanSink(format string, p SpanProcessor) processor.TraceDataProcessor {
 	return &protoProcessorSink{
 		sourceFormat:   format,
 		protoProcessor: p,
 	}
 }
 
-func (ps *protoProcessorSink) ReceiveTraceData(ctx context.Context, td data.TraceData) (*receiver.TraceReceiverAcknowledgement, error) {
+func (ps *protoProcessorSink) ProcessTraceData(ctx context.Context, td data.TraceData) error {
 	batch := &agenttracepb.ExportTraceServiceRequest{
 		Node:  td.Node,
 		Spans: td.Spans,
 	}
 
-	failures, err := ps.protoProcessor.ProcessSpans(batch, ps.sourceFormat)
+	_, err := ps.protoProcessor.ProcessSpans(batch, ps.sourceFormat)
 
-	ack := &receiver.TraceReceiverAcknowledgement{
-		SavedSpans:   uint64(len(batch.Spans)) - failures,
-		DroppedSpans: failures,
-	}
-
-	return ack, err
+	return err
 }

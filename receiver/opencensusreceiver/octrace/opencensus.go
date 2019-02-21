@@ -26,7 +26,7 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal"
-	"github.com/census-instrumentation/opencensus-service/receiver"
+	"github.com/census-instrumentation/opencensus-service/processor"
 )
 
 const (
@@ -37,10 +37,10 @@ const (
 
 // Receiver is the type used to handle spans from OpenCensus exporters.
 type Receiver struct {
-	spanSink    receiver.TraceReceiverSink
-	numWorkers  int
-	workers     []*receiverWorker
-	messageChan chan *traceDataWithCtx
+	nextProcessor processor.TraceDataProcessor
+	numWorkers    int
+	workers       []*receiverWorker
+	messageChan   chan *traceDataWithCtx
 }
 
 type traceDataWithCtx struct {
@@ -49,16 +49,16 @@ type traceDataWithCtx struct {
 }
 
 // New creates a new opencensus.Receiver reference.
-func New(sr receiver.TraceReceiverSink, opts ...Option) (*Receiver, error) {
-	if sr == nil {
-		return nil, errors.New("needs a non-nil receiver.TraceReceiverSink")
+func New(nextProcessor processor.TraceDataProcessor, opts ...Option) (*Receiver, error) {
+	if nextProcessor == nil {
+		return nil, errors.New("needs a non-nil processor.TraceDataProcessor")
 	}
 
 	messageChan := make(chan *traceDataWithCtx, messageChannelSize)
 	ocr := &Receiver{
-		spanSink:    sr,
-		numWorkers:  defaultNumWorkers,
-		messageChan: messageChan,
+		nextProcessor: nextProcessor,
+		numWorkers:    defaultNumWorkers,
+		messageChan:   messageChan,
 	}
 	for _, opt := range opts {
 		opt(ocr)
@@ -200,7 +200,7 @@ func (rw *receiverWorker) export(longLivedCtx context.Context, tracedata *data.T
 	// If the starting RPC has a parent span, then add it as a parent link.
 	internal.SetParentLink(longLivedCtx, span)
 
-	rw.receiver.spanSink.ReceiveTraceData(ctx, *tracedata)
+	rw.receiver.nextProcessor.ProcessTraceData(ctx, *tracedata)
 
 	span.Annotate([]trace.Attribute{
 		trace.Int64Attribute("num_spans", int64(len(tracedata.Spans))),
