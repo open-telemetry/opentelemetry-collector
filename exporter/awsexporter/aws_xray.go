@@ -27,8 +27,8 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/census-instrumentation/opencensus-service/data"
-	"github.com/census-instrumentation/opencensus-service/exporter"
-	"github.com/census-instrumentation/opencensus-service/exporter/exporterparser"
+	"github.com/census-instrumentation/opencensus-service/exporter/exporterwrapper"
+	"github.com/census-instrumentation/opencensus-service/processor"
 )
 
 const defaultVersionForAWSXRayApplications = "latest"
@@ -57,11 +57,11 @@ type awsXRayExporter struct {
 	defaultOptions     []xray.Option
 }
 
-var _ exporter.TraceExporter = (*awsXRayExporter)(nil)
+var _ processor.TraceDataProcessor = (*awsXRayExporter)(nil)
 
-// AWSXRayTraceExportersFromViper unmarshals the viper and returns an exporter.TraceExporter targeting
+// AWSXRayTraceExportersFromViper unmarshals the viper and returns an processor.TraceDataProcessor targeting
 // AWS X-Ray according to the configuration settings.
-func AWSXRayTraceExportersFromViper(v *viper.Viper) (tes []exporter.TraceExporter, mes []exporter.MetricsExporter, doneFns []func() error, err error) {
+func AWSXRayTraceExportersFromViper(v *viper.Viper) (tdps []processor.TraceDataProcessor, mdps []processor.MetricsDataProcessor, doneFns []func() error, err error) {
 	var cfg struct {
 		AWSXRay *awsXRayConfig `mapstructure:"aws-xray"`
 	}
@@ -84,12 +84,12 @@ func AWSXRayTraceExportersFromViper(v *viper.Viper) (tes []exporter.TraceExporte
 		defaultServiceName:     xc.DefaultServiceName,
 	}
 
-	tes = append(tes, axe)
+	tdps = append(tdps, axe)
 	doneFns = append(doneFns, func() error {
 		axe.Flush()
 		return nil
 	})
-	return tes, mes, doneFns, nil
+	return
 }
 
 // Flush invokes .Flush() for every one of its underlying exporters.
@@ -146,13 +146,13 @@ func transformConfigToXRayOptions(axrCfg *awsXRayConfig) (xopts []xray.Option, e
 
 // ExportSpans is the method that translates OpenCensus-Proto Traces into AWS X-Ray spans.
 // It uniquely maintains
-func (axe *awsXRayExporter) ExportSpans(ctx context.Context, td data.TraceData) (xerr error) {
+func (axe *awsXRayExporter) ProcessTraceData(ctx context.Context, td data.TraceData) (xerr error) {
 	ctx, span := trace.StartSpan(ctx,
 		"opencensus.service.exporter.aws_xray.ExportSpans",
 		trace.WithSampler(trace.NeverSample()))
 
 	defer func() {
-		if xerr != nil {
+		if xerr != nil && span.IsRecordingEvents() {
 			span.SetStatus(trace.Status{
 				Code:    int32(trace.StatusCodeUnknown),
 				Message: xerr.Error(),
@@ -165,15 +165,17 @@ func (axe *awsXRayExporter) ExportSpans(ctx context.Context, td data.TraceData) 
 	if serviceName == "" {
 		serviceName = axe.defaultServiceName
 	}
-	span.Annotate([]trace.Attribute{
-		trace.StringAttribute("service_name", serviceName),
-	}, "")
+	if span.IsRecordingEvents() {
+		span.Annotate([]trace.Attribute{
+			trace.StringAttribute("service_name", serviceName),
+		}, "")
+	}
 
 	exp, err := axe.getOrMakeExporterByServiceName(serviceName)
 	if err != nil {
 		return err
 	}
-	return exporterparser.OcProtoSpansToOCSpanDataInstrumented(ctx, "aws-xray", exp, td)
+	return exporterwrapper.PushOcProtoSpansToOCTraceExporter(exp, td)
 }
 
 func (axe *awsXRayExporter) getOrMakeExporterByServiceName(serviceName string) (*xray.Exporter, error) {

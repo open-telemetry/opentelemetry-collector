@@ -15,14 +15,11 @@
 package jaegerexporter
 
 import (
-	"context"
-
 	"github.com/spf13/viper"
 	"go.opencensus.io/exporter/jaeger"
 
-	"github.com/census-instrumentation/opencensus-service/data"
-	"github.com/census-instrumentation/opencensus-service/exporter"
-	"github.com/census-instrumentation/opencensus-service/exporter/exporterparser"
+	"github.com/census-instrumentation/opencensus-service/exporter/exporterwrapper"
+	"github.com/census-instrumentation/opencensus-service/processor"
 )
 
 // Slight modified version of go/src/go.opencensus.io/exporter/jaeger/jaeger.go
@@ -33,13 +30,9 @@ type jaegerConfig struct {
 	ServiceName       string `mapstructure:"service_name,omitempty"`
 }
 
-type jaegerExporter struct {
-	exporter *jaeger.Exporter
-}
-
 // JaegerExportersFromViper unmarshals the viper and returns exporter.TraceExporters targeting
 // Jaeger according to the configuration settings.
-func JaegerExportersFromViper(v *viper.Viper) (tes []exporter.TraceExporter, mes []exporter.MetricsExporter, doneFns []func() error, err error) {
+func JaegerExportersFromViper(v *viper.Viper) (tdps []processor.TraceDataProcessor, mdps []processor.MetricsDataProcessor, doneFns []func() error, err error) {
 	var cfg struct {
 		Jaeger *jaegerConfig `mapstructure:"jaeger"`
 	}
@@ -68,13 +61,9 @@ func JaegerExportersFromViper(v *viper.Viper) (tes []exporter.TraceExporter, mes
 		je.Flush()
 		return nil
 	})
-	tes = append(tes, &jaegerExporter{exporter: je})
-	return
-}
-
-func (je *jaegerExporter) ExportSpans(ctx context.Context, td data.TraceData) error {
 	// TODO: Examine "contrib.go.opencensus.io/exporter/jaeger" to see
 	// if trace.ExportSpan was constraining and if perhaps the Jaeger
 	// upload can use the context and information from the Node.
-	return exporterparser.OcProtoSpansToOCSpanDataInstrumented(ctx, "jaeger", je.exporter, td)
+	tdps = append(tdps, exporterwrapper.NewExporterWrapper("jaeger", je))
+	return
 }

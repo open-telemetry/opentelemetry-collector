@@ -15,14 +15,11 @@
 package datadogexporter
 
 import (
-	"context"
-
 	datadog "github.com/DataDog/opencensus-go-exporter-datadog"
 	"github.com/spf13/viper"
 
-	"github.com/census-instrumentation/opencensus-service/data"
-	"github.com/census-instrumentation/opencensus-service/exporter"
-	"github.com/census-instrumentation/opencensus-service/exporter/exporterparser"
+	"github.com/census-instrumentation/opencensus-service/exporter/exporterwrapper"
+	"github.com/census-instrumentation/opencensus-service/processor"
 )
 
 type datadogConfig struct {
@@ -44,13 +41,9 @@ type datadogConfig struct {
 	EnableMetrics bool `mapstructure:"enable_metrics,omitempty"`
 }
 
-type datadogExporter struct {
-	exporter *datadog.Exporter
-}
-
 // DatadogTraceExportersFromViper unmarshals the viper and returns an exporter.TraceExporter targeting
 // Datadog according to the configuration settings.
-func DatadogTraceExportersFromViper(v *viper.Viper) (tes []exporter.TraceExporter, mes []exporter.MetricsExporter, doneFns []func() error, err error) {
+func DatadogTraceExportersFromViper(v *viper.Viper) (tdps []processor.TraceDataProcessor, mdps []processor.MetricsDataProcessor, doneFns []func() error, err error) {
 	var cfg struct {
 		Datadog *datadogConfig `mapstructure:"datadog,omitempty"`
 	}
@@ -78,18 +71,13 @@ func DatadogTraceExportersFromViper(v *viper.Viper) (tes []exporter.TraceExporte
 		return nil
 	})
 
-	dexp := &datadogExporter{exporter: de}
-	tes = append(tes, dexp)
+	// TODO: Examine the Datadog exporter to see
+	// if trace.ExportSpan was constraining and if perhaps the
+	// upload can use the context and information from the Node.
+	tdps = append(tdps, exporterwrapper.NewExporterWrapper("datadog", de))
 
 	// TODO: (@odeke-em, @songya23) implement ExportMetrics for Datadog.
 	// mes = append(mes, oexp)
 
 	return
-}
-
-func (dde *datadogExporter) ExportSpans(ctx context.Context, td data.TraceData) error {
-	// TODO: Examine the Datadog exporter to see
-	// if trace.ExportSpan was constraining and if perhaps the
-	// upload can use the context and information from the Node.
-	return exporterparser.OcProtoSpansToOCSpanDataInstrumented(ctx, "datadog", dde.exporter, td)
 }

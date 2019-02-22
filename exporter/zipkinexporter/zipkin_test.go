@@ -32,9 +32,9 @@ import (
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
 
-	"github.com/census-instrumentation/opencensus-service/exporter"
 	"github.com/census-instrumentation/opencensus-service/internal/config/viperutils"
 	"github.com/census-instrumentation/opencensus-service/internal/testutils"
+	"github.com/census-instrumentation/opencensus-service/processor"
 	"github.com/census-instrumentation/opencensus-service/receiver/zipkinreceiver"
 )
 
@@ -173,7 +173,7 @@ zipkin:
 		t.Fatalf("Failed to create a new Zipkin receiver: %v", err)
 	}
 
-	zexp := exporter.MultiTraceExporters(tes...)
+	zexp := processor.NewMultiTraceDataProcessor(tes)
 	if err := zi.StartTraceReception(context.Background(), zexp); err != nil {
 		t.Fatalf("Failed to start trace reception: %v", err)
 	}

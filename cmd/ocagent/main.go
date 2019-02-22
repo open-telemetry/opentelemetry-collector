@@ -31,7 +31,6 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	"github.com/census-instrumentation/opencensus-service/exporter"
 	"github.com/census-instrumentation/opencensus-service/internal"
 	"github.com/census-instrumentation/opencensus-service/internal/config"
 	"github.com/census-instrumentation/opencensus-service/internal/config/viperutils"
@@ -89,8 +88,8 @@ func runOCAgent() {
 		log.Fatalf("Config: failed to create exporters from YAML: %v", err)
 	}
 
-	commonSpanSink := exporter.MultiTraceExporters(traceExporters...)
-	commonMetricsSink := exporter.MultiMetricsExporters(metricsExporters...)
+	commonSpanSink := processor.NewMultiTraceDataProcessor(traceExporters)
+	commonMetricsSink := processor.NewMultiMetricsDataProcessor(metricsExporters)
 
 	// Add other receivers here as they are implemented
 	ocReceiverDoneFn, err := runOCReceiver(logger, agentConfig, commonSpanSink, commonMetricsSink)

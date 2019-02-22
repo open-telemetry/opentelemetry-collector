@@ -15,15 +15,13 @@
 package kafkaexporter
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/spf13/viper"
 	kafka "github.com/yancl/opencensus-go-exporter-kafka"
 
-	"github.com/census-instrumentation/opencensus-service/data"
-	"github.com/census-instrumentation/opencensus-service/exporter"
-	"github.com/census-instrumentation/opencensus-service/exporter/exporterparser"
+	"github.com/census-instrumentation/opencensus-service/exporter/exporterwrapper"
+	"github.com/census-instrumentation/opencensus-service/processor"
 )
 
 type kafkaConfig struct {
@@ -31,15 +29,9 @@ type kafkaConfig struct {
 	Topic   string   `mapstructure:"topic,omitempty"`
 }
 
-type kafkaExporter struct {
-	exporter *kafka.Exporter
-}
-
-var _ exporter.TraceExporter = (*kafkaExporter)(nil)
-
-// KafkaExportersFromViper unmarshals the viper and returns an exporter.TraceExporter targeting
+// KafkaExportersFromViper unmarshals the viper and returns an processor.TraceDataProcessor targeting
 // Kafka according to the configuration settings.
-func KafkaExportersFromViper(v *viper.Viper) (tes []exporter.TraceExporter, mes []exporter.MetricsExporter, doneFns []func() error, err error) {
+func KafkaExportersFromViper(v *viper.Viper) (tdps []processor.TraceDataProcessor, mdps []processor.MetricsDataProcessor, doneFns []func() error, err error) {
 	var cfg struct {
 		Kafka *kafkaConfig `mapstructure:"kafka"`
 	}
@@ -61,14 +53,10 @@ func KafkaExportersFromViper(v *viper.Viper) (tes []exporter.TraceExporter, mes 
 		return nil, nil, nil, fmt.Errorf("Cannot configure Kafka Trace exporter: %v", kerr)
 	}
 
-	tes = append(tes, &kafkaExporter{exporter: kde})
+	tdps = append(tdps, exporterwrapper.NewExporterWrapper("kafka", kde))
 	doneFns = append(doneFns, func() error {
 		kde.Flush()
 		return nil
 	})
-	return tes, nil, doneFns, nil
-}
-
-func (kde *kafkaExporter) ExportSpans(ctx context.Context, td data.TraceData) error {
-	return exporterparser.OcProtoSpansToOCSpanDataInstrumented(ctx, "kafka", kde.exporter, td)
+	return
 }

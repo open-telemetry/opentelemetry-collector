@@ -18,14 +18,11 @@ package honeycombexporter
 // ask them to make an exporter that uses OpenCensus-Proto instead of OpenCensus-Go.
 
 import (
-	"context"
-
 	"github.com/honeycombio/opencensus-exporter/honeycomb"
 	"github.com/spf13/viper"
 
-	"github.com/census-instrumentation/opencensus-service/data"
-	"github.com/census-instrumentation/opencensus-service/exporter"
-	"github.com/census-instrumentation/opencensus-service/exporter/exporterparser"
+	"github.com/census-instrumentation/opencensus-service/exporter/exporterwrapper"
+	"github.com/census-instrumentation/opencensus-service/processor"
 )
 
 type honeycombConfig struct {
@@ -35,7 +32,7 @@ type honeycombConfig struct {
 
 // HoneycombTraceExportersFromViper unmarshals the viper and returns an exporter.TraceExporter
 // targeting Honeycomb according to the configuration settings.
-func HoneycombTraceExportersFromViper(v *viper.Viper) (tes []exporter.TraceExporter, mes []exporter.MetricsExporter, doneFns []func() error, err error) {
+func HoneycombTraceExportersFromViper(v *viper.Viper) (tdps []processor.TraceDataProcessor, mdps []processor.MetricsDataProcessor, doneFns []func() error, err error) {
 	var cfg struct {
 		Honeycomb *honeycombConfig `mapstructure:"honeycomb"`
 	}
@@ -49,20 +46,11 @@ func HoneycombTraceExportersFromViper(v *viper.Viper) (tes []exporter.TraceExpor
 	}
 
 	rawExp := honeycomb.NewExporter(hc.WriteKey, hc.DatasetName)
-	hce := &honeycombExporter{exporter: rawExp}
 
-	tes = append(tes, hce)
+	tdps = append(tdps, exporterwrapper.NewExporterWrapper("honeycomb", rawExp))
 	doneFns = append(doneFns, func() error {
 		rawExp.Close()
 		return nil
 	})
 	return
-}
-
-type honeycombExporter struct {
-	exporter *honeycomb.Exporter
-}
-
-func (hce *honeycombExporter) ExportSpans(ctx context.Context, td data.TraceData) error {
-	return exporterparser.OcProtoSpansToOCSpanDataInstrumented(ctx, "honeycomb", hce.exporter, td)
 }

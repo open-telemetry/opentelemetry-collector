@@ -25,8 +25,8 @@ import (
 	"go.opencensus.io/trace"
 
 	"github.com/census-instrumentation/opencensus-service/data"
-	"github.com/census-instrumentation/opencensus-service/exporter"
-	"github.com/census-instrumentation/opencensus-service/exporter/exporterparser"
+	"github.com/census-instrumentation/opencensus-service/exporter/exporterwrapper"
+	"github.com/census-instrumentation/opencensus-service/processor"
 )
 
 type stackdriverConfig struct {
@@ -36,15 +36,16 @@ type stackdriverConfig struct {
 	MetricPrefix  string `mapstructure:"metric_prefix,omitempty"`
 }
 
+// TODO: Add metrics support to the exporterwrapper.
 type stackdriverExporter struct {
 	exporter *stackdriver.Exporter
 }
 
-var _ exporter.TraceExporter = (*stackdriverExporter)(nil)
+var _ processor.MetricsDataProcessor = (*stackdriverExporter)(nil)
 
-// StackdriverTraceExportersFromViper unmarshals the viper and returns an exporter.TraceExporter targeting
+// StackdriverTraceExportersFromViper unmarshals the viper and returns an processor.TraceDataProcessor targeting
 // Stackdriver according to the configuration settings.
-func StackdriverTraceExportersFromViper(v *viper.Viper) (tes []exporter.TraceExporter, mes []exporter.MetricsExporter, doneFns []func() error, err error) {
+func StackdriverTraceExportersFromViper(v *viper.Viper) (tdps []processor.TraceDataProcessor, mdps []processor.MetricsDataProcessor, doneFns []func() error, err error) {
 	var cfg struct {
 		Stackdriver *stackdriverConfig `mapstructure:"stackdriver"`
 	}
@@ -87,31 +88,25 @@ func StackdriverTraceExportersFromViper(v *viper.Viper) (tes []exporter.TraceExp
 		exporter: sde,
 	}
 
+	// TODO: Examine "contrib.go.opencensus.io/exporter/stackdriver" to see
+	// if trace.ExportSpan was constraining and if perhaps the Stackdriver
+	// upload can use the context and information from the Node.
 	if sc.EnableTracing {
-		tes = append(tes, exp)
+		tdps = append(tdps, exporterwrapper.NewExporterWrapper("stackdriver", sde))
 	}
 
 	if sc.EnableMetrics {
-		mes = append(mes, exp)
+		mdps = append(mdps, exp)
 	}
 
 	doneFns = append(doneFns, func() error {
 		sde.Flush()
 		return nil
 	})
-	return tes, mes, doneFns, nil
+	return
 }
 
-func (sde *stackdriverExporter) ExportSpans(ctx context.Context, td data.TraceData) error {
-	// TODO: Examine "contrib.go.opencensus.io/exporter/stackdriver" to see
-	// if trace.ExportSpan was constraining and if perhaps the Stackdriver
-	// upload can use the context and information from the Node.
-	return exporterparser.OcProtoSpansToOCSpanDataInstrumented(ctx, "stackdriver", sde.exporter, td)
-}
-
-var _ exporter.MetricsExporter = (*stackdriverExporter)(nil)
-
-func (sde *stackdriverExporter) ExportMetricsData(ctx context.Context, md data.MetricsData) error {
+func (sde *stackdriverExporter) ProcessMetricsData(ctx context.Context, md data.MetricsData) error {
 	ctx, span := trace.StartSpan(ctx,
 		"opencensus.service.exporter.stackdriver.ExportMetricsData",
 		trace.WithSampler(trace.NeverSample()))

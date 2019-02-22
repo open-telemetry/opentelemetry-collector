@@ -27,7 +27,6 @@ import (
 	"google.golang.org/grpc/credentials"
 	yaml "gopkg.in/yaml.v2"
 
-	"github.com/census-instrumentation/opencensus-service/exporter"
 	"github.com/census-instrumentation/opencensus-service/exporter/awsexporter"
 	"github.com/census-instrumentation/opencensus-service/exporter/datadogexporter"
 	"github.com/census-instrumentation/opencensus-service/exporter/honeycombexporter"
@@ -37,6 +36,7 @@ import (
 	"github.com/census-instrumentation/opencensus-service/exporter/prometheusexporter"
 	"github.com/census-instrumentation/opencensus-service/exporter/stackdriverexporter"
 	"github.com/census-instrumentation/opencensus-service/exporter/zipkinexporter"
+	"github.com/census-instrumentation/opencensus-service/processor"
 	"github.com/census-instrumentation/opencensus-service/receiver/opencensusreceiver"
 	"github.com/census-instrumentation/opencensus-service/receiver/prometheusreceiver"
 )
@@ -459,10 +459,10 @@ func eqLocalHost(host string) bool {
 //  + prometheus
 //  + aws-xray
 //  + honeycomb
-func ExportersFromViperConfig(logger *zap.Logger, v *viper.Viper) ([]exporter.TraceExporter, []exporter.MetricsExporter, []func() error, error) {
+func ExportersFromViperConfig(logger *zap.Logger, v *viper.Viper) ([]processor.TraceDataProcessor, []processor.MetricsDataProcessor, []func() error, error) {
 	parseFns := []struct {
 		name string
-		fn   func(*viper.Viper) ([]exporter.TraceExporter, []exporter.MetricsExporter, []func() error, error)
+		fn   func(*viper.Viper) ([]processor.TraceDataProcessor, []processor.MetricsDataProcessor, []func() error, error)
 	}{
 		{name: "datadog", fn: datadogexporter.DatadogTraceExportersFromViper},
 		{name: "stackdriver", fn: stackdriverexporter.StackdriverTraceExportersFromViper},
@@ -475,8 +475,8 @@ func ExportersFromViperConfig(logger *zap.Logger, v *viper.Viper) ([]exporter.Tr
 		{name: "honeycomb", fn: honeycombexporter.HoneycombTraceExportersFromViper},
 	}
 
-	var traceExporters []exporter.TraceExporter
-	var metricsExporters []exporter.MetricsExporter
+	var traceExporters []processor.TraceDataProcessor
+	var metricsExporters []processor.MetricsDataProcessor
 	var doneFns []func() error
 	exportersViper := v.Sub("exporters")
 	if exportersViper == nil {

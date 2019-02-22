@@ -24,10 +24,10 @@ import (
 
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/data"
-	"github.com/census-instrumentation/opencensus-service/exporter"
 	"github.com/census-instrumentation/opencensus-service/internal"
 	"github.com/census-instrumentation/opencensus-service/internal/compression"
 	"github.com/census-instrumentation/opencensus-service/internal/compression/grpc"
+	"github.com/census-instrumentation/opencensus-service/processor"
 )
 
 type opencensusConfig struct {
@@ -47,11 +47,11 @@ const (
 	defaultNumWorkers int = 2
 )
 
-var _ exporter.TraceExporter = (*ocagentExporter)(nil)
+var _ processor.TraceDataProcessor = (*ocagentExporter)(nil)
 
-// OpenCensusTraceExportersFromViper unmarshals the viper and returns an exporter.TraceExporter targeting
+// OpenCensusTraceExportersFromViper unmarshals the viper and returns an processor.TraceDataProcessor targeting
 // OpenCensus Agent/Collector according to the configuration settings.
-func OpenCensusTraceExportersFromViper(v *viper.Viper) (tes []exporter.TraceExporter, mes []exporter.MetricsExporter, doneFns []func() error, err error) {
+func OpenCensusTraceExportersFromViper(v *viper.Viper) (tdps []processor.TraceDataProcessor, mdps []processor.MetricsDataProcessor, doneFns []func() error, err error) {
 	var cfg struct {
 		OpenCensus *opencensusConfig `mapstructure:"opencensus"`
 	}
@@ -98,14 +98,14 @@ func OpenCensusTraceExportersFromViper(v *viper.Viper) (tes []exporter.TraceExpo
 	}
 
 	oexp := &ocagentExporter{exporters: exporters}
-	tes = append(tes, oexp)
+	tdps = append(tdps, oexp)
 
 	// TODO: (@odeke-em, @songya23) implement ExportMetrics for OpenCensus.
-	// mes = append(mes, oexp)
-	return tes, mes, doneFns, nil
+	// mdps = append(mdps, oexp)
+	return
 }
 
-func (oce *ocagentExporter) ExportSpans(ctx context.Context, td data.TraceData) error {
+func (oce *ocagentExporter) ProcessTraceData(ctx context.Context, td data.TraceData) error {
 	// Get an exporter worker round-robin
 	exporter := oce.exporters[atomic.AddUint32(&oce.counter, 1)%uint32(len(oce.exporters))]
 	err := exporter.ExportTraceServiceRequest(
