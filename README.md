@@ -357,6 +357,7 @@ Flags:
       --debug-processor               Flag to add a debug processor (combine with log level DEBUG to log incoming spans)
       --health-check-http-port uint   Port on which to run the healthcheck http server. (default 13133)
   -h, --help                          help for occollector
+      --http-pprof-port uint          Port to be used by golang net/http/pprof (Performance Profiler), the profiler is disabled if no port or 0 is specified.
       --log-level string              Output level of logs (TRACE, DEBUG, INFO, WARN, ERROR, FATAL) (default "INFO")
       --metrics-level string          Output level of telemetry metrics (NONE, BASIC, NORMAL, DETAILED) (default "BASIC")
       --metrics-port uint             Port exposing collector telemetry. (default 8888)

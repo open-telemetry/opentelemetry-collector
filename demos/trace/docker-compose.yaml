@@ -17,11 +17,12 @@ services:
   # Collector
   oc-collector:
     image: occollector:latest
-    command: ["--config=/etc/oc-collector-config.yaml"]
+    command: ["--config=/etc/oc-collector-config.yaml", "--http-pprof-port=1777"]
     volumes:
       - ./oc-collector-config.yaml:/etc/oc-collector-config.yaml
     ports:
       - "55678"
+      - "1777:1777"
       - "8888:8888" # Prometheus metrics
     depends_on:
       - jaeger-all-in-one
@@ -30,10 +31,11 @@ services:
   # Agent
   oc-agent:
     image: ocagent:latest
-    command: ["--config=/etc/oc-agent-config.yaml"]
+    command: ["--config=/etc/oc-agent-config.yaml", "--http-pprof-port=1888"]
     volumes:
       - ./oc-agent-config.yaml:/etc/oc-agent-config.yaml
     ports:
+      - "1888:1888"
       - "14268"
       - "55678"
     depends_on:
@@ -41,7 +43,7 @@ services:
 
   # Synthetic load generator
   synthetic-load-generator:
-    image: omnition/synthetic-load-generator:1.0.6
+    image: omnition/synthetic-load-generator:1.0.25
     environment:
       - JAEGER_COLLECTOR_URL=http://oc-agent:14268
     depends_on:

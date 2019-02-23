@@ -25,7 +25,10 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"syscall"
 
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/zpages"
 	"go.uber.org/zap"
@@ -34,6 +37,8 @@ import (
 	"github.com/census-instrumentation/opencensus-service/internal"
 	"github.com/census-instrumentation/opencensus-service/internal/config"
 	"github.com/census-instrumentation/opencensus-service/internal/config/viperutils"
+	"github.com/census-instrumentation/opencensus-service/internal/pprofserver"
+	"github.com/census-instrumentation/opencensus-service/internal/version"
 	"github.com/census-instrumentation/opencensus-service/processor"
 	"github.com/census-instrumentation/opencensus-service/receiver/jaegerreceiver"
 	"github.com/census-instrumentation/opencensus-service/receiver/opencensusreceiver"
@@ -42,10 +47,31 @@ import (
 	"github.com/census-instrumentation/opencensus-service/receiver/zipkinreceiver/scribe"
 )
 
-var configYAMLFile string
-var ocReceiverPort int
+var rootCmd = &cobra.Command{
+	Use:   "ocagent",
+	Short: "ocagent runs the OpenCensus service",
+	Run: func(cmd *cobra.Command, args []string) {
+		runOCAgent()
+	},
+}
 
-const zipkinRoute = "/api/v2/spans"
+var viperCfg = viper.New()
+
+var configYAMLFile string
+
+func init() {
+	var versionCmd = &cobra.Command{
+		Use:   "version",
+		Short: "Print the version information for ocagent",
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Print(version.Info())
+		},
+	}
+	rootCmd.AddCommand(versionCmd)
+	rootCmd.PersistentFlags().StringVarP(&configYAMLFile, "config", "c", "config.yaml", "The YAML file with the configurations for the agent and various exporters")
+
+	viperutils.AddFlags(viperCfg, rootCmd, pprofserver.AddFlags)
+}
 
 func main() {
 	if err := rootCmd.Execute(); err != nil {
@@ -78,12 +104,19 @@ func runOCAgent() {
 		log.Fatalf("Could not instantiate logger: %v", err)
 	}
 
+	var asyncErrorChan = make(chan error)
+	err = pprofserver.SetupFromViper(asyncErrorChan, viperCfg, logger)
+	if err != nil {
+		log.Fatalf("Failed to start net/http/pprof: %v", err)
+	}
+
 	// TODO(skaris): move the rest of the configs to use viper
-	v, err := viperutils.ViperFromYAMLBytes([]byte(yamlBlob))
+	err = viperutils.LoadYAMLBytes(viperCfg, []byte(yamlBlob))
 	if err != nil {
 		log.Fatalf("Config: failed to create viper from YAML: %v", err)
 	}
-	traceExporters, metricsExporters, closeFns, err := config.ExportersFromViperConfig(logger, v)
+
+	traceExporters, metricsExporters, closeFns, err := config.ExportersFromViperConfig(logger, viperCfg)
 	if err != nil {
 		log.Fatalf("Config: failed to create exporters from YAML: %v", err)
 	}
@@ -150,11 +183,15 @@ func runOCAgent() {
 		}
 	}()
 
-	signalsChan := make(chan os.Signal)
-	signal.Notify(signalsChan, os.Interrupt)
+	signalsChan := make(chan os.Signal, 1)
+	signal.Notify(signalsChan, os.Interrupt, syscall.SIGTERM)
 
-	// Wait for the closing signal
-	<-signalsChan
+	select {
+	case err = <-asyncErrorChan:
+		log.Fatalf("Asynchronous error %q, terminating process", err)
+	case s := <-signalsChan:
+		log.Printf("Received %q signal from OS, terminating process", s)
+	}
 }
 
 func runZPages(port int) func() error {

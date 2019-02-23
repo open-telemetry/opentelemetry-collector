@@ -30,6 +30,8 @@ import (
 
 	"github.com/census-instrumentation/opencensus-service/cmd/occollector/app/builder"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/processor"
+	"github.com/census-instrumentation/opencensus-service/internal/config/viperutils"
+	"github.com/census-instrumentation/opencensus-service/internal/pprofserver"
 	"github.com/census-instrumentation/opencensus-service/receiver"
 )
 
@@ -70,13 +72,15 @@ func (app *Application) init() {
 }
 
 func (app *Application) execute() {
-	var asyncErrorChannel = make(chan error)
-	var signalsChannel = make(chan os.Signal)
-	signal.Notify(signalsChannel, os.Interrupt, syscall.SIGTERM)
+	asyncErrorChannel := make(chan error)
 
 	app.logger.Info("Starting...", zap.Int("NumCPU", runtime.NumCPU()))
 
-	var err error
+	err := pprofserver.SetupFromViper(asyncErrorChannel, app.v, app.logger)
+	if err != nil {
+		log.Fatalf("Failed to start net/http/pprof: %v", err)
+	}
+
 	app.healthCheck, err = newHealthCheck(app.v, app.logger)
 	if err != nil {
 		log.Fatalf("Failed to start healthcheck server: %v", err)
@@ -93,14 +97,17 @@ func (app *Application) execute() {
 		os.Exit(1)
 	}
 
+	signalsChannel := make(chan os.Signal, 1)
+	signal.Notify(signalsChannel, os.Interrupt, syscall.SIGTERM)
+
 	// mark service as ready to receive traffic.
 	app.healthCheck.Ready()
 
 	select {
 	case err = <-asyncErrorChannel:
 		app.logger.Error("Asynchronous error received, terminating process", zap.Error(err))
-	case <-signalsChannel:
-		app.logger.Info("Received kill signal from OS")
+	case s := <-signalsChannel:
+		app.logger.Info("Received signal from OS", zap.String("signal", s.String()))
 	}
 
 	app.healthCheck.Set(healthcheck.Unavailable)
@@ -131,11 +138,12 @@ func (app *Application) Start() error {
 			app.execute()
 		},
 	}
-	addFlags(app.v, rootCmd,
+	viperutils.AddFlags(app.v, rootCmd,
 		telemetryFlags,
 		builder.Flags,
 		healthCheckFlags,
 		loggerFlags,
+		pprofserver.AddFlags,
 	)
 
 	return rootCmd.Execute()
