@@ -1,12 +1,13 @@
 {
-    "node": {
+    "Node": {
       "identifier": {},
       "library_info": {},
       "service_info": {
         "name": "api"
       }
     },
-    "spans": [
+    "Resource": null,
+    "Spans": [
       {
         "trace_id": "AAAAAAAAAABSlpqJVVcaPw==",
         "span_id": "AAAAAABkfZg=",

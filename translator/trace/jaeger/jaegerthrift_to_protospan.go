@@ -22,17 +22,17 @@ import (
 	"time"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 
+	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal"
-	"github.com/census-instrumentation/opencensus-service/translator/trace"
+	tracetranslator "github.com/census-instrumentation/opencensus-service/translator/trace"
 )
 
 // ThriftBatchToOCProto converts a single Jaeger Thrift batch of spans to a OC proto batch.
-func ThriftBatchToOCProto(jbatch *jaeger.Batch) (*agenttracepb.ExportTraceServiceRequest, error) {
-	ocbatch := &agenttracepb.ExportTraceServiceRequest{
+func ThriftBatchToOCProto(jbatch *jaeger.Batch) (data.TraceData, error) {
+	ocbatch := data.TraceData{
 		Node:  jProcessToOCProtoNode(jbatch.GetProcess()),
 		Spans: jSpansToOCProtoSpans(jbatch.GetSpans()),
 	}

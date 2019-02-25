@@ -18,19 +18,19 @@ import (
 	"context"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 	"go.uber.org/zap"
 
+	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/telemetry"
 )
 
 // SpanProcessor handles batches of spans converted to OpenCensus proto format.
 type SpanProcessor interface {
 	// ProcessSpans processes spans and return with the number of spans that failed and an error.
-	ProcessSpans(batch *agenttracepb.ExportTraceServiceRequest, spanFormat string) (uint64, error)
+	ProcessSpans(td data.TraceData, spanFormat string) (uint64, error)
 	// TODO: (@pjanotti) For shutdown improvement, the interface needs a method to attempt that.
 }
 
@@ -39,13 +39,13 @@ type debugSpanProcessor struct{ logger *zap.Logger }
 
 var _ SpanProcessor = (*debugSpanProcessor)(nil)
 
-func (sp *debugSpanProcessor) ProcessSpans(batch *agenttracepb.ExportTraceServiceRequest, spanFormat string) (uint64, error) {
-	if batch.Node == nil {
+func (sp *debugSpanProcessor) ProcessSpans(td data.TraceData, spanFormat string) (uint64, error) {
+	if td.Node == nil {
 		sp.logger.Warn("Received batch with nil Node", zap.String("format", spanFormat))
 	}
 
-	statsTags := StatsTagsForBatch("debug", ServiceNameForBatch(batch), spanFormat)
-	numSpans := len(batch.Spans)
+	statsTags := StatsTagsForBatch("debug", ServiceNameForNode(td.Node), spanFormat)
+	numSpans := len(td.Spans)
 	stats.RecordWithTags(context.Background(), statsTags, StatReceivedSpanCount.M(int64(numSpans)))
 
 	sp.logger.Debug("debugSpanProcessor", zap.String("originalFormat", spanFormat), zap.Int("#spans", numSpans))
@@ -140,14 +140,6 @@ func ServiceNameForNode(node *commonpb.Node) string {
 		serviceName = node.ServiceInfo.Name
 	}
 	return serviceName
-}
-
-// ServiceNameForBatch gets the service name for a specified batch. Used for metrics.
-func ServiceNameForBatch(batch *agenttracepb.ExportTraceServiceRequest) string {
-	if batch == nil {
-		return ""
-	}
-	return ServiceNameForNode(batch.Node)
 }
 
 // StatsTagsForBatch gets the stat tags based on the specified processorName, serviceName, and spanFormat.

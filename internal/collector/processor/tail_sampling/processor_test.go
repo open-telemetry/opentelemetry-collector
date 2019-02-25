@@ -20,10 +20,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/processor"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/processor/idbatcher"
 
-	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"go.uber.org/zap"
 
@@ -62,12 +62,12 @@ func TestConcurrentTraceArrival(t *testing.T) {
 	for _, batch := range batches {
 		// Add the same traceId twice.
 		wg.Add(2)
-		go func(b *agenttracepb.ExportTraceServiceRequest, sf string) {
-			tsp.ProcessSpans(b, sf)
+		go func(td data.TraceData, sf string) {
+			tsp.ProcessSpans(td, sf)
 			wg.Done()
 		}(batch, "test-0")
-		go func(b *agenttracepb.ExportTraceServiceRequest, sf string) {
-			tsp.ProcessSpans(b, sf)
+		go func(td data.TraceData, sf string) {
+			tsp.ProcessSpans(td, sf)
 			wg.Done()
 		}(batch, "test-1")
 	}
@@ -93,8 +93,8 @@ func TestConcurrentTraceMapSize(t *testing.T) {
 	tsp := sp.(*tailSamplingSpanProcessor)
 	for _, batch := range batches {
 		wg.Add(1)
-		go func(b *agenttracepb.ExportTraceServiceRequest, sf string) {
-			tsp.ProcessSpans(b, sf)
+		go func(td data.TraceData, sf string) {
+			tsp.ProcessSpans(td, sf)
 			wg.Done()
 		}(batch, "test")
 	}
@@ -168,13 +168,13 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 	}
 }
 
-func generateIdsAndBatches(numIds int) ([][]byte, []*agenttracepb.ExportTraceServiceRequest) {
+func generateIdsAndBatches(numIds int) ([][]byte, []data.TraceData) {
 	traceIds := make([][]byte, numIds, numIds)
 	for i := 0; i < numIds; i++ {
 		traceIds[i] = indexToTraceID(i + 1)
 	}
 
-	batches := []*agenttracepb.ExportTraceServiceRequest{}
+	tds := []data.TraceData{}
 	for i := range traceIds {
 		spans := make([]*tracepb.Span, i+1)
 		for j := range spans {
@@ -186,14 +186,14 @@ func generateIdsAndBatches(numIds int) ([][]byte, []*agenttracepb.ExportTraceSer
 
 		// Send each span in a separate batch
 		for _, span := range spans {
-			batch := &agenttracepb.ExportTraceServiceRequest{
+			td := data.TraceData{
 				Spans: []*tracepb.Span{span},
 			}
-			batches = append(batches, batch)
+			tds = append(tds, td)
 		}
 	}
 
-	return traceIds, batches
+	return traceIds, tds
 }
 
 func newTestPolicy() []*Policy {
@@ -282,8 +282,8 @@ type mockSpanProcessor struct {
 
 var _ processor.SpanProcessor = &mockSpanProcessor{}
 
-func (p *mockSpanProcessor) ProcessSpans(batch *agenttracepb.ExportTraceServiceRequest, spanFormat string) (uint64, error) {
-	batchSize := len(batch.Spans)
+func (p *mockSpanProcessor) ProcessSpans(td data.TraceData, spanFormat string) (uint64, error) {
+	batchSize := len(td.Spans)
 	p.TotalSpans += batchSize
 	return 0, nil
 }

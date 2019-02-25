@@ -149,14 +149,15 @@ func newMockTraceSink(numReceiveTraceDataCount int) *mockTraceSink {
 	wg := &sync.WaitGroup{}
 	wg.Add(numReceiveTraceDataCount)
 	return &mockTraceSink{
-		wg: wg,
+		wg:           wg,
+		receivedData: make([]data.TraceData, 0, numReceiveTraceDataCount),
 	}
 }
 
 var _ processor.TraceDataProcessor = (*mockTraceSink)(nil)
 
-func (m *mockTraceSink) ProcessTraceData(ctx context.Context, tracedata data.TraceData) error {
-	m.receivedData = append(m.receivedData, tracedata)
+func (m *mockTraceSink) ProcessTraceData(ctx context.Context, td data.TraceData) error {
+	m.receivedData = append(m.receivedData, td)
 	m.wg.Done()
 	return nil
 }

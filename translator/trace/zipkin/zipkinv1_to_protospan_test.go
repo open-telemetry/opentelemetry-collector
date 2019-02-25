@@ -22,8 +22,8 @@ import (
 	"testing"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/golang/protobuf/ptypes/timestamp"
 )
 
@@ -180,7 +180,7 @@ func TestSingleJSONV1BatchToOCProto(t *testing.T) {
 	sortTraceByNodeName(got)
 
 	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("got different data than want")
+		t.Fatalf("Unsuccessful conversion\nGot:\n\t%v\nWant:\n\t%v", got, want)
 	}
 }
 
@@ -195,8 +195,8 @@ func TestMultipleJSONV1BatchesToOCProto(t *testing.T) {
 		t.Fatalf("failed to load the batches: %v", err)
 	}
 
-	nodeToTraceReqs := make(map[string]*agenttracepb.ExportTraceServiceRequest)
-	var got []*agenttracepb.ExportTraceServiceRequest
+	nodeToTraceReqs := make(map[string]*data.TraceData)
+	var got []data.TraceData
 	for _, batch := range batches {
 		jsonBatch, err := json.Marshal(batch)
 		if err != nil {
@@ -215,13 +215,13 @@ func TestMultipleJSONV1BatchesToOCProto(t *testing.T) {
 			if pTsr, ok := nodeToTraceReqs[key]; ok {
 				pTsr.Spans = append(pTsr.Spans, tsr.Spans...)
 			} else {
-				nodeToTraceReqs[key] = tsr
+				nodeToTraceReqs[key] = &tsr
 			}
 		}
 	}
 
 	for _, tsr := range nodeToTraceReqs {
-		got = append(got, tsr)
+		got = append(got, *tsr)
 	}
 
 	want := ocBatchesFromZipkinV1
@@ -229,11 +229,11 @@ func TestMultipleJSONV1BatchesToOCProto(t *testing.T) {
 	sortTraceByNodeName(got)
 
 	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("got different data than want")
+		t.Fatalf("Unsuccessful conversion\nGot:\n\t%v\nWant:\n\t%v", got, want)
 	}
 }
 
-func sortTraceByNodeName(trace []*agenttracepb.ExportTraceServiceRequest) {
+func sortTraceByNodeName(trace []data.TraceData) {
 	sort.Slice(trace, func(i, j int) bool {
 		return trace[i].Node.ServiceInfo.Name < trace[j].Node.ServiceInfo.Name
 	})
@@ -241,7 +241,7 @@ func sortTraceByNodeName(trace []*agenttracepb.ExportTraceServiceRequest) {
 
 // ocBatches has the OpenCensus proto batches used in the test. They are hard coded because
 // structs like tracepb.AttributeMap cannot be ready from JSON.
-var ocBatchesFromZipkinV1 = []*agenttracepb.ExportTraceServiceRequest{
+var ocBatchesFromZipkinV1 = []data.TraceData{
 	{
 		Node: &commonpb.Node{
 			ServiceInfo: &commonpb.ServiceInfo{Name: "front-proxy"},

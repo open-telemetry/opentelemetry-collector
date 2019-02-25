@@ -26,13 +26,13 @@ import (
 	"unsafe"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/proto"
 	"go.opencensus.io/stats"
 	"go.uber.org/zap"
 
+	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/processor"
 )
 
@@ -107,10 +107,10 @@ func NewBatcher(name string, logger *zap.Logger, sender processor.SpanProcessor,
 
 // ProcessSpans implements batcher as a SpanProcessor and takes the provided spans and adds them to
 // batches
-func (b *batcher) ProcessSpans(request *agenttracepb.ExportTraceServiceRequest, spanFormat string) (uint64, error) {
-	bucketID := b.genBucketID(request.Node, request.Resource, spanFormat)
-	bucket := b.getOrAddBucket(bucketID, request.Node, request.Resource, spanFormat)
-	bucket.add(request.Spans)
+func (b *batcher) ProcessSpans(td data.TraceData, spanFormat string) (uint64, error) {
+	bucketID := b.genBucketID(td.Node, td.Resource, spanFormat)
+	bucket := b.getOrAddBucket(bucketID, td.Node, td.Resource, spanFormat)
+	bucket.add(td.Spans)
 	return 0, nil
 }
 
@@ -270,12 +270,12 @@ func (nb *nodeBatcher) sendBatch(batch *batch) {
 	if len(spans) == 0 {
 		return
 	}
-	request := &agenttracepb.ExportTraceServiceRequest{
+	td := data.TraceData{
 		Node:     nb.node,
 		Resource: nb.resource,
 		Spans:    spans,
 	}
-	_, err := nb.parent.sender.ProcessSpans(request, nb.spanFormat)
+	_, err := nb.parent.sender.ProcessSpans(td, nb.spanFormat)
 	// Assumed that the next processor always handles a batch, and doesn't error
 	if err != nil {
 		nb.logger.Error(

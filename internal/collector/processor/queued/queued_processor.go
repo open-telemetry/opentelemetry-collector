@@ -19,13 +19,13 @@ import (
 	"sync"
 	"time"
 
-	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	"github.com/jaegertracing/jaeger/pkg/queue"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 	"go.uber.org/zap"
 
+	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/processor"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/processor/nodebatcher"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/telemetry"
@@ -47,7 +47,7 @@ var _ processor.SpanProcessor = (*queuedSpanProcessor)(nil)
 
 type queueItem struct {
 	queuedTime time.Time
-	batch      *agenttracepb.ExportTraceServiceRequest
+	td         data.TraceData
 	spanFormat string
 }
 
@@ -111,23 +111,23 @@ func (sp *queuedSpanProcessor) Stop() {
 }
 
 // ProcessSpans implements the SpanProcessor interface
-func (sp *queuedSpanProcessor) ProcessSpans(batch *agenttracepb.ExportTraceServiceRequest, spanFormat string) (failures uint64, err error) {
-	allAdded := sp.enqueueSpanBatch(batch, spanFormat)
+func (sp *queuedSpanProcessor) ProcessSpans(td data.TraceData, spanFormat string) (failures uint64, err error) {
+	allAdded := sp.enqueueSpanBatch(td, spanFormat)
 	if !allAdded {
-		failures = uint64(len(batch.Spans))
+		failures = uint64(len(td.Spans))
 	}
 	return
 }
 
-func (sp *queuedSpanProcessor) enqueueSpanBatch(batch *agenttracepb.ExportTraceServiceRequest, spanFormat string) bool {
+func (sp *queuedSpanProcessor) enqueueSpanBatch(td data.TraceData, spanFormat string) bool {
 	item := &queueItem{
 		queuedTime: time.Now(),
-		batch:      batch,
+		td:         td,
 		spanFormat: spanFormat,
 	}
 
-	statsTags := processor.StatsTagsForBatch(sp.name, processor.ServiceNameForBatch(batch), spanFormat)
-	numSpans := len(batch.Spans)
+	statsTags := processor.StatsTagsForBatch(sp.name, processor.ServiceNameForNode(td.Node), spanFormat)
+	numSpans := len(td.Spans)
 	stats.RecordWithTags(context.Background(), statsTags, processor.StatReceivedSpanCount.M(int64(numSpans)))
 
 	addedToQueue := sp.queue.Produce(item)
@@ -139,12 +139,12 @@ func (sp *queuedSpanProcessor) enqueueSpanBatch(batch *agenttracepb.ExportTraceS
 
 func (sp *queuedSpanProcessor) processItemFromQueue(item *queueItem) {
 	startTime := time.Now()
-	_, err := sp.sender.ProcessSpans(item.batch, item.spanFormat)
+	_, err := sp.sender.ProcessSpans(item.td, item.spanFormat)
 	if err == nil {
 		// Record latency metrics and return
 		sendLatencyMs := int64(time.Since(startTime) / time.Millisecond)
 		inQueueLatencyMs := int64(time.Since(item.queuedTime) / time.Millisecond)
-		statsTags := processor.StatsTagsForBatch(sp.name, processor.ServiceNameForBatch(item.batch), item.spanFormat)
+		statsTags := processor.StatsTagsForBatch(sp.name, processor.ServiceNameForNode(item.td.Node), item.spanFormat)
 		stats.RecordWithTags(context.Background(),
 			statsTags,
 			statSuccessSendOps.M(1),
@@ -155,9 +155,9 @@ func (sp *queuedSpanProcessor) processItemFromQueue(item *queueItem) {
 	}
 
 	// There was an error
-	statsTags := processor.StatsTagsForBatch(sp.name, processor.ServiceNameForBatch(item.batch), item.spanFormat)
+	statsTags := processor.StatsTagsForBatch(sp.name, processor.ServiceNameForNode(item.td.Node), item.spanFormat)
 	stats.RecordWithTags(context.Background(), statsTags, statFailedSendOps.M(1))
-	batchSize := len(item.batch.Spans)
+	batchSize := len(item.td.Spans)
 	sp.logger.Warn("Sender failed", zap.String("processor", sp.name), zap.Error(err), zap.String("spanFormat", item.spanFormat))
 	if !sp.retryOnProcessingFailure {
 		// throw away the batch
@@ -191,12 +191,12 @@ func (sp *queuedSpanProcessor) processItemFromQueue(item *queueItem) {
 }
 
 func (sp *queuedSpanProcessor) onItemDropped(item *queueItem, statsTags []tag.Mutator) {
-	numSpans := len(item.batch.Spans)
+	numSpans := len(item.td.Spans)
 	stats.RecordWithTags(context.Background(), statsTags, processor.StatDroppedSpanCount.M(int64(numSpans)))
 
 	sp.logger.Warn("Span batch dropped",
 		zap.String("processor", sp.name),
-		zap.Int("#spans", len(item.batch.Spans)),
+		zap.Int("#spans", len(item.td.Spans)),
 		zap.String("spanSource", item.spanFormat))
 }
 

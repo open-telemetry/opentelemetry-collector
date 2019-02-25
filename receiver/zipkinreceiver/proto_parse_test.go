@@ -24,8 +24,8 @@ import (
 	zipkin_proto3 "github.com/openzipkin/zipkin-go/proto/v2"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal"
 )
 
@@ -113,7 +113,7 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 		t.Fatalf("Expecting exactly 2 requests since spans have different node/localEndpoint: %v", g)
 	}
 
-	want := []*agenttracepb.ExportTraceServiceRequest{
+	want := []data.TraceData{
 		{
 			Node: &commonpb.Node{
 				ServiceInfo: &commonpb.ServiceInfo{

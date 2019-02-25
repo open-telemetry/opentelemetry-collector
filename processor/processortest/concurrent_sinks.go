@@ -12,74 +12,65 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package testhelper
+package processortest
 
 import (
 	"context"
 	"encoding/json"
 	"sync"
 
-	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
-	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/processor"
 )
 
 // TODO: Move this to processortest and use TraceData.
 
-// ConcurrentSpanSink acts as a trace receiver for use in tests.
-type ConcurrentSpanSink struct {
+// ConcurrentTraceDataSink acts as a trace receiver for use in tests.
+type ConcurrentTraceDataSink struct {
 	mu     sync.Mutex
-	traces []*agenttracepb.ExportTraceServiceRequest
+	traces []data.TraceData
 }
 
-var _ processor.TraceDataProcessor = (*ConcurrentSpanSink)(nil)
+var _ processor.TraceDataProcessor = (*ConcurrentTraceDataSink)(nil)
 
 // ProcessTraceData stores traces for tests.
-func (css *ConcurrentSpanSink) ProcessTraceData(ctx context.Context, td data.TraceData) error {
+func (css *ConcurrentTraceDataSink) ProcessTraceData(ctx context.Context, td data.TraceData) error {
 	css.mu.Lock()
 	defer css.mu.Unlock()
 
-	css.traces = append(css.traces, &agenttracepb.ExportTraceServiceRequest{
-		Node:  td.Node,
-		Spans: td.Spans,
-	})
+	css.traces = append(css.traces, td)
 
 	return nil
 }
 
 // AllTraces returns the traces sent to the test sink.
-func (css *ConcurrentSpanSink) AllTraces() []*agenttracepb.ExportTraceServiceRequest {
+func (css *ConcurrentTraceDataSink) AllTraces() []data.TraceData {
 	css.mu.Lock()
 	defer css.mu.Unlock()
 
 	return css.traces[:]
 }
 
-// ConcurrentMetricsSink acts as a metrics receiver for use in tests.
-type ConcurrentMetricsSink struct {
+// ConcurrentMetricsDataSink acts as a metrics receiver for use in tests.
+type ConcurrentMetricsDataSink struct {
 	mu      sync.Mutex
-	metrics []*agentmetricspb.ExportMetricsServiceRequest
+	metrics []data.MetricsData
 }
 
-var _ processor.MetricsDataProcessor = (*ConcurrentMetricsSink)(nil)
+var _ processor.MetricsDataProcessor = (*ConcurrentMetricsDataSink)(nil)
 
 // ProcessMetricsData stores traces for tests.
-func (cms *ConcurrentMetricsSink) ProcessMetricsData(ctx context.Context, md data.MetricsData) error {
+func (cms *ConcurrentMetricsDataSink) ProcessMetricsData(ctx context.Context, md data.MetricsData) error {
 	cms.mu.Lock()
 	defer cms.mu.Unlock()
 
-	cms.metrics = append(cms.metrics, &agentmetricspb.ExportMetricsServiceRequest{
-		Node:     md.Node,
-		Resource: md.Resource,
-		Metrics:  md.Metrics,
-	})
+	cms.metrics = append(cms.metrics, md)
 
 	return nil
 }
 
 // AllMetrics returns the metrics sent to the test sink.
-func (cms *ConcurrentMetricsSink) AllMetrics() []*agentmetricspb.ExportMetricsServiceRequest {
+func (cms *ConcurrentMetricsDataSink) AllMetrics() []data.MetricsData {
 	cms.mu.Lock()
 	defer cms.mu.Unlock()
 

@@ -15,17 +15,17 @@
 package processor
 
 import (
+	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal"
 
 	"github.com/spf13/cast"
 
-	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 )
 
 // MultiProcessorOption represents options that can be applied to a MultiSpanProcessor.
 type MultiProcessorOption func(*multiSpanProcessor)
-type preProcessFn func(*agenttracepb.ExportTraceServiceRequest, string)
+type preProcessFn func(data.TraceData, string)
 
 // MultiSpanProcessor enables processing on multiple processors.
 // For each incoming span batch, it calls ProcessSpans method on each span
@@ -59,11 +59,11 @@ func WithPreProcessFn(preProcFn preProcessFn) MultiProcessorOption {
 // in each ExportTraceServiceRequest.
 func WithAddAttributes(attributes map[string]interface{}, overwrite bool) MultiProcessorOption {
 	return WithPreProcessFn(
-		func(batch *agenttracepb.ExportTraceServiceRequest, spanFormat string) {
+		func(td data.TraceData, spanFormat string) {
 			if len(attributes) == 0 {
 				return
 			}
-			for _, span := range batch.Spans {
+			for _, span := range td.Spans {
 				if span == nil {
 					// We will not create nil spans with just attributes on them
 					continue
@@ -107,14 +107,14 @@ func WithAddAttributes(attributes map[string]interface{}, overwrite bool) MultiP
 }
 
 // ProcessSpans implements the SpanProcessor interface
-func (msp *multiSpanProcessor) ProcessSpans(batch *agenttracepb.ExportTraceServiceRequest, spanFormat string) (uint64, error) {
+func (msp *multiSpanProcessor) ProcessSpans(td data.TraceData, spanFormat string) (uint64, error) {
 	for _, preProcessFn := range msp.preProcessFns {
-		preProcessFn(batch, spanFormat)
+		preProcessFn(td, spanFormat)
 	}
 	var maxFailures uint64
 	var errors []error
 	for _, sp := range msp.processors {
-		failures, err := sp.ProcessSpans(batch, spanFormat)
+		failures, err := sp.ProcessSpans(td, spanFormat)
 		if err != nil {
 			errors = append(errors, err)
 		}

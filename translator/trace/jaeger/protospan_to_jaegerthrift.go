@@ -20,13 +20,13 @@ import (
 	"fmt"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 
-	"github.com/census-instrumentation/opencensus-service/translator/trace"
+	"github.com/census-instrumentation/opencensus-service/data"
+	tracetranslator "github.com/census-instrumentation/opencensus-service/translator/trace"
 )
 
 var (
@@ -43,18 +43,14 @@ var (
 )
 
 // OCProtoToJaegerThrift translates OpenCensus trace data into the Jaeger Thrift format.
-func OCProtoToJaegerThrift(ocBatch *agenttracepb.ExportTraceServiceRequest) (*jaeger.Batch, error) {
-	if ocBatch == nil {
-		return nil, nil
-	}
-
-	jSpans, err := ocSpansToJaegerSpans(ocBatch.Spans)
+func OCProtoToJaegerThrift(td data.TraceData) (*jaeger.Batch, error) {
+	jSpans, err := ocSpansToJaegerSpans(td.Spans)
 	if err != nil {
 		return nil, err
 	}
 
 	jb := &jaeger.Batch{
-		Process: ocNodeToJaegerProcess(ocBatch.Node),
+		Process: ocNodeToJaegerProcess(td.Node),
 		Spans:   jSpans,
 	}
 

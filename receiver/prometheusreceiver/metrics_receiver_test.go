@@ -34,9 +34,9 @@ import (
 	"go.opencensus.io/tag"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/census-instrumentation/opencensus-service/receiver/testhelper"
+	"github.com/census-instrumentation/opencensus-service/data"
+	"github.com/census-instrumentation/opencensus-service/processor/processortest"
 	"github.com/golang/protobuf/ptypes/timestamp"
 )
 
@@ -105,7 +105,7 @@ buffer_count: 2
 		t.Fatalf("Failed to create promreceiver: %v", err)
 	}
 
-	cms := new(testhelper.ConcurrentMetricsSink)
+	cms := new(processortest.ConcurrentMetricsDataSink)
 	if err := precv.StartMetricsReception(context.Background(), cms); err != nil {
 		t.Fatalf("Failed to invoke StartMetricsReception: %v", err)
 	}
@@ -182,7 +182,7 @@ buffer_count: 2
 	retrievedTimestamps := indexTimestampsByMetricDescriptorName(got)
 
 	// Now compare the received metrics data with what we expect.
-	want1 := []*agentmetricspb.ExportMetricsServiceRequest{
+	want1 := []data.MetricsData{
 		{
 			Node: &commonpb.Node{
 				Identifier: &commonpb.ProcessIdentifier{
@@ -275,7 +275,7 @@ buffer_count: 2
 		},
 	}
 
-	want2 := []*agentmetricspb.ExportMetricsServiceRequest{
+	want2 := []data.MetricsData{
 		{
 			Node: &commonpb.Node{
 				Identifier: &commonpb.ProcessIdentifier{
@@ -385,20 +385,19 @@ buffer_count: 2
 	}
 
 	// Firstly sort them so that comparisons return stable results.
-
 	byMetricsSorter(t, got)
 	byMetricsSorter(t, want1)
 	byMetricsSorter(t, want2)
 
 	// Since these tests rely on underdeterministic behavior and timing that's imprecise.
 	// The best that we can do is provide any of variants of what we want.
-	wantPermutations := [][]*agentmetricspb.ExportMetricsServiceRequest{
+	wantPermutations := [][]data.MetricsData{
 		want1, want2,
 	}
 
 	for _, want := range wantPermutations {
 		if !reflect.DeepEqual(got, want) {
-			gj, wj := string(testhelper.ToJSON(got)), string(testhelper.ToJSON(want))
+			gj, wj := string(processortest.ToJSON(got)), string(processortest.ToJSON(want))
 			if gj == wj {
 				return
 			}
@@ -407,39 +406,36 @@ buffer_count: 2
 
 	// Otherwise no variant of the wanted data matched, hence error out.
 
-	gj := testhelper.ToJSON(got)
+	gj := processortest.ToJSON(got)
 	for _, want := range wantPermutations {
-		wj := testhelper.ToJSON(want)
+		wj := processortest.ToJSON(want)
 		t.Errorf("Failed to match either:\nGot:\n%s\n\nWant:\n%s\n\n", gj, wj)
 	}
 
 }
 
-func byMetricsSorter(t *testing.T, ereqs []*agentmetricspb.ExportMetricsServiceRequest) {
-	for i, ereq := range ereqs {
-		eMetrics := ereq.Metrics
+func byMetricsSorter(t *testing.T, mds []data.MetricsData) {
+	for i, md := range mds {
+		eMetrics := md.Metrics
 		sort.Slice(eMetrics, func(i, j int) bool {
-			emi, emj := eMetrics[i], eMetrics[j]
-			return emi.GetMetricDescriptor().GetName() < emj.GetMetricDescriptor().GetName()
+			mdi, mdj := eMetrics[i], eMetrics[j]
+			return mdi.GetMetricDescriptor().GetName() < mdj.GetMetricDescriptor().GetName()
 		})
-		ereq.Metrics = eMetrics
-		ereqs[i] = ereq
+		md.Metrics = eMetrics
+		mds[i] = md
 	}
 
 	// Then sort by requests.
-	sort.Slice(ereqs, func(i, j int) bool {
-		eir, ejr := ereqs[i], ereqs[j]
-		return eir.String() < ejr.String()
+	sort.Slice(mds, func(i, j int) bool {
+		mdi, mdj := mds[i], mds[j]
+		return string(processortest.ToJSON(mdi)) < string(processortest.ToJSON(mdj))
 	})
 }
 
-func indexTimestampsByMetricDescriptorName(ereqs []*agentmetricspb.ExportMetricsServiceRequest) map[string]*timestamp.Timestamp {
+func indexTimestampsByMetricDescriptorName(mds []data.MetricsData) map[string]*timestamp.Timestamp {
 	index := make(map[string]*timestamp.Timestamp)
-	for _, ereq := range ereqs {
-		if ereq == nil {
-			continue
-		}
-		for _, eimetric := range ereq.Metrics {
+	for _, md := range mds {
+		for _, eimetric := range md.Metrics {
 			for _, eiTimeSeries := range eimetric.Timeseries {
 				if ts := eiTimeSeries.GetStartTimestamp(); ts != nil {
 					index[eimetric.GetMetricDescriptor().GetName()] = ts

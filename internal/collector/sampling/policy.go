@@ -18,8 +18,9 @@ import (
 	"sync"
 	"time"
 
-	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+
+	"github.com/census-instrumentation/opencensus-service/data"
 )
 
 // TraceData stores the sampling related trace data.
@@ -34,7 +35,7 @@ type TraceData struct {
 	// SpanCount track the number of spans on the trace.
 	SpanCount int64
 	// ReceivedBatches stores all the batches received for the trace.
-	ReceivedBatches []*agenttracepb.ExportTraceServiceRequest
+	ReceivedBatches []data.TraceData
 }
 
 // Decision gives the status of sampling decision.

@@ -22,13 +22,13 @@ import (
 	"testing"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 
+	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal/testutils"
-	"github.com/census-instrumentation/opencensus-service/translator/trace"
+	tracetranslator "github.com/census-instrumentation/opencensus-service/translator/trace"
 )
 
 func TestJaegerFromOCProtoTraceIDRoundTrip(t *testing.T) {
@@ -115,7 +115,7 @@ func TestInvalidOCProtoIDs(t *testing.T) {
 }
 
 func TestNilOCProtoNode(t *testing.T) {
-	nilNodeBatch := &agenttracepb.ExportTraceServiceRequest{
+	nilNodeBatch := data.TraceData{
 		Spans: []*tracepb.Span{
 			{
 				TraceId: []byte("0123456789abcdef"),
@@ -138,15 +138,15 @@ func TestNilOCProtoNode(t *testing.T) {
 func TestOCProtoToJaegerThrift(t *testing.T) {
 	const numOfFiles = 2
 	for i := 0; i < numOfFiles; i++ {
-		ocBatch := ocBatches[i]
+		td := tds[i]
 
-		gotJBatch, err := OCProtoToJaegerThrift(ocBatch)
+		gotJBatch, err := OCProtoToJaegerThrift(td)
 		if err != nil {
 			t.Errorf("Failed to translate OC batch to Jaeger Thrift: %v", err)
 			continue
 		}
 
-		wantSpanCount, gotSpanCount := len(ocBatch.Spans), len(gotJBatch.Spans)
+		wantSpanCount, gotSpanCount := len(td.Spans), len(gotJBatch.Spans)
 		if wantSpanCount != gotSpanCount {
 			t.Errorf("Different number of spans in the batches on pass #%d (want %d, got %d)", i, wantSpanCount, gotSpanCount)
 			continue
@@ -188,9 +188,9 @@ func TestOCProtoToJaegerThrift(t *testing.T) {
 	}
 }
 
-// ocBatches has the OpenCensus proto batches used in the test. They are hard coded because
+// tds has the TraceData proto used in the test. They are hard coded because
 // structs like tracepb.AttributeMap cannot be ready from JSON.
-var ocBatches = []*agenttracepb.ExportTraceServiceRequest{
+var tds = []data.TraceData{
 	{
 		Node: &commonpb.Node{
 			Identifier: &commonpb.ProcessIdentifier{

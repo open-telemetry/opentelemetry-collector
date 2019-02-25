@@ -31,8 +31,8 @@ import (
 	"go.opencensus.io/exporter/zipkin"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal"
 	"github.com/census-instrumentation/opencensus-service/internal/testutils"
 	"github.com/census-instrumentation/opencensus-service/processor/processortest"
@@ -231,7 +231,7 @@ func TestConversionRoundtrip(t *testing.T) {
 		t.Fatalf("Failed to parse and convert receiver JSON: %v", err)
 	}
 
-	wantProtoRequests := []*agenttracepb.ExportTraceServiceRequest{
+	wantProtoRequests := []data.TraceData{
 		{
 			Node: &commonpb.Node{
 				ServiceInfo: &commonpb.ServiceInfo{Name: "frontend"},

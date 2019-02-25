@@ -1,5 +1,5 @@
 {
-    "node": {
+    "Node": {
       "identifier": {
         "host_name": "api246-sjc1"
       },
@@ -17,7 +17,8 @@
         "ip": "10.53.69.61"
       }
     },
-    "spans": [
+    "Resource": null,
+    "Spans": [
       {
         "trace_id": "AAAAAAAAAABSlpqJVVcaPw==",
         "span_id": "AAAAAABkfZg=",

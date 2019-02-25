@@ -21,12 +21,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 	"go.uber.org/zap"
 
+	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/processor"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/processor/idbatcher"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/sampling"
@@ -179,7 +179,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 }
 
 // ProcessSpans is required by the SpanProcessor interface.
-func (tsp *tailSamplingSpanProcessor) ProcessSpans(batch *agenttracepb.ExportTraceServiceRequest, spanFormat string) (uint64, error) {
+func (tsp *tailSamplingSpanProcessor) ProcessSpans(td data.TraceData, spanFormat string) (uint64, error) {
 	tsp.start.Do(func() {
 		tsp.logger.Info("First trace data arrived, starting tail-sampling timers")
 		tsp.policyTicker.Start(1 * time.Second)
@@ -187,7 +187,7 @@ func (tsp *tailSamplingSpanProcessor) ProcessSpans(batch *agenttracepb.ExportTra
 
 	// Groupd spans per their traceId to minize contention on idToTrace
 	idToSpans := make(map[traceKey][]*tracepb.Span)
-	for _, span := range batch.Spans {
+	for _, span := range td.Spans {
 		if len(span.TraceId) != 16 {
 			tsp.logger.Warn("Span without valid TraceId", zap.String("spanFormat", spanFormat))
 			continue
@@ -240,8 +240,8 @@ func (tsp *tailSamplingSpanProcessor) ProcessSpans(batch *agenttracepb.ExportTra
 			if actualDecision == sampling.Pending {
 				// Add the spans to the trace, but only once for all policies, otherwise same spans will
 				// be duplicated in the final trace.
-				traceBatch := prepareTraceBatch(spans, singleTrace, batch)
-				actualData.ReceivedBatches = append(actualData.ReceivedBatches, traceBatch)
+				traceTd := prepareTraceBatch(spans, singleTrace, td)
+				actualData.ReceivedBatches = append(actualData.ReceivedBatches, traceTd)
 				actualData.Unlock()
 				break
 			}
@@ -252,8 +252,8 @@ func (tsp *tailSamplingSpanProcessor) ProcessSpans(batch *agenttracepb.ExportTra
 				// All process for pending done above, keep the case so it doesn't go to default.
 			case sampling.Sampled:
 				// Forward the spans to the policy destinations
-				traceBatch := prepareTraceBatch(spans, singleTrace, batch)
-				if failCount, err := policyAndDests.Destination.ProcessSpans(traceBatch, spanFormat); err != nil {
+				traceTd := prepareTraceBatch(spans, singleTrace, td)
+				if failCount, err := policyAndDests.Destination.ProcessSpans(traceTd, spanFormat); err != nil {
 					tsp.logger.Warn("Error sending late arrived spans to destination",
 						zap.String("policy", policyAndDests.Name),
 						zap.Uint64("failCount", failCount),
@@ -303,19 +303,19 @@ func (tsp *tailSamplingSpanProcessor) dropTrace(traceID traceKey, deletionTime t
 	}
 }
 
-func prepareTraceBatch(spans []*tracepb.Span, singleTrace bool, batch *agenttracepb.ExportTraceServiceRequest) *agenttracepb.ExportTraceServiceRequest {
-	var traceBatch *agenttracepb.ExportTraceServiceRequest
+func prepareTraceBatch(spans []*tracepb.Span, singleTrace bool, td data.TraceData) data.TraceData {
+	var traceTd data.TraceData
 	if singleTrace {
 		// Special case no need to prepare a batch
-		traceBatch = batch
+		traceTd = td
 	} else {
-		traceBatch = &agenttracepb.ExportTraceServiceRequest{
-			Node:     batch.Node,
-			Resource: batch.Resource,
+		traceTd = data.TraceData{
+			Node:     td.Node,
+			Resource: td.Resource,
 			Spans:    spans,
 		}
 	}
-	return traceBatch
+	return traceTd
 }
 
 // tTicker interface allows easier testing of ticker related functionality used by tailSamplingProcessor

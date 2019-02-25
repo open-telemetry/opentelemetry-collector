@@ -26,7 +26,6 @@ import (
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"github.com/omnition/scribe-go/if/scribe/gen-go/scribe"
 
-	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal"
 	"github.com/census-instrumentation/opencensus-service/processor"
 	"github.com/census-instrumentation/opencensus-service/receiver"
@@ -154,7 +153,7 @@ func (sc *scribeCollector) Log(messages []*scribe.LogEntry) (r scribe.ResultCode
 		return scribe.ResultCode_OK, nil
 	}
 
-	ocBatches, err := zipkintranslator.V1ThriftBatchToOCProto(zSpans)
+	tds, err := zipkintranslator.V1ThriftBatchToOCProto(zSpans)
 	if err != nil {
 		return scribe.ResultCode_OK, err
 	}
@@ -162,9 +161,9 @@ func (sc *scribeCollector) Log(messages []*scribe.LogEntry) (r scribe.ResultCode
 	ctx := context.Background()
 	spansMetricsFn := internal.NewReceivedSpansRecorderStreaming(ctx, "zipkin-scribe")
 
-	for _, ocBatch := range ocBatches {
-		sc.nextProcessor.ProcessTraceData(ctx, data.TraceData{Node: ocBatch.Node, Spans: ocBatch.Spans})
-		spansMetricsFn(ocBatch.Node, ocBatch.Spans)
+	for _, td := range tds {
+		sc.nextProcessor.ProcessTraceData(ctx, td)
+		spansMetricsFn(td.Node, td.Spans)
 	}
 
 	return scribe.ResultCode_OK, nil

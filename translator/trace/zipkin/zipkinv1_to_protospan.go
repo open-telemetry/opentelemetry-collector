@@ -22,8 +22,8 @@ import (
 	"strconv"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"github.com/pkg/errors"
@@ -83,7 +83,7 @@ type binaryAnnotation struct {
 }
 
 // V1JSONBatchToOCProto converts a JSON blob with a list of Zipkin v1 spans to OC Proto.
-func V1JSONBatchToOCProto(blob []byte) ([]*agenttracepb.ExportTraceServiceRequest, error) {
+func V1JSONBatchToOCProto(blob []byte) ([]data.TraceData, error) {
 	var zSpans []*zipkinV1Span
 	if err := json.Unmarshal(blob, &zSpans); err != nil {
 		return nil, errors.WithMessage(err, msgZipkinV1JSONUnmarshalError)
@@ -110,19 +110,19 @@ type ocSpanAndParsedAnnotations struct {
 	parsedAnnotations *annotationParseResult
 }
 
-func zipkinToOCProtoBatch(ocSpansAndParsedAnnotations []ocSpanAndParsedAnnotations) ([]*agenttracepb.ExportTraceServiceRequest, error) {
+func zipkinToOCProtoBatch(ocSpansAndParsedAnnotations []ocSpanAndParsedAnnotations) ([]data.TraceData, error) {
 	// Service to batch maps the service name to the trace request with the corresponding node.
-	svcToBatch := make(map[string]*agenttracepb.ExportTraceServiceRequest)
+	svcToTD := make(map[string]*data.TraceData)
 	for _, curr := range ocSpansAndParsedAnnotations {
-		req := getOrCreateNodeRequest(svcToBatch, curr.parsedAnnotations.Endpoint)
+		req := getOrCreateNodeRequest(svcToTD, curr.parsedAnnotations.Endpoint)
 		req.Spans = append(req.Spans, curr.ocSpan)
 	}
 
-	batches := make([]*agenttracepb.ExportTraceServiceRequest, 0, len(svcToBatch))
-	for _, v := range svcToBatch {
-		batches = append(batches, v)
+	tds := make([]data.TraceData, 0, len(svcToTD))
+	for _, v := range svcToTD {
+		tds = append(tds, *v)
 	}
-	return batches, nil
+	return tds, nil
 }
 
 func zipkinV1ToOCSpan(zSpan *zipkinV1Span) (*tracepb.Span, *annotationParseResult, error) {
@@ -375,15 +375,16 @@ func epochMicrosecondsToTimestamp(msecs int64) *timestamp.Timestamp {
 	return t
 }
 
-func getOrCreateNodeRequest(m map[string]*agenttracepb.ExportTraceServiceRequest, endpoint *endpoint) *agenttracepb.ExportTraceServiceRequest {
+func getOrCreateNodeRequest(m map[string]*data.TraceData, endpoint *endpoint) *data.TraceData {
 	// this private function assumes that the caller never passes an nil endpoint
 	nodeKey := endpoint.string()
 	req := m[nodeKey]
+
 	if req != nil {
 		return req
 	}
 
-	req = &agenttracepb.ExportTraceServiceRequest{
+	req = &data.TraceData{
 		Node: &commonpb.Node{
 			ServiceInfo: &commonpb.ServiceInfo{Name: endpoint.ServiceName},
 		},

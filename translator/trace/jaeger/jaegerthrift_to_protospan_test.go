@@ -15,7 +15,6 @@
 package jaeger
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -26,8 +25,8 @@ import (
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal/testutils"
 )
 
@@ -115,19 +114,19 @@ func TestThriftBatchToOCProto(t *testing.T) {
 			continue
 		}
 
-		octrace, err := ThriftBatchToOCProto(jb)
+		td, err := ThriftBatchToOCProto(jb)
 		if err != nil {
 			t.Errorf("Failed to handled Jaeger Thrift Batch from %q. Error: %v", thriftInFile, err)
 			continue
 		}
 
-		wantSpanCount, gotSpanCount := len(jb.Spans), len(octrace.Spans)
+		wantSpanCount, gotSpanCount := len(jb.Spans), len(td.Spans)
 		if wantSpanCount != gotSpanCount {
 			t.Errorf("Different number of spans in the batches on pass #%d (want %d, got %d)", i, wantSpanCount, gotSpanCount)
 			continue
 		}
 
-		gb, err := json.MarshalIndent(octrace, "", "  ")
+		gb, err := json.MarshalIndent(td, "", "  ")
 		if err != nil {
 			t.Errorf("Failed to convert received OC proto to json. Error: %v", err)
 			continue
@@ -241,7 +240,7 @@ func TestConservativeConversions(t *testing.T) {
 		},
 	}
 
-	var got []*agenttracepb.ExportTraceServiceRequest
+	got := make([]data.TraceData, 0, len(batches))
 	for i, batch := range batches {
 		gb, err := ThriftBatchToOCProto(batch)
 		if err != nil {
@@ -251,8 +250,12 @@ func TestConservativeConversions(t *testing.T) {
 		got = append(got, gb)
 	}
 
-	want := []*agenttracepb.ExportTraceServiceRequest{
-		{},
+	want := []data.TraceData{
+		{
+			// The conversion returns a slice with capacity equals to the number of elements in the
+			// jager batch spans, even if the element is nil.
+			Spans: make([]*tracepb.Span, 0, 1),
+		},
 		{
 			Node: &commonpb.Node{
 				ServiceInfo: &commonpb.ServiceInfo{Name: "testHere"},
@@ -262,7 +265,9 @@ func TestConservativeConversions(t *testing.T) {
 					"storage_version": "13",
 				},
 			},
-			Spans: []*tracepb.Span{},
+			// The conversion returns a slice with capacity equals to the number of elements in the
+			// jager batch spans, even if the element is nil.
+			Spans: make([]*tracepb.Span, 0, 1),
 		},
 		{
 			Node: &commonpb.Node{
@@ -345,10 +350,7 @@ func TestConservativeConversions(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(got, want) {
-		gj, wj := jsonify(got), jsonify(want)
-		if !bytes.Equal(gj, wj) {
-			t.Fatalf("Unsuccessful conversion\nGot:\n\t%v\nWant:\n\t%v", got, want)
-		}
+		t.Fatalf("Unsuccessful conversion\nGot:\n\t%v\nWant:\n\t%v", got, want)
 	}
 }
 

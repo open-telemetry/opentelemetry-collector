@@ -20,9 +20,9 @@ import (
 	"time"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/census-instrumentation/opencensus-service/data"
 	"go.uber.org/zap"
 )
 
@@ -144,13 +144,13 @@ func TestConcurrentNodeAdds(t *testing.T) {
 		for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
 			spans = append(spans, &tracepb.Span{Name: getTestSpanName(requestNum, spanIndex)})
 		}
-		request := &agenttracepb.ExportTraceServiceRequest{
+		td := data.TraceData{
 			Node: &commonpb.Node{
 				ServiceInfo: &commonpb.ServiceInfo{Name: fmt.Sprintf("svc-%d", requestNum)},
 			},
 			Spans: spans,
 		}
-		go batcher.ProcessSpans(request, "oc")
+		go batcher.ProcessSpans(td, "oc")
 	}
 
 	err := sender.waitFor(requestCount*spansPerRequest, 3*time.Second)
@@ -190,7 +190,7 @@ func TestBucketRemove(t *testing.T) {
 	for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
 		spans = append(spans, &tracepb.Span{Name: getTestSpanName(0, spanIndex)})
 	}
-	request := &agenttracepb.ExportTraceServiceRequest{
+	request := data.TraceData{
 		Node: &commonpb.Node{
 			ServiceInfo: &commonpb.ServiceInfo{Name: "svc"},
 		},
@@ -225,7 +225,7 @@ func TestConcurrentBatchAdds(t *testing.T) {
 		for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
 			spans = append(spans, &tracepb.Span{Name: getTestSpanName(requestNum, spanIndex)})
 		}
-		request := &agenttracepb.ExportTraceServiceRequest{
+		request := data.TraceData{
 			Node: &commonpb.Node{
 				ServiceInfo: &commonpb.ServiceInfo{Name: "svc"},
 			},
@@ -254,7 +254,7 @@ func TestConcurrentBatchAdds(t *testing.T) {
 func BenchmarkConcurrentBatchAdds(b *testing.B) {
 	sender := newTestSender()
 	batcher := NewBatcher("test", zap.NewNop(), sender).(*batcher)
-	request := &agenttracepb.ExportTraceServiceRequest{
+	request := data.TraceData{
 		Node: &commonpb.Node{
 			ServiceInfo: &commonpb.ServiceInfo{Name: "svc"},
 		},
@@ -281,7 +281,7 @@ func getTestSpanName(requestNum, index int) *tracepb.TruncatableString {
 }
 
 type testSender struct {
-	reqChan             chan *agenttracepb.ExportTraceServiceRequest
+	reqChan             chan data.TraceData
 	batchesReceived     int
 	spansReceived       int
 	spansReceivedByName map[string]*tracepb.Span
@@ -289,13 +289,13 @@ type testSender struct {
 
 func newTestSender() *testSender {
 	return &testSender{
-		reqChan:             make(chan *agenttracepb.ExportTraceServiceRequest, 100),
+		reqChan:             make(chan data.TraceData, 100),
 		spansReceivedByName: make(map[string]*tracepb.Span),
 	}
 }
 
-func (ts *testSender) ProcessSpans(request *agenttracepb.ExportTraceServiceRequest, spanFormat string) (uint64, error) {
-	ts.reqChan <- request
+func (ts *testSender) ProcessSpans(td data.TraceData, spanFormat string) (uint64, error) {
+	ts.reqChan <- td
 	return 0, nil
 }
 

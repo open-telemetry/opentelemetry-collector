@@ -26,10 +26,10 @@ import (
 	"go.opencensus.io/trace"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal"
-	"github.com/census-instrumentation/opencensus-service/receiver/testhelper"
+	"github.com/census-instrumentation/opencensus-service/processor/processortest"
 )
 
 func TestReception(t *testing.T) {
@@ -45,7 +45,7 @@ func TestReception(t *testing.T) {
 	defer jr.StopTraceReception(context.Background())
 	t.Log("Starting")
 
-	sink := new(testhelper.ConcurrentSpanSink)
+	sink := new(processortest.ConcurrentTraceDataSink)
 	if err := jr.StartTraceReception(context.Background(), sink); err != nil {
 		t.Fatalf("StartTraceReception failed: %v", err)
 	}
@@ -128,7 +128,7 @@ func TestReception(t *testing.T) {
 
 	got := sink.AllTraces()
 
-	want := []*agenttracepb.ExportTraceServiceRequest{
+	want := []data.TraceData{
 		{
 			Node: &commonpb.Node{
 				ServiceInfo: &commonpb.ServiceInfo{Name: "issaTest"},
@@ -213,7 +213,7 @@ func TestReception(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(got, want) {
-		gj, wj := testhelper.ToJSON(got), testhelper.ToJSON(want)
+		gj, wj := processortest.ToJSON(got), processortest.ToJSON(want)
 		if !bytes.Equal(gj, wj) {
 			t.Errorf("Mismatches responses\nGot:\n\t%v\n\t%s\nWant:\n\t%v\n\t%s", got, gj, want, wj)
 		}

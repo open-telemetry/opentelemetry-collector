@@ -22,17 +22,17 @@ import (
 	"math"
 	"net"
 
-	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"github.com/pkg/errors"
 
-	"github.com/census-instrumentation/opencensus-service/translator/trace"
+	"github.com/census-instrumentation/opencensus-service/data"
+	tracetranslator "github.com/census-instrumentation/opencensus-service/translator/trace"
 )
 
 // V1ThriftBatchToOCProto converts Zipkin v1 spans to OC Proto.
-func V1ThriftBatchToOCProto(zSpans []*zipkincore.Span) ([]*agenttracepb.ExportTraceServiceRequest, error) {
+func V1ThriftBatchToOCProto(zSpans []*zipkincore.Span) ([]data.TraceData, error) {
 	ocSpansAndParsedAnnotations := make([]ocSpanAndParsedAnnotations, 0, len(zSpans))
 	for _, zSpan := range zSpans {
 		ocSpan, parsedAnnotations, err := zipkinV1ThriftToOCSpan(zSpan)

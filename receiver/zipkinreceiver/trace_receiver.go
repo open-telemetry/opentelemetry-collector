@@ -32,7 +32,6 @@ import (
 
 	"github.com/apache/thrift/lib/go/thrift"
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
@@ -114,7 +113,7 @@ func (zr *ZipkinReceiver) StartTraceReception(ctx context.Context, nextProcessor
 }
 
 // v1ToTraceSpans parses Zipkin v1 JSON traces and converts them to OpenCensus Proto spans.
-func (zr *ZipkinReceiver) v1ToTraceSpans(blob []byte, hdr http.Header) (reqs []*agenttracepb.ExportTraceServiceRequest, err error) {
+func (zr *ZipkinReceiver) v1ToTraceSpans(blob []byte, hdr http.Header) (reqs []data.TraceData, err error) {
 	if hdr.Get("Content-Type") == "application/x-thrift" {
 		zSpans, err := deserializeThrift(blob)
 		if err != nil {
@@ -155,7 +154,7 @@ func deserializeThrift(b []byte) ([]*zipkincore.Span, error) {
 }
 
 // v2ToTraceSpans parses Zipkin v2 JSON or Protobuf traces and converts them to OpenCensus Proto spans.
-func (zr *ZipkinReceiver) v2ToTraceSpans(blob []byte, hdr http.Header) (reqs []*agenttracepb.ExportTraceServiceRequest, err error) {
+func (zr *ZipkinReceiver) v2ToTraceSpans(blob []byte, hdr http.Header) (reqs []data.TraceData, err error) {
 	// This flag's reference is from:
 	//      https://github.com/openzipkin/zipkin-go/blob/3793c981d4f621c0e3eb1457acffa2c1cc591384/proto/v2/zipkin.proto#L154
 	debugWasSet := hdr.Get("X-B3-Flags") == "1"
@@ -201,7 +200,7 @@ func (zr *ZipkinReceiver) v2ToTraceSpans(blob []byte, hdr http.Header) (reqs []*
 			// not to send blank spans.
 			continue
 		}
-		reqs = append(reqs, &agenttracepb.ExportTraceServiceRequest{
+		reqs = append(reqs, data.TraceData{
 			Node:  node,
 			Spans: spans,
 		})
@@ -286,14 +285,14 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Now deserialize and process the spans.
 	asZipkinv1 := r.URL != nil && strings.Contains(r.URL.Path, "api/v1/spans")
 
-	var ereqs []*agenttracepb.ExportTraceServiceRequest
+	var tds []data.TraceData
 
 	var receiverNameTag string
 	if asZipkinv1 {
-		ereqs, err = zr.v1ToTraceSpans(slurp, r.Header)
+		tds, err = zr.v1ToTraceSpans(slurp, r.Header)
 		receiverNameTag = "zipkinV1"
 	} else {
-		ereqs, err = zr.v2ToTraceSpans(slurp, r.Header)
+		tds, err = zr.v2ToTraceSpans(slurp, r.Header)
 		receiverNameTag = "zipkinV2"
 	}
 
@@ -308,10 +307,10 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	spansMetricsFn := internal.NewReceivedSpansRecorderStreaming(ctx, receiverNameTag)
 	// Now translate them into TraceData
-	for _, ereq := range ereqs {
-		zr.nextProcessor.ProcessTraceData(ctx, data.TraceData{Node: ereq.Node, Spans: ereq.Spans})
+	for _, td := range tds {
+		zr.nextProcessor.ProcessTraceData(ctx, td)
 		// We MUST unconditionally record metrics from this reception.
-		spansMetricsFn(ereq.Node, ereq.Spans)
+		spansMetricsFn(td.Node, td.Spans)
 	}
 
 	// Finally send back the response "Accepted" as

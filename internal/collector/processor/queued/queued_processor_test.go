@@ -19,28 +19,28 @@ import (
 	"sync/atomic"
 	"testing"
 
-	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/processor"
 )
 
 func TestQueueProcessorHappyPath(t *testing.T) {
 	mockProc := newMockConcurrentSpanProcessor()
 	qp := NewQueuedSpanProcessor(mockProc)
-	goFn := func(b *agenttracepb.ExportTraceServiceRequest) {
-		qp.ProcessSpans(b, "test")
+	goFn := func(td data.TraceData) {
+		qp.ProcessSpans(td, "test")
 	}
 
 	spans := []*tracepb.Span{{}}
 	wantBatches := 10
 	wantSpans := 0
 	for i := 0; i < wantBatches; i++ {
-		batch := &agenttracepb.ExportTraceServiceRequest{
+		td := data.TraceData{
 			Spans: spans,
 		}
 		wantSpans += len(spans)
 		spans = append(spans, &tracepb.Span{})
-		fn := func() { goFn(batch) }
+		fn := func() { goFn(td) }
 		mockProc.runConcurrently(fn)
 	}
 
@@ -63,9 +63,9 @@ type mockConcurrentSpanProcessor struct {
 
 var _ processor.SpanProcessor = (*mockConcurrentSpanProcessor)(nil)
 
-func (p *mockConcurrentSpanProcessor) ProcessSpans(batch *agenttracepb.ExportTraceServiceRequest, spanFormat string) (uint64, error) {
+func (p *mockConcurrentSpanProcessor) ProcessSpans(td data.TraceData, spanFormat string) (uint64, error) {
 	atomic.AddInt32(&p.batchCount, 1)
-	atomic.AddInt32(&p.spanCount, int32(len(batch.Spans)))
+	atomic.AddInt32(&p.spanCount, int32(len(td.Spans)))
 	p.waitGroup.Done()
 	return 0, nil
 }
