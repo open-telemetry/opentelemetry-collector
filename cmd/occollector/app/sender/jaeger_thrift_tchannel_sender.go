@@ -45,16 +45,16 @@ func NewJaegerThriftTChannelSender(
 }
 
 // ProcessSpans sends the received data to the configured Jaeger Thrift end-point.
-func (s *JaegerThriftTChannelSender) ProcessSpans(td data.TraceData, spanFormat string) (uint64, error) {
+func (s *JaegerThriftTChannelSender) ProcessSpans(td data.TraceData, spanFormat string) error {
 	// TODO: (@pjanotti) In case of failure the translation to Jaeger Thrift is going to be remade, cache it somehow.
 	tBatch, err := jaegertranslator.OCProtoToJaegerThrift(td)
 	if err != nil {
-		return uint64(len(tBatch.Spans)), err
+		return err
 	}
 
 	if err := s.reporter.EmitBatch(tBatch); err != nil {
 		s.logger.Error("Reporter failed to report span batch", zap.Error(err))
-		return uint64(len(tBatch.Spans)), err
+		return err
 	}
-	return 0, nil
+	return nil
 }

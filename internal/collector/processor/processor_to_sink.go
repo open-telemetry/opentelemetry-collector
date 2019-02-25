@@ -37,7 +37,5 @@ func WrapWithSpanSink(format string, p SpanProcessor) processor.TraceDataProcess
 }
 
 func (ps *protoProcessorSink) ProcessTraceData(ctx context.Context, td data.TraceData) error {
-	_, err := ps.protoProcessor.ProcessSpans(td, ps.sourceFormat)
-
-	return err
+	return ps.protoProcessor.ProcessSpans(td, ps.sourceFormat)
 }

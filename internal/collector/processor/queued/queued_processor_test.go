@@ -63,11 +63,11 @@ type mockConcurrentSpanProcessor struct {
 
 var _ processor.SpanProcessor = (*mockConcurrentSpanProcessor)(nil)
 
-func (p *mockConcurrentSpanProcessor) ProcessSpans(td data.TraceData, spanFormat string) (uint64, error) {
+func (p *mockConcurrentSpanProcessor) ProcessSpans(td data.TraceData, spanFormat string) error {
 	atomic.AddInt32(&p.batchCount, 1)
 	atomic.AddInt32(&p.spanCount, int32(len(td.Spans)))
 	p.waitGroup.Done()
-	return 0, nil
+	return nil
 }
 
 func newMockConcurrentSpanProcessor() *mockConcurrentSpanProcessor {

@@ -107,21 +107,16 @@ func WithAddAttributes(attributes map[string]interface{}, overwrite bool) MultiP
 }
 
 // ProcessSpans implements the SpanProcessor interface
-func (msp *multiSpanProcessor) ProcessSpans(td data.TraceData, spanFormat string) (uint64, error) {
+func (msp *multiSpanProcessor) ProcessSpans(td data.TraceData, spanFormat string) error {
 	for _, preProcessFn := range msp.preProcessFns {
 		preProcessFn(td, spanFormat)
 	}
-	var maxFailures uint64
 	var errors []error
 	for _, sp := range msp.processors {
-		failures, err := sp.ProcessSpans(td, spanFormat)
+		err := sp.ProcessSpans(td, spanFormat)
 		if err != nil {
 			errors = append(errors, err)
 		}
-
-		if failures > maxFailures {
-			maxFailures = failures
-		}
 	}
-	return maxFailures, internal.CombineErrors(errors)
+	return internal.CombineErrors(errors)
 }

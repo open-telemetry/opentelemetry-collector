@@ -282,10 +282,10 @@ type mockSpanProcessor struct {
 
 var _ processor.SpanProcessor = &mockSpanProcessor{}
 
-func (p *mockSpanProcessor) ProcessSpans(td data.TraceData, spanFormat string) (uint64, error) {
+func (p *mockSpanProcessor) ProcessSpans(td data.TraceData, spanFormat string) error {
 	batchSize := len(td.Spans)
 	p.TotalSpans += batchSize
-	return 0, nil
+	return nil
 }
 
 func indexToTraceID(low int) []byte {

@@ -294,9 +294,9 @@ func newTestSender() *testSender {
 	}
 }
 
-func (ts *testSender) ProcessSpans(td data.TraceData, spanFormat string) (uint64, error) {
+func (ts *testSender) ProcessSpans(td data.TraceData, spanFormat string) error {
 	ts.reqChan <- td
-	return 0, nil
+	return nil
 }
 
 func (ts *testSender) waitFor(spans int, timeout time.Duration) error {

@@ -111,15 +111,11 @@ func (sp *queuedSpanProcessor) Stop() {
 }
 
 // ProcessSpans implements the SpanProcessor interface
-func (sp *queuedSpanProcessor) ProcessSpans(td data.TraceData, spanFormat string) (failures uint64, err error) {
-	allAdded := sp.enqueueSpanBatch(td, spanFormat)
-	if !allAdded {
-		failures = uint64(len(td.Spans))
-	}
-	return
+func (sp *queuedSpanProcessor) ProcessSpans(td data.TraceData, spanFormat string) error {
+	return sp.enqueueSpanBatch(td, spanFormat)
 }
 
-func (sp *queuedSpanProcessor) enqueueSpanBatch(td data.TraceData, spanFormat string) bool {
+func (sp *queuedSpanProcessor) enqueueSpanBatch(td data.TraceData, spanFormat string) error {
 	item := &queueItem{
 		queuedTime: time.Now(),
 		td:         td,
@@ -134,12 +130,12 @@ func (sp *queuedSpanProcessor) enqueueSpanBatch(td data.TraceData, spanFormat st
 	if !addedToQueue {
 		sp.onItemDropped(item, statsTags)
 	}
-	return addedToQueue
+	return nil
 }
 
 func (sp *queuedSpanProcessor) processItemFromQueue(item *queueItem) {
 	startTime := time.Now()
-	_, err := sp.sender.ProcessSpans(item.td, item.spanFormat)
+	err := sp.sender.ProcessSpans(item.td, item.spanFormat)
 	if err == nil {
 		// Record latency metrics and return
 		sendLatencyMs := int64(time.Since(startTime) / time.Millisecond)

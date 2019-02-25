@@ -179,7 +179,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 }
 
 // ProcessSpans is required by the SpanProcessor interface.
-func (tsp *tailSamplingSpanProcessor) ProcessSpans(td data.TraceData, spanFormat string) (uint64, error) {
+func (tsp *tailSamplingSpanProcessor) ProcessSpans(td data.TraceData, spanFormat string) error {
 	tsp.start.Do(func() {
 		tsp.logger.Info("First trace data arrived, starting tail-sampling timers")
 		tsp.policyTicker.Start(1 * time.Second)
@@ -253,10 +253,9 @@ func (tsp *tailSamplingSpanProcessor) ProcessSpans(td data.TraceData, spanFormat
 			case sampling.Sampled:
 				// Forward the spans to the policy destinations
 				traceTd := prepareTraceBatch(spans, singleTrace, td)
-				if failCount, err := policyAndDests.Destination.ProcessSpans(traceTd, spanFormat); err != nil {
+				if err := policyAndDests.Destination.ProcessSpans(traceTd, spanFormat); err != nil {
 					tsp.logger.Warn("Error sending late arrived spans to destination",
 						zap.String("policy", policyAndDests.Name),
-						zap.Uint64("failCount", failCount),
 						zap.Error(err))
 				}
 				fallthrough // so OnLateArrivingSpans is also called for decision Sampled.
@@ -273,7 +272,7 @@ func (tsp *tailSamplingSpanProcessor) ProcessSpans(td data.TraceData, spanFormat
 	}
 
 	stats.Record(tsp.ctx, statNewTraceIDReceivedCount.M(newTraceIDs))
-	return 0, nil
+	return nil
 }
 
 func (tsp *tailSamplingSpanProcessor) dropTrace(traceID traceKey, deletionTime time.Time) {

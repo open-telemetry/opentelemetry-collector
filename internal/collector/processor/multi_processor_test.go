@@ -49,45 +49,6 @@ func TestMultiSpanProcessorMultiplexing(t *testing.T) {
 	}
 }
 
-func TestMultiSpanProcessorSomeNotOk(t *testing.T) {
-	processors := make([]SpanProcessor, 3)
-	for i := range processors {
-		processors[i] = &mockSpanProcessor{}
-	}
-
-	// Make one processor return false for some spans
-	m := processors[1].(*mockSpanProcessor)
-	wantFailures := uint64(2)
-	m.Failures = wantFailures
-
-	tt := NewMultiSpanProcessor(processors)
-	spans := make([]*tracepb.Span, wantFailures+3)
-	for i := range spans {
-		spans[i] = &tracepb.Span{}
-	}
-	td := data.TraceData{
-		Spans: spans,
-	}
-
-	var wantSpansCount = 0
-	for i := 0; i < 2; i++ {
-		failures, _ := tt.ProcessSpans(td, "test")
-		batchSize := len(td.Spans)
-		wantSpansCount += batchSize
-		if wantFailures != failures {
-			t.Errorf("Wanted %d failures but got %d", wantFailures, failures)
-		}
-	}
-
-	for _, p := range processors {
-		m := p.(*mockSpanProcessor)
-		if m.TotalSpans != wantSpansCount {
-			t.Errorf("Wanted %d for every processor but got %d", wantSpansCount, m.TotalSpans)
-			return
-		}
-	}
-}
-
 func TestMultiSpanProcessorWhenOneErrors(t *testing.T) {
 	processors := make([]SpanProcessor, 3)
 	for i := range processors {
@@ -105,16 +66,13 @@ func TestMultiSpanProcessorWhenOneErrors(t *testing.T) {
 
 	var wantSpansCount = 0
 	for i := 0; i < 2; i++ {
-		failures, err := tt.ProcessSpans(td, "test")
+		err := tt.ProcessSpans(td, "test")
 		if err == nil {
 			t.Errorf("Wanted error got nil")
 			return
 		}
 		batchSize := len(td.Spans)
 		wantSpansCount += batchSize
-		if failures != uint64(batchSize) {
-			t.Errorf("Wanted all spans to fail, got a different value.")
-		}
 	}
 
 	for _, p := range processors {
@@ -233,19 +191,18 @@ func multiSpanProcessorWithAddAttributesTestHelper(t *testing.T, overwrite bool)
 }
 
 type mockSpanProcessor struct {
-	Failures   uint64
 	TotalSpans int
 	MustFail   bool
 }
 
 var _ SpanProcessor = &mockSpanProcessor{}
 
-func (p *mockSpanProcessor) ProcessSpans(td data.TraceData, spanFormat string) (uint64, error) {
+func (p *mockSpanProcessor) ProcessSpans(td data.TraceData, spanFormat string) error {
 	batchSize := len(td.Spans)
 	p.TotalSpans += batchSize
 	if p.MustFail {
-		return uint64(batchSize), fmt.Errorf("this processor must fail")
+		return fmt.Errorf("this processor must fail")
 	}
 
-	return p.Failures, nil
+	return nil
 }

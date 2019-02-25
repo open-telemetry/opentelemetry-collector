@@ -107,11 +107,11 @@ func NewBatcher(name string, logger *zap.Logger, sender processor.SpanProcessor,
 
 // ProcessSpans implements batcher as a SpanProcessor and takes the provided spans and adds them to
 // batches
-func (b *batcher) ProcessSpans(td data.TraceData, spanFormat string) (uint64, error) {
+func (b *batcher) ProcessSpans(td data.TraceData, spanFormat string) error {
 	bucketID := b.genBucketID(td.Node, td.Resource, spanFormat)
 	bucket := b.getOrAddBucket(bucketID, td.Node, td.Resource, spanFormat)
 	bucket.add(td.Spans)
-	return 0, nil
+	return nil
 }
 
 func (b *batcher) genBucketID(node *commonpb.Node, resource *resourcepb.Resource, spanFormat string) string {
@@ -275,7 +275,7 @@ func (nb *nodeBatcher) sendBatch(batch *batch) {
 		Resource: nb.resource,
 		Spans:    spans,
 	}
-	_, err := nb.parent.sender.ProcessSpans(td, nb.spanFormat)
+	err := nb.parent.sender.ProcessSpans(td, nb.spanFormat)
 	// Assumed that the next processor always handles a batch, and doesn't error
 	if err != nil {
 		nb.logger.Error(

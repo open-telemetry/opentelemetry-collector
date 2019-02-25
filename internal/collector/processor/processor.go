@@ -30,7 +30,7 @@ import (
 // SpanProcessor handles batches of spans converted to OpenCensus proto format.
 type SpanProcessor interface {
 	// ProcessSpans processes spans and return with the number of spans that failed and an error.
-	ProcessSpans(td data.TraceData, spanFormat string) (uint64, error)
+	ProcessSpans(td data.TraceData, spanFormat string) error
 	// TODO: (@pjanotti) For shutdown improvement, the interface needs a method to attempt that.
 }
 
@@ -39,7 +39,7 @@ type debugSpanProcessor struct{ logger *zap.Logger }
 
 var _ SpanProcessor = (*debugSpanProcessor)(nil)
 
-func (sp *debugSpanProcessor) ProcessSpans(td data.TraceData, spanFormat string) (uint64, error) {
+func (sp *debugSpanProcessor) ProcessSpans(td data.TraceData, spanFormat string) error {
 	if td.Node == nil {
 		sp.logger.Warn("Received batch with nil Node", zap.String("format", spanFormat))
 	}
@@ -49,7 +49,7 @@ func (sp *debugSpanProcessor) ProcessSpans(td data.TraceData, spanFormat string)
 	stats.RecordWithTags(context.Background(), statsTags, StatReceivedSpanCount.M(int64(numSpans)))
 
 	sp.logger.Debug("debugSpanProcessor", zap.String("originalFormat", spanFormat), zap.Int("#spans", numSpans))
-	return 0, nil
+	return nil
 }
 
 // NewNoopSpanProcessor creates an OC SpanProcessor that just drops the received data.

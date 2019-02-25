@@ -32,11 +32,10 @@ func NewTraceExporterProcessor(traceExporters ...processor.TraceDataProcessor) S
 	return &exporterSpanProcessor{tdp: processor.NewMultiTraceDataProcessor(traceExporters)}
 }
 
-func (sp *exporterSpanProcessor) ProcessSpans(td data.TraceData, spanFormat string) (uint64, error) {
+func (sp *exporterSpanProcessor) ProcessSpans(td data.TraceData, spanFormat string) error {
 	err := sp.tdp.ProcessTraceData(context.Background(), td)
 	if err != nil {
-		// TODO: determine if the number of dropped spans is needed because it was wrong anyway.
-		return 0, err
+		return err
 	}
-	return 0, nil
+	return nil
 }
