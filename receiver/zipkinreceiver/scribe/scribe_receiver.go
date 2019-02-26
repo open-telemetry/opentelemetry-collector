@@ -65,6 +65,13 @@ func NewReceiver(addr string, port uint16, category string) (receiver.TraceRecei
 	return r, nil
 }
 
+const traceSource string = "Zipkin-Scribe"
+
+// TraceSource returns the name of the trace data source.
+func (r *scribeReceiver) TraceSource() string {
+	return traceSource
+}
+
 func (r *scribeReceiver) StartTraceReception(ctx context.Context, nextProcessor processor.TraceDataProcessor) error {
 	r.Lock()
 	defer r.Unlock()

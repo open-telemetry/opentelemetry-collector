@@ -33,14 +33,13 @@ import (
 func createReceivers(v *viper.Viper, logger *zap.Logger, spanProcessor processor.SpanProcessor) []receiver.TraceReceiver {
 	var someReceiverEnabled bool
 	receivers := []struct {
-		name    string
 		runFn   func(*zap.Logger, *viper.Viper, processor.SpanProcessor) (receiver.TraceReceiver, error)
 		enabled bool
 	}{
-		{"Jaeger", jaegerreceiver.Start, builder.JaegerReceiverEnabled(v)},
-		{"OpenCensus", ocreceiver.Start, builder.OpenCensusReceiverEnabled(v)},
-		{"Zipkin", zipkinreceiver.Start, builder.ZipkinReceiverEnabled(v)},
-		{"Zipkin-Scribe", zipkinscribereceiver.Start, builder.ZipkinScribeReceiverEnabled(v)},
+		{jaegerreceiver.Start, builder.JaegerReceiverEnabled(v)},
+		{ocreceiver.Start, builder.OpenCensusReceiverEnabled(v)},
+		{zipkinreceiver.Start, builder.ZipkinReceiverEnabled(v)},
+		{zipkinscribereceiver.Start, builder.ZipkinScribeReceiverEnabled(v)},
 	}
 
 	var startedTraceReceivers []receiver.TraceReceiver
@@ -52,7 +51,7 @@ func createReceivers(v *viper.Viper, logger *zap.Logger, spanProcessor processor
 				for _, startedTraceReceiver := range startedTraceReceivers {
 					startedTraceReceiver.StopTraceReception(context.Background())
 				}
-				logger.Fatal("Cannot run receiver for "+receiver.name, zap.Error(err))
+				logger.Fatal("Cannot run receiver for "+rec.TraceSource(), zap.Error(err))
 			}
 			startedTraceReceivers = append(startedTraceReceivers, rec)
 			someReceiverEnabled = true

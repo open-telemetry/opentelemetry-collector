@@ -64,6 +64,8 @@ var (
 	errAlreadyStopped = errors.New("already stopped")
 )
 
+const source string = "OpenCensus"
+
 // New just creates the OpenCensus receiver services. It is the caller's
 // responsibility to invoke the respective Start*Reception methods as well
 // as the various Stop*Reception methods or simply Stop to end it.
@@ -85,6 +87,11 @@ func New(addr string, opts ...Option) (*Receiver, error) {
 	}
 
 	return ocr, nil
+}
+
+// TraceSource returns the name of the trace data source.
+func (ocr *Receiver) TraceSource() string {
+	return source
 }
 
 // StartTraceReception exclusively runs the Trace receiver on the gRPC server.
@@ -109,6 +116,11 @@ func (ocr *Receiver) registerTraceDataProcessor(ts processor.TraceDataProcessor)
 	})
 
 	return err
+}
+
+// MetricsSource returns the name of the metrics data source.
+func (ocr *Receiver) MetricsSource() string {
+	return source
 }
 
 // StartMetricsReception exclusively runs the Metrics receiver on the gRPC server.

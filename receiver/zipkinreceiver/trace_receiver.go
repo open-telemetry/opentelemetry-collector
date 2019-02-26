@@ -84,6 +84,13 @@ var (
 	errAlreadyStopped = errors.New("already stopped")
 )
 
+const traceSource string = "Zipkin"
+
+// TraceSource returns the name of the trace data source.
+func (zr *ZipkinReceiver) TraceSource() string {
+	return traceSource
+}
+
 // StartTraceReception spins up the receiver's HTTP server and makes the receiver start its processing.
 func (zr *ZipkinReceiver) StartTraceReception(ctx context.Context, nextProcessor processor.TraceDataProcessor) error {
 	zr.mu.Lock()

@@ -24,28 +24,37 @@ import (
 // A TraceReceiver is an "arbitrary data"-to-"trace proto span" converter.
 // Its purpose is to translate data from the wild into trace proto accompanied
 // by a *commonpb.Node to uniquely identify where that data comes from.
-// TraceReceiver feeds a TraceReceiverSink with data.
+// TraceReceiver feeds a processor.TraceDataProcessor with data.
 //
 // For example it could be Zipkin data source which translates
 // Zipkin spans into *tracepb.Span-s.
-//
-// StartTraceReception tells the receiver to start its processing.
-//
-// StopTraceReception tells the receiver that should stop reception,
-// giving it a chance to perform any necessary clean-up.
 type TraceReceiver interface {
+	// TraceSource returns the name of the trace data source.
+	TraceSource() string
+
+	// StartTraceReception tells the receiver to start its processing.
 	StartTraceReception(ctx context.Context, nextProcessor processor.TraceDataProcessor) error
+
+	// StopTraceReception tells the receiver that should stop reception,
+	// giving it a chance to perform any necessary clean-up.
 	StopTraceReception(ctx context.Context) error
 }
 
 // A MetricsReceiver is an "arbitrary data"-to-"metric proto" converter.
 // Its purpose is to translate data from the wild into metric proto accompanied
 // by a *commonpb.Node to uniquely identify where that data comes from.
-// MetricsReceiver feeds a MetricsReceiverSink with data.
+// MetricsReceiver feeds a processor.MetricsDataProcessor with data.
 //
 // For example it could be Prometheus data source which translates
 // Prometheus metrics into *metricpb.Metric-s.
 type MetricsReceiver interface {
+	// MetricsSource returns the name of the metrics data source.
+	MetricsSource() string
+
+	// StartMetricsReception tells the receiver to start its processing.
 	StartMetricsReception(ctx context.Context, nextProcessor processor.MetricsDataProcessor) error
+
+	// StopMetricsReception tells the receiver that should stop reception,
+	// giving it a chance to perform any necessary clean-up.
 	StopMetricsReception(ctx context.Context) error
 }

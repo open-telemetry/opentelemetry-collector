@@ -89,6 +89,8 @@ const (
 	defaultZipkinThriftUDPPort  = 5775
 	defaultCompactThriftUDPPort = 6831
 	defaultBinaryThriftUDPPort  = 6832
+
+	traceSource string = "Jaeger"
 )
 
 // New creates a TraceReceiver that receives traffic as a collector with both Thrift and HTTP transports.
@@ -158,6 +160,10 @@ func (jr *jReceiver) agentBinaryThriftAddr() string {
 		port = defaultBinaryThriftUDPPort
 	}
 	return fmt.Sprintf(":%d", port)
+}
+
+func (jr *jReceiver) TraceSource() string {
+	return traceSource
 }
 
 func (jr *jReceiver) StartTraceReception(ctx context.Context, nextProcessor processor.TraceDataProcessor) error {
