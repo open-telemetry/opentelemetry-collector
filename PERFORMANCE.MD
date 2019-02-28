@@ -21,10 +21,11 @@ on a variety of factors including:
 ## Testing
 
 Testing was completed on Linux using the [Synthetic Load Generator
-utility](https://github.com/Omnition/synthetic-load-generator) and results can
-be reproduced in your own environment. It is important to note that this utility
-has a few configurable parameters which can impact the results of the tests. The
-parameters used are defined below.
+utility](https://github.com/Omnition/synthetic-load-generator) running for a
+minimum of one hour (i.e. sustained rate). You can be reproduce these results in
+your own environment using the parameters described in this document. It is
+important to note that this utility has a few configurable parameters which can
+impact the results of the tests. The parameters used are defined below.
 
 * FlushInterval(ms) [default: 1000]
 * MaxQueueSize [default: 100]
