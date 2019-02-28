@@ -30,12 +30,12 @@ import (
 )
 
 var (
-	// ZipkinV1 friendly convertion errors
+	// ZipkinV1 friendly conversion errors
 	msgZipkinV1JSONUnmarshalError = "zipkinv1"
 	msgZipkinV1TraceIDError       = "zipkinV1 span traceId"
 	msgZipkinV1SpanIDError        = "zipkinV1 span id"
 	msgZipkinV1ParentIDError      = "zipkinV1 span parentId"
-	// Generic hex to ID convertion errors
+	// Generic hex to ID conversion errors
 	errHexTraceIDWrongLen = errors.New("hex traceId span has wrong length (expected 16 or 32)")
 	errHexTraceIDParsing  = errors.New("failed to parse hex traceId")
 	errHexTraceIDZero     = errors.New("traceId is zero")

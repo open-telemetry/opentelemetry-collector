@@ -216,7 +216,7 @@ func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 		}
 
 		// The connection should be invalid at this point and
-		// no attempt to send corrections should succeeed.
+		// no attempt to send corrections should succeed.
 		n1 := &commonpb.Node{
 			Identifier:  &commonpb.ProcessIdentifier{Pid: 9489, HostName: "nodejs-host"},
 			LibraryInfo: &commonpb.LibraryInfo{Language: commonpb.LibraryInfo_NODE_JS},

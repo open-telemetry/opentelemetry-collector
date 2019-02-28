@@ -499,7 +499,7 @@ func ExportersFromViperConfig(logger *zap.Logger, v *viper.Viper) ([]processor.T
 		for _, me := range mes {
 			if me != nil {
 				metricsExporters = append(metricsExporters, me)
-				logger.Info("Metrices Exporter enabled", zap.String("exporter", cfg.name))
+				logger.Info("Metrics Exporter enabled", zap.String("exporter", cfg.name))
 			}
 		}
 

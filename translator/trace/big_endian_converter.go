@@ -30,7 +30,7 @@ func Int64TraceIDToByteTraceID(high, low int64) []byte {
 	return traceID
 }
 
-// Int64SpanIDToByteSpanID takes a long represenation of a span id and
+// Int64SpanIDToByteSpanID takes a long representation of a span id and
 // converts it to a []byte representation.
 func Int64SpanIDToByteSpanID(id int64) []byte {
 	if id == 0 {

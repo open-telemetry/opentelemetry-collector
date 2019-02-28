@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package sampling containts the interfaces and data types used to implement
+// Package sampling contains the interfaces and data types used to implement
 // the various sampling policies.
 
 package viperutils
