@@ -16,17 +16,17 @@ package receiver_test
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	"time"
+
+	"github.com/census-instrumentation/opencensus-service/exporter/loggingexporter"
 
 	"contrib.go.opencensus.io/exporter/ocagent"
 	"go.opencensus.io/trace"
 
-	"github.com/census-instrumentation/opencensus-service/data"
-	"github.com/census-instrumentation/opencensus-service/processor"
 	"github.com/census-instrumentation/opencensus-service/receiver"
 	"github.com/census-instrumentation/opencensus-service/receiver/opencensusreceiver"
+	"go.uber.org/zap"
 )
 
 func Example_endToEnd() {
@@ -43,7 +43,7 @@ func Example_endToEnd() {
 
 	// Once we have the span receiver which will connect to the
 	// various exporter pipeline i.e. *tracepb.Span->OpenCensus.SpanData
-	lsr := new(logSpanSink)
+	lsr := loggingexporter.NewTraceExporter(zap.NewNop())
 	for _, tr := range trl {
 		if err := tr.StartTraceReception(context.Background(), lsr); err != nil {
 			log.Fatalf("Failed to start trace receiver: %v", err)
@@ -89,15 +89,4 @@ func Example_endToEnd() {
 	<-time.After(400 * time.Millisecond)
 	oce.Flush()
 	<-time.After(5 * time.Second)
-}
-
-type logSpanSink int
-
-var _ processor.TraceDataProcessor = (*logSpanSink)(nil)
-
-func (lsr *logSpanSink) ProcessTraceData(ctx context.Context, td data.TraceData) error {
-	spansBlob, _ := json.MarshalIndent(td.Spans, " ", "  ")
-	log.Printf("\n****\nNode: %#v\nSpans: %s\n****\n", td.Node, spansBlob)
-
-	return nil
 }

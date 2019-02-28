@@ -26,6 +26,7 @@ import (
 
 	"github.com/census-instrumentation/opencensus-service/cmd/occollector/app/builder"
 	"github.com/census-instrumentation/opencensus-service/cmd/occollector/app/sender"
+	"github.com/census-instrumentation/opencensus-service/exporter/loggingexporter"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/processor"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/processor/nodebatcher"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/processor/queued"
@@ -246,8 +247,9 @@ func startProcessor(v *viper.Viper, logger *zap.Logger) (processor.SpanProcessor
 	// TODO: (@pjanotti) make use of metrics exporters
 	_ = metricsExporters
 
-	if builder.DebugProcessorEnabled(v) {
-		dbgProc := processor.NewNoopSpanProcessor(logger)
+	if builder.LoggingExporterEnabled(v) {
+		dbgProc := processor.NewTraceExporterProcessor(loggingexporter.NewTraceExporter(logger))
+		// TODO: Add this to the exporters list and avoid treating it specially. Don't know all the implications.
 		nameToSpanProcessor["debug"] = dbgProc
 		spanProcessors = append(spanProcessors, dbgProc)
 	}

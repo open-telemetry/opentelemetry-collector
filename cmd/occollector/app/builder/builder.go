@@ -36,7 +36,7 @@ const (
 	ocReceiverFlg               = "receive-oc-trace"
 	zipkinReceiverFlg           = "receive-zipkin"
 	zipkinScribeReceiverFlg     = "receive-zipkin-scribe"
-	debugProcessorFlg           = "debug-processor"
+	loggingExporterFlg          = "logging-exporter"
 	useTailSamplingAlwaysSample = "tail-sampling-always-sample"
 )
 
@@ -51,7 +51,7 @@ func Flags(flags *flag.FlagSet) {
 		fmt.Sprintf("Flag to run the Zipkin receiver, default settings: %+v", *NewDefaultZipkinReceiverCfg()))
 	flags.Bool(zipkinScribeReceiverFlg, false,
 		fmt.Sprintf("Flag to run the Zipkin Scribe receiver, default settings: %+v", *NewDefaultZipkinScribeReceiverCfg()))
-	flags.Bool(debugProcessorFlg, false, "Flag to add a debug processor (combine with log level DEBUG to log incoming spans)")
+	flags.Bool(loggingExporterFlg, false, "Flag to add a logging exporter (combine with log level DEBUG to log incoming spans)")
 	flags.Bool(useTailSamplingAlwaysSample, false, "Flag to use a tail-based sampling processor with an always sample policy, "+
 		"unless tail sampling setting is present on configuration file.")
 }
@@ -61,9 +61,9 @@ func GetConfigFile(v *viper.Viper) string {
 	return v.GetString(configCfg)
 }
 
-// DebugProcessorEnabled returns true if the debug processor is enabled, and false otherwise
-func DebugProcessorEnabled(v *viper.Viper) bool {
-	return v.GetBool(debugProcessorFlg)
+// LoggingExporterEnabled returns true if the debug processor is enabled, and false otherwise
+func LoggingExporterEnabled(v *viper.Viper) bool {
+	return v.GetBool(loggingExporterFlg)
 }
 
 // DebugTailSamplingEnabled returns true if the debug processor is enabled, and false otherwise

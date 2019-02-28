@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package processor
+package loggingexporter
 
 import (
 	"context"
@@ -20,11 +20,11 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/data"
-	"go.uber.org/zap/zaptest"
+	"go.uber.org/zap"
 )
 
-func TestDebugTraceDataProcessorNoErrors(t *testing.T) {
-	dtdp := NewDebugTraceDataProcessor(zaptest.NewLogger(t))
+func TestLoggingTraceExporterNoErrors(t *testing.T) {
+	dtdp := NewTraceExporter(zap.NewNop())
 	td := data.TraceData{
 		Spans: make([]*tracepb.Span, 7),
 	}
@@ -32,15 +32,21 @@ func TestDebugTraceDataProcessorNoErrors(t *testing.T) {
 		t.Errorf("Wanted nil got error")
 		return
 	}
+	if "LoggingExporter" != dtdp.ExportFormat() {
+		t.Errorf("Wanted LoggingExporter got %v", dtdp.ExportFormat())
+	}
 }
 
-func TestDebugMetricsDataProcessorNoErrors(t *testing.T) {
-	dmdp := NewDebugMetricsDataProcessor(zaptest.NewLogger(t))
+func TestLoggingMetricsExporterNoErrors(t *testing.T) {
+	dmdp := NewMetricsExporter(zap.NewNop())
 	md := data.MetricsData{
 		Metrics: make([]*metricspb.Metric, 7),
 	}
 	if err := dmdp.ProcessMetricsData(context.Background(), md); err != nil {
 		t.Errorf("Wanted nil got error")
 		return
+	}
+	if "LoggingExporter" != dmdp.ExportFormat() {
+		t.Errorf("Wanted LoggingExporter got %v", dmdp.ExportFormat())
 	}
 }

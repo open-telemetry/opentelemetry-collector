@@ -15,13 +15,10 @@
 package processor
 
 import (
-	"context"
-
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
-	"go.uber.org/zap"
 
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/telemetry"
@@ -32,29 +29,6 @@ type SpanProcessor interface {
 	// ProcessSpans processes spans and return with the number of spans that failed and an error.
 	ProcessSpans(td data.TraceData, spanFormat string) error
 	// TODO: (@pjanotti) For shutdown improvement, the interface needs a method to attempt that.
-}
-
-// An initial processor that does not sends the data to any destination but helps debugging.
-type debugSpanProcessor struct{ logger *zap.Logger }
-
-var _ SpanProcessor = (*debugSpanProcessor)(nil)
-
-func (sp *debugSpanProcessor) ProcessSpans(td data.TraceData, spanFormat string) error {
-	if td.Node == nil {
-		sp.logger.Warn("Received batch with nil Node", zap.String("format", spanFormat))
-	}
-
-	statsTags := StatsTagsForBatch("debug", ServiceNameForNode(td.Node), spanFormat)
-	numSpans := len(td.Spans)
-	stats.RecordWithTags(context.Background(), statsTags, StatReceivedSpanCount.M(int64(numSpans)))
-
-	sp.logger.Debug("debugSpanProcessor", zap.String("originalFormat", spanFormat), zap.Int("#spans", numSpans))
-	return nil
-}
-
-// NewNoopSpanProcessor creates an OC SpanProcessor that just drops the received data.
-func NewNoopSpanProcessor(logger *zap.Logger) SpanProcessor {
-	return &debugSpanProcessor{logger: logger}
 }
 
 // Keys and stats for telemetry.
