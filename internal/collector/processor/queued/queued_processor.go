@@ -112,10 +112,6 @@ func (sp *queuedSpanProcessor) Stop() {
 
 // ProcessSpans implements the SpanProcessor interface
 func (sp *queuedSpanProcessor) ProcessSpans(td data.TraceData, spanFormat string) error {
-	return sp.enqueueSpanBatch(td, spanFormat)
-}
-
-func (sp *queuedSpanProcessor) enqueueSpanBatch(td data.TraceData, spanFormat string) error {
 	item := &queueItem{
 		queuedTime: time.Now(),
 		td:         td,
@@ -232,14 +228,14 @@ func MetricViews(level telemetry.Level) []*view.View {
 		Measure:     statSuccessSendOps,
 		Description: "The number of successful send operations performed by queued exporter",
 		TagKeys:     tagKeys,
-		Aggregation: view.Count(),
+		Aggregation: view.Sum(),
 	}
 	countFailuresSendView := &view.View{
 		Name:        statFailedSendOps.Name(),
 		Measure:     statFailedSendOps,
 		Description: "The number of failed send operations performed by queued exporter",
 		TagKeys:     tagKeys,
-		Aggregation: view.Count(),
+		Aggregation: view.Sum(),
 	}
 
 	latencyDistributionAggregation := view.Distribution(10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 10000, 20000, 30000, 50000)

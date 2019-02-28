@@ -61,7 +61,7 @@ func MetricViews(level telemetry.Level) []*view.View {
 		Measure:     statNodesAddedToBatches,
 		Description: statNodesAddedToBatches.Description(),
 		TagKeys:     exporterTagKeys,
-		Aggregation: view.Count(),
+		Aggregation: view.Sum(),
 	}
 
 	nodesRemovedFromBatchesView := &view.View{
@@ -69,7 +69,7 @@ func MetricViews(level telemetry.Level) []*view.View {
 		Measure:     statNodesRemovedFromBatches,
 		Description: statNodesRemovedFromBatches.Description(),
 		TagKeys:     exporterTagKeys,
-		Aggregation: view.Count(),
+		Aggregation: view.Sum(),
 	}
 
 	countBatchSizeTriggerSendView := &view.View{
@@ -77,7 +77,7 @@ func MetricViews(level telemetry.Level) []*view.View {
 		Measure:     statBatchSizeTriggerSend,
 		Description: statBatchSizeTriggerSend.Description(),
 		TagKeys:     tagKeys,
-		Aggregation: view.Count(),
+		Aggregation: view.Sum(),
 	}
 
 	countTimeoutTriggerSendView := &view.View{
@@ -85,7 +85,7 @@ func MetricViews(level telemetry.Level) []*view.View {
 		Measure:     statTimeoutTriggerSend,
 		Description: statTimeoutTriggerSend.Description(),
 		TagKeys:     tagKeys,
-		Aggregation: view.Count(),
+		Aggregation: view.Sum(),
 	}
 
 	countBatchOnDeadNode := &view.View{
@@ -93,7 +93,7 @@ func MetricViews(level telemetry.Level) []*view.View {
 		Measure:     statBatchOnDeadNode,
 		Description: statBatchOnDeadNode.Description(),
 		TagKeys:     tagKeys,
-		Aggregation: view.Count(),
+		Aggregation: view.Sum(),
 	}
 
 	return []*view.View{

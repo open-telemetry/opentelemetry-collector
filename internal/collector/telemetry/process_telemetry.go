@@ -31,7 +31,7 @@ var viewTotalAllocMem = &view.View{
 	Name:        mRuntimeTotalAllocMem.Name(),
 	Description: mRuntimeTotalAllocMem.Description(),
 	Measure:     mRuntimeTotalAllocMem,
-	Aggregation: view.Count(),
+	Aggregation: view.LastValue(),
 	TagKeys:     nil,
 }
 
@@ -49,7 +49,7 @@ var viewCPUSeconds = &view.View{
 	Name:        mCPUSeconds.Name(),
 	Description: mCPUSeconds.Description(),
 	Measure:     mCPUSeconds,
-	Aggregation: view.Count(),
+	Aggregation: view.LastValue(),
 	TagKeys:     nil,
 }
 
