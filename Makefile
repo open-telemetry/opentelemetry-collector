@@ -48,7 +48,7 @@ lint:
 
 .PHONY: install-tools
 install-tools:
-	go get -u golang.org/x/lint/golint
+	go get golang.org/x/lint/golint
 
 .PHONY: agent
 agent:
