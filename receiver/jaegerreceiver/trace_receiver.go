@@ -37,7 +37,6 @@ import (
 	"github.com/uber/tchannel-go/thrift"
 	"go.uber.org/zap"
 
-	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal"
 	"github.com/census-instrumentation/opencensus-service/processor"
 	"github.com/census-instrumentation/opencensus-service/receiver"
@@ -73,6 +72,8 @@ type jReceiver struct {
 
 	tchannel        *tchannel.Channel
 	collectorServer *http.Server
+
+	defaultAgentCtx context.Context
 }
 
 const (
@@ -95,7 +96,10 @@ const (
 
 // New creates a TraceReceiver that receives traffic as a collector with both Thrift and HTTP transports.
 func New(ctx context.Context, config *Configuration) (receiver.TraceReceiver, error) {
-	return &jReceiver{config: config}, nil
+	return &jReceiver{
+		config:          config,
+		defaultAgentCtx: internal.ContextWithReceiverName(context.Background(), "jaeger-agent"),
+	}, nil
 }
 
 var _ receiver.TraceReceiver = (*jReceiver)(nil)
@@ -232,9 +236,11 @@ func (jr *jReceiver) stopTraceReceptionLocked(ctx context.Context) error {
 	return err
 }
 
+const collectorReceiverTagValue = "jaeger-collector"
+
 func (jr *jReceiver) SubmitBatches(ctx thrift.Context, batches []*jaeger.Batch) ([]*jaeger.BatchSubmitResponse, error) {
 	jbsr := make([]*jaeger.BatchSubmitResponse, 0, len(batches))
-	spansMetricsFn := internal.NewReceivedSpansRecorderStreaming(ctx, "jaeger-collector")
+	ctxWithReceiverName := internal.ContextWithReceiverName(ctx, collectorReceiverTagValue)
 
 	for _, batch := range batches {
 		td, err := jaegertranslator.ThriftBatchToOCProto(batch)
@@ -245,7 +251,7 @@ func (jr *jReceiver) SubmitBatches(ctx thrift.Context, batches []*jaeger.Batch) 
 			ok = true
 			jr.nextProcessor.ProcessTraceData(ctx, td)
 			// We MUST unconditionally record metrics from this reception.
-			spansMetricsFn(td.Node, td.Spans)
+			internal.RecordTraceReceiverMetrics(ctxWithReceiverName, len(batch.Spans), len(batch.Spans)-len(td.Spans))
 		}
 
 		jbsr = append(jbsr, &jaeger.BatchSubmitResponse{
@@ -267,17 +273,14 @@ func (jr *jReceiver) EmitZipkinBatch(spans []*zipkincore.Span) error {
 // EmitBatch implements cmd/agent/reporter.Reporter and it forwards
 // Jaeger spans received by the Jaeger agent processor.
 func (jr *jReceiver) EmitBatch(batch *jaeger.Batch) error {
-	octrace, err := jaegertranslator.ThriftBatchToOCProto(batch)
+	td, err := jaegertranslator.ThriftBatchToOCProto(batch)
 	if err != nil {
-		// TODO: (@odeke-em) add this error for Jaeger observability metrics
+		internal.RecordTraceReceiverMetrics(jr.defaultAgentCtx, len(batch.Spans), len(batch.Spans))
 		return err
 	}
 
-	ctx := context.Background()
-	spansMetricsFn := internal.NewReceivedSpansRecorderStreaming(ctx, "jaeger-agent")
-	err = jr.nextProcessor.ProcessTraceData(ctx, data.TraceData{Node: octrace.Node, Spans: octrace.Spans})
-	// We MUST unconditionally record metrics from this reception.
-	spansMetricsFn(octrace.Node, octrace.Spans)
+	err = jr.nextProcessor.ProcessTraceData(jr.defaultAgentCtx, td)
+	internal.RecordTraceReceiverMetrics(jr.defaultAgentCtx, len(batch.Spans), len(batch.Spans)-len(td.Spans))
 
 	return err
 }

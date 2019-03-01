@@ -271,6 +271,11 @@ func zlibUncompressedbody(r io.Reader) io.Reader {
 	return zr
 }
 
+const (
+	zipkinV1TagValue = "zipkinV1"
+	zipkinV2TagValue = "zipkinV2"
+)
+
 // The ZipkinReceiver receives spans from endpoint /api/v2 as JSON,
 // unmarshals them and sends them along to the nextProcessor.
 func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -279,6 +284,7 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 
 	// If the starting RPC has a parent span, then add it as a parent link.
+	// TODO: parentCtx should be direct parent for the span created here.
 	parentCtx := r.Context()
 	internal.SetParentLink(parentCtx, span)
 
@@ -294,13 +300,13 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	var tds []data.TraceData
 
-	var receiverNameTag string
+	var receiverTagValue string
 	if asZipkinv1 {
 		tds, err = zr.v1ToTraceSpans(slurp, r.Header)
-		receiverNameTag = "zipkinV1"
+		receiverTagValue = zipkinV1TagValue
 	} else {
 		tds, err = zr.v2ToTraceSpans(slurp, r.Header)
-		receiverNameTag = "zipkinV2"
+		receiverTagValue = zipkinV2TagValue
 	}
 
 	if err != nil {
@@ -312,13 +318,15 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	spansMetricsFn := internal.NewReceivedSpansRecorderStreaming(ctx, receiverNameTag)
-	// Now translate them into TraceData
+	ctxWithReceiverName := internal.ContextWithReceiverName(ctx, receiverTagValue)
+	tdsSize := 0
 	for _, td := range tds {
-		zr.nextProcessor.ProcessTraceData(ctx, td)
-		// We MUST unconditionally record metrics from this reception.
-		spansMetricsFn(td.Node, td.Spans)
+		zr.nextProcessor.ProcessTraceData(ctxWithReceiverName, td)
+		tdsSize += len(td.Spans)
 	}
+
+	// TODO: Get the number of dropped spans from the conversion failure.
+	internal.RecordTraceReceiverMetrics(ctxWithReceiverName, tdsSize, 0)
 
 	// Finally send back the response "Accepted" as
 	// required at https://zipkin.io/zipkin-api/#/default/post_spans

@@ -105,6 +105,8 @@ func OpenCensusTraceExportersFromViper(v *viper.Viper) (tdps []processor.TraceDa
 	return
 }
 
+const exporterTagValue = "oc_trace"
+
 func (oce *ocagentExporter) ProcessTraceData(ctx context.Context, td data.TraceData) error {
 	// Get an exporter worker round-robin
 	exporter := oce.exporters[atomic.AddUint32(&oce.counter, 1)%uint32(len(oce.exporters))]
@@ -115,10 +117,14 @@ func (oce *ocagentExporter) ProcessTraceData(ctx context.Context, td data.TraceD
 			Node:     td.Node,
 		},
 	)
+	ctxWithExporterName := internal.ContextWithExporterName(ctx, exporterTagValue)
 	if err != nil {
+		// TODO: If failed to send all maybe record a different metric. Failed to "Sent", but
+		// this may not be accurate if we have retry outside of this exporter. Maybe the retry
+		// processor should record these metrics. For the moment we assume no retry.
+		internal.RecordTraceExporterMetrics(ctxWithExporterName, len(td.Spans), len(td.Spans))
 		return err
 	}
-	nSpansCounter := internal.NewExportedSpansRecorder("ocagent")
-	nSpansCounter(ctx, td.Node, td.Spans)
+	internal.RecordTraceExporterMetrics(ctxWithExporterName, len(td.Spans), 0)
 	return nil
 }

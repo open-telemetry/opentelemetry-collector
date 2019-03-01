@@ -60,6 +60,7 @@ func NewReceiver(addr string, port uint16, category string) (receiver.TraceRecei
 			category:            category,
 			msgDecoder:          base64.StdEncoding.WithPadding('='),
 			tBinProtocolFactory: thrift.NewTBinaryProtocolFactory(true, false),
+			defaultCtx:          internal.ContextWithReceiverName(context.Background(), "zipkin-scribe"),
 		},
 	}
 	return r, nil
@@ -128,6 +129,7 @@ type scribeCollector struct {
 	msgDecoder          *base64.Encoding
 	tBinProtocolFactory *thrift.TBinaryProtocolFactory
 	nextProcessor       processor.TraceDataProcessor
+	defaultCtx          context.Context
 }
 
 var _ scribe.Scribe = (*scribeCollector)(nil)
@@ -138,11 +140,13 @@ func (sc *scribeCollector) Log(messages []*scribe.LogEntry) (r scribe.ResultCode
 	for _, logEntry := range messages {
 		if sc.category != logEntry.Category {
 			// Not the specified category, do nothing
+			// TODO: Is this an error? Should we count this as dropped Span?
 			continue
 		}
 
 		b, err := sc.msgDecoder.DecodeString(logEntry.Message)
 		if err != nil {
+			// TODO: Should we continue to read? What error should we record here?
 			return scribe.ResultCode_OK, err
 		}
 
@@ -150,6 +154,7 @@ func (sc *scribeCollector) Log(messages []*scribe.LogEntry) (r scribe.ResultCode
 		st := thrift.NewStreamTransportR(r)
 		zs := &zipkincore.Span{}
 		if err := zs.Read(sc.tBinProtocolFactory.GetProtocol(st)); err != nil {
+			// TODO: Should we continue to read? What error should we record here?
 			return scribe.ResultCode_OK, err
 		}
 
@@ -162,16 +167,18 @@ func (sc *scribeCollector) Log(messages []*scribe.LogEntry) (r scribe.ResultCode
 
 	tds, err := zipkintranslator.V1ThriftBatchToOCProto(zSpans)
 	if err != nil {
+		// If failed to convert, record all the received spans as dropped.
+		internal.RecordTraceReceiverMetrics(sc.defaultCtx, len(zSpans), len(zSpans))
 		return scribe.ResultCode_OK, err
 	}
 
-	ctx := context.Background()
-	spansMetricsFn := internal.NewReceivedSpansRecorderStreaming(ctx, "zipkin-scribe")
-
+	tdsSize := 0
 	for _, td := range tds {
-		sc.nextProcessor.ProcessTraceData(ctx, td)
-		spansMetricsFn(td.Node, td.Spans)
+		sc.nextProcessor.ProcessTraceData(sc.defaultCtx, td)
+		tdsSize += len(td.Spans)
 	}
+
+	internal.RecordTraceReceiverMetrics(sc.defaultCtx, len(zSpans), len(zSpans)-tdsSize)
 
 	return scribe.ResultCode_OK, nil
 }

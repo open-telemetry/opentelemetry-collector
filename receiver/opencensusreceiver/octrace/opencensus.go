@@ -88,14 +88,13 @@ func (ocr *Receiver) Config(tcs agenttracepb.TraceService_ConfigServer) error {
 
 var errTraceExportProtocolViolation = errors.New("protocol violation: Export's first message must have a Node")
 
-const receiverName = "opencensus_trace"
+const receiverTagValue = "oc_trace"
 
 // Export is the gRPC method that receives streamed traces from
 // OpenCensus-traceproto compatible libraries/applications.
 func (ocr *Receiver) Export(tes agenttracepb.TraceService_ExportServer) error {
 	// We need to ensure that it propagates the receiver name as a tag
-	ctxWithReceiverName := internal.ContextWithReceiverName(tes.Context(), receiverName)
-	spansMetricsFn := internal.NewReceivedSpansRecorderStreaming(tes.Context(), receiverName)
+	ctxWithReceiverName := internal.ContextWithReceiverName(tes.Context(), receiverTagValue)
 
 	// The first message MUST have a non-nil Node.
 	recv, err := tes.Recv()
@@ -131,7 +130,7 @@ func (ocr *Receiver) Export(tes agenttracepb.TraceService_ExportServer) error {
 
 		ocr.messageChan <- &traceDataWithCtx{data: td, ctx: ctxWithReceiverName}
 
-		spansMetricsFn(td.Node, td.Spans)
+		internal.RecordTraceReceiverMetrics(ctxWithReceiverName, len(td.Spans), 0)
 
 		recv, err = tes.Recv()
 		if err != nil {
