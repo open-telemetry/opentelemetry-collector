@@ -27,18 +27,18 @@ const exportFormat = "LoggingExporter"
 // A logging exporter that does not sends the data to any destination but logs debugging messages.
 type loggingExporter struct{ logger *zap.Logger }
 
-var _ exporter.TraceDataExporter = (*loggingExporter)(nil)
-var _ exporter.MetricsDataExporter = (*loggingExporter)(nil)
+var _ exporter.TraceExporter = (*loggingExporter)(nil)
+var _ exporter.MetricsExporter = (*loggingExporter)(nil)
 
 func (sp *loggingExporter) ProcessTraceData(ctx context.Context, td data.TraceData) error {
 	// TODO: Record metrics
 	// TODO: Add ability to record the received data
-	sp.logger.Debug("loggingTraceDataExporter", zap.Int("#spans", len(td.Spans)))
+	sp.logger.Debug("loggingTraceExporter", zap.Int("#spans", len(td.Spans)))
 	return nil
 }
 
 func (sp *loggingExporter) ProcessMetricsData(ctx context.Context, md data.MetricsData) error {
-	sp.logger.Debug("loggingMetricsDataExporter", zap.Int("#metrics", len(md.Metrics)))
+	sp.logger.Debug("loggingMetricsExporter", zap.Int("#metrics", len(md.Metrics)))
 	// TODO: Record metrics
 	// TODO: Add ability to record the received data
 	return nil
@@ -48,14 +48,14 @@ func (sp *loggingExporter) ExportFormat() string {
 	return exportFormat
 }
 
-// NewTraceExporter creates an exporter.TraceDataExporter that just drops the
+// NewTraceExporter creates an exporter.TraceExporter that just drops the
 // received data and logs debugging messages.
-func NewTraceExporter(logger *zap.Logger) exporter.TraceDataExporter {
+func NewTraceExporter(logger *zap.Logger) exporter.TraceExporter {
 	return &loggingExporter{logger: logger}
 }
 
-// NewMetricsExporter creates an exporter.MetricsDataExporter that just drops the
+// NewMetricsExporter creates an exporter.MetricsExporter that just drops the
 // received data and logs debugging messages.
-func NewMetricsExporter(logger *zap.Logger) exporter.MetricsDataExporter {
+func NewMetricsExporter(logger *zap.Logger) exporter.MetricsExporter {
 	return &loggingExporter{logger: logger}
 }

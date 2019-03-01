@@ -28,8 +28,8 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/data"
+	"github.com/census-instrumentation/opencensus-service/exporter/exportertest"
 	"github.com/census-instrumentation/opencensus-service/internal"
-	"github.com/census-instrumentation/opencensus-service/processor/processortest"
 )
 
 func TestJaegerAgentUDP_ThriftCompact_6831(t *testing.T) {
@@ -58,7 +58,7 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *Configu
 	}
 	defer jr.StopTraceReception(context.Background())
 
-	sink := new(processortest.ConcurrentTraceDataSink)
+	sink := new(exportertest.SinkTraceExporter)
 	if err := jr.StartTraceReception(context.Background(), sink); err != nil {
 		t.Fatalf("StartTraceReception failed: %v", err)
 	}
@@ -229,7 +229,7 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *Configu
 	}
 
 	if !reflect.DeepEqual(got, want) {
-		gj, wj := processortest.ToJSON(got), processortest.ToJSON(want)
+		gj, wj := exportertest.ToJSON(got), exportertest.ToJSON(want)
 		if !bytes.Equal(gj, wj) {
 			t.Errorf("Mismatched responses\nGot:\n\t%v\n\t%s\nWant:\n\t%v\n\t%s", got, gj, want, wj)
 		}

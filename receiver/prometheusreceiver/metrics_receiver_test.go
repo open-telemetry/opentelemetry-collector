@@ -36,7 +36,7 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/census-instrumentation/opencensus-service/data"
-	"github.com/census-instrumentation/opencensus-service/processor/processortest"
+	"github.com/census-instrumentation/opencensus-service/exporter/exportertest"
 	"github.com/golang/protobuf/ptypes/timestamp"
 )
 
@@ -105,7 +105,7 @@ buffer_count: 2
 		t.Fatalf("Failed to create promreceiver: %v", err)
 	}
 
-	cms := new(processortest.ConcurrentMetricsDataSink)
+	cms := new(exportertest.SinkMetricsExporter)
 	if err := precv.StartMetricsReception(context.Background(), cms); err != nil {
 		t.Fatalf("Failed to invoke StartMetricsReception: %v", err)
 	}
@@ -397,7 +397,7 @@ buffer_count: 2
 
 	for _, want := range wantPermutations {
 		if !reflect.DeepEqual(got, want) {
-			gj, wj := string(processortest.ToJSON(got)), string(processortest.ToJSON(want))
+			gj, wj := string(exportertest.ToJSON(got)), string(exportertest.ToJSON(want))
 			if gj == wj {
 				return
 			}
@@ -406,9 +406,9 @@ buffer_count: 2
 
 	// Otherwise no variant of the wanted data matched, hence error out.
 
-	gj := processortest.ToJSON(got)
+	gj := exportertest.ToJSON(got)
 	for _, want := range wantPermutations {
-		wj := processortest.ToJSON(want)
+		wj := exportertest.ToJSON(want)
 		t.Errorf("Failed to match either:\nGot:\n%s\n\nWant:\n%s\n\n", gj, wj)
 	}
 
@@ -428,7 +428,7 @@ func byMetricsSorter(t *testing.T, mds []data.MetricsData) {
 	// Then sort by requests.
 	sort.Slice(mds, func(i, j int) bool {
 		mdi, mdj := mds[i], mds[j]
-		return string(processortest.ToJSON(mdi)) < string(processortest.ToJSON(mdj))
+		return string(exportertest.ToJSON(mdi)) < string(exportertest.ToJSON(mdj))
 	})
 }
 

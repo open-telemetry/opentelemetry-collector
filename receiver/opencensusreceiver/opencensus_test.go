@@ -27,12 +27,11 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
-	"github.com/census-instrumentation/opencensus-service/processor/processortest"
-
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/data"
+	"github.com/census-instrumentation/opencensus-service/exporter/exportertest"
 	"github.com/census-instrumentation/opencensus-service/internal"
 )
 
@@ -46,7 +45,7 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 	}
 	defer ocr.StopTraceReception(context.Background())
 
-	sink := new(processortest.ConcurrentTraceDataSink)
+	sink := new(exportertest.SinkTraceExporter)
 
 	go func() {
 		if err := ocr.StartTraceReception(context.Background(), sink); err != nil {
@@ -140,7 +139,7 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(got, want) {
-		gj, wj := processortest.ToJSON(got), processortest.ToJSON(want)
+		gj, wj := exportertest.ToJSON(got), exportertest.ToJSON(want)
 		if !bytes.Equal(gj, wj) {
 			t.Errorf("Mismatched responses\nGot:\n\t%v\n\t%s\nWant:\n\t%v\n\t%s", got, gj, want, wj)
 		}
@@ -157,7 +156,7 @@ func TestGrpcGatewayCors_endToEnd(t *testing.T) {
 	}
 	defer ocr.Stop()
 
-	sink := new(processortest.ConcurrentTraceDataSink)
+	sink := new(exportertest.SinkTraceExporter)
 	go func() {
 		if err := ocr.StartTraceReception(context.Background(), sink); err != nil {
 			t.Fatalf("Failed to start trace receiver: %v", err)
@@ -188,7 +187,7 @@ func TestAcceptAllGRPCProtoAffiliatedContentTypes(t *testing.T) {
 		t.Fatalf("Failed to create trace receiver: %v", err)
 	}
 
-	cbts := new(processortest.ConcurrentTraceDataSink)
+	cbts := new(exportertest.SinkTraceExporter)
 	if err := ocr.StartTraceReception(context.Background(), cbts); err != nil {
 		t.Fatalf("Failed to start the trace receiver: %v", err)
 	}

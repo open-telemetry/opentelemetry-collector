@@ -15,31 +15,43 @@ package processortest
 
 import (
 	"context"
+	"reflect"
 	"testing"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/data"
+	"github.com/census-instrumentation/opencensus-service/exporter/exportertest"
 )
 
-func TestNoopTraceDataProcessorNoErrors(t *testing.T) {
-	ntdp := NewNoopTraceDataProcessor()
-	td := data.TraceData{
+func TestNopTraceDataProcessorNoErrors(t *testing.T) {
+	sink := new(exportertest.SinkTraceExporter)
+	ntp := NewNopTraceProcessor(sink)
+	want := data.TraceData{
 		Spans: make([]*tracepb.Span, 7),
 	}
-	if err := ntdp.ProcessTraceData(context.Background(), td); err != nil {
+	if err := ntp.ProcessTraceData(context.Background(), want); err != nil {
 		t.Errorf("Wanted nil got error")
 		return
+	}
+	got := sink.AllTraces()[0]
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("Mismatches responses\nGot:\n\t%v\nWant:\n\t%v\n", got, want)
 	}
 }
 
-func TestNoopMetricsDataProcessorNoErrors(t *testing.T) {
-	nmdp := NewNoopMetricsDataProcessor()
-	md := data.MetricsData{
+func TestNopMetricsDataProcessorNoErrors(t *testing.T) {
+	sink := new(exportertest.SinkMetricsExporter)
+	nmp := NewNopMetricsProcessor(sink)
+	want := data.MetricsData{
 		Metrics: make([]*metricspb.Metric, 7),
 	}
-	if err := nmdp.ProcessMetricsData(context.Background(), md); err != nil {
+	if err := nmp.ProcessMetricsData(context.Background(), want); err != nil {
 		t.Errorf("Wanted nil got error")
 		return
+	}
+	got := sink.AllMetrics()[0]
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("Mismatches responses\nGot:\n\t%v\nWant:\n\t%v\n", got, want)
 	}
 }

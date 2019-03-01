@@ -20,48 +20,48 @@ import (
 	"github.com/census-instrumentation/opencensus-service/processor"
 )
 
-// TraceDataExporter composes TraceDataProcessor with some additional
+// TraceExporter composes TraceDataProcessor with some additional
 // exporter-specific functions. This helps the service core to identify which
 // TraceDataProcessors are Exporters and which are internal processing
 // components, so that better validation of pipelines can be done.
-type TraceDataExporter interface {
+type TraceExporter interface {
 	processor.TraceDataProcessor
 
 	// ExportFormat gets the name of the format in which this exporter sends its data.
 	ExportFormat() string
 }
 
-// TraceDataExporterFactory is an interface that builds a new TraceDataExporter based on
+// TraceExporterFactory is an interface that builds a new TraceExporter based on
 // some viper.Viper configuration.
-type TraceDataExporterFactory interface {
-	// Type gets the type of the TraceDataExporter created by this factory.
+type TraceExporterFactory interface {
+	// Type gets the type of the TraceExporter created by this factory.
 	Type() string
-	// NewFromViper takes a viper.Viper config and creates a new TraceDataExporter.
-	NewFromViper(cfg *viper.Viper) (TraceDataExporter, error)
-	// DefaultConfig returns the default configuration for TraceDataExporter
+	// NewFromViper takes a viper.Viper config and creates a new TraceExporter.
+	NewFromViper(cfg *viper.Viper) (TraceExporter, error)
+	// DefaultConfig returns the default configuration for TraceExporter
 	// created by this factory.
 	DefaultConfig() *viper.Viper
 }
 
-// MetricsDataExporter composes MetricsDataProcessor with some additional
+// MetricsExporter composes MetricsDataProcessor with some additional
 // exporter-specific functions. This helps the service core to identify which
 // MetricsDataProcessors are Exporters and which are internal processing
 // components, so that better validation of pipelines can be done.
-type MetricsDataExporter interface {
+type MetricsExporter interface {
 	processor.MetricsDataProcessor
 
 	// ExportFormat gets the name of the format in which this exporter sends its data.
 	ExportFormat() string
 }
 
-// MetricsDataExporterFactory is an interface that builds a new MetricsDataExporter based on
+// MetricsExporterFactory is an interface that builds a new MetricsExporter based on
 // some viper.Viper configuration.
-type MetricsDataExporterFactory interface {
-	// Type gets the type of the MetricsDataExporter created by this factory.
+type MetricsExporterFactory interface {
+	// Type gets the type of the MetricsExporter created by this factory.
 	Type() string
-	// NewFromViper takes a viper.Viper config and creates a new MetricsDataExporter.
-	NewFromViper(cfg *viper.Viper) (MetricsDataExporter, error)
-	// DefaultConfig returns the default configuration for MetricsDataExporter
+	// NewFromViper takes a viper.Viper config and creates a new MetricsExporter.
+	NewFromViper(cfg *viper.Viper) (MetricsExporter, error)
+	// DefaultConfig returns the default configuration for MetricsExporter
 	// created by this factory.
 	DefaultConfig() *viper.Viper
 }

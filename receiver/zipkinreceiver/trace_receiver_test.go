@@ -33,9 +33,9 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/data"
+	"github.com/census-instrumentation/opencensus-service/exporter/exportertest"
 	"github.com/census-instrumentation/opencensus-service/internal"
 	"github.com/census-instrumentation/opencensus-service/internal/testutils"
-	"github.com/census-instrumentation/opencensus-service/processor/processortest"
 	spandatatranslator "github.com/census-instrumentation/opencensus-service/translator/trace/spandata"
 )
 
@@ -225,7 +225,7 @@ func TestConversionRoundtrip(t *testing.T) {
   }
 }]`)
 
-	zi := &ZipkinReceiver{nextProcessor: processortest.NewNoopTraceDataProcessor()}
+	zi := &ZipkinReceiver{nextProcessor: exportertest.NewNopTraceExporter()}
 	ereqs, err := zi.v2ToTraceSpans(receiverInputJSON, nil)
 	if err != nil {
 		t.Fatalf("Failed to parse and convert receiver JSON: %v", err)
