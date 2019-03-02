@@ -34,11 +34,11 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	"github.com/census-instrumentation/opencensus-service/internal"
 	"github.com/census-instrumentation/opencensus-service/internal/config"
 	"github.com/census-instrumentation/opencensus-service/internal/config/viperutils"
 	"github.com/census-instrumentation/opencensus-service/internal/pprofserver"
 	"github.com/census-instrumentation/opencensus-service/internal/version"
+	"github.com/census-instrumentation/opencensus-service/observability"
 	"github.com/census-instrumentation/opencensus-service/processor"
 	"github.com/census-instrumentation/opencensus-service/receiver/jaegerreceiver"
 	"github.com/census-instrumentation/opencensus-service/receiver/opencensusreceiver"
@@ -230,7 +230,7 @@ func runOCReceiver(logger *zap.Logger, acfg *config.Config, tdp processor.TraceD
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create the OpenCensus receiver on address %q: error %v", addr, err)
 	}
-	if err := view.Register(internal.AllViews...); err != nil {
+	if err := view.Register(observability.AllViews...); err != nil {
 		return nil, fmt.Errorf("Failed to register internal.AllViews: %v", err)
 	}
 

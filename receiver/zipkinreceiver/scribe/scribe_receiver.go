@@ -26,7 +26,7 @@ import (
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"github.com/omnition/scribe-go/if/scribe/gen-go/scribe"
 
-	"github.com/census-instrumentation/opencensus-service/internal"
+	"github.com/census-instrumentation/opencensus-service/observability"
 	"github.com/census-instrumentation/opencensus-service/processor"
 	"github.com/census-instrumentation/opencensus-service/receiver"
 	zipkintranslator "github.com/census-instrumentation/opencensus-service/translator/trace/zipkin"
@@ -60,7 +60,7 @@ func NewReceiver(addr string, port uint16, category string) (receiver.TraceRecei
 			category:            category,
 			msgDecoder:          base64.StdEncoding.WithPadding('='),
 			tBinProtocolFactory: thrift.NewTBinaryProtocolFactory(true, false),
-			defaultCtx:          internal.ContextWithReceiverName(context.Background(), "zipkin-scribe"),
+			defaultCtx:          observability.ContextWithReceiverName(context.Background(), "zipkin-scribe"),
 		},
 	}
 	return r, nil
@@ -168,7 +168,7 @@ func (sc *scribeCollector) Log(messages []*scribe.LogEntry) (r scribe.ResultCode
 	tds, err := zipkintranslator.V1ThriftBatchToOCProto(zSpans)
 	if err != nil {
 		// If failed to convert, record all the received spans as dropped.
-		internal.RecordTraceReceiverMetrics(sc.defaultCtx, len(zSpans), len(zSpans))
+		observability.RecordTraceReceiverMetrics(sc.defaultCtx, len(zSpans), len(zSpans))
 		return scribe.ResultCode_OK, err
 	}
 
@@ -178,7 +178,7 @@ func (sc *scribeCollector) Log(messages []*scribe.LogEntry) (r scribe.ResultCode
 		tdsSize += len(td.Spans)
 	}
 
-	internal.RecordTraceReceiverMetrics(sc.defaultCtx, len(zSpans), len(zSpans)-tdsSize)
+	observability.RecordTraceReceiverMetrics(sc.defaultCtx, len(zSpans), len(zSpans)-tdsSize)
 
 	return scribe.ResultCode_OK, nil
 }

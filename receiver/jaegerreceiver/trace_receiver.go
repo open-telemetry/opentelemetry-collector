@@ -37,7 +37,7 @@ import (
 	"github.com/uber/tchannel-go/thrift"
 	"go.uber.org/zap"
 
-	"github.com/census-instrumentation/opencensus-service/internal"
+	"github.com/census-instrumentation/opencensus-service/observability"
 	"github.com/census-instrumentation/opencensus-service/processor"
 	"github.com/census-instrumentation/opencensus-service/receiver"
 	jaegertranslator "github.com/census-instrumentation/opencensus-service/translator/trace/jaeger"
@@ -98,7 +98,7 @@ const (
 func New(ctx context.Context, config *Configuration) (receiver.TraceReceiver, error) {
 	return &jReceiver{
 		config:          config,
-		defaultAgentCtx: internal.ContextWithReceiverName(context.Background(), "jaeger-agent"),
+		defaultAgentCtx: observability.ContextWithReceiverName(context.Background(), "jaeger-agent"),
 	}, nil
 }
 
@@ -240,7 +240,7 @@ const collectorReceiverTagValue = "jaeger-collector"
 
 func (jr *jReceiver) SubmitBatches(ctx thrift.Context, batches []*jaeger.Batch) ([]*jaeger.BatchSubmitResponse, error) {
 	jbsr := make([]*jaeger.BatchSubmitResponse, 0, len(batches))
-	ctxWithReceiverName := internal.ContextWithReceiverName(ctx, collectorReceiverTagValue)
+	ctxWithReceiverName := observability.ContextWithReceiverName(ctx, collectorReceiverTagValue)
 
 	for _, batch := range batches {
 		td, err := jaegertranslator.ThriftBatchToOCProto(batch)
@@ -251,7 +251,7 @@ func (jr *jReceiver) SubmitBatches(ctx thrift.Context, batches []*jaeger.Batch) 
 			ok = true
 			jr.nextProcessor.ProcessTraceData(ctx, td)
 			// We MUST unconditionally record metrics from this reception.
-			internal.RecordTraceReceiverMetrics(ctxWithReceiverName, len(batch.Spans), len(batch.Spans)-len(td.Spans))
+			observability.RecordTraceReceiverMetrics(ctxWithReceiverName, len(batch.Spans), len(batch.Spans)-len(td.Spans))
 		}
 
 		jbsr = append(jbsr, &jaeger.BatchSubmitResponse{
@@ -275,12 +275,12 @@ func (jr *jReceiver) EmitZipkinBatch(spans []*zipkincore.Span) error {
 func (jr *jReceiver) EmitBatch(batch *jaeger.Batch) error {
 	td, err := jaegertranslator.ThriftBatchToOCProto(batch)
 	if err != nil {
-		internal.RecordTraceReceiverMetrics(jr.defaultAgentCtx, len(batch.Spans), len(batch.Spans))
+		observability.RecordTraceReceiverMetrics(jr.defaultAgentCtx, len(batch.Spans), len(batch.Spans))
 		return err
 	}
 
 	err = jr.nextProcessor.ProcessTraceData(jr.defaultAgentCtx, td)
-	internal.RecordTraceReceiverMetrics(jr.defaultAgentCtx, len(batch.Spans), len(batch.Spans)-len(td.Spans))
+	observability.RecordTraceReceiverMetrics(jr.defaultAgentCtx, len(batch.Spans), len(batch.Spans)-len(td.Spans))
 
 	return err
 }

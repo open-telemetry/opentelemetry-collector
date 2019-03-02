@@ -40,6 +40,7 @@ import (
 
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal"
+	"github.com/census-instrumentation/opencensus-service/observability"
 	"github.com/census-instrumentation/opencensus-service/processor"
 	"github.com/census-instrumentation/opencensus-service/receiver"
 	zipkintranslator "github.com/census-instrumentation/opencensus-service/translator/trace/zipkin"
@@ -286,7 +287,7 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// If the starting RPC has a parent span, then add it as a parent link.
 	// TODO: parentCtx should be direct parent for the span created here.
 	parentCtx := r.Context()
-	internal.SetParentLink(parentCtx, span)
+	observability.SetParentLink(parentCtx, span)
 
 	pr := processBodyIfNecessary(r)
 	slurp, err := ioutil.ReadAll(pr)
@@ -318,7 +319,7 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctxWithReceiverName := internal.ContextWithReceiverName(ctx, receiverTagValue)
+	ctxWithReceiverName := observability.ContextWithReceiverName(ctx, receiverTagValue)
 	tdsSize := 0
 	for _, td := range tds {
 		zr.nextProcessor.ProcessTraceData(ctxWithReceiverName, td)
@@ -326,7 +327,7 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO: Get the number of dropped spans from the conversion failure.
-	internal.RecordTraceReceiverMetrics(ctxWithReceiverName, tdsSize, 0)
+	observability.RecordTraceReceiverMetrics(ctxWithReceiverName, tdsSize, 0)
 
 	// Finally send back the response "Accepted" as
 	// required at https://zipkin.io/zipkin-api/#/default/post_spans

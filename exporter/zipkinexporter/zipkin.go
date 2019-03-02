@@ -31,7 +31,7 @@ import (
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	"github.com/census-instrumentation/opencensus-service/data"
-	"github.com/census-instrumentation/opencensus-service/internal"
+	"github.com/census-instrumentation/opencensus-service/observability"
 	"github.com/census-instrumentation/opencensus-service/processor"
 	spandatatranslator "github.com/census-instrumentation/opencensus-service/translator/trace/spandata"
 )
@@ -221,7 +221,7 @@ func (ze *zipkinExporter) ProcessTraceData(ctx context.Context, td data.TraceDat
 	}
 
 	// And finally record metrics on the number of exported spans.
-	internal.RecordTraceExporterMetrics(internal.ContextWithExporterName(ctx, "zipkin"), len(td.Spans), len(td.Spans)-goodSpans)
+	observability.RecordTraceExporterMetrics(observability.ContextWithExporterName(ctx, "zipkin"), len(td.Spans), len(td.Spans)-goodSpans)
 
 	return nil
 }

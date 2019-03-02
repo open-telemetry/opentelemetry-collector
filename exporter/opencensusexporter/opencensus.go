@@ -24,9 +24,9 @@ import (
 
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/data"
-	"github.com/census-instrumentation/opencensus-service/internal"
 	"github.com/census-instrumentation/opencensus-service/internal/compression"
 	"github.com/census-instrumentation/opencensus-service/internal/compression/grpc"
+	"github.com/census-instrumentation/opencensus-service/observability"
 	"github.com/census-instrumentation/opencensus-service/processor"
 )
 
@@ -117,14 +117,14 @@ func (oce *ocagentExporter) ProcessTraceData(ctx context.Context, td data.TraceD
 			Node:     td.Node,
 		},
 	)
-	ctxWithExporterName := internal.ContextWithExporterName(ctx, exporterTagValue)
+	ctxWithExporterName := observability.ContextWithExporterName(ctx, exporterTagValue)
 	if err != nil {
 		// TODO: If failed to send all maybe record a different metric. Failed to "Sent", but
 		// this may not be accurate if we have retry outside of this exporter. Maybe the retry
 		// processor should record these metrics. For the moment we assume no retry.
-		internal.RecordTraceExporterMetrics(ctxWithExporterName, len(td.Spans), len(td.Spans))
+		observability.RecordTraceExporterMetrics(ctxWithExporterName, len(td.Spans), len(td.Spans))
 		return err
 	}
-	internal.RecordTraceExporterMetrics(ctxWithExporterName, len(td.Spans), 0)
+	observability.RecordTraceExporterMetrics(ctxWithExporterName, len(td.Spans), 0)
 	return nil
 }

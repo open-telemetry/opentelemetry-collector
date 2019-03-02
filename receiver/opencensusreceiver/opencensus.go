@@ -25,7 +25,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	"github.com/census-instrumentation/opencensus-service/internal"
+	"github.com/census-instrumentation/opencensus-service/observability"
 	"github.com/census-instrumentation/opencensus-service/processor"
 	"github.com/census-instrumentation/opencensus-service/receiver/opencensusreceiver/ocmetrics"
 	"github.com/census-instrumentation/opencensus-service/receiver/opencensusreceiver/octrace"
@@ -151,7 +151,7 @@ func (ocr *Receiver) grpcServer() *grpc.Server {
 	defer ocr.mu.Unlock()
 
 	if ocr.serverGRPC == nil {
-		ocr.serverGRPC = internal.GRPCServerWithObservabilityEnabled(ocr.grpcServerOptions...)
+		ocr.serverGRPC = observability.GRPCServerWithObservabilityEnabled(ocr.grpcServerOptions...)
 	}
 
 	return ocr.serverGRPC

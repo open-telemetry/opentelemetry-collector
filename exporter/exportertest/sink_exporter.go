@@ -16,7 +16,6 @@ package exportertest
 
 import (
 	"context"
-	"encoding/json"
 	"sync"
 
 	"github.com/census-instrumentation/opencensus-service/data"
@@ -85,10 +84,4 @@ func (sme *SinkMetricsExporter) AllMetrics() []data.MetricsData {
 	defer sme.mu.Unlock()
 
 	return sme.metrics[:]
-}
-
-// ToJSON marshals a generic interface to JSON to enable easy comparisons.
-func ToJSON(v interface{}) []byte {
-	b, _ := json.MarshalIndent(v, "", "  ")
-	return b
 }

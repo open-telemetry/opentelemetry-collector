@@ -28,7 +28,7 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/census-instrumentation/opencensus-service/data"
-	"github.com/census-instrumentation/opencensus-service/internal"
+	"github.com/census-instrumentation/opencensus-service/observability"
 	"github.com/census-instrumentation/opencensus-service/processor"
 )
 
@@ -62,7 +62,7 @@ const receiverTagValue = "oc_metrics"
 func (ocr *Receiver) Export(mes agentmetricspb.MetricsService_ExportServer) error {
 	// The bundler will receive batches of metrics i.e. []*metricspb.Metric
 	// We need to ensure that it propagates the receiver name as a tag
-	ctxWithReceiverName := internal.ContextWithReceiverName(mes.Context(), receiverTagValue)
+	ctxWithReceiverName := observability.ContextWithReceiverName(mes.Context(), receiverTagValue)
 	metricsBundler := bundler.NewBundler((*data.MetricsData)(nil), func(payload interface{}) {
 		ocr.batchMetricExporting(ctxWithReceiverName, payload)
 	})
@@ -138,7 +138,7 @@ func (ocr *Receiver) batchMetricExporting(longLivedRPCCtx context.Context, paylo
 	// bundledMetrics list unfurling then send metrics grouped per node
 
 	// If the starting RPC has a parent span, then add it as a parent link.
-	internal.SetParentLink(longLivedRPCCtx, span)
+	observability.SetParentLink(longLivedRPCCtx, span)
 
 	nMetrics := int64(0)
 	for _, md := range mds {

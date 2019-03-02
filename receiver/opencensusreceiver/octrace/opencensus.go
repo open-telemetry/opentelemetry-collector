@@ -25,7 +25,7 @@ import (
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/census-instrumentation/opencensus-service/data"
-	"github.com/census-instrumentation/opencensus-service/internal"
+	"github.com/census-instrumentation/opencensus-service/observability"
 	"github.com/census-instrumentation/opencensus-service/processor"
 )
 
@@ -94,7 +94,7 @@ const receiverTagValue = "oc_trace"
 // OpenCensus-traceproto compatible libraries/applications.
 func (ocr *Receiver) Export(tes agenttracepb.TraceService_ExportServer) error {
 	// We need to ensure that it propagates the receiver name as a tag
-	ctxWithReceiverName := internal.ContextWithReceiverName(tes.Context(), receiverTagValue)
+	ctxWithReceiverName := observability.ContextWithReceiverName(tes.Context(), receiverTagValue)
 
 	// The first message MUST have a non-nil Node.
 	recv, err := tes.Recv()
@@ -130,7 +130,7 @@ func (ocr *Receiver) Export(tes agenttracepb.TraceService_ExportServer) error {
 
 		ocr.messageChan <- &traceDataWithCtx{data: td, ctx: ctxWithReceiverName}
 
-		internal.RecordTraceReceiverMetrics(ctxWithReceiverName, len(td.Spans), 0)
+		observability.RecordTraceReceiverMetrics(ctxWithReceiverName, len(td.Spans), 0)
 
 		recv, err = tes.Recv()
 		if err != nil {
@@ -197,7 +197,7 @@ func (rw *receiverWorker) export(longLivedCtx context.Context, tracedata *data.T
 	// spansAndNode list unfurling then send spans grouped per node
 
 	// If the starting RPC has a parent span, then add it as a parent link.
-	internal.SetParentLink(longLivedCtx, span)
+	observability.SetParentLink(longLivedCtx, span)
 
 	rw.receiver.nextProcessor.ProcessTraceData(ctx, *tracedata)
 

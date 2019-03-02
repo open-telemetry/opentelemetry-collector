@@ -20,33 +20,39 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/data"
+	"github.com/census-instrumentation/opencensus-service/observability/observabilitytest"
 	"go.uber.org/zap"
 )
 
 func TestLoggingTraceExporterNoErrors(t *testing.T) {
-	dtdp := NewTraceExporter(zap.NewNop())
+	lte := NewTraceExporter(zap.NewNop())
 	td := data.TraceData{
 		Spans: make([]*tracepb.Span, 7),
 	}
-	if err := dtdp.ProcessTraceData(context.Background(), td); err != nil {
+	if err := lte.ProcessTraceData(context.Background(), td); err != nil {
 		t.Errorf("Wanted nil got error")
 		return
 	}
-	if "LoggingExporter" != dtdp.ExportFormat() {
-		t.Errorf("Wanted LoggingExporter got %v", dtdp.ExportFormat())
+	if "LoggingExporter" != lte.ExportFormat() {
+		t.Errorf("Wanted LoggingExporter got %v", lte.ExportFormat())
 	}
 }
 
+func TestLoggingTraceExporterRecordMetrics(t *testing.T) {
+	lte := NewTraceExporter(zap.NewNop())
+	observabilitytest.CheckRecordedMetricsForTraceExporter(t, lte, "logging_trace")
+}
+
 func TestLoggingMetricsExporterNoErrors(t *testing.T) {
-	dmdp := NewMetricsExporter(zap.NewNop())
+	lme := NewMetricsExporter(zap.NewNop())
 	md := data.MetricsData{
 		Metrics: make([]*metricspb.Metric, 7),
 	}
-	if err := dmdp.ProcessMetricsData(context.Background(), md); err != nil {
+	if err := lme.ProcessMetricsData(context.Background(), md); err != nil {
 		t.Errorf("Wanted nil got error")
 		return
 	}
-	if "LoggingExporter" != dmdp.ExportFormat() {
-		t.Errorf("Wanted LoggingExporter got %v", dmdp.ExportFormat())
+	if "LoggingExporter" != lme.ExportFormat() {
+		t.Errorf("Wanted LoggingExporter got %v", lme.ExportFormat())
 	}
 }

@@ -36,6 +36,7 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal"
+	"github.com/census-instrumentation/opencensus-service/observability"
 	"github.com/census-instrumentation/opencensus-service/processor"
 )
 
@@ -370,7 +371,7 @@ func ocReceiverOnGRPCServer(t *testing.T, sr processor.MetricsDataProcessor, opt
 	}
 
 	// Now run it as a gRPC server
-	srv := internal.GRPCServerWithObservabilityEnabled()
+	srv := observability.GRPCServerWithObservabilityEnabled()
 	agentmetricspb.RegisterMetricsServiceServer(srv, oci)
 	go func() {
 		_ = srv.Serve(ln)
