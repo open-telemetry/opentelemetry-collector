@@ -236,10 +236,14 @@ A Docker scratch image can be built with make by targeting `docker-agent`.
 
 ```shell
 $ make docker-agent
-$ docker run --rm -it -p 55678:55678 -p 55679:55679 \
-    -v $(pwd)/ocagent-config.yaml:/conf/ocagent-config.yaml \
-    --config=/conf/ocagent-config.yaml \
-    ocagent
+$ docker run \
+    --rm \
+    --interactive \
+    --tty \
+    --publish 55678:55678 --publish 55679:55679 \
+    --volume $(pwd)/ocagent-config.yaml:/conf/ocagent-config.yaml \
+    ocagent \
+    --config=/conf/ocagent-config.yaml
 ```
 
 ## OpenCensus Collector
@@ -341,10 +345,14 @@ $ ./bin/occollector_$($GOOS)
 (note: additional ports may be required depending on your receiver configuration):
 ```shell
 $ make docker-collector
-$ docker run --rm -it -p 55678:55678 -p 8888:8888 \
-    -v $(pwd)/occollector-config.yaml:/conf/occollector-config.yaml \
-    --config=/conf/occollector-config.yaml \
-    occollector
+$ docker run \
+    --rm \
+    --interactive \
+    -- tty \
+    --publish 55678:55678 --publish 8888:8888 \
+    --volume $(pwd)/occollector-config.yaml:/conf/occollector-config.yaml \
+    occollector \
+    --config=/conf/occollector-config.yaml
 ```
 
 It can be configured via command-line or config file:
