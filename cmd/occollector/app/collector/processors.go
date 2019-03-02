@@ -30,7 +30,7 @@ import (
 	"github.com/census-instrumentation/opencensus-service/internal/collector/processor"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/processor/nodebatcher"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/processor/queued"
-	tailsampling "github.com/census-instrumentation/opencensus-service/internal/collector/processor/tail_sampling"
+	"github.com/census-instrumentation/opencensus-service/internal/collector/processor/tailsampling"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/sampling"
 	"github.com/census-instrumentation/opencensus-service/internal/config"
 	mainprocessor "github.com/census-instrumentation/opencensus-service/processor"
