@@ -46,12 +46,12 @@ import (
 // Configuration defines the behavior and the ports that
 // the Jaeger receiver will use.
 type Configuration struct {
-	CollectorThriftPort int `yaml:"tchannel_port"`
-	CollectorHTTPPort   int `yaml:"collector_http_port"`
+	CollectorThriftPort int `mapstructure:"tchannel_port"`
+	CollectorHTTPPort   int `mapstructure:"collector_http_port"`
 
-	AgentPort              int `yaml:"agent_port"`
-	AgentCompactThriftPort int `yaml:"agent_compact_thrift_port"`
-	AgentBinaryThriftPort  int `yaml:"agent_binary_thrift_port"`
+	AgentPort              int `mapstructure:"agent_port"`
+	AgentCompactThriftPort int `mapstructure:"agent_compact_thrift_port"`
+	AgentBinaryThriftPort  int `mapstructure:"agent_binary_thrift_port"`
 }
 
 // Receiver type is used to receive spans that were originally intended to be sent to Jaeger.

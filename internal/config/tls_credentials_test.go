@@ -17,6 +17,10 @@ package config
 import (
 	"reflect"
 	"testing"
+
+	"github.com/spf13/viper"
+
+	"github.com/census-instrumentation/opencensus-service/internal/config/viperutils"
 )
 
 func TestTLSConfigByParsing(t *testing.T) {
@@ -28,12 +32,15 @@ receivers:
       key_file: "foobar.key"
   `)
 
-	cfg, err := ParseOCAgentConfig(configYAML)
+	v := viper.New()
+	err := viperutils.LoadYAMLBytes(v, configYAML)
 	if err != nil {
-		t.Fatalf("Failed to parse OCAgent config: %v", err)
+		t.Fatalf("Unexpected YAML parse error: %v", err)
 	}
-	if cfg == nil {
-		t.Fatal("Returned nil while parsing config")
+	var cfg Config
+	err = v.Unmarshal(&cfg)
+	if err != nil {
+		t.Fatalf("Unexpected error unmarshaling viper: %s", err)
 	}
 
 	tlsCreds := cfg.OpenCensusReceiverTLSServerCredentials()
@@ -102,9 +109,15 @@ receivers:
 	}
 
 	for i, tt := range combinations {
-		cfg, err := ParseOCAgentConfig([]byte(tt.config))
+		v := viper.New()
+		err := viperutils.LoadYAMLBytes(v, []byte(tt.config))
 		if err != nil {
-			t.Errorf("#%d: unexpected parsing error: %v", i, err)
+			t.Fatalf("#%d: Unexpected YAML parse error: %v", i, err)
+		}
+		var cfg Config
+		err = v.Unmarshal(&cfg)
+		if err != nil {
+			t.Fatalf("#%d: Unexpected error unmarshaling viper: %s", i, err)
 		}
 		tlsCreds := cfg.OpenCensusReceiverTLSServerCredentials()
 		got, want := tlsCreds.nonEmpty(), tt.want

@@ -25,7 +25,6 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-	yaml "gopkg.in/yaml.v2"
 
 	"github.com/census-instrumentation/opencensus-service/exporter/awsexporter"
 	"github.com/census-instrumentation/opencensus-service/exporter/datadogexporter"
@@ -87,9 +86,9 @@ var defaultScribeConfiguration = &ScribeReceiverConfig{
 // * ZPages
 // * Exporters
 type Config struct {
-	Receivers *Receivers    `yaml:"receivers"`
-	ZPages    *ZPagesConfig `yaml:"zpages"`
-	Exporters *Exporters    `yaml:"exporters"`
+	Receivers *Receivers    `mapstructure:"receivers"`
+	ZPages    *ZPagesConfig `mapstructure:"zpages"`
+	Exporters *Exporters    `mapstructure:"exporters"`
 }
 
 // Receivers denotes configurations for the various telemetry ingesters, such as:
@@ -98,10 +97,10 @@ type Config struct {
 // * Prometheus (metrics)
 // * Zipkin (traces)
 type Receivers struct {
-	OpenCensus *ReceiverConfig       `yaml:"opencensus"`
-	Zipkin     *ReceiverConfig       `yaml:"zipkin"`
-	Jaeger     *ReceiverConfig       `yaml:"jaeger"`
-	Scribe     *ScribeReceiverConfig `yaml:"zipkin-scribe"`
+	OpenCensus *ReceiverConfig       `mapstructure:"opencensus"`
+	Zipkin     *ReceiverConfig       `mapstructure:"zipkin"`
+	Jaeger     *ReceiverConfig       `mapstructure:"jaeger"`
+	Scribe     *ScribeReceiverConfig `mapstructure:"zipkin-scribe"`
 
 	// Prometheus contains the Prometheus configurations.
 	// Such as:
@@ -111,7 +110,7 @@ type Receivers struct {
 	//
 	//          static_configs:
 	//              - targets: ['localhost:9988']
-	Prometheus *prometheusreceiver.Configuration `yaml:"prometheus"`
+	Prometheus *prometheusreceiver.Configuration `mapstructure:"prometheus"`
 }
 
 // ReceiverConfig is the per-receiver configuration that identifies attributes
@@ -120,23 +119,23 @@ type Receivers struct {
 // * Various ports
 type ReceiverConfig struct {
 	// The address to which the OpenCensus receiver will be bound and run on.
-	Address             string `yaml:"address"`
-	CollectorHTTPPort   int    `yaml:"collector_http_port"`
-	CollectorThriftPort int    `yaml:"collector_thrift_port"`
+	Address             string `mapstructure:"address"`
+	CollectorHTTPPort   int    `mapstructure:"collector_http_port"`
+	CollectorThriftPort int    `mapstructure:"collector_thrift_port"`
 
 	// The allowed CORS origins for HTTP/JSON requests the grpc-gateway adapter
 	// for the OpenCensus receiver. See github.com/rs/cors
 	// An empty list means that CORS is not enabled at all. A wildcard (*) can be
 	// used to match any origin or one or more characters of an origin.
-	CorsAllowedOrigins []string `yaml:"cors_allowed_origins"`
+	CorsAllowedOrigins []string `mapstructure:"cors_allowed_origins"`
 
 	// DisableTracing disables trace receiving and is only applicable to trace receivers.
-	DisableTracing bool `yaml:"disable_tracing"`
+	DisableTracing bool `mapstructure:"disable_tracing"`
 	// DisableMetrics disables metrics receiving and is only applicable to metrics receivers.
-	DisableMetrics bool `yaml:"disable_metrics"`
+	DisableMetrics bool `mapstructure:"disable_metrics"`
 
 	// TLSCredentials is a (cert_file, key_file) configuration.
-	TLSCredentials *TLSCredentials `yaml:"tls_credentials"`
+	TLSCredentials *TLSCredentials `mapstructure:"tls_credentials"`
 }
 
 // ScribeReceiverConfig carries the settings for the Zipkin Scribe receiver.
@@ -147,23 +146,23 @@ type ScribeReceiverConfig struct {
 	// a listener for at most one of the host's IP addresses.
 	//
 	// The default value bind to all available interfaces on the local computer.
-	Address string `yaml:"address" mapstructure:"address"`
-	Port    uint16 `yaml:"port" mapstructure:"port"`
+	Address string `mapstructure:"address" mapstructure:"address"`
+	Port    uint16 `mapstructure:"port" mapstructure:"port"`
 	// Category is the string that will be used to identify the scribe log messages
 	// that contain Zipkin spans.
-	Category string `yaml:"category" mapstructure:"category"`
+	Category string `mapstructure:"category" mapstructure:"category"`
 }
 
 // Exporters denotes the configurations for the various backends
 // that this service exports observability signals to.
 type Exporters struct {
-	Zipkin *zipkinexporter.ZipkinConfig `yaml:"zipkin"`
+	Zipkin *zipkinexporter.ZipkinConfig `mapstructure:"zipkin"`
 }
 
 // ZPagesConfig denotes the configuration that zPages will be run with.
 type ZPagesConfig struct {
-	Disabled bool `yaml:"disabled"`
-	Port     int  `yaml:"port"`
+	Disabled bool `mapstructure:"disabled"`
+	Port     int  `mapstructure:"port"`
 }
 
 // OpenCensusReceiverAddress is a helper to safely retrieve the address
@@ -375,32 +374,17 @@ func (c *Config) OpenCensusReceiverTLSCredentialsServerOption() (opt opencensusr
 	return tlsCreds.ToOpenCensusReceiverServerOption()
 }
 
-// ParseOCAgentConfig unmarshals byte content in the YAML file format
-// to  retrieve the configuration that will be used to run the OpenCensus agent.
-func ParseOCAgentConfig(yamlBlob []byte) (*Config, error) {
-	var cfg Config
-	if err := yaml.Unmarshal(yamlBlob, &cfg); err != nil {
-		return nil, err
-	}
-	return &cfg, nil
-}
-
 // CheckLogicalConflicts serves to catch logical errors such as
 // if the Zipkin receiver port conflicts with that of the exporter,
 // lest we'll have a self DOS because spans will be exported "out" from
 // the exporter, yet be received from the receiver, then sent back out
 // and back in a never ending loop.
-func (c *Config) CheckLogicalConflicts(blob []byte) error {
-	var cfg Config
-	if err := yaml.Unmarshal(blob, &cfg); err != nil {
-		return err
-	}
-
-	if cfg.Exporters == nil || cfg.Exporters.Zipkin == nil || !c.ZipkinReceiverEnabled() {
+func (c *Config) CheckLogicalConflicts() error {
+	if c.Exporters == nil || c.Exporters.Zipkin == nil || !c.ZipkinReceiverEnabled() {
 		return nil
 	}
 
-	zc := cfg.Exporters.Zipkin
+	zc := c.Exporters.Zipkin
 
 	zExporterAddr := zc.EndpointURL()
 	zExporterURL, err := url.Parse(zExporterAddr)
@@ -485,7 +469,7 @@ func ExportersFromViperConfig(logger *zap.Logger, v *viper.Viper) ([]processor.T
 	for _, cfg := range parseFns {
 		tes, mes, tesDoneFns, err := cfg.fn(exportersViper)
 		if err != nil {
-			err = fmt.Errorf("Failed to create config for %q: %v", cfg.name, err)
+			err = fmt.Errorf("failed to create config for %q: %v", cfg.name, err)
 			return nil, nil, nil, err
 		}
 

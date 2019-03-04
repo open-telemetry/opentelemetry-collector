@@ -17,8 +17,12 @@ package prometheusreceiver
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"time"
+
+	"github.com/spf13/viper"
+	"gopkg.in/yaml.v2"
 
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	"github.com/census-instrumentation/opencensus-service/data"
@@ -30,9 +34,9 @@ import (
 
 // Configuration defines the behavior and targets of the Prometheus scrapers.
 type Configuration struct {
-	ScrapeConfig *config.Config `yaml:"config"`
-	BufferPeriod time.Duration  `yaml:"buffer_period"`
-	BufferCount  int            `yaml:"buffer_count"`
+	ScrapeConfig *config.Config `mapstructure:"config"`
+	BufferPeriod time.Duration  `mapstructure:"buffer_period"`
+	BufferCount  int            `mapstructure:"buffer_count"`
 }
 
 // Preceiver is the type that provides Prometheus scraper/receiver functionality.
@@ -44,20 +48,45 @@ type Preceiver struct {
 
 var _ receiver.MetricsReceiver = (*Preceiver)(nil)
 
-// New creates a new prometheus.Receiver reference.
-func New(cfg *Configuration) (*Preceiver, error) {
-	if cfg == nil || cfg.ScrapeConfig == nil {
-		return nil, errNilScrapeConfig
-	}
-	pr := &Preceiver{cfg: cfg}
-	return pr, nil
-}
-
 var (
 	errAlreadyStarted         = errors.New("already started the Prometheus receiver")
 	errNilMetricsReceiverSink = errors.New("expecting a non-nil MetricsReceiverSink")
 	errNilScrapeConfig        = errors.New("expecting a non-nil ScrapeConfig")
 )
+
+const (
+	prometheusConfigKey = "config"
+)
+
+// New creates a new prometheus.Receiver reference.
+func New(v *viper.Viper) (*Preceiver, error) {
+	var cfg Configuration
+
+	// Unmarshal our config values (using viper's mapstructure)
+	err := v.Unmarshal(&cfg)
+	if err != nil {
+		return nil, fmt.Errorf("prometheus receiver failed to parse config: %s", err)
+	}
+
+	// Unmarshal prometheus's config values. Since prometheus uses `yaml` tags, so use `yaml`.
+	if !v.IsSet(prometheusConfigKey) {
+		return nil, errNilScrapeConfig
+	}
+	promCfgMap := v.Sub(prometheusConfigKey).AllSettings()
+	out, err := yaml.Marshal(promCfgMap)
+	if err != nil {
+		return nil, fmt.Errorf("prometheus receiver failed to marshal config to yaml: %s", err)
+	}
+	err = yaml.Unmarshal(out, &cfg.ScrapeConfig)
+	if err != nil {
+		return nil, fmt.Errorf("prometheus receiver failed to unmarshal yaml to prometheus config: %s", err)
+	}
+	if len(cfg.ScrapeConfig.ScrapeConfigs) == 0 {
+		return nil, errNilScrapeConfig
+	}
+	pr := &Preceiver{cfg: &cfg}
+	return pr, nil
+}
 
 const metricsSource string = "Prometheus"
 

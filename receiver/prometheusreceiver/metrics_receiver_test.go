@@ -26,8 +26,7 @@ import (
 	"testing"
 	"time"
 
-	"gopkg.in/yaml.v2"
-
+	"github.com/spf13/viper"
 	"go.opencensus.io/exporter/prometheus"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
@@ -37,6 +36,7 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/exporter/exportertest"
+	"github.com/census-instrumentation/opencensus-service/internal/config/viperutils"
 	"github.com/golang/protobuf/ptypes/timestamp"
 )
 
@@ -54,6 +54,27 @@ func (sc *scrapeCounter) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	default:
 		sc.scrapeTrackCh <- true
 		sc.pe.ServeHTTP(rw, req)
+	}
+}
+
+func TestNew(t *testing.T) {
+	v := viper.New()
+
+	_, err := New(v)
+	if err != errNilScrapeConfig {
+		t.Fatalf("Expected errNilScrapeConfig but did not get it.")
+	}
+
+	v.Set("config", nil)
+	_, err = New(v)
+	if err != errNilScrapeConfig {
+		t.Fatalf("Expected errNilScrapeConfig but did not get it.")
+	}
+
+	v.Set("config.blah", "some_value")
+	_, err = New(v)
+	if err != errNilScrapeConfig {
+		t.Fatalf("Expected errNilScrapeConfig but did not get it.")
 	}
 }
 
@@ -95,12 +116,12 @@ buffer_count: 2
 
 	host, port, _ := net.SplitHostPort(cstURL.Host)
 
-	config := new(Configuration)
-	if err := yaml.Unmarshal([]byte(yamlConfig), config); err != nil {
-		t.Fatalf("Failed to unmarshal YAML: %v", err)
+	v := viper.New()
+	if err = viperutils.LoadYAMLBytes(v, []byte(yamlConfig)); err != nil {
+		t.Fatalf("Failed to load yaml config into viper")
 	}
 
-	precv, err := New(config)
+	precv, err := New(v)
 	if err != nil {
 		t.Fatalf("Failed to create promreceiver: %v", err)
 	}

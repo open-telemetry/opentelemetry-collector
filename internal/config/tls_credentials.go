@@ -18,10 +18,10 @@ package config
 // that are used for starting a server.
 type TLSCredentials struct {
 	// CertFile is the file path containing the TLS certificate.
-	CertFile string `yaml:"cert_file"`
+	CertFile string `mapstructure:"cert_file"`
 
 	// KeyFile is the file path containing the TLS key.
-	KeyFile string `yaml:"key_file"`
+	KeyFile string `mapstructure:"key_file"`
 }
 
 // nonEmpty returns true if the TLSCredentials are non-nil and
