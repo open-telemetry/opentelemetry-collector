@@ -31,8 +31,8 @@ func TestNopTraceExporterNoErrors(t *testing.T) {
 		t.Errorf("Wanted nil got error")
 		return
 	}
-	if "NopExporter" != nte.ExportFormat() {
-		t.Errorf("Wanted NopExporter got %s", nte.ExportFormat())
+	if "nop_trace" != nte.TraceExportFormat() {
+		t.Errorf("Wanted nop_trace got %s", nte.TraceExportFormat())
 		return
 	}
 }
@@ -46,8 +46,8 @@ func TestNoopMetricsExporterNoErrors(t *testing.T) {
 		t.Errorf("Wanted nil got error")
 		return
 	}
-	if "NopExporter" != nme.ExportFormat() {
-		t.Errorf("Wanted NopExporter got %s", nme.ExportFormat())
+	if "nop_metrics" != nme.MetricsExportFormat() {
+		t.Errorf("Wanted nop_metrics got %s", nme.MetricsExportFormat())
 		return
 	}
 }

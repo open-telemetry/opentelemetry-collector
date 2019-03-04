@@ -34,10 +34,17 @@ func (ne *nopExporter) ProcessMetricsData(ctx context.Context, md data.MetricsDa
 	return nil
 }
 
-const nopExportFormat = "NopExporter"
+const (
+	nopTraceExportFormat   = "nop_trace"
+	nopMetricsExportFormat = "nop_metrics"
+)
 
-func (ne *nopExporter) ExportFormat() string {
-	return nopExportFormat
+func (ne *nopExporter) TraceExportFormat() string {
+	return nopTraceExportFormat
+}
+
+func (ne *nopExporter) MetricsExportFormat() string {
+	return nopMetricsExportFormat
 }
 
 // NewNopTraceExporter creates an TraceExporter that just drops the received data.

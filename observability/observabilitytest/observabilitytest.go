@@ -43,7 +43,7 @@ func (cme *nopMetricsExporter) ExportView(vd *view.Data) {}
 
 // CheckRecordedMetricsForTraceExporter checks that the given TraceExporter records the correct set of metrics with the correct
 // set of tags by sending some TraceData to the exporter. The exporter should be able to handle the requests.
-func CheckRecordedMetricsForTraceExporter(t *testing.T, te exporter.TraceExporter, exporterTagName string) {
+func CheckRecordedMetricsForTraceExporter(t *testing.T, te exporter.TraceExporter) {
 	// Register a nop metrics exporter for the OC library.
 	nmp := new(nopMetricsExporter)
 	view.RegisterExporter(nmp)
@@ -98,8 +98,8 @@ func CheckRecordedMetricsForTraceExporter(t *testing.T, te exporter.TraceExporte
 		}
 	}
 
-	checkValueForExporterView(t, observability.ViewExporterReceivedSpans, exporterTagName, int64(numBatches*len(spans)))
-	checkValueForExporterView(t, observability.ViewExporterDroppedSpans, exporterTagName, 0)
+	checkValueForExporterView(t, observability.ViewExporterReceivedSpans, te.TraceExportFormat(), int64(numBatches*len(spans)))
+	checkValueForExporterView(t, observability.ViewExporterDroppedSpans, te.TraceExportFormat(), 0)
 }
 
 func checkValueForExporterView(t *testing.T, v *view.View, exporterTagName string, value int64) {

@@ -27,8 +27,10 @@ import (
 type TraceExporter interface {
 	processor.TraceDataProcessor
 
-	// ExportFormat gets the name of the format in which this exporter sends its data.
-	ExportFormat() string
+	// TraceExportFormat gets the name of the format in which this exporter sends its data.
+	// For exporters that can export multiple signals it is recommended to encode the signal
+	// as suffix (e.g. "oc_trace").
+	TraceExportFormat() string
 }
 
 // TraceExporterFactory is an interface that builds a new TraceExporter based on
@@ -50,8 +52,10 @@ type TraceExporterFactory interface {
 type MetricsExporter interface {
 	processor.MetricsDataProcessor
 
-	// ExportFormat gets the name of the format in which this exporter sends its data.
-	ExportFormat() string
+	// MetricsExportFormat gets the name of the format in which this exporter sends its data.
+	// For exporters that can export multiple signals it is recommended to encode the signal
+	// as suffix (e.g. "oc_metrics").
+	MetricsExportFormat() string
 }
 
 // MetricsExporterFactory is an interface that builds a new MetricsExporter based on

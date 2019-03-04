@@ -23,7 +23,10 @@ import (
 	"go.uber.org/zap"
 )
 
-const exportFormat = "LoggingExporter"
+const (
+	traceExportFormat   = "logging_trace"
+	metricsExportFormat = "logging_metrics"
+)
 
 // A logging exporter that does not sends the data to any destination but logs debugging messages.
 type loggingExporter struct{ logger *zap.Logger }
@@ -36,7 +39,7 @@ func (le *loggingExporter) ProcessTraceData(ctx context.Context, td data.TraceDa
 	// TODO: Add ability to record the received data
 
 	// Even though we just log all the spans, we record 0 dropped spans.
-	observability.RecordTraceExporterMetrics(observability.ContextWithExporterName(ctx, "logging_trace"), len(td.Spans), 0)
+	observability.RecordTraceExporterMetrics(observability.ContextWithExporterName(ctx, traceExportFormat), len(td.Spans), 0)
 	return nil
 }
 
@@ -47,8 +50,12 @@ func (le *loggingExporter) ProcessMetricsData(ctx context.Context, md data.Metri
 	return nil
 }
 
-func (le *loggingExporter) ExportFormat() string {
-	return exportFormat
+func (le *loggingExporter) TraceExportFormat() string {
+	return traceExportFormat
+}
+
+func (le *loggingExporter) MetricsExportFormat() string {
+	return metricsExportFormat
 }
 
 // NewTraceExporter creates an exporter.TraceExporter that just drops the
