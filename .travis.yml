@@ -13,9 +13,7 @@ install:
   - make install-tools
 
 script:
-  - make fmt
-  - make lint
-  - make test-with-coverage
+  - make travis-ci
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
