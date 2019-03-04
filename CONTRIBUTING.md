@@ -28,20 +28,21 @@ information on using pull requests.
 Fork the repo, checkout the upstream repo to your GOPATH by:
 
 ```
-$ go get -d github.com/census-instrumentation/opencensus-service
+$ GO111MODULE="" go get -d github.com/census-instrumentation/opencensus-service
 ```
 
 Add your fork as an origin:
 
 ```
-cd $(go env GOPATH)/github.com/census-instrumentation/opencensus-service
+cd $(go env GOPATH)/src/github.com/census-instrumentation/opencensus-service
 git remote add fork git@github.com:YOUR_GITHUB_USERNAME/opencensus-service.git
 ```
 
-Run tests:
+Run tests, fmt and lint:
 
 ```
-$ go test ./...
+$ make install-tools # Only first time.
+$ make
 ```
 
 Checkout a new branch, make modifications and push the branch to your fork
