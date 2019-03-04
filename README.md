@@ -154,6 +154,7 @@ exporters:
   opencensus:
     headers: {"X-test-header": "test-header"}
     compression: "gzip"
+    cert-pem-file: "server_ca_public.pem" # optional to enable TLS
     endpoint: "127.0.0.1:55678"
 
   jaeger:

@@ -16,11 +16,13 @@ package opencensusexporter
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync/atomic"
 
 	"contrib.go.opencensus.io/exporter/ocagent"
 	"github.com/spf13/viper"
+	"google.golang.org/grpc/credentials"
 
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/data"
@@ -34,8 +36,10 @@ type opencensusConfig struct {
 	Endpoint    string            `mapstructure:"endpoint,omitempty"`
 	Compression string            `mapstructure:"compression,omitempty"`
 	Headers     map[string]string `mapstructure:"headers,omitempty"`
+	NumWorkers  int               `mapstructure:"num-workers,omitempty"`
+	CertPemFile string            `mapstructure:"cert-pem-file,omitempty"`
+
 	// TODO: add insecure, service name options.
-	NumWorkers int `mapstructure:"num-workers,omitempty"`
 }
 
 type ocagentExporter struct {
@@ -45,6 +49,15 @@ type ocagentExporter struct {
 
 const (
 	defaultNumWorkers int = 2
+)
+
+var (
+	// ErrEndpointRequired indicates that this exporter was not provided with an endpoint in its config.
+	ErrEndpointRequired = errors.New("OpenCensus exporter config requires an Endpoint")
+	// ErrUnsupportedCompressionType indicates that this exporter was provided with a compression protocol it does not support.
+	ErrUnsupportedCompressionType = errors.New("OpenCensus exporter unsupported compression type")
+	// ErrUnableToGetTLSCreds indicates that this exporter could not read the provided TLS credentials.
+	ErrUnableToGetTLSCreds = errors.New("OpenCensus exporter unable to read TLS credentials")
 )
 
 var _ processor.TraceDataProcessor = (*ocagentExporter)(nil)
@@ -64,16 +77,25 @@ func OpenCensusTraceExportersFromViper(v *viper.Viper) (tdps []processor.TraceDa
 	}
 
 	if ocac.Endpoint == "" {
-		return nil, nil, nil, fmt.Errorf("openCensus config requires an Endpoint")
+		return nil, nil, nil, ErrEndpointRequired
 	}
 
-	opts := []ocagent.ExporterOption{ocagent.WithAddress(ocac.Endpoint), ocagent.WithInsecure()}
+	opts := []ocagent.ExporterOption{ocagent.WithAddress(ocac.Endpoint)}
 	if ocac.Compression != "" {
 		if compressionKey := grpc.GetGRPCCompressionKey(ocac.Compression); compressionKey != compression.Unsupported {
 			opts = append(opts, ocagent.UseCompressor(compressionKey))
 		} else {
-			return nil, nil, nil, fmt.Errorf("unsupported compression type: %s", ocac.Compression)
+			return nil, nil, nil, ErrUnsupportedCompressionType
 		}
+	}
+	if ocac.CertPemFile != "" {
+		creds, err := credentials.NewClientTLSFromFile(ocac.CertPemFile, "")
+		if err != nil {
+			return nil, nil, nil, ErrUnableToGetTLSCreds
+		}
+		opts = append(opts, ocagent.WithTLSCredentials(creds))
+	} else {
+		opts = append(opts, ocagent.WithInsecure())
 	}
 	if len(ocac.Headers) > 0 {
 		opts = append(opts, ocagent.WithHeaders(ocac.Headers))
