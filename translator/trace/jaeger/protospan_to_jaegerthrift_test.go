@@ -21,6 +21,8 @@ import (
 	"strings"
 	"testing"
 
+	tracetranslator "github.com/census-instrumentation/opencensus-service/translator/trace"
+
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
@@ -28,31 +30,7 @@ import (
 
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal/testutils"
-	tracetranslator "github.com/census-instrumentation/opencensus-service/translator/trace"
 )
-
-func TestJaegerFromOCProtoTraceIDRoundTrip(t *testing.T) {
-	wl := int64(0x0001020304050607)
-	wh := int64(0x70605040302010FF)
-	gl, gh, err := traceIDBytesToLowAndHigh(tracetranslator.Int64TraceIDToByteTraceID(wh, wl))
-	if err != nil {
-		t.Errorf("Error converting from OC trace id: %v", err)
-	}
-	if gl != wl || gh != wh {
-		t.Errorf("Round trip of trace Id failed want: (0x%0x, 0x%0x) got: (0x%0x, 0x%0x)", wl, wh, gl, gh)
-	}
-}
-
-func TestJaegerFromOCProtoSpanIDRoundTrip(t *testing.T) {
-	w := int64(0x0001020304050607)
-	g, err := ocIDBytesToJaegerID(tracetranslator.Int64SpanIDToByteSpanID(w))
-	if err != nil {
-		t.Errorf("Error converting from OC span id: %v", err)
-	}
-	if g != w {
-		t.Errorf("Round trip of span Id failed want: 0x%0x got: 0x%0x", w, g)
-	}
-}
 
 func TestInvalidOCProtoIDs(t *testing.T) {
 	fakeTraceID := []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}
@@ -66,13 +44,13 @@ func TestInvalidOCProtoIDs(t *testing.T) {
 			name:         "nil TraceID",
 			ocSpans:      []*tracepb.Span{{}},
 			wantErr:      nil,
-			wrappedError: errNilTraceID,
+			wrappedError: tracetranslator.ErrNilTraceID,
 		},
 		{
 			name:         "empty TraceID",
 			ocSpans:      []*tracepb.Span{{TraceId: []byte{}}},
 			wantErr:      nil,
-			wrappedError: errWrongLenTraceID,
+			wrappedError: tracetranslator.ErrWrongLenTraceID,
 		},
 		{
 			name:    "zero TraceID",
@@ -83,13 +61,13 @@ func TestInvalidOCProtoIDs(t *testing.T) {
 			name:         "nil SpanID",
 			ocSpans:      []*tracepb.Span{{TraceId: fakeTraceID}},
 			wantErr:      nil,
-			wrappedError: errNilID,
+			wrappedError: tracetranslator.ErrNilSpanID,
 		},
 		{
 			name:         "empty SpanID",
 			ocSpans:      []*tracepb.Span{{TraceId: fakeTraceID, SpanId: []byte{}}},
 			wantErr:      nil,
-			wrappedError: errWrongLenID,
+			wrappedError: tracetranslator.ErrWrongLenSpanID,
 		},
 		{
 			name:    "zero SpanID",

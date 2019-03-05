@@ -15,7 +15,6 @@
 package jaeger
 
 import (
-	"encoding/binary"
 	"errors"
 	"fmt"
 
@@ -30,12 +29,8 @@ import (
 )
 
 var (
-	errZeroTraceID     = errors.New("OC span has an all zeros trace ID")
-	errNilTraceID      = errors.New("OC trace ID is nil")
-	errWrongLenTraceID = errors.New("TraceID does not have 16 bytes")
-	errZeroSpanID      = errors.New("OC span has an all zeros span ID")
-	errNilID           = errors.New("OC ID is nil")
-	errWrongLenID      = errors.New("ID does not have 8 bytes")
+	errZeroTraceID = errors.New("OC span has an all zeros trace ID")
+	errZeroSpanID  = errors.New("OC span has an all zeros span ID")
 )
 
 var (
@@ -164,7 +159,7 @@ func ocSpansToJaegerSpans(ocSpans []*tracepb.Span) ([]*jaeger.Span, error) {
 	// Pre-allocate assuming that few, if any spans, are nil.
 	jSpans := make([]*jaeger.Span, 0, len(ocSpans))
 	for _, ocSpan := range ocSpans {
-		traceIDLow, traceIDHigh, err := traceIDBytesToLowAndHigh(ocSpan.TraceId)
+		traceIDHigh, traceIDLow, err := tracetranslator.BytesToInt64TraceID(ocSpan.TraceId)
 		if err != nil {
 			return nil, fmt.Errorf("OC span has invalid trace ID: %v", err)
 		}
@@ -175,7 +170,7 @@ func ocSpansToJaegerSpans(ocSpans []*tracepb.Span) ([]*jaeger.Span, error) {
 		if err != nil {
 			return nil, fmt.Errorf("Error converting OC links to Jaeger references: %v", err)
 		}
-		spanID, err := ocIDBytesToJaegerID(ocSpan.SpanId)
+		spanID, err := tracetranslator.BytesToInt64SpanID(ocSpan.SpanId)
 		if err != nil {
 			return nil, fmt.Errorf("OC span has invalid span ID: %v", err)
 		}
@@ -185,7 +180,7 @@ func ocSpansToJaegerSpans(ocSpans []*tracepb.Span) ([]*jaeger.Span, error) {
 		// OC ParentSpanId can be nil/empty: only attempt conversion if not nil/empty.
 		var parentSpanID int64
 		if len(ocSpan.ParentSpanId) != 0 {
-			parentSpanID, err = ocIDBytesToJaegerID(ocSpan.ParentSpanId)
+			parentSpanID, err = tracetranslator.BytesToInt64SpanID(ocSpan.ParentSpanId)
 			if err != nil {
 				return nil, fmt.Errorf("OC span has invalid parent span ID: %v", err)
 			}
@@ -227,7 +222,7 @@ func ocLinksToJaegerReferences(ocSpanLinks *tracepb.Span_Links) ([]*jaeger.SpanR
 	ocLinks := ocSpanLinks.Link
 	jRefs := make([]*jaeger.SpanRef, 0, len(ocLinks))
 	for _, ocLink := range ocLinks {
-		traceIDLow, traceIDHigh, err := traceIDBytesToLowAndHigh(ocLink.TraceId)
+		traceIDHigh, traceIDLow, err := tracetranslator.BytesToInt64TraceID(ocLink.TraceId)
 		if err != nil {
 			return nil, fmt.Errorf("OC link has invalid trace ID: %v", err)
 		}
@@ -242,7 +237,7 @@ func ocLinksToJaegerReferences(ocSpanLinks *tracepb.Span_Links) ([]*jaeger.SpanR
 			jRefType = jaeger.SpanRefType_FOLLOWS_FROM
 		}
 
-		spanID, err := ocIDBytesToJaegerID(ocLink.SpanId)
+		spanID, err := tracetranslator.BytesToInt64SpanID(ocLink.SpanId)
 		if err != nil {
 			return nil, fmt.Errorf("OC link has invalid span ID: %v", err)
 		}
@@ -385,29 +380,6 @@ func truncableStringToStr(ts *tracepb.TruncatableString) string {
 		return ""
 	}
 	return ts.Value
-}
-
-func traceIDBytesToLowAndHigh(traceID []byte) (traceIDLow, traceIDHigh int64, err error) {
-	if traceID == nil {
-		return 0, 0, errNilTraceID
-	}
-	if len(traceID) != 16 {
-		return 0, 0, errWrongLenTraceID
-	}
-	traceIDHigh = int64(binary.BigEndian.Uint64(traceID[:8]))
-	traceIDLow = int64(binary.BigEndian.Uint64(traceID[8:]))
-	return traceIDLow, traceIDHigh, nil
-}
-
-func ocIDBytesToJaegerID(b []byte) (id int64, err error) {
-	if b == nil {
-		return 0, errNilID
-	}
-	if len(b) != 8 {
-		return 0, errWrongLenID
-	}
-	id = int64(binary.BigEndian.Uint64(b))
-	return id, nil
 }
 
 func timestampToEpochMicroseconds(ts *timestamp.Timestamp) int64 {

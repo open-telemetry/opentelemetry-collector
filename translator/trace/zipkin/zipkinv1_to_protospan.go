@@ -15,7 +15,6 @@
 package zipkin
 
 import (
-	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -24,6 +23,7 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/data"
+	tracetranslator "github.com/census-instrumentation/opencensus-service/translator/trace"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"github.com/pkg/errors"
@@ -339,10 +339,7 @@ func hexTraceIDToOCTraceID(hex string) ([]byte, error) {
 		return nil, errHexTraceIDZero
 	}
 
-	traceID := make([]byte, 16)
-	binary.BigEndian.PutUint64(traceID[:8], high)
-	binary.BigEndian.PutUint64(traceID[8:], low)
-	return traceID, nil
+	return tracetranslator.UInt64ToByteTraceID(high, low), nil
 }
 
 func hexIDToOCID(hex string) ([]byte, error) {
@@ -360,9 +357,7 @@ func hexIDToOCID(hex string) ([]byte, error) {
 		return nil, errHexIDZero
 	}
 
-	id := make([]byte, 8)
-	binary.BigEndian.PutUint64(id, idValue)
-	return id, nil
+	return tracetranslator.UInt64ToByteSpanID(idValue), nil
 }
 
 func epochMicrosecondsToTimestamp(msecs int64) *timestamp.Timestamp {

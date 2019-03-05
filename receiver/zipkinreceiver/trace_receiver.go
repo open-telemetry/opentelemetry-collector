@@ -18,7 +18,6 @@ import (
 	"compress/gzip"
 	"compress/zlib"
 	"context"
-	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -43,6 +42,7 @@ import (
 	"github.com/census-instrumentation/opencensus-service/observability"
 	"github.com/census-instrumentation/opencensus-service/processor"
 	"github.com/census-instrumentation/opencensus-service/receiver"
+	tracetranslator "github.com/census-instrumentation/opencensus-service/translator/trace"
 	zipkintranslator "github.com/census-instrumentation/opencensus-service/translator/trace/zipkin"
 )
 
@@ -344,19 +344,14 @@ func zTraceIDToOCProtoTraceID(zTraceID zipkinmodel.TraceID) ([]byte, error) {
 	if zTraceID.High == 0 && zTraceID.Low == 0 {
 		return nil, errZeroTraceID
 	}
-	traceID := make([]byte, 16)
-	binary.BigEndian.PutUint64(traceID[:8], uint64(zTraceID.High))
-	binary.BigEndian.PutUint64(traceID[8:], uint64(zTraceID.Low))
-	return traceID, nil
+	return tracetranslator.UInt64ToByteTraceID(zTraceID.High, zTraceID.Low), nil
 }
 
 func zSpanIDToOCProtoSpanID(id zipkinmodel.ID) ([]byte, error) {
 	if id == 0 {
 		return nil, errZeroID
 	}
-	spanID := make([]byte, 8)
-	binary.BigEndian.PutUint64(spanID, uint64(id))
-	return spanID, nil
+	return tracetranslator.UInt64ToByteSpanID(uint64(id)), nil
 }
 
 func zipkinSpanToTraceSpan(zs *zipkinmodel.SpanModel) (*tracepb.Span, *commonpb.Node, error) {

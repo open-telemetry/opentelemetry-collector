@@ -15,7 +15,6 @@
 package tailsampling
 
 import (
-	"encoding/binary"
 	"sync"
 	"testing"
 	"time"
@@ -23,11 +22,11 @@ import (
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/processor"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/processor/idbatcher"
+	"github.com/census-instrumentation/opencensus-service/internal/collector/sampling"
+	tracetranslator "github.com/census-instrumentation/opencensus-service/translator/trace"
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"go.uber.org/zap"
-
-	"github.com/census-instrumentation/opencensus-service/internal/collector/sampling"
 )
 
 const (
@@ -171,7 +170,7 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 func generateIdsAndBatches(numIds int) ([][]byte, []data.TraceData) {
 	traceIds := make([][]byte, numIds, numIds)
 	for i := 0; i < numIds; i++ {
-		traceIds[i] = indexToTraceID(i + 1)
+		traceIds[i] = tracetranslator.UInt64ToByteTraceID(1, uint64(i+1))
 	}
 
 	tds := []data.TraceData{}
@@ -180,7 +179,7 @@ func generateIdsAndBatches(numIds int) ([][]byte, []data.TraceData) {
 		for j := range spans {
 			spans[j] = &tracepb.Span{
 				TraceId: traceIds[i],
-				SpanId:  indexToSpanID(i + 1),
+				SpanId:  tracetranslator.UInt64ToByteSpanID(uint64(i + 1)),
 			}
 		}
 
@@ -286,17 +285,4 @@ func (p *mockSpanProcessor) ProcessSpans(td data.TraceData, spanFormat string) e
 	batchSize := len(td.Spans)
 	p.TotalSpans += batchSize
 	return nil
-}
-
-func indexToTraceID(low int) []byte {
-	traceID := make([]byte, 16)
-	binary.BigEndian.PutUint64(traceID[:8], 1)
-	binary.BigEndian.PutUint64(traceID[8:], uint64(low))
-	return traceID
-}
-
-func indexToSpanID(id int) []byte {
-	spanID := make([]byte, 8)
-	binary.BigEndian.PutUint64(spanID, uint64(id))
-	return spanID
 }

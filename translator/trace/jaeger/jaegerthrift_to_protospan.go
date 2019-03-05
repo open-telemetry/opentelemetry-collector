@@ -106,10 +106,10 @@ func jSpansToOCProtoSpans(jspans []*jaeger.Span) []*tracepb.Span {
 		startTime := epochMicrosecondsAsTime(uint64(jspan.StartTime))
 		_, sKind, sStatus, sAttributes := jtagsToAttributes(jspan.Tags)
 		span := &tracepb.Span{
-			TraceId: tracetranslator.Int64TraceIDToByteTraceID(jspan.TraceIdHigh, jspan.TraceIdLow),
-			SpanId:  tracetranslator.Int64SpanIDToByteSpanID(jspan.SpanId),
+			TraceId: tracetranslator.Int64ToByteTraceID(jspan.TraceIdHigh, jspan.TraceIdLow),
+			SpanId:  tracetranslator.Int64ToByteSpanID(jspan.SpanId),
 			// TODO: Tracestate: Check RFC status and if is applicable,
-			ParentSpanId: tracetranslator.Int64SpanIDToByteSpanID(jspan.ParentSpanId),
+			ParentSpanId: tracetranslator.Int64ToByteSpanID(jspan.ParentSpanId),
 			Name:         strToTruncatableString(jspan.OperationName),
 			Kind:         sKind,
 			StartTime:    internal.TimeToTimestamp(startTime),
@@ -171,8 +171,8 @@ func jReferencesToOCProtoLinks(jrefs []*jaeger.SpanRef) *tracepb.Span_Links {
 		}
 
 		link := &tracepb.Span_Link{
-			TraceId: tracetranslator.Int64TraceIDToByteTraceID(jref.TraceIdHigh, jref.TraceIdLow),
-			SpanId:  tracetranslator.Int64SpanIDToByteSpanID(jref.SpanId),
+			TraceId: tracetranslator.Int64ToByteTraceID(jref.TraceIdHigh, jref.TraceIdLow),
+			SpanId:  tracetranslator.Int64ToByteSpanID(jref.SpanId),
 			Type:    linkType,
 		}
 		links = append(links, link)

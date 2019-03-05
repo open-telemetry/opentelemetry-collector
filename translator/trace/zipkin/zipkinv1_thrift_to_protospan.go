@@ -60,11 +60,11 @@ func zipkinV1ThriftToOCSpan(zSpan *zipkincore.Span) (*tracepb.Span, *annotationP
 	// failures on the receivers in general are silent at this moment, so letting them
 	// proceed for now. We should validate the traceID, spanID and parentID are good with
 	// OC proto requirements.
-	traceID := tracetranslator.Int64TraceIDToByteTraceID(traceIDHigh, zSpan.TraceID)
-	spanID := tracetranslator.Int64SpanIDToByteSpanID(zSpan.ID)
+	traceID := tracetranslator.Int64ToByteTraceID(traceIDHigh, zSpan.TraceID)
+	spanID := tracetranslator.Int64ToByteSpanID(zSpan.ID)
 	var parentID []byte
 	if zSpan.ParentID != nil {
-		parentID = tracetranslator.Int64SpanIDToByteSpanID(*zSpan.ParentID)
+		parentID = tracetranslator.Int64ToByteSpanID(*zSpan.ParentID)
 	}
 
 	parsedAnnotations := parseZipkinV1ThriftAnnotations(zSpan.Annotations)

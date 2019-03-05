@@ -15,12 +15,13 @@
 package idbatcher
 
 import (
-	"encoding/binary"
 	"runtime"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
+
+	tracetranslator "github.com/census-instrumentation/opencensus-service/translator/trace"
 )
 
 func TestBatcherNew(t *testing.T) {
@@ -155,9 +156,7 @@ func concurrencyTest(t *testing.T, numBatches, newBatchesInitialCapacity, batchC
 func generateSequentialIds(numIds uint64) [][]byte {
 	ids := make([][]byte, numIds, numIds)
 	for i := uint64(0); i < numIds; i++ {
-		dst := make([]byte, 16, 16)
-		binary.BigEndian.PutUint64(dst, i)
-		ids[i] = dst
+		ids[i] = tracetranslator.UInt64ToByteTraceID(0, i)
 	}
 	return ids
 }

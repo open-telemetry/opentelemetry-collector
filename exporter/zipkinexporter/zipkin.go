@@ -16,12 +16,13 @@ package zipkinexporter
 
 import (
 	"context"
-	"encoding/binary"
 	"fmt"
 	"net"
 	"strconv"
 	"sync"
 	"time"
+
+	tracetranslator "github.com/census-instrumentation/opencensus-service/translator/trace"
 
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
@@ -276,14 +277,13 @@ func canonicalCodeString(code int32) string {
 }
 
 func convertTraceID(t trace.TraceID) zipkinmodel.TraceID {
-	return zipkinmodel.TraceID{
-		High: binary.BigEndian.Uint64(t[:8]),
-		Low:  binary.BigEndian.Uint64(t[8:]),
-	}
+	h, l, _ := tracetranslator.BytesToUInt64TraceID(t[:])
+	return zipkinmodel.TraceID{High: h, Low: l}
 }
 
 func convertSpanID(s trace.SpanID) zipkinmodel.ID {
-	return zipkinmodel.ID(binary.BigEndian.Uint64(s[:]))
+	id, _ := tracetranslator.BytesToUInt64SpanID(s[:])
+	return zipkinmodel.ID(id)
 }
 
 func spanKind(s *trace.SpanData) zipkinmodel.Kind {
