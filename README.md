@@ -81,7 +81,7 @@ $ kubectl apply -f example/k8s.yaml
 Create an Agent [configuration](#config) file based on the options described below. Please note the Agent
 requires the `opencensus` receiver be enabled. By default, the Agent has no exporters configured.
 
-Build the Agent, see [Building binaries](#agent-building-binaries),
+Build the Agent, see [Usage](##agent-usage),
 and start it:
 
 ```shell
@@ -148,7 +148,7 @@ An exporter is how you send data to one or more backends/destinations. One or mo
 By default, no exporters are configured on the OpenCensus Service (either the Agent or Collector).
 
 A basic example of all available exporters is provided below. For detailed exporter configuration,
-please see the [exporter README.md](exporter/exporterparser/README.md).
+please see the [exporter README.md](exporter/README.md).
 ```yaml
 exporters:
   opencensus:
@@ -176,6 +176,7 @@ exporters:
     default_service_name: "verifiability_agent"
     version: "latest"
     buffer_size: 200
+
   honeycomb:
     write_key: "739769d7-e61c-42ec-82b9-3ee88dfeff43"
     dataset_name: "dc8_9"
