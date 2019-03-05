@@ -41,19 +41,29 @@ var _ view.Exporter = (*nopMetricsExporter)(nil)
 
 func (cme *nopMetricsExporter) ExportView(vd *view.Data) {}
 
-// CheckRecordedMetricsForTraceExporter checks that the given TraceExporter records the correct set of metrics with the correct
-// set of tags by sending some TraceData to the exporter. The exporter should be able to handle the requests.
-func CheckRecordedMetricsForTraceExporter(t *testing.T, te exporter.TraceExporter) {
+// SetupRecordedMetricsTest does setup the testing environment to check the metrics recorded by receivers, producers or exporters.
+// The returned function should be deferred "defer SetupRecordedMetricsTest(t)()".
+func SetupRecordedMetricsTest(t *testing.T) func() {
 	// Register a nop metrics exporter for the OC library.
 	nmp := new(nopMetricsExporter)
 	view.RegisterExporter(nmp)
-	defer view.UnregisterExporter(nmp)
 
 	// Now for the stats exporter
-	if err := view.Register(observability.ViewExporterReceivedSpans, observability.ViewExporterDroppedSpans); err != nil {
+	if err := view.Register(observability.AllViews...); err != nil {
 		t.Fatalf("Failed to register all views: %v", err)
 	}
-	defer view.Unregister(observability.ViewExporterReceivedSpans, observability.ViewExporterDroppedSpans)
+
+	return func() {
+		view.UnregisterExporter(nmp)
+		view.Unregister(observability.AllViews...)
+	}
+}
+
+// CheckRecordedMetricsForTraceExporter checks that the given TraceExporter records the correct set of metrics with the correct
+// set of tags by sending few TraceData to the exporter. The exporter should be able to handle the requests correctly without
+// dropping.
+func CheckRecordedMetricsForTraceExporter(t *testing.T, te exporter.TraceExporter) {
+	defer SetupRecordedMetricsTest(t)()
 
 	now := time.Now().UTC()
 	spans := []*tracepb.Span{
@@ -98,30 +108,54 @@ func CheckRecordedMetricsForTraceExporter(t *testing.T, te exporter.TraceExporte
 		}
 	}
 
-	checkValueForExporterView(t, observability.ViewExporterReceivedSpans, te.TraceExportFormat(), int64(numBatches*len(spans)))
-	checkValueForExporterView(t, observability.ViewExporterDroppedSpans, te.TraceExportFormat(), 0)
+	CheckValueViewExporterReceivedSpans(t, fakeReceiverName, te.TraceExportFormat(), int64(numBatches*len(spans)))
+	CheckValueViewExporterDroppedSpans(t, fakeReceiverName, te.TraceExportFormat(), 0)
 }
 
-func checkValueForExporterView(t *testing.T, v *view.View, exporterTagName string, value int64) {
-	rows, err := view.RetrieveData(v.Name)
-	if err != nil {
-		t.Fatalf("Error retrieving view data.")
-	}
+// CheckValueViewExporterReceivedSpans checks that for the current exported value in the ViewExporterReceivedSpans
+// for {TagKeyReceiver: receiverName, TagKeyExporter: exporterTagName} is equal to "value".
+// In tests that this function is called it is required to also call SetupRecordedMetricsTest as first thing.
+func CheckValueViewExporterReceivedSpans(t *testing.T, receiverName string, exporterTagName string, value int64) {
+	checkValueForView(t, observability.ViewExporterReceivedSpans.Name,
+		wantsTagsForExporterView(receiverName, exporterTagName), value)
+}
 
-	wantTags := []tag.Tag{
-		{Key: observability.TagKeyReceiver, Value: fakeReceiverName},
-		{Key: observability.TagKeyExporter, Value: exporterTagName},
+// CheckValueViewExporterDroppedSpans checks that for the current exported value in the ViewExporterDroppedSpans
+// for {TagKeyReceiver: receiverName} is equal to "value".
+// In tests that this function is called it is required to also call SetupRecordedMetricsTest as first thing.
+func CheckValueViewExporterDroppedSpans(t *testing.T, receiverName string, exporterTagName string, value int64) {
+	checkValueForView(t, observability.ViewExporterDroppedSpans.Name,
+		wantsTagsForExporterView(receiverName, exporterTagName), value)
+}
+
+// CheckValueViewReceiverReceivedSpans checks that for the current exported value in the ViewReceiverReceivedSpans
+// for {TagKeyReceiver: receiverName, TagKeyExporter: exporterTagName} is equal to "value".
+// In tests that this function is called it is required to also call SetupRecordedMetricsTest as first thing.
+func CheckValueViewReceiverReceivedSpans(t *testing.T, receiverName string, value int64) {
+	checkValueForView(t, observability.ViewReceiverReceivedSpans.Name,
+		wantsTagsForReceiverView(receiverName), value)
+}
+
+// CheckValueViewReceiverDroppedSpans checks that for the current exported value in the ViewReceiverDroppedSpans
+// for {TagKeyReceiver: receiverName} is equal to "value".
+// In tests that this function is called it is required to also call SetupRecordedMetricsTest as first thing.
+func CheckValueViewReceiverDroppedSpans(t *testing.T, receiverName string, value int64) {
+	checkValueForView(t, observability.ViewReceiverDroppedSpans.Name,
+		wantsTagsForReceiverView(receiverName), value)
+}
+
+func checkValueForView(t *testing.T, vName string, wantTags []tag.Tag, value int64) {
+	// Make sure the tags slice is sorted by tag keys.
+	sortTags(wantTags)
+
+	rows, err := view.RetrieveData(vName)
+	if err != nil {
+		t.Fatalf("Error retrieving view data for view Name %s", vName)
 	}
-	// Make sure the vector is sorted by tag keys.
-	sort.SliceStable(wantTags, func(i, j int) bool {
-		return wantTags[i].Key.Name() < wantTags[j].Key.Name()
-	})
 
 	for _, row := range rows {
-		// Make sure the vecotr is sorted by tag keys.
-		sort.SliceStable(row.Tags, func(i, j int) bool {
-			return row.Tags[i].Key.Name() < row.Tags[j].Key.Name()
-		})
+		// Make sure the tags slice is sorted by tag keys.
+		sortTags(row.Tags)
 		if reflect.DeepEqual(wantTags, row.Tags) {
 			sum := row.Data.(*view.SumData)
 			if float64(value) != sum.Value {
@@ -132,4 +166,23 @@ func checkValueForExporterView(t *testing.T, v *view.View, exporterTagName strin
 		}
 	}
 	t.Fatalf("Could not find wantTags: %s in rows %v", wantTags, rows)
+}
+
+func wantsTagsForExporterView(receiverName string, exporterTagName string) []tag.Tag {
+	return []tag.Tag{
+		{Key: observability.TagKeyReceiver, Value: receiverName},
+		{Key: observability.TagKeyExporter, Value: exporterTagName},
+	}
+}
+
+func wantsTagsForReceiverView(receiverName string) []tag.Tag {
+	return []tag.Tag{
+		{Key: observability.TagKeyReceiver, Value: receiverName},
+	}
+}
+
+func sortTags(tags []tag.Tag) {
+	sort.SliceStable(tags, func(i, j int) bool {
+		return tags[i].Key.Name() < tags[j].Key.Name()
+	})
 }
