@@ -22,10 +22,10 @@ BUILD_X2=-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)
 endif
 BUILD_INFO=-ldflags "${BUILD_X1} ${BUILD_X2}"
 
-all_pkgs:
+all-pkgs:
 	@echo $(ALL_PKGS) | tr ' ' '\n' | sort
 
-all_srcs:
+all-srcs:
 	@echo $(ALL_SRC) | tr ' ' '\n' | sort
 
 .DEFAULT_GOAL := fmt-vet-lint-test
