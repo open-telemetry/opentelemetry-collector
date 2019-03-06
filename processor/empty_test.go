@@ -14,20 +14,4 @@
 
 package processor
 
-import (
-	"github.com/census-instrumentation/opencensus-service/consumer"
-)
-
-// TraceProcessor composes TraceConsumer with some additional processor-specific functions.
-type TraceProcessor interface {
-	consumer.TraceConsumer
-
-	// TODO: Add processor specific functions.
-}
-
-// MetricsProcessor composes MetricsConsumer with some additional processor-specific functions.
-type MetricsProcessor interface {
-	consumer.MetricsConsumer
-
-	// TODO: Add processor specific functions.
-}
+// Package with interface only.

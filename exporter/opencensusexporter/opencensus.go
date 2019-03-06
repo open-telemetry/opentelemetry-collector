@@ -25,11 +25,11 @@ import (
 	"google.golang.org/grpc/credentials"
 
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
+	"github.com/census-instrumentation/opencensus-service/consumer"
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal/compression"
 	"github.com/census-instrumentation/opencensus-service/internal/compression/grpc"
 	"github.com/census-instrumentation/opencensus-service/observability"
-	"github.com/census-instrumentation/opencensus-service/processor"
 )
 
 type opencensusConfig struct {
@@ -60,11 +60,11 @@ var (
 	ErrUnableToGetTLSCreds = errors.New("OpenCensus exporter unable to read TLS credentials")
 )
 
-var _ processor.TraceDataProcessor = (*ocagentExporter)(nil)
+var _ consumer.TraceConsumer = (*ocagentExporter)(nil)
 
-// OpenCensusTraceExportersFromViper unmarshals the viper and returns an processor.TraceDataProcessor targeting
+// OpenCensusTraceExportersFromViper unmarshals the viper and returns an consumer.TraceConsumer targeting
 // OpenCensus Agent/Collector according to the configuration settings.
-func OpenCensusTraceExportersFromViper(v *viper.Viper) (tdps []processor.TraceDataProcessor, mdps []processor.MetricsDataProcessor, doneFns []func() error, err error) {
+func OpenCensusTraceExportersFromViper(v *viper.Viper) (tps []consumer.TraceConsumer, mps []consumer.MetricsConsumer, doneFns []func() error, err error) {
 	var cfg struct {
 		OpenCensus *opencensusConfig `mapstructure:"opencensus"`
 	}
@@ -120,16 +120,16 @@ func OpenCensusTraceExportersFromViper(v *viper.Viper) (tdps []processor.TraceDa
 	}
 
 	oexp := &ocagentExporter{exporters: exporters}
-	tdps = append(tdps, oexp)
+	tps = append(tps, oexp)
 
 	// TODO: (@odeke-em, @songya23) implement ExportMetrics for OpenCensus.
-	// mdps = append(mdps, oexp)
+	// mps = append(mps, oexp)
 	return
 }
 
 const exporterTagValue = "oc_trace"
 
-func (oce *ocagentExporter) ProcessTraceData(ctx context.Context, td data.TraceData) error {
+func (oce *ocagentExporter) ConsumeTraceData(ctx context.Context, td data.TraceData) error {
 	// Get an exporter worker round-robin
 	exporter := oce.exporters[atomic.AddUint32(&oce.counter, 1)%uint32(len(oce.exporters))]
 	err := exporter.ExportTraceServiceRequest(

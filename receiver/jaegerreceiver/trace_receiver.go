@@ -37,8 +37,8 @@ import (
 	"github.com/uber/tchannel-go/thrift"
 	"go.uber.org/zap"
 
+	"github.com/census-instrumentation/opencensus-service/consumer"
 	"github.com/census-instrumentation/opencensus-service/observability"
-	"github.com/census-instrumentation/opencensus-service/processor"
 	"github.com/census-instrumentation/opencensus-service/receiver"
 	jaegertranslator "github.com/census-instrumentation/opencensus-service/translator/trace/jaeger"
 )
@@ -60,7 +60,7 @@ type jReceiver struct {
 	// mu protects the fields of this type
 	mu sync.Mutex
 
-	nextProcessor processor.TraceDataProcessor
+	nextConsumer consumer.TraceConsumer
 
 	startOnce sync.Once
 	stopOnce  sync.Once
@@ -170,7 +170,7 @@ func (jr *jReceiver) TraceSource() string {
 	return traceSource
 }
 
-func (jr *jReceiver) StartTraceReception(ctx context.Context, nextProcessor processor.TraceDataProcessor) error {
+func (jr *jReceiver) StartTraceReception(ctx context.Context, nextConsumer consumer.TraceConsumer) error {
 	jr.mu.Lock()
 	defer jr.mu.Unlock()
 
@@ -186,8 +186,8 @@ func (jr *jReceiver) StartTraceReception(ctx context.Context, nextProcessor proc
 			return
 		}
 
-		// Finally set the nextProcessor, since we never encountered an error.
-		jr.nextProcessor = nextProcessor
+		// Finally set the nextConsumer, since we never encountered an error.
+		jr.nextConsumer = nextConsumer
 
 		err = nil
 	})
@@ -249,7 +249,7 @@ func (jr *jReceiver) SubmitBatches(ctx thrift.Context, batches []*jaeger.Batch) 
 
 		if err == nil {
 			ok = true
-			jr.nextProcessor.ProcessTraceData(ctx, td)
+			jr.nextConsumer.ConsumeTraceData(ctx, td)
 			// We MUST unconditionally record metrics from this reception.
 			observability.RecordTraceReceiverMetrics(ctxWithReceiverName, len(batch.Spans), len(batch.Spans)-len(td.Spans))
 		}
@@ -279,7 +279,7 @@ func (jr *jReceiver) EmitBatch(batch *jaeger.Batch) error {
 		return err
 	}
 
-	err = jr.nextProcessor.ProcessTraceData(jr.defaultAgentCtx, td)
+	err = jr.nextConsumer.ConsumeTraceData(jr.defaultAgentCtx, td)
 	observability.RecordTraceReceiverMetrics(jr.defaultAgentCtx, len(batch.Spans), len(batch.Spans)-len(td.Spans))
 
 	return err

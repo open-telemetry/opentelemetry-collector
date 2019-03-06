@@ -18,8 +18,8 @@ import (
 	datadog "github.com/DataDog/opencensus-go-exporter-datadog"
 	"github.com/spf13/viper"
 
+	"github.com/census-instrumentation/opencensus-service/consumer"
 	"github.com/census-instrumentation/opencensus-service/exporter/exporterwrapper"
-	"github.com/census-instrumentation/opencensus-service/processor"
 )
 
 type datadogConfig struct {
@@ -43,7 +43,7 @@ type datadogConfig struct {
 
 // DatadogTraceExportersFromViper unmarshals the viper and returns an exporter.TraceExporter targeting
 // Datadog according to the configuration settings.
-func DatadogTraceExportersFromViper(v *viper.Viper) (tdps []processor.TraceDataProcessor, mdps []processor.MetricsDataProcessor, doneFns []func() error, err error) {
+func DatadogTraceExportersFromViper(v *viper.Viper) (tps []consumer.TraceConsumer, mps []consumer.MetricsConsumer, doneFns []func() error, err error) {
 	var cfg struct {
 		Datadog *datadogConfig `mapstructure:"datadog,omitempty"`
 	}
@@ -74,7 +74,7 @@ func DatadogTraceExportersFromViper(v *viper.Viper) (tdps []processor.TraceDataP
 	// TODO: Examine the Datadog exporter to see
 	// if trace.ExportSpan was constraining and if perhaps the
 	// upload can use the context and information from the Node.
-	tdps = append(tdps, exporterwrapper.NewExporterWrapper("datadog", de))
+	tps = append(tps, exporterwrapper.NewExporterWrapper("datadog", de))
 
 	// TODO: (@odeke-em, @songya23) implement ExportMetrics for Datadog.
 	// mes = append(mes, oexp)

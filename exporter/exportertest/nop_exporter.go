@@ -26,11 +26,11 @@ type nopExporter int
 var _ exporter.TraceExporter = (*nopExporter)(nil)
 var _ exporter.MetricsExporter = (*nopExporter)(nil)
 
-func (ne *nopExporter) ProcessTraceData(ctx context.Context, td data.TraceData) error {
+func (ne *nopExporter) ConsumeTraceData(ctx context.Context, td data.TraceData) error {
 	return nil
 }
 
-func (ne *nopExporter) ProcessMetricsData(ctx context.Context, md data.MetricsData) error {
+func (ne *nopExporter) ConsumeMetricsData(ctx context.Context, md data.MetricsData) error {
 	return nil
 }
 

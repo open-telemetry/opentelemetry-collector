@@ -30,8 +30,8 @@ type SinkTraceExporter struct {
 
 var _ exporter.TraceExporter = (*SinkTraceExporter)(nil)
 
-// ProcessTraceData stores traces for tests.
-func (ste *SinkTraceExporter) ProcessTraceData(ctx context.Context, td data.TraceData) error {
+// ConsumeTraceData stores traces for tests.
+func (ste *SinkTraceExporter) ConsumeTraceData(ctx context.Context, td data.TraceData) error {
 	ste.mu.Lock()
 	defer ste.mu.Unlock()
 
@@ -66,8 +66,8 @@ type SinkMetricsExporter struct {
 
 var _ exporter.MetricsExporter = (*SinkMetricsExporter)(nil)
 
-// ProcessMetricsData stores traces for tests.
-func (sme *SinkMetricsExporter) ProcessMetricsData(ctx context.Context, md data.MetricsData) error {
+// ConsumeMetricsData stores traces for tests.
+func (sme *SinkMetricsExporter) ConsumeMetricsData(ctx context.Context, md data.MetricsData) error {
 	sme.mu.Lock()
 	defer sme.mu.Unlock()
 

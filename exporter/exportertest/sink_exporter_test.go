@@ -30,7 +30,7 @@ func TestSinkTraceExporter(t *testing.T) {
 	}
 	want := make([]data.TraceData, 0, 7)
 	for i := 0; i < 7; i++ {
-		if err := sink.ProcessTraceData(context.Background(), td); err != nil {
+		if err := sink.ConsumeTraceData(context.Background(), td); err != nil {
 			t.Errorf("Wanted nil got error")
 			return
 		}
@@ -53,7 +53,7 @@ func TestSinkMetricsExporter(t *testing.T) {
 	}
 	want := make([]data.MetricsData, 0, 7)
 	for i := 0; i < 7; i++ {
-		if err := sink.ProcessMetricsData(context.Background(), md); err != nil {
+		if err := sink.ConsumeMetricsData(context.Background(), md); err != nil {
 			t.Errorf("Wanted nil got error")
 			return
 		}

@@ -25,8 +25,8 @@ import (
 	"gopkg.in/yaml.v2"
 
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
+	"github.com/census-instrumentation/opencensus-service/consumer"
 	"github.com/census-instrumentation/opencensus-service/data"
-	"github.com/census-instrumentation/opencensus-service/processor"
 	"github.com/census-instrumentation/opencensus-service/receiver"
 	"github.com/orijtech/promreceiver"
 	"github.com/prometheus/prometheus/config"
@@ -97,15 +97,15 @@ func (pr *Preceiver) MetricsSource() string {
 
 // StartMetricsReception is the method that starts Prometheus scraping and it
 // is controlled by having previously defined a Configuration using perhaps New.
-func (pr *Preceiver) StartMetricsReception(ctx context.Context, nextProcessor processor.MetricsDataProcessor) error {
+func (pr *Preceiver) StartMetricsReception(ctx context.Context, nextConsumer consumer.MetricsConsumer) error {
 	var err = errAlreadyStarted
 	pr.startOnce.Do(func() {
-		if nextProcessor == nil {
+		if nextConsumer == nil {
 			err = errNilMetricsReceiverSink
 			return
 		}
 
-		tms := &promMetricsReceiverToOpenCensusMetricsReceiver{nextProcessor: nextProcessor}
+		tms := &promMetricsReceiverToOpenCensusMetricsReceiver{nextConsumer: nextConsumer}
 		cfg := pr.cfg
 		pr.recv, err = promreceiver.ReceiverFromConfig(
 			context.Background(),
@@ -118,7 +118,7 @@ func (pr *Preceiver) StartMetricsReception(ctx context.Context, nextProcessor pr
 }
 
 // Flush triggers the Flush method on the underlying Prometheus scrapers and instructs
-// them to immediately sned over the metrics they've collected, to the MetricsDataProcessor.
+// them to immediately sned over the metrics they've collected, to the MetricsConsumer.
 func (pr *Preceiver) Flush() {
 	pr.recv.Flush()
 }
@@ -130,7 +130,7 @@ func (pr *Preceiver) StopMetricsReception(ctx context.Context) error {
 }
 
 type promMetricsReceiverToOpenCensusMetricsReceiver struct {
-	nextProcessor processor.MetricsDataProcessor
+	nextConsumer consumer.MetricsConsumer
 }
 
 var _ promreceiver.MetricsSink = (*promMetricsReceiverToOpenCensusMetricsReceiver)(nil)
@@ -143,7 +143,7 @@ func (pmrtomr *promMetricsReceiverToOpenCensusMetricsReceiver) ReceiveMetrics(ct
 		return errNilRequest
 	}
 
-	err := pmrtomr.nextProcessor.ProcessMetricsData(ctx, data.MetricsData{
+	err := pmrtomr.nextConsumer.ConsumeMetricsData(ctx, data.MetricsData{
 		Node:     ereq.Node,
 		Resource: ereq.Resource,
 		Metrics:  ereq.Metrics,

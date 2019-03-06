@@ -24,13 +24,13 @@ import (
 	"github.com/census-instrumentation/opencensus-service/exporter/exportertest"
 )
 
-func TestNopTraceDataProcessorNoErrors(t *testing.T) {
+func TestNopTraceProcessorNoErrors(t *testing.T) {
 	sink := new(exportertest.SinkTraceExporter)
 	ntp := NewNopTraceProcessor(sink)
 	want := data.TraceData{
 		Spans: make([]*tracepb.Span, 7),
 	}
-	if err := ntp.ProcessTraceData(context.Background(), want); err != nil {
+	if err := ntp.ConsumeTraceData(context.Background(), want); err != nil {
 		t.Errorf("Wanted nil got error")
 		return
 	}
@@ -40,13 +40,13 @@ func TestNopTraceDataProcessorNoErrors(t *testing.T) {
 	}
 }
 
-func TestNopMetricsDataProcessorNoErrors(t *testing.T) {
+func TestNopMetricsProcessorNoErrors(t *testing.T) {
 	sink := new(exportertest.SinkMetricsExporter)
 	nmp := NewNopMetricsProcessor(sink)
 	want := data.MetricsData{
 		Metrics: make([]*metricspb.Metric, 7),
 	}
-	if err := nmp.ProcessMetricsData(context.Background(), want); err != nil {
+	if err := nmp.ConsumeMetricsData(context.Background(), want); err != nil {
 		t.Errorf("Wanted nil got error")
 		return
 	}

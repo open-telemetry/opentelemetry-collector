@@ -20,8 +20,8 @@ import (
 	"github.com/spf13/viper"
 	kafka "github.com/yancl/opencensus-go-exporter-kafka"
 
+	"github.com/census-instrumentation/opencensus-service/consumer"
 	"github.com/census-instrumentation/opencensus-service/exporter/exporterwrapper"
-	"github.com/census-instrumentation/opencensus-service/processor"
 )
 
 type kafkaConfig struct {
@@ -29,9 +29,9 @@ type kafkaConfig struct {
 	Topic   string   `mapstructure:"topic,omitempty"`
 }
 
-// KafkaExportersFromViper unmarshals the viper and returns an processor.TraceDataProcessor targeting
+// KafkaExportersFromViper unmarshals the viper and returns an consumer.TraceConsumer targeting
 // Kafka according to the configuration settings.
-func KafkaExportersFromViper(v *viper.Viper) (tdps []processor.TraceDataProcessor, mdps []processor.MetricsDataProcessor, doneFns []func() error, err error) {
+func KafkaExportersFromViper(v *viper.Viper) (tps []consumer.TraceConsumer, mps []consumer.MetricsConsumer, doneFns []func() error, err error) {
 	var cfg struct {
 		Kafka *kafkaConfig `mapstructure:"kafka"`
 	}
@@ -53,7 +53,7 @@ func KafkaExportersFromViper(v *viper.Viper) (tdps []processor.TraceDataProcesso
 		return nil, nil, nil, fmt.Errorf("Cannot configure Kafka Trace exporter: %v", kerr)
 	}
 
-	tdps = append(tdps, exporterwrapper.NewExporterWrapper("kafka", kde))
+	tps = append(tps, exporterwrapper.NewExporterWrapper("kafka", kde))
 	doneFns = append(doneFns, func() error {
 		kde.Flush()
 		return nil

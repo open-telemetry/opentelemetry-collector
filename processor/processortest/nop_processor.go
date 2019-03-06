@@ -17,32 +17,33 @@ package processortest
 import (
 	"context"
 
+	"github.com/census-instrumentation/opencensus-service/consumer"
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/processor"
 )
 
 type nopProcessor struct {
-	nextTraceProcessor   processor.TraceDataProcessor
-	nextMetricsProcessor processor.MetricsDataProcessor
+	nextTraceProcessor   consumer.TraceConsumer
+	nextMetricsProcessor consumer.MetricsConsumer
 }
 
-var _ processor.TraceDataProcessor = (*nopProcessor)(nil)
-var _ processor.MetricsDataProcessor = (*nopProcessor)(nil)
+var _ processor.TraceProcessor = (*nopProcessor)(nil)
+var _ processor.MetricsProcessor = (*nopProcessor)(nil)
 
-func (np *nopProcessor) ProcessTraceData(ctx context.Context, td data.TraceData) error {
-	return np.nextTraceProcessor.ProcessTraceData(ctx, td)
+func (np *nopProcessor) ConsumeTraceData(ctx context.Context, td data.TraceData) error {
+	return np.nextTraceProcessor.ConsumeTraceData(ctx, td)
 }
 
-func (np *nopProcessor) ProcessMetricsData(ctx context.Context, md data.MetricsData) error {
-	return np.nextMetricsProcessor.ProcessMetricsData(ctx, md)
+func (np *nopProcessor) ConsumeMetricsData(ctx context.Context, md data.MetricsData) error {
+	return np.nextMetricsProcessor.ConsumeMetricsData(ctx, md)
 }
 
-// NewNopTraceProcessor creates an TraceDataProcessor that just pass the received data to the nextTraceProcessor.
-func NewNopTraceProcessor(nextTraceProcessor processor.TraceDataProcessor) processor.TraceDataProcessor {
+// NewNopTraceProcessor creates an TraceProcessor that just pass the received data to the nextTraceProcessor.
+func NewNopTraceProcessor(nextTraceProcessor consumer.TraceConsumer) consumer.TraceConsumer {
 	return &nopProcessor{nextTraceProcessor: nextTraceProcessor}
 }
 
-// NewNopMetricsProcessor creates an MetricsDataProcessor that just pass the received data to the nextMetricsProcessor.
-func NewNopMetricsProcessor(nextMetricsProcessor processor.MetricsDataProcessor) processor.MetricsDataProcessor {
+// NewNopMetricsProcessor creates an MetricsProcessor that just pass the received data to the nextMetricsProcessor.
+func NewNopMetricsProcessor(nextMetricsProcessor consumer.MetricsConsumer) consumer.MetricsConsumer {
 	return &nopProcessor{nextMetricsProcessor: nextMetricsProcessor}
 }

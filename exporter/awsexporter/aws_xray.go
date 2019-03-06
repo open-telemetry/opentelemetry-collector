@@ -26,9 +26,9 @@ import (
 
 	"github.com/spf13/viper"
 
+	"github.com/census-instrumentation/opencensus-service/consumer"
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/exporter/exporterwrapper"
-	"github.com/census-instrumentation/opencensus-service/processor"
 )
 
 const defaultVersionForAWSXRayApplications = "latest"
@@ -57,11 +57,11 @@ type awsXRayExporter struct {
 	defaultOptions     []xray.Option
 }
 
-var _ processor.TraceDataProcessor = (*awsXRayExporter)(nil)
+var _ consumer.TraceConsumer = (*awsXRayExporter)(nil)
 
-// AWSXRayTraceExportersFromViper unmarshals the viper and returns an processor.TraceDataProcessor targeting
+// AWSXRayTraceExportersFromViper unmarshals the viper and returns an consumer.TraceConsumer targeting
 // AWS X-Ray according to the configuration settings.
-func AWSXRayTraceExportersFromViper(v *viper.Viper) (tdps []processor.TraceDataProcessor, mdps []processor.MetricsDataProcessor, doneFns []func() error, err error) {
+func AWSXRayTraceExportersFromViper(v *viper.Viper) (tps []consumer.TraceConsumer, mps []consumer.MetricsConsumer, doneFns []func() error, err error) {
 	var cfg struct {
 		AWSXRay *awsXRayConfig `mapstructure:"aws-xray"`
 	}
@@ -84,7 +84,7 @@ func AWSXRayTraceExportersFromViper(v *viper.Viper) (tdps []processor.TraceDataP
 		defaultServiceName:     xc.DefaultServiceName,
 	}
 
-	tdps = append(tdps, axe)
+	tps = append(tps, axe)
 	doneFns = append(doneFns, func() error {
 		axe.Flush()
 		return nil
@@ -146,7 +146,7 @@ func transformConfigToXRayOptions(axrCfg *awsXRayConfig) (xopts []xray.Option, e
 
 // ExportSpans is the method that translates OpenCensus-Proto Traces into AWS X-Ray spans.
 // It uniquely maintains
-func (axe *awsXRayExporter) ProcessTraceData(ctx context.Context, td data.TraceData) (xerr error) {
+func (axe *awsXRayExporter) ConsumeTraceData(ctx context.Context, td data.TraceData) (xerr error) {
 	ctx, span := trace.StartSpan(ctx,
 		"opencensus.service.exporter.aws_xray.ExportSpans",
 		trace.WithSampler(trace.NeverSample()))

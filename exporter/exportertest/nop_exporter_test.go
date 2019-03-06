@@ -27,7 +27,7 @@ func TestNopTraceExporterNoErrors(t *testing.T) {
 	td := data.TraceData{
 		Spans: make([]*tracepb.Span, 7),
 	}
-	if err := nte.ProcessTraceData(context.Background(), td); err != nil {
+	if err := nte.ConsumeTraceData(context.Background(), td); err != nil {
 		t.Errorf("Wanted nil got error")
 		return
 	}
@@ -42,7 +42,7 @@ func TestNoopMetricsExporterNoErrors(t *testing.T) {
 	md := data.MetricsData{
 		Metrics: make([]*metricspb.Metric, 7),
 	}
-	if err := nme.ProcessMetricsData(context.Background(), md); err != nil {
+	if err := nme.ConsumeMetricsData(context.Background(), md); err != nil {
 		t.Errorf("Wanted nil got error")
 		return
 	}

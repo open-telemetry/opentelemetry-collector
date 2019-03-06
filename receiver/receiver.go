@@ -17,14 +17,14 @@ package receiver
 import (
 	"context"
 
+	"github.com/census-instrumentation/opencensus-service/consumer"
 	_ "github.com/census-instrumentation/opencensus-service/internal/compression/grpc" // load in supported grpc compression encodings
-	"github.com/census-instrumentation/opencensus-service/processor"
 )
 
 // A TraceReceiver is an "arbitrary data"-to-"trace proto span" converter.
 // Its purpose is to translate data from the wild into trace proto accompanied
 // by a *commonpb.Node to uniquely identify where that data comes from.
-// TraceReceiver feeds a processor.TraceDataProcessor with data.
+// TraceReceiver feeds a consumer.TraceConsumer with data.
 //
 // For example it could be Zipkin data source which translates
 // Zipkin spans into *tracepb.Span-s.
@@ -33,7 +33,7 @@ type TraceReceiver interface {
 	TraceSource() string
 
 	// StartTraceReception tells the receiver to start its processing.
-	StartTraceReception(ctx context.Context, nextProcessor processor.TraceDataProcessor) error
+	StartTraceReception(ctx context.Context, nextConsumer consumer.TraceConsumer) error
 
 	// StopTraceReception tells the receiver that should stop reception,
 	// giving it a chance to perform any necessary clean-up.
@@ -43,7 +43,7 @@ type TraceReceiver interface {
 // A MetricsReceiver is an "arbitrary data"-to-"metric proto" converter.
 // Its purpose is to translate data from the wild into metric proto accompanied
 // by a *commonpb.Node to uniquely identify where that data comes from.
-// MetricsReceiver feeds a processor.MetricsDataProcessor with data.
+// MetricsReceiver feeds a consumer.MetricsConsumer with data.
 //
 // For example it could be Prometheus data source which translates
 // Prometheus metrics into *metricpb.Metric-s.
@@ -52,7 +52,7 @@ type MetricsReceiver interface {
 	MetricsSource() string
 
 	// StartMetricsReception tells the receiver to start its processing.
-	StartMetricsReception(ctx context.Context, nextProcessor processor.MetricsDataProcessor) error
+	StartMetricsReception(ctx context.Context, nextConsumer consumer.MetricsConsumer) error
 
 	// StopMetricsReception tells the receiver that should stop reception,
 	// giving it a chance to perform any necessary clean-up.

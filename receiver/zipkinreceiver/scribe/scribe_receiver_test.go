@@ -29,8 +29,8 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/omnition/scribe-go/if/scribe/gen-go/scribe"
 
+	"github.com/census-instrumentation/opencensus-service/consumer"
 	"github.com/census-instrumentation/opencensus-service/data"
-	"github.com/census-instrumentation/opencensus-service/processor"
 )
 
 func TestNonEqualCategoryIsIgnored(t *testing.T) {
@@ -154,9 +154,9 @@ func newMockTraceSink(numReceiveTraceDataCount int) *mockTraceSink {
 	}
 }
 
-var _ processor.TraceDataProcessor = (*mockTraceSink)(nil)
+var _ consumer.TraceConsumer = (*mockTraceSink)(nil)
 
-func (m *mockTraceSink) ProcessTraceData(ctx context.Context, td data.TraceData) error {
+func (m *mockTraceSink) ConsumeTraceData(ctx context.Context, td data.TraceData) error {
 	m.receivedData = append(m.receivedData, td)
 	m.wg.Done()
 	return nil

@@ -16,22 +16,7 @@ package exporter
 
 import (
 	"github.com/spf13/viper"
-
-	"github.com/census-instrumentation/opencensus-service/processor"
 )
-
-// TraceExporter composes TraceDataProcessor with some additional
-// exporter-specific functions. This helps the service core to identify which
-// TraceDataProcessors are Exporters and which are internal processing
-// components, so that better validation of pipelines can be done.
-type TraceExporter interface {
-	processor.TraceDataProcessor
-
-	// TraceExportFormat gets the name of the format in which this exporter sends its data.
-	// For exporters that can export multiple signals it is recommended to encode the signal
-	// as suffix (e.g. "oc_trace").
-	TraceExportFormat() string
-}
 
 // TraceExporterFactory is an interface that builds a new TraceExporter based on
 // some viper.Viper configuration.
@@ -43,19 +28,6 @@ type TraceExporterFactory interface {
 	// DefaultConfig returns the default configuration for TraceExporter
 	// created by this factory.
 	DefaultConfig() *viper.Viper
-}
-
-// MetricsExporter composes MetricsDataProcessor with some additional
-// exporter-specific functions. This helps the service core to identify which
-// MetricsDataProcessors are Exporters and which are internal processing
-// components, so that better validation of pipelines can be done.
-type MetricsExporter interface {
-	processor.MetricsDataProcessor
-
-	// MetricsExportFormat gets the name of the format in which this exporter sends its data.
-	// For exporters that can export multiple signals it is recommended to encode the signal
-	// as suffix (e.g. "oc_metrics").
-	MetricsExportFormat() string
 }
 
 // MetricsExporterFactory is an interface that builds a new MetricsExporter based on

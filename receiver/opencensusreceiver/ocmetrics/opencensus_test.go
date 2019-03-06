@@ -34,10 +34,10 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"github.com/census-instrumentation/opencensus-service/consumer"
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal"
 	"github.com/census-instrumentation/opencensus-service/observability"
-	"github.com/census-instrumentation/opencensus-service/processor"
 )
 
 // TODO: add E2E tests once ocagent implements metric service client.
@@ -330,9 +330,9 @@ func newMetricAppender() *metricAppender {
 	return &metricAppender{metricsPerNode: make(map[*commonpb.Node][]*metricspb.Metric)}
 }
 
-var _ processor.MetricsDataProcessor = (*metricAppender)(nil)
+var _ consumer.MetricsConsumer = (*metricAppender)(nil)
 
-func (sa *metricAppender) ProcessMetricsData(ctx context.Context, md data.MetricsData) error {
+func (sa *metricAppender) ConsumeMetricsData(ctx context.Context, md data.MetricsData) error {
 	sa.Lock()
 	defer sa.Unlock()
 
@@ -341,7 +341,7 @@ func (sa *metricAppender) ProcessMetricsData(ctx context.Context, md data.Metric
 	return nil
 }
 
-func ocReceiverOnGRPCServer(t *testing.T, sr processor.MetricsDataProcessor, opts ...Option) (oci *Receiver, port int, done func()) {
+func ocReceiverOnGRPCServer(t *testing.T, sr consumer.MetricsConsumer, opts ...Option) (oci *Receiver, port int, done func()) {
 	ln, err := net.Listen("tcp", ":0")
 	if err != nil {
 		t.Fatalf("Failed to find an available address to run the gRPC server: %v", err)

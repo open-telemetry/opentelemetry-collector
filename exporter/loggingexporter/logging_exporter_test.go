@@ -29,7 +29,7 @@ func TestLoggingTraceExporterNoErrors(t *testing.T) {
 	td := data.TraceData{
 		Spans: make([]*tracepb.Span, 7),
 	}
-	if err := lte.ProcessTraceData(context.Background(), td); err != nil {
+	if err := lte.ConsumeTraceData(context.Background(), td); err != nil {
 		t.Errorf("Wanted nil got error")
 		return
 	}
@@ -48,7 +48,7 @@ func TestLoggingMetricsExporterNoErrors(t *testing.T) {
 	md := data.MetricsData{
 		Metrics: make([]*metricspb.Metric, 7),
 	}
-	if err := lme.ProcessMetricsData(context.Background(), md); err != nil {
+	if err := lme.ConsumeMetricsData(context.Background(), md); err != nil {
 		t.Errorf("Wanted nil got error")
 		return
 	}

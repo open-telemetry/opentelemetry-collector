@@ -24,9 +24,9 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	"github.com/census-instrumentation/opencensus-service/consumer"
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/observability"
-	"github.com/census-instrumentation/opencensus-service/processor"
 )
 
 const (
@@ -37,10 +37,10 @@ const (
 
 // Receiver is the type used to handle spans from OpenCensus exporters.
 type Receiver struct {
-	nextProcessor processor.TraceDataProcessor
-	numWorkers    int
-	workers       []*receiverWorker
-	messageChan   chan *traceDataWithCtx
+	nextConsumer consumer.TraceConsumer
+	numWorkers   int
+	workers      []*receiverWorker
+	messageChan  chan *traceDataWithCtx
 }
 
 type traceDataWithCtx struct {
@@ -49,16 +49,16 @@ type traceDataWithCtx struct {
 }
 
 // New creates a new opencensus.Receiver reference.
-func New(nextProcessor processor.TraceDataProcessor, opts ...Option) (*Receiver, error) {
-	if nextProcessor == nil {
-		return nil, errors.New("needs a non-nil processor.TraceDataProcessor")
+func New(nextConsumer consumer.TraceConsumer, opts ...Option) (*Receiver, error) {
+	if nextConsumer == nil {
+		return nil, errors.New("needs a non-nil consumer.TraceConsumer")
 	}
 
 	messageChan := make(chan *traceDataWithCtx, messageChannelSize)
 	ocr := &Receiver{
-		nextProcessor: nextProcessor,
-		numWorkers:    defaultNumWorkers,
-		messageChan:   messageChan,
+		nextConsumer: nextConsumer,
+		numWorkers:   defaultNumWorkers,
+		messageChan:  messageChan,
 	}
 	for _, opt := range opts {
 		opt(ocr)
@@ -199,7 +199,7 @@ func (rw *receiverWorker) export(longLivedCtx context.Context, tracedata *data.T
 	// If the starting RPC has a parent span, then add it as a parent link.
 	observability.SetParentLink(longLivedCtx, span)
 
-	rw.receiver.nextProcessor.ProcessTraceData(ctx, *tracedata)
+	rw.receiver.nextConsumer.ConsumeTraceData(ctx, *tracedata)
 
 	span.Annotate([]trace.Attribute{
 		trace.Int64Attribute("num_spans", int64(len(tracedata.Spans))),

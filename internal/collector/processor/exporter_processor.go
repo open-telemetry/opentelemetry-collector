@@ -17,23 +17,25 @@ package processor
 import (
 	"context"
 
+	"github.com/census-instrumentation/opencensus-service/consumer"
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/processor"
+	"github.com/census-instrumentation/opencensus-service/processor/multiconsumer"
 )
 
 type exporterSpanProcessor struct {
-	tdp processor.TraceDataProcessor
+	tp processor.TraceProcessor
 }
 
 var _ SpanProcessor = (*exporterSpanProcessor)(nil)
 
 // NewTraceExporterProcessor creates processor that feeds SpanData to the given trace exporters.
-func NewTraceExporterProcessor(traceExporters ...processor.TraceDataProcessor) SpanProcessor {
-	return &exporterSpanProcessor{tdp: processor.NewMultiTraceDataProcessor(traceExporters)}
+func NewTraceExporterProcessor(traceExporters ...consumer.TraceConsumer) SpanProcessor {
+	return &exporterSpanProcessor{tp: multiconsumer.NewTraceProcessor(traceExporters)}
 }
 
 func (sp *exporterSpanProcessor) ProcessSpans(td data.TraceData, spanFormat string) error {
-	err := sp.tdp.ProcessTraceData(context.Background(), td)
+	err := sp.tp.ConsumeTraceData(context.Background(), td)
 	if err != nil {
 		return err
 	}

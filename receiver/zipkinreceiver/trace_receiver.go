@@ -37,10 +37,10 @@ import (
 	zipkinproto "github.com/openzipkin/zipkin-go/proto/v2"
 	"go.opencensus.io/trace"
 
+	"github.com/census-instrumentation/opencensus-service/consumer"
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal"
 	"github.com/census-instrumentation/opencensus-service/observability"
-	"github.com/census-instrumentation/opencensus-service/processor"
 	"github.com/census-instrumentation/opencensus-service/receiver"
 	tracetranslator "github.com/census-instrumentation/opencensus-service/translator/trace"
 	zipkintranslator "github.com/census-instrumentation/opencensus-service/translator/trace/zipkin"
@@ -54,7 +54,7 @@ type ZipkinReceiver struct {
 	// addr is the address onto which the HTTP server will be bound
 	addr string
 
-	nextProcessor processor.TraceDataProcessor
+	nextConsumer consumer.TraceConsumer
 
 	startOnce sync.Once
 	stopOnce  sync.Once
@@ -93,7 +93,7 @@ func (zr *ZipkinReceiver) TraceSource() string {
 }
 
 // StartTraceReception spins up the receiver's HTTP server and makes the receiver start its processing.
-func (zr *ZipkinReceiver) StartTraceReception(ctx context.Context, nextProcessor processor.TraceDataProcessor) error {
+func (zr *ZipkinReceiver) StartTraceReception(ctx context.Context, nextConsumer consumer.TraceConsumer) error {
 	zr.mu.Lock()
 	defer zr.mu.Unlock()
 
@@ -111,7 +111,7 @@ func (zr *ZipkinReceiver) StartTraceReception(ctx context.Context, nextProcessor
 			_ = server.Serve(ln)
 		}()
 
-		zr.nextProcessor = nextProcessor
+		zr.nextConsumer = nextConsumer
 		zr.server = server
 
 		err = nil
@@ -278,7 +278,7 @@ const (
 )
 
 // The ZipkinReceiver receives spans from endpoint /api/v2 as JSON,
-// unmarshals them and sends them along to the nextProcessor.
+// unmarshals them and sends them along to the nextConsumer.
 func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Trace this method
 	ctx, span := trace.StartSpan(context.Background(), "ZipkinReceiver.Export")
@@ -322,7 +322,7 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctxWithReceiverName := observability.ContextWithReceiverName(ctx, receiverTagValue)
 	tdsSize := 0
 	for _, td := range tds {
-		zr.nextProcessor.ProcessTraceData(ctxWithReceiverName, td)
+		zr.nextConsumer.ConsumeTraceData(ctxWithReceiverName, td)
 		tdsSize += len(td.Spans)
 	}
 

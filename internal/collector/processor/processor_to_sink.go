@@ -17,8 +17,8 @@ package processor
 import (
 	"context"
 
+	"github.com/census-instrumentation/opencensus-service/consumer"
 	"github.com/census-instrumentation/opencensus-service/data"
-	"github.com/census-instrumentation/opencensus-service/processor"
 )
 
 type protoProcessorSink struct {
@@ -26,16 +26,16 @@ type protoProcessorSink struct {
 	protoProcessor SpanProcessor
 }
 
-var _ (processor.TraceDataProcessor) = (*protoProcessorSink)(nil)
+var _ (consumer.TraceConsumer) = (*protoProcessorSink)(nil)
 
 // WrapWithSpanSink wraps a processor to be used as a span sink by receivers.
-func WrapWithSpanSink(format string, p SpanProcessor) processor.TraceDataProcessor {
+func WrapWithSpanSink(format string, p SpanProcessor) consumer.TraceConsumer {
 	return &protoProcessorSink{
 		sourceFormat:   format,
 		protoProcessor: p,
 	}
 }
 
-func (ps *protoProcessorSink) ProcessTraceData(ctx context.Context, td data.TraceData) error {
+func (ps *protoProcessorSink) ConsumeTraceData(ctx context.Context, td data.TraceData) error {
 	return ps.protoProcessor.ProcessSpans(td, ps.sourceFormat)
 }

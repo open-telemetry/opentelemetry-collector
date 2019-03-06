@@ -34,7 +34,7 @@ type loggingExporter struct{ logger *zap.Logger }
 var _ exporter.TraceExporter = (*loggingExporter)(nil)
 var _ exporter.MetricsExporter = (*loggingExporter)(nil)
 
-func (le *loggingExporter) ProcessTraceData(ctx context.Context, td data.TraceData) error {
+func (le *loggingExporter) ConsumeTraceData(ctx context.Context, td data.TraceData) error {
 	le.logger.Debug("loggingTraceExporter", zap.Int("#spans", len(td.Spans)))
 	// TODO: Add ability to record the received data
 
@@ -43,7 +43,7 @@ func (le *loggingExporter) ProcessTraceData(ctx context.Context, td data.TraceDa
 	return nil
 }
 
-func (le *loggingExporter) ProcessMetricsData(ctx context.Context, md data.MetricsData) error {
+func (le *loggingExporter) ConsumeMetricsData(ctx context.Context, md data.MetricsData) error {
 	le.logger.Debug("loggingMetricsExporter", zap.Int("#metrics", len(md.Metrics)))
 	// TODO: Add ability to record the received data
 	// TODO: Record metrics

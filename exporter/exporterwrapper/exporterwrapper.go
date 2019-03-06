@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package exporterwrapper provides support for wrapping OC go library trace.Exporter into a
-// processor.TraceDataProcessor.
+// consumer.TraceConsumer.
 // For now it currently only provides statically imported OpenCensus
 // exporters like:
 //  * Stackdriver Tracing and Monitoring
@@ -27,13 +27,13 @@ import (
 	"go.opencensus.io/trace"
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/census-instrumentation/opencensus-service/consumer"
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal"
-	"github.com/census-instrumentation/opencensus-service/processor"
 	spandatatranslator "github.com/census-instrumentation/opencensus-service/translator/trace/spandata"
 )
 
-// NewExporterWrapper returns a processor.TraceDataProcessor that converts OpenCensus Proto TraceData
+// NewExporterWrapper returns a consumer.TraceConsumer that converts OpenCensus Proto TraceData
 // to OpenCensus-Go SpanData and calls into the given trace.Exporter.
 //
 // This is a bootstrapping mechanism for us to re-use as many of
@@ -41,7 +41,7 @@ import (
 // by various vendors and contributors. Eventually the goal is to
 // get those exporters converted to directly receive
 // OpenCensus Proto TraceData.
-func NewExporterWrapper(exporterName string, ocExporter trace.Exporter) processor.TraceDataProcessor {
+func NewExporterWrapper(exporterName string, ocExporter trace.Exporter) consumer.TraceConsumer {
 	return &ocExporterWrapper{spanName: "opencensus.service.exporter." + exporterName + ".ExportTrace", ocExporter: ocExporter}
 }
 
@@ -50,9 +50,9 @@ type ocExporterWrapper struct {
 	ocExporter trace.Exporter
 }
 
-var _ processor.TraceDataProcessor = (*ocExporterWrapper)(nil)
+var _ consumer.TraceConsumer = (*ocExporterWrapper)(nil)
 
-func (octew *ocExporterWrapper) ProcessTraceData(ctx context.Context, td data.TraceData) (aerr error) {
+func (octew *ocExporterWrapper) ConsumeTraceData(ctx context.Context, td data.TraceData) (aerr error) {
 	ctx, span := trace.StartSpan(ctx,
 		octew.spanName, trace.WithSampler(trace.NeverSample()))
 

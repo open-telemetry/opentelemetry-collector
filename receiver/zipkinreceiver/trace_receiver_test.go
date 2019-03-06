@@ -225,7 +225,7 @@ func TestConversionRoundtrip(t *testing.T) {
   }
 }]`)
 
-	zi := &ZipkinReceiver{nextProcessor: exportertest.NewNopTraceExporter()}
+	zi := &ZipkinReceiver{nextConsumer: exportertest.NewNopTraceExporter()}
 	ereqs, err := zi.v2ToTraceSpans(receiverInputJSON, nil)
 	if err != nil {
 		t.Fatalf("Failed to parse and convert receiver JSON: %v", err)

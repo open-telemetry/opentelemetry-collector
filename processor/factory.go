@@ -16,28 +16,28 @@ package processor
 
 import "github.com/spf13/viper"
 
-// TraceDataProcessorFactory is an interface that builds a new TraceDataProcessor based on
+// TraceProcessorFactory is an interface that builds a new TraceProcessor based on
 // some viper.Viper configuration.
-type TraceDataProcessorFactory interface {
-	// Type gets the type of the TraceDataProcessor created by this factory.
+type TraceProcessorFactory interface {
+	// Type gets the type of the TraceProcessor created by this factory.
 	Type() string
-	// NewFromViper takes a viper.Viper config and creates a new TraceDataProcessor which uses next as
-	// the next TraceDataProcessor in the pipeline.
-	NewFromViper(cfg *viper.Viper, next TraceDataProcessor) (TraceDataProcessor, error)
-	// DefaultConfig returns the default configuration for TraceDataProcessors
+	// NewFromViper takes a viper.Viper config and creates a new TraceProcessor which uses next as
+	// the next TraceProcessor in the pipeline.
+	NewFromViper(cfg *viper.Viper, next TraceProcessor) (TraceProcessor, error)
+	// DefaultConfig returns the default configuration for TraceProcessors
 	// created by this factory.
 	DefaultConfig() *viper.Viper
 }
 
-// MetricsDataProcessorFactory is an interface that builds a new MetricsDataProcessor based on
+// MetricsProcessorFactory is an interface that builds a new MetricsProcessor based on
 // some viper.Viper configuration.
-type MetricsDataProcessorFactory interface {
-	// Type gets the type of the MetricsDataProcessor created by this factory.
+type MetricsProcessorFactory interface {
+	// Type gets the type of the MetricsProcessor created by this factory.
 	Type() string
-	// NewFromViper takes a viper.Viper config and creates a new MetricsDataProcessor which uses next as
-	// the next MetricsDataProcessor in the pipeline.
-	NewFromViper(cfg *viper.Viper, next MetricsDataProcessor) (MetricsDataProcessor, error)
-	// DefaultConfig returns the default configuration for MetricsDataProcessors
+	// NewFromViper takes a viper.Viper config and creates a new MetricsProcessor which uses next as
+	// the next MetricsProcessor in the pipeline.
+	NewFromViper(cfg *viper.Viper, next MetricsProcessor) (MetricsProcessor, error)
+	// DefaultConfig returns the default configuration for MetricsProcessors
 	// created by this factory.
 	DefaultConfig() *viper.Viper
 }

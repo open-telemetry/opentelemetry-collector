@@ -156,7 +156,7 @@ prometheus:
 		},
 	}
 	me := mes[0]
-	me.ProcessMetricsData(context.Background(), data.MetricsData{Metrics: []*metricspb.Metric{metric1}})
+	me.ConsumeMetricsData(context.Background(), data.MetricsData{Metrics: []*metricspb.Metric{metric1}})
 
 	res, err := http.Get("http://localhost:7777/metrics")
 	if err != nil {

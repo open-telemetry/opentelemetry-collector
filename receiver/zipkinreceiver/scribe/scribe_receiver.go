@@ -26,8 +26,8 @@ import (
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"github.com/omnition/scribe-go/if/scribe/gen-go/scribe"
 
+	"github.com/census-instrumentation/opencensus-service/consumer"
 	"github.com/census-instrumentation/opencensus-service/observability"
-	"github.com/census-instrumentation/opencensus-service/processor"
 	"github.com/census-instrumentation/opencensus-service/receiver"
 	zipkintranslator "github.com/census-instrumentation/opencensus-service/translator/trace/zipkin"
 )
@@ -73,18 +73,18 @@ func (r *scribeReceiver) TraceSource() string {
 	return traceSource
 }
 
-func (r *scribeReceiver) StartTraceReception(ctx context.Context, nextProcessor processor.TraceDataProcessor) error {
+func (r *scribeReceiver) StartTraceReception(ctx context.Context, nextConsumer consumer.TraceConsumer) error {
 	r.Lock()
 	defer r.Unlock()
 
-	if nextProcessor == nil {
+	if nextConsumer == nil {
 		return errors.New("trace reception requires a non-nil destination")
 	}
 
 	err := errAlreadyStarted
 	r.startOnce.Do(func() {
 		err = nil
-		r.collector.nextProcessor = nextProcessor
+		r.collector.nextConsumer = nextConsumer
 		serverSocket, sockErr := thrift.NewTServerSocket(r.addr + ":" + strconv.Itoa(int(r.port)))
 		if sockErr != nil {
 			err = sockErr
@@ -128,7 +128,7 @@ type scribeCollector struct {
 	category            string
 	msgDecoder          *base64.Encoding
 	tBinProtocolFactory *thrift.TBinaryProtocolFactory
-	nextProcessor       processor.TraceDataProcessor
+	nextConsumer        consumer.TraceConsumer
 	defaultCtx          context.Context
 }
 
@@ -174,7 +174,7 @@ func (sc *scribeCollector) Log(messages []*scribe.LogEntry) (r scribe.ResultCode
 
 	tdsSize := 0
 	for _, td := range tds {
-		sc.nextProcessor.ProcessTraceData(sc.defaultCtx, td)
+		sc.nextConsumer.ConsumeTraceData(sc.defaultCtx, td)
 		tdsSize += len(td.Spans)
 	}
 

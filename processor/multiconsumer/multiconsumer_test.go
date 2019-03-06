@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package processor
+package multiconsumer
 
 import (
 	"context"
@@ -20,16 +20,17 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/census-instrumentation/opencensus-service/consumer"
 	"github.com/census-instrumentation/opencensus-service/data"
 )
 
-func TestMultiTraceDataProcessorMultiplexing(t *testing.T) {
-	processors := make([]TraceDataProcessor, 3)
+func TestTraceProcessorMultiplexing(t *testing.T) {
+	processors := make([]consumer.TraceConsumer, 3)
 	for i := range processors {
-		processors[i] = &mockTraceDataProcessor{}
+		processors[i] = &mockTraceConsumer{}
 	}
 
-	mtdp := NewMultiTraceDataProcessor(processors)
+	tdp := NewTraceProcessor(processors)
 	td := data.TraceData{
 		Spans: make([]*tracepb.Span, 7),
 	}
@@ -37,7 +38,7 @@ func TestMultiTraceDataProcessorMultiplexing(t *testing.T) {
 	var wantSpansCount = 0
 	for i := 0; i < 2; i++ {
 		wantSpansCount += len(td.Spans)
-		err := mtdp.ProcessTraceData(context.Background(), td)
+		err := tdp.ConsumeTraceData(context.Background(), td)
 		if err != nil {
 			t.Errorf("Wanted nil got error")
 			return
@@ -45,7 +46,7 @@ func TestMultiTraceDataProcessorMultiplexing(t *testing.T) {
 	}
 
 	for _, p := range processors {
-		m := p.(*mockTraceDataProcessor)
+		m := p.(*mockTraceConsumer)
 		if m.TotalSpans != wantSpansCount {
 			t.Errorf("Wanted %d spans for every processor but got %d", wantSpansCount, m.TotalSpans)
 			return
@@ -53,16 +54,16 @@ func TestMultiTraceDataProcessorMultiplexing(t *testing.T) {
 	}
 }
 
-func TestMultiTraceDataProcessorWhenOneErrors(t *testing.T) {
-	processors := make([]TraceDataProcessor, 3)
+func TestTraceProcessorWhenOneErrors(t *testing.T) {
+	processors := make([]consumer.TraceConsumer, 3)
 	for i := range processors {
-		processors[i] = &mockTraceDataProcessor{}
+		processors[i] = &mockTraceConsumer{}
 	}
 
 	// Make one processor return error
-	processors[1].(*mockTraceDataProcessor).MustFail = true
+	processors[1].(*mockTraceConsumer).MustFail = true
 
-	mtdp := NewMultiTraceDataProcessor(processors)
+	tdp := NewTraceProcessor(processors)
 	td := data.TraceData{
 		Spans: make([]*tracepb.Span, 5),
 	}
@@ -70,7 +71,7 @@ func TestMultiTraceDataProcessorWhenOneErrors(t *testing.T) {
 	var wantSpansCount = 0
 	for i := 0; i < 2; i++ {
 		wantSpansCount += len(td.Spans)
-		err := mtdp.ProcessTraceData(context.Background(), td)
+		err := tdp.ConsumeTraceData(context.Background(), td)
 		if err == nil {
 			t.Errorf("Wanted error got nil")
 			return
@@ -78,7 +79,7 @@ func TestMultiTraceDataProcessorWhenOneErrors(t *testing.T) {
 	}
 
 	for _, p := range processors {
-		m := p.(*mockTraceDataProcessor)
+		m := p.(*mockTraceConsumer)
 		if m.TotalSpans != wantSpansCount {
 			t.Errorf("Wanted %d spans for every processor but got %d", wantSpansCount, m.TotalSpans)
 			return
@@ -86,13 +87,13 @@ func TestMultiTraceDataProcessorWhenOneErrors(t *testing.T) {
 	}
 }
 
-func TestMultiMetricsDataProcessorMultiplexing(t *testing.T) {
-	processors := make([]MetricsDataProcessor, 3)
+func TestMetricsProcessorMultiplexing(t *testing.T) {
+	processors := make([]consumer.MetricsConsumer, 3)
 	for i := range processors {
-		processors[i] = &mockMetricsDataProcessor{}
+		processors[i] = &mockMetricsConsumer{}
 	}
 
-	mmdp := NewMultiMetricsDataProcessor(processors)
+	mdp := NewMetricsProcessor(processors)
 	md := data.MetricsData{
 		Metrics: make([]*metricspb.Metric, 7),
 	}
@@ -100,7 +101,7 @@ func TestMultiMetricsDataProcessorMultiplexing(t *testing.T) {
 	var wantMetricsCount = 0
 	for i := 0; i < 2; i++ {
 		wantMetricsCount += len(md.Metrics)
-		err := mmdp.ProcessMetricsData(context.Background(), md)
+		err := mdp.ConsumeMetricsData(context.Background(), md)
 		if err != nil {
 			t.Errorf("Wanted nil got error")
 			return
@@ -108,7 +109,7 @@ func TestMultiMetricsDataProcessorMultiplexing(t *testing.T) {
 	}
 
 	for _, p := range processors {
-		m := p.(*mockMetricsDataProcessor)
+		m := p.(*mockMetricsConsumer)
 		if m.TotalMetrics != wantMetricsCount {
 			t.Errorf("Wanted %d metrics for every processor but got %d", wantMetricsCount, m.TotalMetrics)
 			return
@@ -116,16 +117,16 @@ func TestMultiMetricsDataProcessorMultiplexing(t *testing.T) {
 	}
 }
 
-func TestMultiMetricsDataProcessorWhenOneErrors(t *testing.T) {
-	processors := make([]MetricsDataProcessor, 3)
+func TestMetricsProcessorWhenOneErrors(t *testing.T) {
+	processors := make([]consumer.MetricsConsumer, 3)
 	for i := range processors {
-		processors[i] = &mockMetricsDataProcessor{}
+		processors[i] = &mockMetricsConsumer{}
 	}
 
 	// Make one processor return error
-	processors[1].(*mockMetricsDataProcessor).MustFail = true
+	processors[1].(*mockMetricsConsumer).MustFail = true
 
-	mmdp := NewMultiMetricsDataProcessor(processors)
+	mdp := NewMetricsProcessor(processors)
 	md := data.MetricsData{
 		Metrics: make([]*metricspb.Metric, 5),
 	}
@@ -133,7 +134,7 @@ func TestMultiMetricsDataProcessorWhenOneErrors(t *testing.T) {
 	var wantMetricsCount = 0
 	for i := 0; i < 2; i++ {
 		wantMetricsCount += len(md.Metrics)
-		err := mmdp.ProcessMetricsData(context.Background(), md)
+		err := mdp.ConsumeMetricsData(context.Background(), md)
 		if err == nil {
 			t.Errorf("Wanted error got nil")
 			return
@@ -141,7 +142,7 @@ func TestMultiMetricsDataProcessorWhenOneErrors(t *testing.T) {
 	}
 
 	for _, p := range processors {
-		m := p.(*mockMetricsDataProcessor)
+		m := p.(*mockMetricsConsumer)
 		if m.TotalMetrics != wantMetricsCount {
 			t.Errorf("Wanted %d metrics for every processor but got %d", wantMetricsCount, m.TotalMetrics)
 			return
@@ -149,14 +150,14 @@ func TestMultiMetricsDataProcessorWhenOneErrors(t *testing.T) {
 	}
 }
 
-type mockTraceDataProcessor struct {
+type mockTraceConsumer struct {
 	TotalSpans int
 	MustFail   bool
 }
 
-var _ TraceDataProcessor = &mockTraceDataProcessor{}
+var _ consumer.TraceConsumer = &mockTraceConsumer{}
 
-func (p *mockTraceDataProcessor) ProcessTraceData(ctx context.Context, td data.TraceData) error {
+func (p *mockTraceConsumer) ConsumeTraceData(ctx context.Context, td data.TraceData) error {
 	p.TotalSpans += len(td.Spans)
 	if p.MustFail {
 		return fmt.Errorf("this processor must fail")
@@ -165,14 +166,14 @@ func (p *mockTraceDataProcessor) ProcessTraceData(ctx context.Context, td data.T
 	return nil
 }
 
-type mockMetricsDataProcessor struct {
+type mockMetricsConsumer struct {
 	TotalMetrics int
 	MustFail     bool
 }
 
-var _ MetricsDataProcessor = &mockMetricsDataProcessor{}
+var _ consumer.MetricsConsumer = &mockMetricsConsumer{}
 
-func (p *mockMetricsDataProcessor) ProcessMetricsData(ctx context.Context, td data.MetricsData) error {
+func (p *mockMetricsConsumer) ConsumeMetricsData(ctx context.Context, td data.MetricsData) error {
 	p.TotalMetrics += len(td.Metrics)
 	if p.MustFail {
 		return fmt.Errorf("this processor must fail")

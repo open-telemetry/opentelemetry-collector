@@ -26,6 +26,7 @@ import (
 
 	"github.com/census-instrumentation/opencensus-service/cmd/occollector/app/builder"
 	"github.com/census-instrumentation/opencensus-service/cmd/occollector/app/sender"
+	"github.com/census-instrumentation/opencensus-service/consumer"
 	"github.com/census-instrumentation/opencensus-service/exporter/loggingexporter"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/processor"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/processor/nodebatcher"
@@ -33,10 +34,9 @@ import (
 	"github.com/census-instrumentation/opencensus-service/internal/collector/processor/tailsampling"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/sampling"
 	"github.com/census-instrumentation/opencensus-service/internal/config"
-	mainprocessor "github.com/census-instrumentation/opencensus-service/processor"
 )
 
-func createExporters(v *viper.Viper, logger *zap.Logger) ([]func(), []mainprocessor.TraceDataProcessor, []mainprocessor.MetricsDataProcessor) {
+func createExporters(v *viper.Viper, logger *zap.Logger) ([]func(), []consumer.TraceConsumer, []consumer.MetricsConsumer) {
 	// TODO: (@pjanotti) this is slightly modified from agent but in the end duplication, need to consolidate style and visibility.
 	traceExporters, metricsExporters, doneFns, err := config.ExportersFromViperConfig(logger, v)
 	if err != nil {
