@@ -23,7 +23,17 @@ information on using pull requests.
 
 [GitHub Help]: https://help.github.com/articles/about-pull-requests/
 
-## Instructions
+## Required Tools
+
+Working with the project sources requires the following tools:
+
+1. [git](https://git-scm.com/)
+2. [bzr](http://bazaar.canonical.com/en/)
+3. [go](https://golang.org/) (version 1.11.4 and up)
+4. [make](https://www.gnu.org/software/make/)
+5. [docker](https://www.docker.com/)
+
+## Repository Setup
 
 Fork the repo, checkout the upstream repo to your GOPATH by:
 
@@ -33,24 +43,29 @@ $ GO111MODULE="" go get -d github.com/census-instrumentation/opencensus-service
 
 Add your fork as an origin:
 
-```
-cd $(go env GOPATH)/src/github.com/census-instrumentation/opencensus-service
-git remote add fork git@github.com:YOUR_GITHUB_USERNAME/opencensus-service.git
+```shell
+$ cd $(go env GOPATH)/src/github.com/census-instrumentation/opencensus-service
+$ git remote add fork git@github.com:YOUR_GITHUB_USERNAME/opencensus-service.git
 ```
 
 Run tests, fmt and lint:
 
-```
+```shell 
 $ make install-tools # Only first time.
 $ make
 ```
 
-Checkout a new branch, make modifications and push the branch to your fork
+*Note:* the default build target requires tools that are installed at `$(go env GOPATH)/bin`, ensure that `$(go env GOPATH)/bin` is included in your `PATH`.
+
+## Creating a PR
+
+Checkout a new branch, make modifications, build locally, and push the branch to your fork
 to open a new PR:
 
-```
+```shell
 $ git checkout -b feature
 # edit
+$ make
 $ git commit
 $ git push fork feature
 ```
