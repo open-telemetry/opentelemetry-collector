@@ -15,6 +15,7 @@ package exportertest
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
@@ -22,32 +23,56 @@ import (
 	"github.com/census-instrumentation/opencensus-service/data"
 )
 
-func TestNopTraceExporterNoErrors(t *testing.T) {
+func TestNopTraceExporter_NoErrors(t *testing.T) {
 	nte := NewNopTraceExporter()
 	td := data.TraceData{
 		Spans: make([]*tracepb.Span, 7),
 	}
 	if err := nte.ConsumeTraceData(context.Background(), td); err != nil {
-		t.Errorf("Wanted nil got error")
-		return
+		t.Fatalf("Wanted nil got error")
 	}
 	if "nop_trace" != nte.TraceExportFormat() {
-		t.Errorf("Wanted nop_trace got %s", nte.TraceExportFormat())
-		return
+		t.Fatalf("Wanted nop_trace got %s", nte.TraceExportFormat())
 	}
 }
 
-func TestNoopMetricsExporterNoErrors(t *testing.T) {
+func TestNopTraceExporter_WithErrors(t *testing.T) {
+	want := errors.New("MyError")
+	nte := NewNopTraceExporter(WithReturnError(want))
+	td := data.TraceData{
+		Spans: make([]*tracepb.Span, 7),
+	}
+	if got := nte.ConsumeTraceData(context.Background(), td); got != want {
+		t.Fatalf("Want %v Got %v", want, got)
+	}
+	if "nop_trace" != nte.TraceExportFormat() {
+		t.Fatalf("Wanted nop_trace got %s", nte.TraceExportFormat())
+	}
+}
+
+func TestNopMetricsExporter_NoErrors(t *testing.T) {
 	nme := NewNopMetricsExporter()
 	md := data.MetricsData{
 		Metrics: make([]*metricspb.Metric, 7),
 	}
 	if err := nme.ConsumeMetricsData(context.Background(), md); err != nil {
-		t.Errorf("Wanted nil got error")
-		return
+		t.Fatalf("Wanted nil got error")
 	}
 	if "nop_metrics" != nme.MetricsExportFormat() {
-		t.Errorf("Wanted nop_metrics got %s", nme.MetricsExportFormat())
-		return
+		t.Fatalf("Wanted nop_metrics got %s", nme.MetricsExportFormat())
+	}
+}
+
+func TestNopMetricsExporter_WithErrors(t *testing.T) {
+	want := errors.New("MyError")
+	nme := NewNopMetricsExporter(WithReturnError(want))
+	md := data.MetricsData{
+		Metrics: make([]*metricspb.Metric, 7),
+	}
+	if got := nme.ConsumeMetricsData(context.Background(), md); got != want {
+		t.Fatalf("Want %v Got %v", want, got)
+	}
+	if "nop_metrics" != nme.MetricsExportFormat() {
+		t.Fatalf("Wanted nop_metrics got %s", nme.MetricsExportFormat())
 	}
 }

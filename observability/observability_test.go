@@ -16,10 +16,6 @@
 // observability and observabilitytest
 package observability_test
 
-// This file contains helpers that are useful to add observability
-// with metrics and tracing using OpenCensus to the various pieces
-// of the service.
-
 import (
 	"context"
 	"testing"
@@ -34,14 +30,22 @@ const (
 )
 
 func TestTracePieplineRecordedMetrics(t *testing.T) {
-	defer observabilitytest.SetupRecordedMetricsTest(t)()
+	defer observabilitytest.SetupRecordedMetricsTest()()
 
 	receiverCtx := observability.ContextWithReceiverName(context.Background(), receiverName)
 	observability.RecordTraceReceiverMetrics(receiverCtx, 17, 13)
 	exporterCtx := observability.ContextWithExporterName(receiverCtx, exporterName)
 	observability.RecordTraceExporterMetrics(exporterCtx, 27, 23)
-	observabilitytest.CheckValueViewReceiverReceivedSpans(t, receiverName, 17)
-	observabilitytest.CheckValueViewReceiverDroppedSpans(t, receiverName, 13)
-	observabilitytest.CheckValueViewExporterReceivedSpans(t, receiverName, exporterName, 27)
-	observabilitytest.CheckValueViewExporterDroppedSpans(t, receiverName, exporterName, 23)
+	if err := observabilitytest.CheckValueViewReceiverReceivedSpans(receiverName, 17); err != nil {
+		t.Fatalf("When check recorded values: want nil got %v", err)
+	}
+	if err := observabilitytest.CheckValueViewReceiverDroppedSpans(receiverName, 13); err != nil {
+		t.Fatalf("When check recorded values: want nil got %v", err)
+	}
+	if err := observabilitytest.CheckValueViewExporterReceivedSpans(receiverName, exporterName, 27); err != nil {
+		t.Fatalf("When check recorded values: want nil got %v", err)
+	}
+	if err := observabilitytest.CheckValueViewExporterDroppedSpans(receiverName, exporterName, 23); err != nil {
+		t.Fatalf("When check recorded values: want nil got %v", err)
+	}
 }

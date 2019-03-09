@@ -31,8 +31,7 @@ func TestSinkTraceExporter(t *testing.T) {
 	want := make([]data.TraceData, 0, 7)
 	for i := 0; i < 7; i++ {
 		if err := sink.ConsumeTraceData(context.Background(), td); err != nil {
-			t.Errorf("Wanted nil got error")
-			return
+			t.Fatalf("Wanted nil got error")
 		}
 		want = append(want, td)
 	}
@@ -42,7 +41,6 @@ func TestSinkTraceExporter(t *testing.T) {
 	}
 	if "sink_trace" != sink.TraceExportFormat() {
 		t.Errorf("Wanted sink_trace got %s", sink.TraceExportFormat())
-		return
 	}
 }
 
@@ -54,8 +52,7 @@ func TestSinkMetricsExporter(t *testing.T) {
 	want := make([]data.MetricsData, 0, 7)
 	for i := 0; i < 7; i++ {
 		if err := sink.ConsumeMetricsData(context.Background(), md); err != nil {
-			t.Errorf("Wanted nil got error")
-			return
+			t.Fatalf("Wanted nil got error")
 		}
 		want = append(want, md)
 	}
@@ -65,6 +62,5 @@ func TestSinkMetricsExporter(t *testing.T) {
 	}
 	if "sink_metrics" != sink.MetricsExportFormat() {
 		t.Errorf("Wanted sink_metrics got %s", sink.MetricsExportFormat())
-		return
 	}
 }

@@ -39,7 +39,7 @@ import (
 // test is to ensure exactness, but with the mentioned views registered, the
 // output will be quite noisy.
 func TestEnsureRecordedMetrics(t *testing.T) {
-	defer observabilitytest.SetupRecordedMetricsTest(t)()
+	defer observabilitytest.SetupRecordedMetricsTest()()
 
 	_, port, doneReceiverFn := ocReceiverOnGRPCServer(t, exportertest.NewNopTraceExporter())
 	defer doneReceiverFn()
@@ -58,12 +58,16 @@ func TestEnsureRecordedMetrics(t *testing.T) {
 	}
 	flush(traceSvcDoneFn)
 
-	observabilitytest.CheckValueViewReceiverReceivedSpans(t, "oc_trace", int64(n))
-	observabilitytest.CheckValueViewReceiverDroppedSpans(t, "oc_trace", 0)
+	if err := observabilitytest.CheckValueViewReceiverReceivedSpans("oc_trace", n); err != nil {
+		t.Fatalf("When check recorded values: want nil got %v", err)
+	}
+	if err := observabilitytest.CheckValueViewReceiverDroppedSpans("oc_trace", 0); err != nil {
+		t.Fatalf("When check recorded values: want nil got %v", err)
+	}
 }
 
 func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
-	defer observabilitytest.SetupRecordedMetricsTest(t)()
+	defer observabilitytest.SetupRecordedMetricsTest()()
 
 	_, port, doneFn := ocReceiverOnGRPCServer(t, exportertest.NewNopTraceExporter())
 	defer doneFn()
@@ -81,8 +85,12 @@ func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
 	}
 	flush(traceSvcDoneFn)
 
-	observabilitytest.CheckValueViewReceiverReceivedSpans(t, "oc_trace", 0)
-	observabilitytest.CheckValueViewReceiverDroppedSpans(t, "oc_trace", 0)
+	if err := observabilitytest.CheckValueViewReceiverReceivedSpans("oc_trace", 0); err != nil {
+		t.Fatalf("When check recorded values: want nil got %v", err)
+	}
+	if err := observabilitytest.CheckValueViewReceiverDroppedSpans("oc_trace", 0); err != nil {
+		t.Fatalf("When check recorded values: want nil got %v", err)
+	}
 }
 
 func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {

@@ -21,17 +21,20 @@ import (
 	"github.com/census-instrumentation/opencensus-service/exporter"
 )
 
-type nopExporter int
+// NopExporterOption represents options that can be applied to a NopExporter.
+type NopExporterOption func(*nopExporter)
+
+type nopExporter struct{ retError error }
 
 var _ exporter.TraceExporter = (*nopExporter)(nil)
 var _ exporter.MetricsExporter = (*nopExporter)(nil)
 
 func (ne *nopExporter) ConsumeTraceData(ctx context.Context, td data.TraceData) error {
-	return nil
+	return ne.retError
 }
 
 func (ne *nopExporter) ConsumeMetricsData(ctx context.Context, md data.MetricsData) error {
-	return nil
+	return ne.retError
 }
 
 const (
@@ -48,11 +51,26 @@ func (ne *nopExporter) MetricsExportFormat() string {
 }
 
 // NewNopTraceExporter creates an TraceExporter that just drops the received data.
-func NewNopTraceExporter() exporter.TraceExporter {
-	return new(nopExporter)
+func NewNopTraceExporter(options ...NopExporterOption) exporter.TraceExporter {
+	return newNopExporter(options...)
 }
 
 // NewNopMetricsExporter creates an MetricsExporter that just drops the received data.
-func NewNopMetricsExporter() exporter.MetricsExporter {
-	return new(nopExporter)
+func NewNopMetricsExporter(options ...NopExporterOption) exporter.MetricsExporter {
+	return newNopExporter(options...)
+}
+
+// WithReturnError returns a NopExporterOption that enforces the nop Exporters to return the given error.
+func WithReturnError(retError error) NopExporterOption {
+	return func(ne *nopExporter) {
+		ne.retError = retError
+	}
+}
+
+func newNopExporter(options ...NopExporterOption) *nopExporter {
+	ne := new(nopExporter)
+	for _, opt := range options {
+		opt(ne)
+	}
+	return ne
 }

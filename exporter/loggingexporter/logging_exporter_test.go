@@ -30,8 +30,7 @@ func TestLoggingTraceExporterNoErrors(t *testing.T) {
 		Spans: make([]*tracepb.Span, 7),
 	}
 	if err := lte.ConsumeTraceData(context.Background(), td); err != nil {
-		t.Errorf("Wanted nil got error")
-		return
+		t.Fatalf("Wanted nil got error")
 	}
 	if "logging_trace" != lte.TraceExportFormat() {
 		t.Errorf("Wanted logging_trace got %v", lte.TraceExportFormat())
@@ -40,7 +39,9 @@ func TestLoggingTraceExporterNoErrors(t *testing.T) {
 
 func TestLoggingTraceExporterRecordMetrics(t *testing.T) {
 	lte := NewTraceExporter(zap.NewNop())
-	observabilitytest.CheckRecordedMetricsForTraceExporter(t, lte)
+	if err := observabilitytest.CheckRecordedMetricsForTraceExporter(lte); err != nil {
+		t.Fatalf("When test LoggingTraceExporter recording metrics: want nil got %v", err)
+	}
 }
 
 func TestLoggingMetricsExporterNoErrors(t *testing.T) {
@@ -49,8 +50,7 @@ func TestLoggingMetricsExporterNoErrors(t *testing.T) {
 		Metrics: make([]*metricspb.Metric, 7),
 	}
 	if err := lme.ConsumeMetricsData(context.Background(), md); err != nil {
-		t.Errorf("Wanted nil got error")
-		return
+		t.Fatalf("Wanted nil got error")
 	}
 	if "logging_metrics" != lme.MetricsExportFormat() {
 		t.Errorf("Wanted logging_metrics got %v", lme.MetricsExportFormat())
