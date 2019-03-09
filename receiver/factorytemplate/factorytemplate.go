@@ -51,14 +51,14 @@ type factory struct {
 
 type traceReceiverFactory struct {
 	factory
-	newReceiver func(interface{}, consumer.TraceConsumer) (receiver.TraceReceiver, error)
+	newReceiver func(interface{}, consumer.TraceConsumer, *zap.Logger) (receiver.TraceReceiver, error)
 }
 
 var _ (receiver.TraceReceiverFactory) = (*traceReceiverFactory)(nil)
 
 type metricsReceiverFactory struct {
 	factory
-	newReceiver func(interface{}, consumer.MetricsConsumer) (receiver.MetricsReceiver, error)
+	newReceiver func(interface{}, consumer.MetricsConsumer, *zap.Logger) (receiver.MetricsReceiver, error)
 }
 
 var _ (receiver.MetricsReceiverFactory) = (*metricsReceiverFactory)(nil)
@@ -77,7 +77,7 @@ var _ (receiver.MetricsReceiverFactory) = (*metricsReceiverFactory)(nil)
 func NewTraceReceiverFactory(
 	receiverType string,
 	newDefaulfCfg func() interface{},
-	newReceiver func(interface{}, consumer.TraceConsumer) (receiver.TraceReceiver, error),
+	newReceiver func(interface{}, consumer.TraceConsumer, *zap.Logger) (receiver.TraceReceiver, error),
 ) (receiver.TraceReceiverFactory, error) {
 	if receiverType == "" {
 		return nil, ErrEmptyReciverType
@@ -112,7 +112,7 @@ func NewTraceReceiverFactory(
 func NewMetricsReceiverFactory(
 	receiverType string,
 	newDefaulfCfg func() interface{},
-	newReceiver func(interface{}, consumer.MetricsConsumer) (receiver.MetricsReceiver, error),
+	newReceiver func(interface{}, consumer.MetricsConsumer, *zap.Logger) (receiver.MetricsReceiver, error),
 ) (receiver.MetricsReceiverFactory, error) {
 	if receiverType == "" {
 		return nil, ErrEmptyReciverType
@@ -147,7 +147,7 @@ func (trf *traceReceiverFactory) NewFromViper(v *viper.Viper, next consumer.Trac
 	if err != nil {
 		return nil, err
 	}
-	r, err := trf.newReceiver(cfg, next)
+	r, err := trf.newReceiver(cfg, next, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +165,7 @@ func (mrf *metricsReceiverFactory) NewFromViper(v *viper.Viper, next consumer.Me
 	if err != nil {
 		return nil, err
 	}
-	r, err := mrf.newReceiver(cfg, next)
+	r, err := mrf.newReceiver(cfg, next, logger)
 	if err != nil {
 		return nil, err
 	}

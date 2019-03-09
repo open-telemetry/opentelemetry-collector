@@ -35,7 +35,7 @@ func TestNewTraceReceiverFactory(t *testing.T) {
 	type args struct {
 		receiverType  string
 		newDefaultCfg func() interface{}
-		newReceiver   func(interface{}, consumer.TraceConsumer) (receiver.TraceReceiver, error)
+		newReceiver   func(interface{}, consumer.TraceConsumer, *zap.Logger) (receiver.TraceReceiver, error)
 	}
 	tests := []struct {
 		name    string
@@ -104,7 +104,7 @@ func TestNewMetricsReceiverFactory(t *testing.T) {
 	type args struct {
 		receiverType  string
 		newDefaultCfg func() interface{}
-		newReceiver   func(interface{}, consumer.MetricsConsumer) (receiver.MetricsReceiver, error)
+		newReceiver   func(interface{}, consumer.MetricsConsumer, *zap.Logger) (receiver.MetricsReceiver, error)
 	}
 	tests := []struct {
 		name    string
@@ -283,7 +283,7 @@ func Test_traceReceiverFactory_NewFromViper_Errors(t *testing.T) {
 		},
 	}
 
-	newTraceReceiverAlwaysFail := func(cfg interface{}, next consumer.TraceConsumer) (receiver.TraceReceiver, error) {
+	newTraceReceiverAlwaysFail := func(cfg interface{}, next consumer.TraceConsumer, logger *zap.Logger) (receiver.TraceReceiver, error) {
 		return nil, errNewReceiver
 	}
 	factory, err := NewTraceReceiverFactory(
@@ -368,7 +368,7 @@ func Test_metricsReceiverFactory_NewFromViper_Errors(t *testing.T) {
 		},
 	}
 
-	newMetricsReceiverAlwaysFail := func(cfg interface{}, next consumer.MetricsConsumer) (receiver.MetricsReceiver, error) {
+	newMetricsReceiverAlwaysFail := func(cfg interface{}, next consumer.MetricsConsumer, logger *zap.Logger) (receiver.MetricsReceiver, error) {
 		return nil, errNewReceiver
 	}
 
@@ -435,7 +435,7 @@ func Examplefactory_DefaultConfig() {
 	templateArgs := []struct {
 		receiverType  string
 		newDefaultCfg func() interface{}
-		newReceiver   func(interface{}, consumer.TraceConsumer) (receiver.TraceReceiver, error)
+		newReceiver   func(interface{}, consumer.TraceConsumer, *zap.Logger) (receiver.TraceReceiver, error)
 	}{
 		{
 			receiverType:  "mockReceiver",
@@ -477,7 +477,7 @@ func checkedBuildReceiverFactory(
 	t *testing.T,
 	receiverType string,
 	newDefaultCfg func() interface{},
-	newReceiver func(interface{}, consumer.TraceConsumer) (receiver.TraceReceiver, error),
+	newReceiver func(interface{}, consumer.TraceConsumer, *zap.Logger) (receiver.TraceReceiver, error),
 ) receiver.TraceReceiverFactory {
 	factory, err := NewTraceReceiverFactory(receiverType, newDefaultCfg, newReceiver)
 	if err != nil {
@@ -509,13 +509,13 @@ func altNewMockReceiverDefaultCfg() interface{} {
 	}
 }
 
-func newMockTraceReceiver(cfg interface{}, next consumer.TraceConsumer) (receiver.TraceReceiver, error) {
+func newMockTraceReceiver(cfg interface{}, next consumer.TraceConsumer, logger *zap.Logger) (receiver.TraceReceiver, error) {
 	return &mockReceiver{
 		config: cfg.(*mockReceiverCfg),
 	}, nil
 }
 
-func newMockMetricsReceiver(cfg interface{}, next consumer.MetricsConsumer) (receiver.MetricsReceiver, error) {
+func newMockMetricsReceiver(cfg interface{}, next consumer.MetricsConsumer, logger *zap.Logger) (receiver.MetricsReceiver, error) {
 	return &mockReceiver{
 		config: cfg.(*mockReceiverCfg),
 	}, nil
