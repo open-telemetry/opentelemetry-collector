@@ -84,8 +84,25 @@ func TestConcurrentTraceArrival(t *testing.T) {
 	}
 }
 
-func TestConcurrentTraceMapSize(t *testing.T) {
+func TestSequentialTraceMapSize(t *testing.T) {
 	traceIds, batches := generateIdsAndBatches(210)
+	const maxSize = 100
+	sp, _ := NewTailSamplingSpanProcessor(newTestPolicy(), uint64(maxSize), 64, defaultTestDecisionWait, zap.NewNop())
+	tsp := sp.(*tailSamplingSpanProcessor)
+	for _, batch := range batches {
+		tsp.ProcessSpans(batch, "test")
+	}
+
+	// On sequential insertion it is possible to know exactly which traces should be still on the map.
+	for i := 0; i < len(traceIds)-maxSize; i++ {
+		if _, ok := tsp.idToTrace.Load(traceKey(traceIds[i])); ok {
+			t.Fatalf("Found unexpected traceId[%d] still on map (id: %v)", i, traceIds[i])
+		}
+	}
+}
+
+func TestConcurrentTraceMapSize(t *testing.T) {
+	_, batches := generateIdsAndBatches(210)
 	const maxSize = 100
 	var wg sync.WaitGroup
 	sp, _ := NewTailSamplingSpanProcessor(newTestPolicy(), uint64(maxSize), 64, defaultTestDecisionWait, zap.NewNop())
@@ -100,10 +117,15 @@ func TestConcurrentTraceMapSize(t *testing.T) {
 
 	wg.Wait()
 
-	for i := 0; i < len(traceIds)-maxSize; i++ {
-		if _, ok := tsp.idToTrace.Load(traceKey(traceIds[i])); ok {
-			t.Fatalf("Found unexpected traceId[%d] still on map (id: %v)", i, traceIds[i])
-		}
+	// Since we can't guarantee the order of insertion the only thing that can be checked is
+	// if the number of traces on the map matches the expected value.
+	cnt := 0
+	tsp.idToTrace.Range(func(_ interface{}, _ interface{}) bool {
+		cnt++
+		return true
+	})
+	if cnt != maxSize {
+		t.Fatalf("got %d traces on idToTrace, want %d", cnt, maxSize)
 	}
 }
 
