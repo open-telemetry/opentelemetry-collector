@@ -39,7 +39,8 @@ import (
 // test is to ensure exactness, but with the mentioned views registered, the
 // output will be quite noisy.
 func TestEnsureRecordedMetrics(t *testing.T) {
-	defer observabilitytest.SetupRecordedMetricsTest()()
+	doneFn := observabilitytest.SetupRecordedMetricsTest()
+	defer doneFn()
 
 	_, port, doneReceiverFn := ocReceiverOnGRPCServer(t, exportertest.NewNopTraceExporter())
 	defer doneReceiverFn()
@@ -67,7 +68,8 @@ func TestEnsureRecordedMetrics(t *testing.T) {
 }
 
 func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
-	defer observabilitytest.SetupRecordedMetricsTest()()
+	doneFn := observabilitytest.SetupRecordedMetricsTest()
+	defer doneFn()
 
 	_, port, doneFn := ocReceiverOnGRPCServer(t, exportertest.NewNopTraceExporter())
 	defer doneFn()

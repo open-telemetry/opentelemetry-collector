@@ -20,37 +20,35 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/data"
-	"github.com/census-instrumentation/opencensus-service/observability/observabilitytest"
 	"go.uber.org/zap"
 )
 
 func TestLoggingTraceExporterNoErrors(t *testing.T) {
-	lte := NewTraceExporter(zap.NewNop())
+	lte, err := NewTraceExporter(zap.NewNop())
+	if err != nil {
+		t.Fatalf("Wanted nil got %v", err)
+	}
 	td := data.TraceData{
 		Spans: make([]*tracepb.Span, 7),
 	}
 	if err := lte.ConsumeTraceData(context.Background(), td); err != nil {
-		t.Fatalf("Wanted nil got error")
+		t.Fatalf("Wanted nil got %v", err)
 	}
 	if "logging_trace" != lte.TraceExportFormat() {
 		t.Errorf("Wanted logging_trace got %v", lte.TraceExportFormat())
 	}
 }
 
-func TestLoggingTraceExporterRecordMetrics(t *testing.T) {
-	lte := NewTraceExporter(zap.NewNop())
-	if err := observabilitytest.CheckRecordedMetricsForTraceExporter(lte); err != nil {
-		t.Fatalf("When test LoggingTraceExporter recording metrics: want nil got %v", err)
-	}
-}
-
 func TestLoggingMetricsExporterNoErrors(t *testing.T) {
-	lme := NewMetricsExporter(zap.NewNop())
+	lme, err := NewMetricsExporter(zap.NewNop())
+	if err != nil {
+		t.Fatalf("Wanted nil got %v", err)
+	}
 	md := data.MetricsData{
 		Metrics: make([]*metricspb.Metric, 7),
 	}
 	if err := lme.ConsumeMetricsData(context.Background(), md); err != nil {
-		t.Fatalf("Wanted nil got error")
+		t.Fatalf("Wanted nil got %v", err)
 	}
 	if "logging_metrics" != lme.MetricsExportFormat() {
 		t.Errorf("Wanted logging_metrics got %v", lme.MetricsExportFormat())

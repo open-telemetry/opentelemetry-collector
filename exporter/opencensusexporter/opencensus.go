@@ -21,15 +21,15 @@ import (
 	"sync/atomic"
 
 	"contrib.go.opencensus.io/exporter/ocagent"
+	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc/credentials"
 
-	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	"github.com/census-instrumentation/opencensus-service/consumer"
 	"github.com/census-instrumentation/opencensus-service/data"
+	"github.com/census-instrumentation/opencensus-service/exporter/exporterhelper"
 	"github.com/census-instrumentation/opencensus-service/internal/compression"
 	"github.com/census-instrumentation/opencensus-service/internal/compression/grpc"
-	"github.com/census-instrumentation/opencensus-service/observability"
 )
 
 type opencensusConfig struct {
@@ -59,8 +59,6 @@ var (
 	// ErrUnableToGetTLSCreds indicates that this exporter could not read the provided TLS credentials.
 	ErrUnableToGetTLSCreds = errors.New("OpenCensus exporter unable to read TLS credentials")
 )
-
-var _ consumer.TraceConsumer = (*ocagentExporter)(nil)
 
 // OpenCensusTraceExportersFromViper unmarshals the viper and returns an consumer.TraceConsumer targeting
 // OpenCensus Agent/Collector according to the configuration settings.
@@ -119,7 +117,9 @@ func OpenCensusTraceExportersFromViper(v *viper.Viper) (tps []consumer.TraceCons
 		})
 	}
 
-	oexp := &ocagentExporter{exporters: exporters}
+	oce := &ocagentExporter{exporters: exporters}
+	oexp, _ := exporterhelper.NewTraceExporter("oc_trace", oce.PushTraceData, exporterhelper.WithRecordMetrics(true))
+
 	tps = append(tps, oexp)
 
 	// TODO: (@odeke-em, @songya23) implement ExportMetrics for OpenCensus.
@@ -127,9 +127,7 @@ func OpenCensusTraceExportersFromViper(v *viper.Viper) (tps []consumer.TraceCons
 	return
 }
 
-const exporterTagValue = "oc_trace"
-
-func (oce *ocagentExporter) ConsumeTraceData(ctx context.Context, td data.TraceData) error {
+func (oce *ocagentExporter) PushTraceData(ctx context.Context, td data.TraceData) (int, error) {
 	// Get an exporter worker round-robin
 	exporter := oce.exporters[atomic.AddUint32(&oce.counter, 1)%uint32(len(oce.exporters))]
 	err := exporter.ExportTraceServiceRequest(
@@ -139,14 +137,8 @@ func (oce *ocagentExporter) ConsumeTraceData(ctx context.Context, td data.TraceD
 			Node:     td.Node,
 		},
 	)
-	ctxWithExporterName := observability.ContextWithExporterName(ctx, exporterTagValue)
 	if err != nil {
-		// TODO: If failed to send all maybe record a different metric. Failed to "Sent", but
-		// this may not be accurate if we have retry outside of this exporter. Maybe the retry
-		// processor should record these metrics. For the moment we assume no retry.
-		observability.RecordTraceExporterMetrics(ctxWithExporterName, len(td.Spans), len(td.Spans))
-		return err
+		return len(td.Spans), err
 	}
-	observability.RecordTraceExporterMetrics(ctxWithExporterName, len(td.Spans), 0)
-	return nil
+	return 0, nil
 }

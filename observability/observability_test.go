@@ -30,7 +30,8 @@ const (
 )
 
 func TestTracePieplineRecordedMetrics(t *testing.T) {
-	defer observabilitytest.SetupRecordedMetricsTest()()
+	doneFn := observabilitytest.SetupRecordedMetricsTest()
+	defer doneFn()
 
 	receiverCtx := observability.ContextWithReceiverName(context.Background(), receiverName)
 	observability.RecordTraceReceiverMetrics(receiverCtx, 17, 13)

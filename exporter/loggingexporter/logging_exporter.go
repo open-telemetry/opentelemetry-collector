@@ -19,7 +19,7 @@ import (
 
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/exporter"
-	"github.com/census-instrumentation/opencensus-service/observability"
+	"github.com/census-instrumentation/opencensus-service/exporter/exporterhelper"
 	"go.uber.org/zap"
 )
 
@@ -28,44 +28,30 @@ const (
 	metricsExportFormat = "logging_metrics"
 )
 
-// A logging exporter that does not sends the data to any destination but logs debugging messages.
-type loggingExporter struct{ logger *zap.Logger }
-
-var _ exporter.TraceExporter = (*loggingExporter)(nil)
-var _ exporter.MetricsExporter = (*loggingExporter)(nil)
-
-func (le *loggingExporter) ConsumeTraceData(ctx context.Context, td data.TraceData) error {
-	le.logger.Debug("loggingTraceExporter", zap.Int("#spans", len(td.Spans)))
-	// TODO: Add ability to record the received data
-
-	// Even though we just log all the spans, we record 0 dropped spans.
-	observability.RecordTraceExporterMetrics(observability.ContextWithExporterName(ctx, traceExportFormat), len(td.Spans), 0)
-	return nil
-}
-
-func (le *loggingExporter) ConsumeMetricsData(ctx context.Context, md data.MetricsData) error {
-	le.logger.Debug("loggingMetricsExporter", zap.Int("#metrics", len(md.Metrics)))
-	// TODO: Add ability to record the received data
-	// TODO: Record metrics
-	return nil
-}
-
-func (le *loggingExporter) TraceExportFormat() string {
-	return traceExportFormat
-}
-
-func (le *loggingExporter) MetricsExportFormat() string {
-	return metricsExportFormat
-}
-
 // NewTraceExporter creates an exporter.TraceExporter that just drops the
 // received data and logs debugging messages.
-func NewTraceExporter(logger *zap.Logger) exporter.TraceExporter {
-	return &loggingExporter{logger: logger}
+func NewTraceExporter(logger *zap.Logger) (exporter.TraceExporter, error) {
+	return exporterhelper.NewTraceExporter(
+		traceExportFormat,
+		func(ctx context.Context, td data.TraceData) (int, error) {
+			logger.Debug("loggingTraceExporter", zap.Int("#spans", len(td.Spans)))
+			// TODO: Add ability to record the received data
+			return 0, nil
+		},
+		exporterhelper.WithSpanName("LoggingExporter.ConsumeTraceData"), exporterhelper.WithRecordMetrics(true),
+	)
 }
 
 // NewMetricsExporter creates an exporter.MetricsExporter that just drops the
 // received data and logs debugging messages.
-func NewMetricsExporter(logger *zap.Logger) exporter.MetricsExporter {
-	return &loggingExporter{logger: logger}
+func NewMetricsExporter(logger *zap.Logger) (exporter.MetricsExporter, error) {
+	return exporterhelper.NewMetricsExporter(
+		metricsExportFormat,
+		func(ctx context.Context, md data.MetricsData) (int, error) {
+			logger.Debug("loggingMetricsExporter", zap.Int("#metrics", len(md.Metrics)))
+			// TODO: Add ability to record the received data
+			return 0, nil
+		},
+		exporterhelper.WithSpanName("LoggingExporter.ConsumeMetricsData"), exporterhelper.WithRecordMetrics(true),
+	)
 }

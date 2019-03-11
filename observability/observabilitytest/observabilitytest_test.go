@@ -18,12 +18,8 @@ package observabilitytest_test
 
 import (
 	"context"
-	"errors"
 	"testing"
 
-	"github.com/census-instrumentation/opencensus-service/data"
-	"github.com/census-instrumentation/opencensus-service/exporter"
-	"github.com/census-instrumentation/opencensus-service/exporter/exportertest"
 	"github.com/census-instrumentation/opencensus-service/observability"
 	"github.com/census-instrumentation/opencensus-service/observability/observabilitytest"
 )
@@ -34,7 +30,8 @@ const (
 )
 
 func TestCheckValueViewReceiverViews(t *testing.T) {
-	defer observabilitytest.SetupRecordedMetricsTest()()
+	doneFn := observabilitytest.SetupRecordedMetricsTest()
+	defer doneFn()
 
 	receiverCtx := observability.ContextWithReceiverName(context.Background(), receiverName)
 	observability.RecordTraceReceiverMetrics(receiverCtx, 17, 13)
@@ -62,7 +59,8 @@ func TestCheckValueViewReceiverViews(t *testing.T) {
 }
 
 func TestCheckValueViewExporterViews(t *testing.T) {
-	defer observabilitytest.SetupRecordedMetricsTest()()
+	doneFn := observabilitytest.SetupRecordedMetricsTest()
+	defer doneFn()
 
 	receiverCtx := observability.ContextWithReceiverName(context.Background(), receiverName)
 	exporterCtx := observability.ContextWithExporterName(receiverCtx, exporterName)
@@ -97,49 +95,4 @@ func TestNoSetupCalled(t *testing.T) {
 	if err := observabilitytest.CheckValueViewReceiverReceivedSpans(receiverName, 17); err == nil {
 		t.Fatalf("When check recorded values: want not-nil got nil")
 	}
-}
-
-func TestCheckRecordedMetricsForTraceExporter_WithNoMetricsRecorded(t *testing.T) {
-	ne := exportertest.NewNopTraceExporter()
-	if err := observabilitytest.CheckRecordedMetricsForTraceExporter(ne); err == nil {
-		t.Fatalf("When check recorded values: want not-nil got nil")
-	}
-}
-
-func TestCheckRecordedMetricsForTraceExporter_WithReturnError(t *testing.T) {
-	newe := exportertest.NewNopTraceExporter(exportertest.WithReturnError(errors.New("my_error")))
-	if err := observabilitytest.CheckRecordedMetricsForTraceExporter(newe); err == nil {
-		t.Fatalf("When check recorded values: want not-nil got nil")
-	}
-}
-
-func TestCheckRecordedMetricsForTraceExporter_WrongReceived(t *testing.T) {
-	if err := observabilitytest.CheckRecordedMetricsForTraceExporter(&obsTestExporter{receivedSpans: 2, droppedSpans: 0}); err == nil {
-		t.Fatalf("When check recorded values: want not-nil got nil")
-	}
-}
-func TestCheckRecordedMetricsForTraceExporter_WrongDropped(t *testing.T) {
-	if err := observabilitytest.CheckRecordedMetricsForTraceExporter(&obsTestExporter{receivedSpans: 1, droppedSpans: 1}); err == nil {
-		t.Fatalf("When check recorded values: want not-nil got nil")
-	}
-}
-
-func TestCheckRecordedMetricsForTraceExporter(t *testing.T) {
-	if err := observabilitytest.CheckRecordedMetricsForTraceExporter(&obsTestExporter{receivedSpans: 1, droppedSpans: 0}); err != nil {
-		t.Fatalf("When check recorded values: want nil got %v", err)
-	}
-}
-
-type obsTestExporter struct{ receivedSpans, droppedSpans int }
-
-var _ exporter.TraceExporter = (*obsTestExporter)(nil)
-
-func (ote *obsTestExporter) ConsumeTraceData(ctx context.Context, td data.TraceData) error {
-	exporterCtx := observability.ContextWithExporterName(ctx, ote.TraceExportFormat())
-	observability.RecordTraceExporterMetrics(exporterCtx, ote.receivedSpans, ote.droppedSpans)
-	return nil
-}
-
-func (ote *obsTestExporter) TraceExportFormat() string {
-	return exporterName
 }
