@@ -28,6 +28,7 @@ import (
 
 	"github.com/census-instrumentation/opencensus-service/consumer"
 	"github.com/census-instrumentation/opencensus-service/data"
+	"github.com/census-instrumentation/opencensus-service/exporter/exporterhelper"
 	"github.com/census-instrumentation/opencensus-service/exporter/exporterwrapper"
 )
 
@@ -57,8 +58,6 @@ type awsXRayExporter struct {
 	defaultOptions     []xray.Option
 }
 
-var _ consumer.TraceConsumer = (*awsXRayExporter)(nil)
-
 // AWSXRayTraceExportersFromViper unmarshals the viper and returns an consumer.TraceConsumer targeting
 // AWS X-Ray according to the configuration settings.
 func AWSXRayTraceExportersFromViper(v *viper.Viper) (tps []consumer.TraceConsumer, mps []consumer.MetricsConsumer, doneFns []func() error, err error) {
@@ -84,7 +83,17 @@ func AWSXRayTraceExportersFromViper(v *viper.Viper) (tps []consumer.TraceConsume
 		defaultServiceName:     xc.DefaultServiceName,
 	}
 
-	tps = append(tps, axe)
+	axte, err := exporterhelper.NewTraceExporter(
+		"aws_xray",
+		axe.PushTraceData,
+		exporterhelper.WithSpanName("ocservice.exporter.AwsXray.ConsumeTraceData"),
+		exporterhelper.WithRecordMetrics(true),
+	)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	tps = append(tps, axte)
 	doneFns = append(doneFns, func() error {
 		axe.Flush()
 		return nil
@@ -146,25 +155,13 @@ func transformConfigToXRayOptions(axrCfg *awsXRayConfig) (xopts []xray.Option, e
 
 // ExportSpans is the method that translates OpenCensus-Proto Traces into AWS X-Ray spans.
 // It uniquely maintains
-func (axe *awsXRayExporter) ConsumeTraceData(ctx context.Context, td data.TraceData) (xerr error) {
-	ctx, span := trace.StartSpan(ctx,
-		"opencensus.service.exporter.aws_xray.ExportSpans",
-		trace.WithSampler(trace.NeverSample()))
-
-	defer func() {
-		if xerr != nil && span.IsRecordingEvents() {
-			span.SetStatus(trace.Status{
-				Code:    int32(trace.StatusCodeUnknown),
-				Message: xerr.Error(),
-			})
-		}
-		span.End()
-	}()
-
+func (axe *awsXRayExporter) PushTraceData(ctx context.Context, td data.TraceData) (int, error) {
 	serviceName := td.Node.GetServiceInfo().GetName()
 	if serviceName == "" {
 		serviceName = axe.defaultServiceName
 	}
+	// TODO: Consider to do this in the exporterhelper.
+	span := trace.FromContext(ctx)
 	if span.IsRecordingEvents() {
 		span.Annotate([]trace.Attribute{
 			trace.StringAttribute("service_name", serviceName),
@@ -173,7 +170,7 @@ func (axe *awsXRayExporter) ConsumeTraceData(ctx context.Context, td data.TraceD
 
 	exp, err := axe.getOrMakeExporterByServiceName(serviceName)
 	if err != nil {
-		return err
+		return len(td.Spans), err
 	}
 	return exporterwrapper.PushOcProtoSpansToOCTraceExporter(exp, td)
 }

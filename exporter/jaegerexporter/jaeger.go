@@ -61,9 +61,14 @@ func JaegerExportersFromViper(v *viper.Viper) (tps []consumer.TraceConsumer, mps
 		je.Flush()
 		return nil
 	})
+
+	jte, err := exporterwrapper.NewExporterWrapper("jaeger", "ocservice.exporter.Jaeger.ConsumeTraceData", je)
+	if err != nil {
+		return nil, nil, nil, err
+	}
 	// TODO: Examine "contrib.go.opencensus.io/exporter/jaeger" to see
 	// if trace.ExportSpan was constraining and if perhaps the Jaeger
 	// upload can use the context and information from the Node.
-	tps = append(tps, exporterwrapper.NewExporterWrapper("jaeger", je))
+	tps = append(tps, jte)
 	return
 }

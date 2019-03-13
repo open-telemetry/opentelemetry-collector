@@ -27,8 +27,9 @@ import (
 	"go.opencensus.io/trace"
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/census-instrumentation/opencensus-service/consumer"
 	"github.com/census-instrumentation/opencensus-service/data"
+	"github.com/census-instrumentation/opencensus-service/exporter"
+	"github.com/census-instrumentation/opencensus-service/exporter/exporterhelper"
 	"github.com/census-instrumentation/opencensus-service/internal"
 	spandatatranslator "github.com/census-instrumentation/opencensus-service/translator/trace/spandata"
 )
@@ -41,42 +42,22 @@ import (
 // by various vendors and contributors. Eventually the goal is to
 // get those exporters converted to directly receive
 // OpenCensus Proto TraceData.
-func NewExporterWrapper(exporterName string, ocExporter trace.Exporter) consumer.TraceConsumer {
-	return &ocExporterWrapper{spanName: "opencensus.service.exporter." + exporterName + ".ExportTrace", ocExporter: ocExporter}
-}
-
-type ocExporterWrapper struct {
-	spanName   string
-	ocExporter trace.Exporter
-}
-
-var _ consumer.TraceConsumer = (*ocExporterWrapper)(nil)
-
-func (octew *ocExporterWrapper) ConsumeTraceData(ctx context.Context, td data.TraceData) (aerr error) {
-	ctx, span := trace.StartSpan(ctx,
-		octew.spanName, trace.WithSampler(trace.NeverSample()))
-
-	if span.IsRecordingEvents() {
-		span.Annotate([]trace.Attribute{
-			trace.Int64Attribute("n_spans", int64(len(td.Spans))),
-		}, "")
-	}
-
-	defer func() {
-		if aerr != nil && span.IsRecordingEvents() {
-			span.SetStatus(trace.Status{Code: trace.StatusCodeInternal, Message: aerr.Error()})
-		}
-		span.End()
-	}()
-
-	return PushOcProtoSpansToOCTraceExporter(octew.ocExporter, td)
+func NewExporterWrapper(exporterName string, spanName string, ocExporter trace.Exporter) (exporter.TraceExporter, error) {
+	return exporterhelper.NewTraceExporter(
+		exporterName,
+		func(ctx context.Context, td data.TraceData) (int, error) {
+			return PushOcProtoSpansToOCTraceExporter(ocExporter, td)
+		},
+		exporterhelper.WithSpanName(spanName),
+		exporterhelper.WithRecordMetrics(true),
+	)
 }
 
 // TODO: Remove PushOcProtoSpansToOCTraceExporter after aws-xray is changed to ExporterWrapper.
 
 // PushOcProtoSpansToOCTraceExporter pushes TraceData to the given trace.Exporter by converting the
 // protos to trace.SpanData.
-func PushOcProtoSpansToOCTraceExporter(ocExporter trace.Exporter, td data.TraceData) error {
+func PushOcProtoSpansToOCTraceExporter(ocExporter trace.Exporter, td data.TraceData) (int, error) {
 	var errs []error
 	var goodSpans []*tracepb.Span
 	for _, span := range td.Spans {
@@ -89,5 +70,5 @@ func PushOcProtoSpansToOCTraceExporter(ocExporter trace.Exporter, td data.TraceD
 		}
 	}
 
-	return internal.CombineErrors(errs)
+	return len(td.Spans) - len(goodSpans), internal.CombineErrors(errs)
 }

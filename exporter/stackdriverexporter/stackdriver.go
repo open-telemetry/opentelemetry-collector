@@ -88,11 +88,16 @@ func StackdriverTraceExportersFromViper(v *viper.Viper) (tps []consumer.TraceCon
 		exporter: sde,
 	}
 
+	sdte, err := exporterwrapper.NewExporterWrapper("stackdriver_trace", "ocservice.exporter.Stackdriver.ConsumeTraceData", sde)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
 	// TODO: Examine "contrib.go.opencensus.io/exporter/stackdriver" to see
 	// if trace.ExportSpan was constraining and if perhaps the Stackdriver
 	// upload can use the context and information from the Node.
 	if sc.EnableTracing {
-		tps = append(tps, exporterwrapper.NewExporterWrapper("stackdriver", sde))
+		tps = append(tps, sdte)
 	}
 
 	if sc.EnableMetrics {

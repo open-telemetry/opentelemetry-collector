@@ -118,7 +118,15 @@ func OpenCensusTraceExportersFromViper(v *viper.Viper) (tps []consumer.TraceCons
 	}
 
 	oce := &ocagentExporter{exporters: exporters}
-	oexp, _ := exporterhelper.NewTraceExporter("oc_trace", oce.PushTraceData, exporterhelper.WithRecordMetrics(true))
+	oexp, err := exporterhelper.NewTraceExporter(
+		"oc_trace",
+		oce.PushTraceData,
+		exporterhelper.WithSpanName("ocservice.exporter.OpenCensus.ConsumeTraceData"),
+		exporterhelper.WithRecordMetrics(true))
+
+	if err != nil {
+		return nil, nil, nil, err
+	}
 
 	tps = append(tps, oexp)
 

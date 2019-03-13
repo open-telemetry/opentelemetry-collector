@@ -47,7 +47,12 @@ func HoneycombTraceExportersFromViper(v *viper.Viper) (tps []consumer.TraceConsu
 
 	rawExp := honeycomb.NewExporter(hc.WriteKey, hc.DatasetName)
 
-	tps = append(tps, exporterwrapper.NewExporterWrapper("honeycomb", rawExp))
+	hcte, err := exporterwrapper.NewExporterWrapper("honeycomb", "ocservice.exporter.HoneyComb.ConsumeTraceData", rawExp)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	tps = append(tps, hcte)
 	doneFns = append(doneFns, func() error {
 		rawExp.Close()
 		return nil

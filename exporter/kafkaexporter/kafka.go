@@ -53,7 +53,12 @@ func KafkaExportersFromViper(v *viper.Viper) (tps []consumer.TraceConsumer, mps 
 		return nil, nil, nil, fmt.Errorf("Cannot configure Kafka Trace exporter: %v", kerr)
 	}
 
-	tps = append(tps, exporterwrapper.NewExporterWrapper("kafka", kde))
+	kte, err := exporterwrapper.NewExporterWrapper("kafka", "ocservice.exporter.Kafka.ConsumeTraceData", kde)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	tps = append(tps, kte)
 	doneFns = append(doneFns, func() error {
 		kde.Flush()
 		return nil

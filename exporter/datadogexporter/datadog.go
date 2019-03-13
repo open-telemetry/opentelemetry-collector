@@ -71,10 +71,15 @@ func DatadogTraceExportersFromViper(v *viper.Viper) (tps []consumer.TraceConsume
 		return nil
 	})
 
+	dgte, err := exporterwrapper.NewExporterWrapper("datadog", "ocservice.exporter.DataDog.ConsumeTraceData", de)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
 	// TODO: Examine the Datadog exporter to see
 	// if trace.ExportSpan was constraining and if perhaps the
 	// upload can use the context and information from the Node.
-	tps = append(tps, exporterwrapper.NewExporterWrapper("datadog", de))
+	tps = append(tps, dgte)
 
 	// TODO: (@odeke-em, @songya23) implement ExportMetrics for Datadog.
 	// mes = append(mes, oexp)
