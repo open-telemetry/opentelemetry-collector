@@ -22,8 +22,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/census-instrumentation/opencensus-service/observability"
-
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
@@ -31,8 +29,10 @@ import (
 	"go.opencensus.io/stats"
 	"go.uber.org/zap"
 
+	"github.com/census-instrumentation/opencensus-service/consumer"
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/processor"
+	"github.com/census-instrumentation/opencensus-service/observability"
 )
 
 const (
@@ -49,7 +49,7 @@ const (
 
 // batcher is a component that accepts spans, and places them into batches grouped by node and resource.
 //
-// batcher implements processor.SpanProcessor
+// batcher implements consumer.TraceConsumer
 //
 // batcher is a composition of four main pieces. First is its buckets map which maps nodes to buckets.
 // Second is the nodebatcher which keeps a batch associated with a single node, and sends it downstream.
@@ -61,7 +61,7 @@ const (
 //      tracking by node is no longer needed.
 type batcher struct {
 	buckets sync.Map
-	sender  processor.SpanProcessor
+	sender  consumer.TraceConsumer
 	tickers []*bucketTicker
 	name    string
 	logger  *zap.Logger
@@ -75,10 +75,10 @@ type batcher struct {
 	bucketMu sync.RWMutex
 }
 
-var _ processor.SpanProcessor = (*batcher)(nil)
+var _ consumer.TraceConsumer = (*batcher)(nil)
 
 // NewBatcher creates a new batcher that batches spans by node and resource
-func NewBatcher(name string, logger *zap.Logger, sender processor.SpanProcessor, opts ...Option) processor.SpanProcessor {
+func NewBatcher(name string, logger *zap.Logger, sender consumer.TraceConsumer, opts ...Option) consumer.TraceConsumer {
 	// Init with defaults
 	b := &batcher{
 		name:   name,
@@ -102,9 +102,9 @@ func NewBatcher(name string, logger *zap.Logger, sender processor.SpanProcessor,
 	return b
 }
 
-// ProcessSpans implements batcher as a SpanProcessor and takes the provided spans and adds them to
+// ConsumeTraceData implements batcher as a SpanProcessor and takes the provided spans and adds them to
 // batches
-func (b *batcher) ProcessSpans(ctx context.Context, td data.TraceData) error {
+func (b *batcher) ConsumeTraceData(ctx context.Context, td data.TraceData) error {
 	bucketID := b.genBucketID(td.Node, td.Resource, td.SourceFormat)
 	bucket := b.getOrAddBucket(bucketID, td.Node, td.Resource, td.SourceFormat)
 	bucket.add(td.Spans)
@@ -233,7 +233,7 @@ func (nb *nodeBatch) sendItems(
 
 	// TODO: This process should be done in an async way, perhaps with a channel + goroutine worker(s)
 	ctx := observability.ContextWithReceiverName(context.Background(), nb.format)
-	_ = nb.parent.sender.ProcessSpans(ctx, td)
+	_ = nb.parent.sender.ConsumeTraceData(ctx, td)
 }
 
 func (nb *nodeBatch) getAndReset() ([][]*tracepb.Span, uint32) {

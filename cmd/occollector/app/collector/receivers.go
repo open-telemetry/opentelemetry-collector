@@ -22,18 +22,18 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/census-instrumentation/opencensus-service/cmd/occollector/app/builder"
+	"github.com/census-instrumentation/opencensus-service/consumer"
 	jaegerreceiver "github.com/census-instrumentation/opencensus-service/internal/collector/jaeger"
 	ocreceiver "github.com/census-instrumentation/opencensus-service/internal/collector/opencensus"
-	"github.com/census-instrumentation/opencensus-service/internal/collector/processor"
 	zipkinreceiver "github.com/census-instrumentation/opencensus-service/internal/collector/zipkin"
 	zipkinscribereceiver "github.com/census-instrumentation/opencensus-service/internal/collector/zipkin/scribe"
 	"github.com/census-instrumentation/opencensus-service/receiver"
 )
 
-func createReceivers(v *viper.Viper, logger *zap.Logger, spanProcessor processor.SpanProcessor) []receiver.TraceReceiver {
+func createReceivers(v *viper.Viper, logger *zap.Logger, traceConsumers consumer.TraceConsumer) []receiver.TraceReceiver {
 	var someReceiverEnabled bool
 	receivers := []struct {
-		runFn   func(*zap.Logger, *viper.Viper, processor.SpanProcessor) (receiver.TraceReceiver, error)
+		runFn   func(*zap.Logger, *viper.Viper, consumer.TraceConsumer) (receiver.TraceReceiver, error)
 		enabled bool
 	}{
 		{jaegerreceiver.Start, builder.JaegerReceiverEnabled(v)},
@@ -45,7 +45,7 @@ func createReceivers(v *viper.Viper, logger *zap.Logger, spanProcessor processor
 	var startedTraceReceivers []receiver.TraceReceiver
 	for _, receiver := range receivers {
 		if receiver.enabled {
-			rec, err := receiver.runFn(logger, v, spanProcessor)
+			rec, err := receiver.runFn(logger, v, traceConsumers)
 			if err != nil {
 				// TODO: (@pjanotti) better shutdown, for now just try to stop any started receiver before terminating.
 				for _, startedTraceReceiver := range startedTraceReceivers {

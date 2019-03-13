@@ -25,6 +25,7 @@ import (
 	"go.opencensus.io/tag"
 	"go.uber.org/zap"
 
+	"github.com/census-instrumentation/opencensus-service/consumer"
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/processor"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/processor/nodebatcher"
@@ -35,7 +36,7 @@ type queuedSpanProcessor struct {
 	name                     string
 	queue                    *queue.BoundedQueue
 	logger                   *zap.Logger
-	sender                   processor.SpanProcessor
+	sender                   consumer.TraceConsumer
 	numWorkers               int
 	retryOnProcessingFailure bool
 	backoffDelay             time.Duration
@@ -43,7 +44,7 @@ type queuedSpanProcessor struct {
 	stopOnce                 sync.Once
 }
 
-var _ processor.SpanProcessor = (*queuedSpanProcessor)(nil)
+var _ consumer.TraceConsumer = (*queuedSpanProcessor)(nil)
 
 type queueItem struct {
 	queuedTime time.Time
@@ -54,7 +55,7 @@ type queueItem struct {
 // NewQueuedSpanProcessor returns a span processor that maintains a bounded
 // in-memory queue of span batches, and sends out span batches using the
 // provided sender
-func NewQueuedSpanProcessor(sender processor.SpanProcessor, opts ...Option) processor.SpanProcessor {
+func NewQueuedSpanProcessor(sender consumer.TraceConsumer, opts ...Option) consumer.TraceConsumer {
 	options := Options.apply(opts...)
 	sp := newQueuedSpanProcessor(sender, options)
 
@@ -88,7 +89,7 @@ func NewQueuedSpanProcessor(sender processor.SpanProcessor, opts ...Option) proc
 	return sp
 }
 
-func newQueuedSpanProcessor(sender processor.SpanProcessor, opts options) *queuedSpanProcessor {
+func newQueuedSpanProcessor(sender consumer.TraceConsumer, opts options) *queuedSpanProcessor {
 	boundedQueue := queue.NewBoundedQueue(opts.queueSize, func(item interface{}) {})
 	return &queuedSpanProcessor{
 		name:                     opts.name,
@@ -110,8 +111,8 @@ func (sp *queuedSpanProcessor) Stop() {
 	})
 }
 
-// ProcessSpans implements the SpanProcessor interface
-func (sp *queuedSpanProcessor) ProcessSpans(ctx context.Context, td data.TraceData) error {
+// ConsumeTraceData implements the SpanProcessor interface
+func (sp *queuedSpanProcessor) ConsumeTraceData(ctx context.Context, td data.TraceData) error {
 	item := &queueItem{
 		queuedTime: time.Now(),
 		td:         td,
@@ -131,7 +132,7 @@ func (sp *queuedSpanProcessor) ProcessSpans(ctx context.Context, td data.TraceDa
 
 func (sp *queuedSpanProcessor) processItemFromQueue(item *queueItem) {
 	startTime := time.Now()
-	err := sp.sender.ProcessSpans(item.ctx, item.td)
+	err := sp.sender.ConsumeTraceData(item.ctx, item.td)
 	if err == nil {
 		// Record latency metrics and return
 		sendLatencyMs := int64(time.Since(startTime) / time.Millisecond)

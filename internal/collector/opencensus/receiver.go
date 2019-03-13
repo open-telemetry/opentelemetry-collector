@@ -25,13 +25,14 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/census-instrumentation/opencensus-service/cmd/occollector/app/builder"
+	"github.com/census-instrumentation/opencensus-service/consumer"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/processor"
 	"github.com/census-instrumentation/opencensus-service/receiver"
 	"github.com/census-instrumentation/opencensus-service/receiver/opencensusreceiver"
 )
 
 // Start starts the OpenCensus receiver endpoint.
-func Start(logger *zap.Logger, v *viper.Viper, spanProc processor.SpanProcessor) (receiver.TraceReceiver, error) {
+func Start(logger *zap.Logger, v *viper.Viper, traceConsumer consumer.TraceConsumer) (receiver.TraceReceiver, error) {
 	rOpts, err := builder.NewDefaultOpenCensusReceiverCfg().InitFromViper(v)
 	if err != nil {
 		return nil, err
@@ -47,7 +48,7 @@ func Start(logger *zap.Logger, v *viper.Viper, spanProc processor.SpanProcessor)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create the OpenCensus trace receiver: %v", err)
 	}
-	ss := processor.WrapWithSpanSink("oc", spanProc)
+	ss := processor.WithSourceName("oc_trace", traceConsumer)
 	if err := ocr.StartTraceReception(context.Background(), ss); err != nil {
 		return nil, fmt.Errorf("Cannot bind Opencensus receiver to address %q: %v", addr, err)
 	}

@@ -29,7 +29,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/census-instrumentation/opencensus-service/cmd/occollector/app/builder"
-	"github.com/census-instrumentation/opencensus-service/internal/collector/processor"
+	"github.com/census-instrumentation/opencensus-service/consumer"
 	"github.com/census-instrumentation/opencensus-service/internal/config/viperutils"
 	"github.com/census-instrumentation/opencensus-service/internal/pprofserver"
 	"github.com/census-instrumentation/opencensus-service/receiver"
@@ -45,7 +45,7 @@ type Application struct {
 	v           *viper.Viper
 	logger      *zap.Logger
 	healthCheck *healthcheck.HealthCheck
-	processor   processor.SpanProcessor
+	processor   consumer.TraceConsumer
 	receivers   []receiver.TraceReceiver
 }
 

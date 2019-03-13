@@ -21,11 +21,12 @@ import (
 	"testing"
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/census-instrumentation/opencensus-service/consumer"
 	"github.com/census-instrumentation/opencensus-service/data"
 )
 
 func TestMultiSpanProcessorMultiplexing(t *testing.T) {
-	processors := make([]SpanProcessor, 3)
+	processors := make([]consumer.TraceConsumer, 3)
 	for i := range processors {
 		processors[i] = &mockSpanProcessor{}
 	}
@@ -38,7 +39,7 @@ func TestMultiSpanProcessorMultiplexing(t *testing.T) {
 	var wantSpansCount = 0
 	for i := 0; i < 2; i++ {
 		wantSpansCount += len(td.Spans)
-		tt.ProcessSpans(context.Background(), td)
+		tt.ConsumeTraceData(context.Background(), td)
 	}
 
 	for _, p := range processors {
@@ -51,7 +52,7 @@ func TestMultiSpanProcessorMultiplexing(t *testing.T) {
 }
 
 func TestMultiSpanProcessorWhenOneErrors(t *testing.T) {
-	processors := make([]SpanProcessor, 3)
+	processors := make([]consumer.TraceConsumer, 3)
 	for i := range processors {
 		processors[i] = &mockSpanProcessor{}
 	}
@@ -67,7 +68,7 @@ func TestMultiSpanProcessorWhenOneErrors(t *testing.T) {
 
 	var wantSpansCount = 0
 	for i := 0; i < 2; i++ {
-		err := tt.ProcessSpans(context.Background(), td)
+		err := tt.ConsumeTraceData(context.Background(), td)
 		if err == nil {
 			t.Errorf("Wanted error got nil")
 			return
@@ -86,7 +87,7 @@ func TestMultiSpanProcessorWhenOneErrors(t *testing.T) {
 }
 
 func TestMultiSpanProcessorWithPreProcessFn(t *testing.T) {
-	processors := make([]SpanProcessor, 3)
+	processors := make([]consumer.TraceConsumer, 3)
 	for i := range processors {
 		processors[i] = &mockSpanProcessor{}
 	}
@@ -105,7 +106,7 @@ func TestMultiSpanProcessorWithPreProcessFn(t *testing.T) {
 	batchCount := 2
 	for i := 0; i < batchCount; i++ {
 		wantSpansCount += len(batch.Spans)
-		tt.ProcessSpans(context.Background(), batch)
+		tt.ConsumeTraceData(context.Background(), batch)
 	}
 
 	for _, p := range processors {
@@ -131,7 +132,7 @@ func TestMultiSpanProcessorWithAddAttributesNoOverwrite(t *testing.T) {
 }
 
 func multiSpanProcessorWithAddAttributesTestHelper(t *testing.T, overwrite bool) {
-	processors := make([]SpanProcessor, 3)
+	processors := make([]consumer.TraceConsumer, 3)
 	for i := range processors {
 		processors[i] = &mockSpanProcessor{}
 	}
@@ -161,7 +162,7 @@ func multiSpanProcessorWithAddAttributesTestHelper(t *testing.T, overwrite bool)
 
 	spans := make([]*tracepb.Span, 0, len(td.Spans)*2)
 	for i := 0; i < 2; i++ {
-		tt.ProcessSpans(context.Background(), td)
+		tt.ConsumeTraceData(context.Background(), td)
 		spans = append(spans, td.Spans...)
 	}
 
@@ -196,9 +197,9 @@ type mockSpanProcessor struct {
 	MustFail   bool
 }
 
-var _ SpanProcessor = &mockSpanProcessor{}
+var _ consumer.TraceConsumer = &mockSpanProcessor{}
 
-func (p *mockSpanProcessor) ProcessSpans(ctx context.Context, td data.TraceData) error {
+func (p *mockSpanProcessor) ConsumeTraceData(ctx context.Context, td data.TraceData) error {
 	batchSize := len(td.Spans)
 	p.TotalSpans += batchSize
 	if p.MustFail {

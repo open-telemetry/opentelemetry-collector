@@ -21,17 +21,16 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/census-instrumentation/opencensus-service/observability"
-
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 	"go.uber.org/zap"
 
+	"github.com/census-instrumentation/opencensus-service/consumer"
 	"github.com/census-instrumentation/opencensus-service/data"
-	"github.com/census-instrumentation/opencensus-service/internal/collector/processor"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/processor/idbatcher"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/sampling"
+	"github.com/census-instrumentation/opencensus-service/observability"
 )
 
 // Policy combines a sampling policy evaluator with the destinations to be
@@ -42,7 +41,7 @@ type Policy struct {
 	// Evaluator that decides if a trace is sampled or not by this policy instance.
 	Evaluator sampling.PolicyEvaluator
 	// Destination is the consumer of the traces selected to be sampled.
-	Destination processor.SpanProcessor
+	Destination consumer.TraceConsumer
 	// ctx used to carry metric tags of each policy.
 	ctx context.Context
 }
@@ -70,7 +69,7 @@ const (
 	sourceFormat = "tail-sampling"
 )
 
-var _ processor.SpanProcessor = (*tailSamplingSpanProcessor)(nil)
+var _ consumer.TraceConsumer = (*tailSamplingSpanProcessor)(nil)
 
 // NewTailSamplingSpanProcessor creates a TailSamplingSpanProcessor with the given policies.
 // It will keep maxNumTraces on memory and will attempt to wait until decisionWait before evaluating if
@@ -80,7 +79,7 @@ func NewTailSamplingSpanProcessor(
 	policies []*Policy,
 	maxNumTraces, expectedNewTracesPerSec uint64,
 	decisionWait time.Duration,
-	logger *zap.Logger) (processor.SpanProcessor, error) {
+	logger *zap.Logger) (consumer.TraceConsumer, error) {
 
 	numDecisionBatches := uint64(decisionWait.Seconds())
 	inBatcher, err := idbatcher.New(numDecisionBatches, expectedNewTracesPerSec, uint64(2*runtime.NumCPU()))
@@ -150,7 +149,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 				trace.Unlock()
 
 				for j := 0; j < len(traceBatches); j++ {
-					policy.Destination.ProcessSpans(policy.ctx, traceBatches[j])
+					policy.Destination.ConsumeTraceData(policy.ctx, traceBatches[j])
 				}
 			case sampling.NotSampled:
 				stats.RecordWithTags(
@@ -183,8 +182,8 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 	)
 }
 
-// ProcessSpans is required by the SpanProcessor interface.
-func (tsp *tailSamplingSpanProcessor) ProcessSpans(ctx context.Context, td data.TraceData) error {
+// ConsumeTraceData is required by the SpanProcessor interface.
+func (tsp *tailSamplingSpanProcessor) ConsumeTraceData(ctx context.Context, td data.TraceData) error {
 	tsp.start.Do(func() {
 		tsp.logger.Info("First trace data arrived, starting tail-sampling timers")
 		tsp.policyTicker.Start(1 * time.Second)
@@ -258,7 +257,7 @@ func (tsp *tailSamplingSpanProcessor) ProcessSpans(ctx context.Context, td data.
 			case sampling.Sampled:
 				// Forward the spans to the policy destinations
 				traceTd := prepareTraceBatch(spans, singleTrace, td)
-				if err := policyAndDests.Destination.ProcessSpans(policyAndDests.ctx, traceTd); err != nil {
+				if err := policyAndDests.Destination.ConsumeTraceData(policyAndDests.ctx, traceTd); err != nil {
 					tsp.logger.Warn("Error sending late arrived spans to destination",
 						zap.String("policy", policyAndDests.Name),
 						zap.Error(err))

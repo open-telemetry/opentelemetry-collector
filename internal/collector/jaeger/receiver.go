@@ -29,13 +29,14 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/census-instrumentation/opencensus-service/cmd/occollector/app/builder"
+	"github.com/census-instrumentation/opencensus-service/consumer"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/processor"
 	"github.com/census-instrumentation/opencensus-service/receiver"
 	"github.com/census-instrumentation/opencensus-service/receiver/jaegerreceiver"
 )
 
 // Start starts the Jaeger receiver endpoint.
-func Start(logger *zap.Logger, v *viper.Viper, spanProc processor.SpanProcessor) (receiver.TraceReceiver, error) {
+func Start(logger *zap.Logger, v *viper.Viper, traceConsumer consumer.TraceConsumer) (receiver.TraceReceiver, error) {
 	rOpts, err := builder.NewDefaultJaegerReceiverCfg().InitFromViper(v)
 	if err != nil {
 		return nil, err
@@ -50,7 +51,7 @@ func Start(logger *zap.Logger, v *viper.Viper, spanProc processor.SpanProcessor)
 		return nil, err
 	}
 
-	ss := processor.WrapWithSpanSink("jaeger", spanProc)
+	ss := processor.WithSourceName("jaeger", traceConsumer)
 	if err := jtr.StartTraceReception(ctx, ss); err != nil {
 		return nil, err
 	}

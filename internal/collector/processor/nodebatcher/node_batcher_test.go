@@ -153,7 +153,7 @@ func TestConcurrentNodeAdds(t *testing.T) {
 			Spans:        spans,
 			SourceFormat: "oc_trace",
 		}
-		go batcher.ProcessSpans(context.Background(), td)
+		go batcher.ConsumeTraceData(context.Background(), td)
 	}
 
 	err := <-waitForCn
@@ -201,7 +201,7 @@ func TestBucketRemove(t *testing.T) {
 		Spans:        spans,
 		SourceFormat: "oc_trace",
 	}
-	batcher.ProcessSpans(context.Background(), request)
+	batcher.ConsumeTraceData(context.Background(), request)
 
 	err := <-waitForCn
 	if err != nil {
@@ -252,7 +252,7 @@ func TestBucketTickerStop(t *testing.T) {
 		Spans:        spans,
 		SourceFormat: "oc_trace",
 	}
-	batcher.ProcessSpans(context.Background(), request)
+	batcher.ConsumeTraceData(context.Background(), request)
 
 	err := <-waitForCn
 	if err == nil {
@@ -282,7 +282,7 @@ func TestConcurrentBatchAdds(t *testing.T) {
 			Spans:        spans,
 			SourceFormat: "oc_trace",
 		}
-		go batcher.ProcessSpans(context.Background(), request)
+		go batcher.ConsumeTraceData(context.Background(), request)
 	}
 
 	err := <-waitForCn
@@ -323,7 +323,7 @@ func BenchmarkConcurrentBatchAdds(b *testing.B) {
 	b.Run("v1", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			for _, td := range requests {
-				_ = batcher.ProcessSpans(context.Background(), td)
+				_ = batcher.ConsumeTraceData(context.Background(), td)
 			}
 		}
 	})
@@ -341,7 +341,7 @@ func newNopSender() *nopSender {
 	return &nopSender{}
 }
 
-func (ts *nopSender) ProcessSpans(ctx context.Context, td data.TraceData) error {
+func (ts *nopSender) ConsumeTraceData(ctx context.Context, td data.TraceData) error {
 	return nil
 }
 
@@ -359,7 +359,7 @@ func newTestSender() *testSender {
 	}
 }
 
-func (ts *testSender) ProcessSpans(ctx context.Context, td data.TraceData) error {
+func (ts *testSender) ConsumeTraceData(ctx context.Context, td data.TraceData) error {
 	ts.reqChan <- td
 	return nil
 }

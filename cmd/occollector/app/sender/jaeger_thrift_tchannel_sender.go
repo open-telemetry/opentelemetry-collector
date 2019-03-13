@@ -21,8 +21,8 @@ import (
 
 	reporter "github.com/jaegertracing/jaeger/cmd/agent/app/reporter"
 
+	"github.com/census-instrumentation/opencensus-service/consumer"
 	"github.com/census-instrumentation/opencensus-service/data"
-	"github.com/census-instrumentation/opencensus-service/internal/collector/processor"
 	jaegertranslator "github.com/census-instrumentation/opencensus-service/translator/trace/jaeger"
 )
 
@@ -33,7 +33,7 @@ type JaegerThriftTChannelSender struct {
 	reporter reporter.Reporter
 }
 
-var _ processor.SpanProcessor = (*JaegerThriftTChannelSender)(nil)
+var _ consumer.TraceConsumer = (*JaegerThriftTChannelSender)(nil)
 
 // NewJaegerThriftTChannelSender creates new TChannel-based sender.
 func NewJaegerThriftTChannelSender(
@@ -46,8 +46,8 @@ func NewJaegerThriftTChannelSender(
 	}
 }
 
-// ProcessSpans sends the received data to the configured Jaeger Thrift end-point.
-func (s *JaegerThriftTChannelSender) ProcessSpans(ctx context.Context, td data.TraceData) error {
+// ConsumeTraceData sends the received data to the configured Jaeger Thrift end-point.
+func (s *JaegerThriftTChannelSender) ConsumeTraceData(ctx context.Context, td data.TraceData) error {
 	// TODO: (@pjanotti) In case of failure the translation to Jaeger Thrift is going to be remade, cache it somehow.
 	tBatch, err := jaegertranslator.OCProtoToJaegerThrift(td)
 	if err != nil {

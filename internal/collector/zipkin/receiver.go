@@ -25,13 +25,14 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/census-instrumentation/opencensus-service/cmd/occollector/app/builder"
+	"github.com/census-instrumentation/opencensus-service/consumer"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/processor"
 	"github.com/census-instrumentation/opencensus-service/receiver"
 	"github.com/census-instrumentation/opencensus-service/receiver/zipkinreceiver"
 )
 
 // Start starts the Zipkin receiver endpoint.
-func Start(logger *zap.Logger, v *viper.Viper, spanProc processor.SpanProcessor) (receiver.TraceReceiver, error) {
+func Start(logger *zap.Logger, v *viper.Viper, traceConsumer consumer.TraceConsumer) (receiver.TraceReceiver, error) {
 	rOpts, err := builder.NewDefaultZipkinReceiverCfg().InitFromViper(v)
 	if err != nil {
 		return nil, err
@@ -42,7 +43,7 @@ func Start(logger *zap.Logger, v *viper.Viper, spanProc processor.SpanProcessor)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create the Zipkin receiver: %v", err)
 	}
-	ss := processor.WrapWithSpanSink("zipkin", spanProc)
+	ss := processor.WithSourceName("zipkin", traceConsumer)
 
 	if err := zi.StartTraceReception(context.Background(), ss); err != nil {
 		return nil, fmt.Errorf("Cannot start Zipkin receiver to address %q: %v", addr, err)

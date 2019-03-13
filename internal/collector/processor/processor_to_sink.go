@@ -22,22 +22,22 @@ import (
 )
 
 type protoProcessorSink struct {
-	sourceFormat   string
-	protoProcessor SpanProcessor
+	sourceFormat  string
+	traceConsumer consumer.TraceConsumer
 }
 
 var _ (consumer.TraceConsumer) = (*protoProcessorSink)(nil)
 
-// WrapWithSpanSink wraps a processor to be used as a span sink by receivers.
-func WrapWithSpanSink(format string, p SpanProcessor) consumer.TraceConsumer {
+// WithSourceName wraps a processor to be used as a span sink by receivers.
+func WithSourceName(format string, p consumer.TraceConsumer) consumer.TraceConsumer {
 	return &protoProcessorSink{
-		sourceFormat:   format,
-		protoProcessor: p,
+		sourceFormat:  format,
+		traceConsumer: p,
 	}
 }
 
 func (ps *protoProcessorSink) ConsumeTraceData(ctx context.Context, td data.TraceData) error {
 	// For the moment ensure that source format is set here before we change receivers to set this.
 	td.SourceFormat = ps.sourceFormat
-	return ps.protoProcessor.ProcessSpans(ctx, td)
+	return ps.traceConsumer.ConsumeTraceData(ctx, td)
 }
