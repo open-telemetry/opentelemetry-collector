@@ -15,6 +15,7 @@
 package queued
 
 import (
+	"context"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -28,7 +29,7 @@ func TestQueueProcessorHappyPath(t *testing.T) {
 	mockProc := newMockConcurrentSpanProcessor()
 	qp := NewQueuedSpanProcessor(mockProc)
 	goFn := func(td data.TraceData) {
-		qp.ProcessSpans(td, "test")
+		qp.ProcessSpans(context.Background(), td)
 	}
 
 	spans := []*tracepb.Span{{}}
@@ -36,7 +37,8 @@ func TestQueueProcessorHappyPath(t *testing.T) {
 	wantSpans := 0
 	for i := 0; i < wantBatches; i++ {
 		td := data.TraceData{
-			Spans: spans,
+			Spans:        spans,
+			SourceFormat: "oc_trace",
 		}
 		wantSpans += len(spans)
 		spans = append(spans, &tracepb.Span{})
@@ -63,7 +65,7 @@ type mockConcurrentSpanProcessor struct {
 
 var _ processor.SpanProcessor = (*mockConcurrentSpanProcessor)(nil)
 
-func (p *mockConcurrentSpanProcessor) ProcessSpans(td data.TraceData, spanFormat string) error {
+func (p *mockConcurrentSpanProcessor) ProcessSpans(ctx context.Context, td data.TraceData) error {
 	atomic.AddInt32(&p.batchCount, 1)
 	atomic.AddInt32(&p.spanCount, int32(len(td.Spans)))
 	p.waitGroup.Done()

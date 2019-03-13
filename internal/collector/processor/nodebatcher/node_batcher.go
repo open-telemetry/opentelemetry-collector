@@ -22,6 +22,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/census-instrumentation/opencensus-service/observability"
+
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
@@ -102,9 +104,9 @@ func NewBatcher(name string, logger *zap.Logger, sender processor.SpanProcessor,
 
 // ProcessSpans implements batcher as a SpanProcessor and takes the provided spans and adds them to
 // batches
-func (b *batcher) ProcessSpans(td data.TraceData, spanFormat string) error {
-	bucketID := b.genBucketID(td.Node, td.Resource, spanFormat)
-	bucket := b.getOrAddBucket(bucketID, td.Node, td.Resource, spanFormat)
+func (b *batcher) ProcessSpans(ctx context.Context, td data.TraceData) error {
+	bucketID := b.genBucketID(td.Node, td.Resource, td.SourceFormat)
+	bucket := b.getOrAddBucket(bucketID, td.Node, td.Resource, td.SourceFormat)
 	bucket.add(td.Spans)
 	return nil
 }
@@ -219,18 +221,19 @@ func (nb *nodeBatch) sendItems(
 		tdItems = append(tdItems, items...)
 	}
 	td := data.TraceData{
-		Node:     nb.node,
-		Resource: nb.resource,
-		Spans:    tdItems,
+		Node:         nb.node,
+		Resource:     nb.resource,
+		Spans:        tdItems,
+		SourceFormat: nb.format,
 	}
-
 	statsTags := processor.StatsTagsForBatch(
 		nb.parent.name, processor.ServiceNameForNode(nb.node), nb.format,
 	)
 	_ = stats.RecordWithTags(context.Background(), statsTags, measure.M(1))
 
 	// TODO: This process should be done in an async way, perhaps with a channel + goroutine worker(s)
-	_ = nb.parent.sender.ProcessSpans(td, nb.format)
+	ctx := observability.ContextWithReceiverName(context.Background(), nb.format)
+	_ = nb.parent.sender.ProcessSpans(ctx, td)
 }
 
 func (nb *nodeBatch) getAndReset() ([][]*tracepb.Span, uint32) {

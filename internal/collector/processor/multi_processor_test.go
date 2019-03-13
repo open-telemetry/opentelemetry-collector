@@ -15,6 +15,7 @@
 package processor
 
 import (
+	"context"
 	"fmt"
 	"sync/atomic"
 	"testing"
@@ -37,7 +38,7 @@ func TestMultiSpanProcessorMultiplexing(t *testing.T) {
 	var wantSpansCount = 0
 	for i := 0; i < 2; i++ {
 		wantSpansCount += len(td.Spans)
-		tt.ProcessSpans(td, "test")
+		tt.ProcessSpans(context.Background(), td)
 	}
 
 	for _, p := range processors {
@@ -66,7 +67,7 @@ func TestMultiSpanProcessorWhenOneErrors(t *testing.T) {
 
 	var wantSpansCount = 0
 	for i := 0; i < 2; i++ {
-		err := tt.ProcessSpans(td, "test")
+		err := tt.ProcessSpans(context.Background(), td)
 		if err == nil {
 			t.Errorf("Wanted error got nil")
 			return
@@ -91,7 +92,7 @@ func TestMultiSpanProcessorWithPreProcessFn(t *testing.T) {
 	}
 
 	calledFnCount := int32(0)
-	testPreProcessFn := func(data.TraceData, string) {
+	testPreProcessFn := func(context.Context, data.TraceData) {
 		atomic.AddInt32(&calledFnCount, 1)
 	}
 
@@ -104,7 +105,7 @@ func TestMultiSpanProcessorWithPreProcessFn(t *testing.T) {
 	batchCount := 2
 	for i := 0; i < batchCount; i++ {
 		wantSpansCount += len(batch.Spans)
-		tt.ProcessSpans(batch, "test")
+		tt.ProcessSpans(context.Background(), batch)
 	}
 
 	for _, p := range processors {
@@ -160,7 +161,7 @@ func multiSpanProcessorWithAddAttributesTestHelper(t *testing.T, overwrite bool)
 
 	spans := make([]*tracepb.Span, 0, len(td.Spans)*2)
 	for i := 0; i < 2; i++ {
-		tt.ProcessSpans(td, "test")
+		tt.ProcessSpans(context.Background(), td)
 		spans = append(spans, td.Spans...)
 	}
 
@@ -197,7 +198,7 @@ type mockSpanProcessor struct {
 
 var _ SpanProcessor = &mockSpanProcessor{}
 
-func (p *mockSpanProcessor) ProcessSpans(td data.TraceData, spanFormat string) error {
+func (p *mockSpanProcessor) ProcessSpans(ctx context.Context, td data.TraceData) error {
 	batchSize := len(td.Spans)
 	p.TotalSpans += batchSize
 	if p.MustFail {

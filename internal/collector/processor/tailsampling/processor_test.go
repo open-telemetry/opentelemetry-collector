@@ -15,6 +15,7 @@
 package tailsampling
 
 import (
+	"context"
 	"sync"
 	"testing"
 	"time"
@@ -38,7 +39,7 @@ func TestSequentialTraceArrival(t *testing.T) {
 	sp, _ := NewTailSamplingSpanProcessor(newTestPolicy(), uint64(2*len(traceIds)), 64, defaultTestDecisionWait, zap.NewNop())
 	tsp := sp.(*tailSamplingSpanProcessor)
 	for _, batch := range batches {
-		tsp.ProcessSpans(batch, "test")
+		tsp.ProcessSpans(context.Background(), batch)
 	}
 
 	for i := range traceIds {
@@ -61,14 +62,16 @@ func TestConcurrentTraceArrival(t *testing.T) {
 	for _, batch := range batches {
 		// Add the same traceId twice.
 		wg.Add(2)
-		go func(td data.TraceData, sf string) {
-			tsp.ProcessSpans(td, sf)
+		go func(td data.TraceData) {
+			td.SourceFormat = "test-0"
+			tsp.ProcessSpans(context.Background(), td)
 			wg.Done()
-		}(batch, "test-0")
-		go func(td data.TraceData, sf string) {
-			tsp.ProcessSpans(td, sf)
+		}(batch)
+		go func(td data.TraceData) {
+			td.SourceFormat = "test-1"
+			tsp.ProcessSpans(context.Background(), td)
 			wg.Done()
-		}(batch, "test-1")
+		}(batch)
 	}
 
 	wg.Wait()
@@ -90,7 +93,7 @@ func TestSequentialTraceMapSize(t *testing.T) {
 	sp, _ := NewTailSamplingSpanProcessor(newTestPolicy(), uint64(maxSize), 64, defaultTestDecisionWait, zap.NewNop())
 	tsp := sp.(*tailSamplingSpanProcessor)
 	for _, batch := range batches {
-		tsp.ProcessSpans(batch, "test")
+		tsp.ProcessSpans(context.Background(), batch)
 	}
 
 	// On sequential insertion it is possible to know exactly which traces should be still on the map.
@@ -109,10 +112,10 @@ func TestConcurrentTraceMapSize(t *testing.T) {
 	tsp := sp.(*tailSamplingSpanProcessor)
 	for _, batch := range batches {
 		wg.Add(1)
-		go func(td data.TraceData, sf string) {
-			tsp.ProcessSpans(td, sf)
+		go func(td data.TraceData) {
+			tsp.ProcessSpans(context.Background(), td)
 			wg.Done()
-		}(batch, "test")
+		}(batch)
 	}
 
 	wg.Wait()
@@ -156,7 +159,7 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 	// First evaluations shouldn't have anything to evaluate, until decision wait time passed.
 	for evalNum := 0; evalNum < decisionWaitSeconds; evalNum++ {
 		for ; currItem < numSpansPerBatchWindow*(evalNum+1); currItem++ {
-			tsp.ProcessSpans(batches[currItem], "test")
+			tsp.ProcessSpans(context.Background(), batches[currItem])
 			if !mtt.Started {
 				t.Fatalf("Time ticker was expected to have started")
 			}
@@ -179,7 +182,7 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 	}
 
 	// Late span of a sampled trace should be sent directly down the pipeline exporter
-	tsp.ProcessSpans(batches[0], "test")
+	tsp.ProcessSpans(context.Background(), batches[0])
 	expectedNumWithLateSpan := numSpansPerBatchWindow + 1
 	if msp.TotalSpans != expectedNumWithLateSpan {
 		t.Fatalf("late span was not accounted for: got %d, want %d", msp.TotalSpans, expectedNumWithLateSpan)
@@ -208,7 +211,8 @@ func generateIdsAndBatches(numIds int) ([][]byte, []data.TraceData) {
 		// Send each span in a separate batch
 		for _, span := range spans {
 			td := data.TraceData{
-				Spans: []*tracepb.Span{span},
+				Spans:        []*tracepb.Span{span},
+				SourceFormat: "test",
 			}
 			tds = append(tds, td)
 		}
@@ -303,7 +307,7 @@ type mockSpanProcessor struct {
 
 var _ processor.SpanProcessor = &mockSpanProcessor{}
 
-func (p *mockSpanProcessor) ProcessSpans(td data.TraceData, spanFormat string) error {
+func (p *mockSpanProcessor) ProcessSpans(ctx context.Context, td data.TraceData) error {
 	batchSize := len(td.Spans)
 	p.TotalSpans += batchSize
 	return nil

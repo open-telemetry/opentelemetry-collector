@@ -34,8 +34,8 @@ func NewTraceExporterProcessor(traceExporters ...consumer.TraceConsumer) SpanPro
 	return &exporterSpanProcessor{tp: multiconsumer.NewTraceProcessor(traceExporters)}
 }
 
-func (sp *exporterSpanProcessor) ProcessSpans(td data.TraceData, spanFormat string) error {
-	err := sp.tp.ConsumeTraceData(context.Background(), td)
+func (sp *exporterSpanProcessor) ProcessSpans(ctx context.Context, td data.TraceData) error {
+	err := sp.tp.ConsumeTraceData(ctx, td)
 	if err != nil {
 		return err
 	}

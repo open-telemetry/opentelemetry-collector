@@ -37,5 +37,7 @@ func WrapWithSpanSink(format string, p SpanProcessor) consumer.TraceConsumer {
 }
 
 func (ps *protoProcessorSink) ConsumeTraceData(ctx context.Context, td data.TraceData) error {
-	return ps.protoProcessor.ProcessSpans(td, ps.sourceFormat)
+	// For the moment ensure that source format is set here before we change receivers to set this.
+	td.SourceFormat = ps.sourceFormat
+	return ps.protoProcessor.ProcessSpans(ctx, td)
 }

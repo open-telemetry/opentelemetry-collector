@@ -48,7 +48,7 @@ var _ processor.SpanProcessor = (*queuedSpanProcessor)(nil)
 type queueItem struct {
 	queuedTime time.Time
 	td         data.TraceData
-	spanFormat string
+	ctx        context.Context
 }
 
 // NewQueuedSpanProcessor returns a span processor that maintains a bounded
@@ -111,14 +111,14 @@ func (sp *queuedSpanProcessor) Stop() {
 }
 
 // ProcessSpans implements the SpanProcessor interface
-func (sp *queuedSpanProcessor) ProcessSpans(td data.TraceData, spanFormat string) error {
+func (sp *queuedSpanProcessor) ProcessSpans(ctx context.Context, td data.TraceData) error {
 	item := &queueItem{
 		queuedTime: time.Now(),
 		td:         td,
-		spanFormat: spanFormat,
+		ctx:        ctx,
 	}
 
-	statsTags := processor.StatsTagsForBatch(sp.name, processor.ServiceNameForNode(td.Node), spanFormat)
+	statsTags := processor.StatsTagsForBatch(sp.name, processor.ServiceNameForNode(td.Node), td.SourceFormat)
 	numSpans := len(td.Spans)
 	stats.RecordWithTags(context.Background(), statsTags, processor.StatReceivedSpanCount.M(int64(numSpans)))
 
@@ -131,12 +131,12 @@ func (sp *queuedSpanProcessor) ProcessSpans(td data.TraceData, spanFormat string
 
 func (sp *queuedSpanProcessor) processItemFromQueue(item *queueItem) {
 	startTime := time.Now()
-	err := sp.sender.ProcessSpans(item.td, item.spanFormat)
+	err := sp.sender.ProcessSpans(item.ctx, item.td)
 	if err == nil {
 		// Record latency metrics and return
 		sendLatencyMs := int64(time.Since(startTime) / time.Millisecond)
 		inQueueLatencyMs := int64(time.Since(item.queuedTime) / time.Millisecond)
-		statsTags := processor.StatsTagsForBatch(sp.name, processor.ServiceNameForNode(item.td.Node), item.spanFormat)
+		statsTags := processor.StatsTagsForBatch(sp.name, processor.ServiceNameForNode(item.td.Node), item.td.SourceFormat)
 		stats.RecordWithTags(context.Background(),
 			statsTags,
 			statSuccessSendOps.M(1),
@@ -147,10 +147,10 @@ func (sp *queuedSpanProcessor) processItemFromQueue(item *queueItem) {
 	}
 
 	// There was an error
-	statsTags := processor.StatsTagsForBatch(sp.name, processor.ServiceNameForNode(item.td.Node), item.spanFormat)
+	statsTags := processor.StatsTagsForBatch(sp.name, processor.ServiceNameForNode(item.td.Node), item.td.SourceFormat)
 	stats.RecordWithTags(context.Background(), statsTags, statFailedSendOps.M(1))
 	batchSize := len(item.td.Spans)
-	sp.logger.Warn("Sender failed", zap.String("processor", sp.name), zap.Error(err), zap.String("spanFormat", item.spanFormat))
+	sp.logger.Warn("Sender failed", zap.String("processor", sp.name), zap.Error(err), zap.String("spanFormat", item.td.SourceFormat))
 	if !sp.retryOnProcessingFailure {
 		// throw away the batch
 		sp.logger.Error("Failed to process batch, discarding", zap.String("processor", sp.name), zap.Int("batch-size", batchSize))
@@ -189,7 +189,7 @@ func (sp *queuedSpanProcessor) onItemDropped(item *queueItem, statsTags []tag.Mu
 	sp.logger.Warn("Span batch dropped",
 		zap.String("processor", sp.name),
 		zap.Int("#spans", len(item.td.Spans)),
-		zap.String("spanSource", item.spanFormat))
+		zap.String("spanSource", item.td.SourceFormat))
 }
 
 // Variables related to metrics specific to queued processor.

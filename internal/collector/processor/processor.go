@@ -15,6 +15,8 @@
 package processor
 
 import (
+	"context"
+
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
@@ -27,7 +29,7 @@ import (
 // SpanProcessor handles batches of spans converted to OpenCensus proto format.
 type SpanProcessor interface {
 	// ProcessSpans processes spans and return with the number of spans that failed and an error.
-	ProcessSpans(td data.TraceData, spanFormat string) error
+	ProcessSpans(ctx context.Context, td data.TraceData) error
 	// TODO: (@pjanotti) For shutdown improvement, the interface needs a method to attempt that.
 }
 

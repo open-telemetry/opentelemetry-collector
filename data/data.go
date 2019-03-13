@@ -30,7 +30,8 @@ type MetricsData struct {
 
 // TraceData is a struct that groups proto spans with a unique node and a resource.
 type TraceData struct {
-	Node     *commonpb.Node
-	Resource *resourcepb.Resource
-	Spans    []*tracepb.Span
+	Node         *commonpb.Node
+	Resource     *resourcepb.Resource
+	Spans        []*tracepb.Span
+	SourceFormat string
 }

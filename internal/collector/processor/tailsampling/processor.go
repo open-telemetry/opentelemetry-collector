@@ -21,6 +21,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/census-instrumentation/opencensus-service/observability"
+
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
@@ -64,6 +66,10 @@ type tailSamplingSpanProcessor struct {
 	numTracesOnMap  uint64
 }
 
+const (
+	sourceFormat = "tail-sampling"
+)
+
 var _ processor.SpanProcessor = (*tailSamplingSpanProcessor)(nil)
 
 // NewTailSamplingSpanProcessor creates a TailSamplingSpanProcessor with the given policies.
@@ -90,8 +96,7 @@ func NewTailSamplingSpanProcessor(
 	}
 
 	for _, policy := range policies {
-		mutator := tag.Insert(tagPolicyKey, policy.Name)
-		policyCtx, err := tag.New(tsp.ctx, mutator)
+		policyCtx, err := tag.New(tsp.ctx, tag.Upsert(tagPolicyKey, policy.Name), tag.Upsert(observability.TagKeyReceiver, sourceFormat))
 		if err != nil {
 			return nil, err
 		}
@@ -145,7 +150,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 				trace.Unlock()
 
 				for j := 0; j < len(traceBatches); j++ {
-					policy.Destination.ProcessSpans(traceBatches[j], "tail-sampling")
+					policy.Destination.ProcessSpans(policy.ctx, traceBatches[j])
 				}
 			case sampling.NotSampled:
 				stats.RecordWithTags(
@@ -179,7 +184,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 }
 
 // ProcessSpans is required by the SpanProcessor interface.
-func (tsp *tailSamplingSpanProcessor) ProcessSpans(td data.TraceData, spanFormat string) error {
+func (tsp *tailSamplingSpanProcessor) ProcessSpans(ctx context.Context, td data.TraceData) error {
 	tsp.start.Do(func() {
 		tsp.logger.Info("First trace data arrived, starting tail-sampling timers")
 		tsp.policyTicker.Start(1 * time.Second)
@@ -189,7 +194,7 @@ func (tsp *tailSamplingSpanProcessor) ProcessSpans(td data.TraceData, spanFormat
 	idToSpans := make(map[traceKey][]*tracepb.Span)
 	for _, span := range td.Spans {
 		if len(span.TraceId) != 16 {
-			tsp.logger.Warn("Span without valid TraceId", zap.String("spanFormat", spanFormat))
+			tsp.logger.Warn("Span without valid TraceId", zap.String("SourceFormat", td.SourceFormat))
 			continue
 		}
 		traceKey := traceKey(span.TraceId)
@@ -253,7 +258,7 @@ func (tsp *tailSamplingSpanProcessor) ProcessSpans(td data.TraceData, spanFormat
 			case sampling.Sampled:
 				// Forward the spans to the policy destinations
 				traceTd := prepareTraceBatch(spans, singleTrace, td)
-				if err := policyAndDests.Destination.ProcessSpans(traceTd, spanFormat); err != nil {
+				if err := policyAndDests.Destination.ProcessSpans(policyAndDests.ctx, traceTd); err != nil {
 					tsp.logger.Warn("Error sending late arrived spans to destination",
 						zap.String("policy", policyAndDests.Name),
 						zap.Error(err))

@@ -15,6 +15,8 @@
 package processor
 
 import (
+	"context"
+
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal"
 
@@ -25,7 +27,7 @@ import (
 
 // MultiProcessorOption represents options that can be applied to a MultiSpanProcessor.
 type MultiProcessorOption func(*multiSpanProcessor)
-type preProcessFn func(data.TraceData, string)
+type preProcessFn func(context.Context, data.TraceData)
 
 // MultiSpanProcessor enables processing on multiple processors.
 // For each incoming span batch, it calls ProcessSpans method on each span
@@ -59,7 +61,7 @@ func WithPreProcessFn(preProcFn preProcessFn) MultiProcessorOption {
 // in each ExportTraceServiceRequest.
 func WithAddAttributes(attributes map[string]interface{}, overwrite bool) MultiProcessorOption {
 	return WithPreProcessFn(
-		func(td data.TraceData, spanFormat string) {
+		func(ctx context.Context, td data.TraceData) {
 			if len(attributes) == 0 {
 				return
 			}
@@ -107,13 +109,13 @@ func WithAddAttributes(attributes map[string]interface{}, overwrite bool) MultiP
 }
 
 // ProcessSpans implements the SpanProcessor interface
-func (msp *multiSpanProcessor) ProcessSpans(td data.TraceData, spanFormat string) error {
+func (msp *multiSpanProcessor) ProcessSpans(ctx context.Context, td data.TraceData) error {
 	for _, preProcessFn := range msp.preProcessFns {
-		preProcessFn(td, spanFormat)
+		preProcessFn(ctx, td)
 	}
 	var errors []error
 	for _, sp := range msp.processors {
-		err := sp.ProcessSpans(td, spanFormat)
+		err := sp.ProcessSpans(ctx, td)
 		if err != nil {
 			errors = append(errors, err)
 		}

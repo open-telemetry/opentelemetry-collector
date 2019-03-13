@@ -15,6 +15,7 @@
 package nodebatcher
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -149,9 +150,10 @@ func TestConcurrentNodeAdds(t *testing.T) {
 			Node: &commonpb.Node{
 				ServiceInfo: &commonpb.ServiceInfo{Name: fmt.Sprintf("svc-%d", requestNum)},
 			},
-			Spans: spans,
+			Spans:        spans,
+			SourceFormat: "oc_trace",
 		}
-		batcher.ProcessSpans(td, "oc")
+		go batcher.ProcessSpans(context.Background(), td)
 	}
 
 	err := <-waitForCn
@@ -196,23 +198,24 @@ func TestBucketRemove(t *testing.T) {
 		Node: &commonpb.Node{
 			ServiceInfo: &commonpb.ServiceInfo{Name: "svc"},
 		},
-		Spans: spans,
+		Spans:        spans,
+		SourceFormat: "oc_trace",
 	}
-	batcher.ProcessSpans(request, "oc")
+	batcher.ProcessSpans(context.Background(), request)
 
 	err := <-waitForCn
 	if err != nil {
 		t.Errorf("failed to wait for sender %s", err)
 	}
 
-	if batcher.getBucket(batcher.genBucketID(request.Node, nil, "oc")) == nil {
+	if batcher.getBucket(batcher.genBucketID(request.Node, nil, "oc_trace")) == nil {
 		t.Errorf("Bucket should exist but does not.")
 	}
 
 	// Doesn't seem to be a great way to test this without waiting
 	<-time.After(2 * time.Duration(removeAfterTicks) * tickTime)
 
-	if batcher.getBucket(batcher.genBucketID(request.Node, nil, "oc")) != nil {
+	if batcher.getBucket(batcher.genBucketID(request.Node, nil, "oc_trace")) != nil {
 		t.Errorf("Bucket should be deleted but is not.")
 	}
 }
@@ -246,16 +249,17 @@ func TestBucketTickerStop(t *testing.T) {
 		Node: &commonpb.Node{
 			ServiceInfo: &commonpb.ServiceInfo{Name: "svc"},
 		},
-		Spans: spans,
+		Spans:        spans,
+		SourceFormat: "oc_trace",
 	}
-	batcher.ProcessSpans(request, "oc")
+	batcher.ProcessSpans(context.Background(), request)
 
 	err := <-waitForCn
 	if err == nil {
 		t.Errorf("Unexpectedly received spans")
 	}
 
-	if batcher.getBucket(batcher.genBucketID(request.Node, nil, "oc")) == nil {
+	if batcher.getBucket(batcher.genBucketID(request.Node, nil, "oc_trace")) == nil {
 		t.Errorf("Bucket should not be deleted but is.")
 	}
 }
@@ -275,9 +279,10 @@ func TestConcurrentBatchAdds(t *testing.T) {
 			Node: &commonpb.Node{
 				ServiceInfo: &commonpb.ServiceInfo{Name: "svc"},
 			},
-			Spans: spans,
+			Spans:        spans,
+			SourceFormat: "oc_trace",
 		}
-		batcher.ProcessSpans(request, "oc")
+		go batcher.ProcessSpans(context.Background(), request)
 	}
 
 	err := <-waitForCn
@@ -310,14 +315,15 @@ func BenchmarkConcurrentBatchAdds(b *testing.B) {
 		Node: &commonpb.Node{
 			ServiceInfo: &commonpb.ServiceInfo{Name: "svc"},
 		},
-		Spans: spans,
+		Spans:        spans,
+		SourceFormat: "oc_trace",
 	}
 	requests = append(requests, request)
 
 	b.Run("v1", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			for _, td := range requests {
-				_ = batcher.ProcessSpans(td, "oc")
+				_ = batcher.ProcessSpans(context.Background(), td)
 			}
 		}
 	})
@@ -335,7 +341,7 @@ func newNopSender() *nopSender {
 	return &nopSender{}
 }
 
-func (ts *nopSender) ProcessSpans(td data.TraceData, spanFormat string) error {
+func (ts *nopSender) ProcessSpans(ctx context.Context, td data.TraceData) error {
 	return nil
 }
 
@@ -353,7 +359,7 @@ func newTestSender() *testSender {
 	}
 }
 
-func (ts *testSender) ProcessSpans(td data.TraceData, spanFormat string) error {
+func (ts *testSender) ProcessSpans(ctx context.Context, td data.TraceData) error {
 	ts.reqChan <- td
 	return nil
 }
