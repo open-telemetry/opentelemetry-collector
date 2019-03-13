@@ -120,15 +120,13 @@ prometheus:
 	}
 
 	var metric1 = &metricspb.Metric{
-		Descriptor_: &metricspb.Metric_MetricDescriptor{
-			MetricDescriptor: &metricspb.MetricDescriptor{
-				Name:        "this/one/there(where)",
-				Description: "Extra ones",
-				Unit:        "1",
-				LabelKeys: []*metricspb.LabelKey{
-					{Key: "os", Description: "Operating system"},
-					{Key: "arch", Description: "Architecture"},
-				},
+		MetricDescriptor: &metricspb.MetricDescriptor{
+			Name:        "this/one/there(where)",
+			Description: "Extra ones",
+			Unit:        "1",
+			LabelKeys: []*metricspb.LabelKey{
+				{Key: "os", Description: "Operating system"},
+				{Key: "arch", Description: "Architecture"},
 			},
 		},
 		Timeseries: []*metricspb.TimeSeries{
@@ -169,7 +167,7 @@ prometheus:
 	_ = res.Body.Close()
 	want := `# HELP test_this_one_there_where_ Extra ones
 # TYPE test_this_one_there_where_ counter
-test_this_one_there_where_{arch="x86",code="one",foo="bar",os="windows"} 99
+test_this_one_there_where_{arch="x86",code="one",foo="bar",os="windows"} 99.0
 `
 	if got := string(blob); got != want {
 		t.Errorf("Response mismatch\nGot:\n%s\n\nWant:\n%s", got, want)
