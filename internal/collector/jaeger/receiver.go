@@ -30,7 +30,6 @@ import (
 
 	"github.com/census-instrumentation/opencensus-service/cmd/occollector/app/builder"
 	"github.com/census-instrumentation/opencensus-service/consumer"
-	"github.com/census-instrumentation/opencensus-service/internal/collector/processor"
 	"github.com/census-instrumentation/opencensus-service/receiver"
 	"github.com/census-instrumentation/opencensus-service/receiver/jaegerreceiver"
 )
@@ -51,8 +50,7 @@ func Start(logger *zap.Logger, v *viper.Viper, traceConsumer consumer.TraceConsu
 		return nil, err
 	}
 
-	ss := processor.WithSourceName("jaeger", traceConsumer)
-	if err := jtr.StartTraceReception(ctx, ss); err != nil {
+	if err := jtr.StartTraceReception(ctx, traceConsumer); err != nil {
 		return nil, err
 	}
 

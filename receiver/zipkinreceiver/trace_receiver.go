@@ -322,6 +322,7 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctxWithReceiverName := observability.ContextWithReceiverName(ctx, receiverTagValue)
 	tdsSize := 0
 	for _, td := range tds {
+		td.SourceFormat = "zipkin"
 		zr.nextConsumer.ConsumeTraceData(ctxWithReceiverName, td)
 		tdsSize += len(td.Spans)
 	}

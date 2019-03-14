@@ -26,7 +26,6 @@ import (
 
 	"github.com/census-instrumentation/opencensus-service/cmd/occollector/app/builder"
 	"github.com/census-instrumentation/opencensus-service/consumer"
-	"github.com/census-instrumentation/opencensus-service/internal/collector/processor"
 	"github.com/census-instrumentation/opencensus-service/receiver"
 	"github.com/census-instrumentation/opencensus-service/receiver/zipkinreceiver"
 )
@@ -43,9 +42,8 @@ func Start(logger *zap.Logger, v *viper.Viper, traceConsumer consumer.TraceConsu
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create the Zipkin receiver: %v", err)
 	}
-	ss := processor.WithSourceName("zipkin", traceConsumer)
 
-	if err := zi.StartTraceReception(context.Background(), ss); err != nil {
+	if err := zi.StartTraceReception(context.Background(), traceConsumer); err != nil {
 		return nil, fmt.Errorf("Cannot start Zipkin receiver to address %q: %v", addr, err)
 	}
 

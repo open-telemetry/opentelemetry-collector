@@ -264,4 +264,5 @@ var wantTraceData = data.TraceData{
 			},
 		},
 	},
+	SourceFormat: "zipkin-scribe",
 }

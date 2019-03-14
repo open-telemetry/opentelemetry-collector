@@ -249,6 +249,7 @@ func (jr *jReceiver) SubmitBatches(ctx thrift.Context, batches []*jaeger.Batch) 
 
 		if err == nil {
 			ok = true
+			td.SourceFormat = "jaeger"
 			jr.nextConsumer.ConsumeTraceData(ctx, td)
 			// We MUST unconditionally record metrics from this reception.
 			observability.RecordTraceReceiverMetrics(ctxWithReceiverName, len(batch.Spans), len(batch.Spans)-len(td.Spans))

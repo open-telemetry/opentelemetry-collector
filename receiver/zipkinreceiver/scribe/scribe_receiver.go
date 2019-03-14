@@ -174,6 +174,7 @@ func (sc *scribeCollector) Log(messages []*scribe.LogEntry) (r scribe.ResultCode
 
 	tdsSize := 0
 	for _, td := range tds {
+		td.SourceFormat = "zipkin-scribe"
 		sc.nextConsumer.ConsumeTraceData(sc.defaultCtx, td)
 		tdsSize += len(td.Spans)
 	}

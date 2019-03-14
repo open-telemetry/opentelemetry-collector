@@ -123,9 +123,10 @@ func (ocr *Receiver) Export(tes agenttracepb.TraceService_ExportServer) error {
 		}
 
 		td := &data.TraceData{
-			Node:     lastNonNilNode,
-			Resource: resource,
-			Spans:    recv.Spans,
+			Node:         lastNonNilNode,
+			Resource:     resource,
+			Spans:        recv.Spans,
+			SourceFormat: "oc_trace",
 		}
 
 		ocr.messageChan <- &traceDataWithCtx{data: td, ctx: ctxWithReceiverName}

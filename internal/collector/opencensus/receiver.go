@@ -26,7 +26,6 @@ import (
 
 	"github.com/census-instrumentation/opencensus-service/cmd/occollector/app/builder"
 	"github.com/census-instrumentation/opencensus-service/consumer"
-	"github.com/census-instrumentation/opencensus-service/internal/collector/processor"
 	"github.com/census-instrumentation/opencensus-service/receiver"
 	"github.com/census-instrumentation/opencensus-service/receiver/opencensusreceiver"
 )
@@ -48,8 +47,8 @@ func Start(logger *zap.Logger, v *viper.Viper, traceConsumer consumer.TraceConsu
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create the OpenCensus trace receiver: %v", err)
 	}
-	ss := processor.WithSourceName("oc_trace", traceConsumer)
-	if err := ocr.StartTraceReception(context.Background(), ss); err != nil {
+
+	if err := ocr.StartTraceReception(context.Background(), traceConsumer); err != nil {
 		return nil, fmt.Errorf("Cannot bind Opencensus receiver to address %q: %v", addr, err)
 	}
 
