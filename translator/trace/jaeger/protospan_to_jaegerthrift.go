@@ -15,7 +15,6 @@
 package jaeger
 
 import (
-	"errors"
 	"fmt"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
@@ -26,11 +25,6 @@ import (
 
 	"github.com/census-instrumentation/opencensus-service/data"
 	tracetranslator "github.com/census-instrumentation/opencensus-service/translator/trace"
-)
-
-var (
-	errZeroTraceID = errors.New("OC span has an all zeros trace ID")
-	errZeroSpanID  = errors.New("OC span has an all zeros span ID")
 )
 
 var (
@@ -109,7 +103,7 @@ func ocNodeToJaegerProcess(node *commonpb.Node) *jaeger.Process {
 		if ocLib.Language != commonpb.LibraryInfo_LANGUAGE_UNSPECIFIED {
 			languageStr := ocLib.Language.String()
 			languageTag := &jaeger.Tag{
-				Key:   "opencensus.language",
+				Key:   opencensusLanguage,
 				VType: jaeger.TagType_STRING,
 				VStr:  &languageStr,
 			}
@@ -117,7 +111,7 @@ func ocNodeToJaegerProcess(node *commonpb.Node) *jaeger.Process {
 		}
 		if ocLib.ExporterVersion != "" {
 			exporterTag := &jaeger.Tag{
-				Key:   "opencensus.exporterversion",
+				Key:   opencensusExporterVersion,
 				VType: jaeger.TagType_STRING,
 				VStr:  &ocLib.ExporterVersion,
 			}
@@ -125,7 +119,7 @@ func ocNodeToJaegerProcess(node *commonpb.Node) *jaeger.Process {
 		}
 		if ocLib.CoreLibraryVersion != "" {
 			exporterTag := &jaeger.Tag{
-				Key:   "opencensus.corelibversion",
+				Key:   opencensusCoreLibVersion,
 				VType: jaeger.TagType_STRING,
 				VStr:  &ocLib.CoreLibraryVersion,
 			}
@@ -296,7 +290,7 @@ func ocTimeEventsToJaegerLogs(ocSpanTimeEvents *tracepb.Span_TimeEvents) []*jaeg
 		default:
 			msg := "An unknown OpenCensus TimeEvent type was detected when translating to Jaeger"
 			jTag := &jaeger.Tag{
-				Key:  "unknown.oc.timeevent.type",
+				Key:  ocTimeEventUnknownType,
 				VStr: &msg,
 			}
 			jLog.Fields = append(jLog.Fields, jTag)

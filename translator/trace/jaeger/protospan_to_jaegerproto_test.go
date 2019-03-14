@@ -1,4 +1,4 @@
-// Copyright 2018, OpenCensus Authors
+// Copyright 2019, OpenCensus Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,81 +18,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
-	"strings"
 	"testing"
-
-	tracetranslator "github.com/census-instrumentation/opencensus-service/translator/trace"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
-	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
+	jaeger "github.com/jaegertracing/jaeger/model"
 
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal/testutils"
 )
 
-func TestInvalidOCProtoIDs(t *testing.T) {
-	fakeTraceID := []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}
-	tests := []struct {
-		name         string
-		ocSpans      []*tracepb.Span
-		wantErr      error // nil means that we check for the message of the wrapped error
-		wrappedError error // when wantErr is nil we expect this error to have been wrapped by the one received
-	}{
-		{
-			name:         "nil TraceID",
-			ocSpans:      []*tracepb.Span{{}},
-			wantErr:      nil,
-			wrappedError: tracetranslator.ErrNilTraceID,
-		},
-		{
-			name:         "empty TraceID",
-			ocSpans:      []*tracepb.Span{{TraceId: []byte{}}},
-			wantErr:      nil,
-			wrappedError: tracetranslator.ErrWrongLenTraceID,
-		},
-		{
-			name:    "zero TraceID",
-			ocSpans: []*tracepb.Span{{TraceId: []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}},
-			wantErr: errZeroTraceID,
-		},
-		{
-			name:         "nil SpanID",
-			ocSpans:      []*tracepb.Span{{TraceId: fakeTraceID}},
-			wantErr:      nil,
-			wrappedError: tracetranslator.ErrNilSpanID,
-		},
-		{
-			name:         "empty SpanID",
-			ocSpans:      []*tracepb.Span{{TraceId: fakeTraceID, SpanId: []byte{}}},
-			wantErr:      nil,
-			wrappedError: tracetranslator.ErrWrongLenSpanID,
-		},
-		{
-			name:    "zero SpanID",
-			ocSpans: []*tracepb.Span{{TraceId: fakeTraceID, SpanId: []byte{0, 0, 0, 0, 0, 0, 0, 0}}},
-			wantErr: errZeroSpanID,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			_, err := ocSpansToJaegerSpans(tt.ocSpans)
-			if err == nil {
-				t.Error("ocSpansToJaegerSpans() no error, want error")
-				return
-			}
-			if tt.wantErr != nil && err != tt.wantErr {
-				t.Errorf("ocSpansToJaegerSpans() = %v, want %v", err, tt.wantErr)
-			}
-			if tt.wrappedError != nil && !strings.Contains(err.Error(), tt.wrappedError.Error()) {
-				t.Errorf("ocSpansToJaegerSpans() = %v, want it to wrap error %v", err, tt.wrappedError)
-			}
-		})
-	}
-}
-
-func TestNilOCProtoNodeToJaegerThrift(t *testing.T) {
+func TestNilOCProtoNodeToJaegerProto(t *testing.T) {
 	nilNodeBatch := data.TraceData{
 		Spans: []*tracepb.Span{
 			{
@@ -101,30 +38,27 @@ func TestNilOCProtoNodeToJaegerThrift(t *testing.T) {
 			},
 		},
 	}
-	got, err := OCProtoToJaegerThrift(nilNodeBatch)
+	got, err := OCProtoToJaegerProto(nilNodeBatch)
 	if err != nil {
-		t.Fatalf("Failed to translate OC batch to Jaeger Thrift: %v", err)
+		t.Fatalf("Failed to translate OC batch to Jaeger Proto: %v", err)
 	}
 	if got.Process == nil {
 		t.Fatalf("Jaeger requires a non-nil Process field")
 	}
-	if got.Process != unknownProcess {
-		t.Fatalf("got unexpected Jaeger Process field")
-	}
 }
 
-func TestOCProtoToJaegerThrift(t *testing.T) {
+func TestOCProtoToJaegerProto(t *testing.T) {
 	const numOfFiles = 2
 	for i := 0; i < numOfFiles; i++ {
-		td := tds[i]
+		ocBatch := ocBatches[i]
 
-		gotJBatch, err := OCProtoToJaegerThrift(td)
+		gotJBatch, err := OCProtoToJaegerProto(ocBatch)
 		if err != nil {
-			t.Errorf("Failed to translate OC batch to Jaeger Thrift: %v", err)
+			t.Errorf("Failed to translate OC batch to Jaeger Proto: %v", err)
 			continue
 		}
 
-		wantSpanCount, gotSpanCount := len(td.Spans), len(gotJBatch.Spans)
+		wantSpanCount, gotSpanCount := len(ocBatch.Spans), len(gotJBatch.Spans)
 		if wantSpanCount != gotSpanCount {
 			t.Errorf("Different number of spans in the batches on pass #%d (want %d, got %d)", i, wantSpanCount, gotSpanCount)
 			continue
@@ -132,10 +66,10 @@ func TestOCProtoToJaegerThrift(t *testing.T) {
 
 		// Jaeger binary tags do not round trip from Jaeger -> OCProto -> Jaeger.
 		// For tests use data without binary tags.
-		thriftFile := fmt.Sprintf("./testdata/thrift_batch_no_binary_tags_%02d.json", i+1)
+		protoFile := fmt.Sprintf("./testdata/proto_batch_no_binary_tags_%02d.json", i+1)
 		wantJBatch := &jaeger.Batch{}
-		if err := loadFromJSON(thriftFile, wantJBatch); err != nil {
-			t.Errorf("Failed load Jaeger Thrift from %q: %v", thriftFile, err)
+		if err := loadFromJSON(protoFile, wantJBatch); err != nil {
+			t.Errorf("Failed to load Jaeger Proto from %q: %v", protoFile, err)
 			continue
 		}
 
@@ -155,20 +89,27 @@ func TestOCProtoToJaegerThrift(t *testing.T) {
 				return jSpan.Tags[i].Key < jSpan.Tags[j].Key
 			})
 		}
+		for _, jSpan := range jSpans {
+			for _, jSpanLog := range jSpan.Logs {
+				sort.Slice(jSpanLog.Fields, func(i, j int) bool {
+					return jSpanLog.Fields[i].Key < jSpanLog.Fields[j].Key
+				})
+			}
+		}
 
 		gjson, _ := json.Marshal(gotJBatch)
 		wjson, _ := json.Marshal(wantJBatch)
 		gjsonStr := testutils.GenerateNormalizedJSON(string(gjson))
 		wjsonStr := testutils.GenerateNormalizedJSON(string(wjson))
 		if gjsonStr != wjsonStr {
-			t.Errorf("OC Proto to Jaeger Thrift failed.\nGot:\n%s\nWant:\n%s\n", gjsonStr, wjsonStr)
+			t.Errorf("OC Proto to Jaeger Proto failed.\nGot:\n%s\nWant:\n%s\n", gjsonStr, wjsonStr)
 		}
 	}
 }
 
-// tds has the TraceData proto used in the test. They are hard coded because
-// structs like tracepb.AttributeMap cannot be ready from JSON.
-var tds = []data.TraceData{
+// ocBatches has the OpenCensus proto batches used in the test. They are hard coded because
+// structs like tracepb.AttributeMap cannot be read from JSON.
+var ocBatches = []data.TraceData{
 	{
 		Node: &commonpb.Node{
 			Identifier: &commonpb.ProcessIdentifier{
@@ -306,8 +247,8 @@ var tds = []data.TraceData{
 			},
 			{
 				TraceId:      []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x52, 0x96, 0x9A, 0x89, 0x55, 0x57, 0x1A, 0x3F},
-				SpanId:       []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x64, 0x7D, 0x98},
-				ParentSpanId: []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+				SpanId:       []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x64, 0x7D, 0x90},
+				ParentSpanId: []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x64, 0x7D, 0x98},
 				Name:         &tracepb.TruncatableString{Value: "get2"},
 				StartTime:    &timestamp.Timestamp{Seconds: 1485467192, Nanos: 639875000},
 				EndTime:      &timestamp.Timestamp{Seconds: 1485467192, Nanos: 662813000},

@@ -25,7 +25,7 @@ import (
 
 	"github.com/gorilla/mux"
 	agentapp "github.com/jaegertracing/jaeger/cmd/agent/app"
-	"github.com/jaegertracing/jaeger/cmd/agent/app/httpserver"
+	"github.com/jaegertracing/jaeger/cmd/agent/app/configmanager"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/reporter"
 	"github.com/jaegertracing/jaeger/cmd/collector/app"
 	"github.com/jaegertracing/jaeger/thrift-gen/baggage"
@@ -289,7 +289,7 @@ func (jr *jReceiver) GetReporter() reporter.Reporter {
 	return jr
 }
 
-func (jr *jReceiver) GetManager() httpserver.ClientConfigManager {
+func (jr *jReceiver) GetManager() configmanager.ClientConfigManager {
 	return jr
 }
 

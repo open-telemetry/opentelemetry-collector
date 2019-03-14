@@ -21,7 +21,6 @@ import (
 
 	tchReporter "github.com/jaegertracing/jaeger/cmd/agent/app/reporter/tchannel"
 	"github.com/spf13/viper"
-	"github.com/uber/jaeger-lib/metrics"
 	"go.uber.org/zap"
 
 	"github.com/census-instrumentation/opencensus-service/cmd/occollector/app/builder"
@@ -74,7 +73,7 @@ func buildQueuedSpanProcessor(
 			DiscoveryMinPeers:  thriftTChannelSenderOpts.DiscoveryMinPeers,
 			ConnCheckTimeout:   thriftTChannelSenderOpts.DiscoveryConnCheckTimeout,
 		}
-		tchreporter, err := tchrepbuilder.CreateReporter(metrics.NullFactory, logger)
+		tchreporter, err := tchrepbuilder.CreateReporter(logger)
 		if err != nil {
 			logger.Fatal("Cannot create tchannel reporter.", zap.Error(err))
 			return nil, nil, err
@@ -89,6 +88,14 @@ func buildQueuedSpanProcessor(
 			thriftHTTPSenderOpts.Headers,
 			logger,
 			sender.HTTPTimeout(thriftHTTPSenderOpts.Timeout),
+		)
+	case builder.ProtoGRPCSenderType:
+		protoGRPCSenderOpts := opts.SenderConfig.(*builder.JaegerProtoGRPCSenderCfg)
+		logger.Info("Initializing proto-GRPC sender",
+			zap.String("url", protoGRPCSenderOpts.CollectorEndpoint))
+		spanSender = sender.NewJaegerProtoGRPCSender(
+			protoGRPCSenderOpts.CollectorEndpoint,
+			logger,
 		)
 	}
 	doneFns, traceExporters, _ := createExporters(opts.RawConfig, logger)
