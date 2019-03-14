@@ -44,7 +44,7 @@ import (
 	"github.com/census-instrumentation/opencensus-service/receiver/opencensusreceiver"
 	"github.com/census-instrumentation/opencensus-service/receiver/prometheusreceiver"
 	"github.com/census-instrumentation/opencensus-service/receiver/zipkinreceiver"
-	"github.com/census-instrumentation/opencensus-service/receiver/zipkinreceiver/scribe"
+	"github.com/census-instrumentation/opencensus-service/receiver/zipkinreceiver/zipkinscribereceiver"
 )
 
 var rootCmd = &cobra.Command{
@@ -310,7 +310,7 @@ func runZipkinReceiver(addr string, next consumer.TraceConsumer) (doneFn func() 
 }
 
 func runZipkinScribeReceiver(config *config.ScribeReceiverConfig, next consumer.TraceConsumer) (doneFn func() error, err error) {
-	zs, err := scribe.NewReceiver(config.Address, config.Port, config.Category)
+	zs, err := zipkinscribereceiver.NewReceiver(config.Address, config.Port, config.Category)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create the Zipkin Scribe receiver: %v", err)
 	}

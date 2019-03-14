@@ -26,7 +26,7 @@ import (
 	"github.com/census-instrumentation/opencensus-service/cmd/occollector/app/builder"
 	"github.com/census-instrumentation/opencensus-service/consumer"
 	"github.com/census-instrumentation/opencensus-service/receiver"
-	"github.com/census-instrumentation/opencensus-service/receiver/zipkinreceiver/scribe"
+	"github.com/census-instrumentation/opencensus-service/receiver/zipkinreceiver/zipkinscribereceiver"
 )
 
 // Start starts the Zipkin Scribe receiver endpoint.
@@ -36,7 +36,7 @@ func Start(logger *zap.Logger, v *viper.Viper, traceConsumer consumer.TraceConsu
 		return nil, err
 	}
 
-	sr, err := scribe.NewReceiver(rOpts.Address, rOpts.Port, rOpts.Category)
+	sr, err := zipkinscribereceiver.NewReceiver(rOpts.Address, rOpts.Port, rOpts.Category)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create the Zipkin Scribe receiver: %v", err)
 	}
