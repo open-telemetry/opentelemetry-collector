@@ -27,12 +27,12 @@ import (
 	"github.com/census-instrumentation/opencensus-service/cmd/occollector/app/sender"
 	"github.com/census-instrumentation/opencensus-service/consumer"
 	"github.com/census-instrumentation/opencensus-service/exporter/loggingexporter"
-	"github.com/census-instrumentation/opencensus-service/internal/collector/processor"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/processor/nodebatcher"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/processor/queued"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/processor/tailsampling"
 	"github.com/census-instrumentation/opencensus-service/internal/collector/sampling"
 	"github.com/census-instrumentation/opencensus-service/internal/config"
+	"github.com/census-instrumentation/opencensus-service/processor/addattributesprocessor"
 	"github.com/census-instrumentation/opencensus-service/processor/multiconsumer"
 )
 
@@ -161,7 +161,7 @@ func buildQueuedSpanProcessor(
 			),
 		)
 	}
-	return doneFns, processor.NewMultiSpanProcessor(queuedConsumers), nil
+	return doneFns, multiconsumer.NewTraceProcessor(queuedConsumers), nil
 }
 
 func buildSamplingProcessor(cfg *builder.SamplingCfg, nameToTraceConsumer map[string]consumer.TraceConsumer, v *viper.Viper, logger *zap.Logger) (consumer.TraceConsumer, error) {
@@ -209,7 +209,7 @@ func buildSamplingProcessor(cfg *builder.SamplingCfg, nameToTraceConsumer map[st
 		case numPolicyProcessors == 1:
 			policy.Destination = policyProcessors[0]
 		case numPolicyProcessors > 1:
-			policy.Destination = processor.NewMultiSpanProcessor(policyProcessors)
+			policy.Destination = multiconsumer.NewTraceProcessor(policyProcessors)
 		default:
 			return nil, fmt.Errorf("no exporters for sampling policy %q", polCfg.Name)
 		}
@@ -292,7 +292,7 @@ func startProcessor(v *viper.Viper, logger *zap.Logger) (consumer.TraceConsumer,
 			{
 				Name:        "tail-always-sampling",
 				Evaluator:   sampling.NewAlwaysSample(),
-				Destination: processor.NewMultiSpanProcessor(traceConsumers),
+				Destination: multiconsumer.NewTraceProcessor(traceConsumers),
 			},
 		}
 		var err error
@@ -310,20 +310,18 @@ func startProcessor(v *viper.Viper, logger *zap.Logger) (consumer.TraceConsumer,
 	}
 
 	// Wraps processors in a single one to be connected to all enabled receivers.
-	var processorOptions []processor.MultiProcessorOption
 	if multiProcessorCfg.Global != nil && multiProcessorCfg.Global.Attributes != nil {
 		logger.Info(
 			"Found global attributes config",
 			zap.Bool("overwrite", multiProcessorCfg.Global.Attributes.Overwrite),
 			zap.Any("values", multiProcessorCfg.Global.Attributes.Values),
 		)
-		processorOptions = append(
-			processorOptions,
-			processor.WithAddAttributes(
-				multiProcessorCfg.Global.Attributes.Values,
-				multiProcessorCfg.Global.Attributes.Overwrite,
-			),
+		tp, _ := addattributesprocessor.NewTraceProcessor(
+			multiconsumer.NewTraceProcessor(traceConsumers),
+			addattributesprocessor.WithAttributes(multiProcessorCfg.Global.Attributes.Values),
+			addattributesprocessor.WithOverwrite(multiProcessorCfg.Global.Attributes.Overwrite),
 		)
+		return tp, closeFns
 	}
-	return processor.NewMultiSpanProcessor(traceConsumers, processorOptions...), closeFns
+	return multiconsumer.NewTraceProcessor(traceConsumers), closeFns
 }
