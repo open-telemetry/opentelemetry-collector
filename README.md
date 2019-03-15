@@ -307,7 +307,6 @@ sampling:
       # exporters the policy applies to
       exporters:
         - jaeger
-        - omnition
       policy: string-tag-filter
       configuration:
         tag: tag1
@@ -316,14 +315,15 @@ sampling:
           - value2
     my-numeric-tag-filter:
       exporters:
-        - jaeger
-        - omnition
+        - zipkin
       policy: numeric-tag-filter
       configuration:
         tag: tag1
         min-value: 0
         max-value: 100
 ```
+
+> Note that an exporter can only have a single sampling policy today.
 
 ### <a name="collector-usage"></a>Usage
 
