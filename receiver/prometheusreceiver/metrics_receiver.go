@@ -44,6 +44,7 @@ type Preceiver struct {
 	startOnce sync.Once
 	recv      *promreceiver.Receiver
 	cfg       *Configuration
+	consumer  consumer.MetricsConsumer
 }
 
 var _ receiver.MetricsReceiver = (*Preceiver)(nil)
@@ -59,7 +60,7 @@ const (
 )
 
 // New creates a new prometheus.Receiver reference.
-func New(v *viper.Viper) (*Preceiver, error) {
+func New(v *viper.Viper, next consumer.MetricsConsumer) (*Preceiver, error) {
 	var cfg Configuration
 
 	// Unmarshal our config values (using viper's mapstructure)
@@ -84,7 +85,10 @@ func New(v *viper.Viper) (*Preceiver, error) {
 	if len(cfg.ScrapeConfig.ScrapeConfigs) == 0 {
 		return nil, errNilScrapeConfig
 	}
-	pr := &Preceiver{cfg: &cfg}
+	pr := &Preceiver{
+		cfg:      &cfg,
+		consumer: next,
+	}
 	return pr, nil
 }
 
@@ -97,15 +101,15 @@ func (pr *Preceiver) MetricsSource() string {
 
 // StartMetricsReception is the method that starts Prometheus scraping and it
 // is controlled by having previously defined a Configuration using perhaps New.
-func (pr *Preceiver) StartMetricsReception(ctx context.Context, nextConsumer consumer.MetricsConsumer) error {
+func (pr *Preceiver) StartMetricsReception(ctx context.Context, asyncErrorChan chan<- error) error {
 	var err = errAlreadyStarted
 	pr.startOnce.Do(func() {
-		if nextConsumer == nil {
+		if pr.consumer == nil {
 			err = errNilMetricsReceiverSink
 			return
 		}
 
-		tms := &promMetricsReceiverToOpenCensusMetricsReceiver{nextConsumer: nextConsumer}
+		tms := &promMetricsReceiverToOpenCensusMetricsReceiver{nextConsumer: pr.consumer}
 		cfg := pr.cfg
 		pr.recv, err = promreceiver.ReceiverFromConfig(
 			context.Background(),

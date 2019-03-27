@@ -531,7 +531,7 @@ func (mr *mockReceiver) TraceSource() string {
 	return "mockReceiver"
 }
 
-func (mr *mockReceiver) StartTraceReception(ctx context.Context, nextConsumer consumer.TraceConsumer) error {
+func (mr *mockReceiver) StartTraceReception(ctx context.Context, asyncErrChan chan<- error) error {
 	if mr == nil {
 		panic("mockReceiver is nil")
 	}
@@ -552,7 +552,7 @@ func (mr *mockReceiver) MetricsSource() string {
 	return "mockReceiver"
 }
 
-func (mr *mockReceiver) StartMetricsReception(ctx context.Context, nextConsumer consumer.MetricsConsumer) error {
+func (mr *mockReceiver) StartMetricsReception(ctx context.Context, asyncErrChan chan<- error) error {
 	if mr == nil {
 		panic("mockReceiver is nil")
 	}

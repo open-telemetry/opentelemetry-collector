@@ -89,7 +89,7 @@ func (app *Application) execute() {
 	var closeFns []func()
 	app.processor, closeFns = startProcessor(app.v, app.logger)
 
-	app.receivers = createReceivers(app.v, app.logger, app.processor)
+	app.receivers = createReceivers(app.v, app.logger, app.processor, asyncErrorChannel)
 
 	err = initTelemetry(asyncErrorChannel, app.v, app.logger)
 	if err != nil {

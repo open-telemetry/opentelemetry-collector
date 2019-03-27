@@ -16,9 +16,11 @@ package zipkinreceiver
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -32,6 +34,7 @@ import (
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/census-instrumentation/opencensus-service/consumer"
 	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/exporter/exportertest"
 	"github.com/census-instrumentation/opencensus-service/internal"
@@ -105,6 +108,64 @@ func TestShortIDSpanConversion(t *testing.T) {
 	want := []byte{0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8}
 	if !reflect.DeepEqual(ocSpan.TraceId, want) {
 		t.Errorf("got=%v want=%v", ocSpan.TraceId, want)
+	}
+}
+
+func TestNew(t *testing.T) {
+	type args struct {
+		address      string
+		nextConsumer consumer.TraceConsumer
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *ZipkinReceiver
+		wantErr error
+	}{
+		{
+			name:    "nil nextConsumer",
+			args:    args{},
+			wantErr: errNilNextConsumer,
+		},
+		{
+			name: "happy path",
+			args: args{
+				nextConsumer: exportertest.NewNopTraceExporter(),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := New(tt.args.address, tt.args.nextConsumer)
+			if err != tt.wantErr {
+				t.Errorf("New() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got.TraceSource() != traceSource {
+				t.Errorf("TraceSource() = %v, want %v", got, traceSource)
+			}
+		})
+	}
+}
+
+func TestZipkinReceiverPortAlreadyInUse(t *testing.T) {
+	l, err := net.Listen("tcp", ":0")
+	if err != nil {
+		t.Fatalf("failed to open a port: %v", err)
+	}
+	defer l.Close()
+	_, portStr, err := net.SplitHostPort(l.Addr().String())
+	if err != nil {
+		t.Fatalf("failed to split listener address: %v", err)
+	}
+	traceReceiver, err := New(":"+portStr, exportertest.NewNopTraceExporter())
+	if err != nil {
+		t.Fatalf("Failed to create receiver: %v", err)
+	}
+	err = traceReceiver.StartTraceReception(context.Background(), nil)
+	if err == nil {
+		traceReceiver.StopTraceReception(context.Background())
+		t.Fatal("conflict on port was expected")
 	}
 }
 

@@ -34,19 +34,19 @@ import (
 
 func TestReception(t *testing.T) {
 	// 1. Create the Jaeger receiver aka "server"
-	tchannelPort, collectorHTTPPort := 14267, 14268
-	jr, err := New(context.Background(), &Configuration{
-		CollectorThriftPort: tchannelPort,
-		CollectorHTTPPort:   collectorHTTPPort,
-	})
+	config := &Configuration{
+		CollectorThriftPort: 14267,
+		CollectorHTTPPort:   14268,
+	}
+	sink := new(exportertest.SinkTraceExporter)
+	jr, err := New(context.Background(), config, sink)
 	if err != nil {
 		t.Fatalf("Failed to create new Jaeger Receiver: %v", err)
 	}
 	defer jr.StopTraceReception(context.Background())
 	t.Log("Starting")
 
-	sink := new(exportertest.SinkTraceExporter)
-	if err := jr.StartTraceReception(context.Background(), sink); err != nil {
+	if err := jr.StartTraceReception(context.Background(), nil); err != nil {
 		t.Fatalf("StartTraceReception failed: %v", err)
 	}
 	t.Log("StartTraceReception")
@@ -65,7 +65,7 @@ func TestReception(t *testing.T) {
 				jaeger.Int64Tag("int64", 1e7),
 			},
 		},
-		CollectorEndpoint: fmt.Sprintf("http://localhost:%d/api/traces", collectorHTTPPort),
+		CollectorEndpoint: fmt.Sprintf("http://localhost:%d/api/traces", config.CollectorHTTPPort),
 	})
 	if err != nil {
 		t.Fatalf("Failed to create the Jaeger OpenCensus exporter for the live application: %v", err)

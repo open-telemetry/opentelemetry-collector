@@ -60,19 +60,19 @@ func (sc *scrapeCounter) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 func TestNew(t *testing.T) {
 	v := viper.New()
 
-	_, err := New(v)
+	_, err := New(v, nil)
 	if err != errNilScrapeConfig {
 		t.Fatalf("Expected errNilScrapeConfig but did not get it.")
 	}
 
 	v.Set("config", nil)
-	_, err = New(v)
+	_, err = New(v, nil)
 	if err != errNilScrapeConfig {
 		t.Fatalf("Expected errNilScrapeConfig but did not get it.")
 	}
 
 	v.Set("config.blah", "some_value")
-	_, err = New(v)
+	_, err = New(v, nil)
 	if err != errNilScrapeConfig {
 		t.Fatalf("Expected errNilScrapeConfig but did not get it.")
 	}
@@ -121,13 +121,13 @@ buffer_count: 2
 		t.Fatalf("Failed to load yaml config into viper")
 	}
 
-	precv, err := New(v)
+	cms := new(exportertest.SinkMetricsExporter)
+	precv, err := New(v, cms)
 	if err != nil {
 		t.Fatalf("Failed to create promreceiver: %v", err)
 	}
 
-	cms := new(exportertest.SinkMetricsExporter)
-	if err := precv.StartMetricsReception(context.Background(), cms); err != nil {
+	if err := precv.StartMetricsReception(context.Background(), nil); err != nil {
 		t.Fatalf("Failed to invoke StartMetricsReception: %v", err)
 	}
 	defer precv.StopMetricsReception(context.Background())

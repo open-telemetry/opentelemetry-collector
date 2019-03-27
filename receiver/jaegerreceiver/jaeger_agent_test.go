@@ -52,14 +52,14 @@ func TestJaegerAgentUDP_ThriftBinary_6832(t *testing.T) {
 
 func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *Configuration) {
 	// 1. Create the Jaeger receiver aka "server"
-	jr, err := New(context.Background(), receiverConfig)
+	sink := new(exportertest.SinkTraceExporter)
+	jr, err := New(context.Background(), receiverConfig, sink)
 	if err != nil {
 		t.Fatalf("Failed to create new Jaeger Receiver: %v", err)
 	}
 	defer jr.StopTraceReception(context.Background())
 
-	sink := new(exportertest.SinkTraceExporter)
-	if err := jr.StartTraceReception(context.Background(), sink); err != nil {
+	if err := jr.StartTraceReception(context.Background(), nil); err != nil {
 		t.Fatalf("StartTraceReception failed: %v", err)
 	}
 

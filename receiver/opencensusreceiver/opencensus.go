@@ -53,6 +53,9 @@ type Receiver struct {
 	traceReceiver   *octrace.Receiver
 	metricsReceiver *ocmetrics.Receiver
 
+	traceConsumer   consumer.TraceConsumer
+	metricsConsumer consumer.MetricsConsumer
+
 	stopOnce                 sync.Once
 	startServerOnce          sync.Once
 	startTraceReceiverOnce   sync.Once
@@ -69,7 +72,7 @@ const source string = "OpenCensus"
 // New just creates the OpenCensus receiver services. It is the caller's
 // responsibility to invoke the respective Start*Reception methods as well
 // as the various Stop*Reception methods or simply Stop to end it.
-func New(addr string, opts ...Option) (*Receiver, error) {
+func New(addr string, tc consumer.TraceConsumer, mc consumer.MetricsConsumer, opts ...Option) (*Receiver, error) {
 	// TODO: (@odeke-em) use options to enable address binding changes.
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
@@ -86,6 +89,9 @@ func New(addr string, opts ...Option) (*Receiver, error) {
 		opt.withReceiver(ocr)
 	}
 
+	ocr.traceConsumer = tc
+	ocr.metricsConsumer = mc
+
 	return ocr, nil
 }
 
@@ -96,19 +102,20 @@ func (ocr *Receiver) TraceSource() string {
 
 // StartTraceReception exclusively runs the Trace receiver on the gRPC server.
 // To start both Trace and Metrics receivers/services, please use Start.
-func (ocr *Receiver) StartTraceReception(ctx context.Context, ts consumer.TraceConsumer) error {
-	err := ocr.registerTraceConsumer(ts)
+func (ocr *Receiver) StartTraceReception(ctx context.Context, asyncErrorChan chan<- error) error {
+	err := ocr.registerTraceConsumer()
 	if err != nil && err != errAlreadyStarted {
 		return err
 	}
+	// TODO: (@pjanotti) pass asyncErrorChan down the chain
 	return ocr.startServer()
 }
 
-func (ocr *Receiver) registerTraceConsumer(ts consumer.TraceConsumer) error {
+func (ocr *Receiver) registerTraceConsumer() error {
 	var err = errAlreadyStarted
 
 	ocr.startTraceReceiverOnce.Do(func() {
-		ocr.traceReceiver, err = octrace.New(ts, ocr.traceReceiverOpts...)
+		ocr.traceReceiver, err = octrace.New(ocr.traceConsumer, ocr.traceReceiverOpts...)
 		if err == nil {
 			srv := ocr.grpcServer()
 			agenttracepb.RegisterTraceServiceServer(srv, ocr.traceReceiver)
@@ -125,19 +132,19 @@ func (ocr *Receiver) MetricsSource() string {
 
 // StartMetricsReception exclusively runs the Metrics receiver on the gRPC server.
 // To start both Trace and Metrics receivers/services, please use Start.
-func (ocr *Receiver) StartMetricsReception(ctx context.Context, ms consumer.MetricsConsumer) error {
-	err := ocr.registerMetricsConsumer(ms)
+func (ocr *Receiver) StartMetricsReception(ctx context.Context, asyncErrorChan chan<- error) error {
+	err := ocr.registerMetricsConsumer()
 	if err != nil && err != errAlreadyStarted {
 		return err
 	}
 	return ocr.startServer()
 }
 
-func (ocr *Receiver) registerMetricsConsumer(ms consumer.MetricsConsumer) error {
+func (ocr *Receiver) registerMetricsConsumer() error {
 	var err = errAlreadyStarted
 
 	ocr.startMetricsReceiverOnce.Do(func() {
-		ocr.metricsReceiver, err = ocmetrics.New(ms, ocr.metricsReceiverOpts...)
+		ocr.metricsReceiver, err = ocmetrics.New(ocr.metricsConsumer, ocr.metricsReceiverOpts...)
 		if err == nil {
 			srv := ocr.grpcServer()
 			agentmetricspb.RegisterMetricsServiceServer(srv, ocr.metricsReceiver)
@@ -179,11 +186,11 @@ func (ocr *Receiver) StopMetricsReception(ctx context.Context) error {
 }
 
 // Start runs all the receivers/services namely, Trace and Metrics services.
-func (ocr *Receiver) Start(ctx context.Context, tc consumer.TraceConsumer, mc consumer.MetricsConsumer) error {
-	if err := ocr.registerTraceConsumer(tc); err != nil && err != errAlreadyStarted {
+func (ocr *Receiver) Start(ctx context.Context) error {
+	if err := ocr.registerTraceConsumer(); err != nil && err != errAlreadyStarted {
 		return err
 	}
-	if err := ocr.registerMetricsConsumer(mc); err != nil && err != errAlreadyStarted {
+	if err := ocr.registerMetricsConsumer(); err != nil && err != errAlreadyStarted {
 		return err
 	}
 

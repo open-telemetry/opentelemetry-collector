@@ -31,7 +31,7 @@ import (
 )
 
 // Start starts the OpenCensus receiver endpoint.
-func Start(logger *zap.Logger, v *viper.Viper, traceConsumer consumer.TraceConsumer) (receiver.TraceReceiver, error) {
+func Start(logger *zap.Logger, v *viper.Viper, traceConsumer consumer.TraceConsumer, asyncErrorChan chan<- error) (receiver.TraceReceiver, error) {
 	rOpts, err := builder.NewDefaultOpenCensusReceiverCfg().InitFromViper(v)
 	if err != nil {
 		return nil, err
@@ -43,12 +43,12 @@ func Start(logger *zap.Logger, v *viper.Viper, traceConsumer consumer.TraceConsu
 	}
 
 	addr := ":" + strconv.FormatInt(int64(rOpts.Port), 10)
-	ocr, err := opencensusreceiver.New(addr, tlsCredsOption)
+	ocr, err := opencensusreceiver.New(addr, traceConsumer, nil, tlsCredsOption)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create the OpenCensus trace receiver: %v", err)
 	}
 
-	if err := ocr.StartTraceReception(context.Background(), traceConsumer); err != nil {
+	if err := ocr.StartTraceReception(context.Background(), asyncErrorChan); err != nil {
 		return nil, fmt.Errorf("Cannot bind Opencensus receiver to address %q: %v", addr, err)
 	}
 

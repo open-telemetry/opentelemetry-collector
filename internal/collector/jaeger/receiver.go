@@ -35,22 +35,23 @@ import (
 )
 
 // Start starts the Jaeger receiver endpoint.
-func Start(logger *zap.Logger, v *viper.Viper, traceConsumer consumer.TraceConsumer) (receiver.TraceReceiver, error) {
+func Start(logger *zap.Logger, v *viper.Viper, traceConsumer consumer.TraceConsumer, asyncErrorChan chan<- error) (receiver.TraceReceiver, error) {
 	rOpts, err := builder.NewDefaultJaegerReceiverCfg().InitFromViper(v)
 	if err != nil {
 		return nil, err
 	}
 
 	ctx := context.Background()
-	jtr, err := jaegerreceiver.New(ctx, &jaegerreceiver.Configuration{
+	config := &jaegerreceiver.Configuration{
 		CollectorThriftPort: rOpts.ThriftTChannelPort,
 		CollectorHTTPPort:   rOpts.ThriftHTTPPort,
-	})
+	}
+	jtr, err := jaegerreceiver.New(ctx, config, traceConsumer)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := jtr.StartTraceReception(ctx, traceConsumer); err != nil {
+	if err := jtr.StartTraceReception(ctx, asyncErrorChan); err != nil {
 		return nil, err
 	}
 

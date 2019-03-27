@@ -33,7 +33,12 @@ func Example_endToEnd() {
 	// This is what the cmd/ocagent code would look like this.
 	// A trace receiver as per the trace receiver
 	// configs that have been parsed.
-	tr, err := opencensusreceiver.New("localhost:55678")
+	lte, err := loggingexporter.NewTraceExporter(zap.NewNop())
+	if err != nil {
+		log.Fatalf("Failed to create logging exporter: %v", err)
+	}
+
+	tr, err := opencensusreceiver.New("localhost:55678", lte, nil)
 	if err != nil {
 		log.Fatalf("Failed to create trace receiver: %v", err)
 	}
@@ -43,9 +48,8 @@ func Example_endToEnd() {
 
 	// Once we have the span receiver which will connect to the
 	// various exporter pipeline i.e. *tracepb.Span->OpenCensus.SpanData
-	lsr, _ := loggingexporter.NewTraceExporter(zap.NewNop())
 	for _, tr := range trl {
-		if err := tr.StartTraceReception(context.Background(), lsr); err != nil {
+		if err := tr.StartTraceReception(context.Background(), nil); err != nil {
 			log.Fatalf("Failed to start trace receiver: %v", err)
 		}
 	}

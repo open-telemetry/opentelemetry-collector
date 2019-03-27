@@ -46,6 +46,12 @@ import (
 	zipkintranslator "github.com/census-instrumentation/opencensus-service/translator/trace/zipkin"
 )
 
+var (
+	errNilNextConsumer = errors.New("nil nextConsumer")
+	errAlreadyStarted  = errors.New("already started")
+	errAlreadyStopped  = errors.New("already stopped")
+)
+
 // ZipkinReceiver type is used to handle spans received in the Zipkin format.
 type ZipkinReceiver struct {
 	// mu protects the fields of this struct
@@ -65,8 +71,15 @@ var _ receiver.TraceReceiver = (*ZipkinReceiver)(nil)
 var _ http.Handler = (*ZipkinReceiver)(nil)
 
 // New creates a new zipkinreceiver.ZipkinReceiver reference.
-func New(address string) (*ZipkinReceiver, error) {
-	zr := &ZipkinReceiver{addr: address}
+func New(address string, nextConsumer consumer.TraceConsumer) (*ZipkinReceiver, error) {
+	if nextConsumer == nil {
+		return nil, errNilNextConsumer
+	}
+
+	zr := &ZipkinReceiver{
+		addr:         address,
+		nextConsumer: nextConsumer,
+	}
 	return zr, nil
 }
 
@@ -80,11 +93,6 @@ func (zr *ZipkinReceiver) address() string {
 	return addr
 }
 
-var (
-	errAlreadyStarted = errors.New("already started")
-	errAlreadyStopped = errors.New("already stopped")
-)
-
 const traceSource string = "Zipkin"
 
 // TraceSource returns the name of the trace data source.
@@ -93,7 +101,7 @@ func (zr *ZipkinReceiver) TraceSource() string {
 }
 
 // StartTraceReception spins up the receiver's HTTP server and makes the receiver start its processing.
-func (zr *ZipkinReceiver) StartTraceReception(ctx context.Context, nextConsumer consumer.TraceConsumer) error {
+func (zr *ZipkinReceiver) StartTraceReception(ctx context.Context, asyncErrorChan chan<- error) error {
 	zr.mu.Lock()
 	defer zr.mu.Unlock()
 
@@ -108,10 +116,9 @@ func (zr *ZipkinReceiver) StartTraceReception(ctx context.Context, nextConsumer 
 
 		server := &http.Server{Handler: zr}
 		go func() {
-			_ = server.Serve(ln)
+			asyncErrorChan <- server.Serve(ln)
 		}()
 
-		zr.nextConsumer = nextConsumer
 		zr.server = server
 
 		err = nil

@@ -168,13 +168,13 @@ zipkin:
 	tes[0].(*zipkinExporter).reporter = mzr
 
 	// Run the Zipkin receiver to "receive spans upload from a client application"
-	zi, err := zipkinreceiver.New(":0")
+	zexp := multiconsumer.NewTraceProcessor(tes)
+	zi, err := zipkinreceiver.New(":0", zexp)
 	if err != nil {
 		t.Fatalf("Failed to create a new Zipkin receiver: %v", err)
 	}
 
-	zexp := multiconsumer.NewTraceProcessor(tes)
-	if err := zi.StartTraceReception(context.Background(), zexp); err != nil {
+	if err := zi.StartTraceReception(context.Background(), nil); err != nil {
 		t.Fatalf("Failed to start trace reception: %v", err)
 	}
 	defer zi.StopTraceReception(context.Background())

@@ -16,7 +16,6 @@ package zipkinscribereceiver
 
 import (
 	"context"
-	"log"
 	"net"
 	"reflect"
 	"strconv"
@@ -26,16 +25,85 @@ import (
 	"github.com/apache/thrift/lib/go/thrift"
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
-	"github.com/omnition/scribe-go/if/scribe/gen-go/scribe"
-
 	"github.com/census-instrumentation/opencensus-service/consumer"
 	"github.com/census-instrumentation/opencensus-service/data"
+	"github.com/census-instrumentation/opencensus-service/exporter/exportertest"
+	"github.com/golang/protobuf/ptypes/timestamp"
+	"github.com/omnition/scribe-go/if/scribe/gen-go/scribe"
 )
+
+func TestNewReceiver(t *testing.T) {
+	type args struct {
+		addr         string
+		port         uint16
+		category     string
+		nextConsumer consumer.TraceConsumer
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr error
+	}{
+		{
+			name: "nil nextConsumer",
+			args: args{
+				addr:     "",
+				port:     0,
+				category: "any",
+			},
+			wantErr: errNilNextConsumer,
+		},
+		{
+			name: "happy path",
+			args: args{
+				addr:         "",
+				port:         0,
+				category:     "any",
+				nextConsumer: exportertest.NewNopTraceExporter(),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := NewReceiver(tt.args.addr, tt.args.port, tt.args.category, tt.args.nextConsumer)
+			if err != tt.wantErr {
+				t.Errorf("NewReceiver() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != nil && got.TraceSource() != traceSource {
+				t.Errorf("TraceSource() = %v, want %v", got, traceSource)
+			}
+		})
+	}
+}
+
+func TestBadEncodedMessage(t *testing.T) {
+	sink := &mockTraceSink{}
+	traceReceiver, err := NewReceiver("", 0, "zipkin", sink)
+	if err != nil {
+		t.Fatalf("Failed to create receiver: %v", err)
+	}
+
+	messages := []*scribe.LogEntry{
+		{
+			Category: "zipkin",
+			Message:  "This should trigger bad encoded message",
+		},
+	}
+
+	scribeReceiver := traceReceiver.(*scribeReceiver)
+	tstatus, err := scribeReceiver.collector.Log(messages)
+	if tstatus != scribe.ResultCode_OK {
+		t.Errorf("got %v, want scribe.ResultCode_OK", tstatus)
+	}
+	if err == nil {
+		t.Errorf("an error was expected since the message has bad encoding")
+	}
+}
 
 func TestNonEqualCategoryIsIgnored(t *testing.T) {
 	sink := &mockTraceSink{}
-	traceReceiver, err := NewReceiver("", 0, "not-zipkin")
+	traceReceiver, err := NewReceiver("", 0, "not-zipkin", sink)
 	if err != nil {
 		t.Fatalf("Failed to create receiver: %v", err)
 	}
@@ -74,26 +142,20 @@ func TestScribeReceiverPortAlreadyInUse(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to convert %s to an int: %v", portStr, err)
 	}
-	traceReceiver, err := NewReceiver("", uint16(port), "zipkin")
+	traceReceiver, err := NewReceiver("", uint16(port), "zipkin", exportertest.NewNopTraceExporter())
 	if err != nil {
 		t.Fatalf("Failed to create receiver: %v", err)
 	}
-	err = traceReceiver.StartTraceReception(context.Background(), &mockTraceSink{})
+	err = traceReceiver.StartTraceReception(context.Background(), nil)
 	if err == nil {
 		traceReceiver.StopTraceReception(context.Background())
 		t.Fatal("conflict on port was expected")
 	}
-	log.Printf("%v", err)
 }
 
 func TestScribeReceiverServer(t *testing.T) {
 	const host = ""
 	const port = 9410
-
-	traceReceiver, err := NewReceiver(host, port, "zipkin")
-	if err != nil {
-		t.Fatalf("Failed to create receiver: %v", err)
-	}
 
 	messages := []*scribe.LogEntry{
 		{
@@ -103,7 +165,13 @@ func TestScribeReceiverServer(t *testing.T) {
 		},
 	}
 	sink := newMockTraceSink(len(messages))
-	traceReceiver.StartTraceReception(context.Background(), sink)
+
+	traceReceiver, err := NewReceiver(host, port, "zipkin", sink)
+	if err != nil {
+		t.Fatalf("Failed to create receiver: %v", err)
+	}
+
+	traceReceiver.StartTraceReception(context.Background(), nil)
 	if err != nil {
 		t.Fatalf("Failed to start trace reception: %v", err)
 	}

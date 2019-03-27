@@ -17,7 +17,6 @@ package receiver
 import (
 	"context"
 
-	"github.com/census-instrumentation/opencensus-service/consumer"
 	_ "github.com/census-instrumentation/opencensus-service/internal/compression/grpc" // load in supported grpc compression encodings
 )
 
@@ -33,7 +32,10 @@ type TraceReceiver interface {
 	TraceSource() string
 
 	// StartTraceReception tells the receiver to start its processing.
-	StartTraceReception(ctx context.Context, nextConsumer consumer.TraceConsumer) error
+	// Any fatal errors happening in goroutines started by the receiver should be
+	// reported on asyncErrorChannel.
+	// By convention the consumer of the data received is set at creation time.
+	StartTraceReception(ctx context.Context, asyncErrorChannel chan<- error) error
 
 	// StopTraceReception tells the receiver that should stop reception,
 	// giving it a chance to perform any necessary clean-up.
@@ -52,7 +54,10 @@ type MetricsReceiver interface {
 	MetricsSource() string
 
 	// StartMetricsReception tells the receiver to start its processing.
-	StartMetricsReception(ctx context.Context, nextConsumer consumer.MetricsConsumer) error
+	// Any fatal errors happening in goroutines started by the receiver should be
+	// reported on asyncErrorChannel.
+	// By convention the consumer of the data received is set at creation time.
+	StartMetricsReception(ctx context.Context, asyncErrorChannel chan<- error) error
 
 	// StopMetricsReception tells the receiver that should stop reception,
 	// giving it a chance to perform any necessary clean-up.

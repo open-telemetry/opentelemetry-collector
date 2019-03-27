@@ -122,7 +122,7 @@ func runOCAgent() {
 	commonMetricsSink := multiconsumer.NewMetricsProcessor(metricsExporters)
 
 	// Add other receivers here as they are implemented
-	ocReceiverDoneFn, err := runOCReceiver(logger, &agentConfig, commonSpanSink, commonMetricsSink)
+	ocReceiverDoneFn, err := runOCReceiver(logger, &agentConfig, commonSpanSink, commonMetricsSink, asyncErrorChan)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -139,7 +139,7 @@ func runOCAgent() {
 	// If the Zipkin receiver is enabled, then run it
 	if agentConfig.ZipkinReceiverEnabled() {
 		zipkinReceiverAddr := agentConfig.ZipkinReceiverAddress()
-		zipkinReceiverDoneFn, err := runZipkinReceiver(zipkinReceiverAddr, commonSpanSink)
+		zipkinReceiverDoneFn, err := runZipkinReceiver(zipkinReceiverAddr, commonSpanSink, asyncErrorChan)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -147,7 +147,7 @@ func runOCAgent() {
 	}
 
 	if agentConfig.ZipkinScribeReceiverEnabled() {
-		zipkinScribeDoneFn, err := runZipkinScribeReceiver(agentConfig.ZipkinScribeConfig(), commonSpanSink)
+		zipkinScribeDoneFn, err := runZipkinScribeReceiver(agentConfig.ZipkinScribeConfig(), commonSpanSink, asyncErrorChan)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -156,7 +156,7 @@ func runOCAgent() {
 
 	if agentConfig.JaegerReceiverEnabled() {
 		collectorHTTPPort, collectorThriftPort := agentConfig.JaegerReceiverPorts()
-		jaegerDoneFn, err := runJaegerReceiver(collectorThriftPort, collectorHTTPPort, commonSpanSink)
+		jaegerDoneFn, err := runJaegerReceiver(collectorThriftPort, collectorHTTPPort, commonSpanSink, asyncErrorChan)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -165,7 +165,7 @@ func runOCAgent() {
 
 	// If the Prometheus receiver is enabled, then run it.
 	if agentConfig.PrometheusReceiverEnabled() {
-		promDoneFn, err := runPrometheusReceiver(viperCfg, commonMetricsSink)
+		promDoneFn, err := runPrometheusReceiver(viperCfg, commonMetricsSink, asyncErrorChan)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -214,7 +214,7 @@ func runZPages(port int) func() error {
 	return srv.Close
 }
 
-func runOCReceiver(logger *zap.Logger, acfg *config.Config, tdp consumer.TraceConsumer, mdp consumer.MetricsConsumer) (doneFn func() error, err error) {
+func runOCReceiver(logger *zap.Logger, acfg *config.Config, tc consumer.TraceConsumer, mc consumer.MetricsConsumer, asyncErrorChan chan<- error) (doneFn func() error, err error) {
 	tlsCredsOption, hasTLSCreds, err := acfg.OpenCensusReceiverTLSCredentialsServerOption()
 	if err != nil {
 		return nil, fmt.Errorf("OpenCensus receiver TLS Credentials: %v", err)
@@ -222,6 +222,8 @@ func runOCReceiver(logger *zap.Logger, acfg *config.Config, tdp consumer.TraceCo
 	addr := acfg.OpenCensusReceiverAddress()
 	corsOrigins := acfg.OpenCensusReceiverCorsAllowedOrigins()
 	ocr, err := opencensusreceiver.New(addr,
+		tc,
+		mc,
 		tlsCredsOption,
 		opencensusreceiver.WithCorsOrigins(corsOrigins))
 
@@ -242,19 +244,19 @@ func runOCReceiver(logger *zap.Logger, acfg *config.Config, tdp consumer.TraceCo
 
 	switch {
 	case acfg.CanRunOpenCensusTraceReceiver() && acfg.CanRunOpenCensusMetricsReceiver():
-		if err := ocr.Start(ctx, tdp, mdp); err != nil {
+		if err := ocr.Start(ctx); err != nil {
 			return nil, fmt.Errorf("failed to start Trace and Metrics Receivers: %v", err)
 		}
 		log.Printf("Running OpenCensus Trace and Metrics receivers as a gRPC service at %q", addr)
 
 	case acfg.CanRunOpenCensusTraceReceiver():
-		if err := ocr.StartTraceReception(ctx, tdp); err != nil {
+		if err := ocr.StartTraceReception(ctx, asyncErrorChan); err != nil {
 			return nil, fmt.Errorf("failed to start TraceReceiver: %v", err)
 		}
 		log.Printf("Running OpenCensus Trace receiver as a gRPC service at %q", addr)
 
 	case acfg.CanRunOpenCensusMetricsReceiver():
-		if err := ocr.StartMetricsReception(ctx, mdp); err != nil {
+		if err := ocr.StartMetricsReception(ctx, asyncErrorChan); err != nil {
 			return nil, fmt.Errorf("failed to start MetricsReceiver: %v", err)
 		}
 		log.Printf("Running OpenCensus Metrics receiver as a gRPC service at %q", addr)
@@ -271,19 +273,20 @@ func runOCReceiver(logger *zap.Logger, acfg *config.Config, tdp consumer.TraceCo
 	return doneFn, nil
 }
 
-func runJaegerReceiver(collectorThriftPort, collectorHTTPPort int, next consumer.TraceConsumer) (doneFn func() error, err error) {
-	jtr, err := jaegerreceiver.New(context.Background(), &jaegerreceiver.Configuration{
+func runJaegerReceiver(collectorThriftPort, collectorHTTPPort int, next consumer.TraceConsumer, asyncErrorChan chan<- error) (doneFn func() error, err error) {
+	config := &jaegerreceiver.Configuration{
 		CollectorThriftPort: collectorThriftPort,
 		CollectorHTTPPort:   collectorHTTPPort,
 
 		// TODO: (@odeke-em, @pjanotti) send a change
 		// to dynamically retrieve the Jaeger Agent's ports
 		// and not use their defaults of 5778, 6831, 6832
-	})
+	}
+	jtr, err := jaegerreceiver.New(context.Background(), config, next)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create new Jaeger receiver: %v", err)
 	}
-	if err := jtr.StartTraceReception(context.Background(), next); err != nil {
+	if err := jtr.StartTraceReception(context.Background(), asyncErrorChan); err != nil {
 		return nil, fmt.Errorf("failed to start Jaeger receiver: %v", err)
 	}
 	doneFn = func() error {
@@ -293,13 +296,13 @@ func runJaegerReceiver(collectorThriftPort, collectorHTTPPort int, next consumer
 	return doneFn, nil
 }
 
-func runZipkinReceiver(addr string, next consumer.TraceConsumer) (doneFn func() error, err error) {
-	zi, err := zipkinreceiver.New(addr)
+func runZipkinReceiver(addr string, next consumer.TraceConsumer, asyncErrorChan chan<- error) (doneFn func() error, err error) {
+	zi, err := zipkinreceiver.New(addr, next)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create the Zipkin receiver: %v", err)
 	}
 
-	if err := zi.StartTraceReception(context.Background(), next); err != nil {
+	if err := zi.StartTraceReception(context.Background(), asyncErrorChan); err != nil {
 		return nil, fmt.Errorf("cannot start Zipkin receiver with address %q: %v", addr, err)
 	}
 	doneFn = func() error {
@@ -309,13 +312,13 @@ func runZipkinReceiver(addr string, next consumer.TraceConsumer) (doneFn func() 
 	return doneFn, nil
 }
 
-func runZipkinScribeReceiver(config *config.ScribeReceiverConfig, next consumer.TraceConsumer) (doneFn func() error, err error) {
-	zs, err := zipkinscribereceiver.NewReceiver(config.Address, config.Port, config.Category)
+func runZipkinScribeReceiver(config *config.ScribeReceiverConfig, next consumer.TraceConsumer, asyncErrorChan chan<- error) (doneFn func() error, err error) {
+	zs, err := zipkinscribereceiver.NewReceiver(config.Address, config.Port, config.Category, next)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create the Zipkin Scribe receiver: %v", err)
 	}
 
-	if err := zs.StartTraceReception(context.Background(), next); err != nil {
+	if err := zs.StartTraceReception(context.Background(), asyncErrorChan); err != nil {
 		return nil, fmt.Errorf("cannot start Zipkin Scribe receiver with %v: %v", config, err)
 	}
 	doneFn = func() error {
@@ -325,12 +328,12 @@ func runZipkinScribeReceiver(config *config.ScribeReceiverConfig, next consumer.
 	return doneFn, nil
 }
 
-func runPrometheusReceiver(v *viper.Viper, next consumer.MetricsConsumer) (doneFn func() error, err error) {
-	pmr, err := prometheusreceiver.New(v.Sub("receivers.prometheus"))
+func runPrometheusReceiver(v *viper.Viper, next consumer.MetricsConsumer, asyncErrorChan chan<- error) (doneFn func() error, err error) {
+	pmr, err := prometheusreceiver.New(v.Sub("receivers.prometheus"), next)
 	if err != nil {
 		return nil, err
 	}
-	if err := pmr.StartMetricsReception(context.Background(), next); err != nil {
+	if err := pmr.StartMetricsReception(context.Background(), asyncErrorChan); err != nil {
 		return nil, err
 	}
 	doneFn = func() error {

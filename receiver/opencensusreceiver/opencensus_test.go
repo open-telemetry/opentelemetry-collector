@@ -39,16 +39,15 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 	addr := ":35993"
 
 	// Set the buffer count to 1 to make it flush the test span immediately.
-	ocr, err := New(addr)
+	sink := new(exportertest.SinkTraceExporter)
+	ocr, err := New(addr, sink, nil)
 	if err != nil {
 		t.Fatalf("Failed to create trace receiver: %v", err)
 	}
 	defer ocr.StopTraceReception(context.Background())
 
-	sink := new(exportertest.SinkTraceExporter)
-
 	go func() {
-		if err := ocr.StartTraceReception(context.Background(), sink); err != nil {
+		if err := ocr.StartTraceReception(context.Background(), nil); err != nil {
 			t.Fatalf("Failed to start trace receiver: %v", err)
 		}
 	}()
@@ -152,15 +151,15 @@ func TestGrpcGatewayCors_endToEnd(t *testing.T) {
 	addr := ":35991"
 	corsOrigins := []string{"allowed-*.com"}
 
-	ocr, err := New(addr, WithCorsOrigins(corsOrigins))
+	sink := new(exportertest.SinkTraceExporter)
+	ocr, err := New(addr, sink, nil, WithCorsOrigins(corsOrigins))
 	if err != nil {
 		t.Fatalf("Failed to create trace receiver: %v", err)
 	}
 	defer ocr.Stop()
 
-	sink := new(exportertest.SinkTraceExporter)
 	go func() {
-		if err := ocr.StartTraceReception(context.Background(), sink); err != nil {
+		if err := ocr.StartTraceReception(context.Background(), nil); err != nil {
 			t.Fatalf("Failed to start trace receiver: %v", err)
 		}
 	}()
@@ -184,13 +183,13 @@ func TestAcceptAllGRPCProtoAffiliatedContentTypes(t *testing.T) {
 	t.Skip("Currently a flaky test as we need a way to flush all written traces")
 
 	addr := ":35991"
-	ocr, err := New(addr)
+	cbts := new(exportertest.SinkTraceExporter)
+	ocr, err := New(addr, cbts, nil)
 	if err != nil {
 		t.Fatalf("Failed to create trace receiver: %v", err)
 	}
 
-	cbts := new(exportertest.SinkTraceExporter)
-	if err := ocr.StartTraceReception(context.Background(), cbts); err != nil {
+	if err := ocr.StartTraceReception(context.Background(), nil); err != nil {
 		t.Fatalf("Failed to start the trace receiver: %v", err)
 	}
 	defer ocr.Stop()
@@ -315,7 +314,7 @@ func verifyCorsResp(t *testing.T, url string, origin string, wantStatus int, wan
 
 // Issue #379: Invoking Stop on an unstarted OpenCensus receiver should never crash.
 func TestStopWithoutStartNeverCrashes(t *testing.T) {
-	ocr, err := New(":55444")
+	ocr, err := New(":55444", nil, nil)
 	if err != nil {
 		t.Fatalf("Failed to create an OpenCensus receiver: %v", err)
 	}

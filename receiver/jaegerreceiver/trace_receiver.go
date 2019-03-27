@@ -95,10 +95,11 @@ const (
 )
 
 // New creates a TraceReceiver that receives traffic as a collector with both Thrift and HTTP transports.
-func New(ctx context.Context, config *Configuration) (receiver.TraceReceiver, error) {
+func New(ctx context.Context, config *Configuration, nextConsumer consumer.TraceConsumer) (receiver.TraceReceiver, error) {
 	return &jReceiver{
 		config:          config,
 		defaultAgentCtx: observability.ContextWithReceiverName(context.Background(), "jaeger-agent"),
+		nextConsumer:    nextConsumer,
 	}, nil
 }
 
@@ -170,7 +171,7 @@ func (jr *jReceiver) TraceSource() string {
 	return traceSource
 }
 
-func (jr *jReceiver) StartTraceReception(ctx context.Context, nextConsumer consumer.TraceConsumer) error {
+func (jr *jReceiver) StartTraceReception(ctx context.Context, asyncErrorChan chan<- error) error {
 	jr.mu.Lock()
 	defer jr.mu.Unlock()
 
@@ -185,9 +186,6 @@ func (jr *jReceiver) StartTraceReception(ctx context.Context, nextConsumer consu
 			jr.stopTraceReceptionLocked(context.Background())
 			return
 		}
-
-		// Finally set the nextConsumer, since we never encountered an error.
-		jr.nextConsumer = nextConsumer
 
 		err = nil
 	})

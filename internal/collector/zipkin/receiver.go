@@ -31,19 +31,19 @@ import (
 )
 
 // Start starts the Zipkin receiver endpoint.
-func Start(logger *zap.Logger, v *viper.Viper, traceConsumer consumer.TraceConsumer) (receiver.TraceReceiver, error) {
+func Start(logger *zap.Logger, v *viper.Viper, traceConsumer consumer.TraceConsumer, asyncErrorChan chan<- error) (receiver.TraceReceiver, error) {
 	rOpts, err := builder.NewDefaultZipkinReceiverCfg().InitFromViper(v)
 	if err != nil {
 		return nil, err
 	}
 
 	addr := ":" + strconv.FormatInt(int64(rOpts.Port), 10)
-	zi, err := zipkinreceiver.New(addr)
+	zi, err := zipkinreceiver.New(addr, traceConsumer)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create the Zipkin receiver: %v", err)
 	}
 
-	if err := zi.StartTraceReception(context.Background(), traceConsumer); err != nil {
+	if err := zi.StartTraceReception(context.Background(), asyncErrorChan); err != nil {
 		return nil, fmt.Errorf("Cannot start Zipkin receiver to address %q: %v", addr, err)
 	}
 
