@@ -433,7 +433,9 @@ func makeMetric(val int) *metricspb.Metric {
 	}
 
 	return &metricspb.Metric{
-		MetricDescriptor: descriptor,
-		Timeseries:       []*metricspb.TimeSeries{ts},
+		Descriptor_: &metricspb.Metric_MetricDescriptor{
+			MetricDescriptor: descriptor,
+		},
+		Timeseries: []*metricspb.TimeSeries{ts},
 	}
 }
