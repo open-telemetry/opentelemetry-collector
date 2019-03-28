@@ -219,14 +219,12 @@ buffer_count: 2
 			},
 			Metrics: []*metricspb.Metric{
 				{
-					Descriptor_: &metricspb.Metric_MetricDescriptor{
-						MetricDescriptor: &metricspb.MetricDescriptor{
-							Name:        "e2ereceiver_e2e_calls",
-							Description: "The number of calls",
-							Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
-							LabelKeys: []*metricspb.LabelKey{
-								{Key: "method"},
-							},
+					MetricDescriptor: &metricspb.MetricDescriptor{
+						Name:        "e2ereceiver_e2e_calls",
+						Description: "The number of calls",
+						Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
+						LabelKeys: []*metricspb.LabelKey{
+							{Key: "method"},
 						},
 					},
 					Timeseries: []*metricspb.TimeSeries{
@@ -247,14 +245,12 @@ buffer_count: 2
 					},
 				},
 				{
-					Descriptor_: &metricspb.Metric_MetricDescriptor{
-						MetricDescriptor: &metricspb.MetricDescriptor{
-							Name:        "e2ereceiver_e2e_call_latency",
-							Description: "The latency in milliseconds per call",
-							Type:        metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION,
-							LabelKeys: []*metricspb.LabelKey{
-								{Key: "method"},
-							},
+					MetricDescriptor: &metricspb.MetricDescriptor{
+						Name:        "e2ereceiver_e2e_call_latency",
+						Description: "The latency in milliseconds per call",
+						Type:        metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION,
+						LabelKeys: []*metricspb.LabelKey{
+							{Key: "method"},
 						},
 					},
 					Timeseries: []*metricspb.TimeSeries{
@@ -312,14 +308,12 @@ buffer_count: 2
 			},
 			Metrics: []*metricspb.Metric{
 				{
-					Descriptor_: &metricspb.Metric_MetricDescriptor{
-						MetricDescriptor: &metricspb.MetricDescriptor{
-							Name:        "e2ereceiver_e2e_calls",
-							Description: "The number of calls",
-							Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
-							LabelKeys: []*metricspb.LabelKey{
-								{Key: "method"},
-							},
+					MetricDescriptor: &metricspb.MetricDescriptor{
+						Name:        "e2ereceiver_e2e_calls",
+						Description: "The number of calls",
+						Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
+						LabelKeys: []*metricspb.LabelKey{
+							{Key: "method"},
 						},
 					},
 					Timeseries: []*metricspb.TimeSeries{
@@ -356,14 +350,12 @@ buffer_count: 2
 			},
 			Metrics: []*metricspb.Metric{
 				{
-					Descriptor_: &metricspb.Metric_MetricDescriptor{
-						MetricDescriptor: &metricspb.MetricDescriptor{
-							Name:        "e2ereceiver_e2e_call_latency",
-							Description: "The latency in milliseconds per call",
-							Type:        metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION,
-							LabelKeys: []*metricspb.LabelKey{
-								{Key: "method"},
-							},
+					MetricDescriptor: &metricspb.MetricDescriptor{
+						Name:        "e2ereceiver_e2e_call_latency",
+						Description: "The latency in milliseconds per call",
+						Type:        metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION,
+						LabelKeys: []*metricspb.LabelKey{
+							{Key: "method"},
 						},
 					},
 					Timeseries: []*metricspb.TimeSeries{
