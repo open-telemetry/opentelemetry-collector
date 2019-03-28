@@ -262,9 +262,9 @@ func (ocr *Receiver) startServer() error {
 
 			// Start the gRPC and HTTP/JSON (grpc-gateway) servers on the same port.
 			m := cmux.New(ocr.ln)
-			grpcL := m.Match(
-				cmux.HTTP2HeaderField("content-type", "application/grpc"),
-				cmux.HTTP2HeaderField("content-type", "application/grpc+proto"))
+			grpcL := m.MatchWithWriters(
+				cmux.HTTP2MatchHeaderFieldSendSettings("content-type", "application/grpc"),
+				cmux.HTTP2MatchHeaderFieldSendSettings("content-type", "application/grpc+proto"))
 
 			httpL := m.Match(cmux.Any())
 			go func() {
