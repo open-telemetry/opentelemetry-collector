@@ -38,10 +38,10 @@ test:
 	$(GOTEST) $(GOTEST_OPT) $(ALL_PKGS)
 
 .PHONY: travis-ci
-travis-ci: fmt vet lint test-with-cover
+travis-ci: fmt install-go-cmp vet lint test-with-cover
 
 .PHONY: test-with-cover
-test-with-cover: 
+test-with-cover:
 	@echo Verifying that all packages have test files to count in coverage
 	@scripts/check-test-files.sh $(subst github.com/census-instrumentation/opencensus-service/,./,$(ALL_PKGS))
 	@echo pre-compiling tests
@@ -86,6 +86,10 @@ vet:
 install-tools:
 	go get golang.org/x/lint/golint
 
+.PHONY: install-go-cmp
+install-go-cmp:
+	go get -u github.com/google/go-cmp/cmp
+
 .PHONY: agent
 agent:
 	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/ocagent_$(GOOS) $(BUILD_INFO) ./cmd/ocagent
@@ -112,7 +116,7 @@ docker-agent:
 	COMPONENT=agent $(MAKE) docker-component
 
 .PHONY: docker-collector
-docker-collector: 
+docker-collector:
 	COMPONENT=collector $(MAKE) docker-component
 
 

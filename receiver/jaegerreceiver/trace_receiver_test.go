@@ -15,12 +15,12 @@
 package jaegerreceiver
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"reflect"
 	"testing"
 	"time"
+
+	"github.com/google/go-cmp/cmp"
 
 	"go.opencensus.io/exporter/jaeger"
 	"go.opencensus.io/trace"
@@ -212,10 +212,7 @@ func TestReception(t *testing.T) {
 		},
 	}
 
-	if !reflect.DeepEqual(got, want) {
-		gj, wj := exportertest.ToJSON(got), exportertest.ToJSON(want)
-		if !bytes.Equal(gj, wj) {
-			t.Errorf("Mismatches responses\nGot:\n\t%v\n\t%s\nWant:\n\t%v\n\t%s", got, gj, want, wj)
-		}
+	if diff := cmp.Diff(got, want); diff != "" {
+		t.Errorf("Mismatched responses\n-Got +Want:\n\t%s", diff)
 	}
 }

@@ -22,6 +22,7 @@ require (
 	github.com/gogo/googleapis v1.1.0 // indirect
 	github.com/golang/groupcache v0.0.0-20190129154638-5b532d6fd5ef // indirect
 	github.com/golang/protobuf v1.3.1
+	github.com/google/go-cmp v0.2.0
 	github.com/google/gofuzz v0.0.0-20170612174753-24818f796faf // indirect
 	github.com/googleapis/gnostic v0.2.0 // indirect
 	github.com/gophercloud/gophercloud v0.0.0-20190206021053-df38e1611dbe // indirect
