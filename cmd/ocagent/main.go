@@ -43,6 +43,7 @@ import (
 	"github.com/census-instrumentation/opencensus-service/receiver/jaegerreceiver"
 	"github.com/census-instrumentation/opencensus-service/receiver/opencensusreceiver"
 	"github.com/census-instrumentation/opencensus-service/receiver/prometheusreceiver"
+	"github.com/census-instrumentation/opencensus-service/receiver/vmmetricsreceiver"
 	"github.com/census-instrumentation/opencensus-service/receiver/zipkinreceiver"
 	"github.com/census-instrumentation/opencensus-service/receiver/zipkinreceiver/zipkinscribereceiver"
 )
@@ -170,6 +171,15 @@ func runOCAgent() {
 			log.Fatal(err)
 		}
 		closeFns = append(closeFns, promDoneFn)
+	}
+
+	// If the VMMetrics receiver is enabled, then run it.
+	if agentConfig.VMMetricsReceiverEnabled() {
+		vmmDoneFn, err := runVMMetricsReceiver(viperCfg, commonMetricsSink, asyncErrorChan)
+		if err != nil {
+			log.Fatal(err)
+		}
+		closeFns = append(closeFns, vmmDoneFn)
 	}
 
 	// Always cleanup finally
@@ -340,5 +350,20 @@ func runPrometheusReceiver(v *viper.Viper, next consumer.MetricsConsumer, asyncE
 		return pmr.StopMetricsReception(context.Background())
 	}
 	log.Print("Running Prometheus receiver")
+	return doneFn, nil
+}
+
+func runVMMetricsReceiver(v *viper.Viper, next consumer.MetricsConsumer, asyncErrorChan chan<- error) (doneFn func() error, err error) {
+	vmr, err := vmmetricsreceiver.New(v.Sub("receivers.vmmetrics"), next)
+	if err != nil {
+		return nil, err
+	}
+	if err := vmr.StartMetricsReception(context.Background(), asyncErrorChan); err != nil {
+		return nil, err
+	}
+	doneFn = func() error {
+		return vmr.StopMetricsReception(context.Background())
+	}
+	log.Print("Running VMMetrics receiver")
 	return doneFn, nil
 }

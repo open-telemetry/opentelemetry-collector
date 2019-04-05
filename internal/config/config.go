@@ -101,6 +101,7 @@ type Receivers struct {
 	Zipkin     *ReceiverConfig       `mapstructure:"zipkin"`
 	Jaeger     *ReceiverConfig       `mapstructure:"jaeger"`
 	Scribe     *ScribeReceiverConfig `mapstructure:"zipkin-scribe"`
+	VMMetrics  *ReceiverConfig       `mapstructure:"vmmetrics"`
 
 	// Prometheus contains the Prometheus configurations.
 	// Such as:
@@ -372,6 +373,14 @@ func (tlsCreds *TLSCredentials) ToOpenCensusReceiverServerOption() (opt opencens
 func (c *Config) OpenCensusReceiverTLSCredentialsServerOption() (opt opencensusreceiver.Option, ok bool, err error) {
 	tlsCreds := c.OpenCensusReceiverTLSServerCredentials()
 	return tlsCreds.ToOpenCensusReceiverServerOption()
+}
+
+// VMMetricsReceiverEnabled returns true if Config is non-nil.
+func (c *Config) VMMetricsReceiverEnabled() bool {
+	if c == nil {
+		return false
+	}
+	return c.Receivers != nil && c.Receivers.VMMetrics != nil
 }
 
 // CheckLogicalConflicts serves to catch logical errors such as

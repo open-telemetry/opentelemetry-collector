@@ -1,0 +1,11 @@
+receivers:
+  vmmetrics:
+    scrape_interval: 10s
+
+zpages:
+  port: 55679
+
+exporters:
+  prometheus:
+    namespace: "vmmetrics_test"
+    address: "localhost:8888"
