@@ -35,9 +35,10 @@ var (
 
 // Configuration defines the behavior and targets of the VM metrics scrapers.
 type Configuration struct {
-	scrapeInterval time.Duration `mapstructure:"scrape_interval"`
-	mountPoint     string        `mapstructure:"mount_point"`
-	metricPrefix   string        `mapstructure:"metric_prefix"`
+	scrapeInterval    time.Duration `mapstructure:"scrape_interval"`
+	mountPoint        string        `mapstructure:"mount_point"`
+	processMountPoint string        `mapstructure:"process_mount_point"`
+	metricPrefix      string        `mapstructure:"metric_prefix"`
 }
 
 // Receiver is the type used to handle metrics from VM metrics.
@@ -59,12 +60,12 @@ func New(v *viper.Viper, consumer consumer.MetricsConsumer) (*Receiver, error) {
 	var cfg Configuration
 
 	// Unmarshal our config values (using viper's mapstructure)
-	err := v.Unmarshal(&cfg)
+	err := unmarshal(&cfg, v.AllSettings())
 	if err != nil {
 		return nil, fmt.Errorf("vmmetrics receiver failed to parse config: %s", err)
 	}
 
-	vmc, err := NewVMMetricsCollector(cfg.scrapeInterval, cfg.mountPoint, cfg.metricPrefix, consumer)
+	vmc, err := NewVMMetricsCollector(cfg.scrapeInterval, cfg.mountPoint, cfg.processMountPoint, cfg.metricPrefix, consumer)
 	if err != nil {
 		return nil, err
 	}
@@ -106,4 +107,22 @@ func (vmr *Receiver) StopMetricsReception(ctx context.Context) error {
 		err = nil
 	})
 	return err
+}
+
+// TODO(songya): investigate why viper.Unmarshal didn't work, remove this method and use viper.Unmarshal instead.
+func unmarshal(cfg *Configuration, settings map[string]interface{}) error {
+	if interval, ok := settings["scrape_interval"]; ok {
+		intervalInSecs := interval.(int)
+		cfg.scrapeInterval = time.Duration(intervalInSecs * int(time.Second))
+	}
+	if mountPoint, ok := settings["mount_point"]; ok {
+		cfg.mountPoint = mountPoint.(string)
+	}
+	if processMountPoint, ok := settings["process_mount_point"]; ok {
+		cfg.processMountPoint = processMountPoint.(string)
+	}
+	if prefix, ok := settings["metric_prefix"]; ok {
+		cfg.metricPrefix = prefix.(string)
+	}
+	return nil
 }

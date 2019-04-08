@@ -37,9 +37,12 @@ import (
 type VMMetricsCollector struct {
 	consumer consumer.MetricsConsumer
 
-	startTime      time.Time
-	views          []*view.View
-	fs             procfs.FS
+	startTime time.Time
+	views     []*view.View
+
+	fs        procfs.FS
+	processFs procfs.FS
+
 	scrapeInterval time.Duration
 	metricPrefix   string
 	done           chan struct{}
@@ -51,14 +54,17 @@ const (
 )
 
 // NewVMMetricsCollector creates a new set of VM and Process Metrics (mem, cpu).
-func NewVMMetricsCollector(si time.Duration, mpoint, mprefix string, consumer consumer.MetricsConsumer) (*VMMetricsCollector, error) {
-	if mpoint == "" {
-		mpoint = defaultMountPoint
+func NewVMMetricsCollector(si time.Duration, mountPoint, processMountPoint, prefix string, consumer consumer.MetricsConsumer) (*VMMetricsCollector, error) {
+	if mountPoint == "" {
+		mountPoint = defaultMountPoint
+	}
+	if processMountPoint == "" {
+		processMountPoint = defaultMountPoint
 	}
 	if si <= 0 {
 		si = defaultScrapeInterval
 	}
-	fs, err := procfs.NewFS(mpoint)
+	fs, err := procfs.NewFS(mountPoint)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create new VMMetricsCollector: %s", err)
 	}
@@ -68,10 +74,18 @@ func NewVMMetricsCollector(si time.Duration, mpoint, mprefix string, consumer co
 		views:          vmViews,
 		fs:             fs,
 		scrapeInterval: si,
-		metricPrefix:   mprefix,
+		metricPrefix:   prefix,
 		done:           make(chan struct{}),
 	}
 	view.Register(vmc.views...)
+
+	if processMountPoint != mountPoint {
+		vmc.processFs, err = procfs.NewFS(processMountPoint)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create new VMMetricsCollector: %s", err)
+		}
+	}
+
 	return vmc, nil
 }
 
@@ -108,7 +122,13 @@ func (vmc *VMMetricsCollector) scrape() {
 		mRuntimeSysMem.M(int64(ms.Sys)))
 
 	pid := os.Getpid()
-	proc, err := procfs.NewProc(pid)
+	var proc procfs.Proc
+	var err error
+	if vmc.processFs == "" {
+		proc, err = vmc.fs.NewProc(pid)
+	} else {
+		proc, err = vmc.processFs.NewProc(pid)
+	}
 	if err == nil {
 		if procStat, err := proc.NewStat(); err == nil {
 			stats.Record(ctx, mCPUSeconds.M(int64(procStat.CPUTime())))
