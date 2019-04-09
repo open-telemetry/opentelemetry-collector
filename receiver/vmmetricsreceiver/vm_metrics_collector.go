@@ -93,10 +93,12 @@ func NewVMMetricsCollector(si time.Duration, mountPoint, processMountPoint, pref
 func (vmc *VMMetricsCollector) StartCollection() {
 	go func() {
 		ticker := time.NewTicker(vmc.scrapeInterval)
+		var prevProcStat *procfs.ProcStat
+		var prevStat *procfs.Stat
 		for {
 			select {
 			case <-ticker.C:
-				vmc.scrape()
+				prevProcStat, prevStat = vmc.scrape(prevProcStat, prevStat)
 				vmc.export()
 
 			case <-vmc.done:
@@ -111,7 +113,7 @@ func (vmc *VMMetricsCollector) StopCollection() {
 	close(vmc.done)
 }
 
-func (vmc *VMMetricsCollector) scrape() {
+func (vmc *VMMetricsCollector) scrape(prevProcStat *procfs.ProcStat, prevStat *procfs.Stat) (*procfs.ProcStat, *procfs.Stat) {
 	ms := &runtime.MemStats{}
 	runtime.ReadMemStats(ms)
 	ctx := context.Background()
@@ -130,24 +132,46 @@ func (vmc *VMMetricsCollector) scrape() {
 		proc, err = vmc.processFs.NewProc(pid)
 	}
 	if err == nil {
-		if procStat, err := proc.NewStat(); err == nil {
-			stats.Record(ctx, mCPUSeconds.M(int64(procStat.CPUTime())))
+		procStat, err := proc.NewStat()
+		if err == nil {
+			if prevProcStat != nil {
+				stats.Record(ctx, mCPUSeconds.M(procStat.CPUTime()-prevProcStat.CPUTime()))
+			} else {
+				stats.Record(ctx, mCPUSeconds.M(procStat.CPUTime()))
+			}
 		}
+		prevProcStat = &procStat
 	}
 
-	if stat, err := vmc.fs.NewStat(); err == nil {
+	stat, err := vmc.fs.NewStat()
+	if err == nil {
 		cpuStat := stat.CPUTotal
 		stats.Record(
 			ctx,
-			mProcessesCreated.M(int64(stat.ProcessCreated)),
 			mProcessesRunning.M(int64(stat.ProcessesRunning)),
-			mProcessesBlocked.M(int64(stat.ProcessesBlocked)),
-			mUserCPUSeconds.M(cpuStat.User),
-			mNiceCPUSeconds.M(cpuStat.Nice),
-			mSystemCPUSeconds.M(cpuStat.System),
-			mIdleCPUSeconds.M(cpuStat.Idle),
-			mIowaitCPUSeconds.M(cpuStat.Iowait))
+			mProcessesBlocked.M(int64(stat.ProcessesBlocked)))
+		if prevStat != nil {
+			stats.Record(
+				ctx,
+				mProcessesCreated.M(int64(stat.ProcessCreated-prevStat.ProcessCreated)),
+				mUserCPUSeconds.M(cpuStat.User-prevStat.CPUTotal.User),
+				mNiceCPUSeconds.M(cpuStat.Nice-prevStat.CPUTotal.Nice),
+				mSystemCPUSeconds.M(cpuStat.System-prevStat.CPUTotal.System),
+				mIdleCPUSeconds.M(cpuStat.Idle-prevStat.CPUTotal.Idle),
+				mIowaitCPUSeconds.M(cpuStat.Iowait-prevStat.CPUTotal.Iowait))
+		} else {
+			stats.Record(
+				ctx,
+				mProcessesCreated.M(int64(stat.ProcessCreated)),
+				mUserCPUSeconds.M(cpuStat.User),
+				mNiceCPUSeconds.M(cpuStat.Nice),
+				mSystemCPUSeconds.M(cpuStat.System),
+				mIdleCPUSeconds.M(cpuStat.Idle),
+				mIowaitCPUSeconds.M(cpuStat.Iowait))
+		}
+		prevStat = &stat
 	}
+	return prevProcStat, prevStat
 }
 
 func (vmc *VMMetricsCollector) export() {

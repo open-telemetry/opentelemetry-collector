@@ -49,12 +49,12 @@ var viewSysMem = &view.View{
 	TagKeys:     nil,
 }
 
-var mCPUSeconds = stats.Int64("process/cpu_seconds", "CPU seconds for this process", "1")
+var mCPUSeconds = stats.Float64("process/cpu_seconds", "CPU seconds for this process", "s")
 var viewCPUSeconds = &view.View{
 	Name:        mCPUSeconds.Name(),
 	Description: mCPUSeconds.Description(),
 	Measure:     mCPUSeconds,
-	Aggregation: view.LastValue(),
+	Aggregation: view.Sum(),
 	TagKeys:     nil,
 }
 
@@ -117,7 +117,7 @@ var viewProcessesRunning = &view.View{
 	Name:        mProcessesRunning.Name(),
 	Description: mProcessesRunning.Description(),
 	Measure:     mProcessesRunning,
-	Aggregation: view.Sum(),
+	Aggregation: view.LastValue(),
 	TagKeys:     nil,
 }
 
@@ -126,7 +126,7 @@ var viewProcessesBlocked = &view.View{
 	Name:        mProcessesBlocked.Name(),
 	Description: mProcessesBlocked.Description(),
 	Measure:     mProcessesBlocked,
-	Aggregation: view.Sum(),
+	Aggregation: view.LastValue(),
 	TagKeys:     nil,
 }
 
