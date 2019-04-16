@@ -62,12 +62,12 @@ func StackdriverTraceExportersFromViper(v *viper.Viper) (tps []consumer.TraceCon
 
 	// TODO:  For each ProjectID, create a different exporter
 	// or at least a unique Stackdriver client per ProjectID.
-	if sc.ProjectID == "" {
-		return nil, nil, nil, fmt.Errorf("Stackdriver config requires a project ID")
-	}
 
 	sde, serr := stackdriver.NewExporter(stackdriver.Options{
-		ProjectID:    sc.ProjectID,
+		// If the project ID is an empty string, it will be set by default based on
+		// the project this is running on in GCP.
+		ProjectID: sc.ProjectID,
+
 		MetricPrefix: sc.MetricPrefix,
 
 		// Stackdriver Metrics mandates a minimum of 60 seconds for

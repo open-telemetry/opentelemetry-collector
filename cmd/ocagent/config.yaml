@@ -7,7 +7,7 @@ receivers:
 
 exporters:
     stackdriver:
-        project: "project-id"
+        project: "project-id" # Optional if on GCP, defaults to agent project
         enable_tracing: true
 
     zipkin:

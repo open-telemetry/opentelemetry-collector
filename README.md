@@ -165,7 +165,7 @@ exporters:
     topic: "opencensus-spans"
 
   stackdriver:
-    project: "your-project-id"
+    project: "my-project-id" # optional, defaults to agent project if run on GCP
     enable_tracing: true
 
   zipkin:
