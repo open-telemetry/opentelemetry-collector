@@ -38,7 +38,7 @@ test:
 	$(GOTEST) $(GOTEST_OPT) $(ALL_PKGS)
 
 .PHONY: travis-ci
-travis-ci: fmt install-go-cmp vet lint test-with-cover
+travis-ci: fmt vet lint test-with-cover
 
 .PHONY: test-with-cover
 test-with-cover:
@@ -85,9 +85,6 @@ vet:
 .PHONY: install-tools
 install-tools:
 	go get golang.org/x/lint/golint
-
-.PHONY: install-go-cmp
-install-go-cmp:
 	go get -u github.com/google/go-cmp/cmp
 
 .PHONY: agent
