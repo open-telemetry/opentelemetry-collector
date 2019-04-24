@@ -212,12 +212,12 @@ zpages:
 
 ### <a name="agent-usage"></a>Usage
 
+> It is recommended that you use the latest [release](https://github.com/census-instrumentation/opencensus-service/releases).
+
 The ocagent can be run directly from sources, binary, or a Docker image. If you are planning to run from sources or build
 on your machine start by cloning the repo using `go get -d github.com/census-instrumentation/opencensus-service`.
 
-It is recommended that you use the latest [release](https://github.com/census-instrumentation/opencensus-service/releases).
-
-The minimum Go version required for this project is Go 1.11.4.
+The minimum Go version required for this project is Go 1.11.4. In addition, you must manually install [Bazaar](https://github.com/census-instrumentation/opencensus-service/blob/master/CONTRIBUTING.md#required-tools)
 
 1. Run from sources:
 
@@ -366,11 +366,11 @@ Usage:
 
 Flags:
       --config string                 Path to the config file
-      --debug-processor               Flag to add a debug processor (combine with log level DEBUG to log incoming spans)
       --health-check-http-port uint   Port on which to run the healthcheck http server. (default 13133)
   -h, --help                          help for occollector
       --http-pprof-port uint          Port to be used by golang net/http/pprof (Performance Profiler), the profiler is disabled if no port or 0 is specified.
-      --log-level string              Output level of logs (TRACE, DEBUG, INFO, WARN, ERROR, FATAL) (default "INFO")
+      --log-level string              Output level of logs (DEBUG, INFO, WARN, ERROR, FATAL) (default "INFO")
+      --logging-exporter              Flag to add a logging exporter (combine with log level DEBUG to log incoming spans)
       --metrics-level string          Output level of telemetry metrics (NONE, BASIC, NORMAL, DETAILED) (default "BASIC")
       --metrics-port uint             Port exposing collector telemetry. (default 8888)
       --receive-jaeger                Flag to run the Jaeger receiver (i.e.: Jaeger Collector), default settings: {ThriftTChannelPort:14267 ThriftHTTPPort:14268}

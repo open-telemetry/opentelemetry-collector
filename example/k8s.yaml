@@ -14,7 +14,7 @@ data:
 #      zipkin: {}
     exporters:
       opencensus:
-        endpoint: "oc-collector.default.svc.cluster.local:55678" # TODO: Update me
+        endpoint: "oc-collector.default:55678" # TODO: Update me
 ---
 apiVersion: extensions/v1beta1
 kind: DaemonSet
@@ -31,15 +31,18 @@ spec:
         component: oc-agent
     spec:
       containers:
-      - image: omnition/opencensus-agent:0.1.0
+      - command:
+          - "/ocagent_linux"
+          - "--config=/conf/oc-agent-config.yaml"
+        image: omnition/opencensus-agent:0.1.6
         name: oc-agent
         resources:
           limits:
-            cpu: 0.5
+            cpu: 500m
             memory: 500Mi
-        command:
-          - "/ocagent_linux"
-          - "--config=/conf/oc-agent-config.yaml"
+          requests:
+            cpu: 100m
+            memory: 100Mi
         ports:
         - containerPort: 55678
         - containerPort: 55679
@@ -73,18 +76,24 @@ data:
 # Can only use one exporter
 #    exporters:
 #      jaeger:
-#        collector_endpoint: "http://jaeger.default.svc.cluster.local:14268/api/traces"
+#        collector_endpoint: "http://jaeger.default:14268/api/traces"
 #      zipkin: {}
     queued-exporters:
       omnition:
-        num-workers: 20
+        batching:
+          enable: true
+          timeout: 5s
+          send-batch-size: 1024
+        num-workers: 16
         queue-size: 10000
         retry-on-failure: true
-        sender-type: jaeger-thrift-http
-        jaeger-thrift-http:
-          collector_endpoint: https://ingest.omnition.io/api/traces
+        opencensus:
+          compression: "gzip"
+          endpoint: "ingest.omnition.io:443"
           headers: { "x-omnition-api-key":"00000000-0000-0000-0000-000000000001" } # TODO: Update me
-          timeout: 5s
+          num-workers: 8
+          reconnection-delay: 2s
+          secure: true
 ---
 apiVersion: v1
 kind: Service
@@ -130,7 +139,13 @@ spec:
         component: oc-collector
     spec:
       containers:
-      - image: omnition/opencensus-collector:0.1.0
+      - command:
+          - "/occollector_linux"
+          - "--config=/conf/oc-collector-config.yaml"
+        env:
+        - name: GOGC
+          value: "80"
+        image: omnition/opencensus-collector:0.1.6
         name: oc-collector
         resources:
           limits:
@@ -139,9 +154,6 @@ spec:
           requests:
             cpu: 200m
             memory: 400Mi
-        command:
-          - "/occollector_linux"
-          - "--config=/conf/oc-collector-config.yaml"
         ports:
         - containerPort: 55678
 #        - containerPort: 14267
@@ -150,6 +162,8 @@ spec:
         volumeMounts:
         - name: oc-collector-config-vol
           mountPath: /conf
+#        - name: oc-collector-secrets
+#          mountPath: /secrets
         livenessProbe:
           httpGet:
             path: /
@@ -165,3 +179,10 @@ spec:
               - key: oc-collector-config
                 path: oc-collector-config.yaml
           name: oc-collector-config-vol
+#        - secret:
+#            name: oc-collector-secrets
+#            items:
+#              - key: cert.pem
+#                path: cert.pem
+#              - key: key.pem
+#                path: key.pem
