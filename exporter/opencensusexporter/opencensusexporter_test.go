@@ -22,11 +22,12 @@ import (
 
 func TestOpenCensusTraceExportersFromViper(t *testing.T) {
 	v := viper.New()
-	v.Set("opencensus", struct{}{})
+	v.Set("opencensus", map[interface{}]interface{}{})
+	v.Set("opencensus.endpoint", "")
 	_, _, _, err := OpenCensusTraceExportersFromViper(v)
 
 	if err != ErrEndpointRequired {
-		t.Fatalf("Expected to get ErrEndpointRequired but did not")
+		t.Fatalf("Expected to get ErrEndpointRequired. Got %v", err)
 	}
 
 	v.Set("opencensus.endpoint", "127.0.0.1:55678")

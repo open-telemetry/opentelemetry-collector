@@ -20,8 +20,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"contrib.go.opencensus.io/exporter/prometheus"
 	"github.com/spf13/viper"
-	"go.opencensus.io/exporter/prometheus"
 	"go.opencensus.io/stats/view"
 	"go.uber.org/zap"
 

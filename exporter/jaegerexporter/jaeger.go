@@ -16,13 +16,14 @@ package jaegerexporter
 
 import (
 	"github.com/spf13/viper"
-	"go.opencensus.io/exporter/jaeger"
+
+	"contrib.go.opencensus.io/exporter/jaeger"
 
 	"github.com/census-instrumentation/opencensus-service/consumer"
 	"github.com/census-instrumentation/opencensus-service/exporter/exporterwrapper"
 )
 
-// Slight modified version of go/src/go.opencensus.io/exporter/jaeger/jaeger.go
+// Slight modified version of go/src/contrib.go.opencensus.io/exporter/jaeger/jaeger.go
 type jaegerConfig struct {
 	CollectorEndpoint string `mapstructure:"collector_endpoint,omitempty"`
 	Username          string `mapstructure:"username,omitempty"`

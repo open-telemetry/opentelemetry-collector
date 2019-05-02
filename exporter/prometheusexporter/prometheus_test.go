@@ -167,7 +167,7 @@ prometheus:
 	_ = res.Body.Close()
 	want := `# HELP test_this_one_there_where_ Extra ones
 # TYPE test_this_one_there_where_ counter
-test_this_one_there_where_{arch="x86",code="one",foo="bar",os="windows"} 99.0
+test_this_one_there_where_{arch="x86",code="one",foo="bar",os="windows"} 99
 `
 	if got := string(blob); got != want {
 		t.Errorf("Response mismatch\nGot:\n%s\n\nWant:\n%s", got, want)

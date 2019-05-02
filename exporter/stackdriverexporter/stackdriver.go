@@ -119,17 +119,15 @@ func (sde *stackdriverExporter) ConsumeMetricsData(ctx context.Context, md data.
 
 	var setErrorOnce sync.Once
 
-	for _, metric := range md.Metrics {
-		err := sde.exporter.ExportMetric(ctx, md.Node, md.Resource, metric)
-		if err != nil {
-			setErrorOnce.Do(func() {
-				span.SetStatus(trace.Status{Code: trace.StatusCodeInternal, Message: err.Error()})
-			})
+	err := sde.exporter.ExportMetricsProto(ctx, md.Node, md.Resource, md.Metrics)
+	if err != nil {
+		setErrorOnce.Do(func() {
+			span.SetStatus(trace.Status{Code: trace.StatusCodeInternal, Message: err.Error()})
+		})
 
-			span.Annotate([]trace.Attribute{
-				trace.StringAttribute("error", err.Error()),
-			}, "Error encountered")
-		}
+		span.Annotate([]trace.Attribute{
+			trace.StringAttribute("error", err.Error()),
+		}, "Error encountered")
 	}
 
 	return nil

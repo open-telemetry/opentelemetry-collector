@@ -22,7 +22,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 
-	"go.opencensus.io/exporter/jaeger"
+	"contrib.go.opencensus.io/exporter/jaeger"
 	"go.opencensus.io/trace"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
@@ -177,6 +177,9 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *Configu
 							"status.message": {
 								Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "Stale indices"}},
 							},
+							"error": {
+								Value: &tracepb.AttributeValue_BoolValue{BoolValue: true},
+							},
 						},
 					},
 					Links: &tracepb.Span_Links{
@@ -206,6 +209,9 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *Configu
 							},
 							"status.message": {
 								Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "Frontend crash"}},
+							},
+							"error": {
+								Value: &tracepb.AttributeValue_BoolValue{BoolValue: true},
 							},
 						},
 					},

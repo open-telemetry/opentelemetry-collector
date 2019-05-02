@@ -86,6 +86,9 @@ vet:
 install-tools:
 	go get golang.org/x/lint/golint
 	go get -u github.com/google/go-cmp/cmp
+	go get contrib.go.opencensus.io/exporter/jaeger@v0.1.1-0.20190430175949-e8b55949d948
+	go get contrib.go.opencensus.io/exporter/prometheus
+	go get contrib.go.opencensus.io/exporter/zipkin
 
 .PHONY: agent
 agent:
