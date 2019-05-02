@@ -199,22 +199,22 @@ buffer_count: 2
 
 	close(shutdownCh)
 	gotMDs := cms.AllMetrics()
+	if len(gotMDs) == 0 {
+		t.Errorf("Want at least one Metric. Got zero.")
+	}
 
 	// Now compare the received metrics data with what we expect.
 	wantNode := &commonpb.Node{
 		Identifier: &commonpb.ProcessIdentifier{
-			HostName:      host,
-			XXX_sizecache: 11,
+			HostName: host,
 		},
 		ServiceInfo: &commonpb.ServiceInfo{
-			Name:          "demo",
-			XXX_sizecache: 6,
+			Name: "demo",
 		},
 		Attributes: map[string]string{
 			"scheme": "http",
 			"port":   port,
 		},
-		XXX_sizecache: 52,
 	}
 
 	wantMetricPb1 := &metricspb.Metric{
@@ -223,9 +223,8 @@ buffer_count: 2
 			Description: "The number of calls",
 			Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
 			LabelKeys: []*metricspb.LabelKey{
-				{Key: "method", XXX_sizecache: 8},
+				{Key: "method"},
 			},
-			XXX_sizecache: 56,
 		},
 		Timeseries: []*metricspb.TimeSeries{
 			{
@@ -249,9 +248,8 @@ buffer_count: 2
 			Description: "The latency in milliseconds per call",
 			Type:        metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION,
 			LabelKeys: []*metricspb.LabelKey{
-				{Key: "method", XXX_sizecache: 8},
+				{Key: "method"},
 			},
-			XXX_sizecache: 56,
 		},
 		Timeseries: []*metricspb.TimeSeries{
 			{
@@ -290,7 +288,7 @@ buffer_count: 2
 
 	for _, md := range gotMDs {
 		node := md.Node
-		if diff := cmp.Diff(node, wantNode); diff != "" {
+		if diff := cmpNodePb(node, wantNode); diff != "" {
 			t.Errorf("Mismatch Node\n-Got +Want:\n%s", diff)
 		}
 		metricPbs := md.Metrics
@@ -314,7 +312,22 @@ func (producer *fakeProducer) Read() []*metricdata.Metric {
 	return producer.metrics
 }
 
+func cmpNodePb(got, want *commonpb.Node) string {
+	// Ignore all "XXX_sizecache" fields.
+	return cmp.Diff(
+		got,
+		want,
+		cmpopts.IgnoreFields(commonpb.Node{}, "XXX_sizecache"),
+		cmpopts.IgnoreFields(commonpb.ProcessIdentifier{}, "XXX_sizecache"),
+		cmpopts.IgnoreFields(commonpb.ServiceInfo{}, "XXX_sizecache"))
+}
+
 func cmpMetricPb(got, want *metricspb.Metric) string {
 	// Start and end time are non-deteministic. Ignore them when do the comparison.
-	return cmp.Diff(got, want, cmpopts.IgnoreTypes(&timestamp.Timestamp{}))
+	return cmp.Diff(
+		got,
+		want,
+		cmpopts.IgnoreTypes(&timestamp.Timestamp{}),
+		cmpopts.IgnoreFields(metricspb.MetricDescriptor{}, "XXX_sizecache"),
+		cmpopts.IgnoreFields(metricspb.LabelKey{}, "XXX_sizecache"))
 }
