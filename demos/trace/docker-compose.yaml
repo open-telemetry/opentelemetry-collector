@@ -22,6 +22,7 @@ services:
       - ./oc-collector-config.yaml:/etc/oc-collector-config.yaml
     ports:
       - "55678"
+      - "55680:55679"
       - "1777:1777"
       - "8888:8888" # Prometheus metrics
     depends_on:
@@ -38,6 +39,7 @@ services:
       - "1888:1888"
       - "14268"
       - "55678"
+      - "55679:55679"
     depends_on:
       - oc-collector
 

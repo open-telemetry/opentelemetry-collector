@@ -32,6 +32,7 @@ import (
 	"github.com/census-instrumentation/opencensus-service/consumer"
 	"github.com/census-instrumentation/opencensus-service/internal/config/viperutils"
 	"github.com/census-instrumentation/opencensus-service/internal/pprofserver"
+	"github.com/census-instrumentation/opencensus-service/internal/zpagesserver"
 	"github.com/census-instrumentation/opencensus-service/receiver"
 )
 
@@ -47,11 +48,16 @@ type Application struct {
 	healthCheck *healthcheck.HealthCheck
 	processor   consumer.TraceConsumer
 	receivers   []receiver.TraceReceiver
+	// stopTestChan is used to terminate the application in end to end tests.
+	stopTestChan chan struct{}
+	// readyChan is used in tests to indicate that the application is ready.
+	readyChan chan struct{}
 }
 
 func newApp() *Application {
 	return &Application{
-		v: viper.New(),
+		v:         viper.New(),
+		readyChan: make(chan struct{}),
 	}
 }
 
@@ -89,6 +95,20 @@ func (app *Application) execute() {
 	var closeFns []func()
 	app.processor, closeFns = startProcessor(app.v, app.logger)
 
+	zpagesPort := app.v.GetInt(zpagesserver.ZPagesHTTPPort)
+	if zpagesPort > 0 {
+		closeZPages, err := zpagesserver.Run(asyncErrorChannel, zpagesPort)
+		if err != nil {
+			app.logger.Error("Failed to run zPages", zap.Error(err))
+			os.Exit(1)
+		}
+		app.logger.Info("Running zPages", zap.Int("port", zpagesPort))
+		closeFn := func() {
+			closeZPages()
+		}
+		closeFns = append(closeFns, closeFn)
+	}
+
 	app.receivers = createReceivers(app.v, app.logger, app.processor, asyncErrorChannel)
 
 	err = initTelemetry(asyncErrorChannel, app.v, app.logger)
@@ -103,11 +123,18 @@ func (app *Application) execute() {
 	// mark service as ready to receive traffic.
 	app.healthCheck.Ready()
 
+	// set the channel to stop testing.
+	app.stopTestChan = make(chan struct{})
+	// notify tests that it is ready.
+	close(app.readyChan)
+
 	select {
 	case err = <-asyncErrorChannel:
 		app.logger.Error("Asynchronous error received, terminating process", zap.Error(err))
 	case s := <-signalsChannel:
 		app.logger.Info("Received signal from OS", zap.String("signal", s.String()))
+	case <-app.stopTestChan:
+		app.logger.Info("Received stop test request")
 	}
 
 	app.healthCheck.Set(healthcheck.Unavailable)
@@ -144,6 +171,7 @@ func (app *Application) Start() error {
 		healthCheckFlags,
 		loggerFlags,
 		pprofserver.AddFlags,
+		zpagesserver.AddFlags,
 	)
 
 	return rootCmd.Execute()

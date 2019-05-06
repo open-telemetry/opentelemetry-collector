@@ -20,8 +20,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"net"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -29,7 +27,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.opencensus.io/stats/view"
-	"go.opencensus.io/zpages"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -38,6 +35,7 @@ import (
 	"github.com/census-instrumentation/opencensus-service/internal/config/viperutils"
 	"github.com/census-instrumentation/opencensus-service/internal/pprofserver"
 	"github.com/census-instrumentation/opencensus-service/internal/version"
+	"github.com/census-instrumentation/opencensus-service/internal/zpagesserver"
 	"github.com/census-instrumentation/opencensus-service/observability"
 	"github.com/census-instrumentation/opencensus-service/processor/multiconsumer"
 	"github.com/census-instrumentation/opencensus-service/receiver/jaegerreceiver"
@@ -132,7 +130,11 @@ func runOCAgent() {
 	// If zPages are enabled, run them
 	zPagesPort, zPagesEnabled := agentConfig.ZPagesPort()
 	if zPagesEnabled {
-		zCloseFn := runZPages(zPagesPort)
+		zCloseFn, err := zpagesserver.Run(asyncErrorChan, zPagesPort)
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Printf("Running zPages on port %d", zPagesPort)
 		closeFns = append(closeFns, zCloseFn)
 	}
 
@@ -200,28 +202,6 @@ func runOCAgent() {
 	case s := <-signalsChan:
 		log.Printf("Received %q signal from OS, terminating process", s)
 	}
-}
-
-func runZPages(port int) func() error {
-	// And enable zPages too
-	zPagesMux := http.NewServeMux()
-	zpages.Handle(zPagesMux, "/debug")
-
-	addr := fmt.Sprintf(":%d", port)
-	ln, err := net.Listen("tcp", addr)
-	if err != nil {
-		log.Fatalf("Failed to bind to run zPages on %q: %v", addr, err)
-	}
-
-	srv := http.Server{Handler: zPagesMux}
-	go func() {
-		log.Printf("Running zPages at %q", addr)
-		if err := srv.Serve(ln); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Failed to serve zPages: %v", err)
-		}
-	}()
-
-	return srv.Close
 }
 
 func runOCReceiver(logger *zap.Logger, acfg *config.Config, tc consumer.TraceConsumer, mc consumer.MetricsConsumer, asyncErrorChan chan<- error) (doneFn func() error, err error) {
