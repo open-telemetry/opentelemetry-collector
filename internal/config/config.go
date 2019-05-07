@@ -35,6 +35,7 @@ import (
 	"github.com/census-instrumentation/opencensus-service/exporter/opencensusexporter"
 	"github.com/census-instrumentation/opencensus-service/exporter/prometheusexporter"
 	"github.com/census-instrumentation/opencensus-service/exporter/stackdriverexporter"
+	"github.com/census-instrumentation/opencensus-service/exporter/wavefrontexporter"
 	"github.com/census-instrumentation/opencensus-service/exporter/zipkinexporter"
 	"github.com/census-instrumentation/opencensus-service/receiver/opencensusreceiver"
 	"github.com/census-instrumentation/opencensus-service/receiver/prometheusreceiver"
@@ -457,6 +458,7 @@ func ExportersFromViperConfig(logger *zap.Logger, v *viper.Viper) ([]consumer.Tr
 		name string
 		fn   func(*viper.Viper) ([]consumer.TraceConsumer, []consumer.MetricsConsumer, []func() error, error)
 	}{
+		{name: "wavefront", fn: wavefrontexporter.WavefrontTraceExportersFromViper},
 		{name: "datadog", fn: datadogexporter.DatadogTraceExportersFromViper},
 		{name: "stackdriver", fn: stackdriverexporter.StackdriverTraceExportersFromViper},
 		{name: "zipkin", fn: zipkinexporter.ZipkinExportersFromViper},
