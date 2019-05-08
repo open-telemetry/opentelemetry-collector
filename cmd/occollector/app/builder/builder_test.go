@@ -143,39 +143,39 @@ func TestTailSamplingPoliciesConfiguration(t *testing.T) {
 	wCfg.Mode = TailSampling
 	wCfg.Policies = []*PolicyCfg{
 		{
-			Name:      "string-tag-filter1",
-			Type:      StringTagFilter,
+			Name:      "string-attribute-filter1",
+			Type:      StringAttributeFilter,
 			Exporters: []string{"jaeger1"},
-			Configuration: &StringTagFilterCfg{
-				Tag:    "test",
+			Configuration: &StringAttributeFilterCfg{
+				Key:    "test",
 				Values: []string{"value 1", "value 2"},
 			},
 		},
 		{
-			Name:      "numeric-tag-filter2",
-			Type:      NumericTagFilter,
+			Name:      "numeric-attribute-filter2",
+			Type:      NumericAttributeFilter,
 			Exporters: []string{"jaeger2"},
-			Configuration: &NumericTagFilterCfg{
-				Tag:      "http.status_code",
+			Configuration: &NumericAttributeFilterCfg{
+				Key:      "http.status_code",
 				MinValue: 400,
 				MaxValue: 999,
 			},
 		},
 		{
-			Name:      "string-tag-filter3",
-			Type:      StringTagFilter,
+			Name:      "string-attribute-filter3",
+			Type:      StringAttributeFilter,
 			Exporters: []string{"jaeger3"},
-			Configuration: &StringTagFilterCfg{
-				Tag:    "test.different",
+			Configuration: &StringAttributeFilterCfg{
+				Key:    "test.different",
 				Values: []string{"key 1", "key 2"},
 			},
 		},
 		{
-			Name:      "numeric-tag-filter4",
-			Type:      NumericTagFilter,
+			Name:      "numeric-attribute-filter4",
+			Type:      NumericAttributeFilter,
 			Exporters: []string{"jaeger4", "jaeger5"},
-			Configuration: &NumericTagFilterCfg{
-				Tag:      "http.status_code",
+			Configuration: &NumericAttributeFilterCfg{
+				Key:      "http.status_code",
 				MinValue: 400,
 				MaxValue: 999,
 			},

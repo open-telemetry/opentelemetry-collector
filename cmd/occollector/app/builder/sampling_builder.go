@@ -44,12 +44,12 @@ type PolicyType string
 const (
 	// AlwaysSample samples all traces, typically used for debugging.
 	AlwaysSample PolicyType = "always-sample"
-	// NumericTagFilter sample traces that have a given numberic tag in a specified
-	// range, e.g.: tag "http.status_code" >= 399 and <= 999.
-	NumericTagFilter PolicyType = "numeric-tag-filter"
-	// StringTagFilter sample traces that a tag, of type string, matching
+	// NumericAttributeFilter sample traces that have a given numeric attribute in a specified
+	// range, e.g.: attribute "http.status_code" >= 399 and <= 999.
+	NumericAttributeFilter PolicyType = "numeric-attribute-filter"
+	// StringAttributeFilter sample traces that a attribute, of type string, matching
 	// one of the listed values.
-	StringTagFilter PolicyType = "string-tag-filter"
+	StringAttributeFilter PolicyType = "string-attribute-filter"
 	// RateLimiting allows all traces until the specified limits are satisfied.
 	RateLimiting PolicyType = "rate-limiting"
 )
@@ -67,27 +67,27 @@ type PolicyCfg struct {
 	Configuration interface{}
 }
 
-// NumericTagFilterCfg holds the configurable settings to create a numeric tag filter
+// NumericAttributeFilterCfg holds the configurable settings to create a numeric attribute filter
 // sampling policy evaluator.
-type NumericTagFilterCfg struct {
+type NumericAttributeFilterCfg struct {
 	// Tag that the filter is going to be matching against.
-	Tag string `mapstructure:"tag"`
-	// MinValue is the minimum value of the tag to be considered a match.
+	Key string `mapstructure:"key"`
+	// MinValue is the minimum value of the attribute to be considered a match.
 	MinValue int64 `mapstructure:"min-value"`
-	// MaxValue is the maximum value of the tag to be considered a match.
+	// MaxValue is the maximum value of the attribute to be considered a match.
 	MaxValue int64 `mapstructure:"max-value"`
 }
 
-// StringTagFilterCfg holds the configurable settings to create a string tag filter
+// StringAttributeFilterCfg holds the configurable settings to create a string attribute filter
 // sampling policy evaluator.
-type StringTagFilterCfg struct {
+type StringAttributeFilterCfg struct {
 	// Tag that the filter is going to be matching against.
-	Tag string `mapstructure:"tag"`
-	// Values is the set of tag values that if any is equal to the actual tag valueto be considered a match.
+	Key string `mapstructure:"key"`
+	// Values is the set of attribute values that if any is equal to the actual attribute value to be considered a match.
 	Values []string `mapstructure:"values"`
 }
 
-// RateLimitingCfg holds the configurable settings to create a string tag filter
+// RateLimitingCfg holds the configurable settings to create a string attribute filter
 // sampling policy evaluator.
 type RateLimitingCfg struct {
 	// SpansPerSecond limit to the number of spans per second
@@ -135,12 +135,12 @@ func (sCfg *SamplingCfg) InitFromViper(v *viper.Viper) *SamplingCfg {
 			// As the number of polices grow this likely should be in a map.
 			var cfg interface{}
 			switch polCfg.Type {
-			case NumericTagFilter:
-				numTagFilterCfg := &NumericTagFilterCfg{}
-				cfg = numTagFilterCfg
-			case StringTagFilter:
-				strTagFilterCfg := &StringTagFilterCfg{}
-				cfg = strTagFilterCfg
+			case NumericAttributeFilter:
+				numAttributeFilterCfg := &NumericAttributeFilterCfg{}
+				cfg = numAttributeFilterCfg
+			case StringAttributeFilter:
+				strAttributeFilterCfg := &StringAttributeFilterCfg{}
+				cfg = strAttributeFilterCfg
 			case RateLimiting:
 				rateLimitingCfg := &RateLimitingCfg{}
 				cfg = rateLimitingCfg

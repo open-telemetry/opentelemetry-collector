@@ -23,23 +23,23 @@ sampling:
       policy: rate-limiting
       configuration:
         spans-per-second: 1000
-    my-string-tag-filter:
+    my-string-attribute-filter:
       exporters:
         - jaeger
         - omnition
-      policy: string-tag-filter
+      policy: string-attribute-filter
       configuration:
-        tag: tag1
+        key: key1
         values:
           - value1
           - value2
-    my-numeric-tag-filter:
+    my-numeric-attribute-filter:
       exporters:
         - jaeger
         - omnition
-      policy: numeric-tag-filter
+      policy: numeric-attribute-filter
       configuration:
-        tag: tag1
+        key: key1
         min-value: 0
         max-value: 100
     my-always-sample:

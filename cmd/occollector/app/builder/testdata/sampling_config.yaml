@@ -29,38 +29,38 @@ sampling:
   decision-wait: 31s
   num-traces: 20001
   policies:
-    string-tag-filter1:
+    string-attribute-filter1:
         exporters: 
           - jaeger1
-        policy: string-tag-filter
+        policy: string-attribute-filter
         configuration:
-          tag: "test"
+          key: "test"
           values:
             - "value 1"
             - "value 2"
-    numeric-tag-filter2:
+    numeric-attribute-filter2:
         exporters:
           - jaeger2
-        policy: numeric-tag-filter
+        policy: numeric-attribute-filter
         configuration:
-          tag: "http.status_code"
+          key: "http.status_code"
           min-value: 400
           max-value: 999
-    string-tag-filter3: 
+    string-attribute-filter3: 
         exporters: 
           - jaeger3
-        policy: string-tag-filter
+        policy: string-attribute-filter
         configuration:
-          tag: "test.different"
+          key: "test.different"
           values:
             - "key 1"
             - "key 2"
-    numeric-tag-filter4:
+    numeric-attribute-filter4:
         exporters: 
           - jaeger4
           - jaeger5
-        policy: numeric-tag-filter
+        policy: numeric-attribute-filter
         configuration:
-          tag: "http.status_code"
+          key: "http.status_code"
           min-value: 400
           max-value: 999

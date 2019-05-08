@@ -13,7 +13,7 @@ It is important to note that the performance of the OpenCensus Collector depends
 on a variety of factors including:
 
 * The receiving format: Jaeger thrift (14268) or Zipkin v2 JSON (9411)
-* The size of the spans (tests are based on number of tags): 20
+* The size of the spans (tests are based on number of attributes): 20
 * Whether tail-sampling is enabled or not
 * CPU / Memory allocation
 * Operating System: Linux

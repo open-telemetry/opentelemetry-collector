@@ -176,12 +176,12 @@ func buildSamplingProcessor(cfg *builder.SamplingCfg, nameToTraceConsumer map[st
 		switch polCfg.Type {
 		case builder.AlwaysSample:
 			policy.Evaluator = sampling.NewAlwaysSample()
-		case builder.NumericTagFilter:
-			numTagFilterCfg := polCfg.Configuration.(*builder.NumericTagFilterCfg)
-			policy.Evaluator = sampling.NewNumericTagFilter(numTagFilterCfg.Tag, numTagFilterCfg.MinValue, numTagFilterCfg.MaxValue)
-		case builder.StringTagFilter:
-			strTagFilterCfg := polCfg.Configuration.(*builder.StringTagFilterCfg)
-			policy.Evaluator = sampling.NewStringTagFilter(strTagFilterCfg.Tag, strTagFilterCfg.Values)
+		case builder.NumericAttributeFilter:
+			numAttributeFilterCfg := polCfg.Configuration.(*builder.NumericAttributeFilterCfg)
+			policy.Evaluator = sampling.NewNumericAttributeFilter(numAttributeFilterCfg.Key, numAttributeFilterCfg.MinValue, numAttributeFilterCfg.MaxValue)
+		case builder.StringAttributeFilter:
+			strAttributeFilterCfg := polCfg.Configuration.(*builder.StringAttributeFilterCfg)
+			policy.Evaluator = sampling.NewStringAttributeFilter(strAttributeFilterCfg.Key, strAttributeFilterCfg.Values)
 		case builder.RateLimiting:
 			rateLimitingCfg := polCfg.Configuration.(*builder.RateLimitingCfg)
 			policy.Evaluator = sampling.NewRateLimiting(rateLimitingCfg.SpansPerSecond)

@@ -19,7 +19,7 @@
 - [OpenCensus Agent](#opencensus-agent)
     - [Usage](#agent-usage)
 - [OpenCensus Collector](#opencensus-collector)
-    - [Global Tags](#global-tags)
+    - [Global Attributes](#global-attributes)
     - [Intelligent Sampling](#tail-sampling)
     - [Usage](#collector-usage)
 
@@ -275,10 +275,10 @@ The collector also serves as a control plane for agents/clients by supplying
 them updated configuration (e.g. trace sampling policies), and reporting
 agent/client health information/inventory metadata to downstream exporters.
 
-### <a name="global-tags"></a> Global Tags
+### <a name="global-attributes"></a> Global Attributes
 
 The collector also takes some global configurations that modify its behavior for all receivers / exporters. One of the configurations
-available is to add Attributes or Tags to all spans passing through this collector. These additional tags can be configured to either overwrite
+available is to add Attributes or Tags to all spans passing through this collector. These additional attributes can be configured to either overwrite
 attributes if they already exists on the span, or respect the original values. An example of this is provided below.
 ```yaml
 global:
@@ -303,22 +303,22 @@ sampling:
   num-traces: 10000
   policies:
     # user-defined policy name
-    my-string-tag-filter:
+    my-string-attribute-filter:
       # exporters the policy applies to
       exporters:
         - jaeger
-      policy: string-tag-filter
+      policy: string-attribute-filter
       configuration:
-        tag: tag1
+        key: key1
         values:
           - value1
           - value2
-    my-numeric-tag-filter:
+    my-numeric-attribute-filter:
       exporters:
         - zipkin
-      policy: numeric-tag-filter
+      policy: numeric-attribute-filter
       configuration:
-        tag: tag1
+        key: key1
         min-value: 0
         max-value: 100
 ```
