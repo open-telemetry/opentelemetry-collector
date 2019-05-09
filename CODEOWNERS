@@ -1,0 +1,16 @@
+#####################################################
+#
+# List of approvers for OpenTelemetry .NET SDK
+#
+#####################################################
+#
+# Learn about membership in OpenTelemetry community:
+#  https://github.com/open-telemetry/community/blob/master/community-membership.md
+# 
+#
+# Learn about CODEOWNERS file format: 
+#  https://help.github.com/en/articles/about-code-owners
+#
+
+* @BogdanDrutu
+* @pjanotti
