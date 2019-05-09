@@ -33,6 +33,7 @@ import (
 	"github.com/census-instrumentation/opencensus-service/internal/collector/sampling"
 	"github.com/census-instrumentation/opencensus-service/internal/config"
 	"github.com/census-instrumentation/opencensus-service/processor/addattributesprocessor"
+	"github.com/census-instrumentation/opencensus-service/processor/attributekeyprocessor"
 	"github.com/census-instrumentation/opencensus-service/processor/multiconsumer"
 )
 
@@ -310,18 +311,25 @@ func startProcessor(v *viper.Viper, logger *zap.Logger) (consumer.TraceConsumer,
 	}
 
 	// Wraps processors in a single one to be connected to all enabled receivers.
+	tp := multiconsumer.NewTraceProcessor(traceConsumers)
 	if multiProcessorCfg.Global != nil && multiProcessorCfg.Global.Attributes != nil {
 		logger.Info(
 			"Found global attributes config",
 			zap.Bool("overwrite", multiProcessorCfg.Global.Attributes.Overwrite),
 			zap.Any("values", multiProcessorCfg.Global.Attributes.Values),
+			zap.Any("key-mapping", multiProcessorCfg.Global.Attributes.KeyReplacements),
 		)
-		tp, _ := addattributesprocessor.NewTraceProcessor(
-			multiconsumer.NewTraceProcessor(traceConsumers),
-			addattributesprocessor.WithAttributes(multiProcessorCfg.Global.Attributes.Values),
-			addattributesprocessor.WithOverwrite(multiProcessorCfg.Global.Attributes.Overwrite),
-		)
-		return tp, closeFns
+
+		if len(multiProcessorCfg.Global.Attributes.Values) > 0 {
+			tp, _ = addattributesprocessor.NewTraceProcessor(
+				tp,
+				addattributesprocessor.WithAttributes(multiProcessorCfg.Global.Attributes.Values),
+				addattributesprocessor.WithOverwrite(multiProcessorCfg.Global.Attributes.Overwrite),
+			)
+		}
+		if len(multiProcessorCfg.Global.Attributes.KeyReplacements) > 0 {
+			tp, _ = attributekeyprocessor.NewTraceProcessor(tp, multiProcessorCfg.Global.Attributes.KeyReplacements...)
+		}
 	}
-	return multiconsumer.NewTraceProcessor(traceConsumers), closeFns
+	return tp, closeFns
 }

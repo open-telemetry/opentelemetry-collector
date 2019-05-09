@@ -277,9 +277,13 @@ agent/client health information/inventory metadata to downstream exporters.
 
 ### <a name="global-attributes"></a> Global Attributes
 
-The collector also takes some global configurations that modify its behavior for all receivers / exporters. One of the configurations
-available is to add Attributes or Tags to all spans passing through this collector. These additional attributes can be configured to either overwrite
-attributes if they already exists on the span, or respect the original values. An example of this is provided below.
+The collector also takes some global configurations that modify its behavior for all receivers / exporters. 
+
+1. Add Attributes to all spans passing through this collector. These additional attributes can be configured to either overwrite existing keys if they already exist on the span, or respect the original values.
+2. The key of each attribute can also be mapped to different strings using the `key-mapping` configuration. The key matching is case sensitive.
+
+An example using these configurations of this is provided below.
+
 ```yaml
 global:
   attributes:
@@ -290,6 +294,14 @@ global:
       some_int: 1234
       some_float: 3.14159
       some_bool: false
+    key-mapping:
+      # key-mapping is used to replace the attribute key with different keys
+      - key: servertracer.http.responsecode
+        replacement: http.status_code
+      - key:  servertracer.http.responsephrase
+        replacement: http.message
+        overwrite: true # replace attribute key even if the replacement string is already a key on the span attributes
+        keep: true # keep the attribute with the original key
 ```
 
 ### <a name="tail-sampling"></a>Intelligent Sampling

@@ -18,6 +18,8 @@ import (
 	"time"
 
 	"github.com/spf13/viper"
+
+	"github.com/census-instrumentation/opencensus-service/processor/attributekeyprocessor"
 )
 
 // SenderType indicates the type of sender
@@ -126,8 +128,9 @@ type QueuedSpanProcessorCfg struct {
 // AttributesCfg holds configuration for attributes that can be added to all spans
 // going through a processor.
 type AttributesCfg struct {
-	Overwrite bool                   `mapstructure:"overwrite"`
-	Values    map[string]interface{} `mapstructure:"values"`
+	Overwrite       bool                                   `mapstructure:"overwrite"`
+	Values          map[string]interface{}                 `mapstructure:"values"`
+	KeyReplacements []attributekeyprocessor.KeyReplacement `mapstructure:"key-mapping,omitempty"`
 }
 
 // GlobalProcessorCfg holds global configuration values that apply to all processors
