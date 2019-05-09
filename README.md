@@ -1,2 +1,2 @@
-# opentelemetry-service
+# opentelemetry service
 OpenTelemetry service
