@@ -184,7 +184,7 @@ exporters:
 
 ### <a name="config-diagnostics"></a>Diagnostics
 
-zPages is provided for monitoring. Today, the OpenCensus Agent is configured with zPages running by default on port ``55679``.
+zPages is provided for monitoring running by default on port ``55679``.
 These routes below contain the various diagnostic resources:
 
 Resource|Route
