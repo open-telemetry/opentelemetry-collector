@@ -40,7 +40,7 @@ func CombineErrors(errs []error) error {
 	if numErrors == 1 {
 		return errs[0]
 	} else if numErrors > 1 {
-		errMsgs := make([]string, numErrors)
+		errMsgs := make([]string, 0, numErrors)
 		for _, err := range errs {
 			errMsgs = append(errMsgs, err.Error())
 		}
