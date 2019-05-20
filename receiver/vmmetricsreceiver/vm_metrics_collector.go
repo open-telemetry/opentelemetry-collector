@@ -22,26 +22,24 @@ import (
 	"time"
 
 	"github.com/prometheus/procfs"
-	"go.opencensus.io/stats"
-	"go.opencensus.io/stats/view"
 	"go.opencensus.io/trace"
 
 	"github.com/census-instrumentation/opencensus-service/consumer"
 	"github.com/census-instrumentation/opencensus-service/data"
+	"github.com/census-instrumentation/opencensus-service/internal"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 )
 
-// VMMetricsCollector is a struct that contains views related to VM and process metrics (cpu, mem, etc),
-// collects and reports metrics for those views.
+// VMMetricsCollector is a struct that collects and reports VM and process metrics (cpu, mem, etc).
 type VMMetricsCollector struct {
 	consumer consumer.MetricsConsumer
 
 	startTime time.Time
-	views     []*view.View
 
 	fs        procfs.FS
 	processFs procfs.FS
+	pid       int
 
 	scrapeInterval time.Duration
 	metricPrefix   string
@@ -68,22 +66,19 @@ func NewVMMetricsCollector(si time.Duration, mountPoint, processMountPoint, pref
 	if err != nil {
 		return nil, fmt.Errorf("failed to create new VMMetricsCollector: %s", err)
 	}
+	processFs, err := procfs.NewFS(processMountPoint)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create new VMMetricsCollector: %s", err)
+	}
 	vmc := &VMMetricsCollector{
 		consumer:       consumer,
 		startTime:      time.Now(),
-		views:          vmViews,
 		fs:             fs,
+		processFs:      processFs,
+		pid:            os.Getpid(),
 		scrapeInterval: si,
 		metricPrefix:   prefix,
 		done:           make(chan struct{}),
-	}
-	view.Register(vmc.views...)
-
-	if processMountPoint != mountPoint {
-		vmc.processFs, err = procfs.NewFS(processMountPoint)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create new VMMetricsCollector: %s", err)
-		}
 	}
 
 	return vmc, nil
@@ -93,13 +88,10 @@ func NewVMMetricsCollector(si time.Duration, mountPoint, processMountPoint, pref
 func (vmc *VMMetricsCollector) StartCollection() {
 	go func() {
 		ticker := time.NewTicker(vmc.scrapeInterval)
-		var prevProcStat *procfs.ProcStat
-		var prevStat *procfs.Stat
 		for {
 			select {
 			case <-ticker.C:
-				prevProcStat, prevStat = vmc.scrape(prevProcStat, prevStat)
-				vmc.export()
+				vmc.scrapeAndExport()
 
 			case <-vmc.done:
 				return
@@ -113,104 +105,106 @@ func (vmc *VMMetricsCollector) StopCollection() {
 	close(vmc.done)
 }
 
-func (vmc *VMMetricsCollector) scrape(prevProcStat *procfs.ProcStat, prevStat *procfs.Stat) (*procfs.ProcStat, *procfs.Stat) {
+func (vmc *VMMetricsCollector) scrapeAndExport() {
+	ctx, span := trace.StartSpan(context.Background(), "VMMetricsCollector.scrapeAndExport")
+	defer span.End()
+
+	metrics := make([]*metricspb.Metric, 0, len(vmMetricDescriptors))
+	var errs []error
+
 	ms := &runtime.MemStats{}
 	runtime.ReadMemStats(ms)
-	ctx := context.Background()
-	stats.Record(
-		ctx,
-		mRuntimeAllocMem.M(int64(ms.Alloc)),
-		mRuntimeTotalAllocMem.M(int64(ms.TotalAlloc)),
-		mRuntimeSysMem.M(int64(ms.Sys)))
+	metrics = append(
+		metrics,
+		&metricspb.Metric{
+			MetricDescriptor: metricAllocMem,
+			Timeseries:       []*metricspb.TimeSeries{vmc.getInt64TimeSeries(ms.Alloc)},
+		},
+		&metricspb.Metric{
+			MetricDescriptor: metricTotalAllocMem,
+			Timeseries:       []*metricspb.TimeSeries{vmc.getInt64TimeSeries(ms.TotalAlloc)},
+		},
+		&metricspb.Metric{
+			MetricDescriptor: metricSysMem,
+			Timeseries:       []*metricspb.TimeSeries{vmc.getInt64TimeSeries(ms.Sys)},
+		},
+	)
 
-	pid := os.Getpid()
 	var proc procfs.Proc
 	var err error
-	if vmc.processFs == "" {
-		proc, err = vmc.fs.NewProc(pid)
-	} else {
-		proc, err = vmc.processFs.NewProc(pid)
-	}
+	proc, err = vmc.processFs.NewProc(vmc.pid)
 	if err == nil {
 		procStat, err := proc.NewStat()
 		if err == nil {
-			if prevProcStat != nil {
-				stats.Record(ctx, mCPUSeconds.M(procStat.CPUTime()-prevProcStat.CPUTime()))
-			} else {
-				stats.Record(ctx, mCPUSeconds.M(procStat.CPUTime()))
-			}
+			metrics = append(
+				metrics,
+				&metricspb.Metric{
+					MetricDescriptor: metricProcessCPUSeconds,
+					Timeseries:       []*metricspb.TimeSeries{vmc.getDoubleTimeSeries(procStat.CPUTime(), nil)},
+				},
+			)
 		}
-		prevProcStat = &procStat
+	}
+	if err != nil {
+		errs = append(errs, err)
 	}
 
 	stat, err := vmc.fs.NewStat()
 	if err == nil {
 		cpuStat := stat.CPUTotal
-		stats.Record(
-			ctx,
-			mProcessesRunning.M(int64(stat.ProcessesRunning)),
-			mProcessesBlocked.M(int64(stat.ProcessesBlocked)))
-		if prevStat != nil {
-			stats.Record(
-				ctx,
-				mProcessesCreated.M(int64(stat.ProcessCreated-prevStat.ProcessCreated)),
-				mUserCPUSeconds.M(cpuStat.User-prevStat.CPUTotal.User),
-				mNiceCPUSeconds.M(cpuStat.Nice-prevStat.CPUTotal.Nice),
-				mSystemCPUSeconds.M(cpuStat.System-prevStat.CPUTotal.System),
-				mIdleCPUSeconds.M(cpuStat.Idle-prevStat.CPUTotal.Idle),
-				mIowaitCPUSeconds.M(cpuStat.Iowait-prevStat.CPUTotal.Iowait))
-		} else {
-			stats.Record(
-				ctx,
-				mProcessesCreated.M(int64(stat.ProcessCreated)),
-				mUserCPUSeconds.M(cpuStat.User),
-				mNiceCPUSeconds.M(cpuStat.Nice),
-				mSystemCPUSeconds.M(cpuStat.System),
-				mIdleCPUSeconds.M(cpuStat.Idle),
-				mIowaitCPUSeconds.M(cpuStat.Iowait))
-		}
-		prevStat = &stat
-	}
-	return prevProcStat, prevStat
-}
-
-func (vmc *VMMetricsCollector) export() {
-	vds := make([]*view.Data, 0, len(vmc.views))
-	for _, v := range vmc.views {
-		if rows, err := view.RetrieveData(v.Name); err == nil {
-			vd := view.Data{
-				View:  v,
-				Start: vmc.startTime,
-				End:   time.Now(),
-				Rows:  rows,
-			}
-			vds = append(vds, &vd)
-		}
-	}
-	vmc.uploadViewData(vds)
-}
-
-func (vmc *VMMetricsCollector) uploadViewData(vds []*view.Data) {
-	if len(vds) == 0 {
-		return
+		metrics = append(
+			metrics,
+			&metricspb.Metric{
+				MetricDescriptor: metricProcessesRunning,
+				Timeseries:       []*metricspb.TimeSeries{vmc.getInt64TimeSeries(stat.ProcessesRunning)},
+			},
+			&metricspb.Metric{
+				MetricDescriptor: metricProcessesBlocked,
+				Timeseries:       []*metricspb.TimeSeries{vmc.getInt64TimeSeries(stat.ProcessesBlocked)},
+			},
+			&metricspb.Metric{
+				MetricDescriptor: metricProcessesCreated,
+				Timeseries:       []*metricspb.TimeSeries{vmc.getInt64TimeSeries(stat.ProcessCreated)},
+			},
+			&metricspb.Metric{
+				MetricDescriptor: metricCPUSeconds,
+				Timeseries: []*metricspb.TimeSeries{
+					vmc.getDoubleTimeSeries(cpuStat.User, labelValueCPUUser),
+					vmc.getDoubleTimeSeries(cpuStat.System, labelValueCPUSystem),
+					vmc.getDoubleTimeSeries(cpuStat.Idle, labelValueCPUIdle),
+					vmc.getDoubleTimeSeries(cpuStat.Nice, labelValueCPUNice),
+					vmc.getDoubleTimeSeries(cpuStat.Iowait, labelValueCPUIOWait),
+				},
+			},
+		)
+	} else {
+		errs = append(errs, err)
 	}
 
-	ctx, span := trace.StartSpan(context.Background(), "VMMetricsCollector.uploadViewData")
-	defer span.End()
-
-	metrics := make([]*metricspb.Metric, 0, len(vds))
-	errs := []error{}
-	for _, vd := range vds {
-		if metric, err := viewDataToMetric(vd); err == nil {
-			metrics = append(metrics, metric)
-		} else {
-			errs = append(errs, err)
-		}
+	if len(errs) > 0 {
+		span.SetStatus(trace.Status{Code: trace.StatusCodeDataLoss, Message: fmt.Sprintf("Error(s) when scraping VM metrics: %v", internal.CombineErrors(errs))})
 	}
+
 	if len(metrics) > 0 {
 		vmc.consumer.ConsumeMetricsData(ctx, data.MetricsData{Metrics: metrics})
 	}
-	if len(errs) > 0 {
-		span.SetStatus(trace.Status{Code: 15 /*DATA_LOSS*/, Message: fmt.Sprintf("Malformed ViewData(s): %v", errs)})
+}
+
+func (vmc *VMMetricsCollector) getInt64TimeSeries(val uint64) *metricspb.TimeSeries {
+	return &metricspb.TimeSeries{
+		StartTimestamp: internal.TimeToTimestamp(vmc.startTime),
+		Points:         []*metricspb.Point{{Timestamp: internal.TimeToTimestamp(time.Now()), Value: &metricspb.Point_Int64Value{Int64Value: int64(val)}}},
+	}
+}
+
+func (vmc *VMMetricsCollector) getDoubleTimeSeries(val float64, labelVal *metricspb.LabelValue) *metricspb.TimeSeries {
+	var labelVals []*metricspb.LabelValue
+	if labelVal != nil {
+		labelVals = append(labelVals, labelVal)
+	}
+	return &metricspb.TimeSeries{
+		StartTimestamp: internal.TimeToTimestamp(vmc.startTime),
+		LabelValues:    labelVals,
+		Points:         []*metricspb.Point{{Timestamp: internal.TimeToTimestamp(time.Now()), Value: &metricspb.Point_DoubleValue{DoubleValue: val}}},
 	}
 }

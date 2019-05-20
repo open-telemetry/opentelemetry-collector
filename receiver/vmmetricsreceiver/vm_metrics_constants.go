@@ -15,131 +15,90 @@
 package vmmetricsreceiver
 
 import (
-	"go.opencensus.io/stats"
-	"go.opencensus.io/stats/view"
+	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 )
 
-// Measure and view constants for VM and process metrics.
-// TODO(songy23): remove all measures and views and use Metrics APIs instead.
+// VM and process metric constants.
 
-var mRuntimeAllocMem = stats.Int64("process/memory_alloc", "Number of bytes currently allocated in use", "By")
-var viewAllocMem = &view.View{
-	Name:        mRuntimeAllocMem.Name(),
-	Description: mRuntimeAllocMem.Description(),
-	Measure:     mRuntimeAllocMem,
-	Aggregation: view.LastValue(),
-	TagKeys:     nil,
+var metricAllocMem = &metricspb.MetricDescriptor{
+	Name:        "process/memory_alloc",
+	Description: "Number of bytes currently allocated in use",
+	Unit:        "By",
+	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
+	LabelKeys:   nil,
 }
 
-var mRuntimeTotalAllocMem = stats.Int64("process/total_memory_alloc", "Number of allocations in total", "By")
-var viewTotalAllocMem = &view.View{
-	Name:        mRuntimeTotalAllocMem.Name(),
-	Description: mRuntimeTotalAllocMem.Description(),
-	Measure:     mRuntimeTotalAllocMem,
-	Aggregation: view.LastValue(),
-	TagKeys:     nil,
+var metricTotalAllocMem = &metricspb.MetricDescriptor{
+	Name:        "process/total_memory_alloc",
+	Description: "Number of allocations in total",
+	Unit:        "By",
+	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
+	LabelKeys:   nil,
 }
 
-var mRuntimeSysMem = stats.Int64("process/sys_memory_alloc", "Number of bytes given to the process to use in total", "By")
-var viewSysMem = &view.View{
-	Name:        mRuntimeSysMem.Name(),
-	Description: mRuntimeSysMem.Description(),
-	Measure:     mRuntimeSysMem,
-	Aggregation: view.LastValue(),
-	TagKeys:     nil,
+var metricSysMem = &metricspb.MetricDescriptor{
+	Name:        "process/sys_memory_alloc",
+	Description: "Number of bytes given to the process to use in total",
+	Unit:        "By",
+	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
+	LabelKeys:   nil,
 }
 
-var mCPUSeconds = stats.Float64("process/cpu_seconds", "CPU seconds for this process", "s")
-var viewCPUSeconds = &view.View{
-	Name:        mCPUSeconds.Name(),
-	Description: mCPUSeconds.Description(),
-	Measure:     mCPUSeconds,
-	Aggregation: view.Sum(),
-	TagKeys:     nil,
+var metricProcessCPUSeconds = &metricspb.MetricDescriptor{
+	Name:        "process/cpu_seconds",
+	Description: "CPU seconds for this process",
+	Unit:        "s",
+	Type:        metricspb.MetricDescriptor_CUMULATIVE_DOUBLE,
+	LabelKeys:   nil,
 }
 
-var mUserCPUSeconds = stats.Float64("system/cpu_seconds/user", "Total kernel/system user CPU seconds", "s")
-var viewUserCPUSeconds = &view.View{
-	Name:        mUserCPUSeconds.Name(),
-	Description: mUserCPUSeconds.Description(),
-	Measure:     mUserCPUSeconds,
-	Aggregation: view.Sum(),
-	TagKeys:     nil,
+var metricCPUSeconds = &metricspb.MetricDescriptor{
+	Name:        "system/cpu_seconds",
+	Description: "Total kernel/system CPU seconds broken down by different states",
+	Unit:        "s",
+	Type:        metricspb.MetricDescriptor_CUMULATIVE_DOUBLE,
+	LabelKeys:   []*metricspb.LabelKey{{Key: "state", Description: "State of CPU time, e.g user/system/idle"}},
 }
 
-var mNiceCPUSeconds = stats.Float64("system/cpu_seconds/nice", "Total kernel/system nice CPU seconds", "s")
-var viewNiceCPUSeconds = &view.View{
-	Name:        mNiceCPUSeconds.Name(),
-	Description: mNiceCPUSeconds.Description(),
-	Measure:     mNiceCPUSeconds,
-	Aggregation: view.Sum(),
-	TagKeys:     nil,
+var metricProcessesCreated = &metricspb.MetricDescriptor{
+	Name:        "system/processes/created",
+	Description: "Total number of times a process was created",
+	Unit:        "1",
+	Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
+	LabelKeys:   nil,
 }
 
-var mSystemCPUSeconds = stats.Float64("system/cpu_seconds/system", "Total kernel/system system CPU seconds", "s")
-var viewSystemCPUSeconds = &view.View{
-	Name:        mSystemCPUSeconds.Name(),
-	Description: mSystemCPUSeconds.Description(),
-	Measure:     mSystemCPUSeconds,
-	Aggregation: view.Sum(),
-	TagKeys:     nil,
+var metricProcessesRunning = &metricspb.MetricDescriptor{
+	Name:        "system/processes/running",
+	Description: "Total number of running processes",
+	Unit:        "1",
+	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
+	LabelKeys:   nil,
 }
 
-var mIdleCPUSeconds = stats.Float64("system/cpu_seconds/idle", "Total kernel/system idle CPU seconds", "s")
-var viewIdleCPUSeconds = &view.View{
-	Name:        mIdleCPUSeconds.Name(),
-	Description: mIdleCPUSeconds.Description(),
-	Measure:     mIdleCPUSeconds,
-	Aggregation: view.Sum(),
-	TagKeys:     nil,
+var metricProcessesBlocked = &metricspb.MetricDescriptor{
+	Name:        "system/processes/blocked",
+	Description: "Total number of blocked processes",
+	Unit:        "1",
+	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
+	LabelKeys:   nil,
 }
 
-var mIowaitCPUSeconds = stats.Float64("system/cpu_seconds/iowait", "Total kernel/system Iowait CPU seconds", "s")
-var viewIowaitCPUSeconds = &view.View{
-	Name:        mIowaitCPUSeconds.Name(),
-	Description: mIowaitCPUSeconds.Description(),
-	Measure:     mIowaitCPUSeconds,
-	Aggregation: view.Sum(),
-	TagKeys:     nil,
-}
+var (
+	labelValueCPUUser   = &metricspb.LabelValue{Value: "user", HasValue: true}
+	labelValueCPUSystem = &metricspb.LabelValue{Value: "system", HasValue: true}
+	labelValueCPUIdle   = &metricspb.LabelValue{Value: "idle", HasValue: true}
+	labelValueCPUNice   = &metricspb.LabelValue{Value: "nice", HasValue: true}
+	labelValueCPUIOWait = &metricspb.LabelValue{Value: "iowait", HasValue: true}
+)
 
-var mProcessesCreated = stats.Int64("system/processes/created", "Total number of times a process was created", "1")
-var viewProcessesCreated = &view.View{
-	Name:        mProcessesCreated.Name(),
-	Description: mProcessesCreated.Description(),
-	Measure:     mProcessesCreated,
-	Aggregation: view.Sum(),
-	TagKeys:     nil,
+var vmMetricDescriptors = []*metricspb.MetricDescriptor{
+	metricAllocMem,
+	metricTotalAllocMem,
+	metricSysMem,
+	metricProcessCPUSeconds,
+	metricCPUSeconds,
+	metricProcessesCreated,
+	metricProcessesRunning,
+	metricProcessesBlocked,
 }
-
-var mProcessesRunning = stats.Int64("system/processes/running", "Total number of running processes", "1")
-var viewProcessesRunning = &view.View{
-	Name:        mProcessesRunning.Name(),
-	Description: mProcessesRunning.Description(),
-	Measure:     mProcessesRunning,
-	Aggregation: view.LastValue(),
-	TagKeys:     nil,
-}
-
-var mProcessesBlocked = stats.Int64("system/processes/blocked", "Total number of blocked processes", "1")
-var viewProcessesBlocked = &view.View{
-	Name:        mProcessesBlocked.Name(),
-	Description: mProcessesBlocked.Description(),
-	Measure:     mProcessesBlocked,
-	Aggregation: view.LastValue(),
-	TagKeys:     nil,
-}
-
-var vmViews = []*view.View{
-	viewAllocMem,
-	viewTotalAllocMem,
-	viewSysMem,
-	viewCPUSeconds,
-	viewUserCPUSeconds,
-	viewNiceCPUSeconds,
-	viewSystemCPUSeconds,
-	viewIdleCPUSeconds,
-	viewIowaitCPUSeconds,
-	viewProcessesCreated,
-	viewProcessesRunning,
-	viewProcessesBlocked}
