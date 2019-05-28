@@ -73,14 +73,8 @@ lint:
 
 .PHONY: vet
 vet:
-	@VETOUT=`$(GOVET) ./... 2>&1`; \
-	if [ "$$VETOUT" ]; then \
-		echo "$(GOVET) FAILED => clean the following vet errors:\n"; \
-		echo "$$VETOUT\n"; \
-		exit 1; \
-	else \
-	    echo "Vet finished successfully"; \
-	fi
+	@$(GOVET) ./...
+	@echo "Vet finished successfully"
 
 .PHONY: install-tools
 install-tools:
