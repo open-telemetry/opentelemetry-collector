@@ -1,0 +1,12 @@
+receivers:
+  examplereceiver:
+processors:
+  exampleprocessor:
+exporters:
+  exampleexporter:
+
+pipelines:
+  wrongdatatype:
+    receivers: [examplereceiver]
+    processors: [exampleprocessor]
+    exporters: [exampleexporter]

@@ -1,0 +1,11 @@
+receivers:
+  multireceiver:
+exporters:
+  exampleexporter:
+processors:
+  exampleprocessor:
+pipelines:
+  traces:
+    receivers: [1,2,3]
+    exporters: [exampleexporter]
+    processors: [exampleprocessor]

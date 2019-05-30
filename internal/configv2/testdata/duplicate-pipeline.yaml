@@ -1,0 +1,16 @@
+receivers:
+  examplereceiver:
+exporters:
+  exampleexporter:
+processors:
+  exampleprocessor:
+    enabled: true
+pipelines:
+  traces/default:
+    receivers: [examplereceiver]
+    exporters: [exampleexporter]
+    processors: [exampleprocessor]
+  traces/ default:
+    receivers: [examplereceiver]
+    exporters: [exampleexporter]
+    processors: [exampleprocessor]

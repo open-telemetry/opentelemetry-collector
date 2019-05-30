@@ -1,0 +1,4 @@
+receivers:
+exporters:
+processors:
+pipeline:

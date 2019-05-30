@@ -1,0 +1,9 @@
+receivers:
+  /myreceiver:
+exporters:
+  exampleexporter:
+processors:
+  exampleprocessor:
+pipelines:
+  traces:
+    receivers: [somereceiver]

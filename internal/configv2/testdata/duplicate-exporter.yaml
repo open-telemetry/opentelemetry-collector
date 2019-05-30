@@ -1,0 +1,13 @@
+receivers:
+  examplereceiver:
+exporters:
+  exampleexporter/exp:
+  exampleexporter/ exp :
+processors:
+  exampleprocessor:
+    enabled: true
+pipelines:
+  traces:
+    receivers: [examplereceiver]
+    exporters: [exampleexporter]
+    processors: [exampleprocessor]
