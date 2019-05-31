@@ -5,7 +5,7 @@ require (
 	contrib.go.opencensus.io/exporter/jaeger v0.1.1-0.20190430175949-e8b55949d948
 	contrib.go.opencensus.io/exporter/ocagent v0.5.0
 	contrib.go.opencensus.io/exporter/prometheus v0.1.0
-	contrib.go.opencensus.io/exporter/stackdriver v0.12.0
+	contrib.go.opencensus.io/exporter/stackdriver v0.12.1
 	contrib.go.opencensus.io/exporter/zipkin v0.1.1
 	github.com/DataDog/datadog-go v2.2.0+incompatible // indirect
 	github.com/DataDog/opencensus-go-exporter-datadog v0.0.0-20181026070331-e7c4bd17b329

@@ -12,11 +12,11 @@ contrib.go.opencensus.io/exporter/ocagent v0.5.0 h1:TKXjQSRS0/cCDrP7KvkgU6SmILtF
 contrib.go.opencensus.io/exporter/ocagent v0.5.0/go.mod h1:ImxhfLRpxoYiSq891pBrLVhN+qmP8BTVvdH2YLs7Gl0=
 contrib.go.opencensus.io/exporter/prometheus v0.1.0 h1:SByaIoWwNgMdPSgl5sMqM2KDE5H/ukPWBRo314xiDvg=
 contrib.go.opencensus.io/exporter/prometheus v0.1.0/go.mod h1:cGFniUXGZlKRjzOyuZJ6mgB+PgBcCIa79kEKR8YCW+A=
-contrib.go.opencensus.io/exporter/stackdriver v0.12.0 h1:TdHYfZ7qR3Dqab72LTWgJmG6ZsfgS/Nn/gDHF4Pt5DQ=
-contrib.go.opencensus.io/exporter/stackdriver v0.12.0/go.mod h1:nDPyhzW+GXyxrKsf328j/HLDYHMypbVlKSZOtl8CCDM=
+contrib.go.opencensus.io/exporter/stackdriver v0.12.1 h1:Dll2uFfOVI3fa8UzsHyP6z0M6fEc9ZTAMo+Y3z282Xg=
+contrib.go.opencensus.io/exporter/stackdriver v0.12.1/go.mod h1:iwB6wGarfphGGe/e5CWqyUk/cLzKnWsOKPVW3no6OTw=
 contrib.go.opencensus.io/exporter/zipkin v0.1.1 h1:PR+1zWqY8ceXs1qDQQIlgXe+sdiwCf0n32bH4+Epk8g=
 contrib.go.opencensus.io/exporter/zipkin v0.1.1/go.mod h1:GMvdSl3eJ2gapOaLKzTKE3qDgUkJ86k9k3yY2eqwkzc=
-contrib.go.opencensus.io/resource v0.1.0/go.mod h1:F361eGI91LCmW1I/Saf+rX0+OFcigGlFvXwEGEnkRLA=
+contrib.go.opencensus.io/resource v0.1.1/go.mod h1:F361eGI91LCmW1I/Saf+rX0+OFcigGlFvXwEGEnkRLA=
 git.apache.org/thrift.git v0.0.0-20180902110319-2566ecd5d999 h1:sihTnRgTOUSCQz0iS0pjZuFQy/z7GXCJgSBg3+rZKHw=
 git.apache.org/thrift.git v0.0.0-20180902110319-2566ecd5d999/go.mod h1:fPE2ZNJGynbRyZ4dJvy6G277gSllfV2HJqblrnkyeyg=
 github.com/Azure/azure-sdk-for-go v0.0.0-20161028183111-bd73d950fa44 h1:L4fLiifszjLnCRGi6Xhp0MgUwjIMbVXKbayoRiVxkU8=
