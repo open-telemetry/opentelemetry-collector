@@ -5,7 +5,7 @@ require (
 	contrib.go.opencensus.io/exporter/jaeger v0.1.1-0.20190430175949-e8b55949d948
 	contrib.go.opencensus.io/exporter/ocagent v0.5.0
 	contrib.go.opencensus.io/exporter/prometheus v0.1.0
-	contrib.go.opencensus.io/exporter/stackdriver v0.11.1
+	contrib.go.opencensus.io/exporter/stackdriver v0.12.0
 	contrib.go.opencensus.io/exporter/zipkin v0.1.1
 	github.com/DataDog/datadog-go v2.2.0+incompatible // indirect
 	github.com/DataDog/opencensus-go-exporter-datadog v0.0.0-20181026070331-e7c4bd17b329
@@ -20,7 +20,7 @@ require (
 	github.com/facebookgo/subset v0.0.0-20150612182917-8dac2c3c4870 // indirect
 	github.com/gogo/googleapis v1.2.0 // indirect
 	github.com/golang/protobuf v1.3.1
-	github.com/google/go-cmp v0.2.0
+	github.com/google/go-cmp v0.3.0
 	github.com/gorilla/mux v1.6.2
 	github.com/grpc-ecosystem/grpc-gateway v1.8.5
 	github.com/honeycombio/libhoney-go v1.10.0 // indirect
@@ -53,12 +53,12 @@ require (
 	github.com/wavefronthq/opencensus-exporter v0.0.0-20190506162721-983d7cdaceaf
 	github.com/wavefronthq/wavefront-sdk-go v0.9.2
 	github.com/yancl/opencensus-go-exporter-kafka v0.0.0-20181029030031-9c471c1bfbeb
-	go.opencensus.io v0.21.0
+	go.opencensus.io v0.22.0
 	go.uber.org/atomic v1.3.2 // indirect
 	go.uber.org/multierr v1.1.0 // indirect
 	go.uber.org/zap v1.9.1
 	google.golang.org/api v0.5.0
-	google.golang.org/grpc v1.20.1
+	google.golang.org/grpc v1.21.0
 	gopkg.in/DataDog/dd-trace-go.v1 v1.12.1 // indirect
 	gopkg.in/alexcesaro/statsd.v2 v2.0.0 // indirect
 	gopkg.in/yaml.v2 v2.2.2
