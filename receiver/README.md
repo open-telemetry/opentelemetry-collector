@@ -49,6 +49,52 @@ using `--receive-oc-trace=false`. On the Collector only the port can be configur
 receivers:
   opencensus:
     port: 55678
+
+    # Settings below are only available on collector.
+
+    # Changes the maximum msg size that can be received (default is 4MiB).
+    # See https://godoc.org/google.golang.org/grpc#MaxRecvMsgSize for more information.
+    max-recv-msg-size-mib: 32
+    
+    # Limits the maximum number of concurrent streams for each receiver transport (default is 100).
+    # See https://godoc.org/google.golang.org/grpc#MaxConcurrentStreams for more information.
+    max-concurrent-streams: 20
+
+    # Controls the keepalive settings, typically used to help scenarios in which the senders have 
+    # load-balancers or proxies between them and the collectors.
+    keepalive:
+
+      # This section controls the https://godoc.org/google.golang.org/grpc/keepalive#ServerParameters.
+      # These are typically used to help load balancers by periodically terminating connections, or keeping
+      # connections alive (preventing RSTs by proxies) when needed for bursts of data following periods of
+      # inactivity.
+      server-parameters:
+        # max-connection-idle is the amount of time after which an idle connection would be closed,
+        # the default is infinity.
+        max-connection-idle: 90s
+        # max-connection-age is the maximum amount of time a connection may exist before it is closed,
+        # the default is infinity.
+        max-connection-age: 180s
+        # max-connection-age-grace is an additive period after max-connection-age for which the connection
+        # will be forcibly closed. The default is infinity.
+        max-connection-age-grace: 10s
+        # time is a duration for which, if the server doesn't see any activity it pings the client to see
+        # if the transport is still alive. The default is 2 hours.
+        time: 30s
+        # timeout is the wait time after a ping that the server waits for the response before closing the
+        # connection. The default is 20 seconds.
+        timeout: 5s 
+
+      # This section controls the https://godoc.org/google.golang.org/grpc/keepalive#EnforcementPolicy.
+      # It is used to set keepalive enforcement policy on the server-side. Server will close connection
+      # with a client that violates this policy. 
+      enforcement-policy:
+        # min-time is the minimum amount of time a client should wait before sending a keepalive ping.
+        # The default value is 5 minutes.
+        min-time: 10s
+        # permit-without-stream if true, server allows keepalive pings even when there are no active
+        # streams(RPCs). The default is false.
+        permit-without-stream: true
 ```
 
 ## Jaeger

@@ -276,6 +276,10 @@ The collector also serves as a control plane for agents/clients by supplying
 them updated configuration (e.g. trace sampling policies), and reporting
 agent/client health information/inventory metadata to downstream exporters.
 
+### <a name="receivers-configuration"></a> Receivers Configuration
+
+For detailed information about configuring receivers for the collector refer to the [receivers README.md](receiver/README.md).
+
 ### <a name="global-attributes"></a> Global Attributes
 
 The collector also takes some global configurations that modify its behavior for all receivers / exporters. 
@@ -398,7 +402,7 @@ Sample configuration file:
 log-level: DEBUG
 
 receivers:
-  opencensus: {} # Runs OpenCensus receiver with default configuration (default behavior)
+  opencensus: {} # Runs OpenCensus receiver with default configuration (default behavior).
 
 queued-exporters:
   jaeger-sender-test: # A friendly name for the exporter

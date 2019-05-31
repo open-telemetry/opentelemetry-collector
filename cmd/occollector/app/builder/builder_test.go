@@ -212,6 +212,36 @@ func TestTailSamplingConfig(t *testing.T) {
 	}
 }
 
+func TestOpencensusReceiverKeepaliveSettings(t *testing.T) {
+	v, err := loadViperFromFile("./testdata/oc_keepalive_config.yaml")
+	if err != nil {
+		t.Fatalf("Failed to load viper from test file: %v", err)
+	}
+
+	wCfg := NewDefaultOpenCensusReceiverCfg()
+	wCfg.Keepalive = &serverParametersAndEnforcementPolicy{
+		ServerParameters: &keepaliveServerParameters{
+			Time:    30 * time.Second,
+			Timeout: 5 * time.Second,
+		},
+		EnforcementPolicy: &keepaliveEnforcementPolicy{
+			MinTime:             10 * time.Second,
+			PermitWithoutStream: true,
+		},
+	}
+
+	gCfg, err := NewDefaultOpenCensusReceiverCfg().InitFromViper(v)
+	if err != nil {
+		t.Fatalf("got '%v', want nil", err)
+	}
+	if !reflect.DeepEqual(*gCfg.Keepalive.ServerParameters, *wCfg.Keepalive.ServerParameters) {
+		t.Fatalf("Wanted ServerParameters %+v but got %+v", *wCfg.Keepalive.ServerParameters, *gCfg.Keepalive.ServerParameters)
+	}
+	if !reflect.DeepEqual(*gCfg.Keepalive.EnforcementPolicy, *wCfg.Keepalive.EnforcementPolicy) {
+		t.Fatalf("Wanted EnforcementPolicy %+v but got %+v", *wCfg.Keepalive.EnforcementPolicy, *gCfg.Keepalive.EnforcementPolicy)
+	}
+}
+
 func loadViperFromFile(file string) (*viper.Viper, error) {
 	v := viper.New()
 	v.SetConfigFile(file)

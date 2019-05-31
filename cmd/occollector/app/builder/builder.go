@@ -18,6 +18,7 @@ import (
 	"flag"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/census-instrumentation/opencensus-service/internal/config"
 	"github.com/spf13/viper"
@@ -106,6 +107,37 @@ type OpenCensusReceiverCfg struct {
 
 	// TLSCredentials is a (cert_file, key_file) configuration.
 	TLSCredentials *config.TLSCredentials `mapstructure:"tls_credentials"`
+
+	// Keepalive anchor for all the settings related to keepalive.
+	Keepalive *serverParametersAndEnforcementPolicy `mapstructure:"keepalive,omitempty"`
+
+	// MaxRecvMsgSizeMiB sets the maximum size (in MiB) of messages accepted by the server.
+	MaxRecvMsgSizeMiB uint64 `mapstructure:"max-recv-msg-size-mib"`
+
+	// MaxConcurrentStreams sets the limit on the number of concurrent streams to each ServerTransport.
+	MaxConcurrentStreams uint32 `mapstructure:"max-concurrent-streams"`
+}
+
+type serverParametersAndEnforcementPolicy struct {
+	ServerParameters  *keepaliveServerParameters  `mapstructure:"server-parameters,omitempty"`
+	EnforcementPolicy *keepaliveEnforcementPolicy `mapstructure:"enforcement-policy,omitempty"`
+}
+
+// keepaliveServerParameters allow configuration of the keepalive.ServerParameters.
+// See https://godoc.org/google.golang.org/grpc/keepalive#ServerParameters for details.
+type keepaliveServerParameters struct {
+	MaxConnectionIdle     time.Duration `mapstructure:"max-connection-idle,omitempty"`
+	MaxConnectionAge      time.Duration `mapstructure:"max-connection-age,omitempty"`
+	MaxConnectionAgeGrace time.Duration `mapstructure:"max-connection-age-grace,omitempty"`
+	Time                  time.Duration `mapstructure:"time,omitempty"`
+	Timeout               time.Duration `mapstructure:"timeout,omitempty"`
+}
+
+// keepaliveEnforcementPolicy allow configuration of the keepalive.EnforcementPolicy.
+// See https://godoc.org/google.golang.org/grpc/keepalive#EnforcementPolicy for details.
+type keepaliveEnforcementPolicy struct {
+	MinTime             time.Duration `mapstructure:"min-time,omitempty"`
+	PermitWithoutStream bool          `mapstructure:"permit-without-stream,omitempty"`
 }
 
 // OpenCensusReceiverEnabled checks if the OpenCensus receiver is enabled, via a command-line flag, environment
