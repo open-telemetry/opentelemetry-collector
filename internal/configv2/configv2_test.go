@@ -15,164 +15,20 @@
 package configv2
 
 import (
-	"os"
 	"path"
 	"testing"
 
-	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/census-instrumentation/opencensus-service/internal/configmodels"
-	"github.com/census-instrumentation/opencensus-service/internal/factories"
 )
 
-// ExampleReceiver: for testing purposes we are defining an example config and factory
-// for "examplereceiver" receiver type.
-type ExampleReceiver struct {
-	configmodels.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-	ExtraSetting                  string                   `mapstructure:"extra"`
-}
-
-type ExampleReceiverFactory struct {
-}
-
-// Type gets the type of the Receiver config created by this factory.
-func (f *ExampleReceiverFactory) Type() string {
-	return "examplereceiver"
-}
-
-// CreateDefaultConfig creates the default configuration for the Receiver.
-func (f *ExampleReceiverFactory) CreateDefaultConfig() configmodels.Receiver {
-	return &ExampleReceiver{
-		ReceiverSettings: configmodels.ReceiverSettings{
-			Endpoint: "localhost:1000",
-			Enabled:  false,
-		},
-		ExtraSetting: "some string",
-	}
-}
-
-// MultiProtoReceiver: for testing purposes we are defining an example multi protocol
-// config and factory for "multireceiver" receiver type.
-type MultiProtoReceiver struct {
-	Protocols map[string]MultiProtoReceiverOneCfg `mapstructure:"protocols"`
-}
-
-var _ configmodels.Receiver = (*MultiProtoReceiver)(nil)
-
-type MultiProtoReceiverOneCfg struct {
-	Enabled      bool   `mapstructure:"enabled"`
-	Endpoint     string `mapstructure:"endpoint"`
-	ExtraSetting string `mapstructure:"extra"`
-}
-
-type MultiProtoReceiverFactory struct {
-}
-
-// Type gets the type of the Receiver config created by this factory.
-func (f *MultiProtoReceiverFactory) Type() string {
-	return "multireceiver"
-}
-
-// CreateDefaultConfig creates the default configuration for the Receiver.
-func (f *MultiProtoReceiverFactory) CreateDefaultConfig() configmodels.Receiver {
-	return &MultiProtoReceiver{
-		Protocols: map[string]MultiProtoReceiverOneCfg{
-			"http": {
-				Enabled:      false,
-				Endpoint:     "example.com:8888",
-				ExtraSetting: "extra string 1",
-			},
-			"tcp": {
-				Enabled:      false,
-				Endpoint:     "omnition.com:9999",
-				ExtraSetting: "extra string 2",
-			},
-		},
-	}
-}
-
-// ExampleExporter: for testing purposes we are defining an example config and factory
-// for "exampleexporter" exporter type.
-type ExampleExporter struct {
-	configmodels.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-	ExtraSetting                  string                   `mapstructure:"extra"`
-}
-
-type ExampleExporterFactory struct {
-}
-
-// Type gets the type of the Exporter config created by this factory.
-func (f *ExampleExporterFactory) Type() string {
-	return "exampleexporter"
-}
-
-// CreateDefaultConfig creates the default configuration for the Exporter.
-func (f *ExampleExporterFactory) CreateDefaultConfig() configmodels.Exporter {
-	return &ExampleExporter{
-		ExporterSettings: configmodels.ExporterSettings{
-			Enabled: false,
-		},
-		ExtraSetting: "some export string",
-	}
-}
-
-// ExampleProcessor: for testing purposes we are defining an example config and factory
-// for "exampleprocessor" processor type.
-type ExampleProcessor struct {
-	configmodels.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-	ExtraSetting                   string                   `mapstructure:"extra"`
-}
-
-type ExampleProcessorFactory struct {
-}
-
-// Type gets the type of the Processor config created by this factory.
-func (f *ExampleProcessorFactory) Type() string {
-	return "exampleprocessor"
-}
-
-// CreateDefaultConfig creates the default configuration for the Processor.
-func (f *ExampleProcessorFactory) CreateDefaultConfig() configmodels.Processor {
-	return &ExampleProcessor{
-		ProcessorSettings: configmodels.ProcessorSettings{
-			Enabled: false,
-		},
-		ExtraSetting: "some export string",
-	}
-}
-
-// Register all factories
-var _ = factories.RegisterReceiverFactory(&ExampleReceiverFactory{})
-var _ = factories.RegisterReceiverFactory(&MultiProtoReceiverFactory{})
-var _ = factories.RegisterExporterFactory(&ExampleExporterFactory{})
-var _ = factories.RegisterProcessorFactory(&ExampleProcessorFactory{})
-
-func loadConfigFile(t *testing.T, fileName string) (*configmodels.ConfigV2, error) {
-	// Open the file for reading.
-	file, err := os.Open(fileName)
-	if err != nil {
-		t.Error(err)
-		return nil, err
-	}
-
-	// Read yaml config from file
-	v := viper.New()
-	v.SetConfigType("yaml")
-	err = v.ReadConfig(file)
-	if err != nil {
-		t.Errorf("unable to read yaml, %v", err)
-		return nil, err
-	}
-
-	// Load the config from viper
-	return Load(v)
-}
+var _ = RegisterTestFactories()
 
 func TestDecodeConfig(t *testing.T) {
 
 	// Load the config
-	config, err := loadConfigFile(t, path.Join(".", "testdata", "valid-config.yaml"))
+	config, err := LoadConfigFile(t, path.Join(".", "testdata", "valid-config.yaml"))
 	if err != nil {
 		t.Fatalf("unable to load config, %v", err)
 	}
@@ -244,7 +100,7 @@ func TestDecodeConfig(t *testing.T) {
 func TestDecodeConfig_MultiProto(t *testing.T) {
 
 	// Load the config
-	config, err := loadConfigFile(t, path.Join(".", "testdata", "multiproto-config.yaml"))
+	config, err := LoadConfigFile(t, path.Join(".", "testdata", "multiproto-config.yaml"))
 	if err != nil {
 		t.Fatalf("unable to load config, %v", err)
 	}
@@ -325,7 +181,7 @@ func TestDecodeConfig_Invalid(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		_, err := loadConfigFile(t, path.Join(".", "testdata", test.name+".yaml"))
+		_, err := LoadConfigFile(t, path.Join(".", "testdata", test.name+".yaml"))
 		if err == nil {
 			t.Errorf("expected error but succedded on invalid config case: %s", test.name)
 		} else if test.expected != 0 {

@@ -200,7 +200,16 @@ func loadReceivers(v *viper.Viper) (configmodels.Receivers, error) {
 
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
-		if err := subViper.UnmarshalKey(key, receiverCfg); err != nil {
+		customUnmarshaler := factory.CustomUnmarshaler()
+		if customUnmarshaler != nil {
+			// This configuration requires a custom unmarshaler, use it.
+			err = customUnmarshaler(subViper, key, receiverCfg)
+		} else {
+			// Standard viper unmarshaler is fine.
+			err = subViper.UnmarshalKey(key, receiverCfg)
+		}
+
+		if err != nil {
 			return nil, &configError{
 				code: errUnmarshalError,
 				msg:  fmt.Sprintf("error reading settings for receiver type %q: %v", typeStr, err),

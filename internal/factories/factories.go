@@ -15,7 +15,13 @@
 package factories
 
 import (
+	"context"
 	"fmt"
+
+	"github.com/census-instrumentation/opencensus-service/consumer"
+	"github.com/census-instrumentation/opencensus-service/receiver"
+
+	"github.com/spf13/viper"
 
 	"github.com/census-instrumentation/opencensus-service/internal/configmodels"
 )
@@ -31,7 +37,28 @@ type ReceiverFactory interface {
 
 	// CreateDefaultConfig creates the default configuration for the Receiver.
 	CreateDefaultConfig() configmodels.Receiver
+
+	// CustomUnmarshaler returns a custom unmarshaler for the configuration or nil if
+	// there is no need for custom unmarshaling. This is typically used if viper.Unmarshal()
+	// is not sufficient to unmarshal correctly.
+	CustomUnmarshaler() CustomUnmarshaler
+
+	// CreateTraceReceiver creates a trace receiver based on this config.
+	// If the receiver type does not support tracing or if the config is not valid
+	// error will be returned instead.
+	CreateTraceReceiver(ctx context.Context, cfg configmodels.Receiver,
+		nextConsumer consumer.TraceConsumer) (receiver.TraceReceiver, error)
+
+	// CreateMetricsReceiver creates a metrics receiver based on this config.
+	// If the receiver type does not support metrics or if the config is not valid
+	// error will be returned instead.
+	CreateMetricsReceiver(cfg configmodels.Receiver,
+		consumer consumer.MetricsConsumer) (receiver.MetricsReceiver, error)
 }
+
+// CustomUnmarshaler is a function that un-marshals a viper data into a config struct
+// in a custom way.
+type CustomUnmarshaler func(v *viper.Viper, viperKey string, intoCfg interface{}) error
 
 // List of registered receiver factories.
 var receiverFactories = make(map[string]ReceiverFactory)

@@ -1,0 +1,17 @@
+receivers:
+  opencensus:
+  opencensus/customname:
+    endpoint: 0.0.0.0:9090
+
+processors:
+  exampleprocessor:
+
+exporters:
+  exampleexporter:
+
+pipelines:
+  traces:
+      receivers: [opencensus]
+      processors: [exampleprocessor]
+      exporters: [exampleexporter]
+

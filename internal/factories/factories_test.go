@@ -15,7 +15,11 @@
 package factories
 
 import (
+	"context"
 	"testing"
+
+	"github.com/census-instrumentation/opencensus-service/consumer"
+	"github.com/census-instrumentation/opencensus-service/receiver"
 
 	"github.com/census-instrumentation/opencensus-service/internal/configmodels"
 )
@@ -28,9 +32,33 @@ func (f *ExampleReceiverFactory) Type() string {
 	return "examplereceiver"
 }
 
+// CustomUnmarshaler returns nil because we don't need custom unmarshaling for this factory.
+func (f *ExampleReceiverFactory) CustomUnmarshaler() CustomUnmarshaler {
+	return nil
+}
+
 // CreateDefaultConfig creates the default configuration for the Receiver.
 func (f *ExampleReceiverFactory) CreateDefaultConfig() configmodels.Receiver {
 	return nil
+}
+
+// CreateTraceReceiver creates a trace receiver based on this config.
+func (f *ExampleReceiverFactory) CreateTraceReceiver(
+	ctx context.Context,
+	cfg configmodels.Receiver,
+	nextConsumer consumer.TraceConsumer,
+) (receiver.TraceReceiver, error) {
+	// Not used for this test, just return nil
+	return nil, nil
+}
+
+// CreateMetricsReceiver creates a metrics receiver based on this config.
+func (f *ExampleReceiverFactory) CreateMetricsReceiver(
+	cfg configmodels.Receiver,
+	consumer consumer.MetricsConsumer,
+) (receiver.MetricsReceiver, error) {
+	// Not used for this test, just return nil
+	return nil, nil
 }
 
 func TestRegisterReceiverFactory(t *testing.T) {
