@@ -16,14 +16,14 @@ package factories
 
 import (
 	"context"
+	"errors"
 	"fmt"
-
-	"github.com/census-instrumentation/opencensus-service/consumer"
-	"github.com/census-instrumentation/opencensus-service/receiver"
 
 	"github.com/spf13/viper"
 
+	"github.com/census-instrumentation/opencensus-service/consumer"
 	"github.com/census-instrumentation/opencensus-service/internal/configmodels"
+	"github.com/census-instrumentation/opencensus-service/receiver"
 )
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -55,6 +55,11 @@ type ReceiverFactory interface {
 	CreateMetricsReceiver(cfg configmodels.Receiver,
 		consumer consumer.MetricsConsumer) (receiver.MetricsReceiver, error)
 }
+
+// ErrDataTypeIsNotSupported can be returned by CreateTraceReceiver or
+// CreateMetricsReceiver if the particular telemetry data type is not supported
+// by the receiver.
+var ErrDataTypeIsNotSupported = errors.New("telemetry type is not supported")
 
 // CustomUnmarshaler is a function that un-marshals a viper data into a config struct
 // in a custom way.
