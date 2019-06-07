@@ -20,6 +20,7 @@ import (
 	"github.com/census-instrumentation/opencensus-service/consumer"
 	"github.com/census-instrumentation/opencensus-service/internal/configmodels"
 	"github.com/census-instrumentation/opencensus-service/internal/factories"
+	"github.com/census-instrumentation/opencensus-service/processor"
 	"github.com/census-instrumentation/opencensus-service/receiver"
 )
 
@@ -190,6 +191,22 @@ func (f *ExampleProcessorFactory) CreateDefaultConfig() configmodels.Processor {
 		},
 		ExtraSetting: "some export string",
 	}
+}
+
+// CreateTraceProcessor creates a trace processor based on this config.
+func (f *ExampleProcessorFactory) CreateTraceProcessor(
+	nextConsumer consumer.TraceConsumer,
+	cfg configmodels.Processor,
+) (processor.TraceProcessor, error) {
+	return nil, factories.ErrDataTypeIsNotSupported
+}
+
+// CreateMetricsProcessor creates a metrics processor based on this config.
+func (f *ExampleProcessorFactory) CreateMetricsProcessor(
+	nextConsumer consumer.MetricsConsumer,
+	cfg configmodels.Processor,
+) (processor.MetricsProcessor, error) {
+	return nil, factories.ErrDataTypeIsNotSupported
 }
 
 // RegisterTestFactories registers example factories. This is only used by tests.

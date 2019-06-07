@@ -18,6 +18,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/census-instrumentation/opencensus-service/processor"
+
 	"github.com/census-instrumentation/opencensus-service/consumer"
 	"github.com/census-instrumentation/opencensus-service/receiver"
 
@@ -130,21 +132,37 @@ func TestRegisterExporterFactory(t *testing.T) {
 	}
 }
 
-type ExampleOptionFactory struct {
+type ExampleProcessorFactory struct {
 }
 
-// Type gets the type of the Option config created by this factory.
-func (f *ExampleOptionFactory) Type() string {
+// Type gets the type of the Processor config created by this factory.
+func (f *ExampleProcessorFactory) Type() string {
 	return "exampleoption"
 }
 
 // CreateDefaultConfig creates the default configuration for the Processor.
-func (f *ExampleOptionFactory) CreateDefaultConfig() configmodels.Processor {
+func (f *ExampleProcessorFactory) CreateDefaultConfig() configmodels.Processor {
 	return nil
 }
 
-func TestRegisterOptionFactory(t *testing.T) {
-	f := ExampleOptionFactory{}
+// CreateTraceProcessor creates a trace processor based on this config.
+func (f *ExampleProcessorFactory) CreateTraceProcessor(
+	nextConsumer consumer.TraceConsumer,
+	cfg configmodels.Processor,
+) (processor.TraceProcessor, error) {
+	return nil, ErrDataTypeIsNotSupported
+}
+
+// CreateMetricsProcessor creates a metrics processor based on this config.
+func (f *ExampleProcessorFactory) CreateMetricsProcessor(
+	nextConsumer consumer.MetricsConsumer,
+	cfg configmodels.Processor,
+) (processor.MetricsProcessor, error) {
+	return nil, ErrDataTypeIsNotSupported
+}
+
+func TestRegisterProcessorFactory(t *testing.T) {
+	f := ExampleProcessorFactory{}
 	err := RegisterProcessorFactory(&f)
 	if err != nil {
 		t.Fatalf("cannot register factory")

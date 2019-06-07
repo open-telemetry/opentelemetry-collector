@@ -23,14 +23,14 @@ import (
 
 	"github.com/census-instrumentation/opencensus-service/consumer"
 	"github.com/census-instrumentation/opencensus-service/internal/configmodels"
+	"github.com/census-instrumentation/opencensus-service/processor"
 	"github.com/census-instrumentation/opencensus-service/receiver"
 )
 
 ///////////////////////////////////////////////////////////////////////////////
 // Receiver factory and its registry.
 
-// ReceiverFactory is factory interface for receivers. Note: only configuration-related
-// functionality exists for now. We will add more factory functionality in the future.
+// ReceiverFactory is factory interface for receivers.
 type ReceiverFactory interface {
 	// Type gets the type of the Receiver created by this factory.
 	Type() string
@@ -115,32 +115,43 @@ func GetExporterFactory(typeStr string) ExporterFactory {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Option factory and its registry.
+// Processor factory and its registry.
 
-// OptionFactory is factory interface for options. Note: only configuration-related
-// functionality exists for now. We will add more factory functionality in the future.
-type OptionFactory interface {
-	// Type gets the type of the Option created by this factory.
+// ProcessorFactory is factory interface for processors.
+type ProcessorFactory interface {
+	// Type gets the type of the Processor created by this factory.
 	Type() string
 
-	// CreateDefaultConfig creates the default configuration for the Option.
+	// CreateDefaultConfig creates the default configuration for the Processor.
 	CreateDefaultConfig() configmodels.Processor
+
+	// CreateTraceProcessor creates a trace processor based on this config.
+	// If the processor type does not support tracing or if the config is not valid
+	// error will be returned instead.
+	CreateTraceProcessor(nextConsumer consumer.TraceConsumer,
+		cfg configmodels.Processor) (processor.TraceProcessor, error)
+
+	// CreateMetricsProcessor creates a metrics processor based on this config.
+	// If the processor type does not support metrics or if the config is not valid
+	// error will be returned instead.
+	CreateMetricsProcessor(nextConsumer consumer.MetricsConsumer,
+		cfg configmodels.Processor) (processor.MetricsProcessor, error)
 }
 
-// List of registered option factories.
-var optionFactories = make(map[string]OptionFactory)
+// List of registered processor factories.
+var processorFactories = make(map[string]ProcessorFactory)
 
-// RegisterProcessorFactory registers a option factory.
-func RegisterProcessorFactory(factory OptionFactory) error {
-	if optionFactories[factory.Type()] != nil {
-		panic(fmt.Sprintf("duplicate option factory %q", factory.Type()))
+// RegisterProcessorFactory registers a processor factory.
+func RegisterProcessorFactory(factory ProcessorFactory) error {
+	if processorFactories[factory.Type()] != nil {
+		panic(fmt.Sprintf("duplicate processor factory %q", factory.Type()))
 	}
 
-	optionFactories[factory.Type()] = factory
+	processorFactories[factory.Type()] = factory
 	return nil
 }
 
-// GetProcessorFactory gets a option factory by type string.
-func GetProcessorFactory(typeStr string) OptionFactory {
-	return optionFactories[typeStr]
+// GetProcessorFactory gets a processor factory by type string.
+func GetProcessorFactory(typeStr string) ProcessorFactory {
+	return processorFactories[typeStr]
 }

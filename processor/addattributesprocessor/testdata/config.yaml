@@ -1,0 +1,19 @@
+receivers:
+  examplereceiver:
+
+processors:
+  attributes:
+  attributes/2:
+    values:
+      attribute1: 123
+      "string attribute": "string value"
+      "attribute.with.dot": "another value"
+
+exporters:
+  exampleexporter:
+
+pipelines:
+  traces:
+    receivers: [examplereceiver]
+    processors: [attributes]
+    exporters: [exampleexporter]
