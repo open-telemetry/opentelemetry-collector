@@ -31,6 +31,7 @@ import (
 	"github.com/census-instrumentation/opencensus-service/cmd/occollector/app/builder"
 	"github.com/census-instrumentation/opencensus-service/consumer"
 	"github.com/census-instrumentation/opencensus-service/internal/config/viperutils"
+	"github.com/census-instrumentation/opencensus-service/internal/configv2"
 	"github.com/census-instrumentation/opencensus-service/internal/pprofserver"
 	"github.com/census-instrumentation/opencensus-service/internal/zpagesserver"
 	"github.com/census-instrumentation/opencensus-service/receiver"
@@ -48,10 +49,20 @@ type Application struct {
 	healthCheck *healthcheck.HealthCheck
 	processor   consumer.TraceConsumer
 	receivers   []receiver.TraceReceiver
+	exporters   builder.Exporters
+
 	// stopTestChan is used to terminate the application in end to end tests.
 	stopTestChan chan struct{}
 	// readyChan is used in tests to indicate that the application is ready.
 	readyChan chan struct{}
+
+	// asyncErrorChannel is used to signal a fatal error from any component.
+	asyncErrorChannel chan error
+
+	// closeFns are functions that must be called on application shutdown.
+	// Various components can add their own functions that they need to be
+	// called for cleanup during shutdown.
+	closeFns []func()
 }
 
 func newApp() *Application {
@@ -77,27 +88,25 @@ func (app *Application) init() {
 	}
 }
 
-func (app *Application) execute() {
-	asyncErrorChannel := make(chan error)
-
-	app.logger.Info("Starting...", zap.Int("NumCPU", runtime.NumCPU()))
-
-	err := pprofserver.SetupFromViper(asyncErrorChannel, app.v, app.logger)
+func (app *Application) setupPProf() {
+	err := pprofserver.SetupFromViper(app.asyncErrorChannel, app.v, app.logger)
 	if err != nil {
 		log.Fatalf("Failed to start net/http/pprof: %v", err)
 	}
+}
 
+func (app *Application) setupHealthCheck() {
+	var err error
 	app.healthCheck, err = newHealthCheck(app.v, app.logger)
 	if err != nil {
 		log.Fatalf("Failed to start healthcheck server: %v", err)
 	}
+}
 
-	var closeFns []func()
-	app.processor, closeFns = startProcessor(app.v, app.logger)
-
+func (app *Application) setupZPages() {
 	zpagesPort := app.v.GetInt(zpagesserver.ZPagesHTTPPort)
 	if zpagesPort > 0 {
-		closeZPages, err := zpagesserver.Run(asyncErrorChannel, zpagesPort)
+		closeZPages, err := zpagesserver.Run(app.asyncErrorChannel, zpagesPort)
 		if err != nil {
 			app.logger.Error("Failed to run zPages", zap.Error(err))
 			os.Exit(1)
@@ -106,17 +115,21 @@ func (app *Application) execute() {
 		closeFn := func() {
 			closeZPages()
 		}
-		closeFns = append(closeFns, closeFn)
+		app.closeFns = append(app.closeFns, closeFn)
 	}
+}
 
-	app.receivers = createReceivers(app.v, app.logger, app.processor, asyncErrorChannel)
-
-	err = initTelemetry(asyncErrorChannel, app.v, app.logger)
+func (app *Application) setupTelemetry() {
+	err := AppTelemetry.init(app.asyncErrorChannel, app.v, app.logger)
 	if err != nil {
 		app.logger.Error("Failed to initialize telemetry", zap.Error(err))
 		os.Exit(1)
 	}
+}
 
+// runAndWaitForShutdownEvent waits for one of the shutdown events that can happen.
+func (app *Application) runAndWaitForShutdownEvent() {
+	// Plug SIGTERM signal into a channel.
 	signalsChannel := make(chan os.Signal, 1)
 	signal.Notify(signalsChannel, os.Interrupt, syscall.SIGTERM)
 
@@ -129,13 +142,46 @@ func (app *Application) execute() {
 	close(app.readyChan)
 
 	select {
-	case err = <-asyncErrorChannel:
+	case err := <-app.asyncErrorChannel:
 		app.logger.Error("Asynchronous error received, terminating process", zap.Error(err))
 	case s := <-signalsChannel:
 		app.logger.Info("Received signal from OS", zap.String("signal", s.String()))
 	case <-app.stopTestChan:
 		app.logger.Info("Received stop test request")
 	}
+}
+
+func (app *Application) shutdownReceivers() {
+	for _, receiver := range app.receivers {
+		receiver.StopTraceReception(context.Background())
+	}
+}
+
+func (app *Application) shutdownClosableComponents() {
+	for _, closeFn := range app.closeFns {
+		closeFn()
+	}
+}
+
+func (app *Application) execute() {
+	app.logger.Info("Starting...", zap.Int("NumCPU", runtime.NumCPU()))
+
+	app.asyncErrorChannel = make(chan error)
+
+	// Setup everything.
+
+	app.setupPProf()
+	app.setupHealthCheck()
+	app.processor, app.closeFns = startProcessor(app.v, app.logger)
+	app.setupZPages()
+	app.receivers = createReceivers(app.v, app.logger, app.processor, app.asyncErrorChannel)
+	app.setupTelemetry()
+
+	// Everything is ready, now run until an event requiring shutdown happens.
+
+	app.runAndWaitForShutdownEvent()
+
+	// Begin shutdown sequence.
 
 	app.healthCheck.Set(healthcheck.Unavailable)
 	app.logger.Info("Starting shutdown...")
@@ -143,13 +189,11 @@ func (app *Application) execute() {
 	// TODO: orderly shutdown: first receivers, then flushing pipelines giving
 	// senders a chance to send all their data. This may take time, the allowed
 	// time should be part of configuration.
-	for _, receiver := range app.receivers {
-		receiver.StopTraceReception(context.Background())
-	}
+	app.shutdownReceivers()
 
-	for _, closeFn := range closeFns {
-		closeFn()
-	}
+	app.shutdownClosableComponents()
+
+	AppTelemetry.shutdown()
 
 	app.logger.Info("Shutdown complete.")
 }
@@ -163,6 +207,93 @@ func (app *Application) Start() error {
 		Run: func(cmd *cobra.Command, args []string) {
 			app.init()
 			app.execute()
+		},
+	}
+	viperutils.AddFlags(app.v, rootCmd,
+		telemetryFlags,
+		builder.Flags,
+		healthCheckFlags,
+		loggerFlags,
+		pprofserver.AddFlags,
+		zpagesserver.AddFlags,
+	)
+
+	return rootCmd.Execute()
+}
+
+func (app *Application) setupPipelines() {
+	// Load configuration.
+	config, err := configv2.Load(app.v)
+	if err != nil {
+		log.Fatalf("Cannot load configuration: %v", err)
+	}
+
+	// Pipeline is built backwards, starting from exporters, so that we create objects
+	// which are referenced before objects which reference them.
+
+	// First create exporters.
+	app.exporters, err = builder.NewExportersBuilder(app.logger, config).Build()
+	if err != nil {
+		log.Fatalf("Cannot load configuration: %v", err)
+	}
+
+	// TODO: create pipelines and their processors and plug exporters to the
+	// end of the pipelines.
+
+	// TODO: create receivers and plug them into the start of the pipelines.
+}
+
+func (app *Application) shutdownPipelines() {
+	// Shutdown order is the reverse of building: first receivers, then flushing pipelines
+	// giving senders a chance to send all their data. This may take time, the allowed
+	// time should be part of configuration.
+
+	// TODO: shutdown receivers.
+
+	// TODO: shutdown processors
+
+	app.exporters.StopAll()
+}
+
+func (app *Application) executeUnified() {
+	app.logger.Info("Starting...", zap.Int("NumCPU", runtime.NumCPU()))
+
+	app.asyncErrorChannel = make(chan error)
+
+	// Setup everything.
+
+	app.setupPProf()
+	app.setupHealthCheck()
+	app.setupZPages()
+	app.setupTelemetry()
+	app.setupPipelines()
+
+	// Everything is ready, now run until an event requiring shutdown happens.
+
+	app.runAndWaitForShutdownEvent()
+
+	// Begin shutdown sequence.
+
+	app.healthCheck.Set(healthcheck.Unavailable)
+	app.logger.Info("Starting shutdown...")
+
+	app.shutdownPipelines()
+	app.shutdownClosableComponents()
+
+	AppTelemetry.shutdown()
+
+	app.logger.Info("Shutdown complete.")
+}
+
+// StartUnified starts the unified service according to the command and configuration
+// given by the user.
+func (app *Application) StartUnified() error {
+	rootCmd := &cobra.Command{
+		Use:  "unisvc",
+		Long: "OpenTelemetry Service",
+		Run: func(cmd *cobra.Command, args []string) {
+			app.init()
+			app.executeUnified()
 		},
 	}
 	viperutils.AddFlags(app.v, rootCmd,

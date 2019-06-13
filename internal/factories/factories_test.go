@@ -104,6 +104,16 @@ func (f *ExampleExporterFactory) CreateDefaultConfig() configmodels.Exporter {
 	return nil
 }
 
+// CreateTraceExporter creates a trace exporter based on this config.
+func (f *ExampleExporterFactory) CreateTraceExporter(cfg configmodels.Exporter) (consumer.TraceConsumer, StopFunc, error) {
+	return nil, nil, nil
+}
+
+// CreateMetricsExporter creates a metrics exporter based on this config.
+func (f *ExampleExporterFactory) CreateMetricsExporter(cfg configmodels.Exporter) (consumer.MetricsConsumer, StopFunc, error) {
+	return nil, nil, nil
+}
+
 func TestRegisterExporterFactory(t *testing.T) {
 	f := ExampleExporterFactory{}
 	err := RegisterExporterFactory(&f)

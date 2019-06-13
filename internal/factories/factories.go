@@ -86,6 +86,10 @@ func GetReceiverFactory(typeStr string) ReceiverFactory {
 ///////////////////////////////////////////////////////////////////////////////
 // Exporter factory and its registry.
 
+// StopFunc is a function that can be called to stop an exporter that
+// was created previously.
+type StopFunc func() error
+
 // ExporterFactory is factory interface for exporters. Note: only configuration-related
 // functionality exists for now. We will add more factory functionality in the future.
 type ExporterFactory interface {
@@ -94,6 +98,12 @@ type ExporterFactory interface {
 
 	// CreateDefaultConfig creates the default configuration for the Exporter.
 	CreateDefaultConfig() configmodels.Exporter
+
+	// CreateTraceExporter creates a trace exporter based on this config.
+	CreateTraceExporter(cfg configmodels.Exporter) (consumer.TraceConsumer, StopFunc, error)
+
+	// CreateMetricsExporter creates a metrics exporter based on this config.
+	CreateMetricsExporter(cfg configmodels.Exporter) (consumer.MetricsConsumer, StopFunc, error)
 }
 
 // List of registered exporter factories.

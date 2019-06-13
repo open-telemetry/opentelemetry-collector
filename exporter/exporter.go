@@ -37,3 +37,10 @@ type MetricsExporter interface {
 	// as suffix (e.g. "oc_metrics").
 	MetricsExportFormat() string
 }
+
+// Exporter is union of trace and/or metrics exporter.
+type Exporter interface {
+	TraceExporter
+	MetricsExporter
+	Stop() error
+}

@@ -92,6 +92,10 @@ agent:
 collector:
 	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/occollector_$(GOOS) $(BUILD_INFO) ./cmd/occollector
 
+.PHONY: unisvc
+unisvc:
+	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/unisvc_$(GOOS) $(BUILD_INFO) ./cmd/unisvc
+
 .PHONY: docker-component # Not intended to be used directly
 docker-component: check-component
 	GOOS=linux $(MAKE) $(COMPONENT)
@@ -113,9 +117,12 @@ docker-agent:
 docker-collector:
 	COMPONENT=collector $(MAKE) docker-component
 
+.PHONY: docker-unisvc
+docker-unisvc:
+	COMPONENT=unisvc $(MAKE) docker-component
 
 .PHONY: binaries
-binaries: agent collector
+binaries: agent collector unisvc
 
 .PHONY: binaries-all-sys
 binaries-all-sys:

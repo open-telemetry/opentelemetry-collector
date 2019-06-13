@@ -24,6 +24,8 @@ import (
 )
 
 func TestApplication_Start(t *testing.T) {
+	App = newApp()
+
 	portArg := []string{
 		healthCheckHTTPPort, // Keep it as first since its address is used later.
 		zpagesserver.ZPagesHTTPPort,
@@ -51,6 +53,43 @@ func TestApplication_Start(t *testing.T) {
 	}()
 
 	<-App.readyChan
+	if !isAppAvailable(t, "http://"+addresses[0]) {
+		t.Fatalf("App didn't reach ready state")
+	}
+	close(App.stopTestChan)
+	<-appDone
+}
+
+func TestApplication_StartUnified(t *testing.T) {
+
+	App = newApp()
+
+	portArg := []string{
+		healthCheckHTTPPort, // Keep it as first since its address is used later.
+		zpagesserver.ZPagesHTTPPort,
+		"metrics-port",
+	}
+	addresses := getMultipleAvailableLocalAddresses(t, uint(len(portArg)))
+	for i, addr := range addresses {
+		_, port, err := net.SplitHostPort(addr)
+		if err != nil {
+			t.Fatalf("failed to split host and port from %q: %v", addr, err)
+		}
+		App.v.Set(portArg[i], port)
+	}
+
+	App.v.Set("config", "testdata/unisvc-config.yaml")
+
+	appDone := make(chan struct{})
+	go func() {
+		defer close(appDone)
+		if err := App.StartUnified(); err != nil {
+			t.Fatalf("App.StartUnified() got %v, want nil", err)
+		}
+	}()
+
+	<-App.readyChan
+
 	if !isAppAvailable(t, "http://"+addresses[0]) {
 		t.Fatalf("App didn't reach ready state")
 	}

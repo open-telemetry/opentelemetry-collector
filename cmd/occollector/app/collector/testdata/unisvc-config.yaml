@@ -1,0 +1,18 @@
+receivers:
+  jaeger:
+    enabled: true
+
+exporters:
+  opencensus:
+    endpoint: "locahost:55678"
+    enabled: true
+
+processors:
+  attributes:
+    enabled: true
+
+pipelines:
+  traces:
+    receivers: [jaeger]
+    processors: [attributes]
+    exporters: [opencensus]

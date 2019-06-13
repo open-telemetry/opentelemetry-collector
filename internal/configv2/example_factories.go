@@ -167,6 +167,16 @@ func (f *ExampleExporterFactory) CreateDefaultConfig() configmodels.Exporter {
 	}
 }
 
+// CreateTraceExporter creates a trace exporter based on this config.
+func (f *ExampleExporterFactory) CreateTraceExporter(cfg configmodels.Exporter) (consumer.TraceConsumer, factories.StopFunc, error) {
+	return nil, nil, nil
+}
+
+// CreateMetricsExporter creates a metrics exporter based on this config.
+func (f *ExampleExporterFactory) CreateMetricsExporter(cfg configmodels.Exporter) (consumer.MetricsConsumer, factories.StopFunc, error) {
+	return nil, nil, nil
+}
+
 // ExampleProcessor is for testing purposes. We are defining an example config and factory
 // for "exampleprocessor" processor type.
 type ExampleProcessor struct {

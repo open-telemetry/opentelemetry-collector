@@ -43,6 +43,8 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, e1,
 		&ConfigV2{
 			ExporterSettings: configmodels.ExporterSettings{
+				NameVal: "opencensus/2",
+				TypeVal: "opencensus",
 				Enabled: true,
 			},
 			Headers: map[string]string{
