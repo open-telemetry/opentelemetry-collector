@@ -40,6 +40,8 @@ Make sure commit history is preserved.
 
 [ ] Cleanup the `contrib` repo to only contain additional vendor specific receivers and exporters.
 
+(Note: alternatively `contrib` can be a directory in the main repo - this is still open for discussion).
+
 [ ] Provide OpenCensus-to-OpenTelemetry Service migration guidelines for end-users who want to migrate. This will include recommendations on configuration file migration. We will also consider the possibility to support old configuration format in the new binary.
 
 This approach allows us to have significant progress towards 2 stated goals in our [vision document](../blob/master/docs/VISION.md): unify the codebase for agent and collector and make the service more extensible.
