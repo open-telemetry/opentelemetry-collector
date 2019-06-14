@@ -19,9 +19,9 @@ Make sure commit history is preserved.
 - Zipkin
 - OpenCensus, temporarily until OpenTelemetry one is available (we may want to keep OC for longer to facilitate migrations)
 
-[ ] Cleanly decouple `core` from `cmd` in the repository. `core` will contain all business logic. `cmd` will be just a main.go that executes the business logic and compiles to `otelsvc` executable.
+[ ] Cleanly decouple `core` from `cmd` in the repository. `core` will contain all business logic. `cmd` will be just a main.go that executes the business logic and compiles to `otsvc` executable.
 
-`otelsvc` will will only include receivers and exporters which we consider to be part of the core. 
+`otsvc` will will only include receivers and exporters which we consider to be part of the core. 
 
 The new codebase will contain improvements which are already in progress and which are aimed at making the codebase extensible and enable the splitting to core and contrib. This includes 3 initiatives:
 
@@ -31,7 +31,7 @@ The new codebase will contain improvements which are already in progress and whi
     
 - Implementation of the [new configuration format](https://docs.google.com/document/d/1GWOzV0H0RTN1adiwo7fTmkjfCATDDFGuOB4jp3ldCc8/edit#) that makes use of factories and allows for greater flexibility in the configuration.
 
-The functionally of the new otelsvc will heavily lean on existing implementation and will be mostly a superset of the current agent/collector functionality when considering core receivers and exporters only (however we will allow deviations if it saves significant implementation effort and makes the service better).
+The functionally of the new `otsvc` will heavily lean on existing implementation and will be mostly a superset of the current agent/collector functionality when considering core receivers and exporters only (however we will allow deviations if it saves significant implementation effort and makes the service better).
 
 [ ] Provide guidelines and example implementations for vendors to follow when they add new receivers and exporters to the contrib package.
 
