@@ -1,0 +1,26 @@
+receivers:
+  examplereceiver:
+    enabled: true
+
+processors:
+  attributes:
+    values:
+      attr1: 12345
+
+exporters:
+  exampleexporter:
+    enabled: true
+
+  exampleexporter/2:
+    enabled: true
+
+pipelines:
+  traces:
+    receivers: [examplereceiver]
+    processors: [attributes]
+    exporters: [exampleexporter]
+
+  traces/2:
+    receivers: [examplereceiver]
+    processors: [attributes]
+    exporters: [exampleexporter, exampleexporter/2]

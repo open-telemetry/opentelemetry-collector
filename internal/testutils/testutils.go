@@ -16,6 +16,8 @@ package testutils
 
 import (
 	"encoding/json"
+	"net"
+	"testing"
 )
 
 // GenerateNormalizedJSON generates a normalized JSON from the string
@@ -27,4 +29,19 @@ func GenerateNormalizedJSON(j string) string {
 	json.Unmarshal([]byte(j), &i)
 	n, _ := json.Marshal(i)
 	return string(n)
+}
+
+// GetAvailableLocalAddress finds an available local port and returns an endpoint
+// describing it. The port is available for opening when this function returns
+// provided that there is no race by some other code to grab the same port
+// immediately.
+func GetAvailableLocalAddress(t *testing.T) string {
+	ln, err := net.Listen("tcp", ":0")
+	if err != nil {
+		t.Fatalf("failed to get a free local port: %v", err)
+	}
+	// There is a possible race if something else takes this same port before
+	// the test uses it, however, that is unlikely in practice.
+	defer ln.Close()
+	return ln.Addr().String()
 }

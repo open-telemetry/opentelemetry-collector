@@ -15,59 +15,31 @@
 package builder
 
 import (
-	"context"
 	"fmt"
 
 	"go.uber.org/zap"
 
 	"github.com/census-instrumentation/opencensus-service/consumer"
-	"github.com/census-instrumentation/opencensus-service/data"
-	"github.com/census-instrumentation/opencensus-service/exporter"
 	"github.com/census-instrumentation/opencensus-service/internal"
 	"github.com/census-instrumentation/opencensus-service/internal/configmodels"
 	"github.com/census-instrumentation/opencensus-service/internal/factories"
 )
 
-// exporterImpl is a running exporter that is built based on a config. It can have
+// builtExporter is an exporter that is built based on a config. It can have
 // a trace and/or a metrics consumer and have a stop function.
-type exporterImpl struct {
+type builtExporter struct {
 	tc   consumer.TraceConsumer
 	mc   consumer.MetricsConsumer
 	stop func() error
 }
 
-// Check that exporterImpl implements Exporter interface.
-var _ exporter.Exporter = (*exporterImpl)(nil)
-
-// ConsumeTraceData receives data.TraceData for processing by the TraceConsumer.
-func (exp *exporterImpl) ConsumeTraceData(ctx context.Context, td data.TraceData) error {
-	return exp.tc.ConsumeTraceData(ctx, td)
-}
-
-// ConsumeMetricsData receives data.MetricsData for processing by the MetricsConsumer.
-func (exp *exporterImpl) ConsumeMetricsData(ctx context.Context, md data.MetricsData) error {
-	return exp.mc.ConsumeMetricsData(ctx, md)
-}
-
-// TraceExportFormat is unneeded, we need to get rid of it after we cleanup
-// exporter.TraceExporter interface.
-func (exp *exporterImpl) TraceExportFormat() string {
-	return ""
-}
-
-// MetricsExportFormat is unneeded, we need to get rid of it after we cleanup
-// exporter.MetricsExporter interface.
-func (exp *exporterImpl) MetricsExportFormat() string {
-	return ""
-}
-
 // Stop the exporter.
-func (exp *exporterImpl) Stop() error {
+func (exp *builtExporter) Stop() error {
 	return exp.stop()
 }
 
 // Exporters is a map of exporters created from exporter configs.
-type Exporters map[configmodels.Exporter]*exporterImpl
+type Exporters map[configmodels.Exporter]*builtExporter
 
 // StopAll stops all exporters.
 func (exps Exporters) StopAll() {
@@ -179,11 +151,11 @@ func combineStopFunc(f1, f2 factories.StopFunc) factories.StopFunc {
 func (eb *ExportersBuilder) buildExporter(
 	config configmodels.Exporter,
 	exportersInputDataTypes exportersRequiredDataTypes,
-) (*exporterImpl, error) {
+) (*builtExporter, error) {
 
 	factory := factories.GetExporterFactory(config.Type())
 
-	exporter := &exporterImpl{}
+	exporter := &builtExporter{}
 
 	inputDataTypes := exportersInputDataTypes[config]
 	if inputDataTypes == nil {

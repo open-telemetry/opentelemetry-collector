@@ -20,6 +20,8 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/census-instrumentation/opencensus-service/internal/testutils"
+
 	"github.com/census-instrumentation/opencensus-service/internal/zpagesserver"
 )
 
@@ -112,18 +114,7 @@ func isAppAvailable(t *testing.T, healthCheckEndPoint string) bool {
 func getMultipleAvailableLocalAddresses(t *testing.T, numAddresses uint) []string {
 	addresses := make([]string, numAddresses, numAddresses)
 	for i := uint(0); i < numAddresses; i++ {
-		addresses[i] = getAvailableLocalAddress(t)
+		addresses[i] = testutils.GetAvailableLocalAddress(t)
 	}
 	return addresses
-}
-
-func getAvailableLocalAddress(t *testing.T) string {
-	ln, err := net.Listen("tcp", ":0")
-	if err != nil {
-		t.Fatalf("failed to get a free local port: %v", err)
-	}
-	// There is a possible race if something else takes this same port before
-	// the test uses it, however, that is unlikely in practice.
-	defer ln.Close()
-	return ln.Addr().String()
 }

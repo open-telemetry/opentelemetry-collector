@@ -94,7 +94,7 @@ func TestExportersBuilder_StopAll(t *testing.T) {
 	exporters := make(Exporters)
 	expCfg := &configmodels.ExporterSettings{}
 	stopCalled := false
-	exporters[expCfg] = &exporterImpl{
+	exporters[expCfg] = &builtExporter{
 		stop: func() error {
 			stopCalled = true
 			return nil

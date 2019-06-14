@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/census-instrumentation/opencensus-service/internal/configmodels"
 	"github.com/census-instrumentation/opencensus-service/internal/configv2"
 	"github.com/census-instrumentation/opencensus-service/internal/factories"
 )
@@ -42,6 +43,9 @@ func TestLoadConfig(t *testing.T) {
 	p1 := config.Processors["attributes/2"]
 	assert.Equal(t, p1,
 		&ConfigV2{
+			ProcessorSettings: configmodels.ProcessorSettings{
+				TypeVal: "attributes",
+			},
 			Values: map[string]interface{}{
 				"attribute1":         123,
 				"string attribute":   "string value",

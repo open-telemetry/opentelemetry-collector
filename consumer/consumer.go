@@ -35,3 +35,9 @@ type MetricsConsumer interface {
 type TraceConsumer interface {
 	ConsumeTraceData(ctx context.Context, td data.TraceData) error
 }
+
+// DataConsumer is a union type that can accept traces and/or metrics.
+type DataConsumer interface {
+	TraceConsumer
+	MetricsConsumer
+}

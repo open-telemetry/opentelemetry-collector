@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"github.com/census-instrumentation/opencensus-service/consumer"
+	"github.com/census-instrumentation/opencensus-service/data"
 	"github.com/census-instrumentation/opencensus-service/internal/configmodels"
 	"github.com/census-instrumentation/opencensus-service/internal/factories"
 	"github.com/census-instrumentation/opencensus-service/processor"
@@ -169,12 +170,30 @@ func (f *ExampleExporterFactory) CreateDefaultConfig() configmodels.Exporter {
 
 // CreateTraceExporter creates a trace exporter based on this config.
 func (f *ExampleExporterFactory) CreateTraceExporter(cfg configmodels.Exporter) (consumer.TraceConsumer, factories.StopFunc, error) {
-	return nil, nil, nil
+	return &ExampleExporterConsumer{}, nil, nil
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
 func (f *ExampleExporterFactory) CreateMetricsExporter(cfg configmodels.Exporter) (consumer.MetricsConsumer, factories.StopFunc, error) {
-	return nil, nil, nil
+	return &ExampleExporterConsumer{}, nil, nil
+}
+
+// ExampleExporterConsumer stores consumed traces and metrics for testing purposes.
+type ExampleExporterConsumer struct {
+	Traces  []data.TraceData
+	Metrics []data.MetricsData
+}
+
+// ConsumeTraceData receives data.TraceData for processing by the TraceConsumer.
+func (exp *ExampleExporterConsumer) ConsumeTraceData(ctx context.Context, td data.TraceData) error {
+	exp.Traces = append(exp.Traces, td)
+	return nil
+}
+
+// ConsumeMetricsData receives data.MetricsData for processing by the MetricsConsumer.
+func (exp *ExampleExporterConsumer) ConsumeMetricsData(ctx context.Context, md data.MetricsData) error {
+	exp.Metrics = append(exp.Metrics, md)
+	return nil
 }
 
 // ExampleProcessor is for testing purposes. We are defining an example config and factory

@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/census-instrumentation/opencensus-service/internal/factories"
+	"github.com/census-instrumentation/opencensus-service/internal/testutils"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -32,6 +33,9 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateReceiver(t *testing.T) {
 	factory := factories.GetReceiverFactory(typeStr)
 	cfg := factory.CreateDefaultConfig()
+
+	config := cfg.(*ConfigV2)
+	config.Endpoint = testutils.GetAvailableLocalAddress(t)
 
 	tReceiver, err := factory.CreateTraceReceiver(context.Background(), cfg, nil)
 	assert.NotNil(t, tReceiver)

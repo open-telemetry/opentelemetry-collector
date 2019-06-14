@@ -31,3 +31,8 @@ type MetricsProcessor interface {
 
 	// TODO: Add processor specific functions.
 }
+
+// Processor is a data consumer.
+type Processor interface {
+	consumer.DataConsumer
+}

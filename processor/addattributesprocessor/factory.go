@@ -40,6 +40,9 @@ func (f *processorFactory) Type() string {
 // CreateDefaultConfig creates the default configuration for exporter.
 func (f *processorFactory) CreateDefaultConfig() configmodels.Processor {
 	return &ConfigV2{
+		ProcessorSettings: configmodels.ProcessorSettings{
+			TypeVal: typeStr,
+		},
 		Values: map[string]interface{}{},
 	}
 }

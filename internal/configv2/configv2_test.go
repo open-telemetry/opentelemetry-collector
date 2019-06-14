@@ -83,6 +83,7 @@ func TestDecodeConfig(t *testing.T) {
 	assert.Equal(t, config.Processors["exampleprocessor"],
 		&ExampleProcessor{
 			ProcessorSettings: configmodels.ProcessorSettings{
+				TypeVal: "exampleprocessor",
 				Enabled: false,
 			},
 			ExtraSetting: "some export string",

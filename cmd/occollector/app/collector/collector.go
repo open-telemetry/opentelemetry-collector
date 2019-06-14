@@ -237,8 +237,12 @@ func (app *Application) setupPipelines() {
 		log.Fatalf("Cannot load configuration: %v", err)
 	}
 
-	// TODO: create pipelines and their processors and plug exporters to the
+	// Create pipelines and their processors and plug exporters to the
 	// end of the pipelines.
+	_, err = builder.NewPipelinesBuilder(app.logger, config, app.exporters).Build()
+	if err != nil {
+		log.Fatalf("Cannot load configuration: %v", err)
+	}
 
 	// TODO: create receivers and plug them into the start of the pipelines.
 }
