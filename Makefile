@@ -1,6 +1,7 @@
 # More exclusions can be added similar with: -not -path './vendor/*'
 ALL_SRC := $(shell find . -name '*.go' \
                                 -not -path './vendor/*' \
+                                -not -path './tools/*' \
                                 -type f | sort)
 
 # ALL_PKGS is used with 'go cover'
@@ -78,11 +79,7 @@ vet:
 
 .PHONY: install-tools
 install-tools:
-	go get -u golang.org/x/lint/golint
-	go get -u github.com/google/go-cmp/cmp
-	go get contrib.go.opencensus.io/exporter/jaeger@v0.1.1-0.20190430175949-e8b55949d948
-	go get contrib.go.opencensus.io/exporter/prometheus
-	go get contrib.go.opencensus.io/exporter/zipkin
+	go install golang.org/x/lint/golint
 
 .PHONY: agent
 agent:
