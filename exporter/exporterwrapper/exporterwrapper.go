@@ -16,8 +16,6 @@
 // consumer.TraceConsumer.
 // For now it currently only provides statically imported OpenCensus
 // exporters like:
-//  * Stackdriver Tracing and Monitoring
-//  * DataDog
 //  * Zipkin
 package exporterwrapper
 
