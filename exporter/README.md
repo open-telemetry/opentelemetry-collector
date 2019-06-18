@@ -1,4 +1,4 @@
-A variety of exporters are available to the OpenCensus Service (both Agent and Collector)
+A variety of exporters are available to the OpenTelemetry Service (both Agent and Collector)
 
 ## Collector
 
@@ -51,7 +51,7 @@ sampling:
 
 ### Queued Exporters
 
-In addition to the normal `exporters`, the OpenCensus Collector supports a special configuration.
+In addition to the normal `exporters`, the OpenTelemetry Collector supports a special configuration.
 `queued-exporters` offer bounded buffer retry logic for multiple destinations.
 
 ```yaml
