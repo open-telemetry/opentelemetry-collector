@@ -228,7 +228,7 @@ func (ze *zipkinExporter) ConsumeTraceData(ctx context.Context, td data.TraceDat
 }
 
 // This code from down below is mostly copied from
-// https://github.com/census-instrumentation/opencensus-proto/blob/96e75b88df843315da521168a0e3b11792088728/exporter/zipkin/zipkin.go#L57-L194
+// https://github.com/census-instrumentation/opencensus-go/blob/96e75b88df843315da521168a0e3b11792088728/exporter/zipkin/zipkin.go#L57-L194
 // but that is because the Zipkin Go exporter requires process to change
 // and was designed without taking into account that LocalEndpoint and RemoteEndpoint
 // are per-span-Node attributes instead of global/system variables.
