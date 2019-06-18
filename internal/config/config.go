@@ -438,7 +438,6 @@ func eqLocalHost(host string) bool {
 // from:
 //  + zipkin
 //  + jaeger
-//  + kafka
 //  + opencensus
 //  + prometheus
 func ExportersFromViperConfig(logger *zap.Logger, v *viper.Viper) ([]consumer.TraceConsumer, []consumer.MetricsConsumer, []func() error, error) {
@@ -448,7 +447,6 @@ func ExportersFromViperConfig(logger *zap.Logger, v *viper.Viper) ([]consumer.Tr
 	}{
 		{name: "zipkin", fn: zipkinexporter.ZipkinExportersFromViper},
 		{name: "jaeger", fn: jaegerexporter.JaegerExportersFromViper},
-		{name: "kafka", fn: kafkaexporter.KafkaExportersFromViper},
 		{name: "opencensus", fn: opencensusexporter.OpenCensusTraceExportersFromViper},
 		{name: "prometheus", fn: prometheusexporter.PrometheusExportersFromViper},
 	}

@@ -39,7 +39,6 @@ require (
 	github.com/uber/jaeger-client-go v2.16.0+incompatible // indirect
 	github.com/uber/jaeger-lib v2.0.0+incompatible
 	github.com/uber/tchannel-go v1.10.0
-	github.com/yancl/opencensus-go-exporter-kafka v0.0.0-20181029030031-9c471c1bfbeb
 	go.opencensus.io v0.22.0
 	go.uber.org/atomic v1.3.2 // indirect
 	go.uber.org/multierr v1.1.0 // indirect
