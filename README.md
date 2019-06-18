@@ -172,26 +172,8 @@ exporters:
   jaeger:
     collector_endpoint: "http://127.0.0.1:14268/api/traces"
 
-  kafka:
-    brokers: ["127.0.0.1:9092"]
-    topic: "opentelemetry-spans"
-
-  stackdriver:
-    project: "my-project-id" # optional, defaults to agent project if run on GCP
-    enable_tracing: true
-
   zipkin:
     endpoint: "http://127.0.0.1:9411/api/v2/spans"
-
-  aws-xray:
-    region: "us-west-2"
-    default_service_name: "verifiability_agent"
-    version: "latest"
-    buffer_size: 200
-
-  honeycomb:
-    write_key: "739769d7-e61c-42ec-82b9-3ee88dfeff43"
-    dataset_name: "dc8_9"
 ```
 
 ### <a name="config-diagnostics"></a>Diagnostics

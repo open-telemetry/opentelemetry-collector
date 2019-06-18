@@ -19,7 +19,7 @@ package configmodels
 
 /*
 Receivers, Exporters and Processors typically have common configuration settings, however
-sometimes specific implementations (e.g. StackDriver) will have extra configuration settings.
+sometimes specific implementations will have extra configuration settings.
 This requires the configuration data for these entities to be polymorphic.
 
 To satisfy these requirements we declare interfaces Receiver, Exporter, Processor,

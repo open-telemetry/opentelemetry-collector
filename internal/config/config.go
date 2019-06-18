@@ -27,15 +27,10 @@ import (
 	"google.golang.org/grpc/credentials"
 
 	"github.com/census-instrumentation/opencensus-service/consumer"
-	"github.com/census-instrumentation/opencensus-service/exporter/awsexporter"
-	"github.com/census-instrumentation/opencensus-service/exporter/datadogexporter"
-	"github.com/census-instrumentation/opencensus-service/exporter/honeycombexporter"
 	"github.com/census-instrumentation/opencensus-service/exporter/jaegerexporter"
 	"github.com/census-instrumentation/opencensus-service/exporter/kafkaexporter"
 	"github.com/census-instrumentation/opencensus-service/exporter/opencensusexporter"
 	"github.com/census-instrumentation/opencensus-service/exporter/prometheusexporter"
-	"github.com/census-instrumentation/opencensus-service/exporter/stackdriverexporter"
-	"github.com/census-instrumentation/opencensus-service/exporter/wavefrontexporter"
 	"github.com/census-instrumentation/opencensus-service/exporter/zipkinexporter"
 	"github.com/census-instrumentation/opencensus-service/receiver/opencensusreceiver"
 	"github.com/census-instrumentation/opencensus-service/receiver/prometheusreceiver"
@@ -61,9 +56,6 @@ import (
 //          buffer_period: 5s
 //
 //  exporters:
-//      stackdriver:
-//          project: <project_id>
-//          enable_tracing: true
 //      zipkin:
 //          endpoint: "http://localhost:9411/api/v2/spans"
 //
@@ -444,30 +436,19 @@ func eqLocalHost(host string) bool {
 
 // ExportersFromViperConfig uses the viper configuration payload to returns the respective exporters
 // from:
-//  + datadog
-//  + stackdriver
 //  + zipkin
 //  + jaeger
-//  + kafka
 //  + opencensus
 //  + prometheus
-//  + aws-xray
-//  + honeycomb
 func ExportersFromViperConfig(logger *zap.Logger, v *viper.Viper) ([]consumer.TraceConsumer, []consumer.MetricsConsumer, []func() error, error) {
 	parseFns := []struct {
 		name string
 		fn   func(*viper.Viper) ([]consumer.TraceConsumer, []consumer.MetricsConsumer, []func() error, error)
 	}{
-		{name: "wavefront", fn: wavefrontexporter.WavefrontTraceExportersFromViper},
-		{name: "datadog", fn: datadogexporter.DatadogTraceExportersFromViper},
-		{name: "stackdriver", fn: stackdriverexporter.StackdriverTraceExportersFromViper},
 		{name: "zipkin", fn: zipkinexporter.ZipkinExportersFromViper},
 		{name: "jaeger", fn: jaegerexporter.JaegerExportersFromViper},
-		{name: "kafka", fn: kafkaexporter.KafkaExportersFromViper},
 		{name: "opencensus", fn: opencensusexporter.OpenCensusTraceExportersFromViper},
 		{name: "prometheus", fn: prometheusexporter.PrometheusExportersFromViper},
-		{name: "aws-xray", fn: awsexporter.AWSXRayTraceExportersFromViper},
-		{name: "honeycomb", fn: honeycombexporter.HoneycombTraceExportersFromViper},
 	}
 
 	var traceExporters []consumer.TraceConsumer
