@@ -28,7 +28,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/exporter/jaegerexporter"
-	"github.com/open-telemetry/opentelemetry-service/exporter/kafkaexporter"
 	"github.com/open-telemetry/opentelemetry-service/exporter/opencensusexporter"
 	"github.com/open-telemetry/opentelemetry-service/exporter/prometheusexporter"
 	"github.com/open-telemetry/opentelemetry-service/exporter/zipkinexporter"
