@@ -1,4 +1,4 @@
-// Copyright 2018, OpenCensus Authors
+// Copyright 2018, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,16 +24,16 @@ import (
 
 	"go.opencensus.io/trace"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/census-instrumentation/opencensus-service/exporter/exportertest"
-	"github.com/census-instrumentation/opencensus-service/observability/observabilitytest"
+	commonpb "github.com/open-telemtery/opentelemetry-proto/gen-go/agent/common/v1"
+	agenttracepb "github.com/open-telemtery/opentelemetry-proto/gen-go/agent/trace/v1"
+	tracepb "github.com/open-telemtery/opentelemetry-proto/gen-go/trace/v1"
+	"github.com/open-telemtery/opentelemetry-service/exporter/exportertest"
+	"github.com/open-telemtery/opentelemetry-service/observability/observabilitytest"
 )
 
 // Ensure that if we add a metrics exporter that our target metrics
 // will be recorded but also with the proper tag keys and values.
-// See Issue https://github.com/census-instrumentation/opencensus-service/issues/63
+// See Issue https://github.com/open-telemtery/opentelemetry-service/issues/63
 //
 // Note: we are intentionally skipping the ocgrpc.ServerDefaultViews as this
 // test is to ensure exactness, but with the mentioned views registered, the

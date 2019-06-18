@@ -1,4 +1,4 @@
-// Copyright 2019, OpenCensus Authors
+// Copyright 2019, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,13 +22,13 @@ import (
 	"math"
 	"net"
 
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	tracepb "github.com/open-telemtery/opentelemetry-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"github.com/pkg/errors"
 
-	"github.com/census-instrumentation/opencensus-service/data"
-	tracetranslator "github.com/census-instrumentation/opencensus-service/translator/trace"
+	"github.com/open-telemtery/opentelemetry-service/data"
+	tracetranslator "github.com/open-telemtery/opentelemetry-service/translator/trace"
 )
 
 // V1ThriftBatchToOCProto converts Zipkin v1 spans to OC Proto.
@@ -56,7 +56,7 @@ func zipkinV1ThriftToOCSpan(zSpan *zipkincore.Span) (*tracepb.Span, *annotationP
 	}
 
 	// TODO: (@pjanotti) ideally we should error here instead of generating invalid OC proto
-	// however per https://github.com/census-instrumentation/opencensus-service/issues/349
+	// however per https://github.com/open-telemtery/opentelemetry-service/issues/349
 	// failures on the receivers in general are silent at this moment, so letting them
 	// proceed for now. We should validate the traceID, spanID and parentID are good with
 	// OC proto requirements.

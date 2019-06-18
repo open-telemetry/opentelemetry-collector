@@ -1,4 +1,4 @@
-// Copyright 2018, OpenCensus Authors
+// Copyright 2018, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,14 +28,14 @@ import (
 	"strings"
 	"testing"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	commonpb "github.com/open-telemtery/opentelemetry-proto/gen-go/agent/common/v1"
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
 
-	"github.com/census-instrumentation/opencensus-service/internal/config/viperutils"
-	"github.com/census-instrumentation/opencensus-service/internal/testutils"
-	"github.com/census-instrumentation/opencensus-service/processor/multiconsumer"
-	"github.com/census-instrumentation/opencensus-service/receiver/zipkinreceiver"
+	"github.com/open-telemtery/opentelemetry-service/internal/config/viperutils"
+	"github.com/open-telemtery/opentelemetry-service/internal/testutils"
+	"github.com/open-telemtery/opentelemetry-service/processor/multiconsumer"
+	"github.com/open-telemtery/opentelemetry-service/receiver/zipkinreceiver"
 )
 
 func TestZipkinEndpointFromNode(t *testing.T) {

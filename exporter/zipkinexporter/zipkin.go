@@ -1,4 +1,4 @@
-// Copyright 2018, OpenCensus Authors
+// Copyright 2018, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import (
 	"sync"
 	"time"
 
-	tracetranslator "github.com/census-instrumentation/opencensus-service/translator/trace"
+	tracetranslator "github.com/open-telemtery/opentelemetry-service/translator/trace"
 
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
@@ -30,11 +30,11 @@ import (
 	"github.com/spf13/viper"
 	"go.opencensus.io/trace"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	"github.com/census-instrumentation/opencensus-service/consumer"
-	"github.com/census-instrumentation/opencensus-service/data"
-	"github.com/census-instrumentation/opencensus-service/observability"
-	spandatatranslator "github.com/census-instrumentation/opencensus-service/translator/trace/spandata"
+	commonpb "github.com/open-telemtery/opentelemetry-proto/gen-go/agent/common/v1"
+	"github.com/open-telemtery/opentelemetry-service/consumer"
+	"github.com/open-telemtery/opentelemetry-service/data"
+	"github.com/open-telemtery/opentelemetry-service/observability"
+	spandatatranslator "github.com/open-telemtery/opentelemetry-service/translator/trace/spandata"
 )
 
 // ZipkinConfig holds the configuration of a Zipkin exporter.
@@ -228,14 +228,14 @@ func (ze *zipkinExporter) ConsumeTraceData(ctx context.Context, td data.TraceDat
 }
 
 // This code from down below is mostly copied from
-// https://github.com/census-instrumentation/opencensus-go/blob/96e75b88df843315da521168a0e3b11792088728/exporter/zipkin/zipkin.go#L57-L194
+// https://github.com/open-telemtery/opentelemetry-go/blob/96e75b88df843315da521168a0e3b11792088728/exporter/zipkin/zipkin.go#L57-L194
 // but that is because the Zipkin Go exporter requires process to change
 // and was designed without taking into account that LocalEndpoint and RemoteEndpoint
 // are per-span-Node attributes instead of global/system variables.
 // The alternative is to create a single exporter for every single combination
 // but this wastes resources i.e. an HTTP client for every single combination
 // but also requires the exporter to be changed entirely as per
-// https://github.com/census-instrumentation/opencensus-go/issues/959
+// https://github.com/open-telemtery/opentelemetry-go/issues/959
 //
 // TODO: (@odeke-em) whenever we come to consensus with the OpenCensus-Go repository
 // on the Zipkin exporter and they have the same logic, then delete all the code

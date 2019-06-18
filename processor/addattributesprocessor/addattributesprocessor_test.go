@@ -1,4 +1,4 @@
-// Copyright 2018, OpenCensus Authors
+// Copyright 2018, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,9 +19,9 @@ import (
 	"errors"
 	"testing"
 
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/census-instrumentation/opencensus-service/data"
-	"github.com/census-instrumentation/opencensus-service/exporter/exportertest"
+	tracepb "github.com/open-telemtery/opentelemetry-proto/gen-go/trace/v1"
+	"github.com/open-telemtery/opentelemetry-service/data"
+	"github.com/open-telemtery/opentelemetry-service/exporter/exportertest"
 )
 
 func TestAddAttributesProcessorInvalidValue(t *testing.T) {

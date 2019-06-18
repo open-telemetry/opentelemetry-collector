@@ -1,4 +1,4 @@
-// Copyright 2018, OpenCensus Authors
+// Copyright 2018, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,12 +21,12 @@ import (
 
 	"go.opencensus.io/trace"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"github.com/census-instrumentation/opencensus-service/consumer"
-	"github.com/census-instrumentation/opencensus-service/data"
-	"github.com/census-instrumentation/opencensus-service/observability"
+	commonpb "github.com/open-telemtery/opentelemetry-proto/gen-go/agent/common/v1"
+	agenttracepb "github.com/open-telemtery/opentelemetry-proto/gen-go/agent/trace/v1"
+	resourcepb "github.com/open-telemtery/opentelemetry-proto/gen-go/resource/v1"
+	"github.com/open-telemtery/opentelemetry-service/consumer"
+	"github.com/open-telemtery/opentelemetry-service/data"
+	"github.com/open-telemtery/opentelemetry-service/observability"
 )
 
 const (
@@ -117,7 +117,7 @@ func (ocr *Receiver) Export(tes agenttracepb.TraceService_ExportServer) error {
 		}
 
 		// TODO(songya): differentiate between unset and nil resource. See
-		// https://github.com/census-instrumentation/opencensus-proto/issues/146.
+		// https://github.com/open-telemtery/opentelemetry-proto/issues/146.
 		if recv.Resource != nil {
 			resource = recv.Resource
 		}

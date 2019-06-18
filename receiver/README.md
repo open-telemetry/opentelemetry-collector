@@ -1,7 +1,7 @@
 A variety of receivers are available to the OpenCensus Service (both Agent and Collector)
 
 __Currently there are some inconsistencies between Agent and Collector configuration, those will be addressed by issue
-[#135](https://github.com/census-instrumentation/opencensus-service/issues/135).__ 
+[#135](https://github.com/open-telemtery/opentelemetry-service/issues/135).__ 
 
 ## OpenCensus
 
@@ -23,7 +23,7 @@ HTTP/JSON in addition to gRPC. The HTTP/JSON address is the same as gRPC as the
 protocol is recognized and processed accordingly.
 
 To write traces with HTTP/JSON, `POST` to `[address]/v1/trace`. The JSON message
-format parallels the gRPC protobuf format, see this [OpenApi spec for it](https://github.com/census-instrumentation/opencensus-proto/blob/master/gen-openapi/opencensus/proto/agent/trace/v1/trace_service.swagger.json).
+format parallels the gRPC protobuf format, see this [OpenApi spec for it](https://github.com/open-telemtery/opentelemetry-proto/blob/master/gen-openapi/opencensus/proto/agent/trace/v1/trace_service.swagger.json).
 
 The HTTP/JSON endpoint can also optionally 
 [CORS](https://fetch.spec.whatwg.org/#cors-protocol), which is enabled by
@@ -40,7 +40,7 @@ receivers:
 ```
 
 ### Collector Differences
-(To be fixed via [#135](https://github.com/census-instrumentation/opencensus-service/issues/135))
+(To be fixed via [#135](https://github.com/open-telemtery/opentelemetry-service/issues/135))
 
 By default this receiver is ALWAYS started on the OpenCensus Collector, it can be disabled via command-line by
 using `--receive-oc-trace=false`. On the Collector only the port can be configured, example:
@@ -113,7 +113,7 @@ receivers:
 ```
 
 ### Collector Differences
-(To be fixed via [#135](https://github.com/census-instrumentation/opencensus-service/issues/135))
+(To be fixed via [#135](https://github.com/open-telemtery/opentelemetry-service/issues/135))
  
 On the Collector Jaeger reception at the default ports can be enabled via command-line `--receive-jaeger`, and the name of the fields is slightly different:
 
@@ -139,7 +139,7 @@ receivers:
 ```
 
 ### Collector Differences
-(To be fixed via [#135](https://github.com/census-instrumentation/opencensus-service/issues/135))
+(To be fixed via [#135](https://github.com/open-telemtery/opentelemetry-service/issues/135))
  
 On the Collector Zipkin reception at the port 9411 can be enabled via command-line `--receive-zipkin`. On the Collector only the port can be configured, example:
 

@@ -1,4 +1,4 @@
-// Copyright 2019, OpenCensus Authors
+// Copyright 2019, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,10 +24,10 @@ import (
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
 
-	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
-	"github.com/census-instrumentation/opencensus-service/consumer"
-	"github.com/census-instrumentation/opencensus-service/data"
-	"github.com/census-instrumentation/opencensus-service/receiver"
+	agentmetricspb "github.com/open-telemtery/opentelemetry-proto/gen-go/agent/metrics/v1"
+	"github.com/open-telemtery/opentelemetry-service/consumer"
+	"github.com/open-telemtery/opentelemetry-service/data"
+	"github.com/open-telemtery/opentelemetry-service/receiver"
 	"github.com/orijtech/promreceiver"
 	"github.com/prometheus/prometheus/config"
 )

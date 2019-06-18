@@ -1,4 +1,4 @@
-// Copyright 2018, OpenCensus Authors
+// Copyright 2018, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,13 +28,13 @@ import (
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
-	"github.com/census-instrumentation/opencensus-service/cmd/occollector/app/builder"
-	"github.com/census-instrumentation/opencensus-service/consumer"
-	"github.com/census-instrumentation/opencensus-service/internal/config/viperutils"
-	"github.com/census-instrumentation/opencensus-service/internal/configv2"
-	"github.com/census-instrumentation/opencensus-service/internal/pprofserver"
-	"github.com/census-instrumentation/opencensus-service/internal/zpagesserver"
-	"github.com/census-instrumentation/opencensus-service/receiver"
+	"github.com/open-telemtery/opentelemetry-service/cmd/occollector/app/builder"
+	"github.com/open-telemtery/opentelemetry-service/consumer"
+	"github.com/open-telemtery/opentelemetry-service/internal/config/viperutils"
+	"github.com/open-telemtery/opentelemetry-service/internal/configv2"
+	"github.com/open-telemtery/opentelemetry-service/internal/pprofserver"
+	"github.com/open-telemtery/opentelemetry-service/internal/zpagesserver"
+	"github.com/open-telemtery/opentelemetry-service/receiver"
 )
 
 var (

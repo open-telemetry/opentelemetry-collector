@@ -1,4 +1,4 @@
-// Copyright 2018, OpenCensus Authors
+// Copyright 2018, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,18 +22,18 @@ import (
 	"time"
 
 	"contrib.go.opencensus.io/exporter/ocagent"
-	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
+	agenttracepb "github.com/open-telemtery/opentelemetry-proto/gen-go/agent/trace/v1"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
 
-	"github.com/census-instrumentation/opencensus-service/consumer"
-	"github.com/census-instrumentation/opencensus-service/data"
-	"github.com/census-instrumentation/opencensus-service/exporter/exporterhelper"
-	"github.com/census-instrumentation/opencensus-service/internal"
-	"github.com/census-instrumentation/opencensus-service/internal/compression"
-	compressiongrpc "github.com/census-instrumentation/opencensus-service/internal/compression/grpc"
+	"github.com/open-telemtery/opentelemetry-service/consumer"
+	"github.com/open-telemtery/opentelemetry-service/data"
+	"github.com/open-telemtery/opentelemetry-service/exporter/exporterhelper"
+	"github.com/open-telemtery/opentelemetry-service/internal"
+	"github.com/open-telemtery/opentelemetry-service/internal/compression"
+	compressiongrpc "github.com/open-telemtery/opentelemetry-service/internal/compression/grpc"
 )
 
 // keepaliveConfig exposes the keepalive.ClientParameters to be used by the exporter.
