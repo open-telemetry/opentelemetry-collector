@@ -1,14 +1,14 @@
 module github.com/open-telemetry/opentelemetry-service
 
 require (
-	contrib.go.opentelemtry.io/exporter/aws v0.0.0-20181029163544-2befc13012d0
-	contrib.go.opentelemtry.io/exporter/jaeger v0.1.1-0.20190430175949-e8b55949d948
-	contrib.go.opentelemtry.io/exporter/ocagent v0.5.0
-	contrib.go.opentelemtry.io/exporter/prometheus v0.1.0
-	contrib.go.opentelemtry.io/exporter/stackdriver v0.12.2
-	contrib.go.opentelemtry.io/exporter/zipkin v0.1.1
+	contrib.go.opentelemetry.io/exporter/aws v0.0.0-20181029163544-2befc13012d0
+	contrib.go.opentelemetry.io/exporter/jaeger v0.1.1-0.20190430175949-e8b55949d948
+	contrib.go.opentelemetry.io/exporter/ocagent v0.5.0
+	contrib.go.opentelemetry.io/exporter/prometheus v0.1.0
+	contrib.go.opentelemetry.io/exporter/stackdriver v0.12.2
+	contrib.go.opentelemetry.io/exporter/zipkin v0.1.1
 	github.com/DataDog/datadog-go v2.2.0+incompatible // indirect
-	github.com/DataDog/opentelemtry-go-exporter-datadog v0.0.0-20181026070331-e7c4bd17b329
+	github.com/DataDog/opentelemetry-go-exporter-datadog v0.0.0-20181026070331-e7c4bd17b329
 	github.com/VividCortex/gohistogram v1.0.0 // indirect
 	github.com/apache/thrift v0.0.0-20161221203622-b2a4d4ae21c7
 	github.com/bmizerany/perks v0.0.0-20141205001514-d9a9656a3a4b // indirect
@@ -24,7 +24,7 @@ require (
 	github.com/gorilla/mux v1.6.2
 	github.com/grpc-ecosystem/grpc-gateway v1.8.5
 	github.com/honeycombio/libhoney-go v1.10.0 // indirect
-	github.com/honeycombio/opentelemtry-exporter v0.0.0-20181101214123-9be2bb327b5a
+	github.com/honeycombio/opentelemetry-exporter v0.0.0-20181101214123-9be2bb327b5a
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jaegertracing/jaeger v1.9.0
 	github.com/omnition/scribe-go v0.0.0-20190131012523-9e3c68f31124
@@ -50,10 +50,10 @@ require (
 	github.com/uber/jaeger-client-go v2.16.0+incompatible // indirect
 	github.com/uber/jaeger-lib v2.0.0+incompatible
 	github.com/uber/tchannel-go v1.10.0
-	github.com/wavefronthq/opentelemtry-exporter v0.0.0-20190506162721-983d7cdaceaf
+	github.com/wavefronthq/opentelemetry-exporter v0.0.0-20190506162721-983d7cdaceaf
 	github.com/wavefronthq/wavefront-sdk-go v0.9.2
-	github.com/yancl/opentelemtry-go-exporter-kafka v0.0.0-20181029030031-9c471c1bfbeb
-	go.opentelemtry.io v0.22.0
+	github.com/yancl/opentelemetry-go-exporter-kafka v0.0.0-20181029030031-9c471c1bfbeb
+	go.opentelemetry.io v0.22.0
 	go.uber.org/atomic v1.3.2 // indirect
 	go.uber.org/multierr v1.1.0 // indirect
 	go.uber.org/zap v1.9.1

@@ -36,15 +36,15 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, config)
 
-	e0 := config.Exporters["opentelemtry"]
+	e0 := config.Exporters["opentelemetry"]
 	assert.Equal(t, e0, factory.CreateDefaultConfig())
 
-	e1 := config.Exporters["opentelemtry/2"]
+	e1 := config.Exporters["opentelemetry/2"]
 	assert.Equal(t, e1,
 		&ConfigV2{
 			ExporterSettings: configmodels.ExporterSettings{
-				NameVal: "opentelemtry/2",
-				TypeVal: "opentelemtry",
+				NameVal: "opentelemetry/2",
+				TypeVal: "opentelemetry",
 				Enabled: true,
 			},
 			Headers: map[string]string{

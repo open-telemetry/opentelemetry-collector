@@ -21,8 +21,8 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-service/exporter/loggingexporter"
 
-	"contrib.go.opentelemtry.io/exporter/ocagent"
-	"go.opentelemtry.io/trace"
+	"contrib.go.opentelemetry.io/exporter/ocagent"
+	"go.opentelemetry.io/trace"
 
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 	"github.com/open-telemetry/opentelemetry-service/receiver/opentelemetryreceiver"

@@ -28,9 +28,9 @@ const (
 	ocTimeEventMessageEventCSize     = "opentel.timeevent.messageevent.csize"
 	ocSameProcessAsParentSpan        = "opentel.sameprocessasparentspan"
 	ocSpanChildCount                 = "opentel.span.childcount"
-	opentelemetryLanguage               = "opentelemtry.language"
-	opentelemetryExporterVersion        = "opentelemtry.exporterversion"
-	opentelemetryCoreLibVersion         = "opentelemtry.corelibversion"
+	opentelemetryLanguage               = "opentelemetry.language"
+	opentelemetryExporterVersion        = "opentelemetry.exporterversion"
+	opentelemetryCoreLibVersion         = "opentelemetry.corelibversion"
 )
 
 var (

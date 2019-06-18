@@ -15,7 +15,7 @@
 package exporterhelper
 
 import (
-	"go.opentelemtry.io/trace"
+	"go.opentelemetry.io/trace"
 )
 
 var (

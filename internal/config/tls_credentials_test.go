@@ -26,7 +26,7 @@ import (
 func TestTLSConfigByParsing(t *testing.T) {
 	configYAML := []byte(`
 receivers:
-  opentelemtry:
+  opentelemetry:
     tls_credentials:
       cert_file: "foobar.crt"
       key_file: "foobar.key"
@@ -84,7 +84,7 @@ func TestTLSCredentials_nonEmptyChecks(t *testing.T) {
 		{
 			config: `
 receivers:
-  opentelemtry:
+  opentelemetry:
     tls_credentials:
       cert_file: "foo"
         `, want: true,
@@ -92,7 +92,7 @@ receivers:
 		{
 			config: `
 receivers:
-  opentelemtry:
+  opentelemetry:
     tls_credentials:
       key_file: "foo"
         `, want: true,
@@ -100,7 +100,7 @@ receivers:
 		{
 			config: `
 receivers:
-  opentelemtry:
+  opentelemetry:
     tls_credentials:
       key_file: ""
       cert_file: ""

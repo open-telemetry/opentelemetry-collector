@@ -30,10 +30,10 @@ import (
 func TestExportersBuilder_Build(t *testing.T) {
 	config := &configmodels.ConfigV2{
 		Exporters: map[string]configmodels.Exporter{
-			"opentelemtry": &opentelemetryexporter.ConfigV2{
+			"opentelemetry": &opentelemetryexporter.ConfigV2{
 				ExporterSettings: configmodels.ExporterSettings{
-					NameVal: "opentelemtry",
-					TypeVal: "opentelemtry",
+					NameVal: "opentelemetry",
+					TypeVal: "opentelemetry",
 					Enabled: true,
 				},
 				Endpoint: "0.0.0.0:12345",
@@ -44,7 +44,7 @@ func TestExportersBuilder_Build(t *testing.T) {
 			"trace": {
 				Name:      "trace",
 				InputType: configmodels.TracesDataType,
-				Exporters: []string{"opentelemtry"},
+				Exporters: []string{"opentelemetry"},
 			},
 		},
 	}
@@ -54,7 +54,7 @@ func TestExportersBuilder_Build(t *testing.T) {
 	assert.NoError(t, err)
 	require.NotNil(t, exporters)
 
-	e1 := exporters[config.Exporters["opentelemtry"]]
+	e1 := exporters[config.Exporters["opentelemetry"]]
 
 	// Ensure exporter has its fields correctly populated.
 	require.NotNil(t, e1)
@@ -66,7 +66,7 @@ func TestExportersBuilder_Build(t *testing.T) {
 	assert.NoError(t, e1.Stop())
 
 	// Now change only pipeline data type to "metrics" and make sure exporter builder
-	// now fails (because opentelemtry exporter does not currently support metrics).
+	// now fails (because opentelemetry exporter does not currently support metrics).
 	config.Pipelines["trace"].InputType = configmodels.MetricsDataType
 	_, err = NewExportersBuilder(zap.NewNop(), config).Build()
 	assert.NotNil(t, err)
@@ -79,7 +79,7 @@ func TestExportersBuilder_Build(t *testing.T) {
 	assert.NotNil(t, exporters)
 	assert.Nil(t, err)
 
-	e1 = exporters[config.Exporters["opentelemtry"]]
+	e1 = exporters[config.Exporters["opentelemetry"]]
 
 	// Ensure exporter has its fields correctly populated.
 	require.NotNil(t, e1)

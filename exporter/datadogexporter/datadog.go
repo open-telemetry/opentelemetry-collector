@@ -15,7 +15,7 @@
 package datadogexporter
 
 import (
-	datadog "github.com/DataDog/opentelemtry-go-exporter-datadog"
+	datadog "github.com/DataDog/opentelemetry-go-exporter-datadog"
 	"github.com/spf13/viper"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"

@@ -1,10 +1,10 @@
 receivers:
-  opentelemtry:
+  opentelemetry:
     address: ":55678"
     reconnection-delay: 2s
   jaeger:
     collector_http_port: 14268
 
 exporters:
-  opentelemtry:
+  opentelemetry:
     endpoint: "opentel-collector:55678"

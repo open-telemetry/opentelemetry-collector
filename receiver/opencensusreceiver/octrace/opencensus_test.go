@@ -32,7 +32,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"google.golang.org/grpc"
 
-	"contrib.go.opentelemtry.io/exporter/ocagent"
+	"contrib.go.opentelemetry.io/exporter/ocagent"
 	commonpb "github.com/open-telemetry/opentelemetry-proto/gen-go/agent/common/v1"
 	agenttracepb "github.com/open-telemetry/opentelemetry-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/open-telemetry/opentelemetry-proto/gen-go/trace/v1"
@@ -40,8 +40,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/data"
 	"github.com/open-telemetry/opentelemetry-service/internal"
 	"github.com/open-telemetry/opentelemetry-service/observability"
-	"go.opentelemtry.io/trace"
-	"go.opentelemtry.io/trace/tracestate"
+	"go.opentelemetry.io/trace"
+	"go.opentelemetry.io/trace/tracestate"
 )
 
 func TestReceiver_endToEnd(t *testing.T) {
@@ -52,7 +52,7 @@ func TestReceiver_endToEnd(t *testing.T) {
 	_, port, doneFn := ocReceiverOnGRPCServer(t, sappender)
 	defer doneFn()
 
-	// Now the opentelemtry-agent exporter.
+	// Now the opentelemetry-agent exporter.
 	address := fmt.Sprintf("localhost:%d", port)
 	oce, err := ocagent.NewExporter(ocagent.WithAddress(address), ocagent.WithInsecure())
 	if err != nil {

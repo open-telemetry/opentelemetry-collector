@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"github.com/open-telemetry/opentelemetry-service/observability"
-	"go.opentelemtry.io/trace"
+	"go.opentelemetry.io/trace"
 
 	"github.com/open-telemetry/opentelemetry-service/data"
 	"github.com/open-telemetry/opentelemetry-service/exporter"

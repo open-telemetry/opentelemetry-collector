@@ -19,7 +19,7 @@ import (
 	"testing"
 
 	metricspb "github.com/open-telemetry/opentelemetry-proto/gen-go/metrics/v1"
-	"go.opentelemtry.io/trace"
+	"go.opentelemetry.io/trace"
 
 	"github.com/open-telemetry/opentelemetry-service/data"
 	"github.com/open-telemetry/opentelemetry-service/exporter"

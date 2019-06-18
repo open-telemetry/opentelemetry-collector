@@ -28,7 +28,7 @@ var _ = factories.RegisterReceiverFactory(&receiverFactory{})
 
 const (
 	// The value of "type" key in configuration.
-	typeStr = "opentelemtry"
+	typeStr = "opentelemetry"
 )
 
 // receiverFactory is the factory for receiver.

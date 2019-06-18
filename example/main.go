@@ -23,11 +23,11 @@ import (
 	"os"
 	"time"
 
-	"contrib.go.opentelemtry.io/exporter/ocagent"
-	"go.opentelemtry.io/stats"
-	"go.opentelemtry.io/stats/view"
-	"go.opentelemtry.io/tag"
-	"go.opentelemtry.io/trace"
+	"contrib.go.opentelemetry.io/exporter/ocagent"
+	"go.opentelemetry.io/stats"
+	"go.opentelemetry.io/stats/view"
+	"go.opentelemetry.io/tag"
+	"go.opentelemetry.io/trace"
 )
 
 func main() {

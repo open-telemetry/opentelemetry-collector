@@ -44,7 +44,7 @@ import (
 // We expect the configuration.yaml file to look like this:
 //
 //  receivers:
-//      opentelemtry:
+//      opentelemetry:
 //          port: <port>
 //
 //      zipkin:
@@ -98,7 +98,7 @@ type Config struct {
 // * Prometheus (metrics)
 // * Zipkin (traces)
 type Receivers struct {
-	OpenTelemetry *ReceiverConfig       `mapstructure:"opentelemtry"`
+	OpenTelemetry *ReceiverConfig       `mapstructure:"opentelemetry"`
 	Zipkin     *ReceiverConfig       `mapstructure:"zipkin"`
 	Jaeger     *ReceiverConfig       `mapstructure:"jaeger"`
 	Scribe     *ScribeReceiverConfig `mapstructure:"zipkin-scribe"`
@@ -449,7 +449,7 @@ func eqLocalHost(host string) bool {
 //  + zipkin
 //  + jaeger
 //  + kafka
-//  + opentelemtry
+//  + opentelemetry
 //  + prometheus
 //  + aws-xray
 //  + honeycomb
@@ -464,7 +464,7 @@ func ExportersFromViperConfig(logger *zap.Logger, v *viper.Viper) ([]consumer.Tr
 		{name: "zipkin", fn: zipkinexporter.ZipkinExportersFromViper},
 		{name: "jaeger", fn: jaegerexporter.JaegerExportersFromViper},
 		{name: "kafka", fn: kafkaexporter.KafkaExportersFromViper},
-		{name: "opentelemtry", fn: opentelemetryexporter.OpenCensusTraceExportersFromViper},
+		{name: "opentelemetry", fn: opentelemetryexporter.OpenCensusTraceExportersFromViper},
 		{name: "prometheus", fn: prometheusexporter.PrometheusExportersFromViper},
 		{name: "aws-xray", fn: awsexporter.AWSXRayTraceExportersFromViper},
 		{name: "honeycomb", fn: honeycombexporter.HoneycombTraceExportersFromViper},

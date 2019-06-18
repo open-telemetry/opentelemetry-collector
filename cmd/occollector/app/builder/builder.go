@@ -27,7 +27,7 @@ import (
 const (
 	receiversRoot     = "receivers"
 	jaegerEntry       = "jaeger"
-	opentelemetryEntry   = "opentelemtry"
+	opentelemetryEntry   = "opentelemetry"
 	zipkinEntry       = "zipkin"
 	zipkinScribeEntry = "zipkin-scribe"
 

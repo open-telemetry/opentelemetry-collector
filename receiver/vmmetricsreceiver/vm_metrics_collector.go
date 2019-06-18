@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"github.com/prometheus/procfs"
-	"go.opentelemtry.io/trace"
+	"go.opentelemetry.io/trace"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/data"

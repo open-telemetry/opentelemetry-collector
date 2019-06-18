@@ -26,7 +26,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"go.opentelemtry.io/stats/view"
+	"go.opentelemetry.io/stats/view"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 

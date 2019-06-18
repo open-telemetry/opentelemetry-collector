@@ -23,7 +23,7 @@
         "vStr": "10.53.69.61"
       },
       {
-        "key": "opentelemtry.exporterversion",
+        "key": "opentelemetry.exporterversion",
         "vType": "STRING",
         "vStr": "someVersion"
       },

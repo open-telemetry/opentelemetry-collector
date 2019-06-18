@@ -1,5 +1,5 @@
 receivers:
-  opentelemtry:
+  opentelemetry:
     keepalive:
       server-parameters:
         time: 30s

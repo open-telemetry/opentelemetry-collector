@@ -23,11 +23,11 @@ import (
 
 	"google.golang.org/grpc"
 
-	"go.opentelemtry.io/plugin/ocgrpc"
-	"go.opentelemtry.io/stats"
-	"go.opentelemtry.io/stats/view"
-	"go.opentelemtry.io/tag"
-	"go.opentelemtry.io/trace"
+	"go.opentelemetry.io/plugin/ocgrpc"
+	"go.opentelemetry.io/stats"
+	"go.opentelemetry.io/stats/view"
+	"go.opentelemetry.io/tag"
+	"go.opentelemetry.io/trace"
 )
 
 var (

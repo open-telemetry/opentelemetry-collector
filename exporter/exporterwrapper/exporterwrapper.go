@@ -24,7 +24,7 @@ package exporterwrapper
 import (
 	"context"
 
-	"go.opentelemtry.io/trace"
+	"go.opentelemetry.io/trace"
 
 	tracepb "github.com/open-telemetry/opentelemetry-proto/gen-go/trace/v1"
 	"github.com/open-telemetry/opentelemetry-service/data"

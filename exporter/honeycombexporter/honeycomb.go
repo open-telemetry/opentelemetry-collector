@@ -18,7 +18,7 @@ package honeycombexporter
 // ask them to make an exporter that uses OpenTelemetry-Proto instead of OpenTelemetry-Go.
 
 import (
-	"github.com/honeycombio/opentelemtry-exporter/honeycomb"
+	"github.com/honeycombio/opentelemetry-exporter/honeycomb"
 	"github.com/spf13/viper"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"

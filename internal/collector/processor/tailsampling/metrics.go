@@ -15,9 +15,9 @@
 package tailsampling
 
 import (
-	"go.opentelemtry.io/stats"
-	"go.opentelemtry.io/stats/view"
-	"go.opentelemtry.io/tag"
+	"go.opentelemetry.io/stats"
+	"go.opentelemetry.io/stats/view"
+	"go.opentelemetry.io/tag"
 
 	"github.com/open-telemetry/opentelemetry-service/internal/collector/telemetry"
 )

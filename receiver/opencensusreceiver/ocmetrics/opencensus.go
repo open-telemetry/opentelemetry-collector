@@ -21,7 +21,7 @@ import (
 
 	"google.golang.org/api/support/bundler"
 
-	"go.opentelemtry.io/trace"
+	"go.opentelemetry.io/trace"
 
 	commonpb "github.com/open-telemetry/opentelemetry-proto/gen-go/agent/common/v1"
 	agentmetricspb "github.com/open-telemetry/opentelemetry-proto/gen-go/agent/metrics/v1"

@@ -22,7 +22,7 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
 
-	"contrib.go.opentelemtry.io/exporter/ocagent"
+	"contrib.go.opentelemetry.io/exporter/ocagent"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exporterhelper"
@@ -36,7 +36,7 @@ var _ = factories.RegisterExporterFactory(&exporterFactory{})
 
 const (
 	// The value of "type" key in configuration.
-	typeStr = "opentelemtry"
+	typeStr = "opentelemetry"
 )
 
 // exporterFactory is the factory for OpenTelemetry exporter.

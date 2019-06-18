@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/prometheus/procfs"
-	"go.opentelemtry.io/stats"
-	"go.opentelemtry.io/stats/view"
+	"go.opentelemetry.io/stats"
+	"go.opentelemetry.io/stats/view"
 )
 
 // ProcessMetricsViews is a struct that contains views related to process metrics (cpu, mem, etc)

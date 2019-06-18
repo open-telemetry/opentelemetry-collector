@@ -19,7 +19,7 @@ import (
 	"errors"
 	"io"
 
-	"go.opentelemtry.io/trace"
+	"go.opentelemetry.io/trace"
 
 	commonpb "github.com/open-telemetry/opentelemetry-proto/gen-go/agent/common/v1"
 	agenttracepb "github.com/open-telemetry/opentelemetry-proto/gen-go/agent/trace/v1"
@@ -48,7 +48,7 @@ type traceDataWithCtx struct {
 	ctx  context.Context
 }
 
-// New creates a new opentelemtry.Receiver reference.
+// New creates a new opentelemetry.Receiver reference.
 func New(nextConsumer consumer.TraceConsumer, opts ...Option) (*Receiver, error) {
 	if nextConsumer == nil {
 		return nil, errors.New("needs a non-nil consumer.TraceConsumer")

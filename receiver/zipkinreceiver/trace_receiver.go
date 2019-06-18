@@ -35,7 +35,7 @@ import (
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	zipkinproto "github.com/openzipkin/zipkin-go/proto/v2"
-	"go.opentelemtry.io/trace"
+	"go.opentelemetry.io/trace"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/data"
@@ -475,7 +475,7 @@ func extractProtoStatus(zs *zipkinmodel.SpanModel) *tracepb.Status {
 		return nil
 	}
 	canonicalCodeStr := zs.Tags["error"]
-	message := zs.Tags["opentelemtry.status_description"]
+	message := zs.Tags["opentelemetry.status_description"]
 	if message == "" && canonicalCodeStr == "" {
 		return nil
 	}

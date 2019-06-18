@@ -21,7 +21,7 @@ import (
 	"sync"
 	"time"
 
-	"contrib.go.opentelemtry.io/exporter/ocagent"
+	"contrib.go.opentelemetry.io/exporter/ocagent"
 	agenttracepb "github.com/open-telemetry/opentelemetry-proto/gen-go/agent/trace/v1"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
@@ -91,7 +91,7 @@ const (
 // OpenTelemetry Agent/Collector according to the configuration settings.
 func OpenCensusTraceExportersFromViper(v *viper.Viper) (tps []consumer.TraceConsumer, mps []consumer.MetricsConsumer, doneFns []func() error, err error) {
 	var cfg struct {
-		OpenTelemetry *opentelemetryConfig `mapstructure:"opentelemtry"`
+		OpenTelemetry *opentelemetryConfig `mapstructure:"opentelemetry"`
 	}
 	if err := v.Unmarshal(&cfg); err != nil {
 		return nil, nil, nil, err

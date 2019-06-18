@@ -17,7 +17,7 @@ import (
 	"errors"
 	"testing"
 
-	"go.opentelemtry.io/trace"
+	"go.opentelemetry.io/trace"
 )
 
 func TestDefaultOptions(t *testing.T) {

@@ -27,10 +27,10 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 
-	"contrib.go.opentelemtry.io/exporter/prometheus"
+	"contrib.go.opentelemetry.io/exporter/prometheus"
 	"github.com/spf13/viper"
-	"go.opentelemtry.io/metric/metricdata"
-	"go.opentelemtry.io/metric/metricproducer"
+	"go.opentelemetry.io/metric/metricdata"
+	"go.opentelemetry.io/metric/metricproducer"
 
 	commonpb "github.com/open-telemetry/opentelemetry-proto/gen-go/agent/common/v1"
 	metricspb "github.com/open-telemetry/opentelemetry-proto/gen-go/metrics/v1"

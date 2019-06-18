@@ -14,7 +14,7 @@
 
 package compression
 
-// Compression keys for supported compression types within opentelemtry collector
+// Compression keys for supported compression types within opentelemetry collector
 const (
 	Unsupported = ""
 	Gzip        = "gzip"

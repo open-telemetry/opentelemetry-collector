@@ -39,10 +39,10 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(config.Receivers), 2)
 
-	r0 := config.Receivers["opentelemtry"]
+	r0 := config.Receivers["opentelemetry"]
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
 
-	r1 := config.Receivers["opentelemtry/customname"].(*ConfigV2)
+	r1 := config.Receivers["opentelemetry/customname"].(*ConfigV2)
 	assert.Equal(t, r1.ReceiverSettings,
 		configmodels.ReceiverSettings{
 			Endpoint: "0.0.0.0:9090",

@@ -1,5 +1,5 @@
 receivers:
-    opentelemtry:
+    opentelemetry:
         address: "127.0.0.1:55678"
 
     zipkin:

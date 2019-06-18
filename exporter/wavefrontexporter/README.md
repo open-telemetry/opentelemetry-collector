@@ -58,5 +58,5 @@ exporters:
 ```
 
 ### References
-- [https://github.com/wavefrontHQ/opentelemtry-exporter](https://github.com/wavefrontHQ/opentelemtry-exporter) 
+- [https://github.com/wavefrontHQ/opentelemetry-exporter](https://github.com/wavefrontHQ/opentelemetry-exporter) 
 - [https://github.com/wavefrontHQ/wavefront-sdk-go](https://github.com/wavefrontHQ/wavefront-sdk-go)

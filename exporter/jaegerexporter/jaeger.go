@@ -17,13 +17,13 @@ package jaegerexporter
 import (
 	"github.com/spf13/viper"
 
-	"contrib.go.opentelemtry.io/exporter/jaeger"
+	"contrib.go.opentelemetry.io/exporter/jaeger"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exporterwrapper"
 )
 
-// Slight modified version of go/src/contrib.go.opentelemtry.io/exporter/jaeger/jaeger.go
+// Slight modified version of go/src/contrib.go.opentelemetry.io/exporter/jaeger/jaeger.go
 type jaegerConfig struct {
 	CollectorEndpoint string `mapstructure:"collector_endpoint,omitempty"`
 	Username          string `mapstructure:"username,omitempty"`
@@ -67,7 +67,7 @@ func JaegerExportersFromViper(v *viper.Viper) (tps []consumer.TraceConsumer, mps
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	// TODO: Examine "contrib.go.opentelemtry.io/exporter/jaeger" to see
+	// TODO: Examine "contrib.go.opentelemetry.io/exporter/jaeger" to see
 	// if trace.ExportSpan was constraining and if perhaps the Jaeger
 	// upload can use the context and information from the Node.
 	tps = append(tps, jte)

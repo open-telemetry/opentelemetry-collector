@@ -24,7 +24,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/cmd/occollector/app/builder"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	jaegerreceiver "github.com/open-telemetry/opentelemetry-service/internal/collector/jaeger"
-	ocreceiver "github.com/open-telemetry/opentelemetry-service/internal/collector/opentelemtry"
+	ocreceiver "github.com/open-telemetry/opentelemetry-service/internal/collector/opentelemetry"
 	zipkinreceiver "github.com/open-telemetry/opentelemetry-service/internal/collector/zipkin"
 	zipkinscribereceiver "github.com/open-telemetry/opentelemetry-service/internal/collector/zipkin/scribe"
 	"github.com/open-telemetry/opentelemetry-service/receiver"

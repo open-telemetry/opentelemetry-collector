@@ -28,7 +28,7 @@ import (
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
 	zipkinhttp "github.com/openzipkin/zipkin-go/reporter/http"
 	"github.com/spf13/viper"
-	"go.opentelemtry.io/trace"
+	"go.opentelemetry.io/trace"
 
 	commonpb "github.com/open-telemetry/opentelemetry-proto/gen-go/agent/common/v1"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
@@ -194,7 +194,7 @@ func (ze *zipkinExporter) stop() error {
 
 func (ze *zipkinExporter) ConsumeTraceData(ctx context.Context, td data.TraceData) (zerr error) {
 	ctx, span := trace.StartSpan(ctx,
-		"opentelemtry.service.exporter.zipkin.ExportTrace",
+		"opentelemetry.service.exporter.zipkin.ExportTrace",
 		trace.WithSampler(trace.NeverSample()))
 
 	defer func() {
@@ -243,7 +243,7 @@ func (ze *zipkinExporter) ConsumeTraceData(ctx context.Context, td data.TraceDat
 
 const (
 	statusCodeTagKey        = "error"
-	statusDescriptionTagKey = "opentelemtry.status_description"
+	statusDescriptionTagKey = "opentelemetry.status_description"
 )
 
 var (

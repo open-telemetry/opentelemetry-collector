@@ -22,8 +22,8 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 
-	"contrib.go.opentelemtry.io/exporter/jaeger"
-	"go.opentelemtry.io/trace"
+	"contrib.go.opentelemetry.io/exporter/jaeger"
+	"go.opentelemetry.io/trace"
 
 	commonpb "github.com/open-telemetry/opentelemetry-proto/gen-go/agent/common/v1"
 	tracepb "github.com/open-telemetry/opentelemetry-proto/gen-go/trace/v1"

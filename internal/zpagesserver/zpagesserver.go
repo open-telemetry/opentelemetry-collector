@@ -20,7 +20,7 @@ import (
 	"net"
 	"net/http"
 
-	"go.opentelemtry.io/zpages"
+	"go.opentelemetry.io/zpages"
 )
 
 const (
