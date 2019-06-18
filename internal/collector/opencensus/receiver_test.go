@@ -1,4 +1,4 @@
-// Copyright 2019, OpenCensus Authors
+// Copyright 2019, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package ocreceiver wraps the functionality to start the end-point that
-// receives data directly in the OpenCensus format.
+// receives data directly in the OpenTelemetry format.
 package ocreceiver
 
 import (
@@ -23,9 +23,9 @@ import (
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
-	"github.com/census-instrumentation/opencensus-service/cmd/occollector/app/builder"
-	"github.com/census-instrumentation/opencensus-service/processor/processortest"
-	"github.com/census-instrumentation/opencensus-service/receiver/opencensusreceiver"
+	"github.com/open-telemetry/opentelemetry-service/cmd/occollector/app/builder"
+	"github.com/open-telemetry/opentelemetry-service/processor/processortest"
+	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver"
 )
 
 func TestStart(t *testing.T) {
@@ -93,7 +93,7 @@ func TestStart(t *testing.T) {
 			}
 			if got != nil {
 				// TODO: (@pjanotti) current StopTraceReception, stop the whole receiver.
-				// See https://github.com/census-instrumentation/opencensus-service/issues/559
+				// See https://github.com/open-telemetry/opentelemetry-service/issues/559
 				got.(*opencensusreceiver.Receiver).Stop()
 			}
 		})

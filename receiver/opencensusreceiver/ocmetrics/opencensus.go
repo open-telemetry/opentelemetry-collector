@@ -1,4 +1,4 @@
-// Copyright 2018, OpenCensus Authors
+// Copyright 2018, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,16 +23,16 @@ import (
 
 	"go.opencensus.io/trace"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"github.com/census-instrumentation/opencensus-service/consumer"
-	"github.com/census-instrumentation/opencensus-service/data"
-	"github.com/census-instrumentation/opencensus-service/observability"
+	commonpb "github.com/open-telemetry/opentelemetry-proto/gen-go/agent/common/v1"
+	agentmetricspb "github.com/open-telemetry/opentelemetry-proto/gen-go/agent/metrics/v1"
+	metricspb "github.com/open-telemetry/opentelemetry-proto/gen-go/metrics/v1"
+	resourcepb "github.com/open-telemetry/opentelemetry-proto/gen-go/resource/v1"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/observability"
 )
 
-// Receiver is the type used to handle metrics from OpenCensus exporters.
+// Receiver is the type used to handle metrics from OpenTelemetry exporters.
 type Receiver struct {
 	nextConsumer       consumer.MetricsConsumer
 	metricBufferPeriod time.Duration
@@ -58,7 +58,7 @@ var errMetricsExportProtocolViolation = errors.New("protocol violation: Export's
 const receiverTagValue = "oc_metrics"
 
 // Export is the gRPC method that receives streamed metrics from
-// OpenCensus-metricproto compatible libraries/applications.
+// OpenTelemetry-metricproto compatible libraries/applications.
 func (ocr *Receiver) Export(mes agentmetricspb.MetricsService_ExportServer) error {
 	// The bundler will receive batches of metrics i.e. []*metricspb.Metric
 	// We need to ensure that it propagates the receiver name as a tag
@@ -101,7 +101,7 @@ func (ocr *Receiver) Export(mes agentmetricspb.MetricsService_ExportServer) erro
 		}
 
 		// TODO(songya): differentiate between unset and nil resource. See
-		// https://github.com/census-instrumentation/opencensus-proto/issues/146.
+		// https://github.com/open-telemetry/opentelemetry-proto/issues/146.
 		if recv.Resource != nil {
 			resource = recv.Resource
 		}

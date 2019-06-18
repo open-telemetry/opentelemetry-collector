@@ -1,6 +1,6 @@
-# OpenCensus Agent/Collector Demo
+# OpenTelemetry Agent/Collector Demo
 
-Typical flow of tracing data with OpenCensus service: tracing data initially received by OC Agent
+Typical flow of tracing data with OpenTelemetry service: tracing data initially received by OC Agent
 and then sent OC Collector using OC data format. The OC Collector then sends the data to the
 tracing backend, in this demo Jaeger and Zipkin.
 

@@ -1,4 +1,4 @@
-// Copyright 2018, OpenCensus Authors
+// Copyright 2018, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,12 +24,12 @@ import (
 
 	"contrib.go.opencensus.io/exporter/ocagent"
 
-	"github.com/census-instrumentation/opencensus-service/consumer"
-	"github.com/census-instrumentation/opencensus-service/exporter/exporterhelper"
-	"github.com/census-instrumentation/opencensus-service/internal/compression"
-	compressiongrpc "github.com/census-instrumentation/opencensus-service/internal/compression/grpc"
-	"github.com/census-instrumentation/opencensus-service/internal/configmodels"
-	"github.com/census-instrumentation/opencensus-service/internal/factories"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/exporter/exporterhelper"
+	"github.com/open-telemetry/opentelemetry-service/internal/compression"
+	compressiongrpc "github.com/open-telemetry/opentelemetry-service/internal/compression/grpc"
+	"github.com/open-telemetry/opentelemetry-service/internal/configmodels"
+	"github.com/open-telemetry/opentelemetry-service/internal/factories"
 )
 
 var _ = factories.RegisterExporterFactory(&exporterFactory{})
@@ -39,7 +39,7 @@ const (
 	typeStr = "opencensus"
 )
 
-// exporterFactory is the factory for OpenCensus exporter.
+// exporterFactory is the factory for OpenTelemetry exporter.
 type exporterFactory struct {
 }
 
@@ -66,7 +66,7 @@ func (f *exporterFactory) CreateTraceExporter(config configmodels.Exporter) (con
 	if ocac.Endpoint == "" {
 		return nil, nil, &ocTraceExporterError{
 			code: errEndpointRequired,
-			msg:  "OpenCensus exporter config requires an Endpoint",
+			msg:  "OpenTelemetry exporter config requires an Endpoint",
 		}
 	}
 
@@ -77,7 +77,7 @@ func (f *exporterFactory) CreateTraceExporter(config configmodels.Exporter) (con
 		} else {
 			return nil, nil, &ocTraceExporterError{
 				code: errUnsupportedCompressionType,
-				msg:  fmt.Sprintf("OpenCensus exporter unsupported compression type %q", ocac.Compression),
+				msg:  fmt.Sprintf("OpenTelemetry exporter unsupported compression type %q", ocac.Compression),
 			}
 		}
 	}
@@ -86,7 +86,7 @@ func (f *exporterFactory) CreateTraceExporter(config configmodels.Exporter) (con
 		if err != nil {
 			return nil, nil, &ocTraceExporterError{
 				code: errUnableToGetTLSCreds,
-				msg:  fmt.Sprintf("OpenCensus exporter unable to read TLS credentials from pem file %q: %v", ocac.CertPemFile, err),
+				msg:  fmt.Sprintf("OpenTelemetry exporter unable to read TLS credentials from pem file %q: %v", ocac.CertPemFile, err),
 			}
 		}
 		opts = append(opts, ocagent.WithTLSCredentials(creds))
@@ -96,7 +96,7 @@ func (f *exporterFactory) CreateTraceExporter(config configmodels.Exporter) (con
 			return nil, nil, &ocTraceExporterError{
 				code: errUnableToGetTLSCreds,
 				msg: fmt.Sprintf(
-					"OpenCensus exporter unable to read certificates from system pool: %v", err),
+					"OpenTelemetry exporter unable to read certificates from system pool: %v", err),
 			}
 		}
 		creds := credentials.NewClientTLSFromCert(certPool, "")
@@ -127,7 +127,7 @@ func (f *exporterFactory) CreateTraceExporter(config configmodels.Exporter) (con
 	for exporterIndex := 0; exporterIndex < numWorkers; exporterIndex++ {
 		exporter, serr := ocagent.NewExporter(opts...)
 		if serr != nil {
-			return nil, nil, fmt.Errorf("cannot configure OpenCensus Trace exporter: %v", serr)
+			return nil, nil, fmt.Errorf("cannot configure OpenTelemetry Trace exporter: %v", serr)
 		}
 		exportersChan <- exporter
 	}
@@ -136,7 +136,7 @@ func (f *exporterFactory) CreateTraceExporter(config configmodels.Exporter) (con
 	oexp, err := exporterhelper.NewTraceExporter(
 		"oc_trace",
 		oce.PushTraceData,
-		exporterhelper.WithSpanName("ocservice.exporter.OpenCensus.ConsumeTraceData"),
+		exporterhelper.WithSpanName("ocservice.exporter.OpenTelemetry.ConsumeTraceData"),
 		exporterhelper.WithRecordMetrics(true))
 
 	if err != nil {

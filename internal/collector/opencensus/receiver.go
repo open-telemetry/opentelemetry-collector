@@ -1,4 +1,4 @@
-// Copyright 2018, OpenCensus Authors
+// Copyright 2018, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package ocreceiver wraps the functionality to start the end-point that
-// receives data directly in the OpenCensus format.
+// receives data directly in the OpenTelemetry format.
 package ocreceiver
 
 import (
@@ -26,13 +26,13 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 
-	"github.com/census-instrumentation/opencensus-service/cmd/occollector/app/builder"
-	"github.com/census-instrumentation/opencensus-service/consumer"
-	"github.com/census-instrumentation/opencensus-service/receiver"
-	"github.com/census-instrumentation/opencensus-service/receiver/opencensusreceiver"
+	"github.com/open-telemetry/opentelemetry-service/cmd/occollector/app/builder"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/receiver"
+	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver"
 )
 
-// Start starts the OpenCensus receiver endpoint.
+// Start starts the OpenTelemetry receiver endpoint.
 func Start(logger *zap.Logger, v *viper.Viper, traceConsumer consumer.TraceConsumer, asyncErrorChan chan<- error) (receiver.TraceReceiver, error) {
 	addr, opts, zapFields, err := receiverOptions(v)
 	if err != nil {
@@ -41,14 +41,14 @@ func Start(logger *zap.Logger, v *viper.Viper, traceConsumer consumer.TraceConsu
 
 	ocr, err := opencensusreceiver.New(addr, traceConsumer, nil, opts...)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create the OpenCensus trace receiver: %v", err)
+		return nil, fmt.Errorf("Failed to create the OpenTelemetry trace receiver: %v", err)
 	}
 
 	if err := ocr.StartTraceReception(context.Background(), asyncErrorChan); err != nil {
 		return nil, fmt.Errorf("Cannot bind Opencensus receiver to address %q: %v", addr, err)
 	}
 
-	logger.Info("OpenCensus receiver is running.", zapFields...)
+	logger.Info("OpenTelemetry receiver is running.", zapFields...)
 
 	return ocr, nil
 }
@@ -61,7 +61,7 @@ func receiverOptions(v *viper.Viper) (addr string, opts []opencensusreceiver.Opt
 
 	tlsCredsOption, hasTLSCreds, err := rOpts.TLSCredentials.ToOpenCensusReceiverServerOption()
 	if err != nil {
-		return addr, opts, zapFields, fmt.Errorf("OpenCensus receiver TLS Credentials: %v", err)
+		return addr, opts, zapFields, fmt.Errorf("OpenTelemetry receiver TLS Credentials: %v", err)
 	}
 	if hasTLSCreds {
 		opts = append(opts, tlsCredsOption)

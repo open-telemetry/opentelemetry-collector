@@ -1,4 +1,4 @@
-// Copyright 2019, OpenCensus Authors
+// Copyright 2019, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/census-instrumentation/opencensus-service/data"
+	"github.com/open-telemetry/opentelemetry-service/data"
 	"github.com/google/go-cmp/cmp"
 	"github.com/spf13/viper"
 )
@@ -38,7 +38,7 @@ func TestOpenCensusTraceExportersFromViper(t *testing.T) {
 	exporters, _, _, err := OpenCensusTraceExportersFromViper(v)
 
 	if err != nil {
-		t.Fatalf("Unexpected error building OpenCensus Exporter")
+		t.Fatalf("Unexpected error building OpenTelemetry Exporter")
 	}
 	if len(exporters) != 1 {
 		t.Fatalf("Should get 1 exporter but got %d", len(exporters))
@@ -58,7 +58,7 @@ func TestOpenCensusTraceExportersFromViper_TLS(t *testing.T) {
 	v.Set("opencensus.cert-pem-file", "testdata/test_cert.pem")
 	exporters, _, _, err := OpenCensusTraceExportersFromViper(v)
 	if err != nil {
-		t.Fatalf("Unexpected error building OpenCensus Exporter")
+		t.Fatalf("Unexpected error building OpenTelemetry Exporter")
 	}
 	if len(exporters) != 1 {
 		t.Fatalf("Should get 1 exporter but got %d", len(exporters))
@@ -77,7 +77,7 @@ func TestOpenCensusTraceExportersFromViper_Compression(t *testing.T) {
 	v.Set("opencensus.compression", "gzip")
 	exporters, _, _, err := OpenCensusTraceExportersFromViper(v)
 	if err != nil {
-		t.Fatalf("Unexpected error building OpenCensus Exporter")
+		t.Fatalf("Unexpected error building OpenTelemetry Exporter")
 	}
 	if len(exporters) != 1 {
 		t.Fatalf("Should get 1 exporter but got %d", len(exporters))

@@ -1,4 +1,4 @@
-// Copyright 2018, OpenCensus Authors
+// Copyright 2018, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package spandata defines translators from Trace proto spans to OpenCensus Go spanData.
+// Package spandata defines translators from Trace proto spans to OpenTelemetry Go spanData.
 package spandata
 
 import (
@@ -22,7 +22,7 @@ import (
 	"go.opencensus.io/trace"
 	"go.opencensus.io/trace/tracestate"
 
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	tracepb "github.com/open-telemetry/opentelemetry-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/golang/protobuf/ptypes/wrappers"
 )
@@ -165,7 +165,7 @@ func protoAttributesToOCAttributes(attrs *tracepb.Span_Attributes) map[string]in
 }
 
 func protoTimeEventsToOCMessageEvents(tes *tracepb.Span_TimeEvents) []trace.MessageEvent {
-	// TODO: (@odeke-em) file a bug with OpenCensus-Go and ask them why
+	// TODO: (@odeke-em) file a bug with OpenTelemetry-Go and ask them why
 	// only MessageEvents are implemented.
 	if tes == nil || len(tes.TimeEvent) == 0 {
 		return nil
@@ -182,7 +182,7 @@ func protoTimeEventsToOCMessageEvents(tes *tracepb.Span_TimeEvents) []trace.Mess
 		}
 		me := tme.MessageEvent
 		var ocme trace.MessageEvent
-		// TODO: (@odeke-em) file an issue with OpenCensus-Go to ask why
+		// TODO: (@odeke-em) file an issue with OpenTelemetry-Go to ask why
 		// they have these attributes as int64 yet the proto definitions
 		// are uint64, this could be a potential loss of precision particularly
 		// in very high traffic systems.
@@ -218,7 +218,7 @@ func protoTimeEventsToOCAnnotations(tes *tracepb.Span_TimeEvents) []trace.Annota
 		}
 		me := tann.Annotation
 		var ocann trace.Annotation
-		// TODO: (@odeke-em) file an issue with OpenCensus-Go to ask why
+		// TODO: (@odeke-em) file an issue with OpenTelemetry-Go to ask why
 		// they have these attributes as int64 yet the proto definitions
 		// are uint64, this could be a potential loss of precision particularly
 		// in very high traffic systems.

@@ -1,4 +1,4 @@
-// Copyright 2018, OpenCensus Authors
+// Copyright 2018, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,6 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package ocmetrics is the logic for receiving OpenCensus metrics proto from
+// Package ocmetrics is the logic for receiving OpenTelemetry metrics proto from
 // already instrumented applications and then passing them onto a metricsink instance.
 package ocmetrics

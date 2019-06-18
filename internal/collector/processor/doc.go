@@ -1,4 +1,4 @@
-// Copyright 2018, OpenCensus Authors
+// Copyright 2018, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,6 +14,6 @@
 
 // Package processor is the central point on the collector processing: it
 // aggregates and performs any operation that applies to all traces in the
-// pipeline. Traces reach it after being converted to the OpenCensus protobuf
+// pipeline. Traces reach it after being converted to the OpenTelemetry protobuf
 // format.
 package processor

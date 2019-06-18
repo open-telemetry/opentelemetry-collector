@@ -1,4 +1,4 @@
-// Copyright 2018, OpenCensus Authors
+// Copyright 2018, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 package observability
 
 // This file contains helpers that are useful to add observability
-// with metrics and tracing using OpenCensus to the various pieces
+// with metrics and tracing using OpenTelemetry to the various pieces
 // of the service.
 
 import (
@@ -117,7 +117,7 @@ func RecordTraceExporterMetrics(ctx context.Context, receivedSpans int, droppedS
 }
 
 // GRPCServerWithObservabilityEnabled creates a gRPC server that at a bare minimum has
-// the OpenCensus ocgrpc server stats handler enabled for tracing and stats.
+// the OpenTelemetry ocgrpc server stats handler enabled for tracing and stats.
 // Use it instead of invoking grpc.NewServer directly.
 func GRPCServerWithObservabilityEnabled(extraOpts ...grpc.ServerOption) *grpc.Server {
 	opts := append(extraOpts, grpc.StatsHandler(&ocgrpc.ServerHandler{}))

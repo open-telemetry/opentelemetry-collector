@@ -1,4 +1,4 @@
-// Copyright 2018, OpenCensus Authors
+// Copyright 2018, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,21 +17,21 @@ package jaeger
 import (
 	"fmt"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	commonpb "github.com/open-telemetry/opentelemetry-proto/gen-go/agent/common/v1"
+	tracepb "github.com/open-telemetry/opentelemetry-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 
-	"github.com/census-instrumentation/opencensus-service/data"
-	tracetranslator "github.com/census-instrumentation/opencensus-service/translator/trace"
+	"github.com/open-telemetry/opentelemetry-service/data"
+	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
 )
 
 var (
 	unknownProcess = &jaeger.Process{ServiceName: "unknown-service-name"}
 )
 
-// OCProtoToJaegerThrift translates OpenCensus trace data into the Jaeger Thrift format.
+// OCProtoToJaegerThrift translates OpenTelemetry trace data into the Jaeger Thrift format.
 func OCProtoToJaegerThrift(td data.TraceData) (*jaeger.Batch, error) {
 	jSpans, err := ocSpansToJaegerSpans(td.Spans)
 	if err != nil {
@@ -96,7 +96,7 @@ func ocNodeToJaegerProcess(node *commonpb.Node) *jaeger.Process {
 		}
 	}
 
-	// Add OpenCensus library information as tags if available
+	// Add OpenTelemetry library information as tags if available
 	ocLib := node.LibraryInfo
 	if ocLib != nil {
 		// Only add language if specified
@@ -288,7 +288,7 @@ func ocTimeEventsToJaegerLogs(ocSpanTimeEvents *tracepb.Span_TimeEvents) []*jaeg
 		case *tracepb.Span_TimeEvent_MessageEvent_:
 			jLog.Fields = ocMessageEventToJaegerTags(teValue.MessageEvent)
 		default:
-			msg := "An unknown OpenCensus TimeEvent type was detected when translating to Jaeger"
+			msg := "An unknown OpenTelemetry TimeEvent type was detected when translating to Jaeger"
 			jTag := &jaeger.Tag{
 				Key:  ocTimeEventUnknownType,
 				VStr: &msg,
@@ -416,7 +416,7 @@ func ocSpanAttributesToJaegerTags(ocAttribs *tracepb.Span_Attributes) []*jaeger.
 			jTag.VDouble = &d
 			jTag.VType = jaeger.TagType_DOUBLE
 		default:
-			str := "<Unknown OpenCensus Attribute for key \"" + key + "\">"
+			str := "<Unknown OpenTelemetry Attribute for key \"" + key + "\">"
 			jTag.VStr = &str
 			jTag.VType = jaeger.TagType_STRING
 		}

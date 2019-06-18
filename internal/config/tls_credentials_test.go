@@ -1,4 +1,4 @@
-// Copyright 2019, OpenCensus Authors
+// Copyright 2019, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/census-instrumentation/opencensus-service/internal/config/viperutils"
+	"github.com/open-telemetry/opentelemetry-service/internal/config/viperutils"
 )
 
 func TestTLSConfigByParsing(t *testing.T) {
@@ -69,7 +69,7 @@ func TestTLSConfigDereferencing(t *testing.T) {
 	}
 
 	if nilConfig.openCensusReceiverEnabled() {
-		t.Error("Somehow OpenCensus receiver is enabled on a nil Config")
+		t.Error("Somehow OpenTelemetry receiver is enabled on a nil Config")
 	}
 }
 

@@ -1,4 +1,4 @@
-// Copyright 2019, OpenCensus Authors
+// Copyright 2019, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,17 +23,17 @@ import (
 	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	jaeger "github.com/jaegertracing/jaeger/model"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/census-instrumentation/opencensus-service/data"
-	tracetranslator "github.com/census-instrumentation/opencensus-service/translator/trace"
+	commonpb "github.com/open-telemetry/opentelemetry-proto/gen-go/agent/common/v1"
+	tracepb "github.com/open-telemetry/opentelemetry-proto/gen-go/trace/v1"
+	"github.com/open-telemetry/opentelemetry-service/data"
+	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
 )
 
 var (
 	unknownProcessProto = &jaeger.Process{ServiceName: "unknown-service-name"}
 )
 
-// OCProtoToJaegerProto translates OpenCensus trace data into the Jaeger Proto for GRPC.
+// OCProtoToJaegerProto translates OpenTelemetry trace data into the Jaeger Proto for GRPC.
 func OCProtoToJaegerProto(td data.TraceData) (*jaeger.Batch, error) {
 	jSpans, err := ocSpansToJaegerSpansProto(td.Spans)
 	if err != nil {
@@ -98,7 +98,7 @@ func ocNodeToJaegerProcessProto(node *commonpb.Node) *jaeger.Process {
 		}
 	}
 
-	// Add OpenCensus library information as tags if available
+	// Add OpenTelemetry library information as tags if available
 	ocLib := node.LibraryInfo
 	if ocLib != nil {
 		// Only add language if specified
@@ -246,7 +246,7 @@ func ocSpanAttributesToJaegerTagsProto(ocAttribs *tracepb.Span_Attributes) []jae
 			jTag.VFloat64 = d
 			jTag.VType = jaeger.ValueType_FLOAT64
 		default:
-			str := "<Unknown OpenCensus Attribute for key \"" + key + "\">"
+			str := "<Unknown OpenTelemetry Attribute for key \"" + key + "\">"
 			jTag.VStr = str
 			jTag.VType = jaeger.ValueType_STRING
 		}
@@ -275,7 +275,7 @@ func ocTimeEventsToJaegerLogsProto(ocSpanTimeEvents *tracepb.Span_TimeEvents) []
 		case *tracepb.Span_TimeEvent_MessageEvent_:
 			jLog.Fields = ocMessageEventToJaegerTagsProto(teValue.MessageEvent)
 		default:
-			msg := "An unknown OpenCensus TimeEvent type was detected when translating to Jaeger"
+			msg := "An unknown OpenTelemetry TimeEvent type was detected when translating to Jaeger"
 			jKV := jaeger.KeyValue{
 				Key:   ocTimeEventUnknownType,
 				VStr:  msg,

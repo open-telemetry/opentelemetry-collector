@@ -1,4 +1,4 @@
-// Copyright 2018, OpenCensus Authors
+// Copyright 2018, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,19 +26,19 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
-	"github.com/census-instrumentation/opencensus-service/consumer"
-	"github.com/census-instrumentation/opencensus-service/exporter/awsexporter"
-	"github.com/census-instrumentation/opencensus-service/exporter/datadogexporter"
-	"github.com/census-instrumentation/opencensus-service/exporter/honeycombexporter"
-	"github.com/census-instrumentation/opencensus-service/exporter/jaegerexporter"
-	"github.com/census-instrumentation/opencensus-service/exporter/kafkaexporter"
-	"github.com/census-instrumentation/opencensus-service/exporter/opencensusexporter"
-	"github.com/census-instrumentation/opencensus-service/exporter/prometheusexporter"
-	"github.com/census-instrumentation/opencensus-service/exporter/stackdriverexporter"
-	"github.com/census-instrumentation/opencensus-service/exporter/wavefrontexporter"
-	"github.com/census-instrumentation/opencensus-service/exporter/zipkinexporter"
-	"github.com/census-instrumentation/opencensus-service/receiver/opencensusreceiver"
-	"github.com/census-instrumentation/opencensus-service/receiver/prometheusreceiver"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/exporter/awsexporter"
+	"github.com/open-telemetry/opentelemetry-service/exporter/datadogexporter"
+	"github.com/open-telemetry/opentelemetry-service/exporter/honeycombexporter"
+	"github.com/open-telemetry/opentelemetry-service/exporter/jaegerexporter"
+	"github.com/open-telemetry/opentelemetry-service/exporter/kafkaexporter"
+	"github.com/open-telemetry/opentelemetry-service/exporter/opencensusexporter"
+	"github.com/open-telemetry/opentelemetry-service/exporter/prometheusexporter"
+	"github.com/open-telemetry/opentelemetry-service/exporter/stackdriverexporter"
+	"github.com/open-telemetry/opentelemetry-service/exporter/wavefrontexporter"
+	"github.com/open-telemetry/opentelemetry-service/exporter/zipkinexporter"
+	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver"
+	"github.com/open-telemetry/opentelemetry-service/receiver/prometheusreceiver"
 )
 
 // We expect the configuration.yaml file to look like this:
@@ -94,11 +94,11 @@ type Config struct {
 
 // Receivers denotes configurations for the various telemetry ingesters, such as:
 // * Jaeger (traces)
-// * OpenCensus (metrics and traces)
+// * OpenTelemetry (metrics and traces)
 // * Prometheus (metrics)
 // * Zipkin (traces)
 type Receivers struct {
-	OpenCensus *ReceiverConfig       `mapstructure:"opencensus"`
+	OpenTelemetry *ReceiverConfig       `mapstructure:"opencensus"`
 	Zipkin     *ReceiverConfig       `mapstructure:"zipkin"`
 	Jaeger     *ReceiverConfig       `mapstructure:"jaeger"`
 	Scribe     *ScribeReceiverConfig `mapstructure:"zipkin-scribe"`
@@ -120,13 +120,13 @@ type Receivers struct {
 // * Address
 // * Various ports
 type ReceiverConfig struct {
-	// The address to which the OpenCensus receiver will be bound and run on.
+	// The address to which the OpenTelemetry receiver will be bound and run on.
 	Address             string `mapstructure:"address"`
 	CollectorHTTPPort   int    `mapstructure:"collector_http_port"`
 	CollectorThriftPort int    `mapstructure:"collector_thrift_port"`
 
 	// The allowed CORS origins for HTTP/JSON requests the grpc-gateway adapter
-	// for the OpenCensus receiver. See github.com/rs/cors
+	// for the OpenTelemetry receiver. See github.com/rs/cors
 	// An empty list means that CORS is not enabled at all. A wildcard (*) can be
 	// used to match any origin or one or more characters of an origin.
 	CorsAllowedOrigins []string `mapstructure:"cors_allowed_origins"`
@@ -168,18 +168,18 @@ type ZPagesConfig struct {
 }
 
 // OpenCensusReceiverAddress is a helper to safely retrieve the address
-// that the OpenCensus receiver will be bound to.
-// If Config is nil or the OpenCensus receiver's configuration is nil, it
+// that the OpenTelemetry receiver will be bound to.
+// If Config is nil or the OpenTelemetry receiver's configuration is nil, it
 // will return the default of ":55678"
 func (c *Config) OpenCensusReceiverAddress() string {
 	if c == nil || c.Receivers == nil {
 		return defaultOCReceiverAddress
 	}
 	inCfg := c.Receivers
-	if inCfg.OpenCensus == nil || inCfg.OpenCensus.Address == "" {
+	if inCfg.OpenTelemetry == nil || inCfg.OpenTelemetry.Address == "" {
 		return defaultOCReceiverAddress
 	}
-	return inCfg.OpenCensus.Address
+	return inCfg.OpenTelemetry.Address
 }
 
 // OpenCensusReceiverCorsAllowedOrigins is a helper to safely retrieve the list
@@ -189,30 +189,30 @@ func (c *Config) OpenCensusReceiverCorsAllowedOrigins() []string {
 		return defaultOCReceiverCorsAllowedOrigins
 	}
 	inCfg := c.Receivers
-	if inCfg.OpenCensus == nil {
+	if inCfg.OpenTelemetry == nil {
 		return defaultOCReceiverCorsAllowedOrigins
 	}
-	return inCfg.OpenCensus.CorsAllowedOrigins
+	return inCfg.OpenTelemetry.CorsAllowedOrigins
 }
 
 // CanRunOpenCensusTraceReceiver returns true if the configuration
-// permits running the OpenCensus Trace receiver.
+// permits running the OpenTelemetry Trace receiver.
 func (c *Config) CanRunOpenCensusTraceReceiver() bool {
-	return c.openCensusReceiverEnabled() && !c.Receivers.OpenCensus.DisableTracing
+	return c.openCensusReceiverEnabled() && !c.Receivers.OpenTelemetry.DisableTracing
 }
 
 // CanRunOpenCensusMetricsReceiver returns true if the configuration
-// permits running the OpenCensus Metrics receiver.
+// permits running the OpenTelemetry Metrics receiver.
 func (c *Config) CanRunOpenCensusMetricsReceiver() bool {
-	return c.openCensusReceiverEnabled() && !c.Receivers.OpenCensus.DisableMetrics
+	return c.openCensusReceiverEnabled() && !c.Receivers.OpenTelemetry.DisableMetrics
 }
 
 // openCensusReceiverEnabled returns true if both:
-//    Config.Receivers and Config.Receivers.OpenCensus
+//    Config.Receivers and Config.Receivers.OpenTelemetry
 // are non-nil.
 func (c *Config) openCensusReceiverEnabled() bool {
 	return c != nil && c.Receivers != nil &&
-		c.Receivers.OpenCensus != nil
+		c.Receivers.OpenTelemetry != nil
 }
 
 // ZPagesDisabled returns true if zPages have not been enabled.
@@ -335,13 +335,13 @@ func (rCfg *ReceiverConfig) HasTLSCredentials() bool {
 }
 
 // OpenCensusReceiverTLSServerCredentials retrieves the TLS credentials
-// from this Config's OpenCensus receiver if any.
+// from this Config's OpenTelemetry receiver if any.
 func (c *Config) OpenCensusReceiverTLSServerCredentials() *TLSCredentials {
 	if !c.openCensusReceiverEnabled() {
 		return nil
 	}
 
-	ocrConfig := c.Receivers.OpenCensus
+	ocrConfig := c.Receivers.OpenTelemetry
 	if !ocrConfig.HasTLSCredentials() {
 		return nil
 	}
@@ -366,7 +366,7 @@ func (tlsCreds *TLSCredentials) ToOpenCensusReceiverServerOption() (opt opencens
 	return opencensusreceiver.WithGRPCServerOptions(gRPCCredsOpt), true, nil
 }
 
-// OpenCensusReceiverTLSCredentialsServerOption checks if the OpenCensus receiver's Configuration
+// OpenCensusReceiverTLSCredentialsServerOption checks if the OpenTelemetry receiver's Configuration
 // has TLS credentials in the form of a certificate file and a key file. If it doesn't
 // have any, it will return opencensusreceiver.WithNoopOption() and a nil error.
 // Otherwise, it will try to retrieve gRPC transport credentials from the file combinations,

@@ -1,4 +1,4 @@
-// Copyright 2019, OpenCensus Authors
+// Copyright 2019, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,12 +25,12 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.uber.org/zap"
 
-	"github.com/census-instrumentation/opencensus-service/internal/collector/processor"
-	"github.com/census-instrumentation/opencensus-service/internal/collector/processor/nodebatcher"
-	"github.com/census-instrumentation/opencensus-service/internal/collector/processor/queued"
-	"github.com/census-instrumentation/opencensus-service/internal/collector/processor/tailsampling"
-	"github.com/census-instrumentation/opencensus-service/internal/collector/telemetry"
-	"github.com/census-instrumentation/opencensus-service/observability"
+	"github.com/open-telemetry/opentelemetry-service/internal/collector/processor"
+	"github.com/open-telemetry/opentelemetry-service/internal/collector/processor/nodebatcher"
+	"github.com/open-telemetry/opentelemetry-service/internal/collector/processor/queued"
+	"github.com/open-telemetry/opentelemetry-service/internal/collector/processor/tailsampling"
+	"github.com/open-telemetry/opentelemetry-service/internal/collector/telemetry"
+	"github.com/open-telemetry/opentelemetry-service/observability"
 )
 
 const (
@@ -49,7 +49,7 @@ type appTelemetry struct {
 
 func telemetryFlags(flags *flag.FlagSet) {
 	flags.String(metricsLevelCfg, "BASIC", "Output level of telemetry metrics (NONE, BASIC, NORMAL, DETAILED)")
-	// At least until we can use a generic, i.e.: OpenCensus, metrics exporter we default to Prometheus at port 8888, if not otherwise specified.
+	// At least until we can use a generic, i.e.: OpenTelemetry, metrics exporter we default to Prometheus at port 8888, if not otherwise specified.
 	flags.Uint(metricsPortCfg, 8888, "Port exposing collector telemetry.")
 }
 

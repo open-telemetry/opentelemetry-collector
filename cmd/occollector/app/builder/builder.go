@@ -1,4 +1,4 @@
-// Copyright 2018, OpenCensus Authors
+// Copyright 2018, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/census-instrumentation/opencensus-service/internal/config"
+	"github.com/open-telemetry/opentelemetry-service/internal/config"
 	"github.com/spf13/viper"
 )
 
@@ -47,7 +47,7 @@ func Flags(flags *flag.FlagSet) {
 	flags.Bool(jaegerReceiverFlg, false,
 		fmt.Sprintf("Flag to run the Jaeger receiver (i.e.: Jaeger Collector), default settings: %+v", *NewDefaultJaegerReceiverCfg()))
 	flags.Bool(ocReceiverFlg, true,
-		fmt.Sprintf("Flag to run the OpenCensus trace receiver, default settings: %+v", *NewDefaultOpenCensusReceiverCfg()))
+		fmt.Sprintf("Flag to run the OpenTelemetry trace receiver, default settings: %+v", *NewDefaultOpenCensusReceiverCfg()))
 	flags.Bool(zipkinReceiverFlg, false,
 		fmt.Sprintf("Flag to run the Zipkin receiver, default settings: %+v", *NewDefaultZipkinReceiverCfg()))
 	flags.Bool(zipkinScribeReceiverFlg, false,
@@ -100,7 +100,7 @@ func (cfg *JaegerReceiverCfg) InitFromViper(v *viper.Viper) (*JaegerReceiverCfg,
 	return cfg, initFromViper(cfg, v, receiversRoot, jaegerEntry)
 }
 
-// OpenCensusReceiverCfg holds configuration for OpenCensus receiver.
+// OpenCensusReceiverCfg holds configuration for OpenTelemetry receiver.
 type OpenCensusReceiverCfg struct {
 	// Port is the port that the receiver will use
 	Port int `mapstructure:"port"`
@@ -140,7 +140,7 @@ type keepaliveEnforcementPolicy struct {
 	PermitWithoutStream bool          `mapstructure:"permit-without-stream,omitempty"`
 }
 
-// OpenCensusReceiverEnabled checks if the OpenCensus receiver is enabled, via a command-line flag, environment
+// OpenCensusReceiverEnabled checks if the OpenTelemetry receiver is enabled, via a command-line flag, environment
 // variable, or configuration file.
 func OpenCensusReceiverEnabled(v *viper.Viper) bool {
 	return featureEnabled(v, ocReceiverFlg, receiversRoot, opencensusEntry)

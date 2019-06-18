@@ -1,4 +1,4 @@
-// Copyright 2018, OpenCensus Authors
+// Copyright 2018, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,10 +23,10 @@ import (
 	"github.com/golang/protobuf/proto"
 	zipkin_proto3 "github.com/openzipkin/zipkin-go/proto/v2"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/census-instrumentation/opencensus-service/data"
-	"github.com/census-instrumentation/opencensus-service/internal"
+	commonpb "github.com/open-telemetry/opentelemetry-proto/gen-go/agent/common/v1"
+	tracepb "github.com/open-telemetry/opentelemetry-proto/gen-go/trace/v1"
+	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/internal"
 )
 
 func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
@@ -103,7 +103,7 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 	hdr := make(http.Header)
 	hdr.Set("Content-Type", "application/x-protobuf")
 
-	// 3. Get that payload converted to OpenCensus proto spans.
+	// 3. Get that payload converted to OpenTelemetry proto spans.
 	reqs, err := zi.v2ToTraceSpans(protoBlob, hdr)
 	if err != nil {
 		t.Fatalf("Failed to parse convert Zipkin spans in Protobuf to Trace spans: %v", err)

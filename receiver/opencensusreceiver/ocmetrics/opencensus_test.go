@@ -1,4 +1,4 @@
-// Copyright 2018, OpenCensus Authors
+// Copyright 2018, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,13 +31,13 @@ import (
 	"github.com/golang/protobuf/proto"
 	"google.golang.org/grpc"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/census-instrumentation/opencensus-service/consumer"
-	"github.com/census-instrumentation/opencensus-service/data"
-	"github.com/census-instrumentation/opencensus-service/internal"
-	"github.com/census-instrumentation/opencensus-service/observability"
+	commonpb "github.com/open-telemetry/opentelemetry-proto/gen-go/agent/common/v1"
+	agentmetricspb "github.com/open-telemetry/opentelemetry-proto/gen-go/agent/metrics/v1"
+	metricspb "github.com/open-telemetry/opentelemetry-proto/gen-go/metrics/v1"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/internal"
+	"github.com/open-telemetry/opentelemetry-service/observability"
 )
 
 // TODO: add E2E tests once ocagent implements metric service client.
@@ -166,7 +166,7 @@ func TestExportMultiplexing(t *testing.T) {
 }
 
 // The first message without a Node MUST be rejected and teardown the connection.
-// See https://github.com/census-instrumentation/opencensus-service/issues/53
+// See https://github.com/open-telemetry/opentelemetry-service/issues/53
 func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 	metricSink := newMetricAppender()
 
@@ -234,10 +234,10 @@ func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 
 // If the first message is valid (has a non-nil Node) and has metrics, those
 // metrics should be received and NEVER discarded.
-// See https://github.com/census-instrumentation/opencensus-service/issues/51
+// See https://github.com/open-telemetry/opentelemetry-service/issues/51
 func TestExportProtocolConformation_metricsInFirstMessage(t *testing.T) {
 	t.Skipf("Currently disabled, this test is flaky on Windows. Enable this test when the following are fixed:\nIssue %s\n",
-		"https://github.com/census-instrumentation/opencensus-service/issues/225",
+		"https://github.com/open-telemetry/opentelemetry-service/issues/225",
 	)
 
 	metricSink := newMetricAppender()

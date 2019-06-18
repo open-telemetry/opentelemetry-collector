@@ -1,4 +1,4 @@
-// Copyright 2019, OpenCensus Authors
+// Copyright 2019, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,10 +17,10 @@ package opencensusexporter
 import (
 	"time"
 
-	"github.com/census-instrumentation/opencensus-service/internal/configmodels"
+	"github.com/open-telemetry/opentelemetry-service/internal/configmodels"
 )
 
-// ConfigV2 defines configuration for OpenCensus exporter.
+// ConfigV2 defines configuration for OpenTelemetry exporter.
 type ConfigV2 struct {
 	configmodels.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	Endpoint                      string                   `mapstructure:"endpoint"`

@@ -1,4 +1,4 @@
-// Copyright 2018, OpenCensus Authors
+// Copyright 2018, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -47,9 +47,9 @@ func TestReceiversEnabledByPresenceWithDefaultSettings(t *testing.T) {
 	woc := NewDefaultOpenCensusReceiverCfg()
 	goc, err := woc.InitFromViper(v)
 	if err != nil {
-		t.Errorf("Failed to InitFromViper for OpenCensus receiver: %v", err)
+		t.Errorf("Failed to InitFromViper for OpenTelemetry receiver: %v", err)
 	} else if !reflect.DeepEqual(woc, goc) {
-		t.Errorf("Incorrect config for OpenCensus receiver, want %v got %v", woc, goc)
+		t.Errorf("Incorrect config for OpenTelemetry receiver, want %v got %v", woc, goc)
 	}
 
 	wz := NewDefaultZipkinReceiverCfg()

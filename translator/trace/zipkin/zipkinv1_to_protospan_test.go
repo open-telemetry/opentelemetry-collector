@@ -1,4 +1,4 @@
-// Copyright 2018, OpenCensus Authors
+// Copyright 2018, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,9 +21,9 @@ import (
 	"sort"
 	"testing"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/census-instrumentation/opencensus-service/data"
+	commonpb "github.com/open-telemetry/opentelemetry-proto/gen-go/agent/common/v1"
+	tracepb "github.com/open-telemetry/opentelemetry-proto/gen-go/trace/v1"
+	"github.com/open-telemetry/opentelemetry-service/data"
 	"github.com/golang/protobuf/ptypes/timestamp"
 )
 
@@ -239,7 +239,7 @@ func sortTraceByNodeName(trace []data.TraceData) {
 	})
 }
 
-// ocBatches has the OpenCensus proto batches used in the test. They are hard coded because
+// ocBatches has the OpenTelemetry proto batches used in the test. They are hard coded because
 // structs like tracepb.AttributeMap cannot be ready from JSON.
 var ocBatchesFromZipkinV1 = []data.TraceData{
 	{

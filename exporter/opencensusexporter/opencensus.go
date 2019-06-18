@@ -1,4 +1,4 @@
-// Copyright 2018, OpenCensus Authors
+// Copyright 2018, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,18 +22,18 @@ import (
 	"time"
 
 	"contrib.go.opencensus.io/exporter/ocagent"
-	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
+	agenttracepb "github.com/open-telemetry/opentelemetry-proto/gen-go/agent/trace/v1"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
 
-	"github.com/census-instrumentation/opencensus-service/consumer"
-	"github.com/census-instrumentation/opencensus-service/data"
-	"github.com/census-instrumentation/opencensus-service/exporter/exporterhelper"
-	"github.com/census-instrumentation/opencensus-service/internal"
-	"github.com/census-instrumentation/opencensus-service/internal/compression"
-	compressiongrpc "github.com/census-instrumentation/opencensus-service/internal/compression/grpc"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/exporter/exporterhelper"
+	"github.com/open-telemetry/opentelemetry-service/internal"
+	"github.com/open-telemetry/opentelemetry-service/internal/compression"
+	compressiongrpc "github.com/open-telemetry/opentelemetry-service/internal/compression/grpc"
 )
 
 // keepaliveConfig exposes the keepalive.ClientParameters to be used by the exporter.
@@ -88,15 +88,15 @@ const (
 )
 
 // OpenCensusTraceExportersFromViper unmarshals the viper and returns an consumer.TraceConsumer targeting
-// OpenCensus Agent/Collector according to the configuration settings.
+// OpenTelemetry Agent/Collector according to the configuration settings.
 func OpenCensusTraceExportersFromViper(v *viper.Viper) (tps []consumer.TraceConsumer, mps []consumer.MetricsConsumer, doneFns []func() error, err error) {
 	var cfg struct {
-		OpenCensus *opencensusConfig `mapstructure:"opencensus"`
+		OpenTelemetry *opencensusConfig `mapstructure:"opencensus"`
 	}
 	if err := v.Unmarshal(&cfg); err != nil {
 		return nil, nil, nil, err
 	}
-	ocac := cfg.OpenCensus
+	ocac := cfg.OpenTelemetry
 	if ocac == nil {
 		return nil, nil, nil, nil
 	}
@@ -104,7 +104,7 @@ func OpenCensusTraceExportersFromViper(v *viper.Viper) (tps []consumer.TraceCons
 	if ocac.Endpoint == "" {
 		return nil, nil, nil, &ocTraceExporterError{
 			code: errEndpointRequired,
-			msg:  "OpenCensus exporter config requires an Endpoint",
+			msg:  "OpenTelemetry exporter config requires an Endpoint",
 		}
 	}
 
@@ -115,7 +115,7 @@ func OpenCensusTraceExportersFromViper(v *viper.Viper) (tps []consumer.TraceCons
 		} else {
 			return nil, nil, nil, &ocTraceExporterError{
 				code: errUnsupportedCompressionType,
-				msg:  fmt.Sprintf("OpenCensus exporter unsupported compression type %q", ocac.Compression),
+				msg:  fmt.Sprintf("OpenTelemetry exporter unsupported compression type %q", ocac.Compression),
 			}
 		}
 	}
@@ -124,7 +124,7 @@ func OpenCensusTraceExportersFromViper(v *viper.Viper) (tps []consumer.TraceCons
 		if err != nil {
 			return nil, nil, nil, &ocTraceExporterError{
 				code: errUnableToGetTLSCreds,
-				msg:  fmt.Sprintf("OpenCensus exporter unable to read TLS credentials from pem file %q: %v", ocac.CertPemFile, err),
+				msg:  fmt.Sprintf("OpenTelemetry exporter unable to read TLS credentials from pem file %q: %v", ocac.CertPemFile, err),
 			}
 		}
 		opts = append(opts, ocagent.WithTLSCredentials(creds))
@@ -134,7 +134,7 @@ func OpenCensusTraceExportersFromViper(v *viper.Viper) (tps []consumer.TraceCons
 			return nil, nil, nil, &ocTraceExporterError{
 				code: errUnableToGetTLSCreds,
 				msg: fmt.Sprintf(
-					"OpenCensus exporter unable to read certificates from system pool: %v", err),
+					"OpenTelemetry exporter unable to read certificates from system pool: %v", err),
 			}
 		}
 		creds := credentials.NewClientTLSFromCert(certPool, "")
@@ -165,7 +165,7 @@ func OpenCensusTraceExportersFromViper(v *viper.Viper) (tps []consumer.TraceCons
 	for exporterIndex := 0; exporterIndex < numWorkers; exporterIndex++ {
 		exporter, serr := ocagent.NewExporter(opts...)
 		if serr != nil {
-			return nil, nil, nil, fmt.Errorf("cannot configure OpenCensus Trace exporter: %v", serr)
+			return nil, nil, nil, fmt.Errorf("cannot configure OpenTelemetry Trace exporter: %v", serr)
 		}
 		exportersChan <- exporter
 	}
@@ -174,7 +174,7 @@ func OpenCensusTraceExportersFromViper(v *viper.Viper) (tps []consumer.TraceCons
 	oexp, err := exporterhelper.NewTraceExporter(
 		"oc_trace",
 		oce.PushTraceData,
-		exporterhelper.WithSpanName("ocservice.exporter.OpenCensus.ConsumeTraceData"),
+		exporterhelper.WithSpanName("ocservice.exporter.OpenTelemetry.ConsumeTraceData"),
 		exporterhelper.WithRecordMetrics(true))
 
 	if err != nil {
@@ -184,7 +184,7 @@ func OpenCensusTraceExportersFromViper(v *viper.Viper) (tps []consumer.TraceCons
 	tps = append(tps, oexp)
 	doneFns = append(doneFns, oce.stop)
 
-	// TODO: (@odeke-em, @songya23) implement ExportMetrics for OpenCensus.
+	// TODO: (@odeke-em, @songya23) implement ExportMetrics for OpenTelemetry.
 	// mps = append(mps, oexp)
 	return
 }
@@ -224,7 +224,7 @@ func (oce *ocagentExporter) PushTraceData(ctx context.Context, td data.TraceData
 	if !ok {
 		err := &ocTraceExporterError{
 			code: errAlreadyStopped,
-			msg:  fmt.Sprintf("OpenCensus exporter was already stopped."),
+			msg:  fmt.Sprintf("OpenTelemetry exporter was already stopped."),
 		}
 		return len(td.Spans), err
 	}

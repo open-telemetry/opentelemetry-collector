@@ -1,4 +1,4 @@
-// Copyright 2019, OpenCensus Authors
+// Copyright 2019, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,10 +26,10 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/census-instrumentation/opencensus-service/consumer"
-	"github.com/census-instrumentation/opencensus-service/data"
-	"github.com/census-instrumentation/opencensus-service/exporter/exporterhelper"
-	"github.com/census-instrumentation/opencensus-service/exporter/exporterwrapper"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/exporter/exporterhelper"
+	"github.com/open-telemetry/opentelemetry-service/exporter/exporterwrapper"
 )
 
 const defaultVersionForAWSXRayApplications = "latest"
@@ -49,7 +49,7 @@ type awsXRayConfig struct {
 type awsXRayExporter struct {
 	mu sync.RWMutex
 
-	// exportersByServiceName shards AWS X-Ray OpenCensus-Go
+	// exportersByServiceName shards AWS X-Ray OpenTelemetry-Go
 	// Trace exporters by serviceName that's derived
 	// from each Node of spans that this exporter receives.
 	exportersByServiceName map[string]*xray.Exporter
@@ -153,7 +153,7 @@ func transformConfigToXRayOptions(axrCfg *awsXRayConfig) (xopts []xray.Option, e
 	return xopts, nil
 }
 
-// ExportSpans is the method that translates OpenCensus-Proto Traces into AWS X-Ray spans.
+// ExportSpans is the method that translates OpenTelemetry-Proto Traces into AWS X-Ray spans.
 // It uniquely maintains
 func (axe *awsXRayExporter) PushTraceData(ctx context.Context, td data.TraceData) (int, error) {
 	serviceName := td.Node.GetServiceInfo().GetName()

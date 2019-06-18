@@ -1,4 +1,4 @@
-// Copyright 2018, OpenCensus Authors
+// Copyright 2018, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,11 +25,11 @@ import (
 	"contrib.go.opencensus.io/exporter/jaeger"
 	"go.opencensus.io/trace"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/census-instrumentation/opencensus-service/data"
-	"github.com/census-instrumentation/opencensus-service/exporter/exportertest"
-	"github.com/census-instrumentation/opencensus-service/internal"
+	commonpb "github.com/open-telemetry/opentelemetry-proto/gen-go/agent/common/v1"
+	tracepb "github.com/open-telemetry/opentelemetry-proto/gen-go/trace/v1"
+	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
+	"github.com/open-telemetry/opentelemetry-service/internal"
 )
 
 func TestJaegerAgentUDP_ThriftCompact_6831(t *testing.T) {
@@ -41,7 +41,7 @@ func TestJaegerAgentUDP_ThriftCompact_6831(t *testing.T) {
 }
 
 func TestJaegerAgentUDP_ThriftBinary_6832(t *testing.T) {
-	t.Skipf("Unfortunately due to Jaeger internal versioning, OpenCensus-Go's Thrift seems to conflict with ours")
+	t.Skipf("Unfortunately due to Jaeger internal versioning, OpenTelemetry-Go's Thrift seems to conflict with ours")
 
 	port := 6832
 	addrForClient := fmt.Sprintf(":%d", port)
@@ -81,7 +81,7 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *Configu
 		},
 	})
 	if err != nil {
-		t.Fatalf("Failed to create the Jaeger OpenCensus exporter for the live application: %v", err)
+		t.Fatalf("Failed to create the Jaeger OpenTelemetry exporter for the live application: %v", err)
 	}
 
 	// 3. Now finally send some spans
@@ -224,7 +224,7 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *Configu
 								// Parent_Linked_Spans as currently they've only got:
 								// * Child_of
 								// * Follows_from
-								// yet OpenCensus has Parent too but Jaeger uses a zero-value for LinkCHILD.
+								// yet OpenTelemetry has Parent too but Jaeger uses a zero-value for LinkCHILD.
 								Type: tracepb.Span_Link_PARENT_LINKED_SPAN,
 							},
 						},

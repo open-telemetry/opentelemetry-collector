@@ -1,4 +1,4 @@
-// Copyright 2018, OpenCensus Authors
+// Copyright 2018, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,13 +19,13 @@ import (
 	"log"
 	"time"
 
-	"github.com/census-instrumentation/opencensus-service/exporter/loggingexporter"
+	"github.com/open-telemetry/opentelemetry-service/exporter/loggingexporter"
 
 	"contrib.go.opencensus.io/exporter/ocagent"
 	"go.opencensus.io/trace"
 
-	"github.com/census-instrumentation/opencensus-service/receiver"
-	"github.com/census-instrumentation/opencensus-service/receiver/opencensusreceiver"
+	"github.com/open-telemetry/opentelemetry-service/receiver"
+	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver"
 	"go.uber.org/zap"
 )
 
@@ -47,7 +47,7 @@ func Example_endToEnd() {
 	trl := []receiver.TraceReceiver{tr}
 
 	// Once we have the span receiver which will connect to the
-	// various exporter pipeline i.e. *tracepb.Span->OpenCensus.SpanData
+	// various exporter pipeline i.e. *tracepb.Span->OpenTelemetry.SpanData
 	for _, tr := range trl {
 		if err := tr.StartTraceReception(context.Background(), nil); err != nil {
 			log.Fatalf("Failed to start trace receiver: %v", err)

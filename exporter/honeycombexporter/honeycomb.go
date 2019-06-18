@@ -1,4 +1,4 @@
-// Copyright 2019, OpenCensus Authors
+// Copyright 2019, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,14 +15,14 @@
 package honeycombexporter
 
 // TODO: (@odeke-em) file an issue at the official Honeycomb repository to
-// ask them to make an exporter that uses OpenCensus-Proto instead of OpenCensus-Go.
+// ask them to make an exporter that uses OpenTelemetry-Proto instead of OpenTelemetry-Go.
 
 import (
 	"github.com/honeycombio/opencensus-exporter/honeycomb"
 	"github.com/spf13/viper"
 
-	"github.com/census-instrumentation/opencensus-service/consumer"
-	"github.com/census-instrumentation/opencensus-service/exporter/exporterwrapper"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/exporter/exporterwrapper"
 )
 
 type honeycombConfig struct {

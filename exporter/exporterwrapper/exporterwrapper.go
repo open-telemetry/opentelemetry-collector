@@ -1,4 +1,4 @@
-// Copyright 2018, OpenCensus Authors
+// Copyright 2018, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
 
 // Package exporterwrapper provides support for wrapping OC go library trace.Exporter into a
 // consumer.TraceConsumer.
-// For now it currently only provides statically imported OpenCensus
+// For now it currently only provides statically imported OpenTelemetry
 // exporters like:
 //  * Stackdriver Tracing and Monitoring
 //  * DataDog
@@ -26,22 +26,22 @@ import (
 
 	"go.opencensus.io/trace"
 
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/census-instrumentation/opencensus-service/data"
-	"github.com/census-instrumentation/opencensus-service/exporter"
-	"github.com/census-instrumentation/opencensus-service/exporter/exporterhelper"
-	"github.com/census-instrumentation/opencensus-service/internal"
-	spandatatranslator "github.com/census-instrumentation/opencensus-service/translator/trace/spandata"
+	tracepb "github.com/open-telemetry/opentelemetry-proto/gen-go/trace/v1"
+	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/exporter"
+	"github.com/open-telemetry/opentelemetry-service/exporter/exporterhelper"
+	"github.com/open-telemetry/opentelemetry-service/internal"
+	spandatatranslator "github.com/open-telemetry/opentelemetry-service/translator/trace/spandata"
 )
 
-// NewExporterWrapper returns a consumer.TraceConsumer that converts OpenCensus Proto TraceData
-// to OpenCensus-Go SpanData and calls into the given trace.Exporter.
+// NewExporterWrapper returns a consumer.TraceConsumer that converts OpenTelemetry Proto TraceData
+// to OpenTelemetry-Go SpanData and calls into the given trace.Exporter.
 //
 // This is a bootstrapping mechanism for us to re-use as many of
-// the OpenCensus-Go trace.SpanData exporters which were written
+// the OpenTelemetry-Go trace.SpanData exporters which were written
 // by various vendors and contributors. Eventually the goal is to
 // get those exporters converted to directly receive
-// OpenCensus Proto TraceData.
+// OpenTelemetry Proto TraceData.
 func NewExporterWrapper(exporterName string, spanName string, ocExporter trace.Exporter) (exporter.TraceExporter, error) {
 	return exporterhelper.NewTraceExporter(
 		exporterName,

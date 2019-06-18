@@ -1,4 +1,4 @@
-// Copyright 2018, OpenCensus Authors
+// Copyright 2018, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Program ocagent collects OpenCensus stats and traces
+// Program ocagent collects OpenTelemetry stats and traces
 // to export to a configured backend.
 package main
 
@@ -30,25 +30,25 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	"github.com/census-instrumentation/opencensus-service/consumer"
-	"github.com/census-instrumentation/opencensus-service/internal/config"
-	"github.com/census-instrumentation/opencensus-service/internal/config/viperutils"
-	"github.com/census-instrumentation/opencensus-service/internal/pprofserver"
-	"github.com/census-instrumentation/opencensus-service/internal/version"
-	"github.com/census-instrumentation/opencensus-service/internal/zpagesserver"
-	"github.com/census-instrumentation/opencensus-service/observability"
-	"github.com/census-instrumentation/opencensus-service/processor/multiconsumer"
-	"github.com/census-instrumentation/opencensus-service/receiver/jaegerreceiver"
-	"github.com/census-instrumentation/opencensus-service/receiver/opencensusreceiver"
-	"github.com/census-instrumentation/opencensus-service/receiver/prometheusreceiver"
-	"github.com/census-instrumentation/opencensus-service/receiver/vmmetricsreceiver"
-	"github.com/census-instrumentation/opencensus-service/receiver/zipkinreceiver"
-	"github.com/census-instrumentation/opencensus-service/receiver/zipkinreceiver/zipkinscribereceiver"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/internal/config"
+	"github.com/open-telemetry/opentelemetry-service/internal/config/viperutils"
+	"github.com/open-telemetry/opentelemetry-service/internal/pprofserver"
+	"github.com/open-telemetry/opentelemetry-service/internal/version"
+	"github.com/open-telemetry/opentelemetry-service/internal/zpagesserver"
+	"github.com/open-telemetry/opentelemetry-service/observability"
+	"github.com/open-telemetry/opentelemetry-service/processor/multiconsumer"
+	"github.com/open-telemetry/opentelemetry-service/receiver/jaegerreceiver"
+	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver"
+	"github.com/open-telemetry/opentelemetry-service/receiver/prometheusreceiver"
+	"github.com/open-telemetry/opentelemetry-service/receiver/vmmetricsreceiver"
+	"github.com/open-telemetry/opentelemetry-service/receiver/zipkinreceiver"
+	"github.com/open-telemetry/opentelemetry-service/receiver/zipkinreceiver/zipkinscribereceiver"
 )
 
 var rootCmd = &cobra.Command{
 	Use:   "ocagent",
-	Short: "ocagent runs the OpenCensus service",
+	Short: "ocagent runs the OpenTelemetry service",
 	Run: func(cmd *cobra.Command, args []string) {
 		runOCAgent()
 	},
@@ -207,7 +207,7 @@ func runOCAgent() {
 func runOCReceiver(logger *zap.Logger, acfg *config.Config, tc consumer.TraceConsumer, mc consumer.MetricsConsumer, asyncErrorChan chan<- error) (doneFn func() error, err error) {
 	tlsCredsOption, hasTLSCreds, err := acfg.OpenCensusReceiverTLSCredentialsServerOption()
 	if err != nil {
-		return nil, fmt.Errorf("OpenCensus receiver TLS Credentials: %v", err)
+		return nil, fmt.Errorf("OpenTelemetry receiver TLS Credentials: %v", err)
 	}
 	addr := acfg.OpenCensusReceiverAddress()
 	corsOrigins := acfg.OpenCensusReceiverCorsAllowedOrigins()
@@ -218,14 +218,14 @@ func runOCReceiver(logger *zap.Logger, acfg *config.Config, tc consumer.TraceCon
 		opencensusreceiver.WithCorsOrigins(corsOrigins))
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to create the OpenCensus receiver on address %q: error %v", addr, err)
+		return nil, fmt.Errorf("failed to create the OpenTelemetry receiver on address %q: error %v", addr, err)
 	}
 	if err := view.Register(observability.AllViews...); err != nil {
 		return nil, fmt.Errorf("failed to register internal.AllViews: %v", err)
 	}
 
 	// Temporarily disabling the grpc metrics since they do not provide good data at this moment,
-	// See https://github.com/census-instrumentation/opencensus-service/issues/287
+	// See https://github.com/open-telemetry/opentelemetry-service/issues/287
 	// if err := view.Register(ocgrpc.DefaultServerViews...); err != nil {
 	// 	return nil, fmt.Errorf("Failed to register ocgrpc.DefaultServerViews: %v", err)
 	// }
@@ -237,24 +237,24 @@ func runOCReceiver(logger *zap.Logger, acfg *config.Config, tc consumer.TraceCon
 		if err := ocr.Start(ctx); err != nil {
 			return nil, fmt.Errorf("failed to start Trace and Metrics Receivers: %v", err)
 		}
-		log.Printf("Running OpenCensus Trace and Metrics receivers as a gRPC service at %q", addr)
+		log.Printf("Running OpenTelemetry Trace and Metrics receivers as a gRPC service at %q", addr)
 
 	case acfg.CanRunOpenCensusTraceReceiver():
 		if err := ocr.StartTraceReception(ctx, asyncErrorChan); err != nil {
 			return nil, fmt.Errorf("failed to start TraceReceiver: %v", err)
 		}
-		log.Printf("Running OpenCensus Trace receiver as a gRPC service at %q", addr)
+		log.Printf("Running OpenTelemetry Trace receiver as a gRPC service at %q", addr)
 
 	case acfg.CanRunOpenCensusMetricsReceiver():
 		if err := ocr.StartMetricsReception(ctx, asyncErrorChan); err != nil {
 			return nil, fmt.Errorf("failed to start MetricsReceiver: %v", err)
 		}
-		log.Printf("Running OpenCensus Metrics receiver as a gRPC service at %q", addr)
+		log.Printf("Running OpenTelemetry Metrics receiver as a gRPC service at %q", addr)
 	}
 
 	if hasTLSCreds {
 		tlsCreds := acfg.OpenCensusReceiverTLSServerCredentials()
-		logger.Info("OpenCensus receiver with TLS Credentials",
+		logger.Info("OpenTelemetry receiver with TLS Credentials",
 			zap.String("cert_file", tlsCreds.CertFile),
 			zap.String("key_file", tlsCreds.KeyFile))
 	}

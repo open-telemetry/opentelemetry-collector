@@ -1,4 +1,4 @@
-// Copyright 2018, OpenCensus Authors
+// Copyright 2018, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,9 +19,9 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/census-instrumentation/opencensus-service/exporter/zipkinexporter"
-	"github.com/census-instrumentation/opencensus-service/internal/config"
-	"github.com/census-instrumentation/opencensus-service/internal/config/viperutils"
+	"github.com/open-telemetry/opentelemetry-service/exporter/zipkinexporter"
+	"github.com/open-telemetry/opentelemetry-service/internal/config"
+	"github.com/open-telemetry/opentelemetry-service/internal/config/viperutils"
 )
 
 // Issue #233: Zipkin receiver and exporter loopback detection
@@ -69,20 +69,20 @@ exporters:
 	}
 }
 
-// Issue #377: If Config.OpenCensus == nil, invoking
+// Issue #377: If Config.OpenTelemetry == nil, invoking
 // CanRunOpenCensus{Metrics, Trace}Receiver() would crash.
 func TestOpenCensusTraceReceiverEnabledNoCrash(t *testing.T) {
 	// 1. Test with an in-code struct.
 	cfg := &config.Config{
 		Receivers: &config.Receivers{
-			OpenCensus: nil,
+			OpenTelemetry: nil,
 		},
 	}
 	if cfg.CanRunOpenCensusTraceReceiver() {
-		t.Fatal("CanRunOpenCensusTraceReceiver: Unexpected True for a nil Receiver.OpenCensus")
+		t.Fatal("CanRunOpenCensusTraceReceiver: Unexpected True for a nil Receiver.OpenTelemetry")
 	}
 	if cfg.CanRunOpenCensusMetricsReceiver() {
-		t.Fatal("CanRunOpenCensusMetricsReceiver: Unexpected True for a nil Receiver.OpenCensus")
+		t.Fatal("CanRunOpenCensusMetricsReceiver: Unexpected True for a nil Receiver.OpenTelemetry")
 	}
 
 	// 2. Test with a struct unmarshalled from a configuration file's YAML.
@@ -102,9 +102,9 @@ receivers:
 	}
 
 	if cfg.CanRunOpenCensusTraceReceiver() {
-		t.Fatal("yaml.CanRunOpenCensusTraceReceiver: Unexpected True for a nil Receiver.OpenCensus")
+		t.Fatal("yaml.CanRunOpenCensusTraceReceiver: Unexpected True for a nil Receiver.OpenTelemetry")
 	}
 	if cfg.CanRunOpenCensusMetricsReceiver() {
-		t.Fatal("yaml.CanRunOpenCensusMetricsReceiver: Unexpected True for a nil Receiver.OpenCensus")
+		t.Fatal("yaml.CanRunOpenCensusMetricsReceiver: Unexpected True for a nil Receiver.OpenTelemetry")
 	}
 }

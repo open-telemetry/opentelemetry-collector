@@ -1,4 +1,4 @@
-// Copyright 2018, OpenCensus Authors
+// Copyright 2018, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -30,20 +30,20 @@ import (
 	"sync"
 
 	"github.com/apache/thrift/lib/go/thrift"
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	commonpb "github.com/open-telemetry/opentelemetry-proto/gen-go/agent/common/v1"
+	tracepb "github.com/open-telemetry/opentelemetry-proto/gen-go/trace/v1"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	zipkinproto "github.com/openzipkin/zipkin-go/proto/v2"
 	"go.opencensus.io/trace"
 
-	"github.com/census-instrumentation/opencensus-service/consumer"
-	"github.com/census-instrumentation/opencensus-service/data"
-	"github.com/census-instrumentation/opencensus-service/internal"
-	"github.com/census-instrumentation/opencensus-service/observability"
-	"github.com/census-instrumentation/opencensus-service/receiver"
-	tracetranslator "github.com/census-instrumentation/opencensus-service/translator/trace"
-	zipkintranslator "github.com/census-instrumentation/opencensus-service/translator/trace/zipkin"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/internal"
+	"github.com/open-telemetry/opentelemetry-service/observability"
+	"github.com/open-telemetry/opentelemetry-service/receiver"
+	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
+	zipkintranslator "github.com/open-telemetry/opentelemetry-service/translator/trace/zipkin"
 )
 
 var (
@@ -127,7 +127,7 @@ func (zr *ZipkinReceiver) StartTraceReception(ctx context.Context, asyncErrorCha
 	return err
 }
 
-// v1ToTraceSpans parses Zipkin v1 JSON traces and converts them to OpenCensus Proto spans.
+// v1ToTraceSpans parses Zipkin v1 JSON traces and converts them to OpenTelemetry Proto spans.
 func (zr *ZipkinReceiver) v1ToTraceSpans(blob []byte, hdr http.Header) (reqs []data.TraceData, err error) {
 	if hdr.Get("Content-Type") == "application/x-thrift" {
 		zSpans, err := deserializeThrift(blob)
@@ -168,7 +168,7 @@ func deserializeThrift(b []byte) ([]*zipkincore.Span, error) {
 	return spans, nil
 }
 
-// v2ToTraceSpans parses Zipkin v2 JSON or Protobuf traces and converts them to OpenCensus Proto spans.
+// v2ToTraceSpans parses Zipkin v2 JSON or Protobuf traces and converts them to OpenTelemetry Proto spans.
 func (zr *ZipkinReceiver) v2ToTraceSpans(blob []byte, hdr http.Header) (reqs []data.TraceData, err error) {
 	// This flag's reference is from:
 	//      https://github.com/openzipkin/zipkin-go/blob/3793c981d4f621c0e3eb1457acffa2c1cc591384/proto/v2/zipkin.proto#L154
@@ -470,7 +470,7 @@ const statusCodeUnknown = 2
 
 func extractProtoStatus(zs *zipkinmodel.SpanModel) *tracepb.Status {
 	// The status is stored with the "error" key
-	// See https://github.com/census-instrumentation/opencensus-go/blob/1eb9a13c7dd02141e065a665f6bf5c99a090a16a/exporter/zipkin/zipkin.go#L160-L165
+	// See https://github.com/open-telemetry/opentelemetry-go/blob/1eb9a13c7dd02141e065a665f6bf5c99a090a16a/exporter/zipkin/zipkin.go#L160-L165
 	if zs == nil || len(zs.Tags) == 0 {
 		return nil
 	}
@@ -564,8 +564,8 @@ func zipkinTagsToTraceAttributes(tags map[string]string) *tracepb.Span_Attribute
 	amap := make(map[string]*tracepb.AttributeValue, len(tags))
 	for key, value := range tags {
 		// We did a translation from "boolean" to "string"
-		// in OpenCensus-Go's Zipkin exporter as per
-		// https://github.com/census-instrumentation/opencensus-go/blob/1eb9a13c7dd02141e065a665f6bf5c99a090a16a/exporter/zipkin/zipkin.go#L138-L155
+		// in OpenTelemetry-Go's Zipkin exporter as per
+		// https://github.com/open-telemetry/opentelemetry-go/blob/1eb9a13c7dd02141e065a665f6bf5c99a090a16a/exporter/zipkin/zipkin.go#L138-L155
 		switch value {
 		case "true", "false":
 			amap[key] = &tracepb.AttributeValue{
