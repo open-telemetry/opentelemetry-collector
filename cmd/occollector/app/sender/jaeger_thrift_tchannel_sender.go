@@ -1,4 +1,4 @@
-// Copyright 2018, OpenCensus Authors
+// Copyright 2019, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,9 +21,9 @@ import (
 
 	reporter "github.com/jaegertracing/jaeger/cmd/agent/app/reporter"
 
-	"github.com/census-instrumentation/opencensus-service/consumer"
-	"github.com/census-instrumentation/opencensus-service/data"
-	jaegertranslator "github.com/census-instrumentation/opencensus-service/translator/trace/jaeger"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/data"
+	jaegertranslator "github.com/open-telemetry/opentelemetry-service/translator/trace/jaeger"
 )
 
 // JaegerThriftTChannelSender takes span batches and sends them

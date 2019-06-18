@@ -1,4 +1,4 @@
-// Copyright 2018, OpenCensus Authors
+// Copyright 2019, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,14 +26,13 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
-	"github.com/census-instrumentation/opencensus-service/consumer"
-	"github.com/census-instrumentation/opencensus-service/exporter/jaegerexporter"
-	"github.com/census-instrumentation/opencensus-service/exporter/kafkaexporter"
-	"github.com/census-instrumentation/opencensus-service/exporter/opencensusexporter"
-	"github.com/census-instrumentation/opencensus-service/exporter/prometheusexporter"
-	"github.com/census-instrumentation/opencensus-service/exporter/zipkinexporter"
-	"github.com/census-instrumentation/opencensus-service/receiver/opencensusreceiver"
-	"github.com/census-instrumentation/opencensus-service/receiver/prometheusreceiver"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/exporter/jaegerexporter"
+	"github.com/open-telemetry/opentelemetry-service/exporter/opencensusexporter"
+	"github.com/open-telemetry/opentelemetry-service/exporter/prometheusexporter"
+	"github.com/open-telemetry/opentelemetry-service/exporter/zipkinexporter"
+	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver"
+	"github.com/open-telemetry/opentelemetry-service/receiver/prometheusreceiver"
 )
 
 // We expect the configuration.yaml file to look like this:

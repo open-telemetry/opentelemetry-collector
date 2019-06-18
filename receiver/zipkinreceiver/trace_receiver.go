@@ -1,4 +1,4 @@
-// Copyright 2018, OpenCensus Authors
+// Copyright 2019, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -37,13 +37,13 @@ import (
 	zipkinproto "github.com/openzipkin/zipkin-go/proto/v2"
 	"go.opencensus.io/trace"
 
-	"github.com/census-instrumentation/opencensus-service/consumer"
-	"github.com/census-instrumentation/opencensus-service/data"
-	"github.com/census-instrumentation/opencensus-service/internal"
-	"github.com/census-instrumentation/opencensus-service/observability"
-	"github.com/census-instrumentation/opencensus-service/receiver"
-	tracetranslator "github.com/census-instrumentation/opencensus-service/translator/trace"
-	zipkintranslator "github.com/census-instrumentation/opencensus-service/translator/trace/zipkin"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/internal"
+	"github.com/open-telemetry/opentelemetry-service/observability"
+	"github.com/open-telemetry/opentelemetry-service/receiver"
+	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
+	zipkintranslator "github.com/open-telemetry/opentelemetry-service/translator/trace/zipkin"
 )
 
 var (

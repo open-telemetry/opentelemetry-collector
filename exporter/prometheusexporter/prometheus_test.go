@@ -1,4 +1,4 @@
-// Copyright 2019, OpenCensus Authors
+// Copyright 2019, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,8 +24,8 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/census-instrumentation/opencensus-service/data"
-	viperutils "github.com/census-instrumentation/opencensus-service/internal/config/viperutils"
+	"github.com/open-telemetry/opentelemetry-service/data"
+	viperutils "github.com/open-telemetry/opentelemetry-service/internal/config/viperutils"
 )
 
 func TestPrometheusExporter(t *testing.T) {

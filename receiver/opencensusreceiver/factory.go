@@ -1,4 +1,4 @@
-// Copyright 2019, OpenCensus Authors
+// Copyright 2019, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,11 +17,11 @@ package opencensusreceiver
 import (
 	"context"
 
-	"github.com/census-instrumentation/opencensus-service/internal/configmodels"
-	"github.com/census-instrumentation/opencensus-service/internal/factories"
+	"github.com/open-telemetry/opentelemetry-service/internal/configmodels"
+	"github.com/open-telemetry/opentelemetry-service/internal/factories"
 
-	"github.com/census-instrumentation/opencensus-service/consumer"
-	"github.com/census-instrumentation/opencensus-service/receiver"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
 
 var _ = factories.RegisterReceiverFactory(&receiverFactory{})

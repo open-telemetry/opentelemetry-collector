@@ -1,4 +1,4 @@
-// Copyright 2018, OpenCensus Authors
+// Copyright 2019, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,9 +26,9 @@ import (
 	"github.com/apache/thrift/lib/go/thrift"
 	"go.uber.org/zap"
 
-	"github.com/census-instrumentation/opencensus-service/consumer"
-	"github.com/census-instrumentation/opencensus-service/data"
-	jaegertranslator "github.com/census-instrumentation/opencensus-service/translator/trace/jaeger"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/data"
+	jaegertranslator "github.com/open-telemetry/opentelemetry-service/translator/trace/jaeger"
 )
 
 // Default timeout for http request in seconds

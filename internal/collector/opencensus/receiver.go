@@ -1,4 +1,4 @@
-// Copyright 2018, OpenCensus Authors
+// Copyright 2019, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,10 +26,10 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 
-	"github.com/census-instrumentation/opencensus-service/cmd/occollector/app/builder"
-	"github.com/census-instrumentation/opencensus-service/consumer"
-	"github.com/census-instrumentation/opencensus-service/receiver"
-	"github.com/census-instrumentation/opencensus-service/receiver/opencensusreceiver"
+	"github.com/open-telemetry/opentelemetry-service/cmd/occollector/app/builder"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/receiver"
+	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver"
 )
 
 // Start starts the OpenCensus receiver endpoint.

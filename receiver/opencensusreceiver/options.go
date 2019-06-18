@@ -1,4 +1,4 @@
-// Copyright 2018, OpenCensus Authors
+// Copyright 2019, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,8 +17,8 @@ package opencensusreceiver
 import (
 	"google.golang.org/grpc"
 
-	"github.com/census-instrumentation/opencensus-service/receiver/opencensusreceiver/ocmetrics"
-	"github.com/census-instrumentation/opencensus-service/receiver/opencensusreceiver/octrace"
+	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver/ocmetrics"
+	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver/octrace"
 )
 
 // Option interface defines for configuration settings to be applied to receivers.

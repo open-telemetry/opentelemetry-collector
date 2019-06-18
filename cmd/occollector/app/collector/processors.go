@@ -1,4 +1,4 @@
-// Copyright 2019, OpenCensus Authors
+// Copyright 2019, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,18 +23,18 @@ import (
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
-	"github.com/census-instrumentation/opencensus-service/cmd/occollector/app/builder"
-	"github.com/census-instrumentation/opencensus-service/cmd/occollector/app/sender"
-	"github.com/census-instrumentation/opencensus-service/consumer"
-	"github.com/census-instrumentation/opencensus-service/exporter/loggingexporter"
-	"github.com/census-instrumentation/opencensus-service/internal/collector/processor/nodebatcher"
-	"github.com/census-instrumentation/opencensus-service/internal/collector/processor/queued"
-	"github.com/census-instrumentation/opencensus-service/internal/collector/processor/tailsampling"
-	"github.com/census-instrumentation/opencensus-service/internal/collector/sampling"
-	"github.com/census-instrumentation/opencensus-service/internal/config"
-	"github.com/census-instrumentation/opencensus-service/processor/addattributesprocessor"
-	"github.com/census-instrumentation/opencensus-service/processor/attributekeyprocessor"
-	"github.com/census-instrumentation/opencensus-service/processor/multiconsumer"
+	"github.com/open-telemetry/opentelemetry-service/cmd/occollector/app/builder"
+	"github.com/open-telemetry/opentelemetry-service/cmd/occollector/app/sender"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/exporter/loggingexporter"
+	"github.com/open-telemetry/opentelemetry-service/internal/collector/processor/nodebatcher"
+	"github.com/open-telemetry/opentelemetry-service/internal/collector/processor/queued"
+	"github.com/open-telemetry/opentelemetry-service/internal/collector/processor/tailsampling"
+	"github.com/open-telemetry/opentelemetry-service/internal/collector/sampling"
+	"github.com/open-telemetry/opentelemetry-service/internal/config"
+	"github.com/open-telemetry/opentelemetry-service/processor/addattributesprocessor"
+	"github.com/open-telemetry/opentelemetry-service/processor/attributekeyprocessor"
+	"github.com/open-telemetry/opentelemetry-service/processor/multiconsumer"
 )
 
 func createExporters(v *viper.Viper, logger *zap.Logger) ([]func(), []consumer.TraceConsumer, []consumer.MetricsConsumer) {

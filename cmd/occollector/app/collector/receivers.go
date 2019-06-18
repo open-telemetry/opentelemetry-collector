@@ -1,4 +1,4 @@
-// Copyright 2019, OpenCensus Authors
+// Copyright 2019, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,13 +21,13 @@ import (
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
-	"github.com/census-instrumentation/opencensus-service/cmd/occollector/app/builder"
-	"github.com/census-instrumentation/opencensus-service/consumer"
-	jaegerreceiver "github.com/census-instrumentation/opencensus-service/internal/collector/jaeger"
-	ocreceiver "github.com/census-instrumentation/opencensus-service/internal/collector/opencensus"
-	zipkinreceiver "github.com/census-instrumentation/opencensus-service/internal/collector/zipkin"
-	zipkinscribereceiver "github.com/census-instrumentation/opencensus-service/internal/collector/zipkin/scribe"
-	"github.com/census-instrumentation/opencensus-service/receiver"
+	"github.com/open-telemetry/opentelemetry-service/cmd/occollector/app/builder"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	jaegerreceiver "github.com/open-telemetry/opentelemetry-service/internal/collector/jaeger"
+	ocreceiver "github.com/open-telemetry/opentelemetry-service/internal/collector/opencensus"
+	zipkinreceiver "github.com/open-telemetry/opentelemetry-service/internal/collector/zipkin"
+	zipkinscribereceiver "github.com/open-telemetry/opentelemetry-service/internal/collector/zipkin/scribe"
+	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
 
 func createReceivers(v *viper.Viper, logger *zap.Logger, traceConsumers consumer.TraceConsumer, asyncErrorChan chan<- error) []receiver.TraceReceiver {

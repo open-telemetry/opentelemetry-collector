@@ -1,4 +1,4 @@
-// Copyright 2019, OpenCensus Authors
+// Copyright 2019, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,8 +27,8 @@ import (
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"github.com/pkg/errors"
 
-	"github.com/census-instrumentation/opencensus-service/data"
-	tracetranslator "github.com/census-instrumentation/opencensus-service/translator/trace"
+	"github.com/open-telemetry/opentelemetry-service/data"
+	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
 )
 
 // V1ThriftBatchToOCProto converts Zipkin v1 spans to OC Proto.

@@ -1,4 +1,4 @@
-// Copyright 2019, OpenCensus Authors
+// Copyright 2019, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,11 +26,11 @@ import (
 	"go.opencensus.io/tag"
 	"go.uber.org/zap"
 
-	"github.com/census-instrumentation/opencensus-service/consumer"
-	"github.com/census-instrumentation/opencensus-service/data"
-	"github.com/census-instrumentation/opencensus-service/internal/collector/processor/idbatcher"
-	"github.com/census-instrumentation/opencensus-service/internal/collector/sampling"
-	"github.com/census-instrumentation/opencensus-service/observability"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/internal/collector/processor/idbatcher"
+	"github.com/open-telemetry/opentelemetry-service/internal/collector/sampling"
+	"github.com/open-telemetry/opentelemetry-service/observability"
 )
 
 // Policy combines a sampling policy evaluator with the destinations to be

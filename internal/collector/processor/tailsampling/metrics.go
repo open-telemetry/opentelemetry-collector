@@ -1,4 +1,4 @@
-// Copyright 2019, OpenCensus Authors
+// Copyright 2019, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 
-	"github.com/census-instrumentation/opencensus-service/internal/collector/telemetry"
+	"github.com/open-telemetry/opentelemetry-service/internal/collector/telemetry"
 )
 
 // Variables related to metrics specific to tail sampling.

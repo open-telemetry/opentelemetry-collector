@@ -1,4 +1,4 @@
-module github.com/census-instrumentation/opencensus-service
+module github.com/open-telemetry/opentelemetry-service
 
 require (
 	cloud.google.com/go v0.38.0 // indirect

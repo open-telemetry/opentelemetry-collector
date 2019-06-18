@@ -1,4 +1,4 @@
-// Copyright 2019, OpenCensus Authors
+// Copyright 2019, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ package consumer
 import (
 	"context"
 
-	"github.com/census-instrumentation/opencensus-service/data"
+	"github.com/open-telemetry/opentelemetry-service/data"
 )
 
 // MetricsConsumer is an interface that receives data.MetricsData, process it as needed, and

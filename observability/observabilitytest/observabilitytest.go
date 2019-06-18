@@ -1,4 +1,4 @@
-// Copyright 2018, OpenCensus Authors
+// Copyright 2019, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 
-	"github.com/census-instrumentation/opencensus-service/observability"
+	"github.com/open-telemetry/opentelemetry-service/observability"
 )
 
 // SetupRecordedMetricsTest does setup the testing environment to check the metrics recorded by receivers, producers or exporters.

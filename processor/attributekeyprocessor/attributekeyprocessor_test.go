@@ -1,4 +1,4 @@
-// Copyright 2019, OpenCensus Authors
+// Copyright 2019, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,11 +22,11 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/google/go-cmp/cmp"
 
-	"github.com/census-instrumentation/opencensus-service/consumer"
-	"github.com/census-instrumentation/opencensus-service/data"
-	"github.com/census-instrumentation/opencensus-service/exporter/exportertest"
-	"github.com/census-instrumentation/opencensus-service/processor"
-	"github.com/census-instrumentation/opencensus-service/processor/processortest"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
+	"github.com/open-telemetry/opentelemetry-service/processor"
+	"github.com/open-telemetry/opentelemetry-service/processor/processortest"
 )
 
 func TestNewTraceProcessor(t *testing.T) {

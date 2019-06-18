@@ -1,4 +1,4 @@
-// Copyright 2018, OpenCensus Authors
+// Copyright 2019, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,11 +25,11 @@ import (
 	"go.opencensus.io/tag"
 	"go.uber.org/zap"
 
-	"github.com/census-instrumentation/opencensus-service/consumer"
-	"github.com/census-instrumentation/opencensus-service/data"
-	"github.com/census-instrumentation/opencensus-service/internal/collector/processor"
-	"github.com/census-instrumentation/opencensus-service/internal/collector/processor/nodebatcher"
-	"github.com/census-instrumentation/opencensus-service/internal/collector/telemetry"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/internal/collector/processor"
+	"github.com/open-telemetry/opentelemetry-service/internal/collector/processor/nodebatcher"
+	"github.com/open-telemetry/opentelemetry-service/internal/collector/telemetry"
 )
 
 type queuedSpanProcessor struct {

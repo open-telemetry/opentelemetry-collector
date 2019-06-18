@@ -1,4 +1,4 @@
-// Copyright 2019, OpenCensus Authors
+// Copyright 2019, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,11 +20,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/census-instrumentation/opencensus-service/consumer"
-	"github.com/census-instrumentation/opencensus-service/data"
-	"github.com/census-instrumentation/opencensus-service/internal/collector/processor/idbatcher"
-	"github.com/census-instrumentation/opencensus-service/internal/collector/sampling"
-	tracetranslator "github.com/census-instrumentation/opencensus-service/translator/trace"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/internal/collector/processor/idbatcher"
+	"github.com/open-telemetry/opentelemetry-service/internal/collector/sampling"
+	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"go.uber.org/zap"

@@ -1,4 +1,4 @@
-// Copyright 2018, OpenCensus Authors
+// Copyright 2019, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,9 +19,9 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/census-instrumentation/opencensus-service/exporter/zipkinexporter"
-	"github.com/census-instrumentation/opencensus-service/internal/config"
-	"github.com/census-instrumentation/opencensus-service/internal/config/viperutils"
+	"github.com/open-telemetry/opentelemetry-service/exporter/zipkinexporter"
+	"github.com/open-telemetry/opentelemetry-service/internal/config"
+	"github.com/open-telemetry/opentelemetry-service/internal/config/viperutils"
 )
 
 // Issue #233: Zipkin receiver and exporter loopback detection

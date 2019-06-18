@@ -1,4 +1,4 @@
-// Copyright 2018, OpenCensus Authors
+// Copyright 2019, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -30,20 +30,20 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	"github.com/census-instrumentation/opencensus-service/consumer"
-	"github.com/census-instrumentation/opencensus-service/internal/config"
-	"github.com/census-instrumentation/opencensus-service/internal/config/viperutils"
-	"github.com/census-instrumentation/opencensus-service/internal/pprofserver"
-	"github.com/census-instrumentation/opencensus-service/internal/version"
-	"github.com/census-instrumentation/opencensus-service/internal/zpagesserver"
-	"github.com/census-instrumentation/opencensus-service/observability"
-	"github.com/census-instrumentation/opencensus-service/processor/multiconsumer"
-	"github.com/census-instrumentation/opencensus-service/receiver/jaegerreceiver"
-	"github.com/census-instrumentation/opencensus-service/receiver/opencensusreceiver"
-	"github.com/census-instrumentation/opencensus-service/receiver/prometheusreceiver"
-	"github.com/census-instrumentation/opencensus-service/receiver/vmmetricsreceiver"
-	"github.com/census-instrumentation/opencensus-service/receiver/zipkinreceiver"
-	"github.com/census-instrumentation/opencensus-service/receiver/zipkinreceiver/zipkinscribereceiver"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/internal/config"
+	"github.com/open-telemetry/opentelemetry-service/internal/config/viperutils"
+	"github.com/open-telemetry/opentelemetry-service/internal/pprofserver"
+	"github.com/open-telemetry/opentelemetry-service/internal/version"
+	"github.com/open-telemetry/opentelemetry-service/internal/zpagesserver"
+	"github.com/open-telemetry/opentelemetry-service/observability"
+	"github.com/open-telemetry/opentelemetry-service/processor/multiconsumer"
+	"github.com/open-telemetry/opentelemetry-service/receiver/jaegerreceiver"
+	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver"
+	"github.com/open-telemetry/opentelemetry-service/receiver/prometheusreceiver"
+	"github.com/open-telemetry/opentelemetry-service/receiver/vmmetricsreceiver"
+	"github.com/open-telemetry/opentelemetry-service/receiver/zipkinreceiver"
+	"github.com/open-telemetry/opentelemetry-service/receiver/zipkinreceiver/zipkinscribereceiver"
 )
 
 var rootCmd = &cobra.Command{

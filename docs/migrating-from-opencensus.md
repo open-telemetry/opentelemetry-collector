@@ -9,10 +9,10 @@ The contrib package and vendor-specific receivers and exporters will continue to
 
 This is the action plan that also shows the progress. Tick the boxes after the task is complete.
 
-[ ] Copy all commits from https://github.com/census-instrumentation/opencensus-service to https://github.com/open-telemetry/opentelemetry-service
+[X] Copy all commits from https://github.com/census-instrumentation/opencensus-service to https://github.com/open-telemetry/opentelemetry-service
 Make sure commit history is preserved.
 
-[ ] Remove receivers and exporters that are not part of core. We will keep the following in the core:
+[X] Remove receivers and exporters that are not part of core. We will keep the following in the core:
 
 - Prometheus
 - Jaeger (agent and collector ones)
@@ -28,7 +28,7 @@ The new codebase will contain improvements which are already in progress and whi
 - Decoupling of receiver and exporter implementations from the core logic.
 
 - Introduction of receiver and exporter factories that can be individually registered to activate them.
-    
+
 - Implementation of the [new configuration format](https://docs.google.com/document/d/1GWOzV0H0RTN1adiwo7fTmkjfCATDDFGuOB4jp3ldCc8/edit#) that makes use of factories and allows for greater flexibility in the configuration.
 
 The functionally of the new `otsvc` will heavily lean on existing implementation and will be mostly a superset of the current agent/collector functionality when considering core receivers and exporters only (however we will allow deviations if it saves significant implementation effort and makes the service better).

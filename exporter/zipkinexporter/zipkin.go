@@ -1,4 +1,4 @@
-// Copyright 2018, OpenCensus Authors
+// Copyright 2019, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import (
 	"sync"
 	"time"
 
-	tracetranslator "github.com/census-instrumentation/opencensus-service/translator/trace"
+	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
 
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
@@ -31,10 +31,10 @@ import (
 	"go.opencensus.io/trace"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	"github.com/census-instrumentation/opencensus-service/consumer"
-	"github.com/census-instrumentation/opencensus-service/data"
-	"github.com/census-instrumentation/opencensus-service/observability"
-	spandatatranslator "github.com/census-instrumentation/opencensus-service/translator/trace/spandata"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/observability"
+	spandatatranslator "github.com/open-telemetry/opentelemetry-service/translator/trace/spandata"
 )
 
 // ZipkinConfig holds the configuration of a Zipkin exporter.
