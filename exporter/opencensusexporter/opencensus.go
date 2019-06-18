@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"contrib.go.opencensus.io/exporter/ocagent"
-	agenttracepb "github.com/open-telemetry/opentelemetry-proto/gen-go/agent/trace/v1"
+	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"

@@ -17,8 +17,8 @@ import (
 	"context"
 	"testing"
 
-	metricspb "github.com/open-telemetry/opentelemetry-proto/gen-go/metrics/v1"
-	tracepb "github.com/open-telemetry/opentelemetry-proto/gen-go/trace/v1"
+	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/open-telemetry/opentelemetry-service/data"
 	"go.uber.org/zap"
 )

@@ -24,8 +24,8 @@ import (
 
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 
-	commonpb "github.com/open-telemetry/opentelemetry-proto/gen-go/agent/common/v1"
-	tracepb "github.com/open-telemetry/opentelemetry-proto/gen-go/trace/v1"
+	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/open-telemetry/opentelemetry-service/data"
 	"github.com/open-telemetry/opentelemetry-service/internal/testutils"
 )

@@ -23,10 +23,10 @@ import (
 
 	"go.opencensus.io/trace"
 
-	commonpb "github.com/open-telemetry/opentelemetry-proto/gen-go/agent/common/v1"
-	agentmetricspb "github.com/open-telemetry/opentelemetry-proto/gen-go/agent/metrics/v1"
-	metricspb "github.com/open-telemetry/opentelemetry-proto/gen-go/metrics/v1"
-	resourcepb "github.com/open-telemetry/opentelemetry-proto/gen-go/resource/v1"
+	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
+	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/data"
 	"github.com/open-telemetry/opentelemetry-service/observability"

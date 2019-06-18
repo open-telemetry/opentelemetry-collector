@@ -22,7 +22,7 @@ import (
 	"math"
 	"net"
 
-	tracepb "github.com/open-telemetry/opentelemetry-proto/gen-go/trace/v1"
+	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"github.com/pkg/errors"

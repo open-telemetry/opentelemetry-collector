@@ -17,7 +17,7 @@ package sampling
 import (
 	"time"
 
-	tracepb "github.com/open-telemetry/opentelemetry-proto/gen-go/trace/v1"
+	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 )
 
 type rateLimiting struct {

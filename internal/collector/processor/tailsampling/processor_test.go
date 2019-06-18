@@ -26,7 +26,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/internal/collector/sampling"
 	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
 
-	tracepb "github.com/open-telemetry/opentelemetry-proto/gen-go/trace/v1"
+	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"go.uber.org/zap"
 )
 

@@ -30,7 +30,7 @@ import (
 	"github.com/spf13/viper"
 	"go.opencensus.io/trace"
 
-	commonpb "github.com/open-telemetry/opentelemetry-proto/gen-go/agent/common/v1"
+	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/data"
 	"github.com/open-telemetry/opentelemetry-service/observability"

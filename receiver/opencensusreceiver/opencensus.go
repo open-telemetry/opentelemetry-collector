@@ -33,8 +33,8 @@ import (
 	"github.com/rs/cors"
 	"github.com/soheilhy/cmux"
 
-	agentmetricspb "github.com/open-telemetry/opentelemetry-proto/gen-go/agent/metrics/v1"
-	agenttracepb "github.com/open-telemetry/opentelemetry-proto/gen-go/agent/trace/v1"
+	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
+	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 )
 
 // Receiver is the type that exposes Trace and Metrics reception.
