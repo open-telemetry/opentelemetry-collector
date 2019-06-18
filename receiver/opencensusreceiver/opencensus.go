@@ -25,11 +25,11 @@ import (
 
 	"google.golang.org/grpc"
 
+	gatewayruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/observability"
 	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver/ocmetrics"
 	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver/octrace"
-	gatewayruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/rs/cors"
 	"github.com/soheilhy/cmux"
 
