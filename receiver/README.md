@@ -7,13 +7,13 @@ __Currently there are some inconsistencies between Agent and Collector configura
 
 This receiver receives spans from OpenTelemetry instrumented applications and translates them into the internal span types that are then sent to the collector/exporters.
 
-Its address can be configured in the YAML configuration file under section "receivers", subsection "opencensus" and field "address". The syntax of the field "address" is `[address|host]:<port-number>`.
+Its address can be configured in the YAML configuration file under section "receivers", subsection "opentelemtry" and field "address". The syntax of the field "address" is `[address|host]:<port-number>`.
 
 For example:
 
 ```yaml
 receivers:
-  opencensus:
+  opentelemtry:
     address: "127.0.0.1:55678"
 ```
 ### Writing with HTTP/JSON 
@@ -23,7 +23,7 @@ HTTP/JSON in addition to gRPC. The HTTP/JSON address is the same as gRPC as the
 protocol is recognized and processed accordingly.
 
 To write traces with HTTP/JSON, `POST` to `[address]/v1/trace`. The JSON message
-format parallels the gRPC protobuf format, see this [OpenApi spec for it](https://github.com/open-telemetry/opentelemetry-proto/blob/master/gen-openapi/opencensus/proto/agent/trace/v1/trace_service.swagger.json).
+format parallels the gRPC protobuf format, see this [OpenApi spec for it](https://github.com/open-telemetry/opentelemetry-proto/blob/master/gen-openapi/opentelemtry/proto/agent/trace/v1/trace_service.swagger.json).
 
 The HTTP/JSON endpoint can also optionally 
 [CORS](https://fetch.spec.whatwg.org/#cors-protocol), which is enabled by
@@ -31,7 +31,7 @@ specifying a list of allowed CORS origins in the `cors_allowed_origins` field:
 
 ```yaml
 receivers:
-  opencensus:
+  opentelemtry:
     address: "localhost:55678"
     cors_allowed_origins:
     - http://test.com
@@ -43,11 +43,11 @@ receivers:
 (To be fixed via [#135](https://github.com/open-telemetry/opentelemetry-service/issues/135))
 
 By default this receiver is ALWAYS started on the OpenTelemetry Collector, it can be disabled via command-line by
-using `--receive-oc-trace=false`. On the Collector only the port can be configured, example:
+using `--receive-opentel-trace=false`. On the Collector only the port can be configured, example:
 
 ```yaml
 receivers:
-  opencensus:
+  opentelemtry:
     port: 55678
 
     # Settings below are only available on collector.
@@ -170,7 +170,7 @@ receivers:
     prometheus:
       config:
         scrape_configs:
-          - job_name: 'opencensus_service'
+          - job_name: 'opentelemetry_service'
             scrape_interval: 5s
             static_configs:
               - targets: ['localhost:8889']

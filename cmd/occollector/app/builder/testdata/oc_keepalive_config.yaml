@@ -1,5 +1,5 @@
 receivers:
-  opencensus:
+  opentelemtry:
     keepalive:
       server-parameters:
         time: 30s

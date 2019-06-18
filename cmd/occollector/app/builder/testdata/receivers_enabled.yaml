@@ -1,6 +1,6 @@
 # Enable receivers with default configuration
 receivers:
   jaeger: {} 
-  opencensus: {}
+  opentelemtry: {}
   zipkin: {}
   zipkin-scribe: {}

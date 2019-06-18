@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package opencensusexporter
+package opentelemetryexporter
 
 import (
 	"context"
@@ -21,7 +21,7 @@ import (
 	"sync"
 	"time"
 
-	"contrib.go.opencensus.io/exporter/ocagent"
+	"contrib.go.opentelemtry.io/exporter/ocagent"
 	agenttracepb "github.com/open-telemetry/opentelemetry-proto/gen-go/agent/trace/v1"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
@@ -44,7 +44,7 @@ type keepaliveConfig struct {
 	PermitWithoutStream bool          `mapstructure:"permit-without-stream,omitempty"`
 }
 
-type opencensusConfig struct {
+type opentelemetryConfig struct {
 	Endpoint            string            `mapstructure:"endpoint,omitempty"`
 	Compression         string            `mapstructure:"compression,omitempty"`
 	Headers             map[string]string `mapstructure:"headers,omitempty"`
@@ -91,7 +91,7 @@ const (
 // OpenTelemetry Agent/Collector according to the configuration settings.
 func OpenCensusTraceExportersFromViper(v *viper.Viper) (tps []consumer.TraceConsumer, mps []consumer.MetricsConsumer, doneFns []func() error, err error) {
 	var cfg struct {
-		OpenTelemetry *opencensusConfig `mapstructure:"opencensus"`
+		OpenTelemetry *opentelemetryConfig `mapstructure:"opentelemtry"`
 	}
 	if err := v.Unmarshal(&cfg); err != nil {
 		return nil, nil, nil, err

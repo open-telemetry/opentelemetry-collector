@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package opencensusreceiver
+package opentelemetryreceiver
 
 import (
 	"context"
@@ -27,8 +27,8 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/observability"
-	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver/ocmetrics"
-	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver/octrace"
+	"github.com/open-telemetry/opentelemetry-service/receiver/opentelemetryreceiver/ocmetrics"
+	"github.com/open-telemetry/opentelemetry-service/receiver/opentelemetryreceiver/octrace"
 	gatewayruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/rs/cors"
 	"github.com/soheilhy/cmux"

@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package opencensusreceiver
+package opentelemetryreceiver
 
 import (
 	"google.golang.org/grpc"
 
-	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver/ocmetrics"
-	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver/octrace"
+	"github.com/open-telemetry/opentelemetry-service/receiver/opentelemetryreceiver/ocmetrics"
+	"github.com/open-telemetry/opentelemetry-service/receiver/opentelemetryreceiver/octrace"
 )
 
 // Option interface defines for configuration settings to be applied to receivers.

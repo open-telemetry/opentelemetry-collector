@@ -20,9 +20,9 @@ import (
 	"sync"
 	"time"
 
-	"contrib.go.opencensus.io/exporter/stackdriver"
+	"contrib.go.opentelemtry.io/exporter/stackdriver"
 	"github.com/spf13/viper"
-	"go.opencensus.io/trace"
+	"go.opentelemtry.io/trace"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/data"
@@ -93,7 +93,7 @@ func StackdriverTraceExportersFromViper(v *viper.Viper) (tps []consumer.TraceCon
 		return nil, nil, nil, err
 	}
 
-	// TODO: Examine "contrib.go.opencensus.io/exporter/stackdriver" to see
+	// TODO: Examine "contrib.go.opentelemtry.io/exporter/stackdriver" to see
 	// if trace.ExportSpan was constraining and if perhaps the Stackdriver
 	// upload can use the context and information from the Node.
 	if sc.EnableTracing {
@@ -113,7 +113,7 @@ func StackdriverTraceExportersFromViper(v *viper.Viper) (tps []consumer.TraceCon
 
 func (sde *stackdriverExporter) ConsumeMetricsData(ctx context.Context, md data.MetricsData) error {
 	ctx, span := trace.StartSpan(ctx,
-		"opencensus.service.exporter.stackdriver.ExportMetricsData",
+		"opentelemtry.service.exporter.stackdriver.ExportMetricsData",
 		trace.WithSampler(trace.NeverSample()))
 	defer span.End()
 

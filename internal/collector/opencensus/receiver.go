@@ -29,7 +29,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/cmd/occollector/app/builder"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
-	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver"
+	"github.com/open-telemetry/opentelemetry-service/receiver/opentelemetryreceiver"
 )
 
 // Start starts the OpenTelemetry receiver endpoint.
@@ -39,7 +39,7 @@ func Start(logger *zap.Logger, v *viper.Viper, traceConsumer consumer.TraceConsu
 		return nil, err
 	}
 
-	ocr, err := opencensusreceiver.New(addr, traceConsumer, nil, opts...)
+	ocr, err := opentelemetryreceiver.New(addr, traceConsumer, nil, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create the OpenTelemetry trace receiver: %v", err)
 	}
@@ -53,7 +53,7 @@ func Start(logger *zap.Logger, v *viper.Viper, traceConsumer consumer.TraceConsu
 	return ocr, nil
 }
 
-func receiverOptions(v *viper.Viper) (addr string, opts []opencensusreceiver.Option, zapFields []zap.Field, err error) {
+func receiverOptions(v *viper.Viper) (addr string, opts []opentelemetryreceiver.Option, zapFields []zap.Field, err error) {
 	rOpts, err := builder.NewDefaultOpenCensusReceiverCfg().InitFromViper(v)
 	if err != nil {
 		return addr, opts, zapFields, err
@@ -71,7 +71,7 @@ func receiverOptions(v *viper.Viper) (addr string, opts []opencensusreceiver.Opt
 
 	grpcServerOptions, zapFields := grpcServerOptions(rOpts, zapFields)
 	if len(grpcServerOptions) > 0 {
-		opts = append(opts, opencensusreceiver.WithGRPCServerOptions(grpcServerOptions...))
+		opts = append(opts, opentelemetryreceiver.WithGRPCServerOptions(grpcServerOptions...))
 	}
 
 	addr = ":" + strconv.FormatInt(int64(rOpts.Port), 10)

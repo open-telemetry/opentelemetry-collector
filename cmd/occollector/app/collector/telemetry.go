@@ -20,9 +20,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"contrib.go.opencensus.io/exporter/prometheus"
+	"contrib.go.opentelemtry.io/exporter/prometheus"
 	"github.com/spf13/viper"
-	"go.opencensus.io/stats/view"
+	"go.opentelemtry.io/stats/view"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/internal/collector/processor"

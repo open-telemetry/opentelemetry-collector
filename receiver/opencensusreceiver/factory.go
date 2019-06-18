@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package opencensusreceiver
+package opentelemetryreceiver
 
 import (
 	"context"
@@ -28,7 +28,7 @@ var _ = factories.RegisterReceiverFactory(&receiverFactory{})
 
 const (
 	// The value of "type" key in configuration.
-	typeStr = "opencensus"
+	typeStr = "opentelemtry"
 )
 
 // receiverFactory is the factory for receiver.

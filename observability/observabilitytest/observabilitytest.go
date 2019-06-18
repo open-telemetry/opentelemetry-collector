@@ -19,8 +19,8 @@ import (
 	"reflect"
 	"sort"
 
-	"go.opencensus.io/stats/view"
-	"go.opencensus.io/tag"
+	"go.opentelemtry.io/stats/view"
+	"go.opentelemtry.io/tag"
 
 	"github.com/open-telemetry/opentelemetry-service/observability"
 )

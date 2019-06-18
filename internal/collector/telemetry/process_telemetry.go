@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/prometheus/procfs"
-	"go.opencensus.io/stats"
-	"go.opencensus.io/stats/view"
+	"go.opentelemtry.io/stats"
+	"go.opentelemtry.io/stats/view"
 )
 
 // ProcessMetricsViews is a struct that contains views related to process metrics (cpu, mem, etc)
@@ -17,7 +17,7 @@ type ProcessMetricsViews struct {
 	done  chan struct{}
 }
 
-var mRuntimeAllocMem = stats.Int64("oc.io/process/memory_alloc", "Number of bytes currently allocated in use", "By")
+var mRuntimeAllocMem = stats.Int64("opentel.io/process/memory_alloc", "Number of bytes currently allocated in use", "By")
 var viewAllocMem = &view.View{
 	Name:        mRuntimeAllocMem.Name(),
 	Description: mRuntimeAllocMem.Description(),
@@ -26,7 +26,7 @@ var viewAllocMem = &view.View{
 	TagKeys:     nil,
 }
 
-var mRuntimeTotalAllocMem = stats.Int64("oc.io/process/total_memory_alloc", "Number of allocations in total", "By")
+var mRuntimeTotalAllocMem = stats.Int64("opentel.io/process/total_memory_alloc", "Number of allocations in total", "By")
 var viewTotalAllocMem = &view.View{
 	Name:        mRuntimeTotalAllocMem.Name(),
 	Description: mRuntimeTotalAllocMem.Description(),
@@ -35,7 +35,7 @@ var viewTotalAllocMem = &view.View{
 	TagKeys:     nil,
 }
 
-var mRuntimeSysMem = stats.Int64("oc.io/process/sys_memory_alloc", "Number of bytes given to the process to use in total", "By")
+var mRuntimeSysMem = stats.Int64("opentel.io/process/sys_memory_alloc", "Number of bytes given to the process to use in total", "By")
 var viewSysMem = &view.View{
 	Name:        mRuntimeSysMem.Name(),
 	Description: mRuntimeSysMem.Description(),
@@ -44,7 +44,7 @@ var viewSysMem = &view.View{
 	TagKeys:     nil,
 }
 
-var mCPUSeconds = stats.Int64("oc.io/process/cpu_seconds", "CPU seconds for this process", "1")
+var mCPUSeconds = stats.Int64("opentel.io/process/cpu_seconds", "CPU seconds for this process", "1")
 var viewCPUSeconds = &view.View{
 	Name:        mCPUSeconds.Name(),
 	Description: mCPUSeconds.Description(),

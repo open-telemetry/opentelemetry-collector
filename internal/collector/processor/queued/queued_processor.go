@@ -20,9 +20,9 @@ import (
 	"time"
 
 	"github.com/jaegertracing/jaeger/pkg/queue"
-	"go.opencensus.io/stats"
-	"go.opencensus.io/stats/view"
-	"go.opencensus.io/tag"
+	"go.opentelemtry.io/stats"
+	"go.opentelemtry.io/stats/view"
+	"go.opentelemtry.io/tag"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package opencensusexporter
+package opentelemetryexporter
 
 import (
 	"crypto/x509"
@@ -22,7 +22,7 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
 
-	"contrib.go.opencensus.io/exporter/ocagent"
+	"contrib.go.opentelemtry.io/exporter/ocagent"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exporterhelper"
@@ -36,7 +36,7 @@ var _ = factories.RegisterExporterFactory(&exporterFactory{})
 
 const (
 	// The value of "type" key in configuration.
-	typeStr = "opencensus"
+	typeStr = "opentelemtry"
 )
 
 // exporterFactory is the factory for OpenTelemetry exporter.

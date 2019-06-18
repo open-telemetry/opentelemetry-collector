@@ -15,11 +15,11 @@ services:
       - "9411:9411"
 
   # Collector
-  oc-collector:
+  opentel-collector:
     image: occollector:latest
-    command: ["--config=/etc/oc-collector-config.yaml", "--http-pprof-port=1777"]
+    command: ["--config=/etc/opentel-collector-config.yaml", "--http-pprof-port=1777"]
     volumes:
-      - ./oc-collector-config.yaml:/etc/oc-collector-config.yaml
+      - ./opentel-collector-config.yaml:/etc/opentel-collector-config.yaml
     ports:
       - "55678"
       - "55680:55679"
@@ -30,24 +30,24 @@ services:
       - zipkin-all-in-one
 
   # Agent
-  oc-agent:
+  opentel-agent:
     image: ocagent:latest
-    command: ["--config=/etc/oc-agent-config.yaml", "--http-pprof-port=1888"]
+    command: ["--config=/etc/opentel-agent-config.yaml", "--http-pprof-port=1888"]
     volumes:
-      - ./oc-agent-config.yaml:/etc/oc-agent-config.yaml
+      - ./opentel-agent-config.yaml:/etc/opentel-agent-config.yaml
     ports:
       - "1888:1888"
       - "14268"
       - "55678"
       - "55679:55679"
     depends_on:
-      - oc-collector
+      - opentel-collector
 
   # Synthetic load generator
   synthetic-load-generator:
     image: omnition/synthetic-load-generator:1.0.25
     environment:
-      - JAEGER_COLLECTOR_URL=http://oc-agent:14268
+      - JAEGER_COLLECTOR_URL=http://opentel-agent:14268
     depends_on:
-      - oc-agent
+      - opentel-agent
 

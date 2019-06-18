@@ -21,11 +21,11 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-service/exporter/loggingexporter"
 
-	"contrib.go.opencensus.io/exporter/ocagent"
-	"go.opencensus.io/trace"
+	"contrib.go.opentelemtry.io/exporter/ocagent"
+	"go.opentelemtry.io/trace"
 
 	"github.com/open-telemetry/opentelemetry-service/receiver"
-	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver"
+	"github.com/open-telemetry/opentelemetry-service/receiver/opentelemetryreceiver"
 	"go.uber.org/zap"
 )
 
@@ -38,7 +38,7 @@ func Example_endToEnd() {
 		log.Fatalf("Failed to create logging exporter: %v", err)
 	}
 
-	tr, err := opencensusreceiver.New("localhost:55678", lte, nil)
+	tr, err := opentelemetryreceiver.New("localhost:55678", lte, nil)
 	if err != nil {
 		log.Fatalf("Failed to create trace receiver: %v", err)
 	}

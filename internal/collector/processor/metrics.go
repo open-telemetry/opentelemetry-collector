@@ -16,9 +16,9 @@ package processor
 
 import (
 	commonpb "github.com/open-telemetry/opentelemetry-proto/gen-go/agent/common/v1"
-	"go.opencensus.io/stats"
-	"go.opencensus.io/stats/view"
-	"go.opencensus.io/tag"
+	"go.opentelemtry.io/stats"
+	"go.opentelemtry.io/stats/view"
+	"go.opentelemtry.io/tag"
 
 	"github.com/open-telemetry/opentelemetry-service/internal/collector/telemetry"
 )

@@ -15,7 +15,7 @@
 package exporterhelper
 
 import (
-	"go.opencensus.io/trace"
+	"go.opentelemtry.io/trace"
 )
 
 var (

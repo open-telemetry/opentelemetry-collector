@@ -23,7 +23,7 @@ import (
 )
 
 var (
-	// Map of opencensus compression types to grpc registered compression types
+	// Map of opentelemtry compression types to grpc registered compression types
 	grpcCompressionKeyMap = map[string]string{
 		compression.Gzip: gzip.Name,
 	}

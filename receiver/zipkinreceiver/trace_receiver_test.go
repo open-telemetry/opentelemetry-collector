@@ -27,7 +27,7 @@ import (
 	"testing"
 	"time"
 
-	"contrib.go.opencensus.io/exporter/zipkin"
+	"contrib.go.opentelemtry.io/exporter/zipkin"
 	openzipkin "github.com/openzipkin/zipkin-go"
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	zhttp "github.com/openzipkin/zipkin-go/reporter/http"

@@ -20,7 +20,7 @@
         "v_str": "10.53.69.61"
       },
       {
-        "key": "opencensus.exporterversion",
+        "key": "opentelemtry.exporterversion",
         "v_str": "someVersion"
       },
       {
@@ -94,20 +94,20 @@
           "timestamp": "2017-01-26T21:46:31.639874Z",
           "fields": [
             {
-              "key": "oc.timeevent.messageevent.id",
+              "key": "opentel.timeevent.messageevent.id",
               "v_type": 2
             },
             {
-              "key": "oc.timeevent.messageevent.type",
+              "key": "opentel.timeevent.messageevent.type",
               "v_str": "SENT"
             },
             {
-              "key": "oc.timeevent.messageevent.csize",
+              "key": "opentel.timeevent.messageevent.csize",
               "v_int64": 512,
               "v_type": 2
             },
             {
-              "key": "oc.timeevent.messageevent.usize",
+              "key": "opentel.timeevent.messageevent.usize",
               "v_int64": 1024,
               "v_type": 2
             }
@@ -130,7 +130,7 @@
               "v_str": "nothing"
             },
             {
-              "key": "oc.timeevent.annotation.description",
+              "key": "opentel.timeevent.annotation.description",
               "v_str": "annotation description"
             }
           ]

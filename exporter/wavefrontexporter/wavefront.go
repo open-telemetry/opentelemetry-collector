@@ -17,7 +17,7 @@ package wavefrontexporter
 import (
 	"errors"
 
-	"github.com/wavefronthq/opencensus-exporter/wavefront"
+	"github.com/wavefronthq/opentelemtry-exporter/wavefront"
 	"github.com/wavefronthq/wavefront-sdk-go/senders"
 
 	"github.com/spf13/viper"

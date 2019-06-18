@@ -1,6 +1,6 @@
 receivers:
-  opencensus:
-  opencensus/customname:
+  opentelemtry:
+  opentelemtry/customname:
     endpoint: 0.0.0.0:9090
 
 processors:
@@ -11,7 +11,7 @@ exporters:
 
 pipelines:
   traces:
-      receivers: [opencensus]
+      receivers: [opentelemtry]
       processors: [exampleprocessor]
       exporters: [exampleexporter]
 

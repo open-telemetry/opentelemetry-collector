@@ -18,7 +18,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/viper"
-	kafka "github.com/yancl/opencensus-go-exporter-kafka"
+	kafka "github.com/yancl/opentelemtry-go-exporter-kafka"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exporterwrapper"

@@ -32,7 +32,7 @@ func TestApplication_Start(t *testing.T) {
 		healthCheckHTTPPort, // Keep it as first since its address is used later.
 		zpagesserver.ZPagesHTTPPort,
 		"metrics-port",
-		"receivers.opencensus.port",
+		"receivers.opentelemtry.port",
 	}
 	addresses := getMultipleAvailableLocalAddresses(t, uint(len(portArg)))
 	for i, addr := range addresses {

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package opencensusexporter
+package opentelemetryexporter
 
 import (
 	"path"
@@ -36,15 +36,15 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, config)
 
-	e0 := config.Exporters["opencensus"]
+	e0 := config.Exporters["opentelemtry"]
 	assert.Equal(t, e0, factory.CreateDefaultConfig())
 
-	e1 := config.Exporters["opencensus/2"]
+	e1 := config.Exporters["opentelemtry/2"]
 	assert.Equal(t, e1,
 		&ConfigV2{
 			ExporterSettings: configmodels.ExporterSettings{
-				NameVal: "opencensus/2",
-				TypeVal: "opencensus",
+				NameVal: "opentelemtry/2",
+				TypeVal: "opentelemtry",
 				Enabled: true,
 			},
 			Headers: map[string]string{

@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	"go.opencensus.io/trace"
+	"go.opentelemtry.io/trace"
 
 	commonpb "github.com/open-telemetry/opentelemetry-proto/gen-go/agent/common/v1"
 	agenttracepb "github.com/open-telemetry/opentelemetry-proto/gen-go/agent/trace/v1"
@@ -132,7 +132,7 @@ func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
 	defer ocSpansSaver.mu.Unlock()
 
 	if len(ocSpansSaver.spanData) == 0 {
-		t.Fatal("Unfortunately did not receive an exported span data. Please check this library's implementation or go.opencensus.io/trace")
+		t.Fatal("Unfortunately did not receive an exported span data. Please check this library's implementation or go.opentelemtry.io/trace")
 	}
 
 	gotSpanData := ocSpansSaver.spanData[:]

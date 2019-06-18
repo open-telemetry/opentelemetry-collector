@@ -23,7 +23,7 @@
         "vStr": "10.53.69.61"
       },
       {
-        "key": "opencensus.exporterversion",
+        "key": "opentelemtry.exporterversion",
         "vType": "STRING",
         "vStr": "someVersion"
       },

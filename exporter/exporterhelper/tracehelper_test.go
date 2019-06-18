@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	tracepb "github.com/open-telemetry/opentelemetry-proto/gen-go/trace/v1"
-	"go.opencensus.io/trace"
+	"go.opentelemtry.io/trace"
 
 	"github.com/open-telemetry/opentelemetry-service/data"
 	"github.com/open-telemetry/opentelemetry-service/exporter"

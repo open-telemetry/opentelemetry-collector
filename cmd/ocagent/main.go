@@ -26,7 +26,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"go.opencensus.io/stats/view"
+	"go.opentelemtry.io/stats/view"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -39,7 +39,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/observability"
 	"github.com/open-telemetry/opentelemetry-service/processor/multiconsumer"
 	"github.com/open-telemetry/opentelemetry-service/receiver/jaegerreceiver"
-	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver"
+	"github.com/open-telemetry/opentelemetry-service/receiver/opentelemetryreceiver"
 	"github.com/open-telemetry/opentelemetry-service/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-service/receiver/vmmetricsreceiver"
 	"github.com/open-telemetry/opentelemetry-service/receiver/zipkinreceiver"
@@ -211,11 +211,11 @@ func runOCReceiver(logger *zap.Logger, acfg *config.Config, tc consumer.TraceCon
 	}
 	addr := acfg.OpenCensusReceiverAddress()
 	corsOrigins := acfg.OpenCensusReceiverCorsAllowedOrigins()
-	ocr, err := opencensusreceiver.New(addr,
+	ocr, err := opentelemetryreceiver.New(addr,
 		tc,
 		mc,
 		tlsCredsOption,
-		opencensusreceiver.WithCorsOrigins(corsOrigins))
+		opentelemetryreceiver.WithCorsOrigins(corsOrigins))
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to create the OpenTelemetry receiver on address %q: error %v", addr, err)

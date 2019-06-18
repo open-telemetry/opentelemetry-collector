@@ -1,5 +1,5 @@
 receivers:
-  opencensus:
+  opentelemtry:
     port: 55678
 
 exporters:

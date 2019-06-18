@@ -1,7 +1,7 @@
 receivers:
   jaeger:
     collector_http_port: 14268
-  opencensus:
+  opentelemtry:
     address: "127.0.0.1:55678"
 queued-exporters:
   jaeger1:

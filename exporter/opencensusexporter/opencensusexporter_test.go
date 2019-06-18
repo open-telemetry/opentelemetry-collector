@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package opencensusexporter
+package opentelemetryexporter
 
 import (
 	"context"
@@ -26,15 +26,15 @@ import (
 
 func TestOpenCensusTraceExportersFromViper(t *testing.T) {
 	v := viper.New()
-	v.Set("opencensus", map[interface{}]interface{}{})
-	v.Set("opencensus.endpoint", "")
+	v.Set("opentelemtry", map[interface{}]interface{}{})
+	v.Set("opentelemtry.endpoint", "")
 	_, _, _, err := OpenCensusTraceExportersFromViper(v)
 
 	if errorCode(err) != errEndpointRequired {
 		t.Fatalf("Expected to get errEndpointRequired. Got %v", err)
 	}
 
-	v.Set("opencensus.endpoint", "127.0.0.1:55678")
+	v.Set("opentelemtry.endpoint", "127.0.0.1:55678")
 	exporters, _, _, err := OpenCensusTraceExportersFromViper(v)
 
 	if err != nil {
@@ -47,15 +47,15 @@ func TestOpenCensusTraceExportersFromViper(t *testing.T) {
 
 func TestOpenCensusTraceExportersFromViper_TLS(t *testing.T) {
 	v := viper.New()
-	v.Set("opencensus.endpoint", "127.0.0.1:55678")
-	v.Set("opencensus.cert-pem-file", "dummy_file.pem")
+	v.Set("opentelemtry.endpoint", "127.0.0.1:55678")
+	v.Set("opentelemtry.cert-pem-file", "dummy_file.pem")
 	_, _, _, err := OpenCensusTraceExportersFromViper(v)
 
 	if errorCode(err) != errUnableToGetTLSCreds {
 		t.Fatalf("Expected to get errUnableToGetTLSCreds but got %v", err)
 	}
 
-	v.Set("opencensus.cert-pem-file", "testdata/test_cert.pem")
+	v.Set("opentelemtry.cert-pem-file", "testdata/test_cert.pem")
 	exporters, _, _, err := OpenCensusTraceExportersFromViper(v)
 	if err != nil {
 		t.Fatalf("Unexpected error building OpenTelemetry Exporter")
@@ -67,14 +67,14 @@ func TestOpenCensusTraceExportersFromViper_TLS(t *testing.T) {
 
 func TestOpenCensusTraceExportersFromViper_Compression(t *testing.T) {
 	v := viper.New()
-	v.Set("opencensus.endpoint", "127.0.0.1:55678")
-	v.Set("opencensus.compression", "random-compression")
+	v.Set("opentelemtry.endpoint", "127.0.0.1:55678")
+	v.Set("opentelemtry.compression", "random-compression")
 	_, _, _, err := OpenCensusTraceExportersFromViper(v)
 	if errorCode(err) != errUnsupportedCompressionType {
 		t.Fatalf("Expected to get errUnsupportedCompressionType but got %v", err)
 	}
 
-	v.Set("opencensus.compression", "gzip")
+	v.Set("opentelemtry.compression", "gzip")
 	exporters, _, _, err := OpenCensusTraceExportersFromViper(v)
 	if err != nil {
 		t.Fatalf("Unexpected error building OpenTelemetry Exporter")
@@ -86,7 +86,7 @@ func TestOpenCensusTraceExportersFromViper_Compression(t *testing.T) {
 
 func TestOpenCensusTraceExporters_StopError(t *testing.T) {
 	v := viper.New()
-	v.Set("opencensus.endpoint", "127.0.0.1:55678")
+	v.Set("opentelemtry.endpoint", "127.0.0.1:55678")
 	tps, _, doneFns, err := OpenCensusTraceExportersFromViper(v)
 	doneFnCalled := false
 	defer func() {
@@ -127,15 +127,15 @@ func TestOpenCensusTraceExporterConfigsViaViper(t *testing.T) {
 	tests := []struct {
 		name      string
 		configMap map[string]string
-		want      opencensusConfig
+		want      opentelemetryConfig
 	}{
 		{
 			name: "UseSecure",
 			configMap: map[string]string{
-				"opencensus.endpoint": defaultTestEndPoint,
-				"opencensus.secure":   "true",
+				"opentelemtry.endpoint": defaultTestEndPoint,
+				"opentelemtry.secure":   "true",
 			},
-			want: opencensusConfig{
+			want: opentelemetryConfig{
 				Endpoint:  defaultTestEndPoint,
 				UseSecure: true,
 			},
@@ -143,10 +143,10 @@ func TestOpenCensusTraceExporterConfigsViaViper(t *testing.T) {
 		{
 			name: "ReconnectionDelay",
 			configMap: map[string]string{
-				"opencensus.endpoint":           defaultTestEndPoint,
-				"opencensus.reconnection-delay": "5s",
+				"opentelemtry.endpoint":           defaultTestEndPoint,
+				"opentelemtry.reconnection-delay": "5s",
 			},
-			want: opencensusConfig{
+			want: opentelemetryConfig{
 				Endpoint:          defaultTestEndPoint,
 				ReconnectionDelay: 5 * time.Second,
 			},
@@ -154,12 +154,12 @@ func TestOpenCensusTraceExporterConfigsViaViper(t *testing.T) {
 		{
 			name: "KeepaliveParameters",
 			configMap: map[string]string{
-				"opencensus.endpoint":                        defaultTestEndPoint,
-				"opencensus.keepalive.time":                  "30s",
-				"opencensus.keepalive.timeout":               "25s",
-				"opencensus.keepalive.permit-without-stream": "true",
+				"opentelemtry.endpoint":                        defaultTestEndPoint,
+				"opentelemtry.keepalive.time":                  "30s",
+				"opentelemtry.keepalive.timeout":               "25s",
+				"opentelemtry.keepalive.permit-without-stream": "true",
 			},
-			want: opencensusConfig{
+			want: opentelemetryConfig{
 				Endpoint: defaultTestEndPoint,
 				KeepaliveParameters: &keepaliveConfig{
 					Time:                30 * time.Second,
@@ -178,8 +178,8 @@ func TestOpenCensusTraceExporterConfigsViaViper(t *testing.T) {
 			}
 
 			// Ensure that the settings are being read, via UnmarshalExact.
-			var got opencensusConfig
-			if err := v.Sub("opencensus").UnmarshalExact(&got); err != nil {
+			var got opentelemetryConfig
+			if err := v.Sub("opentelemtry").UnmarshalExact(&got); err != nil {
 				t.Fatalf("UnmarshalExact() error: %v", err)
 			}
 

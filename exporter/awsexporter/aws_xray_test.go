@@ -21,7 +21,7 @@ import (
 	"testing"
 	"time"
 
-	xray "contrib.go.opencensus.io/exporter/aws"
+	xray "contrib.go.opentelemtry.io/exporter/aws"
 )
 
 func TestTransformConfigToXRayOptions(t *testing.T) {

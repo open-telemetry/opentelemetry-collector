@@ -25,7 +25,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-service/cmd/occollector/app/builder"
 	"github.com/open-telemetry/opentelemetry-service/processor/processortest"
-	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver"
+	"github.com/open-telemetry/opentelemetry-service/receiver/opentelemetryreceiver"
 )
 
 func TestStart(t *testing.T) {
@@ -38,7 +38,7 @@ func TestStart(t *testing.T) {
 			name: "default_config",
 			viperFn: func() *viper.Viper {
 				v := viper.New()
-				v.Set("receivers.opencensus.{}", nil)
+				v.Set("receivers.opentelemtry.{}", nil)
 				return v
 			},
 		},
@@ -46,7 +46,7 @@ func TestStart(t *testing.T) {
 			name: "invalid_port",
 			viperFn: func() *viper.Viper {
 				v := viper.New()
-				v.Set("receivers.opencensus.port", -1)
+				v.Set("receivers.opentelemtry.port", -1)
 				return v
 			},
 			wantErr: true,
@@ -55,7 +55,7 @@ func TestStart(t *testing.T) {
 			name: "missing_tls_files",
 			viperFn: func() *viper.Viper {
 				v := viper.New()
-				v.Set("receivers.opencensus.tls_credentials.cert_file", "foo")
+				v.Set("receivers.opentelemtry.tls_credentials.cert_file", "foo")
 				return v
 			},
 			wantErr: true,
@@ -64,13 +64,13 @@ func TestStart(t *testing.T) {
 			name: "grpc_settings",
 			viperFn: func() *viper.Viper {
 				v := viper.New()
-				v.Set("receivers.opencensus.port", 55678)
-				v.Set("receivers.opencensus.max-recv-msg-size-mib", 32)
-				v.Set("receivers.opencensus.max-concurrent-streams", 64)
-				v.Set("receivers.opencensus.keepalive.server-parameters.max-connection-age", 180*time.Second)
-				v.Set("receivers.opencensus.keepalive.server-parameters.max-connection-age-grace", 10*time.Second)
-				v.Set("receivers.opencensus.keepalive.enforcement-policy.min-time", 60*time.Second)
-				v.Set("receivers.opencensus.keepalive.enforcement-policy.permit-without-stream", true)
+				v.Set("receivers.opentelemtry.port", 55678)
+				v.Set("receivers.opentelemtry.max-recv-msg-size-mib", 32)
+				v.Set("receivers.opentelemtry.max-concurrent-streams", 64)
+				v.Set("receivers.opentelemtry.keepalive.server-parameters.max-connection-age", 180*time.Second)
+				v.Set("receivers.opentelemtry.keepalive.server-parameters.max-connection-age-grace", 10*time.Second)
+				v.Set("receivers.opentelemtry.keepalive.enforcement-policy.min-time", 60*time.Second)
+				v.Set("receivers.opentelemtry.keepalive.enforcement-policy.permit-without-stream", true)
 				return v
 			},
 		},
@@ -80,7 +80,7 @@ func TestStart(t *testing.T) {
 			// Enforce that all configurations are actually recognized.
 			v := tt.viperFn()
 			rOpts := builder.OpenCensusReceiverCfg{}
-			if err := v.Sub("receivers.opencensus").UnmarshalExact(&rOpts); err != nil {
+			if err := v.Sub("receivers.opentelemtry").UnmarshalExact(&rOpts); err != nil {
 				t.Errorf("UnmarshalExact error: %v", err)
 				return
 			}
@@ -94,7 +94,7 @@ func TestStart(t *testing.T) {
 			if got != nil {
 				// TODO: (@pjanotti) current StopTraceReception, stop the whole receiver.
 				// See https://github.com/open-telemetry/opentelemetry-service/issues/559
-				got.(*opencensusreceiver.Receiver).Stop()
+				got.(*opentelemetryreceiver.Receiver).Stop()
 			}
 		})
 	}

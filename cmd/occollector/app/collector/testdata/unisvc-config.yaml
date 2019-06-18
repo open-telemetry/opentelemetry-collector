@@ -3,7 +3,7 @@ receivers:
     enabled: true
 
 exporters:
-  opencensus:
+  opentelemtry:
     endpoint: "locahost:55678"
     enabled: true
 
@@ -15,4 +15,4 @@ pipelines:
   traces:
     receivers: [jaeger]
     processors: [attributes]
-    exporters: [opencensus]
+    exporters: [opentelemtry]

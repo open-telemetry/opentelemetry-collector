@@ -1,6 +1,6 @@
 # No receivers enabled, all commented out
 receivers:
   # jaeger: {} 
-  # opencensus: {}
+  # opentelemtry: {}
   # zipkin: {}
   # zipkin-scribe: {}

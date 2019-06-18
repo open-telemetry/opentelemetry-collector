@@ -40,7 +40,7 @@ func BenchmarkGenBucketID(b *testing.B) {
 		"composite-md5": batcher.genBucketID,
 	}
 
-	inputSmall := bucketIDTestInput{&commonpb.Node{ServiceInfo: &commonpb.ServiceInfo{Name: "svc"}}, nil, "oc"}
+	inputSmall := bucketIDTestInput{&commonpb.Node{ServiceInfo: &commonpb.ServiceInfo{Name: "svc"}}, nil, "opentel"}
 	inputBig := bucketIDTestInput{
 		&commonpb.Node{
 			ServiceInfo: &commonpb.ServiceInfo{Name: "svc-i-am-a-cat"},
@@ -52,7 +52,7 @@ func BenchmarkGenBucketID(b *testing.B) {
 			"skarisskarisskarisdf":  "bsdfasdfasdfasdfasdf",
 			"iamacatiamacatiamacat": "bsdfasdfasdfasdfasdf",
 		}},
-		"oc",
+		"opentel",
 	}
 
 	for genName, gen := range gens {
@@ -76,20 +76,20 @@ func TestGenBucketID(t *testing.T) {
 		{
 			"different span formats",
 			false,
-			bucketIDTestInput{&commonpb.Node{ServiceInfo: &commonpb.ServiceInfo{Name: "svc"}}, nil, "oc"},
+			bucketIDTestInput{&commonpb.Node{ServiceInfo: &commonpb.ServiceInfo{Name: "svc"}}, nil, "opentel"},
 			bucketIDTestInput{&commonpb.Node{ServiceInfo: &commonpb.ServiceInfo{Name: "svc"}}, nil, "zipkin"},
 		},
 		{
 			"identical but different node objects",
 			true,
-			bucketIDTestInput{&commonpb.Node{ServiceInfo: &commonpb.ServiceInfo{Name: "svc"}}, nil, "oc"},
-			bucketIDTestInput{&commonpb.Node{ServiceInfo: &commonpb.ServiceInfo{Name: "svc"}}, nil, "oc"},
+			bucketIDTestInput{&commonpb.Node{ServiceInfo: &commonpb.ServiceInfo{Name: "svc"}}, nil, "opentel"},
+			bucketIDTestInput{&commonpb.Node{ServiceInfo: &commonpb.ServiceInfo{Name: "svc"}}, nil, "opentel"},
 		},
 		{
 			"different nodes",
 			false,
-			bucketIDTestInput{&commonpb.Node{ServiceInfo: &commonpb.ServiceInfo{Name: "svc"}}, nil, "oc"},
-			bucketIDTestInput{&commonpb.Node{ServiceInfo: &commonpb.ServiceInfo{Name: "svc2"}}, nil, "oc"},
+			bucketIDTestInput{&commonpb.Node{ServiceInfo: &commonpb.ServiceInfo{Name: "svc"}}, nil, "opentel"},
+			bucketIDTestInput{&commonpb.Node{ServiceInfo: &commonpb.ServiceInfo{Name: "svc2"}}, nil, "opentel"},
 		},
 		{
 			"different resources",
@@ -97,12 +97,12 @@ func TestGenBucketID(t *testing.T) {
 			bucketIDTestInput{
 				&commonpb.Node{ServiceInfo: &commonpb.ServiceInfo{Name: "svc"}},
 				&resourcepb.Resource{Labels: map[string]string{"a": "b"}},
-				"oc",
+				"opentel",
 			},
 			bucketIDTestInput{
 				&commonpb.Node{ServiceInfo: &commonpb.ServiceInfo{Name: "svc"}},
 				&resourcepb.Resource{Labels: map[string]string{"a": "c"}},
-				"oc",
+				"opentel",
 			},
 		},
 		{
@@ -111,12 +111,12 @@ func TestGenBucketID(t *testing.T) {
 			bucketIDTestInput{
 				&commonpb.Node{ServiceInfo: &commonpb.ServiceInfo{Name: "svc"}},
 				&resourcepb.Resource{Labels: map[string]string{"a": "b"}},
-				"oc",
+				"opentel",
 			},
 			bucketIDTestInput{
 				&commonpb.Node{ServiceInfo: &commonpb.ServiceInfo{Name: "svc"}},
 				&resourcepb.Resource{Labels: map[string]string{"a": "b"}},
-				"oc",
+				"opentel",
 			},
 		},
 	}

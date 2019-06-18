@@ -21,8 +21,8 @@ import (
 	"sync"
 	"time"
 
-	xray "contrib.go.opencensus.io/exporter/aws"
-	"go.opencensus.io/trace"
+	xray "contrib.go.opentelemtry.io/exporter/aws"
+	"go.opentelemtry.io/trace"
 
 	"github.com/spf13/viper"
 

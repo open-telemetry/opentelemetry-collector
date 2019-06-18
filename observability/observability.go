@@ -23,19 +23,19 @@ import (
 
 	"google.golang.org/grpc"
 
-	"go.opencensus.io/plugin/ocgrpc"
-	"go.opencensus.io/stats"
-	"go.opencensus.io/stats/view"
-	"go.opencensus.io/tag"
-	"go.opencensus.io/trace"
+	"go.opentelemtry.io/plugin/ocgrpc"
+	"go.opentelemtry.io/stats"
+	"go.opentelemtry.io/stats/view"
+	"go.opentelemtry.io/tag"
+	"go.opentelemtry.io/trace"
 )
 
 var (
-	mReceiverReceivedSpans = stats.Int64("oc.io/receiver/received_spans", "Counts the number of spans received by the receiver", "1")
-	mReceiverDroppedSpans  = stats.Int64("oc.io/receiver/dropped_spans", "Counts the number of spans dropped by the receiver", "1")
+	mReceiverReceivedSpans = stats.Int64("opentel.io/receiver/received_spans", "Counts the number of spans received by the receiver", "1")
+	mReceiverDroppedSpans  = stats.Int64("opentel.io/receiver/dropped_spans", "Counts the number of spans dropped by the receiver", "1")
 
-	mExporterReceivedSpans = stats.Int64("oc.io/exporter/received_spans", "Counts the number of spans received by the exporter", "1")
-	mExporterDroppedSpans  = stats.Int64("oc.io/exporter/dropped_spans", "Counts the number of spans received by the exporter", "1")
+	mExporterReceivedSpans = stats.Int64("opentel.io/exporter/received_spans", "Counts the number of spans received by the exporter", "1")
+	mExporterDroppedSpans  = stats.Int64("opentel.io/exporter/dropped_spans", "Counts the number of spans received by the exporter", "1")
 )
 
 // TagKeyReceiver defines tag key for Receiver.

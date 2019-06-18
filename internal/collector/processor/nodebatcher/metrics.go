@@ -15,9 +15,9 @@
 package nodebatcher
 
 import (
-	"go.opencensus.io/stats"
-	"go.opencensus.io/stats/view"
-	"go.opencensus.io/tag"
+	"go.opentelemtry.io/stats"
+	"go.opentelemtry.io/stats/view"
+	"go.opentelemtry.io/tag"
 
 	"github.com/open-telemetry/opentelemetry-service/internal/collector/processor"
 	"github.com/open-telemetry/opentelemetry-service/internal/collector/telemetry"

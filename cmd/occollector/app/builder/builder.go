@@ -27,14 +27,14 @@ import (
 const (
 	receiversRoot     = "receivers"
 	jaegerEntry       = "jaeger"
-	opencensusEntry   = "opencensus"
+	opentelemetryEntry   = "opentelemtry"
 	zipkinEntry       = "zipkin"
 	zipkinScribeEntry = "zipkin-scribe"
 
 	// flags
 	configCfg                   = "config"
 	jaegerReceiverFlg           = "receive-jaeger"
-	ocReceiverFlg               = "receive-oc-trace"
+	ocReceiverFlg               = "receive-opentel-trace"
 	zipkinReceiverFlg           = "receive-zipkin"
 	zipkinScribeReceiverFlg     = "receive-zipkin-scribe"
 	loggingExporterFlg          = "logging-exporter"
@@ -143,7 +143,7 @@ type keepaliveEnforcementPolicy struct {
 // OpenCensusReceiverEnabled checks if the OpenTelemetry receiver is enabled, via a command-line flag, environment
 // variable, or configuration file.
 func OpenCensusReceiverEnabled(v *viper.Viper) bool {
-	return featureEnabled(v, ocReceiverFlg, receiversRoot, opencensusEntry)
+	return featureEnabled(v, ocReceiverFlg, receiversRoot, opentelemetryEntry)
 }
 
 // NewDefaultOpenCensusReceiverCfg returns an instance of OpenCensusReceiverCfg with default values
@@ -156,7 +156,7 @@ func NewDefaultOpenCensusReceiverCfg() *OpenCensusReceiverCfg {
 
 // InitFromViper returns a OpenCensusReceiverCfg according to the configuration.
 func (cfg *OpenCensusReceiverCfg) InitFromViper(v *viper.Viper) (*OpenCensusReceiverCfg, error) {
-	return cfg, initFromViper(cfg, v, receiversRoot, opencensusEntry)
+	return cfg, initFromViper(cfg, v, receiversRoot, opentelemetryEntry)
 }
 
 // ZipkinReceiverCfg holds configuration for Zipkin receiver.

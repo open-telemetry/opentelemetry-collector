@@ -23,17 +23,17 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-service/exporter/opencensusexporter"
+	"github.com/open-telemetry/opentelemetry-service/exporter/opentelemetryexporter"
 	"github.com/open-telemetry/opentelemetry-service/internal/configmodels"
 )
 
 func TestExportersBuilder_Build(t *testing.T) {
 	config := &configmodels.ConfigV2{
 		Exporters: map[string]configmodels.Exporter{
-			"opencensus": &opencensusexporter.ConfigV2{
+			"opentelemtry": &opentelemetryexporter.ConfigV2{
 				ExporterSettings: configmodels.ExporterSettings{
-					NameVal: "opencensus",
-					TypeVal: "opencensus",
+					NameVal: "opentelemtry",
+					TypeVal: "opentelemtry",
 					Enabled: true,
 				},
 				Endpoint: "0.0.0.0:12345",
@@ -44,7 +44,7 @@ func TestExportersBuilder_Build(t *testing.T) {
 			"trace": {
 				Name:      "trace",
 				InputType: configmodels.TracesDataType,
-				Exporters: []string{"opencensus"},
+				Exporters: []string{"opentelemtry"},
 			},
 		},
 	}
@@ -54,7 +54,7 @@ func TestExportersBuilder_Build(t *testing.T) {
 	assert.NoError(t, err)
 	require.NotNil(t, exporters)
 
-	e1 := exporters[config.Exporters["opencensus"]]
+	e1 := exporters[config.Exporters["opentelemtry"]]
 
 	// Ensure exporter has its fields correctly populated.
 	require.NotNil(t, e1)
@@ -66,7 +66,7 @@ func TestExportersBuilder_Build(t *testing.T) {
 	assert.NoError(t, e1.Stop())
 
 	// Now change only pipeline data type to "metrics" and make sure exporter builder
-	// now fails (because opencensus exporter does not currently support metrics).
+	// now fails (because opentelemtry exporter does not currently support metrics).
 	config.Pipelines["trace"].InputType = configmodels.MetricsDataType
 	_, err = NewExportersBuilder(zap.NewNop(), config).Build()
 	assert.NotNil(t, err)
@@ -79,7 +79,7 @@ func TestExportersBuilder_Build(t *testing.T) {
 	assert.NotNil(t, exporters)
 	assert.Nil(t, err)
 
-	e1 = exporters[config.Exporters["opencensus"]]
+	e1 = exporters[config.Exporters["opentelemtry"]]
 
 	// Ensure exporter has its fields correctly populated.
 	require.NotNil(t, e1)

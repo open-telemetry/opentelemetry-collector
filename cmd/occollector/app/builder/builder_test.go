@@ -30,10 +30,10 @@ func TestReceiversEnabledByPresenceWithDefaultSettings(t *testing.T) {
 		t.Fatalf("Failed to load viper from test file: %v", err)
 	}
 
-	jaegerEnabled, opencensusEnabled, zipkinEnabled, scribeEnabled :=
+	jaegerEnabled, opentelemetryEnabled, zipkinEnabled, scribeEnabled :=
 		JaegerReceiverEnabled(v), OpenCensusReceiverEnabled(v), ZipkinReceiverEnabled(v), ZipkinScribeReceiverEnabled(v)
-	if !jaegerEnabled || !opencensusEnabled || !zipkinEnabled || !scribeEnabled {
-		t.Fatalf("Some of the expected receivers were not enabled j:%v oc:%v z:%v scribe:%v", jaegerEnabled, opencensusEnabled, zipkinEnabled, scribeEnabled)
+	if !jaegerEnabled || !opentelemetryEnabled || !zipkinEnabled || !scribeEnabled {
+		t.Fatalf("Some of the expected receivers were not enabled j:%v opentel:%v z:%v scribe:%v", jaegerEnabled, opentelemetryEnabled, zipkinEnabled, scribeEnabled)
 	}
 
 	wj := NewDefaultJaegerReceiverCfg()
@@ -75,10 +75,10 @@ func TestReceiversDisabledByPresenceWithDefaultSettings(t *testing.T) {
 		t.Fatalf("Failed to load viper from test file: %v", err)
 	}
 
-	jaegerEnabled, opencensusEnabled, zipkinEnabled, scribeEnabled :=
+	jaegerEnabled, opentelemetryEnabled, zipkinEnabled, scribeEnabled :=
 		JaegerReceiverEnabled(v), OpenCensusReceiverEnabled(v), ZipkinReceiverEnabled(v), ZipkinScribeReceiverEnabled(v)
-	if jaegerEnabled || opencensusEnabled || zipkinEnabled {
-		t.Fatalf("Not all receivers were disabled j:%v oc:%v z:%v scribe:%v", jaegerEnabled, opencensusEnabled, zipkinEnabled, scribeEnabled)
+	if jaegerEnabled || opentelemetryEnabled || zipkinEnabled {
+		t.Fatalf("Not all receivers were disabled j:%v opentel:%v z:%v scribe:%v", jaegerEnabled, opentelemetryEnabled, zipkinEnabled, scribeEnabled)
 	}
 }
 

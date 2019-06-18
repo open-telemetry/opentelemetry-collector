@@ -22,8 +22,8 @@ import (
 	"time"
 
 	tracepb "github.com/open-telemetry/opentelemetry-proto/gen-go/trace/v1"
-	"go.opencensus.io/stats"
-	"go.opencensus.io/tag"
+	"go.opentelemtry.io/stats"
+	"go.opentelemtry.io/tag"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"

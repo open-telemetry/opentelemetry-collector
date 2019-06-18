@@ -20,7 +20,7 @@ import (
 	"net"
 	"net/http"
 
-	"go.opencensus.io/zpages"
+	"go.opentelemtry.io/zpages"
 )
 
 const (

@@ -23,8 +23,8 @@ import (
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 
-	"go.opencensus.io/trace"
-	"go.opencensus.io/trace/tracestate"
+	"go.opentelemtry.io/trace"
+	"go.opentelemtry.io/trace/tracestate"
 
 	tracepb "github.com/open-telemetry/opentelemetry-proto/gen-go/trace/v1"
 	"github.com/open-telemetry/opentelemetry-service/internal"

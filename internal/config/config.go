@@ -32,19 +32,19 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/exporter/honeycombexporter"
 	"github.com/open-telemetry/opentelemetry-service/exporter/jaegerexporter"
 	"github.com/open-telemetry/opentelemetry-service/exporter/kafkaexporter"
-	"github.com/open-telemetry/opentelemetry-service/exporter/opencensusexporter"
+	"github.com/open-telemetry/opentelemetry-service/exporter/opentelemetryexporter"
 	"github.com/open-telemetry/opentelemetry-service/exporter/prometheusexporter"
 	"github.com/open-telemetry/opentelemetry-service/exporter/stackdriverexporter"
 	"github.com/open-telemetry/opentelemetry-service/exporter/wavefrontexporter"
 	"github.com/open-telemetry/opentelemetry-service/exporter/zipkinexporter"
-	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver"
+	"github.com/open-telemetry/opentelemetry-service/receiver/opentelemetryreceiver"
 	"github.com/open-telemetry/opentelemetry-service/receiver/prometheusreceiver"
 )
 
 // We expect the configuration.yaml file to look like this:
 //
 //  receivers:
-//      opencensus:
+//      opentelemtry:
 //          port: <port>
 //
 //      zipkin:
@@ -98,7 +98,7 @@ type Config struct {
 // * Prometheus (metrics)
 // * Zipkin (traces)
 type Receivers struct {
-	OpenTelemetry *ReceiverConfig       `mapstructure:"opencensus"`
+	OpenTelemetry *ReceiverConfig       `mapstructure:"opentelemtry"`
 	Zipkin     *ReceiverConfig       `mapstructure:"zipkin"`
 	Jaeger     *ReceiverConfig       `mapstructure:"jaeger"`
 	Scribe     *ScribeReceiverConfig `mapstructure:"zipkin-scribe"`
@@ -350,12 +350,12 @@ func (c *Config) OpenCensusReceiverTLSServerCredentials() *TLSCredentials {
 
 // ToOpenCensusReceiverServerOption checks if the TLS credentials
 // in the form of a certificate file and a key file. If they aren't,
-// it will return opencensusreceiver.WithNoopOption() and a nil error.
+// it will return opentelemetryreceiver.WithNoopOption() and a nil error.
 // Otherwise, it will try to retrieve gRPC transport credentials from the file combinations,
 // and create a option, along with any errors encountered while retrieving the credentials.
-func (tlsCreds *TLSCredentials) ToOpenCensusReceiverServerOption() (opt opencensusreceiver.Option, ok bool, err error) {
+func (tlsCreds *TLSCredentials) ToOpenCensusReceiverServerOption() (opt opentelemetryreceiver.Option, ok bool, err error) {
 	if tlsCreds == nil {
-		return opencensusreceiver.WithNoopOption(), false, nil
+		return opentelemetryreceiver.WithNoopOption(), false, nil
 	}
 
 	transportCreds, err := credentials.NewServerTLSFromFile(tlsCreds.CertFile, tlsCreds.KeyFile)
@@ -363,15 +363,15 @@ func (tlsCreds *TLSCredentials) ToOpenCensusReceiverServerOption() (opt opencens
 		return nil, false, err
 	}
 	gRPCCredsOpt := grpc.Creds(transportCreds)
-	return opencensusreceiver.WithGRPCServerOptions(gRPCCredsOpt), true, nil
+	return opentelemetryreceiver.WithGRPCServerOptions(gRPCCredsOpt), true, nil
 }
 
 // OpenCensusReceiverTLSCredentialsServerOption checks if the OpenTelemetry receiver's Configuration
 // has TLS credentials in the form of a certificate file and a key file. If it doesn't
-// have any, it will return opencensusreceiver.WithNoopOption() and a nil error.
+// have any, it will return opentelemetryreceiver.WithNoopOption() and a nil error.
 // Otherwise, it will try to retrieve gRPC transport credentials from the file combinations,
 // and create a option, along with any errors encountered while retrieving the credentials.
-func (c *Config) OpenCensusReceiverTLSCredentialsServerOption() (opt opencensusreceiver.Option, ok bool, err error) {
+func (c *Config) OpenCensusReceiverTLSCredentialsServerOption() (opt opentelemetryreceiver.Option, ok bool, err error) {
 	tlsCreds := c.OpenCensusReceiverTLSServerCredentials()
 	return tlsCreds.ToOpenCensusReceiverServerOption()
 }
@@ -449,7 +449,7 @@ func eqLocalHost(host string) bool {
 //  + zipkin
 //  + jaeger
 //  + kafka
-//  + opencensus
+//  + opentelemtry
 //  + prometheus
 //  + aws-xray
 //  + honeycomb
@@ -464,7 +464,7 @@ func ExportersFromViperConfig(logger *zap.Logger, v *viper.Viper) ([]consumer.Tr
 		{name: "zipkin", fn: zipkinexporter.ZipkinExportersFromViper},
 		{name: "jaeger", fn: jaegerexporter.JaegerExportersFromViper},
 		{name: "kafka", fn: kafkaexporter.KafkaExportersFromViper},
-		{name: "opencensus", fn: opencensusexporter.OpenCensusTraceExportersFromViper},
+		{name: "opentelemtry", fn: opentelemetryexporter.OpenCensusTraceExportersFromViper},
 		{name: "prometheus", fn: prometheusexporter.PrometheusExportersFromViper},
 		{name: "aws-xray", fn: awsexporter.AWSXRayTraceExportersFromViper},
 		{name: "honeycomb", fn: honeycombexporter.HoneycombTraceExportersFromViper},

@@ -83,7 +83,7 @@ queued-exporters:
       timeout: 5s
     # Non-sender exporters can now also be used by setting the exporters section in queued-exporters.
     exporters:
-      opencensus:
+      opentelemtry:
         endpoint: "127.0.0.1:55566"
         cert-pem-file: "server_ca_public.pem" # PEM file used to enable TLS. For trusted CAs from
                                               # system pool use "secure:" setting, see below.

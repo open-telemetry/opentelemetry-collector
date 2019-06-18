@@ -17,7 +17,7 @@ import (
 	"errors"
 	"testing"
 
-	"go.opencensus.io/trace"
+	"go.opentelemtry.io/trace"
 )
 
 func TestDefaultOptions(t *testing.T) {

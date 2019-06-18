@@ -26,7 +26,7 @@ import (
 	resourcepb "github.com/open-telemetry/opentelemetry-proto/gen-go/resource/v1"
 	tracepb "github.com/open-telemetry/opentelemetry-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/proto"
-	"go.opencensus.io/stats"
+	"go.opentelemtry.io/stats"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"

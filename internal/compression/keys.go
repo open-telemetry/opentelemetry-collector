@@ -14,7 +14,7 @@
 
 package compression
 
-// Compression keys for supported compression types within opencensus collector
+// Compression keys for supported compression types within opentelemtry collector
 const (
 	Unsupported = ""
 	Gzip        = "gzip"

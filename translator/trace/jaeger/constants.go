@@ -20,17 +20,17 @@ import (
 
 const (
 	// Jaeger Tags
-	ocTimeEventUnknownType           = "oc.timeevent.unknown.type"
-	ocTimeEventAnnotationDescription = "oc.timeevent.annotation.description"
-	ocTimeEventMessageEventType      = "oc.timeevent.messageevent.type"
-	ocTimeEventMessageEventID        = "oc.timeevent.messageevent.id"
-	ocTimeEventMessageEventUSize     = "oc.timeevent.messageevent.usize"
-	ocTimeEventMessageEventCSize     = "oc.timeevent.messageevent.csize"
-	ocSameProcessAsParentSpan        = "oc.sameprocessasparentspan"
-	ocSpanChildCount                 = "oc.span.childcount"
-	opencensusLanguage               = "opencensus.language"
-	opencensusExporterVersion        = "opencensus.exporterversion"
-	opencensusCoreLibVersion         = "opencensus.corelibversion"
+	ocTimeEventUnknownType           = "opentel.timeevent.unknown.type"
+	ocTimeEventAnnotationDescription = "opentel.timeevent.annotation.description"
+	ocTimeEventMessageEventType      = "opentel.timeevent.messageevent.type"
+	ocTimeEventMessageEventID        = "opentel.timeevent.messageevent.id"
+	ocTimeEventMessageEventUSize     = "opentel.timeevent.messageevent.usize"
+	ocTimeEventMessageEventCSize     = "opentel.timeevent.messageevent.csize"
+	ocSameProcessAsParentSpan        = "opentel.sameprocessasparentspan"
+	ocSpanChildCount                 = "opentel.span.childcount"
+	opentelemetryLanguage               = "opentelemtry.language"
+	opentelemetryExporterVersion        = "opentelemtry.exporterversion"
+	opentelemetryCoreLibVersion         = "opentelemtry.corelibversion"
 )
 
 var (
