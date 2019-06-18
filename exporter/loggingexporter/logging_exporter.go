@@ -17,9 +17,9 @@ package loggingexporter
 import (
 	"context"
 
-	"github.com/open-telemtery/opentelemetry-service/data"
-	"github.com/open-telemtery/opentelemetry-service/exporter"
-	"github.com/open-telemtery/opentelemetry-service/exporter/exporterhelper"
+	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/exporter"
+	"github.com/open-telemetry/opentelemetry-service/exporter/exporterhelper"
 	"go.uber.org/zap"
 )
 

@@ -20,9 +20,9 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/open-telemtery/opentelemetry-service/internal/testutils"
+	"github.com/open-telemetry/opentelemetry-service/internal/testutils"
 
-	"github.com/open-telemtery/opentelemetry-service/internal/zpagesserver"
+	"github.com/open-telemetry/opentelemetry-service/internal/zpagesserver"
 )
 
 func TestApplication_Start(t *testing.T) {

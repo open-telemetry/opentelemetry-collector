@@ -19,13 +19,13 @@ import (
 	"sync"
 	"testing"
 
-	tracepb "github.com/open-telemtery/opentelemetry-proto/gen-go/trace/v1"
+	tracepb "github.com/open-telemetry/opentelemetry-proto/gen-go/trace/v1"
 	"go.opencensus.io/trace"
 
-	"github.com/open-telemtery/opentelemetry-service/data"
-	"github.com/open-telemtery/opentelemetry-service/exporter"
-	"github.com/open-telemtery/opentelemetry-service/observability"
-	"github.com/open-telemtery/opentelemetry-service/observability/observabilitytest"
+	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/exporter"
+	"github.com/open-telemetry/opentelemetry-service/observability"
+	"github.com/open-telemetry/opentelemetry-service/observability/observabilitytest"
 )
 
 const (

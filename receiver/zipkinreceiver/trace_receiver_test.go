@@ -32,14 +32,14 @@ import (
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	zhttp "github.com/openzipkin/zipkin-go/reporter/http"
 
-	commonpb "github.com/open-telemtery/opentelemetry-proto/gen-go/agent/common/v1"
-	tracepb "github.com/open-telemtery/opentelemetry-proto/gen-go/trace/v1"
-	"github.com/open-telemtery/opentelemetry-service/consumer"
-	"github.com/open-telemtery/opentelemetry-service/data"
-	"github.com/open-telemtery/opentelemetry-service/exporter/exportertest"
-	"github.com/open-telemtery/opentelemetry-service/internal"
-	"github.com/open-telemtery/opentelemetry-service/internal/testutils"
-	spandatatranslator "github.com/open-telemtery/opentelemetry-service/translator/trace/spandata"
+	commonpb "github.com/open-telemetry/opentelemetry-proto/gen-go/agent/common/v1"
+	tracepb "github.com/open-telemetry/opentelemetry-proto/gen-go/trace/v1"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
+	"github.com/open-telemetry/opentelemetry-service/internal"
+	"github.com/open-telemetry/opentelemetry-service/internal/testutils"
+	spandatatranslator "github.com/open-telemetry/opentelemetry-service/translator/trace/spandata"
 )
 
 func TestTraceIDConversion(t *testing.T) {

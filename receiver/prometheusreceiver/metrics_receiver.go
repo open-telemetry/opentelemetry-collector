@@ -24,10 +24,10 @@ import (
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
 
-	agentmetricspb "github.com/open-telemtery/opentelemetry-proto/gen-go/agent/metrics/v1"
-	"github.com/open-telemtery/opentelemetry-service/consumer"
-	"github.com/open-telemtery/opentelemetry-service/data"
-	"github.com/open-telemtery/opentelemetry-service/receiver"
+	agentmetricspb "github.com/open-telemetry/opentelemetry-proto/gen-go/agent/metrics/v1"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/receiver"
 	"github.com/orijtech/promreceiver"
 	"github.com/prometheus/prometheus/config"
 )

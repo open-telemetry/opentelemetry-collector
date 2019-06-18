@@ -15,7 +15,7 @@
 package exporter
 
 import (
-	"github.com/open-telemtery/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
 )
 
 // TraceExporter composes TraceConsumer with some additional exporter-specific functions.

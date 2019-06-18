@@ -16,7 +16,7 @@
 // and traces and exports to a configured backend.
 package main
 
-import "github.com/open-telemtery/opentelemetry-service/unisvc"
+import "github.com/open-telemetry/opentelemetry-service/unisvc"
 
 func main() {
 	unisvc.Run()

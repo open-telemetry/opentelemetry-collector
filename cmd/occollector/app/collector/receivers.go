@@ -21,13 +21,13 @@ import (
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
-	"github.com/open-telemtery/opentelemetry-service/cmd/occollector/app/builder"
-	"github.com/open-telemtery/opentelemetry-service/consumer"
-	jaegerreceiver "github.com/open-telemtery/opentelemetry-service/internal/collector/jaeger"
-	ocreceiver "github.com/open-telemtery/opentelemetry-service/internal/collector/opencensus"
-	zipkinreceiver "github.com/open-telemtery/opentelemetry-service/internal/collector/zipkin"
-	zipkinscribereceiver "github.com/open-telemtery/opentelemetry-service/internal/collector/zipkin/scribe"
-	"github.com/open-telemtery/opentelemetry-service/receiver"
+	"github.com/open-telemetry/opentelemetry-service/cmd/occollector/app/builder"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	jaegerreceiver "github.com/open-telemetry/opentelemetry-service/internal/collector/jaeger"
+	ocreceiver "github.com/open-telemetry/opentelemetry-service/internal/collector/opencensus"
+	zipkinreceiver "github.com/open-telemetry/opentelemetry-service/internal/collector/zipkin"
+	zipkinscribereceiver "github.com/open-telemetry/opentelemetry-service/internal/collector/zipkin/scribe"
+	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
 
 func createReceivers(v *viper.Viper, logger *zap.Logger, traceConsumers consumer.TraceConsumer, asyncErrorChan chan<- error) []receiver.TraceReceiver {

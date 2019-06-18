@@ -22,7 +22,7 @@ import (
 	"go.opencensus.io/trace"
 	"go.opencensus.io/trace/tracestate"
 
-	tracepb "github.com/open-telemtery/opentelemetry-proto/gen-go/trace/v1"
+	tracepb "github.com/open-telemetry/opentelemetry-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/golang/protobuf/ptypes/wrappers"
 )

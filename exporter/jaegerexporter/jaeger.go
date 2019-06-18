@@ -19,8 +19,8 @@ import (
 
 	"contrib.go.opencensus.io/exporter/jaeger"
 
-	"github.com/open-telemtery/opentelemetry-service/consumer"
-	"github.com/open-telemtery/opentelemetry-service/exporter/exporterwrapper"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/exporter/exporterwrapper"
 )
 
 // Slight modified version of go/src/contrib.go.opencensus.io/exporter/jaeger/jaeger.go

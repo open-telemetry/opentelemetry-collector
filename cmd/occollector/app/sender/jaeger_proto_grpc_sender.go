@@ -22,9 +22,9 @@ import (
 
 	jaegerproto "github.com/jaegertracing/jaeger/proto-gen/api_v2"
 
-	"github.com/open-telemtery/opentelemetry-service/consumer"
-	"github.com/open-telemtery/opentelemetry-service/data"
-	jaegertranslator "github.com/open-telemtery/opentelemetry-service/translator/trace/jaeger"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/data"
+	jaegertranslator "github.com/open-telemetry/opentelemetry-service/translator/trace/jaeger"
 )
 
 // JaegerProtoGRPCSender forwards spans encoded in the jaeger proto

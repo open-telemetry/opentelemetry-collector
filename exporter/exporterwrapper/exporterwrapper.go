@@ -24,12 +24,12 @@ import (
 
 	"go.opencensus.io/trace"
 
-	tracepb "github.com/open-telemtery/opentelemetry-proto/gen-go/trace/v1"
-	"github.com/open-telemtery/opentelemetry-service/data"
-	"github.com/open-telemtery/opentelemetry-service/exporter"
-	"github.com/open-telemtery/opentelemetry-service/exporter/exporterhelper"
-	"github.com/open-telemtery/opentelemetry-service/internal"
-	spandatatranslator "github.com/open-telemtery/opentelemetry-service/translator/trace/spandata"
+	tracepb "github.com/open-telemetry/opentelemetry-proto/gen-go/trace/v1"
+	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/exporter"
+	"github.com/open-telemetry/opentelemetry-service/exporter/exporterhelper"
+	"github.com/open-telemetry/opentelemetry-service/internal"
+	spandatatranslator "github.com/open-telemetry/opentelemetry-service/translator/trace/spandata"
 )
 
 // NewExporterWrapper returns a consumer.TraceConsumer that converts OpenCensus Proto TraceData

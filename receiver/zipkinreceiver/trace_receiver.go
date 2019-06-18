@@ -30,20 +30,20 @@ import (
 	"sync"
 
 	"github.com/apache/thrift/lib/go/thrift"
-	commonpb "github.com/open-telemtery/opentelemetry-proto/gen-go/agent/common/v1"
-	tracepb "github.com/open-telemtery/opentelemetry-proto/gen-go/trace/v1"
+	commonpb "github.com/open-telemetry/opentelemetry-proto/gen-go/agent/common/v1"
+	tracepb "github.com/open-telemetry/opentelemetry-proto/gen-go/trace/v1"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	zipkinproto "github.com/openzipkin/zipkin-go/proto/v2"
 	"go.opencensus.io/trace"
 
-	"github.com/open-telemtery/opentelemetry-service/consumer"
-	"github.com/open-telemtery/opentelemetry-service/data"
-	"github.com/open-telemtery/opentelemetry-service/internal"
-	"github.com/open-telemtery/opentelemetry-service/observability"
-	"github.com/open-telemtery/opentelemetry-service/receiver"
-	tracetranslator "github.com/open-telemtery/opentelemetry-service/translator/trace"
-	zipkintranslator "github.com/open-telemtery/opentelemetry-service/translator/trace/zipkin"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/internal"
+	"github.com/open-telemetry/opentelemetry-service/observability"
+	"github.com/open-telemetry/opentelemetry-service/receiver"
+	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
+	zipkintranslator "github.com/open-telemetry/opentelemetry-service/translator/trace/zipkin"
 )
 
 var (
@@ -470,7 +470,7 @@ const statusCodeUnknown = 2
 
 func extractProtoStatus(zs *zipkinmodel.SpanModel) *tracepb.Status {
 	// The status is stored with the "error" key
-	// See https://github.com/open-telemtery/opentelemetry-go/blob/1eb9a13c7dd02141e065a665f6bf5c99a090a16a/exporter/zipkin/zipkin.go#L160-L165
+	// See https://github.com/census-instrumentation/opencensus-proto/blob/1eb9a13c7dd02141e065a665f6bf5c99a090a16a/exporter/zipkin/zipkin.go#L160-L165
 	if zs == nil || len(zs.Tags) == 0 {
 		return nil
 	}
@@ -565,7 +565,7 @@ func zipkinTagsToTraceAttributes(tags map[string]string) *tracepb.Span_Attribute
 	for key, value := range tags {
 		// We did a translation from "boolean" to "string"
 		// in OpenCensus-Go's Zipkin exporter as per
-		// https://github.com/open-telemtery/opentelemetry-go/blob/1eb9a13c7dd02141e065a665f6bf5c99a090a16a/exporter/zipkin/zipkin.go#L138-L155
+		// https://github.com/census-instrumentation/opencensus-proto/blob/1eb9a13c7dd02141e065a665f6bf5c99a090a16a/exporter/zipkin/zipkin.go#L138-L155
 		switch value {
 		case "true", "false":
 			amap[key] = &tracepb.AttributeValue{

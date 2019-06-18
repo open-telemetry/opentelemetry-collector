@@ -19,7 +19,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 
-	"github.com/open-telemtery/opentelemetry-service/processor/attributekeyprocessor"
+	"github.com/open-telemetry/opentelemetry-service/processor/attributekeyprocessor"
 )
 
 func TestGlobalProcessorCfg_InitFromViper(t *testing.T) {

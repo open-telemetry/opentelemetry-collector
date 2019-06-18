@@ -24,10 +24,10 @@ import (
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
-	"github.com/open-telemtery/opentelemetry-service/cmd/occollector/app/builder"
-	"github.com/open-telemtery/opentelemetry-service/consumer"
-	"github.com/open-telemtery/opentelemetry-service/receiver"
-	"github.com/open-telemtery/opentelemetry-service/receiver/zipkinreceiver"
+	"github.com/open-telemetry/opentelemetry-service/cmd/occollector/app/builder"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/receiver"
+	"github.com/open-telemetry/opentelemetry-service/receiver/zipkinreceiver"
 )
 
 // Start starts the Zipkin receiver endpoint.

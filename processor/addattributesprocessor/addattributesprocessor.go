@@ -18,12 +18,12 @@ import (
 	"context"
 	"errors"
 
-	tracepb "github.com/open-telemtery/opentelemetry-proto/gen-go/trace/v1"
+	tracepb "github.com/open-telemetry/opentelemetry-proto/gen-go/trace/v1"
 	"github.com/spf13/cast"
 
-	"github.com/open-telemtery/opentelemetry-service/consumer"
-	"github.com/open-telemtery/opentelemetry-service/data"
-	"github.com/open-telemtery/opentelemetry-service/processor"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/processor"
 )
 
 var (

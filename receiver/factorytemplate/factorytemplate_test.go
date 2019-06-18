@@ -26,9 +26,9 @@ import (
 	"go.uber.org/zap"
 	yaml "gopkg.in/yaml.v2"
 
-	"github.com/open-telemtery/opentelemetry-service/consumer"
-	"github.com/open-telemtery/opentelemetry-service/exporter/exportertest"
-	"github.com/open-telemtery/opentelemetry-service/receiver"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
+	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
 
 func TestNewTraceReceiverFactory(t *testing.T) {

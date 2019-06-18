@@ -18,9 +18,9 @@ import (
 	"reflect"
 	"testing"
 
-	metricspb "github.com/open-telemtery/opentelemetry-proto/gen-go/metrics/v1"
-	tracepb "github.com/open-telemtery/opentelemetry-proto/gen-go/trace/v1"
-	"github.com/open-telemtery/opentelemetry-service/data"
+	metricspb "github.com/open-telemetry/opentelemetry-proto/gen-go/metrics/v1"
+	tracepb "github.com/open-telemetry/opentelemetry-proto/gen-go/trace/v1"
+	"github.com/open-telemetry/opentelemetry-service/data"
 )
 
 func TestSinkTraceExporter(t *testing.T) {

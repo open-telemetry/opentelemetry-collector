@@ -22,18 +22,18 @@ import (
 	"time"
 
 	"contrib.go.opencensus.io/exporter/ocagent"
-	agenttracepb "github.com/open-telemtery/opentelemetry-proto/gen-go/agent/trace/v1"
+	agenttracepb "github.com/open-telemetry/opentelemetry-proto/gen-go/agent/trace/v1"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
 
-	"github.com/open-telemtery/opentelemetry-service/consumer"
-	"github.com/open-telemtery/opentelemetry-service/data"
-	"github.com/open-telemtery/opentelemetry-service/exporter/exporterhelper"
-	"github.com/open-telemtery/opentelemetry-service/internal"
-	"github.com/open-telemtery/opentelemetry-service/internal/compression"
-	compressiongrpc "github.com/open-telemtery/opentelemetry-service/internal/compression/grpc"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/exporter/exporterhelper"
+	"github.com/open-telemetry/opentelemetry-service/internal"
+	"github.com/open-telemetry/opentelemetry-service/internal/compression"
+	compressiongrpc "github.com/open-telemetry/opentelemetry-service/internal/compression/grpc"
 )
 
 // keepaliveConfig exposes the keepalive.ClientParameters to be used by the exporter.

@@ -20,13 +20,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemtery/opentelemetry-service/consumer"
-	"github.com/open-telemtery/opentelemetry-service/data"
-	"github.com/open-telemtery/opentelemetry-service/internal/collector/processor/idbatcher"
-	"github.com/open-telemtery/opentelemetry-service/internal/collector/sampling"
-	tracetranslator "github.com/open-telemtery/opentelemetry-service/translator/trace"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/internal/collector/processor/idbatcher"
+	"github.com/open-telemetry/opentelemetry-service/internal/collector/sampling"
+	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
 
-	tracepb "github.com/open-telemtery/opentelemetry-proto/gen-go/trace/v1"
+	tracepb "github.com/open-telemetry/opentelemetry-proto/gen-go/trace/v1"
 	"go.uber.org/zap"
 )
 

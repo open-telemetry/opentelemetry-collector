@@ -17,10 +17,10 @@ package multiconsumer
 import (
 	"context"
 
-	"github.com/open-telemtery/opentelemetry-service/consumer"
-	"github.com/open-telemtery/opentelemetry-service/data"
-	"github.com/open-telemtery/opentelemetry-service/internal"
-	"github.com/open-telemtery/opentelemetry-service/processor"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/internal"
+	"github.com/open-telemetry/opentelemetry-service/processor"
 )
 
 // NewMetricsProcessor wraps multiple metrics consumers in a single one.

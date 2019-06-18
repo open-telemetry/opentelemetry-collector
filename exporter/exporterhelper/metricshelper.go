@@ -17,11 +17,11 @@ package exporterhelper
 import (
 	"context"
 
-	"github.com/open-telemtery/opentelemetry-service/observability"
+	"github.com/open-telemetry/opentelemetry-service/observability"
 	"go.opencensus.io/trace"
 
-	"github.com/open-telemtery/opentelemetry-service/data"
-	"github.com/open-telemtery/opentelemetry-service/exporter"
+	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/exporter"
 )
 
 // PushMetricsData is a helper function that is similar to ConsumeMetricsData but also returns

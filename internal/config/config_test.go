@@ -19,9 +19,9 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/open-telemtery/opentelemetry-service/exporter/zipkinexporter"
-	"github.com/open-telemtery/opentelemetry-service/internal/config"
-	"github.com/open-telemtery/opentelemetry-service/internal/config/viperutils"
+	"github.com/open-telemetry/opentelemetry-service/exporter/zipkinexporter"
+	"github.com/open-telemetry/opentelemetry-service/internal/config"
+	"github.com/open-telemetry/opentelemetry-service/internal/config/viperutils"
 )
 
 // Issue #233: Zipkin receiver and exporter loopback detection

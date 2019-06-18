@@ -33,13 +33,13 @@ import (
 	"google.golang.org/grpc"
 
 	"contrib.go.opencensus.io/exporter/ocagent"
-	commonpb "github.com/open-telemtery/opentelemetry-proto/gen-go/agent/common/v1"
-	agenttracepb "github.com/open-telemtery/opentelemetry-proto/gen-go/agent/trace/v1"
-	tracepb "github.com/open-telemtery/opentelemetry-proto/gen-go/trace/v1"
-	"github.com/open-telemtery/opentelemetry-service/consumer"
-	"github.com/open-telemtery/opentelemetry-service/data"
-	"github.com/open-telemtery/opentelemetry-service/internal"
-	"github.com/open-telemtery/opentelemetry-service/observability"
+	commonpb "github.com/open-telemetry/opentelemetry-proto/gen-go/agent/common/v1"
+	agenttracepb "github.com/open-telemetry/opentelemetry-proto/gen-go/agent/trace/v1"
+	tracepb "github.com/open-telemetry/opentelemetry-proto/gen-go/trace/v1"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/internal"
+	"github.com/open-telemetry/opentelemetry-service/observability"
 	"go.opencensus.io/trace"
 	"go.opencensus.io/trace/tracestate"
 )
@@ -304,7 +304,7 @@ func TestExportMultiplexing(t *testing.T) {
 }
 
 // The first message without a Node MUST be rejected and teardown the connection.
-// See https://github.com/open-telemtery/opentelemetry-service/issues/53
+// See https://github.com/census-instrumentation/opencensus-service/issues/53
 func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 	spanSink := newSpanAppender()
 
@@ -372,7 +372,7 @@ func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 
 // If the first message is valid (has a non-nil Node) and has spans, those
 // spans should be received and NEVER discarded.
-// See https://github.com/open-telemtery/opentelemetry-service/issues/51
+// See https://github.com/census-instrumentation/opencensus-service/issues/51
 func TestExportProtocolConformation_spansInFirstMessage(t *testing.T) {
 	spanSink := newSpanAppender()
 

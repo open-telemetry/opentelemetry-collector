@@ -18,10 +18,10 @@ import (
 	"reflect"
 	"testing"
 
-	metricspb "github.com/open-telemtery/opentelemetry-proto/gen-go/metrics/v1"
-	tracepb "github.com/open-telemtery/opentelemetry-proto/gen-go/trace/v1"
-	"github.com/open-telemtery/opentelemetry-service/data"
-	"github.com/open-telemtery/opentelemetry-service/exporter/exportertest"
+	metricspb "github.com/open-telemetry/opentelemetry-proto/gen-go/metrics/v1"
+	tracepb "github.com/open-telemetry/opentelemetry-proto/gen-go/trace/v1"
+	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
 )
 
 func TestNopTraceProcessorNoErrors(t *testing.T) {

@@ -23,8 +23,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemtery/opentelemetry-service/exporter/opencensusexporter"
-	"github.com/open-telemtery/opentelemetry-service/internal/configmodels"
+	"github.com/open-telemetry/opentelemetry-service/exporter/opencensusexporter"
+	"github.com/open-telemetry/opentelemetry-service/internal/configmodels"
 )
 
 func TestExportersBuilder_Build(t *testing.T) {

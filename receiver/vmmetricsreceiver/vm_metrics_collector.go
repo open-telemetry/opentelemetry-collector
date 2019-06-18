@@ -24,11 +24,11 @@ import (
 	"github.com/prometheus/procfs"
 	"go.opencensus.io/trace"
 
-	"github.com/open-telemtery/opentelemetry-service/consumer"
-	"github.com/open-telemtery/opentelemetry-service/data"
-	"github.com/open-telemtery/opentelemetry-service/internal"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/internal"
 
-	metricspb "github.com/open-telemtery/opentelemetry-proto/gen-go/metrics/v1"
+	metricspb "github.com/open-telemetry/opentelemetry-proto/gen-go/metrics/v1"
 )
 
 // VMMetricsCollector is a struct that collects and reports VM and process metrics (cpu, mem, etc).

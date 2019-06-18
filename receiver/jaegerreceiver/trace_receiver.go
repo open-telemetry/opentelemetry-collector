@@ -37,10 +37,10 @@ import (
 	"github.com/uber/tchannel-go/thrift"
 	"go.uber.org/zap"
 
-	"github.com/open-telemtery/opentelemetry-service/consumer"
-	"github.com/open-telemtery/opentelemetry-service/observability"
-	"github.com/open-telemtery/opentelemetry-service/receiver"
-	jaegertranslator "github.com/open-telemtery/opentelemetry-service/translator/trace/jaeger"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/observability"
+	"github.com/open-telemetry/opentelemetry-service/receiver"
+	jaegertranslator "github.com/open-telemetry/opentelemetry-service/translator/trace/jaeger"
 )
 
 // Configuration defines the behavior and the ports that

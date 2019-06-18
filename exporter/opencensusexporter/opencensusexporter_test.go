@@ -19,7 +19,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemtery/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/data"
 	"github.com/google/go-cmp/cmp"
 	"github.com/spf13/viper"
 )

@@ -17,8 +17,8 @@ package exportertest
 import (
 	"context"
 
-	"github.com/open-telemtery/opentelemetry-service/data"
-	"github.com/open-telemtery/opentelemetry-service/exporter"
+	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/exporter"
 )
 
 // NopExporterOption represents options that can be applied to a NopExporter.

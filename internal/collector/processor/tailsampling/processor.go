@@ -21,16 +21,16 @@ import (
 	"sync/atomic"
 	"time"
 
-	tracepb "github.com/open-telemtery/opentelemetry-proto/gen-go/trace/v1"
+	tracepb "github.com/open-telemetry/opentelemetry-proto/gen-go/trace/v1"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 	"go.uber.org/zap"
 
-	"github.com/open-telemtery/opentelemetry-service/consumer"
-	"github.com/open-telemtery/opentelemetry-service/data"
-	"github.com/open-telemtery/opentelemetry-service/internal/collector/processor/idbatcher"
-	"github.com/open-telemtery/opentelemetry-service/internal/collector/sampling"
-	"github.com/open-telemtery/opentelemetry-service/observability"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/internal/collector/processor/idbatcher"
+	"github.com/open-telemetry/opentelemetry-service/internal/collector/sampling"
+	"github.com/open-telemetry/opentelemetry-service/observability"
 )
 
 // Policy combines a sampling policy evaluator with the destinations to be

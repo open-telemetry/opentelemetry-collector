@@ -15,7 +15,7 @@
 package processor
 
 import (
-	"github.com/open-telemtery/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
 )
 
 // TraceProcessor composes TraceConsumer with some additional processor-specific functions.

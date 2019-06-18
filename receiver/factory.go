@@ -18,7 +18,7 @@ import (
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
-	"github.com/open-telemtery/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
 )
 
 // TraceReceiverFactory is an interface that builds a new TraceReceiver based on

@@ -17,11 +17,11 @@ package opencensusreceiver
 import (
 	"context"
 
-	"github.com/open-telemtery/opentelemetry-service/internal/configmodels"
-	"github.com/open-telemtery/opentelemetry-service/internal/factories"
+	"github.com/open-telemetry/opentelemetry-service/internal/configmodels"
+	"github.com/open-telemetry/opentelemetry-service/internal/factories"
 
-	"github.com/open-telemtery/opentelemetry-service/consumer"
-	"github.com/open-telemtery/opentelemetry-service/receiver"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
 
 var _ = factories.RegisterReceiverFactory(&receiverFactory{})

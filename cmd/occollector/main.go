@@ -22,7 +22,7 @@ package main
 import (
 	"log"
 
-	"github.com/open-telemtery/opentelemetry-service/cmd/occollector/app/collector"
+	"github.com/open-telemetry/opentelemetry-service/cmd/occollector/app/collector"
 )
 
 func main() {

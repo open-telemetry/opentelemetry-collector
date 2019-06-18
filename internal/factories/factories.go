@@ -21,10 +21,10 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/open-telemtery/opentelemetry-service/consumer"
-	"github.com/open-telemtery/opentelemetry-service/internal/configmodels"
-	"github.com/open-telemtery/opentelemetry-service/processor"
-	"github.com/open-telemtery/opentelemetry-service/receiver"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/internal/configmodels"
+	"github.com/open-telemetry/opentelemetry-service/processor"
+	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
 
 ///////////////////////////////////////////////////////////////////////////////

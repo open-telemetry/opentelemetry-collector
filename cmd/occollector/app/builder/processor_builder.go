@@ -19,7 +19,7 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/open-telemtery/opentelemetry-service/processor/attributekeyprocessor"
+	"github.com/open-telemetry/opentelemetry-service/processor/attributekeyprocessor"
 )
 
 // SenderType indicates the type of sender

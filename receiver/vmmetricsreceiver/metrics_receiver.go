@@ -24,7 +24,7 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/open-telemtery/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
 )
 
 var (

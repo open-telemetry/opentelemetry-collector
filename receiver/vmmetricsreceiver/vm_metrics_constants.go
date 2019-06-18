@@ -15,7 +15,7 @@
 package vmmetricsreceiver
 
 import (
-	metricspb "github.com/open-telemtery/opentelemetry-proto/gen-go/metrics/v1"
+	metricspb "github.com/open-telemetry/opentelemetry-proto/gen-go/metrics/v1"
 )
 
 // VM and process metric constants.

@@ -19,14 +19,14 @@ import (
 	"reflect"
 	"testing"
 
-	tracepb "github.com/open-telemtery/opentelemetry-proto/gen-go/trace/v1"
+	tracepb "github.com/open-telemetry/opentelemetry-proto/gen-go/trace/v1"
 	"github.com/google/go-cmp/cmp"
 
-	"github.com/open-telemtery/opentelemetry-service/consumer"
-	"github.com/open-telemtery/opentelemetry-service/data"
-	"github.com/open-telemtery/opentelemetry-service/exporter/exportertest"
-	"github.com/open-telemtery/opentelemetry-service/processor"
-	"github.com/open-telemtery/opentelemetry-service/processor/processortest"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
+	"github.com/open-telemetry/opentelemetry-service/processor"
+	"github.com/open-telemetry/opentelemetry-service/processor/processortest"
 )
 
 func TestNewTraceProcessor(t *testing.T) {

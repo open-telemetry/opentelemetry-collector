@@ -17,12 +17,12 @@ package configv2
 import (
 	"context"
 
-	"github.com/open-telemtery/opentelemetry-service/consumer"
-	"github.com/open-telemtery/opentelemetry-service/data"
-	"github.com/open-telemtery/opentelemetry-service/internal/configmodels"
-	"github.com/open-telemtery/opentelemetry-service/internal/factories"
-	"github.com/open-telemtery/opentelemetry-service/processor"
-	"github.com/open-telemtery/opentelemetry-service/receiver"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/internal/configmodels"
+	"github.com/open-telemetry/opentelemetry-service/internal/factories"
+	"github.com/open-telemetry/opentelemetry-service/processor"
+	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
 
 // ExampleReceiver is for testing purposes. We are defining an example config and factory

@@ -32,10 +32,10 @@ import (
 	"go.opencensus.io/metric/metricdata"
 	"go.opencensus.io/metric/metricproducer"
 
-	commonpb "github.com/open-telemtery/opentelemetry-proto/gen-go/agent/common/v1"
-	metricspb "github.com/open-telemtery/opentelemetry-proto/gen-go/metrics/v1"
-	"github.com/open-telemtery/opentelemetry-service/exporter/exportertest"
-	"github.com/open-telemtery/opentelemetry-service/internal/config/viperutils"
+	commonpb "github.com/open-telemetry/opentelemetry-proto/gen-go/agent/common/v1"
+	metricspb "github.com/open-telemetry/opentelemetry-proto/gen-go/metrics/v1"
+	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
+	"github.com/open-telemetry/opentelemetry-service/internal/config/viperutils"
 	"github.com/golang/protobuf/ptypes/timestamp"
 )
 

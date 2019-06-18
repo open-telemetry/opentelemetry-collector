@@ -28,13 +28,13 @@ import (
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
-	"github.com/open-telemtery/opentelemetry-service/cmd/occollector/app/builder"
-	"github.com/open-telemtery/opentelemetry-service/consumer"
-	"github.com/open-telemtery/opentelemetry-service/internal/config/viperutils"
-	"github.com/open-telemtery/opentelemetry-service/internal/configv2"
-	"github.com/open-telemtery/opentelemetry-service/internal/pprofserver"
-	"github.com/open-telemtery/opentelemetry-service/internal/zpagesserver"
-	"github.com/open-telemtery/opentelemetry-service/receiver"
+	"github.com/open-telemetry/opentelemetry-service/cmd/occollector/app/builder"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/internal/config/viperutils"
+	"github.com/open-telemetry/opentelemetry-service/internal/configv2"
+	"github.com/open-telemetry/opentelemetry-service/internal/pprofserver"
+	"github.com/open-telemetry/opentelemetry-service/internal/zpagesserver"
+	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
 
 var (

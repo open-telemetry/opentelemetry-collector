@@ -19,9 +19,9 @@ import (
 
 	"go.opencensus.io/trace"
 
-	"github.com/open-telemtery/opentelemetry-service/data"
-	"github.com/open-telemtery/opentelemetry-service/exporter"
-	"github.com/open-telemtery/opentelemetry-service/observability"
+	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/exporter"
+	"github.com/open-telemetry/opentelemetry-service/observability"
 )
 
 // PushTraceData is a helper function that is similar to ConsumeTraceData but also returns

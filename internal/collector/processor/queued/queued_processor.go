@@ -25,11 +25,11 @@ import (
 	"go.opencensus.io/tag"
 	"go.uber.org/zap"
 
-	"github.com/open-telemtery/opentelemetry-service/consumer"
-	"github.com/open-telemtery/opentelemetry-service/data"
-	"github.com/open-telemtery/opentelemetry-service/internal/collector/processor"
-	"github.com/open-telemtery/opentelemetry-service/internal/collector/processor/nodebatcher"
-	"github.com/open-telemtery/opentelemetry-service/internal/collector/telemetry"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/internal/collector/processor"
+	"github.com/open-telemetry/opentelemetry-service/internal/collector/processor/nodebatcher"
+	"github.com/open-telemetry/opentelemetry-service/internal/collector/telemetry"
 )
 
 type queuedSpanProcessor struct {

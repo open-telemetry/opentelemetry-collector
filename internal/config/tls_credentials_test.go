@@ -20,7 +20,7 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/open-telemtery/opentelemetry-service/internal/config/viperutils"
+	"github.com/open-telemetry/opentelemetry-service/internal/config/viperutils"
 )
 
 func TestTLSConfigByParsing(t *testing.T) {

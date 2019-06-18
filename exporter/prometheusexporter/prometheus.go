@@ -21,8 +21,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/open-telemtery/opentelemetry-service/consumer"
-	"github.com/open-telemtery/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/data"
 	"github.com/spf13/viper"
 
 	// TODO: once this repository has been transferred to the

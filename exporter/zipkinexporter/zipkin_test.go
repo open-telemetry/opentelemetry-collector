@@ -28,14 +28,14 @@ import (
 	"strings"
 	"testing"
 
-	commonpb "github.com/open-telemtery/opentelemetry-proto/gen-go/agent/common/v1"
+	commonpb "github.com/open-telemetry/opentelemetry-proto/gen-go/agent/common/v1"
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
 
-	"github.com/open-telemtery/opentelemetry-service/internal/config/viperutils"
-	"github.com/open-telemtery/opentelemetry-service/internal/testutils"
-	"github.com/open-telemtery/opentelemetry-service/processor/multiconsumer"
-	"github.com/open-telemtery/opentelemetry-service/receiver/zipkinreceiver"
+	"github.com/open-telemetry/opentelemetry-service/internal/config/viperutils"
+	"github.com/open-telemetry/opentelemetry-service/internal/testutils"
+	"github.com/open-telemetry/opentelemetry-service/processor/multiconsumer"
+	"github.com/open-telemetry/opentelemetry-service/receiver/zipkinreceiver"
 )
 
 func TestZipkinEndpointFromNode(t *testing.T) {

@@ -27,12 +27,12 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
-	commonpb "github.com/open-telemtery/opentelemetry-proto/gen-go/agent/common/v1"
-	agenttracepb "github.com/open-telemtery/opentelemetry-proto/gen-go/agent/trace/v1"
-	tracepb "github.com/open-telemtery/opentelemetry-proto/gen-go/trace/v1"
-	"github.com/open-telemtery/opentelemetry-service/data"
-	"github.com/open-telemtery/opentelemetry-service/exporter/exportertest"
-	"github.com/open-telemtery/opentelemetry-service/internal"
+	commonpb "github.com/open-telemetry/opentelemetry-proto/gen-go/agent/common/v1"
+	agenttracepb "github.com/open-telemetry/opentelemetry-proto/gen-go/agent/trace/v1"
+	tracepb "github.com/open-telemetry/opentelemetry-proto/gen-go/trace/v1"
+	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
+	"github.com/open-telemetry/opentelemetry-service/internal"
 )
 
 func TestGrpcGateway_endToEnd(t *testing.T) {
@@ -175,7 +175,7 @@ func TestGrpcGatewayCors_endToEnd(t *testing.T) {
 	verifyCorsResp(t, url, "disallowed-origin.com", 200, false)
 }
 
-// As per Issue https://github.com/open-telemtery/opentelemetry-service/issues/366
+// As per Issue https://github.com/census-instrumentation/opencensus-service/issues/366
 // the agent's mux should be able to accept all Proto affiliated content-types and not
 // redirect them to the web-grpc-gateway endpoint.
 func TestAcceptAllGRPCProtoAffiliatedContentTypes(t *testing.T) {
@@ -203,7 +203,7 @@ func TestAcceptAllGRPCProtoAffiliatedContentTypes(t *testing.T) {
 	}
 
 	// Now start the client with the various Proto affiliated gRPC Content-Types,
-	// as we encountered in https://github.com/open-telemtery/opentelemetry-service/issues/366
+	// as we encountered in https://github.com/census-instrumentation/opencensus-service/issues/366
 	protoAffiliatedContentTypes := []string{"application/grpc", "application/grpc+proto"}
 	for _, contentType := range protoAffiliatedContentTypes {
 		if err := runContentTypeTests(addr, asContentType, contentType); err != nil {

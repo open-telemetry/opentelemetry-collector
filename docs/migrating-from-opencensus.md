@@ -9,7 +9,7 @@ The contrib package and vendor-specific receivers and exporters will continue to
 
 This is the action plan that also shows the progress. Tick the boxes after the task is complete.
 
-[ ] Copy all commits from https://github.com/open-telemtery/opentelemetry-service to https://github.com/open-telemetry/opentelemetry-service
+[ ] Copy all commits from https://github.com/open-telemetry/opentelemetry-service to https://github.com/open-telemetry/opentelemetry-service
 Make sure commit history is preserved.
 
 [ ] Remove receivers and exporters that are not part of core. We will keep the following in the core:
@@ -35,7 +35,7 @@ The functionally of the new `otsvc` will heavily lean on existing implementation
 
 [ ] Provide guidelines and example implementations for vendors to follow when they add new receivers and exporters to the contrib package.
 
-[ ] Create a new repository for contrib and copy all commits from https://github.com/open-telemtery/opentelemetry-service to https://github.com/open-telemetry/opentelemetry-service
+[ ] Create a new repository for contrib and copy all commits from https://github.com/open-telemetry/opentelemetry-service to https://github.com/open-telemetry/opentelemetry-service
 Make sure commit history is preserved.
 
 [ ] Cleanup the `contrib` repo to only contain additional vendor specific receivers and exporters.

@@ -23,9 +23,9 @@ import (
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
-	"github.com/open-telemtery/opentelemetry-service/cmd/occollector/app/builder"
-	"github.com/open-telemtery/opentelemetry-service/processor/processortest"
-	"github.com/open-telemtery/opentelemetry-service/receiver/opencensusreceiver"
+	"github.com/open-telemetry/opentelemetry-service/cmd/occollector/app/builder"
+	"github.com/open-telemetry/opentelemetry-service/processor/processortest"
+	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver"
 )
 
 func TestStart(t *testing.T) {
@@ -93,7 +93,7 @@ func TestStart(t *testing.T) {
 			}
 			if got != nil {
 				// TODO: (@pjanotti) current StopTraceReception, stop the whole receiver.
-				// See https://github.com/open-telemtery/opentelemetry-service/issues/559
+				// See https://github.com/census-instrumentation/opencensus-service/issues/559
 				got.(*opencensusreceiver.Receiver).Stop()
 			}
 		})

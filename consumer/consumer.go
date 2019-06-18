@@ -17,7 +17,7 @@ package consumer
 import (
 	"context"
 
-	"github.com/open-telemtery/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/data"
 )
 
 // MetricsConsumer is an interface that receives data.MetricsData, process it as needed, and

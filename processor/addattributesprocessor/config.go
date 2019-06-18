@@ -15,7 +15,7 @@
 package addattributesprocessor
 
 import (
-	"github.com/open-telemtery/opentelemetry-service/internal/configmodels"
+	"github.com/open-telemetry/opentelemetry-service/internal/configmodels"
 )
 
 // ConfigV2 defines configuration for Attributes processor.

@@ -23,9 +23,9 @@ import (
 
 	"github.com/golang/protobuf/ptypes/timestamp"
 
-	metricspb "github.com/open-telemtery/opentelemetry-proto/gen-go/metrics/v1"
-	"github.com/open-telemtery/opentelemetry-service/data"
-	viperutils "github.com/open-telemtery/opentelemetry-service/internal/config/viperutils"
+	metricspb "github.com/open-telemetry/opentelemetry-proto/gen-go/metrics/v1"
+	"github.com/open-telemetry/opentelemetry-service/data"
+	viperutils "github.com/open-telemetry/opentelemetry-service/internal/config/viperutils"
 )
 
 func TestPrometheusExporter(t *testing.T) {

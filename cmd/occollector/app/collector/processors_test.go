@@ -21,10 +21,10 @@ import (
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
-	"github.com/open-telemtery/opentelemetry-service/processor/addattributesprocessor"
-	"github.com/open-telemtery/opentelemetry-service/processor/attributekeyprocessor"
-	"github.com/open-telemtery/opentelemetry-service/processor/multiconsumer"
-	"github.com/open-telemtery/opentelemetry-service/processor/processortest"
+	"github.com/open-telemetry/opentelemetry-service/processor/addattributesprocessor"
+	"github.com/open-telemetry/opentelemetry-service/processor/attributekeyprocessor"
+	"github.com/open-telemetry/opentelemetry-service/processor/multiconsumer"
+	"github.com/open-telemetry/opentelemetry-service/processor/processortest"
 )
 
 func Test_startProcessor(t *testing.T) {

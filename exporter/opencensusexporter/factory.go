@@ -24,12 +24,12 @@ import (
 
 	"contrib.go.opencensus.io/exporter/ocagent"
 
-	"github.com/open-telemtery/opentelemetry-service/consumer"
-	"github.com/open-telemtery/opentelemetry-service/exporter/exporterhelper"
-	"github.com/open-telemtery/opentelemetry-service/internal/compression"
-	compressiongrpc "github.com/open-telemtery/opentelemetry-service/internal/compression/grpc"
-	"github.com/open-telemtery/opentelemetry-service/internal/configmodels"
-	"github.com/open-telemtery/opentelemetry-service/internal/factories"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/exporter/exporterhelper"
+	"github.com/open-telemetry/opentelemetry-service/internal/compression"
+	compressiongrpc "github.com/open-telemetry/opentelemetry-service/internal/compression/grpc"
+	"github.com/open-telemetry/opentelemetry-service/internal/configmodels"
+	"github.com/open-telemetry/opentelemetry-service/internal/factories"
 )
 
 var _ = factories.RegisterExporterFactory(&exporterFactory{})

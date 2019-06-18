@@ -21,9 +21,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemtery/opentelemetry-service/internal/configmodels"
-	"github.com/open-telemtery/opentelemetry-service/internal/configv2"
-	"github.com/open-telemtery/opentelemetry-service/internal/factories"
+	"github.com/open-telemetry/opentelemetry-service/internal/configmodels"
+	"github.com/open-telemetry/opentelemetry-service/internal/configv2"
+	"github.com/open-telemetry/opentelemetry-service/internal/factories"
 )
 
 var _ = configv2.RegisterTestFactories()

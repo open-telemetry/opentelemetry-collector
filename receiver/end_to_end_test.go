@@ -19,13 +19,13 @@ import (
 	"log"
 	"time"
 
-	"github.com/open-telemtery/opentelemetry-service/exporter/loggingexporter"
+	"github.com/open-telemetry/opentelemetry-service/exporter/loggingexporter"
 
 	"contrib.go.opencensus.io/exporter/ocagent"
 	"go.opencensus.io/trace"
 
-	"github.com/open-telemtery/opentelemetry-service/receiver"
-	"github.com/open-telemtery/opentelemetry-service/receiver/opencensusreceiver"
+	"github.com/open-telemetry/opentelemetry-service/receiver"
+	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver"
 	"go.uber.org/zap"
 )
 

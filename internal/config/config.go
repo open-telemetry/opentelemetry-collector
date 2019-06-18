@@ -26,14 +26,14 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
-	"github.com/open-telemtery/opentelemetry-service/consumer"
-	"github.com/open-telemtery/opentelemetry-service/exporter/jaegerexporter"
-	"github.com/open-telemtery/opentelemetry-service/exporter/kafkaexporter"
-	"github.com/open-telemtery/opentelemetry-service/exporter/opencensusexporter"
-	"github.com/open-telemtery/opentelemetry-service/exporter/prometheusexporter"
-	"github.com/open-telemtery/opentelemetry-service/exporter/zipkinexporter"
-	"github.com/open-telemtery/opentelemetry-service/receiver/opencensusreceiver"
-	"github.com/open-telemtery/opentelemetry-service/receiver/prometheusreceiver"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/exporter/jaegerexporter"
+	"github.com/open-telemetry/opentelemetry-service/exporter/kafkaexporter"
+	"github.com/open-telemetry/opentelemetry-service/exporter/opencensusexporter"
+	"github.com/open-telemetry/opentelemetry-service/exporter/prometheusexporter"
+	"github.com/open-telemetry/opentelemetry-service/exporter/zipkinexporter"
+	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver"
+	"github.com/open-telemetry/opentelemetry-service/receiver/prometheusreceiver"
 )
 
 // We expect the configuration.yaml file to look like this:

@@ -23,10 +23,10 @@ import (
 	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	jaeger "github.com/jaegertracing/jaeger/model"
 
-	commonpb "github.com/open-telemtery/opentelemetry-proto/gen-go/agent/common/v1"
-	tracepb "github.com/open-telemtery/opentelemetry-proto/gen-go/trace/v1"
-	"github.com/open-telemtery/opentelemetry-service/data"
-	tracetranslator "github.com/open-telemtery/opentelemetry-service/translator/trace"
+	commonpb "github.com/open-telemetry/opentelemetry-proto/gen-go/agent/common/v1"
+	tracepb "github.com/open-telemetry/opentelemetry-proto/gen-go/trace/v1"
+	"github.com/open-telemetry/opentelemetry-service/data"
+	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
 )
 
 var (

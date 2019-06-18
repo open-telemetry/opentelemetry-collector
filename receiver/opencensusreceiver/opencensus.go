@@ -25,16 +25,16 @@ import (
 
 	"google.golang.org/grpc"
 
-	"github.com/open-telemtery/opentelemetry-service/consumer"
-	"github.com/open-telemtery/opentelemetry-service/observability"
-	"github.com/open-telemtery/opentelemetry-service/receiver/opencensusreceiver/ocmetrics"
-	"github.com/open-telemtery/opentelemetry-service/receiver/opencensusreceiver/octrace"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/observability"
+	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver/ocmetrics"
+	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver/octrace"
 	gatewayruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/rs/cors"
 	"github.com/soheilhy/cmux"
 
-	agentmetricspb "github.com/open-telemtery/opentelemetry-proto/gen-go/agent/metrics/v1"
-	agenttracepb "github.com/open-telemtery/opentelemetry-proto/gen-go/agent/trace/v1"
+	agentmetricspb "github.com/open-telemetry/opentelemetry-proto/gen-go/agent/metrics/v1"
+	agenttracepb "github.com/open-telemetry/opentelemetry-proto/gen-go/agent/trace/v1"
 )
 
 // Receiver is the type that exposes Trace and Metrics reception.

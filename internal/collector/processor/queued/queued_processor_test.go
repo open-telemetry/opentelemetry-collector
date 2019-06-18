@@ -20,10 +20,10 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/open-telemtery/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
 
-	tracepb "github.com/open-telemtery/opentelemetry-proto/gen-go/trace/v1"
-	"github.com/open-telemtery/opentelemetry-service/data"
+	tracepb "github.com/open-telemetry/opentelemetry-proto/gen-go/trace/v1"
+	"github.com/open-telemetry/opentelemetry-service/data"
 )
 
 func TestQueueProcessorHappyPath(t *testing.T) {

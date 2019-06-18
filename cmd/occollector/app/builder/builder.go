@@ -20,7 +20,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/open-telemtery/opentelemetry-service/internal/config"
+	"github.com/open-telemetry/opentelemetry-service/internal/config"
 	"github.com/spf13/viper"
 )
 

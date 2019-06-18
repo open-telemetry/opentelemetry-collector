@@ -19,7 +19,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemtery/opentelemetry-service/internal"
+	"github.com/open-telemetry/opentelemetry-service/internal"
 )
 
 func TestTimeConverters(t *testing.T) {

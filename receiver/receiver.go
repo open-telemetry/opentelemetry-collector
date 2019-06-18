@@ -17,7 +17,7 @@ package receiver
 import (
 	"context"
 
-	_ "github.com/open-telemtery/opentelemetry-service/internal/compression/grpc" // load in supported grpc compression encodings
+	_ "github.com/open-telemetry/opentelemetry-service/internal/compression/grpc" // load in supported grpc compression encodings
 )
 
 // A TraceReceiver is an "arbitrary data"-to-"trace proto span" converter.

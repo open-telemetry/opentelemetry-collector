@@ -18,11 +18,11 @@ import (
 	"errors"
 	"testing"
 
-	metricspb "github.com/open-telemtery/opentelemetry-proto/gen-go/metrics/v1"
+	metricspb "github.com/open-telemetry/opentelemetry-proto/gen-go/metrics/v1"
 	"go.opencensus.io/trace"
 
-	"github.com/open-telemtery/opentelemetry-service/data"
-	"github.com/open-telemtery/opentelemetry-service/exporter"
+	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/exporter"
 )
 
 func TestMetricsExporter_InvalidName(t *testing.T) {

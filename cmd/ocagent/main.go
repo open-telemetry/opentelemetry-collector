@@ -30,20 +30,20 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	"github.com/open-telemtery/opentelemetry-service/consumer"
-	"github.com/open-telemtery/opentelemetry-service/internal/config"
-	"github.com/open-telemtery/opentelemetry-service/internal/config/viperutils"
-	"github.com/open-telemtery/opentelemetry-service/internal/pprofserver"
-	"github.com/open-telemtery/opentelemetry-service/internal/version"
-	"github.com/open-telemtery/opentelemetry-service/internal/zpagesserver"
-	"github.com/open-telemtery/opentelemetry-service/observability"
-	"github.com/open-telemtery/opentelemetry-service/processor/multiconsumer"
-	"github.com/open-telemtery/opentelemetry-service/receiver/jaegerreceiver"
-	"github.com/open-telemtery/opentelemetry-service/receiver/opencensusreceiver"
-	"github.com/open-telemtery/opentelemetry-service/receiver/prometheusreceiver"
-	"github.com/open-telemtery/opentelemetry-service/receiver/vmmetricsreceiver"
-	"github.com/open-telemtery/opentelemetry-service/receiver/zipkinreceiver"
-	"github.com/open-telemtery/opentelemetry-service/receiver/zipkinreceiver/zipkinscribereceiver"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/internal/config"
+	"github.com/open-telemetry/opentelemetry-service/internal/config/viperutils"
+	"github.com/open-telemetry/opentelemetry-service/internal/pprofserver"
+	"github.com/open-telemetry/opentelemetry-service/internal/version"
+	"github.com/open-telemetry/opentelemetry-service/internal/zpagesserver"
+	"github.com/open-telemetry/opentelemetry-service/observability"
+	"github.com/open-telemetry/opentelemetry-service/processor/multiconsumer"
+	"github.com/open-telemetry/opentelemetry-service/receiver/jaegerreceiver"
+	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver"
+	"github.com/open-telemetry/opentelemetry-service/receiver/prometheusreceiver"
+	"github.com/open-telemetry/opentelemetry-service/receiver/vmmetricsreceiver"
+	"github.com/open-telemetry/opentelemetry-service/receiver/zipkinreceiver"
+	"github.com/open-telemetry/opentelemetry-service/receiver/zipkinreceiver/zipkinscribereceiver"
 )
 
 var rootCmd = &cobra.Command{
@@ -225,7 +225,7 @@ func runOCReceiver(logger *zap.Logger, acfg *config.Config, tc consumer.TraceCon
 	}
 
 	// Temporarily disabling the grpc metrics since they do not provide good data at this moment,
-	// See https://github.com/open-telemtery/opentelemetry-service/issues/287
+	// See https://github.com/census-instrumentation/opencensus-service/issues/287
 	// if err := view.Register(ocgrpc.DefaultServerViews...); err != nil {
 	// 	return nil, fmt.Errorf("Failed to register ocgrpc.DefaultServerViews: %v", err)
 	// }

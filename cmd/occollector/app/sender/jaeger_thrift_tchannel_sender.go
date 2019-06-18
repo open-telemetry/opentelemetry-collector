@@ -21,9 +21,9 @@ import (
 
 	reporter "github.com/jaegertracing/jaeger/cmd/agent/app/reporter"
 
-	"github.com/open-telemtery/opentelemetry-service/consumer"
-	"github.com/open-telemtery/opentelemetry-service/data"
-	jaegertranslator "github.com/open-telemtery/opentelemetry-service/translator/trace/jaeger"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/data"
+	jaegertranslator "github.com/open-telemetry/opentelemetry-service/translator/trace/jaeger"
 )
 
 // JaegerThriftTChannelSender takes span batches and sends them

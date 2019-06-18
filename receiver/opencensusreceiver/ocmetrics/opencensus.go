@@ -23,13 +23,13 @@ import (
 
 	"go.opencensus.io/trace"
 
-	commonpb "github.com/open-telemtery/opentelemetry-proto/gen-go/agent/common/v1"
-	agentmetricspb "github.com/open-telemtery/opentelemetry-proto/gen-go/agent/metrics/v1"
-	metricspb "github.com/open-telemtery/opentelemetry-proto/gen-go/metrics/v1"
-	resourcepb "github.com/open-telemtery/opentelemetry-proto/gen-go/resource/v1"
-	"github.com/open-telemtery/opentelemetry-service/consumer"
-	"github.com/open-telemtery/opentelemetry-service/data"
-	"github.com/open-telemtery/opentelemetry-service/observability"
+	commonpb "github.com/open-telemetry/opentelemetry-proto/gen-go/agent/common/v1"
+	agentmetricspb "github.com/open-telemetry/opentelemetry-proto/gen-go/agent/metrics/v1"
+	metricspb "github.com/open-telemetry/opentelemetry-proto/gen-go/metrics/v1"
+	resourcepb "github.com/open-telemetry/opentelemetry-proto/gen-go/resource/v1"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/observability"
 )
 
 // Receiver is the type used to handle metrics from OpenCensus exporters.
@@ -101,7 +101,7 @@ func (ocr *Receiver) Export(mes agentmetricspb.MetricsService_ExportServer) erro
 		}
 
 		// TODO(songya): differentiate between unset and nil resource. See
-		// https://github.com/open-telemtery/opentelemetry-proto/issues/146.
+		// https://github.com/census-instrumentation/opencensus-proto/issues/146.
 		if recv.Resource != nil {
 			resource = recv.Resource
 		}

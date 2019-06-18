@@ -20,8 +20,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/open-telemtery/opentelemetry-service/observability"
-	"github.com/open-telemtery/opentelemetry-service/observability/observabilitytest"
+	"github.com/open-telemetry/opentelemetry-service/observability"
+	"github.com/open-telemetry/opentelemetry-service/observability/observabilitytest"
 )
 
 const (
