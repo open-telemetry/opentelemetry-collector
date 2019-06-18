@@ -1,6 +1,6 @@
 language: go
 
-go_import_path: github.com/census-instrumentation/opencensus-service
+go_import_path: github.com/open-telemetry/opentelemetry-service
 
 go:
   - 1.12.x

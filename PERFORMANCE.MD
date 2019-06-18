@@ -1,18 +1,18 @@
-# OpenCensus Service Performance
+# OpenTelemetry Service Performance
 
 The performance numbers that follow were generated using version 0.1.3 of the
-OpenCensus Service, are applicable primarily to the OpenCensus Collector and
+OpenTelemetry Service, are applicable primarily to the OpenTelemetry Collector and
 are measured only for traces. In the future, more configurations will be tested.
 
-Note with the OpenCensus Agent you can expect as good if not better performance
-with lower resource utilization. This is because the OpenCensus Agent does not
+Note with the OpenTelemetry Agent you can expect as good if not better performance
+with lower resource utilization. This is because the OpenTelemetry Agent does not
 today support features such as batching or retries and will not support
 tail-sampling.
 
-It is important to note that the performance of the OpenCensus Collector depends
+It is important to note that the performance of the OpenTelemetry Collector depends
 on a variety of factors including:
 
-* The receiving format: OpenCensus (55678), Jaeger thrift (14268) or Zipkin v2 JSON (9411)
+* The receiving format: OpenTelemetry (55678), Jaeger thrift (14268) or Zipkin v2 JSON (9411)
 * The size of the spans (tests are based on number of attributes): 20
 * Whether tail-sampling is enabled or not
 * CPU / Memory allocation
@@ -35,8 +35,8 @@ impact the results of the tests. The parameters used are defined below.
 
 | Span<br>Format    | CPU<br>(2+ GHz) | RAM<br>(GB) | Sustained<br>Rate | Recommended<br>Maximum |
 | :---:             | :---:           | :---:       | :---:             | :---:                  |
-| OpenCensus        | 1               | 2           | ~12K              | 10K                    |
-| OpenCensus        | 2               | 4           | ~24K              | 20K                    |
+| OpenTelemetry        | 1               | 2           | ~12K              | 10K                    |
+| OpenTelemetry        | 2               | 4           | ~24K              | 20K                    |
 | Jaeger Thrift     | 1               | 2           | ~14K              | 12K                    |
 | Jaeger Thrift     | 2               | 4           | ~27.5K            | 24K                    |
 | Zipkin v2 JSON    | 1               | 2           | ~10.5K            | 9K                     |
@@ -56,8 +56,8 @@ service
 
 | Span<br>Format    | CPU<br>(2+ GHz) | RAM<br>(GB) | Sustained<br>Rate | Recommended<br>Maximum |
 | :---:             | :---:           | :---:       | :---:             | :---:                  |
-| OpenCensus        | 1               | 2           | ~9K               | 8K                     |
-| OpenCensus        | 2               | 4           | ~18K              | 16K                    |
+| OpenTelemetry        | 1               | 2           | ~9K               | 8K                     |
+| OpenTelemetry        | 2               | 4           | ~18K              | 16K                    |
 | Jaeger Thrift     | 1               | 6           | ~11.5K            | 10K                    |
 | Jaeger Thrift     | 2               | 8           | ~23K              | 20K                    |
 | Zipkin v2 JSON    | 1               | 6           | ~8.5K             | 7K                     |
