@@ -1,11 +1,11 @@
-# OpenCensus Service Design Specs
+# OpenTelemetry Service Design Specs
 
-This document describes the architecture design and implementation of OpenCensus Agent and
-OpenCensus Collector.
+This document describes the architecture design and implementation of OpenTelemetry Agent and
+OpenTelemetry Collector.
 
 # Table of contents
 - [Goals](#goals)
-- [OpenCensus Agent](#opencensus-agent)
+- [OpenTelemetry Agent](#opentelemetry-agent)
     - [Architecture overview](#agent-architecture-overview)
     - [Communication](#agent-communication)
     - [Protocol Workflow](#agent-protocol-workflow)
@@ -13,7 +13,7 @@ OpenCensus Collector.
         - [Receivers](#agent-impl-receivers)
         - [Agent Core](#agent-impl-agent-core)
         - [Exporters](#agent-impl-exporters)
-- [OpenCensus Collector](#opencensus-collector)
+- [OpenTelemetry Collector](#opentelemetry-collector)
     - [Architecture overview](#collector-architecture-overview)
 
 ## <a name="goals"></a>Goals
@@ -23,32 +23,32 @@ optionally run a daemon on the host and it will read the
 collected data and upload to the configured backend.
 * Binaries can be instrumented without thinking about the exporting story.
 Allows open source binary projects (e.g. web servers like Caddy or Istio Mixer)
-to adopt OpenCensus without having to link any exporters into their binary.
+to adopt OpenTelemetry without having to link any exporters into their binary.
 * Easier to scale the exporter development. Not every language has to
 implement support for each backend.
 * Custom daemons containing only the required exporters compiled in can be created.
 
-## <a name="opencensus-agent"></a>OpenCensus Agent
+## <a name="opentelemetry-agent"></a>OpenTelemetry Agent
 
 ### <a name="agent-architecture-overview"></a>Architecture Overview
 
 On a typical VM/container, there are user applications running in some processes/pods with
-OpenCensus Library (Library). Previously, Library did all the recording, collecting, sampling and
+OpenTelemetry Library (Library). Previously, Library did all the recording, collecting, sampling and
 aggregation on spans/stats/metrics, and exported them to other persistent storage backends via the
 Library exporters, or displayed them on local zpages. This pattern has several drawbacks, for
 example:
 
-1. For each OpenCensus Library, exporters/zpages need to be re-implemented in native languages.
+1. For each OpenTelemetry Library, exporters/zpages need to be re-implemented in native languages.
 2. In some programming languages (e.g Ruby, PHP), it is difficult to do the stats aggregation in
 process.
-3. To enable exporting OpenCensus spans/stats/metrics, application users need to manually add
+3. To enable exporting OpenTelemetry spans/stats/metrics, application users need to manually add
 library exporters and redeploy their binaries. This is especially difficult when there’s already
-an incident and users want to use OpenCensus to investigate what’s going on right away.
+an incident and users want to use OpenTelemetry to investigate what’s going on right away.
 4. Application users need to take the responsibility in configuring and initializing exporters.
 This is error-prone (e.g they may not set up the correct credentials\monitored resources), and
-users may be reluctant to “pollute” their code with OpenCensus.
+users may be reluctant to “pollute” their code with OpenTelemetry.
 
-To resolve the issues above, we are introducing OpenCensus Agent (Agent). Agent runs as a daemon
+To resolve the issues above, we are introducing OpenTelemetry Agent (Agent). Agent runs as a daemon
 in the VM/container and can be deployed independent of Library. Once Agent is deployed and
 running, it should be able to retrieve spans/stats/metrics from Library, export them to other
 backends. We MAY also give Agent the ability to push configurations (e.g sampling probability) to
@@ -84,7 +84,7 @@ assoicated, Agent should handle the data properly, as if they were sent in a sub
 Identifier is no longer needed once the streams are established.
 3. On Library side, if connection to Agent failed, Library should retry indefintely if possible,
 subject to available/configured memory buffer size. (Reason: consider environments where the
-running applications are already instrumented with OpenCensus Library but Agent is not deployed
+running applications are already instrumented with OpenTelemetry Library but Agent is not deployed
 yet. Sometime in the future, we can simply roll out the Agent to those environments and Library
 would automatically connect to Agent with indefinite retries. Zero changes are required to the
 applications.) Depending on the language and implementation, retry can be done in either
@@ -105,7 +105,7 @@ invocations.
 
 The Agent consists of three main parts:
 
-1. The receivers of different instrumentation libraries, such as OpenCensus, Zipkin,
+1. The receivers of different instrumentation libraries, such as OpenTelemetry, Zipkin,
 Istio Mixer, Prometheus client, etc. Receivers act as the “frontend” or “gateway” of
 Agent. In addition, there MAY be one special receiver for receiving configuration updates
 from outside.
@@ -149,18 +149,18 @@ Once in a while, Agent Core will push `SpanProto` with `Node` to each exporter. 
 receiving them, each exporter will translate `SpanProto` to the format supported by the
 backend (e.g Jaeger Thrift Span), and then push them to corresponding backend or service.
 
-## <a name="opencensus-collector"></a>OpenCensus Collector
+## <a name="opentelemetry-collector"></a>OpenTelemetry Collector
 
 ### <a name="collector-architecture-overview"></a>Architecture Overview
 
-The OpenCensus Collector runs as a standalone instance and receives spans and
-metrics exporterd by one or more OpenCensus Agents or Libraries, or by
+The OpenTelemetry Collector runs as a standalone instance and receives spans and
+metrics exporterd by one or more OpenTelemetry Agents or Libraries, or by
 tasks/agents that emit in one of the supported protocols. The Collector is
 configured to send data to the configured exporter(s). The following figure
 summarizes the deployment architecture:
 
-![OpenCensus Collector Architecture](https://user-images.githubusercontent.com/10536136/46637070-65f05f80-cb0f-11e8-96e6-bc56468486b3.png "OpenCensus Collector Architecture")
+![OpenTelemetry Collector Architecture](https://user-images.githubusercontent.com/10536136/46637070-65f05f80-cb0f-11e8-96e6-bc56468486b3.png "OpenTelemetry Collector Architecture")
 
-The OpenCensus Collector can also be deployed in other configurations, such as
+The OpenTelemetry Collector can also be deployed in other configurations, such as
 receiving data from other agents or clients in one of the formats supported by
 its receivers.

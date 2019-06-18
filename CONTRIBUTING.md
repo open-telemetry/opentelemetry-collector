@@ -1,27 +1,52 @@
-# How to contribute
+# Contributing Guide
 
-We'd love to accept your patches and contributions to this project. There are
-just a few small guidelines you need to follow.
+We'd love your help!
 
-## Contributor License Agreement
+## Report a bug or requesting feature
 
-Contributions to this project must be accompanied by a Contributor License
-Agreement. You (or your employer) retain the copyright to your contribution,
-this simply gives us permission to use and redistribute your contributions as
-part of the project. Head over to <https://cla.developers.google.com/> to see
-your current agreements on file or to sign a new one.
+Reporting bugs is an important contribution. Please make sure to include:
 
-You generally only need to submit a CLA once, so if you've already submitted one
-(even if it was for a different project), you probably don't need to do it
-again.
+* Expected and actual behavior
+* OpenTelemetry version you are running
+* If possible, steps to reproduce
 
-## Code reviews
+## How to contribute
 
-All submissions, including submissions by project members, require review. We
-use GitHub pull requests for this purpose. Consult [GitHub Help] for more
-information on using pull requests.
+### Before you start
 
-[GitHub Help]: https://help.github.com/articles/about-pull-requests/
+Please read project contribution
+[guide](https://github.com/open-telemetry/community/blob/master/CONTRIBUTING.md)
+for general practices for OpenTelemetry project.
+
+### Fork
+
+In the interest of keeping this repository clean and manageable, you should
+work from a fork. To create a fork, click the 'Fork' button at the top of the
+repository, then clone the fork locally using `git clone
+git@github.com:USERNAME/opentelemetry-service.git`.
+
+You should also add this repository as an "upstream" repo to your local copy,
+in order to keep it up to date. You can add this as a remote like so:
+
+`git remote add upstream https://github.com/open-telemetry/opentelemetry-service.git
+
+# verify that the upstream exists
+git remote -v`
+
+To update your fork, fetch the upstream repo's branches and commits, then merge your master with upstream's master:
+
+```
+git fetch upstream
+git checkout master
+git merge upstream/master
+```
+
+Remember to always work in a branch of your local copy, as you might otherwise
+have to contend with conflicts in master.
+
+Please also see [GitHub
+workflow](https://github.com/open-telemetry/community/blob/master/CONTRIBUTING.md#github-workflow)
+section of general project contributing guide.
 
 ## Required Tools
 
@@ -38,14 +63,14 @@ Working with the project sources requires the following tools:
 Fork the repo, checkout the upstream repo to your GOPATH by:
 
 ```
-$ GO111MODULE="" go get -d github.com/census-instrumentation/opencensus-service
+$ GO111MODULE="" go get -d github.com/open-telemetry/opentelemetry-service
 ```
 
 Add your fork as an origin:
 
 ```shell
-$ cd $(go env GOPATH)/src/github.com/census-instrumentation/opencensus-service
-$ git remote add fork git@github.com:YOUR_GITHUB_USERNAME/opencensus-service.git
+$ cd $(go env GOPATH)/src/github.com/open-telemetry/opentelemetry-service
+$ git remote add fork git@github.com:YOUR_GITHUB_USERNAME/opentelemetry-service.git
 ```
 
 Run tests, fmt and lint:

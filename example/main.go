@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Sample contains a program that exports to the OpenCensus service.
+// Sample contains a program that exports to the OpenTelemetry service.
 package main
 
 import (
@@ -35,7 +35,7 @@ func main() {
 		ocagent.WithInsecure(),
 		ocagent.WithServiceName(fmt.Sprintf("example-go-%d", os.Getpid())))
 	if err != nil {
-		log.Fatalf("Failed to create ocagent-exporter: %v", err)
+		log.Fatalf("Failed to create opentelagent-exporter: %v", err)
 	}
 	trace.RegisterExporter(oce)
 	view.RegisterExporter(oce)
