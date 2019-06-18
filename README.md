@@ -1,9 +1,7 @@
 # OpenTelemetry Service
 
-<aside class="notice">
-This is a pre-release version of the OpenTelemetry Service.
+*IMPORTANT:* This is a pre-released version of the OpenTelemetry Service.
 For now, please use the [OpenCensus Service](https://github.com/census-instrumentation/opencensus-service).
-</aside>
 
 [![Build Status][travis-image]][travis-url]
 [![GoDoc][godoc-image]][godoc-url]
