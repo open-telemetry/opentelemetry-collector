@@ -16,7 +16,7 @@ GOVET=go vet
 GOOS=$(shell go env GOOS)
 
 GIT_SHA=$(shell git rev-parse --short HEAD)
-BUILD_INFO_IMPORT_PATH=github.com/census-instrumentation/opencensus-service/internal/version
+BUILD_INFO_IMPORT_PATH=github.com/open-telemetry/opentelemetry-service/internal/version
 BUILD_X1=-X $(BUILD_INFO_IMPORT_PATH).GitHash=$(GIT_SHA)
 ifdef VERSION
 BUILD_X2=-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)
@@ -44,7 +44,7 @@ travis-ci: fmt vet lint test-with-cover
 .PHONY: test-with-cover
 test-with-cover:
 	@echo Verifying that all packages have test files to count in coverage
-	@scripts/check-test-files.sh $(subst github.com/census-instrumentation/opencensus-service/,./,$(ALL_PKGS))
+	@scripts/check-test-files.sh $(subst github.com/open-telemetry/opentelemetry-service/,./,$(ALL_PKGS))
 	@echo pre-compiling tests
 	@time go test -i $(ALL_PKGS)
 	$(GOTEST) $(GOTEST_OPT_WITH_COVERAGE) $(ALL_PKGS)
