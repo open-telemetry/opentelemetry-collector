@@ -106,10 +106,6 @@ ifndef COMPONENT
 	$(error COMPONENT variable was not defined)
 endif
 
-.PHONY: docker-agent
-docker-agent:
-	COMPONENT=agent $(MAKE) docker-component
-
 .PHONY: docker-collector
 docker-collector:
 	COMPONENT=collector $(MAKE) docker-component
