@@ -61,6 +61,8 @@ func (f *receiverFactory) CustomUnmarshaler() factories.CustomUnmarshaler {
 // CreateDefaultConfig creates the default configuration for Jaeger receiver.
 func (f *receiverFactory) CreateDefaultConfig() configmodels.Receiver {
 	return &ConfigV2{
+		TypeVal: typeStr,
+		NameVal: typeStr,
 		Protocols: map[string]*configmodels.ReceiverSettings{
 			protoThriftTChannel: {
 				Enabled:  false,

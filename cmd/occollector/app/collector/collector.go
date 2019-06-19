@@ -44,12 +44,13 @@ var (
 
 // Application represents a collector application
 type Application struct {
-	v           *viper.Viper
-	logger      *zap.Logger
-	healthCheck *healthcheck.HealthCheck
-	processor   consumer.TraceConsumer
-	receivers   []receiver.TraceReceiver
-	exporters   builder.Exporters
+	v              *viper.Viper
+	logger         *zap.Logger
+	healthCheck    *healthcheck.HealthCheck
+	processor      consumer.TraceConsumer
+	receivers      []receiver.TraceReceiver
+	exporters      builder.Exporters
+	builtReceivers builder.Receivers
 
 	// stopTestChan is used to terminate the application in end to end tests.
 	stopTestChan chan struct{}
@@ -89,6 +90,7 @@ func (app *Application) init() {
 }
 
 func (app *Application) setupPProf() {
+	app.logger.Info("Setting up profiler...")
 	err := pprofserver.SetupFromViper(app.asyncErrorChannel, app.v, app.logger)
 	if err != nil {
 		log.Fatalf("Failed to start net/http/pprof: %v", err)
@@ -96,6 +98,7 @@ func (app *Application) setupPProf() {
 }
 
 func (app *Application) setupHealthCheck() {
+	app.logger.Info("Setting up health checks...")
 	var err error
 	app.healthCheck, err = newHealthCheck(app.v, app.logger)
 	if err != nil {
@@ -104,6 +107,7 @@ func (app *Application) setupHealthCheck() {
 }
 
 func (app *Application) setupZPages() {
+	app.logger.Info("Setting up zPages...")
 	zpagesPort := app.v.GetInt(zpagesserver.ZPagesHTTPPort)
 	if zpagesPort > 0 {
 		closeZPages, err := zpagesserver.Run(app.asyncErrorChannel, zpagesPort)
@@ -120,6 +124,7 @@ func (app *Application) setupZPages() {
 }
 
 func (app *Application) setupTelemetry() {
+	app.logger.Info("Setting up own telemetry...")
 	err := AppTelemetry.init(app.asyncErrorChannel, app.v, app.logger)
 	if err != nil {
 		app.logger.Error("Failed to initialize telemetry", zap.Error(err))
@@ -129,6 +134,8 @@ func (app *Application) setupTelemetry() {
 
 // runAndWaitForShutdownEvent waits for one of the shutdown events that can happen.
 func (app *Application) runAndWaitForShutdownEvent() {
+	app.logger.Info("Everything is ready. Begin running and processing data.")
+
 	// Plug SIGTERM signal into a channel.
 	signalsChannel := make(chan os.Signal, 1)
 	signal.Notify(signalsChannel, os.Interrupt, syscall.SIGTERM)
@@ -222,11 +229,15 @@ func (app *Application) Start() error {
 }
 
 func (app *Application) setupPipelines() {
+	app.logger.Info("Loading configuration...")
+
 	// Load configuration.
 	config, err := configv2.Load(app.v)
 	if err != nil {
 		log.Fatalf("Cannot load configuration: %v", err)
 	}
+
+	app.logger.Info("Applying configuration...")
 
 	// Pipeline is built backwards, starting from exporters, so that we create objects
 	// which are referenced before objects which reference them.
@@ -239,12 +250,22 @@ func (app *Application) setupPipelines() {
 
 	// Create pipelines and their processors and plug exporters to the
 	// end of the pipelines.
-	_, err = builder.NewPipelinesBuilder(app.logger, config, app.exporters).Build()
+	pipelines, err := builder.NewPipelinesBuilder(app.logger, config, app.exporters).Build()
 	if err != nil {
 		log.Fatalf("Cannot load configuration: %v", err)
 	}
 
-	// TODO: create receivers and plug them into the start of the pipelines.
+	// Create receivers and plug them into the start of the pipelines.
+	app.builtReceivers, err = builder.NewReceiversBuilder(app.logger, config, pipelines).Build()
+	if err != nil {
+		log.Fatalf("Cannot load configuration: %v", err)
+	}
+
+	app.logger.Info("Starting receivers...")
+	err = app.builtReceivers.StartAll(app.logger, app.asyncErrorChannel)
+	if err != nil {
+		log.Fatalf("Cannot start receivers: %v", err)
+	}
 }
 
 func (app *Application) shutdownPipelines() {
@@ -252,7 +273,8 @@ func (app *Application) shutdownPipelines() {
 	// giving senders a chance to send all their data. This may take time, the allowed
 	// time should be part of configuration.
 
-	// TODO: shutdown receivers.
+	app.logger.Info("Stopping receivers...")
+	app.builtReceivers.StopAll()
 
 	// TODO: shutdown processors
 

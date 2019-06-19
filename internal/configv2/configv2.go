@@ -191,6 +191,8 @@ func loadReceivers(v *viper.Viper) (configmodels.Receivers, error) {
 
 		// Create the default config for this receiver.
 		receiverCfg := factory.CreateDefaultConfig()
+		receiverCfg.SetType(typeStr)
+		receiverCfg.SetName(fullName)
 
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
