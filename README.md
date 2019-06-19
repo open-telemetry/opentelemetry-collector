@@ -86,7 +86,7 @@ $ kubectl apply -f example/k8s.yaml
 ### <a name="getting-started-standalone"></a>Standalone
 
 Create an Agent [configuration](#config) file based on the options described
-below. By default, the Agent has the `opentelemetry` receiver enabled, but no
+below. By default, the Agent has the `opencensus` receiver enabled, but no
 exporters configured.
 
 Build the Agent, see [Usage](##agent-usage),
@@ -98,7 +98,7 @@ $ 2018/10/08 21:38:00 Running OpenTelemetry receiver as a gRPC service at "127.0
 ```
 
 Create an Collector [configuration](#config) file based on the options
-described below. By default, the Collector has the `opentelemetry` receiver
+described below. By default, the Collector has the `opencensus` receiver
 enabled, but no exporters configured.
 
 Build the Collector and start it:
