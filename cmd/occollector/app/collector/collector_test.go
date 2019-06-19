@@ -80,7 +80,7 @@ func TestApplication_StartUnified(t *testing.T) {
 		App.v.Set(portArg[i], port)
 	}
 
-	App.v.Set("config", "testdata/unisvc-config.yaml")
+	App.v.Set("config", "testdata/otelsvc-config.yaml")
 
 	appDone := make(chan struct{})
 	go func() {

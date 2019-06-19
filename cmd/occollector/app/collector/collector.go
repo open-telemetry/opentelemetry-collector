@@ -293,7 +293,7 @@ func (app *Application) executeUnified() {
 // given by the user.
 func (app *Application) StartUnified() error {
 	rootCmd := &cobra.Command{
-		Use:  "unisvc",
+		Use:  "otelsvc",
 		Long: "OpenTelemetry Service",
 		Run: func(cmd *cobra.Command, args []string) {
 			app.init()
