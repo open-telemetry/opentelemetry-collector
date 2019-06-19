@@ -19,19 +19,16 @@ For now, please use the [OpenCensus Service](https://github.com/open-telemetry/o
     - [Receivers](#config-receivers)
     - [Exporters](#config-exporters)
     - [Diagnostics](#config-diagnostics)
-- [OpenTelemetry Agent](#opentelemetry-agent)
-    - [Usage](#agent-usage)
-- [OpenTelemetry Collector](#opentelemetry-collector)
     - [Global Attributes](#global-attributes)
     - [Intelligent Sampling](#tail-sampling)
-    - [Usage](#collector-usage)
+- [Usage](#usage)
 
 ## Introduction
 
-The OpenTelemetry Service is an component that can collect traces and metrics
-from processes instrumented by OpenTelemetry or other monitoring/tracing
-libraries (Jaeger, Prometheus, etc.), does aggregation and smart sampling, and
-export traces and metrics to one or more monitoring/tracing backends.
+The OpenTelemetry Service can collect traces and metrics from processes
+instrumented by OpenTelemetry or other monitoring/tracing libraries (Jaeger,
+Prometheus, etc.), handles aggregation and smart sampling, and export traces
+and metrics to one or more monitoring/tracing backends.
 
 Some frameworks and ecosystems are now providing out-of-the-box instrumentation
 by using OpenTelemetry, but the user is still expected to register an exporter
@@ -50,17 +47,25 @@ is just configure and deploy the OpenTelemetry Service separately. The
 OpenTelemetry Service will then automatically collect traces and metrics and
 export to any backend of users' choice.
 
-Currently the OpenTelemetry Service consists of two components, [OpenTelemetry
-Agent](#opentelemetry-agent) and [OpenTelemetry Collector](#opentelemetry-collector).
+Currently the OpenTelemetry Service consists of a single binary and two
+deployment methods:
+
+1. [Agent](#opentelemetry-agent) running with the application or on the same host as the application
+2. [Collector](#opentelemetry-collector) running as a standalone application
+
 For the detailed design specs, please see [DESIGN.md](DESIGN.md).
 
 ## <a name="deploy"></a>Deployment
 
-The OpenTelemetry Service can be deployed in a variety of different ways. The
-OpenTelemetry Agent can be deployed with the application either as a separate
-process, as a sidecar, or via a Kubernetes daemonset. Typically, the
-OpenTelemetry Collector is deployed separately as either a Docker container,
+The OpenTelemetry Service can be deployed in a variety of different ways
+depending on requirements. The Agent can be deployed with the application
+either as a separate process, as a sidecar, or via a Kubernetes daemonset. The
+Collector is deployed as a separate application as either a Docker container,
 VM, or Kubernetes pod.
+
+While the Agent and Collector share the same binary, the configuration between
+the two may differ depending on requirements (e.g. queue size and feature-set
+enabled).
 
 ![deployment-models](images/opentelemetry-service-deployment-models.png)
 
@@ -81,26 +86,26 @@ $ kubectl apply -f example/k8s.yaml
 ### <a name="getting-started-standalone"></a>Standalone
 
 Create an Agent [configuration](#config) file based on the options described
-below. Please note the Agent requires the `opentelemetry` receiver be enabled. By
-default, the Agent has no exporters configured.
+below. By default, the Agent has the `opencensus` receiver enabled, but no
+exporters configured.
 
 Build the Agent, see [Usage](##agent-usage),
 and start it:
 
 ```shell
-$ ./bin/ocagent_$(go env GOOS)
+$ ./bin/otelsvc_$(go env GOOS)
 $ 2018/10/08 21:38:00 Running OpenTelemetry receiver as a gRPC service at "127.0.0.1:55678"
 ```
 
 Create an Collector [configuration](#config) file based on the options
-described below. By default, the Collector has the `opentelemetry` receiver
-enabled, but no exporters.
+described below. By default, the Collector has the `opencensus` receiver
+enabled, but no exporters configured.
 
 Build the Collector and start it:
 
 ```shell
-$ make collector
-$ ./bin/occollector_$($GOOS)
+$ make otelsvc
+$ ./bin/otelsvc_$($GOOS)
 ```
 
 Run the demo application:
@@ -131,7 +136,7 @@ README.md](receiver/README.md).
 
 ```yaml
 receivers:
-  opentelemetry:
+  opencensus:
     address: "127.0.0.1:55678"
 
   zipkin:
@@ -162,7 +167,7 @@ README.md](exporter/README.md).
 
 ```yaml
 exporters:
-  opentelemetry:
+  opencensus:
     headers: {"X-test-header": "test-header"}
     compression: "gzip"
     cert-pem-file: "server_ca_public.pem" # optional to enable TLS
@@ -202,83 +207,11 @@ zpages:
     disabled: true
 ```
 
-## OpenTelemetry Agent
-
-### <a name="agent-usage"></a>Usage
-
-> It is recommended that you use the latest [release](https://github.com/open-telemetry/opentelemetry-service/releases).
-
-The ocagent can be run directly from sources, binary, or a Docker image. If you
-are planning to run from sources or build on your machine start by cloning the
-repo using `go get -d github.com/open-telemetry/opentelemetry-service`.
-
-The minimum Go version required for this project is Go 1.12.5. In addition, you
-must manually install
-[Bazaar](https://github.com/open-telemetry/opentelemetry-service/blob/master/CONTRIBUTING.md#required-tools)
-
-1. Run from sources:
-
-```shell
-$ GO111MODULE=on go run github.com/open-telemetry/opentelemetry-service/cmd/ocagent --help
-```
-
-2. Run from binary (from the root of your repo):
-
-```shell
-$ make agent
-```
-
-3. Build a Docker scratch image and use the appropriate Docker command for your scenario
-(note: additional ports may be required depending on your receiver configuration):
-
-A Docker scratch image can be built with make by targeting `docker-agent`.
-
-```shell
-$ make docker-agent
-$ docker run \
-    --rm \
-    --interactive \
-    --tty \
-    --publish 55678:55678 --publish 55679:55679 \
-    --volume $(pwd)/ocagent-config.yaml:/conf/ocagent-config.yaml \
-    ocagent \
-    --config=/conf/ocagent-config.yaml
-```
-
-## OpenTelemetry Collector
-
-The OpenTelemetry Collector is a component that runs “nearby” (e.g. in the same
-VPC, AZ, etc.) a user’s application components and receives trace spans and
-metrics emitted by the OpenTelemetry Agent or tasks instrumented with
-OpenTelemetry instrumentation (or other supported protocols/libraries). The
-received spans and metrics could be emitted directly by clients in instrumented
-tasks, or potentially routed via intermediate proxy sidecar/daemon agents (such
-as the OpenTelemetry Agent). The collector provides a central egress point for
-exporting traces and metrics to one or more tracing and metrics backends, with
-buffering and retries as well as advanced aggregation, filtering and annotation
-capabilities.
-
-The collector is extensible enabling it to support a range of out-of-the-box
-(and custom) capabilities such as:
-
-* Retroactive (tail-based) sampling of traces
-* Cluster-wide z-pages
-* Filtering of traces and metrics
-* Aggregation of traces and metrics
-* Decoration with meta-data from infrastructure provider (e.g. k8s master)
-* much more ...
-
-The collector also serves as a control plane for agents/clients by supplying
-them updated configuration (e.g. trace sampling policies), and reporting
-agent/client health information/inventory metadata to downstream exporters.
-
-### <a name="receivers-configuration"></a> Receivers Configuration
-
-For detailed information about configuring receivers for the collector refer to the [receivers README.md](receiver/README.md).
-
 ### <a name="global-attributes"></a> Global Attributes
 
-The collector also takes some global configurations that modify its behavior for all receivers / exporters.
+The OpenTelemetry Service also takes some global configurations that modify its
+behavior for all receivers / exporters. This configuration is typically applied
+on the Collector, but could also be added to the Agent.
 
 1. Add Attributes to all spans passing through this collector. These additional
    attributes can be configured to either overwrite existing keys if they
@@ -308,8 +241,11 @@ global:
         keep: true # keep the attribute with the original key
 ```
 
-### <a name="tail-sampling"></a>Intelligent Sampling
+### <a name="sampling"></a>Sampling
 
+Sampling can also be configured on the OpenTelemetry Service. Tail sampling
+must be configured on the Collector as it requires all spans for a given trace
+to make a sampling decision.
 ```yaml
 sampling:
   mode: tail
@@ -341,57 +277,57 @@ sampling:
 
 > Note that an exporter can only have a single sampling policy today.
 
-### <a name="collector-usage"></a>Usage
+## <a name="collector-usage"></a>Usage
 
 > It is recommended that you use the latest [release](https://github.com/open-telemetry/opentelemetry-service/releases).
 
-The collector can be run directly from sources, binary, or a Docker image. If
-you are planning to run from sources or build on your machine start by cloning
-the repo using `go get -d
+The OpenTelemetry Service can be run directly from sources, binary, or a Docker
+image. If you are planning to run from sources or build on your machine start
+by cloning the repo using `go get -d
 github.com/open-telemetry/opentelemetry-service`.
 
 The minimum Go version required for this project is Go 1.12.5.
 
 1. Run from sources:
 ```shell
-$ GO111MODULE=on go run github.com/open-telemetry/opentelemetry-service/cmd/occollector --help
+$ GO111MODULE=on go run github.com/open-telemetry/opentelemetry-service/cmd/otelsvc --help
 ```
 2. Run from binary (from the root of your repo):
 ```shell
-$ make collector
-$ ./bin/occollector_$($GOOS)
+$ make otelsvc
+$ ./bin/otelsvc_$($GOOS)
 ```
 3. Build a Docker scratch image and use the appropriate Docker command for your
    scenario (note: additional ports may be required depending on your receiver
    configuration):
 ```shell
-$ make docker-collector
+$ make docker-otelsvc
 $ docker run \
     --rm \
     --interactive \
     -- tty \
-    --publish 55678:55678 --publish 8888:8888 \
-    --volume $(pwd)/occollector-config.yaml:/conf/occollector-config.yaml \
-    occollector \
-    --config=/conf/occollector-config.yaml
+    --publish 55678:55678 --publish 55679:55679 --publish 8888:8888 \
+    --volume $(pwd)/occollector-config.yaml:/conf/otelsvc-config.yaml \
+    otelsvc \
+    --config=/conf/otelsvc-config.yaml
 ```
 
 It can be configured via command-line or config file:
 ```
-OpenTelemetry Collector
+OpenTelemetry Service
 
 Usage:
-  occollector [flags]
+  otelsvc [flags]
 
 Flags:
       --config string                 Path to the config file
       --health-check-http-port uint   Port on which to run the healthcheck http server. (default 13133)
-  -h, --help                          help for occollector
+  -h, --help                          help for otelsvc
       --http-pprof-port uint          Port to be used by golang net/http/pprof (Performance Profiler), the profiler is disabled if no port or 0 is specified.
       --log-level string              Output level of logs (DEBUG, INFO, WARN, ERROR, FATAL) (default "INFO")
       --logging-exporter              Flag to add a logging exporter (combine with log level DEBUG to log incoming spans)
       --metrics-level string          Output level of telemetry metrics (NONE, BASIC, NORMAL, DETAILED) (default "BASIC")
-      --metrics-port uint             Port exposing collector telemetry. (default 8888)
+      --metrics-port uint             Port exposing telemetry. (default 8888)
       --receive-jaeger                Flag to run the Jaeger receiver (i.e.: Jaeger Collector), default settings: {ThriftTChannelPort:14267 ThriftHTTPPort:14268}
       --receive-oc-trace              Flag to run the OpenTelemetry trace receiver, default settings: {Port:55678} (default true)
       --receive-zipkin                Flag to run the Zipkin receiver, default settings: {Port:9411}
@@ -404,7 +340,7 @@ Sample configuration file:
 log-level: DEBUG
 
 receivers:
-  opentelemetry: {} # Runs OpenTelemetry receiver with default configuration (default behavior).
+  opencensus: {} # Runs OpenCensus receiver with default configuration (default behavior).
 
 queued-exporters:
   jaeger-sender-test: # A friendly name for the exporter

@@ -16,8 +16,8 @@ bin/
 
 # Binaries are copied (as needed) to the same location as their respective Dockerfile in
 # order to simplify docker build commands. Ignore these files if proper clean up fails.
-cmd/ocagent/ocagent_linux
 cmd/occollector/occollector_linux
+cmd/otelsvc/otelsvc_linux
 
 # Coverage
 coverage.txt

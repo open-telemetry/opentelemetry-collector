@@ -2,40 +2,40 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: oc-agent-conf
+  name: otelsvc-agent-conf
   labels:
-    app: opencensus
-    component: oc-agent-conf
+    app: opentelemetry
+    component: otelsvc-agent-conf
 data:
-  oc-agent-config: |
+  otelsvc-agent-config: |
     receivers:
       opencensus: {}
 #      jaeger: {}
 #      zipkin: {}
     exporters:
       opencensus:
-        endpoint: "oc-collector.default:55678" # TODO: Update me
+        endpoint: "otelsvc-collector.default:55678" # TODO: Update me
 ---
 apiVersion: extensions/v1beta1
 kind: DaemonSet
 metadata:
-  name: oc-agent
+  name: otelsvc-agent
   labels:
-    app: opencensus
-    component: oc-agent
+    app: opentelemetry
+    component: otelsvc-agent
 spec:
   template:
     metadata:
       labels:
-        app: opencensus
-        component: oc-agent
+        app: opentelemetry
+        component: otelsvc-agent
     spec:
       containers:
       - command:
           - "/ocagent_linux"
-          - "--config=/conf/oc-agent-config.yaml"
+          - "--config=/conf/otelsvc-agent-config.yaml"
         image: omnition/opencensus-agent:0.1.6
-        name: oc-agent
+        name: otelsvc-agent
         resources:
           limits:
             cpu: 500m
@@ -50,25 +50,25 @@ spec:
 #        - containerPort: 14268
 #        - containerPort: 9411
         volumeMounts:
-        - name: oc-agent-config-vol
+        - name: otelsvc-agent-config-vol
           mountPath: /conf
       volumes:
         - configMap:
-            name: oc-agent-conf
+            name: otelsvc-agent-conf
             items:
-              - key: oc-agent-config
-                path: oc-agent-config.yaml
-          name: oc-agent-config-vol
+              - key: otelsvc-agent-config
+                path: otelsvc-agent-config.yaml
+          name: otelsvc-agent-config-vol
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: oc-collector-conf
+  name: otelsvc-collector-conf
   labels:
-    app: opencensus
-    component: oc-collector-conf
+    app: opentelemetry
+    component: otelsvc-collector-conf
 data:
-  oc-collector-config: |
+  otelsvc-collector-config: |
     receivers:
       opencensus:
 # keepalive settings can help load balancing, see receiver/README.md for more info.
@@ -103,10 +103,10 @@ data:
 apiVersion: v1
 kind: Service
 metadata:
-  name: oc-collector
+  name: otelsvc-collector
   labels:
     app: opencesus
-    component: oc-collector
+    component: otelsvc-collector
 spec:
   ports:
   - name: opencensus
@@ -120,15 +120,15 @@ spec:
 #  - name: zipkin
 #    port: 9411
   selector:
-    component: oc-collector
+    component: otelsvc-collector
 ---
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: oc-collector
+  name: otelsvc-collector
   labels:
-    app: opencensus
-    component: oc-collector
+    app: opentelemetry
+    component: otelsvc-collector
 spec:
   minReadySeconds: 5
   progressDeadlineSeconds: 120
@@ -140,18 +140,18 @@ spec:
         prometheus.io/port: "8888"
         prometheus.io/scrape: "true"
       labels:
-        app: opencensus
-        component: oc-collector
+        app: opentelemetry
+        component: otelsvc-collector
     spec:
       containers:
       - command:
           - "/occollector_linux"
-          - "--config=/conf/oc-collector-config.yaml"
+          - "--config=/conf/otelsvc-collector-config.yaml"
         env:
         - name: GOGC
           value: "80"
         image: omnition/opencensus-collector:0.1.6
-        name: oc-collector
+        name: otelsvc-collector
         resources:
           limits:
             cpu: 1
@@ -165,9 +165,9 @@ spec:
 #        - containerPort: 14268
 #        - containerPort: 9411
         volumeMounts:
-        - name: oc-collector-config-vol
+        - name: otelsvc-collector-config-vol
           mountPath: /conf
-#        - name: oc-collector-secrets
+#        - name: otelsvc-collector-secrets
 #          mountPath: /secrets
         livenessProbe:
           httpGet:
@@ -179,13 +179,13 @@ spec:
             port: 13133
       volumes:
         - configMap:
-            name: oc-collector-conf
+            name: otelsvc-collector-conf
             items:
-              - key: oc-collector-config
-                path: oc-collector-config.yaml
-          name: oc-collector-config-vol
+              - key: otelsvc-collector-config
+                path: otelsvc-collector-config.yaml
+          name: otelsvc-collector-config-vol
 #        - secret:
-#            name: oc-collector-secrets
+#            name: otelsvc-collector-secrets
 #            items:
 #              - key: cert.pem
 #                path: cert.pem
