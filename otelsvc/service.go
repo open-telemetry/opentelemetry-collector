@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package unisvc implements Open Telemetry Service that collects stats
+// Package otelsvc implements Open Telemetry Service that collects stats
 // and traces and exports to a configured backend.
-package unisvc
+package otelsvc
 
 import (
 	"log"

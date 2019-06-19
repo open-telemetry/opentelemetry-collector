@@ -81,17 +81,13 @@ vet:
 install-tools:
 	go install golang.org/x/lint/golint
 
-.PHONY: agent
-agent:
-	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/ocagent_$(GOOS) $(BUILD_INFO) ./cmd/ocagent
-
 .PHONY: collector
 collector:
 	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/occollector_$(GOOS) $(BUILD_INFO) ./cmd/occollector
 
-.PHONY: unisvc
-unisvc:
-	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/unisvc_$(GOOS) $(BUILD_INFO) ./cmd/unisvc
+.PHONY: otelsvc
+otelsvc:
+	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/otelsvc_$(GOOS) $(BUILD_INFO) ./cmd/otelsvc
 
 .PHONY: docker-component # Not intended to be used directly
 docker-component: check-component
@@ -106,20 +102,16 @@ ifndef COMPONENT
 	$(error COMPONENT variable was not defined)
 endif
 
-.PHONY: docker-agent
-docker-agent:
-	COMPONENT=agent $(MAKE) docker-component
-
 .PHONY: docker-collector
 docker-collector:
 	COMPONENT=collector $(MAKE) docker-component
 
-.PHONY: docker-unisvc
-docker-unisvc:
-	COMPONENT=unisvc $(MAKE) docker-component
+.PHONY: docker-otelsvc
+docker-otelsvc:
+	COMPONENT=otelsvc $(MAKE) docker-component
 
 .PHONY: binaries
-binaries: agent collector unisvc
+binaries: collector otelsvc
 
 .PHONY: binaries-all-sys
 binaries-all-sys:
