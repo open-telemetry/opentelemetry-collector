@@ -35,6 +35,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/processor/addattributesprocessor"
 	"github.com/open-telemetry/opentelemetry-service/processor/attributekeyprocessor"
 	"github.com/open-telemetry/opentelemetry-service/processor/multiconsumer"
+	"github.com/open-telemetry/opentelemetry-service/processor/tracesamplerprocessor"
 )
 
 func createExporters(v *viper.Viper, logger *zap.Logger) ([]func(), []consumer.TraceConsumer, []consumer.MetricsConsumer) {
@@ -281,7 +282,12 @@ func startProcessor(v *viper.Viper, logger *zap.Logger) (consumer.TraceConsumer,
 
 	var tailSamplingProcessor consumer.TraceConsumer
 	samplingProcessorCfg := builder.NewDefaultSamplingCfg().InitFromViper(v)
-	if samplingProcessorCfg.Mode == builder.TailSampling {
+	useHeadSamplingProcessor := false
+	if samplingProcessorCfg.Mode == builder.HeadSampling {
+		// Head-sampling should be the first processor in the pipeline to avoid global operations on data
+		// that is not going to be sampled, for now just set a flag to added the sampler later.
+		useHeadSamplingProcessor = true
+	} else if samplingProcessorCfg.Mode == builder.TailSampling {
 		var err error
 		tailSamplingProcessor, err = buildSamplingProcessor(samplingProcessorCfg, nameToTraceConsumer, v, logger)
 		if err != nil {
@@ -331,5 +337,26 @@ func startProcessor(v *viper.Viper, logger *zap.Logger) (consumer.TraceConsumer,
 			tp, _ = attributekeyprocessor.NewTraceProcessor(tp, multiProcessorCfg.Global.Attributes.KeyReplacements...)
 		}
 	}
+
+	if useHeadSamplingProcessor {
+		vTraceSampler := v.Sub("sampling.policies.probabilistic.configuration")
+		if vTraceSampler == nil {
+			logger.Error("Trace head-based sampling mode is enabled but there is no valid policy section defined")
+			os.Exit(1)
+		}
+
+		cfg := &tracesamplerprocessor.TraceSamplerCfg{}
+		samplerCfg, err := cfg.InitFromViper(vTraceSampler)
+		if err != nil {
+			logger.Error("Trace head-based sampling configuration error", zap.Error(err))
+			os.Exit(1)
+		}
+		logger.Info(
+			"Trace head-sampling enabled",
+			zap.Float32("sampling-percentage", samplerCfg.SamplingPercentage),
+		)
+		tp, _ = tracesamplerprocessor.NewTraceProcessor(tp, *samplerCfg)
+	}
+
 	return tp, closeFns
 }

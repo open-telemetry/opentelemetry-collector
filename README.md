@@ -308,6 +308,29 @@ global:
         keep: true # keep the attribute with the original key
 ```
 
+### <a name="probabilistic-trace-sampling"></a>Probabilistic Head-based Trace Sampling
+
+In some scenarios it may be desirable to perform probabilistic head-based trace sampling on the collector.
+This can be done using by specifying `probabilistic` policy secion under the `sampling` section of the collector configuration file.
+
+```yaml
+sampling:
+  # mode indicates if the sampling is head or tail based. For probabilistic the mode is head-based.
+  mode: head
+  policies:
+    # section below defines a probabilistic trace sampler based on hashing the trace ID associated to
+    # each span and sampling the span according to the given spans.
+    probabilistic:
+      configuration:
+        # sampling-percentage is the percentage of sampling to be applied to all spans, unless their service is specified
+        # on sampling-percentage.
+        sampling-percentage: 5
+        # hash-seed allows choosing the seed for the hash function used in the trace sampling. This is important when
+        # multiple layers of collectors are being used with head sampling, in such scenarios make sure to
+        # choose different seeds for each layer.
+        hash-seed: 1
+```
+
 ### <a name="tail-sampling"></a>Intelligent Sampling
 
 ```yaml

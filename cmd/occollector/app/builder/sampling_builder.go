@@ -33,6 +33,9 @@ const (
 	// NoSampling mode is the default and means that all data arriving at the collector
 	// is passed ahead.
 	NoSampling Mode = "no-sampling"
+	// HeadSampling is the mode in which trace data is sampled at ingestion, without seeing
+	// the whole trace data.
+	HeadSampling Mode = "head"
 	// TailSampling is the mode in which trace data is temporarily retained until an evaluation
 	// if the trace should be sampled is performed.
 	TailSampling Mode = "tail"
