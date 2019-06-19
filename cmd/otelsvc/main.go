@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Program unisvc is the Open Telemetry Service that collects stats
+// Program otelsvc is the Open Telemetry Service that collects stats
 // and traces and exports to a configured backend.
 package main
 
-import "github.com/open-telemetry/opentelemetry-service/unisvc"
+import "github.com/open-telemetry/opentelemetry-service/otelsvc"
 
 func main() {
-	unisvc.Run()
+	otelsvc.Run()
 }
