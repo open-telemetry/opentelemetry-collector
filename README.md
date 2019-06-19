@@ -20,7 +20,7 @@ For now, please use the [OpenCensus Service](https://github.com/open-telemetry/o
     - [Exporters](#config-exporters)
     - [Diagnostics](#config-diagnostics)
     - [Global Attributes](#global-attributes)
-    - [Intelligent Sampling](#tail-sampling)
+    - [Sampling](#sampling)
 - [Usage](#usage)
 
 ## Introduction
@@ -243,9 +243,33 @@ global:
 
 ### <a name="sampling"></a>Sampling
 
-Sampling can also be configured on the OpenTelemetry Service. Tail sampling
-must be configured on the Collector as it requires all spans for a given trace
-to make a sampling decision.
+Sampling can also be configured on the OpenTelemetry Service. Both head-based and
+tail-based sampling are supported. Either the Agent or the Collector may enable
+head-based sampling. Tail sampling must be configured on the Collector as it
+requires all spans for a given trace to make a sampling decision.
+
+#### Head-based Example
+
+```yaml
+sampling:
+  # mode indicates if the sampling is head or tail based. For probabilistic the mode is head-based.
+  mode: head
+  policies:
+    # section below defines a probabilistic trace sampler based on hashing the trace ID associated to
+    # each span and sampling the span according to the given spans.
+    probabilistic:
+      configuration:
+        # sampling-percentage is the percentage of sampling to be applied to all spans, unless their service is specified
+        # on sampling-percentage.
+        sampling-percentage: 5
+        # hash-seed allows choosing the seed for the hash function used in the trace sampling. This is important when
+        # multiple layers of collectors are being used with head sampling, in such scenarios make sure to
+        # choose different seeds for each layer.
+        hash-seed: 1
+```
+
+#### Tail-based Example
+
 ```yaml
 sampling:
   mode: tail
