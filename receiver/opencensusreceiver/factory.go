@@ -49,6 +49,8 @@ func (f *receiverFactory) CustomUnmarshaler() factories.CustomUnmarshaler {
 func (f *receiverFactory) CreateDefaultConfig() configmodels.Receiver {
 	return &ConfigV2{
 		ReceiverSettings: configmodels.ReceiverSettings{
+			TypeVal:  typeStr,
+			NameVal:  typeStr,
 			Endpoint: "127.0.0.1:55678",
 			Enabled:  true,
 		},

@@ -30,6 +30,12 @@ import (
 type ExampleReceiver struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 	ExtraSetting                  string                   `mapstructure:"extra"`
+
+	// FailTraceCreation causes CreateTraceReceiver to fail. Useful for testing.
+	FailTraceCreation bool `mapstructure:"-"`
+
+	// FailMetricsCreation causes CreateTraceReceiver to fail. Useful for testing.
+	FailMetricsCreation bool `mapstructure:"-"`
 }
 
 // ExampleReceiverFactory is factory for ExampleReceiver.
@@ -50,6 +56,7 @@ func (f *ExampleReceiverFactory) CustomUnmarshaler() factories.CustomUnmarshaler
 func (f *ExampleReceiverFactory) CreateDefaultConfig() configmodels.Receiver {
 	return &ExampleReceiver{
 		ReceiverSettings: configmodels.ReceiverSettings{
+			TypeVal:  "examplereceiver",
 			Endpoint: "localhost:1000",
 			Enabled:  false,
 		},
@@ -63,26 +70,96 @@ func (f *ExampleReceiverFactory) CreateTraceReceiver(
 	cfg configmodels.Receiver,
 	nextConsumer consumer.TraceConsumer,
 ) (receiver.TraceReceiver, error) {
-	// Not used for this test, just return nil
-	return nil, nil
+	if cfg.(*ExampleReceiver).FailTraceCreation {
+		return nil, factories.ErrDataTypeIsNotSupported
+	}
+	return &ExampleReceiverProducer{TraceConsumer: nextConsumer}, nil
 }
 
 // CreateMetricsReceiver creates a metrics receiver based on this config.
 func (f *ExampleReceiverFactory) CreateMetricsReceiver(
 	cfg configmodels.Receiver,
-	consumer consumer.MetricsConsumer,
+	nextConsumer consumer.MetricsConsumer,
 ) (receiver.MetricsReceiver, error) {
-	// Not used for this test, just return nil
-	return nil, nil
+	if cfg.(*ExampleReceiver).FailMetricsCreation {
+		return nil, factories.ErrDataTypeIsNotSupported
+	}
+	return &ExampleReceiverProducer{MetricsConsumer: nextConsumer}, nil
+}
+
+// ExampleReceiverProducer allows producing traces and metrics for testing purposes.
+type ExampleReceiverProducer struct {
+	TraceConsumer   consumer.TraceConsumer
+	TraceStarted    bool
+	TraceStopped    bool
+	MetricsConsumer consumer.MetricsConsumer
+	MetricsStarted  bool
+	MetricsStopped  bool
+}
+
+// TraceSource returns the name of the trace data source.
+func (erp *ExampleReceiverProducer) TraceSource() string {
+	return ""
+}
+
+// StartTraceReception tells the receiver to start its processing.
+func (erp *ExampleReceiverProducer) StartTraceReception(ctx context.Context, asyncErrorChannel chan<- error) error {
+	erp.TraceStarted = true
+	return nil
+}
+
+// StopTraceReception tells the receiver that should stop reception,
+func (erp *ExampleReceiverProducer) StopTraceReception(ctx context.Context) error {
+	erp.TraceStopped = true
+	return nil
+}
+
+// MetricsSource returns the name of the metrics data source.
+func (erp *ExampleReceiverProducer) MetricsSource() string {
+	return ""
+}
+
+// StartMetricsReception tells the receiver to start its processing.
+func (erp *ExampleReceiverProducer) StartMetricsReception(ctx context.Context, asyncErrorChannel chan<- error) error {
+	erp.MetricsStarted = true
+	return nil
+}
+
+// StopMetricsReception tells the receiver that should stop reception,
+func (erp *ExampleReceiverProducer) StopMetricsReception(ctx context.Context) error {
+	erp.MetricsStopped = true
+	return nil
 }
 
 // MultiProtoReceiver is for testing purposes. We are defining an example multi protocol
 // config and factory for "multireceiver" receiver type.
 type MultiProtoReceiver struct {
+	TypeVal   string                              `mapstructure:"-"`
+	NameVal   string                              `mapstructure:"-"`
 	Protocols map[string]MultiProtoReceiverOneCfg `mapstructure:"protocols"`
 }
 
 var _ configmodels.Receiver = (*MultiProtoReceiver)(nil)
+
+// Name gets the exporter name.
+func (rs *MultiProtoReceiver) Name() string {
+	return rs.NameVal
+}
+
+// SetName sets the exporter name.
+func (rs *MultiProtoReceiver) SetName(name string) {
+	rs.NameVal = name
+}
+
+// Type sets the receiver type.
+func (rs *MultiProtoReceiver) Type() string {
+	return rs.TypeVal
+}
+
+// SetType sets the receiver type.
+func (rs *MultiProtoReceiver) SetType(typeStr string) {
+	rs.TypeVal = typeStr
+}
 
 // MultiProtoReceiverOneCfg is multi proto receiver config.
 type MultiProtoReceiverOneCfg struct {
@@ -108,6 +185,7 @@ func (f *MultiProtoReceiverFactory) CustomUnmarshaler() factories.CustomUnmarsha
 // CreateDefaultConfig creates the default configuration for the Receiver.
 func (f *MultiProtoReceiverFactory) CreateDefaultConfig() configmodels.Receiver {
 	return &MultiProtoReceiver{
+		TypeVal: "multireceiver",
 		Protocols: map[string]MultiProtoReceiverOneCfg{
 			"http": {
 				Enabled:      false,

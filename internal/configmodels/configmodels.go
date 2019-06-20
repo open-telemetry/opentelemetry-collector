@@ -39,9 +39,18 @@ type ConfigV2 struct {
 	Pipelines  Pipelines
 }
 
+// NamedEntity is a configuration entity that has a name.
+type NamedEntity interface {
+	Name() string
+	SetName(name string)
+}
+
 // Receiver is the configuration of a receiver. Specific receivers must implement this
 // interface and will typically embed ReceiverSettings struct or a struct that extends it.
 type Receiver interface {
+	NamedEntity
+	Type() string
+	SetType(typeStr string)
 }
 
 // Receivers is a map of names to Receivers.
@@ -49,9 +58,7 @@ type Receivers map[string]Receiver
 
 // Exporter is the configuration of an exporter.
 type Exporter interface {
-	Name() string
-	SetName(name string)
-
+	NamedEntity
 	Type() string
 	SetType(typeStr string)
 }
@@ -90,8 +97,8 @@ const (
 	MetricsDataTypeStr = "metrics"
 )
 
-// GetDataTypeStr converts data type to string.
-func (dataType DataType) GetDataTypeStr() string {
+// GetString converts data type to string.
+func (dataType DataType) GetString() string {
 	switch dataType {
 	case TracesDataType:
 		return TracesDataTypeStr
@@ -121,8 +128,30 @@ type Pipelines map[string]*Pipeline
 // ReceiverSettings defines common settings for a single-protocol receiver configuration.
 // Specific receivers can embed this struct and extend it with more fields if needed.
 type ReceiverSettings struct {
+	TypeVal  string `mapstructure:"-"`
+	NameVal  string `mapstructure:"-"`
 	Enabled  bool   `mapstructure:"enabled"`
 	Endpoint string `mapstructure:"endpoint"`
+}
+
+// Name gets the receiver name.
+func (rs *ReceiverSettings) Name() string {
+	return rs.NameVal
+}
+
+// SetName sets the receiver name.
+func (rs *ReceiverSettings) SetName(name string) {
+	rs.NameVal = name
+}
+
+// Type sets the receiver type.
+func (rs *ReceiverSettings) Type() string {
+	return rs.TypeVal
+}
+
+// SetType sets the receiver type.
+func (rs *ReceiverSettings) SetType(typeStr string) {
+	rs.TypeVal = typeStr
 }
 
 // ExporterSettings defines common settings for an exporter configuration.

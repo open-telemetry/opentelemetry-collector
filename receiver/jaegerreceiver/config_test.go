@@ -44,6 +44,8 @@ func TestLoadConfig(t *testing.T) {
 	r1 := config.Receivers["jaeger/customname"].(*ConfigV2)
 	assert.Equal(t, r1,
 		&ConfigV2{
+			TypeVal: typeStr,
+			NameVal: "jaeger/customname",
 			Protocols: map[string]*configmodels.ReceiverSettings{
 				"thrift-http": {
 					Enabled:  false,

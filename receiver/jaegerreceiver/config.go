@@ -20,5 +20,27 @@ import (
 
 // ConfigV2 defines configuration for Jaeger receiver.
 type ConfigV2 struct {
+	TypeVal   string                                    `mapstructure:"-"`
+	NameVal   string                                    `mapstructure:"-"`
 	Protocols map[string]*configmodels.ReceiverSettings `mapstructure:"protocols"`
+}
+
+// Name gets the receiver name.
+func (rs *ConfigV2) Name() string {
+	return rs.NameVal
+}
+
+// SetName sets the receiver name.
+func (rs *ConfigV2) SetName(name string) {
+	rs.NameVal = name
+}
+
+// Type sets the receiver type.
+func (rs *ConfigV2) Type() string {
+	return rs.TypeVal
+}
+
+// SetType sets the receiver type.
+func (rs *ConfigV2) SetType(typeStr string) {
+	rs.TypeVal = typeStr
 }

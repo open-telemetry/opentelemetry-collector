@@ -54,11 +54,11 @@ func NewPipelinesBuilder(
 }
 
 // Build pipeline processors from config.
-func (eb *PipelinesBuilder) Build() (PipelineProcessors, error) {
+func (pb *PipelinesBuilder) Build() (PipelineProcessors, error) {
 	pipelineProcessors := make(PipelineProcessors)
 
-	for _, pipeline := range eb.config.Pipelines {
-		firstProcessor, err := eb.buildPipeline(pipeline)
+	for _, pipeline := range pb.config.Pipelines {
+		firstProcessor, err := pb.buildPipeline(pipeline)
 		if err != nil {
 			return nil, err
 		}
@@ -71,7 +71,7 @@ func (eb *PipelinesBuilder) Build() (PipelineProcessors, error) {
 // Builds a pipeline of processors. Returns the first processor in the pipeline.
 // The last processor in the pipeline will be plugged to fan out the data into exporters
 // that are configured for this pipeline.
-func (eb *PipelinesBuilder) buildPipeline(
+func (pb *PipelinesBuilder) buildPipeline(
 	pipelineCfg *configmodels.Pipeline,
 ) (*builtProcessor, error) {
 
@@ -83,9 +83,9 @@ func (eb *PipelinesBuilder) buildPipeline(
 
 	switch pipelineCfg.InputType {
 	case configmodels.TracesDataType:
-		tc = eb.buildFanoutExportersTraceConsumer(pipelineCfg.Exporters)
+		tc = pb.buildFanoutExportersTraceConsumer(pipelineCfg.Exporters)
 	case configmodels.MetricsDataType:
-		mc = eb.buildFanoutExportersMetricsConsumer(pipelineCfg.Exporters)
+		mc = pb.buildFanoutExportersMetricsConsumer(pipelineCfg.Exporters)
 	}
 
 	// Now build the processors backwards, starting from the last one.
@@ -94,7 +94,7 @@ func (eb *PipelinesBuilder) buildPipeline(
 	// in the pipeline and so on.
 	for i := len(pipelineCfg.Processors) - 1; i >= 0; i-- {
 		procName := pipelineCfg.Processors[i]
-		procCfg := eb.config.Processors[procName]
+		procCfg := pb.config.Processors[procName]
 
 		factory := factories.GetProcessorFactory(procCfg.Type())
 
@@ -115,22 +115,24 @@ func (eb *PipelinesBuilder) buildPipeline(
 		}
 	}
 
+	pb.logger.Info("Pipeline is enabled.", zap.String("pipelines", pipelineCfg.Name))
+
 	return &builtProcessor{tc, mc}, nil
 }
 
 // Converts the list of exporter names to a list of corresponding builtExporters.
-func (eb *PipelinesBuilder) getBuiltExportersByNames(exporterNames []string) []*builtExporter {
+func (pb *PipelinesBuilder) getBuiltExportersByNames(exporterNames []string) []*builtExporter {
 	var result []*builtExporter
 	for _, name := range exporterNames {
-		exporter := eb.exporters[eb.config.Exporters[name]]
+		exporter := pb.exporters[pb.config.Exporters[name]]
 		result = append(result, exporter)
 	}
 
 	return result
 }
 
-func (eb *PipelinesBuilder) buildFanoutExportersTraceConsumer(exporterNames []string) consumer.TraceConsumer {
-	builtExporters := eb.getBuiltExportersByNames(exporterNames)
+func (pb *PipelinesBuilder) buildFanoutExportersTraceConsumer(exporterNames []string) consumer.TraceConsumer {
+	builtExporters := pb.getBuiltExportersByNames(exporterNames)
 
 	// Optimize for the case when there is only one exporter, no need to create junction point.
 	if len(builtExporters) == 1 {
@@ -146,8 +148,8 @@ func (eb *PipelinesBuilder) buildFanoutExportersTraceConsumer(exporterNames []st
 	return multiconsumer.NewTraceProcessor(exporters)
 }
 
-func (eb *PipelinesBuilder) buildFanoutExportersMetricsConsumer(exporterNames []string) consumer.MetricsConsumer {
-	builtExporters := eb.getBuiltExportersByNames(exporterNames)
+func (pb *PipelinesBuilder) buildFanoutExportersMetricsConsumer(exporterNames []string) consumer.MetricsConsumer {
+	builtExporters := pb.getBuiltExportersByNames(exporterNames)
 
 	// Optimize for the case when there is only one exporter, no need to create junction point.
 	if len(builtExporters) == 1 {

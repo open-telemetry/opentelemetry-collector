@@ -45,6 +45,8 @@ func TestLoadConfig(t *testing.T) {
 	r1 := config.Receivers["opencensus/customname"].(*ConfigV2)
 	assert.Equal(t, r1.ReceiverSettings,
 		configmodels.ReceiverSettings{
+			TypeVal:  typeStr,
+			NameVal:  "opencensus/customname",
 			Endpoint: "0.0.0.0:9090",
 			Enabled:  true,
 		})

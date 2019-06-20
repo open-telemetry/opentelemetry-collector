@@ -2,6 +2,15 @@ receivers:
   examplereceiver:
     enabled: true
 
+  examplereceiver/2:
+    enabled: true
+
+  examplereceiver/3:
+    enabled: true
+
+  examplereceiver/multi:
+    enabled: true
+
 processors:
   attributes:
     values:
@@ -16,11 +25,23 @@ exporters:
 
 pipelines:
   traces:
-    receivers: [examplereceiver]
+    receivers: [examplereceiver, examplereceiver/multi]
     processors: [attributes]
     exporters: [exampleexporter]
 
   traces/2:
-    receivers: [examplereceiver]
+    receivers: [examplereceiver/2, examplereceiver/multi]
     processors: [attributes]
     exporters: [exampleexporter, exampleexporter/2]
+
+  metrics:
+    receivers: [examplereceiver]
+    exporters: [exampleexporter]
+
+  metrics/2:
+    receivers: [examplereceiver/3]
+    exporters: [exampleexporter]
+
+  metrics/3:
+    receivers: [examplereceiver/3]
+    exporters: [exampleexporter/2]

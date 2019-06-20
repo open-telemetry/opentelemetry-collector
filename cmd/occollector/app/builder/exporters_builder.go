@@ -174,7 +174,7 @@ func (eb *ExportersBuilder) buildExporter(
 				// Could not create because this exporter does not support this data type.
 				return nil, typeMismatchErr(config, requirement.requiredBy, configmodels.TracesDataType)
 			}
-			return nil, fmt.Errorf("error creating %q exporter: %v", config.Name(), err)
+			return nil, fmt.Errorf("error creating %s exporter: %v", config.Name(), err)
 		}
 
 		exporter.tc = tc
@@ -189,12 +189,14 @@ func (eb *ExportersBuilder) buildExporter(
 				// Could not create because this exporter does not support this data type.
 				return nil, typeMismatchErr(config, requirement.requiredBy, configmodels.MetricsDataType)
 			}
-			return nil, fmt.Errorf("error creating %q exporter: %v", config.Name(), err)
+			return nil, fmt.Errorf("error creating %s exporter: %v", config.Name(), err)
 		}
 
 		exporter.mc = mc
 		exporter.stop = combineStopFunc(exporter.stop, stopFunc)
 	}
+
+	eb.logger.Info("Exporter is enabled.", zap.String("exporter", config.Name()))
 
 	return exporter, nil
 }
@@ -204,10 +206,8 @@ func typeMismatchErr(
 	requiredByPipeline *configmodels.Pipeline,
 	dataType configmodels.DataType,
 ) error {
-	return fmt.Errorf(
-		"pipeline %q produces %q to exporter %s which does not support %q "+
-			"telemetry data. exporter will be detached from pipeline",
-		requiredByPipeline.Name, dataType.GetDataTypeStr(),
-		config.Name(), dataType.GetDataTypeStr(),
+	return fmt.Errorf("%s is a %s pipeline but has a %s which does not support %s",
+		requiredByPipeline.Name, dataType.GetString(),
+		config.Name(), dataType.GetString(),
 	)
 }
