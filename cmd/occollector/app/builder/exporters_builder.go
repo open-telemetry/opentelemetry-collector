@@ -196,7 +196,7 @@ func (eb *ExportersBuilder) buildExporter(
 		exporter.stop = combineStopFunc(exporter.stop, stopFunc)
 	}
 
-	eb.logger.Info(fmt.Sprintf("Exporter %s is enabled.", config.Name()))
+	eb.logger.Info("Exporter is enabled.", zap.String("exporter", config.Name()))
 
 	return exporter, nil
 }
@@ -206,9 +206,7 @@ func typeMismatchErr(
 	requiredByPipeline *configmodels.Pipeline,
 	dataType configmodels.DataType,
 ) error {
-	return fmt.Errorf(
-		"pipeline %s is attached %s to exporter %s which does not support %s "+
-			"telemetry data produced by pipeline. Exporter will be detached from pipeline",
+	return fmt.Errorf("%s is a %s pipeline but has a %s which does not support %s",
 		requiredByPipeline.Name, dataType.GetString(),
 		config.Name(), dataType.GetString(),
 	)

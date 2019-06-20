@@ -195,23 +195,23 @@ func testReceivers(
 	}
 }
 
-func TestReceiversBuilder_Error(t *testing.T) {
-	//config, err := configv2.LoadConfigFile(t, "testdata/pipelines_builder.yaml")
-	//require.Nil(t, err)
-	//
-	//// Corrupt the pipeline, change data type to metrics. We have to forcedly do it here
-	//// since there is no way to have such config loaded by LoadConfigFile, it would not
-	//// pass validation. We are doing this to test failure mode of PipelinesBuilder.
-	//pipeline := config.Pipelines["traces"]
-	//pipeline.InputType = configmodels.MetricsDataType
-	//
-	//exporters, err := NewExportersBuilder(zap.NewNop(), config).Build()
-	//
-	//// This should fail because "attributes" processor defined in the config does
-	//// not support metrics data type.
-	//_, err = NewPipelinesBuilder(zap.NewNop(), config, exporters).Build()
-	//
-	//assert.NotNil(t, err)
+func TestReceiversBuilder_DataTypeError(t *testing.T) {
+	config, err := configv2.LoadConfigFile(t, "testdata/pipelines_builder.yaml")
+	require.Nil(t, err)
+
+	// Make examplereceiver to "unsupport" trace data type.
+	receiver := config.Receivers["examplereceiver"]
+	receiver.(*configv2.ExampleReceiver).FailTraceCreation = true
+
+	// Build the pipeline
+	allExporters, err := NewExportersBuilder(zap.NewNop(), config).Build()
+	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), config, allExporters).Build()
+	receivers, err := NewReceiversBuilder(zap.NewNop(), config, pipelineProcessors).Build()
+
+	// This should fail because "examplereceiver" is attached to "traces" pipeline
+	// which is a configuration error.
+	assert.NotNil(t, err)
+	assert.Nil(t, receivers)
 }
 
 func TestReceiversBuilder_StartAll(t *testing.T) {

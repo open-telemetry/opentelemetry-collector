@@ -88,11 +88,12 @@ func (rcvs Receivers) StopAll() {
 // StartAll starts all receivers.
 func (rcvs Receivers) StartAll(logger *zap.Logger, asyncErrorChan chan<- error) error {
 	for cfg, rcv := range rcvs {
-		logger.Info(fmt.Sprintf("Receiver %s starting...", cfg.Name()))
+		logger.Info("Receiver is starting...", zap.String("receiver", cfg.Name()))
+
 		if err := rcv.Start(asyncErrorChan); err != nil {
 			return err
 		}
-		logger.Info(fmt.Sprintf("Receiver %s started.", cfg.Name()))
+		logger.Info("Receiver is started.", zap.String("receiver", cfg.Name()))
 	}
 	return nil
 }
@@ -197,8 +198,8 @@ func (rb *ReceiversBuilder) attachReceiverToPipelines(
 	if err != nil {
 		if err == factories.ErrDataTypeIsNotSupported {
 			return fmt.Errorf(
-				"receiver %s does not support %s but some pipelines that "+
-					"want to process %s are attached to the receiever",
+				"receiver %s does not support %s but it was used in a "+
+					"%s pipeline",
 				config.Name(),
 				dataType.GetString(),
 				dataType.GetString())
@@ -206,8 +207,8 @@ func (rb *ReceiversBuilder) attachReceiverToPipelines(
 		return fmt.Errorf("cannot create receiver %s", config.Name())
 	}
 
-	rb.logger.Info(fmt.Sprintf("Receiver %s is enabled for %s.",
-		config.Name(), dataType.GetString()))
+	rb.logger.Info("Receiver is enabled.",
+		zap.String("receiver", config.Name()), zap.String("datatype", dataType.GetString()))
 
 	return nil
 }

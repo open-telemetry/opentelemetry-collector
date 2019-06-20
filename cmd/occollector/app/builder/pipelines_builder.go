@@ -115,7 +115,7 @@ func (pb *PipelinesBuilder) buildPipeline(
 		}
 	}
 
-	pb.logger.Info(fmt.Sprintf("Pipeline %s enabled.", pipelineCfg.Name))
+	pb.logger.Info("Pipeline is enabled.", zap.String("pipelines", pipelineCfg.Name))
 
 	return &builtProcessor{tc, mc}, nil
 }

@@ -134,12 +134,12 @@ type ReceiverSettings struct {
 	Endpoint string `mapstructure:"endpoint"`
 }
 
-// Name gets the exporter name.
+// Name gets the receiver name.
 func (rs *ReceiverSettings) Name() string {
 	return rs.NameVal
 }
 
-// SetName sets the exporter name.
+// SetName sets the receiver name.
 func (rs *ReceiverSettings) SetName(name string) {
 	rs.NameVal = name
 }

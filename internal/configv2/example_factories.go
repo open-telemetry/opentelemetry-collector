@@ -30,6 +30,12 @@ import (
 type ExampleReceiver struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 	ExtraSetting                  string                   `mapstructure:"extra"`
+
+	// FailTraceCreation causes CreateTraceReceiver to fail. Useful for testing.
+	FailTraceCreation bool `mapstructure:"-"`
+
+	// FailMetricsCreation causes CreateTraceReceiver to fail. Useful for testing.
+	FailMetricsCreation bool `mapstructure:"-"`
 }
 
 // ExampleReceiverFactory is factory for ExampleReceiver.
@@ -64,7 +70,9 @@ func (f *ExampleReceiverFactory) CreateTraceReceiver(
 	cfg configmodels.Receiver,
 	nextConsumer consumer.TraceConsumer,
 ) (receiver.TraceReceiver, error) {
-	// Not used for this test, just return nil
+	if cfg.(*ExampleReceiver).FailTraceCreation {
+		return nil, factories.ErrDataTypeIsNotSupported
+	}
 	return &ExampleReceiverProducer{TraceConsumer: nextConsumer}, nil
 }
 
@@ -73,7 +81,9 @@ func (f *ExampleReceiverFactory) CreateMetricsReceiver(
 	cfg configmodels.Receiver,
 	nextConsumer consumer.MetricsConsumer,
 ) (receiver.MetricsReceiver, error) {
-	// Not used for this test, just return nil
+	if cfg.(*ExampleReceiver).FailMetricsCreation {
+		return nil, factories.ErrDataTypeIsNotSupported
+	}
 	return &ExampleReceiverProducer{MetricsConsumer: nextConsumer}, nil
 }
 
