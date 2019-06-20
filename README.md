@@ -401,3 +401,4 @@ queued-exporters:
 [gitter-url]: https://gitter.im/open-telemetry/opentelemetry-service?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
 [codecov-image]: https://codecov.io/gh/open-telemetry/opentelemetry-service/branch/master/graph/badge.svg
 [codecov-url]: https://codecov.io/gh/open-telemetry/opentelemetry-service/branch/master/
+
