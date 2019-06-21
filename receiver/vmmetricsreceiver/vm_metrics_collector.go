@@ -91,8 +91,9 @@ func NewVMMetricsCollector(si time.Duration, mountPoint, processMountPoint, pref
 func detectResource() {
 	res, err := auto.Detect(context.Background())
 	if err != nil {
-		rsc = nil
-	} else {
+		panic(fmt.Sprintf("Resource detection failed, err:%v", err))
+	}
+	if res != nil {
 		rsc = &resourcepb.Resource{
 			Type:   res.Type,
 			Labels: make(map[string]string, len(res.Labels)),
