@@ -1,10 +1,14 @@
 receivers:
   opencensus:
-    address: ":55678"
+    port: 55678
     reconnection-delay: 2s
   jaeger:
     collector_http_port: 14268
 
-exporters:
+queued-exporters:
+  collector:
+    num-workers: 2
+    queue-size: 10
+    retry-on-failure: true
   opencensus:
     endpoint: "oc-collector:55678"
