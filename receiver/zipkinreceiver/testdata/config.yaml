@@ -1,0 +1,18 @@
+receivers:
+  zipkin:
+  zipkin/customname:
+    endpoint: "127.0.0.1:8765"
+    enabled: true
+
+processors:
+  exampleprocessor:
+
+exporters:
+  exampleexporter:
+
+pipelines:
+  traces:
+   receivers: [zipkin]
+   processors: [exampleprocessor]
+   exporters: [exampleexporter]
+
