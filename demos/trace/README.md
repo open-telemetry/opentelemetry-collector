@@ -1,6 +1,9 @@
-# OpenCensus Agent/Collector Demo
+# OpenCensus Service Demo
 
-Typical flow of tracing data with OpenCensus service: tracing data initially received by OC Agent
+*IMPORTANT:* This is a pre-released version of the OpenTelemetry Service.
+For now, please use the [OpenCensus Service](https://github.com/open-telemetry/opentelemetry-service).
+
+Typical flow of tracing data with OpenCensus Service: tracing data initially received by OC Agent
 and then sent OC Collector using OC data format. The OC Collector then sends the data to the
 tracing backend, in this demo Jaeger and Zipkin.
 
@@ -8,7 +11,7 @@ This demo uses `docker-compose` and runs against locally built docker images of 
 order to build the docker images use the commands below from the root of the repo:
 
 ```shell
-make docker-agent && make docker-collector
+make docker-collector
 ```
 
 To run the demo, switch to the `demos/trace` folder and run:
