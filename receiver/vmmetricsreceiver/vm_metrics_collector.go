@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"sync"
 	"time"
 
 	"github.com/prometheus/procfs"
@@ -54,6 +55,7 @@ const (
 )
 
 var rsc *resourcepb.Resource
+var resourceDetectionSync sync.Once
 
 // NewVMMetricsCollector creates a new set of VM and Process Metrics (mem, cpu).
 func NewVMMetricsCollector(si time.Duration, mountPoint, processMountPoint, prefix string, consumer consumer.MetricsConsumer) (*VMMetricsCollector, error) {
@@ -89,19 +91,21 @@ func NewVMMetricsCollector(si time.Duration, mountPoint, processMountPoint, pref
 }
 
 func detectResource() {
-	res, err := auto.Detect(context.Background())
-	if err != nil {
-		panic(fmt.Sprintf("Resource detection failed, err:%v", err))
-	}
-	if res != nil {
-		rsc = &resourcepb.Resource{
-			Type:   res.Type,
-			Labels: make(map[string]string, len(res.Labels)),
+	resourceDetectionSync.Do(func() {
+		res, err := auto.Detect(context.Background())
+		if err != nil {
+			panic(fmt.Sprintf("Resource detection failed, err:%v", err))
 		}
-		for k, v := range res.Labels {
-			rsc.Labels[k] = v
+		if res != nil {
+			rsc = &resourcepb.Resource{
+				Type:   res.Type,
+				Labels: make(map[string]string, len(res.Labels)),
+			}
+			for k, v := range res.Labels {
+				rsc.Labels[k] = v
+			}
 		}
-	}
+	})
 }
 
 // StartCollection starts a ticker'd goroutine that will scrape and export vm metrics periodically.
