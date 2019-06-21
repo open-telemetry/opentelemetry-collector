@@ -1,0 +1,22 @@
+receivers:
+  prometheus:
+  prometheus/customname:
+    endpoint: "1.2.3.4:456"
+    buffer_period: 234
+    buffer_count: 45
+    config:
+      scrape_configs:
+        - job_name: 'demo'
+          scrape_interval: 5s
+
+processors:
+  exampleprocessor:
+
+exporters:
+  exampleexporter:
+
+pipelines:
+  traces:
+    receivers: [prometheus]
+    processors: [exampleprocessor]
+    exporters: [exampleexporter]
