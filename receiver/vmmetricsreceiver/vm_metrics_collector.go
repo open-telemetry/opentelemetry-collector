@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"sync"
 	"time"
 
 	"github.com/prometheus/procfs"
@@ -28,7 +29,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/data"
 	"github.com/open-telemetry/opentelemetry-service/internal"
 
+	"contrib.go.opencensus.io/resource/auto"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 )
 
 // VMMetricsCollector is a struct that collects and reports VM and process metrics (cpu, mem, etc).
@@ -50,6 +53,9 @@ const (
 	defaultMountPoint     = procfs.DefaultMountPoint // "/proc"
 	defaultScrapeInterval = 10 * time.Second
 )
+
+var rsc *resourcepb.Resource
+var resourceDetectionSync sync.Once
 
 // NewVMMetricsCollector creates a new set of VM and Process Metrics (mem, cpu).
 func NewVMMetricsCollector(si time.Duration, mountPoint, processMountPoint, prefix string, consumer consumer.MetricsConsumer) (*VMMetricsCollector, error) {
@@ -84,8 +90,28 @@ func NewVMMetricsCollector(si time.Duration, mountPoint, processMountPoint, pref
 	return vmc, nil
 }
 
+func detectResource() {
+	resourceDetectionSync.Do(func() {
+		res, err := auto.Detect(context.Background())
+		if err != nil {
+			panic(fmt.Sprintf("Resource detection failed, err:%v", err))
+		}
+		if res != nil {
+			rsc = &resourcepb.Resource{
+				Type:   res.Type,
+				Labels: make(map[string]string, len(res.Labels)),
+			}
+			for k, v := range res.Labels {
+				rsc.Labels[k] = v
+			}
+		}
+	})
+}
+
 // StartCollection starts a ticker'd goroutine that will scrape and export vm metrics periodically.
 func (vmc *VMMetricsCollector) StartCollection() {
+	detectResource()
+
 	go func() {
 		ticker := time.NewTicker(vmc.scrapeInterval)
 		for {
@@ -118,14 +144,17 @@ func (vmc *VMMetricsCollector) scrapeAndExport() {
 		metrics,
 		&metricspb.Metric{
 			MetricDescriptor: metricAllocMem,
+			Resource:         rsc,
 			Timeseries:       []*metricspb.TimeSeries{vmc.getInt64TimeSeries(ms.Alloc)},
 		},
 		&metricspb.Metric{
 			MetricDescriptor: metricTotalAllocMem,
+			Resource:         rsc,
 			Timeseries:       []*metricspb.TimeSeries{vmc.getInt64TimeSeries(ms.TotalAlloc)},
 		},
 		&metricspb.Metric{
 			MetricDescriptor: metricSysMem,
+			Resource:         rsc,
 			Timeseries:       []*metricspb.TimeSeries{vmc.getInt64TimeSeries(ms.Sys)},
 		},
 	)
@@ -140,6 +169,7 @@ func (vmc *VMMetricsCollector) scrapeAndExport() {
 				metrics,
 				&metricspb.Metric{
 					MetricDescriptor: metricProcessCPUSeconds,
+					Resource:         rsc,
 					Timeseries:       []*metricspb.TimeSeries{vmc.getDoubleTimeSeries(procStat.CPUTime(), nil)},
 				},
 			)
@@ -156,18 +186,22 @@ func (vmc *VMMetricsCollector) scrapeAndExport() {
 			metrics,
 			&metricspb.Metric{
 				MetricDescriptor: metricProcessesRunning,
+				Resource:         rsc,
 				Timeseries:       []*metricspb.TimeSeries{vmc.getInt64TimeSeries(stat.ProcessesRunning)},
 			},
 			&metricspb.Metric{
 				MetricDescriptor: metricProcessesBlocked,
+				Resource:         rsc,
 				Timeseries:       []*metricspb.TimeSeries{vmc.getInt64TimeSeries(stat.ProcessesBlocked)},
 			},
 			&metricspb.Metric{
 				MetricDescriptor: metricProcessesCreated,
+				Resource:         rsc,
 				Timeseries:       []*metricspb.TimeSeries{vmc.getInt64TimeSeries(stat.ProcessCreated)},
 			},
 			&metricspb.Metric{
 				MetricDescriptor: metricCPUSeconds,
+				Resource:         rsc,
 				Timeseries: []*metricspb.TimeSeries{
 					vmc.getDoubleTimeSeries(cpuStat.User, labelValueCPUUser),
 					vmc.getDoubleTimeSeries(cpuStat.System, labelValueCPUSystem),
