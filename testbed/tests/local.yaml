@@ -1,1 +1,1 @@
-agent: ../../bin/otelsvc_linux
+agent: ../../bin/otelsvc_{{.GOOS}}
