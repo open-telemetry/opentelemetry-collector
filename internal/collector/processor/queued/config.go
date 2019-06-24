@@ -1,0 +1,35 @@
+// Copyright 2019, OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package queued
+
+import (
+	"time"
+
+	"github.com/open-telemetry/opentelemetry-service/internal/configmodels"
+)
+
+// ConfigV2 defines configuration for Attributes processor.
+type ConfigV2 struct {
+	configmodels.ProcessorSettings `mapstructure:",squash"`
+
+	// NumWorkers is the number of queue workers that dequeue batches and send them out.
+	NumWorkers int `mapstructure:"num-workers"`
+	// QueueSize is the maximum number of batches allowed in queue at a given time.
+	QueueSize int `mapstructure:"queue-size"`
+	// Retry indicates whether queue processor should retry span batches in case of processing failure.
+	RetryOnFailure bool `mapstructure:"retry-on-failure"`
+	// BackoffDelay is the amount of time a worker waits after a failed send before retrying.
+	BackoffDelay time.Duration `mapstructure:"backoff-delay"`
+}
