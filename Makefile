@@ -102,10 +102,6 @@ ifndef COMPONENT
 	$(error COMPONENT variable was not defined)
 endif
 
-.PHONY: docker-collector
-docker-collector:
-	COMPONENT=collector $(MAKE) docker-component
-
 .PHONY: docker-otelsvc
 docker-otelsvc:
 	COMPONENT=otelsvc $(MAKE) docker-component
