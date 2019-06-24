@@ -17,6 +17,7 @@ require (
 	github.com/google/go-cmp v0.3.0
 	github.com/gorilla/mux v1.6.2
 	github.com/grpc-ecosystem/grpc-gateway v1.8.5
+	github.com/guillermo/go.procstat v0.0.0-20131123175440-34c2813d2e7f
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jaegertracing/jaeger v1.9.0
 	github.com/omnition/scribe-go v0.0.0-20190131012523-9e3c68f31124

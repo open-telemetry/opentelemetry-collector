@@ -39,6 +39,7 @@ const (
 	zipkinScribeReceiverFlg     = "receive-zipkin-scribe"
 	loggingExporterFlg          = "logging-exporter"
 	useTailSamplingAlwaysSample = "tail-sampling-always-sample"
+	memBallastFlag              = "mem-ballast-size-mib"
 )
 
 // Flags adds flags related to basic building of the collector application to the given flagset.
@@ -55,6 +56,9 @@ func Flags(flags *flag.FlagSet) {
 	flags.Bool(loggingExporterFlg, false, "Flag to add a logging exporter (combine with log level DEBUG to log incoming spans)")
 	flags.Bool(useTailSamplingAlwaysSample, false, "Flag to use a tail-based sampling processor with an always sample policy, "+
 		"unless tail sampling setting is present on configuration file.")
+	flags.Uint(memBallastFlag, 0,
+		fmt.Sprintf("Flag to specify size of memory (MiB) ballast to set. Ballast is not used when this is not specified. "+
+			"default settings: 0"))
 }
 
 // GetConfigFile gets the config file from the config file flag.
@@ -70,6 +74,11 @@ func LoggingExporterEnabled(v *viper.Viper) bool {
 // DebugTailSamplingEnabled returns true if the debug processor is enabled, and false otherwise
 func DebugTailSamplingEnabled(v *viper.Viper) bool {
 	return v.GetBool(useTailSamplingAlwaysSample)
+}
+
+// MemBallastSize returns the size of memory ballast to use in MBs
+func MemBallastSize(v *viper.Viper) int {
+	return v.GetInt(memBallastFlag)
 }
 
 // JaegerReceiverCfg holds configuration for Jaeger receivers.
