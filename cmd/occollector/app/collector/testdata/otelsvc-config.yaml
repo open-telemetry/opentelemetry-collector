@@ -12,9 +12,11 @@ processors:
     enabled: true
   queued-retry:
     enabled: true
+  batch:
+    enabled: true
 
 pipelines:
   traces:
     receivers: [jaeger]
-    processors: [attributes, queued-retry]
+    processors: [attributes, batch, queued-retry]
     exporters: [opencensus]

@@ -18,12 +18,12 @@ import (
 	"context"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-service/processor"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/receiver"
-
 	"github.com/open-telemetry/opentelemetry-service/internal/configmodels"
+	"github.com/open-telemetry/opentelemetry-service/processor"
+	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
 
 type ExampleReceiverFactory struct {
@@ -157,6 +157,7 @@ func (f *ExampleProcessorFactory) CreateDefaultConfig() configmodels.Processor {
 
 // CreateTraceProcessor creates a trace processor based on this config.
 func (f *ExampleProcessorFactory) CreateTraceProcessor(
+	logger *zap.Logger,
 	nextConsumer consumer.TraceConsumer,
 	cfg configmodels.Processor,
 ) (processor.TraceProcessor, error) {
@@ -165,6 +166,7 @@ func (f *ExampleProcessorFactory) CreateTraceProcessor(
 
 // CreateMetricsProcessor creates a metrics processor based on this config.
 func (f *ExampleProcessorFactory) CreateMetricsProcessor(
+	logger *zap.Logger,
 	nextConsumer consumer.MetricsConsumer,
 	cfg configmodels.Processor,
 ) (processor.MetricsProcessor, error) {

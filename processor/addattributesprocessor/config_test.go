@@ -45,6 +45,7 @@ func TestLoadConfig(t *testing.T) {
 		&ConfigV2{
 			ProcessorSettings: configmodels.ProcessorSettings{
 				TypeVal: "attributes",
+				NameVal: "attributes/2",
 			},
 			Values: map[string]interface{}{
 				"attribute1":         123,

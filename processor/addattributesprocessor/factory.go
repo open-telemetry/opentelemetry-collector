@@ -15,6 +15,8 @@
 package addattributesprocessor
 
 import (
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/internal/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/internal/factories"
@@ -28,20 +30,21 @@ const (
 	typeStr = "attributes"
 )
 
-// processorFactory is the factory for OpenCensus exporter.
+// processorFactory is the factory for Attributes processor.
 type processorFactory struct {
 }
 
-// Type gets the type of the Option config created by this factory.
+// Type gets the type of the config created by this factory.
 func (f *processorFactory) Type() string {
 	return typeStr
 }
 
-// CreateDefaultConfig creates the default configuration for exporter.
+// CreateDefaultConfig creates the default configuration for processor.
 func (f *processorFactory) CreateDefaultConfig() configmodels.Processor {
 	return &ConfigV2{
 		ProcessorSettings: configmodels.ProcessorSettings{
 			TypeVal: typeStr,
+			NameVal: typeStr,
 		},
 		Values: map[string]interface{}{},
 	}
@@ -49,6 +52,7 @@ func (f *processorFactory) CreateDefaultConfig() configmodels.Processor {
 
 // CreateTraceProcessor creates a trace processor based on this config.
 func (f *processorFactory) CreateTraceProcessor(
+	logger *zap.Logger,
 	nextConsumer consumer.TraceConsumer,
 	cfg configmodels.Processor,
 ) (processor.TraceProcessor, error) {
@@ -58,6 +62,7 @@ func (f *processorFactory) CreateTraceProcessor(
 
 // CreateMetricsProcessor creates a metrics processor based on this config.
 func (f *processorFactory) CreateMetricsProcessor(
+	logger *zap.Logger,
 	nextConsumer consumer.MetricsConsumer,
 	cfg configmodels.Processor,
 ) (processor.MetricsProcessor, error) {
