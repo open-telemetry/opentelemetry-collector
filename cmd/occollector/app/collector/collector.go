@@ -123,9 +123,9 @@ func (app *Application) setupZPages() {
 	}
 }
 
-func (app *Application) setupTelemetry() {
+func (app *Application) setupTelemetry(ballastSizeBytes uint64) {
 	app.logger.Info("Setting up own telemetry...")
-	err := AppTelemetry.init(app.asyncErrorChannel, app.v, app.logger)
+	err := AppTelemetry.init(app.asyncErrorChannel, ballastSizeBytes, app.v, app.logger)
 	if err != nil {
 		app.logger.Error("Failed to initialize telemetry", zap.Error(err))
 		os.Exit(1)
@@ -173,23 +173,24 @@ func (app *Application) shutdownClosableComponents() {
 func (app *Application) execute() {
 	app.logger.Info("Starting...", zap.Int("NumCPU", runtime.NumCPU()))
 
+	// Set memory ballast
+	ballast, ballastSizeBytes := app.createMemoryBallast()
+
 	app.asyncErrorChannel = make(chan error)
 
 	// Setup everything.
-
 	app.setupPProf()
 	app.setupHealthCheck()
 	app.processor, app.closeFns = startProcessor(app.v, app.logger)
 	app.setupZPages()
 	app.receivers = createReceivers(app.v, app.logger, app.processor, app.asyncErrorChannel)
-	app.setupTelemetry()
+	app.setupTelemetry(ballastSizeBytes)
 
 	// Everything is ready, now run until an event requiring shutdown happens.
-
 	app.runAndWaitForShutdownEvent()
 
 	// Begin shutdown sequence.
-
+	runtime.KeepAlive(ballast)
 	app.healthCheck.Set(healthcheck.Unavailable)
 	app.logger.Info("Starting shutdown...")
 
@@ -284,22 +285,23 @@ func (app *Application) shutdownPipelines() {
 func (app *Application) executeUnified() {
 	app.logger.Info("Starting...", zap.Int("NumCPU", runtime.NumCPU()))
 
+	// Set memory ballast
+	ballast, ballastSizeBytes := app.createMemoryBallast()
+
 	app.asyncErrorChannel = make(chan error)
 
 	// Setup everything.
-
 	app.setupPProf()
 	app.setupHealthCheck()
 	app.setupZPages()
-	app.setupTelemetry()
+	app.setupTelemetry(ballastSizeBytes)
 	app.setupPipelines()
 
 	// Everything is ready, now run until an event requiring shutdown happens.
-
 	app.runAndWaitForShutdownEvent()
 
 	// Begin shutdown sequence.
-
+	runtime.KeepAlive(ballast)
 	app.healthCheck.Set(healthcheck.Unavailable)
 	app.logger.Info("Starting shutdown...")
 
@@ -332,4 +334,15 @@ func (app *Application) StartUnified() error {
 	)
 
 	return rootCmd.Execute()
+}
+
+func (app *Application) createMemoryBallast() ([]byte, uint64) {
+	ballastSizeMiB := builder.MemBallastSize(app.v)
+	if ballastSizeMiB > 0 {
+		ballastSizeBytes := uint64(ballastSizeMiB) * 1024 * 1024
+		ballast := make([]byte, ballastSizeBytes)
+		app.logger.Info("Using memory ballast", zap.Int("MiBs", ballastSizeMiB))
+		return ballast, ballastSizeBytes
+	}
+	return nil, 0
 }

@@ -53,7 +53,7 @@ func telemetryFlags(flags *flag.FlagSet) {
 	flags.Uint(metricsPortCfg, 8888, "Port exposing collector telemetry.")
 }
 
-func (tel *appTelemetry) init(asyncErrorChannel chan<- error, v *viper.Viper, logger *zap.Logger) error {
+func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, v *viper.Viper, logger *zap.Logger) error {
 	level, err := telemetry.ParseLevel(v.GetString(metricsLevelCfg))
 	if err != nil {
 		log.Fatalf("Failed to parse metrics level: %v", err)
@@ -70,7 +70,7 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, v *viper.Viper, lo
 	views = append(views, nodebatcher.MetricViews(level)...)
 	views = append(views, observability.AllViews...)
 	views = append(views, tailsampling.SamplingProcessorMetricViews(level)...)
-	processMetricsViews := telemetry.NewProcessMetricsViews()
+	processMetricsViews := telemetry.NewProcessMetricsViews(ballastSizeBytes)
 	views = append(views, processMetricsViews.Views()...)
 	tel.views = views
 	if err := view.Register(views...); err != nil {

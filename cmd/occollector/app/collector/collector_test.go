@@ -18,7 +18,11 @@ package collector
 import (
 	"net"
 	"net/http"
+	"os"
+	"runtime"
 	"testing"
+
+	stats "github.com/guillermo/go.procstat"
 
 	"github.com/open-telemetry/opentelemetry-service/internal/testutils"
 
@@ -99,6 +103,72 @@ func TestApplication_StartUnified(t *testing.T) {
 	<-appDone
 }
 
+func testMemBallast(t *testing.T, app *Application, ballastSizeMiB int) {
+	maxRssBytes := mibToBytes(50)
+	minVirtualBytes := mibToBytes(ballastSizeMiB)
+
+	portArg := []string{
+		healthCheckHTTPPort, // Keep it as first since its address is used later.
+		zpagesserver.ZPagesHTTPPort,
+		"metrics-port",
+		"receivers.opencensus.port",
+	}
+
+	addresses := getMultipleAvailableLocalAddresses(t, uint(len(portArg)))
+	for i, addr := range addresses {
+		_, port, err := net.SplitHostPort(addr)
+		if err != nil {
+			t.Fatalf("failed to split host and port from %q: %v", addr, err)
+		}
+		app.v.Set(portArg[i], port)
+	}
+
+	// Without exporters the collector will start and just shutdown, no error is expected.
+	app.v.Set("logging-exporter", true)
+	app.v.Set("mem-ballast-size-mib", ballastSizeMiB)
+
+	appDone := make(chan struct{})
+	go func() {
+		defer close(appDone)
+		if err := app.Start(); err != nil {
+			t.Fatalf("app.Start() got %v, want nil", err)
+		}
+	}()
+
+	<-app.readyChan
+	if !isAppAvailable(t, "http://"+addresses[0]) {
+		t.Fatalf("app didn't reach ready state")
+	}
+	stats := stats.Stat{Pid: os.Getpid()}
+	err := stats.Update()
+	if err != nil {
+		panic(err)
+	}
+
+	if stats.Vsize < minVirtualBytes {
+		t.Errorf("unexpected virtual memory size. expected: >=%d, got: %d", minVirtualBytes, stats.Vsize)
+	}
+
+	if stats.Rss > maxRssBytes {
+		t.Errorf("unexpected RSS size. expected: <%d, got: %d", maxRssBytes, stats.Rss)
+	}
+
+	close(app.stopTestChan)
+	<-appDone
+}
+
+// TestApplication_MemBallast starts a new instance of collector with different
+// mem ballast sizes and ensures that ballast consumes virtual memory but does
+// not count towards RSS mem
+func TestApplication_MemBallast(t *testing.T) {
+	cases := []int{0, 500, 1000}
+	for i := 0; i < len(cases); i++ {
+		runtime.GC()
+		app := newApp()
+		testMemBallast(t, app, cases[i])
+	}
+}
+
 // isAppAvailable checks if the healthcheck server at the given endpoint is
 // returning `available`.
 func isAppAvailable(t *testing.T, healthCheckEndPoint string) bool {
@@ -117,4 +187,8 @@ func getMultipleAvailableLocalAddresses(t *testing.T, numAddresses uint) []strin
 		addresses[i] = testutils.GetAvailableLocalAddress(t)
 	}
 	return addresses
+}
+
+func mibToBytes(mib int) uint64 {
+	return uint64(mib) * 1024 * 1024
 }

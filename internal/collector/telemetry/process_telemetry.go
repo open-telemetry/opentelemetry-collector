@@ -13,8 +13,9 @@ import (
 
 // ProcessMetricsViews is a struct that contains views related to process metrics (cpu, mem, etc)
 type ProcessMetricsViews struct {
-	views []*view.View
-	done  chan struct{}
+	ballastSizeBytes uint64
+	views            []*view.View
+	done             chan struct{}
 }
 
 var mRuntimeAllocMem = stats.Int64("oc.io/process/memory_alloc", "Number of bytes currently allocated in use", "By")
@@ -55,10 +56,11 @@ var viewCPUSeconds = &view.View{
 
 // NewProcessMetricsViews creates a new set of ProcessMetrics (mem, cpu) that can be used to measure
 // basic information about this process.
-func NewProcessMetricsViews() *ProcessMetricsViews {
+func NewProcessMetricsViews(ballastSizeBytes uint64) *ProcessMetricsViews {
 	return &ProcessMetricsViews{
-		views: []*view.View{viewAllocMem, viewTotalAllocMem, viewSysMem, viewCPUSeconds},
-		done:  make(chan struct{}),
+		ballastSizeBytes: ballastSizeBytes,
+		views:            []*view.View{viewAllocMem, viewTotalAllocMem, viewSysMem, viewCPUSeconds},
+		done:             make(chan struct{}),
 	}
 }
 
@@ -89,7 +91,7 @@ func (pmv *ProcessMetricsViews) StopCollection() {
 
 func (pmv *ProcessMetricsViews) updateViews() {
 	ms := &runtime.MemStats{}
-	runtime.ReadMemStats(ms)
+	pmv.readMemStats(ms)
 	stats.Record(context.Background(), mRuntimeAllocMem.M(int64(ms.Alloc)))
 	stats.Record(context.Background(), mRuntimeTotalAllocMem.M(int64(ms.TotalAlloc)))
 	stats.Record(context.Background(), mRuntimeSysMem.M(int64(ms.Sys)))
@@ -101,4 +103,12 @@ func (pmv *ProcessMetricsViews) updateViews() {
 			stats.Record(context.Background(), mCPUSeconds.M(int64(procStat.CPUTime())))
 		}
 	}
+}
+
+func (pmv *ProcessMetricsViews) readMemStats(ms *runtime.MemStats) {
+	runtime.ReadMemStats(ms)
+	ms.Alloc -= pmv.ballastSizeBytes
+	ms.HeapAlloc -= pmv.ballastSizeBytes
+	ms.HeapSys -= pmv.ballastSizeBytes
+	ms.HeapInuse -= pmv.ballastSizeBytes
 }
