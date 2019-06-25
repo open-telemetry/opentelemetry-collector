@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/internal/configmodels"
@@ -138,13 +139,13 @@ type ProcessorFactory interface {
 	// CreateTraceProcessor creates a trace processor based on this config.
 	// If the processor type does not support tracing or if the config is not valid
 	// error will be returned instead.
-	CreateTraceProcessor(nextConsumer consumer.TraceConsumer,
+	CreateTraceProcessor(logger *zap.Logger, nextConsumer consumer.TraceConsumer,
 		cfg configmodels.Processor) (processor.TraceProcessor, error)
 
 	// CreateMetricsProcessor creates a metrics processor based on this config.
 	// If the processor type does not support metrics or if the config is not valid
 	// error will be returned instead.
-	CreateMetricsProcessor(nextConsumer consumer.MetricsConsumer,
+	CreateMetricsProcessor(logger *zap.Logger, nextConsumer consumer.MetricsConsumer,
 		cfg configmodels.Processor) (processor.MetricsProcessor, error)
 }
 

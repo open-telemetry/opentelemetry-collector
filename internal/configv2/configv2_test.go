@@ -88,6 +88,7 @@ func TestDecodeConfig(t *testing.T) {
 		&ExampleProcessor{
 			ProcessorSettings: configmodels.ProcessorSettings{
 				TypeVal: "exampleprocessor",
+				NameVal: "exampleprocessor",
 				Enabled: false,
 			},
 			ExtraSetting: "some export string",

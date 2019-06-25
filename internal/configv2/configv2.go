@@ -315,6 +315,7 @@ func loadProcessors(v *viper.Viper) (configmodels.Processors, error) {
 		// Create the default config for this processors
 		processorCfg := factory.CreateDefaultConfig()
 		processorCfg.SetType(typeStr)
+		processorCfg.SetName(fullName)
 
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.

@@ -17,6 +17,8 @@ package queued
 import (
 	"testing"
 
+	"go.uber.org/zap"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -37,11 +39,11 @@ func TestCreateProcessor(t *testing.T) {
 
 	cfg := factory.CreateDefaultConfig()
 
-	tp, err := factory.CreateTraceProcessor(nil, cfg)
+	tp, err := factory.CreateTraceProcessor(zap.NewNop(), nil, cfg)
 	assert.NotNil(t, tp)
 	assert.NoError(t, err, "cannot create trace processor")
 
-	mp, err := factory.CreateMetricsProcessor(nil, cfg)
+	mp, err := factory.CreateMetricsProcessor(zap.NewNop(), nil, cfg)
 	assert.Nil(t, mp)
 	assert.Error(t, err, "should not be able to create metric processor")
 }

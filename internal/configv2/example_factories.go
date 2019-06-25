@@ -23,6 +23,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/internal/factories"
 	"github.com/open-telemetry/opentelemetry-service/processor"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
+	"go.uber.org/zap"
 )
 
 // ExampleReceiver is for testing purposes. We are defining an example config and factory
@@ -302,6 +303,7 @@ func (f *ExampleProcessorFactory) CreateDefaultConfig() configmodels.Processor {
 
 // CreateTraceProcessor creates a trace processor based on this config.
 func (f *ExampleProcessorFactory) CreateTraceProcessor(
+	logger *zap.Logger,
 	nextConsumer consumer.TraceConsumer,
 	cfg configmodels.Processor,
 ) (processor.TraceProcessor, error) {
@@ -310,6 +312,7 @@ func (f *ExampleProcessorFactory) CreateTraceProcessor(
 
 // CreateMetricsProcessor creates a metrics processor based on this config.
 func (f *ExampleProcessorFactory) CreateMetricsProcessor(
+	logger *zap.Logger,
 	nextConsumer consumer.MetricsConsumer,
 	cfg configmodels.Processor,
 ) (processor.MetricsProcessor, error) {

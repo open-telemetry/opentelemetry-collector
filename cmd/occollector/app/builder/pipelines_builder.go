@@ -104,9 +104,9 @@ func (pb *PipelinesBuilder) buildPipeline(
 		var err error
 		switch pipelineCfg.InputType {
 		case configmodels.TracesDataType:
-			tc, err = factory.CreateTraceProcessor(tc, procCfg)
+			tc, err = factory.CreateTraceProcessor(pb.logger, tc, procCfg)
 		case configmodels.MetricsDataType:
-			mc, err = factory.CreateMetricsProcessor(mc, procCfg)
+			mc, err = factory.CreateMetricsProcessor(pb.logger, mc, procCfg)
 		}
 
 		if err != nil {

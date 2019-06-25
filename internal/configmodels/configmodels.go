@@ -69,6 +69,7 @@ type Exporters map[string]Exporter
 // Processor is the configuration of a processor. Specific processors must implement this
 // interface and will typically embed ProcessorSettings struct or a struct that extends it.
 type Processor interface {
+	NamedEntity
 	Type() string
 	SetType(typeStr string)
 }
@@ -188,7 +189,18 @@ func (es *ExporterSettings) SetType(typeStr string) {
 // Specific processors can embed this struct and extend it with more fields if needed.
 type ProcessorSettings struct {
 	TypeVal string `mapstructure:"-"`
+	NameVal string `mapstructure:"-"`
 	Enabled bool   `mapstructure:"enabled"`
+}
+
+// Name gets the processor name.
+func (proc *ProcessorSettings) Name() string {
+	return proc.NameVal
+}
+
+// SetName sets the processor name.
+func (proc *ProcessorSettings) SetName(name string) {
+	proc.NameVal = name
 }
 
 // Type sets the processor type.

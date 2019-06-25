@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package queued
+package nodebatcher
 
 import (
 	"path"
@@ -38,19 +38,26 @@ func TestLoadConfig(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, config)
 
-	p0 := config.Processors["queued-retry"]
+	p0 := config.Processors["batch"]
 	assert.Equal(t, p0, factory.CreateDefaultConfig())
 
-	p1 := config.Processors["queued-retry/2"]
+	p1 := config.Processors["batch/2"]
+
+	timeout := time.Second * 10
+	tickTime := time.Second * 5
+	removeAfterTicks := 20
+	sendBatchSize := 1000
+
 	assert.Equal(t, p1,
 		&ConfigV2{
 			ProcessorSettings: configmodels.ProcessorSettings{
-				TypeVal: "queued-retry",
-				NameVal: "queued-retry/2",
+				TypeVal: "batch",
+				NameVal: "batch/2",
 			},
-			NumWorkers:     2,
-			QueueSize:      10,
-			RetryOnFailure: true,
-			BackoffDelay:   time.Second * 5,
+			Timeout:          &timeout,
+			NumTickers:       10,
+			RemoveAfterTicks: &removeAfterTicks,
+			SendBatchSize:    &sendBatchSize,
+			TickTime:         &tickTime,
 		})
 }
