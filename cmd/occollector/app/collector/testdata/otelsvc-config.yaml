@@ -10,9 +10,11 @@ exporters:
 processors:
   attributes:
     enabled: true
+  queued-retry:
+    enabled: true
 
 pipelines:
   traces:
     receivers: [jaeger]
-    processors: [attributes]
+    processors: [attributes, queued-retry]
     exporters: [opencensus]
