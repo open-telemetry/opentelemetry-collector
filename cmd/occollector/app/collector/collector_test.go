@@ -18,11 +18,7 @@ package collector
 import (
 	"net"
 	"net/http"
-	"os"
-	"runtime"
 	"testing"
-
-	"github.com/shirou/gopsutil/process"
 
 	"github.com/open-telemetry/opentelemetry-service/internal/testutils"
 	"github.com/open-telemetry/opentelemetry-service/internal/zpagesserver"
@@ -102,90 +98,6 @@ func TestApplication_StartUnified(t *testing.T) {
 	<-appDone
 }
 
-func testMemBallast(t *testing.T, app *Application, ballastSizeMiB int, maxRSSBytes uint64) {
-	minVirtualBytes := mibToBytes(ballastSizeMiB)
-
-	portArg := []string{
-		healthCheckHTTPPort, // Keep it as first since its address is used later.
-		zpagesserver.ZPagesHTTPPort,
-		"metrics-port",
-		"receivers.opencensus.port",
-	}
-
-	addresses := getMultipleAvailableLocalAddresses(t, uint(len(portArg)))
-	for i, addr := range addresses {
-		_, port, err := net.SplitHostPort(addr)
-		if err != nil {
-			t.Fatalf("failed to split host and port from %q: %v", addr, err)
-		}
-		app.v.Set(portArg[i], port)
-	}
-
-	// Without exporters the collector will start and just shutdown, no error is expected.
-	app.v.Set("logging-exporter", true)
-	app.v.Set("mem-ballast-size-mib", ballastSizeMiB)
-
-	appDone := make(chan struct{})
-	go func() {
-		defer close(appDone)
-		if err := app.Start(); err != nil {
-			t.Fatalf("app.Start() got %v, want nil", err)
-		}
-	}()
-
-	<-app.readyChan
-	if !isAppAvailable(t, "http://"+addresses[0]) {
-		t.Fatalf("app didn't reach ready state")
-	}
-
-	vms, rss := getMemStats(t)
-
-	if vms < minVirtualBytes {
-		t.Errorf("unexpected virtual memory size. expected: >=%d, got: %d", minVirtualBytes, vms)
-	}
-
-	if rss > maxRSSBytes {
-		t.Errorf("unexpected RSS size. expected: <%d, got: %d", maxRSSBytes, rss)
-	}
-
-	close(app.stopTestChan)
-	<-appDone
-}
-
-// TestApplication_MemBallast starts a new instance of collector with different
-// mem ballast sizes and ensures that ballast consumes virtual memory but does
-// not count towards RSS mem
-func TestApplication_MemBallast(t *testing.T) {
-	supportedPlatforms := map[string]bool{
-		"linux/386":     true,
-		"linux/amd64":   true,
-		"linux/arm":     true,
-		"freebsd/amd64": true,
-		"freebsd/386":   true,
-		"freebsd/arm":   true,
-		"darwin/amd64":  true,
-		"darwin/386":    true,
-		"openbsd/amd64": true,
-		"windows/amd64": true,
-	}
-	platform := runtime.GOOS + "/" + runtime.GOARCH
-	if _, ok := supportedPlatforms[platform]; !ok {
-		t.Skipf("This test cannot run on the platform: %s", platform)
-	}
-
-	perInstanceRSS := mibToBytes(50)
-	ballastCostPerMB := 0.045
-	cases := []int{0, 500, 1000}
-	for i := 0; i < len(cases); i++ {
-		_, currentRSS := getMemStats(t)
-		ballastCost := float64(cases[i]) * ballastCostPerMB
-		maxRSS := currentRSS + perInstanceRSS + mibToBytes(int(ballastCost))
-		app := newApp()
-		testMemBallast(t, app, cases[i], maxRSS)
-		runtime.GC()
-	}
-}
-
 // isAppAvailable checks if the healthcheck server at the given endpoint is
 // returning `available`.
 func isAppAvailable(t *testing.T, healthCheckEndPoint string) bool {
@@ -208,17 +120,4 @@ func getMultipleAvailableLocalAddresses(t *testing.T, numAddresses uint) []strin
 
 func mibToBytes(mib int) uint64 {
 	return uint64(mib) * 1024 * 1024
-}
-
-func getMemStats(t *testing.T) (uint64, uint64) {
-	proc, err := process.NewProcess(int32(os.Getpid()))
-	if err != nil {
-		t.Fatalf("error reading process stats:%v ", err)
-	}
-	mem, err := proc.MemoryInfo()
-	if err != nil {
-		t.Fatalf("error reading process memory stats:%v ", err)
-	}
-
-	return mem.VMS, mem.RSS
 }
