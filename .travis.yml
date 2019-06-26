@@ -1,4 +1,7 @@
 language: go
+cache:
+  directories:
+    - /home/travis/gopath/pkg/mod
 
 go_import_path: github.com/open-telemetry/opentelemetry-service
 
@@ -10,6 +13,7 @@ env:
     GO111MODULE=on
 
 install:
+  - go mod download
   - make install-tools
 
 script:
