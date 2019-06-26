@@ -22,10 +22,9 @@ import (
 	"runtime"
 	"testing"
 
-	stats "github.com/guillermo/go.procstat"
+	"github.com/shirou/gopsutil/process"
 
 	"github.com/open-telemetry/opentelemetry-service/internal/testutils"
-
 	"github.com/open-telemetry/opentelemetry-service/internal/zpagesserver"
 )
 
@@ -103,8 +102,7 @@ func TestApplication_StartUnified(t *testing.T) {
 	<-appDone
 }
 
-func testMemBallast(t *testing.T, app *Application, ballastSizeMiB int) {
-	maxRssBytes := mibToBytes(50)
+func testMemBallast(t *testing.T, app *Application, ballastSizeMiB int, maxRSSBytes uint64) {
 	minVirtualBytes := mibToBytes(ballastSizeMiB)
 
 	portArg := []string{
@@ -139,18 +137,15 @@ func testMemBallast(t *testing.T, app *Application, ballastSizeMiB int) {
 	if !isAppAvailable(t, "http://"+addresses[0]) {
 		t.Fatalf("app didn't reach ready state")
 	}
-	stats := stats.Stat{Pid: os.Getpid()}
-	err := stats.Update()
-	if err != nil {
-		panic(err)
+
+	vms, rss := getMemStats(t)
+
+	if vms < minVirtualBytes {
+		t.Errorf("unexpected virtual memory size. expected: >=%d, got: %d", minVirtualBytes, vms)
 	}
 
-	if stats.Vsize < minVirtualBytes {
-		t.Errorf("unexpected virtual memory size. expected: >=%d, got: %d", minVirtualBytes, stats.Vsize)
-	}
-
-	if stats.Rss > maxRssBytes {
-		t.Errorf("unexpected RSS size. expected: <%d, got: %d", maxRssBytes, stats.Rss)
+	if rss > maxRSSBytes {
+		t.Errorf("unexpected RSS size. expected: <%d, got: %d", maxRSSBytes, rss)
 	}
 
 	close(app.stopTestChan)
@@ -161,11 +156,33 @@ func testMemBallast(t *testing.T, app *Application, ballastSizeMiB int) {
 // mem ballast sizes and ensures that ballast consumes virtual memory but does
 // not count towards RSS mem
 func TestApplication_MemBallast(t *testing.T) {
+	supportedPlatforms := map[string]bool{
+		"linux/386":     true,
+		"linux/amd64":   true,
+		"linux/arm":     true,
+		"freebsd/amd64": true,
+		"freebsd/386":   true,
+		"freebsd/arm":   true,
+		"darwin/amd64":  true,
+		"darwin/386":    true,
+		"openbsd/amd64": true,
+		"windows/amd64": true,
+	}
+	platform := runtime.GOOS + "/" + runtime.GOARCH
+	if _, ok := supportedPlatforms[platform]; !ok {
+		t.Skipf("This test cannot run on the platform: %s", platform)
+	}
+
+	perInstanceRSS := mibToBytes(50)
+	ballastCostPerMB := 0.045
 	cases := []int{0, 500, 1000}
 	for i := 0; i < len(cases); i++ {
-		runtime.GC()
+		_, currentRSS := getMemStats(t)
+		ballastCost := float64(cases[i]) * ballastCostPerMB
+		maxRSS := currentRSS + perInstanceRSS + mibToBytes(int(ballastCost))
 		app := newApp()
-		testMemBallast(t, app, cases[i])
+		testMemBallast(t, app, cases[i], maxRSS)
+		runtime.GC()
 	}
 }
 
@@ -191,4 +208,17 @@ func getMultipleAvailableLocalAddresses(t *testing.T, numAddresses uint) []strin
 
 func mibToBytes(mib int) uint64 {
 	return uint64(mib) * 1024 * 1024
+}
+
+func getMemStats(t *testing.T) (uint64, uint64) {
+	proc, err := process.NewProcess(int32(os.Getpid()))
+	if err != nil {
+		t.Fatalf("error reading process stats:%v ", err)
+	}
+	mem, err := proc.MemoryInfo()
+	if err != nil {
+		t.Fatalf("error reading process memory stats:%v ", err)
+	}
+
+	return mem.VMS, mem.RSS
 }
