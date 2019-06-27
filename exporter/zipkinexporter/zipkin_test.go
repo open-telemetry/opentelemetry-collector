@@ -16,7 +16,6 @@ package zipkinexporter
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -35,6 +34,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/internal/config/viperutils"
 	"github.com/open-telemetry/opentelemetry-service/internal/testutils"
 	"github.com/open-telemetry/opentelemetry-service/processor/multiconsumer"
+	"github.com/open-telemetry/opentelemetry-service/receiver/receivertest"
 	"github.com/open-telemetry/opentelemetry-service/receiver/zipkinreceiver"
 )
 
@@ -174,10 +174,11 @@ zipkin:
 		t.Fatalf("Failed to create a new Zipkin receiver: %v", err)
 	}
 
-	if err := zi.StartTraceReception(context.Background(), nil); err != nil {
+	mh := receivertest.NewMockHost()
+	if err := zi.StartTraceReception(mh); err != nil {
 		t.Fatalf("Failed to start trace reception: %v", err)
 	}
-	defer zi.StopTraceReception(context.Background())
+	defer zi.StopTraceReception()
 
 	// Let the receiver receive "uploaded Zipkin spans from a Java client application"
 	req, _ := http.NewRequest("POST", "https://tld.org/", strings.NewReader(zipkinSpansJSONJavaLibrary))

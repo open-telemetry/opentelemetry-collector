@@ -106,13 +106,13 @@ func (erp *ExampleReceiverProducer) TraceSource() string {
 }
 
 // StartTraceReception tells the receiver to start its processing.
-func (erp *ExampleReceiverProducer) StartTraceReception(ctx context.Context, asyncErrorChannel chan<- error) error {
+func (erp *ExampleReceiverProducer) StartTraceReception(host receiver.Host) error {
 	erp.TraceStarted = true
 	return nil
 }
 
 // StopTraceReception tells the receiver that should stop reception,
-func (erp *ExampleReceiverProducer) StopTraceReception(ctx context.Context) error {
+func (erp *ExampleReceiverProducer) StopTraceReception() error {
 	erp.TraceStopped = true
 	return nil
 }
@@ -123,13 +123,13 @@ func (erp *ExampleReceiverProducer) MetricsSource() string {
 }
 
 // StartMetricsReception tells the receiver to start its processing.
-func (erp *ExampleReceiverProducer) StartMetricsReception(ctx context.Context, asyncErrorChannel chan<- error) error {
+func (erp *ExampleReceiverProducer) StartMetricsReception(host receiver.Host) error {
 	erp.MetricsStarted = true
 	return nil
 }
 
 // StopMetricsReception tells the receiver that should stop reception,
-func (erp *ExampleReceiverProducer) StopMetricsReception(ctx context.Context) error {
+func (erp *ExampleReceiverProducer) StopMetricsReception() error {
 	erp.MetricsStopped = true
 	return nil
 }

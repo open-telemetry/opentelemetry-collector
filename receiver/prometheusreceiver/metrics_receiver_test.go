@@ -15,11 +15,7 @@
 package prometheusreceiver
 
 import (
-	"context"
 	"fmt"
-	"go.opencensus.io/metric/metricdata"
-	"go.opencensus.io/metric/metricproducer"
-	"go.uber.org/zap"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -33,10 +29,15 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
+	"github.com/spf13/viper"
+	"go.opencensus.io/metric/metricdata"
+	"go.opencensus.io/metric/metricproducer"
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-service/data"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-service/internal/config/viperutils"
-	"github.com/spf13/viper"
+	"github.com/open-telemetry/opentelemetry-service/receiver/receivertest"
 )
 
 var logger, _ = zap.NewDevelopment()
@@ -125,10 +126,11 @@ buffer_count: 2
 		t.Fatalf("Failed to create promreceiver: %v", err)
 	}
 
-	if err := precv.StartMetricsReception(context.Background(), nil); err != nil {
+	mh := receivertest.NewMockHost()
+	if err := precv.StartMetricsReception(mh); err != nil {
 		t.Fatalf("Failed to invoke StartMetricsReception: %v", err)
 	}
-	defer precv.StopMetricsReception(context.Background())
+	defer precv.StopMetricsReception()
 
 	keyMethod := metricdata.LabelKey{Key: "method"}
 	ldm := metricdata.Descriptor{

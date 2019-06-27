@@ -20,16 +20,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-cmp/cmp"
-
 	"contrib.go.opencensus.io/exporter/jaeger"
-	"go.opencensus.io/trace"
-
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/google/go-cmp/cmp"
+	"go.opencensus.io/trace"
+
 	"github.com/open-telemetry/opentelemetry-service/data"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-service/internal"
+	"github.com/open-telemetry/opentelemetry-service/receiver/receivertest"
 )
 
 func TestReception(t *testing.T) {
@@ -43,10 +43,11 @@ func TestReception(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create new Jaeger Receiver: %v", err)
 	}
-	defer jr.StopTraceReception(context.Background())
+	defer jr.StopTraceReception()
 	t.Log("Starting")
 
-	if err := jr.StartTraceReception(context.Background(), nil); err != nil {
+	mh := receivertest.NewMockHost()
+	if err := jr.StartTraceReception(mh); err != nil {
 		t.Fatalf("StartTraceReception failed: %v", err)
 	}
 	t.Log("StartTraceReception")

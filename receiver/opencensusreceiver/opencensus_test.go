@@ -24,15 +24,16 @@ import (
 	"testing"
 	"time"
 
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
-
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
+
 	"github.com/open-telemetry/opentelemetry-service/data"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-service/internal"
+	"github.com/open-telemetry/opentelemetry-service/receiver/receivertest"
 )
 
 func TestGrpcGateway_endToEnd(t *testing.T) {
@@ -44,10 +45,11 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create trace receiver: %v", err)
 	}
-	defer ocr.StopTraceReception(context.Background())
+	defer ocr.StopTraceReception()
 
+	mh := receivertest.NewMockHost()
 	go func() {
-		if err := ocr.StartTraceReception(context.Background(), nil); err != nil {
+		if err := ocr.StartTraceReception(mh); err != nil {
 			t.Fatalf("Failed to start trace receiver: %v", err)
 		}
 	}()
@@ -157,8 +159,9 @@ func TestGrpcGatewayCors_endToEnd(t *testing.T) {
 	}
 	defer ocr.Stop()
 
+	mh := receivertest.NewMockHost()
 	go func() {
-		if err := ocr.StartTraceReception(context.Background(), nil); err != nil {
+		if err := ocr.StartTraceReception(mh); err != nil {
 			t.Fatalf("Failed to start trace receiver: %v", err)
 		}
 	}()
@@ -188,7 +191,8 @@ func TestAcceptAllGRPCProtoAffiliatedContentTypes(t *testing.T) {
 		t.Fatalf("Failed to create trace receiver: %v", err)
 	}
 
-	if err := ocr.StartTraceReception(context.Background(), nil); err != nil {
+	mh := receivertest.NewMockHost()
+	if err := ocr.StartTraceReception(mh); err != nil {
 		t.Fatalf("Failed to start the trace receiver: %v", err)
 	}
 	defer ocr.Stop()

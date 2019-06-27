@@ -39,14 +39,14 @@ type builtReceiver struct {
 func (rcv *builtReceiver) Stop() error {
 	var errors []error
 	if rcv.trace != nil {
-		err := rcv.trace.StopTraceReception(context.Background())
+		err := rcv.trace.StopTraceReception()
 		if err != nil {
 			errors = append(errors, err)
 		}
 	}
 
 	if rcv.metrics != nil {
-		err := rcv.metrics.StopMetricsReception(context.Background())
+		err := rcv.metrics.StopMetricsReception()
 		if err != nil {
 			errors = append(errors, err)
 		}
@@ -56,17 +56,17 @@ func (rcv *builtReceiver) Stop() error {
 }
 
 // Start the receiver.
-func (rcv *builtReceiver) Start(asyncErrorChan chan<- error) error {
+func (rcv *builtReceiver) Start(host receiver.Host) error {
 	var errors []error
 	if rcv.trace != nil {
-		err := rcv.trace.StartTraceReception(context.Background(), asyncErrorChan)
+		err := rcv.trace.StartTraceReception(host)
 		if err != nil {
 			errors = append(errors, err)
 		}
 	}
 
 	if rcv.metrics != nil {
-		err := rcv.metrics.StartMetricsReception(context.Background(), asyncErrorChan)
+		err := rcv.metrics.StartMetricsReception(host)
 		if err != nil {
 			errors = append(errors, err)
 		}
@@ -86,11 +86,11 @@ func (rcvs Receivers) StopAll() {
 }
 
 // StartAll starts all receivers.
-func (rcvs Receivers) StartAll(logger *zap.Logger, asyncErrorChan chan<- error) error {
+func (rcvs Receivers) StartAll(logger *zap.Logger, host receiver.Host) error {
 	for cfg, rcv := range rcvs {
 		logger.Info("Receiver is starting...", zap.String("receiver", cfg.Name()))
 
-		if err := rcv.Start(asyncErrorChan); err != nil {
+		if err := rcv.Start(host); err != nil {
 			return err
 		}
 		logger.Info("Receiver is started.", zap.String("receiver", cfg.Name()))

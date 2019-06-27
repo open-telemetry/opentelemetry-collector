@@ -35,7 +35,7 @@ import (
 )
 
 // Start starts the Jaeger receiver endpoint.
-func Start(logger *zap.Logger, v *viper.Viper, traceConsumer consumer.TraceConsumer, asyncErrorChan chan<- error) (receiver.TraceReceiver, error) {
+func Start(logger *zap.Logger, v *viper.Viper, traceConsumer consumer.TraceConsumer, host receiver.Host) (receiver.TraceReceiver, error) {
 	rOpts, err := builder.NewDefaultJaegerReceiverCfg().InitFromViper(v)
 	if err != nil {
 		return nil, err
@@ -51,7 +51,7 @@ func Start(logger *zap.Logger, v *viper.Viper, traceConsumer consumer.TraceConsu
 		return nil, err
 	}
 
-	if err := jtr.StartTraceReception(ctx, asyncErrorChan); err != nil {
+	if err := jtr.StartTraceReception(host); err != nil {
 		return nil, err
 	}
 

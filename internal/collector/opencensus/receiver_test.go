@@ -26,6 +26,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/cmd/occollector/app/builder"
 	"github.com/open-telemetry/opentelemetry-service/processor/processortest"
 	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver"
+	"github.com/open-telemetry/opentelemetry-service/receiver/receivertest"
 )
 
 func TestStart(t *testing.T) {
@@ -85,8 +86,8 @@ func TestStart(t *testing.T) {
 				return
 			}
 			nopProcessor := processortest.NewNopTraceProcessor(nil)
-			asyncErrChan := make(chan error, 1)
-			got, err := Start(zap.NewNop(), v, nopProcessor, asyncErrChan)
+			mh := receivertest.NewMockHost()
+			got, err := Start(zap.NewNop(), v, nopProcessor, mh)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Start() error = %v, wantErr %v", err, tt.wantErr)
 				return

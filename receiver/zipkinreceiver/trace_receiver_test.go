@@ -16,7 +16,6 @@ package zipkinreceiver
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -28,17 +27,18 @@ import (
 	"time"
 
 	"contrib.go.opencensus.io/exporter/zipkin"
+	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	openzipkin "github.com/openzipkin/zipkin-go"
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	zhttp "github.com/openzipkin/zipkin-go/reporter/http"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/data"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-service/internal"
 	"github.com/open-telemetry/opentelemetry-service/internal/testutils"
+	"github.com/open-telemetry/opentelemetry-service/receiver/receivertest"
 	spandatatranslator "github.com/open-telemetry/opentelemetry-service/translator/trace/spandata"
 )
 
@@ -162,9 +162,10 @@ func TestZipkinReceiverPortAlreadyInUse(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create receiver: %v", err)
 	}
-	err = traceReceiver.StartTraceReception(context.Background(), nil)
+	mh := receivertest.NewMockHost()
+	err = traceReceiver.StartTraceReception(mh)
 	if err == nil {
-		traceReceiver.StopTraceReception(context.Background())
+		traceReceiver.StopTraceReception()
 		t.Fatal("conflict on port was expected")
 	}
 }

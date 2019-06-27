@@ -49,7 +49,7 @@ func Example_endToEnd() {
 	// Once we have the span receiver which will connect to the
 	// various exporter pipeline i.e. *tracepb.Span->OpenCensus.SpanData
 	for _, tr := range trl {
-		if err := tr.StartTraceReception(context.Background(), nil); err != nil {
+		if err := tr.StartTraceReception(nil); err != nil {
 			log.Fatalf("Failed to start trace receiver: %v", err)
 		}
 	}
@@ -57,7 +57,7 @@ func Example_endToEnd() {
 	// Before exiting, stop all the trace receivers
 	defer func() {
 		for _, tr := range trl {
-			_ = tr.StopTraceReception(context.Background())
+			_ = tr.StopTraceReception()
 		}
 	}()
 	log.Println("Done starting the trace receiver")

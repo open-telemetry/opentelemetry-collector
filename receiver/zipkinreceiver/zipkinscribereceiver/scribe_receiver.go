@@ -79,7 +79,7 @@ func (r *scribeReceiver) TraceSource() string {
 	return traceSource
 }
 
-func (r *scribeReceiver) StartTraceReception(ctx context.Context, asyncErrorChan chan<- error) error {
+func (r *scribeReceiver) StartTraceReception(host receiver.Host) error {
 	r.Lock()
 	defer r.Unlock()
 
@@ -112,7 +112,7 @@ func (r *scribeReceiver) StartTraceReception(ctx context.Context, asyncErrorChan
 	return err
 }
 
-func (r *scribeReceiver) StopTraceReception(ctx context.Context) error {
+func (r *scribeReceiver) StopTraceReception() error {
 	r.Lock()
 	defer r.Unlock()
 
