@@ -31,6 +31,7 @@ require (
 	github.com/prometheus/procfs v0.0.0-20190117184657-bf6a532e95b1
 	github.com/prometheus/prometheus v0.0.0-20190131111325-62e591f928dd
 	github.com/rs/cors v1.6.0
+	github.com/shirou/gopsutil v2.18.12+incompatible
 	github.com/soheilhy/cmux v0.1.4
 	github.com/spf13/cast v1.2.0
 	github.com/spf13/cobra v0.0.3
