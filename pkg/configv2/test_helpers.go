@@ -18,7 +18,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-service/internal/configmodels"
+	"github.com/open-telemetry/opentelemetry-service/pkg/configmodels"
 	"github.com/spf13/viper"
 )
 

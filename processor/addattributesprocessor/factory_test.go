@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-service/internal/factories"
+	"github.com/open-telemetry/opentelemetry-service/pkg/factories"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {

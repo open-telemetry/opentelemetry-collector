@@ -23,7 +23,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/internal/configmodels"
+	"github.com/open-telemetry/opentelemetry-service/pkg/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/processor"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 )

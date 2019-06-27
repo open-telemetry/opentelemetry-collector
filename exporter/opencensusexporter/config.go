@@ -17,7 +17,7 @@ package opencensusexporter
 import (
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-service/internal/configmodels"
+	"github.com/open-telemetry/opentelemetry-service/pkg/configmodels"
 )
 
 // ConfigV2 defines configuration for OpenCensus exporter.

@@ -21,8 +21,8 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/internal"
-	"github.com/open-telemetry/opentelemetry-service/internal/configmodels"
-	"github.com/open-telemetry/opentelemetry-service/internal/factories"
+	"github.com/open-telemetry/opentelemetry-service/pkg/configmodels"
+	"github.com/open-telemetry/opentelemetry-service/pkg/factories"
 )
 
 // builtExporter is an exporter that is built based on a config. It can have

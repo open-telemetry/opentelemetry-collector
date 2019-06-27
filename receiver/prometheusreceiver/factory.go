@@ -22,8 +22,8 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/internal/configmodels"
-	"github.com/open-telemetry/opentelemetry-service/internal/factories"
+	"github.com/open-telemetry/opentelemetry-service/pkg/configmodels"
+	"github.com/open-telemetry/opentelemetry-service/pkg/factories"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
 
