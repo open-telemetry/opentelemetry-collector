@@ -1,0 +1,22 @@
+receivers:
+  jaeger:
+    collector_http_port: 14268
+    protocols:
+      thrift-http:
+        endpoint: "*:14268"
+        enabled: true
+
+exporters:
+  opencensus:
+    endpoint: "127.0.0.1:56565"
+    enabled: true
+
+processors:
+  attributes:
+    enabled: true
+
+pipelines:
+  traces:
+    receivers: [jaeger]
+    processors: [attributes]
+    exporters: [opencensus]

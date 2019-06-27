@@ -1,6 +1,7 @@
 # More exclusions can be added similar with: -not -path './vendor/*'
 ALL_SRC := $(shell find . -name '*.go' \
                                 -not -path './vendor/*' \
+                                -not -path './testbed/*' \
                                 -not -path './tools/*' \
                                 -type f | sort)
 
@@ -33,6 +34,10 @@ all-srcs:
 
 .PHONY: fmt-vet-lint-test
 fmt-vet-lint-test: fmt vet lint test
+
+.PHONY: perf-test
+perf-test: otelsvc
+	$(MAKE) -C testbed runtests
 
 .PHONY: test
 test:
