@@ -25,11 +25,14 @@
 package testbed
 
 import (
+	"bytes"
 	"errors"
 	"log"
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
+	"text/template"
 
 	"github.com/spf13/viper"
 )
@@ -64,10 +67,28 @@ func LoadConfig() error {
 
 	testBedConfigDir := path.Dir(testBedConfigFile)
 
+	// Use templates to expand some selected content on the config file.
+	cfgTemplate, err := template.ParseFiles(testBedConfigFile)
+	if err != nil {
+		log.Fatalf("Template failed to parse config file %q: %s",
+			testBedConfigFile, err.Error())
+	}
+
+	templateVars := struct {
+		GOOS string
+	}{
+		GOOS: runtime.GOOS,
+	}
+	var buf bytes.Buffer
+	if err := cfgTemplate.Execute(&buf, templateVars); err != nil {
+		log.Fatalf("Configuration template failed to run on file %q: %s",
+			testBedConfigFile, err.Error())
+	}
+
 	// Read the config.
 	v := viper.New()
-	v.SetConfigFile(testBedConfigFile)
-	if err = v.ReadInConfig(); err != nil {
+	v.SetConfigType("yaml")
+	if err = v.ReadConfig(bytes.NewBuffer(buf.Bytes())); err != nil {
 		log.Fatalf("Cannot load test bed config from %q: %s",
 			testBedConfigFile, err.Error())
 	}
@@ -78,7 +99,6 @@ func LoadConfig() error {
 	}
 
 	// Convert relative paths to absolute.
-
 	testBedConfig.Agent, err = filepath.Abs(path.Join(testBedConfigDir, testBedConfig.Agent))
 	if err != nil {
 		log.Fatalf("Cannot resolve file name %q: %s",
