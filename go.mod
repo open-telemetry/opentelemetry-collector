@@ -12,26 +12,26 @@ require (
 	github.com/aws/aws-sdk-go v1.19.18 // indirect
 	github.com/bmizerany/perks v0.0.0-20141205001514-d9a9656a3a4b // indirect
 	github.com/census-instrumentation/opencensus-proto v0.2.0
+	github.com/go-kit/kit v0.8.0
 	github.com/gogo/googleapis v1.2.0 // indirect
 	github.com/golang/protobuf v1.3.1
 	github.com/google/go-cmp v0.3.0
 	github.com/gorilla/mux v1.6.2
 	github.com/grpc-ecosystem/grpc-gateway v1.8.5
-	github.com/guillermo/go.procstat v0.0.0-20131123175440-34c2813d2e7f
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jaegertracing/jaeger v1.9.0
+	github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024
 	github.com/omnition/scribe-go v0.0.0-20190131012523-9e3c68f31124
 	github.com/opentracing/opentracing-go v1.1.0 // indirect
 	github.com/openzipkin/zipkin-go v0.1.6
 	github.com/orijtech/prometheus-go-metrics-exporter v0.0.3-0.20190313163149-b321c5297f60
-	github.com/orijtech/promreceiver v0.0.6
 	github.com/pkg/errors v0.8.0
 	github.com/prashantv/protectmem v0.0.0-20171002184600-e20412882b3a // indirect
 	github.com/prometheus/client_golang v0.9.2
+	github.com/prometheus/common v0.0.0-20181126121408-4724e9255275
 	github.com/prometheus/procfs v0.0.0-20190117184657-bf6a532e95b1
 	github.com/prometheus/prometheus v0.0.0-20190131111325-62e591f928dd
 	github.com/rs/cors v1.6.0
-	github.com/shirou/gopsutil v2.18.12+incompatible
 	github.com/soheilhy/cmux v0.1.4
 	github.com/spf13/cast v1.2.0
 	github.com/spf13/cobra v0.0.3

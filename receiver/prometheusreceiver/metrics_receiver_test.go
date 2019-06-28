@@ -1,4 +1,4 @@
-// Copyright 2019, OpenTelemetry Authors
+// Copyright 2019, OpenCensus Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,27 +17,29 @@ package prometheusreceiver
 import (
 	"context"
 	"fmt"
+	"go.opencensus.io/metric/metricdata"
+	"go.opencensus.io/metric/metricproducer"
+	"go.uber.org/zap"
 	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"reflect"
+	"sort"
 	"testing"
 	"time"
 
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
-
 	"contrib.go.opencensus.io/exporter/prometheus"
-	"github.com/spf13/viper"
-	"go.opencensus.io/metric/metricdata"
-	"go.opencensus.io/metric/metricproducer"
-
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
+	"github.com/open-telemetry/opentelemetry-service/data"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-service/internal/config/viperutils"
+	"github.com/spf13/viper"
 )
+
+var logger, _ = zap.NewDevelopment()
 
 type scrapeCounter struct {
 	scrapeTrackCh chan bool
@@ -48,7 +50,7 @@ type scrapeCounter struct {
 func (sc *scrapeCounter) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	select {
 	case <-sc.shutdownCh:
-		http.Error(rw, "shuting down", http.StatusGone)
+		http.Error(rw, "shutting down", http.StatusGone)
 
 	default:
 		sc.scrapeTrackCh <- true
@@ -59,19 +61,19 @@ func (sc *scrapeCounter) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 func TestNew(t *testing.T) {
 	v := viper.New()
 
-	_, err := New(v, nil)
+	_, err := New(logger, v, nil)
 	if err != errNilScrapeConfig {
 		t.Fatalf("Expected errNilScrapeConfig but did not get it.")
 	}
 
 	v.Set("config", nil)
-	_, err = New(v, nil)
+	_, err = New(logger, v, nil)
 	if err != errNilScrapeConfig {
 		t.Fatalf("Expected errNilScrapeConfig but did not get it.")
 	}
 
 	v.Set("config.blah", "some_value")
-	_, err = New(v, nil)
+	_, err = New(logger, v, nil)
 	if err != errNilScrapeConfig {
 		t.Fatalf("Expected errNilScrapeConfig but did not get it.")
 	}
@@ -103,12 +105,9 @@ func TestEndToEnd(t *testing.T) {
 config:
   scrape_configs:
     - job_name: 'demo'
-
       scrape_interval: %s
-
       static_configs:
         - targets: ['%s']
-
 buffer_period: 500ms
 buffer_count: 2
 `, scrapePeriod, cstURL.Host)
@@ -121,7 +120,7 @@ buffer_count: 2
 	}
 
 	cms := new(exportertest.SinkMetricsExporter)
-	precv, err := New(v, cms)
+	precv, err := New(logger, v, cms)
 	if err != nil {
 		t.Fatalf("Failed to create promreceiver: %v", err)
 	}
@@ -197,86 +196,96 @@ buffer_count: 2
 	// Pause for the next scrape
 	precv.Flush()
 
-	close(shutdownCh)
-	gotMDs := cms.AllMetrics()
-	if len(gotMDs) == 0 {
-		t.Errorf("Want at least one Metric. Got zero.")
-	}
+	got := cms.AllMetrics()
+
+	// Unfortunately we can't control the time that Prometheus produces from scraping,
+	// hence for equality, we manually have to retrieve the times recorded by Prometheus,
+	// but indexed by each unique MetricDescriptor.Name().
+	retrievedTimestamps := indexTimestampsByMetricDescriptorName(got)
 
 	// Now compare the received metrics data with what we expect.
-	wantNode := &commonpb.Node{
-		Identifier: &commonpb.ProcessIdentifier{
-			HostName: host,
-		},
-		ServiceInfo: &commonpb.ServiceInfo{
-			Name: "demo",
-		},
-		Attributes: map[string]string{
-			"scheme": "http",
-			"port":   port,
-		},
-	}
-
-	wantMetricPb1 := &metricspb.Metric{
-		MetricDescriptor: &metricspb.MetricDescriptor{
-			Name:        "e2ereceiver_e2e_calls",
-			Description: "The number of calls",
-			Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
-			LabelKeys: []*metricspb.LabelKey{
-				{Key: "method"},
-			},
-		},
-		Timeseries: []*metricspb.TimeSeries{
-			{
-				LabelValues: []*metricspb.LabelValue{
-					{Value: "a.b.c.run"},
+	want1 := []data.MetricsData{
+		{
+			Node: &commonpb.Node{
+				Identifier: &commonpb.ProcessIdentifier{
+					HostName: host,
 				},
-				Points: []*metricspb.Point{
-					{
-						Value: &metricspb.Point_Int64Value{
-							Int64Value: 1,
+				ServiceInfo: &commonpb.ServiceInfo{
+					Name: "demo",
+				},
+				Attributes: map[string]string{
+					"scheme": "http",
+					"port":   port,
+				},
+			},
+			Metrics: []*metricspb.Metric{
+				{
+					MetricDescriptor: &metricspb.MetricDescriptor{
+						Name:        "e2ereceiver_e2e_calls",
+						Description: "The number of calls",
+						Type:        metricspb.MetricDescriptor_CUMULATIVE_DOUBLE,
+						LabelKeys: []*metricspb.LabelKey{
+							{Key: "method"},
+						},
+					},
+					Timeseries: []*metricspb.TimeSeries{
+						{
+							StartTimestamp: retrievedTimestamps["e2ereceiver_e2e_calls"],
+							LabelValues: []*metricspb.LabelValue{
+								{Value: "a.b.c.run", HasValue: true},
+							},
+							Points: []*metricspb.Point{
+								{
+									Timestamp: retrievedTimestamps["e2ereceiver_e2e_calls"],
+									Value: &metricspb.Point_DoubleValue{
+										DoubleValue: 1,
+									},
+								},
+							},
 						},
 					},
 				},
-			},
-		},
-	}
-
-	wantMetricPb2 := &metricspb.Metric{
-		MetricDescriptor: &metricspb.MetricDescriptor{
-			Name:        "e2ereceiver_e2e_call_latency",
-			Description: "The latency in milliseconds per call",
-			Type:        metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION,
-			LabelKeys: []*metricspb.LabelKey{
-				{Key: "method"},
-			},
-		},
-		Timeseries: []*metricspb.TimeSeries{
-			{
-				LabelValues: []*metricspb.LabelValue{
-					{Value: "a.b.c.run"},
-				},
-				Points: []*metricspb.Point{
-					{
-						Value: &metricspb.Point_DistributionValue{
-							DistributionValue: &metricspb.DistributionValue{
-								Count:                 1,
-								Sum:                   180,
-								SumOfSquaredDeviation: 1,
-								BucketOptions: &metricspb.DistributionValue_BucketOptions{
-									Type: &metricspb.DistributionValue_BucketOptions_Explicit_{
-										Explicit: &metricspb.DistributionValue_BucketOptions_Explicit{
-											Bounds: []float64{0, 100, 200, 500, 1000, 5000},
+				{
+					MetricDescriptor: &metricspb.MetricDescriptor{
+						Name:        "e2ereceiver_e2e_call_latency",
+						Description: "The latency in milliseconds per call",
+						Type:        metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION,
+						LabelKeys: []*metricspb.LabelKey{
+							{Key: "method"},
+						},
+					},
+					Timeseries: []*metricspb.TimeSeries{
+						{
+							StartTimestamp: retrievedTimestamps["e2ereceiver_e2e_call_latency"],
+							LabelValues: []*metricspb.LabelValue{
+								{Value: "a.b.c.run", HasValue: true},
+							},
+							Points: []*metricspb.Point{
+								{
+									Timestamp: retrievedTimestamps["e2ereceiver_e2e_call_latency"],
+									Value: &metricspb.Point_DistributionValue{
+										DistributionValue: &metricspb.DistributionValue{
+											Count: 1,
+											Sum:   180,
+											BucketOptions: &metricspb.DistributionValue_BucketOptions{
+												Type: &metricspb.DistributionValue_BucketOptions_Explicit_{
+													Explicit: &metricspb.DistributionValue_BucketOptions_Explicit{
+														Bounds: []float64{0, 100, 200, 500, 1000, 5000},
+													},
+												},
+											},
+											// size(bounds) + 1 (= N) buckets. The boundaries for bucket
+											Buckets: []*metricspb.DistributionValue_Bucket{
+												{},
+												{Count: 1},
+												{},
+												{},
+												{},
+												{},
+												{},
+											},
 										},
 									},
-								},
-								Buckets: []*metricspb.DistributionValue_Bucket{
-									{},
-									{Count: 1},
-									{},
-									{},
-									{},
-									{},
 								},
 							},
 						},
@@ -286,22 +295,152 @@ buffer_count: 2
 		},
 	}
 
-	for _, md := range gotMDs {
-		node := md.Node
-		if diff := cmpNodePb(node, wantNode); diff != "" {
-			t.Errorf("Mismatch Node\n-Got +Want:\n%s", diff)
-		}
-		metricPbs := md.Metrics
-		if len(metricPbs) != 1 {
-			t.Errorf("Want 1 metric, got %d", len(metricPbs))
-		}
-		metricPb := metricPbs[0]
-		diff1 := cmpMetricPb(metricPb, wantMetricPb1)
-		diff2 := cmpMetricPb(metricPb, wantMetricPb2)
-		if diff1 != "" && diff2 != "" {
-			t.Errorf("Metric doesn't match with either of wanted metrics\n-Got +Want:\n%s\n-Got +Want:\n%s", diff1, diff2)
+	want2 := []data.MetricsData{
+		{
+			Node: &commonpb.Node{
+				Identifier: &commonpb.ProcessIdentifier{
+					HostName: host,
+				},
+				ServiceInfo: &commonpb.ServiceInfo{
+					Name: "demo",
+				},
+				Attributes: map[string]string{
+					"scheme": "http",
+					"port":   port,
+				},
+			},
+			Metrics: []*metricspb.Metric{
+				{
+					MetricDescriptor: &metricspb.MetricDescriptor{
+						Name:        "e2ereceiver_e2e_calls",
+						Description: "The number of calls",
+						Type:        metricspb.MetricDescriptor_CUMULATIVE_DOUBLE,
+						LabelKeys: []*metricspb.LabelKey{
+							{Key: "method"},
+						},
+					},
+					Timeseries: []*metricspb.TimeSeries{
+						{
+							StartTimestamp: retrievedTimestamps["e2ereceiver_e2e_calls"],
+							LabelValues: []*metricspb.LabelValue{
+								{Value: "a.b.c.run", HasValue: true},
+							},
+							Points: []*metricspb.Point{
+								{
+									Timestamp: retrievedTimestamps["e2ereceiver_e2e_calls"],
+									Value: &metricspb.Point_DoubleValue{
+										DoubleValue: 1,
+									},
+								},
+							},
+						},
+					},
+				},
+				{
+					MetricDescriptor: &metricspb.MetricDescriptor{
+						Name:        "e2ereceiver_e2e_call_latency",
+						Description: "The latency in milliseconds per call",
+						Type:        metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION,
+						LabelKeys: []*metricspb.LabelKey{
+							{Key: "method"},
+						},
+					},
+					Timeseries: []*metricspb.TimeSeries{
+						{
+							StartTimestamp: retrievedTimestamps["e2ereceiver_e2e_call_latency"],
+							LabelValues: []*metricspb.LabelValue{
+								{Value: "a.b.c.run", HasValue: true},
+							},
+							Points: []*metricspb.Point{
+								{
+									Timestamp: retrievedTimestamps["e2ereceiver_e2e_call_latency"],
+									Value: &metricspb.Point_DistributionValue{
+										DistributionValue: &metricspb.DistributionValue{
+											Count: 1,
+											Sum:   180,
+											BucketOptions: &metricspb.DistributionValue_BucketOptions{
+												Type: &metricspb.DistributionValue_BucketOptions_Explicit_{
+													Explicit: &metricspb.DistributionValue_BucketOptions_Explicit{
+														Bounds: []float64{0, 100, 200, 500, 1000, 5000},
+													},
+												},
+											},
+											// size(bounds) + 1 (= N) buckets. The boundaries for bucket
+											Buckets: []*metricspb.DistributionValue_Bucket{
+												{},
+												{Count: 1},
+												{},
+												{},
+												{},
+												{},
+												{},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Firstly sort them so that comparisons return stable results.
+	byMetricsSorter(t, got)
+	byMetricsSorter(t, want1)
+	byMetricsSorter(t, want2)
+
+	if reflect.DeepEqual(got, want1) {
+		fmt.Println("done")
+		return
+	}
+
+	// Since these tests rely on underdeterministic behavior and timing that's imprecise.
+	// The best that we can do is provide any of variants of what we want.
+	wantPermutations := [][]data.MetricsData{
+		want1, want2,
+	}
+
+	for _, want := range wantPermutations {
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("different metric got:\n%v\nwant:\n%v\n", string(exportertest.ToJSON(got)),
+				string(exportertest.ToJSON(want)))
 		}
 	}
+}
+
+func byMetricsSorter(t *testing.T, mds []data.MetricsData) {
+	for i, md := range mds {
+		eMetrics := md.Metrics
+		sort.Slice(eMetrics, func(i, j int) bool {
+			mdi, mdj := eMetrics[i], eMetrics[j]
+			return mdi.GetMetricDescriptor().GetName() < mdj.GetMetricDescriptor().GetName()
+		})
+		md.Metrics = eMetrics
+		mds[i] = md
+	}
+
+	// Then sort by requests.
+	sort.Slice(mds, func(i, j int) bool {
+		mdi, mdj := mds[i], mds[j]
+		return string(exportertest.ToJSON(mdi)) < string(exportertest.ToJSON(mdj))
+	})
+}
+
+func indexTimestampsByMetricDescriptorName(mds []data.MetricsData) map[string]*timestamp.Timestamp {
+	index := make(map[string]*timestamp.Timestamp)
+	for _, md := range mds {
+		for _, eimetric := range md.Metrics {
+			for _, eiTimeSeries := range eimetric.Timeseries {
+				if ts := eiTimeSeries.GetStartTimestamp(); ts != nil {
+					index[eimetric.GetMetricDescriptor().GetName()] = ts
+					break
+				}
+			}
+		}
+	}
+	return index
 }
 
 type fakeProducer struct {
@@ -310,24 +449,4 @@ type fakeProducer struct {
 
 func (producer *fakeProducer) Read() []*metricdata.Metric {
 	return producer.metrics
-}
-
-func cmpNodePb(got, want *commonpb.Node) string {
-	// Ignore all "XXX_sizecache" fields.
-	return cmp.Diff(
-		got,
-		want,
-		cmpopts.IgnoreFields(commonpb.Node{}, "XXX_sizecache"),
-		cmpopts.IgnoreFields(commonpb.ProcessIdentifier{}, "XXX_sizecache"),
-		cmpopts.IgnoreFields(commonpb.ServiceInfo{}, "XXX_sizecache"))
-}
-
-func cmpMetricPb(got, want *metricspb.Metric) string {
-	// Start and end time are non-deteministic. Ignore them when do the comparison.
-	return cmp.Diff(
-		got,
-		want,
-		cmpopts.IgnoreTypes(&timestamp.Timestamp{}),
-		cmpopts.IgnoreFields(metricspb.MetricDescriptor{}, "XXX_sizecache"),
-		cmpopts.IgnoreFields(metricspb.LabelKey{}, "XXX_sizecache"))
 }
