@@ -20,8 +20,8 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/pkg/configmodels"
-	"github.com/open-telemetry/opentelemetry-service/pkg/factories"
+	"github.com/open-telemetry/opentelemetry-service/factories"
+	"github.com/open-telemetry/opentelemetry-service/models"
 	"github.com/open-telemetry/opentelemetry-service/processor/multiconsumer"
 )
 
@@ -34,12 +34,12 @@ type builtProcessor struct {
 
 // PipelineProcessors is a map of entry-point processors created from pipeline configs.
 // Each element of the map points to the first processor of the pipeline.
-type PipelineProcessors map[*configmodels.Pipeline]*builtProcessor
+type PipelineProcessors map[*models.Pipeline]*builtProcessor
 
 // PipelinesBuilder builds pipelines from config.
 type PipelinesBuilder struct {
 	logger    *zap.Logger
-	config    *configmodels.ConfigV2
+	config    *models.ConfigV2
 	exporters Exporters
 }
 
@@ -47,7 +47,7 @@ type PipelinesBuilder struct {
 // built via ExportersBuilder. Call Build() on the returned value.
 func NewPipelinesBuilder(
 	logger *zap.Logger,
-	config *configmodels.ConfigV2,
+	config *models.ConfigV2,
 	exporters Exporters,
 ) *PipelinesBuilder {
 	return &PipelinesBuilder{logger, config, exporters}
@@ -72,7 +72,7 @@ func (pb *PipelinesBuilder) Build() (PipelineProcessors, error) {
 // The last processor in the pipeline will be plugged to fan out the data into exporters
 // that are configured for this pipeline.
 func (pb *PipelinesBuilder) buildPipeline(
-	pipelineCfg *configmodels.Pipeline,
+	pipelineCfg *models.Pipeline,
 ) (*builtProcessor, error) {
 
 	// Build the pipeline backwards.
@@ -82,9 +82,9 @@ func (pb *PipelinesBuilder) buildPipeline(
 	var mc consumer.MetricsConsumer
 
 	switch pipelineCfg.InputType {
-	case configmodels.TracesDataType:
+	case models.TracesDataType:
 		tc = pb.buildFanoutExportersTraceConsumer(pipelineCfg.Exporters)
-	case configmodels.MetricsDataType:
+	case models.MetricsDataType:
 		mc = pb.buildFanoutExportersMetricsConsumer(pipelineCfg.Exporters)
 	}
 
@@ -103,9 +103,9 @@ func (pb *PipelinesBuilder) buildPipeline(
 		// which we will build in the next loop iteration).
 		var err error
 		switch pipelineCfg.InputType {
-		case configmodels.TracesDataType:
+		case models.TracesDataType:
 			tc, err = factory.CreateTraceProcessor(pb.logger, tc, procCfg)
-		case configmodels.MetricsDataType:
+		case models.MetricsDataType:
 			mc, err = factory.CreateMetricsProcessor(pb.logger, mc, procCfg)
 		}
 

@@ -19,8 +19,8 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/data"
-	"github.com/open-telemetry/opentelemetry-service/pkg/configmodels"
-	"github.com/open-telemetry/opentelemetry-service/pkg/factories"
+	"github.com/open-telemetry/opentelemetry-service/factories"
+	"github.com/open-telemetry/opentelemetry-service/models"
 	"github.com/open-telemetry/opentelemetry-service/processor"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 	"go.uber.org/zap"
@@ -29,8 +29,8 @@ import (
 // ExampleReceiver is for testing purposes. We are defining an example config and factory
 // for "examplereceiver" receiver type.
 type ExampleReceiver struct {
-	configmodels.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-	ExtraSetting                  string                   `mapstructure:"extra"`
+	models.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	ExtraSetting            string                   `mapstructure:"extra"`
 
 	// FailTraceCreation causes CreateTraceReceiver to fail. Useful for testing.
 	FailTraceCreation bool `mapstructure:"-"`
@@ -54,9 +54,9 @@ func (f *ExampleReceiverFactory) CustomUnmarshaler() factories.CustomUnmarshaler
 }
 
 // CreateDefaultConfig creates the default configuration for the Receiver.
-func (f *ExampleReceiverFactory) CreateDefaultConfig() configmodels.Receiver {
+func (f *ExampleReceiverFactory) CreateDefaultConfig() models.Receiver {
 	return &ExampleReceiver{
-		ReceiverSettings: configmodels.ReceiverSettings{
+		ReceiverSettings: models.ReceiverSettings{
 			TypeVal:  "examplereceiver",
 			Endpoint: "localhost:1000",
 			Enabled:  false,
@@ -68,7 +68,7 @@ func (f *ExampleReceiverFactory) CreateDefaultConfig() configmodels.Receiver {
 // CreateTraceReceiver creates a trace receiver based on this config.
 func (f *ExampleReceiverFactory) CreateTraceReceiver(
 	ctx context.Context,
-	cfg configmodels.Receiver,
+	cfg models.Receiver,
 	nextConsumer consumer.TraceConsumer,
 ) (receiver.TraceReceiver, error) {
 	if cfg.(*ExampleReceiver).FailTraceCreation {
@@ -79,7 +79,7 @@ func (f *ExampleReceiverFactory) CreateTraceReceiver(
 
 // CreateMetricsReceiver creates a metrics receiver based on this config.
 func (f *ExampleReceiverFactory) CreateMetricsReceiver(
-	cfg configmodels.Receiver,
+	cfg models.Receiver,
 	nextConsumer consumer.MetricsConsumer,
 ) (receiver.MetricsReceiver, error) {
 	if cfg.(*ExampleReceiver).FailMetricsCreation {
@@ -140,7 +140,7 @@ type MultiProtoReceiver struct {
 	Protocols map[string]MultiProtoReceiverOneCfg `mapstructure:"protocols"`
 }
 
-var _ configmodels.Receiver = (*MultiProtoReceiver)(nil)
+var _ models.Receiver = (*MultiProtoReceiver)(nil)
 
 // Name gets the exporter name.
 func (rs *MultiProtoReceiver) Name() string {
@@ -184,7 +184,7 @@ func (f *MultiProtoReceiverFactory) CustomUnmarshaler() factories.CustomUnmarsha
 }
 
 // CreateDefaultConfig creates the default configuration for the Receiver.
-func (f *MultiProtoReceiverFactory) CreateDefaultConfig() configmodels.Receiver {
+func (f *MultiProtoReceiverFactory) CreateDefaultConfig() models.Receiver {
 	return &MultiProtoReceiver{
 		TypeVal: "multireceiver",
 		Protocols: map[string]MultiProtoReceiverOneCfg{
@@ -205,7 +205,7 @@ func (f *MultiProtoReceiverFactory) CreateDefaultConfig() configmodels.Receiver 
 // CreateTraceReceiver creates a trace receiver based on this config.
 func (f *MultiProtoReceiverFactory) CreateTraceReceiver(
 	ctx context.Context,
-	cfg configmodels.Receiver,
+	cfg models.Receiver,
 	nextConsumer consumer.TraceConsumer,
 ) (receiver.TraceReceiver, error) {
 	// Not used for this test, just return nil
@@ -214,7 +214,7 @@ func (f *MultiProtoReceiverFactory) CreateTraceReceiver(
 
 // CreateMetricsReceiver creates a metrics receiver based on this config.
 func (f *MultiProtoReceiverFactory) CreateMetricsReceiver(
-	cfg configmodels.Receiver,
+	cfg models.Receiver,
 	consumer consumer.MetricsConsumer,
 ) (receiver.MetricsReceiver, error) {
 	// Not used for this test, just return nil
@@ -224,8 +224,8 @@ func (f *MultiProtoReceiverFactory) CreateMetricsReceiver(
 // ExampleExporter is for testing purposes. We are defining an example config and factory
 // for "exampleexporter" exporter type.
 type ExampleExporter struct {
-	configmodels.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-	ExtraSetting                  string                   `mapstructure:"extra"`
+	models.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	ExtraSetting            string                   `mapstructure:"extra"`
 }
 
 // ExampleExporterFactory is factory for ExampleExporter.
@@ -238,9 +238,9 @@ func (f *ExampleExporterFactory) Type() string {
 }
 
 // CreateDefaultConfig creates the default configuration for the Exporter.
-func (f *ExampleExporterFactory) CreateDefaultConfig() configmodels.Exporter {
+func (f *ExampleExporterFactory) CreateDefaultConfig() models.Exporter {
 	return &ExampleExporter{
-		ExporterSettings: configmodels.ExporterSettings{
+		ExporterSettings: models.ExporterSettings{
 			Enabled: false,
 		},
 		ExtraSetting: "some export string",
@@ -248,12 +248,12 @@ func (f *ExampleExporterFactory) CreateDefaultConfig() configmodels.Exporter {
 }
 
 // CreateTraceExporter creates a trace exporter based on this config.
-func (f *ExampleExporterFactory) CreateTraceExporter(cfg configmodels.Exporter) (consumer.TraceConsumer, factories.StopFunc, error) {
+func (f *ExampleExporterFactory) CreateTraceExporter(cfg models.Exporter) (consumer.TraceConsumer, factories.StopFunc, error) {
 	return &ExampleExporterConsumer{}, nil, nil
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *ExampleExporterFactory) CreateMetricsExporter(cfg configmodels.Exporter) (consumer.MetricsConsumer, factories.StopFunc, error) {
+func (f *ExampleExporterFactory) CreateMetricsExporter(cfg models.Exporter) (consumer.MetricsConsumer, factories.StopFunc, error) {
 	return &ExampleExporterConsumer{}, nil, nil
 }
 
@@ -278,8 +278,8 @@ func (exp *ExampleExporterConsumer) ConsumeMetricsData(ctx context.Context, md d
 // ExampleProcessor is for testing purposes. We are defining an example config and factory
 // for "exampleprocessor" processor type.
 type ExampleProcessor struct {
-	configmodels.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-	ExtraSetting                   string                   `mapstructure:"extra"`
+	models.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	ExtraSetting             string                   `mapstructure:"extra"`
 }
 
 // ExampleProcessorFactory is factory for ExampleProcessor.
@@ -292,9 +292,9 @@ func (f *ExampleProcessorFactory) Type() string {
 }
 
 // CreateDefaultConfig creates the default configuration for the Processor.
-func (f *ExampleProcessorFactory) CreateDefaultConfig() configmodels.Processor {
+func (f *ExampleProcessorFactory) CreateDefaultConfig() models.Processor {
 	return &ExampleProcessor{
-		ProcessorSettings: configmodels.ProcessorSettings{
+		ProcessorSettings: models.ProcessorSettings{
 			Enabled: false,
 		},
 		ExtraSetting: "some export string",
@@ -305,7 +305,7 @@ func (f *ExampleProcessorFactory) CreateDefaultConfig() configmodels.Processor {
 func (f *ExampleProcessorFactory) CreateTraceProcessor(
 	logger *zap.Logger,
 	nextConsumer consumer.TraceConsumer,
-	cfg configmodels.Processor,
+	cfg models.Processor,
 ) (processor.TraceProcessor, error) {
 	return nil, factories.ErrDataTypeIsNotSupported
 }
@@ -314,7 +314,7 @@ func (f *ExampleProcessorFactory) CreateTraceProcessor(
 func (f *ExampleProcessorFactory) CreateMetricsProcessor(
 	logger *zap.Logger,
 	nextConsumer consumer.MetricsConsumer,
-	cfg configmodels.Processor,
+	cfg models.Processor,
 ) (processor.MetricsProcessor, error) {
 	return nil, factories.ErrDataTypeIsNotSupported
 }

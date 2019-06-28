@@ -21,7 +21,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/pkg/configmodels"
+	"github.com/open-telemetry/opentelemetry-service/models"
 	"github.com/open-telemetry/opentelemetry-service/processor"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
@@ -40,14 +40,14 @@ func (f *ExampleReceiverFactory) CustomUnmarshaler() CustomUnmarshaler {
 }
 
 // CreateDefaultConfig creates the default configuration for the Receiver.
-func (f *ExampleReceiverFactory) CreateDefaultConfig() configmodels.Receiver {
+func (f *ExampleReceiverFactory) CreateDefaultConfig() models.Receiver {
 	return nil
 }
 
 // CreateTraceReceiver creates a trace receiver based on this config.
 func (f *ExampleReceiverFactory) CreateTraceReceiver(
 	ctx context.Context,
-	cfg configmodels.Receiver,
+	cfg models.Receiver,
 	nextConsumer consumer.TraceConsumer,
 ) (receiver.TraceReceiver, error) {
 	// Not used for this test, just return nil
@@ -56,7 +56,7 @@ func (f *ExampleReceiverFactory) CreateTraceReceiver(
 
 // CreateMetricsReceiver creates a metrics receiver based on this config.
 func (f *ExampleReceiverFactory) CreateMetricsReceiver(
-	cfg configmodels.Receiver,
+	cfg models.Receiver,
 	consumer consumer.MetricsConsumer,
 ) (receiver.MetricsReceiver, error) {
 	// Not used for this test, just return nil
@@ -100,17 +100,17 @@ func (f *ExampleExporterFactory) Type() string {
 }
 
 // CreateDefaultConfig creates the default configuration for the Exporter.
-func (f *ExampleExporterFactory) CreateDefaultConfig() configmodels.Exporter {
+func (f *ExampleExporterFactory) CreateDefaultConfig() models.Exporter {
 	return nil
 }
 
 // CreateTraceExporter creates a trace exporter based on this config.
-func (f *ExampleExporterFactory) CreateTraceExporter(cfg configmodels.Exporter) (consumer.TraceConsumer, StopFunc, error) {
+func (f *ExampleExporterFactory) CreateTraceExporter(cfg models.Exporter) (consumer.TraceConsumer, StopFunc, error) {
 	return nil, nil, nil
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *ExampleExporterFactory) CreateMetricsExporter(cfg configmodels.Exporter) (consumer.MetricsConsumer, StopFunc, error) {
+func (f *ExampleExporterFactory) CreateMetricsExporter(cfg models.Exporter) (consumer.MetricsConsumer, StopFunc, error) {
 	return nil, nil, nil
 }
 
@@ -151,7 +151,7 @@ func (f *ExampleProcessorFactory) Type() string {
 }
 
 // CreateDefaultConfig creates the default configuration for the Processor.
-func (f *ExampleProcessorFactory) CreateDefaultConfig() configmodels.Processor {
+func (f *ExampleProcessorFactory) CreateDefaultConfig() models.Processor {
 	return nil
 }
 
@@ -159,7 +159,7 @@ func (f *ExampleProcessorFactory) CreateDefaultConfig() configmodels.Processor {
 func (f *ExampleProcessorFactory) CreateTraceProcessor(
 	logger *zap.Logger,
 	nextConsumer consumer.TraceConsumer,
-	cfg configmodels.Processor,
+	cfg models.Processor,
 ) (processor.TraceProcessor, error) {
 	return nil, ErrDataTypeIsNotSupported
 }
@@ -168,7 +168,7 @@ func (f *ExampleProcessorFactory) CreateTraceProcessor(
 func (f *ExampleProcessorFactory) CreateMetricsProcessor(
 	logger *zap.Logger,
 	nextConsumer consumer.MetricsConsumer,
-	cfg configmodels.Processor,
+	cfg models.Processor,
 ) (processor.MetricsProcessor, error) {
 	return nil, ErrDataTypeIsNotSupported
 }

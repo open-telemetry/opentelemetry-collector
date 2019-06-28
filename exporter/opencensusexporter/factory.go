@@ -26,10 +26,10 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exporterhelper"
+	"github.com/open-telemetry/opentelemetry-service/factories"
 	"github.com/open-telemetry/opentelemetry-service/internal/compression"
 	compressiongrpc "github.com/open-telemetry/opentelemetry-service/internal/compression/grpc"
-	"github.com/open-telemetry/opentelemetry-service/pkg/configmodels"
-	"github.com/open-telemetry/opentelemetry-service/pkg/factories"
+	"github.com/open-telemetry/opentelemetry-service/models"
 )
 
 var _ = factories.RegisterExporterFactory(&exporterFactory{})
@@ -49,9 +49,9 @@ func (f *exporterFactory) Type() string {
 }
 
 // CreateDefaultConfig creates the default configuration for exporter.
-func (f *exporterFactory) CreateDefaultConfig() configmodels.Exporter {
+func (f *exporterFactory) CreateDefaultConfig() models.Exporter {
 	return &ConfigV2{
-		ExporterSettings: configmodels.ExporterSettings{
+		ExporterSettings: models.ExporterSettings{
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
@@ -60,7 +60,7 @@ func (f *exporterFactory) CreateDefaultConfig() configmodels.Exporter {
 }
 
 // CreateTraceExporter creates a trace exporter based on this config.
-func (f *exporterFactory) CreateTraceExporter(config configmodels.Exporter) (consumer.TraceConsumer, factories.StopFunc, error) {
+func (f *exporterFactory) CreateTraceExporter(config models.Exporter) (consumer.TraceConsumer, factories.StopFunc, error) {
 	ocac := config.(*ConfigV2)
 
 	if ocac.Endpoint == "" {
@@ -147,6 +147,6 @@ func (f *exporterFactory) CreateTraceExporter(config configmodels.Exporter) (con
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *exporterFactory) CreateMetricsExporter(cfg configmodels.Exporter) (consumer.MetricsConsumer, factories.StopFunc, error) {
+func (f *exporterFactory) CreateMetricsExporter(cfg models.Exporter) (consumer.MetricsConsumer, factories.StopFunc, error) {
 	return nil, nil, factories.ErrDataTypeIsNotSupported
 }

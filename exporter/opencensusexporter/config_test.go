@@ -21,9 +21,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-service/pkg/configmodels"
-	"github.com/open-telemetry/opentelemetry-service/pkg/configv2"
-	"github.com/open-telemetry/opentelemetry-service/pkg/factories"
+	"github.com/open-telemetry/opentelemetry-service/configv2"
+	"github.com/open-telemetry/opentelemetry-service/factories"
+	"github.com/open-telemetry/opentelemetry-service/models"
 )
 
 var _ = configv2.RegisterTestFactories()
@@ -42,7 +42,7 @@ func TestLoadConfig(t *testing.T) {
 	e1 := config.Exporters["opencensus/2"]
 	assert.Equal(t, e1,
 		&ConfigV2{
-			ExporterSettings: configmodels.ExporterSettings{
+			ExporterSettings: models.ExporterSettings{
 				NameVal: "opencensus/2",
 				TypeVal: "opencensus",
 				Enabled: true,

@@ -24,14 +24,14 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-service/exporter/opencensusexporter"
-	"github.com/open-telemetry/opentelemetry-service/pkg/configmodels"
+	"github.com/open-telemetry/opentelemetry-service/models"
 )
 
 func TestExportersBuilder_Build(t *testing.T) {
-	config := &configmodels.ConfigV2{
-		Exporters: map[string]configmodels.Exporter{
+	config := &models.ConfigV2{
+		Exporters: map[string]models.Exporter{
 			"opencensus": &opencensusexporter.ConfigV2{
-				ExporterSettings: configmodels.ExporterSettings{
+				ExporterSettings: models.ExporterSettings{
 					NameVal: "opencensus",
 					TypeVal: "opencensus",
 					Enabled: true,
@@ -40,10 +40,10 @@ func TestExportersBuilder_Build(t *testing.T) {
 			},
 		},
 
-		Pipelines: map[string]*configmodels.Pipeline{
+		Pipelines: map[string]*models.Pipeline{
 			"trace": {
 				Name:      "trace",
-				InputType: configmodels.TracesDataType,
+				InputType: models.TracesDataType,
 				Exporters: []string{"opencensus"},
 			},
 		},
@@ -67,7 +67,7 @@ func TestExportersBuilder_Build(t *testing.T) {
 
 	// Now change only pipeline data type to "metrics" and make sure exporter builder
 	// now fails (because opencensus exporter does not currently support metrics).
-	config.Pipelines["trace"].InputType = configmodels.MetricsDataType
+	config.Pipelines["trace"].InputType = models.MetricsDataType
 	_, err = NewExportersBuilder(zap.NewNop(), config).Build()
 	assert.NotNil(t, err)
 
@@ -92,7 +92,7 @@ func TestExportersBuilder_Build(t *testing.T) {
 
 func TestExportersBuilder_StopAll(t *testing.T) {
 	exporters := make(Exporters)
-	expCfg := &configmodels.ExporterSettings{}
+	expCfg := &models.ExporterSettings{}
 	stopCalled := false
 	exporters[expCfg] = &builtExporter{
 		stop: func() error {

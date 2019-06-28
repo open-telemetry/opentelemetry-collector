@@ -24,8 +24,8 @@ import (
 	"strconv"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/pkg/configmodels"
-	"github.com/open-telemetry/opentelemetry-service/pkg/factories"
+	"github.com/open-telemetry/opentelemetry-service/factories"
+	"github.com/open-telemetry/opentelemetry-service/models"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
 
@@ -59,11 +59,11 @@ func (f *receiverFactory) CustomUnmarshaler() factories.CustomUnmarshaler {
 }
 
 // CreateDefaultConfig creates the default configuration for Jaeger receiver.
-func (f *receiverFactory) CreateDefaultConfig() configmodels.Receiver {
+func (f *receiverFactory) CreateDefaultConfig() models.Receiver {
 	return &ConfigV2{
 		TypeVal: typeStr,
 		NameVal: typeStr,
-		Protocols: map[string]*configmodels.ReceiverSettings{
+		Protocols: map[string]*models.ReceiverSettings{
 			protoThriftTChannel: {
 				Enabled:  false,
 				Endpoint: defaultTChannelBindEndpoint,
@@ -79,7 +79,7 @@ func (f *receiverFactory) CreateDefaultConfig() configmodels.Receiver {
 // CreateTraceReceiver creates a trace receiver based on provided config.
 func (f *receiverFactory) CreateTraceReceiver(
 	ctx context.Context,
-	cfg configmodels.Receiver,
+	cfg models.Receiver,
 	nextConsumer consumer.TraceConsumer,
 ) (receiver.TraceReceiver, error) {
 
@@ -125,7 +125,7 @@ func (f *receiverFactory) CreateTraceReceiver(
 
 // CreateMetricsReceiver creates a metrics receiver based on provided config.
 func (f *receiverFactory) CreateMetricsReceiver(
-	cfg configmodels.Receiver,
+	cfg models.Receiver,
 	consumer consumer.MetricsConsumer,
 ) (receiver.MetricsReceiver, error) {
 	return nil, factories.ErrDataTypeIsNotSupported

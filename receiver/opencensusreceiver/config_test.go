@@ -21,9 +21,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-service/pkg/configmodels"
-	"github.com/open-telemetry/opentelemetry-service/pkg/configv2"
-	"github.com/open-telemetry/opentelemetry-service/pkg/factories"
+	"github.com/open-telemetry/opentelemetry-service/configv2"
+	"github.com/open-telemetry/opentelemetry-service/factories"
+	"github.com/open-telemetry/opentelemetry-service/models"
 )
 
 var _ = configv2.RegisterTestFactories()
@@ -44,7 +44,7 @@ func TestLoadConfig(t *testing.T) {
 
 	r1 := config.Receivers["opencensus/customname"].(*ConfigV2)
 	assert.Equal(t, r1.ReceiverSettings,
-		configmodels.ReceiverSettings{
+		models.ReceiverSettings{
 			TypeVal:  typeStr,
 			NameVal:  "opencensus/customname",
 			Endpoint: "0.0.0.0:9090",

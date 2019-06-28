@@ -14,9 +14,9 @@
 
 package zipkinreceiver
 
-import "github.com/open-telemetry/opentelemetry-service/pkg/configmodels"
+import "github.com/open-telemetry/opentelemetry-service/models"
 
 // ConfigV2 defines configuration for Zipkin receiver.
 type ConfigV2 struct {
-	configmodels.ReceiverSettings `mapstructure:",squash"`
+	models.ReceiverSettings `mapstructure:",squash"`
 }

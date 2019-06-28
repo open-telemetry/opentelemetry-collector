@@ -26,9 +26,9 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 
+	"github.com/open-telemetry/opentelemetry-service/configv2"
 	"github.com/open-telemetry/opentelemetry-service/data"
-	"github.com/open-telemetry/opentelemetry-service/pkg/configmodels"
-	"github.com/open-telemetry/opentelemetry-service/pkg/configv2"
+	"github.com/open-telemetry/opentelemetry-service/models"
 )
 
 type testCase struct {
@@ -216,7 +216,7 @@ func TestReceiversBuilder_DataTypeError(t *testing.T) {
 
 func TestReceiversBuilder_StartAll(t *testing.T) {
 	receivers := make(Receivers)
-	rcvCfg := &configmodels.ReceiverSettings{}
+	rcvCfg := &models.ReceiverSettings{}
 
 	receiver := &configv2.ExampleReceiverProducer{}
 
@@ -238,7 +238,7 @@ func TestReceiversBuilder_StartAll(t *testing.T) {
 
 func TestReceiversBuilder_StopAll(t *testing.T) {
 	receivers := make(Receivers)
-	rcvCfg := &configmodels.ReceiverSettings{}
+	rcvCfg := &models.ReceiverSettings{}
 
 	receiver := &configv2.ExampleReceiverProducer{}
 

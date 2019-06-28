@@ -22,8 +22,8 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/pkg/configmodels"
-	"github.com/open-telemetry/opentelemetry-service/pkg/factories"
+	"github.com/open-telemetry/opentelemetry-service/factories"
+	"github.com/open-telemetry/opentelemetry-service/models"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
 
@@ -85,9 +85,9 @@ func CustomUnmarshalerFunc(v *viper.Viper, viperKey string, intoCfg interface{})
 }
 
 // CreateDefaultConfig creates the default configuration for receiver.
-func (f *ReceiverFactory) CreateDefaultConfig() configmodels.Receiver {
+func (f *ReceiverFactory) CreateDefaultConfig() models.Receiver {
 	return &ConfigV2{
-		ReceiverSettings: configmodels.ReceiverSettings{
+		ReceiverSettings: models.ReceiverSettings{
 			TypeVal:  typeStr,
 			NameVal:  typeStr,
 			Endpoint: "127.0.0.1:9090",
@@ -98,7 +98,7 @@ func (f *ReceiverFactory) CreateDefaultConfig() configmodels.Receiver {
 // CreateTraceReceiver creates a trace receiver based on provided config.
 func (f *ReceiverFactory) CreateTraceReceiver(
 	ctx context.Context,
-	cfg configmodels.Receiver,
+	cfg models.Receiver,
 	nextConsumer consumer.TraceConsumer,
 ) (receiver.TraceReceiver, error) {
 	// Prometheus does not support traces
@@ -107,7 +107,7 @@ func (f *ReceiverFactory) CreateTraceReceiver(
 
 // CreateMetricsReceiver creates a metrics receiver based on provided config.
 func (f *ReceiverFactory) CreateMetricsReceiver(
-	cfg configmodels.Receiver,
+	cfg models.Receiver,
 	consumer consumer.MetricsConsumer,
 ) (receiver.MetricsReceiver, error) {
 

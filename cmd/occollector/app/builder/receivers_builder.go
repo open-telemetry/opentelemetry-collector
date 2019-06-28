@@ -21,9 +21,9 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/factories"
 	"github.com/open-telemetry/opentelemetry-service/internal"
-	"github.com/open-telemetry/opentelemetry-service/pkg/configmodels"
-	"github.com/open-telemetry/opentelemetry-service/pkg/factories"
+	"github.com/open-telemetry/opentelemetry-service/models"
 	"github.com/open-telemetry/opentelemetry-service/processor/multiconsumer"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
@@ -76,7 +76,7 @@ func (rcv *builtReceiver) Start(asyncErrorChan chan<- error) error {
 }
 
 // Receivers is a map of receivers created from receiver configs.
-type Receivers map[configmodels.Receiver]*builtReceiver
+type Receivers map[models.Receiver]*builtReceiver
 
 // StopAll stops all receivers.
 func (rcvs Receivers) StopAll() {
@@ -101,14 +101,14 @@ func (rcvs Receivers) StartAll(logger *zap.Logger, asyncErrorChan chan<- error) 
 // ReceiversBuilder builds receivers from config.
 type ReceiversBuilder struct {
 	logger             *zap.Logger
-	config             *configmodels.ConfigV2
+	config             *models.ConfigV2
 	pipelineProcessors PipelineProcessors
 }
 
 // NewReceiversBuilder creates a new ReceiversBuilder. Call Build() on the returned value.
 func NewReceiversBuilder(
 	logger *zap.Logger,
-	config *configmodels.ConfigV2,
+	config *models.ConfigV2,
 	pipelineProcessors PipelineProcessors,
 ) *ReceiversBuilder {
 	return &ReceiversBuilder{logger, config, pipelineProcessors}
@@ -131,7 +131,7 @@ func (rb *ReceiversBuilder) Build() (Receivers, error) {
 }
 
 // hasReceiver returns true if the pipeline is attached to specified receiver.
-func hasReceiver(pipeline *configmodels.Pipeline, receiverName string) bool {
+func hasReceiver(pipeline *models.Pipeline, receiverName string) bool {
 	for _, name := range pipeline.Receivers {
 		if name == receiverName {
 			return true
@@ -140,16 +140,16 @@ func hasReceiver(pipeline *configmodels.Pipeline, receiverName string) bool {
 	return false
 }
 
-type attachedPipelines map[configmodels.DataType][]*builtProcessor
+type attachedPipelines map[models.DataType][]*builtProcessor
 
-func (rb *ReceiversBuilder) findPipelinesToAttach(config configmodels.Receiver) (attachedPipelines, error) {
+func (rb *ReceiversBuilder) findPipelinesToAttach(config models.Receiver) (attachedPipelines, error) {
 	// A receiver may be attached to multiple pipelines. Pipelines may consume different
 	// data types. We need to compile the list of pipelines of each type that must be
 	// attached to this receiver according to configuration.
 
 	pipelinesToAttach := make(attachedPipelines)
-	pipelinesToAttach[configmodels.TracesDataType] = make([]*builtProcessor, 0)
-	pipelinesToAttach[configmodels.MetricsDataType] = make([]*builtProcessor, 0)
+	pipelinesToAttach[models.TracesDataType] = make([]*builtProcessor, 0)
+	pipelinesToAttach[models.MetricsDataType] = make([]*builtProcessor, 0)
 
 	// Iterate over all pipelines.
 	for _, pipelineCfg := range rb.config.Pipelines {
@@ -173,8 +173,8 @@ func (rb *ReceiversBuilder) findPipelinesToAttach(config configmodels.Receiver) 
 
 func (rb *ReceiversBuilder) attachReceiverToPipelines(
 	factory factories.ReceiverFactory,
-	dataType configmodels.DataType,
-	config configmodels.Receiver,
+	dataType models.DataType,
+	config models.Receiver,
 	receiver *builtReceiver,
 	pipelineProcessors []*builtProcessor,
 ) error {
@@ -183,14 +183,14 @@ func (rb *ReceiversBuilder) attachReceiverToPipelines(
 	// sure its output is fanned out to all attached pipelines.
 	var err error
 	switch dataType {
-	case configmodels.TracesDataType:
+	case models.TracesDataType:
 		// First, create the fan out junction point.
 		junction := buildFanoutTraceConsumer(pipelineProcessors)
 
 		// Now create the receiver and tell it to send to the junction point.
 		receiver.trace, err = factory.CreateTraceReceiver(context.Background(), config, junction)
 
-	case configmodels.MetricsDataType:
+	case models.MetricsDataType:
 		junction := buildFanoutMetricConsumer(pipelineProcessors)
 		receiver.metrics, err = factory.CreateMetricsReceiver(config, junction)
 	}
@@ -213,7 +213,7 @@ func (rb *ReceiversBuilder) attachReceiverToPipelines(
 	return nil
 }
 
-func (rb *ReceiversBuilder) buildReceiver(config configmodels.Receiver) (*builtReceiver, error) {
+func (rb *ReceiversBuilder) buildReceiver(config models.Receiver) (*builtReceiver, error) {
 
 	// First find pipelines that must be attached to this receiver.
 	pipelinesToAttach, err := rb.findPipelinesToAttach(config)

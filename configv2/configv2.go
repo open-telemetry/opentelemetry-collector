@@ -24,8 +24,8 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/open-telemetry/opentelemetry-service/pkg/configmodels"
-	"github.com/open-telemetry/opentelemetry-service/pkg/factories"
+	"github.com/open-telemetry/opentelemetry-service/factories"
+	"github.com/open-telemetry/opentelemetry-service/models"
 )
 
 // These are errors that can be returned by Load(). Note that error codes are not part
@@ -82,9 +82,9 @@ const (
 const typeAndNameSeparator = "/"
 
 // Load loads a ConfigV2 from Viper.
-func Load(v *viper.Viper) (*configmodels.ConfigV2, error) {
+func Load(v *viper.Viper) (*models.ConfigV2, error) {
 
-	var config configmodels.ConfigV2
+	var config models.ConfigV2
 
 	// Load the config.
 
@@ -159,7 +159,7 @@ func decodeTypeAndName(key string) (typeStr, fullName string, err error) {
 	return
 }
 
-func loadReceivers(v *viper.Viper) (configmodels.Receivers, error) {
+func loadReceivers(v *viper.Viper) (models.Receivers, error) {
 	// Get the list of all "receivers" sub vipers from config source.
 	subViper := v.Sub(receiversKeyName)
 
@@ -167,7 +167,7 @@ func loadReceivers(v *viper.Viper) (configmodels.Receivers, error) {
 	keyMap := v.GetStringMap(receiversKeyName)
 
 	// Prepare resulting map
-	receivers := make(configmodels.Receivers, 0)
+	receivers := make(models.Receivers, 0)
 
 	// Iterate over input map and create a config for each.
 	for key := range keyMap {
@@ -225,7 +225,7 @@ func loadReceivers(v *viper.Viper) (configmodels.Receivers, error) {
 	return receivers, nil
 }
 
-func loadExporters(v *viper.Viper) (configmodels.Exporters, error) {
+func loadExporters(v *viper.Viper) (models.Exporters, error) {
 	// Get the list of all "exporters" sub vipers from config source.
 	subViper := v.Sub(exportersKeyName)
 
@@ -233,7 +233,7 @@ func loadExporters(v *viper.Viper) (configmodels.Exporters, error) {
 	keyMap := v.GetStringMap(exportersKeyName)
 
 	// Prepare resulting map
-	exporters := make(configmodels.Exporters, 0)
+	exporters := make(models.Exporters, 0)
 
 	// Iterate over exporters and create a config for each.
 	for key := range keyMap {
@@ -282,7 +282,7 @@ func loadExporters(v *viper.Viper) (configmodels.Exporters, error) {
 	return exporters, nil
 }
 
-func loadProcessors(v *viper.Viper) (configmodels.Processors, error) {
+func loadProcessors(v *viper.Viper) (models.Processors, error) {
 	// Get the list of all "processors" sub vipers from config source.
 	subViper := v.Sub(processorsKeyName)
 
@@ -290,7 +290,7 @@ func loadProcessors(v *viper.Viper) (configmodels.Processors, error) {
 	keyMap := v.GetStringMap(processorsKeyName)
 
 	// Prepare resulting map.
-	processors := make(configmodels.Processors, 0)
+	processors := make(models.Processors, 0)
 
 	// Iterate over processors and create a config for each.
 	for key := range keyMap {
@@ -339,7 +339,7 @@ func loadProcessors(v *viper.Viper) (configmodels.Processors, error) {
 	return processors, nil
 }
 
-func loadPipelines(v *viper.Viper) (configmodels.Pipelines, error) {
+func loadPipelines(v *viper.Viper) (models.Pipelines, error) {
 	// Get the list of all "pipelines" sub vipers from config source.
 	subViper := v.Sub(pipelinesKeyName)
 
@@ -347,7 +347,7 @@ func loadPipelines(v *viper.Viper) (configmodels.Pipelines, error) {
 	keyMap := v.GetStringMap(pipelinesKeyName)
 
 	// Prepare resulting map.
-	pipelines := make(configmodels.Pipelines, 0)
+	pipelines := make(models.Pipelines, 0)
 
 	// Iterate over input map and create a config for each.
 	for key := range keyMap {
@@ -361,14 +361,14 @@ func loadPipelines(v *viper.Viper) (configmodels.Pipelines, error) {
 		}
 
 		// Create the config for this pipeline.
-		var pipelineCfg configmodels.Pipeline
+		var pipelineCfg models.Pipeline
 
 		// Set the type.
 		switch typeStr {
-		case configmodels.TracesDataTypeStr:
-			pipelineCfg.InputType = configmodels.TracesDataType
-		case configmodels.MetricsDataTypeStr:
-			pipelineCfg.InputType = configmodels.MetricsDataType
+		case models.TracesDataTypeStr:
+			pipelineCfg.InputType = models.TracesDataType
+		case models.MetricsDataTypeStr:
+			pipelineCfg.InputType = models.MetricsDataType
 		default:
 			return nil, &configError{
 				code: errInvalidPipelineType,
@@ -400,7 +400,7 @@ func loadPipelines(v *viper.Viper) (configmodels.Pipelines, error) {
 	return pipelines, nil
 }
 
-func validateConfig(cfg *configmodels.ConfigV2) error {
+func validateConfig(cfg *models.ConfigV2) error {
 	// This function performs basic validation of configuration. There may be more subtle
 	// invalid cases that we currently don't check for but which we may want to add in
 	// the future (e.g. disallowing receiving and exporting on the same endpoint).
@@ -412,7 +412,7 @@ func validateConfig(cfg *configmodels.ConfigV2) error {
 	return nil
 }
 
-func validatePipelines(cfg *configmodels.ConfigV2) error {
+func validatePipelines(cfg *models.ConfigV2) error {
 	// Must have at least one pipeline.
 	if len(cfg.Pipelines) < 1 {
 		return &configError{code: errMissingPipelines, msg: "must have at least one pipeline"}
@@ -427,7 +427,7 @@ func validatePipelines(cfg *configmodels.ConfigV2) error {
 	return nil
 }
 
-func validatePipeline(cfg *configmodels.ConfigV2, pipeline *configmodels.Pipeline) error {
+func validatePipeline(cfg *models.ConfigV2, pipeline *models.Pipeline) error {
 	if err := validatePipelineReceivers(cfg, pipeline); err != nil {
 		return err
 	}
@@ -443,7 +443,7 @@ func validatePipeline(cfg *configmodels.ConfigV2, pipeline *configmodels.Pipelin
 	return nil
 }
 
-func validatePipelineReceivers(cfg *configmodels.ConfigV2, pipeline *configmodels.Pipeline) error {
+func validatePipelineReceivers(cfg *models.ConfigV2, pipeline *models.Pipeline) error {
 	if len(pipeline.Receivers) == 0 {
 		return &configError{
 			code: errPipelineMustHaveReceiver,
@@ -465,7 +465,7 @@ func validatePipelineReceivers(cfg *configmodels.ConfigV2, pipeline *configmodel
 	return nil
 }
 
-func validatePipelineExporters(cfg *configmodels.ConfigV2, pipeline *configmodels.Pipeline) error {
+func validatePipelineExporters(cfg *models.ConfigV2, pipeline *models.Pipeline) error {
 	if len(pipeline.Exporters) == 0 {
 		return &configError{
 			code: errPipelineMustHaveExporter,
@@ -487,8 +487,8 @@ func validatePipelineExporters(cfg *configmodels.ConfigV2, pipeline *configmodel
 	return nil
 }
 
-func validatePipelineProcessors(cfg *configmodels.ConfigV2, pipeline *configmodels.Pipeline) error {
-	if pipeline.InputType == configmodels.TracesDataType {
+func validatePipelineProcessors(cfg *models.ConfigV2, pipeline *models.Pipeline) error {
+	if pipeline.InputType == models.TracesDataType {
 		// Traces pipeline must have at least one processor.
 		if len(pipeline.Processors) == 0 {
 			return &configError{
@@ -496,7 +496,7 @@ func validatePipelineProcessors(cfg *configmodels.ConfigV2, pipeline *configmode
 				msg:  fmt.Sprintf("pipeline %q must have at least one processor", pipeline.Name),
 			}
 		}
-	} else if pipeline.InputType == configmodels.MetricsDataType {
+	} else if pipeline.InputType == models.MetricsDataType {
 		// Metrics pipeline cannot have processors.
 		if len(pipeline.Processors) > 0 {
 			return &configError{

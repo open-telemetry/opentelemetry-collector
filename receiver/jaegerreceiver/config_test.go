@@ -21,9 +21,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-service/pkg/configmodels"
-	"github.com/open-telemetry/opentelemetry-service/pkg/configv2"
-	"github.com/open-telemetry/opentelemetry-service/pkg/factories"
+	"github.com/open-telemetry/opentelemetry-service/configv2"
+	"github.com/open-telemetry/opentelemetry-service/factories"
+	"github.com/open-telemetry/opentelemetry-service/models"
 )
 
 var _ = configv2.RegisterTestFactories()
@@ -46,7 +46,7 @@ func TestLoadConfig(t *testing.T) {
 		&ConfigV2{
 			TypeVal: typeStr,
 			NameVal: "jaeger/customname",
-			Protocols: map[string]*configmodels.ReceiverSettings{
+			Protocols: map[string]*models.ReceiverSettings{
 				"thrift-http": {
 					Enabled:  false,
 					Endpoint: "127.0.0.1:3456",
