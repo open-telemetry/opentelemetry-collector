@@ -17,12 +17,12 @@ package queued
 import (
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-service/pkg/configmodels"
+	"github.com/open-telemetry/opentelemetry-service/models"
 )
 
 // ConfigV2 defines configuration for Attributes processor.
 type ConfigV2 struct {
-	configmodels.ProcessorSettings `mapstructure:",squash"`
+	models.ProcessorSettings `mapstructure:",squash"`
 
 	// NumWorkers is the number of queue workers that dequeue batches and send them out.
 	NumWorkers int `mapstructure:"num-workers"`

@@ -15,14 +15,14 @@
 package jaegerreceiver
 
 import (
-	"github.com/open-telemetry/opentelemetry-service/pkg/configmodels"
+	"github.com/open-telemetry/opentelemetry-service/models"
 )
 
 // ConfigV2 defines configuration for Jaeger receiver.
 type ConfigV2 struct {
-	TypeVal   string                                    `mapstructure:"-"`
-	NameVal   string                                    `mapstructure:"-"`
-	Protocols map[string]*configmodels.ReceiverSettings `mapstructure:"protocols"`
+	TypeVal   string                              `mapstructure:"-"`
+	NameVal   string                              `mapstructure:"-"`
+	Protocols map[string]*models.ReceiverSettings `mapstructure:"protocols"`
 }
 
 // Name gets the receiver name.

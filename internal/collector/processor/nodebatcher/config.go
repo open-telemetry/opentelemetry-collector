@@ -17,12 +17,12 @@ package nodebatcher
 import (
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-service/pkg/configmodels"
+	"github.com/open-telemetry/opentelemetry-service/models"
 )
 
 // ConfigV2 defines configuration for batch processor.
 type ConfigV2 struct {
-	configmodels.ProcessorSettings `mapstructure:",squash"`
+	models.ProcessorSettings `mapstructure:",squash"`
 
 	// Timeout sets the time after which a batch will be sent regardless of size.
 	Timeout *time.Duration `mapstructure:"timeout,omitempty"`

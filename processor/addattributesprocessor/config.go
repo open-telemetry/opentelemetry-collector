@@ -15,12 +15,12 @@
 package addattributesprocessor
 
 import (
-	"github.com/open-telemetry/opentelemetry-service/pkg/configmodels"
+	"github.com/open-telemetry/opentelemetry-service/models"
 )
 
 // ConfigV2 defines configuration for Attributes processor.
 type ConfigV2 struct {
-	configmodels.ProcessorSettings `mapstructure:",squash"`
-	Overwrite                      bool                   `mapstructure:"overwrite"`
-	Values                         map[string]interface{} `mapstructure:"values"`
+	models.ProcessorSettings `mapstructure:",squash"`
+	Overwrite                bool                   `mapstructure:"overwrite"`
+	Values                   map[string]interface{} `mapstructure:"values"`
 }

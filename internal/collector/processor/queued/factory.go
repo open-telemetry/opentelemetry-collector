@@ -18,8 +18,8 @@ import (
 	"time"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/pkg/configmodels"
-	"github.com/open-telemetry/opentelemetry-service/pkg/factories"
+	"github.com/open-telemetry/opentelemetry-service/factories"
+	"github.com/open-telemetry/opentelemetry-service/models"
 	"github.com/open-telemetry/opentelemetry-service/processor"
 	"go.uber.org/zap"
 )
@@ -41,9 +41,9 @@ func (f *processorFactory) Type() string {
 }
 
 // CreateDefaultConfig creates the default configuration for exporter.
-func (f *processorFactory) CreateDefaultConfig() configmodels.Processor {
+func (f *processorFactory) CreateDefaultConfig() models.Processor {
 	return &ConfigV2{
-		ProcessorSettings: configmodels.ProcessorSettings{
+		ProcessorSettings: models.ProcessorSettings{
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
@@ -58,7 +58,7 @@ func (f *processorFactory) CreateDefaultConfig() configmodels.Processor {
 func (f *processorFactory) CreateTraceProcessor(
 	logger *zap.Logger,
 	nextConsumer consumer.TraceConsumer,
-	cfg configmodels.Processor,
+	cfg models.Processor,
 ) (processor.TraceProcessor, error) {
 	oCfg := cfg.(*ConfigV2)
 	return NewQueuedSpanProcessor(nextConsumer,
@@ -73,7 +73,7 @@ func (f *processorFactory) CreateTraceProcessor(
 func (f *processorFactory) CreateMetricsProcessor(
 	logger *zap.Logger,
 	nextConsumer consumer.MetricsConsumer,
-	cfg configmodels.Processor,
+	cfg models.Processor,
 ) (processor.MetricsProcessor, error) {
 	return nil, factories.ErrDataTypeIsNotSupported
 }

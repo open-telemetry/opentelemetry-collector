@@ -20,9 +20,9 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/factories"
 	"github.com/open-telemetry/opentelemetry-service/internal"
-	"github.com/open-telemetry/opentelemetry-service/pkg/configmodels"
-	"github.com/open-telemetry/opentelemetry-service/pkg/factories"
+	"github.com/open-telemetry/opentelemetry-service/models"
 )
 
 // builtExporter is an exporter that is built based on a config. It can have
@@ -39,7 +39,7 @@ func (exp *builtExporter) Stop() error {
 }
 
 // Exporters is a map of exporters created from exporter configs.
-type Exporters map[configmodels.Exporter]*builtExporter
+type Exporters map[models.Exporter]*builtExporter
 
 // StopAll stops all exporters.
 func (exps Exporters) StopAll() {
@@ -50,23 +50,23 @@ func (exps Exporters) StopAll() {
 
 type dataTypeRequirement struct {
 	// Pipeline that requires the data type.
-	requiredBy *configmodels.Pipeline
+	requiredBy *models.Pipeline
 }
 
 // Map of data type requirements.
-type dataTypeRequirements map[configmodels.DataType]dataTypeRequirement
+type dataTypeRequirements map[models.DataType]dataTypeRequirement
 
 // Data type requirements for all exporters.
-type exportersRequiredDataTypes map[configmodels.Exporter]dataTypeRequirements
+type exportersRequiredDataTypes map[models.Exporter]dataTypeRequirements
 
 // ExportersBuilder builds exporters from config.
 type ExportersBuilder struct {
 	logger *zap.Logger
-	config *configmodels.ConfigV2
+	config *models.ConfigV2
 }
 
 // NewExportersBuilder creates a new ExportersBuilder. Call Build() on the returned value.
-func NewExportersBuilder(logger *zap.Logger, config *configmodels.ConfigV2) *ExportersBuilder {
+func NewExportersBuilder(logger *zap.Logger, config *models.ConfigV2) *ExportersBuilder {
 	return &ExportersBuilder{logger, config}
 }
 
@@ -149,7 +149,7 @@ func combineStopFunc(f1, f2 factories.StopFunc) factories.StopFunc {
 }
 
 func (eb *ExportersBuilder) buildExporter(
-	config configmodels.Exporter,
+	config models.Exporter,
 	exportersInputDataTypes exportersRequiredDataTypes,
 ) (*builtExporter, error) {
 
@@ -166,13 +166,13 @@ func (eb *ExportersBuilder) buildExporter(
 		return exporter, nil
 	}
 
-	if requirement, ok := inputDataTypes[configmodels.TracesDataType]; ok {
+	if requirement, ok := inputDataTypes[models.TracesDataType]; ok {
 		// Traces data type is required. Create a trace exporter based on config.
 		tc, stopFunc, err := factory.CreateTraceExporter(config)
 		if err != nil {
 			if err == factories.ErrDataTypeIsNotSupported {
 				// Could not create because this exporter does not support this data type.
-				return nil, typeMismatchErr(config, requirement.requiredBy, configmodels.TracesDataType)
+				return nil, typeMismatchErr(config, requirement.requiredBy, models.TracesDataType)
 			}
 			return nil, fmt.Errorf("error creating %s exporter: %v", config.Name(), err)
 		}
@@ -181,13 +181,13 @@ func (eb *ExportersBuilder) buildExporter(
 		exporter.stop = stopFunc
 	}
 
-	if requirement, ok := inputDataTypes[configmodels.MetricsDataType]; ok {
+	if requirement, ok := inputDataTypes[models.MetricsDataType]; ok {
 		// Metrics data type is required. Create a trace exporter based on config.
 		mc, stopFunc, err := factory.CreateMetricsExporter(config)
 		if err != nil {
 			if err == factories.ErrDataTypeIsNotSupported {
 				// Could not create because this exporter does not support this data type.
-				return nil, typeMismatchErr(config, requirement.requiredBy, configmodels.MetricsDataType)
+				return nil, typeMismatchErr(config, requirement.requiredBy, models.MetricsDataType)
 			}
 			return nil, fmt.Errorf("error creating %s exporter: %v", config.Name(), err)
 		}
@@ -202,9 +202,9 @@ func (eb *ExportersBuilder) buildExporter(
 }
 
 func typeMismatchErr(
-	config configmodels.Exporter,
-	requiredByPipeline *configmodels.Pipeline,
-	dataType configmodels.DataType,
+	config models.Exporter,
+	requiredByPipeline *models.Pipeline,
+	dataType models.DataType,
 ) error {
 	return fmt.Errorf("%s is a %s pipeline but has a %s which does not support %s",
 		requiredByPipeline.Name, dataType.GetString(),

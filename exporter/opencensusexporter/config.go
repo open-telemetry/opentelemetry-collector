@@ -17,18 +17,18 @@ package opencensusexporter
 import (
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-service/pkg/configmodels"
+	"github.com/open-telemetry/opentelemetry-service/models"
 )
 
 // ConfigV2 defines configuration for OpenCensus exporter.
 type ConfigV2 struct {
-	configmodels.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	Endpoint                      string                   `mapstructure:"endpoint"`
-	Compression                   string                   `mapstructure:"compression"`
-	Headers                       map[string]string        `mapstructure:"headers"`
-	NumWorkers                    int                      `mapstructure:"num-workers"`
-	CertPemFile                   string                   `mapstructure:"cert-pem-file"`
-	UseSecure                     bool                     `mapstructure:"secure,omitempty"`
-	ReconnectionDelay             time.Duration            `mapstructure:"reconnection-delay,omitempty"`
-	KeepaliveParameters           *keepaliveConfig         `mapstructure:"keepalive,omitempty"`
+	models.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	Endpoint                string                   `mapstructure:"endpoint"`
+	Compression             string                   `mapstructure:"compression"`
+	Headers                 map[string]string        `mapstructure:"headers"`
+	NumWorkers              int                      `mapstructure:"num-workers"`
+	CertPemFile             string                   `mapstructure:"cert-pem-file"`
+	UseSecure               bool                     `mapstructure:"secure,omitempty"`
+	ReconnectionDelay       time.Duration            `mapstructure:"reconnection-delay,omitempty"`
+	KeepaliveParameters     *keepaliveConfig         `mapstructure:"keepalive,omitempty"`
 }

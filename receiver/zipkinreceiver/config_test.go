@@ -21,9 +21,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-service/pkg/configmodels"
-	"github.com/open-telemetry/opentelemetry-service/pkg/configv2"
-	"github.com/open-telemetry/opentelemetry-service/pkg/factories"
+	"github.com/open-telemetry/opentelemetry-service/configv2"
+	"github.com/open-telemetry/opentelemetry-service/factories"
+	"github.com/open-telemetry/opentelemetry-service/models"
 )
 
 var _ = configv2.RegisterTestFactories()
@@ -44,7 +44,7 @@ func TestLoadConfig(t *testing.T) {
 	r1 := config.Receivers["zipkin/customname"].(*ConfigV2)
 	assert.Equal(t, r1,
 		&ConfigV2{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ReceiverSettings: models.ReceiverSettings{
 				TypeVal:  typeStr,
 				NameVal:  "zipkin/customname",
 				Endpoint: "127.0.0.1:8765",

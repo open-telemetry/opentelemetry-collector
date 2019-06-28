@@ -23,7 +23,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/pkg/configmodels"
+	"github.com/open-telemetry/opentelemetry-service/models"
 	"github.com/open-telemetry/opentelemetry-service/processor"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
@@ -37,7 +37,7 @@ type ReceiverFactory interface {
 	Type() string
 
 	// CreateDefaultConfig creates the default configuration for the Receiver.
-	CreateDefaultConfig() configmodels.Receiver
+	CreateDefaultConfig() models.Receiver
 
 	// CustomUnmarshaler returns a custom unmarshaler for the configuration or nil if
 	// there is no need for custom unmarshaling. This is typically used if viper.Unmarshal()
@@ -47,13 +47,13 @@ type ReceiverFactory interface {
 	// CreateTraceReceiver creates a trace receiver based on this config.
 	// If the receiver type does not support tracing or if the config is not valid
 	// error will be returned instead.
-	CreateTraceReceiver(ctx context.Context, cfg configmodels.Receiver,
+	CreateTraceReceiver(ctx context.Context, cfg models.Receiver,
 		nextConsumer consumer.TraceConsumer) (receiver.TraceReceiver, error)
 
 	// CreateMetricsReceiver creates a metrics receiver based on this config.
 	// If the receiver type does not support metrics or if the config is not valid
 	// error will be returned instead.
-	CreateMetricsReceiver(cfg configmodels.Receiver,
+	CreateMetricsReceiver(cfg models.Receiver,
 		consumer consumer.MetricsConsumer) (receiver.MetricsReceiver, error)
 }
 
@@ -98,13 +98,13 @@ type ExporterFactory interface {
 	Type() string
 
 	// CreateDefaultConfig creates the default configuration for the Exporter.
-	CreateDefaultConfig() configmodels.Exporter
+	CreateDefaultConfig() models.Exporter
 
 	// CreateTraceExporter creates a trace exporter based on this config.
-	CreateTraceExporter(cfg configmodels.Exporter) (consumer.TraceConsumer, StopFunc, error)
+	CreateTraceExporter(cfg models.Exporter) (consumer.TraceConsumer, StopFunc, error)
 
 	// CreateMetricsExporter creates a metrics exporter based on this config.
-	CreateMetricsExporter(cfg configmodels.Exporter) (consumer.MetricsConsumer, StopFunc, error)
+	CreateMetricsExporter(cfg models.Exporter) (consumer.MetricsConsumer, StopFunc, error)
 }
 
 // List of registered exporter factories.
@@ -134,19 +134,19 @@ type ProcessorFactory interface {
 	Type() string
 
 	// CreateDefaultConfig creates the default configuration for the Processor.
-	CreateDefaultConfig() configmodels.Processor
+	CreateDefaultConfig() models.Processor
 
 	// CreateTraceProcessor creates a trace processor based on this config.
 	// If the processor type does not support tracing or if the config is not valid
 	// error will be returned instead.
 	CreateTraceProcessor(logger *zap.Logger, nextConsumer consumer.TraceConsumer,
-		cfg configmodels.Processor) (processor.TraceProcessor, error)
+		cfg models.Processor) (processor.TraceProcessor, error)
 
 	// CreateMetricsProcessor creates a metrics processor based on this config.
 	// If the processor type does not support metrics or if the config is not valid
 	// error will be returned instead.
 	CreateMetricsProcessor(logger *zap.Logger, nextConsumer consumer.MetricsConsumer,
-		cfg configmodels.Processor) (processor.MetricsProcessor, error)
+		cfg models.Processor) (processor.MetricsProcessor, error)
 }
 
 // List of registered processor factories.
