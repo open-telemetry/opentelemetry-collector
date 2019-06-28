@@ -1,3 +1,17 @@
+// Copyright 2019, OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package testbed
 
 import (
@@ -45,8 +59,8 @@ func (r *Results) Init(resultsDir string) {
 	_, _ = io.WriteString(r.resultsFile,
 		"# Test Results\n"+
 			fmt.Sprintf("Started: %s\n\n", time.Now().Format(time.RFC1123Z))+
-			"Test|Result|Duration|CPU Avg%|CPU Max%|RAM Avg MiB|RAM Max MiB|Sent Spans|Received Spans\n"+
-			"----|------|-------:|-------:|-------:|----------:|----------:|---------:|-------------:\n")
+			"Test                                    |Result|Duration|CPU Avg%|CPU Max%|RAM Avg MiB|RAM Max MiB|Sent Spans|Received Spans\n"+
+			"----------------------------------------|------|-------:|-------:|-------:|----------:|----------:|---------:|-------------:\n")
 }
 
 // Save the total results and close the file.
@@ -59,7 +73,7 @@ func (r *Results) Save() {
 // Add results for one test.
 func (r *Results) Add(testName string, result *TestResult) {
 	_, _ = io.WriteString(r.resultsFile,
-		fmt.Sprintf("%s|%s|%.0fs|%.1f|%.1f|%d|%d|%d|%d\n",
+		fmt.Sprintf("%-40s|%-6s|%7.0fs|%8.1f|%8.1f|%11d|%11d|%10d|%14d\n",
 			result.testName,
 			result.result,
 			result.duration.Seconds(),
