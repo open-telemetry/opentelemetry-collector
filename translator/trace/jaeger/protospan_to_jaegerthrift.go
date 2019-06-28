@@ -202,6 +202,8 @@ func ocSpansToJaegerSpans(ocSpans []*tracepb.Span) ([]*jaeger.Span, error) {
 			}
 		}
 
+		jSpan.Tags = appendJaegerThriftTagFromOCStatus(jSpan.Tags, ocSpan.Status)
+
 		jSpans = append(jSpans, jSpan)
 	}
 
@@ -246,6 +248,35 @@ func ocLinksToJaegerReferences(ocSpanLinks *tracepb.Span_Links) ([]*jaeger.SpanR
 	}
 
 	return jRefs, nil
+}
+
+func appendJaegerThriftTagFromOCStatus(jTags []*jaeger.Tag, ocStatus *tracepb.Status) []*jaeger.Tag {
+	if ocStatus == nil {
+		return jTags
+	}
+
+	for _, jt := range jTags {
+		if jt.Key == tracetranslator.TagStatusCode || jt.Key == tracetranslator.TagStatusMsg {
+			return jTags
+		}
+	}
+
+	code := int64(ocStatus.Code)
+	jTags = append(jTags, &jaeger.Tag{
+		Key:   tracetranslator.TagStatusCode,
+		VLong: &code,
+		VType: jaeger.TagType_LONG,
+	})
+
+	if ocStatus.Message != "" {
+		jTags = append(jTags, &jaeger.Tag{
+			Key:   tracetranslator.TagStatusMsg,
+			VStr:  &ocStatus.Message,
+			VType: jaeger.TagType_STRING,
+		})
+	}
+
+	return jTags
 }
 
 func appendJaegerTagFromOCSpanKind(jTags []*jaeger.Tag, ocSpanKind tracepb.Span_SpanKind) []*jaeger.Tag {

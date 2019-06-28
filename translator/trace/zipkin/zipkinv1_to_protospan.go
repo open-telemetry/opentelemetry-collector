@@ -24,9 +24,10 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
+	"github.com/pkg/errors"
+
 	"github.com/open-telemetry/opentelemetry-service/data"
 	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
-	"github.com/pkg/errors"
 )
 
 var (
@@ -144,7 +145,7 @@ func zipkinV1ToOCSpan(zSpan *zipkinV1Span) (*tracepb.Span, *annotationParseResul
 	}
 
 	parsedAnnotations := parseZipkinV1Annotations(zSpan.Annotations)
-	attributes, localComponent := zipkinV1BinAnnotationsToOCAttributes(zSpan.BinaryAnnotations)
+	attributes, ocStatus, localComponent := zipkinV1BinAnnotationsToOCAttributes(zSpan.BinaryAnnotations)
 	if parsedAnnotations.Endpoint.ServiceName == unknownServiceName && localComponent != "" {
 		parsedAnnotations.Endpoint.ServiceName = localComponent
 	}
@@ -161,6 +162,7 @@ func zipkinV1ToOCSpan(zSpan *zipkinV1Span) (*tracepb.Span, *annotationParseResul
 		TraceId:      traceID,
 		SpanId:       spanID,
 		ParentSpanId: parentID,
+		Status:       ocStatus,
 		Kind:         parsedAnnotations.Kind,
 		TimeEvents:   parsedAnnotations.TimeEvents,
 		StartTime:    startTime,
@@ -175,14 +177,16 @@ func zipkinV1ToOCSpan(zSpan *zipkinV1Span) (*tracepb.Span, *annotationParseResul
 	return ocSpan, parsedAnnotations, nil
 }
 
-func zipkinV1BinAnnotationsToOCAttributes(binAnnotations []*binaryAnnotation) (attributes *tracepb.Span_Attributes, fallbackServiceName string) {
+func zipkinV1BinAnnotationsToOCAttributes(binAnnotations []*binaryAnnotation) (attributes *tracepb.Span_Attributes, status *tracepb.Status, fallbackServiceName string) {
 	if len(binAnnotations) == 0 {
-		return nil, ""
+		return nil, nil, ""
 	}
 
+	sMapper := &statusMapper{}
 	var localComponent string
 	attributeMap := make(map[string]*tracepb.AttributeValue)
 	for _, binAnnotation := range binAnnotations {
+
 		if binAnnotation.Endpoint != nil && binAnnotation.Endpoint.ServiceName != "" {
 			fallbackServiceName = binAnnotation.Endpoint.ServiceName
 		}
@@ -197,16 +201,24 @@ func zipkinV1BinAnnotationsToOCAttributes(binAnnotations []*binaryAnnotation) (a
 		}
 
 		key := binAnnotation.Key
+
 		if key == zipkincore.LOCAL_COMPONENT {
 			// TODO: (@pjanotti) add reference to OpenTracing and change related tags to use them
 			key = "component"
 			localComponent = binAnnotation.Value
 		}
+
+		if drop := sMapper.fromAttribute(key, pbAttrib); drop {
+			continue
+		}
+
 		attributeMap[key] = pbAttrib
 	}
 
+	status = sMapper.ocStatus()
+
 	if len(attributeMap) == 0 {
-		return nil, ""
+		return nil, status, ""
 	}
 
 	if fallbackServiceName == "" {
@@ -217,7 +229,7 @@ func zipkinV1BinAnnotationsToOCAttributes(binAnnotations []*binaryAnnotation) (a
 		AttributeMap: attributeMap,
 	}
 
-	return attributes, fallbackServiceName
+	return attributes, status, fallbackServiceName
 }
 
 // annotationParseResult stores the results of examining the original annotations,
