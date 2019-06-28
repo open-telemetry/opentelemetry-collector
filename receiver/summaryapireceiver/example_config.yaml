@@ -1,0 +1,12 @@
+receivers:
+  summaryapi:
+    scrape_interval: 10
+    kubelet_endpoint: "http://localhost:8080/api/v1/nodes/gke-dpo-cluster-default-pool-df24a477-ls6l/proxy/stats/summary"
+
+zpages:
+  port: 55679
+
+exporters:
+  prometheus:
+    namespace: "summaryapi_test"
+    address: "localhost:8888"

@@ -1,0 +1,18 @@
+receivers:
+  summaryapi:
+  summaryapi/customname:
+    scrape_interval: 10
+    kubelet_endpoint: "http://localhost:8080/api/v1/nodes/gke-dpo-cluster-default-pool-df24a477-ls6l/proxy/stats/summary"
+
+processors:
+  exampleprocessor:
+
+exporters:
+  exampleexporter:
+
+pipelines:
+  traces:
+   receivers: [summaryapi]
+   processors: [exampleprocessor]
+   exporters: [exampleexporter]
+
