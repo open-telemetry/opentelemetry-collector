@@ -168,4 +168,3 @@ func (pr *Preceiver) StopMetricsReception(ctx context.Context) error {
 	pr.stopOnce.Do(pr.cancel)
 	return nil
 }
-

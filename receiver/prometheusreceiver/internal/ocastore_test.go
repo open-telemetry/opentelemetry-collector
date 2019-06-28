@@ -17,8 +17,8 @@ package internal
 import (
 	"context"
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-service/data"
 	"github.com/go-kit/kit/log"
+	"github.com/open-telemetry/opentelemetry-service/data"
 	"github.com/prometheus/prometheus/discovery"
 	"net/http"
 	"net/http/httptest"

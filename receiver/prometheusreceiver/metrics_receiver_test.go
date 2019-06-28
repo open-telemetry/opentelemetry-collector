@@ -32,10 +32,10 @@ import (
 	"contrib.go.opencensus.io/exporter/prometheus"
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/open-telemetry/opentelemetry-service/data"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-service/internal/config/viperutils"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/spf13/viper"
 )
 
