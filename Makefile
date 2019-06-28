@@ -35,8 +35,8 @@ all-srcs:
 .PHONY: fmt-vet-lint-test
 fmt-vet-lint-test: fmt vet lint test
 
-.PHONY: perf-test
-perf-test: otelsvc
+.PHONY: e2e-test
+e2e-test: otelsvc
 	$(MAKE) -C testbed runtests
 
 .PHONY: test
@@ -44,7 +44,9 @@ test:
 	$(GOTEST) $(GOTEST_OPT) $(ALL_PKGS)
 
 .PHONY: travis-ci
-travis-ci: fmt vet lint test-with-cover
+travis-ci: fmt vet lint test-with-cover otelsvc
+	$(MAKE) -C testbed install-tools
+	$(MAKE) -C testbed runtests
 
 .PHONY: test-with-cover
 test-with-cover:

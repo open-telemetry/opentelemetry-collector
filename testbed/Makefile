@@ -17,8 +17,7 @@ test:
 
 .PHONY: runtests
 runtests: test
-	cd tests && TESTBED_CONFIG=local.yaml go test -v 2>&1 | tee results/testoutput.log
-	cd tests && mkdir -p results/junit && go-junit-report < results/testoutput.log > results/junit/results.xml
+	./runtests.sh
 
 .PHONY: fmt
 fmt:

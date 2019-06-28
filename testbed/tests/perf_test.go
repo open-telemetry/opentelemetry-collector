@@ -1,4 +1,4 @@
-// Copyright 2019, OpenCensus Authors
+// Copyright 2019, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -72,7 +72,7 @@ func Test10kSPS(t *testing.T) {
 	defer tc.Stop()
 
 	tc.SetExpectedMaxCPU(150)
-	tc.SetExpectedMaxRAM(50)
+	tc.SetExpectedMaxRAM(70)
 
 	tc.StartBackend(testbed.BackendOC)
 	tc.StartAgent()
@@ -155,7 +155,7 @@ func Test1000SPSWithAttributes(t *testing.T) {
 			defer tc.Stop()
 
 			tc.SetExpectedMaxCPU(test.expectedCPU)
-			tc.SetExpectedMaxRAM(70)
+			tc.SetExpectedMaxRAM(100)
 
 			tc.StartBackend(testbed.BackendOC)
 			tc.StartAgent()
