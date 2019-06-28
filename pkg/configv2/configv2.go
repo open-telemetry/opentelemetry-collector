@@ -24,8 +24,8 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/open-telemetry/opentelemetry-service/internal/configmodels"
-	"github.com/open-telemetry/opentelemetry-service/internal/factories"
+	"github.com/open-telemetry/opentelemetry-service/pkg/configmodels"
+	"github.com/open-telemetry/opentelemetry-service/pkg/factories"
 )
 
 // These are errors that can be returned by Load(). Note that error codes are not part

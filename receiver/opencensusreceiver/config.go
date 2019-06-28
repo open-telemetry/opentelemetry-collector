@@ -14,7 +14,7 @@
 
 package opencensusreceiver
 
-import "github.com/open-telemetry/opentelemetry-service/internal/configmodels"
+import "github.com/open-telemetry/opentelemetry-service/pkg/configmodels"
 
 // ConfigV2 defines configuration for OpenCensus receiver.
 type ConfigV2 struct {

@@ -31,9 +31,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/cmd/occollector/app/builder"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/internal/config/viperutils"
-	"github.com/open-telemetry/opentelemetry-service/internal/configv2"
 	"github.com/open-telemetry/opentelemetry-service/internal/pprofserver"
 	"github.com/open-telemetry/opentelemetry-service/internal/zpagesserver"
+	"github.com/open-telemetry/opentelemetry-service/pkg/configv2"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
 

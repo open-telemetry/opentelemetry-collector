@@ -26,8 +26,8 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 
 	"github.com/open-telemetry/opentelemetry-service/data"
-	"github.com/open-telemetry/opentelemetry-service/internal/configmodels"
-	"github.com/open-telemetry/opentelemetry-service/internal/configv2"
+	"github.com/open-telemetry/opentelemetry-service/pkg/configmodels"
+	"github.com/open-telemetry/opentelemetry-service/pkg/configv2"
 	"github.com/open-telemetry/opentelemetry-service/processor/addattributesprocessor"
 )
 
