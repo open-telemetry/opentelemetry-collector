@@ -188,11 +188,11 @@ func (rb *ReceiversBuilder) attachReceiverToPipelines(
 		junction := buildFanoutTraceConsumer(pipelineProcessors)
 
 		// Now create the receiver and tell it to send to the junction point.
-		receiver.trace, err = factory.CreateTraceReceiver(context.Background(), config, junction)
+		receiver.trace, err = factory.CreateTraceReceiver(context.Background(), rb.logger, config, junction)
 
 	case models.MetricsDataType:
 		junction := buildFanoutMetricConsumer(pipelineProcessors)
-		receiver.metrics, err = factory.CreateMetricsReceiver(config, junction)
+		receiver.metrics, err = factory.CreateMetricsReceiver(rb.logger, config, junction)
 	}
 
 	if err != nil {

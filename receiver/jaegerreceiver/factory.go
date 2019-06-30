@@ -23,6 +23,8 @@ import (
 	"net"
 	"strconv"
 
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/factories"
 	"github.com/open-telemetry/opentelemetry-service/models"
@@ -79,6 +81,7 @@ func (f *receiverFactory) CreateDefaultConfig() models.Receiver {
 // CreateTraceReceiver creates a trace receiver based on provided config.
 func (f *receiverFactory) CreateTraceReceiver(
 	ctx context.Context,
+	logger *zap.Logger,
 	cfg models.Receiver,
 	nextConsumer consumer.TraceConsumer,
 ) (receiver.TraceReceiver, error) {
@@ -125,6 +128,7 @@ func (f *receiverFactory) CreateTraceReceiver(
 
 // CreateMetricsReceiver creates a metrics receiver based on provided config.
 func (f *receiverFactory) CreateMetricsReceiver(
+	logger *zap.Logger,
 	cfg models.Receiver,
 	consumer consumer.MetricsConsumer,
 ) (receiver.MetricsReceiver, error) {
