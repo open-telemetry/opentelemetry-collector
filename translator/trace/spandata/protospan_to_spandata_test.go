@@ -21,12 +21,11 @@ import (
 	"testing"
 	"time"
 
+	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes/wrappers"
-
 	"go.opencensus.io/trace"
 	"go.opencensus.io/trace/tracestate"
 
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/open-telemetry/opentelemetry-service/internal"
 )
 

@@ -171,12 +171,6 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *Configu
 					},
 					Attributes: &tracepb.Span_Attributes{
 						AttributeMap: map[string]*tracepb.AttributeValue{
-							"status.code": {
-								Value: &tracepb.AttributeValue_IntValue{IntValue: trace.StatusCodeNotFound},
-							},
-							"status.message": {
-								Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "Stale indices"}},
-							},
 							"error": {
 								Value: &tracepb.AttributeValue_BoolValue{BoolValue: true},
 							},
@@ -204,12 +198,6 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *Configu
 					},
 					Attributes: &tracepb.Span_Attributes{
 						AttributeMap: map[string]*tracepb.AttributeValue{
-							"status.code": {
-								Value: &tracepb.AttributeValue_IntValue{IntValue: trace.StatusCodeInternal},
-							},
-							"status.message": {
-								Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "Frontend crash"}},
-							},
 							"error": {
 								Value: &tracepb.AttributeValue_BoolValue{BoolValue: true},
 							},

@@ -190,6 +190,8 @@ func jtagsToAttributes(tags []*jaeger.Tag) (string, tracepb.Span_SpanKind, *trac
 
 	var statusCodePtr *int32
 	var statusMessage string
+	var httpStatusCodePtr *int32
+	var httpStatusMessage string
 	var message string
 
 	sAttribs := make(map[string]*tracepb.AttributeValue)
@@ -206,12 +208,19 @@ func jtagsToAttributes(tags []*jaeger.Tag) (string, tracepb.Span_SpanKind, *trac
 				sKind = tracepb.Span_SERVER
 			}
 
-		case "http.status_code", "status.code": // It is expected to be an int
-			statusCodePtr = new(int32)
-			*statusCodePtr = int32(tag.GetVLong())
+		case tracetranslator.TagStatusCode:
+			statusCodePtr = statusCodeFromTag(tag)
+			continue
 
-		case "http.status_message", "status.message":
+		case tracetranslator.TagStatusMsg:
 			statusMessage = tag.GetVStr()
+			continue
+
+		case tracetranslator.TagHTTPStatusCode:
+			httpStatusCodePtr = statusCodeFromHTTPTag(tag)
+
+		case tracetranslator.TagHTTPStatusMsg:
+			httpStatusMessage = tag.GetVStr()
 
 		case "message":
 			message = tag.GetVStr()
@@ -246,6 +255,11 @@ func jtagsToAttributes(tags []*jaeger.Tag) (string, tracepb.Span_SpanKind, *trac
 		}
 
 		sAttribs[tag.Key] = attrib
+	}
+
+	if statusCodePtr == nil {
+		statusCodePtr = httpStatusCodePtr
+		statusMessage = httpStatusMessage
 	}
 
 	var sStatus *tracepb.Status
