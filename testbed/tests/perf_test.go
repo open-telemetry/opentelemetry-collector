@@ -61,10 +61,7 @@ func TestIdleMode(t *testing.T) {
 
 	tc.StartAgent()
 
-	select {
-	case <-time.After(10 * time.Second):
-	case <-tc.ErrorSignal:
-	}
+	tc.Sleep(10 * time.Second)
 }
 
 func Test10kSPS(t *testing.T) {
@@ -78,16 +75,12 @@ func Test10kSPS(t *testing.T) {
 	tc.StartAgent()
 	tc.StartLoad(testbed.LoadOptions{SpansPerSecond: 10000})
 
-	select {
-	case <-time.After(15 * time.Second):
-	case <-tc.ErrorSignal:
-	}
+	tc.Sleep(15 * time.Second)
 
 	tc.StopLoad()
-	select {
-	case <-time.After(1 * time.Second):
-	case <-tc.ErrorSignal:
-	}
+
+	tc.WaitFor(func() bool { return tc.LoadGenerator.SpansSent() == tc.MockBackend.SpansReceived() },
+		"all spans received")
 
 	tc.StopAgent()
 
@@ -104,10 +97,7 @@ func TestNoBackend10kSPS(t *testing.T) {
 	tc.StartAgent()
 	tc.StartLoad(testbed.LoadOptions{SpansPerSecond: 10000})
 
-	select {
-	case <-time.After(10 * time.Second):
-	case <-tc.ErrorSignal:
-	}
+	tc.Sleep(10 * time.Second)
 }
 
 func Test1000SPSWithAttributes(t *testing.T) {
@@ -170,17 +160,11 @@ func Test1000SPSWithAttributes(t *testing.T) {
 			}
 
 			tc.StartLoad(options)
-
-			select {
-			case <-time.After(10 * time.Second):
-			case <-tc.ErrorSignal:
-			}
-
+			tc.Sleep(10 * time.Second)
 			tc.StopLoad()
-			select {
-			case <-time.After(1 * time.Second):
-			case <-tc.ErrorSignal:
-			}
+
+			tc.WaitFor(func() bool { return tc.LoadGenerator.SpansSent() == tc.MockBackend.SpansReceived() },
+				"all spans received")
 
 			tc.StopAgent()
 

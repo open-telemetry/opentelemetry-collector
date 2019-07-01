@@ -206,7 +206,7 @@ func (tc *TestCase) Stop() {
 		testName:          tc.t.Name(),
 		result:            result,
 		receivedSpanCount: tc.MockBackend.SpansReceived(),
-		sentSpanCount:     tc.LoadGenerator.SpansSent,
+		sentSpanCount:     tc.LoadGenerator.SpansSent(),
 		duration:          time.Since(tc.startTime),
 		cpuPercentageAvg:  rc.CPUPercentAvg,
 		cpuPercentageMax:  rc.CPUPercentMax,
@@ -218,9 +218,58 @@ func (tc *TestCase) Stop() {
 // ValidateData validates data by comparing the number of spans sent by load generator
 // and number of spans received by mock backend.
 func (tc *TestCase) ValidateData() {
-	if assert.EqualValues(tc.t, tc.LoadGenerator.SpansSent, tc.MockBackend.SpansReceived(),
+	select {
+	case <-tc.ErrorSignal:
+		// Error is already signaled and recorded. Validating data is pointless.
+		return
+	default:
+	}
+
+	if assert.EqualValues(tc.t, tc.LoadGenerator.SpansSent(), tc.MockBackend.SpansReceived(),
 		"Received and sent span counters do not match.") {
 		log.Printf("Sent and received data matches.")
+	}
+}
+
+// Sleep for specified duration or until error is signalled.
+func (tc *TestCase) Sleep(d time.Duration) {
+	select {
+	case <-time.After(d):
+	case <-tc.ErrorSignal:
+	}
+}
+
+// WaitFor the specific condition for up to 10 seconds. Records a test error
+// if time is out and condition does not become true. If error is signalled
+// while waiting the function will return false, but will not record additional
+// test error (we assume that signalled error is already recorded in indicateError()).
+func (tc *TestCase) WaitFor(cond func() bool, errMsg ...interface{}) bool {
+	startTime := time.Now()
+
+	// Start with 5 ms waiting interval between condition re-evaluation.
+	waitInterval := time.Millisecond * 5
+
+	for {
+		if cond() {
+			return true
+		}
+
+		select {
+		case <-time.After(waitInterval):
+		case <-tc.ErrorSignal:
+			return false
+		}
+
+		// Increase waiting interval exponentially up to 500 ms.
+		if waitInterval < time.Millisecond*500 {
+			waitInterval = waitInterval * 2
+		}
+
+		if time.Since(startTime) > time.Second*10 {
+			// Waited too long
+			tc.t.Error("Time out waiting for", errMsg)
+			return false
+		}
 	}
 }
 
