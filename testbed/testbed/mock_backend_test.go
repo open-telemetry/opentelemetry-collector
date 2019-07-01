@@ -36,21 +36,21 @@ func TestGeneratorAndBackend(t *testing.T) {
 	lg, err := NewLoadGenerator()
 	require.NoError(t, err, "Cannot start load generator")
 
-	assert.EqualValues(t, 0, lg.SpansSent)
+	assert.EqualValues(t, 0, lg.spansSent)
 
 	// Generate at 1000 SPS
 	lg.Start(LoadOptions{SpansPerSecond: 1000})
 
 	// Wait until at least 50 spans are sent
-	WaitFor(t, func() bool { return lg.GetSpansSent() > 50 }, "SpansSent > 50")
+	WaitFor(t, func() bool { return lg.SpansSent() > 50 }, "SpansSent > 50")
 
 	lg.Stop()
 
 	// The backend should receive everything generated.
-	assert.Equal(t, lg.SpansSent, mb.SpansReceived())
+	assert.Equal(t, lg.SpansSent(), mb.SpansReceived())
 }
 
-// WaitFor the specific condition for up to 5 seconds. Records a test error
+// WaitFor the specific condition for up to 10 seconds. Records a test error
 // if condition does not become true.
 func WaitFor(t *testing.T, cond func() bool, errMsg ...interface{}) bool {
 	startTime := time.Now()
@@ -70,7 +70,7 @@ func WaitFor(t *testing.T, cond func() bool, errMsg ...interface{}) bool {
 			return true
 		}
 
-		if time.Since(startTime) > time.Second*5 {
+		if time.Since(startTime) > time.Second*10 {
 			// Waited too long
 			t.Error("Time out waiting for", errMsg)
 			return false

@@ -30,8 +30,8 @@ import (
 type LoadGenerator struct {
 	exporter *jaeger.Exporter
 
-	TracesSent uint64
-	SpansSent  uint64
+	tracesSent uint64
+	spansSent  uint64
 
 	stopOnce   sync.Once
 	stopWait   sync.WaitGroup
@@ -109,11 +109,11 @@ func (lg *LoadGenerator) Stop() {
 
 // GetStats returns the stats as a printable string.
 func (lg *LoadGenerator) GetStats() string {
-	return fmt.Sprintf("Sent:%5d spans", atomic.LoadUint64(&lg.SpansSent))
+	return fmt.Sprintf("Sent:%5d spans", atomic.LoadUint64(&lg.spansSent))
 }
 
-func (lg *LoadGenerator) GetSpansSent() uint64 {
-	return atomic.LoadUint64(&lg.SpansSent)
+func (lg *LoadGenerator) SpansSent() uint64 {
+	return atomic.LoadUint64(&lg.spansSent)
 }
 
 func (lg *LoadGenerator) generate() {
@@ -142,12 +142,12 @@ func (lg *LoadGenerator) generate() {
 
 func (lg *LoadGenerator) generateTrace() {
 
-	traceID := atomic.AddUint64(&lg.TracesSent, 1)
+	traceID := atomic.AddUint64(&lg.tracesSent, 1)
 	for i := uint(0); i < lg.options.SpansPerTrace; i++ {
 
 		startTime := time.Now()
 
-		spanID := atomic.AddUint64(&lg.SpansSent, 1)
+		spanID := atomic.AddUint64(&lg.spansSent, 1)
 
 		// Create a span.
 		span := &trace.SpanData{
