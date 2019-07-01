@@ -127,10 +127,11 @@ func (tc *TestCase) StartAgent() {
 	logFileName := tc.composeTestResultFileName("agent.log")
 
 	err := tc.agentProc.start(startParams{
-		name:        "Agent",
-		logFilePath: logFileName,
-		cmd:         testBedConfig.Agent,
-		cmdArgs:     []string{"--config", tc.agentConfigFile},
+		name:         "Agent",
+		logFilePath:  logFileName,
+		cmd:          testBedConfig.Agent,
+		cmdArgs:      []string{"--config", tc.agentConfigFile},
+		resourceSpec: &tc.resourceSpec,
 	})
 
 	if err != nil {
@@ -138,15 +139,13 @@ func (tc *TestCase) StartAgent() {
 		return
 	}
 
-	// Start watching if expected resources are defined.
-	if tc.resourceSpec.expectedMaxCPU != 0 || tc.resourceSpec.expectedMaxRAM != 0 {
-		go func() {
-			err := tc.agentProc.watchResourceConsumption(&tc.resourceSpec)
-			if err != nil {
-				tc.indicateError(err)
-			}
-		}()
-	}
+	// Start watching resource consumption.
+	go func() {
+		err := tc.agentProc.watchResourceConsumption()
+		if err != nil {
+			tc.indicateError(err)
+		}
+	}()
 
 	// Wait a bit for agent to start. This is a hack. We need to have a way to
 	// wait for agent to start properly.

@@ -48,6 +48,12 @@ type resourceSpec struct {
 	resourceCheckPeriod time.Duration
 }
 
+// isSpecified returns true if any part of resourceSpec is specified,
+// i.e. has non-zero value.
+func (rs *resourceSpec) isSpecified() bool {
+	return rs != nil && (rs.expectedMaxCPU != 0 || rs.expectedMaxRAM != 0)
+}
+
 // childProcess is a child process that can be monitored and the output
 // of which will be written to a log file.
 type childProcess struct {
@@ -101,10 +107,11 @@ type childProcess struct {
 }
 
 type startParams struct {
-	name        string
-	logFilePath string
-	cmd         string
-	cmdArgs     []string
+	name         string
+	logFilePath  string
+	cmd          string
+	cmdArgs      []string
+	resourceSpec *resourceSpec
 }
 
 type ResourceConsumption struct {
@@ -126,6 +133,7 @@ func (cp *childProcess) start(params startParams) error {
 
 	cp.name = params.name
 	cp.doneSignal = make(chan struct{})
+	cp.resourceSpec = params.resourceSpec
 
 	log.Printf("Starting %s (%s)", cp.name, params.cmd)
 
@@ -236,8 +244,11 @@ func (cp *childProcess) stop() {
 	})
 }
 
-func (cp *childProcess) watchResourceConsumption(spec *resourceSpec) error {
-	cp.resourceSpec = spec
+func (cp *childProcess) watchResourceConsumption() error {
+	if !cp.resourceSpec.isSpecified() {
+		// Resource monitoring is not enabled.
+		return nil
+	}
 
 	var err error
 	cp.processMon, err = process.NewProcess(int32(cp.cmd.Process.Pid))
@@ -257,7 +268,7 @@ func (cp *childProcess) watchResourceConsumption(spec *resourceSpec) error {
 	}
 
 	// Measure every resourceCheckPeriod.
-	ticker := time.NewTicker(spec.resourceCheckPeriod)
+	ticker := time.NewTicker(cp.resourceSpec.resourceCheckPeriod)
 	defer ticker.Stop()
 
 	for {
@@ -351,7 +362,7 @@ func (cp *childProcess) isAllowedResourceUsage() bool {
 
 // GetResourceConsumption returns resource consumption as a string
 func (cp *childProcess) GetResourceConsumption() string {
-	if cp.resourceSpec == nil {
+	if !cp.resourceSpec.isSpecified() {
 		// Monitoring is not enabled.
 		return ""
 	}
