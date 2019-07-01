@@ -100,13 +100,13 @@ func New(logger *zap.Logger, v *viper.Viper, next consumer.MetricsConsumer) (*Pr
 }
 
 // New creates a new prometheus.Receiver reference.
-func newPrometheusReceiver(logger *zap.Logger, cfg *Configuration, next consumer.MetricsConsumer) (*Preceiver, error) {
+func newPrometheusReceiver(logger *zap.Logger, cfg *Configuration, next consumer.MetricsConsumer) *Preceiver {
 	pr := &Preceiver{
 		cfg:      cfg,
 		consumer: next,
 		logger:   logger,
 	}
-	return pr, nil
+	return pr
 }
 
 const metricsSource string = "Prometheus"

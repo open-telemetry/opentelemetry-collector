@@ -126,5 +126,5 @@ func (f *ReceiverFactory) CreateMetricsReceiver(
 	if config.ScrapeConfig == nil || len(config.ScrapeConfig.ScrapeConfigs) == 0 {
 		return nil, errNilScrapeConfig
 	}
-	return newPrometheusReceiver(logger, &config, consumer)
+	return newPrometheusReceiver(logger, &config, consumer), nil
 }
