@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
@@ -98,6 +99,7 @@ func (f *ReceiverFactory) CreateDefaultConfig() models.Receiver {
 // CreateTraceReceiver creates a trace receiver based on provided config.
 func (f *ReceiverFactory) CreateTraceReceiver(
 	ctx context.Context,
+	logger *zap.Logger,
 	cfg models.Receiver,
 	nextConsumer consumer.TraceConsumer,
 ) (receiver.TraceReceiver, error) {
@@ -107,6 +109,7 @@ func (f *ReceiverFactory) CreateTraceReceiver(
 
 // CreateMetricsReceiver creates a metrics receiver based on provided config.
 func (f *ReceiverFactory) CreateMetricsReceiver(
+	logger *zap.Logger,
 	cfg models.Receiver,
 	consumer consumer.MetricsConsumer,
 ) (receiver.MetricsReceiver, error) {
@@ -123,9 +126,5 @@ func (f *ReceiverFactory) CreateMetricsReceiver(
 	if config.ScrapeConfig == nil || len(config.ScrapeConfig.ScrapeConfigs) == 0 {
 		return nil, errNilScrapeConfig
 	}
-	pr := &Preceiver{
-		cfg:      &config,
-		consumer: consumer,
-	}
-	return pr, nil
+	return newPrometheusReceiver(logger, &config, consumer), nil
 }

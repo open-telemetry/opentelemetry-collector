@@ -68,6 +68,7 @@ func (f *ExampleReceiverFactory) CreateDefaultConfig() models.Receiver {
 // CreateTraceReceiver creates a trace receiver based on this config.
 func (f *ExampleReceiverFactory) CreateTraceReceiver(
 	ctx context.Context,
+	logger *zap.Logger,
 	cfg models.Receiver,
 	nextConsumer consumer.TraceConsumer,
 ) (receiver.TraceReceiver, error) {
@@ -79,6 +80,7 @@ func (f *ExampleReceiverFactory) CreateTraceReceiver(
 
 // CreateMetricsReceiver creates a metrics receiver based on this config.
 func (f *ExampleReceiverFactory) CreateMetricsReceiver(
+	logger *zap.Logger,
 	cfg models.Receiver,
 	nextConsumer consumer.MetricsConsumer,
 ) (receiver.MetricsReceiver, error) {
@@ -205,6 +207,7 @@ func (f *MultiProtoReceiverFactory) CreateDefaultConfig() models.Receiver {
 // CreateTraceReceiver creates a trace receiver based on this config.
 func (f *MultiProtoReceiverFactory) CreateTraceReceiver(
 	ctx context.Context,
+	logger *zap.Logger,
 	cfg models.Receiver,
 	nextConsumer consumer.TraceConsumer,
 ) (receiver.TraceReceiver, error) {
@@ -214,6 +217,7 @@ func (f *MultiProtoReceiverFactory) CreateTraceReceiver(
 
 // CreateMetricsReceiver creates a metrics receiver based on this config.
 func (f *MultiProtoReceiverFactory) CreateMetricsReceiver(
+	logger *zap.Logger,
 	cfg models.Receiver,
 	consumer consumer.MetricsConsumer,
 ) (receiver.MetricsReceiver, error) {

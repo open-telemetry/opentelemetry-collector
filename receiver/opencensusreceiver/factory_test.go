@@ -18,6 +18,8 @@ import (
 	"context"
 	"testing"
 
+	"go.uber.org/zap"
+
 	"github.com/stretchr/testify/assert"
 
 	"github.com/open-telemetry/opentelemetry-service/factories"
@@ -37,13 +39,13 @@ func TestCreateReceiver(t *testing.T) {
 	config := cfg.(*ConfigV2)
 	config.Endpoint = testutils.GetAvailableLocalAddress(t)
 
-	tReceiver, err := factory.CreateTraceReceiver(context.Background(), cfg, nil)
+	tReceiver, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
 	assert.NotNil(t, tReceiver)
 	assert.Nil(t, err)
 
 	// The default config does not provide scrape_config so we expect that metrics receiver
 	// creation must also fail.
-	mReceiver, err := factory.CreateMetricsReceiver(cfg, nil)
+	mReceiver, err := factory.CreateMetricsReceiver(zap.NewNop(), cfg, nil)
 	assert.NotNil(t, mReceiver)
 	assert.Nil(t, err)
 }

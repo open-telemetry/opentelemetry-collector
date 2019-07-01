@@ -18,6 +18,8 @@ import (
 	"context"
 	"testing"
 
+	"go.uber.org/zap"
+
 	"github.com/stretchr/testify/assert"
 
 	"github.com/open-telemetry/opentelemetry-service/factories"
@@ -33,11 +35,11 @@ func TestCreateReceiver(t *testing.T) {
 	factory := factories.GetReceiverFactory(typeStr)
 	cfg := factory.CreateDefaultConfig()
 
-	tReceiver, err := factory.CreateTraceReceiver(context.Background(), cfg, nil)
+	tReceiver, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
 	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 
-	mReceiver, err := factory.CreateMetricsReceiver(cfg, nil)
+	mReceiver, err := factory.CreateMetricsReceiver(zap.NewNop(), cfg, nil)
 	assert.Equal(t, err, factories.ErrDataTypeIsNotSupported)
 	assert.Nil(t, mReceiver)
 }
@@ -49,7 +51,7 @@ func TestCreateNoEndpoints(t *testing.T) {
 
 	rCfg.Protocols[protoThriftHTTP].Endpoint = ""
 	rCfg.Protocols[protoThriftTChannel].Endpoint = ""
-	_, err := factory.CreateTraceReceiver(context.Background(), cfg, nil)
+	_, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
 	assert.Error(t, err, "receiver creation with no endpoints must fail")
 }
 
@@ -59,7 +61,7 @@ func TestCreateInvalidTChannelEndpoint(t *testing.T) {
 	rCfg := cfg.(*ConfigV2)
 
 	rCfg.Protocols[protoThriftTChannel].Endpoint = ""
-	_, err := factory.CreateTraceReceiver(context.Background(), cfg, nil)
+	_, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
 	assert.Error(t, err, "receiver creation with invalid tchannel endpoint must fail")
 }
 
@@ -69,7 +71,7 @@ func TestCreateNoPort(t *testing.T) {
 	rCfg := cfg.(*ConfigV2)
 
 	rCfg.Protocols[protoThriftHTTP].Endpoint = "127.0.0.1:"
-	_, err := factory.CreateTraceReceiver(context.Background(), cfg, nil)
+	_, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
 	assert.Error(t, err, "receiver creation with no port number must fail")
 }
 
@@ -79,7 +81,7 @@ func TestCreateLargePort(t *testing.T) {
 	rCfg := cfg.(*ConfigV2)
 
 	rCfg.Protocols[protoThriftHTTP].Endpoint = "127.0.0.1:65536"
-	_, err := factory.CreateTraceReceiver(context.Background(), cfg, nil)
+	_, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
 	assert.Error(t, err, "receiver creation with too large port number must fail")
 }
 
@@ -90,6 +92,6 @@ func TestCreateNoProtocols(t *testing.T) {
 
 	delete(rCfg.Protocols, protoThriftHTTP)
 	delete(rCfg.Protocols, protoThriftTChannel)
-	_, err := factory.CreateTraceReceiver(context.Background(), cfg, nil)
+	_, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
 	assert.Error(t, err, "receiver creation with no protocols must fail")
 }

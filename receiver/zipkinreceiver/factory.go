@@ -17,6 +17,8 @@ package zipkinreceiver
 import (
 	"context"
 
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/factories"
 	"github.com/open-telemetry/opentelemetry-service/models"
@@ -62,6 +64,7 @@ func (f *ReceiverFactory) CreateDefaultConfig() models.Receiver {
 // CreateTraceReceiver creates a trace receiver based on provided config.
 func (f *ReceiverFactory) CreateTraceReceiver(
 	ctx context.Context,
+	logger *zap.Logger,
 	cfg models.Receiver,
 	nextConsumer consumer.TraceConsumer,
 ) (receiver.TraceReceiver, error) {
@@ -72,6 +75,7 @@ func (f *ReceiverFactory) CreateTraceReceiver(
 
 // CreateMetricsReceiver creates a metrics receiver based on provided config.
 func (f *ReceiverFactory) CreateMetricsReceiver(
+	logger *zap.Logger,
 	cfg models.Receiver,
 	consumer consumer.MetricsConsumer,
 ) (receiver.MetricsReceiver, error) {
