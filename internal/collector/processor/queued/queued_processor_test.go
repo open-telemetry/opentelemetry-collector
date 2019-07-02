@@ -16,15 +16,76 @@ package queued
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"sync/atomic"
 	"testing"
-
-	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"time"
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+
+	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/errorkind"
 )
+
+func TestQueuedProcessor_noEnqueueOnPermanentError(t *testing.T) {
+	ctx := context.Background()
+	td := data.TraceData{
+		Spans: make([]*tracepb.Span, 7),
+	}
+
+	c := &waitGroupTraceConsumer{
+		consumeTraceDataError: errorkind.Permanent(errors.New("bad data")),
+	}
+
+	qp := NewQueuedSpanProcessor(
+		c,
+		Options.WithRetryOnProcessingFailures(true),
+		Options.WithBackoffDelay(time.Hour),
+		Options.WithNumWorkers(1),
+		Options.WithQueueSize(2),
+	).(*queuedSpanProcessor)
+
+	c.Add(1)
+	if err := qp.ConsumeTraceData(ctx, td); err != nil {
+		// This is asynchronous so it should just enqueue, no errors expected.
+		t.Fatalf("c.ConsumeTraceData() = %v want nil", err)
+	}
+	c.Wait()
+	<-time.After(50 * time.Millisecond)
+
+	queueSize := qp.queue.Size()
+	if queueSize != 0 {
+		t.Fatalf("queueSize = %d, want 0", queueSize)
+	}
+
+	c.consumeTraceDataError = errors.New("transient error")
+	c.Add(1)
+	if err := qp.ConsumeTraceData(ctx, td); err != nil {
+		// This is asynchronous so it should just enqueue, no errors expected.
+		t.Fatalf("c.ConsumeTraceData() got non-permanent error")
+	}
+	c.Wait()
+	<-time.After(50 * time.Millisecond)
+
+	queueSize = qp.queue.Size()
+	if queueSize != 1 {
+		t.Fatalf("queueSize = %d, want 1", queueSize)
+	}
+}
+
+type waitGroupTraceConsumer struct {
+	sync.WaitGroup
+	consumeTraceDataError error
+}
+
+var _ consumer.TraceConsumer = (*waitGroupTraceConsumer)(nil)
+
+func (c *waitGroupTraceConsumer) ConsumeTraceData(ctx context.Context, td data.TraceData) error {
+	defer c.Done()
+	return c.consumeTraceDataError
+}
 
 func TestQueueProcessorHappyPath(t *testing.T) {
 	mockProc := newMockConcurrentSpanProcessor()
