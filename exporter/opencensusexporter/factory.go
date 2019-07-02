@@ -18,6 +18,8 @@ import (
 	"crypto/x509"
 	"fmt"
 
+	"go.uber.org/zap"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
@@ -60,7 +62,7 @@ func (f *exporterFactory) CreateDefaultConfig() models.Exporter {
 }
 
 // CreateTraceExporter creates a trace exporter based on this config.
-func (f *exporterFactory) CreateTraceExporter(config models.Exporter) (consumer.TraceConsumer, factories.StopFunc, error) {
+func (f *exporterFactory) CreateTraceExporter(logger *zap.Logger, config models.Exporter) (consumer.TraceConsumer, factories.StopFunc, error) {
 	ocac := config.(*ConfigV2)
 
 	if ocac.Endpoint == "" {
@@ -147,6 +149,6 @@ func (f *exporterFactory) CreateTraceExporter(config models.Exporter) (consumer.
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *exporterFactory) CreateMetricsExporter(cfg models.Exporter) (consumer.MetricsConsumer, factories.StopFunc, error) {
+func (f *exporterFactory) CreateMetricsExporter(logger *zap.Logger, cfg models.Exporter) (consumer.MetricsConsumer, factories.StopFunc, error) {
 	return nil, nil, factories.ErrDataTypeIsNotSupported
 }

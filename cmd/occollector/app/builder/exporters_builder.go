@@ -168,7 +168,7 @@ func (eb *ExportersBuilder) buildExporter(
 
 	if requirement, ok := inputDataTypes[models.TracesDataType]; ok {
 		// Traces data type is required. Create a trace exporter based on config.
-		tc, stopFunc, err := factory.CreateTraceExporter(config)
+		tc, stopFunc, err := factory.CreateTraceExporter(eb.logger, config)
 		if err != nil {
 			if err == factories.ErrDataTypeIsNotSupported {
 				// Could not create because this exporter does not support this data type.
@@ -183,7 +183,7 @@ func (eb *ExportersBuilder) buildExporter(
 
 	if requirement, ok := inputDataTypes[models.MetricsDataType]; ok {
 		// Metrics data type is required. Create a trace exporter based on config.
-		mc, stopFunc, err := factory.CreateMetricsExporter(config)
+		mc, stopFunc, err := factory.CreateMetricsExporter(eb.logger, config)
 		if err != nil {
 			if err == factories.ErrDataTypeIsNotSupported {
 				// Could not create because this exporter does not support this data type.
