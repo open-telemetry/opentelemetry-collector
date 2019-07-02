@@ -49,7 +49,7 @@ func (f *ExampleReceiverFactory) Type() string {
 }
 
 // CustomUnmarshaler returns nil because we don't need custom unmarshaling for this factory.
-func (f *ExampleReceiverFactory) CustomUnmarshaler() factories.CustomUnmarshaler {
+func (f *ExampleReceiverFactory) CustomUnmarshaler() receiver.CustomUnmarshaler {
 	return nil
 }
 
@@ -73,7 +73,7 @@ func (f *ExampleReceiverFactory) CreateTraceReceiver(
 	nextConsumer consumer.TraceConsumer,
 ) (receiver.TraceReceiver, error) {
 	if cfg.(*ExampleReceiver).FailTraceCreation {
-		return nil, factories.ErrDataTypeIsNotSupported
+		return nil, models.ErrDataTypeIsNotSupported
 	}
 	return &ExampleReceiverProducer{TraceConsumer: nextConsumer}, nil
 }
@@ -85,7 +85,7 @@ func (f *ExampleReceiverFactory) CreateMetricsReceiver(
 	nextConsumer consumer.MetricsConsumer,
 ) (receiver.MetricsReceiver, error) {
 	if cfg.(*ExampleReceiver).FailMetricsCreation {
-		return nil, factories.ErrDataTypeIsNotSupported
+		return nil, models.ErrDataTypeIsNotSupported
 	}
 	return &ExampleReceiverProducer{MetricsConsumer: nextConsumer}, nil
 }
@@ -181,7 +181,7 @@ func (f *MultiProtoReceiverFactory) Type() string {
 }
 
 // CustomUnmarshaler returns nil because we don't need custom unmarshaling for this factory.
-func (f *MultiProtoReceiverFactory) CustomUnmarshaler() factories.CustomUnmarshaler {
+func (f *MultiProtoReceiverFactory) CustomUnmarshaler() receiver.CustomUnmarshaler {
 	return nil
 }
 
@@ -311,7 +311,7 @@ func (f *ExampleProcessorFactory) CreateTraceProcessor(
 	nextConsumer consumer.TraceConsumer,
 	cfg models.Processor,
 ) (processor.TraceProcessor, error) {
-	return nil, factories.ErrDataTypeIsNotSupported
+	return nil, models.ErrDataTypeIsNotSupported
 }
 
 // CreateMetricsProcessor creates a metrics processor based on this config.
@@ -320,13 +320,13 @@ func (f *ExampleProcessorFactory) CreateMetricsProcessor(
 	nextConsumer consumer.MetricsConsumer,
 	cfg models.Processor,
 ) (processor.MetricsProcessor, error) {
-	return nil, factories.ErrDataTypeIsNotSupported
+	return nil, models.ErrDataTypeIsNotSupported
 }
 
 // RegisterTestFactories registers example factories. This is only used by tests.
 func RegisterTestFactories() error {
-	_ = factories.RegisterReceiverFactory(&ExampleReceiverFactory{})
-	_ = factories.RegisterReceiverFactory(&MultiProtoReceiverFactory{})
+	_ = receiver.RegisterReceiverFactory(&ExampleReceiverFactory{})
+	_ = receiver.RegisterReceiverFactory(&MultiProtoReceiverFactory{})
 	_ = factories.RegisterExporterFactory(&ExampleExporterFactory{})
 	_ = factories.RegisterProcessorFactory(&ExampleProcessorFactory{})
 	return nil

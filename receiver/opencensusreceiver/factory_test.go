@@ -22,18 +22,18 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/open-telemetry/opentelemetry-service/factories"
 	"github.com/open-telemetry/opentelemetry-service/internal/testutils"
+	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := factories.GetReceiverFactory(typeStr)
+	factory := receiver.GetReceiverFactory(typeStr)
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 }
 
 func TestCreateReceiver(t *testing.T) {
-	factory := factories.GetReceiverFactory(typeStr)
+	factory := receiver.GetReceiverFactory(typeStr)
 	cfg := factory.CreateDefaultConfig()
 
 	config := cfg.(*ConfigV2)

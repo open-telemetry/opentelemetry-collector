@@ -18,21 +18,21 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
-	"github.com/stretchr/testify/assert"
-
-	"github.com/open-telemetry/opentelemetry-service/factories"
+	"github.com/open-telemetry/opentelemetry-service/models"
+	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := factories.GetReceiverFactory(typeStr)
+	factory := receiver.GetReceiverFactory(typeStr)
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 }
 
 func TestCreateReceiver(t *testing.T) {
-	factory := factories.GetReceiverFactory(typeStr)
+	factory := receiver.GetReceiverFactory(typeStr)
 	cfg := factory.CreateDefaultConfig()
 
 	tReceiver, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
@@ -40,12 +40,12 @@ func TestCreateReceiver(t *testing.T) {
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 
 	mReceiver, err := factory.CreateMetricsReceiver(zap.NewNop(), cfg, nil)
-	assert.Equal(t, err, factories.ErrDataTypeIsNotSupported)
+	assert.Equal(t, err, models.ErrDataTypeIsNotSupported)
 	assert.Nil(t, mReceiver)
 }
 
 func TestCreateNoEndpoints(t *testing.T) {
-	factory := factories.GetReceiverFactory(typeStr)
+	factory := receiver.GetReceiverFactory(typeStr)
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*ConfigV2)
 
@@ -56,7 +56,7 @@ func TestCreateNoEndpoints(t *testing.T) {
 }
 
 func TestCreateInvalidTChannelEndpoint(t *testing.T) {
-	factory := factories.GetReceiverFactory(typeStr)
+	factory := receiver.GetReceiverFactory(typeStr)
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*ConfigV2)
 
@@ -66,7 +66,7 @@ func TestCreateInvalidTChannelEndpoint(t *testing.T) {
 }
 
 func TestCreateNoPort(t *testing.T) {
-	factory := factories.GetReceiverFactory(typeStr)
+	factory := receiver.GetReceiverFactory(typeStr)
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*ConfigV2)
 
@@ -76,7 +76,7 @@ func TestCreateNoPort(t *testing.T) {
 }
 
 func TestCreateLargePort(t *testing.T) {
-	factory := factories.GetReceiverFactory(typeStr)
+	factory := receiver.GetReceiverFactory(typeStr)
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*ConfigV2)
 
@@ -86,7 +86,7 @@ func TestCreateLargePort(t *testing.T) {
 }
 
 func TestCreateNoProtocols(t *testing.T) {
-	factory := factories.GetReceiverFactory(typeStr)
+	factory := receiver.GetReceiverFactory(typeStr)
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*ConfigV2)
 

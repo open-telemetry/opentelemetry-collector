@@ -23,11 +23,12 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/open-telemetry/opentelemetry-service/data"
-	"github.com/open-telemetry/opentelemetry-service/factories"
+	"github.com/open-telemetry/opentelemetry-service/models"
+	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := factories.GetReceiverFactory(typeStr)
+	factory := receiver.GetReceiverFactory(typeStr)
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 }
@@ -38,7 +39,7 @@ type mockTraceConsumer struct {
 func (m *mockTraceConsumer) ConsumeTraceData(ctx context.Context, td data.TraceData) error { return nil }
 
 func TestCreateReceiver(t *testing.T) {
-	factory := factories.GetReceiverFactory(typeStr)
+	factory := receiver.GetReceiverFactory(typeStr)
 	cfg := factory.CreateDefaultConfig()
 
 	tReceiver, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, &mockTraceConsumer{})
@@ -46,6 +47,6 @@ func TestCreateReceiver(t *testing.T) {
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 
 	mReceiver, err := factory.CreateMetricsReceiver(zap.NewNop(), cfg, nil)
-	assert.Equal(t, err, factories.ErrDataTypeIsNotSupported)
+	assert.Equal(t, err, models.ErrDataTypeIsNotSupported)
 	assert.Nil(t, mReceiver)
 }

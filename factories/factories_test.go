@@ -15,7 +15,6 @@
 package factories
 
 import (
-	"context"
 	"testing"
 
 	"go.uber.org/zap"
@@ -23,75 +22,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/models"
 	"github.com/open-telemetry/opentelemetry-service/processor"
-	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
-
-type ExampleReceiverFactory struct {
-}
-
-// Type gets the type of the Receiver config created by this factory.
-func (f *ExampleReceiverFactory) Type() string {
-	return "examplereceiver"
-}
-
-// CustomUnmarshaler returns nil because we don't need custom unmarshaling for this factory.
-func (f *ExampleReceiverFactory) CustomUnmarshaler() CustomUnmarshaler {
-	return nil
-}
-
-// CreateDefaultConfig creates the default configuration for the Receiver.
-func (f *ExampleReceiverFactory) CreateDefaultConfig() models.Receiver {
-	return nil
-}
-
-// CreateTraceReceiver creates a trace receiver based on this config.
-func (f *ExampleReceiverFactory) CreateTraceReceiver(
-	ctx context.Context,
-	logger *zap.Logger,
-	cfg models.Receiver,
-	nextConsumer consumer.TraceConsumer,
-) (receiver.TraceReceiver, error) {
-	// Not used for this test, just return nil
-	return nil, nil
-}
-
-// CreateMetricsReceiver creates a metrics receiver based on this config.
-func (f *ExampleReceiverFactory) CreateMetricsReceiver(
-	logger *zap.Logger,
-	cfg models.Receiver,
-	consumer consumer.MetricsConsumer,
-) (receiver.MetricsReceiver, error) {
-	// Not used for this test, just return nil
-	return nil, nil
-}
-
-func TestRegisterReceiverFactory(t *testing.T) {
-	f := ExampleReceiverFactory{}
-	err := RegisterReceiverFactory(&f)
-	if err != nil {
-		t.Fatalf("cannot register factory")
-	}
-
-	if &f != GetReceiverFactory(f.Type()) {
-		t.Fatalf("cannot find factory")
-	}
-
-	// Verify that attempt to register a factory with duplicate name panics
-	panicked := false
-	func() {
-		defer func() {
-			if r := recover(); r != nil {
-				panicked = true
-			}
-		}()
-
-		err = RegisterReceiverFactory(&f)
-	}()
-
-	if !panicked {
-		t.Fatalf("must panic on double registration")
-	}
-}
 
 type ExampleExporterFactory struct {
 }
@@ -163,7 +94,7 @@ func (f *ExampleProcessorFactory) CreateTraceProcessor(
 	nextConsumer consumer.TraceConsumer,
 	cfg models.Processor,
 ) (processor.TraceProcessor, error) {
-	return nil, ErrDataTypeIsNotSupported
+	return nil, models.ErrDataTypeIsNotSupported
 }
 
 // CreateMetricsProcessor creates a metrics processor based on this config.
@@ -172,7 +103,7 @@ func (f *ExampleProcessorFactory) CreateMetricsProcessor(
 	nextConsumer consumer.MetricsConsumer,
 	cfg models.Processor,
 ) (processor.MetricsProcessor, error) {
-	return nil, ErrDataTypeIsNotSupported
+	return nil, models.ErrDataTypeIsNotSupported
 }
 
 func TestRegisterProcessorFactory(t *testing.T) {

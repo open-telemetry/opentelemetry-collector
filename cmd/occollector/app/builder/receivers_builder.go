@@ -21,7 +21,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/factories"
 	"github.com/open-telemetry/opentelemetry-service/internal"
 	"github.com/open-telemetry/opentelemetry-service/models"
 	"github.com/open-telemetry/opentelemetry-service/processor/multiconsumer"
@@ -172,10 +171,10 @@ func (rb *ReceiversBuilder) findPipelinesToAttach(config models.Receiver) (attac
 }
 
 func (rb *ReceiversBuilder) attachReceiverToPipelines(
-	factory factories.ReceiverFactory,
+	factory receiver.Factory,
 	dataType models.DataType,
 	config models.Receiver,
-	receiver *builtReceiver,
+	rcv *builtReceiver,
 	pipelineProcessors []*builtProcessor,
 ) error {
 	// There are pipelines of the specified data type that must be attached to
@@ -188,15 +187,15 @@ func (rb *ReceiversBuilder) attachReceiverToPipelines(
 		junction := buildFanoutTraceConsumer(pipelineProcessors)
 
 		// Now create the receiver and tell it to send to the junction point.
-		receiver.trace, err = factory.CreateTraceReceiver(context.Background(), rb.logger, config, junction)
+		rcv.trace, err = factory.CreateTraceReceiver(context.Background(), rb.logger, config, junction)
 
 	case models.MetricsDataType:
 		junction := buildFanoutMetricConsumer(pipelineProcessors)
-		receiver.metrics, err = factory.CreateMetricsReceiver(rb.logger, config, junction)
+		rcv.metrics, err = factory.CreateMetricsReceiver(rb.logger, config, junction)
 	}
 
 	if err != nil {
-		if err == factories.ErrDataTypeIsNotSupported {
+		if err == models.ErrDataTypeIsNotSupported {
 			return fmt.Errorf(
 				"receiver %s does not support %s but it was used in a "+
 					"%s pipeline",
@@ -222,8 +221,8 @@ func (rb *ReceiversBuilder) buildReceiver(config models.Receiver) (*builtReceive
 	}
 
 	// Prepare to build the receiver.
-	factory := factories.GetReceiverFactory(config.Type())
-	receiver := &builtReceiver{}
+	factory := receiver.GetReceiverFactory(config.Type())
+	rcv := &builtReceiver{}
 
 	// Now we have list of pipelines broken down by data type. Iterate for each data type.
 	for dataType, pipelines := range pipelinesToAttach {
@@ -234,13 +233,13 @@ func (rb *ReceiversBuilder) buildReceiver(config models.Receiver) (*builtReceive
 
 		// Attach the corresponding part of the receiver to all pipelines that require
 		// this data type.
-		err := rb.attachReceiverToPipelines(factory, dataType, config, receiver, pipelines)
+		err := rb.attachReceiverToPipelines(factory, dataType, config, rcv, pipelines)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	return receiver, nil
+	return rcv, nil
 }
 
 func buildFanoutTraceConsumer(pipelineFrontProcessors []*builtProcessor) consumer.TraceConsumer {
