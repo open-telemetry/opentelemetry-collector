@@ -27,7 +27,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/data"
-	"github.com/open-telemetry/opentelemetry-service/errorkind"
+	"github.com/open-telemetry/opentelemetry-service/errors/errorkind"
 	"github.com/open-telemetry/opentelemetry-service/internal/collector/processor"
 	"github.com/open-telemetry/opentelemetry-service/internal/collector/processor/nodebatcher"
 	"github.com/open-telemetry/opentelemetry-service/internal/collector/telemetry"

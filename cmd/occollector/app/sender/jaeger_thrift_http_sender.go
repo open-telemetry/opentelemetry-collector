@@ -28,7 +28,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/data"
-	"github.com/open-telemetry/opentelemetry-service/errorkind"
+	"github.com/open-telemetry/opentelemetry-service/errors/errorkind"
 	jaegertranslator "github.com/open-telemetry/opentelemetry-service/translator/trace/jaeger"
 )
 

@@ -23,10 +23,11 @@ import (
 	"time"
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/data"
-	"github.com/open-telemetry/opentelemetry-service/errorkind"
+	"github.com/open-telemetry/opentelemetry-service/errors/errorkind"
 )
 
 func TestQueuedProcessor_noEnqueueOnPermanentError(t *testing.T) {
@@ -48,31 +49,20 @@ func TestQueuedProcessor_noEnqueueOnPermanentError(t *testing.T) {
 	).(*queuedSpanProcessor)
 
 	c.Add(1)
-	if err := qp.ConsumeTraceData(ctx, td); err != nil {
-		// This is asynchronous so it should just enqueue, no errors expected.
-		t.Fatalf("c.ConsumeTraceData() = %v want nil", err)
-	}
+	require.Nil(t, qp.ConsumeTraceData(ctx, td))
 	c.Wait()
 	<-time.After(50 * time.Millisecond)
 
-	queueSize := qp.queue.Size()
-	if queueSize != 0 {
-		t.Fatalf("queueSize = %d, want 0", queueSize)
-	}
+	require.Zero(t, qp.queue.Size())
 
 	c.consumeTraceDataError = errors.New("transient error")
 	c.Add(1)
-	if err := qp.ConsumeTraceData(ctx, td); err != nil {
-		// This is asynchronous so it should just enqueue, no errors expected.
-		t.Fatalf("c.ConsumeTraceData() got non-permanent error")
-	}
+	// This is asynchronous so it should just enqueue, no errors expected.
+	require.Nil(t, qp.ConsumeTraceData(ctx, td))
 	c.Wait()
 	<-time.After(50 * time.Millisecond)
 
-	queueSize = qp.queue.Size()
-	if queueSize != 1 {
-		t.Fatalf("queueSize = %d, want 1", queueSize)
-	}
+	require.Equal(t, 1, qp.queue.Size())
 }
 
 type waitGroupTraceConsumer struct {
