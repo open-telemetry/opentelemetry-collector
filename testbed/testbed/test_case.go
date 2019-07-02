@@ -32,6 +32,9 @@ type TestCase struct {
 	// Directory where test case results and logs will be written.
 	resultDir string
 
+	// does not write out results when set to true
+	skipResults bool
+
 	// Agent config file path.
 	agentConfigFile string
 
@@ -60,13 +63,17 @@ type TestCase struct {
 const mibibyte = 1024 * 1024
 
 // NewTestCase creates a new TestCase. It expected agent-config.yaml in the specified directory.
-func NewTestCase(t *testing.T) *TestCase {
+func NewTestCase(t *testing.T, opts ...TestCaseOption) *TestCase {
 	tc := TestCase{}
 
 	tc.t = t
 	tc.ErrorSignal = make(chan struct{})
 	tc.doneSignal = make(chan struct{})
 	tc.startTime = time.Now()
+
+	for _, opt := range opts {
+		opt.Apply(&tc)
+	}
 
 	var err error
 	tc.resultDir, err = filepath.Abs(path.Join("results", t.Name()))
@@ -123,14 +130,16 @@ func (tc *TestCase) SetExpectedMaxRAM(ramMiB uint32) {
 
 // StartAgent starts the agent and redirects its standard output and standard error
 // to "agent.log" file located in the test directory.
-func (tc *TestCase) StartAgent() {
+func (tc *TestCase) StartAgent(args ...string) {
+	args = append(args, "--config")
+	args = append(args, tc.agentConfigFile)
 	logFileName := tc.composeTestResultFileName("agent.log")
 
 	err := tc.agentProc.start(startParams{
 		name:         "Agent",
 		logFilePath:  logFileName,
 		cmd:          testBedConfig.Agent,
-		cmdArgs:      []string{"--config", tc.agentConfigFile},
+		cmdArgs:      args, 
 		resourceSpec: &tc.resourceSpec,
 	})
 
@@ -180,6 +189,16 @@ func (tc *TestCase) StopBackend() {
 	tc.MockBackend.Stop()
 }
 
+// AgentMemoryInfo returns raw memory info struct about the agent 
+// as returned by github.com/shirou/gopsutil/process
+func (tc *TestCase) AgentMemoryInfo() (uint32, uint32, error) {
+	stat, err := tc.agentProc.processMon.MemoryInfo()
+	if err != nil {
+		return 0, 0, err
+	}
+	return uint32(stat.RSS / mibibyte), uint32(stat.VMS / mibibyte), nil
+}
+
 // Stop stops the load generator, the agent and the backend.
 func (tc *TestCase) Stop() {
 	// Stop all components
@@ -189,6 +208,10 @@ func (tc *TestCase) Stop() {
 
 	// Stop logging
 	close(tc.doneSignal)
+
+	if tc.skipResults {
+		return
+	}
 
 	// Report test results
 
@@ -238,11 +261,11 @@ func (tc *TestCase) Sleep(d time.Duration) {
 	}
 }
 
-// WaitFor the specific condition for up to 10 seconds. Records a test error
+// WaitForN the specific condition for up to a specified duration. Records a test error
 // if time is out and condition does not become true. If error is signalled
 // while waiting the function will return false, but will not record additional
 // test error (we assume that signalled error is already recorded in indicateError()).
-func (tc *TestCase) WaitFor(cond func() bool, errMsg ...interface{}) bool {
+func (tc *TestCase) WaitForN(cond func() bool, duration time.Duration, errMsg ...interface{}) bool {
 	startTime := time.Now()
 
 	// Start with 5 ms waiting interval between condition re-evaluation.
@@ -264,12 +287,17 @@ func (tc *TestCase) WaitFor(cond func() bool, errMsg ...interface{}) bool {
 			waitInterval = waitInterval * 2
 		}
 
-		if time.Since(startTime) > time.Second*10 {
+		if time.Since(startTime) > duration {
 			// Waited too long
 			tc.t.Error("Time out waiting for", errMsg)
 			return false
 		}
 	}
+}
+
+// WaitFor is like WaitForN but with a fixed duration of 10 seconds
+func (tc *TestCase) WaitFor(cond func() bool, errMsg ...interface{}) bool {
+	return tc.WaitForN(cond, time.Second * 10, errMsg...)
 }
 
 func (tc *TestCase) indicateError(err error) {
