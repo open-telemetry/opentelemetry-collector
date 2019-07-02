@@ -17,11 +17,10 @@ package jaeger
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"sort"
 	"strings"
 	"testing"
-
-	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
@@ -30,9 +29,10 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-service/data"
 	"github.com/open-telemetry/opentelemetry-service/internal/testutils"
+	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
 )
 
-func TestInvalidOCProtoIDs(t *testing.T) {
+func TestThriftInvalidOCProtoIDs(t *testing.T) {
 	fakeTraceID := []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}
 	tests := []struct {
 		name         string
@@ -162,6 +162,220 @@ func TestOCProtoToJaegerThrift(t *testing.T) {
 		wjsonStr := testutils.GenerateNormalizedJSON(string(wjson))
 		if gjsonStr != wjsonStr {
 			t.Errorf("OC Proto to Jaeger Thrift failed.\nGot:\n%s\nWant:\n%s\n", gjsonStr, wjsonStr)
+		}
+	}
+}
+
+func TestOCStatusToJaegerThriftTags(t *testing.T) {
+
+	type test struct {
+		haveAttributes *tracepb.Span_Attributes
+		haveStatus     *tracepb.Status
+		wantTags       []*jaeger.Tag
+	}
+
+	cases := []test{
+		// only status.code
+		{
+			haveAttributes: nil,
+			haveStatus: &tracepb.Status{
+				Code: 10,
+			},
+			wantTags: []*jaeger.Tag{
+				{
+					Key:   tracetranslator.TagStatusCode,
+					VLong: func() *int64 { v := int64(10); return &v }(),
+					VType: jaeger.TagType_LONG,
+				},
+			},
+		},
+		// only status.message
+		{
+			haveAttributes: nil,
+			haveStatus: &tracepb.Status{
+				Message: "Message",
+			},
+			wantTags: []*jaeger.Tag{
+				{
+					Key:   tracetranslator.TagStatusCode,
+					VLong: func() *int64 { v := int64(0); return &v }(),
+					VType: jaeger.TagType_LONG,
+				},
+				{
+					Key:   tracetranslator.TagStatusMsg,
+					VStr:  func() *string { v := "Message"; return &v }(),
+					VType: jaeger.TagType_STRING,
+				},
+			},
+		},
+		// both status.code and status.message
+		{
+			haveAttributes: nil,
+			haveStatus: &tracepb.Status{
+				Code:    12,
+				Message: "Forbidden",
+			},
+			wantTags: []*jaeger.Tag{
+				{
+					Key:   tracetranslator.TagStatusCode,
+					VLong: func() *int64 { v := int64(12); return &v }(),
+					VType: jaeger.TagType_LONG,
+				},
+				{
+					Key:   tracetranslator.TagStatusMsg,
+					VStr:  func() *string { v := "Forbidden"; return &v }(),
+					VType: jaeger.TagType_STRING,
+				},
+			},
+		},
+
+		// status and existing tags
+		{
+			haveStatus: &tracepb.Status{
+				Code:    404,
+				Message: "NotFound",
+			},
+			haveAttributes: &tracepb.Span_Attributes{
+				AttributeMap: map[string]*tracepb.AttributeValue{
+					"status.code": {
+						Value: &tracepb.AttributeValue_IntValue{
+							IntValue: 13,
+						},
+					},
+					"status.message": {
+						Value: &tracepb.AttributeValue_StringValue{
+							StringValue: &tracepb.TruncatableString{Value: "Error"},
+						},
+					},
+				},
+			},
+			wantTags: []*jaeger.Tag{
+				{
+					Key:   tracetranslator.TagStatusCode,
+					VLong: func() *int64 { v := int64(13); return &v }(),
+					VType: jaeger.TagType_LONG,
+				},
+				{
+					Key:   tracetranslator.TagStatusMsg,
+					VStr:  func() *string { v := "Error"; return &v }(),
+					VType: jaeger.TagType_STRING,
+				},
+			},
+		},
+
+		// partial existing tag
+
+		{
+			haveStatus: &tracepb.Status{
+				Code:    404,
+				Message: "NotFound",
+			},
+			haveAttributes: &tracepb.Span_Attributes{
+				AttributeMap: map[string]*tracepb.AttributeValue{
+					"status.code": {
+						Value: &tracepb.AttributeValue_IntValue{
+							IntValue: 13,
+						},
+					},
+				},
+			},
+			wantTags: []*jaeger.Tag{
+				{
+					Key:   tracetranslator.TagStatusCode,
+					VLong: func() *int64 { v := int64(13); return &v }(),
+					VType: jaeger.TagType_LONG,
+				},
+			},
+		},
+
+		{
+			haveStatus: &tracepb.Status{
+				Code:    404,
+				Message: "NotFound",
+			},
+			haveAttributes: &tracepb.Span_Attributes{
+				AttributeMap: map[string]*tracepb.AttributeValue{
+					"status.message": {
+						Value: &tracepb.AttributeValue_StringValue{
+							StringValue: &tracepb.TruncatableString{Value: "Error"},
+						},
+					},
+				},
+			},
+			wantTags: []*jaeger.Tag{
+				{
+					Key:   tracetranslator.TagStatusMsg,
+					VStr:  func() *string { v := "Error"; return &v }(),
+					VType: jaeger.TagType_STRING,
+				},
+			},
+		},
+		// both status and tags
+		{
+			haveStatus: &tracepb.Status{
+				Code:    13,
+				Message: "Forbidden",
+			},
+			haveAttributes: &tracepb.Span_Attributes{
+				AttributeMap: map[string]*tracepb.AttributeValue{
+					"http.status_code": {
+						Value: &tracepb.AttributeValue_IntValue{
+							IntValue: 404,
+						},
+					},
+					"http.status_message": {
+						Value: &tracepb.AttributeValue_StringValue{
+							StringValue: &tracepb.TruncatableString{Value: "NotFound"},
+						},
+					},
+				},
+			},
+			wantTags: []*jaeger.Tag{
+				{
+					Key:   tracetranslator.TagHTTPStatusCode,
+					VLong: func() *int64 { v := int64(404); return &v }(),
+					VType: jaeger.TagType_LONG,
+				},
+				{
+					Key:   tracetranslator.TagHTTPStatusMsg,
+					VStr:  func() *string { v := "NotFound"; return &v }(),
+					VType: jaeger.TagType_STRING,
+				},
+				{
+					Key:   tracetranslator.TagStatusCode,
+					VLong: func() *int64 { v := int64(13); return &v }(),
+					VType: jaeger.TagType_LONG,
+				},
+				{
+					Key:   tracetranslator.TagStatusMsg,
+					VStr:  func() *string { v := "Forbidden"; return &v }(),
+					VType: jaeger.TagType_STRING,
+				},
+			},
+		},
+	}
+
+	fakeTraceID := []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}
+	fakeSpanID := []byte{0, 1, 2, 3, 4, 5, 6, 7}
+	for i, c := range cases {
+		gb, err := OCProtoToJaegerThrift(data.TraceData{
+			Spans: []*tracepb.Span{{
+				TraceId:    fakeTraceID,
+				SpanId:     fakeSpanID,
+				Status:     c.haveStatus,
+				Attributes: c.haveAttributes,
+			}},
+		})
+		if err != nil {
+			t.Errorf("#%d: Unexpected error: %v", i, err)
+			continue
+		}
+		gs := gb.Spans[0]
+		sort.Slice(gs.Tags, func(i, j int) bool {
+			return gs.Tags[i].Key < gs.Tags[j].Key
+		})
+		if !reflect.DeepEqual(c.wantTags, gs.Tags) {
+			t.Fatalf("%d: Unsuccessful conversion\nGot:\n\t%v\nWant:\n\t%v", i, gs.Tags, c.wantTags)
 		}
 	}
 }

@@ -22,4 +22,11 @@ const (
 	MessageEventTypeKey             = "message.type"
 	MessageEventCompressedSizeKey   = "message.compressed_size"
 	MessageEventUncompressedSizeKey = "message.uncompressed_size"
+
+	TagStatusCode       = "status.code"
+	TagStatusMsg        = "status.message"
+	TagHTTPStatusCode   = "http.status_code"
+	TagHTTPStatusMsg    = "http.status_message"
+	TagZipkinCensusCode = "census.status_code"
+	TagZipkinCensusMsg  = "census.status_description"
 )
