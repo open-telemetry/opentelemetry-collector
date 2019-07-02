@@ -25,6 +25,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-service/factories"
 	"github.com/open-telemetry/opentelemetry-service/internal/compression"
+	"github.com/open-telemetry/opentelemetry-service/models"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -40,7 +41,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	_, _, err := factory.CreateMetricsExporter(zap.NewNop(), cfg)
-	assert.Error(t, err, factories.ErrDataTypeIsNotSupported)
+	assert.Error(t, err, models.ErrDataTypeIsNotSupported)
 }
 
 func TestCreateTraceExporter(t *testing.T) {

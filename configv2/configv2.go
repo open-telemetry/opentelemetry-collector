@@ -26,6 +26,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-service/factories"
 	"github.com/open-telemetry/opentelemetry-service/models"
+	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
 
 // These are errors that can be returned by Load(). Note that error codes are not part
@@ -181,7 +182,7 @@ func loadReceivers(v *viper.Viper) (models.Receivers, error) {
 		}
 
 		// Find receiver factory based on "type" that we read from config source
-		factory := factories.GetReceiverFactory(typeStr)
+		factory := receiver.GetReceiverFactory(typeStr)
 		if factory == nil {
 			return nil, &configError{
 				code: errUnknownReceiverType,

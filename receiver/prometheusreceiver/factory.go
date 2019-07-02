@@ -23,14 +23,13 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/factories"
 	"github.com/open-telemetry/opentelemetry-service/models"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
 
 // This file implements config V2 for Prometheus receiver.
 
-var _ = factories.RegisterReceiverFactory(&ReceiverFactory{})
+var _ = receiver.RegisterReceiverFactory(&ReceiverFactory{})
 
 const (
 	// The value of "type" key in configuration.
@@ -47,7 +46,7 @@ func (f *ReceiverFactory) Type() string {
 }
 
 // CustomUnmarshaler returns custom unmarshaler for this config.
-func (f *ReceiverFactory) CustomUnmarshaler() factories.CustomUnmarshaler {
+func (f *ReceiverFactory) CustomUnmarshaler() receiver.CustomUnmarshaler {
 	return CustomUnmarshalerFunc
 }
 
@@ -104,7 +103,7 @@ func (f *ReceiverFactory) CreateTraceReceiver(
 	nextConsumer consumer.TraceConsumer,
 ) (receiver.TraceReceiver, error) {
 	// Prometheus does not support traces
-	return nil, factories.ErrDataTypeIsNotSupported
+	return nil, models.ErrDataTypeIsNotSupported
 }
 
 // CreateMetricsReceiver creates a metrics receiver based on provided config.

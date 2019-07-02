@@ -20,8 +20,9 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/open-telemetry/opentelemetry-service/data"
 	"github.com/spf13/viper"
+
+	"github.com/open-telemetry/opentelemetry-service/data"
 )
 
 func TestOpenCensusTraceExportersFromViper(t *testing.T) {

@@ -15,74 +15,14 @@
 package factories
 
 import (
-	"context"
-	"errors"
 	"fmt"
 
-	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/models"
 	"github.com/open-telemetry/opentelemetry-service/processor"
-	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
-
-///////////////////////////////////////////////////////////////////////////////
-// Receiver factory and its registry.
-
-// ReceiverFactory is factory interface for receivers.
-type ReceiverFactory interface {
-	// Type gets the type of the Receiver created by this factory.
-	Type() string
-
-	// CreateDefaultConfig creates the default configuration for the Receiver.
-	CreateDefaultConfig() models.Receiver
-
-	// CustomUnmarshaler returns a custom unmarshaler for the configuration or nil if
-	// there is no need for custom unmarshaling. This is typically used if viper.Unmarshal()
-	// is not sufficient to unmarshal correctly.
-	CustomUnmarshaler() CustomUnmarshaler
-
-	// CreateTraceReceiver creates a trace receiver based on this config.
-	// If the receiver type does not support tracing or if the config is not valid
-	// error will be returned instead.
-	CreateTraceReceiver(ctx context.Context, logger *zap.Logger, cfg models.Receiver,
-		nextConsumer consumer.TraceConsumer) (receiver.TraceReceiver, error)
-
-	// CreateMetricsReceiver creates a metrics receiver based on this config.
-	// If the receiver type does not support metrics or if the config is not valid
-	// error will be returned instead.
-	CreateMetricsReceiver(logger *zap.Logger, cfg models.Receiver,
-		consumer consumer.MetricsConsumer) (receiver.MetricsReceiver, error)
-}
-
-// ErrDataTypeIsNotSupported can be returned by CreateTraceReceiver or
-// CreateMetricsReceiver if the particular telemetry data type is not supported
-// by the receiver.
-var ErrDataTypeIsNotSupported = errors.New("telemetry type is not supported")
-
-// CustomUnmarshaler is a function that un-marshals a viper data into a config struct
-// in a custom way.
-type CustomUnmarshaler func(v *viper.Viper, viperKey string, intoCfg interface{}) error
-
-// List of registered receiver factories.
-var receiverFactories = make(map[string]ReceiverFactory)
-
-// RegisterReceiverFactory registers a receiver factory.
-func RegisterReceiverFactory(factory ReceiverFactory) error {
-	if receiverFactories[factory.Type()] != nil {
-		panic(fmt.Sprintf("duplicate receiver factory %q", factory.Type()))
-	}
-
-	receiverFactories[factory.Type()] = factory
-	return nil
-}
-
-// GetReceiverFactory gets a receiver factory by type string.
-func GetReceiverFactory(typeStr string) ReceiverFactory {
-	return receiverFactories[typeStr]
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Exporter factory and its registry.

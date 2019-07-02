@@ -26,12 +26,11 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/factories"
 	"github.com/open-telemetry/opentelemetry-service/models"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
 
-var _ = factories.RegisterReceiverFactory(&receiverFactory{})
+var _ = receiver.RegisterReceiverFactory(&receiverFactory{})
 
 const (
 	// The value of "type" key in configuration.
@@ -56,7 +55,7 @@ func (f *receiverFactory) Type() string {
 }
 
 // CustomUnmarshaler returns nil because we don't need custom unmarshaling for this config.
-func (f *receiverFactory) CustomUnmarshaler() factories.CustomUnmarshaler {
+func (f *receiverFactory) CustomUnmarshaler() receiver.CustomUnmarshaler {
 	return nil
 }
 
@@ -132,7 +131,7 @@ func (f *receiverFactory) CreateMetricsReceiver(
 	cfg models.Receiver,
 	consumer consumer.MetricsConsumer,
 ) (receiver.MetricsReceiver, error) {
-	return nil, factories.ErrDataTypeIsNotSupported
+	return nil, models.ErrDataTypeIsNotSupported
 }
 
 // extract the port number from string in "address:port" format. If the

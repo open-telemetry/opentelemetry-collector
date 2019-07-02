@@ -150,5 +150,5 @@ func (f *exporterFactory) CreateTraceExporter(logger *zap.Logger, config models.
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
 func (f *exporterFactory) CreateMetricsExporter(logger *zap.Logger, cfg models.Exporter) (consumer.MetricsConsumer, factories.StopFunc, error) {
-	return nil, nil, factories.ErrDataTypeIsNotSupported
+	return nil, nil, models.ErrDataTypeIsNotSupported
 }
