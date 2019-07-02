@@ -36,7 +36,7 @@ type Host interface {
 	// into the pipeline and false when it should drop the data and report
 	// error to the client.
 	//
-	// Receivers are expected to return the proper error (according to their
+	// Receivers are expected to signal to the source from which they receive the data the proper error (according to their
 	// protocol) when this function return false. For example an HTTP based
 	// receiver should return 503 (Service Unavailable) if OkToIngest returns
 	// false.
