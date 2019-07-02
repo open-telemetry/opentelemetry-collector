@@ -27,10 +27,10 @@ type Host interface {
 	// operations.
 	Context() context.Context
 
-	// AsyncErrorChannel returns a channel used by a receiver to notify its
-	// host about any fatal error (that requires re-starting the receiver) that
-	// that happen after its start function has returned.
-	AsyncErrorChannel() chan<- error
+	// ReportFatalError is used to report to the host that the receiver encountered
+	// a fatal error (i.e.: an error that the instance can't recover from) after
+	// its start function has already returned.
+	ReportFatalError(err error)
 
 	// OkToIngest returns true when the receiver can inject the received data
 	// into the pipeline and false when it should drop the data and report

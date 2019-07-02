@@ -24,8 +24,7 @@ import (
 
 // MockHost mocks a receiver.ReceiverHost for test purposes.
 type MockHost struct {
-	asyncErrorChannel chan error
-	okToIngest        bool
+	okToIngest bool
 }
 
 var _ receiver.Host = (*MockHost)(nil)
@@ -36,11 +35,11 @@ func (mh *MockHost) Context() context.Context {
 	return context.Background()
 }
 
-// AsyncErrorChannel returns a channel used by a receiver to notify its
-// host about any fatal error (that requires re-starting the receiver) that
-// that happen after its start function has returned.
-func (mh *MockHost) AsyncErrorChannel() chan<- error {
-	return mh.asyncErrorChannel
+// ReportFatalError is used to report to the host that the receiver encountered
+// a fatal error (i.e.: an error that the instance can't recover from) after
+// its start function has already returned.
+func (mh *MockHost) ReportFatalError(err error) {
+	// Do nothing for now.
 }
 
 // OkToIngest returns true when the receiver can inject the received data
@@ -54,8 +53,7 @@ func (mh *MockHost) OkToIngest() bool {
 // tests.
 func NewMockHost() receiver.Host {
 	return &MockHost{
-		asyncErrorChannel: make(chan error, 1),
-		okToIngest:        true,
+		okToIngest: true,
 	}
 }
 

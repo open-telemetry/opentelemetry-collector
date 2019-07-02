@@ -17,7 +17,7 @@
 package receivertest
 
 import (
-	"reflect"
+	"errors"
 	"testing"
 )
 
@@ -40,10 +40,5 @@ func TestNewMockHost(t *testing.T) {
 	if got.OkToIngest() {
 		t.Fatal("OkToIngest() = true, want false")
 	}
-	wantErrChanType := reflect.ChanOf(reflect.SendDir, reflect.TypeOf((*error)(nil)).Elem())
-	errChan := got.AsyncErrorChannel()
-	gotErrChanType := reflect.TypeOf(errChan)
-	if gotErrChanType != wantErrChanType {
-		t.Fatalf("AsyncErrorChannel() = %v, want %v", gotErrChanType, wantErrChanType)
-	}
+	got.ReportFatalError(errors.New("TestError"))
 }

@@ -132,11 +132,11 @@ func (pr *Preceiver) StartMetricsReception(host receiver.Host) error {
 		discoveryManagerScrape := discovery.NewManager(ctx, l)
 		go func() {
 			if err := discoveryManagerScrape.Run(); err != nil {
-				host.AsyncErrorChannel() <- err
+				host.ReportFatalError(err)
 			}
 		}()
 		if err := scrapeManager.ApplyConfig(pr.cfg.ScrapeConfig); err != nil {
-			host.AsyncErrorChannel() <- err
+			host.ReportFatalError(err)
 			return
 		}
 

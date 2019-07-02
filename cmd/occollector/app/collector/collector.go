@@ -75,11 +75,11 @@ func (app *Application) Context() context.Context {
 	return context.Background()
 }
 
-// AsyncErrorChannel returns a channel used by a receiver to notify its
-// host about any fatal error (that requires re-starting the receiver) that
-// that happen after its start function has returned.
-func (app *Application) AsyncErrorChannel() chan<- error {
-	return app.asyncErrorChannel
+// ReportFatalError is used to report to the host that the receiver encountered
+// a fatal error (i.e.: an error that the instance can't recover from) after
+// its start function has already returned.
+func (app *Application) ReportFatalError(err error) {
+	app.asyncErrorChannel <- err
 }
 
 // OkToIngest returns true when the receiver can inject the received data

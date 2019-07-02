@@ -116,7 +116,7 @@ func (zr *ZipkinReceiver) StartTraceReception(host receiver.Host) error {
 
 		server := &http.Server{Handler: zr}
 		go func() {
-			host.AsyncErrorChannel() <- server.Serve(ln)
+			host.ReportFatalError(server.Serve(ln))
 		}()
 
 		zr.server = server
