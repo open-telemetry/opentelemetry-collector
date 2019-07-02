@@ -1,0 +1,57 @@
+// Copyright 2019, OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package vmmetricsreceiver
+
+import (
+	"path"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/open-telemetry/opentelemetry-service/configv2"
+	"github.com/open-telemetry/opentelemetry-service/models"
+	"github.com/open-telemetry/opentelemetry-service/receiver"
+)
+
+var _ = configv2.RegisterTestFactories()
+
+func TestLoadConfig(t *testing.T) {
+	factory := receiver.GetReceiverFactory(typeStr)
+
+	config, err := configv2.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"))
+
+	require.NoError(t, err)
+	require.NotNil(t, config)
+
+	assert.Equal(t, len(config.Receivers), 2)
+
+	r0 := config.Receivers["vmmetrics"]
+	assert.Equal(t, r0, factory.CreateDefaultConfig())
+
+	r1 := config.Receivers["vmmetrics/customname"].(*ConfigV2)
+	assert.Equal(t, r1,
+		&ConfigV2{
+			ReceiverSettings: models.ReceiverSettings{
+				TypeVal: typeStr,
+				NameVal: "vmmetrics/customname",
+			},
+			ScrapeInterval:    5 * time.Second,
+			MetricPrefix:      "testmetric",
+			MountPoint:        "/mountpoint",
+			ProcessMountPoint: "/proc",
+		})
+}

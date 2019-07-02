@@ -15,7 +15,6 @@
 package vmmetricsreceiver
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"runtime"
@@ -25,6 +24,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
 
 var (
@@ -76,8 +76,15 @@ func New(v *viper.Viper, consumer consumer.MetricsConsumer) (*Receiver, error) {
 	return vmr, nil
 }
 
+const metricsSource string = "VMMetrics"
+
+// MetricsSource returns the name of the metrics data source.
+func (vmr *Receiver) MetricsSource() string {
+	return metricsSource
+}
+
 // StartMetricsReception scrapes VM metrics based on the OS platform.
-func (vmr *Receiver) StartMetricsReception(ctx context.Context, asyncErrorChan chan<- error) error {
+func (vmr *Receiver) StartMetricsReception(host receiver.Host) error {
 	vmr.mu.Lock()
 	defer vmr.mu.Unlock()
 
@@ -97,7 +104,7 @@ func (vmr *Receiver) StartMetricsReception(ctx context.Context, asyncErrorChan c
 }
 
 // StopMetricsReception stops and cancels the underlying VM metrics scrapers.
-func (vmr *Receiver) StopMetricsReception(ctx context.Context) error {
+func (vmr *Receiver) StopMetricsReception() error {
 	vmr.mu.Lock()
 	defer vmr.mu.Unlock()
 
