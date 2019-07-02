@@ -19,6 +19,7 @@ import (
 )
 
 // ConfigV2 defines configuration for logging exporter.
+// TODO: allow configuration of logging level
 type ConfigV2 struct {
 	models.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 }
