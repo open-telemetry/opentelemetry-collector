@@ -20,14 +20,13 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/factories"
 	"github.com/open-telemetry/opentelemetry-service/models"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
 
 // This file implements factory for Zipkin receiver.
 
-var _ = factories.RegisterReceiverFactory(&ReceiverFactory{})
+var _ = receiver.RegisterReceiverFactory(&ReceiverFactory{})
 
 const (
 	// The value of "type" key in configuration.
@@ -46,7 +45,7 @@ func (f *ReceiverFactory) Type() string {
 }
 
 // CustomUnmarshaler returns nil because we don't need custom unmarshaling for this config.
-func (f *ReceiverFactory) CustomUnmarshaler() factories.CustomUnmarshaler {
+func (f *ReceiverFactory) CustomUnmarshaler() receiver.CustomUnmarshaler {
 	return nil
 }
 
@@ -79,5 +78,5 @@ func (f *ReceiverFactory) CreateMetricsReceiver(
 	cfg models.Receiver,
 	consumer consumer.MetricsConsumer,
 ) (receiver.MetricsReceiver, error) {
-	return nil, factories.ErrDataTypeIsNotSupported
+	return nil, models.ErrDataTypeIsNotSupported
 }

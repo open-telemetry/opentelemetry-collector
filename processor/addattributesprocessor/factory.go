@@ -66,5 +66,5 @@ func (f *processorFactory) CreateMetricsProcessor(
 	nextConsumer consumer.MetricsConsumer,
 	cfg models.Processor,
 ) (processor.MetricsProcessor, error) {
-	return nil, factories.ErrDataTypeIsNotSupported
+	return nil, models.ErrDataTypeIsNotSupported
 }
