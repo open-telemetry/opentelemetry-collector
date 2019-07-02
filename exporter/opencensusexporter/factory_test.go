@@ -18,6 +18,8 @@ import (
 	"testing"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -37,7 +39,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	factory := factories.GetExporterFactory(typeStr)
 	cfg := factory.CreateDefaultConfig()
 
-	_, _, err := factory.CreateMetricsExporter(cfg)
+	_, _, err := factory.CreateMetricsExporter(zap.NewNop(), cfg)
 	assert.Error(t, err, factories.ErrDataTypeIsNotSupported)
 }
 
@@ -132,7 +134,7 @@ func TestCreateTraceExporter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := factories.GetExporterFactory(typeStr)
-			consumer, stopFunc, err := factory.CreateTraceExporter(&tt.config)
+			consumer, stopFunc, err := factory.CreateTraceExporter(zap.NewNop(), &tt.config)
 
 			if tt.mustFail {
 				assert.NotNil(t, err)

@@ -101,10 +101,10 @@ type ExporterFactory interface {
 	CreateDefaultConfig() models.Exporter
 
 	// CreateTraceExporter creates a trace exporter based on this config.
-	CreateTraceExporter(cfg models.Exporter) (consumer.TraceConsumer, StopFunc, error)
+	CreateTraceExporter(logger *zap.Logger, cfg models.Exporter) (consumer.TraceConsumer, StopFunc, error)
 
 	// CreateMetricsExporter creates a metrics exporter based on this config.
-	CreateMetricsExporter(cfg models.Exporter) (consumer.MetricsConsumer, StopFunc, error)
+	CreateMetricsExporter(logger *zap.Logger, cfg models.Exporter) (consumer.MetricsConsumer, StopFunc, error)
 }
 
 // List of registered exporter factories.

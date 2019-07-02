@@ -252,12 +252,12 @@ func (f *ExampleExporterFactory) CreateDefaultConfig() models.Exporter {
 }
 
 // CreateTraceExporter creates a trace exporter based on this config.
-func (f *ExampleExporterFactory) CreateTraceExporter(cfg models.Exporter) (consumer.TraceConsumer, factories.StopFunc, error) {
+func (f *ExampleExporterFactory) CreateTraceExporter(logger *zap.Logger, cfg models.Exporter) (consumer.TraceConsumer, factories.StopFunc, error) {
 	return &ExampleExporterConsumer{}, nil, nil
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *ExampleExporterFactory) CreateMetricsExporter(cfg models.Exporter) (consumer.MetricsConsumer, factories.StopFunc, error) {
+func (f *ExampleExporterFactory) CreateMetricsExporter(logger *zap.Logger, cfg models.Exporter) (consumer.MetricsConsumer, factories.StopFunc, error) {
 	return &ExampleExporterConsumer{}, nil, nil
 }
 
