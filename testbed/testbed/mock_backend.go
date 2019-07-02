@@ -66,6 +66,20 @@ func NewMockBackend(logFilePath string) *MockBackend {
 	return mb
 }
 
+var _ receiver.Host = (*MockBackend)(nil)
+
+func (mb *MockBackend) Context() context.Context {
+	return context.Background()
+}
+
+func (mb *MockBackend) ReportFatalError(err error) {
+	log.Printf("Fatal error reported: %v", err)
+}
+
+func (mb *MockBackend) OkToIngest() bool {
+	return true
+}
+
 // Start a backend of specified type. Only one backend type
 // can be started at a time.
 func (mb *MockBackend) Start(backendType BackendType) error {
@@ -110,7 +124,7 @@ func (mb *MockBackend) Start(backendType BackendType) error {
 			}
 		}()
 
-		err := mb.jaegerReceiver.StartTraceReception(context.Background(), mb.jaegerErrChan)
+		err := mb.jaegerReceiver.StartTraceReception(mb)
 		if err != nil {
 			return err
 		}
@@ -139,7 +153,7 @@ func (mb *MockBackend) Stop() {
 		}
 
 		if mb.jaegerReceiver != nil {
-			if err := mb.jaegerReceiver.StopTraceReception(context.Background()); err != nil {
+			if err := mb.jaegerReceiver.StopTraceReception(); err != nil {
 				log.Printf("Cannot stop Jaeger receiver: %s", err.Error())
 			}
 		}

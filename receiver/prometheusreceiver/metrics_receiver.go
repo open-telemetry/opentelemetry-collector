@@ -18,12 +18,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
+	"time"
+
 	"github.com/prometheus/prometheus/discovery"
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/prometheus/prometheus/storage"
 	"go.uber.org/zap"
-	"sync"
-	"time"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
@@ -118,8 +119,9 @@ func (pr *Preceiver) MetricsSource() string {
 
 // StartMetricsReception is the method that starts Prometheus scraping and it
 // is controlled by having previously defined a Configuration using perhaps New.
-func (pr *Preceiver) StartMetricsReception(ctx context.Context, asyncErrorChan chan<- error) error {
+func (pr *Preceiver) StartMetricsReception(host receiver.Host) error {
 	pr.startOnce.Do(func() {
+		ctx := host.Context()
 		c, cancel := context.WithCancel(ctx)
 		pr.cancel = cancel
 		app := internal.NewOcaStore(c, pr.consumer, pr.logger.Sugar())
@@ -130,11 +132,11 @@ func (pr *Preceiver) StartMetricsReception(ctx context.Context, asyncErrorChan c
 		discoveryManagerScrape := discovery.NewManager(ctx, l)
 		go func() {
 			if err := discoveryManagerScrape.Run(); err != nil {
-				asyncErrorChan <- err
+				host.ReportFatalError(err)
 			}
 		}()
 		if err := scrapeManager.ApplyConfig(pr.cfg.ScrapeConfig); err != nil {
-			asyncErrorChan <- err
+			host.ReportFatalError(err)
 			return
 		}
 
@@ -174,7 +176,7 @@ func (pr *Preceiver) Flush() {
 }
 
 // StopMetricsReception stops and cancels the underlying Prometheus scrapers.
-func (pr *Preceiver) StopMetricsReception(ctx context.Context) error {
+func (pr *Preceiver) StopMetricsReception() error {
 	pr.stopOnce.Do(pr.cancel)
 	return nil
 }

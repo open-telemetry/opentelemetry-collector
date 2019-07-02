@@ -15,7 +15,6 @@
 package collector
 
 import (
-	"context"
 	"os"
 
 	"github.com/spf13/viper"
@@ -30,10 +29,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
 
-func createReceivers(v *viper.Viper, logger *zap.Logger, traceConsumers consumer.TraceConsumer, asyncErrorChan chan<- error) []receiver.TraceReceiver {
+func createReceivers(v *viper.Viper, logger *zap.Logger, traceConsumers consumer.TraceConsumer, host receiver.Host) []receiver.TraceReceiver {
 	var someReceiverEnabled bool
 	receivers := []struct {
-		runFn   func(*zap.Logger, *viper.Viper, consumer.TraceConsumer, chan<- error) (receiver.TraceReceiver, error)
+		runFn   func(*zap.Logger, *viper.Viper, consumer.TraceConsumer, receiver.Host) (receiver.TraceReceiver, error)
 		enabled bool
 	}{
 		{jaegerreceiver.Start, builder.JaegerReceiverEnabled(v)},
@@ -45,11 +44,11 @@ func createReceivers(v *viper.Viper, logger *zap.Logger, traceConsumers consumer
 	var startedTraceReceivers []receiver.TraceReceiver
 	for _, receiver := range receivers {
 		if receiver.enabled {
-			rec, err := receiver.runFn(logger, v, traceConsumers, asyncErrorChan)
+			rec, err := receiver.runFn(logger, v, traceConsumers, host)
 			if err != nil {
 				// TODO: (@pjanotti) better shutdown, for now just try to stop any started receiver before terminating.
 				for _, startedTraceReceiver := range startedTraceReceivers {
-					startedTraceReceiver.StopTraceReception(context.Background())
+					startedTraceReceiver.StopTraceReception()
 				}
 				logger.Fatal("Cannot run receiver for "+rec.TraceSource(), zap.Error(err))
 			}

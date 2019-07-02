@@ -171,19 +171,19 @@ func (jr *jReceiver) TraceSource() string {
 	return traceSource
 }
 
-func (jr *jReceiver) StartTraceReception(ctx context.Context, asyncErrorChan chan<- error) error {
+func (jr *jReceiver) StartTraceReception(host receiver.Host) error {
 	jr.mu.Lock()
 	defer jr.mu.Unlock()
 
 	var err = errAlreadyStarted
 	jr.startOnce.Do(func() {
 		if err = jr.startAgent(); err != nil && err != errAlreadyStarted {
-			jr.stopTraceReceptionLocked(context.Background())
+			jr.stopTraceReceptionLocked()
 			return
 		}
 
 		if err = jr.startCollector(); err != nil && err != errAlreadyStarted {
-			jr.stopTraceReceptionLocked(context.Background())
+			jr.stopTraceReceptionLocked()
 			return
 		}
 
@@ -192,14 +192,14 @@ func (jr *jReceiver) StartTraceReception(ctx context.Context, asyncErrorChan cha
 	return err
 }
 
-func (jr *jReceiver) StopTraceReception(ctx context.Context) error {
+func (jr *jReceiver) StopTraceReception() error {
 	jr.mu.Lock()
 	defer jr.mu.Unlock()
 
-	return jr.stopTraceReceptionLocked(ctx)
+	return jr.stopTraceReceptionLocked()
 }
 
-func (jr *jReceiver) stopTraceReceptionLocked(ctx context.Context) error {
+func (jr *jReceiver) stopTraceReceptionLocked() error {
 	var err = errAlreadyStopped
 	jr.stopOnce.Do(func() {
 		var errs []error

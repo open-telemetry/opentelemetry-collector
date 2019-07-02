@@ -17,7 +17,6 @@
 package zipkinscribereceiver
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/spf13/viper"
@@ -30,7 +29,7 @@ import (
 )
 
 // Start starts the Zipkin Scribe receiver endpoint.
-func Start(logger *zap.Logger, v *viper.Viper, traceConsumer consumer.TraceConsumer, asyncErrorChan chan<- error) (receiver.TraceReceiver, error) {
+func Start(logger *zap.Logger, v *viper.Viper, traceConsumer consumer.TraceConsumer, host receiver.Host) (receiver.TraceReceiver, error) {
 	rOpts, err := builder.NewDefaultZipkinScribeReceiverCfg().InitFromViper(v)
 	if err != nil {
 		return nil, err
@@ -41,7 +40,7 @@ func Start(logger *zap.Logger, v *viper.Viper, traceConsumer consumer.TraceConsu
 		return nil, fmt.Errorf("Failed to create the Zipkin Scribe receiver: %v", err)
 	}
 
-	if err := sr.StartTraceReception(context.Background(), asyncErrorChan); err != nil {
+	if err := sr.StartTraceReception(host); err != nil {
 		return nil, fmt.Errorf("Cannot start Zipkin Scribe receiver %+v: %v", rOpts, err)
 	}
 

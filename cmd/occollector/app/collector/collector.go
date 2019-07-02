@@ -66,6 +66,29 @@ type Application struct {
 	closeFns []func()
 }
 
+var _ receiver.Host = (*Application)(nil)
+
+// Context returns a context provided by the host to be used on the receiver
+// operations.
+func (app *Application) Context() context.Context {
+	// For now simply the background context.
+	return context.Background()
+}
+
+// ReportFatalError is used to report to the host that the receiver encountered
+// a fatal error (i.e.: an error that the instance can't recover from) after
+// its start function has already returned.
+func (app *Application) ReportFatalError(err error) {
+	app.asyncErrorChannel <- err
+}
+
+// OkToIngest returns true when the receiver can inject the received data
+// into the pipeline and false when it should drop the data and report
+// error to the client.
+func (app *Application) OkToIngest() bool {
+	return true
+}
+
 func newApp() *Application {
 	return &Application{
 		v:         viper.New(),
@@ -160,7 +183,7 @@ func (app *Application) runAndWaitForShutdownEvent() {
 
 func (app *Application) shutdownReceivers() {
 	for _, receiver := range app.receivers {
-		receiver.StopTraceReception(context.Background())
+		receiver.StopTraceReception()
 	}
 }
 
@@ -183,7 +206,7 @@ func (app *Application) execute() {
 	app.setupHealthCheck()
 	app.processor, app.closeFns = startProcessor(app.v, app.logger)
 	app.setupZPages()
-	app.receivers = createReceivers(app.v, app.logger, app.processor, app.asyncErrorChannel)
+	app.receivers = createReceivers(app.v, app.logger, app.processor, app)
 	app.setupTelemetry(ballastSizeBytes)
 
 	// Everything is ready, now run until an event requiring shutdown happens.
@@ -263,7 +286,7 @@ func (app *Application) setupPipelines() {
 	}
 
 	app.logger.Info("Starting receivers...")
-	err = app.builtReceivers.StartAll(app.logger, app.asyncErrorChannel)
+	err = app.builtReceivers.StartAll(app.logger, app)
 	if err != nil {
 		log.Fatalf("Cannot start receivers: %v", err)
 	}

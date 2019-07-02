@@ -101,7 +101,7 @@ func (zr *ZipkinReceiver) TraceSource() string {
 }
 
 // StartTraceReception spins up the receiver's HTTP server and makes the receiver start its processing.
-func (zr *ZipkinReceiver) StartTraceReception(ctx context.Context, asyncErrorChan chan<- error) error {
+func (zr *ZipkinReceiver) StartTraceReception(host receiver.Host) error {
 	zr.mu.Lock()
 	defer zr.mu.Unlock()
 
@@ -116,7 +116,7 @@ func (zr *ZipkinReceiver) StartTraceReception(ctx context.Context, asyncErrorCha
 
 		server := &http.Server{Handler: zr}
 		go func() {
-			asyncErrorChan <- server.Serve(ln)
+			host.ReportFatalError(server.Serve(ln))
 		}()
 
 		zr.server = server
@@ -235,7 +235,7 @@ func (zr *ZipkinReceiver) deserializeFromJSON(jsonBlob []byte, debugWasSet bool)
 // StopTraceReception tells the receiver that should stop reception,
 // giving it a chance to perform any necessary clean-up and shutting down
 // its HTTP server.
-func (zr *ZipkinReceiver) StopTraceReception(ctx context.Context) error {
+func (zr *ZipkinReceiver) StopTraceReception() error {
 	var err = errAlreadyStopped
 	zr.stopOnce.Do(func() {
 		err = zr.server.Close()

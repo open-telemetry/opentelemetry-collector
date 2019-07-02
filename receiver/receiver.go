@@ -20,6 +20,29 @@ import (
 	_ "github.com/open-telemetry/opentelemetry-service/internal/compression/grpc" // load in supported grpc compression encodings
 )
 
+// Host represents the entity where the receiver is being hosted. It is used to
+// allow communication between the receiver and its host.
+type Host interface {
+	// Context returns a context provided by the host to be used on the receiver
+	// operations.
+	Context() context.Context
+
+	// ReportFatalError is used to report to the host that the receiver encountered
+	// a fatal error (i.e.: an error that the instance can't recover from) after
+	// its start function has already returned.
+	ReportFatalError(err error)
+
+	// OkToIngest returns true when the receiver can inject the received data
+	// into the pipeline and false when it should drop the data and report
+	// error to the client.
+	//
+	// Receivers are expected to signal to the source from which they receive the data the proper error (according to their
+	// protocol) when this function return false. For example an HTTP based
+	// receiver should return 503 (Service Unavailable) if OkToIngest returns
+	// false.
+	OkToIngest() bool
+}
+
 // A TraceReceiver is an "arbitrary data"-to-"trace proto span" converter.
 // Its purpose is to translate data from the wild into trace proto accompanied
 // by a *commonpb.Node to uniquely identify where that data comes from.
@@ -32,14 +55,12 @@ type TraceReceiver interface {
 	TraceSource() string
 
 	// StartTraceReception tells the receiver to start its processing.
-	// Any fatal errors happening in goroutines started by the receiver should be
-	// reported on asyncErrorChannel.
 	// By convention the consumer of the data received is set at creation time.
-	StartTraceReception(ctx context.Context, asyncErrorChannel chan<- error) error
+	StartTraceReception(host Host) error
 
 	// StopTraceReception tells the receiver that should stop reception,
 	// giving it a chance to perform any necessary clean-up.
-	StopTraceReception(ctx context.Context) error
+	StopTraceReception() error
 }
 
 // A MetricsReceiver is an "arbitrary data"-to-"metric proto" converter.
@@ -54,12 +75,10 @@ type MetricsReceiver interface {
 	MetricsSource() string
 
 	// StartMetricsReception tells the receiver to start its processing.
-	// Any fatal errors happening in goroutines started by the receiver should be
-	// reported on asyncErrorChannel.
 	// By convention the consumer of the data received is set at creation time.
-	StartMetricsReception(ctx context.Context, asyncErrorChannel chan<- error) error
+	StartMetricsReception(host Host) error
 
 	// StopMetricsReception tells the receiver that should stop reception,
 	// giving it a chance to perform any necessary clean-up.
-	StopMetricsReception(ctx context.Context) error
+	StopMetricsReception() error
 }

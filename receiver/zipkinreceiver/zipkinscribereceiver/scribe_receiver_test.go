@@ -146,9 +146,9 @@ func TestScribeReceiverPortAlreadyInUse(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create receiver: %v", err)
 	}
-	err = traceReceiver.StartTraceReception(context.Background(), nil)
+	err = traceReceiver.StartTraceReception(nil)
 	if err == nil {
-		traceReceiver.StopTraceReception(context.Background())
+		traceReceiver.StopTraceReception()
 		t.Fatal("conflict on port was expected")
 	}
 }
@@ -171,12 +171,12 @@ func TestScribeReceiverServer(t *testing.T) {
 		t.Fatalf("Failed to create receiver: %v", err)
 	}
 
-	traceReceiver.StartTraceReception(context.Background(), nil)
+	traceReceiver.StartTraceReception(nil)
 	if err != nil {
 		t.Fatalf("Failed to start trace reception: %v", err)
 	}
 	defer func() {
-		err := traceReceiver.StopTraceReception(context.Background())
+		err := traceReceiver.StopTraceReception()
 		if err != nil {
 			t.Fatalf("Error stopping trace reception: %v", err)
 		}

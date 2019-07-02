@@ -17,7 +17,6 @@
 package zipkinreceiver
 
 import (
-	"context"
 	"fmt"
 	"strconv"
 
@@ -31,7 +30,7 @@ import (
 )
 
 // Start starts the Zipkin receiver endpoint.
-func Start(logger *zap.Logger, v *viper.Viper, traceConsumer consumer.TraceConsumer, asyncErrorChan chan<- error) (receiver.TraceReceiver, error) {
+func Start(logger *zap.Logger, v *viper.Viper, traceConsumer consumer.TraceConsumer, host receiver.Host) (receiver.TraceReceiver, error) {
 	rOpts, err := builder.NewDefaultZipkinReceiverCfg().InitFromViper(v)
 	if err != nil {
 		return nil, err
@@ -43,7 +42,7 @@ func Start(logger *zap.Logger, v *viper.Viper, traceConsumer consumer.TraceConsu
 		return nil, fmt.Errorf("Failed to create the Zipkin receiver: %v", err)
 	}
 
-	if err := zi.StartTraceReception(context.Background(), asyncErrorChan); err != nil {
+	if err := zi.StartTraceReception(host); err != nil {
 		return nil, fmt.Errorf("Cannot start Zipkin receiver to address %q: %v", addr, err)
 	}
 

@@ -11,3 +11,5 @@ require (
 	github.com/stretchr/testify v1.3.0
 	go.opencensus.io v0.22.0
 )
+
+replace github.com/open-telemetry/opentelemetry-service => ../

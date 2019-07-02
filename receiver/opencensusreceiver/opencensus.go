@@ -23,18 +23,18 @@ import (
 	"sync"
 	"time"
 
-	"google.golang.org/grpc"
-
-	gatewayruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
-	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/observability"
-	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver/ocmetrics"
-	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver/octrace"
-	"github.com/rs/cors"
-	"github.com/soheilhy/cmux"
-
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
+	gatewayruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/rs/cors"
+	"github.com/soheilhy/cmux"
+	"google.golang.org/grpc"
+
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/observability"
+	"github.com/open-telemetry/opentelemetry-service/receiver"
+	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver/ocmetrics"
+	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver/octrace"
 )
 
 // Receiver is the type that exposes Trace and Metrics reception.
@@ -102,7 +102,7 @@ func (ocr *Receiver) TraceSource() string {
 
 // StartTraceReception exclusively runs the Trace receiver on the gRPC server.
 // To start both Trace and Metrics receivers/services, please use Start.
-func (ocr *Receiver) StartTraceReception(ctx context.Context, asyncErrorChan chan<- error) error {
+func (ocr *Receiver) StartTraceReception(host receiver.Host) error {
 	err := ocr.registerTraceConsumer()
 	if err != nil && err != errAlreadyStarted {
 		return err
@@ -132,7 +132,7 @@ func (ocr *Receiver) MetricsSource() string {
 
 // StartMetricsReception exclusively runs the Metrics receiver on the gRPC server.
 // To start both Trace and Metrics receivers/services, please use Start.
-func (ocr *Receiver) StartMetricsReception(ctx context.Context, asyncErrorChan chan<- error) error {
+func (ocr *Receiver) StartMetricsReception(host receiver.Host) error {
 	err := ocr.registerMetricsConsumer()
 	if err != nil && err != errAlreadyStarted {
 		return err
@@ -167,7 +167,7 @@ func (ocr *Receiver) grpcServer() *grpc.Server {
 // StopTraceReception is a method to turn off receiving traces. It
 // currently is a noop because we don't yet know if gRPC allows
 // stopping a specific service.
-func (ocr *Receiver) StopTraceReception(ctx context.Context) error {
+func (ocr *Receiver) StopTraceReception() error {
 	// StopTraceReception is a noop currently.
 	// TODO: (@odeke-em) investigate whether or not gRPC
 	// provides a way to stop specific services.
@@ -178,7 +178,7 @@ func (ocr *Receiver) StopTraceReception(ctx context.Context) error {
 // StopMetricsReception is a method to turn off receiving metrics. It
 // currently is a noop because we don't yet know if gRPC allows
 // stopping a specific service.
-func (ocr *Receiver) StopMetricsReception(ctx context.Context) error {
+func (ocr *Receiver) StopMetricsReception() error {
 	// StopMetricsReception is a noop currently.
 	// TODO: (@odeke-em) investigate whether or not gRPC
 	// provides a way to stop specific services.
