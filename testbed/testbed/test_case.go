@@ -139,7 +139,7 @@ func (tc *TestCase) StartAgent(args ...string) {
 		name:         "Agent",
 		logFilePath:  logFileName,
 		cmd:          testBedConfig.Agent,
-		cmdArgs:      args, 
+		cmdArgs:      args,
 		resourceSpec: &tc.resourceSpec,
 	})
 
@@ -189,7 +189,7 @@ func (tc *TestCase) StopBackend() {
 	tc.MockBackend.Stop()
 }
 
-// AgentMemoryInfo returns raw memory info struct about the agent 
+// AgentMemoryInfo returns raw memory info struct about the agent
 // as returned by github.com/shirou/gopsutil/process
 func (tc *TestCase) AgentMemoryInfo() (uint32, uint32, error) {
 	stat, err := tc.agentProc.processMon.MemoryInfo()
@@ -297,7 +297,7 @@ func (tc *TestCase) WaitForN(cond func() bool, duration time.Duration, errMsg ..
 
 // WaitFor is like WaitForN but with a fixed duration of 10 seconds
 func (tc *TestCase) WaitFor(cond func() bool, errMsg ...interface{}) bool {
-	return tc.WaitForN(cond, time.Second * 10, errMsg...)
+	return tc.WaitForN(cond, time.Second*10, errMsg...)
 }
 
 func (tc *TestCase) indicateError(err error) {
