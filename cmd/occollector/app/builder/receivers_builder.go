@@ -203,7 +203,7 @@ func (rb *ReceiversBuilder) attachReceiverToPipelines(
 				dataType.GetString(),
 				dataType.GetString())
 		}
-		return fmt.Errorf("cannot create receiver %s", config.Name())
+		return fmt.Errorf("cannot create receiver %s: %s", config.Name(), err.Error())
 	}
 
 	rb.logger.Info("Receiver is enabled.",
