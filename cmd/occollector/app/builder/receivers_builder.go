@@ -20,6 +20,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-service/configv2/configerror"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/internal"
 	"github.com/open-telemetry/opentelemetry-service/models"
@@ -195,7 +196,7 @@ func (rb *ReceiversBuilder) attachReceiverToPipelines(
 	}
 
 	if err != nil {
-		if err == models.ErrDataTypeIsNotSupported {
+		if err == configerror.ErrDataTypeIsNotSupported {
 			return fmt.Errorf(
 				"receiver %s does not support %s but it was used in a "+
 					"%s pipeline",

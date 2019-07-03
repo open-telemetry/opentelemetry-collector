@@ -21,6 +21,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-service/configv2/configerror"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
 	"github.com/open-telemetry/opentelemetry-service/models"
@@ -56,7 +57,7 @@ func (f *factory) CreateDefaultConfig() models.Exporter {
 
 // CreateTraceExporter creates a trace exporter based on this config.
 func (f *factory) CreateTraceExporter(logger *zap.Logger, config models.Exporter) (consumer.TraceConsumer, exporter.StopFunc, error) {
-	return nil, nil, models.ErrDataTypeIsNotSupported
+	return nil, nil, configerror.ErrDataTypeIsNotSupported
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.

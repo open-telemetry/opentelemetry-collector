@@ -19,6 +19,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-service/configv2/configerror"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/models"
 )
@@ -42,7 +43,7 @@ func (f *ExampleProcessorFactory) CreateTraceProcessor(
 	nextConsumer consumer.TraceConsumer,
 	cfg models.Processor,
 ) (TraceProcessor, error) {
-	return nil, models.ErrDataTypeIsNotSupported
+	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
 // CreateMetricsProcessor creates a metrics processor based on this config.
@@ -51,7 +52,7 @@ func (f *ExampleProcessorFactory) CreateMetricsProcessor(
 	nextConsumer consumer.MetricsConsumer,
 	cfg models.Processor,
 ) (MetricsProcessor, error) {
-	return nil, models.ErrDataTypeIsNotSupported
+	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
 func TestRegisterProcessorFactory(t *testing.T) {

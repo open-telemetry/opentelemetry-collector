@@ -21,8 +21,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-service/configv2/configerror"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
-	"github.com/open-telemetry/opentelemetry-service/models"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -38,7 +38,7 @@ func TestCreateTraceExporter(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	_, _, err := factory.CreateTraceExporter(zap.NewNop(), cfg)
-	assert.Error(t, err, models.ErrDataTypeIsNotSupported)
+	assert.Error(t, err, configerror.ErrDataTypeIsNotSupported)
 }
 
 func TestCreateMetricsExporter(t *testing.T) {

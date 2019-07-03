@@ -17,6 +17,7 @@ package nodebatcher
 import (
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-service/configv2/configerror"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/models"
 	"github.com/open-telemetry/opentelemetry-service/processor"
@@ -100,5 +101,5 @@ func (f *processorFactory) CreateMetricsProcessor(
 	nextConsumer consumer.MetricsConsumer,
 	cfg models.Processor,
 ) (processor.MetricsProcessor, error) {
-	return nil, models.ErrDataTypeIsNotSupported
+	return nil, configerror.ErrDataTypeIsNotSupported
 }

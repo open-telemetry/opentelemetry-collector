@@ -19,6 +19,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-service/configv2/configerror"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
 	"github.com/open-telemetry/opentelemetry-service/internal"
@@ -170,7 +171,7 @@ func (eb *ExportersBuilder) buildExporter(
 		// Traces data type is required. Create a trace exporter based on config.
 		tc, stopFunc, err := factory.CreateTraceExporter(eb.logger, config)
 		if err != nil {
-			if err == models.ErrDataTypeIsNotSupported {
+			if err == configerror.ErrDataTypeIsNotSupported {
 				// Could not create because this exporter does not support this data type.
 				return nil, typeMismatchErr(config, requirement.requiredBy, models.TracesDataType)
 			}
@@ -185,7 +186,7 @@ func (eb *ExportersBuilder) buildExporter(
 		// Metrics data type is required. Create a trace exporter based on config.
 		mc, stopFunc, err := factory.CreateMetricsExporter(eb.logger, config)
 		if err != nil {
-			if err == models.ErrDataTypeIsNotSupported {
+			if err == configerror.ErrDataTypeIsNotSupported {
 				// Could not create because this exporter does not support this data type.
 				return nil, typeMismatchErr(config, requirement.requiredBy, models.MetricsDataType)
 			}
