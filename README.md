@@ -67,7 +67,7 @@ While the Agent and Collector share the same binary, the configuration between
 the two may differ depending on requirements (e.g. queue size and feature-set
 enabled).
 
-![deployment-models](images/opentelemetry-service-deployment-models.png)
+![deployment-models](https://imgur.com/Tj384ap)
 
 ## <a name="getting-started"></a>Getting Started
 
