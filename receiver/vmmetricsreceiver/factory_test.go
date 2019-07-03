@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/models"
@@ -33,17 +34,23 @@ func TestCreateDefaultConfig(t *testing.T) {
 }
 
 func TestCreateReceiver(t *testing.T) {
-	if runtime.GOOS != "linux" {
-		t.Skip("vmmetricsreceiver currently only supported on linux")
-	}
 	factory := receiver.GetReceiverFactory(typeStr)
 	cfg := factory.CreateDefaultConfig()
 
 	tReceiver, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
+
 	assert.Equal(t, err, models.ErrDataTypeIsNotSupported)
 	assert.Nil(t, tReceiver)
 
 	mReceiver, err := factory.CreateMetricsReceiver(zap.NewNop(), cfg, nil)
+
+	// Currently vmmetrics receiver is only supported on linux.
+	if runtime.GOOS != "linux" {
+		require.Nil(t, tReceiver)
+		require.NotNil(t, err)
+		return
+	}
+
 	assert.Nil(t, err)
 	assert.NotNil(t, mReceiver)
 }
