@@ -73,7 +73,7 @@ enabled).
 
 ### <a name="getting-started-demo"></a>Demo
 
-Instructions for setting up an end-to-end demo environment can be found [here](https://github.com/open-telemetry/opentelemetry-service/tree/master/exmaples/demotrace)
+Instructions for setting up an end-to-end demo environment can be found [here](https://github.com/open-telemetry/opentelemetry-service/tree/master/examples/demotrace)
 
 ### <a name="getting-started-k8s"></a>Kubernetes
 
