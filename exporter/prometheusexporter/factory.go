@@ -22,12 +22,12 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/factories"
+	"github.com/open-telemetry/opentelemetry-service/exporter"
 	"github.com/open-telemetry/opentelemetry-service/models"
 	"github.com/orijtech/prometheus-go-metrics-exporter"
 )
 
-var _ = factories.RegisterExporterFactory(&exporterFactory{})
+var _ = exporter.RegisterExporterFactory(&exporterFactory{})
 
 const (
 	// The value of "type" key in configuration.
@@ -55,12 +55,12 @@ func (f *exporterFactory) CreateDefaultConfig() models.Exporter {
 }
 
 // CreateTraceExporter creates a trace exporter based on this config.
-func (f *exporterFactory) CreateTraceExporter(logger *zap.Logger, config models.Exporter) (consumer.TraceConsumer, factories.StopFunc, error) {
+func (f *exporterFactory) CreateTraceExporter(logger *zap.Logger, config models.Exporter) (consumer.TraceConsumer, exporter.StopFunc, error) {
 	return nil, nil, models.ErrDataTypeIsNotSupported
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *exporterFactory) CreateMetricsExporter(logger *zap.Logger, cfg models.Exporter) (consumer.MetricsConsumer, factories.StopFunc, error) {
+func (f *exporterFactory) CreateMetricsExporter(logger *zap.Logger, cfg models.Exporter) (consumer.MetricsConsumer, exporter.StopFunc, error) {
 	pcfg := cfg.(*ConfigV2)
 
 	addr := strings.TrimSpace(pcfg.Endpoint)

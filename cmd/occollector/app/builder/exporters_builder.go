@@ -20,7 +20,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/factories"
+	"github.com/open-telemetry/opentelemetry-service/exporter"
 	"github.com/open-telemetry/opentelemetry-service/internal"
 	"github.com/open-telemetry/opentelemetry-service/models"
 )
@@ -128,7 +128,7 @@ func (eb *ExportersBuilder) calcExportersRequiredDataTypes() exportersRequiredDa
 // and then combine any errors that the 2 functions return.
 // Safe to use if any of the 2 functions are nil. If both functions
 // are nil then returns nil.
-func combineStopFunc(f1, f2 factories.StopFunc) factories.StopFunc {
+func combineStopFunc(f1, f2 exporter.StopFunc) exporter.StopFunc {
 	if f1 == nil {
 		return f2
 	}
@@ -153,7 +153,7 @@ func (eb *ExportersBuilder) buildExporter(
 	exportersInputDataTypes exportersRequiredDataTypes,
 ) (*builtExporter, error) {
 
-	factory := factories.GetExporterFactory(config.Type())
+	factory := exporter.GetExporterFactory(config.Type())
 
 	exporter := &builtExporter{}
 

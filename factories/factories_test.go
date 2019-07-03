@@ -24,57 +24,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/processor"
 )
 
-type ExampleExporterFactory struct {
-}
-
-// Type gets the type of the Exporter config created by this factory.
-func (f *ExampleExporterFactory) Type() string {
-	return "exampleexporter"
-}
-
-// CreateDefaultConfig creates the default configuration for the Exporter.
-func (f *ExampleExporterFactory) CreateDefaultConfig() models.Exporter {
-	return nil
-}
-
-// CreateTraceExporter creates a trace exporter based on this config.
-func (f *ExampleExporterFactory) CreateTraceExporter(logger *zap.Logger, cfg models.Exporter) (consumer.TraceConsumer, StopFunc, error) {
-	return nil, nil, nil
-}
-
-// CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *ExampleExporterFactory) CreateMetricsExporter(logger *zap.Logger, cfg models.Exporter) (consumer.MetricsConsumer, StopFunc, error) {
-	return nil, nil, nil
-}
-
-func TestRegisterExporterFactory(t *testing.T) {
-	f := ExampleExporterFactory{}
-	err := RegisterExporterFactory(&f)
-	if err != nil {
-		t.Fatalf("cannot register factory")
-	}
-
-	if &f != GetExporterFactory(f.Type()) {
-		t.Fatalf("cannot find factory")
-	}
-
-	// Verify that attempt to register a factory with duplicate name panics
-	paniced := false
-	func() {
-		defer func() {
-			if r := recover(); r != nil {
-				paniced = true
-			}
-		}()
-
-		err = RegisterExporterFactory(&f)
-	}()
-
-	if !paniced {
-		t.Fatalf("must panic on double registration")
-	}
-}
-
 type ExampleProcessorFactory struct {
 }
 
