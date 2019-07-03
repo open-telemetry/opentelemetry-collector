@@ -24,6 +24,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/errors/errorkind"
 	jaegertranslator "github.com/open-telemetry/opentelemetry-service/translator/trace/jaeger"
 )
 
@@ -55,7 +56,7 @@ func (s *JaegerProtoGRPCSender) ConsumeTraceData(ctx context.Context, td data.Tr
 	protoBatch, err := jaegertranslator.OCProtoToJaegerProto(td)
 	if err != nil {
 		s.logger.Warn("Error translating OC proto batch to Jaeger proto", zap.Error(err))
-		return err
+		return errorkind.Permanent(err)
 	}
 
 	_, err = s.client.PostSpans(context.Background(), &jaegerproto.PostSpansRequest{Batch: *protoBatch})
