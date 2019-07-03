@@ -25,7 +25,7 @@ import (
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := exporter.GetExporterFactory(typeStr)
+	factory := exporter.GetFactory(typeStr)
 	require.NotNil(t, factory)
 
 	cfg := factory.CreateDefaultConfig()
@@ -33,7 +33,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 }
 
 func TestCreateMetricsExporter(t *testing.T) {
-	factory := exporter.GetExporterFactory(typeStr)
+	factory := exporter.GetFactory(typeStr)
 	cfg := factory.CreateDefaultConfig()
 
 	_, _, err := factory.CreateMetricsExporter(zap.NewNop(), cfg)
@@ -41,7 +41,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 }
 
 func TestCreateTraceExporter(t *testing.T) {
-	factory := exporter.GetExporterFactory(typeStr)
+	factory := exporter.GetFactory(typeStr)
 	cfg := factory.CreateDefaultConfig()
 
 	_, _, err := factory.CreateTraceExporter(zap.NewNop(), cfg)

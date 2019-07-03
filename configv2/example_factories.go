@@ -329,7 +329,7 @@ func (f *ExampleProcessorFactory) CreateMetricsProcessor(
 func RegisterTestFactories() error {
 	_ = receiver.RegisterReceiverFactory(&ExampleReceiverFactory{})
 	_ = receiver.RegisterReceiverFactory(&MultiProtoReceiverFactory{})
-	_ = exporter.RegisterExporterFactory(&ExampleExporterFactory{})
+	_ = exporter.RegisterFactory(&ExampleExporterFactory{})
 	_ = factories.RegisterProcessorFactory(&ExampleProcessorFactory{})
 	return nil
 }

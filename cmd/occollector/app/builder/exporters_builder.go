@@ -153,7 +153,7 @@ func (eb *ExportersBuilder) buildExporter(
 	exportersInputDataTypes exportersRequiredDataTypes,
 ) (*builtExporter, error) {
 
-	factory := exporter.GetExporterFactory(config.Type())
+	factory := exporter.GetFactory(config.Type())
 
 	exporter := &builtExporter{}
 
