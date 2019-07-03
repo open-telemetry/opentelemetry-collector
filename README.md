@@ -73,7 +73,7 @@ enabled).
 
 ### <a name="getting-started-demo"></a>Demo
 
-Instructions for setting up an end-to-end demo environment can be found [here](https://github.com/open-telemetry/opentelemetry-service/tree/master/demos/trace)
+Instructions for setting up an end-to-end demo environment can be found [here](https://github.com/open-telemetry/opentelemetry-service/tree/master/examples/demotrace)
 
 ### <a name="getting-started-k8s"></a>Kubernetes
 
@@ -111,7 +111,7 @@ $ ./bin/otelsvc_$($GOOS)
 Run the demo application:
 
 ```shell
-$ go run "$(go env GOPATH)/src/github.com/open-telemetry/opentelemetry-service/example/main.go"
+$ go run "$(go env GOPATH)/src/github.com/open-telemetry/opentelemetry-service/examples/main.go"
 ```
 
 You should be able to see the traces in your exporter(s) of choice. If you stop
