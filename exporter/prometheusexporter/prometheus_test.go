@@ -53,7 +53,7 @@ func TestPrometheusExporter(t *testing.T) {
 		},
 	}
 
-	factory := exporter.GetExporterFactory(typeStr)
+	factory := exporter.GetFactory(typeStr)
 	for i, tt := range tests {
 		// Run it a few times to ensure that shutdowns exit cleanly.
 		for j := 0; j < 3; j++ {
@@ -105,7 +105,7 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 		Endpoint: ":7777",
 	}
 
-	factory := exporter.GetExporterFactory(typeStr)
+	factory := exporter.GetFactory(typeStr)
 	consumer, stopFunc, err := factory.CreateMetricsExporter(zap.NewNop(), config)
 	assert.Nil(t, err)
 

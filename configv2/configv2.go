@@ -249,7 +249,7 @@ func loadExporters(v *viper.Viper) (models.Exporters, error) {
 		}
 
 		// Find exporter factory based on "type" that we read from config source
-		factory := exporter.GetExporterFactory(typeStr)
+		factory := exporter.GetFactory(typeStr)
 		if factory == nil {
 			return nil, &configError{
 				code: errUnknownExporterType,

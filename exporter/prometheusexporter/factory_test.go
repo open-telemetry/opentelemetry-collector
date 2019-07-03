@@ -26,7 +26,7 @@ import (
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := exporter.GetExporterFactory(typeStr)
+	factory := exporter.GetFactory(typeStr)
 	require.NotNil(t, factory)
 
 	cfg := factory.CreateDefaultConfig()
@@ -34,7 +34,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 }
 
 func TestCreateTraceExporter(t *testing.T) {
-	factory := exporter.GetExporterFactory(typeStr)
+	factory := exporter.GetFactory(typeStr)
 	cfg := factory.CreateDefaultConfig()
 
 	_, _, err := factory.CreateTraceExporter(zap.NewNop(), cfg)
@@ -59,7 +59,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			factory := exporter.GetExporterFactory(typeStr)
+			factory := exporter.GetFactory(typeStr)
 			consumer, stopFunc, err := factory.CreateMetricsExporter(zap.NewNop(), &tt.config)
 
 			if tt.mustFail {

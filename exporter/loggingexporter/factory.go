@@ -22,24 +22,24 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/models"
 )
 
-var _ = exporter.RegisterExporterFactory(&exporterFactory{})
+var _ = exporter.RegisterFactory(&factory{})
 
 const (
 	// The value of "type" key in configuration.
 	typeStr = "logging"
 )
 
-// exporterFactory is the factory for logging exporter.
-type exporterFactory struct {
+// factory is the factory for logging exporter.
+type factory struct {
 }
 
 // Type gets the type of the Exporter config created by this factory.
-func (f *exporterFactory) Type() string {
+func (f *factory) Type() string {
 	return typeStr
 }
 
 // CreateDefaultConfig creates the default configuration for exporter.
-func (f *exporterFactory) CreateDefaultConfig() models.Exporter {
+func (f *factory) CreateDefaultConfig() models.Exporter {
 	return &ConfigV2{
 		ExporterSettings: models.ExporterSettings{
 			TypeVal: typeStr,
@@ -53,7 +53,7 @@ func noopStopFunc() error {
 }
 
 // CreateTraceExporter creates a trace exporter based on this config.
-func (f *exporterFactory) CreateTraceExporter(logger *zap.Logger, config models.Exporter) (consumer.TraceConsumer, exporter.StopFunc, error) {
+func (f *factory) CreateTraceExporter(logger *zap.Logger, config models.Exporter) (consumer.TraceConsumer, exporter.StopFunc, error) {
 
 	lexp, err := NewTraceExporter(logger)
 	if err != nil {
@@ -63,7 +63,7 @@ func (f *exporterFactory) CreateTraceExporter(logger *zap.Logger, config models.
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *exporterFactory) CreateMetricsExporter(logger *zap.Logger, cfg models.Exporter) (consumer.MetricsConsumer, exporter.StopFunc, error) {
+func (f *factory) CreateMetricsExporter(logger *zap.Logger, cfg models.Exporter) (consumer.MetricsConsumer, exporter.StopFunc, error) {
 	lexp, err := NewMetricsExporter(logger)
 	if err != nil {
 		return nil, nil, err

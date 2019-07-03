@@ -15,12 +15,7 @@
 package exporter
 
 import (
-	"fmt"
-
-	"go.uber.org/zap"
-
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/models"
 )
 
 // TraceExporter composes TraceConsumer with some additional exporter-specific functions.
@@ -48,41 +43,4 @@ type Exporter interface {
 	TraceExporter
 	MetricsExporter
 	Stop() error
-}
-
-// StopFunc is a function that can be called to stop an exporter that
-// was created previously.
-type StopFunc func() error
-
-// Factory interface for exporters.
-type Factory interface {
-	// Type gets the type of the Exporter created by this factory.
-	Type() string
-
-	// CreateDefaultConfig creates the default configuration for the Exporter.
-	CreateDefaultConfig() models.Exporter
-
-	// CreateTraceExporter creates a trace exporter based on this config.
-	CreateTraceExporter(logger *zap.Logger, cfg models.Exporter) (consumer.TraceConsumer, StopFunc, error)
-
-	// CreateMetricsExporter creates a metrics exporter based on this config.
-	CreateMetricsExporter(logger *zap.Logger, cfg models.Exporter) (consumer.MetricsConsumer, StopFunc, error)
-}
-
-// List of registered exporter factories.
-var exporterFactories = make(map[string]Factory)
-
-// RegisterExporterFactory registers a exporter factory.
-func RegisterExporterFactory(factory Factory) error {
-	if exporterFactories[factory.Type()] != nil {
-		panic(fmt.Sprintf("duplicate exporter factory %q", factory.Type()))
-	}
-
-	exporterFactories[factory.Type()] = factory
-	return nil
-}
-
-// GetExporterFactory gets a exporter factory by type string.
-func GetExporterFactory(typeStr string) Factory {
-	return exporterFactories[typeStr]
 }
