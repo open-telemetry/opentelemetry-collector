@@ -1,0 +1,35 @@
+# Enable debug level to see output of "logging" exporter
+log-level: DEBUG
+
+receivers:
+  opencensus:
+    endpoint: 0.0.0.0:55678
+    enabled: true
+
+exporters:
+  logging:
+    enabled: true
+
+# TODO: enable zipkin exporter when it is implemented in otelsvc
+#  zipkin:
+#    endpoint: "http://zipkin-all-in-one:9411/api/v2/spans"
+
+# TODO: enable jaeger exporter when it is implemented in otelsvc
+#  jaeger:
+#    num-workers: 4
+#    queue-size: 100
+#    retry-on-failure: true
+#    sender-type: jaeger-thrift-http
+#    jaeger-thrift-http:
+#      collector-endpoint: http://jaeger-all-in-one:14268/api/traces
+#      timeout: 5s
+
+processors:
+  batch:
+  queued-retry:
+
+pipelines:
+  traces:
+    receivers: [opencensus]
+    exporters: [logging]
+    processors: [batch, queued-retry]
