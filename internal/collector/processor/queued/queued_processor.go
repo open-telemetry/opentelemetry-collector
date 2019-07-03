@@ -27,7 +27,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/errors/errorkind"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumererror"
 	"github.com/open-telemetry/opentelemetry-service/internal/collector/processor"
 	"github.com/open-telemetry/opentelemetry-service/internal/collector/processor/nodebatcher"
 	"github.com/open-telemetry/opentelemetry-service/internal/collector/telemetry"
@@ -153,7 +153,7 @@ func (sp *queuedSpanProcessor) processItemFromQueue(item *queueItem) {
 
 	// Immediately drop data on permanent errors. In this context permanent
 	// errors indicate some kind of bad data.
-	if errorkind.IsPermanent(err) {
+	if consumererror.IsPermanent(err) {
 		numSpans := len(item.td.Spans)
 		sp.logger.Warn(
 			"Unrecoverable bad data error",
