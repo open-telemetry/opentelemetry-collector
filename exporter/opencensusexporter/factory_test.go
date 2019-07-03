@@ -54,7 +54,7 @@ func TestCreateTraceExporter(t *testing.T) {
 	// exporter keeps trying to update its connection state in the background
 	// so unless there is a receiver enabled the stop call can return different
 	// results. Standing up a receiver to ensure that stop don't report errors.
-	rcvFactory := receiver.GetReceiverFactory(typeStr)
+	rcvFactory := receiver.GetFactory(typeStr)
 	require.NotNil(t, rcvFactory)
 	rcvCfg := rcvFactory.CreateDefaultConfig().(*opencensusreceiver.ConfigV2)
 	rcvCfg.Endpoint = testutils.GetAvailableLocalAddress(t)

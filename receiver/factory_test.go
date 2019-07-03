@@ -63,14 +63,14 @@ func (f *ExampleReceiverFactory) CreateMetricsReceiver(
 	return nil, nil
 }
 
-func TestRegisterReceiverFactory(t *testing.T) {
+func TestRegisterFactory(t *testing.T) {
 	f := ExampleReceiverFactory{}
-	err := RegisterReceiverFactory(&f)
+	err := RegisterFactory(&f)
 	if err != nil {
 		t.Fatalf("cannot register factory")
 	}
 
-	if &f != GetReceiverFactory(f.Type()) {
+	if &f != GetFactory(f.Type()) {
 		t.Fatalf("cannot find factory")
 	}
 
@@ -83,7 +83,7 @@ func TestRegisterReceiverFactory(t *testing.T) {
 			}
 		}()
 
-		err = RegisterReceiverFactory(&f)
+		err = RegisterFactory(&f)
 	}()
 
 	if !panicked {

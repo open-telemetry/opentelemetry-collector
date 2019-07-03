@@ -30,7 +30,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
 
-var _ = receiver.RegisterReceiverFactory(&receiverFactory{})
+var _ = receiver.RegisterFactory(&factory{})
 
 const (
 	// The value of "type" key in configuration.
@@ -45,22 +45,22 @@ const (
 	defaultTChannelBindEndpoint = "127.0.0.1:14267"
 )
 
-// receiverFactory is the factory for Jaeger receiver.
-type receiverFactory struct {
+// factory is the factory for Jaeger receiver.
+type factory struct {
 }
 
 // Type gets the type of the Receiver config created by this factory.
-func (f *receiverFactory) Type() string {
+func (f *factory) Type() string {
 	return typeStr
 }
 
 // CustomUnmarshaler returns nil because we don't need custom unmarshaling for this config.
-func (f *receiverFactory) CustomUnmarshaler() receiver.CustomUnmarshaler {
+func (f *factory) CustomUnmarshaler() receiver.CustomUnmarshaler {
 	return nil
 }
 
 // CreateDefaultConfig creates the default configuration for Jaeger receiver.
-func (f *receiverFactory) CreateDefaultConfig() models.Receiver {
+func (f *factory) CreateDefaultConfig() models.Receiver {
 	return &ConfigV2{
 		TypeVal: typeStr,
 		NameVal: typeStr,
@@ -78,7 +78,7 @@ func (f *receiverFactory) CreateDefaultConfig() models.Receiver {
 }
 
 // CreateTraceReceiver creates a trace receiver based on provided config.
-func (f *receiverFactory) CreateTraceReceiver(
+func (f *factory) CreateTraceReceiver(
 	ctx context.Context,
 	logger *zap.Logger,
 	cfg models.Receiver,
@@ -126,7 +126,7 @@ func (f *receiverFactory) CreateTraceReceiver(
 }
 
 // CreateMetricsReceiver creates a metrics receiver based on provided config.
-func (f *receiverFactory) CreateMetricsReceiver(
+func (f *factory) CreateMetricsReceiver(
 	logger *zap.Logger,
 	cfg models.Receiver,
 	consumer consumer.MetricsConsumer,

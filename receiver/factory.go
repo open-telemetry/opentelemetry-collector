@@ -58,8 +58,8 @@ type CustomUnmarshaler func(v *viper.Viper, viperKey string, intoCfg interface{}
 // List of registered receiver factories.
 var receiverFactories = make(map[string]Factory)
 
-// RegisterReceiverFactory registers a receiver factory.
-func RegisterReceiverFactory(factory Factory) error {
+// RegisterFactory registers a receiver factory.
+func RegisterFactory(factory Factory) error {
 	if receiverFactories[factory.Type()] != nil {
 		panic(fmt.Sprintf("duplicate receiver factory %q", factory.Type()))
 	}
@@ -68,7 +68,7 @@ func RegisterReceiverFactory(factory Factory) error {
 	return nil
 }
 
-// GetReceiverFactory gets a receiver factory by type string.
-func GetReceiverFactory(typeStr string) Factory {
+// GetFactory gets a receiver factory by type string.
+func GetFactory(typeStr string) Factory {
 	return receiverFactories[typeStr]
 }
