@@ -330,6 +330,6 @@ func RegisterTestFactories() error {
 	_ = receiver.RegisterFactory(&ExampleReceiverFactory{})
 	_ = receiver.RegisterFactory(&MultiProtoReceiverFactory{})
 	_ = exporter.RegisterFactory(&ExampleExporterFactory{})
-	_ = processor.RegisterProcessorFactory(&ExampleProcessorFactory{})
+	_ = processor.RegisterFactory(&ExampleProcessorFactory{})
 	return nil
 }

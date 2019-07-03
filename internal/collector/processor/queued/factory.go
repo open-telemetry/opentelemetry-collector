@@ -24,24 +24,24 @@ import (
 	"go.uber.org/zap"
 )
 
-var _ = processor.RegisterProcessorFactory(&processorFactory{})
+var _ = processor.RegisterFactory(&factory{})
 
 const (
 	// The value of "type" key in configuration.
 	typeStr = "queued-retry"
 )
 
-// processorFactory is the factory for OpenCensus exporter.
-type processorFactory struct {
+// factory is the factory for OpenCensus exporter.
+type factory struct {
 }
 
 // Type gets the type of the Option config created by this factory.
-func (f *processorFactory) Type() string {
+func (f *factory) Type() string {
 	return typeStr
 }
 
 // CreateDefaultConfig creates the default configuration for exporter.
-func (f *processorFactory) CreateDefaultConfig() models.Processor {
+func (f *factory) CreateDefaultConfig() models.Processor {
 	return &ConfigV2{
 		ProcessorSettings: models.ProcessorSettings{
 			TypeVal: typeStr,
@@ -55,7 +55,7 @@ func (f *processorFactory) CreateDefaultConfig() models.Processor {
 }
 
 // CreateTraceProcessor creates a trace processor based on this config.
-func (f *processorFactory) CreateTraceProcessor(
+func (f *factory) CreateTraceProcessor(
 	logger *zap.Logger,
 	nextConsumer consumer.TraceConsumer,
 	cfg models.Processor,
@@ -70,7 +70,7 @@ func (f *processorFactory) CreateTraceProcessor(
 }
 
 // CreateMetricsProcessor creates a metrics processor based on this config.
-func (f *processorFactory) CreateMetricsProcessor(
+func (f *factory) CreateMetricsProcessor(
 	logger *zap.Logger,
 	nextConsumer consumer.MetricsConsumer,
 	cfg models.Processor,

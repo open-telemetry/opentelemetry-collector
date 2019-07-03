@@ -47,8 +47,8 @@ type Factory interface {
 // List of registered processor factories.
 var processorFactories = make(map[string]Factory)
 
-// RegisterProcessorFactory registers a processor factory.
-func RegisterProcessorFactory(factory Factory) error {
+// RegisterFactory registers a processor factory.
+func RegisterFactory(factory Factory) error {
 	if processorFactories[factory.Type()] != nil {
 		panic(fmt.Sprintf("duplicate processor factory %q", factory.Type()))
 	}
@@ -57,7 +57,7 @@ func RegisterProcessorFactory(factory Factory) error {
 	return nil
 }
 
-// GetProcessorFactory gets a processor factory by type string.
-func GetProcessorFactory(typeStr string) Factory {
+// GetFactory gets a processor factory by type string.
+func GetFactory(typeStr string) Factory {
 	return processorFactories[typeStr]
 }

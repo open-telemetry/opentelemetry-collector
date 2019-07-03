@@ -24,21 +24,21 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/models"
 )
 
-type ExampleProcessorFactory struct {
+type TestFactory struct {
 }
 
 // Type gets the type of the Processor config created by this factory.
-func (f *ExampleProcessorFactory) Type() string {
+func (f *TestFactory) Type() string {
 	return "exampleoption"
 }
 
 // CreateDefaultConfig creates the default configuration for the Processor.
-func (f *ExampleProcessorFactory) CreateDefaultConfig() models.Processor {
+func (f *TestFactory) CreateDefaultConfig() models.Processor {
 	return nil
 }
 
 // CreateTraceProcessor creates a trace processor based on this config.
-func (f *ExampleProcessorFactory) CreateTraceProcessor(
+func (f *TestFactory) CreateTraceProcessor(
 	logger *zap.Logger,
 	nextConsumer consumer.TraceConsumer,
 	cfg models.Processor,
@@ -47,7 +47,7 @@ func (f *ExampleProcessorFactory) CreateTraceProcessor(
 }
 
 // CreateMetricsProcessor creates a metrics processor based on this config.
-func (f *ExampleProcessorFactory) CreateMetricsProcessor(
+func (f *TestFactory) CreateMetricsProcessor(
 	logger *zap.Logger,
 	nextConsumer consumer.MetricsConsumer,
 	cfg models.Processor,
@@ -56,13 +56,13 @@ func (f *ExampleProcessorFactory) CreateMetricsProcessor(
 }
 
 func TestRegisterProcessorFactory(t *testing.T) {
-	f := ExampleProcessorFactory{}
-	err := RegisterProcessorFactory(&f)
+	f := TestFactory{}
+	err := RegisterFactory(&f)
 	if err != nil {
 		t.Fatalf("cannot register factory")
 	}
 
-	if &f != GetProcessorFactory(f.Type()) {
+	if &f != GetFactory(f.Type()) {
 		t.Fatalf("cannot find factory")
 	}
 
@@ -75,7 +75,7 @@ func TestRegisterProcessorFactory(t *testing.T) {
 			}
 		}()
 
-		err = RegisterProcessorFactory(&f)
+		err = RegisterFactory(&f)
 	}()
 
 	if !paniced {

@@ -306,7 +306,7 @@ func loadProcessors(v *viper.Viper) (models.Processors, error) {
 		}
 
 		// Find processor factory based on "type" that we read from config source.
-		factory := processor.GetProcessorFactory(typeStr)
+		factory := processor.GetFactory(typeStr)
 		if factory == nil {
 			return nil, &configError{
 				code: errUnknownProcessorType,
