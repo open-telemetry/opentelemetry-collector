@@ -15,13 +15,14 @@
 package loggingexporter
 
 import (
-	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/factories"
-	"github.com/open-telemetry/opentelemetry-service/models"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/exporter"
+	"github.com/open-telemetry/opentelemetry-service/models"
 )
 
-var _ = factories.RegisterExporterFactory(&exporterFactory{})
+var _ = exporter.RegisterExporterFactory(&exporterFactory{})
 
 const (
 	// The value of "type" key in configuration.
@@ -52,7 +53,7 @@ func noopStopFunc() error {
 }
 
 // CreateTraceExporter creates a trace exporter based on this config.
-func (f *exporterFactory) CreateTraceExporter(logger *zap.Logger, config models.Exporter) (consumer.TraceConsumer, factories.StopFunc, error) {
+func (f *exporterFactory) CreateTraceExporter(logger *zap.Logger, config models.Exporter) (consumer.TraceConsumer, exporter.StopFunc, error) {
 
 	lexp, err := NewTraceExporter(logger)
 	if err != nil {
@@ -62,7 +63,7 @@ func (f *exporterFactory) CreateTraceExporter(logger *zap.Logger, config models.
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *exporterFactory) CreateMetricsExporter(logger *zap.Logger, cfg models.Exporter) (consumer.MetricsConsumer, factories.StopFunc, error) {
+func (f *exporterFactory) CreateMetricsExporter(logger *zap.Logger, cfg models.Exporter) (consumer.MetricsConsumer, exporter.StopFunc, error) {
 	lexp, err := NewMetricsExporter(logger)
 	if err != nil {
 		return nil, nil, err

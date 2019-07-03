@@ -18,23 +18,21 @@ import (
 	"crypto/x509"
 	"fmt"
 
+	"contrib.go.opencensus.io/exporter/ocagent"
 	"go.uber.org/zap"
-
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
 
-	"contrib.go.opencensus.io/exporter/ocagent"
-
 	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/exporter"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exporterhelper"
-	"github.com/open-telemetry/opentelemetry-service/factories"
 	"github.com/open-telemetry/opentelemetry-service/internal/compression"
 	compressiongrpc "github.com/open-telemetry/opentelemetry-service/internal/compression/grpc"
 	"github.com/open-telemetry/opentelemetry-service/models"
 )
 
-var _ = factories.RegisterExporterFactory(&exporterFactory{})
+var _ = exporter.RegisterExporterFactory(&exporterFactory{})
 
 const (
 	// The value of "type" key in configuration.
@@ -62,7 +60,7 @@ func (f *exporterFactory) CreateDefaultConfig() models.Exporter {
 }
 
 // CreateTraceExporter creates a trace exporter based on this config.
-func (f *exporterFactory) CreateTraceExporter(logger *zap.Logger, config models.Exporter) (consumer.TraceConsumer, factories.StopFunc, error) {
+func (f *exporterFactory) CreateTraceExporter(logger *zap.Logger, config models.Exporter) (consumer.TraceConsumer, exporter.StopFunc, error) {
 	ocac := config.(*ConfigV2)
 
 	if ocac.Endpoint == "" {
@@ -149,6 +147,6 @@ func (f *exporterFactory) CreateTraceExporter(logger *zap.Logger, config models.
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *exporterFactory) CreateMetricsExporter(logger *zap.Logger, cfg models.Exporter) (consumer.MetricsConsumer, factories.StopFunc, error) {
+func (f *exporterFactory) CreateMetricsExporter(logger *zap.Logger, cfg models.Exporter) (consumer.MetricsConsumer, exporter.StopFunc, error) {
 	return nil, nil, models.ErrDataTypeIsNotSupported
 }

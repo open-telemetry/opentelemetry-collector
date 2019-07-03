@@ -17,18 +17,16 @@ package prometheusexporter
 import (
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-service/models"
-
-	"go.uber.org/zap"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-service/factories"
+	"github.com/open-telemetry/opentelemetry-service/exporter"
+	"github.com/open-telemetry/opentelemetry-service/models"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := factories.GetExporterFactory(typeStr)
+	factory := exporter.GetExporterFactory(typeStr)
 	require.NotNil(t, factory)
 
 	cfg := factory.CreateDefaultConfig()
@@ -36,7 +34,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 }
 
 func TestCreateTraceExporter(t *testing.T) {
-	factory := factories.GetExporterFactory(typeStr)
+	factory := exporter.GetExporterFactory(typeStr)
 	cfg := factory.CreateDefaultConfig()
 
 	_, _, err := factory.CreateTraceExporter(zap.NewNop(), cfg)
@@ -61,7 +59,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			factory := factories.GetExporterFactory(typeStr)
+			factory := exporter.GetExporterFactory(typeStr)
 			consumer, stopFunc, err := factory.CreateMetricsExporter(zap.NewNop(), &tt.config)
 
 			if tt.mustFail {

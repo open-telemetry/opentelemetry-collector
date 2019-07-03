@@ -17,16 +17,15 @@ package loggingexporter
 import (
 	"testing"
 
-	"go.uber.org/zap"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-service/factories"
+	"github.com/open-telemetry/opentelemetry-service/exporter"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := factories.GetExporterFactory(typeStr)
+	factory := exporter.GetExporterFactory(typeStr)
 	require.NotNil(t, factory)
 
 	cfg := factory.CreateDefaultConfig()
@@ -34,7 +33,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 }
 
 func TestCreateMetricsExporter(t *testing.T) {
-	factory := factories.GetExporterFactory(typeStr)
+	factory := exporter.GetExporterFactory(typeStr)
 	cfg := factory.CreateDefaultConfig()
 
 	_, _, err := factory.CreateMetricsExporter(zap.NewNop(), cfg)
@@ -42,7 +41,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 }
 
 func TestCreateTraceExporter(t *testing.T) {
-	factory := factories.GetExporterFactory(typeStr)
+	factory := exporter.GetExporterFactory(typeStr)
 	cfg := factory.CreateDefaultConfig()
 
 	_, _, err := factory.CreateTraceExporter(zap.NewNop(), cfg)

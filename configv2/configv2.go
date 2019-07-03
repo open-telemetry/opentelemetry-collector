@@ -24,6 +24,7 @@ import (
 
 	"github.com/spf13/viper"
 
+	"github.com/open-telemetry/opentelemetry-service/exporter"
 	"github.com/open-telemetry/opentelemetry-service/factories"
 	"github.com/open-telemetry/opentelemetry-service/models"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
@@ -248,7 +249,7 @@ func loadExporters(v *viper.Viper) (models.Exporters, error) {
 		}
 
 		// Find exporter factory based on "type" that we read from config source
-		factory := factories.GetExporterFactory(typeStr)
+		factory := exporter.GetExporterFactory(typeStr)
 		if factory == nil {
 			return nil, &configError{
 				code: errUnknownExporterType,

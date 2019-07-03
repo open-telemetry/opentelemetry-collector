@@ -27,44 +27,6 @@ import (
 ///////////////////////////////////////////////////////////////////////////////
 // Exporter factory and its registry.
 
-// StopFunc is a function that can be called to stop an exporter that
-// was created previously.
-type StopFunc func() error
-
-// ExporterFactory is factory interface for exporters. Note: only configuration-related
-// functionality exists for now. We will add more factory functionality in the future.
-type ExporterFactory interface {
-	// Type gets the type of the Exporter created by this factory.
-	Type() string
-
-	// CreateDefaultConfig creates the default configuration for the Exporter.
-	CreateDefaultConfig() models.Exporter
-
-	// CreateTraceExporter creates a trace exporter based on this config.
-	CreateTraceExporter(logger *zap.Logger, cfg models.Exporter) (consumer.TraceConsumer, StopFunc, error)
-
-	// CreateMetricsExporter creates a metrics exporter based on this config.
-	CreateMetricsExporter(logger *zap.Logger, cfg models.Exporter) (consumer.MetricsConsumer, StopFunc, error)
-}
-
-// List of registered exporter factories.
-var exporterFactories = make(map[string]ExporterFactory)
-
-// RegisterExporterFactory registers a exporter factory.
-func RegisterExporterFactory(factory ExporterFactory) error {
-	if exporterFactories[factory.Type()] != nil {
-		panic(fmt.Sprintf("duplicate exporter factory %q", factory.Type()))
-	}
-
-	exporterFactories[factory.Type()] = factory
-	return nil
-}
-
-// GetExporterFactory gets a exporter factory by type string.
-func GetExporterFactory(typeStr string) ExporterFactory {
-	return exporterFactories[typeStr]
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 // Processor factory and its registry.
 
