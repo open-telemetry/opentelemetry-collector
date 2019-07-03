@@ -1,0 +1,19 @@
+receivers:
+  vmmetrics:
+  vmmetrics/customname:
+    scrape_interval: 5s
+    mount_point: /mountpoint
+    process_mount_point: /proc
+    metric_prefix: testmetric
+
+processors:
+  exampleprocessor:
+
+exporters:
+  exampleexporter:
+
+pipelines:
+  traces:
+    receivers: [vmmetrics]
+    processors: [exampleprocessor]
+    exporters: [exampleexporter]
