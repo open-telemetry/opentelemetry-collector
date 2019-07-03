@@ -22,15 +22,15 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-service/configv2"
-	"github.com/open-telemetry/opentelemetry-service/factories"
 	"github.com/open-telemetry/opentelemetry-service/models"
+	"github.com/open-telemetry/opentelemetry-service/processor"
 )
 
 var _ = configv2.RegisterTestFactories()
 
 func TestLoadConfig(t *testing.T) {
 
-	factory := factories.GetProcessorFactory(typeStr)
+	factory := processor.GetProcessorFactory(typeStr)
 
 	config, err := configv2.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"))
 

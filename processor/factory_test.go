@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package factories
+package processor
 
 import (
 	"testing"
@@ -21,7 +21,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/models"
-	"github.com/open-telemetry/opentelemetry-service/processor"
 )
 
 type ExampleProcessorFactory struct {
@@ -42,7 +41,7 @@ func (f *ExampleProcessorFactory) CreateTraceProcessor(
 	logger *zap.Logger,
 	nextConsumer consumer.TraceConsumer,
 	cfg models.Processor,
-) (processor.TraceProcessor, error) {
+) (TraceProcessor, error) {
 	return nil, models.ErrDataTypeIsNotSupported
 }
 
@@ -51,7 +50,7 @@ func (f *ExampleProcessorFactory) CreateMetricsProcessor(
 	logger *zap.Logger,
 	nextConsumer consumer.MetricsConsumer,
 	cfg models.Processor,
-) (processor.MetricsProcessor, error) {
+) (MetricsProcessor, error) {
 	return nil, models.ErrDataTypeIsNotSupported
 }
 

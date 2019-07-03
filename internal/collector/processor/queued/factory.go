@@ -18,13 +18,12 @@ import (
 	"time"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/factories"
 	"github.com/open-telemetry/opentelemetry-service/models"
 	"github.com/open-telemetry/opentelemetry-service/processor"
 	"go.uber.org/zap"
 )
 
-var _ = factories.RegisterProcessorFactory(&processorFactory{})
+var _ = processor.RegisterProcessorFactory(&processorFactory{})
 
 const (
 	// The value of "type" key in configuration.

@@ -22,11 +22,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-service/factories"
+	"github.com/open-telemetry/opentelemetry-service/processor"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := factories.GetProcessorFactory(typeStr)
+	factory := processor.GetProcessorFactory(typeStr)
 	require.NotNil(t, factory)
 
 	cfg := factory.CreateDefaultConfig()
@@ -34,7 +34,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 }
 
 func TestCreateProcessor(t *testing.T) {
-	factory := factories.GetProcessorFactory(typeStr)
+	factory := processor.GetProcessorFactory(typeStr)
 	require.NotNil(t, factory)
 
 	cfg := factory.CreateDefaultConfig()

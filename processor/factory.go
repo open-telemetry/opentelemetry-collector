@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package factories
+package processor
 
 import (
 	"fmt"
@@ -21,17 +21,10 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/models"
-	"github.com/open-telemetry/opentelemetry-service/processor"
 )
 
-///////////////////////////////////////////////////////////////////////////////
-// Exporter factory and its registry.
-
-///////////////////////////////////////////////////////////////////////////////
-// Processor factory and its registry.
-
-// ProcessorFactory is factory interface for processors.
-type ProcessorFactory interface {
+// Factory is factory interface for processors.
+type Factory interface {
 	// Type gets the type of the Processor created by this factory.
 	Type() string
 
@@ -42,20 +35,20 @@ type ProcessorFactory interface {
 	// If the processor type does not support tracing or if the config is not valid
 	// error will be returned instead.
 	CreateTraceProcessor(logger *zap.Logger, nextConsumer consumer.TraceConsumer,
-		cfg models.Processor) (processor.TraceProcessor, error)
+		cfg models.Processor) (TraceProcessor, error)
 
 	// CreateMetricsProcessor creates a metrics processor based on this config.
 	// If the processor type does not support metrics or if the config is not valid
 	// error will be returned instead.
 	CreateMetricsProcessor(logger *zap.Logger, nextConsumer consumer.MetricsConsumer,
-		cfg models.Processor) (processor.MetricsProcessor, error)
+		cfg models.Processor) (MetricsProcessor, error)
 }
 
 // List of registered processor factories.
-var processorFactories = make(map[string]ProcessorFactory)
+var processorFactories = make(map[string]Factory)
 
 // RegisterProcessorFactory registers a processor factory.
-func RegisterProcessorFactory(factory ProcessorFactory) error {
+func RegisterProcessorFactory(factory Factory) error {
 	if processorFactories[factory.Type()] != nil {
 		panic(fmt.Sprintf("duplicate processor factory %q", factory.Type()))
 	}
@@ -65,6 +58,6 @@ func RegisterProcessorFactory(factory ProcessorFactory) error {
 }
 
 // GetProcessorFactory gets a processor factory by type string.
-func GetProcessorFactory(typeStr string) ProcessorFactory {
+func GetProcessorFactory(typeStr string) Factory {
 	return processorFactories[typeStr]
 }

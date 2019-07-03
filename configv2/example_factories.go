@@ -22,7 +22,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
-	"github.com/open-telemetry/opentelemetry-service/factories"
 	"github.com/open-telemetry/opentelemetry-service/models"
 	"github.com/open-telemetry/opentelemetry-service/processor"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
@@ -330,6 +329,6 @@ func RegisterTestFactories() error {
 	_ = receiver.RegisterReceiverFactory(&ExampleReceiverFactory{})
 	_ = receiver.RegisterReceiverFactory(&MultiProtoReceiverFactory{})
 	_ = exporter.RegisterFactory(&ExampleExporterFactory{})
-	_ = factories.RegisterProcessorFactory(&ExampleProcessorFactory{})
+	_ = processor.RegisterProcessorFactory(&ExampleProcessorFactory{})
 	return nil
 }
