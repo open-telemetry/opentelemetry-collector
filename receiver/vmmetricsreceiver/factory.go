@@ -28,29 +28,29 @@ import (
 
 // This file implements factory for VMMetrics receiver.
 
-var _ = receiver.RegisterReceiverFactory(&Factory{})
+var _ = receiver.RegisterFactory(&factory{})
 
 const (
 	// The value of "type" key in configuration.
 	typeStr = "vmmetrics"
 )
 
-// Factory is the factory for receiver.
-type Factory struct {
+// factory is the factory for receiver.
+type factory struct {
 }
 
 // Type gets the type of the Receiver config created by this factory.
-func (f *Factory) Type() string {
+func (f *factory) Type() string {
 	return typeStr
 }
 
 // CustomUnmarshaler returns custom unmarshaler for this config.
-func (f *Factory) CustomUnmarshaler() receiver.CustomUnmarshaler {
+func (f *factory) CustomUnmarshaler() receiver.CustomUnmarshaler {
 	return nil
 }
 
 // CreateDefaultConfig creates the default configuration for receiver.
-func (f *Factory) CreateDefaultConfig() models.Receiver {
+func (f *factory) CreateDefaultConfig() models.Receiver {
 	return &ConfigV2{
 		ReceiverSettings: models.ReceiverSettings{
 			TypeVal: typeStr,
@@ -60,7 +60,7 @@ func (f *Factory) CreateDefaultConfig() models.Receiver {
 }
 
 // CreateTraceReceiver creates a trace receiver based on provided config.
-func (f *Factory) CreateTraceReceiver(
+func (f *factory) CreateTraceReceiver(
 	ctx context.Context,
 	logger *zap.Logger,
 	cfg models.Receiver,
@@ -71,7 +71,7 @@ func (f *Factory) CreateTraceReceiver(
 }
 
 // CreateMetricsReceiver creates a metrics receiver based on provided config.
-func (f *Factory) CreateMetricsReceiver(
+func (f *factory) CreateMetricsReceiver(
 	logger *zap.Logger,
 	config models.Receiver,
 	consumer consumer.MetricsConsumer,

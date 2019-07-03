@@ -30,7 +30,7 @@ import (
 var _ = configv2.RegisterTestFactories()
 
 func TestLoadConfig(t *testing.T) {
-	factory := receiver.GetReceiverFactory(typeStr)
+	factory := receiver.GetFactory(typeStr)
 
 	config, err := configv2.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"))
 

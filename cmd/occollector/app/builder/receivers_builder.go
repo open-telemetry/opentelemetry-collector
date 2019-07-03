@@ -221,7 +221,7 @@ func (rb *ReceiversBuilder) buildReceiver(config models.Receiver) (*builtReceive
 	}
 
 	// Prepare to build the receiver.
-	factory := receiver.GetReceiverFactory(config.Type())
+	factory := receiver.GetFactory(config.Type())
 	rcv := &builtReceiver{}
 
 	// Now we have list of pipelines broken down by data type. Iterate for each data type.

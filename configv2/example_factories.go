@@ -326,8 +326,8 @@ func (f *ExampleProcessorFactory) CreateMetricsProcessor(
 
 // RegisterTestFactories registers example factories. This is only used by tests.
 func RegisterTestFactories() error {
-	_ = receiver.RegisterReceiverFactory(&ExampleReceiverFactory{})
-	_ = receiver.RegisterReceiverFactory(&MultiProtoReceiverFactory{})
+	_ = receiver.RegisterFactory(&ExampleReceiverFactory{})
+	_ = receiver.RegisterFactory(&MultiProtoReceiverFactory{})
 	_ = exporter.RegisterFactory(&ExampleExporterFactory{})
 	_ = processor.RegisterProcessorFactory(&ExampleProcessorFactory{})
 	return nil

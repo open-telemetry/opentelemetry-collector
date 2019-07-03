@@ -183,7 +183,7 @@ func loadReceivers(v *viper.Viper) (models.Receivers, error) {
 		}
 
 		// Find receiver factory based on "type" that we read from config source
-		factory := receiver.GetReceiverFactory(typeStr)
+		factory := receiver.GetFactory(typeStr)
 		if factory == nil {
 			return nil, &configError{
 				code: errUnknownReceiverType,
