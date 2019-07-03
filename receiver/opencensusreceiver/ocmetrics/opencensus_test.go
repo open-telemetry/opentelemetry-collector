@@ -35,7 +35,7 @@ import (
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/internal"
 	"github.com/open-telemetry/opentelemetry-service/observability"
 )
@@ -332,7 +332,7 @@ func newMetricAppender() *metricAppender {
 
 var _ consumer.MetricsConsumer = (*metricAppender)(nil)
 
-func (sa *metricAppender) ConsumeMetricsData(ctx context.Context, md data.MetricsData) error {
+func (sa *metricAppender) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
 	sa.Lock()
 	defer sa.Unlock()
 

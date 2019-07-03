@@ -22,7 +22,7 @@ import (
 	"github.com/spf13/cast"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/processor"
 )
 
@@ -89,7 +89,7 @@ func NewTraceProcessor(nextConsumer consumer.TraceConsumer, options ...Option) (
 	return aap, nil
 }
 
-func (aap *addattributesprocessor) ConsumeTraceData(ctx context.Context, td data.TraceData) error {
+func (aap *addattributesprocessor) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	if len(aap.attributeMap) == 0 {
 		return aap.nextConsumer.ConsumeTraceData(ctx, td)
 	}

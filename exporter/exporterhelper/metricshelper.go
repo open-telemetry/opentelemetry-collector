@@ -20,13 +20,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/observability"
 	"go.opencensus.io/trace"
 
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
 )
 
 // PushMetricsData is a helper function that is similar to ConsumeMetricsData but also returns
 // the number of dropped metrics.
-type PushMetricsData func(ctx context.Context, td data.MetricsData) (droppedMetrics int, err error)
+type PushMetricsData func(ctx context.Context, td consumerdata.MetricsData) (droppedMetrics int, err error)
 
 type metricsExporter struct {
 	exporterFormat  string
@@ -39,7 +39,7 @@ func (me *metricsExporter) MetricsExportFormat() string {
 	return me.exporterFormat
 }
 
-func (me *metricsExporter) ConsumeMetricsData(ctx context.Context, md data.MetricsData) error {
+func (me *metricsExporter) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
 	exporterCtx := observability.ContextWithExporterName(ctx, me.exporterFormat)
 	_, err := me.pushMetricsData(exporterCtx, md)
 	return err
@@ -71,7 +71,7 @@ func NewMetricsExporter(exporterFormat string, pushMetricsData PushMetricsData, 
 }
 
 func pushMetricsDataWithSpan(next PushMetricsData, spanName string) PushMetricsData {
-	return func(ctx context.Context, md data.MetricsData) (int, error) {
+	return func(ctx context.Context, md consumerdata.MetricsData) (int, error) {
 		ctx, span := trace.StartSpan(ctx, spanName)
 		defer span.End()
 		// Call next stage.

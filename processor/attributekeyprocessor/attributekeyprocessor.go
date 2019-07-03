@@ -20,7 +20,7 @@ import (
 	"fmt"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/processor"
 )
 
@@ -72,7 +72,7 @@ func NewTraceProcessor(nextConsumer consumer.TraceConsumer, replacements ...KeyR
 	}, nil
 }
 
-func (akp *attributekeyprocessor) ConsumeTraceData(ctx context.Context, td data.TraceData) error {
+func (akp *attributekeyprocessor) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	if len(akp.replacements) == 0 {
 		return akp.nextConsumer.ConsumeTraceData(ctx, td)
 	}

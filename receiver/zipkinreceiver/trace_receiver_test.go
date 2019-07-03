@@ -34,7 +34,7 @@ import (
 	zhttp "github.com/openzipkin/zipkin-go/reporter/http"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-service/internal"
 	"github.com/open-telemetry/opentelemetry-service/internal/testutils"
@@ -293,7 +293,7 @@ func TestConversionRoundtrip(t *testing.T) {
 		t.Fatalf("Failed to parse and convert receiver JSON: %v", err)
 	}
 
-	wantProtoRequests := []data.TraceData{
+	wantProtoRequests := []consumerdata.TraceData{
 		{
 			Node: &commonpb.Node{
 				ServiceInfo: &commonpb.ServiceInfo{Name: "frontend"},

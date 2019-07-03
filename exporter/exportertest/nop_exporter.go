@@ -17,7 +17,7 @@ package exportertest
 import (
 	"context"
 
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
 )
 
@@ -29,11 +29,11 @@ type nopExporter struct{ retError error }
 var _ exporter.TraceExporter = (*nopExporter)(nil)
 var _ exporter.MetricsExporter = (*nopExporter)(nil)
 
-func (ne *nopExporter) ConsumeTraceData(ctx context.Context, td data.TraceData) error {
+func (ne *nopExporter) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	return ne.retError
 }
 
-func (ne *nopExporter) ConsumeMetricsData(ctx context.Context, md data.MetricsData) error {
+func (ne *nopExporter) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
 	return ne.retError
 }
 

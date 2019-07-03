@@ -20,7 +20,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
 	"github.com/open-telemetry/opentelemetry-service/factories"
 	"github.com/open-telemetry/opentelemetry-service/models"
@@ -265,18 +265,18 @@ func (f *ExampleExporterFactory) CreateMetricsExporter(logger *zap.Logger, cfg m
 
 // ExampleExporterConsumer stores consumed traces and metrics for testing purposes.
 type ExampleExporterConsumer struct {
-	Traces  []data.TraceData
-	Metrics []data.MetricsData
+	Traces  []consumerdata.TraceData
+	Metrics []consumerdata.MetricsData
 }
 
-// ConsumeTraceData receives data.TraceData for processing by the TraceConsumer.
-func (exp *ExampleExporterConsumer) ConsumeTraceData(ctx context.Context, td data.TraceData) error {
+// ConsumeTraceData receives consumerdata.TraceData for processing by the TraceConsumer.
+func (exp *ExampleExporterConsumer) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	exp.Traces = append(exp.Traces, td)
 	return nil
 }
 
-// ConsumeMetricsData receives data.MetricsData for processing by the MetricsConsumer.
-func (exp *ExampleExporterConsumer) ConsumeMetricsData(ctx context.Context, md data.MetricsData) error {
+// ConsumeMetricsData receives consumerdata.MetricsData for processing by the MetricsConsumer.
+func (exp *ExampleExporterConsumer) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
 	exp.Metrics = append(exp.Metrics, md)
 	return nil
 }

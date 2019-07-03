@@ -22,7 +22,7 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"go.opencensus.io/trace"
 
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
 	"github.com/open-telemetry/opentelemetry-service/observability"
 	"github.com/open-telemetry/opentelemetry-service/observability/observabilitytest"
@@ -47,7 +47,7 @@ func TestTraceExporter_NilPushTraceData(t *testing.T) {
 	}
 }
 func TestTraceExporter_Default(t *testing.T) {
-	td := data.TraceData{}
+	td := consumerdata.TraceData{}
 	te, err := NewTraceExporter(fakeExporterName, newPushTraceData(0, nil))
 	if err != nil {
 		t.Fatalf("NewTraceExporter returns: Want nil Got %v", err)
@@ -61,7 +61,7 @@ func TestTraceExporter_Default(t *testing.T) {
 }
 
 func TestTraceExporter_Default_ReturnError(t *testing.T) {
-	td := data.TraceData{}
+	td := consumerdata.TraceData{}
 	want := errors.New("my_error")
 	te, err := NewTraceExporter(fakeExporterName, newPushTraceData(0, want))
 	if err != nil {
@@ -123,7 +123,7 @@ func TestTraceExporter_WithSpan_ReturnError(t *testing.T) {
 }
 
 func newPushTraceData(droppedSpans int, retError error) PushTraceData {
-	return func(ctx context.Context, td data.TraceData) (int, error) {
+	return func(ctx context.Context, td consumerdata.TraceData) (int, error) {
 		return droppedSpans, retError
 	}
 }
@@ -133,7 +133,7 @@ func checkRecordedMetricsForTraceExporter(t *testing.T, te exporter.TraceExporte
 	defer doneFn()
 
 	spans := make([]*tracepb.Span, 2, 2)
-	td := data.TraceData{Spans: spans}
+	td := consumerdata.TraceData{Spans: spans}
 	ctx := observability.ContextWithReceiverName(context.Background(), fakeReceiverName)
 	const numBatches = 7
 	for i := 0; i < numBatches; i++ {
@@ -151,7 +151,7 @@ func checkRecordedMetricsForTraceExporter(t *testing.T, te exporter.TraceExporte
 }
 
 func generateTraceTraffic(t *testing.T, te exporter.TraceExporter, numRequests int, wantError error) {
-	td := data.TraceData{Spans: make([]*tracepb.Span, 1, 1)}
+	td := consumerdata.TraceData{Spans: make([]*tracepb.Span, 1, 1)}
 	ctx, span := trace.StartSpan(context.Background(), fakeParentSpanName, trace.WithSampler(trace.AlwaysSample()))
 	defer span.End()
 	for i := 0; i < numRequests; i++ {

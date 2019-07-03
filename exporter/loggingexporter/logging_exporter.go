@@ -17,7 +17,7 @@ package loggingexporter
 import (
 	"context"
 
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exporterhelper"
 	"go.uber.org/zap"
@@ -33,7 +33,7 @@ const (
 func NewTraceExporter(logger *zap.Logger) (exporter.TraceExporter, error) {
 	return exporterhelper.NewTraceExporter(
 		traceExportFormat,
-		func(ctx context.Context, td data.TraceData) (int, error) {
+		func(ctx context.Context, td consumerdata.TraceData) (int, error) {
 			logger.Debug("loggingTraceExporter", zap.Int("#spans", len(td.Spans)))
 			// TODO: Add ability to record the received data
 			return 0, nil
@@ -47,7 +47,7 @@ func NewTraceExporter(logger *zap.Logger) (exporter.TraceExporter, error) {
 func NewMetricsExporter(logger *zap.Logger) (exporter.MetricsExporter, error) {
 	return exporterhelper.NewMetricsExporter(
 		metricsExportFormat,
-		func(ctx context.Context, md data.MetricsData) (int, error) {
+		func(ctx context.Context, md consumerdata.MetricsData) (int, error) {
 			logger.Debug("loggingMetricsExporter", zap.Int("#metrics", len(md.Metrics)))
 			// TODO: Add ability to record the received data
 			return 0, nil

@@ -23,7 +23,7 @@ import (
 	jaegerproto "github.com/jaegertracing/jaeger/proto-gen/api_v2"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/errors/errorkind"
 	jaegertranslator "github.com/open-telemetry/opentelemetry-service/translator/trace/jaeger"
 )
@@ -51,8 +51,8 @@ func NewJaegerProtoGRPCSender(collectorEndpoint string, zlogger *zap.Logger) *Ja
 	return s
 }
 
-// ConsumeTraceData receives data.TraceData for processing by the JaegerProtoGRPCSender.
-func (s *JaegerProtoGRPCSender) ConsumeTraceData(ctx context.Context, td data.TraceData) error {
+// ConsumeTraceData receives consumerdata.TraceData for processing by the JaegerProtoGRPCSender.
+func (s *JaegerProtoGRPCSender) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	protoBatch, err := jaegertranslator.OCProtoToJaegerProto(td)
 	if err != nil {
 		s.logger.Warn("Error translating OC proto batch to Jaeger proto", zap.Error(err))

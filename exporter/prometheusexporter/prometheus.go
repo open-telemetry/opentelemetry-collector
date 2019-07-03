@@ -22,7 +22,7 @@ import (
 	"strings"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/spf13/viper"
 
 	// TODO: once this repository has been transferred to the
@@ -103,7 +103,7 @@ type prometheusExporter struct {
 
 var _ consumer.MetricsConsumer = (*prometheusExporter)(nil)
 
-func (pe *prometheusExporter) ConsumeMetricsData(ctx context.Context, md data.MetricsData) error {
+func (pe *prometheusExporter) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
 	for _, metric := range md.Metrics {
 		_ = pe.exporter.ExportMetric(ctx, md.Node, md.Resource, metric)
 	}

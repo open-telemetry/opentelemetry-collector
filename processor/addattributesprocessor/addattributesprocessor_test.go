@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
 )
 
@@ -41,7 +41,7 @@ func TestAddAttributesProcessorWithEmptyMap(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unexpected error when creating: want nil got %v", err)
 	}
-	if got := tt.ConsumeTraceData(context.Background(), data.TraceData{}); got != want {
+	if got := tt.ConsumeTraceData(context.Background(), consumerdata.TraceData{}); got != want {
 		t.Fatalf("ConsumeTraceData return error: want %v got %v", want, got)
 	}
 }
@@ -52,7 +52,7 @@ func TestAddAttributesProcessorWithEmptyMapReturnsError(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unexpected error when creating: want nil got %v", err)
 	}
-	if got := tt.ConsumeTraceData(context.Background(), data.TraceData{}); got != want {
+	if got := tt.ConsumeTraceData(context.Background(), consumerdata.TraceData{}); got != want {
 		t.Fatalf("ConsumeTraceData return error: want %v got %v", want, got)
 	}
 }
@@ -73,7 +73,7 @@ func TestAddAttributesProcessorNoAttributesAndNilSpan(t *testing.T) {
 		t.Fatalf("Unexpected error when creating: want nil got %v", err)
 	}
 
-	td := data.TraceData{}
+	td := consumerdata.TraceData{}
 	td.Spans = append(td.Spans, nil, &tracepb.Span{
 		Name: &tracepb.TruncatableString{Value: "foo"},
 	})
@@ -135,7 +135,7 @@ func addAttributesProcessorTestHelper(t *testing.T, overwrite bool) {
 		t.Fatalf("Unexpected error when creating: want nil got %v", err)
 	}
 
-	td := data.TraceData{}
+	td := consumerdata.TraceData{}
 	for i := 0; i < 7; i++ {
 		td.Spans = append(td.Spans, &tracepb.Span{
 			Attributes: &tracepb.Span_Attributes{

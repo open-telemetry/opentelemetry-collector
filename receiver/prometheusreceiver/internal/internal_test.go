@@ -17,7 +17,7 @@ package internal
 import (
 	"context"
 	"errors"
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/scrape"
 	"go.uber.org/zap"
@@ -50,16 +50,16 @@ func (m *mockMetadataCache) SharedLabels() labels.Labels {
 
 func newMockConsumer() *mockConsumer {
 	return &mockConsumer{
-		Metrics: make(chan *data.MetricsData, 1),
+		Metrics: make(chan *consumerdata.MetricsData, 1),
 	}
 }
 
 type mockConsumer struct {
-	Metrics    chan *data.MetricsData
+	Metrics    chan *consumerdata.MetricsData
 	consumOnce sync.Once
 }
 
-func (m *mockConsumer) ConsumeMetricsData(ctx context.Context, md data.MetricsData) error {
+func (m *mockConsumer) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
 	m.consumOnce.Do(func() {
 		m.Metrics <- &md
 	})

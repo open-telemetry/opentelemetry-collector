@@ -25,7 +25,7 @@ import (
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/internal"
 )
 
@@ -113,7 +113,7 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 		t.Fatalf("Expecting exactly 2 requests since spans have different node/localEndpoint: %v", g)
 	}
 
-	want := []data.TraceData{
+	want := []consumerdata.TraceData{
 		{
 			Node: &commonpb.Node{
 				ServiceInfo: &commonpb.ServiceInfo{

@@ -26,7 +26,7 @@ import (
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"github.com/pkg/errors"
 
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
 )
 
@@ -84,7 +84,7 @@ type binaryAnnotation struct {
 }
 
 // V1JSONBatchToOCProto converts a JSON blob with a list of Zipkin v1 spans to OC Proto.
-func V1JSONBatchToOCProto(blob []byte) ([]data.TraceData, error) {
+func V1JSONBatchToOCProto(blob []byte) ([]consumerdata.TraceData, error) {
 	var zSpans []*zipkinV1Span
 	if err := json.Unmarshal(blob, &zSpans); err != nil {
 		return nil, errors.WithMessage(err, msgZipkinV1JSONUnmarshalError)
@@ -111,15 +111,15 @@ type ocSpanAndParsedAnnotations struct {
 	parsedAnnotations *annotationParseResult
 }
 
-func zipkinToOCProtoBatch(ocSpansAndParsedAnnotations []ocSpanAndParsedAnnotations) ([]data.TraceData, error) {
+func zipkinToOCProtoBatch(ocSpansAndParsedAnnotations []ocSpanAndParsedAnnotations) ([]consumerdata.TraceData, error) {
 	// Service to batch maps the service name to the trace request with the corresponding node.
-	svcToTD := make(map[string]*data.TraceData)
+	svcToTD := make(map[string]*consumerdata.TraceData)
 	for _, curr := range ocSpansAndParsedAnnotations {
 		req := getOrCreateNodeRequest(svcToTD, curr.parsedAnnotations.Endpoint)
 		req.Spans = append(req.Spans, curr.ocSpan)
 	}
 
-	tds := make([]data.TraceData, 0, len(svcToTD))
+	tds := make([]consumerdata.TraceData, 0, len(svcToTD))
 	for _, v := range svcToTD {
 		tds = append(tds, *v)
 	}
@@ -382,7 +382,7 @@ func epochMicrosecondsToTimestamp(msecs int64) *timestamp.Timestamp {
 	return t
 }
 
-func getOrCreateNodeRequest(m map[string]*data.TraceData, endpoint *endpoint) *data.TraceData {
+func getOrCreateNodeRequest(m map[string]*consumerdata.TraceData, endpoint *endpoint) *consumerdata.TraceData {
 	// this private function assumes that the caller never passes an nil endpoint
 	nodeKey := endpoint.string()
 	req := m[nodeKey]
@@ -391,7 +391,7 @@ func getOrCreateNodeRequest(m map[string]*data.TraceData, endpoint *endpoint) *d
 		return req
 	}
 
-	req = &data.TraceData{
+	req = &consumerdata.TraceData{
 		Node: &commonpb.Node{
 			ServiceInfo: &commonpb.ServiceInfo{Name: endpoint.ServiceName},
 		},

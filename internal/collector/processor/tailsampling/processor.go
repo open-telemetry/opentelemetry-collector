@@ -27,7 +27,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/internal/collector/processor/idbatcher"
 	"github.com/open-telemetry/opentelemetry-service/internal/collector/sampling"
 	"github.com/open-telemetry/opentelemetry-service/observability"
@@ -183,7 +183,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 }
 
 // ConsumeTraceData is required by the SpanProcessor interface.
-func (tsp *tailSamplingSpanProcessor) ConsumeTraceData(ctx context.Context, td data.TraceData) error {
+func (tsp *tailSamplingSpanProcessor) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	tsp.start.Do(func() {
 		tsp.logger.Info("First trace data arrived, starting tail-sampling timers")
 		tsp.policyTicker.Start(1 * time.Second)
@@ -306,13 +306,13 @@ func (tsp *tailSamplingSpanProcessor) dropTrace(traceID traceKey, deletionTime t
 	}
 }
 
-func prepareTraceBatch(spans []*tracepb.Span, singleTrace bool, td data.TraceData) data.TraceData {
-	var traceTd data.TraceData
+func prepareTraceBatch(spans []*tracepb.Span, singleTrace bool, td consumerdata.TraceData) consumerdata.TraceData {
+	var traceTd consumerdata.TraceData
 	if singleTrace {
 		// Special case no need to prepare a batch
 		traceTd = td
 	} else {
-		traceTd = data.TraceData{
+		traceTd = consumerdata.TraceData{
 			Node:     td.Node,
 			Resource: td.Resource,
 			Spans:    spans,

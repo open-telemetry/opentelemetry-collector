@@ -27,12 +27,12 @@ import (
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"github.com/pkg/errors"
 
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
 )
 
 // V1ThriftBatchToOCProto converts Zipkin v1 spans to OC Proto.
-func V1ThriftBatchToOCProto(zSpans []*zipkincore.Span) ([]data.TraceData, error) {
+func V1ThriftBatchToOCProto(zSpans []*zipkincore.Span) ([]consumerdata.TraceData, error) {
 	ocSpansAndParsedAnnotations := make([]ocSpanAndParsedAnnotations, 0, len(zSpans))
 	for _, zSpan := range zSpans {
 		ocSpan, parsedAnnotations, err := zipkinV1ThriftToOCSpan(zSpan)

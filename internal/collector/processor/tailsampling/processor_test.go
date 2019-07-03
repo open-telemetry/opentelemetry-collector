@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/internal/collector/processor/idbatcher"
 	"github.com/open-telemetry/opentelemetry-service/internal/collector/sampling"
 	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
@@ -62,12 +62,12 @@ func TestConcurrentTraceArrival(t *testing.T) {
 	for _, batch := range batches {
 		// Add the same traceId twice.
 		wg.Add(2)
-		go func(td data.TraceData) {
+		go func(td consumerdata.TraceData) {
 			td.SourceFormat = "test-0"
 			tsp.ConsumeTraceData(context.Background(), td)
 			wg.Done()
 		}(batch)
-		go func(td data.TraceData) {
+		go func(td consumerdata.TraceData) {
 			td.SourceFormat = "test-1"
 			tsp.ConsumeTraceData(context.Background(), td)
 			wg.Done()
@@ -112,7 +112,7 @@ func TestConcurrentTraceMapSize(t *testing.T) {
 	tsp := sp.(*tailSamplingSpanProcessor)
 	for _, batch := range batches {
 		wg.Add(1)
-		go func(td data.TraceData) {
+		go func(td consumerdata.TraceData) {
 			tsp.ConsumeTraceData(context.Background(), td)
 			wg.Done()
 		}(batch)
@@ -192,13 +192,13 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 	}
 }
 
-func generateIdsAndBatches(numIds int) ([][]byte, []data.TraceData) {
+func generateIdsAndBatches(numIds int) ([][]byte, []consumerdata.TraceData) {
 	traceIds := make([][]byte, numIds, numIds)
 	for i := 0; i < numIds; i++ {
 		traceIds[i] = tracetranslator.UInt64ToByteTraceID(1, uint64(i+1))
 	}
 
-	tds := []data.TraceData{}
+	tds := []consumerdata.TraceData{}
 	for i := range traceIds {
 		spans := make([]*tracepb.Span, i+1)
 		for j := range spans {
@@ -210,7 +210,7 @@ func generateIdsAndBatches(numIds int) ([][]byte, []data.TraceData) {
 
 		// Send each span in a separate batch
 		for _, span := range spans {
-			td := data.TraceData{
+			td := consumerdata.TraceData{
 				Spans:        []*tracepb.Span{span},
 				SourceFormat: "test",
 			}
@@ -307,7 +307,7 @@ type mockSpanProcessor struct {
 
 var _ consumer.TraceConsumer = &mockSpanProcessor{}
 
-func (p *mockSpanProcessor) ConsumeTraceData(ctx context.Context, td data.TraceData) error {
+func (p *mockSpanProcessor) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	batchSize := len(td.Spans)
 	p.TotalSpans += batchSize
 	return nil

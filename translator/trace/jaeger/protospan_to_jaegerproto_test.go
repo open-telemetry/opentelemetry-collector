@@ -26,13 +26,13 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 	jaeger "github.com/jaegertracing/jaeger/model"
 
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/internal/testutils"
 	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
 )
 
 func TestNilOCProtoNodeToJaegerProto(t *testing.T) {
-	nilNodeBatch := data.TraceData{
+	nilNodeBatch := consumerdata.TraceData{
 		Spans: []*tracepb.Span{
 			{
 				TraceId: []byte("0123456789abcdef"),
@@ -301,7 +301,7 @@ func TestOCStatusToJaegerProtoTags(t *testing.T) {
 	fakeTraceID := []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}
 	fakeSpanID := []byte{0, 1, 2, 3, 4, 5, 6, 7}
 	for i, c := range cases {
-		gb, err := OCProtoToJaegerProto(data.TraceData{
+		gb, err := OCProtoToJaegerProto(consumerdata.TraceData{
 			Spans: []*tracepb.Span{{
 				TraceId:    fakeTraceID,
 				SpanId:     fakeSpanID,
@@ -326,7 +326,7 @@ func TestOCStatusToJaegerProtoTags(t *testing.T) {
 
 // ocBatches has the OpenCensus proto batches used in the test. They are hard coded because
 // structs like tracepb.AttributeMap cannot be read from JSON.
-var ocBatches = []data.TraceData{
+var ocBatches = []consumerdata.TraceData{
 	{
 		Node: &commonpb.Node{
 			Identifier: &commonpb.ProcessIdentifier{

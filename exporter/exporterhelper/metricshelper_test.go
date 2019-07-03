@@ -21,7 +21,7 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"go.opencensus.io/trace"
 
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
 )
 
@@ -37,7 +37,7 @@ func TestMetricsExporter_NilPushMetricsData(t *testing.T) {
 	}
 }
 func TestMetricsExporter_Default(t *testing.T) {
-	td := data.MetricsData{}
+	td := consumerdata.MetricsData{}
 	te, err := NewMetricsExporter(fakeExporterName, newPushMetricsData(0, nil))
 	if err != nil {
 		t.Fatalf("NewMetricsExporter returns: Want nil Got %v", err)
@@ -51,7 +51,7 @@ func TestMetricsExporter_Default(t *testing.T) {
 }
 
 func TestMetricsExporter_Default_ReturnError(t *testing.T) {
-	td := data.MetricsData{}
+	td := consumerdata.MetricsData{}
 	want := errors.New("my_error")
 	te, err := NewMetricsExporter(fakeExporterName, newPushMetricsData(0, want))
 	if err != nil {
@@ -88,13 +88,13 @@ func TestMetricsExporter_WithSpan_ReturnError(t *testing.T) {
 }
 
 func newPushMetricsData(droppedSpans int, retError error) PushMetricsData {
-	return func(ctx context.Context, td data.MetricsData) (int, error) {
+	return func(ctx context.Context, td consumerdata.MetricsData) (int, error) {
 		return droppedSpans, retError
 	}
 }
 
 func generateMetricsTraffic(t *testing.T, te exporter.MetricsExporter, numRequests int, wantError error) {
-	td := data.MetricsData{Metrics: make([]*metricspb.Metric, 1, 1)}
+	td := consumerdata.MetricsData{Metrics: make([]*metricspb.Metric, 1, 1)}
 	ctx, span := trace.StartSpan(context.Background(), fakeParentSpanName, trace.WithSampler(trace.AlwaysSample()))
 	defer span.End()
 	for i := 0; i < numRequests; i++ {

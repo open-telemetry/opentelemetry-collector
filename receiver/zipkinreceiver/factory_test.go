@@ -22,7 +22,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/models"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
@@ -36,7 +36,9 @@ func TestCreateDefaultConfig(t *testing.T) {
 type mockTraceConsumer struct {
 }
 
-func (m *mockTraceConsumer) ConsumeTraceData(ctx context.Context, td data.TraceData) error { return nil }
+func (m *mockTraceConsumer) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
+	return nil
+}
 
 func TestCreateReceiver(t *testing.T) {
 	factory := receiver.GetReceiverFactory(typeStr)

@@ -27,7 +27,7 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/internal/testutils"
 	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
 )
@@ -93,7 +93,7 @@ func TestThriftInvalidOCProtoIDs(t *testing.T) {
 }
 
 func TestNilOCProtoNodeToJaegerThrift(t *testing.T) {
-	nilNodeBatch := data.TraceData{
+	nilNodeBatch := consumerdata.TraceData{
 		Spans: []*tracepb.Span{
 			{
 				TraceId: []byte("0123456789abcdef"),
@@ -358,7 +358,7 @@ func TestOCStatusToJaegerThriftTags(t *testing.T) {
 	fakeTraceID := []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}
 	fakeSpanID := []byte{0, 1, 2, 3, 4, 5, 6, 7}
 	for i, c := range cases {
-		gb, err := OCProtoToJaegerThrift(data.TraceData{
+		gb, err := OCProtoToJaegerThrift(consumerdata.TraceData{
 			Spans: []*tracepb.Span{{
 				TraceId:    fakeTraceID,
 				SpanId:     fakeSpanID,
@@ -382,7 +382,7 @@ func TestOCStatusToJaegerThriftTags(t *testing.T) {
 
 // tds has the TraceData proto used in the test. They are hard coded because
 // structs like tracepb.AttributeMap cannot be ready from JSON.
-var tds = []data.TraceData{
+var tds = []consumerdata.TraceData{
 	{
 		Node: &commonpb.Node{
 			Identifier: &commonpb.ProcessIdentifier{

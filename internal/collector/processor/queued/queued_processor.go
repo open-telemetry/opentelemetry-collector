@@ -26,7 +26,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/errors/errorkind"
 	"github.com/open-telemetry/opentelemetry-service/internal/collector/processor"
 	"github.com/open-telemetry/opentelemetry-service/internal/collector/processor/nodebatcher"
@@ -49,7 +49,7 @@ var _ consumer.TraceConsumer = (*queuedSpanProcessor)(nil)
 
 type queueItem struct {
 	queuedTime time.Time
-	td         data.TraceData
+	td         consumerdata.TraceData
 	ctx        context.Context
 }
 
@@ -113,7 +113,7 @@ func (sp *queuedSpanProcessor) Stop() {
 }
 
 // ConsumeTraceData implements the SpanProcessor interface
-func (sp *queuedSpanProcessor) ConsumeTraceData(ctx context.Context, td data.TraceData) error {
+func (sp *queuedSpanProcessor) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	item := &queueItem{
 		queuedTime: time.Now(),
 		td:         td,

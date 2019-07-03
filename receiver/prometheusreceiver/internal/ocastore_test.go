@@ -18,7 +18,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-kit/kit/log"
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/prometheus/prometheus/discovery"
 	"net/http"
 	"net/http/httptest"
@@ -141,7 +141,7 @@ func TestOcaStoreIntegration(t *testing.T) {
 			mc, cancel := startScraper(target.Host)
 			defer cancel()
 
-			var d *data.MetricsData
+			var d *consumerdata.MetricsData
 			select {
 			case d = <-mc.Metrics:
 			case <-time.After(time.Second * 10):

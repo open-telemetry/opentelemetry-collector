@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/processor"
 )
 
@@ -30,11 +30,11 @@ type nopProcessor struct {
 var _ processor.TraceProcessor = (*nopProcessor)(nil)
 var _ processor.MetricsProcessor = (*nopProcessor)(nil)
 
-func (np *nopProcessor) ConsumeTraceData(ctx context.Context, td data.TraceData) error {
+func (np *nopProcessor) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	return np.nextTraceProcessor.ConsumeTraceData(ctx, td)
 }
 
-func (np *nopProcessor) ConsumeMetricsData(ctx context.Context, md data.MetricsData) error {
+func (np *nopProcessor) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
 	return np.nextMetricsProcessor.ConsumeMetricsData(ctx, md)
 }
 

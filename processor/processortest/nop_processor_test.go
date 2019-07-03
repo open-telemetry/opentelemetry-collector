@@ -20,14 +20,14 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
 )
 
 func TestNopTraceProcessorNoErrors(t *testing.T) {
 	sink := new(exportertest.SinkTraceExporter)
 	ntp := NewNopTraceProcessor(sink)
-	want := data.TraceData{
+	want := consumerdata.TraceData{
 		Spans: make([]*tracepb.Span, 7),
 	}
 	if err := ntp.ConsumeTraceData(context.Background(), want); err != nil {
@@ -43,7 +43,7 @@ func TestNopTraceProcessorNoErrors(t *testing.T) {
 func TestNopMetricsProcessorNoErrors(t *testing.T) {
 	sink := new(exportertest.SinkMetricsExporter)
 	nmp := NewNopMetricsProcessor(sink)
-	want := data.MetricsData{
+	want := consumerdata.MetricsData{
 		Metrics: make([]*metricspb.Metric, 7),
 	}
 	if err := nmp.ConsumeMetricsData(context.Background(), want); err != nil {

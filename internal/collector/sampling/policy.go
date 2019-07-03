@@ -20,7 +20,7 @@ import (
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 )
 
 // TraceData stores the sampling related trace data.
@@ -35,7 +35,7 @@ type TraceData struct {
 	// SpanCount track the number of spans on the trace.
 	SpanCount int64
 	// ReceivedBatches stores all the batches received for the trace.
-	ReceivedBatches []data.TraceData
+	ReceivedBatches []consumerdata.TraceData
 }
 
 // Decision gives the status of sampling decision.

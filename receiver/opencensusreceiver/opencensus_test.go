@@ -30,7 +30,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-service/internal"
 	"github.com/open-telemetry/opentelemetry-service/receiver/receivertest"
@@ -114,7 +114,7 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 
 	got := sink.AllTraces()
 
-	want := []data.TraceData{
+	want := []consumerdata.TraceData{
 		{
 			Node: &commonpb.Node{
 				Identifier: &commonpb.ProcessIdentifier{HostName: "testHost"},

@@ -26,13 +26,13 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/errors/errorkind"
 )
 
 func TestQueuedProcessor_noEnqueueOnPermanentError(t *testing.T) {
 	ctx := context.Background()
-	td := data.TraceData{
+	td := consumerdata.TraceData{
 		Spans: make([]*tracepb.Span, 7),
 	}
 
@@ -72,7 +72,7 @@ type waitGroupTraceConsumer struct {
 
 var _ consumer.TraceConsumer = (*waitGroupTraceConsumer)(nil)
 
-func (c *waitGroupTraceConsumer) ConsumeTraceData(ctx context.Context, td data.TraceData) error {
+func (c *waitGroupTraceConsumer) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	defer c.Done()
 	return c.consumeTraceDataError
 }
@@ -80,7 +80,7 @@ func (c *waitGroupTraceConsumer) ConsumeTraceData(ctx context.Context, td data.T
 func TestQueueProcessorHappyPath(t *testing.T) {
 	mockProc := newMockConcurrentSpanProcessor()
 	qp := NewQueuedSpanProcessor(mockProc)
-	goFn := func(td data.TraceData) {
+	goFn := func(td consumerdata.TraceData) {
 		qp.ConsumeTraceData(context.Background(), td)
 	}
 
@@ -88,7 +88,7 @@ func TestQueueProcessorHappyPath(t *testing.T) {
 	wantBatches := 10
 	wantSpans := 0
 	for i := 0; i < wantBatches; i++ {
-		td := data.TraceData{
+		td := consumerdata.TraceData{
 			Spans:        spans,
 			SourceFormat: "oc_trace",
 		}
@@ -117,7 +117,7 @@ type mockConcurrentSpanProcessor struct {
 
 var _ consumer.TraceConsumer = (*mockConcurrentSpanProcessor)(nil)
 
-func (p *mockConcurrentSpanProcessor) ConsumeTraceData(ctx context.Context, td data.TraceData) error {
+func (p *mockConcurrentSpanProcessor) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	atomic.AddInt32(&p.batchCount, 1)
 	atomic.AddInt32(&p.spanCount, int32(len(td.Spans)))
 	p.waitGroup.Done()

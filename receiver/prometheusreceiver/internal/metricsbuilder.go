@@ -26,7 +26,7 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/pkg/textparse"
@@ -41,7 +41,7 @@ var trimmableSuffixes = []string{metricsSuffixBucket, metricsSuffixCount, metric
 var errNoDataToBuild = errors.New("there's no data to build")
 var errNoBoundaryLabel = errors.New("given metricType has no BucketLabel or QuantileLabel")
 var errEmptyBoundaryLabel = errors.New("BucketLabel or QuantileLabel is empty")
-var dummyMetric = &data.MetricsData{
+var dummyMetric = &consumerdata.MetricsData{
 	Node: &commonpb.Node{
 		Identifier:  &commonpb.ProcessIdentifier{HostName: "127.0.0.1"},
 		ServiceInfo: &commonpb.ServiceInfo{Name: "internal"},
@@ -82,7 +82,7 @@ type dataPointGroupMetadata struct {
 }
 
 // newMetricBuilder creates a MetricBuilder which is allowed to feed all the datapoints from a single prometheus
-// scraped page by calling its AddDataPoint function, and turn them into an opencensus data.MetricsData object
+// scraped page by calling its AddDataPoint function, and turn them into an opencensus consumerdata.MetricsData object
 // by calling its Build function
 func newMetricBuilder(node *commonpb.Node, mc MetadataCache, logger *zap.SugaredLogger) *metricBuilder {
 
@@ -165,8 +165,8 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 	return nil
 }
 
-// Build is to build an opencensus data.MetricsData based on all added data points
-func (b *metricBuilder) Build() (*data.MetricsData, error) {
+// Build is to build an opencensus consumerdata.MetricsData based on all added data points
+func (b *metricBuilder) Build() (*consumerdata.MetricsData, error) {
 	if !b.hasData {
 		if b.hasInternalMetric {
 			return dummyMetric, nil
@@ -177,7 +177,7 @@ func (b *metricBuilder) Build() (*data.MetricsData, error) {
 	if err := b.completeCurrentMetric(); err != nil {
 		return nil, err
 	}
-	return &data.MetricsData{
+	return &consumerdata.MetricsData{
 		Node:    b.node,
 		Metrics: b.metrics,
 	}, nil
