@@ -12,15 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Program otelsvc is the Open Telemetry Service that collects stats
-// and traces and exports to a configured backend.
-package main
+package loggingexporter
 
 import (
-	"github.com/open-telemetry/opentelemetry-service/otelsvc"
-	_ "github.com/open-telemetry/opentelemetry-service/receiver/vmmetricsreceiver"
+	"github.com/open-telemetry/opentelemetry-service/models"
 )
 
-func main() {
-	otelsvc.Run()
+// ConfigV2 defines configuration for logging exporter.
+// TODO: allow configuration of logging level
+type ConfigV2 struct {
+	models.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 }

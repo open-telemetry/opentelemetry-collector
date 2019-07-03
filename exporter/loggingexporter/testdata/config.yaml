@@ -1,0 +1,20 @@
+receivers:
+  examplereceiver:
+
+processors:
+  exampleprocessor:
+
+exporters:
+  logging:
+  logging/2:
+    enabled: true
+
+
+pipelines:
+  traces:
+    receivers: [examplereceiver]
+    processors: [exampleprocessor]
+    exporters: [logging]
+  metrics:
+    receivers: [examplereceiver]
+    exporters: [logging]

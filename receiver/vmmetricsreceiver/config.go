@@ -12,15 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Program otelsvc is the Open Telemetry Service that collects stats
-// and traces and exports to a configured backend.
-package main
+package vmmetricsreceiver
 
 import (
-	"github.com/open-telemetry/opentelemetry-service/otelsvc"
-	_ "github.com/open-telemetry/opentelemetry-service/receiver/vmmetricsreceiver"
+	"time"
+
+	"github.com/open-telemetry/opentelemetry-service/models"
 )
 
-func main() {
-	otelsvc.Run()
+// ConfigV2 defines configuration for VMMetrics receiver.
+type ConfigV2 struct {
+	models.ReceiverSettings `mapstructure:",squash"`
+	ScrapeInterval          time.Duration `mapstructure:"scrape_interval"`
+	MountPoint              string        `mapstructure:"mount_point"`
+	ProcessMountPoint       string        `mapstructure:"process_mount_point"`
+	MetricPrefix            string        `mapstructure:"metric_prefix"`
 }
