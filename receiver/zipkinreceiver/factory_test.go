@@ -22,8 +22,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/open-telemetry/opentelemetry-service/configv2/configerror"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/models"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
 
@@ -49,6 +49,6 @@ func TestCreateReceiver(t *testing.T) {
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 
 	mReceiver, err := factory.CreateMetricsReceiver(zap.NewNop(), cfg, nil)
-	assert.Equal(t, err, models.ErrDataTypeIsNotSupported)
+	assert.Equal(t, err, configerror.ErrDataTypeIsNotSupported)
 	assert.Nil(t, mReceiver)
 }

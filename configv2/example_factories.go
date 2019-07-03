@@ -19,6 +19,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-service/configv2/configerror"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
@@ -74,7 +75,7 @@ func (f *ExampleReceiverFactory) CreateTraceReceiver(
 	nextConsumer consumer.TraceConsumer,
 ) (receiver.TraceReceiver, error) {
 	if cfg.(*ExampleReceiver).FailTraceCreation {
-		return nil, models.ErrDataTypeIsNotSupported
+		return nil, configerror.ErrDataTypeIsNotSupported
 	}
 	return &ExampleReceiverProducer{TraceConsumer: nextConsumer}, nil
 }
@@ -86,7 +87,7 @@ func (f *ExampleReceiverFactory) CreateMetricsReceiver(
 	nextConsumer consumer.MetricsConsumer,
 ) (receiver.MetricsReceiver, error) {
 	if cfg.(*ExampleReceiver).FailMetricsCreation {
-		return nil, models.ErrDataTypeIsNotSupported
+		return nil, configerror.ErrDataTypeIsNotSupported
 	}
 	return &ExampleReceiverProducer{MetricsConsumer: nextConsumer}, nil
 }
@@ -312,7 +313,7 @@ func (f *ExampleProcessorFactory) CreateTraceProcessor(
 	nextConsumer consumer.TraceConsumer,
 	cfg models.Processor,
 ) (processor.TraceProcessor, error) {
-	return nil, models.ErrDataTypeIsNotSupported
+	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
 // CreateMetricsProcessor creates a metrics processor based on this config.
@@ -321,7 +322,7 @@ func (f *ExampleProcessorFactory) CreateMetricsProcessor(
 	nextConsumer consumer.MetricsConsumer,
 	cfg models.Processor,
 ) (processor.MetricsProcessor, error) {
-	return nil, models.ErrDataTypeIsNotSupported
+	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
 // RegisterTestFactories registers example factories. This is only used by tests.

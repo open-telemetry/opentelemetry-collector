@@ -20,7 +20,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-service/models"
+	"github.com/open-telemetry/opentelemetry-service/configv2/configerror"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 	"github.com/stretchr/testify/assert"
 )
@@ -36,7 +36,7 @@ func TestCreateReceiver(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	tReceiver, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
-	assert.Equal(t, err, models.ErrDataTypeIsNotSupported)
+	assert.Equal(t, err, configerror.ErrDataTypeIsNotSupported)
 	assert.Nil(t, tReceiver)
 
 	// The default config does not provide scrape_config so we expect that metrics receiver

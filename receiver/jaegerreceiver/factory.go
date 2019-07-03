@@ -25,6 +25,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-service/configv2/configerror"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/models"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
@@ -131,7 +132,7 @@ func (f *factory) CreateMetricsReceiver(
 	cfg models.Receiver,
 	consumer consumer.MetricsConsumer,
 ) (receiver.MetricsReceiver, error) {
-	return nil, models.ErrDataTypeIsNotSupported
+	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
 // extract the port number from string in "address:port" format. If the

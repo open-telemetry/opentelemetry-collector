@@ -22,6 +22,7 @@ import (
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v2"
 
+	"github.com/open-telemetry/opentelemetry-service/configv2/configerror"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/models"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
@@ -103,7 +104,7 @@ func (f *factory) CreateTraceReceiver(
 	nextConsumer consumer.TraceConsumer,
 ) (receiver.TraceReceiver, error) {
 	// Prometheus does not support traces
-	return nil, models.ErrDataTypeIsNotSupported
+	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
 // CreateMetricsReceiver creates a metrics receiver based on provided config.
