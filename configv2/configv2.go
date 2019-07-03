@@ -25,8 +25,8 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/open-telemetry/opentelemetry-service/exporter"
-	"github.com/open-telemetry/opentelemetry-service/factories"
 	"github.com/open-telemetry/opentelemetry-service/models"
+	"github.com/open-telemetry/opentelemetry-service/processor"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
 
@@ -306,7 +306,7 @@ func loadProcessors(v *viper.Viper) (models.Processors, error) {
 		}
 
 		// Find processor factory based on "type" that we read from config source.
-		factory := factories.GetProcessorFactory(typeStr)
+		factory := processor.GetProcessorFactory(typeStr)
 		if factory == nil {
 			return nil, &configError{
 				code: errUnknownProcessorType,

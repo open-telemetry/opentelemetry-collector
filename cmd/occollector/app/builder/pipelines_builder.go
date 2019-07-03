@@ -20,8 +20,8 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/factories"
 	"github.com/open-telemetry/opentelemetry-service/models"
+	"github.com/open-telemetry/opentelemetry-service/processor"
 	"github.com/open-telemetry/opentelemetry-service/processor/multiconsumer"
 )
 
@@ -96,7 +96,7 @@ func (pb *PipelinesBuilder) buildPipeline(
 		procName := pipelineCfg.Processors[i]
 		procCfg := pb.config.Processors[procName]
 
-		factory := factories.GetProcessorFactory(procCfg.Type())
+		factory := processor.GetProcessorFactory(procCfg.Type())
 
 		// This processor must point to the next consumer and then
 		// it becomes the next for the previous one (previous in the pipeline,
