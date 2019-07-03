@@ -136,9 +136,9 @@ func lookupAttribute(node *commonpb.Node, key string) string {
 	return node.Attributes[key]
 }
 
-func zipkinEndpointFromNode(node *commonpb.Node, serviceName string, endpointType zipkinDirection) (*zipkinmodel.Endpoint, error) {
+func zipkinEndpointFromNode(node *commonpb.Node, serviceName string, endpointType zipkinDirection) *zipkinmodel.Endpoint {
 	if node == nil {
-		return nil, nil
+		return nil
 	}
 
 	// The data in the Attributes map was saved in the format
@@ -168,7 +168,7 @@ func zipkinEndpointFromNode(node *commonpb.Node, serviceName string, endpointTyp
 	port, _ := strconv.ParseUint(attributes[portKey], 10, 16)
 	if serviceName == "" && len(ip) == 0 && port == 0 {
 		// Nothing to put on the endpoint
-		return nil, nil
+		return nil
 	}
 
 	zEndpoint := &zipkinmodel.Endpoint{
@@ -182,7 +182,7 @@ func zipkinEndpointFromNode(node *commonpb.Node, serviceName string, endpointTyp
 		zEndpoint.IPv4 = ip
 	}
 
-	return zEndpoint, nil
+	return zEndpoint
 }
 
 func (ze *zipkinExporter) stop() error {
@@ -210,15 +210,13 @@ func (ze *zipkinExporter) ConsumeTraceData(ctx context.Context, td data.TraceDat
 		if err != nil {
 			return errorkind.Permanent(err)
 		}
-		zs, err := ze.zipkinSpan(td.Node, sd)
-		if err == nil {
-			// ze.reporter can get closed in the midst of a Send
-			// so avoid a read/write during that mutation.
-			ze.mu.Lock()
-			ze.reporter.Send(zs)
-			ze.mu.Unlock()
-			goodSpans++
-		}
+		zs := ze.zipkinSpan(td.Node, sd)
+		// ze.reporter can get closed in the midst of a Send
+		// so avoid a read/write during that mutation.
+		ze.mu.Lock()
+		ze.reporter.Send(zs)
+		ze.mu.Unlock()
+		goodSpans++
 	}
 
 	// And finally record metrics on the number of exported spans.
@@ -320,15 +318,12 @@ const (
 
 const zipkinRemoteEndpointKey = "zipkin.remoteEndpoint.serviceName"
 
-func (ze *zipkinExporter) zipkinSpan(node *commonpb.Node, s *trace.SpanData) (zc zipkinmodel.SpanModel, err error) {
+func (ze *zipkinExporter) zipkinSpan(node *commonpb.Node, s *trace.SpanData) (zc zipkinmodel.SpanModel) {
 	localEndpointServiceName := ze.serviceNameOrDefault(node)
-	localEndpoint, err := zipkinEndpointFromNode(node, localEndpointServiceName, isLocalEndpoint)
-	if err != nil {
-		return zc, err
-	}
+	localEndpoint := zipkinEndpointFromNode(node, localEndpointServiceName, isLocalEndpoint)
 
 	remoteServiceName := lookupAttribute(node, zipkinRemoteEndpointKey)
-	remoteEndpoint, _ := zipkinEndpointFromNode(node, remoteServiceName, isRemoteEndpoint)
+	remoteEndpoint := zipkinEndpointFromNode(node, remoteServiceName, isRemoteEndpoint)
 
 	sc := s.SpanContext
 	z := zipkinmodel.SpanModel{
@@ -410,5 +405,5 @@ func (ze *zipkinExporter) zipkinSpan(node *commonpb.Node, s *trace.SpanData) (zc
 		}
 	}
 
-	return z, nil
+	return z
 }
