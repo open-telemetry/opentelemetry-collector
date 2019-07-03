@@ -45,22 +45,19 @@ func TestZipkinEndpointFromNode(t *testing.T) {
 		endpointType zipkinDirection
 	}
 	tests := []struct {
-		name    string
-		args    args
-		want    *zipkinmodel.Endpoint
-		wantErr bool
+		name string
+		args args
+		want *zipkinmodel.Endpoint
 	}{
 		{
-			name:    "Nil Node",
-			args:    args{node: nil, serviceName: "", endpointType: isLocalEndpoint},
-			want:    nil,
-			wantErr: false,
+			name: "Nil Node",
+			args: args{node: nil, serviceName: "", endpointType: isLocalEndpoint},
+			want: nil,
 		},
 		{
-			name:    "Only svc name",
-			args:    args{node: &commonpb.Node{}, serviceName: "test", endpointType: isLocalEndpoint},
-			want:    &zipkinmodel.Endpoint{ServiceName: "test"},
-			wantErr: false,
+			name: "Only svc name",
+			args: args{node: &commonpb.Node{}, serviceName: "test", endpointType: isLocalEndpoint},
+			want: &zipkinmodel.Endpoint{ServiceName: "test"},
 		},
 		{
 			name: "Only ipv4",
@@ -71,8 +68,7 @@ func TestZipkinEndpointFromNode(t *testing.T) {
 				serviceName:  "",
 				endpointType: isLocalEndpoint,
 			},
-			want:    &zipkinmodel.Endpoint{IPv4: net.ParseIP("1.2.3.4")},
-			wantErr: false,
+			want: &zipkinmodel.Endpoint{IPv4: net.ParseIP("1.2.3.4")},
 		},
 		{
 			name: "Only ipv6 remote",
@@ -83,8 +79,7 @@ func TestZipkinEndpointFromNode(t *testing.T) {
 				serviceName:  "",
 				endpointType: isRemoteEndpoint,
 			},
-			want:    &zipkinmodel.Endpoint{IPv6: net.ParseIP("2001:0db8:85a3:0000:0000:8a2e:0370:7334")},
-			wantErr: false,
+			want: &zipkinmodel.Endpoint{IPv6: net.ParseIP("2001:0db8:85a3:0000:0000:8a2e:0370:7334")},
 		},
 		{
 			name: "Only port",
@@ -95,8 +90,7 @@ func TestZipkinEndpointFromNode(t *testing.T) {
 				serviceName:  "",
 				endpointType: isLocalEndpoint,
 			},
-			want:    &zipkinmodel.Endpoint{Port: 42},
-			wantErr: false,
+			want: &zipkinmodel.Endpoint{Port: 42},
 		},
 		{
 			name: "Service name, ipv4, and port",
@@ -107,18 +101,13 @@ func TestZipkinEndpointFromNode(t *testing.T) {
 				serviceName:  "test-svc",
 				endpointType: isLocalEndpoint,
 			},
-			want:    &zipkinmodel.Endpoint{ServiceName: "test-svc", IPv4: net.ParseIP("4.3.2.1"), Port: 2},
-			wantErr: false,
+			want: &zipkinmodel.Endpoint{ServiceName: "test-svc", IPv4: net.ParseIP("4.3.2.1"), Port: 2},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := zipkinEndpointFromNode(tt.args.node, tt.args.serviceName, tt.args.endpointType)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("zipkinEndpointFromNode() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
+			got := zipkinEndpointFromNode(tt.args.node, tt.args.serviceName, tt.args.endpointType)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("zipkinEndpointFromNode() = %v, want %v", got, tt.want)
 			}
