@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-service/configv2"
-	"github.com/open-telemetry/opentelemetry-service/models"
+	"github.com/open-telemetry/opentelemetry-service/configv2/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
 
@@ -44,7 +44,7 @@ func TestLoadConfig(t *testing.T) {
 
 	r1 := config.Receivers["prometheus/customname"].(*ConfigV2)
 	assert.Equal(t, r1.ReceiverSettings,
-		models.ReceiverSettings{
+		configmodels.ReceiverSettings{
 			TypeVal:  typeStr,
 			NameVal:  "prometheus/customname",
 			Endpoint: "1.2.3.4:456",

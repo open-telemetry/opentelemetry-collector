@@ -20,7 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/open-telemetry/opentelemetry-service/models"
+	"github.com/open-telemetry/opentelemetry-service/configv2/configmodels"
 )
 
 var _ = RegisterTestFactories()
@@ -38,7 +38,7 @@ func TestDecodeConfig(t *testing.T) {
 
 	assert.Equal(t, config.Receivers["examplereceiver"],
 		&ExampleReceiver{
-			ReceiverSettings: models.ReceiverSettings{
+			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal:  "examplereceiver",
 				NameVal:  "examplereceiver",
 				Endpoint: "localhost:1000",
@@ -49,7 +49,7 @@ func TestDecodeConfig(t *testing.T) {
 
 	assert.Equal(t, config.Receivers["examplereceiver/myreceiver"],
 		&ExampleReceiver{
-			ReceiverSettings: models.ReceiverSettings{
+			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal:  "examplereceiver",
 				NameVal:  "examplereceiver/myreceiver",
 				Endpoint: "127.0.0.1:12345",
@@ -63,7 +63,7 @@ func TestDecodeConfig(t *testing.T) {
 
 	assert.Equal(t, config.Exporters["exampleexporter"],
 		&ExampleExporter{
-			ExporterSettings: models.ExporterSettings{
+			ExporterSettings: configmodels.ExporterSettings{
 				NameVal: "exampleexporter",
 				TypeVal: "exampleexporter",
 				Enabled: false,
@@ -73,7 +73,7 @@ func TestDecodeConfig(t *testing.T) {
 
 	assert.Equal(t, config.Exporters["exampleexporter/myexporter"],
 		&ExampleExporter{
-			ExporterSettings: models.ExporterSettings{
+			ExporterSettings: configmodels.ExporterSettings{
 				NameVal: "exampleexporter/myexporter",
 				TypeVal: "exampleexporter",
 				Enabled: true,
@@ -86,7 +86,7 @@ func TestDecodeConfig(t *testing.T) {
 
 	assert.Equal(t, config.Processors["exampleprocessor"],
 		&ExampleProcessor{
-			ProcessorSettings: models.ProcessorSettings{
+			ProcessorSettings: configmodels.ProcessorSettings{
 				TypeVal: "exampleprocessor",
 				NameVal: "exampleprocessor",
 				Enabled: false,
@@ -98,9 +98,9 @@ func TestDecodeConfig(t *testing.T) {
 	assert.Equal(t, len(config.Pipelines), 1, "Incorrect pipelines count")
 
 	assert.Equal(t, config.Pipelines["traces"],
-		&models.Pipeline{
+		&configmodels.Pipeline{
 			Name:       "traces",
-			InputType:  models.TracesDataType,
+			InputType:  configmodels.TracesDataType,
 			Receivers:  []string{"examplereceiver"},
 			Processors: []string{"exampleprocessor"},
 			Exporters:  []string{"exampleexporter"},

@@ -18,8 +18,8 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/configv2/configerror"
+	"github.com/open-telemetry/opentelemetry-service/configv2/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/models"
 	"github.com/open-telemetry/opentelemetry-service/processor"
 )
 
@@ -40,14 +40,14 @@ func (f *factory) Type() string {
 }
 
 // CreateDefaultConfig creates the default configuration for processor.
-func (f *factory) CreateDefaultConfig() models.Processor {
+func (f *factory) CreateDefaultConfig() configmodels.Processor {
 	removeAfterTicks := int(defaultRemoveAfterCycles)
 	sendBatchSize := int(defaultSendBatchSize)
 	tickTime := defaultTickTime
 	timeout := defaultTimeout
 
 	return &ConfigV2{
-		ProcessorSettings: models.ProcessorSettings{
+		ProcessorSettings: configmodels.ProcessorSettings{
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
@@ -63,7 +63,7 @@ func (f *factory) CreateDefaultConfig() models.Processor {
 func (f *factory) CreateTraceProcessor(
 	logger *zap.Logger,
 	nextConsumer consumer.TraceConsumer,
-	c models.Processor,
+	c configmodels.Processor,
 ) (processor.TraceProcessor, error) {
 	cfg := c.(*ConfigV2)
 
@@ -99,7 +99,7 @@ func (f *factory) CreateTraceProcessor(
 func (f *factory) CreateMetricsProcessor(
 	logger *zap.Logger,
 	nextConsumer consumer.MetricsConsumer,
-	cfg models.Processor,
+	cfg configmodels.Processor,
 ) (processor.MetricsProcessor, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }

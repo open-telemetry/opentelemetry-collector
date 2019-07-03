@@ -20,8 +20,8 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/configv2/configerror"
+	"github.com/open-telemetry/opentelemetry-service/configv2/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/models"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
 
@@ -51,9 +51,9 @@ func (f *factory) CustomUnmarshaler() receiver.CustomUnmarshaler {
 }
 
 // CreateDefaultConfig creates the default configuration for Jaeger receiver.
-func (f *factory) CreateDefaultConfig() models.Receiver {
+func (f *factory) CreateDefaultConfig() configmodels.Receiver {
 	return &ConfigV2{
-		ReceiverSettings: models.ReceiverSettings{
+		ReceiverSettings: configmodels.ReceiverSettings{
 			TypeVal:  typeStr,
 			NameVal:  typeStr,
 			Endpoint: defaultBindEndpoint,
@@ -65,7 +65,7 @@ func (f *factory) CreateDefaultConfig() models.Receiver {
 func (f *factory) CreateTraceReceiver(
 	ctx context.Context,
 	logger *zap.Logger,
-	cfg models.Receiver,
+	cfg configmodels.Receiver,
 	nextConsumer consumer.TraceConsumer,
 ) (receiver.TraceReceiver, error) {
 
@@ -76,7 +76,7 @@ func (f *factory) CreateTraceReceiver(
 // CreateMetricsReceiver creates a metrics receiver based on provided config.
 func (f *factory) CreateMetricsReceiver(
 	logger *zap.Logger,
-	cfg models.Receiver,
+	cfg configmodels.Receiver,
 	consumer consumer.MetricsConsumer,
 ) (receiver.MetricsReceiver, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported

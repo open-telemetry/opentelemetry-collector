@@ -20,8 +20,8 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/configv2/configerror"
+	"github.com/open-telemetry/opentelemetry-service/configv2/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/models"
 )
 
 type TestFactory struct {
@@ -33,7 +33,7 @@ func (f *TestFactory) Type() string {
 }
 
 // CreateDefaultConfig creates the default configuration for the Processor.
-func (f *TestFactory) CreateDefaultConfig() models.Processor {
+func (f *TestFactory) CreateDefaultConfig() configmodels.Processor {
 	return nil
 }
 
@@ -41,7 +41,7 @@ func (f *TestFactory) CreateDefaultConfig() models.Processor {
 func (f *TestFactory) CreateTraceProcessor(
 	logger *zap.Logger,
 	nextConsumer consumer.TraceConsumer,
-	cfg models.Processor,
+	cfg configmodels.Processor,
 ) (TraceProcessor, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
@@ -50,7 +50,7 @@ func (f *TestFactory) CreateTraceProcessor(
 func (f *TestFactory) CreateMetricsProcessor(
 	logger *zap.Logger,
 	nextConsumer consumer.MetricsConsumer,
-	cfg models.Processor,
+	cfg configmodels.Processor,
 ) (MetricsProcessor, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }

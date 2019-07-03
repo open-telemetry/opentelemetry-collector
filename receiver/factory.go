@@ -21,8 +21,8 @@ import (
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-service/configv2/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/models"
 )
 
 // Factory is factory interface for receivers.
@@ -31,7 +31,7 @@ type Factory interface {
 	Type() string
 
 	// CreateDefaultConfig creates the default configuration for the Receiver.
-	CreateDefaultConfig() models.Receiver
+	CreateDefaultConfig() configmodels.Receiver
 
 	// CustomUnmarshaler returns a custom unmarshaler for the configuration or nil if
 	// there is no need for custom unmarshaling. This is typically used if viper.Unmarshal()
@@ -41,13 +41,13 @@ type Factory interface {
 	// CreateTraceReceiver creates a trace receiver based on this config.
 	// If the receiver type does not support tracing or if the config is not valid
 	// error will be returned instead.
-	CreateTraceReceiver(ctx context.Context, logger *zap.Logger, cfg models.Receiver,
+	CreateTraceReceiver(ctx context.Context, logger *zap.Logger, cfg configmodels.Receiver,
 		nextConsumer consumer.TraceConsumer) (TraceReceiver, error)
 
 	// CreateMetricsReceiver creates a metrics receiver based on this config.
 	// If the receiver type does not support metrics or if the config is not valid
 	// error will be returned instead.
-	CreateMetricsReceiver(logger *zap.Logger, cfg models.Receiver,
+	CreateMetricsReceiver(logger *zap.Logger, cfg configmodels.Receiver,
 		consumer consumer.MetricsConsumer) (MetricsReceiver, error)
 }
 
