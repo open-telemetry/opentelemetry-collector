@@ -27,6 +27,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/errors/errorkind"
 	"github.com/open-telemetry/opentelemetry-service/internal/collector/processor"
 	"github.com/open-telemetry/opentelemetry-service/internal/collector/processor/nodebatcher"
 	"github.com/open-telemetry/opentelemetry-service/internal/collector/telemetry"
@@ -149,6 +150,26 @@ func (sp *queuedSpanProcessor) processItemFromQueue(item *queueItem) {
 
 	// There was an error
 	statsTags := processor.StatsTagsForBatch(sp.name, processor.ServiceNameForNode(item.td.Node), item.td.SourceFormat)
+
+	// Immediately drop data on permanent errors. In this context permanent
+	// errors indicate some kind of bad data.
+	if errorkind.IsPermanent(err) {
+		numSpans := len(item.td.Spans)
+		sp.logger.Warn(
+			"Unrecoverable bad data error",
+			zap.String("processor", sp.name),
+			zap.Int("#spans", numSpans),
+			zap.String("spanFormat", item.td.SourceFormat),
+			zap.Error(err))
+
+		stats.RecordWithTags(
+			context.Background(),
+			statsTags,
+			processor.StatBadBatchDroppedSpanCount.M(int64(numSpans)))
+
+		return
+	}
+
 	stats.RecordWithTags(context.Background(), statsTags, statFailedSendOps.M(1))
 	batchSize := len(item.td.Spans)
 	sp.logger.Warn("Sender failed", zap.String("processor", sp.name), zap.Error(err), zap.String("spanFormat", item.td.SourceFormat))

@@ -17,12 +17,12 @@ package sender
 import (
 	"context"
 
-	"go.uber.org/zap"
-
 	reporter "github.com/jaegertracing/jaeger/cmd/agent/app/reporter"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/errors/errorkind"
 	jaegertranslator "github.com/open-telemetry/opentelemetry-service/translator/trace/jaeger"
 )
 
@@ -51,7 +51,7 @@ func (s *JaegerThriftTChannelSender) ConsumeTraceData(ctx context.Context, td da
 	// TODO: (@pjanotti) In case of failure the translation to Jaeger Thrift is going to be remade, cache it somehow.
 	tBatch, err := jaegertranslator.OCProtoToJaegerThrift(td)
 	if err != nil {
-		return err
+		return errorkind.Permanent(err)
 	}
 
 	if err := s.reporter.EmitBatch(tBatch); err != nil {
