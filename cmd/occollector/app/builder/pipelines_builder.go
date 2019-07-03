@@ -96,7 +96,7 @@ func (pb *PipelinesBuilder) buildPipeline(
 		procName := pipelineCfg.Processors[i]
 		procCfg := pb.config.Processors[procName]
 
-		factory := processor.GetProcessorFactory(procCfg.Type())
+		factory := processor.GetFactory(procCfg.Type())
 
 		// This processor must point to the next consumer and then
 		// it becomes the next for the previous one (previous in the pipeline,

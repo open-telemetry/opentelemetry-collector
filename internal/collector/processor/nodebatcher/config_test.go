@@ -31,7 +31,7 @@ var _ = configv2.RegisterTestFactories()
 
 func TestLoadConfig(t *testing.T) {
 
-	factory := processor.GetProcessorFactory(typeStr)
+	factory := processor.GetFactory(typeStr)
 
 	config, err := configv2.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"))
 

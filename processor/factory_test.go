@@ -56,12 +56,12 @@ func (f *ExampleProcessorFactory) CreateMetricsProcessor(
 
 func TestRegisterProcessorFactory(t *testing.T) {
 	f := ExampleProcessorFactory{}
-	err := RegisterProcessorFactory(&f)
+	err := RegisterFactory(&f)
 	if err != nil {
 		t.Fatalf("cannot register factory")
 	}
 
-	if &f != GetProcessorFactory(f.Type()) {
+	if &f != GetFactory(f.Type()) {
 		t.Fatalf("cannot find factory")
 	}
 
@@ -74,7 +74,7 @@ func TestRegisterProcessorFactory(t *testing.T) {
 			}
 		}()
 
-		err = RegisterProcessorFactory(&f)
+		err = RegisterFactory(&f)
 	}()
 
 	if !paniced {

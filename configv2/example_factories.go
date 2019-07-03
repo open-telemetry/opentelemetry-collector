@@ -329,6 +329,6 @@ func RegisterTestFactories() error {
 	_ = receiver.RegisterReceiverFactory(&ExampleReceiverFactory{})
 	_ = receiver.RegisterReceiverFactory(&MultiProtoReceiverFactory{})
 	_ = exporter.RegisterFactory(&ExampleExporterFactory{})
-	_ = processor.RegisterProcessorFactory(&ExampleProcessorFactory{})
+	_ = processor.RegisterFactory(&ExampleProcessorFactory{})
 	return nil
 }

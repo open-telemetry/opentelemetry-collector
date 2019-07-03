@@ -26,7 +26,7 @@ import (
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := processor.GetProcessorFactory(typeStr)
+	factory := processor.GetFactory(typeStr)
 	require.NotNil(t, factory)
 
 	cfg := factory.CreateDefaultConfig()
@@ -34,7 +34,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 }
 
 func TestCreateProcessor(t *testing.T) {
-	factory := processor.GetProcessorFactory(typeStr)
+	factory := processor.GetFactory(typeStr)
 	require.NotNil(t, factory)
 
 	cfg := factory.CreateDefaultConfig()
