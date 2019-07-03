@@ -16,6 +16,8 @@ package vmmetricsreceiver
 
 import (
 	"context"
+	"errors"
+	"runtime"
 
 	"go.uber.org/zap"
 
@@ -75,6 +77,9 @@ func (f *Factory) CreateMetricsReceiver(
 	consumer consumer.MetricsConsumer,
 ) (receiver.MetricsReceiver, error) {
 
+	if runtime.GOOS != "linux" {
+		return nil, errors.New("vmmetrics receiver is only supported on linux")
+	}
 	cfg := config.(*ConfigV2)
 
 	vmc, err := NewVMMetricsCollector(cfg.ScrapeInterval, cfg.MountPoint, cfg.ProcessMountPoint, cfg.MetricPrefix, consumer)
