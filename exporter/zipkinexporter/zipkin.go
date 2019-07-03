@@ -22,8 +22,6 @@ import (
 	"sync"
 	"time"
 
-	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
-
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
 	zipkinhttp "github.com/openzipkin/zipkin-go/reporter/http"
@@ -33,7 +31,9 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/errors/errorkind"
 	"github.com/open-telemetry/opentelemetry-service/observability"
+	"github.com/open-telemetry/opentelemetry-service/translator/trace"
 	spandatatranslator "github.com/open-telemetry/opentelemetry-service/translator/trace/spandata"
 )
 
@@ -208,7 +208,7 @@ func (ze *zipkinExporter) ConsumeTraceData(ctx context.Context, td data.TraceDat
 	for _, span := range td.Spans {
 		sd, err := spandatatranslator.ProtoSpanToOCSpanData(span)
 		if err != nil {
-			return err
+			return errorkind.Permanent(err)
 		}
 		zs, err := ze.zipkinSpan(td.Node, sd)
 		if err == nil {

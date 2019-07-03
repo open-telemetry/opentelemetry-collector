@@ -22,35 +22,43 @@ import (
 	"testing"
 
 	"github.com/golang/protobuf/ptypes/timestamp"
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+
 	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/factories"
 	viperutils "github.com/open-telemetry/opentelemetry-service/internal/config/viperutils"
 )
 
 func TestPrometheusExporter(t *testing.T) {
 	tests := []struct {
-		config  string
+		config  *ConfigV2
 		wantErr string
 	}{
 		{
-			config: `
-prometheus:
-    namespace: "test"
-    const_labels: {
-        "foo": "bar",
-        "code": "one"
-    }
-    address: ":8999"
-`,
+			config: &ConfigV2{
+				Namespace: "test",
+				ConstLabels: map[string]string{
+					"foo":  "bar",
+					"code": "one",
+				},
+				Endpoint: ":8999",
+			},
+		},
+		{
+			config:  &ConfigV2{},
+			wantErr: "expecting a non-blank address to run the Prometheus metrics handler",
 		},
 	}
 
+	factory := factories.GetExporterFactory(typeStr)
 	for i, tt := range tests {
 		// Run it a few times to ensure that shutdowns exit cleanly.
 		for j := 0; j < 3; j++ {
-			v, _ := viperutils.ViperFromYAMLBytes([]byte(tt.config))
-			tes, mes, doneFns, err := PrometheusExportersFromViper(v)
+			consumer, stopFunc, err := factory.CreateMetricsExporter(zap.NewNop(), tt.config)
+
 			if tt.wantErr != "" {
 				if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
 					t.Errorf("#%d iteration #%d: Unexpected error: %v Wanted: %v", i, j, err, tt.wantErr)
@@ -58,18 +66,12 @@ prometheus:
 				continue
 			}
 
+			assert.NotNil(t, consumer)
+
 			if err != nil {
 				t.Errorf("#%d iteration #%d: unexpected parse error: %v", i, j, err)
 			}
-			if len(tes) != 0 {
-				t.Errorf("#%d iteration #%d: Unexpectedly got back %d > 0 trace exporters", i, j, len(tes))
-			}
-			if len(mes) == 0 {
-				t.Errorf("#%d iteration #%d: Unexpectedly got back 0 metrics exporters", i, j)
-			}
-			for _, doneFn := range doneFns {
-				doneFn()
-			}
+			stopFunc()
 		}
 	}
 }
@@ -94,30 +96,22 @@ prometheus:`)
 }
 
 func TestPrometheusExporter_endToEnd(t *testing.T) {
-	config := []byte(`
-prometheus:
-    namespace: "test"
-    const_labels: {
-        "foo": "bar",
-        "code": "one"
-    }
-    address: ":7777"
-`)
-
-	v, _ := viperutils.ViperFromYAMLBytes([]byte(config))
-	_, mes, doneFns, err := PrometheusExportersFromViper(v)
-	defer func() {
-		for _, doneFn := range doneFns {
-			doneFn()
-		}
-	}()
-
-	if err != nil {
-		t.Fatalf("Unexpected parse error: %v", err)
+	config := &ConfigV2{
+		Namespace: "test",
+		ConstLabels: map[string]string{
+			"foo":  "bar",
+			"code": "one",
+		},
+		Endpoint: ":7777",
 	}
-	if len(mes) == 0 {
-		t.Fatal("Unexpectedly got back 0 metrics exporters")
-	}
+
+	factory := factories.GetExporterFactory(typeStr)
+	consumer, stopFunc, err := factory.CreateMetricsExporter(zap.NewNop(), config)
+	assert.Nil(t, err)
+
+	defer stopFunc()
+
+	assert.NotNil(t, consumer)
 
 	var metric1 = &metricspb.Metric{
 		MetricDescriptor: &metricspb.MetricDescriptor{
@@ -153,8 +147,7 @@ prometheus:
 			},
 		},
 	}
-	me := mes[0]
-	me.ConsumeMetricsData(context.Background(), data.MetricsData{Metrics: []*metricspb.Metric{metric1}})
+	consumer.ConsumeMetricsData(context.Background(), data.MetricsData{Metrics: []*metricspb.Metric{metric1}})
 
 	res, err := http.Get("http://localhost:7777/metrics")
 	if err != nil {

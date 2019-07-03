@@ -16,15 +16,66 @@ package queued
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"sync/atomic"
 	"testing"
-
-	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"time"
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/stretchr/testify/require"
+
+	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/errors/errorkind"
 )
+
+func TestQueuedProcessor_noEnqueueOnPermanentError(t *testing.T) {
+	ctx := context.Background()
+	td := data.TraceData{
+		Spans: make([]*tracepb.Span, 7),
+	}
+
+	c := &waitGroupTraceConsumer{
+		consumeTraceDataError: errorkind.Permanent(errors.New("bad data")),
+	}
+
+	qp := NewQueuedSpanProcessor(
+		c,
+		Options.WithRetryOnProcessingFailures(true),
+		Options.WithBackoffDelay(time.Hour),
+		Options.WithNumWorkers(1),
+		Options.WithQueueSize(2),
+	).(*queuedSpanProcessor)
+
+	c.Add(1)
+	require.Nil(t, qp.ConsumeTraceData(ctx, td))
+	c.Wait()
+	<-time.After(50 * time.Millisecond)
+
+	require.Zero(t, qp.queue.Size())
+
+	c.consumeTraceDataError = errors.New("transient error")
+	c.Add(1)
+	// This is asynchronous so it should just enqueue, no errors expected.
+	require.Nil(t, qp.ConsumeTraceData(ctx, td))
+	c.Wait()
+	<-time.After(50 * time.Millisecond)
+
+	require.Equal(t, 1, qp.queue.Size())
+}
+
+type waitGroupTraceConsumer struct {
+	sync.WaitGroup
+	consumeTraceDataError error
+}
+
+var _ consumer.TraceConsumer = (*waitGroupTraceConsumer)(nil)
+
+func (c *waitGroupTraceConsumer) ConsumeTraceData(ctx context.Context, td data.TraceData) error {
+	defer c.Done()
+	return c.consumeTraceDataError
+}
 
 func TestQueueProcessorHappyPath(t *testing.T) {
 	mockProc := newMockConcurrentSpanProcessor()
