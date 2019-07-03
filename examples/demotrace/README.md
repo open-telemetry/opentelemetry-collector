@@ -16,7 +16,7 @@ order to build the docker images use the commands below from the root of the rep
 make docker-otelsvc
 ```
 
-To run the demo, switch to the `demos/trace` folder and run:
+To run the demo, switch to the `examples/demotrace` folder and run:
 
 ```shell
 docker-compose up
@@ -25,4 +25,4 @@ docker-compose up
 Open `http://localhost:16686` to see the data on the Jaeger backend and `http://localhost:9411` to see
 the data on the Zipkin backend.
 
-To clean up any docker container from the demo run `docker-compose down` from the `demos/trace` folder.
+To clean up any docker container from the demo run `docker-compose down` from the `examples/demotrace` folder.
