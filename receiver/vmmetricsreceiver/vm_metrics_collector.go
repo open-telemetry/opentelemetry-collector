@@ -26,7 +26,7 @@ import (
 	"go.opencensus.io/trace"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/internal"
 
 	"contrib.go.opencensus.io/resource/auto"
@@ -220,7 +220,7 @@ func (vmc *VMMetricsCollector) scrapeAndExport() {
 	}
 
 	if len(metrics) > 0 {
-		vmc.consumer.ConsumeMetricsData(ctx, data.MetricsData{Metrics: metrics})
+		vmc.consumer.ConsumeMetricsData(ctx, consumerdata.MetricsData{Metrics: metrics})
 	}
 }
 

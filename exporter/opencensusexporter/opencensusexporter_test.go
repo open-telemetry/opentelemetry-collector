@@ -22,7 +22,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/spf13/viper"
 
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 )
 
 func TestOpenCensusTraceExportersFromViper(t *testing.T) {
@@ -113,7 +113,7 @@ func TestOpenCensusTraceExporters_StopError(t *testing.T) {
 	if err != nil {
 		t.Fatalf("doneFn[0]() got = %v, want = nil", err)
 	}
-	err = tps[0].ConsumeTraceData(context.Background(), data.TraceData{})
+	err = tps[0].ConsumeTraceData(context.Background(), consumerdata.TraceData{})
 	if errorCode(err) != errAlreadyStopped {
 		t.Fatalf("Expected to get errAlreadyStopped but got %v", err)
 	}

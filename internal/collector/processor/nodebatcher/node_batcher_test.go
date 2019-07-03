@@ -23,7 +23,7 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"go.uber.org/zap"
 )
 
@@ -146,7 +146,7 @@ func TestConcurrentNodeAdds(t *testing.T) {
 		for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
 			spans = append(spans, &tracepb.Span{Name: getTestSpanName(requestNum, spanIndex)})
 		}
-		td := data.TraceData{
+		td := consumerdata.TraceData{
 			Node: &commonpb.Node{
 				ServiceInfo: &commonpb.ServiceInfo{Name: fmt.Sprintf("svc-%d", requestNum)},
 			},
@@ -194,7 +194,7 @@ func TestBucketRemove(t *testing.T) {
 	for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
 		spans = append(spans, &tracepb.Span{Name: getTestSpanName(0, spanIndex)})
 	}
-	request := data.TraceData{
+	request := consumerdata.TraceData{
 		Node: &commonpb.Node{
 			ServiceInfo: &commonpb.ServiceInfo{Name: "svc"},
 		},
@@ -245,7 +245,7 @@ func TestBucketTickerStop(t *testing.T) {
 	for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
 		spans = append(spans, &tracepb.Span{Name: getTestSpanName(0, spanIndex)})
 	}
-	request := data.TraceData{
+	request := consumerdata.TraceData{
 		Node: &commonpb.Node{
 			ServiceInfo: &commonpb.ServiceInfo{Name: "svc"},
 		},
@@ -275,7 +275,7 @@ func TestConcurrentBatchAdds(t *testing.T) {
 		for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
 			spans = append(spans, &tracepb.Span{Name: getTestSpanName(requestNum, spanIndex)})
 		}
-		request := data.TraceData{
+		request := consumerdata.TraceData{
 			Node: &commonpb.Node{
 				ServiceInfo: &commonpb.ServiceInfo{Name: "svc"},
 			},
@@ -306,12 +306,12 @@ func BenchmarkConcurrentBatchAdds(b *testing.B) {
 	sender1 := newNopSender()
 	batcher := NewBatcher("test", zap.NewNop(), sender1).(*batcher)
 	spansPerRequest := 1000
-	var requests []data.TraceData
+	var requests []consumerdata.TraceData
 	spans := make([]*tracepb.Span, 0, spansPerRequest)
 	for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
 		spans = append(spans, &tracepb.Span{Name: getTestSpanName(0, spanIndex)})
 	}
-	request := data.TraceData{
+	request := consumerdata.TraceData{
 		Node: &commonpb.Node{
 			ServiceInfo: &commonpb.ServiceInfo{Name: "svc"},
 		},
@@ -341,12 +341,12 @@ func newNopSender() *nopSender {
 	return &nopSender{}
 }
 
-func (ts *nopSender) ConsumeTraceData(ctx context.Context, td data.TraceData) error {
+func (ts *nopSender) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	return nil
 }
 
 type testSender struct {
-	reqChan             chan data.TraceData
+	reqChan             chan consumerdata.TraceData
 	batchesReceived     int
 	spansReceived       int
 	spansReceivedByName map[string]*tracepb.Span
@@ -354,12 +354,12 @@ type testSender struct {
 
 func newTestSender() *testSender {
 	return &testSender{
-		reqChan:             make(chan data.TraceData, 100),
+		reqChan:             make(chan consumerdata.TraceData, 100),
 		spansReceivedByName: make(map[string]*tracepb.Span),
 	}
 }
 
-func (ts *testSender) ConsumeTraceData(ctx context.Context, td data.TraceData) error {
+func (ts *testSender) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	ts.reqChan <- td
 	return nil
 }

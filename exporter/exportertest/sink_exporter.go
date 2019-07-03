@@ -18,20 +18,20 @@ import (
 	"context"
 	"sync"
 
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
 )
 
 // SinkTraceExporter acts as a trace receiver for use in tests.
 type SinkTraceExporter struct {
 	mu     sync.Mutex
-	traces []data.TraceData
+	traces []consumerdata.TraceData
 }
 
 var _ exporter.TraceExporter = (*SinkTraceExporter)(nil)
 
 // ConsumeTraceData stores traces for tests.
-func (ste *SinkTraceExporter) ConsumeTraceData(ctx context.Context, td data.TraceData) error {
+func (ste *SinkTraceExporter) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	ste.mu.Lock()
 	defer ste.mu.Unlock()
 
@@ -51,7 +51,7 @@ func (ste *SinkTraceExporter) TraceExportFormat() string {
 }
 
 // AllTraces returns the traces sent to the test sink.
-func (ste *SinkTraceExporter) AllTraces() []data.TraceData {
+func (ste *SinkTraceExporter) AllTraces() []consumerdata.TraceData {
 	ste.mu.Lock()
 	defer ste.mu.Unlock()
 
@@ -61,13 +61,13 @@ func (ste *SinkTraceExporter) AllTraces() []data.TraceData {
 // SinkMetricsExporter acts as a metrics receiver for use in tests.
 type SinkMetricsExporter struct {
 	mu      sync.Mutex
-	metrics []data.MetricsData
+	metrics []consumerdata.MetricsData
 }
 
 var _ exporter.MetricsExporter = (*SinkMetricsExporter)(nil)
 
 // ConsumeMetricsData stores traces for tests.
-func (sme *SinkMetricsExporter) ConsumeMetricsData(ctx context.Context, md data.MetricsData) error {
+func (sme *SinkMetricsExporter) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
 	sme.mu.Lock()
 	defer sme.mu.Unlock()
 
@@ -82,7 +82,7 @@ func (sme *SinkMetricsExporter) MetricsExportFormat() string {
 }
 
 // AllMetrics returns the metrics sent to the test sink.
-func (sme *SinkMetricsExporter) AllMetrics() []data.MetricsData {
+func (sme *SinkMetricsExporter) AllMetrics() []consumerdata.MetricsData {
 	sme.mu.Lock()
 	defer sme.mu.Unlock()
 

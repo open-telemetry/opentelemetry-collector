@@ -23,7 +23,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/processor"
 )
 
@@ -86,13 +86,13 @@ func NewTraceProcessor(nextConsumer consumer.TraceConsumer, cfg TraceSamplerCfg)
 	}, nil
 }
 
-func (tsp *tracesamplerprocessor) ConsumeTraceData(ctx context.Context, td data.TraceData) error {
+func (tsp *tracesamplerprocessor) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	scaledSamplingRate := tsp.scaledSamplingRate
 	if scaledSamplingRate >= numHashBuckets {
 		return tsp.nextConsumer.ConsumeTraceData(ctx, td)
 	}
 
-	sampledTraceData := data.TraceData{
+	sampledTraceData := consumerdata.TraceData{
 		Node:         td.Node,
 		Resource:     td.Resource,
 		SourceFormat: td.SourceFormat,

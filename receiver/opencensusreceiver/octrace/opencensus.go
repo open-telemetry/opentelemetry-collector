@@ -25,7 +25,7 @@ import (
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/observability"
 )
 
@@ -44,7 +44,7 @@ type Receiver struct {
 }
 
 type traceDataWithCtx struct {
-	data *data.TraceData
+	data *consumerdata.TraceData
 	ctx  context.Context
 }
 
@@ -122,7 +122,7 @@ func (ocr *Receiver) Export(tes agenttracepb.TraceService_ExportServer) error {
 			resource = recv.Resource
 		}
 
-		td := &data.TraceData{
+		td := &consumerdata.TraceData{
 			Node:         lastNonNilNode,
 			Resource:     resource,
 			Spans:        recv.Spans,
@@ -180,7 +180,7 @@ func (rw *receiverWorker) stopListening() {
 	close(rw.cancel)
 }
 
-func (rw *receiverWorker) export(longLivedCtx context.Context, tracedata *data.TraceData) {
+func (rw *receiverWorker) export(longLivedCtx context.Context, tracedata *consumerdata.TraceData) {
 	if tracedata == nil {
 		return
 	}

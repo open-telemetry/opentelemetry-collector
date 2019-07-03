@@ -34,7 +34,7 @@ import (
 	"go.opencensus.io/metric/metricproducer"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-service/internal/config/viperutils"
 	"github.com/open-telemetry/opentelemetry-service/receiver/receivertest"
@@ -206,7 +206,7 @@ buffer_count: 2
 	retrievedTimestamps := indexTimestampsByMetricDescriptorName(got)
 
 	// Now compare the received metrics data with what we expect.
-	want1 := []data.MetricsData{
+	want1 := []consumerdata.MetricsData{
 		{
 			Node: &commonpb.Node{
 				Identifier: &commonpb.ProcessIdentifier{
@@ -297,7 +297,7 @@ buffer_count: 2
 		},
 	}
 
-	want2 := []data.MetricsData{
+	want2 := []consumerdata.MetricsData{
 		{
 			Node: &commonpb.Node{
 				Identifier: &commonpb.ProcessIdentifier{
@@ -400,7 +400,7 @@ buffer_count: 2
 
 	// Since these tests rely on underdeterministic behavior and timing that's imprecise.
 	// The best that we can do is provide any of variants of what we want.
-	wantPermutations := [][]data.MetricsData{
+	wantPermutations := [][]consumerdata.MetricsData{
 		want1, want2,
 	}
 
@@ -412,7 +412,7 @@ buffer_count: 2
 	}
 }
 
-func byMetricsSorter(t *testing.T, mds []data.MetricsData) {
+func byMetricsSorter(t *testing.T, mds []consumerdata.MetricsData) {
 	for i, md := range mds {
 		eMetrics := md.Metrics
 		sort.Slice(eMetrics, func(i, j int) bool {
@@ -430,7 +430,7 @@ func byMetricsSorter(t *testing.T, mds []data.MetricsData) {
 	})
 }
 
-func indexTimestampsByMetricDescriptorName(mds []data.MetricsData) map[string]*timestamp.Timestamp {
+func indexTimestampsByMetricDescriptorName(mds []consumerdata.MetricsData) map[string]*timestamp.Timestamp {
 	index := make(map[string]*timestamp.Timestamp)
 	for _, md := range mds {
 		for _, eimetric := range md.Metrics {

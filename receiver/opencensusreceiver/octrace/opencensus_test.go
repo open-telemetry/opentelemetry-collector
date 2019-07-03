@@ -37,7 +37,7 @@ import (
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/internal"
 	"github.com/open-telemetry/opentelemetry-service/observability"
 	"go.opencensus.io/trace"
@@ -466,7 +466,7 @@ func newSpanAppender() *spanAppender {
 
 var _ consumer.TraceConsumer = (*spanAppender)(nil)
 
-func (sa *spanAppender) ConsumeTraceData(ctx context.Context, td data.TraceData) error {
+func (sa *spanAppender) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	sa.Lock()
 	defer sa.Unlock()
 

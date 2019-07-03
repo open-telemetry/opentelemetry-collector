@@ -25,7 +25,7 @@ import (
 	"go.opencensus.io/trace"
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exporterhelper"
 	"github.com/open-telemetry/opentelemetry-service/internal"
@@ -43,7 +43,7 @@ import (
 func NewExporterWrapper(exporterName string, spanName string, ocExporter trace.Exporter) (exporter.TraceExporter, error) {
 	return exporterhelper.NewTraceExporter(
 		exporterName,
-		func(ctx context.Context, td data.TraceData) (int, error) {
+		func(ctx context.Context, td consumerdata.TraceData) (int, error) {
 			return PushOcProtoSpansToOCTraceExporter(ocExporter, td)
 		},
 		exporterhelper.WithSpanName(spanName),
@@ -55,7 +55,7 @@ func NewExporterWrapper(exporterName string, spanName string, ocExporter trace.E
 
 // PushOcProtoSpansToOCTraceExporter pushes TraceData to the given trace.Exporter by converting the
 // protos to trace.SpanData.
-func PushOcProtoSpansToOCTraceExporter(ocExporter trace.Exporter, td data.TraceData) (int, error) {
+func PushOcProtoSpansToOCTraceExporter(ocExporter trace.Exporter, td consumerdata.TraceData) (int, error) {
 	var errs []error
 	var goodSpans []*tracepb.Span
 	for _, span := range td.Spans {

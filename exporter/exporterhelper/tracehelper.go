@@ -19,14 +19,14 @@ import (
 
 	"go.opencensus.io/trace"
 
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
 	"github.com/open-telemetry/opentelemetry-service/observability"
 )
 
 // PushTraceData is a helper function that is similar to ConsumeTraceData but also returns
 // the number of dropped spans.
-type PushTraceData func(ctx context.Context, td data.TraceData) (droppedSpans int, err error)
+type PushTraceData func(ctx context.Context, td consumerdata.TraceData) (droppedSpans int, err error)
 
 type traceExporter struct {
 	exporterFormat string
@@ -35,7 +35,7 @@ type traceExporter struct {
 
 var _ (exporter.TraceExporter) = (*traceExporter)(nil)
 
-func (te *traceExporter) ConsumeTraceData(ctx context.Context, td data.TraceData) error {
+func (te *traceExporter) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	exporterCtx := observability.ContextWithExporterName(ctx, te.exporterFormat)
 	_, err := te.pushTraceData(exporterCtx, td)
 	return err
@@ -73,7 +73,7 @@ func NewTraceExporter(exporterFormat string, pushTraceData PushTraceData, option
 }
 
 func pushTraceDataWithMetrics(next PushTraceData) PushTraceData {
-	return func(ctx context.Context, td data.TraceData) (int, error) {
+	return func(ctx context.Context, td consumerdata.TraceData) (int, error) {
 		// TOOD: Add retry logic here if we want to support because we need to record special metrics.
 		droppedSpans, err := next(ctx, td)
 		// TODO: How to record the reason of dropping?
@@ -83,7 +83,7 @@ func pushTraceDataWithMetrics(next PushTraceData) PushTraceData {
 }
 
 func pushTraceDataWithSpan(next PushTraceData, spanName string) PushTraceData {
-	return func(ctx context.Context, td data.TraceData) (int, error) {
+	return func(ctx context.Context, td consumerdata.TraceData) (int, error) {
 		ctx, span := trace.StartSpan(ctx, spanName)
 		defer span.End()
 		// Call next stage.

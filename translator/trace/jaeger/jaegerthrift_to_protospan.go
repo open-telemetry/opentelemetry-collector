@@ -25,14 +25,14 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/internal"
 	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
 )
 
 // ThriftBatchToOCProto converts a single Jaeger Thrift batch of spans to a OC proto batch.
-func ThriftBatchToOCProto(jbatch *jaeger.Batch) (data.TraceData, error) {
-	ocbatch := data.TraceData{
+func ThriftBatchToOCProto(jbatch *jaeger.Batch) (consumerdata.TraceData, error) {
+	ocbatch := consumerdata.TraceData{
 		Node:  jProcessToOCProtoNode(jbatch.GetProcess()),
 		Spans: jSpansToOCProtoSpans(jbatch.GetSpans()),
 	}

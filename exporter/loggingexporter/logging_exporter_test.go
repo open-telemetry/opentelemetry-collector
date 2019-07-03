@@ -19,7 +19,7 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"go.uber.org/zap"
 )
 
@@ -28,7 +28,7 @@ func TestLoggingTraceExporterNoErrors(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Wanted nil got %v", err)
 	}
-	td := data.TraceData{
+	td := consumerdata.TraceData{
 		Spans: make([]*tracepb.Span, 7),
 	}
 	if err := lte.ConsumeTraceData(context.Background(), td); err != nil {
@@ -44,7 +44,7 @@ func TestLoggingMetricsExporterNoErrors(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Wanted nil got %v", err)
 	}
-	md := data.MetricsData{
+	md := consumerdata.MetricsData{
 		Metrics: make([]*metricspb.Metric, 7),
 	}
 	if err := lme.ConsumeMetricsData(context.Background(), md); err != nil {

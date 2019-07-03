@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/internal"
 	"github.com/open-telemetry/opentelemetry-service/processor"
 )
@@ -33,7 +33,7 @@ type metricsConsumers []consumer.MetricsConsumer
 var _ processor.MetricsProcessor = (*metricsConsumers)(nil)
 
 // ConsumeMetricsData exports the MetricsData to all consumers wrapped by the current one.
-func (mcs metricsConsumers) ConsumeMetricsData(ctx context.Context, md data.MetricsData) error {
+func (mcs metricsConsumers) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
 	var errs []error
 	for _, mdp := range mcs {
 		if err := mdp.ConsumeMetricsData(ctx, md); err != nil {
@@ -53,7 +53,7 @@ type traceConsumers []consumer.TraceConsumer
 var _ processor.TraceProcessor = (*traceConsumers)(nil)
 
 // ConsumeTraceData exports the span data to all trace consumers wrapped by the current one.
-func (tcs traceConsumers) ConsumeTraceData(ctx context.Context, td data.TraceData) error {
+func (tcs traceConsumers) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	var errs []error
 	for _, tdp := range tcs {
 		if err := tdp.ConsumeTraceData(ctx, td); err != nil {

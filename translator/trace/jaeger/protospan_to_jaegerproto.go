@@ -25,7 +25,7 @@ import (
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
 )
 
@@ -34,7 +34,7 @@ var (
 )
 
 // OCProtoToJaegerProto translates OpenCensus trace data into the Jaeger Proto for GRPC.
-func OCProtoToJaegerProto(td data.TraceData) (*jaeger.Batch, error) {
+func OCProtoToJaegerProto(td consumerdata.TraceData) (*jaeger.Batch, error) {
 	jSpans, err := ocSpansToJaegerSpansProto(td.Spans)
 	if err != nil {
 		return nil, err

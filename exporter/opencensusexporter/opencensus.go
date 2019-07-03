@@ -29,7 +29,7 @@ import (
 	"google.golang.org/grpc/keepalive"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exporterhelper"
 	"github.com/open-telemetry/opentelemetry-service/internal"
 	"github.com/open-telemetry/opentelemetry-service/internal/compression"
@@ -218,7 +218,7 @@ func (oce *ocagentExporter) stop() error {
 	return internal.CombineErrors(errors)
 }
 
-func (oce *ocagentExporter) PushTraceData(ctx context.Context, td data.TraceData) (int, error) {
+func (oce *ocagentExporter) PushTraceData(ctx context.Context, td consumerdata.TraceData) (int, error) {
 	// Get first available exporter.
 	exporter, ok := <-oce.exporters
 	if !ok {

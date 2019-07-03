@@ -20,12 +20,12 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 )
 
 func TestNopTraceExporter_NoErrors(t *testing.T) {
 	nte := NewNopTraceExporter()
-	td := data.TraceData{
+	td := consumerdata.TraceData{
 		Spans: make([]*tracepb.Span, 7),
 	}
 	if err := nte.ConsumeTraceData(context.Background(), td); err != nil {
@@ -39,7 +39,7 @@ func TestNopTraceExporter_NoErrors(t *testing.T) {
 func TestNopTraceExporter_WithErrors(t *testing.T) {
 	want := errors.New("MyError")
 	nte := NewNopTraceExporter(WithReturnError(want))
-	td := data.TraceData{
+	td := consumerdata.TraceData{
 		Spans: make([]*tracepb.Span, 7),
 	}
 	if got := nte.ConsumeTraceData(context.Background(), td); got != want {
@@ -52,7 +52,7 @@ func TestNopTraceExporter_WithErrors(t *testing.T) {
 
 func TestNopMetricsExporter_NoErrors(t *testing.T) {
 	nme := NewNopMetricsExporter()
-	md := data.MetricsData{
+	md := consumerdata.MetricsData{
 		Metrics: make([]*metricspb.Metric, 7),
 	}
 	if err := nme.ConsumeMetricsData(context.Background(), md); err != nil {
@@ -66,7 +66,7 @@ func TestNopMetricsExporter_NoErrors(t *testing.T) {
 func TestNopMetricsExporter_WithErrors(t *testing.T) {
 	want := errors.New("MyError")
 	nme := NewNopMetricsExporter(WithReturnError(want))
-	md := data.MetricsData{
+	md := consumerdata.MetricsData{
 		Metrics: make([]*metricspb.Metric, 7),
 	}
 	if got := nme.ConsumeMetricsData(context.Background(), md); got != want {

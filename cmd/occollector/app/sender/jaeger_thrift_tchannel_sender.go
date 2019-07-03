@@ -21,7 +21,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/errors/errorkind"
 	jaegertranslator "github.com/open-telemetry/opentelemetry-service/translator/trace/jaeger"
 )
@@ -47,7 +47,7 @@ func NewJaegerThriftTChannelSender(
 }
 
 // ConsumeTraceData sends the received data to the configured Jaeger Thrift end-point.
-func (s *JaegerThriftTChannelSender) ConsumeTraceData(ctx context.Context, td data.TraceData) error {
+func (s *JaegerThriftTChannelSender) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	// TODO: (@pjanotti) In case of failure the translation to Jaeger Thrift is going to be remade, cache it somehow.
 	tBatch, err := jaegertranslator.OCProtoToJaegerThrift(td)
 	if err != nil {

@@ -21,7 +21,7 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 )
 
 func TestTraceProcessorMultiplexing(t *testing.T) {
@@ -31,7 +31,7 @@ func TestTraceProcessorMultiplexing(t *testing.T) {
 	}
 
 	tdp := NewTraceProcessor(processors)
-	td := data.TraceData{
+	td := consumerdata.TraceData{
 		Spans: make([]*tracepb.Span, 7),
 	}
 
@@ -64,7 +64,7 @@ func TestTraceProcessorWhenOneErrors(t *testing.T) {
 	processors[1].(*mockTraceConsumer).MustFail = true
 
 	tdp := NewTraceProcessor(processors)
-	td := data.TraceData{
+	td := consumerdata.TraceData{
 		Spans: make([]*tracepb.Span, 5),
 	}
 
@@ -94,7 +94,7 @@ func TestMetricsProcessorMultiplexing(t *testing.T) {
 	}
 
 	mdp := NewMetricsProcessor(processors)
-	md := data.MetricsData{
+	md := consumerdata.MetricsData{
 		Metrics: make([]*metricspb.Metric, 7),
 	}
 
@@ -127,7 +127,7 @@ func TestMetricsProcessorWhenOneErrors(t *testing.T) {
 	processors[1].(*mockMetricsConsumer).MustFail = true
 
 	mdp := NewMetricsProcessor(processors)
-	md := data.MetricsData{
+	md := consumerdata.MetricsData{
 		Metrics: make([]*metricspb.Metric, 5),
 	}
 
@@ -157,7 +157,7 @@ type mockTraceConsumer struct {
 
 var _ consumer.TraceConsumer = &mockTraceConsumer{}
 
-func (p *mockTraceConsumer) ConsumeTraceData(ctx context.Context, td data.TraceData) error {
+func (p *mockTraceConsumer) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	p.TotalSpans += len(td.Spans)
 	if p.MustFail {
 		return fmt.Errorf("this processor must fail")
@@ -173,7 +173,7 @@ type mockMetricsConsumer struct {
 
 var _ consumer.MetricsConsumer = &mockMetricsConsumer{}
 
-func (p *mockMetricsConsumer) ConsumeMetricsData(ctx context.Context, td data.MetricsData) error {
+func (p *mockMetricsConsumer) ConsumeMetricsData(ctx context.Context, td consumerdata.MetricsData) error {
 	p.TotalMetrics += len(td.Metrics)
 	if p.MustFail {
 		return fmt.Errorf("this processor must fail")

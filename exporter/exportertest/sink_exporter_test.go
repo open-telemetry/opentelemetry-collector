@@ -20,15 +20,15 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 )
 
 func TestSinkTraceExporter(t *testing.T) {
 	sink := new(SinkTraceExporter)
-	td := data.TraceData{
+	td := consumerdata.TraceData{
 		Spans: make([]*tracepb.Span, 7),
 	}
-	want := make([]data.TraceData, 0, 7)
+	want := make([]consumerdata.TraceData, 0, 7)
 	for i := 0; i < 7; i++ {
 		if err := sink.ConsumeTraceData(context.Background(), td); err != nil {
 			t.Fatalf("Wanted nil got error")
@@ -46,10 +46,10 @@ func TestSinkTraceExporter(t *testing.T) {
 
 func TestSinkMetricsExporter(t *testing.T) {
 	sink := new(SinkMetricsExporter)
-	md := data.MetricsData{
+	md := consumerdata.MetricsData{
 		Metrics: make([]*metricspb.Metric, 7),
 	}
-	want := make([]data.MetricsData, 0, 7)
+	want := make([]consumerdata.MetricsData, 0, 7)
 	for i := 0; i < 7; i++ {
 		if err := sink.ConsumeMetricsData(context.Background(), md); err != nil {
 			t.Fatalf("Wanted nil got error")

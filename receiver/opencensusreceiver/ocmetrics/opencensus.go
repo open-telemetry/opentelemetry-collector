@@ -28,7 +28,7 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/observability"
 )
 
@@ -63,7 +63,7 @@ func (ocr *Receiver) Export(mes agentmetricspb.MetricsService_ExportServer) erro
 	// The bundler will receive batches of metrics i.e. []*metricspb.Metric
 	// We need to ensure that it propagates the receiver name as a tag
 	ctxWithReceiverName := observability.ContextWithReceiverName(mes.Context(), receiverTagValue)
-	metricsBundler := bundler.NewBundler((*data.MetricsData)(nil), func(payload interface{}) {
+	metricsBundler := bundler.NewBundler((*consumerdata.MetricsData)(nil), func(payload interface{}) {
 		ocr.batchMetricExporting(ctxWithReceiverName, payload)
 	})
 
@@ -118,13 +118,13 @@ func (ocr *Receiver) Export(mes agentmetricspb.MetricsService_ExportServer) erro
 func processReceivedMetrics(ni *commonpb.Node, resource *resourcepb.Resource, metrics []*metricspb.Metric, bundler *bundler.Bundler) {
 	// Firstly, we'll add them to the bundler.
 	if len(metrics) > 0 {
-		bundlerPayload := &data.MetricsData{Node: ni, Metrics: metrics, Resource: resource}
+		bundlerPayload := &consumerdata.MetricsData{Node: ni, Metrics: metrics, Resource: resource}
 		bundler.Add(bundlerPayload, len(bundlerPayload.Metrics))
 	}
 }
 
 func (ocr *Receiver) batchMetricExporting(longLivedRPCCtx context.Context, payload interface{}) {
-	mds := payload.([]*data.MetricsData)
+	mds := payload.([]*consumerdata.MetricsData)
 	if len(mds) == 0 {
 		return
 	}

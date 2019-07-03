@@ -28,7 +28,7 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/omnition/scribe-go/if/scribe/gen-go/scribe"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
 )
 
@@ -210,7 +210,7 @@ func TestScribeReceiverServer(t *testing.T) {
 // TODO: Move this to processortest.
 type mockTraceSink struct {
 	wg           *sync.WaitGroup
-	receivedData []data.TraceData
+	receivedData []consumerdata.TraceData
 }
 
 func newMockTraceSink(numReceiveTraceDataCount int) *mockTraceSink {
@@ -218,13 +218,13 @@ func newMockTraceSink(numReceiveTraceDataCount int) *mockTraceSink {
 	wg.Add(numReceiveTraceDataCount)
 	return &mockTraceSink{
 		wg:           wg,
-		receivedData: make([]data.TraceData, 0, numReceiveTraceDataCount),
+		receivedData: make([]consumerdata.TraceData, 0, numReceiveTraceDataCount),
 	}
 }
 
 var _ consumer.TraceConsumer = (*mockTraceSink)(nil)
 
-func (m *mockTraceSink) ConsumeTraceData(ctx context.Context, td data.TraceData) error {
+func (m *mockTraceSink) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	m.receivedData = append(m.receivedData, td)
 	m.wg.Done()
 	return nil
@@ -234,7 +234,7 @@ func (m *mockTraceSink) Wait() {
 	m.wg.Wait()
 }
 
-var wantTraceData = data.TraceData{
+var wantTraceData = consumerdata.TraceData{
 	Node: &commonpb.Node{
 		ServiceInfo: &commonpb.ServiceInfo{Name: "zipkin-query"},
 		Attributes: map[string]string{

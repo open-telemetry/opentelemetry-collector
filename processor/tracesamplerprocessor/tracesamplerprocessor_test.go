@@ -26,7 +26,7 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
 	processormetrics "github.com/open-telemetry/opentelemetry-service/internal/collector/processor"
 	"github.com/open-telemetry/opentelemetry-service/processor"
@@ -270,10 +270,10 @@ func Test_hash(t *testing.T) {
 	}
 }
 
-// genRandomTestData generates a slice of data.TraceData with the numBatches elements which one with
+// genRandomTestData generates a slice of consumerdata.TraceData with the numBatches elements which one with
 // numTracesPerBatch spans (ie.: each span has a different trace ID). All spans belong to the specified
 // serviceName.
-func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string) (tdd []data.TraceData) {
+func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string) (tdd []consumerdata.TraceData) {
 	r := rand.New(rand.NewSource(1))
 
 	for i := 0; i < numBatches; i++ {
@@ -284,7 +284,7 @@ func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string) (t
 			}
 			spans = append(spans, span)
 		}
-		td := data.TraceData{
+		td := consumerdata.TraceData{
 			Node: &commonpb.Node{
 				ServiceInfo: &commonpb.ServiceInfo{Name: serviceName},
 			},
@@ -298,7 +298,7 @@ func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string) (t
 
 // assertSampledData checks for no repeated traceIDs and counts the number of spans on the sampled data for
 // the given service.
-func assertSampledData(t *testing.T, sampled []data.TraceData, serviceName string) (traceIDs map[string]bool, spanCount int) {
+func assertSampledData(t *testing.T, sampled []consumerdata.TraceData, serviceName string) (traceIDs map[string]bool, spanCount int) {
 	traceIDs = make(map[string]bool)
 	for _, td := range sampled {
 		if processormetrics.ServiceNameForNode(td.Node) != serviceName {

@@ -26,7 +26,7 @@ import (
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/internal/testutils"
 	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
 )
@@ -241,7 +241,7 @@ func TestConservativeConversions(t *testing.T) {
 		},
 	}
 
-	got := make([]data.TraceData, 0, len(batches))
+	got := make([]consumerdata.TraceData, 0, len(batches))
 	for i, batch := range batches {
 		gb, err := ThriftBatchToOCProto(batch)
 		if err != nil {
@@ -251,7 +251,7 @@ func TestConservativeConversions(t *testing.T) {
 		got = append(got, gb)
 	}
 
-	want := []data.TraceData{
+	want := []consumerdata.TraceData{
 		{
 			// The conversion returns a slice with capacity equals to the number of elements in the
 			// jager batch spans, even if the element is nil.

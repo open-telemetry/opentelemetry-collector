@@ -22,7 +22,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 	"github.com/open-telemetry/opentelemetry-service/receiver/jaegerreceiver"
 	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver"
@@ -176,7 +176,7 @@ type mockTraceConsumer struct {
 	spansReceived uint64
 }
 
-func (tc *mockTraceConsumer) ConsumeTraceData(ctx context.Context, td data.TraceData) error {
+func (tc *mockTraceConsumer) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	atomic.AddUint64(&tc.spansReceived, uint64(len(td.Spans)))
 
 	for _, span := range td.Spans {
@@ -204,7 +204,7 @@ func (tc *mockTraceConsumer) ConsumeTraceData(ctx context.Context, td data.Trace
 type mockMetricConsumer struct {
 }
 
-func (mc *mockMetricConsumer) ConsumeMetricsData(ctx context.Context, md data.MetricsData) error {
+func (mc *mockMetricConsumer) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
 	// Metrics backend is not implemented yet.
 	return nil
 }

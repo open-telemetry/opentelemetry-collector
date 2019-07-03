@@ -27,7 +27,7 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 
 	"github.com/open-telemetry/opentelemetry-service/configv2"
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/models"
 	"github.com/open-telemetry/opentelemetry-service/receiver/receivertest"
 )
@@ -139,7 +139,7 @@ func testReceivers(
 
 	// Send one trace.
 	name := tracepb.TruncatableString{Value: "testspanname"}
-	traceData := data.TraceData{
+	traceData := consumerdata.TraceData{
 		SourceFormat: "test-source-format",
 		Spans: []*tracepb.Span{
 			{Name: &name},
@@ -150,7 +150,7 @@ func testReceivers(
 		traceProducer.TraceConsumer.ConsumeTraceData(context.Background(), traceData)
 	}
 
-	metricsData := data.MetricsData{
+	metricsData := consumerdata.MetricsData{
 		Metrics: []*metricspb.Metric{
 			{MetricDescriptor: &metricspb.MetricDescriptor{Name: "testmetric"}},
 		},

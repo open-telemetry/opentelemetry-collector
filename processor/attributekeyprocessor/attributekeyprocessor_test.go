@@ -23,7 +23,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-service/processor"
 	"github.com/open-telemetry/opentelemetry-service/processor/processortest"
@@ -140,12 +140,12 @@ func Test_attributekeyprocessor_ConsumeTraceData(t *testing.T) {
 	tests := []struct {
 		name string
 		args []KeyReplacement
-		td   data.TraceData
-		want []data.TraceData
+		td   consumerdata.TraceData
+		want []consumerdata.TraceData
 	}{
 		{
 			name: "keyMap_nil",
-			want: []data.TraceData{
+			want: []consumerdata.TraceData{
 				{},
 			},
 		},
@@ -157,10 +157,10 @@ func Test_attributekeyprocessor_ConsumeTraceData(t *testing.T) {
 					NewKey: "bar",
 				},
 			},
-			td: data.TraceData{
+			td: consumerdata.TraceData{
 				Spans: make([]*tracepb.Span, 1, 1),
 			},
-			want: []data.TraceData{
+			want: []consumerdata.TraceData{
 				{
 					Spans: make([]*tracepb.Span, 1, 1),
 				},
@@ -174,14 +174,14 @@ func Test_attributekeyprocessor_ConsumeTraceData(t *testing.T) {
 					NewKey: "bar",
 				},
 			},
-			td: data.TraceData{
+			td: consumerdata.TraceData{
 				Spans: []*tracepb.Span{
 					{
 						Name: &tracepb.TruncatableString{Value: "test"},
 					},
 				},
 			},
-			want: []data.TraceData{
+			want: []consumerdata.TraceData{
 				{
 					Spans: []*tracepb.Span{
 						{
@@ -199,7 +199,7 @@ func Test_attributekeyprocessor_ConsumeTraceData(t *testing.T) {
 					NewKey: "bar",
 				},
 			},
-			td: data.TraceData{
+			td: consumerdata.TraceData{
 				Spans: []*tracepb.Span{
 					{
 						Name:       &tracepb.TruncatableString{Value: "test"},
@@ -207,7 +207,7 @@ func Test_attributekeyprocessor_ConsumeTraceData(t *testing.T) {
 					},
 				},
 			},
-			want: []data.TraceData{
+			want: []consumerdata.TraceData{
 				{
 					Spans: []*tracepb.Span{
 						{
@@ -242,7 +242,7 @@ func Test_attributekeyprocessor_ConsumeTraceData(t *testing.T) {
 					KeepOriginal: true,
 				},
 			},
-			td: data.TraceData{
+			td: consumerdata.TraceData{
 				Spans: []*tracepb.Span{
 					{
 						Name: &tracepb.TruncatableString{Value: "test"},
@@ -274,7 +274,7 @@ func Test_attributekeyprocessor_ConsumeTraceData(t *testing.T) {
 					},
 				},
 			},
-			want: []data.TraceData{
+			want: []consumerdata.TraceData{
 				{
 					Spans: []*tracepb.Span{
 						{

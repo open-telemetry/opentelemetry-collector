@@ -25,7 +25,7 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
 )
 
@@ -197,8 +197,8 @@ func TestMultipleJSONV1BatchesToOCProto(t *testing.T) {
 		t.Fatalf("failed to load the batches: %v", err)
 	}
 
-	nodeToTraceReqs := make(map[string]*data.TraceData)
-	var got []data.TraceData
+	nodeToTraceReqs := make(map[string]*consumerdata.TraceData)
+	var got []consumerdata.TraceData
 	for _, batch := range batches {
 		jsonBatch, err := json.Marshal(batch)
 		if err != nil {
@@ -235,7 +235,7 @@ func TestMultipleJSONV1BatchesToOCProto(t *testing.T) {
 	}
 }
 
-func sortTraceByNodeName(trace []data.TraceData) {
+func sortTraceByNodeName(trace []consumerdata.TraceData) {
 	sort.Slice(trace, func(i, j int) bool {
 		return trace[i].Node.ServiceInfo.Name < trace[j].Node.ServiceInfo.Name
 	})
@@ -563,7 +563,7 @@ func TestJSONHTTPToGRPCStatusCode(t *testing.T) {
 
 // ocBatches has the OpenCensus proto batches used in the test. They are hard coded because
 // structs like tracepb.AttributeMap cannot be ready from JSON.
-var ocBatchesFromZipkinV1 = []data.TraceData{
+var ocBatchesFromZipkinV1 = []consumerdata.TraceData{
 	{
 		Node: &commonpb.Node{
 			ServiceInfo: &commonpb.ServiceInfo{Name: "front-proxy"},

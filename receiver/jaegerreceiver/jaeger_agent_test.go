@@ -26,7 +26,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"go.opencensus.io/trace"
 
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-service/internal"
 	"github.com/open-telemetry/opentelemetry-service/receiver/receivertest"
@@ -145,7 +145,7 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *Configu
 
 	got := sink.AllTraces()
 
-	want := []data.TraceData{
+	want := []consumerdata.TraceData{
 		{
 			Node: &commonpb.Node{
 				ServiceInfo: &commonpb.ServiceInfo{Name: "issaTest"},

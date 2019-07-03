@@ -23,7 +23,7 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 
-	"github.com/open-telemetry/opentelemetry-service/data"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
 )
 
@@ -32,7 +32,7 @@ var (
 )
 
 // OCProtoToJaegerThrift translates OpenCensus trace data into the Jaeger Thrift format.
-func OCProtoToJaegerThrift(td data.TraceData) (*jaeger.Batch, error) {
+func OCProtoToJaegerThrift(td consumerdata.TraceData) (*jaeger.Batch, error) {
 	jSpans, err := ocSpansToJaegerSpans(td.Spans)
 	if err != nil {
 		return nil, err
