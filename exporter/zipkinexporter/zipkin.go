@@ -31,7 +31,7 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/errors/errorkind"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumererror"
 	"github.com/open-telemetry/opentelemetry-service/observability"
 	"github.com/open-telemetry/opentelemetry-service/translator/trace"
 	spandatatranslator "github.com/open-telemetry/opentelemetry-service/translator/trace/spandata"
@@ -208,7 +208,7 @@ func (ze *zipkinExporter) ConsumeTraceData(ctx context.Context, td consumerdata.
 	for _, span := range td.Spans {
 		sd, err := spandatatranslator.ProtoSpanToOCSpanData(span)
 		if err != nil {
-			return errorkind.Permanent(err)
+			return consumererror.Permanent(err)
 		}
 		zs := ze.zipkinSpan(td.Node, sd)
 		// ze.reporter can get closed in the midst of a Send

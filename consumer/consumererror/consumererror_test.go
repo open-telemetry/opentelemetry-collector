@@ -12,10 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package errorkind provides wrappers to easily classify errors, allowing
-// appropriate action by error handlers without need to know each individual
-// error type/instance.
-package errorkind
+package consumererror
 
 import (
 	"errors"

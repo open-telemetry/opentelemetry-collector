@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package errorkind provides wrappers to easily classify errors. This allows
+// Package consumererror provides wrappers to easily classify errors. This allows
 // appropriate action by error handlers without the need to know each individual
 // error type/instance.
-package errorkind
+package consumererror
 
 // permanent is an error that will be always returned if its source
 // receives the same inputs.

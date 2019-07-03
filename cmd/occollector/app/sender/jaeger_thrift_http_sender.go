@@ -28,7 +28,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/errors/errorkind"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumererror"
 	jaegertranslator "github.com/open-telemetry/opentelemetry-service/translator/trace/jaeger"
 )
 
@@ -89,7 +89,7 @@ func (s *JaegerThriftHTTPSender) ConsumeTraceData(ctx context.Context, td consum
 	// TODO: (@pjanotti) In case of failure the translation to Jaeger Thrift is going to be remade, cache it somehow.
 	tBatch, err := jaegertranslator.OCProtoToJaegerThrift(td)
 	if err != nil {
-		return errorkind.Permanent(err)
+		return consumererror.Permanent(err)
 	}
 
 	body, err := serializeThrift(tBatch)

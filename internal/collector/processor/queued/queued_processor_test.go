@@ -27,7 +27,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/errors/errorkind"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumererror"
 )
 
 func TestQueuedProcessor_noEnqueueOnPermanentError(t *testing.T) {
@@ -37,7 +37,7 @@ func TestQueuedProcessor_noEnqueueOnPermanentError(t *testing.T) {
 	}
 
 	c := &waitGroupTraceConsumer{
-		consumeTraceDataError: errorkind.Permanent(errors.New("bad data")),
+		consumeTraceDataError: consumererror.Permanent(errors.New("bad data")),
 	}
 
 	qp := NewQueuedSpanProcessor(
