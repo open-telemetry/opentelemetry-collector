@@ -16,6 +16,7 @@ package vmmetricsreceiver
 
 import (
 	"context"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -32,6 +33,9 @@ func TestCreateDefaultConfig(t *testing.T) {
 }
 
 func TestCreateReceiver(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("vmmetricsreceiver currently only supported on linux")
+	}
 	factory := receiver.GetReceiverFactory(typeStr)
 	cfg := factory.CreateDefaultConfig()
 
