@@ -15,17 +15,23 @@
 package opencensusexporter
 
 import (
+	"context"
+	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
+	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver"
 	"testing"
 	"time"
 
-	"go.uber.org/zap"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/factories"
 	"github.com/open-telemetry/opentelemetry-service/internal/compression"
+	"github.com/open-telemetry/opentelemetry-service/internal/testutils"
 	"github.com/open-telemetry/opentelemetry-service/models"
+	"github.com/open-telemetry/opentelemetry-service/receiver"
+	_ "github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver" // Register the factory
+	"github.com/open-telemetry/opentelemetry-service/receiver/receivertest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -45,7 +51,25 @@ func TestCreateMetricsExporter(t *testing.T) {
 }
 
 func TestCreateTraceExporter(t *testing.T) {
-	const defaultTestEndPoint = "127.0.0.1:55678"
+	// This test is about creating the exporter and stopping it. However, the
+	// exporter keeps trying to update its connection state in the background
+	// so unless there is a receiver enabled the stop call can return different
+	// results. Standing up a receiver to ensure that stop don't report errors.
+	rcvFactory := receiver.GetReceiverFactory(typeStr)
+	require.NotNil(t, rcvFactory)
+	rcvCfg := rcvFactory.CreateDefaultConfig().(*opencensusreceiver.ConfigV2)
+	rcvCfg.Endpoint = testutils.GetAvailableLocalAddress(t)
+
+	rcv, err := rcvFactory.CreateTraceReceiver(
+		context.Background(),
+		zap.NewNop(),
+		rcvCfg,
+		new(exportertest.SinkTraceExporter))
+	require.NotNil(t, rcv)
+	require.Nil(t, err)
+	require.Nil(t, rcv.StartTraceReception(receivertest.NewMockHost()))
+	defer rcv.StopTraceReception()
+
 	tests := []struct {
 		name     string
 		config   ConfigV2
@@ -61,21 +85,21 @@ func TestCreateTraceExporter(t *testing.T) {
 		{
 			name: "UseSecure",
 			config: ConfigV2{
-				Endpoint:  defaultTestEndPoint,
+				Endpoint:  rcvCfg.Endpoint,
 				UseSecure: true,
 			},
 		},
 		{
 			name: "ReconnectionDelay",
 			config: ConfigV2{
-				Endpoint:          defaultTestEndPoint,
+				Endpoint:          rcvCfg.Endpoint,
 				ReconnectionDelay: 5 * time.Second,
 			},
 		},
 		{
 			name: "KeepaliveParameters",
 			config: ConfigV2{
-				Endpoint: defaultTestEndPoint,
+				Endpoint: rcvCfg.Endpoint,
 				KeepaliveParameters: &keepaliveConfig{
 					Time:                30 * time.Second,
 					Timeout:             25 * time.Second,
@@ -86,14 +110,14 @@ func TestCreateTraceExporter(t *testing.T) {
 		{
 			name: "Compression",
 			config: ConfigV2{
-				Endpoint:    defaultTestEndPoint,
+				Endpoint:    rcvCfg.Endpoint,
 				Compression: compression.Gzip,
 			},
 		},
 		{
 			name: "Headers",
 			config: ConfigV2{
-				Endpoint: defaultTestEndPoint,
+				Endpoint: rcvCfg.Endpoint,
 				Headers: map[string]string{
 					"hdr1": "val1",
 					"hdr2": "val2",
@@ -103,14 +127,14 @@ func TestCreateTraceExporter(t *testing.T) {
 		{
 			name: "NumWorkers",
 			config: ConfigV2{
-				Endpoint:   defaultTestEndPoint,
+				Endpoint:   rcvCfg.Endpoint,
 				NumWorkers: 3,
 			},
 		},
 		{
 			name: "CompressionError",
 			config: ConfigV2{
-				Endpoint:    defaultTestEndPoint,
+				Endpoint:    rcvCfg.Endpoint,
 				Compression: "unknown compression",
 			},
 			mustFail: true,
@@ -118,14 +142,14 @@ func TestCreateTraceExporter(t *testing.T) {
 		{
 			name: "CertPemFile",
 			config: ConfigV2{
-				Endpoint:    defaultTestEndPoint,
+				Endpoint:    rcvCfg.Endpoint,
 				CertPemFile: "testdata/test_cert.pem",
 			},
 		},
 		{
 			name: "CertPemFileError",
 			config: ConfigV2{
-				Endpoint:    defaultTestEndPoint,
+				Endpoint:    rcvCfg.Endpoint,
 				CertPemFile: "nosuchfile",
 			},
 			mustFail: true,
