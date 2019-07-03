@@ -100,55 +100,25 @@ func TestNoBackend10kSPS(t *testing.T) {
 	tc.Sleep(10 * time.Second)
 }
 
-func Test1000SPSWithAttributes(t *testing.T) {
+type testCase struct {
+	attrCount    int
+	attrSizeByte int
+	expectedMaxCPU  uint32
+	expectedMaxRAM uint32
+}
 
-	tests := []struct {
-		attrCount    int
-		attrSizeByte int
-		expectedCPU  uint32
-	}{
-		// No attributes.
-		{
-			attrCount:    0,
-			attrSizeByte: 0,
-			expectedCPU:  20,
-		},
-
-		// We generate 10 attributes each with average key length of 100 bytes and
-		// average value length of 50 bytes so total size of attributes values is
-		// 15000 bytes.
-		{
-			attrCount:    100,
-			attrSizeByte: 50,
-			expectedCPU:  120,
-		},
-
-		// Approx 10 KiB attributes.
-		{
-			attrCount:    10,
-			attrSizeByte: 1000,
-			expectedCPU:  100,
-		},
-
-		// Approx 100 KiB attributes.
-		{
-			attrCount:    20,
-			attrSizeByte: 5000,
-			expectedCPU:  250,
-		},
-	}
-
+func test1000SPSWithAttributes(t *testing.T, args []string, tests []testCase) {
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("%d*%dbytes", test.attrCount, test.attrSizeByte), func(t *testing.T) {
 
 			tc := testbed.NewTestCase(t)
 			defer tc.Stop()
 
-			tc.SetExpectedMaxCPU(test.expectedCPU)
-			tc.SetExpectedMaxRAM(100)
+			tc.SetExpectedMaxCPU(test.expectedMaxCPU)
+			tc.SetExpectedMaxRAM(test.expectedMaxRAM)
 
 			tc.StartBackend(testbed.BackendOC)
-			tc.StartAgent()
+			tc.StartAgent(args...)
 
 			options := testbed.LoadOptions{SpansPerSecond: 1000}
 			options.Attributes = make(map[string]interface{})
@@ -171,4 +141,74 @@ func Test1000SPSWithAttributes(t *testing.T) {
 			tc.ValidateData()
 		})
 	}
+}
+
+
+func Test1000SPSWithAttributes(t *testing.T) {
+	test1000SPSWithAttributes(t, []string{}, []testCase{
+		// No attributes.
+		{
+			attrCount:    0,
+			attrSizeByte: 0,
+			expectedMaxCPU:  30,
+			expectedMaxRAM:  100,
+		},
+
+		// We generate 10 attributes each with average key length of 100 bytes and
+		// average value length of 50 bytes so total size of attributes values is
+		// 15000 bytes.
+		{
+			attrCount:    100,
+			attrSizeByte: 50,
+			expectedMaxCPU:  120,
+			expectedMaxRAM:  100,
+		},
+
+		// Approx 10 KiB attributes.
+		{
+			attrCount:    10,
+			attrSizeByte: 1000,
+			expectedMaxCPU:  100,
+			expectedMaxRAM:  100,
+		},
+
+		// Approx 100 KiB attributes.
+		{
+			attrCount:    20,
+			attrSizeByte: 5000,
+			expectedMaxCPU:  250,
+			expectedMaxRAM:  100,
+		},
+	})
+}
+
+func TestBallast1000SPSWithAttributes(t *testing.T) {
+	args := []string{"--mem-ballast-size-mib", "1000"}
+	test1000SPSWithAttributes(t, args, []testCase{
+		// No attributes.
+		{
+			attrCount:    0,
+			attrSizeByte: 0,
+			expectedMaxCPU:  30,
+			expectedMaxRAM:  2000,
+		},
+		{
+			attrCount:    100,
+			attrSizeByte: 50,
+			expectedMaxCPU:  80,
+			expectedMaxRAM:  2000,
+		},
+		{
+			attrCount:    10,
+			attrSizeByte: 1000,
+			expectedMaxCPU:  80,
+			expectedMaxRAM:  2000,
+		},
+		{
+			attrCount:    20,
+			attrSizeByte: 5000,
+			expectedMaxCPU:  120,
+			expectedMaxRAM:  2000,
+		},
+	})
 }
