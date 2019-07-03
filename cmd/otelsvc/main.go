@@ -17,10 +17,14 @@
 package main
 
 import (
-	"github.com/open-telemetry/opentelemetry-service/otelsvc"
+	"log"
+
+	"github.com/open-telemetry/opentelemetry-service/cmd/occollector/app/collector"
 	_ "github.com/open-telemetry/opentelemetry-service/receiver/vmmetricsreceiver"
 )
 
 func main() {
-	otelsvc.Run()
+	if err := collector.App.StartUnified(); err != nil {
+		log.Fatalf("Failed to run the service: %v", err)
+	}
 }
