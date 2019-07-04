@@ -19,8 +19,8 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-service/configv2/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/models"
 )
 
 // StopFunc is a function that can be called to stop an exporter that
@@ -33,13 +33,13 @@ type Factory interface {
 	Type() string
 
 	// CreateDefaultConfig creates the default configuration for the Exporter.
-	CreateDefaultConfig() models.Exporter
+	CreateDefaultConfig() configmodels.Exporter
 
 	// CreateTraceExporter creates a trace exporter based on this config.
-	CreateTraceExporter(logger *zap.Logger, cfg models.Exporter) (consumer.TraceConsumer, StopFunc, error)
+	CreateTraceExporter(logger *zap.Logger, cfg configmodels.Exporter) (consumer.TraceConsumer, StopFunc, error)
 
 	// CreateMetricsExporter creates a metrics exporter based on this config.
-	CreateMetricsExporter(logger *zap.Logger, cfg models.Exporter) (consumer.MetricsConsumer, StopFunc, error)
+	CreateMetricsExporter(logger *zap.Logger, cfg configmodels.Exporter) (consumer.MetricsConsumer, StopFunc, error)
 }
 
 // List of registered exporter factories.

@@ -17,9 +17,9 @@ package loggingexporter
 import (
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-service/configv2/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
-	"github.com/open-telemetry/opentelemetry-service/models"
 )
 
 var _ = exporter.RegisterFactory(&factory{})
@@ -39,9 +39,9 @@ func (f *factory) Type() string {
 }
 
 // CreateDefaultConfig creates the default configuration for exporter.
-func (f *factory) CreateDefaultConfig() models.Exporter {
+func (f *factory) CreateDefaultConfig() configmodels.Exporter {
 	return &ConfigV2{
-		ExporterSettings: models.ExporterSettings{
+		ExporterSettings: configmodels.ExporterSettings{
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
@@ -53,7 +53,7 @@ func noopStopFunc() error {
 }
 
 // CreateTraceExporter creates a trace exporter based on this config.
-func (f *factory) CreateTraceExporter(logger *zap.Logger, config models.Exporter) (consumer.TraceConsumer, exporter.StopFunc, error) {
+func (f *factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Exporter) (consumer.TraceConsumer, exporter.StopFunc, error) {
 
 	lexp, err := NewTraceExporter(logger)
 	if err != nil {
@@ -63,7 +63,7 @@ func (f *factory) CreateTraceExporter(logger *zap.Logger, config models.Exporter
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *factory) CreateMetricsExporter(logger *zap.Logger, cfg models.Exporter) (consumer.MetricsConsumer, exporter.StopFunc, error) {
+func (f *factory) CreateMetricsExporter(logger *zap.Logger, cfg configmodels.Exporter) (consumer.MetricsConsumer, exporter.StopFunc, error) {
 	lexp, err := NewMetricsExporter(logger)
 	if err != nil {
 		return nil, nil, err

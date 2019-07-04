@@ -26,8 +26,8 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 
 	"github.com/open-telemetry/opentelemetry-service/configv2"
+	"github.com/open-telemetry/opentelemetry-service/configv2/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/models"
 	"github.com/open-telemetry/opentelemetry-service/processor/addattributesprocessor"
 )
 
@@ -131,7 +131,7 @@ func TestPipelinesBuilder_Error(t *testing.T) {
 	// since there is no way to have such config loaded by LoadConfigFile, it would not
 	// pass validation. We are doing this to test failure mode of PipelinesBuilder.
 	pipeline := config.Pipelines["traces"]
-	pipeline.InputType = models.MetricsDataType
+	pipeline.InputType = configmodels.MetricsDataType
 
 	exporters, err := NewExportersBuilder(zap.NewNop(), config).Build()
 

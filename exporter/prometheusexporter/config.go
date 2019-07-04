@@ -17,12 +17,12 @@ package prometheusexporter
 import (
 	prometheus_golang "github.com/prometheus/client_golang/prometheus"
 
-	"github.com/open-telemetry/opentelemetry-service/models"
+	"github.com/open-telemetry/opentelemetry-service/configv2/configmodels"
 )
 
 // ConfigV2 defines configuration for Prometheus exporter.
 type ConfigV2 struct {
-	models.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	configmodels.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 
 	// The address on which the Prometheus scrape handler will be run on.
 	Endpoint string `mapstructure:"endpoint"`

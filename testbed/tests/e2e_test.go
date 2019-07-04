@@ -19,9 +19,9 @@ package tests
 
 import (
 	"fmt"
+	"strconv"
 	"testing"
 	"time"
-	"strconv"
 
 	"github.com/stretchr/testify/assert"
 
@@ -29,9 +29,9 @@ import (
 )
 
 func TestBallastMemory(t *testing.T) {
-	tests := []struct{
+	tests := []struct {
 		ballastSize uint32
-		maxRSS uint32
+		maxRSS      uint32
 	}{
 		{100, 50},
 		{500, 70},
@@ -45,14 +45,14 @@ func TestBallastMemory(t *testing.T) {
 		tc.StartAgent("--mem-ballast-size-mib", strconv.Itoa(int(test.ballastSize)))
 
 		var rss, vms uint32
-		// It is possible that the process is not ready or the ballast code path 
+		// It is possible that the process is not ready or the ballast code path
 		// is not hit immediately so we give the process up to a couple of seconds
 		// to fire up and setup ballast. 2 seconds is a long time for this case but
 		// it is short enough to not be annoying if the test fails repeatedly
 		tc.WaitForN(func() bool {
 			rss, vms, _ = tc.AgentMemoryInfo()
 			return vms > test.ballastSize
-		}, time.Second * 2, "VMS must be greater than %d", test.ballastSize)
+		}, time.Second*2, "VMS must be greater than %d", test.ballastSize)
 
 		assert.True(t, rss <= test.maxRSS, fmt.Sprintf("RSS must be less than or equal to %d", test.maxRSS))
 		tc.Stop()

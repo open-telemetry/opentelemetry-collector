@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-service/configv2"
-	"github.com/open-telemetry/opentelemetry-service/models"
+	"github.com/open-telemetry/opentelemetry-service/configv2/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
 
@@ -46,7 +46,7 @@ func TestLoadConfig(t *testing.T) {
 		&ConfigV2{
 			TypeVal: typeStr,
 			NameVal: "jaeger/customname",
-			Protocols: map[string]*models.ReceiverSettings{
+			Protocols: map[string]*configmodels.ReceiverSettings{
 				"thrift-http": {
 					Enabled:  false,
 					Endpoint: "127.0.0.1:3456",

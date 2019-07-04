@@ -27,8 +27,8 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 
 	"github.com/open-telemetry/opentelemetry-service/configv2"
+	"github.com/open-telemetry/opentelemetry-service/configv2/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/models"
 	"github.com/open-telemetry/opentelemetry-service/receiver/receivertest"
 )
 
@@ -217,7 +217,7 @@ func TestReceiversBuilder_DataTypeError(t *testing.T) {
 
 func TestReceiversBuilder_StartAll(t *testing.T) {
 	receivers := make(Receivers)
-	rcvCfg := &models.ReceiverSettings{}
+	rcvCfg := &configmodels.ReceiverSettings{}
 
 	receiver := &configv2.ExampleReceiverProducer{}
 
@@ -239,7 +239,7 @@ func TestReceiversBuilder_StartAll(t *testing.T) {
 
 func TestReceiversBuilder_StopAll(t *testing.T) {
 	receivers := make(Receivers)
-	rcvCfg := &models.ReceiverSettings{}
+	rcvCfg := &configmodels.ReceiverSettings{}
 
 	receiver := &configv2.ExampleReceiverProducer{}
 
