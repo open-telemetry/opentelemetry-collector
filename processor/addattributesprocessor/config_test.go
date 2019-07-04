@@ -21,26 +21,26 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-service/configv2"
-	"github.com/open-telemetry/opentelemetry-service/configv2/configmodels"
+	"github.com/open-telemetry/opentelemetry-service/config"
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/processor"
 )
 
-var _ = configv2.RegisterTestFactories()
+var _ = config.RegisterTestFactories()
 
 func TestLoadConfig(t *testing.T) {
 
 	factory := processor.GetFactory(typeStr)
 
-	config, err := configv2.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"))
+	cfg, err := config.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"))
 
 	require.Nil(t, err)
-	require.NotNil(t, config)
+	require.NotNil(t, cfg)
 
-	p0 := config.Processors["attributes"]
+	p0 := cfg.Processors["attributes"]
 	assert.Equal(t, p0, factory.CreateDefaultConfig())
 
-	p1 := config.Processors["attributes/2"]
+	p1 := cfg.Processors["attributes/2"]
 	assert.Equal(t, p1,
 		&ConfigV2{
 			ProcessorSettings: configmodels.ProcessorSettings{

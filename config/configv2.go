@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package configv2 implements loading of configuration V2 from Viper configuration.
+// Package config implements loading of configuration from Viper configuration.
 // The implementation relies on registered factories that allow creating
 // default configuration for each type of receiver/exporter/processor.
-package configv2
+package config
 
 import (
 	"errors"
@@ -24,7 +24,7 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/open-telemetry/opentelemetry-service/configv2/configmodels"
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
 	"github.com/open-telemetry/opentelemetry-service/processor"
 	"github.com/open-telemetry/opentelemetry-service/receiver"

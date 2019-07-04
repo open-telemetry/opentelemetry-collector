@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configv2
+package config
 
 import (
 	"path"
@@ -20,7 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/open-telemetry/opentelemetry-service/configv2/configmodels"
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 )
 
 var _ = RegisterTestFactories()

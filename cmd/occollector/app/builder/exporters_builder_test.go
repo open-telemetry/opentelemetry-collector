@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-service/configv2/configmodels"
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/exporter/opencensusexporter"
 )
 

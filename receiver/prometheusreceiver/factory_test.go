@@ -20,7 +20,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-service/configv2/configerror"
+	"github.com/open-telemetry/opentelemetry-service/config/configerror"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 	"github.com/stretchr/testify/assert"
 )

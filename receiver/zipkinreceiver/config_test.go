@@ -21,27 +21,27 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-service/configv2"
-	"github.com/open-telemetry/opentelemetry-service/configv2/configmodels"
+	"github.com/open-telemetry/opentelemetry-service/config"
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
 
-var _ = configv2.RegisterTestFactories()
+var _ = config.RegisterTestFactories()
 
 func TestLoadConfig(t *testing.T) {
 	factory := receiver.GetFactory(typeStr)
 
-	config, err := configv2.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"))
+	cfg, err := config.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"))
 
 	require.NoError(t, err)
-	require.NotNil(t, config)
+	require.NotNil(t, cfg)
 
-	assert.Equal(t, len(config.Receivers), 2)
+	assert.Equal(t, len(cfg.Receivers), 2)
 
-	r0 := config.Receivers["zipkin"]
+	r0 := cfg.Receivers["zipkin"]
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
 
-	r1 := config.Receivers["zipkin/customname"].(*ConfigV2)
+	r1 := cfg.Receivers["zipkin/customname"].(*ConfigV2)
 	assert.Equal(t, r1,
 		&ConfigV2{
 			ReceiverSettings: configmodels.ReceiverSettings{
