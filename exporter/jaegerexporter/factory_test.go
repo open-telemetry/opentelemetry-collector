@@ -73,9 +73,30 @@ func TestCreateTraceExporter(t *testing.T) {
 		mustFail bool
 	}{
 		{
-			name: "NoEndpoint",
+			name: "NoCollectorEndpoint",
 			config: ConfigV2{
-				Endpoint: "",
+				CollectorEndpoint: "",
+			},
+			mustFail: true,
+		},
+		{
+			name: "NoUsername",
+			config: ConfigV2{
+				Username: "",
+			},
+			mustFail: true,
+		},
+		{
+			name: "NoPassword",
+			config: ConfigV2{
+				Password: "",
+			},
+			mustFail: true,
+		},
+		{
+			name: "NoServiceName",
+			config: ConfigV2{
+				ServiceName: "",
 			},
 			mustFail: true,
 		},

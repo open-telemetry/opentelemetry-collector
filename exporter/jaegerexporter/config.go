@@ -9,4 +9,5 @@ type ConfigV2 struct {
 	Username                      string                   `mapstructure:"username,omitempty"`
 	Password                      string                   `mapstructure:"password,omitempty"`
 	ServiceName                   string                   `mapstructure:"service_name,omitempty"`
+	NumWorkers                    int                      `mapstructure:"num-workers"`
 }
