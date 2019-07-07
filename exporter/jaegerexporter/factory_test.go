@@ -103,8 +103,8 @@ func TestCreateTraceExporter(t *testing.T) {
 		{
 			name: "NumWorkers",
 			config: ConfigV2{
-				Endpoint:   rcvCfg.Endpoint,
-				NumWorkers: 3,
+				CollectorEndpoint: rcvCfg.CollectorEndpoint,
+				NumWorkers:        3,
 			},
 		},
 	}

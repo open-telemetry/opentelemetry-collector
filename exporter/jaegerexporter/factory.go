@@ -50,7 +50,7 @@ func (f *factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Ex
 		}
 	}
 
-	jOptions := jager.Options{}
+	jOptions := jaeger.Options{}
 	jOptions.CollectorEndpoint = jc.CollectorEndpoint
 
 	if jc.Username == "" {
