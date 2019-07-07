@@ -20,8 +20,8 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-service/configv2/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/models"
 )
 
 type TestFactory struct {
@@ -38,7 +38,7 @@ func (f *TestFactory) CustomUnmarshaler() CustomUnmarshaler {
 }
 
 // CreateDefaultConfig creates the default configuration for the Receiver.
-func (f *TestFactory) CreateDefaultConfig() models.Receiver {
+func (f *TestFactory) CreateDefaultConfig() configmodels.Receiver {
 	return nil
 }
 
@@ -46,7 +46,7 @@ func (f *TestFactory) CreateDefaultConfig() models.Receiver {
 func (f *TestFactory) CreateTraceReceiver(
 	ctx context.Context,
 	logger *zap.Logger,
-	cfg models.Receiver,
+	cfg configmodels.Receiver,
 	nextConsumer consumer.TraceConsumer,
 ) (TraceReceiver, error) {
 	// Not used for this test, just return nil
@@ -56,7 +56,7 @@ func (f *TestFactory) CreateTraceReceiver(
 // CreateMetricsReceiver creates a metrics receiver based on this config.
 func (f *TestFactory) CreateMetricsReceiver(
 	logger *zap.Logger,
-	cfg models.Receiver,
+	cfg configmodels.Receiver,
 	consumer consumer.MetricsConsumer,
 ) (MetricsReceiver, error) {
 	// Not used for this test, just return nil

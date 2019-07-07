@@ -25,12 +25,12 @@ import (
 	"google.golang.org/grpc/keepalive"
 
 	"github.com/open-telemetry/opentelemetry-service/configv2/configerror"
+	"github.com/open-telemetry/opentelemetry-service/configv2/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exporterhelper"
 	"github.com/open-telemetry/opentelemetry-service/internal/compression"
 	compressiongrpc "github.com/open-telemetry/opentelemetry-service/internal/compression/grpc"
-	"github.com/open-telemetry/opentelemetry-service/models"
 )
 
 var _ = exporter.RegisterFactory(&factory{})
@@ -50,9 +50,9 @@ func (f *factory) Type() string {
 }
 
 // CreateDefaultConfig creates the default configuration for exporter.
-func (f *factory) CreateDefaultConfig() models.Exporter {
+func (f *factory) CreateDefaultConfig() configmodels.Exporter {
 	return &ConfigV2{
-		ExporterSettings: models.ExporterSettings{
+		ExporterSettings: configmodels.ExporterSettings{
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
@@ -61,7 +61,7 @@ func (f *factory) CreateDefaultConfig() models.Exporter {
 }
 
 // CreateTraceExporter creates a trace exporter based on this config.
-func (f *factory) CreateTraceExporter(logger *zap.Logger, config models.Exporter) (consumer.TraceConsumer, exporter.StopFunc, error) {
+func (f *factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Exporter) (consumer.TraceConsumer, exporter.StopFunc, error) {
 	ocac := config.(*ConfigV2)
 
 	if ocac.Endpoint == "" {
@@ -148,6 +148,6 @@ func (f *factory) CreateTraceExporter(logger *zap.Logger, config models.Exporter
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *factory) CreateMetricsExporter(logger *zap.Logger, cfg models.Exporter) (consumer.MetricsConsumer, exporter.StopFunc, error) {
+func (f *factory) CreateMetricsExporter(logger *zap.Logger, cfg configmodels.Exporter) (consumer.MetricsConsumer, exporter.StopFunc, error) {
 	return nil, nil, configerror.ErrDataTypeIsNotSupported
 }

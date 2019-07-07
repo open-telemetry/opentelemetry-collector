@@ -101,9 +101,9 @@ func TestNoBackend10kSPS(t *testing.T) {
 }
 
 type testCase struct {
-	attrCount    int
-	attrSizeByte int
-	expectedMaxCPU  uint32
+	attrCount      int
+	attrSizeByte   int
+	expectedMaxCPU uint32
 	expectedMaxRAM uint32
 }
 
@@ -143,41 +143,40 @@ func test1000SPSWithAttributes(t *testing.T, args []string, tests []testCase) {
 	}
 }
 
-
 func Test1000SPSWithAttributes(t *testing.T) {
 	test1000SPSWithAttributes(t, []string{}, []testCase{
 		// No attributes.
 		{
-			attrCount:    0,
-			attrSizeByte: 0,
-			expectedMaxCPU:  30,
-			expectedMaxRAM:  100,
+			attrCount:      0,
+			attrSizeByte:   0,
+			expectedMaxCPU: 30,
+			expectedMaxRAM: 100,
 		},
 
 		// We generate 10 attributes each with average key length of 100 bytes and
 		// average value length of 50 bytes so total size of attributes values is
 		// 15000 bytes.
 		{
-			attrCount:    100,
-			attrSizeByte: 50,
-			expectedMaxCPU:  120,
-			expectedMaxRAM:  100,
+			attrCount:      100,
+			attrSizeByte:   50,
+			expectedMaxCPU: 120,
+			expectedMaxRAM: 100,
 		},
 
 		// Approx 10 KiB attributes.
 		{
-			attrCount:    10,
-			attrSizeByte: 1000,
-			expectedMaxCPU:  100,
-			expectedMaxRAM:  100,
+			attrCount:      10,
+			attrSizeByte:   1000,
+			expectedMaxCPU: 100,
+			expectedMaxRAM: 100,
 		},
 
 		// Approx 100 KiB attributes.
 		{
-			attrCount:    20,
-			attrSizeByte: 5000,
-			expectedMaxCPU:  250,
-			expectedMaxRAM:  100,
+			attrCount:      20,
+			attrSizeByte:   5000,
+			expectedMaxCPU: 250,
+			expectedMaxRAM: 100,
 		},
 	})
 }
@@ -187,28 +186,28 @@ func TestBallast1000SPSWithAttributes(t *testing.T) {
 	test1000SPSWithAttributes(t, args, []testCase{
 		// No attributes.
 		{
-			attrCount:    0,
-			attrSizeByte: 0,
-			expectedMaxCPU:  30,
-			expectedMaxRAM:  2000,
+			attrCount:      0,
+			attrSizeByte:   0,
+			expectedMaxCPU: 30,
+			expectedMaxRAM: 2000,
 		},
 		{
-			attrCount:    100,
-			attrSizeByte: 50,
-			expectedMaxCPU:  80,
-			expectedMaxRAM:  2000,
+			attrCount:      100,
+			attrSizeByte:   50,
+			expectedMaxCPU: 80,
+			expectedMaxRAM: 2000,
 		},
 		{
-			attrCount:    10,
-			attrSizeByte: 1000,
-			expectedMaxCPU:  80,
-			expectedMaxRAM:  2000,
+			attrCount:      10,
+			attrSizeByte:   1000,
+			expectedMaxCPU: 80,
+			expectedMaxRAM: 2000,
 		},
 		{
-			attrCount:    20,
-			attrSizeByte: 5000,
-			expectedMaxCPU:  120,
-			expectedMaxRAM:  2000,
+			attrCount:      20,
+			attrSizeByte:   5000,
+			expectedMaxCPU: 120,
+			expectedMaxRAM: 2000,
 		},
 	})
 }

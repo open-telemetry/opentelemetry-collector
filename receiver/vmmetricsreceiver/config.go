@@ -17,14 +17,14 @@ package vmmetricsreceiver
 import (
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-service/models"
+	"github.com/open-telemetry/opentelemetry-service/configv2/configmodels"
 )
 
 // ConfigV2 defines configuration for VMMetrics receiver.
 type ConfigV2 struct {
-	models.ReceiverSettings `mapstructure:",squash"`
-	ScrapeInterval          time.Duration `mapstructure:"scrape_interval"`
-	MountPoint              string        `mapstructure:"mount_point"`
-	ProcessMountPoint       string        `mapstructure:"process_mount_point"`
-	MetricPrefix            string        `mapstructure:"metric_prefix"`
+	configmodels.ReceiverSettings `mapstructure:",squash"`
+	ScrapeInterval                time.Duration `mapstructure:"scrape_interval"`
+	MountPoint                    string        `mapstructure:"mount_point"`
+	ProcessMountPoint             string        `mapstructure:"process_mount_point"`
+	MetricPrefix                  string        `mapstructure:"metric_prefix"`
 }

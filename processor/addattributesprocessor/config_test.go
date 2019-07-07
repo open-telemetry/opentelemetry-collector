@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-service/configv2"
-	"github.com/open-telemetry/opentelemetry-service/models"
+	"github.com/open-telemetry/opentelemetry-service/configv2/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/processor"
 )
 
@@ -43,7 +43,7 @@ func TestLoadConfig(t *testing.T) {
 	p1 := config.Processors["attributes/2"]
 	assert.Equal(t, p1,
 		&ConfigV2{
-			ProcessorSettings: models.ProcessorSettings{
+			ProcessorSettings: configmodels.ProcessorSettings{
 				TypeVal: "attributes",
 				NameVal: "attributes/2",
 			},

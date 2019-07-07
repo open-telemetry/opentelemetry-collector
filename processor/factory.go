@@ -19,8 +19,8 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-service/configv2/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/models"
 )
 
 // Factory is factory interface for processors.
@@ -29,19 +29,19 @@ type Factory interface {
 	Type() string
 
 	// CreateDefaultConfig creates the default configuration for the Processor.
-	CreateDefaultConfig() models.Processor
+	CreateDefaultConfig() configmodels.Processor
 
 	// CreateTraceProcessor creates a trace processor based on this config.
 	// If the processor type does not support tracing or if the config is not valid
 	// error will be returned instead.
 	CreateTraceProcessor(logger *zap.Logger, nextConsumer consumer.TraceConsumer,
-		cfg models.Processor) (TraceProcessor, error)
+		cfg configmodels.Processor) (TraceProcessor, error)
 
 	// CreateMetricsProcessor creates a metrics processor based on this config.
 	// If the processor type does not support metrics or if the config is not valid
 	// error will be returned instead.
 	CreateMetricsProcessor(logger *zap.Logger, nextConsumer consumer.MetricsConsumer,
-		cfg models.Processor) (MetricsProcessor, error)
+		cfg configmodels.Processor) (MetricsProcessor, error)
 }
 
 // List of registered processor factories.
