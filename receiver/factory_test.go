@@ -24,26 +24,26 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 )
 
-type ExampleReceiverFactory struct {
+type TestFactory struct {
 }
 
 // Type gets the type of the Receiver config created by this factory.
-func (f *ExampleReceiverFactory) Type() string {
+func (f *TestFactory) Type() string {
 	return "examplereceiver"
 }
 
 // CustomUnmarshaler returns nil because we don't need custom unmarshaling for this factory.
-func (f *ExampleReceiverFactory) CustomUnmarshaler() CustomUnmarshaler {
+func (f *TestFactory) CustomUnmarshaler() CustomUnmarshaler {
 	return nil
 }
 
 // CreateDefaultConfig creates the default configuration for the Receiver.
-func (f *ExampleReceiverFactory) CreateDefaultConfig() configmodels.Receiver {
+func (f *TestFactory) CreateDefaultConfig() configmodels.Receiver {
 	return nil
 }
 
 // CreateTraceReceiver creates a trace receiver based on this config.
-func (f *ExampleReceiverFactory) CreateTraceReceiver(
+func (f *TestFactory) CreateTraceReceiver(
 	ctx context.Context,
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
@@ -54,7 +54,7 @@ func (f *ExampleReceiverFactory) CreateTraceReceiver(
 }
 
 // CreateMetricsReceiver creates a metrics receiver based on this config.
-func (f *ExampleReceiverFactory) CreateMetricsReceiver(
+func (f *TestFactory) CreateMetricsReceiver(
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
 	consumer consumer.MetricsConsumer,
@@ -64,7 +64,7 @@ func (f *ExampleReceiverFactory) CreateMetricsReceiver(
 }
 
 func TestRegisterFactory(t *testing.T) {
-	f := ExampleReceiverFactory{}
+	f := TestFactory{}
 	err := RegisterFactory(&f)
 	if err != nil {
 		t.Fatalf("cannot register factory")
