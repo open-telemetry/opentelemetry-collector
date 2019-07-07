@@ -26,8 +26,8 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 
-	"github.com/open-telemetry/opentelemetry-service/configv2"
-	"github.com/open-telemetry/opentelemetry-service/configv2/configmodels"
+	"github.com/open-telemetry/opentelemetry-service/config"
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/receiver/receivertest"
 )
@@ -91,18 +91,18 @@ func testReceivers(
 	test testCase,
 ) {
 	// Load the config
-	config, err := configv2.LoadConfigFile(t, "testdata/pipelines_builder.yaml")
+	cfg, err := config.LoadConfigFile(t, "testdata/pipelines_builder.yaml")
 	require.Nil(t, err)
 
 	// Build the pipeline
-	allExporters, err := NewExportersBuilder(zap.NewNop(), config).Build()
-	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), config, allExporters).Build()
-	receivers, err := NewReceiversBuilder(zap.NewNop(), config, pipelineProcessors).Build()
+	allExporters, err := NewExportersBuilder(zap.NewNop(), cfg).Build()
+	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), cfg, allExporters).Build()
+	receivers, err := NewReceiversBuilder(zap.NewNop(), cfg, pipelineProcessors).Build()
 
 	assert.NoError(t, err)
 	require.NotNil(t, receivers)
 
-	receiver := receivers[config.Receivers[test.receiverName]]
+	receiver := receivers[cfg.Receivers[test.receiverName]]
 
 	// Ensure receiver has its fields correctly populated.
 	require.NotNil(t, receiver)
@@ -123,7 +123,7 @@ func testReceivers(
 	var exporters []*builtExporter
 	for _, name := range test.exporterNames {
 		// Ensure exporter is created.
-		exp := allExporters[config.Exporters[name]]
+		exp := allExporters[cfg.Exporters[name]]
 		require.NotNil(t, exp)
 		exporters = append(exporters, exp)
 	}
@@ -132,7 +132,7 @@ func testReceivers(
 
 	// First check that there are no traces in the exporters yet.
 	for _, exporter := range exporters {
-		consumer := exporter.tc.(*configv2.ExampleExporterConsumer)
+		consumer := exporter.tc.(*config.ExampleExporterConsumer)
 		require.Equal(t, len(consumer.Traces), 0)
 		require.Equal(t, len(consumer.Metrics), 0)
 	}
@@ -146,7 +146,7 @@ func testReceivers(
 		},
 	}
 	if test.hasTraces {
-		traceProducer := receiver.trace.(*configv2.ExampleReceiverProducer)
+		traceProducer := receiver.trace.(*config.ExampleReceiverProducer)
 		traceProducer.TraceConsumer.ConsumeTraceData(context.Background(), traceData)
 	}
 
@@ -156,14 +156,14 @@ func testReceivers(
 		},
 	}
 	if test.hasMetrics {
-		metricsProducer := receiver.metrics.(*configv2.ExampleReceiverProducer)
+		metricsProducer := receiver.metrics.(*config.ExampleReceiverProducer)
 		metricsProducer.MetricsConsumer.ConsumeMetricsData(context.Background(), metricsData)
 	}
 
 	// Now verify received data.
 	for _, name := range test.exporterNames {
 		// Check that the data is received by exporter.
-		exporter := allExporters[config.Exporters[name]]
+		exporter := allExporters[cfg.Exporters[name]]
 
 		// Validate traces.
 		if test.hasTraces {
@@ -174,7 +174,7 @@ func testReceivers(
 				spanDuplicationCount = 1
 			}
 
-			traceConsumer := exporter.tc.(*configv2.ExampleExporterConsumer)
+			traceConsumer := exporter.tc.(*config.ExampleExporterConsumer)
 			require.Equal(t, spanDuplicationCount, len(traceConsumer.Traces))
 
 			for i := 0; i < spanDuplicationCount; i++ {
@@ -189,7 +189,7 @@ func testReceivers(
 
 		// Validate metrics.
 		if test.hasMetrics {
-			metricsConsumer := exporter.mc.(*configv2.ExampleExporterConsumer)
+			metricsConsumer := exporter.mc.(*config.ExampleExporterConsumer)
 			require.Equal(t, 1, len(metricsConsumer.Metrics))
 			assert.Equal(t, metricsData, metricsConsumer.Metrics[0])
 		}
@@ -197,17 +197,17 @@ func testReceivers(
 }
 
 func TestReceiversBuilder_DataTypeError(t *testing.T) {
-	config, err := configv2.LoadConfigFile(t, "testdata/pipelines_builder.yaml")
+	cfg, err := config.LoadConfigFile(t, "testdata/pipelines_builder.yaml")
 	require.Nil(t, err)
 
 	// Make examplereceiver to "unsupport" trace data type.
-	receiver := config.Receivers["examplereceiver"]
-	receiver.(*configv2.ExampleReceiver).FailTraceCreation = true
+	receiver := cfg.Receivers["examplereceiver"]
+	receiver.(*config.ExampleReceiver).FailTraceCreation = true
 
 	// Build the pipeline
-	allExporters, err := NewExportersBuilder(zap.NewNop(), config).Build()
-	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), config, allExporters).Build()
-	receivers, err := NewReceiversBuilder(zap.NewNop(), config, pipelineProcessors).Build()
+	allExporters, err := NewExportersBuilder(zap.NewNop(), cfg).Build()
+	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), cfg, allExporters).Build()
+	receivers, err := NewReceiversBuilder(zap.NewNop(), cfg, pipelineProcessors).Build()
 
 	// This should fail because "examplereceiver" is attached to "traces" pipeline
 	// which is a configuration error.
@@ -219,7 +219,7 @@ func TestReceiversBuilder_StartAll(t *testing.T) {
 	receivers := make(Receivers)
 	rcvCfg := &configmodels.ReceiverSettings{}
 
-	receiver := &configv2.ExampleReceiverProducer{}
+	receiver := &config.ExampleReceiverProducer{}
 
 	receivers[rcvCfg] = &builtReceiver{
 		trace:   receiver,
@@ -241,7 +241,7 @@ func TestReceiversBuilder_StopAll(t *testing.T) {
 	receivers := make(Receivers)
 	rcvCfg := &configmodels.ReceiverSettings{}
 
-	receiver := &configv2.ExampleReceiverProducer{}
+	receiver := &config.ExampleReceiverProducer{}
 
 	receivers[rcvCfg] = &builtReceiver{
 		trace:   receiver,

@@ -25,8 +25,8 @@ import (
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 
-	"github.com/open-telemetry/opentelemetry-service/configv2"
-	"github.com/open-telemetry/opentelemetry-service/configv2/configmodels"
+	"github.com/open-telemetry/opentelemetry-service/config"
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/processor/addattributesprocessor"
 )
@@ -35,7 +35,7 @@ import (
 var _ = addattributesprocessor.ConfigV2{}
 
 // Register test factories used in the pipelines_builder.yaml test config.
-var _ = configv2.RegisterTestFactories()
+var _ = config.RegisterTestFactories()
 
 func TestPipelinesBuilder_Build(t *testing.T) {
 	tests := []struct {
@@ -64,17 +64,17 @@ func TestPipelinesBuilder_Build(t *testing.T) {
 
 func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 	// Load the config
-	config, err := configv2.LoadConfigFile(t, "testdata/pipelines_builder.yaml")
+	cfg, err := config.LoadConfigFile(t, "testdata/pipelines_builder.yaml")
 	require.Nil(t, err)
 
 	// Build the pipeline
-	allExporters, err := NewExportersBuilder(zap.NewNop(), config).Build()
-	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), config, allExporters).Build()
+	allExporters, err := NewExportersBuilder(zap.NewNop(), cfg).Build()
+	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), cfg, allExporters).Build()
 
 	assert.NoError(t, err)
 	require.NotNil(t, pipelineProcessors)
 
-	processor := pipelineProcessors[config.Pipelines[pipelineName]]
+	processor := pipelineProcessors[cfg.Pipelines[pipelineName]]
 
 	// Ensure pipeline has its fields correctly populated.
 	require.NotNil(t, processor)
@@ -85,7 +85,7 @@ func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 	var exporters []*builtExporter
 	for _, name := range exporterNames {
 		// Ensure exporter is created.
-		exp := allExporters[config.Exporters[name]]
+		exp := allExporters[cfg.Exporters[name]]
 		require.NotNil(t, exp)
 		exporters = append(exporters, exp)
 	}
@@ -93,9 +93,9 @@ func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 	// Send TraceData via processor and verify that all exporters of the pipeline receive it.
 
 	// First check that there are no traces in the exporters yet.
-	var exporterConsumers []*configv2.ExampleExporterConsumer
+	var exporterConsumers []*config.ExampleExporterConsumer
 	for _, exporter := range exporters {
-		consumer := exporter.tc.(*configv2.ExampleExporterConsumer)
+		consumer := exporter.tc.(*config.ExampleExporterConsumer)
 		exporterConsumers = append(exporterConsumers, consumer)
 		require.Equal(t, len(consumer.Traces), 0)
 	}
@@ -124,20 +124,20 @@ func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 }
 
 func TestPipelinesBuilder_Error(t *testing.T) {
-	config, err := configv2.LoadConfigFile(t, "testdata/pipelines_builder.yaml")
+	cfg, err := config.LoadConfigFile(t, "testdata/pipelines_builder.yaml")
 	require.Nil(t, err)
 
 	// Corrupt the pipeline, change data type to metrics. We have to forcedly do it here
 	// since there is no way to have such config loaded by LoadConfigFile, it would not
 	// pass validation. We are doing this to test failure mode of PipelinesBuilder.
-	pipeline := config.Pipelines["traces"]
+	pipeline := cfg.Pipelines["traces"]
 	pipeline.InputType = configmodels.MetricsDataType
 
-	exporters, err := NewExportersBuilder(zap.NewNop(), config).Build()
+	exporters, err := NewExportersBuilder(zap.NewNop(), cfg).Build()
 
 	// This should fail because "attributes" processor defined in the config does
 	// not support metrics data type.
-	_, err = NewPipelinesBuilder(zap.NewNop(), config, exporters).Build()
+	_, err = NewPipelinesBuilder(zap.NewNop(), cfg, exporters).Build()
 
 	assert.NotNil(t, err)
 }
