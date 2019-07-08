@@ -1,15 +1,14 @@
 module github.com/open-telemetry/opentelemetry-service
 
 require (
-	cloud.google.com/go v0.38.0 // indirect
 	contrib.go.opencensus.io/exporter/jaeger v0.1.1-0.20190430175949-e8b55949d948
 	contrib.go.opencensus.io/exporter/ocagent v0.5.0
 	contrib.go.opencensus.io/exporter/prometheus v0.1.0
+	contrib.go.opencensus.io/exporter/stackdriver v0.12.2
 	contrib.go.opencensus.io/exporter/zipkin v0.1.1
 	contrib.go.opencensus.io/resource v0.1.1
 	github.com/VividCortex/gohistogram v1.0.0 // indirect
 	github.com/apache/thrift v0.0.0-20161221203622-b2a4d4ae21c7
-	github.com/aws/aws-sdk-go v1.19.18 // indirect
 	github.com/bmizerany/perks v0.0.0-20141205001514-d9a9656a3a4b // indirect
 	github.com/census-instrumentation/opencensus-proto v0.2.0
 	github.com/go-kit/kit v0.8.0
@@ -45,7 +44,6 @@ require (
 	go.opencensus.io v0.22.0
 	go.uber.org/zap v1.10.0
 	golang.org/x/lint v0.0.0-20190313153728-d0100b6bd8b3
-	golang.org/x/oauth2 v0.0.0-20190402181905-9f3314589c9a // indirect
 	google.golang.org/api v0.5.0
 	google.golang.org/grpc v1.21.0
 	gopkg.in/yaml.v2 v2.2.2

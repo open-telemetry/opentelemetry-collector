@@ -30,6 +30,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/exporter/jaegerexporter"
 	"github.com/open-telemetry/opentelemetry-service/exporter/opencensusexporter"
 	"github.com/open-telemetry/opentelemetry-service/exporter/prometheusexporter"
+	"github.com/open-telemetry/opentelemetry-service/exporter/stackdriverexporter"
 	"github.com/open-telemetry/opentelemetry-service/exporter/zipkinexporter"
 	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver"
 	"github.com/open-telemetry/opentelemetry-service/receiver/prometheusreceiver"
@@ -439,6 +440,7 @@ func eqLocalHost(host string) bool {
 //  + jaeger
 //  + opencensus
 //  + prometheus
+//  + stackdriver
 func ExportersFromViperConfig(logger *zap.Logger, v *viper.Viper) ([]consumer.TraceConsumer, []consumer.MetricsConsumer, []func() error, error) {
 	parseFns := []struct {
 		name string
@@ -448,6 +450,7 @@ func ExportersFromViperConfig(logger *zap.Logger, v *viper.Viper) ([]consumer.Tr
 		{name: "jaeger", fn: jaegerexporter.JaegerExportersFromViper},
 		{name: "opencensus", fn: opencensusexporter.OpenCensusTraceExportersFromViper},
 		{name: "prometheus", fn: prometheusexporter.PrometheusExportersFromViper},
+		{name: "stackdriver", fn: stackdriverexporter.StackdriverTraceExportersFromViper},
 	}
 
 	var traceExporters []consumer.TraceConsumer
