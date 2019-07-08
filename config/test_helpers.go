@@ -23,7 +23,7 @@ import (
 )
 
 // LoadConfigFile loads a config from file.
-func LoadConfigFile(t *testing.T, fileName string) (*configmodels.ConfigV2, error) {
+func LoadConfigFile(t *testing.T, fileName string) (*configmodels.Config, error) {
 	// Open the file for reading.
 	file, err := os.Open(fileName)
 	if err != nil {

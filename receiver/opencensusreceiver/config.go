@@ -16,7 +16,7 @@ package opencensusreceiver
 
 import "github.com/open-telemetry/opentelemetry-service/config/configmodels"
 
-// ConfigV2 defines configuration for OpenCensus receiver.
-type ConfigV2 struct {
+// Config defines configuration for OpenCensus receiver.
+type Config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 }

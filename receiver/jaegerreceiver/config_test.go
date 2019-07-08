@@ -41,9 +41,9 @@ func TestLoadConfig(t *testing.T) {
 	r0 := cfg.Receivers["jaeger"]
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
 
-	r1 := cfg.Receivers["jaeger/customname"].(*ConfigV2)
+	r1 := cfg.Receivers["jaeger/customname"].(*Config)
 	assert.Equal(t, r1,
-		&ConfigV2{
+		&Config{
 			TypeVal: typeStr,
 			NameVal: "jaeger/customname",
 			Protocols: map[string]*configmodels.ReceiverSettings{

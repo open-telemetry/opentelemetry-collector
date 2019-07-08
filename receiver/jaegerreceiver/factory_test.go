@@ -47,7 +47,7 @@ func TestCreateReceiver(t *testing.T) {
 func TestCreateNoEndpoints(t *testing.T) {
 	factory := receiver.GetFactory(typeStr)
 	cfg := factory.CreateDefaultConfig()
-	rCfg := cfg.(*ConfigV2)
+	rCfg := cfg.(*Config)
 
 	rCfg.Protocols[protoThriftHTTP].Endpoint = ""
 	rCfg.Protocols[protoThriftTChannel].Endpoint = ""
@@ -58,7 +58,7 @@ func TestCreateNoEndpoints(t *testing.T) {
 func TestCreateInvalidTChannelEndpoint(t *testing.T) {
 	factory := receiver.GetFactory(typeStr)
 	cfg := factory.CreateDefaultConfig()
-	rCfg := cfg.(*ConfigV2)
+	rCfg := cfg.(*Config)
 
 	rCfg.Protocols[protoThriftTChannel].Endpoint = ""
 	_, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
@@ -68,7 +68,7 @@ func TestCreateInvalidTChannelEndpoint(t *testing.T) {
 func TestCreateNoPort(t *testing.T) {
 	factory := receiver.GetFactory(typeStr)
 	cfg := factory.CreateDefaultConfig()
-	rCfg := cfg.(*ConfigV2)
+	rCfg := cfg.(*Config)
 
 	rCfg.Protocols[protoThriftHTTP].Endpoint = "127.0.0.1:"
 	_, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
@@ -78,7 +78,7 @@ func TestCreateNoPort(t *testing.T) {
 func TestCreateLargePort(t *testing.T) {
 	factory := receiver.GetFactory(typeStr)
 	cfg := factory.CreateDefaultConfig()
-	rCfg := cfg.(*ConfigV2)
+	rCfg := cfg.(*Config)
 
 	rCfg.Protocols[protoThriftHTTP].Endpoint = "127.0.0.1:65536"
 	_, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
@@ -88,7 +88,7 @@ func TestCreateLargePort(t *testing.T) {
 func TestCreateNoProtocols(t *testing.T) {
 	factory := receiver.GetFactory(typeStr)
 	cfg := factory.CreateDefaultConfig()
-	rCfg := cfg.(*ConfigV2)
+	rCfg := cfg.(*Config)
 
 	delete(rCfg.Protocols, protoThriftHTTP)
 	delete(rCfg.Protocols, protoThriftTChannel)

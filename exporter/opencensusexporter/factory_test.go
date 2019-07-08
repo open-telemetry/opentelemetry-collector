@@ -56,7 +56,7 @@ func TestCreateTraceExporter(t *testing.T) {
 	// results. Standing up a receiver to ensure that stop don't report errors.
 	rcvFactory := receiver.GetFactory(typeStr)
 	require.NotNil(t, rcvFactory)
-	rcvCfg := rcvFactory.CreateDefaultConfig().(*opencensusreceiver.ConfigV2)
+	rcvCfg := rcvFactory.CreateDefaultConfig().(*opencensusreceiver.Config)
 	rcvCfg.Endpoint = testutils.GetAvailableLocalAddress(t)
 
 	rcv, err := rcvFactory.CreateTraceReceiver(
@@ -71,33 +71,33 @@ func TestCreateTraceExporter(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		config   ConfigV2
+		config   Config
 		mustFail bool
 	}{
 		{
 			name: "NoEndpoint",
-			config: ConfigV2{
+			config: Config{
 				Endpoint: "",
 			},
 			mustFail: true,
 		},
 		{
 			name: "UseSecure",
-			config: ConfigV2{
+			config: Config{
 				Endpoint:  rcvCfg.Endpoint,
 				UseSecure: true,
 			},
 		},
 		{
 			name: "ReconnectionDelay",
-			config: ConfigV2{
+			config: Config{
 				Endpoint:          rcvCfg.Endpoint,
 				ReconnectionDelay: 5 * time.Second,
 			},
 		},
 		{
 			name: "KeepaliveParameters",
-			config: ConfigV2{
+			config: Config{
 				Endpoint: rcvCfg.Endpoint,
 				KeepaliveParameters: &keepaliveConfig{
 					Time:                30 * time.Second,
@@ -108,14 +108,14 @@ func TestCreateTraceExporter(t *testing.T) {
 		},
 		{
 			name: "Compression",
-			config: ConfigV2{
+			config: Config{
 				Endpoint:    rcvCfg.Endpoint,
 				Compression: compression.Gzip,
 			},
 		},
 		{
 			name: "Headers",
-			config: ConfigV2{
+			config: Config{
 				Endpoint: rcvCfg.Endpoint,
 				Headers: map[string]string{
 					"hdr1": "val1",
@@ -125,14 +125,14 @@ func TestCreateTraceExporter(t *testing.T) {
 		},
 		{
 			name: "NumWorkers",
-			config: ConfigV2{
+			config: Config{
 				Endpoint:   rcvCfg.Endpoint,
 				NumWorkers: 3,
 			},
 		},
 		{
 			name: "CompressionError",
-			config: ConfigV2{
+			config: Config{
 				Endpoint:    rcvCfg.Endpoint,
 				Compression: "unknown compression",
 			},
@@ -140,14 +140,14 @@ func TestCreateTraceExporter(t *testing.T) {
 		},
 		{
 			name: "CertPemFile",
-			config: ConfigV2{
+			config: Config{
 				Endpoint:    rcvCfg.Endpoint,
 				CertPemFile: "testdata/test_cert.pem",
 			},
 		},
 		{
 			name: "CertPemFileError",
-			config: ConfigV2{
+			config: Config{
 				Endpoint:    rcvCfg.Endpoint,
 				CertPemFile: "nosuchfile",
 			},

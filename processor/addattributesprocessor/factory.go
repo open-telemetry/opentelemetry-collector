@@ -41,7 +41,7 @@ func (f *factory) Type() string {
 
 // CreateDefaultConfig creates the default configuration for processor.
 func (f *factory) CreateDefaultConfig() configmodels.Processor {
-	return &ConfigV2{
+	return &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
 			TypeVal: typeStr,
 			NameVal: typeStr,
@@ -56,7 +56,7 @@ func (f *factory) CreateTraceProcessor(
 	nextConsumer consumer.TraceConsumer,
 	cfg configmodels.Processor,
 ) (processor.TraceProcessor, error) {
-	oCfg := cfg.(*ConfigV2)
+	oCfg := cfg.(*Config)
 	return NewTraceProcessor(nextConsumer, WithAttributes(oCfg.Values), WithOverwrite(oCfg.Overwrite))
 }
 

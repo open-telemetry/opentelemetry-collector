@@ -42,7 +42,7 @@ func (f *factory) Type() string {
 
 // CreateDefaultConfig creates the default configuration for exporter.
 func (f *factory) CreateDefaultConfig() configmodels.Processor {
-	return &ConfigV2{
+	return &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
 			TypeVal: typeStr,
 			NameVal: typeStr,
@@ -60,7 +60,7 @@ func (f *factory) CreateTraceProcessor(
 	nextConsumer consumer.TraceConsumer,
 	cfg configmodels.Processor,
 ) (processor.TraceProcessor, error) {
-	oCfg := cfg.(*ConfigV2)
+	oCfg := cfg.(*Config)
 	return NewQueuedSpanProcessor(nextConsumer,
 		Options.WithNumWorkers(oCfg.NumWorkers),
 		Options.WithQueueSize(oCfg.QueueSize),

@@ -45,12 +45,12 @@ func TestCreateMetricsExporter(t *testing.T) {
 	const defaultTestEndPoint = "127.0.0.1:55678"
 	tests := []struct {
 		name     string
-		config   ConfigV2
+		config   Config
 		mustFail bool
 	}{
 		{
 			name: "NoEndpoint",
-			config: ConfigV2{
+			config: Config{
 				Endpoint: "",
 			},
 			mustFail: true,

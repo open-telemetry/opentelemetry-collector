@@ -51,7 +51,7 @@ func (f *factory) Type() string {
 
 // CreateDefaultConfig creates the default configuration for exporter.
 func (f *factory) CreateDefaultConfig() configmodels.Exporter {
-	return &ConfigV2{
+	return &Config{
 		ExporterSettings: configmodels.ExporterSettings{
 			TypeVal: typeStr,
 			NameVal: typeStr,
@@ -62,7 +62,7 @@ func (f *factory) CreateDefaultConfig() configmodels.Exporter {
 
 // CreateTraceExporter creates a trace exporter based on this config.
 func (f *factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Exporter) (consumer.TraceConsumer, exporter.StopFunc, error) {
-	ocac := config.(*ConfigV2)
+	ocac := config.(*Config)
 
 	if ocac.Endpoint == "" {
 		return nil, nil, &ocTraceExporterError{

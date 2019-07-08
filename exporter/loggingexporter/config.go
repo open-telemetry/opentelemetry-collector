@@ -18,8 +18,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 )
 
-// ConfigV2 defines configuration for logging exporter.
+// Config defines configuration for logging exporter.
 // TODO: allow configuration of logging level
-type ConfigV2 struct {
+type Config struct {
 	configmodels.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 }

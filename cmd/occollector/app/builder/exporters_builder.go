@@ -63,11 +63,11 @@ type exportersRequiredDataTypes map[configmodels.Exporter]dataTypeRequirements
 // ExportersBuilder builds exporters from config.
 type ExportersBuilder struct {
 	logger *zap.Logger
-	config *configmodels.ConfigV2
+	config *configmodels.Config
 }
 
 // NewExportersBuilder creates a new ExportersBuilder. Call Build() on the returned value.
-func NewExportersBuilder(logger *zap.Logger, config *configmodels.ConfigV2) *ExportersBuilder {
+func NewExportersBuilder(logger *zap.Logger, config *configmodels.Config) *ExportersBuilder {
 	return &ExportersBuilder{logger, config}
 }
 

@@ -20,8 +20,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 )
 
-// ConfigV2 defines configuration for batch processor.
-type ConfigV2 struct {
+// Config defines configuration for batch processor.
+type Config struct {
 	configmodels.ProcessorSettings `mapstructure:",squash"`
 
 	// Timeout sets the time after which a batch will be sent regardless of size.

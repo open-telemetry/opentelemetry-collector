@@ -32,7 +32,7 @@ import (
 )
 
 // Ensure attributes processor is registered.
-var _ = addattributesprocessor.ConfigV2{}
+var _ = addattributesprocessor.Config{}
 
 // Register test factories used in the pipelines_builder.yaml test config.
 var _ = config.RegisterTestFactories()

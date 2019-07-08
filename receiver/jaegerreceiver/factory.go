@@ -62,7 +62,7 @@ func (f *factory) CustomUnmarshaler() receiver.CustomUnmarshaler {
 
 // CreateDefaultConfig creates the default configuration for Jaeger receiver.
 func (f *factory) CreateDefaultConfig() configmodels.Receiver {
-	return &ConfigV2{
+	return &Config{
 		TypeVal: typeStr,
 		NameVal: typeStr,
 		Protocols: map[string]*configmodels.ReceiverSettings{
@@ -89,7 +89,7 @@ func (f *factory) CreateTraceReceiver(
 	// Convert settings in the source config to Configuration struct
 	// that Jaeger receiver understands.
 
-	rCfg := cfg.(*ConfigV2)
+	rCfg := cfg.(*Config)
 
 	protoHTTP := rCfg.Protocols[protoThriftHTTP]
 	protoTChannel := rCfg.Protocols[protoThriftTChannel]

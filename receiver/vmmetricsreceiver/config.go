@@ -20,8 +20,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 )
 
-// ConfigV2 defines configuration for VMMetrics receiver.
-type ConfigV2 struct {
+// Config defines configuration for VMMetrics receiver.
+type Config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`
 	ScrapeInterval                time.Duration `mapstructure:"scrape_interval"`
 	MountPoint                    string        `mapstructure:"mount_point"`
