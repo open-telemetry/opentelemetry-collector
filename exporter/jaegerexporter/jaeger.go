@@ -23,6 +23,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/exporter/exporterwrapper"
 )
 
+// wrapper for jaeger exporter
+type jaegerExporter struct {
+	exporter *jaeger.Exporter
+}
+
 type jTraceExporterErrorCode int
 type jTraceExporterError struct {
 	code jTraceExporterErrorCode
@@ -40,7 +45,7 @@ const (
 	// errCollectorEndpointRequired indicates that this exporter was not provided with a collector endpoint in its config.
 	errCollectorEndpointRequired
 
-	// errUsernameRequired indicates that this exporter was not provided with a user name in its config.
+	// errUsernameRequired indicates that this exporter was not provided with a username in its config.
 	errUsernameRequired
 
 	// errPasswordRequired indicates that this exporter was not provided with a password in its config.

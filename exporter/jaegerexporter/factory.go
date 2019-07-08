@@ -1,7 +1,23 @@
+// Copyright 2019, OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package jaegerexporter
 
 import (
 	"fmt"
+
+	"go.uber.org/zap"
 
 	"contrib.go.opencensus.io/exporter/jaeger"
 	"github.com/open-telemetry/opentelemetry-service/config/configerror"
@@ -9,7 +25,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exporterwrapper"
-	"go.uber.org/zap"
 )
 
 var _ = exporter.RegisterFactory(&factory{})
@@ -45,7 +60,7 @@ func (f *factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Ex
 	if jc.CollectorEndpoint == "" {
 		return nil, nil, &jTraceExporterError{
 			code: errCollectorEndpointRequired,
-			msg:  "Jaeger exporter config requires an Endpoint",
+			msg:  "Jaeger exporter config requires an endpoint",
 		}
 	}
 
@@ -55,7 +70,7 @@ func (f *factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Ex
 	if jc.Username == "" {
 		return nil, nil, &jTraceExporterError{
 			code: errUsernameRequired,
-			msg:  "Jaeger exporter config requires a Username",
+			msg:  "Jaeger exporter config requires a username",
 		}
 	}
 	jOptions.Username = jc.Username
@@ -80,15 +95,17 @@ func (f *factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Ex
 
 	exporter, serr := jaeger.NewExporter(jOptions)
 	if serr != nil {
-		return nil, nil, fmt.Errorf("cannot configure jaeger Trace exporter: %v", serr)
+		return nil, nil, fmt.Errorf("cannot create Jaeger trace exporter: %v", serr)
 	}
+	// wrap exporter to return exporter.stop()
+	je := jaegerExporter{exporter}
 
 	jexp, err := exporterwrapper.NewExporterWrapper("jaeger", "ocservice.exporter.Jaeger.ConsumeTraceData", exporter)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return jexp, noopStopFunc, nil
+	return jexp, je.stop, nil
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
@@ -96,6 +113,8 @@ func (f *factory) CreateMetricsExporter(logger *zap.Logger, cfg configmodels.Exp
 	return nil, nil, configerror.ErrDataTypeIsNotSupported
 }
 
-func noopStopFunc() error {
+func (je *jaegerExporter) stop() error {
+	// waiting for exported trace spans to be uploaded before stopping.
+	je.exporter.Flush()
 	return nil
 }

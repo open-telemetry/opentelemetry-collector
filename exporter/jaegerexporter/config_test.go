@@ -18,11 +18,12 @@ import (
 	"path"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/open-telemetry/opentelemetry-service/config"
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 var _ = config.RegisterTestFactories()
