@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"io"
 	"io/ioutil"
 	"net"
@@ -158,7 +159,7 @@ zipkin:
 
 	// Run the Zipkin receiver to "receive spans upload from a client application"
 	zexp := multiconsumer.NewTraceProcessor(tes)
-	zi, err := zipkinreceiver.New(":0", zexp)
+	zi, err := zipkinreceiver.New(":0", configmodels.EnableBackPressure, zexp)
 	if err != nil {
 		t.Fatalf("Failed to create a new Zipkin receiver: %v", err)
 	}

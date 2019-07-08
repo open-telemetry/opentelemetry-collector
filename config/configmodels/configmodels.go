@@ -126,13 +126,24 @@ type Pipelines map[string]*Pipeline
 // These are helper structs which you can embed when implementing your specific
 // receiver/exporter/processor config storage.
 
+// BackPressureState defines if backpressure should be exterted or not.
+type BackPressureState bool
+
+const (
+	// EnableBackPressure indicates that backpressure is enabled.
+	EnableBackPressure BackPressureState = false
+	// DisableBackPressure indicates that backpressure is disabled.
+	DisableBackPressure BackPressureState = true
+)
+
 // ReceiverSettings defines common settings for a single-protocol receiver configuration.
 // Specific receivers can embed this struct and extend it with more fields if needed.
 type ReceiverSettings struct {
-	TypeVal  string `mapstructure:"-"`
-	NameVal  string `mapstructure:"-"`
-	Enabled  bool   `mapstructure:"enabled"`
-	Endpoint string `mapstructure:"endpoint"`
+	TypeVal           string            `mapstructure:"-"`
+	NameVal           string            `mapstructure:"-"`
+	Enabled           bool              `mapstructure:"enabled"`
+	Endpoint          string            `mapstructure:"endpoint"`
+	BackPressureState BackPressureState `mapstructure:"disable-backpressure"`
 }
 
 // Name gets the receiver name.
