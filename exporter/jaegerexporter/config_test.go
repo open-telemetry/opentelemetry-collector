@@ -18,20 +18,19 @@ import (
 	"path"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-service/config"
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-service/exporter"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/open-telemetry/opentelemetry-service/configv2"
-	"github.com/open-telemetry/opentelemetry-service/configv2/configmodels"
-	"github.com/open-telemetry/opentelemetry-service/exporter"
 )
 
-var _ = configv2.RegisterTestFactories()
+var _ = config.RegisterTestFactories()
 
 func TestLoadConfig(t *testing.T) {
 	factory := exporter.GetFactory(typeStr)
 
-	config, err := configv2.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"))
+	config, err := config.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"))
 
 	require.NoError(t, err)
 	require.NotNil(t, config)

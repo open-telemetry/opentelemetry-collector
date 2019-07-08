@@ -1,6 +1,6 @@
 package jaegerexporter
 
-import "github.com/open-telemetry/opentelemetry-service/configv2/configmodels"
+import "github.com/open-telemetry/opentelemetry-service/config/configmodels"
 
 // ConfigV2 defines configuration for Jaeger exporter.
 type ConfigV2 struct {
