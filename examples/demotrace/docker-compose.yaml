@@ -15,11 +15,11 @@ services:
       - "9411:9411"
 
   # Collector
-  oc-collector:
-    image: collector:latest
-    command: ["--config=/etc/oc-collector-config.yaml", "--http-pprof-port=1777"]
+  otel-collector:
+    image: otelsvc:latest
+    command: ["--config=/etc/otel-collector-config.yaml", "--http-pprof-port=1777"]
     volumes:
-      - ./oc-collector-config.yaml:/etc/oc-collector-config.yaml
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
     ports:
       - "55678"
       - "55680:55679"
@@ -30,23 +30,22 @@ services:
       - zipkin-all-in-one
 
   # Agent
-  oc-agent:
-    image: collector:latest
-    command: ["--config=/etc/oc-agent-config.yaml", "--http-pprof-port=1888"]
+  otel-agent:
+    image: otelsvc:latest
+    command: ["--config=/etc/otel-agent-config.yaml", "--http-pprof-port=1888"]
     volumes:
-      - ./oc-agent-config.yaml:/etc/oc-agent-config.yaml
+      - ./otel-agent-config.yaml:/etc/otel-agent-config.yaml
     ports:
       - "14268"
       - "55678"
       - "55679:55679"
     depends_on:
-      - oc-collector
+      - otel-collector
 
   # Synthetic load generator
   synthetic-load-generator:
     image: omnition/synthetic-load-generator:1.0.25
     environment:
-      - JAEGER_COLLECTOR_URL=http://otelsvc-agent:14268
+      - JAEGER_COLLECTOR_URL=http://otel-agent:14268
     depends_on:
-      - oc-agent
-
+      - otel-agent
