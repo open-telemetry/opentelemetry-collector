@@ -8,7 +8,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/configv2/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
-	"github.com/open-telemetry/opentelemetry-service/exporter/exporterhelper"
+	"github.com/open-telemetry/opentelemetry-service/exporter/exporterwrapper"
 	"go.uber.org/zap"
 )
 
@@ -35,7 +35,6 @@ func (f *factory) CreateDefaultConfig() configmodels.Exporter {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		Headers: map[string]string{},
 	}
 }
 
@@ -45,7 +44,7 @@ func (f *factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Ex
 
 	if jc.CollectorEndpoint == "" {
 		return nil, nil, &jTraceExporterError{
-			code: errEndpointRequired,
+			code: errCollectorEndpointRequired,
 			msg:  "Jaeger exporter config requires an Endpoint",
 		}
 	}
@@ -79,35 +78,24 @@ func (f *factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Ex
 		ServiceName: jc.ServiceName,
 	}
 
-	numWorkers := defaultNumWorkers
-	if ocac.NumWorkers > 0 {
-		numWorkers = ocac.NumWorkers
+	exporter, serr := jaeger.NewExporter(jOptions)
+	if serr != nil {
+		return nil, nil, fmt.Errorf("cannot configure jaeger Trace exporter: %v", serr)
 	}
 
-	exportersChan := make(chan *jaeger.Exporter, numWorkers)
-	for exporterIndex := 0; exporterIndex < numWorkers; exporterIndex++ {
-		exporter, serr := jaeger.NewExporter(jOptions)
-		if serr != nil {
-			return nil, nil, fmt.Errorf("cannot configure jaeger Trace exporter: %v", serr)
-		}
-		exportersChan <- exporter
-	}
-
-	je := &jaegerExporter{exporters: exportersChan}
-	jexp, err := exporterhelper.NewTraceExporter(
-		"j_trace",
-		je.PushTraceData,
-		exporterhelper.WithSpanName("jservice.exporter.Jaeger.ConsumeTraceData"),
-		exporterhelper.WithRecordMetrics(true))
-
+	jexp, err := exporterwrapper.NewExporterWrapper("jaeger", "ocservice.exporter.Jaeger.ConsumeTraceData", exporter)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return jexp, je.stop, nil
+	return jexp, noopStopFunc, nil
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
 func (f *factory) CreateMetricsExporter(logger *zap.Logger, cfg configmodels.Exporter) (consumer.MetricsConsumer, exporter.StopFunc, error) {
 	return nil, nil, configerror.ErrDataTypeIsNotSupported
+}
+
+func noopStopFunc() error {
+	return nil
 }

@@ -55,7 +55,7 @@ func TestCreateTraceExporter(t *testing.T) {
 	rcvFactory := receiver.GetFactory(typeStr)
 	require.NotNil(t, rcvFactory)
 	rcvCfg := rcvFactory.CreateDefaultConfig().(*jaegerreceiver.ConfigV2)
-	rcvCfg.Endpoint = testutils.GetAvailableLocalAddress(t)
+	rcvCfg.Protocols["thrift-http"].Endpoint = testutils.GetAvailableLocalAddress(t)
 
 	rcv, err := rcvFactory.CreateTraceReceiver(
 		context.Background(),
@@ -101,10 +101,12 @@ func TestCreateTraceExporter(t *testing.T) {
 			mustFail: true,
 		},
 		{
-			name: "NumWorkers",
+			name: "valid example",
 			config: ConfigV2{
-				CollectorEndpoint: rcvCfg.CollectorEndpoint,
-				NumWorkers:        3,
+				CollectorEndpoint: rcvCfg.Protocols["thrift-http"].Endpoint,
+				Username:          "user",
+				Password:          "123",
+				ServiceName:       "trace-test",
 			},
 		},
 	}

@@ -15,25 +15,13 @@
 package jaegerexporter
 
 import (
-	"context"
-	"fmt"
-	"sync"
-
 	"github.com/spf13/viper"
 
 	"contrib.go.opencensus.io/exporter/jaeger"
-	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exporterwrapper"
-	"github.com/open-telemetry/opentelemetry-service/internal"
 )
-
-type jaegerExporter struct {
-	counter   uint32
-	exporters chan *jaeger.Exporter
-}
 
 type jTraceExporterErrorCode int
 type jTraceExporterError struct {
@@ -48,8 +36,6 @@ func (e *jTraceExporterError) Error() string {
 }
 
 const (
-	defaultNumWorkers int = 2
-
 	_ jTraceExporterErrorCode = iota // skip 0
 	// errCollectorEndpointRequired indicates that this exporter was not provided with a collector endpoint in its config.
 	errCollectorEndpointRequired
@@ -59,6 +45,9 @@ const (
 
 	// errPasswordRequired indicates that this exporter was not provided with a password in its config.
 	errPasswordRequired
+
+	// errServiceNameRequired indicates that this exporter was not provided with a serviceName in its config.
+	errServiceNameRequired
 
 	// errAlreadyStopped indicates that the exporter was already stopped.
 	errAlreadyStopped
@@ -113,58 +102,4 @@ func JaegerExportersFromViper(v *viper.Viper) (tps []consumer.TraceConsumer, mps
 	// upload can use the context and information from the Node.
 	tps = append(tps, jte)
 	return
-}
-
-func (j *jaegerExporter) stop() error {
-	wg := &sync.WaitGroup{}
-	var errors []error
-	var errorsMu sync.Mutex
-	visitedCnt := 0
-	for currExporter := range j.exporters {
-		wg.Add(1)
-		go func(exporter *j.Exporter) {
-			defer wg.Done()
-			err := exporter.Stop()
-			if err != nil {
-				errorsMu.Lock()
-				errors = append(errors, err)
-				errorsMu.Unlock()
-			}
-		}(currExporter)
-		visitedCnt++
-		if visitedCnt == cap(j.exporters) {
-			// Visited and started Stop on all exporters, just wait for the stop to finish.
-			break
-		}
-	}
-
-	wg.Wait()
-	close(j.exporters)
-
-	return internal.CombineErrors(errors)
-}
-
-func (j *jaegerExporter) PushTraceData(ctx context.Context, td consumerdata.TraceData) (int, error) {
-	// Get first available exporter.
-	exporter, ok := <-j.exporters
-	if !ok {
-		err := &jTraceExporterError{
-			code: errAlreadyStopped,
-			msg:  fmt.Sprintf("Jaeger exporter was already stopped."),
-		}
-		return len(td.Spans), err
-	}
-
-	err := exporter.ExportTraceServiceRequest(
-		&agenttracepb.ExportTraceServiceRequest{
-			Spans:    td.Spans,
-			Resource: td.Resource,
-			Node:     td.Node,
-		},
-	)
-	j.exporters <- exporter
-	if err != nil {
-		return len(td.Spans), err
-	}
-	return 0, nil
 }

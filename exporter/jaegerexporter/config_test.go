@@ -48,8 +48,8 @@ func TestLoadConfig(t *testing.T) {
 				Enabled: true,
 			},
 			CollectorEndpoint: "1.2.3.4:1234",
-			NumWorkers:        123,
 			Password:          "j12345",
 			Username:          "user",
+			ServiceName:       "trace-test",
 		})
 }
