@@ -29,7 +29,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/cmd/occollector/app/builder"
-	"github.com/open-telemetry/opentelemetry-service/configv2"
+	"github.com/open-telemetry/opentelemetry-service/config"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/internal/config/viperutils"
 	"github.com/open-telemetry/opentelemetry-service/internal/pprofserver"
@@ -256,7 +256,7 @@ func (app *Application) setupPipelines() {
 	app.logger.Info("Loading configuration...")
 
 	// Load configuration.
-	config, err := configv2.Load(app.v)
+	cfg, err := config.Load(app.v)
 	if err != nil {
 		log.Fatalf("Cannot load configuration: %v", err)
 	}
@@ -267,20 +267,20 @@ func (app *Application) setupPipelines() {
 	// which are referenced before objects which reference them.
 
 	// First create exporters.
-	app.exporters, err = builder.NewExportersBuilder(app.logger, config).Build()
+	app.exporters, err = builder.NewExportersBuilder(app.logger, cfg).Build()
 	if err != nil {
 		log.Fatalf("Cannot load configuration: %v", err)
 	}
 
 	// Create pipelines and their processors and plug exporters to the
 	// end of the pipelines.
-	pipelines, err := builder.NewPipelinesBuilder(app.logger, config, app.exporters).Build()
+	pipelines, err := builder.NewPipelinesBuilder(app.logger, cfg, app.exporters).Build()
 	if err != nil {
 		log.Fatalf("Cannot load configuration: %v", err)
 	}
 
 	// Create receivers and plug them into the start of the pipelines.
-	app.builtReceivers, err = builder.NewReceiversBuilder(app.logger, config, pipelines).Build()
+	app.builtReceivers, err = builder.NewReceiversBuilder(app.logger, cfg, pipelines).Build()
 	if err != nil {
 		log.Fatalf("Cannot load configuration: %v", err)
 	}

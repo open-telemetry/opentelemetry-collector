@@ -21,25 +21,25 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-service/configv2"
-	"github.com/open-telemetry/opentelemetry-service/configv2/configmodels"
+	"github.com/open-telemetry/opentelemetry-service/config"
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
 )
 
-var _ = configv2.RegisterTestFactories()
+var _ = config.RegisterTestFactories()
 
 func TestLoadConfig(t *testing.T) {
 	factory := exporter.GetFactory(typeStr)
 
-	config, err := configv2.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"))
+	cfg, err := config.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"))
 
 	require.NoError(t, err)
-	require.NotNil(t, config)
+	require.NotNil(t, cfg)
 
-	e0 := config.Exporters["opencensus"]
+	e0 := cfg.Exporters["opencensus"]
 	assert.Equal(t, e0, factory.CreateDefaultConfig())
 
-	e1 := config.Exporters["opencensus/2"]
+	e1 := cfg.Exporters["opencensus/2"]
 	assert.Equal(t, e1,
 		&ConfigV2{
 			ExporterSettings: configmodels.ExporterSettings{
