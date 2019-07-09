@@ -16,7 +16,7 @@ services:
 
   # Collector
   oc-collector:
-    image: collector:latest
+    image: occollector:latest
     command: ["--config=/etc/oc-collector-config.yaml", "--http-pprof-port=1777"]
     volumes:
       - ./oc-collector-config.yaml:/etc/oc-collector-config.yaml
@@ -31,7 +31,7 @@ services:
 
   # Agent
   oc-agent:
-    image: collector:latest
+    image: ocagent:latest
     command: ["--config=/etc/oc-agent-config.yaml", "--http-pprof-port=1888"]
     volumes:
       - ./oc-agent-config.yaml:/etc/oc-agent-config.yaml
@@ -50,3 +50,10 @@ services:
     depends_on:
       - oc-agent
 
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yaml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
