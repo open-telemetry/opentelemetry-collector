@@ -42,7 +42,7 @@ func TestLoadConfig(t *testing.T) {
 	r0 := cfg.Receivers["prometheus"]
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
 
-	r1 := cfg.Receivers["prometheus/customname"].(*ConfigV2)
+	r1 := cfg.Receivers["prometheus/customname"].(*Config)
 	assert.Equal(t, r1.ReceiverSettings,
 		configmodels.ReceiverSettings{
 			TypeVal:  typeStr,

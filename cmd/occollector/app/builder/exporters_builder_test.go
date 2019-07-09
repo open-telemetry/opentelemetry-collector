@@ -28,9 +28,9 @@ import (
 )
 
 func TestExportersBuilder_Build(t *testing.T) {
-	config := &configmodels.ConfigV2{
+	config := &configmodels.Config{
 		Exporters: map[string]configmodels.Exporter{
-			"opencensus": &opencensusexporter.ConfigV2{
+			"opencensus": &opencensusexporter.Config{
 				ExporterSettings: configmodels.ExporterSettings{
 					NameVal: "opencensus",
 					TypeVal: "opencensus",

@@ -20,8 +20,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 )
 
-// ConfigV2 defines configuration for OpenCensus exporter.
-type ConfigV2 struct {
+// Config defines configuration for OpenCensus exporter.
+type Config struct {
 	configmodels.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	Endpoint                      string                   `mapstructure:"endpoint"`
 	Compression                   string                   `mapstructure:"compression"`

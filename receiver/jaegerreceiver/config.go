@@ -18,29 +18,29 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 )
 
-// ConfigV2 defines configuration for Jaeger receiver.
-type ConfigV2 struct {
+// Config defines configuration for Jaeger receiver.
+type Config struct {
 	TypeVal   string                                    `mapstructure:"-"`
 	NameVal   string                                    `mapstructure:"-"`
 	Protocols map[string]*configmodels.ReceiverSettings `mapstructure:"protocols"`
 }
 
 // Name gets the receiver name.
-func (rs *ConfigV2) Name() string {
+func (rs *Config) Name() string {
 	return rs.NameVal
 }
 
 // SetName sets the receiver name.
-func (rs *ConfigV2) SetName(name string) {
+func (rs *Config) SetName(name string) {
 	rs.NameVal = name
 }
 
 // Type sets the receiver type.
-func (rs *ConfigV2) Type() string {
+func (rs *Config) Type() string {
 	return rs.TypeVal
 }
 
 // SetType sets the receiver type.
-func (rs *ConfigV2) SetType(typeStr string) {
+func (rs *Config) SetType(typeStr string) {
 	rs.TypeVal = typeStr
 }

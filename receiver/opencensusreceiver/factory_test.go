@@ -36,7 +36,7 @@ func TestCreateReceiver(t *testing.T) {
 	factory := receiver.GetFactory(typeStr)
 	cfg := factory.CreateDefaultConfig()
 
-	config := cfg.(*ConfigV2)
+	config := cfg.(*Config)
 	config.Endpoint = testutils.GetAvailableLocalAddress(t)
 
 	tReceiver, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)

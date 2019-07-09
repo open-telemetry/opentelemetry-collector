@@ -43,7 +43,7 @@ func TestLoadConfig(t *testing.T) {
 
 	p1 := cfg.Processors["queued-retry/2"]
 	assert.Equal(t, p1,
-		&ConfigV2{
+		&Config{
 			ProcessorSettings: configmodels.ProcessorSettings{
 				TypeVal: "queued-retry",
 				NameVal: "queued-retry/2",

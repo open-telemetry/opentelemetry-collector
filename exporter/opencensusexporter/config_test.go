@@ -41,7 +41,7 @@ func TestLoadConfig(t *testing.T) {
 
 	e1 := cfg.Exporters["opencensus/2"]
 	assert.Equal(t, e1,
-		&ConfigV2{
+		&Config{
 			ExporterSettings: configmodels.ExporterSettings{
 				NameVal: "opencensus/2",
 				TypeVal: "opencensus",

@@ -14,7 +14,7 @@
 
 // Package configmodels defines the data models for entities. This file defines the
 // models for V2 configuration format. The defined entities are:
-// ConfigV2 (the top-level structure), Receivers, Exporters, Processors, Pipelines.
+// Config (the top-level structure), Receivers, Exporters, Processors, Pipelines.
 package configmodels
 
 /*
@@ -31,8 +31,8 @@ corresponding interface and if they have additional settings they must also exte
 the corresponding common settings struct (the easiest approach is to embed the common struct).
 */
 
-// ConfigV2 defines the configuration V2 for the various elements of collector or agent.
-type ConfigV2 struct {
+// Config defines the configuration V2 for the various elements of collector or agent.
+type Config struct {
 	Receivers  Receivers
 	Exporters  Exporters
 	Processors Processors
