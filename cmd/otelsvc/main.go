@@ -19,12 +19,12 @@ package main
 import (
 	"log"
 
-	"github.com/open-telemetry/opentelemetry-service/cmd/occollector/app/collector"
+	"github.com/open-telemetry/opentelemetry-service/application"
 	_ "github.com/open-telemetry/opentelemetry-service/receiver/vmmetricsreceiver"
 )
 
 func main() {
-	if err := collector.App.StartUnified(); err != nil {
+	if err := application.App.StartUnified(); err != nil {
 		log.Fatalf("Failed to run the service: %v", err)
 	}
 }

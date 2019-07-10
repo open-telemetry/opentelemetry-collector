@@ -12,20 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config
+package application
 
-// TLSCredentials holds the fields for TLS credentials
-// that are used for starting a server.
-type TLSCredentials struct {
-	// CertFile is the file path containing the TLS certificate.
-	CertFile string `mapstructure:"cert_file"`
+import (
+	"flag"
 
-	// KeyFile is the file path containing the TLS key.
-	KeyFile string `mapstructure:"key_file"`
+	"github.com/jaegertracing/jaeger/pkg/healthcheck"
+	"github.com/spf13/viper"
+	"go.uber.org/zap"
+)
+
+const (
+	healthCheckHTTPPort = "health-check-http-port"
+)
+
+func healthCheckFlags(flags *flag.FlagSet) {
+	flags.Uint(healthCheckHTTPPort, 13133, "Port on which to run the healthcheck http server.")
 }
 
-// nonEmpty returns true if the TLSCredentials are non-nil and
-// if either CertFile or KeyFile is non-empty.
-func (tc *TLSCredentials) nonEmpty() bool {
-	return tc != nil && (tc.CertFile != "" || tc.KeyFile != "")
+func newHealthCheck(v *viper.Viper, logger *zap.Logger) (*healthcheck.HealthCheck, error) {
+	return healthcheck.New(
+		healthcheck.Unavailable, healthcheck.Logger(logger),
+	).Serve(v.GetInt(healthCheckHTTPPort))
 }

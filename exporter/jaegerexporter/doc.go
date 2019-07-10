@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sender
-
-// TODO: Delete me when tests are added.
+// Package jaegerexporter contains a specialized Jaeger exporter. Unlike client
+// library exporters they do not buffer or attempt to resend failed batches, all
+// of that is delegated to the callers of the exporter.
+package jaegerexporter

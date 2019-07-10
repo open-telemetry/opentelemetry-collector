@@ -581,9 +581,3 @@ func zipkinTagsToTraceAttributes(tags map[string]string) *tracepb.Span_Attribute
 	}
 	return &tracepb.Span_Attributes{AttributeMap: amap}
 }
-
-func setIfNonEmpty(key, value string, dest map[string]string) {
-	if value != "" {
-		dest[key] = value
-	}
-}

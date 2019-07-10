@@ -24,64 +24,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-func TestReceiversEnabledByPresenceWithDefaultSettings(t *testing.T) {
-	v, err := loadViperFromFile("./testdata/receivers_enabled.yaml")
-	if err != nil {
-		t.Fatalf("Failed to load viper from test file: %v", err)
-	}
-
-	jaegerEnabled, opencensusEnabled, zipkinEnabled, scribeEnabled :=
-		JaegerReceiverEnabled(v), OpenCensusReceiverEnabled(v), ZipkinReceiverEnabled(v), ZipkinScribeReceiverEnabled(v)
-	if !jaegerEnabled || !opencensusEnabled || !zipkinEnabled || !scribeEnabled {
-		t.Fatalf("Some of the expected receivers were not enabled j:%v oc:%v z:%v scribe:%v", jaegerEnabled, opencensusEnabled, zipkinEnabled, scribeEnabled)
-	}
-
-	wj := NewDefaultJaegerReceiverCfg()
-	gj, err := wj.InitFromViper(v)
-	if err != nil {
-		t.Errorf("Failed to InitFromViper for Jaeger receiver: %v", err)
-	} else if !reflect.DeepEqual(wj, gj) {
-		t.Errorf("Incorrect config for Jaeger receiver, want %v got %v", wj, gj)
-	}
-
-	woc := NewDefaultOpenCensusReceiverCfg()
-	goc, err := woc.InitFromViper(v)
-	if err != nil {
-		t.Errorf("Failed to InitFromViper for OpenCensus receiver: %v", err)
-	} else if !reflect.DeepEqual(woc, goc) {
-		t.Errorf("Incorrect config for OpenCensus receiver, want %v got %v", woc, goc)
-	}
-
-	wz := NewDefaultZipkinReceiverCfg()
-	gz, err := wz.InitFromViper(v)
-	if err != nil {
-		t.Errorf("Failed to InitFromViper for Zipkin receiver: %v", err)
-	} else if !reflect.DeepEqual(wz, gz) {
-		t.Errorf("Incorrect config for Zipkin receiver, want %v got %v", wz, gz)
-	}
-
-	wscrb := NewDefaultZipkinScribeReceiverCfg()
-	gscrb, err := wscrb.InitFromViper(v)
-	if err != nil {
-		t.Errorf("Failed to InitFromViper for Zipkin Scribe receiver: %v", err)
-	} else if !reflect.DeepEqual(wscrb, gscrb) {
-		t.Errorf("Incorrect config for Zipkin Scribe receiver, want %v got %v", wscrb, gscrb)
-	}
-}
-
-func TestReceiversDisabledByPresenceWithDefaultSettings(t *testing.T) {
-	v, err := loadViperFromFile("./testdata/receivers_disabled.yaml")
-	if err != nil {
-		t.Fatalf("Failed to load viper from test file: %v", err)
-	}
-
-	jaegerEnabled, opencensusEnabled, zipkinEnabled, scribeEnabled :=
-		JaegerReceiverEnabled(v), OpenCensusReceiverEnabled(v), ZipkinReceiverEnabled(v), ZipkinScribeReceiverEnabled(v)
-	if jaegerEnabled || opencensusEnabled || zipkinEnabled {
-		t.Fatalf("Not all receivers were disabled j:%v oc:%v z:%v scribe:%v", jaegerEnabled, opencensusEnabled, zipkinEnabled, scribeEnabled)
-	}
-}
-
 func TestMultiAndQueuedSpanProcessorConfig(t *testing.T) {
 	v, err := loadViperFromFile("./testdata/queued_exporters.yaml")
 	if err != nil {
@@ -209,36 +151,6 @@ func TestTailSamplingConfig(t *testing.T) {
 	gCfg := NewDefaultTailBasedCfg().InitFromViper(v)
 	if !reflect.DeepEqual(gCfg, wCfg) {
 		t.Fatalf("Wanted %+v but got %+v", *wCfg, *gCfg)
-	}
-}
-
-func TestOpencensusReceiverKeepaliveSettings(t *testing.T) {
-	v, err := loadViperFromFile("./testdata/oc_keepalive_config.yaml")
-	if err != nil {
-		t.Fatalf("Failed to load viper from test file: %v", err)
-	}
-
-	wCfg := NewDefaultOpenCensusReceiverCfg()
-	wCfg.Keepalive = &serverParametersAndEnforcementPolicy{
-		ServerParameters: &keepaliveServerParameters{
-			Time:    30 * time.Second,
-			Timeout: 5 * time.Second,
-		},
-		EnforcementPolicy: &keepaliveEnforcementPolicy{
-			MinTime:             10 * time.Second,
-			PermitWithoutStream: true,
-		},
-	}
-
-	gCfg, err := NewDefaultOpenCensusReceiverCfg().InitFromViper(v)
-	if err != nil {
-		t.Fatalf("got '%v', want nil", err)
-	}
-	if !reflect.DeepEqual(*gCfg.Keepalive.ServerParameters, *wCfg.Keepalive.ServerParameters) {
-		t.Fatalf("Wanted ServerParameters %+v but got %+v", *wCfg.Keepalive.ServerParameters, *gCfg.Keepalive.ServerParameters)
-	}
-	if !reflect.DeepEqual(*gCfg.Keepalive.EnforcementPolicy, *wCfg.Keepalive.EnforcementPolicy) {
-		t.Fatalf("Wanted EnforcementPolicy %+v but got %+v", *wCfg.Keepalive.EnforcementPolicy, *gCfg.Keepalive.EnforcementPolicy)
 	}
 }
 
