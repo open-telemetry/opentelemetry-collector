@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"io"
 	"io/ioutil"
 	"net"
@@ -37,6 +36,7 @@ import (
 	zipkinproto "github.com/openzipkin/zipkin-go/proto/v2"
 	"go.opencensus.io/trace"
 
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/internal"

@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"io"
 	"io/ioutil"
 	"net"
@@ -32,6 +31,7 @@ import (
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
 
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/internal/config/viperutils"
 	"github.com/open-telemetry/opentelemetry-service/internal/testutils"
 	"github.com/open-telemetry/opentelemetry-service/processor/multiconsumer"

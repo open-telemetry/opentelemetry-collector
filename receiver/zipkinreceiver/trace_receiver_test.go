@@ -17,7 +17,6 @@ package zipkinreceiver
 import (
 	"bytes"
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"io"
 	"io/ioutil"
 	"net"
@@ -37,6 +36,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"

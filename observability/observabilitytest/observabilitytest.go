@@ -36,7 +36,7 @@ func SetupRecordedMetricsTest() (doneFn func()) {
 	}
 }
 
-// CheckValueViewReceiverIngestionBlockedRPCs checks that for the current exported value in the ViewReceiverReceivedSpans
+// CheckValueViewReceiverIngestionBlockedRPCs checks that for the current exported value in the ViewReceiverIngestionBlockedRPCs
 // for {TagKeyReceiver: receiverName, TagKeyExporter: exporterTagName} is equal to "value".
 // In tests that this function is called it is required to also call SetupRecordedMetricsTest as first thing.
 func CheckValueViewReceiverIngestionBlockedRPCs(receiverName string, value int) error {
@@ -44,7 +44,7 @@ func CheckValueViewReceiverIngestionBlockedRPCs(receiverName string, value int) 
 		wantsTagsForReceiverView(receiverName), int64(value))
 }
 
-// CheckValueViewReceiverIngestionBlockedRPCsWithDataLoss checks that for the current exported value in the ViewReceiverReceivedSpans
+// CheckValueViewReceiverIngestionBlockedRPCsWithDataLoss checks that for the current exported value in the ViewReceiverIngestionBlockedRPCsWithDataLoss
 // for {TagKeyReceiver: receiverName, TagKeyExporter: exporterTagName} is equal to "value".
 // In tests that this function is called it is required to also call SetupRecordedMetricsTest as first thing.
 func CheckValueViewReceiverIngestionBlockedRPCsWithDataLoss(receiverName string, value int) error {
