@@ -12,31 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package application
+package service
 
 import (
 	"flag"
 
+	"github.com/jaegertracing/jaeger/pkg/healthcheck"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 const (
-	logLevelCfg = "log-level"
+	healthCheckHTTPPort = "health-check-http-port"
 )
 
-func loggerFlags(flags *flag.FlagSet) {
-	flags.String(logLevelCfg, "INFO", "Output level of logs (TRACE, DEBUG, INFO, WARN, ERROR, FATAL)")
+func healthCheckFlags(flags *flag.FlagSet) {
+	flags.Uint(healthCheckHTTPPort, 13133, "Port on which to run the healthcheck http server.")
 }
 
-func newLogger(v *viper.Viper) (*zap.Logger, error) {
-	var level zapcore.Level
-	err := (&level).UnmarshalText([]byte(v.GetString(logLevelCfg)))
-	if err != nil {
-		return nil, err
-	}
-	conf := zap.NewProductionConfig()
-	conf.Level.SetLevel(level)
-	return conf.Build()
+func newHealthCheck(v *viper.Viper, logger *zap.Logger) (*healthcheck.HealthCheck, error) {
+	return healthcheck.New(
+		healthcheck.Unavailable, healthcheck.Logger(logger),
+	).Serve(v.GetInt(healthCheckHTTPPort))
 }

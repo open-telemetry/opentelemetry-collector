@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package collector handles the command-line, configuration, and runs the OC collector.
-package application
+package service
 
 import (
 	"net"

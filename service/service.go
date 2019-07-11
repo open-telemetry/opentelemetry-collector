@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package application handles the command-line, configuration, and runs the
+// Package service handles the command-line, configuration, and runs the
 // OpenTelemetry Service.
-package application
+package service
 
 import (
 	"context"
@@ -29,13 +29,13 @@ import (
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-service/application/builder"
 	"github.com/open-telemetry/opentelemetry-service/config"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/internal/config/viperutils"
 	"github.com/open-telemetry/opentelemetry-service/internal/pprofserver"
 	"github.com/open-telemetry/opentelemetry-service/internal/zpagesserver"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
+	"github.com/open-telemetry/opentelemetry-service/service/builder"
 )
 
 var (
