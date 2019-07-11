@@ -49,3 +49,11 @@ services:
       - JAEGER_COLLECTOR_URL=http://otel-agent:14268
     depends_on:
       - otel-agent
+
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yaml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
