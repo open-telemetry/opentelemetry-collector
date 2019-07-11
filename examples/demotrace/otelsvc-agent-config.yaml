@@ -11,4 +11,4 @@ queued-exporters:
     queue-size: 10
     retry-on-failure: true
   opencensus:
-    endpoint: "oc-collector:55678"
+    endpoint: "otelsvc-collector:55678"
