@@ -12,8 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package collector handles the command-line, configuration, and runs the OC collector.
-package collector
+// Package service handles the command-line, configuration, and runs the
+// OpenTelemetry Service.
+package service
 
 import (
 	"context"
@@ -28,13 +29,13 @@ import (
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-service/cmd/occollector/app/builder"
 	"github.com/open-telemetry/opentelemetry-service/config"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/internal/config/viperutils"
 	"github.com/open-telemetry/opentelemetry-service/internal/pprofserver"
 	"github.com/open-telemetry/opentelemetry-service/internal/zpagesserver"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
+	"github.com/open-telemetry/opentelemetry-service/service/builder"
 )
 
 var (
@@ -191,65 +192,6 @@ func (app *Application) shutdownClosableComponents() {
 	for _, closeFn := range app.closeFns {
 		closeFn()
 	}
-}
-
-func (app *Application) execute() {
-	app.logger.Info("Starting...", zap.Int("NumCPU", runtime.NumCPU()))
-
-	// Set memory ballast
-	ballast, ballastSizeBytes := app.createMemoryBallast()
-
-	app.asyncErrorChannel = make(chan error)
-
-	// Setup everything.
-	app.setupPProf()
-	app.setupHealthCheck()
-	app.processor, app.closeFns = startProcessor(app.v, app.logger)
-	app.setupZPages()
-	app.receivers = createReceivers(app.v, app.logger, app.processor, app)
-	app.setupTelemetry(ballastSizeBytes)
-
-	// Everything is ready, now run until an event requiring shutdown happens.
-	app.runAndWaitForShutdownEvent()
-
-	// Begin shutdown sequence.
-	runtime.KeepAlive(ballast)
-	app.healthCheck.Set(healthcheck.Unavailable)
-	app.logger.Info("Starting shutdown...")
-
-	// TODO: orderly shutdown: first receivers, then flushing pipelines giving
-	// senders a chance to send all their data. This may take time, the allowed
-	// time should be part of configuration.
-	app.shutdownReceivers()
-
-	app.shutdownClosableComponents()
-
-	AppTelemetry.shutdown()
-
-	app.logger.Info("Shutdown complete.")
-}
-
-// Start the application according to the command and configuration given
-// by the user.
-func (app *Application) Start() error {
-	rootCmd := &cobra.Command{
-		Use:  "occollector",
-		Long: "OpenCensus Collector",
-		Run: func(cmd *cobra.Command, args []string) {
-			app.init()
-			app.execute()
-		},
-	}
-	viperutils.AddFlags(app.v, rootCmd,
-		telemetryFlags,
-		builder.Flags,
-		healthCheckFlags,
-		loggerFlags,
-		pprofserver.AddFlags,
-		zpagesserver.AddFlags,
-	)
-
-	return rootCmd.Execute()
 }
 
 func (app *Application) setupPipelines() {

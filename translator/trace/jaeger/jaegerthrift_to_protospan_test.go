@@ -601,8 +601,3 @@ func TestHTTPToGRPCStatusCode(t *testing.T) {
 		}
 	}
 }
-
-func jsonify(v interface{}) []byte {
-	jb, _ := json.MarshalIndent(v, "", "   ")
-	return jb
-}

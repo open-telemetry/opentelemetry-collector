@@ -12,20 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config
+package jaegerexporter
 
-// TLSCredentials holds the fields for TLS credentials
-// that are used for starting a server.
-type TLSCredentials struct {
-	// CertFile is the file path containing the TLS certificate.
-	CertFile string `mapstructure:"cert_file"`
-
-	// KeyFile is the file path containing the TLS key.
-	KeyFile string `mapstructure:"key_file"`
-}
-
-// nonEmpty returns true if the TLSCredentials are non-nil and
-// if either CertFile or KeyFile is non-empty.
-func (tc *TLSCredentials) nonEmpty() bool {
-	return tc != nil && (tc.CertFile != "" || tc.KeyFile != "")
-}
+// TODO: Delete me when tests are added.

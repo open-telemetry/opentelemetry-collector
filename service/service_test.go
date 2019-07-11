@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package collector handles the command-line, configuration, and runs the OC collector.
-package collector
+package service
 
 import (
 	"net"
@@ -24,43 +24,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/internal/testutils"
 	"github.com/open-telemetry/opentelemetry-service/internal/zpagesserver"
 )
-
-func TestApplication_Start(t *testing.T) {
-	App = newApp()
-
-	portArg := []string{
-		healthCheckHTTPPort, // Keep it as first since its address is used later.
-		zpagesserver.ZPagesHTTPPort,
-		"metrics-port",
-		"receivers.opencensus.port",
-	}
-	addresses := getMultipleAvailableLocalAddresses(t, uint(len(portArg)))
-	for i, addr := range addresses {
-		_, port, err := net.SplitHostPort(addr)
-		if err != nil {
-			t.Fatalf("failed to split host and port from %q: %v", addr, err)
-		}
-		App.v.Set(portArg[i], port)
-	}
-
-	// Without exporters the collector will start and just shutdown, no error is expected.
-	App.v.Set("logging-exporter", true)
-
-	appDone := make(chan struct{})
-	go func() {
-		defer close(appDone)
-		if err := App.Start(); err != nil {
-			t.Fatalf("App.Start() got %v, want nil", err)
-		}
-	}()
-
-	<-App.readyChan
-	if !isAppAvailable(t, "http://"+addresses[0]) {
-		t.Fatalf("App didn't reach ready state")
-	}
-	close(App.stopTestChan)
-	<-appDone
-}
 
 func TestApplication_StartUnified(t *testing.T) {
 
@@ -130,8 +93,4 @@ func getMultipleAvailableLocalAddresses(t *testing.T, numAddresses uint) []strin
 		addresses[i] = testutils.GetAvailableLocalAddress(t)
 	}
 	return addresses
-}
-
-func mibToBytes(mib int) uint64 {
-	return uint64(mib) * 1024 * 1024
 }

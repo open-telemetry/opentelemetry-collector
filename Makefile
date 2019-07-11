@@ -87,10 +87,6 @@ vet:
 install-tools:
 	go install golang.org/x/lint/golint
 
-.PHONY: collector
-collector:
-	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/occollector_$(GOOS) $(BUILD_INFO) ./cmd/occollector
-
 .PHONY: otelsvc
 otelsvc:
 	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/otelsvc_$(GOOS) $(BUILD_INFO) ./cmd/otelsvc
@@ -113,7 +109,7 @@ docker-otelsvc:
 	COMPONENT=otelsvc $(MAKE) docker-component
 
 .PHONY: binaries
-binaries: collector otelsvc
+binaries: otelsvc
 
 .PHONY: binaries-all-sys
 binaries-all-sys:
