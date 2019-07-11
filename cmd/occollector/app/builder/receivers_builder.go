@@ -101,14 +101,14 @@ func (rcvs Receivers) StartAll(logger *zap.Logger, host receiver.Host) error {
 // ReceiversBuilder builds receivers from config.
 type ReceiversBuilder struct {
 	logger             *zap.Logger
-	config             *configmodels.ConfigV2
+	config             *configmodels.Config
 	pipelineProcessors PipelineProcessors
 }
 
 // NewReceiversBuilder creates a new ReceiversBuilder. Call Build() on the returned value.
 func NewReceiversBuilder(
 	logger *zap.Logger,
-	config *configmodels.ConfigV2,
+	config *configmodels.Config,
 	pipelineProcessors PipelineProcessors,
 ) *ReceiversBuilder {
 	return &ReceiversBuilder{logger, config, pipelineProcessors}

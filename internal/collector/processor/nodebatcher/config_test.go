@@ -49,7 +49,7 @@ func TestLoadConfig(t *testing.T) {
 	sendBatchSize := 1000
 
 	assert.Equal(t, p1,
-		&ConfigV2{
+		&Config{
 			ProcessorSettings: configmodels.ProcessorSettings{
 				TypeVal: "batch",
 				NameVal: "batch/2",

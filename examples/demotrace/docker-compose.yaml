@@ -15,11 +15,11 @@ services:
       - "9411:9411"
 
   # Collector
-  otelsvc-collector:
+  otel-collector:
     image: otelsvc:latest
-    command: ["--config=/etc/otelsvc-collector-config.yaml", "--http-pprof-port=1777"]
+    command: ["--config=/etc/otel-collector-config.yaml", "--http-pprof-port=1777"]
     volumes:
-      - ./otelsvc-collector-config.yaml:/etc/otelsvc-collector-config.yaml
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
     ports:
       - "55678"
       - "55680:55679"
@@ -30,25 +30,25 @@ services:
       - zipkin-all-in-one
 
   # Agent
-  otelsvc-agent:
+  otel-agent:
     image: otelsvc:latest
-    command: ["--config=/etc/otelsvc-agent-config.yaml", "--http-pprof-port=1888"]
+    command: ["--config=/etc/otel-agent-config.yaml", "--http-pprof-port=1888"]
     volumes:
-      - ./otelsvc-agent-config.yaml:/etc/otelsvc-agent-config.yaml
+      - ./otel-agent-config.yaml:/etc/otel-agent-config.yaml
     ports:
       - "14268"
       - "55678"
       - "55679:55679"
     depends_on:
-      - otelsvc-collector
+      - otel-collector
 
   # Synthetic load generator
   synthetic-load-generator:
     image: omnition/synthetic-load-generator:1.0.25
     environment:
-      - JAEGER_COLLECTOR_URL=http://otelsvc-agent:14268
+      - JAEGER_COLLECTOR_URL=http://otel-agent:14268
     depends_on:
-      - otelsvc-agent
+      - otel-agent
 
   prometheus:
     container_name: prometheus

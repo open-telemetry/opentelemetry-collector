@@ -48,7 +48,7 @@ func (f *factory) CustomUnmarshaler() receiver.CustomUnmarshaler {
 
 // CreateDefaultConfig creates the default configuration for receiver.
 func (f *factory) CreateDefaultConfig() configmodels.Receiver {
-	return &ConfigV2{
+	return &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
 			TypeVal:  typeStr,
 			NameVal:  typeStr,
@@ -94,7 +94,7 @@ func (f *factory) CreateMetricsReceiver(
 }
 
 func (f *factory) createReceiver(cfg configmodels.Receiver) (*Receiver, error) {
-	rCfg := cfg.(*ConfigV2)
+	rCfg := cfg.(*Config)
 
 	// There must be one receiver for both metrics and traces. We maintain a map of
 	// receivers per config.
@@ -118,4 +118,4 @@ func (f *factory) createReceiver(cfg configmodels.Receiver) (*Receiver, error) {
 // We maintain this map because the factory is asked trace and metric receivers separately
 // when it gets CreateTraceReceiver() and CreateMetricsReceiver() but they must not
 // create separate objects, they must use one Receiver object per configuration.
-var receivers = map[*ConfigV2]*Receiver{}
+var receivers = map[*Config]*Receiver{}

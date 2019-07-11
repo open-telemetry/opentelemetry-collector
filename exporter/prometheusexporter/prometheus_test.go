@@ -34,11 +34,11 @@ import (
 
 func TestPrometheusExporter(t *testing.T) {
 	tests := []struct {
-		config  *ConfigV2
+		config  *Config
 		wantErr string
 	}{
 		{
-			config: &ConfigV2{
+			config: &Config{
 				Namespace: "test",
 				ConstLabels: map[string]string{
 					"foo":  "bar",
@@ -48,7 +48,7 @@ func TestPrometheusExporter(t *testing.T) {
 			},
 		},
 		{
-			config:  &ConfigV2{},
+			config:  &Config{},
 			wantErr: "expecting a non-blank address to run the Prometheus metrics handler",
 		},
 	}
@@ -96,7 +96,7 @@ prometheus:`)
 }
 
 func TestPrometheusExporter_endToEnd(t *testing.T) {
-	config := &ConfigV2{
+	config := &Config{
 		Namespace: "test",
 		ConstLabels: map[string]string{
 			"foo":  "bar",

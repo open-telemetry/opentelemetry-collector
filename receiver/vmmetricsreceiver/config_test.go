@@ -42,9 +42,9 @@ func TestLoadConfig(t *testing.T) {
 	r0 := cfg.Receivers["vmmetrics"]
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
 
-	r1 := cfg.Receivers["vmmetrics/customname"].(*ConfigV2)
+	r1 := cfg.Receivers["vmmetrics/customname"].(*Config)
 	assert.Equal(t, r1,
-		&ConfigV2{
+		&Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal: typeStr,
 				NameVal: "vmmetrics/customname",

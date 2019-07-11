@@ -73,7 +73,7 @@ func CustomUnmarshalerFunc(v *viper.Viper, viperKey string, intoCfg interface{})
 		return fmt.Errorf("prometheus receiver failed to marshal config to yaml: %s", err)
 	}
 
-	config := intoCfg.(*ConfigV2)
+	config := intoCfg.(*Config)
 
 	err = yaml.Unmarshal(out, &config.PrometheusConfig)
 	if err != nil {
@@ -87,7 +87,7 @@ func CustomUnmarshalerFunc(v *viper.Viper, viperKey string, intoCfg interface{})
 
 // CreateDefaultConfig creates the default configuration for receiver.
 func (f *factory) CreateDefaultConfig() configmodels.Receiver {
-	return &ConfigV2{
+	return &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
 			TypeVal:  typeStr,
 			NameVal:  typeStr,
@@ -114,7 +114,7 @@ func (f *factory) CreateMetricsReceiver(
 	consumer consumer.MetricsConsumer,
 ) (receiver.MetricsReceiver, error) {
 
-	rCfg := cfg.(*ConfigV2)
+	rCfg := cfg.(*Config)
 
 	// Create receiver Configuration from our input cfg
 	config := Configuration{

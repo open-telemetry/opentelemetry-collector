@@ -41,9 +41,9 @@ func TestLoadConfig(t *testing.T) {
 	r0 := cfg.Receivers["zipkin"]
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
 
-	r1 := cfg.Receivers["zipkin/customname"].(*ConfigV2)
+	r1 := cfg.Receivers["zipkin/customname"].(*Config)
 	assert.Equal(t, r1,
-		&ConfigV2{
+		&Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal:  typeStr,
 				NameVal:  "zipkin/customname",

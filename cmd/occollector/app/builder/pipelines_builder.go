@@ -39,7 +39,7 @@ type PipelineProcessors map[*configmodels.Pipeline]*builtProcessor
 // PipelinesBuilder builds pipelines from config.
 type PipelinesBuilder struct {
 	logger    *zap.Logger
-	config    *configmodels.ConfigV2
+	config    *configmodels.Config
 	exporters Exporters
 }
 
@@ -47,7 +47,7 @@ type PipelinesBuilder struct {
 // built via ExportersBuilder. Call Build() on the returned value.
 func NewPipelinesBuilder(
 	logger *zap.Logger,
-	config *configmodels.ConfigV2,
+	config *configmodels.Config,
 	exporters Exporters,
 ) *PipelinesBuilder {
 	return &PipelinesBuilder{logger, config, exporters}

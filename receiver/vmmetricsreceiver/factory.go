@@ -52,7 +52,7 @@ func (f *factory) CustomUnmarshaler() receiver.CustomUnmarshaler {
 
 // CreateDefaultConfig creates the default configuration for receiver.
 func (f *factory) CreateDefaultConfig() configmodels.Receiver {
-	return &ConfigV2{
+	return &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
 			TypeVal: typeStr,
 			NameVal: typeStr,
@@ -81,7 +81,7 @@ func (f *factory) CreateMetricsReceiver(
 	if runtime.GOOS != "linux" {
 		return nil, errors.New("vmmetrics receiver is only supported on linux")
 	}
-	cfg := config.(*ConfigV2)
+	cfg := config.(*Config)
 
 	vmc, err := NewVMMetricsCollector(cfg.ScrapeInterval, cfg.MountPoint, cfg.ProcessMountPoint, cfg.MetricPrefix, consumer)
 	if err != nil {

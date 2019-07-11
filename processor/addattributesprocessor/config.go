@@ -18,8 +18,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 )
 
-// ConfigV2 defines configuration for Attributes processor.
-type ConfigV2 struct {
+// Config defines configuration for Attributes processor.
+type Config struct {
 	configmodels.ProcessorSettings `mapstructure:",squash"`
 	Overwrite                      bool                   `mapstructure:"overwrite"`
 	Values                         map[string]interface{} `mapstructure:"values"`

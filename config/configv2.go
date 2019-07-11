@@ -83,10 +83,10 @@ const (
 // typeAndNameSeparator is the separator that is used between type and name in type/name composite keys.
 const typeAndNameSeparator = "/"
 
-// Load loads a ConfigV2 from Viper.
-func Load(v *viper.Viper) (*configmodels.ConfigV2, error) {
+// Load loads a Config from Viper.
+func Load(v *viper.Viper) (*configmodels.Config, error) {
 
-	var config configmodels.ConfigV2
+	var config configmodels.Config
 
 	// Load the config.
 
@@ -402,7 +402,7 @@ func loadPipelines(v *viper.Viper) (configmodels.Pipelines, error) {
 	return pipelines, nil
 }
 
-func validateConfig(cfg *configmodels.ConfigV2) error {
+func validateConfig(cfg *configmodels.Config) error {
 	// This function performs basic validation of configuration. There may be more subtle
 	// invalid cases that we currently don't check for but which we may want to add in
 	// the future (e.g. disallowing receiving and exporting on the same endpoint).
@@ -414,7 +414,7 @@ func validateConfig(cfg *configmodels.ConfigV2) error {
 	return nil
 }
 
-func validatePipelines(cfg *configmodels.ConfigV2) error {
+func validatePipelines(cfg *configmodels.Config) error {
 	// Must have at least one pipeline.
 	if len(cfg.Pipelines) < 1 {
 		return &configError{code: errMissingPipelines, msg: "must have at least one pipeline"}
@@ -429,7 +429,7 @@ func validatePipelines(cfg *configmodels.ConfigV2) error {
 	return nil
 }
 
-func validatePipeline(cfg *configmodels.ConfigV2, pipeline *configmodels.Pipeline) error {
+func validatePipeline(cfg *configmodels.Config, pipeline *configmodels.Pipeline) error {
 	if err := validatePipelineReceivers(cfg, pipeline); err != nil {
 		return err
 	}
@@ -445,7 +445,7 @@ func validatePipeline(cfg *configmodels.ConfigV2, pipeline *configmodels.Pipelin
 	return nil
 }
 
-func validatePipelineReceivers(cfg *configmodels.ConfigV2, pipeline *configmodels.Pipeline) error {
+func validatePipelineReceivers(cfg *configmodels.Config, pipeline *configmodels.Pipeline) error {
 	if len(pipeline.Receivers) == 0 {
 		return &configError{
 			code: errPipelineMustHaveReceiver,
@@ -467,7 +467,7 @@ func validatePipelineReceivers(cfg *configmodels.ConfigV2, pipeline *configmodel
 	return nil
 }
 
-func validatePipelineExporters(cfg *configmodels.ConfigV2, pipeline *configmodels.Pipeline) error {
+func validatePipelineExporters(cfg *configmodels.Config, pipeline *configmodels.Pipeline) error {
 	if len(pipeline.Exporters) == 0 {
 		return &configError{
 			code: errPipelineMustHaveExporter,
@@ -489,7 +489,7 @@ func validatePipelineExporters(cfg *configmodels.ConfigV2, pipeline *configmodel
 	return nil
 }
 
-func validatePipelineProcessors(cfg *configmodels.ConfigV2, pipeline *configmodels.Pipeline) error {
+func validatePipelineProcessors(cfg *configmodels.Config, pipeline *configmodels.Pipeline) error {
 	if pipeline.InputType == configmodels.TracesDataType {
 		// Traces pipeline must have at least one processor.
 		if len(pipeline.Processors) == 0 {

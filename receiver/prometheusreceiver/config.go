@@ -22,8 +22,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 )
 
-// ConfigV2 defines configuration for Prometheus receiver.
-type ConfigV2 struct {
+// Config defines configuration for Prometheus receiver.
+type Config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`
 	PrometheusConfig              *config.Config `mapstructure:"-"`
 	BufferPeriod                  time.Duration  `mapstructure:"buffer_period"`

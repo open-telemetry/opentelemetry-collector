@@ -42,7 +42,7 @@ func TestLoadConfig(t *testing.T) {
 
 	p1 := cfg.Processors["attributes/2"]
 	assert.Equal(t, p1,
-		&ConfigV2{
+		&Config{
 			ProcessorSettings: configmodels.ProcessorSettings{
 				TypeVal: "attributes",
 				NameVal: "attributes/2",

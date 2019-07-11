@@ -52,7 +52,7 @@ func (f *factory) CustomUnmarshaler() receiver.CustomUnmarshaler {
 
 // CreateDefaultConfig creates the default configuration for Jaeger receiver.
 func (f *factory) CreateDefaultConfig() configmodels.Receiver {
-	return &ConfigV2{
+	return &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
 			TypeVal:  typeStr,
 			NameVal:  typeStr,
@@ -69,7 +69,7 @@ func (f *factory) CreateTraceReceiver(
 	nextConsumer consumer.TraceConsumer,
 ) (receiver.TraceReceiver, error) {
 
-	rCfg := cfg.(*ConfigV2)
+	rCfg := cfg.(*Config)
 	return New(rCfg.Endpoint, nextConsumer)
 }
 

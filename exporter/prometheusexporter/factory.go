@@ -46,7 +46,7 @@ func (f *factory) Type() string {
 
 // CreateDefaultConfig creates the default configuration for exporter.
 func (f *factory) CreateDefaultConfig() configmodels.Exporter {
-	return &ConfigV2{
+	return &Config{
 		ExporterSettings: configmodels.ExporterSettings{
 			TypeVal: typeStr,
 			NameVal: typeStr,
@@ -62,7 +62,7 @@ func (f *factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Ex
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
 func (f *factory) CreateMetricsExporter(logger *zap.Logger, cfg configmodels.Exporter) (consumer.MetricsConsumer, exporter.StopFunc, error) {
-	pcfg := cfg.(*ConfigV2)
+	pcfg := cfg.(*Config)
 
 	addr := strings.TrimSpace(pcfg.Endpoint)
 	if addr == "" {

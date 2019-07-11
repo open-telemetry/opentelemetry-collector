@@ -40,7 +40,7 @@ func (f *factory) Type() string {
 
 // CreateDefaultConfig creates the default configuration for exporter.
 func (f *factory) CreateDefaultConfig() configmodels.Exporter {
-	return &ConfigV2{
+	return &Config{
 		ExporterSettings: configmodels.ExporterSettings{
 			TypeVal: typeStr,
 			NameVal: typeStr,
