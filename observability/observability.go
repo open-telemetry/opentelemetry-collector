@@ -28,6 +28,8 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 	"go.opencensus.io/trace"
+
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 )
 
 var (
@@ -138,8 +140,8 @@ func ContextWithReceiverName(ctx context.Context, receiverName string) context.C
 // when the host blocks ingestion. If back pressure is disabled the metric for
 // respective data loss is recorded.
 // Use it with a context.Context generated using ContextWithReceiverName().
-func RecordIngestionBlockedMetrics(ctxWithTraceReceiverName context.Context, backPressureDisabled bool) {
-	if backPressureDisabled {
+func RecordIngestionBlockedMetrics(ctxWithTraceReceiverName context.Context, backPressureSetting configmodels.BackPressureSetting) {
+	if backPressureSetting == configmodels.DisableBackPressure {
 		// In this case data loss will happen, record the proper metric.
 		stats.Record(ctxWithTraceReceiverName, mReceiverIngestionBlockedRPCsWithDataLoss.M(1))
 	}

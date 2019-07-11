@@ -20,6 +20,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/observability"
 	"github.com/open-telemetry/opentelemetry-service/observability/observabilitytest"
 )
@@ -35,8 +36,8 @@ func TestTracePieplineRecordedMetrics(t *testing.T) {
 
 	receiverCtx := observability.ContextWithReceiverName(context.Background(), receiverName)
 	observability.RecordTraceReceiverMetrics(receiverCtx, 17, 13)
-	observability.RecordIngestionBlockedMetrics(receiverCtx, false)
-	observability.RecordIngestionBlockedMetrics(receiverCtx, true)
+	observability.RecordIngestionBlockedMetrics(receiverCtx, configmodels.EnableBackPressure)
+	observability.RecordIngestionBlockedMetrics(receiverCtx, configmodels.DisableBackPressure)
 	exporterCtx := observability.ContextWithExporterName(receiverCtx, exporterName)
 	observability.RecordTraceExporterMetrics(exporterCtx, 27, 23)
 	if err := observabilitytest.CheckValueViewReceiverReceivedSpans(receiverName, 17); err != nil {

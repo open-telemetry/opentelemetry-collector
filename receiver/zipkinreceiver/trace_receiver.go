@@ -58,10 +58,10 @@ type ZipkinReceiver struct {
 	mu sync.Mutex
 
 	// addr is the address onto which the HTTP server will be bound
-	addr              string
-	host              receiver.Host
-	backPressureState configmodels.BackPressureState
-	nextConsumer      consumer.TraceConsumer
+	addr                string
+	host                receiver.Host
+	backPressureSetting configmodels.BackPressureSetting
+	nextConsumer        consumer.TraceConsumer
 
 	startOnce sync.Once
 	stopOnce  sync.Once
@@ -72,15 +72,15 @@ var _ receiver.TraceReceiver = (*ZipkinReceiver)(nil)
 var _ http.Handler = (*ZipkinReceiver)(nil)
 
 // New creates a new zipkinreceiver.ZipkinReceiver reference.
-func New(address string, backPressureState configmodels.BackPressureState, nextConsumer consumer.TraceConsumer) (*ZipkinReceiver, error) {
+func New(address string, backPressureSetting configmodels.BackPressureSetting, nextConsumer consumer.TraceConsumer) (*ZipkinReceiver, error) {
 	if nextConsumer == nil {
 		return nil, errNilNextConsumer
 	}
 
 	zr := &ZipkinReceiver{
-		addr:              address,
-		backPressureState: backPressureState,
-		nextConsumer:      nextConsumer,
+		addr:                address,
+		backPressureSetting: backPressureSetting,
+		nextConsumer:        nextConsumer,
 	}
 	return zr, nil
 }
@@ -316,7 +316,7 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if !zr.host.OkToIngest() {
 		var responseStatusCode int
 		var zPageMessage string
-		if zr.backPressureState == configmodels.EnableBackPressure {
+		if zr.backPressureSetting == configmodels.EnableBackPressure {
 			responseStatusCode = http.StatusServiceUnavailable
 			zPageMessage = "Host blocked ingestion. Back pressure is ON."
 		} else {
@@ -332,7 +332,7 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		observability.RecordIngestionBlockedMetrics(
 			ctxWithReceiverName,
-			zr.backPressureState == configmodels.DisableBackPressure)
+			zr.backPressureSetting)
 		w.WriteHeader(responseStatusCode)
 		return
 	}

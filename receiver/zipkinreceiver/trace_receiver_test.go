@@ -580,7 +580,7 @@ func TestZipkinExporter_HostIngestionStatusChanges(t *testing.T) {
 	}
 	tests := []struct {
 		name                                       string
-		backPressureState                          configmodels.BackPressureState
+		backPressureSetting                        configmodels.BackPressureSetting
 		expectedReceivedBatches                    int
 		expectedIngestionBlockedRPCs               int
 		expectedIngestionBlockedRPCsNoBackPressure int
@@ -588,7 +588,7 @@ func TestZipkinExporter_HostIngestionStatusChanges(t *testing.T) {
 	}{
 		{
 			name:                         "EnableBackPressure",
-			backPressureState:            configmodels.EnableBackPressure,
+			backPressureSetting:          configmodels.EnableBackPressure,
 			expectedReceivedBatches:      2,
 			expectedIngestionBlockedRPCs: 1,
 			expectedIngestionBlockedRPCsNoBackPressure: 0,
@@ -609,7 +609,7 @@ func TestZipkinExporter_HostIngestionStatusChanges(t *testing.T) {
 		},
 		{
 			name:                         "DisableBackPressure",
-			backPressureState:            configmodels.DisableBackPressure,
+			backPressureSetting:          configmodels.DisableBackPressure,
 			expectedReceivedBatches:      2,
 			expectedIngestionBlockedRPCs: 1,
 			expectedIngestionBlockedRPCsNoBackPressure: 1,
@@ -636,7 +636,7 @@ func TestZipkinExporter_HostIngestionStatusChanges(t *testing.T) {
 			defer doneFn()
 
 			sink := new(exportertest.SinkTraceExporter)
-			zr, err := New("127.0.0.1:0", tt.backPressureState, sink)
+			zr, err := New("127.0.0.1:0", tt.backPressureSetting, sink)
 			require.Nil(t, err)
 			require.NotNil(t, zr)
 			defer zr.StopTraceReception()
