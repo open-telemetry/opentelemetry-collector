@@ -21,9 +21,9 @@ import (
 
 	"go.opencensus.io/trace"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	commonpb "github.com/census-instrumentation/opencensus-proto/gen-gogo/agent/common/v1"
+	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-gogo/agent/trace/v1"
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-gogo/resource/v1"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/observability"

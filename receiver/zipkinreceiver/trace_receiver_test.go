@@ -28,8 +28,8 @@ import (
 	"time"
 
 	"contrib.go.opencensus.io/exporter/zipkin"
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	commonpb "github.com/census-instrumentation/opencensus-proto/gen-gogo/agent/common/v1"
+	tracepb "github.com/census-instrumentation/opencensus-proto/gen-gogo/trace/v1"
 	openzipkin "github.com/openzipkin/zipkin-go"
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	zhttp "github.com/openzipkin/zipkin-go/reporter/http"

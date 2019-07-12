@@ -14,7 +14,7 @@
 
 package sampling
 
-import tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+import tracepb "github.com/census-instrumentation/opencensus-proto/gen-gogo/trace/v1"
 
 type numericAttributeFilter struct {
 	key                string

@@ -27,7 +27,7 @@ import (
 	"strings"
 	"testing"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	commonpb "github.com/census-instrumentation/opencensus-proto/gen-gogo/agent/common/v1"
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
 

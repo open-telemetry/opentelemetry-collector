@@ -14,6 +14,7 @@ require (
 	github.com/census-instrumentation/opencensus-proto v0.2.0
 	github.com/go-kit/kit v0.8.0
 	github.com/gogo/googleapis v1.2.0 // indirect
+	github.com/gogo/protobuf v1.2.1
 	github.com/golang/protobuf v1.3.1
 	github.com/google/go-cmp v0.3.0
 	github.com/gorilla/mux v1.6.2
@@ -49,4 +50,10 @@ require (
 	google.golang.org/api v0.5.0
 	google.golang.org/grpc v1.21.0
 	gopkg.in/yaml.v2 v2.2.2
+)
+
+replace (
+	contrib.go.opencensus.io/exporter/ocagent => github.com/omnition/opencensus-go-exporter-ocagent v0.5.0-gogo
+	github.com/census-instrumentation/opencensus-proto => github.com/omnition/opencensus-proto v0.3.0-gogo
+	github.com/orijtech/prometheus-go-metrics-exporter => github.com/omnition/prometheus-go-metrics-exporter v0.0.2-gogo
 )

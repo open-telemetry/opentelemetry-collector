@@ -29,8 +29,8 @@ import (
 	"sync"
 
 	"github.com/apache/thrift/lib/go/thrift"
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	commonpb "github.com/census-instrumentation/opencensus-proto/gen-gogo/agent/common/v1"
+	tracepb "github.com/census-instrumentation/opencensus-proto/gen-gogo/trace/v1"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	zipkinproto "github.com/openzipkin/zipkin-go/proto/v2"

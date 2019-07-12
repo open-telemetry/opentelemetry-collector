@@ -18,13 +18,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/golang/protobuf/ptypes"
-	"github.com/golang/protobuf/ptypes/timestamp"
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
+	ptypes "github.com/gogo/protobuf/types"
+	timestamp "github.com/gogo/protobuf/types"
+	wrappers "github.com/gogo/protobuf/types"
 	jaeger "github.com/jaegertracing/jaeger/model"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	commonpb "github.com/census-instrumentation/opencensus-proto/gen-gogo/agent/common/v1"
+	tracepb "github.com/census-instrumentation/opencensus-proto/gen-gogo/trace/v1"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
 )

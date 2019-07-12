@@ -23,8 +23,8 @@ import (
 	"sync"
 	"time"
 
-	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
-	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
+	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-gogo/agent/metrics/v1"
+	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-gogo/agent/trace/v1"
 	gatewayruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/rs/cors"
 	"github.com/soheilhy/cmux"

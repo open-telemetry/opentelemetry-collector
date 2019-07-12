@@ -23,7 +23,7 @@ import (
 	"sort"
 	"testing"
 
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	tracepb "github.com/census-instrumentation/opencensus-proto/gen-gogo/trace/v1"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 
 	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"

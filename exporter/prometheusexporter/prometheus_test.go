@@ -21,11 +21,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/golang/protobuf/ptypes/timestamp"
+	timestamp "github.com/gogo/protobuf/types"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	metricspb "github.com/census-instrumentation/opencensus-proto/gen-gogo/metrics/v1"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/internal/config/viperutils"

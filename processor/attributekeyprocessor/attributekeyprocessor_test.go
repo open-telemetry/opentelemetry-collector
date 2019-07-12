@@ -19,7 +19,7 @@ import (
 	"reflect"
 	"testing"
 
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	tracepb "github.com/census-instrumentation/opencensus-proto/gen-gogo/trace/v1"
 	"github.com/google/go-cmp/cmp"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"

@@ -21,8 +21,8 @@ import (
 	"time"
 
 	"contrib.go.opencensus.io/exporter/jaeger"
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	commonpb "github.com/census-instrumentation/opencensus-proto/gen-gogo/agent/common/v1"
+	tracepb "github.com/census-instrumentation/opencensus-proto/gen-gogo/trace/v1"
 	"github.com/google/go-cmp/cmp"
 	"go.opencensus.io/trace"
 

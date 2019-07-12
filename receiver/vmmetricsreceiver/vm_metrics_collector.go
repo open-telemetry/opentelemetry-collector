@@ -30,8 +30,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/internal"
 
 	"contrib.go.opencensus.io/resource/auto"
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	metricspb "github.com/census-instrumentation/opencensus-proto/gen-gogo/metrics/v1"
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-gogo/resource/v1"
 )
 
 // VMMetricsCollector is a struct that collects and reports VM and process metrics (cpu, mem, etc).

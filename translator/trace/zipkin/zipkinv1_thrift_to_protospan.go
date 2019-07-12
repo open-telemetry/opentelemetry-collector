@@ -22,8 +22,8 @@ import (
 	"math"
 	"net"
 
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
+	tracepb "github.com/census-instrumentation/opencensus-proto/gen-gogo/trace/v1"
+	timestamp "github.com/gogo/protobuf/types"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"github.com/pkg/errors"
 

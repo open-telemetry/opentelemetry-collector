@@ -26,9 +26,9 @@ import (
 	"time"
 
 	"contrib.go.opencensus.io/exporter/prometheus"
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
+	commonpb "github.com/census-instrumentation/opencensus-proto/gen-gogo/agent/common/v1"
+	metricspb "github.com/census-instrumentation/opencensus-proto/gen-gogo/metrics/v1"
+	timestamp "github.com/gogo/protobuf/types"
 	"github.com/spf13/viper"
 	"go.opencensus.io/metric/metricdata"
 	"go.opencensus.io/metric/metricproducer"

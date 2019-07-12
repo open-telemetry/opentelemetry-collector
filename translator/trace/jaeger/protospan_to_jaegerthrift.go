@@ -17,10 +17,10 @@ package jaeger
 import (
 	"fmt"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/golang/protobuf/ptypes"
-	"github.com/golang/protobuf/ptypes/timestamp"
+	commonpb "github.com/census-instrumentation/opencensus-proto/gen-gogo/agent/common/v1"
+	tracepb "github.com/census-instrumentation/opencensus-proto/gen-gogo/trace/v1"
+	ptypes "github.com/gogo/protobuf/types"
+	timestamp "github.com/gogo/protobuf/types"
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"

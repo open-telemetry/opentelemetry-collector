@@ -15,7 +15,7 @@
 package vmmetricsreceiver
 
 import (
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	metricspb "github.com/census-instrumentation/opencensus-proto/gen-gogo/metrics/v1"
 )
 
 // VM and process metric constants.

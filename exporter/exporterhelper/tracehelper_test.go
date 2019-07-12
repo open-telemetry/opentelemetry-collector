@@ -19,7 +19,7 @@ import (
 	"sync"
 	"testing"
 
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	tracepb "github.com/census-instrumentation/opencensus-proto/gen-gogo/trace/v1"
 	"go.opencensus.io/trace"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"

@@ -19,7 +19,7 @@ import (
 	"errors"
 	"fmt"
 
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	tracepb "github.com/census-instrumentation/opencensus-proto/gen-gogo/trace/v1"
 	"github.com/spf13/viper"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"

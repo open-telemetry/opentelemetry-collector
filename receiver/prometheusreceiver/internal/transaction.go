@@ -17,7 +17,7 @@ package internal
 import (
 	"context"
 	"errors"
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	commonpb "github.com/census-instrumentation/opencensus-proto/gen-gogo/agent/common/v1"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/pkg/labels"

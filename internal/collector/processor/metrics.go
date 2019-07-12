@@ -15,7 +15,7 @@
 package processor
 
 import (
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	commonpb "github.com/census-instrumentation/opencensus-proto/gen-gogo/agent/common/v1"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
