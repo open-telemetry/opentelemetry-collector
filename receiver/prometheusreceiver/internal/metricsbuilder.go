@@ -17,7 +17,6 @@ package internal
 import (
 	"errors"
 	"fmt"
-	"github.com/golang/protobuf/ptypes/wrappers"
 	"go.uber.org/zap"
 	"sort"
 	"strconv"
@@ -25,7 +24,8 @@ import (
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
+	timestamp "github.com/gogo/protobuf/types"
+	wrappers "github.com/gogo/protobuf/types"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/pkg/labels"

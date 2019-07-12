@@ -21,7 +21,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/golang/protobuf/ptypes/timestamp"
+	timestamp "github.com/gogo/protobuf/types"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 

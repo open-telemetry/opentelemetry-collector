@@ -19,7 +19,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/protobuf/ptypes/timestamp"
+	timestamp "github.com/gogo/protobuf/types"
 )
 
 // TimeToTimestamp converts a time.Time to a timestamp.Timestamp pointer.

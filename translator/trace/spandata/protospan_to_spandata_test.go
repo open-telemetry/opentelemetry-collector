@@ -22,7 +22,7 @@ import (
 	"time"
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/golang/protobuf/ptypes/wrappers"
+	wrappers "github.com/gogo/protobuf/types"
 	"go.opencensus.io/trace"
 	"go.opencensus.io/trace/tracestate"
 

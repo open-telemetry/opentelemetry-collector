@@ -18,9 +18,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/golang/protobuf/ptypes"
-	"github.com/golang/protobuf/ptypes/timestamp"
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
+	ptypes "github.com/gogo/protobuf/types"
+	timestamp "github.com/gogo/protobuf/types"
+	wrappers "github.com/gogo/protobuf/types"
 	jaeger "github.com/jaegertracing/jaeger/model"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
