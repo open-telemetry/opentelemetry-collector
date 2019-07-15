@@ -28,9 +28,20 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 	"go.opencensus.io/trace"
+
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 )
 
 var (
+	mReceiverIngestionBlockedRPCs = stats.Int64(
+		"oc.io/receiver/ingestion_blocked_rpcs",
+		"Counts the number of RPCs blocked by the receiver host",
+		"1")
+	mReceiverIngestionBlockedRPCsWithDataLoss = stats.Int64(
+		"oc.io/receiver/ingestion_blocked_silent_data_loss",
+		"Counts the number of RPCs blocked by the receiver host without back pressure causing data loss",
+		"1")
+
 	mReceiverReceivedSpans = stats.Int64("oc.io/receiver/received_spans", "Counts the number of spans received by the receiver", "1")
 	mReceiverDroppedSpans  = stats.Int64("oc.io/receiver/dropped_spans", "Counts the number of spans dropped by the receiver", "1")
 
@@ -43,6 +54,33 @@ var TagKeyReceiver, _ = tag.NewKey("oc_receiver")
 
 // TagKeyExporter defines tag key for Exporter.
 var TagKeyExporter, _ = tag.NewKey("oc_exporter")
+
+// ViewReceiverIngestionBlockedRPCs defines the view for the receiver ingestion
+// blocked metric. If it causes data loss or not depends if back pressure is
+// enabled and the client has available resources to buffer and retry.
+// The metric used by the view does not use number of spans to avoid requiring
+// de-serializing the RPC message.
+var ViewReceiverIngestionBlockedRPCs = &view.View{
+	Name:        mReceiverIngestionBlockedRPCs.Name(),
+	Description: mReceiverIngestionBlockedRPCs.Description(),
+	Measure:     mReceiverIngestionBlockedRPCs,
+	Aggregation: view.Sum(),
+	TagKeys:     []tag.Key{TagKeyReceiver},
+}
+
+// ViewReceiverIngestionBlockedRPCsWithDataLoss defines the view for the receiver
+// ingestion blocked without back pressure to the client. Since there is no back
+// pressure the client will assume that the data was ingested and there will be
+// data loss.
+// The metric used by the view does not use number of spans to avoid requiring
+// de-serializing the RPC message.
+var ViewReceiverIngestionBlockedRPCsWithDataLoss = &view.View{
+	Name:        mReceiverIngestionBlockedRPCsWithDataLoss.Name(),
+	Description: mReceiverIngestionBlockedRPCsWithDataLoss.Description(),
+	Measure:     mReceiverIngestionBlockedRPCsWithDataLoss,
+	Aggregation: view.Sum(),
+	TagKeys:     []tag.Key{TagKeyReceiver},
+}
 
 // ViewReceiverReceivedSpans defines the view for the receiver received spans metric.
 var ViewReceiverReceivedSpans = &view.View{
@@ -82,6 +120,8 @@ var ViewExporterDroppedSpans = &view.View{
 
 // AllViews has the views for the metrics provided by the agent.
 var AllViews = []*view.View{
+	ViewReceiverIngestionBlockedRPCs,
+	ViewReceiverIngestionBlockedRPCsWithDataLoss,
 	ViewReceiverReceivedSpans,
 	ViewReceiverDroppedSpans,
 	ViewExporterReceivedSpans,
@@ -94,6 +134,18 @@ var AllViews = []*view.View{
 func ContextWithReceiverName(ctx context.Context, receiverName string) context.Context {
 	ctx, _ = tag.New(ctx, tag.Upsert(TagKeyReceiver, receiverName))
 	return ctx
+}
+
+// RecordIngestionBlockedMetrics records metrics related to the receiver responses
+// when the host blocks ingestion. If back pressure is disabled the metric for
+// respective data loss is recorded.
+// Use it with a context.Context generated using ContextWithReceiverName().
+func RecordIngestionBlockedMetrics(ctxWithTraceReceiverName context.Context, backPressureSetting configmodels.BackPressureSetting) {
+	if backPressureSetting == configmodels.DisableBackPressure {
+		// In this case data loss will happen, record the proper metric.
+		stats.Record(ctxWithTraceReceiverName, mReceiverIngestionBlockedRPCsWithDataLoss.M(1))
+	}
+	stats.Record(ctxWithTraceReceiverName, mReceiverIngestionBlockedRPCs.M(1))
 }
 
 // RecordTraceReceiverMetrics records the number of the spans received and dropped by the receiver.

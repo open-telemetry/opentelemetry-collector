@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -32,12 +33,17 @@ import (
 	openzipkin "github.com/openzipkin/zipkin-go"
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	zhttp "github.com/openzipkin/zipkin-go/reporter/http"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-service/internal"
 	"github.com/open-telemetry/opentelemetry-service/internal/testutils"
+	"github.com/open-telemetry/opentelemetry-service/observability/observabilitytest"
+	"github.com/open-telemetry/opentelemetry-service/receiver"
 	"github.com/open-telemetry/opentelemetry-service/receiver/receivertest"
 	spandatatranslator "github.com/open-telemetry/opentelemetry-service/translator/trace/spandata"
 )
@@ -136,7 +142,7 @@ func TestNew(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := New(tt.args.address, tt.args.nextConsumer)
+			got, err := New(tt.args.address, configmodels.EnableBackPressure, tt.args.nextConsumer)
 			if err != tt.wantErr {
 				t.Errorf("New() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -158,7 +164,7 @@ func TestZipkinReceiverPortAlreadyInUse(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to split listener address: %v", err)
 	}
-	traceReceiver, err := New(":"+portStr, exportertest.NewNopTraceExporter())
+	traceReceiver, err := New(":"+portStr, configmodels.EnableBackPressure, exportertest.NewNopTraceExporter())
 	if err != nil {
 		t.Fatalf("Failed to create receiver: %v", err)
 	}
@@ -519,5 +525,160 @@ func TestConversionRoundtrip(t *testing.T) {
 	gj, wj := testutils.GenerateNormalizedJSON(buf.String()), testutils.GenerateNormalizedJSON(wantFinalJSON)
 	if gj != wj {
 		t.Errorf("The roundtrip JSON doesn't match the JSON that we want\nGot:\n%s\nWant:\n%s", gj, wj)
+	}
+}
+
+func TestStartTraceReception(t *testing.T) {
+	tests := []struct {
+		name    string
+		host    receiver.Host
+		wantErr bool
+	}{
+		{
+			name:    "nil_host",
+			wantErr: true,
+		},
+		{
+			name: "valid_host",
+			host: receivertest.NewMockHost(),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sink := new(exportertest.SinkTraceExporter)
+			zr, err := New("127.0.0.1:0", configmodels.DisableBackPressure, sink)
+			require.Nil(t, err)
+			require.NotNil(t, zr)
+
+			if err := zr.StartTraceReception(tt.host); (err != nil) != tt.wantErr {
+				t.Errorf("StartTraceReception error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if !tt.wantErr {
+				require.Nil(t, zr.StopTraceReception())
+			}
+		})
+	}
+}
+
+func TestZipkinExporter_HostIngestionStatusChanges(t *testing.T) {
+	const jsonZipkinData = `[{
+	"traceId": "4d1e00c0db9010db86154a4ba6e91385","parentId": "86154a4ba6e91385","id": "4d1e00c0db9010db",
+		"kind": "CLIENT","name": "get",
+		"timestamp": 1472470996199000,"duration": 207000,
+		"localEndpoint": {"serviceName": "frontend","ipv6": "7::80:807f"},
+	"remoteEndpoint": {"serviceName": "backend","ipv4": "192.168.99.101","port": 9000},
+	"annotations": [
+	{"timestamp": 1472470996238000,"value": "foo"},
+	{"timestamp": 1472470996403000,"value": "bar"}
+],
+"tags": {"http.path": "/api","clnt/finagle.version": "6.45.0"}
+}]`
+	type ingestionStateTest struct {
+		okToIngest         bool
+		expectedHTTPStatus int
+	}
+	tests := []struct {
+		name                                       string
+		backPressureSetting                        configmodels.BackPressureSetting
+		expectedReceivedBatches                    int
+		expectedIngestionBlockedRPCs               int
+		expectedIngestionBlockedRPCsNoBackPressure int
+		ingestionStates                            []ingestionStateTest
+	}{
+		{
+			name:                         "EnableBackPressure",
+			backPressureSetting:          configmodels.EnableBackPressure,
+			expectedReceivedBatches:      2,
+			expectedIngestionBlockedRPCs: 1,
+			expectedIngestionBlockedRPCsNoBackPressure: 0,
+			ingestionStates: []ingestionStateTest{
+				{
+					okToIngest:         true,
+					expectedHTTPStatus: http.StatusAccepted,
+				},
+				{
+					okToIngest:         false,
+					expectedHTTPStatus: http.StatusServiceUnavailable,
+				},
+				{
+					okToIngest:         true,
+					expectedHTTPStatus: http.StatusAccepted,
+				},
+			},
+		},
+		{
+			name:                         "DisableBackPressure",
+			backPressureSetting:          configmodels.DisableBackPressure,
+			expectedReceivedBatches:      2,
+			expectedIngestionBlockedRPCs: 1,
+			expectedIngestionBlockedRPCsNoBackPressure: 1,
+			ingestionStates: []ingestionStateTest{
+				{
+					okToIngest:         true,
+					expectedHTTPStatus: http.StatusAccepted,
+				},
+				{
+					okToIngest:         false,
+					expectedHTTPStatus: http.StatusAccepted,
+				},
+				{
+					okToIngest:         true,
+					expectedHTTPStatus: http.StatusAccepted,
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			doneFn := observabilitytest.SetupRecordedMetricsTest()
+			defer doneFn()
+
+			sink := new(exportertest.SinkTraceExporter)
+			zr, err := New("127.0.0.1:0", tt.backPressureSetting, sink)
+			require.Nil(t, err)
+			require.NotNil(t, zr)
+			defer zr.StopTraceReception()
+
+			host := receivertest.NewMockHost().(*receivertest.MockHost)
+			err = zr.StartTraceReception(host)
+			require.Nil(t, err)
+
+			for _, ingestionState := range tt.ingestionStates {
+				host.SetOkToIngest(ingestionState.okToIngest)
+				rw := httptest.NewRecorder()
+				req := httptest.NewRequest(
+					"POST",
+					"https://tld.org/",
+					strings.NewReader(jsonZipkinData))
+				zr.ServeHTTP(rw, req)
+				assert.Equal(t, ingestionState.expectedHTTPStatus, rw.Code)
+			}
+
+			require.Equal(t, tt.expectedReceivedBatches, len(sink.AllTraces()))
+			require.Nil(
+				t,
+				observabilitytest.CheckValueViewReceiverReceivedSpans(
+					zipkinV2TagValue,
+					tt.expectedReceivedBatches),
+			)
+			require.Nil(
+				t,
+				observabilitytest.CheckValueViewReceiverIngestionBlockedRPCs(
+					zipkinV2TagValue,
+					tt.expectedIngestionBlockedRPCs),
+			)
+
+			// This view should only have data if ingestion was blocked and there was no back pressure.
+			err = observabilitytest.CheckValueViewReceiverIngestionBlockedRPCsWithDataLoss(
+				zipkinV2TagValue,
+				tt.expectedIngestionBlockedRPCsNoBackPressure)
+			if tt.expectedIngestionBlockedRPCsNoBackPressure == 0 {
+				require.NotNil(t, err)
+			} else {
+				require.Nil(t, err)
+			}
+		})
 	}
 }

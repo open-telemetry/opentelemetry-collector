@@ -70,7 +70,7 @@ func (f *factory) CreateTraceReceiver(
 ) (receiver.TraceReceiver, error) {
 
 	rCfg := cfg.(*Config)
-	return New(rCfg.Endpoint, nextConsumer)
+	return New(rCfg.Endpoint, rCfg.BackPressureSetting(), nextConsumer)
 }
 
 // CreateMetricsReceiver creates a metrics receiver based on provided config.

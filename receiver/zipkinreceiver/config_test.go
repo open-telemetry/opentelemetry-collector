@@ -45,10 +45,11 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, r1,
 		&Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal:  typeStr,
-				NameVal:  "zipkin/customname",
-				Endpoint: "127.0.0.1:8765",
-				Enabled:  true,
+				TypeVal:             typeStr,
+				NameVal:             "zipkin/customname",
+				Endpoint:            "127.0.0.1:8765",
+				Enabled:             true,
+				DisableBackPressure: true,
 			},
 		})
 }

@@ -17,7 +17,6 @@ package zipkinreceiver
 import (
 	"compress/gzip"
 	"compress/zlib"
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -37,6 +36,7 @@ import (
 	zipkinproto "github.com/openzipkin/zipkin-go/proto/v2"
 	"go.opencensus.io/trace"
 
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/internal"
@@ -58,9 +58,10 @@ type ZipkinReceiver struct {
 	mu sync.Mutex
 
 	// addr is the address onto which the HTTP server will be bound
-	addr string
-
-	nextConsumer consumer.TraceConsumer
+	addr                string
+	host                receiver.Host
+	backPressureSetting configmodels.BackPressureSetting
+	nextConsumer        consumer.TraceConsumer
 
 	startOnce sync.Once
 	stopOnce  sync.Once
@@ -71,14 +72,15 @@ var _ receiver.TraceReceiver = (*ZipkinReceiver)(nil)
 var _ http.Handler = (*ZipkinReceiver)(nil)
 
 // New creates a new zipkinreceiver.ZipkinReceiver reference.
-func New(address string, nextConsumer consumer.TraceConsumer) (*ZipkinReceiver, error) {
+func New(address string, backPressureSetting configmodels.BackPressureSetting, nextConsumer consumer.TraceConsumer) (*ZipkinReceiver, error) {
 	if nextConsumer == nil {
 		return nil, errNilNextConsumer
 	}
 
 	zr := &ZipkinReceiver{
-		addr:         address,
-		nextConsumer: nextConsumer,
+		addr:                address,
+		backPressureSetting: backPressureSetting,
+		nextConsumer:        nextConsumer,
 	}
 	return zr, nil
 }
@@ -102,6 +104,10 @@ func (zr *ZipkinReceiver) TraceSource() string {
 
 // StartTraceReception spins up the receiver's HTTP server and makes the receiver start its processing.
 func (zr *ZipkinReceiver) StartTraceReception(host receiver.Host) error {
+	if host == nil {
+		return errors.New("nil host")
+	}
+
 	zr.mu.Lock()
 	defer zr.mu.Unlock()
 
@@ -114,12 +120,12 @@ func (zr *ZipkinReceiver) StartTraceReception(host receiver.Host) error {
 			return
 		}
 
+		zr.host = host
 		server := &http.Server{Handler: zr}
+		zr.server = server
 		go func() {
 			host.ReportFatalError(server.Serve(ln))
 		}()
-
-		zr.server = server
 
 		err = nil
 	})
@@ -288,13 +294,48 @@ const (
 // unmarshals them and sends them along to the nextConsumer.
 func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Trace this method
-	ctx, span := trace.StartSpan(context.Background(), "ZipkinReceiver.Export")
+	parentCtx := r.Context()
+	ctx, span := trace.StartSpan(parentCtx, "ZipkinReceiver.Export")
 	defer span.End()
 
 	// If the starting RPC has a parent span, then add it as a parent link.
-	// TODO: parentCtx should be direct parent for the span created here.
-	parentCtx := r.Context()
 	observability.SetParentLink(parentCtx, span)
+
+	// Now deserialize and process the spans.
+	asZipkinv1 := r.URL != nil && strings.Contains(r.URL.Path, "api/v1/spans")
+
+	var receiverTagValue string
+	if asZipkinv1 {
+		receiverTagValue = zipkinV1TagValue
+	} else {
+		receiverTagValue = zipkinV2TagValue
+	}
+
+	ctxWithReceiverName := observability.ContextWithReceiverName(ctx, receiverTagValue)
+
+	if !zr.host.OkToIngest() {
+		var responseStatusCode int
+		var zPageMessage string
+		if zr.backPressureSetting == configmodels.EnableBackPressure {
+			responseStatusCode = http.StatusServiceUnavailable
+			zPageMessage = "Host blocked ingestion. Back pressure is ON."
+		} else {
+			responseStatusCode = http.StatusAccepted
+			zPageMessage = "Host blocked ingestion. Back pressure is OFF."
+		}
+
+		// Internal z-page status does not depend on backpressure setting.
+		span.SetStatus(trace.Status{
+			Code:    trace.StatusCodeUnavailable,
+			Message: zPageMessage,
+		})
+
+		observability.RecordIngestionBlockedMetrics(
+			ctxWithReceiverName,
+			zr.backPressureSetting)
+		w.WriteHeader(responseStatusCode)
+		return
+	}
 
 	pr := processBodyIfNecessary(r)
 	slurp, err := ioutil.ReadAll(pr)
@@ -303,18 +344,11 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	_ = r.Body.Close()
 
-	// Now deserialize and process the spans.
-	asZipkinv1 := r.URL != nil && strings.Contains(r.URL.Path, "api/v1/spans")
-
 	var tds []consumerdata.TraceData
-
-	var receiverTagValue string
 	if asZipkinv1 {
 		tds, err = zr.v1ToTraceSpans(slurp, r.Header)
-		receiverTagValue = zipkinV1TagValue
 	} else {
 		tds, err = zr.v2ToTraceSpans(slurp, r.Header)
-		receiverTagValue = zipkinV2TagValue
 	}
 
 	if err != nil {
@@ -326,7 +360,6 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctxWithReceiverName := observability.ContextWithReceiverName(ctx, receiverTagValue)
 	tdsSize := 0
 	for _, td := range tds {
 		td.SourceFormat = "zipkin"
