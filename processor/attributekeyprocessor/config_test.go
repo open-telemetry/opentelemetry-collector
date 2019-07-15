@@ -43,19 +43,19 @@ func TestLoadConfig(t *testing.T) {
 				NameVal: "attribute-key",
 			},
 			KeyReplacements: []KeyReplacement{
-				KeyReplacement{
+				{
 					Key:          "foo",
 					NewKey:       "boo",
 					Overwrite:    true,
 					KeepOriginal: true,
 				},
-				KeyReplacement{
+				{
 					Key:          "kie",
 					NewKey:       "goo",
 					Overwrite:    true,
 					KeepOriginal: false,
 				},
-				KeyReplacement{
+				{
 					Key:          "ddd",
 					NewKey:       "vss",
 					Overwrite:    false,
