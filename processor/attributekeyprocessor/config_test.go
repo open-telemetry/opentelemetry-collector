@@ -35,28 +35,25 @@ func TestLoadConfig(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, config)
 
-	p0 := config.Processors["attribute-key"]
+	p0 := config.Processors["attributes"]
 	assert.Equal(t, p0,
 		&Config{
 			ProcessorSettings: configmodels.ProcessorSettings{
-				TypeVal: "attribute-key",
-				NameVal: "attribute-key",
+				TypeVal: "attributes",
+				NameVal: "attributes",
 			},
-			KeyReplacements: []KeyReplacement{
-				{
-					Key:          "foo",
+			KeyReplacements: map[string]NewKeyProperties{
+				"foo": {
 					NewKey:       "boo",
 					Overwrite:    true,
 					KeepOriginal: true,
 				},
-				{
-					Key:          "kie",
+				"kie": {
 					NewKey:       "goo",
 					Overwrite:    true,
 					KeepOriginal: false,
 				},
-				{
-					Key:          "ddd",
+				"ddd": {
 					NewKey:       "vss",
 					Overwrite:    false,
 					KeepOriginal: true,
@@ -72,6 +69,6 @@ func TestLoadConfigEmpty(t *testing.T) {
 
 	require.Nil(t, err)
 	require.NotNil(t, config)
-	p0 := config.Processors["attribute-key"]
+	p0 := config.Processors["attributes"]
 	assert.Equal(t, p0, factory.CreateDefaultConfig())
 }

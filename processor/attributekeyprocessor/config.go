@@ -21,5 +21,19 @@ import (
 // Config defines configuration for Attribute Key processor.
 type Config struct {
 	configmodels.ProcessorSettings `mapstructure:",squash"`
-	KeyReplacements                []KeyReplacement `mapstructure:"key-replacements"`
+	// map key is the attribute key to be replaced.
+	KeyReplacements map[string]NewKeyProperties `mapstructure:"key-replacements"`
+}
+
+// NewKeyProperties defines the key's replacments properties.
+type NewKeyProperties struct {
+	// NewKey is the value that will be used as the new key for the attribute.
+	NewKey string `mapstructure:"replacement"`
+	// Overwrite is set to true to indicate that the replacement should be
+	// performed even if the new key already exists on the attributes.
+	// In this case the original value associated with the new key is lost.
+	Overwrite bool `mapstructure:"overwrite"`
+	// KeepOriginal is set to true to indicate that the original key
+	// should not be removed from the attributes.
+	KeepOriginal bool `mapstructure:"keep"`
 }

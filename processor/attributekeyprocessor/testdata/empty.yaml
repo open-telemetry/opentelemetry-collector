@@ -2,7 +2,7 @@ receivers:
   examplereceiver:
 
 processors:
-  attribute-key:
+  attributes:
     
 
 exporters:
@@ -11,5 +11,5 @@ exporters:
 pipelines:
   traces:
     receivers: [examplereceiver]
-    processors: [attribute-key]
+    processors: [attributes]
     exporters: [exampleexporter]
