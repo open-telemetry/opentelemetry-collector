@@ -22,7 +22,7 @@ import (
 type Config struct {
 	configmodels.ProcessorSettings `mapstructure:",squash"`
 	// map key is the attribute key to be replaced.
-	KeyReplacements map[string]NewKeyProperties `mapstructure:"key-replacements"`
+	Keys map[string]NewKeyProperties `mapstructure:"keys"`
 }
 
 // NewKeyProperties defines the key's replacments properties.

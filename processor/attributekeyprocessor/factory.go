@@ -27,7 +27,7 @@ var _ = processor.RegisterFactory(&factory{})
 
 const (
 	// The value of "type" Attribute Key in configuration.
-	typeStr = "attributes"
+	typeStr = "attribute-key"
 )
 
 // factory is the factory for Attribute Key processor.
@@ -46,7 +46,7 @@ func (f *factory) CreateDefaultConfig() configmodels.Processor {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		KeyReplacements: make(map[string]NewKeyProperties, 0),
+		Keys: make(map[string]NewKeyProperties, 0),
 	}
 }
 
@@ -57,7 +57,7 @@ func (f *factory) CreateTraceProcessor(
 	cfg configmodels.Processor,
 ) (processor.TraceProcessor, error) {
 	oCfg := cfg.(*Config)
-	return NewTraceProcessor(nextConsumer, convertToKeyReplacements(&oCfg.KeyReplacements)...)
+	return NewTraceProcessor(nextConsumer, convertToKeyReplacements(&oCfg.Keys)...)
 }
 
 // CreateMetricsProcessor creates a metrics processor based on this config.
@@ -69,7 +69,7 @@ func (f *factory) CreateMetricsProcessor(
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
-// convert key replacments' "map" to KeyReplacement
+// convert keys' "map" to KeyReplacement
 func convertToKeyReplacements(keyMap *map[string]NewKeyProperties) []KeyReplacement {
 	var replacements []KeyReplacement
 	for key, val := range *keyMap {

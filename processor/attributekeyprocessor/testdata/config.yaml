@@ -2,8 +2,8 @@ receivers:
   examplereceiver:
 
 processors:
-  attributes:
-    key-replacements:
+  attribute-key:
+    keys:
       foo: 
           replacement: "boo"
           overwrite: true
@@ -16,12 +16,15 @@ processors:
           replacement: "vss"
           overwrite: false
           keep: true    
-
+      dot.test:
+          replacement: "bot"
+          overwrite: false
+          keep: false
 exporters:
   exampleexporter:
 
 pipelines:
   traces:
     receivers: [examplereceiver]
-    processors: [attributes]
+    processors: [attribute-key]
     exporters: [exampleexporter]
