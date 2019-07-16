@@ -17,7 +17,9 @@ package internal
 import (
 	"context"
 	"errors"
+
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
+
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/scrape"
 	"go.uber.org/zap"

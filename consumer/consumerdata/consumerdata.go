@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package consumerdata contains data structures that holds proto metrics/spans, node and resource.
 package consumerdata
 
 import (

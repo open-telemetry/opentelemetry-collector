@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package consumer contains interfaces that receive and process consumerdata.
 package consumer
 
 import (
