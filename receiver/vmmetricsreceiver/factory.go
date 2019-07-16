@@ -77,6 +77,7 @@ func (f *Factory) CreateMetricsReceiver(
 ) (receiver.MetricsReceiver, error) {
 
 	if runtime.GOOS != "linux" {
+		// TODO: add support for other platforms.
 		return nil, errors.New("vmmetrics receiver is only supported on linux")
 	}
 	cfg := config.(*Config)
