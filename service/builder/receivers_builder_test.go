@@ -29,6 +29,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/config"
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-service/processor/addattributesprocessor"
 	"github.com/open-telemetry/opentelemetry-service/receiver/receivertest"
 )
 
@@ -90,14 +91,20 @@ func testReceivers(
 	t *testing.T,
 	test testCase,
 ) {
-	// Load the config
-	cfg, err := config.LoadConfigFile(t, "testdata/pipelines_builder.yaml")
+	receiverFactories, processorsFactories, exporterFactories, err := config.ExampleComponents()
+	assert.Nil(t, err)
+
+	attrFactory := &addattributesprocessor.Factory{}
+	processorsFactories[attrFactory.Type()] = attrFactory
+	cfg, err := config.LoadConfigFile(
+		t, "testdata/pipelines_builder.yaml", receiverFactories, processorsFactories, exporterFactories,
+	)
 	require.Nil(t, err)
 
 	// Build the pipeline
-	allExporters, err := NewExportersBuilder(zap.NewNop(), cfg).Build()
-	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), cfg, allExporters).Build()
-	receivers, err := NewReceiversBuilder(zap.NewNop(), cfg, pipelineProcessors).Build()
+	allExporters, err := NewExportersBuilder(zap.NewNop(), cfg, exporterFactories).Build()
+	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), cfg, allExporters, processorsFactories).Build()
+	receivers, err := NewReceiversBuilder(zap.NewNop(), cfg, pipelineProcessors, receiverFactories).Build()
 
 	assert.NoError(t, err)
 	require.NotNil(t, receivers)
@@ -197,17 +204,24 @@ func testReceivers(
 }
 
 func TestReceiversBuilder_DataTypeError(t *testing.T) {
-	cfg, err := config.LoadConfigFile(t, "testdata/pipelines_builder.yaml")
-	require.Nil(t, err)
+	receiverFactories, processorsFactories, exporterFactories, err := config.ExampleComponents()
+	assert.Nil(t, err)
+
+	attrFactory := &addattributesprocessor.Factory{}
+	processorsFactories[attrFactory.Type()] = attrFactory
+	cfg, err := config.LoadConfigFile(
+		t, "testdata/pipelines_builder.yaml", receiverFactories, processorsFactories, exporterFactories,
+	)
+	assert.Nil(t, err)
 
 	// Make examplereceiver to "unsupport" trace data type.
 	receiver := cfg.Receivers["examplereceiver"]
 	receiver.(*config.ExampleReceiver).FailTraceCreation = true
 
 	// Build the pipeline
-	allExporters, err := NewExportersBuilder(zap.NewNop(), cfg).Build()
-	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), cfg, allExporters).Build()
-	receivers, err := NewReceiversBuilder(zap.NewNop(), cfg, pipelineProcessors).Build()
+	allExporters, err := NewExportersBuilder(zap.NewNop(), cfg, exporterFactories).Build()
+	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), cfg, allExporters, processorsFactories).Build()
+	receivers, err := NewReceiversBuilder(zap.NewNop(), cfg, pipelineProcessors, receiverFactories).Build()
 
 	// This should fail because "examplereceiver" is attached to "traces" pipeline
 	// which is a configuration error.

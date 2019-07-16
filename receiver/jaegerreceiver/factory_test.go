@@ -22,17 +22,16 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/config/configerror"
-	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := receiver.GetFactory(typeStr)
+	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 }
 
 func TestCreateReceiver(t *testing.T) {
-	factory := receiver.GetFactory(typeStr)
+	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
 
 	tReceiver, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
@@ -45,7 +44,7 @@ func TestCreateReceiver(t *testing.T) {
 }
 
 func TestCreateNoEndpoints(t *testing.T) {
-	factory := receiver.GetFactory(typeStr)
+	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
@@ -56,7 +55,7 @@ func TestCreateNoEndpoints(t *testing.T) {
 }
 
 func TestCreateInvalidTChannelEndpoint(t *testing.T) {
-	factory := receiver.GetFactory(typeStr)
+	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
@@ -66,7 +65,7 @@ func TestCreateInvalidTChannelEndpoint(t *testing.T) {
 }
 
 func TestCreateNoPort(t *testing.T) {
-	factory := receiver.GetFactory(typeStr)
+	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
@@ -76,7 +75,7 @@ func TestCreateNoPort(t *testing.T) {
 }
 
 func TestCreateLargePort(t *testing.T) {
-	factory := receiver.GetFactory(typeStr)
+	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
@@ -86,7 +85,7 @@ func TestCreateLargePort(t *testing.T) {
 }
 
 func TestCreateNoProtocols(t *testing.T) {
-	factory := receiver.GetFactory(typeStr)
+	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 

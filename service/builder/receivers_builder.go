@@ -103,6 +103,7 @@ type ReceiversBuilder struct {
 	logger             *zap.Logger
 	config             *configmodels.Config
 	pipelineProcessors PipelineProcessors
+	factories          map[string]receiver.Factory
 }
 
 // NewReceiversBuilder creates a new ReceiversBuilder. Call Build() on the returned value.
@@ -110,8 +111,9 @@ func NewReceiversBuilder(
 	logger *zap.Logger,
 	config *configmodels.Config,
 	pipelineProcessors PipelineProcessors,
+	factories map[string]receiver.Factory,
 ) *ReceiversBuilder {
-	return &ReceiversBuilder{logger, config, pipelineProcessors}
+	return &ReceiversBuilder{logger, config, pipelineProcessors, factories}
 }
 
 // Build receivers from config.
@@ -222,7 +224,10 @@ func (rb *ReceiversBuilder) buildReceiver(config configmodels.Receiver) (*builtR
 	}
 
 	// Prepare to build the receiver.
-	factory := receiver.GetFactory(config.Type())
+	factory := rb.factories[config.Type()]
+	if factory == nil {
+		return nil, fmt.Errorf("receiver factory not found for type: %s", config.Type())
+	}
 	rcv := &builtReceiver{}
 
 	// Now we have list of pipelines broken down by data type. Iterate for each data type.

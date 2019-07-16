@@ -24,25 +24,21 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/config/configerror"
-	"github.com/open-telemetry/opentelemetry-service/exporter"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-service/internal/compression"
 	"github.com/open-telemetry/opentelemetry-service/internal/testutils"
-	"github.com/open-telemetry/opentelemetry-service/receiver"
 	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver"
 	"github.com/open-telemetry/opentelemetry-service/receiver/receivertest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := exporter.GetFactory(typeStr)
-	require.NotNil(t, factory)
-
+	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 }
 
 func TestCreateMetricsExporter(t *testing.T) {
-	factory := exporter.GetFactory(typeStr)
+	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
 
 	_, _, err := factory.CreateMetricsExporter(zap.NewNop(), cfg)
@@ -54,7 +50,7 @@ func TestCreateTraceExporter(t *testing.T) {
 	// exporter keeps trying to update its connection state in the background
 	// so unless there is a receiver enabled the stop call can return different
 	// results. Standing up a receiver to ensure that stop don't report errors.
-	rcvFactory := receiver.GetFactory(typeStr)
+	rcvFactory := &opencensusreceiver.Factory{}
 	require.NotNil(t, rcvFactory)
 	rcvCfg := rcvFactory.CreateDefaultConfig().(*opencensusreceiver.Config)
 	rcvCfg.Endpoint = testutils.GetAvailableLocalAddress(t)
@@ -157,7 +153,7 @@ func TestCreateTraceExporter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			factory := exporter.GetFactory(typeStr)
+			factory := &Factory{}
 			consumer, stopFunc, err := factory.CreateTraceExporter(zap.NewNop(), &tt.config)
 
 			if tt.mustFail {

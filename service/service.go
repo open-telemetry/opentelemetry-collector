@@ -31,16 +31,13 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-service/config"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/exporter"
 	"github.com/open-telemetry/opentelemetry-service/internal/config/viperutils"
 	"github.com/open-telemetry/opentelemetry-service/internal/pprofserver"
 	"github.com/open-telemetry/opentelemetry-service/internal/zpagesserver"
+	"github.com/open-telemetry/opentelemetry-service/processor"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 	"github.com/open-telemetry/opentelemetry-service/service/builder"
-)
-
-var (
-	// App represents the collector application in its entirety
-	App = newApp()
 )
 
 // Application represents a collector application
@@ -52,6 +49,11 @@ type Application struct {
 	receivers      []receiver.TraceReceiver
 	exporters      builder.Exporters
 	builtReceivers builder.Receivers
+
+	// factories
+	receiverFactories  map[string]receiver.Factory
+	exporterFactories  map[string]exporter.Factory
+	processorFactories map[string]processor.Factory
 
 	// stopTestChan is used to terminate the application in end to end tests.
 	stopTestChan chan struct{}
@@ -90,10 +92,18 @@ func (app *Application) OkToIngest() bool {
 	return true
 }
 
-func newApp() *Application {
+// New creates and returns a new instance of Application
+func New(
+	receiverFactories map[string]receiver.Factory,
+	processorFactories map[string]processor.Factory,
+	exporterFactories map[string]exporter.Factory,
+) *Application {
 	return &Application{
-		v:         viper.New(),
-		readyChan: make(chan struct{}),
+		v:                  viper.New(),
+		readyChan:          make(chan struct{}),
+		receiverFactories:  receiverFactories,
+		processorFactories: processorFactories,
+		exporterFactories:  exporterFactories,
 	}
 }
 
@@ -198,7 +208,7 @@ func (app *Application) setupPipelines() {
 	app.logger.Info("Loading configuration...")
 
 	// Load configuration.
-	cfg, err := config.Load(app.v)
+	cfg, err := config.Load(app.v, app.receiverFactories, app.processorFactories, app.exporterFactories)
 	if err != nil {
 		log.Fatalf("Cannot load configuration: %v", err)
 	}
@@ -209,20 +219,20 @@ func (app *Application) setupPipelines() {
 	// which are referenced before objects which reference them.
 
 	// First create exporters.
-	app.exporters, err = builder.NewExportersBuilder(app.logger, cfg).Build()
+	app.exporters, err = builder.NewExportersBuilder(app.logger, cfg, app.exporterFactories).Build()
 	if err != nil {
 		log.Fatalf("Cannot load configuration: %v", err)
 	}
 
 	// Create pipelines and their processors and plug exporters to the
 	// end of the pipelines.
-	pipelines, err := builder.NewPipelinesBuilder(app.logger, cfg, app.exporters).Build()
+	pipelines, err := builder.NewPipelinesBuilder(app.logger, cfg, app.exporters, app.processorFactories).Build()
 	if err != nil {
 		log.Fatalf("Cannot load configuration: %v", err)
 	}
 
 	// Create receivers and plug them into the start of the pipelines.
-	app.builtReceivers, err = builder.NewReceiversBuilder(app.logger, cfg, pipelines).Build()
+	app.builtReceivers, err = builder.NewReceiversBuilder(app.logger, cfg, pipelines, app.receiverFactories).Build()
 	if err != nil {
 		log.Fatalf("Cannot load configuration: %v", err)
 	}

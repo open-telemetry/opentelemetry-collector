@@ -31,12 +31,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/processor/addattributesprocessor"
 )
 
-// Ensure attributes processor is registered.
-var _ = addattributesprocessor.Config{}
-
-// Register test factories used in the pipelines_builder.yaml test config.
-var _ = config.RegisterTestFactories()
-
 func TestPipelinesBuilder_Build(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -63,13 +57,19 @@ func TestPipelinesBuilder_Build(t *testing.T) {
 }
 
 func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
+	receiverFactories, processorsFactories, exporterFactories, err := config.ExampleComponents()
+	assert.Nil(t, err)
+	attrFactory := &addattributesprocessor.Factory{}
+	processorsFactories[attrFactory.Type()] = attrFactory
+	cfg, err := config.LoadConfigFile(
+		t, "testdata/pipelines_builder.yaml", receiverFactories, processorsFactories, exporterFactories,
+	)
 	// Load the config
-	cfg, err := config.LoadConfigFile(t, "testdata/pipelines_builder.yaml")
 	require.Nil(t, err)
 
 	// Build the pipeline
-	allExporters, err := NewExportersBuilder(zap.NewNop(), cfg).Build()
-	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), cfg, allExporters).Build()
+	allExporters, err := NewExportersBuilder(zap.NewNop(), cfg, exporterFactories).Build()
+	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), cfg, allExporters, processorsFactories).Build()
 
 	assert.NoError(t, err)
 	require.NotNil(t, pipelineProcessors)
@@ -124,7 +124,13 @@ func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 }
 
 func TestPipelinesBuilder_Error(t *testing.T) {
-	cfg, err := config.LoadConfigFile(t, "testdata/pipelines_builder.yaml")
+	receiverFactories, processorsFactories, exporterFactories, err := config.ExampleComponents()
+	assert.Nil(t, err)
+	attrFactory := &addattributesprocessor.Factory{}
+	processorsFactories[attrFactory.Type()] = attrFactory
+	cfg, err := config.LoadConfigFile(
+		t, "testdata/pipelines_builder.yaml", receiverFactories, processorsFactories, exporterFactories,
+	)
 	require.Nil(t, err)
 
 	// Corrupt the pipeline, change data type to metrics. We have to forcedly do it here
@@ -133,11 +139,11 @@ func TestPipelinesBuilder_Error(t *testing.T) {
 	pipeline := cfg.Pipelines["traces"]
 	pipeline.InputType = configmodels.MetricsDataType
 
-	exporters, err := NewExportersBuilder(zap.NewNop(), cfg).Build()
+	exporters, err := NewExportersBuilder(zap.NewNop(), cfg, exporterFactories).Build()
 
 	// This should fail because "attributes" processor defined in the config does
 	// not support metrics data type.
-	_, err = NewPipelinesBuilder(zap.NewNop(), cfg, exporters).Build()
+	_, err = NewPipelinesBuilder(zap.NewNop(), cfg, exporters, processorsFactories).Build()
 
 	assert.NotNil(t, err)
 }
