@@ -93,7 +93,7 @@ Build the Agent, see [Usage](##agent-usage),
 and start it:
 
 ```shell
-$ ./bin/otelsvc_$(go env GOOS)
+$ ./bin/$(go env GOOS)/otelsvc
 $ 2018/10/08 21:38:00 Running OpenTelemetry receiver as a gRPC service at "127.0.0.1:55678"
 ```
 
@@ -105,7 +105,7 @@ Build the Collector and start it:
 
 ```shell
 $ make otelsvc
-$ ./bin/otelsvc_$($GOOS)
+$ ./bin/$($GOOS)/otelsvc
 ```
 
 Run the demo application:
@@ -319,7 +319,7 @@ $ GO111MODULE=on go run github.com/open-telemetry/opentelemetry-service/cmd/otel
 2. Run from binary (from the root of your repo):
 ```shell
 $ make otelsvc
-$ ./bin/otelsvc_$($GOOS)
+$ ./bin/$($GOOS)/otelsvc
 ```
 3. Build a Docker scratch image and use the appropriate Docker command for your
    scenario (note: additional ports may be required depending on your receiver
