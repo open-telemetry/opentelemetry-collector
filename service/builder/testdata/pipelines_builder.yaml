@@ -12,7 +12,7 @@ receivers:
     enabled: true
 
 processors:
-  attributes:
+  add-attributes:
     values:
       attr1: 12345
 
@@ -26,12 +26,12 @@ exporters:
 pipelines:
   traces:
     receivers: [examplereceiver, examplereceiver/multi]
-    processors: [attributes]
+    processors: [add-attributes]
     exporters: [exampleexporter]
 
   traces/2:
     receivers: [examplereceiver/2, examplereceiver/multi]
-    processors: [attributes]
+    processors: [add-attributes]
     exporters: [exampleexporter, exampleexporter/2]
 
   metrics:

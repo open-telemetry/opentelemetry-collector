@@ -48,10 +48,10 @@ func TestDefaultComponents(t *testing.T) {
 		"vmmetrics":  &vmmetricsreceiver.Factory{},
 	}
 	expectedProcessors := map[string]processor.Factory{
-		"attributes":    &addattributesprocessor.Factory{},
-		"attribute-key": &attributekeyprocessor.Factory{},
-		"queued-retry":  &queued.Factory{},
-		"batch":         &nodebatcher.Factory{},
+		"add-attributes": &addattributesprocessor.Factory{},
+		"attribute-key":  &attributekeyprocessor.Factory{},
+		"queued-retry":   &queued.Factory{},
+		"batch":          &nodebatcher.Factory{},
 	}
 	expectedExporters := map[string]exporter.Factory{
 		"opencensus": &opencensusexporter.Factory{},

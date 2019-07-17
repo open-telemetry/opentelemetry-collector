@@ -25,7 +25,7 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr = "attributes"
+	typeStr = "add-attributes"
 )
 
 // Factory is the factory for Attributes processor.

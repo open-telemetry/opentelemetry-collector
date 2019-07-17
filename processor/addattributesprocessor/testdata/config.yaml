@@ -2,8 +2,8 @@ receivers:
   examplereceiver:
 
 processors:
-  attributes:
-  attributes/2:
+  add-attributes:
+  add-attributes/2:
     values:
       attribute1: 123
       "string attribute": "string value"
@@ -15,5 +15,5 @@ exporters:
 pipelines:
   traces:
     receivers: [examplereceiver]
-    processors: [attributes]
+    processors: [add-attributes]
     exporters: [exampleexporter]

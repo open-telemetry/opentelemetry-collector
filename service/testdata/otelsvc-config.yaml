@@ -8,7 +8,7 @@ exporters:
     enabled: true
 
 processors:
-  attributes:
+  add-attributes:
     enabled: true
   queued-retry:
     enabled: true
@@ -18,5 +18,5 @@ processors:
 pipelines:
   traces:
     receivers: [jaeger]
-    processors: [attributes, batch, queued-retry]
+    processors: [add-attributes, batch, queued-retry]
     exporters: [opencensus]
