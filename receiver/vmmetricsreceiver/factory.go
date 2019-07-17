@@ -27,31 +27,29 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
 
-// This file implements factory for VMMetrics receiver.
-
-var _ = receiver.RegisterFactory(&factory{})
+// This file implements Factory for VMMetrics receiver.
 
 const (
 	// The value of "type" key in configuration.
 	typeStr = "vmmetrics"
 )
 
-// factory is the factory for receiver.
-type factory struct {
+// Factory is the Factory for receiver.
+type Factory struct {
 }
 
-// Type gets the type of the Receiver config created by this factory.
-func (f *factory) Type() string {
+// Type gets the type of the Receiver config created by this Factory.
+func (f *Factory) Type() string {
 	return typeStr
 }
 
 // CustomUnmarshaler returns custom unmarshaler for this config.
-func (f *factory) CustomUnmarshaler() receiver.CustomUnmarshaler {
+func (f *Factory) CustomUnmarshaler() receiver.CustomUnmarshaler {
 	return nil
 }
 
 // CreateDefaultConfig creates the default configuration for receiver.
-func (f *factory) CreateDefaultConfig() configmodels.Receiver {
+func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 	return &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
 			TypeVal: typeStr,
@@ -61,7 +59,7 @@ func (f *factory) CreateDefaultConfig() configmodels.Receiver {
 }
 
 // CreateTraceReceiver creates a trace receiver based on provided config.
-func (f *factory) CreateTraceReceiver(
+func (f *Factory) CreateTraceReceiver(
 	ctx context.Context,
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
@@ -72,7 +70,7 @@ func (f *factory) CreateTraceReceiver(
 }
 
 // CreateMetricsReceiver creates a metrics receiver based on provided config.
-func (f *factory) CreateMetricsReceiver(
+func (f *Factory) CreateMetricsReceiver(
 	logger *zap.Logger,
 	config configmodels.Receiver,
 	consumer consumer.MetricsConsumer,

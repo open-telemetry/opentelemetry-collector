@@ -18,12 +18,22 @@ import (
 	"os"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/spf13/viper"
+
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-service/exporter"
+	"github.com/open-telemetry/opentelemetry-service/processor"
+	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
 
 // LoadConfigFile loads a config from file.
-func LoadConfigFile(t *testing.T, fileName string) (*configmodels.Config, error) {
+func LoadConfigFile(
+	t *testing.T,
+	fileName string,
+	receivers map[string]receiver.Factory,
+	processors map[string]processor.Factory,
+	exporters map[string]exporter.Factory,
+) (*configmodels.Config, error) {
 	// Open the file for reading.
 	file, err := os.Open(fileName)
 	if err != nil {
@@ -41,5 +51,5 @@ func LoadConfigFile(t *testing.T, fileName string) (*configmodels.Config, error)
 	}
 
 	// Load the config from viper
-	return Load(v)
+	return Load(v, receivers, processors, exporters)
 }

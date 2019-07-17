@@ -20,25 +20,19 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
-	"github.com/open-telemetry/opentelemetry-service/processor"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := processor.GetFactory(typeStr)
-	require.NotNil(t, factory)
+	factory := &Factory{}
 
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 }
 
 func TestCreateProcessor(t *testing.T) {
-	factory := processor.GetFactory(typeStr)
-	require.NotNil(t, factory)
+	factory := &Factory{}
 
 	cfg := factory.CreateDefaultConfig()
-
 	tp, err := factory.CreateTraceProcessor(zap.NewNop(), nil, cfg)
 	assert.NotNil(t, tp)
 	assert.NoError(t, err, "cannot create trace processor")

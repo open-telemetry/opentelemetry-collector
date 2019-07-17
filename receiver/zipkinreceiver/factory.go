@@ -27,8 +27,6 @@ import (
 
 // This file implements factory for Zipkin receiver.
 
-var _ = receiver.RegisterFactory(&factory{})
-
 const (
 	// The value of "type" key in configuration.
 	typeStr = "zipkin"
@@ -36,22 +34,22 @@ const (
 	defaultBindEndpoint = "127.0.0.1:9411"
 )
 
-// factory is the factory for Zipkin receiver.
-type factory struct {
+// Factory is the factory for Zipkin receiver.
+type Factory struct {
 }
 
 // Type gets the type of the Receiver config created by this factory.
-func (f *factory) Type() string {
+func (f *Factory) Type() string {
 	return typeStr
 }
 
 // CustomUnmarshaler returns nil because we don't need custom unmarshaling for this config.
-func (f *factory) CustomUnmarshaler() receiver.CustomUnmarshaler {
+func (f *Factory) CustomUnmarshaler() receiver.CustomUnmarshaler {
 	return nil
 }
 
 // CreateDefaultConfig creates the default configuration for Jaeger receiver.
-func (f *factory) CreateDefaultConfig() configmodels.Receiver {
+func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 	return &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
 			TypeVal:  typeStr,
@@ -62,7 +60,7 @@ func (f *factory) CreateDefaultConfig() configmodels.Receiver {
 }
 
 // CreateTraceReceiver creates a trace receiver based on provided config.
-func (f *factory) CreateTraceReceiver(
+func (f *Factory) CreateTraceReceiver(
 	ctx context.Context,
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
@@ -74,7 +72,7 @@ func (f *factory) CreateTraceReceiver(
 }
 
 // CreateMetricsReceiver creates a metrics receiver based on provided config.
-func (f *factory) CreateMetricsReceiver(
+func (f *Factory) CreateMetricsReceiver(
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
 	consumer consumer.MetricsConsumer,

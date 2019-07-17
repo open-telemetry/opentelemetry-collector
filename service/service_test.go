@@ -21,13 +21,18 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+
+	"github.com/open-telemetry/opentelemetry-service/defaults"
 	"github.com/open-telemetry/opentelemetry-service/internal/testutils"
 	"github.com/open-telemetry/opentelemetry-service/internal/zpagesserver"
 )
 
 func TestApplication_StartUnified(t *testing.T) {
+	receiverFactories, processorsFactories, exporterFactories, err := defaults.Components()
+	assert.Nil(t, err)
 
-	App = newApp()
+	app := New(receiverFactories, processorsFactories, exporterFactories)
 
 	portArg := []string{
 		healthCheckHTTPPort, // Keep it as first since its address is used later.
@@ -40,23 +45,23 @@ func TestApplication_StartUnified(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to split host and port from %q: %v", addr, err)
 		}
-		App.v.Set(portArg[i], port)
+		app.v.Set(portArg[i], port)
 	}
 
-	App.v.Set("config", "testdata/otelsvc-config.yaml")
+	app.v.Set("config", "testdata/otelsvc-config.yaml")
 
 	appDone := make(chan struct{})
 	go func() {
 		defer close(appDone)
-		if err := App.StartUnified(); err != nil {
-			t.Fatalf("App.StartUnified() got %v, want nil", err)
+		if err := app.StartUnified(); err != nil {
+			t.Fatalf("app.StartUnified() got %v, want nil", err)
 		}
 	}()
 
-	<-App.readyChan
+	<-app.readyChan
 
 	if !isAppAvailable(t, "http://"+addresses[0]) {
-		t.Fatalf("App didn't reach ready state")
+		t.Fatalf("app didn't reach ready state")
 	}
 
 	// We have to wait here work around a data race bug in Jaeger
@@ -71,7 +76,7 @@ func TestApplication_StartUnified(t *testing.T) {
 	// to latest version.
 	time.Sleep(1 * time.Second)
 
-	close(App.stopTestChan)
+	close(app.stopTestChan)
 	<-appDone
 }
 

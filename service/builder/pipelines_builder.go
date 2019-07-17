@@ -41,6 +41,7 @@ type PipelinesBuilder struct {
 	logger    *zap.Logger
 	config    *configmodels.Config
 	exporters Exporters
+	factories map[string]processor.Factory
 }
 
 // NewPipelinesBuilder creates a new PipelinesBuilder. Requires exporters to be already
@@ -49,8 +50,9 @@ func NewPipelinesBuilder(
 	logger *zap.Logger,
 	config *configmodels.Config,
 	exporters Exporters,
+	factories map[string]processor.Factory,
 ) *PipelinesBuilder {
-	return &PipelinesBuilder{logger, config, exporters}
+	return &PipelinesBuilder{logger, config, exporters, factories}
 }
 
 // Build pipeline processors from config.
@@ -96,7 +98,7 @@ func (pb *PipelinesBuilder) buildPipeline(
 		procName := pipelineCfg.Processors[i]
 		procCfg := pb.config.Processors[procName]
 
-		factory := processor.GetFactory(procCfg.Type())
+		factory := pb.factories[procCfg.Type()]
 
 		// This processor must point to the next consumer and then
 		// it becomes the next for the previous one (previous in the pipeline,

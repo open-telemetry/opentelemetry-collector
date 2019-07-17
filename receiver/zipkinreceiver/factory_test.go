@@ -25,11 +25,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/config/configerror"
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := receiver.GetFactory(typeStr)
+	factory := &Factory{}
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 }
@@ -42,7 +41,7 @@ func (m *mockTraceConsumer) ConsumeTraceData(ctx context.Context, td consumerdat
 }
 
 func TestCreateReceiver(t *testing.T) {
-	factory := receiver.GetFactory(typeStr)
+	factory := &Factory{}
 	cfg := factory.CreateDefaultConfig()
 
 	tReceiver, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, &mockTraceConsumer{})

@@ -84,25 +84,30 @@ const (
 const typeAndNameSeparator = "/"
 
 // Load loads a Config from Viper.
-func Load(v *viper.Viper) (*configmodels.Config, error) {
+func Load(
+	v *viper.Viper,
+	receiverFactories map[string]receiver.Factory,
+	processorFactories map[string]processor.Factory,
+	exporterFactories map[string]exporter.Factory,
+) (*configmodels.Config, error) {
 
 	var config configmodels.Config
 
 	// Load the config.
 
-	receivers, err := loadReceivers(v)
+	receivers, err := loadReceivers(v, receiverFactories)
 	if err != nil {
 		return nil, err
 	}
 	config.Receivers = receivers
 
-	exporters, err := loadExporters(v)
+	exporters, err := loadExporters(v, exporterFactories)
 	if err != nil {
 		return nil, err
 	}
 	config.Exporters = exporters
 
-	processors, err := loadProcessors(v)
+	processors, err := loadProcessors(v, processorFactories)
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +166,7 @@ func decodeTypeAndName(key string) (typeStr, fullName string, err error) {
 	return
 }
 
-func loadReceivers(v *viper.Viper) (configmodels.Receivers, error) {
+func loadReceivers(v *viper.Viper, factories map[string]receiver.Factory) (configmodels.Receivers, error) {
 	// Get the list of all "receivers" sub vipers from config source.
 	subViper := v.Sub(receiversKeyName)
 
@@ -183,7 +188,7 @@ func loadReceivers(v *viper.Viper) (configmodels.Receivers, error) {
 		}
 
 		// Find receiver factory based on "type" that we read from config source
-		factory := receiver.GetFactory(typeStr)
+		factory := factories[typeStr]
 		if factory == nil {
 			return nil, &configError{
 				code: errUnknownReceiverType,
@@ -227,7 +232,7 @@ func loadReceivers(v *viper.Viper) (configmodels.Receivers, error) {
 	return receivers, nil
 }
 
-func loadExporters(v *viper.Viper) (configmodels.Exporters, error) {
+func loadExporters(v *viper.Viper, factories map[string]exporter.Factory) (configmodels.Exporters, error) {
 	// Get the list of all "exporters" sub vipers from config source.
 	subViper := v.Sub(exportersKeyName)
 
@@ -249,7 +254,7 @@ func loadExporters(v *viper.Viper) (configmodels.Exporters, error) {
 		}
 
 		// Find exporter factory based on "type" that we read from config source
-		factory := exporter.GetFactory(typeStr)
+		factory := factories[typeStr]
 		if factory == nil {
 			return nil, &configError{
 				code: errUnknownExporterType,
@@ -284,7 +289,7 @@ func loadExporters(v *viper.Viper) (configmodels.Exporters, error) {
 	return exporters, nil
 }
 
-func loadProcessors(v *viper.Viper) (configmodels.Processors, error) {
+func loadProcessors(v *viper.Viper, factories map[string]processor.Factory) (configmodels.Processors, error) {
 	// Get the list of all "processors" sub vipers from config source.
 	subViper := v.Sub(processorsKeyName)
 
@@ -306,7 +311,7 @@ func loadProcessors(v *viper.Viper) (configmodels.Processors, error) {
 		}
 
 		// Find processor factory based on "type" that we read from config source.
-		factory := processor.GetFactory(typeStr)
+		factory := factories[typeStr]
 		if factory == nil {
 			return nil, &configError{
 				code: errUnknownProcessorType,

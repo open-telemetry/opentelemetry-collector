@@ -18,22 +18,17 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-service/exporter"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := exporter.GetFactory(typeStr)
-	require.NotNil(t, factory)
-
+	factory := &Factory{}
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 }
 
 func TestCreateMetricsExporter(t *testing.T) {
-	factory := exporter.GetFactory(typeStr)
+	factory := &Factory{}
 	cfg := factory.CreateDefaultConfig()
 
 	_, _, err := factory.CreateMetricsExporter(zap.NewNop(), cfg)
@@ -41,7 +36,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 }
 
 func TestCreateTraceExporter(t *testing.T) {
-	factory := exporter.GetFactory(typeStr)
+	factory := &Factory{}
 	cfg := factory.CreateDefaultConfig()
 
 	_, _, err := factory.CreateTraceExporter(zap.NewNop(), cfg)

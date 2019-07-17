@@ -23,12 +23,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 )
 
-var _ = RegisterTestFactories()
-
 func TestDecodeConfig(t *testing.T) {
+	receivers, processors, exporters, err := ExampleComponents()
+	assert.Nil(t, err)
 
 	// Load the config
-	config, err := LoadConfigFile(t, path.Join(".", "testdata", "valid-config.yaml"))
+	config, err := LoadConfigFile(
+		t, path.Join(".", "testdata", "valid-config.yaml"), receivers, processors, exporters,
+	)
 	if err != nil {
 		t.Fatalf("unable to load config, %v", err)
 	}
@@ -108,9 +110,13 @@ func TestDecodeConfig(t *testing.T) {
 }
 
 func TestDecodeConfig_MultiProto(t *testing.T) {
+	receivers, processors, exporters, err := ExampleComponents()
+	assert.Nil(t, err)
 
 	// Load the config
-	config, err := LoadConfigFile(t, path.Join(".", "testdata", "multiproto-config.yaml"))
+	config, err := LoadConfigFile(
+		t, path.Join(".", "testdata", "multiproto-config.yaml"), receivers, processors, exporters,
+	)
 	if err != nil {
 		t.Fatalf("unable to load config, %v", err)
 	}
@@ -194,8 +200,13 @@ func TestDecodeConfig_Invalid(t *testing.T) {
 		{name: "duplicate-pipeline", expected: errDuplicatePipelineName},
 	}
 
+	receivers, processors, exporters, err := ExampleComponents()
+	assert.Nil(t, err)
+
 	for _, test := range testCases {
-		_, err := LoadConfigFile(t, path.Join(".", "testdata", test.name+".yaml"))
+		_, err := LoadConfigFile(
+			t, path.Join(".", "testdata", test.name+".yaml"), receivers, processors, exporters,
+		)
 		if err == nil {
 			t.Errorf("expected error but succedded on invalid config case: %s", test.name)
 		} else if test.expected != 0 {
