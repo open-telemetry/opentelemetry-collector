@@ -1,0 +1,15 @@
+receivers:
+  examplereceiver:
+
+processors:
+  attribute-key:
+    
+
+exporters:
+  exampleexporter:
+
+pipelines:
+  traces:
+    receivers: [examplereceiver]
+    processors: [attribute-key]
+    exporters: [exampleexporter]

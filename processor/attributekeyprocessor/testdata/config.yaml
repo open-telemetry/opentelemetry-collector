@@ -1,0 +1,30 @@
+receivers:
+  examplereceiver:
+
+processors:
+  attribute-key:
+    keys:
+      foo: 
+          replacement: "boo"
+          overwrite: true
+          keep: true
+      kie: 
+          replacement: "goo"
+          overwrite: true
+          keep: false
+      ddd:
+          replacement: "vss"
+          overwrite: false
+          keep: true    
+      dot.test:
+          replacement: "bot"
+          overwrite: false
+          keep: false
+exporters:
+  exampleexporter:
+
+pipelines:
+  traces:
+    receivers: [examplereceiver]
+    processors: [attribute-key]
+    exporters: [exampleexporter]
