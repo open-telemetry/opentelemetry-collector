@@ -38,15 +38,15 @@ func TestLoadConfig(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
 
-	p0 := cfg.Processors["attributes"]
+	p0 := cfg.Processors["add-attributes"]
 	assert.Equal(t, p0, factory.CreateDefaultConfig())
 
-	p1 := cfg.Processors["attributes/2"]
+	p1 := cfg.Processors["add-attributes/2"]
 	assert.Equal(t, p1,
 		&Config{
 			ProcessorSettings: configmodels.ProcessorSettings{
-				TypeVal: "attributes",
-				NameVal: "attributes/2",
+				TypeVal: "add-attributes",
+				NameVal: "add-attributes/2",
 			},
 			Values: map[string]interface{}{
 				"attribute1":         123,
