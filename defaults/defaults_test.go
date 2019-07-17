@@ -30,6 +30,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/internal/collector/processor/queued"
 	"github.com/open-telemetry/opentelemetry-service/processor"
 	"github.com/open-telemetry/opentelemetry-service/processor/addattributesprocessor"
+	"github.com/open-telemetry/opentelemetry-service/processor/attributekeyprocessor"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 	"github.com/open-telemetry/opentelemetry-service/receiver/jaegerreceiver"
 	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver"
@@ -47,9 +48,10 @@ func TestDefaultComponents(t *testing.T) {
 		"vmmetrics":  &vmmetricsreceiver.Factory{},
 	}
 	expectedProcessors := map[string]processor.Factory{
-		"attributes":   &addattributesprocessor.Factory{},
-		"queued-retry": &queued.Factory{},
-		"batch":        &nodebatcher.Factory{},
+		"attributes":    &addattributesprocessor.Factory{},
+		"attribute-key": &attributekeyprocessor.Factory{},
+		"queued-retry":  &queued.Factory{},
+		"batch":         &nodebatcher.Factory{},
 	}
 	expectedExporters := map[string]exporter.Factory{
 		"opencensus": &opencensusexporter.Factory{},

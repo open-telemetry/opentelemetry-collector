@@ -26,11 +26,18 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/processor"
 )
 
-var _ = config.RegisterTestFactories()
-
 func TestLoadConfig(t *testing.T) {
+	receivers, _, exporters, err := config.ExampleComponents()
+	processors, err := processor.Build(&Factory{})
+	require.NotNil(t, processors)
+	require.NoError(t, err)
 
-	config, err := config.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"))
+	config, err := config.LoadConfigFile(
+		t,
+		path.Join(".", "testdata", "config.yaml"),
+		receivers,
+		processors,
+		exporters)
 
 	require.Nil(t, err)
 	require.NotNil(t, config)
@@ -68,12 +75,21 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestLoadConfigEmpty(t *testing.T) {
-	factory := processor.GetFactory(typeStr)
+	receivers, _, exporters, err := config.ExampleComponents()
+	processors, err := processor.Build(&Factory{})
+	require.NotNil(t, processors)
+	require.NoError(t, err)
 
-	config, err := config.LoadConfigFile(t, path.Join(".", "testdata", "empty.yaml"))
+	config, err := config.LoadConfigFile(
+		t,
+		path.Join(".", "testdata", "empty.yaml"),
+		receivers,
+		processors,
+		exporters)
 
 	require.Nil(t, err)
 	require.NotNil(t, config)
 	p0 := config.Processors["attribute-key"]
+	factory := &Factory{}
 	assert.Equal(t, p0, factory.CreateDefaultConfig())
 }

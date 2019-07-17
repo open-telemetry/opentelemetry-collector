@@ -23,11 +23,10 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
-	"github.com/open-telemetry/opentelemetry-service/processor"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := processor.GetFactory(typeStr)
+	factory := &Factory{}
 	require.NotNil(t, factory)
 
 	cfg := factory.CreateDefaultConfig()
@@ -35,7 +34,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 }
 
 func TestCreateProcessor(t *testing.T) {
-	factory := processor.GetFactory(typeStr)
+	factory := &Factory{}
 	require.NotNil(t, factory)
 
 	cfg := factory.CreateDefaultConfig()
