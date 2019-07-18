@@ -33,24 +33,22 @@ import (
 	compressiongrpc "github.com/open-telemetry/opentelemetry-service/internal/compression/grpc"
 )
 
-var _ = exporter.RegisterFactory(&factory{})
-
 const (
 	// The value of "type" key in configuration.
 	typeStr = "opencensus"
 )
 
-// factory is the factory for OpenCensus exporter.
-type factory struct {
+// Factory is the factory for OpenCensus exporter.
+type Factory struct {
 }
 
 // Type gets the type of the Exporter config created by this factory.
-func (f *factory) Type() string {
+func (f *Factory) Type() string {
 	return typeStr
 }
 
 // CreateDefaultConfig creates the default configuration for exporter.
-func (f *factory) CreateDefaultConfig() configmodels.Exporter {
+func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 	return &Config{
 		ExporterSettings: configmodels.ExporterSettings{
 			TypeVal: typeStr,
@@ -61,7 +59,7 @@ func (f *factory) CreateDefaultConfig() configmodels.Exporter {
 }
 
 // CreateTraceExporter creates a trace exporter based on this config.
-func (f *factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Exporter) (consumer.TraceConsumer, exporter.StopFunc, error) {
+func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Exporter) (consumer.TraceConsumer, exporter.StopFunc, error) {
 	ocac := config.(*Config)
 
 	if ocac.Endpoint == "" {
@@ -148,6 +146,6 @@ func (f *factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Ex
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *factory) CreateMetricsExporter(logger *zap.Logger, cfg configmodels.Exporter) (consumer.MetricsConsumer, exporter.StopFunc, error) {
+func (f *Factory) CreateMetricsExporter(logger *zap.Logger, cfg configmodels.Exporter) (consumer.MetricsConsumer, exporter.StopFunc, error) {
 	return nil, nil, configerror.ErrDataTypeIsNotSupported
 }

@@ -24,15 +24,17 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-service/config"
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
 
-var _ = config.RegisterTestFactories()
-
 func TestLoadConfig(t *testing.T) {
-	factory := receiver.GetFactory(typeStr)
+	receivers, processors, exporters, err := config.ExampleComponents()
+	assert.Nil(t, err)
 
-	cfg, err := config.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"))
+	factory := &Factory{}
+	receivers[typeStr] = factory
+	cfg, err := config.LoadConfigFile(
+		t, path.Join(".", "testdata", "config.yaml"), receivers, processors, exporters,
+	)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)

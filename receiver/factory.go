@@ -55,20 +55,16 @@ type Factory interface {
 // in a custom way.
 type CustomUnmarshaler func(v *viper.Viper, viperKey string, intoCfg interface{}) error
 
-// List of registered receiver factories.
-var receiverFactories = make(map[string]Factory)
-
-// RegisterFactory registers a receiver factory.
-func RegisterFactory(factory Factory) error {
-	if receiverFactories[factory.Type()] != nil {
-		panic(fmt.Sprintf("duplicate receiver factory %q", factory.Type()))
+// Build takes a list of receiver factories and returns a map of type map[string]Factory
+// with factory type as keys. It returns a non-nil error when more than one factories
+// have the same type.
+func Build(factories ...Factory) (map[string]Factory, error) {
+	fMap := map[string]Factory{}
+	for _, f := range factories {
+		if _, ok := fMap[f.Type()]; ok {
+			return fMap, fmt.Errorf("duplicate receiver factory %q", f.Type())
+		}
+		fMap[f.Type()] = f
 	}
-
-	receiverFactories[factory.Type()] = factory
-	return nil
-}
-
-// GetFactory gets a receiver factory by type string.
-func GetFactory(typeStr string) Factory {
-	return receiverFactories[typeStr]
+	return fMap, nil
 }

@@ -62,13 +62,18 @@ type exportersRequiredDataTypes map[configmodels.Exporter]dataTypeRequirements
 
 // ExportersBuilder builds exporters from config.
 type ExportersBuilder struct {
-	logger *zap.Logger
-	config *configmodels.Config
+	logger    *zap.Logger
+	config    *configmodels.Config
+	factories map[string]exporter.Factory
 }
 
 // NewExportersBuilder creates a new ExportersBuilder. Call Build() on the returned value.
-func NewExportersBuilder(logger *zap.Logger, config *configmodels.Config) *ExportersBuilder {
-	return &ExportersBuilder{logger, config}
+func NewExportersBuilder(
+	logger *zap.Logger,
+	config *configmodels.Config,
+	factories map[string]exporter.Factory,
+) *ExportersBuilder {
+	return &ExportersBuilder{logger, config, factories}
 }
 
 // Build exporters from config.
@@ -154,7 +159,10 @@ func (eb *ExportersBuilder) buildExporter(
 	exportersInputDataTypes exportersRequiredDataTypes,
 ) (*builtExporter, error) {
 
-	factory := exporter.GetFactory(config.Type())
+	factory := eb.factories[config.Type()]
+	if factory == nil {
+		return nil, fmt.Errorf("exporter factory not found for type: %s", config.Type())
+	}
 
 	exporter := &builtExporter{}
 

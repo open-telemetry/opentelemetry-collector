@@ -12,11 +12,11 @@ exporters:
     enabled: true
 
 processors:
-  attributes:
+  add-attributes:
     enabled: true
 
 pipelines:
   traces:
     receivers: [jaeger]
-    processors: [attributes]
+    processors: [add-attributes]
     exporters: [opencensus]

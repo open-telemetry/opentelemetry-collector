@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package nodebatcher
+package attributekeyprocessor
 
 import (
 	"go.uber.org/zap"
@@ -24,11 +24,11 @@ import (
 )
 
 const (
-	// The value of "type" key in configuration.
-	typeStr = "batch"
+	// The value of "type" Attribute Key in configuration.
+	typeStr = "attribute-key"
 )
 
-// Factory is the factory for batch processor.
+// Factory is the factory for Attribute Key processor.
 type Factory struct {
 }
 
@@ -39,21 +39,12 @@ func (f *Factory) Type() string {
 
 // CreateDefaultConfig creates the default configuration for processor.
 func (f *Factory) CreateDefaultConfig() configmodels.Processor {
-	removeAfterTicks := int(defaultRemoveAfterCycles)
-	sendBatchSize := int(defaultSendBatchSize)
-	tickTime := defaultTickTime
-	timeout := defaultTimeout
-
 	return &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		RemoveAfterTicks: &removeAfterTicks,
-		SendBatchSize:    &sendBatchSize,
-		NumTickers:       defaultNumTickers,
-		TickTime:         &tickTime,
-		Timeout:          &timeout,
+		Keys: make(map[string]NewKeyProperties, 0),
 	}
 }
 
@@ -61,36 +52,10 @@ func (f *Factory) CreateDefaultConfig() configmodels.Processor {
 func (f *Factory) CreateTraceProcessor(
 	logger *zap.Logger,
 	nextConsumer consumer.TraceConsumer,
-	c configmodels.Processor,
+	cfg configmodels.Processor,
 ) (processor.TraceProcessor, error) {
-	cfg := c.(*Config)
-
-	var batchingOptions []Option
-	if cfg.Timeout != nil {
-		batchingOptions = append(batchingOptions, WithTimeout(*cfg.Timeout))
-	}
-	if cfg.NumTickers > 0 {
-		batchingOptions = append(
-			batchingOptions, WithNumTickers(cfg.NumTickers),
-		)
-	}
-	if cfg.TickTime != nil {
-		batchingOptions = append(
-			batchingOptions, WithTickTime(*cfg.TickTime),
-		)
-	}
-	if cfg.SendBatchSize != nil {
-		batchingOptions = append(
-			batchingOptions, WithSendBatchSize(*cfg.SendBatchSize),
-		)
-	}
-	if cfg.RemoveAfterTicks != nil {
-		batchingOptions = append(
-			batchingOptions, WithRemoveAfterTicks(*cfg.RemoveAfterTicks),
-		)
-	}
-
-	return NewBatcher(cfg.NameVal, logger, nextConsumer, batchingOptions...), nil
+	oCfg := cfg.(*Config)
+	return NewTraceProcessor(nextConsumer, convertToKeyReplacements(&oCfg.Keys)...)
 }
 
 // CreateMetricsProcessor creates a metrics processor based on this config.
@@ -100,4 +65,13 @@ func (f *Factory) CreateMetricsProcessor(
 	cfg configmodels.Processor,
 ) (processor.MetricsProcessor, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
+}
+
+// convert keys' "map" to KeyReplacement
+func convertToKeyReplacements(keyMap *map[string]NewKeyProperties) []KeyReplacement {
+	var replacements []KeyReplacement
+	for key, val := range *keyMap {
+		replacements = append(replacements, KeyReplacement{Key: key, NewKey: val.NewKey, Overwrite: val.Overwrite, KeepOriginal: val.KeepOriginal})
+	}
+	return replacements
 }

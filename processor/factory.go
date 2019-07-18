@@ -44,20 +44,16 @@ type Factory interface {
 		cfg configmodels.Processor) (MetricsProcessor, error)
 }
 
-// List of registered processor factories.
-var processorFactories = make(map[string]Factory)
-
-// RegisterFactory registers a processor factory.
-func RegisterFactory(factory Factory) error {
-	if processorFactories[factory.Type()] != nil {
-		panic(fmt.Sprintf("duplicate processor factory %q", factory.Type()))
+// Build takes a list of processor factories and returns a map of type map[string]Factory
+// with factory type as keys. It returns a non-nil error when more than one factories
+// have the same type.
+func Build(factories ...Factory) (map[string]Factory, error) {
+	fMap := map[string]Factory{}
+	for _, f := range factories {
+		if _, ok := fMap[f.Type()]; ok {
+			return fMap, fmt.Errorf("duplicate processor factory %q", f.Type())
+		}
+		fMap[f.Type()] = f
 	}
-
-	processorFactories[factory.Type()] = factory
-	return nil
-}
-
-// GetFactory gets a processor factory by type string.
-func GetFactory(typeStr string) Factory {
-	return processorFactories[typeStr]
+	return fMap, nil
 }

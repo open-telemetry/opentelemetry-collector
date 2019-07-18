@@ -23,12 +23,18 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/open-telemetry/opentelemetry-service/config"
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/exporter/opencensusexporter"
 )
 
 func TestExportersBuilder_Build(t *testing.T) {
-	config := &configmodels.Config{
+	_, _, exporterFactories, err := config.ExampleComponents()
+	assert.Nil(t, err)
+
+	oceFactory := &opencensusexporter.Factory{}
+	exporterFactories[oceFactory.Type()] = oceFactory
+	cfg := &configmodels.Config{
 		Exporters: map[string]configmodels.Exporter{
 			"opencensus": &opencensusexporter.Config{
 				ExporterSettings: configmodels.ExporterSettings{
@@ -49,12 +55,12 @@ func TestExportersBuilder_Build(t *testing.T) {
 		},
 	}
 
-	exporters, err := NewExportersBuilder(zap.NewNop(), config).Build()
+	exporters, err := NewExportersBuilder(zap.NewNop(), cfg, exporterFactories).Build()
 
 	assert.NoError(t, err)
 	require.NotNil(t, exporters)
 
-	e1 := exporters[config.Exporters["opencensus"]]
+	e1 := exporters[cfg.Exporters["opencensus"]]
 
 	// Ensure exporter has its fields correctly populated.
 	require.NotNil(t, e1)
@@ -67,19 +73,19 @@ func TestExportersBuilder_Build(t *testing.T) {
 
 	// Now change only pipeline data type to "metrics" and make sure exporter builder
 	// now fails (because opencensus exporter does not currently support metrics).
-	config.Pipelines["trace"].InputType = configmodels.MetricsDataType
-	_, err = NewExportersBuilder(zap.NewNop(), config).Build()
+	cfg.Pipelines["trace"].InputType = configmodels.MetricsDataType
+	_, err = NewExportersBuilder(zap.NewNop(), cfg, exporterFactories).Build()
 	assert.NotNil(t, err)
 
 	// Remove the pipeline so that the exporter is not attached to any pipeline.
 	// This should result in creating an exporter that has none of consumption
 	// functions set.
-	delete(config.Pipelines, "trace")
-	exporters, err = NewExportersBuilder(zap.NewNop(), config).Build()
+	delete(cfg.Pipelines, "trace")
+	exporters, err = NewExportersBuilder(zap.NewNop(), cfg, exporterFactories).Build()
 	assert.NotNil(t, exporters)
 	assert.Nil(t, err)
 
-	e1 = exporters[config.Exporters["opencensus"]]
+	e1 = exporters[cfg.Exporters["opencensus"]]
 
 	// Ensure exporter has its fields correctly populated.
 	require.NotNil(t, e1)

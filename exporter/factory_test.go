@@ -17,6 +17,7 @@ package exporter
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
@@ -24,11 +25,12 @@ import (
 )
 
 type TestFactory struct {
+	name string
 }
 
 // Type gets the type of the Exporter config created by this factory.
 func (f *TestFactory) Type() string {
-	return "exampleexporter"
+	return f.name
 }
 
 // CreateDefaultConfig creates the default configuration for the Exporter.
@@ -46,30 +48,41 @@ func (f *TestFactory) CreateMetricsExporter(logger *zap.Logger, cfg configmodels
 	return nil, nil, nil
 }
 
-func TestRegisterFactory(t *testing.T) {
-	f := TestFactory{}
-	err := RegisterFactory(&f)
-	if err != nil {
-		t.Fatalf("cannot register factory")
+func TestFactoriesBuilder(t *testing.T) {
+	type testCase struct {
+		in  []Factory
+		out map[string]Factory
+		err bool
 	}
 
-	if &f != GetFactory(f.Type()) {
-		t.Fatalf("cannot find factory")
+	testCases := []testCase{
+		{
+			in: []Factory{
+				&TestFactory{"exp1"},
+				&TestFactory{"exp2"},
+			},
+			out: map[string]Factory{
+				"exp1": &TestFactory{"exp1"},
+				"exp2": &TestFactory{"exp2"},
+			},
+			err: false,
+		},
+		{
+			in: []Factory{
+				&TestFactory{"exp1"},
+				&TestFactory{"exp1"},
+			},
+			err: true,
+		},
 	}
 
-	// Verify that attempt to register a factory with duplicate name panics
-	panicked := false
-	func() {
-		defer func() {
-			if r := recover(); r != nil {
-				panicked = true
-			}
-		}()
-
-		err = RegisterFactory(&f)
-	}()
-
-	if !panicked {
-		t.Fatalf("must panic on double registration")
+	for _, c := range testCases {
+		out, err := Build(c.in...)
+		if c.err {
+			assert.NotNil(t, err)
+			continue
+		}
+		assert.Nil(t, err)
+		assert.Equal(t, c.out, out)
 	}
 }

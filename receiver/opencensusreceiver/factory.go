@@ -25,29 +25,27 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
 
-var _ = receiver.RegisterFactory(&factory{})
-
 const (
 	// The value of "type" key in configuration.
 	typeStr = "opencensus"
 )
 
-// factory is the factory for receiver.
-type factory struct {
+// Factory is the Factory for receiver.
+type Factory struct {
 }
 
-// Type gets the type of the Receiver config created by this factory.
-func (f *factory) Type() string {
+// Type gets the type of the Receiver config created by this Factory.
+func (f *Factory) Type() string {
 	return typeStr
 }
 
 // CustomUnmarshaler returns nil because we don't need custom unmarshaling for this config.
-func (f *factory) CustomUnmarshaler() receiver.CustomUnmarshaler {
+func (f *Factory) CustomUnmarshaler() receiver.CustomUnmarshaler {
 	return nil
 }
 
 // CreateDefaultConfig creates the default configuration for receiver.
-func (f *factory) CreateDefaultConfig() configmodels.Receiver {
+func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 	return &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
 			TypeVal:  typeStr,
@@ -59,13 +57,12 @@ func (f *factory) CreateDefaultConfig() configmodels.Receiver {
 }
 
 // CreateTraceReceiver creates a  trace receiver based on provided config.
-func (f *factory) CreateTraceReceiver(
+func (f *Factory) CreateTraceReceiver(
 	ctx context.Context,
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
 	nextConsumer consumer.TraceConsumer,
 ) (receiver.TraceReceiver, error) {
-
 	r, err := f.createReceiver(cfg)
 	if err != nil {
 		return nil, err
@@ -77,7 +74,7 @@ func (f *factory) CreateTraceReceiver(
 }
 
 // CreateMetricsReceiver creates a metrics receiver based on provided config.
-func (f *factory) CreateMetricsReceiver(
+func (f *Factory) CreateMetricsReceiver(
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
 	consumer consumer.MetricsConsumer,
@@ -93,7 +90,7 @@ func (f *factory) CreateMetricsReceiver(
 	return r, nil
 }
 
-func (f *factory) createReceiver(cfg configmodels.Receiver) (*Receiver, error) {
+func (f *Factory) createReceiver(cfg configmodels.Receiver) (*Receiver, error) {
 	rCfg := cfg.(*Config)
 
 	// There must be one receiver for both metrics and traces. We maintain a map of
@@ -115,7 +112,7 @@ func (f *factory) createReceiver(cfg configmodels.Receiver) (*Receiver, error) {
 }
 
 // This is the map of already created OpenCensus receivers for particular configurations.
-// We maintain this map because the factory is asked trace and metric receivers separately
+// We maintain this map because the Factory is asked trace and metric receivers separately
 // when it gets CreateTraceReceiver() and CreateMetricsReceiver() but they must not
 // create separate objects, they must use one Receiver object per configuration.
 var receivers = map[*Config]*Receiver{}

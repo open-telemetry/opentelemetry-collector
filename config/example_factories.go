@@ -325,11 +325,26 @@ func (f *ExampleProcessorFactory) CreateMetricsProcessor(
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
-// RegisterTestFactories registers example factories. This is only used by tests.
-func RegisterTestFactories() error {
-	_ = receiver.RegisterFactory(&ExampleReceiverFactory{})
-	_ = receiver.RegisterFactory(&MultiProtoReceiverFactory{})
-	_ = exporter.RegisterFactory(&ExampleExporterFactory{})
-	_ = processor.RegisterFactory(&ExampleProcessorFactory{})
-	return nil
+// ExampleComponents registers example factories. This is only used by tests.
+func ExampleComponents() (
+	receivers map[string]receiver.Factory,
+	processors map[string]processor.Factory,
+	exporters map[string]exporter.Factory,
+	err error,
+) {
+	receivers, err = receiver.Build(
+		&ExampleReceiverFactory{},
+		&MultiProtoReceiverFactory{},
+	)
+	if err != nil {
+		return
+	}
+
+	exporters, err = exporter.Build(&ExampleExporterFactory{})
+	if err != nil {
+		return
+	}
+
+	processors, err = processor.Build(&ExampleProcessorFactory{})
+	return
 }

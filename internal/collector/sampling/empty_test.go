@@ -12,12 +12,4 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package configerror contains the common errors caused by malformed configs.
-package configerror
-
-import "errors"
-
-// ErrDataTypeIsNotSupported can be returned by receiver, exporter or processor
-// factory methods that create the entity if the particular telemetry
-// data type is not supported by the receiver, exporter or processor.
-var ErrDataTypeIsNotSupported = errors.New("telemetry type is not supported")
+package sampling

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package queued
+package attributekeyprocessor
 
 import (
 	"testing"
@@ -20,19 +20,26 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := &Factory{}
+	require.NotNil(t, factory)
+
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 }
 
 func TestCreateProcessor(t *testing.T) {
 	factory := &Factory{}
+	require.NotNil(t, factory)
+
 	cfg := factory.CreateDefaultConfig()
 
-	tp, err := factory.CreateTraceProcessor(zap.NewNop(), nil, cfg)
+	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), cfg)
 	assert.NotNil(t, tp)
 	assert.NoError(t, err, "cannot create trace processor")
 
