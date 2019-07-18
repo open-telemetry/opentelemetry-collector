@@ -104,7 +104,7 @@ func (mb *MockBackend) Start(backendType BackendType) error {
 			return err
 		}
 
-		err := mb.ocReceiver.Start(context.Background())
+		err := mb.ocReceiver.StartTraceReception(mb)
 		if err != nil {
 			return err
 		}
@@ -149,7 +149,7 @@ func (mb *MockBackend) Stop() {
 		mb.logFile.Close()
 
 		if mb.ocReceiver != nil {
-			_ = mb.ocReceiver.Stop()
+			_ = mb.ocReceiver.StopTraceReception()
 		}
 
 		if mb.jaegerReceiver != nil {

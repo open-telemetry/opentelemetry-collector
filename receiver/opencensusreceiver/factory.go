@@ -99,9 +99,14 @@ func (f *Factory) createReceiver(cfg configmodels.Receiver) (*Receiver, error) {
 	// Check to see if there is already a receiver for this config.
 	receiver, ok := receivers[rCfg]
 	if !ok {
+		// Build the configuration options.
+		opts, err := rCfg.buildOptions()
+		if err != nil {
+			return nil, err
+		}
+
 		// We don't have a receiver, so create one.
-		var err error
-		receiver, err = New(rCfg.Endpoint, nil, nil)
+		receiver, err = New(rCfg.Endpoint, nil, nil, opts...)
 		if err != nil {
 			return nil, err
 		}
