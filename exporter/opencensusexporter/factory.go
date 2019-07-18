@@ -18,7 +18,6 @@ import (
 	"crypto/x509"
 	"fmt"
 
-	"contrib.go.opencensus.io/exporter/ocagent"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -29,6 +28,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exporterhelper"
+	"github.com/open-telemetry/opentelemetry-service/exporter/opencensusexporter/ocagent"
 	"github.com/open-telemetry/opentelemetry-service/internal/compression"
 	compressiongrpc "github.com/open-telemetry/opentelemetry-service/internal/compression/grpc"
 )

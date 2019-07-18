@@ -21,7 +21,6 @@ import (
 	"sync"
 	"time"
 
-	"contrib.go.opencensus.io/exporter/ocagent"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
@@ -31,6 +30,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exporterhelper"
+	"github.com/open-telemetry/opentelemetry-service/exporter/opencensusexporter/ocagent"
 	"github.com/open-telemetry/opentelemetry-service/internal/compression"
 	compressiongrpc "github.com/open-telemetry/opentelemetry-service/internal/compression/grpc"
 	"github.com/open-telemetry/opentelemetry-service/oterr"
