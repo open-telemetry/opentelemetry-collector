@@ -14,9 +14,128 @@
 
 package opencensusreceiver
 
-import "github.com/open-telemetry/opentelemetry-service/config/configmodels"
+import (
+	"fmt"
+	"time"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/keepalive"
+
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
+)
 
 // Config defines configuration for OpenCensus receiver.
 type Config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+
+	// TLSCredentials is a (cert_file, key_file) configuration.
+	TLSCredentials *tlsCredentials `mapstructure:"tls-credentials,omitempty"`
+
+	// Keepalive anchor for all the settings related to keepalive.
+	Keepalive *serverParametersAndEnforcementPolicy `mapstructure:"keepalive,omitempty"`
+
+	// MaxRecvMsgSizeMiB sets the maximum size (in MiB) of messages accepted by the server.
+	MaxRecvMsgSizeMiB uint64 `mapstructure:"max-recv-msg-size-mib,omitempty"`
+
+	// MaxConcurrentStreams sets the limit on the number of concurrent streams to each ServerTransport.
+	MaxConcurrentStreams uint32 `mapstructure:"max-concurrent-streams,omitempty"`
+}
+
+// tlsCredentials holds the fields for TLS credentials
+// that are used for starting a server.
+type tlsCredentials struct {
+	// CertFile is the file path containing the TLS certificate.
+	CertFile string `mapstructure:"cert-file"`
+
+	// KeyFile is the file path containing the TLS key.
+	KeyFile string `mapstructure:"key-file"`
+}
+
+type serverParametersAndEnforcementPolicy struct {
+	ServerParameters  *keepaliveServerParameters  `mapstructure:"server-parameters,omitempty"`
+	EnforcementPolicy *keepaliveEnforcementPolicy `mapstructure:"enforcement-policy,omitempty"`
+}
+
+// keepaliveServerParameters allow configuration of the keepalive.ServerParameters.
+// See https://godoc.org/google.golang.org/grpc/keepalive#ServerParameters for details.
+type keepaliveServerParameters struct {
+	MaxConnectionIdle     time.Duration `mapstructure:"max-connection-idle,omitempty"`
+	MaxConnectionAge      time.Duration `mapstructure:"max-connection-age,omitempty"`
+	MaxConnectionAgeGrace time.Duration `mapstructure:"max-connection-age-grace,omitempty"`
+	Time                  time.Duration `mapstructure:"time,omitempty"`
+	Timeout               time.Duration `mapstructure:"timeout,omitempty"`
+}
+
+// keepaliveEnforcementPolicy allow configuration of the keepalive.EnforcementPolicy.
+// See https://godoc.org/google.golang.org/grpc/keepalive#EnforcementPolicy for details.
+type keepaliveEnforcementPolicy struct {
+	MinTime             time.Duration `mapstructure:"min-time,omitempty"`
+	PermitWithoutStream bool          `mapstructure:"permit-without-stream,omitempty"`
+}
+
+func (rOpts *Config) buildOptions() (opts []Option, err error) {
+	tlsCredsOption, hasTLSCreds, err := rOpts.TLSCredentials.ToOpenCensusReceiverServerOption()
+	if err != nil {
+		return opts, fmt.Errorf("OpenCensus receiver TLS Credentials: %v", err)
+	}
+	if hasTLSCreds {
+		opts = append(opts, tlsCredsOption)
+	}
+
+	grpcServerOptions := rOpts.grpcServerOptions()
+	if len(grpcServerOptions) > 0 {
+		opts = append(opts, WithGRPCServerOptions(grpcServerOptions...))
+	}
+
+	return opts, err
+}
+
+func (rOpts *Config) grpcServerOptions() []grpc.ServerOption {
+	var grpcServerOptions []grpc.ServerOption
+	if rOpts.MaxRecvMsgSizeMiB > 0 {
+		grpcServerOptions = append(grpcServerOptions, grpc.MaxRecvMsgSize(int(rOpts.MaxRecvMsgSizeMiB*1024*1024)))
+	}
+	if rOpts.MaxConcurrentStreams > 0 {
+		grpcServerOptions = append(grpcServerOptions, grpc.MaxConcurrentStreams(rOpts.MaxConcurrentStreams))
+	}
+	if rOpts.Keepalive != nil {
+		if rOpts.Keepalive.ServerParameters != nil {
+			svrParams := rOpts.Keepalive.ServerParameters
+			grpcServerOptions = append(grpcServerOptions, grpc.KeepaliveParams(keepalive.ServerParameters{
+				MaxConnectionIdle:     svrParams.MaxConnectionIdle,
+				MaxConnectionAge:      svrParams.MaxConnectionAge,
+				MaxConnectionAgeGrace: svrParams.MaxConnectionAgeGrace,
+				Time:                  svrParams.Time,
+				Timeout:               svrParams.Timeout,
+			}))
+		}
+		if rOpts.Keepalive.EnforcementPolicy != nil {
+			enfPol := rOpts.Keepalive.EnforcementPolicy
+			grpcServerOptions = append(grpcServerOptions, grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
+				MinTime:             enfPol.MinTime,
+				PermitWithoutStream: enfPol.PermitWithoutStream,
+			}))
+		}
+	}
+
+	return grpcServerOptions
+}
+
+// ToOpenCensusReceiverServerOption checks if the TLS credentials
+// in the form of a certificate file and a key file. If they aren't,
+// it will return opencensusreceiver.WithNoopOption() and a nil error.
+// Otherwise, it will try to retrieve gRPC transport credentials from the file combinations,
+// and create a option, along with any errors encountered while retrieving the credentials.
+func (tlsCreds *tlsCredentials) ToOpenCensusReceiverServerOption() (opt Option, ok bool, err error) {
+	if tlsCreds == nil {
+		return WithNoopOption(), false, nil
+	}
+
+	transportCreds, err := credentials.NewServerTLSFromFile(tlsCreds.CertFile, tlsCreds.KeyFile)
+	if err != nil {
+		return nil, false, err
+	}
+	gRPCCredsOpt := grpc.Creds(transportCreds)
+	return WithGRPCServerOptions(gRPCCredsOpt), true, nil
 }

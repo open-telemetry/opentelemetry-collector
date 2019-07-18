@@ -17,6 +17,7 @@ package opencensusreceiver
 import (
 	"path"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -38,7 +39,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	assert.Equal(t, len(cfg.Receivers), 2)
+	assert.Equal(t, len(cfg.Receivers), 4)
 
 	r0 := cfg.Receivers["opencensus"]
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
@@ -50,5 +51,40 @@ func TestLoadConfig(t *testing.T) {
 			NameVal:  "opencensus/customname",
 			Endpoint: "0.0.0.0:9090",
 			Enabled:  true,
+		})
+
+	r2 := cfg.Receivers["opencensus/keepalive"].(*Config)
+	assert.Equal(t, r2,
+		&Config{
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal:  typeStr,
+				NameVal:  "opencensus/keepalive",
+				Endpoint: "127.0.0.1:55678",
+				Enabled:  true,
+			},
+			Keepalive: &serverParametersAndEnforcementPolicy{
+				ServerParameters: &keepaliveServerParameters{
+					Time:    30 * time.Second,
+					Timeout: 5 * time.Second,
+				},
+				EnforcementPolicy: &keepaliveEnforcementPolicy{
+					MinTime:             10 * time.Second,
+					PermitWithoutStream: true,
+				},
+			},
+		})
+
+	r3 := cfg.Receivers["opencensus/nobackpressure"].(*Config)
+	assert.Equal(t, r3,
+		&Config{
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal:             typeStr,
+				NameVal:             "opencensus/nobackpressure",
+				Endpoint:            "127.0.0.1:55678",
+				Enabled:             true,
+				DisableBackPressure: true,
+			},
+			MaxRecvMsgSizeMiB:    32,
+			MaxConcurrentStreams: 16,
 		})
 }

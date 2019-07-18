@@ -17,12 +17,15 @@ package opencensusreceiver
 import (
 	"context"
 	"testing"
-
-	"go.uber.org/zap"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-service/internal/testutils"
+	"github.com/open-telemetry/opentelemetry-service/receiver/receivertest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -42,9 +45,139 @@ func TestCreateReceiver(t *testing.T) {
 	assert.NotNil(t, tReceiver)
 	assert.Nil(t, err)
 
-	// The default config does not provide scrape_config so we expect that metrics receiver
-	// creation must also fail.
 	mReceiver, err := factory.CreateMetricsReceiver(zap.NewNop(), cfg, nil)
 	assert.NotNil(t, mReceiver)
 	assert.Nil(t, err)
+}
+
+func TestCreateTraceReceiver(t *testing.T) {
+	factory := Factory{}
+	endpoint := testutils.GetAvailableLocalAddress(t)
+	defaultReceiverSettings := configmodels.ReceiverSettings{
+		TypeVal:  typeStr,
+		NameVal:  typeStr,
+		Endpoint: endpoint,
+		Enabled:  true,
+	}
+	tests := []struct {
+		name    string
+		cfg     *Config
+		wantErr bool
+	}{
+		{
+			name: "default",
+			cfg: &Config{
+				ReceiverSettings: defaultReceiverSettings,
+			},
+		},
+		{
+			name: "invalid_port",
+			cfg: &Config{
+				ReceiverSettings: configmodels.ReceiverSettings{
+					TypeVal:  typeStr,
+					NameVal:  typeStr,
+					Endpoint: "127.0.0.1:112233",
+					Enabled:  true,
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "max-msg-size-and-concurrent-connections",
+			cfg: &Config{
+				ReceiverSettings:     defaultReceiverSettings,
+				MaxRecvMsgSizeMiB:    32,
+				MaxConcurrentStreams: 16,
+			},
+		},
+	}
+	ctx := context.Background()
+	logger := zap.NewNop()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sink := new(exportertest.SinkTraceExporter)
+			tr, err := factory.CreateTraceReceiver(ctx, logger, tt.cfg, sink)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("factory.CreateTraceReceiver() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if tr != nil {
+				mh := receivertest.NewMockHost()
+				if err := tr.StartTraceReception(mh); err == nil {
+					tr.StopTraceReception()
+				} else {
+					t.Fatalf("StartTraceReception() error = %v", err)
+				}
+			}
+		})
+	}
+}
+
+func TestCreateMetricReceiver(t *testing.T) {
+	factory := Factory{}
+	endpoint := testutils.GetAvailableLocalAddress(t)
+	defaultReceiverSettings := configmodels.ReceiverSettings{
+		TypeVal:  typeStr,
+		NameVal:  typeStr,
+		Endpoint: endpoint,
+		Enabled:  true,
+	}
+	tests := []struct {
+		name    string
+		cfg     *Config
+		wantErr bool
+	}{
+		{
+			name: "default",
+			cfg: &Config{
+				ReceiverSettings: defaultReceiverSettings,
+			},
+		},
+		{
+			name: "invalid_address",
+			cfg: &Config{
+				ReceiverSettings: configmodels.ReceiverSettings{
+					TypeVal:  typeStr,
+					NameVal:  typeStr,
+					Endpoint: "327.0.0.1:1122",
+					Enabled:  true,
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "keepalive",
+			cfg: &Config{
+				ReceiverSettings: defaultReceiverSettings,
+				Keepalive: &serverParametersAndEnforcementPolicy{
+					ServerParameters: &keepaliveServerParameters{
+						MaxConnectionAge: 60 * time.Second,
+					},
+					EnforcementPolicy: &keepaliveEnforcementPolicy{
+						MinTime:             30 * time.Second,
+						PermitWithoutStream: true,
+					},
+				},
+			},
+		},
+	}
+	logger := zap.NewNop()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sink := new(exportertest.SinkMetricsExporter)
+			tc, err := factory.CreateMetricsReceiver(logger, tt.cfg, sink)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("factory.CreateMetricsReceiver() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if tc != nil {
+				mh := receivertest.NewMockHost()
+				if err := tc.StartMetricsReception(mh); err == nil {
+					tc.StopMetricsReception()
+				} else {
+					t.Fatalf("StartTraceReception() error = %v", err)
+				}
+			}
+		})
+	}
 }

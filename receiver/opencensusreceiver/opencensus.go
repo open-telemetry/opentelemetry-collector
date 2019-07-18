@@ -100,15 +100,10 @@ func (ocr *Receiver) TraceSource() string {
 	return source
 }
 
-// StartTraceReception exclusively runs the Trace receiver on the gRPC server.
-// To start both Trace and Metrics receivers/services, please use Start.
+// StartTraceReception runs the trace receiver on the gRPC server. Currently
+// it also enables the metrics receiver too.
 func (ocr *Receiver) StartTraceReception(host receiver.Host) error {
-	err := ocr.registerTraceConsumer()
-	if err != nil && err != errAlreadyStarted {
-		return err
-	}
-	// TODO: (@pjanotti) pass asyncErrorChan down the chain
-	return ocr.startServer()
+	return ocr.start()
 }
 
 func (ocr *Receiver) registerTraceConsumer() error {
@@ -130,14 +125,10 @@ func (ocr *Receiver) MetricsSource() string {
 	return source
 }
 
-// StartMetricsReception exclusively runs the Metrics receiver on the gRPC server.
-// To start both Trace and Metrics receivers/services, please use Start.
+// StartMetricsReception runs the metrics receiver on the gRPC server. Currently
+// it also enables the trace receiver too.
 func (ocr *Receiver) StartMetricsReception(host receiver.Host) error {
-	err := ocr.registerMetricsConsumer()
-	if err != nil && err != errAlreadyStarted {
-		return err
-	}
-	return ocr.startServer()
+	return ocr.start()
 }
 
 func (ocr *Receiver) registerMetricsConsumer() error {
@@ -164,34 +155,43 @@ func (ocr *Receiver) grpcServer() *grpc.Server {
 	return ocr.serverGRPC
 }
 
-// StopTraceReception is a method to turn off receiving traces. It
-// currently is a noop because we don't yet know if gRPC allows
-// stopping a specific service.
+// StopTraceReception is a method to turn off receiving traces. It stops
+// metrics reception too.
 func (ocr *Receiver) StopTraceReception() error {
-	// StopTraceReception is a noop currently.
-	// TODO: (@odeke-em) investigate whether or not gRPC
-	// provides a way to stop specific services.
-	ocr.traceReceiver.Stop()
-	return nil
-}
-
-// StopMetricsReception is a method to turn off receiving metrics. It
-// currently is a noop because we don't yet know if gRPC allows
-// stopping a specific service.
-func (ocr *Receiver) StopMetricsReception() error {
-	// StopMetricsReception is a noop currently.
-	// TODO: (@odeke-em) investigate whether or not gRPC
-	// provides a way to stop specific services.
-	return nil
-}
-
-// Start runs all the receivers/services namely, Trace and Metrics services.
-func (ocr *Receiver) Start(ctx context.Context) error {
-	if err := ocr.registerTraceConsumer(); err != nil && err != errAlreadyStarted {
+	if err := ocr.stop(); err != errAlreadyStopped {
 		return err
 	}
-	if err := ocr.registerMetricsConsumer(); err != nil && err != errAlreadyStarted {
+	return nil
+}
+
+// StopMetricsReception is a method to turn off receiving metrics. It stops
+// trace reception too.
+func (ocr *Receiver) StopMetricsReception() error {
+	if err := ocr.stop(); err != errAlreadyStopped {
 		return err
+	}
+	return nil
+}
+
+// start runs all the receivers/services namely, Trace and Metrics services.
+func (ocr *Receiver) start() error {
+	hasConsumer := false
+	if ocr.traceConsumer != nil {
+		hasConsumer = true
+		if err := ocr.registerTraceConsumer(); err != nil && err != errAlreadyStarted {
+			return err
+		}
+	}
+
+	if ocr.metricsConsumer != nil {
+		hasConsumer = true
+		if err := ocr.registerMetricsConsumer(); err != nil && err != errAlreadyStarted {
+			return err
+		}
+	}
+
+	if !hasConsumer {
+		return errors.New("cannot start receiver: no consumers were specified")
 	}
 
 	if err := ocr.startServer(); err != nil && err != errAlreadyStarted {
@@ -203,13 +203,21 @@ func (ocr *Receiver) Start(ctx context.Context) error {
 	return nil
 }
 
-// Stop stops the underlying gRPC server and all the services running on it.
-func (ocr *Receiver) Stop() error {
+// stop stops the underlying gRPC server and all the services running on it.
+func (ocr *Receiver) stop() error {
 	ocr.mu.Lock()
 	defer ocr.mu.Unlock()
 
 	var err = errAlreadyStopped
 	ocr.stopOnce.Do(func() {
+		err = nil
+
+		if ocr.traceReceiver != nil {
+			ocr.traceReceiver.Stop()
+		}
+
+		// Currently there is no symmetric stop for metrics receiver.
+
 		if ocr.serverHTTP != nil {
 			_ = ocr.serverHTTP.Close()
 		}

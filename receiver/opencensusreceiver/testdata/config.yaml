@@ -2,6 +2,18 @@ receivers:
   opencensus:
   opencensus/customname:
     endpoint: 0.0.0.0:9090
+  opencensus/keepalive:
+    keepalive:
+      server-parameters:
+        time: 30s
+        timeout: 5s
+      enforcement-policy:
+        min-time: 10s
+        permit-without-stream: true
+  opencensus/nobackpressure:
+    disable-backpressure: true
+    max-recv-msg-size-mib: 32
+    max-concurrent-streams: 16
 
 processors:
   exampleprocessor:
