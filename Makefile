@@ -94,7 +94,7 @@ otelsvc:
 .PHONY: docker-component # Not intended to be used directly
 docker-component: check-component
 	GOOS=linux $(MAKE) $(COMPONENT)
-	cp ./bin/$(GOOS)/$(COMPONENT) ./cmd/$(COMPONENT)/
+	cp ./bin/linux/$(COMPONENT) ./cmd/$(COMPONENT)/
 	docker build -t $(COMPONENT) ./cmd/$(COMPONENT)/
 	rm ./cmd/$(COMPONENT)/$(COMPONENT)
 
