@@ -11,4 +11,9 @@ require (
 	go.opencensus.io v0.22.0
 )
 
-replace github.com/open-telemetry/opentelemetry-service => ../
+replace (
+	contrib.go.opencensus.io/exporter/ocagent => github.com/omnition/opencensus-go-exporter-ocagent v0.5.0-gogo
+	github.com/census-instrumentation/opencensus-proto => github.com/omnition/opencensus-proto v0.3.0-gogo
+	github.com/open-telemetry/opentelemetry-service => ../
+	github.com/orijtech/prometheus-go-metrics-exporter => github.com/omnition/prometheus-go-metrics-exporter v0.0.2-gogo
+)
