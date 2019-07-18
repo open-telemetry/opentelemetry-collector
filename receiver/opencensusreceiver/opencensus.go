@@ -158,8 +158,6 @@ func (ocr *Receiver) grpcServer() *grpc.Server {
 // StopTraceReception is a method to turn off receiving traces. It stops
 // metrics reception too.
 func (ocr *Receiver) StopTraceReception() error {
-	// TODO: (@odeke-em) investigate whether or not gRPC
-	// provides a way to stop specific services.
 	if err := ocr.stop(); err != errAlreadyStopped {
 		return err
 	}
@@ -169,8 +167,6 @@ func (ocr *Receiver) StopTraceReception() error {
 // StopMetricsReception is a method to turn off receiving metrics. It stops
 // trace reception too.
 func (ocr *Receiver) StopMetricsReception() error {
-	// TODO: (@odeke-em) investigate whether or not gRPC
-	// provides a way to stop specific services.
 	if err := ocr.stop(); err != errAlreadyStopped {
 		return err
 	}
