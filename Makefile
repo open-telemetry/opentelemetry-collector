@@ -89,14 +89,14 @@ install-tools:
 
 .PHONY: otelsvc
 otelsvc:
-	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/otelsvc_$(GOOS) $(BUILD_INFO) ./cmd/otelsvc
+	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/$(GOOS)/otelsvc $(BUILD_INFO) ./cmd/otelsvc
 
 .PHONY: docker-component # Not intended to be used directly
 docker-component: check-component
 	GOOS=linux $(MAKE) $(COMPONENT)
-	cp ./bin/$(COMPONENT)_linux ./cmd/$(COMPONENT)/
+	cp ./bin/$(GOOS)/$(COMPONENT) ./cmd/$(COMPONENT)/
 	docker build -t $(COMPONENT) ./cmd/$(COMPONENT)/
-	rm ./cmd/$(COMPONENT)/$(COMPONENT)_linux
+	rm ./cmd/$(COMPONENT)/$(COMPONENT)
 
 .PHONY: check-component
 check-component:

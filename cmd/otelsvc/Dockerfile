@@ -3,6 +3,6 @@ RUN apk --update add ca-certificates
 
 FROM scratch
 COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
-COPY otelsvc_linux /
-ENTRYPOINT ["/otelsvc_linux"]
+COPY otelsvc /
+ENTRYPOINT ["/otelsvc"]
 EXPOSE 55678 55679
