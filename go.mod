@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-service
 require (
 	cloud.google.com/go v0.38.0 // indirect
 	contrib.go.opencensus.io/exporter/jaeger v0.1.1-0.20190430175949-e8b55949d948
-	contrib.go.opencensus.io/exporter/ocagent v0.5.1-0.20190621222907-f9129169651c
+	contrib.go.opencensus.io/exporter/ocagent v0.5.1
 	contrib.go.opencensus.io/exporter/prometheus v0.1.0
 	contrib.go.opencensus.io/exporter/zipkin v0.1.1
 	contrib.go.opencensus.io/resource v0.1.1
