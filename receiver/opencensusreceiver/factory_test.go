@@ -25,7 +25,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-service/internal/testutils"
-	"github.com/open-telemetry/opentelemetry-service/receiver"
 	"github.com/open-telemetry/opentelemetry-service/receiver/receivertest"
 )
 
@@ -52,7 +51,7 @@ func TestCreateReceiver(t *testing.T) {
 }
 
 func TestCreateTraceReceiver(t *testing.T) {
-	factory := receiver.GetFactory(typeStr)
+	factory := Factory{}
 	endpoint := testutils.GetAvailableLocalAddress(t)
 	defaultReceiverSettings := configmodels.ReceiverSettings{
 		TypeVal:  typeStr,
@@ -115,7 +114,7 @@ func TestCreateTraceReceiver(t *testing.T) {
 }
 
 func TestCreateMetricReceiver(t *testing.T) {
-	factory := receiver.GetFactory(typeStr)
+	factory := Factory{}
 	endpoint := testutils.GetAvailableLocalAddress(t)
 	defaultReceiverSettings := configmodels.ReceiverSettings{
 		TypeVal:  typeStr,
