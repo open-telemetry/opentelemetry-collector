@@ -47,7 +47,6 @@ func TestLoadConfig(t *testing.T) {
 			ExporterSettings: configmodels.ExporterSettings{
 				NameVal: "logging/2",
 				TypeVal: "logging",
-				Enabled: true,
 			},
 		})
 }

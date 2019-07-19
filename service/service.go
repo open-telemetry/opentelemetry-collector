@@ -208,7 +208,7 @@ func (app *Application) setupPipelines() {
 	app.logger.Info("Loading configuration...")
 
 	// Load configuration.
-	cfg, err := config.Load(app.v, app.receiverFactories, app.processorFactories, app.exporterFactories)
+	cfg, err := config.Load(app.v, app.receiverFactories, app.processorFactories, app.exporterFactories, app.logger)
 	if err != nil {
 		log.Fatalf("Cannot load configuration: %v", err)
 	}

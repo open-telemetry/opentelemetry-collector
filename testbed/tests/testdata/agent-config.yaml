@@ -4,16 +4,13 @@ receivers:
     protocols:
       thrift-http:
         endpoint: "*:14268"
-        enabled: true
 
 exporters:
   opencensus:
     endpoint: "127.0.0.1:56565"
-    enabled: true
 
 processors:
   add-attributes:
-    enabled: true
 
 pipelines:
   traces:

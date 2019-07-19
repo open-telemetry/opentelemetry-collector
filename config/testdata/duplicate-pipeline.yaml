@@ -4,7 +4,6 @@ exporters:
   exampleexporter:
 processors:
   exampleprocessor:
-    enabled: true
 pipelines:
   traces/default:
     receivers: [examplereceiver]

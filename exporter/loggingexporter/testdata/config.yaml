@@ -7,7 +7,6 @@ processors:
 exporters:
   logging:
   logging/2:
-    enabled: true
 
 
 pipelines:

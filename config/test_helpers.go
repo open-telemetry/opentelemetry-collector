@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
@@ -51,5 +52,5 @@ func LoadConfigFile(
 	}
 
 	// Load the config from viper
-	return Load(v, receivers, processors, exporters)
+	return Load(v, receivers, processors, exporters, zap.NewNop())
 }

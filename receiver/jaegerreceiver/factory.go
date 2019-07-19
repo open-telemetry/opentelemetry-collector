@@ -65,11 +65,9 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 		NameVal: typeStr,
 		Protocols: map[string]*configmodels.ReceiverSettings{
 			protoThriftTChannel: {
-				Enabled:  false,
 				Endpoint: defaultTChannelBindEndpoint,
 			},
 			protoThriftHTTP: {
-				Enabled:  false,
 				Endpoint: defaultHTTPBindEndpoint,
 			},
 		},
@@ -95,7 +93,7 @@ func (f *Factory) CreateTraceReceiver(
 	config := Configuration{}
 
 	// Set ports
-	if protoHTTP != nil {
+	if protoHTTP != nil && protoHTTP.IsEnabled() {
 		var err error
 		config.CollectorHTTPPort, err = extractPortFromEndpoint(protoHTTP.Endpoint)
 		if err != nil {
@@ -103,7 +101,7 @@ func (f *Factory) CreateTraceReceiver(
 		}
 	}
 
-	if protoTChannel != nil {
+	if protoTChannel != nil && protoTChannel.IsEnabled() {
 		var err error
 		config.CollectorThriftPort, err = extractPortFromEndpoint(protoTChannel.Endpoint)
 		if err != nil {
@@ -114,7 +112,7 @@ func (f *Factory) CreateTraceReceiver(
 	if (protoHTTP == nil && protoTChannel == nil) ||
 		(config.CollectorHTTPPort == 0 && config.CollectorThriftPort == 0) {
 		return nil, errors.New("either " + protoThriftHTTP + " or " + protoThriftTChannel +
-			" protocol endpoint with non-zero port must be defined for " + typeStr + " receiver")
+			" protocol endpoint with non-zero port must be enabled for " + typeStr + " receiver")
 	}
 
 	// Jaeger receiver implementation currently does not allow specifying which interface

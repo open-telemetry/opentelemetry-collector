@@ -50,7 +50,6 @@ func TestLoadConfig(t *testing.T) {
 				TypeVal:             typeStr,
 				NameVal:             "zipkin/customname",
 				Endpoint:            "127.0.0.1:8765",
-				Enabled:             true,
 				DisableBackPressure: true,
 			},
 		})

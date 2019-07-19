@@ -61,7 +61,6 @@ func (f *ExampleReceiverFactory) CreateDefaultConfig() configmodels.Receiver {
 		ReceiverSettings: configmodels.ReceiverSettings{
 			TypeVal:  "examplereceiver",
 			Endpoint: "localhost:1000",
-			Enabled:  false,
 		},
 		ExtraSetting: "some string",
 	}
@@ -166,9 +165,21 @@ func (rs *MultiProtoReceiver) SetType(typeStr string) {
 	rs.TypeVal = typeStr
 }
 
+// IsEnabled returns true if the entity is enabled.
+func (rs *MultiProtoReceiver) IsEnabled() bool {
+	for _, p := range rs.Protocols {
+		if !p.Disabled {
+			// If any protocol is enabled then the receiver as a whole should be enabled.
+			return true
+		}
+	}
+	// All protocols are disabled so the entire receiver can be disabled.
+	return false
+}
+
 // MultiProtoReceiverOneCfg is multi proto receiver config.
 type MultiProtoReceiverOneCfg struct {
-	Enabled      bool   `mapstructure:"enabled"`
+	Disabled     bool   `mapstructure:"disabled"`
 	Endpoint     string `mapstructure:"endpoint"`
 	ExtraSetting string `mapstructure:"extra"`
 }
@@ -193,12 +204,10 @@ func (f *MultiProtoReceiverFactory) CreateDefaultConfig() configmodels.Receiver 
 		TypeVal: "multireceiver",
 		Protocols: map[string]MultiProtoReceiverOneCfg{
 			"http": {
-				Enabled:      false,
 				Endpoint:     "example.com:8888",
 				ExtraSetting: "extra string 1",
 			},
 			"tcp": {
-				Enabled:      false,
 				Endpoint:     "omnition.com:9999",
 				ExtraSetting: "extra string 2",
 			},
@@ -246,10 +255,8 @@ func (f *ExampleExporterFactory) Type() string {
 // CreateDefaultConfig creates the default configuration for the Exporter.
 func (f *ExampleExporterFactory) CreateDefaultConfig() configmodels.Exporter {
 	return &ExampleExporter{
-		ExporterSettings: configmodels.ExporterSettings{
-			Enabled: false,
-		},
-		ExtraSetting: "some export string",
+		ExporterSettings: configmodels.ExporterSettings{},
+		ExtraSetting:     "some export string",
 	}
 }
 
@@ -300,10 +307,8 @@ func (f *ExampleProcessorFactory) Type() string {
 // CreateDefaultConfig creates the default configuration for the Processor.
 func (f *ExampleProcessorFactory) CreateDefaultConfig() configmodels.Processor {
 	return &ExampleProcessor{
-		ProcessorSettings: configmodels.ProcessorSettings{
-			Enabled: false,
-		},
-		ExtraSetting: "some export string",
+		ProcessorSettings: configmodels.ProcessorSettings{},
+		ExtraSetting:      "some export string",
 	}
 }
 
