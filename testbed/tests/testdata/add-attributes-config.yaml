@@ -4,20 +4,17 @@ receivers:
     protocols:
       thrift-http:
         endpoint: "*:14268"
-        enabled: true
 
 exporters:
   opencensus:
     endpoint: "127.0.0.1:56565"
-    enabled: true
 
 processors:
   batch:
   queued-retry:
   add-attributes:
-    enabled: true
     attrib.key00: 123
-    attrib.key01: "a large name for this attribute"
+    attrib.key01: "a small string for this attribute"
     attrib.key02: true
     region: test-region
     data-center: test-datacenter
