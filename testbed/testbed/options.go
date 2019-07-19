@@ -17,19 +17,26 @@
 
 package testbed
 
-// TestCaseOption defines a TestCase option
+// TestCaseOption defines a TestCase option.
 type TestCaseOption struct {
 	option func(t *TestCase)
 }
 
-// Apply takes a TestCase and runs the option function on it
+// Apply takes a TestCase and runs the option function on it.
 func (o TestCaseOption) Apply(t *TestCase) {
 	o.option(t)
 }
 
-// WithSkipResults option disables writing out results file for a TestCase
+// WithSkipResults option disables writing out results file for a TestCase.
 func WithSkipResults() TestCaseOption {
 	return TestCaseOption{func(t *TestCase) {
 		t.skipResults = true
+	}}
+}
+
+// WithConfigFile allows a custom configuration file for TestCase.
+func WithConfigFile(file string) TestCaseOption {
+	return TestCaseOption{func(t *TestCase) {
+		t.agentConfigFile = file
 	}}
 }

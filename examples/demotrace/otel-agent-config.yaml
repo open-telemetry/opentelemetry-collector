@@ -4,7 +4,6 @@ log-level: DEBUG
 receivers:
   opencensus:
     endpoint: 0.0.0.0:55678
-    reconnection-delay: 2s
   jaeger:
     protocols:
       thrift-http:
