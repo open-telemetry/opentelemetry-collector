@@ -55,6 +55,7 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 	}
 	defer ocr.StopTraceReception()
 
+	// TODO(songy23): make starting server deteminisitc
 	// Wait for the servers to start
 	<-time.After(10 * time.Millisecond)
 
@@ -167,6 +168,7 @@ func TestTraceGrpcGatewayCors_endToEnd(t *testing.T) {
 		}
 	}()
 
+	// TODO(songy23): make starting server deteminisitc
 	// Wait for the servers to start
 	<-time.After(10 * time.Millisecond)
 
@@ -197,6 +199,7 @@ func TestMetricsGrpcGatewayCors_endToEnd(t *testing.T) {
 		}
 	}()
 
+	// TODO(songy23): make starting server deteminisitc
 	// Wait for the servers to start
 	<-time.After(10 * time.Millisecond)
 
