@@ -268,6 +268,12 @@ func (ocr *Receiver) startServer() error {
 				return
 			}
 
+			err = agentmetricspb.RegisterMetricsServiceHandlerFromEndpoint(c, ocr.gatewayMux, endpoint, opts)
+			if err != nil {
+				errChan <- err
+				return
+			}
+
 			// Start the gRPC and HTTP/JSON (grpc-gateway) servers on the same port.
 			m := cmux.New(ocr.ln)
 			grpcL := m.MatchWithWriters(

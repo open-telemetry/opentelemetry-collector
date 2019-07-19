@@ -55,6 +55,7 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 	}
 	defer ocr.StopTraceReception()
 
+	// TODO(songy23): make starting server deteminisitc
 	// Wait for the servers to start
 	<-time.After(10 * time.Millisecond)
 
@@ -149,7 +150,7 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 	}
 }
 
-func TestGrpcGatewayCors_endToEnd(t *testing.T) {
+func TestTraceGrpcGatewayCors_endToEnd(t *testing.T) {
 	addr := ":35991"
 	corsOrigins := []string{"allowed-*.com"}
 
@@ -161,16 +162,44 @@ func TestGrpcGatewayCors_endToEnd(t *testing.T) {
 	defer ocr.StopTraceReception()
 
 	mh := receivertest.NewMockHost()
-	go func() {
-		if err := ocr.StartTraceReception(mh); err != nil {
-			t.Fatalf("Failed to start trace receiver: %v", err)
-		}
-	}()
+	if err := ocr.StartTraceReception(mh); err != nil {
+		t.Fatalf("Failed to start trace receiver: %v", err)
+	}
 
+	// TODO(songy23): make starting server deteminisitc
 	// Wait for the servers to start
 	<-time.After(10 * time.Millisecond)
 
 	url := fmt.Sprintf("http://%s/v1/trace", addr)
+
+	// Verify allowed domain gets responses that allow CORS.
+	verifyCorsResp(t, url, "allowed-origin.com", 200, true)
+
+	// Verify disallowed domain gets responses that disallow CORS.
+	verifyCorsResp(t, url, "disallowed-origin.com", 200, false)
+}
+
+func TestMetricsGrpcGatewayCors_endToEnd(t *testing.T) {
+	addr := ":35991"
+	corsOrigins := []string{"allowed-*.com"}
+
+	sink := new(exportertest.SinkMetricsExporter)
+	ocr, err := New(addr, nil, sink, WithCorsOrigins(corsOrigins))
+	if err != nil {
+		t.Fatalf("Failed to create metrics receiver: %v", err)
+	}
+	defer ocr.StopMetricsReception()
+
+	mh := receivertest.NewMockHost()
+	if err := ocr.StartMetricsReception(mh); err != nil {
+		t.Fatalf("Failed to start metrics receiver: %v", err)
+	}
+
+	// TODO(songy23): make starting server deteminisitc
+	// Wait for the servers to start
+	<-time.After(10 * time.Millisecond)
+
+	url := fmt.Sprintf("http://%s/v1/metrics", addr)
 
 	// Verify allowed domain gets responses that allow CORS.
 	verifyCorsResp(t, url, "allowed-origin.com", 200, true)
