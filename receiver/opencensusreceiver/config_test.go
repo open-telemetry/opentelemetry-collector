@@ -59,7 +59,6 @@ func TestLoadConfig(t *testing.T) {
 				TypeVal:  typeStr,
 				NameVal:  "opencensus/keepalive",
 				Endpoint: "127.0.0.1:55678",
-				Enabled:  true,
 			},
 			Keepalive: &serverParametersAndEnforcementPolicy{
 				ServerParameters: &keepaliveServerParameters{
@@ -80,7 +79,6 @@ func TestLoadConfig(t *testing.T) {
 				TypeVal:             typeStr,
 				NameVal:             "opencensus/nobackpressure",
 				Endpoint:            "127.0.0.1:55678",
-				Enabled:             true,
 				DisableBackPressure: true,
 			},
 			MaxRecvMsgSizeMiB:    32,
