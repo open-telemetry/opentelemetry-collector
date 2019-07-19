@@ -4,11 +4,9 @@ log-level: DEBUG
 receivers:
   opencensus:
     endpoint: 0.0.0.0:55678
-    enabled: true
 
 exporters:
   logging:
-    enabled: true
 
 # TODO: enable zipkin exporter when it is implemented in otelsvc
 #  zipkin:

@@ -36,77 +36,84 @@ func TestDecodeConfig(t *testing.T) {
 	}
 
 	// Verify receivers
-	assert.Equal(t, len(config.Receivers), 2, "Incorrect receivers count")
+	assert.Equal(t, 2, len(config.Receivers), "Incorrect receivers count")
 
-	assert.Equal(t, config.Receivers["examplereceiver"],
+	assert.Equal(t,
 		&ExampleReceiver{
 			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal:  "examplereceiver",
 				NameVal:  "examplereceiver",
 				Endpoint: "localhost:1000",
-				Enabled:  false,
 			},
 			ExtraSetting: "some string",
-		}, "Did not load receiver config correctly")
+		},
+		config.Receivers["examplereceiver"],
+		"Did not load receiver config correctly")
 
-	assert.Equal(t, config.Receivers["examplereceiver/myreceiver"],
+	assert.Equal(t,
 		&ExampleReceiver{
 			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal:  "examplereceiver",
 				NameVal:  "examplereceiver/myreceiver",
 				Endpoint: "127.0.0.1:12345",
-				Enabled:  true,
 			},
 			ExtraSetting: "some string",
-		}, "Did not load receiver config correctly")
+		},
+		config.Receivers["examplereceiver/myreceiver"],
+		"Did not load receiver config correctly")
 
 	// Verify exporters
-	assert.Equal(t, len(config.Exporters), 2, "Incorrect exporters count")
+	assert.Equal(t, 2, len(config.Exporters), "Incorrect exporters count")
 
-	assert.Equal(t, config.Exporters["exampleexporter"],
+	assert.Equal(t,
 		&ExampleExporter{
 			ExporterSettings: configmodels.ExporterSettings{
 				NameVal: "exampleexporter",
 				TypeVal: "exampleexporter",
-				Enabled: false,
 			},
 			ExtraSetting: "some export string",
-		}, "Did not load exporter config correctly")
+		},
+		config.Exporters["exampleexporter"],
+		"Did not load exporter config correctly")
 
-	assert.Equal(t, config.Exporters["exampleexporter/myexporter"],
+	assert.Equal(t,
 		&ExampleExporter{
 			ExporterSettings: configmodels.ExporterSettings{
 				NameVal: "exampleexporter/myexporter",
 				TypeVal: "exampleexporter",
-				Enabled: true,
 			},
 			ExtraSetting: "some export string 2",
-		}, "Did not load exporter config correctly")
+		},
+		config.Exporters["exampleexporter/myexporter"],
+		"Did not load exporter config correctly")
 
 	// Verify Processors
-	assert.Equal(t, len(config.Processors), 1, "Incorrect processors count")
+	assert.Equal(t, 1, len(config.Processors), "Incorrect processors count")
 
-	assert.Equal(t, config.Processors["exampleprocessor"],
+	assert.Equal(t,
 		&ExampleProcessor{
 			ProcessorSettings: configmodels.ProcessorSettings{
 				TypeVal: "exampleprocessor",
 				NameVal: "exampleprocessor",
-				Enabled: false,
 			},
 			ExtraSetting: "some export string",
-		}, "Did not load processor config correctly")
+		},
+		config.Processors["exampleprocessor"],
+		"Did not load processor config correctly")
 
 	// Verify Pipelines
-	assert.Equal(t, len(config.Pipelines), 1, "Incorrect pipelines count")
+	assert.Equal(t, 1, len(config.Pipelines), "Incorrect pipelines count")
 
-	assert.Equal(t, config.Pipelines["traces"],
+	assert.Equal(t,
 		&configmodels.Pipeline{
 			Name:       "traces",
 			InputType:  configmodels.TracesDataType,
 			Receivers:  []string{"examplereceiver"},
 			Processors: []string{"exampleprocessor"},
 			Exporters:  []string{"exampleexporter"},
-		}, "Did not load pipeline config correctly")
+		},
+		config.Pipelines["traces"],
+		"Did not load pipeline config correctly")
 }
 
 func TestDecodeConfig_MultiProto(t *testing.T) {
@@ -122,43 +129,43 @@ func TestDecodeConfig_MultiProto(t *testing.T) {
 	}
 
 	// Verify receivers
-	assert.Equal(t, len(config.Receivers), 2, "Incorrect receivers count")
+	assert.Equal(t, 2, len(config.Receivers), "Incorrect receivers count")
 
-	assert.Equal(t, config.Receivers["multireceiver"],
+	assert.Equal(t,
 		&MultiProtoReceiver{
 			TypeVal: "multireceiver",
 			NameVal: "multireceiver",
 			Protocols: map[string]MultiProtoReceiverOneCfg{
 				"http": {
-					Enabled:      false,
 					Endpoint:     "example.com:8888",
 					ExtraSetting: "extra string 1",
 				},
 				"tcp": {
-					Enabled:      false,
 					Endpoint:     "omnition.com:9999",
 					ExtraSetting: "extra string 2",
 				},
 			},
-		}, "Did not load receiver config correctly")
+		},
+		config.Receivers["multireceiver"],
+		"Did not load receiver config correctly")
 
-	assert.Equal(t, config.Receivers["multireceiver/myreceiver"],
+	assert.Equal(t,
 		&MultiProtoReceiver{
 			TypeVal: "multireceiver",
 			NameVal: "multireceiver/myreceiver",
 			Protocols: map[string]MultiProtoReceiverOneCfg{
 				"http": {
-					Enabled:      true,
 					Endpoint:     "127.0.0.1:12345",
 					ExtraSetting: "some string 1",
 				},
 				"tcp": {
-					Enabled:      true,
 					Endpoint:     "0.0.0.0:4567",
 					ExtraSetting: "some string 2",
 				},
 			},
-		}, "Did not load receiver config correctly")
+		},
+		config.Receivers["multireceiver/myreceiver"],
+		"Did not load receiver config correctly")
 }
 
 func TestDecodeConfig_Invalid(t *testing.T) {
@@ -190,8 +197,8 @@ func TestDecodeConfig_Invalid(t *testing.T) {
 		{name: "unknown-processor-type", expected: errUnknownProcessorType},
 		{name: "invalid-bool-value", expected: errUnmarshalError},
 		{name: "invalid-sequence-value", expected: errUnmarshalError},
-		{name: "invalid-enabled-bool-value", expected: errUnmarshalError},
-		{name: "invalid-enabled-bool-value2", expected: errUnmarshalError},
+		{name: "invalid-disabled-bool-value", expected: errUnmarshalError},
+		{name: "invalid-disabled-bool-value2", expected: errUnmarshalError},
 		{name: "invalid-pipeline-type", expected: errInvalidPipelineType},
 		{name: "invalid-pipeline-type-and-name", expected: errInvalidTypeAndNameKey},
 		{name: "duplicate-receiver", expected: errDuplicateReceiverName},

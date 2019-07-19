@@ -1,15 +1,8 @@
 receivers:
   examplereceiver:
-    enabled: true
-
   examplereceiver/2:
-    enabled: true
-
   examplereceiver/3:
-    enabled: true
-
   examplereceiver/multi:
-    enabled: true
 
 processors:
   add-attributes:
@@ -18,10 +11,7 @@ processors:
 
 exporters:
   exampleexporter:
-    enabled: true
-
   exampleexporter/2:
-    enabled: true
 
 pipelines:
   traces:

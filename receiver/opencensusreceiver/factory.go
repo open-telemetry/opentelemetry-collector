@@ -51,7 +51,6 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 			TypeVal:  typeStr,
 			NameVal:  typeStr,
 			Endpoint: "127.0.0.1:55678",
-			Enabled:  true,
 		},
 	}
 }

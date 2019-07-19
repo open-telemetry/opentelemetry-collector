@@ -47,7 +47,6 @@ func TestLoadConfig(t *testing.T) {
 			ExporterSettings: configmodels.ExporterSettings{
 				NameVal: "opencensus/2",
 				TypeVal: "opencensus",
-				Enabled: true,
 			},
 			Headers: map[string]string{
 				"can you have a . here?": "F0000000-0000-0000-0000-000000000000",

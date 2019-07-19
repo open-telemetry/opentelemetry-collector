@@ -49,6 +49,7 @@ type NamedEntity interface {
 // interface and will typically embed ReceiverSettings struct or a struct that extends it.
 type Receiver interface {
 	NamedEntity
+	IsEnabled() bool
 	Type() string
 	SetType(typeStr string)
 }
@@ -59,6 +60,7 @@ type Receivers map[string]Receiver
 // Exporter is the configuration of an exporter.
 type Exporter interface {
 	NamedEntity
+	IsEnabled() bool
 	Type() string
 	SetType(typeStr string)
 }
@@ -70,6 +72,7 @@ type Exporters map[string]Exporter
 // interface and will typically embed ProcessorSettings struct or a struct that extends it.
 type Processor interface {
 	NamedEntity
+	IsEnabled() bool
 	Type() string
 	SetType(typeStr string)
 }
@@ -141,7 +144,7 @@ const (
 type ReceiverSettings struct {
 	TypeVal             string `mapstructure:"-"`
 	NameVal             string `mapstructure:"-"`
-	Enabled             bool   `mapstructure:"enabled"`
+	Disabled            bool   `mapstructure:"disabled"`
 	Endpoint            string `mapstructure:"endpoint"`
 	DisableBackPressure bool   `mapstructure:"disable-backpressure"`
 }
@@ -166,6 +169,13 @@ func (rs *ReceiverSettings) SetType(typeStr string) {
 	rs.TypeVal = typeStr
 }
 
+// IsEnabled returns true if the entity is enabled.
+func (rs *ReceiverSettings) IsEnabled() bool {
+	// Note: we use Disabled bool so that the default of false results in
+	// entity being enabled by default.
+	return !rs.Disabled
+}
+
 // BackPressureSetting gets the back pressure setting of the configuration.
 func (rs *ReceiverSettings) BackPressureSetting() BackPressureSetting {
 	if rs.DisableBackPressure {
@@ -177,9 +187,9 @@ func (rs *ReceiverSettings) BackPressureSetting() BackPressureSetting {
 // ExporterSettings defines common settings for an exporter configuration.
 // Specific exporters can embed this struct and extend it with more fields if needed.
 type ExporterSettings struct {
-	TypeVal string `mapstructure:"-"`
-	NameVal string `mapstructure:"-"`
-	Enabled bool   `mapstructure:"enabled"`
+	TypeVal  string `mapstructure:"-"`
+	NameVal  string `mapstructure:"-"`
+	Disabled bool   `mapstructure:"disabled"`
 }
 
 var _ Exporter = (*ExporterSettings)(nil)
@@ -204,12 +214,17 @@ func (es *ExporterSettings) SetType(typeStr string) {
 	es.TypeVal = typeStr
 }
 
+// IsEnabled returns true if the entity is enabled.
+func (es *ExporterSettings) IsEnabled() bool {
+	return !es.Disabled
+}
+
 // ProcessorSettings defines common settings for a processor configuration.
 // Specific processors can embed this struct and extend it with more fields if needed.
 type ProcessorSettings struct {
-	TypeVal string `mapstructure:"-"`
-	NameVal string `mapstructure:"-"`
-	Enabled bool   `mapstructure:"enabled"`
+	TypeVal  string `mapstructure:"-"`
+	NameVal  string `mapstructure:"-"`
+	Disabled bool   `mapstructure:"disabled"`
 }
 
 // Name gets the processor name.
@@ -230,6 +245,11 @@ func (proc *ProcessorSettings) Type() string {
 // SetType sets the processor type.
 func (proc *ProcessorSettings) SetType(typeStr string) {
 	proc.TypeVal = typeStr
+}
+
+// IsEnabled returns true if the entity is enabled.
+func (proc *ProcessorSettings) IsEnabled() bool {
+	return !proc.Disabled
 }
 
 var _ Processor = (*ProcessorSettings)(nil)

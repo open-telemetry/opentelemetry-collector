@@ -49,6 +49,5 @@ func TestLoadConfig(t *testing.T) {
 			TypeVal:  typeStr,
 			NameVal:  "opencensus/customname",
 			Endpoint: "0.0.0.0:9090",
-			Enabled:  true,
 		})
 }
