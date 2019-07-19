@@ -162,11 +162,9 @@ func TestTraceGrpcGatewayCors_endToEnd(t *testing.T) {
 	defer ocr.StopTraceReception()
 
 	mh := receivertest.NewMockHost()
-	go func() {
-		if err := ocr.StartTraceReception(mh); err != nil {
-			t.Fatalf("Failed to start trace receiver: %v", err)
-		}
-	}()
+	if err := ocr.StartTraceReception(mh); err != nil {
+		t.Fatalf("Failed to start trace receiver: %v", err)
+	}
 
 	// TODO(songy23): make starting server deteminisitc
 	// Wait for the servers to start
@@ -193,11 +191,9 @@ func TestMetricsGrpcGatewayCors_endToEnd(t *testing.T) {
 	defer ocr.StopMetricsReception()
 
 	mh := receivertest.NewMockHost()
-	go func() {
-		if err := ocr.StartMetricsReception(mh); err != nil {
-			t.Fatalf("Failed to start metrics receiver: %v", err)
-		}
-	}()
+	if err := ocr.StartMetricsReception(mh); err != nil {
+		t.Fatalf("Failed to start metrics receiver: %v", err)
+	}
 
 	// TODO(songy23): make starting server deteminisitc
 	// Wait for the servers to start
