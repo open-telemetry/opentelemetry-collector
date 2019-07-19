@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
@@ -89,6 +90,7 @@ func Load(
 	receiverFactories map[string]receiver.Factory,
 	processorFactories map[string]processor.Factory,
 	exporterFactories map[string]exporter.Factory,
+	logger *zap.Logger,
 ) (*configmodels.Config, error) {
 
 	var config configmodels.Config
@@ -121,7 +123,7 @@ func Load(
 
 	// Config is loaded. Now validate it.
 
-	if err := validateConfig(&config); err != nil {
+	if err := validateConfig(&config, logger); err != nil {
 		return nil, err
 	}
 
@@ -407,19 +409,23 @@ func loadPipelines(v *viper.Viper) (configmodels.Pipelines, error) {
 	return pipelines, nil
 }
 
-func validateConfig(cfg *configmodels.Config) error {
+func validateConfig(cfg *configmodels.Config, logger *zap.Logger) error {
 	// This function performs basic validation of configuration. There may be more subtle
 	// invalid cases that we currently don't check for but which we may want to add in
 	// the future (e.g. disallowing receiving and exporting on the same endpoint).
 
-	if err := validatePipelines(cfg); err != nil {
+	if err := validatePipelines(cfg, logger); err != nil {
 		return err
 	}
+
+	validateReceivers(cfg)
+	validateExporters(cfg)
+	validateProcessors(cfg)
 
 	return nil
 }
 
-func validatePipelines(cfg *configmodels.Config) error {
+func validatePipelines(cfg *configmodels.Config, logger *zap.Logger) error {
 	// Must have at least one pipeline.
 	if len(cfg.Pipelines) < 1 {
 		return &configError{code: errMissingPipelines, msg: "must have at least one pipeline"}
@@ -427,30 +433,38 @@ func validatePipelines(cfg *configmodels.Config) error {
 
 	// Validate pipelines.
 	for _, pipeline := range cfg.Pipelines {
-		if err := validatePipeline(cfg, pipeline); err != nil {
+		if err := validatePipeline(cfg, pipeline, logger); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func validatePipeline(cfg *configmodels.Config, pipeline *configmodels.Pipeline) error {
-	if err := validatePipelineReceivers(cfg, pipeline); err != nil {
+func validatePipeline(
+	cfg *configmodels.Config,
+	pipeline *configmodels.Pipeline,
+	logger *zap.Logger,
+) error {
+	if err := validatePipelineReceivers(cfg, pipeline, logger); err != nil {
 		return err
 	}
 
-	if err := validatePipelineExporters(cfg, pipeline); err != nil {
+	if err := validatePipelineExporters(cfg, pipeline, logger); err != nil {
 		return err
 	}
 
-	if err := validatePipelineProcessors(cfg, pipeline); err != nil {
+	if err := validatePipelineProcessors(cfg, pipeline, logger); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func validatePipelineReceivers(cfg *configmodels.Config, pipeline *configmodels.Pipeline) error {
+func validatePipelineReceivers(
+	cfg *configmodels.Config,
+	pipeline *configmodels.Pipeline,
+	logger *zap.Logger,
+) error {
 	if len(pipeline.Receivers) == 0 {
 		return &configError{
 			code: errPipelineMustHaveReceiver,
@@ -469,10 +483,29 @@ func validatePipelineReceivers(cfg *configmodels.Config, pipeline *configmodels.
 		}
 	}
 
+	// Remove disabled receivers.
+	rs := pipeline.Receivers[:0]
+	for _, ref := range pipeline.Receivers {
+		rcv := cfg.Receivers[ref]
+		if rcv.IsEnabled() {
+			// The receiver is enabled. Keep it in the pipeline.
+			rs = append(rs, ref)
+		} else {
+			logger.Info("pipeline references a disabled receiver. Ignoring the receiver.",
+				zap.String("pipeline", pipeline.Name),
+				zap.String("receiver", ref))
+		}
+	}
+	pipeline.Receivers = rs
+
 	return nil
 }
 
-func validatePipelineExporters(cfg *configmodels.Config, pipeline *configmodels.Pipeline) error {
+func validatePipelineExporters(
+	cfg *configmodels.Config,
+	pipeline *configmodels.Pipeline,
+	logger *zap.Logger,
+) error {
 	if len(pipeline.Exporters) == 0 {
 		return &configError{
 			code: errPipelineMustHaveExporter,
@@ -491,10 +524,29 @@ func validatePipelineExporters(cfg *configmodels.Config, pipeline *configmodels.
 		}
 	}
 
+	// Remove disabled exporters.
+	rs := pipeline.Exporters[:0]
+	for _, ref := range pipeline.Exporters {
+		exp := cfg.Exporters[ref]
+		if exp.IsEnabled() {
+			// The exporter is enabled. Keep it in the pipeline.
+			rs = append(rs, ref)
+		} else {
+			logger.Info("pipeline references a disabled exporter. Ignoring the exporter.",
+				zap.String("pipeline", pipeline.Name),
+				zap.String("exporter", ref))
+		}
+	}
+	pipeline.Exporters = rs
+
 	return nil
 }
 
-func validatePipelineProcessors(cfg *configmodels.Config, pipeline *configmodels.Pipeline) error {
+func validatePipelineProcessors(
+	cfg *configmodels.Config,
+	pipeline *configmodels.Pipeline,
+	logger *zap.Logger,
+) error {
 	if pipeline.InputType == configmodels.TracesDataType {
 		// Traces pipeline must have at least one processor.
 		if len(pipeline.Processors) == 0 {
@@ -524,5 +576,47 @@ func validatePipelineProcessors(cfg *configmodels.Config, pipeline *configmodels
 		}
 	}
 
+	// Remove disabled processors.
+	rs := pipeline.Processors[:0]
+	for _, ref := range pipeline.Processors {
+		proc := cfg.Processors[ref]
+		if proc.IsEnabled() {
+			// The processor is enabled. Keep it in the pipeline.
+			rs = append(rs, ref)
+		} else {
+			logger.Info("pipeline references a disabled processor. Ignoring the processor.",
+				zap.String("pipeline", pipeline.Name),
+				zap.String("processor", ref))
+		}
+	}
+	pipeline.Processors = rs
+
 	return nil
+}
+
+func validateReceivers(cfg *configmodels.Config) {
+	// Remove disabled receivers.
+	for name, rcv := range cfg.Receivers {
+		if !rcv.IsEnabled() {
+			delete(cfg.Receivers, name)
+		}
+	}
+}
+
+func validateExporters(cfg *configmodels.Config) {
+	// Remove disabled exporters.
+	for name, rcv := range cfg.Exporters {
+		if !rcv.IsEnabled() {
+			delete(cfg.Exporters, name)
+		}
+	}
+}
+
+func validateProcessors(cfg *configmodels.Config) {
+	// Remove disabled processors.
+	for name, rcv := range cfg.Processors {
+		if !rcv.IsEnabled() {
+			delete(cfg.Processors, name)
+		}
+	}
 }

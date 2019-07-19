@@ -1,8 +1,8 @@
 receivers:
   examplereceiver:
-    enabled: "string for bool"
 exporters:
   exampleexporter:
+    disabled: "string for bool"
 processors:
   exampleprocessor:
 pipelines:

@@ -47,7 +47,6 @@ func TestLoadConfig(t *testing.T) {
 			ExporterSettings: configmodels.ExporterSettings{
 				NameVal: "prometheus/2",
 				TypeVal: "prometheus",
-				Enabled: true,
 			},
 			Endpoint:  "1.2.3.4:1234",
 			Namespace: "test-space",

@@ -57,7 +57,6 @@ func TestCreateTraceReceiver(t *testing.T) {
 		TypeVal:  typeStr,
 		NameVal:  typeStr,
 		Endpoint: endpoint,
-		Enabled:  true,
 	}
 	tests := []struct {
 		name    string
@@ -77,7 +76,6 @@ func TestCreateTraceReceiver(t *testing.T) {
 					TypeVal:  typeStr,
 					NameVal:  typeStr,
 					Endpoint: "127.0.0.1:112233",
-					Enabled:  true,
 				},
 			},
 			wantErr: true,
@@ -120,7 +118,6 @@ func TestCreateMetricReceiver(t *testing.T) {
 		TypeVal:  typeStr,
 		NameVal:  typeStr,
 		Endpoint: endpoint,
-		Enabled:  true,
 	}
 	tests := []struct {
 		name    string
@@ -140,7 +137,6 @@ func TestCreateMetricReceiver(t *testing.T) {
 					TypeVal:  typeStr,
 					NameVal:  typeStr,
 					Endpoint: "327.0.0.1:1122",
-					Enabled:  true,
 				},
 			},
 			wantErr: true,

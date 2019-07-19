@@ -4,7 +4,7 @@ exporters:
   exampleexporter:
 processors:
   exampleprocessor:
-    enabled: [2,3]
+    disabled: [2,3]
 pipelines:
   traces:
     receivers: [examplereceiver]

@@ -1,19 +1,14 @@
 receivers:
   jaeger:
-    enabled: true
 
 exporters:
   opencensus:
     endpoint: "locahost:55678"
-    enabled: true
 
 processors:
   add-attributes:
-    enabled: true
   queued-retry:
-    enabled: true
   batch:
-    enabled: true
 
 pipelines:
   traces:

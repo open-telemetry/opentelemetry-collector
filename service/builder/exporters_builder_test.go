@@ -40,7 +40,6 @@ func TestExportersBuilder_Build(t *testing.T) {
 				ExporterSettings: configmodels.ExporterSettings{
 					NameVal: "opencensus",
 					TypeVal: "opencensus",
-					Enabled: true,
 				},
 				Endpoint: "0.0.0.0:12345",
 			},

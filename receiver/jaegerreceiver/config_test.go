@@ -50,11 +50,10 @@ func TestLoadConfig(t *testing.T) {
 			NameVal: "jaeger/customname",
 			Protocols: map[string]*configmodels.ReceiverSettings{
 				"thrift-http": {
-					Enabled:  false,
+					Disabled: true,
 					Endpoint: "127.0.0.1:3456",
 				},
 				"thrift-tchannel": {
-					Enabled:  true,
 					Endpoint: "0.0.0.0:123",
 				},
 			},

@@ -1,24 +1,25 @@
 receivers:
   examplereceiver:
-    # no settings
   examplereceiver/myreceiver:
     endpoint: "127.0.0.1:12345"
-    enabled: true
     extra: "some string"
+  examplereceiver/disabled:
+    disabled: true
 
 processors:
   exampleprocessor:
-    enabled: false
+  exampleprocessor/disabled:
+    disabled: true
 
 exporters:
   exampleexporter/myexporter:
     extra: "some export string 2"
-    enabled: true
+  exampleexporter/disabled:
+    disabled: true
   exampleexporter:
-    # no settings
 
 pipelines:
   traces:
-    receivers: [examplereceiver]
-    processors: [exampleprocessor]
-    exporters: [exampleexporter]
+    receivers: [examplereceiver, examplereceiver/disabled]
+    processors: [exampleprocessor, exampleprocessor/disabled]
+    exporters: [exampleexporter/disabled, exampleexporter]

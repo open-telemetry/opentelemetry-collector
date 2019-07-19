@@ -5,20 +5,16 @@ receivers:
   opencensus:
     endpoint: 0.0.0.0:55678
     reconnection-delay: 2s
-    enabled: true
   jaeger:
     protocols:
       thrift-http:
         endpoint: "0.0.0.0:14268"
-        enabled: true
 
 
 exporters:
   opencensus:
     endpoint: "otel-collector:55678"
-    enabled: true
   logging:
-    enabled: true
 
 processors:
   batch:

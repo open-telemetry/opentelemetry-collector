@@ -4,16 +4,14 @@ receivers:
     protocols:
       http:
         endpoint: "127.0.0.1:12345"
-        enabled: true
         extra: "some string 1"
       tcp:
         endpoint: "0.0.0.0:4567"
-        enabled: true
         extra: "some string 2"
 
 processors:
   exampleprocessor:
-    enabled: false
+    disabled: true
 
 exporters:
   exampleexporter:
