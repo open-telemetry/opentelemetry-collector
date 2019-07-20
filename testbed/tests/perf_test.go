@@ -93,7 +93,7 @@ func TestNoBackend10kSPS(t *testing.T) {
 	defer tc.Stop()
 
 	tc.SetExpectedMaxCPU(200)
-	tc.SetExpectedMaxRAM(150)
+	tc.SetExpectedMaxRAM(200)
 
 	tc.StartAgent()
 	tc.StartLoad(testbed.LoadOptions{SpansPerSecond: 10000})
