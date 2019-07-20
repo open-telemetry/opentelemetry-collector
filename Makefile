@@ -30,10 +30,10 @@ all-pkgs:
 all-srcs:
 	@echo $(ALL_SRC) | tr ' ' '\n' | sort
 
-.DEFAULT_GOAL := fmt-vet-lint-test
+.DEFAULT_GOAL := addlicense-fmt-vet-lint-test
 
-.PHONY: fmt-vet-lint-test
-fmt-vet-lint-test: fmt vet lint test
+.PHONY: addlicense-fmt-vet-lint-test
+addlicense-fmt-vet-lint-test: addlicense fmt vet lint test
 
 .PHONY: e2e-test
 e2e-test: otelsvc
