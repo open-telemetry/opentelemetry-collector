@@ -10,12 +10,11 @@ exporters:
     endpoint: "127.0.0.1:56565"
 
 processors:
-  batch:
-  queued-retry:
   add-attributes:
+  queued-retry:
 
 pipelines:
   traces:
     receivers: [jaeger]
-    processors: [add-attributes]
+    processors: [add-attributes,queued-retry]
     exporters: [opencensus]
