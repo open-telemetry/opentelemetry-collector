@@ -30,7 +30,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exporterhelper"
-	"github.com/open-telemetry/opentelemetry-service/exporter/opencensusexporter/ocagent"
+	"github.com/open-telemetry/opentelemetry-service/exporter/opencensusexporter/ocsender"
 	"github.com/open-telemetry/opentelemetry-service/internal/compression"
 	compressiongrpc "github.com/open-telemetry/opentelemetry-service/internal/compression/grpc"
 	"github.com/open-telemetry/opentelemetry-service/oterr"
@@ -58,7 +58,7 @@ type opencensusConfig struct {
 
 type ocagentExporter struct {
 	counter   uint32
-	exporters chan *ocagent.Exporter
+	exporters chan *ocsender.Exporter
 }
 
 type ocTraceExporterErrorCode int
@@ -108,10 +108,10 @@ func OpenCensusTraceExportersFromViper(v *viper.Viper) (tps []consumer.TraceCons
 		}
 	}
 
-	opts := []ocagent.ExporterOption{ocagent.WithAddress(ocac.Endpoint)}
+	opts := []ocsender.ExporterOption{ocsender.WithAddress(ocac.Endpoint)}
 	if ocac.Compression != "" {
 		if compressionKey := compressiongrpc.GetGRPCCompressionKey(ocac.Compression); compressionKey != compression.Unsupported {
-			opts = append(opts, ocagent.UseCompressor(compressionKey))
+			opts = append(opts, ocsender.UseCompressor(compressionKey))
 		} else {
 			return nil, nil, nil, &ocTraceExporterError{
 				code: errUnsupportedCompressionType,
@@ -127,7 +127,7 @@ func OpenCensusTraceExportersFromViper(v *viper.Viper) (tps []consumer.TraceCons
 				msg:  fmt.Sprintf("OpenCensus exporter unable to read TLS credentials from pem file %q: %v", ocac.CertPemFile, err),
 			}
 		}
-		opts = append(opts, ocagent.WithTLSCredentials(creds))
+		opts = append(opts, ocsender.WithTLSCredentials(creds))
 	} else if ocac.UseSecure {
 		certPool, err := x509.SystemCertPool()
 		if err != nil {
@@ -138,18 +138,18 @@ func OpenCensusTraceExportersFromViper(v *viper.Viper) (tps []consumer.TraceCons
 			}
 		}
 		creds := credentials.NewClientTLSFromCert(certPool, "")
-		opts = append(opts, ocagent.WithTLSCredentials(creds))
+		opts = append(opts, ocsender.WithTLSCredentials(creds))
 	} else {
-		opts = append(opts, ocagent.WithInsecure())
+		opts = append(opts, ocsender.WithInsecure())
 	}
 	if len(ocac.Headers) > 0 {
-		opts = append(opts, ocagent.WithHeaders(ocac.Headers))
+		opts = append(opts, ocsender.WithHeaders(ocac.Headers))
 	}
 	if ocac.ReconnectionDelay > 0 {
-		opts = append(opts, ocagent.WithReconnectionPeriod(ocac.ReconnectionDelay))
+		opts = append(opts, ocsender.WithReconnectionPeriod(ocac.ReconnectionDelay))
 	}
 	if ocac.KeepaliveParameters != nil {
-		opts = append(opts, ocagent.WithGRPCDialOption(grpc.WithKeepaliveParams(keepalive.ClientParameters{
+		opts = append(opts, ocsender.WithGRPCDialOption(grpc.WithKeepaliveParams(keepalive.ClientParameters{
 			Time:                ocac.KeepaliveParameters.Time,
 			Timeout:             ocac.KeepaliveParameters.Timeout,
 			PermitWithoutStream: ocac.KeepaliveParameters.PermitWithoutStream,
@@ -161,9 +161,9 @@ func OpenCensusTraceExportersFromViper(v *viper.Viper) (tps []consumer.TraceCons
 		numWorkers = ocac.NumWorkers
 	}
 
-	exportersChan := make(chan *ocagent.Exporter, numWorkers)
+	exportersChan := make(chan *ocsender.Exporter, numWorkers)
 	for exporterIndex := 0; exporterIndex < numWorkers; exporterIndex++ {
-		exporter, serr := ocagent.NewExporter(opts...)
+		exporter, serr := ocsender.NewExporter(opts...)
 		if serr != nil {
 			return nil, nil, nil, fmt.Errorf("cannot configure OpenCensus Trace exporter: %v", serr)
 		}
@@ -196,7 +196,7 @@ func (oce *ocagentExporter) stop() error {
 	visitedCnt := 0
 	for currExporter := range oce.exporters {
 		wg.Add(1)
-		go func(exporter *ocagent.Exporter) {
+		go func(exporter *ocsender.Exporter) {
 			defer wg.Done()
 			err := exporter.Stop()
 			if err != nil {
