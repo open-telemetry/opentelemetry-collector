@@ -14,6 +14,7 @@ GOFMT=gofmt
 GOLINT=golint
 GOVET=go vet
 GOOS=$(shell go env GOOS)
+ADDLICENCESE= addlicense
 
 GIT_SHA=$(shell git rev-parse --short HEAD)
 BUILD_INFO_IMPORT_PATH=github.com/open-telemetry/opentelemetry-service/internal/version
@@ -55,6 +56,17 @@ test-with-cover:
 	@time go test -i $(ALL_PKGS)
 	$(GOTEST) $(GOTEST_OPT_WITH_COVERAGE) $(ALL_PKGS)
 	go tool cover -html=coverage.txt -o coverage.html
+
+.PHONY: addlicense
+addlicense:
+	@ADDLICENCESEOUT=`$(ADDLICENCESE) -y 2019 -c 'OpenTelemetry Authors' $(ALL_SRC) 2>&1`; \
+		if [ "$$ADDLICENCESEOUT" ]; then \
+			echo "$(ADDLICENCESE) FAILED => add License errors:\n"; \
+			echo "$$ADDLICENCESEOUT\n"; \
+			exit 1; \
+		else \
+			echo "Add License finished successfully"; \
+		fi
 
 .PHONY: fmt
 fmt:

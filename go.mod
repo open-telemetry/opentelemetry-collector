@@ -15,6 +15,7 @@ require (
 	github.com/go-kit/kit v0.8.0
 	github.com/gogo/googleapis v1.2.0 // indirect
 	github.com/golang/protobuf v1.3.1
+	github.com/google/addlicense v0.0.0-20190510175307-22550fa7c1b0 // indirect
 	github.com/google/go-cmp v0.3.0
 	github.com/gorilla/mux v1.6.2
 	github.com/grpc-ecosystem/grpc-gateway v1.9.0
