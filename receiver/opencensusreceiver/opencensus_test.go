@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -26,17 +27,28 @@ import (
 	"time"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
+	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
 
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-service/internal"
 	"github.com/open-telemetry/opentelemetry-service/internal/testutils"
+	"github.com/open-telemetry/opentelemetry-service/observability/observabilitytest"
+	"github.com/open-telemetry/opentelemetry-service/receiver"
+	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver/ocmetrics"
+	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver/octrace"
 	"github.com/open-telemetry/opentelemetry-service/receiver/receivertest"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 func TestGrpcGateway_endToEnd(t *testing.T) {
@@ -396,4 +408,398 @@ func TestStartWithoutConsumersShouldFail(t *testing.T) {
 	require.Error(t, r.StartTraceReception(mh))
 	require.Error(t, r.StartMetricsReception(mh))
 
+}
+
+func TestOCReceiverTrace_HostIngestionStatusChanges(t *testing.T) {
+	type ingestionStateTest struct {
+		okToIngest   bool
+		expectedCode codes.Code
+	}
+	tests := []struct {
+		name                                       string
+		backPressureSetting                        configmodels.BackPressureSetting
+		expectedReceivedBatches                    int
+		expectedIngestionBlockedRPCs               int
+		expectedIngestionBlockedRPCsNoBackPressure int
+		ingestionStates                            []ingestionStateTest
+	}{
+		{
+			name:                         "EnableBackPressure",
+			backPressureSetting:          configmodels.EnableBackPressure,
+			expectedReceivedBatches:      2,
+			expectedIngestionBlockedRPCs: 1,
+			expectedIngestionBlockedRPCsNoBackPressure: 0,
+			ingestionStates: []ingestionStateTest{
+				{
+					okToIngest:   true,
+					expectedCode: codes.OK,
+				},
+				{
+					okToIngest:   false,
+					expectedCode: codes.Unavailable,
+				},
+				{
+					okToIngest:   true,
+					expectedCode: codes.OK,
+				},
+			},
+		},
+		{
+			name:                         "DisableBackPressure",
+			backPressureSetting:          configmodels.DisableBackPressure,
+			expectedReceivedBatches:      2,
+			expectedIngestionBlockedRPCs: 1,
+			expectedIngestionBlockedRPCsNoBackPressure: 1,
+			ingestionStates: []ingestionStateTest{
+				{
+					okToIngest:   true,
+					expectedCode: codes.OK,
+				},
+				{
+					okToIngest:   false,
+					expectedCode: codes.OK,
+				},
+				{
+					okToIngest:   true,
+					expectedCode: codes.OK,
+				},
+			},
+		},
+	}
+
+	addr := testutils.GetAvailableLocalAddress(t)
+	msg := &agenttracepb.ExportTraceServiceRequest{
+		Node: &commonpb.Node{
+			ServiceInfo: &commonpb.ServiceInfo{Name: "test-svc"},
+		},
+		Spans: []*tracepb.Span{
+			{
+				TraceId: []byte{
+					0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+					0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10,
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			doneFn := observabilitytest.SetupRecordedMetricsTest()
+			defer doneFn()
+
+			sink := new(exportertest.SinkTraceExporter)
+			host := receivertest.NewMockHost().(*receivertest.MockHost)
+			opts := WithTraceReceiverOptions(octrace.WithBackPressureSetting(
+				tt.backPressureSetting))
+			ocr, err := New(addr, nil, nil, opts)
+			require.Nil(t, err)
+			require.NotNil(t, ocr)
+
+			ocr.traceConsumer = sink
+			err = ocr.StartTraceReception(host)
+			require.Nil(t, err)
+			defer ocr.StopTraceReception()
+
+			cc, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithBlock())
+			if err != nil {
+				t.Errorf("grpc.Dial: %v", err)
+			}
+			defer cc.Close()
+
+			for _, ingestionState := range tt.ingestionStates {
+				host.SetOkToIngest(ingestionState.okToIngest)
+
+				acc := agenttracepb.NewTraceServiceClient(cc)
+				stream, err := acc.Export(context.Background())
+				require.NoError(t, err)
+				require.NotNil(t, stream)
+
+				err = stream.Send(msg)
+				stream.CloseSend()
+				if err == nil {
+					for {
+						if _, err = stream.Recv(); err != nil {
+							if err == io.EOF {
+								err = nil
+							}
+							break
+						}
+					}
+				}
+				status, ok := status.FromError(err)
+				require.True(t, ok)
+				assert.Equal(t, ingestionState.expectedCode, status.Code())
+			}
+
+			require.Equal(t, tt.expectedReceivedBatches, len(sink.AllTraces()))
+			require.Nil(
+				t,
+				observabilitytest.CheckValueViewReceiverReceivedSpans(
+					"oc_trace",
+					tt.expectedReceivedBatches),
+			)
+			require.Nil(
+				t,
+				observabilitytest.CheckValueViewReceiverIngestionBlockedRPCs(
+					"oc_trace",
+					tt.expectedIngestionBlockedRPCs),
+			)
+
+			// This view should only have data if ingestion was blocked and there was no back pressure.
+			err = observabilitytest.CheckValueViewReceiverIngestionBlockedRPCsWithDataLoss(
+				"oc_trace",
+				tt.expectedIngestionBlockedRPCsNoBackPressure)
+			if tt.expectedIngestionBlockedRPCsNoBackPressure == 0 {
+				require.NotNil(t, err)
+			} else {
+				require.Nil(t, err)
+			}
+		})
+	}
+}
+
+func TestOCReceiverMetrics_HostIngestionStatusChanges(t *testing.T) {
+	type ingestionStateTest struct {
+		okToIngest   bool
+		expectedCode codes.Code
+	}
+	tests := []struct {
+		name                                       string
+		backPressureSetting                        configmodels.BackPressureSetting
+		expectedReceivedBatches                    int
+		expectedIngestionBlockedRPCs               int
+		expectedIngestionBlockedRPCsNoBackPressure int
+		ingestionStates                            []ingestionStateTest
+	}{
+		{
+			name:                         "EnableBackPressure",
+			backPressureSetting:          configmodels.EnableBackPressure,
+			expectedReceivedBatches:      2,
+			expectedIngestionBlockedRPCs: 1,
+			expectedIngestionBlockedRPCsNoBackPressure: 0,
+			ingestionStates: []ingestionStateTest{
+				{
+					okToIngest:   true,
+					expectedCode: codes.OK,
+				},
+				{
+					okToIngest:   false,
+					expectedCode: codes.Unavailable,
+				},
+				{
+					okToIngest:   true,
+					expectedCode: codes.OK,
+				},
+			},
+		},
+		{
+			name:                         "DisableBackPressure",
+			backPressureSetting:          configmodels.DisableBackPressure,
+			expectedReceivedBatches:      2,
+			expectedIngestionBlockedRPCs: 1,
+			expectedIngestionBlockedRPCsNoBackPressure: 1,
+			ingestionStates: []ingestionStateTest{
+				{
+					okToIngest:   true,
+					expectedCode: codes.OK,
+				},
+				{
+					okToIngest:   false,
+					expectedCode: codes.OK,
+				},
+				{
+					okToIngest:   true,
+					expectedCode: codes.OK,
+				},
+			},
+		},
+	}
+
+	addr := testutils.GetAvailableLocalAddress(t)
+	msg := &agentmetricspb.ExportMetricsServiceRequest{
+		Node: &commonpb.Node{
+			ServiceInfo: &commonpb.ServiceInfo{Name: "test-svc"},
+		},
+		Metrics: []*metricspb.Metric{
+			makeMetric(1),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			doneFn := observabilitytest.SetupRecordedMetricsTest()
+			defer doneFn()
+
+			sink := new(exportertest.SinkMetricsExporter)
+			host := receivertest.NewMockHost().(*receivertest.MockHost)
+			opts := WithMetricsReceiverOptions(ocmetrics.WithBackPressureSetting(
+				tt.backPressureSetting))
+			ocr, err := New(addr, nil, nil, opts)
+			require.Nil(t, err)
+			require.NotNil(t, ocr)
+
+			ocr.metricsConsumer = sink
+			err = ocr.StartMetricsReception(host)
+			require.Nil(t, err)
+			defer ocr.StopMetricsReception()
+
+			cc, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithBlock())
+			if err != nil {
+				t.Errorf("grpc.Dial: %v", err)
+			}
+			defer cc.Close()
+
+			for _, ingestionState := range tt.ingestionStates {
+				host.SetOkToIngest(ingestionState.okToIngest)
+
+				acc := agentmetricspb.NewMetricsServiceClient(cc)
+				stream, err := acc.Export(context.Background())
+				require.NoError(t, err)
+				require.NotNil(t, stream)
+
+				err = stream.Send(msg)
+				stream.CloseSend()
+				if err == nil {
+					for {
+						if _, err = stream.Recv(); err != nil {
+							if err == io.EOF {
+								err = nil
+							}
+							break
+						}
+					}
+				}
+				status, ok := status.FromError(err)
+				require.True(t, ok)
+				assert.Equal(t, ingestionState.expectedCode, status.Code())
+			}
+
+			// TODO: Add common observability for metric receiver.
+			//require.Equal(t, tt.expectedReceivedBatches, len(sink.AllMetrics()))
+			//require.Nil(
+			//	t,
+			//	observabilitytest.CheckValueViewReceiverReceivedMetrics(
+			//		"oc_metrics",
+			//		tt.expectedReceivedBatches),
+			//)
+			require.Nil(
+				t,
+				observabilitytest.CheckValueViewReceiverIngestionBlockedRPCs(
+					"oc_metrics",
+					tt.expectedIngestionBlockedRPCs),
+			)
+
+			// This view should only have data if ingestion was blocked and there was no back pressure.
+			err = observabilitytest.CheckValueViewReceiverIngestionBlockedRPCsWithDataLoss(
+				"oc_metrics",
+				tt.expectedIngestionBlockedRPCsNoBackPressure)
+			if tt.expectedIngestionBlockedRPCsNoBackPressure == 0 {
+				require.NotNil(t, err)
+			} else {
+				require.Nil(t, err)
+			}
+		})
+	}
+}
+
+func makeMetric(val int) *metricspb.Metric {
+	key := &metricspb.LabelKey{
+		Key:         fmt.Sprintf("%s%d", "key", val),
+		Description: "label key",
+	}
+	value := &metricspb.LabelValue{
+		Value:    fmt.Sprintf("%s%d", "value", val),
+		HasValue: true,
+	}
+
+	descriptor := &metricspb.MetricDescriptor{
+		Name:        fmt.Sprintf("%s%d", "metric_descriptort_", val),
+		Description: "metric descriptor",
+		Unit:        "1",
+		Type:        metricspb.MetricDescriptor_GAUGE_INT64,
+		LabelKeys:   []*metricspb.LabelKey{key},
+	}
+
+	now := time.Now().UTC()
+	point := &metricspb.Point{
+		Timestamp: internal.TimeToTimestamp(now.Add(20 * time.Second)),
+		Value: &metricspb.Point_Int64Value{
+			Int64Value: int64(val),
+		},
+	}
+
+	ts := &metricspb.TimeSeries{
+		StartTimestamp: internal.TimeToTimestamp(now.Add(-10 * time.Second)),
+		LabelValues:    []*metricspb.LabelValue{value},
+		Points:         []*metricspb.Point{point},
+	}
+
+	return &metricspb.Metric{
+		MetricDescriptor: descriptor,
+		Timeseries:       []*metricspb.TimeSeries{ts},
+	}
+}
+
+func TestReceiver_start(t *testing.T) {
+	type fields struct {
+		host receiver.Host
+	}
+	type args struct {
+		traceConsumer   consumer.TraceConsumer
+		metricsConsumer consumer.MetricsConsumer
+		host            receiver.Host
+	}
+	tests := []struct {
+		name    string
+		args    args
+		fields  fields
+		wantErr bool
+	}{
+		{
+			name:    "nil_host",
+			wantErr: true,
+		},
+		{
+			name: "different_host",
+			args: args{
+				host: receivertest.NewMockHost(),
+			},
+			fields: fields{
+				host: receivertest.NewMockHost(),
+			},
+			wantErr: true,
+		},
+		{
+			name: "no_consumers",
+			args: args{
+				host: receivertest.NewMockHost(),
+			},
+			wantErr: true,
+		},
+		{
+			name: "only_trace_consumer",
+			args: args{
+				traceConsumer: new(exportertest.SinkTraceExporter),
+				host:          receivertest.NewMockHost(),
+			},
+		},
+		{
+			name: "only_metrics_consumer",
+			args: args{
+				metricsConsumer: new(exportertest.SinkMetricsExporter),
+				host:            receivertest.NewMockHost(),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			addr := testutils.GetAvailableLocalAddress(t)
+			ocr, _ := New(addr, tt.args.traceConsumer, tt.args.metricsConsumer)
+			defer ocr.stop()
+			ocr.host = tt.fields.host
+			if err := ocr.start(tt.args.host); (err != nil) != tt.wantErr {
+				t.Errorf("Receiver.start() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
 }

@@ -23,6 +23,8 @@ import (
 	"google.golang.org/grpc/keepalive"
 
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver/ocmetrics"
+	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver/octrace"
 )
 
 // Config defines configuration for OpenCensus receiver.
@@ -87,6 +89,16 @@ func (rOpts *Config) buildOptions() (opts []Option, err error) {
 	if len(grpcServerOptions) > 0 {
 		opts = append(opts, WithGRPCServerOptions(grpcServerOptions...))
 	}
+
+	traceOpts := []octrace.Option{
+		octrace.WithBackPressureSetting(rOpts.BackPressureSetting()),
+	}
+	opts = append(opts, WithTraceReceiverOptions(traceOpts...))
+
+	metricsOpts := []ocmetrics.Option{
+		ocmetrics.WithBackPressureSetting(rOpts.BackPressureSetting()),
+	}
+	opts = append(opts, WithMetricsReceiverOptions(metricsOpts...))
 
 	return opts, err
 }

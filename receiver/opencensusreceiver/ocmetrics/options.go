@@ -14,7 +14,11 @@
 
 package ocmetrics
 
-import "time"
+import (
+	"time"
+
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
+)
 
 // Option interface defines for configuration settings to be applied to receivers.
 //
@@ -53,4 +57,18 @@ func (mpc metricBufferCount) WithReceiver(oci *Receiver) {
 // send them to its MetricsReceiverSink.
 func WithMetricBufferCount(count int) Option {
 	return metricBufferCount(count)
+}
+
+type backPressureOption configmodels.BackPressureSetting
+
+var _ Option = (backPressureOption)(configmodels.DisableBackPressure)
+
+func (bpo backPressureOption) WithReceiver(ocr *Receiver) {
+	ocr.backPressureSetting = configmodels.BackPressureSetting(bpo)
+}
+
+// WithBackPressureSetting sets the back pressure setting to be used by the
+// receiver.
+func WithBackPressureSetting(setting configmodels.BackPressureSetting) Option {
+	return backPressureOption(setting)
 }

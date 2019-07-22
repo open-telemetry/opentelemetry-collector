@@ -20,32 +20,44 @@ import (
 	"io"
 	"time"
 
-	"google.golang.org/api/support/bundler"
-
-	"go.opencensus.io/trace"
-
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	"go.opencensus.io/trace"
+	"google.golang.org/api/support/bundler"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/observability"
+	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
 
 // Receiver is the type used to handle metrics from OpenCensus exporters.
 type Receiver struct {
-	nextConsumer       consumer.MetricsConsumer
-	metricBufferPeriod time.Duration
-	metricBufferCount  int
+	nextConsumer        consumer.MetricsConsumer
+	host                receiver.Host
+	backPressureSetting configmodels.BackPressureSetting
+	metricBufferPeriod  time.Duration
+	metricBufferCount   int
 }
 
 // New creates a new ocmetrics.Receiver reference.
-func New(nextConsumer consumer.MetricsConsumer, opts ...Option) (*Receiver, error) {
+func New(nextConsumer consumer.MetricsConsumer, host receiver.Host, opts ...Option) (*Receiver, error) {
 	if nextConsumer == nil {
-		return nil, errors.New("needs a non-nil consumer.MetricsConsumer")
+		return nil, errors.New("nil nextConsumer")
 	}
-	ocr := &Receiver{nextConsumer: nextConsumer}
+	if host == nil {
+		return nil, errors.New("nil host")
+	}
+
+	ocr := &Receiver{
+		nextConsumer: nextConsumer,
+		host:         host,
+	}
 	for _, opt := range opts {
 		opt.WithReceiver(ocr)
 	}
@@ -107,7 +119,10 @@ func (ocr *Receiver) Export(mes agentmetricspb.MetricsService_ExportServer) erro
 			resource = recv.Resource
 		}
 
-		processReceivedMetrics(lastNonNilNode, resource, recv.Metrics, metricsBundler)
+		err = ocr.processReceivedMetrics(ctxWithReceiverName, lastNonNilNode, resource, recv.Metrics, metricsBundler)
+		if err != nil {
+			return err
+		}
 
 		recv, err = mes.Recv()
 		if err != nil {
@@ -121,22 +136,19 @@ func (ocr *Receiver) Export(mes agentmetricspb.MetricsService_ExportServer) erro
 	}
 }
 
-func processReceivedMetrics(ni *commonpb.Node, resource *resourcepb.Resource, metrics []*metricspb.Metric, bundler *bundler.Bundler) {
-	// Firstly, we'll add them to the bundler.
-	if len(metrics) > 0 {
-		bundlerPayload := &consumerdata.MetricsData{Node: ni, Metrics: metrics, Resource: resource}
-		bundler.Add(bundlerPayload, len(bundlerPayload.Metrics))
-	}
-}
-
-func (ocr *Receiver) batchMetricExporting(longLivedRPCCtx context.Context, payload interface{}) {
-	mds := payload.([]*consumerdata.MetricsData)
-	if len(mds) == 0 {
-		return
+func (ocr *Receiver) processReceivedMetrics(
+	receiverCtx context.Context,
+	ni *commonpb.Node,
+	resource *resourcepb.Resource,
+	metrics []*metricspb.Metric,
+	bundler *bundler.Bundler,
+) error {
+	if len(metrics) == 0 {
+		return nil
 	}
 
 	// Trace this method
-	ctx, span := trace.StartSpan(context.Background(), "OpenCensusMetricsReceiver.Export")
+	_, span := trace.StartSpan(context.Background(), "OpenCensusMetricsReceiver.Export")
 	defer span.End()
 
 	// TODO: (@odeke-em) investigate if it is necessary
@@ -144,15 +156,47 @@ func (ocr *Receiver) batchMetricExporting(longLivedRPCCtx context.Context, paylo
 	// bundledMetrics list unfurling then send metrics grouped per node
 
 	// If the starting RPC has a parent span, then add it as a parent link.
-	observability.SetParentLink(longLivedRPCCtx, span)
+	observability.SetParentLink(receiverCtx, span)
 
-	nMetrics := int64(0)
-	for _, md := range mds {
-		ocr.nextConsumer.ConsumeMetricsData(ctx, *md)
-		nMetrics += int64(len(md.Metrics))
+	if !ocr.host.OkToIngest() {
+		statusCode, zPageMessage := observability.RecordIngestionBlocked(
+			receiverCtx,
+			span,
+			ocr.backPressureSetting)
+
+		return status.Error(codes.Code(statusCode), zPageMessage)
 	}
 
-	span.Annotate([]trace.Attribute{
-		trace.Int64Attribute("num_metrics", nMetrics),
-	}, "")
+	// Firstly, we'll add them to the bundler.
+	bundlerPayload := &consumerdata.MetricsData{Node: ni, Metrics: metrics, Resource: resource}
+	err := bundler.Add(bundlerPayload, len(bundlerPayload.Metrics))
+	receivedMetrics := len(metrics)
+	droppedMetrics := 0
+	if err != nil {
+		droppedMetrics = receivedMetrics
+		statusErr, _ := status.FromError(err)
+		span.SetStatus(trace.Status{
+			Code:    int32(statusErr.Code()),
+			Message: statusErr.Message(),
+		})
+	}
+
+	// TODO: Create proper observability some all metric receivers generate
+	// consistent metrics.
+	span.AddAttributes(
+		trace.Int64Attribute("received_metrics", int64(receivedMetrics)),
+		trace.Int64Attribute("dropped_metrics", int64(droppedMetrics)),
+	)
+
+	return err
+}
+
+func (ocr *Receiver) batchMetricExporting(longLivedRPCCtx context.Context, payload interface{}) {
+	mds := payload.([]*consumerdata.MetricsData)
+	ctx := context.Background()
+	for _, md := range mds {
+		// TODO: add observability for errors here.
+		// TODO: consider queued-retry for metrics too.
+		ocr.nextConsumer.ConsumeMetricsData(ctx, *md)
+	}
 }

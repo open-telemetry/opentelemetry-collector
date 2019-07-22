@@ -22,25 +22,102 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
-	"github.com/golang/protobuf/proto"
-	"google.golang.org/grpc"
-
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"github.com/golang/protobuf/proto"
+	"google.golang.org/grpc"
+
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-service/internal"
 	"github.com/open-telemetry/opentelemetry-service/observability"
+	"github.com/open-telemetry/opentelemetry-service/receiver"
+	"github.com/open-telemetry/opentelemetry-service/receiver/receivertest"
 )
 
 // TODO: add E2E tests once ocagent implements metric service client.
+
+func TestNew(t *testing.T) {
+	nextConsumer := new(exportertest.SinkMetricsExporter)
+	host := receivertest.NewMockHost()
+
+	type args struct {
+		nextConsumer consumer.MetricsConsumer
+		host         receiver.Host
+		opts         []Option
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *Receiver
+		wantErr bool
+	}{
+		{
+			name:    "nil_consumer",
+			args:    args{},
+			wantErr: true,
+		},
+		{
+			name: "nil_host",
+			args: args{
+				nextConsumer: nextConsumer,
+			},
+			wantErr: true,
+		},
+		{
+			name: "no_options",
+			args: args{
+				nextConsumer: nextConsumer,
+				host:         host,
+			},
+			want: &Receiver{
+				nextConsumer: nextConsumer,
+				host:         host,
+			},
+		},
+		{
+			name: "with_options",
+			args: args{
+				nextConsumer: nextConsumer,
+				host:         host,
+				opts: []Option{
+					WithBackPressureSetting(configmodels.DisableBackPressure),
+					WithMetricBufferCount(150),
+					WithMetricBufferPeriod(500 * time.Millisecond),
+				},
+			},
+			want: &Receiver{
+				nextConsumer:        nextConsumer,
+				host:                host,
+				backPressureSetting: configmodels.DisableBackPressure,
+				metricBufferPeriod:  500 * time.Millisecond,
+				metricBufferCount:   150,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := New(tt.args.nextConsumer, tt.args.host, tt.args.opts...)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("New() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("New() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
 
 // Issue #43. Export should support node multiplexing.
 // The goal is to ensure that Receiver can always support
@@ -365,7 +442,7 @@ func ocReceiverOnGRPCServer(t *testing.T, sr consumer.MetricsConsumer, opts ...O
 		t.Fatalf("Failed to create new agent: %v", err)
 	}
 
-	oci, err = New(sr, opts...)
+	oci, err = New(sr, receivertest.NewMockHost(), opts...)
 	if err != nil {
 		t.Fatalf("Failed to create the Receiver: %v", err)
 	}

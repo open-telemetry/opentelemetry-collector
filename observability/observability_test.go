@@ -20,6 +20,8 @@ import (
 	"context"
 	"testing"
 
+	"go.opencensus.io/trace"
+
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/observability"
 	"github.com/open-telemetry/opentelemetry-service/observability/observabilitytest"
@@ -34,10 +36,13 @@ func TestTracePieplineRecordedMetrics(t *testing.T) {
 	doneFn := observabilitytest.SetupRecordedMetricsTest()
 	defer doneFn()
 
+	_, zPageSpan := trace.StartSpan(context.Background(), receiverName)
+	defer zPageSpan.End()
+
 	receiverCtx := observability.ContextWithReceiverName(context.Background(), receiverName)
 	observability.RecordTraceReceiverMetrics(receiverCtx, 17, 13)
-	observability.RecordIngestionBlockedMetrics(receiverCtx, configmodels.EnableBackPressure)
-	observability.RecordIngestionBlockedMetrics(receiverCtx, configmodels.DisableBackPressure)
+	observability.RecordIngestionBlocked(receiverCtx, zPageSpan, configmodels.EnableBackPressure)
+	observability.RecordIngestionBlocked(receiverCtx, zPageSpan, configmodels.DisableBackPressure)
 	exporterCtx := observability.ContextWithExporterName(receiverCtx, exporterName)
 	observability.RecordTraceExporterMetrics(exporterCtx, 27, 23)
 	if err := observabilitytest.CheckValueViewReceiverReceivedSpans(receiverName, 17); err != nil {

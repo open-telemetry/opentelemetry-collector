@@ -315,24 +315,17 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if !zr.host.OkToIngest() {
 		var responseStatusCode int
-		var zPageMessage string
 		if zr.backPressureSetting == configmodels.EnableBackPressure {
 			responseStatusCode = http.StatusServiceUnavailable
-			zPageMessage = "Host blocked ingestion. Back pressure is ON."
 		} else {
 			responseStatusCode = http.StatusAccepted
-			zPageMessage = "Host blocked ingestion. Back pressure is OFF."
 		}
 
-		// Internal z-page status does not depend on backpressure setting.
-		span.SetStatus(trace.Status{
-			Code:    trace.StatusCodeUnavailable,
-			Message: zPageMessage,
-		})
-
-		observability.RecordIngestionBlockedMetrics(
+		observability.RecordIngestionBlocked(
 			ctxWithReceiverName,
+			span,
 			zr.backPressureSetting)
+
 		w.WriteHeader(responseStatusCode)
 		return
 	}

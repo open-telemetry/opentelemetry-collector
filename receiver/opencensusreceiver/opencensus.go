@@ -21,7 +21,6 @@ import (
 	"net"
 	"net/http"
 	"sync"
-	"time"
 
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
@@ -55,6 +54,8 @@ type Receiver struct {
 
 	traceConsumer   consumer.TraceConsumer
 	metricsConsumer consumer.MetricsConsumer
+
+	host receiver.Host
 
 	stopOnce                 sync.Once
 	startServerOnce          sync.Once
@@ -103,14 +104,14 @@ func (ocr *Receiver) TraceSource() string {
 // StartTraceReception runs the trace receiver on the gRPC server. Currently
 // it also enables the metrics receiver too.
 func (ocr *Receiver) StartTraceReception(host receiver.Host) error {
-	return ocr.start()
+	return ocr.start(host)
 }
 
 func (ocr *Receiver) registerTraceConsumer() error {
 	var err = errAlreadyStarted
 
 	ocr.startTraceReceiverOnce.Do(func() {
-		ocr.traceReceiver, err = octrace.New(ocr.traceConsumer, ocr.traceReceiverOpts...)
+		ocr.traceReceiver, err = octrace.New(ocr.traceConsumer, ocr.host, ocr.traceReceiverOpts...)
 		if err == nil {
 			srv := ocr.grpcServer()
 			agenttracepb.RegisterTraceServiceServer(srv, ocr.traceReceiver)
@@ -128,14 +129,14 @@ func (ocr *Receiver) MetricsSource() string {
 // StartMetricsReception runs the metrics receiver on the gRPC server. Currently
 // it also enables the trace receiver too.
 func (ocr *Receiver) StartMetricsReception(host receiver.Host) error {
-	return ocr.start()
+	return ocr.start(host)
 }
 
 func (ocr *Receiver) registerMetricsConsumer() error {
 	var err = errAlreadyStarted
 
 	ocr.startMetricsReceiverOnce.Do(func() {
-		ocr.metricsReceiver, err = ocmetrics.New(ocr.metricsConsumer, ocr.metricsReceiverOpts...)
+		ocr.metricsReceiver, err = ocmetrics.New(ocr.metricsConsumer, ocr.host, ocr.metricsReceiverOpts...)
 		if err == nil {
 			srv := ocr.grpcServer()
 			agentmetricspb.RegisterMetricsServiceServer(srv, ocr.metricsReceiver)
@@ -174,7 +175,15 @@ func (ocr *Receiver) StopMetricsReception() error {
 }
 
 // start runs all the receivers/services namely, Trace and Metrics services.
-func (ocr *Receiver) start() error {
+func (ocr *Receiver) start(host receiver.Host) error {
+	if host == nil {
+		return errors.New("nil host")
+	}
+	if ocr.host != nil && ocr.host != host {
+		return errors.New("host was already set to a different instance")
+	}
+	ocr.host = host
+
 	hasConsumer := false
 	if ocr.traceConsumer != nil {
 		hasConsumer = true
@@ -212,12 +221,6 @@ func (ocr *Receiver) stop() error {
 	ocr.stopOnce.Do(func() {
 		err = nil
 
-		if ocr.traceReceiver != nil {
-			ocr.traceReceiver.Stop()
-		}
-
-		// Currently there is no symmetric stop for metrics receiver.
-
 		if ocr.serverHTTP != nil {
 			_ = ocr.serverHTTP.Close()
 		}
@@ -253,54 +256,46 @@ func (ocr *Receiver) httpServer() *http.Server {
 }
 
 func (ocr *Receiver) startServer() error {
-	err := errAlreadyStarted
+	startErr := errAlreadyStarted
 	ocr.startServerOnce.Do(func() {
-		errChan := make(chan error, 1)
+		// Register the grpc-gateway on the HTTP server mux
+		c := context.Background()
+		// TODO: check use of grpc.WithInsecure in the context of
+		// https://github.com/open-telemetry/opentelemetry-service/issues/170
+		opts := []grpc.DialOption{grpc.WithInsecure()}
+		endpoint := ocr.ln.Addr().String()
+
+		err := agenttracepb.RegisterTraceServiceHandlerFromEndpoint(c, ocr.gatewayMux, endpoint, opts)
+		if err != nil {
+			startErr = err
+			return
+		}
+
+		err = agentmetricspb.RegisterMetricsServiceHandlerFromEndpoint(c, ocr.gatewayMux, endpoint, opts)
+		if err != nil {
+			startErr = err
+			return
+		}
+
+		// Start the gRPC and HTTP/JSON (grpc-gateway) servers on the same port.
+		m := cmux.New(ocr.ln)
+		grpcL := m.MatchWithWriters(
+			cmux.HTTP2MatchHeaderFieldSendSettings("content-type", "application/grpc"),
+			cmux.HTTP2MatchHeaderFieldSendSettings("content-type", "application/grpc+proto"))
+
+		httpL := m.Match(cmux.Any())
+
 		go func() {
-			// Register the grpc-gateway on the HTTP server mux
-			c := context.Background()
-			opts := []grpc.DialOption{grpc.WithInsecure()}
-			endpoint := ocr.ln.Addr().String()
-
-			err := agenttracepb.RegisterTraceServiceHandlerFromEndpoint(c, ocr.gatewayMux, endpoint, opts)
-			if err != nil {
-				errChan <- err
-				return
-			}
-
-			err = agentmetricspb.RegisterMetricsServiceHandlerFromEndpoint(c, ocr.gatewayMux, endpoint, opts)
-			if err != nil {
-				errChan <- err
-				return
-			}
-
-			// Start the gRPC and HTTP/JSON (grpc-gateway) servers on the same port.
-			m := cmux.New(ocr.ln)
-			grpcL := m.MatchWithWriters(
-				cmux.HTTP2MatchHeaderFieldSendSettings("content-type", "application/grpc"),
-				cmux.HTTP2MatchHeaderFieldSendSettings("content-type", "application/grpc+proto"))
-
-			httpL := m.Match(cmux.Any())
-			go func() {
-				errChan <- ocr.serverGRPC.Serve(grpcL)
-			}()
-			go func() {
-				errChan <- ocr.httpServer().Serve(httpL)
-			}()
-			errChan <- m.Serve()
+			ocr.host.ReportFatalError(ocr.serverGRPC.Serve(grpcL))
+		}()
+		go func() {
+			ocr.host.ReportFatalError(ocr.httpServer().Serve(httpL))
+		}()
+		go func() {
+			ocr.host.ReportFatalError(m.Serve())
 		}()
 
-		// Our goal is to heuristically try running the server
-		// and if it returns an error immediately, we reporter that.
-		select {
-		case serr := <-errChan:
-			err = serr
-
-		case <-time.After(1 * time.Second):
-			// No error otherwise returned in the period of 1s.
-			// We can assume that the serve is at least running.
-			err = nil
-		}
+		startErr = nil
 	})
-	return err
+	return startErr
 }

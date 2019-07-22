@@ -29,20 +29,92 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/protobuf/proto"
-	"google.golang.org/grpc"
-
 	"contrib.go.opencensus.io/exporter/ocagent"
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/internal"
-	"github.com/open-telemetry/opentelemetry-service/observability"
+	"github.com/golang/protobuf/proto"
 	"go.opencensus.io/trace"
 	"go.opencensus.io/trace/tracestate"
+	"google.golang.org/grpc"
+
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
+	"github.com/open-telemetry/opentelemetry-service/internal"
+	"github.com/open-telemetry/opentelemetry-service/observability"
+	"github.com/open-telemetry/opentelemetry-service/receiver"
+	"github.com/open-telemetry/opentelemetry-service/receiver/receivertest"
 )
+
+func TestNew(t *testing.T) {
+	nextConsumer := new(exportertest.SinkTraceExporter)
+	host := receivertest.NewMockHost()
+
+	type args struct {
+		nextConsumer consumer.TraceConsumer
+		host         receiver.Host
+		opts         []Option
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *Receiver
+		wantErr bool
+	}{
+		{
+			name:    "nil_consumer",
+			args:    args{},
+			wantErr: true,
+		},
+		{
+			name: "nil_host",
+			args: args{
+				nextConsumer: nextConsumer,
+			},
+			wantErr: true,
+		},
+		{
+			name: "no_options",
+			args: args{
+				nextConsumer: nextConsumer,
+				host:         host,
+			},
+			want: &Receiver{
+				nextConsumer: nextConsumer,
+				host:         host,
+			},
+		},
+		{
+			name: "with_options",
+			args: args{
+				nextConsumer: nextConsumer,
+				host:         host,
+				opts: []Option{
+					WithBackPressureSetting(configmodels.DisableBackPressure),
+				},
+			},
+			want: &Receiver{
+				nextConsumer:        nextConsumer,
+				host:                host,
+				backPressureSetting: configmodels.DisableBackPressure,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := New(tt.args.nextConsumer, tt.args.host, tt.args.opts...)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("New() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("New() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
 
 func TestReceiver_endToEnd(t *testing.T) {
 	t.Skip("This test is flaky due to timing slowdown due to -race. Will reenable in the future")
@@ -498,13 +570,14 @@ func ocReceiverOnGRPCServer(t *testing.T, sr consumer.TraceConsumer, opts ...Opt
 		t.Fatalf("Failed to create new agent: %v", err)
 	}
 
-	oci, err = New(sr, opts...)
+	oci, err = New(sr, receivertest.NewMockHost(), opts...)
 	if err != nil {
 		t.Fatalf("Failed to create the Receiver: %v", err)
 	}
 
 	// Now run it as a gRPC server
 	srv := observability.GRPCServerWithObservabilityEnabled()
+
 	agenttracepb.RegisterTraceServiceServer(srv, oci)
 	go func() {
 		_ = srv.Serve(ln)

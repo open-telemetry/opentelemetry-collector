@@ -14,15 +14,19 @@
 
 package octrace
 
+import (
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
+)
+
 // Option interface defines for configuration settings to be applied to receivers.
 //
 // WithReceiver applies the configuration to the given receiver.
 type Option func(*Receiver)
 
-// WithWorkerCount sets the number of worker goroutines that will be started
-// for the receiver
-func WithWorkerCount(workerCount int) Option {
+// WithBackPressureSetting sets the back pressure setting to be used by the
+// receiver.
+func WithBackPressureSetting(setting configmodels.BackPressureSetting) Option {
 	return func(r *Receiver) {
-		r.numWorkers = workerCount
+		r.backPressureSetting = setting
 	}
 }

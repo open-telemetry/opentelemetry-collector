@@ -136,18 +136,6 @@ func ContextWithReceiverName(ctx context.Context, receiverName string) context.C
 	return ctx
 }
 
-// RecordIngestionBlockedMetrics records metrics related to the receiver responses
-// when the host blocks ingestion. If back pressure is disabled the metric for
-// respective data loss is recorded.
-// Use it with a context.Context generated using ContextWithReceiverName().
-func RecordIngestionBlockedMetrics(ctxWithTraceReceiverName context.Context, backPressureSetting configmodels.BackPressureSetting) {
-	if backPressureSetting == configmodels.DisableBackPressure {
-		// In this case data loss will happen, record the proper metric.
-		stats.Record(ctxWithTraceReceiverName, mReceiverIngestionBlockedRPCsWithDataLoss.M(1))
-	}
-	stats.Record(ctxWithTraceReceiverName, mReceiverIngestionBlockedRPCs.M(1))
-}
-
 // RecordTraceReceiverMetrics records the number of the spans received and dropped by the receiver.
 // Use it with a context.Context generated using ContextWithReceiverName().
 func RecordTraceReceiverMetrics(ctxWithTraceReceiverName context.Context, receivedSpans int, droppedSpans int) {
@@ -192,4 +180,36 @@ func SetParentLink(sideCtx context.Context, span *trace.Span) bool {
 		Type:    trace.LinkTypeParent,
 	})
 	return true
+}
+
+// RecordIngestionBlocked records metrics and update the zpage span related to
+// the receiver responses when the host blocks ingestion. If back pressure is
+// disabled the metric for respective data loss is recorded.
+// Use it with a context.Context generated using ContextWithReceiverName().
+func RecordIngestionBlocked(
+	ctxWithTraceReceiverName context.Context,
+	zPageSpan *trace.Span,
+	backPressureSetting configmodels.BackPressureSetting,
+) (statusCode int, zPageMessage string) {
+
+	if backPressureSetting == configmodels.EnableBackPressure {
+		statusCode = trace.StatusCodeUnavailable
+		zPageMessage = "Host blocked ingestion. Back pressure is ON."
+	} else {
+		statusCode = trace.StatusCodeOK
+		zPageMessage = "Host blocked ingestion. Back pressure is OFF."
+
+		// In this case data loss will happen, record the proper metric.
+		stats.Record(ctxWithTraceReceiverName, mReceiverIngestionBlockedRPCsWithDataLoss.M(1))
+	}
+
+	stats.Record(ctxWithTraceReceiverName, mReceiverIngestionBlockedRPCs.M(1))
+
+	// Internal z-page status does not depend on backpressure setting.
+	zPageSpan.SetStatus(trace.Status{
+		Code:    trace.StatusCodeUnavailable,
+		Message: zPageMessage,
+	})
+
+	return statusCode, zPageMessage
 }

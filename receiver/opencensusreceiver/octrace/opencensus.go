@@ -19,14 +19,18 @@ import (
 	"errors"
 	"io"
 
-	"go.opencensus.io/trace"
-
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	"go.opencensus.io/trace"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/observability"
+	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
 
 const (
@@ -37,10 +41,9 @@ const (
 
 // Receiver is the type used to handle spans from OpenCensus exporters.
 type Receiver struct {
-	nextConsumer consumer.TraceConsumer
-	numWorkers   int
-	workers      []*receiverWorker
-	messageChan  chan *traceDataWithCtx
+	nextConsumer        consumer.TraceConsumer
+	host                receiver.Host
+	backPressureSetting configmodels.BackPressureSetting
 }
 
 type traceDataWithCtx struct {
@@ -49,29 +52,21 @@ type traceDataWithCtx struct {
 }
 
 // New creates a new opencensus.Receiver reference.
-func New(nextConsumer consumer.TraceConsumer, opts ...Option) (*Receiver, error) {
+func New(nextConsumer consumer.TraceConsumer, host receiver.Host, opts ...Option) (*Receiver, error) {
 	if nextConsumer == nil {
-		return nil, errors.New("needs a non-nil consumer.TraceConsumer")
+		return nil, errors.New("nil nextConsumer")
+	}
+	if host == nil {
+		return nil, errors.New("nil host")
 	}
 
-	messageChan := make(chan *traceDataWithCtx, messageChannelSize)
 	ocr := &Receiver{
 		nextConsumer: nextConsumer,
-		numWorkers:   defaultNumWorkers,
-		messageChan:  messageChan,
+		host:         host,
 	}
 	for _, opt := range opts {
 		opt(ocr)
 	}
-
-	// Setup and startup worker pool
-	workers := make([]*receiverWorker, 0, ocr.numWorkers)
-	for index := 0; index < ocr.numWorkers; index++ {
-		worker := newReceiverWorker(ocr)
-		go worker.listenOn(messageChan)
-		workers = append(workers, worker)
-	}
-	ocr.workers = workers
 
 	return ocr, nil
 }
@@ -111,27 +106,10 @@ func (ocr *Receiver) Export(tes agenttracepb.TraceService_ExportServer) error {
 	var resource *resourcepb.Resource
 	// Now that we've got the first message with a Node, we can start to receive streamed up spans.
 	for {
-		// If a Node has been sent from downstream, save and use it.
-		if recv.Node != nil {
-			lastNonNilNode = recv.Node
+		lastNonNilNode, resource, err = ocr.processReceivedMsg(ctxWithReceiverName, lastNonNilNode, resource, recv)
+		if err != nil {
+			return err
 		}
-
-		// TODO(songya): differentiate between unset and nil resource. See
-		// https://github.com/census-instrumentation/opencensus-proto/issues/146.
-		if recv.Resource != nil {
-			resource = recv.Resource
-		}
-
-		td := &consumerdata.TraceData{
-			Node:         lastNonNilNode,
-			Resource:     resource,
-			Spans:        recv.Spans,
-			SourceFormat: "oc_trace",
-		}
-
-		ocr.messageChan <- &traceDataWithCtx{data: td, ctx: ctxWithReceiverName}
-
-		observability.RecordTraceReceiverMetrics(ctxWithReceiverName, len(td.Spans), 0)
 
 		recv, err = tes.Recv()
 		if err != nil {
@@ -145,64 +123,61 @@ func (ocr *Receiver) Export(tes agenttracepb.TraceService_ExportServer) error {
 	}
 }
 
-// Stop the receiver and its workers
-func (ocr *Receiver) Stop() {
-	for _, worker := range ocr.workers {
-		worker.stopListening()
-	}
-}
-
-type receiverWorker struct {
-	receiver *Receiver
-	tes      agenttracepb.TraceService_ExportServer
-	cancel   chan struct{}
-}
-
-func newReceiverWorker(receiver *Receiver) *receiverWorker {
-	return &receiverWorker{
-		receiver: receiver,
-		cancel:   make(chan struct{}),
-	}
-}
-
-func (rw *receiverWorker) listenOn(cn <-chan *traceDataWithCtx) {
-	for {
-		select {
-		case tdWithCtx := <-cn:
-			rw.export(tdWithCtx.ctx, tdWithCtx.data)
-		case <-rw.cancel:
-			return
-		}
-	}
-}
-
-func (rw *receiverWorker) stopListening() {
-	close(rw.cancel)
-}
-
-func (rw *receiverWorker) export(longLivedCtx context.Context, tracedata *consumerdata.TraceData) {
-	if tracedata == nil {
-		return
+func (ocr *Receiver) processReceivedMsg(
+	receiverCtx context.Context,
+	lastNonNilNode *commonpb.Node,
+	resource *resourcepb.Resource,
+	recv *agenttracepb.ExportTraceServiceRequest,
+) (*commonpb.Node, *resourcepb.Resource, error) {
+	// If a Node has been sent from downstream, save and use it.
+	if recv.Node != nil {
+		lastNonNilNode = recv.Node
 	}
 
-	if len(tracedata.Spans) == 0 {
-		return
+	// TODO(songya): differentiate between unset and nil resource. See
+	// https://github.com/census-instrumentation/opencensus-proto/issues/146.
+	if recv.Resource != nil {
+		resource = recv.Resource
 	}
 
+	td := &consumerdata.TraceData{
+		Node:         lastNonNilNode,
+		Resource:     resource,
+		Spans:        recv.Spans,
+		SourceFormat: "oc_trace",
+	}
+
+	return lastNonNilNode, resource, ocr.export(receiverCtx, td)
+}
+
+func (ocr *Receiver) export(receiverCtx context.Context, tracedata *consumerdata.TraceData) error {
 	// Trace this method
 	ctx, span := trace.StartSpan(context.Background(), "OpenCensusTraceReceiver.Export")
 	defer span.End()
 
-	// TODO: (@odeke-em) investigate if it is necessary
-	// to group nodes with their respective spans during
-	// spansAndNode list unfurling then send spans grouped per node
-
 	// If the starting RPC has a parent span, then add it as a parent link.
-	observability.SetParentLink(longLivedCtx, span)
+	observability.SetParentLink(receiverCtx, span)
 
-	rw.receiver.nextConsumer.ConsumeTraceData(ctx, *tracedata)
+	if !ocr.host.OkToIngest() {
+		statusCode, zPageMessage := observability.RecordIngestionBlocked(
+			receiverCtx,
+			span,
+			ocr.backPressureSetting)
 
-	span.Annotate([]trace.Attribute{
-		trace.Int64Attribute("num_spans", int64(len(tracedata.Spans))),
-	}, "")
+		return status.Error(codes.Code(statusCode), zPageMessage)
+	}
+
+	receivedSpans := len(tracedata.Spans)
+	droppedSpans := 0
+	err := ocr.nextConsumer.ConsumeTraceData(ctx, *tracedata)
+	if err != nil {
+		droppedSpans = receivedSpans
+		span.SetStatus(trace.Status{
+			Code:    trace.StatusCodeUnknown,
+			Message: err.Error(),
+		})
+	}
+
+	observability.RecordTraceReceiverMetrics(receiverCtx, receivedSpans, droppedSpans)
+	return err
 }
