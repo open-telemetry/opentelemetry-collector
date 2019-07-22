@@ -10,8 +10,13 @@ exporters:
     endpoint: "127.0.0.1:56565"
 
 processors:
-  add-attributes:
   queued-retry:
+  add-attributes:
+    attrib.key00: 123
+    attrib.key01: "a small string for this attribute"
+    attrib.key02: true
+    region: test-region
+    data-center: test-datacenter
 
 pipelines:
   traces:

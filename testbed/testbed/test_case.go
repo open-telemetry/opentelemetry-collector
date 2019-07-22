@@ -88,8 +88,14 @@ func NewTestCase(t *testing.T, opts ...TestCaseOption) *TestCase {
 	// Set default resource check period.
 	tc.resourceSpec.resourceCheckPeriod = 3 * time.Second
 
-	// Locations of agent config and load generator spec files.
-	tc.agentConfigFile, err = filepath.Abs(path.Join("testdata", "agent-config.yaml"))
+	configFile := tc.agentConfigFile
+	if configFile == "" {
+		// Use the default config file.
+		configFile = path.Join("testdata", "agent-config.yaml")
+	}
+
+	// Ensure that the config file is an absolute path.
+	tc.agentConfigFile, err = filepath.Abs(configFile)
 	if err != nil {
 		tc.t.Fatalf("Cannot resolve filename: %s", err.Error())
 	}

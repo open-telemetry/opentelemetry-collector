@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"path"
 	"testing"
 	"time"
 
@@ -92,7 +93,7 @@ func TestNoBackend10kSPS(t *testing.T) {
 	defer tc.Stop()
 
 	tc.SetExpectedMaxCPU(200)
-	tc.SetExpectedMaxRAM(50)
+	tc.SetExpectedMaxRAM(200)
 
 	tc.StartAgent()
 	tc.StartLoad(testbed.LoadOptions{SpansPerSecond: 10000})
@@ -107,11 +108,11 @@ type testCase struct {
 	expectedMaxRAM uint32
 }
 
-func test1000SPSWithAttributes(t *testing.T, args []string, tests []testCase) {
+func test1000SPSWithAttributes(t *testing.T, args []string, tests []testCase, opts ...testbed.TestCaseOption) {
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("%d*%dbytes", test.attrCount, test.attrSizeByte), func(t *testing.T) {
 
-			tc := testbed.NewTestCase(t)
+			tc := testbed.NewTestCase(t, opts...)
 			defer tc.Stop()
 
 			tc.SetExpectedMaxCPU(test.expectedMaxCPU)
@@ -210,4 +211,39 @@ func TestBallast1000SPSWithAttributes(t *testing.T) {
 			expectedMaxRAM: 2000,
 		},
 	})
+}
+
+func TestBallast1000SPSWithAttributesAddAttributesProcessor(t *testing.T) {
+	args := []string{"--mem-ballast-size-mib", "1000"}
+	test1000SPSWithAttributes(
+		t,
+		args,
+		[]testCase{
+			{
+				attrCount:      0,
+				attrSizeByte:   0,
+				expectedMaxCPU: 30,
+				expectedMaxRAM: 2000,
+			},
+			{
+				attrCount:      100,
+				attrSizeByte:   50,
+				expectedMaxCPU: 80,
+				expectedMaxRAM: 2000,
+			},
+			{
+				attrCount:      10,
+				attrSizeByte:   1000,
+				expectedMaxCPU: 80,
+				expectedMaxRAM: 2000,
+			},
+			{
+				attrCount:      20,
+				attrSizeByte:   5000,
+				expectedMaxCPU: 120,
+				expectedMaxRAM: 2000,
+			},
+		},
+		testbed.WithConfigFile(path.Join("testdata", "add-attributes-config.yaml")),
+	)
 }
