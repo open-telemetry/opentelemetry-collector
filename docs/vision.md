@@ -8,7 +8,7 @@ This is a living document that is expected to evolve over time.
 Highly stable and performant under varying loads. Well-behaved under extreme load, with predictable, low resource consumption.
 
 ## Observable
-Expose own operational metrics in a clear way. Be an exemplar of observable service. Allow configuring the level of observability (more or less metrics, traces, logs, etc reported).
+Expose own operational metrics in a clear way. Be an exemplar of observable service. Allow configuring the level of observability (more or less metrics, traces, logs, etc reported). See [more details](observability.md).
 
 ## Multi-Data
 Support traces, metrics, logs and other relevant data types.

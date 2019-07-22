@@ -55,6 +55,8 @@ deployment methods:
 
 For the detailed design specs, please see [DESIGN.md](DESIGN.md).
 
+For the future vision of OpenTelemetry Service please see [vision.md](docs/vision.md).
+
 ## <a name="deploy"></a>Deployment
 
 The OpenTelemetry Service can be deployed in a variety of different ways
