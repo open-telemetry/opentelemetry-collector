@@ -23,6 +23,7 @@ package internal
 // This ensures that all systems use the same version of tools in addition to regular dependencies.
 
 import (
+	_ "github.com/google/addlicense"
 	_ "github.com/jstemmer/go-junit-report"
 	_ "golang.org/x/lint/golint"
 )
