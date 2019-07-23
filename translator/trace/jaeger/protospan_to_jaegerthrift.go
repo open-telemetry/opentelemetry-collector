@@ -194,14 +194,7 @@ func ocSpansToJaegerSpans(ocSpans []*tracepb.Span) ([]*jaeger.Span, error) {
 			Logs:      ocTimeEventsToJaegerLogs(ocSpan.TimeEvents),
 		}
 
-		if ocSpan.Attributes == nil {
-			jSpan.Tags = appendJaegerTagFromOCSpanKind(jSpan.Tags, ocSpan.Kind)
-		} else {
-			if _, ok := ocSpan.Attributes.AttributeMap["span.kind"]; !ok {
-				jSpan.Tags = appendJaegerTagFromOCSpanKind(jSpan.Tags, ocSpan.Kind)
-			}
-		}
-
+		jSpan.Tags = appendJaegerTagFromOCSpanKind(jSpan.Tags, ocSpan.Kind)
 		jSpan.Tags = appendJaegerThriftTagFromOCStatus(jSpan.Tags, ocSpan.Status)
 
 		jSpans = append(jSpans, jSpan)
@@ -280,6 +273,13 @@ func appendJaegerThriftTagFromOCStatus(jTags []*jaeger.Tag, ocStatus *tracepb.St
 }
 
 func appendJaegerTagFromOCSpanKind(jTags []*jaeger.Tag, ocSpanKind tracepb.Span_SpanKind) []*jaeger.Tag {
+	// TODO: (@pjanotti): Replace any OpenTracing literals by importing github.com/opentracing/opentracing-go/ext?
+	for _, jt := range jTags {
+		if jt.Key == "span.kind" {
+			return jTags
+		}
+	}
+
 	// TODO: (@pjanotti): Replace any OpenTracing literals by importing github.com/opentracing/opentracing-go/ext?
 	var tagValue string
 	switch ocSpanKind {

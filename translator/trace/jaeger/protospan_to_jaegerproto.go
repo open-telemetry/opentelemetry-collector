@@ -343,7 +343,13 @@ func ocMessageEventToJaegerTagsProto(msgEvent *tracepb.Span_TimeEvent_MessageEve
 
 // Replica of protospan_to_jaegerthrift appendJaegerTagFromOCSpanKind
 func appendJaegerTagFromOCSpanKindProto(jTags []jaeger.KeyValue, ocSpanKind tracepb.Span_SpanKind) []jaeger.KeyValue {
-	// We could check if the key is already present but it doesn't seem worth at this point.
+	// TODO: (@pjanotti): Replace any OpenTracing literals by importing github.com/opentracing/opentracing-go/ext?
+	for _, jt := range jTags {
+		if jt.Key == "span.kind" {
+			return jTags
+		}
+	}
+
 	// TODO: (@pjanotti): Replace any OpenTracing literals by importing github.com/opentracing/opentracing-go/ext?
 	var tagValue string
 	switch ocSpanKind {

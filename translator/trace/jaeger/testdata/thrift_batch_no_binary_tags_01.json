@@ -66,7 +66,7 @@
         {
           "key": "span.kind",
           "vType": "STRING",
-          "vStr": "server"
+          "vStr": "client"
         },
         {
           "key": "peer.port",

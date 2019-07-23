@@ -62,7 +62,7 @@
         },
         {
           "key": "span.kind",
-          "v_str": "server"
+          "v_str": "client"
         },
         {
           "key": "peer.port",

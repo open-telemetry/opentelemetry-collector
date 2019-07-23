@@ -1,7 +1,6 @@
 {
     "process": {
-      "serviceName": "api",
-      "tags": []
+      "serviceName": "api"
     },
     "spans": [
       {
