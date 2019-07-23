@@ -26,11 +26,11 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/internal/collector/processor"
-	"github.com/open-telemetry/opentelemetry-service/internal/collector/processor/nodebatcher"
-	"github.com/open-telemetry/opentelemetry-service/internal/collector/processor/queued"
 	"github.com/open-telemetry/opentelemetry-service/internal/collector/processor/tailsampling"
 	"github.com/open-telemetry/opentelemetry-service/internal/collector/telemetry"
 	"github.com/open-telemetry/opentelemetry-service/observability"
+	"github.com/open-telemetry/opentelemetry-service/processor/nodebatcher"
+	"github.com/open-telemetry/opentelemetry-service/processor/queued"
 )
 
 const (

@@ -12,22 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package internal
+// Package oterr provides helper functions to create and process
+// OpenTelemetry specific errors
+package oterr
 
 import (
-	"time"
-
-	"github.com/golang/protobuf/ptypes/timestamp"
+	"fmt"
+	"strings"
 )
 
-// TimeToTimestamp converts a time.Time to a timestamp.Timestamp pointer.
-func TimeToTimestamp(t time.Time) *timestamp.Timestamp {
-	if t.IsZero() {
-		return nil
+// CombineErrors converts a list of errors into one error.
+func CombineErrors(errs []error) error {
+	numErrors := len(errs)
+	if numErrors == 1 {
+		return errs[0]
+	} else if numErrors > 1 {
+		errMsgs := make([]string, 0, numErrors)
+		for _, err := range errs {
+			errMsgs = append(errMsgs, err.Error())
+		}
+		return fmt.Errorf("[%s]", strings.Join(errMsgs, "; "))
 	}
-	nanoTime := t.UnixNano()
-	return &timestamp.Timestamp{
-		Seconds: nanoTime / 1e9,
-		Nanos:   int32(nanoTime % 1e9),
-	}
+	return nil
 }
