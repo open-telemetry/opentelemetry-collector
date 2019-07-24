@@ -97,8 +97,8 @@ vet:
 
 .PHONY: install-tools
 install-tools:
-	go install golang.org/x/lint/golint
-	go install github.com/google/addlicense
+	GO111MODULE=on go install github.com/google/addlicense
+	GO111MODULE=on go install golang.org/x/lint/golint
 
 .PHONY: otelsvc
 otelsvc:
