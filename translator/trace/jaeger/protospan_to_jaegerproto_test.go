@@ -16,7 +16,6 @@ package jaeger
 
 import (
 	"fmt"
-	"github.com/google/go-cmp/cmp"
 	"reflect"
 	"sort"
 	"testing"
@@ -24,6 +23,7 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
+	"github.com/google/go-cmp/cmp"
 	jaeger "github.com/jaegertracing/jaeger/model"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
@@ -99,7 +99,9 @@ func sortJaegerProtoBatch(batch *jaeger.Batch) {
 		// For reading purposes https://github.com/google/go-cmp/issues/61
 		// To make cmp.Diff bypass the panic, set the Process of the Span to be that of the Batch only for
 		// testing purposes.
-		jSpan.Process = batch.Process
+		if jSpan.Process == nil {
+			jSpan.Process = batch.Process
+		}
 
 		sort.Slice(jSpan.Tags, func(i, j int) bool {
 			return jSpan.Tags[i].Key < jSpan.Tags[j].Key

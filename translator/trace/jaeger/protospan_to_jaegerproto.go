@@ -344,13 +344,6 @@ func ocMessageEventToJaegerTagsProto(msgEvent *tracepb.Span_TimeEvent_MessageEve
 // Replica of protospan_to_jaegerthrift appendJaegerTagFromOCSpanKind
 func appendJaegerTagFromOCSpanKindProto(jTags []jaeger.KeyValue, ocSpanKind tracepb.Span_SpanKind) []jaeger.KeyValue {
 	// TODO: (@pjanotti): Replace any OpenTracing literals by importing github.com/opentracing/opentracing-go/ext?
-	for _, jt := range jTags {
-		if jt.Key == "span.kind" {
-			return jTags
-		}
-	}
-
-	// TODO: (@pjanotti): Replace any OpenTracing literals by importing github.com/opentracing/opentracing-go/ext?
 	var tagValue string
 	switch ocSpanKind {
 	case tracepb.Span_CLIENT:
@@ -391,12 +384,6 @@ func appendJaegerTagFromOCTracestateProto(jTags []jaeger.KeyValue, ocSpanTracest
 func appendJaegerTagFromOCStatusProto(jTags []jaeger.KeyValue, ocStatus *tracepb.Status) []jaeger.KeyValue {
 	if ocStatus == nil {
 		return jTags
-	}
-
-	for _, jt := range jTags {
-		if jt.Key == "status.code" || jt.Key == "status.message" {
-			return jTags
-		}
 	}
 
 	jTags = append(jTags, jaeger.KeyValue{
@@ -506,9 +493,29 @@ func ocSpansToJaegerSpansProto(ocSpans []*tracepb.Span) ([]*jaeger.Span, error) 
 			// Flags: TODO Flags might be used once sampling and other features are implemented in OC.
 		}
 
+		// The following keys(with their values) stored as attributes on the OC span are not to be duplicated as
+		// Jaeger tags.
+		// If there are no attributes for the OC span, the tags should be set.
+		// The AttributeMap is used to check for the keys because it leads to better worst case performance compared to
+		// iterating over the list of set Jaeger tags.
+		var foundSpanKind = false
+		var foundStatusCode = false
+		var foundStatusMessage = false
+		if ocSpan.Attributes != nil {
+			// TODO: (@pjanotti): Replace any OpenTracing literals by importing github.com/opentracing/opentracing-go/ext?
+			_, foundSpanKind = ocSpan.Attributes.AttributeMap["span.kind"]
+			_, foundStatusCode = ocSpan.Attributes.AttributeMap[tracetranslator.TagStatusCode]
+			_, foundStatusMessage = ocSpan.Attributes.AttributeMap[tracetranslator.TagStatusMsg]
+		}
+
+		if !foundSpanKind {
+			jSpan.Tags = appendJaegerTagFromOCSpanKindProto(jSpan.Tags, ocSpan.Kind)
+		}
+		// Only add status tags if neither status.code or status.message are present.
+		if !foundStatusCode && !foundStatusMessage {
+			jSpan.Tags = appendJaegerTagFromOCStatusProto(jSpan.Tags, ocSpan.Status)
+		}
 		jSpan.Tags = appendJaegerTagFromOCTracestateProto(jSpan.Tags, ocSpan.Tracestate)
-		jSpan.Tags = appendJaegerTagFromOCSpanKindProto(jSpan.Tags, ocSpan.Kind)
-		jSpan.Tags = appendJaegerTagFromOCStatusProto(jSpan.Tags, ocSpan.Status)
 		jSpan.Tags = appendJaegerTagFromOCSameProcessAsParentSpanProto(jSpan.Tags, ocSpan.SameProcessAsParentSpan)
 		jSpan.Tags = appendJaegerTagFromOCChildSpanCountProto(jSpan.Tags, ocSpan.ChildSpanCount)
 		jSpans = append(jSpans, jSpan)

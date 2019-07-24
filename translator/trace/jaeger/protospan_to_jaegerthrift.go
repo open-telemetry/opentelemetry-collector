@@ -194,9 +194,28 @@ func ocSpansToJaegerSpans(ocSpans []*tracepb.Span) ([]*jaeger.Span, error) {
 			Logs:      ocTimeEventsToJaegerLogs(ocSpan.TimeEvents),
 		}
 
-		jSpan.Tags = appendJaegerTagFromOCSpanKind(jSpan.Tags, ocSpan.Kind)
-		jSpan.Tags = appendJaegerThriftTagFromOCStatus(jSpan.Tags, ocSpan.Status)
+		// The following keys(with their values) stored as attributes on the OC span are not to be duplicated as
+		// Jaeger tags.
+		// If there are no attributes for the OC span, the tags should be set.
+		// The AttributeMap is used to check for the keys because it leads to better worst case performance compared to
+		// iterating over the list of set Jaeger tags.
+		var foundSpanKind = false
+		var foundStatusCode = false
+		var foundStatusMessage = false
+		if ocSpan.Attributes != nil {
+			// TODO: (@pjanotti): Replace any OpenTracing literals by importing github.com/opentracing/opentracing-go/ext?
+			_, foundSpanKind = ocSpan.Attributes.AttributeMap["span.kind"]
+			_, foundStatusCode = ocSpan.Attributes.AttributeMap[tracetranslator.TagStatusCode]
+			_, foundStatusMessage = ocSpan.Attributes.AttributeMap[tracetranslator.TagStatusMsg]
+		}
 
+		if !foundSpanKind {
+			jSpan.Tags = appendJaegerTagFromOCSpanKind(jSpan.Tags, ocSpan.Kind)
+		}
+		// Only add status tags if neither status.code or status.message are present.
+		if !foundStatusCode && !foundStatusMessage {
+			jSpan.Tags = appendJaegerThriftTagFromOCStatus(jSpan.Tags, ocSpan.Status)
+		}
 		jSpans = append(jSpans, jSpan)
 	}
 
@@ -248,12 +267,6 @@ func appendJaegerThriftTagFromOCStatus(jTags []*jaeger.Tag, ocStatus *tracepb.St
 		return jTags
 	}
 
-	for _, jt := range jTags {
-		if jt.Key == tracetranslator.TagStatusCode || jt.Key == tracetranslator.TagStatusMsg {
-			return jTags
-		}
-	}
-
 	code := int64(ocStatus.Code)
 	jTags = append(jTags, &jaeger.Tag{
 		Key:   tracetranslator.TagStatusCode,
@@ -273,12 +286,6 @@ func appendJaegerThriftTagFromOCStatus(jTags []*jaeger.Tag, ocStatus *tracepb.St
 }
 
 func appendJaegerTagFromOCSpanKind(jTags []*jaeger.Tag, ocSpanKind tracepb.Span_SpanKind) []*jaeger.Tag {
-	// TODO: (@pjanotti): Replace any OpenTracing literals by importing github.com/opentracing/opentracing-go/ext?
-	for _, jt := range jTags {
-		if jt.Key == "span.kind" {
-			return jTags
-		}
-	}
 
 	// TODO: (@pjanotti): Replace any OpenTracing literals by importing github.com/opentracing/opentracing-go/ext?
 	var tagValue string
