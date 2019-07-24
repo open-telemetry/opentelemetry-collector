@@ -23,6 +23,8 @@ const (
 	MessageEventCompressedSizeKey   = "message.compressed_size"
 	MessageEventUncompressedSizeKey = "message.uncompressed_size"
 
+	TagSpanKind = "span.kind"
+
 	TagStatusCode       = "status.code"
 	TagStatusMsg        = "status.message"
 	TagHTTPStatusCode   = "http.status_code"

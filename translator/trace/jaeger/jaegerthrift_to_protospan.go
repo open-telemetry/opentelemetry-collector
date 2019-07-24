@@ -198,9 +198,8 @@ func jtagsToAttributes(tags []*jaeger.Tag) (string, tracepb.Span_SpanKind, *trac
 
 	for _, tag := range tags {
 		// Take the opportunity to get the "span.kind" per OpenTracing spec, however, keep it also on the attributes.
-		// TODO: (@pjanotti): Replace any OpenTracing literals by importing github.com/opentracing/opentracing-go/ext?
 		switch tag.Key {
-		case "span.kind":
+		case tracetranslator.TagSpanKind:
 			switch tag.GetVStr() {
 			case "client":
 				sKind = tracepb.Span_CLIENT

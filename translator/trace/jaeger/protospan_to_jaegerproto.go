@@ -343,7 +343,6 @@ func ocMessageEventToJaegerTagsProto(msgEvent *tracepb.Span_TimeEvent_MessageEve
 
 // Replica of protospan_to_jaegerthrift appendJaegerTagFromOCSpanKind
 func appendJaegerTagFromOCSpanKindProto(jTags []jaeger.KeyValue, ocSpanKind tracepb.Span_SpanKind) []jaeger.KeyValue {
-	// We could check if the key is already present but it doesn't seem worth at this point.
 	// TODO: (@pjanotti): Replace any OpenTracing literals by importing github.com/opentracing/opentracing-go/ext?
 	var tagValue string
 	switch ocSpanKind {
@@ -355,7 +354,7 @@ func appendJaegerTagFromOCSpanKindProto(jTags []jaeger.KeyValue, ocSpanKind trac
 
 	if tagValue != "" {
 		jTag := jaeger.KeyValue{
-			Key:   "span.kind",
+			Key:   tracetranslator.TagSpanKind,
 			VStr:  tagValue,
 			VType: jaeger.ValueType_STRING,
 		}
@@ -385,12 +384,6 @@ func appendJaegerTagFromOCTracestateProto(jTags []jaeger.KeyValue, ocSpanTracest
 func appendJaegerTagFromOCStatusProto(jTags []jaeger.KeyValue, ocStatus *tracepb.Status) []jaeger.KeyValue {
 	if ocStatus == nil {
 		return jTags
-	}
-
-	for _, jt := range jTags {
-		if jt.Key == "status.code" || jt.Key == "status.message" {
-			return jTags
-		}
 	}
 
 	jTags = append(jTags, jaeger.KeyValue{
@@ -500,9 +493,16 @@ func ocSpansToJaegerSpansProto(ocSpans []*tracepb.Span) ([]*jaeger.Span, error) 
 			// Flags: TODO Flags might be used once sampling and other features are implemented in OC.
 		}
 
+		// Only add the "span.kind" tag if not set in the OC span attributes.
+		if !tracetranslator.OCAttributeKeyExist(ocSpan.Attributes, tracetranslator.TagSpanKind) {
+			jSpan.Tags = appendJaegerTagFromOCSpanKindProto(jSpan.Tags, ocSpan.Kind)
+		}
+		// Only add status tags if neither status.code and status.message are set in the OC span attributes.
+		if !tracetranslator.OCAttributeKeyExist(ocSpan.Attributes, tracetranslator.TagStatusCode) &&
+			!tracetranslator.OCAttributeKeyExist(ocSpan.Attributes, tracetranslator.TagStatusMsg) {
+			jSpan.Tags = appendJaegerTagFromOCStatusProto(jSpan.Tags, ocSpan.Status)
+		}
 		jSpan.Tags = appendJaegerTagFromOCTracestateProto(jSpan.Tags, ocSpan.Tracestate)
-		jSpan.Tags = appendJaegerTagFromOCSpanKindProto(jSpan.Tags, ocSpan.Kind)
-		jSpan.Tags = appendJaegerTagFromOCStatusProto(jSpan.Tags, ocSpan.Status)
 		jSpan.Tags = appendJaegerTagFromOCSameProcessAsParentSpanProto(jSpan.Tags, ocSpan.SameProcessAsParentSpan)
 		jSpan.Tags = appendJaegerTagFromOCChildSpanCountProto(jSpan.Tags, ocSpan.ChildSpanCount)
 		jSpans = append(jSpans, jSpan)

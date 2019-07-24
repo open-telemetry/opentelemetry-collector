@@ -15,7 +15,6 @@
 package jaeger
 
 import (
-	"encoding/json"
 	"fmt"
 	"reflect"
 	"sort"
@@ -24,10 +23,10 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
+	"github.com/google/go-cmp/cmp"
 	jaeger "github.com/jaegertracing/jaeger/model"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/internal/testutils"
 	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
 )
 
@@ -75,38 +74,46 @@ func TestOCProtoToJaegerProto(t *testing.T) {
 			continue
 		}
 
-		// Sort tags to help with comparison, not only for jaeger.Process but also
-		// on each span.
-		sort.Slice(gotJBatch.Process.Tags, func(i, j int) bool {
-			return gotJBatch.Process.Tags[i].Key < gotJBatch.Process.Tags[j].Key
-		})
-		sort.Slice(wantJBatch.Process.Tags, func(i, j int) bool {
-			return wantJBatch.Process.Tags[i].Key < wantJBatch.Process.Tags[j].Key
-		})
-		var jSpans []*jaeger.Span
-		jSpans = append(jSpans, gotJBatch.Spans...)
-		jSpans = append(jSpans, wantJBatch.Spans...)
-		for _, jSpan := range jSpans {
-			sort.Slice(jSpan.Tags, func(i, j int) bool {
-				return jSpan.Tags[i].Key < jSpan.Tags[j].Key
-			})
-		}
-		for _, jSpan := range jSpans {
-			for _, jSpanLog := range jSpan.Logs {
-				sort.Slice(jSpanLog.Fields, func(i, j int) bool {
-					return jSpanLog.Fields[i].Key < jSpanLog.Fields[j].Key
-				})
-			}
-		}
+		// Sort the got and want jaeger batch values for comparison purposes.
+		sortJaegerProtoBatch(gotJBatch)
+		sortJaegerProtoBatch(wantJBatch)
 
-		gjson, _ := json.Marshal(gotJBatch)
-		wjson, _ := json.Marshal(wantJBatch)
-		gjsonStr := testutils.GenerateNormalizedJSON(string(gjson))
-		wjsonStr := testutils.GenerateNormalizedJSON(string(wjson))
-		if gjsonStr != wjsonStr {
-			t.Errorf("OC Proto to Jaeger Proto failed.\nGot:\n%s\nWant:\n%s\n", gjsonStr, wjsonStr)
+		if diff := cmp.Diff(gotJBatch, wantJBatch); diff != "" {
+			// Note: Lines with "-" at the beginning refer to values in gotJBatch. Lines with "+" refer to values in
+			// wantJBatch.
+			t.Errorf("OC Proto to Jaeger Proto failed with following difference: \n%s", diff)
 		}
 	}
+}
+
+// Helper method to sort jaeger.Batch for cmp.Diff.
+func sortJaegerProtoBatch(batch *jaeger.Batch) {
+	// First sort the process tags.
+	sort.Slice(batch.Process.Tags, func(i, j int) bool {
+		return batch.Process.Tags[i].Key < batch.Process.Tags[j].Key
+	})
+	// Sort the span tags and the span log fields.
+	for _, jSpan := range batch.Spans {
+
+		// cmp.Diff ends up comparing batch.Spans[].Process where it doesn't handle nil references well.
+		// For reading purposes https://github.com/google/go-cmp/issues/61
+		// To make cmp.Diff bypass the panic, set the Process of the Span to be that of the Batch only for
+		// testing purposes.
+		if jSpan.Process == nil {
+			jSpan.Process = batch.Process
+		}
+
+		sort.Slice(jSpan.Tags, func(i, j int) bool {
+			return jSpan.Tags[i].Key < jSpan.Tags[j].Key
+		})
+		for _, jSpanLog := range jSpan.Logs {
+			sort.Slice(jSpanLog.Fields, func(i, j int) bool {
+				return jSpanLog.Fields[i].Key < jSpanLog.Fields[j].Key
+			})
+		}
+
+	}
+
 }
 
 func TestOCStatusToJaegerProtoTags(t *testing.T) {
@@ -350,7 +357,7 @@ var ocBatches = []consumerdata.TraceData{
 				SpanId:       []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x64, 0x7D, 0x98},
 				ParentSpanId: []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x68, 0xC4, 0xE3},
 				Name:         &tracepb.TruncatableString{Value: "get"},
-				Kind:         tracepb.Span_SERVER,
+				Kind:         tracepb.Span_CLIENT,
 				StartTime:    &timestamp.Timestamp{Seconds: 1485467191, Nanos: 639875000},
 				EndTime:      &timestamp.Timestamp{Seconds: 1485467191, Nanos: 662813000},
 				Attributes: &tracepb.Span_Attributes{
@@ -372,6 +379,9 @@ var ocBatches = []consumerdata.TraceData{
 						},
 						"someDouble": {
 							Value: &tracepb.AttributeValue_DoubleValue{DoubleValue: 129.8},
+						},
+						"span.kind": {
+							Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "client"}},
 						},
 					},
 				},
