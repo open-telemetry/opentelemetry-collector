@@ -49,6 +49,10 @@ func TestLoadConfig(t *testing.T) {
 			TypeVal: typeStr,
 			NameVal: "jaeger/customname",
 			Protocols: map[string]*configmodels.ReceiverSettings{
+				"grpc": {
+					Disabled: true,
+					Endpoint: "127.0.0.1:9876",
+				},
 				"thrift-http": {
 					Disabled: true,
 					Endpoint: "127.0.0.1:3456",

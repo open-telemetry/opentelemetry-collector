@@ -28,6 +28,7 @@ import (
 	"github.com/jaegertracing/jaeger/cmd/agent/app/configmanager"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/reporter"
 	"github.com/jaegertracing/jaeger/cmd/collector/app"
+	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"github.com/jaegertracing/jaeger/thrift-gen/baggage"
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 	"github.com/jaegertracing/jaeger/thrift-gen/sampling"
@@ -36,6 +37,7 @@ import (
 	tchannel "github.com/uber/tchannel-go"
 	"github.com/uber/tchannel-go/thrift"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/observability"
@@ -48,6 +50,7 @@ import (
 type Configuration struct {
 	CollectorThriftPort int `mapstructure:"tchannel_port"`
 	CollectorHTTPPort   int `mapstructure:"collector_http_port"`
+	CollectorGRPCPort   int `mapstructure:"collector_grpc_port"`
 
 	AgentPort              int `mapstructure:"agent_port"`
 	AgentCompactThriftPort int `mapstructure:"agent_compact_thrift_port"`
@@ -70,6 +73,7 @@ type jReceiver struct {
 	agent       *agentapp.Agent
 	agentServer *http.Server
 
+	grpc            *grpc.Server
 	tchannel        *tchannel.Channel
 	collectorServer *http.Server
 
@@ -77,7 +81,9 @@ type jReceiver struct {
 }
 
 const (
-	// As per https://www.jaegertracing.io/docs/1.7/deployment/
+	// As per https://www.jaegertracing.io/docs/1.13/deployment/
+	// By default, the port used by jaeger-agent to send spans in model.proto format
+	defaultGRPCPort = 14250
 	// By default, the port used by jaeger-agent to send spans in jaeger.thrift format
 	defaultTChannelPort = 14267
 	// By default, can accept spans directly from clients in jaeger.thrift format over binary thrift protocol
@@ -145,7 +151,18 @@ func (jr *jReceiver) tchannelAddr() string {
 	return fmt.Sprintf(":%d", port)
 }
 
-func (jr *jReceiver) AgentCompactThriftAddr() string {
+func (jr *jReceiver) grpcAddr() string {
+	var port int
+	if jr.config != nil {
+		port = jr.config.CollectorGRPCPort
+	}
+	if port <= 0 {
+		port = defaultGRPCPort
+	}
+	return fmt.Sprintf(":%d", port)
+}
+
+func (jr *jReceiver) agentCompactThriftAddr() string {
 	var port int
 	if jr.config != nil {
 		port = jr.config.AgentCompactThriftPort
@@ -219,6 +236,10 @@ func (jr *jReceiver) stopTraceReceptionLocked() error {
 			jr.tchannel.Close()
 			jr.tchannel = nil
 		}
+		if jr.grpc != nil {
+			jr.grpc.Stop()
+			jr.grpc = nil
+		}
 		if len(errs) == 0 {
 			err = nil
 			return
@@ -262,6 +283,7 @@ func (jr *jReceiver) SubmitBatches(ctx thrift.Context, batches []*jaeger.Batch) 
 
 var _ reporter.Reporter = (*jReceiver)(nil)
 var _ agentapp.CollectorProxy = (*jReceiver)(nil)
+var _ api_v2.CollectorServiceServer = (*jReceiver)(nil)
 
 // EmitZipkinBatch implements cmd/agent/reporter.Reporter and it forwards
 // Zipkin spans received by the Jaeger agent processor.
@@ -300,6 +322,21 @@ func (jr *jReceiver) GetBaggageRestrictions(serviceName string) ([]*baggage.Bagg
 	return nil, nil
 }
 
+func (jr *jReceiver) PostSpans(ctx context.Context, r *api_v2.PostSpansRequest) (*api_v2.PostSpansResponse, error) {
+	ctxWithReceiverName := observability.ContextWithReceiverName(ctx, collectorReceiverTagValue)
+
+	td, err := jaegertranslator.ProtoBatchToOCProto(r.Batch)
+	if err != nil {
+		observability.RecordTraceReceiverMetrics(ctxWithReceiverName, len(r.Batch.Spans), len(r.Batch.Spans))
+		return nil, err
+	}
+
+	err = jr.nextConsumer.ConsumeTraceData(ctx, td)
+	observability.RecordTraceReceiverMetrics(ctxWithReceiverName, len(r.Batch.Spans), len(r.Batch.Spans)-len(td.Spans))
+
+	return &api_v2.PostSpansResponse{}, err
+}
+
 func (jr *jReceiver) startAgent() error {
 	processorConfigs := []agentapp.ProcessorConfiguration{
 		{
@@ -307,7 +344,7 @@ func (jr *jReceiver) startAgent() error {
 			Model:    "jaeger",
 			Protocol: "compact",
 			Server: agentapp.ServerConfiguration{
-				HostPort: jr.AgentCompactThriftAddr(),
+				HostPort: jr.agentCompactThriftAddr(),
 			},
 		},
 		{
@@ -374,6 +411,26 @@ func (jr *jReceiver) startCollector() error {
 	jr.collectorServer = &http.Server{Handler: nr}
 	go func() {
 		_ = jr.collectorServer.Serve(cln)
+	}()
+
+	// And finally, the gRPC server
+	jr.grpc = grpc.NewServer()
+	gaddr := jr.grpcAddr()
+	gln, gerr := net.Listen("tcp", gaddr)
+	if gerr != nil {
+		// Abort and close tch, cln
+		tch.Close()
+		cln.Close()
+		return fmt.Errorf("Failed to bind to gRPC address %q: %v", gaddr, gerr)
+	}
+
+	api_v2.RegisterCollectorServiceServer(jr.grpc, jr)
+
+	go func() {
+		if err := jr.grpc.Serve(gln); err != nil {
+			// TODO(@jpkrohling): what is the pattern in this project to log errors in go routines?
+			// return fmt.Errorf("Could not launch gRPC service: %v", err)
+		}
 	}()
 
 	return nil
