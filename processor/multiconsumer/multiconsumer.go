@@ -19,7 +19,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/internal"
+	"github.com/open-telemetry/opentelemetry-service/oterr"
 	"github.com/open-telemetry/opentelemetry-service/processor"
 )
 
@@ -40,7 +40,7 @@ func (mcs metricsConsumers) ConsumeMetricsData(ctx context.Context, md consumerd
 			errs = append(errs, err)
 		}
 	}
-	return internal.CombineErrors(errs)
+	return oterr.CombineErrors(errs)
 }
 
 // NewTraceProcessor wraps multiple trace consumers in a single one.
@@ -60,5 +60,5 @@ func (tcs traceConsumers) ConsumeTraceData(ctx context.Context, td consumerdata.
 			errs = append(errs, err)
 		}
 	}
-	return internal.CombineErrors(errs)
+	return oterr.CombineErrors(errs)
 }

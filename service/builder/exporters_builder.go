@@ -23,7 +23,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
-	"github.com/open-telemetry/opentelemetry-service/internal"
+	"github.com/open-telemetry/opentelemetry-service/oterr"
 )
 
 // builtExporter is an exporter that is built based on a config. It can have
@@ -150,7 +150,7 @@ func combineStopFunc(f1, f2 exporter.StopFunc) exporter.StopFunc {
 		if err := f2(); err != nil {
 			errs = append(errs, err)
 		}
-		return internal.CombineErrors(errs)
+		return oterr.CombineErrors(errs)
 	}
 }
 

@@ -31,9 +31,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exporterhelper"
-	"github.com/open-telemetry/opentelemetry-service/internal"
 	"github.com/open-telemetry/opentelemetry-service/internal/compression"
 	compressiongrpc "github.com/open-telemetry/opentelemetry-service/internal/compression/grpc"
+	"github.com/open-telemetry/opentelemetry-service/oterr"
 )
 
 // keepaliveConfig exposes the keepalive.ClientParameters to be used by the exporter.
@@ -215,7 +215,7 @@ func (oce *ocagentExporter) stop() error {
 	wg.Wait()
 	close(oce.exporters)
 
-	return internal.CombineErrors(errors)
+	return oterr.CombineErrors(errors)
 }
 
 func (oce *ocagentExporter) PushTraceData(ctx context.Context, td consumerdata.TraceData) (int, error) {

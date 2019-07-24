@@ -20,12 +20,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/exporter/loggingexporter"
 	"github.com/open-telemetry/opentelemetry-service/exporter/opencensusexporter"
 	"github.com/open-telemetry/opentelemetry-service/exporter/prometheusexporter"
-	"github.com/open-telemetry/opentelemetry-service/internal"
-	"github.com/open-telemetry/opentelemetry-service/internal/collector/processor/nodebatcher"
-	"github.com/open-telemetry/opentelemetry-service/internal/collector/processor/queued"
+	"github.com/open-telemetry/opentelemetry-service/oterr"
 	"github.com/open-telemetry/opentelemetry-service/processor"
 	"github.com/open-telemetry/opentelemetry-service/processor/addattributesprocessor"
 	"github.com/open-telemetry/opentelemetry-service/processor/attributekeyprocessor"
+	"github.com/open-telemetry/opentelemetry-service/processor/nodebatcher"
+	"github.com/open-telemetry/opentelemetry-service/processor/queued"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 	"github.com/open-telemetry/opentelemetry-service/receiver/jaegerreceiver"
 	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver"
@@ -72,5 +72,5 @@ func Components() (
 	if err != nil {
 		errs = append(errs, err)
 	}
-	return receivers, processors, exporters, internal.CombineErrors(errs)
+	return receivers, processors, exporters, oterr.CombineErrors(errs)
 }

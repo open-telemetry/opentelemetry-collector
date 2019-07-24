@@ -22,16 +22,16 @@ import (
 	"sync"
 	"time"
 
+	"contrib.go.opencensus.io/resource/auto"
+	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/prometheus/procfs"
 	"go.opencensus.io/trace"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/internal"
-
-	"contrib.go.opencensus.io/resource/auto"
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	"github.com/open-telemetry/opentelemetry-service/oterr"
 )
 
 // VMMetricsCollector is a struct that collects and reports VM and process metrics (cpu, mem, etc).
@@ -216,7 +216,7 @@ func (vmc *VMMetricsCollector) scrapeAndExport() {
 	}
 
 	if len(errs) > 0 {
-		span.SetStatus(trace.Status{Code: trace.StatusCodeDataLoss, Message: fmt.Sprintf("Error(s) when scraping VM metrics: %v", internal.CombineErrors(errs))})
+		span.SetStatus(trace.Status{Code: trace.StatusCodeDataLoss, Message: fmt.Sprintf("Error(s) when scraping VM metrics: %v", oterr.CombineErrors(errs))})
 	}
 
 	if len(metrics) > 0 {
