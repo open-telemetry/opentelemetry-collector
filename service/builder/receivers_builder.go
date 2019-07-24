@@ -23,7 +23,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/config/configerror"
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/internal"
+	"github.com/open-telemetry/opentelemetry-service/oterr"
 	"github.com/open-telemetry/opentelemetry-service/processor/multiconsumer"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
@@ -52,7 +52,7 @@ func (rcv *builtReceiver) Stop() error {
 		}
 	}
 
-	return internal.CombineErrors(errors)
+	return oterr.CombineErrors(errors)
 }
 
 // Start the receiver.
@@ -72,7 +72,7 @@ func (rcv *builtReceiver) Start(host receiver.Host) error {
 		}
 	}
 
-	return internal.CombineErrors(errors)
+	return oterr.CombineErrors(errors)
 }
 
 // Receivers is a map of receivers created from receiver configs.

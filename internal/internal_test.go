@@ -15,7 +15,6 @@
 package internal_test
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -37,37 +36,5 @@ func TestTimeConverters(t *testing.T) {
 	}
 	if g, w := t1.UnixNano(), t2.UnixNano(); g != w {
 		t.Errorf("Convertedback time does not match original time\nGot: %d\nWant:%d", g, w)
-	}
-}
-
-func TestCombineErrors(t *testing.T) {
-	testCases := []struct {
-		errors    []error
-		expected  string
-		expectNil bool
-	}{{
-		errors:    []error{},
-		expectNil: true,
-	}, {
-		errors: []error{
-			fmt.Errorf("foo"),
-		},
-		expected: "foo",
-	}, {
-		errors: []error{
-			fmt.Errorf("foo"),
-			fmt.Errorf("bar"),
-		},
-		expected: "[foo; bar]",
-	}}
-
-	for _, tc := range testCases {
-		got := internal.CombineErrors(tc.errors)
-		if (got == nil) != tc.expectNil {
-			t.Errorf("CombineErrors(%v) == nil? Got: %t. Want: %t", tc.errors, got == nil, tc.expectNil)
-		}
-		if got != nil && tc.expected != got.Error() {
-			t.Errorf("CombineErrors(%v) = %q. Want: %q", tc.errors, got, tc.expected)
-		}
 	}
 }
