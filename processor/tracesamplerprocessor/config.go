@@ -16,8 +16,8 @@ package tracesamplerprocessor
 
 import "github.com/open-telemetry/opentelemetry-service/config/configmodels"
 
-// TraceSamplerCfg has the configuration guiding the trace sampler processor.
-type TraceSamplerCfg struct {
+// Config has the configuration guiding the trace sampler processor.
+type Config struct {
 	configmodels.ProcessorSettings `mapstructure:",squash"`
 	// SamplingPercentage is the percentage rate at which traces are going to be sampled. Defaults to zero, i.e.: no sample.
 	// Values greater or equal 100 are treated as "sample all traces".

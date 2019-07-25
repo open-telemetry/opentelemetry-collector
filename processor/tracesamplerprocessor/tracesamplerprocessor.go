@@ -38,8 +38,8 @@ const (
 	percentageScaleFactor = numHashBuckets / 100.0
 )
 
-// InitFromViper updates TraceSamplerCfg according to the viper configuration.
-func (tsc *TraceSamplerCfg) InitFromViper(v *viper.Viper) (*TraceSamplerCfg, error) {
+// InitFromViper updates TraceSampler config according to the viper configuration.
+func (tsc *Config) InitFromViper(v *viper.Viper) (*Config, error) {
 	if v == nil {
 		return nil, errors.New("v is nil")
 	}
@@ -62,7 +62,7 @@ var _ processor.TraceProcessor = (*tracesamplerprocessor)(nil)
 
 // NewTraceProcessor returns a processor.TraceProcessor that will perform head sampling according to the given
 // configuration.
-func NewTraceProcessor(nextConsumer consumer.TraceConsumer, cfg TraceSamplerCfg) (processor.TraceProcessor, error) {
+func NewTraceProcessor(nextConsumer consumer.TraceConsumer, cfg Config) (processor.TraceProcessor, error) {
 	if nextConsumer == nil {
 		return nil, errors.New("nextConsumer is nil")
 	}

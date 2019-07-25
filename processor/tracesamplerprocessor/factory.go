@@ -24,8 +24,8 @@ import (
 )
 
 const (
-	// The value of "type" trace-sample in configuration.
-	typeStr = "trace-sample"
+	// The value of "type" trace-samplers in configuration.
+	typeStr = "trace-sampler"
 )
 
 // Factory is the factory for trace-sample processor.
@@ -39,7 +39,7 @@ func (f *Factory) Type() string {
 
 // CreateDefaultConfig creates the default configuration for processor.
 func (f *Factory) CreateDefaultConfig() configmodels.Processor {
-	return &TraceSamplerCfg{
+	return &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
 			TypeVal: typeStr,
 			NameVal: typeStr,
@@ -53,7 +53,7 @@ func (f *Factory) CreateTraceProcessor(
 	nextConsumer consumer.TraceConsumer,
 	cfg configmodels.Processor,
 ) (processor.TraceProcessor, error) {
-	oCfg := cfg.(*TraceSamplerCfg)
+	oCfg := cfg.(*Config)
 	return NewTraceProcessor(nextConsumer, *oCfg)
 }
 

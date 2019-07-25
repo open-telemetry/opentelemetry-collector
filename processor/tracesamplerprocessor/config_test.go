@@ -39,12 +39,12 @@ func TestLoadConfig(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
 
-	p0 := cfg.Processors["trace-sample"]
+	p0 := cfg.Processors["trace-sampler"]
 	assert.Equal(t, p0,
-		&TraceSamplerCfg{
+		&Config{
 			ProcessorSettings: configmodels.ProcessorSettings{
-				TypeVal: "trace-sample",
-				NameVal: "trace-sample",
+				TypeVal: "trace-sampler",
+				NameVal: "trace-sampler",
 			},
 			SamplingPercentage: 15.3,
 			HashSeed:           22,
@@ -67,7 +67,7 @@ func TestLoadConfigEmpty(t *testing.T) {
 
 	require.Nil(t, err)
 	require.NotNil(t, config)
-	p0 := config.Processors["trace-sample"]
+	p0 := config.Processors["trace-sampler"]
 	factory := &Factory{}
 	assert.Equal(t, p0, factory.CreateDefaultConfig())
 }

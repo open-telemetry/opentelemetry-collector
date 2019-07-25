@@ -17,17 +17,14 @@ package tracesamplerprocessor
 import (
 	"testing"
 
-	"go.uber.org/zap"
-
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := &Factory{}
-	require.NotNil(t, factory)
 
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
@@ -35,7 +32,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestCreateProcessor(t *testing.T) {
 	factory := &Factory{}
-	require.NotNil(t, factory)
 
 	cfg := factory.CreateDefaultConfig()
 

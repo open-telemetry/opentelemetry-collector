@@ -33,7 +33,7 @@ import (
 	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
 )
 
-func TestTraceSamplerCfg_InitFromViper(t *testing.T) {
+func TestConfig_InitFromViper(t *testing.T) {
 	type fields struct {
 		SamplingPercentage float32
 	}
@@ -41,7 +41,7 @@ func TestTraceSamplerCfg_InitFromViper(t *testing.T) {
 		name       string
 		fields     fields
 		genViperFn func() *viper.Viper
-		want       *TraceSamplerCfg
+		want       *Config
 		wantErr    bool
 	}{
 		{
@@ -76,7 +76,7 @@ func TestTraceSamplerCfg_InitFromViper(t *testing.T) {
 				v.Set(samplingPercentageCfgTag, 5)
 				return v
 			},
-			want: &TraceSamplerCfg{
+			want: &Config{
 				SamplingPercentage: 5.0,
 			},
 		},
@@ -88,7 +88,7 @@ func TestTraceSamplerCfg_InitFromViper(t *testing.T) {
 				v.Set(hashSeedCfgTag, 1234)
 				return v
 			},
-			want: &TraceSamplerCfg{
+			want: &Config{
 				SamplingPercentage: 0.03,
 				HashSeed:           1234,
 			},
@@ -96,16 +96,16 @@ func TestTraceSamplerCfg_InitFromViper(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tsc := &TraceSamplerCfg{
+			tsc := &Config{
 				SamplingPercentage: tt.fields.SamplingPercentage,
 			}
 			got, err := tsc.InitFromViper(tt.genViperFn())
 			if (err != nil) != tt.wantErr {
-				t.Errorf("TraceSamplerCfg.InitFromViper() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Config.InitFromViper() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("TraceSamplerCfg.InitFromViper() = %v, want %v", got, tt.want)
+				t.Errorf("Config.InitFromViper() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -115,7 +115,7 @@ func TestNewTraceProcessor(t *testing.T) {
 	tests := []struct {
 		name         string
 		nextConsumer consumer.TraceConsumer
-		cfg          TraceSamplerCfg
+		cfg          Config
 		want         processor.TraceProcessor
 		wantErr      bool
 	}{
@@ -126,7 +126,7 @@ func TestNewTraceProcessor(t *testing.T) {
 		{
 			name:         "happy_path",
 			nextConsumer: &exportertest.SinkTraceExporter{},
-			cfg: TraceSamplerCfg{
+			cfg: Config{
 				SamplingPercentage: 15.5,
 			},
 			want: &tracesamplerprocessor{
@@ -136,7 +136,7 @@ func TestNewTraceProcessor(t *testing.T) {
 		{
 			name:         "happy_path_hash_seed",
 			nextConsumer: &exportertest.SinkTraceExporter{},
-			cfg: TraceSamplerCfg{
+			cfg: Config{
 				SamplingPercentage: 13.33,
 				HashSeed:           4321,
 			},
@@ -169,14 +169,14 @@ func TestNewTraceProcessor(t *testing.T) {
 func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 	tests := []struct {
 		name              string
-		cfg               TraceSamplerCfg
+		cfg               Config
 		numBatches        int
 		numTracesPerBatch int
 		acceptableDelta   float64
 	}{
 		{
 			name: "random_sampling_tiny",
-			cfg: TraceSamplerCfg{
+			cfg: Config{
 				SamplingPercentage: 0.03,
 			},
 			numBatches:        1e5,
@@ -185,7 +185,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 		},
 		{
 			name: "random_sampling_small",
-			cfg: TraceSamplerCfg{
+			cfg: Config{
 				SamplingPercentage: 5,
 			},
 			numBatches:        1e5,
@@ -194,7 +194,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 		},
 		{
 			name: "random_sampling_medium",
-			cfg: TraceSamplerCfg{
+			cfg: Config{
 				SamplingPercentage: 50.0,
 			},
 			numBatches:        1e5,
@@ -203,7 +203,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 		},
 		{
 			name: "random_sampling_high",
-			cfg: TraceSamplerCfg{
+			cfg: Config{
 				SamplingPercentage: 90.0,
 			},
 			numBatches:        1e5,
@@ -212,7 +212,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 		},
 		{
 			name: "random_sampling_all",
-			cfg: TraceSamplerCfg{
+			cfg: Config{
 				SamplingPercentage: 100.0,
 			},
 			numBatches:        1e5,
