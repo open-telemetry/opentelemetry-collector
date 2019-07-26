@@ -1,0 +1,15 @@
+receivers:
+  examplereceiver:
+
+processors:
+  trace-sampler:
+    
+
+exporters:
+  exampleexporter:
+
+pipelines:
+  traces:
+    receivers: [examplereceiver]
+    processors: [trace-sampler]
+    exporters: [exampleexporter]

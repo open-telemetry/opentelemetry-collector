@@ -1,0 +1,16 @@
+receivers:
+  examplereceiver:
+
+processors:
+  trace-sampler:
+    sampling-percentage: 15.3
+    hash-seed: 22
+
+exporters:
+  exampleexporter:
+
+pipelines:
+  traces:
+    receivers: [examplereceiver]
+    processors: [trace-sampler]
+    exporters: [exampleexporter]
