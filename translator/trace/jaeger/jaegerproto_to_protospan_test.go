@@ -164,7 +164,6 @@ func expectedTraceData(t1, t2, t3 time.Time) consumerdata.TraceData {
 				},
 			},
 		},
-		SourceFormat: "jaeger",
 	}
 
 }

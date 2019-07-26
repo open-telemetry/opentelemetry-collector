@@ -194,12 +194,12 @@ func (jr *jReceiver) StartTraceReception(host receiver.Host) error {
 
 	var err = errAlreadyStarted
 	jr.startOnce.Do(func() {
-		if err = jr.startAgent(); err != nil && err != errAlreadyStarted {
+		if err = jr.startAgent(host); err != nil && err != errAlreadyStarted {
 			jr.stopTraceReceptionLocked()
 			return
 		}
 
-		if err = jr.startCollector(); err != nil && err != errAlreadyStarted {
+		if err = jr.startCollector(host); err != nil && err != errAlreadyStarted {
 			jr.stopTraceReceptionLocked()
 			return
 		}
@@ -326,6 +326,7 @@ func (jr *jReceiver) PostSpans(ctx context.Context, r *api_v2.PostSpansRequest) 
 	ctxWithReceiverName := observability.ContextWithReceiverName(ctx, collectorReceiverTagValue)
 
 	td, err := jaegertranslator.ProtoBatchToOCProto(r.Batch)
+	td.SourceFormat = "jaeger"
 	if err != nil {
 		observability.RecordTraceReceiverMetrics(ctxWithReceiverName, len(r.Batch.Spans), len(r.Batch.Spans))
 		return nil, err
@@ -337,7 +338,7 @@ func (jr *jReceiver) PostSpans(ctx context.Context, r *api_v2.PostSpansRequest) 
 	return &api_v2.PostSpansResponse{}, err
 }
 
-func (jr *jReceiver) startAgent() error {
+func (jr *jReceiver) startAgent(_ receiver.Host) error {
 	processorConfigs := []agentapp.ProcessorConfiguration{
 		{
 			// Compact Thrift running by default on 6831.
@@ -379,7 +380,7 @@ func (jr *jReceiver) startAgent() error {
 	return nil
 }
 
-func (jr *jReceiver) startCollector() error {
+func (jr *jReceiver) startCollector(host receiver.Host) error {
 	tch, terr := tchannel.NewChannel("jaeger-collector", new(tchannel.ChannelOptions))
 	if terr != nil {
 		return fmt.Errorf("Failed to create NewTChannel: %v", terr)
@@ -428,8 +429,7 @@ func (jr *jReceiver) startCollector() error {
 
 	go func() {
 		if err := jr.grpc.Serve(gln); err != nil {
-			// TODO(@jpkrohling): what is the pattern in this project to log errors in go routines?
-			// return fmt.Errorf("Could not launch gRPC service: %v", err)
+			host.ReportFatalError(err)
 		}
 	}()
 

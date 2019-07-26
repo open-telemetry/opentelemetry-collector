@@ -33,9 +33,8 @@ import (
 // ProtoBatchToOCProto converts a single Jaeger Proto batch of spans to a OC proto batch.
 func ProtoBatchToOCProto(batch model.Batch) (consumerdata.TraceData, error) {
 	ocbatch := consumerdata.TraceData{
-		Node:         jProtoProcessToOCProtoNode(batch.GetProcess()),
-		Spans:        jProtoSpansToOCProtoSpans(batch.GetSpans()),
-		SourceFormat: "jaeger", // TODO(@jpkrohling): is this appropriate here? the proto model is Jaeger's
+		Node:  jProtoProcessToOCProtoNode(batch.GetProcess()),
+		Spans: jProtoSpansToOCProtoSpans(batch.GetSpans()),
 	}
 
 	return ocbatch, nil
