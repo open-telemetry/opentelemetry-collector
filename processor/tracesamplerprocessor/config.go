@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tracesamplerprocessor
+package probabilisticsampler
 
 import "github.com/open-telemetry/opentelemetry-service/config/configmodels"
 

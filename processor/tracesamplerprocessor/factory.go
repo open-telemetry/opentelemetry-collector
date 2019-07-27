@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tracesamplerprocessor
+package probabilisticsampler
 
 import (
 	"go.uber.org/zap"
@@ -25,7 +25,7 @@ import (
 
 const (
 	// The value of "type" trace-samplers in configuration.
-	typeStr = "trace-sampler"
+	typeStr = "probabilistic-sampler"
 )
 
 // Factory is the factory for trace-sample processor.

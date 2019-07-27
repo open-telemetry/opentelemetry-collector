@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tracesamplerprocessor
+package probabilisticsampler
 
 import (
 	"path"
@@ -39,12 +39,12 @@ func TestLoadConfig(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
 
-	p0 := cfg.Processors["trace-sampler"]
+	p0 := cfg.Processors["probabilistic-sampler"]
 	assert.Equal(t, p0,
 		&Config{
 			ProcessorSettings: configmodels.ProcessorSettings{
-				TypeVal: "trace-sampler",
-				NameVal: "trace-sampler",
+				TypeVal: "probabilistic-sampler",
+				NameVal: "probabilistic-sampler",
 			},
 			SamplingPercentage: 15.3,
 			HashSeed:           22,
@@ -67,7 +67,7 @@ func TestLoadConfigEmpty(t *testing.T) {
 
 	require.Nil(t, err)
 	require.NotNil(t, config)
-	p0 := config.Processors["trace-sampler"]
+	p0 := config.Processors["probabilistic-sampler"]
 	factory := &Factory{}
 	assert.Equal(t, p0, factory.CreateDefaultConfig())
 }
