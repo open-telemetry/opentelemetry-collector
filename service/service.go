@@ -140,6 +140,7 @@ func (app *Application) setupHealthCheck() {
 	}
 }
 
+// TODO(ccaraman): Move ZPage configuration to be apart of global config/config.go
 func (app *Application) setupZPages() {
 	app.logger.Info("Setting up zPages...")
 	zpagesPort := app.v.GetInt(zpagesserver.ZPagesHTTPPort)

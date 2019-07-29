@@ -142,11 +142,16 @@ const (
 // ReceiverSettings defines common settings for a single-protocol receiver configuration.
 // Specific receivers can embed this struct and extend it with more fields if needed.
 type ReceiverSettings struct {
-	TypeVal             string `mapstructure:"-"`
-	NameVal             string `mapstructure:"-"`
-	Disabled            bool   `mapstructure:"disabled"`
-	Endpoint            string `mapstructure:"endpoint"`
-	DisableBackPressure bool   `mapstructure:"disable-backpressure"`
+	TypeVal string `mapstructure:"-"`
+	NameVal string `mapstructure:"-"`
+	// Configures if the receiver is disabled and doesn't receive any data. The default value is set by the receiver
+	// populating the struct.
+	Disabled bool `mapstructure:"disabled"`
+	// Configures the endpoint for the receiver. The default value is set by the receiver populating the struct
+	Endpoint string `mapstructure:"endpoint"`
+	// Configures if the receiver enables the back pressure functionality. The default value is set by the receiver
+	// populating the struct
+	DisableBackPressure bool `mapstructure:"disable-backpressure"`
 }
 
 // Name gets the receiver name.
