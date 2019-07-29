@@ -1,10 +1,10 @@
 **Note** This documentation is still in progress. For any questions, please reach out in the
-[OpenTelemetry Gitter](https://github.com/open-telemetry/community#Communication) or
+[OpenTelemetry Gitter](https://gitter.im/open-telemetry/opentelemetry-service) or
 refer to the [issues page](https://github.com/open-telemetry/opentelemetry-service/issues).
 
 # Receivers
 A receiver is how data gets into OpenTelemetry Service. Generally, a receiver accepts data in a specified format and can
-support [traces]() and/or [metrics]().
+support [traces](https://github.com/open-telemetry/opentelemetry-proto/blob/2ccb7cb0cf038086955c46eebea767fddb331d16/src/opentelemetry/proto/trace/v1/trace.proto) and/or [metrics](https://github.com/open-telemetry/opentelemetry-proto/blob/2ccb7cb0cf038086955c46eebea767fddb331d16/src/opentelemetry/proto/metrics/v1/metrics.proto).
 
 
 Supported receivers (sorted alphabetically):

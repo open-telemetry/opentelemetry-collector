@@ -56,6 +56,7 @@ const (
 	errMetricPipelineCannotHaveProcessors
 	errUnmarshalError
 	errMissingReceivers
+	// TODO(ccaraman): Add an error for missing Processors with corresponding test cases.
 )
 
 type configError struct {
