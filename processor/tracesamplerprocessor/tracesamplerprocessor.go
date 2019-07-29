@@ -38,19 +38,8 @@ const (
 	percentageScaleFactor = numHashBuckets / 100.0
 )
 
-// TraceSamplerCfg has the configuration guiding the trace sampler processor.
-type TraceSamplerCfg struct {
-	// SamplingPercentage is the percentage rate at which traces are going to be sampled. Defaults to zero, i.e.: no sample.
-	// Values greater or equal 100 are treated as "sample all traces".
-	SamplingPercentage float32
-	// HashSeed allows one to configure the hashing seed. This is important in scenarios where multiple layers of collectors
-	// have different sampling rates: if they use the same seed all passing one layer may pass the other even if they have
-	// different sampling rates, configuring different seeds avoids that.
-	HashSeed uint32
-}
-
-// InitFromViper updates TraceSamplerCfg according to the viper configuration.
-func (tsc *TraceSamplerCfg) InitFromViper(v *viper.Viper) (*TraceSamplerCfg, error) {
+// InitFromViper updates TraceSampler config according to the viper configuration.
+func (tsc *Config) InitFromViper(v *viper.Viper) (*Config, error) {
 	if v == nil {
 		return nil, errors.New("v is nil")
 	}
@@ -73,7 +62,7 @@ var _ processor.TraceProcessor = (*tracesamplerprocessor)(nil)
 
 // NewTraceProcessor returns a processor.TraceProcessor that will perform head sampling according to the given
 // configuration.
-func NewTraceProcessor(nextConsumer consumer.TraceConsumer, cfg TraceSamplerCfg) (processor.TraceProcessor, error) {
+func NewTraceProcessor(nextConsumer consumer.TraceConsumer, cfg Config) (processor.TraceProcessor, error) {
 	if nextConsumer == nil {
 		return nil, errors.New("nextConsumer is nil")
 	}

@@ -164,7 +164,11 @@ func TestCreateTraceExporter(t *testing.T) {
 				assert.NotNil(t, stopFunc)
 
 				err = stopFunc()
-				assert.Nil(t, err)
+				if err != nil {
+					// Since the endpoint of opencensus exporter doesn't actually exist,
+					// exporter may already stop because it cannot connect.
+					assert.Equal(t, err.Error(), "rpc error: code = Canceled desc = grpc: the client connection is closing")
+				}
 			}
 		})
 	}

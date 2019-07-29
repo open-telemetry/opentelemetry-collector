@@ -18,10 +18,9 @@ import (
 	"errors"
 	"testing"
 
-	"go.uber.org/zap"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/config"
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
@@ -68,7 +67,12 @@ func TestExportersBuilder_Build(t *testing.T) {
 	assert.NotNil(t, e1.stop)
 
 	// Ensure it can be stopped.
-	assert.NoError(t, e1.Stop())
+	err = e1.Stop()
+	if err != nil {
+		// Since the endpoint of opencensus exporter doesn't actually exist, e1 may
+		// already stop because it cannot connect.
+		assert.Equal(t, err.Error(), "rpc error: code = Canceled desc = grpc: the client connection is closing")
+	}
 
 	// Now change only pipeline data type to "metrics" and make sure exporter builder
 	// now fails (because opencensus exporter does not currently support metrics).
