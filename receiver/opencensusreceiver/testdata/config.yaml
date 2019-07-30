@@ -9,14 +9,15 @@ receivers:
   # - disable-backpressure
   # For more information on the struct, refer to
   # https://github:com/open-telemetry/opentelemetry-service/blob/71589202609d7e787244076b631b45e219101867/config/configmodels/configmodels.go#L142-L150
-  # This configuration has a name 'customname' with a full name of 'opencensus/customname'.
-  # To reference this configuration in a pipeline, use the full name `opencensus/customname`.
+  # This configuration is of type 'opencensus' and has the name 'customname' with a full name of 'opencensus/customname'
+  # ('<type>/<name>'. To reference this configuration in a pipeline, use the full name `opencensus/customname`.
   opencensus/customname:
-    # The endpoint for this receiver will be: "0.0.0.0:9090".
+    # The receiver will listen on endpoint: "0.0.0.0:9090".
     endpoint: 0.0.0.0:9090
-    # This receiver doesn't allow for back pressure.
+    # This receiver doesn't enable back pressure functionality and will result in no behavior change.
     disable-backpressure: true
-  # The following entry configures all of the keep alive settings. These settings are use during server initialization.
+  # The following entry configures all of the keep alive settings. These settings are used to configure the underlying
+  # server used to connect to the endpoint.
   opencensus/keepalive:
     keepalive:
       server-parameters:
@@ -38,7 +39,7 @@ receivers:
       server-parameters:
         max-connection-idle: 10s
   # The following entry demonstrates how to specify TLS credentials for the server.
-  # Note: These are not valid files and will fail during server initialization.
+  # Note: These files do not exist. If the receiver is started with this configuration, it will fail.
   opencensus/tlscredentials:
     tls-credentials:
       cert-file: test.crt

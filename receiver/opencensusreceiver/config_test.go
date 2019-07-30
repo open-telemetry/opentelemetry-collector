@@ -96,7 +96,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		})
 
-	// TODO(ccaraman): Once the config loader checks for the files existance, this test may fail and require
+	// TODO(ccaraman): Once the config loader checks for the files existence, this test may fail and require
 	// 	use of fake cert/key for test purposes.
 	r4 := cfg.Receivers["opencensus/tlscredentials"].(*Config)
 	assert.Equal(t, r4,

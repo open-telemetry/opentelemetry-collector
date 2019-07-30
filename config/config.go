@@ -624,6 +624,9 @@ func validatePipelineProcessors(
 	return nil
 }
 
+// TODO(ccaraman): Determine if there a way to consolidate the validate receivers apart of the loadReceivers method.
+//	 Currently, validateReceivers needs to be invoked after validatePipelineReceivers because that bit of
+//	 code checks if a receiver is enabled prior to finalizing the pipelines.
 func validateReceivers(cfg *configmodels.Config) {
 	// Remove disabled receivers.
 	for name, rcv := range cfg.Receivers {
