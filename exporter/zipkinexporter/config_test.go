@@ -20,6 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/config"
 )
@@ -42,5 +43,11 @@ func TestLoadConfig(t *testing.T) {
 	// Endpoint doesn't have a default value so set it directly.
 	defaultCfg := factory.CreateDefaultConfig().(*Config)
 	defaultCfg.Endpoint = "http://some.location.org:9411/api/v2/spans"
-	assert.Equal(t, e0, defaultCfg)
+	assert.Equal(t, defaultCfg, e0)
+
+	e1 := cfg.Exporters["zipkin/2"]
+	assert.Equal(t, "zipkin/2", e1.(*Config).Name())
+	assert.Equal(t, "https://somedest:1234/api/v2/spans", e1.(*Config).Endpoint)
+	_, _, err = factory.CreateTraceExporter(zap.NewNop(), e1)
+	require.NoError(t, err)
 }
