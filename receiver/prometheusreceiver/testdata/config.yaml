@@ -4,6 +4,7 @@ receivers:
     endpoint: "1.2.3.4:456"
     buffer_period: 234
     buffer_count: 45
+    adjust_metrics: false
     config:
       scrape_configs:
         - job_name: 'demo'

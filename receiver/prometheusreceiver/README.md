@@ -176,7 +176,7 @@ object of OpenCensus. The target object is not accessible from the Appender inte
 ocagent appender, we need to have a way to inject the binding target into the appender instance.
 
 
-3. Group metrics from the same family together
+2. Group metrics from the same family together
                                                                                                                                                                                                                                                                                                                                                                            
 In OpenCensus, metric points of the same name are usually grouped together as one timeseries but different data points. 
 It's important for the appender to keep track of the metric family changes, and group metrics of the same family together.
@@ -186,17 +186,24 @@ and `summary`, not all the data points have the same name, there are some specia
 we need to handle this properly, and do not consider this is a metric family change.
 
 
-4. Group complex metrics such as histogram together in proper order
+3. Group complex metrics such as histogram together in proper order
 
 In Prometheus, a single aggregated type of metric data such as `histogram` and `summary` is represent by multiple metric data points, such as
 buckets and quantiles as well as the additional `_sum` and `_count` data. ScrapeLoop will feed them into the appender individually. The ocagent
 appender need to have a way to bundle them together to transform them into a single Metric Datapoint Proto object. 
 
-5. Tags need to handle carefully
+4. Tags need to handle carefully
 
 ScrapeLoop strips out any tag with empty value, however, in OpenCensus, the tag keys is stored separately, we need to able to get all the possible tag keys
 of the same metric family before committing the metric family to the sink.
 
+5. StartTimestamp and values of metrics of cumulative types
+
+In OpenCensus, every metrics of cumulative type is required to have a StartTimestamp, which records when a metric is first recorded, however, Prometheus
+dose not provide such data. One of the solutions to tackle this problem is to cache the first observed value of these metrics as well as
+the timestamp, then for any subsequent data of the same metric, use the cached timestamp as StartTimestamp and the delta with the first value as value.
+However, metrics can come and go, or the remote server can restart at any given time, the receiver also needs to take care of issues such as a new value is 
+smaller than the previous seen value, by considering it as a metrics with new StartTime.
 
 ## Prometheus Metric to OpenCensus Metric Proto Mapping
 
@@ -232,8 +239,8 @@ Counter as described in the [Prometheus Metric Types Document](https://prometheu
 > is a cumulative metric that represents a single monotonically increasing counter whose value can only increase or be 
 > reset to zero on restart
 
-It is one of the most simple metric types we can be found in both systems. Examples of Prometheus Counters is as shown 
-below:
+It is one of the most simple metric types we can find in both systems. However, it is a cumulative type of metric, 
+considering with have two continuous scrapes from a target, with the first one as shown below:
 ```
 # HELP http_requests_total The total number of HTTP requests.
 # TYPE http_requests_total counter
@@ -241,7 +248,18 @@ http_requests_total{method="post",code="200"} 1027
 http_requests_total{method="post",code="400"}    3
 ```
 
-The corresponding Ocagent Metric will be:
+and the 2nd one:
+```
+# HELP http_requests_total The total number of HTTP requests.
+# TYPE http_requests_total counter
+http_requests_total{method="post",code="200"} 1028
+http_requests_total{method="post",code="400"}    5
+```
+
+The Prometheus Receiver will only produce one Metric from the 2nd scrape and subsequent ones if any, the 1st scrape, 
+however, is stored as metadata to take delta from.
+
+The output of the 2nd scrape is as shown below:
 ```go
 metrics := []*metricspb.Metric{
   {
@@ -251,17 +269,17 @@ metrics := []*metricspb.Metric{
       LabelKeys: []*metricspb.LabelKey{{Key: "method"}, {Key: "code"}}},
     Timeseries: []*metricspb.TimeSeries{
       {
-        StartTimestamp: tsOc,
+        StartTimestamp: startTimestamp,
         LabelValues:    []*metricspb.LabelValue{{Value: "post", HasValue: true}, {Value: "200", HasValue: true}},
         Points: []*metricspb.Point{
-          {Timestamp: tsOc, Value: &metricspb.Point_DoubleValue{DoubleValue: 1027.0}},
+          {Timestamp: currentTimestamp, Value: &metricspb.Point_DoubleValue{DoubleValue: 1.0}},
         },
       },
       {
-        StartTimestamp: tsOc,
+        StartTimestamp: startTimestamp,
         LabelValues:    []*metricspb.LabelValue{{Value: "post", HasValue: false}, {Value: "400", HasValue: true}},
         Points: []*metricspb.Point{
-          {Timestamp: tsOc, Value: &metricspb.Point_DoubleValue{DoubleValue: 3.0}},
+          {Timestamp: currentTimestamp, Value: &metricspb.Point_DoubleValue{DoubleValue: 2.0}},
         },
       },
     },
@@ -269,8 +287,7 @@ metrics := []*metricspb.Metric{
 }
 ```
 
-*Note: `tsOc` is a timestamp object, which is based on the timestamp provided by a scrapLoop. In most cases, it is 
-the timestamp when a target is scrapped, however, it can also be the timestamp recorded with a metric*
+*Note: `startTimestamp` is the timestamp cached from the first scrape, `currentTimestamp` is the timestamp of the current scrape*
 
 
 ### Gauge
@@ -299,17 +316,17 @@ metrics := []*metricspb.Metric{
       LabelKeys: []*metricspb.LabelKey{{Key: "id"}, {Key: "foo"}}},
     Timeseries: []*metricspb.TimeSeries{
       {
-        StartTimestamp: tsOc,
+        StartTimestamp: nil,
         LabelValues:    []*metricspb.LabelValue{{Value: "1", HasValue: true}, {Value: "bar", HasValue: true}},
         Points: []*metricspb.Point{
-          {Timestamp: tsOc, Value: &metricspb.Point_DoubleValue{DoubleValue: 1.0}},
+          {Timestamp: currentTimestamp, Value: &metricspb.Point_DoubleValue{DoubleValue: 1.0}},
         },
       },
       {
-        StartTimestamp: tsOc,
+        StartTimestamp: nil,
         LabelValues:    []*metricspb.LabelValue{{Value: "2", HasValue: true}, {Value: "", HasValue: false}},
         Points: []*metricspb.Point{
-          {Timestamp: tsOc, Value: &metricspb.Point_DoubleValue{DoubleValue: 2.0}},
+          {Timestamp: currentTimestamp, Value: &metricspb.Point_DoubleValue{DoubleValue: 2.0}},
         },
       },
     },
@@ -322,7 +339,10 @@ metrics := []*metricspb.Metric{
 Histogram is a complex data type, in Prometheus, it uses multiple data points to represent a single histogram. Its 
 description can be found from: [Prometheus Histogram](https://prometheus.io/docs/concepts/metric_types/#histogram).
 
-An example of histogram is as shown below:
+Similar to counter, histogram is also a cumulative type metric, thus only the 2nd and subsequent scrapes can produce a metric for OpenCensus, 
+with the first scrape stored as metadata.
+
+An example of histogram with first scrape response:
 ```
 # HELP hist_test This is my histogram vec
 # TYPE hist_test histogram
@@ -339,6 +359,24 @@ hist_test_count{t1="2"} 100.0
 
 ```
 
+And a subsequent 2nd scrape response:
+```
+# HELP hist_test This is my histogram vec
+# TYPE hist_test histogram
+hist_test_bucket{t1="1",,le="10.0"} 2.0
+hist_test_bucket{t1="1",le="20.0"} 6.0
+hist_test_bucket{t1="1",le="+inf"} 13.0
+hist_test_sum{t1="1"} 150.0
+hist_test_count{t1="1"} 13.0
+hist_test_bucket{t1="2",,le="10.0"} 10.0
+hist_test_bucket{t1="2",le="20.0"} 30.0
+hist_test_bucket{t1="2",le="+inf"} 100.0
+hist_test_sum{t1="2"} 10000.0
+hist_test_count{t1="2"} 100.0
+
+```
+
+
 Its corresponding Ocagent metrics will be:
 ```go
 metrics := []*metricspb.Metric{
@@ -349,10 +387,10 @@ metrics := []*metricspb.Metric{
       LabelKeys: []*metricspb.LabelKey{{Key: "t1"}}},
     Timeseries: []*metricspb.TimeSeries{
       {
-        StartTimestamp: tsOc,
+        StartTimestamp: startTimestamp,
         LabelValues:    []*metricspb.LabelValue{{Value: "1", HasValue: true}},
         Points: []*metricspb.Point{
-          {Timestamp: tsOc, Value: &metricspb.Point_DistributionValue{
+          {Timestamp: currentTimestamp, Value: &metricspb.Point_DistributionValue{
             DistributionValue: &metricspb.DistributionValue{
               BucketOptions: &metricspb.DistributionValue_BucketOptions{
                 Type: &metricspb.DistributionValue_BucketOptions_Explicit_{
@@ -361,17 +399,17 @@ metrics := []*metricspb.Metric{
                   },
                 },
               },
-              Count:   10,
-              Sum:     100.0,
-              Buckets: []*metricspb.DistributionValue_Bucket{{Count: 1}, {Count: 2}, {Count: 7}},
+              Count:   3,
+              Sum:     50.0,
+              Buckets: []*metricspb.DistributionValue_Bucket{{Count: 1}, {Count: 2}, {Count: 0}},
             }}},
         },
       },
       {
-        StartTimestamp: tsOc,
+        StartTimestamp: startTimestamp,
         LabelValues:    []*metricspb.LabelValue{{Value: "2", HasValue: true}},
         Points: []*metricspb.Point{
-          {Timestamp: tsOc, Value: &metricspb.Point_DistributionValue{
+          {Timestamp: currentTimestamp, Value: &metricspb.Point_DistributionValue{
             DistributionValue: &metricspb.DistributionValue{
               BucketOptions: &metricspb.DistributionValue_BucketOptions{
                 Type: &metricspb.DistributionValue_BucketOptions_Explicit_{
@@ -380,9 +418,9 @@ metrics := []*metricspb.Metric{
                   },
                 },
               },
-              Count:   100,
-              Sum:     10000.0,
-              Buckets: []*metricspb.DistributionValue_Bucket{{Count: 10}, {Count: 20}, {Count: 70}},
+              Count:   0,
+              Sum:     0.0,
+              Buckets: []*metricspb.DistributionValue_Bucket{{Count: 0}, {Count: 0}, {Count: 0}},
             }}},
         },
       },
@@ -403,12 +441,19 @@ Prometheus. We have to set this value to `0` instead.
 
 ### Gaugehistogram
 
-This is an undocumented data type, it shall be same as regular [Histogram](#histogram)
+This is an undocumented data type, and it's not supported currently
 
 ### Summary
 
 Same as histogram, summary is also a complex metric type which is represent by multiple data points. A detailed 
 description can be found from [Prometheus Summary](https://prometheus.io/docs/concepts/metric_types/#summary)
+
+The sum and count from Summary is also cumulative, however, the quantiles are not. The receiver will still consider the first scrape 
+as metadata, and won't produce an output to OpenCensus. For any subsequent scrapes, the count and sum will be deltas from the first scrape,
+while the quantiles are left as it is. 
+
+For the following two scrapes, with the first one:
+
 ```
 # HELP go_gc_duration_seconds A summary of the GC invocation durations.
 # TYPE go_gc_duration_seconds summary
@@ -419,6 +464,19 @@ go_gc_duration_seconds{quantile="0.75"} 0.0003426
 go_gc_duration_seconds{quantile="1"} 0.0023638
 go_gc_duration_seconds_sum 17.391350544
 go_gc_duration_seconds_count 52489
+```
+
+And the 2nd one:
+```
+# HELP go_gc_duration_seconds A summary of the GC invocation durations.
+# TYPE go_gc_duration_seconds summary
+go_gc_duration_seconds{quantile="0"} 0.0001271
+go_gc_duration_seconds{quantile="0.25"} 0.0002455
+go_gc_duration_seconds{quantile="0.5"} 0.0002904
+go_gc_duration_seconds{quantile="0.75"} 0.0003426
+go_gc_duration_seconds{quantile="1"} 0.0023639
+go_gc_duration_seconds_sum 17.491350544
+go_gc_duration_seconds_count 52490
 ```
 
 The corresponding Ocagent metrics is as shown below:
@@ -432,20 +490,20 @@ metrics := []*metricspb.Metric{
       LabelKeys: []*metricspb.LabelKey{}},
     Timeseries: []*metricspb.TimeSeries{
       {
-        StartTimestamp: tsOc,
+        StartTimestamp: startTimestamp,
         LabelValues:    []*metricspb.LabelValue{},
         Points: []*metricspb.Point{
-          {Timestamp: tsOc, Value: &metricspb.Point_SummaryValue{
+          {Timestamp: currentTimestamp, Value: &metricspb.Point_SummaryValue{
             SummaryValue: &metricspb.SummaryValue{
-			  Sum:   &wrappers.DoubleValue{Value: 17.391350544},
-			  Count: &wrappers.Int64Value{Value: 52489},
+			  Sum:   &wrappers.DoubleValue{Value: 0.1},
+			  Count: &wrappers.Int64Value{Value: 1},
               Snapshot: &metricspb.SummaryValue_Snapshot{
                 PercentileValues: []*metricspb.SummaryValue_Snapshot_ValueAtPercentile{
                   {Percentile: 0.0,   Value: 0.0001271},
                   {Percentile: 25.0,  Value: 0.0002455},
                   {Percentile: 50.0,  Value: 0.0002904},
                   {Percentile: 75.0,  Value: 0.0003426},
-                  {Percentile: 100.0, Value: 0.0023638},
+                  {Percentile: 100.0, Value: 0.0023639},
                 },
               }}}},
         },
@@ -456,9 +514,12 @@ metrics := []*metricspb.Metric{
 
 ```
 
-The major difference between the two systems is that in Prometheus it uses `quantile`, while in OpenCensus `percentile` 
-is used. Other than that, OpenCensus has optional values for `Sum` and `Count` of a snapshot, however, they are not 
+There's also some differences between the two systems. One of them is that in Prometheus it uses `quantile`, while in OpenCensus it uses `percentile`.
+Other than that, OpenCensus has optional values for `Sum` and `Count` of a snapshot, however, they are not 
 provided in Prometheus, and `nil` will be used for these values.
+
+Other than that, in some prometheus implementations, such as the Python version, Summary is allowed to have no quantiles, in a case
+like this, the receiver will produce a Summary of OpenCensus with Snapshot set to `nil`
 
 ### Others
 
