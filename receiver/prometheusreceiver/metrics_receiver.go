@@ -24,11 +24,11 @@ import (
 	"github.com/prometheus/prometheus/discovery"
 	"github.com/prometheus/prometheus/scrape"
 	"go.uber.org/zap"
-	
+
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 	"github.com/open-telemetry/opentelemetry-service/receiver/prometheusreceiver/internal"
-	
+
 	"github.com/prometheus/prometheus/config"
 	sd_config "github.com/prometheus/prometheus/discovery/config"
 	"github.com/spf13/viper"
@@ -37,10 +37,9 @@ import (
 
 // Configuration defines the behavior and targets of the Prometheus scrapers.
 type Configuration struct {
-	ScrapeConfig  *config.Config `mapstructure:"config"`
-	BufferPeriod  time.Duration  `mapstructure:"buffer_period"`
-	BufferCount   int            `mapstructure:"buffer_count"`
-	AdjustMetrics bool           `mapstructure:"adjust_metrics"`
+	ScrapeConfig *config.Config `mapstructure:"config"`
+	BufferPeriod time.Duration  `mapstructure:"buffer_period"`
+	BufferCount  int            `mapstructure:"buffer_count"`
 }
 
 // Preceiver is the type that provides Prometheus scraper/receiver functionality.
@@ -66,8 +65,6 @@ const (
 // New creates a new prometheus.Receiver reference.
 func New(logger *zap.Logger, v *viper.Viper, next consumer.MetricsConsumer) (*Preceiver, error) {
 	var cfg Configuration
-
-	cfg.AdjustMetrics = true
 
 	// Unmarshal our config values (using viper's mapstructure)
 	err := v.Unmarshal(&cfg)
@@ -116,15 +113,14 @@ func (pr *Preceiver) MetricsSource() string {
 	return metricsSource
 }
 
+// StartMetricsReception is the method that starts Prometheus scraping and it
+// is controlled by having previously defined a Configuration using perhaps New.
 func (pr *Preceiver) StartMetricsReception(host receiver.Host) error {
 	pr.startOnce.Do(func() {
 		ctx := host.Context()
 		c, cancel := context.WithCancel(ctx)
 		pr.cancel = cancel
-		var jobsMap *internal.JobsMap = nil
-		if pr.cfg.AdjustMetrics {
-			jobsMap = internal.NewJobsMap(time.Duration(2 * time.Minute))
-		}
+		jobsMap := internal.NewJobsMap(time.Duration(2 * time.Minute))
 		app := internal.NewOcaStore(c, pr.consumer, pr.logger.Sugar(), jobsMap)
 		// need to use a logger with the gokitLog interface
 		l := internal.NewZapToGokitLogAdapter(pr.logger)

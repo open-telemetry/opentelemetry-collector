@@ -18,7 +18,7 @@ import (
 	"fmt"
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	
+
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/google/go-cmp/cmp"
 	"github.com/spf13/viper"
@@ -151,7 +151,6 @@ func setupMockPrometheus(tds ...*testData) (*mockPrometheus, string) {
 		log.Fatal("len(jobs) != len(targets), make sure job names are unique")
 	}
 	config := make(map[string]interface{})
-	config["adjust_metrics"] = true
 	config["config"] = map[string]interface{}{"scrape_configs": jobs}
 
 	mp := newMockPrometheus(endpoints)
