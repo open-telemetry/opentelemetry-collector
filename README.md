@@ -200,16 +200,16 @@ Pipelines can be of two types:
 - metrics: collects and processes metrics data.
 - traces: collects and processes trace data.
 
-A pipeline consists of a set of receivers, exporters and processors and all must be configured in the configuration.
-A receiver/processor/exporter can be used in more than one pipeline.
+A pipeline consists of a set of receivers, processors, and exporters. Each receiver/processor/exporter must be specified
+in the configuration to be included in a pipeline and each receiver/processor/exporter can be used in more than one pipeline.
 
 The following is an example pipeline configuration. For more information, refer to [processor README.md](processor/README.md)
 ```yaml
 pipelines:
   traces/first:
-    receivers: [opencensus]
-    processors: [exampleprocessors]
-    exporters: [exampleexporters]
+    receivers: [examplereceiver]
+    processors: [exampleprocessor]
+    exporters: [exampleexporter]
 
 ```
 

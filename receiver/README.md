@@ -21,7 +21,7 @@ Describe the common receiver settings: endpoint, disabled and disable-backpressu
 ## <a name="opencensus"></a>OpenCensus Receiver
 **Traces and metrics are supported.**
 
-This receiver receives spans from [OpenCensus](https://opencensus.io/) instrumented applications and translates them into the internal span types that are then sent to the exporters.
+This receiver receives spans from [OpenCensus](https://opencensus.io/) instrumented applications and translates them into the internal format sent to processors and exporters in the pipeline.
 
 Its address can be configured in the YAML configuration file under section "receivers", subsection "opencensus" and field "address". The syntax of the field "address" is `[address|host]:<port-number>`.
 
