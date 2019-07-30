@@ -20,6 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/exporter/loggingexporter"
 	"github.com/open-telemetry/opentelemetry-service/exporter/opencensusexporter"
 	"github.com/open-telemetry/opentelemetry-service/exporter/prometheusexporter"
+	"github.com/open-telemetry/opentelemetry-service/exporter/zipkinexporter"
 	"github.com/open-telemetry/opentelemetry-service/oterr"
 	"github.com/open-telemetry/opentelemetry-service/processor"
 	"github.com/open-telemetry/opentelemetry-service/processor/addattributesprocessor"
@@ -58,6 +59,7 @@ func Components() (
 		&opencensusexporter.Factory{},
 		&prometheusexporter.Factory{},
 		&loggingexporter.Factory{},
+		&zipkinexporter.Factory{},
 	)
 	if err != nil {
 		errs = append(errs, err)

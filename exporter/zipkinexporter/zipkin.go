@@ -22,13 +22,13 @@ import (
 	"sync"
 	"time"
 
+	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
 	zipkinhttp "github.com/openzipkin/zipkin-go/reporter/http"
 	"github.com/spf13/viper"
 	"go.opencensus.io/trace"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumererror"
@@ -39,10 +39,9 @@ import (
 
 // ZipkinConfig holds the configuration of a Zipkin exporter.
 type ZipkinConfig struct {
-	ServiceName      string         `mapstructure:"service_name,omitempty"`
-	Endpoint         string         `mapstructure:"endpoint,omitempty"`
-	LocalEndpointURI string         `mapstructure:"local_endpoint,omitempty"`
-	UploadPeriod     *time.Duration `mapstructure:"upload_period,omitempty"`
+	ServiceName  string         `mapstructure:"service_name,omitempty"`
+	Endpoint     string         `mapstructure:"endpoint,omitempty"`
+	UploadPeriod *time.Duration `mapstructure:"upload_period,omitempty"`
 }
 
 // zipkinExporter is a multiplexing exporter that spawns a new OpenCensus-Go Zipkin
@@ -54,11 +53,9 @@ type zipkinExporter struct {
 	// mu protects the fields below
 	mu sync.Mutex
 
-	defaultServiceName      string
-	defaultLocalEndpointURI string
+	defaultServiceName string
 
-	endpointURI string
-	reporter    zipkinreporter.Reporter
+	reporter zipkinreporter.Reporter
 }
 
 // Default values for Zipkin endpoint.
@@ -96,16 +93,12 @@ func ZipkinExportersFromViper(v *viper.Viper) (tps []consumer.TraceConsumer, mps
 	if zc.ServiceName != "" {
 		serviceName = zc.ServiceName
 	}
-	localEndpointURI := "192.168.1.5:5454"
-	if zc.LocalEndpointURI != "" {
-		localEndpointURI = zc.LocalEndpointURI
-	}
 	endpoint := zc.EndpointURL()
 	var uploadPeriod time.Duration
 	if zc.UploadPeriod != nil && *zc.UploadPeriod > 0 {
 		uploadPeriod = *zc.UploadPeriod
 	}
-	zle, err := newZipkinExporter(endpoint, serviceName, localEndpointURI, uploadPeriod)
+	zle, err := newZipkinExporter(endpoint, serviceName, uploadPeriod)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("Cannot configure Zipkin exporter: %v", err)
 	}
@@ -114,17 +107,15 @@ func ZipkinExportersFromViper(v *viper.Viper) (tps []consumer.TraceConsumer, mps
 	return
 }
 
-func newZipkinExporter(finalEndpointURI, defaultServiceName, defaultLocalEndpointURI string, uploadPeriod time.Duration) (*zipkinExporter, error) {
+func newZipkinExporter(finalEndpointURI, defaultServiceName string, uploadPeriod time.Duration) (*zipkinExporter, error) {
 	var opts []zipkinhttp.ReporterOption
 	if uploadPeriod > 0 {
 		opts = append(opts, zipkinhttp.BatchInterval(uploadPeriod))
 	}
 	reporter := zipkinhttp.NewReporter(finalEndpointURI, opts...)
 	zle := &zipkinExporter{
-		endpointURI:             finalEndpointURI,
-		defaultServiceName:      defaultServiceName,
-		defaultLocalEndpointURI: defaultLocalEndpointURI,
-		reporter:                reporter,
+		defaultServiceName: defaultServiceName,
+		reporter:           reporter,
 	}
 	return zle, nil
 }
