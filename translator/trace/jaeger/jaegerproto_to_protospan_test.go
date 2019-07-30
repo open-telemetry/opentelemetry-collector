@@ -94,6 +94,11 @@ func expectedTraceData(t1, t2, t3 time.Time) consumerdata.TraceData {
 						"f": {
 							Value: &tracepb.AttributeValue_DoubleValue{DoubleValue: 1},
 						},
+						"span.kind": {
+							Value: &tracepb.AttributeValue_StringValue{
+								StringValue: &tracepb.TruncatableString{Value: "server"},
+							},
+						},
 					},
 				},
 				Links: &tracepb.Span_Links{
@@ -151,14 +156,10 @@ func expectedTraceData(t1, t2, t3 time.Time) consumerdata.TraceData {
 								StringValue: &tracepb.TruncatableString{Value: "Internal server error"},
 							},
 						},
-					},
-				},
-				Links: &tracepb.Span_Links{
-					Link: []*tracepb.Span_Link{
-						{
-							TraceId: traceID,
-							SpanId:  childSpanID,
-							Type:    tracepb.Span_Link_PARENT_LINKED_SPAN,
+						"span.kind": {
+							Value: &tracepb.AttributeValue_StringValue{
+								StringValue: &tracepb.TruncatableString{Value: "client"},
+							},
 						},
 					},
 				},

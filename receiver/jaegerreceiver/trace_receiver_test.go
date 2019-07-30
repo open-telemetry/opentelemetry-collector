@@ -198,20 +198,6 @@ func expectedTraceData(t1, t2, t3 time.Time) []consumerdata.TraceData {
 							},
 						},
 					},
-					Links: &tracepb.Span_Links{
-						Link: []*tracepb.Span_Link{
-							{
-								TraceId: traceID,
-								SpanId:  childSpanID,
-								// TODO: (@pjanotti, @odeke-em) contact the Jaeger maintains to inquire about
-								// Parent_Linked_Spans as currently they've only got:
-								// * Child_of
-								// * Follows_from
-								// yet OpenCensus has Parent too but Jaeger uses a zero-value for LinkCHILD.
-								Type: tracepb.Span_Link_PARENT_LINKED_SPAN,
-							},
-						},
-					},
 				},
 			},
 			SourceFormat: "jaeger",
@@ -257,13 +243,6 @@ func traceFixture(t1, t2, t3 time.Time) []*trace.SpanData {
 			Status: trace.Status{
 				Code:    trace.StatusCodeInternal,
 				Message: "Frontend crash",
-			},
-			Links: []trace.Link{
-				{
-					TraceID: traceID,
-					SpanID:  childSpanID,
-					Type:    trace.LinkTypeChild,
-				},
 			},
 		},
 	}

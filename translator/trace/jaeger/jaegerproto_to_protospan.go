@@ -196,10 +196,8 @@ func jProtoTagsToAttributes(tags []model.KeyValue) (string, tracepb.Span_SpanKin
 			switch tag.GetVStr() {
 			case "client":
 				sKind = tracepb.Span_CLIENT
-				continue // TODO(@jpkrohling): is it appropriate to return here?
 			case "server":
 				sKind = tracepb.Span_SERVER
-				continue
 			}
 
 		case tracetranslator.TagStatusCode:

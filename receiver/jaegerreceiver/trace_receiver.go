@@ -383,7 +383,7 @@ func (jr *jReceiver) startAgent(_ receiver.Host) error {
 func (jr *jReceiver) startCollector(host receiver.Host) error {
 	tch, terr := tchannel.NewChannel("jaeger-collector", new(tchannel.ChannelOptions))
 	if terr != nil {
-		return fmt.Errorf("Failed to create NewTChannel: %v", terr)
+		return fmt.Errorf("failed to create NewTChannel: %v", terr)
 	}
 
 	server := thrift.NewServer(tch)
@@ -392,7 +392,7 @@ func (jr *jReceiver) startCollector(host receiver.Host) error {
 	taddr := jr.tchannelAddr()
 	tln, terr := net.Listen("tcp", taddr)
 	if terr != nil {
-		return fmt.Errorf("Failed to bind to TChannnel address %q: %v", taddr, terr)
+		return fmt.Errorf("failed to bind to TChannnel address %q: %v", taddr, terr)
 	}
 	tch.Serve(tln)
 	jr.tchannel = tch
@@ -403,7 +403,7 @@ func (jr *jReceiver) startCollector(host receiver.Host) error {
 	if cerr != nil {
 		// Abort and close tch
 		tch.Close()
-		return fmt.Errorf("Failed to bind to Collector address %q: %v", caddr, cerr)
+		return fmt.Errorf("failed to bind to Collector address %q: %v", caddr, cerr)
 	}
 
 	nr := mux.NewRouter()
@@ -422,7 +422,7 @@ func (jr *jReceiver) startCollector(host receiver.Host) error {
 		// Abort and close tch, cln
 		tch.Close()
 		cln.Close()
-		return fmt.Errorf("Failed to bind to gRPC address %q: %v", gaddr, gerr)
+		return fmt.Errorf("failed to bind to gRPC address %q: %v", gaddr, gerr)
 	}
 
 	api_v2.RegisterCollectorServiceServer(jr.grpc, jr)
