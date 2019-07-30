@@ -15,6 +15,8 @@
 package tailsampling
 
 import (
+	"time"
+
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/config/configerror"
@@ -36,6 +38,14 @@ type Factory struct {
 // Type gets the type of the config created by this factory.
 func (f *Factory) Type() string {
 	return typeStr
+}
+
+// CreateDefaultConfig creates the default configuration for processor.
+func (f *Factory) CreateDefaultConfig() configmodels.Processor {
+	return &builder.TailBasedCfg{
+		DecisionWait: 30 * time.Second,
+		NumTraces:    50000,
+	}
 }
 
 // CreateTraceProcessor creates a trace processor based on this config.

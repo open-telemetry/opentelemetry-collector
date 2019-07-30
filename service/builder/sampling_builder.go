@@ -173,14 +173,6 @@ type TailBasedCfg struct {
 	ExpectedNewTracesPerSec uint64 `mapstructure:"expected-new-traces-per-sec"`
 }
 
-// NewDefaultTailBasedCfg creates a TailBasedCfg with the default values.
-func NewDefaultTailBasedCfg() *TailBasedCfg {
-	return &TailBasedCfg{
-		DecisionWait: 30 * time.Second,
-		NumTraces:    50000,
-	}
-}
-
 // InitFromViper initializes TailBasedCfg with properties from viper.
 func (tCfg *TailBasedCfg) InitFromViper(v *viper.Viper) *TailBasedCfg {
 	tv := v.Sub(samplingTag)

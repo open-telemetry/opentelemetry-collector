@@ -21,13 +21,19 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
-	"github.com/open-telemetry/opentelemetry-service/service/builder"
 )
+
+func TestCreateDefaultConfig(t *testing.T) {
+	factory := &Factory{}
+
+	cfg := factory.CreateDefaultConfig()
+	assert.NotNil(t, cfg, "failed to create default config")
+}
 
 func TestCreateProcessor(t *testing.T) {
 	factory := &Factory{}
 
-	cfg := builder.NewDefaultTailBasedCfg()
+	cfg := factory.CreateDefaultConfig()
 
 	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), cfg)
 	assert.NotNil(t, tp)
