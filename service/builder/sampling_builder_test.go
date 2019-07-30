@@ -24,7 +24,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-service/config"
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-service/processor"
 	"github.com/open-telemetry/opentelemetry-service/processor/tailsampling"
 	"github.com/open-telemetry/opentelemetry-service/service/builder"
 )
@@ -35,8 +34,9 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := &tailsampling.Factory{}
 	processors[factory.Type()] = factory
+
 	cfg, err := config.LoadConfigFile(
-		t, path.Join(".", "testdata", "sampling_config.yaml"), receivers, processors, exporters,
+		t, path.Join(".", "testdata", "tail_sampling_config.yaml"), receivers, processors, exporters,
 	)
 
 	require.Nil(t, err)

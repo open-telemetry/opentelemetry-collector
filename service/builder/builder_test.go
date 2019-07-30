@@ -138,22 +138,6 @@ func TestTailSamplingPoliciesConfiguration(t *testing.T) {
 	}
 }
 
-func TestTailSamplingConfig(t *testing.T) {
-	v, err := loadViperFromFile("./testdata/sampling_config.yaml")
-	if err != nil {
-		t.Fatalf("Failed to load viper from test file: %v", err)
-	}
-
-	wCfg := NewDefaultTailBasedCfg()
-	wCfg.DecisionWait = 31 * time.Second
-	wCfg.NumTraces = 20001
-
-	gCfg := NewDefaultTailBasedCfg().InitFromViper(v)
-	if !reflect.DeepEqual(gCfg, wCfg) {
-		t.Fatalf("Wanted %+v but got %+v", *wCfg, *gCfg)
-	}
-}
-
 func loadViperFromFile(file string) (*viper.Viper, error) {
 	v := viper.New()
 	v.SetConfigFile(file)
