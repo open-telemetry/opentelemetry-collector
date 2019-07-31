@@ -5,7 +5,7 @@ ALL_SRC := $(shell find . -name '*.go' \
                                 -type f | sort)
 
 # All source code and documents. Used in spell check.
-ALL_SRC_AND_DOC := $(shell find . \( -name "*.md" -o -name "*.go" \) \
+ALL_SRC_AND_DOC := $(shell find . \( -name "*.md" -o -name "*.go" -o -name "*.yaml" \) \
                                 -not -path './vendor/*' \
                                 -type f | sort)
 
