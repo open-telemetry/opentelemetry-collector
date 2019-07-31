@@ -93,17 +93,9 @@ func NewTraceProcessor(logger *zap.Logger, nextConsumer consumer.TraceConsumer, 
 		maxNumTraces:    cfg.NumTraces,
 		logger:          logger,
 		decisionBatcher: inBatcher,
-		// policies:        policies,
 	}
 
 	// TODO(#146): add policies to TailBasedCfg
-	// for _, policy := range policies {
-	// 	policyCtx, err := tag.New(tsp.ctx, tag.Upsert(tagPolicyKey, policy.Name), tag.Upsert(observability.TagKeyReceiver, sourceFormat))
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	// 	policy.ctx = policyCtx
-	// }
 	tsp.policyTicker = &policyTicker{onTick: tsp.samplingPolicyOnTick}
 	tsp.deleteChan = make(chan traceKey, cfg.NumTraces)
 
