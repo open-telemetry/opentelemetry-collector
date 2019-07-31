@@ -28,6 +28,7 @@ import (
 	"github.com/jaegertracing/jaeger/cmd/agent/app/configmanager"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/reporter"
 	"github.com/jaegertracing/jaeger/cmd/collector/app"
+	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"github.com/jaegertracing/jaeger/thrift-gen/baggage"
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 	"github.com/jaegertracing/jaeger/thrift-gen/sampling"
@@ -36,6 +37,7 @@ import (
 	tchannel "github.com/uber/tchannel-go"
 	"github.com/uber/tchannel-go/thrift"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/observability"
@@ -48,6 +50,7 @@ import (
 type Configuration struct {
 	CollectorThriftPort int `mapstructure:"tchannel_port"`
 	CollectorHTTPPort   int `mapstructure:"collector_http_port"`
+	CollectorGRPCPort   int `mapstructure:"collector_grpc_port"`
 
 	AgentPort              int `mapstructure:"agent_port"`
 	AgentCompactThriftPort int `mapstructure:"agent_compact_thrift_port"`
@@ -70,6 +73,7 @@ type jReceiver struct {
 	agent       *agentapp.Agent
 	agentServer *http.Server
 
+	grpc            *grpc.Server
 	tchannel        *tchannel.Channel
 	collectorServer *http.Server
 
@@ -77,7 +81,9 @@ type jReceiver struct {
 }
 
 const (
-	// As per https://www.jaegertracing.io/docs/1.7/deployment/
+	// As per https://www.jaegertracing.io/docs/1.13/deployment/
+	// By default, the port used by jaeger-agent to send spans in model.proto format
+	defaultGRPCPort = 14250
 	// By default, the port used by jaeger-agent to send spans in jaeger.thrift format
 	defaultTChannelPort = 14267
 	// By default, can accept spans directly from clients in jaeger.thrift format over binary thrift protocol
@@ -145,7 +151,18 @@ func (jr *jReceiver) tchannelAddr() string {
 	return fmt.Sprintf(":%d", port)
 }
 
-func (jr *jReceiver) AgentCompactThriftAddr() string {
+func (jr *jReceiver) grpcAddr() string {
+	var port int
+	if jr.config != nil {
+		port = jr.config.CollectorGRPCPort
+	}
+	if port <= 0 {
+		port = defaultGRPCPort
+	}
+	return fmt.Sprintf(":%d", port)
+}
+
+func (jr *jReceiver) agentCompactThriftAddr() string {
 	var port int
 	if jr.config != nil {
 		port = jr.config.AgentCompactThriftPort
@@ -177,12 +194,12 @@ func (jr *jReceiver) StartTraceReception(host receiver.Host) error {
 
 	var err = errAlreadyStarted
 	jr.startOnce.Do(func() {
-		if err = jr.startAgent(); err != nil && err != errAlreadyStarted {
+		if err = jr.startAgent(host); err != nil && err != errAlreadyStarted {
 			jr.stopTraceReceptionLocked()
 			return
 		}
 
-		if err = jr.startCollector(); err != nil && err != errAlreadyStarted {
+		if err = jr.startCollector(host); err != nil && err != errAlreadyStarted {
 			jr.stopTraceReceptionLocked()
 			return
 		}
@@ -218,6 +235,10 @@ func (jr *jReceiver) stopTraceReceptionLocked() error {
 		if jr.tchannel != nil {
 			jr.tchannel.Close()
 			jr.tchannel = nil
+		}
+		if jr.grpc != nil {
+			jr.grpc.Stop()
+			jr.grpc = nil
 		}
 		if len(errs) == 0 {
 			err = nil
@@ -262,6 +283,7 @@ func (jr *jReceiver) SubmitBatches(ctx thrift.Context, batches []*jaeger.Batch) 
 
 var _ reporter.Reporter = (*jReceiver)(nil)
 var _ agentapp.CollectorProxy = (*jReceiver)(nil)
+var _ api_v2.CollectorServiceServer = (*jReceiver)(nil)
 
 // EmitZipkinBatch implements cmd/agent/reporter.Reporter and it forwards
 // Zipkin spans received by the Jaeger agent processor.
@@ -300,14 +322,33 @@ func (jr *jReceiver) GetBaggageRestrictions(serviceName string) ([]*baggage.Bagg
 	return nil, nil
 }
 
-func (jr *jReceiver) startAgent() error {
+func (jr *jReceiver) PostSpans(ctx context.Context, r *api_v2.PostSpansRequest) (*api_v2.PostSpansResponse, error) {
+	ctxWithReceiverName := observability.ContextWithReceiverName(ctx, collectorReceiverTagValue)
+
+	td, err := jaegertranslator.ProtoBatchToOCProto(r.Batch)
+	td.SourceFormat = "jaeger"
+	if err != nil {
+		observability.RecordTraceReceiverMetrics(ctxWithReceiverName, len(r.Batch.Spans), len(r.Batch.Spans))
+		return nil, err
+	}
+
+	err = jr.nextConsumer.ConsumeTraceData(ctx, td)
+	observability.RecordTraceReceiverMetrics(ctxWithReceiverName, len(r.Batch.Spans), len(r.Batch.Spans)-len(td.Spans))
+	if err != nil {
+		return nil, err
+	}
+
+	return &api_v2.PostSpansResponse{}, err
+}
+
+func (jr *jReceiver) startAgent(_ receiver.Host) error {
 	processorConfigs := []agentapp.ProcessorConfiguration{
 		{
 			// Compact Thrift running by default on 6831.
 			Model:    "jaeger",
 			Protocol: "compact",
 			Server: agentapp.ServerConfiguration{
-				HostPort: jr.AgentCompactThriftAddr(),
+				HostPort: jr.agentCompactThriftAddr(),
 			},
 		},
 		{
@@ -342,10 +383,10 @@ func (jr *jReceiver) startAgent() error {
 	return nil
 }
 
-func (jr *jReceiver) startCollector() error {
+func (jr *jReceiver) startCollector(host receiver.Host) error {
 	tch, terr := tchannel.NewChannel("jaeger-collector", new(tchannel.ChannelOptions))
 	if terr != nil {
-		return fmt.Errorf("Failed to create NewTChannel: %v", terr)
+		return fmt.Errorf("failed to create NewTChannel: %v", terr)
 	}
 
 	server := thrift.NewServer(tch)
@@ -354,7 +395,7 @@ func (jr *jReceiver) startCollector() error {
 	taddr := jr.tchannelAddr()
 	tln, terr := net.Listen("tcp", taddr)
 	if terr != nil {
-		return fmt.Errorf("Failed to bind to TChannnel address %q: %v", taddr, terr)
+		return fmt.Errorf("failed to bind to TChannnel address %q: %v", taddr, terr)
 	}
 	tch.Serve(tln)
 	jr.tchannel = tch
@@ -365,7 +406,7 @@ func (jr *jReceiver) startCollector() error {
 	if cerr != nil {
 		// Abort and close tch
 		tch.Close()
-		return fmt.Errorf("Failed to bind to Collector address %q: %v", caddr, cerr)
+		return fmt.Errorf("failed to bind to Collector address %q: %v", caddr, cerr)
 	}
 
 	nr := mux.NewRouter()
@@ -374,6 +415,25 @@ func (jr *jReceiver) startCollector() error {
 	jr.collectorServer = &http.Server{Handler: nr}
 	go func() {
 		_ = jr.collectorServer.Serve(cln)
+	}()
+
+	// And finally, the gRPC server
+	jr.grpc = grpc.NewServer()
+	gaddr := jr.grpcAddr()
+	gln, gerr := net.Listen("tcp", gaddr)
+	if gerr != nil {
+		// Abort and close tch, cln
+		tch.Close()
+		cln.Close()
+		return fmt.Errorf("failed to bind to gRPC address %q: %v", gaddr, gerr)
+	}
+
+	api_v2.RegisterCollectorServiceServer(jr.grpc, jr)
+
+	go func() {
+		if err := jr.grpc.Serve(gln); err != nil {
+			host.ReportFatalError(err)
+		}
 	}()
 
 	return nil

@@ -18,7 +18,6 @@ package jaegerreceiver
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net"
 	"strconv"
@@ -36,10 +35,12 @@ const (
 	typeStr = "jaeger"
 
 	// Protocol values.
+	protoGRPC           = "grpc"
 	protoThriftHTTP     = "thrift-http"
 	protoThriftTChannel = "thrift-tchannel"
 
 	// Default endpoints to bind to.
+	defaultGRPCBindEndpoint     = "127.0.0.1:14250"
 	defaultHTTPBindEndpoint     = "127.0.0.1:14268"
 	defaultTChannelBindEndpoint = "127.0.0.1:14267"
 )
@@ -64,6 +65,9 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 		TypeVal: typeStr,
 		NameVal: typeStr,
 		Protocols: map[string]*configmodels.ReceiverSettings{
+			protoGRPC: {
+				Endpoint: defaultGRPCBindEndpoint,
+			},
 			protoThriftTChannel: {
 				Endpoint: defaultTChannelBindEndpoint,
 			},
@@ -87,12 +91,21 @@ func (f *Factory) CreateTraceReceiver(
 
 	rCfg := cfg.(*Config)
 
+	protoGRPC := rCfg.Protocols[protoGRPC]
 	protoHTTP := rCfg.Protocols[protoThriftHTTP]
 	protoTChannel := rCfg.Protocols[protoThriftTChannel]
 
 	config := Configuration{}
 
 	// Set ports
+	if protoGRPC != nil && protoGRPC.IsEnabled() {
+		var err error
+		config.CollectorGRPCPort, err = extractPortFromEndpoint(protoGRPC.Endpoint)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	if protoHTTP != nil && protoHTTP.IsEnabled() {
 		var err error
 		config.CollectorHTTPPort, err = extractPortFromEndpoint(protoHTTP.Endpoint)
@@ -109,14 +122,16 @@ func (f *Factory) CreateTraceReceiver(
 		}
 	}
 
-	if (protoHTTP == nil && protoTChannel == nil) ||
-		(config.CollectorHTTPPort == 0 && config.CollectorThriftPort == 0) {
-		return nil, errors.New("either " + protoThriftHTTP + " or " + protoThriftTChannel +
-			" protocol endpoint with non-zero port must be enabled for " + typeStr + " receiver")
+	if (protoGRPC == nil && protoHTTP == nil && protoTChannel == nil) ||
+		(config.CollectorGRPCPort == 0 && config.CollectorHTTPPort == 0 && config.CollectorThriftPort == 0) {
+		err := fmt.Errorf("either %v, %v, or %v protocol endpoint with non-zero port must be enabled for %s receiver",
+			protoGRPC,
+			protoThriftHTTP,
+			protoThriftTChannel,
+			typeStr,
+		)
+		return nil, err
 	}
-
-	// Jaeger receiver implementation currently does not allow specifying which interface
-	// to bind to so we cannot use yet the address part of endpoint.
 
 	// Create the receiver.
 	return New(ctx, &config, nextConsumer)
