@@ -27,7 +27,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	model "github.com/jaegertracing/jaeger/model"
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
-	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
 	"github.com/stretchr/testify/assert"
 	"go.opencensus.io/trace"
 	"google.golang.org/grpc"
@@ -36,6 +35,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-service/internal"
 	"github.com/open-telemetry/opentelemetry-service/receiver/receivertest"
+	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
 )
 
 func TestReception(t *testing.T) {

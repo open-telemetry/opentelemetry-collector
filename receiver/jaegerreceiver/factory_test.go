@@ -16,6 +16,7 @@ package jaegerreceiver
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -81,6 +82,42 @@ func TestCreateNoPort(t *testing.T) {
 	rCfg.Protocols[protoThriftHTTP].Endpoint = "127.0.0.1:"
 	_, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
 	assert.Error(t, err, "receiver creation with no port number must fail")
+}
+
+func TestCreateSamePort(t *testing.T) {
+	factory := Factory{}
+	cfg := factory.CreateDefaultConfig()
+	rCfg := cfg.(*Config)
+
+	ports := []struct {
+		protoGRPC           string
+		protoThriftHTTP     string
+		protoThriftTChannel string
+	}{
+		{protoGRPC: "14260", protoThriftHTTP: "14260", protoThriftTChannel: "14261"},
+		{protoGRPC: "14261", protoThriftHTTP: "14260", protoThriftTChannel: "14261"},
+		{protoGRPC: "14260", protoThriftHTTP: "14261", protoThriftTChannel: "14261"},
+	}
+
+	for _, tt := range ports {
+		rCfg.Protocols[protoGRPC].Endpoint = fmt.Sprintf("127.0.0.1:%s", tt.protoGRPC)
+		rCfg.Protocols[protoThriftHTTP].Endpoint = fmt.Sprintf("127.0.0.1:%s", tt.protoThriftHTTP)
+		rCfg.Protocols[protoThriftTChannel].Endpoint = fmt.Sprintf("127.0.0.1:%s", tt.protoThriftTChannel)
+		_, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
+		assert.Error(t, err, "receiver creation with duplicate port number must fail")
+	}
+}
+
+func TestCreateSamePortDifferentIP(t *testing.T) {
+	factory := Factory{}
+	cfg := factory.CreateDefaultConfig()
+	rCfg := cfg.(*Config)
+
+	rCfg.Protocols[protoGRPC].Endpoint = "127.0.0.1:14260"
+	rCfg.Protocols[protoThriftHTTP].Endpoint = "127.0.0.1:14261"
+	rCfg.Protocols[protoThriftTChannel].Endpoint = "127.0.0.2:14261"
+	_, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
+	assert.NoError(t, err)
 }
 
 func TestCreateLargePort(t *testing.T) {

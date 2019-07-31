@@ -133,6 +133,16 @@ func (f *Factory) CreateTraceReceiver(
 		return nil, err
 	}
 
+	// if the same port is used for two distinct services, return an error
+	if protoGRPC.Endpoint == protoHTTP.Endpoint || protoGRPC.Endpoint == protoTChannel.Endpoint || protoHTTP.Endpoint == protoTChannel.Endpoint {
+		err := fmt.Errorf("the same endpoint (IP:Port) is being used for two or more services: %v (gRPC), %v (HTTP), %v (TChannel)",
+			protoGRPC,
+			protoThriftHTTP,
+			protoThriftTChannel,
+		)
+		return nil, err
+	}
+
 	// Jaeger receiver implementation currently does not allow specifying which interface
 	// to bind to so we cannot use yet the address part of endpoint.
 

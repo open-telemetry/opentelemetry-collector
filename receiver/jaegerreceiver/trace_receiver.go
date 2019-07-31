@@ -334,6 +334,9 @@ func (jr *jReceiver) PostSpans(ctx context.Context, r *api_v2.PostSpansRequest) 
 
 	err = jr.nextConsumer.ConsumeTraceData(ctx, td)
 	observability.RecordTraceReceiverMetrics(ctxWithReceiverName, len(r.Batch.Spans), len(r.Batch.Spans)-len(td.Spans))
+	if err != nil {
+		return nil, err
+	}
 
 	return &api_v2.PostSpansResponse{}, err
 }
