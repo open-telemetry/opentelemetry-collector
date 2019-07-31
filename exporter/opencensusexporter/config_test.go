@@ -59,7 +59,7 @@ func TestLoadConfig(t *testing.T) {
 			CertPemFile:       "/var/lib/mycert.pem",
 			UseSecure:         true,
 			ReconnectionDelay: 15,
-			KeepaliveParameters: &keepaliveConfig{
+			KeepaliveParameters: &KeepaliveConfig{
 				Time:                20,
 				PermitWithoutStream: true,
 				Timeout:             30,

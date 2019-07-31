@@ -30,5 +30,5 @@ type Config struct {
 	CertPemFile                   string                   `mapstructure:"cert-pem-file"`
 	UseSecure                     bool                     `mapstructure:"secure,omitempty"`
 	ReconnectionDelay             time.Duration            `mapstructure:"reconnection-delay,omitempty"`
-	KeepaliveParameters           *keepaliveConfig         `mapstructure:"keepalive,omitempty"`
+	KeepaliveParameters           *KeepaliveConfig         `mapstructure:"keepalive,omitempty"`
 }
