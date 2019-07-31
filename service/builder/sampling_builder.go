@@ -18,6 +18,8 @@ import (
 	"time"
 
 	"github.com/spf13/viper"
+
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 )
 
 const (
@@ -159,20 +161,16 @@ func (sCfg *SamplingCfg) InitFromViper(v *viper.Viper) *SamplingCfg {
 
 // TailBasedCfg holds the configuration for tail-based sampling.
 type TailBasedCfg struct {
+	configmodels.ProcessorSettings `mapstructure:",squash"`
 	// DecisionWait is the desired wait time from the arrival of the first span of
 	// trace until the decision about sampling it or not is evaluated.
 	DecisionWait time.Duration `mapstructure:"decision-wait"`
 	// NumTraces is the number of traces kept on memory. Typically most of the data
 	// of a trace is released after a sampling decision is taken.
 	NumTraces uint64 `mapstructure:"num-traces"`
-}
-
-// NewDefaultTailBasedCfg creates a TailBasedCfg with the default values.
-func NewDefaultTailBasedCfg() *TailBasedCfg {
-	return &TailBasedCfg{
-		DecisionWait: 30 * time.Second,
-		NumTraces:    50000,
-	}
+	// ExpectedNewTracesPerSec sets the expected number of new traces sending to the tail sampling processor
+	// per second. This helps with allocating data structures with closer to actual usage size.
+	ExpectedNewTracesPerSec uint64 `mapstructure:"expected-new-traces-per-sec"`
 }
 
 // InitFromViper initializes TailBasedCfg with properties from viper.

@@ -1,0 +1,17 @@
+receivers:
+  examplereceiver:
+
+exporters:
+  exampleexporter:
+
+processors:
+  tail-sampling:
+    decision-wait: 31s
+    num-traces: 20001
+    expected-new-traces-per-sec: 100
+
+pipelines:
+  traces:
+    receivers: [examplereceiver]
+    processors: [tail-sampling]
+    exporters: [exampleexporter]

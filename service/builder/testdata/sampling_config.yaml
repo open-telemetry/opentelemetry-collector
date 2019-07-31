@@ -28,9 +28,10 @@ sampling:
   mode: tail
   decision-wait: 31s
   num-traces: 20001
+  expected-new-traces-per-sec: 100
   policies:
     string-attribute-filter1:
-        exporters: 
+        exporters:
           - jaeger1
         policy: string-attribute-filter
         configuration:
@@ -46,8 +47,8 @@ sampling:
           key: "http.status_code"
           min-value: 400
           max-value: 999
-    string-attribute-filter3: 
-        exporters: 
+    string-attribute-filter3:
+        exporters:
           - jaeger3
         policy: string-attribute-filter
         configuration:
@@ -56,7 +57,7 @@ sampling:
             - "key 1"
             - "key 2"
     numeric-attribute-filter4:
-        exporters: 
+        exporters:
           - jaeger4
           - jaeger5
         policy: numeric-attribute-filter

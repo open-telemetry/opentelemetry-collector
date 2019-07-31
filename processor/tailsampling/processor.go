@@ -16,6 +16,7 @@ package tailsampling
 
 import (
 	"context"
+	"errors"
 	"runtime"
 	"sync"
 	"sync/atomic"
@@ -30,7 +31,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/internal/collector/processor/idbatcher"
 	"github.com/open-telemetry/opentelemetry-service/internal/collector/sampling"
-	"github.com/open-telemetry/opentelemetry-service/observability"
+	"github.com/open-telemetry/opentelemetry-service/processor"
+	"github.com/open-telemetry/opentelemetry-service/service/builder"
 )
 
 // Policy combines a sampling policy evaluator with the destinations to be
@@ -54,6 +56,7 @@ type traceKey string
 // policies to sample traces.
 type tailSamplingSpanProcessor struct {
 	ctx             context.Context
+	nextConsumer    consumer.TraceConsumer
 	start           sync.Once
 	maxNumTraces    uint64
 	policies        []*Policy
@@ -69,40 +72,33 @@ const (
 	sourceFormat = "tail-sampling"
 )
 
-var _ consumer.TraceConsumer = (*tailSamplingSpanProcessor)(nil)
+var _ processor.TraceProcessor = (*tailSamplingSpanProcessor)(nil)
 
-// NewTailSamplingSpanProcessor creates a TailSamplingSpanProcessor with the given policies.
-// It will keep maxNumTraces on memory and will attempt to wait until decisionWait before evaluating if
-// a trace should be sampled or not. Providing expectedNewTracesPerSec helps with allocating data structures
-// with closer to actual usage size.
-func NewTailSamplingSpanProcessor(
-	policies []*Policy,
-	maxNumTraces, expectedNewTracesPerSec uint64,
-	decisionWait time.Duration,
-	logger *zap.Logger) (consumer.TraceConsumer, error) {
+// NewTraceProcessor returns a processor.TraceProcessor that will perform tail sampling according to the given
+// configuration.
+func NewTraceProcessor(logger *zap.Logger, nextConsumer consumer.TraceConsumer, cfg builder.TailBasedCfg) (processor.TraceProcessor, error) {
+	if nextConsumer == nil {
+		return nil, errors.New("nextConsumer is nil")
+	}
 
-	numDecisionBatches := uint64(decisionWait.Seconds())
-	inBatcher, err := idbatcher.New(numDecisionBatches, expectedNewTracesPerSec, uint64(2*runtime.NumCPU()))
+	numDecisionBatches := uint64(cfg.DecisionWait.Seconds())
+	inBatcher, err := idbatcher.New(numDecisionBatches, cfg.ExpectedNewTracesPerSec, uint64(2*runtime.NumCPU()))
 	if err != nil {
 		return nil, err
 	}
+
 	tsp := &tailSamplingSpanProcessor{
 		ctx:             context.Background(),
-		maxNumTraces:    maxNumTraces,
-		policies:        policies,
+		nextConsumer:    nextConsumer,
+		maxNumTraces:    cfg.NumTraces,
 		logger:          logger,
 		decisionBatcher: inBatcher,
 	}
 
-	for _, policy := range policies {
-		policyCtx, err := tag.New(tsp.ctx, tag.Upsert(tagPolicyKey, policy.Name), tag.Upsert(observability.TagKeyReceiver, sourceFormat))
-		if err != nil {
-			return nil, err
-		}
-		policy.ctx = policyCtx
-	}
+	// TODO(#146): add policies to TailBasedCfg
 	tsp.policyTicker = &policyTicker{onTick: tsp.samplingPolicyOnTick}
-	tsp.deleteChan = make(chan traceKey, maxNumTraces)
+	tsp.deleteChan = make(chan traceKey, cfg.NumTraces)
+
 	return tsp, nil
 }
 

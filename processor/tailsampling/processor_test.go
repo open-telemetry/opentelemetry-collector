@@ -20,14 +20,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/internal/collector/processor/idbatcher"
-	"github.com/open-telemetry/opentelemetry-service/internal/collector/sampling"
-	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
-
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
+	"github.com/open-telemetry/opentelemetry-service/internal/collector/processor/idbatcher"
+	"github.com/open-telemetry/opentelemetry-service/internal/collector/sampling"
+	"github.com/open-telemetry/opentelemetry-service/service/builder"
+	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
 )
 
 const (
@@ -36,7 +38,12 @@ const (
 
 func TestSequentialTraceArrival(t *testing.T) {
 	traceIds, batches := generateIdsAndBatches(128)
-	sp, _ := NewTailSamplingSpanProcessor(newTestPolicy(), uint64(2*len(traceIds)), 64, defaultTestDecisionWait, zap.NewNop())
+	cfg := builder.TailBasedCfg{
+		DecisionWait:            defaultTestDecisionWait,
+		NumTraces:               uint64(2 * len(traceIds)),
+		ExpectedNewTracesPerSec: 64,
+	}
+	sp, _ := NewTraceProcessor(zap.NewNop(), &exportertest.SinkTraceExporter{}, cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
 	for _, batch := range batches {
 		tsp.ConsumeTraceData(context.Background(), batch)
@@ -57,7 +64,12 @@ func TestConcurrentTraceArrival(t *testing.T) {
 	traceIds, batches := generateIdsAndBatches(128)
 
 	var wg sync.WaitGroup
-	sp, _ := NewTailSamplingSpanProcessor(newTestPolicy(), uint64(2*len(traceIds)), 64, defaultTestDecisionWait, zap.NewNop())
+	cfg := builder.TailBasedCfg{
+		DecisionWait:            defaultTestDecisionWait,
+		NumTraces:               uint64(2 * len(traceIds)),
+		ExpectedNewTracesPerSec: 64,
+	}
+	sp, _ := NewTraceProcessor(zap.NewNop(), &exportertest.SinkTraceExporter{}, cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
 	for _, batch := range batches {
 		// Add the same traceId twice.
@@ -90,7 +102,12 @@ func TestConcurrentTraceArrival(t *testing.T) {
 func TestSequentialTraceMapSize(t *testing.T) {
 	traceIds, batches := generateIdsAndBatches(210)
 	const maxSize = 100
-	sp, _ := NewTailSamplingSpanProcessor(newTestPolicy(), uint64(maxSize), 64, defaultTestDecisionWait, zap.NewNop())
+	cfg := builder.TailBasedCfg{
+		DecisionWait:            defaultTestDecisionWait,
+		NumTraces:               uint64(maxSize),
+		ExpectedNewTracesPerSec: 64,
+	}
+	sp, _ := NewTraceProcessor(zap.NewNop(), &exportertest.SinkTraceExporter{}, cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
 	for _, batch := range batches {
 		tsp.ConsumeTraceData(context.Background(), batch)
@@ -108,7 +125,12 @@ func TestConcurrentTraceMapSize(t *testing.T) {
 	_, batches := generateIdsAndBatches(210)
 	const maxSize = 100
 	var wg sync.WaitGroup
-	sp, _ := NewTailSamplingSpanProcessor(newTestPolicy(), uint64(maxSize), 64, defaultTestDecisionWait, zap.NewNop())
+	cfg := builder.TailBasedCfg{
+		DecisionWait:            defaultTestDecisionWait,
+		NumTraces:               uint64(maxSize),
+		ExpectedNewTracesPerSec: 64,
+	}
+	sp, _ := NewTraceProcessor(zap.NewNop(), &exportertest.SinkTraceExporter{}, cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
 	for _, batch := range batches {
 		wg.Add(1)
@@ -133,19 +155,17 @@ func TestConcurrentTraceMapSize(t *testing.T) {
 }
 
 func TestSamplingPolicyTypicalPath(t *testing.T) {
+	t.Skip("TODO(#146): add policies to TailBasedCfg and fix this test")
 	const maxSize = 100
 	const decisionWaitSeconds = 5
-	decisionWait := time.Second * decisionWaitSeconds
 	msp := &mockSpanProcessor{}
 	mpe := &mockPolicyEvaluator{}
-	testPolicy := []*Policy{
-		{
-			Name:        "test",
-			Evaluator:   mpe,
-			Destination: msp,
-		},
+	cfg := builder.TailBasedCfg{
+		DecisionWait:            defaultTestDecisionWait,
+		NumTraces:               uint64(maxSize),
+		ExpectedNewTracesPerSec: 64,
 	}
-	sp, _ := NewTailSamplingSpanProcessor(testPolicy, maxSize, 64, decisionWait, zap.NewNop())
+	sp, _ := NewTraceProcessor(zap.NewNop(), &exportertest.SinkTraceExporter{}, cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
 
 	// For this test  explicitly control the timer calls and batcher.
