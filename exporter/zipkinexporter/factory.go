@@ -57,12 +57,6 @@ func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Ex
 		return nil, nil, errors.New("exporter config requires a non-empty 'http-url'") // TODO: better error
 	}
 
-	// TODO: (@pjanotti) Move to code like the comment below in a separate PR.
-	//ze, err := exporterhelper.NewTraceExporter(
-	//	"zipkin",
-	//	ze.PushTraceData,
-	//	exporterhelper.WithSpanName("otelsvc.exporter.Zipkin.ConsumeTraceData"),
-	//	exporterhelper.WithRecordMetrics(true))
 	ze, err := newZipkinExporter(cfg.HTTPAddress, "<missing service name>", 0)
 	if err != nil {
 		return nil, nil, err
