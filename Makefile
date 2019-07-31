@@ -112,7 +112,7 @@ install-tools:
 	GO111MODULE=on go install \
 	  github.com/google/addlicense \
 	  golang.org/x/lint/golint \
-    golang.org/x/tools/cmd/goimports
+	  golang.org/x/tools/cmd/goimports
 
 .PHONY: otelsvc
 otelsvc:
