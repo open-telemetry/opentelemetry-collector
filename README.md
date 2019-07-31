@@ -89,11 +89,10 @@ Create an Agent [configuration](#config) file based on the options described
 below. By default, the Agent has the `opencensus` receiver enabled, but no
 exporters configured.
 
-Build the Agent, see [Usage](##agent-usage),
-and start it:
+Build the Agent and start it with the example configuration:
 
 ```shell
-$ ./bin/$(go env GOOS)/otelsvc
+$ ./bin/$(go env GOOS)/otelsvc  --config ./examples/demotrace/otel-agent-config.yaml
 $ 2018/10/08 21:38:00 Running OpenTelemetry receiver as a gRPC service at "127.0.0.1:55678"
 ```
 
@@ -101,11 +100,11 @@ Create an Collector [configuration](#config) file based on the options
 described below. By default, the Collector has the `opencensus` receiver
 enabled, but no exporters configured.
 
-Build the Collector and start it:
+Build the Collector and start it with the example configuration:
 
 ```shell
 $ make otelsvc
-$ ./bin/$($GOOS)/otelsvc
+$ ./bin/$($GOOS)/otelsvc --config ./examples/demotrace/otel-collector-config.yaml
 ```
 
 Run the demo application:
