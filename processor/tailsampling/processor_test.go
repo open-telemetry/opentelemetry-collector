@@ -28,7 +28,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-service/internal/collector/processor/idbatcher"
 	"github.com/open-telemetry/opentelemetry-service/internal/collector/sampling"
-	"github.com/open-telemetry/opentelemetry-service/service/builder"
 	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
 )
 
@@ -38,7 +37,7 @@ const (
 
 func TestSequentialTraceArrival(t *testing.T) {
 	traceIds, batches := generateIdsAndBatches(128)
-	cfg := builder.TailBasedCfg{
+	cfg := Config{
 		DecisionWait:            defaultTestDecisionWait,
 		NumTraces:               uint64(2 * len(traceIds)),
 		ExpectedNewTracesPerSec: 64,
@@ -64,7 +63,7 @@ func TestConcurrentTraceArrival(t *testing.T) {
 	traceIds, batches := generateIdsAndBatches(128)
 
 	var wg sync.WaitGroup
-	cfg := builder.TailBasedCfg{
+	cfg := Config{
 		DecisionWait:            defaultTestDecisionWait,
 		NumTraces:               uint64(2 * len(traceIds)),
 		ExpectedNewTracesPerSec: 64,
@@ -102,7 +101,7 @@ func TestConcurrentTraceArrival(t *testing.T) {
 func TestSequentialTraceMapSize(t *testing.T) {
 	traceIds, batches := generateIdsAndBatches(210)
 	const maxSize = 100
-	cfg := builder.TailBasedCfg{
+	cfg := Config{
 		DecisionWait:            defaultTestDecisionWait,
 		NumTraces:               uint64(maxSize),
 		ExpectedNewTracesPerSec: 64,
@@ -125,7 +124,7 @@ func TestConcurrentTraceMapSize(t *testing.T) {
 	_, batches := generateIdsAndBatches(210)
 	const maxSize = 100
 	var wg sync.WaitGroup
-	cfg := builder.TailBasedCfg{
+	cfg := Config{
 		DecisionWait:            defaultTestDecisionWait,
 		NumTraces:               uint64(maxSize),
 		ExpectedNewTracesPerSec: 64,
@@ -160,7 +159,7 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 	const decisionWaitSeconds = 5
 	msp := &mockSpanProcessor{}
 	mpe := &mockPolicyEvaluator{}
-	cfg := builder.TailBasedCfg{
+	cfg := Config{
 		DecisionWait:            defaultTestDecisionWait,
 		NumTraces:               uint64(maxSize),
 		ExpectedNewTracesPerSec: 64,

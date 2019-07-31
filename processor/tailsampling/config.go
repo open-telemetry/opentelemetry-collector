@@ -12,35 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package builder
+package tailsampling
 
 import (
 	"time"
 
-	"github.com/spf13/viper"
-
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
-)
-
-const (
-	modeTag     = "mode"
-	policiesTag = "policies"
-	samplingTag = "sampling"
-)
-
-// Mode indicates the sampling mode
-type Mode string
-
-const (
-	// NoSampling mode is the default and means that all data arriving at the collector
-	// is passed ahead.
-	NoSampling Mode = "no-sampling"
-	// HeadSampling is the mode in which trace data is sampled at ingestion, without seeing
-	// the whole trace data.
-	HeadSampling Mode = "head"
-	// TailSampling is the mode in which trace data is temporarily retained until an evaluation
-	// if the trace should be sampled is performed.
-	TailSampling Mode = "tail"
 )
 
 // PolicyType indicates the type of sampling policy.
@@ -92,75 +69,8 @@ type StringAttributeFilterCfg struct {
 	Values []string `mapstructure:"values"`
 }
 
-// RateLimitingCfg holds the configurable settings to create a string attribute filter
-// sampling policy evaluator.
-type RateLimitingCfg struct {
-	// SpansPerSecond limit to the number of spans per second
-	SpansPerSecond int64 `mapstructure:"spans-per-second"`
-}
-
-// SamplingCfg holds the sampling configuration.
-type SamplingCfg struct {
-	// Mode specifies the sampling mode to be used.
-	Mode Mode `mapstructure:"mode"`
-	// Policies contains the list of policies to be used by sampling.
-	Policies []*PolicyCfg `mapstructure:"policies"`
-}
-
-// NewDefaultSamplingCfg creates a SamplingCfg with the default values.
-func NewDefaultSamplingCfg() *SamplingCfg {
-	return &SamplingCfg{
-		Mode: NoSampling,
-	}
-}
-
-// InitFromViper initializes SamplingCfg with properties from viper.
-func (sCfg *SamplingCfg) InitFromViper(v *viper.Viper) *SamplingCfg {
-	sv := v.Sub(samplingTag)
-	if sv == nil {
-		return sCfg
-	}
-
-	sCfg.Mode = Mode(sv.GetString(modeTag))
-
-	pv := sv.Sub(policiesTag)
-	if pv == nil {
-		return sCfg
-	}
-
-	for policyName := range sv.GetStringMap(policiesTag) {
-		polSub := pv.Sub(policyName)
-		polCfg := &PolicyCfg{}
-		polCfg.Name = policyName
-		polCfg.Type = PolicyType(polSub.GetString("policy"))
-		polCfg.Exporters = polSub.GetStringSlice("exporters")
-
-		cfgSub := polSub.Sub("configuration")
-		if cfgSub != nil {
-			// As the number of polices grow this likely should be in a map.
-			var cfg interface{}
-			switch polCfg.Type {
-			case NumericAttributeFilter:
-				numAttributeFilterCfg := &NumericAttributeFilterCfg{}
-				cfg = numAttributeFilterCfg
-			case StringAttributeFilter:
-				strAttributeFilterCfg := &StringAttributeFilterCfg{}
-				cfg = strAttributeFilterCfg
-			case RateLimiting:
-				rateLimitingCfg := &RateLimitingCfg{}
-				cfg = rateLimitingCfg
-			}
-			cfgSub.Unmarshal(cfg)
-			polCfg.Configuration = cfg
-		}
-
-		sCfg.Policies = append(sCfg.Policies, polCfg)
-	}
-	return sCfg
-}
-
-// TailBasedCfg holds the configuration for tail-based sampling.
-type TailBasedCfg struct {
+// Config holds the configuration for tail-based sampling.
+type Config struct {
 	configmodels.ProcessorSettings `mapstructure:",squash"`
 	// DecisionWait is the desired wait time from the arrival of the first span of
 	// trace until the decision about sampling it or not is evaluated.
@@ -171,18 +81,4 @@ type TailBasedCfg struct {
 	// ExpectedNewTracesPerSec sets the expected number of new traces sending to the tail sampling processor
 	// per second. This helps with allocating data structures with closer to actual usage size.
 	ExpectedNewTracesPerSec uint64 `mapstructure:"expected-new-traces-per-sec"`
-}
-
-// InitFromViper initializes TailBasedCfg with properties from viper.
-func (tCfg *TailBasedCfg) InitFromViper(v *viper.Viper) *TailBasedCfg {
-	tv := v.Sub(samplingTag)
-	if tv == nil {
-		return tCfg
-	}
-	if tv == nil || tv.GetString(modeTag) != string(TailSampling) {
-		return tCfg
-	}
-
-	tv.Unmarshal(tCfg)
-	return tCfg
 }

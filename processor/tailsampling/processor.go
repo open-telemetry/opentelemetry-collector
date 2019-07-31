@@ -32,7 +32,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/internal/collector/processor/idbatcher"
 	"github.com/open-telemetry/opentelemetry-service/internal/collector/sampling"
 	"github.com/open-telemetry/opentelemetry-service/processor"
-	"github.com/open-telemetry/opentelemetry-service/service/builder"
 )
 
 // Policy combines a sampling policy evaluator with the destinations to be
@@ -76,7 +75,7 @@ var _ processor.TraceProcessor = (*tailSamplingSpanProcessor)(nil)
 
 // NewTraceProcessor returns a processor.TraceProcessor that will perform tail sampling according to the given
 // configuration.
-func NewTraceProcessor(logger *zap.Logger, nextConsumer consumer.TraceConsumer, cfg builder.TailBasedCfg) (processor.TraceProcessor, error) {
+func NewTraceProcessor(logger *zap.Logger, nextConsumer consumer.TraceConsumer, cfg Config) (processor.TraceProcessor, error) {
 	if nextConsumer == nil {
 		return nil, errors.New("nextConsumer is nil")
 	}
