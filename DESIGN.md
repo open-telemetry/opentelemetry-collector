@@ -90,7 +90,7 @@ running. By default, the Agent is available on port 55678.
    there is no identifier in the first message, Agent should drop the whole
    message and return an error to the client. In addition, the first message
    MAY contain additional data (such as `Span`s). As long as it has a valid
-   identifier assoicated, Agent should handle the data properly, as if they
+   identifier associated, Agent should handle the data properly, as if they
    were sent in a subsequent message. Identifier is no longer needed once the
    streams are established.
 3. On Library side, if connection to Agent failed, Library should retry
@@ -139,7 +139,7 @@ library, and `Node` is not required for the subsequent messages from libraries.
 
 #### <a name="agent-impl-core"></a>Agent Core
 
-Most functionalities of Agent are in Agent Core. Agent Core's responsibilies
+Most functionalities of Agent are in Agent Core. Agent Core's responsibilities
 include:
 
 1. Accept `SpanProto` from each receiver. Note that the `SpanProto`s that are

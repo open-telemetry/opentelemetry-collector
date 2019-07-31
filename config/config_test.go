@@ -215,7 +215,7 @@ func TestDecodeConfig_Invalid(t *testing.T) {
 			t, path.Join(".", "testdata", test.name+".yaml"), receivers, processors, exporters,
 		)
 		if err == nil {
-			t.Errorf("expected error but succedded on invalid config case: %s", test.name)
+			t.Errorf("expected error but succeeded on invalid config case: %s", test.name)
 		} else if test.expected != 0 {
 			cfgErr, ok := err.(*configError)
 			if !ok {
