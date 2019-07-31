@@ -31,7 +31,7 @@ all-pkgs:
 all-srcs:
 	@echo $(ALL_SRC) | tr ' ' '\n' | sort
 
-.DEFAULT_GOAL := addlicense-fmt-vet-lint-test
+.DEFAULT_GOAL := addlicense-fmt-vet-lint-goimports-test
 
 .PHONY: addlicense-fmt-vet-lint-goimports-test
 addlicense-fmt-vet-lint-goimports-test: addlicense fmt vet lint goimports test
