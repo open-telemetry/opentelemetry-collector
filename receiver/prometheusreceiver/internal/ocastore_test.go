@@ -79,7 +79,7 @@ func TestOcaStoreIntegration(t *testing.T) {
 		mv   []v
 	}{
 		{
-			name: "promethues_text_format_example",
+			name: "prometheus_text_format_example",
 			page: testData1,
 			mv: []v{
 				{

@@ -220,7 +220,7 @@ func (b *metricBuilder) initNewMetricIfNeeded(metricName string, _ labels.Labels
 				Description: metadata.Help,
 				Unit:        heuristicalMetricAndKnownUnits(metricFamily, metadata.Unit),
 				Type:        convToOCAMetricType(metadata.Type),
-				// Due to the fact that scrapeLoop strips any tags with emtpy value, we cannot get the
+				// Due to the fact that scrapeLoop strips any tags with empty value, we cannot get the
 				// full set of labels by just looking at the first metrics, thus setting the LabelKeys of
 				// this proto need to be done after finished the whole group
 			},

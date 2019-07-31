@@ -90,7 +90,7 @@ func (tsp *tracesamplerprocessor) ConsumeTraceData(ctx context.Context, td consu
 	sampledSpans := make([]*tracepb.Span, 0, len(td.Spans))
 	for _, span := range td.Spans {
 		// If one assumes random trace ids hashing may seems avoidable, however, traces can be coming from sources
-		// with various different criterias to generate trace id and perhaps were already sampled without hashing.
+		// with various different criteria to generate trace id and perhaps were already sampled without hashing.
 		// Hashing here prevents bias due to such systems.
 		if hash(span.TraceId, tsp.hashSeed)&bitMaskHashBuckets < scaledSamplingRate {
 			sampledSpans = append(sampledSpans, span)

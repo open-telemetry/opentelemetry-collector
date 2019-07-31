@@ -12,6 +12,7 @@ require (
 	github.com/aws/aws-sdk-go v1.19.18 // indirect
 	github.com/bmizerany/perks v0.0.0-20141205001514-d9a9656a3a4b // indirect
 	github.com/census-instrumentation/opencensus-proto v0.2.1
+	github.com/client9/misspell v0.3.4
 	github.com/go-kit/kit v0.8.0
 	github.com/gogo/googleapis v1.2.0 // indirect
 	github.com/golang/protobuf v1.3.1

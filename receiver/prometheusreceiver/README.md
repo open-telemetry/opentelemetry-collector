@@ -22,8 +22,8 @@ metric types are different from the two systems.  However, it shall not drop dat
 Prometheus itself can also used as an exporter, that it can expose the metrics it scrape from other system with its own 
 metrics endpoint, so is ocagent. We shall be able to retain parity from the following two setups: 
 
-1. app -> promethues -> metric-endpoint 
-2. app -> ocgent-with-prometheus-receiver -> ocagent-promethues-exporter-metrics-endpoint
+1. app -> prometheus -> metric-endpoint 
+2. app -> ocgent-with-prometheus-receiver -> ocagent-prometheus-exporter-metrics-endpoint
 
 
 ## Prometheus Text Format Overview
@@ -462,4 +462,4 @@ provided in Prometheus, and `nil` will be used for these values.
 
 ### Others
 
-For any other Prometheus metrics types, they will make to the [Guage](#gague) type of Ocagent
+For any other Prometheus metrics types, they will make to the [Gauge](#gague) type of Ocagent

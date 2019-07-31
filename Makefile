@@ -4,6 +4,11 @@ ALL_SRC := $(shell find . -name '*.go' \
                                 -not -path './testbed/*' \
                                 -type f | sort)
 
+# All source code and documents. Used in spell check.
+ALL_SRC_AND_DOC := $(shell find . \( -name "*.md" -o -name "*.go" -o -name "*.yaml" \) \
+                                -not -path './vendor/*' \
+                                -type f | sort)
+
 # ALL_PKGS is used with 'go cover'
 ALL_PKGS := $(shell go list $(sort $(dir $(ALL_SRC))))
 
@@ -16,6 +21,8 @@ GOLINT=golint
 GOVET=go vet
 GOOS=$(shell go env GOOS)
 ADDLICENCESE= addlicense
+MISSPELL=misspell -error
+MISSPELL_CORRECTION=misspell -w
 
 GIT_SHA=$(shell git rev-parse --short HEAD)
 BUILD_INFO_IMPORT_PATH=github.com/open-telemetry/opentelemetry-service/internal/version
@@ -31,10 +38,10 @@ all-pkgs:
 all-srcs:
 	@echo $(ALL_SRC) | tr ' ' '\n' | sort
 
-.DEFAULT_GOAL := addlicense-fmt-vet-lint-goimports-test
+.DEFAULT_GOAL := addlicense-fmt-vet-lint-goimports-misspell-test
 
-.PHONY: addlicense-fmt-vet-lint-goimports-test
-addlicense-fmt-vet-lint-goimports-test: addlicense fmt vet lint goimports test
+.PHONY: addlicense-fmt-vet-lint-goimports-misspell-test
+addlicense-fmt-vet-lint-goimports-misspell-test: addlicense fmt vet lint goimports misspell test
 
 .PHONY: e2e-test
 e2e-test: otelsvc
@@ -45,7 +52,7 @@ test:
 	$(GOTEST) $(GOTEST_OPT) $(ALL_PKGS)
 
 .PHONY: travis-ci
-travis-ci: fmt vet lint goimports test-with-cover otelsvc
+travis-ci: fmt vet lint goimports misspell test-with-cover otelsvc
 	$(MAKE) -C testbed install-tools
 	$(MAKE) -C testbed runtests
 
@@ -102,6 +109,14 @@ goimports:
 	    echo "Goimports finished successfully"; \
 	fi
 
+.PHONY: misspell
+misspell:
+	$(MISSPELL) $(ALL_SRC_AND_DOC)
+
+.PHONY: misspell-correction
+misspell-correction:
+	$(MISSPELL_CORRECTION) $(ALL_SRC_AND_DOC)
+
 .PHONY: vet
 vet:
 	@$(GOVET) ./...
@@ -112,7 +127,8 @@ install-tools:
 	GO111MODULE=on go install \
 	  github.com/google/addlicense \
 	  golang.org/x/lint/golint \
-	  golang.org/x/tools/cmd/goimports
+	  golang.org/x/tools/cmd/goimports \
+	  github.com/client9/misspell/cmd/misspell
 
 .PHONY: otelsvc
 otelsvc:
