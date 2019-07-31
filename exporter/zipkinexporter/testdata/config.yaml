@@ -6,9 +6,9 @@ processors:
 
 exporters:
   zipkin:
-    endpoint: "http://some.location.org:9411/api/v2/spans"
+    http-url: "http://some.location.org:9411/api/v2/spans"
   zipkin/2:
-    endpoint: "https://somedest:1234/api/v2/spans"
+    http-url: "https://somedest:1234/api/v2/spans"
 
 pipelines:
   traces:

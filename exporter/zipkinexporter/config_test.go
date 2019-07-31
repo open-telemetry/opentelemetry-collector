@@ -40,14 +40,14 @@ func TestLoadConfig(t *testing.T) {
 
 	e0 := cfg.Exporters["zipkin"]
 
-	// Endpoint doesn't have a default value so set it directly.
+	// HTTPAddress doesn't have a default value so set it directly.
 	defaultCfg := factory.CreateDefaultConfig().(*Config)
-	defaultCfg.Endpoint = "http://some.location.org:9411/api/v2/spans"
+	defaultCfg.HTTPAddress = "http://some.location.org:9411/api/v2/spans"
 	assert.Equal(t, defaultCfg, e0)
 
 	e1 := cfg.Exporters["zipkin/2"]
 	assert.Equal(t, "zipkin/2", e1.(*Config).Name())
-	assert.Equal(t, "https://somedest:1234/api/v2/spans", e1.(*Config).Endpoint)
+	assert.Equal(t, "https://somedest:1234/api/v2/spans", e1.(*Config).HTTPAddress)
 	_, _, err = factory.CreateTraceExporter(zap.NewNop(), e1)
 	require.NoError(t, err)
 }

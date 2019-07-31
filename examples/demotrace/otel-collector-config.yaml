@@ -8,7 +8,7 @@ receivers:
 exporters:
   logging:
   zipkin:
-    endpoint: "http://zipkin-all-in-one:9411/api/v2/spans"
+    http-url: "http://zipkin-all-in-one:9411/api/v2/spans"
 
 # TODO: enable jaeger exporter when it is implemented in otelsvc
 #  jaeger:

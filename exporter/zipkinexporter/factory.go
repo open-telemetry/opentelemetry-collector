@@ -52,8 +52,8 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Exporter) (consumer.TraceConsumer, exporter.StopFunc, error) {
 	cfg := config.(*Config)
 
-	if cfg.Endpoint == "" {
-		return nil, nil, errors.New("exporter config requires an Endpoint") // TODO: better error
+	if cfg.HTTPAddress == "" {
+		return nil, nil, errors.New("exporter config requires a non-empty 'http-url'") // TODO: better error
 	}
 
 	// TODO: (@pjanotti) Move to code like the comment below in a separate PR.
@@ -62,7 +62,7 @@ func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Ex
 	//	ze.PushTraceData,
 	//	exporterhelper.WithSpanName("otelsvc.exporter.Zipkin.ConsumeTraceData"),
 	//	exporterhelper.WithRecordMetrics(true))
-	ze, err := newZipkinExporter(cfg.Endpoint, "<missing service name>", 0)
+	ze, err := newZipkinExporter(cfg.HTTPAddress, "<missing service name>", 0)
 	if err != nil {
 		return nil, nil, err
 	}
