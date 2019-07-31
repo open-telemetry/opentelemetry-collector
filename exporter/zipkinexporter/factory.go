@@ -16,6 +16,7 @@ package zipkinexporter
 
 import (
 	"errors"
+
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/config/configerror"
