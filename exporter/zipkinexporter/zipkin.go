@@ -33,7 +33,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumererror"
 	"github.com/open-telemetry/opentelemetry-service/observability"
-	"github.com/open-telemetry/opentelemetry-service/translator/trace"
+	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
 	spandatatranslator "github.com/open-telemetry/opentelemetry-service/translator/trace/spandata"
 )
 

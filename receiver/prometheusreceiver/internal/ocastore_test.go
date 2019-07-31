@@ -17,9 +17,6 @@ package internal
 import (
 	"context"
 	"fmt"
-	"github.com/go-kit/kit/log"
-	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/prometheus/prometheus/discovery"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -28,9 +25,13 @@ import (
 	"time"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"github.com/go-kit/kit/log"
 	"github.com/prometheus/prometheus/config"
 	sd_config "github.com/prometheus/prometheus/discovery/config"
 	"github.com/prometheus/prometheus/scrape"
+
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
+	"github.com/prometheus/prometheus/discovery"
 )
 
 func TestOcaStore(t *testing.T) {

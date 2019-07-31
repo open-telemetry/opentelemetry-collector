@@ -11,6 +11,7 @@ GOTEST_OPT?= -race -timeout 30s
 GOTEST_OPT_WITH_COVERAGE = $(GOTEST_OPT) -coverprofile=coverage.txt -covermode=atomic
 GOTEST=go test
 GOFMT=gofmt
+GOIMPORTS=goimports
 GOLINT=golint
 GOVET=go vet
 GOOS=$(shell go env GOOS)
@@ -30,10 +31,10 @@ all-pkgs:
 all-srcs:
 	@echo $(ALL_SRC) | tr ' ' '\n' | sort
 
-.DEFAULT_GOAL := addlicense-fmt-vet-lint-test
+.DEFAULT_GOAL := addlicense-fmt-vet-lint-goimports-test
 
-.PHONY: addlicense-fmt-vet-lint-test
-addlicense-fmt-vet-lint-test: addlicense fmt vet lint test
+.PHONY: addlicense-fmt-vet-lint-goimports-test
+addlicense-fmt-vet-lint-goimports-test: addlicense fmt vet lint goimports test
 
 .PHONY: e2e-test
 e2e-test: otelsvc
@@ -44,7 +45,7 @@ test:
 	$(GOTEST) $(GOTEST_OPT) $(ALL_PKGS)
 
 .PHONY: travis-ci
-travis-ci: fmt vet lint test-with-cover otelsvc
+travis-ci: fmt vet lint goimports test-with-cover otelsvc
 	$(MAKE) -C testbed install-tools
 	$(MAKE) -C testbed runtests
 
@@ -90,6 +91,17 @@ lint:
 	    echo "Lint finished successfully"; \
 	fi
 
+.PHONY: goimports
+goimports:
+	@IMPORTSOUT=`$(GOIMPORTS) -d . 2>&1`; \
+	if [ "$$IMPORTSOUT" ]; then \
+		echo "$(GOIMPORTS) FAILED => fix the following goimports errors:\n"; \
+		echo "$$IMPORTSOUT\n"; \
+		exit 1; \
+	else \
+	    echo "Goimports finished successfully"; \
+	fi
+
 .PHONY: vet
 vet:
 	@$(GOVET) ./...
@@ -97,8 +109,10 @@ vet:
 
 .PHONY: install-tools
 install-tools:
-	GO111MODULE=on go install github.com/google/addlicense
-	GO111MODULE=on go install golang.org/x/lint/golint
+	GO111MODULE=on go install \
+	  github.com/google/addlicense \
+	  golang.org/x/lint/golint \
+	  golang.org/x/tools/cmd/goimports
 
 .PHONY: otelsvc
 otelsvc:

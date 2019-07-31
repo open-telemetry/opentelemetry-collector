@@ -16,11 +16,12 @@ package internal
 
 import (
 	"context"
-	"github.com/prometheus/prometheus/pkg/labels"
-	"github.com/prometheus/prometheus/scrape"
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/prometheus/prometheus/pkg/labels"
+	"github.com/prometheus/prometheus/scrape"
 )
 
 func Test_transaction(t *testing.T) {
