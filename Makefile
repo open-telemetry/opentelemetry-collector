@@ -93,9 +93,9 @@ lint:
 
 .PHONY: goimports
 goimports:
-	@IMPORTSOUT=`$(GOIMPORTS) -l . 2>&1`; \
+	@IMPORTSOUT=`$(GOIMPORTS) -d . 2>&1`; \
 	if [ "$$IMPORTSOUT" ]; then \
-		echo "$(GOIMPORTS) FAILED => fix the import order in the following files:\n"; \
+		echo "$(GOIMPORTS) FAILED => fix the following goimports errors:\n"; \
 		echo "$$IMPORTSOUT\n"; \
 		exit 1; \
 	else \
