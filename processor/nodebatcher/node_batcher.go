@@ -71,8 +71,6 @@ type batcher struct {
 	numTickers        int
 	tickTime          time.Duration
 	timeout           time.Duration
-
-	bucketMu sync.RWMutex
 }
 
 var _ consumer.TraceConsumer = (*batcher)(nil)

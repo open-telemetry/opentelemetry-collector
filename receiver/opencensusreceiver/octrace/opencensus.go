@@ -154,7 +154,6 @@ func (ocr *Receiver) Stop() {
 
 type receiverWorker struct {
 	receiver *Receiver
-	tes      agenttracepb.TraceService_ExportServer
 	cancel   chan struct{}
 }
 

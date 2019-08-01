@@ -338,13 +338,14 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	pr := processBodyIfNecessary(r)
-	slurp, err := ioutil.ReadAll(pr)
+	slurp, _ := ioutil.ReadAll(pr)
 	if c, ok := pr.(io.Closer); ok {
 		_ = c.Close()
 	}
 	_ = r.Body.Close()
 
 	var tds []consumerdata.TraceData
+	var err error
 	if asZipkinv1 {
 		tds, err = zr.v1ToTraceSpans(slurp, r.Header)
 	} else {

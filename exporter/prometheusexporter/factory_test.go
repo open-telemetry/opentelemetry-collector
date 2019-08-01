@@ -41,7 +41,6 @@ func TestCreateTraceExporter(t *testing.T) {
 }
 
 func TestCreateMetricsExporter(t *testing.T) {
-	const defaultTestEndPoint = "127.0.0.1:55678"
 	tests := []struct {
 		name     string
 		config   Config

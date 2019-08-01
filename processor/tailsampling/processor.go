@@ -67,10 +67,6 @@ type tailSamplingSpanProcessor struct {
 	numTracesOnMap  uint64
 }
 
-const (
-	sourceFormat = "tail-sampling"
-)
-
 var _ processor.TraceProcessor = (*tailSamplingSpanProcessor)(nil)
 
 // NewTraceProcessor returns a processor.TraceProcessor that will perform tail sampling according to the given
@@ -200,7 +196,7 @@ func (tsp *tailSamplingSpanProcessor) ConsumeTraceData(ctx context.Context, td c
 	for id, spans := range idToSpans {
 		lenSpans := int64(len(spans))
 		lenPolicies := len(tsp.policies)
-		initialDecisions := make([]sampling.Decision, lenPolicies, lenPolicies)
+		initialDecisions := make([]sampling.Decision, lenPolicies)
 		for i := 0; i < lenPolicies; i++ {
 			initialDecisions[i] = sampling.Pending
 		}

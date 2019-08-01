@@ -52,7 +52,6 @@ var dummyMetric = &consumerdata.MetricsData{
 
 type metricBuilder struct {
 	node                   *commonpb.Node
-	ts                     int64
 	hasData                bool
 	hasInternalMetric      bool
 	mc                     MetadataCache

@@ -212,7 +212,7 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 }
 
 func generateIdsAndBatches(numIds int) ([][]byte, []consumerdata.TraceData) {
-	traceIds := make([][]byte, numIds, numIds)
+	traceIds := make([][]byte, numIds)
 	for i := 0; i < numIds; i++ {
 		traceIds[i] = tracetranslator.UInt64ToByteTraceID(1, uint64(i+1))
 	}
@@ -238,16 +238,6 @@ func generateIdsAndBatches(numIds int) ([][]byte, []consumerdata.TraceData) {
 	}
 
 	return traceIds, tds
-}
-
-func newTestPolicy() []*Policy {
-	return []*Policy{
-		{
-			Name:        "test",
-			Evaluator:   sampling.NewAlwaysSample(),
-			Destination: &mockSpanProcessor{},
-		},
-	}
 }
 
 type mockPolicyEvaluator struct {

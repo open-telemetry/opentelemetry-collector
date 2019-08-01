@@ -42,7 +42,7 @@ all-srcs:
 .DEFAULT_GOAL := addlicense-fmt-vet-lint-goimports-misspell-staticcheck-test
 
 .PHONY: addlicense-fmt-vet-lint-goimports-misspell-staticcheck-test
-addlicense-fmt-vet-lint-goimports-misspell-test: addlicense fmt vet lint goimports misspell staticcheck test
+addlicense-fmt-vet-lint-goimports-misspell-staticcheck-test: addlicense fmt vet lint goimports misspell staticcheck test
 
 .PHONY: e2e-test
 e2e-test: otelsvc

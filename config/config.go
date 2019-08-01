@@ -176,7 +176,7 @@ func loadReceivers(v *viper.Viper, factories map[string]receiver.Factory) (confi
 	keyMap := v.GetStringMap(receiversKeyName)
 
 	// Prepare resulting map
-	receivers := make(configmodels.Receivers, 0)
+	receivers := make(configmodels.Receivers)
 
 	// Iterate over input map and create a config for each.
 	for key := range keyMap {
@@ -242,7 +242,7 @@ func loadExporters(v *viper.Viper, factories map[string]exporter.Factory) (confi
 	keyMap := v.GetStringMap(exportersKeyName)
 
 	// Prepare resulting map
-	exporters := make(configmodels.Exporters, 0)
+	exporters := make(configmodels.Exporters)
 
 	// Iterate over exporters and create a config for each.
 	for key := range keyMap {
@@ -299,7 +299,7 @@ func loadProcessors(v *viper.Viper, factories map[string]processor.Factory) (con
 	keyMap := v.GetStringMap(processorsKeyName)
 
 	// Prepare resulting map.
-	processors := make(configmodels.Processors, 0)
+	processors := make(configmodels.Processors)
 
 	// Iterate over processors and create a config for each.
 	for key := range keyMap {
@@ -356,7 +356,7 @@ func loadPipelines(v *viper.Viper) (configmodels.Pipelines, error) {
 	keyMap := v.GetStringMap(pipelinesKeyName)
 
 	// Prepare resulting map.
-	pipelines := make(configmodels.Pipelines, 0)
+	pipelines := make(configmodels.Pipelines)
 
 	// Iterate over input map and create a config for each.
 	for key := range keyMap {

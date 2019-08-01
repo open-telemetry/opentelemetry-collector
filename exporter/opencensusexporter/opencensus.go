@@ -57,7 +57,6 @@ type opencensusConfig struct {
 }
 
 type ocagentExporter struct {
-	counter   uint32
 	exporters chan *ocagent.Exporter
 }
 

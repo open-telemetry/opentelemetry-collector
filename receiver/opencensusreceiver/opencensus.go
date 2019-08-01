@@ -76,7 +76,7 @@ func New(addr string, tc consumer.TraceConsumer, mc consumer.MetricsConsumer, op
 	// TODO: (@odeke-em) use options to enable address binding changes.
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to bind to address %q: %v", addr, err)
+		return nil, fmt.Errorf("failed to bind to address %q: %v", addr, err)
 	}
 
 	ocr := &Receiver{

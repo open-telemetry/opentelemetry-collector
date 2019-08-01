@@ -44,7 +44,7 @@ func (f *Factory) CreateDefaultConfig() configmodels.Processor {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		Keys: make(map[string]NewKeyProperties, 0),
+		Keys: make(map[string]NewKeyProperties),
 	}
 }
 

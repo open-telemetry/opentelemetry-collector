@@ -31,7 +31,7 @@ func TestNopTraceExporter_NoErrors(t *testing.T) {
 	if err := nte.ConsumeTraceData(context.Background(), td); err != nil {
 		t.Fatalf("Wanted nil got error")
 	}
-	if "nop_trace" != nte.TraceExportFormat() {
+	if nte.TraceExportFormat() != "nop_trace" {
 		t.Fatalf("Wanted nop_trace got %s", nte.TraceExportFormat())
 	}
 }
@@ -45,7 +45,7 @@ func TestNopTraceExporter_WithErrors(t *testing.T) {
 	if got := nte.ConsumeTraceData(context.Background(), td); got != want {
 		t.Fatalf("Want %v Got %v", want, got)
 	}
-	if "nop_trace" != nte.TraceExportFormat() {
+	if nte.TraceExportFormat() != "nop_trace" {
 		t.Fatalf("Wanted nop_trace got %s", nte.TraceExportFormat())
 	}
 }
@@ -58,7 +58,7 @@ func TestNopMetricsExporter_NoErrors(t *testing.T) {
 	if err := nme.ConsumeMetricsData(context.Background(), md); err != nil {
 		t.Fatalf("Wanted nil got error")
 	}
-	if "nop_metrics" != nme.MetricsExportFormat() {
+	if nme.MetricsExportFormat() != "nop_metrics" {
 		t.Fatalf("Wanted nop_metrics got %s", nme.MetricsExportFormat())
 	}
 }
@@ -72,7 +72,7 @@ func TestNopMetricsExporter_WithErrors(t *testing.T) {
 	if got := nme.ConsumeMetricsData(context.Background(), md); got != want {
 		t.Fatalf("Want %v Got %v", want, got)
 	}
-	if "nop_metrics" != nme.MetricsExportFormat() {
+	if nme.MetricsExportFormat() != "nop_metrics" {
 		t.Fatalf("Wanted nop_metrics got %s", nme.MetricsExportFormat())
 	}
 }
