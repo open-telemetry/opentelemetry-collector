@@ -7,18 +7,12 @@ receivers:
 
 exporters:
   logging:
+
   zipkin:
     url: "http://zipkin-all-in-one:9411/api/v2/spans"
 
-# TODO: enable jaeger exporter when it is implemented in otelsvc
-#  jaeger:
-#    num-workers: 4
-#    queue-size: 100
-#    retry-on-failure: true
-#    sender-type: jaeger-thrift-http
-#    jaeger-thrift-http:
-#      collector-endpoint: http://jaeger-all-in-one:14268/api/traces
-#      timeout: 5s
+  jaeger-grpc:
+    endpoint: jaeger-all-in-one:14250
 
 processors:
   batch:
@@ -27,5 +21,5 @@ processors:
 pipelines:
   traces:
     receivers: [opencensus]
-    exporters: [logging, zipkin]
+    exporters: [logging, zipkin, jaeger-grpc]
     processors: [batch, queued-retry]

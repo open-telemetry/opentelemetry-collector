@@ -1,0 +1,17 @@
+receivers:
+  examplereceiver:
+
+processors:
+  exampleprocessor:
+
+exporters:
+  jaeger-grpc:
+    endpoint: "some.target:55678"
+  jaeger-grpc/2:
+    endpoint: "a.new.target:1234"
+
+pipelines:
+  traces:
+    receivers: [examplereceiver]
+    processors: [exampleprocessor]
+    exporters: [jaeger-grpc, jaeger-grpc/2]

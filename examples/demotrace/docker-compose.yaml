@@ -3,10 +3,11 @@ services:
 
   # Jaeger
   jaeger-all-in-one:
-    image: jaegertracing/all-in-one:1.8
+    image: jaegertracing/all-in-one:latest
     ports:
       - "16686:16686"
       - "14268"
+      - "14250"
 
   # Zipkin
   zipkin-all-in-one:
