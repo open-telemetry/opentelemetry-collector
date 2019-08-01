@@ -53,11 +53,11 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Exporter) (consumer.TraceConsumer, exporter.StopFunc, error) {
 	cfg := config.(*Config)
 
-	if cfg.HTTPAddress == "" {
-		return nil, nil, errors.New("exporter config requires a non-empty 'http-url'") // TODO: better error
+	if cfg.URL == "" {
+		return nil, nil, errors.New("exporter config requires a non-empty 'url'") // TODO: better error
 	}
 
-	ze, err := newZipkinExporter(cfg.HTTPAddress, "<missing service name>", 0)
+	ze, err := newZipkinExporter(cfg.URL, "<missing service name>", 0)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -22,7 +22,7 @@ import (
 type Config struct {
 	configmodels.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 
-	// HTTPAddress is the URL to send the Zipkin trace data to (e.g.:
+	// The URL to send the Zipkin trace data to (e.g.:
 	// http://some.url:9411/api/v2/spans).
-	HTTPAddress string `mapstructure:"http-url"`
+	URL string `mapstructure:"url"`
 }

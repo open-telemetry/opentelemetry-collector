@@ -51,9 +51,9 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	assert.Nil(t, ze)
 	assert.Nil(t, zeStopFn)
 
-	// HTTPAddress doesn't have a default value so set it directly.
+	// URL doesn't have a default value so set it directly.
 	zeCfg := cfg.(*Config)
-	zeCfg.HTTPAddress = "http://some.location.org:9411/api/v2/spans"
+	zeCfg.URL = "http://some.location.org:9411/api/v2/spans"
 	ze, zeStopFn, err = factory.CreateTraceExporter(
 		zap.NewNop(),
 		cfg)
