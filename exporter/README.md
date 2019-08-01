@@ -27,7 +27,7 @@ Exports trace data to a [Zipkin](https://zipkin.io/) endpoint.
 
 The following settings can be configured:
 
-* `endpoint:` URL to which the exporter is going to send Zipkin trace data. This
+* `url:` URL to which the exporter is going to send Zipkin trace data. This
 setting doesn't have a default value and must be specified in the configuration.
 
 Example:
@@ -35,5 +35,5 @@ Example:
 ```yaml
 exporters:
   zipkin:
-    endpoint: "http://some.url:9411/api/v2/spans"
+    url: "http://some.url:9411/api/v2/spans"
 ```

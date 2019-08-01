@@ -1,0 +1,17 @@
+receivers:
+  examplereceiver:
+
+processors:
+  exampleprocessor:
+
+exporters:
+  zipkin:
+    url: "http://some.location.org:9411/api/v2/spans"
+  zipkin/2:
+    url: "https://somedest:1234/api/v2/spans"
+
+pipelines:
+  traces:
+    receivers: [examplereceiver]
+    processors: [exampleprocessor]
+    exporters: [zipkin, zipkin/2]
