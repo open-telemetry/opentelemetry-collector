@@ -44,6 +44,8 @@ type Config struct {
 
 // tlsCredentials holds the fields for TLS credentials
 // that are used for starting a server.
+// TODO(ccaraman): Add validation to check that these files exist at configuration loading time.
+//  Currently, these values aren't validated until the receiver is started.
 type tlsCredentials struct {
 	// CertFile is the file path containing the TLS certificate.
 	CertFile string `mapstructure:"cert-file"`
@@ -58,6 +60,7 @@ type serverParametersAndEnforcementPolicy struct {
 }
 
 // keepaliveServerParameters allow configuration of the keepalive.ServerParameters.
+// The same default values as keepalive.ServerParameters are applicable and get applied by the server.
 // See https://godoc.org/google.golang.org/grpc/keepalive#ServerParameters for details.
 type keepaliveServerParameters struct {
 	MaxConnectionIdle     time.Duration `mapstructure:"max-connection-idle,omitempty"`
@@ -68,6 +71,7 @@ type keepaliveServerParameters struct {
 }
 
 // keepaliveEnforcementPolicy allow configuration of the keepalive.EnforcementPolicy.
+// The same default values as keepalive.EnforcementPolicy are applicable and get applied by the server.
 // See https://godoc.org/google.golang.org/grpc/keepalive#EnforcementPolicy for details.
 type keepaliveEnforcementPolicy struct {
 	MinTime             time.Duration `mapstructure:"min-time,omitempty"`
@@ -77,7 +81,7 @@ type keepaliveEnforcementPolicy struct {
 func (rOpts *Config) buildOptions() (opts []Option, err error) {
 	tlsCredsOption, hasTLSCreds, err := rOpts.TLSCredentials.ToOpenCensusReceiverServerOption()
 	if err != nil {
-		return opts, fmt.Errorf("OpenCensus receiver TLS Credentials: %v", err)
+		return opts, fmt.Errorf("Error initializing OpenCensus receiver %q TLS Credentials: %v", rOpts.NameVal, err)
 	}
 	if hasTLSCreds {
 		opts = append(opts, tlsCredsOption)
@@ -99,6 +103,10 @@ func (rOpts *Config) grpcServerOptions() []grpc.ServerOption {
 	if rOpts.MaxConcurrentStreams > 0 {
 		grpcServerOptions = append(grpcServerOptions, grpc.MaxConcurrentStreams(rOpts.MaxConcurrentStreams))
 	}
+	// The default values referenced in the GRPC docs are set within the server, so this code doesn't need
+	// to apply them over zero/nil values before passing these as grpc.ServerOptions.
+	// The following shows the server code for applying default grpc.ServerOptions.
+	// https://sourcegraph.com/github.com/grpc/grpc-go@120728e1f775e40a2a764341939b78d666b08260/-/blob/internal/transport/http2_server.go#L184-200
 	if rOpts.Keepalive != nil {
 		if rOpts.Keepalive.ServerParameters != nil {
 			svrParams := rOpts.Keepalive.ServerParameters
@@ -110,6 +118,10 @@ func (rOpts *Config) grpcServerOptions() []grpc.ServerOption {
 				Timeout:               svrParams.Timeout,
 			}))
 		}
+		// The default values referenced in the GRPC are set within the server, so this code doesn't need
+		// to apply them over zero/nil values before passing these as grpc.ServerOptions.
+		// The following shows the server code for applying default grpc.ServerOptions.
+		// https://sourcegraph.com/github.com/grpc/grpc-go@120728e1f775e40a2a764341939b78d666b08260/-/blob/internal/transport/http2_server.go#L202-205
 		if rOpts.Keepalive.EnforcementPolicy != nil {
 			enfPol := rOpts.Keepalive.EnforcementPolicy
 			grpcServerOptions = append(grpcServerOptions, grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{

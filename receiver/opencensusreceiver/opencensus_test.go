@@ -39,6 +39,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/receiver/receivertest"
 )
 
+// TODO(ccaraman): Migrate tests to use assert for validating functionality.
 func TestGrpcGateway_endToEnd(t *testing.T) {
 	addr := ":35993"
 
@@ -55,7 +56,7 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 	}
 	defer ocr.StopTraceReception()
 
-	// TODO(songy23): make starting server deteminisitc
+	// TODO(songy23): make starting server deterministic
 	// Wait for the servers to start
 	<-time.After(10 * time.Millisecond)
 
@@ -166,7 +167,7 @@ func TestTraceGrpcGatewayCors_endToEnd(t *testing.T) {
 		t.Fatalf("Failed to start trace receiver: %v", err)
 	}
 
-	// TODO(songy23): make starting server deteminisitc
+	// TODO(songy23): make starting server deterministic
 	// Wait for the servers to start
 	<-time.After(10 * time.Millisecond)
 
@@ -195,7 +196,7 @@ func TestMetricsGrpcGatewayCors_endToEnd(t *testing.T) {
 		t.Fatalf("Failed to start metrics receiver: %v", err)
 	}
 
-	// TODO(songy23): make starting server deteminisitc
+	// TODO(songy23): make starting server deterministic
 	// Wait for the servers to start
 	<-time.After(10 * time.Millisecond)
 
@@ -345,7 +346,6 @@ func verifyCorsResp(t *testing.T, url string, origin string, wantStatus int, wan
 	}
 }
 
-// Issue #379: Invoking Stop on an unstarted OpenCensus receiver should never crash.
 func TestStopWithoutStartNeverCrashes(t *testing.T) {
 	ocr, err := New(":55444", nil, nil)
 	if err != nil {

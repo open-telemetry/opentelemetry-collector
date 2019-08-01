@@ -1,11 +1,28 @@
-A variety of receivers are available to the OpenCensus Service (both Agent and Collector)
+**Note** This documentation is still in progress. For any questions, please
+reach out in the [OpenTelemetry Gitter](https://gitter.im/open-telemetry/opentelemetry-service)
+or refer to the [issues page](https://github.com/open-telemetry/opentelemetry-service/issues).
 
-__Currently there are some inconsistencies between Agent and Collector configuration, those will be addressed by issue
-[#135](https://github.com/census-instrumentation/opencensus-service/issues/135).__ 
+# Receivers
+A receiver is how data gets into OpenTelemetry Service. Generally, a receiver
+accepts data in a specified format and can support traces and/or metrics. The
+format of the traces and metrics supported are receiver specific.
 
-## OpenCensus
+Supported receivers (sorted alphabetically):
+- [Jaeger Receiver](#jaeger)
+- [OpenCensus Receiver](#opencensus)
+- [Prometheus Receiver](#prometheus)
+- [VM Metrics Receiver](#vmmetrics)
+- [Zipkin Receiver](#zipkin)
 
-This receiver receives spans from OpenCensus instrumented applications and translates them into the internal span types that are then sent to the collector/exporters.
+## Configuring Receiver(s)
+TODO - Add what a fullname is and how that is referenced in other parts of the
+configuration. Describe the common receiver settings: endpoint, disabled and
+disable-backpressure.
+
+## <a name="opencensus"></a>OpenCensus Receiver
+**Traces and metrics are supported.**
+
+This receiver receives spans from [OpenCensus](https://opencensus.io/) instrumented applications and translates them into the internal format sent to processors and exporters in the pipeline.
 
 Its address can be configured in the YAML configuration file under section "receivers", subsection "opencensus" and field "address". The syntax of the field "address" is `[address|host]:<port-number>`.
 
@@ -39,7 +56,12 @@ receivers:
     - https://*.example.com  
 ```
 
+### Deprecated YAML Configurations
+**Note**: This isn't a full list of deprecated OpenCensus YAML configurations. If something is missing, please expand the documentation
+or open an issue.
+
 ### Collector Differences
+TODO(ccaraman) - Delete all references to opencensus-service issue 135 in follow up pr.
 (To be fixed via [#135](https://github.com/census-instrumentation/opencensus-service/issues/135))
 
 By default this receiver is ALWAYS started on the OpenCensus Collector, it can be disabled via command-line by
@@ -97,9 +119,12 @@ receivers:
         permit-without-stream: true
 ```
 
-## Jaeger
+
+## <a name="jaeger"></a>Jaeger Receiver
+**Only traces are supported.**
 
 This receiver receives spans from Jaeger collector HTTP and Thrift uploads and translates them into the internal span types that are then sent to the collector/exporters.
+Only traces are supported. This receiver does not support metrics.
 
 Its address can be configured in the YAML configuration file under section "receivers", subsection "jaeger" and fields "collector_http_port", "collector_thrift_port".
 
@@ -124,32 +149,8 @@ receivers:
     jaeger-thrift-http-port: 14268
 ```
 
-## Zipkin
-
-This receiver receives spans from Zipkin (V1 and V2) HTTP uploads and translates them into the internal span types that are then sent to the collector/exporters.
-
-Its address can be configured in the YAML configuration file under section "receivers", subsection "zipkin" and field "address".  The syntax of the field "address" is `[address|host]:<port-number>`.
-
-For example:
-
-```yaml
-receivers:
-  zipkin:
-    address: "127.0.0.1:9411"
-```
-
-### Collector Differences
-(To be fixed via [#135](https://github.com/census-instrumentation/opencensus-service/issues/135))
- 
-On the Collector Zipkin reception at the port 9411 can be enabled via command-line `--receive-zipkin`. On the Collector only the port can be configured, example:
-
-```yaml
-receivers:
-  zipkin:
-    port: 9411
-```
-
-## Prometheus
+## <a name="prometheus"></a>Prometheus Receiver
+**Only metrics are supported.**
 
 This receiver is a drop-in replacement for getting Prometheus to scrape your services. Just like you would write in a
 YAML configuration file before starting Prometheus, such as with:
@@ -180,3 +181,37 @@ receivers:
             static_configs:
               - targets: ['localhost:9777']
 ```
+
+## <a name="vmmetrics"></a>VM Metrics Receiver
+**Only metrics are supported.**
+
+<Add more information - I'm lonely.>
+
+## <a name="zipkin"></a>Zipkin Receiver
+**Only traces are supported.**
+
+This receiver receives spans from Zipkin (V1 and V2) HTTP uploads and translates them into the internal span types that are then sent to the collector/exporters.
+
+Its address can be configured in the YAML configuration file under section "receivers", subsection "zipkin" and field "address".  The syntax of the field "address" is `[address|host]:<port-number>`.
+
+For example:
+
+```yaml
+receivers:
+  zipkin:
+    address: "127.0.0.1:9411"
+```
+
+### Collector Differences
+(To be fixed via [#135](https://github.com/census-instrumentation/opencensus-service/issues/135))
+
+On the Collector Zipkin reception at the port 9411 can be enabled via command-line `--receive-zipkin`. On the Collector only the port can be configured, example:
+
+```yaml
+receivers:
+  zipkin:
+    port: 9411
+```
+
+## Common Configuration Errors
+<Fill this in as we go with common gotchas experienced by users. These should eventually be made apart of the validation test suite.>

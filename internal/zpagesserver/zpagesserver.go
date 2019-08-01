@@ -25,6 +25,7 @@ import (
 
 const (
 	// ZPagesHTTPPort is the name of the flag used to specify the zpages port.
+	// TODO(ccaraman): Move ZPage configuration to be apart of global config/config.go, maybe under diagnostics section.
 	ZPagesHTTPPort = "zpages-http-port"
 )
 

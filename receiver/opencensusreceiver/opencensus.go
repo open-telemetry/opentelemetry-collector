@@ -71,7 +71,7 @@ const source string = "OpenCensus"
 
 // New just creates the OpenCensus receiver services. It is the caller's
 // responsibility to invoke the respective Start*Reception methods as well
-// as the various Stop*Reception methods or simply Stop to end it.
+// as the various Stop*Reception methods to end it.
 func New(addr string, tc consumer.TraceConsumer, mc consumer.MetricsConsumer, opts ...Option) (*Receiver, error) {
 	// TODO: (@odeke-em) use options to enable address binding changes.
 	ln, err := net.Listen("tcp", addr)

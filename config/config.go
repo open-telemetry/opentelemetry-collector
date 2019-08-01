@@ -55,6 +55,8 @@ const (
 	errPipelineExporterNotExists
 	errMetricPipelineCannotHaveProcessors
 	errUnmarshalError
+	errMissingReceivers
+	// TODO(ccaraman): Add an error for missing Processors with corresponding test cases.
 )
 
 type configError struct {
@@ -175,6 +177,19 @@ func loadReceivers(v *viper.Viper, factories map[string]receiver.Factory) (confi
 	// Get the map of "receivers" sub-keys.
 	keyMap := v.GetStringMap(receiversKeyName)
 
+	// Currently there is no default receiver enabled. The configuration must specify at least one receiver to enable
+	// functionality.
+	if len(keyMap) == 0 {
+		return nil, &configError{
+			code: errMissingReceivers,
+			msg:  "no receivers specified in config",
+		}
+	}
+
+	// This boolean is used to track if there are any enabled receivers. If there are none at the end of loading
+	// all of the receivers, throw an error.
+	enabledReceiver := false
+
 	// Prepare resulting map
 	receivers := make(configmodels.Receivers, 0)
 
@@ -211,6 +226,9 @@ func loadReceivers(v *viper.Viper, factories map[string]receiver.Factory) (confi
 			err = customUnmarshaler(subViper, key, receiverCfg)
 		} else {
 			// Standard viper unmarshaler is fine.
+			// TODO(ccaraman): UnmarshallExact should be used to catch erroneous config entries.
+			// 	This leads to quickly identifying config values that are not supported and reduce confusion for
+			// 	users.
 			err = subViper.UnmarshalKey(key, receiverCfg)
 		}
 
@@ -228,7 +246,18 @@ func loadReceivers(v *viper.Viper, factories map[string]receiver.Factory) (confi
 			}
 		}
 
+		// Or'ing the enabled flag for all receivers will return true if at least one is enabled.
+		enabledReceiver = enabledReceiver || receiverCfg.IsEnabled()
+
 		receivers[fullName] = receiverCfg
+	}
+
+	// There must be at least one enabled receiver for the config to be valid.
+	if !enabledReceiver {
+		return nil, &configError{
+			code: errMissingReceivers,
+			msg:  "no enabled receivers specified in config",
+		}
 	}
 
 	return receivers, nil
@@ -496,6 +525,7 @@ func validatePipelineReceivers(
 				zap.String("receiver", ref))
 		}
 	}
+
 	pipeline.Receivers = rs
 
 	return nil
@@ -594,6 +624,9 @@ func validatePipelineProcessors(
 	return nil
 }
 
+// TODO(ccaraman): Determine if there a way to consolidate the validate receivers apart of the loadReceivers method.
+//	 Currently, validateReceivers needs to be invoked after validatePipelineReceivers because that bit of
+//	 code checks if a receiver is enabled prior to finalizing the pipelines.
 func validateReceivers(cfg *configmodels.Config) {
 	// Remove disabled receivers.
 	for name, rcv := range cfg.Receivers {

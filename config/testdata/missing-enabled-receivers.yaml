@@ -1,0 +1,23 @@
+receivers:
+  examplereceiver:
+    disabled: true
+  examplereceiver/disabled:
+    disabled: true
+
+processors:
+  exampleprocessor:
+  exampleprocessor/disabled:
+    disabled: true
+
+exporters:
+  exampleexporter/myexporter:
+    extra: "some export string 2"
+  exampleexporter/disabled:
+    disabled: true
+  exampleexporter:
+
+pipelines:
+  traces:
+    receivers: [examplereceiver, examplereceiver/disabled]
+    processors: [exampleprocessor, exampleprocessor/disabled]
+    exporters: [exampleexporter/disabled, exampleexporter]

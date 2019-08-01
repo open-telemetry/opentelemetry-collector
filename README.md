@@ -122,14 +122,29 @@ exporting will resume.
 ## <a name="config"></a>Configuration
 
 The OpenTelemetry Service (both the Agent and Collector) is configured via a
-YAML file. In general, you need to configure one or more receivers as well as
-one or more exporters. In addition, diagnostics can also be configured.
+YAML file. In general, at least one enabled receiver and one enabled exporter
+needs to be configured.
+
+*Note* This documentation is still in progress. For any questions, please reach out in the
+[OpenTelemetry Gitter](https://gitter.im/open-telemetry/opentelemetry-service) or
+refer to the [issues page](https://github.com/open-telemetry/opentelemetry-service/issues).
+
+There are four main parts to a config:
+```yaml
+receivers:
+  ...
+exporters:
+  ...
+processors:
+  ...
+pipelines:
+  ...
+```
 
 ### <a name="config-receivers"></a>Receivers
 
-A receiver is how you get data into the OpenTelemetry Service. One or more
-receivers can be configured. By default, the `opentelemetry` receiver is enabled
-on the Collector and required as a defined receiver for the Agent.
+A receiver is how data gets into OpenTelemetry Service. One or more receivers
+must be configured.
 
 A basic example of all available receivers is provided below. For detailed
 receiver configuration, please see the [receiver
@@ -182,6 +197,33 @@ exporters:
     endpoint: "http://127.0.0.1:9411/api/v2/spans"
 ```
 
+### <a name="config-pipelines"></a>Pipelines
+Pipelines can be of two types:
+
+- metrics: collects and processes metrics data.
+- traces: collects and processes trace data.
+
+A pipeline consists of a set of receivers, processors, and exporters. Each
+receiver/processor/exporter must be specified in the configuration to be
+included in a pipeline and each receiver/processor/exporter can be used in more
+than one pipeline.
+
+*Note:* For processor(s) referenced in multiple pipelines, each pipeline will
+get a separate instance of that processor(s). This is in contrast to
+receiver(s)/exporter(s) referenced in multiple pipelines, one instance of
+a receiver/exporter is reference by all the pipelines.
+
+The following is an example pipeline configuration. For more information, refer
+to [pipeline documentation](docs/pipelines.md)
+```yaml
+pipelines:
+  traces:
+    receivers: [examplereceiver]
+    processors: [exampleprocessor]
+    exporters: [exampleexporter]
+
+```
+
 ### <a name="config-diagnostics"></a>Diagnostics
 
 zPages is provided for monitoring running by default on port ``55679``.
@@ -208,7 +250,10 @@ zpages:
     disabled: true
 ```
 
+
 ### <a name="global-attributes"></a> Global Attributes
+**TODO** Remove this once processors have been documented since that handles
+these features now.
 
 The OpenTelemetry Service also takes some global configurations that modify its
 behavior for all receivers / exporters. This configuration is typically applied
@@ -301,7 +346,6 @@ sampling:
 ```
 
 > Note that an exporter can only have a single sampling policy today.
-
 ## <a name="collector-usage"></a>Usage
 
 > It is recommended that you use the latest [release](https://github.com/open-telemetry/opentelemetry-service/releases).

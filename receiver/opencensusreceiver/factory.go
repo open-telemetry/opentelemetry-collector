@@ -51,6 +51,8 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 			TypeVal:  typeStr,
 			NameVal:  typeStr,
 			Endpoint: "127.0.0.1:55678",
+			// Disable: false - This receiver is enabled by default.
+			// DisableBackPressure: false - This receiver will enable back pressure by default.
 		},
 	}
 }

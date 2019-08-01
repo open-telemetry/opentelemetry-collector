@@ -1,19 +1,56 @@
 receivers:
+  # The following entry initializes the default OpenCensus receiver.
+  # The default values are specified here
+  #  https://github.com/open-telemetry/opentelemetry-service/blob/71589202609d7e787244076b631b45e219101867/receiver/opencensusreceiver/factory.go#L47-L56
+  # The full name of this receiver is `opencensus` and can be referenced in pipelines by 'opencensus'.
   opencensus:
+  # The following entry demonstrates configuring the common receiver settings:
+  # - endpoint
+  # - disable-backpressure
+  # For more information on the struct, refer to
+  # https://github:com/open-telemetry/opentelemetry-service/blob/71589202609d7e787244076b631b45e219101867/config/configmodels/configmodels.go#L142-L150
+  # This configuration is of type 'opencensus' and has the name 'customname' with a full name of 'opencensus/customname'
+  # ('<type>/<name>'. To reference this configuration in a pipeline, use the full name `opencensus/customname`.
   opencensus/customname:
+    # The receiver will listen on endpoint: "0.0.0.0:9090".
     endpoint: 0.0.0.0:9090
+    # This receiver doesn't enable back pressure functionality and will result in no behavior change.
+    disable-backpressure: true
+  # The following entry configures all of the keep alive settings. These settings are used to configure the receiver.
   opencensus/keepalive:
     keepalive:
       server-parameters:
+        max-connection-idle: 11s
+        max-connection-age: 12s
+        max-connection-age-grace: 13s
         time: 30s
         timeout: 5s
       enforcement-policy:
         min-time: 10s
         permit-without-stream: true
+  # The following demonstrates how to disable back pressure, set maximum limits on stream, message size and connection
+  # idle time.
+  # Note: The test yaml has demonstrated configuration on a grouped by their structure; however, all of the settings can
+  # be mix and matched like adding the maximum connection idle setting in this example.
   opencensus/nobackpressure:
     disable-backpressure: true
     max-recv-msg-size-mib: 32
     max-concurrent-streams: 16
+    keepalive:
+      server-parameters:
+        max-connection-idle: 10s
+  # The following entry demonstrates how to specify TLS credentials for the server.
+  # Note: These files do not exist. If the receiver is started with this configuration, it will fail.
+  opencensus/tlscredentials:
+    tls-credentials:
+      cert-file: test.crt
+      key-file: test.key
+  # The following entry demonstrates how to disable a receiver using the disabled flag from the common receiver settings.
+  # Note: The current implementation removes disabled receivers from the global list of receivers so the total count
+  # of receivers in the test will not include this one.
+  opencensus/disabled:
+    # This receiver is disabled and won't receive any data.
+    disabled: true
 
 processors:
   exampleprocessor:
@@ -23,7 +60,9 @@ exporters:
 
 pipelines:
   traces:
-      receivers: [opencensus]
-      processors: [exampleprocessor]
-      exporters: [exampleexporter]
-
+    receivers: [opencensus/customname]
+    processors: [exampleprocessor]
+    exporters: [exampleexporter]
+  metrics:
+    receivers: [opencensus]
+    exporters: [exampleexporter]
