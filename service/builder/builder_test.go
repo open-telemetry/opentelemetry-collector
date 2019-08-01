@@ -15,9 +15,7 @@
 package builder
 
 import (
-	"encoding/json"
 	"reflect"
-	"sort"
 	"testing"
 	"time"
 
@@ -69,72 +67,6 @@ func TestMultiAndQueuedSpanProcessorConfig(t *testing.T) {
 		if !reflect.DeepEqual(*wCfg.Processors[i], *gCfg.Processors[i]) {
 			t.Errorf("Wanted %+v but got %+v", *wCfg.Processors[i], *gCfg.Processors[i])
 		}
-	}
-}
-
-func TestTailSamplingPoliciesConfiguration(t *testing.T) {
-	v, err := loadViperFromFile("./testdata/sampling_config.yaml")
-	if err != nil {
-		t.Fatalf("Failed to load viper from test file: %v", err)
-	}
-
-	wCfg := NewDefaultSamplingCfg()
-	if wCfg.Mode != NoSampling {
-		t.Fatalf("Default SamplingCfg Mode should be NoSampling")
-	}
-	wCfg.Mode = TailSampling
-	wCfg.Policies = []*PolicyCfg{
-		{
-			Name:      "string-attribute-filter1",
-			Type:      StringAttributeFilter,
-			Exporters: []string{"jaeger1"},
-			Configuration: &StringAttributeFilterCfg{
-				Key:    "test",
-				Values: []string{"value 1", "value 2"},
-			},
-		},
-		{
-			Name:      "numeric-attribute-filter2",
-			Type:      NumericAttributeFilter,
-			Exporters: []string{"jaeger2"},
-			Configuration: &NumericAttributeFilterCfg{
-				Key:      "http.status_code",
-				MinValue: 400,
-				MaxValue: 999,
-			},
-		},
-		{
-			Name:      "string-attribute-filter3",
-			Type:      StringAttributeFilter,
-			Exporters: []string{"jaeger3"},
-			Configuration: &StringAttributeFilterCfg{
-				Key:    "test.different",
-				Values: []string{"key 1", "key 2"},
-			},
-		},
-		{
-			Name:      "numeric-attribute-filter4",
-			Type:      NumericAttributeFilter,
-			Exporters: []string{"jaeger4", "jaeger5"},
-			Configuration: &NumericAttributeFilterCfg{
-				Key:      "http.status_code",
-				MinValue: 400,
-				MaxValue: 999,
-			},
-		},
-	}
-
-	gCfg := NewDefaultSamplingCfg().InitFromViper(v)
-	sort.Slice(gCfg.Policies, func(i, j int) bool {
-		if len(gCfg.Policies[i].Exporters) == len(gCfg.Policies[j].Exporters) {
-			return gCfg.Policies[i].Exporters[0] < gCfg.Policies[j].Exporters[0]
-		}
-		return len(gCfg.Policies[i].Exporters) < len(gCfg.Policies[j].Exporters)
-	})
-
-	if !reflect.DeepEqual(gCfg, wCfg) {
-		gb, _ := json.MarshalIndent(gCfg, "", " ")
-		t.Fatalf("Wanted %+v but got %+v\ngot json:\n%s", *wCfg, *gCfg, string(gb))
 	}
 }
 

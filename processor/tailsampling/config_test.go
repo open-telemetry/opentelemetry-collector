@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package builder_test
+package tailsampling
 
 import (
 	"path"
@@ -24,15 +24,13 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-service/config"
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-service/processor/tailsampling"
-	"github.com/open-telemetry/opentelemetry-service/service/builder"
 )
 
 func TestLoadConfig(t *testing.T) {
 	receivers, processors, exporters, err := config.ExampleComponents()
 	assert.Nil(t, err)
 
-	factory := &tailsampling.Factory{}
+	factory := &Factory{}
 	processors[factory.Type()] = factory
 
 	cfg, err := config.LoadConfigFile(
@@ -44,7 +42,7 @@ func TestLoadConfig(t *testing.T) {
 
 	p0 := cfg.Processors["tail-sampling"]
 	assert.Equal(t, p0,
-		&builder.TailBasedCfg{
+		&Config{
 			ProcessorSettings: configmodels.ProcessorSettings{
 				TypeVal: "tail-sampling",
 				NameVal: "tail-sampling",
