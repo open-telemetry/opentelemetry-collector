@@ -98,17 +98,19 @@ func concurrencyTest(t *testing.T, numBatches, newBatchesInitialCapacity, batchC
 	var got Batch
 	go func() {
 		var completedDequeues uint64
+	outer:
 		for {
 			select {
 			case <-ticker.C:
 				g, _ := batcher.CloseCurrentAndTakeFirstBatch()
 				completedDequeues++
 				if completedDequeues <= numBatches && len(g) != 0 {
-					t.Fatal("Some of the first batches were not empty")
+					t.Error("Some of the first batches were not empty")
+					return
 				}
 				got = append(got, g...)
 			case <-stopTicker:
-				break
+				break outer
 			}
 		}
 	}()
@@ -154,7 +156,7 @@ func concurrencyTest(t *testing.T, numBatches, newBatchesInitialCapacity, batchC
 }
 
 func generateSequentialIds(numIds uint64) [][]byte {
-	ids := make([][]byte, numIds, numIds)
+	ids := make([][]byte, numIds)
 	for i := uint64(0); i < numIds; i++ {
 		ids[i] = tracetranslator.UInt64ToByteTraceID(0, i)
 	}
