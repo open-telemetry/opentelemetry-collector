@@ -167,7 +167,7 @@ func TestTraceGrpcGatewayCors_endToEnd(t *testing.T) {
 		t.Fatalf("Failed to start trace receiver: %v", err)
 	}
 
-	// TODO(songy23): make starting server determinisitc
+	// TODO(songy23): make starting server deterministic
 	// Wait for the servers to start
 	<-time.After(10 * time.Millisecond)
 
