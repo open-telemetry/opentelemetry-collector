@@ -15,14 +15,15 @@
 package internal
 
 import (
+	"sort"
+	"strings"
+
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/pkg/textparse"
 	"github.com/prometheus/prometheus/scrape"
-	"sort"
-	"strings"
 )
 
 // MetricFamily is unit which is corresponding to the metrics items which shared the same TYPE/UNIT/... metadata from
