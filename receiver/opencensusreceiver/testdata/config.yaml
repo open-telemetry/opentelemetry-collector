@@ -16,8 +16,7 @@ receivers:
     endpoint: 0.0.0.0:9090
     # This receiver doesn't enable back pressure functionality and will result in no behavior change.
     disable-backpressure: true
-  # The following entry configures all of the keep alive settings. These settings are used to configure the underlying
-  # server used to connect to the endpoint.
+  # The following entry configures all of the keep alive settings. These settings are used to configure the receiver.
   opencensus/keepalive:
     keepalive:
       server-parameters:
@@ -31,6 +30,8 @@ receivers:
         permit-without-stream: true
   # The following demonstrates how to disable back pressure, set maximum limits on stream, message size and connection
   # idle time.
+  # Note: The test yaml has demonstrated configuration on a grouped by their structure; however, all of the settings can
+  # be mix and matched like adding the maximum connection idle setting in this example.
   opencensus/nobackpressure:
     disable-backpressure: true
     max-recv-msg-size-mib: 32
