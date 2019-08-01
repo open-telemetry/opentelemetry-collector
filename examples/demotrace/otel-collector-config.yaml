@@ -7,10 +7,8 @@ receivers:
 
 exporters:
   logging:
-
-# TODO: enable zipkin exporter when it is implemented in otelsvc
-#  zipkin:
-#    endpoint: "http://zipkin-all-in-one:9411/api/v2/spans"
+  zipkin:
+    url: "http://zipkin-all-in-one:9411/api/v2/spans"
 
 # TODO: enable jaeger exporter when it is implemented in otelsvc
 #  jaeger:
@@ -29,5 +27,5 @@ processors:
 pipelines:
   traces:
     receivers: [opencensus]
-    exporters: [logging]
+    exporters: [logging, zipkin]
     processors: [batch, queued-retry]

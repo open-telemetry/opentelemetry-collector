@@ -17,14 +17,16 @@ package internal
 import (
 	"context"
 	"errors"
-	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"io"
+	"sync"
+	"sync/atomic"
+
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/prometheus/prometheus/storage"
 	"go.uber.org/zap"
-	"io"
-	"sync"
-	"sync/atomic"
+
+	"github.com/open-telemetry/opentelemetry-service/consumer"
 )
 
 const (

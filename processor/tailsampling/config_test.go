@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package opencensusexporter
+package tailsampling
 
 import (
 	"path"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -30,39 +31,24 @@ func TestLoadConfig(t *testing.T) {
 	assert.Nil(t, err)
 
 	factory := &Factory{}
-	exporters[typeStr] = factory
+	processors[factory.Type()] = factory
+
 	cfg, err := config.LoadConfigFile(
-		t, path.Join(".", "testdata", "config.yaml"), receivers, processors, exporters,
+		t, path.Join(".", "testdata", "tail_sampling_config.yaml"), receivers, processors, exporters,
 	)
 
-	require.NoError(t, err)
+	require.Nil(t, err)
 	require.NotNil(t, cfg)
 
-	e0 := cfg.Exporters["opencensus"]
-	assert.Equal(t, e0, factory.CreateDefaultConfig())
-
-	e1 := cfg.Exporters["opencensus/2"]
-	assert.Equal(t, e1,
+	p0 := cfg.Processors["tail-sampling"]
+	assert.Equal(t, p0,
 		&Config{
-			ExporterSettings: configmodels.ExporterSettings{
-				NameVal: "opencensus/2",
-				TypeVal: "opencensus",
+			ProcessorSettings: configmodels.ProcessorSettings{
+				TypeVal: "tail-sampling",
+				NameVal: "tail-sampling",
 			},
-			Headers: map[string]string{
-				"can you have a . here?": "F0000000-0000-0000-0000-000000000000",
-				"header1":                "234",
-				"another":                "somevalue",
-			},
-			Endpoint:          "1.2.3.4:1234",
-			Compression:       "on",
-			NumWorkers:        123,
-			CertPemFile:       "/var/lib/mycert.pem",
-			UseSecure:         true,
-			ReconnectionDelay: 15,
-			KeepaliveParameters: &KeepaliveConfig{
-				Time:                20,
-				PermitWithoutStream: true,
-				Timeout:             30,
-			},
+			DecisionWait:            31 * time.Second,
+			NumTraces:               20001,
+			ExpectedNewTracesPerSec: 100,
 		})
 }

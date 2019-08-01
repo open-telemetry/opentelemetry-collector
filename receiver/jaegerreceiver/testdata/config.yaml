@@ -2,6 +2,9 @@ receivers:
   jaeger:
   jaeger/customname:
     protocols:
+      grpc:
+        endpoint: "127.0.0.1:9876"
+        disabled: true
       thrift-http:
         endpoint: "127.0.0.1:3456"
         disabled: true

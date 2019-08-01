@@ -12,9 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tracesamplerprocessor
+package tailsampling
 
 import (
+	"time"
+
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/config/configerror"
@@ -24,11 +26,11 @@ import (
 )
 
 const (
-	// The value of "type" trace-samplers in configuration.
-	typeStr = "trace-sampler"
+	// The value of "type" Tail Sampling in configuration.
+	typeStr = "tail-sampling"
 )
 
-// Factory is the factory for trace-sample processor.
+// Factory is the factory for Tail Sampling processor.
 type Factory struct {
 }
 
@@ -40,10 +42,8 @@ func (f *Factory) Type() string {
 // CreateDefaultConfig creates the default configuration for processor.
 func (f *Factory) CreateDefaultConfig() configmodels.Processor {
 	return &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
-		},
+		DecisionWait: 30 * time.Second,
+		NumTraces:    50000,
 	}
 }
 
@@ -53,8 +53,8 @@ func (f *Factory) CreateTraceProcessor(
 	nextConsumer consumer.TraceConsumer,
 	cfg configmodels.Processor,
 ) (processor.TraceProcessor, error) {
-	oCfg := cfg.(*Config)
-	return NewTraceProcessor(nextConsumer, *oCfg)
+	tCfg := cfg.(*Config)
+	return NewTraceProcessor(logger, nextConsumer, *tCfg)
 }
 
 // CreateMetricsProcessor creates a metrics processor based on this config.

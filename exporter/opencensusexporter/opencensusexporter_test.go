@@ -162,7 +162,7 @@ func TestOpenCensusTraceExporterConfigsViaViper(t *testing.T) {
 			},
 			want: opencensusConfig{
 				Endpoint: defaultTestEndPoint,
-				KeepaliveParameters: &keepaliveConfig{
+				KeepaliveParameters: &KeepaliveConfig{
 					Time:                30 * time.Second,
 					Timeout:             25 * time.Second,
 					PermitWithoutStream: true,

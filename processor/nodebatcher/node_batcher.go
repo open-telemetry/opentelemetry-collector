@@ -16,7 +16,7 @@ package nodebatcher
 
 import (
 	"context"
-	"crypto/md5"
+	"crypto/sha256"
 	"fmt"
 	"math/rand"
 	"sync"
@@ -112,7 +112,7 @@ func (b *batcher) ConsumeTraceData(ctx context.Context, td consumerdata.TraceDat
 }
 
 func (b *batcher) genBucketID(node *commonpb.Node, resource *resourcepb.Resource, spanFormat string) string {
-	h := md5.New()
+	h := sha256.New()
 	if node != nil {
 		nodeKey, err := proto.Marshal(node)
 		if err != nil {

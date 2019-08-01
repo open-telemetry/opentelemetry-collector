@@ -15,17 +15,18 @@
 package internal
 
 import (
-	"github.com/golang/protobuf/ptypes/wrappers"
 	"reflect"
 	"testing"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/pkg/textparse"
 	"github.com/prometheus/prometheus/scrape"
+
+	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
 )
 
 func Test_isUsefulLabel(t *testing.T) {

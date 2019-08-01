@@ -26,6 +26,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/exporter/loggingexporter"
 	"github.com/open-telemetry/opentelemetry-service/exporter/opencensusexporter"
 	"github.com/open-telemetry/opentelemetry-service/exporter/prometheusexporter"
+	"github.com/open-telemetry/opentelemetry-service/exporter/zipkinexporter"
 	"github.com/open-telemetry/opentelemetry-service/processor"
 	"github.com/open-telemetry/opentelemetry-service/processor/addattributesprocessor"
 	"github.com/open-telemetry/opentelemetry-service/processor/attributekeyprocessor"
@@ -57,6 +58,7 @@ func TestDefaultComponents(t *testing.T) {
 		"opencensus": &opencensusexporter.Factory{},
 		"prometheus": &prometheusexporter.Factory{},
 		"logging":    &loggingexporter.Factory{},
+		"zipkin":     &zipkinexporter.Factory{},
 	}
 
 	receivers, processors, exporters, err := Components()

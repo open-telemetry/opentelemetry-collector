@@ -18,6 +18,7 @@ import (
 	"math"
 	"strconv"
 
+	model "github.com/jaegertracing/jaeger/model"
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 
 	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
@@ -47,6 +48,29 @@ func statusCodeFromTag(tag *jaeger.Tag) *int32 {
 	case jaeger.TagType_LONG:
 		return toInt32(int(tag.GetVLong()))
 	case jaeger.TagType_STRING:
+		if i, err := strconv.Atoi(tag.GetVStr()); err == nil {
+			return toInt32(i)
+		}
+	}
+	return nil
+}
+
+// statusCodeFromTag maps an integer attribute value to a status code (int32).
+// The function return nil if the value is not an integer or an integer larger than what
+// can fit in an int32
+func statusCodeFromProtoTag(tag model.KeyValue) *int32 {
+	toInt32 := func(i int) *int32 {
+		if i <= math.MaxInt32 {
+			j := int32(i)
+			return &j
+		}
+		return nil
+	}
+
+	switch tag.GetVType() {
+	case model.ValueType_INT64:
+		return toInt32(int(tag.GetVInt64()))
+	case model.ValueType_STRING:
 		if i, err := strconv.Atoi(tag.GetVStr()); err == nil {
 			return toInt32(i)
 		}

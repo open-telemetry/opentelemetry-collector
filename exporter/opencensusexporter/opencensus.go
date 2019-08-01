@@ -28,17 +28,17 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
 
+	"github.com/open-telemetry/opentelemetry-service/compression"
+	compressiongrpc "github.com/open-telemetry/opentelemetry-service/compression/grpc"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exporterhelper"
-	"github.com/open-telemetry/opentelemetry-service/internal/compression"
-	compressiongrpc "github.com/open-telemetry/opentelemetry-service/internal/compression/grpc"
 	"github.com/open-telemetry/opentelemetry-service/oterr"
 )
 
-// keepaliveConfig exposes the keepalive.ClientParameters to be used by the exporter.
+// KeepaliveConfig exposes the keepalive.ClientParameters to be used by the exporter.
 // Refer to the original data-structure for the meaning of each parameter.
-type keepaliveConfig struct {
+type KeepaliveConfig struct {
 	Time                time.Duration `mapstructure:"time,omitempty"`
 	Timeout             time.Duration `mapstructure:"timeout,omitempty"`
 	PermitWithoutStream bool          `mapstructure:"permit-without-stream,omitempty"`
@@ -52,7 +52,7 @@ type opencensusConfig struct {
 	CertPemFile         string            `mapstructure:"cert-pem-file,omitempty"`
 	UseSecure           bool              `mapstructure:"secure,omitempty"`
 	ReconnectionDelay   time.Duration     `mapstructure:"reconnection-delay,omitempty"`
-	KeepaliveParameters *keepaliveConfig  `mapstructure:"keepalive,omitempty"`
+	KeepaliveParameters *KeepaliveConfig  `mapstructure:"keepalive,omitempty"`
 	// TODO: service name options.
 }
 

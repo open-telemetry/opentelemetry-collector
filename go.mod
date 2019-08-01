@@ -12,10 +12,11 @@ require (
 	github.com/aws/aws-sdk-go v1.19.18 // indirect
 	github.com/bmizerany/perks v0.0.0-20141205001514-d9a9656a3a4b // indirect
 	github.com/census-instrumentation/opencensus-proto v0.2.1
+	github.com/client9/misspell v0.3.4
 	github.com/go-kit/kit v0.8.0
 	github.com/gogo/googleapis v1.2.0 // indirect
 	github.com/golang/protobuf v1.3.1
-	github.com/google/addlicense v0.0.0-20190510175307-22550fa7c1b0 // indirect
+	github.com/google/addlicense v0.0.0-20190510175307-22550fa7c1b0
 	github.com/google/go-cmp v0.3.0
 	github.com/gorilla/mux v1.6.2
 	github.com/grpc-ecosystem/grpc-gateway v1.9.0
@@ -47,6 +48,7 @@ require (
 	go.uber.org/zap v1.10.0
 	golang.org/x/lint v0.0.0-20190313153728-d0100b6bd8b3
 	golang.org/x/oauth2 v0.0.0-20190402181905-9f3314589c9a // indirect
+	golang.org/x/tools v0.0.0-20190730215328-ed3277de2799
 	google.golang.org/api v0.5.0
 	google.golang.org/grpc v1.21.0
 	gopkg.in/yaml.v2 v2.2.2

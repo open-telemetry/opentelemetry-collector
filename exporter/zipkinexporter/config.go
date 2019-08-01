@@ -12,23 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package opencensusexporter
+package zipkinexporter
 
 import (
-	"time"
-
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 )
 
-// Config defines configuration for OpenCensus exporter.
+// Config defines configuration settings for the Zipkin exporter.
 type Config struct {
 	configmodels.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	Endpoint                      string                   `mapstructure:"endpoint"`
-	Compression                   string                   `mapstructure:"compression"`
-	Headers                       map[string]string        `mapstructure:"headers"`
-	NumWorkers                    int                      `mapstructure:"num-workers"`
-	CertPemFile                   string                   `mapstructure:"cert-pem-file"`
-	UseSecure                     bool                     `mapstructure:"secure,omitempty"`
-	ReconnectionDelay             time.Duration            `mapstructure:"reconnection-delay,omitempty"`
-	KeepaliveParameters           *KeepaliveConfig         `mapstructure:"keepalive,omitempty"`
+
+	// The URL to send the Zipkin trace data to (e.g.:
+	// http://some.url:9411/api/v2/spans).
+	URL string `mapstructure:"url"`
 }

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package opencensusexporter
+package zipkinexporter
 
 import (
 	"path"
@@ -20,9 +20,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/config"
-	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -38,31 +38,16 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e0 := cfg.Exporters["opencensus"]
-	assert.Equal(t, e0, factory.CreateDefaultConfig())
+	e0 := cfg.Exporters["zipkin"]
 
-	e1 := cfg.Exporters["opencensus/2"]
-	assert.Equal(t, e1,
-		&Config{
-			ExporterSettings: configmodels.ExporterSettings{
-				NameVal: "opencensus/2",
-				TypeVal: "opencensus",
-			},
-			Headers: map[string]string{
-				"can you have a . here?": "F0000000-0000-0000-0000-000000000000",
-				"header1":                "234",
-				"another":                "somevalue",
-			},
-			Endpoint:          "1.2.3.4:1234",
-			Compression:       "on",
-			NumWorkers:        123,
-			CertPemFile:       "/var/lib/mycert.pem",
-			UseSecure:         true,
-			ReconnectionDelay: 15,
-			KeepaliveParameters: &KeepaliveConfig{
-				Time:                20,
-				PermitWithoutStream: true,
-				Timeout:             30,
-			},
-		})
+	// URL doesn't have a default value so set it directly.
+	defaultCfg := factory.CreateDefaultConfig().(*Config)
+	defaultCfg.URL = "http://some.location.org:9411/api/v2/spans"
+	assert.Equal(t, defaultCfg, e0)
+
+	e1 := cfg.Exporters["zipkin/2"]
+	assert.Equal(t, "zipkin/2", e1.(*Config).Name())
+	assert.Equal(t, "https://somedest:1234/api/v2/spans", e1.(*Config).URL)
+	_, _, err = factory.CreateTraceExporter(zap.NewNop(), e1)
+	require.NoError(t, err)
 }

@@ -17,8 +17,6 @@ package internal
 import (
 	"errors"
 	"fmt"
-	"github.com/golang/protobuf/ptypes/wrappers"
-	"go.uber.org/zap"
 	"sort"
 	"strconv"
 	"strings"
@@ -26,11 +24,14 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
-	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/pkg/textparse"
 	"github.com/prometheus/prometheus/scrape"
+	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 )
 
 const metricsSuffixCount = "_count"
@@ -219,7 +220,7 @@ func (b *metricBuilder) initNewMetricIfNeeded(metricName string, _ labels.Labels
 				Description: metadata.Help,
 				Unit:        heuristicalMetricAndKnownUnits(metricFamily, metadata.Unit),
 				Type:        convToOCAMetricType(metadata.Type),
-				// Due to the fact that scrapeLoop strips any tags with emtpy value, we cannot get the
+				// Due to the fact that scrapeLoop strips any tags with empty value, we cannot get the
 				// full set of labels by just looking at the first metrics, thus setting the LabelKeys of
 				// this proto need to be done after finished the whole group
 			},

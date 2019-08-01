@@ -108,14 +108,14 @@ func New(
 }
 
 func (app *Application) init() {
-	var err error
-	if file := builder.GetConfigFile(app.v); file != "" {
-		app.v.SetConfigFile(file)
-		err := app.v.ReadInConfig()
-		if err != nil {
-			log.Fatalf("Error loading config file %q: %v", file, err)
-			return
-		}
+	file := builder.GetConfigFile(app.v)
+	if file == "" {
+		log.Fatalf("Config file not specified")
+	}
+	app.v.SetConfigFile(file)
+	err := app.v.ReadInConfig()
+	if err != nil {
+		log.Fatalf("Error loading config file %q: %v", file, err)
 	}
 	app.logger, err = newLogger(app.v)
 	if err != nil {
