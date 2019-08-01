@@ -119,15 +119,15 @@ func (b *batcher) AddToCurrentBatch(id ID) {
 }
 
 func (b *batcher) CloseCurrentAndTakeFirstBatch() (Batch, bool) {
-	for readBatch := range b.batches {
+	if readBatch, ok := <-b.batches; ok {
 		if !b.stopped {
 			nextBatch := make(Batch, 0, b.newBatchesInitialCapacity)
 			b.cbMutex.Lock()
 			b.batches <- b.currentBatch
 			b.currentBatch = nextBatch
 			b.cbMutex.Unlock()
-			return readBatch, true
 		}
+		return readBatch, true
 	}
 
 	readBatch := b.currentBatch
