@@ -1,6 +1,6 @@
 # Exporters
 
-Below is the list of back-ends by supported by the OpenTelemetry Service.
+Below is the list of exporters directly supported by the OpenTelemetry Service.
 
 * [Jaeger](#jaeger)
 * [Logging](#logging)
@@ -9,11 +9,11 @@ Below is the list of back-ends by supported by the OpenTelemetry Service.
 * [Zipkin](#zipkin)
 
 The [contributors repository](https://github.com/open-telemetry/opentelemetry-service-contrib)
- has exporters to support more back-ends.
+ has more exporters that can be added to custom builds of the service.
 
 ## <a name="jaeger"></a>Jaeger 
 
-Exports trace data to a [Jaeger](https://www.jaegertracing.io/) collector 
+Exports trace data to [Jaeger](https://www.jaegertracing.io/) collectors 
 accepting one of the following protocols:
 
 * [gRPC](#jaeger-grpc)
