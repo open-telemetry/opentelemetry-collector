@@ -30,9 +30,9 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/internal/collector/processor/idbatcher"
 	"github.com/open-telemetry/opentelemetry-service/observability"
 	"github.com/open-telemetry/opentelemetry-service/processor"
+	"github.com/open-telemetry/opentelemetry-service/processor/tailsampling/idbatcher"
 	"github.com/open-telemetry/opentelemetry-service/processor/tailsampling/sampling"
 )
 
