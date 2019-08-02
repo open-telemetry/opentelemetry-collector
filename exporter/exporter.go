@@ -23,20 +23,16 @@ import (
 type TraceExporter interface {
 	consumer.TraceConsumer
 
-	// TraceExportFormat gets the name of the format in which this exporter sends its data.
-	// For exporters that can export multiple signals it is recommended to encode the signal
-	// as suffix (e.g. "oc_trace").
-	TraceExportFormat() string
+	// TraceExporterName gets the name of the trace exporter.
+	TraceExporterName() string
 }
 
 // MetricsExporter composes MetricsConsumer with some additional exporter-specific functions.
 type MetricsExporter interface {
 	consumer.MetricsConsumer
 
-	// MetricsExportFormat gets the name of the format in which this exporter sends its data.
-	// For exporters that can export multiple signals it is recommended to encode the signal
-	// as suffix (e.g. "oc_metrics").
-	MetricsExportFormat() string
+	// MetricsExporterName gets the name of the metrics exporter.
+	MetricsExporterName() string
 }
 
 // Exporter is union of trace and/or metrics exporter.

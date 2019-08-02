@@ -35,7 +35,7 @@ type metricsExporter struct {
 
 var _ (exporter.MetricsExporter) = (*metricsExporter)(nil)
 
-func (me *metricsExporter) MetricsExportFormat() string {
+func (me *metricsExporter) MetricsExporterName() string {
 	return me.exporterName
 }
 

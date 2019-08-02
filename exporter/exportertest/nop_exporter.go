@@ -38,16 +38,16 @@ func (ne *nopExporter) ConsumeMetricsData(ctx context.Context, md consumerdata.M
 }
 
 const (
-	nopTraceExportFormat   = "nop_trace"
-	nopMetricsExportFormat = "nop_metrics"
+	nopTraceExporterName   = "nop_trace"
+	nopMetricsExporterName = "nop_metrics"
 )
 
-func (ne *nopExporter) TraceExportFormat() string {
-	return nopTraceExportFormat
+func (ne *nopExporter) TraceExporterName() string {
+	return nopTraceExporterName
 }
 
-func (ne *nopExporter) MetricsExportFormat() string {
-	return nopMetricsExportFormat
+func (ne *nopExporter) MetricsExporterName() string {
+	return nopMetricsExporterName
 }
 
 // NewNopTraceExporter creates an TraceExporter that just drops the received data.

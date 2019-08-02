@@ -17,41 +17,37 @@ package loggingexporter
 import (
 	"context"
 
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exporterhelper"
-	"go.uber.org/zap"
-)
-
-const (
-	traceExportFormat   = "logging_trace"
-	metricsExportFormat = "logging_metrics"
 )
 
 // NewTraceExporter creates an exporter.TraceExporter that just drops the
 // received data and logs debugging messages.
-func NewTraceExporter(logger *zap.Logger) (exporter.TraceExporter, error) {
+func NewTraceExporter(exporterName string, logger *zap.Logger) (exporter.TraceExporter, error) {
 	return exporterhelper.NewTraceExporter(
-		traceExportFormat,
+		exporterName,
 		func(ctx context.Context, td consumerdata.TraceData) (int, error) {
-			logger.Debug("loggingTraceExporter", zap.Int("#spans", len(td.Spans)))
+			logger.Debug(exporterName, zap.Int("#spans", len(td.Spans)))
 			// TODO: Add ability to record the received data
 			return 0, nil
 		},
-		exporterhelper.WithSpanName("LoggingExporter.ConsumeTraceData"), exporterhelper.WithRecordMetrics(true),
+		exporterhelper.WithSpanName(exporterName+".ConsumeTraceData"), exporterhelper.WithRecordMetrics(true),
 	)
 }
 
 // NewMetricsExporter creates an exporter.MetricsExporter that just drops the
 // received data and logs debugging messages.
-func NewMetricsExporter(logger *zap.Logger) (exporter.MetricsExporter, error) {
+func NewMetricsExporter(exporterName string, logger *zap.Logger) (exporter.MetricsExporter, error) {
 	return exporterhelper.NewMetricsExporter(
-		metricsExportFormat,
+		exporterName,
 		func(ctx context.Context, md consumerdata.MetricsData) (int, error) {
-			logger.Debug("loggingMetricsExporter", zap.Int("#metrics", len(md.Metrics)))
+			logger.Debug(exporterName, zap.Int("#metrics", len(md.Metrics)))
 			// TODO: Add ability to record the received data
 			return 0, nil
 		},
-		exporterhelper.WithSpanName("LoggingExporter.ConsumeMetricsData"), exporterhelper.WithRecordMetrics(true),
+		exporterhelper.WithSpanName(exporterName+".ConsumeMetricsData"), exporterhelper.WithRecordMetrics(true),
 	)
 }
