@@ -36,19 +36,69 @@ func TestLoadConfig(t *testing.T) {
 	cfg, err := config.LoadConfigFile(
 		t, path.Join(".", "testdata", "tail_sampling_config.yaml"), receivers, processors, exporters,
 	)
-
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
 
-	p0 := cfg.Processors["tail-sampling"]
-	assert.Equal(t, p0,
+	assert.Equal(t, cfg.Processors["tail-sampling"],
 		&Config{
 			ProcessorSettings: configmodels.ProcessorSettings{
 				TypeVal: "tail-sampling",
 				NameVal: "tail-sampling",
 			},
-			DecisionWait:            31 * time.Second,
-			NumTraces:               20001,
-			ExpectedNewTracesPerSec: 100,
+			DecisionWait:            10 * time.Second,
+			NumTraces:               100,
+			ExpectedNewTracesPerSec: 10,
+			PolicyCfg: PolicyCfg{
+				Name: "test-policy-1",
+				Type: AlwaysSample,
+			},
+		})
+
+	assert.Equal(t, cfg.Processors["tail-sampling/2"],
+		&Config{
+			ProcessorSettings: configmodels.ProcessorSettings{
+				TypeVal: "tail-sampling",
+				NameVal: "tail-sampling/2",
+			},
+			DecisionWait:            20 * time.Second,
+			NumTraces:               200,
+			ExpectedNewTracesPerSec: 20,
+			PolicyCfg: PolicyCfg{
+				Name:                      "test-policy-2",
+				Type:                      NumericAttributeFilter,
+				NumericAttributeFilterCfg: NumericAttributeFilterCfg{Key: "key1", MinValue: 50, MaxValue: 100},
+			},
+		})
+
+	assert.Equal(t, cfg.Processors["tail-sampling/3"],
+		&Config{
+			ProcessorSettings: configmodels.ProcessorSettings{
+				TypeVal: "tail-sampling",
+				NameVal: "tail-sampling/3",
+			},
+			DecisionWait:            30 * time.Second,
+			NumTraces:               300,
+			ExpectedNewTracesPerSec: 30,
+			PolicyCfg: PolicyCfg{
+				Name:                     "test-policy-3",
+				Type:                     StringAttributeFilter,
+				StringAttributeFilterCfg: StringAttributeFilterCfg{Key: "key2", Values: []string{"value1", "value2"}},
+			},
+		})
+
+	assert.Equal(t, cfg.Processors["tail-sampling/4"],
+		&Config{
+			ProcessorSettings: configmodels.ProcessorSettings{
+				TypeVal: "tail-sampling",
+				NameVal: "tail-sampling/4",
+			},
+			DecisionWait:            40 * time.Second,
+			NumTraces:               400,
+			ExpectedNewTracesPerSec: 40,
+			PolicyCfg: PolicyCfg{
+				Name:                  "test-policy-4",
+				Type:                  RateLimitingFilter,
+				RateLimitingFilterCfg: RateLimitingFilterCfg{SpansPerSecond: 35},
+			},
 		})
 }

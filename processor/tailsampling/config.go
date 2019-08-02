@@ -32,21 +32,22 @@ const (
 	// StringAttributeFilter sample traces that a attribute, of type string, matching
 	// one of the listed values.
 	StringAttributeFilter PolicyType = "string-attribute-filter"
-	// RateLimiting allows all traces until the specified limits are satisfied.
-	RateLimiting PolicyType = "rate-limiting"
+	// RateLimitingFilter allows all traces until the specified limits are satisfied.
+	RateLimitingFilter PolicyType = "rate-limiting-filter"
 )
 
 // PolicyCfg holds the common configuration to all policies.
 type PolicyCfg struct {
 	// Name given to the instance of the policy to make easy to identify it in metrics and logs.
-	Name string
+	Name string `mapstructure:"name"`
 	// Type of the policy this will be used to match the proper configuration of the policy.
-	Type PolicyType
-	// Exporters hold the name of the exporters that the policy evaluator uses to make decisions
-	// about whether or not sending the traces.
-	Exporters []string
-	// Configuration holds the settings specific to the policy.
-	Configuration interface{}
+	Type PolicyType `mapstructure:"type"`
+	// Configs for numeric attribute filter sampling policy evaluator.
+	NumericAttributeFilterCfg NumericAttributeFilterCfg `mapstructure:"numeric-attribute-filter"`
+	// Configs for string attribute filter sampling policy evaluator.
+	StringAttributeFilterCfg StringAttributeFilterCfg `mapstructure:"string-attribute-filter"`
+	// Configs for rate limiting filter sampling policy evaluator.
+	RateLimitingFilterCfg RateLimitingFilterCfg `mapstructure:"rate-limiting-filter"`
 }
 
 // NumericAttributeFilterCfg holds the configurable settings to create a numeric attribute filter
@@ -69,6 +70,13 @@ type StringAttributeFilterCfg struct {
 	Values []string `mapstructure:"values"`
 }
 
+// RateLimitingFilterCfg holds the configurable settings to create a rate limiting
+// sampling policy evaluator.
+type RateLimitingFilterCfg struct {
+	// SpansPerSecond sets the limit on the maximum nuber of spans that can be processed each second.
+	SpansPerSecond int64 `mapstructure:"spans-per-second"`
+}
+
 // Config holds the configuration for tail-based sampling.
 type Config struct {
 	configmodels.ProcessorSettings `mapstructure:",squash"`
@@ -81,4 +89,7 @@ type Config struct {
 	// ExpectedNewTracesPerSec sets the expected number of new traces sending to the tail sampling processor
 	// per second. This helps with allocating data structures with closer to actual usage size.
 	ExpectedNewTracesPerSec uint64 `mapstructure:"expected-new-traces-per-sec"`
+	// PolicyCfg sets the tail-based sampling policy which makes a sampling decision
+	// for a given trace when requested.
+	PolicyCfg PolicyCfg `mapstructure:"policy"`
 }

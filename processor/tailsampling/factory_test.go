@@ -33,7 +33,13 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateProcessor(t *testing.T) {
 	factory := &Factory{}
 
-	cfg := factory.CreateDefaultConfig()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	// Manually set required fields
+	cfg.ExpectedNewTracesPerSec = 64
+	cfg.PolicyCfg = PolicyCfg{
+		Name: "test-policy",
+		Type: AlwaysSample,
+	}
 
 	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), cfg)
 	assert.NotNil(t, tp)
