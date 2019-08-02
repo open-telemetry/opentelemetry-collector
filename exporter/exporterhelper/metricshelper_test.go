@@ -94,7 +94,7 @@ func newPushMetricsData(droppedSpans int, retError error) PushMetricsData {
 }
 
 func generateMetricsTraffic(t *testing.T, te exporter.MetricsExporter, numRequests int, wantError error) {
-	td := consumerdata.MetricsData{Metrics: make([]*metricspb.Metric, 1, 1)}
+	td := consumerdata.MetricsData{Metrics: make([]*metricspb.Metric, 1)}
 	ctx, span := trace.StartSpan(context.Background(), fakeParentSpanName, trace.WithSampler(trace.AlwaysSample()))
 	defer span.End()
 	for i := 0; i < numRequests; i++ {

@@ -132,7 +132,7 @@ func checkRecordedMetricsForTraceExporter(t *testing.T, te exporter.TraceExporte
 	doneFn := observabilitytest.SetupRecordedMetricsTest()
 	defer doneFn()
 
-	spans := make([]*tracepb.Span, 2, 2)
+	spans := make([]*tracepb.Span, 2)
 	td := consumerdata.TraceData{Spans: spans}
 	ctx := observability.ContextWithReceiverName(context.Background(), fakeReceiverName)
 	const numBatches = 7
@@ -151,7 +151,7 @@ func checkRecordedMetricsForTraceExporter(t *testing.T, te exporter.TraceExporte
 }
 
 func generateTraceTraffic(t *testing.T, te exporter.TraceExporter, numRequests int, wantError error) {
-	td := consumerdata.TraceData{Spans: make([]*tracepb.Span, 1, 1)}
+	td := consumerdata.TraceData{Spans: make([]*tracepb.Span, 1)}
 	ctx, span := trace.StartSpan(context.Background(), fakeParentSpanName, trace.WithSampler(trace.AlwaysSample()))
 	defer span.End()
 	for i := 0; i < numRequests; i++ {

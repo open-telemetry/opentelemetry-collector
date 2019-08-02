@@ -27,7 +27,7 @@ import (
 )
 
 var (
-	errUnsupportedType = errors.New("Unsupported type")
+	errUnsupportedType = errors.New("unsupported type")
 )
 
 type addattributesprocessor struct {

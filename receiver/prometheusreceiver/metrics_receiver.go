@@ -23,7 +23,6 @@ import (
 
 	"github.com/prometheus/prometheus/discovery"
 	"github.com/prometheus/prometheus/scrape"
-	"github.com/prometheus/prometheus/storage"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
@@ -47,7 +46,6 @@ type Configuration struct {
 type Preceiver struct {
 	startOnce sync.Once
 	stopOnce  sync.Once
-	ocaStore  storage.Appender
 	cfg       *Configuration
 	consumer  consumer.MetricsConsumer
 	cancel    context.CancelFunc
@@ -57,9 +55,7 @@ type Preceiver struct {
 var _ receiver.MetricsReceiver = (*Preceiver)(nil)
 
 var (
-	errAlreadyStarted         = errors.New("already started the Prometheus receiver")
-	errNilMetricsReceiverSink = errors.New("expecting a non-nil MetricsReceiverSink")
-	errNilScrapeConfig        = errors.New("expecting a non-nil ScrapeConfig")
+	errNilScrapeConfig = errors.New("expecting a non-nil ScrapeConfig")
 )
 
 const (

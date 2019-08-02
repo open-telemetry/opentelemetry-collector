@@ -111,7 +111,7 @@ func (s *JaegerThriftHTTPSender) ConsumeTraceData(ctx context.Context, td consum
 	io.Copy(ioutil.Discard, resp.Body)
 	resp.Body.Close()
 	if resp.StatusCode >= http.StatusBadRequest {
-		return fmt.Errorf("Jaeger Thirft HTTP sender error: %d", resp.StatusCode)
+		return fmt.Errorf("jaeger Thirft HTTP sender error: %d", resp.StatusCode)
 	}
 	return nil
 }

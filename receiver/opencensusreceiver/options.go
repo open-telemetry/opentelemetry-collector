@@ -94,9 +94,7 @@ type noopOption int
 
 var _ Option = (noopOption)(0)
 
-func (noopOpt noopOption) withReceiver(ocr *Receiver) {
-	return
-}
+func (noopOpt noopOption) withReceiver(ocr *Receiver) {}
 
 // WithNoopOption returns an option that doesn't mutate the receiver.
 func WithNoopOption() Option { return noopOption(0) }

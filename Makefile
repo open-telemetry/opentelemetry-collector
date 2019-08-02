@@ -23,6 +23,7 @@ GOOS=$(shell go env GOOS)
 ADDLICENCESE= addlicense
 MISSPELL=misspell -error
 MISSPELL_CORRECTION=misspell -w
+STATICCHECK=staticcheck
 
 GIT_SHA=$(shell git rev-parse --short HEAD)
 BUILD_INFO_IMPORT_PATH=github.com/open-telemetry/opentelemetry-service/internal/version
@@ -38,10 +39,10 @@ all-pkgs:
 all-srcs:
 	@echo $(ALL_SRC) | tr ' ' '\n' | sort
 
-.DEFAULT_GOAL := addlicense-fmt-vet-lint-goimports-misspell-test
+.DEFAULT_GOAL := addlicense-fmt-vet-lint-goimports-misspell-staticcheck-test
 
-.PHONY: addlicense-fmt-vet-lint-goimports-misspell-test
-addlicense-fmt-vet-lint-goimports-misspell-test: addlicense fmt vet lint goimports misspell test
+.PHONY: addlicense-fmt-vet-lint-goimports-misspell-staticcheck-test
+addlicense-fmt-vet-lint-goimports-misspell-staticcheck-test: addlicense fmt vet lint goimports misspell staticcheck test
 
 .PHONY: e2e-test
 e2e-test: otelsvc
@@ -52,7 +53,7 @@ test:
 	$(GOTEST) $(GOTEST_OPT) $(ALL_PKGS)
 
 .PHONY: travis-ci
-travis-ci: fmt vet lint goimports misspell test-with-cover otelsvc
+travis-ci: fmt vet lint goimports misspell staticcheck test-with-cover otelsvc
 	$(MAKE) -C testbed install-tools
 	$(MAKE) -C testbed runtests
 
@@ -117,6 +118,10 @@ misspell:
 misspell-correction:
 	$(MISSPELL_CORRECTION) $(ALL_SRC_AND_DOC)
 
+.PHONY: staticcheck
+staticcheck:
+	$(STATICCHECK) ./...
+
 .PHONY: vet
 vet:
 	@$(GOVET) ./...
@@ -128,7 +133,8 @@ install-tools:
 	  github.com/google/addlicense \
 	  golang.org/x/lint/golint \
 	  golang.org/x/tools/cmd/goimports \
-	  github.com/client9/misspell/cmd/misspell
+	  github.com/client9/misspell/cmd/misspell \
+	  honnef.co/go/tools/cmd/staticcheck
 
 .PHONY: otelsvc
 otelsvc:

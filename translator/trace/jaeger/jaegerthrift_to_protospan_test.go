@@ -107,7 +107,7 @@ func TestThriftBatchToOCProto_Roundtrip(t *testing.T) {
 
 func TestThriftBatchToOCProto(t *testing.T) {
 	const numOfFiles = 2
-	for i := 1; i <= 2; i++ {
+	for i := 1; i <= numOfFiles; i++ {
 		thriftInFile := fmt.Sprintf("./testdata/thrift_batch_%02d.json", i)
 		jb := &jaeger.Batch{}
 		if err := loadFromJSON(thriftInFile, jb); err != nil {

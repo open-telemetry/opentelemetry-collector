@@ -196,11 +196,10 @@ func Test_metricBuilder(t *testing.T) {
 	}
 
 	tests := []struct {
-		name       string
-		pts        []*pt
-		processErr bool
-		buildErr   bool
-		metrics    []*metricspb.Metric
+		name     string
+		pts      []*pt
+		buildErr bool
+		metrics  []*metricspb.Metric
 	}{
 		{
 			name: "counters",

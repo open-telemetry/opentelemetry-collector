@@ -125,7 +125,6 @@ func TestNew(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    *ZipkinReceiver
 		wantErr error
 	}{
 		{

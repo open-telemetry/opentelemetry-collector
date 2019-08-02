@@ -55,7 +55,6 @@ func MetricTagKeys(level telemetry.Level) []tag.Key {
 		fallthrough
 	case telemetry.Basic:
 		tagKeys = append(tagKeys, TagExporterNameKey)
-		break
 	default:
 		return nil
 	}

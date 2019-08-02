@@ -162,7 +162,7 @@ func ocSpansToJaegerSpans(ocSpans []*tracepb.Span) ([]*jaeger.Span, error) {
 		}
 		jReferences, err := ocLinksToJaegerReferences(ocSpan.Links)
 		if err != nil {
-			return nil, fmt.Errorf("Error converting OC links to Jaeger references: %v", err)
+			return nil, fmt.Errorf("error converting OC links to Jaeger references: %v", err)
 		}
 		spanID, err := tracetranslator.BytesToInt64SpanID(ocSpan.SpanId)
 		if err != nil {

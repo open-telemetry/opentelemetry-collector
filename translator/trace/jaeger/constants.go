@@ -34,10 +34,6 @@ const (
 )
 
 var (
-	errZeroTraceID     = errors.New("OC span has an all zeros trace ID")
-	errNilTraceID      = errors.New("OC trace ID is nil")
-	errWrongLenTraceID = errors.New("TraceID does not have 16 bytes")
-	errZeroSpanID      = errors.New("OC span has an all zeros span ID")
-	errNilID           = errors.New("OC ID is nil")
-	errWrongLenID      = errors.New("ID does not have 8 bytes")
+	errZeroTraceID = errors.New("OC span has an all zeros trace ID")
+	errZeroSpanID  = errors.New("OC span has an all zeros span ID")
 )

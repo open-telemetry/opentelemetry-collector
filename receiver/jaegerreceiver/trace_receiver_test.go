@@ -28,6 +28,7 @@ import (
 	model "github.com/jaegertracing/jaeger/model"
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opencensus.io/trace"
 	"google.golang.org/grpc"
 
@@ -106,6 +107,7 @@ func TestGRPCReception(t *testing.T) {
 	t.Log("StartTraceReception")
 
 	conn, err := grpc.Dial(fmt.Sprintf("0.0.0.0:%d", config.CollectorGRPCPort), grpc.WithInsecure())
+	require.NoError(t, err)
 	defer conn.Close()
 
 	cl := api_v2.NewCollectorServiceClient(conn)

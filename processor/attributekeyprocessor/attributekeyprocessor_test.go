@@ -158,11 +158,11 @@ func Test_attributekeyprocessor_ConsumeTraceData(t *testing.T) {
 				},
 			},
 			td: consumerdata.TraceData{
-				Spans: make([]*tracepb.Span, 1, 1),
+				Spans: make([]*tracepb.Span, 1),
 			},
 			want: []consumerdata.TraceData{
 				{
-					Spans: make([]*tracepb.Span, 1, 1),
+					Spans: make([]*tracepb.Span, 1),
 				},
 			},
 		},

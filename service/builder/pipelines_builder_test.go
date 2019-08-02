@@ -69,6 +69,7 @@ func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 
 	// Build the pipeline
 	allExporters, err := NewExportersBuilder(zap.NewNop(), cfg, exporterFactories).Build()
+	assert.NoError(t, err)
 	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), cfg, allExporters, processorsFactories).Build()
 
 	assert.NoError(t, err)
@@ -140,6 +141,7 @@ func TestPipelinesBuilder_Error(t *testing.T) {
 	pipeline.InputType = configmodels.MetricsDataType
 
 	exporters, err := NewExportersBuilder(zap.NewNop(), cfg, exporterFactories).Build()
+	assert.NoError(t, err)
 
 	// This should fail because "attributes" processor defined in the config does
 	// not support metrics data type.

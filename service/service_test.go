@@ -54,7 +54,8 @@ func TestApplication_StartUnified(t *testing.T) {
 	go func() {
 		defer close(appDone)
 		if err := app.StartUnified(); err != nil {
-			t.Fatalf("app.StartUnified() got %v, want nil", err)
+			t.Errorf("app.StartUnified() got %v, want nil", err)
+			return
 		}
 	}()
 
@@ -93,7 +94,7 @@ func isAppAvailable(t *testing.T, healthCheckEndPoint string) bool {
 }
 
 func getMultipleAvailableLocalAddresses(t *testing.T, numAddresses uint) []string {
-	addresses := make([]string, numAddresses, numAddresses)
+	addresses := make([]string, numAddresses)
 	for i := uint(0); i < numAddresses; i++ {
 		addresses[i] = testutils.GetAvailableLocalAddress(t)
 	}

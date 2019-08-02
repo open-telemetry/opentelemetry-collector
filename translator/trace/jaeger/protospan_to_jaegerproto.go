@@ -455,7 +455,7 @@ func ocSpansToJaegerSpansProto(ocSpans []*tracepb.Span) ([]*jaeger.Span, error) 
 		}
 
 		var spanID jaeger.SpanID
-		uSpanID, err := tracetranslator.BytesToUInt64SpanID(ocSpan.SpanId)
+		uSpanID, _ := tracetranslator.BytesToUInt64SpanID(ocSpan.SpanId)
 		if uSpanID == 0 {
 			return nil, errZeroSpanID
 		}
@@ -463,7 +463,7 @@ func ocSpansToJaegerSpansProto(ocSpans []*tracepb.Span) ([]*jaeger.Span, error) 
 
 		jReferences, err := ocLinksToJaegerReferencesProto(ocSpan.Links)
 		if err != nil {
-			return nil, fmt.Errorf("Error converting OC links to Jaeger references: %v", err)
+			return nil, fmt.Errorf("error converting OC links to Jaeger references: %v", err)
 		}
 
 		// OC ParentSpanId can be nil/empty: only attempt conversion if not nil/empty.

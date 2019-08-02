@@ -22,9 +22,8 @@ import (
 )
 
 var (
-	errAlreadyStarted     = errors.New("already started")
-	errAlreadyStopped     = errors.New("already stopped")
-	errNilMetricsConsumer = errors.New("expecting a non-nil MetricsConsumer")
+	errAlreadyStarted = errors.New("already started")
+	errAlreadyStopped = errors.New("already stopped")
 )
 
 // Receiver is the type used to handle metrics from VM metrics.

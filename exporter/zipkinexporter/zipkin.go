@@ -100,7 +100,7 @@ func ZipkinExportersFromViper(v *viper.Viper) (tps []consumer.TraceConsumer, mps
 	}
 	zle, err := newZipkinExporter(endpoint, serviceName, uploadPeriod)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("Cannot configure Zipkin exporter: %v", err)
+		return nil, nil, nil, fmt.Errorf("cannot configure Zipkin exporter: %v", err)
 	}
 	tps = append(tps, zle)
 	doneFns = append(doneFns, zle.stop)

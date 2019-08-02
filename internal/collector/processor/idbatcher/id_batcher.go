@@ -67,7 +67,6 @@ type batcher struct {
 	cbMutex      sync.Mutex
 	currentBatch Batch
 
-	numBatches                uint64
 	newBatchesInitialCapacity uint64
 	stopchan                  chan bool
 	stopped                   bool
@@ -120,7 +119,7 @@ func (b *batcher) AddToCurrentBatch(id ID) {
 }
 
 func (b *batcher) CloseCurrentAndTakeFirstBatch() (Batch, bool) {
-	for readBatch := range b.batches {
+	if readBatch, ok := <-b.batches; ok {
 		if !b.stopped {
 			nextBatch := make(Batch, 0, b.newBatchesInitialCapacity)
 			b.cbMutex.Lock()

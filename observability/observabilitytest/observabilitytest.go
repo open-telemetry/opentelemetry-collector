@@ -90,7 +90,7 @@ func checkValueForView(vName string, wantTags []tag.Tag, value int64) error {
 
 	rows, err := view.RetrieveData(vName)
 	if err != nil {
-		return fmt.Errorf("Error retrieving view data for view Name %s", vName)
+		return fmt.Errorf("error retrieving view data for view Name %s", vName)
 	}
 
 	for _, row := range rows {
@@ -99,13 +99,13 @@ func checkValueForView(vName string, wantTags []tag.Tag, value int64) error {
 		if reflect.DeepEqual(wantTags, row.Tags) {
 			sum := row.Data.(*view.SumData)
 			if float64(value) != sum.Value {
-				return fmt.Errorf("Different recorded value: want %v got %v", float64(value), sum.Value)
+				return fmt.Errorf("different recorded value: want %v got %v", float64(value), sum.Value)
 			}
 			// We found the result
 			return nil
 		}
 	}
-	return fmt.Errorf("Could not find wantTags: %s in rows %v", wantTags, rows)
+	return fmt.Errorf("could not find wantTags: %s in rows %v", wantTags, rows)
 }
 
 func wantsTagsForExporterView(receiverName string, exporterTagName string) []tag.Tag {

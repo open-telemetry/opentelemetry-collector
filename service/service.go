@@ -30,7 +30,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/config"
-	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
 	"github.com/open-telemetry/opentelemetry-service/internal/config/viperutils"
 	"github.com/open-telemetry/opentelemetry-service/internal/pprofserver"
@@ -45,8 +44,6 @@ type Application struct {
 	v              *viper.Viper
 	logger         *zap.Logger
 	healthCheck    *healthcheck.HealthCheck
-	processor      consumer.TraceConsumer
-	receivers      []receiver.TraceReceiver
 	exporters      builder.Exporters
 	builtReceivers builder.Receivers
 
@@ -190,12 +187,6 @@ func (app *Application) runAndWaitForShutdownEvent() {
 		app.logger.Info("Received signal from OS", zap.String("signal", s.String()))
 	case <-app.stopTestChan:
 		app.logger.Info("Received stop test request")
-	}
-}
-
-func (app *Application) shutdownReceivers() {
-	for _, receiver := range app.receivers {
-		receiver.StopTraceReception()
 	}
 }
 
