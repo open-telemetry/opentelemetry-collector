@@ -29,18 +29,18 @@ import (
 type PushMetricsData func(ctx context.Context, td consumerdata.MetricsData) (droppedMetrics int, err error)
 
 type metricsExporter struct {
-	exporterFormat  string
+	exporterName    string
 	pushMetricsData PushMetricsData
 }
 
 var _ (exporter.MetricsExporter) = (*metricsExporter)(nil)
 
 func (me *metricsExporter) MetricsExportFormat() string {
-	return me.exporterFormat
+	return me.exporterName
 }
 
 func (me *metricsExporter) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
-	exporterCtx := observability.ContextWithExporterName(ctx, me.exporterFormat)
+	exporterCtx := observability.ContextWithExporterName(ctx, me.exporterName)
 	_, err := me.pushMetricsData(exporterCtx, md)
 	return err
 }
@@ -49,9 +49,9 @@ func (me *metricsExporter) ConsumeMetricsData(ctx context.Context, md consumerda
 // If no options are passed it just adds the exporter format as a tag in the Context.
 // TODO: Add support for recordMetrics.
 // TODO: Add support for retries.
-func NewMetricsExporter(exporterFormat string, pushMetricsData PushMetricsData, options ...ExporterOption) (exporter.MetricsExporter, error) {
-	if exporterFormat == "" {
-		return nil, errEmptyExporterFormat
+func NewMetricsExporter(exporterName string, pushMetricsData PushMetricsData, options ...ExporterOption) (exporter.MetricsExporter, error) {
+	if exporterName == "" {
+		return nil, errEmptyExporterName
 	}
 
 	if pushMetricsData == nil {
@@ -65,7 +65,7 @@ func NewMetricsExporter(exporterFormat string, pushMetricsData PushMetricsData, 
 	}
 
 	return &metricsExporter{
-		exporterFormat:  exporterFormat,
+		exporterName:    exporterName,
 		pushMetricsData: pushMetricsData,
 	}, nil
 }

@@ -29,28 +29,28 @@ import (
 type PushTraceData func(ctx context.Context, td consumerdata.TraceData) (droppedSpans int, err error)
 
 type traceExporter struct {
-	exporterFormat string
-	pushTraceData  PushTraceData
+	exporterName  string
+	pushTraceData PushTraceData
 }
 
 var _ (exporter.TraceExporter) = (*traceExporter)(nil)
 
 func (te *traceExporter) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
-	exporterCtx := observability.ContextWithExporterName(ctx, te.exporterFormat)
+	exporterCtx := observability.ContextWithExporterName(ctx, te.exporterName)
 	_, err := te.pushTraceData(exporterCtx, td)
 	return err
 }
 
 func (te *traceExporter) TraceExportFormat() string {
-	return te.exporterFormat
+	return te.exporterName
 }
 
 // NewTraceExporter creates an TraceExporter that can record metrics and can wrap every request with a Span.
 // If no options are passed it just adds the exporter format as a tag in the Context.
 // TODO: Add support for retries.
-func NewTraceExporter(exporterFormat string, pushTraceData PushTraceData, options ...ExporterOption) (exporter.TraceExporter, error) {
-	if exporterFormat == "" {
-		return nil, errEmptyExporterFormat
+func NewTraceExporter(exporterName string, pushTraceData PushTraceData, options ...ExporterOption) (exporter.TraceExporter, error) {
+	if exporterName == "" {
+		return nil, errEmptyExporterName
 	}
 
 	if pushTraceData == nil {
@@ -67,8 +67,8 @@ func NewTraceExporter(exporterFormat string, pushTraceData PushTraceData, option
 	}
 
 	return &traceExporter{
-		exporterFormat: exporterFormat,
-		pushTraceData:  pushTraceData,
+		exporterName:  exporterName,
+		pushTraceData: pushTraceData,
 	}, nil
 }
 

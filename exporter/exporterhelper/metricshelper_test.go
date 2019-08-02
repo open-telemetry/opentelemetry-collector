@@ -26,8 +26,8 @@ import (
 )
 
 func TestMetricsExporter_InvalidName(t *testing.T) {
-	if _, err := NewMetricsExporter("", newPushMetricsData(0, nil)); err != errEmptyExporterFormat {
-		t.Fatalf("NewMetricsExporter returns: Want %v Got %v", errEmptyExporterFormat, err)
+	if _, err := NewMetricsExporter("", newPushMetricsData(0, nil)); err != errEmptyExporterName {
+		t.Fatalf("NewMetricsExporter returns: Want %v Got %v", errEmptyExporterName, err)
 	}
 }
 
