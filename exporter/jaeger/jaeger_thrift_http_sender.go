@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jaegerexporter
+package jaeger
 
 import (
 	"bytes"
@@ -35,29 +35,29 @@ import (
 // Default timeout for http request in seconds
 const defaultHTTPTimeout = time.Second * 5
 
-// JaegerThriftHTTPSender forwards spans encoded in the jaeger thrift
+// ThriftHTTPSender forwards spans encoded in the jaeger thrift
 // format to a http server
-type JaegerThriftHTTPSender struct {
+type ThriftHTTPSender struct {
 	url     string
 	headers map[string]string
 	client  *http.Client
 	logger  *zap.Logger
 }
 
-var _ consumer.TraceConsumer = (*JaegerThriftHTTPSender)(nil)
+var _ consumer.TraceConsumer = (*ThriftHTTPSender)(nil)
 
 // HTTPOption sets a parameter for the HttpCollector
-type HTTPOption func(s *JaegerThriftHTTPSender)
+type HTTPOption func(s *ThriftHTTPSender)
 
 // HTTPTimeout sets maximum timeout for http request.
 func HTTPTimeout(duration time.Duration) HTTPOption {
-	return func(s *JaegerThriftHTTPSender) { s.client.Timeout = duration }
+	return func(s *ThriftHTTPSender) { s.client.Timeout = duration }
 }
 
 // HTTPRoundTripper configures the underlying Transport on the *http.Client
 // that is used
 func HTTPRoundTripper(transport http.RoundTripper) HTTPOption {
-	return func(s *JaegerThriftHTTPSender) {
+	return func(s *ThriftHTTPSender) {
 		s.client.Transport = transport
 	}
 }
@@ -70,8 +70,8 @@ func NewJaegerThriftHTTPSender(
 	headers map[string]string,
 	zlogger *zap.Logger,
 	options ...HTTPOption,
-) *JaegerThriftHTTPSender {
-	s := &JaegerThriftHTTPSender{
+) *ThriftHTTPSender {
+	s := &ThriftHTTPSender{
 		url:     url,
 		headers: headers,
 		client:  &http.Client{Timeout: defaultHTTPTimeout},
@@ -85,7 +85,7 @@ func NewJaegerThriftHTTPSender(
 }
 
 // ConsumeTraceData sends the received data to the configured Jaeger Thrift end-point.
-func (s *JaegerThriftHTTPSender) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
+func (s *ThriftHTTPSender) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	// TODO: (@pjanotti) In case of failure the translation to Jaeger Thrift is going to be remade, cache it somehow.
 	tBatch, err := jaegertranslator.OCProtoToJaegerThrift(td)
 	if err != nil {

@@ -12,7 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package jaegerexporter contains a specialized Jaeger exporter. Unlike client
-// library exporters they do not buffer or attempt to resend failed batches, all
-// of that is delegated to the callers of the exporter.
-package jaegerexporter
+package jaegergrpcexporter
+
+import (
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
+)
+
+// Config defines configuration for Jaeger gRPC exporter.
+type Config struct {
+	configmodels.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	Endpoint                      string                   `mapstructure:"endpoint"`
+}

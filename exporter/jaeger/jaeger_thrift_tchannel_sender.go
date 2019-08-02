@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jaegerexporter
+package jaeger
 
 import (
 	"context"
@@ -26,28 +26,28 @@ import (
 	jaegertranslator "github.com/open-telemetry/opentelemetry-service/translator/trace/jaeger"
 )
 
-// JaegerThriftTChannelSender takes span batches and sends them
+// ThriftTChannelSender takes span batches and sends them
 // out on tchannel in thrift encoding
-type JaegerThriftTChannelSender struct {
+type ThriftTChannelSender struct {
 	logger   *zap.Logger
 	reporter reporter.Reporter
 }
 
-var _ consumer.TraceConsumer = (*JaegerThriftTChannelSender)(nil)
+var _ consumer.TraceConsumer = (*ThriftTChannelSender)(nil)
 
 // NewJaegerThriftTChannelSender creates new TChannel-based sender.
 func NewJaegerThriftTChannelSender(
 	reporter reporter.Reporter,
 	zlogger *zap.Logger,
-) *JaegerThriftTChannelSender {
-	return &JaegerThriftTChannelSender{
+) *ThriftTChannelSender {
+	return &ThriftTChannelSender{
 		logger:   zlogger,
 		reporter: reporter,
 	}
 }
 
 // ConsumeTraceData sends the received data to the configured Jaeger Thrift end-point.
-func (s *JaegerThriftTChannelSender) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
+func (s *ThriftTChannelSender) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	// TODO: (@pjanotti) In case of failure the translation to Jaeger Thrift is going to be remade, cache it somehow.
 	tBatch, err := jaegertranslator.OCProtoToJaegerThrift(td)
 	if err != nil {

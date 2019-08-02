@@ -12,6 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jaegerexporter
-
-// TODO: Delete me when tests are added.
+// Package jaegergrpcexporter implements an exporter that sends trace data to
+// a Jaeger collector gRPC endpoint.
+package jaegergrpcexporter
