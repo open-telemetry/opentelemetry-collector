@@ -12,6 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jaeger
-
-// TODO: Delete me when tests are added.
+// Package jaegerthrifthttpexporter implements an exporter that sends trace data
+// to a Jaeger collector Thrift over HTTP endpoint.
+package jaegerthrifthttpexporter

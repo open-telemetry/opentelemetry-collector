@@ -14,6 +14,12 @@ exporters:
   jaeger-grpc:
     endpoint: jaeger-all-in-one:14250
 
+# Alternatively, use jaeger-thrift-http with the settings below. In this case
+# update the list of exporters on the traces pipeline.
+#
+#  jaeger-thrift-http:
+#    url: http://jaeger-all-in-one:14268/api/traces
+
 processors:
   batch:
   queued-retry:

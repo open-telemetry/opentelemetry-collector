@@ -24,6 +24,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-service/exporter"
 	"github.com/open-telemetry/opentelemetry-service/exporter/jaeger/jaegergrpcexporter"
+	"github.com/open-telemetry/opentelemetry-service/exporter/jaeger/jaegerthrifthttpexporter"
 	"github.com/open-telemetry/opentelemetry-service/exporter/loggingexporter"
 	"github.com/open-telemetry/opentelemetry-service/exporter/opencensusexporter"
 	"github.com/open-telemetry/opentelemetry-service/exporter/prometheusexporter"
@@ -56,11 +57,12 @@ func TestDefaultComponents(t *testing.T) {
 		"batch":          &nodebatcher.Factory{},
 	}
 	expectedExporters := map[string]exporter.Factory{
-		"opencensus":  &opencensusexporter.Factory{},
-		"prometheus":  &prometheusexporter.Factory{},
-		"logging":     &loggingexporter.Factory{},
-		"zipkin":      &zipkinexporter.Factory{},
-		"jaeger-grpc": &jaegergrpcexporter.Factory{},
+		"opencensus":         &opencensusexporter.Factory{},
+		"prometheus":         &prometheusexporter.Factory{},
+		"logging":            &loggingexporter.Factory{},
+		"zipkin":             &zipkinexporter.Factory{},
+		"jaeger-grpc":        &jaegergrpcexporter.Factory{},
+		"jaeger-thrift-http": &jaegerthrifthttpexporter.Factory{},
 	}
 
 	receivers, processors, exporters, err := Components()
