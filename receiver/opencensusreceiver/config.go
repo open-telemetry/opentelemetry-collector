@@ -81,7 +81,7 @@ type keepaliveEnforcementPolicy struct {
 func (rOpts *Config) buildOptions() (opts []Option, err error) {
 	tlsCredsOption, hasTLSCreds, err := rOpts.TLSCredentials.ToOpenCensusReceiverServerOption()
 	if err != nil {
-		return opts, fmt.Errorf("Error initializing OpenCensus receiver %q TLS Credentials: %v", rOpts.NameVal, err)
+		return opts, fmt.Errorf("error initializing OpenCensus receiver %q TLS Credentials: %v", rOpts.NameVal, err)
 	}
 	if hasTLSCreds {
 		opts = append(opts, tlsCredsOption)
