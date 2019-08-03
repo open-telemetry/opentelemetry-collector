@@ -35,8 +35,8 @@ func TestLoggingTraceExporterNoErrors(t *testing.T) {
 	if err := lte.ConsumeTraceData(context.Background(), td); err != nil {
 		t.Fatalf("Wanted nil got %v", err)
 	}
-	if lte.TraceExporterName() != exporterName {
-		t.Errorf("Wanted %q got %q", exporterName, lte.TraceExporterName())
+	if lte.Name() != exporterName {
+		t.Errorf("Wanted %q got %q", exporterName, lte.Name())
 	}
 }
 
@@ -52,7 +52,7 @@ func TestLoggingMetricsExporterNoErrors(t *testing.T) {
 	if err := lme.ConsumeMetricsData(context.Background(), md); err != nil {
 		t.Fatalf("Wanted nil got %v", err)
 	}
-	if lme.MetricsExporterName() != exporterName {
-		t.Errorf("Wanted %q got %q", exporterName, lme.MetricsExporterName())
+	if lme.Name() != exporterName {
+		t.Errorf("Wanted %q got %q", exporterName, lme.Name())
 	}
 }

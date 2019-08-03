@@ -39,8 +39,8 @@ func TestSinkTraceExporter(t *testing.T) {
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("Mismatches responses\nGot:\n\t%v\nWant:\n\t%v\n", got, want)
 	}
-	if sink.TraceExporterName() != "sink_trace" {
-		t.Errorf("Wanted sink_trace got %s", sink.TraceExporterName())
+	if sink.Name() != "sink_trace" {
+		t.Errorf("Wanted sink_trace got %s", sink.Name())
 	}
 }
 
@@ -60,7 +60,7 @@ func TestSinkMetricsExporter(t *testing.T) {
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("Mismatches responses\nGot:\n\t%v\nWant:\n\t%v\n", got, want)
 	}
-	if sink.MetricsExporterName() != "sink_metrics" {
-		t.Errorf("Wanted sink_metrics got %s", sink.MetricsExporterName())
+	if sink.Name() != "sink_metrics" {
+		t.Errorf("Wanted sink_metrics got %s", sink.Name())
 	}
 }

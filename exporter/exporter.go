@@ -23,21 +23,14 @@ import (
 type TraceExporter interface {
 	consumer.TraceConsumer
 
-	// TraceExporterName gets the name of the trace exporter.
-	TraceExporterName() string
+	// Name gets the name of the trace exporter.
+	Name() string
 }
 
 // MetricsExporter composes MetricsConsumer with some additional exporter-specific functions.
 type MetricsExporter interface {
 	consumer.MetricsConsumer
 
-	// MetricsExporterName gets the name of the metrics exporter.
-	MetricsExporterName() string
-}
-
-// Exporter is union of trace and/or metrics exporter.
-type Exporter interface {
-	TraceExporter
-	MetricsExporter
-	Stop() error
+	// Name gets the name of the metrics exporter.
+	Name() string
 }

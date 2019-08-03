@@ -45,7 +45,7 @@ func TestMetricsExporter_Default(t *testing.T) {
 	if err := te.ConsumeMetricsData(context.Background(), td); err != nil {
 		t.Fatalf("ConsumeMetricsData returns: Want nil Got %v", err)
 	}
-	if g, w := te.MetricsExporterName(), fakeExporterName; g != w {
+	if g, w := te.Name(), fakeExporterName; g != w {
 		t.Fatalf("Name returns: Want %s Got %s", w, g)
 	}
 }

@@ -45,8 +45,8 @@ const (
 	sinkMetricsExportFormat = "sink_metrics"
 )
 
-// TraceExporterName returns the name of this TraceExporter.
-func (ste *SinkTraceExporter) TraceExporterName() string {
+// Name returns the name of this TraceExporter.
+func (ste *SinkTraceExporter) Name() string {
 	return sinkTraceExportFormat
 }
 
@@ -76,8 +76,8 @@ func (sme *SinkMetricsExporter) ConsumeMetricsData(ctx context.Context, md consu
 	return nil
 }
 
-// MetricsExporterName returns the name of this MetricsExporter.
-func (sme *SinkMetricsExporter) MetricsExporterName() string {
+// Name returns the name of this MetricsExporter.
+func (sme *SinkMetricsExporter) Name() string {
 	return sinkMetricsExportFormat
 }
 
