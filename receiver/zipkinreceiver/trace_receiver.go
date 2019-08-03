@@ -36,7 +36,6 @@ import (
 	zipkinproto "github.com/openzipkin/zipkin-go/proto/v2"
 	"go.opencensus.io/trace"
 
-	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/internal"
@@ -58,10 +57,9 @@ type ZipkinReceiver struct {
 	mu sync.Mutex
 
 	// addr is the address onto which the HTTP server will be bound
-	addr                string
-	host                receiver.Host
-	backPressureSetting configmodels.BackPressureSetting
-	nextConsumer        consumer.TraceConsumer
+	addr         string
+	host         receiver.Host
+	nextConsumer consumer.TraceConsumer
 
 	startOnce sync.Once
 	stopOnce  sync.Once
@@ -72,15 +70,14 @@ var _ receiver.TraceReceiver = (*ZipkinReceiver)(nil)
 var _ http.Handler = (*ZipkinReceiver)(nil)
 
 // New creates a new zipkinreceiver.ZipkinReceiver reference.
-func New(address string, backPressureSetting configmodels.BackPressureSetting, nextConsumer consumer.TraceConsumer) (*ZipkinReceiver, error) {
+func New(address string, nextConsumer consumer.TraceConsumer) (*ZipkinReceiver, error) {
 	if nextConsumer == nil {
 		return nil, errNilNextConsumer
 	}
 
 	zr := &ZipkinReceiver{
-		addr:                address,
-		backPressureSetting: backPressureSetting,
-		nextConsumer:        nextConsumer,
+		addr:         address,
+		nextConsumer: nextConsumer,
 	}
 	return zr, nil
 }
@@ -312,30 +309,6 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctxWithReceiverName := observability.ContextWithReceiverName(ctx, receiverTagValue)
-
-	if !zr.host.OkToIngest() {
-		var responseStatusCode int
-		var zPageMessage string
-		if zr.backPressureSetting == configmodels.EnableBackPressure {
-			responseStatusCode = http.StatusServiceUnavailable
-			zPageMessage = "Host blocked ingestion. Back pressure is ON."
-		} else {
-			responseStatusCode = http.StatusAccepted
-			zPageMessage = "Host blocked ingestion. Back pressure is OFF."
-		}
-
-		// Internal z-page status does not depend on backpressure setting.
-		span.SetStatus(trace.Status{
-			Code:    trace.StatusCodeUnavailable,
-			Message: zPageMessage,
-		})
-
-		observability.RecordIngestionBlockedMetrics(
-			ctxWithReceiverName,
-			zr.backPressureSetting)
-		w.WriteHeader(responseStatusCode)
-		return
-	}
 
 	pr := processBodyIfNecessary(r)
 	slurp, _ := ioutil.ReadAll(pr)

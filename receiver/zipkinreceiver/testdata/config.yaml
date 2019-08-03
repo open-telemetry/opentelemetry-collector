@@ -2,7 +2,6 @@ receivers:
   zipkin:
   zipkin/customname:
     endpoint: "127.0.0.1:8765"
-    disable-backpressure: true
 
 processors:
   exampleprocessor:

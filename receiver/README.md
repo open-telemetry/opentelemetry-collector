@@ -16,8 +16,7 @@ Supported receivers (sorted alphabetically):
 
 ## Configuring Receiver(s)
 TODO - Add what a fullname is and how that is referenced in other parts of the
-configuration. Describe the common receiver settings: endpoint, disabled and
-disable-backpressure.
+configuration. Describe the common receiver settings: endpoint, disabled, etc.
 
 ## <a name="opencensus"></a>OpenCensus Receiver
 **Traces and metrics are supported.**

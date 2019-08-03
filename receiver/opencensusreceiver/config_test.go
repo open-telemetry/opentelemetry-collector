@@ -41,7 +41,7 @@ func TestLoadConfig(t *testing.T) {
 
 	// Currently disabled receivers are removed from the total list of receivers so 'opencensus/disabled' doesn't
 	// contribute to the count.
-	assert.Equal(t, len(cfg.Receivers), 5)
+	assert.Equal(t, len(cfg.Receivers), 4)
 
 	r0 := cfg.Receivers["opencensus"]
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
@@ -49,10 +49,9 @@ func TestLoadConfig(t *testing.T) {
 	r1 := cfg.Receivers["opencensus/customname"].(*Config)
 	assert.Equal(t, r1.ReceiverSettings,
 		configmodels.ReceiverSettings{
-			TypeVal:             typeStr,
-			NameVal:             "opencensus/customname",
-			Endpoint:            "0.0.0.0:9090",
-			DisableBackPressure: true,
+			TypeVal:  typeStr,
+			NameVal:  "opencensus/customname",
+			Endpoint: "0.0.0.0:9090",
 		})
 
 	r2 := cfg.Receivers["opencensus/keepalive"].(*Config)
@@ -78,28 +77,10 @@ func TestLoadConfig(t *testing.T) {
 			},
 		})
 
-	r3 := cfg.Receivers["opencensus/nobackpressure"].(*Config)
-	assert.Equal(t, r3,
-		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal:             typeStr,
-				NameVal:             "opencensus/nobackpressure",
-				Endpoint:            "127.0.0.1:55678",
-				DisableBackPressure: true,
-			},
-			MaxRecvMsgSizeMiB:    32,
-			MaxConcurrentStreams: 16,
-			Keepalive: &serverParametersAndEnforcementPolicy{
-				ServerParameters: &keepaliveServerParameters{
-					MaxConnectionIdle: 10 * time.Second,
-				},
-			},
-		})
-
 	// TODO(ccaraman): Once the config loader checks for the files existence, this test may fail and require
 	// 	use of fake cert/key for test purposes.
-	r4 := cfg.Receivers["opencensus/tlscredentials"].(*Config)
-	assert.Equal(t, r4,
+	r3 := cfg.Receivers["opencensus/tlscredentials"].(*Config)
+	assert.Equal(t, r3,
 		&Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal:  typeStr,

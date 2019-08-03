@@ -24,7 +24,6 @@ import (
 
 // MockHost mocks a receiver.ReceiverHost for test purposes.
 type MockHost struct {
-	okToIngest bool
 }
 
 var _ receiver.Host = (*MockHost)(nil)
@@ -42,22 +41,8 @@ func (mh *MockHost) ReportFatalError(err error) {
 	// Do nothing for now.
 }
 
-// OkToIngest returns true when the receiver can inject the received data
-// into the pipeline and false when it should drop the data and report
-// error to the client.
-func (mh *MockHost) OkToIngest() bool {
-	return mh.okToIngest
-}
-
 // NewMockHost returns a new instance of MockHost with proper defaults for most
 // tests.
 func NewMockHost() receiver.Host {
-	return &MockHost{
-		okToIngest: true,
-	}
-}
-
-// SetOkToIngest sets the value to be returned by OkToIngest method.
-func (mh *MockHost) SetOkToIngest(value bool) {
-	mh.okToIngest = value
+	return &MockHost{}
 }
