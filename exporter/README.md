@@ -5,27 +5,28 @@ Below is the list of exporters directly supported by the OpenTelemetry Service.
 * [Jaeger](#jaeger)
 * [Logging](#logging)
 * [OpenCensus](#opencensus)
+  * [Configuration](#opencensus-configuration)
 * [Prometheus](#prometheus)
 * [Zipkin](#zipkin)
 
 The [contributors repository](https://github.com/open-telemetry/opentelemetry-service-contrib)
  has more exporters that can be added to custom builds of the service.
 
-## <a name="jaeger"></a>Jaeger 
+## <a name="jaeger"></a>Jaeger
 
-Exports trace data to [Jaeger](https://www.jaegertracing.io/) collectors 
+Exports trace data to [Jaeger](https://www.jaegertracing.io/) collectors
 accepting one of the following protocols:
 
 * [gRPC](#jaeger-grpc)
 
-### Configuration
+### <a name="jaeger-configuration"></a>Configuration
 
 Each different supported protocol has its own configuration settings.
 
 #### <a name="jaeger-grpc"></a>gRPC
 
-* `endpoint:` target to which the exporter is going to send Jaeger trace data, 
-using the gRPC protocol. The valid syntax is described at 
+* `endpoint:` target to which the exporter is going to send Jaeger trace data,
+using the gRPC protocol. The valid syntax is described at
 https://github.com/grpc/grpc/blob/master/doc/naming.md
 
 Example:
@@ -37,13 +38,48 @@ exporters:
 ```
 
 ## <a name="logging"></a>Logging
-TODO: document settings 
+TODO: document settings
 
 ## <a name="opencensus"></a>OpenCensus
-TODO: document settings 
+Exports traces and/or metrics to another OTel-Svc endpoint via gRPC.
+
+### <a name="opencensus-configuration"></a>Configuration
+
+* `endpoint`: target to which the exporter is going to send traces or metrics,
+using the gRPC protocol. The valid syntax is described at
+https://github.com/grpc/grpc/blob/master/doc/naming.md
+
+* `compression`: compression key for supported compression types within
+opencensus collector. Currently the only supported mode is `gzip`.
+
+* `headers`: the headers associated with gRPC requests.
+
+* `num-workers`: number of workers that send the gRPC requests.
+
+* `secure`: whether to enable client transport security for the exporter's gRPC
+connection. See [grpc.WithInsecure()](https://godoc.org/google.golang.org/grpc#WithInsecure).
+
+* `cert-pem-file`: certificate file for TLS credentials of gRPC client. Should
+only be used if `secure` is set to true.
+
+* `reconnection-delay`: time period between each reconnection performed by the
+exporter.
+
+* `keepalive`: keepalive parameters for client gRPC. See
+[grpc.WithKeepaliveParams()](https://godoc.org/google.golang.org/grpc#WithKeepaliveParams).
+
+Example:
+
+```yaml
+exporters:
+  opencensus:
+    endpoint: 127.0.0.1:14250
+    reconnection-delay: 60s
+    secure: false
+```
 
 ## <a name="prometheus"></a>Prometheus
-TODO: document settings 
+TODO: document settings
 
 ## <a name="zipkin"></a>Zipkin
 Exports trace data to a [Zipkin](https://zipkin.io/) back-end.
