@@ -25,6 +25,15 @@ receivers:
       enforcement-policy:
         min-time: 10s
         permit-without-stream: true
+  # The following demonstrates how to set maximum limits on stream, message size and connection idle time.
+  # Note: The test yaml has demonstrated configuration on a grouped by their structure; however, all of the settings can
+  # be mix and matched like adding the maximum connection idle setting in this example.
+  opencensus/msg-size-conc-connect-max-idle:
+    max-recv-msg-size-mib: 32
+    max-concurrent-streams: 16
+    keepalive:
+      server-parameters:
+        max-connection-idle: 10s
   # The following entry demonstrates how to specify TLS credentials for the server.
   # Note: These files do not exist. If the receiver is started with this configuration, it will fail.
   opencensus/tlscredentials:
