@@ -176,9 +176,10 @@ func TestDecodeConfig_Invalid(t *testing.T) {
 	}{
 		{name: "empty-config"},
 		{name: "missing-all-sections"},
+		{name: "missing-enabled-exporters", expected: errMissingExporters},
 		{name: "missing-enabled-receivers", expected: errMissingReceivers},
+		{name: "missing-exporters", expected: errMissingExporters},
 		{name: "missing-receivers", expected: errMissingReceivers},
-		{name: "missing-exporters"},
 		{name: "missing-processors"},
 		{name: "invalid-receiver-name"},
 		{name: "invalid-receiver-reference", expected: errPipelineReceiverNotExists},

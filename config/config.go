@@ -56,7 +56,7 @@ const (
 	errMetricPipelineCannotHaveProcessors
 	errUnmarshalError
 	errMissingReceivers
-	// TODO(ccaraman): Add an error for missing Processors with corresponding test cases.
+	errMissingExporters
 )
 
 type configError struct {
@@ -186,10 +186,6 @@ func loadReceivers(v *viper.Viper, factories map[string]receiver.Factory) (confi
 		}
 	}
 
-	// This boolean is used to track if there are any enabled receivers. If there are none at the end of loading
-	// all of the receivers, throw an error.
-	enabledReceiver := false
-
 	// Prepare resulting map
 	receivers := make(configmodels.Receivers)
 
@@ -245,19 +241,8 @@ func loadReceivers(v *viper.Viper, factories map[string]receiver.Factory) (confi
 				msg:  fmt.Sprintf("duplicate receiver name %q", fullName),
 			}
 		}
-
-		// Or'ing the enabled flag for all receivers will return true if at least one is enabled.
-		enabledReceiver = enabledReceiver || receiverCfg.IsEnabled()
-
 		receivers[fullName] = receiverCfg
-	}
 
-	// There must be at least one enabled receiver for the config to be valid.
-	if !enabledReceiver {
-		return nil, &configError{
-			code: errMissingReceivers,
-			msg:  "no enabled receivers specified in config",
-		}
 	}
 
 	return receivers, nil
@@ -269,6 +254,14 @@ func loadExporters(v *viper.Viper, factories map[string]exporter.Factory) (confi
 
 	// Get the map of "exporters" sub-keys.
 	keyMap := v.GetStringMap(exportersKeyName)
+
+	// There is no default exporter. The configuration must specify at least one exporter to enable functionality.
+	if len(keyMap) == 0 {
+		return nil, &configError{
+			code: errMissingExporters,
+			msg:  "no exporters specified in config",
+		}
+	}
 
 	// Prepare resulting map
 	exporters := make(configmodels.Exporters)
@@ -447,8 +440,12 @@ func validateConfig(cfg *configmodels.Config, logger *zap.Logger) error {
 		return err
 	}
 
-	validateReceivers(cfg)
-	validateExporters(cfg)
+	if err := validateReceivers(cfg); err != nil {
+		return err
+	}
+	if err := validateExporters(cfg); err != nil {
+		return err
+	}
 	validateProcessors(cfg)
 
 	return nil
@@ -624,25 +621,41 @@ func validatePipelineProcessors(
 	return nil
 }
 
-// TODO(ccaraman): Determine if there a way to consolidate the validate receivers apart of the loadReceivers method.
-//	 Currently, validateReceivers needs to be invoked after validatePipelineReceivers because that bit of
-//	 code checks if a receiver is enabled prior to finalizing the pipelines.
-func validateReceivers(cfg *configmodels.Config) {
+func validateReceivers(cfg *configmodels.Config) error {
 	// Remove disabled receivers.
 	for name, rcv := range cfg.Receivers {
 		if !rcv.IsEnabled() {
 			delete(cfg.Receivers, name)
 		}
 	}
+
+	// Currently there is no default receiver enabled. The configuration must specify at least one enabled receiver to
+	// be valid.
+	if len(cfg.Receivers) == 0 {
+		return &configError{
+			code: errMissingReceivers,
+			msg:  "no enabled receivers specified in config",
+		}
+	}
+	return nil
 }
 
-func validateExporters(cfg *configmodels.Config) {
+func validateExporters(cfg *configmodels.Config) error {
 	// Remove disabled exporters.
 	for name, rcv := range cfg.Exporters {
 		if !rcv.IsEnabled() {
 			delete(cfg.Exporters, name)
 		}
 	}
+
+	// There must be at least one enabled exporter to be considered a valid configuration.
+	if len(cfg.Exporters) == 0 {
+		return &configError{
+			code: errMissingExporters,
+			msg:  "no enabled exporters specified in config",
+		}
+	}
+	return nil
 }
 
 func validateProcessors(cfg *configmodels.Config) {
