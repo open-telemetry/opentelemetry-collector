@@ -51,9 +51,9 @@ func noopStopFunc() error {
 }
 
 // CreateTraceExporter creates a trace exporter based on this config.
-func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Exporter) (consumer.TraceConsumer, exporter.StopFunc, error) {
+func (f *Factory) CreateTraceExporter(logger *zap.Logger, cfg configmodels.Exporter) (consumer.TraceConsumer, exporter.StopFunc, error) {
 
-	lexp, err := NewTraceExporter(logger)
+	lexp, err := NewTraceExporter(cfg.Name(), logger)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -62,7 +62,7 @@ func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Ex
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
 func (f *Factory) CreateMetricsExporter(logger *zap.Logger, cfg configmodels.Exporter) (consumer.MetricsConsumer, exporter.StopFunc, error) {
-	lexp, err := NewMetricsExporter(logger)
+	lexp, err := NewMetricsExporter(cfg.Name(), logger)
 	if err != nil {
 		return nil, nil, err
 	}

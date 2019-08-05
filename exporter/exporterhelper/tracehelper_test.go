@@ -55,8 +55,8 @@ func TestTraceExporter_Default(t *testing.T) {
 	if err := te.ConsumeTraceData(context.Background(), td); err != nil {
 		t.Fatalf("ConsumeTraceData returns: Want nil Got %v", err)
 	}
-	if g, w := te.TraceExportFormat(), fakeExporterName; g != w {
-		t.Fatalf("TraceExportFormat returns: Want %s Got %s", w, g)
+	if g, w := te.Name(), fakeExporterName; g != w {
+		t.Fatalf("Name returns: Want %s Got %s", w, g)
 	}
 }
 
@@ -142,10 +142,10 @@ func checkRecordedMetricsForTraceExporter(t *testing.T, te exporter.TraceExporte
 		}
 	}
 
-	if err := observabilitytest.CheckValueViewExporterReceivedSpans(fakeReceiverName, te.TraceExportFormat(), numBatches*len(spans)); err != nil {
+	if err := observabilitytest.CheckValueViewExporterReceivedSpans(fakeReceiverName, te.Name(), numBatches*len(spans)); err != nil {
 		t.Fatalf("CheckValueViewExporterReceivedSpans: Want nil Got %v", err)
 	}
-	if err := observabilitytest.CheckValueViewExporterDroppedSpans(fakeReceiverName, te.TraceExportFormat(), numBatches*droppedSpans); err != nil {
+	if err := observabilitytest.CheckValueViewExporterDroppedSpans(fakeReceiverName, te.Name(), numBatches*droppedSpans); err != nil {
 		t.Fatalf("CheckValueViewExporterDroppedSpans: Want nil Got %v", err)
 	}
 }

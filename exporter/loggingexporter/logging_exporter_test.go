@@ -24,7 +24,8 @@ import (
 )
 
 func TestLoggingTraceExporterNoErrors(t *testing.T) {
-	lte, err := NewTraceExporter(zap.NewNop())
+	const exporterName = "test_logging_exporter"
+	lte, err := NewTraceExporter(exporterName, zap.NewNop())
 	if err != nil {
 		t.Fatalf("Wanted nil got %v", err)
 	}
@@ -34,13 +35,14 @@ func TestLoggingTraceExporterNoErrors(t *testing.T) {
 	if err := lte.ConsumeTraceData(context.Background(), td); err != nil {
 		t.Fatalf("Wanted nil got %v", err)
 	}
-	if lte.TraceExportFormat() != "logging_trace" {
-		t.Errorf("Wanted logging_trace got %v", lte.TraceExportFormat())
+	if lte.Name() != exporterName {
+		t.Errorf("Wanted %q got %q", exporterName, lte.Name())
 	}
 }
 
 func TestLoggingMetricsExporterNoErrors(t *testing.T) {
-	lme, err := NewMetricsExporter(zap.NewNop())
+	const exporterName = "test_metrics_exporter"
+	lme, err := NewMetricsExporter(exporterName, zap.NewNop())
 	if err != nil {
 		t.Fatalf("Wanted nil got %v", err)
 	}
@@ -50,7 +52,7 @@ func TestLoggingMetricsExporterNoErrors(t *testing.T) {
 	if err := lme.ConsumeMetricsData(context.Background(), md); err != nil {
 		t.Fatalf("Wanted nil got %v", err)
 	}
-	if lme.MetricsExportFormat() != "logging_metrics" {
-		t.Errorf("Wanted logging_metrics got %v", lme.MetricsExportFormat())
+	if lme.Name() != exporterName {
+		t.Errorf("Wanted %q got %q", exporterName, lme.Name())
 	}
 }

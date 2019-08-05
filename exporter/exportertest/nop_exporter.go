@@ -24,7 +24,10 @@ import (
 // NopExporterOption represents options that can be applied to a NopExporter.
 type NopExporterOption func(*nopExporter)
 
-type nopExporter struct{ retError error }
+type nopExporter struct {
+	name     string
+	retError error
+}
 
 var _ exporter.TraceExporter = (*nopExporter)(nil)
 var _ exporter.MetricsExporter = (*nopExporter)(nil)
@@ -38,26 +41,22 @@ func (ne *nopExporter) ConsumeMetricsData(ctx context.Context, md consumerdata.M
 }
 
 const (
-	nopTraceExportFormat   = "nop_trace"
-	nopMetricsExportFormat = "nop_metrics"
+	nopTraceExporterName   = "nop_trace"
+	nopMetricsExporterName = "nop_metrics"
 )
 
-func (ne *nopExporter) TraceExportFormat() string {
-	return nopTraceExportFormat
-}
-
-func (ne *nopExporter) MetricsExportFormat() string {
-	return nopMetricsExportFormat
+func (ne *nopExporter) Name() string {
+	return ne.name
 }
 
 // NewNopTraceExporter creates an TraceExporter that just drops the received data.
 func NewNopTraceExporter(options ...NopExporterOption) exporter.TraceExporter {
-	return newNopExporter(options...)
+	return newNopTraceExporter(options...)
 }
 
 // NewNopMetricsExporter creates an MetricsExporter that just drops the received data.
 func NewNopMetricsExporter(options ...NopExporterOption) exporter.MetricsExporter {
-	return newNopExporter(options...)
+	return newNopMetricsExporter(options...)
 }
 
 // WithReturnError returns a NopExporterOption that enforces the nop Exporters to return the given error.
@@ -67,8 +66,20 @@ func WithReturnError(retError error) NopExporterOption {
 	}
 }
 
-func newNopExporter(options ...NopExporterOption) *nopExporter {
-	ne := new(nopExporter)
+func newNopTraceExporter(options ...NopExporterOption) *nopExporter {
+	ne := &nopExporter{
+		name: nopTraceExporterName,
+	}
+	for _, opt := range options {
+		opt(ne)
+	}
+	return ne
+}
+
+func newNopMetricsExporter(options ...NopExporterOption) *nopExporter {
+	ne := &nopExporter{
+		name: nopMetricsExporterName,
+	}
 	for _, opt := range options {
 		opt(ne)
 	}

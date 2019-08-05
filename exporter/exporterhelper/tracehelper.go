@@ -41,7 +41,7 @@ func (te *traceExporter) ConsumeTraceData(ctx context.Context, td consumerdata.T
 	return err
 }
 
-func (te *traceExporter) TraceExportFormat() string {
+func (te *traceExporter) Name() string {
 	return te.exporterName
 }
 
