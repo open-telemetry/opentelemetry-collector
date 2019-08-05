@@ -36,18 +36,6 @@ type KeepaliveConfig struct {
 	PermitWithoutStream bool          `mapstructure:"permit-without-stream,omitempty"`
 }
 
-type opencensusConfig struct {
-	Endpoint            string            `mapstructure:"endpoint,omitempty"`
-	Compression         string            `mapstructure:"compression,omitempty"`
-	Headers             map[string]string `mapstructure:"headers,omitempty"`
-	NumWorkers          int               `mapstructure:"num-workers,omitempty"`
-	CertPemFile         string            `mapstructure:"cert-pem-file,omitempty"`
-	UseSecure           bool              `mapstructure:"secure,omitempty"`
-	ReconnectionDelay   time.Duration     `mapstructure:"reconnection-delay,omitempty"`
-	KeepaliveParameters *KeepaliveConfig  `mapstructure:"keepalive,omitempty"`
-	// TODO: service name options.
-}
-
 type ocagentExporter struct {
 	exporters chan *ocagent.Exporter
 }

@@ -65,12 +65,14 @@ func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Ex
 		return nil, nil, err
 	}
 	oce, err := f.createOCAgentExporter(logger, ocac, opts)
+	if err != nil {
+		return nil, nil, err
+	}
 	oexp, err := exporterhelper.NewTraceExporter(
 		"oc_trace",
 		oce.PushTraceData,
 		exporterhelper.WithSpanName("ocservice.exporter.OpenCensus.ConsumeTraceData"),
 		exporterhelper.WithRecordMetrics(true))
-
 	if err != nil {
 		return nil, nil, err
 	}
@@ -163,6 +165,9 @@ func (f *Factory) CreateMetricsExporter(logger *zap.Logger, config configmodels.
 		return nil, nil, err
 	}
 	oce, err := f.createOCAgentExporter(logger, ocac, opts)
+	if err != nil {
+		return nil, nil, err
+	}
 	oexp, err := exporterhelper.NewMetricsExporter(
 		"oc_metrics",
 		oce.PushMetricsData,
