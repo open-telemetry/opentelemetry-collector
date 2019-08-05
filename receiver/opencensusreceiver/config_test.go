@@ -81,9 +81,9 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, r3,
 		&Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal:             typeStr,
-				NameVal:             "opencensus/msg-size-conc-connect-max-idle",
-				Endpoint:            "127.0.0.1:55678",
+				TypeVal:  typeStr,
+				NameVal:  "opencensus/msg-size-conc-connect-max-idle",
+				Endpoint: "127.0.0.1:55678",
 			},
 			MaxRecvMsgSizeMiB:    32,
 			MaxConcurrentStreams: 16,
