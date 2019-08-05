@@ -131,12 +131,15 @@ func (oce *ocagentExporter) PushMetricsData(ctx context.Context, md consumerdata
 		return len(md.Metrics), err
 	}
 
-	_ = &agentmetricspb.ExportMetricsServiceRequest{
+	req := &agentmetricspb.ExportMetricsServiceRequest{
 		Metrics:  md.Metrics,
 		Resource: md.Resource,
 		Node:     md.Node,
 	}
-	// TODO(songya): add a new interface to ocagent exporter that accepts ExportMetricsServiceRequest
+	err := exporter.ExportMetricsServiceRequest(req)
 	oce.exporters <- exporter
+	if err != nil {
+		return len(md.Metrics), err
+	}
 	return 0, nil
 }
