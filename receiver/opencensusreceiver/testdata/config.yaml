@@ -1,7 +1,7 @@
 receivers:
   # The following entry initializes the default OpenCensus receiver.
   # The default values are specified here
-  #  https://github.com/open-telemetry/opentelemetry-service/blob/71589202609d7e787244076b631b45e219101867/receiver/opencensusreceiver/factory.go#L47-L56
+  # https://github.com/open-telemetry/opentelemetry-service/blob/71589202609d7e787244076b631b45e219101867/receiver/opencensusreceiver/factory.go#L47-L56
   # The full name of this receiver is `opencensus` and can be referenced in pipelines by 'opencensus'.
   opencensus:
   # The following entry demonstrates configuring the common receiver settings:

@@ -40,6 +40,9 @@ type Config struct {
 
 	// MaxConcurrentStreams sets the limit on the number of concurrent streams to each ServerTransport.
 	MaxConcurrentStreams uint32 `mapstructure:"max-concurrent-streams,omitempty"`
+
+	// TODO(ccaramn): Add cors-allowed-origin setting. It seems to have been accidentally forgotten
+	// during OC to OTel port.
 }
 
 // tlsCredentials holds the fields for TLS credentials
