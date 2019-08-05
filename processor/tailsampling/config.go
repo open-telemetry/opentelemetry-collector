@@ -89,7 +89,7 @@ type Config struct {
 	// ExpectedNewTracesPerSec sets the expected number of new traces sending to the tail sampling processor
 	// per second. This helps with allocating data structures with closer to actual usage size.
 	ExpectedNewTracesPerSec uint64 `mapstructure:"expected-new-traces-per-sec"`
-	// PolicyCfg sets the tail-based sampling policy which makes a sampling decision
+	// PolicyCfgs sets the tail-based sampling policy which makes a sampling decision
 	// for a given trace when requested.
-	PolicyCfg PolicyCfg `mapstructure:"policy"`
+	PolicyCfgs []PolicyCfg `mapstructure:"policies"`
 }

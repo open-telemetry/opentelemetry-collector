@@ -48,57 +48,26 @@ func TestLoadConfig(t *testing.T) {
 			DecisionWait:            10 * time.Second,
 			NumTraces:               100,
 			ExpectedNewTracesPerSec: 10,
-			PolicyCfg: PolicyCfg{
-				Name: "test-policy-1",
-				Type: AlwaysSample,
-			},
-		})
-
-	assert.Equal(t, cfg.Processors["tail-sampling/2"],
-		&Config{
-			ProcessorSettings: configmodels.ProcessorSettings{
-				TypeVal: "tail-sampling",
-				NameVal: "tail-sampling/2",
-			},
-			DecisionWait:            20 * time.Second,
-			NumTraces:               200,
-			ExpectedNewTracesPerSec: 20,
-			PolicyCfg: PolicyCfg{
-				Name:                      "test-policy-2",
-				Type:                      NumericAttributeFilter,
-				NumericAttributeFilterCfg: NumericAttributeFilterCfg{Key: "key1", MinValue: 50, MaxValue: 100},
-			},
-		})
-
-	assert.Equal(t, cfg.Processors["tail-sampling/3"],
-		&Config{
-			ProcessorSettings: configmodels.ProcessorSettings{
-				TypeVal: "tail-sampling",
-				NameVal: "tail-sampling/3",
-			},
-			DecisionWait:            30 * time.Second,
-			NumTraces:               300,
-			ExpectedNewTracesPerSec: 30,
-			PolicyCfg: PolicyCfg{
-				Name:                     "test-policy-3",
-				Type:                     StringAttributeFilter,
-				StringAttributeFilterCfg: StringAttributeFilterCfg{Key: "key2", Values: []string{"value1", "value2"}},
-			},
-		})
-
-	assert.Equal(t, cfg.Processors["tail-sampling/4"],
-		&Config{
-			ProcessorSettings: configmodels.ProcessorSettings{
-				TypeVal: "tail-sampling",
-				NameVal: "tail-sampling/4",
-			},
-			DecisionWait:            40 * time.Second,
-			NumTraces:               400,
-			ExpectedNewTracesPerSec: 40,
-			PolicyCfg: PolicyCfg{
-				Name:                  "test-policy-4",
-				Type:                  RateLimitingFilter,
-				RateLimitingFilterCfg: RateLimitingFilterCfg{SpansPerSecond: 35},
+			PolicyCfgs: []PolicyCfg{
+				{
+					Name: "test-policy-1",
+					Type: AlwaysSample,
+				},
+				{
+					Name:                      "test-policy-2",
+					Type:                      NumericAttributeFilter,
+					NumericAttributeFilterCfg: NumericAttributeFilterCfg{Key: "key1", MinValue: 50, MaxValue: 100},
+				},
+				{
+					Name:                     "test-policy-3",
+					Type:                     StringAttributeFilter,
+					StringAttributeFilterCfg: StringAttributeFilterCfg{Key: "key2", Values: []string{"value1", "value2"}},
+				},
+				{
+					Name:                  "test-policy-4",
+					Type:                  RateLimitingFilter,
+					RateLimitingFilterCfg: RateLimitingFilterCfg{SpansPerSecond: 35},
+				},
 			},
 		})
 }

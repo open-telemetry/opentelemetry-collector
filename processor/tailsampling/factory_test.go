@@ -36,9 +36,11 @@ func TestCreateProcessor(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	// Manually set required fields
 	cfg.ExpectedNewTracesPerSec = 64
-	cfg.PolicyCfg = PolicyCfg{
-		Name: "test-policy",
-		Type: AlwaysSample,
+	cfg.PolicyCfgs = []PolicyCfg{
+		{
+			Name: "test-policy",
+			Type: AlwaysSample,
+		},
 	}
 
 	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), cfg)

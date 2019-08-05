@@ -35,7 +35,7 @@ const (
 	defaultTestDecisionWait = 30 * time.Second
 )
 
-var testPolicy = PolicyCfg{Name: "test-policy", Type: AlwaysSample}
+var testPolicy = []PolicyCfg{{Name: "test-policy", Type: AlwaysSample}}
 
 func TestSequentialTraceArrival(t *testing.T) {
 	traceIds, batches := generateIdsAndBatches(128)
@@ -43,7 +43,7 @@ func TestSequentialTraceArrival(t *testing.T) {
 		DecisionWait:            defaultTestDecisionWait,
 		NumTraces:               uint64(2 * len(traceIds)),
 		ExpectedNewTracesPerSec: 64,
-		PolicyCfg:               testPolicy,
+		PolicyCfgs:              testPolicy,
 	}
 	sp, _ := NewTraceProcessor(zap.NewNop(), &exportertest.SinkTraceExporter{}, cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
@@ -70,7 +70,7 @@ func TestConcurrentTraceArrival(t *testing.T) {
 		DecisionWait:            defaultTestDecisionWait,
 		NumTraces:               uint64(2 * len(traceIds)),
 		ExpectedNewTracesPerSec: 64,
-		PolicyCfg:               testPolicy,
+		PolicyCfgs:              testPolicy,
 	}
 	sp, _ := NewTraceProcessor(zap.NewNop(), &exportertest.SinkTraceExporter{}, cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
@@ -109,7 +109,7 @@ func TestSequentialTraceMapSize(t *testing.T) {
 		DecisionWait:            defaultTestDecisionWait,
 		NumTraces:               uint64(maxSize),
 		ExpectedNewTracesPerSec: 64,
-		PolicyCfg:               testPolicy,
+		PolicyCfgs:              testPolicy,
 	}
 	sp, _ := NewTraceProcessor(zap.NewNop(), &exportertest.SinkTraceExporter{}, cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
@@ -133,7 +133,7 @@ func TestConcurrentTraceMapSize(t *testing.T) {
 		DecisionWait:            defaultTestDecisionWait,
 		NumTraces:               uint64(maxSize),
 		ExpectedNewTracesPerSec: 64,
-		PolicyCfg:               testPolicy,
+		PolicyCfgs:              testPolicy,
 	}
 	sp, _ := NewTraceProcessor(zap.NewNop(), &exportertest.SinkTraceExporter{}, cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
@@ -173,7 +173,7 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 		maxNumTraces:    maxSize,
 		logger:          zap.NewNop(),
 		decisionBatcher: newSyncIDBatcher(decisionWaitSeconds),
-		policy:          &Policy{Name: "mock-policy", Evaluator: mpe, ctx: context.TODO()},
+		policies:        []*Policy{{Name: "mock-policy", Evaluator: mpe, ctx: context.TODO()}},
 		deleteChan:      make(chan traceKey, maxSize),
 		policyTicker:    mtt,
 	}

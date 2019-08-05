@@ -9,42 +9,31 @@ processors:
     decision-wait: 10s
     num-traces: 100
     expected-new-traces-per-sec: 10
-    policy:
-      name: test-policy-1
-      type: always-sample
-  tail-sampling/2:
-    decision-wait: 20s
-    num-traces: 200
-    expected-new-traces-per-sec: 20
-    policy:
-      name: test-policy-2
-      type: numeric-attribute-filter
-      numeric-attribute-filter:
-        key: key1
-        min-value: 50
-        max-value: 100
-  tail-sampling/3:
-    decision-wait: 30s
-    num-traces: 300
-    expected-new-traces-per-sec: 30
-    policy:
-      name: test-policy-3
-      type: string-attribute-filter
-      string-attribute-filter:
-        key: key2
-        values: [value1, value2]
-  tail-sampling/4:
-    decision-wait: 40s
-    num-traces: 400
-    expected-new-traces-per-sec: 40
-    policy:
-      name: test-policy-4
-      type: rate-limiting-filter
-      rate-limiting-filter:
-        spans-per-second: 35
+    policies:
+      [
+          {
+            name: test-policy-1,
+            type: always-sample
+          },
+          {
+            name: test-policy-2,
+            type: numeric-attribute-filter,
+            numeric-attribute-filter: {key: key1, min-value: 50, max-value: 100}
+          },
+          {
+            name: test-policy-3,
+            type: string-attribute-filter,
+            string-attribute-filter: {key: key2, values: [value1, value2]}
+          },
+          {
+            name: test-policy-4,
+            type: rate-limiting-filter,
+            rate-limiting-filter: {spans-per-second: 35}
+         }
+      ]
 
 pipelines:
   traces:
     receivers: [examplereceiver]
-    processors: [tail-sampling, tail-sampling/2, tail-sampling/3, tail-sampling/4]
+    processors: [tail-sampling]
     exporters: [exampleexporter]
