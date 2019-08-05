@@ -74,12 +74,6 @@ func TestExportersBuilder_Build(t *testing.T) {
 		assert.Equal(t, err.Error(), "rpc error: code = Canceled desc = grpc: the client connection is closing")
 	}
 
-	// Now change only pipeline data type to "metrics" and make sure exporter builder
-	// now fails (because opencensus exporter does not currently support metrics).
-	cfg.Pipelines["trace"].InputType = configmodels.MetricsDataType
-	_, err = NewExportersBuilder(zap.NewNop(), cfg, exporterFactories).Build()
-	assert.NotNil(t, err)
-
 	// Remove the pipeline so that the exporter is not attached to any pipeline.
 	// This should result in creating an exporter that has none of consumption
 	// functions set.
