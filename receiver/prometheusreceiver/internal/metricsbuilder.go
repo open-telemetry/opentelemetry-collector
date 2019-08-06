@@ -41,7 +41,6 @@ var errEmptyBoundaryLabel = errors.New("BucketLabel or QuantileLabel is empty")
 var dummyMetrics = make([]*metricspb.Metric, 0)
 
 type metricBuilder struct {
-	ts                int64
 	hasData           bool
 	hasInternalMetric bool
 	mc                MetadataCache

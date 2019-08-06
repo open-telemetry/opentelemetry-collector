@@ -1028,7 +1028,7 @@ func TestEndToEnd(t *testing.T) {
 
 	// loop to validate outputs for each targets
 	for _, tt := range targets {
-		result, _ := results[tt.name]
+		result := results[tt.name]
 		t.Run(fmt.Sprintf("verify-%s-results", tt.name), func(t *testing.T) {
 			tt.validateFunc(t, tt, result)
 		})

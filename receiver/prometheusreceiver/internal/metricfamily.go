@@ -41,7 +41,6 @@ type metricFamily struct {
 	labelKeys        map[string]bool
 	labelKeysOrdered []string
 	metadata         *scrape.MetricMetadata
-	currentMetric    *metricspb.Metric
 	groupOrders      map[string]int
 	groups           map[string]*metricGroup
 }

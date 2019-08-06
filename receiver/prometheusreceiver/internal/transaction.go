@@ -138,7 +138,7 @@ func (tr *transaction) Commit() error {
 		return err
 	}
 
-	if metrics != nil && len(metrics) > 0 {
+	if len(metrics) > 0 {
 		if tr.jobsMap != nil {
 			metrics = NewMetricsAdjuster(tr.jobsMap.get(tr.job, tr.instance), tr.logger).AdjustMetrics(metrics)
 		}

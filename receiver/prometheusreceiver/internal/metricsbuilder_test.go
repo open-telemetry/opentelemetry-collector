@@ -18,7 +18,6 @@ import (
 	"reflect"
 	"testing"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/google/go-cmp/cmp"
@@ -46,13 +45,6 @@ var testMetadata = map[string]scrape.MetricMetadata{
 	"poor_name_count": {Metric: "poor_name_count", Type: textparse.MetricTypeCounter, Help: "", Unit: ""},
 	"up":              {Metric: "up", Type: textparse.MetricTypeCounter, Help: "", Unit: ""},
 	"scrape_foo":      {Metric: "scrape_foo", Type: textparse.MetricTypeCounter, Help: "", Unit: ""},
-}
-
-var testNode = &commonpb.Node{
-	ServiceInfo: &commonpb.ServiceInfo{Name: "myjob"},
-	Identifier: &commonpb.ProcessIdentifier{
-		HostName: "example.com",
-	},
 }
 
 type testDataPoint struct {
