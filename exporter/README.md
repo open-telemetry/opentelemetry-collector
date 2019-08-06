@@ -5,7 +5,6 @@ Below is the list of exporters directly supported by the OpenTelemetry Service.
 * [Jaeger](#jaeger)
 * [Logging](#logging)
 * [OpenCensus](#opencensus)
-  * [Configuration](#opencensus-configuration)
 * [Prometheus](#prometheus)
 * [Zipkin](#zipkin)
 
