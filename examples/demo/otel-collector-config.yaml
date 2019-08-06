@@ -6,6 +6,11 @@ receivers:
     endpoint: 0.0.0.0:55678
 
 exporters:
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+    namespace: promexample
+    const_labels:
+      label1: value1
   logging:
 
   zipkin:
@@ -29,3 +34,6 @@ pipelines:
     receivers: [opencensus]
     exporters: [logging, zipkin, jaeger-grpc]
     processors: [batch, queued-retry]
+  metrics:
+    receivers: [opencensus]
+    exporters: [logging,prometheus]
