@@ -45,9 +45,9 @@ must be unique. For the example above:
 - Receiver 1 has full name `examplereceiver`.
 - Receiver 2 has full name `examplereceiver/settings`.
 
-Most receiver expose a setting to disable it, by default receivers are enabled.
-At least one receiver has to be enabled for this part of the configuration to be
-valid.
+All receivers expose a setting to disable it, by default receivers are enabled.
+At least one receiver must be enabled per [pipeline](docs/pipelines.md) to be a
+valid configuration.
 
 ## <a name="opencensus"></a>OpenCensus Receiver
 **Traces and metrics are supported.**
@@ -56,17 +56,17 @@ This receiver receives trace and metrics from [OpenCensus](https://opencensus.io
 instrumented applications. It translates them into the internal format sent to
 processors and exporters in the pipeline.
 
-To get started, all that is required is enable the OpenCensus receiver is to
+To get started, all that is required to enable the OpenCensus receiver is to
 include it in the receiver definitions. This will enable the default values as
-specified [here](https://github.com/open-telemetry/opentelemetry-service/blob/71589202609d7e787244076b631b45e219101867/receiver/opencensusreceiver/factory.go#L47-L56).
+specified [here](https://github.com/open-telemetry/opentelemetry-service/blob/master/receiver/opencensusreceiver/factory.go).
 The following is an example:
 ```yaml
 receivers:
   opencensus:
 ```
 
-The full list of settings exposed for this receiver are documented [here](https://github.com/open-telemetry/opentelemetry-service/blob/fdb5047ba75240fa3c0849474be97a3dbe213de8/receiver/opencensusreceiver/config.go#L28-L43)
-with detailed sample configurations [here](https://github.com/open-telemetry/opentelemetry-service/blob/fdb5047ba75240fa3c0849474be97a3dbe213de8/receiver/opencensusreceiver/testdata/config.yaml#L2-L53).
+The full list of settings exposed for this receiver are documented [here](https://github.com/open-telemetry/opentelemetry-service/blob/master/receiver/opencensusreceiver/config.go)
+with detailed sample configurations [here](https://github.com/open-telemetry/opentelemetry-service/blob/master/receiver/opencensusreceiver/testdata/config.yaml).
 
 ### Writing with HTTP/JSON 
 // TODO(ccaraman) The cors setting wasn't ported accidentally. In a follow up
