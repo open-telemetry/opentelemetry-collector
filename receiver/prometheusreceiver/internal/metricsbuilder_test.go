@@ -25,8 +25,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/pkg/labels"
-	"github.com/prometheus/prometheus/scrape"
 	"github.com/prometheus/prometheus/pkg/textparse"
+	"github.com/prometheus/prometheus/scrape"
 )
 
 const startTs = int64(1555366610000)

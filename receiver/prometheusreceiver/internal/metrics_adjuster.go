@@ -23,7 +23,6 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"go.uber.org/zap"
-
 )
 
 // Notes on garbage collection (gc):

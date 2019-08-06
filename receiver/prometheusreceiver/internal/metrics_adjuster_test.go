@@ -15,13 +15,14 @@
 package internal
 
 import (
+	"reflect"
+	"testing"
+	"time"
+
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"go.uber.org/zap"
-	"reflect"
-	"testing"
-	"time"
 )
 
 func Test_gauge(t *testing.T) {
