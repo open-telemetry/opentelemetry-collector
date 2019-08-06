@@ -26,14 +26,14 @@ type PolicyType string
 const (
 	// AlwaysSample samples all traces, typically used for debugging.
 	AlwaysSample PolicyType = "always-sample"
-	// NumericAttributeFilter sample traces that have a given numeric attribute in a specified
+	// NumericAttribute sample traces that have a given numeric attribute in a specified
 	// range, e.g.: attribute "http.status_code" >= 399 and <= 999.
-	NumericAttributeFilter PolicyType = "numeric-attribute-filter"
-	// StringAttributeFilter sample traces that a attribute, of type string, matching
+	NumericAttribute PolicyType = "numeric-attribute"
+	// StringAttribute sample traces that a attribute, of type string, matching
 	// one of the listed values.
-	StringAttributeFilter PolicyType = "string-attribute-filter"
-	// RateLimitingFilter allows all traces until the specified limits are satisfied.
-	RateLimitingFilter PolicyType = "rate-limiting-filter"
+	StringAttribute PolicyType = "string-attribute"
+	// RateLimiting allows all traces until the specified limits are satisfied.
+	RateLimiting PolicyType = "rate-limiting"
 )
 
 // PolicyCfg holds the common configuration to all policies.
@@ -43,16 +43,16 @@ type PolicyCfg struct {
 	// Type of the policy this will be used to match the proper configuration of the policy.
 	Type PolicyType `mapstructure:"type"`
 	// Configs for numeric attribute filter sampling policy evaluator.
-	NumericAttributeFilterCfg NumericAttributeFilterCfg `mapstructure:"numeric-attribute-filter"`
+	NumericAttributeCfg NumericAttributeCfg `mapstructure:"numeric-attribute"`
 	// Configs for string attribute filter sampling policy evaluator.
-	StringAttributeFilterCfg StringAttributeFilterCfg `mapstructure:"string-attribute-filter"`
+	StringAttributeCfg StringAttributeCfg `mapstructure:"string-attribute"`
 	// Configs for rate limiting filter sampling policy evaluator.
-	RateLimitingFilterCfg RateLimitingFilterCfg `mapstructure:"rate-limiting-filter"`
+	RateLimitingCfg RateLimitingCfg `mapstructure:"rate-limiting"`
 }
 
-// NumericAttributeFilterCfg holds the configurable settings to create a numeric attribute filter
+// NumericAttributeCfg holds the configurable settings to create a numeric attribute filter
 // sampling policy evaluator.
-type NumericAttributeFilterCfg struct {
+type NumericAttributeCfg struct {
 	// Tag that the filter is going to be matching against.
 	Key string `mapstructure:"key"`
 	// MinValue is the minimum value of the attribute to be considered a match.
@@ -61,18 +61,18 @@ type NumericAttributeFilterCfg struct {
 	MaxValue int64 `mapstructure:"max-value"`
 }
 
-// StringAttributeFilterCfg holds the configurable settings to create a string attribute filter
+// StringAttributeCfg holds the configurable settings to create a string attribute filter
 // sampling policy evaluator.
-type StringAttributeFilterCfg struct {
+type StringAttributeCfg struct {
 	// Tag that the filter is going to be matching against.
 	Key string `mapstructure:"key"`
 	// Values is the set of attribute values that if any is equal to the actual attribute value to be considered a match.
 	Values []string `mapstructure:"values"`
 }
 
-// RateLimitingFilterCfg holds the configurable settings to create a rate limiting
+// RateLimitingCfg holds the configurable settings to create a rate limiting
 // sampling policy evaluator.
-type RateLimitingFilterCfg struct {
+type RateLimitingCfg struct {
 	// SpansPerSecond sets the limit on the maximum nuber of spans that can be processed each second.
 	SpansPerSecond int64 `mapstructure:"spans-per-second"`
 }

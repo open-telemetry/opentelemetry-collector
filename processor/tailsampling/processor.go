@@ -124,14 +124,14 @@ func getPolicyEvaluator(cfg *PolicyCfg) (sampling.PolicyEvaluator, error) {
 	switch cfg.Type {
 	case AlwaysSample:
 		return sampling.NewAlwaysSample(), nil
-	case NumericAttributeFilter:
-		nafCfg := cfg.NumericAttributeFilterCfg
+	case NumericAttribute:
+		nafCfg := cfg.NumericAttributeCfg
 		return sampling.NewNumericAttributeFilter(nafCfg.Key, nafCfg.MinValue, nafCfg.MaxValue), nil
-	case StringAttributeFilter:
-		safCfg := cfg.StringAttributeFilterCfg
+	case StringAttribute:
+		safCfg := cfg.StringAttributeCfg
 		return sampling.NewStringAttributeFilter(safCfg.Key, safCfg.Values), nil
-	case RateLimitingFilter:
-		rlfCfg := cfg.RateLimitingFilterCfg
+	case RateLimiting:
+		rlfCfg := cfg.RateLimitingCfg
 		return sampling.NewRateLimiting(rlfCfg.SpansPerSecond), nil
 	default:
 		return nil, fmt.Errorf("unknown sampling policy type %s", cfg.Type)

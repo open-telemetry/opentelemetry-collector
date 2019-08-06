@@ -54,19 +54,19 @@ func TestLoadConfig(t *testing.T) {
 					Type: AlwaysSample,
 				},
 				{
-					Name:                      "test-policy-2",
-					Type:                      NumericAttributeFilter,
-					NumericAttributeFilterCfg: NumericAttributeFilterCfg{Key: "key1", MinValue: 50, MaxValue: 100},
+					Name:                "test-policy-2",
+					Type:                NumericAttribute,
+					NumericAttributeCfg: NumericAttributeCfg{Key: "key1", MinValue: 50, MaxValue: 100},
 				},
 				{
-					Name:                     "test-policy-3",
-					Type:                     StringAttributeFilter,
-					StringAttributeFilterCfg: StringAttributeFilterCfg{Key: "key2", Values: []string{"value1", "value2"}},
+					Name:               "test-policy-3",
+					Type:               StringAttribute,
+					StringAttributeCfg: StringAttributeCfg{Key: "key2", Values: []string{"value1", "value2"}},
 				},
 				{
-					Name:                  "test-policy-4",
-					Type:                  RateLimitingFilter,
-					RateLimitingFilterCfg: RateLimitingFilterCfg{SpansPerSecond: 35},
+					Name:            "test-policy-4",
+					Type:            RateLimiting,
+					RateLimitingCfg: RateLimitingCfg{SpansPerSecond: 35},
 				},
 			},
 		})

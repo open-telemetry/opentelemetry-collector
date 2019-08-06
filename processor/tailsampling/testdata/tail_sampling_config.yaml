@@ -17,18 +17,18 @@ processors:
           },
           {
             name: test-policy-2,
-            type: numeric-attribute-filter,
-            numeric-attribute-filter: {key: key1, min-value: 50, max-value: 100}
+            type: numeric-attribute,
+            numeric-attribute: {key: key1, min-value: 50, max-value: 100}
           },
           {
             name: test-policy-3,
-            type: string-attribute-filter,
-            string-attribute-filter: {key: key2, values: [value1, value2]}
+            type: string-attribute,
+            string-attribute: {key: key2, values: [value1, value2]}
           },
           {
             name: test-policy-4,
-            type: rate-limiting-filter,
-            rate-limiting-filter: {spans-per-second: 35}
+            type: rate-limiting,
+            rate-limiting: {spans-per-second: 35}
          }
       ]
 
