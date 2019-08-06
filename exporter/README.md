@@ -46,26 +46,28 @@ Exports traces and/or metrics to another OTel-Svc endpoint via gRPC.
 
 * `endpoint`: target to which the exporter is going to send traces or metrics,
 using the gRPC protocol. The valid syntax is described at
-https://github.com/grpc/grpc/blob/master/doc/naming.md
+https://github.com/grpc/grpc/blob/master/doc/naming.md. Required.
 
 * `compression`: compression key for supported compression types within
-opencensus collector. Currently the only supported mode is `gzip`.
+collector. Currently the only supported mode is `gzip`. Optional.
 
-* `headers`: the headers associated with gRPC requests.
+* `headers`: the headers associated with gRPC requests. Optional.
 
-* `num-workers`: number of workers that send the gRPC requests.
+* `num-workers`: number of workers that send the gRPC requests. Optional.
 
 * `secure`: whether to enable client transport security for the exporter's gRPC
 connection. See [grpc.WithInsecure()](https://godoc.org/google.golang.org/grpc#WithInsecure).
+Optional.
 
 * `cert-pem-file`: certificate file for TLS credentials of gRPC client. Should
-only be used if `secure` is set to true.
+only be used if `secure` is set to true. Optional.
 
 * `reconnection-delay`: time period between each reconnection performed by the
-exporter.
+exporter. Optional.
 
 * `keepalive`: keepalive parameters for client gRPC. See
 [grpc.WithKeepaliveParams()](https://godoc.org/google.golang.org/grpc#WithKeepaliveParams).
+Optional.
 
 Example:
 
