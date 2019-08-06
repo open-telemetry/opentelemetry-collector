@@ -23,7 +23,7 @@ Prometheus itself can also used as an exporter, that it can expose the metrics i
 metrics endpoint, so is OpenTelemetry service. We shall be able to retain parity from the following two setups: 
 
 1. app -> prometheus -> metric-endpoint 
-2. app -> otelsvc-with-prometheus-receiver -> otelsvc-promethues-exporter-metrics-endpoint
+2. app -> otelsvc-with-prometheus-receiver -> otelsvc-prometheus-exporter-metrics-endpoint
 
 
 ## Prometheus Text Format Overview
@@ -523,8 +523,4 @@ case the receiver will produce an OpenTelemetry Summary with Snapshot set to `ni
 
 ### Others
 
-<<<<<<< HEAD
-For any other Prometheus metrics types, they will make to the [Gauge](#gague) type of Ocagent
-=======
-For any other Prometheus metrics types, they will be transformed into the OpenTelemetry [Guage](#gague) type
->>>>>>> Update README to address reviewer comments.
+For any other Prometheus metrics types, they will be transformed into the OpenTelemetry [Gauge](#gague) type

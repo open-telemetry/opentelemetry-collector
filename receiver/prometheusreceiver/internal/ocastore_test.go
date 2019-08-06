@@ -16,10 +16,9 @@ package internal
 
 import (
 	"context"
-	"testing"
-
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/scrape"
+	"testing"
 )
 
 func TestOcaStore(t *testing.T) {

@@ -17,20 +17,15 @@ package internal
 import (
 	"errors"
 	"fmt"
-	"sort"
+	"go.uber.org/zap"
 	"strconv"
 	"strings"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	
 	"github.com/golang/protobuf/ptypes/timestamp"
-	"github.com/golang/protobuf/ptypes/wrappers"
-	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/pkg/textparse"
-	"github.com/prometheus/prometheus/scrape"
-	"go.uber.org/zap"
 )
 
 const metricsSuffixCount = "_count"

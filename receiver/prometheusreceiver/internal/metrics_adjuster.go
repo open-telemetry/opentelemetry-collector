@@ -16,12 +16,14 @@ package internal
 
 import (
 	"fmt"
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/golang/protobuf/ptypes/wrappers"
-	"go.uber.org/zap"
 	"strings"
 	"sync"
 	"time"
+
+	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"github.com/golang/protobuf/ptypes/wrappers"
+	"go.uber.org/zap"
+
 )
 
 // Notes on garbage collection (gc):
@@ -140,7 +142,7 @@ func (jm *JobsMap) gc() {
 	jm.Lock()
 	defer jm.Unlock()
 	// once the structure is locked, confrim that gc() is still necessary
-	if time.Now().Sub(jm.lastGC) > jm.gcInterval {
+	if time.Since(jm.lastGC) > jm.gcInterval {
 		for sig, tsm := range jm.jobsMap {
 			if !tsm.mark {
 				delete(jm.jobsMap, sig)
@@ -154,7 +156,7 @@ func (jm *JobsMap) gc() {
 
 func (jm *JobsMap) maybeGC() {
 	// speculatively check if gc() is necessary, recheck once the structure is locked
-	if time.Now().Sub(jm.lastGC) > jm.gcInterval {
+	if time.Since(jm.lastGC) > jm.gcInterval {
 		go jm.gc()
 	}
 }
@@ -211,7 +213,7 @@ func (ma *MetricsAdjuster) AdjustMetrics(metrics []*metricspb.Metric) []*metrics
 }
 
 // Returns true if at least one of the metric's timeseries was adjusted and false if all of the
-// timeseries are an initial occurence or a reset.
+// timeseries are an initial occurrence or a reset.
 //
 // Types of metrics returned supported by prometheus:
 // - MetricDescriptor_GAUGE_DOUBLE
@@ -230,7 +232,7 @@ func (ma *MetricsAdjuster) adjustMetric(metric *metricspb.Metric) bool {
 }
 
 // Returns true if at least one of the metric's timeseries was adjusted and false if all of the
-// timeseries are an initial occurence or a reset.
+// timeseries are an initial occurrence or a reset.
 func (ma *MetricsAdjuster) adjustMetricTimeseries(metric *metricspb.Metric) bool {
 	filtered := make([]*metricspb.TimeSeries, 0, len(metric.GetTimeseries()))
 	for _, current := range metric.GetTimeseries() {
@@ -255,7 +257,7 @@ func (ma *MetricsAdjuster) adjustMetricTimeseries(metric *metricspb.Metric) bool
 	return len(filtered) > 0
 }
 
-// Returns true if 'current' was adjusted and false if 'current' is an the initial occurence or a
+// Returns true if 'current' was adjusted and false if 'current' is an the initial occurrence or a
 // reset of the timeseries.
 func (ma *MetricsAdjuster) adjustTimeseries(metricType metricspb.MetricDescriptor_Type,
 	current, initial, previous *metricspb.TimeSeries) bool {
