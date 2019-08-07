@@ -30,6 +30,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
+	"github.com/open-telemetry/opentelemetry-service/oterr"
 )
 
 func TestNewReceiver(t *testing.T) {
@@ -51,7 +52,7 @@ func TestNewReceiver(t *testing.T) {
 				port:     0,
 				category: "any",
 			},
-			wantErr: errNilNextConsumer,
+			wantErr: oterr.ErrNilNextConsumer,
 		},
 		{
 			name: "happy path",

@@ -32,6 +32,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/observability"
+	"github.com/open-telemetry/opentelemetry-service/oterr"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver/ocmetrics"
 	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver/octrace"
@@ -61,11 +62,6 @@ type Receiver struct {
 	startTraceReceiverOnce   sync.Once
 	startMetricsReceiverOnce sync.Once
 }
-
-var (
-	errAlreadyStarted = errors.New("already started")
-	errAlreadyStopped = errors.New("already stopped")
-)
 
 var _ receiver.MetricsReceiver = (*Receiver)(nil)
 var _ receiver.TraceReceiver = (*Receiver)(nil)
@@ -110,7 +106,7 @@ func (ocr *Receiver) StartTraceReception(host receiver.Host) error {
 }
 
 func (ocr *Receiver) registerTraceConsumer() error {
-	var err = errAlreadyStarted
+	var err = oterr.ErrAlreadyStarted
 
 	ocr.startTraceReceiverOnce.Do(func() {
 		ocr.traceReceiver, err = octrace.New(ocr.traceConsumer, ocr.traceReceiverOpts...)
@@ -135,7 +131,7 @@ func (ocr *Receiver) StartMetricsReception(host receiver.Host) error {
 }
 
 func (ocr *Receiver) registerMetricsConsumer() error {
-	var err = errAlreadyStarted
+	var err = oterr.ErrAlreadyStarted
 
 	ocr.startMetricsReceiverOnce.Do(func() {
 		ocr.metricsReceiver, err = ocmetrics.New(ocr.metricsConsumer, ocr.metricsReceiverOpts...)
@@ -161,7 +157,7 @@ func (ocr *Receiver) grpcServer() *grpc.Server {
 // StopTraceReception is a method to turn off receiving traces. It stops
 // metrics reception too.
 func (ocr *Receiver) StopTraceReception() error {
-	if err := ocr.stop(); err != errAlreadyStopped {
+	if err := ocr.stop(); err != oterr.ErrAlreadyStopped {
 		return err
 	}
 	return nil
@@ -170,7 +166,7 @@ func (ocr *Receiver) StopTraceReception() error {
 // StopMetricsReception is a method to turn off receiving metrics. It stops
 // trace reception too.
 func (ocr *Receiver) StopMetricsReception() error {
-	if err := ocr.stop(); err != errAlreadyStopped {
+	if err := ocr.stop(); err != oterr.ErrAlreadyStopped {
 		return err
 	}
 	return nil
@@ -181,14 +177,14 @@ func (ocr *Receiver) start() error {
 	hasConsumer := false
 	if ocr.traceConsumer != nil {
 		hasConsumer = true
-		if err := ocr.registerTraceConsumer(); err != nil && err != errAlreadyStarted {
+		if err := ocr.registerTraceConsumer(); err != nil && err != oterr.ErrAlreadyStarted {
 			return err
 		}
 	}
 
 	if ocr.metricsConsumer != nil {
 		hasConsumer = true
-		if err := ocr.registerMetricsConsumer(); err != nil && err != errAlreadyStarted {
+		if err := ocr.registerMetricsConsumer(); err != nil && err != oterr.ErrAlreadyStarted {
 			return err
 		}
 	}
@@ -197,7 +193,7 @@ func (ocr *Receiver) start() error {
 		return errors.New("cannot start receiver: no consumers were specified")
 	}
 
-	if err := ocr.startServer(); err != nil && err != errAlreadyStarted {
+	if err := ocr.startServer(); err != nil && err != oterr.ErrAlreadyStarted {
 		return err
 	}
 
@@ -211,7 +207,7 @@ func (ocr *Receiver) stop() error {
 	ocr.mu.Lock()
 	defer ocr.mu.Unlock()
 
-	var err = errAlreadyStopped
+	var err = oterr.ErrAlreadyStopped
 	ocr.stopOnce.Do(func() {
 		err = nil
 
@@ -256,7 +252,7 @@ func (ocr *Receiver) httpServer() *http.Server {
 }
 
 func (ocr *Receiver) startServer() error {
-	err := errAlreadyStarted
+	err := oterr.ErrAlreadyStarted
 	ocr.startServerOnce.Do(func() {
 		errChan := make(chan error, 1)
 		go func() {
