@@ -67,9 +67,9 @@ func (f *Factory) CreateTraceProcessor(
 		return nil, errMissingRequiredField
 	}
 
-	// Returning an error for first pr that only implements the config.
-	// Follow up PR will add functionality and replace this error with a
-	// call to instantiate a new TraceProcessor.
+	// TODO(ccaraman): Returning an error for first pr that only implements the
+	// 	config. Follow up PR will add functionality and replace this error with a
+	// 	call to instantiate a new TraceProcessor.
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
