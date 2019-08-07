@@ -24,6 +24,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
 )
 
+func TestFactory_Type(t *testing.T) {
+	factory := &Factory{}
+	assert.NotNil(t, factory)
+	assert.Equal(t, factory.Type(), typeStr)
+}
+
 func TestFactory_CreateDefaultConfig(t *testing.T) {
 	factory := &Factory{}
 	assert.NotNil(t, factory)
