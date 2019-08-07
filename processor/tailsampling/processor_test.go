@@ -23,11 +23,11 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-service/internal/collector/processor/idbatcher"
 	"github.com/open-telemetry/opentelemetry-service/internal/collector/sampling"
+	"github.com/open-telemetry/opentelemetry-service/processor"
 	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
 )
 
@@ -35,12 +35,15 @@ const (
 	defaultTestDecisionWait = 30 * time.Second
 )
 
+var testPolicy = []PolicyCfg{{Name: "test-policy", Type: AlwaysSample}}
+
 func TestSequentialTraceArrival(t *testing.T) {
 	traceIds, batches := generateIdsAndBatches(128)
 	cfg := Config{
 		DecisionWait:            defaultTestDecisionWait,
 		NumTraces:               uint64(2 * len(traceIds)),
 		ExpectedNewTracesPerSec: 64,
+		PolicyCfgs:              testPolicy,
 	}
 	sp, _ := NewTraceProcessor(zap.NewNop(), &exportertest.SinkTraceExporter{}, cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
@@ -67,6 +70,7 @@ func TestConcurrentTraceArrival(t *testing.T) {
 		DecisionWait:            defaultTestDecisionWait,
 		NumTraces:               uint64(2 * len(traceIds)),
 		ExpectedNewTracesPerSec: 64,
+		PolicyCfgs:              testPolicy,
 	}
 	sp, _ := NewTraceProcessor(zap.NewNop(), &exportertest.SinkTraceExporter{}, cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
@@ -105,6 +109,7 @@ func TestSequentialTraceMapSize(t *testing.T) {
 		DecisionWait:            defaultTestDecisionWait,
 		NumTraces:               uint64(maxSize),
 		ExpectedNewTracesPerSec: 64,
+		PolicyCfgs:              testPolicy,
 	}
 	sp, _ := NewTraceProcessor(zap.NewNop(), &exportertest.SinkTraceExporter{}, cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
@@ -128,6 +133,7 @@ func TestConcurrentTraceMapSize(t *testing.T) {
 		DecisionWait:            defaultTestDecisionWait,
 		NumTraces:               uint64(maxSize),
 		ExpectedNewTracesPerSec: 64,
+		PolicyCfgs:              testPolicy,
 	}
 	sp, _ := NewTraceProcessor(zap.NewNop(), &exportertest.SinkTraceExporter{}, cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
@@ -154,23 +160,23 @@ func TestConcurrentTraceMapSize(t *testing.T) {
 }
 
 func TestSamplingPolicyTypicalPath(t *testing.T) {
-	t.Skip("TODO(#146): add policies to TailBasedCfg and fix this test")
 	const maxSize = 100
 	const decisionWaitSeconds = 5
+	// For this test explicitly control the timer calls and batcher, and set a mock
+	// sampling policy evaluator.
 	msp := &mockSpanProcessor{}
 	mpe := &mockPolicyEvaluator{}
-	cfg := Config{
-		DecisionWait:            defaultTestDecisionWait,
-		NumTraces:               uint64(maxSize),
-		ExpectedNewTracesPerSec: 64,
-	}
-	sp, _ := NewTraceProcessor(zap.NewNop(), &exportertest.SinkTraceExporter{}, cfg)
-	tsp := sp.(*tailSamplingSpanProcessor)
-
-	// For this test  explicitly control the timer calls and batcher.
 	mtt := &manualTTicker{}
-	tsp.policyTicker = mtt
-	tsp.decisionBatcher = newSyncIDBatcher(decisionWaitSeconds)
+	tsp := &tailSamplingSpanProcessor{
+		ctx:             context.Background(),
+		nextConsumer:    msp,
+		maxNumTraces:    maxSize,
+		logger:          zap.NewNop(),
+		decisionBatcher: newSyncIDBatcher(decisionWaitSeconds),
+		policies:        []*Policy{{Name: "mock-policy", Evaluator: mpe, ctx: context.TODO()}},
+		deleteChan:      make(chan traceKey, maxSize),
+		policyTicker:    mtt,
+	}
 
 	_, batches := generateIdsAndBatches(210)
 	currItem := 0
@@ -314,7 +320,7 @@ type mockSpanProcessor struct {
 	TotalSpans int
 }
 
-var _ consumer.TraceConsumer = &mockSpanProcessor{}
+var _ processor.TraceProcessor = &mockSpanProcessor{}
 
 func (p *mockSpanProcessor) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	batchSize := len(td.Spans)

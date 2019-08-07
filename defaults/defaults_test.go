@@ -34,6 +34,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/processor/attributekeyprocessor"
 	"github.com/open-telemetry/opentelemetry-service/processor/nodebatcher"
 	"github.com/open-telemetry/opentelemetry-service/processor/queued"
+	"github.com/open-telemetry/opentelemetry-service/processor/tailsampling"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 	"github.com/open-telemetry/opentelemetry-service/receiver/jaegerreceiver"
 	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver"
@@ -55,6 +56,7 @@ func TestDefaultComponents(t *testing.T) {
 		"attribute-key":  &attributekeyprocessor.Factory{},
 		"queued-retry":   &queued.Factory{},
 		"batch":          &nodebatcher.Factory{},
+		"tail-sampling":  &tailsampling.Factory{},
 	}
 	expectedExporters := map[string]exporter.Factory{
 		"opencensus":         &opencensusexporter.Factory{},
