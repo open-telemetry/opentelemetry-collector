@@ -24,7 +24,8 @@ type Config struct {
 	// Separator is the string used to concatenate various parts of the span name.
 	// If no value is set, no separator is used between attribute values.
 	Separator string `mapstructure:"separator"`
-	// Keys represents the attribute keys to pull the values from to build the new span name.
+	// Keys represents the attribute keys to pull the values from to generate the new span name.
+	// If not all attribute keys are present in the span, no rename will occur.
 	// Note: The order in which these are specified is the order in which the new span name will
 	// be built with the attribute values.
 	// This field is required and cannot be empty.
