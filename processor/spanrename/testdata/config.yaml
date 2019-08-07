@@ -1,0 +1,37 @@
+receivers:
+  examplereceiver:
+
+processors:
+  # The following specifies the values of attribute `db.svc`, `operation`,
+  # and `id` will form the new name of the span, in that order, separated by the
+  # value `::`.
+  # Note: There is no default configuration for a span-rename. The field `keys`
+  # is required.
+  # Example:
+  # Attributes Key/Value pair
+  # { "db.svc": "location:, "operation": "get", "id": "1234"}
+  # Separator: "::"
+  # Results in the following new span name:
+  #   "location::get::1234"
+  span-rename/custom:
+    separator: "::"
+    keys: [db.svc, operation, id]
+
+  # The following specifies generating a span name with no separator.
+  # Example:
+  # Attributes Key/Value pair
+  # { "db.svc": "location:, "operation": "get", "id": "1234"}
+  # Separator: ""
+  # Results in the following new span name:
+  #   "locationget1234"
+  span-rename/no-separator:
+    keys: [db.svc, operation, id]
+
+exporters:
+  exampleexporter:
+
+pipelines:
+  traces:
+    receivers: [examplereceiver]
+    processors: [span-rename/custom]
+    exporters: [exampleexporter]
