@@ -374,9 +374,9 @@ $ make docker-otelsvc
 $ docker run \
     --rm \
     --interactive \
-    -- tty \
+    --tty \
     --publish 55678:55678 --publish 55679:55679 --publish 8888:8888 \
-    --volume $(pwd)/occollector-config.yaml:/conf/otelsvc-config.yaml \
+    --volume $(pwd)/otel-collector-config.yaml:/conf/otelsvc-config.yaml \
     otelsvc \
     --config=/conf/otelsvc-config.yaml
 ```
