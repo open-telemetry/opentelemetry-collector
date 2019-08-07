@@ -67,6 +67,9 @@ var (
 	errAlreadyStopped = errors.New("already stopped")
 )
 
+var _ receiver.MetricsReceiver = (*Receiver)(nil)
+var _ receiver.TraceReceiver = (*Receiver)(nil)
+
 const source string = "OpenCensus"
 
 // New just creates the OpenCensus receiver services. It is the caller's

@@ -26,6 +26,8 @@ var (
 	errAlreadyStopped = errors.New("already stopped")
 )
 
+var _ receiver.MetricsReceiver = (*Receiver)(nil)
+
 // Receiver is the type used to handle metrics from VM metrics.
 type Receiver struct {
 	mu sync.Mutex
