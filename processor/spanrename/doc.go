@@ -14,5 +14,4 @@
 
 // Package spanrename contains logic to process traces by renaming the span with
 // an ordered set of attribute values separated by an optional string.
-
 package spanrename
