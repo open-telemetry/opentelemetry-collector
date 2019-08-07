@@ -1,4 +1,4 @@
-// Copyright 2019, OpenCensus Authors
+// Copyright 2019, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -120,7 +120,8 @@ func (pr *Preceiver) StartMetricsReception(host receiver.Host) error {
 		ctx := host.Context()
 		c, cancel := context.WithCancel(ctx)
 		pr.cancel = cancel
-		app := internal.NewOcaStore(c, pr.consumer, pr.logger.Sugar())
+		jobsMap := internal.NewJobsMap(time.Duration(2 * time.Minute))
+		app := internal.NewOcaStore(c, pr.consumer, pr.logger.Sugar(), jobsMap)
 		// need to use a logger with the gokitLog interface
 		l := internal.NewZapToGokitLogAdapter(pr.logger)
 		scrapeManager := scrape.NewManager(l, app)

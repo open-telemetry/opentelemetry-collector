@@ -17,7 +17,6 @@ package internal
 import (
 	"context"
 	"errors"
-	"sync"
 
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/scrape"
@@ -41,6 +40,10 @@ type mockMetadataCache struct {
 	data map[string]scrape.MetricMetadata
 }
 
+func newMockMetadataCache(data map[string]scrape.MetricMetadata) *mockMetadataCache {
+	return &mockMetadataCache{data: data}
+}
+
 func (m *mockMetadataCache) Metadata(metricName string) (scrape.MetricMetadata, bool) {
 	mm, ok := m.data[metricName]
 	return mm, ok
@@ -51,20 +54,15 @@ func (m *mockMetadataCache) SharedLabels() labels.Labels {
 }
 
 func newMockConsumer() *mockConsumer {
-	return &mockConsumer{
-		Metrics: make(chan *consumerdata.MetricsData, 1),
-	}
+	return &mockConsumer{}
 }
 
 type mockConsumer struct {
-	Metrics    chan *consumerdata.MetricsData
-	consumOnce sync.Once
+	md *consumerdata.MetricsData
 }
 
 func (m *mockConsumer) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
-	m.consumOnce.Do(func() {
-		m.Metrics <- &md
-	})
+	m.md = &md
 	return nil
 }
 
