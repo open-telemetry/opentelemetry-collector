@@ -6,7 +6,6 @@ receivers:
   opencensus:
   # The following entry demonstrates configuring the common receiver settings:
   # - endpoint
-  # - disable-backpressure
   # For more information on the struct, refer to
   # https://github:com/open-telemetry/opentelemetry-service/blob/71589202609d7e787244076b631b45e219101867/config/configmodels/configmodels.go#L142-L150
   # This configuration is of type 'opencensus' and has the name 'customname' with a full name of 'opencensus/customname'
@@ -14,8 +13,6 @@ receivers:
   opencensus/customname:
     # The receiver will listen on endpoint: "0.0.0.0:9090".
     endpoint: 0.0.0.0:9090
-    # This receiver doesn't enable back pressure functionality and will result in no behavior change.
-    disable-backpressure: true
   # The following entry configures all of the keep alive settings. These settings are used to configure the receiver.
   opencensus/keepalive:
     keepalive:
@@ -28,12 +25,10 @@ receivers:
       enforcement-policy:
         min-time: 10s
         permit-without-stream: true
-  # The following demonstrates how to disable back pressure, set maximum limits on stream, message size and connection
-  # idle time.
+  # The following demonstrates how to set maximum limits on stream, message size and connection idle time.
   # Note: The test yaml has demonstrated configuration on a grouped by their structure; however, all of the settings can
   # be mix and matched like adding the maximum connection idle setting in this example.
-  opencensus/nobackpressure:
-    disable-backpressure: true
+  opencensus/msg-size-conc-connect-max-idle:
     max-recv-msg-size-mib: 32
     max-concurrent-streams: 16
     keepalive:

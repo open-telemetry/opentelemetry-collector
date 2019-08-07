@@ -129,16 +129,6 @@ type Pipelines map[string]*Pipeline
 // These are helper structs which you can embed when implementing your specific
 // receiver/exporter/processor config storage.
 
-// BackPressureSetting defines if back pressure should be exerted or not.
-type BackPressureSetting int
-
-const (
-	// EnableBackPressure indicates that backpressure is enabled.
-	EnableBackPressure BackPressureSetting = iota
-	// DisableBackPressure indicates that backpressure is disabled.
-	DisableBackPressure
-)
-
 // ReceiverSettings defines common settings for a single-protocol receiver configuration.
 // Specific receivers can embed this struct and extend it with more fields if needed.
 type ReceiverSettings struct {
@@ -151,10 +141,6 @@ type ReceiverSettings struct {
 	// Configures the endpoint in the format 'address:port' for the receiver.
 	// The default value is set by the receiver populating the struct.
 	Endpoint string `mapstructure:"endpoint"`
-	// Configures if the back pressure functionality is disabled for this receiver.
-	// The default value is false, and it is expected that receivers
-	// continue to use the default value of false.
-	DisableBackPressure bool `mapstructure:"disable-backpressure"`
 }
 
 // Name gets the receiver name.
@@ -182,14 +168,6 @@ func (rs *ReceiverSettings) IsEnabled() bool {
 	// Note: we use Disabled bool so that the default of false results in
 	// entity being enabled by default.
 	return !rs.Disabled
-}
-
-// BackPressureSetting gets the back pressure setting of the configuration.
-func (rs *ReceiverSettings) BackPressureSetting() BackPressureSetting {
-	if rs.DisableBackPressure {
-		return DisableBackPressure
-	}
-	return EnableBackPressure
 }
 
 // ExporterSettings defines common settings for an exporter configuration.

@@ -15,7 +15,6 @@ Supported receivers (sorted alphabetically):
 - [Zipkin Receiver](#zipkin)
 
 ## Configuring Receiver(s)
-
 Receivers are configured via YAML under the top-level `receivers` tag. There
 must be at least one enabled receiver for this configuration to be considered
 valid.

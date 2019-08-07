@@ -1,0 +1,21 @@
+receivers:
+  examplereceiver:
+
+processors:
+  exampleprocessor:
+
+exporters:
+  jaeger-thrift-http:
+    url: "http://some.location:14268/api/traces"
+  jaeger-thrift-http/2:
+    url: "http://some.other.location/api/traces"
+    timeout: 2s
+    headers:
+      added-entry: "added value"
+      dot.test: test
+
+pipelines:
+  traces:
+    receivers: [examplereceiver]
+    processors: [exampleprocessor]
+    exporters: [jaeger-thrift-http, jaeger-thrift-http/2]

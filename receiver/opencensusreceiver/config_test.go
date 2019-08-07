@@ -49,10 +49,9 @@ func TestLoadConfig(t *testing.T) {
 	r1 := cfg.Receivers["opencensus/customname"].(*Config)
 	assert.Equal(t, r1.ReceiverSettings,
 		configmodels.ReceiverSettings{
-			TypeVal:             typeStr,
-			NameVal:             "opencensus/customname",
-			Endpoint:            "0.0.0.0:9090",
-			DisableBackPressure: true,
+			TypeVal:  typeStr,
+			NameVal:  "opencensus/customname",
+			Endpoint: "0.0.0.0:9090",
 		})
 
 	r2 := cfg.Receivers["opencensus/keepalive"].(*Config)
@@ -78,14 +77,13 @@ func TestLoadConfig(t *testing.T) {
 			},
 		})
 
-	r3 := cfg.Receivers["opencensus/nobackpressure"].(*Config)
+	r3 := cfg.Receivers["opencensus/msg-size-conc-connect-max-idle"].(*Config)
 	assert.Equal(t, r3,
 		&Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal:             typeStr,
-				NameVal:             "opencensus/nobackpressure",
-				Endpoint:            "127.0.0.1:55678",
-				DisableBackPressure: true,
+				TypeVal:  typeStr,
+				NameVal:  "opencensus/msg-size-conc-connect-max-idle",
+				Endpoint: "127.0.0.1:55678",
 			},
 			MaxRecvMsgSizeMiB:    32,
 			MaxConcurrentStreams: 16,

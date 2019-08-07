@@ -1,0 +1,15 @@
+receivers:
+  examplereceiver/one:
+
+exporters:
+  exampleexporter/disabled:
+    disabled: true
+
+processors:
+  exampleprocessor:
+
+pipelines:
+  traces:
+    receivers: [examplereceiver/one]
+    processors: [exampleprocessor]
+    exporters: [exampleexporter/disabled]

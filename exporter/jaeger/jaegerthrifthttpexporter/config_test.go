@@ -12,14 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package zipkinreceiver
+package jaegerthrifthttpexporter
 
 import (
 	"path"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/config"
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
@@ -30,7 +32,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Nil(t, err)
 
 	factory := &Factory{}
-	receivers[typeStr] = factory
+	exporters[typeStr] = factory
 	cfg, err := config.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), receivers, processors, exporters,
 	)
@@ -38,18 +40,30 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	assert.Equal(t, len(cfg.Receivers), 2)
+	e0 := cfg.Exporters["jaeger-thrift-http"]
 
-	r0 := cfg.Receivers["zipkin"]
-	assert.Equal(t, r0, factory.CreateDefaultConfig())
+	// URL doesn't have a default value so set it directly.
+	defaultCfg := factory.CreateDefaultConfig().(*Config)
+	defaultCfg.URL = "http://some.location:14268/api/traces"
+	assert.Equal(t, defaultCfg, e0)
 
-	r1 := cfg.Receivers["zipkin/customname"].(*Config)
-	assert.Equal(t, r1,
-		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal:  typeStr,
-				NameVal:  "zipkin/customname",
-				Endpoint: "127.0.0.1:8765",
-			},
-		})
+	expectedName := "jaeger-thrift-http/2"
+
+	e1 := cfg.Exporters[expectedName]
+	expectedCfg := Config{
+		ExporterSettings: configmodels.ExporterSettings{
+			TypeVal: typeStr,
+			NameVal: expectedName,
+		},
+		URL: "http://some.other.location/api/traces",
+		Headers: map[string]string{
+			"added-entry": "added value",
+			"dot.test":    "test",
+		},
+		Timeout: 2 * time.Second,
+	}
+	assert.Equal(t, &expectedCfg, e1)
+
+	_, _, err = factory.CreateTraceExporter(zap.NewNop(), e1)
+	require.NoError(t, err)
 }

@@ -19,21 +19,20 @@ import (
 	"log"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-service/exporter/loggingexporter"
-
 	"contrib.go.opencensus.io/exporter/ocagent"
 	"go.opencensus.io/trace"
+	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-service/exporter/loggingexporter"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver"
-	"go.uber.org/zap"
 )
 
 func Example_endToEnd() {
 	// This is what the cmd/ocagent code would look like this.
 	// A trace receiver as per the trace receiver
 	// configs that have been parsed.
-	lte, err := loggingexporter.NewTraceExporter(zap.NewNop())
+	lte, err := loggingexporter.NewTraceExporter("logging_exporter", zap.NewNop())
 	if err != nil {
 		log.Fatalf("Failed to create logging exporter: %v", err)
 	}

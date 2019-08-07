@@ -12,11 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package loggingexporter
+package jaegerthrifthttpexporter
 
 import (
+	"fmt"
+	"net/url"
+
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-service/config/configerror"
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
@@ -24,10 +28,10 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr = "logging"
+	typeStr = "jaeger-thrift-http"
 )
 
-// Factory is the factory for logging exporter.
+// Factory is the factory for Jaeger Thrift over HTTP exporter.
 type Factory struct {
 }
 
@@ -43,28 +47,50 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
+		Timeout: defaultHTTPTimeout,
 	}
-}
-
-func noopStopFunc() error {
-	return nil
 }
 
 // CreateTraceExporter creates a trace exporter based on this config.
-func (f *Factory) CreateTraceExporter(logger *zap.Logger, cfg configmodels.Exporter) (consumer.TraceConsumer, exporter.StopFunc, error) {
+func (f *Factory) CreateTraceExporter(
+	logger *zap.Logger,
+	config configmodels.Exporter,
+) (consumer.TraceConsumer, exporter.StopFunc, error) {
 
-	lexp, err := NewTraceExporter(cfg.Name(), logger)
+	expCfg := config.(*Config)
+	_, err := url.ParseRequestURI(expCfg.URL)
+	if err != nil {
+		// TODO: Improve error message, see #215
+		err = fmt.Errorf(
+			"%q config requires a valid \"url\": %v",
+			expCfg.Name(),
+			err)
+		return nil, nil, err
+	}
+
+	if expCfg.Timeout <= 0 {
+		err := fmt.Errorf(
+			"%q config requires a positive value for \"timeout\"",
+			expCfg.Name())
+		return nil, nil, err
+	}
+
+	exp, err := New(
+		expCfg.Name(),
+		expCfg.URL,
+		expCfg.Headers,
+		expCfg.Timeout)
 	if err != nil {
 		return nil, nil, err
 	}
-	return lexp, noopStopFunc, nil
+
+	return exp, nil, nil
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *Factory) CreateMetricsExporter(logger *zap.Logger, cfg configmodels.Exporter) (consumer.MetricsConsumer, exporter.StopFunc, error) {
-	lexp, err := NewMetricsExporter(cfg.Name(), logger)
-	if err != nil {
-		return nil, nil, err
-	}
-	return lexp, noopStopFunc, nil
+func (f *Factory) CreateMetricsExporter(
+	logger *zap.Logger,
+	cfg configmodels.Exporter,
+) (consumer.MetricsConsumer, exporter.StopFunc, error) {
+	return nil, nil, configerror.ErrDataTypeIsNotSupported
 }

@@ -20,7 +20,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/observability"
 	"github.com/open-telemetry/opentelemetry-service/observability/observabilitytest"
 )
@@ -36,17 +35,9 @@ func TestTracePieplineRecordedMetrics(t *testing.T) {
 
 	receiverCtx := observability.ContextWithReceiverName(context.Background(), receiverName)
 	observability.RecordTraceReceiverMetrics(receiverCtx, 17, 13)
-	observability.RecordIngestionBlockedMetrics(receiverCtx, configmodels.EnableBackPressure)
-	observability.RecordIngestionBlockedMetrics(receiverCtx, configmodels.DisableBackPressure)
 	exporterCtx := observability.ContextWithExporterName(receiverCtx, exporterName)
 	observability.RecordTraceExporterMetrics(exporterCtx, 27, 23)
 	if err := observabilitytest.CheckValueViewReceiverReceivedSpans(receiverName, 17); err != nil {
-		t.Fatalf("When check recorded values: want nil got %v", err)
-	}
-	if err := observabilitytest.CheckValueViewReceiverIngestionBlockedRPCs(receiverName, 2); err != nil {
-		t.Fatalf("When check recorded values: want nil got %v", err)
-	}
-	if err := observabilitytest.CheckValueViewReceiverIngestionBlockedRPCsWithDataLoss(receiverName, 1); err != nil {
 		t.Fatalf("When check recorded values: want nil got %v", err)
 	}
 	if err := observabilitytest.CheckValueViewReceiverDroppedSpans(receiverName, 13); err != nil {

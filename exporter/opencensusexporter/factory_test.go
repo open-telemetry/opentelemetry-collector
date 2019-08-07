@@ -24,7 +24,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/compression"
-	"github.com/open-telemetry/opentelemetry-service/config/configerror"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-service/internal/testutils"
 	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver"
@@ -39,10 +38,13 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestCreateMetricsExporter(t *testing.T) {
 	factory := Factory{}
-	cfg := factory.CreateDefaultConfig()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Endpoint = testutils.GetAvailableLocalAddress(t)
 
-	_, _, err := factory.CreateMetricsExporter(zap.NewNop(), cfg)
-	assert.Error(t, err, configerror.ErrDataTypeIsNotSupported)
+	oexp, sfc, err := factory.CreateMetricsExporter(zap.NewNop(), cfg)
+	require.NotNil(t, oexp)
+	require.NotNil(t, sfc)
+	require.Nil(t, err)
 }
 
 func TestCreateTraceExporter(t *testing.T) {
