@@ -31,16 +31,6 @@ type Host interface {
 	// a fatal error (i.e.: an error that the instance can't recover from) after
 	// its start function has already returned.
 	ReportFatalError(err error)
-
-	// OkToIngest returns true when the receiver can inject the received data
-	// into the pipeline and false when it should drop the data and report
-	// error to the client.
-	//
-	// Receivers are expected to signal to the source from which they receive the data the proper error (according to their
-	// protocol) when this function return false. For example an HTTP based
-	// receiver should return 503 (Service Unavailable) if OkToIngest returns
-	// false.
-	OkToIngest() bool
 }
 
 // A TraceReceiver is an "arbitrary data"-to-"trace proto span" converter.

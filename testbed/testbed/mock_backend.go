@@ -76,10 +76,6 @@ func (mb *MockBackend) ReportFatalError(err error) {
 	log.Printf("Fatal error reported: %v", err)
 }
 
-func (mb *MockBackend) OkToIngest() bool {
-	return true
-}
-
 // Start a backend of specified type. Only one backend type
 // can be started at a time.
 func (mb *MockBackend) Start(backendType BackendType) error {

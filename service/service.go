@@ -82,13 +82,6 @@ func (app *Application) ReportFatalError(err error) {
 	app.asyncErrorChannel <- err
 }
 
-// OkToIngest returns true when the receiver can inject the received data
-// into the pipeline and false when it should drop the data and report
-// error to the client.
-func (app *Application) OkToIngest() bool {
-	return true
-}
-
 // New creates and returns a new instance of Application
 func New(
 	receiverFactories map[string]receiver.Factory,
