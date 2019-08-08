@@ -22,7 +22,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/processor"
-	"github.com/open-telemetry/opentelemetry-service/processor/multiconsumer"
+	"github.com/open-telemetry/opentelemetry-service/processor/fanoutprocessor"
 )
 
 // builtProcessor is a processor that is built based on a config.
@@ -147,7 +147,7 @@ func (pb *PipelinesBuilder) buildFanoutExportersTraceConsumer(exporterNames []st
 	}
 
 	// Create a junction point that fans out to all exporters.
-	return multiconsumer.NewTraceProcessor(exporters)
+	return fanoutprocessor.NewTraceProcessor(exporters)
 }
 
 func (pb *PipelinesBuilder) buildFanoutExportersMetricsConsumer(exporterNames []string) consumer.MetricsConsumer {
@@ -164,5 +164,5 @@ func (pb *PipelinesBuilder) buildFanoutExportersMetricsConsumer(exporterNames []
 	}
 
 	// Create a junction point that fans out to all exporters.
-	return multiconsumer.NewMetricsProcessor(exporters)
+	return fanoutprocessor.NewMetricsProcessor(exporters)
 }
