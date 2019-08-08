@@ -12,8 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package multiprocessor contains implementations of multiplexing Trace/Metrics processor.
-package multiprocessor
+// Package fanoutprocessor contains implementations of Trace/Metrics processors
+// that fan out to multiple other processors.
+package fanoutprocessor
 
 import (
 	"context"
