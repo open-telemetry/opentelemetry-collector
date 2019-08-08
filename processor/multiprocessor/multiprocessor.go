@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package multiconsumer
+// Package multiprocessor contains implementations of multiplexing Trace/Metrics processor.
+package multiprocessor
 
 import (
 	"context"
