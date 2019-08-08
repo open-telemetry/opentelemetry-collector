@@ -50,7 +50,7 @@ type Config struct {
 	// the value.
 	ModifyValues []ModifyKeyValue `mapstructure:"modify-key-values"`
 
-	// SpanRename specifies the set of keys
+	// SpanRename specifies the set of keys to for renaming the span.
 	SpanRename SpanRename `mapstructure:"span-rename"`
 }
 
