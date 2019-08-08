@@ -1,12 +1,10 @@
-# More exclusions can be added similar with: -not -path './vendor/*'
+# More exclusions can be added similar with: -not -path './testbed/*'
 ALL_SRC := $(shell find . -name '*.go' \
-                                -not -path './vendor/*' \
                                 -not -path './testbed/*' \
                                 -type f | sort)
 
 # All source code and documents. Used in spell check.
 ALL_SRC_AND_DOC := $(shell find . \( -name "*.md" -o -name "*.go" -o -name "*.yaml" \) \
-                                -not -path './vendor/*' \
                                 -type f | sort)
 
 # ALL_PKGS is used with 'go cover'
