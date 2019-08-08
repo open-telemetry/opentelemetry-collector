@@ -31,6 +31,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/observability"
+	"github.com/open-telemetry/opentelemetry-service/oterr"
 )
 
 // Receiver is the type used to handle metrics from OpenCensus exporters.
@@ -43,7 +44,7 @@ type Receiver struct {
 // New creates a new ocmetrics.Receiver reference.
 func New(nextConsumer consumer.MetricsConsumer, opts ...Option) (*Receiver, error) {
 	if nextConsumer == nil {
-		return nil, errors.New("needs a non-nil consumer.MetricsConsumer")
+		return nil, oterr.ErrNilNextConsumer
 	}
 	ocr := &Receiver{nextConsumer: nextConsumer}
 	for _, opt := range opts {

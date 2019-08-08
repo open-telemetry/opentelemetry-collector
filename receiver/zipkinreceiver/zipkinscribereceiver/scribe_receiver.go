@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
-	"errors"
 	"strconv"
 	"sync"
 
@@ -28,14 +27,9 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/observability"
+	"github.com/open-telemetry/opentelemetry-service/oterr"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 	zipkintranslator "github.com/open-telemetry/opentelemetry-service/translator/trace/zipkin"
-)
-
-var (
-	errNilNextConsumer = errors.New("nil nextConsumer")
-	errAlreadyStarted  = errors.New("already started")
-	errAlreadyStopped  = errors.New("already stopped")
 )
 
 var _ receiver.TraceReceiver = (*scribeReceiver)(nil)
@@ -55,7 +49,7 @@ type scribeReceiver struct {
 // NewReceiver creates the Zipkin Scribe receiver with the given parameters.
 func NewReceiver(addr string, port uint16, category string, nextConsumer consumer.TraceConsumer) (receiver.TraceReceiver, error) {
 	if nextConsumer == nil {
-		return nil, errNilNextConsumer
+		return nil, oterr.ErrNilNextConsumer
 	}
 
 	r := &scribeReceiver{
@@ -83,7 +77,7 @@ func (r *scribeReceiver) StartTraceReception(host receiver.Host) error {
 	r.Lock()
 	defer r.Unlock()
 
-	err := errAlreadyStarted
+	err := oterr.ErrAlreadyStarted
 	r.startOnce.Do(func() {
 		err = nil
 		serverSocket, sockErr := thrift.NewTServerSocket(r.addr + ":" + strconv.Itoa(int(r.port)))
@@ -116,7 +110,7 @@ func (r *scribeReceiver) StopTraceReception() error {
 	r.Lock()
 	defer r.Unlock()
 
-	var err = errAlreadyStopped
+	var err = oterr.ErrAlreadyStopped
 	r.stopOnce.Do(func() {
 		err = r.server.Stop()
 	})

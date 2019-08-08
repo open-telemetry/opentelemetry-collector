@@ -16,7 +16,6 @@ package tailsampling
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"runtime"
 	"sync"
@@ -31,6 +30,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/observability"
+	"github.com/open-telemetry/opentelemetry-service/oterr"
 	"github.com/open-telemetry/opentelemetry-service/processor"
 	"github.com/open-telemetry/opentelemetry-service/processor/tailsampling/idbatcher"
 	"github.com/open-telemetry/opentelemetry-service/processor/tailsampling/sampling"
@@ -77,7 +77,7 @@ var _ processor.TraceProcessor = (*tailSamplingSpanProcessor)(nil)
 // configuration.
 func NewTraceProcessor(logger *zap.Logger, nextConsumer consumer.TraceConsumer, cfg Config) (processor.TraceProcessor, error) {
 	if nextConsumer == nil {
-		return nil, errors.New("nextConsumer is nil")
+		return nil, oterr.ErrNilNextConsumer
 	}
 
 	numDecisionBatches := uint64(cfg.DecisionWait.Seconds())

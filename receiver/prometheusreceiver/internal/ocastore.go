@@ -27,6 +27,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/oterr"
 )
 
 const (
@@ -36,7 +37,6 @@ const (
 )
 
 var idSeq int64
-var errAlreadyStop = errors.New("ocaStore already stopped")
 var noop = &noopAppender{}
 
 // OcaStore is an interface combines io.Closer and prometheus' scrape.Appendable
@@ -97,15 +97,15 @@ func (o *ocaStore) Close() error {
 type noopAppender struct{}
 
 func (*noopAppender) Add(l labels.Labels, t int64, v float64) (uint64, error) {
-	return 0, errAlreadyStop
+	return 0, oterr.ErrAlreadyStopped
 }
 
 func (*noopAppender) AddFast(l labels.Labels, ref uint64, t int64, v float64) error {
-	return errAlreadyStop
+	return oterr.ErrAlreadyStopped
 }
 
 func (*noopAppender) Commit() error {
-	return errAlreadyStop
+	return oterr.ErrAlreadyStopped
 }
 
 func (*noopAppender) Rollback() error {

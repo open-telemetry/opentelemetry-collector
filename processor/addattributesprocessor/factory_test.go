@@ -17,9 +17,10 @@ package addattributesprocessor
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -32,11 +33,20 @@ func TestCreateProcessor(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
 
-	tp, err := factory.CreateTraceProcessor(zap.NewNop(), nil, cfg)
+	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), cfg)
 	assert.NotNil(t, tp)
 	assert.NoError(t, err, "cannot create trace processor")
 
-	mp, err := factory.CreateMetricsProcessor(zap.NewNop(), nil, cfg)
+	mp, err := factory.CreateMetricsProcessor(zap.NewNop(), exportertest.NewNopMetricsExporter(), cfg)
 	assert.Nil(t, mp)
 	assert.Error(t, err, "should not be able to create metric processor")
+}
+
+func TestNilConsumer(t *testing.T) {
+	factory := Factory{}
+	cfg := factory.CreateDefaultConfig()
+
+	tp, err := factory.CreateTraceProcessor(zap.NewNop(), nil, cfg)
+	assert.Nil(t, tp)
+	assert.Error(t, err, "expected to get a non-nil error")
 }

@@ -27,6 +27,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/observability"
+	"github.com/open-telemetry/opentelemetry-service/oterr"
 )
 
 const (
@@ -51,7 +52,7 @@ type traceDataWithCtx struct {
 // New creates a new opencensus.Receiver reference.
 func New(nextConsumer consumer.TraceConsumer, opts ...Option) (*Receiver, error) {
 	if nextConsumer == nil {
-		return nil, errors.New("needs a non-nil consumer.TraceConsumer")
+		return nil, oterr.ErrNilNextConsumer
 	}
 
 	messageChan := make(chan *traceDataWithCtx, messageChannelSize)

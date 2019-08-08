@@ -40,15 +40,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/internal"
 	"github.com/open-telemetry/opentelemetry-service/observability"
+	"github.com/open-telemetry/opentelemetry-service/oterr"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
 	zipkintranslator "github.com/open-telemetry/opentelemetry-service/translator/trace/zipkin"
-)
-
-var (
-	errNilNextConsumer = errors.New("nil nextConsumer")
-	errAlreadyStarted  = errors.New("already started")
-	errAlreadyStopped  = errors.New("already stopped")
 )
 
 // ZipkinReceiver type is used to handle spans received in the Zipkin format.
@@ -72,7 +67,7 @@ var _ http.Handler = (*ZipkinReceiver)(nil)
 // New creates a new zipkinreceiver.ZipkinReceiver reference.
 func New(address string, nextConsumer consumer.TraceConsumer) (*ZipkinReceiver, error) {
 	if nextConsumer == nil {
-		return nil, errNilNextConsumer
+		return nil, oterr.ErrNilNextConsumer
 	}
 
 	zr := &ZipkinReceiver{
@@ -108,7 +103,7 @@ func (zr *ZipkinReceiver) StartTraceReception(host receiver.Host) error {
 	zr.mu.Lock()
 	defer zr.mu.Unlock()
 
-	var err = errAlreadyStarted
+	var err = oterr.ErrAlreadyStarted
 
 	zr.startOnce.Do(func() {
 		ln, lerr := net.Listen("tcp", zr.address())
@@ -239,7 +234,7 @@ func (zr *ZipkinReceiver) deserializeFromJSON(jsonBlob []byte, debugWasSet bool)
 // giving it a chance to perform any necessary clean-up and shutting down
 // its HTTP server.
 func (zr *ZipkinReceiver) StopTraceReception() error {
-	var err = errAlreadyStopped
+	var err = oterr.ErrAlreadyStopped
 	zr.stopOnce.Do(func() {
 		err = zr.server.Close()
 	})

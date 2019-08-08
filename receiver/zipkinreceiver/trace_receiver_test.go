@@ -39,6 +39,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-service/internal"
 	"github.com/open-telemetry/opentelemetry-service/internal/testutils"
+	"github.com/open-telemetry/opentelemetry-service/oterr"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 	"github.com/open-telemetry/opentelemetry-service/receiver/receivertest"
 	spandatatranslator "github.com/open-telemetry/opentelemetry-service/translator/trace/spandata"
@@ -126,7 +127,7 @@ func TestNew(t *testing.T) {
 		{
 			name:    "nil nextConsumer",
 			args:    args{},
-			wantErr: errNilNextConsumer,
+			wantErr: oterr.ErrNilNextConsumer,
 		},
 		{
 			name: "happy path",
