@@ -88,7 +88,7 @@ func TestExportersBuilder_Build(t *testing.T) {
 	require.NotNil(t, e1)
 	assert.Nil(t, e1.tc)
 	assert.Nil(t, e1.mc)
-	assert.Nil(t, e1.stop)
+	assert.NotNil(t, e1.stop)
 
 	// TODO: once we have an exporter that supports metrics data type test it too.
 }

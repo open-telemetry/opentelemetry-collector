@@ -172,6 +172,7 @@ func (eb *ExportersBuilder) buildExporter(
 		// if there are no pipelines associated with the exporter.
 		eb.logger.Warn("Exporter " + config.Name() +
 			" is not associated with any pipeline and will not export data.")
+		exporter.stop = func() error { return nil }
 		return exporter, nil
 	}
 
