@@ -12,6 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package builder handles the options to build the OpenCensus collector
+// Package builder handles the options to build the OpenTelemetry collector
 // pipeline.
 package builder

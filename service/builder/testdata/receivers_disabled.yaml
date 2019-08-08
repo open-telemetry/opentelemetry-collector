@@ -1,6 +1,0 @@
-# No receivers enabled, all commented out
-receivers:
-  # jaeger: {} 
-  # opencensus: {}
-  # zipkin: {}
-  # zipkin-scribe: {}
