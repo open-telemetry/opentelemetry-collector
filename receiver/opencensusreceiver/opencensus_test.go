@@ -41,7 +41,7 @@ import (
 
 // TODO(ccaraman): Migrate tests to use assert for validating functionality.
 func TestGrpcGateway_endToEnd(t *testing.T) {
-	addr := ":35993"
+	addr := testutils.GetAvailableLocalAddress(t)
 
 	// Set the buffer count to 1 to make it flush the test span immediately.
 	sink := new(exportertest.SinkTraceExporter)
@@ -152,7 +152,7 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 }
 
 func TestTraceGrpcGatewayCors_endToEnd(t *testing.T) {
-	addr := ":35991"
+	addr := testutils.GetAvailableLocalAddress(t)
 	corsOrigins := []string{"allowed-*.com"}
 
 	sink := new(exportertest.SinkTraceExporter)
@@ -181,7 +181,7 @@ func TestTraceGrpcGatewayCors_endToEnd(t *testing.T) {
 }
 
 func TestMetricsGrpcGatewayCors_endToEnd(t *testing.T) {
-	addr := ":35991"
+	addr := testutils.GetAvailableLocalAddress(t)
 	corsOrigins := []string{"allowed-*.com"}
 
 	sink := new(exportertest.SinkMetricsExporter)
@@ -215,7 +215,7 @@ func TestMetricsGrpcGatewayCors_endToEnd(t *testing.T) {
 func TestAcceptAllGRPCProtoAffiliatedContentTypes(t *testing.T) {
 	t.Skip("Currently a flaky test as we need a way to flush all written traces")
 
-	addr := ":35991"
+	addr := testutils.GetAvailableLocalAddress(t)
 	cbts := new(exportertest.SinkTraceExporter)
 	ocr, err := New(addr, cbts, nil)
 	if err != nil {
@@ -347,7 +347,8 @@ func verifyCorsResp(t *testing.T, url string, origin string, wantStatus int, wan
 }
 
 func TestStopWithoutStartNeverCrashes(t *testing.T) {
-	ocr, err := New(":55444", nil, nil)
+	addr := testutils.GetAvailableLocalAddress(t)
+	ocr, err := New(addr, nil, nil)
 	if err != nil {
 		t.Fatalf("Failed to create an OpenCensus receiver: %v", err)
 	}
