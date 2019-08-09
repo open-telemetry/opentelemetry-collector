@@ -42,52 +42,48 @@ import (
 type Config struct {
 	configmodels.ProcessorSettings `mapstructure:",squash"`
 
-	// CopyKeyValues specifies the list of keys whose corresponding values
-	// are to be copied to a new key.
-	CopyKeyValues []CopyKeyValue `mapstructure:"copy-key-values"`
-
-	// ModifyValues specifies the list of attributes based on keys to modify
-	// the value.
-	ModifyValues []ModifyKeyValue `mapstructure:"modify-key-values"`
+	// ModifyValues specifies the list of attributes to modify.
+	ModifyKeyValues []ModifyKeyValue `mapstructure:"modify-key-values"`
 
 	// SpanRename specifies the set of keys to for renaming the span.
 	SpanRename SpanRename `mapstructure:"span-rename"`
 }
 
-// CopyKeyValue defines the properties of the key/value pair to be copied to
-// a new key.
-// The value is not modified.
-type CopyKeyValue struct {
-	// SourceKey specifies the attribute key to get the value.
-	// This field is required.
+// SourceValue specifies where the value should be retrieved from, either:
+// 1. The configuration by setting a `RawValue`
+// or
+// 2. another attribute from the span.
+// Only one of RawValue or SourceKey/KeepOriginal can be set.
+type SourceValue struct{
+	// Only one of RawValue or SourceKey/KeepOriginal can be set. If nothing is set,
+	// the value is nil and it will be equivalent to
+
+	// RawValue specifies the value to set.
+	// To redact a key, set this to the empty string.
+	RawValue interface{} `mapstructure:"raw-value"`
+
+	// SourceKey specifies the attribute value to set.
 	SourceKey string `mapstructure:"source-key"`
 
-	// NewKey is the value that will be used as the new key for the attribute.
-	// This field is required.
-	NewKey string `mapstructure:"new-key"`
-
-	// Overwrite is set to true to indicate that the replacement should be
-	// performed even if the new key already exists on the attributes.
-	// In this case the original value associated with the new key is lost.
-	Overwrite bool `mapstructure:"overwrite"`
-
-	// KeepOriginal is set to true to indicate that the original key
-	// should not be removed from the attributes.
+	// KeepOriginal specifies if the `SourceKey` attribute should be removed
+	// from the span.
+	// The default value is false.
 	KeepOriginal bool `mapstructure:"keep-original"`
 }
 
 // ModifyKeyValue defines the key/value attribute pair to set/update.
 type ModifyKeyValue struct {
-	// SourceKey specifies the attribute to modify the value of.
-	// This field is required.
-	SourceKey string `mapstructure:"source-key"`
+	// Key specifies the attribute key to set/update the value to.
+	// This key doesn't need to exist
+	Key string	`mapstructure:"key"`
 
-	// NewValue specifies what to replace the old value with.
-	// If no value is set, the attribute key/value is removed from the span.
-	NewValue interface{} `mapstructure:"new-value"`
+	// Value specifies the value to set for the key. The value can either be set
+	// from a value in the configuration or from another attribute in the span.
+	Value SourceValue `mapstructure:"value"`
 
 	// Overwrite specifies if this operation should overwrite a value, if the attribute
 	// key value already exists.
+	// The def
 	Overwrite bool `mapstructure:"overwrite"`
 }
 

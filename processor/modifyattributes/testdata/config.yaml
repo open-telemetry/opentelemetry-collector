@@ -1,0 +1,52 @@
+receivers:
+  modify-attributes:
+    # The following is an example of renaming the
+    span-rename:
+      keys: ["db.svc", "operation"]
+      separator: "::"
+    modify-key-values:
+    # This is the config for the add-attributes
+#      add-attributes/2:
+#        values:
+#          attribute1: 123
+#          "string attribute": "string value"
+#          "attribute.with.dot": "another value"
+      # This is the same functionality in the new proposed structure.
+      #  following demonstrates how to set a key with the value of bob.
+      - key: attribute1
+        value:
+          raw-value: 123
+        overwrite: false
+      - key: "string attribute"
+        value:
+          raw-value: "string value"
+      - key: "attribute.with.dot"
+        value:
+          raw-value: "another value"
+# This is the config for attribute-key
+#      attribute-key:
+#        keys:
+#          foo:
+#            replacement: "boo"
+#            overwrite: true
+#            keep: true
+#          kie:
+#            replacement: "goo"
+#            overwrite: true
+#            keep: false
+      - key: "boo"
+        value:
+          source-key: "foo"
+          keep-original: true
+        overwrite: true
+      - key: "goo"
+        value:
+          source-key: "kie"
+          keep-original: false
+        overwrite: true
+
+      # The following is an example of redacting the attribute `db.secretkey`.
+      - key: db.secretkey
+        value:
+          raw-value: ""
+        overwrite: true
