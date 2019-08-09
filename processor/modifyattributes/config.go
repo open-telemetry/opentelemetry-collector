@@ -54,7 +54,7 @@ type Config struct {
 // or
 // 2. another attribute from the span.
 // Only one of RawValue or SourceKey/KeepOriginal can be set.
-type SourceValue struct{
+type SourceValue struct {
 	// Only one of RawValue or SourceKey/KeepOriginal can be set. If nothing is set,
 	// the value is nil and it will be equivalent to
 
@@ -75,7 +75,7 @@ type SourceValue struct{
 type ModifyKeyValue struct {
 	// Key specifies the attribute key to set/update the value to.
 	// This key doesn't need to exist
-	Key string	`mapstructure:"key"`
+	Key string `mapstructure:"key"`
 
 	// Value specifies the value to set for the key. The value can either be set
 	// from a value in the configuration or from another attribute in the span.
