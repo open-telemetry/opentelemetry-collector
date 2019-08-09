@@ -23,12 +23,12 @@ import (
 // attributes. It will logically replaces two previously committed
 // processors
 // 1. Add Attributes Processor
-// That processor functionality is now covered by the ModifyValues
-// field. It allows to set/update key/values in the attribute.
+// This set/updates a key with a specified value from the config.
 // 2. Attribute Key Processor
-// The expected functionality is to duplicate a key/value pair under a new key.
-// Being added to this Modify Attributes Processor is the ability to rename
-// spans using values from attribute keys in the span.
+// This set/updates a key using the value from another attribute, similar to
+// a copy or move functionality.
+// In addition, this proposal include the field for renaming a span using
+// attributes from the span.
 //
 // TODO(ccaraman) Document heavily that intermediary changes from sub-functions
 //  of this processors can't be inputs to other sub-functions.
