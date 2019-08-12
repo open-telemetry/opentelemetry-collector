@@ -16,34 +16,23 @@
 package zpages
 
 import (
-	"flag"
 	"fmt"
 	"net"
 	"net/http"
 
 	"go.opencensus.io/zpages"
+	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 )
 
-const (
-	// ZPagesHTTPPort is the name of the flag used to specify the zpages port.
-	// TODO(ccaraman): Move ZPage configuration to be apart of global config/config.go, maybe under diagnostics section.
-	ZPagesHTTPPort = "zpages-http-port"
-)
-
-// AddFlags adds to the flag set a flag to configure the zpages server.
-func AddFlags(flags *flag.FlagSet) {
-	flags.Uint(
-		ZPagesHTTPPort,
-		55679,
-		"Port on which to run the zpages http server, use 0 to disable zpages.")
-}
-
-// Run run a zPages HTTP endpoint on the given port.
-func Run(asyncErrorChannel chan<- error, port int) (closeFn func() error, err error) {
+// Run runs a zPages HTTP endpoint with the given config.
+func Run(logger *zap.Logger, asyncErrorChannel chan<- error, cfg *configmodels.ZPagesSettings) (closeFn func() error, err error) {
+	logger.Info("Setting up zPages...")
 	zPagesMux := http.NewServeMux()
 	zpages.Handle(zPagesMux, "/debug")
 
-	addr := fmt.Sprintf(":%d", port)
+	addr := fmt.Sprintf(":%d", cfg.Port)
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to bind to run zPages on %q: %v", addr, err)
@@ -56,5 +45,6 @@ func Run(asyncErrorChannel chan<- error, port int) (closeFn func() error, err er
 		}
 	}()
 
+	logger.Info("Running zPages", zap.String("address", addr))
 	return srv.Close, nil
 }

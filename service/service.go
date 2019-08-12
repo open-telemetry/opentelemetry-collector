@@ -30,6 +30,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/config"
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
 	"github.com/open-telemetry/opentelemetry-service/internal/config/viperutils"
 	"github.com/open-telemetry/opentelemetry-service/internal/pprofserver"
@@ -51,6 +52,7 @@ type Application struct {
 	receiverFactories  map[string]receiver.Factory
 	exporterFactories  map[string]exporter.Factory
 	processorFactories map[string]processor.Factory
+	zpagesFactory      zpages.Factory
 
 	// stopTestChan is used to terminate the application in end to end tests.
 	stopTestChan chan struct{}
@@ -130,17 +132,13 @@ func (app *Application) setupHealthCheck() {
 	}
 }
 
-// TODO(ccaraman): Move ZPage configuration to be apart of global config/config.go
-func (app *Application) setupZPages() {
-	app.logger.Info("Setting up zPages...")
-	zpagesPort := app.v.GetInt(zpages.ZPagesHTTPPort)
-	if zpagesPort > 0 {
-		closeZPages, err := zpages.Run(app.asyncErrorChannel, zpagesPort)
-		if err != nil {
-			app.logger.Error("Failed to run zPages", zap.Error(err))
-			os.Exit(1)
-		}
-		app.logger.Info("Running zPages", zap.Int("port", zpagesPort))
+func (app *Application) setupZPages(cfg *configmodels.Config) {
+	closeZPages, err := app.zpagesFactory.CreateZPagesServer(app.logger, app.asyncErrorChannel, cfg.ZPages)
+	if err != nil {
+		app.logger.Error("Failed to run zPages", zap.Error(err))
+		os.Exit(1)
+	}
+	if closeZPages != nil {
 		closeFn := func() {
 			closeZPages()
 		}
@@ -189,19 +187,23 @@ func (app *Application) shutdownClosableComponents() {
 	}
 }
 
-func (app *Application) setupPipelines() {
+func (app *Application) setupConfig() *configmodels.Config {
 	app.logger.Info("Loading configuration...")
 
 	// Load configuration.
-	cfg, err := config.Load(app.v, app.receiverFactories, app.processorFactories, app.exporterFactories, app.logger)
+	cfg, err := config.Load(app.v, app.receiverFactories, app.processorFactories, app.exporterFactories, app.zpagesFactory, app.logger)
 	if err != nil {
 		log.Fatalf("Cannot load configuration: %v", err)
 	}
 
 	app.logger.Info("Applying configuration...")
+	return cfg
+}
 
+func (app *Application) setupPipelines(cfg *configmodels.Config) {
 	// Pipeline is built backwards, starting from exporters, so that we create objects
 	// which are referenced before objects which reference them.
+	var err error
 
 	// First create exporters.
 	app.exporters, err = builder.NewExportersBuilder(app.logger, cfg, app.exporterFactories).Build()
@@ -253,9 +255,10 @@ func (app *Application) executeUnified() {
 	// Setup everything.
 	app.setupPProf()
 	app.setupHealthCheck()
-	app.setupZPages()
 	app.setupTelemetry(ballastSizeBytes)
-	app.setupPipelines()
+	cfg := app.setupConfig()
+	app.setupPipelines(cfg)
+	app.setupZPages(cfg)
 
 	// Everything is ready, now run until an event requiring shutdown happens.
 	app.runAndWaitForShutdownEvent()
@@ -290,7 +293,6 @@ func (app *Application) StartUnified() error {
 		healthCheckFlags,
 		loggerFlags,
 		pprofserver.AddFlags,
-		zpages.AddFlags,
 	)
 
 	return rootCmd.Execute()

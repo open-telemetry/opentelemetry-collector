@@ -25,7 +25,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-service/defaults"
 	"github.com/open-telemetry/opentelemetry-service/internal/testutils"
-	"github.com/open-telemetry/opentelemetry-service/zpages"
 )
 
 func TestApplication_StartUnified(t *testing.T) {
@@ -36,7 +35,6 @@ func TestApplication_StartUnified(t *testing.T) {
 
 	portArg := []string{
 		healthCheckHTTPPort, // Keep it as first since its address is used later.
-		zpages.ZPagesHTTPPort,
 		"metrics-port",
 	}
 	addresses := getMultipleAvailableLocalAddresses(t, uint(len(portArg)))

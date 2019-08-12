@@ -29,6 +29,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/exporter"
 	"github.com/open-telemetry/opentelemetry-service/processor"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
+	"github.com/open-telemetry/opentelemetry-service/zpages"
 )
 
 // These are errors that can be returned by Load(). Note that error codes are not part
@@ -81,6 +82,9 @@ const (
 
 	// pipelinesKeyName is the configuration key name for pipelines section.
 	pipelinesKeyName = "pipelines"
+
+	// zpagesKeyName is the configuration key name for ZPages section.
+	zpagesKeyName = "zpages"
 )
 
 // typeAndNameSeparator is the separator that is used between type and name in type/name composite keys.
@@ -92,6 +96,7 @@ func Load(
 	receiverFactories map[string]receiver.Factory,
 	processorFactories map[string]processor.Factory,
 	exporterFactories map[string]exporter.Factory,
+	zpagesFactory zpages.Factory,
 	logger *zap.Logger,
 ) (*configmodels.Config, error) {
 
@@ -122,6 +127,12 @@ func Load(
 		return nil, err
 	}
 	config.Pipelines = pipelines
+
+	zpages, err := loadZPages(v, zpagesFactory)
+	if err != nil {
+		return nil, err
+	}
+	config.ZPages = zpages
 
 	// Config is loaded. Now validate it.
 
@@ -429,6 +440,30 @@ func loadPipelines(v *viper.Viper) (configmodels.Pipelines, error) {
 	}
 
 	return pipelines, nil
+}
+
+func loadZPages(v *viper.Viper, factory zpages.Factory) (configmodels.ZPages, error) {
+	// Get "zpages" sub viper from config source.
+	subViper := v.Sub(zpagesKeyName)
+
+	if subViper == nil {
+		// Don't start ZPages server unless users explicitly specify it in the config.
+		return &configmodels.ZPagesSettings{Disabled: true}, nil
+	}
+
+	// Create the default config for this Z Pages server.
+	zpagesCfg := factory.CreateDefaultConfig()
+
+	// Now that the default config struct is created we can Unmarshal into it
+	// and it will apply user-defined config on top of the default.
+	if err := subViper.Unmarshal(zpagesCfg); err != nil {
+		return nil, &configError{
+			code: errUnmarshalError,
+			msg:  fmt.Sprintf("error reading settings for zpages: %v", err),
+		}
+	}
+
+	return zpagesCfg, nil
 }
 
 func validateConfig(cfg *configmodels.Config, logger *zap.Logger) error {

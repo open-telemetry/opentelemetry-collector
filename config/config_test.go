@@ -114,6 +114,12 @@ func TestDecodeConfig(t *testing.T) {
 		},
 		config.Pipelines["traces"],
 		"Did not load pipeline config correctly")
+
+	// Verify ZPages
+	assert.Equal(t,
+		&configmodels.ZPagesSettings{Port: 8999},
+		config.ZPages,
+		"Did not load zpages config correctly")
 }
 
 func TestDecodeConfig_MultiProto(t *testing.T) {

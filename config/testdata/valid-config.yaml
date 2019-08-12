@@ -23,3 +23,6 @@ pipelines:
     receivers: [examplereceiver, examplereceiver/disabled]
     processors: [exampleprocessor, exampleprocessor/disabled]
     exporters: [exampleexporter/disabled, exampleexporter]
+
+zpages:
+  port: 8999

@@ -25,6 +25,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/exporter"
 	"github.com/open-telemetry/opentelemetry-service/processor"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
+	"github.com/open-telemetry/opentelemetry-service/zpages"
 )
 
 // LoadConfigFile loads a config from file.
@@ -52,5 +53,5 @@ func LoadConfigFile(
 	}
 
 	// Load the config from viper
-	return Load(v, receivers, processors, exporters, zap.NewNop())
+	return Load(v, receivers, processors, exporters, zpages.Factory{}, zap.NewNop())
 }

@@ -15,37 +15,28 @@
 package zpages
 
 import (
-	"flag"
 	"net"
 	"net/http"
 	"runtime"
 	"strconv"
 	"testing"
 	"time"
+
+	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 )
-
-func TestZPagesServerFlags(t *testing.T) {
-	fs := flag.NewFlagSet("test", flag.ExitOnError)
-	AddFlags(fs)
-
-	args := []string{
-		"--" + ZPagesHTTPPort + "=12345",
-	}
-
-	if err := fs.Parse(args); err != nil {
-		t.Fatalf("failed to parse arguments: %v", err)
-	}
-}
 
 func TestZPagesServerPortInUse(t *testing.T) {
 	const zpagesPort = 17789
+	cfg := &configmodels.ZPagesSettings{Port: zpagesPort}
 	ln, err := net.Listen("tcp", ":"+strconv.Itoa(zpagesPort))
 	if err != nil {
 		t.Fatalf("error opening port: %v", err)
 	}
 	defer ln.Close()
 	asyncErrChan := make(chan error)
-	closeFn, err := Run(asyncErrChan, zpagesPort)
+	closeFn, err := Run(zap.NewNop(), asyncErrChan, cfg)
 	if err == nil {
 		closeFn()
 		t.Fatalf("expected error, got nil")
@@ -54,9 +45,10 @@ func TestZPagesServerPortInUse(t *testing.T) {
 
 func TestZPagesServer(t *testing.T) {
 	const zpagesPort = 17789
+	cfg := &configmodels.ZPagesSettings{Port: zpagesPort}
 
 	asyncErrChan := make(chan error, 1)
-	closeFn, err := Run(asyncErrChan, zpagesPort)
+	closeFn, err := Run(zap.NewNop(), asyncErrChan, cfg)
 	if err != nil {
 		t.Fatalf("failed to setup zpages server: %v", err)
 	}

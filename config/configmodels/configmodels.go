@@ -37,6 +37,7 @@ type Config struct {
 	Exporters  Exporters
 	Processors Processors
 	Pipelines  Pipelines
+	ZPages     ZPages
 }
 
 // NamedEntity is a configuration entity that has a name.
@@ -124,6 +125,11 @@ type Pipeline struct {
 
 // Pipelines is a map of names to Pipelines.
 type Pipelines map[string]*Pipeline
+
+// ZPages is the configuration of a Z Pages server.
+type ZPages interface {
+	IsEnabled() bool
+}
 
 // Below are common setting structs for Receivers, Exporters and Processors.
 // These are helper structs which you can embed when implementing your specific
@@ -239,3 +245,22 @@ func (proc *ProcessorSettings) IsEnabled() bool {
 }
 
 var _ Processor = (*ProcessorSettings)(nil)
+
+// ZPagesSettings holds the configuration for Z Pages Server.
+type ZPagesSettings struct {
+	// Disabled configures if the Z Pages server is disabled.
+	// The default value is false (meaning Z Pages server is enabled by default).
+	Disabled bool `mapstructure:"disabled"`
+	// Port configures the http port for the Z Pages server.
+	// The default value is 55679.
+	Port uint64 `mapstructure:"port"`
+}
+
+// IsEnabled returns true if the entity is enabled.
+func (zst *ZPagesSettings) IsEnabled() bool {
+	// Note: we use Disabled bool so that the default of false results in
+	// entity being enabled by default.
+	return !zst.Disabled
+}
+
+var _ ZPages = (*ZPagesSettings)(nil)
