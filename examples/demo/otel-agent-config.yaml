@@ -25,3 +25,6 @@ pipelines:
     receivers: [opencensus, jaeger]
     exporters: [opencensus, logging]
     processors: [batch, queued-retry]
+  metrics:
+    receivers: [opencensus]
+    exporters: [logging,opencensus]
