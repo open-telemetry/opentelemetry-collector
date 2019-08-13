@@ -37,7 +37,11 @@ exporters:
 ```
 
 ## <a name="logging"></a>Logging
-TODO: document settings
+Exports traces and/or metrics to the console via zap.Logger
+
+### <a name="logging-configuration"></a>Configuration
+
+* `loglevel`: the log level of the logging export (debug|info|warn|error). Default is `info`.
 
 ## <a name="opencensus"></a>OpenCensus
 Exports traces and/or metrics to another OTel-Svc endpoint via gRPC.
