@@ -47,6 +47,9 @@ receivers:
     # This receiver is disabled and won't receive any data.
     disabled: true
 
+  opencensus/cors:
+    cors-allowed-origins:
+    - https://*.test.com
 processors:
   exampleprocessor:
 
