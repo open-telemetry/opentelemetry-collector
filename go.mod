@@ -22,7 +22,6 @@ require (
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jaegertracing/jaeger v1.9.0
 	github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024
-	github.com/omnition/scribe-go v0.0.0-20190131012523-9e3c68f31124
 	github.com/opentracing/opentracing-go v1.1.0 // indirect
 	github.com/openzipkin/zipkin-go v0.1.6
 	github.com/orijtech/prometheus-go-metrics-exporter v0.0.3-0.20190313163149-b321c5297f60
