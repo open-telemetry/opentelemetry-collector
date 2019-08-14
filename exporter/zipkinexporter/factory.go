@@ -62,7 +62,7 @@ func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Ex
 		return nil, nil, err
 	}
 
-	return ze, ze.stop, nil
+	return ze, ze.Stop, nil
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.

@@ -91,7 +91,10 @@ func (f *Factory) CreateMetricsExporter(logger *zap.Logger, cfg configmodels.Exp
 		_ = srv.Serve(ln)
 	}()
 
-	pexp := &prometheusExporter{exporter: pe}
+	pexp := &prometheusExporter{
+		exporter: pe,
+		stopFunc: ln.Close,
+	}
 
-	return pexp, ln.Close, nil
+	return pexp, pexp.Stop, nil
 }

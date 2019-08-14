@@ -103,7 +103,7 @@ func ZipkinExportersFromViper(v *viper.Viper) (tps []consumer.TraceConsumer, mps
 		return nil, nil, nil, fmt.Errorf("cannot configure Zipkin exporter: %v", err)
 	}
 	tps = append(tps, zle)
-	doneFns = append(doneFns, zle.stop)
+	doneFns = append(doneFns, zle.Stop)
 	return
 }
 
@@ -176,7 +176,11 @@ func zipkinEndpointFromNode(node *commonpb.Node, serviceName string, endpointTyp
 	return zEndpoint
 }
 
-func (ze *zipkinExporter) stop() error {
+func (ze *zipkinExporter) Name() string {
+	return "fix me"
+}
+
+func (ze *zipkinExporter) Stop() error {
 	ze.mu.Lock()
 	defer ze.mu.Unlock()
 

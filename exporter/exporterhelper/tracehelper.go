@@ -31,6 +31,7 @@ type PushTraceData func(ctx context.Context, td consumerdata.TraceData) (dropped
 type traceExporter struct {
 	exporterName  string
 	pushTraceData PushTraceData
+	stopFunc      Stop
 }
 
 var _ (exporter.TraceExporter) = (*traceExporter)(nil)
@@ -45,16 +46,24 @@ func (te *traceExporter) Name() string {
 	return te.exporterName
 }
 
+func (te *traceExporter) Stop() error {
+	return te.stopFunc()
+}
+
 // NewTraceExporter creates an TraceExporter that can record metrics and can wrap every request with a Span.
 // If no options are passed it just adds the exporter format as a tag in the Context.
 // TODO: Add support for retries.
-func NewTraceExporter(exporterName string, pushTraceData PushTraceData, options ...ExporterOption) (exporter.TraceExporter, error) {
+func NewTraceExporter(exporterName string, pushTraceData PushTraceData, stopFunc Stop, options ...ExporterOption) (exporter.TraceExporter, error) {
 	if exporterName == "" {
 		return nil, errEmptyExporterName
 	}
 
 	if pushTraceData == nil {
 		return nil, errNilPushTraceData
+	}
+
+	if stopFunc == nil {
+		return nil, errNilStopFunction
 	}
 
 	opts := newExporterOptions(options...)
@@ -69,6 +78,7 @@ func NewTraceExporter(exporterName string, pushTraceData PushTraceData, options 
 	return &traceExporter{
 		exporterName:  exporterName,
 		pushTraceData: pushTraceData,
+		stopFunc:      stopFunc,
 	}, nil
 }
 

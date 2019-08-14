@@ -99,6 +99,7 @@ func PrometheusExportersFromViper(v *viper.Viper) (tps []consumer.TraceConsumer,
 
 type prometheusExporter struct {
 	exporter *prometheus.Exporter
+	stopFunc func() error
 }
 
 var _ consumer.MetricsConsumer = (*prometheusExporter)(nil)
@@ -108,4 +109,12 @@ func (pe *prometheusExporter) ConsumeMetricsData(ctx context.Context, md consume
 		_ = pe.exporter.ExportMetric(ctx, md.Node, md.Resource, metric)
 	}
 	return nil
+}
+
+func (pe *prometheusExporter) Name() string {
+	return "fixme"
+}
+
+func (pe *prometheusExporter) Stop() error {
+	return pe.stopFunc()
 }

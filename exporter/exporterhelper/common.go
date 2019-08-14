@@ -22,6 +22,9 @@ var (
 	okStatus = trace.Status{Code: trace.StatusCodeOK}
 )
 
+// Stop specifies the stop function inovked when the exporter is being shutdown.
+type Stop func() error
+
 // ExporterOptions contains options concerning how an Exporter is configured.
 type ExporterOptions struct {
 	// TODO: Retry logic must be in the same place as metrics recording because

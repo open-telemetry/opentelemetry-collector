@@ -44,6 +44,7 @@ func New(exporterName, collectorEndpoint string) (exporter.TraceExporter, error)
 	exp, err := exporterhelper.NewTraceExporter(
 		exporterName,
 		s.pushTraceData,
+		s.Stop,
 		exporterhelper.WithSpanName("otelsvc.exporter."+exporterName+".ConsumeTraceData"),
 		exporterhelper.WithRecordMetrics(true))
 
@@ -75,4 +76,9 @@ func (s *protoGRPCSender) pushTraceData(
 	}
 
 	return droppedSpans, err
+}
+
+// Stop does nothing at the moment.
+func (s *protoGRPCSender) Stop() error {
+	return nil
 }

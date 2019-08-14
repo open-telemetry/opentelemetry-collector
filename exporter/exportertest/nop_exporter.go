@@ -40,6 +40,10 @@ func (ne *nopExporter) ConsumeMetricsData(ctx context.Context, md consumerdata.M
 	return ne.retError
 }
 
+func (ne *nopExporter) Stop() error {
+	return nil
+}
+
 const (
 	nopTraceExporterName   = "nop_trace"
 	nopMetricsExporterName = "nop_metrics"

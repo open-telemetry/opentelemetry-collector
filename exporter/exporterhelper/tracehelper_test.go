@@ -36,19 +36,26 @@ const (
 )
 
 func TestTraceExporter_InvalidName(t *testing.T) {
-	if _, err := NewTraceExporter("", newPushTraceData(0, nil)); err != errEmptyExporterName {
+	if _, err := NewTraceExporter("", newPushTraceData(0, nil), newStop(nil)); err != errEmptyExporterName {
 		t.Fatalf("NewTraceExporter returns: Want %v Got %v", errEmptyExporterName, err)
 	}
 }
 
 func TestTraceExporter_NilPushTraceData(t *testing.T) {
-	if _, err := NewTraceExporter(fakeExporterName, nil); err != errNilPushTraceData {
+	if _, err := NewTraceExporter(fakeExporterName, nil, newStop(nil)); err != errNilPushTraceData {
 		t.Fatalf("NewTraceExporter returns: Want %v Got %v", errNilPushTraceData, err)
 	}
 }
+
+func TestTraceExporter_errNilStopFunction(t *testing.T) {
+	if _, err := NewTraceExporter(fakeExporterName, newPushTraceData(0, nil), nil); err != errNilStopFunction {
+		t.Fatalf("NewTraceExporter returns: Want %v Got %v", errNilStopFunction, err)
+	}
+}
+
 func TestTraceExporter_Default(t *testing.T) {
 	td := consumerdata.TraceData{}
-	te, err := NewTraceExporter(fakeExporterName, newPushTraceData(0, nil))
+	te, err := NewTraceExporter(fakeExporterName, newPushTraceData(0, nil), newStop(nil))
 	if err != nil {
 		t.Fatalf("NewTraceExporter returns: Want nil Got %v", err)
 	}
@@ -63,7 +70,7 @@ func TestTraceExporter_Default(t *testing.T) {
 func TestTraceExporter_Default_ReturnError(t *testing.T) {
 	td := consumerdata.TraceData{}
 	want := errors.New("my_error")
-	te, err := NewTraceExporter(fakeExporterName, newPushTraceData(0, want))
+	te, err := NewTraceExporter(fakeExporterName, newPushTraceData(0, want), newStop(nil))
 	if err != nil {
 		t.Fatalf("NewTraceExporter returns: Want nil Got %v", err)
 	}
@@ -73,7 +80,7 @@ func TestTraceExporter_Default_ReturnError(t *testing.T) {
 }
 
 func TestTraceExporter_WithRecordMetrics(t *testing.T) {
-	te, err := NewTraceExporter(fakeExporterName, newPushTraceData(0, nil), WithRecordMetrics(true))
+	te, err := NewTraceExporter(fakeExporterName, newPushTraceData(0, nil), newStop(nil), WithRecordMetrics(true))
 	if err != nil {
 		t.Fatalf("NewTraceExporter returns: Want nil Got %v", err)
 	}
@@ -81,7 +88,7 @@ func TestTraceExporter_WithRecordMetrics(t *testing.T) {
 }
 
 func TestTraceExporter_WithRecordMetrics_NonZeroDropped(t *testing.T) {
-	te, err := NewTraceExporter(fakeExporterName, newPushTraceData(1, nil), WithRecordMetrics(true))
+	te, err := NewTraceExporter(fakeExporterName, newPushTraceData(1, nil), newStop(nil), WithRecordMetrics(true))
 	if err != nil {
 		t.Fatalf("NewTraceExporter returns: Want nil Got %v", err)
 	}
@@ -90,7 +97,7 @@ func TestTraceExporter_WithRecordMetrics_NonZeroDropped(t *testing.T) {
 
 func TestTraceExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
-	te, err := NewTraceExporter(fakeExporterName, newPushTraceData(0, want), WithRecordMetrics(true))
+	te, err := NewTraceExporter(fakeExporterName, newPushTraceData(0, want), newStop(nil), WithRecordMetrics(true))
 	if err != nil {
 		t.Fatalf("NewTraceExporter returns: Want nil Got %v", err)
 	}
@@ -98,7 +105,7 @@ func TestTraceExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 }
 
 func TestTraceExporter_WithSpan(t *testing.T) {
-	te, err := NewTraceExporter(fakeExporterName, newPushTraceData(0, nil), WithSpanName(fakeSpanName))
+	te, err := NewTraceExporter(fakeExporterName, newPushTraceData(0, nil), newStop(nil), WithSpanName(fakeSpanName))
 	if err != nil {
 		t.Fatalf("NewTraceExporter returns: Want nil Got %v", err)
 	}
@@ -106,7 +113,7 @@ func TestTraceExporter_WithSpan(t *testing.T) {
 }
 
 func TestTraceExporter_WithSpan_NonZeroDropped(t *testing.T) {
-	te, err := NewTraceExporter(fakeExporterName, newPushTraceData(1, nil), WithSpanName(fakeSpanName))
+	te, err := NewTraceExporter(fakeExporterName, newPushTraceData(1, nil), newStop(nil), WithSpanName(fakeSpanName))
 	if err != nil {
 		t.Fatalf("NewTraceExporter returns: Want nil Got %v", err)
 	}
@@ -115,7 +122,7 @@ func TestTraceExporter_WithSpan_NonZeroDropped(t *testing.T) {
 
 func TestTraceExporter_WithSpan_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
-	te, err := NewTraceExporter(fakeExporterName, newPushTraceData(0, want), WithSpanName(fakeSpanName))
+	te, err := NewTraceExporter(fakeExporterName, newPushTraceData(0, want), newStop(nil), WithSpanName(fakeSpanName))
 	if err != nil {
 		t.Fatalf("NewTraceExporter returns: Want nil Got %v", err)
 	}
