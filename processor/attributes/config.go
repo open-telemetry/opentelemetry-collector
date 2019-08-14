@@ -16,7 +16,7 @@ package attributes
 
 import "github.com/open-telemetry/opentelemetry-service/config/configmodels"
 
-// Config specifies the set of attributes to be added, updated and deleted.
+// Config specifies the set of attributes to be inserted, updated, upserted and deleted.
 // This processor handles all forms of modifications to attributes within a span.
 // The list of actions is applied in order specified in the configuration.
 type Config struct {
