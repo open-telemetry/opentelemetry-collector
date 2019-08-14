@@ -32,6 +32,8 @@ type Config struct {
 	// TLSCredentials is a (cert_file, key_file) configuration.
 	TLSCredentials *tlsCredentials `mapstructure:"tls-credentials,omitempty"`
 
+	CorsOrigins []string `mapstructure:"corsOrigins"`
+
 	// Keepalive anchor for all the settings related to keepalive.
 	Keepalive *serverParametersAndEnforcementPolicy `mapstructure:"keepalive,omitempty"`
 
@@ -88,6 +90,9 @@ func (rOpts *Config) buildOptions() (opts []Option, err error) {
 	}
 	if hasTLSCreds {
 		opts = append(opts, tlsCredsOption)
+	}
+	if len(rOpts.CorsOrigins) > 0 {
+		opts = append(opts, WithCorsOrigins(rOpts.CorsOrigins))
 	}
 
 	grpcServerOptions := rOpts.grpcServerOptions()
