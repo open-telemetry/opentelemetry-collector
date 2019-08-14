@@ -26,7 +26,8 @@ type TraceExporter interface {
 	// Name gets the name of the trace exporter.
 	Name() string
 
-	// Stop is invoked to stop the exporter during shutdown.
+	// Stop is invoked to stop the exporter and do any necessary clean up.
+	// Typically this is invoked during service shutdown.
 	Stop() error
 }
 
@@ -37,6 +38,7 @@ type MetricsExporter interface {
 	// Name gets the name of the metrics exporter.
 	Name() string
 
-	// Stop is invoked to stop the exporter during shutdown.
+	// Stop is invoked to stop the exporter and do any necessary clean up.
+	// Typically this is invoked during service shutdown.
 	Stop() error
 }
