@@ -32,7 +32,7 @@ type Config struct {
 	// TLSCredentials is a (cert_file, key_file) configuration.
 	TLSCredentials *tlsCredentials `mapstructure:"tls-credentials,omitempty"`
 
-	CorsOrigins []string `mapstructure:"corsOrigins"`
+	CorsOrigins []string `mapstructure:"cors-allowed-origins"`
 
 	// Keepalive anchor for all the settings related to keepalive.
 	Keepalive *serverParametersAndEnforcementPolicy `mapstructure:"keepalive,omitempty"`

@@ -68,9 +68,6 @@ The full list of settings exposed for this receiver are documented [here](https:
 with detailed sample configurations [here](https://github.com/open-telemetry/opentelemetry-service/blob/master/receiver/opencensusreceiver/testdata/config.yaml).
 
 ### Writing with HTTP/JSON 
-// TODO(ccaraman) The cors setting wasn't ported accidentally. In a follow up
-pr, add the functionality, tests and update this section of documentation.
-
 The OpenCensus receiver for the agent can receive trace export calls via
 HTTP/JSON in addition to gRPC. The HTTP/JSON address is the same as gRPC as the
 protocol is recognized and processed accordingly.
@@ -87,7 +84,7 @@ specifying a list of allowed CORS origins in the `cors_allowed_origins` field:
 receivers:
   opencensus:
     endpoint: "localhost:55678"
-    cors_allowed_origins:
+    cors-allowed-origins:
     - http://test.com
     # Origins can have wildcards with *, use * by itself to match any origin.
     - https://*.example.com  
