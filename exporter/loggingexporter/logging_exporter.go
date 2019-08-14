@@ -27,14 +27,16 @@ import (
 // NewTraceExporter creates an exporter.TraceExporter that just drops the
 // received data and logs debugging messages.
 func NewTraceExporter(exporterName string, logger *zap.Logger) (exporter.TraceExporter, error) {
-	tl := traceLogger{
-		name:   exporterName,
-		logger: logger,
-	}
 	return exporterhelper.NewTraceExporter(
 		exporterName,
-		tl.pushTraceData,
-		tl.stop,
+		func(ctx context.Context, td consumerdata.TraceData) (int, error) {
+			logger.Debug(exporterName, zap.Int("#spans", len(td.Spans)))
+			// TODO: Add ability to record the received data
+			return 0, nil
+		},
+		func() error {
+			return nil
+		},
 		exporterhelper.WithSpanName(exporterName+".ConsumeTraceData"), exporterhelper.WithRecordMetrics(true),
 	)
 }
@@ -42,46 +44,16 @@ func NewTraceExporter(exporterName string, logger *zap.Logger) (exporter.TraceEx
 // NewMetricsExporter creates an exporter.MetricsExporter that just drops the
 // received data and logs debugging messages.
 func NewMetricsExporter(exporterName string, logger *zap.Logger) (exporter.MetricsExporter, error) {
-	ml := metricsLogger{
-		name:   exporterName,
-		logger: logger,
-	}
 	return exporterhelper.NewMetricsExporter(
 		exporterName,
-		ml.pushMetricsData,
-		ml.stop,
+		func(ctx context.Context, md consumerdata.MetricsData) (int, error) {
+			logger.Debug(exporterName, zap.Int("#metrics", len(md.Metrics)))
+			// TODO: Add ability to record the received data
+			return 0, nil
+		},
+		func() error {
+			return nil
+		},
 		exporterhelper.WithSpanName(exporterName+".ConsumeMetricsData"), exporterhelper.WithRecordMetrics(true),
 	)
-}
-
-type traceLogger struct {
-	name   string
-	logger *zap.Logger
-}
-
-func (tl *traceLogger) pushTraceData(
-	ctx context.Context,
-	td consumerdata.TraceData) (int, error) {
-	tl.logger.Debug(tl.name, zap.Int("#spans", len(td.Spans)))
-	// TODO: Add ability to record the received data
-	return 0, nil
-}
-
-func (tl *traceLogger) stop() error {
-	return nil
-}
-
-type metricsLogger struct {
-	name   string
-	logger *zap.Logger
-}
-
-func (ml *metricsLogger) pushMetricsData(ctx context.Context, md consumerdata.MetricsData) (int, error) {
-	ml.logger.Debug(ml.name, zap.Int("#metrics", len(md.Metrics)))
-	// TODO: Add ability to record the received data
-	return 0, nil
-}
-
-func (ml *metricsLogger) stop() error {
-	return nil
 }

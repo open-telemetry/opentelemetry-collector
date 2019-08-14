@@ -169,6 +169,7 @@ func (f *Factory) CreateMetricsExporter(logger *zap.Logger, config configmodels.
 	if err != nil {
 		return nil, nil, err
 	}
+	// TODO(ccaraman) Fix the exporter name set. It is expected to us the full name <exporter type>(/<name from config>
 	oexp, err := exporterhelper.NewMetricsExporter(
 		"oc_metrics",
 		oce.PushMetricsData,

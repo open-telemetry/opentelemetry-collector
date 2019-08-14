@@ -98,6 +98,7 @@ func PrometheusExportersFromViper(v *viper.Viper) (tps []consumer.TraceConsumer,
 }
 
 type prometheusExporter struct {
+	name     string
 	exporter *prometheus.Exporter
 	stopFunc func() error
 }
@@ -112,7 +113,7 @@ func (pe *prometheusExporter) ConsumeMetricsData(ctx context.Context, md consume
 }
 
 func (pe *prometheusExporter) Name() string {
-	return "fixme"
+	return pe.name
 }
 
 func (pe *prometheusExporter) Stop() error {

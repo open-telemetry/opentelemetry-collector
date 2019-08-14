@@ -177,7 +177,7 @@ func zipkinEndpointFromNode(node *commonpb.Node, serviceName string, endpointTyp
 }
 
 func (ze *zipkinExporter) Name() string {
-	return "fix me"
+	return ze.defaultServiceName
 }
 
 func (ze *zipkinExporter) Stop() error {

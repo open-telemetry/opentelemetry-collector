@@ -56,7 +56,7 @@ func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Ex
 	if cfg.URL == "" {
 		return nil, nil, errors.New("exporter config requires a non-empty 'url'") // TODO: better error
 	}
-
+	// TODO Fix service name. Should this be the full name of the exporter?
 	ze, err := newZipkinExporter(cfg.URL, "<missing service name>", 0)
 	if err != nil {
 		return nil, nil, err
