@@ -26,6 +26,7 @@ services:
       - "55680:55679"
       - "1777:1777"
       - "8888:8888" # Prometheus metrics
+      - "8889:8889" # Prometheus exporter metrics
     depends_on:
       - jaeger-all-in-one
       - zipkin-all-in-one
@@ -48,6 +49,17 @@ services:
     image: omnition/synthetic-load-generator:1.0.25
     environment:
       - JAEGER_COLLECTOR_URL=http://otel-agent:14268
+    depends_on:
+      - otel-agent
+
+  metrics-load-generator:
+    image: golang:1.12.7
+    volumes:
+      - ../main.go:/usr/src/main.go
+    environment:
+      - GO111MODULE=on
+      - OTEL_AGENT_ENDPOINT=otel-agent:55678
+    command: ["bash", "-c", "go run /usr/src/main.go"]
     depends_on:
       - otel-agent
 

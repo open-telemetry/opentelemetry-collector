@@ -389,7 +389,7 @@ func (jr *jReceiver) startCollector(host receiver.Host) error {
 	taddr := jr.tchannelAddr()
 	tln, terr := net.Listen("tcp", taddr)
 	if terr != nil {
-		return fmt.Errorf("failed to bind to TChannnel address %q: %v", taddr, terr)
+		return fmt.Errorf("failed to bind to TChannel address %q: %v", taddr, terr)
 	}
 	tch.Serve(tln)
 	jr.tchannel = tch

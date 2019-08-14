@@ -31,7 +31,12 @@ import (
 )
 
 func main() {
+	ocAgentAddr, ok := os.LookupEnv("OTEL_AGENT_ENDPOINT")
+	if !ok {
+		ocAgentAddr = ocagent.DefaultAgentHost + ":" + string(ocagent.DefaultAgentPort)
+	}
 	oce, err := ocagent.NewExporter(
+		ocagent.WithAddress(ocAgentAddr),
 		ocagent.WithInsecure(),
 		ocagent.WithServiceName(fmt.Sprintf("example-go-%d", os.Getpid())))
 	if err != nil {
