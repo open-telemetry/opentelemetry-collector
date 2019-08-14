@@ -4,7 +4,7 @@ out in the [OpenTelemetry Gitter](https://gitter.im/open-telemetry/opentelemetry
 or refer to the [issues page](https://github.com/open-telemetry/opentelemetry-service/issues).
 
 ## <a name="attributes"></a>Attributes Processor
-The attributes processors modifies attributes of a span.
+The attributes processor modifies attributes of a span.
 
 It takes a list of actions which are performed in order specified in the config.
 The supported actions are:

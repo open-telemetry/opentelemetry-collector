@@ -63,7 +63,7 @@ type ActionKeyValue struct {
 type Action int
 
 const (
-	// ADD adds the key/value to spans when the key does not exist.
+	// INSERT adds the key/value to spans when the key does not exist.
 	// No action is applied to spans where the key already exists.
 	// This is the default operation.
 	INSERT Action = iota
