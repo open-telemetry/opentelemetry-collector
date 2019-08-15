@@ -30,7 +30,7 @@ func NewTraceExporter(exporterName string, logger *zap.Logger) (exporter.TraceEx
 	return exporterhelper.NewTraceExporter(
 		exporterName,
 		func(ctx context.Context, td consumerdata.TraceData) (int, error) {
-			logger.Debug(exporterName, zap.Int("#spans", len(td.Spans)))
+			logger.Info(exporterName, zap.Int("#spans", len(td.Spans)))
 			// TODO: Add ability to record the received data
 			return 0, nil
 		},
@@ -44,7 +44,7 @@ func NewMetricsExporter(exporterName string, logger *zap.Logger) (exporter.Metri
 	return exporterhelper.NewMetricsExporter(
 		exporterName,
 		func(ctx context.Context, md consumerdata.MetricsData) (int, error) {
-			logger.Debug(exporterName, zap.Int("#metrics", len(md.Metrics)))
+			logger.Info(exporterName, zap.Int("#metrics", len(md.Metrics)))
 			// TODO: Add ability to record the received data
 			return 0, nil
 		},

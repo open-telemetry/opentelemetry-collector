@@ -52,16 +52,16 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Exporter) (consumer.TraceConsumer, exporter.StopFunc, error) {
 	cfg := config.(*Config)
 
-	le, err := f.createLogger(cfg.LogLevel)
+	exporterLogger, err := f.createLogger(cfg.LogLevel)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	lexp, err := NewTraceExporter(cfg.Name(), le)
+	lexp, err := NewTraceExporter(cfg.Name(), exporterLogger)
 	if err != nil {
 		return nil, nil, err
 	}
-	return lexp, le.Sync, nil
+	return lexp, exporterLogger.Sync, nil
 }
 
 func (f *Factory) createLogger(logLevel string) (*zap.Logger, error) {
@@ -83,14 +83,14 @@ func (f *Factory) createLogger(logLevel string) (*zap.Logger, error) {
 func (f *Factory) CreateMetricsExporter(logger *zap.Logger, config configmodels.Exporter) (consumer.MetricsConsumer, exporter.StopFunc, error) {
 	cfg := config.(*Config)
 
-	le, err := f.createLogger(cfg.LogLevel)
+	exporterLogger, err := f.createLogger(cfg.LogLevel)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	lexp, err := NewMetricsExporter(cfg.Name(), le)
+	lexp, err := NewMetricsExporter(cfg.Name(), exporterLogger)
 	if err != nil {
 		return nil, nil, err
 	}
-	return lexp, le.Sync, nil
+	return lexp, exporterLogger.Sync, nil
 }
