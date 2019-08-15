@@ -55,7 +55,7 @@ func TestLoadConfig(t *testing.T) {
 					Endpoint: "127.0.0.1:9876",
 				},
 				"thrift-http": {
-					Endpoint: "127.0.0.1:3456",
+					Endpoint: ":3456",
 				},
 				"thrift-tchannel": {
 					Endpoint: "0.0.0.0:123",

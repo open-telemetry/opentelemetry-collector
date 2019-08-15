@@ -96,9 +96,9 @@ receivers:
 ## <a name="jaeger"></a>Jaeger Receiver
 **Only traces are supported.**
 
-This receiver receives traces from [Jaeger](https://www.jaegertracing.io)
-instrumented applications. It translates them into the internal format and sends
-it to processors and receivers.
+This receiver receives traces in the [Jaeger](https://www.jaegertracing.io)
+format. It translates them into the internal format and sends
+it to processors and exporters.
 
 It supports multiple protocols:
 - Thrift HTTP
@@ -110,7 +110,7 @@ specified in [factory.go](jaegerreceiver/factory.go). The following demonstrates
 how to specify the default Jaeger receiver.
 ```yaml
 receivers:
-  jaegers:
+  jaeger:
 ```
 
 It is possible to configure the protocols on different ports, refer to
