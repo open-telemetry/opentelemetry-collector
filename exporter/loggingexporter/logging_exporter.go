@@ -34,9 +34,6 @@ func NewTraceExporter(exporterName string, logger *zap.Logger) (exporter.TraceEx
 			// TODO: Add ability to record the received data
 			return 0, nil
 		},
-		func() error {
-			return nil
-		},
 		exporterhelper.WithSpanName(exporterName+".ConsumeTraceData"), exporterhelper.WithRecordMetrics(true),
 	)
 }
@@ -50,9 +47,6 @@ func NewMetricsExporter(exporterName string, logger *zap.Logger) (exporter.Metri
 			logger.Debug(exporterName, zap.Int("#metrics", len(md.Metrics)))
 			// TODO: Add ability to record the received data
 			return 0, nil
-		},
-		func() error {
-			return nil
 		},
 		exporterhelper.WithSpanName(exporterName+".ConsumeMetricsData"), exporterhelper.WithRecordMetrics(true),
 	)

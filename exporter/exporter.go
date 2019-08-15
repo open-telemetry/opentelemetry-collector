@@ -26,9 +26,8 @@ type TraceExporter interface {
 	// Name gets the name of the trace exporter.
 	Name() string
 
-	// Stop is invoked to stop the exporter and do any necessary clean up.
-	// Typically this is invoked during service shutdown.
-	Stop() error
+	// Shutdown is invoked during service shutdown.
+	Shutdown() error
 }
 
 // MetricsExporter composes MetricsConsumer with some additional exporter-specific functions.
@@ -38,7 +37,6 @@ type MetricsExporter interface {
 	// Name gets the name of the metrics exporter.
 	Name() string
 
-	// Stop is invoked to stop the exporter and do any necessary clean up.
-	// Typically this is invoked during service shutdown.
-	Stop() error
+	// Shutdown is invoked during service shutdown.
+	Shutdown() error
 }

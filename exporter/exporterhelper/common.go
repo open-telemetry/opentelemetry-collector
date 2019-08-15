@@ -22,8 +22,8 @@ var (
 	okStatus = trace.Status{Code: trace.StatusCodeOK}
 )
 
-// Stop specifies the stop function inovked when the exporter is being shutdown.
-type Stop func() error
+// Shutdown specifies the function invoked when the exporter is being shutdown.
+type Shutdown func() error
 
 // ExporterOptions contains options concerning how an Exporter is configured.
 type ExporterOptions struct {
@@ -33,6 +33,7 @@ type ExporterOptions struct {
 	// in the receiver.
 	recordMetrics bool
 	spanName      string
+	shutdownFunc  Shutdown
 }
 
 // ExporterOption apply changes to ExporterOptions.
@@ -49,6 +50,14 @@ func WithRecordMetrics(recordMetrics bool) ExporterOption {
 func WithSpanName(spanName string) ExporterOption {
 	return func(o *ExporterOptions) {
 		o.spanName = spanName
+	}
+}
+
+// WithShutdown overrides the default Shutdown function for an exporter.
+// The default shutdown function does nothing and returns nil.
+func WithShutdown(shutdown Shutdown) ExporterOption {
+	return func(o *ExporterOptions) {
+		o.shutdownFunc = shutdown
 	}
 }
 

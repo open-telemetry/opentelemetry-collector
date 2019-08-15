@@ -31,7 +31,7 @@ type PushMetricsData func(ctx context.Context, td consumerdata.MetricsData) (dro
 type metricsExporter struct {
 	exporterName    string
 	pushMetricsData PushMetricsData
-	stopFunc        Stop
+	shutdownFunc    Shutdown
 }
 
 var _ (exporter.MetricsExporter) = (*metricsExporter)(nil)
@@ -46,16 +46,15 @@ func (me *metricsExporter) ConsumeMetricsData(ctx context.Context, md consumerda
 	return err
 }
 
-// Expose a way to override the Stop function
-func (me *metricsExporter) Stop() error {
-	return me.stopFunc()
+func (me *metricsExporter) Shutdown() error {
+	return me.shutdownFunc()
 }
 
 // NewMetricsExporter creates an MetricsExporter that can record metrics and can wrap every request with a Span.
 // If no options are passed it just adds the exporter format as a tag in the Context.
 // TODO: Add support for recordMetrics.
 // TODO: Add support for retries.
-func NewMetricsExporter(exporterName string, pushMetricsData PushMetricsData, stopFunc Stop, options ...ExporterOption) (exporter.MetricsExporter, error) {
+func NewMetricsExporter(exporterName string, pushMetricsData PushMetricsData, options ...ExporterOption) (exporter.MetricsExporter, error) {
 	if exporterName == "" {
 		return nil, errEmptyExporterName
 	}
@@ -64,20 +63,21 @@ func NewMetricsExporter(exporterName string, pushMetricsData PushMetricsData, st
 		return nil, errNilPushMetricsData
 	}
 
-	if stopFunc == nil {
-		return nil, errNilStopFunction
-	}
-
 	opts := newExporterOptions(options...)
 
 	if opts.spanName != "" {
 		pushMetricsData = pushMetricsDataWithSpan(pushMetricsData, opts.spanName)
 	}
 
+	// The default shutdown method returns nil.
+	if opts.shutdownFunc == nil {
+		opts.shutdownFunc = func() error { return nil }
+	}
+
 	return &metricsExporter{
 		exporterName:    exporterName,
 		pushMetricsData: pushMetricsData,
-		stopFunc:        stopFunc,
+		shutdownFunc:    opts.shutdownFunc,
 	}, nil
 }
 

@@ -20,6 +20,7 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 )
 
@@ -38,6 +39,7 @@ func TestLoggingTraceExporterNoErrors(t *testing.T) {
 	if lte.Name() != exporterName {
 		t.Errorf("Wanted %q got %q", exporterName, lte.Name())
 	}
+	assert.NoError(t, lte.Shutdown())
 }
 
 func TestLoggingMetricsExporterNoErrors(t *testing.T) {
@@ -55,4 +57,5 @@ func TestLoggingMetricsExporterNoErrors(t *testing.T) {
 	if lme.Name() != exporterName {
 		t.Errorf("Wanted %q got %q", exporterName, lme.Name())
 	}
+	assert.NoError(t, lme.Shutdown())
 }

@@ -40,7 +40,7 @@ func (ne *nopExporter) ConsumeMetricsData(ctx context.Context, md consumerdata.M
 	return ne.retError
 }
 
-func (ne *nopExporter) Stop() error {
+func (ne *nopExporter) Shutdown() error {
 	return nil
 }
 

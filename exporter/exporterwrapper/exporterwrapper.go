@@ -46,9 +46,6 @@ func NewExporterWrapper(exporterName string, spanName string, ocExporter trace.E
 		func(ctx context.Context, td consumerdata.TraceData) (int, error) {
 			return PushOcProtoSpansToOCTraceExporter(ocExporter, td)
 		},
-		func() error {
-			return nil
-		},
 		exporterhelper.WithSpanName(spanName),
 		exporterhelper.WithRecordMetrics(true),
 	)

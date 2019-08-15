@@ -26,26 +26,20 @@ import (
 )
 
 func TestMetricsExporter_InvalidName(t *testing.T) {
-	if _, err := NewMetricsExporter("", newPushMetricsData(0, nil), newStop(nil)); err != errEmptyExporterName {
+	if _, err := NewMetricsExporter("", newPushMetricsData(0, nil)); err != errEmptyExporterName {
 		t.Fatalf("NewMetricsExporter returns: Want %v Got %v", errEmptyExporterName, err)
 	}
 }
 
 func TestMetricsExporter_NilPushMetricsData(t *testing.T) {
-	if _, err := NewMetricsExporter(fakeExporterName, nil, newStop(nil)); err != errNilPushMetricsData {
+	if _, err := NewMetricsExporter(fakeExporterName, nil); err != errNilPushMetricsData {
 		t.Fatalf("NewMetricsExporter returns: Want %v Got %v", errNilPushMetricsData, err)
-	}
-}
-
-func TestMetricsExporter_NilStopFunction(t *testing.T) {
-	if _, err := NewMetricsExporter(fakeExporterName, newPushMetricsData(0, nil), nil); err != errNilStopFunction {
-		t.Fatalf("NewMetricsExporter returns: Want %v Got %v", errNilStopFunction, err)
 	}
 }
 
 func TestMetricsExporter_Default(t *testing.T) {
 	td := consumerdata.MetricsData{}
-	te, err := NewMetricsExporter(fakeExporterName, newPushMetricsData(0, nil), newStop(nil))
+	te, err := NewMetricsExporter(fakeExporterName, newPushMetricsData(0, nil))
 	if err != nil {
 		t.Fatalf("NewMetricsExporter returns: Want nil Got %v", err)
 	}
@@ -55,12 +49,15 @@ func TestMetricsExporter_Default(t *testing.T) {
 	if g, w := te.Name(), fakeExporterName; g != w {
 		t.Fatalf("Name returns: Want %s Got %s", w, g)
 	}
+	if err := te.Shutdown(); err != nil {
+		t.Fatalf("Shutdown returns: Want nil Got %v", err)
+	}
 }
 
 func TestMetricsExporter_Default_ReturnError(t *testing.T) {
 	td := consumerdata.MetricsData{}
 	want := errors.New("my_error")
-	te, err := NewMetricsExporter(fakeExporterName, newPushMetricsData(0, want), newStop(nil))
+	te, err := NewMetricsExporter(fakeExporterName, newPushMetricsData(0, want))
 	if err != nil {
 		t.Fatalf("NewMetricsExporter returns: Want nil Got %v", err)
 	}
@@ -70,7 +67,7 @@ func TestMetricsExporter_Default_ReturnError(t *testing.T) {
 }
 
 func TestMetricsExporter_WithSpan(t *testing.T) {
-	te, err := NewMetricsExporter(fakeExporterName, newPushMetricsData(0, nil), newStop(nil), WithSpanName(fakeSpanName))
+	te, err := NewMetricsExporter(fakeExporterName, newPushMetricsData(0, nil), WithSpanName(fakeSpanName))
 	if err != nil {
 		t.Fatalf("NewMetricsExporter returns: Want nil Got %v", err)
 	}
@@ -78,7 +75,7 @@ func TestMetricsExporter_WithSpan(t *testing.T) {
 }
 
 func TestMetricsExporter_WithSpan_NonZeroDropped(t *testing.T) {
-	te, err := NewMetricsExporter(fakeExporterName, newPushMetricsData(1, nil), newStop(nil), WithSpanName(fakeSpanName))
+	te, err := NewMetricsExporter(fakeExporterName, newPushMetricsData(1, nil), WithSpanName(fakeSpanName))
 	if err != nil {
 		t.Fatalf("NewMetricsExporter returns: Want nil Got %v", err)
 	}
@@ -87,11 +84,38 @@ func TestMetricsExporter_WithSpan_NonZeroDropped(t *testing.T) {
 
 func TestMetricsExporter_WithSpan_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
-	te, err := NewMetricsExporter(fakeExporterName, newPushMetricsData(0, want), newStop(nil), WithSpanName(fakeSpanName))
+	te, err := NewMetricsExporter(fakeExporterName, newPushMetricsData(0, want), WithSpanName(fakeSpanName))
 	if err != nil {
 		t.Fatalf("NewMetricsExporter returns: Want nil Got %v", err)
 	}
 	checkWrapSpanForMetricsExporter(t, te, want, 0)
+}
+
+func TestMetricsExporter_WithShutdown(t *testing.T) {
+	shutdownCalled := false
+	shutdown := func() error { shutdownCalled = true; return nil }
+	me, err := NewMetricsExporter(fakeExporterName, newPushMetricsData(0, nil), WithShutdown(shutdown))
+	if err != nil {
+		t.Fatalf("NewTraceExporter returns: Want nil Got %v", err)
+	}
+	if err = me.Shutdown(); err != nil {
+		t.Fatalf("Shutdown returns: Want nil Got %v", err)
+	}
+	if shutdownCalled != true {
+		t.Fatalf("Shutdown function didn't get invoked")
+	}
+}
+
+func TestMetricsExporter_WithShutdown_ReturnError(t *testing.T) {
+	want := errors.New("my_error")
+	shutdownErr := func() error { return want }
+	me, err := NewMetricsExporter(fakeExporterName, newPushMetricsData(0, nil), WithShutdown(shutdownErr))
+	if err != nil {
+		t.Fatalf("NewMetricsExporter returns: Want nil Got %v", err)
+	}
+	if err := me.Shutdown(); err != want {
+		t.Fatalf("Shutdown returns: Want err: %v Got %v", want, err)
+	}
 }
 
 func newPushMetricsData(droppedSpans int, retError error) PushMetricsData {

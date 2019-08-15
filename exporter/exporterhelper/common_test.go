@@ -59,10 +59,3 @@ func checkSpanName(t *testing.T, opts ExporterOptions, spanName string) {
 		return
 	}
 }
-
-// This function is added for testing new instances of Metrics/TraceExporters.
-func newStop(retError error) Stop {
-	return func() error {
-		return retError
-	}
-}

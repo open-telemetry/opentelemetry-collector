@@ -63,7 +63,6 @@ func New(
 	exp, err := exporterhelper.NewTraceExporter(
 		exporterName,
 		s.pushTraceData,
-		s.Stop,
 		exporterhelper.WithSpanName("otelsvc.exporter."+exporterName+".ConsumeTraceData"),
 		exporterhelper.WithRecordMetrics(true))
 
@@ -122,10 +121,6 @@ func (s *jaegerThriftHTTPSender) pushTraceData(
 	}
 
 	return 0, nil
-}
-
-func (s *jaegerThriftHTTPSender) Stop() error {
-	return nil
 }
 
 func serializeThrift(obj thrift.TStruct) (*bytes.Buffer, error) {

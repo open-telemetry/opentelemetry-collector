@@ -58,8 +58,8 @@ func (ste *SinkTraceExporter) AllTraces() []consumerdata.TraceData {
 	return ste.traces[:]
 }
 
-// Stop stops the exporter. This is invoked during shutdown.
-func (ste *SinkTraceExporter) Stop() error {
+// Shutdown stops the exporter and is invoked during shutdown.
+func (ste *SinkTraceExporter) Shutdown() error {
 	return nil
 }
 
@@ -94,7 +94,7 @@ func (sme *SinkMetricsExporter) AllMetrics() []consumerdata.MetricsData {
 	return sme.metrics[:]
 }
 
-// Stop stops the exporter. This is invoked during shutdown.
-func (sme *SinkMetricsExporter) Stop() error {
+// Shutdown stops the exporter and is invoked during shutdown.
+func (sme *SinkMetricsExporter) Shutdown() error {
 	return nil
 }

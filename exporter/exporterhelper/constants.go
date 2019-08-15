@@ -25,8 +25,6 @@ var (
 	errNilPushTraceData = errors.New("nil pushTraceData")
 	// errNilPushMetricsData is returned when a nil pushMetricsData is given.
 	errNilPushMetricsData = errors.New("nil pushMetricsData")
-	// errNilStopFunction is returned when a nil stop function is given.
-	errNilStopFunction = errors.New("nil stopFunc")
 )
 
 const (
