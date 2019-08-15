@@ -27,7 +27,7 @@ type Config struct {
 	Actions []ActionKeyValue `mapstructure:"actions"`
 }
 
-// ActionKeyValue specifies the attribute key to act upon..
+// ActionKeyValue specifies the attribute key to act upon.
 type ActionKeyValue struct {
 	// Key specifies the attribute to act upon.
 	// This is a required field.
@@ -45,19 +45,19 @@ type ActionKeyValue struct {
 	// The set of values are {INSERT, UPDATE, UPSERT, DELETE}.
 	// Both lower case and upper case are supported.
 	// INSERT - Inserts the key/value to spans when the key does not exist.
-	//       	No action is applied to spans where the key already exists.
-	//       	Either Value or FromAttribute must be set.
+	//          No action is applied to spans where the key already exists.
+	//          Either Value or FromAttribute must be set.
 	// UPDATE - Updates an existing key with a value. No action is applied
 	//          to spans where the key does not exist.
 	//          Either Value or FromAttribute must be set.
 	// UPSERT - Performs insert or update action depending on the span
-	// 			containing the key. The key/value is insert to spans
-	// 			that did not originally have the key. The key/value is updated
-	// 			for spans where the key already existed.
-	//        	Either Value or FromAttribute must be set.
+	//          containing the key. The key/value is insert to spans
+	//          that did not originally have the key. The key/value is updated
+	//          for spans where the key already existed.
+	//          Either Value or FromAttribute must be set.
 	// DELETE - Deletes the attribute from the span. If the key doesn't exist,
-	// 			no action is performed.
-	// The default action is INSERT.
+	//          no action is performed.
+	// This is a required field.
 	Action Action `mapstructure:"action"`
 }
 
@@ -68,7 +68,6 @@ type Action string
 const (
 	// INSERT adds the key/value to spans when the key does not exist.
 	// No action is applied to spans where the key already exists.
-	// This is the default operation.
 	INSERT Action = "insert"
 
 	// UPDATE updates an existing key with a value. No action is applied

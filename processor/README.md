@@ -8,19 +8,17 @@ The attributes processor modifies attributes of a span.
 
 It takes a list of actions which are performed in order specified in the config.
 The supported actions are:
-- insert: Inserts a new attribute to spans without the specified key.
-- update: Updates an attribute of spans with the specified key.
-- upsert: Performs insert or update. Inserts an attribute for spans without
-  the specified key and updates an attribute for spans with the specified key.
+- insert: Inserts a new attribute in spans where the key does not already exist.
+- update: Updates an attribute in spans where the key does exist.
+- upsert: Performs insert or update. Inserts a new attribute in spans where the
+  key does not already exist and updates an attribute in spans where the key
+  does exist.
 - delete: Deletes an attribute from a span.
-
-**INSERT is the default action.**
-
 
 For the actions `insert`, `update` and `upsert`,
  - `key`  is required
- - one of `value` or `from_attribute` is set
- - optionally `action` for actions other than `insert`.
+ - one of `value` or `from_attribute` is required
+ - `action` is required.
 ```yaml
   # Key specifies the attribute to act upon.
 - key: <key>

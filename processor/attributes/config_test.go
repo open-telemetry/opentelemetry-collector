@@ -40,15 +40,15 @@ func TestLoadingConifg(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, config)
 
-	p0 := config.Processors["attributes/default"]
+	p0 := config.Processors["attributes/insert"]
 	assert.Equal(t, p0, &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
-			NameVal: "attributes/default",
+			NameVal: "attributes/insert",
 			TypeVal: typeStr,
 		},
 		Actions: []ActionKeyValue{
 			{Key: "attribute1", Value: 123, Action: INSERT},
-			{Key: "string key", FromAttribute: "anotherkey"},
+			{Key: "string key", FromAttribute: "anotherkey", Action: INSERT},
 		},
 	})
 
@@ -95,7 +95,7 @@ func TestLoadingConifg(t *testing.T) {
 			TypeVal: typeStr,
 		},
 		Actions: []ActionKeyValue{
-			{Key: "operation", Value: "default"},
+			{Key: "operation", Value: "default", Action: INSERT},
 			{Key: "svc.operation", FromAttribute: "operation", Action: UPSERT},
 			{Key: "operation", Action: DELETE},
 		},
@@ -111,7 +111,7 @@ func TestLoadingConifg(t *testing.T) {
 			{Key: "db.table", Action: DELETE},
 			{Key: "redacted_span", Value: true, Action: UPSERT},
 			{Key: "copy_key", FromAttribute: "key_original", Action: UPDATE},
-			{Key: "account_id", Value: 2245},
+			{Key: "account_id", Value: 2245, Action: INSERT},
 			{Key: "account_password", Action: DELETE},
 		},
 	})

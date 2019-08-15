@@ -1,9 +1,8 @@
 processors:
-  # The following example demonstrates the default behavior of insert a key/value.
-  # There is no need to specify action because the default action is insert.
-  attributes/default:
+  # The following example demonstrates inserting keys/values into spans.
+  attributes/insert:
     actions:
-      # The following inserting a new attribute {"attribute1": 123} to spans where
+      # The following inserts a new attribute {"attribute1": 123} to spans where
       # the key "attribute1" doesn't exist.
       # The type of `attribute1` is inferred by the configuration.
       #  `123` is an integer and is stored as an integer in the attributes.
@@ -13,11 +12,12 @@ processors:
         value: 123
         action: insert
       # The following uses the value from attribute "anotherkey" to insert a new
-      # attribute {"string key": <value from attribute["anotherkey"]} to spans
+      # attribute {"string key": <value from attribute "anotherkey">} to spans
       # where the key "string key" does not exist. If the attribute "anotherkey"
       # doesn't exist, no new attribute is inserted to spans.
       - key: "string key"
         from_attribute: "anotherkey"
+        action: insert
 
   # The following demonstrates configuring the processor to only update existing
   # keys in an attribute.
@@ -47,7 +47,7 @@ processors:
         value: "planet-earth"
         action: upsert
 
-      # The following demonstrates moving a value to a new key.
+      # The following demonstrates copying a value to a new key.
       # Note: If a span doesn't contain `user_key`, no new attribute `new_user_key`
       # is created.
       - key: new_user_key
@@ -73,9 +73,9 @@ processors:
   # Span4 Attributes: {svc.operation: division, timeout: 3}
   attributes/complex:
     actions:
-      # The default action inserts an attribute.
       - key: operation
         value: default
+        action: insert
       # The spans after the first action of insert.
       # Span1 Attributes: {timeout: 10, svc.operation: addition, operation: addition}
       # Span2 Attributes: {operation: subtract, math_value: 123}
@@ -113,6 +113,7 @@ processors:
         action: update
       - key: account_id
         value: 2245
+        action: insert
       - key: account_password
         action: delete
 
@@ -125,7 +126,7 @@ exporters:
 pipelines:
   traces:
     receivers: [examplereceiver]
-    processors: [attributes/default]
+    processors: [attributes/insert]
     exporters: [exampleexporter]
 
 
