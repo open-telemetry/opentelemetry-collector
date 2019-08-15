@@ -33,7 +33,7 @@ type ExporterOptions struct {
 	// in the receiver.
 	recordMetrics bool
 	spanName      string
-	shutdownFunc  Shutdown
+	shutdown      Shutdown
 }
 
 // ExporterOption apply changes to ExporterOptions.
@@ -54,10 +54,10 @@ func WithSpanName(spanName string) ExporterOption {
 }
 
 // WithShutdown overrides the default Shutdown function for an exporter.
-// The default shutdown function does nothing and returns nil.
+// The default shutdown function does nothing and always returns nil.
 func WithShutdown(shutdown Shutdown) ExporterOption {
 	return func(o *ExporterOptions) {
-		o.shutdownFunc = shutdown
+		o.shutdown = shutdown
 	}
 }
 

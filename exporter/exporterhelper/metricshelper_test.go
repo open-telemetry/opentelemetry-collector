@@ -19,12 +19,15 @@ import (
 	"testing"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"github.com/stretchr/testify/assert"
 	"go.opencensus.io/trace"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
 )
 
+// TODO https://github.com/open-telemetry/opentelemetry-service/issues/266
+// Migrate tests to use testify/assert instead of t.Fatal pattern.
 func TestMetricsExporter_InvalidName(t *testing.T) {
 	if _, err := NewMetricsExporter("", newPushMetricsData(0, nil)); err != errEmptyExporterName {
 		t.Fatalf("NewMetricsExporter returns: Want %v Got %v", errEmptyExporterName, err)
@@ -38,20 +41,16 @@ func TestMetricsExporter_NilPushMetricsData(t *testing.T) {
 }
 
 func TestMetricsExporter_Default(t *testing.T) {
-	td := consumerdata.MetricsData{}
-	te, err := NewMetricsExporter(fakeExporterName, newPushMetricsData(0, nil))
-	if err != nil {
-		t.Fatalf("NewMetricsExporter returns: Want nil Got %v", err)
-	}
-	if err := te.ConsumeMetricsData(context.Background(), td); err != nil {
-		t.Fatalf("ConsumeMetricsData returns: Want nil Got %v", err)
-	}
-	if g, w := te.Name(), fakeExporterName; g != w {
-		t.Fatalf("Name returns: Want %s Got %s", w, g)
-	}
-	if err := te.Shutdown(); err != nil {
-		t.Fatalf("Shutdown returns: Want nil Got %v", err)
-	}
+	md := consumerdata.MetricsData{}
+	me, err := NewMetricsExporter(fakeExporterName, newPushMetricsData(0, nil))
+	assert.NotNil(t, me)
+	assert.Nil(t, err)
+
+	assert.Nil(t, me.ConsumeMetricsData(context.Background(), md))
+
+	assert.Equal(t, me.Name(), fakeExporterName)
+
+	assert.Nil(t, me.Shutdown())
 }
 
 func TestMetricsExporter_Default_ReturnError(t *testing.T) {
@@ -94,28 +93,24 @@ func TestMetricsExporter_WithSpan_ReturnError(t *testing.T) {
 func TestMetricsExporter_WithShutdown(t *testing.T) {
 	shutdownCalled := false
 	shutdown := func() error { shutdownCalled = true; return nil }
+
 	me, err := NewMetricsExporter(fakeExporterName, newPushMetricsData(0, nil), WithShutdown(shutdown))
-	if err != nil {
-		t.Fatalf("NewTraceExporter returns: Want nil Got %v", err)
-	}
-	if err = me.Shutdown(); err != nil {
-		t.Fatalf("Shutdown returns: Want nil Got %v", err)
-	}
-	if shutdownCalled != true {
-		t.Fatalf("Shutdown function didn't get invoked")
-	}
+	assert.NotNil(t, me)
+	assert.Nil(t, err)
+
+	assert.Nil(t, me.Shutdown())
+	assert.True(t, shutdownCalled)
 }
 
 func TestMetricsExporter_WithShutdown_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
 	shutdownErr := func() error { return want }
+
 	me, err := NewMetricsExporter(fakeExporterName, newPushMetricsData(0, nil), WithShutdown(shutdownErr))
-	if err != nil {
-		t.Fatalf("NewMetricsExporter returns: Want nil Got %v", err)
-	}
-	if err := me.Shutdown(); err != want {
-		t.Fatalf("Shutdown returns: Want err: %v Got %v", want, err)
-	}
+	assert.NotNil(t, me)
+	assert.Nil(t, err)
+
+	assert.Equal(t, me.Shutdown(), want)
 }
 
 func newPushMetricsData(droppedSpans int, retError error) PushMetricsData {

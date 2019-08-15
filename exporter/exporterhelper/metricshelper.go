@@ -31,7 +31,7 @@ type PushMetricsData func(ctx context.Context, td consumerdata.MetricsData) (dro
 type metricsExporter struct {
 	exporterName    string
 	pushMetricsData PushMetricsData
-	shutdownFunc    Shutdown
+	shutdown        Shutdown
 }
 
 var _ (exporter.MetricsExporter) = (*metricsExporter)(nil)
@@ -46,8 +46,9 @@ func (me *metricsExporter) ConsumeMetricsData(ctx context.Context, md consumerda
 	return err
 }
 
+// Shutdown stops the exporter and is invoked during shutdown.
 func (me *metricsExporter) Shutdown() error {
-	return me.shutdownFunc()
+	return me.shutdown()
 }
 
 // NewMetricsExporter creates an MetricsExporter that can record metrics and can wrap every request with a Span.
@@ -69,15 +70,15 @@ func NewMetricsExporter(exporterName string, pushMetricsData PushMetricsData, op
 		pushMetricsData = pushMetricsDataWithSpan(pushMetricsData, opts.spanName)
 	}
 
-	// The default shutdown method returns nil.
-	if opts.shutdownFunc == nil {
-		opts.shutdownFunc = func() error { return nil }
+	// The default shutdown method always returns nil.
+	if opts.shutdown == nil {
+		opts.shutdown = func() error { return nil }
 	}
 
 	return &metricsExporter{
 		exporterName:    exporterName,
 		pushMetricsData: pushMetricsData,
-		shutdownFunc:    opts.shutdownFunc,
+		shutdown:        opts.shutdown,
 	}, nil
 }
 

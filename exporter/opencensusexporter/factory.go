@@ -169,7 +169,8 @@ func (f *Factory) CreateMetricsExporter(logger *zap.Logger, config configmodels.
 	if err != nil {
 		return nil, nil, err
 	}
-	// TODO(ccaraman) Fix the exporter name set. It is expected to us the full name <exporter type>(/<name from config>
+	// TODO https://github.com/open-telemetry/opentelemetry-service/issues/265
+	//	What is the exporterName used for? Should this be the full name of the exporter or just the type?
 	oexp, err := exporterhelper.NewMetricsExporter(
 		"oc_metrics",
 		oce.PushMetricsData,

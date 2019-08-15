@@ -98,9 +98,9 @@ func PrometheusExportersFromViper(v *viper.Viper) (tps []consumer.TraceConsumer,
 }
 
 type prometheusExporter struct {
-	name         string
-	exporter     *prometheus.Exporter
-	shutdownFunc exporterhelper.Shutdown
+	name     string
+	exporter *prometheus.Exporter
+	shutdown exporterhelper.Shutdown
 }
 
 var _ consumer.MetricsConsumer = (*prometheusExporter)(nil)
@@ -116,6 +116,7 @@ func (pe *prometheusExporter) Name() string {
 	return pe.name
 }
 
+// Shutdown stops the exporter and is invoked during shutdown.
 func (pe *prometheusExporter) Shutdown() error {
-	return pe.shutdownFunc()
+	return pe.shutdown()
 }
