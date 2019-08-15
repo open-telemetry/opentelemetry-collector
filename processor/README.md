@@ -31,8 +31,34 @@ Supported processors (sorted alphabetically):
 ## <a name="queued"></a>Queued Processor
 <FILL ME IN - I'M LONELY!>
 
-## <a name="span-rename"></a>Span Rename Processor
-<FILL ME IN - I'M LONELY!>
+## <a name="span"></a>Span Processor
+The span processor modifies top level settings of a span. Currently, only 
+renaming a span is supported. 
+
+### Rename a span
+It takes a list of `keys` and an optional `separator` string. The attribute
+value for the keys are used to create a new name in the order specified in the
+configuration. If a separator is specified, it will separate values.
+
+For more information, refer to [config.go](span/config.go)
+```yaml
+span:
+  rename:
+    # Keys represents the attribute keys to pull the values from to generate the
+    # new span name.
+    keys: [<key1>, <key2>, ...]
+    # Separator is the string used to concatenate various parts of the span name.
+    separator: <value>
+```
+
+### Example configuration
+For more examples with detailed comments, refer to [config.yaml](span/testdata/config.yaml)
+```yaml
+span:
+  rename:
+    keys: ["db.svc", "operation"]
+    separator: "::"
+```
 
 ## <a name="tail-sampling"></a>Tail Sampling Processor
 <FILL ME IN - I'M LONELY!>

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package spanrename
+package span
 
 import (
 	"errors"
@@ -27,12 +27,12 @@ import (
 
 const (
 	// typeStr is the value of "type" Span Rename in the configuration.
-	typeStr = "span-rename"
+	typeStr = "span"
 )
 
 // errMissingRequiredField is returned when a required field in the config
 // is not specified.
-var errMissingRequiredField = errors.New("error creating \"span-rename\" processor due to missing required field \"keys\"")
+var errMissingRequiredField = errors.New("error creating \"span\" processor due to missing required field \"keys\"")
 
 // Factory is the factory for the Span Rename processor.
 type Factory struct {
@@ -63,7 +63,7 @@ func (f *Factory) CreateTraceProcessor(
 	// Keys has to be set for the span-rename processor to be valid.
 	// If not set and not enforced, the processor would do no work.
 	oCfg := cfg.(*Config)
-	if len(oCfg.Keys) == 0 {
+	if len(oCfg.Rename.Keys) == 0 {
 		return nil, errMissingRequiredField
 	}
 

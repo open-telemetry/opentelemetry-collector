@@ -12,6 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package spanrename contains logic to process traces by renaming the span with
-// an ordered set of attribute values separated by an optional string.
-package spanrename
+// Package span contains logic to modify top level settings of a span, such
+// as renaming.
+package span

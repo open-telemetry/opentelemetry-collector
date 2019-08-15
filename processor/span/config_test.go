@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package spanrename
+package span
 
 import (
 	"path"
@@ -41,23 +41,27 @@ func TestLoadConfig(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, config)
 
-	p0 := config.Processors["span-rename/custom"]
+	p0 := config.Processors["span/custom"]
 	assert.Equal(t, p0, &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
 			TypeVal: typeStr,
-			NameVal: "span-rename/custom",
+			NameVal: "span/custom",
 		},
-		Keys:      []string{"db.svc", "operation", "id"},
-		Separator: "::",
+		Rename: Rename{
+			Keys:      []string{"db.svc", "operation", "id"},
+			Separator: "::",
+		},
 	})
 
-	p1 := config.Processors["span-rename/no-separator"]
+	p1 := config.Processors["span/no-separator"]
 	assert.Equal(t, p1, &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
 			TypeVal: typeStr,
-			NameVal: "span-rename/no-separator",
+			NameVal: "span/no-separator",
 		},
-		Keys:      []string{"db.svc", "operation", "id"},
-		Separator: "",
+		Rename: Rename{
+			Keys:      []string{"db.svc", "operation", "id"},
+			Separator: "",
+		},
 	})
 }

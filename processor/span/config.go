@@ -12,15 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package spanrename
+package span
 
 import (
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 )
 
-// Config is the configuration for the span rename processor.
+// Config is the configuration for the span processor.
 type Config struct {
 	configmodels.ProcessorSettings `mapstructure:",squash"`
+
+	// Rename specifies the components required to rename a span.
+	// The `keys` field needs to be set for this processor to be properly
+	// configured. Once there are multiple operations within span, this
+	// requirement can be removed.
+	Rename Rename `mapstructure:"rename"`
+}
+
+// Rename specifies the components of a span to use to rename a span.
+type Rename struct {
 	// Separator is the string used to concatenate various parts of the span name.
 	// If no value is set, no separator is used between attribute values.
 	Separator string `mapstructure:"separator"`

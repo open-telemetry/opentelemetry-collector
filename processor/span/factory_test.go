@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package spanrename
+package span
 
 import (
 	"testing"
@@ -47,8 +47,8 @@ func TestFactory_CreateTraceProcessor(t *testing.T) {
 
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	// Keys field needs to be set for the configuration to be valid.
-	oCfg.Keys = []string{"test-key"}
+	// Rename.Keys field needs to be set for the configuration to be valid.
+	oCfg.Rename.Keys = []string{"test-key"}
 	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), oCfg)
 	// TODO(ccaraman): Fix this when the processor logic is added and the trace processor
 	//	no longer returns an error.

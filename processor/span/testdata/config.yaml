@@ -6,7 +6,7 @@ processors:
   # and `id` will form the new name of the span, in that order, separated by the
   # value `::`. All attribute keys needs to be specified in the span for
   # the processor to apply changes.
-  # Note: There is no default configuration for a span-rename. The field `keys`
+  # Note: There is no default configuration for a span. The field `keys`
   # is required.
   #
   # Example 1 - All keys are in the span:
@@ -27,9 +27,10 @@ processors:
   # Results in no new name because the attribute key `operation` isn't set.
   # Span name after processor:
   #   "Span.Name": "serviceA"
-  span-rename/custom:
-    separator: "::"
-    keys: [db.svc, operation, id]
+  span/custom:
+    rename:
+      separator: "::"
+      keys: [db.svc, operation, id]
 
   # The following specifies generating a span name with no separator.
   # Example:
@@ -38,8 +39,9 @@ processors:
   # Separator: ""
   # Results in the following new span name:
   #   "locationget1234"
-  span-rename/no-separator:
-    keys: [db.svc, operation, id]
+  span/no-separator:
+    rename:
+      keys: [db.svc, operation, id]
 
 exporters:
   exampleexporter:
@@ -47,5 +49,5 @@ exporters:
 pipelines:
   traces:
     receivers: [examplereceiver]
-    processors: [span-rename/custom]
+    processors: [span/custom]
     exporters: [exampleexporter]
