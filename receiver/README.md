@@ -78,7 +78,7 @@ format parallels the gRPC protobuf format, see this
 
 The HTTP/JSON endpoint can also optionally 
 [CORS](https://fetch.spec.whatwg.org/#cors-protocol), which is enabled by
-specifying a list of allowed CORS origins in the `cors_allowed_origins` field:
+specifying a list of allowed CORS origins in the `cors-allowed-origins` field:
 
 ```yaml
 receivers:
