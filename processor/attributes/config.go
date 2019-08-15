@@ -30,17 +30,20 @@ type Config struct {
 // ActionKeyValue specifies the attribute key to act upon..
 type ActionKeyValue struct {
 	// Key specifies the attribute to act upon.
+	// This is a required field.
 	Key string `mapstruture:"key"`
 
 	// Value specifies the value to populate for the key.
+	// The type of the value is inferred from the configuration.
 	Value interface{} `mapstructure:"value"`
 
 	// FromAttribute specifies the attribute from the span to use to populate
 	// the value. If the attribute doesn't exist, no action is performed.
-	FromAttribute string `mapstructure:"from-attribute"`
+	FromAttribute string `mapstructure:"from_attribute"`
 
 	// Action specifies the type of action to perform.
 	// The set of values are {INSERT, UPDATE, UPSERT, DELETE}.
+	// Both lower case and upper case are supported.
 	// INSERT - Inserts the key/value to spans when the key does not exist.
 	//       	No action is applied to spans where the key already exists.
 	//       	Either Value or FromAttribute must be set.
@@ -54,30 +57,30 @@ type ActionKeyValue struct {
 	//        	Either Value or FromAttribute must be set.
 	// DELETE - Deletes the attribute from the span. If the key doesn't exist,
 	// 			no action is performed.
-	// The default action is ADD.
+	// The default action is INSERT.
 	Action Action `mapstructure:"action"`
 }
 
 // Action is the enum to capture the four types of actions to perform on an
 // attribute.
-type Action int
+type Action string
 
 const (
 	// INSERT adds the key/value to spans when the key does not exist.
 	// No action is applied to spans where the key already exists.
 	// This is the default operation.
-	INSERT Action = iota
+	INSERT Action = "insert"
 
 	// UPDATE updates an existing key with a value. No action is applied
 	// to spans where the key does not exist.
-	UPDATE
+	UPDATE Action = "update"
 
 	// UPSERT performs the INSERT or UPDATE action. The key/value is
 	// insert to spans that did not originally have the key. The key/value is
 	// updated for spans where the key already existed.
-	UPSERT
+	UPSERT Action = "upsert"
 
 	// DELETE deletes the attribute from the span. If the key doesn't exist,
 	//no action is performed.
-	DELETE
+	DELETE Action = "delete"
 )

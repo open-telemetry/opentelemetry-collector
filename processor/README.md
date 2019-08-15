@@ -8,7 +8,7 @@ The attributes processor modifies attributes of a span.
 
 It takes a list of actions which are performed in order specified in the config.
 The supported actions are:
-- inserts: Inserts a new attribute to spans without the specified key.
+- insert: Inserts a new attribute to spans without the specified key.
 - update: Updates an attribute of spans with the specified key.
 - upsert: Performs insert or update. Inserts an attribute for spans without
   the specified key and updates an attribute for spans with the specified key.
@@ -17,13 +17,16 @@ The supported actions are:
 **INSERT is the default action.**
 
 
-For the actions `insert`, `update` and `upsert`, a `key` must be specified,
- one of `value` or `from_attribute` and `action`.
+For the actions `insert`, `update` and `upsert`,
+ - `key`  is required
+ - one of `value` or `from_attribute` is set
+ - optionally `action` for actions other than `insert`.
 ```yaml
   # Key specifies the attribute to act upon.
 - key: <key>
   action: {insert, update, upsert}
   # Value specifies the value to populate for the key.
+  # The type is inferred from the configuration.
   value: <value>
 
   # Key specifies the attribute to act upon.
@@ -34,14 +37,16 @@ For the actions `insert`, `update` and `upsert`, a `key` must be specified,
   from_attribute: <other key>
 ```
 
-For the `delete` action, a `key` and `action`must be specified.
+For the `delete` action,
+ - `key` is required
+ - `action: delete` is required.
 ```yaml
 # Key specifies the attribute to act upon.
 - key: <key>
   action: delete
 ```
 
-Please refer to [config.go](processors/attributes/config.go) for the config spec.
+Please refer to [config.go](attributes/config.go) for the config spec.
 
 ### Example
 The list of actions can be composed to create rich scenarios, such as
@@ -66,5 +71,5 @@ processors:
         action: delete
 
 ```
-Refer to [config.yaml](processors/attributes/testdata/config.yaml) for detailed
+Refer to [config.yaml](attributes/testdata/config.yaml) for detailed
 examples on using the processor.
