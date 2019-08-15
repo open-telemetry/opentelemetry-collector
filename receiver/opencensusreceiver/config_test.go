@@ -118,6 +118,6 @@ func TestLoadConfig(t *testing.T) {
 				NameVal:  "opencensus/cors",
 				Endpoint: "127.0.0.1:55678",
 			},
-			CorsOrigins: []string{"https://*.test.com"},
+			CorsOrigins: []string{"https://*.test.com", "https://test.com"},
 		})
 }
