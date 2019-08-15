@@ -46,7 +46,6 @@ type Config struct {
 
 	// MaxConcurrentStreams sets the limit on the number of concurrent streams to each ServerTransport.
 	MaxConcurrentStreams uint32 `mapstructure:"max-concurrent-streams,omitempty"`
-
 }
 
 // tlsCredentials holds the fields for TLS credentials
