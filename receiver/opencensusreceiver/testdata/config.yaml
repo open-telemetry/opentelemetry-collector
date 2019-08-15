@@ -47,6 +47,13 @@ receivers:
     # This receiver is disabled and won't receive any data.
     disabled: true
 
+
+  # The following entry demonstrates how to configure the OpenCensus receiver to allow Cross-Origin Resource Sharing (CORS).
+  # Both fully qualified domain names and the use of wildcards are supported.
+  opencensus/cors:
+    cors-allowed-origins:
+    - https://*.test.com # Wildcard subdomain. Allows domains like https://www.test.com and https://foo.test.com but not https://wwwtest.com.
+    - https://test.com # Fully qualified domain name. Allows https://test.com only.
 processors:
   exampleprocessor:
 

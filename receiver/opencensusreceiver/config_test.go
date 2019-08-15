@@ -41,7 +41,7 @@ func TestLoadConfig(t *testing.T) {
 
 	// Currently disabled receivers are removed from the total list of receivers so 'opencensus/disabled' doesn't
 	// contribute to the count.
-	assert.Equal(t, len(cfg.Receivers), 5)
+	assert.Equal(t, len(cfg.Receivers), 6)
 
 	r0 := cfg.Receivers["opencensus"]
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
@@ -108,5 +108,16 @@ func TestLoadConfig(t *testing.T) {
 				CertFile: "test.crt",
 				KeyFile:  "test.key",
 			},
+		})
+
+	r5 := cfg.Receivers["opencensus/cors"].(*Config)
+	assert.Equal(t, r5,
+		&Config{
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal:  typeStr,
+				NameVal:  "opencensus/cors",
+				Endpoint: "127.0.0.1:55678",
+			},
+			CorsOrigins: []string{"https://*.test.com", "https://test.com"},
 		})
 }

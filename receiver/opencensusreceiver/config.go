@@ -32,6 +32,12 @@ type Config struct {
 	// TLSCredentials is a (cert_file, key_file) configuration.
 	TLSCredentials *tlsCredentials `mapstructure:"tls-credentials,omitempty"`
 
+	// CorsOrigins are the allowed CORS origins for HTTP/JSON requests to grpc-gateway adapter
+	// for the OpenCensus receiver. See github.com/rs/cors
+	// An empty list means that CORS is not enabled at all. A wildcard (*) can be
+	// used to match any origin or one or more characters of an origin.
+	CorsOrigins []string `mapstructure:"cors-allowed-origins"`
+
 	// Keepalive anchor for all the settings related to keepalive.
 	Keepalive *serverParametersAndEnforcementPolicy `mapstructure:"keepalive,omitempty"`
 
@@ -40,9 +46,6 @@ type Config struct {
 
 	// MaxConcurrentStreams sets the limit on the number of concurrent streams to each ServerTransport.
 	MaxConcurrentStreams uint32 `mapstructure:"max-concurrent-streams,omitempty"`
-
-	// TODO(ccaramn): Add cors-allowed-origin setting. It seems to have been accidentally forgotten
-	// during OC to OTel port.
 }
 
 // tlsCredentials holds the fields for TLS credentials
@@ -88,6 +91,9 @@ func (rOpts *Config) buildOptions() (opts []Option, err error) {
 	}
 	if hasTLSCreds {
 		opts = append(opts, tlsCredsOption)
+	}
+	if len(rOpts.CorsOrigins) > 0 {
+		opts = append(opts, WithCorsOrigins(rOpts.CorsOrigins))
 	}
 
 	grpcServerOptions := rOpts.grpcServerOptions()
