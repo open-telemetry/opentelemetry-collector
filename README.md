@@ -118,7 +118,7 @@ $ go run "$(go env GOPATH)/src/github.com/open-telemetry/opentelemetry-service/e
 ```
 
 You should be able to see the traces in your exporter(s) of choice. If you stop
-the ocagent, the example application will stop exporting. If you run it again,
+the otelsvc, the example application will stop exporting. If you run it again,
 exporting will resume.
 
 ## <a name="config"></a>Configuration
