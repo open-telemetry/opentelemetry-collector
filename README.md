@@ -50,8 +50,8 @@ export to any backend of users' choice.
 Currently the OpenTelemetry Service consists of a single binary and two
 deployment methods:
 
-1. [Agent](#opentelemetry-agent) running with the application or on the same host as the application
-2. [Collector](#opentelemetry-collector) running as a standalone application
+1. Agent running with the application or on the same host as the application
+2. Collector running as a standalone application
 
 For the detailed design specs, please see [DESIGN.md](DESIGN.md).
 
@@ -75,7 +75,7 @@ enabled).
 
 ### <a name="getting-started-demo"></a>Demo
 
-Instructions for setting up an end-to-end demo environment can be found [here](https://github.com/open-telemetry/opentelemetry-service/tree/master/examples/demotrace)
+Instructions for setting up an end-to-end demo environment can be found [here](https://github.com/open-telemetry/opentelemetry-service/tree/master/examples/demo)
 
 ### <a name="getting-started-k8s"></a>Kubernetes
 
@@ -94,7 +94,7 @@ exporters configured.
 Build the Agent and start it with the example configuration:
 
 ```shell
-$ ./bin/$(go env GOOS)/otelsvc  --config ./examples/demotrace/otel-agent-config.yaml
+$ ./bin/$(go env GOOS)/otelsvc  --config ./examples/demo/otel-agent-config.yaml
 $ 2018/10/08 21:38:00 Running OpenTelemetry receiver as a gRPC service at "127.0.0.1:55678"
 ```
 
@@ -106,7 +106,7 @@ Build the Collector and start it with the example configuration:
 
 ```shell
 $ make otelsvc
-$ ./bin/$($GOOS)/otelsvc --config ./examples/demotrace/otel-collector-config.yaml
+$ ./bin/$($GOOS)/otelsvc --config ./examples/demo/otel-collector-config.yaml
 ```
 
 Run the demo application:
