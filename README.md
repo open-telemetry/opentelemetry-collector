@@ -53,7 +53,9 @@ deployment methods:
 1. Agent running with the application or on the same host as the application
 2. Collector running as a standalone application
 
-For the detailed design specs, please see [DESIGN.md](DESIGN.md).
+For the detailed design specs, please see [design.md](docs/design.md).
+
+For OpenTelemetry Service performance specs, please see [performance.md](docs/performance.md).
 
 For the future vision of OpenTelemetry Service please see [vision.md](docs/vision.md).
 
