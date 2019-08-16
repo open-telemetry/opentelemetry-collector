@@ -38,6 +38,8 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
+	// The receiver `jaeger/disabled` doesn't count because disabled receivers
+	// are excluded from the final list.
 	assert.Equal(t, len(cfg.Receivers), 2)
 
 	r0 := cfg.Receivers["jaeger"]
@@ -50,12 +52,10 @@ func TestLoadConfig(t *testing.T) {
 			NameVal: "jaeger/customname",
 			Protocols: map[string]*configmodels.ReceiverSettings{
 				"grpc": {
-					Disabled: true,
 					Endpoint: "127.0.0.1:9876",
 				},
 				"thrift-http": {
-					Disabled: true,
-					Endpoint: "127.0.0.1:3456",
+					Endpoint: ":3456",
 				},
 				"thrift-tchannel": {
 					Endpoint: "0.0.0.0:123",

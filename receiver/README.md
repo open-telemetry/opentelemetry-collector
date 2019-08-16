@@ -92,21 +92,31 @@ receivers:
 
 ## <a name="jaeger"></a>Jaeger Receiver
 **Only traces are supported.**
-// TODO(ccaraman) Update Jaeger receiver documentation.
 
-This receiver receives spans from Jaeger collector HTTP and Thrift uploads and translates them into the internal span types that are then sent to the collector/exporters.
-Only traces are supported. This receiver does not support metrics.
+This receiver receives traces in the [Jaeger](https://www.jaegertracing.io)
+format. It translates them into the internal format and sends
+it to processors and exporters.
 
-Its address can be configured in the YAML configuration file under section "receivers", subsection "jaeger" and fields "collector_http_port", "collector_thrift_port".
+It supports multiple protocols:
+- Thrift HTTP
+- Thrift TChannel
+- gRPC
 
-For example:
-
+By default, the Jaeger receiver supports all three protocols on the default ports
+specified in [factory.go](jaegerreceiver/factory.go). The following demonstrates
+how to specify the default Jaeger receiver.
 ```yaml
 receivers:
   jaeger:
-    collector_thrift_port: 14267
-    collector_http_port: 14268
 ```
+
+It is possible to configure the protocols on different ports, refer to
+[config.yaml](jaegerreceiver/testdata/config.yaml) for detailed config
+examples.
+
+// TODO Issue https://github.com/open-telemetry/opentelemetry-service/issues/158
+// The Jaeger receiver enables all protocols even when one is specified or a
+// subset is enabled. The documentation should be updated when that fix occurs.
 
 ## <a name="prometheus"></a>Prometheus Receiver
 **Only metrics are supported.**

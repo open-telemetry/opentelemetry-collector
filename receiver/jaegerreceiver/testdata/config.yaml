@@ -1,15 +1,35 @@
 receivers:
+  # The following demonstrates initializing the default jaeger receiver.
+  # By default all three protocols (grpc, thrift-http, thrift-tchannel)
+  # are enabled and the default endpoints are specified in factory.go
   jaeger:
+  # The following demonstrates specifying different endpoints.
+  # The Jaeger receiver connects to ports on all available network interfaces.
+  # Ex: `endpoint: "9876"` is incorrect.
+  # Ex: `endpoint: "1.2.3.4:9876"`  and ":9876" is correct
   jaeger/customname:
     protocols:
       grpc:
         endpoint: "127.0.0.1:9876"
-        disabled: true
       thrift-http:
-        endpoint: "127.0.0.1:3456"
-        disabled: true
+        endpoint: ":3456"
       thrift-tchannel:
         endpoint: "0.0.0.0:123"
+
+  # The following demonstrates disabling the receiver.
+  # All of the protocols need to be disabled for the receiver to be disabled.
+  # If a subset of the protocols are disabled, the disabled flags are ignored
+  # and all protocols are enabled.
+  # This is to be fixed with issue
+  # https://github.com/open-telemetry/opentelemetry-service/issues/158
+  jaeger/disabled:
+    protocols:
+      grpc:
+        disabled: true
+      thrift-http:
+        disabled: true
+      thrift-tchannel:
+        disabled: true
 
 processors:
   exampleprocessor:
