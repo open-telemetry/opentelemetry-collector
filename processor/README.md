@@ -3,7 +3,6 @@
 out in the [OpenTelemetry Gitter](https://gitter.im/open-telemetry/opentelemetry-service)
 or refer to the [issues page](https://github.com/open-telemetry/opentelemetry-service/issues).
 
-<<<<<<< HEAD
 Supported processors (sorted alphabetically):
 - [Attributes Processor](#attributes)
 - [Fan Out Processor](#fan-out)
