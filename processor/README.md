@@ -6,11 +6,12 @@ or refer to the [issues page](https://github.com/open-telemetry/opentelemetry-se
 <<<<<<< HEAD
 Supported processors (sorted alphabetically):
 - [Attributes Processor](#attributes)
+- [Fan Out Processor](#fan-out)
 - [Multi-Consumer Processor](#multi-consumer)
 - [Node Batcher Processor](#node-batcher)
 - [Probabilistic Sampler Processor](#probabilistic-sampler)
 - [Queued Processor](#queued)
-- [Span Processor](#span-rename)
+- [Span Processor](#span)
 - [Tail Sampling Processor](#tail-sampling)
 
 ## <a name="attributes"></a>Attributes Processor
@@ -82,7 +83,7 @@ processors:
 Refer to [config.yaml](attributes/testdata/config.yaml) for detailed
 examples on using the processor.
 
-## <a name="attribute-key"></a>Attribute Key Processor
+## <a name="fan-out"></a>Fan Out Processor
 <FILL ME IN - I'M LONELY!>
 
 ## <a name="multi-consumer"></a>Multi-Consumer Processor

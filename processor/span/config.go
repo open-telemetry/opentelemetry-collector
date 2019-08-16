@@ -24,20 +24,19 @@ type Config struct {
 
 	// Rename specifies the components required to rename a span.
 	// The `keys` field needs to be set for this processor to be properly
-	// configured. Once there are multiple operations within span, this
-	// requirement can be removed.
+	// configured.
 	Rename Rename `mapstructure:"rename"`
 }
 
-// Rename specifies the components of a span to use to rename a span.
+// Rename specifies the attributes to use to rename a span.
 type Rename struct {
-	// Separator is the string used to concatenate various parts of the span name.
+	// Separator is the string used to separate attributes values in the new span name.
 	// If no value is set, no separator is used between attribute values.
 	Separator string `mapstructure:"separator"`
 	// Keys represents the attribute keys to pull the values from to generate the new span name.
-	// If not all attribute keys are present in the span, no rename will occur.
-	// Note: The order in which these are specified is the order in which the new span name will
-	// be built with the attribute values.
+	// All attribute keys are required in the span to rename a span.
+	// If any attribute is missing from the span, no rename will occur.
+	// Note: The new span name is constructed in order of the `keys` specified in the configuration.
 	// This field is required and cannot be empty.
 	Keys []string `mapstructure:"keys"`
 }
