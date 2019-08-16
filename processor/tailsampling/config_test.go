@@ -36,19 +36,38 @@ func TestLoadConfig(t *testing.T) {
 	cfg, err := config.LoadConfigFile(
 		t, path.Join(".", "testdata", "tail_sampling_config.yaml"), receivers, processors, exporters,
 	)
-
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
 
-	p0 := cfg.Processors["tail-sampling"]
-	assert.Equal(t, p0,
+	assert.Equal(t, cfg.Processors["tail-sampling"],
 		&Config{
 			ProcessorSettings: configmodels.ProcessorSettings{
 				TypeVal: "tail-sampling",
 				NameVal: "tail-sampling",
 			},
-			DecisionWait:            31 * time.Second,
-			NumTraces:               20001,
-			ExpectedNewTracesPerSec: 100,
+			DecisionWait:            10 * time.Second,
+			NumTraces:               100,
+			ExpectedNewTracesPerSec: 10,
+			PolicyCfgs: []PolicyCfg{
+				{
+					Name: "test-policy-1",
+					Type: AlwaysSample,
+				},
+				{
+					Name:                "test-policy-2",
+					Type:                NumericAttribute,
+					NumericAttributeCfg: NumericAttributeCfg{Key: "key1", MinValue: 50, MaxValue: 100},
+				},
+				{
+					Name:               "test-policy-3",
+					Type:               StringAttribute,
+					StringAttributeCfg: StringAttributeCfg{Key: "key2", Values: []string{"value1", "value2"}},
+				},
+				{
+					Name:            "test-policy-4",
+					Type:            RateLimiting,
+					RateLimitingCfg: RateLimitingCfg{SpansPerSecond: 35},
+				},
+			},
 		})
 }

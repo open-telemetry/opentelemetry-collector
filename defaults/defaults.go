@@ -29,6 +29,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/processor/attributekeyprocessor"
 	"github.com/open-telemetry/opentelemetry-service/processor/nodebatcher"
 	"github.com/open-telemetry/opentelemetry-service/processor/queued"
+	"github.com/open-telemetry/opentelemetry-service/processor/tailsampling"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 	"github.com/open-telemetry/opentelemetry-service/receiver/jaegerreceiver"
 	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver"
@@ -74,6 +75,7 @@ func Components() (
 		&attributekeyprocessor.Factory{},
 		&queued.Factory{},
 		&nodebatcher.Factory{},
+		&tailsampling.Factory{},
 	)
 	if err != nil {
 		errs = append(errs, err)

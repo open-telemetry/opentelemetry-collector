@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package multiconsumer
+// Package fanoutprocessor contains implementations of Trace/Metrics processors
+// that fan out to multiple other processors.
+package fanoutprocessor
 
 import (
 	"context"

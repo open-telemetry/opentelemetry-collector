@@ -33,10 +33,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/exporter"
 	"github.com/open-telemetry/opentelemetry-service/internal/config/viperutils"
 	"github.com/open-telemetry/opentelemetry-service/internal/pprofserver"
-	"github.com/open-telemetry/opentelemetry-service/internal/zpagesserver"
 	"github.com/open-telemetry/opentelemetry-service/processor"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 	"github.com/open-telemetry/opentelemetry-service/service/builder"
+	"github.com/open-telemetry/opentelemetry-service/zpages"
 )
 
 // Application represents a collector application
@@ -80,13 +80,6 @@ func (app *Application) Context() context.Context {
 // its start function has already returned.
 func (app *Application) ReportFatalError(err error) {
 	app.asyncErrorChannel <- err
-}
-
-// OkToIngest returns true when the receiver can inject the received data
-// into the pipeline and false when it should drop the data and report
-// error to the client.
-func (app *Application) OkToIngest() bool {
-	return true
 }
 
 // New creates and returns a new instance of Application
@@ -140,9 +133,9 @@ func (app *Application) setupHealthCheck() {
 // TODO(ccaraman): Move ZPage configuration to be apart of global config/config.go
 func (app *Application) setupZPages() {
 	app.logger.Info("Setting up zPages...")
-	zpagesPort := app.v.GetInt(zpagesserver.ZPagesHTTPPort)
+	zpagesPort := app.v.GetInt(zpages.ZPagesHTTPPort)
 	if zpagesPort > 0 {
-		closeZPages, err := zpagesserver.Run(app.asyncErrorChannel, zpagesPort)
+		closeZPages, err := zpages.Run(app.asyncErrorChannel, zpagesPort)
 		if err != nil {
 			app.logger.Error("Failed to run zPages", zap.Error(err))
 			os.Exit(1)
@@ -297,7 +290,7 @@ func (app *Application) StartUnified() error {
 		healthCheckFlags,
 		loggerFlags,
 		pprofserver.AddFlags,
-		zpagesserver.AddFlags,
+		zpages.AddFlags,
 	)
 
 	return rootCmd.Execute()

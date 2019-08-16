@@ -26,8 +26,8 @@ import (
 // TraceData stores the sampling related trace data.
 type TraceData struct {
 	sync.Mutex
-	// Decision gives the current status of the sampling decision for each policy.
-	Decision []Decision
+	// Decisions gives the current status of the sampling decision for each policy.
+	Decisions []Decision
 	// Arrival time the first span for the trace was received.
 	ArrivalTime time.Time
 	// Decisiontime time when sampling decision was taken.

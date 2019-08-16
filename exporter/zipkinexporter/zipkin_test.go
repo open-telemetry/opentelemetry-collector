@@ -31,10 +31,9 @@ import (
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
 
-	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/internal/config/viperutils"
 	"github.com/open-telemetry/opentelemetry-service/internal/testutils"
-	"github.com/open-telemetry/opentelemetry-service/processor/multiconsumer"
+	"github.com/open-telemetry/opentelemetry-service/processor/fanoutprocessor"
 	"github.com/open-telemetry/opentelemetry-service/receiver/receivertest"
 	"github.com/open-telemetry/opentelemetry-service/receiver/zipkinreceiver"
 )
@@ -158,8 +157,8 @@ zipkin:
 	tes[0].(*zipkinExporter).reporter = mzr
 
 	// Run the Zipkin receiver to "receive spans upload from a client application"
-	zexp := multiconsumer.NewTraceProcessor(tes)
-	zi, err := zipkinreceiver.New(":0", configmodels.EnableBackPressure, zexp)
+	zexp := fanoutprocessor.NewTraceProcessor(tes)
+	zi, err := zipkinreceiver.New(":0", zexp)
 	if err != nil {
 		t.Fatalf("Failed to create a new Zipkin receiver: %v", err)
 	}

@@ -41,6 +41,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/observability"
+	"github.com/open-telemetry/opentelemetry-service/oterr"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 	jaegertranslator "github.com/open-telemetry/opentelemetry-service/translator/trace/jaeger"
 )
@@ -108,11 +109,6 @@ func New(ctx context.Context, config *Configuration, nextConsumer consumer.Trace
 }
 
 var _ receiver.TraceReceiver = (*jReceiver)(nil)
-
-var (
-	errAlreadyStarted = errors.New("already started")
-	errAlreadyStopped = errors.New("already stopped")
-)
 
 func (jr *jReceiver) collectorAddr() string {
 	var port int
@@ -190,14 +186,14 @@ func (jr *jReceiver) StartTraceReception(host receiver.Host) error {
 	jr.mu.Lock()
 	defer jr.mu.Unlock()
 
-	var err = errAlreadyStarted
+	var err = oterr.ErrAlreadyStarted
 	jr.startOnce.Do(func() {
-		if err = jr.startAgent(host); err != nil && err != errAlreadyStarted {
+		if err = jr.startAgent(host); err != nil && err != oterr.ErrAlreadyStarted {
 			jr.stopTraceReceptionLocked()
 			return
 		}
 
-		if err = jr.startCollector(host); err != nil && err != errAlreadyStarted {
+		if err = jr.startCollector(host); err != nil && err != oterr.ErrAlreadyStarted {
 			jr.stopTraceReceptionLocked()
 			return
 		}
@@ -215,7 +211,7 @@ func (jr *jReceiver) StopTraceReception() error {
 }
 
 func (jr *jReceiver) stopTraceReceptionLocked() error {
-	var err = errAlreadyStopped
+	var err = oterr.ErrAlreadyStopped
 	jr.stopOnce.Do(func() {
 		var errs []error
 
@@ -393,7 +389,7 @@ func (jr *jReceiver) startCollector(host receiver.Host) error {
 	taddr := jr.tchannelAddr()
 	tln, terr := net.Listen("tcp", taddr)
 	if terr != nil {
-		return fmt.Errorf("failed to bind to TChannnel address %q: %v", taddr, terr)
+		return fmt.Errorf("failed to bind to TChannel address %q: %v", taddr, terr)
 	}
 	tch.Serve(tln)
 	jr.tchannel = tch

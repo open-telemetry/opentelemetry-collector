@@ -23,6 +23,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-service/oterr"
 	"github.com/open-telemetry/opentelemetry-service/processor"
 )
 
@@ -80,6 +81,9 @@ var _ processor.TraceProcessor = (*addattributesprocessor)(nil)
 // NewTraceProcessor returns a processor.TraceProcessor that adds the WithAttributeMap(attributes) to all spans
 // passed to it. If a key already exists, we will only overwrite is the WithOverwrite(true) is set.
 func NewTraceProcessor(nextConsumer consumer.TraceConsumer, options ...Option) (processor.TraceProcessor, error) {
+	if nextConsumer == nil {
+		return nil, oterr.ErrNilNextConsumer
+	}
 	aap := &addattributesprocessor{nextConsumer: nextConsumer}
 	for _, opt := range options {
 		if err := opt(aap); err != nil {

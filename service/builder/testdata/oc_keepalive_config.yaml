@@ -1,9 +1,0 @@
-receivers:
-  opencensus:
-    keepalive:
-      server-parameters:
-        time: 30s
-        timeout: 5s
-      enforcement-policy:
-        min-time: 10s
-        permit-without-stream: true

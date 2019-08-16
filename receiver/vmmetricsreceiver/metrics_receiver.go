@@ -15,16 +15,13 @@
 package vmmetricsreceiver
 
 import (
-	"errors"
 	"sync"
 
+	"github.com/open-telemetry/opentelemetry-service/oterr"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
 
-var (
-	errAlreadyStarted = errors.New("already started")
-	errAlreadyStopped = errors.New("already stopped")
-)
+var _ receiver.MetricsReceiver = (*Receiver)(nil)
 
 // Receiver is the type used to handle metrics from VM metrics.
 type Receiver struct {
@@ -48,7 +45,7 @@ func (vmr *Receiver) StartMetricsReception(host receiver.Host) error {
 	vmr.mu.Lock()
 	defer vmr.mu.Unlock()
 
-	var err = errAlreadyStarted
+	var err = oterr.ErrAlreadyStarted
 	vmr.startOnce.Do(func() {
 		vmr.vmc.StartCollection()
 		err = nil
@@ -61,7 +58,7 @@ func (vmr *Receiver) StopMetricsReception() error {
 	vmr.mu.Lock()
 	defer vmr.mu.Unlock()
 
-	var err = errAlreadyStopped
+	var err = oterr.ErrAlreadyStopped
 	vmr.stopOnce.Do(func() {
 		vmr.vmc.StopCollection()
 		err = nil

@@ -12,8 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package processor is the central point on the collector processing: it
-// aggregates and performs any operation that applies to all traces in the
-// pipeline. Traces reach it after being converted to the OpenCensus protobuf
-// format.
-package processor
+package oterr
+
+import (
+	"errors"
+)
+
+var (
+	// ErrAlreadyStarted indicates an error on starting an already-started
+	// receiver/processor/exporter.
+	ErrAlreadyStarted = errors.New("already started")
+
+	// ErrAlreadyStopped indicates an error on stoping an already-stopped
+	// receiver/processor/exporter.
+	ErrAlreadyStopped = errors.New("already stopped")
+
+	// ErrNilNextConsumer indicates an error on nil next consumer.
+	ErrNilNextConsumer = errors.New("nil nextConsumer")
+)

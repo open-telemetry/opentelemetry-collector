@@ -41,7 +41,7 @@ func TestLoadConfig(t *testing.T) {
 
 	// Currently disabled receivers are removed from the total list of receivers so 'opencensus/disabled' doesn't
 	// contribute to the count.
-	assert.Equal(t, len(cfg.Receivers), 5)
+	assert.Equal(t, len(cfg.Receivers), 6)
 
 	r0 := cfg.Receivers["opencensus"]
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
@@ -49,10 +49,9 @@ func TestLoadConfig(t *testing.T) {
 	r1 := cfg.Receivers["opencensus/customname"].(*Config)
 	assert.Equal(t, r1.ReceiverSettings,
 		configmodels.ReceiverSettings{
-			TypeVal:             typeStr,
-			NameVal:             "opencensus/customname",
-			Endpoint:            "0.0.0.0:9090",
-			DisableBackPressure: true,
+			TypeVal:  typeStr,
+			NameVal:  "opencensus/customname",
+			Endpoint: "0.0.0.0:9090",
 		})
 
 	r2 := cfg.Receivers["opencensus/keepalive"].(*Config)
@@ -78,14 +77,13 @@ func TestLoadConfig(t *testing.T) {
 			},
 		})
 
-	r3 := cfg.Receivers["opencensus/nobackpressure"].(*Config)
+	r3 := cfg.Receivers["opencensus/msg-size-conc-connect-max-idle"].(*Config)
 	assert.Equal(t, r3,
 		&Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal:             typeStr,
-				NameVal:             "opencensus/nobackpressure",
-				Endpoint:            "127.0.0.1:55678",
-				DisableBackPressure: true,
+				TypeVal:  typeStr,
+				NameVal:  "opencensus/msg-size-conc-connect-max-idle",
+				Endpoint: "127.0.0.1:55678",
 			},
 			MaxRecvMsgSizeMiB:    32,
 			MaxConcurrentStreams: 16,
@@ -110,5 +108,16 @@ func TestLoadConfig(t *testing.T) {
 				CertFile: "test.crt",
 				KeyFile:  "test.key",
 			},
+		})
+
+	r5 := cfg.Receivers["opencensus/cors"].(*Config)
+	assert.Equal(t, r5,
+		&Config{
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal:  typeStr,
+				NameVal:  "opencensus/cors",
+				Endpoint: "127.0.0.1:55678",
+			},
+			CorsOrigins: []string{"https://*.test.com", "https://test.com"},
 		})
 }

@@ -17,16 +17,17 @@ package internal
 import (
 	"context"
 	"errors"
+	"math"
 	"strings"
 	"sync/atomic"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/storage"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-service/consumer"
 )
 
 const (
@@ -49,19 +50,24 @@ type transaction struct {
 	ctx           context.Context
 	isNew         bool
 	sink          consumer.MetricsConsumer
+	job           string
+	instance      string
+	jobsMap       *JobsMap
 	ms            MetadataService
+	node          *commonpb.Node
 	metricBuilder *metricBuilder
 	logger        *zap.SugaredLogger
 }
 
-func newTransaction(ctx context.Context, ms MetadataService, sink consumer.MetricsConsumer, logger *zap.SugaredLogger) *transaction {
+func newTransaction(ctx context.Context, jobsMap *JobsMap, ms MetadataService, sink consumer.MetricsConsumer, logger *zap.SugaredLogger) *transaction {
 	return &transaction{
-		id:     atomic.AddInt64(&idSeq, 1),
-		ctx:    ctx,
-		isNew:  true,
-		sink:   sink,
-		ms:     ms,
-		logger: logger,
+		id:      atomic.AddInt64(&idSeq, 1),
+		ctx:     ctx,
+		isNew:   true,
+		sink:    sink,
+		jobsMap: jobsMap,
+		ms:      ms,
+		logger:  logger,
 	}
 }
 
@@ -77,11 +83,20 @@ func (tr *transaction) Add(l labels.Labels, t int64, v float64) (uint64, error) 
 
 // returning an error from this method can cause the whole appending transaction to be aborted and fail
 func (tr *transaction) AddFast(ls labels.Labels, _ uint64, t int64, v float64) error {
+	// Important, must handle. prometheus will still try to feed the appender some data even if it failed to
+	// scrape the remote target,  if the previous scrape was success and some data were cached internally
+	// in our case, we don't need these data, simply drop them shall be good enough. more details:
+	// https://github.com/prometheus/prometheus/blob/851131b0740be7291b98f295567a97f32fffc655/scrape/scrape.go#L933-L935
+	if math.IsNaN(v) {
+		return nil
+	}
+
 	select {
 	case <-tr.ctx.Done():
 		return errTransactionAborted
 	default:
 	}
+
 	if tr.isNew {
 		if err := tr.initTransaction(ls); err != nil {
 			return err
@@ -100,8 +115,12 @@ func (tr *transaction) initTransaction(ls labels.Labels) error {
 	if err != nil {
 		return err
 	}
-	node := createNode(job, instance, mc.SharedLabels().Get(model.SchemeLabel))
-	tr.metricBuilder = newMetricBuilder(node, mc, tr.logger)
+	if tr.jobsMap != nil {
+		tr.job = job
+		tr.instance = instance
+	}
+	tr.node = createNode(job, instance, mc.SharedLabels().Get(model.SchemeLabel))
+	tr.metricBuilder = newMetricBuilder(mc, tr.logger)
 	tr.isNew = false
 	return nil
 }
@@ -114,15 +133,21 @@ func (tr *transaction) Commit() error {
 		return nil
 	}
 
-	md, err := tr.metricBuilder.Build()
+	metrics, err := tr.metricBuilder.Build()
 	if err != nil {
 		return err
 	}
 
-	if md != dummyMetric {
-		return tr.sink.ConsumeMetricsData(context.Background(), *md)
+	if len(metrics) > 0 {
+		if tr.jobsMap != nil {
+			metrics = NewMetricsAdjuster(tr.jobsMap.get(tr.job, tr.instance), tr.logger).AdjustMetrics(metrics)
+		}
+		md := consumerdata.MetricsData{
+			Node:    tr.node,
+			Metrics: metrics,
+		}
+		return tr.sink.ConsumeMetricsData(context.Background(), md)
 	}
-
 	return nil
 }
 

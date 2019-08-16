@@ -29,16 +29,9 @@ func TestNewMockHost(t *testing.T) {
 	if ctx := got.Context(); ctx == nil {
 		t.Fatalf("Context() = nil, want non-nil")
 	}
-	if !got.OkToIngest() {
-		t.Fatal("OkToIngest() = false, want true")
-	}
-	mh, ok := got.(*MockHost)
+	_, ok := got.(*MockHost)
 	if !ok {
 		t.Fatal("got.(*MockHost) failed")
-	}
-	mh.SetOkToIngest(false)
-	if got.OkToIngest() {
-		t.Fatal("OkToIngest() = true, want false")
 	}
 	got.ReportFatalError(errors.New("TestError"))
 }

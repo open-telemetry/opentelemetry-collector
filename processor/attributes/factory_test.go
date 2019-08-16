@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package addattributesprocessor
+package attributes
 
 import (
 	"testing"
@@ -20,33 +20,40 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
+	"github.com/open-telemetry/opentelemetry-service/config/configerror"
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 )
 
-func TestCreateDefaultConfig(t *testing.T) {
+func TestFactory_Type(t *testing.T) {
 	factory := Factory{}
-	cfg := factory.CreateDefaultConfig()
-	assert.NotNil(t, cfg, "failed to create default config")
+	assert.Equal(t, factory.Type(), typeStr)
 }
 
-func TestCreateProcessor(t *testing.T) {
+func TestFactory_CreateDefaultConfig(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
-
-	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), cfg)
-	assert.NotNil(t, tp)
-	assert.NoError(t, err, "cannot create trace processor")
-
-	mp, err := factory.CreateMetricsProcessor(zap.NewNop(), exportertest.NewNopMetricsExporter(), cfg)
-	assert.Nil(t, mp)
-	assert.Error(t, err, "should not be able to create metric processor")
+	assert.Equal(t, cfg, &Config{
+		ProcessorSettings: configmodels.ProcessorSettings{
+			NameVal: typeStr,
+			TypeVal: typeStr,
+		},
+	})
 }
 
-func TestNilConsumer(t *testing.T) {
+func TestFactory_CreateTraceProcessor(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
 
 	tp, err := factory.CreateTraceProcessor(zap.NewNop(), nil, cfg)
 	assert.Nil(t, tp)
-	assert.Error(t, err, "expected to get a non-nil error")
+	assert.Equal(t, err, configerror.ErrDataTypeIsNotSupported)
+}
+
+func TestFactory_CreateMetricsProcessor(t *testing.T) {
+	factory := Factory{}
+	cfg := factory.CreateDefaultConfig()
+
+	mp, err := factory.CreateMetricsProcessor(zap.NewNop(), nil, cfg)
+	assert.Nil(t, mp)
+	assert.Equal(t, err, configerror.ErrDataTypeIsNotSupported)
 }

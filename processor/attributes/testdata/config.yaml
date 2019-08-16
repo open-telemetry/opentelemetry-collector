@@ -1,0 +1,132 @@
+processors:
+  # The following example demonstrates inserting keys/values into spans.
+  attributes/insert:
+    actions:
+      # The following inserts a new attribute {"attribute1": 123} to spans where
+      # the key "attribute1" doesn't exist.
+      # The type of `attribute1` is inferred by the configuration.
+      #  `123` is an integer and is stored as an integer in the attributes.
+      # This demonstrates how to backfill spans with an attribute that may
+      # not have been sent by all clients.
+      - key: "attribute1"
+        value: 123
+        action: insert
+      # The following uses the value from attribute "anotherkey" to insert a new
+      # attribute {"string key": <value from attribute "anotherkey">} to spans
+      # where the key "string key" does not exist. If the attribute "anotherkey"
+      # doesn't exist, no new attribute is inserted to spans.
+      - key: "string key"
+        from_attribute: "anotherkey"
+        action: insert
+
+  # The following demonstrates configuring the processor to only update existing
+  # keys in an attribute.
+  # Note: `action: update` must be set.
+  attributes/update:
+    actions:
+      # The following updates the attribute 'boo' using the value from attribute
+      # 'foo'. Spans without the attribute 'boo' will not change.
+      - key: "boo"
+        from_attribute: "foo"
+        action: update
+      # The following updates the attribute to { "db.secret": "redacted"}.
+      # This demonstrates sanitizing spans of sensitive data.
+      - key: db.secret
+        value: redacted
+        action: update
+
+  # The following demonstrates setting an attribute on both spans where the
+  # key does exist and the key doesn't exist.
+  attributes/upsert:
+    actions:
+      # The following demonstrates how to set an attribute on all spans.
+      # Any spans that already had `region` now have value `planet-earth`.
+      # This can be done to set properties for all traces without
+      # requiring an instrumentation change.
+      - key: region
+        value: "planet-earth"
+        action: upsert
+
+      # The following demonstrates copying a value to a new key.
+      # Note: If a span doesn't contain `user_key`, no new attribute `new_user_key`
+      # is created.
+      - key: new_user_key
+        from_attribute: user_key
+        action: upsert
+
+  # The following demonstrates deleting keys from an attribute.
+  attributes/delete:
+    actions:
+      - key: credit_card
+        action: delete
+      - key: duplicate_key
+        action: delete
+
+  # The following demonstrates how to backfill spans missing an attribute,
+  # insert/update that value to a new key and deleting the old key. This guarantees
+  # an attribute `svc.operation` exists in spans and the attribute `operation`
+  # doesn't exist.
+  # Ex: The spans before the processor `attributes/complex`.
+  # Span1 Attributes: {timeout: 10, svc.operation: addition, operation: addition}
+  # Span2 Attributes: {operation: subtract, math_value: 123}
+  # Span3 Attributes: {timeout: 10, math_value: 4}
+  # Span4 Attributes: {svc.operation: division, timeout: 3}
+  attributes/complex:
+    actions:
+      - key: operation
+        value: default
+        action: insert
+      # The spans after the first action of insert.
+      # Span1 Attributes: {timeout: 10, svc.operation: addition, operation: addition}
+      # Span2 Attributes: {operation: subtract, math_value: 123}
+      # Span3 Attributes: {timeout: 10, math_value: 4, operation: default}
+      # Span4 Attributes: {svc.operation: division, timeout: 3, operation:default}
+
+      - key: svc.operation
+        from_attribute: operation
+        action: upsert
+      # The spans after the second action of upsert.
+      # Span1 Attributes: {timeout: 10, svc.operation: addition, operation: addition}
+      # Span2 Attributes: {svc.operation: subtract, operation: subtract, math_value: 123}
+      # Span3 Attributes: {svc.operation: default, timeout: 10, math_value: 4, operation: default}
+      # Span4 Attributes: {svc.operation: default, timeout: 3, operation:default}
+
+      - key: operation
+        action: delete
+      # The spans after the third/final action of delete.
+      # Span1 Attributes: {timeout: 10, svc.operation: addition}
+      # Span2 Attributes: {svc.operation: subtract, math_value: 123}
+      # Span3 Attributes: {svc.operation: default, timeout: 10, math_value: 4}
+      # Span4 Attributes: {svc.operation: default, timeout: 3}
+
+  # The following is an example of various actions. The actions are applied in
+  # the order specified in the configuration.
+  attributes/example:
+    actions:
+      - key: db.table
+        action: delete
+      - key: redacted_span
+        value: true
+        action: upsert
+      - key: copy_key
+        from_attribute: key_original
+        action: update
+      - key: account_id
+        value: 2245
+        action: insert
+      - key: account_password
+        action: delete
+
+receivers:
+  examplereceiver:
+
+exporters:
+  exampleexporter:
+
+pipelines:
+  traces:
+    receivers: [examplereceiver]
+    processors: [attributes/insert]
+    exporters: [exampleexporter]
+
+

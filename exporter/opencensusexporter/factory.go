@@ -26,7 +26,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-service/compression"
 	compressiongrpc "github.com/open-telemetry/opentelemetry-service/compression/grpc"
-	"github.com/open-telemetry/opentelemetry-service/config/configerror"
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
@@ -65,11 +64,24 @@ func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Ex
 	if err != nil {
 		return nil, nil, err
 	}
-	return f.CreateOCAgent(logger, ocac, opts)
+	oce, err := f.createOCAgentExporter(logger, ocac, opts)
+	if err != nil {
+		return nil, nil, err
+	}
+	oexp, err := exporterhelper.NewTraceExporter(
+		"oc_trace",
+		oce.PushTraceData,
+		exporterhelper.WithSpanName("ocservice.exporter.OpenCensus.ConsumeTraceData"),
+		exporterhelper.WithRecordMetrics(true))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return oexp, oce.stop, nil
 }
 
-// CreateOCAgent takes ocagent exporter options and create an OC exporter
-func (f *Factory) CreateOCAgent(logger *zap.Logger, ocac *Config, opts []ocagent.ExporterOption) (consumer.TraceConsumer, exporter.StopFunc, error) {
+// createOCAgentExporter takes ocagent exporter options and create an OC exporter
+func (f *Factory) createOCAgentExporter(logger *zap.Logger, ocac *Config, opts []ocagent.ExporterOption) (*ocagentExporter, error) {
 	numWorkers := defaultNumWorkers
 	if ocac.NumWorkers > 0 {
 		numWorkers = ocac.NumWorkers
@@ -79,29 +91,18 @@ func (f *Factory) CreateOCAgent(logger *zap.Logger, ocac *Config, opts []ocagent
 	for exporterIndex := 0; exporterIndex < numWorkers; exporterIndex++ {
 		exporter, serr := ocagent.NewExporter(opts...)
 		if serr != nil {
-			return nil, nil, fmt.Errorf("cannot configure OpenCensus Trace exporter: %v", serr)
+			return nil, fmt.Errorf("cannot configure OpenCensus exporter: %v", serr)
 		}
 		exportersChan <- exporter
 	}
-
 	oce := &ocagentExporter{exporters: exportersChan}
-	oexp, err := exporterhelper.NewTraceExporter(
-		"oc_trace",
-		oce.PushTraceData,
-		exporterhelper.WithSpanName("ocservice.exporter.OpenCensus.ConsumeTraceData"),
-		exporterhelper.WithRecordMetrics(true))
-
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return oexp, oce.stop, nil
+	return oce, nil
 }
 
 // OCAgentOptions takes the oc exporter Config and generates ocagent Options
 func (f *Factory) OCAgentOptions(logger *zap.Logger, ocac *Config) ([]ocagent.ExporterOption, error) {
 	if ocac.Endpoint == "" {
-		return nil, &ocTraceExporterError{
+		return nil, &ocExporterError{
 			code: errEndpointRequired,
 			msg:  "OpenCensus exporter config requires an Endpoint",
 		}
@@ -111,7 +112,7 @@ func (f *Factory) OCAgentOptions(logger *zap.Logger, ocac *Config) ([]ocagent.Ex
 		if compressionKey := compressiongrpc.GetGRPCCompressionKey(ocac.Compression); compressionKey != compression.Unsupported {
 			opts = append(opts, ocagent.UseCompressor(compressionKey))
 		} else {
-			return nil, &ocTraceExporterError{
+			return nil, &ocExporterError{
 				code: errUnsupportedCompressionType,
 				msg:  fmt.Sprintf("OpenCensus exporter unsupported compression type %q", ocac.Compression),
 			}
@@ -120,7 +121,7 @@ func (f *Factory) OCAgentOptions(logger *zap.Logger, ocac *Config) ([]ocagent.Ex
 	if ocac.CertPemFile != "" {
 		creds, err := credentials.NewClientTLSFromFile(ocac.CertPemFile, "")
 		if err != nil {
-			return nil, &ocTraceExporterError{
+			return nil, &ocExporterError{
 				code: errUnableToGetTLSCreds,
 				msg:  fmt.Sprintf("OpenCensus exporter unable to read TLS credentials from pem file %q: %v", ocac.CertPemFile, err),
 			}
@@ -129,7 +130,7 @@ func (f *Factory) OCAgentOptions(logger *zap.Logger, ocac *Config) ([]ocagent.Ex
 	} else if ocac.UseSecure {
 		certPool, err := x509.SystemCertPool()
 		if err != nil {
-			return nil, &ocTraceExporterError{
+			return nil, &ocExporterError{
 				code: errUnableToGetTLSCreds,
 				msg: fmt.Sprintf(
 					"OpenCensus exporter unable to read certificates from system pool: %v", err),
@@ -157,6 +158,25 @@ func (f *Factory) OCAgentOptions(logger *zap.Logger, ocac *Config) ([]ocagent.Ex
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *Factory) CreateMetricsExporter(logger *zap.Logger, cfg configmodels.Exporter) (consumer.MetricsConsumer, exporter.StopFunc, error) {
-	return nil, nil, configerror.ErrDataTypeIsNotSupported
+func (f *Factory) CreateMetricsExporter(logger *zap.Logger, config configmodels.Exporter) (consumer.MetricsConsumer, exporter.StopFunc, error) {
+	ocac := config.(*Config)
+	opts, err := f.OCAgentOptions(logger, ocac)
+	if err != nil {
+		return nil, nil, err
+	}
+	oce, err := f.createOCAgentExporter(logger, ocac, opts)
+	if err != nil {
+		return nil, nil, err
+	}
+	oexp, err := exporterhelper.NewMetricsExporter(
+		"oc_metrics",
+		oce.PushMetricsData,
+		exporterhelper.WithSpanName("ocservice.exporter.OpenCensus.ConsumeMetricsData"),
+		exporterhelper.WithRecordMetrics(true))
+
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return oexp, oce.stop, nil
 }

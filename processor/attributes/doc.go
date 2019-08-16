@@ -12,6 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package processor
-
-// TODO: Add tests for the other things in this package.
+// Package attributes contains the logic to modify attributes of a span.
+// It supports insert, update, upsert and delete as actions.
+package attributes

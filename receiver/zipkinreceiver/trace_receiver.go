@@ -36,20 +36,14 @@ import (
 	zipkinproto "github.com/openzipkin/zipkin-go/proto/v2"
 	"go.opencensus.io/trace"
 
-	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/internal"
 	"github.com/open-telemetry/opentelemetry-service/observability"
+	"github.com/open-telemetry/opentelemetry-service/oterr"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
 	zipkintranslator "github.com/open-telemetry/opentelemetry-service/translator/trace/zipkin"
-)
-
-var (
-	errNilNextConsumer = errors.New("nil nextConsumer")
-	errAlreadyStarted  = errors.New("already started")
-	errAlreadyStopped  = errors.New("already stopped")
 )
 
 // ZipkinReceiver type is used to handle spans received in the Zipkin format.
@@ -58,10 +52,9 @@ type ZipkinReceiver struct {
 	mu sync.Mutex
 
 	// addr is the address onto which the HTTP server will be bound
-	addr                string
-	host                receiver.Host
-	backPressureSetting configmodels.BackPressureSetting
-	nextConsumer        consumer.TraceConsumer
+	addr         string
+	host         receiver.Host
+	nextConsumer consumer.TraceConsumer
 
 	startOnce sync.Once
 	stopOnce  sync.Once
@@ -72,15 +65,14 @@ var _ receiver.TraceReceiver = (*ZipkinReceiver)(nil)
 var _ http.Handler = (*ZipkinReceiver)(nil)
 
 // New creates a new zipkinreceiver.ZipkinReceiver reference.
-func New(address string, backPressureSetting configmodels.BackPressureSetting, nextConsumer consumer.TraceConsumer) (*ZipkinReceiver, error) {
+func New(address string, nextConsumer consumer.TraceConsumer) (*ZipkinReceiver, error) {
 	if nextConsumer == nil {
-		return nil, errNilNextConsumer
+		return nil, oterr.ErrNilNextConsumer
 	}
 
 	zr := &ZipkinReceiver{
-		addr:                address,
-		backPressureSetting: backPressureSetting,
-		nextConsumer:        nextConsumer,
+		addr:         address,
+		nextConsumer: nextConsumer,
 	}
 	return zr, nil
 }
@@ -111,7 +103,7 @@ func (zr *ZipkinReceiver) StartTraceReception(host receiver.Host) error {
 	zr.mu.Lock()
 	defer zr.mu.Unlock()
 
-	var err = errAlreadyStarted
+	var err = oterr.ErrAlreadyStarted
 
 	zr.startOnce.Do(func() {
 		ln, lerr := net.Listen("tcp", zr.address())
@@ -242,7 +234,7 @@ func (zr *ZipkinReceiver) deserializeFromJSON(jsonBlob []byte, debugWasSet bool)
 // giving it a chance to perform any necessary clean-up and shutting down
 // its HTTP server.
 func (zr *ZipkinReceiver) StopTraceReception() error {
-	var err = errAlreadyStopped
+	var err = oterr.ErrAlreadyStopped
 	zr.stopOnce.Do(func() {
 		err = zr.server.Close()
 	})
@@ -312,30 +304,6 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctxWithReceiverName := observability.ContextWithReceiverName(ctx, receiverTagValue)
-
-	if !zr.host.OkToIngest() {
-		var responseStatusCode int
-		var zPageMessage string
-		if zr.backPressureSetting == configmodels.EnableBackPressure {
-			responseStatusCode = http.StatusServiceUnavailable
-			zPageMessage = "Host blocked ingestion. Back pressure is ON."
-		} else {
-			responseStatusCode = http.StatusAccepted
-			zPageMessage = "Host blocked ingestion. Back pressure is OFF."
-		}
-
-		// Internal z-page status does not depend on backpressure setting.
-		span.SetStatus(trace.Status{
-			Code:    trace.StatusCodeUnavailable,
-			Message: zPageMessage,
-		})
-
-		observability.RecordIngestionBlockedMetrics(
-			ctxWithReceiverName,
-			zr.backPressureSetting)
-		w.WriteHeader(responseStatusCode)
-		return
-	}
 
 	pr := processBodyIfNecessary(r)
 	slurp, _ := ioutil.ReadAll(pr)

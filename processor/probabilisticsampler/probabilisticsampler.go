@@ -24,6 +24,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-service/oterr"
 	"github.com/open-telemetry/opentelemetry-service/processor"
 )
 
@@ -64,7 +65,7 @@ var _ processor.TraceProcessor = (*tracesamplerprocessor)(nil)
 // configuration.
 func NewTraceProcessor(nextConsumer consumer.TraceConsumer, cfg Config) (processor.TraceProcessor, error) {
 	if nextConsumer == nil {
-		return nil, errors.New("nextConsumer is nil")
+		return nil, oterr.ErrNilNextConsumer
 	}
 
 	return &tracesamplerprocessor{

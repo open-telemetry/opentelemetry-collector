@@ -16,11 +16,11 @@ package attributekeyprocessor
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-service/oterr"
 	"github.com/open-telemetry/opentelemetry-service/processor"
 )
 
@@ -49,7 +49,7 @@ var _ processor.TraceProcessor = (*attributekeyprocessor)(nil)
 // NewTraceProcessor returns a processor.TraceProcessor
 func NewTraceProcessor(nextConsumer consumer.TraceConsumer, replacements ...KeyReplacement) (processor.TraceProcessor, error) {
 	if nextConsumer == nil {
-		return nil, errors.New("nextConsumer is nil")
+		return nil, oterr.ErrNilNextConsumer
 	}
 
 	lenReplacements := len(replacements)
