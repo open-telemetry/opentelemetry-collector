@@ -32,7 +32,7 @@ spec:
     spec:
       containers:
       - command:
-          - "/ocagent_linux"
+          - "/otelsvc_agent_linux"
           - "--config=/conf/otelsvc-agent-config.yaml"
         image: omnition/opencensus-agent:0.1.6
         name: otelsvc-agent
@@ -75,7 +75,7 @@ data:
         keepalive:
           server-parameters:
             max-connection-age: 120s
-            max-connection-age-grace: 30s            
+            max-connection-age-grace: 30s
       jaeger: {}
       zipkin: {}
 # Can only use one exporter
@@ -145,7 +145,7 @@ spec:
     spec:
       containers:
       - command:
-          - "/occollector_linux"
+          - "/otelsvc_collector_linux"
           - "--config=/conf/otelsvc-collector-config.yaml"
         env:
         - name: GOGC
