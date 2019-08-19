@@ -18,6 +18,7 @@ import (
 	"context"
 
 	jaegerproto "github.com/jaegertracing/jaeger/proto-gen/api_v2"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
@@ -30,7 +31,7 @@ import (
 // New returns a new Jaeger gRPC exporter.
 // The exporter name is the name to be used in the observability of the exporter.
 // The collectorEndpoint should be of the form "hostname:14250" (a gRPC target).
-func New(exporterName, collectorEndpoint string) (exporter.TraceExporter, error) {
+func New(logger *zap.Logger, exporterName, collectorEndpoint string) (exporter.TraceExporter, error) {
 	client, err := grpc.Dial(collectorEndpoint, grpc.WithInsecure())
 	if err != nil {
 		return nil, err
@@ -38,6 +39,7 @@ func New(exporterName, collectorEndpoint string) (exporter.TraceExporter, error)
 
 	collectorServiceClient := jaegerproto.NewCollectorServiceClient(client)
 	s := &protoGRPCSender{
+		logger: logger,
 		client: collectorServiceClient,
 	}
 
@@ -53,6 +55,7 @@ func New(exporterName, collectorEndpoint string) (exporter.TraceExporter, error)
 // protoGRPCSender forwards spans encoded in the jaeger proto
 // format, to a grpc server.
 type protoGRPCSender struct {
+	logger *zap.Logger
 	client jaegerproto.CollectorServiceClient
 }
 
@@ -63,6 +66,7 @@ func (s *protoGRPCSender) pushTraceData(
 
 	protoBatch, err := jaegertranslator.OCProtoToJaegerProto(td)
 	if err != nil {
+		s.logger.Warn("error while converting spans to Jaeger Proto", zap.Error(err))
 		return len(td.Spans), consumererror.Permanent(err)
 	}
 
@@ -71,6 +75,7 @@ func (s *protoGRPCSender) pushTraceData(
 		&jaegerproto.PostSpansRequest{Batch: *protoBatch})
 
 	if err != nil {
+		s.logger.Warn("could not send one or more spans to Jaeger", zap.Error(err))
 		droppedSpans = len(protoBatch.Spans)
 	}
 
