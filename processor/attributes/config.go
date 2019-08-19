@@ -31,7 +31,7 @@ type Config struct {
 type ActionKeyValue struct {
 	// Key specifies the attribute to act upon.
 	// This is a required field.
-	Key string `mapstruture:"key"`
+	Key string `mapstructure:"key"`
 
 	// Value specifies the value to populate for the key.
 	// The type of the value is inferred from the configuration.
