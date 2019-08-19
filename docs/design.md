@@ -9,17 +9,17 @@ OpenTelemetry Service is an executable that allows to receive telemetry data, op
 
 The Service supports several popular open-source protocols for telemetry data receiving and sending as well as offering a pluggable architecture for adding more protocols.
 
-Data receiving, transformation and sending is done using Pipelines. The Service can be configured to have one or more Pipeline. Each Pipeline includes a set of Receivers that receive the data, a series of optional Processors that get the data from receivers and transform it and a set of Exporters which get the data from the Processors and send it further outside the Service. The same receiver can feed data to multiple Pipelines and multiple pipelines can feed data into the same Exporter.
+Data receiving, transformation and sending is done using Pipelines. The Service can be configured to have one or more Pipelines. Each Pipeline includes a set of Receivers that receive the data, a series of optional Processors that get the data from receivers and transform it and a set of Exporters which get the data from the Processors and send it further outside the Service. The same receiver can feed data to multiple Pipelines and multiple pipelines can feed data into the same Exporter.
 
 ## Pipelines
 
 Pipeline defines a path the data follows in the Service starting from reception, then further processing or modification and finally exiting the Service via exporters.
 
-Pipelines can operate on 2 telemetry data types: traces and metrics. The data type the pipeline operates is a property of the pipeline defined by its configuration. A pipeline can be depicted the following way:
+Pipelines can operate on 2 telemetry data types: traces and metrics. The data type is a property of the pipeline defined by its configuration. Receivers, exporters and processors used in a pipeline must support the particular data type otherwise ErrDataTypeIsNotSupported will be reported when the configuration is loaded. A pipeline can be depicted the following way:
 
 ![Pipelines](images/design-pipelines.png)
 
-There can be one or more receivers in a pipeline. Data from all receivers is pushed to the first processor, which performs a processing on it and then pushes it to the next processor (or it may drop the data, e.g. if it is a “sampling” processor) and so on until the last processor in the pipeline pushes the data to the exporters. Each exporter gets a copy of each data element. The last processor uses a multiconsumer to fanout the data to multiple exporters.
+There can be one or more receivers in a pipeline. Data from all receivers is pushed to the first processor, which performs a processing on it and then pushes it to the next processor (or it may drop the data, e.g. if it is a “sampling” processor) and so on until the last processor in the pipeline pushes the data to the exporters. Each exporter gets a copy of each data element. The last processor uses a fanoutprocessor to fanout the data to multiple exporters.
 
 The pipeline is constructed during Service startup based on pipeline definition in the config file.
 
@@ -69,18 +69,14 @@ Important: when the same receiver is referenced in more than one pipeline the Se
 
 Exporters typically forward the data they get to a destination on a network (but they can also send it elsewhere, e.g “logging” exporter writes the telemetry data to a local file). 
 
-The configuration allows to have multiple exporters of the same type, even in the same pipeline. For example one can have 2 “jaeger” exporters defined each one sending to a different jaeger endpoint, e.g.:
+The configuration allows to have multiple exporters of the same type, even in the same pipeline. For example one can have 2 “opencensus” exporters defined each one sending to a different opencensus endpoint, e.g.:
 
 ```yaml
 exporters:
-  jaeger/1:
-    protocols:
-      grpc:
-        endpoint: "example.com:14250”
-  jaeger/2:
-    protocols:
-      grpc:
-        endpoint: "127.0.0.1:14250”
+  opencensus/1:
+    endpoint: "example.com:14250”
+  opencensus/2:
+    endpoint: "127.0.0.1:14250”
 ```
 
 Usually an exporter gets the data from one pipeline, however it is possible to configure multiple pipelines to send data to the same exporter, e.g.:
@@ -109,7 +105,9 @@ In the above example “jaeger” exporter will get data from pipeline “traces
 
 ### Processors
 
-A pipeline can contain one or more sequentially connected processors. The first processor gets the data from one or more receivers that are configured for the pipeline, the last processor sends the data to one or more exporters that are configured for the pipeline. All processors between the first and last receive the data strictly only from one preceding processor and send data strictly only to the succeeding processor.
+A pipeline can contain sequentially connected processors. The first processor gets the data from one or more receivers that are configured for the pipeline, the last processor sends the data to one or more exporters that are configured for the pipeline. All processors between the first and last receive the data strictly only from one preceding processor and send data strictly only to the succeeding processor.
+
+The traces pipeline must have at least one processor. Metrics pipeline does not require processors since we currently do not have any implemented metrics processors yet.
 
 Processors can transform the data before forwarding it (i.e. add or remove attributes from spans), they can drop the data simply by deciding not to forward it (this is for example how “sampling” processor works), they can also generate new data (this is how for example how a “persistent-queue” processor can work after Service restarts by reading previously saved data from a local file and forwarding it on the pipeline).
 
@@ -193,3 +191,40 @@ TODO: update the diagram below.
 The OpenTelemetry Collector can also be deployed in other configurations, such
 as receiving data from other agents or clients in one of the formats supported
 by its receivers.
+
+
+### <a name="agent-communication"></a>OpenCensus Protocol
+
+TODO: move this section somewhere else since this document is intended to describe non-protocol specific functionality.
+
+OpenCensus Protocol uses a bi-directional gRPC
+stream. Sender should initiate the connection, since there’s only one
+dedicated port for Agent, while there could be multiple instrumented processes. By default, the Service is available on port 55678.
+
+#### <a name="agent-protocol-workflow"></a>Protocol Workflow
+
+1. Sender will try to directly establish connections for Config and Export
+   streams.
+2. As the first message in each stream, Sender must send its identifier. Each
+   identifier should uniquely identify Sender within the VM/container. If
+   there is no identifier in the first message, Service should drop the whole
+   message and return an error to the client. In addition, the first message
+   MAY contain additional data (such as `Span`s). As long as it has a valid
+   identifier associated, Service should handle the data properly, as if they
+   were sent in a subsequent message. Identifier is no longer needed once the
+   streams are established.
+3. On Sender side, if connection to Service failed, Sender should retry
+   indefintely if possible, subject to available/configured memory buffer size.
+   (Reason: consider environments where the running applications are already
+   instrumented with OpenTelemetry Library but Service is not deployed yet.
+   Sometime in the future, we can simply roll out the Service to those
+   environments and Library would automatically connect to Service with
+   indefinite retries. Zero changes are required to the applications.)
+   Depending on the language and implementation, retry can be done in either
+   background or a daemon thread. Retry should be performed at a fixed
+   frequency (rather than exponential backoff) to have a deterministic expected
+   connect time.
+4. On Service side, if an established stream were disconnected, the identifier of
+   the corresponding Sender would be considered expired. Sender needs to
+   start a new connection with a unique identifier (MAY be different than the
+   previous one).
