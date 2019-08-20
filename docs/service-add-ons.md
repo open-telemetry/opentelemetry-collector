@@ -44,6 +44,8 @@ this design won’t prevent such extensions in the future[^1].
 The diagram below shows the basic state transitions of the OpenTelemetry Service 
 and how it will interact with the service add-ons.
 
+![image](OTelSvc-LifeCycle.png)
+
 
 ## Configuration
 
