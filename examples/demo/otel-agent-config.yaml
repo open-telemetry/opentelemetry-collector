@@ -15,6 +15,7 @@ exporters:
   opencensus:
     endpoint: "otel-collector:55678"
   logging:
+    loglevel: debug
 
 processors:
   batch:

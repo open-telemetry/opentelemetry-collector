@@ -16,6 +16,7 @@ package loggingexporter
 
 import (
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
@@ -43,28 +44,53 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
+		LogLevel: "info",
 	}
-}
-
-func noopStopFunc() error {
-	return nil
 }
 
 // CreateTraceExporter creates a trace exporter based on this config.
-func (f *Factory) CreateTraceExporter(logger *zap.Logger, cfg configmodels.Exporter) (consumer.TraceConsumer, exporter.StopFunc, error) {
+func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Exporter) (consumer.TraceConsumer, exporter.StopFunc, error) {
+	cfg := config.(*Config)
 
-	lexp, err := NewTraceExporter(cfg.Name(), logger)
+	exporterLogger, err := f.createLogger(cfg.LogLevel)
 	if err != nil {
 		return nil, nil, err
 	}
-	return lexp, noopStopFunc, nil
+
+	lexp, err := NewTraceExporter(cfg.Name(), exporterLogger)
+	if err != nil {
+		return nil, nil, err
+	}
+	return lexp, exporterLogger.Sync, nil
+}
+
+func (f *Factory) createLogger(logLevel string) (*zap.Logger, error) {
+	var level zapcore.Level
+	err := (&level).UnmarshalText([]byte(logLevel))
+	if err != nil {
+		return nil, err
+	}
+	conf := zap.NewProductionConfig()
+	conf.Level.SetLevel(level)
+	logginglogger, err := conf.Build()
+	if err != nil {
+		return nil, err
+	}
+	return logginglogger, nil
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *Factory) CreateMetricsExporter(logger *zap.Logger, cfg configmodels.Exporter) (consumer.MetricsConsumer, exporter.StopFunc, error) {
-	lexp, err := NewMetricsExporter(cfg.Name(), logger)
+func (f *Factory) CreateMetricsExporter(logger *zap.Logger, config configmodels.Exporter) (consumer.MetricsConsumer, exporter.StopFunc, error) {
+	cfg := config.(*Config)
+
+	exporterLogger, err := f.createLogger(cfg.LogLevel)
 	if err != nil {
 		return nil, nil, err
 	}
-	return lexp, noopStopFunc, nil
+
+	lexp, err := NewMetricsExporter(cfg.Name(), exporterLogger)
+	if err != nil {
+		return nil, nil, err
+	}
+	return lexp, exporterLogger.Sync, nil
 }
