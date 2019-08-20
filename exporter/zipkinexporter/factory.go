@@ -56,13 +56,15 @@ func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Ex
 	if cfg.URL == "" {
 		return nil, nil, errors.New("exporter config requires a non-empty 'url'") // TODO: better error
 	}
-
+	// <missing service name> is used if the zipkin span is not carrying the name of the service, which shouldn't happen
+	// in normal circumstances. It happens only due to (bad) conversions between formats. The current value is a
+	// clear indication that somehow the name of the service was lost in translation.
 	ze, err := newZipkinExporter(cfg.URL, "<missing service name>", 0)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return ze, ze.stop, nil
+	return ze, ze.Shutdown, nil
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.

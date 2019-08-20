@@ -58,6 +58,11 @@ func (ste *SinkTraceExporter) AllTraces() []consumerdata.TraceData {
 	return ste.traces[:]
 }
 
+// Shutdown stops the exporter and is invoked during shutdown.
+func (ste *SinkTraceExporter) Shutdown() error {
+	return nil
+}
+
 // SinkMetricsExporter acts as a metrics receiver for use in tests.
 type SinkMetricsExporter struct {
 	mu      sync.Mutex
@@ -87,4 +92,9 @@ func (sme *SinkMetricsExporter) AllMetrics() []consumerdata.MetricsData {
 	defer sme.mu.Unlock()
 
 	return sme.metrics[:]
+}
+
+// Shutdown stops the exporter and is invoked during shutdown.
+func (sme *SinkMetricsExporter) Shutdown() error {
+	return nil
 }

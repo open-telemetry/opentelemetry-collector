@@ -66,7 +66,7 @@ const (
 	errAlreadyStopped
 )
 
-func (oce *ocagentExporter) stop() error {
+func (oce *ocagentExporter) Shutdown() error {
 	wg := &sync.WaitGroup{}
 	var errors []error
 	var errorsMu sync.Mutex
