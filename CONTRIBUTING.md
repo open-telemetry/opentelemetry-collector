@@ -18,13 +18,13 @@ Please read project contribution
 [guide](https://github.com/open-telemetry/community/blob/master/CONTRIBUTING.md)
 for general practices for OpenTelemetry project.
 
-Select a good issue from:
+Select a good issue from the links below (ordered by difficulty/complexity):
 
 * [Good First Issue](https://github.com/open-telemetry/opentelemetry-service/issues?utf8=%E2%9C%93&q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
 * [Up for Grabs](https://github.com/open-telemetry/opentelemetry-service/issues?utf8=%E2%9C%93&q=is%3Aissue+is%3Aopen+label%3Aup-for-grabs+)
 * [Help Wanted](https://github.com/open-telemetry/opentelemetry-service/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
 
-Comment on the issue that you want to work on it so we can assign it to you and
+Comment on the issue that you want to work on so we can assign it to you and
 clarify anything related to it. 
 
 Follow the instructions below to create your PR.
