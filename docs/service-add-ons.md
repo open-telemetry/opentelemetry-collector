@@ -4,7 +4,7 @@ Besides the pipeline elements (receivers, processors, and exporters) the OTelSvc
 uses various ad-hoc “add-on” components (e.g.: healthcheck, z-pages, etc). 
 However, the interface and configuration for such components was not specified 
 and the service code directly handles them individually in an ad-hoc fashion. 
-This document proposes a design to make these “add-ons” another extension point 
+This document describes how “add-ons” can be used as another extension point 
 of OTelSvc, in a similar fashion to pipeline elements.
 
 ## Design Goals
@@ -20,11 +20,11 @@ pipeline elements;
 The configuration will follow the same pattern used for pipelines: a base 
 configuration type and the creation of factories to instantiate the AddOn objects.
 
-In order to support generic add-on components an interface needs to be defined 
-so the service can interactly uniformly with them. This interface needs to cover 
+In order to support generic add-on components an interface is defined 
+so the service can interact uniformly with them. This interface needs to cover 
 at minimum Start and Shutdown. 
 
-In addition to this base interface there will be support to notify add-ons when 
+In addition to this base interface there is support to notify add-ons when 
 pipelines are “ready” and when they are about to be stopped, i.e.: “not ready” 
 to receive data. These are a necessary addition to allow implementing add-ons 
 that indicate to LBs and external systems if the service instance is ready or 
@@ -61,9 +61,9 @@ these sections would look like in the configuration file:
 # value.
 add-ons:
   health-check:
-    endpoint**: "0.0.0.0:13133"
+    endpoint: "0.0.0.0:13133"
   pprof:
-    endpoint**: "0.0.0.0:1777"
+    endpoint: "0.0.0.0:1777"
     block-profile-fraction: 0
     mutex-profile-fraction: 0
   zpages:
