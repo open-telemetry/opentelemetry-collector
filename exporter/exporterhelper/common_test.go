@@ -17,6 +17,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opencensus.io/trace"
 )
 
@@ -36,26 +38,14 @@ func TestWithSpanName(t *testing.T) {
 }
 
 func TestErrorToStatus(t *testing.T) {
-	if g, w := errToStatus(nil), okStatus; g != w {
-		t.Fatalf("Status: Want %v Got %v", w, g)
-	}
-
-	errorStatus := trace.Status{Code: trace.StatusCodeUnknown, Message: "my_error"}
-	if g, w := errToStatus(errors.New("my_error")), errorStatus; g != w {
-		t.Fatalf("Status: Want %v Got %v", w, g)
-	}
+	require.Equal(t, okStatus, errToStatus(nil))
+	require.Equal(t, trace.Status{Code: trace.StatusCodeUnknown, Message: "my_error"}, errToStatus(errors.New("my_error")))
 }
 
 func checkRecordMetrics(t *testing.T, opts ExporterOptions, recordMetrics bool) {
-	if opts.recordMetrics != recordMetrics {
-		t.Errorf("Wrong recordMetrics Want: %t Got: %t", opts.recordMetrics, recordMetrics)
-		return
-	}
+	assert.Equalf(t, opts.recordMetrics, recordMetrics, "Wrong recordMetrics Want: %t Got: %t", opts.recordMetrics, recordMetrics)
 }
 
 func checkSpanName(t *testing.T, opts ExporterOptions, spanName string) {
-	if opts.spanName != spanName {
-		t.Errorf("Wrong spanName Want: %s Got: %s", opts.spanName, spanName)
-		return
-	}
+	assert.Equalf(t, opts.spanName, spanName, "Wrong spanName Want: %s Got: %s", opts.spanName, spanName)
 }
