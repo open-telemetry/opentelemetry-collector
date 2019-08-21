@@ -15,6 +15,9 @@
 package attributes
 
 import (
+	"fmt"
+	"strings"
+
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/config/configerror"
@@ -53,7 +56,12 @@ func (f *Factory) CreateTraceProcessor(
 	nextConsumer consumer.TraceConsumer,
 	cfg configmodels.Processor,
 ) (processor.TraceProcessor, error) {
-	// TODO(ccaraman) Validate that there is at least one action.
+
+	oCfg := cfg.(*Config)
+	err := validateAttributesConfiguration(*oCfg)
+	if err != nil {
+		return nil, err
+	}
 	// TODO(ccaraman) Update to use NewTraceProcessor in follow up PR.
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
@@ -65,4 +73,35 @@ func (f *Factory) CreateMetricsProcessor(
 	cfg configmodels.Processor,
 ) (processor.MetricsProcessor, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
+}
+
+// validateAttributesConfiguration validates the configuration has all of the required fields for the processor.
+func validateAttributesConfiguration(config Config) error {
+	if len(config.Actions) == 0 {
+		return fmt.Errorf("error creating \"attributes\" processor due to missing required field \"actions\" of processor %q", config.Name())
+	}
+
+	for i, a := range config.Actions{
+		// `key` is a required field
+		if a.Key == "" {
+			return fmt.Errorf("error creating \"attributes\" processor due to missing required field \"key\" at the %d-th actions of processor %q", i, config.Name())
+		}
+
+		// Convert action to lowercase. There must be a better way for this comparison.
+		lowerAction := strings.ToLower(string(a.Action))
+		switch Action(lowerAction){
+		case INSERT, UPDATE, UPSERT:
+			if a.Value== nil && a.FromAttribute == "" {
+				return fmt.Errorf("error creating \"attributes\" processor due to missing field \"value\" or \"from_attribute\" at the %d-th actions of processor %q", i, config.Name())
+			}
+			if a.Value!= nil && a.FromAttribute != "" {
+				return fmt.Errorf("error creating \"attributes\" processor due to both fields \"value\" and \"from_attribute\" being set at the %d-th actions of processor %q", i, config.Name())
+			}
+		case DELETE:
+			// Do nothing since key is already set
+		default:
+			return fmt.Errorf("error creating \"attributes\" processor due to unsupported action %q at the %d-th actions of processor %q",a.Action, i, config.Name())
+		}
+	}
+	return nil
 }

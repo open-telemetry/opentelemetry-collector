@@ -57,3 +57,72 @@ func TestFactory_CreateMetricsProcessor(t *testing.T) {
 	assert.Nil(t, mp)
 	assert.Equal(t, err, configerror.ErrDataTypeIsNotSupported)
 }
+
+
+func TestFactory_validateAttributesConfiguration(t *testing.T){
+	factory := Factory{}
+	cfg := factory.CreateDefaultConfig()
+	oCfg := cfg.(*Config)
+
+	oCfg.Actions = []ActionKeyValue{
+		{Key: "one", Action: DELETE},
+		{Key: "two", Value: 123, Action:INSERT},
+		{Key: "three", FromAttribute:"two", Action:"upDaTE"},
+		{Key: "five", FromAttribute: "two", Action:UPSERT},
+	}
+	assert.NoError(t, validateAttributesConfiguration(*oCfg))
+
+}
+// Refactor this into a list of configurations and expected error
+func TestFactory_validateAttributesConfiguration_InvalidConfig(t *testing.T){
+	testcase := [] struct{
+		name string
+		actionLists []ActionKeyValue
+		errorString	string
+	}{
+		{
+			name: "emtpy action lists",
+			actionLists: []ActionKeyValue{},
+			errorString: "error creating \"attributes\" processor due to missing required field \"actions\" of processor \"attributes/error\"",
+		},
+		{
+			name: "missing key",
+			actionLists: []ActionKeyValue{
+				{Key: "one", Action: DELETE},
+				{Key: "", Value: 123, Action:UPSERT},
+			},
+			errorString: "error creating \"attributes\" processor due to missing required field \"key\" at the 1-th actions of processor \"attributes/error\"",
+		},
+		{
+			name: "invalid action",
+			actionLists: []ActionKeyValue{
+				{Key: "invalid", Action: "invalid"},
+			},
+			errorString: "error creating \"attributes\" processor due to unsupported action \"invalid\" at the 0-th actions of processor \"attributes/error\"",
+		},
+		{
+			name: "missing value or from attribute",
+			actionLists: []ActionKeyValue{
+				{Key: "MissingValueFromAttributes", Action: INSERT},
+			},
+			errorString: "error creating \"attributes\" processor due to missing field \"value\" or \"from_attribute\" at the 0-th actions of processor \"attributes/error\"",
+		},
+		{
+			name: "both set value and from attribute",
+			actionLists: []ActionKeyValue{
+				{Key: "BothSet", Value: 123, FromAttribute: "aa", Action:UPSERT},
+			},
+			errorString: "error creating \"attributes\" processor due to both fields \"value\" and \"from_attribute\" being set at the 0-th actions of processor \"attributes/error\"",
+		},
+	}
+	factory := Factory{}
+	cfg := factory.CreateDefaultConfig()
+	oCfg := cfg.(*Config)
+	oCfg.NameVal = "attributes/error"
+	for _, tc :=range testcase{
+		t.Run(tc.name, func(t *testing.T){
+			oCfg.Actions = tc.actionLists
+			assert.Equal(t, validateAttributesConfiguration(*oCfg).Error(), tc.errorString)
+		})
+	}
+}
