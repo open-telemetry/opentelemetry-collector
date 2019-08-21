@@ -1,37 +1,143 @@
-# OpenTelemetry Service Design Specs
+# OpenTelemetry Service Architecture
 
 This document describes the architecture design and implementation of
-OpenTelemetry Agent and OpenTelemetry Collector.
+OpenTelemetry Service.
 
-# Table of contents
-- [Goals](#goals)
-- [OpenTelemetry Agent](#opentelemetry-agent)
-    - [Architecture overview](#agent-architecture-overview)
-    - [Communication](#agent-communication)
-    - [Protocol Workflow](#agent-protocol-workflow)
-    - [Implementation details of Agent server](#agent-implementation-details-of-agent-server)
-        - [Receivers](#agent-impl-receivers)
-        - [Agent Core](#agent-impl-agent-core)
-        - [Exporters](#agent-impl-exporters)
-- [OpenTelemetry Collector](#opentelemetry-collector)
-    - [Architecture overview](#collector-architecture-overview)
+## Summary
 
-## <a name="goals"></a>Goals
+OpenTelemetry Service is an executable that allows to receive telemetry data, optionally transform it and send the data further.
 
-* Allow enabling/configuring of exporters lazily. After deploying code,
-optionally run a daemon on the host and it will read the collected data and
-upload to the configured backend.
-* Binaries can be instrumented without thinking about the exporting story.
-Allows open source binary projects (e.g. web servers like Caddy or Istio Mixer)
-to adopt OpenTelemetry without having to link any exporters into their binary.
-* Easier to scale the exporter development. Not every language has to
-implement support for each backend.
-* Custom daemons containing only the required exporters compiled in can be
-created.
+The Service supports several popular open-source protocols for telemetry data receiving and sending as well as offering a pluggable architecture for adding more protocols.
 
-## <a name="opentelemetry-agent"></a>OpenTelemetry Agent
+Data receiving, transformation and sending is done using Pipelines. The Service can be configured to have one or more Pipelines. Each Pipeline includes a set of Receivers that receive the data, a series of optional Processors that get the data from receivers and transform it and a set of Exporters which get the data from the Processors and send it further outside the Service. The same receiver can feed data to multiple Pipelines and multiple pipelines can feed data into the same Exporter.
 
-### <a name="agent-architecture-overview"></a>Architecture Overview
+## Pipelines
+
+Pipeline defines a path the data follows in the Service starting from reception, then further processing or modification and finally exiting the Service via exporters.
+
+Pipelines can operate on 2 telemetry data types: traces and metrics. The data type is a property of the pipeline defined by its configuration. Receivers, exporters and processors used in a pipeline must support the particular data type otherwise `ErrDataTypeIsNotSupported` will be reported when the configuration is loaded. A pipeline can be depicted the following way:
+
+![Pipelines](images/design-pipelines.png)
+
+There can be one or more receivers in a pipeline. Data from all receivers is pushed to the first processor, which performs a processing on it and then pushes it to the next processor (or it may drop the data, e.g. if it is a “sampling” processor) and so on until the last processor in the pipeline pushes the data to the exporters. Each exporter gets a copy of each data element. The last processor uses a `fanoutprocessor` to fanout the data to multiple exporters.
+
+The pipeline is constructed during Service startup based on pipeline definition in the config file.
+
+A pipeline configuration typically looks like this:
+
+```yaml
+pipelines: # section that can contain multiple subsections, one per pipeline
+  traces:  # type of the pipeline 
+    receivers: [opencensus, jaeger, zipkin]
+    processors: [tags, tail-sampling, batch, queued-retry]
+    exporters: [opencensus, jaeger, stackdriver, zipkin]
+```
+
+The above example defines a pipeline for “traces” type of telemetry data, with 3 receivers, 4 processors and 4 exporters. 
+
+For details of config file format see [this document](https://docs.google.com/document/d/1GWOzV0H0RTN1adiwo7fTmkjfCATDDFGuOB4jp3ldCc8/edit#).
+
+### Receivers
+
+Receivers typically listen on a network port and receive telemetry data. Usually one receiver is configured to send received data to one pipeline, however it is also possible to configure the same receiver to send the same received data to multiple pipelines. This can be done by simply listing the same receiver in the “receivers” key of several pipelines:
+
+```yaml
+receivers:
+  opencensus:
+    endpoint: "127.0.0.1:55678”
+
+pipelines:
+  traces:  # a pipeline of “traces” type
+    receivers: [opencensus]
+    processors: [tags, tail-sampling, batch, queued-retry]
+    exporters: [jaeger]
+  traces/2:  # another pipeline of “traces” type
+    receivers: [opencensus]
+    processors: [batch]
+    exporters: [opencensus]
+```
+
+In the above example “opencensus” receiver will send the same data to pipeline “traces” and to pipeline “traces/2”. (Note: the configuration uses composite key names in the form of `type[/name]` as defined in this [this document](https://docs.google.com/document/d/1GWOzV0H0RTN1adiwo7fTmkjfCATDDFGuOB4jp3ldCc8/edit#)).
+
+When the Service loads this config the result will look like this (part of processors and exporters are omitted from the diagram for brevity):
+
+![Receivers](images/design-receivers.png)
+
+Important: when the same receiver is referenced in more than one pipeline the Service will create only one receiver instance at runtime that will send the data to `fanoutprocessor` which in turn will send the data to the first processor of each pipeline. The data propagation from receiver to `fanoutprocessor` and then to processors is via synchronous function call. This means that if one processor blocks the call the other pipelines that are attached to this receiver will be blocked from receiving the same data and the receiver itself will stop processing and forwarding newly received data.
+
+### Exporters
+
+Exporters typically forward the data they get to a destination on a network (but they can also send it elsewhere, e.g “logging” exporter writes the telemetry data to a local file). 
+
+The configuration allows to have multiple exporters of the same type, even in the same pipeline. For example one can have 2 “opencensus” exporters defined each one sending to a different opencensus endpoint, e.g.:
+
+```yaml
+exporters:
+  opencensus/1:
+    endpoint: "example.com:14250”
+  opencensus/2:
+    endpoint: "127.0.0.1:14250”
+```
+
+Usually an exporter gets the data from one pipeline, however it is possible to configure multiple pipelines to send data to the same exporter, e.g.:
+
+```yaml
+exporters:
+  jaeger:
+    protocols:
+      grpc:
+        endpoint: "127.0.0.1:14250”
+
+pipelines:
+  traces:  # a pipeline of “traces” type
+    receivers: [zipkin]
+    processors: [tags, tail-sampling, batch, queued-retry]
+    exporters: [jaeger]
+  traces/2:  # another pipeline of “traces” type
+    receivers: [opencensus]
+    processors: [batch]
+    exporters: [jaeger]
+```
+
+In the above example “jaeger” exporter will get data from pipeline “traces” and from pipeline “traces/2”. When the Service loads this config the result will look like this (part of processors and receivers are omitted from the diagram for brevity):
+
+![Exporters](images/design-exporters.png)
+
+### Processors
+
+A pipeline can contain sequentially connected processors. The first processor gets the data from one or more receivers that are configured for the pipeline, the last processor sends the data to one or more exporters that are configured for the pipeline. All processors between the first and last receive the data strictly only from one preceding processor and send data strictly only to the succeeding processor.
+
+The traces pipeline must have at least one processor. Metrics pipeline does not require processors since we currently do not have any implemented metrics processors yet.
+
+Processors can transform the data before forwarding it (i.e. add or remove attributes from spans), they can drop the data simply by deciding not to forward it (this is for example how “sampling” processor works), they can also generate new data (this is how for example how a “persistent-queue” processor can work after Service restarts by reading previously saved data from a local file and forwarding it on the pipeline).
+
+The same name of the processor can be referenced in the “processors” key of multiple pipelines. In this case the same configuration will be used for each of these processors however each pipeline will always gets its own instance of the processor. Each of these processors will have its own state, the processors are never shared between pipelines. For example if “queued-retry” processor is used several pipelines each pipeline will have its own queue (although the queues will be configured exactly the same way if the reference the same key in the config file). As an example, given the following config:
+
+```yaml
+processors:
+  queued-retry:
+    size: 50
+    per-exporter: true
+    enabled: true
+
+pipelines:
+  traces:  # a pipeline of “traces” type
+    receivers: [zipkin]
+    processors: [queued-retry]
+    exporters: [jaeger]
+  traces/2:  # another pipeline of “traces” type
+    receivers: [opencensus]
+    processors: [queued-retry]
+    exporters: [opencensus]
+```
+
+When the Service loads this config the result will look like this:
+
+![Processors](images/design-processors.png)
+
+Note that each “queued-retry” processor is an independent instance, although both are configured the same way, i.e. each have a size of 50.
+
+## <a name="opentelemetry-agent"></a>Running as an Agent
 
 On a typical VM/container, there are user applications running in some
 processes/pods with OpenTelemetry Library (Library). Previously, Library did
@@ -53,7 +159,7 @@ drawbacks, for example:
    correct credentials\monitored resources), and users may be reluctant to
    “pollute” their code with OpenTelemetry.
 
-To resolve the issues above, we are introducing OpenTelemetry Agent (Agent).
+To resolve the issues above, you can run OpenTelemetry Service as an Agent.
 The Agent runs as a daemon in the VM/container and can be deployed independent
 of Library. Once Agent is deployed and running, it should be able to retrieve
 spans/stats/metrics from Library, export them to other backends. We MAY also
@@ -61,124 +167,64 @@ give Agent the ability to push configurations (e.g sampling probability) to
 Library. For those languages that cannot do stats aggregation in process, they
 should also be able to send raw measurements and have Agent do the aggregation.
 
+TODO: update the diagram below.
+
 ![agent-architecture](https://user-images.githubusercontent.com/10536136/48792454-2a69b900-eca9-11e8-96eb-c65b2b1e4e83.png)
 
-For developers/maintainers of other libraries: Agent can also be extended to
+For developers/maintainers of other libraries: Agent can also 
 accept spans/stats/metrics from other tracing/monitoring libraries, such as
-Zipkin, Prometheus, etc. This is done by adding specific recevers. See
+Zipkin, Prometheus, etc. This is done by adding specific receivers. See
 [Receivers](#receivers) for details.
 
-To support Agent, Library should have “agent exporters”, similar to the
-existing exporters to other backends. There should be 3 separate agent
-exporters for tracing/stats/metrics respectively. Agent exporters will be
-responsible for sending spans/stats/metrics and (possibly) receiving
-configuration updates from Agent.
+## <a name="opentelemetry-collector"></a>Running as a Collector
 
-### <a name="agent-communication"></a>Communication
-
-Communication between Library and Agent should use a bi-directional gRPC
-stream. Library should initiate the connection, since there’s only one
-dedicated port for Agent, while there could be multiple processes with Library
-running. By default, the Agent is available on port 55678.
-
-### <a name="agent-protocol-workflow"></a>Protocol Workflow
-
-1. Library will try to directly establish connections for Config and Export
-   streams.
-2. As the first message in each stream, Library must send its identifier. Each
-   identifier should uniquely identify Library within the VM/container. If
-   there is no identifier in the first message, Agent should drop the whole
-   message and return an error to the client. In addition, the first message
-   MAY contain additional data (such as `Span`s). As long as it has a valid
-   identifier associated, Agent should handle the data properly, as if they
-   were sent in a subsequent message. Identifier is no longer needed once the
-   streams are established.
-3. On Library side, if connection to Agent failed, Library should retry
-   indefintely if possible, subject to available/configured memory buffer size.
-   (Reason: consider environments where the running applications are already
-   instrumented with OpenTelemetry Library but Agent is not deployed yet.
-   Sometime in the future, we can simply roll out the Agent to those
-   environments and Library would automatically connect to Agent with
-   indefinite retries. Zero changes are required to the applications.)
-   Depending on the language and implementation, retry can be done in either
-   background or a daemon thread. Retry should be performed at a fixed
-   frequency (rather than exponential backoff) to have a deterministic expected
-   connect time.
-4. On Agent side, if an established stream were disconnected, the identifier of
-   the corresponding Library would be considered expired. Library needs to
-   start a new connection with a unique identifier (MAY be different than the
-   previous one).
-
-### <a name="agent-protocol-implementation-details-of-agent-server"></a>Implementation details of Agent Server
-
-This section describes the in-process implementation details of OpenTelemetry Agent.
-
-![agent-implementation](https://user-images.githubusercontent.com/10536136/48792455-2a69b900-eca9-11e8-9055-a5d906d841b0.png)
-
-Note: Red arrows represent RPCs or HTTP requests. Black arrows represent local method
-invocations.
-
-The Agent consists of three main parts:
-
-1. The receivers of different instrumentation libraries, such as OpenTelemetry,
-   Zipkin, Istio Mixer, Prometheus client, etc. Receivers act as the “frontend”
-   or “gateway” of Agent. In addition, there MAY be one special receiver for
-   receiving configuration updates from outside.
-2. The core Agent module. It acts as the “brain” or “dispatcher” of Agent.
-3. The exporters to different monitoring backends or collector services, such
-   as Jaeger, Zipkin, etc.
-
-#### <a name="agent-impl-receivers"></a>Receivers
-
-Each receiver can be connected with multiple instrumentation libraries. The
-communication protocol between receivers and libraries is the one we described
-in the proto files (for example trace_service.proto). When a library opens the
-connection with the corresponding receiver, the first message it sends must
-have the `Node` identifier. The receiver will then cache the `Node` for each
-library, and `Node` is not required for the subsequent messages from libraries.
-
-#### <a name="agent-impl-core"></a>Agent Core
-
-Most functionalities of Agent are in Agent Core. Agent Core's responsibilities
-include:
-
-1. Accept `SpanProto` from each receiver. Note that the `SpanProto`s that are
-   sent to Agent Core must have `Node` associated, so that Agent Core can
-   differentiate and group `SpanProto`s by each `Node`.
-2. Store and batch `SpanProto`s.
-3. Augment the `SpanProto` or `Node` sent from the receiver. For example, in a
-   Kubernetes container, Agent Core can detect the namespace, pod id and
-   container name and then add them to its record of Node from receiver
-4. For some configured period of time, Agent Core will push `SpanProto`s
-   (grouped by `Node`s) to Exporters.
-5. Display the currently stored `SpanProto`s on local zPages.
-6. MAY accept the updated configuration from Config Receiver, and apply it to
-   all the config service clients.
-7. MAY track the status of all the connections of Config streams. Depending on
-   the language and implementation of the Config service protocol, Agent Core
-   MAY either store a list of active Config streams (e.g gRPC-Java), or a list
-   of last active time for streams that cannot be kept alive all the time (e.g
-   gRPC-Python).
-
-#### <a name="agent-impl-exporters"></a>Exporters
-
-Once in a while, Agent Core will push `SpanProto` with `Node` to each exporter.
-After receiving them, each exporter will translate `SpanProto` to the format
-supported by the backend (e.g Jaeger Thrift Span), and then push them to
-corresponding backend or service.
-
-## <a name="opentelemetry-collector"></a>OpenTelemetry Collector
-
-### <a name="collector-architecture-overview"></a>Architecture Overview
-
-The OpenTelemetry Collector runs as a standalone instance and receives spans
-and metrics exported by one or more OpenTelemetry Agents or Libraries, or by
+The OpenTelemetry Service can run as a standalone Collector instance and receives spans
+and metrics exported by one or more Agents or Libraries, or by
 tasks/agents that emit in one of the supported protocols. The Collector is
 configured to send data to the configured exporter(s). The following figure
 summarizes the deployment architecture:
+
+TODO: update the diagram below.
 
 ![OpenTelemetry Collector Architecture](https://user-images.githubusercontent.com/10536136/46637070-65f05f80-cb0f-11e8-96e6-bc56468486b3.png "OpenTelemetry Collector Architecture")
 
 The OpenTelemetry Collector can also be deployed in other configurations, such
 as receiving data from other agents or clients in one of the formats supported
 by its receivers.
+
+
+### <a name="agent-communication"></a>OpenCensus Protocol
+
+TODO: move this section somewhere else since this document is intended to describe non-protocol specific functionality.
+
+OpenCensus Protocol uses a bi-directional gRPC
+stream. Sender should initiate the connection, since there’s only one
+dedicated port for Agent, while there could be multiple instrumented processes. By default, the Service is available on port 55678.
+
+#### <a name="agent-protocol-workflow"></a>Protocol Workflow
+
+1. Sender will try to directly establish connections for Config and Export
+   streams.
+2. As the first message in each stream, Sender must send its identifier. Each
+   identifier should uniquely identify Sender within the VM/container. If
+   there is no identifier in the first message, Service should drop the whole
+   message and return an error to the client. In addition, the first message
+   MAY contain additional data (such as `Span`s). As long as it has a valid
+   identifier associated, Service should handle the data properly, as if they
+   were sent in a subsequent message. Identifier is no longer needed once the
+   streams are established.
+3. On Sender side, if connection to Service failed, Sender should retry
+   indefintely if possible, subject to available/configured memory buffer size.
+   (Reason: consider environments where the running applications are already
+   instrumented with OpenTelemetry Library but Service is not deployed yet.
+   Sometime in the future, we can simply roll out the Service to those
+   environments and Library would automatically connect to Service with
+   indefinite retries. Zero changes are required to the applications.)
+   Depending on the language and implementation, retry can be done in either
+   background or a daemon thread. Retry should be performed at a fixed
+   frequency (rather than exponential backoff) to have a deterministic expected
+   connect time.
+4. On Service side, if an established stream were disconnected, the identifier of
+   the corresponding Sender would be considered expired. Sender needs to
+   start a new connection with a unique identifier (MAY be different than the
+   previous one).
