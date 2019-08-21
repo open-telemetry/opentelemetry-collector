@@ -42,7 +42,7 @@ const defaultHTTPTimeout = time.Second * 5
 // The headers parameter is used to add entries to the POST message set to the
 // collector.
 // The timeout is used to set the timeout for the HTTP requests, if the
-// value is equal or smaller than zero the defaulf of 5 seconds is used.
+// value is equal or smaller than zero the default of 5 seconds is used.
 func New(
 	exporterName string,
 	httpAddress string,

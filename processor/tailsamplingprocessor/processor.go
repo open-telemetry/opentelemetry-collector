@@ -221,7 +221,7 @@ func (tsp *tailSamplingSpanProcessor) ConsumeTraceData(ctx context.Context, td c
 		tsp.policyTicker.Start(1 * time.Second)
 	})
 
-	// Groupd spans per their traceId to minize contention on idToTrace
+	// Groupd spans per their traceId to minimize contention on idToTrace
 	idToSpans := make(map[traceKey][]*tracepb.Span)
 	for _, span := range td.Spans {
 		if len(span.TraceId) != 16 {
@@ -355,7 +355,7 @@ func prepareTraceBatch(spans []*tracepb.Span, singleTrace bool, td consumerdata.
 
 // tTicker interface allows easier testing of ticker related functionality used by tailSamplingProcessor
 type tTicker interface {
-	// Start sets the frequency of the ticker and starts the perioc calls to OnTick.
+	// Start sets the frequency of the ticker and starts the periodic calls to OnTick.
 	Start(d time.Duration)
 	// OnTick is called when the ticker fires.
 	OnTick()
