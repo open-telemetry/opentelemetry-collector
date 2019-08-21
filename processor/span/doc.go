@@ -12,6 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package span contains logic to modify top level settings of a span, such
-// as renaming.
-package span
+// Package spanprocessor contains logic to modify top level settings of a span, such
+// as its name.
+package spanprocessor

@@ -5,8 +5,8 @@ processors:
   # The following specifies the values of attribute `db.svc`, `operation`,
   # and `id` will form the new name of the span, in that order, separated by the
   # value `::`. All attribute keys needs to be specified in the span for
-  # the processor to apply changes.
-  # Note: There is no default configuration for a span. The field `keys`
+  # the processor to rename it.
+  # Note: There is no default configuration for the span processor. For 'rename', the field `keys`
   # is required.
   #
   # Example 1 - All keys are in the span:

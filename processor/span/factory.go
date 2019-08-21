@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package span
+package spanprocessor
 
 import (
 	"errors"
@@ -26,15 +26,17 @@ import (
 )
 
 const (
-	// typeStr is the value of "type" Span Rename in the configuration.
+	// typeStr is the value of "type" Span processor in the configuration.
 	typeStr = "span"
 )
 
 // errMissingRequiredField is returned when a required field in the config
 // is not specified.
-var errMissingRequiredField = errors.New("error creating \"span\" processor due to missing required field \"keys\"")
+// TODO https://github.com/open-telemetry/opentelemetry-service/issues/215
+//	Move this to the error package that allows for span name and field to be specified.
+var errMissingRequiredField = errors.New("error creating \"span\" processor due to missing required field \"keys\" in \"rename:\"")
 
-// Factory is the factory for the Span Rename processor.
+// Factory is the factory for the Span processor.
 type Factory struct {
 }
 
@@ -78,6 +80,6 @@ func (f *Factory) CreateMetricsProcessor(
 	logger *zap.Logger,
 	nextConsumer consumer.MetricsConsumer,
 	cfg configmodels.Processor) (processor.MetricsProcessor, error) {
-	// Span Rename Processor does not support Metrics.
+	// Span Processor does not support Metrics.
 	return nil, configerror.ErrDataTypeIsNotSupported
 }

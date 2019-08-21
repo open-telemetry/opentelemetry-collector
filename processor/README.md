@@ -6,12 +6,15 @@ or refer to the [issues page](https://github.com/open-telemetry/opentelemetry-se
 Supported processors (sorted alphabetically):
 - [Attributes Processor](#attributes)
 - [Fan Out Processor](#fan-out)
-- [Multi-Consumer Processor](#multi-consumer)
 - [Node Batcher Processor](#node-batcher)
 - [Probabilistic Sampler Processor](#probabilistic-sampler)
 - [Queued Processor](#queued)
 - [Span Processor](#span)
 - [Tail Sampling Processor](#tail-sampling)
+
+## Ordering Processors
+The order processors are specified in a pipeline is important as this is the
+order in which each processor is applied to traces.
 
 ## <a name="attributes"></a>Attributes Processor
 The attributes processor modifies attributes of a span.
@@ -83,10 +86,9 @@ Refer to [config.yaml](attributes/testdata/config.yaml) for detailed
 examples on using the processor.
 
 ## <a name="fan-out"></a>Fan Out Processor
-<FILL ME IN - I'M LONELY!>
-
-## <a name="multi-consumer"></a>Multi-Consumer Processor
-<FILL ME IN - I'M LONELY!>
+This processor isn't configurable. The following issue follows the conversation
+around where should this logic exist.
+TODO https://github.com/open-telemetry/opentelemetry-service/issues/283
 
 ## <a name="node-batcher"></a>Node Batcher Processor
 <FILL ME IN - I'M LONELY!>
@@ -105,6 +107,10 @@ renaming a span is supported.
 It takes a list of `keys` and an optional `separator` string. The attribute
 value for the keys are used to create a new name in the order specified in the
 configuration. If a separator is specified, it will separate values.
+
+If renaming is dependent on attributes being modified by the `attributes`
+processor, ensure the `span` processor is specified after the `attributes`
+processor in the `pipeline` specification.
 
 For more information, refer to [config.go](span/config.go)
 ```yaml
