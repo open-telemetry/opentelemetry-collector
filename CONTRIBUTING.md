@@ -18,6 +18,24 @@ Please read project contribution
 [guide](https://github.com/open-telemetry/community/blob/master/CONTRIBUTING.md)
 for general practices for OpenTelemetry project.
 
+Select a good issue from the links below (ordered by difficulty/complexity):
+
+* [Good First Issue](https://github.com/open-telemetry/opentelemetry-service/issues?utf8=%E2%9C%93&q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
+* [Up for Grabs](https://github.com/open-telemetry/opentelemetry-service/issues?utf8=%E2%9C%93&q=is%3Aissue+is%3Aopen+label%3Aup-for-grabs+)
+* [Help Wanted](https://github.com/open-telemetry/opentelemetry-service/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
+
+Comment on the issue that you want to work on so we can assign it to you and
+clarify anything related to it.
+
+If you would like to work on something that is not listed as an issue 
+(e.g. a new feature or enhancement) please create an issue and describe your 
+proposal. It is best to do this in advance so that maintainers can decide if 
+the proposal is a good fit for this repository. This will help avoid situations 
+when you spend significant time on something that maintainers may decide this 
+repo is not the right place for.
+
+Follow the instructions below to create your PR.
+
 ### Fork
 
 In the interest of keeping this repository clean and manageable, you should

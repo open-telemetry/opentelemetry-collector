@@ -134,6 +134,8 @@ func (jr *jReceiver) agentAddress() string {
 	return fmt.Sprintf(":%d", port)
 }
 
+// TODO https://github.com/open-telemetry/opentelemetry-service/issues/267
+//	Remove ThriftTChannel support.
 func (jr *jReceiver) tchannelAddr() string {
 	var port int
 	if jr.config != nil {

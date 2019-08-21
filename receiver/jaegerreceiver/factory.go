@@ -35,8 +35,10 @@ const (
 	typeStr = "jaeger"
 
 	// Protocol values.
-	protoGRPC           = "grpc"
-	protoThriftHTTP     = "thrift-http"
+	protoGRPC       = "grpc"
+	protoThriftHTTP = "thrift-http"
+	// TODO https://github.com/open-telemetry/opentelemetry-service/issues/267
+	//	Remove ThriftTChannel support.
 	protoThriftTChannel = "thrift-tchannel"
 
 	// Default endpoints to bind to.
