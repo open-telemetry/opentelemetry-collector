@@ -21,15 +21,15 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/spf13/viper"
-
 	// TODO: once this repository has been transferred to the
 	// official census-ecosystem location, update this import path.
 	"github.com/orijtech/prometheus-go-metrics-exporter"
-
 	prometheus_golang "github.com/prometheus/client_golang/prometheus"
+	"github.com/spf13/viper"
+
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-service/exporter/exporterhelper"
 )
 
 type prometheusConfig struct {
@@ -98,7 +98,9 @@ func PrometheusExportersFromViper(v *viper.Viper) (tps []consumer.TraceConsumer,
 }
 
 type prometheusExporter struct {
+	name     string
 	exporter *prometheus.Exporter
+	shutdown exporterhelper.Shutdown
 }
 
 var _ consumer.MetricsConsumer = (*prometheusExporter)(nil)
@@ -108,4 +110,13 @@ func (pe *prometheusExporter) ConsumeMetricsData(ctx context.Context, md consume
 		_ = pe.exporter.ExportMetric(ctx, md.Node, md.Resource, metric)
 	}
 	return nil
+}
+
+func (pe *prometheusExporter) Name() string {
+	return pe.name
+}
+
+// Shutdown stops the exporter and is invoked during shutdown.
+func (pe *prometheusExporter) Shutdown() error {
+	return pe.shutdown()
 }

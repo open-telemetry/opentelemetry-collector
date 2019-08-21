@@ -28,9 +28,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/internal/collector/telemetry"
 	"github.com/open-telemetry/opentelemetry-service/observability"
 	"github.com/open-telemetry/opentelemetry-service/processor"
-	"github.com/open-telemetry/opentelemetry-service/processor/nodebatcher"
-	"github.com/open-telemetry/opentelemetry-service/processor/queued"
-	"github.com/open-telemetry/opentelemetry-service/processor/tailsampling"
+	"github.com/open-telemetry/opentelemetry-service/processor/nodebatcherprocessor"
+	"github.com/open-telemetry/opentelemetry-service/processor/queuedprocessor"
+	"github.com/open-telemetry/opentelemetry-service/processor/tailsamplingprocessor"
 )
 
 const (
@@ -66,10 +66,10 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 	port := v.GetInt(metricsPortCfg)
 
 	views := processor.MetricViews(level)
-	views = append(views, queued.MetricViews(level)...)
-	views = append(views, nodebatcher.MetricViews(level)...)
+	views = append(views, queuedprocessor.MetricViews(level)...)
+	views = append(views, nodebatcherprocessor.MetricViews(level)...)
 	views = append(views, observability.AllViews...)
-	views = append(views, tailsampling.SamplingProcessorMetricViews(level)...)
+	views = append(views, tailsamplingprocessor.SamplingProcessorMetricViews(level)...)
 	processMetricsViews := telemetry.NewProcessMetricsViews(ballastSizeBytes)
 	views = append(views, processMetricsViews.Views()...)
 	tel.views = views

@@ -31,6 +31,7 @@ type PushTraceData func(ctx context.Context, td consumerdata.TraceData) (dropped
 type traceExporter struct {
 	exporterName  string
 	pushTraceData PushTraceData
+	shutdown      Shutdown
 }
 
 var _ (exporter.TraceExporter) = (*traceExporter)(nil)
@@ -43,6 +44,11 @@ func (te *traceExporter) ConsumeTraceData(ctx context.Context, td consumerdata.T
 
 func (te *traceExporter) Name() string {
 	return te.exporterName
+}
+
+// Shutdown stops the exporter and is invoked during shutdown.
+func (te *traceExporter) Shutdown() error {
+	return te.shutdown()
 }
 
 // NewTraceExporter creates an TraceExporter that can record metrics and can wrap every request with a Span.
@@ -66,9 +72,17 @@ func NewTraceExporter(exporterName string, pushTraceData PushTraceData, options 
 		pushTraceData = pushTraceDataWithSpan(pushTraceData, opts.spanName)
 	}
 
+	// The default shutdown function returns nil.
+	if opts.shutdown == nil {
+		opts.shutdown = func() error {
+			return nil
+		}
+	}
+
 	return &traceExporter{
 		exporterName:  exporterName,
 		pushTraceData: pushTraceData,
+		shutdown:      opts.shutdown,
 	}, nil
 }
 

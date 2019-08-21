@@ -76,6 +76,7 @@ func (zc *ZipkinConfig) EndpointURL() string {
 
 // ZipkinExportersFromViper unmarshals the viper and returns an exporter.TraceExporter targeting
 // Zipkin according to the configuration settings.
+// TODO Cleanup FromViper uses https://github.com/open-telemetry/opentelemetry-service/issues/263
 func ZipkinExportersFromViper(v *viper.Viper) (tps []consumer.TraceConsumer, mps []consumer.MetricsConsumer, doneFns []func() error, err error) {
 	var cfg struct {
 		Zipkin *ZipkinConfig `mapstructure:"zipkin"`
@@ -103,7 +104,7 @@ func ZipkinExportersFromViper(v *viper.Viper) (tps []consumer.TraceConsumer, mps
 		return nil, nil, nil, fmt.Errorf("cannot configure Zipkin exporter: %v", err)
 	}
 	tps = append(tps, zle)
-	doneFns = append(doneFns, zle.stop)
+	doneFns = append(doneFns, zle.Shutdown)
 	return
 }
 
@@ -176,7 +177,11 @@ func zipkinEndpointFromNode(node *commonpb.Node, serviceName string, endpointTyp
 	return zEndpoint
 }
 
-func (ze *zipkinExporter) stop() error {
+func (ze *zipkinExporter) Name() string {
+	return ze.defaultServiceName
+}
+
+func (ze *zipkinExporter) Shutdown() error {
 	ze.mu.Lock()
 	defer ze.mu.Unlock()
 

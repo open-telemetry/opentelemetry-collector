@@ -7,7 +7,7 @@ processors:
 exporters:
   logging:
   logging/2:
-
+    loglevel: debug
 
 pipelines:
   traces:
@@ -16,4 +16,4 @@ pipelines:
     exporters: [logging]
   metrics:
     receivers: [examplereceiver]
-    exporters: [logging]
+    exporters: [logging,logging/2]

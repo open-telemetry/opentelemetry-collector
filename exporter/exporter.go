@@ -25,6 +25,9 @@ type TraceExporter interface {
 
 	// Name gets the name of the trace exporter.
 	Name() string
+
+	// Shutdown is invoked during service shutdown.
+	Shutdown() error
 }
 
 // MetricsExporter composes MetricsConsumer with some additional exporter-specific functions.
@@ -33,4 +36,7 @@ type MetricsExporter interface {
 
 	// Name gets the name of the metrics exporter.
 	Name() string
+
+	// Shutdown is invoked during service shutdown.
+	Shutdown() error
 }
