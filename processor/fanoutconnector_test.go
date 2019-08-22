@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package fanoutprocessor
+package processor
 
 import (
 	"context"
@@ -31,7 +31,7 @@ func TestTraceProcessorMultiplexing(t *testing.T) {
 		processors[i] = &mockTraceConsumer{}
 	}
 
-	tdp := NewTraceProcessor(processors)
+	tdp := NewTraceFanOutConnector(processors)
 	td := consumerdata.TraceData{
 		Spans: make([]*tracepb.Span, 7),
 	}
@@ -64,7 +64,7 @@ func TestTraceProcessorWhenOneErrors(t *testing.T) {
 	// Make one processor return error
 	processors[1].(*mockTraceConsumer).MustFail = true
 
-	tdp := NewTraceProcessor(processors)
+	tdp := NewTraceFanOutConnector(processors)
 	td := consumerdata.TraceData{
 		Spans: make([]*tracepb.Span, 5),
 	}
@@ -94,7 +94,7 @@ func TestMetricsProcessorMultiplexing(t *testing.T) {
 		processors[i] = &mockMetricsConsumer{}
 	}
 
-	mdp := NewMetricsProcessor(processors)
+	mdp := NewMetricsFanOutConnector(processors)
 	md := consumerdata.MetricsData{
 		Metrics: make([]*metricspb.Metric, 7),
 	}
@@ -127,7 +127,7 @@ func TestMetricsProcessorWhenOneErrors(t *testing.T) {
 	// Make one processor return error
 	processors[1].(*mockMetricsConsumer).MustFail = true
 
-	mdp := NewMetricsProcessor(processors)
+	mdp := NewMetricsFanOutConnector(processors)
 	md := consumerdata.MetricsData{
 		Metrics: make([]*metricspb.Metric, 5),
 	}
