@@ -40,7 +40,7 @@ and how it will interact with the service extensions.
 ## Configuration
 
 The config package will be extended to load the extension components when the 
-configuration is loaded. The settings for extensions components will live in the 
+configuration is loaded. The settings for extension components will live in the 
 same configuration file as the pipeline elements. Below is an example of how 
 these sections would look like in the configuration file:
 
@@ -66,7 +66,13 @@ service:
   extensions: [health-check, pprof, zpages]
 ```
 
-The configuration base type does not share any common fields. 
+The configuration base type does not share any common fields.
+
+The configuration, analogous to pipelines, allows to have multiple extensions of
+the same type. Implementers of extensions need to take care to return error 
+if it can only execute a single instance. (Note: the configuration uses composite
+key names in the form of `type[/name]` 
+as defined in this [this document](https://docs.google.com/document/d/1GWOzV0H0RTN1adiwo7fTmkjfCATDDFGuOB4jp3ldCc8/edit#)).
 
 The factory follows the same pattern established for pipeline configuration:
 
@@ -85,7 +91,7 @@ type Factory interface {
     CustomUnmarshaler(v *viper.Viper, viperKey string, intoCfg interface{}) CustomUnmarshaler 
 
     // CreateExtension creates a service extension based on the given config.
-    CreateExtension(logger *zap.Logger, cfg configmodels.AddOn) (Component, error)
+    CreateExtension(logger *zap.Logger, cfg configmodels.Extension) (Component, error)
 }
 ```
 
@@ -140,6 +146,6 @@ type Host interface {
 ## Notes
 
 [^1]:
-     This can be done by adding specific interfaces to AddOn types that support 
-     those and having the service checking which of the AddOn instances support 
+     This can be done by adding specific interfaces to extension types that support 
+     those and having the service checking which of the extension instances support 
      each interface.
