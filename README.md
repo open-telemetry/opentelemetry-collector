@@ -81,7 +81,7 @@ Instructions for setting up an end-to-end demo environment can be found [here](h
 
 ### <a name="getting-started-k8s"></a>Kubernetes
 
-Apply the [sample YAML](example/k8s.yaml) file:
+Apply the [sample YAML](examples/k8s.yaml) file:
 
 ```shell
 $ kubectl apply -f example/k8s.yaml
