@@ -35,10 +35,10 @@ type metricsFanOutConnector []consumer.MetricsConsumer
 var _ MetricsProcessor = (*metricsFanOutConnector)(nil)
 
 // ConsumeMetricsData exports the MetricsData to all consumers wrapped by the current one.
-func (mcs metricsFanOutConnector) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
+func (mfc metricsFanOutConnector) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
 	var errs []error
-	for _, mdp := range mcs {
-		if err := mdp.ConsumeMetricsData(ctx, md); err != nil {
+	for _, mc := range mfc {
+		if err := mc.ConsumeMetricsData(ctx, md); err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -55,10 +55,10 @@ type traceFanOutConnector []consumer.TraceConsumer
 var _ TraceProcessor = (*traceFanOutConnector)(nil)
 
 // ConsumeTraceData exports the span data to all trace consumers wrapped by the current one.
-func (tcs traceFanOutConnector) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
+func (tfc traceFanOutConnector) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	var errs []error
-	for _, tdp := range tcs {
-		if err := tdp.ConsumeTraceData(ctx, td); err != nil {
+	for _, tc := range tfc {
+		if err := tc.ConsumeTraceData(ctx, td); err != nil {
 			errs = append(errs, err)
 		}
 	}
