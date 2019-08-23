@@ -24,7 +24,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/oterr"
-	"github.com/open-telemetry/opentelemetry-service/processor/fanoutprocessor"
+	"github.com/open-telemetry/opentelemetry-service/processor"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
 
@@ -260,7 +260,7 @@ func buildFanoutTraceConsumer(pipelineFrontProcessors []*builtProcessor) consume
 	}
 
 	// Create a junction point that fans out to all pipelines.
-	return fanoutprocessor.NewTraceProcessor(pipelineConsumers)
+	return processor.NewTraceFanOutConnector(pipelineConsumers)
 }
 
 func buildFanoutMetricConsumer(pipelineFrontProcessors []*builtProcessor) consumer.MetricsConsumer {
@@ -275,5 +275,5 @@ func buildFanoutMetricConsumer(pipelineFrontProcessors []*builtProcessor) consum
 	}
 
 	// Create a junction point that fans out to all pipelines.
-	return fanoutprocessor.NewMetricsProcessor(pipelineConsumers)
+	return processor.NewMetricsFanOutConnector(pipelineConsumers)
 }

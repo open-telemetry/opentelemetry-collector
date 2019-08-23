@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package fanoutprocessor
+package processor
 
 import (
 	"context"
@@ -31,7 +31,7 @@ func TestTraceProcessorMultiplexing(t *testing.T) {
 		processors[i] = &mockTraceConsumer{}
 	}
 
-	tdp := NewTraceProcessor(processors)
+	tfc := NewTraceFanOutConnector(processors)
 	td := consumerdata.TraceData{
 		Spans: make([]*tracepb.Span, 7),
 	}
@@ -39,7 +39,7 @@ func TestTraceProcessorMultiplexing(t *testing.T) {
 	var wantSpansCount = 0
 	for i := 0; i < 2; i++ {
 		wantSpansCount += len(td.Spans)
-		err := tdp.ConsumeTraceData(context.Background(), td)
+		err := tfc.ConsumeTraceData(context.Background(), td)
 		if err != nil {
 			t.Errorf("Wanted nil got error")
 			return
@@ -64,7 +64,7 @@ func TestTraceProcessorWhenOneErrors(t *testing.T) {
 	// Make one processor return error
 	processors[1].(*mockTraceConsumer).MustFail = true
 
-	tdp := NewTraceProcessor(processors)
+	tfc := NewTraceFanOutConnector(processors)
 	td := consumerdata.TraceData{
 		Spans: make([]*tracepb.Span, 5),
 	}
@@ -72,7 +72,7 @@ func TestTraceProcessorWhenOneErrors(t *testing.T) {
 	var wantSpansCount = 0
 	for i := 0; i < 2; i++ {
 		wantSpansCount += len(td.Spans)
-		err := tdp.ConsumeTraceData(context.Background(), td)
+		err := tfc.ConsumeTraceData(context.Background(), td)
 		if err == nil {
 			t.Errorf("Wanted error got nil")
 			return
@@ -94,7 +94,7 @@ func TestMetricsProcessorMultiplexing(t *testing.T) {
 		processors[i] = &mockMetricsConsumer{}
 	}
 
-	mdp := NewMetricsProcessor(processors)
+	mfc := NewMetricsFanOutConnector(processors)
 	md := consumerdata.MetricsData{
 		Metrics: make([]*metricspb.Metric, 7),
 	}
@@ -102,7 +102,7 @@ func TestMetricsProcessorMultiplexing(t *testing.T) {
 	var wantMetricsCount = 0
 	for i := 0; i < 2; i++ {
 		wantMetricsCount += len(md.Metrics)
-		err := mdp.ConsumeMetricsData(context.Background(), md)
+		err := mfc.ConsumeMetricsData(context.Background(), md)
 		if err != nil {
 			t.Errorf("Wanted nil got error")
 			return
@@ -127,7 +127,7 @@ func TestMetricsProcessorWhenOneErrors(t *testing.T) {
 	// Make one processor return error
 	processors[1].(*mockMetricsConsumer).MustFail = true
 
-	mdp := NewMetricsProcessor(processors)
+	mfc := NewMetricsFanOutConnector(processors)
 	md := consumerdata.MetricsData{
 		Metrics: make([]*metricspb.Metric, 5),
 	}
@@ -135,7 +135,7 @@ func TestMetricsProcessorWhenOneErrors(t *testing.T) {
 	var wantMetricsCount = 0
 	for i := 0; i < 2; i++ {
 		wantMetricsCount += len(md.Metrics)
-		err := mdp.ConsumeMetricsData(context.Background(), md)
+		err := mfc.ConsumeMetricsData(context.Background(), md)
 		if err == nil {
 			t.Errorf("Wanted error got nil")
 			return

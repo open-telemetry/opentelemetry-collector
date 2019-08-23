@@ -19,7 +19,7 @@ Pipelines can operate on 2 telemetry data types: traces and metrics. The data ty
 
 ![Pipelines](images/design-pipelines.png)
 
-There can be one or more receivers in a pipeline. Data from all receivers is pushed to the first processor, which performs a processing on it and then pushes it to the next processor (or it may drop the data, e.g. if it is a “sampling” processor) and so on until the last processor in the pipeline pushes the data to the exporters. Each exporter gets a copy of each data element. The last processor uses a `fanoutprocessor` to fanout the data to multiple exporters.
+There can be one or more receivers in a pipeline. Data from all receivers is pushed to the first processor, which performs a processing on it and then pushes it to the next processor (or it may drop the data, e.g. if it is a “sampling” processor) and so on until the last processor in the pipeline pushes the data to the exporters. Each exporter gets a copy of each data element. The last processor uses a `FanOutConnector` to fan out the data to multiple exporters.
 
 The pipeline is constructed during Service startup based on pipeline definition in the config file.
 
@@ -63,7 +63,7 @@ When the Service loads this config the result will look like this (part of proce
 
 ![Receivers](images/design-receivers.png)
 
-Important: when the same receiver is referenced in more than one pipeline the Service will create only one receiver instance at runtime that will send the data to `fanoutprocessor` which in turn will send the data to the first processor of each pipeline. The data propagation from receiver to `fanoutprocessor` and then to processors is via synchronous function call. This means that if one processor blocks the call the other pipelines that are attached to this receiver will be blocked from receiving the same data and the receiver itself will stop processing and forwarding newly received data.
+Important: when the same receiver is referenced in more than one pipeline the Service will create only one receiver instance at runtime that will send the data to `FanOutConnector` which in turn will send the data to the first processor of each pipeline. The data propagation from receiver to `FanOutConnector` and then to processors is via synchronous function call. This means that if one processor blocks the call the other pipelines that are attached to this receiver will be blocked from receiving the same data and the receiver itself will stop processing and forwarding newly received data.
 
 ### Exporters
 

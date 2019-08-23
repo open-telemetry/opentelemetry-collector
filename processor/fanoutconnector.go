@@ -12,9 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package fanoutprocessor contains implementations of Trace/Metrics processors
-// that fan out to multiple other processors.
-package fanoutprocessor
+package processor
 
 import (
 	"context"
@@ -22,43 +20,45 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/oterr"
-	"github.com/open-telemetry/opentelemetry-service/processor"
 )
 
-// NewMetricsProcessor wraps multiple metrics consumers in a single one.
-func NewMetricsProcessor(mcs []consumer.MetricsConsumer) processor.MetricsProcessor {
-	return metricsConsumers(mcs)
+// This file contains implementations of Trace/Metrics connectors
+// that fan out the data to multiple other consumers.
+
+// NewMetricsFanOutConnector wraps multiple metrics consumers in a single one.
+func NewMetricsFanOutConnector(mcs []consumer.MetricsConsumer) MetricsProcessor {
+	return metricsFanOutConnector(mcs)
 }
 
-type metricsConsumers []consumer.MetricsConsumer
+type metricsFanOutConnector []consumer.MetricsConsumer
 
-var _ processor.MetricsProcessor = (*metricsConsumers)(nil)
+var _ MetricsProcessor = (*metricsFanOutConnector)(nil)
 
 // ConsumeMetricsData exports the MetricsData to all consumers wrapped by the current one.
-func (mcs metricsConsumers) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
+func (mfc metricsFanOutConnector) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
 	var errs []error
-	for _, mdp := range mcs {
-		if err := mdp.ConsumeMetricsData(ctx, md); err != nil {
+	for _, mc := range mfc {
+		if err := mc.ConsumeMetricsData(ctx, md); err != nil {
 			errs = append(errs, err)
 		}
 	}
 	return oterr.CombineErrors(errs)
 }
 
-// NewTraceProcessor wraps multiple trace consumers in a single one.
-func NewTraceProcessor(tcs []consumer.TraceConsumer) processor.TraceProcessor {
-	return traceConsumers(tcs)
+// NewTraceFanOutConnector wraps multiple trace consumers in a single one.
+func NewTraceFanOutConnector(tcs []consumer.TraceConsumer) TraceProcessor {
+	return traceFanOutConnector(tcs)
 }
 
-type traceConsumers []consumer.TraceConsumer
+type traceFanOutConnector []consumer.TraceConsumer
 
-var _ processor.TraceProcessor = (*traceConsumers)(nil)
+var _ TraceProcessor = (*traceFanOutConnector)(nil)
 
 // ConsumeTraceData exports the span data to all trace consumers wrapped by the current one.
-func (tcs traceConsumers) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
+func (tfc traceFanOutConnector) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	var errs []error
-	for _, tdp := range tcs {
-		if err := tdp.ConsumeTraceData(ctx, td); err != nil {
+	for _, tc := range tfc {
+		if err := tc.ConsumeTraceData(ctx, td); err != nil {
 			errs = append(errs, err)
 		}
 	}
