@@ -15,8 +15,10 @@ package exportertest
 
 import (
 	"context"
-	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
@@ -30,18 +32,14 @@ func TestSinkTraceExporter(t *testing.T) {
 	}
 	want := make([]consumerdata.TraceData, 0, 7)
 	for i := 0; i < 7; i++ {
-		if err := sink.ConsumeTraceData(context.Background(), td); err != nil {
-			t.Fatalf("Wanted nil got error")
-		}
+		err := sink.ConsumeTraceData(context.Background(), td)
+		require.Nil(t, err)
 		want = append(want, td)
 	}
 	got := sink.AllTraces()
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("Mismatches responses\nGot:\n\t%v\nWant:\n\t%v\n", got, want)
-	}
-	if sink.Name() != "sink_trace" {
-		t.Errorf("Wanted sink_trace got %s", sink.Name())
-	}
+	assert.Equal(t, want, got)
+
+	assert.Equal(t, "sink_trace", sink.Name())
 }
 
 func TestSinkMetricsExporter(t *testing.T) {
@@ -51,16 +49,12 @@ func TestSinkMetricsExporter(t *testing.T) {
 	}
 	want := make([]consumerdata.MetricsData, 0, 7)
 	for i := 0; i < 7; i++ {
-		if err := sink.ConsumeMetricsData(context.Background(), md); err != nil {
-			t.Fatalf("Wanted nil got error")
-		}
+		err := sink.ConsumeMetricsData(context.Background(), md)
+		require.Nil(t, err)
 		want = append(want, md)
 	}
 	got := sink.AllMetrics()
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("Mismatches responses\nGot:\n\t%v\nWant:\n\t%v\n", got, want)
-	}
-	if sink.Name() != "sink_metrics" {
-		t.Errorf("Wanted sink_metrics got %s", sink.Name())
-	}
+	assert.Equal(t, want, got)
+
+	assert.Equal(t, "sink_metrics", sink.Name())
 }
