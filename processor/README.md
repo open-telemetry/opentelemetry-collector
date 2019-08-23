@@ -5,7 +5,6 @@ or refer to the [issues page](https://github.com/open-telemetry/opentelemetry-se
 
 Supported processors (sorted alphabetically):
 - [Attributes Processor](#attributes)
-- [Fan Out Processor](#fan-out)
 - [Node Batcher Processor](#node-batcher)
 - [Probabilistic Sampler Processor](#probabilistic-sampler)
 - [Queued Processor](#queued)
@@ -84,11 +83,6 @@ processors:
 ```
 Refer to [config.yaml](attributes/testdata/config.yaml) for detailed
 examples on using the processor.
-
-## <a name="fan-out"></a>Fan Out Processor
-This processor isn't configurable. The following issue follows the conversation
-around where should this logic exist.
-TODO https://github.com/open-telemetry/opentelemetry-service/issues/283
 
 ## <a name="node-batcher"></a>Node Batcher Processor
 <FILL ME IN - I'M LONELY!>
