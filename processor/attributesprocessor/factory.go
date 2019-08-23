@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"strings"
 
+	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/spf13/cast"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/config/configerror"
@@ -41,6 +43,7 @@ func (f *Factory) Type() string {
 }
 
 // CreateDefaultConfig creates the default configuration for the processor.
+// Note: This isn't a valid configuration because the processor would do no work.
 func (f *Factory) CreateDefaultConfig() configmodels.Processor {
 	return &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
@@ -58,12 +61,11 @@ func (f *Factory) CreateTraceProcessor(
 ) (processor.TraceProcessor, error) {
 
 	oCfg := cfg.(*Config)
-	err := validateAttributesConfiguration(*oCfg)
+	actions, err := validateAttributesConfiguration(*oCfg)
 	if err != nil {
 		return nil, err
 	}
-	// TODO(ccaraman) Update to use NewTraceProcessor in follow up PR.
-	return nil, configerror.ErrDataTypeIsNotSupported
+	return NewTraceProcessor(nextConsumer, actions)
 }
 
 // CreateMetricsProcessor creates a metrics processor based on this config.
@@ -75,33 +77,72 @@ func (f *Factory) CreateMetricsProcessor(
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
+// attributeValue is used to convert the raw `value` from ActionKeyValue to the supported trace attribute values.
+func attributeValue(value interface{}) (*tracepb.AttributeValue, error) {
+	attrib := &tracepb.AttributeValue{}
+	switch val := value.(type) {
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+		attrib.Value = &tracepb.AttributeValue_IntValue{IntValue: cast.ToInt64(val)}
+	case float32, float64:
+		attrib.Value = &tracepb.AttributeValue_DoubleValue{DoubleValue: cast.ToFloat64(val)}
+	case string:
+		attrib.Value = &tracepb.AttributeValue_StringValue{
+			StringValue: &tracepb.TruncatableString{Value: val},
+		}
+	case bool:
+		attrib.Value = &tracepb.AttributeValue_BoolValue{BoolValue: val}
+	default:
+		return nil, fmt.Errorf("error unsupported value type \"%T\"", value)
+	}
+	return attrib, nil
+}
+
 // validateAttributesConfiguration validates the configuration has all of the required fields for the processor.
-func validateAttributesConfiguration(config Config) error {
+func validateAttributesConfiguration(config Config) ([]attributesAction, error) {
 	if len(config.Actions) == 0 {
-		return fmt.Errorf("error creating \"attributes\" processor due to missing required field \"actions\" of processor %q", config.Name())
+		return nil, fmt.Errorf("error creating \"attributes\" processor due to missing required field \"actions\" of processor %q", config.Name())
 	}
 
-	for i, a := range config.Actions{
+	var attributeAction []attributesAction
+	for i, a := range config.Actions {
 		// `key` is a required field
 		if a.Key == "" {
-			return fmt.Errorf("error creating \"attributes\" processor due to missing required field \"key\" at the %d-th actions of processor %q", i, config.Name())
+			return nil, fmt.Errorf("error creating \"attributes\" processor due to missing required field \"key\" at the %d-th actions of processor %q", i, config.Name())
 		}
 
-		// Convert action to lowercase. There must be a better way for this comparison.
-		lowerAction := strings.ToLower(string(a.Action))
-		switch Action(lowerAction){
-		case INSERT, UPDATE, UPSERT:
-			if a.Value== nil && a.FromAttribute == "" {
-				return fmt.Errorf("error creating \"attributes\" processor due to missing field \"value\" or \"from_attribute\" at the %d-th actions of processor %q", i, config.Name())
-			}
-			if a.Value!= nil && a.FromAttribute != "" {
-				return fmt.Errorf("error creating \"attributes\" processor due to both fields \"value\" and \"from_attribute\" being set at the %d-th actions of processor %q", i, config.Name())
-			}
-		case DELETE:
-			// Do nothing since key is already set
-		default:
-			return fmt.Errorf("error creating \"attributes\" processor due to unsupported action %q at the %d-th actions of processor %q",a.Action, i, config.Name())
+		// Convert `action` to lowercase for comparison.
+		a.Action = strings.ToLower(a.Action)
+		action := attributesAction{
+			Key:    a.Key,
+			Action: a.Action,
 		}
+		switch a.Action {
+		case INSERT, UPDATE, UPSERT:
+			if a.Value == nil && a.FromAttribute == "" {
+				return nil, fmt.Errorf("error creating \"attributes\" processor due to missing field \"value\" or \"from_attribute\" at the %d-th actions of processor %q", i, config.Name())
+			}
+			if a.Value != nil && a.FromAttribute != "" {
+				return nil, fmt.Errorf("error creating \"attributes\" processor due to both fields \"value\" and \"from_attribute\" being set at the %d-th actions of processor %q", i, config.Name())
+			}
+			// Convert the raw value from the configuration to the internal trace representation of the value.
+			if a.Value != nil {
+				val, err := attributeValue(a.Value)
+				if err != nil {
+					return nil, err
+				}
+				action.AttributeValue = val
+			} else {
+				action.FromAttribute = a.FromAttribute
+			}
+
+		case DELETE:
+			// Do nothing since `key` is the only required field for `delete` action.
+
+		default:
+			return nil, fmt.Errorf("error creating \"attributes\" processor due to unsupported action %q at the %d-th actions of processor %q", a.Action, i, config.Name())
+		}
+
+		attributeAction = append(attributeAction, action)
 	}
-	return nil
+	return attributeAction, nil
 }

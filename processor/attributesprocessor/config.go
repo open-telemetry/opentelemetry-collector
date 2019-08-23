@@ -58,28 +58,24 @@ type ActionKeyValue struct {
 	// DELETE - Deletes the attribute from the span. If the key doesn't exist,
 	//          no action is performed.
 	// This is a required field.
-	Action Action `mapstructure:"action"`
+	Action string `mapstructure:"action"`
 }
-
-// Action is the enum to capture the four types of actions to perform on an
-// attribute.
-type Action string
 
 const (
 	// INSERT adds the key/value to spans when the key does not exist.
 	// No action is applied to spans where the key already exists.
-	INSERT Action = "insert"
+	INSERT string = "insert"
 
 	// UPDATE updates an existing key with a value. No action is applied
 	// to spans where the key does not exist.
-	UPDATE Action = "update"
+	UPDATE string = "update"
 
 	// UPSERT performs the INSERT or UPDATE action. The key/value is
 	// insert to spans that did not originally have the key. The key/value is
 	// updated for spans where the key already existed.
-	UPSERT Action = "upsert"
+	UPSERT string = "upsert"
 
 	// DELETE deletes the attribute from the span. If the key doesn't exist,
 	//no action is performed.
-	DELETE Action = "delete"
+	DELETE string = "delete"
 )
