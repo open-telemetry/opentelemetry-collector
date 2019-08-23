@@ -27,24 +27,24 @@ import (
 
 func TestFactory_Type(t *testing.T) {
 	factory := &Factory{}
-	require.NotNil(t, factory)
+	assert.NotNil(t, factory)
 	assert.Equal(t, factory.Type(), typeStr)
 }
 
 func TestFactory_CreateDefaultConfig(t *testing.T) {
 	factory := &Factory{}
-	require.NotNil(t, factory)
+	assert.NotNil(t, factory)
 
 	cfg := factory.CreateDefaultConfig()
 	// Check the values of the default configuration.
-	require.NotNil(t, cfg)
+	assert.NotNil(t, cfg)
 	assert.Equal(t, typeStr, cfg.Type())
 	assert.Equal(t, typeStr, cfg.Name())
 }
 
 func TestFactory_CreateTraceProcessor(t *testing.T) {
 	factory := &Factory{}
-	require.NotNil(t, factory)
+	assert.NotNil(t, factory)
 
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
@@ -63,7 +63,7 @@ func TestFactory_CreateTraceProcessor(t *testing.T) {
 // returns an error.
 func TestFactory_CreateTraceProcessor_InvalidConfig(t *testing.T) {
 	factory := &Factory{}
-	require.NotNil(t, factory)
+	assert.NotNil(t, factory)
 
 	cfg := factory.CreateDefaultConfig()
 	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), cfg)
@@ -73,7 +73,7 @@ func TestFactory_CreateTraceProcessor_InvalidConfig(t *testing.T) {
 
 func TestFactory_CreateMetricProcessor(t *testing.T) {
 	factory := &Factory{}
-	require.NotNil(t, factory)
+	assert.NotNil(t, factory)
 
 	cfg := factory.CreateDefaultConfig()
 	mp, err := factory.CreateMetricsProcessor(zap.NewNop(), nil, cfg)
