@@ -18,6 +18,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
@@ -28,12 +30,11 @@ func TestNopTraceExporter_NoErrors(t *testing.T) {
 	td := consumerdata.TraceData{
 		Spans: make([]*tracepb.Span, 7),
 	}
-	if err := nte.ConsumeTraceData(context.Background(), td); err != nil {
-		t.Fatalf("Wanted nil got error")
-	}
-	if nte.Name() != "nop_trace" {
-		t.Fatalf("Wanted nop_trace got %s", nte.Name())
-	}
+
+	err := nte.ConsumeTraceData(context.Background(), td)
+	require.Nil(t, err)
+
+	require.Equal(t, "nop_trace", nte.Name())
 }
 
 func TestNopTraceExporter_WithErrors(t *testing.T) {
@@ -42,12 +43,10 @@ func TestNopTraceExporter_WithErrors(t *testing.T) {
 	td := consumerdata.TraceData{
 		Spans: make([]*tracepb.Span, 7),
 	}
-	if got := nte.ConsumeTraceData(context.Background(), td); got != want {
-		t.Fatalf("Want %v Got %v", want, got)
-	}
-	if nte.Name() != "nop_trace" {
-		t.Fatalf("Wanted nop_trace got %s", nte.Name())
-	}
+
+	require.Equal(t, want, nte.ConsumeTraceData(context.Background(), td))
+
+	require.Equal(t, "nop_trace", nte.Name())
 }
 
 func TestNopMetricsExporter_NoErrors(t *testing.T) {
@@ -55,12 +54,11 @@ func TestNopMetricsExporter_NoErrors(t *testing.T) {
 	md := consumerdata.MetricsData{
 		Metrics: make([]*metricspb.Metric, 7),
 	}
-	if err := nme.ConsumeMetricsData(context.Background(), md); err != nil {
-		t.Fatalf("Wanted nil got error")
-	}
-	if nme.Name() != "nop_metrics" {
-		t.Fatalf("Wanted nop_metrics got %s", nme.Name())
-	}
+	err := nme.ConsumeMetricsData(context.Background(), md)
+
+	require.Nil(t, err)
+
+	require.Equal(t, "nop_metrics", nme.Name())
 }
 
 func TestNopMetricsExporter_WithErrors(t *testing.T) {
@@ -69,10 +67,8 @@ func TestNopMetricsExporter_WithErrors(t *testing.T) {
 	md := consumerdata.MetricsData{
 		Metrics: make([]*metricspb.Metric, 7),
 	}
-	if got := nme.ConsumeMetricsData(context.Background(), md); got != want {
-		t.Fatalf("Want %v Got %v", want, got)
-	}
-	if nme.Name() != "nop_metrics" {
-		t.Fatalf("Wanted nop_metrics got %s", nme.Name())
-	}
+
+	require.Equal(t, want, nme.ConsumeMetricsData(context.Background(), md))
+
+	require.Equal(t, "nop_metrics", nme.Name())
 }

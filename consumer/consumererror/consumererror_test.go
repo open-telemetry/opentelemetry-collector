@@ -17,22 +17,19 @@ package consumererror
 import (
 	"errors"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestPermanent(t *testing.T) {
 	err := errors.New("testError")
-	if IsPermanent(err) {
-		t.Fatalf("IsPermanent() = true, want false")
-	}
+	require.False(t, IsPermanent(err))
+
 	err = Permanent(err)
-	if !IsPermanent(err) {
-		t.Fatalf("IsPermanent() = false, want true")
-	}
+	require.True(t, IsPermanent(err))
 }
 
 func TestIsPermanent_NilError(t *testing.T) {
 	var err error
-	if IsPermanent(err) {
-		t.Fatalf("IsPermanent() = true, want false")
-	}
+	require.False(t, IsPermanent(err))
 }
