@@ -66,15 +66,21 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 	return &Config{
 		TypeVal: typeStr,
 		NameVal: typeStr,
-		Protocols: map[string]*configmodels.ReceiverSettings{
+		Protocols: map[string]*receiver.SecureReceiverSettings{
 			protoGRPC: {
-				Endpoint: defaultGRPCBindEndpoint,
+				ReceiverSettings: configmodels.ReceiverSettings{
+					Endpoint: defaultGRPCBindEndpoint,
+				},
 			},
 			protoThriftTChannel: {
-				Endpoint: defaultTChannelBindEndpoint,
+				ReceiverSettings: configmodels.ReceiverSettings{
+					Endpoint: defaultTChannelBindEndpoint,
+				},
 			},
 			protoThriftHTTP: {
-				Endpoint: defaultHTTPBindEndpoint,
+				ReceiverSettings: configmodels.ReceiverSettings{
+					Endpoint: defaultHTTPBindEndpoint,
+				},
 			},
 		},
 	}
@@ -105,6 +111,10 @@ func (f *Factory) CreateTraceReceiver(
 		config.CollectorGRPCPort, err = extractPortFromEndpoint(protoGRPC.Endpoint)
 		if err != nil {
 			return nil, err
+		}
+
+		if protoGRPC.TLSCredentials != nil {
+			config.CollectorGRPCTLSSettings = protoGRPC.TLSCredentials
 		}
 	}
 

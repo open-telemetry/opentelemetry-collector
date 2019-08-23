@@ -34,7 +34,7 @@ import (
 	"github.com/jaegertracing/jaeger/thrift-gen/sampling"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"github.com/uber/jaeger-lib/metrics"
-	tchannel "github.com/uber/tchannel-go"
+	"github.com/uber/tchannel-go"
 	"github.com/uber/tchannel-go/thrift"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -52,6 +52,8 @@ type Configuration struct {
 	CollectorThriftPort int `mapstructure:"tchannel_port"`
 	CollectorHTTPPort   int `mapstructure:"collector_http_port"`
 	CollectorGRPCPort   int `mapstructure:"collector_grpc_port"`
+
+	CollectorGRPCTLSSettings *receiver.TLSCredentials `mapstructure:"tls-credentials"`
 
 	AgentPort              int `mapstructure:"agent_port"`
 	AgentCompactThriftPort int `mapstructure:"agent_compact_thrift_port"`
@@ -414,7 +416,18 @@ func (jr *jReceiver) startCollector(host receiver.Host) error {
 	}()
 
 	// And finally, the gRPC server
-	jr.grpc = grpc.NewServer()
+	if jr.config.CollectorGRPCTLSSettings != nil {
+		option, err := jr.config.CollectorGRPCTLSSettings.ToGrpcServerOption()
+		if err != nil {
+			tch.Close()
+			cln.Close()
+			return fmt.Errorf("failed to configure TLS: %v", err)
+
+		}
+		jr.grpc = grpc.NewServer(option)
+	} else {
+		jr.grpc = grpc.NewServer()
+	}
 	gaddr := jr.grpcAddr()
 	gln, gerr := net.Listen("tcp", gaddr)
 	if gerr != nil {
