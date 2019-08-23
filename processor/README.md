@@ -103,7 +103,7 @@ TODO https://github.com/open-telemetry/opentelemetry-service/issues/283
 The span processor modifies top level settings of a span. Currently, only 
 renaming a span is supported. 
 
-### Rename a span
+### Name a span
 It takes a list of `keys` and an optional `separator` string. The attribute
 value for the keys are used to create a new name in the order specified in the
 configuration. If a separator is specified, it will separate values.
@@ -115,7 +115,7 @@ processor in the `pipeline` specification.
 For more information, refer to [config.go](span/config.go)
 ```yaml
 span:
-  rename:
+  name:
     # Keys represents the attribute keys to pull the values from to generate the
     # new span name.
     keys: [<key1>, <key2>, ...]
@@ -127,7 +127,7 @@ span:
 For more examples with detailed comments, refer to [config.yaml](span/testdata/config.yaml)
 ```yaml
 span:
-  rename:
+  name:
     keys: ["db.svc", "operation"]
     separator: "::"
 ```

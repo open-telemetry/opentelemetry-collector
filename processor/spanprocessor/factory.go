@@ -34,7 +34,7 @@ const (
 // is not specified.
 // TODO https://github.com/open-telemetry/opentelemetry-service/issues/215
 //	Move this to the error package that allows for span name and field to be specified.
-var errMissingRequiredField = errors.New("error creating \"span\" processor due to missing required field \"keys\" in \"rename:\"")
+var errMissingRequiredField = errors.New("error creating \"span\" processor due to missing required field \"keys\" in \"name:\"")
 
 // Factory is the factory for the Span processor.
 type Factory struct {
@@ -56,13 +56,12 @@ func (f *Factory) CreateDefaultConfig() configmodels.Processor {
 }
 
 // CreateTraceProcessor creates a trace processor based on this config.
-// TODO(ccaraman): Use NewTraceProcessor when added in follow up PR.
 func (f *Factory) CreateTraceProcessor(
 	logger *zap.Logger,
 	nextConsumer consumer.TraceConsumer,
 	cfg configmodels.Processor) (processor.TraceProcessor, error) {
 
-	// Keys has to be set for the span-rename processor to be valid.
+	// 'keys' under 'name' has to be set for the span processor to be valid.
 	// If not set and not enforced, the processor would do no work.
 	oCfg := cfg.(*Config)
 	if len(oCfg.Rename.Keys) == 0 {

@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/config/configerror"
@@ -26,34 +27,35 @@ import (
 
 func TestFactory_Type(t *testing.T) {
 	factory := &Factory{}
-	assert.NotNil(t, factory)
+	require.NotNil(t, factory)
 	assert.Equal(t, factory.Type(), typeStr)
 }
 
 func TestFactory_CreateDefaultConfig(t *testing.T) {
 	factory := &Factory{}
-	assert.NotNil(t, factory)
+	require.NotNil(t, factory)
 
 	cfg := factory.CreateDefaultConfig()
 	// Check the values of the default configuration.
+	require.NotNil(t, cfg)
 	assert.Equal(t, typeStr, cfg.Type())
 	assert.Equal(t, typeStr, cfg.Name())
-	assert.NotNil(t, cfg, "failed to create default config")
 }
 
 func TestFactory_CreateTraceProcessor(t *testing.T) {
 	factory := &Factory{}
-	assert.NotNil(t, factory)
+	require.NotNil(t, factory)
 
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
 
-	// Rename.Keys field needs to be set for the configuration to be valid.
+	// Name.Keys field needs to be set for the configuration to be valid.
 	oCfg.Rename.Keys = []string{"test-key"}
 	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), oCfg)
+
 	// TODO(ccaraman): Fix this when the processor logic is added and the trace processor
 	//  no longer returns an error.
-	assert.Nil(t, tp, "should not be able to create trace processor")
+	require.Nil(t, tp)
 	assert.Equal(t, err, configerror.ErrDataTypeIsNotSupported)
 }
 
@@ -61,20 +63,20 @@ func TestFactory_CreateTraceProcessor(t *testing.T) {
 // returns an error.
 func TestFactory_CreateTraceProcessor_InvalidConfig(t *testing.T) {
 	factory := &Factory{}
-	assert.NotNil(t, factory)
+	require.NotNil(t, factory)
 
 	cfg := factory.CreateDefaultConfig()
 	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), cfg)
-	assert.Nil(t, tp, "should not be able to create trace processor")
-	assert.Equal(t, err, errMissingRequiredField, "should not be able to create trace processor")
+	require.Nil(t, tp)
+	assert.Equal(t, err, errMissingRequiredField)
 }
 
 func TestFactory_CreateMetricProcessor(t *testing.T) {
 	factory := &Factory{}
-	assert.NotNil(t, factory)
+	require.NotNil(t, factory)
 
 	cfg := factory.CreateDefaultConfig()
 	mp, err := factory.CreateMetricsProcessor(zap.NewNop(), nil, cfg)
-	assert.Nil(t, mp)
-	assert.Equal(t, err, configerror.ErrDataTypeIsNotSupported, "should not be able to create metrics processor")
+	require.Nil(t, mp)
+	assert.Equal(t, err, configerror.ErrDataTypeIsNotSupported)
 }

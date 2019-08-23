@@ -22,20 +22,22 @@ import (
 type Config struct {
 	configmodels.ProcessorSettings `mapstructure:",squash"`
 
-	// Rename specifies the components required to rename a span.
+	// Rename specifies the components required to re-name a span.
 	// The `keys` field needs to be set for this processor to be properly
 	// configured.
-	Rename Rename `mapstructure:"rename"`
+	// Note: The field name is `Rename` to avoid collision with the Name() method
+	// from configmodels.ProcessorSettings.NamedEntity
+	Rename Name `mapstructure:"name"`
 }
 
-// Rename specifies the attributes to use to rename a span.
-type Rename struct {
+// Name specifies the attributes to use to re-name a span.
+type Name struct {
 	// Separator is the string used to separate attributes values in the new span name.
 	// If no value is set, no separator is used between attribute values.
 	Separator string `mapstructure:"separator"`
 	// Keys represents the attribute keys to pull the values from to generate the new span name.
-	// All attribute keys are required in the span to rename a span.
-	// If any attribute is missing from the span, no rename will occur.
+	// All attribute keys are required in the span to re-name a span.
+	// If any attribute is missing from the span, no re-name will occur.
 	// Note: The new span name is constructed in order of the `keys` specified in the configuration.
 	// This field is required and cannot be empty.
 	Keys []string `mapstructure:"keys"`
