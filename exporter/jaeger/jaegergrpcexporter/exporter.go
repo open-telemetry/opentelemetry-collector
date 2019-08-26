@@ -16,9 +16,11 @@ package jaegergrpcexporter
 
 import (
 	"context"
+	"crypto/x509"
 
 	jaegerproto "github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumererror"
@@ -30,8 +32,26 @@ import (
 // New returns a new Jaeger gRPC exporter.
 // The exporter name is the name to be used in the observability of the exporter.
 // The collectorEndpoint should be of the form "hostname:14250" (a gRPC target).
-func New(exporterName, collectorEndpoint string) (exporter.TraceExporter, error) {
-	client, err := grpc.Dial(collectorEndpoint, grpc.WithInsecure())
+func New(config Config) (exporter.TraceExporter, error) {
+	opts := []grpc.DialOption{}
+	if config.CertPemFile != "" {
+		creds, err := credentials.NewClientTLSFromFile(config.CertPemFile, config.ServerOverride)
+		if err != nil {
+			return nil, err
+		}
+		opts = append(opts, grpc.WithTransportCredentials(creds))
+	} else if config.UseSecure {
+		certPool, err := x509.SystemCertPool()
+		if err != nil {
+			return nil, err
+		}
+		creds := credentials.NewClientTLSFromCert(certPool, config.ServerOverride)
+		opts = append(opts, grpc.WithTransportCredentials(creds))
+	} else {
+		opts = append(opts, grpc.WithInsecure())
+	}
+
+	client, err := grpc.Dial(config.Endpoint, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -42,9 +62,9 @@ func New(exporterName, collectorEndpoint string) (exporter.TraceExporter, error)
 	}
 
 	exp, err := exporterhelper.NewTraceExporter(
-		exporterName,
+		config.Name(),
 		s.pushTraceData,
-		exporterhelper.WithSpanName("otelsvc.exporter."+exporterName+".ConsumeTraceData"),
+		exporterhelper.WithSpanName("otelsvc.exporter."+config.Name()+".ConsumeTraceData"),
 		exporterhelper.WithRecordMetrics(true))
 
 	return exp, err

@@ -120,7 +120,7 @@ func (f *Factory) OCAgentOptions(logger *zap.Logger, ocac *Config) ([]ocagent.Ex
 		}
 	}
 	if ocac.CertPemFile != "" {
-		creds, err := credentials.NewClientTLSFromFile(ocac.CertPemFile, "")
+		creds, err := credentials.NewClientTLSFromFile(ocac.CertPemFile, ocac.ServerOverride)
 		if err != nil {
 			return nil, &ocExporterError{
 				code: errUnableToGetTLSCreds,
@@ -137,7 +137,7 @@ func (f *Factory) OCAgentOptions(logger *zap.Logger, ocac *Config) ([]ocagent.Ex
 					"OpenCensus exporter unable to read certificates from system pool: %v", err),
 			}
 		}
-		creds := credentials.NewClientTLSFromCert(certPool, "")
+		creds := credentials.NewClientTLSFromCert(certPool, ocac.ServerOverride)
 		opts = append(opts, ocagent.WithTLSCredentials(creds))
 	} else {
 		opts = append(opts, ocagent.WithInsecure())

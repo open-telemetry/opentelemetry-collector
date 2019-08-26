@@ -39,14 +39,6 @@ type Config struct {
 	// The number of workers that send the gRPC requests.
 	NumWorkers int `mapstructure:"num-workers"`
 
-	// certificate file for TLS credentials of gRPC client. Should
-	// only be used if `secure` is set to true.
-	CertPemFile string `mapstructure:"cert-pem-file"`
-
-	// Whether to enable client transport security for the exporter's gRPC
-	// connection. See [grpc.WithInsecure()](https://godoc.org/google.golang.org/grpc#WithInsecure).
-	UseSecure bool `mapstructure:"secure,omitempty"`
-
 	// The time period between each reconnection performed by the exporter.
 	ReconnectionDelay time.Duration `mapstructure:"reconnection-delay,omitempty"`
 

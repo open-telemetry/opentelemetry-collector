@@ -176,6 +176,10 @@ type ExporterSettings struct {
 	TypeVal  string `mapstructure:"-"`
 	NameVal  string `mapstructure:"-"`
 	Disabled bool   `mapstructure:"disabled"`
+
+	UseSecure      bool   `mapstructure:"secure,omitempty"`
+	CertPemFile    string `mapstructure:"cert-pem-file"`
+	ServerOverride string `mapstructure:"server-override"`
 }
 
 var _ Exporter = (*ExporterSettings)(nil)

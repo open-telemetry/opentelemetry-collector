@@ -9,6 +9,11 @@ exporters:
     endpoint: "some.target:55678"
   jaeger-grpc/2:
     endpoint: "a.new.target:1234"
+  jaeger-grpc/tls:
+    endpoint: "opentelemetry.io:123"
+    secure: true
+    cert-pem-file: "/test.pem"
+    server-override: "foo.com"
 
 pipelines:
   traces:

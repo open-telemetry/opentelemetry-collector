@@ -16,10 +16,12 @@ package jaegergrpcexporter
 
 import (
 	"context"
+	"path"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 )
 
@@ -27,6 +29,9 @@ func TestNew(t *testing.T) {
 	type args struct {
 		exporterName      string
 		collectorEndpoint string
+		secure            bool
+		certPemFile       string
+		serverOverride    string
 	}
 	tests := []struct {
 		name    string
@@ -47,10 +52,37 @@ func TestNew(t *testing.T) {
 				collectorEndpoint: "some.non.existent:55678",
 			},
 		},
+		{
+			name: "createSecureExporter",
+			args: args{
+				collectorEndpoint: "foo:55",
+				exporterName:      typeStr,
+				secure:            true,
+			},
+		},
+		{
+			name: "createSecureExporterWithClientTLS",
+			args: args{
+				collectorEndpoint: "foo:55",
+				exporterName:      typeStr,
+				secure:            true,
+				certPemFile:       path.Join(".", "testdata", "test_cert.pem"),
+				serverOverride:    "foo",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := New(tt.args.exporterName, tt.args.collectorEndpoint)
+			config := &Config{
+				Endpoint: tt.args.collectorEndpoint,
+				ExporterSettings: configmodels.ExporterSettings{
+					NameVal:        tt.args.exporterName,
+					UseSecure:      tt.args.secure,
+					CertPemFile:    tt.args.certPemFile,
+					ServerOverride: tt.args.serverOverride,
+				},
+			}
+			got, err := New(*config)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("New() error = %v, wantErr %v", err, tt.wantErr)
 				return

@@ -50,4 +50,9 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, "a.new.target:1234", e1.(*Config).Endpoint)
 	_, _, err = factory.CreateTraceExporter(zap.NewNop(), e1)
 	require.NoError(t, err)
+
+	tlsExporter := cfg.Exporters["jaeger-grpc/tls"]
+	assert.Equal(t, true, tlsExporter.(*Config).UseSecure)
+	assert.Equal(t, "foo.com", tlsExporter.(*Config).ServerOverride)
+	assert.Equal(t, "/test.pem", tlsExporter.(*Config).CertPemFile)
 }
