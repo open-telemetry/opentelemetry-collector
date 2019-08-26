@@ -177,8 +177,11 @@ type ExporterSettings struct {
 	NameVal  string `mapstructure:"-"`
 	Disabled bool   `mapstructure:"disabled"`
 
-	UseSecure      bool   `mapstructure:"secure,omitempty"`
-	CertPemFile    string `mapstructure:"cert-pem-file"`
+	// UseSecure determines whether the exporter is using a secure connection.
+	UseSecure bool `mapstructure:"secure,omitempty"`
+	// CertPemFile defines the path of a certificate to be used for mutual TLS.
+	CertPemFile string `mapstructure:"cert-pem-file"`
+	// ServerOverride allows for overriding of the hostname to be checked during the TLS handshake.
 	ServerOverride string `mapstructure:"server-override"`
 }
 
