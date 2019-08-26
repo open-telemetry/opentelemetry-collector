@@ -3,6 +3,18 @@
 out in the [OpenTelemetry Gitter](https://gitter.im/open-telemetry/opentelemetry-service)
 or refer to the [issues page](https://github.com/open-telemetry/opentelemetry-service/issues).
 
+Supported processors (sorted alphabetically):
+- [Attributes Processor](#attributes)
+- [Node Batcher Processor](#node-batcher)
+- [Probabilistic Sampler Processor](#probabilistic-sampler)
+- [Queued Processor](#queued)
+- [Span Processor](#span)
+- [Tail Sampling Processor](#tail-sampling)
+
+## Ordering Processors
+The order processors are specified in a pipeline is important as this is the
+order in which each processor is applied to traces.
+
 ## <a name="attributes"></a>Attributes Processor
 The attributes processor modifies attributes of a span.
 
@@ -71,3 +83,49 @@ processors:
 ```
 Refer to [config.yaml](attributes/testdata/config.yaml) for detailed
 examples on using the processor.
+
+## <a name="node-batcher"></a>Node Batcher Processor
+<FILL ME IN - I'M LONELY!>
+
+## <a name="probabilistic-sampler"></a>Probabilistic Sampler Processor
+<FILL ME IN - I'M LONELY!>
+
+## <a name="queued"></a>Queued Processor
+<FILL ME IN - I'M LONELY!>
+
+## <a name="span"></a>Span Processor
+The span processor modifies top level settings of a span. Currently, only 
+renaming a span is supported. 
+
+### Name a span
+It takes a list of `from_attributes` and an optional `separator` string. The
+attribute value for the keys are used to create a new name in the order
+specified in the configuration. If a separator is specified, it will separate
+values.
+
+If renaming is dependent on attributes being modified by the `attributes`
+processor, ensure the `span` processor is specified after the `attributes`
+processor in the `pipeline` specification.
+
+For more information, refer to [config.go](span/config.go)
+```yaml
+span:
+  name:
+    # from_attributes represents the attribute keys to pull the values from to generate the
+    # new span name.
+    from_attributes: [<key1>, <key2>, ...]
+    # Separator is the string used to concatenate various parts of the span name.
+    separator: <value>
+```
+
+### Example configuration
+For more examples with detailed comments, refer to [config.yaml](span/testdata/config.yaml)
+```yaml
+span:
+  name:
+    from_attributes: ["db.svc", "operation"]
+    separator: "::"
+```
+
+## <a name="tail-sampling"></a>Tail Sampling Processor
+<FILL ME IN - I'M LONELY!>

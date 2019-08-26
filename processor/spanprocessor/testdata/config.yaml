@@ -1,0 +1,53 @@
+receivers:
+  examplereceiver:
+
+processors:
+  # The following specifies the values of attribute `db.svc`, `operation`,
+  # and `id` will form the new name of the span, in that order, separated by the
+  # value `::`. All attribute keys needs to be specified in the span for
+  # the processor to rename it.
+  # Note: There is no default configuration for the span processor. For 'name',
+  # the field `from_attributes` is required.
+  #
+  # Example 1 - All keys are in the span:
+  # Span name before processor:
+  #   "Span.Name": "serviceA"
+  # Attributes Key/Value pair for a span
+  # { "db.svc": "location", "operation": "get", "id": "1234"}
+  # Separator: "::"
+  # Results in the following new span name:
+  #   "Span.Name": "location::get::1234"
+  #
+  # Example 2 - Some keys are missing from the span.
+  # Span name(before processor):
+  #   "Span.Name": "serviceA"
+  # Attributes Key/Value pair for a span
+  # { "db.svc": "location", "id": "1234"}
+  # Separator: "::"
+  # Results in no new name because the attribute key `operation` isn't set.
+  # Span name after processor:
+  #   "Span.Name": "serviceA"
+  span/custom:
+    name:
+      separator: "::"
+      from_attributes: [db.svc, operation, id]
+
+  # The following specifies generating a span name with no separator.
+  # Example:
+  # Attributes Key/Value pair
+  # { "db.svc": "location:, "operation": "get", "id": "1234"}
+  # Separator: ""
+  # Results in the following new span name:
+  #   "locationget1234"
+  span/no-separator:
+    name:
+      from_attributes: [db.svc, operation, id]
+
+exporters:
+  exampleexporter:
+
+pipelines:
+  traces:
+    receivers: [examplereceiver]
+    processors: [span/custom]
+    exporters: [exampleexporter]
