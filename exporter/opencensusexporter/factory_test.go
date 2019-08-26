@@ -24,6 +24,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/compression"
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-service/internal/testutils"
 	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver"
@@ -82,8 +83,10 @@ func TestCreateTraceExporter(t *testing.T) {
 		{
 			name: "UseSecure",
 			config: Config{
-				Endpoint:  rcvCfg.Endpoint,
-				UseSecure: true,
+				Endpoint: rcvCfg.Endpoint,
+				ExporterSettings: configmodels.ExporterSettings{
+					UseSecure: true,
+				},
 			},
 		},
 		{
@@ -139,15 +142,19 @@ func TestCreateTraceExporter(t *testing.T) {
 		{
 			name: "CertPemFile",
 			config: Config{
-				Endpoint:    rcvCfg.Endpoint,
-				CertPemFile: "testdata/test_cert.pem",
+				Endpoint: rcvCfg.Endpoint,
+				ExporterSettings: configmodels.ExporterSettings{
+					CertPemFile: "testdata/test_cert.pem",
+				},
 			},
 		},
 		{
 			name: "CertPemFileError",
 			config: Config{
-				Endpoint:    rcvCfg.Endpoint,
-				CertPemFile: "nosuchfile",
+				Endpoint: rcvCfg.Endpoint,
+				ExporterSettings: configmodels.ExporterSettings{
+					CertPemFile: "nosuchfile",
+				},
 			},
 			mustFail: true,
 		},

@@ -45,8 +45,10 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, e1,
 		&Config{
 			ExporterSettings: configmodels.ExporterSettings{
-				NameVal: "opencensus/2",
-				TypeVal: "opencensus",
+				NameVal:     "opencensus/2",
+				TypeVal:     "opencensus",
+				CertPemFile: "/var/lib/mycert.pem",
+				UseSecure:   true,
 			},
 			Headers: map[string]string{
 				"can you have a . here?": "F0000000-0000-0000-0000-000000000000",
@@ -56,8 +58,6 @@ func TestLoadConfig(t *testing.T) {
 			Endpoint:          "1.2.3.4:1234",
 			Compression:       "on",
 			NumWorkers:        123,
-			CertPemFile:       "/var/lib/mycert.pem",
-			UseSecure:         true,
 			ReconnectionDelay: 15,
 			KeepaliveParameters: &KeepaliveConfig{
 				Time:                20,
