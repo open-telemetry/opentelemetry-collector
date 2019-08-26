@@ -85,11 +85,6 @@ type Factory interface {
     // CreateDefaultConfig creates the default configuration for the extension.
     CreateDefaultConfig() configmodels.Extension
 
-    // CustomUnmarshaler returns a custom unmarshaler for the configuration or nil if
-    // there is no need for custom unmarshaling. This is typically used if viper.Unmarshal()
-    // is not sufficient to unmarshal correctly.
-    CustomUnmarshaler(v *viper.Viper, viperKey string, intoCfg interface{}) CustomUnmarshaler 
-
     // CreateExtension creates a service extension based on the given config.
     CreateExtension(logger *zap.Logger, cfg configmodels.Extension) (Component, error)
 }

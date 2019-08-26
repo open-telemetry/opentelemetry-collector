@@ -1,0 +1,16 @@
+extensions:
+  exampleextension:
+service:
+  extensions: [exampleextension, nosuchextension, and, another, three]
+
+receivers:
+  examplereceiver:
+processors:
+  exampleprocessor:
+exporters:
+  exampleexporter:
+pipelines:
+  traces:
+    receivers: [examplereceiver]
+    processors: [exampleprocessor]
+    exporters: [exampleexporter]

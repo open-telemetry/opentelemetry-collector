@@ -47,10 +47,7 @@ type Application struct {
 	exporters      builder.Exporters
 	builtReceivers builder.Receivers
 
-	// factories
-	receiverFactories  map[string]receiver.Factory
-	exporterFactories  map[string]exporter.Factory
-	processorFactories map[string]processor.Factory
+	factories config.Factories
 
 	// stopTestChan is used to terminate the application in end to end tests.
 	stopTestChan chan struct{}
@@ -89,11 +86,13 @@ func New(
 	exporterFactories map[string]exporter.Factory,
 ) *Application {
 	return &Application{
-		v:                  viper.New(),
-		readyChan:          make(chan struct{}),
-		receiverFactories:  receiverFactories,
-		processorFactories: processorFactories,
-		exporterFactories:  exporterFactories,
+		v:         viper.New(),
+		readyChan: make(chan struct{}),
+		factories: config.Factories{
+			Receivers:  receiverFactories,
+			Processors: processorFactories,
+			Exporters:  exporterFactories,
+		},
 	}
 }
 
@@ -193,7 +192,7 @@ func (app *Application) setupPipelines() {
 	app.logger.Info("Loading configuration...")
 
 	// Load configuration.
-	cfg, err := config.Load(app.v, app.receiverFactories, app.processorFactories, app.exporterFactories, app.logger)
+	cfg, err := config.Load(app.v, app.factories, app.logger)
 	if err != nil {
 		log.Fatalf("Cannot load configuration: %v", err)
 	}
@@ -204,20 +203,20 @@ func (app *Application) setupPipelines() {
 	// which are referenced before objects which reference them.
 
 	// First create exporters.
-	app.exporters, err = builder.NewExportersBuilder(app.logger, cfg, app.exporterFactories).Build()
+	app.exporters, err = builder.NewExportersBuilder(app.logger, cfg, app.factories.Exporters).Build()
 	if err != nil {
 		log.Fatalf("Cannot load configuration: %v", err)
 	}
 
 	// Create pipelines and their processors and plug exporters to the
 	// end of the pipelines.
-	pipelines, err := builder.NewPipelinesBuilder(app.logger, cfg, app.exporters, app.processorFactories).Build()
+	pipelines, err := builder.NewPipelinesBuilder(app.logger, cfg, app.exporters, app.factories.Processors).Build()
 	if err != nil {
 		log.Fatalf("Cannot load configuration: %v", err)
 	}
 
 	// Create receivers and plug them into the start of the pipelines.
-	app.builtReceivers, err = builder.NewReceiversBuilder(app.logger, cfg, pipelines, app.receiverFactories).Build()
+	app.builtReceivers, err = builder.NewReceiversBuilder(app.logger, cfg, pipelines, app.factories.Receivers).Build()
 	if err != nil {
 		log.Fatalf("Cannot load configuration: %v", err)
 	}

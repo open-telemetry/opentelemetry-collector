@@ -24,16 +24,24 @@ import (
 )
 
 func TestDecodeConfig(t *testing.T) {
-	receivers, processors, exporters, err := ExampleComponents()
+	factories, err := ExampleComponents()
 	assert.Nil(t, err)
 
 	// Load the config
-	config, err := LoadConfigFile(
-		t, path.Join(".", "testdata", "valid-config.yaml"), receivers, processors, exporters,
-	)
+	config, err := LoadConfigFile(t, path.Join(".", "testdata", "valid-config.yaml"), factories)
 	if err != nil {
 		t.Fatalf("unable to load config, %v", err)
 	}
+
+	// Verify extensions.
+	assert.Equal(t, 3, len(config.Extensions))
+	assert.False(t, config.Extensions["exampleextension/disabled"].IsEnabled())
+	assert.Equal(t, "some string", config.Extensions["exampleextension/1"].(*ExampleExtension).ExtraSetting)
+
+	// Verify service.
+	assert.Equal(t, 2, len(config.Service.Extensions))
+	assert.Equal(t, "exampleextension/0", config.Service.Extensions[0])
+	assert.Equal(t, "exampleextension/1", config.Service.Extensions[1])
 
 	// Verify receivers
 	assert.Equal(t, 2, len(config.Receivers), "Incorrect receivers count")
@@ -117,13 +125,11 @@ func TestDecodeConfig(t *testing.T) {
 }
 
 func TestDecodeConfig_MultiProto(t *testing.T) {
-	receivers, processors, exporters, err := ExampleComponents()
+	factories, err := ExampleComponents()
 	assert.Nil(t, err)
 
 	// Load the config
-	config, err := LoadConfigFile(
-		t, path.Join(".", "testdata", "multiproto-config.yaml"), receivers, processors, exporters,
-	)
+	config, err := LoadConfigFile(t, path.Join(".", "testdata", "multiproto-config.yaml"), factories)
 	if err != nil {
 		t.Fatalf("unable to load config, %v", err)
 	}
@@ -181,8 +187,10 @@ func TestDecodeConfig_Invalid(t *testing.T) {
 		{name: "missing-exporters", expected: errMissingExporters},
 		{name: "missing-receivers", expected: errMissingReceivers},
 		{name: "missing-processors"},
+		{name: "invalid-extension-name", expected: errExtensionNotExists},
 		{name: "invalid-receiver-name"},
 		{name: "invalid-receiver-reference", expected: errPipelineReceiverNotExists},
+		{name: "missing-extension-type", expected: errInvalidTypeAndNameKey},
 		{name: "missing-receiver-type", expected: errInvalidTypeAndNameKey},
 		{name: "missing-exporter-name-after-slash", expected: errInvalidTypeAndNameKey},
 		{name: "missing-processor-type", expected: errInvalidTypeAndNameKey},
@@ -194,28 +202,30 @@ func TestDecodeConfig_Invalid(t *testing.T) {
 		{name: "pipeline-processor-not-exists", expected: errPipelineProcessorNotExists},
 		{name: "pipeline-must-have-processors", expected: errPipelineMustHaveProcessors},
 		{name: "metric-pipeline-cannot-have-processors", expected: errMetricPipelineCannotHaveProcessors},
+		{name: "unknown-extension-type", expected: errUnknownExtensionType},
 		{name: "unknown-receiver-type", expected: errUnknownReceiverType},
 		{name: "unknown-exporter-type", expected: errUnknownExporterType},
 		{name: "unknown-processor-type", expected: errUnknownProcessorType},
+		{name: "invalid-extension-disabled-value", expected: errUnmarshalError},
+		{name: "invalid-service-extensions-value", expected: errUnmarshalError},
 		{name: "invalid-bool-value", expected: errUnmarshalError},
 		{name: "invalid-sequence-value", expected: errUnmarshalError},
 		{name: "invalid-disabled-bool-value", expected: errUnmarshalError},
 		{name: "invalid-disabled-bool-value2", expected: errUnmarshalError},
 		{name: "invalid-pipeline-type", expected: errInvalidPipelineType},
 		{name: "invalid-pipeline-type-and-name", expected: errInvalidTypeAndNameKey},
+		{name: "duplicate-extension", expected: errDuplicateExtensionName},
 		{name: "duplicate-receiver", expected: errDuplicateReceiverName},
 		{name: "duplicate-exporter", expected: errDuplicateExporterName},
 		{name: "duplicate-processor", expected: errDuplicateProcessorName},
 		{name: "duplicate-pipeline", expected: errDuplicatePipelineName},
 	}
 
-	receivers, processors, exporters, err := ExampleComponents()
+	factories, err := ExampleComponents()
 	assert.Nil(t, err)
 
 	for _, test := range testCases {
-		_, err := LoadConfigFile(
-			t, path.Join(".", "testdata", test.name+".yaml"), receivers, processors, exporters,
-		)
+		_, err := LoadConfigFile(t, path.Join(".", "testdata", test.name+".yaml"), factories)
 		if err == nil {
 			t.Errorf("expected error but succeeded on invalid config case: %s", test.name)
 		} else if test.expected != 0 {

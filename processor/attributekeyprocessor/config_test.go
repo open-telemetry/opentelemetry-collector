@@ -27,18 +27,13 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
-	receivers, _, exporters, err := config.ExampleComponents()
+	factories, err := config.ExampleComponents()
 	require.NoError(t, err)
-	processors, err := processor.Build(&Factory{})
-	require.NotNil(t, processors)
+	factories.Processors, err = processor.Build(&Factory{})
+	require.NotNil(t, factories.Processors)
 	require.NoError(t, err)
 
-	config, err := config.LoadConfigFile(
-		t,
-		path.Join(".", "testdata", "config.yaml"),
-		receivers,
-		processors,
-		exporters)
+	config, err := config.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.Nil(t, err)
 	require.NotNil(t, config)
@@ -76,18 +71,13 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestLoadConfigEmpty(t *testing.T) {
-	receivers, _, exporters, err := config.ExampleComponents()
+	factories, err := config.ExampleComponents()
 	require.NoError(t, err)
-	processors, err := processor.Build(&Factory{})
-	require.NotNil(t, processors)
+	factories.Processors, err = processor.Build(&Factory{})
+	require.NotNil(t, factories.Processors)
 	require.NoError(t, err)
 
-	config, err := config.LoadConfigFile(
-		t,
-		path.Join(".", "testdata", "empty.yaml"),
-		receivers,
-		processors,
-		exporters)
+	config, err := config.LoadConfigFile(t, path.Join(".", "testdata", "empty.yaml"), factories)
 
 	require.Nil(t, err)
 	require.NotNil(t, config)

@@ -31,12 +31,14 @@ corresponding interface and if they have additional settings they must also exte
 the corresponding common settings struct (the easiest approach is to embed the common struct).
 */
 
-// Config defines the configuration V2 for the various elements of collector or agent.
+// Config defines the configuration for the various elements of collector or agent.
 type Config struct {
 	Receivers  Receivers
 	Exporters  Exporters
 	Processors Processors
 	Pipelines  Pipelines
+	Extensions Extensions
+	Service    Service
 }
 
 // NamedEntity is a configuration entity that has a name.
@@ -124,6 +126,25 @@ type Pipeline struct {
 
 // Pipelines is a map of names to Pipelines.
 type Pipelines map[string]*Pipeline
+
+// Extension is the configuration of a service extension. Specific extensions
+// must implement this interface and will typically embed ExtensionSettings
+// struct or a struct that extends it.
+type Extension interface {
+	NamedEntity
+	IsEnabled() bool
+	Type() string
+	SetType(typeStr string)
+}
+
+// Extensions is a map of names to extensions.
+type Extensions map[string]Extension
+
+// Service defines the configurable components of the service.
+type Service struct {
+	// Extensions is the ordered list of extensions configured for the service.
+	Extensions []string `mapstructure:"extensions"`
+}
 
 // Below are common setting structs for Receivers, Exporters and Processors.
 // These are helper structs which you can embed when implementing your specific
@@ -239,3 +260,38 @@ func (proc *ProcessorSettings) IsEnabled() bool {
 }
 
 var _ Processor = (*ProcessorSettings)(nil)
+
+// ExtensionSettings defines common settings for a service extension configuration.
+// Specific extensions can embed this struct and extend it with more fields if needed.
+type ExtensionSettings struct {
+	TypeVal  string `mapstructure:"-"`
+	NameVal  string `mapstructure:"-"`
+	Disabled bool   `mapstructure:"disabled"`
+}
+
+// Name gets the extension name.
+func (ext *ExtensionSettings) Name() string {
+	return ext.NameVal
+}
+
+// SetName sets the extension name.
+func (ext *ExtensionSettings) SetName(name string) {
+	ext.NameVal = name
+}
+
+// Type sets the extension type.
+func (ext *ExtensionSettings) Type() string {
+	return ext.TypeVal
+}
+
+// SetType sets the extension type.
+func (ext *ExtensionSettings) SetType(typeStr string) {
+	ext.TypeVal = typeStr
+}
+
+// IsEnabled returns true if the entity is enabled.
+func (ext *ExtensionSettings) IsEnabled() bool {
+	return !ext.Disabled
+}
+
+var _ Extension = (*ExtensionSettings)(nil)

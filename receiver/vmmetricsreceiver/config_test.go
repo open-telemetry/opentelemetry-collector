@@ -27,14 +27,12 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
-	receivers, processors, exporters, err := config.ExampleComponents()
+	factories, err := config.ExampleComponents()
 	assert.Nil(t, err)
 
 	factory := &Factory{}
-	receivers[typeStr] = factory
-	cfg, err := config.LoadConfigFile(
-		t, path.Join(".", "testdata", "config.yaml"), receivers, processors, exporters,
-	)
+	factories.Receivers[typeStr] = factory
+	cfg, err := config.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)

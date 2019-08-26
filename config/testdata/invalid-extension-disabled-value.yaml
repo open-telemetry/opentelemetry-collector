@@ -1,0 +1,3 @@
+extensions:
+  exampleextension:
+    disabled: "not a bool value"

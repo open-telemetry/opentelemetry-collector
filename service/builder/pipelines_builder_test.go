@@ -57,20 +57,18 @@ func TestPipelinesBuilder_Build(t *testing.T) {
 }
 
 func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
-	receiverFactories, processorsFactories, exporterFactories, err := config.ExampleComponents()
+	factories, err := config.ExampleComponents()
 	assert.Nil(t, err)
 	attrFactory := &addattributesprocessor.Factory{}
-	processorsFactories[attrFactory.Type()] = attrFactory
-	cfg, err := config.LoadConfigFile(
-		t, "testdata/pipelines_builder.yaml", receiverFactories, processorsFactories, exporterFactories,
-	)
+	factories.Processors[attrFactory.Type()] = attrFactory
+	cfg, err := config.LoadConfigFile(t, "testdata/pipelines_builder.yaml", factories)
 	// Load the config
 	require.Nil(t, err)
 
 	// Build the pipeline
-	allExporters, err := NewExportersBuilder(zap.NewNop(), cfg, exporterFactories).Build()
+	allExporters, err := NewExportersBuilder(zap.NewNop(), cfg, factories.Exporters).Build()
 	assert.NoError(t, err)
-	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), cfg, allExporters, processorsFactories).Build()
+	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), cfg, allExporters, factories.Processors).Build()
 
 	assert.NoError(t, err)
 	require.NotNil(t, pipelineProcessors)
@@ -125,13 +123,11 @@ func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 }
 
 func TestPipelinesBuilder_Error(t *testing.T) {
-	receiverFactories, processorsFactories, exporterFactories, err := config.ExampleComponents()
+	factories, err := config.ExampleComponents()
 	assert.Nil(t, err)
 	attrFactory := &addattributesprocessor.Factory{}
-	processorsFactories[attrFactory.Type()] = attrFactory
-	cfg, err := config.LoadConfigFile(
-		t, "testdata/pipelines_builder.yaml", receiverFactories, processorsFactories, exporterFactories,
-	)
+	factories.Processors[attrFactory.Type()] = attrFactory
+	cfg, err := config.LoadConfigFile(t, "testdata/pipelines_builder.yaml", factories)
 	require.Nil(t, err)
 
 	// Corrupt the pipeline, change data type to metrics. We have to forcedly do it here
@@ -140,12 +136,12 @@ func TestPipelinesBuilder_Error(t *testing.T) {
 	pipeline := cfg.Pipelines["traces"]
 	pipeline.InputType = configmodels.MetricsDataType
 
-	exporters, err := NewExportersBuilder(zap.NewNop(), cfg, exporterFactories).Build()
+	exporters, err := NewExportersBuilder(zap.NewNop(), cfg, factories.Exporters).Build()
 	assert.NoError(t, err)
 
 	// This should fail because "attributes" processor defined in the config does
 	// not support metrics data type.
-	_, err = NewPipelinesBuilder(zap.NewNop(), cfg, exporters, processorsFactories).Build()
+	_, err = NewPipelinesBuilder(zap.NewNop(), cfg, exporters, factories.Processors).Build()
 
 	assert.NotNil(t, err)
 }

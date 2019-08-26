@@ -22,19 +22,10 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-service/exporter"
-	"github.com/open-telemetry/opentelemetry-service/processor"
-	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
 
 // LoadConfigFile loads a config from file.
-func LoadConfigFile(
-	t *testing.T,
-	fileName string,
-	receivers map[string]receiver.Factory,
-	processors map[string]processor.Factory,
-	exporters map[string]exporter.Factory,
-) (*configmodels.Config, error) {
+func LoadConfigFile(t *testing.T, fileName string, factories Factories) (*configmodels.Config, error) {
 	// Open the file for reading.
 	file, err := os.Open(fileName)
 	if err != nil {
@@ -51,6 +42,6 @@ func LoadConfigFile(
 		return nil, err
 	}
 
-	// Load the config from viper
-	return Load(v, receivers, processors, exporters, zap.NewNop())
+	// Load the config from viper using the given factories.
+	return Load(v, factories, zap.NewNop())
 }
