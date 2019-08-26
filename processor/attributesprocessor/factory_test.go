@@ -122,7 +122,6 @@ func TestFactory_validateAttributesConfiguration(t *testing.T) {
 
 }
 
-// Refactor this into a list of configurations and expected error
 func TestFactory_validateAttributesConfiguration_InvalidConfig(t *testing.T) {
 	testcase := []struct {
 		name        string
