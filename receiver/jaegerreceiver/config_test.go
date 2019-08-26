@@ -81,7 +81,7 @@ func TestLoadConfig(t *testing.T) {
 					ReceiverSettings: configmodels.ReceiverSettings{
 						Endpoint: "127.0.0.1:9876",
 					},
-					TLSCredentials: &security.TLSCredentials{
+					TLSCredentials: &receiver.TLSCredentials{
 						CertFile: "/test.crt",
 						KeyFile:  "/test.key",
 					},
