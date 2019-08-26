@@ -41,10 +41,9 @@ func TestCreateMetricsExporter(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Endpoint = testutils.GetAvailableLocalAddress(t)
 
-	oexp, sfc, err := factory.CreateMetricsExporter(zap.NewNop(), cfg)
-	require.NotNil(t, oexp)
-	require.NotNil(t, sfc)
+	oexp, err := factory.CreateMetricsExporter(zap.NewNop(), cfg)
 	require.Nil(t, err)
+	require.NotNil(t, oexp)
 }
 
 func TestCreateTraceExporter(t *testing.T) {
@@ -156,16 +155,15 @@ func TestCreateTraceExporter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := &Factory{}
-			consumer, stopFunc, err := factory.CreateTraceExporter(zap.NewNop(), &tt.config)
+			consumer, err := factory.CreateTraceExporter(zap.NewNop(), &tt.config)
 
 			if tt.mustFail {
 				assert.NotNil(t, err)
 			} else {
 				assert.Nil(t, err)
 				assert.NotNil(t, consumer)
-				assert.NotNil(t, stopFunc)
 
-				err = stopFunc()
+				err = consumer.Shutdown()
 				if err != nil {
 					// Since the endpoint of opencensus exporter doesn't actually exist,
 					// exporter may already stop because it cannot connect.

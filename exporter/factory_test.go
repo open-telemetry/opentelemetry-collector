@@ -21,7 +21,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-service/consumer"
 )
 
 type TestFactory struct {
@@ -39,13 +38,13 @@ func (f *TestFactory) CreateDefaultConfig() configmodels.Exporter {
 }
 
 // CreateTraceExporter creates a trace exporter based on this config.
-func (f *TestFactory) CreateTraceExporter(logger *zap.Logger, cfg configmodels.Exporter) (consumer.TraceConsumer, StopFunc, error) {
-	return nil, nil, nil
+func (f *TestFactory) CreateTraceExporter(logger *zap.Logger, cfg configmodels.Exporter) (TraceExporter, error) {
+	return nil, nil
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *TestFactory) CreateMetricsExporter(logger *zap.Logger, cfg configmodels.Exporter) (consumer.MetricsConsumer, StopFunc, error) {
-	return nil, nil, nil
+func (f *TestFactory) CreateMetricsExporter(logger *zap.Logger, cfg configmodels.Exporter) (MetricsExporter, error) {
+	return nil, nil
 }
 
 func TestFactoriesBuilder(t *testing.T) {

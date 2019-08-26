@@ -33,7 +33,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
 
-	_, _, err := factory.CreateMetricsExporter(zap.NewNop(), cfg)
+	_, err := factory.CreateMetricsExporter(zap.NewNop(), cfg)
 	assert.Error(t, err, configerror.ErrDataTypeIsNotSupported)
 }
 
@@ -44,21 +44,18 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 
 	// Default config doesn't have default endpoint so creating from it should
 	// fail.
-	ze, zeStopFn, err := factory.CreateTraceExporter(
+	ze, err := factory.CreateTraceExporter(
 		zap.NewNop(),
 		cfg)
 	assert.Error(t, err)
 	assert.Nil(t, ze)
-	assert.Nil(t, zeStopFn)
 
 	// URL doesn't have a default value so set it directly.
 	zeCfg := cfg.(*Config)
 	zeCfg.URL = "http://some.location.org:9411/api/v2/spans"
-	ze, zeStopFn, err = factory.CreateTraceExporter(
+	ze, err = factory.CreateTraceExporter(
 		zap.NewNop(),
 		cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, ze)
-	assert.NotNil(t, zeStopFn)
-	assert.NoError(t, zeStopFn())
 }

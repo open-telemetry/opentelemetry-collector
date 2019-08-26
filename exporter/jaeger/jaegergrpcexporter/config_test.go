@@ -48,6 +48,6 @@ func TestLoadConfig(t *testing.T) {
 	e1 := cfg.Exporters["jaeger-grpc/2"]
 	assert.Equal(t, "jaeger-grpc/2", e1.(*Config).Name())
 	assert.Equal(t, "a.new.target:1234", e1.(*Config).Endpoint)
-	_, _, err = factory.CreateTraceExporter(zap.NewNop(), e1)
+	_, err = factory.CreateTraceExporter(zap.NewNop(), e1)
 	require.NoError(t, err)
 }

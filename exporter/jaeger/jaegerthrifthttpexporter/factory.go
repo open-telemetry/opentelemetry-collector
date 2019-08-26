@@ -22,7 +22,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-service/config/configerror"
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
 )
 
@@ -55,7 +54,7 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 func (f *Factory) CreateTraceExporter(
 	logger *zap.Logger,
 	config configmodels.Exporter,
-) (consumer.TraceConsumer, exporter.StopFunc, error) {
+) (exporter.TraceExporter, error) {
 
 	expCfg := config.(*Config)
 	_, err := url.ParseRequestURI(expCfg.URL)
@@ -65,14 +64,14 @@ func (f *Factory) CreateTraceExporter(
 			"%q config requires a valid \"url\": %v",
 			expCfg.Name(),
 			err)
-		return nil, nil, err
+		return nil, err
 	}
 
 	if expCfg.Timeout <= 0 {
 		err := fmt.Errorf(
 			"%q config requires a positive value for \"timeout\"",
 			expCfg.Name())
-		return nil, nil, err
+		return nil, err
 	}
 
 	exp, err := New(
@@ -81,16 +80,16 @@ func (f *Factory) CreateTraceExporter(
 		expCfg.Headers,
 		expCfg.Timeout)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	return exp, nil, nil
+	return exp, nil
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
 func (f *Factory) CreateMetricsExporter(
 	logger *zap.Logger,
 	cfg configmodels.Exporter,
-) (consumer.MetricsConsumer, exporter.StopFunc, error) {
-	return nil, nil, configerror.ErrDataTypeIsNotSupported
+) (exporter.MetricsExporter, error) {
+	return nil, configerror.ErrDataTypeIsNotSupported
 }

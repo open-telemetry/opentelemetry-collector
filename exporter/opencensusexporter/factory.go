@@ -27,7 +27,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/compression"
 	compressiongrpc "github.com/open-telemetry/opentelemetry-service/compression/grpc"
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exporterhelper"
 )
@@ -58,15 +57,15 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 }
 
 // CreateTraceExporter creates a trace exporter based on this config.
-func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Exporter) (consumer.TraceConsumer, exporter.StopFunc, error) {
+func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Exporter) (exporter.TraceExporter, error) {
 	ocac := config.(*Config)
 	opts, err := f.OCAgentOptions(logger, ocac)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	oce, err := f.createOCAgentExporter(logger, ocac, opts)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	oexp, err := exporterhelper.NewTraceExporter(
 		"oc_trace",
@@ -75,10 +74,10 @@ func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Ex
 		exporterhelper.WithRecordMetrics(true),
 		exporterhelper.WithShutdown(oce.Shutdown))
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	return oexp, oce.Shutdown, nil
+	return oexp, nil
 }
 
 // createOCAgentExporter takes ocagent exporter options and create an OC exporter
@@ -159,15 +158,15 @@ func (f *Factory) OCAgentOptions(logger *zap.Logger, ocac *Config) ([]ocagent.Ex
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *Factory) CreateMetricsExporter(logger *zap.Logger, config configmodels.Exporter) (consumer.MetricsConsumer, exporter.StopFunc, error) {
+func (f *Factory) CreateMetricsExporter(logger *zap.Logger, config configmodels.Exporter) (exporter.MetricsExporter, error) {
 	ocac := config.(*Config)
 	opts, err := f.OCAgentOptions(logger, ocac)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	oce, err := f.createOCAgentExporter(logger, ocac, opts)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	// TODO https://github.com/open-telemetry/opentelemetry-service/issues/265
 	//	What is the exporterName used for? Should this be the full name of the exporter or just the type?
@@ -179,8 +178,8 @@ func (f *Factory) CreateMetricsExporter(logger *zap.Logger, config configmodels.
 		exporterhelper.WithShutdown(oce.Shutdown))
 
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	return oexp, oce.Shutdown, nil
+	return oexp, nil
 }

@@ -21,31 +21,44 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-service/config/configerror"
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
 	"github.com/open-telemetry/opentelemetry-service/oterr"
 )
 
 // builtExporter is an exporter that is built based on a config. It can have
-// a trace and/or a metrics consumer and have a stop function.
+// a trace and/or a metrics consumer and have a shutdown function.
 type builtExporter struct {
-	tc   consumer.TraceConsumer
-	mc   consumer.MetricsConsumer
-	stop func() error
+	tc exporter.TraceExporter
+	mc exporter.MetricsExporter
 }
 
-// Stop the exporter.
-func (exp *builtExporter) Stop() error {
-	return exp.stop()
+// Shutdown the trace component and the metrics component of an exporter.
+func (exp *builtExporter) Shutdown() error {
+	var errors []error
+	if exp.tc != nil {
+		err := exp.tc.Shutdown()
+		if err != nil {
+			errors = append(errors, err)
+		}
+	}
+
+	if exp.mc != nil {
+		err := exp.mc.Shutdown()
+		if err != nil {
+			errors = append(errors, err)
+		}
+	}
+
+	return oterr.CombineErrors(errors)
 }
 
 // Exporters is a map of exporters created from exporter configs.
 type Exporters map[configmodels.Exporter]*builtExporter
 
-// StopAll stops all exporters.
-func (exps Exporters) StopAll() {
+// ShutdownAll stops all exporters.
+func (exps Exporters) ShutdownAll() {
 	for _, exp := range exps {
-		exp.Stop()
+		exp.Shutdown()
 	}
 }
 
@@ -129,36 +142,10 @@ func (eb *ExportersBuilder) calcExportersRequiredDataTypes() exportersRequiredDa
 	return result
 }
 
-// combineStopFunc combines 2 functions and returns one function
-// that can be called and which in turn will call both functions
-// and then combine any errors that the 2 functions return.
-// Safe to use if any of the 2 functions are nil. If both functions
-// are nil then returns nil.
-func combineStopFunc(f1, f2 exporter.StopFunc) exporter.StopFunc {
-	if f1 == nil {
-		return f2
-	}
-	if f2 == nil {
-		return f1
-	}
-
-	return func() error {
-		var errs []error
-		if err := f1(); err != nil {
-			errs = append(errs, err)
-		}
-		if err := f2(); err != nil {
-			errs = append(errs, err)
-		}
-		return oterr.CombineErrors(errs)
-	}
-}
-
 func (eb *ExportersBuilder) buildExporter(
 	config configmodels.Exporter,
 	exportersInputDataTypes exportersRequiredDataTypes,
 ) (*builtExporter, error) {
-
 	factory := eb.factories[config.Type()]
 	if factory == nil {
 		return nil, fmt.Errorf("exporter factory not found for type: %s", config.Type())
@@ -168,17 +155,18 @@ func (eb *ExportersBuilder) buildExporter(
 
 	inputDataTypes := exportersInputDataTypes[config]
 	if inputDataTypes == nil {
+		// TODO  https://github.com/open-telemetry/opentelemetry-service/issues/294
+		// 	Move this validation to config/config.go:validateConfig
 		// No data types where requested for this exporter. This can only happen
 		// if there are no pipelines associated with the exporter.
 		eb.logger.Warn("Exporter " + config.Name() +
 			" is not associated with any pipeline and will not export data.")
-		exporter.stop = func() error { return nil }
 		return exporter, nil
 	}
 
 	if requirement, ok := inputDataTypes[configmodels.TracesDataType]; ok {
 		// Traces data type is required. Create a trace exporter based on config.
-		tc, stopFunc, err := factory.CreateTraceExporter(eb.logger, config)
+		tc, err := factory.CreateTraceExporter(eb.logger, config)
 		if err != nil {
 			if err == configerror.ErrDataTypeIsNotSupported {
 				// Could not create because this exporter does not support this data type.
@@ -188,12 +176,11 @@ func (eb *ExportersBuilder) buildExporter(
 		}
 
 		exporter.tc = tc
-		exporter.stop = stopFunc
 	}
 
 	if requirement, ok := inputDataTypes[configmodels.MetricsDataType]; ok {
 		// Metrics data type is required. Create a trace exporter based on config.
-		mc, stopFunc, err := factory.CreateMetricsExporter(eb.logger, config)
+		mc, err := factory.CreateMetricsExporter(eb.logger, config)
 		if err != nil {
 			if err == configerror.ErrDataTypeIsNotSupported {
 				// Could not create because this exporter does not support this data type.
@@ -203,7 +190,6 @@ func (eb *ExportersBuilder) buildExporter(
 		}
 
 		exporter.mc = mc
-		exporter.stop = combineStopFunc(exporter.stop, stopFunc)
 	}
 
 	eb.logger.Info("Exporter is enabled.", zap.String("exporter", config.Name()))

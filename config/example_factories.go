@@ -150,7 +150,7 @@ func (rs *MultiProtoReceiver) Name() string {
 	return rs.NameVal
 }
 
-// SetName sets the exporter name.
+// SetName sets the receiver name.
 func (rs *MultiProtoReceiver) SetName(name string) {
 	rs.NameVal = name
 }
@@ -241,6 +241,7 @@ func (f *MultiProtoReceiverFactory) CreateMetricsReceiver(
 type ExampleExporter struct {
 	configmodels.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 	ExtraSetting                  string                   `mapstructure:"extra"`
+	ExporterShutdown              bool
 }
 
 // ExampleExporterFactory is factory for ExampleExporter.
@@ -261,19 +262,20 @@ func (f *ExampleExporterFactory) CreateDefaultConfig() configmodels.Exporter {
 }
 
 // CreateTraceExporter creates a trace exporter based on this config.
-func (f *ExampleExporterFactory) CreateTraceExporter(logger *zap.Logger, cfg configmodels.Exporter) (consumer.TraceConsumer, exporter.StopFunc, error) {
-	return &ExampleExporterConsumer{}, nil, nil
+func (f *ExampleExporterFactory) CreateTraceExporter(logger *zap.Logger, cfg configmodels.Exporter) (exporter.TraceExporter, error) {
+	return &ExampleExporterConsumer{}, nil
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *ExampleExporterFactory) CreateMetricsExporter(logger *zap.Logger, cfg configmodels.Exporter) (consumer.MetricsConsumer, exporter.StopFunc, error) {
-	return &ExampleExporterConsumer{}, nil, nil
+func (f *ExampleExporterFactory) CreateMetricsExporter(logger *zap.Logger, cfg configmodels.Exporter) (exporter.MetricsExporter, error) {
+	return &ExampleExporterConsumer{}, nil
 }
 
 // ExampleExporterConsumer stores consumed traces and metrics for testing purposes.
 type ExampleExporterConsumer struct {
-	Traces  []consumerdata.TraceData
-	Metrics []consumerdata.MetricsData
+	Traces           []consumerdata.TraceData
+	Metrics          []consumerdata.MetricsData
+	ExporterShutdown bool
 }
 
 // ConsumeTraceData receives consumerdata.TraceData for processing by the TraceConsumer.
@@ -285,6 +287,17 @@ func (exp *ExampleExporterConsumer) ConsumeTraceData(ctx context.Context, td con
 // ConsumeMetricsData receives consumerdata.MetricsData for processing by the MetricsConsumer.
 func (exp *ExampleExporterConsumer) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
 	exp.Metrics = append(exp.Metrics, md)
+	return nil
+}
+
+// Name returns the name of the exporter.
+func (exp *ExampleExporterConsumer) Name() string {
+	return "exampleexporter"
+}
+
+// Shutdown is invoked during shutdown.
+func (exp *ExampleExporterConsumer) Shutdown() error {
+	exp.ExporterShutdown = true
 	return nil
 }
 

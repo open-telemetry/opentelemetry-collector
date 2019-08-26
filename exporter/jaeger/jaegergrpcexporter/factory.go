@@ -21,7 +21,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-service/config/configerror"
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
 )
 
@@ -53,7 +52,7 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 func (f *Factory) CreateTraceExporter(
 	logger *zap.Logger,
 	config configmodels.Exporter,
-) (consumer.TraceConsumer, exporter.StopFunc, error) {
+) (exporter.TraceExporter, error) {
 
 	expCfg := config.(*Config)
 	if expCfg.Endpoint == "" {
@@ -61,21 +60,21 @@ func (f *Factory) CreateTraceExporter(
 		err := fmt.Errorf(
 			"%q config requires a non-empty \"endpoint\"",
 			expCfg.Name())
-		return nil, nil, err
+		return nil, err
 	}
 
 	exp, err := New(expCfg.Name(), expCfg.Endpoint)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	return exp, nil, nil
+	return exp, nil
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
 func (f *Factory) CreateMetricsExporter(
 	logger *zap.Logger,
 	cfg configmodels.Exporter,
-) (consumer.MetricsConsumer, exporter.StopFunc, error) {
-	return nil, nil, configerror.ErrDataTypeIsNotSupported
+) (exporter.MetricsExporter, error) {
+	return nil, configerror.ErrDataTypeIsNotSupported
 }
