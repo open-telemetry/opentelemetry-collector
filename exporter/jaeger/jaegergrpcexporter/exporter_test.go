@@ -70,6 +70,17 @@ func TestNew(t *testing.T) {
 				serverOverride:    "foo",
 			},
 		},
+		{
+			name: "createSecureExporterWithClientTLS",
+			args: args{
+				collectorEndpoint: "foo:55",
+				exporterName:      typeStr,
+				secure:            true,
+				certPemFile:       path.Join(".", "testdata", "test_cert_invalid.pem"),
+				serverOverride:    "foo",
+			},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
