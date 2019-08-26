@@ -48,8 +48,8 @@ func TestLoadConfig(t *testing.T) {
 			NameVal: "span/custom",
 		},
 		Rename: Name{
-			Keys:      []string{"db.svc", "operation", "id"},
-			Separator: "::",
+			FromAttributes: []string{"db.svc", "operation", "id"},
+			Separator:      "::",
 		},
 	})
 
@@ -60,8 +60,8 @@ func TestLoadConfig(t *testing.T) {
 			NameVal: "span/no-separator",
 		},
 		Rename: Name{
-			Keys:      []string{"db.svc", "operation", "id"},
-			Separator: "",
+			FromAttributes: []string{"db.svc", "operation", "id"},
+			Separator:      "",
 		},
 	})
 }

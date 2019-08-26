@@ -45,12 +45,12 @@ func TestFactory_CreateTraceProcessor(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
 
-	// Name.Keys field needs to be set for the configuration to be valid.
-	oCfg.Rename.Keys = []string{"test-key"}
+	// Name.FromAttributes field needs to be set for the configuration to be valid.
+	oCfg.Rename.FromAttributes = []string{"test-key"}
 	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), oCfg)
 
 	// TODO(ccaraman): Fix this when the processor logic is added and the trace processor
-	//  no longer returns an error.
+	//	no longer returns an error.
 	require.Nil(t, tp)
 	assert.Equal(t, err, configerror.ErrDataTypeIsNotSupported)
 }

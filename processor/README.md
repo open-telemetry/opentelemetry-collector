@@ -98,9 +98,10 @@ The span processor modifies top level settings of a span. Currently, only
 renaming a span is supported. 
 
 ### Name a span
-It takes a list of `keys` and an optional `separator` string. The attribute
-value for the keys are used to create a new name in the order specified in the
-configuration. If a separator is specified, it will separate values.
+It takes a list of `from_attributes` and an optional `separator` string. The
+attribute value for the keys are used to create a new name in the order
+specified in the configuration. If a separator is specified, it will separate
+values.
 
 If renaming is dependent on attributes being modified by the `attributes`
 processor, ensure the `span` processor is specified after the `attributes`
@@ -110,9 +111,9 @@ For more information, refer to [config.go](span/config.go)
 ```yaml
 span:
   name:
-    # Keys represents the attribute keys to pull the values from to generate the
+    # from_attributes represents the attribute keys to pull the values from to generate the
     # new span name.
-    keys: [<key1>, <key2>, ...]
+    from_attributes: [<key1>, <key2>, ...]
     # Separator is the string used to concatenate various parts of the span name.
     separator: <value>
 ```
@@ -122,7 +123,7 @@ For more examples with detailed comments, refer to [config.yaml](span/testdata/c
 ```yaml
 span:
   name:
-    keys: ["db.svc", "operation"]
+    from_attributes: ["db.svc", "operation"]
     separator: "::"
 ```
 

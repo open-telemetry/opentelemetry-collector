@@ -7,7 +7,7 @@ processors:
   # value `::`. All attribute keys needs to be specified in the span for
   # the processor to rename it.
   # Note: There is no default configuration for the span processor. For 'name',
-  # the field `keys` is required.
+  # the field `from_attributes` is required.
   #
   # Example 1 - All keys are in the span:
   # Span name before processor:
@@ -30,7 +30,7 @@ processors:
   span/custom:
     name:
       separator: "::"
-      keys: [db.svc, operation, id]
+      from_attributes: [db.svc, operation, id]
 
   # The following specifies generating a span name with no separator.
   # Example:
@@ -41,7 +41,7 @@ processors:
   #   "locationget1234"
   span/no-separator:
     name:
-      keys: [db.svc, operation, id]
+      from_attributes: [db.svc, operation, id]
 
 exporters:
   exampleexporter:
