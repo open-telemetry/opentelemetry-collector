@@ -1037,7 +1037,7 @@ func TestEndToEnd(t *testing.T) {
 }
 
 func TestIncludeFilterConfig(t *testing.T) {
-	jobs := make([]map[string]interface{}, 0, 0)
+	jobs := make([]map[string]interface{}, 0)
 
 	job := make(map[string]interface{})
 	job["job_name"] = "filter_job"
@@ -1054,6 +1054,9 @@ func TestIncludeFilterConfig(t *testing.T) {
 	config["config"] = map[string]interface{}{"scrape_configs": jobs}
 
 	cfg, err := yaml.Marshal(&config)
+	if err != nil {
+		log.Fatalf("failed to create config: %v", err)
+	}
 
 	v := viper.New()
 	if err := viperutils.LoadYAMLBytes(v, []byte(cfg)); err != nil {
@@ -1067,11 +1070,11 @@ func TestIncludeFilterConfig(t *testing.T) {
 	}
 
 	wantFilterMap := map[string]map[string]bool{
-		"localhost:9777": map[string]bool{
+		"localhost:9777": {
 			"foo/bar":        true,
 			"custom/metric1": true,
 		},
-		"localhost:9778": map[string]bool{
+		"localhost:9778": {
 			"hello/world":    true,
 			"custom/metric2": true,
 		},
