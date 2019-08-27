@@ -109,8 +109,8 @@ func TestFactory_validateAttributesConfiguration(t *testing.T) {
 		{Key: "three", FromAttribute: "two", Action: "upDaTE"},
 		{Key: "five", FromAttribute: "two", Action: "upsert"},
 	}
-	output, err := validateAttributesConfiguration(*oCfg)
-	assert.Equal(t, []attributesAction{
+	output, err := buildAttributesConfiguration(*oCfg)
+	assert.Equal(t, []attributeAction{
 		{Key: "one", Action: DELETE},
 		{Key: "two", Action: INSERT, AttributeValue: &tracepb.AttributeValue{
 			Value: &tracepb.AttributeValue_IntValue{IntValue: cast.ToInt64(123)},
@@ -153,7 +153,7 @@ func TestFactory_validateAttributesConfiguration_InvalidConfig(t *testing.T) {
 			actionLists: []ActionKeyValue{
 				{Key: "MissingValueFromAttributes", Action: INSERT},
 			},
-			errorString: "error creating \"attributes\" processor due to missing field \"value\" or \"from_attribute\" at the 0-th actions of processor \"attributes/error\"",
+			errorString: "error creating \"attributes\" processor. Either field \"value\" or \"from_attribute\" setting must be specified for 0-th action of processor \"attributes/error\"",
 		},
 		{
 			name: "both set value and from attribute",
@@ -170,7 +170,7 @@ func TestFactory_validateAttributesConfiguration_InvalidConfig(t *testing.T) {
 	for _, tc := range testcase {
 		t.Run(tc.name, func(t *testing.T) {
 			oCfg.Actions = tc.actionLists
-			output, err := validateAttributesConfiguration(*oCfg)
+			output, err := buildAttributesConfiguration(*oCfg)
 			assert.Nil(t, output)
 			assert.Equal(t, tc.errorString, err.Error())
 		})

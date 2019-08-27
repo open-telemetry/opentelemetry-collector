@@ -61,11 +61,11 @@ func (f *Factory) CreateTraceProcessor(
 ) (processor.TraceProcessor, error) {
 
 	oCfg := cfg.(*Config)
-	actions, err := validateAttributesConfiguration(*oCfg)
+	actions, err := buildAttributesConfiguration(*oCfg)
 	if err != nil {
 		return nil, err
 	}
-	return NewTraceProcessor(nextConsumer, actions)
+	return newTraceProcessor(nextConsumer, actions)
 }
 
 // CreateMetricsProcessor creates a metrics processor based on this config.
@@ -97,13 +97,15 @@ func attributeValue(value interface{}) (*tracepb.AttributeValue, error) {
 	return attrib, nil
 }
 
-// validateAttributesConfiguration validates the configuration has all of the required fields for the processor.
-func validateAttributesConfiguration(config Config) ([]attributesAction, error) {
+// buildAttributesConfiguration validates the input configuration has all of the required fields for the processor
+// and returns a list of valid actions to configure the processor.
+// An error is returned if there are any invalid inputs.
+func buildAttributesConfiguration(config Config) ([]attributeAction, error) {
 	if len(config.Actions) == 0 {
 		return nil, fmt.Errorf("error creating \"attributes\" processor due to missing required field \"actions\" of processor %q", config.Name())
 	}
 
-	var attributeAction []attributesAction
+	var attributeActions []attributeAction
 	for i, a := range config.Actions {
 		// `key` is a required field
 		if a.Key == "" {
@@ -111,15 +113,15 @@ func validateAttributesConfiguration(config Config) ([]attributesAction, error) 
 		}
 
 		// Convert `action` to lowercase for comparison.
-		a.Action = strings.ToLower(a.Action)
-		action := attributesAction{
+		a.Action = Action(strings.ToLower(string(a.Action)))
+		action := attributeAction{
 			Key:    a.Key,
 			Action: a.Action,
 		}
 		switch a.Action {
 		case INSERT, UPDATE, UPSERT:
 			if a.Value == nil && a.FromAttribute == "" {
-				return nil, fmt.Errorf("error creating \"attributes\" processor due to missing field \"value\" or \"from_attribute\" at the %d-th actions of processor %q", i, config.Name())
+				return nil, fmt.Errorf("error creating \"attributes\" processor. Either field \"value\" or \"from_attribute\" setting must be specified for %d-th action of processor %q", i, config.Name())
 			}
 			if a.Value != nil && a.FromAttribute != "" {
 				return nil, fmt.Errorf("error creating \"attributes\" processor due to both fields \"value\" and \"from_attribute\" being set at the %d-th actions of processor %q", i, config.Name())
@@ -142,7 +144,7 @@ func validateAttributesConfiguration(config Config) ([]attributesAction, error) 
 			return nil, fmt.Errorf("error creating \"attributes\" processor due to unsupported action %q at the %d-th actions of processor %q", a.Action, i, config.Name())
 		}
 
-		attributeAction = append(attributeAction, action)
+		attributeActions = append(attributeActions, action)
 	}
-	return attributeAction, nil
+	return attributeActions, nil
 }

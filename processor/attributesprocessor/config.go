@@ -14,7 +14,9 @@
 
 package attributesprocessor
 
-import "github.com/open-telemetry/opentelemetry-service/config/configmodels"
+import (
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
+)
 
 // Config specifies the set of attributes to be inserted, updated, upserted and deleted.
 // This processor handles all forms of modifications to attributes within a span.
@@ -58,24 +60,28 @@ type ActionKeyValue struct {
 	// DELETE - Deletes the attribute from the span. If the key doesn't exist,
 	//          no action is performed.
 	// This is a required field.
-	Action string `mapstructure:"action"`
+	Action Action `mapstructure:"action"`
 }
+
+// Action is the enum to capture the four types of actions to perform on an
+// attribute.
+type Action string
 
 const (
 	// INSERT adds the key/value to spans when the key does not exist.
 	// No action is applied to spans where the key already exists.
-	INSERT string = "insert"
+	INSERT Action = "insert"
 
 	// UPDATE updates an existing key with a value. No action is applied
 	// to spans where the key does not exist.
-	UPDATE string = "update"
+	UPDATE Action = "update"
 
 	// UPSERT performs the INSERT or UPDATE action. The key/value is
 	// insert to spans that did not originally have the key. The key/value is
 	// updated for spans where the key already existed.
-	UPSERT string = "upsert"
+	UPSERT Action = "upsert"
 
 	// DELETE deletes the attribute from the span. If the key doesn't exist,
 	//no action is performed.
-	DELETE string = "delete"
+	DELETE Action = "delete"
 )

@@ -25,20 +25,23 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/processor"
 )
 
-type attributesAction struct {
-	Key            string
-	FromAttribute  string
-	Action         string
-	AttributeValue *tracepb.AttributeValue
-}
 type attributesProcessor struct {
 	nextConsumer consumer.TraceConsumer
-	// Should convert the attributes to internal format for value stuff
-	actions []attributesAction
+	// This structure is very similar to the config for attributes processor
+	// with the value in the converted attribute format instead of the
+	// raw format from the configuration.
+	actions []attributeAction
 }
 
-// NewTraceProcessor returns a processor that modifies attributes of a span.
-func NewTraceProcessor(nextConsumer consumer.TraceConsumer, actions []attributesAction) (processor.TraceProcessor, error) {
+type attributeAction struct {
+	Key            string
+	FromAttribute  string
+	Action         Action
+	AttributeValue *tracepb.AttributeValue
+}
+
+// newTraceProcessor returns a processor that modifies attributes of a span.
+func newTraceProcessor(nextConsumer consumer.TraceConsumer, actions []attributeAction) (processor.TraceProcessor, error) {
 	if nextConsumer == nil {
 		return nil, oterr.ErrNilNextConsumer
 	}
@@ -58,44 +61,53 @@ func (a *attributesProcessor) ConsumeTraceData(ctx context.Context, td consumerd
 		if span.Attributes == nil {
 			span.Attributes = &tracepb.Span_Attributes{}
 		}
+		// Create a new map if one does not exist and size it to the number of actions.
+		// This is the largest size of the new map could be if every action is an insert.
+		if span.Attributes.AttributeMap == nil {
+			span.Attributes.AttributeMap = make(map[string]*tracepb.AttributeValue, len(a.actions))
+		}
 
 		for _, action := range a.actions {
 
-			// Delete is the simplest action.
-			if action.Action == DELETE {
-				// delete() will do nothing if the key does not exist.
+			// TODO https://github.com/open-telemetry/opentelemetry-service/issues/296
+			//	Do benchmark testing between having action be of type string vs integer.
+			//	The reason is attributes processor will most likely be commonly used
+			//	and could impact performance.
+			switch action.Action {
+			case DELETE:
 				delete(span.Attributes.AttributeMap, action.Key)
-				continue
+			case INSERT, UPSERT, UPDATE:
+				modifyAttribute(action, span.Attributes.AttributeMap)
 			}
-
-			// Exists is used to determine if the action insert or update should occur.
-			_, exists := span.Attributes.AttributeMap[action.Key]
-			// Default value of FromAttribute is "" and is a valid key into an attribute map.
-			_, fromAttributeExists := span.Attributes.AttributeMap[action.FromAttribute]
-
-			// No action should occur:
-			// - if the key exists and the action is insert
-			// or
-			// - if the key does not exist and the action is update.
-			// or
-			// - the from attribute does not exists and it is the source of the value.
-			if (exists && action.Action == INSERT) ||
-				(!exists && action.Action == UPDATE) ||
-				(action.AttributeValue == nil && !fromAttributeExists) {
-				continue
-			}
-
-			// At this point, the attribute will be set because:
-			// - the action is upsert
-			// - the key does not exist and the action is insert
-			// - the key does exist and the action is update.
-			if action.AttributeValue != nil {
-				span.Attributes.AttributeMap[action.Key] = action.AttributeValue
-			} else {
-				span.Attributes.AttributeMap[action.Key] = span.Attributes.AttributeMap[action.FromAttribute]
-			}
-
 		}
 	}
 	return a.nextConsumer.ConsumeTraceData(ctx, td)
+}
+
+func modifyAttribute(action attributeAction, attributesMap map[string]*tracepb.AttributeValue) {
+	// Exists is used to determine if the action insert or update should occur.
+	// This value doesn't matter if the action is upsert.
+	_, exists := attributesMap[action.Key]
+
+	// No action should occur:
+	// - if the key exists and the action is insert
+	// or
+	// - if the key does not exist and the action is update.
+	// If the action is UPSERT, this value does not matter.
+	if (exists && action.Action == INSERT) ||
+		(!exists && action.Action == UPDATE) {
+		return
+	}
+
+	// Set the key with a value from the configuration.
+	if action.AttributeValue != nil {
+		attributesMap[action.Key] = action.AttributeValue
+	} else {
+		// Set the key with a value from another attribute, if it exists.
+		value, fromAttributeExists := attributesMap[action.FromAttribute]
+		if !fromAttributeExists {
+			return
+		}
+		attributesMap[action.Key] = value
+	}
 }

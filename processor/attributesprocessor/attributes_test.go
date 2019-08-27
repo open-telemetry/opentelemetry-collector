@@ -30,18 +30,19 @@ import (
 )
 
 // Common structure for the
-type testcase struct {
+type testCase struct {
 	name               string
 	inputAttributes    map[string]*tracepb.AttributeValue
 	expectedAttributes map[string]*tracepb.AttributeValue
 }
 
 // runIndividualTestCase is the common logic of passing trace data through a configured attributes processor.
-func runIndividualTestCase(t *testing.T, tt testcase, tp processor.TraceProcessor) {
+func runIndividualTestCase(t *testing.T, tt testCase, tp processor.TraceProcessor) {
 	t.Run(tt.name, func(t *testing.T) {
 		traceData := consumerdata.TraceData{
 			Spans: []*tracepb.Span{
-				{Name: &tracepb.TruncatableString{Value: tt.name},
+				{
+					Name: &tracepb.TruncatableString{Value: tt.name},
 					Attributes: &tracepb.Span_Attributes{
 						AttributeMap: tt.inputAttributes,
 					},
@@ -60,13 +61,81 @@ func runIndividualTestCase(t *testing.T, tt testcase, tp processor.TraceProcesso
 	})
 }
 
+func TestAttributes_NilAttributes(t *testing.T) {
+	factory := Factory{}
+	cfg := factory.CreateDefaultConfig()
+	oCfg := cfg.(*Config)
+	oCfg.Actions = []ActionKeyValue{
+		{Key: "attribute1", Action: INSERT, Value: 123},
+	}
+
+	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), cfg)
+	require.Nil(t, err)
+	require.NotNil(t, tp)
+	traceData := consumerdata.TraceData{
+		Spans: []*tracepb.Span{
+			nil,
+			{
+				Name:       &tracepb.TruncatableString{Value: "Nil Attributes"},
+				Attributes: nil,
+			},
+			{
+				Name:       &tracepb.TruncatableString{Value: "Empty Attributes"},
+				Attributes: &tracepb.Span_Attributes{},
+			},
+			{
+				Name: &tracepb.TruncatableString{Value: "Nil Attribute Map"},
+				Attributes: &tracepb.Span_Attributes{
+					AttributeMap: nil,
+				},
+			},
+		},
+	}
+	assert.NoError(t, tp.ConsumeTraceData(context.Background(), traceData))
+	assert.Equal(t, consumerdata.TraceData{
+		Spans: []*tracepb.Span{
+			nil,
+			{
+				Name: &tracepb.TruncatableString{Value: "Nil Attributes"},
+				Attributes: &tracepb.Span_Attributes{
+					AttributeMap: map[string]*tracepb.AttributeValue{
+						"attribute1": {
+							Value: &tracepb.AttributeValue_IntValue{IntValue: 123},
+						},
+					},
+				},
+			},
+			{
+				Name: &tracepb.TruncatableString{Value: "Empty Attributes"},
+				Attributes: &tracepb.Span_Attributes{
+					AttributeMap: map[string]*tracepb.AttributeValue{
+						"attribute1": {
+							Value: &tracepb.AttributeValue_IntValue{IntValue: 123},
+						},
+					},
+				},
+			},
+			{
+				Name: &tracepb.TruncatableString{Value: "Nil Attribute Map"},
+				Attributes: &tracepb.Span_Attributes{
+					AttributeMap: map[string]*tracepb.AttributeValue{
+						"attribute1": {
+							Value: &tracepb.AttributeValue_IntValue{IntValue: 123},
+						},
+					},
+				},
+			},
+		},
+	}, traceData)
+}
+
 func TestAttributes_InsertValue(t *testing.T) {
-	testcases := []testcase{
+	testCases := []testCase{
 		// Ensure `attribute1` is set for spans with no attributes.
 		{
-			"InsertEmptyAttributes",
-			map[string]*tracepb.AttributeValue{},
-			map[string]*tracepb.AttributeValue{
+			name:            "InsertEmptyAttributes",
+			inputAttributes: map[string]*tracepb.AttributeValue{},
+			expectedAttributes: map[string]*tracepb.AttributeValue{
 				"attribute1": {
 					Value: &tracepb.AttributeValue_IntValue{IntValue: 123},
 				},
@@ -74,13 +143,13 @@ func TestAttributes_InsertValue(t *testing.T) {
 		},
 		// Ensure `attribute1` is set.
 		{
-			"InsertKeyNoExists",
-			map[string]*tracepb.AttributeValue{
+			name: "InsertKeyNoExists",
+			inputAttributes: map[string]*tracepb.AttributeValue{
 				"anotherkey": {
 					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "bob"}},
 				},
 			},
-			map[string]*tracepb.AttributeValue{
+			expectedAttributes: map[string]*tracepb.AttributeValue{
 				"anotherkey": {
 					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "bob"}},
 				},
@@ -91,13 +160,13 @@ func TestAttributes_InsertValue(t *testing.T) {
 		},
 		// Ensures no insert is performed because the keys `attribute1` already exists.
 		{
-			"InsertKeyExists",
-			map[string]*tracepb.AttributeValue{
+			name: "InsertKeyExists",
+			inputAttributes: map[string]*tracepb.AttributeValue{
 				"attribute1": {
 					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "bob"}},
 				},
 			},
-			map[string]*tracepb.AttributeValue{
+			expectedAttributes: map[string]*tracepb.AttributeValue{
 				"attribute1": {
 					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "bob"}},
 				},
@@ -116,29 +185,29 @@ func TestAttributes_InsertValue(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
-	for _, tt := range testcases {
+	for _, tt := range testCases {
 		runIndividualTestCase(t, tt, tp)
 	}
 }
 
 func TestAttributes_InsertFromAttribute(t *testing.T) {
 
-	testcases := []testcase{
+	testCases := []testCase{
 		// Ensure no attribute is inserted because because attributes do not exist.
 		{
-			"InsertEmptyAttributes",
-			map[string]*tracepb.AttributeValue{},
-			map[string]*tracepb.AttributeValue{},
+			name:               "InsertEmptyAttributes",
+			inputAttributes:    map[string]*tracepb.AttributeValue{},
+			expectedAttributes: map[string]*tracepb.AttributeValue{},
 		},
 		// Ensure no attribute is inserted because because from_attribute `string_key` does not exist.
 		{
-			"InsertMissingFromAttribute",
-			map[string]*tracepb.AttributeValue{
+			name: "InsertMissingFromAttribute",
+			inputAttributes: map[string]*tracepb.AttributeValue{
 				"bob": {
 					Value: &tracepb.AttributeValue_IntValue{IntValue: 1},
 				},
 			},
-			map[string]*tracepb.AttributeValue{
+			expectedAttributes: map[string]*tracepb.AttributeValue{
 				"bob": {
 					Value: &tracepb.AttributeValue_IntValue{IntValue: 1},
 				},
@@ -146,13 +215,13 @@ func TestAttributes_InsertFromAttribute(t *testing.T) {
 		},
 		// Ensure `string key` is set.
 		{
-			"InsertAttributeExists",
-			map[string]*tracepb.AttributeValue{
+			name: "InsertAttributeExists",
+			inputAttributes: map[string]*tracepb.AttributeValue{
 				"anotherkey": {
 					Value: &tracepb.AttributeValue_IntValue{IntValue: 8892342},
 				},
 			},
-			map[string]*tracepb.AttributeValue{
+			expectedAttributes: map[string]*tracepb.AttributeValue{
 				"anotherkey": {
 					Value: &tracepb.AttributeValue_IntValue{IntValue: 8892342},
 				},
@@ -163,8 +232,8 @@ func TestAttributes_InsertFromAttribute(t *testing.T) {
 		},
 		// Ensures no insert is performed because the keys `string key` already exist.
 		{
-			"InsertKeysExists",
-			map[string]*tracepb.AttributeValue{
+			name: "InsertKeysExists",
+			inputAttributes: map[string]*tracepb.AttributeValue{
 				"anotherkey": {
 					Value: &tracepb.AttributeValue_IntValue{IntValue: 8892342},
 				},
@@ -172,7 +241,7 @@ func TestAttributes_InsertFromAttribute(t *testing.T) {
 					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "here"}},
 				},
 			},
-			map[string]*tracepb.AttributeValue{
+			expectedAttributes: map[string]*tracepb.AttributeValue{
 				"anotherkey": {
 					Value: &tracepb.AttributeValue_IntValue{IntValue: 8892342},
 				},
@@ -193,29 +262,29 @@ func TestAttributes_InsertFromAttribute(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
-	for _, tt := range testcases {
+	for _, tt := range testCases {
 		runIndividualTestCase(t, tt, tp)
 	}
 }
 
 func TestAttributes_UpdateValue(t *testing.T) {
 
-	testcases := []testcase{
+	testCases := []testCase{
 		// Ensure no changes to the span as there is no attributes map.
 		{
-			"UpdateNoAttributes",
-			map[string]*tracepb.AttributeValue{},
-			map[string]*tracepb.AttributeValue{},
+			name:               "UpdateNoAttributes",
+			inputAttributes:    map[string]*tracepb.AttributeValue{},
+			expectedAttributes: map[string]*tracepb.AttributeValue{},
 		},
 		// Ensure no changes to the span as the key does not exist.
 		{
-			"UpdateKeyNoExist",
-			map[string]*tracepb.AttributeValue{
+			name: "UpdateKeyNoExist",
+			inputAttributes: map[string]*tracepb.AttributeValue{
 				"boo": {
 					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "foo"}},
 				},
 			},
-			map[string]*tracepb.AttributeValue{
+			expectedAttributes: map[string]*tracepb.AttributeValue{
 				"boo": {
 					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "foo"}},
 				},
@@ -223,13 +292,13 @@ func TestAttributes_UpdateValue(t *testing.T) {
 		},
 		// Ensure the attribute `db.secret` is updated.
 		{
-			"UpdateAttributes",
-			map[string]*tracepb.AttributeValue{
+			name: "UpdateAttributes",
+			inputAttributes: map[string]*tracepb.AttributeValue{
 				"db.secret": {
 					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "password1234"}},
 				},
 			},
-			map[string]*tracepb.AttributeValue{
+			expectedAttributes: map[string]*tracepb.AttributeValue{
 				"db.secret": {
 					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "redacted"}},
 				},
@@ -247,29 +316,29 @@ func TestAttributes_UpdateValue(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
-	for _, tt := range testcases {
+	for _, tt := range testCases {
 		runIndividualTestCase(t, tt, tp)
 	}
 }
 
 func TestAttributes_UpdateFromAttribute(t *testing.T) {
 
-	testcases := []testcase{
+	testCases := []testCase{
 		// Ensure no changes to the span as there is no attributes map.
 		{
-			"UpdateNoAttributes",
-			map[string]*tracepb.AttributeValue{},
-			map[string]*tracepb.AttributeValue{},
+			name:               "UpdateNoAttributes",
+			inputAttributes:    map[string]*tracepb.AttributeValue{},
+			expectedAttributes: map[string]*tracepb.AttributeValue{},
 		},
 		// Ensure the attribute `boo` isn't updated because attribute `foo` isn't present in the span.
 		{
-			"UpdateKeyNoExist",
-			map[string]*tracepb.AttributeValue{
+			name: "UpdateKeyNoExist",
+			inputAttributes: map[string]*tracepb.AttributeValue{
 				"boo": {
 					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "bob"}},
 				},
 			},
-			map[string]*tracepb.AttributeValue{
+			expectedAttributes: map[string]*tracepb.AttributeValue{
 				"boo": {
 					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "bob"}},
 				},
@@ -277,13 +346,13 @@ func TestAttributes_UpdateFromAttribute(t *testing.T) {
 		},
 		// Ensure no updates as the target key `boo` doesn't exists.
 		{
-			"UpdateKeyNoExist",
-			map[string]*tracepb.AttributeValue{
+			name: "UpdateKeyNoExist",
+			inputAttributes: map[string]*tracepb.AttributeValue{
 				"foo": {
 					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "over there"}},
 				},
 			},
-			map[string]*tracepb.AttributeValue{
+			expectedAttributes: map[string]*tracepb.AttributeValue{
 				"foo": {
 					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "over there"}},
 				},
@@ -291,8 +360,8 @@ func TestAttributes_UpdateFromAttribute(t *testing.T) {
 		},
 		// Ensure no updates as the target key `boo` doesn't exists.
 		{
-			"UpdateKeyNoExist",
-			map[string]*tracepb.AttributeValue{
+			name: "UpdateKeyNoExist",
+			inputAttributes: map[string]*tracepb.AttributeValue{
 				"foo": {
 					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "there is a party over here"}},
 				},
@@ -300,7 +369,7 @@ func TestAttributes_UpdateFromAttribute(t *testing.T) {
 					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "not here"}},
 				},
 			},
-			map[string]*tracepb.AttributeValue{
+			expectedAttributes: map[string]*tracepb.AttributeValue{
 				"foo": {
 					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "there is a party over here"}},
 				},
@@ -322,18 +391,18 @@ func TestAttributes_UpdateFromAttribute(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
-	for _, tt := range testcases {
+	for _, tt := range testCases {
 		runIndividualTestCase(t, tt, tp)
 	}
 }
 
 func TestAttributes_UpsertValue(t *testing.T) {
-	testcases := []testcase{
+	testCases := []testCase{
 		// Ensure `region` is set for spans with no attributes.
 		{
-			"UpsertNoAttributes",
-			map[string]*tracepb.AttributeValue{},
-			map[string]*tracepb.AttributeValue{
+			name:            "UpsertNoAttributes",
+			inputAttributes: map[string]*tracepb.AttributeValue{},
+			expectedAttributes: map[string]*tracepb.AttributeValue{
 				"region": {
 					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "planet-earth"}},
 				},
@@ -341,13 +410,13 @@ func TestAttributes_UpsertValue(t *testing.T) {
 		},
 		// Ensure `region` is inserted for spans with some attributes(the key doesn't exist).
 		{
-			"UpsertAttributeNoExist",
-			map[string]*tracepb.AttributeValue{
+			name: "UpsertAttributeNoExist",
+			inputAttributes: map[string]*tracepb.AttributeValue{
 				"mission": {
 					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "to mars"}},
 				},
 			},
-			map[string]*tracepb.AttributeValue{
+			expectedAttributes: map[string]*tracepb.AttributeValue{
 				"mission": {
 					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "to mars"}},
 				},
@@ -358,8 +427,8 @@ func TestAttributes_UpsertValue(t *testing.T) {
 		},
 		/// Ensure `region` is updated for spans with the attribute key `region`.
 		{
-			"UpsertAttributeExists",
-			map[string]*tracepb.AttributeValue{
+			name: "UpsertAttributeExists",
+			inputAttributes: map[string]*tracepb.AttributeValue{
 				"mission": {
 					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "to mars"}},
 				},
@@ -367,7 +436,7 @@ func TestAttributes_UpsertValue(t *testing.T) {
 					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "solar system"}},
 				},
 			},
-			map[string]*tracepb.AttributeValue{
+			expectedAttributes: map[string]*tracepb.AttributeValue{
 				"mission": {
 					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "to mars"}},
 				},
@@ -388,28 +457,29 @@ func TestAttributes_UpsertValue(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
-	for _, tt := range testcases {
+	for _, tt := range testCases {
 		runIndividualTestCase(t, tt, tp)
 	}
 }
+
 func TestAttributes_UpsertFromAttribute(t *testing.T) {
 
-	testcases := []testcase{
+	testCases := []testCase{
 		// Ensure `new_user_key` is not set for spans with no attributes.
 		{
-			"UpsertEmptyAttributes",
-			map[string]*tracepb.AttributeValue{},
-			map[string]*tracepb.AttributeValue{},
+			name:               "UpsertEmptyAttributes",
+			inputAttributes:    map[string]*tracepb.AttributeValue{},
+			expectedAttributes: map[string]*tracepb.AttributeValue{},
 		},
 		// Ensure `new_user_key` is not inserted for spans with missing attribute `user_key`.
 		{
-			"UpsertFromAttributeNoExist",
-			map[string]*tracepb.AttributeValue{
+			name: "UpsertFromAttributeNoExist",
+			inputAttributes: map[string]*tracepb.AttributeValue{
 				"boo": {
 					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "ghosts are scary"}},
 				},
 			},
-			map[string]*tracepb.AttributeValue{
+			expectedAttributes: map[string]*tracepb.AttributeValue{
 				"boo": {
 					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "ghosts are scary"}},
 				},
@@ -417,8 +487,8 @@ func TestAttributes_UpsertFromAttribute(t *testing.T) {
 		},
 		// Ensure `new_user_key` is inserted for spans with attribute `user_key`.
 		{
-			"UpsertFromAttributeExistsInsert",
-			map[string]*tracepb.AttributeValue{
+			name: "UpsertFromAttributeExistsInsert",
+			inputAttributes: map[string]*tracepb.AttributeValue{
 				"user_key": {
 					Value: &tracepb.AttributeValue_IntValue{IntValue: 2245},
 				},
@@ -426,7 +496,7 @@ func TestAttributes_UpsertFromAttribute(t *testing.T) {
 					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "casper the friendly ghost"}},
 				},
 			},
-			map[string]*tracepb.AttributeValue{
+			expectedAttributes: map[string]*tracepb.AttributeValue{
 				"user_key": {
 					Value: &tracepb.AttributeValue_IntValue{IntValue: 2245},
 				},
@@ -440,8 +510,8 @@ func TestAttributes_UpsertFromAttribute(t *testing.T) {
 		},
 		// Ensure `new_user_key` is updated for spans with attribute `user_key`.
 		{
-			"UpsertFromAttributeExistsUpdate",
-			map[string]*tracepb.AttributeValue{
+			name: "UpsertFromAttributeExistsUpdate",
+			inputAttributes: map[string]*tracepb.AttributeValue{
 				"user_key": {
 					Value: &tracepb.AttributeValue_IntValue{IntValue: 2245},
 				},
@@ -452,7 +522,7 @@ func TestAttributes_UpsertFromAttribute(t *testing.T) {
 					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "casper the friendly ghost"}},
 				},
 			},
-			map[string]*tracepb.AttributeValue{
+			expectedAttributes: map[string]*tracepb.AttributeValue{
 				"user_key": {
 					Value: &tracepb.AttributeValue_IntValue{IntValue: 2245},
 				},
@@ -477,39 +547,39 @@ func TestAttributes_UpsertFromAttribute(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
-	for _, tt := range testcases {
+	for _, tt := range testCases {
 		runIndividualTestCase(t, tt, tp)
 	}
 }
 
 func TestAttributes_Delete(t *testing.T) {
-	testcases := []testcase{
+	testCases := []testCase{
 		// Ensure the span contains no changes.
 		{
-			"DeleteEmptyAttributes",
-			map[string]*tracepb.AttributeValue{},
-			map[string]*tracepb.AttributeValue{},
+			name:               "DeleteEmptyAttributes",
+			inputAttributes:    map[string]*tracepb.AttributeValue{},
+			expectedAttributes: map[string]*tracepb.AttributeValue{},
 		},
 		// Ensure the span contains no changes because the key doesn't exist.
 		{
-			"DeleteAttributeNoExist",
-			map[string]*tracepb.AttributeValue{
+			name: "DeleteAttributeNoExist",
+			inputAttributes: map[string]*tracepb.AttributeValue{
 				"boo": {
 					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "ghosts are scary"}},
 				}},
-			map[string]*tracepb.AttributeValue{
+			expectedAttributes: map[string]*tracepb.AttributeValue{
 				"boo": {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "ghosts are scary"}}},
 			},
 		},
 		// Ensure `duplicate_key` is deleted for spans with the attribute set.
 		{
-			"DeleteAttributeExists",
-			map[string]*tracepb.AttributeValue{
+			name: "DeleteAttributeExists",
+			inputAttributes: map[string]*tracepb.AttributeValue{
 				"duplicate_key": {
 					Value: &tracepb.AttributeValue_DoubleValue{DoubleValue: cast.ToFloat64(3245.6)}},
 				"original_key": {Value: &tracepb.AttributeValue_DoubleValue{DoubleValue: cast.ToFloat64(3245.6)}},
 			},
-			map[string]*tracepb.AttributeValue{
+			expectedAttributes: map[string]*tracepb.AttributeValue{
 				"original_key": {Value: &tracepb.AttributeValue_DoubleValue{DoubleValue: cast.ToFloat64(3245.6)}},
 			},
 		},
@@ -526,29 +596,90 @@ func TestAttributes_Delete(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
-	for _, tt := range testcases {
+	for _, tt := range testCases {
 		runIndividualTestCase(t, tt, tp)
 	}
 }
 
+func TestAttributes_FromAttributeNoChange(t *testing.T) {
+	factory := Factory{}
+	cfg := factory.CreateDefaultConfig()
+	oCfg := cfg.(*Config)
+	oCfg.Actions = []ActionKeyValue{
+		{Key: "boo", Action: INSERT, FromAttribute: "boo"},
+		{Key: "boo", Action: UPDATE, FromAttribute: "boo"},
+		{Key: "boo", Action: UPSERT, FromAttribute: "boo"},
+	}
+
+	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), cfg)
+	require.Nil(t, err)
+	require.NotNil(t, tp)
+	traceData := consumerdata.TraceData{
+		Spans: []*tracepb.Span{
+			{
+				Name: &tracepb.TruncatableString{Value: "FromAttributeNoChange"},
+				Attributes: &tracepb.Span_Attributes{
+					AttributeMap: map[string]*tracepb.AttributeValue{
+						"boo": {
+							Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "ghosts are scary"}},
+						},
+					},
+				},
+			},
+			{
+				Name: &tracepb.TruncatableString{Value: "FromAttributeNoChange"},
+				Attributes: &tracepb.Span_Attributes{
+					AttributeMap: map[string]*tracepb.AttributeValue{
+						"bob": {
+							Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "ghosts are scary"}},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	assert.NoError(t, tp.ConsumeTraceData(context.Background(), traceData))
+	require.Equal(t, consumerdata.TraceData{
+		Spans: []*tracepb.Span{
+			{
+				Name: &tracepb.TruncatableString{Value: "FromAttributeNoChange"},
+				Attributes: &tracepb.Span_Attributes{
+					AttributeMap: map[string]*tracepb.AttributeValue{
+						"boo": {
+							Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "ghosts are scary"}},
+						},
+					},
+				},
+			},
+			{
+				Name: &tracepb.TruncatableString{Value: "FromAttributeNoChange"},
+				Attributes: &tracepb.Span_Attributes{
+					AttributeMap: map[string]*tracepb.AttributeValue{
+						"bob": {
+							Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "ghosts are scary"}},
+						},
+					},
+				},
+			},
+		},
+	}, traceData)
+}
+
 func TestAttributes_Ordering(t *testing.T) {
-	testcases := []struct {
-		name               string
-		inputAttributes    map[string]*tracepb.AttributeValue
-		expectedAttributes map[string]*tracepb.AttributeValue
-	}{
+	testCases := []testCase{
 		// For this example, the operations performed are
 		// 1. insert `operation`: `default`
 		// 2. insert `svc.operation`: `default`
 		// 3. delete `operation`.
 		{
-			"OrderingApplyAllSteps",
-			map[string]*tracepb.AttributeValue{
+			name: "OrderingApplyAllSteps",
+			inputAttributes: map[string]*tracepb.AttributeValue{
 				"foo": {
 					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "casper the friendly ghost"}},
 				},
 			},
-			map[string]*tracepb.AttributeValue{
+			expectedAttributes: map[string]*tracepb.AttributeValue{
 				"foo": {
 					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "casper the friendly ghost"}},
 				},
@@ -562,8 +693,8 @@ func TestAttributes_Ordering(t *testing.T) {
 		// 2. insert `svc.operation`: `arithmetic`
 		// 3. delete `operation`.
 		{
-			"OrderingOperationExists",
-			map[string]*tracepb.AttributeValue{
+			name: "OrderingOperationExists",
+			inputAttributes: map[string]*tracepb.AttributeValue{
 				"foo": {
 					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "casper the friendly ghost"}},
 				},
@@ -571,7 +702,7 @@ func TestAttributes_Ordering(t *testing.T) {
 					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "arithmetic"}},
 				},
 			},
-			map[string]*tracepb.AttributeValue{
+			expectedAttributes: map[string]*tracepb.AttributeValue{
 				"foo": {
 					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "casper the friendly ghost"}},
 				},
@@ -586,8 +717,8 @@ func TestAttributes_Ordering(t *testing.T) {
 		// 2. update `svc.operation` to `default`
 		// 3. delete `operation`.
 		{
-			"OrderingSvcOperationExists",
-			map[string]*tracepb.AttributeValue{
+			name: "OrderingSvcOperationExists",
+			inputAttributes: map[string]*tracepb.AttributeValue{
 				"foo": {
 					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "casper the friendly ghost"}},
 				},
@@ -595,7 +726,7 @@ func TestAttributes_Ordering(t *testing.T) {
 					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "some value"}},
 				},
 			},
-			map[string]*tracepb.AttributeValue{
+			expectedAttributes: map[string]*tracepb.AttributeValue{
 				"foo": {
 					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "casper the friendly ghost"}},
 				},
@@ -610,8 +741,8 @@ func TestAttributes_Ordering(t *testing.T) {
 		// 2. update `svc.operation` to `arithmetic`
 		// 3. delete `operation`.
 		{
-			"OrderingBothAttributesExist",
-			map[string]*tracepb.AttributeValue{
+			name: "OrderingBothAttributesExist",
+			inputAttributes: map[string]*tracepb.AttributeValue{
 				"foo": {
 					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "casper the friendly ghost"}},
 				},
@@ -622,7 +753,7 @@ func TestAttributes_Ordering(t *testing.T) {
 					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "add"}},
 				},
 			},
-			map[string]*tracepb.AttributeValue{
+			expectedAttributes: map[string]*tracepb.AttributeValue{
 				"foo": {
 					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "casper the friendly ghost"}},
 				},
@@ -646,7 +777,7 @@ func TestAttributes_Ordering(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
-	for _, tt := range testcases {
+	for _, tt := range testCases {
 		runIndividualTestCase(t, tt, tp)
 	}
 }
