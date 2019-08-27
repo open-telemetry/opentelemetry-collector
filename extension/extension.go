@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package extension defines components that can be added to the OpenTelemetry
+// Package extension defines service extensions that can be added to the OpenTelemetry
 // service but that not interact if the data pipelines, but provide some functionality
 // to the service, examples: health check endpoint, z-pages, etc.
 package extension
 
-// Host represents the entity where the extension component is being hosted.
+// Host represents the entity where the extension is being hosted.
 // It is used to allow communication between the extension and its host.
 type Host interface {
 	// ReportFatalError is used to report to the host that the extension
@@ -26,33 +26,33 @@ type Host interface {
 	ReportFatalError(err error)
 }
 
-// Component is the interface for objects hosted by the OpenTelemetry Service that
-// doesn't participate directly on data pipelines but provide some functionality
+// ServiceExtension is the interface for objects hosted by the OpenTelemetry Service that
+// don't participate directly on data pipelines but provide some functionality
 // to the service, examples: health check endpoint, z-pages, etc.
-type Component interface {
-	// Start the Component object hosted by the given host. At this point in the
+type ServiceExtension interface {
+	// Start the ServiceExtension object hosted by the given host. At this point in the
 	// process life-cycle the receivers are not started and the host did not
 	// receive any data yet.
 	Start(host Host) error
 
-	// Shutdown the Component instance. This happens after the pipelines were
+	// Shutdown the ServiceExtension instance. This happens after the pipelines were
 	// shutdown.
 	Shutdown() error
 }
 
-// PipelineWatcher is an extra interface for Components hosted by the OpenTelemetry
-// Service that is to be implemented by Components interested in changes to pipeline
-// states. Typically this will be used by Components that change their behavior if data is
+// PipelineWatcher is an extra interface for ServiceExtension hosted by the OpenTelemetry
+// Service that is to be implemented by extensions interested in changes to pipeline
+// states. Typically this will be used by extensions that change their behavior if data is
 // being ingested or not, e.g.: a k8s readiness probe.
 type PipelineWatcher interface {
-	// Ready notifies the Component that all pipelines were built and the
+	// Ready notifies the ServiceExtension that all pipelines were built and the
 	// receivers were started, i.e.: the service is ready to receive data
 	// (notice that it may already have received data when this method is called).
 	Ready() error
 
-	// NotReady notifies the Component that all receivers are about to be stopped,
+	// NotReady notifies the ServiceExtension that all receivers are about to be stopped,
 	// i.e.: pipeline receivers will not accept new data.
-	// This is sent before receivers are stopped, so the Component can take any
+	// This is sent before receivers are stopped, so the ServiceExtension can take any
 	// appropriate action before that happens.
 	NotReady() error
 }

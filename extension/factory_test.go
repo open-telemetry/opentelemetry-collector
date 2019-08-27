@@ -28,7 +28,7 @@ type TestFactory struct {
 	name string
 }
 
-// Type gets the type of the extension component config created by this factory.
+// Type gets the type of the extension config created by this factory.
 func (f *TestFactory) Type() string {
 	return f.name
 }
@@ -42,7 +42,7 @@ func (f *TestFactory) CreateDefaultConfig() configmodels.Extension {
 func (f *TestFactory) CreateExtension(
 	logger *zap.Logger,
 	cfg configmodels.Extension,
-) (Component, error) {
+) (ServiceExtension, error) {
 	return nil, errors.New("cannot create extension from TestFactory")
 }
 

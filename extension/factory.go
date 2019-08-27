@@ -24,14 +24,14 @@ import (
 
 // Factory is a factory interface for extensions to the service.
 type Factory interface {
-	// Type gets the type of the extension component created by this factory.
+	// Type gets the type of the extension created by this factory.
 	Type() string
 
 	// CreateDefaultConfig creates the default configuration for the extension.
 	CreateDefaultConfig() configmodels.Extension
 
 	// CreateExtension creates a service extension based on the given config.
-	CreateExtension(logger *zap.Logger, cfg configmodels.Extension) (Component, error)
+	CreateExtension(logger *zap.Logger, cfg configmodels.Extension) (ServiceExtension, error)
 }
 
 // Build takes a list of extension factories and returns a map of type map[string]Factory

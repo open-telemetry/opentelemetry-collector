@@ -373,7 +373,7 @@ func (f *ExampleExtensionFactory) CreateDefaultConfig() configmodels.Extension {
 func (f *ExampleExtensionFactory) CreateExtension(
 	logger *zap.Logger,
 	cfg configmodels.Extension,
-) (extension.Component, error) {
+) (extension.ServiceExtension, error) {
 	return nil, fmt.Errorf("cannot create %q extension type", f.Type())
 }
 
