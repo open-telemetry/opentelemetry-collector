@@ -155,6 +155,12 @@ receivers:
 Include Filter provides ability to filter scraping metrics per target. If a filter is specified for
 a target then only those metrics that are specified in the `Include Filter` list will be scraped.
 Rest of the metrics from the targets will be dropped.
+
+#### Syntax
+- Endpoint and list of metrics name should be double quoted.
+- Metrics name should be comma separated.
+
+#### Example
 ```yaml
 receivers:
     prometheus:
