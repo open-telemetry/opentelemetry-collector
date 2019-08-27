@@ -141,7 +141,7 @@ func testReceivers(
 
 	// First check that there are no traces in the exporters yet.
 	for _, exporter := range exporters {
-		consumer := exporter.tc.(*config.ExampleExporterConsumer)
+		consumer := exporter.te.(*config.ExampleExporterConsumer)
 		require.Equal(t, len(consumer.Traces), 0)
 		require.Equal(t, len(consumer.Metrics), 0)
 	}
@@ -183,7 +183,7 @@ func testReceivers(
 				spanDuplicationCount = 1
 			}
 
-			traceConsumer := exporter.tc.(*config.ExampleExporterConsumer)
+			traceConsumer := exporter.te.(*config.ExampleExporterConsumer)
 			require.Equal(t, spanDuplicationCount, len(traceConsumer.Traces))
 
 			for i := 0; i < spanDuplicationCount; i++ {
@@ -198,7 +198,7 @@ func testReceivers(
 
 		// Validate metrics.
 		if test.hasMetrics {
-			metricsConsumer := exporter.mc.(*config.ExampleExporterConsumer)
+			metricsConsumer := exporter.me.(*config.ExampleExporterConsumer)
 			require.Equal(t, 1, len(metricsConsumer.Metrics))
 			assert.Equal(t, metricsData, metricsConsumer.Metrics[0])
 		}

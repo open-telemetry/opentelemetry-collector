@@ -239,7 +239,8 @@ func (app *Application) shutdownPipelines() {
 
 	// TODO: shutdown processors
 
-	app.exporters.StopAll()
+	app.logger.Info("Shutting down exporters...")
+	app.exporters.ShutdownAll()
 }
 
 func (app *Application) executeUnified() {

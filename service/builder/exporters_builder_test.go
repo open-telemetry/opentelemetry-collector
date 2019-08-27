@@ -15,7 +15,6 @@
 package builder
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -62,16 +61,17 @@ func TestExportersBuilder_Build(t *testing.T) {
 
 	// Ensure exporter has its fields correctly populated.
 	require.NotNil(t, e1)
-	assert.NotNil(t, e1.tc)
-	assert.Nil(t, e1.mc)
-	assert.NotNil(t, e1.stop)
+	assert.NotNil(t, e1.te)
+	assert.Nil(t, e1.me)
 
 	// Ensure it can be stopped.
-	err = e1.Stop()
-	if err != nil {
+
+	if err = e1.Shutdown(); err != nil {
+		// TODO Find a better way to handle this case
 		// Since the endpoint of opencensus exporter doesn't actually exist, e1 may
 		// already stop because it cannot connect.
-		assert.Equal(t, err.Error(), "rpc error: code = Canceled desc = grpc: the client connection is closing")
+		// The test should stop running if this isn't the error cause.
+		require.Equal(t, err.Error(), "rpc error: code = Canceled desc = grpc: the client connection is closing")
 	}
 
 	// Remove the pipeline so that the exporter is not attached to any pipeline.
@@ -84,11 +84,11 @@ func TestExportersBuilder_Build(t *testing.T) {
 
 	e1 = exporters[cfg.Exporters["opencensus"]]
 
-	// Ensure exporter has its fields correctly populated.
+	// Ensure exporter has its fields correctly populated, ie Trace Exporter and
+	// Metrics Exporter are nil.
 	require.NotNil(t, e1)
-	assert.Nil(t, e1.tc)
-	assert.Nil(t, e1.mc)
-	assert.NotNil(t, e1.stop)
+	assert.Nil(t, e1.te)
+	assert.Nil(t, e1.me)
 
 	// TODO: once we have an exporter that supports metrics data type test it too.
 }
@@ -96,74 +96,16 @@ func TestExportersBuilder_Build(t *testing.T) {
 func TestExportersBuilder_StopAll(t *testing.T) {
 	exporters := make(Exporters)
 	expCfg := &configmodels.ExporterSettings{}
-	stopCalled := false
+	traceExporter := &config.ExampleExporterConsumer{}
+	metricExporter := &config.ExampleExporterConsumer{}
 	exporters[expCfg] = &builtExporter{
-		stop: func() error {
-			stopCalled = true
-			return nil
-		},
+		te: traceExporter,
+		me: metricExporter,
 	}
+	assert.False(t, traceExporter.ExporterShutdown)
+	assert.False(t, metricExporter.ExporterShutdown)
+	exporters.ShutdownAll()
 
-	exporters.StopAll()
-
-	assert.Equal(t, stopCalled, true)
-}
-
-func Test_combineStopFunc(t *testing.T) {
-	f := combineStopFunc(nil, nil)
-	assert.Nil(t, f)
-
-	err1 := errors.New("err1")
-	f1called := false
-	f1 := func() error {
-		f1called = true
-		return err1
-	}
-
-	err2 := errors.New("err2")
-	f2called := false
-	f2 := func() error {
-		f2called = true
-		return err2
-	}
-
-	f = combineStopFunc(f1, nil)
-	assert.Equal(t, f(), err1)
-	assert.Equal(t, f1called, true)
-	assert.Equal(t, f2called, false)
-
-	f1called = false
-	f2called = false
-	f = combineStopFunc(nil, f2)
-	assert.Equal(t, f(), err2)
-	assert.Equal(t, f1called, false)
-	assert.Equal(t, f2called, true)
-
-	// When 2 functions are combined ensure both functions are called.
-	f1called = false
-	f2called = false
-	f = combineStopFunc(f1, f2)
-	assert.NotNil(t, f())
-	assert.Equal(t, f1called, true)
-	assert.Equal(t, f2called, true)
-
-	// If first function does not return error the result should be equal to what
-	// second function returns.
-	err1 = nil
-	f = combineStopFunc(f1, f2)
-	assert.Equal(t, f(), err2)
-
-	// If second function does not return error the result should be equal to what
-	// first function returns.
-	err1 = errors.New("err1")
-	err2 = nil
-	f = combineStopFunc(f1, f2)
-	assert.Equal(t, f(), err1)
-
-	// If none of the functions returns an error then combined should also not return
-	// an error.
-	err1 = nil
-	err2 = nil
-	f = combineStopFunc(f1, f2)
-	assert.Equal(t, f(), nil)
+	assert.True(t, traceExporter.ExporterShutdown)
+	assert.True(t, metricExporter.ExporterShutdown)
 }

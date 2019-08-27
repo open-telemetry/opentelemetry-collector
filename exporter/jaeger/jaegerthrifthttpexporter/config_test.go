@@ -64,6 +64,6 @@ func TestLoadConfig(t *testing.T) {
 	}
 	assert.Equal(t, &expectedCfg, e1)
 
-	_, _, err = factory.CreateTraceExporter(zap.NewNop(), e1)
+	_, err = factory.CreateTraceExporter(zap.NewNop(), e1)
 	require.NoError(t, err)
 }

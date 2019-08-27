@@ -36,40 +36,16 @@ func TestCreateTraceExporter(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
 
-	_, _, err := factory.CreateTraceExporter(zap.NewNop(), cfg)
+	_, err := factory.CreateTraceExporter(zap.NewNop(), cfg)
 	assert.Error(t, err, configerror.ErrDataTypeIsNotSupported)
 }
 
 func TestCreateMetricsExporter(t *testing.T) {
-	tests := []struct {
-		name     string
-		config   Config
-		mustFail bool
-	}{
-		{
-			name: "NoEndpoint",
-			config: Config{
-				Endpoint: "",
-			},
-			mustFail: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			factory := Factory{}
-			consumer, stopFunc, err := factory.CreateMetricsExporter(zap.NewNop(), &tt.config)
-
-			if tt.mustFail {
-				assert.NotNil(t, err)
-			} else {
-				assert.Nil(t, err)
-				assert.NotNil(t, consumer)
-				assert.NotNil(t, stopFunc)
-
-				err = stopFunc()
-				assert.Nil(t, err)
-			}
-		})
-	}
+	factory := Factory{}
+	cfg := factory.CreateDefaultConfig()
+	oCfg := cfg.(*Config)
+	oCfg.Endpoint = ""
+	consumer, err := factory.CreateMetricsExporter(zap.NewNop(), oCfg)
+	require.Equal(t, errBlankPrometheusAddress, err)
+	require.Nil(t, consumer)
 }

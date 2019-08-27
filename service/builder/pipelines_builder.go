@@ -137,12 +137,12 @@ func (pb *PipelinesBuilder) buildFanoutExportersTraceConsumer(exporterNames []st
 
 	// Optimize for the case when there is only one exporter, no need to create junction point.
 	if len(builtExporters) == 1 {
-		return builtExporters[0].tc
+		return builtExporters[0].te
 	}
 
 	var exporters []consumer.TraceConsumer
 	for _, builtExp := range builtExporters {
-		exporters = append(exporters, builtExp.tc)
+		exporters = append(exporters, builtExp.te)
 	}
 
 	// Create a junction point that fans out to all exporters.
@@ -154,12 +154,12 @@ func (pb *PipelinesBuilder) buildFanoutExportersMetricsConsumer(exporterNames []
 
 	// Optimize for the case when there is only one exporter, no need to create junction point.
 	if len(builtExporters) == 1 {
-		return builtExporters[0].mc
+		return builtExporters[0].me
 	}
 
 	var exporters []consumer.MetricsConsumer
 	for _, builtExp := range builtExporters {
-		exporters = append(exporters, builtExp.mc)
+		exporters = append(exporters, builtExp.me)
 	}
 
 	// Create a junction point that fans out to all exporters.

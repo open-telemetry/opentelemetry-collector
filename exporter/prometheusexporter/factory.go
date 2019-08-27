@@ -23,7 +23,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-service/config/configerror"
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
 	"github.com/orijtech/prometheus-go-metrics-exporter"
 )
@@ -54,17 +53,17 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 }
 
 // CreateTraceExporter creates a trace exporter based on this config.
-func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Exporter) (consumer.TraceConsumer, exporter.StopFunc, error) {
-	return nil, nil, configerror.ErrDataTypeIsNotSupported
+func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Exporter) (exporter.TraceExporter, error) {
+	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *Factory) CreateMetricsExporter(logger *zap.Logger, cfg configmodels.Exporter) (consumer.MetricsConsumer, exporter.StopFunc, error) {
+func (f *Factory) CreateMetricsExporter(logger *zap.Logger, cfg configmodels.Exporter) (exporter.MetricsExporter, error) {
 	pcfg := cfg.(*Config)
 
 	addr := strings.TrimSpace(pcfg.Endpoint)
 	if addr == "" {
-		return nil, nil, errBlankPrometheusAddress
+		return nil, errBlankPrometheusAddress
 	}
 
 	opts := prometheus.Options{
@@ -73,12 +72,12 @@ func (f *Factory) CreateMetricsExporter(logger *zap.Logger, cfg configmodels.Exp
 	}
 	pe, err := prometheus.New(opts)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	// The Prometheus metrics exporter has to run on the provided address
@@ -97,5 +96,5 @@ func (f *Factory) CreateMetricsExporter(logger *zap.Logger, cfg configmodels.Exp
 		shutdown: ln.Close,
 	}
 
-	return pexp, pexp.Shutdown, nil
+	return pexp, nil
 }

@@ -33,7 +33,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
 
-	_, _, err := factory.CreateMetricsExporter(zap.NewNop(), cfg)
+	_, err := factory.CreateMetricsExporter(zap.NewNop(), cfg)
 	assert.Error(t, err, configerror.ErrDataTypeIsNotSupported)
 }
 
@@ -44,22 +44,20 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 
 	// Default config doesn't have default endpoint so creating from it should
 	// fail.
-	exp, expStopFn, err := factory.CreateTraceExporter(
+	exp, err := factory.CreateTraceExporter(
 		zap.NewNop(),
 		cfg)
-	assert.Error(t, err)
+	assert.Equal(t, "\"jaeger-grpc\" config requires a non-empty \"endpoint\"", err.Error())
 	assert.Nil(t, exp)
-	assert.Nil(t, expStopFn)
 
 	// Endpoint doesn't have a default value so set it directly.
 	expCfg := cfg.(*Config)
 	expCfg.Endpoint = "some.target.org:12345"
-	exp, expStopFn, err = factory.CreateTraceExporter(
+	exp, err = factory.CreateTraceExporter(
 		zap.NewNop(),
 		cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
 
-	// Currently this exporter doesn't have a stop function.
-	assert.Nil(t, expStopFn)
+	assert.NoError(t, exp.Shutdown())
 }

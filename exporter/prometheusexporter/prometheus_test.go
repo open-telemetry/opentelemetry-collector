@@ -18,14 +18,13 @@ import (
 	"context"
 	"io/ioutil"
 	"net/http"
-	"strings"
 	"testing"
 
+	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/internal/config/viperutils"
@@ -53,24 +52,20 @@ func TestPrometheusExporter(t *testing.T) {
 	}
 
 	factory := Factory{}
-	for i, tt := range tests {
+	for _, tt := range tests {
 		// Run it a few times to ensure that shutdowns exit cleanly.
 		for j := 0; j < 3; j++ {
-			consumer, stopFunc, err := factory.CreateMetricsExporter(zap.NewNop(), tt.config)
+			consumer, err := factory.CreateMetricsExporter(zap.NewNop(), tt.config)
 
 			if tt.wantErr != "" {
-				if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
-					t.Errorf("#%d iteration #%d: Unexpected error: %v Wanted: %v", i, j, err, tt.wantErr)
-				}
+				require.Equal(t, tt.wantErr, err.Error())
 				continue
 			}
 
 			assert.NotNil(t, consumer)
 
-			if err != nil {
-				t.Errorf("#%d iteration #%d: unexpected parse error: %v", i, j, err)
-			}
-			stopFunc()
+			require.Nil(t, err)
+			require.NoError(t, consumer.Shutdown())
 		}
 	}
 }
@@ -105,10 +100,10 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 	}
 
 	factory := Factory{}
-	consumer, stopFunc, err := factory.CreateMetricsExporter(zap.NewNop(), config)
+	consumer, err := factory.CreateMetricsExporter(zap.NewNop(), config)
 	assert.Nil(t, err)
 
-	defer stopFunc()
+	defer consumer.Shutdown()
 
 	assert.NotNil(t, consumer)
 

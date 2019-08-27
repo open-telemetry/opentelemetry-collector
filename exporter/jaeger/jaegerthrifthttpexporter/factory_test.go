@@ -35,7 +35,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
 
-	_, _, err := factory.CreateMetricsExporter(zap.NewNop(), cfg)
+	_, err := factory.CreateMetricsExporter(zap.NewNop(), cfg)
 	assert.Error(t, err, configerror.ErrDataTypeIsNotSupported)
 }
 
@@ -46,24 +46,22 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 
 	// Default config doesn't have default URL so creating from it should
 	// fail.
-	exp, expStopFn, err := factory.CreateTraceExporter(
+	exp, err := factory.CreateTraceExporter(
 		zap.NewNop(),
 		cfg)
 	assert.Error(t, err)
 	assert.Nil(t, exp)
-	assert.Nil(t, expStopFn)
 
 	// Endpoint doesn't have a default value so set it directly.
 	expCfg := cfg.(*Config)
 	expCfg.URL = "http://some.target.org:12345/api/traces"
-	exp, expStopFn, err = factory.CreateTraceExporter(
+	exp, err = factory.CreateTraceExporter(
 		zap.NewNop(),
 		cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
 
-	// Currently this exporter doesn't have a stop function.
-	assert.Nil(t, expStopFn)
+	assert.NoError(t, exp.Shutdown())
 }
 
 func TestFactory_CreateTraceExporter(t *testing.T) {
@@ -123,7 +121,7 @@ func TestFactory_CreateTraceExporter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			f := &Factory{}
-			_, _, err := f.CreateTraceExporter(zap.NewNop(), tt.config)
+			_, err := f.CreateTraceExporter(zap.NewNop(), tt.config)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Factory.CreateTraceExporter() error = %v, wantErr %v", err, tt.wantErr)
 				return

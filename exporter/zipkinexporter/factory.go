@@ -21,7 +21,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-service/config/configerror"
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
 )
 
@@ -50,24 +49,25 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 }
 
 // CreateTraceExporter creates a trace exporter based on this config.
-func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Exporter) (consumer.TraceConsumer, exporter.StopFunc, error) {
+func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Exporter) (exporter.TraceExporter, error) {
 	cfg := config.(*Config)
 
 	if cfg.URL == "" {
-		return nil, nil, errors.New("exporter config requires a non-empty 'url'") // TODO: better error
+		// TODO https://github.com/open-telemetry/opentelemetry-service/issues/215
+		return nil, errors.New("exporter config requires a non-empty 'url'")
 	}
 	// <missing service name> is used if the zipkin span is not carrying the name of the service, which shouldn't happen
 	// in normal circumstances. It happens only due to (bad) conversions between formats. The current value is a
 	// clear indication that somehow the name of the service was lost in translation.
 	ze, err := newZipkinExporter(cfg.URL, "<missing service name>", 0)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	return ze, ze.Shutdown, nil
+	return ze, nil
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *Factory) CreateMetricsExporter(logger *zap.Logger, cfg configmodels.Exporter) (consumer.MetricsConsumer, exporter.StopFunc, error) {
-	return nil, nil, configerror.ErrDataTypeIsNotSupported
+func (f *Factory) CreateMetricsExporter(logger *zap.Logger, cfg configmodels.Exporter) (exporter.MetricsExporter, error) {
+	return nil, configerror.ErrDataTypeIsNotSupported
 }
