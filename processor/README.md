@@ -56,7 +56,7 @@ For the `delete` action,
   action: delete
 ```
 
-Please refer to [config.go](attributes/config.go) for the config spec.
+Please refer to [config.go](attributesprocessor/config.go) for the config spec.
 
 ### Example
 The list of actions can be composed to create rich scenarios, such as
@@ -81,7 +81,7 @@ processors:
         action: delete
 
 ```
-Refer to [config.yaml](attributes/testdata/config.yaml) for detailed
+Refer to [config.yaml](attributesprocessor/testdata/config.yaml) for detailed
 examples on using the processor.
 
 ## <a name="node-batcher"></a>Node Batcher Processor
@@ -94,8 +94,8 @@ examples on using the processor.
 <FILL ME IN - I'M LONELY!>
 
 ## <a name="span"></a>Span Processor
-The span processor modifies top level settings of a span. Currently, only 
-renaming a span is supported. 
+The span processor modifies top level settings of a span. Currently, only
+renaming a span is supported.
 
 ### Name a span
 It takes a list of `from_attributes` and an optional `separator` string. The
@@ -107,7 +107,7 @@ If renaming is dependent on attributes being modified by the `attributes`
 processor, ensure the `span` processor is specified after the `attributes`
 processor in the `pipeline` specification.
 
-For more information, refer to [config.go](span/config.go)
+For more information, refer to [config.go](spanprocessor/config.go)
 ```yaml
 span:
   name:
@@ -119,7 +119,7 @@ span:
 ```
 
 ### Example configuration
-For more examples with detailed comments, refer to [config.yaml](span/testdata/config.yaml)
+For more examples with detailed comments, refer to [config.yaml](spanprocessor/testdata/config.yaml)
 ```yaml
 span:
   name:
