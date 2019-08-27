@@ -1046,8 +1046,8 @@ func TestIncludeFilterConfig(t *testing.T) {
 	jobs = append(jobs, job)
 
 	filterMap := make(map[string]interface{})
-	filterMap["localhost:9777"] = "foo/bar, custom/metric1"
-	filterMap["localhost:9778"] = "hello/world,custom/metric2"
+	filterMap["localhost:9777"] = []string{"foo/bar", "custom/metric1"}
+	filterMap["localhost:9778"] = []string{"hello/world", "custom/metric2"}
 
 	config := make(map[string]interface{})
 	config["include_filter"] = filterMap
@@ -1069,18 +1069,22 @@ func TestIncludeFilterConfig(t *testing.T) {
 		t.Fatalf("Failed to create promreceiver: %v", err)
 	}
 
-	wantFilterMap := map[string]map[string]bool{
+	wantFilterMap := map[string]metricsMap{
 		"localhost:9777": {
-			"foo/bar":        true,
-			"custom/metric1": true,
+			m: map[string]bool{
+				"foo/bar":        true,
+				"custom/metric1": true,
+			},
 		},
 		"localhost:9778": {
-			"hello/world":    true,
-			"custom/metric2": true,
+			m: map[string]bool{
+				"hello/world":    true,
+				"custom/metric2": true,
+			},
 		},
 	}
 
-	if diff := cmp.Diff(precv.includeFilterMap, wantFilterMap); diff != "" {
+	if diff := cmp.Diff(precv.includeFilterMap, wantFilterMap, cmp.AllowUnexported(metricsMap{})); diff != "" {
 		t.Fatalf("Error parsing filtermap -got, +want, %v", diff)
 	}
 }

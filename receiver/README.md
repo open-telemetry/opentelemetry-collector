@@ -153,20 +153,20 @@ receivers:
 
 ### Include Filter
 Include Filter provides ability to filter scraping metrics per target. If a filter is specified for
-a target then only those metrics that are specified in the `Include Filter` list will be scraped.
+a target then only those metrics which exactly matches one of the metrics specified in the `Include Filter` list will be scraped.
 Rest of the metrics from the targets will be dropped.
 
 #### Syntax
-- Endpoint and list of metrics name should be double quoted.
-- Metrics name should be comma separated.
+- Endpoint should be double quoted.
+- Metrics should be specified in form of a list.
 
 #### Example
 ```yaml
 receivers:
     prometheus:
       include_filter: {
-        "localhost:9777" : "http/server/server_latency, custom_metric1",
-        "localhost:9778" : "http/client/roundtrip_latency",                
+        "localhost:9777" : [http/server/server_latency, custom_metric1],
+        "localhost:9778" : [http/client/roundtrip_latency],                
       }
       config:
         scrape_configs:

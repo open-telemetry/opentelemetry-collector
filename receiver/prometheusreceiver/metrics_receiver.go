@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
@@ -38,10 +37,14 @@ import (
 
 // Configuration defines the behavior and targets of the Prometheus scrapers.
 type Configuration struct {
-	ScrapeConfig  *config.Config    `mapstructure:"config"`
-	BufferPeriod  time.Duration     `mapstructure:"buffer_period"`
-	BufferCount   int               `mapstructure:"buffer_count"`
-	IncludeFilter map[string]string `mapstructure:"include_filter"`
+	ScrapeConfig  *config.Config      `mapstructure:"config"`
+	BufferPeriod  time.Duration       `mapstructure:"buffer_period"`
+	BufferCount   int                 `mapstructure:"buffer_count"`
+	IncludeFilter map[string][]string `mapstructure:"include_filter"`
+}
+
+type metricsMap struct {
+	m map[string]bool
 }
 
 // Preceiver is the type that provides Prometheus scraper/receiver functionality.
@@ -52,7 +55,7 @@ type Preceiver struct {
 	consumer         consumer.MetricsConsumer
 	cancel           context.CancelFunc
 	logger           *zap.Logger
-	includeFilterMap map[string]map[string]bool
+	includeFilterMap map[string]metricsMap
 }
 
 var _ receiver.MetricsReceiver = (*Preceiver)(nil)
@@ -100,17 +103,16 @@ func New(logger *zap.Logger, v *viper.Viper, next consumer.MetricsConsumer) (*Pr
 	return pr, nil
 }
 
-func parseIncludeFilter(includeFilter map[string]string) map[string]map[string]bool {
-	includeFilterMap := make(map[string]map[string]bool, len(includeFilter))
+func parseIncludeFilter(includeFilter map[string][]string) map[string]metricsMap {
+	includeFilterMap := make(map[string]metricsMap, len(includeFilter))
 	for endpoint, metrics := range includeFilter {
-		list := strings.Split(metrics, ",")
-		metricsMap := make(map[string]bool, len(list))
-		for _, metric := range list {
-			trimmedM := strings.TrimSpace(metric)
-			metricsMap[trimmedM] = true
+		mm := metricsMap{
+			m: make(map[string]bool, len(metrics)),
 		}
-		includeFilterMap[endpoint] = metricsMap
-
+		for _, metric := range metrics {
+			mm.m[metric] = true
+		}
+		includeFilterMap[endpoint] = mm
 	}
 	return includeFilterMap
 }
