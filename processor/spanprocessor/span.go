@@ -58,9 +58,10 @@ func (sp *spanProcessor) ConsumeTraceData(ctx context.Context, td consumerdata.T
 }
 
 func (sp *spanProcessor) nameSpan(span *tracepb.Span) {
-	// Currently, not preallocating the length of the string builder for the name
-	// if this does become a performance issue, the methods Grow, Len() and length
-	// returned by WriteString()
+	// Currently, there is no preallocation for the length of the string builder
+	// backing the new span name. If this does become a performance issue, the
+	// methods Grow() and Len() and the length returned by WriteString() can be
+	// used to improve allocation patterns.
 	var sb strings.Builder
 	for i, key := range sp.config.Rename.FromAttributes {
 		attribute, found := span.Attributes.AttributeMap[key]
@@ -74,7 +75,7 @@ func (sp *spanProcessor) nameSpan(span *tracepb.Span) {
 		// for this method call.
 		// https://golang.org/src/strings/builder.go?s=3425:3477#L110
 
-		// Add the separator at before building the new
+		// Include the separator before appending an attribute value if:
 		// this isn't the first value(ie i == 0) loop through the FromAttributes
 		// and
 		// the separator isn't an empty string.

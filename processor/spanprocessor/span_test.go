@@ -43,7 +43,9 @@ func TestNewTraceProcessor(t *testing.T) {
 	require.NotNil(t, tp)
 }
 
-func TestSpanProcessor_NilEmptyAttributes(t *testing.T) {
+// TestSpanProcessor_NilEmpty tests spans and attributes with nil/empty values
+// do not cause any errors and no renaming occurs.
+func TestSpanProcessor_NilEmpty(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
@@ -142,6 +144,7 @@ func runIndividualTestCase(t *testing.T, tt testCase, tp processor.TraceProcesso
 	})
 }
 
+// TestSpanProcessor_Values tests all possible value types.
 func TestSpanProcessor_Values(t *testing.T) {
 	testCases := []testCase{
 		{
@@ -236,7 +239,8 @@ func TestSpanProcessor_Values(t *testing.T) {
 
 }
 
-func TestSpanProcessor_NoNameChanges(t *testing.T) {
+// TestSpanProcessor_MissingKeys tests that missing a key in an attribute map results in no span name changes.
+func TestSpanProcessor_MissingKeys(t *testing.T) {
 	testCases := []testCase{
 		{
 			inputName: "first keys missing",
@@ -364,6 +368,8 @@ func TestSpanProcessor_NoNameChanges(t *testing.T) {
 
 }
 
+// TestSpanProcessor_Separator ensures naming a span with a single key and separator will only contain the value from
+// the single key.
 func TestSpanProcessor_Separator(t *testing.T) {
 
 	factory := Factory{}
@@ -409,6 +415,7 @@ func TestSpanProcessor_Separator(t *testing.T) {
 
 }
 
+// TestSpanProcessor_NoSeparatorMultipleKeys tests naming a span using multiple keys and no separator.
 func TestSpanProcessor_NoSeparatorMultipleKeys(t *testing.T) {
 
 	factory := Factory{}
@@ -460,6 +467,7 @@ func TestSpanProcessor_NoSeparatorMultipleKeys(t *testing.T) {
 
 }
 
+// TestSpanProcessor_SeparatorMultipleKeys tests naming a span with multiple keys and a separator.
 func TestSpanProcessor_SeparatorMultipleKeys(t *testing.T) {
 
 	factory := Factory{}
@@ -514,6 +522,52 @@ func TestSpanProcessor_SeparatorMultipleKeys(t *testing.T) {
 						},
 						"key4": {
 							Value: &tracepb.AttributeValue_BoolValue{BoolValue: true},
+						},
+					},
+				},
+			},
+		},
+	}, traceData)
+
+}
+
+// TestSpanProcessor_NilName tests naming a span when the input span had no name.
+func TestSpanProcessor_NilName(t *testing.T) {
+
+	factory := Factory{}
+	cfg := factory.CreateDefaultConfig()
+	oCfg := cfg.(*Config)
+	oCfg.Rename.FromAttributes = []string{"key1"}
+	oCfg.Rename.Separator = "::"
+
+	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), oCfg)
+	require.Nil(t, err)
+	require.NotNil(t, tp)
+
+	traceData := consumerdata.TraceData{
+		Spans: []*tracepb.Span{
+			{
+				Name: nil,
+				Attributes: &tracepb.Span_Attributes{
+					AttributeMap: map[string]*tracepb.AttributeValue{
+						"key1": {
+							Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "bob"}},
+						},
+					},
+				},
+			},
+		},
+	}
+	assert.NoError(t, tp.ConsumeTraceData(context.Background(), traceData))
+
+	assert.Equal(t, consumerdata.TraceData{
+		Spans: []*tracepb.Span{
+			{
+				Name: &tracepb.TruncatableString{Value: "bob"},
+				Attributes: &tracepb.Span_Attributes{
+					AttributeMap: map[string]*tracepb.AttributeValue{
+						"key1": {
+							Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "bob"}},
 						},
 					},
 				},
