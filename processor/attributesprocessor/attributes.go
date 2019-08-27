@@ -34,8 +34,12 @@ type attributesProcessor struct {
 }
 
 type attributeAction struct {
-	Key            string
-	FromAttribute  string
+	Key           string
+	FromAttribute string
+	// TODO https://github.com/open-telemetry/opentelemetry-service/issues/296
+	// Do benchmark testing between having action be of type string vs integer.
+	// The reason is attributes processor will most likely be commonly used
+	// and could impact performance.
 	Action         Action
 	AttributeValue *tracepb.AttributeValue
 }
