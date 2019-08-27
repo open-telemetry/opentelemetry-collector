@@ -78,38 +78,46 @@ func (a *attributesProcessor) ConsumeTraceData(ctx context.Context, td consumerd
 			switch action.Action {
 			case DELETE:
 				delete(span.Attributes.AttributeMap, action.Key)
-			case INSERT, UPSERT, UPDATE:
-				modifyAttribute(action, span.Attributes.AttributeMap)
+			case INSERT:
+				insertAttribute(action, span.Attributes.AttributeMap)
+			case UPDATE:
+				updateAttribute(action, span.Attributes.AttributeMap)
+			case UPSERT:
+				// There is no need to check if the target key exists in the attribute map
+				// because the value is to be set regardless.
+				setAttribute(action, span.Attributes.AttributeMap)
 			}
 		}
 	}
 	return a.nextConsumer.ConsumeTraceData(ctx, td)
 }
 
-func modifyAttribute(action attributeAction, attributesMap map[string]*tracepb.AttributeValue) {
-	// Exists is used to determine if the action insert or update should occur.
-	// This value doesn't matter if the action is upsert.
-	_, exists := attributesMap[action.Key]
-
-	// No action should occur:
-	// - if the key exists and the action is insert
-	// or
-	// - if the key does not exist and the action is update.
-	// If the action is UPSERT, this value does not matter.
-	if (exists && action.Action == INSERT) ||
-		(!exists && action.Action == UPDATE) {
+func insertAttribute(action attributeAction, attributesMap map[string]*tracepb.AttributeValue) {
+	// Insert is only performed when the target key does not already exist
+	// in the attribute map.
+	if _, exists := attributesMap[action.Key]; exists {
 		return
 	}
 
+	setAttribute(action, attributesMap)
+}
+
+func updateAttribute(action attributeAction, attributesMap map[string]*tracepb.AttributeValue) {
+	// Update is only performed when the target key already exists in
+	// the attribute map.
+	if _, exists := attributesMap[action.Key]; !exists {
+		return
+	}
+
+	setAttribute(action, attributesMap)
+}
+
+func setAttribute(action attributeAction, attributesMap map[string]*tracepb.AttributeValue) {
 	// Set the key with a value from the configuration.
 	if action.AttributeValue != nil {
 		attributesMap[action.Key] = action.AttributeValue
-	} else {
+	} else if value, fromAttributeExists := attributesMap[action.FromAttribute]; fromAttributeExists {
 		// Set the key with a value from another attribute, if it exists.
-		value, fromAttributeExists := attributesMap[action.FromAttribute]
-		if !fromAttributeExists {
-			return
-		}
 		attributesMap[action.Key] = value
 	}
 }
