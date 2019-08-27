@@ -61,7 +61,6 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
 
-	// Currently this exporter doesn't have a stop function.
 	assert.NoError(t, exp.Shutdown())
 }
 

@@ -96,7 +96,7 @@ func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 	// First check that there are no traces in the exporters yet.
 	var exporterConsumers []*config.ExampleExporterConsumer
 	for _, exporter := range exporters {
-		consumer := exporter.tc.(*config.ExampleExporterConsumer)
+		consumer := exporter.te.(*config.ExampleExporterConsumer)
 		exporterConsumers = append(exporterConsumers, consumer)
 		require.Equal(t, len(consumer.Traces), 0)
 	}

@@ -61,12 +61,12 @@ func TestExportersBuilder_Build(t *testing.T) {
 
 	// Ensure exporter has its fields correctly populated.
 	require.NotNil(t, e1)
-	assert.NotNil(t, e1.tc)
-	assert.Nil(t, e1.mc)
+	assert.NotNil(t, e1.te)
+	assert.Nil(t, e1.me)
 
 	// Ensure it can be stopped.
-	err = e1.Shutdown()
-	if err != nil {
+
+	if err = e1.Shutdown(); err != nil {
 		// TODO Find a better way to handle this case
 		// Since the endpoint of opencensus exporter doesn't actually exist, e1 may
 		// already stop because it cannot connect.
@@ -84,10 +84,11 @@ func TestExportersBuilder_Build(t *testing.T) {
 
 	e1 = exporters[cfg.Exporters["opencensus"]]
 
-	// Ensure exporter has its fields correctly populated.
+	// Ensure exporter has its fields correctly populated, ie Trace Exporter and
+	// Metrics Exporter are nil.
 	require.NotNil(t, e1)
-	assert.Nil(t, e1.tc) // what?
-	assert.Nil(t, e1.mc) // what?
+	assert.Nil(t, e1.te)
+	assert.Nil(t, e1.me)
 
 	// TODO: once we have an exporter that supports metrics data type test it too.
 }
@@ -98,8 +99,8 @@ func TestExportersBuilder_StopAll(t *testing.T) {
 	traceExporter := &config.ExampleExporterConsumer{}
 	metricExporter := &config.ExampleExporterConsumer{}
 	exporters[expCfg] = &builtExporter{
-		tc: traceExporter,
-		mc: metricExporter,
+		te: traceExporter,
+		me: metricExporter,
 	}
 	assert.False(t, traceExporter.ExporterShutdown)
 	assert.False(t, metricExporter.ExporterShutdown)

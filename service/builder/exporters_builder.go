@@ -28,23 +28,21 @@ import (
 // builtExporter is an exporter that is built based on a config. It can have
 // a trace and/or a metrics consumer and have a shutdown function.
 type builtExporter struct {
-	tc exporter.TraceExporter
-	mc exporter.MetricsExporter
+	te exporter.TraceExporter
+	me exporter.MetricsExporter
 }
 
 // Shutdown the trace component and the metrics component of an exporter.
 func (exp *builtExporter) Shutdown() error {
 	var errors []error
-	if exp.tc != nil {
-		err := exp.tc.Shutdown()
-		if err != nil {
+	if exp.te != nil {
+		if err := exp.te.Shutdown(); err != nil {
 			errors = append(errors, err)
 		}
 	}
 
-	if exp.mc != nil {
-		err := exp.mc.Shutdown()
-		if err != nil {
+	if exp.me != nil {
+		if err := exp.me.Shutdown(); err != nil {
 			errors = append(errors, err)
 		}
 	}
@@ -156,7 +154,7 @@ func (eb *ExportersBuilder) buildExporter(
 	inputDataTypes := exportersInputDataTypes[config]
 	if inputDataTypes == nil {
 		// TODO  https://github.com/open-telemetry/opentelemetry-service/issues/294
-		// 	Move this validation to config/config.go:validateConfig
+		// Move this validation to config/config.go:validateConfig
 		// No data types where requested for this exporter. This can only happen
 		// if there are no pipelines associated with the exporter.
 		eb.logger.Warn("Exporter " + config.Name() +
@@ -166,7 +164,7 @@ func (eb *ExportersBuilder) buildExporter(
 
 	if requirement, ok := inputDataTypes[configmodels.TracesDataType]; ok {
 		// Traces data type is required. Create a trace exporter based on config.
-		tc, err := factory.CreateTraceExporter(eb.logger, config)
+		te, err := factory.CreateTraceExporter(eb.logger, config)
 		if err != nil {
 			if err == configerror.ErrDataTypeIsNotSupported {
 				// Could not create because this exporter does not support this data type.
@@ -175,12 +173,12 @@ func (eb *ExportersBuilder) buildExporter(
 			return nil, fmt.Errorf("error creating %s exporter: %v", config.Name(), err)
 		}
 
-		exporter.tc = tc
+		exporter.te = te
 	}
 
 	if requirement, ok := inputDataTypes[configmodels.MetricsDataType]; ok {
 		// Metrics data type is required. Create a trace exporter based on config.
-		mc, err := factory.CreateMetricsExporter(eb.logger, config)
+		me, err := factory.CreateMetricsExporter(eb.logger, config)
 		if err != nil {
 			if err == configerror.ErrDataTypeIsNotSupported {
 				// Could not create because this exporter does not support this data type.
@@ -189,7 +187,7 @@ func (eb *ExportersBuilder) buildExporter(
 			return nil, fmt.Errorf("error creating %s exporter: %v", config.Name(), err)
 		}
 
-		exporter.mc = mc
+		exporter.me = me
 	}
 
 	eb.logger.Info("Exporter is enabled.", zap.String("exporter", config.Name()))

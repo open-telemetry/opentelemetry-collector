@@ -53,7 +53,8 @@ func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Ex
 	cfg := config.(*Config)
 
 	if cfg.URL == "" {
-		return nil, errors.New("exporter config requires a non-empty 'url'") // TODO: better error
+		// TODO https://github.com/open-telemetry/opentelemetry-service/issues/215
+		return nil, errors.New("exporter config requires a non-empty 'url'")
 	}
 	// <missing service name> is used if the zipkin span is not carrying the name of the service, which shouldn't happen
 	// in normal circumstances. It happens only due to (bad) conversions between formats. The current value is a
