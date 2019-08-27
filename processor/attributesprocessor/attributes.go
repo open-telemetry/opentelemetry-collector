@@ -41,6 +41,8 @@ type attributeAction struct {
 }
 
 // newTraceProcessor returns a processor that modifies attributes of a span.
+// To construct the attributes processors, the use of the factory methods are required
+// in order to validate the inputs.
 func newTraceProcessor(nextConsumer consumer.TraceConsumer, actions []attributeAction) (processor.TraceProcessor, error) {
 	if nextConsumer == nil {
 		return nil, oterr.ErrNilNextConsumer
@@ -70,9 +72,9 @@ func (a *attributesProcessor) ConsumeTraceData(ctx context.Context, td consumerd
 		for _, action := range a.actions {
 
 			// TODO https://github.com/open-telemetry/opentelemetry-service/issues/296
-			//	Do benchmark testing between having action be of type string vs integer.
-			//	The reason is attributes processor will most likely be commonly used
-			//	and could impact performance.
+			// Do benchmark testing between having action be of type string vs integer.
+			// The reason is attributes processor will most likely be commonly used
+			// and could impact performance.
 			switch action.Action {
 			case DELETE:
 				delete(span.Attributes.AttributeMap, action.Key)

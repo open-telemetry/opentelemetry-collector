@@ -52,16 +52,19 @@ func runIndividualTestCase(t *testing.T, tt testCase, tp processor.TraceProcesso
 
 		assert.NoError(t, tp.ConsumeTraceData(context.Background(), traceData))
 		require.Equal(t, consumerdata.TraceData{
-			Spans: []*tracepb.Span{{Name: &tracepb.TruncatableString{Value: tt.name},
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: tt.expectedAttributes,
+			Spans: []*tracepb.Span{
+				{
+					Name: &tracepb.TruncatableString{Value: tt.name},
+					Attributes: &tracepb.Span_Attributes{
+						AttributeMap: tt.expectedAttributes,
+					},
 				},
-			}},
+			},
 		}, traceData)
 	})
 }
 
-func TestAttributes_NilAttributes(t *testing.T) {
+func TestAttributes_NilAttributes_Insert(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
@@ -123,6 +126,62 @@ func TestAttributes_NilAttributes(t *testing.T) {
 							Value: &tracepb.AttributeValue_IntValue{IntValue: 123},
 						},
 					},
+				},
+			},
+		},
+	}, traceData)
+}
+
+func TestAttributes_NilAttributes_Delete(t *testing.T) {
+	factory := Factory{}
+	cfg := factory.CreateDefaultConfig()
+	oCfg := cfg.(*Config)
+	oCfg.Actions = []ActionKeyValue{
+		{Key: "attribute1", Action: DELETE},
+	}
+
+	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), cfg)
+	require.Nil(t, err)
+	require.NotNil(t, tp)
+	traceData := consumerdata.TraceData{
+		Spans: []*tracepb.Span{
+			nil,
+			{
+				Name:       &tracepb.TruncatableString{Value: "Nil Attributes"},
+				Attributes: nil,
+			},
+			{
+				Name:       &tracepb.TruncatableString{Value: "Empty Attributes"},
+				Attributes: &tracepb.Span_Attributes{},
+			},
+			{
+				Name: &tracepb.TruncatableString{Value: "Nil Attribute Map"},
+				Attributes: &tracepb.Span_Attributes{
+					AttributeMap: nil,
+				},
+			},
+		},
+	}
+	assert.NoError(t, tp.ConsumeTraceData(context.Background(), traceData))
+	assert.Equal(t, consumerdata.TraceData{
+		Spans: []*tracepb.Span{
+			nil,
+			{
+				Name: &tracepb.TruncatableString{Value: "Nil Attributes"},
+				Attributes: &tracepb.Span_Attributes{
+					AttributeMap: map[string]*tracepb.AttributeValue{},
+				},
+			},
+			{
+				Name: &tracepb.TruncatableString{Value: "Empty Attributes"},
+				Attributes: &tracepb.Span_Attributes{
+					AttributeMap: map[string]*tracepb.AttributeValue{},
+				},
+			},
+			{
+				Name: &tracepb.TruncatableString{Value: "Nil Attribute Map"},
+				Attributes: &tracepb.Span_Attributes{
+					AttributeMap: map[string]*tracepb.AttributeValue{},
 				},
 			},
 		},
