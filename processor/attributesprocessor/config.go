@@ -14,7 +14,9 @@
 
 package attributesprocessor
 
-import "github.com/open-telemetry/opentelemetry-service/config/configmodels"
+import (
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
+)
 
 // Config specifies the set of attributes to be inserted, updated, upserted and deleted.
 // This processor handles all forms of modifications to attributes within a span.
