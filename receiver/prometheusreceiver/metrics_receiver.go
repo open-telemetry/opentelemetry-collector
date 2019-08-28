@@ -43,9 +43,7 @@ type Configuration struct {
 	IncludeFilter map[string][]string `mapstructure:"include_filter"`
 }
 
-type metricsMap struct {
-	m map[string]bool
-}
+type metricsMap map[string]bool
 
 // Preceiver is the type that provides Prometheus scraper/receiver functionality.
 type Preceiver struct {
@@ -106,13 +104,11 @@ func New(logger *zap.Logger, v *viper.Viper, next consumer.MetricsConsumer) (*Pr
 func parseIncludeFilter(includeFilter map[string][]string) map[string]metricsMap {
 	includeFilterMap := make(map[string]metricsMap, len(includeFilter))
 	for endpoint, metrics := range includeFilter {
-		mm := metricsMap{
-			m: make(map[string]bool, len(metrics)),
-		}
+		m := make(map[string]bool, len(metrics))
 		for _, metric := range metrics {
-			mm.m[metric] = true
+			m[metric] = true
 		}
-		includeFilterMap[endpoint] = mm
+		includeFilterMap[endpoint] = m
 	}
 	return includeFilterMap
 }

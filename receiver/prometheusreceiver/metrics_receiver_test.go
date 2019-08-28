@@ -1071,20 +1071,16 @@ func TestIncludeFilterConfig(t *testing.T) {
 
 	wantFilterMap := map[string]metricsMap{
 		"localhost:9777": {
-			m: map[string]bool{
-				"foo/bar":        true,
-				"custom/metric1": true,
-			},
+			"foo/bar":        true,
+			"custom/metric1": true,
 		},
 		"localhost:9778": {
-			m: map[string]bool{
-				"hello/world":    true,
-				"custom/metric2": true,
-			},
+			"hello/world":    true,
+			"custom/metric2": true,
 		},
 	}
 
-	if diff := cmp.Diff(precv.includeFilterMap, wantFilterMap, cmp.AllowUnexported(metricsMap{})); diff != "" {
+	if diff := cmp.Diff(precv.includeFilterMap, wantFilterMap); diff != "" {
 		t.Fatalf("Error parsing filtermap -got, +want, %v", diff)
 	}
 }
