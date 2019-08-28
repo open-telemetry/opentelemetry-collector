@@ -58,10 +58,10 @@ func (sp *spanProcessor) ConsumeTraceData(ctx context.Context, td consumerdata.T
 }
 
 func (sp *spanProcessor) nameSpan(span *tracepb.Span) {
-	// Currently, there is no preallocation for the length of the string builder
-	// backing the new span name. If this does become a performance issue, the
-	// methods Grow() and Len() and the length returned by WriteString() can be
-	// used to improve allocation patterns.
+	// Note: There was a separate proposal for creating the string.
+	// With benchmarking, strings.Builder is faster than the proposal.
+	// For full context, refer to this PR comment:
+	// https://github.com/open-telemetry/opentelemetry-service/pull/301#discussion_r318357678
 	var sb strings.Builder
 	for i, key := range sp.config.Rename.FromAttributes {
 		attribute, found := span.Attributes.AttributeMap[key]
@@ -105,5 +105,4 @@ func (sp *spanProcessor) nameSpan(span *tracepb.Span) {
 		}
 	}
 	span.Name = &tracepb.TruncatableString{Value: sb.String()}
-
 }

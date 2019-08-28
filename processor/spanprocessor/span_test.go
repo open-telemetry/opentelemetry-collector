@@ -105,7 +105,6 @@ func TestSpanProcessor_NilEmpty(t *testing.T) {
 			},
 		},
 	}, traceData)
-
 }
 
 // Common structure for the test cases.
@@ -236,7 +235,6 @@ func TestSpanProcessor_Values(t *testing.T) {
 	for _, tc := range testCases {
 		runIndividualTestCase(t, tc, tp)
 	}
-
 }
 
 // TestSpanProcessor_MissingKeys tests that missing a key in an attribute map results in no span name changes.
@@ -365,7 +363,6 @@ func TestSpanProcessor_MissingKeys(t *testing.T) {
 	for _, tc := range testCases {
 		runIndividualTestCase(t, tc, tp)
 	}
-
 }
 
 // TestSpanProcessor_Separator ensures naming a span with a single key and separator will only contain the value from
@@ -412,7 +409,6 @@ func TestSpanProcessor_Separator(t *testing.T) {
 			},
 		},
 	}, traceData)
-
 }
 
 // TestSpanProcessor_NoSeparatorMultipleKeys tests naming a span using multiple keys and no separator.
@@ -464,7 +460,6 @@ func TestSpanProcessor_NoSeparatorMultipleKeys(t *testing.T) {
 			},
 		},
 	}, traceData)
-
 }
 
 // TestSpanProcessor_SeparatorMultipleKeys tests naming a span with multiple keys and a separator.
@@ -528,7 +523,6 @@ func TestSpanProcessor_SeparatorMultipleKeys(t *testing.T) {
 			},
 		},
 	}, traceData)
-
 }
 
 // TestSpanProcessor_NilName tests naming a span when the input span had no name.
@@ -574,5 +568,4 @@ func TestSpanProcessor_NilName(t *testing.T) {
 			},
 		},
 	}, traceData)
-
 }
