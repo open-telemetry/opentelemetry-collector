@@ -33,6 +33,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/processor/addattributesprocessor"
 	"github.com/open-telemetry/opentelemetry-service/processor/attributekeyprocessor"
 	"github.com/open-telemetry/opentelemetry-service/processor/nodebatcherprocessor"
+	"github.com/open-telemetry/opentelemetry-service/processor/probabilisticsamplerprocessor"
 	"github.com/open-telemetry/opentelemetry-service/processor/queuedprocessor"
 	"github.com/open-telemetry/opentelemetry-service/processor/tailsamplingprocessor"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
@@ -52,11 +53,12 @@ func TestDefaultComponents(t *testing.T) {
 		"vmmetrics":  &vmmetricsreceiver.Factory{},
 	}
 	expectedProcessors := map[string]processor.Factory{
-		"add-attributes": &addattributesprocessor.Factory{},
-		"attribute-key":  &attributekeyprocessor.Factory{},
-		"queued-retry":   &queuedprocessor.Factory{},
-		"batch":          &nodebatcherprocessor.Factory{},
-		"tail-sampling":  &tailsamplingprocessor.Factory{},
+		"add-attributes":        &addattributesprocessor.Factory{},
+		"attribute-key":         &attributekeyprocessor.Factory{},
+		"queued-retry":          &queuedprocessor.Factory{},
+		"batch":                 &nodebatcherprocessor.Factory{},
+		"tail-sampling":         &tailsamplingprocessor.Factory{},
+		"probabilistic-sampler": &probabilisticsamplerprocessor.Factory{},
 	}
 	expectedExporters := map[string]exporter.Factory{
 		"opencensus":         &opencensusexporter.Factory{},
