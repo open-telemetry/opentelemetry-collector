@@ -15,60 +15,105 @@
 package pprofextension
 
 import (
-	"flag"
+	"net"
 	"net/http"
 	"runtime"
-	"strconv"
 	"testing"
-	"time"
 
-	"github.com/spf13/viper"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-service/extension/extensiontest"
+	"github.com/open-telemetry/opentelemetry-service/internal/testutils"
 )
 
-func TestPerformanceProfilerFlags(t *testing.T) {
-	fs := flag.NewFlagSet("test", flag.ExitOnError)
-	AddFlags(fs)
-
-	args := []string{
-		"--" + httpPprofPortCfg + "=1777",
-		"--" + pprofBlockProfileFraction + "=5",
-		"--" + pprofMutexProfileFraction + "=-1",
+func TestPerformanceProfilerExtensionUsage(t *testing.T) {
+	config := Config{
+		Endpoint:             testutils.GetAvailableLocalAddress(t),
+		BlockProfileFraction: 3,
+		MutexProfileFraction: 5,
 	}
 
-	if err := fs.Parse(args); err != nil {
-		t.Fatalf("failed to parse arguments: %v", err)
-	}
-}
+	pprofExt, err := newServer(config, zap.NewNop())
+	require.NoError(t, err)
+	require.NotNil(t, pprofExt)
 
-func TestPerformanceProfilerServer(t *testing.T) {
-	v := viper.New()
-	const pprofPort = 17788
-	v.Set(httpPprofPortCfg, pprofPort)
-	v.Set(pprofBlockProfileFraction, 3)
-	v.Set(pprofMutexProfileFraction, 5)
-
-	asyncErrChan := make(chan error, 1)
-	if err := SetupFromViper(asyncErrChan, v, zap.NewNop()); err != nil {
-		t.Fatalf("failed to setup pprof server: %v", err)
-	}
+	mh := extensiontest.NewMockHost()
+	require.NoError(t, pprofExt.Start(mh))
+	defer pprofExt.Shutdown()
 
 	// Give a chance for the server goroutine to run.
 	runtime.Gosched()
 
+	_, pprofPort, err := net.SplitHostPort(config.Endpoint)
+	require.NoError(t, err)
+
 	client := &http.Client{}
-	resp, err := client.Get("http://localhost:" + strconv.Itoa(pprofPort) + "/debug/pprof")
-	if err != nil {
-		t.Fatalf("failed to get a response from pprof server: %v", err)
-	}
+	resp, err := client.Get("http://localhost:" + pprofPort + "/debug/pprof")
+	require.NoError(t, err)
 	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("ppropf server response: got %v want %v", resp.StatusCode, http.StatusOK)
+
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+}
+
+func TestPerformanceProfilerExtensionPortAlreadyInUse(t *testing.T) {
+	endpoint := testutils.GetAvailableLocalAddress(t)
+	ln, err := net.Listen("tcp", endpoint)
+	require.NoError(t, err)
+	defer ln.Close()
+
+	config := Config{
+		Endpoint: endpoint,
+	}
+	pprofExt, err := newServer(config, zap.NewNop())
+	require.NoError(t, err)
+	require.NotNil(t, pprofExt)
+
+	mh := extensiontest.NewMockHost()
+	require.Error(t, pprofExt.Start(mh))
+}
+
+func TestPerformanceProfilerMultipleStarts(t *testing.T) {
+	config := Config{
+		Endpoint: testutils.GetAvailableLocalAddress(t),
 	}
 
-	select {
-	case err := <-asyncErrChan:
-		t.Fatalf("async err received from pprof: %v", err)
-	case <-time.After(250 * time.Millisecond):
+	pprofExt, err := newServer(config, zap.NewNop())
+	require.NoError(t, err)
+	require.NotNil(t, pprofExt)
+
+	mh := extensiontest.NewMockHost()
+	require.NoError(t, pprofExt.Start(mh))
+	defer pprofExt.Shutdown()
+
+	// Try to start it again, it will fail since it is on the same endpoint.
+	require.Error(t, pprofExt.Start(mh))
+}
+
+func TestPerformanceProfilerMultipleShutdowns(t *testing.T) {
+	config := Config{
+		Endpoint: testutils.GetAvailableLocalAddress(t),
 	}
+
+	pprofExt, err := newServer(config, zap.NewNop())
+	require.NoError(t, err)
+	require.NotNil(t, pprofExt)
+
+	mh := extensiontest.NewMockHost()
+	require.NoError(t, pprofExt.Start(mh))
+
+	require.NoError(t, pprofExt.Shutdown())
+	require.NoError(t, pprofExt.Shutdown())
+}
+
+func TestPerformanceProfilerShutdownWithoutStart(t *testing.T) {
+	config := Config{
+		Endpoint: testutils.GetAvailableLocalAddress(t),
+	}
+
+	pprofExt, err := newServer(config, zap.NewNop())
+	require.NoError(t, err)
+	require.NotNil(t, pprofExt)
+
+	require.NoError(t, pprofExt.Shutdown())
 }

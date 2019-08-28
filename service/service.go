@@ -32,7 +32,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/config"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
 	"github.com/open-telemetry/opentelemetry-service/internal/config/viperutils"
-	"github.com/open-telemetry/opentelemetry-service/internal/pprofserver"
 	"github.com/open-telemetry/opentelemetry-service/processor"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 	"github.com/open-telemetry/opentelemetry-service/service/builder"
@@ -109,14 +108,6 @@ func (app *Application) init() {
 	app.logger, err = newLogger(app.v)
 	if err != nil {
 		log.Fatalf("Failed to get logger: %v", err)
-	}
-}
-
-func (app *Application) setupPProf() {
-	app.logger.Info("Setting up profiler...")
-	err := pprofserver.SetupFromViper(app.asyncErrorChannel, app.v, app.logger)
-	if err != nil {
-		log.Fatalf("Failed to start net/http/pprof: %v", err)
 	}
 }
 
@@ -251,7 +242,6 @@ func (app *Application) executeUnified() {
 	app.asyncErrorChannel = make(chan error)
 
 	// Setup everything.
-	app.setupPProf()
 	app.setupHealthCheck()
 	app.setupZPages()
 	app.setupTelemetry(ballastSizeBytes)
@@ -289,7 +279,6 @@ func (app *Application) StartUnified() error {
 		builder.Flags,
 		healthCheckFlags,
 		loggerFlags,
-		pprofserver.AddFlags,
 		zpages.AddFlags,
 	)
 

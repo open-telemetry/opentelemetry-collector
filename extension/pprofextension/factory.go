@@ -15,6 +15,9 @@
 package pprofextension
 
 import (
+	"errors"
+	"sync/atomic"
+
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
@@ -39,7 +42,14 @@ func (f *Factory) Type() string {
 
 // CreateDefaultConfig creates the default configuration for the extension.
 func (f *Factory) CreateDefaultConfig() configmodels.Extension {
-	return &Config{}
+	return &Config{
+		ExtensionSettings: configmodels.ExtensionSettings{
+			TypeVal: typeStr,
+			NameVal: typeStr,
+		},
+		// No default value for endpoint, which means that the configuration
+		// explicitly must set one.
+	}
 }
 
 // CreateExtension creates the extension based on this config.
@@ -47,7 +57,29 @@ func (f *Factory) CreateExtension(
 	logger *zap.Logger,
 	cfg configmodels.Extension,
 ) (extension.ServiceExtension, error) {
-	return nil, nil
+	config := cfg.(*Config)
+	if config.Endpoint == "" {
+		return nil, errors.New("\"endpoint\" is required when using the \"pprof\" extension")
+	}
+
+	// The runtime settings are global to the application, so while in principle it
+	// is possible to have more than one instance, running multiple will mean that
+	// the settings of the last started instance will prevail. In order to avoid
+	// this issue we will allow the creation of a single instance once per process
+	// while keeping the private function that allow the creation of multiple
+	// instances for unit tests. Summary: only a single instance can be created
+	// via the factory.
+	if !atomic.CompareAndSwapInt32(&instanceState, instanceNotCreated, instanceCreated) {
+		return nil, errors.New("only a single instance can be created per process")
+	}
+
+	return newServer(*config, logger)
 }
 
+// See comment in CreateExtension how these are used.
+var instanceState int32
 
+const (
+	instanceNotCreated int32 = 0
+	instanceCreated    int32 = 1
+)

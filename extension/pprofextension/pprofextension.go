@@ -12,39 +12,59 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package pprofextension bla bla bla
 package pprofextension
 
 import (
-	"flag"
+	"net"
 	"net/http"
 	_ "net/http/pprof" // Needed to enable the performance profiler
 	"runtime"
-	"strconv"
 
-	"github.com/spf13/viper"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-service/extension"
 )
 
+type pprofExtension struct {
+	config Config
+	logger *zap.Logger
+	server http.Server
+}
 
+var _ (extension.ServiceExtension) = (*pprofExtension)(nil)
 
-
-// SetupFromViper sets up the Performance Profiler (pprof) as an HTTP endpoint
-// according to the configuration in the given viper.
-func SetupFromViper(asyncErrorChannel chan<- error, v *viper.Viper, logger *zap.Logger) error {
-	port := v.GetInt(httpPprofPortCfg)
-	if port == 0 {
-		return nil
+func (p *pprofExtension) Start(host extension.Host) error {
+	// Start the listener here so we can have earlier failure if port is
+	// already in use.
+	ln, err := net.Listen("tcp", p.config.Endpoint)
+	if err != nil {
+		return err
 	}
 
-	runtime.SetBlockProfileRate(v.GetInt(pprofBlockProfileFraction))
-	runtime.SetMutexProfileFraction(v.GetInt(pprofMutexProfileFraction))
+	runtime.SetBlockProfileRate(p.config.BlockProfileFraction)
+	runtime.SetMutexProfileFraction(p.config.MutexProfileFraction)
 
-	logger.Info("Starting net/http/pprof server", zap.Int("port", port))
+	p.logger.Info("Starting net/http/pprof server", zap.Any("config", p.config))
 	go func() {
-		if err := http.ListenAndServe(":"+strconv.Itoa(port), nil); err != http.ErrServerClosed {
-			asyncErrorChannel <- err
+		// The listener ownership goes to the server.
+		if err := p.server.Serve(ln); err != http.ErrServerClosed {
+			host.ReportFatalError(err)
 		}
 	}()
 
 	return nil
+}
+
+func (p *pprofExtension) Shutdown() error {
+	return p.server.Close()
+}
+
+func newServer(config Config, logger *zap.Logger) (*pprofExtension, error) {
+	p := &pprofExtension{
+		config: config,
+		logger: logger,
+	}
+
+	return p, nil
 }
