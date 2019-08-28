@@ -30,8 +30,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/exporter/prometheusexporter"
 	"github.com/open-telemetry/opentelemetry-service/exporter/zipkinexporter"
 	"github.com/open-telemetry/opentelemetry-service/processor"
-	"github.com/open-telemetry/opentelemetry-service/processor/addattributesprocessor"
-	"github.com/open-telemetry/opentelemetry-service/processor/attributekeyprocessor"
+	"github.com/open-telemetry/opentelemetry-service/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-service/processor/nodebatcherprocessor"
 	"github.com/open-telemetry/opentelemetry-service/processor/probabilisticsamplerprocessor"
 	"github.com/open-telemetry/opentelemetry-service/processor/queuedprocessor"
@@ -53,8 +52,7 @@ func TestDefaultComponents(t *testing.T) {
 		"vmmetrics":  &vmmetricsreceiver.Factory{},
 	}
 	expectedProcessors := map[string]processor.Factory{
-		"add-attributes":        &addattributesprocessor.Factory{},
-		"attribute-key":         &attributekeyprocessor.Factory{},
+		"attributes":            &attributesprocessor.Factory{},
 		"queued-retry":          &queuedprocessor.Factory{},
 		"batch":                 &nodebatcherprocessor.Factory{},
 		"tail-sampling":         &tailsamplingprocessor.Factory{},

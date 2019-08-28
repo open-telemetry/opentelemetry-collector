@@ -29,7 +29,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/config"
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/processor/addattributesprocessor"
+	"github.com/open-telemetry/opentelemetry-service/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-service/receiver/receivertest"
 )
 
@@ -94,7 +94,7 @@ func testReceivers(
 	factories, err := config.ExampleComponents()
 	assert.Nil(t, err)
 
-	attrFactory := &addattributesprocessor.Factory{}
+	attrFactory := &attributesprocessor.Factory{}
 	factories.Processors[attrFactory.Type()] = attrFactory
 	cfg, err := config.LoadConfigFile(t, "testdata/pipelines_builder.yaml", factories)
 	require.Nil(t, err)
@@ -207,7 +207,7 @@ func TestReceiversBuilder_DataTypeError(t *testing.T) {
 	factories, err := config.ExampleComponents()
 	assert.Nil(t, err)
 
-	attrFactory := &addattributesprocessor.Factory{}
+	attrFactory := &attributesprocessor.Factory{}
 	factories.Processors[attrFactory.Type()] = attrFactory
 	cfg, err := config.LoadConfigFile(t, "testdata/pipelines_builder.yaml", factories)
 	assert.Nil(t, err)

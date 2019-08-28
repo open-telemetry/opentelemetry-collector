@@ -28,7 +28,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/config"
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/processor/addattributesprocessor"
+	"github.com/open-telemetry/opentelemetry-service/processor/attributesprocessor"
 )
 
 func TestPipelinesBuilder_Build(t *testing.T) {
@@ -59,7 +59,7 @@ func TestPipelinesBuilder_Build(t *testing.T) {
 func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 	factories, err := config.ExampleComponents()
 	assert.Nil(t, err)
-	attrFactory := &addattributesprocessor.Factory{}
+	attrFactory := &attributesprocessor.Factory{}
 	factories.Processors[attrFactory.Type()] = attrFactory
 	cfg, err := config.LoadConfigFile(t, "testdata/pipelines_builder.yaml", factories)
 	// Load the config
@@ -125,7 +125,7 @@ func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 func TestPipelinesBuilder_Error(t *testing.T) {
 	factories, err := config.ExampleComponents()
 	assert.Nil(t, err)
-	attrFactory := &addattributesprocessor.Factory{}
+	attrFactory := &attributesprocessor.Factory{}
 	factories.Processors[attrFactory.Type()] = attrFactory
 	cfg, err := config.LoadConfigFile(t, "testdata/pipelines_builder.yaml", factories)
 	require.Nil(t, err)
