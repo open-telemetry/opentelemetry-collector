@@ -1035,3 +1035,52 @@ func TestEndToEnd(t *testing.T) {
 		tt.validateFunc(t, tt, result)
 	}
 }
+
+func TestIncludeFilterConfig(t *testing.T) {
+	jobs := make([]map[string]interface{}, 0)
+
+	job := make(map[string]interface{})
+	job["job_name"] = "filter_job"
+	job["scrape_interval"] = "1s"
+
+	jobs = append(jobs, job)
+
+	filterMap := make(map[string]interface{})
+	filterMap["localhost:9777"] = []string{"foo/bar", "custom/metric1"}
+	filterMap["localhost:9778"] = []string{"hello/world", "custom/metric2"}
+
+	config := make(map[string]interface{})
+	config["include_filter"] = filterMap
+	config["config"] = map[string]interface{}{"scrape_configs": jobs}
+
+	cfg, err := yaml.Marshal(&config)
+	if err != nil {
+		log.Fatalf("failed to create config: %v", err)
+	}
+
+	v := viper.New()
+	if err := viperutils.LoadYAMLBytes(v, []byte(cfg)); err != nil {
+		t.Fatalf("Failed to load yaml config into viper")
+	}
+
+	cms := new(exportertest.SinkMetricsExporter)
+	precv, err := New(logger, v, cms)
+	if err != nil {
+		t.Fatalf("Failed to create promreceiver: %v", err)
+	}
+
+	wantFilterMap := map[string]metricsMap{
+		"localhost:9777": {
+			"foo/bar":        true,
+			"custom/metric1": true,
+		},
+		"localhost:9778": {
+			"hello/world":    true,
+			"custom/metric2": true,
+		},
+	}
+
+	if diff := cmp.Diff(precv.includeFilterMap, wantFilterMap); diff != "" {
+		t.Fatalf("Error parsing filtermap -got, +want, %v", diff)
+	}
+}

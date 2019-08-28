@@ -25,7 +25,8 @@ import (
 // Config defines configuration for Prometheus receiver.
 type Config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`
-	PrometheusConfig              *config.Config `mapstructure:"-"`
-	BufferPeriod                  time.Duration  `mapstructure:"buffer_period"`
-	BufferCount                   int            `mapstructure:"buffer_count"`
+	PrometheusConfig              *config.Config      `mapstructure:"-"`
+	BufferPeriod                  time.Duration       `mapstructure:"buffer_period"`
+	BufferCount                   int                 `mapstructure:"buffer_count"`
+	IncludeFilter                 map[string][]string `mapstructure:"include_filter"`
 }
