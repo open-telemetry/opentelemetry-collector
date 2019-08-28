@@ -62,6 +62,32 @@ processors:
       - key: duplicate_key
         action: delete
 
+
+  # The following demonstrates excluding spans from this attributes processor.
+  # Ex. The following are spans that match the exclude_span and won't be processed
+  # by the processor.
+  # Span1 Name: 'svcB' Attributes: {env: dev, test_request: 123, credit_card: 1234}
+  # Span2 Name: 'svcA' Attributes: {env: dev, test_request: false}
+  # The following are spans that do not match the exclude properties and the
+  # processor actions are applied.
+  # Span3 Name: 'svcB' Attributes: {env: 1, test_request: dev, credit_card: 1234}
+  # Span4 Name: 'svcC' Attributes: {env: dev, test_request: false}
+  attributes/exclude:
+    exclude:
+      # The Span service name must either be "svcA" or "svcB" to match.
+      services: ["svcA", "svcB"]
+      attributes:
+        # This exact attribute ('env', 'dev') must exist in the span for a match.
+        - {key: env, Value: "dev"}
+        # As long as there is an attribute with key 'test_request' in the span
+        # there is a match.
+        - {key: test_request}
+    actions:
+      - key: credit_card
+        action: delete
+      - key: duplicate_key
+        action: delete
+
   # The following demonstrates how to backfill spans missing an attribute,
   # insert/update that value to a new key and deleting the old key. This guarantees
   # an attribute `svc.operation` exists in spans and the attribute `operation`

@@ -24,6 +24,10 @@ import (
 type Config struct {
 	configmodels.ProcessorSettings `mapstructure:",squash"`
 
+	// Exclude specifies the set of properties of a span to match against in order
+	// to exclude the span from actions being applied to it.
+	Exclude MatchProperties `mapstructure:"exclude"`
+
 	// Actions specifies the list of attributes to act on.
 	// The set of actions are {INSERT, UPDATE, UPSERT, DELETE}.
 	Actions []ActionKeyValue `mapstructure:"actions"`
@@ -85,3 +89,27 @@ const (
 	//no action is performed.
 	DELETE Action = "delete"
 )
+
+// MatchProperties specifies the set of properties in a span to match against.
+// At least one of the services must match and all of the attributes match.
+type MatchProperties struct {
+
+	// Services specify the list of service name to match against.
+	// A match occurs if the span service name is in this list.
+	Services []string `mapstructure:"services"`
+
+	// Attributes specifies the list of attributes to match against.
+	// All of these attributes must be in the span and match exactly
+	// for a match to count.
+	Attributes []Attribute `mapstructure:"attributes"`
+}
+
+// Attribute specifies the attribute key and optional value to match against.
+type Attribute struct {
+	// Key specifies the attribute key.
+	Key string `mapstructure:"key"`
+
+	// Values specifies the value to match against.
+	// If it is not set, any value will match.
+	Value interface{} `mapstructure:"value"`
+}

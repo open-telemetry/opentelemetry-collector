@@ -83,8 +83,27 @@ func TestLoadingConifg(t *testing.T) {
 		},
 	})
 
-	p4 := config.Processors["attributes/complex"]
+	p4 := config.Processors["attributes/exclude"]
 	assert.Equal(t, p4, &Config{
+		ProcessorSettings: configmodels.ProcessorSettings{
+			NameVal: "attributes/exclude",
+			TypeVal: typeStr,
+		},
+		Exclude: MatchProperties{
+			Services: []string{"svcA", "svcB"},
+			Attributes: []Attribute{
+				{Key: "env", Value: "dev"},
+				{Key: "test_request"},
+			},
+		},
+		Actions: []ActionKeyValue{
+			{Key: "credit_card", Action: DELETE},
+			{Key: "duplicate_key", Action: DELETE},
+		},
+	})
+
+	p5 := config.Processors["attributes/complex"]
+	assert.Equal(t, p5, &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
 			NameVal: "attributes/complex",
 			TypeVal: typeStr,
@@ -96,8 +115,8 @@ func TestLoadingConifg(t *testing.T) {
 		},
 	})
 
-	p5 := config.Processors["attributes/example"]
-	assert.Equal(t, p5, &Config{
+	p6 := config.Processors["attributes/example"]
+	assert.Equal(t, p6, &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
 			NameVal: "attributes/example",
 			TypeVal: typeStr,
