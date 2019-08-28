@@ -23,3 +23,13 @@ pipelines:
     receivers: [examplereceiver, examplereceiver/disabled]
     processors: [exampleprocessor, exampleprocessor/disabled]
     exporters: [exampleexporter/disabled, exampleexporter]
+
+extensions:
+  exampleextension/0:
+  exampleextension/disabled:
+    disabled: true
+  exampleextension/1:
+    extra: "some string"
+
+service:
+  extensions: [exampleextension/0, exampleextension/disabled, exampleextension/1]

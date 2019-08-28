@@ -91,22 +91,20 @@ func testReceivers(
 	t *testing.T,
 	test testCase,
 ) {
-	receiverFactories, processorsFactories, exporterFactories, err := config.ExampleComponents()
+	factories, err := config.ExampleComponents()
 	assert.Nil(t, err)
 
 	attrFactory := &addattributesprocessor.Factory{}
-	processorsFactories[attrFactory.Type()] = attrFactory
-	cfg, err := config.LoadConfigFile(
-		t, "testdata/pipelines_builder.yaml", receiverFactories, processorsFactories, exporterFactories,
-	)
+	factories.Processors[attrFactory.Type()] = attrFactory
+	cfg, err := config.LoadConfigFile(t, "testdata/pipelines_builder.yaml", factories)
 	require.Nil(t, err)
 
 	// Build the pipeline
-	allExporters, err := NewExportersBuilder(zap.NewNop(), cfg, exporterFactories).Build()
+	allExporters, err := NewExportersBuilder(zap.NewNop(), cfg, factories.Exporters).Build()
 	assert.NoError(t, err)
-	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), cfg, allExporters, processorsFactories).Build()
+	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), cfg, allExporters, factories.Processors).Build()
 	assert.NoError(t, err)
-	receivers, err := NewReceiversBuilder(zap.NewNop(), cfg, pipelineProcessors, receiverFactories).Build()
+	receivers, err := NewReceiversBuilder(zap.NewNop(), cfg, pipelineProcessors, factories.Receivers).Build()
 
 	assert.NoError(t, err)
 	require.NotNil(t, receivers)
@@ -206,14 +204,12 @@ func testReceivers(
 }
 
 func TestReceiversBuilder_DataTypeError(t *testing.T) {
-	receiverFactories, processorsFactories, exporterFactories, err := config.ExampleComponents()
+	factories, err := config.ExampleComponents()
 	assert.Nil(t, err)
 
 	attrFactory := &addattributesprocessor.Factory{}
-	processorsFactories[attrFactory.Type()] = attrFactory
-	cfg, err := config.LoadConfigFile(
-		t, "testdata/pipelines_builder.yaml", receiverFactories, processorsFactories, exporterFactories,
-	)
+	factories.Processors[attrFactory.Type()] = attrFactory
+	cfg, err := config.LoadConfigFile(t, "testdata/pipelines_builder.yaml", factories)
 	assert.Nil(t, err)
 
 	// Make examplereceiver to "unsupport" trace data type.
@@ -221,11 +217,11 @@ func TestReceiversBuilder_DataTypeError(t *testing.T) {
 	receiver.(*config.ExampleReceiver).FailTraceCreation = true
 
 	// Build the pipeline
-	allExporters, err := NewExportersBuilder(zap.NewNop(), cfg, exporterFactories).Build()
+	allExporters, err := NewExportersBuilder(zap.NewNop(), cfg, factories.Exporters).Build()
 	assert.NoError(t, err)
-	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), cfg, allExporters, processorsFactories).Build()
+	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), cfg, allExporters, factories.Processors).Build()
 	assert.NoError(t, err)
-	receivers, err := NewReceiversBuilder(zap.NewNop(), cfg, pipelineProcessors, receiverFactories).Build()
+	receivers, err := NewReceiversBuilder(zap.NewNop(), cfg, pipelineProcessors, factories.Receivers).Build()
 
 	// This should fail because "examplereceiver" is attached to "traces" pipeline
 	// which is a configuration error.

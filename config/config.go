@@ -27,6 +27,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
+	"github.com/open-telemetry/opentelemetry-service/extension"
 	"github.com/open-telemetry/opentelemetry-service/processor"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
@@ -38,10 +39,12 @@ type configErrorCode int
 const (
 	_ configErrorCode = iota // skip 0, start errors codes from 1.
 	errInvalidTypeAndNameKey
+	errUnknownExtensionType
 	errUnknownReceiverType
 	errUnknownExporterType
 	errUnknownProcessorType
 	errInvalidPipelineType
+	errDuplicateExtensionName
 	errDuplicateReceiverName
 	errDuplicateExporterName
 	errDuplicateProcessorName
@@ -50,6 +53,7 @@ const (
 	errPipelineMustHaveReceiver
 	errPipelineMustHaveExporter
 	errPipelineMustHaveProcessors
+	errExtensionNotExists
 	errPipelineReceiverNotExists
 	errPipelineProcessorNotExists
 	errPipelineExporterNotExists
@@ -70,6 +74,12 @@ func (e *configError) Error() string {
 
 // YAML top-level configuration keys
 const (
+	// extensionsKeyName is the configuration key name for extensions section.
+	extensionsKeyName = "extensions"
+
+	// serviceKeyName is the configuration key name for service section.
+	serviceKeyName = "service"
+
 	// receiversKeyName is the configuration key name for receivers section.
 	receiversKeyName = "receivers"
 
@@ -86,12 +96,26 @@ const (
 // typeAndNameSeparator is the separator that is used between type and name in type/name composite keys.
 const typeAndNameSeparator = "/"
 
+// Factories struct holds in a single type all component factories that
+// can be handled by the Config.
+type Factories struct {
+	// Receivers maps receiver type names in the config to the respective factory.
+	Receivers map[string]receiver.Factory
+
+	// Processors maps processor type names in the config to the respective factory.
+	Processors map[string]processor.Factory
+
+	// Exporters maps exporter type names in the config to the respective factory.
+	Exporters map[string]exporter.Factory
+
+	// Extensions maps extension type names in the config to the respective factory.
+	Extensions map[string]extension.Factory
+}
+
 // Load loads a Config from Viper.
 func Load(
 	v *viper.Viper,
-	receiverFactories map[string]receiver.Factory,
-	processorFactories map[string]processor.Factory,
-	exporterFactories map[string]exporter.Factory,
+	factories Factories,
 	logger *zap.Logger,
 ) (*configmodels.Config, error) {
 
@@ -99,19 +123,35 @@ func Load(
 
 	// Load the config.
 
-	receivers, err := loadReceivers(v, receiverFactories)
+	// Start with extensions and service.
+
+	extensions, err := loadExtensions(v, factories.Extensions)
+	if err != nil {
+		return nil, err
+	}
+	config.Extensions = extensions
+
+	service, err := loadService(v)
+	if err != nil {
+		return nil, err
+	}
+	config.Service = service
+
+	// Load data components (receivers, exporters, processores, and pipelines).
+
+	receivers, err := loadReceivers(v, factories.Receivers)
 	if err != nil {
 		return nil, err
 	}
 	config.Receivers = receivers
 
-	exporters, err := loadExporters(v, exporterFactories)
+	exporters, err := loadExporters(v, factories.Exporters)
 	if err != nil {
 		return nil, err
 	}
 	config.Exporters = exporters
 
-	processors, err := loadProcessors(v, processorFactories)
+	processors, err := loadProcessors(v, factories.Processors)
 	if err != nil {
 		return nil, err
 	}
@@ -168,6 +208,75 @@ func decodeTypeAndName(key string) (typeStr, fullName string, err error) {
 
 	err = nil
 	return
+}
+
+func loadExtensions(v *viper.Viper, factories map[string]extension.Factory) (configmodels.Extensions, error) {
+	// Get the list of all "extensions" sub vipers from config source.
+	subViper := v.Sub(extensionsKeyName)
+
+	// Get the map of "extensions" sub-keys.
+	keyMap := v.GetStringMap(extensionsKeyName)
+
+	// Prepare resulting map.
+	extensions := make(configmodels.Extensions)
+
+	// Iterate over extensions and create a config for each.
+	for key := range keyMap {
+		// Decode the key into type and fullName components.
+		typeStr, fullName, err := decodeTypeAndName(key)
+		if err != nil || typeStr == "" {
+			return nil, &configError{
+				code: errInvalidTypeAndNameKey,
+				msg:  fmt.Sprintf("invalid key %q: %s", key, err.Error()),
+			}
+		}
+
+		// Find extension factory based on "type" that we read from config source.
+		factory := factories[typeStr]
+		if factory == nil {
+			return nil, &configError{
+				code: errUnknownExtensionType,
+				msg:  fmt.Sprintf("unknown extension type %q", typeStr),
+			}
+		}
+
+		// Create the default config for this extension
+		extensionCfg := factory.CreateDefaultConfig()
+		extensionCfg.SetType(typeStr)
+		extensionCfg.SetName(fullName)
+
+		// Now that the default config struct is created we can Unmarshal into it
+		// and it will apply user-defined config on top of the default.
+		if err := subViper.UnmarshalKey(key, extensionCfg); err != nil {
+			return nil, &configError{
+				code: errUnmarshalError,
+				msg:  fmt.Sprintf("error reading settings for extension type %q: %v", typeStr, err),
+			}
+		}
+
+		if extensions[fullName] != nil {
+			return nil, &configError{
+				code: errDuplicateExtensionName,
+				msg:  fmt.Sprintf("duplicate extension name %q", fullName),
+			}
+		}
+
+		extensions[fullName] = extensionCfg
+	}
+
+	return extensions, nil
+}
+
+func loadService(v *viper.Viper) (configmodels.Service, error) {
+	var service configmodels.Service
+	if err := v.UnmarshalKey(serviceKeyName, &service); err != nil {
+		return service, &configError{
+			code: errUnmarshalError,
+			msg:  fmt.Sprintf("error reading settings for %q: %v", serviceKeyName, err),
+		}
+	}
+
+	return service, nil
 }
 
 func loadReceivers(v *viper.Viper, factories map[string]receiver.Factory) (configmodels.Receivers, error) {
@@ -436,6 +545,10 @@ func validateConfig(cfg *configmodels.Config, logger *zap.Logger) error {
 	// invalid cases that we currently don't check for but which we may want to add in
 	// the future (e.g. disallowing receiving and exporting on the same endpoint).
 
+	if err := validateService(cfg, logger); err != nil {
+		return err
+	}
+
 	if err := validatePipelines(cfg, logger); err != nil {
 		return err
 	}
@@ -447,6 +560,49 @@ func validateConfig(cfg *configmodels.Config, logger *zap.Logger) error {
 		return err
 	}
 	validateProcessors(cfg)
+
+	return nil
+}
+
+func validateService(cfg *configmodels.Config, logger *zap.Logger) error {
+	// Currently only to validate extensions.
+	return validateServiceExtensions(cfg, &cfg.Service, logger)
+}
+
+func validateServiceExtensions(
+	cfg *configmodels.Config,
+	service *configmodels.Service,
+	logger *zap.Logger,
+) error {
+	if len(cfg.Service.Extensions) < 1 {
+		return nil
+	}
+
+	// Validate extensions.
+	for _, ref := range service.Extensions {
+		// Check that the name referenced in the service extensions exists in the top-level extensions
+		if cfg.Extensions[ref] == nil {
+			return &configError{
+				code: errExtensionNotExists,
+				msg:  fmt.Sprintf("service references extension %q which does not exists", ref),
+			}
+		}
+	}
+
+	// Remove disabled extensions.
+	extensions := service.Extensions[:0]
+	for _, ref := range service.Extensions {
+		ext := cfg.Extensions[ref]
+		if ext.IsEnabled() {
+			// The extension is enabled. Keep it in the pipeline.
+			extensions = append(extensions, ref)
+		} else {
+			logger.Info("service references a disabled extension. Ignoring the extension.",
+				zap.String("extension", ref))
+		}
+	}
+
+	service.Extensions = extensions
 
 	return nil
 }

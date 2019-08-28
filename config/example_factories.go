@@ -16,6 +16,7 @@ package config
 
 import (
 	"context"
+	"fmt"
 
 	"go.uber.org/zap"
 
@@ -24,6 +25,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
+	"github.com/open-telemetry/opentelemetry-service/extension"
 	"github.com/open-telemetry/opentelemetry-service/processor"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
@@ -343,14 +345,50 @@ func (f *ExampleProcessorFactory) CreateMetricsProcessor(
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
+// ExampleExtension is for testing purposes. We are defining an example config and factory
+// for "exampleextension" extension type.
+type ExampleExtension struct {
+	configmodels.ExtensionSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	ExtraSetting                   string                   `mapstructure:"extra"`
+}
+
+// ExampleExtensionFactory is factory for ExampleExtension.
+type ExampleExtensionFactory struct {
+}
+
+// Type gets the type of the Extension config created by this factory.
+func (f *ExampleExtensionFactory) Type() string {
+	return "exampleextension"
+}
+
+// CreateDefaultConfig creates the default configuration for the Extension.
+func (f *ExampleExtensionFactory) CreateDefaultConfig() configmodels.Extension {
+	return &ExampleExtension{
+		ExtensionSettings: configmodels.ExtensionSettings{},
+		ExtraSetting:      "extra string setting",
+	}
+}
+
+// CreateExtension creates an Extension based on this config.
+func (f *ExampleExtensionFactory) CreateExtension(
+	logger *zap.Logger,
+	cfg configmodels.Extension,
+) (extension.ServiceExtension, error) {
+	return nil, fmt.Errorf("cannot create %q extension type", f.Type())
+}
+
+var _ (extension.Factory) = (*ExampleExtensionFactory)(nil)
+
 // ExampleComponents registers example factories. This is only used by tests.
 func ExampleComponents() (
-	receivers map[string]receiver.Factory,
-	processors map[string]processor.Factory,
-	exporters map[string]exporter.Factory,
+	factories Factories,
 	err error,
 ) {
-	receivers, err = receiver.Build(
+	if factories.Extensions, err = extension.Build(&ExampleExtensionFactory{}); err != nil {
+		return
+	}
+
+	factories.Receivers, err = receiver.Build(
 		&ExampleReceiverFactory{},
 		&MultiProtoReceiverFactory{},
 	)
@@ -358,11 +396,12 @@ func ExampleComponents() (
 		return
 	}
 
-	exporters, err = exporter.Build(&ExampleExporterFactory{})
+	factories.Exporters, err = exporter.Build(&ExampleExporterFactory{})
 	if err != nil {
 		return
 	}
 
-	processors, err = processor.Build(&ExampleProcessorFactory{})
+	factories.Processors, err = processor.Build(&ExampleProcessorFactory{})
+
 	return
 }

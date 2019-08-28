@@ -1,7 +1,7 @@
-# OpenTelemetry Service: Extension Components
+# OpenTelemetry Service: Extensions
 
 Besides the pipeline elements (receivers, processors, and exporters) the OTelSvc
-uses various extension components (e.g.: healthcheck, z-pages, etc). 
+uses various service extensions (e.g.: healthcheck, z-pages, etc). 
 This document describes the “extensions” design and how they are implemented.
 
 ## Configuration and Interface
@@ -10,8 +10,8 @@ The configuration follows the same pattern used for pipelines: a base
 configuration type and the creation of factories to instantiate the extension 
 objects.
 
-In order to support generic extension components an interface is defined 
-so the service can interact uniformly with these. At minimum extension components
+In order to support generic service extensions an interface is defined 
+so the service can interact uniformly with these. At minimum service extensions
 need to implement the interface that covers Start and Shutdown. 
 
 In addition to this base interface there is support to notify extensions when 
@@ -39,8 +39,8 @@ and how it will interact with the service extensions.
 
 ## Configuration
 
-The config package will be extended to load the extension components when the 
-configuration is loaded. The settings for extension components will live in the 
+The config package will be extended to load the service extensions when the 
+configuration is loaded. The settings for service extensions will live in the 
 same configuration file as the pipeline elements. Below is an example of how 
 these sections would look like in the configuration file:
 
@@ -61,7 +61,7 @@ extensions:
 # The service lists extensions not directly related to data pipelines, but used
 # by the service.
 service:
-  # extensions lists the components added to the service. They are started
+  # extensions lists the extensions added to the service. They are started
   # in the order presented below and stopped in the reverse order.
   extensions: [health-check, pprof, zpages]
 ```
@@ -79,67 +79,62 @@ The factory follows the same pattern established for pipeline configuration:
 ```go
 // Factory is a factory interface for extensions to the service.
 type Factory interface {
-    // Type gets the type of the extension component created by this factory.
+    // Type gets the type of the extension created by this factory.
     Type() string 
 
     // CreateDefaultConfig creates the default configuration for the extension.
     CreateDefaultConfig() configmodels.Extension
 
-    // CustomUnmarshaler returns a custom unmarshaler for the configuration or nil if
-    // there is no need for custom unmarshaling. This is typically used if viper.Unmarshal()
-    // is not sufficient to unmarshal correctly.
-    CustomUnmarshaler(v *viper.Viper, viperKey string, intoCfg interface{}) CustomUnmarshaler 
-
     // CreateExtension creates a service extension based on the given config.
-    CreateExtension(logger *zap.Logger, cfg configmodels.Extension) (Component, error)
+    CreateExtension(logger *zap.Logger, cfg configmodels.Extension) (ServiceExtension, error)
 }
 ```
 
 
 ## Extension Interface
 
-The interface defined below is the minimum required to keep same behavior for 
-ad-hoc components currently in use on the service:
+The interface defined below is the minimum required for 
+extensions in use on the service:
 
 ```go
-// Component is the interface for objects hosted by the OpenTelemetry Service that
-// doesn't participate directly on data pipelines but provide some functionality
+// ServiceExtension is the interface for objects hosted by the OpenTelemetry Service that
+// don't participate directly on data pipelines but provide some functionality
 // to the service, examples: health check endpoint, z-pages, etc.
-type Component interface {
-    // Start the Component object hosted by the given host. At this point in the
-    // process life-cycle the receivers are not started and the host did not
-    // receive any data yet.
-    Start(host Host) error 
+type ServiceExtension interface {
+	// Start the ServiceExtension object hosted by the given host. At this point in the
+	// process life-cycle the receivers are not started and the host did not
+	// receive any data yet.
+	Start(host Host) error
 
-    // Shutdown the Component instance. This happens after the pipelines were
-    // shutdown.
-    Shutdown() error
+	// Shutdown the ServiceExtension instance. This happens after the pipelines were
+	// shutdown.
+	Shutdown() error
 }
 
-// PipelineWatcher is an extra interface for Components hosted by the OpenTelemetry
-// Service that is to be implemented by Components interested in changes to pipeline
-// states. Typically this will be used by Components that change their behavior if data is
+// PipelineWatcher is an extra interface for ServiceExtension hosted by the OpenTelemetry
+// Service that is to be implemented by extensions interested in changes to pipeline
+// states. Typically this will be used by extensions that change their behavior if data is
 // being ingested or not, e.g.: a k8s readiness probe.
 type PipelineWatcher interface {
-    // Ready notifies the Component that all pipelines were built and the
-    // receivers were started, i.e.: the service is ready to receive data
-    // (notice that it may already have received data when this method is called).
-    Ready() error 
+	// Ready notifies the ServiceExtension that all pipelines were built and the
+	// receivers were started, i.e.: the service is ready to receive data
+	// (notice that it may already have received data when this method is called).
+	Ready() error
 
-    // NotReady notifies the Component that all receivers are about to be stopped,
-    // i.e.: pipeline receivers will not accept new data.
-    // This is sent before receivers are stopped, so the Component can take any
-    // appropriate action before that happens.
-    NotReady() error
+	// NotReady notifies the ServiceExtension that all receivers are about to be stopped,
+	// i.e.: pipeline receivers will not accept new data.
+	// This is sent before receivers are stopped, so the ServiceExtension can take any
+	// appropriate action before that happens.
+	NotReady() error
 }
 
-// Host represents the entity where the extension component is being hosted. 
+// Host represents the entity where the extension is being hosted.
 // It is used to allow communication between the extension and its host.
 type Host interface {
-    // ReportFatalError is used to report to the host that the extension
-    // encountered a fatal error (i.e.: an error that the instance can't recover
-    // from) after its start function had already returned.
-    ReportFatalError(err error)
+	// ReportFatalError is used to report to the host that the extension
+	// encountered a fatal error (i.e.: an error that the instance can't recover
+	// from) after its start function had already returned.
+	ReportFatalError(err error)
 }
 ```
 

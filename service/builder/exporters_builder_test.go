@@ -27,11 +27,11 @@ import (
 )
 
 func TestExportersBuilder_Build(t *testing.T) {
-	_, _, exporterFactories, err := config.ExampleComponents()
+	factories, err := config.ExampleComponents()
 	assert.Nil(t, err)
 
 	oceFactory := &opencensusexporter.Factory{}
-	exporterFactories[oceFactory.Type()] = oceFactory
+	factories.Exporters[oceFactory.Type()] = oceFactory
 	cfg := &configmodels.Config{
 		Exporters: map[string]configmodels.Exporter{
 			"opencensus": &opencensusexporter.Config{
@@ -52,7 +52,7 @@ func TestExportersBuilder_Build(t *testing.T) {
 		},
 	}
 
-	exporters, err := NewExportersBuilder(zap.NewNop(), cfg, exporterFactories).Build()
+	exporters, err := NewExportersBuilder(zap.NewNop(), cfg, factories.Exporters).Build()
 
 	assert.NoError(t, err)
 	require.NotNil(t, exporters)
@@ -78,7 +78,7 @@ func TestExportersBuilder_Build(t *testing.T) {
 	// This should result in creating an exporter that has none of consumption
 	// functions set.
 	delete(cfg.Pipelines, "trace")
-	exporters, err = NewExportersBuilder(zap.NewNop(), cfg, exporterFactories).Build()
+	exporters, err = NewExportersBuilder(zap.NewNop(), cfg, factories.Exporters).Build()
 	assert.NotNil(t, exporters)
 	assert.Nil(t, err)
 
