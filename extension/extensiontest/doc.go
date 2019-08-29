@@ -12,27 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package extensiontest define types and functions used to help test packages
+// implementing the extension package interfaces.
 package extensiontest
-
-import (
-	"errors"
-	"testing"
-	"time"
-
-	"github.com/stretchr/testify/require"
-)
-
-func TestNewMockHost(t *testing.T) {
-	mh := NewMockHost()
-	require.NotNil(t, mh)
-
-	reportedErr := errors.New("TestError")
-	go mh.ReportFatalError(reportedErr)
-
-	receivedError, receivedErr := mh.WaitForFatalError(100 * time.Millisecond)
-	require.True(t, receivedError)
-	require.Equal(t, reportedErr, receivedErr)
-
-	receivedError, _ = mh.WaitForFatalError(100 * time.Millisecond)
-	require.False(t, receivedError)
-}

@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package extensiontest define types and functions used to help test packages
-// implementing the extension package interfaces.
 package extensiontest
 
 import (
