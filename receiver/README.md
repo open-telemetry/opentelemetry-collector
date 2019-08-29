@@ -67,6 +67,16 @@ receivers:
 The full list of settings exposed for this receiver are documented [here](https://github.com/open-telemetry/opentelemetry-service/blob/master/receiver/opencensusreceiver/config.go)
 with detailed sample configurations [here](https://github.com/open-telemetry/opentelemetry-service/blob/master/receiver/opencensusreceiver/testdata/config.yaml).
 
+### Communicating over TLS
+Some receivers support communication using Transport Layer Security (TLS). TLS can be configured by specifying a `tls-crendentials` object in the receiver configuration for receivers that support it. The example below shows the OpenCensus receiver being configured to use TLS.   
+```yaml
+receivers:
+  opencensus:
+    tls-credentials:
+      key-file: /key.pem # path to private key
+      cert-file: /cert.pem # path to certificate
+``` 
+
 ### Writing with HTTP/JSON 
 The OpenCensus receiver for the agent can receive trace export calls via
 HTTP/JSON in addition to gRPC. The HTTP/JSON address is the same as gRPC as the
