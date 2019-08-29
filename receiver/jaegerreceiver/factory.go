@@ -106,7 +106,7 @@ func (f *Factory) CreateTraceReceiver(
 	protoTChannel := rCfg.Protocols[protoThriftTChannel]
 
 	config := Configuration{}
-	grpcServerOptions := []grpc.ServerOption{}
+	var grpcServerOptions []grpc.ServerOption
 
 	// Set ports
 	if protoGRPC != nil && protoGRPC.IsEnabled() {
@@ -123,6 +123,7 @@ func (f *Factory) CreateTraceReceiver(
 			}
 			grpcServerOptions = append(grpcServerOptions, option)
 		}
+		config.CollectorGRPCOptions = grpcServerOptions
 	}
 
 	if protoHTTP != nil && protoHTTP.IsEnabled() {

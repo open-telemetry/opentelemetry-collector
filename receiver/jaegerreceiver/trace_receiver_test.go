@@ -193,10 +193,7 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 	want := expectedTraceData(now, nowPlus10min, nowPlus10min2sec)
 
 	assert.Len(t, req.Batch.Spans, len(want[0].Spans), "got a conflicting amount of spans")
-
-	diff := cmp.Diff(got, want)
-	assert.Equal(t, "", diff, fmt.Sprintf("Mismatched responses\n-Got +Want:\n\t%s", diff))
-
+	assert.Equal(t, "", cmp.Diff(got, want))
 }
 
 func expectedTraceData(t1, t2, t3 time.Time) []consumerdata.TraceData {
