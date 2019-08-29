@@ -11,15 +11,26 @@ exporters:
 
 processors:
   queued-retry:
-  add-attributes:
-    attrib.key00: 123
-    attrib.key01: "a small string for this attribute"
-    attrib.key02: true
-    region: test-region
-    data-center: test-datacenter
+  attributes:
+    actions:
+      - key: attrib.key00
+        value: 123
+        action: insert
+      - key: attrib.key01
+        value: "a small string for this attribute"
+        action: insert
+      - key: attrib.key02
+        value: true
+        action: insert
+      - key: region
+        value: test-region
+        action: insert
+      - key: data-center
+        value: test-datacenter
+        action: insert
 
 pipelines:
   traces:
     receivers: [jaeger]
-    processors: [add-attributes,queued-retry]
+    processors: [attributes,queued-retry]
     exporters: [opencensus]
