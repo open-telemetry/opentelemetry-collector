@@ -24,7 +24,6 @@ import (
 	"runtime"
 	"syscall"
 
-	"github.com/jaegertracing/jaeger/pkg/healthcheck"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -42,7 +41,6 @@ import (
 type Application struct {
 	v              *viper.Viper
 	logger         *zap.Logger
-	healthCheck    *healthcheck.HealthCheck
 	exporters      builder.Exporters
 	builtReceivers builder.Receivers
 
@@ -111,15 +109,6 @@ func (app *Application) init() {
 	}
 }
 
-func (app *Application) setupHealthCheck() {
-	app.logger.Info("Setting up health checks...")
-	var err error
-	app.healthCheck, err = newHealthCheck(app.v, app.logger)
-	if err != nil {
-		log.Fatalf("Failed to start healthcheck server: %v", err)
-	}
-}
-
 // TODO(ccaraman): Move ZPage configuration to be apart of global config/config.go
 func (app *Application) setupZPages() {
 	app.logger.Info("Setting up zPages...")
@@ -155,8 +144,7 @@ func (app *Application) runAndWaitForShutdownEvent() {
 	signalsChannel := make(chan os.Signal, 1)
 	signal.Notify(signalsChannel, os.Interrupt, syscall.SIGTERM)
 
-	// mark service as ready to receive traffic.
-	app.healthCheck.Ready()
+	// TODO: mark service as ready to receive traffic.
 
 	// set the channel to stop testing.
 	app.stopTestChan = make(chan struct{})
@@ -242,19 +230,20 @@ func (app *Application) executeUnified() {
 	app.asyncErrorChannel = make(chan error)
 
 	// Setup everything.
-	app.setupHealthCheck()
 	app.setupZPages()
 	app.setupTelemetry(ballastSizeBytes)
 	app.setupPipelines()
+
+	// TODO: notify pipelineWatchers
 
 	// Everything is ready, now run until an event requiring shutdown happens.
 	app.runAndWaitForShutdownEvent()
 
 	// Begin shutdown sequence.
 	runtime.KeepAlive(ballast)
-	app.healthCheck.Set(healthcheck.Unavailable)
 	app.logger.Info("Starting shutdown...")
 
+	// TODO: notify pipelineWatchers
 	app.shutdownPipelines()
 	app.shutdownClosableComponents()
 
@@ -277,7 +266,6 @@ func (app *Application) StartUnified() error {
 	viperutils.AddFlags(app.v, rootCmd,
 		telemetryFlags,
 		builder.Flags,
-		healthCheckFlags,
 		loggerFlags,
 		zpages.AddFlags,
 	)

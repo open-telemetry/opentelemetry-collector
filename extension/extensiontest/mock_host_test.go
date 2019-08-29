@@ -19,6 +19,7 @@ package extensiontest
 import (
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -27,5 +28,10 @@ func TestNewMockHost(t *testing.T) {
 	mh := NewMockHost()
 	require.NotNil(t, mh)
 
-	mh.ReportFatalError(errors.New("TestError"))
+	reportedErr := errors.New("TestError")
+	go mh.ReportFatalError(reportedErr)
+
+	receivedError, receivedErr := mh.WaitForFatalError(500 * time.Millisecond)
+	require.True(t, receivedError)
+	require.Equal(t, reportedErr, receivedErr)
 }

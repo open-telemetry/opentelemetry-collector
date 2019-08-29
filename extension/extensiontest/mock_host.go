@@ -17,24 +17,42 @@
 package extensiontest
 
 import (
+	"time"
+
 	"github.com/open-telemetry/opentelemetry-service/extension"
 )
 
 // MockHost mocks an extension.Host for test purposes.
 type MockHost struct {
+	errorChan chan error
 }
 
 var _ extension.Host = (*MockHost)(nil)
+
+// NewMockHost returns a new instance of MockHost with proper defaults for most
+// tests.
+func NewMockHost() *MockHost {
+	return &MockHost{
+		errorChan: make(chan error, 1),
+	}
+}
 
 // ReportFatalError is used to report to the host that the extension encountered
 // a fatal error (i.e.: an error that the instance can't recover from) after
 // its start function has already returned.
 func (mh *MockHost) ReportFatalError(err error) {
-	// Do nothing for now.
+	mh.errorChan <- err
 }
 
-// NewMockHost returns a new instance of MockHost with proper defaults for most
-// tests.
-func NewMockHost() extension.Host {
-	return &MockHost{}
+// WaitForFatalError waits the given amount of time until an error is reported via
+// ReportFatalError. It returns the error, if any, and a bool to indicated if
+// an error was received before the time out.
+func (mh *MockHost) WaitForFatalError(timeout time.Duration) (receivedError bool, err error) {
+	select {
+	case err = <-mh.errorChan:
+		receivedError = true
+	case <-time.After(timeout):
+	}
+
+	return
 }

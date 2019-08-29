@@ -48,7 +48,7 @@ func (p *pprofExtension) Start(host extension.Host) error {
 	p.logger.Info("Starting net/http/pprof server", zap.Any("config", p.config))
 	go func() {
 		// The listener ownership goes to the server.
-		if err := p.server.Serve(ln); err != http.ErrServerClosed {
+		if err := p.server.Serve(ln); err != http.ErrServerClosed && err != nil {
 			host.ReportFatalError(err)
 		}
 	}()

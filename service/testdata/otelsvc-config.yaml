@@ -19,3 +19,10 @@ pipelines:
     receivers: [jaeger]
     processors: [attributes, batch, queued-retry]
     exporters: [opencensus]
+
+extensions:
+  health-check:
+  pprof:
+
+service:
+  extensions: [health-check, pprof]
