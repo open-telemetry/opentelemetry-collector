@@ -64,16 +64,16 @@ processors:
 
 
   # The following demonstrates excluding spans from this attributes processor.
-  # Ex. The following are spans that match the exclude_span and won't be processed
-  # by the processor.
+  # Ex. The following spans match the properties and won't be processed by the
+  # processor.
   # Span1 Name: 'svcB' Attributes: {env: dev, test_request: 123, credit_card: 1234}
   # Span2 Name: 'svcA' Attributes: {env: dev, test_request: false}
-  # The following are spans that do not match the exclude properties and the
-  # processor actions are applied.
+  # The following spans do not match the properties and the processor actions
+  # are applied to it.
   # Span3 Name: 'svcB' Attributes: {env: 1, test_request: dev, credit_card: 1234}
   # Span4 Name: 'svcC' Attributes: {env: dev, test_request: false}
-  attributes/exclude:
-    exclude:
+  attributes/excludemulti:
+    match_properties:
       # The Span service name must either be "svcA" or "svcB" to match.
       services: ["svcA", "svcB"]
       attributes:
@@ -82,6 +82,32 @@ processors:
         # As long as there is an attribute with key 'test_request' in the span
         # there is a match.
         - {key: test_request}
+      # Specifies that spans that match the above properties are to be excluded
+      # from being processed.
+      include: false
+    actions:
+      - key: credit_card
+        action: delete
+      - key: duplicate_key
+        action: delete
+
+  # The following demonstrates including spans for this attributes processor.
+  # All other spans that do no match the properties are not processed
+  # by this processor.
+  # Ex. The following are spans match the properties and the actions are applied.
+  # Span1 Name: 'svcB' Attributes: {env: dev, test_request: 123, credit_card: 1234}
+  # Span2 Name: 'svcA' Attributes: {env: dev, test_request: false}
+  # Span3 Name: 'svcB' Attributes: {env: 1, test_request: dev, credit_card: 1234}
+  # The following span does not match the include properties and the
+  # processor actions are not applied.
+  # Span4 Name: 'svcC' Attributes: {env: dev, test_request: false}
+  attributes/includeservices:
+    match_properties:
+      # The Span service name must either be "svcA" or "svcB" to match.
+      services: ["svcA", "svcB"]
+      # Specifies that spans tat match the above property are to be processed
+      # by this processor.
+      include: true
     actions:
       - key: credit_card
         action: delete

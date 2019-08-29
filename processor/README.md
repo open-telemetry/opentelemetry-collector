@@ -58,6 +58,44 @@ For the `delete` action,
 
 Please refer to [config.go](attributesprocessor/config.go) for the config spec.
 
+### Include/Exclude Spans
+It is optional to provide a set of properties of a span to match against to determine
+if the span should be included or excluded by the processor. By default, all
+spans are processed by the processor.
+
+To configure this option, under `match_properties`:
+- `include` is required
+- at least one of or both `services` and `attributes` is required.
+
+```yaml
+match_properties:
+  # At least one of services or attributes must be specified. It is supported
+  # to have both specified, but both `services` and `attributes` must match
+  # for a match to occur.
+
+  # Services specify the list of service name to match against.
+  # A match occurs if the span service name is in this list.
+  services: [<key1>, ..., <keyN>]
+  # Attributes specifies the list of attributes to match against.
+  # All of these attributes must be in the span and match exactly
+  # for a match to count.
+  # Note: This is an optional field.
+  attributes:
+      # Key specifies the attribute to match against.
+    - key: <key>
+      # Value specifies the exact value to match against.
+      # If not specified, a match occurs if the key is present in the attributes.
+      value: {value}
+  # Include specifies if the spans that match the properties should be
+  # included or excluded from the processor.
+  # A `true` value specifies that spans only matching these properties should
+  # be included in the processing by this processor.
+  # A `false` value specifies all spans that do not match these properties
+  # should be processed.
+  # This field is required.
+  include: {true, false}
+```
+
 ### Example
 The list of actions can be composed to create rich scenarios, such as
 back filling attribute, copying values to a new key, redacting sensitive information.

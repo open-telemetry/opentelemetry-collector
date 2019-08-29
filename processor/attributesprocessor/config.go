@@ -18,18 +18,24 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 )
 
-// Config specifies the set of attributes to be inserted, updated, upserted and deleted.
+// Config specifies the set of attributes to be inserted, updated, upserted and
+// deleted and the properties to include/exclude a span from being processed.
 // This processor handles all forms of modifications to attributes within a span.
+// Prior to any actions being applied, each span is compared against
+// the match properties if they are specified. This determines if a span
+// is to be processed or not.
 // The list of actions is applied in order specified in the configuration.
 type Config struct {
 	configmodels.ProcessorSettings `mapstructure:",squash"`
 
-	// Exclude specifies the set of properties of a span to match against in order
-	// to exclude the span from actions being applied to it.
-	Exclude MatchProperties `mapstructure:"exclude"`
+	// Match specifies the set of properties of a span to match against and
+	// if the span should be included or excluded from the processor.
+	// This is an optional field. If not set, all spans are processed.
+	Match MatchProperties `mapstructure:"match_properties"`
 
 	// Actions specifies the list of attributes to act on.
 	// The set of actions are {INSERT, UPDATE, UPSERT, DELETE}.
+	// This is a required field.
 	Actions []ActionKeyValue `mapstructure:"actions"`
 }
 
@@ -90,8 +96,11 @@ const (
 	DELETE Action = "delete"
 )
 
-// MatchProperties specifies the set of properties in a span to match against.
-// At least one of the services must match and all of the attributes match.
+// MatchProperties specifies the set of properties in a span to match against
+// and if the span should be included or excluded.
+// At least one of services or attributes must be specified. It is supported
+// to have both specified, but this requires all of the properties to match
+// for the inclusion/exclusion to occur.
 type MatchProperties struct {
 
 	// Services specify the list of service name to match against.
@@ -102,6 +111,15 @@ type MatchProperties struct {
 	// All of these attributes must be in the span and match exactly
 	// for a match to count.
 	Attributes []Attribute `mapstructure:"attributes"`
+
+	// Include specifies if the spans that match the properties should be
+	// included or excluded from the processor.
+	// A `true` value specifies that spans only matching these properties should
+	// be included in the processing by this processor.
+	// A `false` value specifies all spans that do not match these properties
+	// should be processed.
+	// This field is required.
+	Include bool `mapstructure:"include"`
 }
 
 // Attribute specifies the attribute key and optional value to match against.
