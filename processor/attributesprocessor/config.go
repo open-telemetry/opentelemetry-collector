@@ -97,13 +97,13 @@ const (
 )
 
 // MatchProperties specifies the set of properties in a span to match against
-// and if the span should be included or excluded.
+// and if the span should be included or excluded from the processor.
 // At least one of services or attributes must be specified. It is supported
 // to have both specified, but this requires all of the properties to match
 // for the inclusion/exclusion to occur.
 type MatchProperties struct {
 
-	// Services specify the list of service name to match against.
+	// Services specify the list of service names to match against.
 	// A match occurs if the span service name is in this list.
 	Services []string `mapstructure:"services"`
 

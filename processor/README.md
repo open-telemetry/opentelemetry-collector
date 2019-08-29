@@ -60,7 +60,7 @@ Please refer to [config.go](attributesprocessor/config.go) for the config spec.
 
 ### Include/Exclude Spans
 It is optional to provide a set of properties of a span to match against to determine
-if the span should be included or excluded by the processor. By default, all
+if the span should be included or excluded from the processor. By default, all
 spans are processed by the processor.
 
 To configure this option, under `match_properties`:
