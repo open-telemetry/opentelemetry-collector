@@ -27,6 +27,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/extension"
 	"github.com/open-telemetry/opentelemetry-service/extension/healthcheckextension"
 	"github.com/open-telemetry/opentelemetry-service/extension/pprofextension"
+	"github.com/open-telemetry/opentelemetry-service/extension/zpagesextension"
 	"github.com/open-telemetry/opentelemetry-service/oterr"
 	"github.com/open-telemetry/opentelemetry-service/processor"
 	"github.com/open-telemetry/opentelemetry-service/processor/attributesprocessor"
@@ -53,6 +54,7 @@ func Components() (
 	extensions, err := extension.Build(
 		&healthcheckextension.Factory{},
 		&pprofextension.Factory{},
+		&zpagesextension.Factory{},
 	)
 	if err != nil {
 		errs = append(errs, err)

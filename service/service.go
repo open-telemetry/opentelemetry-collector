@@ -34,7 +34,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/internal/config/viperutils"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 	"github.com/open-telemetry/opentelemetry-service/service/builder"
-	"github.com/open-telemetry/opentelemetry-service/zpages"
 )
 
 // Application represents a collector application
@@ -103,24 +102,6 @@ func (app *Application) init() {
 	app.logger, err = newLogger(app.v)
 	if err != nil {
 		log.Fatalf("Failed to get logger: %v", err)
-	}
-}
-
-// TODO(ccaraman): Move ZPage configuration to be apart of global config/config.go
-func (app *Application) setupZPages() {
-	app.logger.Info("Setting up zPages...")
-	zpagesPort := app.v.GetInt(zpages.ZPagesHTTPPort)
-	if zpagesPort > 0 {
-		closeZPages, err := zpages.Run(app.asyncErrorChannel, zpagesPort)
-		if err != nil {
-			app.logger.Error("Failed to run zPages", zap.Error(err))
-			os.Exit(1)
-		}
-		app.logger.Info("Running zPages", zap.Int("port", zpagesPort))
-		closeFn := func() {
-			closeZPages()
-		}
-		app.closeFns = append(app.closeFns, closeFn)
 	}
 }
 
@@ -279,7 +260,6 @@ func (app *Application) shutdownPipelines() {
 	app.exporters.ShutdownAll()
 }
 
-
 func (app *Application) shutdownExtensions() {
 	// Shutdown on reverse order.
 	for i := len(app.extensions) - 1; i >= 0; i-- {
@@ -303,7 +283,6 @@ func (app *Application) executeUnified() {
 	app.asyncErrorChannel = make(chan error)
 
 	// Setup everything.
-	app.setupZPages()
 	app.setupTelemetry(ballastSizeBytes)
 	app.setupConfigurationComponents()
 	app.notifyPipelineReady()
@@ -340,7 +319,6 @@ func (app *Application) StartUnified() error {
 		telemetryFlags,
 		builder.Flags,
 		loggerFlags,
-		zpages.AddFlags,
 	)
 
 	return rootCmd.Execute()

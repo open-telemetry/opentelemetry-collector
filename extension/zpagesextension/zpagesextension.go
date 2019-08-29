@@ -12,43 +12,42 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package pprofextension bla bla bla
-package pprofextension
+// Package zpagesextension bla bla bla
+package zpagesextension
 
 import (
 	"net"
 	"net/http"
-	_ "net/http/pprof" // Needed to enable the performance profiler
-	"runtime"
 
+	"go.opencensus.io/zpages"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/extension"
 )
 
-type pprofExtension struct {
+type zpagesExtension struct {
 	config Config
 	logger *zap.Logger
 	server http.Server
 }
 
-var _ (extension.ServiceExtension) = (*pprofExtension)(nil)
+var _ (extension.ServiceExtension) = (*zpagesExtension)(nil)
 
-func (p *pprofExtension) Start(host extension.Host) error {
+func (zpe *zpagesExtension) Start(host extension.Host) error {
+	zPagesMux := http.NewServeMux()
+	zpages.Handle(zPagesMux, "/debug")
+
 	// Start the listener here so we can have earlier failure if port is
 	// already in use.
-	ln, err := net.Listen("tcp", p.config.Endpoint)
+	ln, err := net.Listen("tcp", zpe.config.Endpoint)
 	if err != nil {
 		return err
 	}
 
-	runtime.SetBlockProfileRate(p.config.BlockProfileFraction)
-	runtime.SetMutexProfileFraction(p.config.MutexProfileFraction)
-
-	p.logger.Info("Starting net/http/pprof server", zap.Any("config", p.config))
+	zpe.logger.Info("Starting zPages extension", zap.Any("config", zpe.config))
+	zpe.server = http.Server{Handler: zPagesMux}
 	go func() {
-		// The listener ownership goes to the server.
-		if err := p.server.Serve(ln); err != nil && err != http.ErrServerClosed {
+		if err := zpe.server.Serve(ln); err != nil && err != http.ErrServerClosed {
 			host.ReportFatalError(err)
 		}
 	}()
@@ -56,15 +55,15 @@ func (p *pprofExtension) Start(host extension.Host) error {
 	return nil
 }
 
-func (p *pprofExtension) Shutdown() error {
-	return p.server.Close()
+func (zpe *zpagesExtension) Shutdown() error {
+	return zpe.server.Close()
 }
 
-func newServer(config Config, logger *zap.Logger) (*pprofExtension, error) {
-	p := &pprofExtension{
+func newServer(config Config, logger *zap.Logger) (*zpagesExtension, error) {
+	zpe := &zpagesExtension{
 		config: config,
 		logger: logger,
 	}
 
-	return p, nil
+	return zpe, nil
 }

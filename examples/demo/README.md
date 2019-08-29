@@ -1,9 +1,6 @@
 # OpenTelemetry Service Demo
 
-*IMPORTANT:* This is a pre-released version of the OpenTelemetry Service and does not yet
-implement full functionality required to run this demo.
-
-For now, please use the [OpenCensus Service](https://github.com/census-instrumentation/opencensus-service).
+*IMPORTANT:* This is a pre-released version of the OpenTelemetry Service.
 
 Typical flow of tracing and metrics data with OpenTelemetry Service: tracing and metrics data initially received by OpenTelemetry Agent
 and then sent to OpenTelemetry Collector using OC data format. The OpenTelemetry Collector then sends the data to the

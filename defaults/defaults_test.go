@@ -32,6 +32,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/extension"
 	"github.com/open-telemetry/opentelemetry-service/extension/healthcheckextension"
 	"github.com/open-telemetry/opentelemetry-service/extension/pprofextension"
+	"github.com/open-telemetry/opentelemetry-service/extension/zpagesextension"
 	"github.com/open-telemetry/opentelemetry-service/processor"
 	"github.com/open-telemetry/opentelemetry-service/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-service/processor/nodebatcherprocessor"
@@ -50,6 +51,7 @@ func TestDefaultComponents(t *testing.T) {
 	expectedExtensions := map[string]extension.Factory{
 		"health-check": &healthcheckextension.Factory{},
 		"pprof":        &pprofextension.Factory{},
+		"zpages":       &zpagesextension.Factory{},
 	}
 	expectedReceivers := map[string]receiver.Factory{
 		"jaeger":     &jaegerreceiver.Factory{},

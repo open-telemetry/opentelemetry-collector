@@ -23,6 +23,7 @@ pipelines:
 extensions:
   health-check:
   pprof:
+  zpages:
 
 service:
-  extensions: [health-check, pprof]
+  extensions: [pprof, zpages, health-check]

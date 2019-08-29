@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package healthcheckextension
+package zpagesextension
 
 import (
 	"errors"
@@ -26,7 +26,7 @@ import (
 
 const (
 	// The value of extension "type" in configuration.
-	typeStr = "health-check"
+	typeStr = "zpages"
 )
 
 // Factory is the factory for the extension.
@@ -47,7 +47,7 @@ func (f *Factory) CreateDefaultConfig() configmodels.Extension {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		Port: 13133,
+		Endpoint: "127.0.0.1:55679",
 	}
 }
 
@@ -57,6 +57,9 @@ func (f *Factory) CreateExtension(
 	cfg configmodels.Extension,
 ) (extension.ServiceExtension, error) {
 	config := cfg.(*Config)
+	if config.Endpoint == "" {
+		return nil, errors.New("\"endpoint\" is required when using the \"zpages\" extension")
+	}
 
 	// The runtime settings are global to the application, so while in principle it
 	// is possible to have more than one instance, running multiple does not bring

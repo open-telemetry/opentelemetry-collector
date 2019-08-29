@@ -31,7 +31,10 @@ func TestNewMockHost(t *testing.T) {
 	reportedErr := errors.New("TestError")
 	go mh.ReportFatalError(reportedErr)
 
-	receivedError, receivedErr := mh.WaitForFatalError(500 * time.Millisecond)
+	receivedError, receivedErr := mh.WaitForFatalError(100 * time.Millisecond)
 	require.True(t, receivedError)
 	require.Equal(t, reportedErr, receivedErr)
+
+	receivedError, receivedErr = mh.WaitForFatalError(100 * time.Millisecond)
+	require.False(t, receivedError)
 }
