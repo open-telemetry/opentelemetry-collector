@@ -55,11 +55,6 @@ type Application struct {
 
 	// asyncErrorChannel is used to signal a fatal error from any component.
 	asyncErrorChannel chan error
-
-	// closeFns are functions that must be called on application shutdown.
-	// Various components can add their own functions that they need to be
-	// called for cleanup during shutdown.
-	closeFns []func()
 }
 
 var _ receiver.Host = (*Application)(nil)
@@ -134,12 +129,6 @@ func (app *Application) runAndWaitForShutdownEvent() {
 		app.logger.Info("Received signal from OS", zap.String("signal", s.String()))
 	case <-app.stopTestChan:
 		app.logger.Info("Received stop test request")
-	}
-}
-
-func (app *Application) shutdownClosableComponents() {
-	for _, closeFn := range app.closeFns {
-		closeFn()
 	}
 }
 
@@ -294,7 +283,6 @@ func (app *Application) executeUnified() {
 
 	app.notifyPipelineNotReady()
 	app.shutdownPipelines()
-	app.shutdownClosableComponents()
 	app.shutdownExtensions()
 
 	AppTelemetry.shutdown()
