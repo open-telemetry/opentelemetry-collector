@@ -122,8 +122,6 @@ func (app *Application) runAndWaitForShutdownEvent() {
 	signalsChannel := make(chan os.Signal, 1)
 	signal.Notify(signalsChannel, os.Interrupt, syscall.SIGTERM)
 
-	// TODO: mark service as ready to receive traffic.
-
 	// set the channel to stop testing.
 	app.stopTestChan = make(chan struct{})
 	// notify tests that it is ready.

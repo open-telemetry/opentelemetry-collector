@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package zpagesextension bla bla bla
+// Package zpagesextension implements an extension that exposes zPages of
+// properly instrumented components.
 package zpagesextension
 
 import (

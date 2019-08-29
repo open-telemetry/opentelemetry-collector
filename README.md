@@ -391,19 +391,12 @@ Usage:
   otelsvc [flags]
 
 Flags:
-      --config string                 Path to the config file
-      --health-check-http-port uint   Port on which to run the healthcheck http server. (default 13133)
-  -h, --help                          help for otelsvc
-      --http-pprof-port uint          Port to be used by golang net/http/pprof (Performance Profiler), the profiler is disabled if no port or 0 is specified.
-      --log-level string              Output level of logs (DEBUG, INFO, WARN, ERROR, FATAL) (default "INFO")
-      --logging-exporter              Flag to add a logging exporter (combine with log level DEBUG to log incoming spans)
-      --metrics-level string          Output level of telemetry metrics (NONE, BASIC, NORMAL, DETAILED) (default "BASIC")
-      --metrics-port uint             Port exposing telemetry. (default 8888)
-      --receive-jaeger                Flag to run the Jaeger receiver (i.e.: Jaeger Collector), default settings: {ThriftTChannelPort:14267 ThriftHTTPPort:14268}
-      --receive-oc-trace              Flag to run the OpenTelemetry trace receiver, default settings: {Port:55678} (default true)
-      --receive-zipkin                Flag to run the Zipkin receiver, default settings: {Port:9411}
-      --receive-zipkin-scribe         Flag to run the Zipkin Scribe receiver, default settings: {Address: Port:9410 Category:zipkin}
-      --tail-sampling-always-sample   Flag to use a tail-based sampling processor with an always sample policy, unless tail sampling setting is present on configuration file.
+      --config string               Path to the config file
+  -h, --help                        help for otelsvc
+      --log-level string            Output level of logs (TRACE, DEBUG, INFO, WARN, ERROR, FATAL) (default "INFO")
+      --mem-ballast-size-mib uint   Flag to specify size of memory (MiB) ballast to set. Ballast is not used when this is not specified. default settings: 0
+      --metrics-level string        Output level of telemetry metrics (NONE, BASIC, NORMAL, DETAILED) (default "BASIC")
+      --metrics-port uint           Port exposing collector telemetry. (default 8888)
 ```
 
 Sample configuration file:
