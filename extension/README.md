@@ -57,11 +57,11 @@ extensions:
     # to make it available only locally, or ":<port>" to make it available on
     # all network interfaces.
     endpoint: 127.0.0.1:1777
-	# Fraction of blocking events that are profiled. A value <= 0 disables
-	# profiling. See runtime.SetBlockProfileRate for details.
+    # Fraction of blocking events that are profiled. A value <= 0 disables
+    # profiling. See runtime.SetBlockProfileRate for details.
     block-profile-fraction: 0
-	# Fraction of mutex contention events that are profiled. A value <= 0
-	# disables profiling. See runtime.SetMutexProfileFraction for details.
+    # Fraction of mutex contention events that are profiled. A value <= 0
+    # disables profiling. See runtime.SetMutexProfileFraction for details.
     mutex-profile-fraction: 0
 ```
 
