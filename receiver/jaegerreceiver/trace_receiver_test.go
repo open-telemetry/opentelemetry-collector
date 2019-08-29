@@ -142,12 +142,19 @@ func TestGRPCReception(t *testing.T) {
 
 func TestGRPCReceptionWithTLS(t *testing.T) {
 	// prepare
+	grpcServerOptions := []grpc.ServerOption{}
+	tlsCreds := receiver.TLSCredentials{
+		CertFile: path.Join(".", "testdata", "certificate.pem"),
+		KeyFile:  path.Join(".", "testdata", "key.pem"),
+	}
+
+	tlsOption, _ := tlsCreds.ToGrpcServerOption()
+
+	grpcServerOptions = append(grpcServerOptions, tlsOption)
+
 	config := &Configuration{
-		CollectorGRPCPort: 14250, // that's the only one used by this test
-		CollectorGRPCTLSSettings: &receiver.TLSCredentials{
-			CertFile: path.Join(".", "testdata", "certificate.pem"),
-			KeyFile:  path.Join(".", "testdata", "key.pem"),
-		},
+		CollectorGRPCPort:    14250, // that's the only one used by this test
+		CollectorGRPCOptions: grpcServerOptions,
 	}
 	sink := new(exportertest.SinkTraceExporter)
 

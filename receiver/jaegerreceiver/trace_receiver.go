@@ -49,15 +49,14 @@ import (
 // Configuration defines the behavior and the ports that
 // the Jaeger receiver will use.
 type Configuration struct {
-	CollectorThriftPort int `mapstructure:"tchannel_port"`
-	CollectorHTTPPort   int `mapstructure:"collector_http_port"`
-	CollectorGRPCPort   int `mapstructure:"collector_grpc_port"`
+	CollectorThriftPort  int
+	CollectorHTTPPort    int
+	CollectorGRPCPort    int
+	CollectorGRPCOptions []grpc.ServerOption
 
-	CollectorGRPCTLSSettings *receiver.TLSCredentials `mapstructure:"tls-credentials"`
-
-	AgentPort              int `mapstructure:"agent_port"`
-	AgentCompactThriftPort int `mapstructure:"agent_compact_thrift_port"`
-	AgentBinaryThriftPort  int `mapstructure:"agent_binary_thrift_port"`
+	AgentPort              int
+	AgentCompactThriftPort int
+	AgentBinaryThriftPort  int
 }
 
 // Receiver type is used to receive spans that were originally intended to be sent to Jaeger.
@@ -415,19 +414,7 @@ func (jr *jReceiver) startCollector(host receiver.Host) error {
 		_ = jr.collectorServer.Serve(cln)
 	}()
 
-	// And finally, the gRPC server
-	if jr.config.CollectorGRPCTLSSettings != nil {
-		option, err := jr.config.CollectorGRPCTLSSettings.ToGrpcServerOption()
-		if err != nil {
-			tch.Close()
-			cln.Close()
-			return fmt.Errorf("failed to configure TLS: %v", err)
-
-		}
-		jr.grpc = grpc.NewServer(option)
-	} else {
-		jr.grpc = grpc.NewServer()
-	}
+	jr.grpc = grpc.NewServer(jr.config.CollectorGRPCOptions...)
 	gaddr := jr.grpcAddr()
 	gln, gerr := net.Listen("tcp", gaddr)
 	if gerr != nil {

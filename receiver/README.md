@@ -68,7 +68,7 @@ The full list of settings exposed for this receiver are documented [here](https:
 with detailed sample configurations [here](https://github.com/open-telemetry/opentelemetry-service/blob/master/receiver/opencensusreceiver/testdata/config.yaml).
 
 ### Communicating over TLS
-Some receivers support communication using Transport Layer Security (TLS). TLS can be configured by specifying a `tls-crendentials` object in the receiver configuration for receivers that support it. The example below shows the OpenCensus receiver being configured to use TLS.   
+This receiver supports communication using Transport Layer Security (TLS). TLS can be configured by specifying a `tls-crendentials` object in the receiver configuration for receivers that support it.   
 ```yaml
 receivers:
   opencensus:
@@ -127,7 +127,18 @@ examples.
 // TODO Issue https://github.com/open-telemetry/opentelemetry-service/issues/158
 // The Jaeger receiver enables all protocols even when one is specified or a
 // subset is enabled. The documentation should be updated when that fix occurs.
-
+### Communicating over TLS
+This receiver supports communication using Transport Layer Security (TLS), but only using the gRPC protocol. It can be configured by specifying a `tls-crendentials` object in the gRPC receiver configuration.   
+```yaml
+receivers:
+  jaeger:
+    protocols:
+      grpc:
+        tls-credentials:
+          key-file: /key.pem # path to private key
+          cert-file: /cert.pem # path to certificate
+        endpoint: "127.0.0.1:9876"
+``` 
 ## <a name="prometheus"></a>Prometheus Receiver
 **Only metrics are supported.**
 

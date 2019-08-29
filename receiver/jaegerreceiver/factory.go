@@ -22,6 +22,8 @@ import (
 	"net"
 	"strconv"
 
+	"google.golang.org/grpc"
+
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/config/configerror"
@@ -104,6 +106,7 @@ func (f *Factory) CreateTraceReceiver(
 	protoTChannel := rCfg.Protocols[protoThriftTChannel]
 
 	config := Configuration{}
+	grpcServerOptions := []grpc.ServerOption{}
 
 	// Set ports
 	if protoGRPC != nil && protoGRPC.IsEnabled() {
@@ -114,7 +117,11 @@ func (f *Factory) CreateTraceReceiver(
 		}
 
 		if protoGRPC.TLSCredentials != nil {
-			config.CollectorGRPCTLSSettings = protoGRPC.TLSCredentials
+			option, err := protoGRPC.TLSCredentials.ToGrpcServerOption()
+			if err != nil {
+				return nil, fmt.Errorf("failed to configure TLS: %v", err)
+			}
+			grpcServerOptions = append(grpcServerOptions, option)
 		}
 	}
 
