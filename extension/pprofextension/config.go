@@ -29,10 +29,11 @@ type Config struct {
 	Endpoint string `mapstructure:"endpoint"`
 
 	// Fraction of blocking events that are profiled. A value <= 0 disables
-	// profiling. See runtime.SetBlockProfileRate for details.
+	// profiling. See https://golang.org/pkg/runtime/#SetBlockProfileRate for details.
 	BlockProfileFraction int `mapstructure:"block-profile-fraction"`
 
 	// Fraction of mutex contention events that are profiled. A value <= 0
-	// disables profiling. See runtime.SetMutexProfileFraction for details.
+	// disables profiling. See https://golang.org/pkg/runtime/#SetMutexProfileFraction
+	// for details.
 	MutexProfileFraction int `mapstructure:"mutex-profile-fraction"`
 }

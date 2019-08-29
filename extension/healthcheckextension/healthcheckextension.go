@@ -12,9 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package healthcheckextension implements an extension that enables an HTTP
-// endpoint that can be used to check the overall health and status of the
-// service.
 package healthcheckextension
 
 import (

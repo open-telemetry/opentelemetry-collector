@@ -12,18 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package healthcheckextension
-
-import (
-	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
-)
-
-// Config has the configuration for the extension enabling the health check
-// extension, used to report the health status of the service.
-type Config struct {
-	configmodels.ExtensionSettings `mapstructure:",squash"`
-
-	// Port is the port used to publish the health check status.
-	// The default value is 13133.
-	Port uint16 `mapstructure:"port"`
-}
+// Package pprofextension implements an extension that exposes the golang
+// net/http/pprof (Performance Profiler) in a HTTP endpoint.
+package pprofextension

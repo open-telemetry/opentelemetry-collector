@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package pprofextension implements an extension that exposes the golang
-// net/http/pprof (Performance Profiler) in a HTTP endpoint.
 package pprofextension
 
 import (
