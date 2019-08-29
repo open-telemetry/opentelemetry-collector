@@ -29,9 +29,9 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/config"
-	"github.com/open-telemetry/opentelemetry-service/exporter"
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-service/extension"
 	"github.com/open-telemetry/opentelemetry-service/internal/config/viperutils"
-	"github.com/open-telemetry/opentelemetry-service/processor"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 	"github.com/open-telemetry/opentelemetry-service/service/builder"
 	"github.com/open-telemetry/opentelemetry-service/zpages"
@@ -45,6 +45,9 @@ type Application struct {
 	builtReceivers builder.Receivers
 
 	factories config.Factories
+	config    *configmodels.Config
+
+	extensions []extension.ServiceExtension
 
 	// stopTestChan is used to terminate the application in end to end tests.
 	stopTestChan chan struct{}
@@ -78,18 +81,12 @@ func (app *Application) ReportFatalError(err error) {
 
 // New creates and returns a new instance of Application
 func New(
-	receiverFactories map[string]receiver.Factory,
-	processorFactories map[string]processor.Factory,
-	exporterFactories map[string]exporter.Factory,
+	factories config.Factories,
 ) *Application {
 	return &Application{
 		v:         viper.New(),
 		readyChan: make(chan struct{}),
-		factories: config.Factories{
-			Receivers:  receiverFactories,
-			Processors: processorFactories,
-			Exporters:  exporterFactories,
-		},
+		factories: factories,
 	}
 }
 
@@ -167,35 +164,66 @@ func (app *Application) shutdownClosableComponents() {
 	}
 }
 
-func (app *Application) setupPipelines() {
-	app.logger.Info("Loading configuration...")
-
+func (app *Application) setupConfigurationComponents() {
 	// Load configuration.
+	app.logger.Info("Loading configuration...")
 	cfg, err := config.Load(app.v, app.factories, app.logger)
 	if err != nil {
 		log.Fatalf("Cannot load configuration: %v", err)
 	}
 
+	app.config = cfg
+
 	app.logger.Info("Applying configuration...")
 
+	app.setupExtensions()
+	app.setupPipelines()
+}
+
+func (app *Application) setupExtensions() {
+	for _, extName := range app.config.Service.Extensions {
+		extCfg, exists := app.config.Extensions[extName]
+		if !exists {
+			log.Fatalf("Cannot load configuration: extension %q is not configured", extName)
+		}
+
+		factory, exists := app.factories.Extensions[extCfg.Type()]
+		if !exists {
+			log.Fatalf("Cannot load configuration: extension factory for type %q is not configured", extCfg.Type())
+		}
+
+		ext, err := factory.CreateExtension(app.logger, extCfg)
+		if err != nil {
+			log.Fatalf("Cannot load configuration: failed to create extension %q: %v", extName, err)
+		}
+
+		if err := ext.Start(app); err != nil {
+			log.Fatalf("Cannot start extension %q: %v", extName, err)
+		}
+		app.extensions = append(app.extensions, ext)
+	}
+}
+
+func (app *Application) setupPipelines() {
 	// Pipeline is built backwards, starting from exporters, so that we create objects
 	// which are referenced before objects which reference them.
 
 	// First create exporters.
-	app.exporters, err = builder.NewExportersBuilder(app.logger, cfg, app.factories.Exporters).Build()
+	var err error
+	app.exporters, err = builder.NewExportersBuilder(app.logger, app.config, app.factories.Exporters).Build()
 	if err != nil {
 		log.Fatalf("Cannot load configuration: %v", err)
 	}
 
 	// Create pipelines and their processors and plug exporters to the
 	// end of the pipelines.
-	pipelines, err := builder.NewPipelinesBuilder(app.logger, cfg, app.exporters, app.factories.Processors).Build()
+	pipelines, err := builder.NewPipelinesBuilder(app.logger, app.config, app.exporters, app.factories.Processors).Build()
 	if err != nil {
 		log.Fatalf("Cannot load configuration: %v", err)
 	}
 
 	// Create receivers and plug them into the start of the pipelines.
-	app.builtReceivers, err = builder.NewReceiversBuilder(app.logger, cfg, pipelines, app.factories.Receivers).Build()
+	app.builtReceivers, err = builder.NewReceiversBuilder(app.logger, app.config, pipelines, app.factories.Receivers).Build()
 	if err != nil {
 		log.Fatalf("Cannot load configuration: %v", err)
 	}
@@ -204,6 +232,36 @@ func (app *Application) setupPipelines() {
 	err = app.builtReceivers.StartAll(app.logger, app)
 	if err != nil {
 		log.Fatalf("Cannot start receivers: %v", err)
+	}
+}
+
+func (app *Application) notifyPipelineReady() {
+	for i, ext := range app.extensions {
+		if pw, ok := ext.(extension.PipelineWatcher); ok {
+			if err := pw.Ready(); err != nil {
+				log.Fatalf(
+					"Error notifying extension %q that the pipeline was started: %v",
+					app.config.Service.Extensions[i],
+					err,
+				)
+			}
+		}
+	}
+}
+
+func (app *Application) notifyPipelineNotReady() {
+	// Notify on reverse order.
+	for i := len(app.extensions) - 1; i >= 0; i-- {
+		ext := app.extensions[i]
+		if pw, ok := ext.(extension.PipelineWatcher); ok {
+			if err := pw.NotReady(); err != nil {
+				app.logger.Warn(
+					"Error notifying extension that the pipeline was shutdown",
+					zap.Error(err),
+					zap.String("extension", app.config.Service.Extensions[i]),
+				)
+			}
+		}
 	}
 }
 
@@ -221,6 +279,21 @@ func (app *Application) shutdownPipelines() {
 	app.exporters.ShutdownAll()
 }
 
+
+func (app *Application) shutdownExtensions() {
+	// Shutdown on reverse order.
+	for i := len(app.extensions) - 1; i >= 0; i-- {
+		ext := app.extensions[i]
+		if err := ext.Shutdown(); err != nil {
+			app.logger.Warn(
+				"Error shutting down extension",
+				zap.Error(err),
+				zap.String("extension", app.config.Service.Extensions[i]),
+			)
+		}
+	}
+}
+
 func (app *Application) executeUnified() {
 	app.logger.Info("Starting...", zap.Int("NumCPU", runtime.NumCPU()))
 
@@ -232,9 +305,8 @@ func (app *Application) executeUnified() {
 	// Setup everything.
 	app.setupZPages()
 	app.setupTelemetry(ballastSizeBytes)
-	app.setupPipelines()
-
-	// TODO: notify pipelineWatchers
+	app.setupConfigurationComponents()
+	app.notifyPipelineReady()
 
 	// Everything is ready, now run until an event requiring shutdown happens.
 	app.runAndWaitForShutdownEvent()
@@ -243,9 +315,10 @@ func (app *Application) executeUnified() {
 	runtime.KeepAlive(ballast)
 	app.logger.Info("Starting shutdown...")
 
-	// TODO: notify pipelineWatchers
+	app.notifyPipelineNotReady()
 	app.shutdownPipelines()
 	app.shutdownClosableComponents()
+	app.shutdownExtensions()
 
 	AppTelemetry.shutdown()
 

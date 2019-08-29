@@ -28,10 +28,10 @@ import (
 )
 
 func TestApplication_StartUnified(t *testing.T) {
-	receiverFactories, processorsFactories, exporterFactories, err := defaults.Components()
+	factories, err := defaults.Components()
 	assert.Nil(t, err)
 
-	app := New(receiverFactories, processorsFactories, exporterFactories)
+	app := New(factories)
 
 	portArg := []string{
 		"metrics-port",
@@ -58,7 +58,8 @@ func TestApplication_StartUnified(t *testing.T) {
 
 	<-app.readyChan
 
-	if !isAppAvailable(t, "http://"+addresses[0]) {
+	// TODO: Add a way to change configuration files so we can get the ports dynamically
+	if !isAppAvailable(t, "http://localhost:13133") {
 		t.Fatalf("app didn't reach ready state")
 	}
 

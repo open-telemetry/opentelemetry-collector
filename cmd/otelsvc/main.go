@@ -30,10 +30,10 @@ func main() {
 		}
 	}
 
-	receivers, processors, exporters, err := defaults.Components()
+	factories, err := defaults.Components()
 	handleErr(err)
 
-	svc := service.New(receivers, processors, exporters)
+	svc := service.New(factories)
 	err = svc.StartUnified()
 	handleErr(err)
 }
