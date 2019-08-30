@@ -14,4 +14,35 @@
 
 package testutils
 
-// TODO: Add tests
+import (
+	"net"
+	"strconv"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
+
+func TestGetAvailableLocalAddress(t *testing.T) {
+	testEndpointAvailable(t, GetAvailableLocalAddress(t))
+}
+
+func TestGetAvailablePort(t *testing.T) {
+	portStr := strconv.Itoa(int(GetAvailablePort(t)))
+	require.NotEqual(t, "", portStr)
+
+	testEndpointAvailable(t, "127.0.0.1:"+portStr)
+}
+
+func testEndpointAvailable(t *testing.T, endpoint string) {
+	// Endpoint should be free.
+	ln0, err := net.Listen("tcp", endpoint)
+	require.NoError(t, err)
+	require.NotNil(t, ln0)
+	defer ln0.Close()
+
+	// Ensure that the endpoint wasn't something like ":0" by checking that a
+	// second listener will fail.
+	ln1, err := net.Listen("tcp", endpoint)
+	require.Error(t, err)
+	require.Nil(t, ln1)
+}
