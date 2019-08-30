@@ -55,6 +55,17 @@ func TestFactory_CreateTraceProcessor(t *testing.T) {
 	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), cfg)
 	assert.NotNil(t, tp)
 	assert.Nil(t, err)
+
+	tp, err = factory.CreateTraceProcessor(zap.NewNop(), nil, cfg)
+	assert.Nil(t, tp)
+	assert.NotNil(t, err)
+
+	oCfg.Actions = []ActionKeyValue{
+		{Action: DELETE},
+	}
+	tp, err = factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), cfg)
+	assert.Nil(t, tp)
+	assert.NotNil(t, err)
 }
 
 func TestFactory_CreateMetricsProcessor(t *testing.T) {
@@ -147,6 +158,13 @@ func TestFactory_validateAttributesConfiguration_InvalidConfig(t *testing.T) {
 				{Key: "invalid", Action: "invalid"},
 			},
 			errorString: "error creating \"attributes\" processor due to unsupported action \"invalid\" at the 0-th actions of processor \"attributes/error\"",
+		},
+		{
+			name: "unsupported value",
+			actionLists: []ActionKeyValue{
+				{Key: "UnsupportedValue", Value: []int{}, Action: UPSERT},
+			},
+			errorString: "error unsupported value type \"[]int\"",
 		},
 		{
 			name: "missing value or from attribute",
