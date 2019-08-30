@@ -17,7 +17,10 @@ package testutils
 import (
 	"encoding/json"
 	"net"
+	"strconv"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 // GenerateNormalizedJSON generates a normalized JSON from the string
@@ -44,4 +47,18 @@ func GetAvailableLocalAddress(t *testing.T) string {
 	// the test uses it, however, that is unlikely in practice.
 	defer ln.Close()
 	return ln.Addr().String()
+}
+
+// GetAvailablePort finds an available local port and returns it. The port is
+// available for opening when this function returns provided that there is no
+// race by some other code to grab the same port immediately.
+func GetAvailablePort(t *testing.T) uint16 {
+	endpoint := GetAvailableLocalAddress(t)
+	_, port, err := net.SplitHostPort(endpoint)
+	require.NoError(t, err)
+
+	portInt, err := strconv.Atoi(port)
+	require.NoError(t, err)
+
+	return uint16(portInt)
 }

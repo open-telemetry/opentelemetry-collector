@@ -15,8 +15,6 @@
 package healthcheckextension
 
 import (
-	"net"
-	"strconv"
 	"sync/atomic"
 	"testing"
 
@@ -56,7 +54,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 func TestFactory_CreateExtension(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Port = getAvailablePort(t)
+	cfg.Port = testutils.GetAvailablePort(t)
 
 	ext, err := factory.CreateExtension(zap.NewNop(), cfg)
 	require.NoError(t, err)
@@ -69,7 +67,7 @@ func TestFactory_CreateExtension(t *testing.T) {
 func TestFactory_CreateExtensionOnlyOnce(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Port = getAvailablePort(t)
+	cfg.Port = testutils.GetAvailablePort(t)
 
 	logger := zap.NewNop()
 	ext, err := factory.CreateExtension(logger, cfg)
@@ -82,15 +80,4 @@ func TestFactory_CreateExtensionOnlyOnce(t *testing.T) {
 
 	// Restore instance tracking from factory, for other tests.
 	atomic.StoreInt32(&instanceState, instanceNotCreated)
-}
-
-func getAvailablePort(t *testing.T) uint16 {
-	endpoint := testutils.GetAvailableLocalAddress(t)
-	_, port, err := net.SplitHostPort(endpoint)
-	require.NoError(t, err)
-
-	portInt, err := strconv.Atoi(port)
-	require.NoError(t, err)
-
-	return uint16(portInt)
 }

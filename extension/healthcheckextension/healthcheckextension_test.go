@@ -31,7 +31,7 @@ import (
 
 func TestHealthCheckExtensionUsage(t *testing.T) {
 	config := Config{
-		Port: getAvailablePort(t),
+		Port: testutils.GetAvailablePort(t),
 	}
 
 	hcExt, err := newServer(config, zap.NewNop())
@@ -96,7 +96,7 @@ func TestHealthCheckExtensionPortAlreadyInUse(t *testing.T) {
 
 func TestHealthCheckMultipleStarts(t *testing.T) {
 	config := Config{
-		Port: getAvailablePort(t),
+		Port: testutils.GetAvailablePort(t),
 	}
 
 	hcExt, err := newServer(config, zap.NewNop())
@@ -118,7 +118,7 @@ func TestHealthCheckMultipleStarts(t *testing.T) {
 
 func TestHealthCheckMultipleShutdowns(t *testing.T) {
 	config := Config{
-		Port: getAvailablePort(t),
+		Port: testutils.GetAvailablePort(t),
 	}
 
 	hcExt, err := newServer(config, zap.NewNop())
@@ -134,7 +134,7 @@ func TestHealthCheckMultipleShutdowns(t *testing.T) {
 
 func TestHealthCheckShutdownWithoutStart(t *testing.T) {
 	config := Config{
-		Port: getAvailablePort(t),
+		Port: testutils.GetAvailablePort(t),
 	}
 
 	hcExt, err := newServer(config, zap.NewNop())
