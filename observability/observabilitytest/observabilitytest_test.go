@@ -34,7 +34,7 @@ func TestCheckValueViewReceiverViews(t *testing.T) {
 	defer doneFn()
 
 	receiverCtx := observability.ContextWithReceiverName(context.Background(), receiverName)
-	observability.RecordTraceReceiverMetrics(receiverCtx, 17, 13)
+	observability.RecordMetricsForTraceReceiver(receiverCtx, 17, 13)
 	// Test expected values.
 	if err := observabilitytest.CheckValueViewReceiverReceivedSpans(receiverName, 17); err != nil {
 		t.Fatalf("When check recorded values: want nil got %v", err)
@@ -64,7 +64,7 @@ func TestCheckValueViewExporterViews(t *testing.T) {
 
 	receiverCtx := observability.ContextWithReceiverName(context.Background(), receiverName)
 	exporterCtx := observability.ContextWithExporterName(receiverCtx, exporterName)
-	observability.RecordTraceExporterMetrics(exporterCtx, 17, 13)
+	observability.RecordMetricsForTraceExporter(exporterCtx, 17, 13)
 	// Test expected values.
 	if err := observabilitytest.CheckValueViewExporterReceivedSpans(receiverName, exporterName, 17); err != nil {
 		t.Fatalf("When check recorded values: want nil got %v", err)
@@ -90,7 +90,7 @@ func TestCheckValueViewExporterViews(t *testing.T) {
 
 func TestNoSetupCalled(t *testing.T) {
 	receiverCtx := observability.ContextWithReceiverName(context.Background(), receiverName)
-	observability.RecordTraceReceiverMetrics(receiverCtx, 17, 13)
+	observability.RecordMetricsForTraceReceiver(receiverCtx, 17, 13)
 	// Failed to check because views are not registered.
 	if err := observabilitytest.CheckValueViewReceiverReceivedSpans(receiverName, 17); err == nil {
 		t.Fatalf("When check recorded values: want not-nil got nil")

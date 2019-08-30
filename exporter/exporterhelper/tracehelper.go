@@ -91,7 +91,7 @@ func pushTraceDataWithMetrics(next PushTraceData) PushTraceData {
 		// TODO: Add retry logic here if we want to support because we need to record special metrics.
 		droppedSpans, err := next(ctx, td)
 		// TODO: How to record the reason of dropping?
-		observability.RecordTraceExporterMetrics(ctx, len(td.Spans), droppedSpans)
+		observability.RecordMetricsForTraceExporter(ctx, len(td.Spans), droppedSpans)
 		return droppedSpans, err
 	}
 }
