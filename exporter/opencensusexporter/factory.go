@@ -68,10 +68,10 @@ func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Ex
 		return nil, err
 	}
 	oexp, err := exporterhelper.NewTraceExporter(
-		"oc_trace",
+		config,
 		oce.PushTraceData,
-		exporterhelper.WithSpanName("ocservice.exporter.OpenCensus.ConsumeTraceData"),
-		exporterhelper.WithRecordMetrics(true),
+		exporterhelper.WithTracing(true),
+		exporterhelper.WithMetrics(true),
 		exporterhelper.WithShutdown(oce.Shutdown))
 	if err != nil {
 		return nil, err
@@ -168,13 +168,12 @@ func (f *Factory) CreateMetricsExporter(logger *zap.Logger, config configmodels.
 	if err != nil {
 		return nil, err
 	}
-	// TODO https://github.com/open-telemetry/opentelemetry-service/issues/265
-	//	What is the exporterName used for? Should this be the full name of the exporter or just the type?
+
 	oexp, err := exporterhelper.NewMetricsExporter(
-		"oc_metrics",
+		config,
 		oce.PushMetricsData,
-		exporterhelper.WithSpanName("ocservice.exporter.OpenCensus.ConsumeMetricsData"),
-		exporterhelper.WithRecordMetrics(true),
+		exporterhelper.WithTracing(true),
+		exporterhelper.WithMetrics(true),
 		exporterhelper.WithShutdown(oce.Shutdown))
 
 	if err != nil {

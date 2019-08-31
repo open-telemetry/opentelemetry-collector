@@ -20,12 +20,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 )
 
 func TestNew(t *testing.T) {
 	type args struct {
-		exporterName      string
+		config            configmodels.Exporter
 		collectorEndpoint string
 	}
 	tests := []struct {
@@ -36,6 +37,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "empty_exporterName",
 			args: args{
+				config:            nil,
 				collectorEndpoint: "127.0.0.1:55678",
 			},
 			wantErr: true,
@@ -43,14 +45,14 @@ func TestNew(t *testing.T) {
 		{
 			name: "createExporter",
 			args: args{
-				exporterName:      typeStr,
+				config:            &configmodels.ExporterSettings{},
 				collectorEndpoint: "some.non.existent:55678",
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := New(tt.args.exporterName, tt.args.collectorEndpoint)
+			got, err := New(tt.args.config, tt.args.collectorEndpoint)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("New() error = %v, wantErr %v", err, tt.wantErr)
 				return

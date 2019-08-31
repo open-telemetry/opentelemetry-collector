@@ -172,6 +172,14 @@ func RecordMetricsForMetricsExporter(ctx context.Context, receivedTimeSeries int
 	stats.Record(ctx, mExporterReceivedTimeSeries.M(int64(receivedTimeSeries)), mExporterDroppedTimeSeries.M(int64(droppedTimeSeries)))
 }
 
+// MakeComponentName constructs the name of the component that should be used as a tag/metrics label.
+func MakeComponentName(typeStr, name string) string {
+	if len(name) == 0 {
+		return typeStr
+	}
+	return typeStr + "_" + name
+}
+
 // GRPCServerWithObservabilityEnabled creates a gRPC server that at a bare minimum has
 // the OpenCensus ocgrpc server stats handler enabled for tracing and stats.
 // Use it instead of invoking grpc.NewServer directly.
