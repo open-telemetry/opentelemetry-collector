@@ -28,8 +28,8 @@ var (
 )
 
 const (
-	numDroppedMetricsAttribute  = "num_dropped_metrics"
-	numReceivedMetricsAttribute = "num_received_metrics"
-	numDroppedSpansAttribute    = "num_dropped_spans"
-	numReceivedSpansAttribute   = "num_received_spans"
+	numDroppedTimeSeriesAttribute  = "num_dropped_timeseries"
+	numReceivedTimeSeriesAttribute = "num_received_timeseries"
+	numDroppedSpansAttribute       = "num_dropped_spans"
+	numReceivedSpansAttribute      = "num_received_spans"
 )

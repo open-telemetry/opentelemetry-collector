@@ -128,7 +128,7 @@ func (oce *ocagentExporter) PushMetricsData(ctx context.Context, md consumerdata
 			code: errAlreadyStopped,
 			msg:  fmt.Sprintf("OpenCensus exporter was already stopped."),
 		}
-		return len(md.Metrics), err
+		return numTimeSeries(md), err
 	}
 
 	req := &agentmetricspb.ExportMetricsServiceRequest{
@@ -139,7 +139,15 @@ func (oce *ocagentExporter) PushMetricsData(ctx context.Context, md consumerdata
 	err := exporter.ExportMetricsServiceRequest(req)
 	oce.exporters <- exporter
 	if err != nil {
-		return len(md.Metrics), err
+		return numTimeSeries(md), err
 	}
 	return 0, nil
+}
+
+func numTimeSeries(md consumerdata.MetricsData) int {
+	receivedTimeSeries := 0
+	for _, metric := range md.Metrics {
+		receivedTimeSeries += len(metric.GetTimeseries())
+	}
+	return receivedTimeSeries
 }

@@ -31,8 +31,8 @@ import (
 )
 
 const (
-	fakeReceiverName   = "fake_receiver_trace"
-	fakeExporterName   = "fake_exporter_trace"
+	fakeReceiverName   = "fake_receiver"
+	fakeExporterName   = "fake_exporter"
 	fakeSpanName       = "fake_span_name"
 	fakeParentSpanName = "fake_parent_span_name"
 )

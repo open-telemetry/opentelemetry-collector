@@ -29,7 +29,7 @@ const (
 	exporterName = "fake_exporter"
 )
 
-func TestCheckValueViewReceiverViews(t *testing.T) {
+func TestCheckValueViewTraceReceiverViews(t *testing.T) {
 	doneFn := observabilitytest.SetupRecordedMetricsTest()
 	defer doneFn()
 
@@ -58,7 +58,36 @@ func TestCheckValueViewReceiverViews(t *testing.T) {
 	}
 }
 
-func TestCheckValueViewExporterViews(t *testing.T) {
+func TestCheckValueViewMetricsReceiverViews(t *testing.T) {
+	doneFn := observabilitytest.SetupRecordedMetricsTest()
+	defer doneFn()
+
+	receiverCtx := observability.ContextWithReceiverName(context.Background(), receiverName)
+	observability.RecordMetricsForMetricsReceiver(receiverCtx, 17, 13)
+	// Test expected values.
+	if err := observabilitytest.CheckValueViewReceiverReceivedTimeSeries(receiverName, 17); err != nil {
+		t.Fatalf("When check recorded values: want nil got %v", err)
+	}
+	if err := observabilitytest.CheckValueViewReceiverDroppedTimeSeries(receiverName, 13); err != nil {
+		t.Fatalf("When check recorded values: want nil got %v", err)
+	}
+	// Test unexpected tag values
+	if err := observabilitytest.CheckValueViewReceiverReceivedTimeSeries(exporterName, 17); err == nil {
+		t.Fatalf("When check recorded values: want not-nil got nil")
+	}
+	if err := observabilitytest.CheckValueViewReceiverDroppedTimeSeries(exporterName, 13); err == nil {
+		t.Fatalf("When check recorded values: want not-nil got nil")
+	}
+	// Test unexpected recorded values
+	if err := observabilitytest.CheckValueViewReceiverReceivedTimeSeries(receiverName, 13); err == nil {
+		t.Fatalf("When check recorded values: want not-nil got nil")
+	}
+	if err := observabilitytest.CheckValueViewReceiverDroppedTimeSeries(receiverName, 17); err == nil {
+		t.Fatalf("When check recorded values: want not-nil got nil")
+	}
+}
+
+func TestCheckValueViewTraceExporterViews(t *testing.T) {
 	doneFn := observabilitytest.SetupRecordedMetricsTest()
 	defer doneFn()
 
@@ -84,6 +113,36 @@ func TestCheckValueViewExporterViews(t *testing.T) {
 		t.Fatalf("When check recorded values: want not-nil got nil")
 	}
 	if err := observabilitytest.CheckValueViewExporterDroppedSpans(receiverName, exporterName, 17); err == nil {
+		t.Fatalf("When check recorded values: want not-nil got nil")
+	}
+}
+
+func TestCheckValueViewMetricsExporterViews(t *testing.T) {
+	doneFn := observabilitytest.SetupRecordedMetricsTest()
+	defer doneFn()
+
+	receiverCtx := observability.ContextWithReceiverName(context.Background(), receiverName)
+	exporterCtx := observability.ContextWithExporterName(receiverCtx, exporterName)
+	observability.RecordMetricsForMetricsExporter(exporterCtx, 17, 13)
+	// Test expected values.
+	if err := observabilitytest.CheckValueViewExporterReceivedTimeSeries(receiverName, exporterName, 17); err != nil {
+		t.Fatalf("When check recorded values: want nil got %v", err)
+	}
+	if err := observabilitytest.CheckValueViewExporterDroppedTimeSeries(receiverName, exporterName, 13); err != nil {
+		t.Fatalf("When check recorded values: want nil got %v", err)
+	}
+	// Test unexpected tag values
+	if err := observabilitytest.CheckValueViewExporterReceivedTimeSeries(receiverName, receiverName, 17); err == nil {
+		t.Fatalf("When check recorded values: want not-nil got nil")
+	}
+	if err := observabilitytest.CheckValueViewExporterDroppedTimeSeries(receiverName, receiverName, 13); err == nil {
+		t.Fatalf("When check recorded values: want not-nil got nil")
+	}
+	// Test unexpected recorded values
+	if err := observabilitytest.CheckValueViewExporterReceivedTimeSeries(receiverName, exporterName, 13); err == nil {
+		t.Fatalf("When check recorded values: want not-nil got nil")
+	}
+	if err := observabilitytest.CheckValueViewExporterDroppedTimeSeries(receiverName, exporterName, 17); err == nil {
 		t.Fatalf("When check recorded values: want not-nil got nil")
 	}
 }
