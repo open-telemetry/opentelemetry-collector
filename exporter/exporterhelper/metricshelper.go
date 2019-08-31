@@ -53,7 +53,7 @@ func (me *metricsExporter) Shutdown() error {
 // TODO: Add support for retries.
 func NewMetricsExporter(config configmodels.Exporter, pushMetricsData PushMetricsData, options ...ExporterOption) (exporter.MetricsExporter, error) {
 	if config == nil {
-		return nil, errEmptyExporterName
+		return nil, errNilConfig
 	}
 
 	exporterFullName := observability.MakeComponentName(config.Type(), config.Name())

@@ -53,7 +53,7 @@ func (te *traceExporter) Shutdown() error {
 // TODO: Add support for retries.
 func NewTraceExporter(config configmodels.Exporter, pushTraceData PushTraceData, options ...ExporterOption) (exporter.TraceExporter, error) {
 	if config == nil {
-		return nil, errEmptyExporterName
+		return nil, errNilConfig
 	}
 
 	exporterFullName := observability.MakeComponentName(config.Type(), config.Name())

@@ -52,7 +52,7 @@ var (
 func TestTraceExporter_InvalidName(t *testing.T) {
 	te, err := NewTraceExporter(nil, newPushTraceData(0, nil))
 	require.Nil(t, te)
-	require.Equal(t, errEmptyExporterName, err)
+	require.Equal(t, errNilConfig, err)
 }
 
 func TestTraceExporter_NilPushTraceData(t *testing.T) {

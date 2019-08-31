@@ -49,7 +49,7 @@ var (
 func TestMetricsExporter_InvalidName(t *testing.T) {
 	me, err := NewMetricsExporter(nil, newPushMetricsData(0, nil))
 	require.Nil(t, me)
-	require.Equal(t, errEmptyExporterName, err)
+	require.Equal(t, errNilConfig, err)
 }
 
 func TestMetricsExporter_NilPushMetricsData(t *testing.T) {
@@ -95,7 +95,7 @@ func TestMetricsExporter_WithRecordMetrics_NonZeroDropped(t *testing.T) {
 
 func TestMetricsExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
-	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(0, want))
+	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(0, want), WithMetrics(true))
 	require.Nil(t, err)
 	require.NotNil(t, me)
 
