@@ -118,10 +118,11 @@ func (f *Factory) CreateMetricsReceiver(
 
 	// Create receiver Configuration from our input cfg
 	config := Configuration{
-		BufferCount:   rCfg.BufferCount,
-		BufferPeriod:  rCfg.BufferPeriod,
-		ScrapeConfig:  rCfg.PrometheusConfig,
-		IncludeFilter: rCfg.IncludeFilter,
+		BufferCount:         rCfg.BufferCount,
+		BufferPeriod:        rCfg.BufferPeriod,
+		ScrapeConfig:        rCfg.PrometheusConfig,
+		MetricExportNameMap: rCfg.MetricExportNameMap,
+		JobExportPrefixMap:  rCfg.JobExportPrefixMap,
 	}
 
 	if config.ScrapeConfig == nil || len(config.ScrapeConfig.ScrapeConfigs) == 0 {

@@ -47,6 +47,10 @@ var testMetadata = map[string]scrape.MetricMetadata{
 	"scrape_foo":      {Metric: "scrape_foo", Type: textparse.MetricTypeCounter, Help: "", Unit: ""},
 }
 
+var testMetricExportNameMap = map[string]string{}
+
+const testPrefix = ""
+
 type testDataPoint struct {
 	lb labels.Labels
 	t  int64
@@ -94,7 +98,7 @@ func runBuilderTests(t *testing.T, tests []buildTestData) {
 			mc := newMockMetadataCache(testMetadata)
 			st := startTs
 			for i, page := range tt.inputs {
-				b := newMetricBuilder(mc, testLogger)
+				b := newMetricBuilder(mc, testLogger, testMetricExportNameMap, testPrefix)
 				for _, pt := range page.pts {
 					// set ts for testing
 					pt.t = st
@@ -1067,7 +1071,7 @@ func Test_metricBuilder_skipped(t *testing.T) {
 func Test_metricBuilder_baddata(t *testing.T) {
 	t.Run("empty-metric-name", func(t *testing.T) {
 		mc := newMockMetadataCache(testMetadata)
-		b := newMetricBuilder(mc, testLogger)
+		b := newMetricBuilder(mc, testLogger, testMetricExportNameMap, testPrefix)
 		if err := b.AddDataPoint(labels.FromStrings("a", "b"), startTs, 123); err != errMetricNameNotFound {
 			t.Error("expecting errMetricNameNotFound error, but get nil")
 			return
@@ -1080,7 +1084,7 @@ func Test_metricBuilder_baddata(t *testing.T) {
 
 	t.Run("histogram-datapoint-no-bucket-label", func(t *testing.T) {
 		mc := newMockMetadataCache(testMetadata)
-		b := newMetricBuilder(mc, testLogger)
+		b := newMetricBuilder(mc, testLogger, testMetricExportNameMap, testPrefix)
 		if err := b.AddDataPoint(createLabels("hist_test", "k", "v"), startTs, 123); err != errEmptyBoundaryLabel {
 			t.Error("expecting errEmptyBoundaryLabel error, but get nil")
 		}
@@ -1088,7 +1092,7 @@ func Test_metricBuilder_baddata(t *testing.T) {
 
 	t.Run("summary-datapoint-no-quantile-label", func(t *testing.T) {
 		mc := newMockMetadataCache(testMetadata)
-		b := newMetricBuilder(mc, testLogger)
+		b := newMetricBuilder(mc, testLogger, testMetricExportNameMap, testPrefix)
 		if err := b.AddDataPoint(createLabels("summary_test", "k", "v"), startTs, 123); err != errEmptyBoundaryLabel {
 			t.Error("expecting errEmptyBoundaryLabel error, but get nil")
 		}

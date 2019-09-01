@@ -51,9 +51,14 @@ func TestLoadConfig(t *testing.T) {
 		})
 	assert.Equal(t, r1.PrometheusConfig.ScrapeConfigs[0].JobName, "demo")
 	assert.Equal(t, time.Duration(r1.PrometheusConfig.ScrapeConfigs[0].ScrapeInterval), 5*time.Second)
-	wantFilter := map[string][]string{
-		"localhost:9777": {"http/server/server_latency", "custom_metric1"},
-		"localhost:9778": {"http/client/roundtrip_latency"},
+	wantMetricExportNameMap := map[string]string{
+		"kubelet_docker_operations":        "docker_operations",
+		"kubelet_docker_operations_errors": "docker_operations_errors",
 	}
-	assert.Equal(t, r1.IncludeFilter, wantFilter)
+	assert.Equal(t, r1.MetricExportNameMap, wantMetricExportNameMap)
+	wantJobExportPrefixMap := map[string]string{
+		"kubelet":   "kubernetes.io/internal/nodes/kubelet/",
+		"kubeproxy": "kubernetes.io/internal/addons/kubeproxy/",
+	}
+	assert.Equal(t, r1.JobExportPrefixMap, wantJobExportPrefixMap)
 }

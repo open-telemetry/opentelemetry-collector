@@ -41,23 +41,27 @@ var errEmptyBoundaryLabel = errors.New("BucketLabel or QuantileLabel is empty")
 var dummyMetrics = make([]*metricspb.Metric, 0)
 
 type metricBuilder struct {
-	hasData           bool
-	hasInternalMetric bool
-	mc                MetadataCache
-	metrics           []*metricspb.Metric
-	logger            *zap.SugaredLogger
-	currentMf         MetricFamily
+	hasData             bool
+	hasInternalMetric   bool
+	mc                  MetadataCache
+	metrics             []*metricspb.Metric
+	logger              *zap.SugaredLogger
+	metricExportNameMap map[string]string
+	exportPrefix        string
+	currentMf           MetricFamily
 }
 
 // newMetricBuilder creates a MetricBuilder which is allowed to feed all the datapoints from a single prometheus
 // scraped page by calling its AddDataPoint function, and turn them into an opencensus data.MetricsData object
 // by calling its Build function
-func newMetricBuilder(mc MetadataCache, logger *zap.SugaredLogger) *metricBuilder {
+func newMetricBuilder(mc MetadataCache, logger *zap.SugaredLogger, metricExportNameMap map[string]string, exportPrefix string) *metricBuilder {
 
 	return &metricBuilder{
-		mc:      mc,
-		metrics: make([]*metricspb.Metric, 0),
-		logger:  logger,
+		mc:                  mc,
+		metrics:             make([]*metricspb.Metric, 0),
+		logger:              logger,
+		metricExportNameMap: metricExportNameMap,
+		exportPrefix:        exportPrefix,
 	}
 }
 
@@ -70,7 +74,6 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 		b.hasInternalMetric = true
 		lm := ls.Map()
 		delete(lm, model.MetricNameLabel)
-		b.logger.Infow("skip internal metric", "name", metricName, "ts", t, "value", v, "labels", lm)
 		return nil
 	}
 
@@ -81,9 +84,9 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 		if m != nil {
 			b.metrics = append(b.metrics, m)
 		}
-		b.currentMf = newMetricFamily(metricName, b.mc)
+		b.currentMf = newMetricFamily(metricName, b.mc, b.metricExportNameMap, b.exportPrefix)
 	} else if b.currentMf == nil {
-		b.currentMf = newMetricFamily(metricName, b.mc)
+		b.currentMf = newMetricFamily(metricName, b.mc, b.metricExportNameMap, b.exportPrefix)
 	}
 
 	return b.currentMf.Add(metricName, ls, t, v)

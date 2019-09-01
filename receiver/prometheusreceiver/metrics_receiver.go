@@ -37,23 +37,21 @@ import (
 
 // Configuration defines the behavior and targets of the Prometheus scrapers.
 type Configuration struct {
-	ScrapeConfig  *config.Config      `mapstructure:"config"`
-	BufferPeriod  time.Duration       `mapstructure:"buffer_period"`
-	BufferCount   int                 `mapstructure:"buffer_count"`
-	IncludeFilter map[string][]string `mapstructure:"include_filter"`
+	ScrapeConfig        *config.Config    `mapstructure:"config"`
+	BufferPeriod        time.Duration     `mapstructure:"buffer_period"`
+	BufferCount         int               `mapstructure:"buffer_count"`
+	MetricExportNameMap map[string]string `mapstructure:"metric_export_name"`
+	JobExportPrefixMap  map[string]string `mapstructure:"job_export_prefix"`
 }
-
-type metricsMap map[string]bool
 
 // Preceiver is the type that provides Prometheus scraper/receiver functionality.
 type Preceiver struct {
-	startOnce        sync.Once
-	stopOnce         sync.Once
-	cfg              *Configuration
-	consumer         consumer.MetricsConsumer
-	cancel           context.CancelFunc
-	logger           *zap.Logger
-	includeFilterMap map[string]metricsMap
+	startOnce sync.Once
+	stopOnce  sync.Once
+	cfg       *Configuration
+	consumer  consumer.MetricsConsumer
+	cancel    context.CancelFunc
+	logger    *zap.Logger
 }
 
 var _ receiver.MetricsReceiver = (*Preceiver)(nil)
@@ -93,33 +91,19 @@ func New(logger *zap.Logger, v *viper.Viper, next consumer.MetricsConsumer) (*Pr
 		return nil, errNilScrapeConfig
 	}
 	pr := &Preceiver{
-		cfg:              &cfg,
-		consumer:         next,
-		logger:           logger,
-		includeFilterMap: parseIncludeFilter(cfg.IncludeFilter),
+		cfg:      &cfg,
+		consumer: next,
+		logger:   logger,
 	}
 	return pr, nil
-}
-
-func parseIncludeFilter(includeFilter map[string][]string) map[string]metricsMap {
-	includeFilterMap := make(map[string]metricsMap, len(includeFilter))
-	for endpoint, metrics := range includeFilter {
-		m := make(map[string]bool, len(metrics))
-		for _, metric := range metrics {
-			m[metric] = true
-		}
-		includeFilterMap[endpoint] = m
-	}
-	return includeFilterMap
 }
 
 // New creates a new prometheus.Receiver reference.
 func newPrometheusReceiver(logger *zap.Logger, cfg *Configuration, next consumer.MetricsConsumer) *Preceiver {
 	pr := &Preceiver{
-		cfg:              cfg,
-		consumer:         next,
-		logger:           logger,
-		includeFilterMap: parseIncludeFilter(cfg.IncludeFilter),
+		cfg:      cfg,
+		consumer: next,
+		logger:   logger,
 	}
 	return pr
 }
@@ -139,7 +123,7 @@ func (pr *Preceiver) StartMetricsReception(host receiver.Host) error {
 		c, cancel := context.WithCancel(ctx)
 		pr.cancel = cancel
 		jobsMap := internal.NewJobsMap(time.Duration(2 * time.Minute))
-		app := internal.NewOcaStore(c, pr.consumer, pr.logger.Sugar(), jobsMap)
+		app := internal.NewOcaStore(c, pr.consumer, pr.logger.Sugar(), pr.cfg.MetricExportNameMap, pr.cfg.JobExportPrefixMap, jobsMap)
 		// need to use a logger with the gokitLog interface
 		l := internal.NewZapToGokitLogAdapter(pr.logger)
 		scrapeManager := scrape.NewManager(l, app)

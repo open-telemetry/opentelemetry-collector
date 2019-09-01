@@ -1,6 +1,7 @@
 module github.com/open-telemetry/opentelemetry-service
 
 require (
+	cloud.google.com/go v0.43.0 // indirect
 	contrib.go.opencensus.io/exporter/jaeger v0.1.1-0.20190430175949-e8b55949d948
 	contrib.go.opencensus.io/exporter/ocagent v0.6.0
 	contrib.go.opencensus.io/exporter/prometheus v0.1.0
@@ -8,7 +9,7 @@ require (
 	contrib.go.opencensus.io/resource v0.1.1
 	github.com/VividCortex/gohistogram v1.0.0 // indirect
 	github.com/apache/thrift v0.0.0-20161221203622-b2a4d4ae21c7
-	github.com/aws/aws-sdk-go v1.19.18 // indirect
+	github.com/aws/aws-sdk-go v1.22.1 // indirect
 	github.com/bmizerany/perks v0.0.0-20141205001514-d9a9656a3a4b // indirect
 	github.com/census-instrumentation/opencensus-proto v0.2.1
 	github.com/client9/misspell v0.3.4
@@ -16,9 +17,10 @@ require (
 	github.com/gogo/googleapis v1.2.0 // indirect
 	github.com/golang/protobuf v1.3.2
 	github.com/google/addlicense v0.0.0-20190510175307-22550fa7c1b0
-	github.com/google/go-cmp v0.3.0
+	github.com/google/go-cmp v0.3.1
 	github.com/gorilla/mux v1.6.2
 	github.com/grpc-ecosystem/grpc-gateway v1.9.4
+	github.com/hashicorp/golang-lru v0.5.3 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jaegertracing/jaeger v1.9.0
 	github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024
@@ -45,9 +47,12 @@ require (
 	go.opencensus.io v0.22.0
 	go.uber.org/zap v1.10.0
 	golang.org/x/lint v0.0.0-20190409202823-959b441ac422
+	golang.org/x/net v0.0.0-20190724013045-ca1201d0de80 // indirect
+	golang.org/x/sys v0.0.0-20190804053845-51ab0e2deafa // indirect
 	golang.org/x/tools v0.0.0-20190730215328-ed3277de2799
 	google.golang.org/api v0.7.0
-	google.golang.org/grpc v1.22.0
+	google.golang.org/genproto v0.0.0-20190801165951-fa694d86fc64 // indirect
+	google.golang.org/grpc v1.22.1
 	gopkg.in/yaml.v2 v2.2.2
 	honnef.co/go/tools v0.0.0-20190523083050-ea95bdfd59fc
 )

@@ -46,28 +46,32 @@ var errNoJobInstance = errors.New("job or instance cannot be found from labels")
 // will be flush to the downstream consumer, or Rollback, which means discard all the data, is called and all data
 // points are discarded.
 type transaction struct {
-	id            int64
-	ctx           context.Context
-	isNew         bool
-	sink          consumer.MetricsConsumer
-	job           string
-	instance      string
-	jobsMap       *JobsMap
-	ms            MetadataService
-	node          *commonpb.Node
-	metricBuilder *metricBuilder
-	logger        *zap.SugaredLogger
+	id                  int64
+	ctx                 context.Context
+	isNew               bool
+	sink                consumer.MetricsConsumer
+	job                 string
+	instance            string
+	metricExportNameMap map[string]string
+	jobExportPrefixMap  map[string]string
+	jobsMap             *JobsMap
+	ms                  MetadataService
+	node                *commonpb.Node
+	metricBuilder       *metricBuilder
+	logger              *zap.SugaredLogger
 }
 
-func newTransaction(ctx context.Context, jobsMap *JobsMap, ms MetadataService, sink consumer.MetricsConsumer, logger *zap.SugaredLogger) *transaction {
+func newTransaction(ctx context.Context, metricExportNameMap map[string]string, jobExportPrefixMap map[string]string, jobsMap *JobsMap, ms MetadataService, sink consumer.MetricsConsumer, logger *zap.SugaredLogger) *transaction {
 	return &transaction{
-		id:      atomic.AddInt64(&idSeq, 1),
-		ctx:     ctx,
-		isNew:   true,
-		sink:    sink,
-		jobsMap: jobsMap,
-		ms:      ms,
-		logger:  logger,
+		id:                  atomic.AddInt64(&idSeq, 1),
+		ctx:                 ctx,
+		isNew:               true,
+		sink:                sink,
+		metricExportNameMap: metricExportNameMap,
+		jobExportPrefixMap:  jobExportPrefixMap,
+		jobsMap:             jobsMap,
+		ms:                  ms,
+		logger:              logger,
 	}
 }
 
@@ -120,7 +124,12 @@ func (tr *transaction) initTransaction(ls labels.Labels) error {
 		tr.instance = instance
 	}
 	tr.node = createNode(job, instance, mc.SharedLabels().Get(model.SchemeLabel))
-	tr.metricBuilder = newMetricBuilder(mc, tr.logger)
+	exportPrefix, ok := tr.jobExportPrefixMap[job]
+	if !ok {
+		exportPrefix = ""
+	}
+	tr.logger.Infof("*** Job:%v Inst:%v, Prefix:%v", job, instance, exportPrefix)
+	tr.metricBuilder = newMetricBuilder(mc, tr.logger, tr.metricExportNameMap, exportPrefix)
 	tr.isNew = false
 	return nil
 }
@@ -142,6 +151,13 @@ func (tr *transaction) Commit() error {
 		if tr.jobsMap != nil {
 			metrics = NewMetricsAdjuster(tr.jobsMap.get(tr.job, tr.instance), tr.logger).AdjustMetrics(metrics)
 		}
+
+		res := "*** Metrics: "
+		for _, metric := range metrics {
+			res += metric.MetricDescriptor.Name + ", "
+		}
+		tr.logger.Info(res)
+
 		md := consumerdata.MetricsData{
 			Node:    tr.node,
 			Metrics: metrics,

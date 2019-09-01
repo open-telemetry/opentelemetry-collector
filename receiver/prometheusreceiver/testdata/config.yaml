@@ -4,9 +4,13 @@ receivers:
     endpoint: "1.2.3.4:456"
     buffer_period: 234
     buffer_count: 45
-    include_filter: {
-      "localhost:9777" : [http/server/server_latency, custom_metric1],
-      "localhost:9778" : [http/client/roundtrip_latency],
+    metric_export_name: {
+      "kubelet_docker_operations":        "docker_operations",
+      "kubelet_docker_operations_errors": "docker_operations_errors",
+    }
+    job_export_prefix: {
+      "kubelet":   "kubernetes.io/internal/nodes/kubelet/",
+      "kubeproxy": "kubernetes.io/internal/addons/kubeproxy/"
     }
     config:
       scrape_configs:

@@ -151,22 +151,42 @@ receivers:
               - targets: ['localhost:9777']
 ```
 
-### Include Filter
-Include Filter provides ability to filter scraping metrics per target. If a filter is specified for
-a target then only those metrics which exactly matches one of the metrics specified in the `Include Filter` list will be scraped.
-Rest of the metrics from the targets will be dropped.
+### Job Export Prefix
+Job Export Prefix provides the ability to add a metrics prefix per target. If a prefix is specified for a target then
+those metrics are scraped from that target will have the prefix added in the exported name.
 
 #### Syntax
 - Endpoint should be double quoted.
-- Metrics should be specified in form of a list.
+- Prefix should be double quoted with a "/" at the end.
 
 #### Example
 ```yaml
 receivers:
     prometheus:
-      include_filter: {
-        "localhost:9777" : [http/server/server_latency, custom_metric1],
-        "localhost:9778" : [http/client/roundtrip_latency],                
+      job_export_prefix: {
+        "localhost:9777" : "opencensus.io/prometheus"
+        "localhost:9778" : "opentelemetry.io/prometheus"
+      }
+      config:
+        scrape_configs:
+          ...
+```
+
+### Metric Export Name
+Metric Export Name provides the ability to transform a given Prometheus metric name into an new name. If an export name is specified then
+that name will be used when the metric is exported otherwise the orignal name will be used.
+
+#### Syntax
+- Name should be double quoted.
+- ExportedName should be double quoted.
+
+#### Example
+```yaml
+receivers:
+    prometheus:
+      metric_export_name: {
+        "prometheus_operations": "operations",
+        "prometheus_operations_errors": "operations_errors"
       }
       config:
         scrape_configs:

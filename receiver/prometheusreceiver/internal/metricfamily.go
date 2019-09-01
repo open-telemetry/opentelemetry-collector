@@ -36,6 +36,7 @@ type MetricFamily interface {
 
 type metricFamily struct {
 	name             string
+	exportName       string
 	mtype            metricspb.MetricDescriptor_Type
 	mc               MetadataCache
 	labelKeys        map[string]bool
@@ -45,7 +46,7 @@ type metricFamily struct {
 	groups           map[string]*metricGroup
 }
 
-func newMetricFamily(metricName string, mc MetadataCache) MetricFamily {
+func newMetricFamily(metricName string, mc MetadataCache, metricExportNameMap map[string]string, exportPrefix string) MetricFamily {
 	familyName := normalizeMetricName(metricName)
 
 	// lookup metadata based on familyName
@@ -62,9 +63,9 @@ func newMetricFamily(metricName string, mc MetadataCache) MetricFamily {
 			metadata.Type = textparse.MetricTypeUnknown
 		}
 	}
-
 	return &metricFamily{
 		name:             familyName,
+		exportName:       exportName(familyName, metricExportNameMap, exportPrefix),
 		mtype:            convToOCAMetricType(metadata.Type),
 		mc:               mc,
 		labelKeys:        make(map[string]bool),
@@ -73,6 +74,17 @@ func newMetricFamily(metricName string, mc MetadataCache) MetricFamily {
 		groupOrders:      make(map[string]int),
 		groups:           make(map[string]*metricGroup),
 	}
+}
+
+func exportName(metricName string, metricExportNameMap map[string]string, exportPrefix string) string {
+	exportName, ok := metricExportNameMap[metricName]
+	if !ok {
+		exportName = metricName
+	}
+	if exportPrefix != "" {
+		exportName = exportPrefix + exportName
+	}
+	return exportName
 }
 
 func (mf *metricFamily) IsSameFamily(metricName string) bool {
@@ -209,7 +221,7 @@ func (mf *metricFamily) ToMetric() *metricspb.Metric {
 	if len(timeseries) != 0 {
 		return &metricspb.Metric{
 			MetricDescriptor: &metricspb.MetricDescriptor{
-				Name:        mf.name,
+				Name:        mf.exportName,
 				Description: mf.metadata.Help,
 				Unit:        heuristicalMetricAndKnownUnits(mf.name, mf.metadata.Unit),
 				Type:        mf.mtype,
