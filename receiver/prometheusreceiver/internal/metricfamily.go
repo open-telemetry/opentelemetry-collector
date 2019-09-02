@@ -37,6 +37,7 @@ type MetricFamily interface {
 type metricFamily struct {
 	name             string
 	mtype            metricspb.MetricDescriptor_Type
+	mdCache          map[string]*metricspb.MetricDescriptor
 	mc               MetadataCache
 	labelKeys        map[string]bool
 	labelKeysOrdered []string
@@ -45,7 +46,7 @@ type metricFamily struct {
 	groups           map[string]*metricGroup
 }
 
-func newMetricFamily(metricName string, mc MetadataCache) MetricFamily {
+func newMetricFamily(metricName string, mdCache map[string]*metricspb.MetricDescriptor, mc MetadataCache) MetricFamily {
 	familyName := normalizeMetricName(metricName)
 
 	// lookup metadata based on familyName
@@ -65,6 +66,7 @@ func newMetricFamily(metricName string, mc MetadataCache) MetricFamily {
 
 	return &metricFamily{
 		name:             familyName,
+		mdCache:          mdCache,
 		mtype:            convToOCAMetricType(metadata.Type),
 		mc:               mc,
 		labelKeys:        make(map[string]bool),
@@ -207,18 +209,21 @@ func (mf *metricFamily) ToMetric() *metricspb.Metric {
 	}
 
 	if len(timeseries) != 0 {
-		return &metricspb.Metric{
-			MetricDescriptor: &metricspb.MetricDescriptor{
+		descriptor, ok := mf.mdCache[mf.name]
+		if !ok {
+			descriptor = &metricspb.MetricDescriptor{
 				Name:        mf.name,
 				Description: mf.metadata.Help,
 				Unit:        heuristicalMetricAndKnownUnits(mf.name, mf.metadata.Unit),
 				Type:        mf.mtype,
 				LabelKeys:   mf.getLabelKeys(),
-			},
-			Timeseries: timeseries,
+			}
+			if mf.mdCache != nil {
+				mf.mdCache[mf.name] = descriptor
+			}
 		}
+		return &metricspb.Metric{MetricDescriptor: descriptor, Timeseries: timeseries}
 	}
-
 	return nil
 }
 

@@ -22,6 +22,7 @@ import (
 	"sync/atomic"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/prometheus/common/model"
@@ -53,19 +54,21 @@ type transaction struct {
 	job           string
 	instance      string
 	jobsMap       *JobsMap
+	mdCache       map[string]*metricspb.MetricDescriptor
 	ms            MetadataService
 	node          *commonpb.Node
 	metricBuilder *metricBuilder
 	logger        *zap.SugaredLogger
 }
 
-func newTransaction(ctx context.Context, jobsMap *JobsMap, ms MetadataService, sink consumer.MetricsConsumer, logger *zap.SugaredLogger) *transaction {
+func newTransaction(ctx context.Context, jobsMap *JobsMap, mdCache map[string]*metricspb.MetricDescriptor, ms MetadataService, sink consumer.MetricsConsumer, logger *zap.SugaredLogger) *transaction {
 	return &transaction{
 		id:      atomic.AddInt64(&idSeq, 1),
 		ctx:     ctx,
 		isNew:   true,
 		sink:    sink,
 		jobsMap: jobsMap,
+		mdCache: mdCache,
 		ms:      ms,
 		logger:  logger,
 	}
@@ -120,7 +123,7 @@ func (tr *transaction) initTransaction(ls labels.Labels) error {
 		tr.instance = instance
 	}
 	tr.node = createNode(job, instance, mc.SharedLabels().Get(model.SchemeLabel))
-	tr.metricBuilder = newMetricBuilder(mc, tr.logger)
+	tr.metricBuilder = newMetricBuilder(mc, tr.logger, tr.mdCache)
 	tr.isNew = false
 	return nil
 }

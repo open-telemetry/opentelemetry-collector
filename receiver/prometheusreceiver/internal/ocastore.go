@@ -21,6 +21,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/prometheus/prometheus/storage"
@@ -55,10 +56,11 @@ type ocaStore struct {
 	once    *sync.Once
 	ctx     context.Context
 	jobsMap *JobsMap
+	mdCache map[string]*metricspb.MetricDescriptor
 }
 
 // NewOcaStore returns an ocaStore instance, which can be acted as prometheus' scrape.Appendable
-func NewOcaStore(ctx context.Context, sink consumer.MetricsConsumer, logger *zap.SugaredLogger, jobsMap *JobsMap) OcaStore {
+func NewOcaStore(ctx context.Context, sink consumer.MetricsConsumer, logger *zap.SugaredLogger, jobsMap *JobsMap, mdCache map[string]*metricspb.MetricDescriptor) OcaStore {
 	return &ocaStore{
 		running: runningStateInit,
 		ctx:     ctx,
@@ -66,6 +68,7 @@ func NewOcaStore(ctx context.Context, sink consumer.MetricsConsumer, logger *zap
 		logger:  logger,
 		once:    &sync.Once{},
 		jobsMap: jobsMap,
+		mdCache: mdCache,
 	}
 }
 
@@ -80,7 +83,7 @@ func (o *ocaStore) SetScrapeManager(scrapeManager *scrape.Manager) {
 func (o *ocaStore) Appender() (storage.Appender, error) {
 	state := atomic.LoadInt32(&o.running)
 	if state == runningStateReady {
-		return newTransaction(o.ctx, o.jobsMap, o.mc, o.sink, o.logger), nil
+		return newTransaction(o.ctx, o.jobsMap, o.mdCache, o.mc, o.sink, o.logger), nil
 	} else if state == runningStateInit {
 		return nil, errors.New("ScrapeManager is not set")
 	}

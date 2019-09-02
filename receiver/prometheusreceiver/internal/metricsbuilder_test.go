@@ -94,7 +94,8 @@ func runBuilderTests(t *testing.T, tests []buildTestData) {
 			mc := newMockMetadataCache(testMetadata)
 			st := startTs
 			for i, page := range tt.inputs {
-				b := newMetricBuilder(mc, testLogger)
+				mdCache := map[string]*metricspb.MetricDescriptor{}
+				b := newMetricBuilder(mc, testLogger, mdCache)
 				for _, pt := range page.pts {
 					// set ts for testing
 					pt.t = st
@@ -111,6 +112,16 @@ func runBuilderTests(t *testing.T, tests []buildTestData) {
 					got := string(exportertest.ToJSON(metrics))
 					diff := cmp.Diff(want, got)
 					t.Errorf("metricBuilder.Build() mismatch (-want[%d] +got[%d]):\n%v\n want=%v \n got=%v", i, i, diff, want, got)
+				}
+				if len(mdCache) != len(tt.wants[i]) {
+					t.Errorf("metricBuilder.Build() cache not expect length %v, %v", len(mdCache), len(tt.wants[i]))
+				} else {
+					for _, metric := range metrics {
+						_, ok := mdCache[metric.GetMetricDescriptor().GetName()]
+						if !ok {
+							t.Errorf("metricBuilder.Build() metric not cached %v", metric.GetMetricDescriptor().GetName())
+						}
+					}
 				}
 				st += interval
 			}
@@ -1067,7 +1078,7 @@ func Test_metricBuilder_skipped(t *testing.T) {
 func Test_metricBuilder_baddata(t *testing.T) {
 	t.Run("empty-metric-name", func(t *testing.T) {
 		mc := newMockMetadataCache(testMetadata)
-		b := newMetricBuilder(mc, testLogger)
+		b := newMetricBuilder(mc, testLogger, nil)
 		if err := b.AddDataPoint(labels.FromStrings("a", "b"), startTs, 123); err != errMetricNameNotFound {
 			t.Error("expecting errMetricNameNotFound error, but get nil")
 			return
@@ -1080,7 +1091,7 @@ func Test_metricBuilder_baddata(t *testing.T) {
 
 	t.Run("histogram-datapoint-no-bucket-label", func(t *testing.T) {
 		mc := newMockMetadataCache(testMetadata)
-		b := newMetricBuilder(mc, testLogger)
+		b := newMetricBuilder(mc, testLogger, nil)
 		if err := b.AddDataPoint(createLabels("hist_test", "k", "v"), startTs, 123); err != errEmptyBoundaryLabel {
 			t.Error("expecting errEmptyBoundaryLabel error, but get nil")
 		}
@@ -1088,7 +1099,7 @@ func Test_metricBuilder_baddata(t *testing.T) {
 
 	t.Run("summary-datapoint-no-quantile-label", func(t *testing.T) {
 		mc := newMockMetadataCache(testMetadata)
-		b := newMetricBuilder(mc, testLogger)
+		b := newMetricBuilder(mc, testLogger, nil)
 		if err := b.AddDataPoint(createLabels("summary_test", "k", "v"), startTs, 123); err != errEmptyBoundaryLabel {
 			t.Error("expecting errEmptyBoundaryLabel error, but get nil")
 		}

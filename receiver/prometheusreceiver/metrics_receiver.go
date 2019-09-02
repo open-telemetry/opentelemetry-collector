@@ -21,6 +21,7 @@ import (
 	"sync"
 	"time"
 
+	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/prometheus/prometheus/discovery"
 	"github.com/prometheus/prometheus/scrape"
 	"go.uber.org/zap"
@@ -139,7 +140,8 @@ func (pr *Preceiver) StartMetricsReception(host receiver.Host) error {
 		c, cancel := context.WithCancel(ctx)
 		pr.cancel = cancel
 		jobsMap := internal.NewJobsMap(time.Duration(2 * time.Minute))
-		app := internal.NewOcaStore(c, pr.consumer, pr.logger.Sugar(), jobsMap)
+		mdCache := map[string]*metricspb.MetricDescriptor{}
+		app := internal.NewOcaStore(c, pr.consumer, pr.logger.Sugar(), jobsMap, mdCache)
 		// need to use a logger with the gokitLog interface
 		l := internal.NewZapToGokitLogAdapter(pr.logger)
 		scrapeManager := scrape.NewManager(l, app)
