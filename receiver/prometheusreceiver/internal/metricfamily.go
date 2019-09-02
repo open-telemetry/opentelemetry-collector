@@ -40,9 +40,6 @@ var (
 	k8SKeyLocation      = "k8s_location"
 	k8SKeyClusterName   = "k8s_cluster_name"
 	k8SKeyNodeName      = "k8s_node_name"
-	k8SKeyContainerName = "container_name"
-	k8sKeyNampespace    = "namespace"
-	k8sKeyPodName       = "pod_name"
 )
 
 type metricFamily struct {
