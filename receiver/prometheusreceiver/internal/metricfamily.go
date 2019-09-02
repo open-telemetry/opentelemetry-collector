@@ -37,9 +37,12 @@ type MetricFamily interface {
 }
 
 var (
-	k8SLocation    = "k8s_location"
-	k8SClusterName = "k8s_cluster_name"
-	k8SNodeName    = "k8s_node_name"
+	k8SKeyLocation      = "k8s_location"
+	k8SKeyClusterName   = "k8s_cluster_name"
+	k8SKeyNodeName      = "k8s_node_name"
+	k8SKeyContainerName = "container_name"
+	k8sKeyNampespace    = "namespace"
+	k8sKeyPodName       = "pod_name"
 )
 
 type metricFamily struct {
@@ -374,15 +377,15 @@ func populateLabelValues(orderedKeys []string, ls labels.Labels) []*metricspb.La
 }
 
 func createNodeResource(resourceLabels map[string]string) *resourcepb.Resource {
-	location, ok1 := resourceLabels[k8SLocation]
+	location, ok1 := resourceLabels[k8SKeyLocation]
 	if !ok1 {
 		return nil
 	}
-	clusterName, ok2 := resourceLabels[k8SClusterName]
+	clusterName, ok2 := resourceLabels[k8SKeyClusterName]
 	if !ok2 {
 		return nil
 	}
-	nodeName, ok3 := resourceLabels[k8SNodeName]
+	nodeName, ok3 := resourceLabels[k8SKeyNodeName]
 	if !ok3 {
 		return nil
 	}
