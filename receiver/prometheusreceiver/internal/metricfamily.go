@@ -37,9 +37,9 @@ type MetricFamily interface {
 }
 
 var (
-	k8SKeyLocation      = "k8s_location"
-	k8SKeyClusterName   = "k8s_cluster_name"
-	k8SKeyNodeName      = "k8s_node_name"
+	k8SKeyLocation    = "k8s_location"
+	k8SKeyClusterName = "k8s_cluster_name"
+	k8SKeyNodeName    = "k8s_node_name"
 )
 
 type metricFamily struct {
