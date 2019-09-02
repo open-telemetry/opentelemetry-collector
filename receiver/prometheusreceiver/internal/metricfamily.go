@@ -19,11 +19,13 @@ import (
 	"strings"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/pkg/textparse"
 	"github.com/prometheus/prometheus/scrape"
+	"go.opencensus.io/resource/resourcekeys"
 )
 
 // MetricFamily is unit which is corresponding to the metrics items which shared the same TYPE/UNIT/... metadata from
@@ -34,6 +36,12 @@ type MetricFamily interface {
 	ToMetric() *metricspb.Metric
 }
 
+var (
+	k8SLocation    = "k8s_location"
+	k8SClusterName = "k8s_cluster_name"
+	k8SNodeName    = "k8s_node_name"
+)
+
 type metricFamily struct {
 	name             string
 	mtype            metricspb.MetricDescriptor_Type
@@ -43,9 +51,10 @@ type metricFamily struct {
 	metadata         *scrape.MetricMetadata
 	groupOrders      map[string]int
 	groups           map[string]*metricGroup
+	nodeResource     *resourcepb.Resource
 }
 
-func newMetricFamily(metricName string, mc MetadataCache) MetricFamily {
+func newMetricFamily(metricName string, resourceLabels map[string]string, mc MetadataCache) MetricFamily {
 	familyName := normalizeMetricName(metricName)
 
 	// lookup metadata based on familyName
@@ -72,6 +81,7 @@ func newMetricFamily(metricName string, mc MetadataCache) MetricFamily {
 		metadata:         &metadata,
 		groupOrders:      make(map[string]int),
 		groups:           make(map[string]*metricGroup),
+		nodeResource:     createNodeResource(resourceLabels),
 	}
 }
 
@@ -207,7 +217,7 @@ func (mf *metricFamily) ToMetric() *metricspb.Metric {
 	}
 
 	if len(timeseries) != 0 {
-		return &metricspb.Metric{
+		metric := &metricspb.Metric{
 			MetricDescriptor: &metricspb.MetricDescriptor{
 				Name:        mf.name,
 				Description: mf.metadata.Help,
@@ -217,8 +227,11 @@ func (mf *metricFamily) ToMetric() *metricspb.Metric {
 			},
 			Timeseries: timeseries,
 		}
+		if mf.nodeResource != nil {
+			metric.Resource = mf.nodeResource
+		}
+		return metric
 	}
-
 	return nil
 }
 
@@ -358,4 +371,28 @@ func populateLabelValues(orderedKeys []string, ls labels.Labels) []*metricspb.La
 		lvs[i] = &metricspb.LabelValue{Value: value, HasValue: value != ""}
 	}
 	return lvs
+}
+
+func createNodeResource(resourceLabels map[string]string) *resourcepb.Resource {
+	location, ok1 := resourceLabels[k8SLocation]
+	if !ok1 {
+		return nil
+	}
+	clusterName, ok2 := resourceLabels[k8SClusterName]
+	if !ok2 {
+		return nil
+	}
+	nodeName, ok3 := resourceLabels[k8SNodeName]
+	if !ok3 {
+		return nil
+	}
+	return &resourcepb.Resource{
+		Type: resourcekeys.HostType,
+		Labels: map[string]string{
+			// project_id?
+			resourcekeys.CloudKeyZone:      location,
+			resourcekeys.K8SKeyClusterName: clusterName,
+			resourcekeys.HostKeyName:       nodeName,
+		},
+	}
 }

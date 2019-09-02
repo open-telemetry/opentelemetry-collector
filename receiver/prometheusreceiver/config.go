@@ -29,4 +29,5 @@ type Config struct {
 	BufferPeriod                  time.Duration       `mapstructure:"buffer_period"`
 	BufferCount                   int                 `mapstructure:"buffer_count"`
 	IncludeFilter                 map[string][]string `mapstructure:"include_filter"`
+	ResourceLabels                map[string]string   `mapstructure:"resource_labels"`
 }

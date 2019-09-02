@@ -37,10 +37,11 @@ import (
 
 // Configuration defines the behavior and targets of the Prometheus scrapers.
 type Configuration struct {
-	ScrapeConfig  *config.Config      `mapstructure:"config"`
-	BufferPeriod  time.Duration       `mapstructure:"buffer_period"`
-	BufferCount   int                 `mapstructure:"buffer_count"`
-	IncludeFilter map[string][]string `mapstructure:"include_filter"`
+	ScrapeConfig   *config.Config      `mapstructure:"config"`
+	BufferPeriod   time.Duration       `mapstructure:"buffer_period"`
+	BufferCount    int                 `mapstructure:"buffer_count"`
+	IncludeFilter  map[string][]string `mapstructure:"include_filter"`
+	ResourceLabels map[string]string   `mapstructure:"resource_labels"`
 }
 
 type metricsMap map[string]bool
@@ -139,7 +140,7 @@ func (pr *Preceiver) StartMetricsReception(host receiver.Host) error {
 		c, cancel := context.WithCancel(ctx)
 		pr.cancel = cancel
 		jobsMap := internal.NewJobsMap(time.Duration(2 * time.Minute))
-		app := internal.NewOcaStore(c, pr.consumer, pr.logger.Sugar(), jobsMap)
+		app := internal.NewOcaStore(c, pr.consumer, pr.logger.Sugar(), jobsMap, pr.cfg.ResourceLabels)
 		// need to use a logger with the gokitLog interface
 		l := internal.NewZapToGokitLogAdapter(pr.logger)
 		scrapeManager := scrape.NewManager(l, app)

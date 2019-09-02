@@ -45,6 +45,7 @@ type metricBuilder struct {
 	hasInternalMetric bool
 	mc                MetadataCache
 	metrics           []*metricspb.Metric
+	resourceLabels    map[string]string
 	logger            *zap.SugaredLogger
 	currentMf         MetricFamily
 }
@@ -52,12 +53,13 @@ type metricBuilder struct {
 // newMetricBuilder creates a MetricBuilder which is allowed to feed all the datapoints from a single prometheus
 // scraped page by calling its AddDataPoint function, and turn them into an opencensus data.MetricsData object
 // by calling its Build function
-func newMetricBuilder(mc MetadataCache, logger *zap.SugaredLogger) *metricBuilder {
+func newMetricBuilder(resourceLabels map[string]string, mc MetadataCache, logger *zap.SugaredLogger) *metricBuilder {
 
 	return &metricBuilder{
-		mc:      mc,
-		metrics: make([]*metricspb.Metric, 0),
-		logger:  logger,
+		mc:             mc,
+		metrics:        make([]*metricspb.Metric, 0),
+		logger:         logger,
+		resourceLabels: resourceLabels,
 	}
 }
 
@@ -70,7 +72,6 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 		b.hasInternalMetric = true
 		lm := ls.Map()
 		delete(lm, model.MetricNameLabel)
-		b.logger.Infow("skip internal metric", "name", metricName, "ts", t, "value", v, "labels", lm)
 		return nil
 	}
 
@@ -81,9 +82,9 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 		if m != nil {
 			b.metrics = append(b.metrics, m)
 		}
-		b.currentMf = newMetricFamily(metricName, b.mc)
+		b.currentMf = newMetricFamily(metricName, b.resourceLabels, b.mc)
 	} else if b.currentMf == nil {
-		b.currentMf = newMetricFamily(metricName, b.mc)
+		b.currentMf = newMetricFamily(metricName, b.resourceLabels, b.mc)
 	}
 
 	return b.currentMf.Add(metricName, ls, t, v)
