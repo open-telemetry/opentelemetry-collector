@@ -34,9 +34,9 @@ func TestTracePieplineRecordedMetrics(t *testing.T) {
 	defer doneFn()
 
 	receiverCtx := observability.ContextWithReceiverName(context.Background(), receiverName)
-	observability.RecordTraceReceiverMetrics(receiverCtx, 17, 13)
+	observability.RecordMetricsForTraceReceiver(receiverCtx, 17, 13)
 	exporterCtx := observability.ContextWithExporterName(receiverCtx, exporterName)
-	observability.RecordTraceExporterMetrics(exporterCtx, 27, 23)
+	observability.RecordMetricsForTraceExporter(exporterCtx, 27, 23)
 	if err := observabilitytest.CheckValueViewReceiverReceivedSpans(receiverName, 17); err != nil {
 		t.Fatalf("When check recorded values: want nil got %v", err)
 	}

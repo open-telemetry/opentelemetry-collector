@@ -132,7 +132,7 @@ func (ocr *Receiver) Export(tes agenttracepb.TraceService_ExportServer) error {
 
 		ocr.messageChan <- &traceDataWithCtx{data: td, ctx: ctxWithReceiverName}
 
-		observability.RecordTraceReceiverMetrics(ctxWithReceiverName, len(td.Spans), 0)
+		observability.RecordMetricsForTraceReceiver(ctxWithReceiverName, len(td.Spans), 0)
 
 		recv, err = tes.Recv()
 		if err != nil {

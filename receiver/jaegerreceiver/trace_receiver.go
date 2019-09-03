@@ -267,7 +267,7 @@ func (jr *jReceiver) SubmitBatches(ctx thrift.Context, batches []*jaeger.Batch) 
 			td.SourceFormat = "jaeger"
 			jr.nextConsumer.ConsumeTraceData(ctx, td)
 			// We MUST unconditionally record metrics from this reception.
-			observability.RecordTraceReceiverMetrics(ctxWithReceiverName, len(batch.Spans), len(batch.Spans)-len(td.Spans))
+			observability.RecordMetricsForTraceReceiver(ctxWithReceiverName, len(batch.Spans), len(batch.Spans)-len(td.Spans))
 		}
 
 		jbsr = append(jbsr, &jaeger.BatchSubmitResponse{
@@ -292,12 +292,12 @@ func (jr *jReceiver) EmitZipkinBatch(spans []*zipkincore.Span) error {
 func (jr *jReceiver) EmitBatch(batch *jaeger.Batch) error {
 	td, err := jaegertranslator.ThriftBatchToOCProto(batch)
 	if err != nil {
-		observability.RecordTraceReceiverMetrics(jr.defaultAgentCtx, len(batch.Spans), len(batch.Spans))
+		observability.RecordMetricsForTraceReceiver(jr.defaultAgentCtx, len(batch.Spans), len(batch.Spans))
 		return err
 	}
 
 	err = jr.nextConsumer.ConsumeTraceData(jr.defaultAgentCtx, td)
-	observability.RecordTraceReceiverMetrics(jr.defaultAgentCtx, len(batch.Spans), len(batch.Spans)-len(td.Spans))
+	observability.RecordMetricsForTraceReceiver(jr.defaultAgentCtx, len(batch.Spans), len(batch.Spans)-len(td.Spans))
 
 	return err
 }
@@ -324,12 +324,12 @@ func (jr *jReceiver) PostSpans(ctx context.Context, r *api_v2.PostSpansRequest) 
 	td, err := jaegertranslator.ProtoBatchToOCProto(r.Batch)
 	td.SourceFormat = "jaeger"
 	if err != nil {
-		observability.RecordTraceReceiverMetrics(ctxWithReceiverName, len(r.Batch.Spans), len(r.Batch.Spans))
+		observability.RecordMetricsForTraceReceiver(ctxWithReceiverName, len(r.Batch.Spans), len(r.Batch.Spans))
 		return nil, err
 	}
 
 	err = jr.nextConsumer.ConsumeTraceData(ctx, td)
-	observability.RecordTraceReceiverMetrics(ctxWithReceiverName, len(r.Batch.Spans), len(r.Batch.Spans)-len(td.Spans))
+	observability.RecordMetricsForTraceReceiver(ctxWithReceiverName, len(r.Batch.Spans), len(r.Batch.Spans)-len(td.Spans))
 	if err != nil {
 		return nil, err
 	}

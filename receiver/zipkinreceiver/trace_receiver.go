@@ -337,7 +337,7 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO: Get the number of dropped spans from the conversion failure.
-	observability.RecordTraceReceiverMetrics(ctxWithReceiverName, tdsSize, 0)
+	observability.RecordMetricsForTraceReceiver(ctxWithReceiverName, tdsSize, 0)
 
 	// Finally send back the response "Accepted" as
 	// required at https://zipkin.io/zipkin-api/#/default/post_spans
