@@ -22,6 +22,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-service/observability"
 	"github.com/open-telemetry/opentelemetry-service/observability/observabilitytest"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -29,36 +30,57 @@ const (
 	exporterName = "fake_exporter"
 )
 
-func TestCheckValueViewReceiverViews(t *testing.T) {
+func TestCheckValueViewTraceReceiverViews(t *testing.T) {
 	doneFn := observabilitytest.SetupRecordedMetricsTest()
 	defer doneFn()
 
 	receiverCtx := observability.ContextWithReceiverName(context.Background(), receiverName)
 	observability.RecordMetricsForTraceReceiver(receiverCtx, 17, 13)
 	// Test expected values.
-	if err := observabilitytest.CheckValueViewReceiverReceivedSpans(receiverName, 17); err != nil {
-		t.Fatalf("When check recorded values: want nil got %v", err)
-	}
-	if err := observabilitytest.CheckValueViewReceiverDroppedSpans(receiverName, 13); err != nil {
-		t.Fatalf("When check recorded values: want nil got %v", err)
-	}
+	err := observabilitytest.CheckValueViewReceiverReceivedSpans(receiverName, 17)
+	require.Nil(t, err, "When check receiver received spans")
+	err = observabilitytest.CheckValueViewReceiverDroppedSpans(receiverName, 13)
+	require.Nil(t, err, "When check receiver dropped spans")
+
 	// Test unexpected tag values
-	if err := observabilitytest.CheckValueViewReceiverReceivedSpans(exporterName, 17); err == nil {
-		t.Fatalf("When check recorded values: want not-nil got nil")
-	}
-	if err := observabilitytest.CheckValueViewReceiverDroppedSpans(exporterName, 13); err == nil {
-		t.Fatalf("When check recorded values: want not-nil got nil")
-	}
+	err = observabilitytest.CheckValueViewReceiverReceivedSpans(exporterName, 17)
+	require.NotNil(t, err, "When check for unexpected tag value")
+	err = observabilitytest.CheckValueViewReceiverDroppedSpans(exporterName, 13)
+	require.NotNil(t, err, "When check for unexpected tag value")
+
 	// Test unexpected recorded values
-	if err := observabilitytest.CheckValueViewReceiverReceivedSpans(receiverName, 13); err == nil {
-		t.Fatalf("When check recorded values: want not-nil got nil")
-	}
-	if err := observabilitytest.CheckValueViewReceiverDroppedSpans(receiverName, 17); err == nil {
-		t.Fatalf("When check recorded values: want not-nil got nil")
-	}
+	err = observabilitytest.CheckValueViewReceiverReceivedSpans(receiverName, 13)
+	require.NotNil(t, err, "When check for unexpected value")
+	err = observabilitytest.CheckValueViewReceiverDroppedSpans(receiverName, 17)
+	require.NotNil(t, err, "When check for unexpected value")
 }
 
-func TestCheckValueViewExporterViews(t *testing.T) {
+func TestCheckValueViewMetricsReceiverViews(t *testing.T) {
+	doneFn := observabilitytest.SetupRecordedMetricsTest()
+	defer doneFn()
+
+	receiverCtx := observability.ContextWithReceiverName(context.Background(), receiverName)
+	observability.RecordMetricsForMetricsReceiver(receiverCtx, 17, 13)
+	// Test expected values.
+	err := observabilitytest.CheckValueViewReceiverReceivedTimeSeries(receiverName, 17)
+	require.Nil(t, err, "When check receiver received timeseries")
+	err = observabilitytest.CheckValueViewReceiverDroppedTimeSeries(receiverName, 13)
+	require.Nil(t, err, "When check receiver dropped timeseries")
+
+	// Test unexpected tag values
+	err = observabilitytest.CheckValueViewReceiverReceivedTimeSeries(exporterName, 17)
+	require.NotNil(t, err, "When check for unexpected tag value")
+	err = observabilitytest.CheckValueViewReceiverDroppedTimeSeries(exporterName, 13)
+	require.NotNil(t, err, "When check for unexpected tag value")
+
+	// Test unexpected recorded values
+	err = observabilitytest.CheckValueViewReceiverReceivedTimeSeries(receiverName, 13)
+	require.NotNil(t, err, "When check for unexpected value")
+	err = observabilitytest.CheckValueViewReceiverDroppedTimeSeries(receiverName, 17)
+	require.NotNil(t, err, "When check for unexpected value")
+}
+
+func TestCheckValueViewTraceExporterViews(t *testing.T) {
 	doneFn := observabilitytest.SetupRecordedMetricsTest()
 	defer doneFn()
 
@@ -66,33 +88,54 @@ func TestCheckValueViewExporterViews(t *testing.T) {
 	exporterCtx := observability.ContextWithExporterName(receiverCtx, exporterName)
 	observability.RecordMetricsForTraceExporter(exporterCtx, 17, 13)
 	// Test expected values.
-	if err := observabilitytest.CheckValueViewExporterReceivedSpans(receiverName, exporterName, 17); err != nil {
-		t.Fatalf("When check recorded values: want nil got %v", err)
-	}
-	if err := observabilitytest.CheckValueViewExporterDroppedSpans(receiverName, exporterName, 13); err != nil {
-		t.Fatalf("When check recorded values: want nil got %v", err)
-	}
+	err := observabilitytest.CheckValueViewExporterReceivedSpans(receiverName, exporterName, 17)
+	require.Nil(t, err, "When check exporter received spans")
+	err = observabilitytest.CheckValueViewExporterDroppedSpans(receiverName, exporterName, 13)
+	require.Nil(t, err, "When check exporter dropped spans")
+
 	// Test unexpected tag values
-	if err := observabilitytest.CheckValueViewExporterReceivedSpans(receiverName, receiverName, 17); err == nil {
-		t.Fatalf("When check recorded values: want not-nil got nil")
-	}
-	if err := observabilitytest.CheckValueViewExporterDroppedSpans(receiverName, receiverName, 13); err == nil {
-		t.Fatalf("When check recorded values: want not-nil got nil")
-	}
+	err = observabilitytest.CheckValueViewExporterReceivedSpans(receiverName, receiverName, 17)
+	require.NotNil(t, err, "When check for unexpected tag value")
+	err = observabilitytest.CheckValueViewExporterDroppedSpans(receiverName, receiverName, 13)
+	require.NotNil(t, err, "When check for unexpected tag value")
+
 	// Test unexpected recorded values
-	if err := observabilitytest.CheckValueViewExporterReceivedSpans(receiverName, exporterName, 13); err == nil {
-		t.Fatalf("When check recorded values: want not-nil got nil")
-	}
-	if err := observabilitytest.CheckValueViewExporterDroppedSpans(receiverName, exporterName, 17); err == nil {
-		t.Fatalf("When check recorded values: want not-nil got nil")
-	}
+	err = observabilitytest.CheckValueViewExporterReceivedSpans(receiverName, exporterName, 13)
+	require.NotNil(t, err, "When check for unexpected value")
+	err = observabilitytest.CheckValueViewExporterDroppedSpans(receiverName, exporterName, 17)
+	require.NotNil(t, err, "When check for unexpected value")
+}
+
+func TestCheckValueViewMetricsExporterViews(t *testing.T) {
+	doneFn := observabilitytest.SetupRecordedMetricsTest()
+	defer doneFn()
+
+	receiverCtx := observability.ContextWithReceiverName(context.Background(), receiverName)
+	exporterCtx := observability.ContextWithExporterName(receiverCtx, exporterName)
+	observability.RecordMetricsForMetricsExporter(exporterCtx, 17, 13)
+	// Test expected values.
+	err := observabilitytest.CheckValueViewExporterReceivedTimeSeries(receiverName, exporterName, 17)
+	require.Nil(t, err, "When check exporter received timeseries")
+	err = observabilitytest.CheckValueViewExporterDroppedTimeSeries(receiverName, exporterName, 13)
+	require.Nil(t, err, "When check exporter dropped timeseries")
+
+	// Test unexpected tag values
+	err = observabilitytest.CheckValueViewExporterReceivedTimeSeries(receiverName, receiverName, 17)
+	require.NotNil(t, err, "When check for unexpected tag value")
+	err = observabilitytest.CheckValueViewExporterDroppedTimeSeries(receiverName, receiverName, 13)
+	require.NotNil(t, err, "When check for unexpected tag value")
+
+	// Test unexpected recorded values
+	err = observabilitytest.CheckValueViewExporterReceivedTimeSeries(receiverName, exporterName, 13)
+	require.NotNil(t, err, "When check for unexpected value")
+	err = observabilitytest.CheckValueViewExporterDroppedTimeSeries(receiverName, exporterName, 17)
+	require.NotNil(t, err, "When check for unexpected value")
 }
 
 func TestNoSetupCalled(t *testing.T) {
 	receiverCtx := observability.ContextWithReceiverName(context.Background(), receiverName)
 	observability.RecordMetricsForTraceReceiver(receiverCtx, 17, 13)
 	// Failed to check because views are not registered.
-	if err := observabilitytest.CheckValueViewReceiverReceivedSpans(receiverName, 17); err == nil {
-		t.Fatalf("When check recorded values: want not-nil got nil")
-	}
+	err := observabilitytest.CheckValueViewReceiverReceivedSpans(receiverName, 17)
+	require.NotNil(t, err, "When check with no views registered")
 }

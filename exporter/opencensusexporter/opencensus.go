@@ -25,6 +25,7 @@ import (
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-service/exporter/exporterhelper"
 	"github.com/open-telemetry/opentelemetry-service/oterr"
 )
 
@@ -128,7 +129,7 @@ func (oce *ocagentExporter) PushMetricsData(ctx context.Context, md consumerdata
 			code: errAlreadyStopped,
 			msg:  fmt.Sprintf("OpenCensus exporter was already stopped."),
 		}
-		return len(md.Metrics), err
+		return exporterhelper.NumTimeSeries(md), err
 	}
 
 	req := &agentmetricspb.ExportMetricsServiceRequest{
@@ -139,7 +140,7 @@ func (oce *ocagentExporter) PushMetricsData(ctx context.Context, md consumerdata
 	err := exporter.ExportMetricsServiceRequest(req)
 	oce.exporters <- exporter
 	if err != nil {
-		return len(md.Metrics), err
+		return exporterhelper.NumTimeSeries(md), err
 	}
 	return 0, nil
 }

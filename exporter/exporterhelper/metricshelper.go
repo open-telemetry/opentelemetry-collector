@@ -26,7 +26,7 @@ import (
 
 // PushMetricsData is a helper function that is similar to ConsumeMetricsData but also returns
 // the number of dropped metrics.
-type PushMetricsData func(ctx context.Context, td consumerdata.MetricsData) (droppedMetrics int, err error)
+type PushMetricsData func(ctx context.Context, td consumerdata.MetricsData) (droppedTimeSeries int, err error)
 
 type metricsExporter struct {
 	exporterName    string
@@ -53,7 +53,6 @@ func (me *metricsExporter) Shutdown() error {
 
 // NewMetricsExporter creates an MetricsExporter that can record metrics and can wrap every request with a Span.
 // If no options are passed it just adds the exporter format as a tag in the Context.
-// TODO: Add support for recordMetrics.
 // TODO: Add support for retries.
 func NewMetricsExporter(exporterName string, pushMetricsData PushMetricsData, options ...ExporterOption) (exporter.MetricsExporter, error) {
 	if exporterName == "" {
@@ -65,6 +64,9 @@ func NewMetricsExporter(exporterName string, pushMetricsData PushMetricsData, op
 	}
 
 	opts := newExporterOptions(options...)
+	if opts.recordMetrics {
+		pushMetricsData = pushMetricsDataWithMetrics(pushMetricsData)
+	}
 
 	if opts.spanName != "" {
 		pushMetricsData = pushMetricsDataWithSpan(pushMetricsData, opts.spanName)
@@ -82,21 +84,41 @@ func NewMetricsExporter(exporterName string, pushMetricsData PushMetricsData, op
 	}, nil
 }
 
+func pushMetricsDataWithMetrics(next PushMetricsData) PushMetricsData {
+	return func(ctx context.Context, md consumerdata.MetricsData) (int, error) {
+		// TODO: Add retry logic here if we want to support because we need to record special metrics.
+		droppedTimeSeries, err := next(ctx, md)
+		// TODO: How to record the reason of dropping?
+		observability.RecordMetricsForMetricsExporter(ctx, NumTimeSeries(md), droppedTimeSeries)
+		return droppedTimeSeries, err
+	}
+}
+
 func pushMetricsDataWithSpan(next PushMetricsData, spanName string) PushMetricsData {
 	return func(ctx context.Context, md consumerdata.MetricsData) (int, error) {
 		ctx, span := trace.StartSpan(ctx, spanName)
 		defer span.End()
 		// Call next stage.
-		droppedMetrics, err := next(ctx, md)
+		droppedTimeSeries, err := next(ctx, md)
 		if span.IsRecordingEvents() {
+			receivedTimeSeries := NumTimeSeries(md)
 			span.AddAttributes(
-				trace.Int64Attribute(numReceivedMetricsAttribute, int64(len(md.Metrics))),
-				trace.Int64Attribute(numDroppedMetricsAttribute, int64(droppedMetrics)),
+				trace.Int64Attribute(numReceivedTimeSeriesAttribute, int64(receivedTimeSeries)),
+				trace.Int64Attribute(numDroppedTimeSeriesAttribute, int64(droppedTimeSeries)),
 			)
 			if err != nil {
 				span.SetStatus(errToStatus(err))
 			}
 		}
-		return droppedMetrics, err
+		return droppedTimeSeries, err
 	}
+}
+
+// NumTimeSeries returns the number of timeseries in a MetricsData.
+func NumTimeSeries(md consumerdata.MetricsData) int {
+	receivedTimeSeries := 0
+	for _, metric := range md.Metrics {
+		receivedTimeSeries += len(metric.GetTimeseries())
+	}
+	return receivedTimeSeries
 }
