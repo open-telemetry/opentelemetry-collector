@@ -53,7 +53,6 @@ func (me *metricsExporter) Shutdown() error {
 
 // NewMetricsExporter creates an MetricsExporter that can record metrics and can wrap every request with a Span.
 // If no options are passed it just adds the exporter format as a tag in the Context.
-// TODO: Add support for recordMetrics.
 // TODO: Add support for retries.
 func NewMetricsExporter(exporterName string, pushMetricsData PushMetricsData, options ...ExporterOption) (exporter.MetricsExporter, error) {
 	if exporterName == "" {
