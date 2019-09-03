@@ -153,7 +153,7 @@ receivers:
 
 ### Job Export Prefix
 Job Export Prefix provides the ability to add a metrics prefix per target. If a prefix is specified for a target then
-those metrics are scraped from that target will have the prefix added in the exported name.
+those metrics scraped from that target will have the prefix added in the exported name.
 
 #### Syntax
 - Endpoint should be double quoted.
@@ -164,8 +164,8 @@ those metrics are scraped from that target will have the prefix added in the exp
 receivers:
     prometheus:
       job_export_prefix: {
-        "localhost:9777" : "opencensus.io/prometheus"
-        "localhost:9778" : "opentelemetry.io/prometheus"
+        "localhost:9777" : "opencensus.io/prometheus/"
+        "localhost:9778" : "opentelemetry.io/prometheus/"
       }
       config:
         scrape_configs:
@@ -173,7 +173,7 @@ receivers:
 ```
 
 ### Metric Export Name
-Metric Export Name provides the ability to transform a given Prometheus metric name into an new name. If an export name is specified then
+Metric Export Name provides the ability to transform a given Prometheus metric name into a new name. If an export name is specified then
 that name will be used when the metric is exported otherwise the orignal name will be used.
 
 #### Syntax
