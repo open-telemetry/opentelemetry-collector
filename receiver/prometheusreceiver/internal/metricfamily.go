@@ -381,10 +381,9 @@ func createNodeResource(resourceLabels map[string]string) *resourcepb.Resource {
 	return &resourcepb.Resource{
 		Type: resourcekeys.HostType,
 		Labels: map[string]string{
-			// project_id?
-			resourcekeys.CloudKeyZone:      location,    // "cloud.zone"
-			resourcekeys.K8SKeyClusterName: clusterName, // "k8s.cluster.name"
-			resourcekeys.HostKeyName:       nodeName,    // "host.name"
+			resourcekeys.CloudKeyZone:      location,
+			resourcekeys.K8SKeyClusterName: clusterName,
+			resourcekeys.HostKeyName:       nodeName,
 		},
 	}
 }
