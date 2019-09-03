@@ -24,9 +24,9 @@ import (
 
 func Test_createNodeResource(t *testing.T) {
 	resourceLabels := map[string]string{
-		"k8s_location":     "my_location",
-		"k8s_cluster_name": "my_cluster_name",
-		"k8s_node_name":    "my_node_name",
+		resourcekeys.CloudKeyZone:      "my_location",
+		resourcekeys.K8SKeyClusterName: "my_cluster_name",
+		resourcekeys.HostKeyName:       "my_node_name",
 	}
 
 	expected := &resourcepb.Resource{
@@ -54,24 +54,24 @@ func Test_createNodeResourceNil(t *testing.T) {
 
 func Test_createNodeResourceMissingField(t *testing.T) {
 	result1 := createNodeResource(map[string]string{
-		"k8s_cluster_name": "my_cluster_name",
-		"k8s_node_name":    "my_node_name",
+		resourcekeys.K8SKeyClusterName: "my_cluster_name",
+		resourcekeys.HostKeyName:       "my_node_name",
 	})
 	if result1 != nil {
 		t.Errorf("Error: expected nil, actual %v", result1)
 
 	}
 	result2 := createNodeResource(map[string]string{
-		"k8s_location":  "my_location",
-		"k8s_node_name": "my_node_name",
+		resourcekeys.CloudKeyZone: "my_location",
+		resourcekeys.HostKeyName:  "my_node_name",
 	})
 	if result2 != nil {
 		t.Errorf("Error: expected nil, actual %v", result2)
 
 	}
 	result3 := createNodeResource(map[string]string{
-		"k8s_location":     "my_location",
-		"k8s_cluster_name": "my_cluster_name",
+		resourcekeys.CloudKeyZone:      "my_location",
+		resourcekeys.K8SKeyClusterName: "my_cluster_name",
 	})
 	if result3 != nil {
 		t.Errorf("Error: expected nil, actual %v", result3)

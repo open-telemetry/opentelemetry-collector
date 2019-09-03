@@ -9,9 +9,9 @@ receivers:
       "localhost:9778" : [http/client/roundtrip_latency],
     }
     resource_labels: {
-      "k8s_location": "us-central-1a",
-      "k8s_cluster_name": "prometheus-cluster",
-      "k8s_node_name": "prometheus-node",
+      "cloud.zone": "us-central-1a",
+      "k8s.cluster.name": "prometheus-cluster",
+      "host.name": "prometheus-node",
     }
     config:
       scrape_configs:

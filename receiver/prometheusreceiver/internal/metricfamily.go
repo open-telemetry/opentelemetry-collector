@@ -36,12 +36,6 @@ type MetricFamily interface {
 	ToMetric() *metricspb.Metric
 }
 
-var (
-	k8SKeyLocation    = "k8s_location"
-	k8SKeyClusterName = "k8s_cluster_name"
-	k8SKeyNodeName    = "k8s_node_name"
-)
-
 type metricFamily struct {
 	name             string
 	mtype            metricspb.MetricDescriptor_Type
@@ -217,7 +211,7 @@ func (mf *metricFamily) ToMetric() *metricspb.Metric {
 	}
 
 	if len(timeseries) != 0 {
-		metric := &metricspb.Metric{
+		return &metricspb.Metric{
 			MetricDescriptor: &metricspb.MetricDescriptor{
 				Name:        mf.name,
 				Description: mf.metadata.Help,
@@ -226,11 +220,8 @@ func (mf *metricFamily) ToMetric() *metricspb.Metric {
 				LabelKeys:   mf.getLabelKeys(),
 			},
 			Timeseries: timeseries,
+			Resource:   mf.nodeResource,
 		}
-		if mf.nodeResource != nil {
-			metric.Resource = mf.nodeResource
-		}
-		return metric
 	}
 	return nil
 }
@@ -373,26 +364,27 @@ func populateLabelValues(orderedKeys []string, ls labels.Labels) []*metricspb.La
 	return lvs
 }
 
+// TODO: add support for other resource types
 func createNodeResource(resourceLabels map[string]string) *resourcepb.Resource {
-	location, ok1 := resourceLabels[k8SKeyLocation]
-	if !ok1 {
+	location, ok := resourceLabels[resourcekeys.CloudKeyZone]
+	if !ok {
 		return nil
 	}
-	clusterName, ok2 := resourceLabels[k8SKeyClusterName]
-	if !ok2 {
+	clusterName, ok := resourceLabels[resourcekeys.K8SKeyClusterName]
+	if !ok {
 		return nil
 	}
-	nodeName, ok3 := resourceLabels[k8SKeyNodeName]
-	if !ok3 {
+	nodeName, ok := resourceLabels[resourcekeys.HostKeyName]
+	if !ok {
 		return nil
 	}
 	return &resourcepb.Resource{
 		Type: resourcekeys.HostType,
 		Labels: map[string]string{
 			// project_id?
-			resourcekeys.CloudKeyZone:      location,
-			resourcekeys.K8SKeyClusterName: clusterName,
-			resourcekeys.HostKeyName:       nodeName,
+			resourcekeys.CloudKeyZone:      location,    // "cloud.zone"
+			resourcekeys.K8SKeyClusterName: clusterName, // "k8s.cluster.name"
+			resourcekeys.HostKeyName:       nodeName,    // "host.name"
 		},
 	}
 }
