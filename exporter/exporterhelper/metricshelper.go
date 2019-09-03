@@ -90,7 +90,7 @@ func pushMetricsDataWithMetrics(next PushMetricsData) PushMetricsData {
 		// TODO: Add retry logic here if we want to support because we need to record special metrics.
 		droppedTimeSeries, err := next(ctx, md)
 		// TODO: How to record the reason of dropping?
-		observability.RecordMetricsForMetricsExporter(ctx, numTimeSeries(md), droppedTimeSeries)
+		observability.RecordMetricsForMetricsExporter(ctx, NumTimeSeries(md), droppedTimeSeries)
 		return droppedTimeSeries, err
 	}
 }
@@ -102,7 +102,7 @@ func pushMetricsDataWithSpan(next PushMetricsData, spanName string) PushMetricsD
 		// Call next stage.
 		droppedTimeSeries, err := next(ctx, md)
 		if span.IsRecordingEvents() {
-			receivedTimeSeries := numTimeSeries(md)
+			receivedTimeSeries := NumTimeSeries(md)
 			span.AddAttributes(
 				trace.Int64Attribute(numReceivedTimeSeriesAttribute, int64(receivedTimeSeries)),
 				trace.Int64Attribute(numDroppedTimeSeriesAttribute, int64(droppedTimeSeries)),
@@ -115,7 +115,8 @@ func pushMetricsDataWithSpan(next PushMetricsData, spanName string) PushMetricsD
 	}
 }
 
-func numTimeSeries(md consumerdata.MetricsData) int {
+// NumTimeSeries returns the number of timeseries in a MetricsData.
+func NumTimeSeries(md consumerdata.MetricsData) int {
 	receivedTimeSeries := 0
 	for _, metric := range md.Metrics {
 		receivedTimeSeries += len(metric.GetTimeseries())

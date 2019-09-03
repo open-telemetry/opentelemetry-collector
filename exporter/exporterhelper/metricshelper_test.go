@@ -157,7 +157,7 @@ func checkRecordedMetricsForMetricsExporter(t *testing.T, me exporter.MetricsExp
 		require.Equal(t, wantError, me.ConsumeMetricsData(ctx, md))
 	}
 
-	err := observabilitytest.CheckValueViewExporterReceivedTimeSeries(fakeReceiverName, me.Name(), numBatches*numTimeSeries(md))
+	err := observabilitytest.CheckValueViewExporterReceivedTimeSeries(fakeReceiverName, me.Name(), numBatches*NumTimeSeries(md))
 	require.Nilf(t, err, "CheckValueViewExporterTimeSeries: Want nil Got %v", err)
 
 	err = observabilitytest.CheckValueViewExporterDroppedTimeSeries(fakeReceiverName, me.Name(), numBatches*droppedTimeSeries)

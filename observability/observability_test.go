@@ -22,6 +22,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-service/observability"
 	"github.com/open-telemetry/opentelemetry-service/observability/observabilitytest"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -37,16 +38,38 @@ func TestTracePieplineRecordedMetrics(t *testing.T) {
 	observability.RecordMetricsForTraceReceiver(receiverCtx, 17, 13)
 	exporterCtx := observability.ContextWithExporterName(receiverCtx, exporterName)
 	observability.RecordMetricsForTraceExporter(exporterCtx, 27, 23)
-	if err := observabilitytest.CheckValueViewReceiverReceivedSpans(receiverName, 17); err != nil {
-		t.Fatalf("When check recorded values: want nil got %v", err)
-	}
-	if err := observabilitytest.CheckValueViewReceiverDroppedSpans(receiverName, 13); err != nil {
-		t.Fatalf("When check recorded values: want nil got %v", err)
-	}
-	if err := observabilitytest.CheckValueViewExporterReceivedSpans(receiverName, exporterName, 27); err != nil {
-		t.Fatalf("When check recorded values: want nil got %v", err)
-	}
-	if err := observabilitytest.CheckValueViewExporterDroppedSpans(receiverName, exporterName, 23); err != nil {
-		t.Fatalf("When check recorded values: want nil got %v", err)
-	}
+
+	err := observabilitytest.CheckValueViewReceiverReceivedSpans(receiverName, 17)
+	require.Nil(t, err, "When check receiver received spans")
+
+	err = observabilitytest.CheckValueViewReceiverDroppedSpans(receiverName, 13)
+	require.Nil(t, err, "When check receiver dropped spans")
+
+	err = observabilitytest.CheckValueViewExporterReceivedSpans(receiverName, exporterName, 27)
+	require.Nil(t, err, "When check exporter received spans")
+
+	err = observabilitytest.CheckValueViewExporterDroppedSpans(receiverName, exporterName, 23)
+	require.Nil(t, err, "When check exporter dropped spans")
+}
+
+func TestMEtricsPieplineRecordedMetrics(t *testing.T) {
+	doneFn := observabilitytest.SetupRecordedMetricsTest()
+	defer doneFn()
+
+	receiverCtx := observability.ContextWithReceiverName(context.Background(), receiverName)
+	observability.RecordMetricsForMetricsReceiver(receiverCtx, 17, 13)
+	exporterCtx := observability.ContextWithExporterName(receiverCtx, exporterName)
+	observability.RecordMetricsForMetricsExporter(exporterCtx, 27, 23)
+
+	err := observabilitytest.CheckValueViewReceiverReceivedTimeSeries(receiverName, 17)
+	require.Nil(t, err, "When check receiver received timeseries")
+
+	err = observabilitytest.CheckValueViewReceiverDroppedTimeSeries(receiverName, 13)
+	require.Nil(t, err, "When check receiver dropped timeseries")
+
+	err = observabilitytest.CheckValueViewExporterReceivedTimeSeries(receiverName, exporterName, 27)
+	require.Nil(t, err, "When check exporter received timeseries")
+
+	err = observabilitytest.CheckValueViewExporterDroppedTimeSeries(receiverName, exporterName, 23)
+	require.Nil(t, err, "When check exporter dropped timeseries")
 }
