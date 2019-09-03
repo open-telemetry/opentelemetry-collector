@@ -128,7 +128,6 @@ func (tr *transaction) initTransaction(ls labels.Labels) error {
 	if !ok {
 		exportPrefix = ""
 	}
-	tr.logger.Infof("*** Job:%v Inst:%v, Prefix:%v", job, instance, exportPrefix)
 	tr.metricBuilder = newMetricBuilder(mc, tr.logger, tr.metricExportNameMap, exportPrefix)
 	tr.isNew = false
 	return nil
@@ -151,12 +150,6 @@ func (tr *transaction) Commit() error {
 		if tr.jobsMap != nil {
 			metrics = NewMetricsAdjuster(tr.jobsMap.get(tr.job, tr.instance), tr.logger).AdjustMetrics(metrics)
 		}
-
-		res := "*** Metrics: "
-		for _, metric := range metrics {
-			res += metric.MetricDescriptor.Name + ", "
-		}
-		tr.logger.Info(res)
 
 		md := consumerdata.MetricsData{
 			Node:    tr.node,
