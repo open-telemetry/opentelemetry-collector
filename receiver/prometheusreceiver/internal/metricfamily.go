@@ -76,6 +76,9 @@ func newMetricFamily(metricName string, mc MetadataCache, metricExportNameMap ma
 	}
 }
 
+// exportName transforms the given Prometheus metric name into the metric name specified in the metricExportMap.
+// If the name is not in the map, the original name is preserved. The exportPrefix is then prepended to the
+// exported metric name.
 func exportName(metricName string, metricExportNameMap map[string]string, exportPrefix string) string {
 	exportName, ok := metricExportNameMap[metricName]
 	if !ok {
