@@ -200,7 +200,6 @@ func (pr *Preceiver) StopMetricsReception() error {
 	return nil
 }
 
-// TODO: add support for other resource types
 func createResource(resource *Resource) *resourcepb.Resource {
 	if resource.Type == resourcekeys.HostType {
 		rpb := &resourcepb.Resource{
