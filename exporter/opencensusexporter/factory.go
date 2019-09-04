@@ -28,7 +28,6 @@ import (
 	compressiongrpc "github.com/open-telemetry/opentelemetry-service/compression/grpc"
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
-	"github.com/open-telemetry/opentelemetry-service/exporter/exporterhelper"
 )
 
 const (
@@ -63,47 +62,7 @@ func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Ex
 	if err != nil {
 		return nil, err
 	}
-	return f.CreateTraceExporterExtendOptions(logger, ocac, opts)
-}
-
-// createOCAgentExporter takes ocagent exporter options and create an OC exporter
-func (f *Factory) createOCAgentExporter(logger *zap.Logger, ocac *Config, opts []ocagent.ExporterOption) (*ocagentExporter, error) {
-	numWorkers := defaultNumWorkers
-	if ocac.NumWorkers > 0 {
-		numWorkers = ocac.NumWorkers
-	}
-
-	exportersChan := make(chan *ocagent.Exporter, numWorkers)
-	for exporterIndex := 0; exporterIndex < numWorkers; exporterIndex++ {
-		exporter, serr := ocagent.NewExporter(opts...)
-		if serr != nil {
-			return nil, fmt.Errorf("cannot configure OpenCensus exporter: %v", serr)
-		}
-		exportersChan <- exporter
-	}
-	oce := &ocagentExporter{exporters: exportersChan}
-	return oce, nil
-}
-
-// CreateTraceExporterExtendOptions exposes the options as a parameter to the
-// construction of the underlying OC Exporter.
-// This is useful for forks that extend OC Exporter functionalities.
-func (f *Factory) CreateTraceExporterExtendOptions(logger *zap.Logger, ocac *Config, opts []ocagent.ExporterOption) (exporter.TraceExporter, error) {
-	oce, err := f.createOCAgentExporter(logger, ocac, opts)
-	if err != nil {
-		return nil, err
-	}
-	oexp, err := exporterhelper.NewTraceExporter(
-		"oc_trace",
-		oce.PushTraceData,
-		exporterhelper.WithSpanName("otelservice.exporter.OpenCensus.ConsumeTraceData"),
-		exporterhelper.WithRecordMetrics(true),
-		exporterhelper.WithShutdown(oce.Shutdown))
-	if err != nil {
-		return nil, err
-	}
-
-	return oexp, nil
+	return NewTraceExporter(logger, config, opts...)
 }
 
 // OCAgentOptions takes the oc exporter Config and generates ocagent Options
@@ -166,27 +125,10 @@ func (f *Factory) OCAgentOptions(logger *zap.Logger, ocac *Config) ([]ocagent.Ex
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
 func (f *Factory) CreateMetricsExporter(logger *zap.Logger, config configmodels.Exporter) (exporter.MetricsExporter, error) {
-	ocac := config.(*Config)
-	opts, err := f.OCAgentOptions(logger, ocac)
+	oCfg := config.(*Config)
+	opts, err := f.OCAgentOptions(logger, oCfg)
 	if err != nil {
 		return nil, err
 	}
-	oce, err := f.createOCAgentExporter(logger, ocac, opts)
-	if err != nil {
-		return nil, err
-	}
-	// TODO https://github.com/open-telemetry/opentelemetry-service/issues/265
-	//	What is the exporterName used for? Should this be the full name of the exporter or just the type?
-	oexp, err := exporterhelper.NewMetricsExporter(
-		"oc_metrics",
-		oce.PushMetricsData,
-		exporterhelper.WithSpanName("otelservice.exporter.OpenCensus.ConsumeMetricsData"),
-		exporterhelper.WithRecordMetrics(true),
-		exporterhelper.WithShutdown(oce.Shutdown))
-
-	if err != nil {
-		return nil, err
-	}
-
-	return oexp, nil
+	return NewMetricsExporter(logger, config, opts...)
 }
