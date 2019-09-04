@@ -63,21 +63,7 @@ func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Ex
 	if err != nil {
 		return nil, err
 	}
-	oce, err := f.createOCAgentExporter(logger, ocac, opts)
-	if err != nil {
-		return nil, err
-	}
-	oexp, err := exporterhelper.NewTraceExporter(
-		"oc_trace",
-		oce.PushTraceData,
-		exporterhelper.WithSpanName("ocservice.exporter.OpenCensus.ConsumeTraceData"),
-		exporterhelper.WithRecordMetrics(true),
-		exporterhelper.WithShutdown(oce.Shutdown))
-	if err != nil {
-		return nil, err
-	}
-
-	return oexp, nil
+	return f.CreateOCAgentTraceExporter(logger, ocac, opts)
 }
 
 // createOCAgentExporter takes ocagent exporter options and create an OC exporter
@@ -97,6 +83,28 @@ func (f *Factory) createOCAgentExporter(logger *zap.Logger, ocac *Config, opts [
 	}
 	oce := &ocagentExporter{exporters: exportersChan}
 	return oce, nil
+}
+
+// CreateOCAgentTraceExporter is a wrapper around creating the OC agent exporter and
+// returning it as the TraceExporter interface.
+// This method is exposed to allow for extending the options OC Agent supports
+// in forks.
+func (f *Factory) CreateOCAgentTraceExporter(logger *zap.Logger, ocac *Config, opts []ocagent.ExporterOption) (exporter.TraceExporter, error) {
+	oce, err := f.createOCAgentExporter(logger, ocac, opts)
+	if err != nil {
+		return nil, err
+	}
+	oexp, err := exporterhelper.NewTraceExporter(
+		"oc_trace",
+		oce.PushTraceData,
+		exporterhelper.WithSpanName("otelservice.exporter.OpenCensus.ConsumeTraceData"),
+		exporterhelper.WithRecordMetrics(true),
+		exporterhelper.WithShutdown(oce.Shutdown))
+	if err != nil {
+		return nil, err
+	}
+
+	return oexp, nil
 }
 
 // OCAgentOptions takes the oc exporter Config and generates ocagent Options
@@ -173,7 +181,7 @@ func (f *Factory) CreateMetricsExporter(logger *zap.Logger, config configmodels.
 	oexp, err := exporterhelper.NewMetricsExporter(
 		"oc_metrics",
 		oce.PushMetricsData,
-		exporterhelper.WithSpanName("ocservice.exporter.OpenCensus.ConsumeMetricsData"),
+		exporterhelper.WithSpanName("otelservice.exporter.OpenCensus.ConsumeMetricsData"),
 		exporterhelper.WithRecordMetrics(true),
 		exporterhelper.WithShutdown(oce.Shutdown))
 
