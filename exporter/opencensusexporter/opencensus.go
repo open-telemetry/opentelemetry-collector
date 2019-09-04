@@ -23,8 +23,11 @@ import (
 	"contrib.go.opencensus.io/exporter/ocagent"
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
+	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-service/exporter"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exporterhelper"
 	"github.com/open-telemetry/opentelemetry-service/oterr"
 )
@@ -37,7 +40,7 @@ type KeepaliveConfig struct {
 	PermitWithoutStream bool          `mapstructure:"permit-without-stream,omitempty"`
 }
 
-type ocagentExporter struct {
+type ocAgentExporter struct {
 	exporters chan *ocagent.Exporter
 }
 
@@ -67,7 +70,65 @@ const (
 	errAlreadyStopped
 )
 
-func (oce *ocagentExporter) Shutdown() error {
+// NewTraceExporter creates an Open Census trace exporter.
+func NewTraceExporter(logger *zap.Logger, config configmodels.Exporter, opts ...ocagent.ExporterOption) (exporter.TraceExporter, error) {
+	oce, err := createOCAgentExporter(logger, config, opts...)
+	if err != nil {
+		return nil, err
+	}
+	oexp, err := exporterhelper.NewTraceExporter(
+		config,
+		oce.PushTraceData,
+		exporterhelper.WithTracing(true),
+		exporterhelper.WithMetrics(true),
+		exporterhelper.WithShutdown(oce.Shutdown))
+	if err != nil {
+		return nil, err
+	}
+
+	return oexp, nil
+}
+
+// createOCAgentExporter takes ocagent exporter options and create an OC exporter
+func createOCAgentExporter(logger *zap.Logger, config configmodels.Exporter, opts ...ocagent.ExporterOption) (*ocAgentExporter, error) {
+	oCfg := config.(*Config)
+	numWorkers := defaultNumWorkers
+	if oCfg.NumWorkers > 0 {
+		numWorkers = oCfg.NumWorkers
+	}
+
+	exportersChan := make(chan *ocagent.Exporter, numWorkers)
+	for exporterIndex := 0; exporterIndex < numWorkers; exporterIndex++ {
+		exporter, serr := ocagent.NewExporter(opts...)
+		if serr != nil {
+			return nil, fmt.Errorf("cannot configure OpenCensus exporter: %v", serr)
+		}
+		exportersChan <- exporter
+	}
+	oce := &ocAgentExporter{exporters: exportersChan}
+	return oce, nil
+}
+
+// NewMetricsExporter creates an Open Census metrics exporter.
+func NewMetricsExporter(logger *zap.Logger, config configmodels.Exporter, opts ...ocagent.ExporterOption) (exporter.MetricsExporter, error) {
+	oce, err := createOCAgentExporter(logger, config, opts...)
+	if err != nil {
+		return nil, err
+	}
+	oexp, err := exporterhelper.NewMetricsExporter(
+		config,
+		oce.PushMetricsData,
+		exporterhelper.WithTracing(true),
+		exporterhelper.WithMetrics(true),
+		exporterhelper.WithShutdown(oce.Shutdown))
+	if err != nil {
+		return nil, err
+	}
+
+	return oexp, nil
+}
+
+func (oce *ocAgentExporter) Shutdown() error {
 	wg := &sync.WaitGroup{}
 	var errors []error
 	var errorsMu sync.Mutex
@@ -96,7 +157,7 @@ func (oce *ocagentExporter) Shutdown() error {
 	return oterr.CombineErrors(errors)
 }
 
-func (oce *ocagentExporter) PushTraceData(ctx context.Context, td consumerdata.TraceData) (int, error) {
+func (oce *ocAgentExporter) PushTraceData(ctx context.Context, td consumerdata.TraceData) (int, error) {
 	// Get first available exporter.
 	exporter, ok := <-oce.exporters
 	if !ok {
@@ -121,7 +182,7 @@ func (oce *ocagentExporter) PushTraceData(ctx context.Context, td consumerdata.T
 	return 0, nil
 }
 
-func (oce *ocagentExporter) PushMetricsData(ctx context.Context, md consumerdata.MetricsData) (int, error) {
+func (oce *ocAgentExporter) PushMetricsData(ctx context.Context, md consumerdata.MetricsData) (int, error) {
 	// Get first available exporter.
 	exporter, ok := <-oce.exporters
 	if !ok {
