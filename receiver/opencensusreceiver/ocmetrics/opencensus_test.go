@@ -34,9 +34,9 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"github.com/open-telemetry/opentelemetry-service/common"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/internal"
 	"github.com/open-telemetry/opentelemetry-service/observability"
 )
 
@@ -420,14 +420,14 @@ func makeMetric(val int) *metricspb.Metric {
 
 	now := time.Now().UTC()
 	point := &metricspb.Point{
-		Timestamp: internal.TimeToTimestamp(now.Add(20 * time.Second)),
+		Timestamp: common.TimeToTimestamp(now.Add(20 * time.Second)),
 		Value: &metricspb.Point_Int64Value{
 			Int64Value: int64(val),
 		},
 	}
 
 	ts := &metricspb.TimeSeries{
-		StartTimestamp: internal.TimeToTimestamp(now.Add(-10 * time.Second)),
+		StartTimestamp: common.TimeToTimestamp(now.Add(-10 * time.Second)),
 		LabelValues:    []*metricspb.LabelValue{value},
 		Points:         []*metricspb.Point{point},
 	}

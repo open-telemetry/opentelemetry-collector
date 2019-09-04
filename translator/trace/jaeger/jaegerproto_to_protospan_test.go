@@ -27,8 +27,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opencensus.io/trace"
 
+	"github.com/open-telemetry/opentelemetry-service/common"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/internal"
 )
 
 func TestOpenCensusToJaeger(t *testing.T) {
@@ -76,8 +76,8 @@ func expectedTraceData(t1, t2, t3 time.Time) consumerdata.TraceData {
 				SpanId:       childSpanID,
 				ParentSpanId: parentSpanID,
 				Name:         &tracepb.TruncatableString{Value: "DBSearch"},
-				StartTime:    internal.TimeToTimestamp(t1),
-				EndTime:      internal.TimeToTimestamp(t2),
+				StartTime:    common.TimeToTimestamp(t1),
+				EndTime:      common.TimeToTimestamp(t2),
 				Kind:         tracepb.Span_SERVER,
 				Status: &tracepb.Status{
 					Code:    trace.StatusCodeNotFound,
@@ -113,7 +113,7 @@ func expectedTraceData(t1, t2, t3 time.Time) consumerdata.TraceData {
 				TimeEvents: &tracepb.Span_TimeEvents{
 					TimeEvent: []*tracepb.Span_TimeEvent{
 						{
-							Time: internal.TimeToTimestamp(t1),
+							Time: common.TimeToTimestamp(t1),
 							Value: &tracepb.Span_TimeEvent_Annotation_{
 								Annotation: &tracepb.Span_TimeEvent_Annotation{
 									Description: &tracepb.TruncatableString{Value: "executing DB search"},
@@ -136,8 +136,8 @@ func expectedTraceData(t1, t2, t3 time.Time) consumerdata.TraceData {
 				TraceId:   traceID,
 				SpanId:    parentSpanID,
 				Name:      &tracepb.TruncatableString{Value: "ProxyFetch"},
-				StartTime: internal.TimeToTimestamp(t2),
-				EndTime:   internal.TimeToTimestamp(t3),
+				StartTime: common.TimeToTimestamp(t2),
+				EndTime:   common.TimeToTimestamp(t3),
 				Kind:      tracepb.Span_CLIENT,
 				Status: &tracepb.Status{
 					Code:    trace.StatusCodeInternal,

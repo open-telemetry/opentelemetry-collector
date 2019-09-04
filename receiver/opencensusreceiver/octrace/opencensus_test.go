@@ -36,9 +36,9 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/open-telemetry/opentelemetry-service/common"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/internal"
 	"github.com/open-telemetry/opentelemetry-service/observability"
 	"go.opencensus.io/trace"
 	"go.opencensus.io/trace/tracestate"
@@ -126,8 +126,8 @@ func TestReceiver_endToEnd(t *testing.T) {
 			ParentSpanId: serverSpanData.ParentSpanID[:],
 			Name:         &tracepb.TruncatableString{Value: "ServerSpan"},
 			Kind:         tracepb.Span_SERVER,
-			StartTime:    internal.TimeToTimestamp(serverSpanData.StartTime),
-			EndTime:      internal.TimeToTimestamp(serverSpanData.EndTime),
+			StartTime:    common.TimeToTimestamp(serverSpanData.StartTime),
+			EndTime:      common.TimeToTimestamp(serverSpanData.EndTime),
 			Status:       &tracepb.Status{Code: int32(serverSpanData.Status.Code), Message: serverSpanData.Status.Message},
 			Tracestate:   &tracepb.Span_Tracestate{},
 			Links: &tracepb.Span_Links{
@@ -146,8 +146,8 @@ func TestReceiver_endToEnd(t *testing.T) {
 			ParentSpanId: clientSpanData.ParentSpanID[:],
 			Name:         &tracepb.TruncatableString{Value: "ClientSpan"},
 			Kind:         tracepb.Span_CLIENT,
-			StartTime:    internal.TimeToTimestamp(clientSpanData.StartTime),
-			EndTime:      internal.TimeToTimestamp(clientSpanData.EndTime),
+			StartTime:    common.TimeToTimestamp(clientSpanData.StartTime),
+			EndTime:      common.TimeToTimestamp(clientSpanData.EndTime),
 			Status:       &tracepb.Status{Code: int32(clientSpanData.Status.Code), Message: clientSpanData.Status.Message},
 		},
 	}

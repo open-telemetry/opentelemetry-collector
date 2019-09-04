@@ -22,9 +22,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-service/common/testutils"
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
-	"github.com/open-telemetry/opentelemetry-service/internal/testutils"
 	"github.com/open-telemetry/opentelemetry-service/receiver/receivertest"
 )
 

@@ -25,10 +25,10 @@ import (
 	"go.opencensus.io/tag"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-service/common/collector/telemetry"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumererror"
-	"github.com/open-telemetry/opentelemetry-service/internal/collector/telemetry"
 	"github.com/open-telemetry/opentelemetry-service/processor"
 	"github.com/open-telemetry/opentelemetry-service/processor/nodebatcherprocessor"
 )

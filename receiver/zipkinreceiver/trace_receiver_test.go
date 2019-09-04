@@ -34,11 +34,11 @@ import (
 	zhttp "github.com/openzipkin/zipkin-go/reporter/http"
 	"github.com/stretchr/testify/require"
 
+	"github.com/open-telemetry/opentelemetry-service/common"
+	"github.com/open-telemetry/opentelemetry-service/common/testutils"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
-	"github.com/open-telemetry/opentelemetry-service/internal"
-	"github.com/open-telemetry/opentelemetry-service/internal/testutils"
 	"github.com/open-telemetry/opentelemetry-service/oterr"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 	"github.com/open-telemetry/opentelemetry-service/receiver/receivertest"
@@ -315,12 +315,12 @@ func TestConversionRoundtrip(t *testing.T) {
 					SpanId:       []byte{0x4d, 0x1e, 0x00, 0xc0, 0xdb, 0x90, 0x10, 0xdb},
 					Kind:         tracepb.Span_CLIENT,
 					Name:         &tracepb.TruncatableString{Value: "get"},
-					StartTime:    internal.TimeToTimestamp(time.Unix(int64(1472470996199000)/1e6, 1e3*(int64(1472470996199000)%1e6))),
-					EndTime:      internal.TimeToTimestamp(time.Unix(int64(1472470996199000+207000)/1e6, 1e3*(int64(1472470996199000+207000)%1e6))),
+					StartTime:    common.TimeToTimestamp(time.Unix(int64(1472470996199000)/1e6, 1e3*(int64(1472470996199000)%1e6))),
+					EndTime:      common.TimeToTimestamp(time.Unix(int64(1472470996199000+207000)/1e6, 1e3*(int64(1472470996199000+207000)%1e6))),
 					TimeEvents: &tracepb.Span_TimeEvents{
 						TimeEvent: []*tracepb.Span_TimeEvent{
 							{
-								Time: internal.TimeToTimestamp(time.Unix(int64(1472470996238000)/1e6, 1e3*(int64(1472470996238000)%1e6))),
+								Time: common.TimeToTimestamp(time.Unix(int64(1472470996238000)/1e6, 1e3*(int64(1472470996238000)%1e6))),
 								Value: &tracepb.Span_TimeEvent_Annotation_{
 									Annotation: &tracepb.Span_TimeEvent_Annotation{
 										Description: &tracepb.TruncatableString{Value: "foo"},
@@ -328,7 +328,7 @@ func TestConversionRoundtrip(t *testing.T) {
 								},
 							},
 							{
-								Time: internal.TimeToTimestamp(time.Unix(int64(1472470996403000)/1e6, 1e3*(int64(1472470996403000)%1e6))),
+								Time: common.TimeToTimestamp(time.Unix(int64(1472470996403000)/1e6, 1e3*(int64(1472470996403000)%1e6))),
 								Value: &tracepb.Span_TimeEvent_Annotation_{
 									Annotation: &tracepb.Span_TimeEvent_Annotation{
 										Description: &tracepb.TruncatableString{Value: "bar"},
@@ -373,12 +373,12 @@ func TestConversionRoundtrip(t *testing.T) {
 					ParentSpanId: []byte{0x86, 0x15, 0x4a, 0x4b, 0xa6, 0xe9, 0x13, 0x86},
 					Kind:         tracepb.Span_SERVER,
 					Name:         &tracepb.TruncatableString{Value: "put"},
-					StartTime:    internal.TimeToTimestamp(time.Unix(int64(1472470996199000)/1e6, 1e3*(int64(1472470996199000)%1e6))),
-					EndTime:      internal.TimeToTimestamp(time.Unix(int64(1472470996199000+207000)/1e6, 1e3*(int64(1472470996199000+207000)%1e6))),
+					StartTime:    common.TimeToTimestamp(time.Unix(int64(1472470996199000)/1e6, 1e3*(int64(1472470996199000)%1e6))),
+					EndTime:      common.TimeToTimestamp(time.Unix(int64(1472470996199000+207000)/1e6, 1e3*(int64(1472470996199000+207000)%1e6))),
 					TimeEvents: &tracepb.Span_TimeEvents{
 						TimeEvent: []*tracepb.Span_TimeEvent{
 							{
-								Time: internal.TimeToTimestamp(time.Unix(int64(1472470996238000)/1e6, 1e3*(int64(1472470996238000)%1e6))),
+								Time: common.TimeToTimestamp(time.Unix(int64(1472470996238000)/1e6, 1e3*(int64(1472470996238000)%1e6))),
 								Value: &tracepb.Span_TimeEvent_Annotation_{
 									Annotation: &tracepb.Span_TimeEvent_Annotation{
 										Description: &tracepb.TruncatableString{Value: "foo"},
@@ -386,7 +386,7 @@ func TestConversionRoundtrip(t *testing.T) {
 								},
 							},
 							{
-								Time: internal.TimeToTimestamp(time.Unix(int64(1472470996403000)/1e6, 1e3*(int64(1472470996403000)%1e6))),
+								Time: common.TimeToTimestamp(time.Unix(int64(1472470996403000)/1e6, 1e3*(int64(1472470996403000)%1e6))),
 								Value: &tracepb.Span_TimeEvent_Annotation_{
 									Annotation: &tracepb.Span_TimeEvent_Annotation{
 										Description: &tracepb.TruncatableString{Value: "bar"},

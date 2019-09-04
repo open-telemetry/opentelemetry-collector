@@ -25,8 +25,8 @@ import (
 	model "github.com/jaegertracing/jaeger/model"
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 
+	"github.com/open-telemetry/opentelemetry-service/common"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/internal"
 	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
 )
 
@@ -104,8 +104,8 @@ func jProtoSpansToOCProtoSpans(jspans []*model.Span) []*tracepb.Span {
 			ParentSpanId: tracetranslator.UInt64ToByteSpanID(uint64(jspan.ParentSpanID())),
 			Name:         strToTruncatableString(jspan.OperationName),
 			Kind:         sKind,
-			StartTime:    internal.TimeToTimestamp(jspan.StartTime),
-			EndTime:      internal.TimeToTimestamp(jspan.StartTime.Add(jspan.Duration)),
+			StartTime:    common.TimeToTimestamp(jspan.StartTime),
+			EndTime:      common.TimeToTimestamp(jspan.StartTime.Add(jspan.Duration)),
 			Attributes:   sAttributes,
 			// TODO: StackTrace: OpenTracing defines a semantic key for "stack", should we attempt to its content to StackTrace?
 			TimeEvents: jProtoLogsToOCProtoTimeEvents(jspan.Logs),
@@ -135,7 +135,7 @@ func jProtoLogsToOCProtoTimeEvents(logs []model.Log) *tracepb.Span_TimeEvents {
 			}
 		}
 		timeEvent := &tracepb.Span_TimeEvent{
-			Time:  internal.TimeToTimestamp(log.Timestamp),
+			Time:  common.TimeToTimestamp(log.Timestamp),
 			Value: &tracepb.Span_TimeEvent_Annotation_{Annotation: annotation},
 		}
 

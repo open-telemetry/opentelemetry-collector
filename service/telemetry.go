@@ -25,7 +25,7 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-service/internal/collector/telemetry"
+	"github.com/open-telemetry/opentelemetry-service/common/collector/telemetry"
 	"github.com/open-telemetry/opentelemetry-service/observability"
 	"github.com/open-telemetry/opentelemetry-service/processor"
 	"github.com/open-telemetry/opentelemetry-service/processor/nodebatcherprocessor"

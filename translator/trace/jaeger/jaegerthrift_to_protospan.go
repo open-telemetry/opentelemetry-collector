@@ -25,8 +25,8 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 
+	"github.com/open-telemetry/opentelemetry-service/common"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/internal"
 	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
 )
 
@@ -112,8 +112,8 @@ func jSpansToOCProtoSpans(jspans []*jaeger.Span) []*tracepb.Span {
 			ParentSpanId: tracetranslator.Int64ToByteSpanID(jspan.ParentSpanId),
 			Name:         strToTruncatableString(jspan.OperationName),
 			Kind:         sKind,
-			StartTime:    internal.TimeToTimestamp(startTime),
-			EndTime:      internal.TimeToTimestamp(startTime.Add(time.Duration(jspan.Duration) * time.Microsecond)),
+			StartTime:    common.TimeToTimestamp(startTime),
+			EndTime:      common.TimeToTimestamp(startTime.Add(time.Duration(jspan.Duration) * time.Microsecond)),
 			Attributes:   sAttributes,
 			// TODO: StackTrace: OpenTracing defines a semantic key for "stack", should we attempt to its content to StackTrace?
 			TimeEvents: jLogsToOCProtoTimeEvents(jspan.Logs),
@@ -143,7 +143,7 @@ func jLogsToOCProtoTimeEvents(logs []*jaeger.Log) *tracepb.Span_TimeEvents {
 			}
 		}
 		timeEvent := &tracepb.Span_TimeEvent{
-			Time:  internal.TimeToTimestamp(epochMicrosecondsAsTime(uint64(log.Timestamp))),
+			Time:  common.TimeToTimestamp(epochMicrosecondsAsTime(uint64(log.Timestamp))),
 			Value: &tracepb.Span_TimeEvent_Annotation_{Annotation: annotation},
 		}
 

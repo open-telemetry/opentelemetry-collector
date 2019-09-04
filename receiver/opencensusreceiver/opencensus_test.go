@@ -32,10 +32,10 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
+	"github.com/open-telemetry/opentelemetry-service/common"
+	"github.com/open-telemetry/opentelemetry-service/common/testutils"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
-	"github.com/open-telemetry/opentelemetry-service/internal"
-	"github.com/open-telemetry/opentelemetry-service/internal/testutils"
 	"github.com/open-telemetry/opentelemetry-service/receiver/receivertest"
 )
 
@@ -128,8 +128,8 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 					TraceId:   []byte{0x5B, 0x8E, 0xFF, 0xF7, 0x98, 0x3, 0x81, 0x3, 0xD2, 0x69, 0xB6, 0x33, 0x81, 0x3F, 0xC6, 0xC},
 					SpanId:    []byte{0xEE, 0xE1, 0x9B, 0x7E, 0xC3, 0xC1, 0xB1, 0x73},
 					Name:      &tracepb.TruncatableString{Value: "testSpan"},
-					StartTime: internal.TimeToTimestamp(time.Unix(1544712660, 0).UTC()),
-					EndTime:   internal.TimeToTimestamp(time.Unix(1544712661, 0).UTC()),
+					StartTime: common.TimeToTimestamp(time.Unix(1544712660, 0).UTC()),
+					EndTime:   common.TimeToTimestamp(time.Unix(1544712661, 0).UTC()),
 					Attributes: &tracepb.Span_Attributes{
 						AttributeMap: map[string]*tracepb.AttributeValue{
 							"attr1": {

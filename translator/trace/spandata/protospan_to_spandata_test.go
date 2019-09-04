@@ -26,7 +26,7 @@ import (
 	"go.opencensus.io/trace"
 	"go.opencensus.io/trace/tracestate"
 
-	"github.com/open-telemetry/opentelemetry-service/internal"
+	"github.com/open-telemetry/opentelemetry-service/common"
 )
 
 func TestProtoSpanToOCSpanData_endToEnd(t *testing.T) {
@@ -42,8 +42,8 @@ func TestProtoSpanToOCSpanData_endToEnd(t *testing.T) {
 		ParentSpanId: []byte{0xEF, 0xEE, 0xED, 0xEC, 0xEB, 0xEA, 0xE9, 0xE8},
 		Name:         &tracepb.TruncatableString{Value: "End-To-End Here"},
 		Kind:         tracepb.Span_SERVER,
-		StartTime:    internal.TimeToTimestamp(startTime),
-		EndTime:      internal.TimeToTimestamp(endTime),
+		StartTime:    common.TimeToTimestamp(startTime),
+		EndTime:      common.TimeToTimestamp(endTime),
 		Status: &tracepb.Status{
 			Code:    13,
 			Message: "This is not a drill!",
@@ -52,7 +52,7 @@ func TestProtoSpanToOCSpanData_endToEnd(t *testing.T) {
 		TimeEvents: &tracepb.Span_TimeEvents{
 			TimeEvent: []*tracepb.Span_TimeEvent{
 				{
-					Time: internal.TimeToTimestamp(startTime),
+					Time: common.TimeToTimestamp(startTime),
 					Value: &tracepb.Span_TimeEvent_MessageEvent_{
 						MessageEvent: &tracepb.Span_TimeEvent_MessageEvent{
 							Type: tracepb.Span_TimeEvent_MessageEvent_SENT, UncompressedSize: 1024, CompressedSize: 512,
@@ -60,7 +60,7 @@ func TestProtoSpanToOCSpanData_endToEnd(t *testing.T) {
 					},
 				},
 				{
-					Time: internal.TimeToTimestamp(endTime),
+					Time: common.TimeToTimestamp(endTime),
 					Value: &tracepb.Span_TimeEvent_MessageEvent_{
 						MessageEvent: &tracepb.Span_TimeEvent_MessageEvent{
 							Type: tracepb.Span_TimeEvent_MessageEvent_RECEIVED, UncompressedSize: 1024, CompressedSize: 1000,

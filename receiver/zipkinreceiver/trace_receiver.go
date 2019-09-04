@@ -36,9 +36,9 @@ import (
 	zipkinproto "github.com/openzipkin/zipkin-go/proto/v2"
 	"go.opencensus.io/trace"
 
+	"github.com/open-telemetry/opentelemetry-service/common"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/internal"
 	"github.com/open-telemetry/opentelemetry-service/observability"
 	"github.com/open-telemetry/opentelemetry-service/oterr"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
@@ -391,8 +391,8 @@ func zipkinSpanToTraceSpan(zs *zipkinmodel.SpanModel) (*tracepb.Span, *commonpb.
 		SpanId:       spanID,
 		ParentSpanId: parentSpanID,
 		Name:         &tracepb.TruncatableString{Value: zs.Name},
-		StartTime:    internal.TimeToTimestamp(zs.Timestamp),
-		EndTime:      internal.TimeToTimestamp(zs.Timestamp.Add(zs.Duration)),
+		StartTime:    common.TimeToTimestamp(zs.Timestamp),
+		EndTime:      common.TimeToTimestamp(zs.Timestamp.Add(zs.Duration)),
 		Kind:         zipkinSpanKindToProtoSpanKind(zs.Kind),
 		Status:       extractProtoStatus(zs),
 		Attributes:   zipkinTagsToTraceAttributes(zs.Tags),
@@ -549,7 +549,7 @@ func zipkinAnnotationToProtoAnnotation(zas zipkinmodel.Annotation) *tracepb.Span
 		return nil
 	}
 	return &tracepb.Span_TimeEvent{
-		Time: internal.TimeToTimestamp(zas.Timestamp),
+		Time: common.TimeToTimestamp(zas.Timestamp),
 		Value: &tracepb.Span_TimeEvent_Annotation_{
 			Annotation: &tracepb.Span_TimeEvent_Annotation{
 				Description: &tracepb.TruncatableString{Value: zas.Value},

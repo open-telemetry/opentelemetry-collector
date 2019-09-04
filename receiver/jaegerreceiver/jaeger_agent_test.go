@@ -26,9 +26,9 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"go.opencensus.io/trace"
 
+	"github.com/open-telemetry/opentelemetry-service/common"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
-	"github.com/open-telemetry/opentelemetry-service/internal"
 	"github.com/open-telemetry/opentelemetry-service/receiver/receivertest"
 )
 
@@ -164,8 +164,8 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *Configu
 					SpanId:       []byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8},
 					ParentSpanId: []byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18},
 					Name:         &tracepb.TruncatableString{Value: "DBSearch"},
-					StartTime:    internal.TimeToTimestamp(now),
-					EndTime:      internal.TimeToTimestamp(nowPlus10min),
+					StartTime:    common.TimeToTimestamp(now),
+					EndTime:      common.TimeToTimestamp(nowPlus10min),
 					Status: &tracepb.Status{
 						Code:    trace.StatusCodeNotFound,
 						Message: "Stale indices",
@@ -191,8 +191,8 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *Configu
 					TraceId:   []byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80},
 					SpanId:    []byte{0xCF, 0xCE, 0xCD, 0xCC, 0xCB, 0xCA, 0xC9, 0xC8},
 					Name:      &tracepb.TruncatableString{Value: "ProxyFetch"},
-					StartTime: internal.TimeToTimestamp(nowPlus10min),
-					EndTime:   internal.TimeToTimestamp(nowPlus10min2sec),
+					StartTime: common.TimeToTimestamp(nowPlus10min),
+					EndTime:   common.TimeToTimestamp(nowPlus10min2sec),
 					Status: &tracepb.Status{
 						Code:    trace.StatusCodeInternal,
 						Message: "Frontend crash",

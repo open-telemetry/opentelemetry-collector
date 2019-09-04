@@ -25,8 +25,8 @@ import (
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/open-telemetry/opentelemetry-service/common"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/internal"
 )
 
 func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
@@ -134,8 +134,8 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 					SpanId:       []byte{0xF7, 0xF6, 0xF5, 0xF4, 0xF3, 0xF2, 0xF1, 0xF0},
 					ParentSpanId: []byte{0xF7, 0xF6, 0xF5, 0xF4, 0xF3, 0xF2, 0xF1, 0xF0},
 					Name:         &tracepb.TruncatableString{Value: "ProtoSpan1"},
-					StartTime:    internal.TimeToTimestamp(now),
-					EndTime:      internal.TimeToTimestamp(now.Add(12 * time.Second)),
+					StartTime:    common.TimeToTimestamp(now),
+					EndTime:      common.TimeToTimestamp(now.Add(12 * time.Second)),
 				},
 			},
 		},
@@ -159,12 +159,12 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 					SpanId:       []byte{0x67, 0x66, 0x65, 0x64, 0x63, 0x62, 0x61, 0x60},
 					ParentSpanId: []byte{0x17, 0x16, 0x15, 0x14, 0x13, 0x12, 0x11, 0x10},
 					Name:         &tracepb.TruncatableString{Value: "CacheWarmUp"},
-					StartTime:    internal.TimeToTimestamp(now.Add(-10 * time.Hour)),
-					EndTime:      internal.TimeToTimestamp(now.Add(-10 * time.Hour).Add(7 * time.Second)),
+					StartTime:    common.TimeToTimestamp(now.Add(-10 * time.Hour)),
+					EndTime:      common.TimeToTimestamp(now.Add(-10 * time.Hour).Add(7 * time.Second)),
 					TimeEvents: &tracepb.Span_TimeEvents{
 						TimeEvent: []*tracepb.Span_TimeEvent{
 							{
-								Time: internal.TimeToTimestamp(cmpTimestamp(now.Add(-10 * time.Hour))),
+								Time: common.TimeToTimestamp(cmpTimestamp(now.Add(-10 * time.Hour))),
 								Value: &tracepb.Span_TimeEvent_Annotation_{
 									Annotation: &tracepb.Span_TimeEvent_Annotation{
 										Description: &tracepb.TruncatableString{
@@ -174,7 +174,7 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 								},
 							},
 							{
-								Time: internal.TimeToTimestamp(minus10hr5ms),
+								Time: common.TimeToTimestamp(minus10hr5ms),
 								Value: &tracepb.Span_TimeEvent_Annotation_{
 									Annotation: &tracepb.Span_TimeEvent_Annotation{
 										Description: &tracepb.TruncatableString{

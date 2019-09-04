@@ -28,9 +28,9 @@ import (
 	"github.com/prometheus/procfs"
 	"go.opencensus.io/trace"
 
+	"github.com/open-telemetry/opentelemetry-service/common"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/internal"
 	"github.com/open-telemetry/opentelemetry-service/oterr"
 )
 
@@ -226,8 +226,8 @@ func (vmc *VMMetricsCollector) scrapeAndExport() {
 
 func (vmc *VMMetricsCollector) getInt64TimeSeries(val uint64) *metricspb.TimeSeries {
 	return &metricspb.TimeSeries{
-		StartTimestamp: internal.TimeToTimestamp(vmc.startTime),
-		Points:         []*metricspb.Point{{Timestamp: internal.TimeToTimestamp(time.Now()), Value: &metricspb.Point_Int64Value{Int64Value: int64(val)}}},
+		StartTimestamp: common.TimeToTimestamp(vmc.startTime),
+		Points:         []*metricspb.Point{{Timestamp: common.TimeToTimestamp(time.Now()), Value: &metricspb.Point_Int64Value{Int64Value: int64(val)}}},
 	}
 }
 
@@ -237,8 +237,8 @@ func (vmc *VMMetricsCollector) getDoubleTimeSeries(val float64, labelVal *metric
 		labelVals = append(labelVals, labelVal)
 	}
 	return &metricspb.TimeSeries{
-		StartTimestamp: internal.TimeToTimestamp(vmc.startTime),
+		StartTimestamp: common.TimeToTimestamp(vmc.startTime),
 		LabelValues:    labelVals,
-		Points:         []*metricspb.Point{{Timestamp: internal.TimeToTimestamp(time.Now()), Value: &metricspb.Point_DoubleValue{DoubleValue: val}}},
+		Points:         []*metricspb.Point{{Timestamp: common.TimeToTimestamp(time.Now()), Value: &metricspb.Point_DoubleValue{DoubleValue: val}}},
 	}
 }

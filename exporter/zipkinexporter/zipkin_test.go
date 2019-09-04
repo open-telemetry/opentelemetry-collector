@@ -31,8 +31,8 @@ import (
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
 
-	"github.com/open-telemetry/opentelemetry-service/internal/config/viperutils"
-	"github.com/open-telemetry/opentelemetry-service/internal/testutils"
+	"github.com/open-telemetry/opentelemetry-service/common/config/viperutils"
+	"github.com/open-telemetry/opentelemetry-service/common/testutils"
 	"github.com/open-telemetry/opentelemetry-service/processor"
 	"github.com/open-telemetry/opentelemetry-service/receiver/receivertest"
 	"github.com/open-telemetry/opentelemetry-service/receiver/zipkinreceiver"
