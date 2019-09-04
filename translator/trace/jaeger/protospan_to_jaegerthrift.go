@@ -18,6 +18,7 @@ import (
 	"fmt"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/timestamp"
@@ -39,14 +40,14 @@ func OCProtoToJaegerThrift(td consumerdata.TraceData) (*jaeger.Batch, error) {
 	}
 
 	jb := &jaeger.Batch{
-		Process: ocNodeToJaegerProcess(td.Node),
+		Process: ocNodeAndResourceToJaegerProcess(td.Node, td.Resource),
 		Spans:   jSpans,
 	}
 
 	return jb, nil
 }
 
-func ocNodeToJaegerProcess(node *commonpb.Node) *jaeger.Process {
+func ocNodeAndResourceToJaegerProcess(node *commonpb.Node, resource *resourcepb.Resource) *jaeger.Process {
 	if node == nil {
 		// Jaeger requires a non-nil Process
 		return unknownProcess
@@ -130,6 +131,24 @@ func ocNodeToJaegerProcess(node *commonpb.Node) *jaeger.Process {
 	var serviceName string
 	if node.ServiceInfo != nil && node.ServiceInfo.Name != "" {
 		serviceName = node.ServiceInfo.Name
+	}
+
+	if resource != nil {
+		resourceType := resource.GetType()
+		if resourceType != "" {
+			jTags = append(jTags, &jaeger.Tag{
+				Key:   opencensusResourceType,
+				VType: jaeger.TagType_STRING,
+				VStr:  &resourceType,
+			})
+		}
+		for k, v := range resource.GetLabels() {
+			jTags = append(jTags, &jaeger.Tag{
+				Key:   k,
+				VType: jaeger.TagType_STRING,
+				VStr:  &v,
+			})
+		}
 	}
 
 	if serviceName == "" && len(jTags) == 0 {

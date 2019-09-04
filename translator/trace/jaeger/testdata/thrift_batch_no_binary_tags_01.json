@@ -46,6 +46,16 @@
         "key": "a.binary",
         "vType": "STRING",
         "vStr": "AQIDBAMCAQ=="
+      },
+      {
+        "key": "resource_key1",
+        "vType": "STRING",
+        "vStr": "resource_val1"
+      },
+      {
+        "key": "opencensus.resourcetype",
+        "vType": "STRING",
+        "vStr": "k8s.io/container"
       }
     ]
   },

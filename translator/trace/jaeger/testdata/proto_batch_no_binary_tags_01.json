@@ -38,6 +38,14 @@
       {
         "key": "a.binary",
         "v_str": "AQIDBAMCAQ=="
+      },
+      {
+        "key": "resource_key1",
+        "v_str": "resource_val1"
+      },
+      {
+        "key": "opencensus.resourcetype",
+        "v_str": "k8s.io/container"
       }
     ]
   },
