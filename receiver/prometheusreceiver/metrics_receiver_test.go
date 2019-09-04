@@ -32,6 +32,7 @@ import (
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/google/go-cmp/cmp"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
@@ -39,6 +40,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/internal/config/viperutils"
 	"github.com/open-telemetry/opentelemetry-service/receiver/receivertest"
 	"github.com/spf13/viper"
+	"go.opencensus.io/resource/resourcekeys"
 )
 
 var logger, _ = zap.NewDevelopment()
@@ -1082,5 +1084,47 @@ func TestIncludeFilterConfig(t *testing.T) {
 
 	if diff := cmp.Diff(precv.includeFilterMap, wantFilterMap); diff != "" {
 		t.Fatalf("Error parsing filtermap -got, +want, %v", diff)
+	}
+}
+
+func Test_createResource(t *testing.T) {
+	resource := &Resource{
+		Type: resourcekeys.HostType,
+		Labels: map[string]string{
+			resourcekeys.CloudKeyZone:      "my_location",
+			resourcekeys.K8SKeyClusterName: "my_cluster_name",
+			resourcekeys.HostKeyName:       "my_node_name",
+		},
+	}
+
+	expected := &resourcepb.Resource{
+		Type: resourcekeys.HostType,
+		Labels: map[string]string{
+			resourcekeys.CloudKeyZone:      "my_location",
+			resourcekeys.K8SKeyClusterName: "my_cluster_name",
+			resourcekeys.HostKeyName:       "my_node_name",
+		},
+	}
+	result := createResource(resource)
+	if !reflect.DeepEqual(expected, result) {
+		t.Errorf("Error: expected: %v, actual %v", expected, result)
+
+	}
+}
+
+func Test_createResourceUnsupported(t *testing.T) {
+	resource := &Resource{
+		Type: "unsupported_type",
+		Labels: map[string]string{
+			resourcekeys.CloudKeyZone:      "my_location",
+			resourcekeys.K8SKeyClusterName: "my_cluster_name",
+			resourcekeys.HostKeyName:       "my_node_name",
+		},
+	}
+
+	result := createResource(resource)
+	if result != nil {
+		t.Errorf("Error: expected: nil, actual %v", result)
+
 	}
 }

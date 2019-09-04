@@ -25,7 +25,6 @@ import (
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/pkg/textparse"
 	"github.com/prometheus/prometheus/scrape"
-	"go.opencensus.io/resource/resourcekeys"
 )
 
 // MetricFamily is unit which is corresponding to the metrics items which shared the same TYPE/UNIT/... metadata from
@@ -45,10 +44,10 @@ type metricFamily struct {
 	metadata         *scrape.MetricMetadata
 	groupOrders      map[string]int
 	groups           map[string]*metricGroup
-	nodeResource     *resourcepb.Resource
+	resource         *resourcepb.Resource
 }
 
-func newMetricFamily(metricName string, resourceLabels map[string]string, mc MetadataCache) MetricFamily {
+func newMetricFamily(metricName string, resource *resourcepb.Resource, mc MetadataCache) MetricFamily {
 	familyName := normalizeMetricName(metricName)
 
 	// lookup metadata based on familyName
@@ -75,7 +74,7 @@ func newMetricFamily(metricName string, resourceLabels map[string]string, mc Met
 		metadata:         &metadata,
 		groupOrders:      make(map[string]int),
 		groups:           make(map[string]*metricGroup),
-		nodeResource:     createNodeResource(resourceLabels),
+		resource:         resource,
 	}
 }
 
@@ -220,7 +219,7 @@ func (mf *metricFamily) ToMetric() *metricspb.Metric {
 				LabelKeys:   mf.getLabelKeys(),
 			},
 			Timeseries: timeseries,
-			Resource:   mf.nodeResource,
+			Resource:   mf.resource,
 		}
 	}
 	return nil
@@ -362,28 +361,4 @@ func populateLabelValues(orderedKeys []string, ls labels.Labels) []*metricspb.La
 		lvs[i] = &metricspb.LabelValue{Value: value, HasValue: value != ""}
 	}
 	return lvs
-}
-
-// TODO: add support for other resource types
-func createNodeResource(resourceLabels map[string]string) *resourcepb.Resource {
-	location, ok := resourceLabels[resourcekeys.CloudKeyZone]
-	if !ok {
-		return nil
-	}
-	clusterName, ok := resourceLabels[resourcekeys.K8SKeyClusterName]
-	if !ok {
-		return nil
-	}
-	nodeName, ok := resourceLabels[resourcekeys.HostKeyName]
-	if !ok {
-		return nil
-	}
-	return &resourcepb.Resource{
-		Type: resourcekeys.HostType,
-		Labels: map[string]string{
-			resourcekeys.CloudKeyZone:      location,
-			resourcekeys.K8SKeyClusterName: clusterName,
-			resourcekeys.HostKeyName:       nodeName,
-		},
-	}
 }

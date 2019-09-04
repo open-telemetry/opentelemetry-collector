@@ -21,6 +21,7 @@ import (
 	"sync"
 	"time"
 
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/prometheus/prometheus/discovery"
 	"github.com/prometheus/prometheus/scrape"
 	"go.uber.org/zap"
@@ -32,16 +33,17 @@ import (
 	"github.com/prometheus/prometheus/config"
 	sd_config "github.com/prometheus/prometheus/discovery/config"
 	"github.com/spf13/viper"
+	"go.opencensus.io/resource/resourcekeys"
 	"gopkg.in/yaml.v2"
 )
 
 // Configuration defines the behavior and targets of the Prometheus scrapers.
 type Configuration struct {
-	ScrapeConfig   *config.Config      `mapstructure:"config"`
-	BufferPeriod   time.Duration       `mapstructure:"buffer_period"`
-	BufferCount    int                 `mapstructure:"buffer_count"`
-	IncludeFilter  map[string][]string `mapstructure:"include_filter"`
-	ResourceLabels map[string]string   `mapstructure:"resource_labels"`
+	ScrapeConfig  *config.Config      `mapstructure:"config"`
+	BufferPeriod  time.Duration       `mapstructure:"buffer_period"`
+	BufferCount   int                 `mapstructure:"buffer_count"`
+	IncludeFilter map[string][]string `mapstructure:"include_filter"`
+	Resource      Resource            `mapstructure:"resource"`
 }
 
 type metricsMap map[string]bool
@@ -140,7 +142,8 @@ func (pr *Preceiver) StartMetricsReception(host receiver.Host) error {
 		c, cancel := context.WithCancel(ctx)
 		pr.cancel = cancel
 		jobsMap := internal.NewJobsMap(time.Duration(2 * time.Minute))
-		app := internal.NewOcaStore(c, pr.consumer, pr.logger.Sugar(), jobsMap, pr.cfg.ResourceLabels)
+
+		app := internal.NewOcaStore(c, pr.consumer, pr.logger.Sugar(), jobsMap, createResource(&pr.cfg.Resource))
 		// need to use a logger with the gokitLog interface
 		l := internal.NewZapToGokitLogAdapter(pr.logger)
 		scrapeManager := scrape.NewManager(l, app)
@@ -194,5 +197,20 @@ func (pr *Preceiver) Flush() {
 // StopMetricsReception stops and cancels the underlying Prometheus scrapers.
 func (pr *Preceiver) StopMetricsReception() error {
 	pr.stopOnce.Do(pr.cancel)
+	return nil
+}
+
+// TODO: add support for other resource types
+func createResource(resource *Resource) *resourcepb.Resource {
+	if resource.Type == resourcekeys.HostType {
+		rpb := &resourcepb.Resource{
+			Type:   resourcekeys.HostType,
+			Labels: map[string]string{},
+		}
+		for k, v := range resource.Labels {
+			rpb.Labels[k] = v
+		}
+		return rpb
+	}
 	return nil
 }

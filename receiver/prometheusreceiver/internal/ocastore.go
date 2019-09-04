@@ -21,6 +21,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/prometheus/prometheus/storage"
@@ -48,26 +49,26 @@ type OcaStore interface {
 
 // OpenCensus Store for prometheus
 type ocaStore struct {
-	running        int32
-	logger         *zap.SugaredLogger
-	sink           consumer.MetricsConsumer
-	mc             *mService
-	once           *sync.Once
-	ctx            context.Context
-	jobsMap        *JobsMap
-	resourceLabels map[string]string
+	running  int32
+	logger   *zap.SugaredLogger
+	sink     consumer.MetricsConsumer
+	mc       *mService
+	once     *sync.Once
+	ctx      context.Context
+	jobsMap  *JobsMap
+	resource *resourcepb.Resource
 }
 
 // NewOcaStore returns an ocaStore instance, which can be acted as prometheus' scrape.Appendable
-func NewOcaStore(ctx context.Context, sink consumer.MetricsConsumer, logger *zap.SugaredLogger, jobsMap *JobsMap, resourceLabels map[string]string) OcaStore {
+func NewOcaStore(ctx context.Context, sink consumer.MetricsConsumer, logger *zap.SugaredLogger, jobsMap *JobsMap, resource *resourcepb.Resource) OcaStore {
 	return &ocaStore{
-		running:        runningStateInit,
-		ctx:            ctx,
-		sink:           sink,
-		logger:         logger,
-		once:           &sync.Once{},
-		jobsMap:        jobsMap,
-		resourceLabels: resourceLabels,
+		running:  runningStateInit,
+		ctx:      ctx,
+		sink:     sink,
+		logger:   logger,
+		once:     &sync.Once{},
+		jobsMap:  jobsMap,
+		resource: resource,
 	}
 }
 
@@ -82,7 +83,7 @@ func (o *ocaStore) SetScrapeManager(scrapeManager *scrape.Manager) {
 func (o *ocaStore) Appender() (storage.Appender, error) {
 	state := atomic.LoadInt32(&o.running)
 	if state == runningStateReady {
-		return newTransaction(o.ctx, o.jobsMap, o.resourceLabels, o.mc, o.sink, o.logger), nil
+		return newTransaction(o.ctx, o.jobsMap, o.resource, o.mc, o.sink, o.logger), nil
 	} else if state == runningStateInit {
 		return nil, errors.New("ScrapeManager is not set")
 	}

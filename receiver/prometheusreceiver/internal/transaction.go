@@ -22,6 +22,7 @@ import (
 	"sync/atomic"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/prometheus/common/model"
@@ -46,30 +47,30 @@ var errNoJobInstance = errors.New("job or instance cannot be found from labels")
 // will be flush to the downstream consumer, or Rollback, which means discard all the data, is called and all data
 // points are discarded.
 type transaction struct {
-	id             int64
-	ctx            context.Context
-	isNew          bool
-	sink           consumer.MetricsConsumer
-	job            string
-	instance       string
-	jobsMap        *JobsMap
-	resourceLabels map[string]string
-	ms             MetadataService
-	node           *commonpb.Node
-	metricBuilder  *metricBuilder
-	logger         *zap.SugaredLogger
+	id            int64
+	ctx           context.Context
+	isNew         bool
+	sink          consumer.MetricsConsumer
+	job           string
+	instance      string
+	jobsMap       *JobsMap
+	resource      *resourcepb.Resource
+	ms            MetadataService
+	node          *commonpb.Node
+	metricBuilder *metricBuilder
+	logger        *zap.SugaredLogger
 }
 
-func newTransaction(ctx context.Context, jobsMap *JobsMap, resourceLabels map[string]string, ms MetadataService, sink consumer.MetricsConsumer, logger *zap.SugaredLogger) *transaction {
+func newTransaction(ctx context.Context, jobsMap *JobsMap, resource *resourcepb.Resource, ms MetadataService, sink consumer.MetricsConsumer, logger *zap.SugaredLogger) *transaction {
 	return &transaction{
-		id:             atomic.AddInt64(&idSeq, 1),
-		ctx:            ctx,
-		isNew:          true,
-		sink:           sink,
-		jobsMap:        jobsMap,
-		resourceLabels: resourceLabels,
-		ms:             ms,
-		logger:         logger,
+		id:       atomic.AddInt64(&idSeq, 1),
+		ctx:      ctx,
+		isNew:    true,
+		sink:     sink,
+		jobsMap:  jobsMap,
+		resource: resource,
+		ms:       ms,
+		logger:   logger,
 	}
 }
 
@@ -122,7 +123,7 @@ func (tr *transaction) initTransaction(ls labels.Labels) error {
 		tr.instance = instance
 	}
 	tr.node = createNode(job, instance, mc.SharedLabels().Get(model.SchemeLabel))
-	tr.metricBuilder = newMetricBuilder(tr.resourceLabels, mc, tr.logger)
+	tr.metricBuilder = newMetricBuilder(tr.resource, mc, tr.logger)
 	tr.isNew = false
 	return nil
 }

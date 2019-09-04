@@ -56,4 +56,15 @@ func TestLoadConfig(t *testing.T) {
 		"localhost:9778": {"http/client/roundtrip_latency"},
 	}
 	assert.Equal(t, r1.IncludeFilter, wantFilter)
+
+	wantResource := Resource{
+		Type: "host",
+		Labels: map[string]string{
+			"cloud.zone":       "us-central-1a",
+			"k8s.cluster.name": "prometheus-cluster",
+			"host.name":        "prometheus-node",
+		},
+	}
+	assert.Equal(t, r1.Resource, wantResource)
+
 }

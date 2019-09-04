@@ -23,6 +23,7 @@ import (
 	"go.uber.org/zap"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/pkg/labels"
@@ -45,7 +46,7 @@ type metricBuilder struct {
 	hasInternalMetric bool
 	mc                MetadataCache
 	metrics           []*metricspb.Metric
-	resourceLabels    map[string]string
+	resource          *resourcepb.Resource
 	logger            *zap.SugaredLogger
 	currentMf         MetricFamily
 }
@@ -53,13 +54,13 @@ type metricBuilder struct {
 // newMetricBuilder creates a MetricBuilder which is allowed to feed all the datapoints from a single prometheus
 // scraped page by calling its AddDataPoint function, and turn them into an opencensus data.MetricsData object
 // by calling its Build function
-func newMetricBuilder(resourceLabels map[string]string, mc MetadataCache, logger *zap.SugaredLogger) *metricBuilder {
+func newMetricBuilder(resource *resourcepb.Resource, mc MetadataCache, logger *zap.SugaredLogger) *metricBuilder {
 
 	return &metricBuilder{
-		mc:             mc,
-		metrics:        make([]*metricspb.Metric, 0),
-		logger:         logger,
-		resourceLabels: resourceLabels,
+		mc:       mc,
+		metrics:  make([]*metricspb.Metric, 0),
+		logger:   logger,
+		resource: resource,
 	}
 }
 
@@ -82,9 +83,9 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 		if m != nil {
 			b.metrics = append(b.metrics, m)
 		}
-		b.currentMf = newMetricFamily(metricName, b.resourceLabels, b.mc)
+		b.currentMf = newMetricFamily(metricName, b.resource, b.mc)
 	} else if b.currentMf == nil {
-		b.currentMf = newMetricFamily(metricName, b.resourceLabels, b.mc)
+		b.currentMf = newMetricFamily(metricName, b.resource, b.mc)
 	}
 
 	return b.currentMf.Add(metricName, ls, t, v)
