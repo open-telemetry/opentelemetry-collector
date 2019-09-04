@@ -172,7 +172,8 @@ func RecordMetricsForMetricsExporter(ctx context.Context, receivedTimeSeries int
 	stats.Record(ctx, mExporterReceivedTimeSeries.M(int64(receivedTimeSeries)), mExporterDroppedTimeSeries.M(int64(droppedTimeSeries)))
 }
 
-// MakeComponentName constructs the name of the component that should be used as a tag/metrics label.
+// MakeComponentName constructs the name of the component (for the moment receiver and exporter) that should be used for observability.
+// E.g. as a tag/metrics label or span name.
 func MakeComponentName(typeStr, name string) string {
 	if len(name) == 0 {
 		return typeStr

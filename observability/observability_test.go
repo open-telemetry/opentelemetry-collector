@@ -52,7 +52,7 @@ func TestTracePieplineRecordedMetrics(t *testing.T) {
 	require.Nil(t, err, "When check exporter dropped spans")
 }
 
-func TestMEtricsPieplineRecordedMetrics(t *testing.T) {
+func TestMetricsPieplineRecordedMetrics(t *testing.T) {
 	doneFn := observabilitytest.SetupRecordedMetricsTest()
 	defer doneFn()
 
@@ -72,4 +72,12 @@ func TestMEtricsPieplineRecordedMetrics(t *testing.T) {
 
 	err = observabilitytest.CheckValueViewExporterDroppedTimeSeries(receiverName, exporterName, 23)
 	require.Nil(t, err, "When check exporter dropped timeseries")
+}
+
+func TestMakeComponentName(t *testing.T) {
+	const fakeType = "type"
+	const fakeName = "name"
+	const fakeComponentName = "type_name"
+	require.Equal(t, fakeType, observability.MakeComponentName(fakeType, ""))
+	require.Equal(t, fakeComponentName, observability.MakeComponentName(fakeType, fakeName))
 }
