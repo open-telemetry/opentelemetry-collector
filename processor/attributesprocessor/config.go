@@ -112,14 +112,6 @@ type MatchProperties struct {
 	// for a match to count.
 	Attributes []Attribute `mapstructure:"attributes"`
 
-	// Include specifies if the spans that match the properties should be
-	// included or excluded from the processor.
-	// A `true` value specifies that spans only matching these properties should
-	// be included in the processing by this processor.
-	// A `false` value specifies all spans that do not match these properties
-	// should be processed.
-	// This field is required.
-	Include bool `mapstructure:"include"`
 }
 
 // Attribute specifies the attribute key and optional value to match against.
