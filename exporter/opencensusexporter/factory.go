@@ -63,7 +63,7 @@ func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Ex
 	if err != nil {
 		return nil, err
 	}
-	return f.CreateOCAgentTraceExporter(logger, ocac, opts)
+	return f.CreateTraceExporterExtendOptions(logger, ocac, opts)
 }
 
 // createOCAgentExporter takes ocagent exporter options and create an OC exporter
@@ -85,11 +85,10 @@ func (f *Factory) createOCAgentExporter(logger *zap.Logger, ocac *Config, opts [
 	return oce, nil
 }
 
-// CreateOCAgentTraceExporter is a wrapper around creating the OC agent exporter and
-// returning it as the TraceExporter interface.
-// This method is exposed to allow for extending the options OC Agent supports
-// in forks.
-func (f *Factory) CreateOCAgentTraceExporter(logger *zap.Logger, ocac *Config, opts []ocagent.ExporterOption) (exporter.TraceExporter, error) {
+// CreateTraceExporterExtendOptions exposes the options as a parameter to the
+// construction of the underlying OC Exporter.
+// This is useful for forks that extend OC Exporter functionalities.
+func (f *Factory) CreateTraceExporterExtendOptions(logger *zap.Logger, ocac *Config, opts []ocagent.ExporterOption) (exporter.TraceExporter, error) {
 	oce, err := f.createOCAgentExporter(logger, ocac, opts)
 	if err != nil {
 		return nil, err
