@@ -63,7 +63,7 @@ func (f *Factory) CreateTraceExporter(
 		return nil, err
 	}
 
-	exp, err := New(expCfg.Name(), expCfg.Endpoint)
+	exp, err := New(config, expCfg.Endpoint)
 	if err != nil {
 		return nil, err
 	}

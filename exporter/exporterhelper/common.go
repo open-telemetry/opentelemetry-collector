@@ -32,24 +32,24 @@ type ExporterOptions struct {
 	// spans received + dropped will be different than the number of received spans
 	// in the receiver.
 	recordMetrics bool
-	spanName      string
+	recordTrace   bool
 	shutdown      Shutdown
 }
 
 // ExporterOption apply changes to ExporterOptions.
 type ExporterOption func(*ExporterOptions)
 
-// WithRecordMetrics makes new Exporter to record metrics for every request.
-func WithRecordMetrics(recordMetrics bool) ExporterOption {
+// WithMetrics makes new Exporter to record metrics for every request.
+func WithMetrics(recordMetrics bool) ExporterOption {
 	return func(o *ExporterOptions) {
 		o.recordMetrics = recordMetrics
 	}
 }
 
-// WithSpanName makes new Exporter to wrap every request with a Span.
-func WithSpanName(spanName string) ExporterOption {
+// WithTracing makes new Exporter to wrap every request with a trace Span.
+func WithTracing(recordTrace bool) ExporterOption {
 	return func(o *ExporterOptions) {
-		o.spanName = spanName
+		o.recordTrace = recordTrace
 	}
 }
 

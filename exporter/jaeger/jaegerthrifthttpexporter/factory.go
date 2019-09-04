@@ -75,7 +75,7 @@ func (f *Factory) CreateTraceExporter(
 	}
 
 	exp, err := New(
-		expCfg.Name(),
+		config,
 		expCfg.URL,
 		expCfg.Headers,
 		expCfg.Timeout)

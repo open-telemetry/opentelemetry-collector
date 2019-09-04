@@ -25,6 +25,7 @@ import (
 
 	"github.com/apache/thrift/lib/go/thrift"
 
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumererror"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
@@ -44,7 +45,7 @@ const defaultHTTPTimeout = time.Second * 5
 // The timeout is used to set the timeout for the HTTP requests, if the
 // value is equal or smaller than zero the default of 5 seconds is used.
 func New(
-	exporterName string,
+	config configmodels.Exporter,
 	httpAddress string,
 	headers map[string]string,
 	timeout time.Duration,
@@ -61,10 +62,10 @@ func New(
 	}
 
 	exp, err := exporterhelper.NewTraceExporter(
-		exporterName,
+		config,
 		s.pushTraceData,
-		exporterhelper.WithSpanName("otelsvc.exporter."+exporterName+".ConsumeTraceData"),
-		exporterhelper.WithRecordMetrics(true))
+		exporterhelper.WithTracing(true),
+		exporterhelper.WithMetrics(true))
 
 	return exp, err
 }

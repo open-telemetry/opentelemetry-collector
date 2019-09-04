@@ -17,6 +17,7 @@ package exporterhelper
 import (
 	"context"
 
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/observability"
 	"go.opencensus.io/trace"
 
@@ -29,19 +30,15 @@ import (
 type PushMetricsData func(ctx context.Context, td consumerdata.MetricsData) (droppedTimeSeries int, err error)
 
 type metricsExporter struct {
-	exporterName    string
-	pushMetricsData PushMetricsData
-	shutdown        Shutdown
+	exporterFullName string
+	pushMetricsData  PushMetricsData
+	shutdown         Shutdown
 }
 
 var _ (exporter.MetricsExporter) = (*metricsExporter)(nil)
 
-func (me *metricsExporter) Name() string {
-	return me.exporterName
-}
-
 func (me *metricsExporter) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
-	exporterCtx := observability.ContextWithExporterName(ctx, me.exporterName)
+	exporterCtx := observability.ContextWithExporterName(ctx, me.exporterFullName)
 	_, err := me.pushMetricsData(exporterCtx, md)
 	return err
 }
@@ -54,10 +51,12 @@ func (me *metricsExporter) Shutdown() error {
 // NewMetricsExporter creates an MetricsExporter that can record metrics and can wrap every request with a Span.
 // If no options are passed it just adds the exporter format as a tag in the Context.
 // TODO: Add support for retries.
-func NewMetricsExporter(exporterName string, pushMetricsData PushMetricsData, options ...ExporterOption) (exporter.MetricsExporter, error) {
-	if exporterName == "" {
-		return nil, errEmptyExporterName
+func NewMetricsExporter(config configmodels.Exporter, pushMetricsData PushMetricsData, options ...ExporterOption) (exporter.MetricsExporter, error) {
+	if config == nil {
+		return nil, errNilConfig
 	}
+
+	exporterFullName := observability.MakeComponentName(config.Type(), config.Name())
 
 	if pushMetricsData == nil {
 		return nil, errNilPushMetricsData
@@ -68,8 +67,8 @@ func NewMetricsExporter(exporterName string, pushMetricsData PushMetricsData, op
 		pushMetricsData = pushMetricsDataWithMetrics(pushMetricsData)
 	}
 
-	if opts.spanName != "" {
-		pushMetricsData = pushMetricsDataWithSpan(pushMetricsData, opts.spanName)
+	if opts.recordTrace {
+		pushMetricsData = pushMetricsDataWithSpan(pushMetricsData, exporterFullName+".ExportMetricsData")
 	}
 
 	// The default shutdown method always returns nil.
@@ -78,9 +77,9 @@ func NewMetricsExporter(exporterName string, pushMetricsData PushMetricsData, op
 	}
 
 	return &metricsExporter{
-		exporterName:    exporterName,
-		pushMetricsData: pushMetricsData,
-		shutdown:        opts.shutdown,
+		exporterFullName: exporterFullName,
+		pushMetricsData:  pushMetricsData,
+		shutdown:         opts.shutdown,
 	}, nil
 }
 

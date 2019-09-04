@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/trace"
 
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
 	"github.com/open-telemetry/opentelemetry-service/observability"
@@ -30,46 +31,54 @@ import (
 )
 
 const (
-	fakeMetricsReceiverName = "fake_receiver"
-	fakeMetricsExporterName = "fake_exporter"
+	fakeMetricsReceiverName     = "fake_receiver"
+	fakeMetricsExporterType     = "fake_metrics_exporter"
+	fakeMetricsExporterName     = "with_name"
+	fakeMetricsExporterFullName = "fake_metrics_exporter_with_name"
+	fakeMetricsParentSpanName   = "fake_metrics_parent_span_name"
+)
+
+var (
+	fakeMetricsExporterConfig = &configmodels.ExporterSettings{
+		TypeVal:  fakeMetricsExporterType,
+		NameVal:  fakeMetricsExporterName,
+		Disabled: false,
+	}
 )
 
 func TestMetricsExporter_InvalidName(t *testing.T) {
-	me, err := NewMetricsExporter("", newPushMetricsData(0, nil))
+	me, err := NewMetricsExporter(nil, newPushMetricsData(0, nil))
 	require.Nil(t, me)
-	require.Equal(t, errEmptyExporterName, err)
+	require.Equal(t, errNilConfig, err)
 }
 
 func TestMetricsExporter_NilPushMetricsData(t *testing.T) {
-	me, err := NewMetricsExporter(fakeMetricsExporterName, nil)
+	me, err := NewMetricsExporter(fakeMetricsExporterConfig, nil)
 	require.Nil(t, me)
 	require.Equal(t, errNilPushMetricsData, err)
 }
 
 func TestMetricsExporter_Default(t *testing.T) {
 	md := consumerdata.MetricsData{}
-	me, err := NewMetricsExporter(fakeMetricsExporterName, newPushMetricsData(0, nil))
+	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(0, nil))
 	assert.NotNil(t, me)
 	assert.Nil(t, err)
 
 	assert.Nil(t, me.ConsumeMetricsData(context.Background(), md))
-
-	assert.Equal(t, me.Name(), fakeMetricsExporterName)
-
 	assert.Nil(t, me.Shutdown())
 }
 
 func TestMetricsExporter_Default_ReturnError(t *testing.T) {
 	md := consumerdata.MetricsData{}
 	want := errors.New("my_error")
-	me, err := NewMetricsExporter(fakeMetricsExporterName, newPushMetricsData(0, want))
+	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(0, want))
 	require.Nil(t, err)
 	require.NotNil(t, me)
 	require.Equal(t, want, me.ConsumeMetricsData(context.Background(), md))
 }
 
 func TestMetricsExporter_WithRecordMetrics(t *testing.T) {
-	me, err := NewMetricsExporter(fakeMetricsExporterName, newPushMetricsData(0, nil), WithRecordMetrics(true))
+	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(0, nil), WithMetrics(true))
 	require.Nil(t, err)
 	require.NotNil(t, me)
 
@@ -77,7 +86,7 @@ func TestMetricsExporter_WithRecordMetrics(t *testing.T) {
 }
 
 func TestMetricsExporter_WithRecordMetrics_NonZeroDropped(t *testing.T) {
-	me, err := NewMetricsExporter(fakeMetricsExporterName, newPushMetricsData(1, nil), WithRecordMetrics(true))
+	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(1, nil), WithMetrics(true))
 	require.Nil(t, err)
 	require.NotNil(t, me)
 
@@ -86,7 +95,7 @@ func TestMetricsExporter_WithRecordMetrics_NonZeroDropped(t *testing.T) {
 
 func TestMetricsExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
-	me, err := NewMetricsExporter(fakeMetricsExporterName, newPushMetricsData(0, want), WithRecordMetrics(true))
+	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(0, want), WithMetrics(true))
 	require.Nil(t, err)
 	require.NotNil(t, me)
 
@@ -94,14 +103,14 @@ func TestMetricsExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 }
 
 func TestMetricsExporter_WithSpan(t *testing.T) {
-	me, err := NewMetricsExporter(fakeMetricsExporterName, newPushMetricsData(0, nil), WithSpanName(fakeSpanName))
+	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(0, nil), WithTracing(true))
 	require.Nil(t, err)
 	require.NotNil(t, me)
 	checkWrapSpanForMetricsExporter(t, me, nil, 0)
 }
 
 func TestMetricsExporter_WithSpan_NonZeroDropped(t *testing.T) {
-	me, err := NewMetricsExporter(fakeMetricsExporterName, newPushMetricsData(1, nil), WithSpanName(fakeSpanName))
+	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(1, nil), WithTracing(true))
 	require.Nil(t, err)
 	require.NotNil(t, me)
 	checkWrapSpanForMetricsExporter(t, me, nil, 1)
@@ -109,7 +118,7 @@ func TestMetricsExporter_WithSpan_NonZeroDropped(t *testing.T) {
 
 func TestMetricsExporter_WithSpan_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
-	me, err := NewMetricsExporter(fakeMetricsExporterName, newPushMetricsData(0, want), WithSpanName(fakeSpanName))
+	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(0, want), WithTracing(true))
 	require.Nil(t, err)
 	require.NotNil(t, me)
 	checkWrapSpanForMetricsExporter(t, me, want, 0)
@@ -119,7 +128,7 @@ func TestMetricsExporter_WithShutdown(t *testing.T) {
 	shutdownCalled := false
 	shutdown := func() error { shutdownCalled = true; return nil }
 
-	me, err := NewMetricsExporter(fakeMetricsExporterName, newPushMetricsData(0, nil), WithShutdown(shutdown))
+	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(0, nil), WithShutdown(shutdown))
 	assert.NotNil(t, me)
 	assert.Nil(t, err)
 
@@ -131,7 +140,7 @@ func TestMetricsExporter_WithShutdown_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
 	shutdownErr := func() error { return want }
 
-	me, err := NewMetricsExporter(fakeMetricsExporterName, newPushMetricsData(0, nil), WithShutdown(shutdownErr))
+	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(0, nil), WithShutdown(shutdownErr))
 	assert.NotNil(t, me)
 	assert.Nil(t, err)
 
@@ -162,10 +171,10 @@ func checkRecordedMetricsForMetricsExporter(t *testing.T, me exporter.MetricsExp
 		require.Equal(t, wantError, me.ConsumeMetricsData(ctx, md))
 	}
 
-	err := observabilitytest.CheckValueViewExporterReceivedTimeSeries(fakeMetricsReceiverName, me.Name(), numBatches*NumTimeSeries(md))
+	err := observabilitytest.CheckValueViewExporterReceivedTimeSeries(fakeMetricsReceiverName, fakeMetricsExporterFullName, numBatches*NumTimeSeries(md))
 	require.Nilf(t, err, "CheckValueViewExporterTimeSeries: Want nil Got %v", err)
 
-	err = observabilitytest.CheckValueViewExporterDroppedTimeSeries(fakeMetricsReceiverName, me.Name(), numBatches*droppedTimeSeries)
+	err = observabilitytest.CheckValueViewExporterDroppedTimeSeries(fakeMetricsReceiverName, fakeMetricsExporterFullName, numBatches*droppedTimeSeries)
 	require.Nilf(t, err, "CheckValueViewExporterTimeSeries: Want nil Got %v", err)
 }
 
@@ -175,7 +184,7 @@ func generateMetricsTraffic(t *testing.T, me exporter.MetricsExporter, numReques
 			Timeseries: make([]*metricspb.TimeSeries, 1),
 		},
 	}}
-	ctx, span := trace.StartSpan(context.Background(), fakeParentSpanName, trace.WithSampler(trace.AlwaysSample()))
+	ctx, span := trace.StartSpan(context.Background(), fakeMetricsParentSpanName, trace.WithSampler(trace.AlwaysSample()))
 	defer span.End()
 	for i := 0; i < numRequests; i++ {
 		require.Equal(t, wantError, me.ConsumeMetricsData(ctx, md))
@@ -200,7 +209,7 @@ func checkWrapSpanForMetricsExporter(t *testing.T, me exporter.MetricsExporter, 
 	require.Equal(t, numRequests+1, len(gotSpanData))
 
 	parentSpan := gotSpanData[numRequests]
-	require.Equalf(t, fakeParentSpanName, parentSpan.Name, "SpanData %v", parentSpan)
+	require.Equalf(t, fakeMetricsParentSpanName, parentSpan.Name, "SpanData %v", parentSpan)
 
 	for _, sd := range gotSpanData[:numRequests] {
 		require.Equalf(t, parentSpan.SpanContext.SpanID, sd.ParentSpanID, "Exporter span not a child\nSpanData %v", sd)
