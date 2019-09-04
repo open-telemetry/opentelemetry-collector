@@ -77,10 +77,10 @@ func NewTraceExporter(logger *zap.Logger, config configmodels.Exporter, opts ...
 		return nil, err
 	}
 	oexp, err := exporterhelper.NewTraceExporter(
-		"oc_trace",
+		config,
 		oce.PushTraceData,
-		exporterhelper.WithSpanName("otelservice.exporter.OpenCensus.ConsumeTraceData"),
-		exporterhelper.WithRecordMetrics(true),
+		exporterhelper.WithTracing(true),
+		exporterhelper.WithMetrics(true),
 		exporterhelper.WithShutdown(oce.Shutdown))
 	if err != nil {
 		return nil, err
@@ -116,10 +116,10 @@ func NewMetricsExporter(logger *zap.Logger, config configmodels.Exporter, opts .
 		return nil, err
 	}
 	oexp, err := exporterhelper.NewMetricsExporter(
-		"oc_metrics",
+		config,
 		oce.PushMetricsData,
-		exporterhelper.WithSpanName("otelservice.exporter.OpenCensus.ConsumeMetricsData"),
-		exporterhelper.WithRecordMetrics(true),
+		exporterhelper.WithTracing(true),
+		exporterhelper.WithMetrics(true),
 		exporterhelper.WithShutdown(oce.Shutdown))
 	if err != nil {
 		return nil, err

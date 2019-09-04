@@ -24,17 +24,17 @@ import (
 
 func TestDefaultOptions(t *testing.T) {
 	checkRecordMetrics(t, newExporterOptions(), false)
-	checkSpanName(t, newExporterOptions(), "")
+	checkRecordTrace(t, newExporterOptions(), false)
 }
 
 func TestWithRecordMetrics(t *testing.T) {
-	checkRecordMetrics(t, newExporterOptions(WithRecordMetrics(true)), true)
-	checkRecordMetrics(t, newExporterOptions(WithRecordMetrics(false)), false)
+	checkRecordMetrics(t, newExporterOptions(WithMetrics(true)), true)
+	checkRecordMetrics(t, newExporterOptions(WithMetrics(false)), false)
 }
 
 func TestWithSpanName(t *testing.T) {
-	checkSpanName(t, newExporterOptions(WithSpanName("my_span")), "my_span")
-	checkSpanName(t, newExporterOptions(WithSpanName("")), "")
+	checkRecordTrace(t, newExporterOptions(WithTracing(true)), true)
+	checkRecordTrace(t, newExporterOptions(WithTracing(false)), false)
 }
 
 func TestErrorToStatus(t *testing.T) {
@@ -46,6 +46,6 @@ func checkRecordMetrics(t *testing.T, opts ExporterOptions, recordMetrics bool) 
 	assert.Equalf(t, opts.recordMetrics, recordMetrics, "Wrong recordMetrics Want: %t Got: %t", opts.recordMetrics, recordMetrics)
 }
 
-func checkSpanName(t *testing.T, opts ExporterOptions, spanName string) {
-	assert.Equalf(t, opts.spanName, spanName, "Wrong spanName Want: %s Got: %s", opts.spanName, spanName)
+func checkRecordTrace(t *testing.T, opts ExporterOptions, recordTrace bool) {
+	assert.Equalf(t, opts.recordTrace, recordTrace, "Wrong spanName Want: %s Got: %s", opts.recordTrace, recordTrace)
 }

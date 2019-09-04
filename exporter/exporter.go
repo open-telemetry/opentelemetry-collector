@@ -23,9 +23,6 @@ import (
 type TraceExporter interface {
 	consumer.TraceConsumer
 
-	// Name gets the name of the trace exporter.
-	Name() string
-
 	// Shutdown is invoked during service shutdown.
 	Shutdown() error
 }
@@ -33,9 +30,6 @@ type TraceExporter interface {
 // MetricsExporter composes MetricsConsumer with some additional exporter-specific functions.
 type MetricsExporter interface {
 	consumer.MetricsConsumer
-
-	// Name gets the name of the metrics exporter.
-	Name() string
 
 	// Shutdown is invoked during service shutdown.
 	Shutdown() error

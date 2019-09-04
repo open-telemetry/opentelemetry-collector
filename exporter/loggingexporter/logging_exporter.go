@@ -19,6 +19,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exporterhelper"
@@ -26,32 +27,36 @@ import (
 
 // NewTraceExporter creates an exporter.TraceExporter that just drops the
 // received data and logs debugging messages.
-func NewTraceExporter(exporterName string, logger *zap.Logger) (exporter.TraceExporter, error) {
+func NewTraceExporter(config configmodels.Exporter, logger *zap.Logger) (exporter.TraceExporter, error) {
+	typeLog := zap.String("type", config.Type())
+	nameLog := zap.String("name", config.Name())
 	return exporterhelper.NewTraceExporter(
-		exporterName,
+		config,
 		func(ctx context.Context, td consumerdata.TraceData) (int, error) {
-			logger.Info(exporterName, zap.Int("#spans", len(td.Spans)))
+			logger.Info("TraceExporter", typeLog, nameLog, zap.Int("#spans", len(td.Spans)))
 			// TODO: Add ability to record the received data
 			return 0, nil
 		},
-		exporterhelper.WithSpanName(exporterName+".ConsumeTraceData"),
-		exporterhelper.WithRecordMetrics(true),
+		exporterhelper.WithTracing(true),
+		exporterhelper.WithMetrics(true),
 		exporterhelper.WithShutdown(logger.Sync),
 	)
 }
 
 // NewMetricsExporter creates an exporter.MetricsExporter that just drops the
 // received data and logs debugging messages.
-func NewMetricsExporter(exporterName string, logger *zap.Logger) (exporter.MetricsExporter, error) {
+func NewMetricsExporter(config configmodels.Exporter, logger *zap.Logger) (exporter.MetricsExporter, error) {
+	typeLog := zap.String("type", config.Type())
+	nameLog := zap.String("name", config.Name())
 	return exporterhelper.NewMetricsExporter(
-		exporterName,
+		config,
 		func(ctx context.Context, md consumerdata.MetricsData) (int, error) {
-			logger.Info(exporterName, zap.Int("#metrics", len(md.Metrics)))
+			logger.Info("MetricsExporter", typeLog, nameLog, zap.Int("#metrics", len(md.Metrics)))
 			// TODO: Add ability to record the received data
 			return 0, nil
 		},
-		exporterhelper.WithSpanName(exporterName+".ConsumeMetricsData"),
-		exporterhelper.WithRecordMetrics(true),
+		exporterhelper.WithTracing(true),
+		exporterhelper.WithMetrics(true),
 		exporterhelper.WithShutdown(logger.Sync),
 	)
 }

@@ -20,6 +20,7 @@ import (
 	jaegerproto "github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"google.golang.org/grpc"
 
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumererror"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
@@ -30,7 +31,7 @@ import (
 // New returns a new Jaeger gRPC exporter.
 // The exporter name is the name to be used in the observability of the exporter.
 // The collectorEndpoint should be of the form "hostname:14250" (a gRPC target).
-func New(exporterName, collectorEndpoint string) (exporter.TraceExporter, error) {
+func New(config configmodels.Exporter, collectorEndpoint string) (exporter.TraceExporter, error) {
 	client, err := grpc.Dial(collectorEndpoint, grpc.WithInsecure())
 	if err != nil {
 		return nil, err
@@ -42,10 +43,10 @@ func New(exporterName, collectorEndpoint string) (exporter.TraceExporter, error)
 	}
 
 	exp, err := exporterhelper.NewTraceExporter(
-		exporterName,
+		config,
 		s.pushTraceData,
-		exporterhelper.WithSpanName("otelsvc.exporter."+exporterName+".ConsumeTraceData"),
-		exporterhelper.WithRecordMetrics(true))
+		exporterhelper.WithTracing(true),
+		exporterhelper.WithMetrics(true))
 
 	return exp, err
 }

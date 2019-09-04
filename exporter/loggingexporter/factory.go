@@ -56,7 +56,7 @@ func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Ex
 		return nil, err
 	}
 
-	lexp, err := NewTraceExporter(cfg.Name(), exporterLogger)
+	lexp, err := NewTraceExporter(config, exporterLogger)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +87,7 @@ func (f *Factory) CreateMetricsExporter(logger *zap.Logger, config configmodels.
 		return nil, err
 	}
 
-	lexp, err := NewMetricsExporter(cfg.Name(), exporterLogger)
+	lexp, err := NewMetricsExporter(config, exporterLogger)
 	if err != nil {
 		return nil, err
 	}

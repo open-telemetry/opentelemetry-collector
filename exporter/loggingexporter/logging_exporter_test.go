@@ -22,12 +22,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 )
 
 func TestLoggingTraceExporterNoErrors(t *testing.T) {
-	const exporterName = "test_logging_exporter"
-	lte, err := NewTraceExporter(exporterName, zap.NewNop())
+	lte, err := NewTraceExporter(&configmodels.ExporterSettings{}, zap.NewNop())
 	if err != nil {
 		t.Fatalf("Wanted nil got %v", err)
 	}
@@ -37,15 +37,11 @@ func TestLoggingTraceExporterNoErrors(t *testing.T) {
 	if err := lte.ConsumeTraceData(context.Background(), td); err != nil {
 		t.Fatalf("Wanted nil got %v", err)
 	}
-	if lte.Name() != exporterName {
-		t.Errorf("Wanted %q got %q", exporterName, lte.Name())
-	}
 	assert.NoError(t, lte.Shutdown())
 }
 
 func TestLoggingMetricsExporterNoErrors(t *testing.T) {
-	const exporterName = "test_metrics_exporter"
-	lme, err := NewMetricsExporter(exporterName, zap.NewNop())
+	lme, err := NewMetricsExporter(&configmodels.ExporterSettings{}, zap.NewNop())
 	if err != nil {
 		t.Fatalf("Wanted nil got %v", err)
 	}
@@ -54,9 +50,6 @@ func TestLoggingMetricsExporterNoErrors(t *testing.T) {
 	}
 	if err := lme.ConsumeMetricsData(context.Background(), md); err != nil {
 		t.Fatalf("Wanted nil got %v", err)
-	}
-	if lme.Name() != exporterName {
-		t.Errorf("Wanted %q got %q", exporterName, lme.Name())
 	}
 	assert.NoError(t, lme.Shutdown())
 }

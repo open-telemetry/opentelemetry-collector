@@ -49,10 +49,8 @@ func TestFactory_CreateTraceProcessor(t *testing.T) {
 	oCfg.Rename.FromAttributes = []string{"test-key"}
 	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), oCfg)
 
-	// TODO(ccaraman): Fix this when the processor logic is added and the trace processor
-	//	no longer returns an error.
-	require.Nil(t, tp)
-	assert.Equal(t, err, configerror.ErrDataTypeIsNotSupported)
+	require.Nil(t, err)
+	assert.NotNil(t, tp)
 }
 
 // TestFactory_CreateTraceProcessor_InvalidConfig ensures the default configuration

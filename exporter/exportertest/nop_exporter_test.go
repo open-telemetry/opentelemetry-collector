@@ -33,8 +33,6 @@ func TestNopTraceExporter_NoErrors(t *testing.T) {
 
 	err := nte.ConsumeTraceData(context.Background(), td)
 	require.Nil(t, err)
-
-	require.Equal(t, "nop_trace", nte.Name())
 }
 
 func TestNopTraceExporter_WithErrors(t *testing.T) {
@@ -45,8 +43,6 @@ func TestNopTraceExporter_WithErrors(t *testing.T) {
 	}
 
 	require.Equal(t, want, nte.ConsumeTraceData(context.Background(), td))
-
-	require.Equal(t, "nop_trace", nte.Name())
 }
 
 func TestNopMetricsExporter_NoErrors(t *testing.T) {
@@ -57,8 +53,6 @@ func TestNopMetricsExporter_NoErrors(t *testing.T) {
 	err := nme.ConsumeMetricsData(context.Background(), md)
 
 	require.Nil(t, err)
-
-	require.Equal(t, "nop_metrics", nme.Name())
 }
 
 func TestNopMetricsExporter_WithErrors(t *testing.T) {
@@ -69,6 +63,4 @@ func TestNopMetricsExporter_WithErrors(t *testing.T) {
 	}
 
 	require.Equal(t, want, nme.ConsumeMetricsData(context.Background(), md))
-
-	require.Equal(t, "nop_metrics", nme.Name())
 }

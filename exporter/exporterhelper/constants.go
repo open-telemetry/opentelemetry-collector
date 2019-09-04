@@ -19,8 +19,8 @@ import (
 )
 
 var (
-	// errEmptyExporterName is returned when an empty name is given.
-	errEmptyExporterName = errors.New("empty exporterName")
+	// errNilConfig is returned when an empty name is given.
+	errNilConfig = errors.New("nil config")
 	// errNilPushTraceData is returned when a nil pushTraceData is given.
 	errNilPushTraceData = errors.New("nil pushTraceData")
 	// errNilPushMetricsData is returned when a nil pushMetricsData is given.

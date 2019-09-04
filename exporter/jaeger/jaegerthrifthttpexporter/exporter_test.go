@@ -21,6 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 )
 
@@ -28,10 +29,10 @@ func TestNew(t *testing.T) {
 	const testHTTPAddress = "http://a.test.dom:123/at/some/path"
 
 	type args struct {
-		exporterName string
-		httpAddress  string
-		headers      map[string]string
-		timeout      time.Duration
+		config      configmodels.Exporter
+		httpAddress string
+		headers     map[string]string
+		timeout     time.Duration
 	}
 	tests := []struct {
 		name    string
@@ -41,6 +42,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "empty_exporterName",
 			args: args{
+				config:      nil,
 				httpAddress: testHTTPAddress,
 			},
 			wantErr: true,
@@ -48,16 +50,16 @@ func TestNew(t *testing.T) {
 		{
 			name: "createExporter",
 			args: args{
-				exporterName: typeStr,
-				httpAddress:  testHTTPAddress,
-				headers:      map[string]string{"test": "test"},
-				timeout:      10 * time.Nanosecond,
+				config:      &configmodels.ExporterSettings{},
+				httpAddress: testHTTPAddress,
+				headers:     map[string]string{"test": "test"},
+				timeout:     10 * time.Nanosecond,
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := New(tt.args.exporterName, tt.args.httpAddress, tt.args.headers, tt.args.timeout)
+			got, err := New(tt.args.config, tt.args.httpAddress, tt.args.headers, tt.args.timeout)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("New() error = %v, wantErr %v", err, tt.wantErr)
 				return
