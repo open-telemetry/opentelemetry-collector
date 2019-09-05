@@ -12,26 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package service
+package healthcheckextension
 
 import (
-	"flag"
-
-	"github.com/jaegertracing/jaeger/pkg/healthcheck"
-	"github.com/spf13/viper"
-	"go.uber.org/zap"
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 )
 
-const (
-	healthCheckHTTPPort = "health-check-http-port"
-)
+// Config has the configuration for the extension enabling the health check
+// extension, used to report the health status of the service.
+type Config struct {
+	configmodels.ExtensionSettings `mapstructure:",squash"`
 
-func healthCheckFlags(flags *flag.FlagSet) {
-	flags.Uint(healthCheckHTTPPort, 13133, "Port on which to run the healthcheck http server.")
-}
-
-func newHealthCheck(v *viper.Viper, logger *zap.Logger) (*healthcheck.HealthCheck, error) {
-	return healthcheck.New(
-		healthcheck.Unavailable, healthcheck.Logger(logger),
-	).Serve(v.GetInt(healthCheckHTTPPort))
+	// Port is the port used to publish the health check status.
+	// The default value is 13133.
+	Port uint16 `mapstructure:"port"`
 }

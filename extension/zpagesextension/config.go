@@ -12,28 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Program otelsvc is the Open Telemetry Service that collects stats
-// and traces and exports to a configured backend.
-package main
+package zpagesextension
 
 import (
-	"log"
-
-	"github.com/open-telemetry/opentelemetry-service/defaults"
-	"github.com/open-telemetry/opentelemetry-service/service"
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 )
 
-func main() {
-	handleErr := func(err error) {
-		if err != nil {
-			log.Fatalf("Failed to run the service: %v", err)
-		}
-	}
+// Config has the configuration for the extension enabling the zPages extension.
+type Config struct {
+	configmodels.ExtensionSettings `mapstructure:",squash"`
 
-	factories, err := defaults.Components()
-	handleErr(err)
-
-	svc := service.New(factories)
-	err = svc.StartUnified()
-	handleErr(err)
+	// Endpoint is the address and port in which the zPages will be listening to.
+	// Use 127.0.0.1:<port> to make it available only locally, or ":<port>" to
+	// make it available on all network interfaces.
+	Endpoint string `mapstructure:"endpoint"`
 }

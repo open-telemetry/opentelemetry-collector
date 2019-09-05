@@ -37,3 +37,14 @@ pipelines:
   metrics:
     receivers: [opencensus]
     exporters: [logging,prometheus]
+
+extensions:
+  health-check:
+  pprof:
+    endpoint: :1888
+  zpages:
+    endpoint: :55679
+
+service:
+  extensions: [pprof, zpages, health-check]
+

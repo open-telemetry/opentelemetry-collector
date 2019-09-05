@@ -50,13 +50,13 @@ these sections would look like in the configuration file:
 # includes all configurable options and their respective default value.
 extensions:
   health-check:
-    endpoint: "0.0.0.0:13133"
+    port: 13133
   pprof:
-    endpoint: "0.0.0.0:1777"
+    endpoint: "127.0.0.1:1777"
     block-profile-fraction: 0
     mutex-profile-fraction: 0
   zpages:
-   endpoint: "0.0.0.0:55679"
+   endpoint: "127.0.0.1:55679"
 
 # The service lists extensions not directly related to data pipelines, but used
 # by the service.

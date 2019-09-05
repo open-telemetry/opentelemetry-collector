@@ -29,6 +29,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/exporter/opencensusexporter"
 	"github.com/open-telemetry/opentelemetry-service/exporter/prometheusexporter"
 	"github.com/open-telemetry/opentelemetry-service/exporter/zipkinexporter"
+	"github.com/open-telemetry/opentelemetry-service/extension"
+	"github.com/open-telemetry/opentelemetry-service/extension/healthcheckextension"
+	"github.com/open-telemetry/opentelemetry-service/extension/pprofextension"
+	"github.com/open-telemetry/opentelemetry-service/extension/zpagesextension"
 	"github.com/open-telemetry/opentelemetry-service/processor"
 	"github.com/open-telemetry/opentelemetry-service/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-service/processor/nodebatcherprocessor"
@@ -44,6 +48,11 @@ import (
 )
 
 func TestDefaultComponents(t *testing.T) {
+	expectedExtensions := map[string]extension.Factory{
+		"health-check": &healthcheckextension.Factory{},
+		"pprof":        &pprofextension.Factory{},
+		"zpages":       &zpagesextension.Factory{},
+	}
 	expectedReceivers := map[string]receiver.Factory{
 		"jaeger":     &jaegerreceiver.Factory{},
 		"zipkin":     &zipkinreceiver.Factory{},
@@ -67,10 +76,11 @@ func TestDefaultComponents(t *testing.T) {
 		"jaeger-thrift-http": &jaegerthrifthttpexporter.Factory{},
 	}
 
-	receivers, processors, exporters, err := Components()
+	factories, err := Components()
 	fmt.Println(err)
 	assert.Nil(t, err)
-	assert.Equal(t, expectedReceivers, receivers)
-	assert.Equal(t, expectedProcessors, processors)
-	assert.Equal(t, expectedExporters, exporters)
+	assert.Equal(t, expectedExtensions, factories.Extensions)
+	assert.Equal(t, expectedReceivers, factories.Receivers)
+	assert.Equal(t, expectedProcessors, factories.Processors)
+	assert.Equal(t, expectedExporters, factories.Exporters)
 }

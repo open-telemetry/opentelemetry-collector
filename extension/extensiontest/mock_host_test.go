@@ -12,28 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Program otelsvc is the Open Telemetry Service that collects stats
-// and traces and exports to a configured backend.
-package main
+package extensiontest
 
 import (
-	"log"
+	"errors"
+	"testing"
+	"time"
 
-	"github.com/open-telemetry/opentelemetry-service/defaults"
-	"github.com/open-telemetry/opentelemetry-service/service"
+	"github.com/stretchr/testify/require"
 )
 
-func main() {
-	handleErr := func(err error) {
-		if err != nil {
-			log.Fatalf("Failed to run the service: %v", err)
-		}
-	}
+func TestNewMockHost(t *testing.T) {
+	mh := NewMockHost()
+	require.NotNil(t, mh)
 
-	factories, err := defaults.Components()
-	handleErr(err)
+	reportedErr := errors.New("TestError")
+	go mh.ReportFatalError(reportedErr)
 
-	svc := service.New(factories)
-	err = svc.StartUnified()
-	handleErr(err)
+	receivedError, receivedErr := mh.WaitForFatalError(100 * time.Millisecond)
+	require.True(t, receivedError)
+	require.Equal(t, reportedErr, receivedErr)
+
+	receivedError, _ = mh.WaitForFatalError(100 * time.Millisecond)
+	require.False(t, receivedError)
 }

@@ -25,18 +25,15 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-service/defaults"
 	"github.com/open-telemetry/opentelemetry-service/internal/testutils"
-	"github.com/open-telemetry/opentelemetry-service/zpages"
 )
 
 func TestApplication_StartUnified(t *testing.T) {
-	receiverFactories, processorsFactories, exporterFactories, err := defaults.Components()
+	factories, err := defaults.Components()
 	assert.Nil(t, err)
 
-	app := New(receiverFactories, processorsFactories, exporterFactories)
+	app := New(factories)
 
 	portArg := []string{
-		healthCheckHTTPPort, // Keep it as first since its address is used later.
-		zpages.ZPagesHTTPPort,
 		"metrics-port",
 	}
 	addresses := getMultipleAvailableLocalAddresses(t, uint(len(portArg)))
@@ -61,7 +58,8 @@ func TestApplication_StartUnified(t *testing.T) {
 
 	<-app.readyChan
 
-	if !isAppAvailable(t, "http://"+addresses[0]) {
+	// TODO: Add a way to change configuration files so we can get the ports dynamically
+	if !isAppAvailable(t, "http://localhost:13133") {
 		t.Fatalf("app didn't reach ready state")
 	}
 

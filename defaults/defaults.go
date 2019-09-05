@@ -16,6 +16,7 @@
 package defaults
 
 import (
+	"github.com/open-telemetry/opentelemetry-service/config"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
 	"github.com/open-telemetry/opentelemetry-service/exporter/jaeger/jaegergrpcexporter"
 	"github.com/open-telemetry/opentelemetry-service/exporter/jaeger/jaegerthrifthttpexporter"
@@ -23,6 +24,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/exporter/opencensusexporter"
 	"github.com/open-telemetry/opentelemetry-service/exporter/prometheusexporter"
 	"github.com/open-telemetry/opentelemetry-service/exporter/zipkinexporter"
+	"github.com/open-telemetry/opentelemetry-service/extension"
+	"github.com/open-telemetry/opentelemetry-service/extension/healthcheckextension"
+	"github.com/open-telemetry/opentelemetry-service/extension/pprofextension"
+	"github.com/open-telemetry/opentelemetry-service/extension/zpagesextension"
 	"github.com/open-telemetry/opentelemetry-service/oterr"
 	"github.com/open-telemetry/opentelemetry-service/processor"
 	"github.com/open-telemetry/opentelemetry-service/processor/attributesprocessor"
@@ -41,12 +46,20 @@ import (
 // Components returns the default set of components used by the
 // opentelemetry service
 func Components() (
-	map[string]receiver.Factory,
-	map[string]processor.Factory,
-	map[string]exporter.Factory,
+	config.Factories,
 	error,
 ) {
 	errs := []error{}
+
+	extensions, err := extension.Build(
+		&healthcheckextension.Factory{},
+		&pprofextension.Factory{},
+		&zpagesextension.Factory{},
+	)
+	if err != nil {
+		errs = append(errs, err)
+	}
+
 	receivers, err := receiver.Build(
 		&jaegerreceiver.Factory{},
 		&zipkinreceiver.Factory{},
@@ -80,5 +93,13 @@ func Components() (
 	if err != nil {
 		errs = append(errs, err)
 	}
-	return receivers, processors, exporters, oterr.CombineErrors(errs)
+
+	factories := config.Factories{
+		Extensions: extensions,
+		Receivers:  receivers,
+		Processors: processors,
+		Exporters:  exporters,
+	}
+
+	return factories, oterr.CombineErrors(errs)
 }

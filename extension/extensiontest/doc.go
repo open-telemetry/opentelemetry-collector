@@ -12,28 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Program otelsvc is the Open Telemetry Service that collects stats
-// and traces and exports to a configured backend.
-package main
-
-import (
-	"log"
-
-	"github.com/open-telemetry/opentelemetry-service/defaults"
-	"github.com/open-telemetry/opentelemetry-service/service"
-)
-
-func main() {
-	handleErr := func(err error) {
-		if err != nil {
-			log.Fatalf("Failed to run the service: %v", err)
-		}
-	}
-
-	factories, err := defaults.Components()
-	handleErr(err)
-
-	svc := service.New(factories)
-	err = svc.StartUnified()
-	handleErr(err)
-}
+// Package extensiontest define types and functions used to help test packages
+// implementing the extension package interfaces.
+package extensiontest

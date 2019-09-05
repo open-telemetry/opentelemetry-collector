@@ -29,3 +29,13 @@ pipelines:
   metrics:
     receivers: [opencensus]
     exporters: [logging,opencensus]
+
+extensions:
+  pprof:
+    endpoint: :1777
+  zpages:
+    endpoint: :55679
+
+service:
+  extensions: [pprof, zpages]
+

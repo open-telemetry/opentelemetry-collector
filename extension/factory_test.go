@@ -38,7 +38,7 @@ func (f *TestFactory) CreateDefaultConfig() configmodels.Extension {
 	return nil
 }
 
-// CreateTraceProcessor creates a trace processor based on this config.
+// CreateExtension creates a service extension based on this config.
 func (f *TestFactory) CreateExtension(
 	logger *zap.Logger,
 	cfg configmodels.Extension,
