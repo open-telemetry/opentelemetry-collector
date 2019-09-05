@@ -36,6 +36,7 @@ import (
 	zipkinproto "github.com/openzipkin/zipkin-go/proto/v2"
 	"go.opencensus.io/trace"
 
+	"github.com/open-telemetry/opentelemetry-collector/client"
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
@@ -295,8 +296,12 @@ const (
 // The ZipkinReceiver receives spans from endpoint /api/v2 as JSON,
 // unmarshals them and sends them along to the nextConsumer.
 func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// Trace this method
 	parentCtx := r.Context()
+	if c, ok := client.FromHTTP(r); ok {
+		parentCtx = client.NewContext(parentCtx, c)
+	}
+
+	// Trace this method
 	ctx, span := trace.StartSpan(parentCtx, "ZipkinReceiver.Export")
 	defer span.End()
 
