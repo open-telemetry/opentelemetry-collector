@@ -73,18 +73,16 @@ processors:
   # Span3 Name: 'svcB' Attributes: {env: 1, test_request: dev, credit_card: 1234}
   # Span4 Name: 'svcC' Attributes: {env: dev, test_request: false}
   attributes/excludemulti:
-    match_properties:
+    # Specifies the spans properties that exclude a span from being processed.
+    exclude:
       # The Span service name must either be "svcA" or "svcB" to match.
       services: ["svcA", "svcB"]
       attributes:
         # This exact attribute ('env', 'dev') must exist in the span for a match.
-        - {key: env, Value: "dev"}
+        - {key: env, value: "dev"}
         # As long as there is an attribute with key 'test_request' in the span
         # there is a match.
         - {key: test_request}
-      # Specifies that spans that match the above properties are to be excluded
-      # from being processed.
-      include: false
     actions:
       - key: credit_card
         action: delete
@@ -102,12 +100,36 @@ processors:
   # processor actions are not applied.
   # Span4 Name: 'svcC' Attributes: {env: dev, test_request: false}
   attributes/includeservices:
-    match_properties:
+    # Specifies the span properties that must exist for the processor to be applied.
+    include:
       # The Span service name must either be "svcA" or "svcB" to match.
       services: ["svcA", "svcB"]
-      # Specifies that spans tat match the above property are to be processed
-      # by this processor.
-      include: true
+    actions:
+      - key: credit_card
+        action: delete
+      - key: duplicate_key
+        action: delete
+
+  # The following demonstrates specifying the set of span properties to
+  # indicate which spans this processor should be applied to. The `include` of
+  # properties say which ones should be included and the `exclude` properties
+  # further filter out spans that shouldn't be processed.
+  # Ex. The following are spans match the properties and the actions are applied.
+  # Note this span is processed because the value type of redact_trace is a string instead of a boolean.
+  # Span1 Name: 'svcB' Attributes: {env: production, test_request: 123, credit_card: 1234, redact_trace: "false"}
+  # Span2 Name: 'svcA' Attributes: {env: staging, test_request: false, redact_trace: true}
+  # The following span does not match the include properties and the
+  # processor actions are not applied.
+  # Span3 Name: 'svcB' Attributes: {env: production, test_request: true, credit_card: 1234, redact_trace: false}
+  # Span4 Name: 'svcC' Attributes: {env: dev, test_request: false}
+  attributes/selectiveprocessing:
+    # Specifies the span properties that must exist for the processor to be applied.
+    include:
+      # The Span service name must either be "svcA" or "svcB" to match.
+      services: ["svcA", "svcB"]
+    exclude:
+      attributes:
+        - { key: redact_trace, value: false}
     actions:
       - key: credit_card
         action: delete

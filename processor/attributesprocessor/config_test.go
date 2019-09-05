@@ -89,13 +89,12 @@ func TestLoadingConifg(t *testing.T) {
 			NameVal: "attributes/excludemulti",
 			TypeVal: typeStr,
 		},
-		Match: MatchProperties{
+		Exclude: MatchProperties{
 			Services: []string{"svcA", "svcB"},
 			Attributes: []Attribute{
 				{Key: "env", Value: "dev"},
 				{Key: "test_request"},
 			},
-			Include: false,
 		},
 		Actions: []ActionKeyValue{
 			{Key: "credit_card", Action: DELETE},
@@ -109,9 +108,8 @@ func TestLoadingConifg(t *testing.T) {
 			NameVal: "attributes/includeservices",
 			TypeVal: typeStr,
 		},
-		Match: MatchProperties{
+		Include: MatchProperties{
 			Services: []string{"svcA", "svcB"},
-			Include:  true,
 		},
 		Actions: []ActionKeyValue{
 			{Key: "credit_card", Action: DELETE},
@@ -119,8 +117,28 @@ func TestLoadingConifg(t *testing.T) {
 		},
 	})
 
-	p6 := config.Processors["attributes/complex"]
+	p6 := config.Processors["attributes/selectiveprocessing"]
 	assert.Equal(t, p6, &Config{
+		ProcessorSettings: configmodels.ProcessorSettings{
+			NameVal: "attributes/selectiveprocessing",
+			TypeVal: typeStr,
+		},
+		Include: MatchProperties{
+			Services: []string{"svcA", "svcB"},
+		},
+		Exclude: MatchProperties{
+			Attributes: []Attribute{
+				{Key: "redact_trace", Value: false},
+			},
+		},
+		Actions: []ActionKeyValue{
+			{Key: "credit_card", Action: DELETE},
+			{Key: "duplicate_key", Action: DELETE},
+		},
+	})
+
+	p7 := config.Processors["attributes/complex"]
+	assert.Equal(t, p7, &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
 			NameVal: "attributes/complex",
 			TypeVal: typeStr,
@@ -132,8 +150,8 @@ func TestLoadingConifg(t *testing.T) {
 		},
 	})
 
-	p7 := config.Processors["attributes/example"]
-	assert.Equal(t, p7, &Config{
+	p8 := config.Processors["attributes/example"]
+	assert.Equal(t, p8, &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
 			NameVal: "attributes/example",
 			TypeVal: typeStr,

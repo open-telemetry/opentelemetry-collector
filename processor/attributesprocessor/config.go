@@ -22,16 +22,31 @@ import (
 // deleted and the properties to include/exclude a span from being processed.
 // This processor handles all forms of modifications to attributes within a span.
 // Prior to any actions being applied, each span is compared against
-// the match properties if they are specified. This determines if a span
-// is to be processed or not.
+// the include properties and then the exclude properties if they are specified.
+// This determines if a span is to be processed or not.
 // The list of actions is applied in order specified in the configuration.
 type Config struct {
 	configmodels.ProcessorSettings `mapstructure:",squash"`
 
-	// Match specifies the set of properties of a span to match against and
-	// if the span should be included or excluded from the processor.
-	// This is an optional field. If not set, all spans are processed.
-	Match MatchProperties `mapstructure:"match_properties"`
+	// Include specifies the set of span properties that must be present in order
+	// for this processor to apply to it.
+	// Note: If `exclude` is specified, the span is compared against those
+	// properties after the `include` properties.
+	// This is an optional field. If neither `include` and `exclude` are set, all spans
+	// are processed. If `include` is set and `exclude` isn't set, then all
+	// spans matching the properties in this structure are processed.
+	Include MatchProperties `mapstructure:"include"`
+
+	// Exclude specifies the set of span properties that must not be present in order
+	// for this processor to apply to it.
+	// Note: The `exclude` properties are checked after the `include` properties,
+	// if they exist, are checked.
+	// If `include` isn't specified, the `exclude` properties are checked against
+	// all spans.
+	// This is an optional field. If neither `include` and `exclude` are set, all spans
+	// are processed. If `exclude` is set and `include` isn't set, then all
+	// spans  that do no match the properties in this structure are processed.
+	Exclude MatchProperties `mapstructure:"exclude"`
 
 	// Actions specifies the list of attributes to act on.
 	// The set of actions are {INSERT, UPDATE, UPSERT, DELETE}.
@@ -103,15 +118,15 @@ const (
 // for the inclusion/exclusion to occur.
 type MatchProperties struct {
 
-	// Services specify the list of service names to match against.
+	// Services specify the list of service name to match against.
 	// A match occurs if the span service name is in this list.
+	// Note: This is an optional field.
 	Services []string `mapstructure:"services"`
 
 	// Attributes specifies the list of attributes to match against.
-	// All of these attributes must be in the span and match exactly
-	// for a match to count.
+	// All of these attributes must match exactly for a match to occur.
+	// Note: This is an optional field.
 	Attributes []Attribute `mapstructure:"attributes"`
-
 }
 
 // Attribute specifies the attribute key and optional value to match against.
