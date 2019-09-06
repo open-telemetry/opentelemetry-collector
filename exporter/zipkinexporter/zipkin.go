@@ -16,7 +16,6 @@ package zipkinexporter
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"strconv"
 	"sync"
@@ -26,23 +25,14 @@ import (
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
 	zipkinhttp "github.com/openzipkin/zipkin-go/reporter/http"
-	"github.com/spf13/viper"
 	"go.opencensus.io/trace"
 
-	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumererror"
 	"github.com/open-telemetry/opentelemetry-service/observability"
 	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
 	spandatatranslator "github.com/open-telemetry/opentelemetry-service/translator/trace/spandata"
 )
-
-// ZipkinConfig holds the configuration of a Zipkin exporter.
-type ZipkinConfig struct {
-	ServiceName  string         `mapstructure:"service_name,omitempty"`
-	Endpoint     string         `mapstructure:"endpoint,omitempty"`
-	UploadPeriod *time.Duration `mapstructure:"upload_period,omitempty"`
-}
 
 // zipkinExporter is a multiplexing exporter that spawns a new OpenCensus-Go Zipkin
 // exporter per unique node encountered. This is because serviceNames per node define
@@ -63,50 +53,6 @@ const (
 	DefaultZipkinEndpointHostPort = "localhost:9411"
 	DefaultZipkinEndpointURL      = "http://" + DefaultZipkinEndpointHostPort + "/api/v2/spans"
 )
-
-// EndpointURL returns the endpoint URL of the Zipkin configuration.
-func (zc *ZipkinConfig) EndpointURL() string {
-	// If no endpoint was set, use the default Zipkin reporter URI.
-	endpoint := DefaultZipkinEndpointURL
-	if zc != nil && zc.Endpoint != "" {
-		endpoint = zc.Endpoint
-	}
-	return endpoint
-}
-
-// ZipkinExportersFromViper unmarshals the viper and returns an exporter.TraceExporter targeting
-// Zipkin according to the configuration settings.
-// TODO Cleanup FromViper uses https://github.com/open-telemetry/opentelemetry-service/issues/263
-func ZipkinExportersFromViper(v *viper.Viper) (tps []consumer.TraceConsumer, mps []consumer.MetricsConsumer, doneFns []func() error, err error) {
-	var cfg struct {
-		Zipkin *ZipkinConfig `mapstructure:"zipkin"`
-	}
-	if err := v.Unmarshal(&cfg); err != nil {
-		return nil, nil, nil, err
-	}
-
-	zc := cfg.Zipkin
-	if zc == nil {
-		return nil, nil, nil, nil
-	}
-
-	serviceName := ""
-	if zc.ServiceName != "" {
-		serviceName = zc.ServiceName
-	}
-	endpoint := zc.EndpointURL()
-	var uploadPeriod time.Duration
-	if zc.UploadPeriod != nil && *zc.UploadPeriod > 0 {
-		uploadPeriod = *zc.UploadPeriod
-	}
-	zle, err := newZipkinExporter(endpoint, serviceName, uploadPeriod)
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("cannot configure Zipkin exporter: %v", err)
-	}
-	tps = append(tps, zle)
-	doneFns = append(doneFns, zle.Shutdown)
-	return
-}
 
 func newZipkinExporter(finalEndpointURI, defaultServiceName string, uploadPeriod time.Duration) (*zipkinExporter, error) {
 	var opts []zipkinhttp.ReporterOption

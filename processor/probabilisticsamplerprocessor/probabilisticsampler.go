@@ -16,11 +16,8 @@ package probabilisticsamplerprocessor
 
 import (
 	"context"
-	"errors"
-	"fmt"
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/spf13/viper"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
@@ -38,20 +35,6 @@ const (
 	bitMaskHashBuckets    = numHashBuckets - 1
 	percentageScaleFactor = numHashBuckets / 100.0
 )
-
-// InitFromViper updates TraceSampler config according to the viper configuration.
-func (tsc *Config) InitFromViper(v *viper.Viper) (*Config, error) {
-	if v == nil {
-		return nil, errors.New("v is nil")
-	}
-	if err := v.UnmarshalKey(samplingPercentageCfgTag, &tsc.SamplingPercentage); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal %q: %v", samplingPercentageCfgTag, err)
-	}
-	if err := v.UnmarshalKey(hashSeedCfgTag, &tsc.HashSeed); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal %q: %v", hashSeedCfgTag, err)
-	}
-	return tsc, nil
-}
 
 type tracesamplerprocessor struct {
 	nextConsumer       consumer.TraceConsumer
