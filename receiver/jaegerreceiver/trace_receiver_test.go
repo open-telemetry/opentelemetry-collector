@@ -153,7 +153,7 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 	grpcServerOptions = append(grpcServerOptions, tlsOption)
 
 	config := &Configuration{
-		CollectorGRPCPort:    14250, // that's the only one used by this test
+		CollectorGRPCPort:    0, // will dynamically find a free port
 		CollectorGRPCOptions: grpcServerOptions,
 	}
 	sink := new(exportertest.SinkTraceExporter)
@@ -169,13 +169,13 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 
 	creds, err := credentials.NewClientTLSFromFile(path.Join(".", "testdata", "certificate.pem"), "opentelemetry.io")
 	require.NoError(t, err)
-	conn, err := grpc.Dial(fmt.Sprintf("0.0.0.0:%d", config.CollectorGRPCPort), grpc.WithTransportCredentials(creds))
+	conn, err := grpc.Dial(jr.(*jReceiver).grpcAddr(), grpc.WithTransportCredentials(creds))
 	require.NoError(t, err)
 	defer conn.Close()
 
 	cl := api_v2.NewCollectorServiceClient(conn)
 
-	now := time.Unix(1542158650, 536343000).UTC()
+	now := time.Now()
 	d10min := 10 * time.Minute
 	d2sec := 2 * time.Second
 	nowPlus10min := now.Add(d10min)

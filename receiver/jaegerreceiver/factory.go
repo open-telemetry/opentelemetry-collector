@@ -22,9 +22,8 @@ import (
 	"net"
 	"strconv"
 
-	"google.golang.org/grpc"
-
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
 
 	"github.com/open-telemetry/opentelemetry-service/config/configerror"
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
