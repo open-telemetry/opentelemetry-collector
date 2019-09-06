@@ -26,10 +26,6 @@ import (
 )
 
 const (
-	// The constants below are tags used to read the configuration via viper.
-	samplingPercentageCfgTag = "sampling-percentage"
-	hashSeedCfgTag           = "hash-seed"
-
 	// The constants help translate user friendly percentages to numbers direct used in sampling.
 	numHashBuckets        = 0x4000 // Using a power of 2 to avoid division.
 	bitMaskHashBuckets    = numHashBuckets - 1

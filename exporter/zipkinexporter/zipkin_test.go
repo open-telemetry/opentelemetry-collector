@@ -18,14 +18,25 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"reflect"
+	"strings"
 	"testing"
+	"time"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
+
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/internal/testutils"
+	"github.com/open-telemetry/opentelemetry-service/processor"
+	"github.com/open-telemetry/opentelemetry-service/receiver/receivertest"
+	"github.com/open-telemetry/opentelemetry-service/receiver/zipkinreceiver"
 )
 
 func TestZipkinEndpointFromNode(t *testing.T) {
@@ -102,6 +113,101 @@ func TestZipkinEndpointFromNode(t *testing.T) {
 				t.Errorf("zipkinEndpointFromNode() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+// This function tests that Zipkin spans that are received then processed roundtrip
+// back to almost the same JSON with differences:
+// a) Go's net.IP.String intentional shortens 0s with "::" but also converts to hex values
+//    so
+//          "7::0.128.128.127"
+//    becomes
+//          "7::80:807f"
+//
+// The rest of the fields should match up exactly
+func TestZipkinExporter_roundtripJSON(t *testing.T) {
+	buf := new(bytes.Buffer)
+	cst := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		io.Copy(buf, r.Body)
+		r.Body.Close()
+	}))
+	defer cst.Close()
+
+	tes, err := newZipkinExporter(cst.URL, "", time.Millisecond)
+	if err != nil {
+		t.Fatalf("Failed to create a new Zipkin receiver: %v", err)
+	}
+
+	// The test requires the spans from zipkinSpansJSONJavaLibrary to be sent in a single batch, use
+	// a mock to ensure that this happens as intended.
+	mzr := newMockZipkinReporter(cst.URL)
+	tes.reporter = mzr
+
+	// Run the Zipkin receiver to "receive spans upload from a client application"
+	zexp := processor.NewTraceFanOutConnector([]consumer.TraceConsumer{tes})
+	zi, err := zipkinreceiver.New(":0", zexp)
+	if err != nil {
+		t.Fatalf("Failed to create a new Zipkin receiver: %v", err)
+	}
+
+	mh := receivertest.NewMockHost()
+	if err := zi.StartTraceReception(mh); err != nil {
+		t.Fatalf("Failed to start trace reception: %v", err)
+	}
+	defer zi.StopTraceReception()
+
+	// Let the receiver receive "uploaded Zipkin spans from a Java client application"
+	req, _ := http.NewRequest("POST", "https://tld.org/", strings.NewReader(zipkinSpansJSONJavaLibrary))
+	responseWriter := httptest.NewRecorder()
+	zi.ServeHTTP(responseWriter, req)
+
+	// Use the mock zipkin reporter to ensure all expected spans in a single batch. Since Flush waits for
+	// server response there is no need for further synchronization.
+	if err := mzr.Flush(); err != nil {
+		t.Fatalf("Failed to flush zipkin reporter: %v", err)
+	}
+
+	// We expect back the exact JSON that was received
+	want := testutils.GenerateNormalizedJSON(`
+[{
+  "traceId": "4d1e00c0db9010db86154a4ba6e91385","parentId": "86154a4ba6e91385","id": "4d1e00c0db9010db",
+  "kind": "CLIENT","name": "get",
+  "timestamp": 1472470996199000,"duration": 207000,
+  "localEndpoint": {"serviceName": "frontend","ipv6": "7::80:807f"},
+  "remoteEndpoint": {"serviceName": "backend","ipv4": "192.168.99.101","port": 9000},
+  "annotations": [
+    {"timestamp": 1472470996238000,"value": "foo"},
+    {"timestamp": 1472470996403000,"value": "bar"}
+  ],
+  "tags": {"http.path": "/api","clnt/finagle.version": "6.45.0"}
+},
+{
+  "traceId": "4d1e00c0db9010db86154a4ba6e91385","parentId": "86154a4ba6e91386","id": "4d1e00c0db9010db",
+  "kind": "SERVER","name": "put",
+  "timestamp": 1472470996199000,"duration": 207000,
+  "localEndpoint": {"serviceName": "frontend","ipv6": "7::80:807f"},
+  "remoteEndpoint": {"serviceName": "frontend", "ipv4": "192.168.99.101","port": 9000},
+  "annotations": [
+    {"timestamp": 1472470996238000,"value": "foo"},
+    {"timestamp": 1472470996403000,"value": "bar"}
+  ],
+  "tags": {"http.path": "/api","clnt/finagle.version": "6.45.0"}
+},
+{
+  "traceId": "4d1e00c0db9010db86154a4ba6e91385",
+  "parentId": "86154a4ba6e91386",
+  "id": "4d1e00c0db9010db",
+  "kind": "SERVER",
+  "name": "put",
+  "timestamp": 1472470996199000,
+  "duration": 207000
+}]`)
+
+	// Finally we need to inspect the output
+	gotBytes, _ := ioutil.ReadAll(buf)
+	got := testutils.GenerateNormalizedJSON(string(gotBytes))
+	if got != want {
+		t.Errorf("RoundTrip result do not match:\nGot\n %s\n\nWant\n: %s\n", got, want)
 	}
 }
 

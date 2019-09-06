@@ -21,23 +21,11 @@ import (
 	// TODO: once this repository has been transferred to the
 	// official census-ecosystem location, update this import path.
 	"github.com/orijtech/prometheus-go-metrics-exporter"
-	prometheus_golang "github.com/prometheus/client_golang/prometheus"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exporterhelper"
 )
-
-type prometheusConfig struct {
-	// Namespace if set, exports metrics under the provided value.
-	Namespace string `mapstructure:"namespace"`
-
-	// ConstLabels are values that are applied for every exported metric.
-	ConstLabels prometheus_golang.Labels `mapstructure:"const_labels"`
-
-	// The address on which the Prometheus scrape handler will be run on.
-	Address string `mapstructure:"address"`
-}
 
 var errBlankPrometheusAddress = errors.New("expecting a non-blank address to run the Prometheus metrics handler")
 
