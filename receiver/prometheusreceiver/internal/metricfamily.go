@@ -31,18 +31,19 @@ import (
 type MetricFamily interface {
 	Add(metricName string, ls labels.Labels, t int64, v float64) error
 	IsSameFamily(metricName string) bool
-	ToMetric() *metricspb.Metric
+	ToMetric() (*metricspb.Metric, int, int)
 }
 
 type metricFamily struct {
-	name             string
-	mtype            metricspb.MetricDescriptor_Type
-	mc               MetadataCache
-	labelKeys        map[string]bool
-	labelKeysOrdered []string
-	metadata         *scrape.MetricMetadata
-	groupOrders      map[string]int
-	groups           map[string]*metricGroup
+	name              string
+	mtype             metricspb.MetricDescriptor_Type
+	mc                MetadataCache
+	droppedTimeseries int
+	labelKeys         map[string]bool
+	labelKeysOrdered  []string
+	metadata          *scrape.MetricMetadata
+	groupOrders       map[string]int
+	groups            map[string]*metricGroup
 }
 
 func newMetricFamily(metricName string, mc MetadataCache) MetricFamily {
@@ -64,14 +65,15 @@ func newMetricFamily(metricName string, mc MetadataCache) MetricFamily {
 	}
 
 	return &metricFamily{
-		name:             familyName,
-		mtype:            convToOCAMetricType(metadata.Type),
-		mc:               mc,
-		labelKeys:        make(map[string]bool),
-		labelKeysOrdered: make([]string, 0),
-		metadata:         &metadata,
-		groupOrders:      make(map[string]int),
-		groups:           make(map[string]*metricGroup),
+		name:              familyName,
+		mtype:             convToOCAMetricType(metadata.Type),
+		mc:                mc,
+		droppedTimeseries: 0,
+		labelKeys:         make(map[string]bool),
+		labelKeysOrdered:  make([]string, 0),
+		metadata:          &metadata,
+		groupOrders:       make(map[string]int),
+		groups:            make(map[string]*metricGroup),
 	}
 }
 
@@ -147,7 +149,6 @@ func (mf *metricFamily) getLabelKeys() []*metricspb.LabelKey {
 }
 
 func (mf *metricFamily) Add(metricName string, ls labels.Labels, t int64, v float64) error {
-
 	groupKey := mf.getGroupKey(ls)
 	mg := mf.loadMetricGroupOrCreate(groupKey, ls, t)
 	switch mf.mtype {
@@ -166,6 +167,7 @@ func (mf *metricFamily) Add(metricName string, ls labels.Labels, t int64, v floa
 		} else {
 			boundary, err := getBoundary(mf.mtype, ls)
 			if err != nil {
+				mf.droppedTimeseries++
 				return err
 			}
 			mg.complexValue = append(mg.complexValue, &dataPoint{value: v, boundary: boundary})
@@ -177,7 +179,7 @@ func (mf *metricFamily) Add(metricName string, ls labels.Labels, t int64, v floa
 	return nil
 }
 
-func (mf *metricFamily) ToMetric() *metricspb.Metric {
+func (mf *metricFamily) ToMetric() (*metricspb.Metric, int, int) {
 	timeseries := make([]*metricspb.TimeSeries, 0, len(mf.groups))
 	switch mf.mtype {
 	// not supported currently
@@ -188,6 +190,8 @@ func (mf *metricFamily) ToMetric() *metricspb.Metric {
 			tss := mg.toDistributionTimeSeries(mf.labelKeysOrdered)
 			if tss != nil {
 				timeseries = append(timeseries, tss)
+			} else {
+				mf.droppedTimeseries++
 			}
 		}
 	case metricspb.MetricDescriptor_SUMMARY:
@@ -195,6 +199,8 @@ func (mf *metricFamily) ToMetric() *metricspb.Metric {
 			tss := mg.toSummaryTimeSeries(mf.labelKeysOrdered)
 			if tss != nil {
 				timeseries = append(timeseries, tss)
+			} else {
+				mf.droppedTimeseries++
 			}
 		}
 	default:
@@ -202,24 +208,29 @@ func (mf *metricFamily) ToMetric() *metricspb.Metric {
 			tss := mg.toDoubleValueTimeSeries(mf.labelKeysOrdered)
 			if tss != nil {
 				timeseries = append(timeseries, tss)
+			} else {
+				mf.droppedTimeseries++
 			}
 		}
 	}
 
-	if len(timeseries) != 0 {
+	// note: the total number of timeseries is the length of timeseries plus the number of dropped timeseries.
+	numTimeseries := len(timeseries)
+	if numTimeseries != 0 {
 		return &metricspb.Metric{
-			MetricDescriptor: &metricspb.MetricDescriptor{
-				Name:        mf.name,
-				Description: mf.metadata.Help,
-				Unit:        heuristicalMetricAndKnownUnits(mf.name, mf.metadata.Unit),
-				Type:        mf.mtype,
-				LabelKeys:   mf.getLabelKeys(),
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        mf.name,
+					Description: mf.metadata.Help,
+					Unit:        heuristicalMetricAndKnownUnits(mf.name, mf.metadata.Unit),
+					Type:        mf.mtype,
+					LabelKeys:   mf.getLabelKeys(),
+				},
+				Timeseries: timeseries,
 			},
-			Timeseries: timeseries,
-		}
+			numTimeseries + mf.droppedTimeseries,
+			mf.droppedTimeseries
 	}
-
-	return nil
+	return nil, mf.droppedTimeseries, mf.droppedTimeseries
 }
 
 type dataPoint struct {

@@ -45,6 +45,8 @@ type metricBuilder struct {
 	hasInternalMetric bool
 	mc                MetadataCache
 	metrics           []*metricspb.Metric
+	numTimeseries     int
+	droppedTimeseries int
 	logger            *zap.SugaredLogger
 	currentMf         MetricFamily
 }
@@ -55,9 +57,11 @@ type metricBuilder struct {
 func newMetricBuilder(mc MetadataCache, logger *zap.SugaredLogger) *metricBuilder {
 
 	return &metricBuilder{
-		mc:      mc,
-		metrics: make([]*metricspb.Metric, 0),
-		logger:  logger,
+		mc:                mc,
+		metrics:           make([]*metricspb.Metric, 0),
+		logger:            logger,
+		numTimeseries:     0,
+		droppedTimeseries: 0,
 	}
 }
 
@@ -65,6 +69,8 @@ func newMetricBuilder(mc MetadataCache, logger *zap.SugaredLogger) *metricBuilde
 func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error {
 	metricName := ls.Get(model.MetricNameLabel)
 	if metricName == "" {
+		b.numTimeseries++
+		b.droppedTimeseries++
 		return errMetricNameNotFound
 	} else if shouldSkip(metricName) {
 		b.hasInternalMetric = true
@@ -77,7 +83,9 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 	b.hasData = true
 
 	if b.currentMf != nil && !b.currentMf.IsSameFamily(metricName) {
-		m := b.currentMf.ToMetric()
+		m, ts, dts := b.currentMf.ToMetric()
+		b.numTimeseries += ts
+		b.droppedTimeseries += dts
 		if m != nil {
 			b.metrics = append(b.metrics, m)
 		}
@@ -90,22 +98,25 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 }
 
 // Build is to build an opencensus data.MetricsData based on all added data complexValue
-func (b *metricBuilder) Build() ([]*metricspb.Metric, error) {
+func (b *metricBuilder) Build() ([]*metricspb.Metric, int, int, error) {
 	if !b.hasData {
 		if b.hasInternalMetric {
-			return dummyMetrics, nil
+			return dummyMetrics, 0, 0, nil
 		}
-		return nil, errNoDataToBuild
+		return nil, 0, 0, errNoDataToBuild
 	}
 
 	if b.currentMf != nil {
-		if m := b.currentMf.ToMetric(); m != nil {
+		m, ts, dts := b.currentMf.ToMetric()
+		b.numTimeseries += ts
+		b.droppedTimeseries += dts
+		if m != nil {
 			b.metrics = append(b.metrics, m)
 		}
 		b.currentMf = nil
 	}
 
-	return b.metrics, nil
+	return b.metrics, b.numTimeseries, b.droppedTimeseries, nil
 }
 
 // TODO: move the following helper functions to a proper place, as they are not called directly in this go file

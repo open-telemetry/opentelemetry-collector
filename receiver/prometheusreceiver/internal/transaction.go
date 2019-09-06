@@ -24,6 +24,7 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-service/observability"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/storage"
@@ -133,11 +134,11 @@ func (tr *transaction) Commit() error {
 		return nil
 	}
 
-	metrics, err := tr.metricBuilder.Build()
+	metrics, numTimeseries, droppedTimeseries, err := tr.metricBuilder.Build()
+	observability.RecordMetricsForMetricsReceiver(tr.ctx, numTimeseries, droppedTimeseries)
 	if err != nil {
 		return err
 	}
-
 	if len(metrics) > 0 {
 		if tr.jobsMap != nil {
 			metrics = NewMetricsAdjuster(tr.jobsMap.get(tr.job, tr.instance), tr.logger).AdjustMetrics(metrics)
@@ -146,7 +147,7 @@ func (tr *transaction) Commit() error {
 			Node:    tr.node,
 			Metrics: metrics,
 		}
-		return tr.sink.ConsumeMetricsData(context.Background(), md)
+		return tr.sink.ConsumeMetricsData(tr.ctx, md)
 	}
 	return nil
 }
