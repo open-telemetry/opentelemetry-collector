@@ -26,6 +26,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/observability"
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 	"github.com/open-telemetry/opentelemetry-service/receiver/prometheusreceiver/internal"
 
@@ -138,6 +139,7 @@ func (pr *Preceiver) StartMetricsReception(host receiver.Host) error {
 		ctx := host.Context()
 		c, cancel := context.WithCancel(ctx)
 		pr.cancel = cancel
+		c = observability.ContextWithReceiverName(c, pr.MetricsSource())
 		jobsMap := internal.NewJobsMap(time.Duration(2 * time.Minute))
 		app := internal.NewOcaStore(c, pr.consumer, pr.logger.Sugar(), jobsMap)
 		// need to use a logger with the gokitLog interface

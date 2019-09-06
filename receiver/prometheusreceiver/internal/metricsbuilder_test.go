@@ -102,7 +102,7 @@ func runBuilderTests(t *testing.T, tests []buildTestData) {
 						t.Error("unexpected error adding data", err)
 					}
 				}
-				metrics, err := b.Build()
+				metrics, _, _, err := b.Build()
 				if err != nil {
 					t.Error("unexpected error on build", err)
 				}
@@ -1073,7 +1073,7 @@ func Test_metricBuilder_baddata(t *testing.T) {
 			return
 		}
 
-		if _, err := b.Build(); err != errNoDataToBuild {
+		if _, _, _, err := b.Build(); err != errNoDataToBuild {
 			t.Error("expecting errNoDataToBuild error, but get nil")
 		}
 	})
