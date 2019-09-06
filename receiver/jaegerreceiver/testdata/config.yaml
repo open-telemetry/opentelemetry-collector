@@ -31,6 +31,22 @@ receivers:
       thrift-tchannel:
         disabled: true
 
+  # The following demonstrates specifying different endpoints.
+  # The Jaeger receiver connects to ports on all available network interfaces.
+  # Ex: `endpoint: "9876"` is incorrect.
+  # Ex: `endpoint: "1.2.3.4:9876"`  and ":9876" is correct
+  jaeger/tls:
+    protocols:
+      grpc:
+        tls-credentials:
+          cert-file: /test.crt
+          key-file: /test.key
+        endpoint: "127.0.0.1:9876"
+      thrift-http:
+        endpoint: ":3456"
+      thrift-tchannel:
+        endpoint: "0.0.0.0:123"
+
 processors:
   exampleprocessor:
 

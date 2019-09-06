@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
+	"path"
 	"testing"
 	"time"
 
@@ -25,16 +26,18 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/google/go-cmp/cmp"
-	model "github.com/jaegertracing/jaeger/model"
+	"github.com/jaegertracing/jaeger/model"
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/trace"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-service/internal"
+	"github.com/open-telemetry/opentelemetry-service/receiver"
 	"github.com/open-telemetry/opentelemetry-service/receiver/receivertest"
 	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
 )
@@ -135,6 +138,62 @@ func TestGRPCReception(t *testing.T) {
 		t.Errorf("Mismatched responses\n-Got +Want:\n\t%s", diff)
 	}
 
+}
+
+func TestGRPCReceptionWithTLS(t *testing.T) {
+	// prepare
+	grpcServerOptions := []grpc.ServerOption{}
+	tlsCreds := receiver.TLSCredentials{
+		CertFile: path.Join(".", "testdata", "certificate.pem"),
+		KeyFile:  path.Join(".", "testdata", "key.pem"),
+	}
+
+	tlsOption, _ := tlsCreds.ToGrpcServerOption()
+
+	grpcServerOptions = append(grpcServerOptions, tlsOption)
+
+	config := &Configuration{
+		CollectorGRPCPort:    0, // will dynamically find a free port
+		CollectorGRPCOptions: grpcServerOptions,
+	}
+	sink := new(exportertest.SinkTraceExporter)
+
+	jr, err := New(context.Background(), config, sink)
+	assert.NoError(t, err, "should not have failed to create a new receiver")
+	defer jr.StopTraceReception()
+
+	mh := receivertest.NewMockHost()
+	err = jr.StartTraceReception(mh)
+	assert.NoError(t, err, "should not have failed to start trace reception")
+	t.Log("StartTraceReception")
+
+	creds, err := credentials.NewClientTLSFromFile(path.Join(".", "testdata", "certificate.pem"), "opentelemetry.io")
+	require.NoError(t, err)
+	conn, err := grpc.Dial(jr.(*jReceiver).grpcAddr(), grpc.WithTransportCredentials(creds))
+	require.NoError(t, err)
+	defer conn.Close()
+
+	cl := api_v2.NewCollectorServiceClient(conn)
+
+	now := time.Now()
+	d10min := 10 * time.Minute
+	d2sec := 2 * time.Second
+	nowPlus10min := now.Add(d10min)
+	nowPlus10min2sec := now.Add(d10min).Add(d2sec)
+
+	// test
+	req := grpcFixture(now, d10min, d2sec)
+	resp, err := cl.PostSpans(context.Background(), req, grpc.WaitForReady(true))
+
+	// verify
+	assert.NoError(t, err, "should not have failed to post spans")
+	assert.NotNil(t, resp, "response should not have been nil")
+
+	got := sink.AllTraces()
+	want := expectedTraceData(now, nowPlus10min, nowPlus10min2sec)
+
+	assert.Len(t, req.Batch.Spans, len(want[0].Spans), "got a conflicting amount of spans")
+	assert.Equal(t, "", cmp.Diff(got, want))
 }
 
 func expectedTraceData(t1, t2, t3 time.Time) []consumerdata.TraceData {

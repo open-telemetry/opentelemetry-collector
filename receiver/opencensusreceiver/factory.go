@@ -47,11 +47,13 @@ func (f *Factory) CustomUnmarshaler() receiver.CustomUnmarshaler {
 // CreateDefaultConfig creates the default configuration for receiver.
 func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 	return &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
-			TypeVal:  typeStr,
-			NameVal:  typeStr,
-			Endpoint: "127.0.0.1:55678",
-			// Disable: false - This receiver is enabled by default.
+		SecureReceiverSettings: receiver.SecureReceiverSettings{
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal:  typeStr,
+				NameVal:  typeStr,
+				Endpoint: "127.0.0.1:55678",
+				// Disable: false - This receiver is enabled by default.
+			},
 		},
 	}
 }

@@ -24,6 +24,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-service/config"
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -55,10 +56,13 @@ func TestLoadConfig(t *testing.T) {
 	r2 := cfg.Receivers["opencensus/keepalive"].(*Config)
 	assert.Equal(t, r2,
 		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal:  typeStr,
-				NameVal:  "opencensus/keepalive",
-				Endpoint: "127.0.0.1:55678",
+			SecureReceiverSettings: receiver.SecureReceiverSettings{
+				ReceiverSettings: configmodels.ReceiverSettings{
+					TypeVal:  typeStr,
+					NameVal:  "opencensus/keepalive",
+					Endpoint: "127.0.0.1:55678",
+				},
+				TLSCredentials: nil,
 			},
 			Keepalive: &serverParametersAndEnforcementPolicy{
 				ServerParameters: &keepaliveServerParameters{
@@ -78,10 +82,12 @@ func TestLoadConfig(t *testing.T) {
 	r3 := cfg.Receivers["opencensus/msg-size-conc-connect-max-idle"].(*Config)
 	assert.Equal(t, r3,
 		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal:  typeStr,
-				NameVal:  "opencensus/msg-size-conc-connect-max-idle",
-				Endpoint: "127.0.0.1:55678",
+			SecureReceiverSettings: receiver.SecureReceiverSettings{
+				ReceiverSettings: configmodels.ReceiverSettings{
+					TypeVal:  typeStr,
+					NameVal:  "opencensus/msg-size-conc-connect-max-idle",
+					Endpoint: "127.0.0.1:55678",
+				},
 			},
 			MaxRecvMsgSizeMiB:    32,
 			MaxConcurrentStreams: 16,
@@ -97,24 +103,28 @@ func TestLoadConfig(t *testing.T) {
 	r4 := cfg.Receivers["opencensus/tlscredentials"].(*Config)
 	assert.Equal(t, r4,
 		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal:  typeStr,
-				NameVal:  "opencensus/tlscredentials",
-				Endpoint: "127.0.0.1:55678",
-			},
-			TLSCredentials: &tlsCredentials{
-				CertFile: "test.crt",
-				KeyFile:  "test.key",
+			SecureReceiverSettings: receiver.SecureReceiverSettings{
+				ReceiverSettings: configmodels.ReceiverSettings{
+					TypeVal:  typeStr,
+					NameVal:  "opencensus/tlscredentials",
+					Endpoint: "127.0.0.1:55678",
+				},
+				TLSCredentials: &receiver.TLSCredentials{
+					CertFile: "test.crt",
+					KeyFile:  "test.key",
+				},
 			},
 		})
 
 	r5 := cfg.Receivers["opencensus/cors"].(*Config)
 	assert.Equal(t, r5,
 		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal:  typeStr,
-				NameVal:  "opencensus/cors",
-				Endpoint: "127.0.0.1:55678",
+			SecureReceiverSettings: receiver.SecureReceiverSettings{
+				ReceiverSettings: configmodels.ReceiverSettings{
+					TypeVal:  typeStr,
+					NameVal:  "opencensus/cors",
+					Endpoint: "127.0.0.1:55678",
+				},
 			},
 			CorsOrigins: []string{"https://*.test.com", "https://test.com"},
 		})

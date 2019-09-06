@@ -19,19 +19,14 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
 
-	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
 
 // Config defines configuration for OpenCensus receiver.
 type Config struct {
-	configmodels.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-
-	// TLSCredentials is a (cert_file, key_file) configuration.
-	TLSCredentials *tlsCredentials `mapstructure:"tls-credentials,omitempty"`
-
+	receiver.SecureReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 	// CorsOrigins are the allowed CORS origins for HTTP/JSON requests to grpc-gateway adapter
 	// for the OpenCensus receiver. See github.com/rs/cors
 	// An empty list means that CORS is not enabled at all. A wildcard (*) can be
@@ -46,18 +41,6 @@ type Config struct {
 
 	// MaxConcurrentStreams sets the limit on the number of concurrent streams to each ServerTransport.
 	MaxConcurrentStreams uint32 `mapstructure:"max-concurrent-streams,omitempty"`
-}
-
-// tlsCredentials holds the fields for TLS credentials
-// that are used for starting a server.
-// TODO(ccaraman): Add validation to check that these files exist at configuration loading time.
-//  Currently, these values aren't validated until the receiver is started.
-type tlsCredentials struct {
-	// CertFile is the file path containing the TLS certificate.
-	CertFile string `mapstructure:"cert-file"`
-
-	// KeyFile is the file path containing the TLS key.
-	KeyFile string `mapstructure:"key-file"`
 }
 
 type serverParametersAndEnforcementPolicy struct {
@@ -85,7 +68,7 @@ type keepaliveEnforcementPolicy struct {
 }
 
 func (rOpts *Config) buildOptions() (opts []Option, err error) {
-	tlsCredsOption, hasTLSCreds, err := rOpts.TLSCredentials.ToOpenCensusReceiverServerOption()
+	tlsCredsOption, hasTLSCreds, err := ToOpenCensusReceiverServerOption(rOpts.TLSCredentials)
 	if err != nil {
 		return opts, fmt.Errorf("error initializing OpenCensus receiver %q TLS Credentials: %v", rOpts.NameVal, err)
 	}
@@ -148,15 +131,10 @@ func (rOpts *Config) grpcServerOptions() []grpc.ServerOption {
 // it will return opencensusreceiver.WithNoopOption() and a nil error.
 // Otherwise, it will try to retrieve gRPC transport credentials from the file combinations,
 // and create a option, along with any errors encountered while retrieving the credentials.
-func (tlsCreds *tlsCredentials) ToOpenCensusReceiverServerOption() (opt Option, ok bool, err error) {
-	if tlsCreds == nil {
-		return WithNoopOption(), false, nil
-	}
-
-	transportCreds, err := credentials.NewServerTLSFromFile(tlsCreds.CertFile, tlsCreds.KeyFile)
+func ToOpenCensusReceiverServerOption(tlsCreds *receiver.TLSCredentials) (opt Option, ok bool, err error) {
+	gRPCCredsOpt, err := tlsCreds.ToGrpcServerOption()
 	if err != nil {
 		return nil, false, err
 	}
-	gRPCCredsOpt := grpc.Creds(transportCreds)
 	return WithGRPCServerOptions(gRPCCredsOpt), true, nil
 }

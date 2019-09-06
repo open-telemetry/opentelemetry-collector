@@ -23,6 +23,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-service/config"
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-service/receiver"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -38,7 +39,7 @@ func TestLoadConfig(t *testing.T) {
 
 	// The receiver `jaeger/disabled` doesn't count because disabled receivers
 	// are excluded from the final list.
-	assert.Equal(t, len(cfg.Receivers), 2)
+	assert.Equal(t, len(cfg.Receivers), 3)
 
 	r0 := cfg.Receivers["jaeger"]
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
@@ -48,15 +49,50 @@ func TestLoadConfig(t *testing.T) {
 		&Config{
 			TypeVal: typeStr,
 			NameVal: "jaeger/customname",
-			Protocols: map[string]*configmodels.ReceiverSettings{
+			Protocols: map[string]*receiver.SecureReceiverSettings{
 				"grpc": {
-					Endpoint: "127.0.0.1:9876",
+					ReceiverSettings: configmodels.ReceiverSettings{
+						Endpoint: "127.0.0.1:9876",
+					},
 				},
 				"thrift-http": {
-					Endpoint: ":3456",
+					ReceiverSettings: configmodels.ReceiverSettings{
+						Endpoint: ":3456",
+					},
 				},
 				"thrift-tchannel": {
-					Endpoint: "0.0.0.0:123",
+					ReceiverSettings: configmodels.ReceiverSettings{
+						Endpoint: "0.0.0.0:123",
+					},
+				},
+			},
+		})
+
+	tlsConfig := cfg.Receivers["jaeger/tls"].(*Config)
+
+	assert.Equal(t, tlsConfig,
+		&Config{
+			TypeVal: typeStr,
+			NameVal: "jaeger/tls",
+			Protocols: map[string]*receiver.SecureReceiverSettings{
+				"grpc": {
+					ReceiverSettings: configmodels.ReceiverSettings{
+						Endpoint: "127.0.0.1:9876",
+					},
+					TLSCredentials: &receiver.TLSCredentials{
+						CertFile: "/test.crt",
+						KeyFile:  "/test.key",
+					},
+				},
+				"thrift-http": {
+					ReceiverSettings: configmodels.ReceiverSettings{
+						Endpoint: ":3456",
+					},
+				},
+				"thrift-tchannel": {
+					ReceiverSettings: configmodels.ReceiverSettings{
+						Endpoint: "0.0.0.0:123",
+					},
 				},
 			},
 		})

@@ -34,7 +34,7 @@ import (
 	"github.com/jaegertracing/jaeger/thrift-gen/sampling"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"github.com/uber/jaeger-lib/metrics"
-	tchannel "github.com/uber/tchannel-go"
+	"github.com/uber/tchannel-go"
 	"github.com/uber/tchannel-go/thrift"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -49,13 +49,14 @@ import (
 // Configuration defines the behavior and the ports that
 // the Jaeger receiver will use.
 type Configuration struct {
-	CollectorThriftPort int `mapstructure:"tchannel_port"`
-	CollectorHTTPPort   int `mapstructure:"collector_http_port"`
-	CollectorGRPCPort   int `mapstructure:"collector_grpc_port"`
+	CollectorThriftPort  int
+	CollectorHTTPPort    int
+	CollectorGRPCPort    int
+	CollectorGRPCOptions []grpc.ServerOption
 
-	AgentPort              int `mapstructure:"agent_port"`
-	AgentCompactThriftPort int `mapstructure:"agent_compact_thrift_port"`
-	AgentBinaryThriftPort  int `mapstructure:"agent_binary_thrift_port"`
+	AgentPort              int
+	AgentCompactThriftPort int
+	AgentBinaryThriftPort  int
 }
 
 // Receiver type is used to receive spans that were originally intended to be sent to Jaeger.
@@ -413,8 +414,7 @@ func (jr *jReceiver) startCollector(host receiver.Host) error {
 		_ = jr.collectorServer.Serve(cln)
 	}()
 
-	// And finally, the gRPC server
-	jr.grpc = grpc.NewServer()
+	jr.grpc = grpc.NewServer(jr.config.CollectorGRPCOptions...)
 	gaddr := jr.grpcAddr()
 	gln, gerr := net.Listen("tcp", gaddr)
 	if gerr != nil {

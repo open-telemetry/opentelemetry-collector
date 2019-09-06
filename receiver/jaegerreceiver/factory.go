@@ -23,6 +23,7 @@ import (
 	"strconv"
 
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
 
 	"github.com/open-telemetry/opentelemetry-service/config/configerror"
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
@@ -66,15 +67,21 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 	return &Config{
 		TypeVal: typeStr,
 		NameVal: typeStr,
-		Protocols: map[string]*configmodels.ReceiverSettings{
+		Protocols: map[string]*receiver.SecureReceiverSettings{
 			protoGRPC: {
-				Endpoint: defaultGRPCBindEndpoint,
+				ReceiverSettings: configmodels.ReceiverSettings{
+					Endpoint: defaultGRPCBindEndpoint,
+				},
 			},
 			protoThriftTChannel: {
-				Endpoint: defaultTChannelBindEndpoint,
+				ReceiverSettings: configmodels.ReceiverSettings{
+					Endpoint: defaultTChannelBindEndpoint,
+				},
 			},
 			protoThriftHTTP: {
-				Endpoint: defaultHTTPBindEndpoint,
+				ReceiverSettings: configmodels.ReceiverSettings{
+					Endpoint: defaultHTTPBindEndpoint,
+				},
 			},
 		},
 	}
@@ -98,6 +105,7 @@ func (f *Factory) CreateTraceReceiver(
 	protoTChannel := rCfg.Protocols[protoThriftTChannel]
 
 	config := Configuration{}
+	var grpcServerOptions []grpc.ServerOption
 
 	// Set ports
 	if protoGRPC != nil && protoGRPC.IsEnabled() {
@@ -106,6 +114,15 @@ func (f *Factory) CreateTraceReceiver(
 		if err != nil {
 			return nil, err
 		}
+
+		if protoGRPC.TLSCredentials != nil {
+			option, err := protoGRPC.TLSCredentials.ToGrpcServerOption()
+			if err != nil {
+				return nil, fmt.Errorf("failed to configure TLS: %v", err)
+			}
+			grpcServerOptions = append(grpcServerOptions, option)
+		}
+		config.CollectorGRPCOptions = grpcServerOptions
 	}
 
 	if protoHTTP != nil && protoHTTP.IsEnabled() {
