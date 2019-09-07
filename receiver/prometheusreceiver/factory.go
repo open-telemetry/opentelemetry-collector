@@ -16,6 +16,7 @@ package prometheusreceiver
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/spf13/viper"
@@ -30,11 +31,18 @@ import (
 
 // This file implements config V2 for Prometheus receiver.
 
-// var _ = receiver.RegisterFactory(&factory{})
+var _ (receiver.Factory) = (*Factory)(nil)
 
 const (
 	// The value of "type" key in configuration.
 	typeStr = "prometheus"
+
+	// The key for Prometheus scraping configs.
+	prometheusConfigKey = "config"
+)
+
+var (
+	errNilScrapeConfig = errors.New("expecting a non-nil ScrapeConfig")
 )
 
 // Factory is the factory for receiver.
@@ -113,19 +121,9 @@ func (f *Factory) CreateMetricsReceiver(
 	cfg configmodels.Receiver,
 	consumer consumer.MetricsConsumer,
 ) (receiver.MetricsReceiver, error) {
-
-	rCfg := cfg.(*Config)
-
-	// Create receiver Configuration from our input cfg
-	config := Configuration{
-		BufferCount:   rCfg.BufferCount,
-		BufferPeriod:  rCfg.BufferPeriod,
-		ScrapeConfig:  rCfg.PrometheusConfig,
-		IncludeFilter: rCfg.IncludeFilter,
-	}
-
-	if config.ScrapeConfig == nil || len(config.ScrapeConfig.ScrapeConfigs) == 0 {
+	config := cfg.(*Config)
+	if config.PrometheusConfig == nil || len(config.PrometheusConfig.ScrapeConfigs) == 0 {
 		return nil, errNilScrapeConfig
 	}
-	return newPrometheusReceiver(logger, &config, consumer), nil
+	return newPrometheusReceiver(logger, config, consumer), nil
 }

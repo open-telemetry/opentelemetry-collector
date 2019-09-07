@@ -16,8 +16,6 @@ package prometheusreceiver
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"sync"
 	"time"
 
@@ -30,19 +28,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/receiver"
 	"github.com/open-telemetry/opentelemetry-service/receiver/prometheusreceiver/internal"
 
-	"github.com/prometheus/prometheus/config"
 	sd_config "github.com/prometheus/prometheus/discovery/config"
-	"github.com/spf13/viper"
-	"gopkg.in/yaml.v2"
 )
-
-// Configuration defines the behavior and targets of the Prometheus scrapers.
-type Configuration struct {
-	ScrapeConfig  *config.Config      `mapstructure:"config"`
-	BufferPeriod  time.Duration       `mapstructure:"buffer_period"`
-	BufferCount   int                 `mapstructure:"buffer_count"`
-	IncludeFilter map[string][]string `mapstructure:"include_filter"`
-}
 
 type metricsMap map[string]bool
 
@@ -50,7 +37,7 @@ type metricsMap map[string]bool
 type Preceiver struct {
 	startOnce        sync.Once
 	stopOnce         sync.Once
-	cfg              *Configuration
+	cfg              *Config
 	consumer         consumer.MetricsConsumer
 	cancel           context.CancelFunc
 	logger           *zap.Logger
@@ -58,49 +45,6 @@ type Preceiver struct {
 }
 
 var _ receiver.MetricsReceiver = (*Preceiver)(nil)
-
-var (
-	errNilScrapeConfig = errors.New("expecting a non-nil ScrapeConfig")
-)
-
-const (
-	prometheusConfigKey = "config"
-)
-
-// New creates a new prometheus.Receiver reference.
-func New(logger *zap.Logger, v *viper.Viper, next consumer.MetricsConsumer) (*Preceiver, error) {
-	var cfg Configuration
-
-	// Unmarshal our config values (using viper's mapstructure)
-	err := v.Unmarshal(&cfg)
-	if err != nil {
-		return nil, fmt.Errorf("prometheus receiver failed to parse config: %s", err)
-	}
-
-	// Unmarshal prometheus's config values. Since prometheus uses `yaml` tags, so use `yaml`.
-	if !v.IsSet(prometheusConfigKey) {
-		return nil, errNilScrapeConfig
-	}
-	promCfgMap := v.Sub(prometheusConfigKey).AllSettings()
-	out, err := yaml.Marshal(promCfgMap)
-	if err != nil {
-		return nil, fmt.Errorf("prometheus receiver failed to marshal config to yaml: %s", err)
-	}
-	err = yaml.Unmarshal(out, &cfg.ScrapeConfig)
-	if err != nil {
-		return nil, fmt.Errorf("prometheus receiver failed to unmarshal yaml to prometheus config: %s", err)
-	}
-	if len(cfg.ScrapeConfig.ScrapeConfigs) == 0 {
-		return nil, errNilScrapeConfig
-	}
-	pr := &Preceiver{
-		cfg:              &cfg,
-		consumer:         next,
-		logger:           logger,
-		includeFilterMap: parseIncludeFilter(cfg.IncludeFilter),
-	}
-	return pr, nil
-}
 
 func parseIncludeFilter(includeFilter map[string][]string) map[string]metricsMap {
 	includeFilterMap := make(map[string]metricsMap, len(includeFilter))
@@ -115,7 +59,7 @@ func parseIncludeFilter(includeFilter map[string][]string) map[string]metricsMap
 }
 
 // New creates a new prometheus.Receiver reference.
-func newPrometheusReceiver(logger *zap.Logger, cfg *Configuration, next consumer.MetricsConsumer) *Preceiver {
+func newPrometheusReceiver(logger *zap.Logger, cfg *Config, next consumer.MetricsConsumer) *Preceiver {
 	pr := &Preceiver{
 		cfg:              cfg,
 		consumer:         next,
@@ -153,7 +97,7 @@ func (pr *Preceiver) StartMetricsReception(host receiver.Host) error {
 				host.ReportFatalError(err)
 			}
 		}()
-		if err := scrapeManager.ApplyConfig(pr.cfg.ScrapeConfig); err != nil {
+		if err := scrapeManager.ApplyConfig(pr.cfg.PrometheusConfig); err != nil {
 			host.ReportFatalError(err)
 			return
 		}
@@ -174,7 +118,7 @@ func (pr *Preceiver) StartMetricsReception(host receiver.Host) error {
 		// to start applying its original configuration.
 
 		discoveryCfg := make(map[string]sd_config.ServiceDiscoveryConfig)
-		for _, scrapeConfig := range pr.cfg.ScrapeConfig.ScrapeConfigs {
+		for _, scrapeConfig := range pr.cfg.PrometheusConfig.ScrapeConfigs {
 			discoveryCfg[scrapeConfig.JobName] = scrapeConfig.ServiceDiscoveryConfig
 		}
 
