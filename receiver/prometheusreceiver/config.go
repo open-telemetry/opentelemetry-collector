@@ -28,5 +28,6 @@ type Config struct {
 	PrometheusConfig              *config.Config      `mapstructure:"-"`
 	BufferPeriod                  time.Duration       `mapstructure:"buffer_period"`
 	BufferCount                   int                 `mapstructure:"buffer_count"`
+	DisableMetricsAdjuster        bool                `mapstructure:"disabe_metrics_adjuster"`
 	IncludeFilter                 map[string][]string `mapstructure:"include_filter"`
 }
