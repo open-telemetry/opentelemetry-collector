@@ -965,10 +965,10 @@ func TestEndToEnd(t *testing.T) {
 	}
 
 	mp, cfg, err := setupMockPrometheus(targets...)
-	defer mp.Close()
 	if err != nil {
 		t.Fatalf("Failed to create Promtheus config: %v", err)
 	}
+	defer mp.Close()
 
 	cms := new(exportertest.SinkMetricsExporter)
 	precv := newPrometheusReceiver(logger, &Config{PrometheusConfig: cfg}, cms)
