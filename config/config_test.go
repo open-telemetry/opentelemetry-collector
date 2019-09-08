@@ -201,7 +201,6 @@ func TestDecodeConfig_Invalid(t *testing.T) {
 		{name: "pipeline-exporter-not-exists", expected: errPipelineExporterNotExists},
 		{name: "pipeline-processor-not-exists", expected: errPipelineProcessorNotExists},
 		{name: "pipeline-must-have-processors", expected: errPipelineMustHaveProcessors},
-		{name: "metric-pipeline-cannot-have-processors", expected: errMetricPipelineCannotHaveProcessors},
 		{name: "unknown-extension-type", expected: errUnknownExtensionType},
 		{name: "unknown-receiver-type", expected: errUnknownReceiverType},
 		{name: "unknown-exporter-type", expected: errUnknownExporterType},
