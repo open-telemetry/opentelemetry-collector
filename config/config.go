@@ -739,6 +739,7 @@ func validatePipelineProcessors(
 			}
 		}
 	}
+	
 	// Validate pipeline processor name references
 	for _, ref := range pipeline.Processors {
 		// Check that the name referenced in the pipeline's processors exists in the top-level processors.
