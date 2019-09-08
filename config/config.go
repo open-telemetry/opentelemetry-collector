@@ -738,16 +738,7 @@ func validatePipelineProcessors(
 				msg:  fmt.Sprintf("pipeline %q must have at least one processor", pipeline.Name),
 			}
 		}
-	} else if pipeline.InputType == configmodels.MetricsDataType {
-		// Metrics pipeline cannot have processors.
-		if len(pipeline.Processors) > 0 {
-			return &configError{
-				code: errMetricPipelineCannotHaveProcessors,
-				msg:  fmt.Sprintf("metrics pipeline %q cannot have processors", pipeline.Name),
-			}
-		}
 	}
-
 	// Validate pipeline processor name references
 	for _, ref := range pipeline.Processors {
 		// Check that the name referenced in the pipeline's processors exists in the top-level processors.
