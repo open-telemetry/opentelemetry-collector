@@ -14,8 +14,10 @@
 
 package internal
 
-import "go.uber.org/zap"
-import gokitLog "github.com/go-kit/kit/log"
+import (
+	gokitLog "github.com/go-kit/kit/log"
+	"go.uber.org/zap"
+)
 
 // NewZapToGokitLogAdapter create an adapter for zap.Logger to gokitLog.Logger
 func NewZapToGokitLogAdapter(logger *zap.Logger) gokitLog.Logger {
