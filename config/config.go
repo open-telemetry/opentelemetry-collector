@@ -57,7 +57,6 @@ const (
 	errPipelineReceiverNotExists
 	errPipelineProcessorNotExists
 	errPipelineExporterNotExists
-	errMetricPipelineCannotHaveProcessors
 	errUnmarshalError
 	errMissingReceivers
 	errMissingExporters
