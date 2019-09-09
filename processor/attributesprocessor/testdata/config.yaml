@@ -146,6 +146,7 @@ processors:
   # Span3 Attributes: {timeout: 10, math_value: 4}
   # Span4 Attributes: {svc.operation: division, timeout: 3}
   attributes/complex:
+    # Note: There are no include and exclude settings so all spans are processed.
     actions:
       - key: operation
         value: default

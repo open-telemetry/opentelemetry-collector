@@ -37,8 +37,8 @@ type Config struct {
 	// spans matching the properties in this structure are processed.
 	Include MatchProperties `mapstructure:"include"`
 
-	// Exclude specifies the set of span properties that must not be present in order
-	// for this processor to apply to it.
+	// Exclude specifies when this processor will not be applied to the Spans
+	// which match the specified properties.
 	// Note: The `exclude` properties are checked after the `include` properties,
 	// if they exist, are checked.
 	// If `include` isn't specified, the `exclude` properties are checked against
@@ -116,16 +116,34 @@ const (
 // At least one of services or attributes must be specified. It is supported
 // to have both specified, but this requires all of the properties to match
 // for the inclusion/exclusion to occur.
+// The following are examples of invalid configurations:
+//  attributes/bad1:
+//    # This is invalid because include is specified with neither services or
+//    # attributes.
+//    include:
+//    actions: ...
+//
+//  attributes/bad2:
+//    exclude:
+//    	# This is invalid because services and attributes have empty values.
+//      services:
+//      attributes:
+//    actions: ...
+// Please refer to testdata/config.yaml for valid configurations.
 type MatchProperties struct {
 
 	// Services specify the list of service name to match against.
 	// A match occurs if the span service name is in this list.
-	// Note: This is an optional field.
+	// Note: This is an optional field. However, one of services or
+	// attributes must be specified with a non empty value for a valid
+	// configuration.
 	Services []string `mapstructure:"services"`
 
 	// Attributes specifies the list of attributes to match against.
 	// All of these attributes must match exactly for a match to occur.
-	// Note: This is an optional field.
+	// Note: This is an optional field. However, one of services or
+	// attributes must be specified with a non empty value for a valid
+	// configuration.
 	Attributes []Attribute `mapstructure:"attributes"`
 }
 
