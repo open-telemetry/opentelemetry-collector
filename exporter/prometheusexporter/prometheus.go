@@ -17,85 +17,17 @@ package prometheusexporter
 import (
 	"context"
 	"errors"
-	"net"
-	"net/http"
-	"strings"
 
 	// TODO: once this repository has been transferred to the
 	// official census-ecosystem location, update this import path.
 	"github.com/orijtech/prometheus-go-metrics-exporter"
-	prometheus_golang "github.com/prometheus/client_golang/prometheus"
-	"github.com/spf13/viper"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exporterhelper"
 )
 
-type prometheusConfig struct {
-	// Namespace if set, exports metrics under the provided value.
-	Namespace string `mapstructure:"namespace"`
-
-	// ConstLabels are values that are applied for every exported metric.
-	ConstLabels prometheus_golang.Labels `mapstructure:"const_labels"`
-
-	// The address on which the Prometheus scrape handler will be run on.
-	Address string `mapstructure:"address"`
-}
-
 var errBlankPrometheusAddress = errors.New("expecting a non-blank address to run the Prometheus metrics handler")
-
-// PrometheusExportersFromViper unmarshals the viper and returns consumer.MetricsConsumers
-// targeting Prometheus according to the configuration settings.
-// It allows HTTP clients to scrape it on endpoint path "/metrics".
-func PrometheusExportersFromViper(v *viper.Viper) (tps []consumer.TraceConsumer, mps []consumer.MetricsConsumer, doneFns []func() error, err error) {
-	var cfg struct {
-		Prometheus *prometheusConfig `mapstructure:"prometheus"`
-	}
-	if err := v.Unmarshal(&cfg); err != nil {
-		return nil, nil, nil, err
-	}
-	if cfg.Prometheus == nil {
-		return nil, nil, nil, nil
-	}
-
-	pcfg := cfg.Prometheus
-	addr := strings.TrimSpace(pcfg.Address)
-	if addr == "" {
-		err = errBlankPrometheusAddress
-		return
-	}
-
-	opts := prometheus.Options{
-		Namespace:   pcfg.Namespace,
-		ConstLabels: pcfg.ConstLabels,
-	}
-	pe, err := prometheus.New(opts)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	ln, err := net.Listen("tcp", addr)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	// The Prometheus metrics exporter has to run on the provided address
-	// as a server that'll be scraped by Prometheus.
-	mux := http.NewServeMux()
-	mux.Handle("/metrics", pe)
-
-	srv := &http.Server{Handler: mux}
-	go func() {
-		_ = srv.Serve(ln)
-	}()
-
-	doneFns = append(doneFns, ln.Close)
-	pexp := &prometheusExporter{exporter: pe}
-	mps = append(mps, pexp)
-
-	return
-}
 
 type prometheusExporter struct {
 	name     string

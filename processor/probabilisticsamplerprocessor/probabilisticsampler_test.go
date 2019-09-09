@@ -21,8 +21,6 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/spf13/viper"
-
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
@@ -32,84 +30,6 @@ import (
 	processormetrics "github.com/open-telemetry/opentelemetry-service/processor"
 	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
 )
-
-func TestConfig_InitFromViper(t *testing.T) {
-	type fields struct {
-		SamplingPercentage float32
-	}
-	tests := []struct {
-		name       string
-		fields     fields
-		genViperFn func() *viper.Viper
-		want       *Config
-		wantErr    bool
-	}{
-		{
-			name:    "nil_viper",
-			wantErr: true,
-			genViperFn: func() *viper.Viper {
-				return nil
-			},
-		},
-		{
-			name:    "invalid_sampling_rate",
-			wantErr: true,
-			genViperFn: func() *viper.Viper {
-				v := viper.New()
-				v.Set(samplingPercentageCfgTag, "value.is.not.a.number")
-				return v
-			},
-		},
-		{
-			name:    "invalid_hash_seed",
-			wantErr: true,
-			genViperFn: func() *viper.Viper {
-				v := viper.New()
-				v.Set(hashSeedCfgTag, "value.is.not.a.number")
-				return v
-			},
-		},
-		{
-			name: "happy_path",
-			genViperFn: func() *viper.Viper {
-				v := viper.New()
-				v.Set(samplingPercentageCfgTag, 5)
-				return v
-			},
-			want: &Config{
-				SamplingPercentage: 5.0,
-			},
-		},
-		{
-			name: "happy_path_custom_seed",
-			genViperFn: func() *viper.Viper {
-				v := viper.New()
-				v.Set(samplingPercentageCfgTag, 0.03)
-				v.Set(hashSeedCfgTag, 1234)
-				return v
-			},
-			want: &Config{
-				SamplingPercentage: 0.03,
-				HashSeed:           1234,
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tsc := &Config{
-				SamplingPercentage: tt.fields.SamplingPercentage,
-			}
-			got, err := tsc.InitFromViper(tt.genViperFn())
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Config.InitFromViper() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Config.InitFromViper() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
 
 func TestNewTraceProcessor(t *testing.T) {
 	tests := []struct {

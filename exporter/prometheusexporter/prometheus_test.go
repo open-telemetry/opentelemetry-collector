@@ -27,7 +27,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/internal/config/viperutils"
 )
 
 func TestPrometheusExporter(t *testing.T) {
@@ -67,25 +66,6 @@ func TestPrometheusExporter(t *testing.T) {
 			require.Nil(t, err)
 			require.NoError(t, consumer.Shutdown())
 		}
-	}
-}
-
-func TestPrometheusExporter_nilDoesntCauseCrash(t *testing.T) {
-	config := []byte(`
-prometheus:`)
-	v, _ := viperutils.ViperFromYAMLBytes([]byte(config))
-	tes, mes, doneFns, err := PrometheusExportersFromViper(v)
-	if err != nil {
-		t.Errorf("Unexpected parse error: %v", err)
-	}
-	if len(tes) != 0 {
-		t.Errorf("Unexpectedly got back %d > 0 trace exporters", len(tes))
-	}
-	if len(mes) != 0 {
-		t.Errorf("Unexpectedly got back %d > 0 metrics exporters", len(mes))
-	}
-	for _, doneFn := range doneFns {
-		doneFn()
 	}
 }
 
