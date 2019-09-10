@@ -121,8 +121,7 @@ func Load(
 
 	var config configmodels.Config
 
-	// Load the config, initially expand all the env variabls
-	expandEnvConfig(v, logger)
+	// Load the config.
 
 	// Start with extensions and service.
 
@@ -246,9 +245,13 @@ func loadExtensions(v *viper.Viper, factories map[string]extension.Factory) (con
 		extensionCfg.SetType(typeStr)
 		extensionCfg.SetName(fullName)
 
+		// Before unmarshilng first expand all environment variables.
+		sv := subViper.Sub(key)
+		expandEnvConfig(sv)
+
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
-		if err := subViper.UnmarshalKey(key, extensionCfg); err != nil {
+		if err := sv.Unmarshal(extensionCfg); err != nil {
 			return nil, &configError{
 				code: errUnmarshalError,
 				msg:  fmt.Sprintf("error reading settings for extension type %q: %v", typeStr, err),
@@ -324,6 +327,10 @@ func loadReceivers(v *viper.Viper, factories map[string]receiver.Factory) (confi
 		receiverCfg.SetType(typeStr)
 		receiverCfg.SetName(fullName)
 
+		// Before unmarshilng first expand all environment variables.
+		sv := subViper.Sub(key)
+		expandEnvConfig(sv)
+
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
 		customUnmarshaler := factory.CustomUnmarshaler()
@@ -335,7 +342,7 @@ func loadReceivers(v *viper.Viper, factories map[string]receiver.Factory) (confi
 			// TODO(ccaraman): UnmarshallExact should be used to catch erroneous config entries.
 			// 	This leads to quickly identifying config values that are not supported and reduce confusion for
 			// 	users.
-			err = subViper.UnmarshalKey(key, receiverCfg)
+			err = sv.Unmarshal(receiverCfg)
 		}
 
 		if err != nil {
@@ -401,9 +408,13 @@ func loadExporters(v *viper.Viper, factories map[string]exporter.Factory) (confi
 		exporterCfg.SetType(typeStr)
 		exporterCfg.SetName(fullName)
 
+		// Before unmarshilng first expand all environment variables.
+		sv := subViper.Sub(key)
+		expandEnvConfig(sv)
+
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
-		if err := subViper.UnmarshalKey(key, exporterCfg); err != nil {
+		if err := sv.Unmarshal(exporterCfg); err != nil {
 			return nil, &configError{
 				code: errUnmarshalError,
 				msg:  fmt.Sprintf("error reading settings for exporter type %q: %v", typeStr, err),
@@ -458,9 +469,13 @@ func loadProcessors(v *viper.Viper, factories map[string]processor.Factory) (con
 		processorCfg.SetType(typeStr)
 		processorCfg.SetName(fullName)
 
+		// Before unmarshilng first expand all environment variables.
+		sv := subViper.Sub(key)
+		expandEnvConfig(sv)
+
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
-		if err := subViper.UnmarshalKey(key, processorCfg); err != nil {
+		if err := sv.Unmarshal(processorCfg); err != nil {
 			return nil, &configError{
 				code: errUnmarshalError,
 				msg:  fmt.Sprintf("error reading settings for processor type %q: %v", typeStr, err),
@@ -816,10 +831,11 @@ func validateProcessors(cfg *configmodels.Config) {
 	}
 }
 
-func expandEnvConfig(v *viper.Viper, logger *zap.Logger) {
+func expandEnvConfig(v *viper.Viper) {
 	for _, k := range v.AllKeys() {
 		nv, changed := expandStringValues(v.Get(k))
 		if changed {
+			fmt.Printf("Changing k:%s, v:%v, nv:%v\n", k, v.Get(k), nv)
 			v.Set(k, nv)
 		}
 	}
