@@ -62,6 +62,80 @@ processors:
       - key: duplicate_key
         action: delete
 
+
+  # The following demonstrates excluding spans from this attributes processor.
+  # Ex. The following spans match the properties and won't be processed by the
+  # processor.
+  # Span1 Name: 'svcB' Attributes: {env: dev, test_request: 123, credit_card: 1234}
+  # Span2 Name: 'svcA' Attributes: {env: dev, test_request: false}
+  # The following spans do not match the properties and the processor actions
+  # are applied to it.
+  # Span3 Name: 'svcB' Attributes: {env: 1, test_request: dev, credit_card: 1234}
+  # Span4 Name: 'svcC' Attributes: {env: dev, test_request: false}
+  attributes/excludemulti:
+    # Specifies the spans properties that exclude a span from being processed.
+    exclude:
+      # The Span service name must either be "svcA" or "svcB" to match.
+      services: ["svcA", "svcB"]
+      attributes:
+        # This exact attribute ('env', 'dev') must exist in the span for a match.
+        - {key: env, value: "dev"}
+        # As long as there is an attribute with key 'test_request' in the span
+        # there is a match.
+        - {key: test_request}
+    actions:
+      - key: credit_card
+        action: delete
+      - key: duplicate_key
+        action: delete
+
+  # The following demonstrates including spans for this attributes processor.
+  # All other spans that do no match the properties are not processed
+  # by this processor.
+  # Ex. The following are spans match the properties and the actions are applied.
+  # Span1 Name: 'svcB' Attributes: {env: dev, test_request: 123, credit_card: 1234}
+  # Span2 Name: 'svcA' Attributes: {env: dev, test_request: false}
+  # Span3 Name: 'svcB' Attributes: {env: 1, test_request: dev, credit_card: 1234}
+  # The following span does not match the include properties and the
+  # processor actions are not applied.
+  # Span4 Name: 'svcC' Attributes: {env: dev, test_request: false}
+  attributes/includeservices:
+    # Specifies the span properties that must exist for the processor to be applied.
+    include:
+      # The Span service name must either be "svcA" or "svcB" to match.
+      services: ["svcA", "svcB"]
+    actions:
+      - key: credit_card
+        action: delete
+      - key: duplicate_key
+        action: delete
+
+  # The following demonstrates specifying the set of span properties to
+  # indicate which spans this processor should be applied to. The `include` of
+  # properties say which ones should be included and the `exclude` properties
+  # further filter out spans that shouldn't be processed.
+  # Ex. The following are spans match the properties and the actions are applied.
+  # Note this span is processed because the value type of redact_trace is a string instead of a boolean.
+  # Span1 Name: 'svcB' Attributes: {env: production, test_request: 123, credit_card: 1234, redact_trace: "false"}
+  # Span2 Name: 'svcA' Attributes: {env: staging, test_request: false, redact_trace: true}
+  # The following span does not match the include properties and the
+  # processor actions are not applied.
+  # Span3 Name: 'svcB' Attributes: {env: production, test_request: true, credit_card: 1234, redact_trace: false}
+  # Span4 Name: 'svcC' Attributes: {env: dev, test_request: false}
+  attributes/selectiveprocessing:
+    # Specifies the span properties that must exist for the processor to be applied.
+    include:
+      # The Span service name must either be "svcA" or "svcB" to match.
+      services: ["svcA", "svcB"]
+    exclude:
+      attributes:
+        - { key: redact_trace, value: false}
+    actions:
+      - key: credit_card
+        action: delete
+      - key: duplicate_key
+        action: delete
+
   # The following demonstrates how to backfill spans missing an attribute,
   # insert/update that value to a new key and deleting the old key. This guarantees
   # an attribute `svc.operation` exists in spans and the attribute `operation`
@@ -72,6 +146,7 @@ processors:
   # Span3 Attributes: {timeout: 10, math_value: 4}
   # Span4 Attributes: {svc.operation: division, timeout: 3}
   attributes/complex:
+    # Note: There are no include and exclude settings so all spans are processed.
     actions:
       - key: operation
         value: default

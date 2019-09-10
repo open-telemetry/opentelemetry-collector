@@ -83,8 +83,62 @@ func TestLoadingConifg(t *testing.T) {
 		},
 	})
 
-	p4 := config.Processors["attributes/complex"]
+	p4 := config.Processors["attributes/excludemulti"]
 	assert.Equal(t, p4, &Config{
+		ProcessorSettings: configmodels.ProcessorSettings{
+			NameVal: "attributes/excludemulti",
+			TypeVal: typeStr,
+		},
+		Exclude: MatchProperties{
+			Services: []string{"svcA", "svcB"},
+			Attributes: []Attribute{
+				{Key: "env", Value: "dev"},
+				{Key: "test_request"},
+			},
+		},
+		Actions: []ActionKeyValue{
+			{Key: "credit_card", Action: DELETE},
+			{Key: "duplicate_key", Action: DELETE},
+		},
+	})
+
+	p5 := config.Processors["attributes/includeservices"]
+	assert.Equal(t, p5, &Config{
+		ProcessorSettings: configmodels.ProcessorSettings{
+			NameVal: "attributes/includeservices",
+			TypeVal: typeStr,
+		},
+		Include: MatchProperties{
+			Services: []string{"svcA", "svcB"},
+		},
+		Actions: []ActionKeyValue{
+			{Key: "credit_card", Action: DELETE},
+			{Key: "duplicate_key", Action: DELETE},
+		},
+	})
+
+	p6 := config.Processors["attributes/selectiveprocessing"]
+	assert.Equal(t, p6, &Config{
+		ProcessorSettings: configmodels.ProcessorSettings{
+			NameVal: "attributes/selectiveprocessing",
+			TypeVal: typeStr,
+		},
+		Include: MatchProperties{
+			Services: []string{"svcA", "svcB"},
+		},
+		Exclude: MatchProperties{
+			Attributes: []Attribute{
+				{Key: "redact_trace", Value: false},
+			},
+		},
+		Actions: []ActionKeyValue{
+			{Key: "credit_card", Action: DELETE},
+			{Key: "duplicate_key", Action: DELETE},
+		},
+	})
+
+	p7 := config.Processors["attributes/complex"]
+	assert.Equal(t, p7, &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
 			NameVal: "attributes/complex",
 			TypeVal: typeStr,
@@ -96,8 +150,8 @@ func TestLoadingConifg(t *testing.T) {
 		},
 	})
 
-	p5 := config.Processors["attributes/example"]
-	assert.Equal(t, p5, &Config{
+	p8 := config.Processors["attributes/example"]
+	assert.Equal(t, p8, &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
 			NameVal: "attributes/example",
 			TypeVal: typeStr,
