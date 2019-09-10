@@ -6,6 +6,7 @@ receivers:
       "recv": "$RECEIVERS_EXAMPLERECEIVER_EXTRA_MAP_RECV_VALUE"
     }
     extra_list: ["$RECEIVERS_EXAMPLERECEIVER_EXTRA_LIST_ELEMENT_1"]
+    
 
 processors:
   exampleprocessor:
@@ -17,6 +18,7 @@ processors:
 
 exporters:
   exampleexporter:
+    extra_int: "${EXPORTERS_EXAMPLEEXPORTER_EXTRA_INT}"
     extra: "${EXPORTERS_EXAMPLEEXPORTER_EXTRA}"
     extra_map: {
       "exp": "${EXPORTERS_EXAMPLEEXPORTER_EXTRA_MAP_EXP_VALUE}"

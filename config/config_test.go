@@ -150,6 +150,7 @@ func TestDecodeConfigWithEnv(t *testing.T) {
 	const exporterExtra = "some exporter string"
 	const exporterExtraMapValue = "some exporter map value"
 	const exporterExtraListElement = "some exporter list element"
+	os.Setenv("EXPORTERS_EXAMPLEEXPORTER_EXTRA_INT", "65")
 	os.Setenv("EXPORTERS_EXAMPLEEXPORTER_EXTRA", exporterExtra)
 	os.Setenv("EXPORTERS_EXAMPLEEXPORTER_EXTRA_MAP_EXP_VALUE", exporterExtraMapValue)
 	os.Setenv("EXPORTERS_EXAMPLEEXPORTER_EXTRA_LIST_ELEMENT_1", exporterExtraListElement)
@@ -167,6 +168,7 @@ func TestDecodeConfigWithEnv(t *testing.T) {
 		os.Unsetenv("PROCESSORS_EXAMPLEPROCESSOR_EXTRA_MAP_PROC_VALUE")
 		os.Unsetenv("PROCESSORS_EXAMPLEPROCESSOR_EXTRA_LIST_ELEMENT_1")
 
+		os.Unsetenv("EXPORTERS_EXAMPLEEXPORTER_EXTRA_INT")
 		os.Unsetenv("EXPORTERS_EXAMPLEEXPORTER_EXTRA")
 		os.Unsetenv("EXPORTERS_EXAMPLEEXPORTER_EXTRA_MAP_EXP_VALUE")
 		os.Unsetenv("EXPORTERS_EXAMPLEEXPORTER_EXTRA_LIST_ELEMENT_1")
@@ -231,6 +233,7 @@ func TestDecodeConfigWithEnv(t *testing.T) {
 				NameVal: "exampleexporter",
 				TypeVal: "exampleexporter",
 			},
+			ExtraInt:         65,
 			ExtraSetting:     exporterExtra,
 			ExtraMapSetting:  map[string]string{"exp": exporterExtraMapValue},
 			ExtraListSetting: []string{exporterExtraListElement},

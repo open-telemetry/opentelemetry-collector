@@ -820,7 +820,6 @@ func expandEnvConfig(v *viper.Viper, logger *zap.Logger) {
 	for _, k := range v.AllKeys() {
 		nv, changed := expandStringValues(v.Get(k))
 		if changed {
-			fmt.Printf("Changed k:%s v:%v nv:%v\n", k, v.Get(k), nv)
 			v.Set(k, nv)
 		}
 	}

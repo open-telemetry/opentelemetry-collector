@@ -246,6 +246,7 @@ func (f *MultiProtoReceiverFactory) CreateMetricsReceiver(
 // for "exampleexporter" exporter type.
 type ExampleExporter struct {
 	configmodels.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	ExtraInt                      int32                    `mapstructure:"extra_int"`
 	ExtraSetting                  string                   `mapstructure:"extra"`
 	ExtraMapSetting               map[string]string        `mapstructure:"extra_map"`
 	ExtraListSetting              []string                 `mapstructure:"extra_list"`
