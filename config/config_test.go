@@ -15,6 +15,7 @@
 package config
 
 import (
+	"os"
 	"path"
 	"testing"
 
@@ -105,6 +106,151 @@ func TestDecodeConfig(t *testing.T) {
 				NameVal: "exampleprocessor",
 			},
 			ExtraSetting: "some export string",
+		},
+		config.Processors["exampleprocessor"],
+		"Did not load processor config correctly")
+
+	// Verify Pipelines
+	assert.Equal(t, 1, len(config.Pipelines), "Incorrect pipelines count")
+
+	assert.Equal(t,
+		&configmodels.Pipeline{
+			Name:       "traces",
+			InputType:  configmodels.TracesDataType,
+			Receivers:  []string{"examplereceiver"},
+			Processors: []string{"exampleprocessor"},
+			Exporters:  []string{"exampleexporter"},
+		},
+		config.Pipelines["traces"],
+		"Did not load pipeline config correctly")
+}
+
+func TestDecodeConfigWithEnv(t *testing.T) {
+	const extensionExtra = "some extension string"
+	const extensionExtraMapValue = "some extension map value"
+	const extensionExtraListElement = "some extension list element"
+	os.Setenv("EXTENSIONS_EXAMPLEEXTENSION_EXTRA", extensionExtra)
+	os.Setenv("EXTENSIONS_EXAMPLEEXTENSION_EXTRA_MAP_EXT_VALUE", extensionExtraMapValue)
+	os.Setenv("EXTENSIONS_EXAMPLEEXTENSION_EXTRA_LIST_ELEMENT_1", extensionExtraListElement)
+
+	const receiverExtra = "some receiver string"
+	const receiverExtraMapValue = "some receiver map value"
+	const receiverExtraListElement = "some receiver list element"
+	os.Setenv("RECEIVERS_EXAMPLERECEIVER_EXTRA", receiverExtra)
+	os.Setenv("RECEIVERS_EXAMPLERECEIVER_EXTRA_MAP_RECV_VALUE", receiverExtraMapValue)
+	os.Setenv("RECEIVERS_EXAMPLERECEIVER_EXTRA_LIST_ELEMENT_1", receiverExtraListElement)
+
+	const processorExtra = "some processor string"
+	const processorExtraMapValue = "some processor map value"
+	const processorExtraListElement = "some processor list element"
+	os.Setenv("PROCESSORS_EXAMPLEPROCESSOR_EXTRA", processorExtra)
+	os.Setenv("PROCESSORS_EXAMPLEPROCESSOR_EXTRA_MAP_PROC_VALUE", processorExtraMapValue)
+	os.Setenv("PROCESSORS_EXAMPLEPROCESSOR_EXTRA_LIST_ELEMENT_1", processorExtraListElement)
+
+	const exporterExtra = "some exporter string"
+	const exporterExtraMapValue = "some exporter map value"
+	const exporterExtraListElement = "some exporter list element"
+	os.Setenv("EXPORTERS_EXAMPLEEXPORTER_EXTRA", exporterExtra)
+	os.Setenv("EXPORTERS_EXAMPLEEXPORTER_EXTRA_MAP_EXP_VALUE", exporterExtraMapValue)
+	os.Setenv("EXPORTERS_EXAMPLEEXPORTER_EXTRA_LIST_ELEMENT_1", exporterExtraListElement)
+
+	defer func() {
+		os.Unsetenv("EXTENSIONS_EXAMPLEEXTENSION_EXTRA")
+		os.Unsetenv("EXTENSIONS_EXAMPLEEXTENSION_EXTRA_MAP_EXT_VALUE")
+		os.Unsetenv("EXTENSIONS_EXAMPLEEXTENSION_EXTRA_LIST_ELEMENT_1")
+
+		os.Unsetenv("RECEIVERS_EXAMPLERECEIVER_EXTRA")
+		os.Unsetenv("RECEIVERS_EXAMPLERECEIVER_EXTRA_MAP_RECV_VALUE")
+		os.Unsetenv("RECEIVERS_EXAMPLERECEIVER_EXTRA_LIST_ELEMENT_1")
+
+		os.Unsetenv("PROCESSORS_EXAMPLEPROCESSOR_EXTRA")
+		os.Unsetenv("PROCESSORS_EXAMPLEPROCESSOR_EXTRA_MAP_PROC_VALUE")
+		os.Unsetenv("PROCESSORS_EXAMPLEPROCESSOR_EXTRA_LIST_ELEMENT_1")
+
+		os.Unsetenv("EXPORTERS_EXAMPLEEXPORTER_EXTRA")
+		os.Unsetenv("EXPORTERS_EXAMPLEEXPORTER_EXTRA_MAP_EXP_VALUE")
+		os.Unsetenv("EXPORTERS_EXAMPLEEXPORTER_EXTRA_LIST_ELEMENT_1")
+	}()
+
+	t.Log(expandStringValues([]string{"${EXTENSIONS_EXAMPLEEXTENSION_EXTRA}"}))
+
+	factories, err := ExampleComponents()
+	assert.Nil(t, err)
+
+	// Load the config
+	config, err := LoadConfigFile(t, path.Join(".", "testdata", "valid-config-with-env.yaml"), factories)
+	if err != nil {
+		t.Fatalf("unable to load config, %v", err)
+	}
+
+	// Verify extensions.
+	assert.Equal(t, 1, len(config.Extensions))
+	assert.True(t, config.Extensions["exampleextension"].IsEnabled())
+	assert.Equal(t,
+		&ExampleExtension{
+			ExtensionSettings: configmodels.ExtensionSettings{
+				TypeVal: "exampleextension",
+				NameVal: "exampleextension",
+			},
+			ExtraSetting:     extensionExtra,
+			ExtraMapSetting:  map[string]string{"ext": extensionExtraMapValue},
+			ExtraListSetting: []string{extensionExtraListElement},
+		},
+		config.Extensions["exampleextension"],
+		"Did not load extension config correctly")
+
+	// Verify service.
+	assert.Equal(t, 1, len(config.Service.Extensions))
+	assert.Equal(t, "exampleextension", config.Service.Extensions[0])
+
+	// Verify receivers
+	assert.Equal(t, 1, len(config.Receivers), "Incorrect receivers count")
+	assert.True(t, config.Receivers["examplereceiver"].IsEnabled())
+
+	assert.Equal(t,
+		&ExampleReceiver{
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal:  "examplereceiver",
+				NameVal:  "examplereceiver",
+				Endpoint: "127.0.0.1:1234",
+			},
+			ExtraSetting:     receiverExtra,
+			ExtraMapSetting:  map[string]string{"recv": receiverExtraMapValue},
+			ExtraListSetting: []string{receiverExtraListElement},
+		},
+		config.Receivers["examplereceiver"],
+		"Did not load receiver config correctly")
+
+	// Verify exporters
+	assert.Equal(t, 1, len(config.Exporters), "Incorrect exporters count")
+	assert.True(t, config.Exporters["exampleexporter"].IsEnabled())
+
+	assert.Equal(t,
+		&ExampleExporter{
+			ExporterSettings: configmodels.ExporterSettings{
+				NameVal: "exampleexporter",
+				TypeVal: "exampleexporter",
+			},
+			ExtraSetting:     exporterExtra,
+			ExtraMapSetting:  map[string]string{"exp": exporterExtraMapValue},
+			ExtraListSetting: []string{exporterExtraListElement},
+		},
+		config.Exporters["exampleexporter"],
+		"Did not load exporter config correctly")
+
+	// Verify Processors
+	assert.Equal(t, 1, len(config.Processors), "Incorrect processors count")
+	assert.True(t, config.Processors["exampleprocessor"].IsEnabled())
+
+	assert.Equal(t,
+		&ExampleProcessor{
+			ProcessorSettings: configmodels.ProcessorSettings{
+				TypeVal: "exampleprocessor",
+				NameVal: "exampleprocessor",
+			},
+			ExtraSetting:     processorExtra,
+			ExtraMapSetting:  map[string]string{"proc": processorExtraMapValue},
+			ExtraListSetting: []string{processorExtraListElement},
 		},
 		config.Processors["exampleprocessor"],
 		"Did not load processor config correctly")

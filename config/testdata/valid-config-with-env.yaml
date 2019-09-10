@@ -1,0 +1,41 @@
+receivers:
+  examplereceiver:
+    enpoint: "127.0.0.1:1234"
+    extra: "$RECEIVERS_EXAMPLERECEIVER_EXTRA"
+    extra_map: {
+      "recv": "$RECEIVERS_EXAMPLERECEIVER_EXTRA_MAP_RECV_VALUE"
+    }
+    extra_list: ["$RECEIVERS_EXAMPLERECEIVER_EXTRA_LIST_ELEMENT_1"]
+
+processors:
+  exampleprocessor:
+    extra: "$PROCESSORS_EXAMPLEPROCESSOR_EXTRA"
+    extra_map: {
+      "proc": "$PROCESSORS_EXAMPLEPROCESSOR_EXTRA_MAP_PROC_VALUE"
+    }
+    extra_list: ["$PROCESSORS_EXAMPLEPROCESSOR_EXTRA_LIST_ELEMENT_1"]
+
+exporters:
+  exampleexporter:
+    extra: "${EXPORTERS_EXAMPLEEXPORTER_EXTRA}"
+    extra_map: {
+      "exp": "${EXPORTERS_EXAMPLEEXPORTER_EXTRA_MAP_EXP_VALUE}"
+    }
+    extra_list: ["${EXPORTERS_EXAMPLEEXPORTER_EXTRA_LIST_ELEMENT_1}"]
+
+pipelines:
+  traces:
+    receivers: [examplereceiver]
+    processors: [exampleprocessor]
+    exporters: [exampleexporter]
+
+extensions:
+  exampleextension:
+    extra: "${EXTENSIONS_EXAMPLEEXTENSION_EXTRA}"
+    extra_map: {
+      "ext": "${EXTENSIONS_EXAMPLEEXTENSION_EXTRA_MAP_EXT_VALUE}"
+    }
+    extra_list: ["${EXTENSIONS_EXAMPLEEXTENSION_EXTRA_LIST_ELEMENT_1}"]
+
+service:
+  extensions: [exampleextension]

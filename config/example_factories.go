@@ -35,6 +35,8 @@ import (
 type ExampleReceiver struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 	ExtraSetting                  string                   `mapstructure:"extra"`
+	ExtraMapSetting               map[string]string        `mapstructure:"extra_map"`
+	ExtraListSetting              []string                 `mapstructure:"extra_list"`
 
 	// FailTraceCreation causes CreateTraceReceiver to fail. Useful for testing.
 	FailTraceCreation bool `mapstructure:"-"`
@@ -64,7 +66,9 @@ func (f *ExampleReceiverFactory) CreateDefaultConfig() configmodels.Receiver {
 			TypeVal:  "examplereceiver",
 			Endpoint: "localhost:1000",
 		},
-		ExtraSetting: "some string",
+		ExtraSetting:     "some string",
+		ExtraMapSetting:  nil,
+		ExtraListSetting: nil,
 	}
 }
 
@@ -243,6 +247,8 @@ func (f *MultiProtoReceiverFactory) CreateMetricsReceiver(
 type ExampleExporter struct {
 	configmodels.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 	ExtraSetting                  string                   `mapstructure:"extra"`
+	ExtraMapSetting               map[string]string        `mapstructure:"extra_map"`
+	ExtraListSetting              []string                 `mapstructure:"extra_list"`
 	ExporterShutdown              bool
 }
 
@@ -260,6 +266,8 @@ func (f *ExampleExporterFactory) CreateDefaultConfig() configmodels.Exporter {
 	return &ExampleExporter{
 		ExporterSettings: configmodels.ExporterSettings{},
 		ExtraSetting:     "some export string",
+		ExtraMapSetting:  nil,
+		ExtraListSetting: nil,
 	}
 }
 
@@ -308,6 +316,8 @@ func (exp *ExampleExporterConsumer) Shutdown() error {
 type ExampleProcessor struct {
 	configmodels.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 	ExtraSetting                   string                   `mapstructure:"extra"`
+	ExtraMapSetting                map[string]string        `mapstructure:"extra_map"`
+	ExtraListSetting               []string                 `mapstructure:"extra_list"`
 }
 
 // ExampleProcessorFactory is factory for ExampleProcessor.
@@ -324,6 +334,8 @@ func (f *ExampleProcessorFactory) CreateDefaultConfig() configmodels.Processor {
 	return &ExampleProcessor{
 		ProcessorSettings: configmodels.ProcessorSettings{},
 		ExtraSetting:      "some export string",
+		ExtraMapSetting:   nil,
+		ExtraListSetting:  nil,
 	}
 }
 
@@ -350,6 +362,8 @@ func (f *ExampleProcessorFactory) CreateMetricsProcessor(
 type ExampleExtension struct {
 	configmodels.ExtensionSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 	ExtraSetting                   string                   `mapstructure:"extra"`
+	ExtraMapSetting                map[string]string        `mapstructure:"extra_map"`
+	ExtraListSetting               []string                 `mapstructure:"extra_list"`
 }
 
 // ExampleExtensionFactory is factory for ExampleExtension.
@@ -366,6 +380,8 @@ func (f *ExampleExtensionFactory) CreateDefaultConfig() configmodels.Extension {
 	return &ExampleExtension{
 		ExtensionSettings: configmodels.ExtensionSettings{},
 		ExtraSetting:      "extra string setting",
+		ExtraMapSetting:   nil,
+		ExtraListSetting:  nil,
 	}
 }
 

@@ -20,6 +20,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/spf13/viper"
@@ -120,7 +121,8 @@ func Load(
 
 	var config configmodels.Config
 
-	// Load the config.
+	// Load the config, initially expand all the env variabls
+	expandEnvConfig(v, logger)
 
 	// Start with extensions and service.
 
@@ -811,5 +813,48 @@ func validateProcessors(cfg *configmodels.Config) {
 		if !rcv.IsEnabled() {
 			delete(cfg.Processors, name)
 		}
+	}
+}
+
+func expandEnvConfig(v *viper.Viper, logger *zap.Logger) {
+	for _, k := range v.AllKeys() {
+		nv, changed := expandStringValues(v.Get(k))
+		if changed {
+			fmt.Printf("Changed k:%s v:%v nv:%v\n", k, v.Get(k), nv)
+			v.Set(k, nv)
+		}
+	}
+}
+
+func expandStringValues(value interface{}) (interface{}, bool) {
+	switch v := value.(type) {
+	default:
+		return v, false
+	case string:
+		nv := os.ExpandEnv(v)
+		return nv, v != nv
+	case []interface{}:
+		// Viper treats all the slices as []interface{} (at least in what the otelsvc tests).
+		changed := false
+		for i, vint := range v {
+			if vstr, ok := vint.(string); ok {
+				nvstr := os.ExpandEnv(vstr)
+				if vstr != nvstr {
+					v[i] = nvstr
+					changed = true
+				}
+			}
+		}
+		return v, changed
+	case []string:
+		changed := false
+		for i, vstr := range v {
+			nvstr := os.ExpandEnv(vstr)
+			if vstr != nvstr {
+				v[i] = nvstr
+				changed = true
+			}
+		}
+		return v, changed
 	}
 }
