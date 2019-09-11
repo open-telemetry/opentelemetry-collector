@@ -32,11 +32,10 @@ import (
 )
 
 const (
-	fakeTraceReceiverName     = "fake_receiver_trace"
-	fakeTraceExporterType     = "fake_trace_exporter"
-	fakeTraceExporterName     = "with_name"
-	fakeTraceExporterFullName = "fake_trace_exporter_with_name"
-	fakeTraceParentSpanName   = "fake_trace_parent_span_name"
+	fakeTraceReceiverName   = "fake_receiver_trace"
+	fakeTraceExporterType   = "fake_trace_exporter"
+	fakeTraceExporterName   = "fake_trace_exporter/with_name"
+	fakeTraceParentSpanName = "fake_trace_parent_span_name"
 )
 
 var (
@@ -173,10 +172,10 @@ func checkRecordedMetricsForTraceExporter(t *testing.T, te exporter.TraceExporte
 		require.Equal(t, wantError, te.ConsumeTraceData(ctx, td))
 	}
 
-	err := observabilitytest.CheckValueViewExporterReceivedSpans(fakeTraceReceiverName, fakeTraceExporterFullName, numBatches*len(spans))
+	err := observabilitytest.CheckValueViewExporterReceivedSpans(fakeTraceReceiverName, fakeTraceExporterName, numBatches*len(spans))
 	require.Nilf(t, err, "CheckValueViewExporterReceivedSpans: Want nil Got %v", err)
 
-	err = observabilitytest.CheckValueViewExporterDroppedSpans(fakeTraceReceiverName, fakeTraceExporterFullName, numBatches*droppedSpans)
+	err = observabilitytest.CheckValueViewExporterDroppedSpans(fakeTraceReceiverName, fakeTraceExporterName, numBatches*droppedSpans)
 	require.Nilf(t, err, "CheckValueViewExporterDroppedSpans: Want nil Got %v", err)
 }
 

@@ -56,8 +56,6 @@ func NewMetricsExporter(config configmodels.Exporter, pushMetricsData PushMetric
 		return nil, errNilConfig
 	}
 
-	exporterFullName := observability.MakeComponentName(config.Type(), config.Name())
-
 	if pushMetricsData == nil {
 		return nil, errNilPushMetricsData
 	}
@@ -68,7 +66,7 @@ func NewMetricsExporter(config configmodels.Exporter, pushMetricsData PushMetric
 	}
 
 	if opts.recordTrace {
-		pushMetricsData = pushMetricsDataWithSpan(pushMetricsData, exporterFullName+".ExportMetricsData")
+		pushMetricsData = pushMetricsDataWithSpan(pushMetricsData, config.Name()+".ExportMetricsData")
 	}
 
 	// The default shutdown method always returns nil.
@@ -77,7 +75,7 @@ func NewMetricsExporter(config configmodels.Exporter, pushMetricsData PushMetric
 	}
 
 	return &metricsExporter{
-		exporterFullName: exporterFullName,
+		exporterFullName: config.Name(),
 		pushMetricsData:  pushMetricsData,
 		shutdown:         opts.shutdown,
 	}, nil
