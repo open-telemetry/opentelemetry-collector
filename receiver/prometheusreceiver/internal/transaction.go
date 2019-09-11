@@ -22,13 +22,14 @@ import (
 	"sync/atomic"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/observability"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/storage"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-service/consumer"
+	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-service/observability"
 )
 
 const (

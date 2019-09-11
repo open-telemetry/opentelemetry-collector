@@ -20,9 +20,10 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/open-telemetry/opentelemetry-service/observability"
 	"github.com/open-telemetry/opentelemetry-service/observability/observabilitytest"
-	"github.com/stretchr/testify/require"
 )
 
 const (
