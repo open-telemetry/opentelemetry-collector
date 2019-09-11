@@ -245,19 +245,15 @@ func loadExtensions(v *viper.Viper, factories map[string]extension.Factory) (con
 		extensionCfg.SetType(typeStr)
 		extensionCfg.SetName(fullName)
 
-		// Unmarsh only the subconfig for this extension.
-		sv := subViper.Sub(key)
-		if sv != nil {
-			// Before unmarshilng first expand all environment variables.
-			sv = expandEnvConfig(sv)
+		// Unmarshal only the subconfig for this exporter.
+		sv := getConfigSection(subViper, key)
 
-			// Now that the default config struct is created we can Unmarshal into it
-			// and it will apply user-defined config on top of the default.
-			if err := sv.Unmarshal(extensionCfg); err != nil {
-				return nil, &configError{
-					code: errUnmarshalError,
-					msg:  fmt.Sprintf("error reading settings for extension type %q: %v", typeStr, err),
-				}
+		// Now that the default config struct is created we can Unmarshal into it
+		// and it will apply user-defined config on top of the default.
+		if err := sv.Unmarshal(extensionCfg); err != nil {
+			return nil, &configError{
+				code: errUnmarshalError,
+				msg:  fmt.Sprintf("error reading settings for extension type %q: %v", typeStr, err),
 			}
 		}
 
@@ -330,25 +326,21 @@ func loadReceivers(v *viper.Viper, factories map[string]receiver.Factory) (confi
 		receiverCfg.SetType(typeStr)
 		receiverCfg.SetName(fullName)
 
-		// Unmarsh only the subconfig for this receiver.
-		sv := subViper.Sub(key)
-		if sv != nil {
-			// Before unmarshilng first expand all environment variables.
-			sv = expandEnvConfig(sv)
+		// Unmarshal only the subconfig for this exporter.
+		sv := getConfigSection(subViper, key)
 
-			// Now that the default config struct is created we can Unmarshal into it
-			// and it will apply user-defined config on top of the default.
-			customUnmarshaler := factory.CustomUnmarshaler()
-			if customUnmarshaler != nil {
-				// This configuration requires a custom unmarshaler, use it.
-				err = customUnmarshaler(subViper, key, receiverCfg)
-			} else {
-				// Standard viper unmarshaler is fine.
-				// TODO(ccaraman): UnmarshallExact should be used to catch erroneous config entries.
-				// 	This leads to quickly identifying config values that are not supported and reduce confusion for
-				// 	users.
-				err = sv.Unmarshal(receiverCfg)
-			}
+		// Now that the default config struct is created we can Unmarshal into it
+		// and it will apply user-defined config on top of the default.
+		customUnmarshaler := factory.CustomUnmarshaler()
+		if customUnmarshaler != nil {
+			// This configuration requires a custom unmarshaler, use it.
+			err = customUnmarshaler(subViper, key, receiverCfg)
+		} else {
+			// Standard viper unmarshaler is fine.
+			// TODO(ccaraman): UnmarshallExact should be used to catch erroneous config entries.
+			// 	This leads to quickly identifying config values that are not supported and reduce confusion for
+			// 	users.
+			err = sv.Unmarshal(receiverCfg)
 		}
 
 		if err != nil {
@@ -413,19 +405,15 @@ func loadExporters(v *viper.Viper, factories map[string]exporter.Factory) (confi
 		exporterCfg.SetType(typeStr)
 		exporterCfg.SetName(fullName)
 
-		// Unmarsh only the subconfig for this exporter.
-		sv := subViper.Sub(key)
-		if sv != nil {
-			// Before unmarshilng first expand all environment variables.
-			sv = expandEnvConfig(sv)
+		// Unmarshal only the subconfig for this exporter.
+		sv := getConfigSection(subViper, key)
 
-			// Now that the default config struct is created we can Unmarshal into it
-			// and it will apply user-defined config on top of the default.
-			if err := sv.Unmarshal(exporterCfg); err != nil {
-				return nil, &configError{
-					code: errUnmarshalError,
-					msg:  fmt.Sprintf("error reading settings for exporter type %q: %v", typeStr, err),
-				}
+		// Now that the default config struct is created we can Unmarshal into it
+		// and it will apply user-defined config on top of the default.
+		if err := sv.Unmarshal(exporterCfg); err != nil {
+			return nil, &configError{
+				code: errUnmarshalError,
+				msg:  fmt.Sprintf("error reading settings for exporter type %q: %v", typeStr, err),
 			}
 		}
 
@@ -477,19 +465,15 @@ func loadProcessors(v *viper.Viper, factories map[string]processor.Factory) (con
 		processorCfg.SetType(typeStr)
 		processorCfg.SetName(fullName)
 
-		// Unmarsh only the subconfig for this processor.
-		sv := subViper.Sub(key)
-		if sv != nil {
-			// Before unmarshilng first expand all environment variables.
-			sv = expandEnvConfig(sv)
+		// Unmarshal only the subconfig for this exporter.
+		sv := getConfigSection(subViper, key)
 
-			// Now that the default config struct is created we can Unmarshal into it
-			// and it will apply user-defined config on top of the default.
-			if err := sv.Unmarshal(processorCfg); err != nil {
-				return nil, &configError{
-					code: errUnmarshalError,
-					msg:  fmt.Sprintf("error reading settings for processor type %q: %v", typeStr, err),
-				}
+		// Now that the default config struct is created we can Unmarshal into it
+		// and it will apply user-defined config on top of the default.
+		if err := sv.Unmarshal(processorCfg); err != nil {
+			return nil, &configError{
+				code: errUnmarshalError,
+				msg:  fmt.Sprintf("error reading settings for processor type %q: %v", typeStr, err),
 			}
 		}
 
@@ -842,14 +826,28 @@ func validateProcessors(cfg *configmodels.Config) {
 	}
 }
 
+// getConfigSection returns a sub-config from the viper config that has the corresponding given key.
+// It also expand all the string values.
+func getConfigSection(v *viper.Viper, key string) *viper.Viper {
+	// Unmarsh only the subconfig for this processor.
+	sv := v.Sub(key)
+	if sv == nil {
+		// When the config for this key is empty Sub returns nil. In order to avoid nil checks
+		// just return an empty config.
+		return viper.New()
+	}
+	// Before unmarshaling first expand all environment variables.
+	return expandEnvConfig(sv)
+}
+
 // expandEnvConfig creates a new viper config with expanded values for all the values (simple, list or map value).
 // It does not expand the keys.
 // Need to copy everything because of a bug in Viper: Set a value "map[string]interface{}" where a key has a ".",
 // then AllSettings will return the previous value not the newly set one.
-func expandEnvConfig(vip *viper.Viper) *viper.Viper {
+func expandEnvConfig(v *viper.Viper) *viper.Viper {
 	newCfg := make(map[string]interface{})
-	for k, v := range vip.AllSettings() {
-		newCfg[k] = expandStringValues(v)
+	for k, val := range v.AllSettings() {
+		newCfg[k] = expandStringValues(val)
 	}
 	newVip := viper.New()
 	newVip.MergeConfigMap(newCfg)
