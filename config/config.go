@@ -249,7 +249,7 @@ func loadExtensions(v *viper.Viper, factories map[string]extension.Factory) (con
 		sv := subViper.Sub(key)
 		if sv != nil {
 			// Before unmarshilng first expand all environment variables.
-			expandEnvConfig(sv)
+			sv = expandEnvConfig(sv)
 
 			// Now that the default config struct is created we can Unmarshal into it
 			// and it will apply user-defined config on top of the default.
@@ -334,7 +334,7 @@ func loadReceivers(v *viper.Viper, factories map[string]receiver.Factory) (confi
 		sv := subViper.Sub(key)
 		if sv != nil {
 			// Before unmarshilng first expand all environment variables.
-			expandEnvConfig(sv)
+			sv = expandEnvConfig(sv)
 
 			// Now that the default config struct is created we can Unmarshal into it
 			// and it will apply user-defined config on top of the default.
@@ -417,7 +417,7 @@ func loadExporters(v *viper.Viper, factories map[string]exporter.Factory) (confi
 		sv := subViper.Sub(key)
 		if sv != nil {
 			// Before unmarshilng first expand all environment variables.
-			expandEnvConfig(sv)
+			sv = expandEnvConfig(sv)
 
 			// Now that the default config struct is created we can Unmarshal into it
 			// and it will apply user-defined config on top of the default.
@@ -481,7 +481,7 @@ func loadProcessors(v *viper.Viper, factories map[string]processor.Factory) (con
 		sv := subViper.Sub(key)
 		if sv != nil {
 			// Before unmarshilng first expand all environment variables.
-			expandEnvConfig(sv)
+			sv = expandEnvConfig(sv)
 
 			// Now that the default config struct is created we can Unmarshal into it
 			// and it will apply user-defined config on top of the default.
@@ -842,62 +842,39 @@ func validateProcessors(cfg *configmodels.Config) {
 	}
 }
 
-func expandEnvConfig(vip *viper.Viper) {
+// expandEnvConfig creates a new viper config with expanded values for all the values (simple, list or map value).
+// It does not expand the keys.
+// Need to copy everything because of a bug in Viper: Set a value "map[string]interface{}" where a key has a ".",
+// then AllSettings will return the previous value not the newly set one.
+func expandEnvConfig(vip *viper.Viper) *viper.Viper {
+	newCfg := make(map[string]interface{})
 	for k, v := range vip.AllSettings() {
-		nv, changed := expandStringValues(v)
-		if changed {
-			vip.Set(k, nv)
-		}
+		newCfg[k] = expandStringValues(v)
 	}
+	newVip := viper.New()
+	newVip.MergeConfigMap(newCfg)
+	return newVip
 }
 
-func expandStringValues(value interface{}) (interface{}, bool) {
+func expandStringValues(value interface{}) interface{} {
 	switch v := value.(type) {
 	default:
-		return v, false
+		return v
 	case string:
-		nv := os.ExpandEnv(v)
-		return nv, v != nv
+		return os.ExpandEnv(v)
 	case []interface{}:
 		// Viper treats all the slices as []interface{} (at least in what the otelsvc tests).
-		changed := false
-		for i, vint := range v {
-			if nv, c := expandStringValues(vint); c {
-				v[i] = nv
-				changed = true
-			}
+		nslice := make([]interface{}, 0, len(v))
+		for _, vint := range v {
+			nslice = append(nslice, expandStringValues(vint))
 		}
-		return v, changed
+		return nslice
 	case map[string]interface{}:
 		nmap := make(map[string]interface{}, len(v))
 		// Viper treats all the maps as [string]interface{} (at least in what the otelsvc tests).
-		changed := false
 		for k, vint := range v {
-			nv, c := expandStringValues(vint)
-			nmap[k] = nv
-			changed = changed || c
+			nmap[k] = expandStringValues(vint)
 		}
-		fmt.Printf("Map formated %v %t\n", nmap, changed)
-		return nmap, changed
-	case []string:
-		changed := false
-		for i, vstr := range v {
-			nvstr := os.ExpandEnv(vstr)
-			if vstr != nvstr {
-				v[i] = nvstr
-				changed = true
-			}
-		}
-		return v, changed
-	case map[string]string:
-		changed := false
-		for k, vstr := range v {
-			nvstr := os.ExpandEnv(vstr)
-			if vstr != nvstr {
-				v[k] = nvstr
-				changed = true
-			}
-		}
-		return v, changed
+		return nmap
 	}
 }
