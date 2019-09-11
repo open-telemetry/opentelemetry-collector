@@ -827,7 +827,7 @@ func validateProcessors(cfg *configmodels.Config) {
 }
 
 // getConfigSection returns a sub-config from the viper config that has the corresponding given key.
-// It also expand all the string values.
+// It also expands all the string values.
 func getConfigSection(v *viper.Viper, key string) *viper.Viper {
 	// Unmarsh only the subconfig for this processor.
 	sv := v.Sub(key)
