@@ -27,6 +27,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	promcfg "github.com/prometheus/prometheus/config"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v2"
 
@@ -36,9 +37,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
-	"github.com/open-telemetry/opentelemetry-service/internal/config/viperutils"
 	"github.com/open-telemetry/opentelemetry-service/receiver/receivertest"
-	"github.com/spf13/viper"
 )
 
 var logger, _ = zap.NewDevelopment()
@@ -97,27 +96,6 @@ func (mp *mockPrometheus) Close() {
 	mp.srv.Close()
 }
 
-func TestNew(t *testing.T) {
-	v := viper.New()
-
-	_, err := New(logger, v, nil)
-	if err != errNilScrapeConfig {
-		t.Fatalf("Expected errNilScrapeConfig but did not get it.")
-	}
-
-	v.Set("config", nil)
-	_, err = New(logger, v, nil)
-	if err != errNilScrapeConfig {
-		t.Fatalf("Expected errNilScrapeConfig but did not get it.")
-	}
-
-	v.Set("config.blah", "some_value")
-	_, err = New(logger, v, nil)
-	if err != errNilScrapeConfig {
-		t.Fatalf("Expected errNilScrapeConfig but did not get it.")
-	}
-}
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // EndToEnd Test and related
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -133,7 +111,7 @@ type testData struct {
 
 // setupMockPrometheus to create a mocked prometheus based on targets, returning the server and a prometheus exporting
 // config
-func setupMockPrometheus(tds ...*testData) (*mockPrometheus, string) {
+func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *promcfg.Config, error) {
 	jobs := make([]map[string]interface{}, 0, len(tds))
 	endpoints := make(map[string][]mockPrometheusResponse)
 	for _, t := range tds {
@@ -151,12 +129,12 @@ func setupMockPrometheus(tds ...*testData) (*mockPrometheus, string) {
 		log.Fatal("len(jobs) != len(targets), make sure job names are unique")
 	}
 	config := make(map[string]interface{})
-	config["config"] = map[string]interface{}{"scrape_configs": jobs}
+	config["scrape_configs"] = jobs
 
 	mp := newMockPrometheus(endpoints)
 	cfg, err := yaml.Marshal(&config)
 	if err != nil {
-		log.Fatalf("failed to create config: %v", err)
+		return mp, nil, err
 	}
 	u, _ := url.Parse(mp.srv.URL)
 	host, port, _ := net.SplitHostPort(u.Host)
@@ -178,8 +156,8 @@ func setupMockPrometheus(tds ...*testData) (*mockPrometheus, string) {
 	}
 
 	cfgStr := strings.ReplaceAll(string(cfg), srvPlaceHolder, u.Host)
-	log.Println(cfgStr)
-	return mp, cfgStr
+	pCfg, err := promcfg.Load(cfgStr)
+	return mp, pCfg, err
 }
 
 func verifyNumScrapeResults(t *testing.T, td *testData, mds []consumerdata.MetricsData) {
@@ -986,19 +964,14 @@ func TestEndToEnd(t *testing.T) {
 		},
 	}
 
-	mp, yamlConfig := setupMockPrometheus(targets...)
+	mp, cfg, err := setupMockPrometheus(targets...)
+	if err != nil {
+		t.Fatalf("Failed to create Promtheus config: %v", err)
+	}
 	defer mp.Close()
 
-	v := viper.New()
-	if err := viperutils.LoadYAMLBytes(v, []byte(yamlConfig)); err != nil {
-		t.Fatalf("Failed to load yaml config into viper")
-	}
-
 	cms := new(exportertest.SinkMetricsExporter)
-	precv, err := New(logger, v, cms)
-	if err != nil {
-		t.Fatalf("Failed to create promreceiver: %v", err)
-	}
+	precv := newPrometheusReceiver(logger, &Config{PrometheusConfig: cfg}, cms)
 
 	mh := receivertest.NewMockHost()
 	if err := precv.StartMetricsReception(mh); err != nil {
@@ -1033,54 +1006,5 @@ func TestEndToEnd(t *testing.T) {
 			tt.validateFunc(t, tt, result)
 		})
 		tt.validateFunc(t, tt, result)
-	}
-}
-
-func TestIncludeFilterConfig(t *testing.T) {
-	jobs := make([]map[string]interface{}, 0)
-
-	job := make(map[string]interface{})
-	job["job_name"] = "filter_job"
-	job["scrape_interval"] = "1s"
-
-	jobs = append(jobs, job)
-
-	filterMap := make(map[string]interface{})
-	filterMap["localhost:9777"] = []string{"foo/bar", "custom/metric1"}
-	filterMap["localhost:9778"] = []string{"hello/world", "custom/metric2"}
-
-	config := make(map[string]interface{})
-	config["include_filter"] = filterMap
-	config["config"] = map[string]interface{}{"scrape_configs": jobs}
-
-	cfg, err := yaml.Marshal(&config)
-	if err != nil {
-		log.Fatalf("failed to create config: %v", err)
-	}
-
-	v := viper.New()
-	if err := viperutils.LoadYAMLBytes(v, []byte(cfg)); err != nil {
-		t.Fatalf("Failed to load yaml config into viper")
-	}
-
-	cms := new(exportertest.SinkMetricsExporter)
-	precv, err := New(logger, v, cms)
-	if err != nil {
-		t.Fatalf("Failed to create promreceiver: %v", err)
-	}
-
-	wantFilterMap := map[string]metricsMap{
-		"localhost:9777": {
-			"foo/bar":        true,
-			"custom/metric1": true,
-		},
-		"localhost:9778": {
-			"hello/world":    true,
-			"custom/metric2": true,
-		},
-	}
-
-	if diff := cmp.Diff(precv.includeFilterMap, wantFilterMap); diff != "" {
-		t.Fatalf("Error parsing filtermap -got, +want, %v", diff)
 	}
 }
