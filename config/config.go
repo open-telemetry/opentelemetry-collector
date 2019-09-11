@@ -842,11 +842,11 @@ func validateProcessors(cfg *configmodels.Config) {
 	}
 }
 
-func expandEnvConfig(v *viper.Viper) {
-	for _, k := range v.AllKeys() {
-		nv, changed := expandStringValues(v.Get(k))
+func expandEnvConfig(vip *viper.Viper) {
+	for k, v := range vip.AllSettings() {
+		nv, changed := expandStringValues(v)
 		if changed {
-			v.Set(k, nv)
+			vip.Set(k, nv)
 		}
 	}
 }
@@ -862,21 +862,39 @@ func expandStringValues(value interface{}) (interface{}, bool) {
 		// Viper treats all the slices as []interface{} (at least in what the otelsvc tests).
 		changed := false
 		for i, vint := range v {
-			if vstr, ok := vint.(string); ok {
-				nvstr := os.ExpandEnv(vstr)
-				if vstr != nvstr {
-					v[i] = nvstr
-					changed = true
-				}
+			if nv, c := expandStringValues(vint); c {
+				v[i] = nv
+				changed = true
 			}
 		}
 		return v, changed
+	case map[string]interface{}:
+		nmap := make(map[string]interface{}, len(v))
+		// Viper treats all the maps as [string]interface{} (at least in what the otelsvc tests).
+		changed := false
+		for k, vint := range v {
+			nv, c := expandStringValues(vint)
+			nmap[k] = nv
+			changed = changed || c
+		}
+		fmt.Printf("Map formated %v %t\n", nmap, changed)
+		return nmap, changed
 	case []string:
 		changed := false
 		for i, vstr := range v {
 			nvstr := os.ExpandEnv(vstr)
 			if vstr != nvstr {
 				v[i] = nvstr
+				changed = true
+			}
+		}
+		return v, changed
+	case map[string]string:
+		changed := false
+		for k, vstr := range v {
+			nvstr := os.ExpandEnv(vstr)
+			if vstr != nvstr {
+				v[k] = nvstr
 				changed = true
 			}
 		}
