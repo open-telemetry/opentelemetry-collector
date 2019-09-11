@@ -76,8 +76,10 @@ func TestMetricsPieplineRecordedMetrics(t *testing.T) {
 
 func TestMakeComponentName(t *testing.T) {
 	const fakeType = "type"
-	const fakeName = "name"
+	const fakeName = "type/name"
 	const fakeComponentName = "type_name"
 	require.Equal(t, fakeType, observability.MakeComponentName(fakeType, ""))
+	require.Equal(t, fakeType, observability.MakeComponentName(fakeType, fakeType))
+	require.Equal(t, fakeType, observability.MakeComponentName(fakeType, "not_normalized_name"))
 	require.Equal(t, fakeComponentName, observability.MakeComponentName(fakeType, fakeName))
 }

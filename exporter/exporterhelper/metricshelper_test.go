@@ -33,7 +33,7 @@ import (
 const (
 	fakeMetricsReceiverName     = "fake_receiver"
 	fakeMetricsExporterType     = "fake_metrics_exporter"
-	fakeMetricsExporterName     = "with_name"
+	fakeMetricsExporterName     = "fake_metrics_exporter/with_name"
 	fakeMetricsExporterFullName = "fake_metrics_exporter_with_name"
 	fakeMetricsParentSpanName   = "fake_metrics_parent_span_name"
 )

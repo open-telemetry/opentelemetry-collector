@@ -93,8 +93,8 @@ const (
 	pipelinesKeyName = "pipelines"
 )
 
-// typeAndNameSeparator is the separator that is used between type and name in type/name composite keys.
-const typeAndNameSeparator = "/"
+// TypeAndNameSeparator is the separator that is used between type and name in type/name composite keys.
+const TypeAndNameSeparator = "/"
 
 // Factories struct holds in a single type all component factories that
 // can be handled by the Config.
@@ -176,7 +176,7 @@ func Load(
 // fullName is the key normalized such that type and name components have spaces trimmed.
 // The "type" part must be present, the forward slash and "name" are optional.
 func decodeTypeAndName(key string) (typeStr, fullName string, err error) {
-	items := strings.SplitN(key, typeAndNameSeparator, 2)
+	items := strings.SplitN(key, TypeAndNameSeparator, 2)
 
 	if len(items) >= 1 {
 		typeStr = strings.TrimSpace(items[0])
@@ -192,7 +192,7 @@ func decodeTypeAndName(key string) (typeStr, fullName string, err error) {
 		// "name" part is present.
 		nameSuffix = strings.TrimSpace(items[1])
 		if nameSuffix == "" {
-			err = errors.New("name part must be specified after " + typeAndNameSeparator + " in type/name key")
+			err = errors.New("name part must be specified after " + TypeAndNameSeparator + " in type/name key")
 			return
 		}
 	} else {
@@ -203,7 +203,7 @@ func decodeTypeAndName(key string) (typeStr, fullName string, err error) {
 	if nameSuffix == "" {
 		fullName = typeStr
 	} else {
-		fullName = typeStr + typeAndNameSeparator + nameSuffix
+		fullName = typeStr + TypeAndNameSeparator + nameSuffix
 	}
 
 	err = nil

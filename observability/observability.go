@@ -20,14 +20,15 @@ package observability
 
 import (
 	"context"
+	"strings"
 
-	"google.golang.org/grpc"
-
+	"github.com/open-telemetry/opentelemetry-service/config"
 	"go.opencensus.io/plugin/ocgrpc"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 	"go.opencensus.io/trace"
+	"google.golang.org/grpc"
 )
 
 var (
@@ -173,12 +174,19 @@ func RecordMetricsForMetricsExporter(ctx context.Context, receivedTimeSeries int
 }
 
 // MakeComponentName constructs the name of the component (for the moment receiver and exporter) that should be used for observability.
-// E.g. as a tag/metrics label or span name.
-func MakeComponentName(typeStr, name string) string {
-	if len(name) == 0 {
+// E.g. as a tag/metrics label or span name. The normalized fullName must use the format "typeStr/name", the result of this should be "typeStr_name".
+func MakeComponentName(typeStr, fullName string) string {
+	// The fullName is not normalized, use typeStr
+	if typeStr != fullName && !strings.HasPrefix(fullName, typeStr+config.TypeAndNameSeparator) {
 		return typeStr
 	}
-	return typeStr + "_" + name
+
+	// If no suffix then just return the typeStr.
+	if typeStr == fullName {
+		return typeStr
+	}
+
+	return typeStr + "_" + fullName[len(typeStr)+1:]
 }
 
 // GRPCServerWithObservabilityEnabled creates a gRPC server that at a bare minimum has

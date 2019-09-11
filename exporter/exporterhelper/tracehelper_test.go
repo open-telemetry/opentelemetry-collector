@@ -34,7 +34,7 @@ import (
 const (
 	fakeTraceReceiverName     = "fake_receiver_trace"
 	fakeTraceExporterType     = "fake_trace_exporter"
-	fakeTraceExporterName     = "with_name"
+	fakeTraceExporterName     = "fake_trace_exporter/with_name"
 	fakeTraceExporterFullName = "fake_trace_exporter_with_name"
 	fakeTraceParentSpanName   = "fake_trace_parent_span_name"
 )
