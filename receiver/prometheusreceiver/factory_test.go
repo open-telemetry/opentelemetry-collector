@@ -18,10 +18,10 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/config/configerror"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {

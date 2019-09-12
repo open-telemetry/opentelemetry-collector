@@ -23,12 +23,12 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/google/go-cmp/cmp"
 	model "github.com/jaegertracing/jaeger/model"
-	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
 	"github.com/stretchr/testify/assert"
 	"go.opencensus.io/trace"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/internal"
+	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
 )
 
 func TestOpenCensusToJaeger(t *testing.T) {

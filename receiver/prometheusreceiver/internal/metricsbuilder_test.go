@@ -21,11 +21,12 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/google/go-cmp/cmp"
-	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/pkg/textparse"
 	"github.com/prometheus/prometheus/scrape"
+
+	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
 )
 
 const startTs = int64(1555366610000)

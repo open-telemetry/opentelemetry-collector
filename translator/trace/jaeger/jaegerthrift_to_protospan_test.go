@@ -22,10 +22,10 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
-
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
+
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/internal/testutils"
 	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
