@@ -24,6 +24,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/compression"
+	"github.com/open-telemetry/opentelemetry-service/config/configgrpc"
 	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-service/internal/testutils"
 	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver"
@@ -39,7 +40,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateMetricsExporter(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = testutils.GetAvailableLocalAddress(t)
+	cfg.GRPCSettings.Endpoint = testutils.GetAvailableLocalAddress(t)
 
 	oexp, err := factory.CreateMetricsExporter(zap.NewNop(), cfg)
 	require.Nil(t, err)
@@ -74,79 +75,99 @@ func TestCreateTraceExporter(t *testing.T) {
 		{
 			name: "NoEndpoint",
 			config: Config{
-				Endpoint: "",
+				GRPCSettings: configgrpc.GRPCSettings{
+					Endpoint: "",
+				},
 			},
 			mustFail: true,
 		},
 		{
 			name: "UseSecure",
 			config: Config{
-				Endpoint:  rcvCfg.Endpoint,
-				UseSecure: true,
+				GRPCSettings: configgrpc.GRPCSettings{
+					Endpoint:  rcvCfg.Endpoint,
+					UseSecure: true,
+				},
 			},
 		},
 		{
 			name: "ReconnectionDelay",
 			config: Config{
-				Endpoint:          rcvCfg.Endpoint,
+				GRPCSettings: configgrpc.GRPCSettings{
+					Endpoint: rcvCfg.Endpoint,
+				},
 				ReconnectionDelay: 5 * time.Second,
 			},
 		},
 		{
 			name: "KeepaliveParameters",
 			config: Config{
-				Endpoint: rcvCfg.Endpoint,
-				KeepaliveParameters: &KeepaliveConfig{
-					Time:                30 * time.Second,
-					Timeout:             25 * time.Second,
-					PermitWithoutStream: true,
+				GRPCSettings: configgrpc.GRPCSettings{
+					Endpoint: rcvCfg.Endpoint,
+					KeepaliveParameters: &configgrpc.KeepaliveConfig{
+						Time:                30 * time.Second,
+						Timeout:             25 * time.Second,
+						PermitWithoutStream: true,
+					},
 				},
 			},
 		},
 		{
 			name: "Compression",
 			config: Config{
-				Endpoint:    rcvCfg.Endpoint,
-				Compression: compression.Gzip,
+				GRPCSettings: configgrpc.GRPCSettings{
+					Endpoint:    rcvCfg.Endpoint,
+					Compression: compression.Gzip,
+				},
 			},
 		},
 		{
 			name: "Headers",
 			config: Config{
-				Endpoint: rcvCfg.Endpoint,
-				Headers: map[string]string{
-					"hdr1": "val1",
-					"hdr2": "val2",
+				GRPCSettings: configgrpc.GRPCSettings{
+					Endpoint: rcvCfg.Endpoint,
+					Headers: map[string]string{
+						"hdr1": "val1",
+						"hdr2": "val2",
+					},
 				},
 			},
 		},
 		{
 			name: "NumWorkers",
 			config: Config{
-				Endpoint:   rcvCfg.Endpoint,
+				GRPCSettings: configgrpc.GRPCSettings{
+					Endpoint: rcvCfg.Endpoint,
+				},
 				NumWorkers: 3,
 			},
 		},
 		{
 			name: "CompressionError",
 			config: Config{
-				Endpoint:    rcvCfg.Endpoint,
-				Compression: "unknown compression",
+				GRPCSettings: configgrpc.GRPCSettings{
+					Endpoint:    rcvCfg.Endpoint,
+					Compression: "unknown compression",
+				},
 			},
 			mustFail: true,
 		},
 		{
 			name: "CertPemFile",
 			config: Config{
-				Endpoint:    rcvCfg.Endpoint,
-				CertPemFile: "testdata/test_cert.pem",
+				GRPCSettings: configgrpc.GRPCSettings{
+					Endpoint:    rcvCfg.Endpoint,
+					CertPemFile: "testdata/test_cert.pem",
+				},
 			},
 		},
 		{
 			name: "CertPemFileError",
 			config: Config{
-				Endpoint:    rcvCfg.Endpoint,
-				CertPemFile: "nosuchfile",
+				GRPCSettings: configgrpc.GRPCSettings{
+					Endpoint:    rcvCfg.Endpoint,
+					CertPemFile: "nosuchfile",
+				},
 			},
 			mustFail: true,
 		},

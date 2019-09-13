@@ -22,6 +22,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/config"
+	"github.com/open-telemetry/opentelemetry-service/config/configgrpc"
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/exporter/opencensusexporter"
 )
@@ -39,7 +40,9 @@ func TestExportersBuilder_Build(t *testing.T) {
 					NameVal: "opencensus",
 					TypeVal: "opencensus",
 				},
-				Endpoint: "0.0.0.0:12345",
+				GRPCSettings: configgrpc.GRPCSettings{
+					Endpoint: "0.0.0.0:12345",
+				},
 			},
 		},
 

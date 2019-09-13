@@ -17,6 +17,7 @@ package opencensusexporter
 import (
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-service/config/configgrpc"
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 )
 
@@ -24,33 +25,11 @@ import (
 type Config struct {
 	configmodels.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 
-	// The target to which the exporter is going to send traces or metrics,
-	// using the gRPC protocol. The valid syntax is described at
-	// https://github.com/grpc/grpc/blob/master/doc/naming.md.
-	Endpoint string `mapstructure:"endpoint"`
-
-	// The compression key for supported compression types within
-	// collector. Currently the only supported mode is `gzip`.
-	Compression string `mapstructure:"compression"`
-
-	// The headers associated with gRPC requests.
-	Headers map[string]string `mapstructure:"headers"`
+	configgrpc.GRPCSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 
 	// The number of workers that send the gRPC requests.
 	NumWorkers int `mapstructure:"num-workers"`
 
-	// certificate file for TLS credentials of gRPC client. Should
-	// only be used if `secure` is set to true.
-	CertPemFile string `mapstructure:"cert-pem-file"`
-
-	// Whether to enable client transport security for the exporter's gRPC
-	// connection. See [grpc.WithInsecure()](https://godoc.org/google.golang.org/grpc#WithInsecure).
-	UseSecure bool `mapstructure:"secure,omitempty"`
-
 	// The time period between each reconnection performed by the exporter.
 	ReconnectionDelay time.Duration `mapstructure:"reconnection-delay,omitempty"`
-
-	// The keepalive parameters for client gRPC. See grpc.WithKeepaliveParams
-	// (https://godoc.org/google.golang.org/grpc#WithKeepaliveParams).
-	KeepaliveParameters *KeepaliveConfig `mapstructure:"keepalive,omitempty"`
 }
