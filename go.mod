@@ -3,12 +3,16 @@ module github.com/open-telemetry/opentelemetry-service
 go 1.12
 
 require (
+	cloud.google.com/go v0.43.0 // indirect
 	contrib.go.opencensus.io/exporter/jaeger v0.1.1-0.20190430175949-e8b55949d948
 	contrib.go.opencensus.io/exporter/ocagent v0.6.0
 	contrib.go.opencensus.io/exporter/prometheus v0.1.0
 	contrib.go.opencensus.io/exporter/zipkin v0.1.1
 	contrib.go.opencensus.io/resource v0.1.2
+	github.com/VividCortex/gohistogram v1.0.0 // indirect
 	github.com/apache/thrift v0.0.0-20161221203622-b2a4d4ae21c7
+	github.com/aws/aws-sdk-go v1.22.1 // indirect
+	github.com/bmizerany/perks v0.0.0-20141205001514-d9a9656a3a4b // indirect
 	github.com/census-instrumentation/opencensus-proto v0.2.1
 	github.com/client9/misspell v0.3.4
 	github.com/go-kit/kit v0.9.0
@@ -18,12 +22,14 @@ require (
 	github.com/google/go-cmp v0.3.1
 	github.com/gorilla/mux v1.7.3
 	github.com/grpc-ecosystem/grpc-gateway v1.11.1
+	github.com/hashicorp/golang-lru v0.5.3 // indirect
 	github.com/jaegertracing/jaeger v1.9.0
 	github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024
-	github.com/open-telemetry/opentelemetry-service-contrib/exporter/stackdriverexporter v0.0.0-20190906015347-bc14ca6612f1
+	github.com/opentracing/opentracing-go v1.1.0 // indirect
 	github.com/openzipkin/zipkin-go v0.2.1
 	github.com/orijtech/prometheus-go-metrics-exporter v0.0.3-0.20190313163149-b321c5297f60
 	github.com/pkg/errors v0.8.1
+	github.com/prashantv/protectmem v0.0.0-20171002184600-e20412882b3a // indirect
 	github.com/prometheus/client_golang v0.9.3
 	github.com/prometheus/common v0.4.0
 	github.com/prometheus/procfs v0.0.0-20190507164030-5867b95ac084
@@ -33,15 +39,20 @@ require (
 	github.com/spf13/cast v1.3.0
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/viper v1.4.1-0.20190911140308-99520c81d86e
+	github.com/streadway/quantile v0.0.0-20150917103942-b0c588724d25 // indirect
 	github.com/stretchr/testify v1.4.0
+	github.com/uber-go/atomic v1.4.0 // indirect
+	github.com/uber/jaeger-client-go v2.16.0+incompatible // indirect
 	github.com/uber/jaeger-lib v2.0.0+incompatible
 	github.com/uber/tchannel-go v1.10.0
 	go.opencensus.io v0.22.1
 	go.uber.org/zap v1.10.0
 	golang.org/x/lint v0.0.0-20190409202823-959b441ac422
+	golang.org/x/net v0.0.0-20190724013045-ca1201d0de80 // indirect
 	golang.org/x/sys v0.0.0-20190804053845-51ab0e2deafa
 	golang.org/x/tools v0.0.0-20190906203814-12febf440ab1
 	google.golang.org/api v0.10.0
+	google.golang.org/genproto v0.0.0-20190801165951-fa694d86fc64 // indirect
 	google.golang.org/grpc v1.23.0
 	gopkg.in/yaml.v2 v2.2.2
 	honnef.co/go/tools v0.0.1-2019.2.3
