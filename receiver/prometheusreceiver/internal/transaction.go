@@ -140,6 +140,7 @@ func (tr *transaction) Commit() error {
 		return err
 	}
 	if tr.jobsMap != nil {
+		// Note: metrics could be empty after adjustment, which needs to be checked before passing it on to ConsumeMetricsData()
 		metrics = NewMetricsAdjuster(tr.jobsMap.get(tr.job, tr.instance), tr.logger).AdjustMetrics(metrics)
 	}
 	if len(metrics) > 0 {
