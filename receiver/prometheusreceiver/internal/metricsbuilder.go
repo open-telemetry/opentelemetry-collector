@@ -76,7 +76,7 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 		b.hasInternalMetric = true
 		lm := ls.Map()
 		delete(lm, model.MetricNameLabel)
-		b.logger.Infow("skip internal metric", "name", metricName, "ts", t, "value", v, "labels", lm)
+		b.logger.Debugw("skip internal metric", "name", metricName, "ts", t, "value", v, "labels", lm)
 		return nil
 	}
 
