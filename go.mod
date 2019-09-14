@@ -20,7 +20,7 @@ require (
 	github.com/gorilla/mux v1.6.2
 	github.com/grpc-ecosystem/grpc-gateway v1.9.4
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
-	github.com/jaegertracing/jaeger v1.9.0
+	github.com/jaegertracing/jaeger v1.14.0
 	github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024
 	github.com/opentracing/opentracing-go v1.1.0 // indirect
 	github.com/openzipkin/zipkin-go v0.1.6
@@ -45,6 +45,7 @@ require (
 	go.opencensus.io v0.22.0
 	go.uber.org/zap v1.10.0
 	golang.org/x/lint v0.0.0-20190409202823-959b441ac422
+	golang.org/x/sys v0.0.0-20190712062909-fae7ac547cb7
 	golang.org/x/tools v0.0.0-20190730215328-ed3277de2799
 	google.golang.org/api v0.7.0
 	google.golang.org/grpc v1.22.0
