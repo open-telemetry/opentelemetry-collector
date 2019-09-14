@@ -368,7 +368,7 @@ var ocBatches = []consumerdata.TraceData{
 				Attributes: &tracepb.Span_Attributes{
 					AttributeMap: map[string]*tracepb.AttributeValue{
 						"http.url": {
-							Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "http://127.0.0.1:15598/client_transactions"}},
+							Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "http://localhost:15598/client_transactions"}},
 						},
 						"peer.ipv4": {
 							Value: &tracepb.AttributeValue_IntValue{IntValue: 3224716605},

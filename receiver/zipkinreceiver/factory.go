@@ -31,7 +31,7 @@ const (
 	// The value of "type" key in configuration.
 	typeStr = "zipkin"
 
-	defaultBindEndpoint = "127.0.0.1:9411"
+	defaultBindEndpoint = "localhost:9411"
 )
 
 // Factory is the factory for Zipkin receiver.

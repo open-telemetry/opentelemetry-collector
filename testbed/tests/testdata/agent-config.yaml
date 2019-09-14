@@ -7,7 +7,7 @@ receivers:
 
 exporters:
   opencensus:
-    endpoint: "127.0.0.1:56565"
+    endpoint: "localhost:56565"
 
 processors:
   queued-retry:

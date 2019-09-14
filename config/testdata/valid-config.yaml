@@ -1,7 +1,7 @@
 receivers:
   examplereceiver:
   examplereceiver/myreceiver:
-    endpoint: "127.0.0.1:12345"
+    endpoint: "localhost:12345"
     extra: "some string"
   examplereceiver/disabled:
     disabled: true

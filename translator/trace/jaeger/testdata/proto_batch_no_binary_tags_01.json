@@ -66,7 +66,7 @@
       "tags": [
         {
           "key": "http.url",
-          "v_str": "http://127.0.0.1:15598/client_transactions"
+          "v_str": "http://localhost:15598/client_transactions"
         },
         {
           "key": "span.kind",

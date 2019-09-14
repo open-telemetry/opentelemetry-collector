@@ -46,7 +46,7 @@ func TestLoadConfig(t *testing.T) {
 				TypeVal: "zpages",
 				NameVal: "zpages/1",
 			},
-			Endpoint: "127.0.0.1:56888",
+			Endpoint: "localhost:56888",
 		},
 		ext1)
 

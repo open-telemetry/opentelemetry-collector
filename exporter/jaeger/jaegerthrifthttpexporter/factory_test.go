@@ -87,7 +87,7 @@ func TestFactory_CreateTraceExporter(t *testing.T) {
 					TypeVal: typeStr,
 					NameVal: typeStr,
 				},
-				URL: "127.0.0.1:123",
+				URL: "localhost:123",
 			},
 			wantErr: true,
 		},

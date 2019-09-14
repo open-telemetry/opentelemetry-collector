@@ -71,7 +71,7 @@
         {
           "key": "http.url",
           "vType": "STRING",
-          "vStr": "http://127.0.0.1:15598/client_transactions"
+          "vStr": "http://localhost:15598/client_transactions"
         },
         {
           "key": "span.kind",

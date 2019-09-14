@@ -99,7 +99,7 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 		ReceiverSettings: configmodels.ReceiverSettings{
 			TypeVal:  typeStr,
 			NameVal:  typeStr,
-			Endpoint: "127.0.0.1:9090",
+			Endpoint: "localhost:9090",
 		},
 	}
 }

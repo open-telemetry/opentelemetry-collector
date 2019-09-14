@@ -40,7 +40,7 @@
             "http.url": {
               "Value": {
                 "StringValue": {
-                  "value": "http://127.0.0.1:15598/client_transactions"
+                  "value": "http://localhost:15598/client_transactions"
                 }
               }
             },

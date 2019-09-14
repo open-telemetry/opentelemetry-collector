@@ -43,9 +43,9 @@ const (
 	protoThriftTChannel = "thrift-tchannel"
 
 	// Default endpoints to bind to.
-	defaultGRPCBindEndpoint     = "127.0.0.1:14250"
-	defaultHTTPBindEndpoint     = "127.0.0.1:14268"
-	defaultTChannelBindEndpoint = "127.0.0.1:14267"
+	defaultGRPCBindEndpoint     = "localhost:14250"
+	defaultHTTPBindEndpoint     = "localhost:14268"
+	defaultTChannelBindEndpoint = "localhost:14267"
 )
 
 // Factory is the factory for Jaeger receiver.

@@ -97,7 +97,7 @@ Build the Agent and start it with the example configuration:
 
 ```shell
 $ ./bin/$(go env GOOS)/otelsvc  --config ./examples/demo/otel-agent-config.yaml
-$ 2018/10/08 21:38:00 Running OpenTelemetry receiver as a gRPC service at "127.0.0.1:55678"
+$ 2018/10/08 21:38:00 Running OpenTelemetry receiver as a gRPC service at "localhost:55678"
 ```
 
 Create an Collector [configuration](#config) file based on the options
@@ -155,10 +155,10 @@ README.md](receiver/README.md).
 ```yaml
 receivers:
   opencensus:
-    address: "127.0.0.1:55678"
+    address: "localhost:55678"
 
   zipkin:
-    address: "127.0.0.1:9411"
+    address: "localhost:9411"
 
   jaeger:
     jaeger-thrift-tchannel-port: 14267
@@ -189,14 +189,14 @@ exporters:
     headers: {"X-test-header": "test-header"}
     compression: "gzip"
     cert-pem-file: "server_ca_public.pem" # optional to enable TLS
-    endpoint: "127.0.0.1:55678"
+    endpoint: "localhost:55678"
     reconnection-delay: 2s
 
   jaeger:
-    collector_endpoint: "http://127.0.0.1:14268/api/traces"
+    collector_endpoint: "http://localhost:14268/api/traces"
 
   zipkin:
-    endpoint: "http://127.0.0.1:9411/api/v2/spans"
+    endpoint: "http://localhost:9411/api/v2/spans"
 ```
 
 ### <a name="config-pipelines"></a>Pipelines
