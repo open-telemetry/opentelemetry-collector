@@ -1,7 +1,7 @@
 extensions:
   zpages:
   zpages/1:
-    endpoint: "127.0.0.1:56888"
+    endpoint: "localhost:56888"
 
 service:
   extensions: [zpages/1]

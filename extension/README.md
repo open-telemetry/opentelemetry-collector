@@ -53,10 +53,10 @@ extensions:
   # endpoint that can be used by the golang tool pprof to collect profiles.
   # The default values are listed below.
   pprof:
-    # The endpoint in which the pprof will be listening to. Use 127.0.0.1:<port>
+    # The endpoint in which the pprof will be listening to. Use localhost:<port>
     # to make it available only locally, or ":<port>" to make it available on
     # all network interfaces.
-    endpoint: 127.0.0.1:1777
+    endpoint: localhost:1777
     # Fraction of blocking events that are profiled. A value <= 0 disables
     # profiling. See https://golang.org/pkg/runtime/#SetBlockProfileRate for details.
     block-profile-fraction: 0
@@ -78,8 +78,8 @@ extensions:
   # to debug components of the service.
   zpages:
     # Specifies the HTTP endpoint is going to be opened to serve zPages.
-    # Use 127.0.0.1:<port> to make it available only locally, or ":<port>" to
+    # Use localhost:<port> to make it available only locally, or ":<port>" to
     # make it available on all network interfaces.
     # The default value is listed below.
-    endpoint: 127.0.0.1:55679
+    endpoint: localhost:55679
 ```

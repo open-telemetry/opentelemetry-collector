@@ -68,12 +68,16 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 
 func TestHealthCheckExtensionPortAlreadyInUse(t *testing.T) {
 	endpoint := testutils.GetAvailableLocalAddress(t)
-	ln, err := net.Listen("tcp", endpoint)
+	_, portStr, err := net.SplitHostPort(endpoint)
+	require.NoError(t, err)
+
+	// This needs to be ":port" because health checks also tries to connect to ":port".
+	// To avoid the pop-up "accept incoming network connections" health check should be changed
+	// to accept an address.
+	ln, err := net.Listen("tcp", ":"+portStr)
 	require.NoError(t, err)
 	defer ln.Close()
 
-	_, portStr, err := net.SplitHostPort(endpoint)
-	require.NoError(t, err)
 	port, err := strconv.Atoi(portStr)
 	require.NoError(t, err)
 

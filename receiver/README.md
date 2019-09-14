@@ -34,7 +34,7 @@ receivers:
     # <setting one>: <value one>
     disabled: false
     # <setting two>: <value two>
-    endpoint: 127.0.0.1:9211
+    endpoint: localhost:9211
 ```
 
 A receiver instance is referenced by its full name in other parts of the config,
@@ -137,7 +137,7 @@ receivers:
         tls-credentials:
           key-file: /key.pem # path to private key
           cert-file: /cert.pem # path to certificate
-        endpoint: "127.0.0.1:9876"
+        endpoint: "localhost:9876"
 ``` 
 ## <a name="prometheus"></a>Prometheus Receiver
 **Only metrics are supported.**
@@ -211,7 +211,7 @@ For example:
 ```yaml
 receivers:
   zipkin:
-    address: "127.0.0.1:9411"
+    address: "localhost:9411"
 ```
 
 ## Common Configuration Errors

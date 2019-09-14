@@ -1,6 +1,6 @@
 receivers:
   examplereceiver:
-    endpoint: "127.0.0.1:1234"
+    endpoint: "localhost:1234"
     extra: "some receiver string"
     extra_map:
       recv.1: "some receiver map value_1"

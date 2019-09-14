@@ -78,7 +78,7 @@ func TestCreateNoPort(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
-	rCfg.Protocols[protoThriftHTTP].Endpoint = "127.0.0.1:"
+	rCfg.Protocols[protoThriftHTTP].Endpoint = "localhost:"
 	_, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
 	assert.Error(t, err, "receiver creation with no port number must fail")
 }
@@ -88,7 +88,7 @@ func TestCreateLargePort(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
-	rCfg.Protocols[protoThriftHTTP].Endpoint = "127.0.0.1:65536"
+	rCfg.Protocols[protoThriftHTTP].Endpoint = "localhost:65536"
 	_, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
 	assert.Error(t, err, "receiver creation with too large port number must fail")
 }

@@ -10,7 +10,7 @@ receivers:
   jaeger/customname:
     protocols:
       grpc:
-        endpoint: "127.0.0.1:9876"
+        endpoint: "localhost:9876"
       thrift-http:
         endpoint: ":3456"
       thrift-tchannel:
@@ -41,7 +41,7 @@ receivers:
         tls-credentials:
           cert-file: /test.crt
           key-file: /test.key
-        endpoint: "127.0.0.1:9876"
+        endpoint: "localhost:9876"
       thrift-http:
         endpoint: ":3456"
       thrift-tchannel:

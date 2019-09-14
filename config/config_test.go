@@ -64,7 +64,7 @@ func TestDecodeConfig(t *testing.T) {
 			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal:  "examplereceiver",
 				NameVal:  "examplereceiver/myreceiver",
-				Endpoint: "127.0.0.1:12345",
+				Endpoint: "localhost:12345",
 			},
 			ExtraSetting: "some string",
 		},
@@ -230,7 +230,7 @@ func TestSimpleConfig(t *testing.T) {
 				ReceiverSettings: configmodels.ReceiverSettings{
 					TypeVal:  "examplereceiver",
 					NameVal:  "examplereceiver",
-					Endpoint: "127.0.0.1:1234",
+					Endpoint: "localhost:1234",
 				},
 				ExtraSetting:     receiverExtra,
 				ExtraMapSetting:  map[string]string{"recv.1": receiverExtraMapValue + "_1", "recv.2": receiverExtraMapValue + "_2"},
@@ -327,7 +327,7 @@ func TestDecodeConfig_MultiProto(t *testing.T) {
 			NameVal: "multireceiver/myreceiver",
 			Protocols: map[string]MultiProtoReceiverOneCfg{
 				"http": {
-					Endpoint:     "127.0.0.1:12345",
+					Endpoint:     "localhost:12345",
 					ExtraSetting: "some string 1",
 				},
 				"tcp": {

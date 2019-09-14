@@ -342,7 +342,7 @@ func (sa *metricAppender) ConsumeMetricsData(ctx context.Context, md consumerdat
 }
 
 func ocReceiverOnGRPCServer(t *testing.T, sr consumer.MetricsConsumer, opts ...Option) (oci *Receiver, port int, done func()) {
-	ln, err := net.Listen("tcp", ":0")
+	ln, err := net.Listen("tcp", "localhost:")
 	if err != nil {
 		t.Fatalf("Failed to find an available address to run the gRPC server: %v", err)
 	}

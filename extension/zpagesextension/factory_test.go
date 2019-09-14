@@ -39,7 +39,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 			NameVal: typeStr,
 			TypeVal: typeStr,
 		},
-		Endpoint: "127.0.0.1:55679",
+		Endpoint: "localhost:55679",
 	},
 		cfg)
 

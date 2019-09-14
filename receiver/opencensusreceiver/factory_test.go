@@ -80,7 +80,7 @@ func TestCreateTraceReceiver(t *testing.T) {
 					ReceiverSettings: configmodels.ReceiverSettings{
 						TypeVal:  typeStr,
 						NameVal:  typeStr,
-						Endpoint: "127.0.0.1:112233",
+						Endpoint: "localhost:112233",
 					},
 				},
 			},
