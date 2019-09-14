@@ -136,18 +136,21 @@ func ocNodeAndResourceToJaegerProcess(node *commonpb.Node, resource *resourcepb.
 	if resource != nil {
 		resourceType := resource.GetType()
 		if resourceType != "" {
-			jTags = append(jTags, &jaeger.Tag{
+			resourceTypeTag := &jaeger.Tag{
 				Key:   opencensusResourceType,
 				VType: jaeger.TagType_STRING,
 				VStr:  &resourceType,
-			})
+			}
+			jTags = append(jTags, resourceTypeTag)
 		}
 		for k, v := range resource.GetLabels() {
-			jTags = append(jTags, &jaeger.Tag{
+			str := v
+			resourceTag := &jaeger.Tag{
 				Key:   k,
 				VType: jaeger.TagType_STRING,
-				VStr:  &v,
-			})
+				VStr:  &str,
+			}
+			jTags = append(jTags, resourceTag)
 		}
 	}
 
