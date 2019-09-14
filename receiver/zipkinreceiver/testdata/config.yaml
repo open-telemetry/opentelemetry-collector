@@ -1,7 +1,7 @@
 receivers:
   zipkin:
   zipkin/customname:
-    endpoint: "127.0.0.1:8765"
+    endpoint: "localhost:8765"
 
 processors:
   exampleprocessor:

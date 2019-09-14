@@ -19,12 +19,12 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/orijtech/prometheus-go-metrics-exporter"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/config/configerror"
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
-	"github.com/orijtech/prometheus-go-metrics-exporter"
 )
 
 const (

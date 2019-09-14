@@ -39,7 +39,7 @@ func GenerateNormalizedJSON(j string) string {
 // provided that there is no race by some other code to grab the same port
 // immediately.
 func GetAvailableLocalAddress(t *testing.T) string {
-	ln, err := net.Listen("tcp", ":0")
+	ln, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
 		t.Fatalf("failed to get a free local port: %v", err)
 	}

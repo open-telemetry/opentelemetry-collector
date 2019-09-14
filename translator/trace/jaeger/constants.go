@@ -31,6 +31,7 @@ const (
 	opencensusLanguage               = "opencensus.language"
 	opencensusExporterVersion        = "opencensus.exporterversion"
 	opencensusCoreLibVersion         = "opencensus.corelibversion"
+	opencensusResourceType           = "opencensus.resourcetype"
 )
 
 var (

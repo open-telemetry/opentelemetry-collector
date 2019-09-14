@@ -151,7 +151,7 @@ func TestNew(t *testing.T) {
 }
 
 func TestZipkinReceiverPortAlreadyInUse(t *testing.T) {
-	l, err := net.Listen("tcp", ":0")
+	l, err := net.Listen("tcp", "localhost:")
 	if err != nil {
 		t.Fatalf("failed to open a port: %v", err)
 	}
@@ -160,7 +160,7 @@ func TestZipkinReceiverPortAlreadyInUse(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to split listener address: %v", err)
 	}
-	traceReceiver, err := New(":"+portStr, exportertest.NewNopTraceExporter())
+	traceReceiver, err := New("localhost:"+portStr, exportertest.NewNopTraceExporter())
 	if err != nil {
 		t.Fatalf("Failed to create receiver: %v", err)
 	}
@@ -543,7 +543,7 @@ func TestStartTraceReception(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(exportertest.SinkTraceExporter)
-			zr, err := New("127.0.0.1:0", sink)
+			zr, err := New("localhost:0", sink)
 			require.Nil(t, err)
 			require.NotNil(t, zr)
 

@@ -29,19 +29,19 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/protobuf/proto"
-	"google.golang.org/grpc"
-
 	"contrib.go.opencensus.io/exporter/ocagent"
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/golang/protobuf/proto"
+	"go.opencensus.io/trace"
+	"go.opencensus.io/trace/tracestate"
+	"google.golang.org/grpc"
+
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/internal"
 	"github.com/open-telemetry/opentelemetry-service/observability"
-	"go.opencensus.io/trace"
-	"go.opencensus.io/trace/tracestate"
 )
 
 func TestReceiver_endToEnd(t *testing.T) {
@@ -475,7 +475,7 @@ func (sa *spanAppender) ConsumeTraceData(ctx context.Context, td consumerdata.Tr
 }
 
 func ocReceiverOnGRPCServer(t *testing.T, sr consumer.TraceConsumer, opts ...Option) (oci *Receiver, port int, done func()) {
-	ln, err := net.Listen("tcp", ":0")
+	ln, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
 		t.Fatalf("Failed to find an available address to run the gRPC server: %v", err)
 	}

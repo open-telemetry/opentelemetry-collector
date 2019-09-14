@@ -18,14 +18,39 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 )
 
-// Config specifies the set of attributes to be inserted, updated, upserted and deleted.
+// Config specifies the set of attributes to be inserted, updated, upserted and
+// deleted and the properties to include/exclude a span from being processed.
 // This processor handles all forms of modifications to attributes within a span.
+// Prior to any actions being applied, each span is compared against
+// the include properties and then the exclude properties if they are specified.
+// This determines if a span is to be processed or not.
 // The list of actions is applied in order specified in the configuration.
 type Config struct {
 	configmodels.ProcessorSettings `mapstructure:",squash"`
 
+	// Include specifies the set of span properties that must be present in order
+	// for this processor to apply to it.
+	// Note: If `exclude` is specified, the span is compared against those
+	// properties after the `include` properties.
+	// This is an optional field. If neither `include` and `exclude` are set, all spans
+	// are processed. If `include` is set and `exclude` isn't set, then all
+	// spans matching the properties in this structure are processed.
+	Include MatchProperties `mapstructure:"include"`
+
+	// Exclude specifies when this processor will not be applied to the Spans
+	// which match the specified properties.
+	// Note: The `exclude` properties are checked after the `include` properties,
+	// if they exist, are checked.
+	// If `include` isn't specified, the `exclude` properties are checked against
+	// all spans.
+	// This is an optional field. If neither `include` and `exclude` are set, all spans
+	// are processed. If `exclude` is set and `include` isn't set, then all
+	// spans  that do no match the properties in this structure are processed.
+	Exclude MatchProperties `mapstructure:"exclude"`
+
 	// Actions specifies the list of attributes to act on.
 	// The set of actions are {INSERT, UPDATE, UPSERT, DELETE}.
+	// This is a required field.
 	Actions []ActionKeyValue `mapstructure:"actions"`
 }
 
@@ -85,3 +110,49 @@ const (
 	//no action is performed.
 	DELETE Action = "delete"
 )
+
+// MatchProperties specifies the set of properties in a span to match against
+// and if the span should be included or excluded from the processor.
+// At least one of services or attributes must be specified. It is supported
+// to have both specified, but this requires all of the properties to match
+// for the inclusion/exclusion to occur.
+// The following are examples of invalid configurations:
+//  attributes/bad1:
+//    # This is invalid because include is specified with neither services or
+//    # attributes.
+//    include:
+//    actions: ...
+//
+//  attributes/bad2:
+//    exclude:
+//    	# This is invalid because services and attributes have empty values.
+//      services:
+//      attributes:
+//    actions: ...
+// Please refer to testdata/config.yaml for valid configurations.
+type MatchProperties struct {
+
+	// Services specify the list of service name to match against.
+	// A match occurs if the span service name is in this list.
+	// Note: This is an optional field. However, one of services or
+	// attributes must be specified with a non empty value for a valid
+	// configuration.
+	Services []string `mapstructure:"services"`
+
+	// Attributes specifies the list of attributes to match against.
+	// All of these attributes must match exactly for a match to occur.
+	// Note: This is an optional field. However, one of services or
+	// attributes must be specified with a non empty value for a valid
+	// configuration.
+	Attributes []Attribute `mapstructure:"attributes"`
+}
+
+// Attribute specifies the attribute key and optional value to match against.
+type Attribute struct {
+	// Key specifies the attribute key.
+	Key string `mapstructure:"key"`
+
+	// Values specifies the value to match against.
+	// If it is not set, any value will match.
+	Value interface{} `mapstructure:"value"`
+}

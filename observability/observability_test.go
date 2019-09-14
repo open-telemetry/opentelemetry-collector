@@ -20,9 +20,10 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/open-telemetry/opentelemetry-service/observability"
 	"github.com/open-telemetry/opentelemetry-service/observability/observabilitytest"
-	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -72,12 +73,4 @@ func TestMetricsPieplineRecordedMetrics(t *testing.T) {
 
 	err = observabilitytest.CheckValueViewExporterDroppedTimeSeries(receiverName, exporterName, 23)
 	require.Nil(t, err, "When check exporter dropped timeseries")
-}
-
-func TestMakeComponentName(t *testing.T) {
-	const fakeType = "type"
-	const fakeName = "name"
-	const fakeComponentName = "type_name"
-	require.Equal(t, fakeType, observability.MakeComponentName(fakeType, ""))
-	require.Equal(t, fakeComponentName, observability.MakeComponentName(fakeType, fakeName))
 }

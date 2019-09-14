@@ -3,7 +3,7 @@ receivers:
   multireceiver/myreceiver:
     protocols:
       http:
-        endpoint: "127.0.0.1:12345"
+        endpoint: "localhost:12345"
         extra: "some string 1"
       tcp:
         endpoint: "0.0.0.0:4567"

@@ -17,12 +17,12 @@ package exporterhelper
 import (
 	"context"
 
-	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-service/observability"
 	"go.opencensus.io/trace"
 
+	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
+	"github.com/open-telemetry/opentelemetry-service/observability"
 )
 
 // PushMetricsData is a helper function that is similar to ConsumeMetricsData but also returns
@@ -56,8 +56,6 @@ func NewMetricsExporter(config configmodels.Exporter, pushMetricsData PushMetric
 		return nil, errNilConfig
 	}
 
-	exporterFullName := observability.MakeComponentName(config.Type(), config.Name())
-
 	if pushMetricsData == nil {
 		return nil, errNilPushMetricsData
 	}
@@ -68,7 +66,7 @@ func NewMetricsExporter(config configmodels.Exporter, pushMetricsData PushMetric
 	}
 
 	if opts.recordTrace {
-		pushMetricsData = pushMetricsDataWithSpan(pushMetricsData, exporterFullName+".ExportMetricsData")
+		pushMetricsData = pushMetricsDataWithSpan(pushMetricsData, config.Name()+".ExportMetricsData")
 	}
 
 	// The default shutdown method always returns nil.
@@ -77,7 +75,7 @@ func NewMetricsExporter(config configmodels.Exporter, pushMetricsData PushMetric
 	}
 
 	return &metricsExporter{
-		exporterFullName: exporterFullName,
+		exporterFullName: config.Name(),
 		pushMetricsData:  pushMetricsData,
 		shutdown:         opts.shutdown,
 	}, nil

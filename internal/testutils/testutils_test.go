@@ -30,7 +30,7 @@ func TestGetAvailablePort(t *testing.T) {
 	portStr := strconv.Itoa(int(GetAvailablePort(t)))
 	require.NotEqual(t, "", portStr)
 
-	testEndpointAvailable(t, "127.0.0.1:"+portStr)
+	testEndpointAvailable(t, "localhost:"+portStr)
 }
 
 func testEndpointAvailable(t *testing.T, endpoint string) {

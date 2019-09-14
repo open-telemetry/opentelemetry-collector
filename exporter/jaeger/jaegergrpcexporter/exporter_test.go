@@ -38,7 +38,7 @@ func TestNew(t *testing.T) {
 			name: "empty_exporterName",
 			args: args{
 				config:            nil,
-				collectorEndpoint: "127.0.0.1:55678",
+				collectorEndpoint: "localhost:55678",
 			},
 			wantErr: true,
 		},

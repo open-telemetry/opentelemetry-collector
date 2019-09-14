@@ -46,6 +46,16 @@
         "key": "a.binary",
         "vType": "STRING",
         "vStr": "AQIDBAMCAQ=="
+      },
+      {
+        "key": "resource_key1",
+        "vType": "STRING",
+        "vStr": "resource_val1"
+      },
+      {
+        "key": "opencensus.resourcetype",
+        "vType": "STRING",
+        "vStr": "k8s.io/container"
       }
     ]
   },
@@ -61,7 +71,7 @@
         {
           "key": "http.url",
           "vType": "STRING",
-          "vStr": "http://127.0.0.1:15598/client_transactions"
+          "vStr": "http://localhost:15598/client_transactions"
         },
         {
           "key": "span.kind",

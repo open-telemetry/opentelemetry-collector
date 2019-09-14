@@ -23,7 +23,7 @@ type Config struct {
 	configmodels.ExtensionSettings `mapstructure:",squash"`
 
 	// Endpoint is the address and port in which the zPages will be listening to.
-	// Use 127.0.0.1:<port> to make it available only locally, or ":<port>" to
+	// Use localhost:<port> to make it available only locally, or ":<port>" to
 	// make it available on all network interfaces.
 	Endpoint string `mapstructure:"endpoint"`
 }

@@ -47,7 +47,7 @@ func (f *Factory) CreateDefaultConfig() configmodels.Extension {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		Endpoint: "127.0.0.1:1777",
+		Endpoint: "localhost:1777",
 	}
 }
 

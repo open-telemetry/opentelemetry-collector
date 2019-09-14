@@ -31,11 +31,10 @@ import (
 )
 
 const (
-	fakeMetricsReceiverName     = "fake_receiver"
-	fakeMetricsExporterType     = "fake_metrics_exporter"
-	fakeMetricsExporterName     = "with_name"
-	fakeMetricsExporterFullName = "fake_metrics_exporter_with_name"
-	fakeMetricsParentSpanName   = "fake_metrics_parent_span_name"
+	fakeMetricsReceiverName   = "fake_receiver"
+	fakeMetricsExporterType   = "fake_metrics_exporter"
+	fakeMetricsExporterName   = "fake_metrics_exporter/with_name"
+	fakeMetricsParentSpanName = "fake_metrics_parent_span_name"
 )
 
 var (
@@ -171,10 +170,10 @@ func checkRecordedMetricsForMetricsExporter(t *testing.T, me exporter.MetricsExp
 		require.Equal(t, wantError, me.ConsumeMetricsData(ctx, md))
 	}
 
-	err := observabilitytest.CheckValueViewExporterReceivedTimeSeries(fakeMetricsReceiverName, fakeMetricsExporterFullName, numBatches*NumTimeSeries(md))
+	err := observabilitytest.CheckValueViewExporterReceivedTimeSeries(fakeMetricsReceiverName, fakeMetricsExporterName, numBatches*NumTimeSeries(md))
 	require.Nilf(t, err, "CheckValueViewExporterTimeSeries: Want nil Got %v", err)
 
-	err = observabilitytest.CheckValueViewExporterDroppedTimeSeries(fakeMetricsReceiverName, fakeMetricsExporterFullName, numBatches*droppedTimeSeries)
+	err = observabilitytest.CheckValueViewExporterDroppedTimeSeries(fakeMetricsReceiverName, fakeMetricsExporterName, numBatches*droppedTimeSeries)
 	require.Nilf(t, err, "CheckValueViewExporterTimeSeries: Want nil Got %v", err)
 }
 

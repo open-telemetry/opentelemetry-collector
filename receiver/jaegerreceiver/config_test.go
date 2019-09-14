@@ -52,7 +52,7 @@ func TestLoadConfig(t *testing.T) {
 			Protocols: map[string]*receiver.SecureReceiverSettings{
 				"grpc": {
 					ReceiverSettings: configmodels.ReceiverSettings{
-						Endpoint: "127.0.0.1:9876",
+						Endpoint: "localhost:9876",
 					},
 				},
 				"thrift-http": {
@@ -77,7 +77,7 @@ func TestLoadConfig(t *testing.T) {
 			Protocols: map[string]*receiver.SecureReceiverSettings{
 				"grpc": {
 					ReceiverSettings: configmodels.ReceiverSettings{
-						Endpoint: "127.0.0.1:9876",
+						Endpoint: "localhost:9876",
 					},
 					TLSCredentials: &receiver.TLSCredentials{
 						CertFile: "/test.crt",

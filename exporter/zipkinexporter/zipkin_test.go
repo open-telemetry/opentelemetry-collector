@@ -26,12 +26,13 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
 
-	"github.com/open-telemetry/opentelemetry-service/internal/config/viperutils"
+	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/internal/testutils"
 	"github.com/open-telemetry/opentelemetry-service/processor"
 	"github.com/open-telemetry/opentelemetry-service/receiver/receivertest"
@@ -124,7 +125,7 @@ func TestZipkinEndpointFromNode(t *testing.T) {
 //          "7::80:807f"
 //
 // The rest of the fields should match up exactly
-func TestZipkinExportersFromViper_roundtripJSON(t *testing.T) {
+func TestZipkinExporter_roundtripJSON(t *testing.T) {
 	buf := new(bytes.Buffer)
 	cst := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		io.Copy(buf, r.Body)
@@ -132,32 +133,18 @@ func TestZipkinExportersFromViper_roundtripJSON(t *testing.T) {
 	}))
 	defer cst.Close()
 
-	config := `
-zipkin:
-  upload_period: 1ms
-  endpoint: ` + cst.URL
-	v, _ := viperutils.ViperFromYAMLBytes([]byte(config))
-	tes, _, doneFns, err := ZipkinExportersFromViper(v)
-	if len(tes) == 0 || err != nil {
-		t.Fatalf("Failed to parse out exporters: %v", err)
-	}
-	defer func() {
-		for _, fn := range doneFns {
-			fn()
-		}
-	}()
-
-	if g, w := len(tes), 1; g != w {
-		t.Errorf("Number of trace exporters: Got %d Want %d", g, w)
+	tes, err := newZipkinExporter(cst.URL, "", time.Millisecond)
+	if err != nil {
+		t.Fatalf("Failed to create a new Zipkin receiver: %v", err)
 	}
 
 	// The test requires the spans from zipkinSpansJSONJavaLibrary to be sent in a single batch, use
 	// a mock to ensure that this happens as intended.
 	mzr := newMockZipkinReporter(cst.URL)
-	tes[0].(*zipkinExporter).reporter = mzr
+	tes.reporter = mzr
 
 	// Run the Zipkin receiver to "receive spans upload from a client application"
-	zexp := processor.NewTraceFanOutConnector(tes)
+	zexp := processor.NewTraceFanOutConnector([]consumer.TraceConsumer{tes})
 	zi, err := zipkinreceiver.New(":0", zexp)
 	if err != nil {
 		t.Fatalf("Failed to create a new Zipkin receiver: %v", err)

@@ -99,7 +99,7 @@ lint:
 
 .PHONY: goimports
 goimports:
-	@IMPORTSOUT=`$(GOIMPORTS) -d . 2>&1`; \
+	@IMPORTSOUT=`$(GOIMPORTS) -local github.com/open-telemetry/opentelemetry-service -d . 2>&1`; \
 	if [ "$$IMPORTSOUT" ]; then \
 		echo "$(GOIMPORTS) FAILED => fix the following goimports errors:\n"; \
 		echo "$$IMPORTSOUT\n"; \

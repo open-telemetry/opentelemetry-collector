@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/google/go-cmp/cmp"
@@ -351,6 +352,10 @@ var ocBatches = []consumerdata.TraceData{
 				"ip":       "10.53.69.61",
 			},
 		},
+		Resource: &resourcepb.Resource{
+			Type:   "k8s.io/container",
+			Labels: map[string]string{"resource_key1": "resource_val1"},
+		},
 		Spans: []*tracepb.Span{
 			{
 				TraceId:      []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x52, 0x96, 0x9A, 0x89, 0x55, 0x57, 0x1A, 0x3F},
@@ -363,7 +368,7 @@ var ocBatches = []consumerdata.TraceData{
 				Attributes: &tracepb.Span_Attributes{
 					AttributeMap: map[string]*tracepb.AttributeValue{
 						"http.url": {
-							Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "http://127.0.0.1:15598/client_transactions"}},
+							Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "http://localhost:15598/client_transactions"}},
 						},
 						"peer.ipv4": {
 							Value: &tracepb.AttributeValue_IntValue{IntValue: 3224716605},

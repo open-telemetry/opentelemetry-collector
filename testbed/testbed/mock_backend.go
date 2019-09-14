@@ -94,7 +94,7 @@ func (mb *MockBackend) Start(backendType BackendType) error {
 
 	switch backendType {
 	case BackendOC:
-		addr := "127.0.0.1:56565"
+		addr := "localhost:56565"
 		mb.ocReceiver, err = opencensusreceiver.New(addr, mb.tc, mb.mc)
 		if err != nil {
 			return err

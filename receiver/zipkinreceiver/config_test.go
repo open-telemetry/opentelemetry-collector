@@ -47,7 +47,7 @@ func TestLoadConfig(t *testing.T) {
 			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal:  typeStr,
 				NameVal:  "zipkin/customname",
-				Endpoint: "127.0.0.1:8765",
+				Endpoint: "localhost:8765",
 			},
 		})
 }
