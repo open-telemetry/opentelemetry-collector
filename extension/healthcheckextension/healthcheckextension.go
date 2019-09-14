@@ -20,14 +20,14 @@ import (
 	"strconv"
 
 	"github.com/jaegertracing/jaeger/pkg/healthcheck"
-	"go.uber.org/zap"
 	"github.com/open-telemetry/opentelemetry-service/extension"
+	"go.uber.org/zap"
 )
 
 type healthCheckExtension struct {
 	config Config
 	logger *zap.Logger
-	state *healthcheck.HealthCheck
+	state  *healthcheck.HealthCheck
 	server http.Server
 }
 
@@ -76,7 +76,7 @@ func newServer(config Config, logger *zap.Logger) (*healthCheckExtension, error)
 	hc := &healthCheckExtension{
 		config: config,
 		logger: logger,
-		state: healthcheck.New(),
+		state:  healthcheck.New(),
 		server: http.Server{},
 	}
 

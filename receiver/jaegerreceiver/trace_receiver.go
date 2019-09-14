@@ -75,7 +75,7 @@ type jReceiver struct {
 	agent *agentapp.Agent
 
 	grpc            *grpc.Server
-	tchannelServer	*jTchannelReceiver
+	tchannelServer  *jTchannelReceiver
 	collectorServer *http.Server
 
 	defaultAgentCtx context.Context
@@ -84,7 +84,7 @@ type jReceiver struct {
 type jTchannelReceiver struct {
 	nextConsumer consumer.TraceConsumer
 
-	tchannel        *tchannel.Channel
+	tchannel *tchannel.Channel
 }
 
 const (
@@ -112,7 +112,7 @@ func New(ctx context.Context, config *Configuration, nextConsumer consumer.Trace
 		config:          config,
 		defaultAgentCtx: observability.ContextWithReceiverName(context.Background(), "jaeger-agent"),
 		nextConsumer:    nextConsumer,
-		tchannelServer:  &jTchannelReceiver{
+		tchannelServer: &jTchannelReceiver{
 			nextConsumer: nextConsumer,
 		},
 	}, nil
