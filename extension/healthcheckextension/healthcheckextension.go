@@ -20,8 +20,9 @@ import (
 	"strconv"
 
 	"github.com/jaegertracing/jaeger/pkg/healthcheck"
-	"github.com/open-telemetry/opentelemetry-service/extension"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-service/extension"
 )
 
 type healthCheckExtension struct {
