@@ -1,19 +1,19 @@
-# OpenTelemetry Service Architecture
+# OpenTelemetry Collector Architecture
 
 This document describes the architecture design and implementation of
-OpenTelemetry Service.
+OpenTelemetry Collector.
 
 ## Summary
 
-OpenTelemetry Service is an executable that allows to receive telemetry data, optionally transform it and send the data further.
+OpenTelemetry Collector is an executable that allows to receive telemetry data, optionally transform it and send the data further.
 
-The Service supports several popular open-source protocols for telemetry data receiving and sending as well as offering a pluggable architecture for adding more protocols.
+The Collector supports several popular open-source protocols for telemetry data receiving and sending as well as offering a pluggable architecture for adding more protocols.
 
-Data receiving, transformation and sending is done using Pipelines. The Service can be configured to have one or more Pipelines. Each Pipeline includes a set of Receivers that receive the data, a series of optional Processors that get the data from receivers and transform it and a set of Exporters which get the data from the Processors and send it further outside the Service. The same receiver can feed data to multiple Pipelines and multiple pipelines can feed data into the same Exporter.
+Data receiving, transformation and sending is done using Pipelines. The Collector can be configured to have one or more Pipelines. Each Pipeline includes a set of Receivers that receive the data, a series of optional Processors that get the data from receivers and transform it and a set of Exporters which get the data from the Processors and send it further outside the Collector. The same receiver can feed data to multiple Pipelines and multiple pipelines can feed data into the same Exporter.
 
 ## Pipelines
 
-Pipeline defines a path the data follows in the Service starting from reception, then further processing or modification and finally exiting the Service via exporters.
+Pipeline defines a path the data follows in the Collector starting from reception, then further processing or modification and finally exiting the Collector via exporters.
 
 Pipelines can operate on 2 telemetry data types: traces and metrics. The data type is a property of the pipeline defined by its configuration. Receivers, exporters and processors used in a pipeline must support the particular data type otherwise `ErrDataTypeIsNotSupported` will be reported when the configuration is loaded. A pipeline can be depicted the following way:
 
@@ -21,7 +21,7 @@ Pipelines can operate on 2 telemetry data types: traces and metrics. The data ty
 
 There can be one or more receivers in a pipeline. Data from all receivers is pushed to the first processor, which performs a processing on it and then pushes it to the next processor (or it may drop the data, e.g. if it is a “sampling” processor) and so on until the last processor in the pipeline pushes the data to the exporters. Each exporter gets a copy of each data element. The last processor uses a `FanOutConnector` to fan out the data to multiple exporters.
 
-The pipeline is constructed during Service startup based on pipeline definition in the config file.
+The pipeline is constructed during Collector startup based on pipeline definition in the config file.
 
 A pipeline configuration typically looks like this:
 
@@ -59,11 +59,11 @@ pipelines:
 
 In the above example “opencensus” receiver will send the same data to pipeline “traces” and to pipeline “traces/2”. (Note: the configuration uses composite key names in the form of `type[/name]` as defined in this [this document](https://docs.google.com/document/d/1GWOzV0H0RTN1adiwo7fTmkjfCATDDFGuOB4jp3ldCc8/edit#)).
 
-When the Service loads this config the result will look like this (part of processors and exporters are omitted from the diagram for brevity):
+When the Collector loads this config the result will look like this (part of processors and exporters are omitted from the diagram for brevity):
 
 ![Receivers](images/design-receivers.png)
 
-Important: when the same receiver is referenced in more than one pipeline the Service will create only one receiver instance at runtime that will send the data to `FanOutConnector` which in turn will send the data to the first processor of each pipeline. The data propagation from receiver to `FanOutConnector` and then to processors is via synchronous function call. This means that if one processor blocks the call the other pipelines that are attached to this receiver will be blocked from receiving the same data and the receiver itself will stop processing and forwarding newly received data.
+Important: when the same receiver is referenced in more than one pipeline the Collector will create only one receiver instance at runtime that will send the data to `FanOutConnector` which in turn will send the data to the first processor of each pipeline. The data propagation from receiver to `FanOutConnector` and then to processors is via synchronous function call. This means that if one processor blocks the call the other pipelines that are attached to this receiver will be blocked from receiving the same data and the receiver itself will stop processing and forwarding newly received data.
 
 ### Exporters
 
@@ -99,7 +99,7 @@ pipelines:
     exporters: [jaeger]
 ```
 
-In the above example “jaeger” exporter will get data from pipeline “traces” and from pipeline “traces/2”. When the Service loads this config the result will look like this (part of processors and receivers are omitted from the diagram for brevity):
+In the above example “jaeger” exporter will get data from pipeline “traces” and from pipeline “traces/2”. When the Collector loads this config the result will look like this (part of processors and receivers are omitted from the diagram for brevity):
 
 ![Exporters](images/design-exporters.png)
 
@@ -109,7 +109,7 @@ A pipeline can contain sequentially connected processors. The first processor ge
 
 The traces pipeline must have at least one processor. Metrics pipeline does not require processors since we currently do not have any implemented metrics processors yet.
 
-Processors can transform the data before forwarding it (i.e. add or remove attributes from spans), they can drop the data simply by deciding not to forward it (this is for example how “sampling” processor works), they can also generate new data (this is how for example how a “persistent-queue” processor can work after Service restarts by reading previously saved data from a local file and forwarding it on the pipeline).
+Processors can transform the data before forwarding it (i.e. add or remove attributes from spans), they can drop the data simply by deciding not to forward it (this is for example how “sampling” processor works), they can also generate new data (this is how for example how a “persistent-queue” processor can work after Collector restarts by reading previously saved data from a local file and forwarding it on the pipeline).
 
 The same name of the processor can be referenced in the “processors” key of multiple pipelines. In this case the same configuration will be used for each of these processors however each pipeline will always gets its own instance of the processor. Each of these processors will have its own state, the processors are never shared between pipelines. For example if “queued-retry” processor is used several pipelines each pipeline will have its own queue (although the queues will be configured exactly the same way if the reference the same key in the config file). As an example, given the following config:
 
@@ -131,7 +131,7 @@ pipelines:
     exporters: [opencensus]
 ```
 
-When the Service loads this config the result will look like this:
+When the Collector loads this config the result will look like this:
 
 ![Processors](images/design-processors.png)
 
@@ -159,7 +159,7 @@ drawbacks, for example:
    correct credentials\monitored resources), and users may be reluctant to
    “pollute” their code with OpenTelemetry.
 
-To resolve the issues above, you can run OpenTelemetry Service as an Agent.
+To resolve the issues above, you can run OpenTelemetry Collector as an Agent.
 The Agent runs as a daemon in the VM/container and can be deployed independent
 of Library. Once Agent is deployed and running, it should be able to retrieve
 spans/stats/metrics from Library, export them to other backends. We MAY also
@@ -176,9 +176,9 @@ accept spans/stats/metrics from other tracing/monitoring libraries, such as
 Zipkin, Prometheus, etc. This is done by adding specific receivers. See
 [Receivers](#receivers) for details.
 
-## <a name="opentelemetry-collector"></a>Running as a Collector
+## <a name="opentelemetry-collector"></a>Running as a Standalone Collector
 
-The OpenTelemetry Service can run as a standalone Collector instance and receives spans
+The OpenTelemetry Collector can run as a Standalone instance and receives spans
 and metrics exported by one or more Agents or Libraries, or by
 tasks/agents that emit in one of the supported protocols. The Collector is
 configured to send data to the configured exporter(s). The following figure
@@ -199,7 +199,7 @@ TODO: move this section somewhere else since this document is intended to descri
 
 OpenCensus Protocol uses a bi-directional gRPC
 stream. Sender should initiate the connection, since there’s only one
-dedicated port for Agent, while there could be multiple instrumented processes. By default, the Service is available on port 55678.
+dedicated port for Agent, while there could be multiple instrumented processes. By default, the Collector is available on port 55678.
 
 #### <a name="agent-protocol-workflow"></a>Protocol Workflow
 
@@ -207,24 +207,24 @@ dedicated port for Agent, while there could be multiple instrumented processes. 
    streams.
 2. As the first message in each stream, Sender must send its identifier. Each
    identifier should uniquely identify Sender within the VM/container. If
-   there is no identifier in the first message, Service should drop the whole
+   there is no identifier in the first message, Collector should drop the whole
    message and return an error to the client. In addition, the first message
    MAY contain additional data (such as `Span`s). As long as it has a valid
-   identifier associated, Service should handle the data properly, as if they
+   identifier associated, Collector should handle the data properly, as if they
    were sent in a subsequent message. Identifier is no longer needed once the
    streams are established.
-3. On Sender side, if connection to Service failed, Sender should retry
+3. On Sender side, if connection to Collector failed, Sender should retry
    indefintely if possible, subject to available/configured memory buffer size.
    (Reason: consider environments where the running applications are already
-   instrumented with OpenTelemetry Library but Service is not deployed yet.
-   Sometime in the future, we can simply roll out the Service to those
-   environments and Library would automatically connect to Service with
+   instrumented with OpenTelemetry Library but Collector is not deployed yet.
+   Sometime in the future, we can simply roll out the Collector to those
+   environments and Library would automatically connect to Collector with
    indefinite retries. Zero changes are required to the applications.)
    Depending on the language and implementation, retry can be done in either
    background or a daemon thread. Retry should be performed at a fixed
    frequency (rather than exponential backoff) to have a deterministic expected
    connect time.
-4. On Service side, if an established stream were disconnected, the identifier of
+4. On Collector side, if an established stream were disconnected, the identifier of
    the corresponding Sender would be considered expired. Sender needs to
    start a new connection with a unique identifier (MAY be different than the
    previous one).

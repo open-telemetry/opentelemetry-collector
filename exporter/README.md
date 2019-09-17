@@ -1,6 +1,6 @@
 # Exporters
 
-Below is the list of exporters directly supported by the OpenTelemetry Service.
+Below is the list of exporters directly supported by the OpenTelemetry Collector.
 
 * [Jaeger](#jaeger)
 * [Logging](#logging)

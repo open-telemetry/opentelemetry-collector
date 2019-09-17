@@ -1,6 +1,6 @@
-# OpenTelemetry Service
+# OpenTelemetry Collector
 
-*IMPORTANT:* This is a pre-released version of the OpenTelemetry Service.
+*IMPORTANT:* This is a pre-released version of the OpenTelemetry Collector.
 For now, please use the [OpenCensus Service](https://github.com/census-instrumentation/opencensus-service).
 
 [![Build Status][travis-image]][travis-url]
@@ -25,7 +25,7 @@ For now, please use the [OpenCensus Service](https://github.com/census-instrumen
 
 ## Introduction
 
-The OpenTelemetry Service can collect traces and metrics from processes
+The OpenTelemetry Collector can collect traces and metrics from processes
 instrumented by OpenTelemetry or other monitoring/tracing libraries (Jaeger,
 Prometheus, etc.), handles aggregation and smart sampling, and export traces
 and metrics to one or more monitoring/tracing backends.
@@ -40,14 +40,14 @@ not an ideal at an incident time. In addition, currently users need to decide
 which service backend they want to export to, before they distribute their
 binary instrumented by OpenTelemetry.
 
-The OpenTelemetry Service is trying to eliminate these requirements. With the
-OpenTelemetry Service, users do not need to redeploy or restart their
+The OpenTelemetry Collector is trying to eliminate these requirements. With the
+OpenTelemetry Collector, users do not need to redeploy or restart their
 applications as long as it has the OpenTelemetry exporter. All they need to do
-is just configure and deploy the OpenTelemetry Service separately. The
-OpenTelemetry Service will then automatically collect traces and metrics and
+is just configure and deploy the OpenTelemetry Collector separately. The
+OpenTelemetry Collector will then automatically collect traces and metrics and
 export to any backend of users' choice.
 
-Currently the OpenTelemetry Service consists of a single binary and two
+Currently the OpenTelemetry Collector consists of a single binary and two
 deployment methods:
 
 1. Agent running with the application or on the same host as the application
@@ -55,13 +55,13 @@ deployment methods:
 
 For the detailed design specs, please see [design.md](docs/design.md).
 
-For OpenTelemetry Service performance specs, please see [performance.md](docs/performance.md).
+For OpenTelemetry Collector performance specs, please see [performance.md](docs/performance.md).
 
-For the future vision of OpenTelemetry Service please see [vision.md](docs/vision.md).
+For the future vision of OpenTelemetry Collector please see [vision.md](docs/vision.md).
 
 ## <a name="deploy"></a>Deployment
 
-The OpenTelemetry Service can be deployed in a variety of different ways
+The OpenTelemetry Collector can be deployed in a variety of different ways
 depending on requirements. The Agent can be deployed with the application
 either as a separate process, as a sidecar, or via a Kubernetes daemonset. The
 Collector is deployed as a separate application as either a Docker container,
@@ -123,8 +123,8 @@ exporting will resume.
 
 ## <a name="config"></a>Configuration
 
-The OpenTelemetry Service (both the Agent and Collector) is configured via a
-YAML file. In general, at least one enabled receiver and one enabled exporter
+The OpenTelemetry Collector is configured via a YAML file. 
+In general, at least one enabled receiver and one enabled exporter
 needs to be configured.
 
 *Note* This documentation is still in progress. For any questions, please reach out in the
@@ -145,7 +145,7 @@ pipelines:
 
 ### <a name="config-receivers"></a>Receivers
 
-A receiver is how data gets into OpenTelemetry Service. One or more receivers
+A receiver is how data gets into OpenTelemetry Collector. One or more receivers
 must be configured.
 
 A basic example of all available receivers is provided below. For detailed
@@ -177,7 +177,7 @@ receivers:
 
 An exporter is how you send data to one or more backends/destinations. One or
 more exporters can be configured. By default, no exporters are configured on
-the OpenTelemetry Service (either the Agent or Collector).
+the OpenTelemetry Collector.
 
 A basic example of all available exporters is provided below. For detailed
 exporter configuration, please see the [exporter
@@ -257,7 +257,7 @@ zpages:
 **TODO** Remove this once processors have been documented since that handles
 these features now.
 
-The OpenTelemetry Service also takes some global configurations that modify its
+The OpenTelemetry Collector also takes some global configurations that modify its
 behavior for all receivers / exporters. This configuration is typically applied
 on the Collector, but could also be added to the Agent.
 
@@ -291,7 +291,7 @@ global:
 
 ### <a name="sampling"></a>Sampling
 
-Sampling can also be configured on the OpenTelemetry Service. Both head-based and
+Sampling can also be configured on the OpenTelemetry Collector. Both head-based and
 tail-based sampling are supported. Either the Agent or the Collector may enable
 head-based sampling. Tail sampling must be configured on the Collector as it
 requires all spans for a given trace to make a sampling decision.
@@ -352,7 +352,7 @@ sampling:
 
 > It is recommended that you use the latest [release](https://github.com/open-telemetry/opentelemetry-service/releases).
 
-The OpenTelemetry Service can be run directly from sources, binary, or a Docker
+The OpenTelemetry Collector can be run directly from sources, binary, or a Docker
 image. If you are planning to run from sources or build on your machine start
 by cloning the repo using `go get -d
 github.com/open-telemetry/opentelemetry-service`.
@@ -385,7 +385,7 @@ $ docker run \
 
 It can be configured via command-line or config file:
 ```
-OpenTelemetry Service
+OpenTelemetry Collector
 
 Usage:
   otelsvc [flags]

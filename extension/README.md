@@ -23,7 +23,7 @@ service:
 
 ## <a name="health-check"></a>Health Check
 Health Check extension enables an HTTP url that can be probed to check the
-status of the the OpenTelemetry Service. The only configuration setting is the
+status of the the OpenTelemetry Collector. The only configuration setting is the
 port in which the endpoint is going to be available, the default port is 13133.
 
 This extension can be used as kubernetes liveness and readiness probe.

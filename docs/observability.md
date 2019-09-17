@@ -1,12 +1,12 @@
-# OpenTelemetry Service Observability
+# OpenTelemetry Collector Observability
 
 ## Goal
 
-The goal of this document is to have a comprehensive description of observability of the Service and changes needed to achieve observability part of our [vision](vision.md).
+The goal of this document is to have a comprehensive description of observability of the Collector and changes needed to achieve observability part of our [vision](vision.md).
 
 ## What Needs Observation
 
-The following elements of the Service need to be observable.
+The following elements of the Collector need to be observable.
 
 ### Current Values
 
@@ -56,9 +56,9 @@ Note: some of the current values and rates may be calculated as derivatives of c
 
 We want to generate the following events (log and/or send as a trace with additional data):
 
-- Service started/stopped.
+- Collector started/stopped.
 
-- Service reconfigured (if we support on-the-fly reconfiguration).
+- Collector reconfigured (if we support on-the-fly reconfiguration).
 
 - Begin dropping due to throttling (include throttling reason, e.g. local saturation, downstream saturation, downstream unavailable, etc).
 
@@ -78,14 +78,14 @@ The service should collect host resource metrics in addition to service's own pr
 
 ## How We Expose Metrics/Traces
 
-Service configuration must allow specifying the target for own metrics/traces (which can be different from the target of collected data). The metrics and traces must be clearly tagged to indicate that they are service’s own metrics (to avoid conflating with collected data in the backend).
+Collector configuration must allow specifying the target for own metrics/traces (which can be different from the target of collected data). The metrics and traces must be clearly tagged to indicate that they are service’s own metrics (to avoid conflating with collected data in the backend).
 
 ### Impact
 
-We need to be able to assess the impact of these observability improvements on the core performance of the Service.
+We need to be able to assess the impact of these observability improvements on the core performance of the Collector.
 
 ### Configurable Level of Observability
 
-Some of the metrics/traces can be high volume and may not be desirable to always observe. We should consider adding an observability verboseness “level” that allows configuring the Service to send more or less observability data (or even finer granularity to allow turning on/off specific metrics).
+Some of the metrics/traces can be high volume and may not be desirable to always observe. We should consider adding an observability verboseness “level” that allows configuring the Collector to send more or less observability data (or even finer granularity to allow turning on/off specific metrics).
 
 The default level of observability must be defined in a way that has insignificant performance impact on the service.

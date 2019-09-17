@@ -1,12 +1,12 @@
-# OpenTelemetry Service Demo
+# OpenTelemetry Collector Demo
 
-*IMPORTANT:* This is a pre-released version of the OpenTelemetry Service.
+*IMPORTANT:* This is a pre-released version of the OpenTelemetry Collector.
 
-Typical flow of tracing and metrics data with OpenTelemetry Service: tracing and metrics data initially received by OpenTelemetry Agent
+Typical flow of tracing and metrics data with OpenTelemetry Collector: tracing and metrics data initially received by OpenTelemetry Agent
 and then sent to OpenTelemetry Collector using OC data format. The OpenTelemetry Collector then sends the data to the
 backend, in this demo Jaeger, Zipkin, and Prometheus.
 
-This demo uses `docker-compose` and runs against locally built docker images of OpenTelemetry Service. In
+This demo uses `docker-compose` and runs against locally built docker images of OpenTelemetry Collector. In
 order to build the docker images use the commands below from the root of the repo:
 
 ```shell

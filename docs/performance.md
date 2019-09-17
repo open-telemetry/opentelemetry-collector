@@ -1,7 +1,7 @@
-# OpenTelemetry Service Performance
+# OpenTelemetry Collector Performance
 
 The performance numbers that follow were generated using version 0.1.3 of the
-OpenTelemetry Service, are applicable primarily to the OpenTelemetry Collector and
+OpenTelemetry Collector, are applicable primarily to the OpenTelemetry Collector and
 are measured only for traces. In the future, more configurations will be tested.
 
 Note with the OpenTelemetry Agent you can expect as good if not better performance

@@ -1,7 +1,7 @@
 ## Action Plan for Bootstraping from OpenCensus
 
 ### Goals
-We need to bootstrap the OpenTelemetry Service using the existing OpenCensus Service codebase. We agreed to split the Service codebase into 2 parts: core and contrib. This bootstrapping is a good opportunity to do the splitting by only including in the OpenTelemetry Service core the minimum number of receivers and exporters and moving the rest of functionality to a contrib package (most vendor-specific code).
+We need to bootstrap the OpenTelemetry Collector using the existing OpenCensus Service codebase. We agreed to split the Service codebase into 2 parts: core and contrib. This bootstrapping is a good opportunity to do the splitting by only including in the OpenTelemetry Collector core the minimum number of receivers and exporters and moving the rest of functionality to a contrib package (most vendor-specific code).
 
 The contrib package and vendor-specific receivers and exporters will continue to be available and there is no intent to retire it. The intent is to have a clear decoupling in the codebase that facilitates independent contribution of new components in the future, allows to easily create customized versions of a Service and makes it clear that core contributors will be responsible for maintenance of the core while vendor-specific components will be maintained by corresponding vendors (note: this does not exclude dual participation at all - some developers will likely work for vendors and will also be core maintainers).
 
@@ -42,6 +42,6 @@ Make sure commit history is preserved.
 
 (Note: alternatively `contrib` can be a directory in the main repo - this is still open for discussion).
 
-[ ] Provide OpenCensus-to-OpenTelemetry Service migration guidelines for end-users who want to migrate. This will include recommendations on configuration file migration. We will also consider the possibility to support old configuration format in the new binary.
+[ ] Provide OpenCensus-to-OpenTelemetry Collector migration guidelines for end-users who want to migrate. This will include recommendations on configuration file migration. We will also consider the possibility to support old configuration format in the new binary.
 
 This approach allows us to have significant progress towards 2 stated goals in our [vision document](../blob/master/docs/VISION.md): unify the codebase for agent and collector and make the service more extensible.
