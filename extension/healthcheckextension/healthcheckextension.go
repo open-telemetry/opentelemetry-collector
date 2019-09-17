@@ -43,7 +43,8 @@ func (hc *healthCheckExtension) Start(host extension.Host) error {
 	portStr := ":" + strconv.Itoa(int(hc.config.Port))
 	ln, err := net.Listen("tcp", portStr)
 	if err != nil {
-		return err
+		host.ReportFatalError(err)
+		return nil
 	}
 
 	// Mount HC handler

@@ -75,7 +75,7 @@ type jReceiver struct {
 	agent *agentapp.Agent
 
 	grpc            *grpc.Server
-	tchannelServer  *jTchannelReceiver
+	tchanServer     *jTchannelReceiver
 	collectorServer *http.Server
 
 	defaultAgentCtx context.Context
@@ -112,7 +112,7 @@ func New(ctx context.Context, config *Configuration, nextConsumer consumer.Trace
 		config:          config,
 		defaultAgentCtx: observability.ContextWithReceiverName(context.Background(), "jaeger-agent"),
 		nextConsumer:    nextConsumer,
-		tchannelServer: &jTchannelReceiver{
+		tchanServer: &jTchannelReceiver{
 			nextConsumer: nextConsumer,
 		},
 	}, nil
@@ -238,9 +238,9 @@ func (jr *jReceiver) stopTraceReceptionLocked() error {
 			}
 			jr.collectorServer = nil
 		}
-		if jr.tchannelServer.tchannel != nil {
-			jr.tchannelServer.tchannel.Close()
-			jr.tchannelServer.tchannel = nil
+		if jr.tchanServer.tchannel != nil {
+			jr.tchanServer.tchannel.Close()
+			jr.tchanServer.tchannel = nil
 		}
 		if jr.grpc != nil {
 			jr.grpc.Stop()
@@ -422,7 +422,7 @@ func (jr *jReceiver) startCollector(host receiver.Host) error {
 	}
 
 	server := thrift.NewServer(tch)
-	server.Register(jaeger.NewTChanCollectorServer(jr.tchannelServer))
+	server.Register(jaeger.NewTChanCollectorServer(jr.tchanServer))
 
 	taddr := jr.tchannelAddr()
 	tln, terr := net.Listen("tcp", taddr)
@@ -430,7 +430,7 @@ func (jr *jReceiver) startCollector(host receiver.Host) error {
 		return fmt.Errorf("failed to bind to TChannel address %q: %v", taddr, terr)
 	}
 	tch.Serve(tln)
-	jr.tchannelServer.tchannel = tch
+	jr.tchanServer.tchannel = tch
 
 	// Now the collector that runs over HTTP
 	caddr := jr.collectorAddr()

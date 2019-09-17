@@ -19,7 +19,6 @@ import (
 	"net"
 	"net/http"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -62,18 +61,6 @@ func TestApplication_StartUnified(t *testing.T) {
 	if !isAppAvailable(t, "http://localhost:13133") {
 		t.Fatalf("app didn't reach ready state")
 	}
-
-	// We have to wait here work around a data race bug in Jaeger
-	// (https://github.com/jaegertracing/jaeger/pull/1625) caused
-	// by stopping immediately after starting.
-	//
-	// Without this Sleep we were observing this bug on our side:
-	// https://github.com/open-telemetry/opentelemetry-service/issues/43
-	// The Sleep ensures that Jaeger Start() is fully completed before
-	// we call Jaeger Stop().
-	// TODO: Jaeger bug is already fixed, remove this once we update Jaeger
-	// to latest version.
-	time.Sleep(1 * time.Second)
 
 	close(app.stopTestChan)
 	<-appDone
