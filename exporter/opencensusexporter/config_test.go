@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-service/config"
+	"github.com/open-telemetry/opentelemetry-service/config/configgrpc"
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 )
 
@@ -46,21 +47,23 @@ func TestLoadConfig(t *testing.T) {
 				NameVal: "opencensus/2",
 				TypeVal: "opencensus",
 			},
-			Headers: map[string]string{
-				"can you have a . here?": "F0000000-0000-0000-0000-000000000000",
-				"header1":                "234",
-				"another":                "somevalue",
+			GRPCSettings: configgrpc.GRPCSettings{
+				Headers: map[string]string{
+					"can you have a . here?": "F0000000-0000-0000-0000-000000000000",
+					"header1":                "234",
+					"another":                "somevalue",
+				},
+				Endpoint:    "1.2.3.4:1234",
+				Compression: "on",
+				CertPemFile: "/var/lib/mycert.pem",
+				UseSecure:   true,
+				KeepaliveParameters: &configgrpc.KeepaliveConfig{
+					Time:                20,
+					PermitWithoutStream: true,
+					Timeout:             30,
+				},
 			},
-			Endpoint:          "1.2.3.4:1234",
-			Compression:       "on",
 			NumWorkers:        123,
-			CertPemFile:       "/var/lib/mycert.pem",
-			UseSecure:         true,
 			ReconnectionDelay: 15,
-			KeepaliveParameters: &KeepaliveConfig{
-				Time:                20,
-				PermitWithoutStream: true,
-				Timeout:             30,
-			},
 		})
 }
