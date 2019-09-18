@@ -75,7 +75,7 @@ func isAppAvailable(t *testing.T, healthCheckEndPoint string) bool {
 		t.Fatalf("failed to get a response from health probe: %v", err)
 	}
 	defer resp.Body.Close()
-	return resp.StatusCode == http.StatusNoContent
+	return resp.StatusCode == http.StatusOK
 }
 
 func getMultipleAvailableLocalAddresses(t *testing.T, numAddresses uint) []string {
