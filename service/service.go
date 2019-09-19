@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package service handles the command-line, configuration, and runs the
-// OpenTelemetry Service.
+// OpenTelemetry Collector.
 package service
 
 import (
@@ -295,7 +295,7 @@ func (app *Application) executeUnified() {
 func (app *Application) StartUnified() error {
 	rootCmd := &cobra.Command{
 		Use:  "otelsvc",
-		Long: "OpenTelemetry Service",
+		Long: "OpenTelemetry Collector",
 		Run: func(cmd *cobra.Command, args []string) {
 			app.init()
 			app.executeUnified()

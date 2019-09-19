@@ -1,6 +1,6 @@
-# OpenTelemetry Service Long-term Vision
+# OpenTelemetry Collector Long-term Vision
 
-The following are high-level items that define our long-term vision for OpenTelemetry Service, what we aspire to achieve. This vision is our daily guidance when we design new features and make changes to the Service.
+The following are high-level items that define our long-term vision for OpenTelemetry Collector, what we aspire to achieve. This vision is our daily guidance when we design new features and make changes to the Collector.
 
 This is a living document that is expected to evolve over time.
 

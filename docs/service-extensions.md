@@ -1,4 +1,4 @@
-# OpenTelemetry Service: Extensions
+# OpenTelemetry Collector: Extensions
 
 Besides the pipeline elements (receivers, processors, and exporters) the OTelSvc
 uses various service extensions (e.g.: healthcheck, z-pages, etc). 
@@ -29,9 +29,9 @@ supported at this moment, but this design doesn’t prevent such extensions in t
 future[^1].
 
 
-## Service State and Extensions
+## Collector State and Extensions
 
-The diagram below shows the basic state transitions of the OpenTelemetry Service 
+The diagram below shows the basic state transitions of the OpenTelemetry Collector 
 and how it will interact with the service extensions.
 
 ![ServiceLifeCycle](images/design-service-lifecycle.png)
@@ -97,7 +97,7 @@ The interface defined below is the minimum required for
 extensions in use on the service:
 
 ```go
-// ServiceExtension is the interface for objects hosted by the OpenTelemetry Service that
+// ServiceExtension is the interface for objects hosted by the OpenTelemetry Collector that
 // don't participate directly on data pipelines but provide some functionality
 // to the service, examples: health check endpoint, z-pages, etc.
 type ServiceExtension interface {
@@ -112,7 +112,7 @@ type ServiceExtension interface {
 }
 
 // PipelineWatcher is an extra interface for ServiceExtension hosted by the OpenTelemetry
-// Service that is to be implemented by extensions interested in changes to pipeline
+// Collector that is to be implemented by extensions interested in changes to pipeline
 // states. Typically this will be used by extensions that change their behavior if data is
 // being ingested or not, e.g.: a k8s readiness probe.
 type PipelineWatcher interface {

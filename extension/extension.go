@@ -26,7 +26,7 @@ type Host interface {
 	ReportFatalError(err error)
 }
 
-// ServiceExtension is the interface for objects hosted by the OpenTelemetry Service that
+// ServiceExtension is the interface for objects hosted by the OpenTelemetry Collector that
 // don't participate directly on data pipelines but provide some functionality
 // to the service, examples: health check endpoint, z-pages, etc.
 type ServiceExtension interface {

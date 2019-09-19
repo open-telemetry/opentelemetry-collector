@@ -3,7 +3,7 @@ reach out in the [OpenTelemetry Gitter](https://gitter.im/open-telemetry/opentel
 or refer to the [issues page](https://github.com/open-telemetry/opentelemetry-service/issues).
 
 # Receivers
-A receiver is how data gets into OpenTelemetry Service. Generally, a receiver
+A receiver is how data gets into OpenTelemetry Collector. Generally, a receiver
 accepts data in a specified format and can support traces and/or metrics. The
 format of the traces and metrics supported are receiver specific.
 
