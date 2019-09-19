@@ -39,6 +39,9 @@ type GRPCSettings struct {
 	// connection. See https://godoc.org/google.golang.org/grpc#WithInsecure.
 	UseSecure bool `mapstructure:"secure"`
 
+	// Authority to check against when doing TLS verification
+	ServerNameOverride string `mapstructure:"server-name-override"`
+
 	// The keepalive parameters for client gRPC. See grpc.WithKeepaliveParams
 	// (https://godoc.org/google.golang.org/grpc#WithKeepaliveParams).
 	KeepaliveParameters *KeepaliveConfig `mapstructure:"keepalive"`

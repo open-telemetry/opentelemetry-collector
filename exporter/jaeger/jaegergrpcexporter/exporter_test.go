@@ -20,14 +20,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-service/config/configgrpc"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
 )
 
 func TestNew(t *testing.T) {
 	type args struct {
-		config            configmodels.Exporter
-		collectorEndpoint string
+		config Config
 	}
 	tests := []struct {
 		name    string
@@ -35,24 +34,90 @@ func TestNew(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "empty_exporterName",
-			args: args{
-				config:            nil,
-				collectorEndpoint: "localhost:55678",
-			},
-			wantErr: true,
-		},
-		{
 			name: "createExporter",
 			args: args{
-				config:            &configmodels.ExporterSettings{},
-				collectorEndpoint: "some.non.existent:55678",
+				config: Config{
+					Endpoint: "some.non.existent:55678",
+				},
 			},
+		},
+		{
+			name: "createBasicSecureExporter",
+			args: args{
+				config: Config{
+					Endpoint: "foo.bar",
+					GRPCSettings: configgrpc.GRPCSettings{
+						Headers:             nil,
+						Endpoint:            "",
+						Compression:         "",
+						CertPemFile:         "",
+						UseSecure:           true,
+						ServerNameOverride:  "",
+						KeepaliveParameters: nil,
+					},
+				},
+			},
+		},
+		{
+			name: "createSecureExporterWithClientTLS",
+			args: args{
+				config: Config{
+					Endpoint: "foo.bar",
+					GRPCSettings: configgrpc.GRPCSettings{
+						Headers:             nil,
+						Endpoint:            "",
+						Compression:         "",
+						CertPemFile:         "testdata/test_cert.pem",
+						UseSecure:           true,
+						ServerNameOverride:  "",
+						KeepaliveParameters: nil,
+					},
+				},
+			},
+		},
+		{
+			name: "createSecureExporterWithKeepAlive",
+			args: args{
+				config: Config{
+					Endpoint: "foo.bar",
+					GRPCSettings: configgrpc.GRPCSettings{
+						Headers:            nil,
+						Endpoint:           "",
+						Compression:        "",
+						CertPemFile:        "testdata/test_cert.pem",
+						UseSecure:          true,
+						ServerNameOverride: "",
+						KeepaliveParameters: &configgrpc.KeepaliveConfig{
+							Time:                0,
+							Timeout:             0,
+							PermitWithoutStream: false,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "createSecureExporterWithMissingFile",
+			args: args{
+				config: Config{
+					Endpoint: "foo.bar",
+					GRPCSettings: configgrpc.GRPCSettings{
+						Headers:             nil,
+						Endpoint:            "",
+						Compression:         "",
+						CertPemFile:         "testdata/test_cert_missing.pem",
+						UseSecure:           true,
+						ServerNameOverride:  "",
+						KeepaliveParameters: nil,
+					},
+				},
+			},
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := New(tt.args.config, tt.args.collectorEndpoint)
+			got, err := New(&tt.args.config)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("New() error = %v, wantErr %v", err, tt.wantErr)
 				return

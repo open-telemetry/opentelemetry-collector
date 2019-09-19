@@ -15,7 +15,14 @@
 package exporterhelper
 
 import (
+	"crypto/x509"
+
 	"go.opencensus.io/trace"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/keepalive"
+
+	"github.com/open-telemetry/opentelemetry-service/config/configgrpc"
 )
 
 var (
@@ -75,4 +82,36 @@ func errToStatus(err error) trace.Status {
 		return trace.Status{Code: trace.StatusCodeUnknown, Message: err.Error()}
 	}
 	return okStatus
+}
+
+// GrpcSettingsToDialOptions maps configgrpc.GRPCSettings to a slice of dial options for gRPC
+func GrpcSettingsToDialOptions(settings configgrpc.GRPCSettings) ([]grpc.DialOption, error) {
+	opts := []grpc.DialOption{}
+	if settings.CertPemFile != "" {
+		creds, err := credentials.NewClientTLSFromFile(settings.CertPemFile, settings.ServerNameOverride)
+		if err != nil {
+			return nil, err
+		}
+		opts = append(opts, grpc.WithTransportCredentials(creds))
+	} else if settings.UseSecure {
+		certPool, err := x509.SystemCertPool()
+		if err != nil {
+			return nil, err
+		}
+		creds := credentials.NewClientTLSFromCert(certPool, settings.ServerNameOverride)
+		opts = append(opts, grpc.WithTransportCredentials(creds))
+	} else {
+		opts = append(opts, grpc.WithInsecure())
+	}
+
+	if settings.KeepaliveParameters != nil {
+		keepAliveOption := grpc.WithKeepaliveParams(keepalive.ClientParameters{
+			Time:                settings.KeepaliveParameters.Time,
+			Timeout:             settings.KeepaliveParameters.Timeout,
+			PermitWithoutStream: settings.KeepaliveParameters.PermitWithoutStream,
+		})
+		opts = append(opts, keepAliveOption)
+	}
+
+	return opts, nil
 }
