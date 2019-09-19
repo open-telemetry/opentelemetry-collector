@@ -264,10 +264,8 @@ func (jr *jReceiver) stopTraceReceptionLocked() error {
 const collectorReceiverTagValue = "jaeger-collector"
 const tchannelCollectorReceiverTagValue = "jaeger-tchannel-collector"
 
-func (jr *jReceiver) SubmitBatches(batches []*jaeger.Batch, options app.SubmitBatchOptions) ([]*jaeger.BatchSubmitResponse, error) {
+func consumeTraceData(ctx context.Context, batches []*jaeger.Batch, consumer consumer.TraceConsumer) ([]*jaeger.BatchSubmitResponse, error) {
 	jbsr := make([]*jaeger.BatchSubmitResponse, 0, len(batches))
-	ctx := context.Background()
-	ctxWithReceiverName := observability.ContextWithReceiverName(ctx, collectorReceiverTagValue)
 
 	for _, batch := range batches {
 		td, err := jaegertranslator.ThriftBatchToOCProto(batch)
@@ -277,40 +275,30 @@ func (jr *jReceiver) SubmitBatches(batches []*jaeger.Batch, options app.SubmitBa
 		if err == nil {
 			ok = true
 			td.SourceFormat = "jaeger"
-			jr.nextConsumer.ConsumeTraceData(ctx, td)
+			consumer.ConsumeTraceData(ctx, td)
 			// We MUST unconditionally record metrics from this reception.
-			observability.RecordMetricsForTraceReceiver(ctxWithReceiverName, len(batch.Spans), len(batch.Spans)-len(td.Spans))
+			observability.RecordMetricsForTraceReceiver(ctx, len(batch.Spans), len(batch.Spans)-len(td.Spans))
 		}
 
 		jbsr = append(jbsr, &jaeger.BatchSubmitResponse{
 			Ok: ok,
 		})
 	}
+
 	return jbsr, nil
 }
 
+func (jr *jReceiver) SubmitBatches(batches []*jaeger.Batch, options app.SubmitBatchOptions) ([]*jaeger.BatchSubmitResponse, error) {
+	ctx := context.Background()
+	ctxWithReceiverName := observability.ContextWithReceiverName(ctx, collectorReceiverTagValue)
+
+	return consumeTraceData(ctxWithReceiverName, batches, jr.nextConsumer)
+}
+
 func (jtr *jTchannelReceiver) SubmitBatches(ctx thrift.Context, batches []*jaeger.Batch) ([]*jaeger.BatchSubmitResponse, error) {
-	jbsr := make([]*jaeger.BatchSubmitResponse, 0, len(batches))
 	ctxWithReceiverName := observability.ContextWithReceiverName(ctx, tchannelCollectorReceiverTagValue)
 
-	for _, batch := range batches {
-		td, err := jaegertranslator.ThriftBatchToOCProto(batch)
-		// TODO: (@odeke-em) add this error for Jaeger observability
-		ok := false
-
-		if err == nil {
-			ok = true
-			td.SourceFormat = "jaeger"
-			jtr.nextConsumer.ConsumeTraceData(ctx, td)
-			// We MUST unconditionally record metrics from this reception.
-			observability.RecordMetricsForTraceReceiver(ctxWithReceiverName, len(batch.Spans), len(batch.Spans)-len(td.Spans))
-		}
-
-		jbsr = append(jbsr, &jaeger.BatchSubmitResponse{
-			Ok: ok,
-		})
-	}
-	return jbsr, nil
+	return consumeTraceData(ctxWithReceiverName, batches, jtr.nextConsumer)
 }
 
 var _ reporter.Reporter = (*jReceiver)(nil)
