@@ -16,13 +16,13 @@ The [contributors repository](https://github.com/open-telemetry/opentelemetry-se
 Exports trace data to [Jaeger](https://www.jaegertracing.io/) collectors
 accepting one of the following protocols:
 
-* [gRPC](#jaeger-grpc)
+* [gRPC](#jaeger_grpc)
 
 ### <a name="jaeger-configuration"></a>Configuration
 
 Each different supported protocol has its own configuration settings.
 
-#### <a name="jaeger-grpc"></a>gRPC
+#### <a name="jaeger_grpc"></a>gRPC
 
 * `endpoint:` target to which the exporter is going to send Jaeger trace data,
 using the gRPC protocol. The valid syntax is described at
@@ -32,7 +32,7 @@ Example:
 
 ```yaml
 exporters:
-  jaeger-grpc:
+  jaeger_grpc:
     endpoint: jaeger-all-in-one:14250
 ```
 
@@ -57,16 +57,16 @@ collector. Currently the only supported mode is `gzip`. Optional.
 
 * `headers`: the headers associated with gRPC requests. Optional.
 
-* `num-workers`: number of workers that send the gRPC requests. Optional.
+* `num_workers`: number of workers that send the gRPC requests. Optional.
 
 * `secure`: whether to enable client transport security for the exporter's gRPC
 connection. See [grpc.WithInsecure()](https://godoc.org/google.golang.org/grpc#WithInsecure).
 Optional.
 
-* `cert-pem-file`: certificate file for TLS credentials of gRPC client. Should
+* `cert_pem_file`: certificate file for TLS credentials of gRPC client. Should
 only be used if `secure` is set to true. Optional.
 
-* `reconnection-delay`: time period between each reconnection performed by the
+* `reconnection_delay`: time period between each reconnection performed by the
 exporter. Optional.
 
 * `keepalive`: keepalive parameters for client gRPC. See
@@ -79,7 +79,7 @@ Example:
 exporters:
   opencensus:
     endpoint: localhost:14250
-    reconnection-delay: 60s
+    reconnection_delay: 60s
     secure: false
 ```
 

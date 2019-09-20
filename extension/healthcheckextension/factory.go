@@ -26,7 +26,7 @@ import (
 
 const (
 	// The value of extension "type" in configuration.
-	typeStr = "health-check"
+	typeStr = "health_check"
 )
 
 // Factory is the factory for the extension.

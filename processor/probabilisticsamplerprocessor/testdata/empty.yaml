@@ -2,7 +2,7 @@ receivers:
   examplereceiver:
 
 processors:
-  probabilistic-sampler:
+  probabilistic_sampler:
     
 
 exporters:
@@ -11,5 +11,5 @@ exporters:
 pipelines:
   traces:
     receivers: [examplereceiver]
-    processors: [probabilistic-sampler]
+    processors: [probabilistic_sampler]
     exporters: [exampleexporter]

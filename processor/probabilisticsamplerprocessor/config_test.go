@@ -37,12 +37,12 @@ func TestLoadConfig(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
 
-	p0 := cfg.Processors["probabilistic-sampler"]
+	p0 := cfg.Processors["probabilistic_sampler"]
 	assert.Equal(t, p0,
 		&Config{
 			ProcessorSettings: configmodels.ProcessorSettings{
-				TypeVal: "probabilistic-sampler",
-				NameVal: "probabilistic-sampler",
+				TypeVal: "probabilistic_sampler",
+				NameVal: "probabilistic_sampler",
 			},
 			SamplingPercentage: 15.3,
 			HashSeed:           22,
@@ -61,7 +61,7 @@ func TestLoadConfigEmpty(t *testing.T) {
 
 	require.Nil(t, err)
 	require.NotNil(t, config)
-	p0 := config.Processors["probabilistic-sampler"]
+	p0 := config.Processors["probabilistic_sampler"]
 	factory := &Factory{}
 	assert.Equal(t, p0, factory.CreateDefaultConfig())
 }

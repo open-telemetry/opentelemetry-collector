@@ -6,10 +6,10 @@ or refer to the [issues page](https://github.com/open-telemetry/opentelemetry-se
 Supported processors (sorted alphabetically):
 - [Attributes Processor](#attributes)
 - [Node Batcher Processor](#node-batcher)
-- [Probabilistic Sampler Processor](#probabilistic-sampler)
+- [Probabilistic Sampler Processor](#probabilistic_sampler)
 - [Queued Processor](#queued)
 - [Span Processor](#span)
-- [Tail Sampling Processor](#tail-sampling)
+- [Tail Sampling Processor](#tail_sampling)
 
 ## Ordering Processors
 The order processors are specified in a pipeline is important as this is the
@@ -122,7 +122,7 @@ examples on using the processor.
 ## <a name="node-batcher"></a>Node Batcher Processor
 <FILL ME IN - I'M LONELY!>
 
-## <a name="probabilistic-sampler"></a>Probabilistic Sampler Processor
+## <a name="probabilistic_sampler"></a>Probabilistic Sampler Processor
 <FILL ME IN - I'M LONELY!>
 
 ## <a name="queued"></a>Queued Processor
@@ -162,5 +162,5 @@ span:
     separator: "::"
 ```
 
-## <a name="tail-sampling"></a>Tail Sampling Processor
+## <a name="tail_sampling"></a>Tail Sampling Processor
 <FILL ME IN - I'M LONELY!>

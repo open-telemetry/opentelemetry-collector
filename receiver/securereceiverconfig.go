@@ -26,16 +26,16 @@ type SecureReceiverSettings struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 	// Configures the receiver to use TLS.
 	// The default value is nil, which will cause the receiver to not use TLS.
-	TLSCredentials *TLSCredentials `mapstructure:"tls-credentials, omitempty"`
+	TLSCredentials *TLSCredentials `mapstructure:"tls_credentials, omitempty"`
 }
 
 // TLSCredentials contains path information for a certificate and key to be used for TLS
 type TLSCredentials struct {
 	// CertFile is the file path containing the TLS certificate.
-	CertFile string `mapstructure:"cert-file"`
+	CertFile string `mapstructure:"cert_file"`
 
 	// KeyFile is the file path containing the TLS key.
-	KeyFile string `mapstructure:"key-file"`
+	KeyFile string `mapstructure:"key_file"`
 }
 
 // ToGrpcServerOption creates a gRPC ServerOption from TLSCredentials. If TLSCredentials is nil, returns empty option.

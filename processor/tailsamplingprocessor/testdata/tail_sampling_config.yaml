@@ -5,35 +5,35 @@ exporters:
   exampleexporter:
 
 processors:
-  tail-sampling:
-    decision-wait: 10s
-    num-traces: 100
-    expected-new-traces-per-sec: 10
+  tail_sampling:
+    decision_wait: 10s
+    num_traces: 100
+    expected_new_traces_per_sec: 10
     policies:
       [
           {
             name: test-policy-1,
-            type: always-sample
+            type: always_sample
           },
           {
             name: test-policy-2,
-            type: numeric-attribute,
-            numeric-attribute: {key: key1, min-value: 50, max-value: 100}
+            type: numeric_attribute,
+            numeric_attribute: {key: key1, min_value: 50, max_value: 100}
           },
           {
             name: test-policy-3,
-            type: string-attribute,
-            string-attribute: {key: key2, values: [value1, value2]}
+            type: string_attribute,
+            string_attribute: {key: key2, values: [value1, value2]}
           },
           {
             name: test-policy-4,
-            type: rate-limiting,
-            rate-limiting: {spans-per-second: 35}
+            type: rate_limiting,
+            rate_limiting: {spans_per_second: 35}
          }
       ]
 
 pipelines:
   traces:
     receivers: [examplereceiver]
-    processors: [tail-sampling]
+    processors: [tail_sampling]
     exporters: [exampleexporter]

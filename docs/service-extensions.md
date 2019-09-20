@@ -49,12 +49,12 @@ these sections would look like in the configuration file:
 # Example of the extensions provided in OTelSvc core. The list below
 # includes all configurable options and their respective default value.
 extensions:
-  health-check:
+  health_check:
     port: 13133
   pprof:
     endpoint: "localhost:1777"
-    block-profile-fraction: 0
-    mutex-profile-fraction: 0
+    block_profile_fraction: 0
+    mutex_profile_fraction: 0
   zpages:
    endpoint: "localhost:55679"
 
@@ -63,7 +63,7 @@ extensions:
 service:
   # extensions lists the extensions added to the service. They are started
   # in the order presented below and stopped in the reverse order.
-  extensions: [health-check, pprof, zpages]
+  extensions: [health_check, pprof, zpages]
 ```
 
 The configuration base type does not share any common fields.

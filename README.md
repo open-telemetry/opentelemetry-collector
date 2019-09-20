@@ -162,7 +162,7 @@ receivers:
 
   jaeger:
     jaeger-thrift-tchannel-port: 14267
-    jaeger-thrift-http-port: 14268
+    jaeger_thrift_http-port: 14268
 
   prometheus:
     config:
@@ -188,9 +188,9 @@ exporters:
   opencensus:
     headers: {"X-test-header": "test-header"}
     compression: "gzip"
-    cert-pem-file: "server_ca_public.pem" # optional to enable TLS
+    cert_pem_file: "server-ca-public.pem" # optional to enable TLS
     endpoint: "localhost:55678"
-    reconnection-delay: 2s
+    reconnection_delay: 2s
 
   jaeger:
     collector_endpoint: "http://localhost:14268/api/traces"
@@ -307,13 +307,13 @@ sampling:
     # each span and sampling the span according to the given spans.
     probabilistic:
       configuration:
-        # sampling-percentage is the percentage of sampling to be applied to all spans, unless their service is specified
-        # on sampling-percentage.
-        sampling-percentage: 5
-        # hash-seed allows choosing the seed for the hash function used in the trace sampling. This is important when
+        # sampling_percentage is the percentage of sampling to be applied to all spans, unless their service is specified
+        # on sampling_percentage.
+        sampling_percentage: 5
+        # hash_seed allows choosing the seed for the hash function used in the trace sampling. This is important when
         # multiple layers of collectors are being used with head sampling, in such scenarios make sure to
         # choose different seeds for each layer.
-        hash-seed: 1
+        hash_seed: 1
 ```
 
 #### Tail-based Example
@@ -322,29 +322,29 @@ sampling:
 sampling:
   mode: tail
   # amount of time from seeing the first span in a trace until making the sampling decision
-  decision-wait: 10s
+  decision_wait: 10s
   # maximum number of traces kept in the memory
-  num-traces: 10000
+  num_traces: 10000
   policies:
     # user-defined policy name
-    my-string-attribute-filter:
+    my_string_attribute_filter:
       # exporters the policy applies to
       exporters:
         - jaeger
-      policy: string-attribute-filter
+      policy: string_attribute_filter
       configuration:
         key: key1
         values:
           - value1
           - value2
-    my-numeric-attribute-filter:
+    my-numeric_attribute-filter:
       exporters:
         - zipkin
-      policy: numeric-attribute-filter
+      policy: numeric_attribute-filter
       configuration:
         key: key1
-        min-value: 0
-        max-value: 100
+        min_value: 0
+        max_value: 100
 ```
 
 > Note that an exporter can only have a single sampling policy today.
@@ -408,26 +408,26 @@ receivers:
 
 queued-exporters:
   jaeger-sender-test: # A friendly name for the exporter
-    # num-workers is the number of queue workers that will be dequeuing batches and sending them out (default is 10)
-    num-workers: 2
+    # num_workers is the number of queue workers that will be dequeuing batches and sending them out (default is 10)
+    num_workers: 2
 
-    # queue-size is the maximum number of batches allowed in the queue at a given time (default is 5000)
-    queue-size: 100
+    # queue_size is the maximum number of batches allowed in the queue at a given time (default is 5000)
+    queue_size: 100
 
-    # retry-on-failure indicates whether queue processor should retry span batches in case of processing failure (default is true)
-    retry-on-failure: true
+    # retry_on_failure indicates whether queue processor should retry span batches in case of processing failure (default is true)
+    retry_on_failure: true
 
-    # backoff-delay is the amount of time a worker waits after a failed send before retrying (default is 5 seconds)
-    backoff-delay: 3s
+    # backoff_delay is the amount of time a worker waits after a failed send before retrying (default is 5 seconds)
+    backoff_delay: 3s
 
     # sender-type is the type of sender used by this processor, the default is an invalid sender so it forces one to be specified
-    sender-type: jaeger-thrift-http
+    sender-type: jaeger_thrift_http
 
-    # configuration of the selected sender-type, in this example Jaeger jaeger-thrift-http. Which supports 3 settings:
-    # collector-endpoint: address of Jaeger collector jaeger-thrift-http endpoint
+    # configuration of the selected sender-type, in this example Jaeger jaeger_thrift_http. Which supports 3 settings:
+    # collector-endpoint: address of Jaeger collector jaeger_thrift_http endpoint
     # headers: a map of any additional headers to be sent with each batch (e.g.: api keys, etc)
     # timeout: the timeout for the sender to consider the operation as failed
-    jaeger-thrift-http:
+    jaeger_thrift_http:
       collector-endpoint: "http://svc-jaeger-collector:14268/api/traces"
       headers: { "x-header-key":"00000000-0000-0000-0000-000000000001" }
       timeout: 5s

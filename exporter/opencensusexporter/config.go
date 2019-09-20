@@ -28,8 +28,8 @@ type Config struct {
 	configgrpc.GRPCSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 
 	// The number of workers that send the gRPC requests.
-	NumWorkers int `mapstructure:"num-workers"`
+	NumWorkers int `mapstructure:"num_workers"`
 
 	// The time period between each reconnection performed by the exporter.
-	ReconnectionDelay time.Duration `mapstructure:"reconnection-delay,omitempty"`
+	ReconnectionDelay time.Duration `mapstructure:"reconnection_delay,omitempty"`
 }

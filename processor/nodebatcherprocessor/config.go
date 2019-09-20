@@ -28,18 +28,18 @@ type Config struct {
 	Timeout *time.Duration `mapstructure:"timeout,omitempty"`
 
 	// SendBatchSize is the size of a batch which after hit, will trigger it to be sent.
-	SendBatchSize *int `mapstructure:"send-batch-size,omitempty"`
+	SendBatchSize *int `mapstructure:"send_batch_size,omitempty"`
 
 	// NumTickers sets the number of tickers to use to divide the work of looping
 	// over batch buckets. This is an advanced configuration option.
-	NumTickers int `mapstructure:"num-tickers,omitempty"`
+	NumTickers int `mapstructure:"num_tickers,omitempty"`
 
 	// TickTime sets time interval at which the tickers tick. This is an advanced
 	// configuration option.
-	TickTime *time.Duration `mapstructure:"tick-time,omitempty"`
+	TickTime *time.Duration `mapstructure:"tick_time,omitempty"`
 
 	// RemoveAfterTicks is the number of ticks that must pass without a span arriving
 	// from a node after which the batcher for that node will be deleted. This is an
 	// advanced configuration option.
-	RemoveAfterTicks *int `mapstructure:"remove-after-ticks,omitempty"`
+	RemoveAfterTicks *int `mapstructure:"remove_after_ticks,omitempty"`
 }

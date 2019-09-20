@@ -29,7 +29,7 @@ A pipeline configuration typically looks like this:
 pipelines: # section that can contain multiple subsections, one per pipeline
   traces:  # type of the pipeline 
     receivers: [opencensus, jaeger, zipkin]
-    processors: [tags, tail-sampling, batch, queued-retry]
+    processors: [tags, tail_sampling, batch, queued_retry]
     exporters: [opencensus, jaeger, stackdriver, zipkin]
 ```
 
@@ -49,7 +49,7 @@ receivers:
 pipelines:
   traces:  # a pipeline of “traces” type
     receivers: [opencensus]
-    processors: [tags, tail-sampling, batch, queued-retry]
+    processors: [tags, tail_sampling, batch, queued_retry]
     exporters: [jaeger]
   traces/2:  # another pipeline of “traces” type
     receivers: [opencensus]
@@ -91,7 +91,7 @@ exporters:
 pipelines:
   traces:  # a pipeline of “traces” type
     receivers: [zipkin]
-    processors: [tags, tail-sampling, batch, queued-retry]
+    processors: [tags, tail_sampling, batch, queued_retry]
     exporters: [jaeger]
   traces/2:  # another pipeline of “traces” type
     receivers: [opencensus]
@@ -111,11 +111,11 @@ The traces pipeline must have at least one processor. Metrics pipeline does not 
 
 Processors can transform the data before forwarding it (i.e. add or remove attributes from spans), they can drop the data simply by deciding not to forward it (this is for example how “sampling” processor works), they can also generate new data (this is how for example how a “persistent-queue” processor can work after Collector restarts by reading previously saved data from a local file and forwarding it on the pipeline).
 
-The same name of the processor can be referenced in the “processors” key of multiple pipelines. In this case the same configuration will be used for each of these processors however each pipeline will always gets its own instance of the processor. Each of these processors will have its own state, the processors are never shared between pipelines. For example if “queued-retry” processor is used several pipelines each pipeline will have its own queue (although the queues will be configured exactly the same way if the reference the same key in the config file). As an example, given the following config:
+The same name of the processor can be referenced in the “processors” key of multiple pipelines. In this case the same configuration will be used for each of these processors however each pipeline will always gets its own instance of the processor. Each of these processors will have its own state, the processors are never shared between pipelines. For example if “queued_retry” processor is used several pipelines each pipeline will have its own queue (although the queues will be configured exactly the same way if the reference the same key in the config file). As an example, given the following config:
 
 ```yaml
 processors:
-  queued-retry:
+  queued_retry:
     size: 50
     per-exporter: true
     enabled: true
@@ -123,11 +123,11 @@ processors:
 pipelines:
   traces:  # a pipeline of “traces” type
     receivers: [zipkin]
-    processors: [queued-retry]
+    processors: [queued_retry]
     exporters: [jaeger]
   traces/2:  # another pipeline of “traces” type
     receivers: [opencensus]
-    processors: [queued-retry]
+    processors: [queued_retry]
     exporters: [opencensus]
 ```
 
@@ -135,7 +135,7 @@ When the Collector loads this config the result will look like this:
 
 ![Processors](images/design-processors.png)
 
-Note that each “queued-retry” processor is an independent instance, although both are configured the same way, i.e. each have a size of 50.
+Note that each “queued_retry” processor is an independent instance, although both are configured the same way, i.e. each have a size of 50.
 
 ## <a name="opentelemetry-agent"></a>Running as an Agent
 

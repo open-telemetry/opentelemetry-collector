@@ -27,7 +27,7 @@ import (
 
 const (
 	// The value of "type" Tail Sampling in configuration.
-	typeStr = "tail-sampling"
+	typeStr = "tail_sampling"
 )
 
 // Factory is the factory for Tail Sampling processor.

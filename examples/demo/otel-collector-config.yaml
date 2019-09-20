@@ -16,35 +16,35 @@ exporters:
   zipkin:
     url: "http://zipkin-all-in-one:9411/api/v2/spans"
 
-  jaeger-grpc:
+  jaeger_grpc:
     endpoint: jaeger-all-in-one:14250
 
-# Alternatively, use jaeger-thrift-http with the settings below. In this case
+# Alternatively, use jaeger_thrift_http with the settings below. In this case
 # update the list of exporters on the traces pipeline.
 #
-#  jaeger-thrift-http:
+#  jaeger_thrift_http:
 #    url: http://jaeger-all-in-one:14268/api/traces
 
 processors:
   batch:
-  queued-retry:
+  queued_retry:
 
 pipelines:
   traces:
     receivers: [opencensus]
-    exporters: [logging, zipkin, jaeger-grpc]
-    processors: [batch, queued-retry]
+    exporters: [logging, zipkin, jaeger_grpc]
+    processors: [batch, queued_retry]
   metrics:
     receivers: [opencensus]
     exporters: [logging,prometheus]
 
 extensions:
-  health-check:
+  health_check:
   pprof:
     endpoint: :1888
   zpages:
     endpoint: :55679
 
 service:
-  extensions: [pprof, zpages, health-check]
+  extensions: [pprof, zpages, health_check]
 

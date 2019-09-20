@@ -38,9 +38,9 @@ receivers:
   jaeger/tls:
     protocols:
       grpc:
-        tls-credentials:
-          cert-file: /test.crt
-          key-file: /test.key
+        tls_credentials:
+          cert_file: /test.crt
+          key_file: /test.key
         endpoint: "localhost:9876"
       thrift-http:
         endpoint: ":3456"

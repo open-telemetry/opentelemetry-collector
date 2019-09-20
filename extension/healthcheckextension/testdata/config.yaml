@@ -1,10 +1,10 @@
 extensions:
-  health-check:
-  health-check/1:
+  health_check:
+  health_check/1:
     port: 13
 
 service:
-  extensions: [health-check/1]
+  extensions: [health_check/1]
 
 # Data pipeline is required to load the config.
 receivers:

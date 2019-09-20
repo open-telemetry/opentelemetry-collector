@@ -33,7 +33,7 @@ type GRPCSettings struct {
 
 	// Certificate file for TLS credentials of gRPC client. Should
 	// only be used if `secure` is set to true.
-	CertPemFile string `mapstructure:"cert-pem-file"`
+	CertPemFile string `mapstructure:"cert_pem_file"`
 
 	// Whether to enable client transport security for the exporter's gRPC
 	// connection. See https://godoc.org/google.golang.org/grpc#WithInsecure.
@@ -49,5 +49,5 @@ type GRPCSettings struct {
 type KeepaliveConfig struct {
 	Time                time.Duration `mapstructure:"time,omitempty"`
 	Timeout             time.Duration `mapstructure:"timeout,omitempty"`
-	PermitWithoutStream bool          `mapstructure:"permit-without-stream,omitempty"`
+	PermitWithoutStream bool          `mapstructure:"permit_without_stream,omitempty"`
 }
