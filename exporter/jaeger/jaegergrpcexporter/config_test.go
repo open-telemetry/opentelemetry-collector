@@ -36,15 +36,15 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e0 := cfg.Exporters["jaeger-grpc"]
+	e0 := cfg.Exporters["jaeger_grpc"]
 
 	// Endpoint doesn't have a default value so set it directly.
 	defaultCfg := factory.CreateDefaultConfig().(*Config)
 	defaultCfg.Endpoint = "some.target:55678"
 	assert.Equal(t, defaultCfg, e0)
 
-	e1 := cfg.Exporters["jaeger-grpc/2"]
-	assert.Equal(t, "jaeger-grpc/2", e1.(*Config).Name())
+	e1 := cfg.Exporters["jaeger_grpc/2"]
+	assert.Equal(t, "jaeger_grpc/2", e1.(*Config).Name())
 	assert.Equal(t, "a.new.target:1234", e1.(*Config).Endpoint)
 	_, err = factory.CreateTraceExporter(zap.NewNop(), e1)
 	require.NoError(t, err)

@@ -72,9 +72,9 @@ This receiver supports communication using Transport Layer Security (TLS). TLS c
 ```yaml
 receivers:
   opencensus:
-    tls-credentials:
-      key-file: /key.pem # path to private key
-      cert-file: /cert.pem # path to certificate
+    tls_credentials:
+      key_file: /key.pem # path to private key
+      cert_file: /cert.pem # path to certificate
 ``` 
 
 ### Writing with HTTP/JSON 
@@ -88,13 +88,13 @@ format parallels the gRPC protobuf format, see this
 
 The HTTP/JSON endpoint can also optionally 
 [CORS](https://fetch.spec.whatwg.org/#cors-protocol), which is enabled by
-specifying a list of allowed CORS origins in the `cors-allowed-origins` field:
+specifying a list of allowed CORS origins in the `cors_allowed_origins` field:
 
 ```yaml
 receivers:
   opencensus:
     endpoint: "localhost:55678"
-    cors-allowed-origins:
+    cors_allowed_origins:
     - http://test.com
     # Origins can have wildcards with *, use * by itself to match any origin.
     - https://*.example.com  
@@ -134,9 +134,9 @@ receivers:
   jaeger:
     protocols:
       grpc:
-        tls-credentials:
-          key-file: /key.pem # path to private key
-          cert-file: /cert.pem # path to certificate
+        tls_credentials:
+          key_file: /key.pem # path to private key
+          cert_file: /cert.pem # path to certificate
         endpoint: "localhost:9876"
 ``` 
 ## <a name="prometheus"></a>Prometheus Receiver

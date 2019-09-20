@@ -192,7 +192,7 @@ func (sp *queuedSpanProcessor) processItemFromQueue(item *queueItem) {
 	if sp.backoffDelay > 0 {
 		sp.logger.Warn("Backing off before next attempt",
 			zap.String("processor", sp.name),
-			zap.Duration("backoff-delay", sp.backoffDelay))
+			zap.Duration("backoff_delay", sp.backoffDelay))
 		select {
 		case <-sp.stopCh:
 			sp.logger.Info("Interrupted due to shutdown", zap.String("processor", sp.name))

@@ -31,30 +31,30 @@ type Config struct {
 	// for the OpenCensus receiver. See github.com/rs/cors
 	// An empty list means that CORS is not enabled at all. A wildcard (*) can be
 	// used to match any origin or one or more characters of an origin.
-	CorsOrigins []string `mapstructure:"cors-allowed-origins"`
+	CorsOrigins []string `mapstructure:"cors_allowed_origins"`
 
 	// Keepalive anchor for all the settings related to keepalive.
 	Keepalive *serverParametersAndEnforcementPolicy `mapstructure:"keepalive,omitempty"`
 
 	// MaxRecvMsgSizeMiB sets the maximum size (in MiB) of messages accepted by the server.
-	MaxRecvMsgSizeMiB uint64 `mapstructure:"max-recv-msg-size-mib,omitempty"`
+	MaxRecvMsgSizeMiB uint64 `mapstructure:"max_recv_msg_size_mib,omitempty"`
 
 	// MaxConcurrentStreams sets the limit on the number of concurrent streams to each ServerTransport.
-	MaxConcurrentStreams uint32 `mapstructure:"max-concurrent-streams,omitempty"`
+	MaxConcurrentStreams uint32 `mapstructure:"max_concurrent_streams,omitempty"`
 }
 
 type serverParametersAndEnforcementPolicy struct {
-	ServerParameters  *keepaliveServerParameters  `mapstructure:"server-parameters,omitempty"`
-	EnforcementPolicy *keepaliveEnforcementPolicy `mapstructure:"enforcement-policy,omitempty"`
+	ServerParameters  *keepaliveServerParameters  `mapstructure:"server_parameters,omitempty"`
+	EnforcementPolicy *keepaliveEnforcementPolicy `mapstructure:"enforcement_policy,omitempty"`
 }
 
 // keepaliveServerParameters allow configuration of the keepalive.ServerParameters.
 // The same default values as keepalive.ServerParameters are applicable and get applied by the server.
 // See https://godoc.org/google.golang.org/grpc/keepalive#ServerParameters for details.
 type keepaliveServerParameters struct {
-	MaxConnectionIdle     time.Duration `mapstructure:"max-connection-idle,omitempty"`
-	MaxConnectionAge      time.Duration `mapstructure:"max-connection-age,omitempty"`
-	MaxConnectionAgeGrace time.Duration `mapstructure:"max-connection-age-grace,omitempty"`
+	MaxConnectionIdle     time.Duration `mapstructure:"max_connection_idle,omitempty"`
+	MaxConnectionAge      time.Duration `mapstructure:"max_connection_age,omitempty"`
+	MaxConnectionAgeGrace time.Duration `mapstructure:"max_connection_age_grace,omitempty"`
 	Time                  time.Duration `mapstructure:"time,omitempty"`
 	Timeout               time.Duration `mapstructure:"timeout,omitempty"`
 }
@@ -63,8 +63,8 @@ type keepaliveServerParameters struct {
 // The same default values as keepalive.EnforcementPolicy are applicable and get applied by the server.
 // See https://godoc.org/google.golang.org/grpc/keepalive#EnforcementPolicy for details.
 type keepaliveEnforcementPolicy struct {
-	MinTime             time.Duration `mapstructure:"min-time,omitempty"`
-	PermitWithoutStream bool          `mapstructure:"permit-without-stream,omitempty"`
+	MinTime             time.Duration `mapstructure:"min_time,omitempty"`
+	PermitWithoutStream bool          `mapstructure:"permit_without_stream,omitempty"`
 }
 
 func (rOpts *Config) buildOptions() (opts []Option, err error) {

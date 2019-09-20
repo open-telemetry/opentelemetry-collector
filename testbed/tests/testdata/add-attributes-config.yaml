@@ -10,7 +10,7 @@ exporters:
     endpoint: "localhost:56565"
 
 processors:
-  queued-retry:
+  queued_retry:
   attributes:
     actions:
       - key: attrib.key00
@@ -32,5 +32,5 @@ processors:
 pipelines:
   traces:
     receivers: [jaeger]
-    processors: [attributes,queued-retry]
+    processors: [attributes,queued_retry]
     exporters: [opencensus]

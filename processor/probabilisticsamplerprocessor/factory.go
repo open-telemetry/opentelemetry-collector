@@ -25,7 +25,7 @@ import (
 
 const (
 	// The value of "type" trace-samplers in configuration.
-	typeStr = "probabilistic-sampler"
+	typeStr = "probabilistic_sampler"
 )
 
 // Factory is the factory for trace-sample processor.

@@ -2,9 +2,9 @@ receivers:
   examplereceiver:
 
 processors:
-  probabilistic-sampler:
-    sampling-percentage: 15.3
-    hash-seed: 22
+  probabilistic_sampler:
+    sampling_percentage: 15.3
+    hash_seed: 22
 
 exporters:
   exampleexporter:
@@ -12,5 +12,5 @@ exporters:
 pipelines:
   traces:
     receivers: [examplereceiver]
-    processors: [probabilistic-sampler]
+    processors: [probabilistic_sampler]
     exporters: [exampleexporter]

@@ -27,7 +27,7 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr = "queued-retry"
+	typeStr = "queued_retry"
 )
 
 // Factory is the factory for OpenCensus exporter.

@@ -11,19 +11,19 @@ processors:
       - key: key1
         value: 123
         action: insert
-  queued-retry:
+  queued_retry:
   batch:
 
 pipelines:
   traces:
     receivers: [jaeger]
-    processors: [attributes, batch, queued-retry]
+    processors: [attributes, batch, queued_retry]
     exporters: [opencensus]
 
 extensions:
-  health-check:
+  health_check:
   pprof:
   zpages:
 
 service:
-  extensions: [pprof, zpages, health-check]
+  extensions: [pprof, zpages, health_check]
