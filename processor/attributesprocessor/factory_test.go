@@ -109,7 +109,7 @@ func TestFactory_attributeValue(t *testing.T) {
 	assert.Equal(t, "error unsupported value type \"attributesprocessor.Factory\"", err.Error())
 }
 
-func TestFactory_validateAttributesConfiguration(t *testing.T) {
+func TestFactory_validateActionsConfiguration(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
@@ -121,6 +121,7 @@ func TestFactory_validateAttributesConfiguration(t *testing.T) {
 		{Key: "five", FromAttribute: "two", Action: "upsert"},
 	}
 	output, err := buildAttributesConfiguration(*oCfg)
+	require.NoError(t, err)
 	assert.Equal(t, []attributeAction{
 		{Key: "one", Action: DELETE},
 		{Key: "two", Action: INSERT, AttributeValue: &tracepb.AttributeValue{
@@ -129,11 +130,10 @@ func TestFactory_validateAttributesConfiguration(t *testing.T) {
 		{Key: "three", FromAttribute: "two", Action: UPDATE},
 		{Key: "five", FromAttribute: "two", Action: UPSERT},
 	}, output)
-	assert.NoError(t, err)
 
 }
 
-func TestFactory_validateAttributesConfiguration_InvalidConfig(t *testing.T) {
+func TestFactory_validateActionsConfiguration_InvalidConfig(t *testing.T) {
 	testcase := []struct {
 		name        string
 		actionLists []ActionKeyValue
@@ -189,6 +189,140 @@ func TestFactory_validateAttributesConfiguration_InvalidConfig(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			oCfg.Actions = tc.actionLists
 			output, err := buildAttributesConfiguration(*oCfg)
+			assert.Nil(t, output)
+			assert.Equal(t, tc.errorString, err.Error())
+		})
+	}
+}
+
+func TestFactory_validateMatchesConfiguration(t *testing.T) {
+	testcase := []struct {
+		name   string
+		input  MatchProperties
+		output matchingProperties
+	}{
+		{
+			name: "service name build",
+			input: MatchProperties{
+				Services: []string{
+					"a", "b", "c",
+				},
+			},
+			output: matchingProperties{
+				Services: map[string]bool{"a": true, "b": true, "c": true},
+			},
+		},
+		{
+			name: "attributes build",
+			input: MatchProperties{
+				Attributes: []Attribute{
+					{
+						Key: "key1",
+					},
+					{
+						Key:   "key2",
+						Value: 1234,
+					},
+				},
+			},
+			output: matchingProperties{
+				Services: map[string]bool{},
+				Attributes: []matchAttribute{
+					{
+						Key: "key1",
+					},
+					{
+						Key: "key2",
+						AttributeValue: &tracepb.AttributeValue{
+							Value: &tracepb.AttributeValue_IntValue{IntValue: cast.ToInt64(1234)},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "both set of attributes",
+			input: MatchProperties{
+				Services: []string{
+					"a", "b", "c",
+				},
+				Attributes: []Attribute{
+					{
+						Key: "key1",
+					},
+					{
+						Key:   "key2",
+						Value: 1234,
+					},
+				},
+			},
+			output: matchingProperties{
+				Services: map[string]bool{"a": true, "b": true, "c": true},
+				Attributes: []matchAttribute{
+					{
+						Key: "key1",
+					},
+					{
+						Key: "key2",
+						AttributeValue: &tracepb.AttributeValue{
+							Value: &tracepb.AttributeValue_IntValue{IntValue: cast.ToInt64(1234)},
+						},
+					},
+				},
+			},
+		},
+	}
+	for _, tc := range testcase {
+		t.Run(tc.name, func(t *testing.T) {
+			output, err := buildMatchProperties(&tc.input)
+			require.NoError(t, err)
+			assert.Equal(t, &tc.output, output)
+		})
+	}
+}
+
+func TestFactory_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
+	testcases := []struct {
+		name        string
+		property    MatchProperties
+		errorString string
+	}{
+		{
+			name:        "empty property",
+			property:    MatchProperties{},
+			errorString: "error creating \"attributes\" processor. At least one field \"services\" or \"attributes\" must be specified",
+		},
+		{
+			name: "empty service and attributes",
+			property: MatchProperties{
+				Services:   []string{},
+				Attributes: []Attribute{},
+			},
+			errorString: "error creating \"attributes\" processor. At least one field \"services\" or \"attributes\" must be specified",
+		},
+		{
+			name: "empty service name in services list",
+			property: MatchProperties{
+				Services: []string{""},
+			},
+			errorString: "error creating \"attributes\" processor. Can't have empty string for service name in list of services",
+		},
+		{
+			name: "empty key name in attributes list",
+			property: MatchProperties{
+				Services: []string{"a"},
+				Attributes: []Attribute{
+					{
+						Key: "",
+					},
+				},
+			},
+			errorString: "error creating \"attributes\" processor. Can't have empty string for service name in list of attributes",
+		},
+	}
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			output, err := buildMatchProperties(&tc.property)
 			assert.Nil(t, output)
 			assert.Equal(t, tc.errorString, err.Error())
 		})

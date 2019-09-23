@@ -15,6 +15,7 @@
 package attributesprocessor
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -65,7 +66,20 @@ func (f *Factory) CreateTraceProcessor(
 	if err != nil {
 		return nil, err
 	}
-	return newTraceProcessor(nextConsumer, actions)
+	include, err := buildMatchProperties(oCfg.Include)
+	if err != nil {
+		return nil, err
+	}
+	exclude, err := buildMatchProperties(oCfg.Exclude)
+	if err != nil {
+		return nil, err
+	}
+	config := attributesConfig{
+		actions: actions,
+		include: include,
+		exclude: exclude,
+	}
+	return newTraceProcessor(nextConsumer, config)
 }
 
 // CreateMetricsProcessor creates a metrics processor based on this config.
@@ -147,4 +161,50 @@ func buildAttributesConfiguration(config Config) ([]attributeAction, error) {
 		attributeActions = append(attributeActions, action)
 	}
 	return attributeActions, nil
+}
+
+func buildMatchProperties(config *MatchProperties) (*matchingProperties, error) {
+	if config == nil {
+		return nil, nil
+	}
+
+	if len(config.Services) == 0 && len(config.Attributes) == 0 {
+		return nil, errors.New("error creating \"attributes\" processor. At least one field \"services\" or \"attributes\" must be specified")
+	}
+	properties := &matchingProperties{}
+	for _, serviceName := range config.Services {
+		if serviceName == "" {
+			return nil, errors.New("error creating \"attributes\" processor. Can't have empty string for service name in list of services")
+		}
+	}
+	svcNames := make(map[string]bool, len(config.Services))
+	for _, name := range config.Services {
+		svcNames[name] = true
+	}
+	// Copy the list of service names after each one has been validated. If the list is empty, that is okay because the match properties too will be empty.
+	properties.Services = svcNames
+
+	var rawAttributes []matchAttribute
+	for _, attribute := range config.Attributes {
+
+		if attribute.Key == "" {
+			return nil, errors.New("error creating \"attributes\" processor. Can't have empty string for service name in list of attributes")
+		}
+
+		entry := matchAttribute{
+			Key: attribute.Key,
+		}
+		if attribute.Value != nil {
+			val, err := attributeValue(attribute.Value)
+			if err != nil {
+				return nil, err
+			}
+			entry.AttributeValue = val
+		}
+
+		rawAttributes = append(rawAttributes, entry)
+
+	}
+	properties.Attributes = rawAttributes
+	return properties, nil
 }

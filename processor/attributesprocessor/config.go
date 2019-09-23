@@ -35,7 +35,7 @@ type Config struct {
 	// This is an optional field. If neither `include` and `exclude` are set, all spans
 	// are processed. If `include` is set and `exclude` isn't set, then all
 	// spans matching the properties in this structure are processed.
-	Include MatchProperties `mapstructure:"include"`
+	Include *MatchProperties `mapstructure:"include"`
 
 	// Exclude specifies when this processor will not be applied to the Spans
 	// which match the specified properties.
@@ -46,7 +46,7 @@ type Config struct {
 	// This is an optional field. If neither `include` and `exclude` are set, all spans
 	// are processed. If `exclude` is set and `include` isn't set, then all
 	// spans  that do no match the properties in this structure are processed.
-	Exclude MatchProperties `mapstructure:"exclude"`
+	Exclude *MatchProperties `mapstructure:"exclude"`
 
 	// Actions specifies the list of attributes to act on.
 	// The set of actions are {INSERT, UPDATE, UPSERT, DELETE}.
