@@ -15,7 +15,9 @@
 package healthcheckextension
 
 import (
+	"net"
 	"net/http"
+	"strconv"
 
 	"github.com/jaegertracing/jaeger/pkg/healthcheck"
 	"go.uber.org/zap"
@@ -26,7 +28,8 @@ import (
 type healthCheckExtension struct {
 	config Config
 	logger *zap.Logger
-	server *healthcheck.HealthCheck
+	state  *healthcheck.HealthCheck
+	server http.Server
 }
 
 var _ (extension.ServiceExtension) = (*healthCheckExtension)(nil)
@@ -35,9 +38,21 @@ var _ (extension.PipelineWatcher) = (*healthCheckExtension)(nil)
 func (hc *healthCheckExtension) Start(host extension.Host) error {
 
 	hc.logger.Info("Starting health_check extension", zap.Any("config", hc.config))
+
+	// Initialize listener
+	portStr := ":" + strconv.Itoa(int(hc.config.Port))
+	ln, err := net.Listen("tcp", portStr)
+	if err != nil {
+		host.ReportFatalError(err)
+		return nil
+	}
+
+	// Mount HC handler
+	hc.server.Handler = hc.state.Handler()
+
 	go func() {
 		// The listener ownership goes to the server.
-		if _, err := hc.server.Serve(int(hc.config.Port)); err != http.ErrServerClosed && err != nil {
+		if err := hc.server.Serve(ln); err != http.ErrServerClosed && err != nil {
 			host.ReportFatalError(err)
 		}
 	}()
@@ -46,16 +61,16 @@ func (hc *healthCheckExtension) Start(host extension.Host) error {
 }
 
 func (hc *healthCheckExtension) Shutdown() error {
-	return nil
+	return hc.server.Close()
 }
 
 func (hc *healthCheckExtension) Ready() error {
-	hc.server.Set(healthcheck.Ready)
+	hc.state.Set(healthcheck.Ready)
 	return nil
 }
 
 func (hc *healthCheckExtension) NotReady() error {
-	hc.server.Set(healthcheck.Unavailable)
+	hc.state.Set(healthcheck.Unavailable)
 	return nil
 }
 
@@ -63,8 +78,11 @@ func newServer(config Config, logger *zap.Logger) (*healthCheckExtension, error)
 	hc := &healthCheckExtension{
 		config: config,
 		logger: logger,
-		server: healthcheck.New(healthcheck.Unavailable, healthcheck.Logger(logger)),
+		state:  healthcheck.New(),
+		server: http.Server{},
 	}
+
+	hc.state.SetLogger(logger)
 
 	return hc, nil
 }

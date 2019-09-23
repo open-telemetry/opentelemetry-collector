@@ -57,7 +57,7 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 	resp1, err := client.Get(url)
 	require.NoError(t, err)
 	defer resp1.Body.Close()
-	require.Equal(t, http.StatusNoContent, resp1.StatusCode)
+	require.Equal(t, http.StatusOK, resp1.StatusCode)
 
 	hcExt.NotReady()
 	resp2, err := client.Get(url)

@@ -19,7 +19,6 @@ import (
 	"net"
 	"net/http"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -63,18 +62,6 @@ func TestApplication_StartUnified(t *testing.T) {
 		t.Fatalf("app didn't reach ready state")
 	}
 
-	// We have to wait here work around a data race bug in Jaeger
-	// (https://github.com/jaegertracing/jaeger/pull/1625) caused
-	// by stopping immediately after starting.
-	//
-	// Without this Sleep we were observing this bug on our side:
-	// https://github.com/open-telemetry/opentelemetry-service/issues/43
-	// The Sleep ensures that Jaeger Start() is fully completed before
-	// we call Jaeger Stop().
-	// TODO: Jaeger bug is already fixed, remove this once we update Jaeger
-	// to latest version.
-	time.Sleep(1 * time.Second)
-
 	close(app.stopTestChan)
 	<-appDone
 }
@@ -88,7 +75,7 @@ func isAppAvailable(t *testing.T, healthCheckEndPoint string) bool {
 		t.Fatalf("failed to get a response from health probe: %v", err)
 	}
 	defer resp.Body.Close()
-	return resp.StatusCode == http.StatusNoContent
+	return resp.StatusCode == http.StatusOK
 }
 
 func getMultipleAvailableLocalAddresses(t *testing.T, numAddresses uint) []string {
