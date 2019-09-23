@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"sync"
-	"time"
 
 	"contrib.go.opencensus.io/exporter/ocagent"
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
@@ -31,14 +30,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/exporter/exporterhelper"
 	"github.com/open-telemetry/opentelemetry-service/oterr"
 )
-
-// KeepaliveConfig exposes the keepalive.ClientParameters to be used by the exporter.
-// Refer to the original data-structure for the meaning of each parameter.
-type KeepaliveConfig struct {
-	Time                time.Duration `mapstructure:"time,omitempty"`
-	Timeout             time.Duration `mapstructure:"timeout,omitempty"`
-	PermitWithoutStream bool          `mapstructure:"permit-without-stream,omitempty"`
-}
 
 type ocAgentExporter struct {
 	exporters chan *ocagent.Exporter

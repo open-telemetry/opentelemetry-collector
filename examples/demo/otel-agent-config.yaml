@@ -4,7 +4,7 @@ log-level: DEBUG
 receivers:
   opencensus:
     endpoint: 0.0.0.0:55678
-    reconnection-delay: 2s
+    reconnection_delay: 2s
   jaeger:
     protocols:
       thrift-http:
@@ -19,13 +19,13 @@ exporters:
 
 processors:
   batch:
-  queued-retry:
+  queued_retry:
 
 pipelines:
   traces:
     receivers: [opencensus, jaeger]
     exporters: [opencensus, logging]
-    processors: [batch, queued-retry]
+    processors: [batch, queued_retry]
   metrics:
     receivers: [opencensus]
     exporters: [logging,opencensus]

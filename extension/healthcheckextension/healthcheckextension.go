@@ -37,7 +37,7 @@ var _ (extension.PipelineWatcher) = (*healthCheckExtension)(nil)
 
 func (hc *healthCheckExtension) Start(host extension.Host) error {
 
-	hc.logger.Info("Starting health-check extension", zap.Any("config", hc.config))
+	hc.logger.Info("Starting health_check extension", zap.Any("config", hc.config))
 
 	// Initialize listener
 	portStr := ":" + strconv.Itoa(int(hc.config.Port))

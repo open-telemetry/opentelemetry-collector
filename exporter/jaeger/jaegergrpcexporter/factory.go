@@ -26,7 +26,7 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr = "jaeger-grpc"
+	typeStr = "jaeger_grpc"
 )
 
 // Factory is the factory for Jaeger gRPC exporter.

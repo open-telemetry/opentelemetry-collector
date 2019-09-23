@@ -68,7 +68,7 @@ type tailSamplingSpanProcessor struct {
 }
 
 const (
-	sourceFormat = "tail-sampling"
+	sourceFormat = "tail_sampling"
 )
 
 var _ processor.TraceProcessor = (*tailSamplingSpanProcessor)(nil)
@@ -217,7 +217,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 // ConsumeTraceData is required by the SpanProcessor interface.
 func (tsp *tailSamplingSpanProcessor) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	tsp.start.Do(func() {
-		tsp.logger.Info("First trace data arrived, starting tail-sampling timers")
+		tsp.logger.Info("First trace data arrived, starting tail_sampling timers")
 		tsp.policyTicker.Start(1 * time.Second)
 	})
 

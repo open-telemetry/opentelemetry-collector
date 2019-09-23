@@ -26,6 +26,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-service/compression"
 	compressiongrpc "github.com/open-telemetry/opentelemetry-service/compression/grpc"
+	"github.com/open-telemetry/opentelemetry-service/config/configgrpc"
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
 )
@@ -51,7 +52,9 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		Headers: map[string]string{},
+		GRPCSettings: configgrpc.GRPCSettings{
+			Headers: map[string]string{},
+		},
 	}
 }
 

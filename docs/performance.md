@@ -1,20 +1,20 @@
-# OpenTelemetry Service Performance
+# OpenTelemetry Collector Performance
 
 The performance numbers that follow were generated using version 0.1.3 of the
-OpenTelemetry Service, are applicable primarily to the OpenTelemetry Collector and
+OpenTelemetry Collector, are applicable primarily to the OpenTelemetry Collector and
 are measured only for traces. In the future, more configurations will be tested.
 
 Note with the OpenTelemetry Agent you can expect as good if not better performance
 with lower resource utilization. This is because the OpenTelemetry Agent does not
 today support features such as batching or retries and will not support
-tail-sampling.
+tail_sampling.
 
 It is important to note that the performance of the OpenTelemetry Collector depends
 on a variety of factors including:
 
 * The receiving format: OpenTelemetry (55678), Jaeger thrift (14268) or Zipkin v2 JSON (9411)
 * The size of the spans (tests are based on number of attributes): 20
-* Whether tail-sampling is enabled or not
+* Whether tail_sampling is enabled or not
 * CPU / Memory allocation
 * Operating System: Linux
 
