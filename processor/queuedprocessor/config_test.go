@@ -37,15 +37,15 @@ func TestLoadConfig(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
 
-	p0 := cfg.Processors["queued-retry"]
+	p0 := cfg.Processors["queued_retry"]
 	assert.Equal(t, p0, factory.CreateDefaultConfig())
 
-	p1 := cfg.Processors["queued-retry/2"]
+	p1 := cfg.Processors["queued_retry/2"]
 	assert.Equal(t, p1,
 		&Config{
 			ProcessorSettings: configmodels.ProcessorSettings{
-				TypeVal: "queued-retry",
-				NameVal: "queued-retry/2",
+				TypeVal: "queued_retry",
+				NameVal: "queued_retry/2",
 			},
 			NumWorkers:     2,
 			QueueSize:      10,

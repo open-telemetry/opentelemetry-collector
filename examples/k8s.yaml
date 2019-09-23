@@ -73,9 +73,9 @@ data:
       opencensus:
 # keepalive settings can help load balancing, see receiver/README.md for more info.
         keepalive:
-          server-parameters:
-            max-connection-age: 120s
-            max-connection-age-grace: 30s
+          server_parameters:
+            max_connection_age: 120s
+            max_connection_age-grace: 30s
       jaeger: {}
       zipkin: {}
 # Can only use one exporter
@@ -88,16 +88,16 @@ data:
         batching:
           enable: true
           timeout: 5s
-          send-batch-size: 1024
-        num-workers: 16
-        queue-size: 10000
-        retry-on-failure: true
+          send_batch_size: 1024
+        num_workers: 16
+        queue_size: 10000
+        retry_on_failure: true
         opencensus:
           compression: "gzip"
           endpoint: "ingest.omnition.io:443"
           headers: { "x-omnition-api-key":"00000000-0000-0000-0000-000000000001" } # TODO: Update me
-          num-workers: 8
-          reconnection-delay: 2s
+          num_workers: 8
+          reconnection_delay: 2s
           secure: true
 ---
 apiVersion: v1
@@ -115,7 +115,7 @@ spec:
     targetPort: 55678
 #  - name: jaeger-tchannel
 #    port: 14267
-#  - name: jaeger-thrift-http
+#  - name: jaeger_thrift_http
 #    port: 14268
 #  - name: zipkin
 #    port: 9411

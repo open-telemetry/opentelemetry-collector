@@ -5,9 +5,9 @@ processors:
   exampleprocessor:
 
 exporters:
-  jaeger-thrift-http:
+  jaeger_thrift_http:
     url: "http://some.location:14268/api/traces"
-  jaeger-thrift-http/2:
+  jaeger_thrift_http/2:
     url: "http://some.other.location/api/traces"
     timeout: 2s
     headers:
@@ -18,4 +18,4 @@ pipelines:
   traces:
     receivers: [examplereceiver]
     processors: [exampleprocessor]
-    exporters: [jaeger-thrift-http, jaeger-thrift-http/2]
+    exporters: [jaeger_thrift_http, jaeger_thrift_http/2]

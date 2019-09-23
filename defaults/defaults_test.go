@@ -49,7 +49,7 @@ import (
 
 func TestDefaultComponents(t *testing.T) {
 	expectedExtensions := map[string]extension.Factory{
-		"health-check": &healthcheckextension.Factory{},
+		"health_check": &healthcheckextension.Factory{},
 		"pprof":        &pprofextension.Factory{},
 		"zpages":       &zpagesextension.Factory{},
 	}
@@ -62,18 +62,18 @@ func TestDefaultComponents(t *testing.T) {
 	}
 	expectedProcessors := map[string]processor.Factory{
 		"attributes":            &attributesprocessor.Factory{},
-		"queued-retry":          &queuedprocessor.Factory{},
+		"queued_retry":          &queuedprocessor.Factory{},
 		"batch":                 &nodebatcherprocessor.Factory{},
-		"tail-sampling":         &tailsamplingprocessor.Factory{},
-		"probabilistic-sampler": &probabilisticsamplerprocessor.Factory{},
+		"tail_sampling":         &tailsamplingprocessor.Factory{},
+		"probabilistic_sampler": &probabilisticsamplerprocessor.Factory{},
 	}
 	expectedExporters := map[string]exporter.Factory{
 		"opencensus":         &opencensusexporter.Factory{},
 		"prometheus":         &prometheusexporter.Factory{},
 		"logging":            &loggingexporter.Factory{},
 		"zipkin":             &zipkinexporter.Factory{},
-		"jaeger-grpc":        &jaegergrpcexporter.Factory{},
-		"jaeger-thrift-http": &jaegerthrifthttpexporter.Factory{},
+		"jaeger_grpc":        &jaegergrpcexporter.Factory{},
+		"jaeger_thrift_http": &jaegerthrifthttpexporter.Factory{},
 	}
 
 	factories, err := Components()

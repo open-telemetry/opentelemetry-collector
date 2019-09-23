@@ -2,8 +2,8 @@ extensions:
   pprof:
   pprof/1:
     endpoint: "0.0.0.0:1777"
-    block-profile-fraction: 3
-    mutex-profile-fraction: 5
+    block_profile_fraction: 3
+    mutex_profile_fraction: 5
 
 service:
   extensions: [pprof/1]

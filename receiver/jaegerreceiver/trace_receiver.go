@@ -75,10 +75,16 @@ type jReceiver struct {
 	agent *agentapp.Agent
 
 	grpc            *grpc.Server
-	tchannel        *tchannel.Channel
+	tchanServer     *jTchannelReceiver
 	collectorServer *http.Server
 
 	defaultAgentCtx context.Context
+}
+
+type jTchannelReceiver struct {
+	nextConsumer consumer.TraceConsumer
+
+	tchannel *tchannel.Channel
 }
 
 const (
@@ -106,6 +112,9 @@ func New(ctx context.Context, config *Configuration, nextConsumer consumer.Trace
 		config:          config,
 		defaultAgentCtx: observability.ContextWithReceiverName(context.Background(), "jaeger-agent"),
 		nextConsumer:    nextConsumer,
+		tchanServer: &jTchannelReceiver{
+			nextConsumer: nextConsumer,
+		},
 	}, nil
 }
 
@@ -229,9 +238,9 @@ func (jr *jReceiver) stopTraceReceptionLocked() error {
 			}
 			jr.collectorServer = nil
 		}
-		if jr.tchannel != nil {
-			jr.tchannel.Close()
-			jr.tchannel = nil
+		if jr.tchanServer.tchannel != nil {
+			jr.tchanServer.tchannel.Close()
+			jr.tchanServer.tchannel = nil
 		}
 		if jr.grpc != nil {
 			jr.grpc.Stop()
@@ -253,10 +262,10 @@ func (jr *jReceiver) stopTraceReceptionLocked() error {
 }
 
 const collectorReceiverTagValue = "jaeger-collector"
+const tchannelCollectorReceiverTagValue = "jaeger-tchannel-collector"
 
-func (jr *jReceiver) SubmitBatches(ctx thrift.Context, batches []*jaeger.Batch) ([]*jaeger.BatchSubmitResponse, error) {
+func consumeTraceData(ctx context.Context, batches []*jaeger.Batch, consumer consumer.TraceConsumer) ([]*jaeger.BatchSubmitResponse, error) {
 	jbsr := make([]*jaeger.BatchSubmitResponse, 0, len(batches))
-	ctxWithReceiverName := observability.ContextWithReceiverName(ctx, collectorReceiverTagValue)
 
 	for _, batch := range batches {
 		td, err := jaegertranslator.ThriftBatchToOCProto(batch)
@@ -266,16 +275,30 @@ func (jr *jReceiver) SubmitBatches(ctx thrift.Context, batches []*jaeger.Batch) 
 		if err == nil {
 			ok = true
 			td.SourceFormat = "jaeger"
-			jr.nextConsumer.ConsumeTraceData(ctx, td)
+			consumer.ConsumeTraceData(ctx, td)
 			// We MUST unconditionally record metrics from this reception.
-			observability.RecordMetricsForTraceReceiver(ctxWithReceiverName, len(batch.Spans), len(batch.Spans)-len(td.Spans))
+			observability.RecordMetricsForTraceReceiver(ctx, len(batch.Spans), len(batch.Spans)-len(td.Spans))
 		}
 
 		jbsr = append(jbsr, &jaeger.BatchSubmitResponse{
 			Ok: ok,
 		})
 	}
+
 	return jbsr, nil
+}
+
+func (jr *jReceiver) SubmitBatches(batches []*jaeger.Batch, options app.SubmitBatchOptions) ([]*jaeger.BatchSubmitResponse, error) {
+	ctx := context.Background()
+	ctxWithReceiverName := observability.ContextWithReceiverName(ctx, collectorReceiverTagValue)
+
+	return consumeTraceData(ctxWithReceiverName, batches, jr.nextConsumer)
+}
+
+func (jtr *jTchannelReceiver) SubmitBatches(ctx thrift.Context, batches []*jaeger.Batch) ([]*jaeger.BatchSubmitResponse, error) {
+	ctxWithReceiverName := observability.ContextWithReceiverName(ctx, tchannelCollectorReceiverTagValue)
+
+	return consumeTraceData(ctxWithReceiverName, batches, jtr.nextConsumer)
 }
 
 var _ reporter.Reporter = (*jReceiver)(nil)
@@ -387,7 +410,7 @@ func (jr *jReceiver) startCollector(host receiver.Host) error {
 	}
 
 	server := thrift.NewServer(tch)
-	server.Register(jaeger.NewTChanCollectorServer(jr))
+	server.Register(jaeger.NewTChanCollectorServer(jr.tchanServer))
 
 	taddr := jr.tchannelAddr()
 	tln, terr := net.Listen("tcp", taddr)
@@ -395,7 +418,7 @@ func (jr *jReceiver) startCollector(host receiver.Host) error {
 		return fmt.Errorf("failed to bind to TChannel address %q: %v", taddr, terr)
 	}
 	tch.Serve(tln)
-	jr.tchannel = tch
+	jr.tchanServer.tchannel = tch
 
 	// Now the collector that runs over HTTP
 	caddr := jr.collectorAddr()

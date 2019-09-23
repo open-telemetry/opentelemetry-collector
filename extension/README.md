@@ -4,7 +4,7 @@ out in the [OpenTelemetry Gitter](https://gitter.im/open-telemetry/opentelemetry
 or refer to the [issues page](https://github.com/open-telemetry/opentelemetry-service/issues).
 
 Supported service extensions (sorted alphabetically):
-- [Health Check](#health-check)
+- [Health Check](#health_check)
 - [Performance Profiler](#pprof)
 - [zPages](#zpages)
 
@@ -18,10 +18,10 @@ will be shutdown. The ordering is determined in the `extensions` tag under the
 service:
   # Extensions specified below are going to be loaded by the service in the
   # order given below, and shutdown on reverse order.
-  extensions: [health-check, pprof, zpages]
+  extensions: [health_check, pprof, zpages]
 ```
 
-## <a name="health-check"></a>Health Check
+## <a name="health_check"></a>Health Check
 Health Check extension enables an HTTP url that can be probed to check the
 status of the the OpenTelemetry Collector. The only configuration setting is the
 port in which the endpoint is going to be available, the default port is 13133.
@@ -32,9 +32,9 @@ Configuration:
 ```yaml
 
 extensions:
-  # Configures the health-check extension to expose an HTTP endpoint with the
+  # Configures the health_check extension to expose an HTTP endpoint with the
   # service status.
-  health-check:
+  health_check:
     # Specifies the port in which the HTTP endpoint is going to be opened. The
     # default value is 13133.
     port: 13133
@@ -59,11 +59,11 @@ extensions:
     endpoint: localhost:1777
     # Fraction of blocking events that are profiled. A value <= 0 disables
     # profiling. See https://golang.org/pkg/runtime/#SetBlockProfileRate for details.
-    block-profile-fraction: 0
+    block_profile_fraction: 0
     # Fraction of mutex contention events that are profiled. A value <= 0
     # disables profiling. See https://golang.org/pkg/runtime/#SetMutexProfileFraction
     # for details.
-    mutex-profile-fraction: 0
+    mutex_profile_fraction: 0
 ```
 
 ## <a name="zpages"></a>zPages
