@@ -161,9 +161,9 @@ func (vmc *VMMetricsCollector) scrapeAndExport() {
 
 	var proc procfs.Proc
 	var err error
-	proc, err = vmc.processFs.NewProc(vmc.pid)
+	proc, err = vmc.processFs.Proc(vmc.pid)
 	if err == nil {
-		procStat, err := proc.NewStat()
+		procStat, err := proc.Stat()
 		if err == nil {
 			metrics = append(
 				metrics,
@@ -179,7 +179,7 @@ func (vmc *VMMetricsCollector) scrapeAndExport() {
 		errs = append(errs, err)
 	}
 
-	stat, err := vmc.fs.NewStat()
+	stat, err := vmc.fs.Stat()
 	if err == nil {
 		cpuStat := stat.CPUTotal
 		metrics = append(

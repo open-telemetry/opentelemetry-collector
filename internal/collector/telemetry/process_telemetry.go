@@ -113,7 +113,7 @@ func (pmv *ProcessMetricsViews) updateViews() {
 	pid := os.Getpid()
 	proc, err := procfs.NewProc(pid)
 	if err == nil {
-		if procStat, err := proc.NewStat(); err == nil {
+		if procStat, err := proc.Stat(); err == nil {
 			stats.Record(context.Background(), mCPUSeconds.M(int64(procStat.CPUTime())))
 		}
 	}
