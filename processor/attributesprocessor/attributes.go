@@ -86,7 +86,7 @@ func (a *attributesProcessor) ConsumeTraceData(ctx context.Context, td consumerd
 			continue
 		}
 
-		if !a.shouldProcessSpan(span, serviceName) {
+		if a.shouldDropSpan(span, serviceName) {
 			continue
 		}
 
@@ -152,36 +152,36 @@ func setAttribute(action attributeAction, attributesMap map[string]*tracepb.Attr
 	}
 }
 
-// shouldProcessSpan determines if a span should be processed.
-// True is returned when a span should be processed.
-// False is returned when a span should not be processed.
+// shouldDropSpan determines if a span should be processed.
+// True is returned when a span should be dropped.
+// False is returned when a span should not be dropped.
 // The logic determining if a span should be processed is set
 // in the attribute configuration with the include and exclude settings.
 // Include properties are checked before exclude settings are checked.
-func (a *attributesProcessor) shouldProcessSpan(span *tracepb.Span, serviceName string) bool {
-	// By default all spans are processed no include and exclude properties are set.
+func (a *attributesProcessor) shouldDropSpan(span *tracepb.Span, serviceName string) bool {
+	// By default all spans are processed when no include and exclude properties are set.
 	if a.config.include == nil && a.config.exclude == nil {
-		return true
+		return false
 	}
 
 	if a.config.include != nil {
 		// A false returned in this case means the span should not be processed.
 		if include := matchSpanToProperties(*a.config.include, span, serviceName); !include {
-			return false
+			return true
 		}
 	}
 
 	if a.config.exclude != nil {
 		// A true returned in this case means the span should not be processed.
 		if exclude := matchSpanToProperties(*a.config.exclude, span, serviceName); exclude {
-			return false
+			return true
 		}
 	}
 
-	return true
+	return false
 }
 
-// matchProperties
+// matchProperties matches a span and service to a set of properties.
 // There are two sets of properties to match against.
 // The service name is checked first, if specified. The attributes are checked
 // afterwards, if specified.
@@ -190,23 +190,11 @@ func (a *attributesProcessor) shouldProcessSpan(span *tracepb.Span, serviceName 
 // to true for a match to occur.
 func matchSpanToProperties(mp matchingProperties, span *tracepb.Span, serviceName string) bool {
 
-	// Check if the service name is in the list of service names.
-	serviceFound := mp.Services[serviceName]
-	// Only return false only when all of these conditions are true:
-	// - a valid service name is provided. Invalid names are empty string,
-	// `<nil-batch-node>`, `<nil-service-info>` and `<empty-service-info-name>`.
-	// The last three values are from ServiceNameForNode method.
-	// - the map isn't empty (when the map is empty, serviceFound is always false.)
-	// - serviceFound is false
-	if serviceName != "" &&
-		serviceName != "<nil-batch-node>" &&
-		serviceName != "<nil-service-info>" &&
-		serviceName != "<empty-service-info-name>" &&
-		len(mp.Services) != 0 &&
-		!serviceFound {
-		return false
+	if len(mp.Services) != 0 {
+		if serviceFound := mp.Services[serviceName]; len(mp.Services) != 0 && !serviceFound {
+			return false
+		}
 	}
-
 	// If there are no attributes to match against, the span matches.
 	if len(mp.Attributes) == 0 {
 		return true

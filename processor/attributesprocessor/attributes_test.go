@@ -931,7 +931,7 @@ func TestAttributes_Matching_False(t *testing.T) {
 
 }
 
-func TestAttributes_more(t *testing.T) {
+func TestAttributes_MatchingCornerCases(t *testing.T) {
 	mp := matchingProperties{
 		Services: map[string]bool{
 			"svcA": true,
@@ -972,6 +972,46 @@ func TestAttributes_more(t *testing.T) {
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
 			assert.False(t, matchSpanToProperties(mp, tc.span, "svcA"))
+
+		})
+	}
+}
+
+func TestAttributes_MissingServiceName(t *testing.T) {
+	mp := matchingProperties{
+		Services: map[string]bool{
+			"svcA": true,
+		},
+	}
+	testcases := []struct {
+		name string
+		span *tracepb.Span
+	}{
+		{
+			name: "nil attributes",
+			span: &tracepb.Span{
+				Attributes: nil,
+			},
+		},
+		{
+			name: "default attributes",
+			span: &tracepb.Span{
+				Attributes: &tracepb.Span_Attributes{},
+			},
+		},
+		{
+			name: "empty map",
+			span: &tracepb.Span{
+				Attributes: &tracepb.Span_Attributes{
+					AttributeMap: map[string]*tracepb.AttributeValue{},
+				},
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.False(t, matchSpanToProperties(mp, tc.span, ""))
 
 		})
 	}
