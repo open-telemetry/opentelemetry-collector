@@ -86,7 +86,7 @@ func (a *attributesProcessor) ConsumeTraceData(ctx context.Context, td consumerd
 			continue
 		}
 
-		if a.shouldDropSpan(span, serviceName) {
+		if a.skipSpan(span, serviceName) {
 			continue
 		}
 
@@ -152,13 +152,13 @@ func setAttribute(action attributeAction, attributesMap map[string]*tracepb.Attr
 	}
 }
 
-// shouldDropSpan determines if a span should be processed.
-// True is returned when a span should be dropped.
-// False is returned when a span should not be dropped.
+// skipSpan determines if a span should be processed.
+// True is returned when a span should be skipped.
+// False is returned when a span should not be skipped.
 // The logic determining if a span should be processed is set
 // in the attribute configuration with the include and exclude settings.
 // Include properties are checked before exclude settings are checked.
-func (a *attributesProcessor) shouldDropSpan(span *tracepb.Span, serviceName string) bool {
+func (a *attributesProcessor) skipSpan(span *tracepb.Span, serviceName string) bool {
 	// By default all spans are processed when no include and exclude properties are set.
 	if a.config.include == nil && a.config.exclude == nil {
 		return false
@@ -191,17 +191,18 @@ func (a *attributesProcessor) shouldDropSpan(span *tracepb.Span, serviceName str
 func matchSpanToProperties(mp matchingProperties, span *tracepb.Span, serviceName string) bool {
 
 	if len(mp.Services) != 0 {
-		if serviceFound := mp.Services[serviceName]; len(mp.Services) != 0 && !serviceFound {
+		if serviceFound := mp.Services[serviceName]; !serviceFound {
 			return false
 		}
 	}
+
 	// If there are no attributes to match against, the span matches.
 	if len(mp.Attributes) == 0 {
 		return true
 	}
 
 	// At this point, it is expected of the span to have attributes because of
-	// len (mp.Attributes) !=0. For spans with no attributes, it does not match.
+	// len (mp.Attributes) != 0. For spans with no attributes, it does not match.
 	if span.Attributes == nil || len(span.Attributes.AttributeMap) == 0 {
 		return false
 	}
