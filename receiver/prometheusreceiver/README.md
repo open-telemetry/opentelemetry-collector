@@ -23,7 +23,7 @@ Prometheus itself can also used as an exporter, that it can expose the metrics i
 metrics endpoint, so is OpenTelemetry service. We shall be able to retain parity from the following two setups: 
 
 1. app -> prometheus -> metric-endpoint 
-2. app -> otcol-with-prometheus-receiver -> otcol-prometheus-exporter-metrics-endpoint
+2. app -> otelcol-with-prometheus-receiver -> otelcol-prometheus-exporter-metrics-endpoint
 
 
 ## Prometheus Text Format Overview
