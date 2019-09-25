@@ -18,6 +18,7 @@ import (
 	"context"
 	"testing"
 
+	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
@@ -32,6 +33,7 @@ import (
 // Common structure for the
 type testCase struct {
 	name               string
+	nodeName           string
 	inputAttributes    map[string]*tracepb.AttributeValue
 	expectedAttributes map[string]*tracepb.AttributeValue
 }
@@ -40,6 +42,11 @@ type testCase struct {
 func runIndividualTestCase(t *testing.T, tt testCase, tp processor.TraceProcessor) {
 	t.Run(tt.name, func(t *testing.T) {
 		traceData := consumerdata.TraceData{
+			Node: &commonpb.Node{
+				ServiceInfo: &commonpb.ServiceInfo{
+					Name: tt.nodeName,
+				},
+			},
 			Spans: []*tracepb.Span{
 				{
 					Name: &tracepb.TruncatableString{Value: tt.name},
@@ -52,6 +59,11 @@ func runIndividualTestCase(t *testing.T, tt testCase, tp processor.TraceProcesso
 
 		assert.NoError(t, tp.ConsumeTraceData(context.Background(), traceData))
 		require.Equal(t, consumerdata.TraceData{
+			Node: &commonpb.Node{
+				ServiceInfo: &commonpb.ServiceInfo{
+					Name: tt.nodeName,
+				},
+			},
 			Spans: []*tracepb.Span{
 				{
 					Name: &tracepb.TruncatableString{Value: tt.name},
@@ -832,6 +844,373 @@ func TestAttributes_Ordering(t *testing.T) {
 		{Key: "operation", Action: DELETE},
 	}
 
+	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), cfg)
+	require.Nil(t, err)
+	require.NotNil(t, tp)
+
+	for _, tt := range testCases {
+		runIndividualTestCase(t, tt, tp)
+	}
+}
+
+func TestAttributes_Matching_False(t *testing.T) {
+	testcases := []struct {
+		name       string
+		properties matchingProperties
+	}{
+		{
+			name: "service name doesn't match",
+			properties: matchingProperties{
+				Services: map[string]bool{
+					"svcA": true,
+				},
+				Attributes: []matchAttribute{},
+			},
+		},
+		{
+			name: "wrong property value",
+			properties: matchingProperties{
+				Services: map[string]bool{},
+				Attributes: []matchAttribute{
+					{
+						Key: "keyInt",
+						AttributeValue: &tracepb.AttributeValue{
+							Value: &tracepb.AttributeValue_IntValue{
+								IntValue: 1234,
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "incompatible property value",
+			properties: matchingProperties{
+				Services: map[string]bool{},
+				Attributes: []matchAttribute{
+					{
+						Key: "keyInt",
+						AttributeValue: &tracepb.AttributeValue{
+							Value: &tracepb.AttributeValue_StringValue{
+								StringValue: &tracepb.TruncatableString{Value: "123"},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "property key does not exist",
+			properties: matchingProperties{
+				Services: map[string]bool{},
+				Attributes: []matchAttribute{
+					{
+						Key:            "doesnotexist",
+						AttributeValue: nil,
+					},
+				},
+			},
+		},
+	}
+
+	span := &tracepb.Span{
+		Attributes: &tracepb.Span_Attributes{
+			AttributeMap: map[string]*tracepb.AttributeValue{
+				"keyInt": {
+					Value: &tracepb.AttributeValue_IntValue{IntValue: 123},
+				},
+			},
+		},
+	}
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.False(t, matchSpanToProperties(tc.properties, span, "wrongSvc"))
+
+		})
+	}
+
+}
+
+func TestAttributes_MatchingCornerCases(t *testing.T) {
+	mp := matchingProperties{
+		Services: map[string]bool{
+			"svcA": true,
+		},
+		Attributes: []matchAttribute{
+			{
+				Key:            "keyOne",
+				AttributeValue: nil,
+			},
+		},
+	}
+	testcases := []struct {
+		name string
+		span *tracepb.Span
+	}{
+		{
+			name: "nil attributes",
+			span: &tracepb.Span{
+				Attributes: nil,
+			},
+		},
+		{
+			name: "default attributes",
+			span: &tracepb.Span{
+				Attributes: &tracepb.Span_Attributes{},
+			},
+		},
+		{
+			name: "empty map",
+			span: &tracepb.Span{
+				Attributes: &tracepb.Span_Attributes{
+					AttributeMap: map[string]*tracepb.AttributeValue{},
+				},
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.False(t, matchSpanToProperties(mp, tc.span, "svcA"))
+
+		})
+	}
+}
+
+func TestAttributes_MissingServiceName(t *testing.T) {
+	mp := matchingProperties{
+		Services: map[string]bool{
+			"svcA": true,
+		},
+	}
+	testcases := []struct {
+		name string
+		span *tracepb.Span
+	}{
+		{
+			name: "nil attributes",
+			span: &tracepb.Span{
+				Attributes: nil,
+			},
+		},
+		{
+			name: "default attributes",
+			span: &tracepb.Span{
+				Attributes: &tracepb.Span_Attributes{},
+			},
+		},
+		{
+			name: "empty map",
+			span: &tracepb.Span{
+				Attributes: &tracepb.Span_Attributes{
+					AttributeMap: map[string]*tracepb.AttributeValue{},
+				},
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.False(t, matchSpanToProperties(mp, tc.span, ""))
+
+		})
+	}
+}
+
+func TestAttributes_Matching_True(t *testing.T) {
+	testcases := []struct {
+		name       string
+		properties matchingProperties
+	}{
+		{
+			name: "empty match properties",
+			properties: matchingProperties{
+				Services:   map[string]bool{},
+				Attributes: []matchAttribute{},
+			},
+		},
+		{
+			name: "service name match",
+			properties: matchingProperties{
+				Services: map[string]bool{
+					"svcA": true,
+				},
+				Attributes: []matchAttribute{},
+			},
+		},
+		{
+			name: "property exact value match",
+			properties: matchingProperties{
+				Services: map[string]bool{},
+				Attributes: []matchAttribute{
+					{
+						Key: "keyString",
+						AttributeValue: &tracepb.AttributeValue{
+							Value: &tracepb.AttributeValue_StringValue{
+								StringValue: &tracepb.TruncatableString{Value: "arithmetic"},
+							},
+						},
+					},
+					{
+						Key: "keyInt",
+						AttributeValue: &tracepb.AttributeValue{
+							Value: &tracepb.AttributeValue_IntValue{
+								IntValue: 123,
+							},
+						},
+					},
+					{
+						Key: "keyDouble",
+						AttributeValue: &tracepb.AttributeValue{
+							Value: &tracepb.AttributeValue_DoubleValue{
+								DoubleValue: cast.ToFloat64(3245.6),
+							},
+						},
+					},
+					{
+						Key: "keyBool",
+						AttributeValue: &tracepb.AttributeValue{
+							Value: &tracepb.AttributeValue_BoolValue{BoolValue: true},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "property exists",
+			properties: matchingProperties{
+				Services: map[string]bool{
+					"svcA": true,
+				},
+				Attributes: []matchAttribute{
+					{
+						Key:            "keyExists",
+						AttributeValue: nil,
+					},
+				},
+			},
+		},
+		{
+			name: "match all settings exists",
+			properties: matchingProperties{
+				Services: map[string]bool{
+					"svcA": true,
+				},
+				Attributes: []matchAttribute{
+					{
+						Key:            "keyExists",
+						AttributeValue: nil,
+					},
+					{
+						Key: "keyString",
+						AttributeValue: &tracepb.AttributeValue{
+							Value: &tracepb.AttributeValue_StringValue{
+								StringValue: &tracepb.TruncatableString{Value: "arithmetic"},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	span := &tracepb.Span{
+		Attributes: &tracepb.Span_Attributes{
+			AttributeMap: map[string]*tracepb.AttributeValue{
+				"keyString": {
+					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "arithmetic"}},
+				},
+				"keyInt": {
+					Value: &tracepb.AttributeValue_IntValue{IntValue: 123},
+				},
+				"keyDouble": {
+					Value: &tracepb.AttributeValue_DoubleValue{
+						DoubleValue: cast.ToFloat64(3245.6),
+					},
+				},
+				"keyBool": {
+					Value: &tracepb.AttributeValue_BoolValue{BoolValue: true},
+				},
+				"keyExists": {
+					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "present"}},
+				},
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.True(t, matchSpanToProperties(tc.properties, span, "svcA"))
+
+		})
+	}
+}
+
+func TestAttributes_FilterSpans(t *testing.T) {
+	testCases := []testCase{
+		{
+			name:            "apply processor",
+			nodeName:        "svcB",
+			inputAttributes: map[string]*tracepb.AttributeValue{},
+			expectedAttributes: map[string]*tracepb.AttributeValue{
+				"attribute1": {
+					Value: &tracepb.AttributeValue_IntValue{IntValue: 123},
+				},
+			},
+		},
+		{
+			name:     "apply processor with different value for exclude property",
+			nodeName: "svcB",
+			inputAttributes: map[string]*tracepb.AttributeValue{
+				"NoModification": {
+					Value: &tracepb.AttributeValue_BoolValue{BoolValue: false},
+				},
+			},
+			expectedAttributes: map[string]*tracepb.AttributeValue{
+				"attribute1": {
+					Value: &tracepb.AttributeValue_IntValue{IntValue: 123},
+				},
+				"NoModification": {
+					Value: &tracepb.AttributeValue_BoolValue{BoolValue: false},
+				},
+			},
+		},
+		{
+			name:               "incorrect name for include property",
+			nodeName:           "noname",
+			inputAttributes:    map[string]*tracepb.AttributeValue{},
+			expectedAttributes: map[string]*tracepb.AttributeValue{},
+		},
+		{
+			name:     "attribute match for exclude property",
+			nodeName: "svcB",
+			inputAttributes: map[string]*tracepb.AttributeValue{
+				"NoModification": {
+					Value: &tracepb.AttributeValue_BoolValue{BoolValue: true},
+				},
+			},
+			expectedAttributes: map[string]*tracepb.AttributeValue{
+				"NoModification": {
+					Value: &tracepb.AttributeValue_BoolValue{BoolValue: true},
+				},
+			},
+		},
+	}
+
+	factory := Factory{}
+	cfg := factory.CreateDefaultConfig()
+	oCfg := cfg.(*Config)
+	oCfg.Actions = []ActionKeyValue{
+		{Key: "attribute1", Action: INSERT, Value: 123},
+	}
+	oCfg.Include = &MatchProperties{
+		Services: []string{"svcA", "svcB"},
+	}
+	oCfg.Exclude = &MatchProperties{
+		Attributes: []Attribute{
+			{Key: "NoModification", Value: true},
+		},
+	}
 	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), cfg)
 	require.Nil(t, err)
 	require.NotNil(t, tp)
