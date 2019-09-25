@@ -861,7 +861,7 @@ func expandStringValues(value interface{}) interface{} {
 	case string:
 		return os.ExpandEnv(v)
 	case []interface{}:
-		// Viper treats all the slices as []interface{} (at least in what the otelsvc tests).
+		// Viper treats all the slices as []interface{} (at least in what the otelcol tests).
 		nslice := make([]interface{}, 0, len(v))
 		for _, vint := range v {
 			nslice = append(nslice, expandStringValues(vint))
@@ -869,7 +869,7 @@ func expandStringValues(value interface{}) interface{} {
 		return nslice
 	case map[string]interface{}:
 		nmap := make(map[string]interface{}, len(v))
-		// Viper treats all the maps as [string]interface{} (at least in what the otelsvc tests).
+		// Viper treats all the maps as [string]interface{} (at least in what the otelcol tests).
 		for k, vint := range v {
 			nmap[k] = expandStringValues(vint)
 		}

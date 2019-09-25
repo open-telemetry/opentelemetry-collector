@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Program otelsvc is the OpenTelemetry Collector that collects stats
+// Program otelcol is the OpenTelemetry Collector that collects stats
 // and traces and exports to a configured backend.
 package main
 

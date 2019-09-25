@@ -10,7 +10,7 @@ This demo uses `docker-compose` and runs against locally built docker images of 
 order to build the docker images use the commands below from the root of the repo:
 
 ```shell
-make docker-otelsvc
+make docker-otelcol
 ```
 
 To run the demo, switch to the `examples/demotrace` folder and run:

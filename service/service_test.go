@@ -44,7 +44,7 @@ func TestApplication_StartUnified(t *testing.T) {
 		app.v.Set(portArg[i], port)
 	}
 
-	app.v.Set("config", "testdata/otelsvc-config.yaml")
+	app.v.Set("config", "testdata/otelcol-config.yaml")
 
 	appDone := make(chan struct{})
 	go func() {

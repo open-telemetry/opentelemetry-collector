@@ -96,7 +96,7 @@ exporters configured.
 Build the Agent and start it with the example configuration:
 
 ```shell
-$ ./bin/$(go env GOOS)/otelsvc  --config ./examples/demo/otel-agent-config.yaml
+$ ./bin/$(go env GOOS)/otelcol  --config ./examples/demo/otel-agent-config.yaml
 $ 2018/10/08 21:38:00 Running OpenTelemetry receiver as a gRPC service at "localhost:55678"
 ```
 
@@ -107,8 +107,8 @@ enabled, but no exporters configured.
 Build the Collector and start it with the example configuration:
 
 ```shell
-$ make otelsvc
-$ ./bin/$($GOOS)/otelsvc --config ./examples/demo/otel-collector-config.yaml
+$ make otelcol
+$ ./bin/$($GOOS)/otelcol --config ./examples/demo/otel-collector-config.yaml
 ```
 
 Run the demo application:
@@ -118,7 +118,7 @@ $ go run "$(go env GOPATH)/src/github.com/open-telemetry/opentelemetry-service/e
 ```
 
 You should be able to see the traces in your exporter(s) of choice. If you stop
-the otelsvc, the example application will stop exporting. If you run it again,
+the `otelcol`, the example application will stop exporting. If you run it again,
 exporting will resume.
 
 ## <a name="config"></a>Configuration
@@ -361,26 +361,26 @@ The minimum Go version required for this project is Go 1.12.5.
 
 1. Run from sources:
 ```shell
-$ GO111MODULE=on go run github.com/open-telemetry/opentelemetry-service/cmd/otelsvc --help
+$ GO111MODULE=on go run github.com/open-telemetry/opentelemetry-service/cmd/otelcol --help
 ```
 2. Run from binary (from the root of your repo):
 ```shell
-$ make otelsvc
-$ ./bin/$($GOOS)/otelsvc
+$ make otelcol
+$ ./bin/$($GOOS)/otelcol
 ```
 3. Build a Docker scratch image and use the appropriate Docker command for your
    scenario (note: additional ports may be required depending on your receiver
    configuration):
 ```shell
-$ make docker-otelsvc
+$ make docker-otelcol
 $ docker run \
     --rm \
     --interactive \
     --tty \
     --publish 55678:55678 --publish 55679:55679 --publish 8888:8888 \
-    --volume $(pwd)/otel-collector-config.yaml:/conf/otelsvc-config.yaml \
-    otelsvc \
-    --config=/conf/otelsvc-config.yaml
+    --volume $(pwd)/otel-collector-config.yaml:/conf/otelcol-config.yaml \
+    otelcol \
+    --config=/conf/otelcol-config.yaml
 ```
 
 It can be configured via command-line or config file:
@@ -388,11 +388,11 @@ It can be configured via command-line or config file:
 OpenTelemetry Collector
 
 Usage:
-  otelsvc [flags]
+  otelcol [flags]
 
 Flags:
       --config string               Path to the config file
-  -h, --help                        help for otelsvc
+  -h, --help                        help for otelcol
       --log-level string            Output level of logs (TRACE, DEBUG, INFO, WARN, ERROR, FATAL) (default "INFO")
       --mem-ballast-size-mib uint   Flag to specify size of memory (MiB) ballast to set. Ballast is not used when this is not specified. default settings: 0
       --metrics-level string        Output level of telemetry metrics (NONE, BASIC, NORMAL, DETAILED) (default "BASIC")

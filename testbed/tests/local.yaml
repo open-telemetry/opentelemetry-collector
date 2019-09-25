@@ -1,1 +1,1 @@
-agent: ../../bin/{{.GOOS}}/otelsvc
+agent: ../../bin/{{.GOOS}}/otelcol

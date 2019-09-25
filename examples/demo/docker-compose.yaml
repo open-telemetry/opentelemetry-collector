@@ -17,7 +17,7 @@ services:
 
   # Collector
   otel-collector:
-    image: otelsvc:latest
+    image: otelcol:latest
     command: ["--config=/etc/otel-collector-config.yaml"]
     volumes:
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
@@ -34,7 +34,7 @@ services:
 
   # Agent
   otel-agent:
-    image: otelsvc:latest
+    image: otelcol:latest
     command: ["--config=/etc/otel-agent-config.yaml"]
     volumes:
       - ./otel-agent-config.yaml:/etc/otel-agent-config.yaml

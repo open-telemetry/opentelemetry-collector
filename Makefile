@@ -43,7 +43,7 @@ all-srcs:
 addlicense-fmt-vet-lint-goimports-misspell-staticcheck-test: addlicense fmt vet lint goimports misspell staticcheck test
 
 .PHONY: e2e-test
-e2e-test: otelsvc
+e2e-test: otelcol
 	$(MAKE) -C testbed runtests
 
 .PHONY: test
@@ -51,7 +51,7 @@ test:
 	$(GOTEST) $(GOTEST_OPT) $(ALL_PKGS)
 
 .PHONY: travis-ci
-travis-ci: fmt vet lint goimports misspell staticcheck test-with-cover otelsvc
+travis-ci: fmt vet lint goimports misspell staticcheck test-with-cover otelcol
 	$(MAKE) -C testbed install-tools
 	$(MAKE) -C testbed runtests
 
@@ -134,9 +134,9 @@ install-tools:
 	  github.com/client9/misspell/cmd/misspell \
 	  honnef.co/go/tools/cmd/staticcheck
 
-.PHONY: otelsvc
-otelsvc:
-	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/$(GOOS)/otelsvc $(BUILD_INFO) ./cmd/otelsvc
+.PHONY: otelcol
+otelcol:
+	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/$(GOOS)/otelcol $(BUILD_INFO) ./cmd/otelcol
 
 .PHONY: docker-component # Not intended to be used directly
 docker-component: check-component
@@ -151,12 +151,12 @@ ifndef COMPONENT
 	$(error COMPONENT variable was not defined)
 endif
 
-.PHONY: docker-otelsvc
-docker-otelsvc:
-	COMPONENT=otelsvc $(MAKE) docker-component
+.PHONY: docker-otelcol
+docker-otelcol:
+	COMPONENT=otelcol $(MAKE) docker-component
 
 .PHONY: binaries
-binaries: otelsvc
+binaries: otelcol
 
 .PHONY: binaries-all-sys
 binaries-all-sys:

@@ -31,15 +31,15 @@ import (
 )
 
 var (
-	mReceiverReceivedSpans      = stats.Int64("otelsvc/receiver/received_spans", "Counts the number of spans received by the receiver", "1")
-	mReceiverDroppedSpans       = stats.Int64("otelsvc/receiver/dropped_spans", "Counts the number of spans dropped by the receiver", "1")
-	mReceiverReceivedTimeSeries = stats.Int64("otelsvc/receiver/received_timeseries", "Counts the number of timeseries received by the receiver", "1")
-	mReceiverDroppedTimeSeries  = stats.Int64("otelsvc/receiver/dropped_timeseries", "Counts the number of timeseries dropped by the receiver", "1")
+	mReceiverReceivedSpans      = stats.Int64("otelcol/receiver/received_spans", "Counts the number of spans received by the receiver", "1")
+	mReceiverDroppedSpans       = stats.Int64("otelcol/receiver/dropped_spans", "Counts the number of spans dropped by the receiver", "1")
+	mReceiverReceivedTimeSeries = stats.Int64("otelcol/receiver/received_timeseries", "Counts the number of timeseries received by the receiver", "1")
+	mReceiverDroppedTimeSeries  = stats.Int64("otelcol/receiver/dropped_timeseries", "Counts the number of timeseries dropped by the receiver", "1")
 
-	mExporterReceivedSpans      = stats.Int64("otelsvc/exporter/received_spans", "Counts the number of spans received by the exporter", "1")
-	mExporterDroppedSpans       = stats.Int64("otelsvc/exporter/dropped_spans", "Counts the number of spans received by the exporter", "1")
-	mExporterReceivedTimeSeries = stats.Int64("otelsvc/exporter/received_timeseries", "Counts the number of timeseries received by the exporter", "1")
-	mExporterDroppedTimeSeries  = stats.Int64("otelsvc/exporter/dropped_timeseries", "Counts the number of timeseries received by the exporter", "1")
+	mExporterReceivedSpans      = stats.Int64("otelcol/exporter/received_spans", "Counts the number of spans received by the exporter", "1")
+	mExporterDroppedSpans       = stats.Int64("otelcol/exporter/dropped_spans", "Counts the number of spans received by the exporter", "1")
+	mExporterReceivedTimeSeries = stats.Int64("otelcol/exporter/received_timeseries", "Counts the number of timeseries received by the exporter", "1")
+	mExporterDroppedTimeSeries  = stats.Int64("otelcol/exporter/dropped_timeseries", "Counts the number of timeseries received by the exporter", "1")
 )
 
 // TagKeyReceiver defines tag key for Receiver.
