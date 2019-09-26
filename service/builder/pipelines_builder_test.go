@@ -23,6 +23,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector/config"
@@ -54,6 +56,37 @@ func TestPipelinesBuilder_Build(t *testing.T) {
 			testPipeline(t, test.pipelineName, test.exporterNames)
 		})
 	}
+}
+
+func assertEqualTraceData(t *testing.T, expected consumerdata.TraceData, actual consumerdata.TraceData) {
+	if expected.Resource != nil {
+		assert.EqualValues(t, expected.Resource.Type, actual.Resource.Type)
+	}
+
+	if expected.Node != nil {
+		assert.EqualValues(t, expected.Node.ServiceInfo.Name, actual.Node.ServiceInfo.Name)
+	}
+
+	for i := range expected.Spans {
+		assert.EqualValues(t, expected.Spans[i].Name.Value, actual.Spans[i].Name.Value)
+	}
+
+	assert.EqualValues(t, expected.SourceFormat, actual.SourceFormat)
+}
+
+func assertEqualMetricsData(t *testing.T, expected consumerdata.MetricsData, actual consumerdata.MetricsData) {
+	if expected.Resource != nil {
+		assert.EqualValues(t, expected.Resource.Type, actual.Resource.Type)
+	}
+
+	if expected.Node != nil {
+		assert.EqualValues(t, expected.Node.ServiceInfo.Name, actual.Node.ServiceInfo.Name)
+	}
+
+	for i := range expected.Metrics {
+		assert.EqualValues(t, expected.Metrics[i].MetricDescriptor.Name, actual.Metrics[i].MetricDescriptor.Name)
+	}
+
 }
 
 func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
@@ -106,6 +139,14 @@ func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 		Spans: []*tracepb.Span{
 			{Name: &name},
 		},
+		Node: &commonpb.Node{
+			ServiceInfo: &commonpb.ServiceInfo{
+				Name: "servicename",
+			},
+		},
+		Resource: &resourcepb.Resource{
+			Type: "resourcetype",
+		},
 	}
 	processor.tc.ConsumeTraceData(context.Background(), traceData)
 
@@ -113,7 +154,9 @@ func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 	for _, consumer := range exporterConsumers {
 		// Check that the trace is received by exporter.
 		require.Equal(t, 1, len(consumer.Traces))
-		assert.Equal(t, traceData, consumer.Traces[0])
+
+		// Verify that span is successfully delivered.
+		assertEqualTraceData(t, traceData, consumer.Traces[0])
 
 		// Check that the span was processed by "attributes" processor and an
 		// attribute was added.
