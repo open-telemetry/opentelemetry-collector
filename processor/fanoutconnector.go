@@ -47,14 +47,9 @@ func (mfc metricsFanOutConnector) ConsumeMetricsData(ctx context.Context, md con
 	// Fan out to first len-1 consumers.
 	for i := 0; i < len(mfc)-1; i++ {
 		// Create a clone of data. We need to clone because consumers may modify the data.
-		clone, err := cloneMetricsData(&md)
-		if err != nil {
+		clone := cloneMetricsData(&md)
+		if err := mfc[i].ConsumeMetricsData(ctx, *clone); err != nil {
 			errs = append(errs, err)
-			break
-		} else {
-			if err := mfc[i].ConsumeMetricsData(ctx, *clone); err != nil {
-				errs = append(errs, err)
-			}
 		}
 	}
 
@@ -85,14 +80,9 @@ func (tfc traceFanOutConnector) ConsumeTraceData(ctx context.Context, td consume
 	// Fan out to first len-1 consumers.
 	for i := 0; i < len(tfc)-1; i++ {
 		// Create a clone of data. We need to clone because consumers may modify the data.
-		clone, err := cloneTraceData(&td)
-		if err != nil {
+		clone := cloneTraceData(&td)
+		if err := tfc[i].ConsumeTraceData(ctx, *clone); err != nil {
 			errs = append(errs, err)
-			break
-		} else {
-			if err := tfc[i].ConsumeTraceData(ctx, *clone); err != nil {
-				errs = append(errs, err)
-			}
 		}
 	}
 
@@ -107,116 +97,39 @@ func (tfc traceFanOutConnector) ConsumeTraceData(ctx context.Context, td consume
 	return oterr.CombineErrors(errs)
 }
 
-func cloneTraceData(td *consumerdata.TraceData) (*consumerdata.TraceData, error) {
+func cloneTraceData(td *consumerdata.TraceData) *consumerdata.TraceData {
 	clone := &consumerdata.TraceData{
 		SourceFormat: td.SourceFormat,
-	}
-
-	if td.Node != nil {
-		clone.Node = &commonpb.Node{}
-
-		bytes, err := proto.Marshal(td.Node)
-		if err != nil {
-			return nil, err
-		}
-
-		err = proto.Unmarshal(bytes, clone.Node)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if td.Resource != nil {
-		clone.Resource = &resourcepb.Resource{}
-
-		bytes, err := proto.Marshal(td.Resource)
-		if err != nil {
-			return nil, err
-		}
-
-		err = proto.Unmarshal(bytes, clone.Resource)
-		if err != nil {
-			return nil, err
-		}
+		Node:         proto.Clone(td.Node).(*commonpb.Node),
+		Resource:     proto.Clone(td.Resource).(*resourcepb.Resource),
 	}
 
 	if td.Spans != nil {
 		clone.Spans = make([]*tracepb.Span, 0, len(td.Spans))
 
 		for _, span := range td.Spans {
-			if span != nil {
-				bytes, err := proto.Marshal(span)
-				if err != nil {
-					return nil, err
-				}
-
-				var spanClone tracepb.Span
-				err = proto.Unmarshal(bytes, &spanClone)
-				if err != nil {
-					return nil, err
-				}
-				clone.Spans = append(clone.Spans, &spanClone)
-			} else {
-				clone.Spans = append(clone.Spans, nil)
-			}
+			spanClone := proto.Clone(span).(*tracepb.Span)
+			clone.Spans = append(clone.Spans, spanClone)
 		}
 	}
 
-	return clone, nil
+	return clone
 }
 
-func cloneMetricsData(md *consumerdata.MetricsData) (*consumerdata.MetricsData, error) {
-	clone := &consumerdata.MetricsData{}
-
-	if md.Node != nil {
-		clone.Node = &commonpb.Node{}
-
-		bytes, err := proto.Marshal(md.Node)
-		if err != nil {
-			return nil, err
-		}
-
-		err = proto.Unmarshal(bytes, clone.Node)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if md.Resource != nil {
-		clone.Resource = &resourcepb.Resource{}
-
-		bytes, err := proto.Marshal(md.Resource)
-		if err != nil {
-			return nil, err
-		}
-
-		err = proto.Unmarshal(bytes, clone.Resource)
-		if err != nil {
-			return nil, err
-		}
+func cloneMetricsData(md *consumerdata.MetricsData) *consumerdata.MetricsData {
+	clone := &consumerdata.MetricsData{
+		Node:     proto.Clone(md.Node).(*commonpb.Node),
+		Resource: proto.Clone(md.Resource).(*resourcepb.Resource),
 	}
 
 	if md.Metrics != nil {
 		clone.Metrics = make([]*metricspb.Metric, 0, len(md.Metrics))
 
-		for _, span := range md.Metrics {
-			if span != nil {
-				bytes, err := proto.Marshal(span)
-				if err != nil {
-					return nil, err
-				}
-
-				var metricClone metricspb.Metric
-				err = proto.Unmarshal(bytes, &metricClone)
-				if err != nil {
-					return nil, err
-				}
-				clone.Metrics = append(clone.Metrics, &metricClone)
-			} else {
-				clone.Metrics = append(clone.Metrics, nil)
-			}
+		for _, metric := range md.Metrics {
+			metricClone := proto.Clone(metric).(*metricspb.Metric)
+			clone.Metrics = append(clone.Metrics, metricClone)
 		}
 	}
 
-	return clone, nil
+	return clone
 }

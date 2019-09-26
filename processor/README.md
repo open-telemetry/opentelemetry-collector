@@ -11,9 +11,33 @@ Supported processors (sorted alphabetically):
 - [Span Processor](#span)
 - [Tail Sampling Processor](#tail_sampling)
 
+## Data Ownership
+
+The ownership of the `TraceData` and `MetricsData` in a pipeline is passed as the data travels
+through the pipeline. The data is created by the receiver and then the ownership is passed
+to the first processor when `ConsumeTraceData`/`ConsumeMetricsData` function is called.
+Each processor then subsequently calls `ConsumeTraceData`/`ConsumeMetricsData`
+function of the next processor and that in turn passes data ownership.
+The last processor calls `ConsumeTraceData`/`ConsumeMetricsData` of the exporter
+which then assumes the ownership of the data.
+
+Ownership of the data allows the owning component to freely modify the data.
+Data ownership is always exclusive, data is never shared between pipelines.
+This is achieved by cloning the data when the data needs to be processed concurrently.
+Cloning is done by `traceFanOutConnector`/`metricsFanOutConnector` and happens in 2 cases:
+- At the receiving fan out connector when the same receiver is attached to more than
+  one pipeline,
+- At the exporting fan out connector when the pipeline has more than one
+  exporter attached.
+  
+The exclusive ownership of data allows processors and exporters to freely modify the
+data while they own it (e.g. see `attributesprocessor`). Once the ownership is passed
+the processor must no longer read or write the data since it may be concurrently
+modified by the new owner.
+
 ## Ordering Processors
-The order processors are specified in a pipeline is important as this is the
-order in which each processor is applied to traces.
+The order processors specified in a pipeline is important as this is the
+order in which each processor is applied to traces and metrics.
 
 ## <a name="attributes"></a>Attributes Processor
 The attributes processor modifies attributes of a span.

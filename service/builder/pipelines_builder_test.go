@@ -18,14 +18,13 @@ import (
 	"context"
 	"testing"
 
-	"go.uber.org/zap"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/golang/protobuf/proto"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
@@ -59,34 +58,23 @@ func TestPipelinesBuilder_Build(t *testing.T) {
 }
 
 func assertEqualTraceData(t *testing.T, expected consumerdata.TraceData, actual consumerdata.TraceData) {
-	if expected.Resource != nil {
-		assert.EqualValues(t, expected.Resource.Type, actual.Resource.Type)
-	}
-
-	if expected.Node != nil {
-		assert.EqualValues(t, expected.Node.ServiceInfo.Name, actual.Node.ServiceInfo.Name)
-	}
+	assert.True(t, proto.Equal(expected.Resource, actual.Resource))
+	assert.True(t, proto.Equal(expected.Node, actual.Node))
 
 	for i := range expected.Spans {
-		assert.EqualValues(t, expected.Spans[i].Name.Value, actual.Spans[i].Name.Value)
+		assert.True(t, proto.Equal(expected.Spans[i], actual.Spans[i]))
 	}
 
 	assert.EqualValues(t, expected.SourceFormat, actual.SourceFormat)
 }
 
 func assertEqualMetricsData(t *testing.T, expected consumerdata.MetricsData, actual consumerdata.MetricsData) {
-	if expected.Resource != nil {
-		assert.EqualValues(t, expected.Resource.Type, actual.Resource.Type)
-	}
-
-	if expected.Node != nil {
-		assert.EqualValues(t, expected.Node.ServiceInfo.Name, actual.Node.ServiceInfo.Name)
-	}
+	assert.True(t, proto.Equal(expected.Resource, actual.Resource))
+	assert.True(t, proto.Equal(expected.Node, actual.Node))
 
 	for i := range expected.Metrics {
-		assert.EqualValues(t, expected.Metrics[i].MetricDescriptor.Name, actual.Metrics[i].MetricDescriptor.Name)
+		assert.True(t, proto.Equal(expected.Metrics[i], actual.Metrics[i]))
 	}
-
 }
 
 func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
