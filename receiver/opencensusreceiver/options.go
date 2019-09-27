@@ -17,8 +17,8 @@ package opencensusreceiver
 import (
 	"google.golang.org/grpc"
 
-	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver/ocmetrics"
-	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver/octrace"
+	"github.com/open-telemetry/opentelemetry-collector/receiver/opencensusreceiver/ocmetrics"
+	"github.com/open-telemetry/opentelemetry-collector/receiver/opencensusreceiver/octrace"
 )
 
 // Option interface defines for configuration settings to be applied to receivers.

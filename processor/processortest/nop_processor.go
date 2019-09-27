@@ -17,9 +17,9 @@ package processortest
 import (
 	"context"
 
-	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/processor"
+	"github.com/open-telemetry/opentelemetry-collector/consumer"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/processor"
 )
 
 type nopProcessor struct {

@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
+	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {

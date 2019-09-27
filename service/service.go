@@ -28,12 +28,12 @@ import (
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-service/config"
-	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-service/extension"
-	"github.com/open-telemetry/opentelemetry-service/internal/config/viperutils"
-	"github.com/open-telemetry/opentelemetry-service/receiver"
-	"github.com/open-telemetry/opentelemetry-service/service/builder"
+	"github.com/open-telemetry/opentelemetry-collector/config"
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-collector/extension"
+	"github.com/open-telemetry/opentelemetry-collector/internal/config/viperutils"
+	"github.com/open-telemetry/opentelemetry-collector/receiver"
+	"github.com/open-telemetry/opentelemetry-collector/service/builder"
 )
 
 // Application represents a collector application

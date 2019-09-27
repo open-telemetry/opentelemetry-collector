@@ -36,14 +36,14 @@ import (
 	zipkinproto "github.com/openzipkin/zipkin-go/proto/v2"
 	"go.opencensus.io/trace"
 
-	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/internal"
-	"github.com/open-telemetry/opentelemetry-service/observability"
-	"github.com/open-telemetry/opentelemetry-service/oterr"
-	"github.com/open-telemetry/opentelemetry-service/receiver"
-	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
-	zipkintranslator "github.com/open-telemetry/opentelemetry-service/translator/trace/zipkin"
+	"github.com/open-telemetry/opentelemetry-collector/consumer"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/internal"
+	"github.com/open-telemetry/opentelemetry-collector/observability"
+	"github.com/open-telemetry/opentelemetry-collector/oterr"
+	"github.com/open-telemetry/opentelemetry-collector/receiver"
+	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
+	zipkintranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace/zipkin"
 )
 
 // ZipkinReceiver type is used to handle spans received in the Zipkin format.

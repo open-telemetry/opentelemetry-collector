@@ -20,12 +20,12 @@ import (
 	jaegerproto "github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"google.golang.org/grpc"
 
-	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/consumer/consumererror"
-	"github.com/open-telemetry/opentelemetry-service/exporter"
-	"github.com/open-telemetry/opentelemetry-service/exporter/exporterhelper"
-	jaegertranslator "github.com/open-telemetry/opentelemetry-service/translator/trace/jaeger"
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/consumererror"
+	"github.com/open-telemetry/opentelemetry-collector/exporter"
+	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
+	jaegertranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace/jaeger"
 )
 
 // New returns a new Jaeger gRPC exporter.

@@ -24,10 +24,10 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"go.opencensus.io/trace"
 
-	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/observability"
-	"github.com/open-telemetry/opentelemetry-service/oterr"
+	"github.com/open-telemetry/opentelemetry-collector/consumer"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/observability"
+	"github.com/open-telemetry/opentelemetry-collector/oterr"
 )
 
 const (

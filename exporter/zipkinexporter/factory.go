@@ -19,9 +19,9 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-service/config/configerror"
-	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-service/exporter"
+	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-collector/exporter"
 )
 
 const (
@@ -53,7 +53,7 @@ func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Ex
 	cfg := config.(*Config)
 
 	if cfg.URL == "" {
-		// TODO https://github.com/open-telemetry/opentelemetry-service/issues/215
+		// TODO https://github.com/open-telemetry/opentelemetry-collector/issues/215
 		return nil, errors.New("exporter config requires a non-empty 'url'")
 	}
 	// <missing service name> is used if the zipkin span is not carrying the name of the service, which shouldn't happen

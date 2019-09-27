@@ -23,10 +23,10 @@ import (
 	"github.com/prometheus/prometheus/scrape"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/observability"
-	"github.com/open-telemetry/opentelemetry-service/receiver"
-	"github.com/open-telemetry/opentelemetry-service/receiver/prometheusreceiver/internal"
+	"github.com/open-telemetry/opentelemetry-collector/consumer"
+	"github.com/open-telemetry/opentelemetry-collector/observability"
+	"github.com/open-telemetry/opentelemetry-collector/receiver"
+	"github.com/open-telemetry/opentelemetry-collector/receiver/prometheusreceiver/internal"
 
 	sd_config "github.com/prometheus/prometheus/discovery/config"
 )

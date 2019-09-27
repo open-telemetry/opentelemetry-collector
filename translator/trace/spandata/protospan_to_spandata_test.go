@@ -26,7 +26,7 @@ import (
 	"go.opencensus.io/trace"
 	"go.opencensus.io/trace/tracestate"
 
-	"github.com/open-telemetry/opentelemetry-service/internal"
+	"github.com/open-telemetry/opentelemetry-collector/internal"
 )
 
 func TestProtoSpanToOCSpanData_endToEnd(t *testing.T) {

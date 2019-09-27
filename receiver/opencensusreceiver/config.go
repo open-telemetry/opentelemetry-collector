@@ -21,7 +21,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 
-	"github.com/open-telemetry/opentelemetry-service/receiver"
+	"github.com/open-telemetry/opentelemetry-collector/receiver"
 )
 
 // Config defines configuration for OpenCensus receiver.

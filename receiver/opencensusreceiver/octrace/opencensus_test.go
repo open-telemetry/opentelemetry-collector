@@ -38,10 +38,10 @@ import (
 	"go.opencensus.io/trace/tracestate"
 	"google.golang.org/grpc"
 
-	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/internal"
-	"github.com/open-telemetry/opentelemetry-service/observability"
+	"github.com/open-telemetry/opentelemetry-collector/consumer"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/internal"
+	"github.com/open-telemetry/opentelemetry-collector/observability"
 )
 
 func TestReceiver_endToEnd(t *testing.T) {

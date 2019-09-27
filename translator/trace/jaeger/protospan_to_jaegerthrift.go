@@ -24,8 +24,8 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 
-	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 )
 
 var (

@@ -29,10 +29,10 @@ import (
 	"go.opencensus.io/stats"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/observability"
-	"github.com/open-telemetry/opentelemetry-service/processor"
+	"github.com/open-telemetry/opentelemetry-collector/consumer"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/observability"
+	"github.com/open-telemetry/opentelemetry-collector/processor"
 )
 
 const (

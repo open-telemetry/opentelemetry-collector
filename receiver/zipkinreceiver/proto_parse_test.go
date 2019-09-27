@@ -25,8 +25,8 @@ import (
 	"github.com/golang/protobuf/proto"
 	zipkin_proto3 "github.com/openzipkin/zipkin-go/proto/v2"
 
-	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/internal"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/internal"
 )
 
 func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {

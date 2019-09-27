@@ -20,7 +20,7 @@ import (
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 
-	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 )
 
 // TraceData stores the sampling related trace data.

@@ -34,12 +34,12 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
-	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
-	"github.com/open-telemetry/opentelemetry-service/internal"
-	"github.com/open-telemetry/opentelemetry-service/receiver"
-	"github.com/open-telemetry/opentelemetry-service/receiver/receivertest"
-	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
+	"github.com/open-telemetry/opentelemetry-collector/internal"
+	"github.com/open-telemetry/opentelemetry-collector/receiver"
+	"github.com/open-telemetry/opentelemetry-collector/receiver/receivertest"
+	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 )
 
 func TestReception(t *testing.T) {

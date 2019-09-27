@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-service/config"
+	"github.com/open-telemetry/opentelemetry-collector/config"
 )
 
 func TestLoadConfig(t *testing.T) {

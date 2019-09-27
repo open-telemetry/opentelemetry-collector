@@ -26,8 +26,8 @@ import (
 	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	jaeger "github.com/jaegertracing/jaeger/model"
 
-	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 )
 
 var (

@@ -19,8 +19,8 @@ package main
 import (
 	"log"
 
-	"github.com/open-telemetry/opentelemetry-service/defaults"
-	"github.com/open-telemetry/opentelemetry-service/service"
+	"github.com/open-telemetry/opentelemetry-collector/defaults"
+	"github.com/open-telemetry/opentelemetry-collector/service"
 )
 
 func main() {

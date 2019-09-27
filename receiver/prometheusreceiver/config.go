@@ -19,7 +19,7 @@ import (
 
 	"github.com/prometheus/prometheus/config"
 
-	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 )
 
 // Config defines configuration for Prometheus receiver.

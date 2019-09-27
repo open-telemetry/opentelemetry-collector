@@ -21,10 +21,10 @@ import (
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 
-	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/oterr"
-	"github.com/open-telemetry/opentelemetry-service/processor"
+	"github.com/open-telemetry/opentelemetry-collector/consumer"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/oterr"
+	"github.com/open-telemetry/opentelemetry-collector/processor"
 )
 
 type spanProcessor struct {
@@ -61,7 +61,7 @@ func (sp *spanProcessor) nameSpan(span *tracepb.Span) {
 	// Note: There was a separate proposal for creating the string.
 	// With benchmarking, strings.Builder is faster than the proposal.
 	// For full context, refer to this PR comment:
-	// https://github.com/open-telemetry/opentelemetry-service/pull/301#discussion_r318357678
+	// https://github.com/open-telemetry/opentelemetry-collector/pull/301#discussion_r318357678
 	var sb strings.Builder
 	for i, key := range sp.config.Rename.FromAttributes {
 		attribute, found := span.Attributes.AttributeMap[key]

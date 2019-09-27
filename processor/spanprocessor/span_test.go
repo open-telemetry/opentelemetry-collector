@@ -24,10 +24,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
-	"github.com/open-telemetry/opentelemetry-service/oterr"
-	"github.com/open-telemetry/opentelemetry-service/processor"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
+	"github.com/open-telemetry/opentelemetry-collector/oterr"
+	"github.com/open-telemetry/opentelemetry-collector/processor"
 )
 
 func TestNewTraceProcessor(t *testing.T) {

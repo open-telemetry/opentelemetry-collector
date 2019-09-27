@@ -26,10 +26,10 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"go.opencensus.io/trace"
 
-	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
-	"github.com/open-telemetry/opentelemetry-service/internal"
-	"github.com/open-telemetry/opentelemetry-service/receiver/receivertest"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
+	"github.com/open-telemetry/opentelemetry-collector/internal"
+	"github.com/open-telemetry/opentelemetry-collector/receiver/receivertest"
 )
 
 func TestJaegerAgentUDP_ThriftCompact_6831(t *testing.T) {

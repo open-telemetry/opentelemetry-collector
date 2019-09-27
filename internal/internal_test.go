@@ -18,7 +18,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-service/internal"
+	"github.com/open-telemetry/opentelemetry-collector/internal"
 )
 
 func TestTimeConverters(t *testing.T) {

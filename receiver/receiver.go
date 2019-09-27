@@ -17,7 +17,7 @@ package receiver
 import (
 	"context"
 
-	_ "github.com/open-telemetry/opentelemetry-service/compression/grpc" // load in supported grpc compression encodings
+	_ "github.com/open-telemetry/opentelemetry-collector/compression/grpc" // load in supported grpc compression encodings
 )
 
 // Host represents the entity where the receiver is being hosted. It is used to

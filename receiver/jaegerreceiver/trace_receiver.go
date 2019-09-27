@@ -39,11 +39,11 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
-	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/observability"
-	"github.com/open-telemetry/opentelemetry-service/oterr"
-	"github.com/open-telemetry/opentelemetry-service/receiver"
-	jaegertranslator "github.com/open-telemetry/opentelemetry-service/translator/trace/jaeger"
+	"github.com/open-telemetry/opentelemetry-collector/consumer"
+	"github.com/open-telemetry/opentelemetry-collector/observability"
+	"github.com/open-telemetry/opentelemetry-collector/oterr"
+	"github.com/open-telemetry/opentelemetry-collector/receiver"
+	jaegertranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace/jaeger"
 )
 
 // Configuration defines the behavior and the ports that
@@ -144,7 +144,7 @@ func (jr *jReceiver) agentAddress() string {
 	return fmt.Sprintf(":%d", port)
 }
 
-// TODO https://github.com/open-telemetry/opentelemetry-service/issues/267
+// TODO https://github.com/open-telemetry/opentelemetry-collector/issues/267
 //	Remove ThriftTChannel support.
 func (jr *jReceiver) tchannelAddr() string {
 	var port int

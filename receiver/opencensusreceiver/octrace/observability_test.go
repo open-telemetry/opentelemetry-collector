@@ -27,8 +27,8 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"go.opencensus.io/trace"
 
-	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
-	"github.com/open-telemetry/opentelemetry-service/observability/observabilitytest"
+	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
+	"github.com/open-telemetry/opentelemetry-collector/observability/observabilitytest"
 )
 
 // Ensure that if we add a metrics exporter that our target metrics
