@@ -24,7 +24,7 @@ MISSPELL_CORRECTION=misspell -w
 STATICCHECK=staticcheck
 
 GIT_SHA=$(shell git rev-parse --short HEAD)
-BUILD_INFO_IMPORT_PATH=github.com/open-telemetry/opentelemetry-service/internal/version
+BUILD_INFO_IMPORT_PATH=github.com/open-telemetry/opentelemetry-collector/internal/version
 BUILD_X1=-X $(BUILD_INFO_IMPORT_PATH).GitHash=$(GIT_SHA)
 ifdef VERSION
 BUILD_X2=-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)
@@ -58,7 +58,7 @@ travis-ci: fmt vet lint goimports misspell staticcheck test-with-cover otelcol
 .PHONY: test-with-cover
 test-with-cover:
 	@echo Verifying that all packages have test files to count in coverage
-	@scripts/check-test-files.sh $(subst github.com/open-telemetry/opentelemetry-service/,./,$(ALL_PKGS))
+	@scripts/check-test-files.sh $(subst github.com/open-telemetry/opentelemetry-collector/,./,$(ALL_PKGS))
 	@echo pre-compiling tests
 	@time go test -i $(ALL_PKGS)
 	$(GOTEST) $(GOTEST_OPT_WITH_COVERAGE) $(ALL_PKGS)
@@ -99,7 +99,7 @@ lint:
 
 .PHONY: goimports
 goimports:
-	@IMPORTSOUT=`$(GOIMPORTS) -local github.com/open-telemetry/opentelemetry-service -d . 2>&1`; \
+	@IMPORTSOUT=`$(GOIMPORTS) -local github.com/open-telemetry/opentelemetry-collector -d . 2>&1`; \
 	if [ "$$IMPORTSOUT" ]; then \
 		echo "$(GOIMPORTS) FAILED => fix the following goimports errors:\n"; \
 		echo "$$IMPORTSOUT\n"; \

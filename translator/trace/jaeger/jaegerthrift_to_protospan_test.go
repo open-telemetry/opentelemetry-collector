@@ -26,9 +26,9 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 
-	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/internal/testutils"
-	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/internal/testutils"
+	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 )
 
 func TestThriftBatchToOCProto_Roundtrip(t *testing.T) {

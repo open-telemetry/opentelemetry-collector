@@ -19,10 +19,10 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-service/config/configerror"
-	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/processor"
+	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-collector/consumer"
+	"github.com/open-telemetry/opentelemetry-collector/processor"
 )
 
 const (
@@ -32,7 +32,7 @@ const (
 
 // errMissingRequiredField is returned when a required field in the config
 // is not specified.
-// TODO https://github.com/open-telemetry/opentelemetry-service/issues/215
+// TODO https://github.com/open-telemetry/opentelemetry-collector/issues/215
 //	Move this to the error package that allows for span name and field to be specified.
 var errMissingRequiredField = errors.New("error creating \"span\" processor due to missing required field \"from_attributes\" in \"name:\"")
 

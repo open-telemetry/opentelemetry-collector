@@ -27,13 +27,13 @@ import (
 	"go.opencensus.io/tag"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/observability"
-	"github.com/open-telemetry/opentelemetry-service/oterr"
-	"github.com/open-telemetry/opentelemetry-service/processor"
-	"github.com/open-telemetry/opentelemetry-service/processor/tailsamplingprocessor/idbatcher"
-	"github.com/open-telemetry/opentelemetry-service/processor/tailsamplingprocessor/sampling"
+	"github.com/open-telemetry/opentelemetry-collector/consumer"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/observability"
+	"github.com/open-telemetry/opentelemetry-collector/oterr"
+	"github.com/open-telemetry/opentelemetry-collector/processor"
+	"github.com/open-telemetry/opentelemetry-collector/processor/tailsamplingprocessor/idbatcher"
+	"github.com/open-telemetry/opentelemetry-collector/processor/tailsamplingprocessor/sampling"
 )
 
 // Policy combines a sampling policy evaluator with the destinations to be

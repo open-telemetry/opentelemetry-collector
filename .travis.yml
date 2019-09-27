@@ -3,7 +3,7 @@ cache:
   directories:
     - /home/travis/gopath/pkg/mod
 
-go_import_path: github.com/open-telemetry/opentelemetry-service
+go_import_path: github.com/open-telemetry/opentelemetry-collector
 
 go:
   - 1.12.x

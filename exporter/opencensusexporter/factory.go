@@ -24,11 +24,11 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
 
-	"github.com/open-telemetry/opentelemetry-service/compression"
-	compressiongrpc "github.com/open-telemetry/opentelemetry-service/compression/grpc"
-	"github.com/open-telemetry/opentelemetry-service/config/configgrpc"
-	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-service/exporter"
+	"github.com/open-telemetry/opentelemetry-collector/compression"
+	compressiongrpc "github.com/open-telemetry/opentelemetry-collector/compression/grpc"
+	"github.com/open-telemetry/opentelemetry-collector/config/configgrpc"
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-collector/exporter"
 )
 
 const (

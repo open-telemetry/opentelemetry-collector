@@ -1,6 +1,6 @@
 **Note** This documentation is still in progress. For any questions, please
 reach out in the [OpenTelemetry Gitter](https://gitter.im/open-telemetry/opentelemetry-service)
-or refer to the [issues page](https://github.com/open-telemetry/opentelemetry-service/issues).
+or refer to the [issues page](https://github.com/open-telemetry/opentelemetry-collector/issues).
 
 # Receivers
 A receiver is how data gets into OpenTelemetry Collector. Generally, a receiver
@@ -57,15 +57,15 @@ processors and exporters in the pipeline.
 
 To get started, all that is required to enable the OpenCensus receiver is to
 include it in the receiver definitions. This will enable the default values as
-specified [here](https://github.com/open-telemetry/opentelemetry-service/blob/master/receiver/opencensusreceiver/factory.go).
+specified [here](https://github.com/open-telemetry/opentelemetry-collector/blob/master/receiver/opencensusreceiver/factory.go).
 The following is an example:
 ```yaml
 receivers:
   opencensus:
 ```
 
-The full list of settings exposed for this receiver are documented [here](https://github.com/open-telemetry/opentelemetry-service/blob/master/receiver/opencensusreceiver/config.go)
-with detailed sample configurations [here](https://github.com/open-telemetry/opentelemetry-service/blob/master/receiver/opencensusreceiver/testdata/config.yaml).
+The full list of settings exposed for this receiver are documented [here](https://github.com/open-telemetry/opentelemetry-collector/blob/master/receiver/opencensusreceiver/config.go)
+with detailed sample configurations [here](https://github.com/open-telemetry/opentelemetry-collector/blob/master/receiver/opencensusreceiver/testdata/config.yaml).
 
 ### Communicating over TLS
 This receiver supports communication using Transport Layer Security (TLS). TLS can be configured by specifying a `tls-crendentials` object in the receiver configuration for receivers that support it.   
@@ -124,7 +124,7 @@ It is possible to configure the protocols on different ports, refer to
 [config.yaml](jaegerreceiver/testdata/config.yaml) for detailed config
 examples.
 
-// TODO Issue https://github.com/open-telemetry/opentelemetry-service/issues/158
+// TODO Issue https://github.com/open-telemetry/opentelemetry-collector/issues/158
 // The Jaeger receiver enables all protocols even when one is specified or a
 // subset is enabled. The documentation should be updated when that fix occurs.
 ### Communicating over TLS

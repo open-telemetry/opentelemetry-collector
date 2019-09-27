@@ -32,11 +32,11 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
-	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
-	"github.com/open-telemetry/opentelemetry-service/internal"
-	"github.com/open-telemetry/opentelemetry-service/internal/testutils"
-	"github.com/open-telemetry/opentelemetry-service/receiver/receivertest"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
+	"github.com/open-telemetry/opentelemetry-collector/internal"
+	"github.com/open-telemetry/opentelemetry-collector/internal/testutils"
+	"github.com/open-telemetry/opentelemetry-collector/receiver/receivertest"
 )
 
 // TODO(ccaraman): Migrate tests to use assert for validating functionality.

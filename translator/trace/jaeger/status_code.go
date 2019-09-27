@@ -21,7 +21,7 @@ import (
 	model "github.com/jaegertracing/jaeger/model"
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 
-	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
+	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 )
 
 func statusCodeFromHTTPTag(tag *jaeger.Tag) *int32 {

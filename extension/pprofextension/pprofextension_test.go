@@ -23,8 +23,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-service/extension/extensiontest"
-	"github.com/open-telemetry/opentelemetry-service/internal/testutils"
+	"github.com/open-telemetry/opentelemetry-collector/extension/extensiontest"
+	"github.com/open-telemetry/opentelemetry-collector/internal/testutils"
 )
 
 func TestPerformanceProfilerExtensionUsage(t *testing.T) {

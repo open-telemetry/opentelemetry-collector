@@ -15,7 +15,7 @@
 package healthcheckextension
 
 import (
-	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 )
 
 // Config has the configuration for the extension enabling the health check

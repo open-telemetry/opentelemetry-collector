@@ -22,7 +22,7 @@ import (
 	"github.com/jaegertracing/jaeger/pkg/healthcheck"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-service/extension"
+	"github.com/open-telemetry/opentelemetry-collector/extension"
 )
 
 type healthCheckExtension struct {

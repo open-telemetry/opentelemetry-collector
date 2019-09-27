@@ -21,7 +21,7 @@ receivers:
   # If a subset of the protocols are disabled, the disabled flags are ignored
   # and all protocols are enabled.
   # This is to be fixed with issue
-  # https://github.com/open-telemetry/opentelemetry-service/issues/158
+  # https://github.com/open-telemetry/opentelemetry-collector/issues/158
   jaeger/disabled:
     protocols:
       grpc:

@@ -17,8 +17,8 @@ package vmmetricsreceiver
 import (
 	"sync"
 
-	"github.com/open-telemetry/opentelemetry-service/oterr"
-	"github.com/open-telemetry/opentelemetry-service/receiver"
+	"github.com/open-telemetry/opentelemetry-collector/oterr"
+	"github.com/open-telemetry/opentelemetry-collector/receiver"
 )
 
 var _ receiver.MetricsReceiver = (*Receiver)(nil)

@@ -24,11 +24,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/trace"
 
-	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/exporter"
-	"github.com/open-telemetry/opentelemetry-service/observability"
-	"github.com/open-telemetry/opentelemetry-service/observability/observabilitytest"
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/exporter"
+	"github.com/open-telemetry/opentelemetry-collector/observability"
+	"github.com/open-telemetry/opentelemetry-collector/observability/observabilitytest"
 )
 
 const (
@@ -46,7 +46,7 @@ var (
 	}
 )
 
-// TODO https://github.com/open-telemetry/opentelemetry-service/issues/266
+// TODO https://github.com/open-telemetry/opentelemetry-collector/issues/266
 // Migrate tests to use testify/assert instead of t.Fatal pattern.
 func TestTraceExporter_InvalidName(t *testing.T) {
 	te, err := NewTraceExporter(nil, newPushTraceData(0, nil))

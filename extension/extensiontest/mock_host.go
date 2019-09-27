@@ -17,7 +17,7 @@ package extensiontest
 import (
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-service/extension"
+	"github.com/open-telemetry/opentelemetry-collector/extension"
 )
 
 // MockHost mocks an extension.Host for test purposes.

@@ -23,12 +23,12 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/exporter/exportertest"
-	"github.com/open-telemetry/opentelemetry-service/processor"
-	"github.com/open-telemetry/opentelemetry-service/processor/tailsamplingprocessor/idbatcher"
-	"github.com/open-telemetry/opentelemetry-service/processor/tailsamplingprocessor/sampling"
-	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
+	"github.com/open-telemetry/opentelemetry-collector/processor"
+	"github.com/open-telemetry/opentelemetry-collector/processor/tailsamplingprocessor/idbatcher"
+	"github.com/open-telemetry/opentelemetry-collector/processor/tailsamplingprocessor/sampling"
+	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 )
 
 const (

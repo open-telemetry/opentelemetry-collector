@@ -25,7 +25,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/open-telemetry/opentelemetry-service/testbed/testbed"
+	"github.com/open-telemetry/opentelemetry-collector/testbed/testbed"
 )
 
 func TestBallastMemory(t *testing.T) {

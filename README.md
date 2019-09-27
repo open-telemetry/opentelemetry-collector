@@ -77,7 +77,7 @@ enabled).
 
 ### <a name="getting-started-demo"></a>Demo
 
-Instructions for setting up an end-to-end demo environment can be found [here](https://github.com/open-telemetry/opentelemetry-service/tree/master/examples/demo)
+Instructions for setting up an end-to-end demo environment can be found [here](https://github.com/open-telemetry/opentelemetry-collector/tree/master/examples/demo)
 
 ### <a name="getting-started-k8s"></a>Kubernetes
 
@@ -114,7 +114,7 @@ $ ./bin/$($GOOS)/otelcol --config ./examples/demo/otel-collector-config.yaml
 Run the demo application:
 
 ```shell
-$ go run "$(go env GOPATH)/src/github.com/open-telemetry/opentelemetry-service/examples/main.go"
+$ go run "$(go env GOPATH)/src/github.com/open-telemetry/opentelemetry-collector/examples/main.go"
 ```
 
 You should be able to see the traces in your exporter(s) of choice. If you stop
@@ -129,7 +129,7 @@ needs to be configured.
 
 *Note* This documentation is still in progress. For any questions, please reach out in the
 [OpenTelemetry Gitter](https://gitter.im/open-telemetry/opentelemetry-service) or
-refer to the [issues page](https://github.com/open-telemetry/opentelemetry-service/issues).
+refer to the [issues page](https://github.com/open-telemetry/opentelemetry-collector/issues).
 
 There are four main parts to a config:
 ```yaml
@@ -350,18 +350,18 @@ sampling:
 > Note that an exporter can only have a single sampling policy today.
 ## <a name="collector-usage"></a>Usage
 
-> It is recommended that you use the latest [release](https://github.com/open-telemetry/opentelemetry-service/releases).
+> It is recommended that you use the latest [release](https://github.com/open-telemetry/opentelemetry-collector/releases).
 
 The OpenTelemetry Collector can be run directly from sources, binary, or a Docker
 image. If you are planning to run from sources or build on your machine start
 by cloning the repo using `go get -d
-github.com/open-telemetry/opentelemetry-service`.
+github.com/open-telemetry/opentelemetry-collector`.
 
 The minimum Go version required for this project is Go 1.12.5.
 
 1. Run from sources:
 ```shell
-$ GO111MODULE=on go run github.com/open-telemetry/opentelemetry-service/cmd/otelcol --help
+$ GO111MODULE=on go run github.com/open-telemetry/opentelemetry-collector/cmd/otelcol --help
 ```
 2. Run from binary (from the root of your repo):
 ```shell
@@ -435,8 +435,8 @@ queued-exporters:
 
 [travis-image]: https://travis-ci.org/open-telemetry/opentelemetry-service.svg?branch=master
 [travis-url]: https://travis-ci.org/open-telemetry/opentelemetry-service
-[godoc-image]: https://godoc.org/github.com/open-telemetry/opentelemetry-service?status.svg
-[godoc-url]: https://godoc.org/github.com/open-telemetry/opentelemetry-service
+[godoc-image]: https://godoc.org/github.com/open-telemetry/opentelemetry-collector?status.svg
+[godoc-url]: https://godoc.org/github.com/open-telemetry/opentelemetry-collector
 [gitter-image]: https://badges.gitter.im/open-telemetry/opentelemetry-service.svg
 [gitter-url]: https://gitter.im/open-telemetry/opentelemetry-service?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
 [codecov-image]: https://codecov.io/gh/open-telemetry/opentelemetry-service/branch/master/graph/badge.svg

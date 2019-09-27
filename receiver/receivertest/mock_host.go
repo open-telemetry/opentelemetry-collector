@@ -19,7 +19,7 @@ package receivertest
 import (
 	"context"
 
-	"github.com/open-telemetry/opentelemetry-service/receiver"
+	"github.com/open-telemetry/opentelemetry-collector/receiver"
 )
 
 // MockHost mocks a receiver.ReceiverHost for test purposes.

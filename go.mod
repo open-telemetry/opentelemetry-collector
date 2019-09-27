@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-service
+module github.com/open-telemetry/opentelemetry-collector
 
 go 1.12
 

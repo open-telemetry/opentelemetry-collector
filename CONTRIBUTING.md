@@ -20,9 +20,9 @@ for general practices for OpenTelemetry project.
 
 Select a good issue from the links below (ordered by difficulty/complexity):
 
-* [Good First Issue](https://github.com/open-telemetry/opentelemetry-service/issues?utf8=%E2%9C%93&q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
-* [Up for Grabs](https://github.com/open-telemetry/opentelemetry-service/issues?utf8=%E2%9C%93&q=is%3Aissue+is%3Aopen+label%3Aup-for-grabs+)
-* [Help Wanted](https://github.com/open-telemetry/opentelemetry-service/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
+* [Good First Issue](https://github.com/open-telemetry/opentelemetry-collector/issues?utf8=%E2%9C%93&q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
+* [Up for Grabs](https://github.com/open-telemetry/opentelemetry-collector/issues?utf8=%E2%9C%93&q=is%3Aissue+is%3Aopen+label%3Aup-for-grabs+)
+* [Help Wanted](https://github.com/open-telemetry/opentelemetry-collector/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
 
 Comment on the issue that you want to work on so we can assign it to you and
 clarify anything related to it.
@@ -46,7 +46,7 @@ git@github.com:USERNAME/opentelemetry-service.git`.
 You should also add this repository as an "upstream" repo to your local copy,
 in order to keep it up to date. You can add this as a remote like so:
 
-`git remote add upstream https://github.com/open-telemetry/opentelemetry-service.git
+`git remote add upstream https://github.com/open-telemetry/opentelemetry-collector.git
 
 # verify that the upstream exists
 git remote -v`
@@ -81,13 +81,13 @@ Working with the project sources requires the following tools:
 Fork the repo, checkout the upstream repo to your GOPATH by:
 
 ```
-$ GO111MODULE="" go get -d github.com/open-telemetry/opentelemetry-service
+$ GO111MODULE="" go get -d github.com/open-telemetry/opentelemetry-collector
 ```
 
 Add your fork as an origin:
 
 ```shell
-$ cd $(go env GOPATH)/src/github.com/open-telemetry/opentelemetry-service
+$ cd $(go env GOPATH)/src/github.com/open-telemetry/opentelemetry-collector
 $ git remote add fork git@github.com:YOUR_GITHUB_USERNAME/opentelemetry-service.git
 ```
 

@@ -21,7 +21,7 @@ import (
 	"testing"
 	"time"
 
-	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
+	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 )
 
 func TestBatcherNew(t *testing.T) {

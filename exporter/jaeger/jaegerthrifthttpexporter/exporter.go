@@ -25,12 +25,12 @@ import (
 
 	"github.com/apache/thrift/lib/go/thrift"
 
-	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/consumer/consumererror"
-	"github.com/open-telemetry/opentelemetry-service/exporter"
-	"github.com/open-telemetry/opentelemetry-service/exporter/exporterhelper"
-	jaegertranslator "github.com/open-telemetry/opentelemetry-service/translator/trace/jaeger"
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/consumererror"
+	"github.com/open-telemetry/opentelemetry-collector/exporter"
+	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
+	jaegertranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace/jaeger"
 )
 
 // Default timeout for http request in seconds
