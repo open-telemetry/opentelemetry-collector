@@ -50,6 +50,10 @@ e2e-test: otelcol
 test:
 	$(GOTEST) $(GOTEST_OPT) $(ALL_PKGS)
 
+.PHONY: benchmark
+benchmark:
+	$(GOTEST) -bench=. -run=notests $(ALL_PKGS)
+
 .PHONY: travis-ci
 travis-ci: fmt vet lint goimports misspell staticcheck test-with-cover otelcol
 	$(MAKE) -C testbed install-tools

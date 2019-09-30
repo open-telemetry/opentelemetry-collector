@@ -17,9 +17,13 @@ package processor
 import (
 	"context"
 	"fmt"
+	"math/rand"
+	"strconv"
 	"testing"
 
+	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
@@ -152,6 +156,53 @@ func TestMetricsProcessorWhenOneErrors(t *testing.T) {
 	}
 }
 
+func Benchmark100SpanClone(b *testing.B) {
+
+	b.StopTimer()
+
+	name := tracepb.TruncatableString{Value: "testspanname"}
+	traceData := &consumerdata.TraceData{
+		SourceFormat: "test-source-format",
+		Node: &commonpb.Node{
+			ServiceInfo: &commonpb.ServiceInfo{
+				Name: "servicename",
+			},
+		},
+		Resource: &resourcepb.Resource{
+			Type: "resourcetype",
+		},
+	}
+	for i := 0; i < 100; i++ {
+		span := &tracepb.Span{
+			TraceId: genRandBytes(16),
+			SpanId:  genRandBytes(8),
+			Name:    &name,
+			Attributes: &tracepb.Span_Attributes{
+				AttributeMap: map[string]*tracepb.AttributeValue{},
+			},
+		}
+
+		for j := 0; j < 5; j++ {
+			span.Attributes.AttributeMap["intattr"+strconv.Itoa(j)] = &tracepb.AttributeValue{
+				Value: &tracepb.AttributeValue_IntValue{IntValue: int64(i)},
+			}
+			span.Attributes.AttributeMap["strattr"+strconv.Itoa(j)] = &tracepb.AttributeValue{
+				Value: &tracepb.AttributeValue_StringValue{
+					StringValue: &tracepb.TruncatableString{Value: string(genRandBytes(20))},
+				},
+			}
+		}
+
+		traceData.Spans = append(traceData.Spans, span)
+	}
+
+	b.StartTimer()
+
+	for i := 0; i < b.N; i++ {
+		cloneTraceData(traceData)
+	}
+}
+
 type mockTraceConsumer struct {
 	TotalSpans int
 	MustFail   bool
@@ -182,4 +233,12 @@ func (p *mockMetricsConsumer) ConsumeMetricsData(ctx context.Context, td consume
 	}
 
 	return nil
+}
+
+func genRandBytes(len int) []byte {
+	b := make([]byte, len)
+	for i := range b {
+		b[i] = byte(rand.Intn(256))
+	}
+	return b
 }
