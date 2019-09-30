@@ -22,18 +22,21 @@ import (
 // TraceProcessor composes TraceConsumer with some additional processor-specific functions.
 type TraceProcessor interface {
 	consumer.TraceConsumer
-
-	// TODO: Add processor specific functions.
+	GetCapabilities() Capabilities
 }
 
 // MetricsProcessor composes MetricsConsumer with some additional processor-specific functions.
 type MetricsProcessor interface {
 	consumer.MetricsConsumer
-
-	// TODO: Add processor specific functions.
+	GetCapabilities() Capabilities
 }
 
-// Processor is a data consumer.
-type Processor interface {
-	consumer.DataConsumer
+// Capabilities describes the capabilities of TraceProcessor or MetricsProcessor.
+type Capabilities struct {
+	// MutatesConsumedData is set to true if ConsumeTraceData or ConsumeMetricsData
+	// function of the processor modifies the input TraceData or MetricsData argument.
+	// Processors which modify the input data MUST set this flag to true. If the processor
+	// does not modify the data it MUST set this flag to false. If the processor creates
+	// a copy of the data before modifying then this flag can be safely set to false.
+	MutatesConsumedData bool
 }

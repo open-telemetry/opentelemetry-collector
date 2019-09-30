@@ -17,14 +17,12 @@ package processor
 import (
 	"context"
 	"fmt"
-	"math/rand"
-	"strconv"
 	"testing"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
@@ -39,6 +37,9 @@ func TestTraceProcessorMultiplexing(t *testing.T) {
 	tfc := NewTraceFanOutConnector(processors)
 	td := consumerdata.TraceData{
 		Spans: make([]*tracepb.Span, 7),
+		Resource: &resourcepb.Resource{
+			Type: "testtype",
+		},
 	}
 
 	var wantSpansCount = 0
@@ -53,10 +54,8 @@ func TestTraceProcessorMultiplexing(t *testing.T) {
 
 	for _, p := range processors {
 		m := p.(*mockTraceConsumer)
-		if m.TotalSpans != wantSpansCount {
-			t.Errorf("Wanted %d spans for every processor but got %d", wantSpansCount, m.TotalSpans)
-			return
-		}
+		assert.Equal(t, wantSpansCount, m.TotalSpans)
+		assert.True(t, td.Resource == m.Traces[0].Resource)
 	}
 }
 
@@ -116,10 +115,8 @@ func TestMetricsProcessorMultiplexing(t *testing.T) {
 
 	for _, p := range processors {
 		m := p.(*mockMetricsConsumer)
-		if m.TotalMetrics != wantMetricsCount {
-			t.Errorf("Wanted %d metrics for every processor but got %d", wantMetricsCount, m.TotalMetrics)
-			return
-		}
+		assert.Equal(t, wantMetricsCount, m.TotalMetrics)
+		assert.True(t, md.Resource == m.Metrics[0].Resource)
 	}
 }
 
@@ -156,54 +153,8 @@ func TestMetricsProcessorWhenOneErrors(t *testing.T) {
 	}
 }
 
-func Benchmark100SpanClone(b *testing.B) {
-
-	b.StopTimer()
-
-	name := tracepb.TruncatableString{Value: "testspanname"}
-	traceData := &consumerdata.TraceData{
-		SourceFormat: "test-source-format",
-		Node: &commonpb.Node{
-			ServiceInfo: &commonpb.ServiceInfo{
-				Name: "servicename",
-			},
-		},
-		Resource: &resourcepb.Resource{
-			Type: "resourcetype",
-		},
-	}
-	for i := 0; i < 100; i++ {
-		span := &tracepb.Span{
-			TraceId: genRandBytes(16),
-			SpanId:  genRandBytes(8),
-			Name:    &name,
-			Attributes: &tracepb.Span_Attributes{
-				AttributeMap: map[string]*tracepb.AttributeValue{},
-			},
-		}
-
-		for j := 0; j < 5; j++ {
-			span.Attributes.AttributeMap["intattr"+strconv.Itoa(j)] = &tracepb.AttributeValue{
-				Value: &tracepb.AttributeValue_IntValue{IntValue: int64(i)},
-			}
-			span.Attributes.AttributeMap["strattr"+strconv.Itoa(j)] = &tracepb.AttributeValue{
-				Value: &tracepb.AttributeValue_StringValue{
-					StringValue: &tracepb.TruncatableString{Value: string(genRandBytes(20))},
-				},
-			}
-		}
-
-		traceData.Spans = append(traceData.Spans, span)
-	}
-
-	b.StartTimer()
-
-	for i := 0; i < b.N; i++ {
-		cloneTraceData(traceData)
-	}
-}
-
 type mockTraceConsumer struct {
+	Traces     []*consumerdata.TraceData
 	TotalSpans int
 	MustFail   bool
 }
@@ -211,6 +162,7 @@ type mockTraceConsumer struct {
 var _ consumer.TraceConsumer = &mockTraceConsumer{}
 
 func (p *mockTraceConsumer) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
+	p.Traces = append(p.Traces, &td)
 	p.TotalSpans += len(td.Spans)
 	if p.MustFail {
 		return fmt.Errorf("this processor must fail")
@@ -220,25 +172,19 @@ func (p *mockTraceConsumer) ConsumeTraceData(ctx context.Context, td consumerdat
 }
 
 type mockMetricsConsumer struct {
+	Metrics      []*consumerdata.MetricsData
 	TotalMetrics int
 	MustFail     bool
 }
 
 var _ consumer.MetricsConsumer = &mockMetricsConsumer{}
 
-func (p *mockMetricsConsumer) ConsumeMetricsData(ctx context.Context, td consumerdata.MetricsData) error {
-	p.TotalMetrics += len(td.Metrics)
+func (p *mockMetricsConsumer) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
+	p.Metrics = append(p.Metrics, &md)
+	p.TotalMetrics += len(md.Metrics)
 	if p.MustFail {
 		return fmt.Errorf("this processor must fail")
 	}
 
 	return nil
-}
-
-func genRandBytes(len int) []byte {
-	b := make([]byte, len)
-	for i := range b {
-		b[i] = byte(rand.Intn(256))
-	}
-	return b
 }

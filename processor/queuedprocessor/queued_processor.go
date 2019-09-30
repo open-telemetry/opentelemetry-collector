@@ -56,7 +56,7 @@ type queueItem struct {
 // NewQueuedSpanProcessor returns a span processor that maintains a bounded
 // in-memory queue of span batches, and sends out span batches using the
 // provided sender
-func NewQueuedSpanProcessor(sender consumer.TraceConsumer, opts ...Option) consumer.TraceConsumer {
+func NewQueuedSpanProcessor(sender consumer.TraceConsumer, opts ...Option) processor.TraceProcessor {
 	options := Options.apply(opts...)
 	sp := newQueuedSpanProcessor(sender, options)
 
@@ -129,6 +129,10 @@ func (sp *queuedSpanProcessor) ConsumeTraceData(ctx context.Context, td consumer
 		sp.onItemDropped(item, statsTags)
 	}
 	return nil
+}
+
+func (sp *queuedSpanProcessor) GetCapabilities() processor.Capabilities {
+	return processor.Capabilities{MutatesConsumedData: false}
 }
 
 func (sp *queuedSpanProcessor) processItemFromQueue(item *queueItem) {

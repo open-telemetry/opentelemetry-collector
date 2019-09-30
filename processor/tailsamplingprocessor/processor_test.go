@@ -327,3 +327,7 @@ func (p *mockSpanProcessor) ConsumeTraceData(ctx context.Context, td consumerdat
 	p.TotalSpans += batchSize
 	return nil
 }
+
+func (p *mockSpanProcessor) GetCapabilities() processor.Capabilities {
+	return processor.Capabilities{MutatesConsumedData: false}
+}

@@ -100,20 +100,20 @@ func (rcvs Receivers) StartAll(logger *zap.Logger, host receiver.Host) error {
 
 // ReceiversBuilder builds receivers from config.
 type ReceiversBuilder struct {
-	logger             *zap.Logger
-	config             *configmodels.Config
-	pipelineProcessors PipelineProcessors
-	factories          map[string]receiver.Factory
+	logger         *zap.Logger
+	config         *configmodels.Config
+	builtPipelines BuiltPipelines
+	factories      map[string]receiver.Factory
 }
 
 // NewReceiversBuilder creates a new ReceiversBuilder. Call Build() on the returned value.
 func NewReceiversBuilder(
 	logger *zap.Logger,
 	config *configmodels.Config,
-	pipelineProcessors PipelineProcessors,
+	builtPipelines BuiltPipelines,
 	factories map[string]receiver.Factory,
 ) *ReceiversBuilder {
-	return &ReceiversBuilder{logger, config, pipelineProcessors, factories}
+	return &ReceiversBuilder{logger, config, builtPipelines, factories}
 }
 
 // Build receivers from config.
@@ -142,7 +142,7 @@ func hasReceiver(pipeline *configmodels.Pipeline, receiverName string) bool {
 	return false
 }
 
-type attachedPipelines map[configmodels.DataType][]*builtProcessor
+type attachedPipelines map[configmodels.DataType][]*builtPipeline
 
 func (rb *ReceiversBuilder) findPipelinesToAttach(config configmodels.Receiver) (attachedPipelines, error) {
 	// A receiver may be attached to multiple pipelines. Pipelines may consume different
@@ -150,13 +150,13 @@ func (rb *ReceiversBuilder) findPipelinesToAttach(config configmodels.Receiver) 
 	// attached to this receiver according to configuration.
 
 	pipelinesToAttach := make(attachedPipelines)
-	pipelinesToAttach[configmodels.TracesDataType] = make([]*builtProcessor, 0)
-	pipelinesToAttach[configmodels.MetricsDataType] = make([]*builtProcessor, 0)
+	pipelinesToAttach[configmodels.TracesDataType] = make([]*builtPipeline, 0)
+	pipelinesToAttach[configmodels.MetricsDataType] = make([]*builtPipeline, 0)
 
 	// Iterate over all pipelines.
 	for _, pipelineCfg := range rb.config.Pipelines {
 		// Get the first processor of the pipeline.
-		pipelineProcessor := rb.pipelineProcessors[pipelineCfg]
+		pipelineProcessor := rb.builtPipelines[pipelineCfg]
 		if pipelineProcessor == nil {
 			return nil, fmt.Errorf("cannot find pipeline processor for pipeline %s",
 				pipelineCfg.Name)
@@ -178,7 +178,7 @@ func (rb *ReceiversBuilder) attachReceiverToPipelines(
 	dataType configmodels.DataType,
 	config configmodels.Receiver,
 	rcv *builtReceiver,
-	pipelineProcessors []*builtProcessor,
+	builtPipelines []*builtPipeline,
 ) error {
 	// There are pipelines of the specified data type that must be attached to
 	// the receiver. Create the receiver of corresponding data type and make
@@ -187,13 +187,13 @@ func (rb *ReceiversBuilder) attachReceiverToPipelines(
 	switch dataType {
 	case configmodels.TracesDataType:
 		// First, create the fan out junction point.
-		junction := buildFanoutTraceConsumer(pipelineProcessors)
+		junction := buildFanoutTraceConsumer(builtPipelines)
 
 		// Now create the receiver and tell it to send to the junction point.
 		rcv.trace, err = factory.CreateTraceReceiver(context.Background(), rb.logger, config, junction)
 
 	case configmodels.MetricsDataType:
-		junction := buildFanoutMetricConsumer(pipelineProcessors)
+		junction := buildFanoutMetricConsumer(builtPipelines)
 		rcv.metrics, err = factory.CreateMetricsReceiver(rb.logger, config, junction)
 	}
 
@@ -248,32 +248,46 @@ func (rb *ReceiversBuilder) buildReceiver(config configmodels.Receiver) (*builtR
 	return rcv, nil
 }
 
-func buildFanoutTraceConsumer(pipelineFrontProcessors []*builtProcessor) consumer.TraceConsumer {
+func buildFanoutTraceConsumer(pipelines []*builtPipeline) consumer.TraceConsumer {
 	// Optimize for the case when there is only one processor, no need to create junction point.
-	if len(pipelineFrontProcessors) == 1 {
-		return pipelineFrontProcessors[0].tc
+	if len(pipelines) == 1 {
+		return pipelines[0].firstTC
 	}
 
 	var pipelineConsumers []consumer.TraceConsumer
-	for _, builtProc := range pipelineFrontProcessors {
-		pipelineConsumers = append(pipelineConsumers, builtProc.tc)
+	anyPipelineMutatesData := false
+	for _, pipeline := range pipelines {
+		pipelineConsumers = append(pipelineConsumers, pipeline.firstTC)
+		anyPipelineMutatesData = anyPipelineMutatesData || pipeline.MutatesConsumedData
 	}
 
 	// Create a junction point that fans out to all pipelines.
+	if anyPipelineMutatesData {
+		// If any pipeline mutates data use a cloning fan out connector
+		// so that it is safe to modify fanned out data.
+		return processor.NewTraceCloningFanOutConnector(pipelineConsumers)
+	}
 	return processor.NewTraceFanOutConnector(pipelineConsumers)
 }
 
-func buildFanoutMetricConsumer(pipelineFrontProcessors []*builtProcessor) consumer.MetricsConsumer {
+func buildFanoutMetricConsumer(pipelines []*builtPipeline) consumer.MetricsConsumer {
 	// Optimize for the case when there is only one processor, no need to create junction point.
-	if len(pipelineFrontProcessors) == 1 {
-		return pipelineFrontProcessors[0].mc
+	if len(pipelines) == 1 {
+		return pipelines[0].firstMC
 	}
 
 	var pipelineConsumers []consumer.MetricsConsumer
-	for _, builtProc := range pipelineFrontProcessors {
-		pipelineConsumers = append(pipelineConsumers, builtProc.mc)
+	anyPipelineMutatesData := false
+	for _, pipeline := range pipelines {
+		pipelineConsumers = append(pipelineConsumers, pipeline.firstMC)
+		anyPipelineMutatesData = anyPipelineMutatesData || pipeline.MutatesConsumedData
 	}
 
 	// Create a junction point that fans out to all pipelines.
+	if anyPipelineMutatesData {
+		// If any pipeline mutates data use a cloning fan out connector
+		// so that it is safe to modify fanned out data.
+		return processor.NewMetricsCloningFanOutConnector(pipelineConsumers)
+	}
 	return processor.NewMetricsFanOutConnector(pipelineConsumers)
 }

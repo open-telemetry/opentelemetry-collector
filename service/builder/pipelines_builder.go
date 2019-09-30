@@ -24,16 +24,20 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/processor"
 )
 
-// builtProcessor is a processor that is built based on a config.
-// It can have a trace and/or a metrics consumer.
-type builtProcessor struct {
-	tc consumer.TraceConsumer
-	mc consumer.MetricsConsumer
+// builtPipeline is a pipeline that is built based on a config.
+// It can have a trace and/or a metrics consumer (the consumer is either the first
+// processor in the pipeline or the exporter if pipeline has no processors).
+type builtPipeline struct {
+	firstTC consumer.TraceConsumer
+	firstMC consumer.MetricsConsumer
+
+	// MutatesConsumedData is set to true if any processors in the pipeline
+	// can mutate the TraceData or MetricsData input argument.
+	MutatesConsumedData bool
 }
 
-// PipelineProcessors is a map of entry-point processors created from pipeline configs.
-// Each element of the map points to the first processor of the pipeline.
-type PipelineProcessors map[*configmodels.Pipeline]*builtProcessor
+// BuiltPipelines is a map of build pipelines created from pipeline configs.
+type BuiltPipelines map[*configmodels.Pipeline]*builtPipeline
 
 // PipelinesBuilder builds pipelines from config.
 type PipelinesBuilder struct {
@@ -55,8 +59,8 @@ func NewPipelinesBuilder(
 }
 
 // Build pipeline processors from config.
-func (pb *PipelinesBuilder) Build() (PipelineProcessors, error) {
-	pipelineProcessors := make(PipelineProcessors)
+func (pb *PipelinesBuilder) Build() (BuiltPipelines, error) {
+	pipelineProcessors := make(BuiltPipelines)
 
 	for _, pipeline := range pb.config.Pipelines {
 		firstProcessor, err := pb.buildPipeline(pipeline)
@@ -74,7 +78,7 @@ func (pb *PipelinesBuilder) Build() (PipelineProcessors, error) {
 // that are configured for this pipeline.
 func (pb *PipelinesBuilder) buildPipeline(
 	pipelineCfg *configmodels.Pipeline,
-) (*builtProcessor, error) {
+) (*builtPipeline, error) {
 
 	// Build the pipeline backwards.
 
@@ -88,6 +92,8 @@ func (pb *PipelinesBuilder) buildPipeline(
 	case configmodels.MetricsDataType:
 		mc = pb.buildFanoutExportersMetricsConsumer(pipelineCfg.Exporters)
 	}
+
+	mutatesConsumedData := false
 
 	// Now build the processors backwards, starting from the last one.
 	// The last processor points to consumer which fans out to exporters, then
@@ -105,9 +111,19 @@ func (pb *PipelinesBuilder) buildPipeline(
 		var err error
 		switch pipelineCfg.InputType {
 		case configmodels.TracesDataType:
-			tc, err = factory.CreateTraceProcessor(pb.logger, tc, procCfg)
+			var proc processor.TraceProcessor
+			proc, err = factory.CreateTraceProcessor(pb.logger, tc, procCfg)
+			if proc != nil {
+				mutatesConsumedData = mutatesConsumedData || proc.GetCapabilities().MutatesConsumedData
+			}
+			tc = proc
 		case configmodels.MetricsDataType:
-			mc, err = factory.CreateMetricsProcessor(pb.logger, mc, procCfg)
+			var proc processor.MetricsProcessor
+			proc, err = factory.CreateMetricsProcessor(pb.logger, mc, procCfg)
+			if proc != nil {
+				mutatesConsumedData = mutatesConsumedData || proc.GetCapabilities().MutatesConsumedData
+			}
+			mc = proc
 		}
 
 		if err != nil {
@@ -118,7 +134,7 @@ func (pb *PipelinesBuilder) buildPipeline(
 
 	pb.logger.Info("Pipeline is enabled.", zap.String("pipelines", pipelineCfg.Name))
 
-	return &builtProcessor{tc, mc}, nil
+	return &builtPipeline{tc, mc, mutatesConsumedData}, nil
 }
 
 // Converts the list of exporter names to a list of corresponding builtExporters.

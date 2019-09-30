@@ -311,6 +311,10 @@ func (tsp *tailSamplingSpanProcessor) ConsumeTraceData(ctx context.Context, td c
 	return nil
 }
 
+func (tsp *tailSamplingSpanProcessor) GetCapabilities() processor.Capabilities {
+	return processor.Capabilities{MutatesConsumedData: false}
+}
+
 func (tsp *tailSamplingSpanProcessor) dropTrace(traceID traceKey, deletionTime time.Time) {
 	var trace *sampling.TraceData
 	if d, ok := tsp.idToTrace.Load(traceID); ok {

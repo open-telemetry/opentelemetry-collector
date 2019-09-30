@@ -122,6 +122,10 @@ func (a *attributesProcessor) ConsumeTraceData(ctx context.Context, td consumerd
 	return a.nextConsumer.ConsumeTraceData(ctx, td)
 }
 
+func (a *attributesProcessor) GetCapabilities() processor.Capabilities {
+	return processor.Capabilities{MutatesConsumedData: true}
+}
+
 func insertAttribute(action attributeAction, attributesMap map[string]*tracepb.AttributeValue) {
 	// Insert is only performed when the target key does not already exist
 	// in the attribute map.
