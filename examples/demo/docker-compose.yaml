@@ -11,7 +11,7 @@ services:
 
   # Zipkin
   zipkin-all-in-one:
-    image: openzipkin/zipkin:2.11.12
+    image: openzipkin/zipkin:latest
     ports:
       - "9411:9411"
 

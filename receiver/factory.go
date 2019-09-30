@@ -34,7 +34,7 @@ type Factory interface {
 	CreateDefaultConfig() configmodels.Receiver
 
 	// CustomUnmarshaler returns a custom unmarshaler for the configuration or nil if
-	// there is no need for custom unmarshaling. This is typically used if viper.Unmarshal()
+	// there is no need for custom unmarshaling. This is typically used if viper.UnmarshalExact()
 	// is not sufficient to unmarshal correctly.
 	CustomUnmarshaler() CustomUnmarshaler
 

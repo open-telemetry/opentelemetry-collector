@@ -29,4 +29,8 @@ type Config struct {
 	BufferPeriod                  time.Duration       `mapstructure:"buffer_period"`
 	BufferCount                   int                 `mapstructure:"buffer_count"`
 	IncludeFilter                 map[string][]string `mapstructure:"include_filter"`
+
+	// ConfigPlaceholder is just an entry to allow validation of all sections
+	// on the top level configuration.
+	ConfigPlaceholder interface{} `mapstructure:"config"`
 }

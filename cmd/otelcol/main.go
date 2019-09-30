@@ -34,6 +34,6 @@ func main() {
 	handleErr(err)
 
 	svc := service.New(factories)
-	err = svc.StartUnified()
+	err = svc.Start()
 	handleErr(err)
 }

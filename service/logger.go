@@ -17,7 +17,6 @@ package service
 import (
 	"flag"
 
-	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -26,13 +25,18 @@ const (
 	logLevelCfg = "log-level"
 )
 
+var (
+	// Command line pointer to logger level flag configuration.
+	loggerLevelPtr *string
+)
+
 func loggerFlags(flags *flag.FlagSet) {
-	flags.String(logLevelCfg, "INFO", "Output level of logs (TRACE, DEBUG, INFO, WARN, ERROR, FATAL)")
+	loggerLevelPtr = flags.String(logLevelCfg, "INFO", "Output level of logs (TRACE, DEBUG, INFO, WARN, ERROR, FATAL)")
 }
 
-func newLogger(v *viper.Viper) (*zap.Logger, error) {
+func newLogger() (*zap.Logger, error) {
 	var level zapcore.Level
-	err := (&level).UnmarshalText([]byte(v.GetString(logLevelCfg)))
+	err := (&level).UnmarshalText([]byte(*loggerLevelPtr))
 	if err != nil {
 		return nil, err
 	}

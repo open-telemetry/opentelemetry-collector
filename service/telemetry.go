@@ -21,7 +21,6 @@ import (
 	"strconv"
 
 	"contrib.go.opencensus.io/exporter/prometheus"
-	"github.com/spf13/viper"
 	"go.opencensus.io/stats/view"
 	"go.uber.org/zap"
 
@@ -41,6 +40,10 @@ const (
 var (
 	// AppTelemetry is application's own telemetry.
 	AppTelemetry = &appTelemetry{}
+
+	// Command-line flags that control publication of telemetry data.
+	metricsLevelPtr *string
+	metricsPortPtr  *uint
 )
 
 type appTelemetry struct {
@@ -48,13 +51,13 @@ type appTelemetry struct {
 }
 
 func telemetryFlags(flags *flag.FlagSet) {
-	flags.String(metricsLevelCfg, "BASIC", "Output level of telemetry metrics (NONE, BASIC, NORMAL, DETAILED)")
+	metricsLevelPtr = flags.String(metricsLevelCfg, "BASIC", "Output level of telemetry metrics (NONE, BASIC, NORMAL, DETAILED)")
 	// At least until we can use a generic, i.e.: OpenCensus, metrics exporter we default to Prometheus at port 8888, if not otherwise specified.
-	flags.Uint(metricsPortCfg, 8888, "Port exposing collector telemetry.")
+	metricsPortPtr = flags.Uint(metricsPortCfg, 8888, "Port exposing collector telemetry.")
 }
 
-func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, v *viper.Viper, logger *zap.Logger) error {
-	level, err := telemetry.ParseLevel(v.GetString(metricsLevelCfg))
+func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) error {
+	level, err := telemetry.ParseLevel(*metricsLevelPtr)
 	if err != nil {
 		log.Fatalf("Failed to parse metrics level: %v", err)
 	}
@@ -63,7 +66,7 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 		return nil
 	}
 
-	port := v.GetInt(metricsPortCfg)
+	port := int(*metricsPortPtr)
 
 	views := processor.MetricViews(level)
 	views = append(views, queuedprocessor.MetricViews(level)...)
