@@ -67,6 +67,9 @@ func CustomUnmarshalerFunc(v *viper.Viper, viperKey string, intoCfg interface{})
 
 	// Unmarshal our config values (using viper's mapstructure)
 	errorOnUnused := func(decoderCfg *mapstructure.DecoderConfig) {
+		// If ErrorUnused is true, then it is an error for there to exist
+		// keys in the original map that were unused in the decoding process
+		// (extra keys).
 		decoderCfg.ErrorUnused = true
 	}
 	err := v.UnmarshalKey(viperKey, intoCfg, errorOnUnused)

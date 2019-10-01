@@ -30,7 +30,8 @@ type Config struct {
 	BufferCount                   int                 `mapstructure:"buffer_count"`
 	IncludeFilter                 map[string][]string `mapstructure:"include_filter"`
 
-	// ConfigPlaceholder is just an entry to allow validation of all sections
-	// on the top level configuration.
+	// ConfigPlaceholder is just an entry to make the configuration pass a check
+	// that requires that all keys present in the config actually exist on the
+	// structure, ie.: it will error if an unknown key is present.
 	ConfigPlaceholder interface{} `mapstructure:"config"`
 }

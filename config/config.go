@@ -900,5 +900,8 @@ func expandStringValues(value interface{}) interface{} {
 // errorOnUnused sets the decoder configuration to error in case of unused sections
 // are present in the configuration.
 func errorOnUnused(decoderCfg *mapstructure.DecoderConfig) {
+	// If ErrorUnused is true, then it is an error for there to exist
+	// keys in the original map that were unused in the decoding process
+	// (extra keys).
 	decoderCfg.ErrorUnused = true
 }
