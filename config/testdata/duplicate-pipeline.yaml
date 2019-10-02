@@ -4,12 +4,13 @@ exporters:
   exampleexporter:
 processors:
   exampleprocessor:
-pipelines:
-  traces/default:
-    receivers: [examplereceiver]
-    exporters: [exampleexporter]
-    processors: [exampleprocessor]
-  traces/ default:
-    receivers: [examplereceiver]
-    exporters: [exampleexporter]
-    processors: [exampleprocessor]
+service:
+  pipelines:
+    traces/default:
+      receivers: [examplereceiver]
+      exporters: [exampleexporter]
+      processors: [exampleprocessor]
+    traces/ default:
+      receivers: [examplereceiver]
+      exporters: [exampleexporter]
+      processors: [exampleprocessor]

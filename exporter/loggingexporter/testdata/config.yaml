@@ -9,11 +9,12 @@ exporters:
   logging/2:
     loglevel: debug
 
-pipelines:
-  traces:
-    receivers: [examplereceiver]
-    processors: [exampleprocessor]
-    exporters: [logging]
-  metrics:
-    receivers: [examplereceiver]
-    exporters: [logging,logging/2]
+service:
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      processors: [exampleprocessor]
+      exporters: [logging]
+    metrics:
+      receivers: [examplereceiver]
+      exporters: [logging,logging/2]

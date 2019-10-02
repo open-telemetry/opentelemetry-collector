@@ -11,11 +11,11 @@ service:
     - examapleextension
   unknown_section:
     a_num: 2
-pipelines:
-  traces:
-    receivers:
-      - examplereceiver
-    processors:
-      - exampleprocessor
-    exporters:
-      - exampleexporter
+  pipelines:
+    traces:
+      receivers:
+        - examplereceiver
+      processors:
+        - exampleprocessor
+      exporters:
+        - exampleexporter

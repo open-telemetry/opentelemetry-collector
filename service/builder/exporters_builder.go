@@ -121,7 +121,7 @@ func (eb *ExportersBuilder) calcExportersRequiredDataTypes() exportersRequiredDa
 	result := make(exportersRequiredDataTypes)
 
 	// Iterate over pipelines.
-	for _, pipeline := range eb.config.Pipelines {
+	for _, pipeline := range eb.config.Service.Pipelines {
 		// Iterate over all exporters for this pipeline.
 		for _, expName := range pipeline.Exporters {
 			// Find the exporter config by name.

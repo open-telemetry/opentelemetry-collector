@@ -1,7 +1,6 @@
 receivers:
   opencensus:
     endpoint: localhost:55678
-    reconnection_delay: 2s
   jaeger:
     protocols:
       thrift-http:
@@ -18,15 +17,6 @@ processors:
   batch:
   queued_retry:
 
-pipelines:
-  traces:
-    receivers: [opencensus, jaeger]
-    exporters: [opencensus, logging]
-    processors: [batch, queued_retry]
-  metrics:
-    receivers: [opencensus]
-    exporters: [logging,opencensus]
-
 extensions:
   pprof:
     endpoint: localhost:1777
@@ -35,3 +25,12 @@ extensions:
 
 service:
   extensions: [pprof, zpages]
+  pipelines:
+    traces:
+      receivers: [opencensus, jaeger]
+      exporters: [opencensus, logging]
+      processors: [batch, queued_retry]
+    metrics:
+      receivers: [opencensus]
+      exporters: [logging,opencensus]
+

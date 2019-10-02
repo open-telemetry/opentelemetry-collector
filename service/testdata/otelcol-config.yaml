@@ -14,12 +14,6 @@ processors:
   queued_retry:
   batch:
 
-pipelines:
-  traces:
-    receivers: [jaeger]
-    processors: [attributes, batch, queued_retry]
-    exporters: [opencensus]
-
 extensions:
   health_check:
   pprof:
@@ -27,3 +21,9 @@ extensions:
 
 service:
   extensions: [pprof, zpages, health_check]
+  pipelines:
+    traces:
+      receivers: [jaeger]
+      processors: [attributes, batch, queued_retry]
+      exporters: [opencensus]
+

@@ -10,8 +10,9 @@ exporters:
   zipkin/2:
     url: "https://somedest:1234/api/v2/spans"
 
-pipelines:
-  traces:
-    receivers: [examplereceiver]
-    processors: [exampleprocessor]
-    exporters: [zipkin, zipkin/2]
+service:
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      processors: [exampleprocessor]
+      exporters: [zipkin, zipkin/2]

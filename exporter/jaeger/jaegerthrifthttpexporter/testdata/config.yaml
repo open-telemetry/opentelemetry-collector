@@ -14,8 +14,9 @@ exporters:
       added-entry: "added value"
       dot.test: test
 
-pipelines:
-  traces:
-    receivers: [examplereceiver]
-    processors: [exampleprocessor]
-    exporters: [jaeger_thrift_http, jaeger_thrift_http/2]
+service:
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      processors: [exampleprocessor]
+      exporters: [jaeger_thrift_http, jaeger_thrift_http/2]

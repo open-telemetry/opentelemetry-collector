@@ -7,6 +7,11 @@ extensions:
 
 service:
   extensions: [pprof/1]
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      processors: [exampleprocessor]
+      exporters: [exampleexporter]
 
 # Data pipeline is required to load the config.
 receivers:
@@ -15,8 +20,3 @@ processors:
   exampleprocessor:
 exporters:
   exampleexporter:
-pipelines:
-  traces:
-    receivers: [examplereceiver]
-    processors: [exampleprocessor]
-    exporters: [exampleexporter]

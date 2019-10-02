@@ -111,7 +111,7 @@ func TestDecodeConfig(t *testing.T) {
 		"Did not load processor config correctly")
 
 	// Verify Pipelines
-	assert.Equal(t, 1, len(config.Pipelines), "Incorrect pipelines count")
+	assert.Equal(t, 1, len(config.Service.Pipelines), "Incorrect pipelines count")
 
 	assert.Equal(t,
 		&configmodels.Pipeline{
@@ -121,7 +121,7 @@ func TestDecodeConfig(t *testing.T) {
 			Processors: []string{"exampleprocessor"},
 			Exporters:  []string{"exampleexporter"},
 		},
-		config.Pipelines["traces"],
+		config.Service.Pipelines["traces"],
 		"Did not load pipeline config correctly")
 }
 
@@ -275,7 +275,7 @@ func TestSimpleConfig(t *testing.T) {
 			"TEST[%s] Did not load processor config correctly", test.name)
 
 		// Verify Pipelines
-		assert.Equalf(t, 1, len(config.Pipelines), "TEST[%s]", test.name)
+		assert.Equalf(t, 1, len(config.Service.Pipelines), "TEST[%s]", test.name)
 
 		assert.Equalf(t,
 			&configmodels.Pipeline{
@@ -285,7 +285,7 @@ func TestSimpleConfig(t *testing.T) {
 				Processors: []string{"exampleprocessor"},
 				Exporters:  []string{"exampleexporter"},
 			},
-			config.Pipelines["traces"],
+			config.Service.Pipelines["traces"],
 			"TEST[%s] Did not load pipeline config correctly", test.name)
 	}
 }

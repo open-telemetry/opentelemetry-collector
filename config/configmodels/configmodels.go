@@ -36,7 +36,6 @@ type Config struct {
 	Receivers  Receivers
 	Exporters  Exporters
 	Processors Processors
-	Pipelines  Pipelines
 	Extensions Extensions
 	Service    Service
 }
@@ -144,6 +143,9 @@ type Extensions map[string]Extension
 type Service struct {
 	// Extensions is the ordered list of extensions configured for the service.
 	Extensions []string `mapstructure:"extensions"`
+
+	// Pipelines is the set of data pipelines configured for the service.
+	Pipelines Pipelines `mapstructure:"pipelines"`
 }
 
 // Below are common setting structs for Receivers, Exporters and Processors.

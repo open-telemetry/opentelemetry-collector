@@ -13,8 +13,9 @@ processors:
 exporters:
   exampleexporter:
 
-pipelines:
-  traces:
-    receivers: [examplereceiver]
-    processors: [batch/2]
-    exporters: [exampleexporter]
+service:
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      processors: [batch/2]
+      exporters: [exampleexporter]

@@ -10,11 +10,11 @@ extensions:
 service:
   extensions:
     - exampleextension
-pipelines:
-  traces:
-    receivers:
-      - examplereceiver
-    processors:
-      - exampleprocessor
-    exporters:
-      - exampleexporter
+  pipelines:
+    traces:
+      receivers:
+        - examplereceiver
+      processors:
+        - exampleprocessor
+      exporters:
+        - exampleexporter

@@ -154,7 +154,7 @@ func (rb *ReceiversBuilder) findPipelinesToAttach(config configmodels.Receiver) 
 	pipelinesToAttach[configmodels.MetricsDataType] = make([]*builtPipeline, 0)
 
 	// Iterate over all pipelines.
-	for _, pipelineCfg := range rb.config.Pipelines {
+	for _, pipelineCfg := range rb.config.Service.Pipelines {
 		// Get the first processor of the pipeline.
 		pipelineProcessor := rb.builtPipelines[pipelineCfg]
 		if pipelineProcessor == nil {

@@ -62,7 +62,7 @@ func NewPipelinesBuilder(
 func (pb *PipelinesBuilder) Build() (BuiltPipelines, error) {
 	pipelineProcessors := make(BuiltPipelines)
 
-	for _, pipeline := range pb.config.Pipelines {
+	for _, pipeline := range pb.config.Service.Pipelines {
 		firstProcessor, err := pb.buildPipeline(pipeline)
 		if err != nil {
 			return nil, err

@@ -60,11 +60,12 @@ processors:
 exporters:
   exampleexporter:
 
-pipelines:
-  traces:
-    receivers: [opencensus/customname]
-    processors: [exampleprocessor]
-    exporters: [exampleexporter]
-  metrics:
-    receivers: [opencensus]
-    exporters: [exampleexporter]
+service:
+  pipelines:
+    traces:
+      receivers: [opencensus/customname]
+      processors: [exampleprocessor]
+      exporters: [exampleexporter]
+    metrics:
+      receivers: [opencensus]
+      exporters: [exampleexporter]

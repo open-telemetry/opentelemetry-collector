@@ -3,6 +3,7 @@ receivers:
 exporters:
 processors:
   exampleprocessor:
-pipelines:
-  traces:
-    receivers: [invalidreceivername]
+service:
+  pipelines:
+    traces:
+      receivers: [invalidreceivername]
