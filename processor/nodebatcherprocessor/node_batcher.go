@@ -76,7 +76,7 @@ type batcher struct {
 var _ consumer.TraceConsumer = (*batcher)(nil)
 
 // NewBatcher creates a new batcher that batches spans by node and resource
-func NewBatcher(name string, logger *zap.Logger, sender consumer.TraceConsumer, opts ...Option) consumer.TraceConsumer {
+func NewBatcher(name string, logger *zap.Logger, sender consumer.TraceConsumer, opts ...Option) processor.TraceProcessor {
 	// Init with defaults
 	b := &batcher{
 		name:   name,
@@ -107,6 +107,10 @@ func (b *batcher) ConsumeTraceData(ctx context.Context, td consumerdata.TraceDat
 	bucket := b.getOrAddBucket(bucketID, td.Node, td.Resource, td.SourceFormat)
 	bucket.add(td.Spans)
 	return nil
+}
+
+func (b *batcher) GetCapabilities() processor.Capabilities {
+	return processor.Capabilities{MutatesConsumedData: false}
 }
 
 func (b *batcher) genBucketID(node *commonpb.Node, resource *resourcepb.Resource, spanFormat string) string {

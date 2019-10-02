@@ -98,8 +98,8 @@ func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 
 	// Ensure pipeline has its fields correctly populated.
 	require.NotNil(t, processor)
-	assert.NotNil(t, processor.tc)
-	assert.Nil(t, processor.mc)
+	assert.NotNil(t, processor.firstTC)
+	assert.Nil(t, processor.firstMC)
 
 	// Compose the list of created exporters.
 	var exporters []*builtExporter
@@ -136,7 +136,7 @@ func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 			Type: "resourcetype",
 		},
 	}
-	processor.tc.ConsumeTraceData(context.Background(), traceData)
+	processor.firstTC.ConsumeTraceData(context.Background(), traceData)
 
 	// Now verify received data.
 	for _, consumer := range exporterConsumers {

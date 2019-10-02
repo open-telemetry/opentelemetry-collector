@@ -38,6 +38,10 @@ func (np *nopProcessor) ConsumeMetricsData(ctx context.Context, md consumerdata.
 	return np.nextMetricsProcessor.ConsumeMetricsData(ctx, md)
 }
 
+func (np *nopProcessor) GetCapabilities() processor.Capabilities {
+	return processor.Capabilities{MutatesConsumedData: false}
+}
+
 // NewNopTraceProcessor creates an TraceProcessor that just pass the received data to the nextTraceProcessor.
 func NewNopTraceProcessor(nextTraceProcessor consumer.TraceConsumer) consumer.TraceConsumer {
 	return &nopProcessor{nextTraceProcessor: nextTraceProcessor}

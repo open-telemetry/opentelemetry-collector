@@ -57,6 +57,10 @@ func (sp *spanProcessor) ConsumeTraceData(ctx context.Context, td consumerdata.T
 	return sp.nextConsumer.ConsumeTraceData(ctx, td)
 }
 
+func (sp *spanProcessor) GetCapabilities() processor.Capabilities {
+	return processor.Capabilities{MutatesConsumedData: true}
+}
+
 func (sp *spanProcessor) nameSpan(span *tracepb.Span) {
 	// Note: There was a separate proposal for creating the string.
 	// With benchmarking, strings.Builder is faster than the proposal.

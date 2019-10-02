@@ -82,6 +82,10 @@ func (tsp *tracesamplerprocessor) ConsumeTraceData(ctx context.Context, td consu
 	return tsp.nextConsumer.ConsumeTraceData(ctx, sampledTraceData)
 }
 
+func (tsp *tracesamplerprocessor) GetCapabilities() processor.Capabilities {
+	return processor.Capabilities{MutatesConsumedData: false}
+}
+
 // hash is a murmur3 hash function, see http://en.wikipedia.org/wiki/MurmurHash.
 func hash(key []byte, seed uint32) (hash uint32) {
 	const (
