@@ -23,6 +23,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
@@ -58,9 +59,15 @@ const (
 	errPipelineReceiverNotExists
 	errPipelineProcessorNotExists
 	errPipelineExporterNotExists
-	errUnmarshalError
 	errMissingReceivers
 	errMissingExporters
+	errUnmarshalErrorOnTopLevelSection
+	errUnmarshalErrorOnExtension
+	errUnmarshalErrorOnService
+	errUnmarshalErrorOnReceiver
+	errUnmarshalErrorOnProcessor
+	errUnmarshalErrorOnExporter
+	errUnmarshalErrorOnPipeline
 )
 
 type configError struct {
@@ -122,6 +129,23 @@ func Load(
 	var config configmodels.Config
 
 	// Load the config.
+
+	// Struct to validate top level sections.
+	var topLevelSections struct {
+		Extensions map[string]interface{} `mapstructure:"extensions"`
+		Service    map[string]interface{} `mapstructure:"service"`
+		Receivers  map[string]interface{} `mapstructure:"receivers"`
+		Processors map[string]interface{} `mapstructure:"processors"`
+		Exporters  map[string]interface{} `mapstructure:"exporters"`
+		Pipelines  map[string]interface{} `mapstructure:"pipelines"`
+	}
+
+	if err := v.UnmarshalExact(&topLevelSections); err != nil {
+		return nil, &configError{
+			code: errUnmarshalErrorOnTopLevelSection,
+			msg:  fmt.Sprintf("error reading top level sections: %s", err.Error()),
+		}
+	}
 
 	// Start with extensions and service.
 
@@ -250,9 +274,9 @@ func loadExtensions(v *viper.Viper, factories map[string]extension.Factory) (con
 
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
-		if err := sv.Unmarshal(extensionCfg); err != nil {
+		if err := sv.UnmarshalExact(extensionCfg); err != nil {
 			return nil, &configError{
-				code: errUnmarshalError,
+				code: errUnmarshalErrorOnExtension,
 				msg:  fmt.Sprintf("error reading settings for extension type %q: %v", typeStr, err),
 			}
 		}
@@ -272,9 +296,9 @@ func loadExtensions(v *viper.Viper, factories map[string]extension.Factory) (con
 
 func loadService(v *viper.Viper) (configmodels.Service, error) {
 	var service configmodels.Service
-	if err := v.UnmarshalKey(serviceKeyName, &service); err != nil {
+	if err := v.UnmarshalKey(serviceKeyName, &service, errorOnUnused); err != nil {
 		return service, &configError{
-			code: errUnmarshalError,
+			code: errUnmarshalErrorOnService,
 			msg:  fmt.Sprintf("error reading settings for %q: %v", serviceKeyName, err),
 		}
 	}
@@ -336,16 +360,12 @@ func loadReceivers(v *viper.Viper, factories map[string]receiver.Factory) (confi
 			// This configuration requires a custom unmarshaler, use it.
 			err = customUnmarshaler(subViper, key, receiverCfg)
 		} else {
-			// Standard viper unmarshaler is fine.
-			// TODO(ccaraman): UnmarshallExact should be used to catch erroneous config entries.
-			// 	This leads to quickly identifying config values that are not supported and reduce confusion for
-			// 	users.
-			err = sv.Unmarshal(receiverCfg)
+			err = sv.UnmarshalExact(receiverCfg)
 		}
 
 		if err != nil {
 			return nil, &configError{
-				code: errUnmarshalError,
+				code: errUnmarshalErrorOnReceiver,
 				msg:  fmt.Sprintf("error reading settings for receiver type %q: %v", typeStr, err),
 			}
 		}
@@ -410,9 +430,9 @@ func loadExporters(v *viper.Viper, factories map[string]exporter.Factory) (confi
 
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
-		if err := sv.Unmarshal(exporterCfg); err != nil {
+		if err := sv.UnmarshalExact(exporterCfg); err != nil {
 			return nil, &configError{
-				code: errUnmarshalError,
+				code: errUnmarshalErrorOnExporter,
 				msg:  fmt.Sprintf("error reading settings for exporter type %q: %v", typeStr, err),
 			}
 		}
@@ -470,9 +490,9 @@ func loadProcessors(v *viper.Viper, factories map[string]processor.Factory) (con
 
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
-		if err := sv.Unmarshal(processorCfg); err != nil {
+		if err := sv.UnmarshalExact(processorCfg); err != nil {
 			return nil, &configError{
-				code: errUnmarshalError,
+				code: errUnmarshalErrorOnProcessor,
 				msg:  fmt.Sprintf("error reading settings for processor type %q: %v", typeStr, err),
 			}
 		}
@@ -529,9 +549,9 @@ func loadPipelines(v *viper.Viper) (configmodels.Pipelines, error) {
 
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
-		if err := subViper.UnmarshalKey(key, &pipelineCfg); err != nil {
+		if err := subViper.UnmarshalKey(key, &pipelineCfg, errorOnUnused); err != nil {
 			return nil, &configError{
-				code: errUnmarshalError,
+				code: errUnmarshalErrorOnPipeline,
 				msg:  fmt.Sprintf("error reading settings for pipeline type %q: %v", typeStr, err),
 			}
 		}
@@ -875,4 +895,13 @@ func expandStringValues(value interface{}) interface{} {
 		}
 		return nmap
 	}
+}
+
+// errorOnUnused sets the decoder configuration to error in case of unused sections
+// are present in the configuration.
+func errorOnUnused(decoderCfg *mapstructure.DecoderConfig) {
+	// If ErrorUnused is true, then it is an error for there to exist
+	// keys in the original map that were unused in the decoding process
+	// (extra keys).
+	decoderCfg.ErrorUnused = true
 }

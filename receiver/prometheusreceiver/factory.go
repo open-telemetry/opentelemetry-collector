@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v2"
@@ -65,7 +66,13 @@ func CustomUnmarshalerFunc(v *viper.Viper, viperKey string, intoCfg interface{})
 	// YAML unmarshaling routines so we need to do it explicitly.
 
 	// Unmarshal our config values (using viper's mapstructure)
-	err := v.UnmarshalKey(viperKey, intoCfg)
+	errorOnUnused := func(decoderCfg *mapstructure.DecoderConfig) {
+		// If ErrorUnused is true, then it is an error for there to exist
+		// keys in the original map that were unused in the decoding process
+		// (extra keys).
+		decoderCfg.ErrorUnused = true
+	}
+	err := v.UnmarshalKey(viperKey, intoCfg, errorOnUnused)
 	if err != nil {
 		return fmt.Errorf("prometheus receiver failed to parse config: %s", err)
 	}

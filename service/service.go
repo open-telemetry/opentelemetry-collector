@@ -18,6 +18,7 @@ package service
 
 import (
 	"context"
+	"flag"
 	"log"
 	"os"
 	"os/signal"
@@ -31,13 +32,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/extension"
-	"github.com/open-telemetry/opentelemetry-collector/internal/config/viperutils"
 	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	"github.com/open-telemetry/opentelemetry-collector/service/builder"
 )
 
 // Application represents a collector application
 type Application struct {
+	rootCmd        *cobra.Command
 	v              *viper.Viper
 	logger         *zap.Logger
 	exporters      builder.Exporters
@@ -73,19 +74,44 @@ func (app *Application) ReportFatalError(err error) {
 	app.asyncErrorChannel <- err
 }
 
-// New creates and returns a new instance of Application
+// New creates and returns a new instance of Application.
 func New(
 	factories config.Factories,
 ) *Application {
-	return &Application{
+	app := &Application{
 		v:         viper.New(),
 		readyChan: make(chan struct{}),
 		factories: factories,
 	}
+
+	rootCmd := &cobra.Command{
+		Use:  "otelcol",
+		Long: "OpenTelemetry Collector",
+		Run: func(cmd *cobra.Command, args []string) {
+			app.init()
+			app.execute()
+		},
+	}
+
+	// TODO: coalesce this code and expose this information to other components.
+	flagSet := new(flag.FlagSet)
+	addFlagsFns := []func(*flag.FlagSet){
+		telemetryFlags,
+		builder.Flags,
+		loggerFlags,
+	}
+	for _, addFlags := range addFlagsFns {
+		addFlags(flagSet)
+	}
+	rootCmd.Flags().AddGoFlagSet(flagSet)
+
+	app.rootCmd = rootCmd
+
+	return app
 }
 
 func (app *Application) init() {
-	file := builder.GetConfigFile(app.v)
+	file := builder.GetConfigFile()
 	if file == "" {
 		log.Fatalf("Config file not specified")
 	}
@@ -94,7 +120,7 @@ func (app *Application) init() {
 	if err != nil {
 		log.Fatalf("Error loading config file %q: %v", file, err)
 	}
-	app.logger, err = newLogger(app.v)
+	app.logger, err = newLogger()
 	if err != nil {
 		log.Fatalf("Failed to get logger: %v", err)
 	}
@@ -102,7 +128,7 @@ func (app *Application) init() {
 
 func (app *Application) setupTelemetry(ballastSizeBytes uint64) {
 	app.logger.Info("Setting up own telemetry...")
-	err := AppTelemetry.init(app.asyncErrorChannel, ballastSizeBytes, app.v, app.logger)
+	err := AppTelemetry.init(app.asyncErrorChannel, ballastSizeBytes, app.logger)
 	if err != nil {
 		app.logger.Error("Failed to initialize telemetry", zap.Error(err))
 		os.Exit(1)
@@ -261,7 +287,7 @@ func (app *Application) shutdownExtensions() {
 	}
 }
 
-func (app *Application) executeUnified() {
+func (app *Application) execute() {
 	app.logger.Info("Starting...", zap.Int("NumCPU", runtime.NumCPU()))
 
 	// Set memory ballast
@@ -290,28 +316,14 @@ func (app *Application) executeUnified() {
 	app.logger.Info("Shutdown complete.")
 }
 
-// StartUnified starts the unified service according to the command and configuration
+// Start starts the collector according to the command and configuration
 // given by the user.
-func (app *Application) StartUnified() error {
-	rootCmd := &cobra.Command{
-		Use:  "otelcol",
-		Long: "OpenTelemetry Collector",
-		Run: func(cmd *cobra.Command, args []string) {
-			app.init()
-			app.executeUnified()
-		},
-	}
-	viperutils.AddFlags(app.v, rootCmd,
-		telemetryFlags,
-		builder.Flags,
-		loggerFlags,
-	)
-
-	return rootCmd.Execute()
+func (app *Application) Start() error {
+	return app.rootCmd.Execute()
 }
 
 func (app *Application) createMemoryBallast() ([]byte, uint64) {
-	ballastSizeMiB := builder.MemBallastSize(app.v)
+	ballastSizeMiB := builder.MemBallastSize()
 	if ballastSizeMiB > 0 {
 		ballastSizeBytes := uint64(ballastSizeMiB) * 1024 * 1024
 		ballast := make([]byte, ballastSizeBytes)

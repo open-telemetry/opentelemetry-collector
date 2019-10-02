@@ -1,14 +1,11 @@
-# Enable debug level to see output of "logging" exporter
-log-level: DEBUG
-
 receivers:
   opencensus:
-    endpoint: 0.0.0.0:55678
+    endpoint: localhost:55678
     reconnection_delay: 2s
   jaeger:
     protocols:
       thrift-http:
-        endpoint: "0.0.0.0:14268"
+        endpoint: "localhost:14268"
 
 
 exporters:
@@ -32,10 +29,9 @@ pipelines:
 
 extensions:
   pprof:
-    endpoint: :1777
+    endpoint: localhost:1777
   zpages:
-    endpoint: :55679
+    endpoint: localhost:55679
 
 service:
   extensions: [pprof, zpages]
-

@@ -24,6 +24,7 @@ require (
 	github.com/hashicorp/consul/api v1.2.0 // indirect
 	github.com/jaegertracing/jaeger v1.14.0
 	github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024
+	github.com/mitchellh/mapstructure v1.1.2
 	github.com/openzipkin/zipkin-go v0.2.1
 	github.com/orijtech/prometheus-go-metrics-exporter v0.0.3-0.20190313163149-b321c5297f60
 	github.com/pkg/errors v0.8.1

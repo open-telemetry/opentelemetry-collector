@@ -16,8 +16,8 @@
 package service
 
 import (
-	"net"
 	"net/http"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -26,31 +26,23 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/internal/testutils"
 )
 
-func TestApplication_StartUnified(t *testing.T) {
+func TestApplication_Start(t *testing.T) {
 	factories, err := defaults.Components()
 	assert.Nil(t, err)
 
 	app := New(factories)
 
-	portArg := []string{
-		"metrics-port",
-	}
-	addresses := getMultipleAvailableLocalAddresses(t, uint(len(portArg)))
-	for i, addr := range addresses {
-		_, port, err := net.SplitHostPort(addr)
-		if err != nil {
-			t.Fatalf("failed to split host and port from %q: %v", addr, err)
-		}
-		app.v.Set(portArg[i], port)
-	}
-
-	app.v.Set("config", "testdata/otelcol-config.yaml")
+	metricsPort := testutils.GetAvailablePort(t)
+	app.rootCmd.SetArgs([]string{
+		"--config=testdata/otelcol-config.yaml",
+		"--metrics-port=" + strconv.FormatUint(uint64(metricsPort), 10),
+	})
 
 	appDone := make(chan struct{})
 	go func() {
 		defer close(appDone)
-		if err := app.StartUnified(); err != nil {
-			t.Errorf("app.StartUnified() got %v, want nil", err)
+		if err := app.Start(); err != nil {
+			t.Errorf("app.Start() got %v, want nil", err)
 			return
 		}
 	}()
@@ -76,12 +68,4 @@ func isAppAvailable(t *testing.T, healthCheckEndPoint string) bool {
 	}
 	defer resp.Body.Close()
 	return resp.StatusCode == http.StatusOK
-}
-
-func getMultipleAvailableLocalAddresses(t *testing.T, numAddresses uint) []string {
-	addresses := make([]string, numAddresses)
-	for i := uint(0); i < numAddresses; i++ {
-		addresses[i] = testutils.GetAvailableLocalAddress(t)
-	}
-	return addresses
 }
