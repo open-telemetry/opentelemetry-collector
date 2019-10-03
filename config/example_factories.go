@@ -289,6 +289,13 @@ type ExampleExporterConsumer struct {
 	ExporterShutdown bool
 }
 
+// Start tells the exporter to start. The exporter may prepare for exporting
+// by connecting to the endpoint. Host parameter can be used for communicating
+// with the host after Start() has already returned.
+func (exp *ExampleExporterConsumer) Start(host exporter.Host) error {
+	return nil
+}
+
 // ConsumeTraceData receives consumerdata.TraceData for processing by the TraceConsumer.
 func (exp *ExampleExporterConsumer) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	exp.Traces = append(exp.Traces, td)

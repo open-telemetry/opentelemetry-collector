@@ -25,6 +25,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/config/configgrpc"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/opencensusexporter"
+	"github.com/open-telemetry/opentelemetry-collector/receiver/receivertest"
 )
 
 func TestExportersBuilder_Build(t *testing.T) {
@@ -69,8 +70,12 @@ func TestExportersBuilder_Build(t *testing.T) {
 	assert.NotNil(t, e1.te)
 	assert.Nil(t, e1.me)
 
-	// Ensure it can be stopped.
+	// Ensure it can be started.
+	mh := receivertest.NewMockHost()
+	err = exporters.StartAll(zap.NewNop(), mh)
+	assert.NoError(t, err)
 
+	// Ensure it can be stopped.
 	if err = e1.Shutdown(); err != nil {
 		// TODO Find a better way to handle this case
 		// Since the endpoint of opencensus exporter doesn't actually exist, e1 may

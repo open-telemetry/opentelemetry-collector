@@ -30,6 +30,13 @@ type SinkTraceExporter struct {
 
 var _ exporter.TraceExporter = (*SinkTraceExporter)(nil)
 
+// Start tells the exporter to start. The exporter may prepare for exporting
+// by connecting to the endpoint. Host parameter can be used for communicating
+// with the host after Start() has already returned.
+func (ste *SinkTraceExporter) Start(host exporter.Host) error {
+	return nil
+}
+
 // ConsumeTraceData stores traces for tests.
 func (ste *SinkTraceExporter) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	ste.mu.Lock()
@@ -70,6 +77,13 @@ type SinkMetricsExporter struct {
 }
 
 var _ exporter.MetricsExporter = (*SinkMetricsExporter)(nil)
+
+// Start tells the exporter to start. The exporter may prepare for exporting
+// by connecting to the endpoint. Host parameter can be used for communicating
+// with the host after Start() has already returned.
+func (sme *SinkMetricsExporter) Start(host exporter.Host) error {
+	return nil
+}
 
 // ConsumeMetricsData stores traces for tests.
 func (sme *SinkMetricsExporter) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {

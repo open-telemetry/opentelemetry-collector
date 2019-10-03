@@ -29,6 +29,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumererror"
+	"github.com/open-telemetry/opentelemetry-collector/exporter"
 	"github.com/open-telemetry/opentelemetry-collector/observability"
 	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 	spandatatranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace/spandata"
@@ -125,6 +126,10 @@ func zipkinEndpointFromNode(node *commonpb.Node, serviceName string, endpointTyp
 
 func (ze *zipkinExporter) Name() string {
 	return ze.defaultServiceName
+}
+
+func (ze *zipkinExporter) Start(host exporter.Host) error {
+	return nil
 }
 
 func (ze *zipkinExporter) Shutdown() error {

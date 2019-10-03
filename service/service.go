@@ -206,20 +206,25 @@ func (app *Application) setupPipelines() {
 	var err error
 	app.exporters, err = builder.NewExportersBuilder(app.logger, app.config, app.factories.Exporters).Build()
 	if err != nil {
-		log.Fatalf("Cannot load configuration: %v", err)
+		log.Fatalf("Cannot build exporters: %v", err)
+	}
+	app.logger.Info("Starting exporters...")
+	err = app.exporters.StartAll(app.logger, app)
+	if err != nil {
+		log.Fatalf("Cannot start exporters: %v", err)
 	}
 
 	// Create pipelines and their processors and plug exporters to the
 	// end of the pipelines.
 	pipelines, err := builder.NewPipelinesBuilder(app.logger, app.config, app.exporters, app.factories.Processors).Build()
 	if err != nil {
-		log.Fatalf("Cannot load configuration: %v", err)
+		log.Fatalf("Cannot build pipelines: %v", err)
 	}
 
 	// Create receivers and plug them into the start of the pipelines.
 	app.builtReceivers, err = builder.NewReceiversBuilder(app.logger, app.config, pipelines, app.factories.Receivers).Build()
 	if err != nil {
-		log.Fatalf("Cannot load configuration: %v", err)
+		log.Fatalf("Cannot build receivers: %v", err)
 	}
 
 	app.logger.Info("Starting receivers...")

@@ -37,6 +37,10 @@ type traceExporter struct {
 
 var _ (exporter.TraceExporter) = (*traceExporter)(nil)
 
+func (te *traceExporter) Start(host exporter.Host) error {
+	return nil
+}
+
 func (te *traceExporter) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	exporterCtx := observability.ContextWithExporterName(ctx, te.exporterFullName)
 	_, err := te.pushTraceData(exporterCtx, td)
