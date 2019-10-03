@@ -154,7 +154,7 @@ func Load(
 	}
 	config.Extensions = extensions
 
-	// Load data components (receivers, exporters, and processores).
+	// Load data components (receivers, exporters, and processors).
 
 	receivers, err := loadReceivers(v, factories.Receivers)
 	if err != nil {
