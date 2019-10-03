@@ -25,28 +25,20 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 )
 
-func TestNew(t *testing.T) {
-	const testHTTPAddress = "http://a.test.dom:123/at/some/path"
+const testHTTPAddress = "http://a.test.dom:123/at/some/path"
 
-	type args struct {
-		config      configmodels.Exporter
-		httpAddress string
-		headers     map[string]string
-		timeout     time.Duration
-	}
+type args struct {
+	config      configmodels.Exporter
+	httpAddress string
+	headers     map[string]string
+	timeout     time.Duration
+}
+
+func TestNew(t *testing.T) {
 	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
+		name string
+		args args
 	}{
-		{
-			name: "empty_exporterName",
-			args: args{
-				config:      nil,
-				httpAddress: testHTTPAddress,
-			},
-			wantErr: true,
-		},
 		{
 			name: "createExporter",
 			args: args{
@@ -57,21 +49,39 @@ func TestNew(t *testing.T) {
 			},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := New(tt.args.config, tt.args.httpAddress, tt.args.headers, tt.args.timeout)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("New() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-
-			if got == nil {
-				return
-			}
+			assert.NoError(t, err, "nil config")
+			assert.NotNil(t, got)
 
 			// This is expected to fail.
 			err = got.ConsumeTraceData(context.Background(), consumerdata.TraceData{})
 			assert.Error(t, err)
+		})
+	}
+}
+
+func TestNewFails(t *testing.T) {
+	tests := []struct {
+		name string
+		args args
+	}{
+		{
+			name: "empty_exporterName",
+			args: args{
+				config:      nil,
+				httpAddress: testHTTPAddress,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := New(tt.args.config, tt.args.httpAddress, tt.args.headers, tt.args.timeout)
+			assert.EqualError(t, err, "nil config")
+			assert.Nil(t, got)
 		})
 	}
 }

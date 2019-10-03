@@ -28,28 +28,24 @@ import (
 
 func TestLoggingTraceExporterNoErrors(t *testing.T) {
 	lte, err := NewTraceExporter(&configmodels.ExporterSettings{}, zap.NewNop())
-	if err != nil {
-		t.Fatalf("Wanted nil got %v", err)
-	}
+	assert.NotNil(t, lte)
+	assert.NoError(t, err)
+
 	td := consumerdata.TraceData{
 		Spans: make([]*tracepb.Span, 7),
 	}
-	if err := lte.ConsumeTraceData(context.Background(), td); err != nil {
-		t.Fatalf("Wanted nil got %v", err)
-	}
+	assert.NoError(t, lte.ConsumeTraceData(context.Background(), td))
 	assert.NoError(t, lte.Shutdown())
 }
 
 func TestLoggingMetricsExporterNoErrors(t *testing.T) {
 	lme, err := NewMetricsExporter(&configmodels.ExporterSettings{}, zap.NewNop())
-	if err != nil {
-		t.Fatalf("Wanted nil got %v", err)
-	}
+	assert.NotNil(t, lme)
+	assert.NoError(t, err)
+
 	md := consumerdata.MetricsData{
 		Metrics: make([]*metricspb.Metric, 7),
 	}
-	if err := lme.ConsumeMetricsData(context.Background(), md); err != nil {
-		t.Fatalf("Wanted nil got %v", err)
-	}
+	assert.NoError(t, lme.ConsumeMetricsData(context.Background(), md))
 	assert.NoError(t, lme.Shutdown())
 }

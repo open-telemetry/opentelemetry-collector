@@ -68,40 +68,7 @@ func TestFactory_CreateTraceExporter(t *testing.T) {
 	tests := []struct {
 		name    string
 		config  *Config
-		wantErr bool
 	}{
-		{
-			name: "empty_url",
-			config: &Config{
-				ExporterSettings: configmodels.ExporterSettings{
-					TypeVal: typeStr,
-					NameVal: typeStr,
-				},
-			},
-			wantErr: true,
-		},
-		{
-			name: "invalid_url",
-			config: &Config{
-				ExporterSettings: configmodels.ExporterSettings{
-					TypeVal: typeStr,
-					NameVal: typeStr,
-				},
-				URL: "localhost:123",
-			},
-			wantErr: true,
-		},
-		{
-			name: "negative_duration",
-			config: &Config{
-				ExporterSettings: configmodels.ExporterSettings{
-					TypeVal: typeStr,
-					NameVal: typeStr,
-				},
-				Timeout: -2 * time.Second,
-			},
-			wantErr: true,
-		},
 		{
 			name: "create_instance",
 			config: &Config{
@@ -121,11 +88,59 @@ func TestFactory_CreateTraceExporter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			f := &Factory{}
-			_, err := f.CreateTraceExporter(zap.NewNop(), tt.config)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Factory.CreateTraceExporter() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
+			te, err := f.CreateTraceExporter(zap.NewNop(), tt.config)
+			assert.NoError(t, err)
+			assert.NotNil(t, te)
+		})
+	}
+}
+
+func TestFactory_CreateTraceExporterFails(t *testing.T) {
+	tests := []struct {
+		name         string
+		config       *Config
+		errorMessage string
+	}{
+		{
+			name: "empty_url",
+			config: &Config{
+				ExporterSettings: configmodels.ExporterSettings{
+					TypeVal: typeStr,
+					NameVal: typeStr,
+				},
+			},
+			errorMessage: "\"jaeger_thrift_http\" config requires a valid \"url\": parse : empty url",
+		},
+		{
+			name: "invalid_url",
+			config: &Config{
+				ExporterSettings: configmodels.ExporterSettings{
+					TypeVal: typeStr,
+					NameVal: typeStr,
+				},
+				URL: ".localhost:123",
+			},
+			errorMessage: "\"jaeger_thrift_http\" config requires a valid \"url\": parse .localhost:123: invalid URI for request",
+		},
+		{
+			name: "negative_duration",
+			config: &Config{
+				ExporterSettings: configmodels.ExporterSettings{
+					TypeVal: typeStr,
+					NameVal: typeStr,
+				},
+				URL: "localhost:123",
+				Timeout: -2 * time.Second,
+			},
+			errorMessage: "\"jaeger_thrift_http\" config requires a positive value for \"timeout\"",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f := &Factory{}
+			te, err := f.CreateTraceExporter(zap.NewNop(), tt.config)
+			assert.EqualError(t, err, tt.errorMessage)
+			assert.Nil(t, te)
 		})
 	}
 }

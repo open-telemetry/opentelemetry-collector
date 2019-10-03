@@ -31,14 +31,16 @@ func TestCreateMetricsExporter(t *testing.T) {
 	factory := &Factory{}
 	cfg := factory.CreateDefaultConfig()
 
-	_, err := factory.CreateMetricsExporter(zap.NewNop(), cfg)
+	me, err := factory.CreateMetricsExporter(zap.NewNop(), cfg)
 	assert.Nil(t, err)
+	assert.NotNil(t, me)
 }
 
 func TestCreateTraceExporter(t *testing.T) {
 	factory := &Factory{}
 	cfg := factory.CreateDefaultConfig()
 
-	_, err := factory.CreateTraceExporter(zap.NewNop(), cfg)
+	te, err := factory.CreateTraceExporter(zap.NewNop(), cfg)
 	assert.Nil(t, err)
+	assert.NotNil(t, te)
 }
