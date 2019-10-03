@@ -25,8 +25,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-service/extension/extensiontest"
-	"github.com/open-telemetry/opentelemetry-service/internal/testutils"
+	"github.com/open-telemetry/opentelemetry-collector/extension/extensiontest"
+	"github.com/open-telemetry/opentelemetry-collector/internal/testutils"
 )
 
 func TestHealthCheckExtensionUsage(t *testing.T) {
@@ -57,7 +57,7 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 	resp1, err := client.Get(url)
 	require.NoError(t, err)
 	defer resp1.Body.Close()
-	require.Equal(t, http.StatusNoContent, resp1.StatusCode)
+	require.Equal(t, http.StatusOK, resp1.StatusCode)
 
 	hcExt.NotReady()
 	resp2, err := client.Get(url)

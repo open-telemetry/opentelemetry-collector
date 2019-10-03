@@ -12,15 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Program otelsvc is the Open Telemetry Service that collects stats
+// Program otelcol is the OpenTelemetry Collector that collects stats
 // and traces and exports to a configured backend.
 package main
 
 import (
 	"log"
 
-	"github.com/open-telemetry/opentelemetry-service/defaults"
-	"github.com/open-telemetry/opentelemetry-service/service"
+	"github.com/open-telemetry/opentelemetry-collector/defaults"
+	"github.com/open-telemetry/opentelemetry-collector/service"
 )
 
 func main() {
@@ -34,6 +34,6 @@ func main() {
 	handleErr(err)
 
 	svc := service.New(factories)
-	err = svc.StartUnified()
+	err = svc.Start()
 	handleErr(err)
 }

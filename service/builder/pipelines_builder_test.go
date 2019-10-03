@@ -18,17 +18,18 @@ import (
 	"context"
 	"testing"
 
-	"go.uber.org/zap"
-
+	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-
-	"github.com/open-telemetry/opentelemetry-service/config"
-	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/processor/attributesprocessor"
+	"github.com/open-telemetry/opentelemetry-collector/config"
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/processor/attributesprocessor"
 )
 
 func TestPipelinesBuilder_Build(t *testing.T) {
@@ -56,6 +57,26 @@ func TestPipelinesBuilder_Build(t *testing.T) {
 	}
 }
 
+func assertEqualTraceData(t *testing.T, expected consumerdata.TraceData, actual consumerdata.TraceData) {
+	assert.True(t, proto.Equal(expected.Resource, actual.Resource))
+	assert.True(t, proto.Equal(expected.Node, actual.Node))
+
+	for i := range expected.Spans {
+		assert.True(t, proto.Equal(expected.Spans[i], actual.Spans[i]))
+	}
+
+	assert.EqualValues(t, expected.SourceFormat, actual.SourceFormat)
+}
+
+func assertEqualMetricsData(t *testing.T, expected consumerdata.MetricsData, actual consumerdata.MetricsData) {
+	assert.True(t, proto.Equal(expected.Resource, actual.Resource))
+	assert.True(t, proto.Equal(expected.Node, actual.Node))
+
+	for i := range expected.Metrics {
+		assert.True(t, proto.Equal(expected.Metrics[i], actual.Metrics[i]))
+	}
+}
+
 func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 	factories, err := config.ExampleComponents()
 	assert.Nil(t, err)
@@ -73,12 +94,12 @@ func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 	assert.NoError(t, err)
 	require.NotNil(t, pipelineProcessors)
 
-	processor := pipelineProcessors[cfg.Pipelines[pipelineName]]
+	processor := pipelineProcessors[cfg.Service.Pipelines[pipelineName]]
 
 	// Ensure pipeline has its fields correctly populated.
 	require.NotNil(t, processor)
-	assert.NotNil(t, processor.tc)
-	assert.Nil(t, processor.mc)
+	assert.NotNil(t, processor.firstTC)
+	assert.Nil(t, processor.firstMC)
 
 	// Compose the list of created exporters.
 	var exporters []*builtExporter
@@ -106,14 +127,24 @@ func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 		Spans: []*tracepb.Span{
 			{Name: &name},
 		},
+		Node: &commonpb.Node{
+			ServiceInfo: &commonpb.ServiceInfo{
+				Name: "servicename",
+			},
+		},
+		Resource: &resourcepb.Resource{
+			Type: "resourcetype",
+		},
 	}
-	processor.tc.ConsumeTraceData(context.Background(), traceData)
+	processor.firstTC.ConsumeTraceData(context.Background(), traceData)
 
 	// Now verify received data.
 	for _, consumer := range exporterConsumers {
 		// Check that the trace is received by exporter.
 		require.Equal(t, 1, len(consumer.Traces))
-		assert.Equal(t, traceData, consumer.Traces[0])
+
+		// Verify that span is successfully delivered.
+		assertEqualTraceData(t, traceData, consumer.Traces[0])
 
 		// Check that the span was processed by "attributes" processor and an
 		// attribute was added.
@@ -133,7 +164,7 @@ func TestPipelinesBuilder_Error(t *testing.T) {
 	// Corrupt the pipeline, change data type to metrics. We have to forcedly do it here
 	// since there is no way to have such config loaded by LoadConfigFile, it would not
 	// pass validation. We are doing this to test failure mode of PipelinesBuilder.
-	pipeline := cfg.Pipelines["traces"]
+	pipeline := cfg.Service.Pipelines["traces"]
 	pipeline.InputType = configmodels.MetricsDataType
 
 	exporters, err := NewExportersBuilder(zap.NewNop(), cfg, factories.Exporters).Build()

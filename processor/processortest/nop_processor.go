@@ -17,9 +17,9 @@ package processortest
 import (
 	"context"
 
-	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/processor"
+	"github.com/open-telemetry/opentelemetry-collector/consumer"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/processor"
 )
 
 type nopProcessor struct {
@@ -36,6 +36,10 @@ func (np *nopProcessor) ConsumeTraceData(ctx context.Context, td consumerdata.Tr
 
 func (np *nopProcessor) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
 	return np.nextMetricsProcessor.ConsumeMetricsData(ctx, md)
+}
+
+func (np *nopProcessor) GetCapabilities() processor.Capabilities {
+	return processor.Capabilities{MutatesConsumedData: false}
 }
 
 // NewNopTraceProcessor creates an TraceProcessor that just pass the received data to the nextTraceProcessor.

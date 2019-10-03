@@ -17,22 +17,22 @@ package processor
 import (
 	"context"
 
-	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/oterr"
+	"github.com/open-telemetry/opentelemetry-collector/consumer"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/oterr"
 )
 
 // This file contains implementations of Trace/Metrics connectors
 // that fan out the data to multiple other consumers.
 
 // NewMetricsFanOutConnector wraps multiple metrics consumers in a single one.
-func NewMetricsFanOutConnector(mcs []consumer.MetricsConsumer) MetricsProcessor {
+func NewMetricsFanOutConnector(mcs []consumer.MetricsConsumer) consumer.MetricsConsumer {
 	return metricsFanOutConnector(mcs)
 }
 
 type metricsFanOutConnector []consumer.MetricsConsumer
 
-var _ MetricsProcessor = (*metricsFanOutConnector)(nil)
+var _ consumer.MetricsConsumer = (*metricsFanOutConnector)(nil)
 
 // ConsumeMetricsData exports the MetricsData to all consumers wrapped by the current one.
 func (mfc metricsFanOutConnector) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
@@ -46,13 +46,13 @@ func (mfc metricsFanOutConnector) ConsumeMetricsData(ctx context.Context, md con
 }
 
 // NewTraceFanOutConnector wraps multiple trace consumers in a single one.
-func NewTraceFanOutConnector(tcs []consumer.TraceConsumer) TraceProcessor {
+func NewTraceFanOutConnector(tcs []consumer.TraceConsumer) consumer.TraceConsumer {
 	return traceFanOutConnector(tcs)
 }
 
 type traceFanOutConnector []consumer.TraceConsumer
 
-var _ TraceProcessor = (*traceFanOutConnector)(nil)
+var _ consumer.TraceConsumer = (*traceFanOutConnector)(nil)
 
 // ConsumeTraceData exports the span data to all trace consumers wrapped by the current one.
 func (tfc traceFanOutConnector) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {

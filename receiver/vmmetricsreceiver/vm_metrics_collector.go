@@ -28,10 +28,10 @@ import (
 	"github.com/prometheus/procfs"
 	"go.opencensus.io/trace"
 
-	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/internal"
-	"github.com/open-telemetry/opentelemetry-service/oterr"
+	"github.com/open-telemetry/opentelemetry-collector/consumer"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/internal"
+	"github.com/open-telemetry/opentelemetry-collector/oterr"
 )
 
 // VMMetricsCollector is a struct that collects and reports VM and process metrics (cpu, mem, etc).
@@ -161,9 +161,9 @@ func (vmc *VMMetricsCollector) scrapeAndExport() {
 
 	var proc procfs.Proc
 	var err error
-	proc, err = vmc.processFs.NewProc(vmc.pid)
+	proc, err = vmc.processFs.Proc(vmc.pid)
 	if err == nil {
-		procStat, err := proc.NewStat()
+		procStat, err := proc.Stat()
 		if err == nil {
 			metrics = append(
 				metrics,
@@ -179,7 +179,7 @@ func (vmc *VMMetricsCollector) scrapeAndExport() {
 		errs = append(errs, err)
 	}
 
-	stat, err := vmc.fs.NewStat()
+	stat, err := vmc.fs.Stat()
 	if err == nil {
 		cpuStat := stat.CPUTotal
 		metrics = append(

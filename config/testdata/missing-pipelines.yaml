@@ -4,4 +4,5 @@ exporters:
   exampleexporter:
 processors:
   exampleprocessor:
-pipelines:
+service:
+  pipelines:

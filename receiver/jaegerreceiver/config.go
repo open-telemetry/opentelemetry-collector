@@ -15,7 +15,7 @@
 package jaegerreceiver
 
 import (
-	"github.com/open-telemetry/opentelemetry-service/receiver"
+	"github.com/open-telemetry/opentelemetry-collector/receiver"
 )
 
 // Config defines configuration for Jaeger receiver.

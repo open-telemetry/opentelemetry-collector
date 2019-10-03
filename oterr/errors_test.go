@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-service/oterr"
+	"github.com/open-telemetry/opentelemetry-collector/oterr"
 )
 
 func TestCombineErrors(t *testing.T) {

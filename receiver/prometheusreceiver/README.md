@@ -23,7 +23,7 @@ Prometheus itself can also used as an exporter, that it can expose the metrics i
 metrics endpoint, so is OpenTelemetry service. We shall be able to retain parity from the following two setups: 
 
 1. app -> prometheus -> metric-endpoint 
-2. app -> otelsvc-with-prometheus-receiver -> otelsvc-prometheus-exporter-metrics-endpoint
+2. app -> otelcol-with-prometheus-receiver -> otelcol-prometheus-exporter-metrics-endpoint
 
 
 ## Prometheus Text Format Overview
@@ -77,7 +77,7 @@ same metric name. For each individual metric within this group, they share the s
 ## Prometheus Metric Scraper Anatomy 
 
 The metrics scraper is a component which is used to scrape remote Prometheus metric endpoints, it is also the component 
-which otelsvc Prometheus receiver is based on. It's important to understand how it works in order to implement the receiver
+which Prometheus receiver is based on. It's important to understand how it works in order to implement the receiver
 properly. 
 
 ### Major components of Prometheus Scape package
@@ -102,7 +102,7 @@ it is used to acquire a storage appender instance at the beginning of each scrap
 
 - **[storage.Appender](https://github.com/prometheus/prometheus/blob/d3245f15022551c6fc8281766ea62db4d71e2747/storage/interface.go#L86-L95):** 
 an abstraction of the metric storage which can be a filesystem, a database or an remote endpoint...etc. As for OpenTelemetry prometheus receiver, this is 
-also the interface we need to implement to provide a customized storage appender which is backed by an otelsvc metrics sink.  
+also the interface we need to implement to provide a customized storage appender which is backed by metrics sink.  
 
 - **[ScrapeLoop](https://github.com/prometheus/prometheus/blob/d3245f15022551c6fc8281766ea62db4d71e2747/scrape/scrape.go#L586-L1024):** 
 the actual scrape pipeline which performs the main scraping and ingestion logic.
@@ -123,7 +123,7 @@ It basically does the following things in turn:
   6. report task status
   
   
-## Implementing Prometheus storage.Appender with otelsvc metrics sink
+## Implementing Prometheus storage.Appender with metrics sink
 
 ### The storage.Appender interface
 As discussed in the previous section, the storage.Appender is the most important piece of components for us to implement so as to bring the two worlds together. 
@@ -173,7 +173,7 @@ The labels provided to the Add/AddFast methods dose not include some target spec
 which is important construct the 
 [Node proto](https://github.com/census-instrumentation/opencensus-proto/blob/e2601ef16f8a085a69d94ace5133f97438f8945f/src/opencensus/proto/agent/common/v1/common.proto#L36-L51) 
 object of OpenTelemetry. The target object is not accessible from the Appender interface, however, we can get it from the ScrapeManager, when designing the
-otelsvc appender, we need to have a way to inject the binding target into the appender instance.
+appender, we need to have a way to inject the binding target into the appender instance.
 
 
 2. Group metrics from the same family together
@@ -189,7 +189,7 @@ we need to handle this properly, and do not consider this is a metric family cha
 3. Group complex metrics such as histogram together in proper order
 
 In Prometheus, a single aggregated type of metric data such as `histogram` and `summary` is represent by multiple metric data points, such as
-buckets and quantiles as well as the additional `_sum` and `_count` data. ScrapeLoop will feed them into the appender individually. The otelsvc
+buckets and quantiles as well as the additional `_sum` and `_count` data. ScrapeLoop will feed them into the appender individually. The
 appender needs to have a way to bundle them together to transform them into a single Metric Datapoint Proto object. 
 
 4. Tags need to be handled carefully

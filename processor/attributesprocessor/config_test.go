@@ -20,8 +20,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/open-telemetry/opentelemetry-service/config"
-	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-collector/config"
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 )
 
 func TestLoadingConifg(t *testing.T) {
@@ -89,7 +89,7 @@ func TestLoadingConifg(t *testing.T) {
 			NameVal: "attributes/excludemulti",
 			TypeVal: typeStr,
 		},
-		Exclude: MatchProperties{
+		Exclude: &MatchProperties{
 			Services: []string{"svcA", "svcB"},
 			Attributes: []Attribute{
 				{Key: "env", Value: "dev"},
@@ -108,7 +108,7 @@ func TestLoadingConifg(t *testing.T) {
 			NameVal: "attributes/includeservices",
 			TypeVal: typeStr,
 		},
-		Include: MatchProperties{
+		Include: &MatchProperties{
 			Services: []string{"svcA", "svcB"},
 		},
 		Actions: []ActionKeyValue{
@@ -123,10 +123,10 @@ func TestLoadingConifg(t *testing.T) {
 			NameVal: "attributes/selectiveprocessing",
 			TypeVal: typeStr,
 		},
-		Include: MatchProperties{
+		Include: &MatchProperties{
 			Services: []string{"svcA", "svcB"},
 		},
-		Exclude: MatchProperties{
+		Exclude: &MatchProperties{
 			Attributes: []Attribute{
 				{Key: "redact_trace", Value: false},
 			},

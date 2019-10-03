@@ -17,11 +17,12 @@ exporters:
   exampleexporter:
     extra: "locahost:1010"
 
-pipelines:
-  traces:
-      receivers: [multireceiver/myreceiver]
-      processors: [exampleprocessor]
-      exporters: [exampleexporter]
-  metrics:
-      receivers: [multireceiver/myreceiver]
-      exporters: [exampleexporter]
+service:
+  pipelines:
+    traces:
+        receivers: [multireceiver/myreceiver]
+        processors: [exampleprocessor]
+        exporters: [exampleexporter]
+    metrics:
+        receivers: [multireceiver/myreceiver]
+        exporters: [exampleexporter]

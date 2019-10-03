@@ -1,0 +1,21 @@
+receivers:
+  examplereceiver:
+processors:
+  exampleprocessor:
+exporters:
+  exampleexporter:
+extensions:
+  exampleextension:
+service:
+  extenstions:
+    - examapleextension
+  unknown_section:
+    a_num: 2
+  pipelines:
+    traces:
+      receivers:
+        - examplereceiver
+      processors:
+        - exampleprocessor
+      exporters:
+        - exampleexporter

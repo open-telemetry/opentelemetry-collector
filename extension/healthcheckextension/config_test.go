@@ -21,8 +21,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-service/config"
-	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-collector/config"
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -36,20 +36,20 @@ func TestLoadConfig(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
 
-	ext0 := cfg.Extensions["health-check"]
+	ext0 := cfg.Extensions["health_check"]
 	assert.Equal(t, factory.CreateDefaultConfig(), ext0)
 
-	ext1 := cfg.Extensions["health-check/1"]
+	ext1 := cfg.Extensions["health_check/1"]
 	assert.Equal(t,
 		&Config{
 			ExtensionSettings: configmodels.ExtensionSettings{
-				TypeVal: "health-check",
-				NameVal: "health-check/1",
+				TypeVal: "health_check",
+				NameVal: "health_check/1",
 			},
 			Port: 13,
 		},
 		ext1)
 
 	assert.Equal(t, 1, len(cfg.Service.Extensions))
-	assert.Equal(t, "health-check/1", cfg.Service.Extensions[0])
+	assert.Equal(t, "health_check/1", cfg.Service.Extensions[0])
 }

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Program otelsvc is the Open Telemetry Service that collects stats
+// Program otelcol is the OpenTelemetry Collector that collects stats
 // and traces and exports to a configured backend.
 package defaults
 
@@ -22,34 +22,34 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/open-telemetry/opentelemetry-service/exporter"
-	"github.com/open-telemetry/opentelemetry-service/exporter/jaeger/jaegergrpcexporter"
-	"github.com/open-telemetry/opentelemetry-service/exporter/jaeger/jaegerthrifthttpexporter"
-	"github.com/open-telemetry/opentelemetry-service/exporter/loggingexporter"
-	"github.com/open-telemetry/opentelemetry-service/exporter/opencensusexporter"
-	"github.com/open-telemetry/opentelemetry-service/exporter/prometheusexporter"
-	"github.com/open-telemetry/opentelemetry-service/exporter/zipkinexporter"
-	"github.com/open-telemetry/opentelemetry-service/extension"
-	"github.com/open-telemetry/opentelemetry-service/extension/healthcheckextension"
-	"github.com/open-telemetry/opentelemetry-service/extension/pprofextension"
-	"github.com/open-telemetry/opentelemetry-service/extension/zpagesextension"
-	"github.com/open-telemetry/opentelemetry-service/processor"
-	"github.com/open-telemetry/opentelemetry-service/processor/attributesprocessor"
-	"github.com/open-telemetry/opentelemetry-service/processor/nodebatcherprocessor"
-	"github.com/open-telemetry/opentelemetry-service/processor/probabilisticsamplerprocessor"
-	"github.com/open-telemetry/opentelemetry-service/processor/queuedprocessor"
-	"github.com/open-telemetry/opentelemetry-service/processor/tailsamplingprocessor"
-	"github.com/open-telemetry/opentelemetry-service/receiver"
-	"github.com/open-telemetry/opentelemetry-service/receiver/jaegerreceiver"
-	"github.com/open-telemetry/opentelemetry-service/receiver/opencensusreceiver"
-	"github.com/open-telemetry/opentelemetry-service/receiver/prometheusreceiver"
-	"github.com/open-telemetry/opentelemetry-service/receiver/vmmetricsreceiver"
-	"github.com/open-telemetry/opentelemetry-service/receiver/zipkinreceiver"
+	"github.com/open-telemetry/opentelemetry-collector/exporter"
+	"github.com/open-telemetry/opentelemetry-collector/exporter/jaeger/jaegergrpcexporter"
+	"github.com/open-telemetry/opentelemetry-collector/exporter/jaeger/jaegerthrifthttpexporter"
+	"github.com/open-telemetry/opentelemetry-collector/exporter/loggingexporter"
+	"github.com/open-telemetry/opentelemetry-collector/exporter/opencensusexporter"
+	"github.com/open-telemetry/opentelemetry-collector/exporter/prometheusexporter"
+	"github.com/open-telemetry/opentelemetry-collector/exporter/zipkinexporter"
+	"github.com/open-telemetry/opentelemetry-collector/extension"
+	"github.com/open-telemetry/opentelemetry-collector/extension/healthcheckextension"
+	"github.com/open-telemetry/opentelemetry-collector/extension/pprofextension"
+	"github.com/open-telemetry/opentelemetry-collector/extension/zpagesextension"
+	"github.com/open-telemetry/opentelemetry-collector/processor"
+	"github.com/open-telemetry/opentelemetry-collector/processor/attributesprocessor"
+	"github.com/open-telemetry/opentelemetry-collector/processor/nodebatcherprocessor"
+	"github.com/open-telemetry/opentelemetry-collector/processor/probabilisticsamplerprocessor"
+	"github.com/open-telemetry/opentelemetry-collector/processor/queuedprocessor"
+	"github.com/open-telemetry/opentelemetry-collector/processor/tailsamplingprocessor"
+	"github.com/open-telemetry/opentelemetry-collector/receiver"
+	"github.com/open-telemetry/opentelemetry-collector/receiver/jaegerreceiver"
+	"github.com/open-telemetry/opentelemetry-collector/receiver/opencensusreceiver"
+	"github.com/open-telemetry/opentelemetry-collector/receiver/prometheusreceiver"
+	"github.com/open-telemetry/opentelemetry-collector/receiver/vmmetricsreceiver"
+	"github.com/open-telemetry/opentelemetry-collector/receiver/zipkinreceiver"
 )
 
 func TestDefaultComponents(t *testing.T) {
 	expectedExtensions := map[string]extension.Factory{
-		"health-check": &healthcheckextension.Factory{},
+		"health_check": &healthcheckextension.Factory{},
 		"pprof":        &pprofextension.Factory{},
 		"zpages":       &zpagesextension.Factory{},
 	}
@@ -62,18 +62,18 @@ func TestDefaultComponents(t *testing.T) {
 	}
 	expectedProcessors := map[string]processor.Factory{
 		"attributes":            &attributesprocessor.Factory{},
-		"queued-retry":          &queuedprocessor.Factory{},
+		"queued_retry":          &queuedprocessor.Factory{},
 		"batch":                 &nodebatcherprocessor.Factory{},
-		"tail-sampling":         &tailsamplingprocessor.Factory{},
-		"probabilistic-sampler": &probabilisticsamplerprocessor.Factory{},
+		"tail_sampling":         &tailsamplingprocessor.Factory{},
+		"probabilistic_sampler": &probabilisticsamplerprocessor.Factory{},
 	}
 	expectedExporters := map[string]exporter.Factory{
 		"opencensus":         &opencensusexporter.Factory{},
 		"prometheus":         &prometheusexporter.Factory{},
 		"logging":            &loggingexporter.Factory{},
 		"zipkin":             &zipkinexporter.Factory{},
-		"jaeger-grpc":        &jaegergrpcexporter.Factory{},
-		"jaeger-thrift-http": &jaegerthrifthttpexporter.Factory{},
+		"jaeger_grpc":        &jaegergrpcexporter.Factory{},
+		"jaeger_thrift_http": &jaegerthrifthttpexporter.Factory{},
 	}
 
 	factories, err := Components()

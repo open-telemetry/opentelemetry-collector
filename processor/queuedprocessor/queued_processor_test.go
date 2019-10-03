@@ -25,9 +25,10 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/consumer/consumererror"
+	"github.com/open-telemetry/opentelemetry-collector/consumer"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/consumererror"
+	"github.com/open-telemetry/opentelemetry-collector/processor"
 )
 
 func TestQueuedProcessor_noEnqueueOnPermanentError(t *testing.T) {
@@ -77,6 +78,10 @@ func (c *waitGroupTraceConsumer) ConsumeTraceData(ctx context.Context, td consum
 	return c.consumeTraceDataError
 }
 
+func (c *waitGroupTraceConsumer) GetCapabilities() processor.Capabilities {
+	return processor.Capabilities{MutatesConsumedData: false}
+}
+
 func TestQueueProcessorHappyPath(t *testing.T) {
 	mockProc := newMockConcurrentSpanProcessor()
 	qp := NewQueuedSpanProcessor(mockProc)
@@ -122,6 +127,10 @@ func (p *mockConcurrentSpanProcessor) ConsumeTraceData(ctx context.Context, td c
 	atomic.AddInt32(&p.spanCount, int32(len(td.Spans)))
 	p.waitGroup.Done()
 	return nil
+}
+
+func (p *mockConcurrentSpanProcessor) GetCapabilities() processor.Capabilities {
+	return processor.Capabilities{MutatesConsumedData: false}
 }
 
 func newMockConcurrentSpanProcessor() *mockConcurrentSpanProcessor {

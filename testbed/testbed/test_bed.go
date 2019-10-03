@@ -93,7 +93,7 @@ func LoadConfig() error {
 			testBedConfigFile, err.Error())
 	}
 
-	if err = v.Unmarshal(&testBedConfig); err != nil {
+	if err = v.UnmarshalExact(&testBedConfig); err != nil {
 		log.Fatalf("Cannot load test bed config from %q: %s",
 			testBedConfigFile, err.Error())
 	}

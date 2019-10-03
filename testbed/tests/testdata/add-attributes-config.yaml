@@ -1,16 +1,15 @@
 receivers:
   jaeger:
-    collector_http_port: 14268
     protocols:
       thrift-http:
-        endpoint: "*:14268"
+        endpoint: "localhost:14268"
 
 exporters:
   opencensus:
     endpoint: "localhost:56565"
 
 processors:
-  queued-retry:
+  queued_retry:
   attributes:
     actions:
       - key: attrib.key00
@@ -29,8 +28,9 @@ processors:
         value: test-datacenter
         action: insert
 
-pipelines:
-  traces:
-    receivers: [jaeger]
-    processors: [attributes,queued-retry]
-    exporters: [opencensus]
+service:
+  pipelines:
+    traces:
+      receivers: [jaeger]
+      processors: [attributes,queued_retry]
+      exporters: [opencensus]

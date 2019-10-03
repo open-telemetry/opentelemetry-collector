@@ -14,7 +14,7 @@
 
 package zipkinreceiver
 
-import "github.com/open-telemetry/opentelemetry-service/config/configmodels"
+import "github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 
 // Config defines configuration for Zipkin receiver.
 type Config struct {

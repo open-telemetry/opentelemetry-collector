@@ -19,10 +19,10 @@ import (
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 
-	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/oterr"
-	"github.com/open-telemetry/opentelemetry-service/processor"
+	"github.com/open-telemetry/opentelemetry-collector/consumer"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/oterr"
+	"github.com/open-telemetry/opentelemetry-collector/processor"
 )
 
 const (
@@ -80,6 +80,10 @@ func (tsp *tracesamplerprocessor) ConsumeTraceData(ctx context.Context, td consu
 	sampledTraceData.Spans = sampledSpans
 
 	return tsp.nextConsumer.ConsumeTraceData(ctx, sampledTraceData)
+}
+
+func (tsp *tracesamplerprocessor) GetCapabilities() processor.Capabilities {
+	return processor.Capabilities{MutatesConsumedData: false}
 }
 
 // hash is a murmur3 hash function, see http://en.wikipedia.org/wiki/MurmurHash.

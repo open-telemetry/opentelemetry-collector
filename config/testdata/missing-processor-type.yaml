@@ -4,6 +4,7 @@ exporters:
   exampleexporter:
 processors:
   /exampleprocessor:
-pipelines:
-  traces:
-    receivers: [somereceiver]
+service:
+  pipelines:
+    traces:
+      receivers: [somereceiver]

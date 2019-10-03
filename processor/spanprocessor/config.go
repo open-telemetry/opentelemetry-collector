@@ -15,7 +15,7 @@
 package spanprocessor
 
 import (
-	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 )
 
 // Config is the configuration for the span processor.

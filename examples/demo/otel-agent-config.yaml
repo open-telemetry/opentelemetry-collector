@@ -1,14 +1,10 @@
-# Enable debug level to see output of "logging" exporter
-log-level: DEBUG
-
 receivers:
   opencensus:
-    endpoint: 0.0.0.0:55678
-    reconnection-delay: 2s
+    endpoint: localhost:55678
   jaeger:
     protocols:
       thrift-http:
-        endpoint: "0.0.0.0:14268"
+        endpoint: "localhost:14268"
 
 
 exporters:
@@ -19,23 +15,22 @@ exporters:
 
 processors:
   batch:
-  queued-retry:
-
-pipelines:
-  traces:
-    receivers: [opencensus, jaeger]
-    exporters: [opencensus, logging]
-    processors: [batch, queued-retry]
-  metrics:
-    receivers: [opencensus]
-    exporters: [logging,opencensus]
+  queued_retry:
 
 extensions:
   pprof:
-    endpoint: :1777
+    endpoint: localhost:1777
   zpages:
-    endpoint: :55679
+    endpoint: localhost:55679
 
 service:
   extensions: [pprof, zpages]
+  pipelines:
+    traces:
+      receivers: [opencensus, jaeger]
+      exporters: [opencensus, logging]
+      processors: [batch, queued_retry]
+    metrics:
+      receivers: [opencensus]
+      exporters: [logging,opencensus]
 

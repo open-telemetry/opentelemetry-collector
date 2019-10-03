@@ -198,10 +198,11 @@ receivers:
 exporters:
   exampleexporter:
 
-pipelines:
-  traces:
-    receivers: [examplereceiver]
-    processors: [attributes/insert]
-    exporters: [exampleexporter]
+service:
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      processors: [attributes/insert]
+      exporters: [exampleexporter]
 
 

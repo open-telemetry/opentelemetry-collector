@@ -21,7 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 )
 
 func TestDecodeConfig(t *testing.T) {
@@ -111,7 +111,7 @@ func TestDecodeConfig(t *testing.T) {
 		"Did not load processor config correctly")
 
 	// Verify Pipelines
-	assert.Equal(t, 1, len(config.Pipelines), "Incorrect pipelines count")
+	assert.Equal(t, 1, len(config.Service.Pipelines), "Incorrect pipelines count")
 
 	assert.Equal(t,
 		&configmodels.Pipeline{
@@ -121,7 +121,7 @@ func TestDecodeConfig(t *testing.T) {
 			Processors: []string{"exampleprocessor"},
 			Exporters:  []string{"exampleexporter"},
 		},
-		config.Pipelines["traces"],
+		config.Service.Pipelines["traces"],
 		"Did not load pipeline config correctly")
 }
 
@@ -275,7 +275,7 @@ func TestSimpleConfig(t *testing.T) {
 			"TEST[%s] Did not load processor config correctly", test.name)
 
 		// Verify Pipelines
-		assert.Equalf(t, 1, len(config.Pipelines), "TEST[%s]", test.name)
+		assert.Equalf(t, 1, len(config.Service.Pipelines), "TEST[%s]", test.name)
 
 		assert.Equalf(t,
 			&configmodels.Pipeline{
@@ -285,7 +285,7 @@ func TestSimpleConfig(t *testing.T) {
 				Processors: []string{"exampleprocessor"},
 				Exporters:  []string{"exampleexporter"},
 			},
-			config.Pipelines["traces"],
+			config.Service.Pipelines["traces"],
 			"TEST[%s] Did not load pipeline config correctly", test.name)
 	}
 }
@@ -371,12 +371,12 @@ func TestDecodeConfig_Invalid(t *testing.T) {
 		{name: "unknown-receiver-type", expected: errUnknownReceiverType},
 		{name: "unknown-exporter-type", expected: errUnknownExporterType},
 		{name: "unknown-processor-type", expected: errUnknownProcessorType},
-		{name: "invalid-extension-disabled-value", expected: errUnmarshalError},
-		{name: "invalid-service-extensions-value", expected: errUnmarshalError},
-		{name: "invalid-bool-value", expected: errUnmarshalError},
-		{name: "invalid-sequence-value", expected: errUnmarshalError},
-		{name: "invalid-disabled-bool-value", expected: errUnmarshalError},
-		{name: "invalid-disabled-bool-value2", expected: errUnmarshalError},
+		{name: "invalid-extension-disabled-value", expected: errUnmarshalErrorOnExtension},
+		{name: "invalid-service-extensions-value", expected: errUnmarshalErrorOnService},
+		{name: "invalid-bool-value", expected: errUnmarshalErrorOnProcessor},
+		{name: "invalid-sequence-value", expected: errUnmarshalErrorOnPipeline},
+		{name: "invalid-disabled-bool-value", expected: errUnmarshalErrorOnExporter},
+		{name: "invalid-disabled-bool-value2", expected: errUnmarshalErrorOnReceiver},
 		{name: "invalid-pipeline-type", expected: errInvalidPipelineType},
 		{name: "invalid-pipeline-type-and-name", expected: errInvalidTypeAndNameKey},
 		{name: "duplicate-extension", expected: errDuplicateExtensionName},
@@ -384,6 +384,13 @@ func TestDecodeConfig_Invalid(t *testing.T) {
 		{name: "duplicate-exporter", expected: errDuplicateExporterName},
 		{name: "duplicate-processor", expected: errDuplicateProcessorName},
 		{name: "duplicate-pipeline", expected: errDuplicatePipelineName},
+		{name: "invalid-top-level-section", expected: errUnmarshalErrorOnTopLevelSection},
+		{name: "invalid-extension-section", expected: errUnmarshalErrorOnExtension},
+		{name: "invalid-service-section", expected: errUnmarshalErrorOnService},
+		{name: "invalid-receiver-section", expected: errUnmarshalErrorOnReceiver},
+		{name: "invalid-processor-section", expected: errUnmarshalErrorOnProcessor},
+		{name: "invalid-exporter-section", expected: errUnmarshalErrorOnExporter},
+		{name: "invalid-pipeline-section", expected: errUnmarshalErrorOnPipeline},
 	}
 
 	factories, err := ExampleComponents()
@@ -400,8 +407,8 @@ func TestDecodeConfig_Invalid(t *testing.T) {
 					test.expected, err, test.name)
 			} else {
 				if cfgErr.code != test.expected {
-					t.Errorf("expected config error code %v but got error code %v on invalid config case: %s",
-						test.expected, cfgErr.code, test.name)
+					t.Errorf("expected config error code %v but got error code %v (msg: %q) on invalid config case: %s",
+						test.expected, cfgErr.code, cfgErr.msg, test.name)
 				}
 
 				if cfgErr.Error() == "" {

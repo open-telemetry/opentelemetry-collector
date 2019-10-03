@@ -19,7 +19,7 @@ import (
 
 	"github.com/prometheus/prometheus/config"
 
-	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 )
 
 // Config defines configuration for Prometheus receiver.
@@ -29,4 +29,9 @@ type Config struct {
 	BufferPeriod                  time.Duration       `mapstructure:"buffer_period"`
 	BufferCount                   int                 `mapstructure:"buffer_count"`
 	IncludeFilter                 map[string][]string `mapstructure:"include_filter"`
+
+	// ConfigPlaceholder is just an entry to make the configuration pass a check
+	// that requires that all keys present in the config actually exist on the
+	// structure, ie.: it will error if an unknown key is present.
+	ConfigPlaceholder interface{} `mapstructure:"config"`
 }

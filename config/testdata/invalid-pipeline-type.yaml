@@ -5,8 +5,9 @@ processors:
 exporters:
   exampleexporter:
 
-pipelines:
-  wrongdatatype:
-    receivers: [examplereceiver]
-    processors: [exampleprocessor]
-    exporters: [exampleexporter]
+service:
+  pipelines:
+    wrongdatatype:
+      receivers: [examplereceiver]
+      processors: [exampleprocessor]
+      exporters: [exampleexporter]

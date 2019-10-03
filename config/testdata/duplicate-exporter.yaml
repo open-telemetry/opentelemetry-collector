@@ -5,8 +5,9 @@ exporters:
   exampleexporter/ exp :
 processors:
   exampleprocessor:
-pipelines:
-  traces:
-    receivers: [examplereceiver]
-    exporters: [exampleexporter]
-    processors: [exampleprocessor]
+service:
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      exporters: [exampleexporter]
+      processors: [exampleprocessor]

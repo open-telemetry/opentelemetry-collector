@@ -20,10 +20,12 @@ import (
 	"testing"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/stretchr/testify/assert"
 
-	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/consumer"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 )
 
 func TestTraceProcessorMultiplexing(t *testing.T) {
@@ -35,6 +37,9 @@ func TestTraceProcessorMultiplexing(t *testing.T) {
 	tfc := NewTraceFanOutConnector(processors)
 	td := consumerdata.TraceData{
 		Spans: make([]*tracepb.Span, 7),
+		Resource: &resourcepb.Resource{
+			Type: "testtype",
+		},
 	}
 
 	var wantSpansCount = 0
@@ -49,10 +54,8 @@ func TestTraceProcessorMultiplexing(t *testing.T) {
 
 	for _, p := range processors {
 		m := p.(*mockTraceConsumer)
-		if m.TotalSpans != wantSpansCount {
-			t.Errorf("Wanted %d spans for every processor but got %d", wantSpansCount, m.TotalSpans)
-			return
-		}
+		assert.Equal(t, wantSpansCount, m.TotalSpans)
+		assert.True(t, td.Resource == m.Traces[0].Resource)
 	}
 }
 
@@ -112,10 +115,8 @@ func TestMetricsProcessorMultiplexing(t *testing.T) {
 
 	for _, p := range processors {
 		m := p.(*mockMetricsConsumer)
-		if m.TotalMetrics != wantMetricsCount {
-			t.Errorf("Wanted %d metrics for every processor but got %d", wantMetricsCount, m.TotalMetrics)
-			return
-		}
+		assert.Equal(t, wantMetricsCount, m.TotalMetrics)
+		assert.True(t, md.Resource == m.Metrics[0].Resource)
 	}
 }
 
@@ -153,6 +154,7 @@ func TestMetricsProcessorWhenOneErrors(t *testing.T) {
 }
 
 type mockTraceConsumer struct {
+	Traces     []*consumerdata.TraceData
 	TotalSpans int
 	MustFail   bool
 }
@@ -160,6 +162,7 @@ type mockTraceConsumer struct {
 var _ consumer.TraceConsumer = &mockTraceConsumer{}
 
 func (p *mockTraceConsumer) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
+	p.Traces = append(p.Traces, &td)
 	p.TotalSpans += len(td.Spans)
 	if p.MustFail {
 		return fmt.Errorf("this processor must fail")
@@ -169,14 +172,16 @@ func (p *mockTraceConsumer) ConsumeTraceData(ctx context.Context, td consumerdat
 }
 
 type mockMetricsConsumer struct {
+	Metrics      []*consumerdata.MetricsData
 	TotalMetrics int
 	MustFail     bool
 }
 
 var _ consumer.MetricsConsumer = &mockMetricsConsumer{}
 
-func (p *mockMetricsConsumer) ConsumeMetricsData(ctx context.Context, td consumerdata.MetricsData) error {
-	p.TotalMetrics += len(td.Metrics)
+func (p *mockMetricsConsumer) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
+	p.Metrics = append(p.Metrics, &md)
+	p.TotalMetrics += len(md.Metrics)
 	if p.MustFail {
 		return fmt.Errorf("this processor must fail")
 	}

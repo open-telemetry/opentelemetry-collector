@@ -16,42 +16,33 @@
 package service
 
 import (
-	"net"
 	"net/http"
+	"strconv"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/open-telemetry/opentelemetry-service/defaults"
-	"github.com/open-telemetry/opentelemetry-service/internal/testutils"
+	"github.com/open-telemetry/opentelemetry-collector/defaults"
+	"github.com/open-telemetry/opentelemetry-collector/internal/testutils"
 )
 
-func TestApplication_StartUnified(t *testing.T) {
+func TestApplication_Start(t *testing.T) {
 	factories, err := defaults.Components()
 	assert.Nil(t, err)
 
 	app := New(factories)
 
-	portArg := []string{
-		"metrics-port",
-	}
-	addresses := getMultipleAvailableLocalAddresses(t, uint(len(portArg)))
-	for i, addr := range addresses {
-		_, port, err := net.SplitHostPort(addr)
-		if err != nil {
-			t.Fatalf("failed to split host and port from %q: %v", addr, err)
-		}
-		app.v.Set(portArg[i], port)
-	}
-
-	app.v.Set("config", "testdata/otelsvc-config.yaml")
+	metricsPort := testutils.GetAvailablePort(t)
+	app.rootCmd.SetArgs([]string{
+		"--config=testdata/otelcol-config.yaml",
+		"--metrics-port=" + strconv.FormatUint(uint64(metricsPort), 10),
+	})
 
 	appDone := make(chan struct{})
 	go func() {
 		defer close(appDone)
-		if err := app.StartUnified(); err != nil {
-			t.Errorf("app.StartUnified() got %v, want nil", err)
+		if err := app.Start(); err != nil {
+			t.Errorf("app.Start() got %v, want nil", err)
 			return
 		}
 	}()
@@ -62,18 +53,6 @@ func TestApplication_StartUnified(t *testing.T) {
 	if !isAppAvailable(t, "http://localhost:13133") {
 		t.Fatalf("app didn't reach ready state")
 	}
-
-	// We have to wait here work around a data race bug in Jaeger
-	// (https://github.com/jaegertracing/jaeger/pull/1625) caused
-	// by stopping immediately after starting.
-	//
-	// Without this Sleep we were observing this bug on our side:
-	// https://github.com/open-telemetry/opentelemetry-service/issues/43
-	// The Sleep ensures that Jaeger Start() is fully completed before
-	// we call Jaeger Stop().
-	// TODO: Jaeger bug is already fixed, remove this once we update Jaeger
-	// to latest version.
-	time.Sleep(1 * time.Second)
 
 	close(app.stopTestChan)
 	<-appDone
@@ -88,13 +67,5 @@ func isAppAvailable(t *testing.T, healthCheckEndPoint string) bool {
 		t.Fatalf("failed to get a response from health probe: %v", err)
 	}
 	defer resp.Body.Close()
-	return resp.StatusCode == http.StatusNoContent
-}
-
-func getMultipleAvailableLocalAddresses(t *testing.T, numAddresses uint) []string {
-	addresses := make([]string, numAddresses)
-	for i := uint(0); i < numAddresses; i++ {
-		addresses[i] = testutils.GetAvailableLocalAddress(t)
-	}
-	return addresses
+	return resp.StatusCode == http.StatusOK
 }

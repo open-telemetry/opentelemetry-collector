@@ -13,8 +13,9 @@ exporters:
       label1: value1
       "another label": spaced value
 
-pipelines:
-  traces:
-    receivers: [examplereceiver]
-    processors: [exampleprocessor]
-    exporters: [prometheus]
+service:
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      processors: [exampleprocessor]
+      exporters: [prometheus]

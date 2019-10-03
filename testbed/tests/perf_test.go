@@ -25,7 +25,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-service/testbed/testbed"
+	"github.com/open-telemetry/opentelemetry-collector/testbed/testbed"
 )
 
 func TestMain(m *testing.M) {

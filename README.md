@@ -1,6 +1,6 @@
-# OpenTelemetry Service
+# OpenTelemetry Collector
 
-*IMPORTANT:* This is a pre-released version of the OpenTelemetry Service.
+*IMPORTANT:* This is a pre-released version of the OpenTelemetry Collector.
 For now, please use the [OpenCensus Service](https://github.com/census-instrumentation/opencensus-service).
 
 [![Build Status][travis-image]][travis-url]
@@ -25,7 +25,7 @@ For now, please use the [OpenCensus Service](https://github.com/census-instrumen
 
 ## Introduction
 
-The OpenTelemetry Service can collect traces and metrics from processes
+The OpenTelemetry Collector can collect traces and metrics from processes
 instrumented by OpenTelemetry or other monitoring/tracing libraries (Jaeger,
 Prometheus, etc.), handles aggregation and smart sampling, and export traces
 and metrics to one or more monitoring/tracing backends.
@@ -40,14 +40,14 @@ not an ideal at an incident time. In addition, currently users need to decide
 which service backend they want to export to, before they distribute their
 binary instrumented by OpenTelemetry.
 
-The OpenTelemetry Service is trying to eliminate these requirements. With the
-OpenTelemetry Service, users do not need to redeploy or restart their
+The OpenTelemetry Collector is trying to eliminate these requirements. With the
+OpenTelemetry Collector, users do not need to redeploy or restart their
 applications as long as it has the OpenTelemetry exporter. All they need to do
-is just configure and deploy the OpenTelemetry Service separately. The
-OpenTelemetry Service will then automatically collect traces and metrics and
+is just configure and deploy the OpenTelemetry Collector separately. The
+OpenTelemetry Collector will then automatically collect traces and metrics and
 export to any backend of users' choice.
 
-Currently the OpenTelemetry Service consists of a single binary and two
+Currently the OpenTelemetry Collector consists of a single binary and two
 deployment methods:
 
 1. Agent running with the application or on the same host as the application
@@ -55,13 +55,13 @@ deployment methods:
 
 For the detailed design specs, please see [design.md](docs/design.md).
 
-For OpenTelemetry Service performance specs, please see [performance.md](docs/performance.md).
+For OpenTelemetry Collector performance specs, please see [performance.md](docs/performance.md).
 
-For the future vision of OpenTelemetry Service please see [vision.md](docs/vision.md).
+For the future vision of OpenTelemetry Collector please see [vision.md](docs/vision.md).
 
 ## <a name="deploy"></a>Deployment
 
-The OpenTelemetry Service can be deployed in a variety of different ways
+The OpenTelemetry Collector can be deployed in a variety of different ways
 depending on requirements. The Agent can be deployed with the application
 either as a separate process, as a sidecar, or via a Kubernetes daemonset. The
 Collector is deployed as a separate application as either a Docker container,
@@ -77,7 +77,7 @@ enabled).
 
 ### <a name="getting-started-demo"></a>Demo
 
-Instructions for setting up an end-to-end demo environment can be found [here](https://github.com/open-telemetry/opentelemetry-service/tree/master/examples/demo)
+Instructions for setting up an end-to-end demo environment can be found [here](https://github.com/open-telemetry/opentelemetry-collector/tree/master/examples/demo)
 
 ### <a name="getting-started-k8s"></a>Kubernetes
 
@@ -96,7 +96,7 @@ exporters configured.
 Build the Agent and start it with the example configuration:
 
 ```shell
-$ ./bin/$(go env GOOS)/otelsvc  --config ./examples/demo/otel-agent-config.yaml
+$ ./bin/$(go env GOOS)/otelcol  --config ./examples/demo/otel-agent-config.yaml
 $ 2018/10/08 21:38:00 Running OpenTelemetry receiver as a gRPC service at "localhost:55678"
 ```
 
@@ -107,29 +107,29 @@ enabled, but no exporters configured.
 Build the Collector and start it with the example configuration:
 
 ```shell
-$ make otelsvc
-$ ./bin/$($GOOS)/otelsvc --config ./examples/demo/otel-collector-config.yaml
+$ make otelcol
+$ ./bin/$($GOOS)/otelcol --config ./examples/demo/otel-collector-config.yaml
 ```
 
 Run the demo application:
 
 ```shell
-$ go run "$(go env GOPATH)/src/github.com/open-telemetry/opentelemetry-service/examples/main.go"
+$ go run "$(go env GOPATH)/src/github.com/open-telemetry/opentelemetry-collector/examples/main.go"
 ```
 
 You should be able to see the traces in your exporter(s) of choice. If you stop
-the otelsvc, the example application will stop exporting. If you run it again,
+the `otelcol`, the example application will stop exporting. If you run it again,
 exporting will resume.
 
 ## <a name="config"></a>Configuration
 
-The OpenTelemetry Service (both the Agent and Collector) is configured via a
-YAML file. In general, at least one enabled receiver and one enabled exporter
+The OpenTelemetry Collector is configured via a YAML file. 
+In general, at least one enabled receiver and one enabled exporter
 needs to be configured.
 
 *Note* This documentation is still in progress. For any questions, please reach out in the
 [OpenTelemetry Gitter](https://gitter.im/open-telemetry/opentelemetry-service) or
-refer to the [issues page](https://github.com/open-telemetry/opentelemetry-service/issues).
+refer to the [issues page](https://github.com/open-telemetry/opentelemetry-collector/issues).
 
 There are four main parts to a config:
 ```yaml
@@ -139,13 +139,14 @@ exporters:
   ...
 processors:
   ...
-pipelines:
+service:
+  pipelines:
   ...
 ```
 
 ### <a name="config-receivers"></a>Receivers
 
-A receiver is how data gets into OpenTelemetry Service. One or more receivers
+A receiver is how data gets into OpenTelemetry Collector. One or more receivers
 must be configured.
 
 A basic example of all available receivers is provided below. For detailed
@@ -162,7 +163,7 @@ receivers:
 
   jaeger:
     jaeger-thrift-tchannel-port: 14267
-    jaeger-thrift-http-port: 14268
+    jaeger_thrift_http-port: 14268
 
   prometheus:
     config:
@@ -177,7 +178,7 @@ receivers:
 
 An exporter is how you send data to one or more backends/destinations. One or
 more exporters can be configured. By default, no exporters are configured on
-the OpenTelemetry Service (either the Agent or Collector).
+the OpenTelemetry Collector.
 
 A basic example of all available exporters is provided below. For detailed
 exporter configuration, please see the [exporter
@@ -188,9 +189,9 @@ exporters:
   opencensus:
     headers: {"X-test-header": "test-header"}
     compression: "gzip"
-    cert-pem-file: "server_ca_public.pem" # optional to enable TLS
+    cert_pem_file: "server-ca-public.pem" # optional to enable TLS
     endpoint: "localhost:55678"
-    reconnection-delay: 2s
+    reconnection_delay: 2s
 
   jaeger:
     collector_endpoint: "http://localhost:14268/api/traces"
@@ -218,12 +219,12 @@ a receiver/exporter is reference by all the pipelines.
 The following is an example pipeline configuration. For more information, refer
 to [pipeline documentation](docs/pipelines.md)
 ```yaml
-pipelines:
-  traces:
-    receivers: [examplereceiver]
-    processors: [exampleprocessor]
-    exporters: [exampleexporter]
-
+service:
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      processors: [exampleprocessor]
+      exporters: [exampleexporter]
 ```
 
 ### <a name="config-diagnostics"></a>Diagnostics
@@ -257,7 +258,7 @@ zpages:
 **TODO** Remove this once processors have been documented since that handles
 these features now.
 
-The OpenTelemetry Service also takes some global configurations that modify its
+The OpenTelemetry Collector also takes some global configurations that modify its
 behavior for all receivers / exporters. This configuration is typically applied
 on the Collector, but could also be added to the Agent.
 
@@ -291,7 +292,7 @@ global:
 
 ### <a name="sampling"></a>Sampling
 
-Sampling can also be configured on the OpenTelemetry Service. Both head-based and
+Sampling can also be configured on the OpenTelemetry Collector. Both head-based and
 tail-based sampling are supported. Either the Agent or the Collector may enable
 head-based sampling. Tail sampling must be configured on the Collector as it
 requires all spans for a given trace to make a sampling decision.
@@ -307,13 +308,13 @@ sampling:
     # each span and sampling the span according to the given spans.
     probabilistic:
       configuration:
-        # sampling-percentage is the percentage of sampling to be applied to all spans, unless their service is specified
-        # on sampling-percentage.
-        sampling-percentage: 5
-        # hash-seed allows choosing the seed for the hash function used in the trace sampling. This is important when
+        # sampling_percentage is the percentage of sampling to be applied to all spans, unless their service is specified
+        # on sampling_percentage.
+        sampling_percentage: 5
+        # hash_seed allows choosing the seed for the hash function used in the trace sampling. This is important when
         # multiple layers of collectors are being used with head sampling, in such scenarios make sure to
         # choose different seeds for each layer.
-        hash-seed: 1
+        hash_seed: 1
 ```
 
 #### Tail-based Example
@@ -322,77 +323,77 @@ sampling:
 sampling:
   mode: tail
   # amount of time from seeing the first span in a trace until making the sampling decision
-  decision-wait: 10s
+  decision_wait: 10s
   # maximum number of traces kept in the memory
-  num-traces: 10000
+  num_traces: 10000
   policies:
     # user-defined policy name
-    my-string-attribute-filter:
+    my_string_attribute_filter:
       # exporters the policy applies to
       exporters:
         - jaeger
-      policy: string-attribute-filter
+      policy: string_attribute_filter
       configuration:
         key: key1
         values:
           - value1
           - value2
-    my-numeric-attribute-filter:
+    my-numeric_attribute-filter:
       exporters:
         - zipkin
-      policy: numeric-attribute-filter
+      policy: numeric_attribute-filter
       configuration:
         key: key1
-        min-value: 0
-        max-value: 100
+        min_value: 0
+        max_value: 100
 ```
 
 > Note that an exporter can only have a single sampling policy today.
 ## <a name="collector-usage"></a>Usage
 
-> It is recommended that you use the latest [release](https://github.com/open-telemetry/opentelemetry-service/releases).
+> It is recommended that you use the latest [release](https://github.com/open-telemetry/opentelemetry-collector/releases).
 
-The OpenTelemetry Service can be run directly from sources, binary, or a Docker
+The OpenTelemetry Collector can be run directly from sources, binary, or a Docker
 image. If you are planning to run from sources or build on your machine start
 by cloning the repo using `go get -d
-github.com/open-telemetry/opentelemetry-service`.
+github.com/open-telemetry/opentelemetry-collector`.
 
 The minimum Go version required for this project is Go 1.12.5.
 
 1. Run from sources:
 ```shell
-$ GO111MODULE=on go run github.com/open-telemetry/opentelemetry-service/cmd/otelsvc --help
+$ GO111MODULE=on go run github.com/open-telemetry/opentelemetry-collector/cmd/otelcol --help
 ```
 2. Run from binary (from the root of your repo):
 ```shell
-$ make otelsvc
-$ ./bin/$($GOOS)/otelsvc
+$ make otelcol
+$ ./bin/$($GOOS)/otelcol
 ```
 3. Build a Docker scratch image and use the appropriate Docker command for your
    scenario (note: additional ports may be required depending on your receiver
    configuration):
 ```shell
-$ make docker-otelsvc
+$ make docker-otelcol
 $ docker run \
     --rm \
     --interactive \
     --tty \
     --publish 55678:55678 --publish 55679:55679 --publish 8888:8888 \
-    --volume $(pwd)/otel-collector-config.yaml:/conf/otelsvc-config.yaml \
-    otelsvc \
-    --config=/conf/otelsvc-config.yaml
+    --volume $(pwd)/otel-collector-config.yaml:/conf/otelcol-config.yaml \
+    otelcol \
+    --config=/conf/otelcol-config.yaml
 ```
 
 It can be configured via command-line or config file:
 ```
-OpenTelemetry Service
+OpenTelemetry Collector
 
 Usage:
-  otelsvc [flags]
+  otelcol [flags]
 
 Flags:
       --config string               Path to the config file
-  -h, --help                        help for otelsvc
+  -h, --help                        help for otelcol
       --log-level string            Output level of logs (TRACE, DEBUG, INFO, WARN, ERROR, FATAL) (default "INFO")
       --mem-ballast-size-mib uint   Flag to specify size of memory (MiB) ballast to set. Ballast is not used when this is not specified. default settings: 0
       --metrics-level string        Output level of telemetry metrics (NONE, BASIC, NORMAL, DETAILED) (default "BASIC")
@@ -408,26 +409,26 @@ receivers:
 
 queued-exporters:
   jaeger-sender-test: # A friendly name for the exporter
-    # num-workers is the number of queue workers that will be dequeuing batches and sending them out (default is 10)
-    num-workers: 2
+    # num_workers is the number of queue workers that will be dequeuing batches and sending them out (default is 10)
+    num_workers: 2
 
-    # queue-size is the maximum number of batches allowed in the queue at a given time (default is 5000)
-    queue-size: 100
+    # queue_size is the maximum number of batches allowed in the queue at a given time (default is 5000)
+    queue_size: 100
 
-    # retry-on-failure indicates whether queue processor should retry span batches in case of processing failure (default is true)
-    retry-on-failure: true
+    # retry_on_failure indicates whether queue processor should retry span batches in case of processing failure (default is true)
+    retry_on_failure: true
 
-    # backoff-delay is the amount of time a worker waits after a failed send before retrying (default is 5 seconds)
-    backoff-delay: 3s
+    # backoff_delay is the amount of time a worker waits after a failed send before retrying (default is 5 seconds)
+    backoff_delay: 3s
 
     # sender-type is the type of sender used by this processor, the default is an invalid sender so it forces one to be specified
-    sender-type: jaeger-thrift-http
+    sender-type: jaeger_thrift_http
 
-    # configuration of the selected sender-type, in this example Jaeger jaeger-thrift-http. Which supports 3 settings:
-    # collector-endpoint: address of Jaeger collector jaeger-thrift-http endpoint
+    # configuration of the selected sender-type, in this example Jaeger jaeger_thrift_http. Which supports 3 settings:
+    # collector-endpoint: address of Jaeger collector jaeger_thrift_http endpoint
     # headers: a map of any additional headers to be sent with each batch (e.g.: api keys, etc)
     # timeout: the timeout for the sender to consider the operation as failed
-    jaeger-thrift-http:
+    jaeger_thrift_http:
       collector-endpoint: "http://svc-jaeger-collector:14268/api/traces"
       headers: { "x-header-key":"00000000-0000-0000-0000-000000000001" }
       timeout: 5s
@@ -435,8 +436,8 @@ queued-exporters:
 
 [travis-image]: https://travis-ci.org/open-telemetry/opentelemetry-service.svg?branch=master
 [travis-url]: https://travis-ci.org/open-telemetry/opentelemetry-service
-[godoc-image]: https://godoc.org/github.com/open-telemetry/opentelemetry-service?status.svg
-[godoc-url]: https://godoc.org/github.com/open-telemetry/opentelemetry-service
+[godoc-image]: https://godoc.org/github.com/open-telemetry/opentelemetry-collector?status.svg
+[godoc-url]: https://godoc.org/github.com/open-telemetry/opentelemetry-collector
 [gitter-image]: https://badges.gitter.im/open-telemetry/opentelemetry-service.svg
 [gitter-url]: https://gitter.im/open-telemetry/opentelemetry-service?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
 [codecov-image]: https://codecov.io/gh/open-telemetry/opentelemetry-service/branch/master/graph/badge.svg

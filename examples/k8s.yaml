@@ -2,40 +2,40 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: otelsvc-agent-conf
+  name: otel-agent-conf
   labels:
     app: opentelemetry
-    component: otelsvc-agent-conf
+    component: otel-agent-conf
 data:
-  otelsvc-agent-config: |
+  otel-agent-config: |
     receivers:
       opencensus: {}
 #      jaeger: {}
 #      zipkin: {}
     exporters:
       opencensus:
-        endpoint: "otelsvc-collector.default:55678" # TODO: Update me
+        endpoint: "otel-collector.default:55678" # TODO: Update me
 ---
 apiVersion: extensions/v1beta1
 kind: DaemonSet
 metadata:
-  name: otelsvc-agent
+  name: otel-agent
   labels:
     app: opentelemetry
-    component: otelsvc-agent
+    component: otel-agent
 spec:
   template:
     metadata:
       labels:
         app: opentelemetry
-        component: otelsvc-agent
+        component: otel-agent
     spec:
       containers:
       - command:
           - "/otelsvc_agent_linux"
-          - "--config=/conf/otelsvc-agent-config.yaml"
+          - "--config=/conf/otel-agent-config.yaml"
         image: omnition/opencensus-agent:0.1.6
-        name: otelsvc-agent
+        name: otel-agent
         resources:
           limits:
             cpu: 500m
@@ -50,32 +50,32 @@ spec:
 #        - containerPort: 14268
 #        - containerPort: 9411
         volumeMounts:
-        - name: otelsvc-agent-config-vol
+        - name: otel-agent-config-vol
           mountPath: /conf
       volumes:
         - configMap:
-            name: otelsvc-agent-conf
+            name: otel-agent-conf
             items:
-              - key: otelsvc-agent-config
-                path: otelsvc-agent-config.yaml
-          name: otelsvc-agent-config-vol
+              - key: otel-agent-config
+                path: otel-agent-config.yaml
+          name: otel-agent-config-vol
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: otelsvc-collector-conf
+  name: otel-collector-conf
   labels:
     app: opentelemetry
-    component: otelsvc-collector-conf
+    component: otel-collector-conf
 data:
-  otelsvc-collector-config: |
+  otel-collector-config: |
     receivers:
       opencensus:
 # keepalive settings can help load balancing, see receiver/README.md for more info.
         keepalive:
-          server-parameters:
-            max-connection-age: 120s
-            max-connection-age-grace: 30s
+          server_parameters:
+            max_connection_age: 120s
+            max_connection_age-grace: 30s
       jaeger: {}
       zipkin: {}
 # Can only use one exporter
@@ -88,25 +88,25 @@ data:
         batching:
           enable: true
           timeout: 5s
-          send-batch-size: 1024
-        num-workers: 16
-        queue-size: 10000
-        retry-on-failure: true
+          send_batch_size: 1024
+        num_workers: 16
+        queue_size: 10000
+        retry_on_failure: true
         opencensus:
           compression: "gzip"
           endpoint: "ingest.omnition.io:443"
           headers: { "x-omnition-api-key":"00000000-0000-0000-0000-000000000001" } # TODO: Update me
-          num-workers: 8
-          reconnection-delay: 2s
+          num_workers: 8
+          reconnection_delay: 2s
           secure: true
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: otelsvc-collector
+  name: otel-collector
   labels:
     app: opencesus
-    component: otelsvc-collector
+    component: otel-collector
 spec:
   ports:
   - name: opencensus
@@ -115,20 +115,20 @@ spec:
     targetPort: 55678
 #  - name: jaeger-tchannel
 #    port: 14267
-#  - name: jaeger-thrift-http
+#  - name: jaeger_thrift_http
 #    port: 14268
 #  - name: zipkin
 #    port: 9411
   selector:
-    component: otelsvc-collector
+    component: otel-collector
 ---
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: otelsvc-collector
+  name: otel-collector
   labels:
     app: opentelemetry
-    component: otelsvc-collector
+    component: otel-collector
 spec:
   minReadySeconds: 5
   progressDeadlineSeconds: 120
@@ -141,17 +141,17 @@ spec:
         prometheus.io/scrape: "true"
       labels:
         app: opentelemetry
-        component: otelsvc-collector
+        component: otel-collector
     spec:
       containers:
       - command:
           - "/otelsvc_collector_linux"
-          - "--config=/conf/otelsvc-collector-config.yaml"
+          - "--config=/conf/otel-collector-config.yaml"
         env:
         - name: GOGC
           value: "80"
         image: omnition/opencensus-collector:0.1.6
-        name: otelsvc-collector
+        name: otel-collector
         resources:
           limits:
             cpu: 1
@@ -165,9 +165,9 @@ spec:
 #        - containerPort: 14268
 #        - containerPort: 9411
         volumeMounts:
-        - name: otelsvc-collector-config-vol
+        - name: otel-collector-config-vol
           mountPath: /conf
-#        - name: otelsvc-collector-secrets
+#        - name: otel-collector-secrets
 #          mountPath: /secrets
         livenessProbe:
           httpGet:
@@ -179,13 +179,13 @@ spec:
             port: 13133
       volumes:
         - configMap:
-            name: otelsvc-collector-conf
+            name: otel-collector-conf
             items:
-              - key: otelsvc-collector-config
-                path: otelsvc-collector-config.yaml
-          name: otelsvc-collector-config-vol
+              - key: otel-collector-config
+                path: otel-collector-config.yaml
+          name: otel-collector-config-vol
 #        - secret:
-#            name: otelsvc-collector-secrets
+#            name: otel-collector-secrets
 #            items:
 #              - key: cert.pem
 #                path: cert.pem

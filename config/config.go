@@ -23,14 +23,15 @@ import (
 	"os"
 	"strings"
 
+	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-service/exporter"
-	"github.com/open-telemetry/opentelemetry-service/extension"
-	"github.com/open-telemetry/opentelemetry-service/processor"
-	"github.com/open-telemetry/opentelemetry-service/receiver"
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-collector/exporter"
+	"github.com/open-telemetry/opentelemetry-collector/extension"
+	"github.com/open-telemetry/opentelemetry-collector/processor"
+	"github.com/open-telemetry/opentelemetry-collector/receiver"
 )
 
 // These are errors that can be returned by Load(). Note that error codes are not part
@@ -58,9 +59,15 @@ const (
 	errPipelineReceiverNotExists
 	errPipelineProcessorNotExists
 	errPipelineExporterNotExists
-	errUnmarshalError
 	errMissingReceivers
 	errMissingExporters
+	errUnmarshalErrorOnTopLevelSection
+	errUnmarshalErrorOnExtension
+	errUnmarshalErrorOnService
+	errUnmarshalErrorOnReceiver
+	errUnmarshalErrorOnProcessor
+	errUnmarshalErrorOnExporter
+	errUnmarshalErrorOnPipeline
 )
 
 type configError struct {
@@ -123,7 +130,23 @@ func Load(
 
 	// Load the config.
 
-	// Start with extensions and service.
+	// Struct to validate top level sections.
+	var topLevelSections struct {
+		Extensions map[string]interface{} `mapstructure:"extensions"`
+		Service    map[string]interface{} `mapstructure:"service"`
+		Receivers  map[string]interface{} `mapstructure:"receivers"`
+		Processors map[string]interface{} `mapstructure:"processors"`
+		Exporters  map[string]interface{} `mapstructure:"exporters"`
+	}
+
+	if err := v.UnmarshalExact(&topLevelSections); err != nil {
+		return nil, &configError{
+			code: errUnmarshalErrorOnTopLevelSection,
+			msg:  fmt.Sprintf("error reading top level sections: %s", err.Error()),
+		}
+	}
+
+	// Start with the service extensions.
 
 	extensions, err := loadExtensions(v, factories.Extensions)
 	if err != nil {
@@ -131,13 +154,7 @@ func Load(
 	}
 	config.Extensions = extensions
 
-	service, err := loadService(v)
-	if err != nil {
-		return nil, err
-	}
-	config.Service = service
-
-	// Load data components (receivers, exporters, processores, and pipelines).
+	// Load data components (receivers, exporters, and processors).
 
 	receivers, err := loadReceivers(v, factories.Receivers)
 	if err != nil {
@@ -157,11 +174,12 @@ func Load(
 	}
 	config.Processors = processors
 
-	pipelines, err := loadPipelines(v)
+	// Load the service and its data pipelines.
+	service, err := loadService(v)
 	if err != nil {
 		return nil, err
 	}
-	config.Pipelines = pipelines
+	config.Service = service
 
 	// Config is loaded. Now validate it.
 
@@ -250,9 +268,9 @@ func loadExtensions(v *viper.Viper, factories map[string]extension.Factory) (con
 
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
-		if err := sv.Unmarshal(extensionCfg); err != nil {
+		if err := sv.UnmarshalExact(extensionCfg); err != nil {
 			return nil, &configError{
-				code: errUnmarshalError,
+				code: errUnmarshalErrorOnExtension,
 				msg:  fmt.Sprintf("error reading settings for extension type %q: %v", typeStr, err),
 			}
 		}
@@ -272,12 +290,26 @@ func loadExtensions(v *viper.Viper, factories map[string]extension.Factory) (con
 
 func loadService(v *viper.Viper) (configmodels.Service, error) {
 	var service configmodels.Service
-	if err := v.UnmarshalKey(serviceKeyName, &service); err != nil {
+	serviceSub := getConfigSection(v, serviceKeyName)
+
+	// Process the pipelines first so in case of error on them it can be properly
+	// reported.
+	pipelines, err := loadPipelines(serviceSub)
+	if err != nil {
+		return service, err
+	}
+
+	// Do an exact match to find any unused section on config.
+	if err := serviceSub.UnmarshalExact(&service); err != nil {
 		return service, &configError{
-			code: errUnmarshalError,
+			code: errUnmarshalErrorOnService,
 			msg:  fmt.Sprintf("error reading settings for %q: %v", serviceKeyName, err),
 		}
 	}
+
+	// Unmarshal cannot properly build Pipelines field, set it to the value
+	// previously loaded.
+	service.Pipelines = pipelines
 
 	return service, nil
 }
@@ -336,16 +368,12 @@ func loadReceivers(v *viper.Viper, factories map[string]receiver.Factory) (confi
 			// This configuration requires a custom unmarshaler, use it.
 			err = customUnmarshaler(subViper, key, receiverCfg)
 		} else {
-			// Standard viper unmarshaler is fine.
-			// TODO(ccaraman): UnmarshallExact should be used to catch erroneous config entries.
-			// 	This leads to quickly identifying config values that are not supported and reduce confusion for
-			// 	users.
-			err = sv.Unmarshal(receiverCfg)
+			err = sv.UnmarshalExact(receiverCfg)
 		}
 
 		if err != nil {
 			return nil, &configError{
-				code: errUnmarshalError,
+				code: errUnmarshalErrorOnReceiver,
 				msg:  fmt.Sprintf("error reading settings for receiver type %q: %v", typeStr, err),
 			}
 		}
@@ -410,9 +438,9 @@ func loadExporters(v *viper.Viper, factories map[string]exporter.Factory) (confi
 
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
-		if err := sv.Unmarshal(exporterCfg); err != nil {
+		if err := sv.UnmarshalExact(exporterCfg); err != nil {
 			return nil, &configError{
-				code: errUnmarshalError,
+				code: errUnmarshalErrorOnExporter,
 				msg:  fmt.Sprintf("error reading settings for exporter type %q: %v", typeStr, err),
 			}
 		}
@@ -470,9 +498,9 @@ func loadProcessors(v *viper.Viper, factories map[string]processor.Factory) (con
 
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
-		if err := sv.Unmarshal(processorCfg); err != nil {
+		if err := sv.UnmarshalExact(processorCfg); err != nil {
 			return nil, &configError{
-				code: errUnmarshalError,
+				code: errUnmarshalErrorOnProcessor,
 				msg:  fmt.Sprintf("error reading settings for processor type %q: %v", typeStr, err),
 			}
 		}
@@ -529,9 +557,9 @@ func loadPipelines(v *viper.Viper) (configmodels.Pipelines, error) {
 
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
-		if err := subViper.UnmarshalKey(key, &pipelineCfg); err != nil {
+		if err := subViper.UnmarshalKey(key, &pipelineCfg, errorOnUnused); err != nil {
 			return nil, &configError{
-				code: errUnmarshalError,
+				code: errUnmarshalErrorOnPipeline,
 				msg:  fmt.Sprintf("error reading settings for pipeline type %q: %v", typeStr, err),
 			}
 		}
@@ -620,12 +648,12 @@ func validateServiceExtensions(
 
 func validatePipelines(cfg *configmodels.Config, logger *zap.Logger) error {
 	// Must have at least one pipeline.
-	if len(cfg.Pipelines) < 1 {
+	if len(cfg.Service.Pipelines) < 1 {
 		return &configError{code: errMissingPipelines, msg: "must have at least one pipeline"}
 	}
 
 	// Validate pipelines.
-	for _, pipeline := range cfg.Pipelines {
+	for _, pipeline := range cfg.Service.Pipelines {
 		if err := validatePipeline(cfg, pipeline, logger); err != nil {
 			return err
 		}
@@ -829,7 +857,7 @@ func validateProcessors(cfg *configmodels.Config) {
 // getConfigSection returns a sub-config from the viper config that has the corresponding given key.
 // It also expands all the string values.
 func getConfigSection(v *viper.Viper, key string) *viper.Viper {
-	// Unmarsh only the subconfig for this processor.
+	// Unmarshal only the subconfig for this processor.
 	sv := v.Sub(key)
 	if sv == nil {
 		// When the config for this key is empty Sub returns nil. In order to avoid nil checks
@@ -861,7 +889,7 @@ func expandStringValues(value interface{}) interface{} {
 	case string:
 		return os.ExpandEnv(v)
 	case []interface{}:
-		// Viper treats all the slices as []interface{} (at least in what the otelsvc tests).
+		// Viper treats all the slices as []interface{} (at least in what the otelcol tests).
 		nslice := make([]interface{}, 0, len(v))
 		for _, vint := range v {
 			nslice = append(nslice, expandStringValues(vint))
@@ -869,10 +897,19 @@ func expandStringValues(value interface{}) interface{} {
 		return nslice
 	case map[string]interface{}:
 		nmap := make(map[string]interface{}, len(v))
-		// Viper treats all the maps as [string]interface{} (at least in what the otelsvc tests).
+		// Viper treats all the maps as [string]interface{} (at least in what the otelcol tests).
 		for k, vint := range v {
 			nmap[k] = expandStringValues(vint)
 		}
 		return nmap
 	}
+}
+
+// errorOnUnused sets the decoder configuration to error in case of unused sections
+// are present in the configuration.
+func errorOnUnused(decoderCfg *mapstructure.DecoderConfig) {
+	// If ErrorUnused is true, then it is an error for there to exist
+	// keys in the original map that were unused in the decoding process
+	// (extra keys).
+	decoderCfg.ErrorUnused = true
 }

@@ -22,8 +22,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-service/config"
-	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-collector/config"
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -37,11 +37,11 @@ func TestLoadConfig(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
 
-	assert.Equal(t, cfg.Processors["tail-sampling"],
+	assert.Equal(t, cfg.Processors["tail_sampling"],
 		&Config{
 			ProcessorSettings: configmodels.ProcessorSettings{
-				TypeVal: "tail-sampling",
-				NameVal: "tail-sampling",
+				TypeVal: "tail_sampling",
+				NameVal: "tail_sampling",
 			},
 			DecisionWait:            10 * time.Second,
 			NumTraces:               100,

@@ -25,12 +25,12 @@ import (
 	"go.opencensus.io/tag"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/consumer/consumererror"
-	"github.com/open-telemetry/opentelemetry-service/internal/collector/telemetry"
-	"github.com/open-telemetry/opentelemetry-service/processor"
-	"github.com/open-telemetry/opentelemetry-service/processor/nodebatcherprocessor"
+	"github.com/open-telemetry/opentelemetry-collector/consumer"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/consumererror"
+	"github.com/open-telemetry/opentelemetry-collector/internal/collector/telemetry"
+	"github.com/open-telemetry/opentelemetry-collector/processor"
+	"github.com/open-telemetry/opentelemetry-collector/processor/nodebatcherprocessor"
 )
 
 type queuedSpanProcessor struct {
@@ -56,7 +56,7 @@ type queueItem struct {
 // NewQueuedSpanProcessor returns a span processor that maintains a bounded
 // in-memory queue of span batches, and sends out span batches using the
 // provided sender
-func NewQueuedSpanProcessor(sender consumer.TraceConsumer, opts ...Option) consumer.TraceConsumer {
+func NewQueuedSpanProcessor(sender consumer.TraceConsumer, opts ...Option) processor.TraceProcessor {
 	options := Options.apply(opts...)
 	sp := newQueuedSpanProcessor(sender, options)
 
@@ -131,6 +131,10 @@ func (sp *queuedSpanProcessor) ConsumeTraceData(ctx context.Context, td consumer
 	return nil
 }
 
+func (sp *queuedSpanProcessor) GetCapabilities() processor.Capabilities {
+	return processor.Capabilities{MutatesConsumedData: false}
+}
+
 func (sp *queuedSpanProcessor) processItemFromQueue(item *queueItem) {
 	startTime := time.Now()
 	err := sp.sender.ConsumeTraceData(item.ctx, item.td)
@@ -192,7 +196,7 @@ func (sp *queuedSpanProcessor) processItemFromQueue(item *queueItem) {
 	if sp.backoffDelay > 0 {
 		sp.logger.Warn("Backing off before next attempt",
 			zap.String("processor", sp.name),
-			zap.Duration("backoff-delay", sp.backoffDelay))
+			zap.Duration("backoff_delay", sp.backoffDelay))
 		select {
 		case <-sp.stopCh:
 			sp.logger.Info("Interrupted due to shutdown", zap.String("processor", sp.name))

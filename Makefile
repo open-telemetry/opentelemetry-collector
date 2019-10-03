@@ -24,7 +24,7 @@ MISSPELL_CORRECTION=misspell -w
 STATICCHECK=staticcheck
 
 GIT_SHA=$(shell git rev-parse --short HEAD)
-BUILD_INFO_IMPORT_PATH=github.com/open-telemetry/opentelemetry-service/internal/version
+BUILD_INFO_IMPORT_PATH=github.com/open-telemetry/opentelemetry-collector/internal/version
 BUILD_X1=-X $(BUILD_INFO_IMPORT_PATH).GitHash=$(GIT_SHA)
 ifdef VERSION
 BUILD_X2=-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)
@@ -43,22 +43,26 @@ all-srcs:
 addlicense-fmt-vet-lint-goimports-misspell-staticcheck-test: addlicense fmt vet lint goimports misspell staticcheck test
 
 .PHONY: e2e-test
-e2e-test: otelsvc
+e2e-test: otelcol
 	$(MAKE) -C testbed runtests
 
 .PHONY: test
 test:
 	$(GOTEST) $(GOTEST_OPT) $(ALL_PKGS)
 
+.PHONY: benchmark
+benchmark:
+	$(GOTEST) -bench=. -run=notests $(ALL_PKGS)
+
 .PHONY: travis-ci
-travis-ci: fmt vet lint goimports misspell staticcheck test-with-cover otelsvc
+travis-ci: fmt vet lint goimports misspell staticcheck test-with-cover otelcol
 	$(MAKE) -C testbed install-tools
 	$(MAKE) -C testbed runtests
 
 .PHONY: test-with-cover
 test-with-cover:
 	@echo Verifying that all packages have test files to count in coverage
-	@scripts/check-test-files.sh $(subst github.com/open-telemetry/opentelemetry-service/,./,$(ALL_PKGS))
+	@scripts/check-test-files.sh $(subst github.com/open-telemetry/opentelemetry-collector/,./,$(ALL_PKGS))
 	@echo pre-compiling tests
 	@time go test -i $(ALL_PKGS)
 	$(GOTEST) $(GOTEST_OPT_WITH_COVERAGE) $(ALL_PKGS)
@@ -99,7 +103,7 @@ lint:
 
 .PHONY: goimports
 goimports:
-	@IMPORTSOUT=`$(GOIMPORTS) -local github.com/open-telemetry/opentelemetry-service -d . 2>&1`; \
+	@IMPORTSOUT=`$(GOIMPORTS) -local github.com/open-telemetry/opentelemetry-collector -d . 2>&1`; \
 	if [ "$$IMPORTSOUT" ]; then \
 		echo "$(GOIMPORTS) FAILED => fix the following goimports errors:\n"; \
 		echo "$$IMPORTSOUT\n"; \
@@ -134,9 +138,9 @@ install-tools:
 	  github.com/client9/misspell/cmd/misspell \
 	  honnef.co/go/tools/cmd/staticcheck
 
-.PHONY: otelsvc
-otelsvc:
-	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/$(GOOS)/otelsvc $(BUILD_INFO) ./cmd/otelsvc
+.PHONY: otelcol
+otelcol:
+	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/$(GOOS)/otelcol $(BUILD_INFO) ./cmd/otelcol
 
 .PHONY: docker-component # Not intended to be used directly
 docker-component: check-component
@@ -151,12 +155,12 @@ ifndef COMPONENT
 	$(error COMPONENT variable was not defined)
 endif
 
-.PHONY: docker-otelsvc
-docker-otelsvc:
-	COMPONENT=otelsvc $(MAKE) docker-component
+.PHONY: docker-otelcol
+docker-otelcol:
+	COMPONENT=otelcol $(MAKE) docker-component
 
 .PHONY: binaries
-binaries: otelsvc
+binaries: otelcol
 
 .PHONY: binaries-all-sys
 binaries-all-sys:

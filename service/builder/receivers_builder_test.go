@@ -26,11 +26,11 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 
-	"github.com/open-telemetry/opentelemetry-service/config"
-	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/processor/attributesprocessor"
-	"github.com/open-telemetry/opentelemetry-service/receiver/receivertest"
+	"github.com/open-telemetry/opentelemetry-collector/config"
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/processor/attributesprocessor"
+	"github.com/open-telemetry/opentelemetry-collector/receiver/receivertest"
 )
 
 type testCase struct {
@@ -185,7 +185,7 @@ func testReceivers(
 			require.Equal(t, spanDuplicationCount, len(traceConsumer.Traces))
 
 			for i := 0; i < spanDuplicationCount; i++ {
-				assert.Equal(t, traceData, traceConsumer.Traces[i])
+				assertEqualTraceData(t, traceData, traceConsumer.Traces[i])
 
 				// Check that the span was processed by "attributes" processor and an
 				// attribute was added.
@@ -198,7 +198,7 @@ func testReceivers(
 		if test.hasMetrics {
 			metricsConsumer := exporter.me.(*config.ExampleExporterConsumer)
 			require.Equal(t, 1, len(metricsConsumer.Metrics))
-			assert.Equal(t, metricsData, metricsConsumer.Metrics[0])
+			assertEqualMetricsData(t, metricsData, metricsConsumer.Metrics[0])
 		}
 	}
 }

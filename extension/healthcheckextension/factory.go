@@ -20,13 +20,13 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-service/extension"
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-collector/extension"
 )
 
 const (
 	// The value of extension "type" in configuration.
-	typeStr = "health-check"
+	typeStr = "health_check"
 )
 
 // Factory is the factory for the extension.

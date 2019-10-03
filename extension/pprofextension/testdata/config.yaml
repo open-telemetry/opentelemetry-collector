@@ -2,11 +2,16 @@ extensions:
   pprof:
   pprof/1:
     endpoint: "0.0.0.0:1777"
-    block-profile-fraction: 3
-    mutex-profile-fraction: 5
+    block_profile_fraction: 3
+    mutex_profile_fraction: 5
 
 service:
   extensions: [pprof/1]
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      processors: [exampleprocessor]
+      exporters: [exampleexporter]
 
 # Data pipeline is required to load the config.
 receivers:
@@ -15,8 +20,3 @@ processors:
   exampleprocessor:
 exporters:
   exampleexporter:
-pipelines:
-  traces:
-    receivers: [examplereceiver]
-    processors: [exampleprocessor]
-    exporters: [exampleexporter]

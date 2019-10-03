@@ -31,12 +31,6 @@ exporters:
       - "some exporter list value_1"
       - "some exporter list value_2"
 
-pipelines:
-  traces:
-    receivers: [examplereceiver]
-    processors: [exampleprocessor]
-    exporters: [exampleexporter]
-
 extensions:
   exampleextension:
     extra: "some extension string"
@@ -49,3 +43,9 @@ extensions:
 
 service:
   extensions: [exampleextension]
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      processors: [exampleprocessor]
+      exporters: [exampleexporter]
+

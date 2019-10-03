@@ -19,7 +19,7 @@ import (
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 
-	tracetranslator "github.com/open-telemetry/opentelemetry-service/translator/trace"
+	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 )
 
 type status struct {

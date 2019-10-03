@@ -18,7 +18,7 @@ package consumer
 import (
 	"context"
 
-	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 )
 
 // MetricsConsumer is an interface that receives consumerdata.MetricsData, process it as needed, and
@@ -35,10 +35,4 @@ type MetricsConsumer interface {
 // ConsumeTraceData receives consumerdata.TraceData for processing by the TraceConsumer.
 type TraceConsumer interface {
 	ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error
-}
-
-// DataConsumer is a union type that can accept traces and/or metrics.
-type DataConsumer interface {
-	TraceConsumer
-	MetricsConsumer
 }

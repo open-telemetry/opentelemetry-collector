@@ -18,8 +18,8 @@ import (
 	"context"
 	"sync"
 
-	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/exporter"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/exporter"
 )
 
 // SinkTraceExporter acts as a trace receiver for use in tests.

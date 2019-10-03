@@ -3,5 +3,6 @@ exporters:
   exampleexporter:
 processors:
   exampleprocessor:
-pipelines:
-  traces:
+service:
+  pipelines:
+    traces:

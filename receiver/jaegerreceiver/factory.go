@@ -25,10 +25,10 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
-	"github.com/open-telemetry/opentelemetry-service/config/configerror"
-	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/receiver"
+	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-collector/consumer"
+	"github.com/open-telemetry/opentelemetry-collector/receiver"
 )
 
 const (
@@ -38,7 +38,7 @@ const (
 	// Protocol values.
 	protoGRPC       = "grpc"
 	protoThriftHTTP = "thrift-http"
-	// TODO https://github.com/open-telemetry/opentelemetry-service/issues/267
+	// TODO https://github.com/open-telemetry/opentelemetry-collector/issues/267
 	//	Remove ThriftTChannel support.
 	protoThriftTChannel = "thrift-tchannel"
 
