@@ -66,8 +66,8 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 
 func TestFactory_CreateTraceExporter(t *testing.T) {
 	tests := []struct {
-		name    string
-		config  *Config
+		name   string
+		config *Config
 	}{
 		{
 			name: "create_instance",
@@ -129,7 +129,7 @@ func TestFactory_CreateTraceExporterFails(t *testing.T) {
 					TypeVal: typeStr,
 					NameVal: typeStr,
 				},
-				URL: "localhost:123",
+				URL:     "localhost:123",
 				Timeout: -2 * time.Second,
 			},
 			errorMessage: "\"jaeger_thrift_http\" config requires a positive value for \"timeout\"",
