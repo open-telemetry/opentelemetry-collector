@@ -22,12 +22,13 @@ will be passed to all attached pipelines via a data fan-out connector.
 From data ownership perspective pipelines can work in 2 modes: exclusive data ownership
 and shared data ownership.
 
-The mode is defined during startup based on data modification intent of processors.
-The intent is defined by each processor via `MutatesConsumedData` field of
-`GetCapabilities` function. If any processor in the pipeline declares an intent
-to modify the data then that pipeline will work in exclusive ownership mode. In addition
-any other pipeline that receives data from a receiver that is attached to a pipeline with
-exclusive ownership mode will be also operating in exclusive ownership mode.
+The mode is defined during startup based on data modification intent reported by the
+processors. The intent is reported by each processor via `MutatesConsumedData` field of
+the struct returned by `GetCapabilities` function. If any processor in the pipeline
+declares an intent to modify the data then that pipeline will work in exclusive ownership
+mode. In addition any other pipeline that receives data from a receiver that is attached
+to a pipeline with exclusive ownership mode will be also operating in exclusive ownership 
+mode.
 
 ### Exclusive Ownership
 
@@ -43,7 +44,7 @@ data and the data can be safely modified in the pipeline.
 The exclusive ownership of data allows processors to freely modify the data while
 they own it (e.g. see `attributesprocessor`). The duration of ownership of the data
 by processor is from the beginning of `ConsumeTraceData`/`ConsumeMetricsData` call
-and until the processor calls the next processor's `ConsumeTraceData`/`ConsumeMetricsData`
+until the processor calls the next processor's `ConsumeTraceData`/`ConsumeMetricsData`
 function, which passes the ownership to the next processor. After that the processor
 must no longer read or write the data since it may be concurrently modified by the
 new owner.
