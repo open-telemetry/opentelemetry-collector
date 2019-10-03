@@ -86,6 +86,11 @@ func (tsp *tracesamplerprocessor) GetCapabilities() processor.Capabilities {
 	return processor.Capabilities{MutatesConsumedData: false}
 }
 
+// Shutdown is invoked during service shutdown.
+func (tsp *tracesamplerprocessor) Shutdown() error {
+	return nil
+}
+
 // hash is a murmur3 hash function, see http://en.wikipedia.org/wiki/MurmurHash.
 func hash(key []byte, seed uint32) (hash uint32) {
 	const (

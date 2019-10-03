@@ -135,6 +135,12 @@ func (sp *queuedSpanProcessor) GetCapabilities() processor.Capabilities {
 	return processor.Capabilities{MutatesConsumedData: false}
 }
 
+// Shutdown is invoked during service shutdown.
+func (sp *queuedSpanProcessor) Shutdown() error {
+	// TODO: flush the queue.
+	return nil
+}
+
 func (sp *queuedSpanProcessor) processItemFromQueue(item *queueItem) {
 	startTime := time.Now()
 	err := sp.sender.ConsumeTraceData(item.ctx, item.td)
