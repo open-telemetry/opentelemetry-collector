@@ -20,7 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/open-telemetry/opentelemetry-service/config/configgrpc"
+	"github.com/open-telemetry/opentelemetry-collector/config/configgrpc"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 )
 
@@ -37,7 +37,15 @@ func TestNew(t *testing.T) {
 			name: "createExporter",
 			args: args{
 				config: Config{
-					Endpoint: "some.non.existent:55678",
+					GRPCSettings: configgrpc.GRPCSettings{
+						Headers:             nil,
+						Endpoint:            "foo.bar",
+						Compression:         "",
+						CertPemFile:         "",
+						UseSecure:           false,
+						ServerNameOverride:  "",
+						KeepaliveParameters: nil,
+					},
 				},
 			},
 		},
@@ -45,10 +53,9 @@ func TestNew(t *testing.T) {
 			name: "createBasicSecureExporter",
 			args: args{
 				config: Config{
-					Endpoint: "foo.bar",
 					GRPCSettings: configgrpc.GRPCSettings{
 						Headers:             nil,
-						Endpoint:            "",
+						Endpoint:            "foo.bar",
 						Compression:         "",
 						CertPemFile:         "",
 						UseSecure:           true,
@@ -62,10 +69,9 @@ func TestNew(t *testing.T) {
 			name: "createSecureExporterWithClientTLS",
 			args: args{
 				config: Config{
-					Endpoint: "foo.bar",
 					GRPCSettings: configgrpc.GRPCSettings{
 						Headers:             nil,
-						Endpoint:            "",
+						Endpoint:            "foo.bar",
 						Compression:         "",
 						CertPemFile:         "testdata/test_cert.pem",
 						UseSecure:           true,
@@ -79,10 +85,9 @@ func TestNew(t *testing.T) {
 			name: "createSecureExporterWithKeepAlive",
 			args: args{
 				config: Config{
-					Endpoint: "foo.bar",
 					GRPCSettings: configgrpc.GRPCSettings{
 						Headers:            nil,
-						Endpoint:           "",
+						Endpoint:           "foo.bar",
 						Compression:        "",
 						CertPemFile:        "testdata/test_cert.pem",
 						UseSecure:          true,
@@ -100,10 +105,9 @@ func TestNew(t *testing.T) {
 			name: "createSecureExporterWithMissingFile",
 			args: args{
 				config: Config{
-					Endpoint: "foo.bar",
 					GRPCSettings: configgrpc.GRPCSettings{
 						Headers:             nil,
-						Endpoint:            "",
+						Endpoint:            "foo.bar",
 						Compression:         "",
 						CertPemFile:         "testdata/test_cert_missing.pem",
 						UseSecure:           true,

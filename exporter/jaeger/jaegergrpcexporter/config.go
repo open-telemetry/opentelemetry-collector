@@ -15,8 +15,8 @@
 package jaegergrpcexporter
 
 import (
-	"github.com/open-telemetry/opentelemetry-service/config/configgrpc"
-	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-collector/config/configgrpc"
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 )
 
 // Config defines configuration for Jaeger gRPC exporter.
@@ -24,6 +24,4 @@ type Config struct {
 	configmodels.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 
 	configgrpc.GRPCSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-
-	Endpoint string `mapstructure:"endpoint"`
 }

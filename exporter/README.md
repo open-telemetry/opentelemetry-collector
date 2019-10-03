@@ -32,10 +32,10 @@ https://github.com/grpc/grpc/blob/master/doc/naming.md
 connection. See [grpc.WithInsecure()](https://godoc.org/google.golang.org/grpc#WithInsecure).
 Optional.
 
-* `server-name-override`: If set to a non empty string, it will override the virtual host name 
+* `server_name_override`: If set to a non empty string, it will override the virtual host name 
 of authority (e.g. :authority header field) in requests
 
-* `cert-pem-file`: certificate file for TLS credentials of gRPC client. Should
+* `cert_pem_file`: certificate file for TLS credentials of gRPC client. Should
 only be used if `secure` is set to true. Optional.
 
 * `keepalive`: keepalive parameters for client gRPC. See
@@ -49,8 +49,8 @@ Example:
 exporters:
   jaeger_grpc:
     endpoint: jaeger-all-in-one:14250
-    cert-pem-file: /my-cert.pem
-    server-name-override: opentelemetry.io
+    cert_pem_file: /my-cert.pem
+    server_name_override: opentelemetry.io
 ```
 
 ## <a name="logging"></a>Logging
