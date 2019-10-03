@@ -9,12 +9,12 @@ extensions:
 service:
   extensions:
     - exampleextension
-pipelines:
-  traces:
-    receivers:
-      - examplereceiver
-    processors:
-      - exampleprocessor
-    exporters:
-      - exampleexporter
-    unknown_section: 1
+  pipelines:
+    traces:
+      receivers:
+        - examplereceiver
+      processors:
+        - exampleprocessor
+      exporters:
+        - exampleexporter
+      unknown_section: 1

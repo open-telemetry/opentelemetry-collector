@@ -9,8 +9,9 @@ processors:
 exporters:
   exampleexporter:
 
-pipelines:
-  traces:
-    receivers: [examplereceiver]
-    processors: [probabilistic_sampler]
-    exporters: [exampleexporter]
+service:
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      processors: [probabilistic_sampler]
+      exporters: [exampleexporter]

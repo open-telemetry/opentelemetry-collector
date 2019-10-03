@@ -46,11 +46,13 @@ func TestExportersBuilder_Build(t *testing.T) {
 			},
 		},
 
-		Pipelines: map[string]*configmodels.Pipeline{
-			"trace": {
-				Name:      "trace",
-				InputType: configmodels.TracesDataType,
-				Exporters: []string{"opencensus"},
+		Service: configmodels.Service{
+			Pipelines: map[string]*configmodels.Pipeline{
+				"trace": {
+					Name:      "trace",
+					InputType: configmodels.TracesDataType,
+					Exporters: []string{"opencensus"},
+				},
 			},
 		},
 	}
@@ -80,7 +82,7 @@ func TestExportersBuilder_Build(t *testing.T) {
 	// Remove the pipeline so that the exporter is not attached to any pipeline.
 	// This should result in creating an exporter that has none of consumption
 	// functions set.
-	delete(cfg.Pipelines, "trace")
+	delete(cfg.Service.Pipelines, "trace")
 	exporters, err = NewExportersBuilder(zap.NewNop(), cfg, factories.Exporters).Build()
 	assert.NotNil(t, exporters)
 	assert.Nil(t, err)

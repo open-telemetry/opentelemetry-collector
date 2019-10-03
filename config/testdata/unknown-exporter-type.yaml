@@ -4,8 +4,9 @@ exporters:
   nosuchexporter:
 processors:
   exampleprocessor:
-pipelines:
-  traces:
-    receivers: [multireceiver]
-    exporters: [exampleexporter]
-    processors: [exampleprocessor]
+service:
+  pipelines:
+    traces:
+      receivers: [multireceiver]
+      exporters: [exampleexporter]
+      processors: [exampleprocessor]

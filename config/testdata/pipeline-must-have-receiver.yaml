@@ -4,6 +4,7 @@ exporters:
   exampleexporter:
 processors:
   exampleprocessor:
-pipelines:
-  metrics:
-    exporters: [exampleexporter]
+service:
+  pipelines:
+    metrics:
+      exporters: [exampleexporter]

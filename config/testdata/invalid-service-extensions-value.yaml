@@ -1,18 +1,17 @@
 extensions:
   exampleextension:
-service:
-  extensions:
-    exampleextension:
-      disabled: true
-
 receivers:
   examplereceiver:
 processors:
   exampleprocessor:
 exporters:
   exampleexporter:
-pipelines:
-  traces:
-    receivers: [examplereceiver]
-    processors: [exampleprocessor]
-    exporters: [exampleexporter]
+service:
+  extensions:
+    exampleextension:
+      disabled: true
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      processors: [exampleprocessor]
+      exporters: [exampleexporter]

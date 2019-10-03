@@ -31,12 +31,6 @@ exporters:
       - "${EXPORTERS_EXAMPLEEXPORTER_EXTRA_LIST_VALUE_1}"
       - "${EXPORTERS_EXAMPLEEXPORTER_EXTRA_LIST_VALUE_2}"
 
-pipelines:
-  traces:
-    receivers: [examplereceiver]
-    processors: [exampleprocessor]
-    exporters: [exampleexporter]
-
 extensions:
   exampleextension:
     extra: "${EXTENSIONS_EXAMPLEEXTENSION_EXTRA}"
@@ -49,3 +43,9 @@ extensions:
 
 service:
   extensions: [exampleextension]
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      processors: [exampleprocessor]
+      exporters: [exampleexporter]
+

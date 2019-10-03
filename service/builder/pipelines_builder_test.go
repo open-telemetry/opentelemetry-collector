@@ -94,7 +94,7 @@ func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 	assert.NoError(t, err)
 	require.NotNil(t, pipelineProcessors)
 
-	processor := pipelineProcessors[cfg.Pipelines[pipelineName]]
+	processor := pipelineProcessors[cfg.Service.Pipelines[pipelineName]]
 
 	// Ensure pipeline has its fields correctly populated.
 	require.NotNil(t, processor)
@@ -164,7 +164,7 @@ func TestPipelinesBuilder_Error(t *testing.T) {
 	// Corrupt the pipeline, change data type to metrics. We have to forcedly do it here
 	// since there is no way to have such config loaded by LoadConfigFile, it would not
 	// pass validation. We are doing this to test failure mode of PipelinesBuilder.
-	pipeline := cfg.Pipelines["traces"]
+	pipeline := cfg.Service.Pipelines["traces"]
 	pipeline.InputType = configmodels.MetricsDataType
 
 	exporters, err := NewExportersBuilder(zap.NewNop(), cfg, factories.Exporters).Build()

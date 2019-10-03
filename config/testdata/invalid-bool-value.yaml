@@ -5,8 +5,9 @@ exporters:
 processors:
   exampleprocessor:
     disabled: [2,3]
-pipelines:
-  traces:
-    receivers: [examplereceiver]
-    exporters: [exampleexporter]
-    processors: [exampleprocessor]
+service:
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      exporters: [exampleexporter]
+      processors: [exampleprocessor]

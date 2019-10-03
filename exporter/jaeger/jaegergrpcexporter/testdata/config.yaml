@@ -10,8 +10,9 @@ exporters:
   jaeger_grpc/2:
     endpoint: "a.new.target:1234"
 
-pipelines:
-  traces:
-    receivers: [examplereceiver]
-    processors: [exampleprocessor]
-    exporters: [jaeger_grpc, jaeger_grpc/2]
+service:
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      processors: [exampleprocessor]
+      exporters: [jaeger_grpc, jaeger_grpc/2]

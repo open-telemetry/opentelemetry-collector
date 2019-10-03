@@ -9,13 +9,13 @@ extensions:
 service:
   extenstions:
     - examapleextension
-pipelines:
-  traces:
-    receivers:
-      - examplereceiver
-    processors:
-      - exampleprocessor
-    exporters:
-      - exampleexporter
+  pipelines:
+    traces:
+      receivers:
+        - examplereceiver
+      processors:
+        - exampleprocessor
+      exporters:
+        - exampleexporter
 unknown_section:
   a_num: 2

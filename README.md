@@ -139,7 +139,8 @@ exporters:
   ...
 processors:
   ...
-pipelines:
+service:
+  pipelines:
   ...
 ```
 
@@ -218,12 +219,12 @@ a receiver/exporter is reference by all the pipelines.
 The following is an example pipeline configuration. For more information, refer
 to [pipeline documentation](docs/pipelines.md)
 ```yaml
-pipelines:
-  traces:
-    receivers: [examplereceiver]
-    processors: [exampleprocessor]
-    exporters: [exampleexporter]
-
+service:
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      processors: [exampleprocessor]
+      exporters: [exampleexporter]
 ```
 
 ### <a name="config-diagnostics"></a>Diagnostics

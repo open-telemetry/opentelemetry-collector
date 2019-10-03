@@ -11,8 +11,9 @@ exporters:
 processors:
   queued_retry:
 
-pipelines:
-  traces:
-    receivers: [jaeger]
-    processors: [queued_retry]
-    exporters: [opencensus]
+service:
+  pipelines:
+    traces:
+      receivers: [jaeger]
+      processors: [queued_retry]
+      exporters: [opencensus]

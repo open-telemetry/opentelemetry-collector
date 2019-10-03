@@ -26,11 +26,12 @@ The pipeline is constructed during Collector startup based on pipeline definitio
 A pipeline configuration typically looks like this:
 
 ```yaml
-pipelines: # section that can contain multiple subsections, one per pipeline
-  traces:  # type of the pipeline 
-    receivers: [opencensus, jaeger, zipkin]
-    processors: [tags, tail_sampling, batch, queued_retry]
-    exporters: [opencensus, jaeger, stackdriver, zipkin]
+service:
+  pipelines: # section that can contain multiple subsections, one per pipeline
+    traces:  # type of the pipeline 
+      receivers: [opencensus, jaeger, zipkin]
+      processors: [tags, tail_sampling, batch, queued_retry]
+      exporters: [opencensus, jaeger, stackdriver, zipkin]
 ```
 
 The above example defines a pipeline for “traces” type of telemetry data, with 3 receivers, 4 processors and 4 exporters. 
@@ -46,15 +47,16 @@ receivers:
   opencensus:
     endpoint: "localhost:55678”
 
-pipelines:
-  traces:  # a pipeline of “traces” type
-    receivers: [opencensus]
-    processors: [tags, tail_sampling, batch, queued_retry]
-    exporters: [jaeger]
-  traces/2:  # another pipeline of “traces” type
-    receivers: [opencensus]
-    processors: [batch]
-    exporters: [opencensus]
+service:
+  pipelines:
+    traces:  # a pipeline of “traces” type
+      receivers: [opencensus]
+      processors: [tags, tail_sampling, batch, queued_retry]
+        exporters: [jaeger]
+      traces/2:  # another pipeline of “traces” type
+        receivers: [opencensus]
+        processors: [batch]
+        exporters: [opencensus]
 ```
 
 In the above example “opencensus” receiver will send the same data to pipeline “traces” and to pipeline “traces/2”. (Note: the configuration uses composite key names in the form of `type[/name]` as defined in this [this document](https://docs.google.com/document/d/1GWOzV0H0RTN1adiwo7fTmkjfCATDDFGuOB4jp3ldCc8/edit#)).
@@ -88,15 +90,16 @@ exporters:
       grpc:
         endpoint: "localhost:14250”
 
-pipelines:
-  traces:  # a pipeline of “traces” type
-    receivers: [zipkin]
-    processors: [tags, tail_sampling, batch, queued_retry]
-    exporters: [jaeger]
-  traces/2:  # another pipeline of “traces” type
-    receivers: [opencensus]
-    processors: [batch]
-    exporters: [jaeger]
+service:
+  pipelines:
+    traces:  # a pipeline of “traces” type
+      receivers: [zipkin]
+      processors: [tags, tail_sampling, batch, queued_retry]
+      exporters: [jaeger]
+    traces/2:  # another pipeline of “traces” type
+      receivers: [opencensus]
+      processors: [batch]
+      exporters: [jaeger]
 ```
 
 In the above example “jaeger” exporter will get data from pipeline “traces” and from pipeline “traces/2”. When the Collector loads this config the result will look like this (part of processors and receivers are omitted from the diagram for brevity):
@@ -120,15 +123,16 @@ processors:
     per-exporter: true
     enabled: true
 
-pipelines:
-  traces:  # a pipeline of “traces” type
-    receivers: [zipkin]
-    processors: [queued_retry]
-    exporters: [jaeger]
-  traces/2:  # another pipeline of “traces” type
-    receivers: [opencensus]
-    processors: [queued_retry]
-    exporters: [opencensus]
+service:
+  pipelines:
+    traces:  # a pipeline of “traces” type
+      receivers: [zipkin]
+      processors: [queued_retry]
+      exporters: [jaeger]
+    traces/2:  # another pipeline of “traces” type
+      receivers: [opencensus]
+      processors: [queued_retry]
+      exporters: [opencensus]
 ```
 
 When the Collector loads this config the result will look like this:

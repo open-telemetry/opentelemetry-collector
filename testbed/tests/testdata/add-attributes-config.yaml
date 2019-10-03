@@ -28,8 +28,9 @@ processors:
         value: test-datacenter
         action: insert
 
-pipelines:
-  traces:
-    receivers: [jaeger]
-    processors: [attributes,queued_retry]
-    exporters: [opencensus]
+service:
+  pipelines:
+    traces:
+      receivers: [jaeger]
+      processors: [attributes,queued_retry]
+      exporters: [opencensus]

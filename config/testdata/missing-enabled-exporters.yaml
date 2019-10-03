@@ -8,8 +8,9 @@ exporters:
 processors:
   exampleprocessor:
 
-pipelines:
-  traces:
-    receivers: [examplereceiver/one]
-    processors: [exampleprocessor]
-    exporters: [exampleexporter/disabled]
+service:
+  pipelines:
+    traces:
+      receivers: [examplereceiver/one]
+      processors: [exampleprocessor]
+      exporters: [exampleexporter/disabled]

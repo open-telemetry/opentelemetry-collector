@@ -19,8 +19,9 @@ processors:
 exporters:
   exampleexporter:
 
-pipelines:
-  traces:
-    receivers: [prometheus]
-    processors: [exampleprocessor]
-    exporters: [exampleexporter]
+service:
+  pipelines:
+    traces:
+      receivers: [prometheus]
+      processors: [exampleprocessor]
+      exporters: [exampleexporter]

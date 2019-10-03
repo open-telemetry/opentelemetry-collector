@@ -22,8 +22,9 @@ exporters:
       timeout: 30
       permit_without_stream: true
 
-pipelines:
-  traces:
-    receivers: [examplereceiver]
-    processors: [exampleprocessor]
-    exporters: [opencensus]
+service:
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      processors: [exampleprocessor]
+      exporters: [opencensus]

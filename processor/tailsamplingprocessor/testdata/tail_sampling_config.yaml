@@ -32,8 +32,9 @@ processors:
          }
       ]
 
-pipelines:
-  traces:
-    receivers: [examplereceiver]
-    processors: [tail_sampling]
-    exporters: [exampleexporter]
+service:
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      processors: [tail_sampling]
+      exporters: [exampleexporter]

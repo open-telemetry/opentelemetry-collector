@@ -12,8 +12,9 @@ processors:
 exporters:
   exampleexporter:
 
-pipelines:
-  traces:
-    receivers: [vmmetrics]
-    processors: [exampleprocessor]
-    exporters: [exampleexporter]
+service:
+  pipelines:
+    traces:
+      receivers: [vmmetrics]
+      processors: [exampleprocessor]
+      exporters: [exampleexporter]

@@ -12,8 +12,9 @@ processors:
 exporters:
   exampleexporter:
 
-pipelines:
-  traces:
-    receivers: [examplereceiver]
-    processors: [queued_retry/2]
-    exporters: [exampleexporter]
+service:
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      processors: [queued_retry/2]
+      exporters: [exampleexporter]

@@ -137,7 +137,6 @@ func Load(
 		Receivers  map[string]interface{} `mapstructure:"receivers"`
 		Processors map[string]interface{} `mapstructure:"processors"`
 		Exporters  map[string]interface{} `mapstructure:"exporters"`
-		Pipelines  map[string]interface{} `mapstructure:"pipelines"`
 	}
 
 	if err := v.UnmarshalExact(&topLevelSections); err != nil {
@@ -147,7 +146,7 @@ func Load(
 		}
 	}
 
-	// Start with extensions and service.
+	// Start with the service extensions.
 
 	extensions, err := loadExtensions(v, factories.Extensions)
 	if err != nil {
@@ -155,13 +154,7 @@ func Load(
 	}
 	config.Extensions = extensions
 
-	service, err := loadService(v)
-	if err != nil {
-		return nil, err
-	}
-	config.Service = service
-
-	// Load data components (receivers, exporters, processores, and pipelines).
+	// Load data components (receivers, exporters, and processors).
 
 	receivers, err := loadReceivers(v, factories.Receivers)
 	if err != nil {
@@ -181,11 +174,12 @@ func Load(
 	}
 	config.Processors = processors
 
-	pipelines, err := loadPipelines(v)
+	// Load the service and its data pipelines.
+	service, err := loadService(v)
 	if err != nil {
 		return nil, err
 	}
-	config.Pipelines = pipelines
+	config.Service = service
 
 	// Config is loaded. Now validate it.
 
@@ -296,12 +290,26 @@ func loadExtensions(v *viper.Viper, factories map[string]extension.Factory) (con
 
 func loadService(v *viper.Viper) (configmodels.Service, error) {
 	var service configmodels.Service
-	if err := v.UnmarshalKey(serviceKeyName, &service, errorOnUnused); err != nil {
+	serviceSub := getConfigSection(v, serviceKeyName)
+
+	// Process the pipelines first so in case of error on them it can be properly
+	// reported.
+	pipelines, err := loadPipelines(serviceSub)
+	if err != nil {
+		return service, err
+	}
+
+	// Do an exact match to find any unused section on config.
+	if err := serviceSub.UnmarshalExact(&service); err != nil {
 		return service, &configError{
 			code: errUnmarshalErrorOnService,
 			msg:  fmt.Sprintf("error reading settings for %q: %v", serviceKeyName, err),
 		}
 	}
+
+	// Unmarshal cannot properly build Pipelines field, set it to the value
+	// previously loaded.
+	service.Pipelines = pipelines
 
 	return service, nil
 }
@@ -640,12 +648,12 @@ func validateServiceExtensions(
 
 func validatePipelines(cfg *configmodels.Config, logger *zap.Logger) error {
 	// Must have at least one pipeline.
-	if len(cfg.Pipelines) < 1 {
+	if len(cfg.Service.Pipelines) < 1 {
 		return &configError{code: errMissingPipelines, msg: "must have at least one pipeline"}
 	}
 
 	// Validate pipelines.
-	for _, pipeline := range cfg.Pipelines {
+	for _, pipeline := range cfg.Service.Pipelines {
 		if err := validatePipeline(cfg, pipeline, logger); err != nil {
 			return err
 		}
@@ -849,7 +857,7 @@ func validateProcessors(cfg *configmodels.Config) {
 // getConfigSection returns a sub-config from the viper config that has the corresponding given key.
 // It also expands all the string values.
 func getConfigSection(v *viper.Viper, key string) *viper.Viper {
-	// Unmarsh only the subconfig for this processor.
+	// Unmarshal only the subconfig for this processor.
 	sv := v.Sub(key)
 	if sv == nil {
 		// When the config for this key is empty Sub returns nil. In order to avoid nil checks
