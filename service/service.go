@@ -195,8 +195,7 @@ func (app *Application) setupExtensions() error {
 			return fmt.Errorf("failed to create extension %q: %v", extName, err)
 		}
 
-		// The factories can be implemented by third parties, check if they really
-		// created the extension.
+		// Check if the factory really created the extension.
 		if ext == nil {
 			return fmt.Errorf("factory for %q produced a nil extension", extName)
 		}

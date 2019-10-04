@@ -131,8 +131,7 @@ func (pb *PipelinesBuilder) buildPipeline(
 				procName, pipelineCfg.Name, err)
 		}
 
-		// The factories can be implemented by third parties, check if they really
-		// created the exporter.
+		// Check if the factory really created the processor.
 		if tc == nil && mc == nil {
 			return nil, fmt.Errorf("factory for %q produced a nil processor", procCfg.Name())
 		}
