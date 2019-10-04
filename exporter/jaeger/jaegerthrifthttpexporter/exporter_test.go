@@ -36,32 +36,20 @@ type args struct {
 }
 
 func TestNew(t *testing.T) {
-	tests := []struct {
-		name string
-		args args
-	}{
-		{
-			name: "createExporter",
-			args: args{
-				config:      &configmodels.ExporterSettings{},
-				httpAddress: testHTTPAddress,
-				headers:     map[string]string{"test": "test"},
-				timeout:     10 * time.Nanosecond,
-			},
-		},
+	args := args{
+		config:      &configmodels.ExporterSettings{},
+		httpAddress: testHTTPAddress,
+		headers:     map[string]string{"test": "test"},
+		timeout:     10 * time.Nanosecond,
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := New(tt.args.config, tt.args.httpAddress, tt.args.headers, tt.args.timeout)
-			assert.NoError(t, err, "nil config")
-			require.NotNil(t, got)
+	got, err := New(args.config, args.httpAddress, args.headers, args.timeout)
+	assert.NoError(t, err)
+	require.NotNil(t, got)
 
-			// This is expected to fail.
-			err = got.ConsumeTraceData(context.Background(), consumerdata.TraceData{})
-			assert.Error(t, err)
-		})
-	}
+	// This is expected to fail.
+	err = got.ConsumeTraceData(context.Background(), consumerdata.TraceData{})
+	assert.Error(t, err)
 }
 
 func TestNewFailsWithEmptyExporterName(t *testing.T) {
