@@ -33,7 +33,7 @@ connection. See [grpc.WithInsecure()](https://godoc.org/google.golang.org/grpc#W
 Optional.
 
 * `server_name_override`: If set to a non empty string, it will override the virtual host name 
-of authority (e.g. :authority header field) in requests
+of authority (e.g. :authority header field) in requests (typically used for testing).
 
 * `cert_pem_file`: certificate file for TLS credentials of gRPC client. Should
 only be used if `secure` is set to true. Optional.
