@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
@@ -54,7 +55,7 @@ func TestNew(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := New(tt.args.config, tt.args.httpAddress, tt.args.headers, tt.args.timeout)
 			assert.NoError(t, err, "nil config")
-			assert.NotNil(t, got)
+			require.NotNil(t, got)
 
 			// This is expected to fail.
 			err = got.ConsumeTraceData(context.Background(), consumerdata.TraceData{})
@@ -63,25 +64,13 @@ func TestNew(t *testing.T) {
 	}
 }
 
-func TestNewFails(t *testing.T) {
-	tests := []struct {
-		name string
-		args args
-	}{
-		{
-			name: "empty_exporterName",
-			args: args{
-				config:      nil,
-				httpAddress: testHTTPAddress,
-			},
-		},
+func TestNewFailsWithEmptyExporterName(t *testing.T) {
+	args := args{
+		config:      nil,
+		httpAddress: testHTTPAddress,
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := New(tt.args.config, tt.args.httpAddress, tt.args.headers, tt.args.timeout)
-			assert.EqualError(t, err, "nil config")
-			assert.Nil(t, got)
-		})
-	}
+	got, err := New(args.config, args.httpAddress, args.headers, args.timeout)
+	assert.EqualError(t, err, "nil config")
+	assert.Nil(t, got)
 }

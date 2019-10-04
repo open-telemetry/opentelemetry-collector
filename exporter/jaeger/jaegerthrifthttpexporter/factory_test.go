@@ -65,34 +65,23 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 }
 
 func TestFactory_CreateTraceExporter(t *testing.T) {
-	tests := []struct {
-		name   string
-		config *Config
-	}{
-		{
-			name: "create_instance",
-			config: &Config{
-				ExporterSettings: configmodels.ExporterSettings{
-					TypeVal: typeStr,
-					NameVal: typeStr,
-				},
-				URL: "http://some.other.location/api/traces",
-				Headers: map[string]string{
-					"added-entry": "added value",
-					"dot.test":    "test",
-				},
-				Timeout: 2 * time.Second,
-			},
+	f := &Factory{}
+	config := &Config{
+		ExporterSettings: configmodels.ExporterSettings{
+			TypeVal: typeStr,
+			NameVal: typeStr,
 		},
+		URL: "http://some.other.location/api/traces",
+		Headers: map[string]string{
+			"added-entry": "added value",
+			"dot.test":    "test",
+		},
+		Timeout: 2 * time.Second,
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			f := &Factory{}
-			te, err := f.CreateTraceExporter(zap.NewNop(), tt.config)
-			assert.NoError(t, err)
-			assert.NotNil(t, te)
-		})
-	}
+
+	te, err := f.CreateTraceExporter(zap.NewNop(), config)
+	assert.NoError(t, err)
+	assert.NotNil(t, te)
 }
 
 func TestFactory_CreateTraceExporterFails(t *testing.T) {
