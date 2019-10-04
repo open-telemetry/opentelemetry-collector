@@ -103,6 +103,26 @@ func TestExportersBuilder_Build(t *testing.T) {
 	// TODO: once we have an exporter that supports metrics data type test it too.
 }
 
+func TestExportersBuilder_StartAll(t *testing.T) {
+	exporters := make(Exporters)
+	expCfg := &configmodels.ExporterSettings{}
+	traceExporter := &config.ExampleExporterConsumer{}
+	metricExporter := &config.ExampleExporterConsumer{}
+	exporters[expCfg] = &builtExporter{
+		te: traceExporter,
+		me: metricExporter,
+	}
+	assert.False(t, traceExporter.ExporterStarted)
+	assert.False(t, metricExporter.ExporterStarted)
+
+	mh := receivertest.NewMockHost()
+	err := exporters.StartAll(zap.NewNop(), mh)
+	assert.NoError(t, err)
+
+	assert.True(t, traceExporter.ExporterStarted)
+	assert.True(t, metricExporter.ExporterStarted)
+}
+
 func TestExportersBuilder_StopAll(t *testing.T) {
 	exporters := make(Exporters)
 	expCfg := &configmodels.ExporterSettings{}

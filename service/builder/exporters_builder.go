@@ -43,7 +43,7 @@ func (exp *builtExporter) Start(host exporter.Host) error {
 	}
 
 	if exp.me != nil {
-		err := exp.te.Start(host)
+		err := exp.me.Start(host)
 		if err != nil {
 			errors = append(errors, err)
 		}
@@ -81,7 +81,7 @@ func (exps Exporters) StartAll(logger *zap.Logger, host exporter.Host) error {
 		if err := exp.Start(host); err != nil {
 			return err
 		}
-		logger.Info("Exporter is started.", zap.String("exporter", cfg.Name()))
+		logger.Info("Exporter started.", zap.String("exporter", cfg.Name()))
 	}
 	return nil
 }
