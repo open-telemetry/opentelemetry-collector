@@ -1,0 +1,18 @@
+receivers:
+  examplereceiver:
+processors:
+  bf/traces: # this is the bad processor factory
+  bf/metrics:
+exporters:
+  exampleexporter:
+
+service:
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      processors: [bf/traces]
+      exporters: [exampleexporter]
+    metrics:
+      receivers: [examplereceiver]
+      processors: [bf/metrics]
+      exporters: [exampleexporter]

@@ -28,7 +28,9 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/processor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/attributesprocessor"
 )
 
@@ -175,4 +177,65 @@ func TestPipelinesBuilder_Error(t *testing.T) {
 	_, err = NewPipelinesBuilder(zap.NewNop(), cfg, exporters, factories.Processors).Build()
 
 	assert.NotNil(t, err)
+}
+
+func TestProcessorsBuilder_ErrorOnNilProcessor(t *testing.T) {
+	factories, err := config.ExampleComponents()
+	assert.Nil(t, err)
+
+	bf := &badProcessorFactory{}
+	factories.Processors[bf.Type()] = bf
+
+	cfg, err := config.LoadConfigFile(t, "testdata/bad_processor_factory.yaml", factories)
+	require.Nil(t, err)
+
+	allExporters, err := NewExportersBuilder(zap.NewNop(), cfg, factories.Exporters).Build()
+	assert.NoError(t, err)
+
+	// First test only trace receivers by removing the metrics pipeline.
+	metricsPipeline := cfg.Service.Pipelines["metrics"]
+	delete(cfg.Service.Pipelines, "metrics")
+	require.Equal(t, 1, len(cfg.Service.Pipelines))
+
+	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), cfg, allExporters, factories.Processors).Build()
+	assert.Error(t, err)
+	assert.Zero(t, len(pipelineProcessors))
+
+	// Now test the metric pipeline.
+	delete(cfg.Service.Pipelines, "traces")
+	cfg.Service.Pipelines["metrics"] = metricsPipeline
+	require.Equal(t, 1, len(cfg.Service.Pipelines))
+
+	pipelineProcessors, err = NewPipelinesBuilder(zap.NewNop(), cfg, allExporters, factories.Processors).Build()
+	assert.Error(t, err)
+	assert.Zero(t, len(pipelineProcessors))
+}
+
+// badProcessorFactory is a factory that returns no error but returns a nil object.
+type badProcessorFactory struct{}
+
+var _ processor.Factory = (*badProcessorFactory)(nil)
+
+func (b *badProcessorFactory) Type() string {
+	return "bf"
+}
+
+func (b *badProcessorFactory) CreateDefaultConfig() configmodels.Processor {
+	return &configmodels.ProcessorSettings{}
+}
+
+func (b *badProcessorFactory) CreateTraceProcessor(
+	logger *zap.Logger,
+	nextConsumer consumer.TraceConsumer,
+	cfg configmodels.Processor,
+) (processor.TraceProcessor, error) {
+	return nil, nil
+}
+
+func (b *badProcessorFactory) CreateMetricsProcessor(
+	logger *zap.Logger,
+	consumer consumer.MetricsConsumer,
+	cfg configmodels.Processor,
+) (processor.MetricsProcessor, error) {
+	return nil, nil
 }

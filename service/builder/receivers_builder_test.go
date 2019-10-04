@@ -18,18 +18,19 @@ import (
 	"context"
 	"testing"
 
-	"go.uber.org/zap"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/processor/attributesprocessor"
+	"github.com/open-telemetry/opentelemetry-collector/processor/processortest"
+	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/receivertest"
 )
 
@@ -269,4 +270,76 @@ func TestReceiversBuilder_StopAll(t *testing.T) {
 
 	assert.Equal(t, true, receiver.TraceStopped)
 	assert.Equal(t, true, receiver.MetricsStopped)
+}
+
+func TestReceiversBuilder_ErrorOnNilReceiver(t *testing.T) {
+	factories, err := config.ExampleComponents()
+	assert.Nil(t, err)
+
+	npf := &processortest.NopProcessorFactory{}
+	factories.Processors[npf.Type()] = npf
+
+	bf := &badReceiverFactory{}
+	factories.Receivers[bf.Type()] = bf
+
+	cfg, err := config.LoadConfigFile(t, "testdata/bad_receiver_factory.yaml", factories)
+	require.Nil(t, err)
+
+	// Build the pipeline
+	allExporters, err := NewExportersBuilder(zap.NewNop(), cfg, factories.Exporters).Build()
+	assert.NoError(t, err)
+	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), cfg, allExporters, factories.Processors).Build()
+	assert.NoError(t, err)
+
+	// First test only trace receivers by removing the metrics pipeline.
+	metricsPipeline := cfg.Service.Pipelines["metrics"]
+	delete(cfg.Service.Pipelines, "metrics")
+	require.Equal(t, 1, len(cfg.Service.Pipelines))
+
+	receivers, err := NewReceiversBuilder(zap.NewNop(), cfg, pipelineProcessors, factories.Receivers).Build()
+	assert.Error(t, err)
+	assert.Zero(t, len(receivers))
+
+	// Now test the metric pipeline.
+	delete(cfg.Service.Pipelines, "traces")
+	cfg.Service.Pipelines["metrics"] = metricsPipeline
+	require.Equal(t, 1, len(cfg.Service.Pipelines))
+
+	receivers, err = NewReceiversBuilder(zap.NewNop(), cfg, pipelineProcessors, factories.Receivers).Build()
+	assert.Error(t, err)
+	assert.Zero(t, len(receivers))
+}
+
+// badReceiverFactory is a factory that returns no error but returns a nil object.
+type badReceiverFactory struct{}
+
+var _ receiver.Factory = (*badReceiverFactory)(nil)
+
+func (b *badReceiverFactory) Type() string {
+	return "bf"
+}
+
+func (b *badReceiverFactory) CreateDefaultConfig() configmodels.Receiver {
+	return &configmodels.ReceiverSettings{}
+}
+
+func (b *badReceiverFactory) CustomUnmarshaler() receiver.CustomUnmarshaler {
+	return nil
+}
+
+func (b *badReceiverFactory) CreateTraceReceiver(
+	ctx context.Context,
+	logger *zap.Logger,
+	cfg configmodels.Receiver,
+	nextConsumer consumer.TraceConsumer,
+) (receiver.TraceReceiver, error) {
+	return nil, nil
+}
+
+func (b *badReceiverFactory) CreateMetricsReceiver(
+	logger *zap.Logger,
+	cfg configmodels.Receiver,
+	consumer consumer.MetricsConsumer,
+) (receiver.MetricsReceiver, error) {
+	return nil, nil
 }
