@@ -16,24 +16,68 @@ Supported processors (sorted alphabetically):
 The ownership of the `TraceData` and `MetricsData` in a pipeline is passed as the data travels
 through the pipeline. The data is created by the receiver and then the ownership is passed
 to the first processor when `ConsumeTraceData`/`ConsumeMetricsData` function is called.
-Each processor then subsequently calls `ConsumeTraceData`/`ConsumeMetricsData`
-function of the next processor and that in turn passes data ownership.
-The last processor calls `ConsumeTraceData`/`ConsumeMetricsData` of the exporter
-which then assumes the ownership of the data.
+Note: the receiver may be attached to multiple pipelines, in which case the same data
+will be passed to all attached pipelines via a data fan-out connector.
 
-Ownership of the data allows the owning component to freely modify the data.
-Data ownership is always exclusive, data is never shared between pipelines.
-This is achieved by cloning the data when the data needs to be processed concurrently.
-Cloning is done by `traceFanOutConnector`/`metricsFanOutConnector` and happens in 2 cases:
-- At the receiving fan out connector when the same receiver is attached to more than
-  one pipeline,
-- At the exporting fan out connector when the pipeline has more than one
-  exporter attached.
-  
-The exclusive ownership of data allows processors and exporters to freely modify the
-data while they own it (e.g. see `attributesprocessor`). Once the ownership is passed
-the processor must no longer read or write the data since it may be concurrently
-modified by the new owner.
+From data ownership perspective pipelines can work in 2 modes: exclusive data ownership
+and shared data ownership.
+
+The mode is defined during startup based on data modification intent reported by the
+processors. The intent is reported by each processor via `MutatesConsumedData` field of
+the struct returned by `GetCapabilities` function. If any processor in the pipeline
+declares an intent to modify the data then that pipeline will work in exclusive ownership
+mode. In addition any other pipeline that receives data from a receiver that is attached
+to a pipeline with exclusive ownership mode will be also operating in exclusive ownership 
+mode.
+
+### Exclusive Ownership
+
+In exclusive ownership mode the data is owned exclusively by a particular processor at a
+given moment of time and the processor is free to modify the data it owns.
+
+Exclusive ownership mode is only applicable for pipelines that receive data from the
+same receiver. If a pipeline is marked to be in exclusive ownership mode then any data
+received from a shared receiver will be cloned at the fan-out connector before passing
+further to each pipeline. This ensures that each pipeline has its own exclusive copy of
+data and the data can be safely modified in the pipeline.
+
+The exclusive ownership of data allows processors to freely modify the data while
+they own it (e.g. see `attributesprocessor`). The duration of ownership of the data
+by processor is from the beginning of `ConsumeTraceData`/`ConsumeMetricsData` call
+until the processor calls the next processor's `ConsumeTraceData`/`ConsumeMetricsData`
+function, which passes the ownership to the next processor. After that the processor
+must no longer read or write the data since it may be concurrently modified by the
+new owner.
+
+Exclusive Ownership mode allows to easily implement processors that need to modify
+the data by simply declaring such intent.
+
+### Shared Ownership
+
+In shared ownership mode no particular processor owns the data and no processor is
+allowed the modify the shared data.
+
+In this mode no cloning is performed at the fan-out connector of receivers that
+are attached to multiple pipelines. In this case all such pipelines will see
+the same single shared copy of the data. Processors in pipelines operating in shared
+ownership mode are prohibited from modifying the original data that they receive
+via `ConsumeTraceData`/`ConsumeMetricsData` call. Processors may only read the data but
+must not modify the data.
+
+If the processor needs to modify the data while performing the processing but
+does not want to incur the cost of data cloning that Exclusive mode brings then
+the processor can declare that it does not modify the data and use any different
+technique that ensures original data is not modified.
+
+For example the processor can implement copy-on-write approach for individual sub-parts
+of `TraceData`/`MetricsData` argument. Any approach that does not mutate the original
+`TraceData`/`MetricsData` argument (including referenced data, such as `Node`,
+`Resource`, `Spans`, etc) is allowed.
+
+If the processor uses such technique it should declare that it does not intend
+to modify the original data by setting `MutatesConsumedData=false` in its capabilities
+to avoid marking the pipeline for Exclusive ownership and to avoid the cost of
+data cloning described in Exclusive Ownership section.
 
 ## Ordering Processors
 The order processors specified in a pipeline is important as this is the

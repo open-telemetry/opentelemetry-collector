@@ -11,6 +11,18 @@ Below is the list of exporters directly supported by the OpenTelemetry Collector
 The [contributors repository](https://github.com/open-telemetry/opentelemetry-service-contrib)
  has more exporters that can be added to custom builds of the service.
 
+## Data Ownership
+
+When multiple exporters are configured to send the same data (e.g. by configuring multiple
+exporters for the same pipeline) the exporters will have a shared access to the data.
+Exporters get access to this shared data when `ConsumeTraceData`/`ConsumeMetricsData`
+function is called. Exporters MUST NOT modify the `TraceData`/`MetricsData` argument of
+these functions. If the exporter needs to modify the data while performing the exporting
+the exporter can clone the data and perform the modification on the clone or use a
+copy-on-write approach for individual sub-parts of `TraceData`/`MetricsData` argument.
+Any approach that does not mutate the original `TraceData`/`MetricsData` argument 
+(including referenced data, such as `Node`, `Resource`, `Spans`, etc) is allowed.
+
 ## <a name="jaeger"></a>Jaeger
 
 Exports trace data to [Jaeger](https://www.jaegertracing.io/) collectors

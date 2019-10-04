@@ -265,6 +265,9 @@ func buildFanoutTraceConsumer(pipelines []*builtPipeline) consumer.TraceConsumer
 	if anyPipelineMutatesData {
 		// If any pipeline mutates data use a cloning fan out connector
 		// so that it is safe to modify fanned out data.
+		// TODO: if there are more than 2 pipelines only clone data for pipelines that
+		// declare the intent to mutate the data. Pipelines that do not mutate the data
+		// can consume shared data.
 		return processor.NewTraceCloningFanOutConnector(pipelineConsumers)
 	}
 	return processor.NewTraceFanOutConnector(pipelineConsumers)
@@ -287,6 +290,9 @@ func buildFanoutMetricConsumer(pipelines []*builtPipeline) consumer.MetricsConsu
 	if anyPipelineMutatesData {
 		// If any pipeline mutates data use a cloning fan out connector
 		// so that it is safe to modify fanned out data.
+		// TODO: if there are more than 2 pipelines only clone data for pipelines that
+		// declare the intent to mutate the data. Pipelines that do not mutate the data
+		// can consume shared data.
 		return processor.NewMetricsCloningFanOutConnector(pipelineConsumers)
 	}
 	return processor.NewMetricsFanOutConnector(pipelineConsumers)
