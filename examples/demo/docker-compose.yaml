@@ -43,6 +43,7 @@ services:
       - "14268"       # Jaeger receiver
       - "55678"       # OpenCensus receiver
       - "55679:55679" # zpages extension
+      - "13133"       # health_check
     depends_on:
       - otel-collector
 
