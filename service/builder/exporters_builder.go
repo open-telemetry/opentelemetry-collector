@@ -32,6 +32,26 @@ type builtExporter struct {
 	me exporter.MetricsExporter
 }
 
+// Start the exporter.
+func (exp *builtExporter) Start(host exporter.Host) error {
+	var errors []error
+	if exp.te != nil {
+		err := exp.te.Start(host)
+		if err != nil {
+			errors = append(errors, err)
+		}
+	}
+
+	if exp.me != nil {
+		err := exp.me.Start(host)
+		if err != nil {
+			errors = append(errors, err)
+		}
+	}
+
+	return oterr.CombineErrors(errors)
+}
+
 // Shutdown the trace component and the metrics component of an exporter.
 func (exp *builtExporter) Shutdown() error {
 	var errors []error
@@ -52,6 +72,19 @@ func (exp *builtExporter) Shutdown() error {
 
 // Exporters is a map of exporters created from exporter configs.
 type Exporters map[configmodels.Exporter]*builtExporter
+
+// StartAll starts all exporters.
+func (exps Exporters) StartAll(logger *zap.Logger, host exporter.Host) error {
+	for cfg, exp := range exps {
+		logger.Info("Exporter is starting...", zap.String("exporter", cfg.Name()))
+
+		if err := exp.Start(host); err != nil {
+			return err
+		}
+		logger.Info("Exporter started.", zap.String("exporter", cfg.Name()))
+	}
+	return nil
+}
 
 // ShutdownAll stops all exporters.
 func (exps Exporters) ShutdownAll() {

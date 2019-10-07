@@ -93,7 +93,7 @@ func (rcvs Receivers) StartAll(logger *zap.Logger, host receiver.Host) error {
 		if err := rcv.Start(host); err != nil {
 			return err
 		}
-		logger.Info("Receiver is started.", zap.String("receiver", cfg.Name()))
+		logger.Info("Receiver started.", zap.String("receiver", cfg.Name()))
 	}
 	return nil
 }

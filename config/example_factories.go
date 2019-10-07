@@ -286,7 +286,16 @@ func (f *ExampleExporterFactory) CreateMetricsExporter(logger *zap.Logger, cfg c
 type ExampleExporterConsumer struct {
 	Traces           []consumerdata.TraceData
 	Metrics          []consumerdata.MetricsData
+	ExporterStarted  bool
 	ExporterShutdown bool
+}
+
+// Start tells the exporter to start. The exporter may prepare for exporting
+// by connecting to the endpoint. Host parameter can be used for communicating
+// with the host after Start() has already returned.
+func (exp *ExampleExporterConsumer) Start(host exporter.Host) error {
+	exp.ExporterStarted = true
+	return nil
 }
 
 // ConsumeTraceData receives consumerdata.TraceData for processing by the TraceConsumer.

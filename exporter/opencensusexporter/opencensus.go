@@ -90,6 +90,10 @@ func createOCAgentExporter(logger *zap.Logger, config configmodels.Exporter, opt
 
 	exportersChan := make(chan *ocagent.Exporter, numWorkers)
 	for exporterIndex := 0; exporterIndex < numWorkers; exporterIndex++ {
+		// TODO: ocagent.NewExporter blocks for connection. Now that we have ability
+		// to report errors asynchronously using Host.ReportFatalError we can move this
+		// code to Start() and do it in background to avoid blocking Collector startup
+		// as we do now.
 		exporter, serr := ocagent.NewExporter(opts...)
 		if serr != nil {
 			return nil, fmt.Errorf("cannot configure OpenCensus exporter: %v", serr)

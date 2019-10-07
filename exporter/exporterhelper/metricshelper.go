@@ -37,6 +37,10 @@ type metricsExporter struct {
 
 var _ (exporter.MetricsExporter) = (*metricsExporter)(nil)
 
+func (me *metricsExporter) Start(host exporter.Host) error {
+	return nil
+}
+
 func (me *metricsExporter) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
 	exporterCtx := observability.ContextWithExporterName(ctx, me.exporterFullName)
 	_, err := me.pushMetricsData(exporterCtx, md)

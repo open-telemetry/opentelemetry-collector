@@ -24,6 +24,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/exporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
 )
 
@@ -36,6 +37,10 @@ type prometheusExporter struct {
 }
 
 var _ consumer.MetricsConsumer = (*prometheusExporter)(nil)
+
+func (pe *prometheusExporter) Start(host exporter.Host) error {
+	return nil
+}
 
 func (pe *prometheusExporter) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
 	for _, metric := range md.Metrics {

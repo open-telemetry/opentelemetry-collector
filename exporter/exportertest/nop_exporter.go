@@ -32,6 +32,10 @@ type nopExporter struct {
 var _ exporter.TraceExporter = (*nopExporter)(nil)
 var _ exporter.MetricsExporter = (*nopExporter)(nil)
 
+func (ne *nopExporter) Start(host exporter.Host) error {
+	return nil
+}
+
 func (ne *nopExporter) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	return ne.retError
 }
