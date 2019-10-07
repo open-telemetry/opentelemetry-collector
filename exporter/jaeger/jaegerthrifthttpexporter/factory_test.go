@@ -65,10 +65,30 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 }
 
 func TestFactory_CreateTraceExporter(t *testing.T) {
+	f := &Factory{}
+	config := &Config{
+		ExporterSettings: configmodels.ExporterSettings{
+			TypeVal: typeStr,
+			NameVal: typeStr,
+		},
+		URL: "http://some.other.location/api/traces",
+		Headers: map[string]string{
+			"added-entry": "added value",
+			"dot.test":    "test",
+		},
+		Timeout: 2 * time.Second,
+	}
+
+	te, err := f.CreateTraceExporter(zap.NewNop(), config)
+	assert.NoError(t, err)
+	assert.NotNil(t, te)
+}
+
+func TestFactory_CreateTraceExporterFails(t *testing.T) {
 	tests := []struct {
-		name    string
-		config  *Config
-		wantErr bool
+		name         string
+		config       *Config
+		errorMessage string
 	}{
 		{
 			name: "empty_url",
@@ -78,7 +98,7 @@ func TestFactory_CreateTraceExporter(t *testing.T) {
 					NameVal: typeStr,
 				},
 			},
-			wantErr: true,
+			errorMessage: "\"jaeger_thrift_http\" config requires a valid \"url\": parse : empty url",
 		},
 		{
 			name: "invalid_url",
@@ -87,9 +107,9 @@ func TestFactory_CreateTraceExporter(t *testing.T) {
 					TypeVal: typeStr,
 					NameVal: typeStr,
 				},
-				URL: "localhost:123",
+				URL: ".localhost:123",
 			},
-			wantErr: true,
+			errorMessage: "\"jaeger_thrift_http\" config requires a valid \"url\": parse .localhost:123: invalid URI for request",
 		},
 		{
 			name: "negative_duration",
@@ -98,34 +118,18 @@ func TestFactory_CreateTraceExporter(t *testing.T) {
 					TypeVal: typeStr,
 					NameVal: typeStr,
 				},
+				URL:     "localhost:123",
 				Timeout: -2 * time.Second,
 			},
-			wantErr: true,
-		},
-		{
-			name: "create_instance",
-			config: &Config{
-				ExporterSettings: configmodels.ExporterSettings{
-					TypeVal: typeStr,
-					NameVal: typeStr,
-				},
-				URL: "http://some.other.location/api/traces",
-				Headers: map[string]string{
-					"added-entry": "added value",
-					"dot.test":    "test",
-				},
-				Timeout: 2 * time.Second,
-			},
+			errorMessage: "\"jaeger_thrift_http\" config requires a positive value for \"timeout\"",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			f := &Factory{}
-			_, err := f.CreateTraceExporter(zap.NewNop(), tt.config)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Factory.CreateTraceExporter() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
+			te, err := f.CreateTraceExporter(zap.NewNop(), tt.config)
+			assert.EqualError(t, err, tt.errorMessage)
+			assert.Nil(t, te)
 		})
 	}
 }

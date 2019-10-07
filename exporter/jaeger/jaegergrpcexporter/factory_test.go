@@ -47,6 +47,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	exp, err := factory.CreateTraceExporter(
 		zap.NewNop(),
 		cfg)
+	assert.NotNil(t, err)
 	assert.Equal(t, "\"jaeger_grpc\" config requires a non-empty \"endpoint\"", err.Error())
 	assert.Nil(t, exp)
 

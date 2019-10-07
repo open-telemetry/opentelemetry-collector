@@ -20,6 +20,7 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
@@ -28,28 +29,24 @@ import (
 
 func TestLoggingTraceExporterNoErrors(t *testing.T) {
 	lte, err := NewTraceExporter(&configmodels.ExporterSettings{}, zap.NewNop())
-	if err != nil {
-		t.Fatalf("Wanted nil got %v", err)
-	}
+	require.NotNil(t, lte)
+	assert.NoError(t, err)
+
 	td := consumerdata.TraceData{
 		Spans: make([]*tracepb.Span, 7),
 	}
-	if err := lte.ConsumeTraceData(context.Background(), td); err != nil {
-		t.Fatalf("Wanted nil got %v", err)
-	}
+	assert.NoError(t, lte.ConsumeTraceData(context.Background(), td))
 	assert.NoError(t, lte.Shutdown())
 }
 
 func TestLoggingMetricsExporterNoErrors(t *testing.T) {
 	lme, err := NewMetricsExporter(&configmodels.ExporterSettings{}, zap.NewNop())
-	if err != nil {
-		t.Fatalf("Wanted nil got %v", err)
-	}
+	require.NotNil(t, lme)
+	assert.NoError(t, err)
+
 	md := consumerdata.MetricsData{
 		Metrics: make([]*metricspb.Metric, 7),
 	}
-	if err := lme.ConsumeMetricsData(context.Background(), md); err != nil {
-		t.Fatalf("Wanted nil got %v", err)
-	}
+	assert.NoError(t, lme.ConsumeMetricsData(context.Background(), md))
 	assert.NoError(t, lme.Shutdown())
 }
