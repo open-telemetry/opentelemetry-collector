@@ -22,9 +22,10 @@ extensions:
     endpoint: localhost:1777
   zpages:
     endpoint: localhost:55679
+  health_check:
 
 service:
-  extensions: [pprof, zpages]
+  extensions: [health_check, pprof, zpages]
   pipelines:
     traces:
       receivers: [opencensus, jaeger]
@@ -33,4 +34,3 @@ service:
     metrics:
       receivers: [opencensus]
       exporters: [logging,opencensus]
-

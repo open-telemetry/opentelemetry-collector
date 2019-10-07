@@ -13,7 +13,7 @@ order to build the docker images use the commands below from the root of the rep
 make docker-otelcol
 ```
 
-To run the demo, switch to the `examples/demotrace` folder and run:
+To run the demo, switch to the `examples/demo` folder and run:
 
 ```shell
 docker-compose up
@@ -23,4 +23,4 @@ Open `http://localhost:16686` to see the data on the Jaeger backend, `http://loc
 the data on the Zipkin backend, or `http://localhost:9090` to see data on the Prometheus backend (Note that
 it may take some time for the application metrics to appear on the Prometheus dashboard).
 
-To clean up any docker container from the demo run `docker-compose down` from the `examples/demotrace` folder.
+To clean up any docker container from the demo run `docker-compose down` from the `examples/demo` folder.
