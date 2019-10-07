@@ -184,7 +184,7 @@ func TestApplication_setupExtensions(t *testing.T) {
 	}
 }
 
-// badProcessorFactory is a factory that returns no error but returns a nil object.
+// badExtensionFactory is a factory that returns no error but returns a nil object.
 type badExtensionFactory struct{}
 
 var _ extension.Factory = (*badExtensionFactory)(nil)

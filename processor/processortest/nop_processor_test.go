@@ -15,11 +15,12 @@ package processortest
 
 import (
 	"context"
-	"reflect"
 	"testing"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
@@ -31,14 +32,11 @@ func TestNopTraceProcessorNoErrors(t *testing.T) {
 	want := consumerdata.TraceData{
 		Spans: make([]*tracepb.Span, 7),
 	}
-	if err := ntp.ConsumeTraceData(context.Background(), want); err != nil {
-		t.Errorf("Wanted nil got error")
-		return
-	}
+
+	assert.NoError(t, ntp.ConsumeTraceData(context.Background(), want))
+
 	got := sink.AllTraces()[0]
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("Mismatches responses\nGot:\n\t%v\nWant:\n\t%v\n", got, want)
-	}
+	assert.Equal(t, want, got)
 }
 
 func TestNopMetricsProcessorNoErrors(t *testing.T) {
@@ -47,12 +45,28 @@ func TestNopMetricsProcessorNoErrors(t *testing.T) {
 	want := consumerdata.MetricsData{
 		Metrics: make([]*metricspb.Metric, 7),
 	}
-	if err := nmp.ConsumeMetricsData(context.Background(), want); err != nil {
-		t.Errorf("Wanted nil got error")
-		return
-	}
+
+	assert.NoError(t, nmp.ConsumeMetricsData(context.Background(), want))
+
 	got := sink.AllMetrics()[0]
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("Mismatches responses\nGot:\n\t%v\nWant:\n\t%v\n", got, want)
-	}
+	assert.Equal(t, want, got)
+}
+
+func TestNopProcessorFactory(t *testing.T) {
+	f := &NopProcessorFactory{}
+	cfg := f.CreateDefaultConfig()
+
+	tp, err := f.CreateTraceProcessor(
+		zap.NewNop(),
+		new(exportertest.SinkTraceExporter),
+		cfg)
+	assert.NoError(t, err)
+	assert.NotNil(t, tp)
+
+	mp, err := f.CreateMetricsProcessor(
+		zap.NewNop(),
+		new(exportertest.SinkMetricsExporter),
+		cfg)
+	assert.NoError(t, err)
+	assert.NotNil(t, mp)
 }
