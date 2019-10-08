@@ -198,21 +198,26 @@ func NewMetricsAdjuster(tsm *timeseriesMap, logger *zap.SugaredLogger) *MetricsA
 
 // AdjustMetrics takes a sequence of metrics and adjust their values based on the initial and
 // previous points in the timeseriesMap. If the metric is the first point in the timeseries, or the
-// timeseries has been reset, it is removed from the sequence and added to the the timeseriesMap.
-func (ma *MetricsAdjuster) AdjustMetrics(metrics []*metricspb.Metric) []*metricspb.Metric {
+// timeseries has been reset, it is removed from the sequence and added to the timeseriesMap.
+// Additionally returns the total number of timeseries dropped from the metrics.
+func (ma *MetricsAdjuster) AdjustMetrics(metrics []*metricspb.Metric) ([]*metricspb.Metric, int) {
 	var adjusted = make([]*metricspb.Metric, 0, len(metrics))
+	dropped := 0
 	ma.tsm.Lock()
 	defer ma.tsm.Unlock()
 	for _, metric := range metrics {
-		if ma.adjustMetric(metric) {
+		adj, d := ma.adjustMetric(metric)
+		dropped += d
+		if adj {
 			adjusted = append(adjusted, metric)
 		}
 	}
-	return adjusted
+	return adjusted, dropped
 }
 
 // Returns true if at least one of the metric's timeseries was adjusted and false if all of the
-// timeseries are an initial occurrence or a reset.
+// timeseries are an initial occurrence or a reset. Additionally returns the number of timeseries
+// dropped from the metric.
 //
 // Types of metrics returned supported by prometheus:
 // - MetricDescriptor_GAUGE_DOUBLE
@@ -220,19 +225,21 @@ func (ma *MetricsAdjuster) AdjustMetrics(metrics []*metricspb.Metric) []*metrics
 // - MetricDescriptor_CUMULATIVE_DOUBLE
 // - MetricDescriptor_CUMULATIVE_DISTRIBUTION
 // - MetricDescriptor_SUMMARY
-func (ma *MetricsAdjuster) adjustMetric(metric *metricspb.Metric) bool {
+func (ma *MetricsAdjuster) adjustMetric(metric *metricspb.Metric) (bool, int) {
 	switch metric.MetricDescriptor.Type {
 	case metricspb.MetricDescriptor_GAUGE_DOUBLE, metricspb.MetricDescriptor_GAUGE_DISTRIBUTION:
 		// gauges don't need to be adjusted so no additional processing is necessary
-		return true
+		return true, 0
 	default:
 		return ma.adjustMetricTimeseries(metric)
 	}
 }
 
 // Returns true if at least one of the metric's timeseries was adjusted and false if all of the
-// timeseries are an initial occurrence or a reset.
-func (ma *MetricsAdjuster) adjustMetricTimeseries(metric *metricspb.Metric) bool {
+// timeseries are an initial occurrence or a reset. Additionally returns the number of timeseries
+// dropped.
+func (ma *MetricsAdjuster) adjustMetricTimeseries(metric *metricspb.Metric) (bool, int) {
+	dropped := 0
 	filtered := make([]*metricspb.TimeSeries, 0, len(metric.GetTimeseries()))
 	for _, current := range metric.GetTimeseries() {
 		tsi := ma.tsm.get(metric, current.GetLabelValues())
@@ -240,6 +247,7 @@ func (ma *MetricsAdjuster) adjustMetricTimeseries(metric *metricspb.Metric) bool
 			// initial timeseries
 			tsi.initial = current
 			tsi.previous = current
+			dropped++
 		} else {
 			if ma.adjustTimeseries(metric.MetricDescriptor.Type, current, tsi.initial,
 				tsi.previous) {
@@ -249,11 +257,12 @@ func (ma *MetricsAdjuster) adjustMetricTimeseries(metric *metricspb.Metric) bool
 				// reset timeseries
 				tsi.initial = current
 				tsi.previous = current
+				dropped++
 			}
 		}
 	}
 	metric.Timeseries = filtered
-	return len(filtered) > 0
+	return len(filtered) > 0, dropped
 }
 
 // Returns true if 'current' was adjusted and false if 'current' is an the initial occurrence or a

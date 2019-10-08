@@ -338,15 +338,33 @@ type metricsAdjusterTest struct {
 	adjusted    []*metricspb.Metric
 }
 
+func (mat *metricsAdjusterTest) dropped() int {
+	metricsTimeseries := 0
+	for _, metric := range mat.metrics {
+		metricsTimeseries += len(metric.GetTimeseries())
+	}
+
+	adjustedTimeseries := 0
+	for _, adjusted := range mat.adjusted {
+		adjustedTimeseries += len(adjusted.GetTimeseries())
+	}
+	return metricsTimeseries - adjustedTimeseries
+}
+
 func runScript(t *testing.T, tsm *timeseriesMap, script []*metricsAdjusterTest) {
 	l, _ := zap.NewProduction()
 	defer l.Sync() // flushes buffer, if any
 	ma := NewMetricsAdjuster(tsm, l.Sugar())
 
 	for _, test := range script {
-		adjusted := ma.AdjustMetrics(test.metrics)
+		wantDropped := test.dropped()
+		adjusted, dropped := ma.AdjustMetrics(test.metrics)
 		if !reflect.DeepEqual(test.adjusted, adjusted) {
-			t.Errorf("Error: %v - expected: %v, actual %v", test.description, test.adjusted, adjusted)
+			t.Errorf("Error: %v - Adjusted: want: %v, got %v", test.description, test.adjusted, adjusted)
+			break
+		}
+		if wantDropped != dropped {
+			t.Errorf("Error: %v - Dropped: want: %v, got: %v", test.description, wantDropped, dropped)
 			break
 		}
 	}
