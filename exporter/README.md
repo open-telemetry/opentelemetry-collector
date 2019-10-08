@@ -40,12 +40,29 @@ Each different supported protocol has its own configuration settings.
 using the gRPC protocol. The valid syntax is described at
 https://github.com/grpc/grpc/blob/master/doc/naming.md
 
+* `secure`: whether to enable client transport security for the exporter's gRPC
+connection. See [grpc.WithInsecure()](https://godoc.org/google.golang.org/grpc#WithInsecure).
+Optional.
+
+* `server_name_override`: If set to a non empty string, it will override the virtual host name 
+of authority (e.g. :authority header field) in requests (typically used for testing).
+
+* `cert_pem_file`: certificate file for TLS credentials of gRPC client. Should
+only be used if `secure` is set to true. Optional.
+
+* `keepalive`: keepalive parameters for client gRPC. See
+[grpc.WithKeepaliveParams()](https://godoc.org/google.golang.org/grpc#WithKeepaliveParams).
+Optional.
+
+
 Example:
 
 ```yaml
 exporters:
   jaeger_grpc:
     endpoint: jaeger-all-in-one:14250
+    cert_pem_file: /my-cert.pem
+    server_name_override: opentelemetry.io
 ```
 
 ## <a name="logging"></a>Logging

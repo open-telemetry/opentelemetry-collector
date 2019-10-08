@@ -15,7 +15,14 @@
 // Package configgrpc defines the gRPC configuration settings.
 package configgrpc
 
-import "time"
+import (
+	"crypto/x509"
+	"time"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/keepalive"
+)
 
 // GRPCSettings defines common settings for a gRPC configuration.
 type GRPCSettings struct {
@@ -39,6 +46,9 @@ type GRPCSettings struct {
 	// connection. See https://godoc.org/google.golang.org/grpc#WithInsecure.
 	UseSecure bool `mapstructure:"secure"`
 
+	// Authority to check against when doing TLS verification
+	ServerNameOverride string `mapstructure:"server_name_override"`
+
 	// The keepalive parameters for client gRPC. See grpc.WithKeepaliveParams
 	// (https://godoc.org/google.golang.org/grpc#WithKeepaliveParams).
 	KeepaliveParameters *KeepaliveConfig `mapstructure:"keepalive"`
@@ -50,4 +60,36 @@ type KeepaliveConfig struct {
 	Time                time.Duration `mapstructure:"time,omitempty"`
 	Timeout             time.Duration `mapstructure:"timeout,omitempty"`
 	PermitWithoutStream bool          `mapstructure:"permit_without_stream,omitempty"`
+}
+
+// GrpcSettingsToDialOptions maps configgrpc.GRPCSettings to a slice of dial options for gRPC
+func GrpcSettingsToDialOptions(settings GRPCSettings) ([]grpc.DialOption, error) {
+	opts := []grpc.DialOption{}
+	if settings.CertPemFile != "" {
+		creds, err := credentials.NewClientTLSFromFile(settings.CertPemFile, settings.ServerNameOverride)
+		if err != nil {
+			return nil, err
+		}
+		opts = append(opts, grpc.WithTransportCredentials(creds))
+	} else if settings.UseSecure {
+		certPool, err := x509.SystemCertPool()
+		if err != nil {
+			return nil, err
+		}
+		creds := credentials.NewClientTLSFromCert(certPool, settings.ServerNameOverride)
+		opts = append(opts, grpc.WithTransportCredentials(creds))
+	} else {
+		opts = append(opts, grpc.WithInsecure())
+	}
+
+	if settings.KeepaliveParameters != nil {
+		keepAliveOption := grpc.WithKeepaliveParams(keepalive.ClientParameters{
+			Time:                settings.KeepaliveParameters.Time,
+			Timeout:             settings.KeepaliveParameters.Timeout,
+			PermitWithoutStream: settings.KeepaliveParameters.PermitWithoutStream,
+		})
+		opts = append(opts, keepAliveOption)
+	}
+
+	return opts, nil
 }
