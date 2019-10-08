@@ -95,7 +95,6 @@ func validateConfigDataType(t reflect.Type) error {
 		}
 	case reflect.Struct:
 		// Reflect on the pointed data and check each of its fields.
-		// vt := reflect.ValueOf(config).Elem().Type()
 		nf := t.NumField()
 		for i := 0; i < nf; i++ {
 			f := t.Field(i)
