@@ -331,3 +331,8 @@ func (p *mockSpanProcessor) ConsumeTraceData(ctx context.Context, td consumerdat
 func (p *mockSpanProcessor) GetCapabilities() processor.Capabilities {
 	return processor.Capabilities{MutatesConsumedData: false}
 }
+
+// Shutdown is invoked during service shutdown.
+func (p *mockSpanProcessor) Shutdown() error {
+	return nil
+}

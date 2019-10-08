@@ -61,6 +61,11 @@ func (sp *spanProcessor) GetCapabilities() processor.Capabilities {
 	return processor.Capabilities{MutatesConsumedData: true}
 }
 
+// Shutdown is invoked during service shutdown.
+func (sp *spanProcessor) Shutdown() error {
+	return nil
+}
+
 func (sp *spanProcessor) nameSpan(span *tracepb.Span) {
 	// Note: There was a separate proposal for creating the string.
 	// With benchmarking, strings.Builder is faster than the proposal.

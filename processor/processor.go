@@ -19,16 +19,27 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 )
 
+// Processor defines the common functions that must be implemented by TraceProcessor
+// and MetricsProcessor.
+type Processor interface {
+	// GetCapabilities must return the capabilities of the processor.
+	GetCapabilities() Capabilities
+
+	// Shutdown is invoked during service shutdown. Typically used to flush the data
+	// that may be accumulated in the processor.
+	Shutdown() error
+}
+
 // TraceProcessor composes TraceConsumer with some additional processor-specific functions.
 type TraceProcessor interface {
 	consumer.TraceConsumer
-	GetCapabilities() Capabilities
+	Processor
 }
 
 // MetricsProcessor composes MetricsConsumer with some additional processor-specific functions.
 type MetricsProcessor interface {
 	consumer.MetricsConsumer
-	GetCapabilities() Capabilities
+	Processor
 }
 
 // Capabilities describes the capabilities of TraceProcessor or MetricsProcessor.

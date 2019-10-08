@@ -113,6 +113,12 @@ func (b *batcher) GetCapabilities() processor.Capabilities {
 	return processor.Capabilities{MutatesConsumedData: false}
 }
 
+// Shutdown is invoked during service shutdown.
+func (b *batcher) Shutdown() error {
+	// TODO: flush accumulated data.
+	return nil
+}
+
 func (b *batcher) genBucketID(node *commonpb.Node, resource *resourcepb.Resource, spanFormat string) string {
 	h := sha256.New()
 	if node != nil {

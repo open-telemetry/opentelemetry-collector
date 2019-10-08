@@ -126,6 +126,11 @@ func (a *attributesProcessor) GetCapabilities() processor.Capabilities {
 	return processor.Capabilities{MutatesConsumedData: true}
 }
 
+// Shutdown is invoked during service shutdown.
+func (a *attributesProcessor) Shutdown() error {
+	return nil
+}
+
 func insertAttribute(action attributeAction, attributesMap map[string]*tracepb.AttributeValue) {
 	// Insert is only performed when the target key does not already exist
 	// in the attribute map.

@@ -284,7 +284,8 @@ func (app *Application) shutdownPipelines() {
 	app.logger.Info("Stopping receivers...")
 	app.builtReceivers.StopAll()
 
-	// TODO: shutdown processors
+	// TODO: shutdown processors by calling Shutdown() for each processor in the
+	// order they are arranged in the pipeline.
 
 	app.logger.Info("Shutting down exporters...")
 	app.exporters.ShutdownAll()

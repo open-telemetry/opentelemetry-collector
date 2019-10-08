@@ -45,6 +45,11 @@ func (np *nopProcessor) GetCapabilities() processor.Capabilities {
 	return processor.Capabilities{MutatesConsumedData: false}
 }
 
+// Shutdown is invoked during service shutdown.
+func (np *nopProcessor) Shutdown() error {
+	return nil
+}
+
 // NewNopTraceProcessor creates an TraceProcessor that just pass the received data to the nextTraceProcessor.
 func NewNopTraceProcessor(nextTraceProcessor consumer.TraceConsumer) consumer.TraceConsumer {
 	return &nopProcessor{nextTraceProcessor: nextTraceProcessor}
