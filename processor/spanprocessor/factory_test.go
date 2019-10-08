@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
 )
@@ -33,6 +34,7 @@ func TestFactory_Type(t *testing.T) {
 func TestFactory_CreateDefaultConfig(t *testing.T) {
 	factory := &Factory{}
 	cfg := factory.CreateDefaultConfig()
+	assert.NoError(t, configcheck.ValidateConfig(cfg))
 
 	// Check the values of the default configuration.
 	assert.NotNil(t, cfg)

@@ -22,6 +22,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 )
@@ -30,6 +31,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	factory := &Factory{}
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
+	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }
 
 type mockTraceConsumer struct {

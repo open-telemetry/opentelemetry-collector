@@ -17,15 +17,17 @@ package queuedprocessor
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := &Factory{}
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
+	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }
 
 func TestCreateProcessor(t *testing.T) {
