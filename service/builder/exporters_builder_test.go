@@ -24,6 +24,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configgrpc"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-collector/exporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/opencensusexporter"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/receivertest"
 )
@@ -138,4 +139,68 @@ func TestExportersBuilder_StopAll(t *testing.T) {
 
 	assert.True(t, traceExporter.ExporterShutdown)
 	assert.True(t, metricExporter.ExporterShutdown)
+}
+
+func TestExportersBuilder_ErrorOnNilExporter(t *testing.T) {
+	bf := &badExporterFactory{}
+	fm := map[string]exporter.Factory{
+		bf.Type(): bf,
+	}
+
+	pipelines := []*configmodels.Pipeline{
+		{
+			Name:      "trace",
+			InputType: configmodels.TracesDataType,
+			Exporters: []string{bf.Type()},
+		},
+		{
+			Name:      "metrics",
+			InputType: configmodels.MetricsDataType,
+			Exporters: []string{bf.Type()},
+		},
+	}
+
+	for _, pipeline := range pipelines {
+		t.Run(pipeline.Name, func(t *testing.T) {
+
+			cfg := &configmodels.Config{
+				Exporters: map[string]configmodels.Exporter{
+					bf.Type(): &configmodels.ExporterSettings{
+						TypeVal: bf.Type(),
+					},
+				},
+
+				Service: configmodels.Service{
+					Pipelines: map[string]*configmodels.Pipeline{
+						pipeline.Name: pipeline,
+					},
+				},
+			}
+
+			exporters, err := NewExportersBuilder(zap.NewNop(), cfg, fm).Build()
+			assert.Error(t, err)
+			assert.Zero(t, len(exporters))
+		})
+	}
+}
+
+// badExporterFactory is a factory that returns no error but returns a nil object.
+type badExporterFactory struct{}
+
+var _ exporter.Factory = (*badExporterFactory)(nil)
+
+func (b *badExporterFactory) Type() string {
+	return "bf"
+}
+
+func (b *badExporterFactory) CreateDefaultConfig() configmodels.Exporter {
+	return &configmodels.ExporterSettings{}
+}
+
+func (b *badExporterFactory) CreateTraceExporter(logger *zap.Logger, cfg configmodels.Exporter) (exporter.TraceExporter, error) {
+	return nil, nil
+}
+
+func (b *badExporterFactory) CreateMetricsExporter(logger *zap.Logger, cfg configmodels.Exporter) (exporter.MetricsExporter, error) {
+	return nil, nil
 }

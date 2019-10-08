@@ -19,6 +19,7 @@ package service
 import (
 	"context"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -170,32 +171,43 @@ func (app *Application) setupConfigurationComponents() {
 
 	app.logger.Info("Applying configuration...")
 
-	app.setupExtensions()
+	if err := app.setupExtensions(); err != nil {
+		log.Fatalf("Cannot setup extensions: %v", err)
+	}
+
 	app.setupPipelines()
 }
 
-func (app *Application) setupExtensions() {
+func (app *Application) setupExtensions() error {
 	for _, extName := range app.config.Service.Extensions {
 		extCfg, exists := app.config.Extensions[extName]
 		if !exists {
-			log.Fatalf("Cannot load configuration: extension %q is not configured", extName)
+			return fmt.Errorf("extension %q is not configured", extName)
 		}
 
 		factory, exists := app.factories.Extensions[extCfg.Type()]
 		if !exists {
-			log.Fatalf("Cannot load configuration: extension factory for type %q is not configured", extCfg.Type())
+			return fmt.Errorf("extension factory for type %q is not configured", extCfg.Type())
 		}
 
 		ext, err := factory.CreateExtension(app.logger, extCfg)
 		if err != nil {
-			log.Fatalf("Cannot load configuration: failed to create extension %q: %v", extName, err)
+			return fmt.Errorf("failed to create extension %q: %v", extName, err)
+		}
+
+		// Check if the factory really created the extension.
+		if ext == nil {
+			return fmt.Errorf("factory for %q produced a nil extension", extName)
 		}
 
 		if err := ext.Start(app); err != nil {
-			log.Fatalf("Cannot start extension %q: %v", extName, err)
+			return fmt.Errorf("error starting extension %q: %v", extName, err)
 		}
+
 		app.extensions = append(app.extensions, ext)
 	}
+
+	return nil
 }
 
 func (app *Application) setupPipelines() {

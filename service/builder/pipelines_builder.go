@@ -130,6 +130,11 @@ func (pb *PipelinesBuilder) buildPipeline(
 			return nil, fmt.Errorf("error creating processor %q in pipeline %q: %v",
 				procName, pipelineCfg.Name, err)
 		}
+
+		// Check if the factory really created the processor.
+		if tc == nil && mc == nil {
+			return nil, fmt.Errorf("factory for %q produced a nil processor", procCfg.Name())
+		}
 	}
 
 	pb.logger.Info("Pipeline is enabled.", zap.String("pipelines", pipelineCfg.Name))

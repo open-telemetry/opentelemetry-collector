@@ -21,8 +21,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/config"
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/defaults"
+	"github.com/open-telemetry/opentelemetry-collector/extension"
 	"github.com/open-telemetry/opentelemetry-collector/internal/testutils"
 )
 
@@ -68,4 +72,134 @@ func isAppAvailable(t *testing.T, healthCheckEndPoint string) bool {
 	}
 	defer resp.Body.Close()
 	return resp.StatusCode == http.StatusOK
+}
+
+func TestApplication_setupExtensions(t *testing.T) {
+	exampleExtensionFactory := &config.ExampleExtensionFactory{}
+	exampleExtensionConfig := &config.ExampleExtension{
+		ExtensionSettings: configmodels.ExtensionSettings{
+			TypeVal: exampleExtensionFactory.Type(),
+			NameVal: exampleExtensionFactory.Type(),
+		},
+	}
+
+	badExtensionFactory := &badExtensionFactory{}
+	badExtensionFactoryConfig := &configmodels.ExtensionSettings{
+		TypeVal: "bf",
+		NameVal: "bf",
+	}
+
+	tests := []struct {
+		name       string
+		factories  config.Factories
+		config     *configmodels.Config
+		wantErrMsg string
+	}{
+		{
+			name: "extension_not_configured",
+			config: &configmodels.Config{
+				Service: configmodels.Service{
+					Extensions: []string{
+						"myextension",
+					},
+				},
+			},
+			wantErrMsg: "extension \"myextension\" is not configured",
+		},
+		{
+			name: "missing_extension_factory",
+			config: &configmodels.Config{
+				Extensions: map[string]configmodels.Extension{
+					exampleExtensionFactory.Type(): exampleExtensionConfig,
+				},
+				Service: configmodels.Service{
+					Extensions: []string{
+						exampleExtensionFactory.Type(),
+					},
+				},
+			},
+			wantErrMsg: "extension factory for type \"exampleextension\" is not configured",
+		},
+		{
+			name: "error_on_create_extension",
+			factories: config.Factories{
+				Extensions: map[string]extension.Factory{
+					exampleExtensionFactory.Type(): exampleExtensionFactory,
+				},
+			},
+			config: &configmodels.Config{
+				Extensions: map[string]configmodels.Extension{
+					exampleExtensionFactory.Type(): exampleExtensionConfig,
+				},
+				Service: configmodels.Service{
+					Extensions: []string{
+						exampleExtensionFactory.Type(),
+					},
+				},
+			},
+			wantErrMsg: "failed to create extension \"exampleextension\": cannot create \"exampleextension\" extension type",
+		},
+		{
+			name: "bad_factory",
+			factories: config.Factories{
+				Extensions: map[string]extension.Factory{
+					badExtensionFactory.Type(): badExtensionFactory,
+				},
+			},
+			config: &configmodels.Config{
+				Extensions: map[string]configmodels.Extension{
+					badExtensionFactory.Type(): badExtensionFactoryConfig,
+				},
+				Service: configmodels.Service{
+					Extensions: []string{
+						badExtensionFactory.Type(),
+					},
+				},
+			},
+			wantErrMsg: "factory for \"bf\" produced a nil extension",
+		},
+	}
+
+	nopLogger := zap.NewNop()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			app := &Application{
+				logger:    nopLogger,
+				factories: tt.factories,
+				config:    tt.config,
+			}
+
+			err := app.setupExtensions()
+
+			if tt.wantErrMsg == "" {
+				assert.NoError(t, err)
+				assert.Equal(t, 1, len(app.extensions))
+				assert.NotNil(t, app.extensions[0])
+			} else {
+				assert.Error(t, err)
+				assert.Equal(t, tt.wantErrMsg, err.Error())
+				assert.Equal(t, 0, len(app.extensions))
+			}
+		})
+	}
+}
+
+// badExtensionFactory is a factory that returns no error but returns a nil object.
+type badExtensionFactory struct{}
+
+var _ extension.Factory = (*badExtensionFactory)(nil)
+
+func (b badExtensionFactory) Type() string {
+	return "bf"
+}
+
+func (b badExtensionFactory) CreateDefaultConfig() configmodels.Extension {
+	return &configmodels.ExtensionSettings{}
+}
+
+func (b badExtensionFactory) CreateExtension(
+	logger *zap.Logger,
+	cfg configmodels.Extension,
+) (extension.ServiceExtension, error) {
+	return nil, nil
 }

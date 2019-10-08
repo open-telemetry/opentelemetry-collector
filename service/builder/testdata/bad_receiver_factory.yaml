@@ -1,0 +1,16 @@
+receivers:
+  bf: # this is the bad receiver factory
+processors:
+  nop:
+exporters:
+  exampleexporter:
+
+service:
+  pipelines:
+    traces:
+      receivers: [bf]
+      processors: [nop] # trace pipeline requires a processor
+      exporters: [exampleexporter]
+    metrics:
+      receivers: [bf]
+      exporters: [exampleexporter]
