@@ -62,7 +62,7 @@ func ValidateConfigFromFactories(factories config.Factories) error {
 // ValidateConfig enforces that given configuration object is following the patterns
 // used by the collector. This ensures consistency between different implementations
 // of components and extensions. It is recommended for implementers of components
-// to call this function on their tests passing the default configurtation of the
+// to call this function on their tests passing the default configuration of the
 // component factory.
 func ValidateConfig(config interface{}) error {
 	t := reflect.TypeOf(config)
