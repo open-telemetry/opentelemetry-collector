@@ -15,13 +15,13 @@
 package internal
 
 import (
-	"reflect"
 	"testing"
 	"time"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 )
 
@@ -242,7 +242,7 @@ func Test_tsGC(t *testing.T) {
 	}}
 
 	script2 := []*metricsAdjusterTest{{
-		"TsGC: round 2 -  metrics first timeseries adjusted based on round 2, second timeseries not updated",
+		"TsGC: round 2 - metrics first timeseries adjusted based on round 2, second timeseries not updated",
 		[]*metricspb.Metric{
 			cumulative(k1k2, timeseries(2, v1v2, double(2, 88))),
 			cumulativeDist(k1k2, timeseries(2, v1v2, dist(2, bounds0, []int64{8, 7, 9, 14}))),
@@ -296,7 +296,7 @@ func Test_jobGC(t *testing.T) {
 	}}
 
 	job1Script2 := []*metricsAdjusterTest{{
-		"JobGC: job 1, round 2- metrics timeseries empty due to job-level gc",
+		"JobGC: job 1, round 2 - metrics timeseries empty due to job-level gc",
 		[]*metricspb.Metric{
 			cumulative(k1k2, timeseries(4, v1v2, double(4, 99)), timeseries(4, v10v20, double(4, 80))),
 			cumulativeDist(k1k2, timeseries(4, v1v2, dist(4, bounds0, []int64{9, 8, 10, 15})), timeseries(4, v10v20, dist(4, bounds0, []int64{55, 66, 33, 77}))),
@@ -338,17 +338,29 @@ type metricsAdjusterTest struct {
 	adjusted    []*metricspb.Metric
 }
 
+func (mat *metricsAdjusterTest) dropped() int {
+	metricsTimeseries := 0
+	for _, metric := range mat.metrics {
+		metricsTimeseries += len(metric.GetTimeseries())
+	}
+
+	adjustedTimeseries := 0
+	for _, adjusted := range mat.adjusted {
+		adjustedTimeseries += len(adjusted.GetTimeseries())
+	}
+	return metricsTimeseries - adjustedTimeseries
+}
+
 func runScript(t *testing.T, tsm *timeseriesMap, script []*metricsAdjusterTest) {
 	l, _ := zap.NewProduction()
 	defer l.Sync() // flushes buffer, if any
 	ma := NewMetricsAdjuster(tsm, l.Sugar())
 
 	for _, test := range script {
-		adjusted := ma.AdjustMetrics(test.metrics)
-		if !reflect.DeepEqual(test.adjusted, adjusted) {
-			t.Errorf("Error: %v - expected: %v, actual %v", test.description, test.adjusted, adjusted)
-			break
-		}
+		expectedDropped := test.dropped()
+		adjusted, dropped := ma.AdjustMetrics(test.metrics)
+		assert.EqualValuesf(t, test.adjusted, adjusted, "Test: %v - expected: %v, actual: %v", test.description, test.adjusted, adjusted)
+		assert.Equalf(t, expectedDropped, dropped, "Test: %v", test.description)
 	}
 }
 

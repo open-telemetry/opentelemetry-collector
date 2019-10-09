@@ -142,8 +142,11 @@ func (tr *transaction) Commit() error {
 	}
 	// Note: metrics could be empty after adjustment, which needs to be checked before passing it on to ConsumeMetricsData()
 	if tr.jobsMap != nil {
-		metrics = NewMetricsAdjuster(tr.jobsMap.get(tr.job, tr.instance), tr.logger).AdjustMetrics(metrics)
+		dropped := 0
+		metrics, dropped = NewMetricsAdjuster(tr.jobsMap.get(tr.job, tr.instance), tr.logger).AdjustMetrics(metrics)
+		droppedTimeseries += dropped
 	}
+	observability.RecordMetricsForMetricsReceiver(tr.ctx, numTimeseries, droppedTimeseries)
 	if len(metrics) > 0 {
 		md := consumerdata.MetricsData{
 			Node:    tr.node,
