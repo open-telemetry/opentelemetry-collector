@@ -186,6 +186,9 @@ func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 
 	longDuration := 2 * time.Second
 	testDone := make(chan bool, 1)
+	var wg sync.WaitGroup
+	wg.Add(1)
+
 	go func() {
 		// Our insurance policy to ensure that this test doesn't hang
 		// forever and should quickly report if/when we regress.
@@ -196,6 +199,7 @@ func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 			metricsClientDoneFn()
 			t.Errorf("Test took too long (%s) and is likely still hanging so this is a regression", longDuration)
 		}
+		wg.Done()
 	}()
 
 	// Now the response should return an error and should have been torn down
@@ -230,6 +234,7 @@ func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 	}
 
 	close(testDone)
+	wg.Wait()
 }
 
 // If the first message is valid (has a non-nil Node) and has metrics, those
