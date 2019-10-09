@@ -4,7 +4,7 @@ set -e
 
 cd tests
 
-SED="sed --unbuffered"
+SED="sed"
 
 PASS_COLOR=$(printf "\033[32mPASS\033[0m")
 FAIL_COLOR=$(printf "\033[31mFAIL\033[0m")
