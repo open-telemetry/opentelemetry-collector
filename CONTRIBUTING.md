@@ -71,10 +71,9 @@ section of general project contributing guide.
 Working with the project sources requires the following tools:
 
 1. [git](https://git-scm.com/)
-2. [bzr](http://bazaar.canonical.com/en/)
-3. [go](https://golang.org/) (version 1.12.5 and up)
-4. [make](https://www.gnu.org/software/make/)
-5. [docker](https://www.docker.com/)
+2. [go](https://golang.org/) (version 1.12.5 and up)
+3. [make](https://www.gnu.org/software/make/)
+4. [docker](https://www.docker.com/)
 
 ## Repository Setup
 
