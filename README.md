@@ -332,16 +332,16 @@ sampling:
       # exporters the policy applies to
       exporters:
         - jaeger
-      policy: string_attribute_filter
+      policy: string_attribute
       configuration:
         key: key1
         values:
           - value1
           - value2
-    my-numeric_attribute-filter:
+    my_numeric_attribute_filter:
       exporters:
         - zipkin
-      policy: numeric_attribute-filter
+      policy: numeric_attribute
       configuration:
         key: key1
         min_value: 0
