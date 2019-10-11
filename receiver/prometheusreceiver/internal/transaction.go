@@ -175,7 +175,6 @@ func (tr *transaction) Rollback() error {
 func adjustStartTime(startTime float64, metrics []*metricspb.Metric) {
 	startTimeTs := timestampFromFloat64(startTime)
 	for _, metric := range metrics {
-		// should we skip the check and just update gauges too?
 		switch metric.GetMetricDescriptor().GetType() {
 		case metricspb.MetricDescriptor_GAUGE_DOUBLE, metricspb.MetricDescriptor_GAUGE_DISTRIBUTION:
 			continue

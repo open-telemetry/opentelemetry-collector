@@ -32,6 +32,7 @@ import (
 const metricsSuffixCount = "_count"
 const metricsSuffixBucket = "_bucket"
 const metricsSuffixSum = "_sum"
+const startTimeMetricName = "process_start_time_seconds"
 
 var trimmableSuffixes = []string{metricsSuffixBucket, metricsSuffixCount, metricsSuffixSum}
 var errNoDataToBuild = errors.New("there's no data to build")
@@ -81,7 +82,7 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 		delete(lm, model.MetricNameLabel)
 		b.logger.Debugw("skip internal metric", "name", metricName, "ts", t, "value", v, "labels", lm)
 		return nil
-	} else if b.useStartTimeMetric && metricName == "process_start_time_seconds" {
+	} else if b.useStartTimeMetric && metricName == startTimeMetricName {
 		b.startTime = v
 		return nil
 	}
