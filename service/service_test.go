@@ -34,7 +34,7 @@ func TestApplication_Start(t *testing.T) {
 	factories, err := defaults.Components()
 	assert.Nil(t, err)
 
-	app := New(factories)
+	app := New(factories, ApplicationStartInfo{})
 
 	metricsPort := testutils.GetAvailablePort(t)
 	app.rootCmd.SetArgs([]string{

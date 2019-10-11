@@ -39,6 +39,7 @@ import (
 
 // Application represents a collector application
 type Application struct {
+	info           ApplicationStartInfo
 	rootCmd        *cobra.Command
 	v              *viper.Viper
 	logger         *zap.Logger
@@ -57,6 +58,22 @@ type Application struct {
 
 	// asyncErrorChannel is used to signal a fatal error from any component.
 	asyncErrorChannel chan error
+}
+
+// ApplicationStartInfo is the information that is logged at the application start.
+// This information can be overridden in custom builds.
+type ApplicationStartInfo struct {
+	// Executable file name, e.g. "otelcol".
+	ExeName string
+
+	// Long name, used e.g. in the logs.
+	LongName string
+
+	// Version string.
+	Version string
+
+	// Git hash of the source code.
+	GitHash string
 }
 
 var _ receiver.Host = (*Application)(nil)
@@ -78,16 +95,18 @@ func (app *Application) ReportFatalError(err error) {
 // New creates and returns a new instance of Application.
 func New(
 	factories config.Factories,
+	appInfo ApplicationStartInfo,
 ) *Application {
 	app := &Application{
+		info:      appInfo,
 		v:         viper.New(),
 		readyChan: make(chan struct{}),
 		factories: factories,
 	}
 
 	rootCmd := &cobra.Command{
-		Use:  "otelcol",
-		Long: "OpenTelemetry Collector",
+		Use:  appInfo.ExeName,
+		Long: appInfo.LongName,
 		Run: func(cmd *cobra.Command, args []string) {
 			app.init()
 			app.execute()
@@ -306,7 +325,11 @@ func (app *Application) shutdownExtensions() {
 }
 
 func (app *Application) execute() {
-	app.logger.Info("Starting...", zap.Int("NumCPU", runtime.NumCPU()))
+	app.logger.Info("Starting "+app.info.LongName+"...",
+		zap.String("Version", app.info.Version),
+		zap.String("GitHash", app.info.GitHash),
+		zap.Int("NumCPU", runtime.NumCPU()),
+	)
 
 	// Set memory ballast
 	ballast, ballastSizeBytes := app.createMemoryBallast()
