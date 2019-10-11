@@ -967,7 +967,7 @@ func TestEndToEnd(t *testing.T) {
 		},
 	}
 
-        testEndToEnd(t, targets, false)
+	testEndToEnd(t, targets, false)
 }
 
 var startTimeMetricPage = `
