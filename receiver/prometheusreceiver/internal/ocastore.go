@@ -48,24 +48,26 @@ type OcaStore interface {
 
 // OpenCensus Store for prometheus
 type ocaStore struct {
-	running int32
-	logger  *zap.SugaredLogger
-	sink    consumer.MetricsConsumer
-	mc      *mService
-	once    *sync.Once
-	ctx     context.Context
-	jobsMap *JobsMap
+	running            int32
+	logger             *zap.SugaredLogger
+	sink               consumer.MetricsConsumer
+	mc                 *mService
+	once               *sync.Once
+	ctx                context.Context
+	jobsMap            *JobsMap
+	useStartTimeMetric bool
 }
 
 // NewOcaStore returns an ocaStore instance, which can be acted as prometheus' scrape.Appendable
-func NewOcaStore(ctx context.Context, sink consumer.MetricsConsumer, logger *zap.SugaredLogger, jobsMap *JobsMap) OcaStore {
+func NewOcaStore(ctx context.Context, sink consumer.MetricsConsumer, logger *zap.SugaredLogger, jobsMap *JobsMap, useStartTimeMetric bool) OcaStore {
 	return &ocaStore{
-		running: runningStateInit,
-		ctx:     ctx,
-		sink:    sink,
-		logger:  logger,
-		once:    &sync.Once{},
-		jobsMap: jobsMap,
+		running:            runningStateInit,
+		ctx:                ctx,
+		sink:               sink,
+		logger:             logger,
+		once:               &sync.Once{},
+		jobsMap:            jobsMap,
+		useStartTimeMetric: useStartTimeMetric,
 	}
 }
 
@@ -80,7 +82,7 @@ func (o *ocaStore) SetScrapeManager(scrapeManager *scrape.Manager) {
 func (o *ocaStore) Appender() (storage.Appender, error) {
 	state := atomic.LoadInt32(&o.running)
 	if state == runningStateReady {
-		return newTransaction(o.ctx, o.jobsMap, o.mc, o.sink, o.logger), nil
+		return newTransaction(o.ctx, o.jobsMap, o.useStartTimeMetric, o.mc, o.sink, o.logger), nil
 	} else if state == runningStateInit {
 		return nil, errors.New("ScrapeManager is not set")
 	}

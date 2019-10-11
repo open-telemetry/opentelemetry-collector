@@ -41,27 +41,30 @@ var errEmptyBoundaryLabel = errors.New("BucketLabel or QuantileLabel is empty")
 var dummyMetrics = make([]*metricspb.Metric, 0)
 
 type metricBuilder struct {
-	hasData           bool
-	hasInternalMetric bool
-	mc                MetadataCache
-	metrics           []*metricspb.Metric
-	numTimeseries     int
-	droppedTimeseries int
-	logger            *zap.SugaredLogger
-	currentMf         MetricFamily
+	hasData            bool
+	hasInternalMetric  bool
+	mc                 MetadataCache
+	metrics            []*metricspb.Metric
+	numTimeseries      int
+	droppedTimeseries  int
+	useStartTimeMetric bool
+	startTime          float64
+	logger             *zap.SugaredLogger
+	currentMf          MetricFamily
 }
 
 // newMetricBuilder creates a MetricBuilder which is allowed to feed all the datapoints from a single prometheus
 // scraped page by calling its AddDataPoint function, and turn them into an opencensus data.MetricsData object
 // by calling its Build function
-func newMetricBuilder(mc MetadataCache, logger *zap.SugaredLogger) *metricBuilder {
+func newMetricBuilder(mc MetadataCache, useStartTimeMetric bool, logger *zap.SugaredLogger) *metricBuilder {
 
 	return &metricBuilder{
-		mc:                mc,
-		metrics:           make([]*metricspb.Metric, 0),
-		logger:            logger,
-		numTimeseries:     0,
-		droppedTimeseries: 0,
+		mc:                 mc,
+		metrics:            make([]*metricspb.Metric, 0),
+		logger:             logger,
+		numTimeseries:      0,
+		droppedTimeseries:  0,
+		useStartTimeMetric: useStartTimeMetric,
 	}
 }
 
@@ -77,6 +80,9 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 		lm := ls.Map()
 		delete(lm, model.MetricNameLabel)
 		b.logger.Debugw("skip internal metric", "name", metricName, "ts", t, "value", v, "labels", lm)
+		return nil
+	} else if b.useStartTimeMetric && metricName == "process_start_time_seconds" {
+		b.startTime = v
 		return nil
 	}
 
