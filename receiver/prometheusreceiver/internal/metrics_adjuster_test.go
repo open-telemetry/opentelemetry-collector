@@ -19,9 +19,10 @@ import (
 	"time"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	mtu "github.com/open-telemetry/opentelemetry-collector/internal/testutils"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
+
+	mtu "github.com/open-telemetry/opentelemetry-collector/internal/testutils"
 )
 
 func Test_gauge(t *testing.T) {
