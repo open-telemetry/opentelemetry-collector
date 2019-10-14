@@ -29,7 +29,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/processor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/nodebatcherprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/queuedprocessor"
-	"github.com/open-telemetry/opentelemetry-collector/processor/tailsamplingprocessor"
+	"github.com/open-telemetry/opentelemetry-collector/processor/samplingprocessor/tailsamplingprocessor"
 )
 
 const (
