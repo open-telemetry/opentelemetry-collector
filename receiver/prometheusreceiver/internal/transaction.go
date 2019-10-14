@@ -144,19 +144,23 @@ func (tr *transaction) Commit() error {
 	if err != nil {
 		return err
 	}
-	// Note: metrics could be empty after adjustment, which needs to be checked before passing it on to ConsumeMetricsData()
-	if tr.jobsMap != nil {
-		dropped := 0
-		metrics, dropped = NewMetricsAdjuster(tr.jobsMap.get(tr.job, tr.instance), tr.logger).AdjustMetrics(metrics)
-		droppedTimeseries += dropped
-	} else if tr.useStartTimeMetric {
+
+	if tr.useStartTimeMetric {
+		// AdjustStartTime - startTime has to be non-zero in this case.
 		if tr.metricBuilder.startTime == 0.0 {
 			metrics = []*metricspb.Metric{}
 			droppedTimeseries = numTimeseries
 		} else {
 			adjustStartTime(tr.metricBuilder.startTime, metrics)
 		}
+	} else {
+		// AdjustMetrics - jobsMap has to be non-nil in this case.
+		// Note: metrics could be empty after adjustment, which needs to be checked before passing it on to ConsumeMetricsData()
+		dropped := 0
+		metrics, dropped = NewMetricsAdjuster(tr.jobsMap.get(tr.job, tr.instance), tr.logger).AdjustMetrics(metrics)
+		droppedTimeseries += dropped
 	}
+
 	observability.RecordMetricsForMetricsReceiver(tr.ctx, numTimeseries, droppedTimeseries)
 	if len(metrics) > 0 {
 		md := consumerdata.MetricsData{
