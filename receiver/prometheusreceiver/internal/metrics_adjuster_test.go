@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
-	mtu "github.com/open-telemetry/opentelemetry-collector/internal/testutils"
+	mtu "github.com/open-telemetry/opentelemetry-collector/internal/metricstestutils"
 )
 
 func Test_gauge(t *testing.T) {
