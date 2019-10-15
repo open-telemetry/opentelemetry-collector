@@ -30,7 +30,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumererror"
 	"github.com/open-telemetry/opentelemetry-collector/internal/collector/telemetry"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
-	"github.com/open-telemetry/opentelemetry-collector/processor/nodebatcherprocessor"
+	"github.com/open-telemetry/opentelemetry-collector/processor/batchprocessor"
 )
 
 type queuedSpanProcessor struct {
@@ -83,7 +83,7 @@ func NewQueuedSpanProcessor(sender consumer.TraceConsumer, opts ...Option) proce
 
 	if options.batchingEnabled {
 		sp.logger.Info("Using queued processor with batching.")
-		batcher := nodebatcherprocessor.NewBatcher(sp.name, sp.logger, sp, options.batchingOptions...)
+		batcher := batchprocessor.NewBatcher(sp.name, sp.logger, sp, options.batchingOptions...)
 		return batcher
 	}
 
