@@ -32,8 +32,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/observability"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
-	"github.com/open-telemetry/opentelemetry-collector/processor/tailsamplingprocessor/idbatcher"
-	"github.com/open-telemetry/opentelemetry-collector/processor/tailsamplingprocessor/sampling"
+	"github.com/open-telemetry/opentelemetry-collector/processor/samplingprocessor/tailsamplingprocessor/idbatcher"
+	"github.com/open-telemetry/opentelemetry-collector/processor/samplingprocessor/tailsamplingprocessor/sampling"
 )
 
 // Policy combines a sampling policy evaluator with the destinations to be
