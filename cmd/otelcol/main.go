@@ -33,7 +33,9 @@ func main() {
 	factories, err := defaults.Components()
 	handleErr(err)
 
-	svc := service.New(factories)
+	svc, err := service.New(factories)
+	handleErr(err)
+
 	err = svc.Start()
 	handleErr(err)
 }

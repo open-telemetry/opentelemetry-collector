@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/config"
@@ -32,9 +33,10 @@ import (
 
 func TestApplication_Start(t *testing.T) {
 	factories, err := defaults.Components()
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
-	app := New(factories)
+	app, err := New(factories)
+	require.NoError(t, err)
 
 	metricsPort := testutils.GetAvailablePort(t)
 	app.rootCmd.SetArgs([]string{

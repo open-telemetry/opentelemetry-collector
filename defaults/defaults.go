@@ -44,7 +44,7 @@ import (
 )
 
 // Components returns the default set of components used by the
-// opentelemetry service
+// OpenTelemetry collector.
 func Components() (
 	config.Factories,
 	error,

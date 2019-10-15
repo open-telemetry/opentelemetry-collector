@@ -27,7 +27,13 @@ type Factory interface {
 	// Type gets the type of the extension created by this factory.
 	Type() string
 
-	// CreateDefaultConfig creates the default configuration for the extension.
+	// CreateDefaultConfig creates the default configuration for the Extension.
+	// This method can be called multiple times depending on the pipeline
+	// configuration and should not cause side-effects that prevent the creation
+	// of multiple instances of the Extension.
+	// The object returned by this method needs to pass the checks implemented by
+	// 'conifgcheck.ValidateConfig'. It is recommended to have such check in the
+	// tests of any implementation of the Factory interface.
 	CreateDefaultConfig() configmodels.Extension
 
 	// CreateExtension creates a service extension based on the given config.
