@@ -31,7 +31,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/attributesprocessor"
-	"github.com/open-telemetry/opentelemetry-collector/processor/nodebatcherprocessor"
+	"github.com/open-telemetry/opentelemetry-collector/processor/batchprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/queuedprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/samplingprocessor/probabilisticsamplerprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/samplingprocessor/tailsamplingprocessor"
@@ -86,7 +86,7 @@ func Components() (
 	processors, err := processor.Build(
 		&attributesprocessor.Factory{},
 		&queuedprocessor.Factory{},
-		&nodebatcherprocessor.Factory{},
+		&batchprocessor.Factory{},
 		&tailsamplingprocessor.Factory{},
 		&probabilisticsamplerprocessor.Factory{},
 	)

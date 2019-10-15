@@ -19,7 +19,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector/processor/nodebatcherprocessor"
+	"github.com/open-telemetry/opentelemetry-collector/processor/batchprocessor"
 )
 
 const (
@@ -38,7 +38,7 @@ type options struct {
 	extraFormatTypes         []string
 	retryOnProcessingFailure bool
 	batchingEnabled          bool
-	batchingOptions          []nodebatcherprocessor.Option
+	batchingOptions          []batchprocessor.Option
 }
 
 // Option is a function that sets some option on the component.
@@ -105,7 +105,7 @@ func (options) WithBatching(batchingEnabled bool) Option {
 
 // WithBatchingOptions creates an Option that will apply batcher options to
 // the batcher if batching is enabled.
-func (options) WithBatchingOptions(opts ...nodebatcherprocessor.Option) Option {
+func (options) WithBatchingOptions(opts ...batchprocessor.Option) Option {
 	return func(b *options) {
 		b.batchingOptions = opts
 	}

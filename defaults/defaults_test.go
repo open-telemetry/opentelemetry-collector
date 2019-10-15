@@ -35,7 +35,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/extension/zpagesextension"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/attributesprocessor"
-	"github.com/open-telemetry/opentelemetry-collector/processor/nodebatcherprocessor"
+	"github.com/open-telemetry/opentelemetry-collector/processor/batchprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/queuedprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/samplingprocessor/probabilisticsamplerprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/samplingprocessor/tailsamplingprocessor"
@@ -63,7 +63,7 @@ func TestDefaultComponents(t *testing.T) {
 	expectedProcessors := map[string]processor.Factory{
 		"attributes":            &attributesprocessor.Factory{},
 		"queued_retry":          &queuedprocessor.Factory{},
-		"batch":                 &nodebatcherprocessor.Factory{},
+		"batch":                 &batchprocessor.Factory{},
 		"tail_sampling":         &tailsamplingprocessor.Factory{},
 		"probabilistic_sampler": &probabilisticsamplerprocessor.Factory{},
 	}
