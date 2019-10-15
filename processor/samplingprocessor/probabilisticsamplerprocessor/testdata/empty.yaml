@@ -3,7 +3,7 @@ receivers:
 
 processors:
   probabilistic_sampler:
-    
+
 
 exporters:
   exampleexporter:
