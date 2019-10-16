@@ -28,6 +28,12 @@ type Factory interface {
 	Type() string
 
 	// CreateDefaultConfig creates the default configuration for the Exporter.
+	// This method can be called multiple times depending on the pipeline
+	// configuration and should not cause side-effects that prevent the creation
+	// of multiple instances of the Exporter.
+	// The object returned by this method needs to pass the checks implemented by
+	// 'conifgcheck.ValidateConfig'. It is recommended to have such check in the
+	// tests of any implementation of the Factory interface.
 	CreateDefaultConfig() configmodels.Exporter
 
 	// CreateTraceExporter creates a trace exporter based on this config.

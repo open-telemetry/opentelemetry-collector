@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
@@ -42,6 +43,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 			TypeVal: typeStr,
 		},
 	})
+	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }
 
 func TestFactory_CreateTraceProcessor(t *testing.T) {

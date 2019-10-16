@@ -41,7 +41,9 @@ func main() {
 		GitHash:  version.GitHash,
 	}
 
-	svc := service.New(factories, info)
+	svc, err := service.New(factories, info)
+	handleErr(err)
+
 	err = svc.Start()
 	handleErr(err)
 }

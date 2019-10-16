@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package nodebatcherprocessor
+package batchprocessor
 
 import (
 	"time"
 )
 
-// Option is an option to nodebatcherprocessor.
+// Option is an option to batchprocessor.
 type Option func(b *batcher)
 
 // WithTimeout sets the time after which a batch will be sent

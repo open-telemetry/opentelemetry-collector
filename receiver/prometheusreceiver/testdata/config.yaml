@@ -4,6 +4,7 @@ receivers:
     endpoint: "1.2.3.4:456"
     buffer_period: 234
     buffer_count: 45
+    use_start_time_metric: true
     include_filter: {
       "localhost:9777" : [http/server/server_latency, custom_metric1],
       "localhost:9778" : [http/client/roundtrip_latency],

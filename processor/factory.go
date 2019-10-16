@@ -29,6 +29,12 @@ type Factory interface {
 	Type() string
 
 	// CreateDefaultConfig creates the default configuration for the Processor.
+	// This method can be called multiple times depending on the pipeline
+	// configuration and should not cause side-effects that prevent the creation
+	// of multiple instances of the Processor.
+	// The object returned by this method needs to pass the checks implemented by
+	// 'conifgcheck.ValidateConfig'. It is recommended to have such check in the
+	// tests of any implementation of the Factory interface.
 	CreateDefaultConfig() configmodels.Processor
 
 	// CreateTraceProcessor creates a trace processor based on this config.

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tailsamplingprocessor
+package batchprocessor
 
 import (
 	"testing"
@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
+	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -28,22 +28,14 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
+	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }
 
 func TestCreateProcessor(t *testing.T) {
 	factory := &Factory{}
 
-	cfg := factory.CreateDefaultConfig().(*Config)
-	// Manually set required fields
-	cfg.ExpectedNewTracesPerSec = 64
-	cfg.PolicyCfgs = []PolicyCfg{
-		{
-			Name: "test-policy",
-			Type: AlwaysSample,
-		},
-	}
-
-	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), cfg)
+	cfg := factory.CreateDefaultConfig()
+	tp, err := factory.CreateTraceProcessor(zap.NewNop(), nil, cfg)
 	assert.NotNil(t, tp)
 	assert.NoError(t, err, "cannot create trace processor")
 

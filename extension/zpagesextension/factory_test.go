@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/internal/testutils"
 )
@@ -43,6 +44,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	},
 		cfg)
 
+	assert.NoError(t, configcheck.ValidateConfig(cfg))
 	ext, err := factory.CreateExtension(zap.NewNop(), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, ext)

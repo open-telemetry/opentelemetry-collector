@@ -35,10 +35,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/extension/zpagesextension"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/attributesprocessor"
-	"github.com/open-telemetry/opentelemetry-collector/processor/nodebatcherprocessor"
-	"github.com/open-telemetry/opentelemetry-collector/processor/probabilisticsamplerprocessor"
+	"github.com/open-telemetry/opentelemetry-collector/processor/batchprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/queuedprocessor"
-	"github.com/open-telemetry/opentelemetry-collector/processor/tailsamplingprocessor"
+	"github.com/open-telemetry/opentelemetry-collector/processor/samplingprocessor/probabilisticsamplerprocessor"
+	"github.com/open-telemetry/opentelemetry-collector/processor/samplingprocessor/tailsamplingprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/jaegerreceiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/opencensusreceiver"
@@ -63,7 +63,7 @@ func TestDefaultComponents(t *testing.T) {
 	expectedProcessors := map[string]processor.Factory{
 		"attributes":            &attributesprocessor.Factory{},
 		"queued_retry":          &queuedprocessor.Factory{},
-		"batch":                 &nodebatcherprocessor.Factory{},
+		"batch":                 &batchprocessor.Factory{},
 		"tail_sampling":         &tailsamplingprocessor.Factory{},
 		"probabilistic_sampler": &probabilisticsamplerprocessor.Factory{},
 	}

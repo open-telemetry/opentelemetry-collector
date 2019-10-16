@@ -31,6 +31,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/config"
+	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/extension"
 	"github.com/open-telemetry/opentelemetry-collector/receiver"
@@ -85,18 +86,16 @@ func (app *Application) Context() context.Context {
 	return context.Background()
 }
 
-// ReportFatalError is used to report to the host that the receiver encountered
-// a fatal error (i.e.: an error that the instance can't recover from) after
-// its start function has already returned.
-func (app *Application) ReportFatalError(err error) {
-	app.asyncErrorChannel <- err
-}
-
 // New creates and returns a new instance of Application.
 func New(
 	factories config.Factories,
 	appInfo ApplicationStartInfo,
-) *Application {
+) (*Application, error) {
+
+	if err := configcheck.ValidateConfigFromFactories(factories); err != nil {
+		return nil, err
+	}
+
 	app := &Application{
 		info:      appInfo,
 		v:         viper.New(),
@@ -127,7 +126,14 @@ func New(
 
 	app.rootCmd = rootCmd
 
-	return app
+	return app, nil
+}
+
+// ReportFatalError is used to report to the host that the receiver encountered
+// a fatal error (i.e.: an error that the instance can't recover from) after
+// its start function has already returned.
+func (app *Application) ReportFatalError(err error) {
+	app.asyncErrorChannel <- err
 }
 
 func (app *Application) init() {
