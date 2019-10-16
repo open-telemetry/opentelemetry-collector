@@ -61,7 +61,7 @@ func Summary(name string, keys []string, timeseries ...*metricspb.TimeSeries) *m
 // with the label keys in the overall metric), and the value of the timeseries.
 func Timeseries(sts time.Time, vals []string, point *metricspb.Point) *metricspb.TimeSeries {
 	return &metricspb.TimeSeries{
-		StartTimestamp: ToTS(sts),
+		StartTimestamp: Timestamp(sts),
 		Points:         []*metricspb.Point{point},
 		LabelValues:    toVals(vals),
 	}
@@ -69,12 +69,12 @@ func Timeseries(sts time.Time, vals []string, point *metricspb.Point) *metricspb
 
 // Double creates a double point.
 func Double(ts time.Time, value float64) *metricspb.Point {
-	return &metricspb.Point{Timestamp: ToTS(ts), Value: &metricspb.Point_DoubleValue{DoubleValue: value}}
+	return &metricspb.Point{Timestamp: Timestamp(ts), Value: &metricspb.Point_DoubleValue{DoubleValue: value}}
 }
 
-// Dist creates a distribution point. It takes the time stamp, the bucket boundaries for the distribution, and
+// DistPt creates a distribution point. It takes the time stamp, the bucket boundaries for the distribution, and
 // the and counts for the individual buckets as input.
-func Dist(ts time.Time, bounds []float64, counts []int64) *metricspb.Point {
+func DistPt(ts time.Time, bounds []float64, counts []int64) *metricspb.Point {
 	var count int64
 	var sum float64
 	buckets := make([]*metricspb.DistributionValue_Bucket, len(counts))
@@ -102,11 +102,11 @@ func Dist(ts time.Time, bounds []float64, counts []int64) *metricspb.Point {
 		Buckets: buckets,
 		// There's no way to compute SumOfSquaredDeviation from prometheus data
 	}
-	return &metricspb.Point{Timestamp: ToTS(ts), Value: &metricspb.Point_DistributionValue{DistributionValue: distrValue}}
+	return &metricspb.Point{Timestamp: Timestamp(ts), Value: &metricspb.Point_DistributionValue{DistributionValue: distrValue}}
 }
 
-// Summ creates a summary point.
-func Summ(ts time.Time, count int64, sum float64, percent, vals []float64) *metricspb.Point {
+// SummPt creates a summary point.
+func SummPt(ts time.Time, count int64, sum float64, percent, vals []float64) *metricspb.Point {
 	percentiles := make([]*metricspb.SummaryValue_Snapshot_ValueAtPercentile, len(percent))
 	for i := 0; i < len(percent); i++ {
 		percentiles[i] = &metricspb.SummaryValue_Snapshot_ValueAtPercentile{Percentile: percent[i], Value: vals[i]}
@@ -118,11 +118,11 @@ func Summ(ts time.Time, count int64, sum float64, percent, vals []float64) *metr
 			PercentileValues: percentiles,
 		},
 	}
-	return &metricspb.Point{Timestamp: ToTS(ts), Value: &metricspb.Point_SummaryValue{SummaryValue: summaryValue}}
+	return &metricspb.Point{Timestamp: Timestamp(ts), Value: &metricspb.Point_SummaryValue{SummaryValue: summaryValue}}
 }
 
-// ToTS creates a timestamp.
-func ToTS(ts time.Time) *timestamppb.Timestamp {
+// Timestamp creates a timestamp.
+func Timestamp(ts time.Time) *timestamppb.Timestamp {
 	return &timestamppb.Timestamp{
 		Seconds: ts.Unix(),
 		Nanos:   int32(ts.Nanosecond()),

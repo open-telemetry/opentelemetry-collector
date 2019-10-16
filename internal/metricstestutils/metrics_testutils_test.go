@@ -88,10 +88,10 @@ func TestResourceProcessor(t *testing.T) {
 
 	got := []*metricspb.Metric{
 		Gauge(op1, k1k2, Timeseries(t1Ms, v1v2, Double(t1Ms, 44))),
-		GaugeDist(op2, k1k2, Timeseries(t3Ms, v1v2, Dist(t1Ms, bounds0, []int64{2}))),
+		GaugeDist(op2, k1k2, Timeseries(t3Ms, v1v2, DistPt(t1Ms, bounds0, []int64{2}))),
 		Cumulative(op1, k1k2, Timeseries(t5Ms, v1v2, Double(t5Ms, 90)), Timeseries(t5Ms, v10v20, Double(t5Ms, 65))),
-		CumulativeDist(op2, k1k2, Timeseries(t1Ms, v1v2, Dist(t1Ms, bounds0, []int64{2}))),
-		Summary(op1, k1k2, Timeseries(t1Ms, v1v2, Summ(t1Ms, 10, 40, percent0, []float64{1, 5}))),
+		CumulativeDist(op2, k1k2, Timeseries(t1Ms, v1v2, DistPt(t1Ms, bounds0, []int64{2}))),
+		Summary(op1, k1k2, Timeseries(t1Ms, v1v2, SummPt(t1Ms, 10, 40, percent0, []float64{1, 5}))),
 	}
 
 	want := []*metricspb.Metric{
