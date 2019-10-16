@@ -145,7 +145,7 @@ service:
 ### <a name="config-receivers"></a>Receivers
 
 A receiver is how data gets into the OpenTelemetry Collector. One or more receivers
-must be configured. By default, the `opencensus` receiver for both metrics and traces
+must be configured.
 is enabled.
 
 A basic example of all available receivers is provided below. For detailed
