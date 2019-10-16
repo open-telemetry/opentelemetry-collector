@@ -29,9 +29,12 @@ import (
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	timestamppb "github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/google/go-cmp/cmp"
 	promcfg "github.com/prometheus/prometheus/config"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v2"
 
@@ -40,7 +43,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/receiver/receivertest"
 )
 
-var logger, _ = zap.NewDevelopment()
+var logger = zap.NewNop()
 
 type mockPrometheusResponse struct {
 	code int
@@ -930,7 +933,7 @@ func verifyTarget3(t *testing.T, td *testData, mds []consumerdata.MetricsData) {
 
 // TestEndToEnd  end to end test executor
 func TestEndToEnd(t *testing.T) {
-	// 1. setup input data and mock server
+	// 1. setup input data
 	targets := []*testData{
 		{
 			name: "target1",
@@ -964,20 +967,86 @@ func TestEndToEnd(t *testing.T) {
 		},
 	}
 
-	mp, cfg, err := setupMockPrometheus(targets...)
-	if err != nil {
-		t.Fatalf("Failed to create Promtheus config: %v", err)
+	testEndToEnd(t, targets, false)
+}
+
+var startTimeMetricPage = `
+# HELP go_threads Number of OS threads created
+# TYPE go_threads gauge
+go_threads 19
+# HELP http_requests_total The total number of HTTP requests.
+# TYPE http_requests_total counter
+http_requests_total{method="post",code="200"} 100
+http_requests_total{method="post",code="400"} 5
+# HELP http_request_duration_seconds A histogram of the request duration.
+# TYPE http_request_duration_seconds histogram
+http_request_duration_seconds_bucket{le="0.05"} 1000
+http_request_duration_seconds_bucket{le="0.5"} 1500
+http_request_duration_seconds_bucket{le="1"} 2000
+http_request_duration_seconds_bucket{le="+Inf"} 2500
+http_request_duration_seconds_sum 5000
+http_request_duration_seconds_count 2500
+# HELP rpc_duration_seconds A summary of the RPC duration in seconds.
+# TYPE rpc_duration_seconds summary
+rpc_duration_seconds{quantile="0.01"} 1
+rpc_duration_seconds{quantile="0.9"} 5
+rpc_duration_seconds{quantile="0.99"} 8
+rpc_duration_seconds_sum 5000
+rpc_duration_seconds_count 1000
+# HELP process_start_time_seconds Start time of the process since unix epoch in seconds.
+# TYPE process_start_time_seconds gauge
+process_start_time_seconds 400.8
+`
+
+var startTimeMetricPageStartTimestamp = &timestamppb.Timestamp{Seconds: 400, Nanos: 800000000}
+
+const numStartTimeMetricPageTimeseries = 5
+
+func verifyStartTimeMetricPage(t *testing.T, td *testData, mds []consumerdata.MetricsData) {
+	numTimeseries := 0
+	for _, cmd := range mds {
+		for _, metric := range cmd.Metrics {
+			timestamp := startTimeMetricPageStartTimestamp
+			switch metric.GetMetricDescriptor().GetType() {
+			case metricspb.MetricDescriptor_GAUGE_DOUBLE, metricspb.MetricDescriptor_GAUGE_DISTRIBUTION:
+				timestamp = nil
+			}
+			for _, ts := range metric.GetTimeseries() {
+				assert.Equal(t, timestamp, ts.GetStartTimestamp())
+				numTimeseries++
+			}
+		}
 	}
+	assert.Equal(t, numStartTimeMetricPageTimeseries, numTimeseries)
+}
+
+// TestStartTimeMetric validates that timeseries have start time set to 'process_start_time_seconds'
+func TestStartTimeMetric(t *testing.T) {
+	targets := []*testData{
+		{
+			name: "target1",
+			pages: []mockPrometheusResponse{
+				{code: 200, data: startTimeMetricPage},
+			},
+			validateFunc: verifyStartTimeMetricPage,
+		},
+	}
+	testEndToEnd(t, targets, true)
+}
+
+func testEndToEnd(t *testing.T, targets []*testData, useStartTimeMetric bool) {
+	// 1. setup mock server
+	mp, cfg, err := setupMockPrometheus(targets...)
+	require.Nilf(t, err, "Failed to create Promtheus config: %v", err)
 	defer mp.Close()
 
 	cms := new(exportertest.SinkMetricsExporter)
-	precv := newPrometheusReceiver(logger, &Config{PrometheusConfig: cfg}, cms)
+	rcvr := newPrometheusReceiver(logger, &Config{PrometheusConfig: cfg, UseStartTimeMetric: useStartTimeMetric}, cms)
 
 	mh := receivertest.NewMockHost()
-	if err := precv.StartMetricsReception(mh); err != nil {
-		t.Fatalf("Failed to invoke StartMetricsReception: %v", err)
-	}
-	defer precv.StopMetricsReception()
+	err = rcvr.StartMetricsReception(mh)
+	require.Nilf(t, err, "Failed to invoke StartMetricsReception: %v", err)
+	defer rcvr.StopMetricsReception()
 
 	// wait for all provided data to be scraped
 	mp.wg.Wait()
@@ -993,18 +1062,11 @@ func TestEndToEnd(t *testing.T) {
 		results[m.Node.ServiceInfo.Name] = append(result, m)
 	}
 
-	t.Run("results-num-shall-match-targets", func(t *testing.T) {
-		if l := len(results); l != len(mp.endpoints) {
-			t.Errorf("want %d targets, but got %v\n", len(mp.endpoints), l)
-		}
-	})
+	lres, lep := len(results), len(mp.endpoints)
+	assert.Equalf(t, lep, lres, "want %d targets, but got %v\n", lep, lres)
 
 	// loop to validate outputs for each targets
-	for _, tt := range targets {
-		result := results[tt.name]
-		t.Run(fmt.Sprintf("verify-%s-results", tt.name), func(t *testing.T) {
-			tt.validateFunc(t, tt, result)
-		})
-		tt.validateFunc(t, tt, result)
+	for _, target := range targets {
+		target.validateFunc(t, target, results[target.name])
 	}
 }

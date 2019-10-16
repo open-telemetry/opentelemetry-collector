@@ -51,6 +51,7 @@ func TestLoadConfig(t *testing.T) {
 		})
 	assert.Equal(t, r1.PrometheusConfig.ScrapeConfigs[0].JobName, "demo")
 	assert.Equal(t, time.Duration(r1.PrometheusConfig.ScrapeConfigs[0].ScrapeInterval), 5*time.Second)
+	assert.Equal(t, r1.UseStartTimeMetric, true)
 	wantFilter := map[string][]string{
 		"localhost:9777": {"http/server/server_latency", "custom_metric1"},
 		"localhost:9778": {"http/client/roundtrip_latency"},

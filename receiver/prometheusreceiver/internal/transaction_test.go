@@ -34,7 +34,7 @@ func Test_transaction(t *testing.T) {
 
 	t.Run("Commit Without Adding", func(t *testing.T) {
 		mcon := newMockConsumer()
-		tr := newTransaction(context.Background(), nil, ms, mcon, testLogger)
+		tr := newTransaction(context.Background(), nil, true, ms, mcon, testLogger)
 		if got := tr.Commit(); got != nil {
 			t.Errorf("expecting nil from Commit() but got err %v", got)
 		}
@@ -42,7 +42,7 @@ func Test_transaction(t *testing.T) {
 
 	t.Run("Rollback dose nothing", func(t *testing.T) {
 		mcon := newMockConsumer()
-		tr := newTransaction(context.Background(), nil, ms, mcon, testLogger)
+		tr := newTransaction(context.Background(), nil, true, ms, mcon, testLogger)
 		if got := tr.Rollback(); got != nil {
 			t.Errorf("expecting nil from Rollback() but got err %v", got)
 		}
@@ -51,7 +51,7 @@ func Test_transaction(t *testing.T) {
 	badLabels := labels.Labels([]labels.Label{{Name: "foo", Value: "bar"}})
 	t.Run("Add One No Target", func(t *testing.T) {
 		mcon := newMockConsumer()
-		tr := newTransaction(context.Background(), nil, ms, mcon, testLogger)
+		tr := newTransaction(context.Background(), nil, true, ms, mcon, testLogger)
 		if _, got := tr.Add(badLabels, time.Now().Unix()*1000, 1.0); got == nil {
 			t.Errorf("expecting error from Add() but got nil")
 		}
@@ -63,7 +63,7 @@ func Test_transaction(t *testing.T) {
 		{Name: "foo", Value: "bar"}})
 	t.Run("Add One Job not found", func(t *testing.T) {
 		mcon := newMockConsumer()
-		tr := newTransaction(context.Background(), nil, ms, mcon, testLogger)
+		tr := newTransaction(context.Background(), nil, true, ms, mcon, testLogger)
 		if _, got := tr.Add(jobNotFoundLb, time.Now().Unix()*1000, 1.0); got == nil {
 			t.Errorf("expecting error from Add() but got nil")
 		}
@@ -74,14 +74,14 @@ func Test_transaction(t *testing.T) {
 		{Name: "__name__", Value: "foo"}})
 	t.Run("Add One Good", func(t *testing.T) {
 		mcon := newMockConsumer()
-		tr := newTransaction(context.Background(), nil, ms, mcon, testLogger)
+		tr := newTransaction(context.Background(), nil, true, ms, mcon, testLogger)
 		if _, got := tr.Add(goodLabels, time.Now().Unix()*1000, 1.0); got != nil {
 			t.Errorf("expecting error == nil from Add() but got: %v\n", got)
 		}
+		tr.metricBuilder.startTime = 1.0 // set to a non-zero value
 		if got := tr.Commit(); got != nil {
 			t.Errorf("expecting nil from Commit() but got err %v", got)
 		}
-
 		expected := createNode("test", "localhost:8080", "http")
 		md := mcon.md
 		if !reflect.DeepEqual(md.Node, expected) {
@@ -95,7 +95,7 @@ func Test_transaction(t *testing.T) {
 
 	t.Run("Drop NaN value", func(t *testing.T) {
 		mcon := newMockConsumer()
-		tr := newTransaction(context.Background(), nil, ms, mcon, testLogger)
+		tr := newTransaction(context.Background(), nil, true, ms, mcon, testLogger)
 		if _, got := tr.Add(goodLabels, time.Now().Unix()*1000, math.NaN()); got != nil {
 			t.Errorf("expecting error == nil from Add() but got: %v\n", got)
 		}

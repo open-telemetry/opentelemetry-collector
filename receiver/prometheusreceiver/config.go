@@ -28,6 +28,7 @@ type Config struct {
 	PrometheusConfig              *config.Config      `mapstructure:"-"`
 	BufferPeriod                  time.Duration       `mapstructure:"buffer_period"`
 	BufferCount                   int                 `mapstructure:"buffer_count"`
+	UseStartTimeMetric            bool                `mapstructure:"use_start_time_metric"`
 	IncludeFilter                 map[string][]string `mapstructure:"include_filter"`
 
 	// ConfigPlaceholder is just an entry to make the configuration pass a check

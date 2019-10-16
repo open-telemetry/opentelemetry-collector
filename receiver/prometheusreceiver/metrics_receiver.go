@@ -87,8 +87,11 @@ func (pr *Preceiver) StartMetricsReception(host receiver.Host) error {
 		pr.cancel = cancel
 		// TODO: Use the name from the ReceiverSettings
 		c = observability.ContextWithReceiverName(c, pr.receiverFullName)
-		jobsMap := internal.NewJobsMap(time.Duration(2 * time.Minute))
-		app := internal.NewOcaStore(c, pr.consumer, pr.logger.Sugar(), jobsMap)
+		var jobsMap *internal.JobsMap
+		if !pr.cfg.UseStartTimeMetric {
+			jobsMap = internal.NewJobsMap(time.Duration(2 * time.Minute))
+		}
+		app := internal.NewOcaStore(c, pr.consumer, pr.logger.Sugar(), jobsMap, pr.cfg.UseStartTimeMetric)
 		// need to use a logger with the gokitLog interface
 		l := internal.NewZapToGokitLogAdapter(pr.logger)
 		scrapeManager := scrape.NewManager(l, app)

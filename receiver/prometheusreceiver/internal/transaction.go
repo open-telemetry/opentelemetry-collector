@@ -22,6 +22,8 @@ import (
 	"sync/atomic"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/storage"
@@ -48,28 +50,30 @@ var errNoJobInstance = errors.New("job or instance cannot be found from labels")
 // will be flush to the downstream consumer, or Rollback, which means discard all the data, is called and all data
 // points are discarded.
 type transaction struct {
-	id            int64
-	ctx           context.Context
-	isNew         bool
-	sink          consumer.MetricsConsumer
-	job           string
-	instance      string
-	jobsMap       *JobsMap
-	ms            MetadataService
-	node          *commonpb.Node
-	metricBuilder *metricBuilder
-	logger        *zap.SugaredLogger
+	id                 int64
+	ctx                context.Context
+	isNew              bool
+	sink               consumer.MetricsConsumer
+	job                string
+	instance           string
+	jobsMap            *JobsMap
+	useStartTimeMetric bool
+	ms                 MetadataService
+	node               *commonpb.Node
+	metricBuilder      *metricBuilder
+	logger             *zap.SugaredLogger
 }
 
-func newTransaction(ctx context.Context, jobsMap *JobsMap, ms MetadataService, sink consumer.MetricsConsumer, logger *zap.SugaredLogger) *transaction {
+func newTransaction(ctx context.Context, jobsMap *JobsMap, useStartTimeMetric bool, ms MetadataService, sink consumer.MetricsConsumer, logger *zap.SugaredLogger) *transaction {
 	return &transaction{
-		id:      atomic.AddInt64(&idSeq, 1),
-		ctx:     ctx,
-		isNew:   true,
-		sink:    sink,
-		jobsMap: jobsMap,
-		ms:      ms,
-		logger:  logger,
+		id:                 atomic.AddInt64(&idSeq, 1),
+		ctx:                ctx,
+		isNew:              true,
+		sink:               sink,
+		jobsMap:            jobsMap,
+		useStartTimeMetric: useStartTimeMetric,
+		ms:                 ms,
+		logger:             logger,
 	}
 }
 
@@ -122,7 +126,7 @@ func (tr *transaction) initTransaction(ls labels.Labels) error {
 		tr.instance = instance
 	}
 	tr.node = createNode(job, instance, mc.SharedLabels().Get(model.SchemeLabel))
-	tr.metricBuilder = newMetricBuilder(mc, tr.logger)
+	tr.metricBuilder = newMetricBuilder(mc, tr.useStartTimeMetric, tr.logger)
 	tr.isNew = false
 	return nil
 }
@@ -140,12 +144,23 @@ func (tr *transaction) Commit() error {
 	if err != nil {
 		return err
 	}
-	// Note: metrics could be empty after adjustment, which needs to be checked before passing it on to ConsumeMetricsData()
-	if tr.jobsMap != nil {
+
+	if tr.useStartTimeMetric {
+		// AdjustStartTime - startTime has to be non-zero in this case.
+		if tr.metricBuilder.startTime == 0.0 {
+			metrics = []*metricspb.Metric{}
+			droppedTimeseries = numTimeseries
+		} else {
+			adjustStartTime(tr.metricBuilder.startTime, metrics)
+		}
+	} else {
+		// AdjustMetrics - jobsMap has to be non-nil in this case.
+		// Note: metrics could be empty after adjustment, which needs to be checked before passing it on to ConsumeMetricsData()
 		dropped := 0
 		metrics, dropped = NewMetricsAdjuster(tr.jobsMap.get(tr.job, tr.instance), tr.logger).AdjustMetrics(metrics)
 		droppedTimeseries += dropped
 	}
+
 	observability.RecordMetricsForMetricsReceiver(tr.ctx, numTimeseries, droppedTimeseries)
 	if len(metrics) > 0 {
 		md := consumerdata.MetricsData{
@@ -159,6 +174,29 @@ func (tr *transaction) Commit() error {
 
 func (tr *transaction) Rollback() error {
 	return nil
+}
+
+func adjustStartTime(startTime float64, metrics []*metricspb.Metric) {
+	startTimeTs := timestampFromFloat64(startTime)
+	for _, metric := range metrics {
+		switch metric.GetMetricDescriptor().GetType() {
+		case metricspb.MetricDescriptor_GAUGE_DOUBLE, metricspb.MetricDescriptor_GAUGE_DISTRIBUTION:
+			continue
+		default:
+			for _, ts := range metric.GetTimeseries() {
+				ts.StartTimestamp = startTimeTs
+			}
+		}
+	}
+}
+
+func timestampFromFloat64(ts float64) *timestamp.Timestamp {
+	secs := int64(ts)
+	nanos := int64((ts - float64(secs)) * 1e9)
+	return &timestamp.Timestamp{
+		Seconds: secs,
+		Nanos:   int32(nanos),
+	}
 }
 
 func createNode(job, instance, scheme string) *commonpb.Node {

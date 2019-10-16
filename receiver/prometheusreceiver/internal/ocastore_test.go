@@ -24,7 +24,7 @@ import (
 
 func TestOcaStore(t *testing.T) {
 
-	o := NewOcaStore(context.Background(), nil, nil, nil)
+	o := NewOcaStore(context.Background(), nil, nil, nil, false)
 
 	_, err := o.Appender()
 	if err == nil {
