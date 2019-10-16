@@ -35,7 +35,7 @@ func TestApplication_Start(t *testing.T) {
 	factories, err := defaults.Components()
 	require.NoError(t, err)
 
-	app, err := New(factories)
+	app, err := New(factories, ApplicationStartInfo{})
 	require.NoError(t, err)
 
 	metricsPort := testutils.GetAvailablePort(t)

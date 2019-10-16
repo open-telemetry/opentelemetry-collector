@@ -20,6 +20,7 @@ import (
 	"log"
 
 	"github.com/open-telemetry/opentelemetry-collector/defaults"
+	"github.com/open-telemetry/opentelemetry-collector/internal/version"
 	"github.com/open-telemetry/opentelemetry-collector/service"
 )
 
@@ -33,7 +34,14 @@ func main() {
 	factories, err := defaults.Components()
 	handleErr(err)
 
-	svc, err := service.New(factories)
+	info := service.ApplicationStartInfo{
+		ExeName:  "otelcol",
+		LongName: "OpenTelemetry Collector",
+		Version:  version.Version,
+		GitHash:  version.GitHash,
+	}
+
+	svc, err := service.New(factories, info)
 	handleErr(err)
 
 	err = svc.Start()
