@@ -1,10 +1,10 @@
 receivers:
   opencensus:
-    endpoint: localhost:55678
+    endpoint: 0.0.0.0:55678
   jaeger:
     protocols:
       thrift-http:
-        endpoint: "localhost:14268"
+        endpoint: "0.0.0.0:14268"
 
 
 exporters:
