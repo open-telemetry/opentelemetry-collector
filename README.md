@@ -146,7 +146,6 @@ service:
 
 A receiver is how data gets into the OpenTelemetry Collector. One or more receivers
 must be configured.
-is enabled.
 
 A basic example of all available receivers is provided below. For detailed
 receiver configuration, please see the [receiver
