@@ -154,7 +154,7 @@ func TestTraceGrpcGatewayCors_endToEnd(t *testing.T) {
 	defer ocr.StopTraceReception()
 
 	mh := receivertest.NewMockHost()
-	err := ocr.StartTraceReception(mh)
+	err = ocr.StartTraceReception(mh)
 	require.NoError(t, err, "Failed to start trace receiver: %v", err)
 
 	// TODO(songy23): make starting server deterministic
