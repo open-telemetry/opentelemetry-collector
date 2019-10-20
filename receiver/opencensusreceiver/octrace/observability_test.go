@@ -25,6 +25,7 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/stretchr/testify/require"
 	"go.opencensus.io/trace"
 
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
@@ -48,23 +49,18 @@ func TestEnsureRecordedMetrics(t *testing.T) {
 	n := 20
 	// Now for the traceExporter that sends 0 length spans
 	traceSvcClient, traceSvcDoneFn, err := makeTraceServiceClient(port)
-	if err != nil {
-		t.Fatalf("Failed to create the trace service client: %v", err)
-	}
+	require.NoError(t, err, "Failed to create the trace service client: %v", err)
 	spans := []*tracepb.Span{{TraceId: []byte("abcdefghijklmnop"), SpanId: []byte("12345678")}}
 	for i := 0; i < n; i++ {
-		if err := traceSvcClient.Send(&agenttracepb.ExportTraceServiceRequest{Spans: spans, Node: &commonpb.Node{}}); err != nil {
-			t.Fatalf("Failed to send requests to the service: %v", err)
-		}
+		err = traceSvcClient.Send(&agenttracepb.ExportTraceServiceRequest{Spans: spans, Node: &commonpb.Node{}})
+		require.NoError(t, err, "Failed to send requests to the service: %v", err)
 	}
 	flush(traceSvcDoneFn)
 
-	if err := observabilitytest.CheckValueViewReceiverReceivedSpans("oc_trace", n); err != nil {
-		t.Fatalf("When check recorded values: want nil got %v", err)
-	}
-	if err := observabilitytest.CheckValueViewReceiverDroppedSpans("oc_trace", 0); err != nil {
-		t.Fatalf("When check recorded values: want nil got %v", err)
-	}
+	err = observabilitytest.CheckValueViewReceiverReceivedSpans("oc_trace", n)
+	require.NoError(t, err, "When check recorded values: want nil got %v", err)
+	err = observabilitytest.CheckValueViewReceiverDroppedSpans("oc_trace", 0)
+	require.NoError(t, err, "When check recorded values: want nil got %v", err)
 }
 
 func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
@@ -77,22 +73,17 @@ func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
 	n := 20
 	// Now for the traceExporter that sends 0 length spans
 	traceSvcClient, traceSvcDoneFn, err := makeTraceServiceClient(port)
-	if err != nil {
-		t.Fatalf("Failed to create the trace service client: %v", err)
-	}
+	require.NoError(t, err, "Failed to create the trace service client: %v", err)
 	for i := 0; i <= n; i++ {
-		if err := traceSvcClient.Send(&agenttracepb.ExportTraceServiceRequest{Spans: nil, Node: &commonpb.Node{}}); err != nil {
-			t.Fatalf("Failed to send requests to the service: %v", err)
-		}
+		err = traceSvcClient.Send(&agenttracepb.ExportTraceServiceRequest{Spans: nil, Node: &commonpb.Node{}})
+		require.NoError(t, err, "Failed to send requests to the service: %v", err)
 	}
 	flush(traceSvcDoneFn)
 
-	if err := observabilitytest.CheckValueViewReceiverReceivedSpans("oc_trace", 0); err != nil {
-		t.Fatalf("When check recorded values: want nil got %v", err)
-	}
-	if err := observabilitytest.CheckValueViewReceiverDroppedSpans("oc_trace", 0); err != nil {
-		t.Fatalf("When check recorded values: want nil got %v", err)
-	}
+	err = observabilitytest.CheckValueViewReceiverReceivedSpans("oc_trace", 0)
+	require.NoError(t, err, "When check recorded values: want nil got %v", err)
+	err = observabilitytest.CheckValueViewReceiverDroppedSpans("oc_trace", 0)
+	require.NoError(t, err, "When check recorded values: want nil got %v", err)
 }
 
 func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
@@ -113,16 +104,13 @@ func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
 	defer doneFn()
 
 	traceSvcClient, traceSvcDoneFn, err := makeTraceServiceClient(port)
-	if err != nil {
-		t.Fatalf("Failed to create the trace service client: %v", err)
-	}
+	require.NoError(t, err, "Failed to create the trace service client: %v", err)
 
 	n := 5
 	for i := 0; i < n; i++ {
 		sl := []*tracepb.Span{{TraceId: []byte("abcdefghijklmnop"), SpanId: []byte{byte(i + 1), 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08}}}
-		if err := traceSvcClient.Send(&agenttracepb.ExportTraceServiceRequest{Spans: sl, Node: &commonpb.Node{}}); err != nil {
-			t.Fatalf("Failed to send requests to the service: %v", err)
-		}
+		err = traceSvcClient.Send(&agenttracepb.ExportTraceServiceRequest{Spans: sl, Node: &commonpb.Node{}})
+		require.NoError(t, err, "Failed to send requests to the service: %v", err)
 	}
 
 	flush(traceSvcDoneFn)
@@ -131,9 +119,12 @@ func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
 	ocSpansSaver.mu.Lock()
 	defer ocSpansSaver.mu.Unlock()
 
-	if len(ocSpansSaver.spanData) == 0 {
-		t.Fatal("Unfortunately did not receive an exported span data. Please check this library's implementation or go.opencensus.io/trace")
-	}
+	require.NotEqual(
+		t,
+		len(ocSpansSaver.spanData),
+		0,
+		"Unfortunately did not receive an exported span data. Please check this library's implementation or go.opencensus.io/trace",
+	)
 
 	gotSpanData := ocSpansSaver.spanData[:]
 	if g, w := len(gotSpanData), n+1; g != w {

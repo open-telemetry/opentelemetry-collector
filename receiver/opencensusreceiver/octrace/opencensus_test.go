@@ -34,6 +34,7 @@ import (
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/proto"
+	"github.com/stretchr/testify/require"
 	"go.opencensus.io/trace"
 	"go.opencensus.io/trace/tracestate"
 	"google.golang.org/grpc"
@@ -55,9 +56,7 @@ func TestReceiver_endToEnd(t *testing.T) {
 	// Now the opencensus-agent exporter.
 	address := fmt.Sprintf("localhost:%d", port)
 	oce, err := ocagent.NewExporter(ocagent.WithAddress(address), ocagent.WithInsecure())
-	if err != nil {
-		t.Fatalf("Failed to create the ocagent-exporter: %v", err)
-	}
+	require.NoError(t, err, "Failed to create the ocagent-exporter: %v", err)
 
 	trace.RegisterExporter(oce)
 
@@ -176,9 +175,7 @@ func TestExportMultiplexing(t *testing.T) {
 	defer doneFn()
 
 	traceClient, traceClientDoneFn, err := makeTraceServiceClient(port)
-	if err != nil {
-		t.Fatalf("Failed to create the gRPC TraceService_ExportClient: %v", err)
-	}
+	require.NoError(t, err, "Failed to create the gRPC TraceService_ExportClient: %v", err)
 	defer traceClientDoneFn()
 
 	// Step 1) The initiation.
@@ -190,15 +187,13 @@ func TestExportMultiplexing(t *testing.T) {
 		LibraryInfo: &commonpb.LibraryInfo{Language: commonpb.LibraryInfo_JAVA},
 	}
 
-	if err := traceClient.Send(&agenttracepb.ExportTraceServiceRequest{Node: initiatingNode}); err != nil {
-		t.Fatalf("Failed to send the initiating message: %v", err)
-	}
+	err = traceClient.Send(&agenttracepb.ExportTraceServiceRequest{Node: initiatingNode})
+	require.NoError(t, err, "Failed to send the initiating message: %v", err)
 
 	// Step 1a) Send some spans without a node, they should be registered as coming from the initiating node.
 	sLi := []*tracepb.Span{{TraceId: []byte("1234567890abcde")}}
-	if err := traceClient.Send(&agenttracepb.ExportTraceServiceRequest{Node: nil, Spans: sLi}); err != nil {
-		t.Fatalf("Failed to send the proxied message from app1: %v", err)
-	}
+	err = traceClient.Send(&agenttracepb.ExportTraceServiceRequest{Node: nil, Spans: sLi})
+	require.NoError(t, err, "Failed to send the proxied message from app1: %v", err)
 
 	// Step 2) Send a "proxied" trace message from app1 with "node1"
 	node1 := &commonpb.Node{
@@ -206,16 +201,14 @@ func TestExportMultiplexing(t *testing.T) {
 		LibraryInfo: &commonpb.LibraryInfo{Language: commonpb.LibraryInfo_NODE_JS},
 	}
 	sL1 := []*tracepb.Span{{TraceId: []byte("abcdefghijklmno")}}
-	if err := traceClient.Send(&agenttracepb.ExportTraceServiceRequest{Node: node1, Spans: sL1}); err != nil {
-		t.Fatalf("Failed to send the proxied message from app1: %v", err)
-	}
+	err = traceClient.Send(&agenttracepb.ExportTraceServiceRequest{Node: node1, Spans: sL1})
+	require.NoError(t, err, "Failed to send the proxied message from app1: %v", err)
 
 	// Step 3) Send a trace message without a node but with spans: this
 	// should be registered as belonging to the last used node i.e. "node1".
 	sLn1 := []*tracepb.Span{{TraceId: []byte("ABCDEFGHIJKLMNO")}, {TraceId: []byte("1234567890abcde")}}
-	if err := traceClient.Send(&agenttracepb.ExportTraceServiceRequest{Node: nil, Spans: sLn1}); err != nil {
-		t.Fatalf("Failed to send the proxied message without a node: %v", err)
-	}
+	err = traceClient.Send(&agenttracepb.ExportTraceServiceRequest{Node: nil, Spans: sLn1})
+	require.NoError(t, err, "Failed to send the proxied message without a node: %v", err)
 
 	// Step 4) Send a trace message from a differently proxied node "node2" from app2
 	node2 := &commonpb.Node{
@@ -223,22 +216,19 @@ func TestExportMultiplexing(t *testing.T) {
 		LibraryInfo: &commonpb.LibraryInfo{Language: commonpb.LibraryInfo_GO_LANG},
 	}
 	sL2 := []*tracepb.Span{{TraceId: []byte("_B_D_F_H_J_L_N_")}}
-	if err := traceClient.Send(&agenttracepb.ExportTraceServiceRequest{Node: node2, Spans: sL2}); err != nil {
-		t.Fatalf("Failed to send the proxied message from app2: %v", err)
-	}
+	err = traceClient.Send(&agenttracepb.ExportTraceServiceRequest{Node: node2, Spans: sL2})
+	require.NoError(t, err, "Failed to send the proxied message from app2: %v", err)
 
 	// Step 5a) Send a trace message without a node but with spans: this
 	// should be registered as belonging to the last used node i.e. "node2".
 	sLn2a := []*tracepb.Span{{TraceId: []byte("_BCDEFGHIJKLMN_")}, {TraceId: []byte("_234567890abcd_")}}
-	if err := traceClient.Send(&agenttracepb.ExportTraceServiceRequest{Node: nil, Spans: sLn2a}); err != nil {
-		t.Fatalf("Failed to send the proxied message without a node: %v", err)
-	}
+	err = traceClient.Send(&agenttracepb.ExportTraceServiceRequest{Node: nil, Spans: sLn2a})
+	require.NoError(t, err, "Failed to send the proxied message without a node: %v", err)
 
 	// Step 5b)
 	sLn2b := []*tracepb.Span{{TraceId: []byte("_xxxxxxxxxxxxx_")}, {TraceId: []byte("B234567890abcdA")}}
-	if err := traceClient.Send(&agenttracepb.ExportTraceServiceRequest{Node: nil, Spans: sLn2b}); err != nil {
-		t.Fatalf("Failed to send the proxied message without a node: %v", err)
-	}
+	err = traceClient.Send(&agenttracepb.ExportTraceServiceRequest{Node: nil, Spans: sLn2b})
+	require.NoError(t, err, "Failed to send the proxied message without a node: %v", err)
 	// Give the process sometime to send data over the wire and perform batching
 	<-time.After(150 * time.Millisecond)
 
@@ -312,15 +302,12 @@ func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 	defer doneFn()
 
 	traceClient, traceClientDoneFn, err := makeTraceServiceClient(port)
-	if err != nil {
-		t.Fatalf("Failed to create the gRPC TraceService_ExportClient: %v", err)
-	}
+	require.NoError(t, err, "Failed to create the gRPC TraceService_ExportClient: %v", err)
 	defer traceClientDoneFn()
 
 	// Send a Nodeless first message
-	if err := traceClient.Send(&agenttracepb.ExportTraceServiceRequest{Node: nil}); err != nil {
-		t.Fatalf("Unexpectedly failed to send the first message: %v", err)
-	}
+	err = traceClient.Send(&agenttracepb.ExportTraceServiceRequest{Node: nil})
+	require.NoError(t, err, "Unexpectedly failed to send the first message: %v", err)
 
 	longDuration := 2 * time.Second
 	testDone := make(chan bool, 1)
@@ -380,9 +367,7 @@ func TestExportProtocolConformation_spansInFirstMessage(t *testing.T) {
 	defer doneFn()
 
 	traceClient, traceClientDoneFn, err := makeTraceServiceClient(port)
-	if err != nil {
-		t.Fatalf("Failed to create the gRPC TraceService_ExportClient: %v", err)
-	}
+	require.NoError(t, err, "Failed to create the gRPC TraceService_ExportClient: %v", err)
 	defer traceClientDoneFn()
 
 	sLi := []*tracepb.Span{{TraceId: []byte("1234567890abcde")}, {TraceId: []byte("XXXXXXXXXXabcde")}}
@@ -390,9 +375,8 @@ func TestExportProtocolConformation_spansInFirstMessage(t *testing.T) {
 		Identifier:  &commonpb.ProcessIdentifier{Pid: 1},
 		LibraryInfo: &commonpb.LibraryInfo{Language: commonpb.LibraryInfo_JAVA},
 	}
-	if err := traceClient.Send(&agenttracepb.ExportTraceServiceRequest{Node: ni, Spans: sLi}); err != nil {
-		t.Fatalf("Failed to send the first message: %v", err)
-	}
+	err = traceClient.Send(&agenttracepb.ExportTraceServiceRequest{Node: ni, Spans: sLi})
+	require.NoError(t, err, "Failed to send the first message: %v", err)
 
 	// Give it time to be sent over the wire, then exported.
 	<-time.After(100 * time.Millisecond)
@@ -476,9 +460,7 @@ func (sa *spanAppender) ConsumeTraceData(ctx context.Context, td consumerdata.Tr
 
 func ocReceiverOnGRPCServer(t *testing.T, sr consumer.TraceConsumer, opts ...Option) (oci *Receiver, port int, done func()) {
 	ln, err := net.Listen("tcp", "localhost:0")
-	if err != nil {
-		t.Fatalf("Failed to find an available address to run the gRPC server: %v", err)
-	}
+	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 
 	doneFnList := []func(){func() { ln.Close() }}
 	done = func() {
@@ -499,9 +481,7 @@ func ocReceiverOnGRPCServer(t *testing.T, sr consumer.TraceConsumer, opts ...Opt
 	}
 
 	oci, err = New(sr, opts...)
-	if err != nil {
-		t.Fatalf("Failed to create the Receiver: %v", err)
-	}
+	require.NoError(t, err, "Failed to create the Receiver: %v", err)
 
 	// Now run it as a gRPC server
 	srv := observability.GRPCServerWithObservabilityEnabled()
