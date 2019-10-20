@@ -101,12 +101,8 @@ func TestShortIDSpanConversion(t *testing.T) {
 	}
 
 	ocSpan, _, err := zipkinSpanToTraceSpan(&zs)
-	if err != nil {
-		t.Fatalf("unexpected error %v", err)
-	}
-	if len(ocSpan.TraceId) != 16 {
-		t.Fatalf("incorrect OC proto trace id length")
-	}
+	require.NoError(t, err, "unexpected error %v", err)
+	require.Len(t, ocSpan.TraceId, 16, "incorrect OC proto trace id length")
 
 	want := []byte{0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8}
 	if !reflect.DeepEqual(ocSpan.TraceId, want) {
@@ -152,18 +148,12 @@ func TestNew(t *testing.T) {
 
 func TestZipkinReceiverPortAlreadyInUse(t *testing.T) {
 	l, err := net.Listen("tcp", "localhost:")
-	if err != nil {
-		t.Fatalf("failed to open a port: %v", err)
-	}
+	require.NoError(t, err, "failed to open a port: %v", err)
 	defer l.Close()
 	_, portStr, err := net.SplitHostPort(l.Addr().String())
-	if err != nil {
-		t.Fatalf("failed to split listener address: %v", err)
-	}
+	require.NoError(t, err, "failed to split listener address: %v", err)
 	traceReceiver, err := New("localhost:"+portStr, exportertest.NewNopTraceExporter())
-	if err != nil {
-		t.Fatalf("Failed to create receiver: %v", err)
-	}
+	require.NoError(t, err, "Failed to create receiver: %v", err)
 	mh := receivertest.NewMockHost()
 	err = traceReceiver.StartTraceReception(mh)
 	if err == nil {
@@ -175,18 +165,12 @@ func TestZipkinReceiverPortAlreadyInUse(t *testing.T) {
 func TestConvertSpansToTraceSpans_json(t *testing.T) {
 	// Using Adrian Cole's sample at https://gist.github.com/adriancole/e8823c19dfed64e2eb71
 	blob, err := ioutil.ReadFile("./testdata/sample1.json")
-	if err != nil {
-		t.Fatalf("Failed to read sample JSON file: %v", err)
-	}
+	require.NoError(t, err, "Failed to read sample JSON file: %v", err)
 	zi := new(ZipkinReceiver)
 	reqs, err := zi.v2ToTraceSpans(blob, nil)
-	if err != nil {
-		t.Fatalf("Failed to parse convert Zipkin spans in JSON to Trace spans: %v", err)
-	}
+	require.NoError(t, err, "Failed to parse convert Zipkin spans in JSON to Trace spans: %v", err)
 
-	if g, w := len(reqs), 1; g != w {
-		t.Fatalf("Expecting only one request since all spans share same node/localEndpoint: %v", g)
-	}
+	require.Len(t, reqs, 1, "Expecting only one request since all spans share same node/localEndpoint: %v", len(reqs))
 
 	req := reqs[0]
 	wantNode := &commonpb.Node{
@@ -212,9 +196,7 @@ func TestConvertSpansToTraceSpans_json(t *testing.T) {
 		}
 	}
 	// Expecting 9 non-nil spans
-	if g, w := nonNilSpans, 9; g != w {
-		t.Fatalf("Non-nil spans: Got %d Want %d", g, w)
-	}
+	require.Equal(t, 9, nonNilSpans, "Incorrect non-nil spans count")
 }
 
 func TestConversionRoundtrip(t *testing.T) {
@@ -291,9 +273,7 @@ func TestConversionRoundtrip(t *testing.T) {
 
 	zi := &ZipkinReceiver{nextConsumer: exportertest.NewNopTraceExporter()}
 	ereqs, err := zi.v2ToTraceSpans(receiverInputJSON, nil)
-	if err != nil {
-		t.Fatalf("Failed to parse and convert receiver JSON: %v", err)
-	}
+	require.NoError(t, err, "Failed to parse and convert receiver JSON: %v", err)
 
 	wantProtoRequests := []consumerdata.TraceData{
 		{
@@ -418,9 +398,7 @@ func TestConversionRoundtrip(t *testing.T) {
 	if len(g) != len(w) {
 		t.Errorf("Unmatched lengths:\nGot: %d\nWant: %d", len(g), len(w))
 	}
-	if !reflect.DeepEqual(g, w) {
-		t.Fatalf("Failed to transform the expected ProtoSpans\nGot:\n\t%v\nWant:\n\t%v\n", g, w)
-	}
+	require.True(t, reflect.DeepEqual(g, w), "Failed to transform the expected ProtoSpans\nGot:\n\t%v\nWant:\n\t%v\n", g, w)
 
 	// Now the last phase is to transmit them over the wire and then compare the JSONs
 
