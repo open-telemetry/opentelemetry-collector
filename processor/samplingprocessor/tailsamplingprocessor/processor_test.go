@@ -21,6 +21,7 @@ import (
 	"time"
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
@@ -53,12 +54,9 @@ func TestSequentialTraceArrival(t *testing.T) {
 
 	for i := range traceIds {
 		d, ok := tsp.idToTrace.Load(traceKey(traceIds[i]))
+		require.True(t, ok, "Missing expected traceId")
 		v := d.(*sampling.TraceData)
-		if !ok {
-			t.Fatal("Missing expected traceId")
-		} else if v.SpanCount != int64(i+1) {
-			t.Fatalf("Incorrect number of spans for entry %d, got %d, want %d", i, v.SpanCount, i+1)
-		}
+		require.Equal(t, int64(i+1), v.SpanCount, "Incorrect number of spans for entry %d", i)
 	}
 }
 
@@ -93,12 +91,9 @@ func TestConcurrentTraceArrival(t *testing.T) {
 
 	for i := range traceIds {
 		d, ok := tsp.idToTrace.Load(traceKey(traceIds[i]))
+		require.True(t, ok, "Missing expected traceId")
 		v := d.(*sampling.TraceData)
-		if !ok {
-			t.Fatal("Missing expected traceId")
-		} else if v.SpanCount != int64(i+1)*2 {
-			t.Fatalf("Incorrect number of spans for entry %d, got %d, want %d", i, v.SpanCount, i+1)
-		}
+		require.Equal(t, int64(i+1)*2, v.SpanCount, "Incorrect number of spans for entry %d", i)
 	}
 }
 
@@ -119,9 +114,8 @@ func TestSequentialTraceMapSize(t *testing.T) {
 
 	// On sequential insertion it is possible to know exactly which traces should be still on the map.
 	for i := 0; i < len(traceIds)-maxSize; i++ {
-		if _, ok := tsp.idToTrace.Load(traceKey(traceIds[i])); ok {
-			t.Fatalf("Found unexpected traceId[%d] still on map (id: %v)", i, traceIds[i])
-		}
+		_, ok := tsp.idToTrace.Load(traceKey(traceIds[i]))
+		require.False(t, ok, "Found unexpected traceId[%d] still on map (id: %v)", i, traceIds[i])
 	}
 }
 
@@ -154,9 +148,7 @@ func TestConcurrentTraceMapSize(t *testing.T) {
 		cnt++
 		return true
 	})
-	if cnt != maxSize {
-		t.Fatalf("got %d traces on idToTrace, want %d", cnt, maxSize)
-	}
+	require.Equal(t, maxSize, cnt, "Incorrect traces count on idToTrace")
 }
 
 func TestSamplingPolicyTypicalPath(t *testing.T) {
@@ -185,36 +177,34 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 	for evalNum := 0; evalNum < decisionWaitSeconds; evalNum++ {
 		for ; currItem < numSpansPerBatchWindow*(evalNum+1); currItem++ {
 			tsp.ConsumeTraceData(context.Background(), batches[currItem])
-			if !mtt.Started {
-				t.Fatalf("Time ticker was expected to have started")
-			}
+			require.True(t, mtt.Started, "Time ticker was expected to have started")
 		}
 		tsp.samplingPolicyOnTick()
-		if msp.TotalSpans != 0 || mpe.EvaluationCount != 0 {
-			t.Fatalf("policy for initial items was evaluated before decision wait period")
-		}
+		require.False(
+			t,
+			msp.TotalSpans != 0 || mpe.EvaluationCount != 0,
+			"policy for initial items was evaluated before decision wait period",
+		)
 	}
 
 	// Now the first batch that waited the decision period.
 	mpe.NextDecision = sampling.Sampled
 	tsp.samplingPolicyOnTick()
-	if msp.TotalSpans == 0 || mpe.EvaluationCount == 0 {
-		t.Fatalf("policy should have been evaluated totalspans == %d and evaluationcount == %d", msp.TotalSpans, mpe.EvaluationCount)
-	}
+	require.False(
+		t,
+		msp.TotalSpans == 0 || mpe.EvaluationCount == 0,
+		"policy should have been evaluated totalspans == %d and evaluationcount == %d",
+		msp.TotalSpans,
+		mpe.EvaluationCount,
+	)
 
-	if msp.TotalSpans != numSpansPerBatchWindow {
-		t.Fatalf("not all spans of first window were accounted for: got %d, want %d", msp.TotalSpans, numSpansPerBatchWindow)
-	}
+	require.Equal(t, numSpansPerBatchWindow, msp.TotalSpans, "not all spans of first window were accounted for")
 
 	// Late span of a sampled trace should be sent directly down the pipeline exporter
 	tsp.ConsumeTraceData(context.Background(), batches[0])
 	expectedNumWithLateSpan := numSpansPerBatchWindow + 1
-	if msp.TotalSpans != expectedNumWithLateSpan {
-		t.Fatalf("late span was not accounted for: got %d, want %d", msp.TotalSpans, expectedNumWithLateSpan)
-	}
-	if mpe.LateArrivingSpansCount != 1 {
-		t.Fatalf("policy was not notified of the late span")
-	}
+	require.Equal(t, expectedNumWithLateSpan, msp.TotalSpans, "late span was not accounted for")
+	require.Equal(t, 1, mpe.LateArrivingSpansCount, "policy was not notified of the late span")
 }
 
 func generateIdsAndBatches(numIds int) ([][]byte, []consumerdata.TraceData) {

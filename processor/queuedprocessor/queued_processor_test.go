@@ -106,12 +106,8 @@ func TestQueueProcessorHappyPath(t *testing.T) {
 	// Wait until all batches received
 	mockProc.awaitAsyncProcessing()
 
-	if wantBatches != int(mockProc.batchCount) {
-		t.Fatalf("Wanted %d batches, got %d", wantBatches, mockProc.batchCount)
-	}
-	if wantSpans != int(mockProc.spanCount) {
-		t.Fatalf("Wanted %d spans, got %d", wantSpans, mockProc.spanCount)
-	}
+	require.Equal(t, wantBatches, int(mockProc.batchCount), "Incorrect batches count")
+	require.Equal(t, wantSpans, int(mockProc.spanCount), "Incorrect batches spans")
 }
 
 type mockConcurrentSpanProcessor struct {
