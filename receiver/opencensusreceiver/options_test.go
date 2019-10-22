@@ -15,7 +15,6 @@
 package opencensusreceiver
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -30,9 +29,5 @@ func TestNoopOption(t *testing.T) {
 		opt.withReceiver(subjectReceiver)
 	}
 
-	require.True(
-		t,
-		reflect.DeepEqual(plainReceiver, subjectReceiver),
-		"noopOption has side effects\nGot:  %+v\nWant: %+v", subjectReceiver, plainReceiver,
-	)
+	require.Equal(t, plainReceiver, subjectReceiver, "noopOption has side effects")
 }
