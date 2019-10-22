@@ -16,7 +16,6 @@ package zipkinreceiver
 
 import (
 	"net/http"
-	"reflect"
 	"testing"
 	"time"
 
@@ -24,6 +23,7 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/proto"
 	zipkin_proto3 "github.com/openzipkin/zipkin-go/proto/v2"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
@@ -184,7 +184,5 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 		},
 	}
 
-	if g, w := reqs, want; !reflect.DeepEqual(g, w) {
-		t.Errorf("Got:\n\t%v\nWant:\n\t%v", g, w)
-	}
+	assert.Equal(t, want, reqs)
 }

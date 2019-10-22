@@ -22,7 +22,6 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
-	"reflect"
 	"testing"
 	"time"
 
@@ -32,6 +31,7 @@ import (
 	openzipkin "github.com/openzipkin/zipkin-go"
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	zhttp "github.com/openzipkin/zipkin-go/reporter/http"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
@@ -77,20 +77,14 @@ func TestTraceIDConversion(t *testing.T) {
 
 	for _, tc := range tests {
 		got, gotErr := zTraceIDToOCProtoTraceID(tc.id)
-		if tc.wantErr != gotErr {
-			t.Errorf("gotErr=%v wantErr=%v", gotErr, tc.wantErr)
-		}
-		if !reflect.DeepEqual(got, tc.want) {
-			t.Errorf("got=%v want=%v", got, tc.want)
-		}
+		assert.Equal(t, tc.wantErr, gotErr)
+		assert.Equal(t, tc.want, got)
 	}
 }
 
 func TestShortIDSpanConversion(t *testing.T) {
 	shortID, _ := zipkinmodel.TraceIDFromHex("0102030405060708")
-	if shortID.High != 0 {
-		t.Errorf("wanted 64bit traceID, so TraceID.High must be zero")
-	}
+	assert.Equal(t, uint64(0), shortID.High, "wanted 64bit traceID, so TraceID.High must be zero")
 
 	zc := zipkinmodel.SpanContext{
 		TraceID: shortID,
@@ -105,9 +99,7 @@ func TestShortIDSpanConversion(t *testing.T) {
 	require.Len(t, ocSpan.TraceId, 16, "incorrect OC proto trace id length")
 
 	want := []byte{0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8}
-	if !reflect.DeepEqual(ocSpan.TraceId, want) {
-		t.Errorf("got=%v want=%v", ocSpan.TraceId, want)
-	}
+	assert.Equal(t, want, ocSpan.TraceId)
 }
 
 func TestNew(t *testing.T) {
@@ -135,13 +127,8 @@ func TestNew(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := New(tt.args.address, tt.args.nextConsumer)
-			if err != tt.wantErr {
-				t.Errorf("New() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got.TraceSource() != traceSource {
-				t.Errorf("TraceSource() = %v, want %v", got, traceSource)
-			}
+			require.Equal(t, tt.wantErr, err)
+			assert.Equal(t, traceSource, got.TraceSource())
 		})
 	}
 }
@@ -185,9 +172,7 @@ func TestConvertSpansToTraceSpans_json(t *testing.T) {
 			"zipkin.remoteEndpoint.port":        "9000",
 		},
 	}
-	if g, w := req.Node, wantNode; !reflect.DeepEqual(g, w) {
-		t.Errorf("GotNode:\n\t%v\nWantNode:\n\t%v", g, w)
-	}
+	assert.Equal(t, wantNode, req.Node)
 
 	nonNilSpans := 0
 	for _, span := range req.Spans {
@@ -394,11 +379,8 @@ func TestConversionRoundtrip(t *testing.T) {
 		},
 	}
 
-	g, w := ereqs, wantProtoRequests
-	if len(g) != len(w) {
-		t.Errorf("Unmatched lengths:\nGot: %d\nWant: %d", len(g), len(w))
-	}
-	require.True(t, reflect.DeepEqual(g, w), "Failed to transform the expected ProtoSpans\nGot:\n\t%v\nWant:\n\t%v\n", g, w)
+	assert.Equal(t, len(wantProtoRequests), len(ereqs))
+	require.Equal(t, wantProtoRequests, ereqs, "Failed to transform the expected ProtoSpans")
 
 	// Now the last phase is to transmit them over the wire and then compare the JSONs
 
@@ -497,9 +479,7 @@ func TestConversionRoundtrip(t *testing.T) {
 }]`
 
 	gj, wj := testutils.GenerateNormalizedJSON(buf.String()), testutils.GenerateNormalizedJSON(wantFinalJSON)
-	if gj != wj {
-		t.Errorf("The roundtrip JSON doesn't match the JSON that we want\nGot:\n%s\nWant:\n%s", gj, wj)
-	}
+	assert.Equal(t, wj, gj, "The roundtrip JSON doesn't match the JSON that we want")
 }
 
 func TestStartTraceReception(t *testing.T) {
@@ -525,9 +505,8 @@ func TestStartTraceReception(t *testing.T) {
 			require.Nil(t, err)
 			require.NotNil(t, zr)
 
-			if err := zr.StartTraceReception(tt.host); (err != nil) != tt.wantErr {
-				t.Errorf("StartTraceReception error = %v, wantErr %v", err, tt.wantErr)
-			}
+			err = zr.StartTraceReception(tt.host)
+			assert.Equal(t, tt.wantErr, err != nil)
 			if !tt.wantErr {
 				require.Nil(t, zr.StopTraceReception())
 			}
