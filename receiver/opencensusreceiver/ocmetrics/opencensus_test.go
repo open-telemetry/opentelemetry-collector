@@ -32,6 +32,7 @@ import (
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/golang/protobuf/proto"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
@@ -55,9 +56,7 @@ func TestExportMultiplexing(t *testing.T) {
 	defer doneFn()
 
 	metricsClient, metricsClientDoneFn, err := makeMetricsServiceClient(port)
-	if err != nil {
-		t.Fatalf("Failed to create the gRPC MetricsService_ExportClient: %v", err)
-	}
+	require.NoError(t, err, "Failed to create the gRPC MetricsService_ExportClient: %v", err)
 	defer metricsClientDoneFn()
 
 	// Step 1) The initiation.
@@ -69,15 +68,13 @@ func TestExportMultiplexing(t *testing.T) {
 		LibraryInfo: &commonpb.LibraryInfo{Language: commonpb.LibraryInfo_JAVA},
 	}
 
-	if err := metricsClient.Send(&agentmetricspb.ExportMetricsServiceRequest{Node: initiatingNode}); err != nil {
-		t.Fatalf("Failed to send the initiating message: %v", err)
-	}
+	err = metricsClient.Send(&agentmetricspb.ExportMetricsServiceRequest{Node: initiatingNode})
+	require.NoError(t, err, "Failed to send the initiating message: %v", err)
 
 	// Step 1a) Send some metrics without a node, they should be registered as coming from the initiating node.
 	mLi := []*metricspb.Metric{makeMetric(1)}
-	if err := metricsClient.Send(&agentmetricspb.ExportMetricsServiceRequest{Node: nil, Metrics: mLi}); err != nil {
-		t.Fatalf("Failed to send the proxied message from app1: %v", err)
-	}
+	err = metricsClient.Send(&agentmetricspb.ExportMetricsServiceRequest{Node: nil, Metrics: mLi})
+	require.NoError(t, err, "Failed to send the proxied message from app1: %v", err)
 
 	// Step 2) Send a "proxied" metrics message from app1 with "node1"
 	node1 := &commonpb.Node{
@@ -85,16 +82,14 @@ func TestExportMultiplexing(t *testing.T) {
 		LibraryInfo: &commonpb.LibraryInfo{Language: commonpb.LibraryInfo_NODE_JS},
 	}
 	mL1 := []*metricspb.Metric{makeMetric(2)}
-	if err := metricsClient.Send(&agentmetricspb.ExportMetricsServiceRequest{Node: node1, Metrics: mL1}); err != nil {
-		t.Fatalf("Failed to send the proxied message from app1: %v", err)
-	}
+	err = metricsClient.Send(&agentmetricspb.ExportMetricsServiceRequest{Node: node1, Metrics: mL1})
+	require.NoError(t, err, "Failed to send the proxied message from app1: %v", err)
 
 	// Step 3) Send a metrics message without a node but with metrics: this
 	// should be registered as belonging to the last used node i.e. "node1".
 	mLn1 := []*metricspb.Metric{makeMetric(3)}
-	if err := metricsClient.Send(&agentmetricspb.ExportMetricsServiceRequest{Node: nil, Metrics: mLn1}); err != nil {
-		t.Fatalf("Failed to send the proxied message without a node: %v", err)
-	}
+	err = metricsClient.Send(&agentmetricspb.ExportMetricsServiceRequest{Node: nil, Metrics: mLn1})
+	require.NoError(t, err, "Failed to send the proxied message without a node: %v", err)
 
 	// Step 4) Send a metrics message from a differently proxied node "node2" from app2
 	node2 := &commonpb.Node{
@@ -102,22 +97,19 @@ func TestExportMultiplexing(t *testing.T) {
 		LibraryInfo: &commonpb.LibraryInfo{Language: commonpb.LibraryInfo_GO_LANG},
 	}
 	mL2 := []*metricspb.Metric{makeMetric(4)}
-	if err := metricsClient.Send(&agentmetricspb.ExportMetricsServiceRequest{Node: node2, Metrics: mL2}); err != nil {
-		t.Fatalf("Failed to send the proxied message from app2: %v", err)
-	}
+	err = metricsClient.Send(&agentmetricspb.ExportMetricsServiceRequest{Node: node2, Metrics: mL2})
+	require.NoError(t, err, "Failed to send the proxied message from app2: %v", err)
 
 	// Step 5a) Send a metrics message without a node but with metrics: this
 	// should be registered as belonging to the last used node i.e. "node2".
 	mLn2a := []*metricspb.Metric{makeMetric(5)}
-	if err := metricsClient.Send(&agentmetricspb.ExportMetricsServiceRequest{Node: nil, Metrics: mLn2a}); err != nil {
-		t.Fatalf("Failed to send the proxied message without a node: %v", err)
-	}
+	err = metricsClient.Send(&agentmetricspb.ExportMetricsServiceRequest{Node: nil, Metrics: mLn2a})
+	require.NoError(t, err, "Failed to send the proxied message without a node: %v", err)
 
 	// Step 5b)
 	mLn2b := []*metricspb.Metric{makeMetric(6)}
-	if err := metricsClient.Send(&agentmetricspb.ExportMetricsServiceRequest{Node: nil, Metrics: mLn2b}); err != nil {
-		t.Fatalf("Failed to send the proxied message without a node: %v", err)
-	}
+	err = metricsClient.Send(&agentmetricspb.ExportMetricsServiceRequest{Node: nil, Metrics: mLn2b})
+	require.NoError(t, err, "Failed to send the proxied message without a node: %v", err)
 	// Give the process sometime to send data over the wire and perform batching
 	<-time.After(150 * time.Millisecond)
 
@@ -174,15 +166,12 @@ func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 	defer doneFn()
 
 	metricsClient, metricsClientDoneFn, err := makeMetricsServiceClient(port)
-	if err != nil {
-		t.Fatalf("Failed to create the gRPC MetricsService_ExportClient: %v", err)
-	}
+	require.NoError(t, err, "Failed to create the gRPC MetricsService_ExportClient: %v", err)
 	defer metricsClientDoneFn()
 
 	// Send a Nodeless first message
-	if err := metricsClient.Send(&agentmetricspb.ExportMetricsServiceRequest{Node: nil}); err != nil {
-		t.Fatalf("Unexpectedly failed to send the first message: %v", err)
-	}
+	err = metricsClient.Send(&agentmetricspb.ExportMetricsServiceRequest{Node: nil})
+	require.NoError(t, err, "Unexpectedly failed to send the first message: %v", err)
 
 	longDuration := 2 * time.Second
 	testDone := make(chan bool, 1)
@@ -251,9 +240,7 @@ func TestExportProtocolConformation_metricsInFirstMessage(t *testing.T) {
 	defer doneFn()
 
 	metricsClient, metricsClientDoneFn, err := makeMetricsServiceClient(port)
-	if err != nil {
-		t.Fatalf("Failed to create the gRPC MetricsService_ExportClient: %v", err)
-	}
+	require.NoError(t, err, "Failed to create the gRPC MetricsService_ExportClient: %v", err)
 	defer metricsClientDoneFn()
 
 	mLi := []*metricspb.Metric{makeMetric(10), makeMetric(11)}
@@ -261,9 +248,8 @@ func TestExportProtocolConformation_metricsInFirstMessage(t *testing.T) {
 		Identifier:  &commonpb.ProcessIdentifier{Pid: 1},
 		LibraryInfo: &commonpb.LibraryInfo{Language: commonpb.LibraryInfo_JAVA},
 	}
-	if err := metricsClient.Send(&agentmetricspb.ExportMetricsServiceRequest{Node: ni, Metrics: mLi}); err != nil {
-		t.Fatalf("Failed to send the first message: %v", err)
-	}
+	err = metricsClient.Send(&agentmetricspb.ExportMetricsServiceRequest{Node: ni, Metrics: mLi})
+	require.NoError(t, err, "Failed to send the first message: %v", err)
 
 	// Give it time to be sent over the wire, then exported.
 	<-time.After(100 * time.Millisecond)
@@ -348,9 +334,7 @@ func (sa *metricAppender) ConsumeMetricsData(ctx context.Context, md consumerdat
 
 func ocReceiverOnGRPCServer(t *testing.T, sr consumer.MetricsConsumer, opts ...Option) (oci *Receiver, port int, done func()) {
 	ln, err := net.Listen("tcp", "localhost:")
-	if err != nil {
-		t.Fatalf("Failed to find an available address to run the gRPC server: %v", err)
-	}
+	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 
 	doneFnList := []func(){func() { ln.Close() }}
 	done = func() {
@@ -371,9 +355,7 @@ func ocReceiverOnGRPCServer(t *testing.T, sr consumer.MetricsConsumer, opts ...O
 	}
 
 	oci, err = New(sr, opts...)
-	if err != nil {
-		t.Fatalf("Failed to create the Receiver: %v", err)
-	}
+	require.NoError(t, err, "Failed to create the Receiver: %v", err)
 
 	// Now run it as a gRPC server
 	srv := observability.GRPCServerWithObservabilityEnabled()

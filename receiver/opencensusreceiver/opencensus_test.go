@@ -46,14 +46,11 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 	// Set the buffer count to 1 to make it flush the test span immediately.
 	sink := new(exportertest.SinkTraceExporter)
 	ocr, err := New(addr, sink, nil)
-	if err != nil {
-		t.Fatalf("Failed to create trace receiver: %v", err)
-	}
+	require.NoError(t, err, "Failed to create trace receiver: %v", err)
 
 	mh := receivertest.NewMockHost()
-	if err := ocr.StartTraceReception(mh); err != nil {
-		t.Fatalf("Failed to start trace receiver: %v", err)
-	}
+	err = ocr.StartTraceReception(mh)
+	require.NoError(t, err, "Failed to start trace receiver: %v", err)
 	defer ocr.StopTraceReception()
 
 	// TODO(songy23): make starting server deterministic
@@ -85,16 +82,12 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
        ]
     }`)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(traceJSON))
-	if err != nil {
-		t.Fatalf("Error creating trace POST request: %v", err)
-	}
+	require.NoError(t, err, "Error creating trace POST request: %v", err)
 	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
-	if err != nil {
-		t.Fatalf("Error posting trace to grpc-gateway server: %v", err)
-	}
+	require.NoError(t, err, "Error posting trace to grpc-gateway server: %v", err)
 
 	respBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -157,15 +150,12 @@ func TestTraceGrpcGatewayCors_endToEnd(t *testing.T) {
 
 	sink := new(exportertest.SinkTraceExporter)
 	ocr, err := New(addr, sink, nil, WithCorsOrigins(corsOrigins))
-	if err != nil {
-		t.Fatalf("Failed to create trace receiver: %v", err)
-	}
+	require.NoError(t, err, "Failed to create trace receiver: %v", err)
 	defer ocr.StopTraceReception()
 
 	mh := receivertest.NewMockHost()
-	if err := ocr.StartTraceReception(mh); err != nil {
-		t.Fatalf("Failed to start trace receiver: %v", err)
-	}
+	err = ocr.StartTraceReception(mh)
+	require.NoError(t, err, "Failed to start trace receiver: %v", err)
 
 	// TODO(songy23): make starting server deterministic
 	// Wait for the servers to start
@@ -186,15 +176,12 @@ func TestMetricsGrpcGatewayCors_endToEnd(t *testing.T) {
 
 	sink := new(exportertest.SinkMetricsExporter)
 	ocr, err := New(addr, nil, sink, WithCorsOrigins(corsOrigins))
-	if err != nil {
-		t.Fatalf("Failed to create metrics receiver: %v", err)
-	}
+	require.NoError(t, err, "Failed to create metrics receiver: %v", err)
 	defer ocr.StopMetricsReception()
 
 	mh := receivertest.NewMockHost()
-	if err := ocr.StartMetricsReception(mh); err != nil {
-		t.Fatalf("Failed to start metrics receiver: %v", err)
-	}
+	err = ocr.StartMetricsReception(mh)
+	require.NoError(t, err, "Failed to start metrics receiver: %v", err)
 
 	// TODO(songy23): make starting server deterministic
 	// Wait for the servers to start
@@ -218,14 +205,11 @@ func TestAcceptAllGRPCProtoAffiliatedContentTypes(t *testing.T) {
 	addr := testutils.GetAvailableLocalAddress(t)
 	cbts := new(exportertest.SinkTraceExporter)
 	ocr, err := New(addr, cbts, nil)
-	if err != nil {
-		t.Fatalf("Failed to create trace receiver: %v", err)
-	}
+	require.NoError(t, err, "Failed to create trace receiver: %v", err)
 
 	mh := receivertest.NewMockHost()
-	if err := ocr.StartTraceReception(mh); err != nil {
-		t.Fatalf("Failed to start the trace receiver: %v", err)
-	}
+	err = ocr.StartTraceReception(mh)
+	require.NoError(t, err, "Failed to start the trace receiver: %v", err)
 	defer ocr.StopTraceReception()
 
 	// Now start the client with the various Proto affiliated gRPC Content-SubTypes as per:
@@ -307,17 +291,13 @@ func runContentTypeTests(addr string, contentTypeDesignation bool, contentType s
 
 func verifyCorsResp(t *testing.T, url string, origin string, wantStatus int, wantAllowed bool) {
 	req, err := http.NewRequest("OPTIONS", url, nil)
-	if err != nil {
-		t.Fatalf("Error creating trace OPTIONS request: %v", err)
-	}
+	require.NoError(t, err, "Error creating trace OPTIONS request: %v", err)
 	req.Header.Set("Origin", origin)
 	req.Header.Set("Access-Control-Request-Method", "POST")
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
-	if err != nil {
-		t.Fatalf("Error sending OPTIONS to grpc-gateway server: %v", err)
-	}
+	require.NoError(t, err, "Error sending OPTIONS to grpc-gateway server: %v", err)
 
 	err = resp.Body.Close()
 	if err != nil {
@@ -349,9 +329,7 @@ func verifyCorsResp(t *testing.T, url string, origin string, wantStatus int, wan
 func TestStopWithoutStartNeverCrashes(t *testing.T) {
 	addr := testutils.GetAvailableLocalAddress(t)
 	ocr, err := New(addr, nil, nil)
-	if err != nil {
-		t.Fatalf("Failed to create an OpenCensus receiver: %v", err)
-	}
+	require.NoError(t, err, "Failed to create an OpenCensus receiver: %v", err)
 	// Stop it before ever invoking Start*.
 	ocr.stop()
 }
@@ -359,18 +337,12 @@ func TestStopWithoutStartNeverCrashes(t *testing.T) {
 func TestNewPortAlreadyUsed(t *testing.T) {
 	addr := testutils.GetAvailableLocalAddress(t)
 	ln, err := net.Listen("tcp", addr)
-	if err != nil {
-		t.Fatalf("failed to listen on %q: %v", addr, err)
-	}
+	require.NoError(t, err, "failed to listen on %q: %v", addr, err)
 	defer ln.Close()
 
 	r, err := New(addr, nil, nil)
-	if err == nil {
-		t.Fatalf("want err got nil")
-	}
-	if r != nil {
-		t.Fatalf("want nil got %v", r)
-	}
+	require.Error(t, err)
+	require.Nil(t, r)
 }
 
 func TestMultipleStopReceptionShouldNotError(t *testing.T) {

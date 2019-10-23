@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
@@ -111,11 +112,9 @@ func TestCreateTraceReceiver(t *testing.T) {
 			}
 			if tr != nil {
 				mh := receivertest.NewMockHost()
-				if err := tr.StartTraceReception(mh); err == nil {
-					tr.StopTraceReception()
-				} else {
-					t.Fatalf("StartTraceReception() error = %v", err)
-				}
+				err := tr.StartTraceReception(mh)
+				require.NoError(t, err, "StartTraceReception() error = %v", err)
+				tr.StopTraceReception()
 			}
 		})
 	}
@@ -184,11 +183,9 @@ func TestCreateMetricReceiver(t *testing.T) {
 			}
 			if tc != nil {
 				mh := receivertest.NewMockHost()
-				if err := tc.StartMetricsReception(mh); err == nil {
-					tc.StopMetricsReception()
-				} else {
-					t.Fatalf("StartTraceReception() error = %v", err)
-				}
+				err := tc.StartMetricsReception(mh)
+				require.NoError(t, err, "StartTraceReception() error = %v", err)
+				tc.StopMetricsReception()
 			}
 		})
 	}
