@@ -16,7 +16,6 @@ package zipkinreceiver
 
 import (
 	"net/http"
-	"reflect"
 	"testing"
 	"time"
 
@@ -24,6 +23,8 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/proto"
 	zipkin_proto3 "github.com/openzipkin/zipkin-go/proto/v2"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal"
@@ -96,22 +97,15 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 
 	// 2. Serialize it
 	protoBlob, err := proto.Marshal(payloadFromWild)
-	if err != nil {
-		t.Fatalf("Failed to protobuf serialize payload: %v", err)
-	}
+	require.NoError(t, err, "Failed to protobuf serialize payload: %v", err)
 	zi := new(ZipkinReceiver)
 	hdr := make(http.Header)
 	hdr.Set("Content-Type", "application/x-protobuf")
 
 	// 3. Get that payload converted to OpenCensus proto spans.
 	reqs, err := zi.v2ToTraceSpans(protoBlob, hdr)
-	if err != nil {
-		t.Fatalf("Failed to parse convert Zipkin spans in Protobuf to Trace spans: %v", err)
-	}
-
-	if g, w := len(reqs), 2; g != w {
-		t.Fatalf("Expecting exactly 2 requests since spans have different node/localEndpoint: %v", g)
-	}
+	require.NoError(t, err, "Failed to parse convert Zipkin spans in Protobuf to Trace spans: %v", err)
+	require.Len(t, reqs, 2, "Expecting exactly 2 requests since spans have different node/localEndpoint: %v", len(reqs))
 
 	want := []consumerdata.TraceData{
 		{
@@ -190,7 +184,5 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 		},
 	}
 
-	if g, w := reqs, want; !reflect.DeepEqual(g, w) {
-		t.Errorf("Got:\n\t%v\nWant:\n\t%v", g, w)
-	}
+	assert.Equal(t, want, reqs)
 }
