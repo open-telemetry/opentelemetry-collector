@@ -34,6 +34,11 @@ const (
 	StringAttribute PolicyType = "string_attribute"
 	// RateLimiting allows all traces until the specified limits are satisfied.
 	RateLimiting PolicyType = "rate_limiting"
+	// StringProbabilisticAttribute sample traces that a attribute, of type string, matching
+	// one of the listed values and samples certain percentage [0.0 - 1.0] to traces [delimited by ::
+	// [ex:{key: "http.status_code", values: ["500::1.0", "200::0.1"]} ] sample 100% of 500's and 10% of 200's
+	StringProbabilisticAttribute PolicyType = "string_probabilistic_attribute"
+
 )
 
 // PolicyCfg holds the common configuration to all policies.
@@ -48,6 +53,8 @@ type PolicyCfg struct {
 	StringAttributeCfg StringAttributeCfg `mapstructure:"string_attribute"`
 	// Configs for rate limiting filter sampling policy evaluator.
 	RateLimitingCfg RateLimitingCfg `mapstructure:"rate_limiting"`
+	// Configs for string attribute filter sampling policy evaluator.
+	StringProbabilisticAttributeCfg StringProbabilisticAttributeCfg `mapstructure:"string_probabilistic_attribute"`
 }
 
 // NumericAttributeCfg holds the configurable settings to create a numeric attribute filter
@@ -70,6 +77,14 @@ type StringAttributeCfg struct {
 	Values []string `mapstructure:"values"`
 }
 
+// StringProbabilisticAttributeCfg holds the configurable settings to create a string attribute filter
+// sampling policy evaluator.
+type StringProbabilisticAttributeCfg struct {
+	// Tag that the filter is going to be matching against.
+	Key string `mapstructure:"key"`
+	// Values is the set of attribute values that if any is equal to the actual attribute value to be considered a match.
+	Values []string `mapstructure:"values"`
+}
 // RateLimitingCfg holds the configurable settings to create a rate limiting
 // sampling policy evaluator.
 type RateLimitingCfg struct {

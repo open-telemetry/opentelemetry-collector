@@ -29,6 +29,11 @@ processors:
             name: test-policy-4,
             type: rate_limiting,
             rate_limiting: {spans_per_second: 35}
+         },
+         {
+            name: test-policy-5,
+            type: string_probabilistic_attribute,
+            string_attribute: {key: key2, values: [value1::1.0, value2::0.2]}
          }
       ]
 

@@ -133,6 +133,9 @@ func getPolicyEvaluator(cfg *PolicyCfg) (sampling.PolicyEvaluator, error) {
 	case RateLimiting:
 		rlfCfg := cfg.RateLimitingCfg
 		return sampling.NewRateLimiting(rlfCfg.SpansPerSecond), nil
+	case StringProbabilisticAttribute:
+		spafCfg := cfg.StringProbabilisticAttributeCfg
+		return sampling.NewStringProbabilisticAttributeFilter(spafCfg.Key, spafCfg.Values), nil
 	default:
 		return nil, fmt.Errorf("unknown sampling policy type %s", cfg.Type)
 	}
