@@ -15,20 +15,16 @@
 package sampling
 
 import (
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"strconv"
 	"strings"
+
+	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 )
 
 type stringProbabilisticAttributeFilter struct {
 	key         string
 	values      map[string]bool
 	probability map[string]CountingSampler
-}
-
-type sampler struct {
-	key string
-	age int
 }
 
 var _ PolicyEvaluator = (*stringProbabilisticAttributeFilter)(nil)

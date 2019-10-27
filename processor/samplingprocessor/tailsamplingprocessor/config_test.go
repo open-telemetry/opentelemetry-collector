@@ -66,6 +66,11 @@ func TestLoadConfig(t *testing.T) {
 					Type:            RateLimiting,
 					RateLimitingCfg: RateLimitingCfg{SpansPerSecond: 35},
 				},
+				{
+					Name:                            "test-policy-5",
+					Type:                            StringProbabilisticAttribute,
+					StringProbabilisticAttributeCfg: StringProbabilisticAttributeCfg{Key: "key3", Values: []string{"value1::1.0", "value2::0.2"}},
+				},
 			},
 		})
 }

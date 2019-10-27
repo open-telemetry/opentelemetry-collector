@@ -33,7 +33,7 @@ processors:
          {
             name: test-policy-5,
             type: string_probabilistic_attribute,
-            string_attribute: {key: key2, values: [value1::1.0, value2::0.2]}
+            string_probabilistic_attribute: {key: key3, values: [value1::1.0, value2::0.2]}
          }
       ]
 
