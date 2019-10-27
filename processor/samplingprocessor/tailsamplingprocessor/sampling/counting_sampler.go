@@ -6,12 +6,15 @@ import (
 	"time"
 )
 
+//DIVISOR : Divisor constant
 const DIVISOR = 100
 
+//Sampler : Sampler contract
 type Sampler interface {
 	isSampled() bool
 }
 
+//CountingSampler : Counting sampler is implementation of sampler
 type CountingSampler struct {
 	samplingRate float32
 	randomMap    map[int]int
@@ -29,6 +32,7 @@ func (a *atomiccounter) increment() int64 {
 	}
 }
 
+// Initialize the randomMap using random
 func (c CountingSampler) init() {
 	rand.Seed(time.Now().UnixNano())
 	percentage := c.samplingRate * DIVISOR
@@ -49,6 +53,7 @@ func (c CountingSampler) isSampled() bool {
 	return false
 }
 
+//NewCountingSampler : Create instance of counting sampler
 func NewCountingSampler(samplingRate float32) CountingSampler {
 	sampler := CountingSampler{samplingRate, make(map[int]int)}
 	sampler.init()

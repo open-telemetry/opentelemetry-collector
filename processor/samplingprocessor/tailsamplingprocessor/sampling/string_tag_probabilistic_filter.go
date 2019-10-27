@@ -33,8 +33,7 @@ type sampler struct {
 
 var _ PolicyEvaluator = (*stringProbabilisticAttributeFilter)(nil)
 
-// NewStringAttributeFilter creates a policy evaluator that samples all traces with
-// the given attribute in the given numeric range.
+// NewStringProbabilisticAttributeFilter : NewStringAttributeFilter creates a policy evaluator that samples all traces with the given attribute in the given numeric range.
 func NewStringProbabilisticAttributeFilter(key string, values []string) PolicyEvaluator {
 	valuesMap := make(map[string]bool)
 	probabilityMap := make(map[string]CountingSampler)
