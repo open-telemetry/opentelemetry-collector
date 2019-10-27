@@ -38,7 +38,6 @@ const (
 	// one of the listed values and samples certain percentage [0.0 - 1.0] to traces [delimited by ::
 	// [ex:{key: "http.status_code", values: ["500::1.0", "200::0.1"]} ] sample 100% of 500's and 10% of 200's
 	StringProbabilisticAttribute PolicyType = "string_probabilistic_attribute"
-
 )
 
 // PolicyCfg holds the common configuration to all policies.
@@ -85,6 +84,7 @@ type StringProbabilisticAttributeCfg struct {
 	// Values is the set of attribute values that if any is equal to the actual attribute value to be considered a match.
 	Values []string `mapstructure:"values"`
 }
+
 // RateLimitingCfg holds the configurable settings to create a rate limiting
 // sampling policy evaluator.
 type RateLimitingCfg struct {

@@ -15,7 +15,6 @@
 package sampling
 
 import (
-	"fmt"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"strconv"
 	"strings"
@@ -48,8 +47,8 @@ func NewStringProbabilisticAttributeFilter(key string, values []string) PolicyEv
 		}
 	}
 	return &stringProbabilisticAttributeFilter{
-		key:    key,
-		values: valuesMap,
+		key:         key,
+		values:      valuesMap,
 		probability: probabilityMap,
 	}
 }
@@ -67,8 +66,7 @@ func (saf *stringProbabilisticAttributeFilter) Evaluate(traceID []byte, trace *T
 	trace.Lock()
 	batches := trace.ReceivedBatches
 	trace.Unlock()
-	for id, batch := range batches {
-		fmt.Println(id)
+	for _, batch := range batches {
 		node := batch.Node
 		if node != nil && node.Attributes != nil {
 			if v, ok := node.Attributes[saf.key]; ok {

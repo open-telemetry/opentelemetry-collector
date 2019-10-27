@@ -7,6 +7,7 @@ import (
 )
 
 const DIVISOR = 100
+
 type Sampler interface {
 	isSampled() bool
 }
