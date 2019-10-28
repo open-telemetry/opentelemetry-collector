@@ -40,6 +40,17 @@ func TestEvaluate_TenPercent(t *testing.T) {
 	assert.Equal(t, 10, j)
 }
 
+func TestEvaluate_FifteenPercent(t *testing.T) {
+	var status = "200"
+	policies := []string{status + "::0.15"}
+	var stringProbabilisticAttributeFilter = NewStringProbabilisticAttributeFilter(string("http.status_code"), policies)
+	j := 0
+	for i := 0; i < 100; i++ {
+		j = evaluateStringProbabilityAttrib(stringProbabilisticAttributeFilter, j, status)
+	}
+	assert.Equal(t, 15, j)
+}
+
 func TestEvaluate_HundredPercent(t *testing.T) {
 	var status = "500"
 	policies := []string{status + "::1.0"}

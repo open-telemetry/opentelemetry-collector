@@ -23,7 +23,6 @@ import (
 
 type stringProbabilisticAttributeFilter struct {
 	key         string
-	values      map[string]bool
 	probability map[string]CountingSampler
 }
 
@@ -31,19 +30,16 @@ var _ PolicyEvaluator = (*stringProbabilisticAttributeFilter)(nil)
 
 // NewStringProbabilisticAttributeFilter : NewStringAttributeFilter creates a policy evaluator that samples all traces with the given attribute in the given numeric range.
 func NewStringProbabilisticAttributeFilter(key string, values []string) PolicyEvaluator {
-	valuesMap := make(map[string]bool)
 	probabilityMap := make(map[string]CountingSampler)
 	for _, value := range values {
 		if value != "" {
 			v := strings.Split(value, "::")
-			valuesMap[v[0]] = true
 			f, _ := strconv.ParseFloat(v[1], 32)
 			probabilityMap[v[0]] = NewCountingSampler(float32(f))
 		}
 	}
 	return &stringProbabilisticAttributeFilter{
 		key:         key,
-		values:      valuesMap,
 		probability: probabilityMap,
 	}
 }
@@ -65,7 +61,7 @@ func (saf *stringProbabilisticAttributeFilter) Evaluate(traceID []byte, trace *T
 		node := batch.Node
 		if node != nil && node.Attributes != nil {
 			if v, ok := node.Attributes[saf.key]; ok {
-				if _, ok := saf.values[v]; ok && saf.probability[v].isSampled() {
+				if _, ok := saf.probability[v]; ok && saf.probability[v].isSampled() {
 					return Sampled, nil
 				}
 			}
@@ -77,7 +73,7 @@ func (saf *stringProbabilisticAttributeFilter) Evaluate(traceID []byte, trace *T
 			if v, ok := span.Attributes.AttributeMap[saf.key]; ok {
 				truncableStr := v.GetStringValue()
 				if truncableStr != nil {
-					if _, ok := saf.values[truncableStr.Value]; ok && saf.probability[truncableStr.Value].isSampled() {
+					if _, ok := saf.probability[truncableStr.Value]; ok && saf.probability[truncableStr.Value].isSampled() {
 						return Sampled, nil
 					}
 				}

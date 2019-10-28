@@ -34,7 +34,7 @@ const (
 	StringAttribute PolicyType = "string_attribute"
 	// RateLimiting allows all traces until the specified limits are satisfied.
 	RateLimiting PolicyType = "rate_limiting"
-	// StringProbabilisticAttribute sample traces that a attribute, of type string, matching
+	// StringProbabilisticAttribute sample traces that an attribute, of type string, matching
 	// one of the listed values and samples certain percentage [0.0 - 1.0] to traces [delimited by ::
 	// [ex:{key: "http.status_code", values: ["500::1.0", "200::0.1"]} ] sample 100% of 500's and 10% of 200's
 	StringProbabilisticAttribute PolicyType = "string_probabilistic_attribute"

@@ -26,13 +26,13 @@ func TestIsSampled(t *testing.T) {
 	var sampler Sampler = NewCountingSampler(0.0)
 	assert.Equal(t, getSampleBucketSize(sampler, DIVISOR), 0)
 
-	// Sample 10%
-	sampler = NewCountingSampler(0.1)
-	assert.Equal(t, getSampleBucketSize(sampler, DIVISOR), 10)
+	// Sample 15%
+	sampler = NewCountingSampler(0.15)
+	assert.Equal(t, getSampleBucketSize(sampler, DIVISOR), 15)
 
-	// Sample 20%
-	sampler = NewCountingSampler(0.2)
-	assert.Equal(t, getSampleBucketSize(sampler, DIVISOR), 20)
+	// Sample 25%
+	sampler = NewCountingSampler(0.25)
+	assert.Equal(t, getSampleBucketSize(sampler, DIVISOR), 25)
 
 	// Sample 50%
 	sampler = NewCountingSampler(0.5)
