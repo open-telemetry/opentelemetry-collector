@@ -16,6 +16,7 @@ package zipkinexporter
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"strconv"
 	"sync"
@@ -23,6 +24,7 @@ import (
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
+	zipkinproto "github.com/openzipkin/zipkin-go/proto/v2"
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
 	zipkinhttp "github.com/openzipkin/zipkin-go/reporter/http"
 	"go.opencensus.io/trace"
@@ -55,10 +57,19 @@ const (
 	DefaultZipkinEndpointURL      = "http://" + DefaultZipkinEndpointHostPort + "/api/v2/spans"
 )
 
-func newZipkinExporter(finalEndpointURI, defaultServiceName string, uploadPeriod time.Duration) (*zipkinExporter, error) {
+func newZipkinExporter(finalEndpointURI, defaultServiceName string, uploadPeriod time.Duration, format string) (*zipkinExporter, error) {
 	var opts []zipkinhttp.ReporterOption
 	if uploadPeriod > 0 {
 		opts = append(opts, zipkinhttp.BatchInterval(uploadPeriod))
+	}
+	// default is json
+	switch format {
+	case "json":
+		break
+	case "proto":
+		opts = append(opts, zipkinhttp.Serializer(zipkinproto.SpanSerializer{}))
+	default:
+		return nil, fmt.Errorf("%s is not one of json or proto", format)
 	}
 	reporter := zipkinhttp.NewReporter(finalEndpointURI, opts...)
 	zle := &zipkinExporter{

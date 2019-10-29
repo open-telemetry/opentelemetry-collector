@@ -45,6 +45,7 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
+		Format: "json",
 	}
 }
 
@@ -59,7 +60,7 @@ func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Ex
 	// <missing service name> is used if the zipkin span is not carrying the name of the service, which shouldn't happen
 	// in normal circumstances. It happens only due to (bad) conversions between formats. The current value is a
 	// clear indication that somehow the name of the service was lost in translation.
-	ze, err := newZipkinExporter(cfg.URL, "<missing service name>", 0)
+	ze, err := newZipkinExporter(cfg.URL, "<missing service name>", 0, cfg.Format)
 	if err != nil {
 		return nil, err
 	}

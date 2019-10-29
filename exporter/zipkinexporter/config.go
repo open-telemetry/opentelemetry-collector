@@ -24,5 +24,6 @@ type Config struct {
 
 	// The URL to send the Zipkin trace data to (e.g.:
 	// http://some.url:9411/api/v2/spans).
-	URL string `mapstructure:"url"`
+	URL    string `mapstructure:"url"`
+	Format string `mapstructure:"format"`
 }
