@@ -21,6 +21,10 @@ import (
 	"strings"
 	"sync/atomic"
 
+	"go.opencensus.io/plugin/ochttp"
+	"go.opencensus.io/stats"
+	"go.opencensus.io/tag"
+
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
@@ -58,13 +62,14 @@ type transaction struct {
 	instance           string
 	jobsMap            *JobsMap
 	useStartTimeMetric bool
+	receiverName       string
 	ms                 MetadataService
 	node               *commonpb.Node
 	metricBuilder      *metricBuilder
 	logger             *zap.SugaredLogger
 }
 
-func newTransaction(ctx context.Context, jobsMap *JobsMap, useStartTimeMetric bool, ms MetadataService, sink consumer.MetricsConsumer, logger *zap.SugaredLogger) *transaction {
+func newTransaction(ctx context.Context, jobsMap *JobsMap, useStartTimeMetric bool, receiverName string, ms MetadataService, sink consumer.MetricsConsumer, logger *zap.SugaredLogger) *transaction {
 	return &transaction{
 		id:                 atomic.AddInt64(&idSeq, 1),
 		ctx:                ctx,
@@ -72,6 +77,7 @@ func newTransaction(ctx context.Context, jobsMap *JobsMap, useStartTimeMetric bo
 		sink:               sink,
 		jobsMap:            jobsMap,
 		useStartTimeMetric: useStartTimeMetric,
+		receiverName:       receiverName,
 		ms:                 ms,
 		logger:             logger,
 	}
@@ -143,6 +149,15 @@ func (tr *transaction) Commit() error {
 	observability.RecordMetricsForMetricsReceiver(tr.ctx, numTimeseries, droppedTimeseries)
 	if err != nil {
 		return err
+	}
+
+	if tr.metricBuilder.hasInternalMetric {
+		m := ochttp.ClientRoundtripLatency.M(tr.metricBuilder.scrapeLatencyMs)
+		stats.RecordWithTags(tr.ctx, []tag.Mutator{
+			tag.Upsert(observability.TagKeyReceiver, tr.receiverName),
+			tag.Upsert(ochttp.KeyClientStatus, tr.metricBuilder.scrapeStatus),
+		}, m)
+
 	}
 
 	if tr.useStartTimeMetric {
