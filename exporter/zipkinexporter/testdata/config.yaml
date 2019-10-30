@@ -10,6 +10,7 @@ exporters:
   zipkin/2:
     url: "https://somedest:1234/api/v2/spans"
     format: proto
+    default_service_name: test_name
 
 service:
   pipelines:

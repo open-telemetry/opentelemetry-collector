@@ -26,4 +26,6 @@ type Config struct {
 	// http://some.url:9411/api/v2/spans).
 	URL    string `mapstructure:"url"`
 	Format string `mapstructure:"format"`
+
+	DefaultServiceName string `mapstructure:"default_service_name"`
 }
