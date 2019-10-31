@@ -98,7 +98,7 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 				b.scrapeStatus = scrapeStatusOk
 			} else {
 				b.scrapeStatus = scrapeStatusErr
-				b.logger.Infow("http client error:", "ts", t, "value", v, "labels", lm)
+				b.logger.Warnw("http client error:", "ts", t, "value", v, "labels", lm)
 			}
 		case scrapeLatencyMetricName:
 			b.scrapeLatencyMs = v * 1000
