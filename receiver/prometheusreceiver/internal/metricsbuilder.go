@@ -37,6 +37,8 @@ const (
 	scrapeLatencyMetricName = "scrape_duration_seconds"
 	scrapeStatusMetricName  = "up"
 	scrapeStatusOk          = "200"
+	// The 'up' metric only reports whether or not the scrape succeeded - in the case that
+	// it fails, we set the status to '404', which is the most generic failure status.
 	scrapeStatusErr         = "404"
 )
 
@@ -90,7 +92,6 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 		b.hasInternalMetric = true
 		lm := ls.Map()
 		delete(lm, model.MetricNameLabel)
-		b.logger.Debugw("skip internal metric", "name", metricName, "ts", t, "value", v, "labels", lm)
 		switch metricName {
 		case scrapeStatusMetricName:
 			if v == 1.0 {
