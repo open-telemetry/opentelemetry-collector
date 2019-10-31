@@ -39,7 +39,7 @@ const (
 	scrapeStatusOk          = "200"
 	// The 'up' metric only reports whether or not the scrape succeeded - in the case that
 	// it fails, we set the status to '404', which is the most generic failure status.
-	scrapeStatusErr         = "404"
+	scrapeStatusErr = "404"
 )
 
 var (
