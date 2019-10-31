@@ -23,6 +23,7 @@ import (
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
@@ -184,9 +185,7 @@ func Test_hash(t *testing.T) {
 	for i := 1; i <= len(fullKey); i++ {
 		key := fullKey[:i]
 		hash := hash(key, 1)
-		if seen[hash] {
-			t.Fatal("Unexpected duplicated hash")
-		}
+		require.False(t, seen[hash], "Unexpected duplicated hash")
 		seen[hash] = true
 	}
 }

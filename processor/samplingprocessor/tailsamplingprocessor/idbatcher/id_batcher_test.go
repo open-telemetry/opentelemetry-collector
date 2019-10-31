@@ -21,6 +21,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 )
 
@@ -89,9 +91,7 @@ func BenchmarkConcurrentEnqueue(b *testing.B) {
 
 func concurrencyTest(t *testing.T, numBatches, newBatchesInitialCapacity, batchChannelSize uint64) {
 	batcher, err := New(numBatches, newBatchesInitialCapacity, batchChannelSize)
-	if err != nil {
-		t.Fatalf("Failed to create Batcher: %v", err)
-	}
+	require.NoError(t, err, "Failed to create Batcher: %v", err)
 
 	ticker := time.NewTicker(100 * time.Millisecond)
 	stopTicker := make(chan bool)
@@ -139,9 +139,7 @@ func concurrencyTest(t *testing.T, numBatches, newBatchesInitialCapacity, batchC
 		}
 	}
 
-	if len(got) != len(ids) {
-		t.Fatalf("Batcher got %d traces from batches, want %d", len(got), len(ids))
-	}
+	require.Equal(t, len(ids), len(got), "Batcher got incorrect count of traces from batches")
 
 	idSeen := make(map[string]bool, len(ids))
 	for _, id := range got {
@@ -149,9 +147,7 @@ func concurrencyTest(t *testing.T, numBatches, newBatchesInitialCapacity, batchC
 	}
 
 	for i := 0; i < len(ids); i++ {
-		if !idSeen[string(ids[i])] {
-			t.Fatalf("want id %v but id was not seen", ids[i])
-		}
+		require.True(t, idSeen[string(ids[i])], "want id %v but id was not seen", ids[i])
 	}
 }
 
