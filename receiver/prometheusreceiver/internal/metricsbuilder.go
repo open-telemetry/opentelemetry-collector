@@ -29,17 +29,27 @@ import (
 	"github.com/prometheus/prometheus/pkg/textparse"
 )
 
-const metricsSuffixCount = "_count"
-const metricsSuffixBucket = "_bucket"
-const metricsSuffixSum = "_sum"
-const startTimeMetricName = "process_start_time_seconds"
+const (
+	metricsSuffixCount      = "_count"
+	metricsSuffixBucket     = "_bucket"
+	metricsSuffixSum        = "_sum"
+	startTimeMetricName     = "process_start_time_seconds"
+	scrapeLatencyMetricName = "scrape_duration_seconds"
+	scrapeStatusMetricName  = "up"
+	scrapeStatusOk          = "200"
+	// The 'up' metric only reports whether or not the scrape succeeded - in the case that
+	// it fails, we set the status to '404', which is the most generic failure status.
+	scrapeStatusErr = "404"
+)
 
-var trimmableSuffixes = []string{metricsSuffixBucket, metricsSuffixCount, metricsSuffixSum}
-var errNoDataToBuild = errors.New("there's no data to build")
-var errNoBoundaryLabel = errors.New("given metricType has no BucketLabel or QuantileLabel")
-var errEmptyBoundaryLabel = errors.New("BucketLabel or QuantileLabel is empty")
+var (
+	trimmableSuffixes     = []string{metricsSuffixBucket, metricsSuffixCount, metricsSuffixSum}
+	errNoDataToBuild      = errors.New("there's no data to build")
+	errNoBoundaryLabel    = errors.New("given metricType has no BucketLabel or QuantileLabel")
+	errEmptyBoundaryLabel = errors.New("BucketLabel or QuantileLabel is empty")
 
-var dummyMetrics = make([]*metricspb.Metric, 0)
+	dummyMetrics = make([]*metricspb.Metric, 0)
+)
 
 type metricBuilder struct {
 	hasData            bool
@@ -50,6 +60,8 @@ type metricBuilder struct {
 	droppedTimeseries  int
 	useStartTimeMetric bool
 	startTime          float64
+	scrapeLatencyMs    float64
+	scrapeStatus       string
 	logger             *zap.SugaredLogger
 	currentMf          MetricFamily
 }
@@ -76,11 +88,21 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 		b.numTimeseries++
 		b.droppedTimeseries++
 		return errMetricNameNotFound
-	} else if shouldSkip(metricName) {
+	} else if isInternalMetric(metricName) {
 		b.hasInternalMetric = true
 		lm := ls.Map()
 		delete(lm, model.MetricNameLabel)
-		b.logger.Debugw("skip internal metric", "name", metricName, "ts", t, "value", v, "labels", lm)
+		switch metricName {
+		case scrapeStatusMetricName:
+			if v == 1.0 {
+				b.scrapeStatus = scrapeStatusOk
+			} else {
+				b.scrapeStatus = scrapeStatusErr
+				b.logger.Warnw("http client error:", "ts", t, "value", v, "labels", lm)
+			}
+		case scrapeLatencyMetricName:
+			b.scrapeLatencyMs = v * 1000
+		}
 		return nil
 	} else if b.useStartTimeMetric && metricName == startTimeMetricName {
 		b.startTime = v
@@ -263,7 +285,7 @@ func timestampFromMs(timeAtMs int64) *timestamp.Timestamp {
 	}
 }
 
-func shouldSkip(metricName string) bool {
+func isInternalMetric(metricName string) bool {
 	if metricName == "up" || strings.HasPrefix(metricName, "scrape_") {
 		return true
 	}

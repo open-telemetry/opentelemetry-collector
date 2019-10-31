@@ -41,7 +41,6 @@ type Preceiver struct {
 	consumer         consumer.MetricsConsumer
 	cancel           context.CancelFunc
 	logger           *zap.Logger
-	receiverFullName string
 	includeFilterMap map[string]metricsMap
 }
 
@@ -65,7 +64,6 @@ func newPrometheusReceiver(logger *zap.Logger, cfg *Config, next consumer.Metric
 		cfg:              cfg,
 		consumer:         next,
 		logger:           logger,
-		receiverFullName: cfg.Name(),
 		includeFilterMap: parseIncludeFilter(cfg.IncludeFilter),
 	}
 	return pr
@@ -86,12 +84,12 @@ func (pr *Preceiver) StartMetricsReception(host receiver.Host) error {
 		c, cancel := context.WithCancel(ctx)
 		pr.cancel = cancel
 		// TODO: Use the name from the ReceiverSettings
-		c = observability.ContextWithReceiverName(c, pr.receiverFullName)
+		c = observability.ContextWithReceiverName(c, pr.cfg.Name())
 		var jobsMap *internal.JobsMap
 		if !pr.cfg.UseStartTimeMetric {
 			jobsMap = internal.NewJobsMap(time.Duration(2 * time.Minute))
 		}
-		app := internal.NewOcaStore(c, pr.consumer, pr.logger.Sugar(), jobsMap, pr.cfg.UseStartTimeMetric)
+		app := internal.NewOcaStore(c, pr.consumer, pr.logger.Sugar(), jobsMap, pr.cfg.UseStartTimeMetric, pr.cfg.Name())
 		// need to use a logger with the gokitLog interface
 		l := internal.NewZapToGokitLogAdapter(pr.logger)
 		scrapeManager := scrape.NewManager(l, app)

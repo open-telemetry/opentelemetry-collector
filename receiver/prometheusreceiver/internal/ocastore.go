@@ -56,10 +56,11 @@ type ocaStore struct {
 	ctx                context.Context
 	jobsMap            *JobsMap
 	useStartTimeMetric bool
+	receiverName       string
 }
 
 // NewOcaStore returns an ocaStore instance, which can be acted as prometheus' scrape.Appendable
-func NewOcaStore(ctx context.Context, sink consumer.MetricsConsumer, logger *zap.SugaredLogger, jobsMap *JobsMap, useStartTimeMetric bool) OcaStore {
+func NewOcaStore(ctx context.Context, sink consumer.MetricsConsumer, logger *zap.SugaredLogger, jobsMap *JobsMap, useStartTimeMetric bool, receiverName string) OcaStore {
 	return &ocaStore{
 		running:            runningStateInit,
 		ctx:                ctx,
@@ -68,6 +69,7 @@ func NewOcaStore(ctx context.Context, sink consumer.MetricsConsumer, logger *zap
 		once:               &sync.Once{},
 		jobsMap:            jobsMap,
 		useStartTimeMetric: useStartTimeMetric,
+		receiverName:       receiverName,
 	}
 }
 
@@ -82,7 +84,7 @@ func (o *ocaStore) SetScrapeManager(scrapeManager *scrape.Manager) {
 func (o *ocaStore) Appender() (storage.Appender, error) {
 	state := atomic.LoadInt32(&o.running)
 	if state == runningStateReady {
-		return newTransaction(o.ctx, o.jobsMap, o.useStartTimeMetric, o.mc, o.sink, o.logger), nil
+		return newTransaction(o.ctx, o.jobsMap, o.useStartTimeMetric, o.receiverName, o.mc, o.sink, o.logger), nil
 	} else if state == runningStateInit {
 		return nil, errors.New("ScrapeManager is not set")
 	}
