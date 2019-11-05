@@ -25,11 +25,10 @@ import (
 // Config defines configuration for Prometheus receiver.
 type Config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`
-	PrometheusConfig              *config.Config      `mapstructure:"-"`
-	BufferPeriod                  time.Duration       `mapstructure:"buffer_period"`
-	BufferCount                   int                 `mapstructure:"buffer_count"`
-	UseStartTimeMetric            bool                `mapstructure:"use_start_time_metric"`
-	IncludeFilter                 map[string][]string `mapstructure:"include_filter"`
+	PrometheusConfig              *config.Config `mapstructure:"-"`
+	BufferPeriod                  time.Duration  `mapstructure:"buffer_period"`
+	BufferCount                   int            `mapstructure:"buffer_count"`
+	UseStartTimeMetric            bool           `mapstructure:"use_start_time_metric"`
 
 	// ConfigPlaceholder is just an entry to make the configuration pass a check
 	// that requires that all keys present in the config actually exist on the

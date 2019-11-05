@@ -31,40 +31,24 @@ import (
 	sd_config "github.com/prometheus/prometheus/discovery/config"
 )
 
-type metricsMap map[string]bool
-
 // Preceiver is the type that provides Prometheus scraper/receiver functionality.
 type Preceiver struct {
-	startOnce        sync.Once
-	stopOnce         sync.Once
-	cfg              *Config
-	consumer         consumer.MetricsConsumer
-	cancel           context.CancelFunc
-	logger           *zap.Logger
-	includeFilterMap map[string]metricsMap
+	startOnce sync.Once
+	stopOnce  sync.Once
+	cfg       *Config
+	consumer  consumer.MetricsConsumer
+	cancel    context.CancelFunc
+	logger    *zap.Logger
 }
 
 var _ receiver.MetricsReceiver = (*Preceiver)(nil)
 
-func parseIncludeFilter(includeFilter map[string][]string) map[string]metricsMap {
-	includeFilterMap := make(map[string]metricsMap, len(includeFilter))
-	for endpoint, metrics := range includeFilter {
-		m := make(map[string]bool, len(metrics))
-		for _, metric := range metrics {
-			m[metric] = true
-		}
-		includeFilterMap[endpoint] = m
-	}
-	return includeFilterMap
-}
-
 // New creates a new prometheus.Receiver reference.
 func newPrometheusReceiver(logger *zap.Logger, cfg *Config, next consumer.MetricsConsumer) *Preceiver {
 	pr := &Preceiver{
-		cfg:              cfg,
-		consumer:         next,
-		logger:           logger,
-		includeFilterMap: parseIncludeFilter(cfg.IncludeFilter),
+		cfg:      cfg,
+		consumer: next,
+		logger:   logger,
 	}
 	return pr
 }
