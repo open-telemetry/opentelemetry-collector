@@ -349,7 +349,7 @@ func (ma *MetricsAdjuster) adjustPoint(metricType metricspb.MetricDescriptor_Typ
 			&wrappers.DoubleValue{Value: currentSum - initialSum}
 	default:
 		// this shouldn't happen
-		ma.logger.Info("adjust - unexpect point type, skipping", zap.String("type", metricType.String()))
+		ma.logger.Info("Adjust - skipping unexpected point", zap.String("type", metricType.String()))
 	}
 	return true
 }
