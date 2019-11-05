@@ -27,10 +27,15 @@ import (
 // given to the function. Useful to compare JSON contents that
 // may have differences due to formatting. It returns nil in case of
 // invalid JSON.
-func GenerateNormalizedJSON(j string) string {
+func GenerateNormalizedJSON(t *testing.T, jsonStr string) string {
 	var i interface{}
-	json.Unmarshal([]byte(j), &i)
-	n, _ := json.Marshal(i)
+
+	err := json.Unmarshal([]byte(jsonStr), &i)
+	require.NoError(t, err)
+
+	n, err := json.Marshal(i)
+	require.NoError(t, err)
+
 	return string(n)
 }
 

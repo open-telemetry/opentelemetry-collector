@@ -369,20 +369,19 @@ func zipkinSpanToTraceSpan(zs *zipkinmodel.SpanModel) (*tracepb.Span, *commonpb.
 		return nil, nil, errNilZipkinSpan
 	}
 
-	node := nodeFromZipkinEndpoints(zs)
 	traceID, err := zTraceIDToOCProtoTraceID(zs.TraceID)
 	if err != nil {
-		return nil, node, fmt.Errorf("TraceID: %v", err)
+		return nil, nil, fmt.Errorf("TraceID: %v", err)
 	}
 	spanID, err := zSpanIDToOCProtoSpanID(zs.ID)
 	if err != nil {
-		return nil, node, fmt.Errorf("SpanID: %v", err)
+		return nil, nil, fmt.Errorf("SpanID: %v", err)
 	}
 	var parentSpanID []byte
 	if zs.ParentID != nil {
 		parentSpanID, err = zSpanIDToOCProtoSpanID(*zs.ParentID)
 		if err != nil {
-			return nil, node, fmt.Errorf("ParentSpanID: %v", err)
+			return nil, nil, fmt.Errorf("ParentSpanID: %v", err)
 		}
 	}
 
@@ -399,22 +398,25 @@ func zipkinSpanToTraceSpan(zs *zipkinmodel.SpanModel) (*tracepb.Span, *commonpb.
 		TimeEvents:   zipkinAnnotationsToProtoTimeEvents(zs.Annotations),
 	}
 
+	node := nodeFromZipkinEndpoints(zs, pbs)
+
 	return pbs, node, nil
 }
 
-func nodeFromZipkinEndpoints(zs *zipkinmodel.SpanModel) *commonpb.Node {
+func nodeFromZipkinEndpoints(zs *zipkinmodel.SpanModel, pbs *tracepb.Span) *commonpb.Node {
 	if zs.LocalEndpoint == nil && zs.RemoteEndpoint == nil {
 		return nil
 	}
 
 	node := new(commonpb.Node)
+	var endpointMap map[string]string
 
 	// Retrieve and make use of the local endpoint
 	if lep := zs.LocalEndpoint; lep != nil {
 		node.ServiceInfo = &commonpb.ServiceInfo{
 			Name: lep.ServiceName,
 		}
-		node.Attributes = zipkinEndpointIntoAttributes(lep, node.Attributes, isLocalEndpoint)
+		endpointMap = zipkinEndpointIntoAttributes(lep, endpointMap, isLocalEndpoint)
 	}
 
 	// Retrieve and make use of the remote endpoint
@@ -426,8 +428,30 @@ func nodeFromZipkinEndpoints(zs *zipkinmodel.SpanModel) *commonpb.Node {
 		//      "zipkin.remoteEndpoint.port": "9000"
 		//      "zipkin.remoteEndpoint.serviceName": "backend",
 		// }
-		node.Attributes = zipkinEndpointIntoAttributes(rep, node.Attributes, isRemoteEndpoint)
+		endpointMap = zipkinEndpointIntoAttributes(rep, endpointMap, isRemoteEndpoint)
 	}
+
+	if endpointMap != nil {
+
+		if pbs.Attributes == nil {
+			pbs.Attributes = &tracepb.Span_Attributes{}
+		}
+		if pbs.Attributes.AttributeMap == nil {
+			pbs.Attributes.AttributeMap = make(map[string]*tracepb.AttributeValue, 6)
+		}
+
+		// Delete the redundant serviceName key.
+		delete(endpointMap, "serviceName")
+		attrbMap := pbs.Attributes.AttributeMap
+		for key, value := range endpointMap {
+			attrbMap[key] = &tracepb.AttributeValue{
+				Value: &tracepb.AttributeValue_StringValue{
+					StringValue: &tracepb.TruncatableString{Value: value},
+				},
+			}
+		}
+	}
+
 	return node
 }
 

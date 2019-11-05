@@ -79,15 +79,13 @@ func newZipkinExporter(finalEndpointURI, defaultServiceName string, uploadPeriod
 	return zle, nil
 }
 
-func lookupAttribute(node *commonpb.Node, key string) string {
-	if node == nil {
-		return ""
-	}
-	return node.Attributes[key]
-}
+func zipkinEndpointFromAttributes(
+	attributes *map[string]interface{},
+	serviceName string,
+	endpointType zipkinDirection,
+) *zipkinmodel.Endpoint {
 
-func zipkinEndpointFromNode(node *commonpb.Node, serviceName string, endpointType zipkinDirection) *zipkinmodel.Endpoint {
-	if node == nil {
+	if attributes == nil {
 		return nil
 	}
 
@@ -97,7 +95,6 @@ func zipkinEndpointFromNode(node *commonpb.Node, serviceName string, endpointTyp
 	//      "port": "9000",
 	//      "serviceName": "backend",
 	// }
-	attributes := node.Attributes
 
 	var ipv4Key, ipv6Key, portKey string
 	if endpointType == isLocalEndpoint {
@@ -108,14 +105,27 @@ func zipkinEndpointFromNode(node *commonpb.Node, serviceName string, endpointTyp
 
 	var ip net.IP
 	ipv6Selected := false
-	if ipv4 := attributes[ipv4Key]; ipv4 != "" {
-		ip = net.ParseIP(ipv4)
-	} else if ipv6 := attributes[ipv6Key]; ipv6 != "" {
-		ip = net.ParseIP(ipv6)
-		ipv6Selected = true
+	if ipv4, ok := (*attributes)[ipv4Key]; ok {
+		if ipv4Str, ok := ipv4.(string); ok {
+			ip = net.ParseIP(ipv4Str)
+			delete(*attributes, ipv4Key)
+		}
+	} else if ipv6, ok := (*attributes)[ipv6Key]; ok {
+		if ipv6Str, ok := ipv6.(string); ok {
+			ip = net.ParseIP(ipv6Str)
+			ipv6Selected = true
+			delete(*attributes, ipv6Key)
+		}
 	}
 
-	port, _ := strconv.ParseUint(attributes[portKey], 10, 16)
+	var port uint64
+	if portValue, ok := (*attributes)[portKey]; ok {
+		if portStr, ok := portValue.(string); ok {
+			port, _ = strconv.ParseUint(portStr, 10, 16)
+			delete(*attributes, portKey)
+		}
+	}
+
 	if serviceName == "" && len(ip) == 0 && port == 0 {
 		// Nothing to put on the endpoint
 		return nil
@@ -278,10 +288,15 @@ const zipkinRemoteEndpointKey = "zipkin.remoteEndpoint.serviceName"
 
 func (ze *zipkinExporter) zipkinSpan(node *commonpb.Node, s *trace.SpanData) (zc zipkinmodel.SpanModel) {
 	localEndpointServiceName := ze.serviceNameOrDefault(node)
-	localEndpoint := zipkinEndpointFromNode(node, localEndpointServiceName, isLocalEndpoint)
+	localEndpoint := zipkinEndpointFromAttributes(&s.Attributes, localEndpointServiceName, isLocalEndpoint)
 
-	remoteServiceName := lookupAttribute(node, zipkinRemoteEndpointKey)
-	remoteEndpoint := zipkinEndpointFromNode(node, remoteServiceName, isRemoteEndpoint)
+	remoteServiceName := ""
+	if remoteServiceEntry, ok := s.Attributes[zipkinRemoteEndpointKey]; ok {
+		if remoteServiceName, ok = remoteServiceEntry.(string); ok {
+			delete(s.Attributes, zipkinRemoteEndpointKey)
+		}
+	}
+	remoteEndpoint := zipkinEndpointFromAttributes(&s.Attributes, remoteServiceName, isRemoteEndpoint)
 
 	sc := s.SpanContext
 	z := zipkinmodel.SpanModel{

@@ -27,10 +27,10 @@ import (
 	"testing"
 	"time"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	zipkinproto "github.com/openzipkin/zipkin-go/proto/v2"
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
@@ -42,7 +42,7 @@ import (
 
 func TestZipkinEndpointFromNode(t *testing.T) {
 	type args struct {
-		node         *commonpb.Node
+		attributes   map[string]interface{}
 		serviceName  string
 		endpointType zipkinDirection
 	}
@@ -53,20 +53,18 @@ func TestZipkinEndpointFromNode(t *testing.T) {
 	}{
 		{
 			name: "Nil Node",
-			args: args{node: nil, serviceName: "", endpointType: isLocalEndpoint},
+			args: args{attributes: nil, serviceName: "", endpointType: isLocalEndpoint},
 			want: nil,
 		},
 		{
 			name: "Only svc name",
-			args: args{node: &commonpb.Node{}, serviceName: "test", endpointType: isLocalEndpoint},
+			args: args{attributes: make(map[string]interface{}), serviceName: "test", endpointType: isLocalEndpoint},
 			want: &zipkinmodel.Endpoint{ServiceName: "test"},
 		},
 		{
 			name: "Only ipv4",
 			args: args{
-				node: &commonpb.Node{
-					Attributes: map[string]string{"ipv4": "1.2.3.4"},
-				},
+				attributes:   map[string]interface{}{"ipv4": "1.2.3.4"},
 				serviceName:  "",
 				endpointType: isLocalEndpoint,
 			},
@@ -75,9 +73,7 @@ func TestZipkinEndpointFromNode(t *testing.T) {
 		{
 			name: "Only ipv6 remote",
 			args: args{
-				node: &commonpb.Node{
-					Attributes: map[string]string{"zipkin.remoteEndpoint.ipv6": "2001:0db8:85a3:0000:0000:8a2e:0370:7334"},
-				},
+				attributes:   map[string]interface{}{"zipkin.remoteEndpoint.ipv6": "2001:0db8:85a3:0000:0000:8a2e:0370:7334"},
 				serviceName:  "",
 				endpointType: isRemoteEndpoint,
 			},
@@ -86,9 +82,7 @@ func TestZipkinEndpointFromNode(t *testing.T) {
 		{
 			name: "Only port",
 			args: args{
-				node: &commonpb.Node{
-					Attributes: map[string]string{"port": "42"},
-				},
+				attributes:   map[string]interface{}{"port": "42"},
 				serviceName:  "",
 				endpointType: isLocalEndpoint,
 			},
@@ -97,9 +91,7 @@ func TestZipkinEndpointFromNode(t *testing.T) {
 		{
 			name: "Service name, ipv4, and port",
 			args: args{
-				node: &commonpb.Node{
-					Attributes: map[string]string{"ipv4": "4.3.2.1", "port": "2"},
-				},
+				attributes:   map[string]interface{}{"ipv4": "4.3.2.1", "port": "2"},
 				serviceName:  "test-svc",
 				endpointType: isLocalEndpoint,
 			},
@@ -109,9 +101,9 @@ func TestZipkinEndpointFromNode(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := zipkinEndpointFromNode(tt.args.node, tt.args.serviceName, tt.args.endpointType)
+			got := zipkinEndpointFromAttributes(&tt.args.attributes, tt.args.serviceName, tt.args.endpointType)
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("zipkinEndpointFromNode() = %v, want %v", got, tt.want)
+				t.Errorf("zipkinEndpointFromAttributes() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -135,9 +127,8 @@ func TestZipkinExporter_roundtripJSON(t *testing.T) {
 	defer cst.Close()
 
 	tes, err := newZipkinExporter(cst.URL, "", time.Millisecond, "json")
-	if err != nil {
-		t.Fatalf("Failed to create a new Zipkin receiver: %v", err)
-	}
+	assert.NoError(t, err)
+	require.NotNil(t, tes)
 
 	// The test requires the spans from zipkinSpansJSONJavaLibrary to be sent in a single batch, use
 	// a mock to ensure that this happens as intended.
@@ -146,15 +137,13 @@ func TestZipkinExporter_roundtripJSON(t *testing.T) {
 
 	// Run the Zipkin receiver to "receive spans upload from a client application"
 	zexp := processor.NewTraceFanOutConnector([]consumer.TraceConsumer{tes})
-	zi, err := zipkinreceiver.New(":0", zexp)
-	if err != nil {
-		t.Fatalf("Failed to create a new Zipkin receiver: %v", err)
-	}
+	addr := testutils.GetAvailableLocalAddress(t)
+	zi, err := zipkinreceiver.New(addr, zexp)
+	assert.NoError(t, err)
+	require.NotNil(t, zi)
 
 	mh := receivertest.NewMockHost()
-	if err := zi.StartTraceReception(mh); err != nil {
-		t.Fatalf("Failed to start trace reception: %v", err)
-	}
+	require.NoError(t, zi.StartTraceReception(mh))
 	defer zi.StopTraceReception()
 
 	// Let the receiver receive "uploaded Zipkin spans from a Java client application"
@@ -164,12 +153,10 @@ func TestZipkinExporter_roundtripJSON(t *testing.T) {
 
 	// Use the mock zipkin reporter to ensure all expected spans in a single batch. Since Flush waits for
 	// server response there is no need for further synchronization.
-	if err := mzr.Flush(); err != nil {
-		t.Fatalf("Failed to flush zipkin reporter: %v", err)
-	}
+	require.NoError(t, mzr.Flush())
 
 	// We expect back the exact JSON that was received
-	want := testutils.GenerateNormalizedJSON(`
+	want := testutils.GenerateNormalizedJSON(t, `
 [{
   "traceId": "4d1e00c0db9010db86154a4ba6e91385","parentId": "86154a4ba6e91385","id": "4d1e00c0db9010db",
   "kind": "CLIENT","name": "get",
@@ -206,7 +193,7 @@ func TestZipkinExporter_roundtripJSON(t *testing.T) {
 
 	// Finally we need to inspect the output
 	gotBytes, _ := ioutil.ReadAll(buf)
-	got := testutils.GenerateNormalizedJSON(string(gotBytes))
+	got := testutils.GenerateNormalizedJSON(t, string(gotBytes))
 	if got != want {
 		t.Errorf("RoundTrip result do not match:\nGot\n %s\n\nWant\n: %s\n", got, want)
 	}
