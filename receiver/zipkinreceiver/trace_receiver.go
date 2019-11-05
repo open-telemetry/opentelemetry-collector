@@ -43,7 +43,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
-	zipkintranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace/zipkin"
+	"github.com/open-telemetry/opentelemetry-collector/translator/trace/zipkin"
 )
 
 // ZipkinReceiver type is used to handle spans received in the Zipkin format.
@@ -133,9 +133,9 @@ func (zr *ZipkinReceiver) v1ToTraceSpans(blob []byte, hdr http.Header) (reqs []c
 			return nil, err
 		}
 
-		return zipkintranslator.V1ThriftBatchToOCProto(zSpans)
+		return zipkin.V1ThriftBatchToOCProto(zSpans)
 	}
-	return zipkintranslator.V1JSONBatchToOCProto(blob)
+	return zipkin.V1JSONBatchToOCProto(blob)
 }
 
 // deserializeThrift decodes Thrift bytes to a list of spans.
@@ -421,13 +421,6 @@ func nodeFromZipkinEndpoints(zs *zipkinmodel.SpanModel, pbs *tracepb.Span) *comm
 
 	// Retrieve and make use of the remote endpoint
 	if rep := zs.RemoteEndpoint; rep != nil {
-		// For remoteEndpoint, our goal is to prefix its fields with "zipkin.remoteEndpoint."
-		// For example becoming:
-		// {
-		//      "zipkin.remoteEndpoint.ipv4": "192.168.99.101",
-		//      "zipkin.remoteEndpoint.port": "9000"
-		//      "zipkin.remoteEndpoint.serviceName": "backend",
-		// }
 		endpointMap = zipkinEndpointIntoAttributes(rep, endpointMap, isRemoteEndpoint)
 	}
 
@@ -471,11 +464,11 @@ func zipkinEndpointIntoAttributes(ep *zipkinmodel.Endpoint, into map[string]stri
 
 	var ipv4Key, ipv6Key, portKey, serviceNameKey string
 	if endpointType == isLocalEndpoint {
-		ipv4Key, ipv6Key = "ipv4", "ipv6"
-		portKey, serviceNameKey = "port", "serviceName"
+		ipv4Key, ipv6Key = zipkin.LocalEndpointIPv4, zipkin.LocalEndpointIPv6
+		portKey, serviceNameKey = zipkin.LocalEndpointPort, zipkin.LocalEndpointServiceName
 	} else {
-		ipv4Key, ipv6Key = "zipkin.remoteEndpoint.ipv4", "zipkin.remoteEndpoint.ipv6"
-		portKey, serviceNameKey = "zipkin.remoteEndpoint.port", "zipkin.remoteEndpoint.serviceName"
+		ipv4Key, ipv6Key = zipkin.RemoteEndpointIPv4, zipkin.RemoteEndpointIPv6
+		portKey, serviceNameKey = zipkin.RemoteEndpointPort, zipkin.RemoteEndpointServiceName
 	}
 	if ep.IPv4 != nil && !ep.IPv4.Equal(blankIP) {
 		into[ipv4Key] = ep.IPv4.String()

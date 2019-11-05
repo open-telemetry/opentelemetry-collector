@@ -43,6 +43,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/receivertest"
+	"github.com/open-telemetry/opentelemetry-collector/translator/trace/zipkin"
 )
 
 func TestTraceIDConversion(t *testing.T) {
@@ -290,12 +291,12 @@ func TestConversionRoundtrip(t *testing.T) {
 					},
 					Attributes: &tracepb.Span_Attributes{
 						AttributeMap: map[string]*tracepb.AttributeValue{
-							"ipv6":                              {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "7::80:807f"}}},
-							"zipkin.remoteEndpoint.serviceName": {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "backend"}}},
-							"zipkin.remoteEndpoint.ipv4":        {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "192.168.99.101"}}},
-							"zipkin.remoteEndpoint.port":        {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "9000"}}},
-							"http.path":                         {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "/api"}}},
-							"clnt/finagle.version":              {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "6.45.0"}}},
+							zipkin.LocalEndpointIPv6:         {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "7::80:807f"}}},
+							zipkin.RemoteEndpointServiceName: {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "backend"}}},
+							zipkin.RemoteEndpointIPv4:        {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "192.168.99.101"}}},
+							zipkin.RemoteEndpointPort:        {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "9000"}}},
+							"http.path":                      {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "/api"}}},
+							"clnt/finagle.version":           {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "6.45.0"}}},
 						},
 					},
 				},
@@ -329,12 +330,12 @@ func TestConversionRoundtrip(t *testing.T) {
 					},
 					Attributes: &tracepb.Span_Attributes{
 						AttributeMap: map[string]*tracepb.AttributeValue{
-							"ipv6":                              {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "7::80:807f"}}},
-							"zipkin.remoteEndpoint.serviceName": {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "frontend"}}},
-							"zipkin.remoteEndpoint.ipv4":        {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "192.168.99.101"}}},
-							"zipkin.remoteEndpoint.port":        {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "9000"}}},
-							"http.path":                         {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "/api"}}},
-							"clnt/finagle.version":              {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "6.45.0"}}},
+							zipkin.LocalEndpointIPv6:         {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "7::80:807f"}}},
+							zipkin.RemoteEndpointServiceName: {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "frontend"}}},
+							zipkin.RemoteEndpointIPv4:        {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "192.168.99.101"}}},
+							zipkin.RemoteEndpointPort:        {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "9000"}}},
+							"http.path":                      {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "/api"}}},
+							"clnt/finagle.version":           {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "6.45.0"}}},
 						},
 					},
 				},

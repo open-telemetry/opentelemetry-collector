@@ -35,6 +35,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/observability"
 	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 	spandatatranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace/spandata"
+	"github.com/open-telemetry/opentelemetry-collector/translator/trace/zipkin"
 )
 
 // zipkinExporter is a multiplexing exporter that spawns a new OpenCensus-Go Zipkin
@@ -79,11 +80,17 @@ func newZipkinExporter(finalEndpointURI, defaultServiceName string, uploadPeriod
 	return zle, nil
 }
 
+// zipkinEndpointFromAttributes attempts to extrace zipkin endpoint information
+// from a set of attributes (in the format of OC SpanData). It returns the built
+// zipkin endpoint and insert the attribute keys that were made redundant
+// (because now they can be represented by the endpoint) into the redundantKeys
+// map (function assumes that this was created by the caller).
 func zipkinEndpointFromAttributes(
-	attributes *map[string]interface{},
+	attributes map[string]interface{},
 	serviceName string,
 	endpointType zipkinDirection,
-) *zipkinmodel.Endpoint {
+	redundantKeys map[string]bool,
+) (endpoint *zipkinmodel.Endpoint) {
 
 	if attributes == nil {
 		return nil
@@ -98,31 +105,31 @@ func zipkinEndpointFromAttributes(
 
 	var ipv4Key, ipv6Key, portKey string
 	if endpointType == isLocalEndpoint {
-		ipv4Key, ipv6Key, portKey = "ipv4", "ipv6", "port"
+		ipv4Key, ipv6Key, portKey = zipkin.LocalEndpointIPv4, zipkin.LocalEndpointIPv6, zipkin.LocalEndpointPort
 	} else {
-		ipv4Key, ipv6Key, portKey = "zipkin.remoteEndpoint.ipv4", "zipkin.remoteEndpoint.ipv6", "zipkin.remoteEndpoint.port"
+		ipv4Key, ipv6Key, portKey = zipkin.RemoteEndpointIPv4, zipkin.RemoteEndpointIPv6, zipkin.RemoteEndpointPort
 	}
 
 	var ip net.IP
 	ipv6Selected := false
-	if ipv4, ok := (*attributes)[ipv4Key]; ok {
+	if ipv4, ok := attributes[ipv4Key]; ok {
 		if ipv4Str, ok := ipv4.(string); ok {
 			ip = net.ParseIP(ipv4Str)
-			delete(*attributes, ipv4Key)
+			redundantKeys[ipv4Key] = true
 		}
-	} else if ipv6, ok := (*attributes)[ipv6Key]; ok {
+	} else if ipv6, ok := attributes[ipv6Key]; ok {
 		if ipv6Str, ok := ipv6.(string); ok {
 			ip = net.ParseIP(ipv6Str)
 			ipv6Selected = true
-			delete(*attributes, ipv6Key)
+			redundantKeys[ipv6Key] = true
 		}
 	}
 
 	var port uint64
-	if portValue, ok := (*attributes)[portKey]; ok {
+	if portValue, ok := attributes[portKey]; ok {
 		if portStr, ok := portValue.(string); ok {
 			port, _ = strconv.ParseUint(portStr, 10, 16)
-			delete(*attributes, portKey)
+			redundantKeys[portKey] = true
 		}
 	}
 
@@ -284,19 +291,24 @@ const (
 	isRemoteEndpoint zipkinDirection = false
 )
 
-const zipkinRemoteEndpointKey = "zipkin.remoteEndpoint.serviceName"
+func (ze *zipkinExporter) zipkinSpan(
+	node *commonpb.Node,
+	s *trace.SpanData,
+) (zc zipkinmodel.SpanModel) {
 
-func (ze *zipkinExporter) zipkinSpan(node *commonpb.Node, s *trace.SpanData) (zc zipkinmodel.SpanModel) {
 	localEndpointServiceName := ze.serviceNameOrDefault(node)
-	localEndpoint := zipkinEndpointFromAttributes(&s.Attributes, localEndpointServiceName, isLocalEndpoint)
+	redundantKeys := make(map[string]bool, 6)
+	localEndpoint := zipkinEndpointFromAttributes(
+		s.Attributes, localEndpointServiceName, isLocalEndpoint, redundantKeys)
 
 	remoteServiceName := ""
-	if remoteServiceEntry, ok := s.Attributes[zipkinRemoteEndpointKey]; ok {
+	if remoteServiceEntry, ok := s.Attributes[zipkin.RemoteEndpointServiceName]; ok {
 		if remoteServiceName, ok = remoteServiceEntry.(string); ok {
-			delete(s.Attributes, zipkinRemoteEndpointKey)
+			redundantKeys[zipkin.RemoteEndpointServiceName] = true
 		}
 	}
-	remoteEndpoint := zipkinEndpointFromAttributes(&s.Attributes, remoteServiceName, isRemoteEndpoint)
+	remoteEndpoint := zipkinEndpointFromAttributes(
+		s.Attributes, remoteServiceName, isRemoteEndpoint, redundantKeys)
 
 	sc := s.SpanContext
 	z := zipkinmodel.SpanModel{
@@ -326,6 +338,12 @@ func (ze *zipkinExporter) zipkinSpan(node *commonpb.Node, s *trace.SpanData) (zc
 	if len(s.Attributes) != 0 {
 		m := make(map[string]string, len(s.Attributes)+2)
 		for key, value := range s.Attributes {
+			if redundantKeys[key] {
+				// Already represented by something other than an attribute,
+				// skip it.
+				continue
+			}
+
 			switch v := value.(type) {
 			case string:
 				m[key] = v
