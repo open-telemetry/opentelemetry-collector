@@ -27,13 +27,11 @@ import (
 
 // test helpers
 
-var zapLogger *zap.Logger
-var testLogger *zap.SugaredLogger
+var testLogger *zap.Logger
 
 func init() {
 	zl, _ := zap.NewDevelopment()
-	zapLogger = zl
-	testLogger = zapLogger.Sugar()
+	testLogger = zl
 }
 
 type mockMetadataCache struct {

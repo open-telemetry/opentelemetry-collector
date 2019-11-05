@@ -62,14 +62,14 @@ type metricBuilder struct {
 	startTime          float64
 	scrapeLatencyMs    float64
 	scrapeStatus       string
-	logger             *zap.SugaredLogger
+	logger             *zap.Logger
 	currentMf          MetricFamily
 }
 
 // newMetricBuilder creates a MetricBuilder which is allowed to feed all the datapoints from a single prometheus
 // scraped page by calling its AddDataPoint function, and turn them into an opencensus data.MetricsData object
 // by calling its Build function
-func newMetricBuilder(mc MetadataCache, useStartTimeMetric bool, logger *zap.SugaredLogger) *metricBuilder {
+func newMetricBuilder(mc MetadataCache, useStartTimeMetric bool, logger *zap.Logger) *metricBuilder {
 
 	return &metricBuilder{
 		mc:                 mc,
@@ -98,7 +98,7 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 				b.scrapeStatus = scrapeStatusOk
 			} else {
 				b.scrapeStatus = scrapeStatusErr
-				b.logger.Warnw("http client error:", "ts", t, "value", v, "labels", lm)
+				b.logger.Warn("http client error", zap.Int64("timestamp", t), zap.Float64("value", v), zap.String("labels", fmt.Sprintf("%v", lm)))
 			}
 		case scrapeLatencyMetricName:
 			b.scrapeLatencyMs = v * 1000
