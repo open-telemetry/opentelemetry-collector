@@ -425,7 +425,6 @@ func nodeFromZipkinEndpoints(zs *zipkinmodel.SpanModel, pbs *tracepb.Span) *comm
 	}
 
 	if endpointMap != nil {
-
 		if pbs.Attributes == nil {
 			pbs.Attributes = &tracepb.Span_Attributes{}
 		}

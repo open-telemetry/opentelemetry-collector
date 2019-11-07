@@ -80,7 +80,7 @@ func newZipkinExporter(finalEndpointURI, defaultServiceName string, uploadPeriod
 	return zle, nil
 }
 
-// zipkinEndpointFromAttributes attempts to extrace zipkin endpoint information
+// zipkinEndpointFromAttributes extracts zipkin endpoint information
 // from a set of attributes (in the format of OC SpanData). It returns the built
 // zipkin endpoint and insert the attribute keys that were made redundant
 // (because now they can be represented by the endpoint) into the redundantKeys
@@ -113,25 +113,20 @@ func zipkinEndpointFromAttributes(
 
 	var ip net.IP
 	ipv6Selected := false
-	if ipv4, ok := attributes[ipv4Key]; ok {
-		if ipv4Str, ok := ipv4.(string); ok {
-			ip = net.ParseIP(ipv4Str)
-			redundantKeys[ipv4Key] = true
-		}
-	} else if ipv6, ok := attributes[ipv6Key]; ok {
-		if ipv6Str, ok := ipv6.(string); ok {
-			ip = net.ParseIP(ipv6Str)
-			ipv6Selected = true
-			redundantKeys[ipv6Key] = true
-		}
+
+	if ipv4Str, ok := extractStringAttribute(attributes, ipv4Key); ok {
+		ip = net.ParseIP(ipv4Str)
+		redundantKeys[ipv4Key] = true
+	} else if ipv6Str, ok := extractStringAttribute(attributes, ipv6Key); ok {
+		ip = net.ParseIP(ipv6Str)
+		ipv6Selected = true
+		redundantKeys[ipv6Key] = true
 	}
 
 	var port uint64
-	if portValue, ok := attributes[portKey]; ok {
-		if portStr, ok := portValue.(string); ok {
-			port, _ = strconv.ParseUint(portStr, 10, 16)
-			redundantKeys[portKey] = true
-		}
+	if portStr, ok := extractStringAttribute(attributes, portKey); ok {
+		port, _ = strconv.ParseUint(portStr, 10, 16)
+		redundantKeys[portKey] = true
 	}
 
 	if serviceName == "" && len(ip) == 0 && port == 0 {
@@ -151,6 +146,18 @@ func zipkinEndpointFromAttributes(
 	}
 
 	return zEndpoint
+}
+
+func extractStringAttribute(
+	attributes map[string]interface{},
+	key string,
+) (value string, ok bool) {
+	var i interface{}
+	if i, ok = attributes[key]; ok {
+		value, ok = i.(string)
+	}
+
+	return value, ok
 }
 
 func (ze *zipkinExporter) Name() string {
