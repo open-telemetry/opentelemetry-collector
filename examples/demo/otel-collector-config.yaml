@@ -12,6 +12,7 @@ exporters:
 
   zipkin:
     url: "http://zipkin-all-in-one:9411/api/v2/spans"
+    format: proto
 
   jaeger_grpc:
     endpoint: jaeger-all-in-one:14250

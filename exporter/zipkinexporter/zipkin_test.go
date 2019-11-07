@@ -16,7 +16,6 @@ package zipkinexporter
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -30,7 +29,9 @@ import (
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
+	zipkinproto "github.com/openzipkin/zipkin-go/proto/v2"
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
+	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/internal/testutils"
@@ -133,7 +134,7 @@ func TestZipkinExporter_roundtripJSON(t *testing.T) {
 	}))
 	defer cst.Close()
 
-	tes, err := newZipkinExporter(cst.URL, "", time.Millisecond)
+	tes, err := newZipkinExporter(cst.URL, "", time.Millisecond, "json")
 	if err != nil {
 		t.Fatalf("Failed to create a new Zipkin receiver: %v", err)
 	}
@@ -212,9 +213,10 @@ func TestZipkinExporter_roundtripJSON(t *testing.T) {
 }
 
 type mockZipkinReporter struct {
-	url    string
-	client *http.Client
-	batch  []*zipkinmodel.SpanModel
+	url        string
+	client     *http.Client
+	batch      []*zipkinmodel.SpanModel
+	serializer zipkinreporter.SpanSerializer
 }
 
 var _ (zipkinreporter.Reporter) = (*mockZipkinReporter)(nil)
@@ -228,8 +230,9 @@ func (r *mockZipkinReporter) Close() error {
 
 func newMockZipkinReporter(url string) *mockZipkinReporter {
 	return &mockZipkinReporter{
-		url:    url,
-		client: &http.Client{},
+		url:        url,
+		client:     &http.Client{},
+		serializer: zipkinreporter.JSONSerializer{},
 	}
 }
 
@@ -241,7 +244,7 @@ func (r *mockZipkinReporter) Flush() error {
 		return nil
 	}
 
-	body, err := json.Marshal(sendBatch)
+	body, err := r.serializer.Serialize(sendBatch)
 	if err != nil {
 		return err
 	}
@@ -250,7 +253,7 @@ func (r *mockZipkinReporter) Flush() error {
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Type", r.serializer.ContentType())
 
 	resp, err := r.client.Do(req)
 	if err != nil {
@@ -339,3 +342,60 @@ const zipkinSpansJSONJavaLibrary = `
   "duration": 207000
 }]
 `
+
+func TestZipkinExporter_invalidFormat(t *testing.T) {
+	_, err := newZipkinExporter("", "", 0, "foobar")
+	require.Error(t, err)
+}
+
+// The rest of the fields should match up exactly
+func TestZipkinExporter_roundtripProto(t *testing.T) {
+	buf := new(bytes.Buffer)
+	var contentType string
+	cst := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		io.Copy(buf, r.Body)
+		contentType = r.Header.Get("Content-Type")
+		r.Body.Close()
+	}))
+	defer cst.Close()
+
+	tes, err := newZipkinExporter(cst.URL, "", time.Millisecond, "proto")
+	require.NoError(t, err)
+
+	// The test requires the spans from zipkinSpansJSONJavaLibrary to be sent in a single batch, use
+	// a mock to ensure that this happens as intended.
+	mzr := newMockZipkinReporter(cst.URL)
+	tes.reporter = mzr
+
+	mzr.serializer = zipkinproto.SpanSerializer{}
+
+	// Run the Zipkin receiver to "receive spans upload from a client application"
+	zexp := processor.NewTraceFanOutConnector([]consumer.TraceConsumer{tes})
+	port := testutils.GetAvailablePort(t)
+	zi, err := zipkinreceiver.New(fmt.Sprintf(":%d", port), zexp)
+	require.NoError(t, err)
+
+	mh := receivertest.NewMockHost()
+	err = zi.StartTraceReception(mh)
+	require.NoError(t, err)
+	defer zi.StopTraceReception()
+
+	// Let the receiver receive "uploaded Zipkin spans from a Java client application"
+	req, _ := http.NewRequest("POST", "https://tld.org/", strings.NewReader(zipkinSpansJSONJavaLibrary))
+	responseWriter := httptest.NewRecorder()
+	zi.ServeHTTP(responseWriter, req)
+
+	// Use the mock zipkin reporter to ensure all expected spans in a single batch. Since Flush waits for
+	// server response there is no need for further synchronization.
+	err = mzr.Flush()
+	require.NoError(t, err)
+
+	require.Equal(t, zipkinproto.SpanSerializer{}.ContentType(), contentType)
+	// Finally we need to inspect the output
+	gotBytes, err := ioutil.ReadAll(buf)
+	require.NoError(t, err)
+
+	_, err = zipkinproto.ParseSpans(gotBytes, false)
+	require.NoError(t, err)
+
+}

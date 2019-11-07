@@ -9,6 +9,7 @@ exporters:
     url: "http://some.location.org:9411/api/v2/spans"
   zipkin/2:
     url: "https://somedest:1234/api/v2/spans"
+    format: proto
 
 service:
   pipelines:
