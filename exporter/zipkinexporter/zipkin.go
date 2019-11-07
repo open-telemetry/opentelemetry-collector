@@ -84,7 +84,8 @@ func newZipkinExporter(finalEndpointURI, defaultServiceName string, uploadPeriod
 // from a set of attributes (in the format of OC SpanData). It returns the built
 // zipkin endpoint and insert the attribute keys that were made redundant
 // (because now they can be represented by the endpoint) into the redundantKeys
-// map (function assumes that this was created by the caller).
+// map (function assumes that this was created by the caller). Per call at most
+// 3 attribute keys can be made redundant.
 func zipkinEndpointFromAttributes(
 	attributes map[string]interface{},
 	serviceName string,
@@ -296,8 +297,11 @@ func (ze *zipkinExporter) zipkinSpan(
 	s *trace.SpanData,
 ) (zc zipkinmodel.SpanModel) {
 
-	localEndpointServiceName := ze.serviceNameOrDefault(node)
+	// Per call to zipkinEndpointFromAttributes at most 3 attribute keys can be
+	// made redundant, give a hint when calling make that we expect at most 6
+	// items on the map.
 	redundantKeys := make(map[string]bool, 6)
+	localEndpointServiceName := ze.serviceNameOrDefault(node)
 	localEndpoint := zipkinEndpointFromAttributes(
 		s.Attributes, localEndpointServiceName, isLocalEndpoint, redundantKeys)
 

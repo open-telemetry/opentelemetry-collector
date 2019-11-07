@@ -430,11 +430,12 @@ func nodeFromZipkinEndpoints(zs *zipkinmodel.SpanModel, pbs *tracepb.Span) *comm
 			pbs.Attributes = &tracepb.Span_Attributes{}
 		}
 		if pbs.Attributes.AttributeMap == nil {
-			pbs.Attributes.AttributeMap = make(map[string]*tracepb.AttributeValue, 6)
+			pbs.Attributes.AttributeMap = make(
+				map[string]*tracepb.AttributeValue, len(endpointMap))
 		}
 
-		// Delete the redundant serviceName key.
-		delete(endpointMap, "serviceName")
+		// Delete the redundant serviceName key since it is already on the node.
+		delete(endpointMap, zipkin.LocalEndpointServiceName)
 		attrbMap := pbs.Attributes.AttributeMap
 		for key, value := range endpointMap {
 			attrbMap[key] = &tracepb.AttributeValue{
@@ -457,7 +458,14 @@ const (
 
 var blankIP net.IP
 
-func zipkinEndpointIntoAttributes(ep *zipkinmodel.Endpoint, into map[string]string, endpointType zipkinDirection) map[string]string {
+// zipkinEndpointIntoAttributes extracts information from s zipkin endpoint struct
+// and puts it into a map with pre-defined keys.
+func zipkinEndpointIntoAttributes(
+	ep *zipkinmodel.Endpoint,
+	into map[string]string,
+	endpointType zipkinDirection,
+) map[string]string {
+
 	if into == nil {
 		into = make(map[string]string)
 	}
