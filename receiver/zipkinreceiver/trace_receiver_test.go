@@ -359,6 +359,7 @@ func TestConversionRoundtrip(t *testing.T) {
 	config := &zipkinexporter.Config{
 		ExporterSettings: configmodels.ExporterSettings{},
 		URL:              backend.URL,
+		Format:           "json",
 	}
 	ze, err := factory.CreateTraceExporter(zap.NewNop(), config)
 	require.NoError(t, err)
