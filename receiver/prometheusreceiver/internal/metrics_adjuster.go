@@ -80,6 +80,9 @@ func (tsm *timeseriesMap) get(
 	metric *metricspb.Metric, values []*metricspb.LabelValue) *timeseriesinfo {
 	name := metric.GetMetricDescriptor().GetName()
 	sig := getTimeseriesSignature(name, values)
+
+	tsm.Lock()
+	defer tsm.Unlock()
 	tsi, ok := tsm.tsiMap[sig]
 	if !ok {
 		tsi = &timeseriesinfo{}
@@ -143,7 +146,10 @@ func (jm *JobsMap) gc() {
 	// once the structure is locked, confrim that gc() is still necessary
 	if time.Since(jm.lastGC) > jm.gcInterval {
 		for sig, tsm := range jm.jobsMap {
-			if !tsm.mark {
+			tsm.RLock()
+			tsmNotMarked := !tsm.mark
+			tsm.RUnlock()
+			if tsmNotMarked {
 				delete(jm.jobsMap, sig)
 			} else {
 				tsm.gc()
@@ -203,8 +209,6 @@ func NewMetricsAdjuster(tsm *timeseriesMap, logger *zap.Logger) *MetricsAdjuster
 func (ma *MetricsAdjuster) AdjustMetrics(metrics []*metricspb.Metric) ([]*metricspb.Metric, int) {
 	var adjusted = make([]*metricspb.Metric, 0, len(metrics))
 	dropped := 0
-	ma.tsm.Lock()
-	defer ma.tsm.Unlock()
 	for _, metric := range metrics {
 		adj, d := ma.adjustMetric(metric)
 		dropped += d
