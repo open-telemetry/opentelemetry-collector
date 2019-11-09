@@ -16,33 +16,34 @@ package zipkinreceiver
 
 import (
 	"bytes"
-	"fmt"
+	"context"
 	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
-	"contrib.go.opencensus.io/exporter/zipkin"
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	openzipkin "github.com/openzipkin/zipkin-go"
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
-	zhttp "github.com/openzipkin/zipkin-go/reporter/http"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
+	"github.com/open-telemetry/opentelemetry-collector/exporter/zipkinexporter"
 	"github.com/open-telemetry/opentelemetry-collector/internal"
 	"github.com/open-telemetry/opentelemetry-collector/internal/testutils"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/receivertest"
-	spandatatranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace/spandata"
+	"github.com/open-telemetry/opentelemetry-collector/translator/trace/zipkin"
 )
 
 func TestTraceIDConversion(t *testing.T) {
@@ -164,13 +165,6 @@ func TestConvertSpansToTraceSpans_json(t *testing.T) {
 		ServiceInfo: &commonpb.ServiceInfo{
 			Name: "frontend",
 		},
-		Attributes: map[string]string{
-			"ipv6":                              "7::80:807f",
-			"serviceName":                       "frontend",
-			"zipkin.remoteEndpoint.serviceName": "backend",
-			"zipkin.remoteEndpoint.ipv4":        "192.168.99.101",
-			"zipkin.remoteEndpoint.port":        "9000",
-		},
 	}
 	assert.Equal(t, wantNode, req.Node)
 
@@ -201,7 +195,7 @@ func TestConversionRoundtrip(t *testing.T) {
   "duration": 207000,
   "localEndpoint": {
     "serviceName": "frontend",
-    "ipv6": "7::0.128.128.127"
+    "ipv6": "7::80:807f"
   },
   "remoteEndpoint": {
     "serviceName": "backend",
@@ -233,7 +227,7 @@ func TestConversionRoundtrip(t *testing.T) {
   "duration": 207000,
   "localEndpoint": {
     "serviceName": "frontend",
-    "ipv6": "7::0.128.128.127"
+    "ipv6": "7::80:807f"
   },
   "remoteEndpoint": {
     "serviceName": "frontend",
@@ -258,19 +252,12 @@ func TestConversionRoundtrip(t *testing.T) {
 
 	zi := &ZipkinReceiver{nextConsumer: exportertest.NewNopTraceExporter()}
 	ereqs, err := zi.v2ToTraceSpans(receiverInputJSON, nil)
-	require.NoError(t, err, "Failed to parse and convert receiver JSON: %v", err)
+	require.NoError(t, err)
 
 	wantProtoRequests := []consumerdata.TraceData{
 		{
 			Node: &commonpb.Node{
 				ServiceInfo: &commonpb.ServiceInfo{Name: "frontend"},
-				Attributes: map[string]string{
-					"ipv6":                              "7::80:807f",
-					"serviceName":                       "frontend",
-					"zipkin.remoteEndpoint.serviceName": "backend",
-					"zipkin.remoteEndpoint.ipv4":        "192.168.99.101",
-					"zipkin.remoteEndpoint.port":        "9000",
-				},
 			},
 
 			Spans: []*tracepb.Span{
@@ -304,34 +291,15 @@ func TestConversionRoundtrip(t *testing.T) {
 					},
 					Attributes: &tracepb.Span_Attributes{
 						AttributeMap: map[string]*tracepb.AttributeValue{
-							"http.path": {
-								Value: &tracepb.AttributeValue_StringValue{
-									StringValue: &tracepb.TruncatableString{Value: "/api"},
-								},
-							},
-							"clnt/finagle.version": {
-								Value: &tracepb.AttributeValue_StringValue{
-									StringValue: &tracepb.TruncatableString{Value: "6.45.0"},
-								},
-							},
+							zipkin.LocalEndpointIPv6:         {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "7::80:807f"}}},
+							zipkin.RemoteEndpointServiceName: {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "backend"}}},
+							zipkin.RemoteEndpointIPv4:        {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "192.168.99.101"}}},
+							zipkin.RemoteEndpointPort:        {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "9000"}}},
+							"http.path":                      {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "/api"}}},
+							"clnt/finagle.version":           {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "6.45.0"}}},
 						},
 					},
 				},
-			},
-		},
-		{
-			Node: &commonpb.Node{
-				ServiceInfo: &commonpb.ServiceInfo{Name: "frontend"},
-				Attributes: map[string]string{
-					"ipv6":                              "7::80:807f",
-					"serviceName":                       "frontend",
-					"zipkin.remoteEndpoint.serviceName": "frontend",
-					"zipkin.remoteEndpoint.ipv4":        "192.168.99.101",
-					"zipkin.remoteEndpoint.port":        "9000",
-				},
-			},
-
-			Spans: []*tracepb.Span{
 				{
 					TraceId:      []byte{0x4d, 0x1e, 0x00, 0xc0, 0xdb, 0x90, 0x10, 0xdb, 0x86, 0x15, 0x4a, 0x4b, 0xa6, 0xe9, 0x13, 0x85},
 					SpanId:       []byte{0x4d, 0x1e, 0x00, 0xc0, 0xdb, 0x90, 0x10, 0xdb},
@@ -362,16 +330,12 @@ func TestConversionRoundtrip(t *testing.T) {
 					},
 					Attributes: &tracepb.Span_Attributes{
 						AttributeMap: map[string]*tracepb.AttributeValue{
-							"http.path": {
-								Value: &tracepb.AttributeValue_StringValue{
-									StringValue: &tracepb.TruncatableString{Value: "/api"},
-								},
-							},
-							"clnt/finagle.version": {
-								Value: &tracepb.AttributeValue_StringValue{
-									StringValue: &tracepb.TruncatableString{Value: "6.45.0"},
-								},
-							},
+							zipkin.LocalEndpointIPv6:         {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "7::80:807f"}}},
+							zipkin.RemoteEndpointServiceName: {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "frontend"}}},
+							zipkin.RemoteEndpointIPv4:        {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "192.168.99.101"}}},
+							zipkin.RemoteEndpointPort:        {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "9000"}}},
+							"http.path":                      {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "/api"}}},
+							"clnt/finagle.version":           {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "6.45.0"}}},
 						},
 					},
 				},
@@ -379,8 +343,7 @@ func TestConversionRoundtrip(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, len(wantProtoRequests), len(ereqs))
-	require.Equal(t, wantProtoRequests, ereqs, "Failed to transform the expected ProtoSpans")
+	require.Equal(t, wantProtoRequests, ereqs)
 
 	// Now the last phase is to transmit them over the wire and then compare the JSONs
 
@@ -392,94 +355,33 @@ func TestConversionRoundtrip(t *testing.T) {
 	}))
 	defer backend.Close()
 
-	var reporterShutdownFns []func() error
-	for _, treq := range ereqs {
-		ipv6 := treq.Node.Attributes["ipv6"]
-		// Convert this ipv6 address to hostport as recommended in:
-		//      https://github.com/openzipkin/zipkin-go/issues/84
-		hostPort := fmt.Sprintf("[%s]:0", ipv6)
-		le, err := openzipkin.NewEndpoint(treq.Node.GetServiceInfo().GetName(), hostPort)
-		if err != nil {
-			t.Errorf("NewEndpoint err: %v", err)
-			continue
-		}
-		re := zhttp.NewReporter(backend.URL)
-		ze := zipkin.NewExporter(re, le)
-		reporterShutdownFns = append(reporterShutdownFns, re.Close)
+	factory := &zipkinexporter.Factory{}
+	config := &zipkinexporter.Config{
+		ExporterSettings: configmodels.ExporterSettings{},
+		URL:              backend.URL,
+		Format:           "json",
+	}
+	ze, err := factory.CreateTraceExporter(zap.NewNop(), config)
+	require.NoError(t, err)
+	require.NotNil(t, ze)
+	mh := receivertest.NewMockHost()
+	require.NoError(t, ze.Start(mh))
 
-		for _, span := range treq.Spans {
-			sd, _ := spandatatranslator.ProtoSpanToOCSpanData(span)
-			ze.ExportSpan(sd)
-		}
+	for _, treq := range ereqs {
+		require.NoError(t, ze.ConsumeTraceData(context.Background(), treq))
 	}
-	// Now shut down the respective reporters and the server
-	for _, reporterFn := range reporterShutdownFns {
-		_ = reporterFn()
-	}
+
+	// Shutdown the exporter so it can flush any remaining data.
+	assert.NoError(t, ze.Shutdown())
 	backend.Close()
 
-	// Give them time to shutdown
-	<-time.After(200 * time.Millisecond)
-
-	// We expect this final JSON: that is
-	wantFinalJSON := `
-[{
-  "traceId": "4d1e00c0db9010db86154a4ba6e91385",
-  "parentId": "86154a4ba6e91385",
-  "id": "4d1e00c0db9010db",
-  "kind": "CLIENT",
-  "name": "get",
-  "timestamp": 1472470996199000,
-  "duration": 207000,
-  "localEndpoint": {
-    "serviceName": "frontend",
-    "ipv6": "7::80:807f"
-  },
-  "annotations": [
-    {
-      "timestamp": 1472470996238000,
-      "value": "foo"
-    },
-    {
-      "timestamp": 1472470996403000,
-      "value": "bar"
-    }
-  ],
-  "tags": {
-    "http.path": "/api",
-    "clnt/finagle.version": "6.45.0"
-  }
-}]
-[{
-  "traceId": "4d1e00c0db9010db86154a4ba6e91385",
-  "parentId": "86154a4ba6e91386",
-  "id": "4d1e00c0db9010db",
-  "kind": "SERVER",
-  "name": "put",
-  "timestamp": 1472470996199000,
-  "duration": 207000,
-  "localEndpoint": {
-    "serviceName": "frontend",
-    "ipv6": "7::80:807f"
-  },
-  "annotations": [
-    {
-      "timestamp": 1472470996238000,
-      "value": "foo"
-    },
-    {
-      "timestamp": 1472470996403000,
-      "value": "bar"
-    }
-  ],
-  "tags": {
-    "http.path": "/api",
-    "clnt/finagle.version": "6.45.0"
-  }
-}]`
-
-	gj, wj := testutils.GenerateNormalizedJSON(buf.String()), testutils.GenerateNormalizedJSON(wantFinalJSON)
-	assert.Equal(t, wj, gj, "The roundtrip JSON doesn't match the JSON that we want")
+	// The received JSON messages are inside arrays, so reading then directly will
+	// fail with error. Use a small hack to transform the multiple arrays into a
+	// single one.
+	accumulatedJSONMsgs := strings.Replace(buf.String(), "][", ",", -1)
+	gj := testutils.GenerateNormalizedJSON(t, accumulatedJSONMsgs)
+	wj := testutils.GenerateNormalizedJSON(t, string(receiverInputJSON))
+	assert.Equal(t, wj, gj)
 }
 
 func TestStartTraceReception(t *testing.T) {

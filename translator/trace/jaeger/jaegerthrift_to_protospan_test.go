@@ -97,8 +97,8 @@ func TestThriftBatchToOCProto_Roundtrip(t *testing.T) {
 
 		gjson, _ := json.MarshalIndent(gotJBatch, "", "  ")
 		wjson, _ := json.MarshalIndent(wantJBatch, "", "  ")
-		gjsonStr := testutils.GenerateNormalizedJSON(string(gjson))
-		wjsonStr := testutils.GenerateNormalizedJSON(string(wjson))
+		gjsonStr := testutils.GenerateNormalizedJSON(t, string(gjson))
+		wjsonStr := testutils.GenerateNormalizedJSON(t, string(wjson))
 		if gjsonStr != wjsonStr {
 			t.Errorf("OC Proto to Jaeger Thrift failed.\nGot:\n%s\nWant:\n%s\n", gjson, wjson)
 		}
@@ -140,7 +140,7 @@ func TestThriftBatchToOCProto(t *testing.T) {
 			continue
 		}
 
-		gj, wj := testutils.GenerateNormalizedJSON(string(gb)), testutils.GenerateNormalizedJSON(string(wb))
+		gj, wj := testutils.GenerateNormalizedJSON(t, string(gb)), testutils.GenerateNormalizedJSON(t, string(wb))
 		if gj != wj {
 			t.Errorf("The roundtrip JSON doesn't match the JSON that we want\nGot:\n%s\nWant:\n%s", gj, wj)
 		}

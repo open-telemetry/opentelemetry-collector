@@ -28,6 +28,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal"
+	"github.com/open-telemetry/opentelemetry-collector/translator/trace/zipkin"
 )
 
 func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
@@ -113,14 +114,6 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 				ServiceInfo: &commonpb.ServiceInfo{
 					Name: "svc-1",
 				},
-				Attributes: map[string]string{
-					"ipv4":                              "192.168.0.1",
-					"serviceName":                       "svc-1",
-					"port":                              "8009",
-					"zipkin.remoteEndpoint.serviceName": "memcached",
-					"zipkin.remoteEndpoint.ipv6":        "fe80::1453:a77c:da4d:d21b",
-					"zipkin.remoteEndpoint.port":        "11211",
-				},
 			},
 			Spans: []*tracepb.Span{
 				{
@@ -130,6 +123,15 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 					Name:         &tracepb.TruncatableString{Value: "ProtoSpan1"},
 					StartTime:    internal.TimeToTimestamp(now),
 					EndTime:      internal.TimeToTimestamp(now.Add(12 * time.Second)),
+					Attributes: &tracepb.Span_Attributes{
+						AttributeMap: map[string]*tracepb.AttributeValue{
+							zipkin.LocalEndpointIPv4:         {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "192.168.0.1"}}},
+							zipkin.LocalEndpointPort:         {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "8009"}}},
+							zipkin.RemoteEndpointServiceName: {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "memcached"}}},
+							zipkin.RemoteEndpointIPv6:        {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "fe80::1453:a77c:da4d:d21b"}}},
+							zipkin.RemoteEndpointPort:        {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "11211"}}},
+						},
+					},
 				},
 			},
 		},
@@ -137,14 +139,6 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 			Node: &commonpb.Node{
 				ServiceInfo: &commonpb.ServiceInfo{
 					Name: "search",
-				},
-				Attributes: map[string]string{
-					"ipv4":                              "10.0.0.13",
-					"serviceName":                       "search",
-					"port":                              "8009",
-					"zipkin.remoteEndpoint.serviceName": "redis",
-					"zipkin.remoteEndpoint.ipv6":        "fe80::1453:a77c:da4d:d21b",
-					"zipkin.remoteEndpoint.port":        "6379",
 				},
 			},
 			Spans: []*tracepb.Span{
@@ -155,6 +149,15 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 					Name:         &tracepb.TruncatableString{Value: "CacheWarmUp"},
 					StartTime:    internal.TimeToTimestamp(now.Add(-10 * time.Hour)),
 					EndTime:      internal.TimeToTimestamp(now.Add(-10 * time.Hour).Add(7 * time.Second)),
+					Attributes: &tracepb.Span_Attributes{
+						AttributeMap: map[string]*tracepb.AttributeValue{
+							zipkin.LocalEndpointIPv4:         {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "10.0.0.13"}}},
+							zipkin.LocalEndpointPort:         {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "8009"}}},
+							zipkin.RemoteEndpointServiceName: {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "redis"}}},
+							zipkin.RemoteEndpointIPv6:        {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "fe80::1453:a77c:da4d:d21b"}}},
+							zipkin.RemoteEndpointPort:        {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "6379"}}},
+						},
+					},
 					TimeEvents: &tracepb.Span_TimeEvents{
 						TimeEvent: []*tracepb.Span_TimeEvent{
 							{

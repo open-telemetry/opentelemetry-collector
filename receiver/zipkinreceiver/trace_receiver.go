@@ -43,7 +43,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
-	zipkintranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace/zipkin"
+	"github.com/open-telemetry/opentelemetry-collector/translator/trace/zipkin"
 )
 
 // ZipkinReceiver type is used to handle spans received in the Zipkin format.
@@ -133,9 +133,9 @@ func (zr *ZipkinReceiver) v1ToTraceSpans(blob []byte, hdr http.Header) (reqs []c
 			return nil, err
 		}
 
-		return zipkintranslator.V1ThriftBatchToOCProto(zSpans)
+		return zipkin.V1ThriftBatchToOCProto(zSpans)
 	}
-	return zipkintranslator.V1JSONBatchToOCProto(blob)
+	return zipkin.V1JSONBatchToOCProto(blob)
 }
 
 // deserializeThrift decodes Thrift bytes to a list of spans.
@@ -369,20 +369,19 @@ func zipkinSpanToTraceSpan(zs *zipkinmodel.SpanModel) (*tracepb.Span, *commonpb.
 		return nil, nil, errNilZipkinSpan
 	}
 
-	node := nodeFromZipkinEndpoints(zs)
 	traceID, err := zTraceIDToOCProtoTraceID(zs.TraceID)
 	if err != nil {
-		return nil, node, fmt.Errorf("TraceID: %v", err)
+		return nil, nil, fmt.Errorf("TraceID: %v", err)
 	}
 	spanID, err := zSpanIDToOCProtoSpanID(zs.ID)
 	if err != nil {
-		return nil, node, fmt.Errorf("SpanID: %v", err)
+		return nil, nil, fmt.Errorf("SpanID: %v", err)
 	}
 	var parentSpanID []byte
 	if zs.ParentID != nil {
 		parentSpanID, err = zSpanIDToOCProtoSpanID(*zs.ParentID)
 		if err != nil {
-			return nil, node, fmt.Errorf("ParentSpanID: %v", err)
+			return nil, nil, fmt.Errorf("ParentSpanID: %v", err)
 		}
 	}
 
@@ -399,35 +398,53 @@ func zipkinSpanToTraceSpan(zs *zipkinmodel.SpanModel) (*tracepb.Span, *commonpb.
 		TimeEvents:   zipkinAnnotationsToProtoTimeEvents(zs.Annotations),
 	}
 
+	node := nodeFromZipkinEndpoints(zs, pbs)
+
 	return pbs, node, nil
 }
 
-func nodeFromZipkinEndpoints(zs *zipkinmodel.SpanModel) *commonpb.Node {
+func nodeFromZipkinEndpoints(zs *zipkinmodel.SpanModel, pbs *tracepb.Span) *commonpb.Node {
 	if zs.LocalEndpoint == nil && zs.RemoteEndpoint == nil {
 		return nil
 	}
 
 	node := new(commonpb.Node)
+	var endpointMap map[string]string
 
 	// Retrieve and make use of the local endpoint
 	if lep := zs.LocalEndpoint; lep != nil {
 		node.ServiceInfo = &commonpb.ServiceInfo{
 			Name: lep.ServiceName,
 		}
-		node.Attributes = zipkinEndpointIntoAttributes(lep, node.Attributes, isLocalEndpoint)
+		endpointMap = zipkinEndpointIntoAttributes(lep, endpointMap, isLocalEndpoint)
 	}
 
 	// Retrieve and make use of the remote endpoint
 	if rep := zs.RemoteEndpoint; rep != nil {
-		// For remoteEndpoint, our goal is to prefix its fields with "zipkin.remoteEndpoint."
-		// For example becoming:
-		// {
-		//      "zipkin.remoteEndpoint.ipv4": "192.168.99.101",
-		//      "zipkin.remoteEndpoint.port": "9000"
-		//      "zipkin.remoteEndpoint.serviceName": "backend",
-		// }
-		node.Attributes = zipkinEndpointIntoAttributes(rep, node.Attributes, isRemoteEndpoint)
+		endpointMap = zipkinEndpointIntoAttributes(rep, endpointMap, isRemoteEndpoint)
 	}
+
+	if endpointMap != nil {
+		if pbs.Attributes == nil {
+			pbs.Attributes = &tracepb.Span_Attributes{}
+		}
+		if pbs.Attributes.AttributeMap == nil {
+			pbs.Attributes.AttributeMap = make(
+				map[string]*tracepb.AttributeValue, len(endpointMap))
+		}
+
+		// Delete the redundant serviceName key since it is already on the node.
+		delete(endpointMap, zipkin.LocalEndpointServiceName)
+		attrbMap := pbs.Attributes.AttributeMap
+		for key, value := range endpointMap {
+			attrbMap[key] = &tracepb.AttributeValue{
+				Value: &tracepb.AttributeValue_StringValue{
+					StringValue: &tracepb.TruncatableString{Value: value},
+				},
+			}
+		}
+	}
+
 	return node
 }
 
@@ -440,18 +457,25 @@ const (
 
 var blankIP net.IP
 
-func zipkinEndpointIntoAttributes(ep *zipkinmodel.Endpoint, into map[string]string, endpointType zipkinDirection) map[string]string {
+// zipkinEndpointIntoAttributes extracts information from s zipkin endpoint struct
+// and puts it into a map with pre-defined keys.
+func zipkinEndpointIntoAttributes(
+	ep *zipkinmodel.Endpoint,
+	into map[string]string,
+	endpointType zipkinDirection,
+) map[string]string {
+
 	if into == nil {
 		into = make(map[string]string)
 	}
 
 	var ipv4Key, ipv6Key, portKey, serviceNameKey string
 	if endpointType == isLocalEndpoint {
-		ipv4Key, ipv6Key = "ipv4", "ipv6"
-		portKey, serviceNameKey = "port", "serviceName"
+		ipv4Key, ipv6Key = zipkin.LocalEndpointIPv4, zipkin.LocalEndpointIPv6
+		portKey, serviceNameKey = zipkin.LocalEndpointPort, zipkin.LocalEndpointServiceName
 	} else {
-		ipv4Key, ipv6Key = "zipkin.remoteEndpoint.ipv4", "zipkin.remoteEndpoint.ipv6"
-		portKey, serviceNameKey = "zipkin.remoteEndpoint.port", "zipkin.remoteEndpoint.serviceName"
+		ipv4Key, ipv6Key = zipkin.RemoteEndpointIPv4, zipkin.RemoteEndpointIPv6
+		portKey, serviceNameKey = zipkin.RemoteEndpointPort, zipkin.RemoteEndpointServiceName
 	}
 	if ep.IPv4 != nil && !ep.IPv4.Equal(blankIP) {
 		into[ipv4Key] = ep.IPv4.String()
