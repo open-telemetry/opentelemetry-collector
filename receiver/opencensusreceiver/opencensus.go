@@ -21,7 +21,6 @@ import (
 	"net"
 	"net/http"
 	"sync"
-	"time"
 
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
@@ -102,7 +101,7 @@ func (ocr *Receiver) TraceSource() string {
 // StartTraceReception runs the trace receiver on the gRPC server. Currently
 // it also enables the metrics receiver too.
 func (ocr *Receiver) StartTraceReception(host receiver.Host) error {
-	return ocr.start()
+	return ocr.start(host)
 }
 
 func (ocr *Receiver) registerTraceConsumer() error {
@@ -127,7 +126,7 @@ func (ocr *Receiver) MetricsSource() string {
 // StartMetricsReception runs the metrics receiver on the gRPC server. Currently
 // it also enables the trace receiver too.
 func (ocr *Receiver) StartMetricsReception(host receiver.Host) error {
-	return ocr.start()
+	return ocr.start(host)
 }
 
 func (ocr *Receiver) registerMetricsConsumer() error {
@@ -173,7 +172,7 @@ func (ocr *Receiver) StopMetricsReception() error {
 }
 
 // start runs all the receivers/services namely, Trace and Metrics services.
-func (ocr *Receiver) start() error {
+func (ocr *Receiver) start(host receiver.Host) error {
 	hasConsumer := false
 	if ocr.traceConsumer != nil {
 		hasConsumer = true
@@ -193,7 +192,7 @@ func (ocr *Receiver) start() error {
 		return errors.New("cannot start receiver: no consumers were specified")
 	}
 
-	if err := ocr.startServer(); err != nil && err != oterr.ErrAlreadyStarted {
+	if err := ocr.startServer(host); err != nil && err != oterr.ErrAlreadyStarted {
 		return err
 	}
 
@@ -251,55 +250,47 @@ func (ocr *Receiver) httpServer() *http.Server {
 	return ocr.serverHTTP
 }
 
-func (ocr *Receiver) startServer() error {
+func (ocr *Receiver) startServer(host receiver.Host) error {
 	err := oterr.ErrAlreadyStarted
 	ocr.startServerOnce.Do(func() {
-		errChan := make(chan error, 1)
-		go func() {
-			// Register the grpc-gateway on the HTTP server mux
-			c := context.Background()
-			opts := []grpc.DialOption{grpc.WithInsecure()}
-			endpoint := ocr.ln.Addr().String()
+		err = nil
+		// Register the grpc-gateway on the HTTP server mux
+		c := context.Background()
+		opts := []grpc.DialOption{grpc.WithInsecure()}
+		endpoint := ocr.ln.Addr().String()
 
-			err := agenttracepb.RegisterTraceServiceHandlerFromEndpoint(c, ocr.gatewayMux, endpoint, opts)
-			if err != nil {
-				errChan <- err
-				return
-			}
-
-			err = agentmetricspb.RegisterMetricsServiceHandlerFromEndpoint(c, ocr.gatewayMux, endpoint, opts)
-			if err != nil {
-				errChan <- err
-				return
-			}
-
-			// Start the gRPC and HTTP/JSON (grpc-gateway) servers on the same port.
-			m := cmux.New(ocr.ln)
-			grpcL := m.MatchWithWriters(
-				cmux.HTTP2MatchHeaderFieldSendSettings("content-type", "application/grpc"),
-				cmux.HTTP2MatchHeaderFieldSendSettings("content-type", "application/grpc+proto"))
-
-			httpL := m.Match(cmux.Any())
-			go func() {
-				errChan <- ocr.serverGRPC.Serve(grpcL)
-			}()
-			go func() {
-				errChan <- ocr.httpServer().Serve(httpL)
-			}()
-			errChan <- m.Serve()
-		}()
-
-		// Our goal is to heuristically try running the server
-		// and if it returns an error immediately, we reporter that.
-		select {
-		case serr := <-errChan:
-			err = serr
-
-		case <-time.After(1 * time.Second):
-			// No error otherwise returned in the period of 1s.
-			// We can assume that the serve is at least running.
-			err = nil
+		err = agenttracepb.RegisterTraceServiceHandlerFromEndpoint(c, ocr.gatewayMux, endpoint, opts)
+		if err != nil {
+			return
 		}
+
+		err = agentmetricspb.RegisterMetricsServiceHandlerFromEndpoint(c, ocr.gatewayMux, endpoint, opts)
+		if err != nil {
+			return
+		}
+
+		// Start the gRPC and HTTP/JSON (grpc-gateway) servers on the same port.
+		m := cmux.New(ocr.ln)
+		grpcL := m.MatchWithWriters(
+			cmux.HTTP2MatchHeaderFieldSendSettings("content-type", "application/grpc"),
+			cmux.HTTP2MatchHeaderFieldSendSettings("content-type", "application/grpc+proto"))
+
+		httpL := m.Match(cmux.Any())
+		go func() {
+			if err := ocr.serverGRPC.Serve(grpcL); err != nil {
+				host.ReportFatalError(err)
+			}
+		}()
+		go func() {
+			if err := ocr.httpServer().Serve(httpL); err != nil {
+				host.ReportFatalError(err)
+			}
+		}()
+		go func() {
+			if err := m.Serve(); err != nil {
+				host.ReportFatalError(err)
+			}
+		}()
 	})
 	return err
 }
