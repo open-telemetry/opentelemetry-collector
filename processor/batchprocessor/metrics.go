@@ -44,7 +44,7 @@ func MetricViews(level telemetry.Level) []*view.View {
 		return nil
 	}
 
-	exporterTagKeys := []tag.Key{processor.TagExporterNameKey}
+	processorTagKeys := []tag.Key{processor.TagProcessorNameKey}
 
 	batchSizeAggregation := view.Distribution(10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 10000, 20000, 30000, 50000, 100000)
 
@@ -52,7 +52,7 @@ func MetricViews(level telemetry.Level) []*view.View {
 		Name:        statBatchSize.Name(),
 		Measure:     statBatchSize,
 		Description: statBatchSize.Description(),
-		TagKeys:     exporterTagKeys,
+		TagKeys:     processorTagKeys,
 		Aggregation: batchSizeAggregation,
 	}
 
@@ -60,7 +60,7 @@ func MetricViews(level telemetry.Level) []*view.View {
 		Name:        statNodesAddedToBatches.Name(),
 		Measure:     statNodesAddedToBatches,
 		Description: statNodesAddedToBatches.Description(),
-		TagKeys:     exporterTagKeys,
+		TagKeys:     processorTagKeys,
 		Aggregation: view.Sum(),
 	}
 
@@ -68,7 +68,7 @@ func MetricViews(level telemetry.Level) []*view.View {
 		Name:        statNodesRemovedFromBatches.Name(),
 		Measure:     statNodesRemovedFromBatches,
 		Description: statNodesRemovedFromBatches.Description(),
-		TagKeys:     exporterTagKeys,
+		TagKeys:     processorTagKeys,
 		Aggregation: view.Sum(),
 	}
 
