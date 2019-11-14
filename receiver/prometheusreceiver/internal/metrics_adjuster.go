@@ -140,10 +140,13 @@ func NewJobsMap(gcInterval time.Duration) *JobsMap {
 func (jm *JobsMap) gc() {
 	jm.Lock()
 	defer jm.Unlock()
-	// once the structure is locked, confrim that gc() is still necessary
+	// once the structure is locked, confirm that gc() is still necessary
 	if time.Since(jm.lastGC) > jm.gcInterval {
 		for sig, tsm := range jm.jobsMap {
-			if !tsm.mark {
+			tsm.RLock()
+			tsmNotMarked := !tsm.mark
+			tsm.RUnlock()
+			if tsmNotMarked {
 				delete(jm.jobsMap, sig)
 			} else {
 				tsm.gc()
@@ -155,6 +158,8 @@ func (jm *JobsMap) gc() {
 
 func (jm *JobsMap) maybeGC() {
 	// speculatively check if gc() is necessary, recheck once the structure is locked
+	jm.RLock()
+	defer jm.RUnlock()
 	if time.Since(jm.lastGC) > jm.gcInterval {
 		go jm.gc()
 	}

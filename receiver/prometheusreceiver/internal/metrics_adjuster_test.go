@@ -317,6 +317,8 @@ func Test_jobGC(t *testing.T) {
 	time.Sleep(2 * gcInterval)
 	// re-run job 2, round1 - trigger job gc, removing unmarked entries
 	runScript(t, jobsMap.get("job", "1"), job2Script1)
+	// ensure that at least one jobsMap.gc() completed
+	jobsMap.gc()
 	// run job 1, round 2 - verify that all job 1 timeseries have been gc'd
 	runScript(t, jobsMap.get("job", "0"), job1Script2)
 }
