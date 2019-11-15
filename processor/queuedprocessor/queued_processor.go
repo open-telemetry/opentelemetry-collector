@@ -66,7 +66,7 @@ func NewQueuedSpanProcessor(sender consumer.TraceConsumer, opts ...Option) proce
 	})
 
 	// Start a timer to report the queue length.
-	ctx, _ := tag.New(context.Background(), tag.Upsert(processor.TagExporterNameKey, sp.name))
+	ctx, _ := tag.New(context.Background(), tag.Upsert(processor.TagProcessorNameKey, sp.name))
 	ticker := time.NewTicker(1 * time.Second)
 	go func(ctx context.Context) {
 		defer ticker.Stop()
@@ -246,13 +246,13 @@ func MetricViews(level telemetry.Level) []*view.View {
 		return nil
 	}
 
-	exporterTagKeys := []tag.Key{processor.TagExporterNameKey}
+	processorTagKeys := []tag.Key{processor.TagProcessorNameKey}
 
 	queueLengthView := &view.View{
 		Name:        statQueueLength.Name(),
 		Measure:     statQueueLength,
 		Description: "Current number of batches in the queued exporter",
-		TagKeys:     exporterTagKeys,
+		TagKeys:     processorTagKeys,
 		Aggregation: view.LastValue(),
 	}
 	countSuccessSendView := &view.View{
@@ -276,14 +276,14 @@ func MetricViews(level telemetry.Level) []*view.View {
 		Name:        statSendLatencyMs.Name(),
 		Measure:     statSendLatencyMs,
 		Description: "The latency of the successful send operations.",
-		TagKeys:     exporterTagKeys,
+		TagKeys:     processorTagKeys,
 		Aggregation: latencyDistributionAggregation,
 	}
 	inQueueLatencyView := &view.View{
 		Name:        statInQueueLatencyMs.Name(),
 		Measure:     statInQueueLatencyMs,
 		Description: "The \"in queue\" latency of the successful send operations.",
-		TagKeys:     exporterTagKeys,
+		TagKeys:     processorTagKeys,
 		Aggregation: latencyDistributionAggregation,
 	}
 

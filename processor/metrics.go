@@ -25,9 +25,9 @@ import (
 
 // Keys and stats for telemetry.
 var (
-	TagSourceFormatKey, _ = tag.NewKey("format")
-	TagServiceNameKey, _  = tag.NewKey("service")
-	TagExporterNameKey, _ = tag.NewKey("exporter")
+	TagSourceFormatKey, _  = tag.NewKey("source_format")
+	TagServiceNameKey, _   = tag.NewKey("service")
+	TagProcessorNameKey, _ = tag.NewKey("processor")
 
 	StatReceivedSpanCount = stats.Int64(
 		"spans_received",
@@ -54,7 +54,7 @@ func MetricTagKeys(level telemetry.Level) []tag.Key {
 		tagKeys = append(tagKeys, TagSourceFormatKey)
 		fallthrough
 	case telemetry.Basic:
-		tagKeys = append(tagKeys, TagExporterNameKey)
+		tagKeys = append(tagKeys, TagProcessorNameKey)
 	default:
 		return nil
 	}
@@ -143,7 +143,7 @@ func StatsTagsForBatch(processorName, serviceName, spanFormat string) []tag.Muta
 	statsTags := []tag.Mutator{
 		tag.Upsert(TagSourceFormatKey, spanFormat),
 		tag.Upsert(TagServiceNameKey, serviceName),
-		tag.Upsert(TagExporterNameKey, processorName),
+		tag.Upsert(TagProcessorNameKey, processorName),
 	}
 
 	return statsTags

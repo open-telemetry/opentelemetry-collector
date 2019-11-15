@@ -61,6 +61,7 @@ func (f *Factory) CreateTraceProcessor(
 ) (processor.TraceProcessor, error) {
 	oCfg := cfg.(*Config)
 	return NewQueuedSpanProcessor(nextConsumer,
+		Options.WithName(oCfg.Name()),
 		Options.WithNumWorkers(oCfg.NumWorkers),
 		Options.WithQueueSize(oCfg.QueueSize),
 		Options.WithRetryOnProcessingFailures(oCfg.RetryOnFailure),
