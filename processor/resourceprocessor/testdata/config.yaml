@@ -1,0 +1,22 @@
+receivers:
+  examplereceiver:
+
+processors:
+  resource:
+  resource/2:
+    type: "host"
+    labels: {
+      "cloud.zone": "zone-1",
+      "k8s.cluster.name": "k8s-cluster",
+      "host.name": "k8s-node",
+    }
+
+exporters:
+  exampleexporter:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [examplereceiver]
+      processors: [resource/2]
+      exporters: [exampleexporter]
