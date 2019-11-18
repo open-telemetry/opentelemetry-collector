@@ -21,7 +21,7 @@ import (
 // Config defines configuration for Resource processor.
 type Config struct {
 	configmodels.ProcessorSettings `mapstructure:",squash"`
-	// Resource specifies the labels to be added to exported metrics.
+	// Resource specifies the labels to be added to exported metrics and traces.
 	ResourceType string            `mapstructure:"type"`
 	Labels       map[string]string `mapstructure:"labels"`
 }
