@@ -314,7 +314,7 @@ respects additional configuration parameters such as certain environment
 variables. This section captures these additionally respected configuration
 options.
 
-*HTTP_PROXY / HTTPS_PROXY*
+**HTTP_PROXY / HTTPS_PROXY**
 
 The Collector respects the `HTTP_PROXY` and `HTTPS_PROXY` environment
 variables. If set at Collector start time then both REST and gRPC exporters
