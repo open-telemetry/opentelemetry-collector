@@ -22,6 +22,7 @@ recommended you use the
     - [Exporters](#config-exporters)
     - [Extensions](#config-extensions)
     - [Service](#config-service)
+    - [Other](#config-other)
 
 ## Introduction
 
@@ -305,6 +306,19 @@ service:
       processors: [batch, queued_retry]
       exporters: [opencensus, zipkin]
 ```
+
+### <a name="config-other"></a>Other
+
+Beyond standard YAML configuration of the Collector, the Collector also
+respects additional configuration parameters such as certain environment
+variables. This section captures these additionally respected configuration
+options.
+
+*HTTP_PROXY / HTTPS_PROXY*
+
+The Collector respects the `HTTP_PROXY` and `HTTPS_PROXY` environment
+variables. If set at Collector start time then both REST and gRPC exporters
+will proxy traffic as defined by these environment variables.
 
 [travis-image]: https://travis-ci.org/open-telemetry/opentelemetry-service.svg?branch=master
 [travis-url]: https://travis-ci.org/open-telemetry/opentelemetry-service
