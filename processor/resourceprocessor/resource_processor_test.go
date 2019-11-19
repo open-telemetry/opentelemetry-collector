@@ -40,12 +40,42 @@ var (
 		},
 	}
 
+	emptyCfg = &Config{
+		ProcessorSettings: configmodels.ProcessorSettings{
+			TypeVal: "resource",
+			NameVal: "resource",
+		},
+		ResourceType: "",
+		Labels:       map[string]string{},
+	}
+
 	resource = &resourcepb.Resource{
 		Type: "host",
 		Labels: map[string]string{
 			"cloud.zone":       "zone-1",
 			"k8s.cluster.name": "k8s-cluster",
 			"host.name":        "k8s-node",
+		},
+	}
+
+	resource2 = &resourcepb.Resource{
+		Type: "ht",
+		Labels: map[string]string{
+			"zone":    "zone-2",
+			"cluster": "cluster-2",
+			"host":    "node-2",
+		},
+	}
+
+	mergedResource = &resourcepb.Resource{
+		Type: "host",
+		Labels: map[string]string{
+			"cloud.zone":       "zone-1",
+			"k8s.cluster.name": "k8s-cluster",
+			"host.name":        "k8s-node",
+			"zone":             "zone-2",
+			"cluster":          "cluster-2",
+			"host":             "node-2",
 		},
 	}
 )
@@ -58,6 +88,37 @@ func TestTraceResourceProcessor(t *testing.T) {
 
 	ttn := &testTraceConsumer{}
 	rtp := newResourceTraceProcessor(ttn, cfg)
+	assert.True(t, rtp.GetCapabilities().MutatesConsumedData)
+
+	rtp.ConsumeTraceData(context.Background(), test)
+	assert.Equal(t, ttn.td, want)
+}
+
+func TestTraceResourceProcessorEmpty(t *testing.T) {
+	want := consumerdata.TraceData{
+		Resource: resource2,
+	}
+	test := consumerdata.TraceData{
+		Resource: resource2,
+	}
+
+	ttn := &testTraceConsumer{}
+	rtp := newResourceTraceProcessor(ttn, emptyCfg)
+	assert.False(t, rtp.GetCapabilities().MutatesConsumedData)
+
+	rtp.ConsumeTraceData(context.Background(), test)
+	assert.Equal(t, ttn.td, want)
+}
+
+func TestTraceResourceProcessorNonEmptyIncomingResource(t *testing.T) {
+	want := consumerdata.TraceData{
+		Resource: mergedResource,
+	}
+	test := consumerdata.TraceData{
+		Resource: resource2,
+	}
+	ttn := &testTraceConsumer{}
+	rtp := newResourceTraceProcessor(ttn, cfg)
 	rtp.ConsumeTraceData(context.Background(), test)
 	assert.Equal(t, ttn.td, want)
 }
@@ -67,6 +128,38 @@ func TestMetricResourceProcessor(t *testing.T) {
 		Resource: resource,
 	}
 	test := consumerdata.MetricsData{}
+
+	tmn := &testMetricsConsumer{}
+	rmp := newResourceMetricProcessor(tmn, cfg)
+	assert.True(t, rmp.GetCapabilities().MutatesConsumedData)
+
+	rmp.ConsumeMetricsData(context.Background(), test)
+	assert.Equal(t, tmn.md, want)
+}
+
+func TestMetricResourceProcessorEmpty(t *testing.T) {
+	want := consumerdata.MetricsData{
+		Resource: resource2,
+	}
+	test := consumerdata.MetricsData{
+		Resource: resource2,
+	}
+
+	tmn := &testMetricsConsumer{}
+	rmp := newResourceMetricProcessor(tmn, emptyCfg)
+	assert.False(t, rmp.GetCapabilities().MutatesConsumedData)
+
+	rmp.ConsumeMetricsData(context.Background(), test)
+	assert.Equal(t, tmn.md, want)
+}
+
+func TestMetricResourceProcessorNonEmptyIncomingResource(t *testing.T) {
+	want := consumerdata.MetricsData{
+		Resource: mergedResource,
+	}
+	test := consumerdata.MetricsData{
+		Resource: resource2,
+	}
 
 	tmn := &testMetricsConsumer{}
 	rmp := newResourceMetricProcessor(tmn, cfg)

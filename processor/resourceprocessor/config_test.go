@@ -32,8 +32,7 @@ func TestLoadConfig(t *testing.T) {
 	factories.Processors[typeStr] = &Factory{}
 
 	cfg, err := config.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
-
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, cfg)
 
 	p1 := cfg.Processors["resource"]

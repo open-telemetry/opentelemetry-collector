@@ -25,15 +25,17 @@ import (
 )
 
 type resourceTraceProcessor struct {
-	resource *resourcepb.Resource
-	next     consumer.TraceConsumer
+	resource     *resourcepb.Resource
+	capabilities processor.Capabilities
+	next         consumer.TraceConsumer
 }
 
 func newResourceTraceProcessor(next consumer.TraceConsumer, cfg *Config) *resourceTraceProcessor {
 	resource := createResource(cfg)
 	return &resourceTraceProcessor{
-		next:     next,
-		resource: resource,
+		next:         next,
+		capabilities: processor.Capabilities{MutatesConsumedData: !isEmptyResource(resource)},
+		resource:     resource,
 	}
 }
 
@@ -41,7 +43,7 @@ func newResourceTraceProcessor(next consumer.TraceConsumer, cfg *Config) *resour
 func (rtp *resourceTraceProcessor) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	return rtp.next.ConsumeTraceData(ctx, consumerdata.TraceData{
 		Node:         td.Node,
-		Resource:     rtp.resource,
+		Resource:     mergeResource(td.Resource, rtp.resource),
 		Spans:        td.Spans,
 		SourceFormat: td.SourceFormat,
 	})
@@ -49,7 +51,7 @@ func (rtp *resourceTraceProcessor) ConsumeTraceData(ctx context.Context, td cons
 
 // GetCapabilities returns the Capabilities assocciated with the resource processor.
 func (rtp *resourceTraceProcessor) GetCapabilities() processor.Capabilities {
-	return processor.Capabilities{MutatesConsumedData: true}
+	return rtp.capabilities
 }
 
 // Shutdown is invoked during service shutdown.
@@ -58,21 +60,23 @@ func (*resourceTraceProcessor) Shutdown() error {
 }
 
 type resourceMetricProcessor struct {
-	resource *resourcepb.Resource
-	next     consumer.MetricsConsumer
+	resource     *resourcepb.Resource
+	capabilities processor.Capabilities
+	next         consumer.MetricsConsumer
 }
 
 func newResourceMetricProcessor(next consumer.MetricsConsumer, cfg *Config) *resourceMetricProcessor {
 	resource := createResource(cfg)
 	return &resourceMetricProcessor{
-		next:     next,
-		resource: resource,
+		resource:     resource,
+		capabilities: processor.Capabilities{MutatesConsumedData: !isEmptyResource(resource)},
+		next:         next,
 	}
 }
 
 // GetCapabilities returns the Capabilities assocciated with the resource processor.
 func (rmp *resourceMetricProcessor) GetCapabilities() processor.Capabilities {
-	return processor.Capabilities{MutatesConsumedData: true}
+	return rmp.capabilities
 }
 
 // Shutdown is invoked during service shutdown.
@@ -82,9 +86,10 @@ func (*resourceMetricProcessor) Shutdown() error {
 
 // ConsumeMetricsData implements the MetricsProcessor interface
 func (rmp *resourceMetricProcessor) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
+	mergeResource(md.Resource, rmp.resource)
 	return rmp.next.ConsumeMetricsData(ctx, consumerdata.MetricsData{
 		Node:     md.Node,
-		Resource: rmp.resource,
+		Resource: mergeResource(md.Resource, rmp.resource),
 		Metrics:  md.Metrics,
 	})
 }
@@ -98,4 +103,22 @@ func createResource(cfg *Config) *resourcepb.Resource {
 		rpb.Labels[k] = v
 	}
 	return rpb
+}
+
+func mergeResource(to, from *resourcepb.Resource) *resourcepb.Resource {
+	if isEmptyResource(from) {
+		return to
+	}
+	if to == nil {
+		to = &resourcepb.Resource{Labels: map[string]string{}}
+	}
+	to.Type = from.Type
+	for k, v := range from.Labels {
+		to.Labels[k] = v
+	}
+	return to
+}
+
+func isEmptyResource(resource *resourcepb.Resource) bool {
+	return resource.Type == "" && len(resource.Labels) == 0
 }

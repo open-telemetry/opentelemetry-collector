@@ -19,12 +19,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
+
 	"go.uber.org/zap"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
 	var factory Factory
 	cfg := factory.CreateDefaultConfig()
+	assert.NoError(t, configcheck.ValidateConfig(cfg))
 	assert.NotNil(t, cfg)
 }
 
@@ -33,10 +36,10 @@ func TestCreateProcessor(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	tp, err := factory.CreateTraceProcessor(zap.NewNop(), nil, cfg)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, tp)
 
 	mp, err := factory.CreateMetricsProcessor(zap.NewNop(), nil, cfg)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, mp)
 }
