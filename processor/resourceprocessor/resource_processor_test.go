@@ -167,6 +167,12 @@ func TestMetricResourceProcessorNonEmptyIncomingResource(t *testing.T) {
 	assert.Equal(t, tmn.md, want)
 }
 
+func TestMergeResourceWithNilLabels(t *testing.T) {
+	resourceNilLabels := &resourcepb.Resource{Type: "host"}
+	assert.Nil(t, resourceNilLabels.Labels)
+	assert.Equal(t, mergeResource(nil, resourceNilLabels), &resourcepb.Resource{Type: "host", Labels: map[string]string{}})
+}
+
 type testTraceConsumer struct {
 	td consumerdata.TraceData
 }
