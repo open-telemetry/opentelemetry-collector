@@ -26,6 +26,7 @@ require (
 	github.com/mitchellh/mapstructure v1.1.2
 	github.com/openzipkin/zipkin-go v0.2.1
 	github.com/orijtech/prometheus-go-metrics-exporter v0.0.3-0.20190313163149-b321c5297f60
+	github.com/pavius/impi v0.0.0-20180302134524-c1cbdcb8df2b
 	github.com/pkg/errors v0.8.1
 	github.com/prashantv/protectmem v0.0.0-20171002184600-e20412882b3a // indirect
 	github.com/prometheus/client_golang v1.1.0

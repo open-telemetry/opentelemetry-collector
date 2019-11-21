@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/prometheus/prometheus/discovery"
+	sd_config "github.com/prometheus/prometheus/discovery/config"
 	"github.com/prometheus/prometheus/scrape"
 	"go.uber.org/zap"
 
@@ -27,8 +28,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/observability"
 	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/prometheusreceiver/internal"
-
-	sd_config "github.com/prometheus/prometheus/discovery/config"
 )
 
 // Preceiver is the type that provides Prometheus scraper/receiver functionality.
