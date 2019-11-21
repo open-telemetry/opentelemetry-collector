@@ -20,13 +20,12 @@ import (
 	"strconv"
 	"strings"
 
-	"go.uber.org/zap"
-
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/pkg/textparse"
+	"go.uber.org/zap"
 )
 
 const (

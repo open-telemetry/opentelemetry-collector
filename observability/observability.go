@@ -21,13 +21,12 @@ package observability
 import (
 	"context"
 
-	"google.golang.org/grpc"
-
 	"go.opencensus.io/plugin/ocgrpc"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 	"go.opencensus.io/trace"
+	"google.golang.org/grpc"
 )
 
 var (
