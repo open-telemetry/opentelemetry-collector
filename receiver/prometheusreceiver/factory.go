@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
@@ -87,7 +88,7 @@ func CustomUnmarshalerFunc(v *viper.Viper, viperKey string, intoCfg interface{})
 	if err != nil {
 		return fmt.Errorf("prometheus receiver failed to marshal config to yaml: %s", err)
 	}
-
+	out = []byte(os.ExpandEnv(string(out)))
 	config := intoCfg.(*Config)
 
 	err = yaml.Unmarshal(out, &config.PrometheusConfig)
