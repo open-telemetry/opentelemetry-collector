@@ -14,14 +14,14 @@ The [contributors repository](https://github.com/open-telemetry/opentelemetry-se
 ## Proxy Support
 
 Beyond standard YAML configuration as outlined in the sections that follow,
-exporters that leverage the net/http package (all do today) also respects the
+exporters that leverage the net/http package (all do today) also respect the
 following proxy environment variables:
 
 * HTTP_PROXY
 * HTTPS_PROXY
 * NO_PROXY
 
-If set at Collector start time then exporters regardless of protocol
+If set at Collector start time then exporters, regardless of protocol,
 will or will not proxy traffic as defined by these environment variables.
 
 ## Data Ownership
