@@ -343,6 +343,10 @@ func (jr *jReceiver) PostSpans(ctx context.Context, r *api_v2.PostSpansRequest) 
 }
 
 func (jr *jReceiver) startAgent(_ receiver.Host) error {
+	if !jr.agentBinaryThriftEnabled() && !jr.agentCompactThriftEnabled() {
+		return nil
+	}
+
 	processorConfigs := []agentapp.ProcessorConfiguration{}
 
 	if jr.agentBinaryThriftEnabled() {
