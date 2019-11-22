@@ -192,20 +192,9 @@ func (rb *ReceiversBuilder) attachReceiverToPipelines(
 		// Now create the receiver and tell it to send to the junction point.
 		rcv.trace, err = factory.CreateTraceReceiver(context.Background(), rb.logger, config, junction)
 
-		// Check if the factory really created the receiver.
-		if rcv.trace == nil {
-			return fmt.Errorf("factory for %q produced a nil receiver", config.Name())
-		}
-
 	case configmodels.MetricsDataType:
 		junction := buildFanoutMetricConsumer(builtPipelines)
 		rcv.metrics, err = factory.CreateMetricsReceiver(rb.logger, config, junction)
-
-		// The factories can be implemented by third parties, check if they really
-		// created the exporter.
-		if rcv.metrics == nil {
-			return fmt.Errorf("factory for %q produced a nil receiver", config.Name())
-		}
 	}
 
 	if err != nil {
@@ -218,6 +207,11 @@ func (rb *ReceiversBuilder) attachReceiverToPipelines(
 				dataType.GetString())
 		}
 		return fmt.Errorf("cannot create receiver %s: %s", config.Name(), err.Error())
+	}
+
+	// Check if the factory really created the receiver.
+	if rcv.trace == nil && rcv.metrics == nil {
+		return fmt.Errorf("factory for %q produced a nil receiver", config.Name())
 	}
 
 	rb.logger.Info("Receiver is enabled.",
