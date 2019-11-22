@@ -95,13 +95,6 @@ const (
 	// By default, can accept spans directly from clients in jaeger.thrift format over binary thrift protocol
 	defaultCollectorHTTPPort = 14268
 
-	// As per https://www.jaegertracing.io/docs/1.7/deployment/#agent
-	// 5775	UDP accept zipkin.thrift over compact thrift protocol
-	// 6831	UDP accept jaeger.thrift over compact thrift protocol
-	// 6832	UDP accept jaeger.thrift over binary thrift protocol
-	defaultCompactThriftUDPPort = 6831
-	defaultBinaryThriftUDPPort  = 6832
-
 	traceSource string = "Jaeger"
 )
 
@@ -159,10 +152,11 @@ func (jr *jReceiver) agentCompactThriftAddr() string {
 	if jr.config != nil {
 		port = jr.config.AgentCompactThriftPort
 	}
-	if port <= 0 {
-		port = defaultCompactThriftUDPPort
-	}
 	return fmt.Sprintf(":%d", port)
+}
+
+func (jr *jReceiver) agentCompactThriftEnabled() bool {
+	return jr.config != nil && jr.config.AgentCompactThriftPort > 0
 }
 
 func (jr *jReceiver) agentBinaryThriftAddr() string {
@@ -170,10 +164,11 @@ func (jr *jReceiver) agentBinaryThriftAddr() string {
 	if jr.config != nil {
 		port = jr.config.AgentBinaryThriftPort
 	}
-	if port <= 0 {
-		port = defaultBinaryThriftUDPPort
-	}
 	return fmt.Sprintf(":%d", port)
+}
+
+func (jr *jReceiver) agentBinaryThriftEnabled() bool {
+	return jr.config != nil && jr.config.AgentBinaryThriftPort > 0
 }
 
 func (jr *jReceiver) TraceSource() string {
@@ -348,23 +343,28 @@ func (jr *jReceiver) PostSpans(ctx context.Context, r *api_v2.PostSpansRequest) 
 }
 
 func (jr *jReceiver) startAgent(_ receiver.Host) error {
-	processorConfigs := []agentapp.ProcessorConfiguration{
-		{
-			// Compact Thrift running by default on 6831.
-			Model:    "jaeger",
-			Protocol: "compact",
-			Server: agentapp.ServerConfiguration{
-				HostPort: jr.agentCompactThriftAddr(),
-			},
-		},
-		{
+	processorConfigs := []agentapp.ProcessorConfiguration{}
+
+	if jr.agentBinaryThriftEnabled() {
+		processorConfigs = append(processorConfigs, agentapp.ProcessorConfiguration{
 			// Binary Thrift running by default on 6832.
 			Model:    "jaeger",
 			Protocol: "binary",
 			Server: agentapp.ServerConfiguration{
 				HostPort: jr.agentBinaryThriftAddr(),
 			},
-		},
+		})
+	}
+
+	if jr.agentCompactThriftEnabled() {
+		processorConfigs = append(processorConfigs, agentapp.ProcessorConfiguration{
+			// Compact Thrift running by default on 6831.
+			Model:    "jaeger",
+			Protocol: "compact",
+			Server: agentapp.ServerConfiguration{
+				HostPort: jr.agentCompactThriftAddr(),
+			},
+		})
 	}
 
 	builder := agentapp.Builder{
