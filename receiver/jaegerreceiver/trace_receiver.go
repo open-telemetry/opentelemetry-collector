@@ -54,7 +54,6 @@ type Configuration struct {
 	CollectorGRPCPort    int
 	CollectorGRPCOptions []grpc.ServerOption
 
-	AgentPort              int
 	AgentCompactThriftPort int
 	AgentBinaryThriftPort  int
 }
@@ -127,19 +126,6 @@ func (jr *jReceiver) collectorAddr() string {
 	}
 	if port <= 0 {
 		port = defaultCollectorHTTPPort
-	}
-	return fmt.Sprintf(":%d", port)
-}
-
-const defaultAgentPort = 5778
-
-func (jr *jReceiver) agentAddress() string {
-	var port int
-	if jr.config != nil {
-		port = jr.config.AgentPort
-	}
-	if port <= 0 {
-		port = defaultAgentPort
 	}
 	return fmt.Sprintf(":%d", port)
 }
@@ -383,9 +369,6 @@ func (jr *jReceiver) startAgent(_ receiver.Host) error {
 
 	builder := agentapp.Builder{
 		Processors: processorConfigs,
-		HTTPServer: agentapp.HTTPServerConfiguration{
-			HostPort: jr.agentAddress(),
-		},
 	}
 
 	agent, err := builder.CreateAgent(jr, zap.NewNop(), metrics.NullFactory)
