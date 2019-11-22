@@ -88,12 +88,13 @@ func NewTraceProcessor(logger *zap.Logger, nextConsumer consumer.TraceConsumer, 
 
 	ctx := context.Background()
 	policies := []*Policy{}
-	for _, policyCfg := range cfg.PolicyCfgs {
+	for i := range cfg.PolicyCfgs {
+		policyCfg := &cfg.PolicyCfgs[i]
 		policyCtx, err := tag.New(ctx, tag.Upsert(tagPolicyKey, policyCfg.Name), tag.Upsert(observability.TagKeyReceiver, sourceFormat))
 		if err != nil {
 			return nil, err
 		}
-		eval, err := getPolicyEvaluator(&policyCfg)
+		eval, err := getPolicyEvaluator(policyCfg)
 		if err != nil {
 			return nil, err
 		}

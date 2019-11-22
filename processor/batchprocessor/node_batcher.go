@@ -124,7 +124,7 @@ func (b *batcher) genBucketID(node *commonpb.Node, resource *resourcepb.Resource
 	if node != nil {
 		nodeKey, err := proto.Marshal(node)
 		if err != nil {
-			b.logger.Error("Error marshalling node to batcher mapkey.", zap.Error(err))
+			b.logger.Error("Error marshaling node to batcher mapkey.", zap.Error(err))
 		} else {
 			h.Write(nodeKey)
 		}
@@ -132,7 +132,7 @@ func (b *batcher) genBucketID(node *commonpb.Node, resource *resourcepb.Resource
 	if resource != nil {
 		resourceKey, err := proto.Marshal(resource) // TODO: remove once resource is in span
 		if err != nil {
-			b.logger.Error("Error marshalling resource to batcher mapkey.", zap.Error(err))
+			b.logger.Error("Error marshaling resource to batcher mapkey.", zap.Error(err))
 		} else {
 			h.Write(resourceKey)
 		}

@@ -16,6 +16,7 @@ require (
 	github.com/go-kit/kit v0.9.0
 	github.com/gogo/googleapis v1.3.0 // indirect
 	github.com/golang/protobuf v1.3.2
+	github.com/golangci/golangci-lint v1.21.0
 	github.com/google/addlicense v0.0.0-20190510175307-22550fa7c1b0
 	github.com/google/go-cmp v0.3.1
 	github.com/gorilla/mux v1.7.3
@@ -46,12 +47,9 @@ require (
 	github.com/uber/tchannel-go v1.10.0
 	go.opencensus.io v0.22.1
 	go.uber.org/zap v1.10.0
-	golang.org/x/lint v0.0.0-20190409202823-959b441ac422
-	golang.org/x/sys v0.0.0-20190813064441-fde4db37ae7a
-	golang.org/x/tools v0.0.0-20190906203814-12febf440ab1
+	golang.org/x/sys v0.0.0-20190922100055-0a153f010e69
 	google.golang.org/api v0.10.0
 	google.golang.org/grpc v1.23.0
-	gopkg.in/yaml.v2 v2.2.2
-	honnef.co/go/tools v0.0.1-2019.2.3
+	gopkg.in/yaml.v2 v2.2.4
 	k8s.io/client-go v12.0.0+incompatible // indirect
 )
