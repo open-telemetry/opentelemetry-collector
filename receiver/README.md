@@ -107,7 +107,7 @@ This receiver receives traces in the [Jaeger](https://www.jaegertracing.io)
 format. It translates them into the internal format and sends
 it to processors and exporters.
 
-It supports multiple protocols:
+It supports the Jaeger Collector protocols:
 - Thrift HTTP
 - Thrift TChannel
 - gRPC
@@ -123,6 +123,12 @@ receivers:
 It is possible to configure the protocols on different ports, refer to
 [config.yaml](jaegerreceiver/testdata/config.yaml) for detailed config
 examples.
+
+It also supports the Jaeger Agent protocols:
+- Thrift Compact
+- Thrift Binary
+
+By default, these services are not started unless an endpoint is explicitly defined.
 
 // TODO Issue https://github.com/open-telemetry/opentelemetry-collector/issues/158
 // The Jaeger receiver enables all protocols even when one is specified or a
