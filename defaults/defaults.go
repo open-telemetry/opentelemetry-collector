@@ -27,6 +27,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/extension"
 	"github.com/open-telemetry/opentelemetry-collector/extension/healthcheckextension"
 	"github.com/open-telemetry/opentelemetry-collector/extension/pprofextension"
+	"github.com/open-telemetry/opentelemetry-collector/extension/remotesamplingextension"
 	"github.com/open-telemetry/opentelemetry-collector/extension/zpagesextension"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
@@ -55,6 +56,7 @@ func Components() (
 		&healthcheckextension.Factory{},
 		&pprofextension.Factory{},
 		&zpagesextension.Factory{},
+		&remotesamplingextension.Factory{},
 	)
 	if err != nil {
 		errs = append(errs, err)

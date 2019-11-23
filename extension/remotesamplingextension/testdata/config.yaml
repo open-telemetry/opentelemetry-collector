@@ -1,0 +1,21 @@
+extensions:
+  remotesampling:
+  remotesampling/1:
+    port: 5779
+    addr: "0.0.0.0:14251"
+
+service:
+  extensions: [remotesampling/1]
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      processors: [exampleprocessor]
+      exporters: [exampleexporter]
+
+# Data pipeline is required to load the config.
+receivers:
+  examplereceiver:
+processors:
+  exampleprocessor:
+exporters:
+  exampleexporter:
