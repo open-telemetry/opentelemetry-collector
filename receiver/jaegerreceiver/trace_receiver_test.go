@@ -250,60 +250,6 @@ func TestThriftCompactReception(t *testing.T) {
 	}
 }
 
-func TestThriftBinaryReception(t *testing.T) {
-	// 1. Create the Jaeger receiver aka "server"
-	config := &Configuration{
-		AgentBinaryThriftPort: 6832, // that's the only one used by this test
-	}
-	sink := new(exportertest.SinkTraceExporter)
-
-	jr, err := New(context.Background(), config, sink)
-	defer jr.StopTraceReception()
-	assert.NoError(t, err, "should not have failed to create the Jaeger received")
-
-	t.Log("Starting")
-
-	mh := receivertest.NewMockHost()
-	err = jr.StartTraceReception(mh)
-	assert.NoError(t, err, "should not have failed to start trace reception")
-
-	t.Log("StartTraceReception")
-
-	now := time.Unix(1542158650, 536343000).UTC()
-	nowPlus10min := now.Add(10 * time.Minute)
-	nowPlus10min2sec := now.Add(10 * time.Minute).Add(2 * time.Second)
-
-	// 2. Then with a "live application", send spans to the Jaeger exporter.
-	jexp, err := jaeger.NewExporter(jaeger.Options{
-		Process: jaeger.Process{
-			ServiceName: "issaTest",
-			Tags: []jaeger.Tag{
-				jaeger.BoolTag("bool", true),
-				jaeger.StringTag("string", "yes"),
-				jaeger.Int64Tag("int64", 1e7),
-			},
-		},
-		AgentEndpoint: fmt.Sprintf("localhost:%d", config.AgentBinaryThriftPort),
-	})
-	assert.NoError(t, err, "should not have failed to create the Jaeger OpenCensus exporter")
-
-	// 3. Now finally send some spans
-	for _, sd := range traceFixture(now, nowPlus10min, nowPlus10min2sec) {
-		jexp.ExportSpan(sd)
-	}
-	jexp.Flush()
-
-	// sleep for one second to allow UDP to send.
-	time.Sleep(1 * time.Second)
-
-	got := sink.AllTraces()
-	want := expectedTraceData(now, nowPlus10min, nowPlus10min2sec)
-
-	if diff := cmp.Diff(got, want); diff != "" {
-		t.Errorf("Mismatched responses\n-Got +Want:\n\t%s", diff)
-	}
-}
-
 func expectedTraceData(t1, t2, t3 time.Time) []consumerdata.TraceData {
 	traceID := []byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80}
 	parentSpanID := []byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18}
