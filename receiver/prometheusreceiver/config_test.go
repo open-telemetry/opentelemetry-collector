@@ -59,7 +59,7 @@ func TestLoadConfigWithEnvVar(t *testing.T) {
 	const jobname = "JobName"
 	const jobnamevar = "JOBNAME"
 	os.Setenv(jobnamevar, jobname)
-	
+
 	factories, err := config.ExampleComponents()
 	assert.Nil(t, err)
 
