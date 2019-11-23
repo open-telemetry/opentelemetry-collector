@@ -296,6 +296,7 @@ func (jr *jReceiver) EmitZipkinBatch(spans []*zipkincore.Span) error {
 // Jaeger spans received by the Jaeger agent processor.
 func (jr *jReceiver) EmitBatch(batch *jaeger.Batch) error {
 	td, err := jaegertranslator.ThriftBatchToOCProto(batch)
+	td.SourceFormat = "jaeger"
 	if err != nil {
 		observability.RecordMetricsForTraceReceiver(jr.defaultAgentCtx, len(batch.Spans), len(batch.Spans))
 		return err

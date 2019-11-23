@@ -220,6 +220,7 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *Configu
 					},
 				},
 			},
+			SourceFormat: "jaeger",
 		},
 	}
 
