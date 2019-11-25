@@ -25,6 +25,7 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/google/go-cmp/cmp"
 	"go.opencensus.io/trace"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
@@ -53,7 +54,7 @@ func TestJaegerAgentUDP_ThriftBinary_6832(t *testing.T) {
 func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *Configuration) {
 	// 1. Create the Jaeger receiver aka "server"
 	sink := new(exportertest.SinkTraceExporter)
-	jr, err := New(context.Background(), receiverConfig, sink)
+	jr, err := New(context.Background(), receiverConfig, sink, zap.NewNop())
 	if err != nil {
 		t.Fatalf("Failed to create new Jaeger Receiver: %v", err)
 	}

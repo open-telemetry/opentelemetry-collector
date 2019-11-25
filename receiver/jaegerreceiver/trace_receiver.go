@@ -25,8 +25,9 @@ import (
 
 	apacheThrift "github.com/apache/thrift/lib/go/thrift"
 	"github.com/gorilla/mux"
-	agentapp "github.com/jaegertracing/jaeger/cmd/agent/app"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/configmanager"
+	"github.com/jaegertracing/jaeger/cmd/agent/app/httpserver"
+	"github.com/jaegertracing/jaeger/cmd/agent/app/processors"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/reporter"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/servers"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/servers/thriftudp"
@@ -43,7 +44,6 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
-	"github.com/jaegertracing/jaeger/cmd/agent/app/processors"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/observability"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
@@ -61,6 +61,7 @@ type Configuration struct {
 
 	AgentCompactThriftPort int
 	AgentBinaryThriftPort  int
+	AgentHTTPPort          int
 }
 
 // Receiver type is used to receive spans that were originally intended to be sent to Jaeger.
@@ -84,6 +85,7 @@ type jReceiver struct {
 	agentServer     *http.Server
 
 	defaultAgentCtx context.Context
+	logger          *zap.Logger
 }
 
 type jTchannelReceiver struct {
@@ -109,7 +111,7 @@ const (
 )
 
 // New creates a TraceReceiver that receives traffic as a collector with both Thrift and HTTP transports.
-func New(ctx context.Context, config *Configuration, nextConsumer consumer.TraceConsumer) (receiver.TraceReceiver, error) {
+func New(ctx context.Context, config *Configuration, nextConsumer consumer.TraceConsumer, logger *zap.Logger) (receiver.TraceReceiver, error) {
 	return &jReceiver{
 		config:          config,
 		defaultAgentCtx: observability.ContextWithReceiverName(context.Background(), "jaeger-agent"),
@@ -117,6 +119,7 @@ func New(ctx context.Context, config *Configuration, nextConsumer consumer.Trace
 		tchanServer: &jTchannelReceiver{
 			nextConsumer: nextConsumer,
 		},
+		logger: logger,
 	}, nil
 }
 
@@ -179,6 +182,18 @@ func (jr *jReceiver) agentBinaryThriftAddr() string {
 
 func (jr *jReceiver) agentBinaryThriftEnabled() bool {
 	return jr.config != nil && jr.config.AgentBinaryThriftPort > 0
+}
+
+func (jr *jReceiver) agentHTTPPortAddr() string {
+	var port int
+	if jr.config != nil {
+		port = jr.config.AgentHTTPPort
+	}
+	return fmt.Sprintf(":%d", port)
+}
+
+func (jr *jReceiver) agentHTTPPortEnabled() bool {
+	return jr.config != nil && jr.config.AgentHTTPPort > 0
 }
 
 func (jr *jReceiver) TraceSource() string {
@@ -298,8 +313,8 @@ func (jtr *jTchannelReceiver) SubmitBatches(ctx thrift.Context, batches []*jaege
 }
 
 var _ reporter.Reporter = (*jReceiver)(nil)
-var _ agentapp.CollectorProxy = (*jReceiver)(nil)
 var _ api_v2.CollectorServiceServer = (*jReceiver)(nil)
+var _ configmanager.ClientConfigManager = (*jReceiver)(nil)
 
 // EmitZipkinBatch implements cmd/agent/reporter.Reporter and it forwards
 // Zipkin spans received by the Jaeger agent processor.
@@ -321,14 +336,6 @@ func (jr *jReceiver) EmitBatch(batch *jaeger.Batch) error {
 	observability.RecordMetricsForTraceReceiver(jr.defaultAgentCtx, len(batch.Spans), len(batch.Spans)-len(td.Spans))
 
 	return err
-}
-
-func (jr *jReceiver) GetReporter() reporter.Reporter {
-	return jr
-}
-
-func (jr *jReceiver) GetManager() configmanager.ClientConfigManager {
-	return jr
 }
 
 func (jr *jReceiver) GetSamplingStrategy(serviceName string) (*sampling.SamplingStrategyResponse, error) {
@@ -399,6 +406,16 @@ func (jr *jReceiver) startAgent(_ receiver.Host) error {
 
 	for _, processor := range jr.agentProcessors {
 		go processor.Serve()
+	}
+
+	if jr.agentHTTPPortEnabled() {
+		jr.agentServer = httpserver.NewHTTPServer(jr.agentHTTPPortAddr(), jr, metrics.NullFactory)
+
+		go func() {
+			if err := jr.agentServer.ListenAndServe(); err != nil {
+				jr.logger.Error("http server failure", zap.Error(err))
+			}
+		}()
 	}
 
 	return nil

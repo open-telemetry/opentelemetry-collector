@@ -175,7 +175,7 @@ func (f *Factory) CreateTraceReceiver(
 	}
 
 	// Create the receiver.
-	return New(ctx, &config, nextConsumer)
+	return New(ctx, &config, nextConsumer, logger)
 }
 
 // CreateMetricsReceiver creates a metrics receiver based on provided config.

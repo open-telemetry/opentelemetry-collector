@@ -31,6 +31,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/trace"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
@@ -49,7 +50,7 @@ func TestReception(t *testing.T) {
 	}
 	sink := new(exportertest.SinkTraceExporter)
 
-	jr, err := New(context.Background(), config, sink)
+	jr, err := New(context.Background(), config, sink, zap.NewNop())
 	defer jr.StopTraceReception()
 	assert.NoError(t, err, "should not have failed to create the Jaeger received")
 
@@ -100,7 +101,7 @@ func TestGRPCReception(t *testing.T) {
 	}
 	sink := new(exportertest.SinkTraceExporter)
 
-	jr, err := New(context.Background(), config, sink)
+	jr, err := New(context.Background(), config, sink, zap.NewNop())
 	assert.NoError(t, err, "should not have failed to create a new receiver")
 	defer jr.StopTraceReception()
 
@@ -158,7 +159,7 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 	}
 	sink := new(exportertest.SinkTraceExporter)
 
-	jr, err := New(context.Background(), config, sink)
+	jr, err := New(context.Background(), config, sink, zap.NewNop())
 	assert.NoError(t, err, "should not have failed to create a new receiver")
 	defer jr.StopTraceReception()
 
