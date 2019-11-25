@@ -17,6 +17,7 @@ package jaegerreceiver
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"testing"
 	"time"
 
@@ -24,6 +25,7 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/google/go-cmp/cmp"
+	"github.com/stretchr/testify/assert"
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
 
@@ -49,6 +51,38 @@ func TestJaegerAgentUDP_ThriftBinary_6832(t *testing.T) {
 	testJaegerAgent(t, addrForClient, &Configuration{
 		AgentBinaryThriftPort: port,
 	})
+}
+
+func TestJaegerHTTP(t *testing.T) {
+	config := &Configuration{
+		AgentHTTPPort: 5778,
+	}
+	jr, err := New(context.Background(), config, nil, zap.NewNop())
+	if err != nil {
+		t.Fatalf("Failed to create new Jaeger Receiver: %v", err)
+	}
+	defer jr.StopTraceReception()
+
+	mh := receivertest.NewMockHost()
+	if err := jr.StartTraceReception(mh); err != nil {
+		t.Fatalf("StartTraceReception failed: %v", err)
+	}
+
+	// allow http server to start
+	<-time.After(100 * time.Millisecond)
+
+	// this functionality is just stubbed out at the moment.  just confirm they 200.
+	resp, err := http.Get("http://localhost:5778/sampling?service=test")
+	assert.NoError(t, err, "should not have failed to make request")
+	if resp != nil {
+		assert.Equal(t, 200, resp.StatusCode, "should have returned 200")
+	}
+
+	resp, err = http.Get("http://localhost:5778/baggageRestrictions?service=test")
+	assert.NoError(t, err, "should not have failed to make request")
+	if resp != nil {
+		assert.Equal(t, 200, resp.StatusCode, "should have returned 200")
+	}
 }
 
 func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *Configuration) {

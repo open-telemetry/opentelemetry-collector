@@ -192,7 +192,7 @@ func (jr *jReceiver) agentHTTPPortAddr() string {
 	return fmt.Sprintf(":%d", port)
 }
 
-func (jr *jReceiver) agentHTTPPortEnabled() bool {
+func (jr *jReceiver) agentHTTPEnabled() bool {
 	return jr.config != nil && jr.config.AgentHTTPPort > 0
 }
 
@@ -366,7 +366,7 @@ func (jr *jReceiver) PostSpans(ctx context.Context, r *api_v2.PostSpansRequest) 
 }
 
 func (jr *jReceiver) startAgent(_ receiver.Host) error {
-	if !jr.agentBinaryThriftEnabled() && !jr.agentCompactThriftEnabled() {
+	if !jr.agentBinaryThriftEnabled() && !jr.agentCompactThriftEnabled() && !jr.agentHTTPEnabled() {
 		return nil
 	}
 
@@ -408,7 +408,7 @@ func (jr *jReceiver) startAgent(_ receiver.Host) error {
 		go processor.Serve()
 	}
 
-	if jr.agentHTTPPortEnabled() {
+	if jr.agentHTTPEnabled() {
 		jr.agentServer = httpserver.NewHTTPServer(jr.agentHTTPPortAddr(), jr, metrics.NullFactory)
 
 		go func() {
