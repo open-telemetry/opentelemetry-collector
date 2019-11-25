@@ -86,7 +86,6 @@ func (*resourceMetricProcessor) Shutdown() error {
 
 // ConsumeMetricsData implements the MetricsProcessor interface
 func (rmp *resourceMetricProcessor) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
-	mergeResource(md.Resource, rmp.resource)
 	return rmp.next.ConsumeMetricsData(ctx, consumerdata.MetricsData{
 		Node:     md.Node,
 		Resource: mergeResource(md.Resource, rmp.resource),
