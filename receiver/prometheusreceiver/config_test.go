@@ -15,6 +15,7 @@
 package prometheusreceiver
 
 import (
+	"os"
 	"path"
 	"testing"
 	"time"
@@ -52,6 +53,31 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, r1.PrometheusConfig.ScrapeConfigs[0].JobName, "demo")
 	assert.Equal(t, time.Duration(r1.PrometheusConfig.ScrapeConfigs[0].ScrapeInterval), 5*time.Second)
 	assert.Equal(t, r1.UseStartTimeMetric, true)
+}
+
+func TestLoadConfigWithEnvVar(t *testing.T) {
+	const jobname = "JobName"
+	const jobnamevar = "JOBNAME"
+	os.Setenv(jobnamevar, jobname)
+
+	factories, err := config.ExampleComponents()
+	assert.Nil(t, err)
+
+	factory := &Factory{}
+	factories.Receivers[typeStr] = factory
+	cfg, err := config.LoadConfigFile(t, path.Join(".", "testdata", "config_env.yaml"), factories)
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	r := cfg.Receivers["prometheus"].(*Config)
+	assert.Equal(t, r.ReceiverSettings,
+		configmodels.ReceiverSettings{
+			TypeVal:  typeStr,
+			NameVal:  "prometheus",
+			Endpoint: "1.2.3.4:456",
+		})
+	assert.Equal(t, r.PrometheusConfig.ScrapeConfigs[0].JobName, jobname)
+	os.Unsetenv(jobnamevar)
 }
 
 func TestLoadConfigFailsOnUnknownSection(t *testing.T) {
