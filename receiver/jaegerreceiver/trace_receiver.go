@@ -23,14 +23,18 @@ import (
 	"net/http"
 	"sync"
 
+	apacheThrift "github.com/apache/thrift/lib/go/thrift"
 	"github.com/gorilla/mux"
 	agentapp "github.com/jaegertracing/jaeger/cmd/agent/app"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/configmanager"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/reporter"
+	"github.com/jaegertracing/jaeger/cmd/agent/app/servers"
+	"github.com/jaegertracing/jaeger/cmd/agent/app/servers/thriftudp"
 	"github.com/jaegertracing/jaeger/cmd/collector/app"
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"github.com/jaegertracing/jaeger/thrift-gen/baggage"
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
+	jaegerThrift "github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 	"github.com/jaegertracing/jaeger/thrift-gen/sampling"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"github.com/uber/jaeger-lib/metrics"
@@ -39,6 +43,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
+	"github.com/jaegertracing/jaeger/cmd/agent/app/processors"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/observability"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
@@ -71,11 +76,12 @@ type jReceiver struct {
 
 	config *Configuration
 
-	agent *agentapp.Agent
-
 	grpc            *grpc.Server
 	tchanServer     *jTchannelReceiver
 	collectorServer *http.Server
+
+	agentProcessors []processors.Processor
+	agentServer     *http.Server
 
 	defaultAgentCtx context.Context
 }
@@ -87,6 +93,10 @@ type jTchannelReceiver struct {
 }
 
 const (
+	defaultAgentQueueSize     = 1000
+	defaultAgentMaxPacketSize = 65000
+	defaultAgentServerWorkers = 10
+
 	// As per https://www.jaegertracing.io/docs/1.13/deployment/
 	// By default, the port used by jaeger-agent to send spans in model.proto format
 	defaultGRPCPort = 14250
@@ -208,9 +218,14 @@ func (jr *jReceiver) stopTraceReceptionLocked() error {
 	jr.stopOnce.Do(func() {
 		var errs []error
 
-		if jr.agent != nil {
-			jr.agent.Stop()
-			jr.agent = nil
+		if jr.agentServer != nil {
+			if aerr := jr.agentServer.Close(); aerr != nil {
+				errs = append(errs, aerr)
+			}
+			jr.agentServer = nil
+		}
+		for _, processor := range jr.agentProcessors {
+			go processor.Stop()
 		}
 
 		if jr.collectorServer != nil {
@@ -348,45 +363,43 @@ func (jr *jReceiver) startAgent(_ receiver.Host) error {
 		return nil
 	}
 
-	processorConfigs := []agentapp.ProcessorConfiguration{}
+	handler := jaegerThrift.NewAgentProcessor(jr)
 
 	if jr.agentBinaryThriftEnabled() {
-		processorConfigs = append(processorConfigs, agentapp.ProcessorConfiguration{
-			// Binary Thrift running by default on 6832.
-			Model:    "jaeger",
-			Protocol: "binary",
-			Server: agentapp.ServerConfiguration{
-				HostPort: jr.agentBinaryThriftAddr(),
-			},
-		})
+		transport, err := thriftudp.NewTUDPServerTransport(jr.agentBinaryThriftAddr())
+		if err != nil {
+			return err
+		}
+		server, err := servers.NewTBufferedServer(transport, defaultAgentQueueSize, defaultAgentMaxPacketSize, metrics.NullFactory)
+		if err != nil {
+			return err
+		}
+		processor, err := processors.NewThriftProcessor(server, defaultAgentServerWorkers, metrics.NullFactory, apacheThrift.NewTCompactProtocolFactory(), handler, zap.NewNop())
+		if err != nil {
+			return err
+		}
+		jr.agentProcessors = append(jr.agentProcessors, processor)
 	}
 
 	if jr.agentCompactThriftEnabled() {
-		processorConfigs = append(processorConfigs, agentapp.ProcessorConfiguration{
-			// Compact Thrift running by default on 6831.
-			Model:    "jaeger",
-			Protocol: "compact",
-			Server: agentapp.ServerConfiguration{
-				HostPort: jr.agentCompactThriftAddr(),
-			},
-		})
+		transport, err := thriftudp.NewTUDPServerTransport(jr.agentCompactThriftAddr())
+		if err != nil {
+			return err
+		}
+		server, err := servers.NewTBufferedServer(transport, defaultAgentQueueSize, defaultAgentMaxPacketSize, metrics.NullFactory)
+		if err != nil {
+			return err
+		}
+		processor, err := processors.NewThriftProcessor(server, defaultAgentServerWorkers, metrics.NullFactory, apacheThrift.NewTCompactProtocolFactory(), handler, zap.NewNop())
+		if err != nil {
+			return err
+		}
+		jr.agentProcessors = append(jr.agentProcessors, processor)
 	}
 
-	builder := agentapp.Builder{
-		Processors: processorConfigs,
+	for _, processor := range jr.agentProcessors {
+		go processor.Serve()
 	}
-
-	agent, err := builder.CreateAgent(jr, zap.NewNop(), metrics.NullFactory)
-	if err != nil {
-		return err
-	}
-
-	if err := agent.Run(); err != nil {
-		return err
-	}
-
-	// Otherwise no error was encountered,
-	jr.agent = agent
 
 	return nil
 }
