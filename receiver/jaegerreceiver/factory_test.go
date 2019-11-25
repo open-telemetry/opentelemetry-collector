@@ -23,6 +23,8 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-collector/receiver"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -73,6 +75,34 @@ func TestCreateInvalidTChannelEndpoint(t *testing.T) {
 	rCfg.Protocols[protoThriftTChannel].Endpoint = ""
 	_, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
 	assert.Error(t, err, "receiver creation with invalid tchannel endpoint must fail")
+}
+
+func TestCreateInvalidThriftBinaryEndpoint(t *testing.T) {
+	factory := Factory{}
+	cfg := factory.CreateDefaultConfig()
+	rCfg := cfg.(*Config)
+
+	rCfg.Protocols[protoThriftBinary] = &receiver.SecureReceiverSettings{
+		ReceiverSettings: configmodels.ReceiverSettings{
+			Endpoint: "",
+		},
+	}
+	_, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
+	assert.Error(t, err, "receiver creation with no endpoints must fail")
+}
+
+func TestCreateInvalidThriftCompactEndpoint(t *testing.T) {
+	factory := Factory{}
+	cfg := factory.CreateDefaultConfig()
+	rCfg := cfg.(*Config)
+
+	rCfg.Protocols[protoThriftCompact] = &receiver.SecureReceiverSettings{
+		ReceiverSettings: configmodels.ReceiverSettings{
+			Endpoint: "",
+		},
+	}
+	_, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
+	assert.Error(t, err, "receiver creation with no endpoints must fail")
 }
 
 func TestCreateNoPort(t *testing.T) {
