@@ -86,7 +86,7 @@ misspell-correction:
 
 .PHONY: lint
 lint:
-	@$(LINT) run
+	$(LINT) run
 
 .PHONY: impi
 impi:
