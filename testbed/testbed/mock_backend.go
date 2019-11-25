@@ -26,6 +26,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/jaegerreceiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/opencensusreceiver"
+	"go.uber.org/zap"
 )
 
 // MockBackend is a backend that allows receiving the data locally.
@@ -109,7 +110,7 @@ func (mb *MockBackend) Start(backendType BackendType) error {
 		jaegerCfg := jaegerreceiver.Configuration{
 			CollectorHTTPPort: 14268,
 		}
-		mb.jaegerReceiver, err = jaegerreceiver.New(context.Background(), &jaegerCfg, mb.tc)
+		mb.jaegerReceiver, err = jaegerreceiver.New(context.Background(), &jaegerCfg, mb.tc, zap.NewNop())
 		if err != nil {
 			return err
 		}
