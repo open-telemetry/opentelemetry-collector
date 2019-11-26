@@ -32,6 +32,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-collector/internal"
+	"github.com/open-telemetry/opentelemetry-collector/internal/testutils"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/receivertest"
 )
 
@@ -54,8 +55,9 @@ func TestJaegerAgentUDP_ThriftBinary_6832(t *testing.T) {
 }
 
 func TestJaegerHTTP(t *testing.T) {
+	port := int(testutils.GetAvailablePort(t))
 	config := &Configuration{
-		AgentHTTPPort: 5778,
+		AgentHTTPPort: port,
 	}
 	jr, err := New(context.Background(), config, nil, zap.NewNop())
 	if err != nil {
@@ -72,13 +74,15 @@ func TestJaegerHTTP(t *testing.T) {
 	<-time.After(100 * time.Millisecond)
 
 	// this functionality is just stubbed out at the moment.  just confirm they 200.
-	resp, err := http.Get("http://localhost:5778/sampling?service=test")
+	testURL := fmt.Sprintf("http://localhost:%d/sampling?service=test", port)
+	resp, err := http.Get(testURL)
 	assert.NoError(t, err, "should not have failed to make request")
 	if resp != nil {
 		assert.Equal(t, 200, resp.StatusCode, "should have returned 200")
 	}
 
-	resp, err = http.Get("http://localhost:5778/baggageRestrictions?service=test")
+	testURL = fmt.Sprintf("http://localhost:%d/sampling?service=test", port)
+	resp, err = http.Get(testURL)
 	assert.NoError(t, err, "should not have failed to make request")
 	if resp != nil {
 		assert.Equal(t, 200, resp.StatusCode, "should have returned 200")
