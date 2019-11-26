@@ -55,9 +55,9 @@ func TestJaegerAgentUDP_ThriftBinary_6832(t *testing.T) {
 }
 
 func TestJaegerHTTP(t *testing.T) {
-	port := int(testutils.GetAvailablePort(t))
+	port := testutils.GetAvailablePort(t)
 	config := &Configuration{
-		AgentHTTPPort: port,
+		AgentHTTPPort: int(port),
 	}
 	jr, err := New(context.Background(), config, nil, zap.NewNop())
 	if err != nil {
@@ -71,7 +71,9 @@ func TestJaegerHTTP(t *testing.T) {
 	}
 
 	// allow http server to start
-	<-time.After(100 * time.Millisecond)
+	if err := testutils.WaitForPort(t, port); err != nil {
+		t.Fatalf("WaitForPort failed: %v", err)
+	}
 
 	// this functionality is just stubbed out at the moment.  just confirm they 200.
 	testURL := fmt.Sprintf("http://localhost:%d/sampling?service=test", port)
