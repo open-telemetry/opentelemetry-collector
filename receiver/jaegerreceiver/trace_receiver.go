@@ -240,7 +240,7 @@ func (jr *jReceiver) stopTraceReceptionLocked() error {
 			jr.agentServer = nil
 		}
 		for _, processor := range jr.agentProcessors {
-			go processor.Stop()
+			processor.Stop()
 		}
 
 		if jr.collectorServer != nil {
