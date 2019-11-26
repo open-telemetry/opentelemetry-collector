@@ -11,6 +11,19 @@ Below is the list of exporters directly supported by the OpenTelemetry Collector
 The [contributors repository](https://github.com/open-telemetry/opentelemetry-service-contrib)
  has more exporters that can be added to custom builds of the service.
 
+## Proxy Support
+
+Beyond standard YAML configuration as outlined in the sections that follow,
+exporters that leverage the net/http package (all do today) also respect the
+following proxy environment variables:
+
+* HTTP_PROXY
+* HTTPS_PROXY
+* NO_PROXY
+
+If set at Collector start time then exporters, regardless of protocol,
+will or will not proxy traffic as defined by these environment variables.
+
 ## Data Ownership
 
 When multiple exporters are configured to send the same data (e.g. by configuring multiple
