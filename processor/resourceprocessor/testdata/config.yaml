@@ -1,0 +1,26 @@
+receivers:
+  examplereceiver:
+
+processors:
+  # The following specifies an empty resource - it will have no effect on trace or metrics data.
+  resource:
+  # The following specifies a non-trivial resource. Type "host" is used for Kubernetes node resources
+  # that expect the labels "cloud.zone", "k8s.cluster.name", "host.name" to be defined (although this
+  # is not enforced by the configuration logic).
+  resource/2:
+    type: "host"
+    labels: {
+      "cloud.zone": "zone-1",
+      "k8s.cluster.name": "k8s-cluster",
+      "host.name": "k8s-node",
+    }
+
+exporters:
+  exampleexporter:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [examplereceiver]
+      processors: [resource/2]
+      exporters: [exampleexporter]
