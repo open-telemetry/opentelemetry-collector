@@ -381,7 +381,7 @@ func (jr *jReceiver) startAgent(_ receiver.Host) error {
 		if err != nil {
 			return err
 		}
-		processor, err := processors.NewThriftProcessor(server, defaultAgentServerWorkers, metrics.NullFactory, apacheThrift.NewTBinaryProtocolFactoryDefault(), handler, zap.NewNop())
+		processor, err := processors.NewThriftProcessor(server, defaultAgentServerWorkers, metrics.NullFactory, apacheThrift.NewTBinaryProtocolFactoryDefault(), handler, jr.logger)
 		if err != nil {
 			return err
 		}
@@ -397,7 +397,7 @@ func (jr *jReceiver) startAgent(_ receiver.Host) error {
 		if err != nil {
 			return err
 		}
-		processor, err := processors.NewThriftProcessor(server, defaultAgentServerWorkers, metrics.NullFactory, apacheThrift.NewTCompactProtocolFactory(), handler, zap.NewNop())
+		processor, err := processors.NewThriftProcessor(server, defaultAgentServerWorkers, metrics.NullFactory, apacheThrift.NewTCompactProtocolFactory(), handler, jr.logger)
 		if err != nil {
 			return err
 		}
