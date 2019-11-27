@@ -45,6 +45,24 @@ func TestJaegerAgentUDP_ThriftCompact_6831(t *testing.T) {
 	})
 }
 
+func TestJaegerAgentUDP_ThriftCompact_InvalidPort(t *testing.T) {
+	port := 999999
+
+	config := &Configuration{
+		AgentCompactThriftPort: int(port),
+	}
+	jr, err := New(context.Background(), config, nil, zap.NewNop())
+	if err != nil {
+		t.Fatalf("Failed to create new Jaeger Receiver: %v", err)
+	}
+
+	mh := receivertest.NewMockHost()
+	err = jr.StartTraceReception(mh)
+	assert.Error(t, err, "should not have been able to startTraceReception")
+
+	jr.StopTraceReception()
+}
+
 func TestJaegerAgentUDP_ThriftBinary_6832(t *testing.T) {
 	t.Skipf("Unfortunately due to Jaeger internal versioning, OpenCensus-Go's Thrift seems to conflict with ours")
 
@@ -79,6 +97,24 @@ func TestJaegerAgentUDP_ThriftBinary_PortInUse(t *testing.T) {
 	if l != nil {
 		l.Close()
 	}
+}
+
+func TestJaegerAgentUDP_ThriftBinary_InvalidPort(t *testing.T) {
+	port := 999999
+
+	config := &Configuration{
+		AgentBinaryThriftPort: int(port),
+	}
+	jr, err := New(context.Background(), config, nil, zap.NewNop())
+	if err != nil {
+		t.Fatalf("Failed to create new Jaeger Receiver: %v", err)
+	}
+
+	mh := receivertest.NewMockHost()
+	err = jr.StartTraceReception(mh)
+	assert.Error(t, err, "should not have been able to startTraceReception")
+
+	jr.StopTraceReception()
 }
 
 func TestJaegerHTTP(t *testing.T) {
