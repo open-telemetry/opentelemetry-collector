@@ -17,6 +17,7 @@ package jaegerreceiver
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
 	"testing"
 	"time"
@@ -52,6 +53,32 @@ func TestJaegerAgentUDP_ThriftBinary_6832(t *testing.T) {
 	testJaegerAgent(t, addrForClient, &Configuration{
 		AgentBinaryThriftPort: port,
 	})
+}
+
+func TestJaegerAgentUDP_ThriftBinary_PortInUse(t *testing.T) {
+	// This test confirms that the thrift binary port is opened correctly.  This is all we can test at the moment.  See above.
+	port := testutils.GetAvailablePort(t)
+
+	config := &Configuration{
+		AgentBinaryThriftPort: int(port),
+	}
+	jr, err := New(context.Background(), config, nil, zap.NewNop())
+	if err != nil {
+		t.Fatalf("Failed to create new Jaeger Receiver: %v", err)
+	}
+
+	mh := receivertest.NewMockHost()
+	if err := jr.StartTraceReception(mh); err != nil {
+		t.Fatalf("StartTraceReception failed: %v", err)
+	}
+	defer jr.StopTraceReception()
+
+	l, err := net.Listen("udp", fmt.Sprintf("localhost:%d", port))
+	assert.Error(t, err, "should not have been able to listen to the port")
+
+	if l != nil {
+		l.Close()
+	}
 }
 
 func TestJaegerHTTP(t *testing.T) {
