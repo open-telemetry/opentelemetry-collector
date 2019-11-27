@@ -41,6 +41,8 @@ func TestWaitForPort(t *testing.T) {
 
 	port = GetAvailablePort(t)
 	l, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", port))
+	require.NoError(t, err)
+
 	err = WaitForPort(t, port)
 	require.NoError(t, err)
 

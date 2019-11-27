@@ -89,6 +89,13 @@ func TestJaegerHTTP(t *testing.T) {
 	if resp != nil {
 		assert.Equal(t, 200, resp.StatusCode, "should have returned 200")
 	}
+
+	testURL = fmt.Sprintf("http://localhost:%d/baggageRestrictions?service=test", port)
+	resp, err = http.Get(testURL)
+	assert.NoError(t, err, "should not have failed to make request")
+	if resp != nil {
+		assert.Equal(t, 200, resp.StatusCode, "should have returned 200")
+	}
 }
 
 func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *Configuration) {
