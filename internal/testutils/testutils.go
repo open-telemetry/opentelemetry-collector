@@ -79,9 +79,10 @@ func WaitForPort(t *testing.T, port uint16) error {
 	wait := 100 * time.Millisecond
 	address := fmt.Sprintf("localhost:%d", port)
 	for i := totalDuration; i > 0; i -= wait {
-		_, err := net.Dial("tcp", address)
+		conn, err := net.Dial("tcp", address)
 
-		if err == nil {
+		if err == nil && conn != nil {
+			conn.Close()
 			return nil
 		}
 		time.Sleep(wait)
