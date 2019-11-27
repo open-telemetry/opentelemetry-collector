@@ -75,16 +75,16 @@ func GetAvailablePort(t *testing.T) uint16 {
 func WaitForPort(t *testing.T, port uint16) error {
 	t.Helper()
 
-	duration := 100 * time.Millisecond
-	iterations := 50 // 50 * 100ms = 5 seconds
+	totalDuration := 5 * time.Second
+	wait := 100 * time.Millisecond
 	address := fmt.Sprintf("localhost:%d", port)
-	for i := 0; i < iterations; i++ {
+	for i := totalDuration; i > 0; i -= wait {
 		_, err := net.Dial("tcp", address)
 
 		if err == nil {
 			return nil
 		}
-		time.Sleep(duration)
+		time.Sleep(wait)
 	}
 	return fmt.Errorf("failed to wait for port %d", port)
 }
