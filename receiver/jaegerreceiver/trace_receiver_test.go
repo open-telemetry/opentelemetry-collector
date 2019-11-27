@@ -18,7 +18,6 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
-	"net"
 	"path"
 	"testing"
 	"time"
@@ -39,7 +38,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-collector/internal"
-	"github.com/open-telemetry/opentelemetry-collector/internal/testutils"
 	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/receivertest"
 	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
@@ -103,27 +101,6 @@ func TestReception(t *testing.T) {
 	}
 }
 
-func TestHTTPCollectorPortInUse(t *testing.T) {
-	port := testutils.GetAvailablePort(t)
-
-	config := &Configuration{
-		CollectorHTTPPort: int(port),
-	}
-	sink := new(exportertest.SinkTraceExporter)
-
-	l, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", port))
-	defer l.Close()
-	assert.NoErrorf(t, err, "should have been able to open port %d", port)
-
-	jr, err := New(context.Background(), config, sink, zap.NewNop())
-	defer jr.StopTraceReception()
-	assert.NoError(t, err, "should have been to create the receiver")
-
-	mh := receivertest.NewMockHost()
-	err = jr.StartTraceReception(mh)
-	assert.Error(t, err, "should not have been able to start the collector")
-}
-
 func TestGRPCReception(t *testing.T) {
 	// prepare
 	config := &Configuration{
@@ -169,27 +146,6 @@ func TestGRPCReception(t *testing.T) {
 		t.Errorf("Mismatched responses\n-Got +Want:\n\t%s", diff)
 	}
 
-}
-
-func TestGRPCCollectorPortInUse(t *testing.T) {
-	port := testutils.GetAvailablePort(t)
-
-	config := &Configuration{
-		CollectorGRPCPort: int(port),
-	}
-	sink := new(exportertest.SinkTraceExporter)
-
-	l, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", port))
-	defer l.Close()
-	assert.NoErrorf(t, err, "should have been able to open port %d", port)
-
-	jr, err := New(context.Background(), config, sink, zap.NewNop())
-	defer jr.StopTraceReception()
-	assert.NoError(t, err, "should have been to create the receiver")
-
-	mh := receivertest.NewMockHost()
-	err = jr.StartTraceReception(mh)
-	assert.Error(t, err, "should not have been able to start the collector")
 }
 
 func TestGRPCReceptionWithTLS(t *testing.T) {
