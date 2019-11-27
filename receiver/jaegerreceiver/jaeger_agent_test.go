@@ -86,7 +86,7 @@ func TestJaegerAgentUDP_ThriftBinary_PortInUse(t *testing.T) {
 	}
 
 	mh := receivertest.NewMockHost()
-	if err := jr.StartTraceReception(mh); err != nil {
+	if err := jr.(*jReceiver).startAgent(mh); err != nil {
 		t.Fatalf("StartTraceReception failed: %v", err)
 	}
 	defer jr.StopTraceReception()
