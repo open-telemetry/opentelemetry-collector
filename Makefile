@@ -4,7 +4,7 @@ ALL_SRC := $(shell find . -name '*.go' \
                                 -type f | sort)
 
 # All source code and documents. Used in spell check.
-ALL_SRC_AND_DOC := $(shell find . \( -name "*.md" -o -name "*.go" -o -name "*.yaml" \) \
+ALL_DOC := $(shell find . \( -name "*.md" -o -name "*.yaml" \) \
                                 -type f | sort)
 
 # ALL_PKGS is used with 'go cover'
@@ -13,15 +13,11 @@ ALL_PKGS := $(shell go list $(sort $(dir $(ALL_SRC))))
 GOTEST_OPT?= -race -timeout 30s
 GOTEST_OPT_WITH_COVERAGE = $(GOTEST_OPT) -coverprofile=coverage.txt -covermode=atomic
 GOTEST=go test
-GOFMT=gofmt
-GOIMPORTS=goimports
-GOLINT=golint
-GOVET=go vet
 GOOS=$(shell go env GOOS)
 ADDLICENCESE= addlicense
 MISSPELL=misspell -error
 MISSPELL_CORRECTION=misspell -w
-STATICCHECK=staticcheck
+LINT=golangci-lint
 IMPI=impi
 
 GIT_SHA=$(shell git rev-parse --short HEAD)
@@ -56,7 +52,7 @@ benchmark:
 	$(GOTEST) -bench=. -run=notests $(ALL_PKGS)
 
 .PHONY: travis-ci
-travis-ci: fmt impi vet lint goimports misspell staticcheck test-with-cover otelcol
+travis-ci: impi lint misspell test-with-cover otelcol
 	$(MAKE) -C testbed install-tools
 	$(MAKE) -C testbed runtests
 
@@ -80,55 +76,17 @@ addlicense:
 			echo "Add License finished successfully"; \
 		fi
 
-.PHONY: fmt
-fmt:
-	@FMTOUT=`$(GOFMT) -s -l $(ALL_SRC) 2>&1`; \
-	if [ "$$FMTOUT" ]; then \
-		echo "$(GOFMT) FAILED => gofmt the following files:\n"; \
-		echo "$$FMTOUT\n"; \
-		exit 1; \
-	else \
-	    echo "Fmt finished successfully"; \
-	fi
-
-.PHONY: lint
-lint:
-	@LINTOUT=`$(GOLINT) $(ALL_PKGS) 2>&1`; \
-	if [ "$$LINTOUT" ]; then \
-		echo "$(GOLINT) FAILED => clean the following lint errors:\n"; \
-		echo "$$LINTOUT\n"; \
-		exit 1; \
-	else \
-	    echo "Lint finished successfully"; \
-	fi
-
-.PHONY: goimports
-goimports:
-	@IMPORTSOUT=`$(GOIMPORTS) -local github.com/open-telemetry/opentelemetry-collector -d . 2>&1`; \
-	if [ "$$IMPORTSOUT" ]; then \
-		echo "$(GOIMPORTS) FAILED => fix the following goimports errors:\n"; \
-		echo "$$IMPORTSOUT\n"; \
-		exit 1; \
-	else \
-	    echo "Goimports finished successfully"; \
-	fi
-
 .PHONY: misspell
 misspell:
-	$(MISSPELL) $(ALL_SRC_AND_DOC)
+	$(MISSPELL) $(ALL_DOC)
 
 .PHONY: misspell-correction
 misspell-correction:
-	$(MISSPELL_CORRECTION) $(ALL_SRC_AND_DOC)
+	$(MISSPELL_CORRECTION) $(ALL_DOC)
 
-.PHONY: staticcheck
-staticcheck:
-	$(STATICCHECK) ./...
-
-.PHONY: vet
-vet:
-	@$(GOVET) ./...
-	@echo "Vet finished successfully"
+.PHONY: lint
+lint:
+	$(LINT) run
 
 .PHONY: impi
 impi:
@@ -138,10 +96,8 @@ impi:
 install-tools:
 	GO111MODULE=on go install \
 	  github.com/google/addlicense \
-	  golang.org/x/lint/golint \
-	  golang.org/x/tools/cmd/goimports \
+	  github.com/golangci/golangci-lint/cmd/golangci-lint \
 	  github.com/client9/misspell/cmd/misspell \
-	  honnef.co/go/tools/cmd/staticcheck \
 	  github.com/pavius/impi/cmd/impi
 
 .PHONY: otelcol

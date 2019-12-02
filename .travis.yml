@@ -7,10 +7,10 @@ go_import_path: github.com/open-telemetry/opentelemetry-collector
 
 go:
   - 1.12.x
- 
+
 env:
   global:
-    GO111MODULE=on
+    - GO111MODULE=on
 
 install:
   - go mod download
