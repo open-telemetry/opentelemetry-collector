@@ -46,39 +46,20 @@ const (
 // Peer attributes currently defined in database conventions
 // See: https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/data-database.md
 const (
-	AttributeComponent    = "component"
-	AttributePeerAddress  = "peer.address"  // to be obsoleted
-	AttributePeerHost     = "peer.hostname" // to be obsoleted
-	AttributePeerIpv4     = "peer.ipv4"     // to be obsoleted
-	AttributePeerIpv6     = "peer.ipv6"     // to be obsoleted
-	AttributePeerPort     = "peer.port"     // to be obsoleted
-	AttributePeerService  = "peer.service"  // to be obsoleted
-	AttributeNetTransport = "net.transport" // pull request #349
-	TransportTypeTCP      = "IP.TCP"
-	TransportTypeUDP      = "IP.UDP"
-	TransportTypeIP       = "IP"
-	TransportTypeUnix     = "Unix"
-	TransportTypePipe     = "pipe"
-	TransportTypeInProc   = "inproc"
-	TransportTypeOther    = "other"
-	AttributeNetPeerIP    = "net.peer.ip"   // pull request #349
-	AttributeNetPeerPort  = "net.peer.port" // pull request #349
-	AttributeNetPeerName  = "net.peer.name" // pull request #349
-	AttributeNetHostIP    = "net.host.ip"   // pull request #349
-	AttributeNetHostPort  = "net.host.port" // pull request #349
-	AttributeNetHostName  = "net.host.name" // pull request #349
-	AttributeIAMUser      = "iam.user"      // proposed in issue #362
-	AttributeIAMRole      = "iam.role"      // proposed in issue #362
+	AttributeComponent   = "component"
+	AttributePeerAddress = "peer.address"  // to be obsoleted
+	AttributePeerHost    = "peer.hostname" // to be obsoleted
+	AttributePeerIpv4    = "peer.ipv4"     // to be obsoleted
+	AttributePeerIpv6    = "peer.ipv6"     // to be obsoleted
+	AttributePeerPort    = "peer.port"     // to be obsoleted
+	AttributePeerService = "peer.service"  // to be obsoleted
 )
 
 // OpenTelemetry Semantic Convention values for component attribute values.
 // Possibly being removed due to issue #336
 const (
-	ComponentTypeHTTP    = "http"
-	ComponentTypeGRPC    = "grpc"
-	ComponentTypeDB      = "db"        // proposed in issue #362
-	ComponentTypeMsg     = "messaging" // proposed in issue #362
-	ComponentTypeCluster = "cluster"   // proposed in issue #362
+	ComponentTypeHTTP = "http"
+	ComponentTypeGRPC = "grpc"
 )
 
 // OpenTelemetry Semantic Convention attribute names for HTTP related attributes
@@ -96,7 +77,6 @@ const (
 	AttributeHTTPPort       = "http.port"
 	AttributeHTTPRoute      = "http.route"
 	AttributeHTTPClientIP   = "http.client_ip"
-	AttributeHTTPUserAgent  = "http.user_agent" // proposed in issue #362, used by OpenCensus and OpenTelemetry
 )
 
 // OpenTelemetry Semantic Convention attribute names for database related attributes
@@ -106,7 +86,6 @@ const (
 	AttributeDBInstance  = "db.instance"
 	AttributeDBStatement = "db.statement"
 	AttributeDBUser      = "db.user"
-	AttributeDBURL       = "db.url" // pull request #349
 )
 
 // OpenTelemetry Semantic Convention attribute names for gRPC related attributes
@@ -119,21 +98,4 @@ const (
 	AttributeMessageID               = "message.id"
 	AttributeMessageCompressedSize   = "message.compressed_size"
 	AttributeMessageUncompressedSize = "message.uncompressed_size"
-	AttributeMessageContent          = "message.content" // proposed in issue #362
-)
-
-// Proposed OpenTelemetry Semantic Convention attribute names for error/fault/exception related event attributes
-// Derived from OpenTracing: https://github.com/opentracing/specification/blob/master/semantic_conventions.md
-const (
-	EventTypeError        = "error"
-	AttributeErrorKind    = "error.kind"
-	AttributeErrorObject  = "error.object"
-	AttributeErrorMessage = "error.message"
-	AttributeErrorStack   = "error.stack"
-)
-
-// Proposed OpenTelemetry Semantic Convention attribute names for asynchronous messaging related attributes
-// Derived from OpenTracing: https://github.com/opentracing/specification/blob/master/semantic_conventions.md
-const (
-	AttributeMessageDestination = "message_bus.destination" // proposed in issue #362
 )

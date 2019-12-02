@@ -13,17 +13,3 @@
 // limitations under the License.
 
 package conventions
-
-import (
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-)
-
-func TestDefinedAttributeValues(t *testing.T) {
-	attributes := make(map[string]string)
-	attributes[AttributeNetTransport] = TransportTypeTCP
-	attributes[AttributeMessageType] = MessageTypeReceived
-	assert.Equal(t, attributes[AttributeNetTransport], TransportTypeTCP)
-	assert.Equal(t, attributes[AttributeMessageType], MessageTypeReceived)
-}
