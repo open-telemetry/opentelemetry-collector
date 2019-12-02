@@ -22,8 +22,8 @@ import (
 
 func TestDefinedAttributeValues(t *testing.T) {
 	attributes := make(map[string]string)
-	attributes[NetTransportAttribute] = TCPTransportType
-	attributes[MessageTypeAttribute] = ReceivedMessageType
-	assert.Equal(t, attributes[NetTransportAttribute], TCPTransportType)
-	assert.Equal(t, attributes[MessageTypeAttribute], ReceivedMessageType)
+	attributes[AttributeNetTransport] = TransportTypeTCP
+	attributes[AttributeMessageType] = MessageTypeReceived
+	assert.Equal(t, attributes[AttributeNetTransport], TransportTypeTCP)
+	assert.Equal(t, attributes[AttributeMessageType], MessageTypeReceived)
 }
