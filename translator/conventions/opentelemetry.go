@@ -20,7 +20,6 @@ const (
 	AttributeServiceName      = "service.name"
 	AttributeServiceNamespace = "service.namespace"
 	AttributeServiceInstance  = "service.instance.id"
-	AttributeServiceVersion   = "service.version" // proposed
 	AttributeLibraryName      = "library.name"
 	AttributeLibraryLanguage  = "library.language"
 	AttributeLibraryVersion   = "library.version"
@@ -74,7 +73,8 @@ const (
 	AttributeHTTPStatusText = "http.status_text"
 	AttributeHTTPFlavor     = "http.flavor"
 	AttributeHTTPServerName = "http.server_name"
-	AttributeHTTPPort       = "http.port"
+	AttributeHTTPHostName   = "host.name"
+	AttributeHTTPHostPort   = "host.port"
 	AttributeHTTPRoute      = "http.route"
 	AttributeHTTPClientIP   = "http.client_ip"
 )
