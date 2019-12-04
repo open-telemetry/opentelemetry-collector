@@ -370,18 +370,8 @@ func (jr *jReceiver) startAgent(_ receiver.Host) error {
 		return nil
 	}
 
-	handler := jaegerThrift.NewAgentProcessor(jr)
-
 	if jr.agentBinaryThriftEnabled() {
-		transport, err := thriftudp.NewTUDPServerTransport(jr.agentBinaryThriftAddr())
-		if err != nil {
-			return err
-		}
-		server, err := servers.NewTBufferedServer(transport, defaultAgentQueueSize, defaultAgentMaxPacketSize, metrics.NullFactory)
-		if err != nil {
-			return err
-		}
-		processor, err := processors.NewThriftProcessor(server, defaultAgentServerWorkers, metrics.NullFactory, apacheThrift.NewTBinaryProtocolFactoryDefault(), handler, jr.logger)
+		processor, err := jr.buildProcessor(jr.agentBinaryThriftAddr(), apacheThrift.NewTBinaryProtocolFactoryDefault())
 		if err != nil {
 			return err
 		}
@@ -389,15 +379,7 @@ func (jr *jReceiver) startAgent(_ receiver.Host) error {
 	}
 
 	if jr.agentCompactThriftEnabled() {
-		transport, err := thriftudp.NewTUDPServerTransport(jr.agentCompactThriftAddr())
-		if err != nil {
-			return err
-		}
-		server, err := servers.NewTBufferedServer(transport, defaultAgentQueueSize, defaultAgentMaxPacketSize, metrics.NullFactory)
-		if err != nil {
-			return err
-		}
-		processor, err := processors.NewThriftProcessor(server, defaultAgentServerWorkers, metrics.NullFactory, apacheThrift.NewTCompactProtocolFactory(), handler, jr.logger)
+		processor, err := jr.buildProcessor(jr.agentCompactThriftAddr(), apacheThrift.NewTCompactProtocolFactory())
 		if err != nil {
 			return err
 		}
@@ -419,6 +401,23 @@ func (jr *jReceiver) startAgent(_ receiver.Host) error {
 	}
 
 	return nil
+}
+
+func (jr *jReceiver) buildProcessor(address string, factory apacheThrift.TProtocolFactory) (processors.Processor, error) {
+	handler := jaegerThrift.NewAgentProcessor(jr)
+	transport, err := thriftudp.NewTUDPServerTransport(address)
+	if err != nil {
+		return nil, err
+	}
+	server, err := servers.NewTBufferedServer(transport, defaultAgentQueueSize, defaultAgentMaxPacketSize, metrics.NullFactory)
+	if err != nil {
+		return nil, err
+	}
+	processor, err := processors.NewThriftProcessor(server, defaultAgentServerWorkers, metrics.NullFactory, factory, handler, jr.logger)
+	if err != nil {
+		return nil, err
+	}
+	return processor, nil
 }
 
 func (jr *jReceiver) startCollector(host receiver.Host) error {
