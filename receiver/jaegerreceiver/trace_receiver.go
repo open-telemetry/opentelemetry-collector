@@ -23,14 +23,19 @@ import (
 	"net/http"
 	"sync"
 
+	apacheThrift "github.com/apache/thrift/lib/go/thrift"
 	"github.com/gorilla/mux"
-	agentapp "github.com/jaegertracing/jaeger/cmd/agent/app"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/configmanager"
+	"github.com/jaegertracing/jaeger/cmd/agent/app/httpserver"
+	"github.com/jaegertracing/jaeger/cmd/agent/app/processors"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/reporter"
+	"github.com/jaegertracing/jaeger/cmd/agent/app/servers"
+	"github.com/jaegertracing/jaeger/cmd/agent/app/servers/thriftudp"
 	"github.com/jaegertracing/jaeger/cmd/collector/app"
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"github.com/jaegertracing/jaeger/thrift-gen/baggage"
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
+	jaegerThrift "github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 	"github.com/jaegertracing/jaeger/thrift-gen/sampling"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"github.com/uber/jaeger-lib/metrics"
@@ -54,9 +59,9 @@ type Configuration struct {
 	CollectorGRPCPort    int
 	CollectorGRPCOptions []grpc.ServerOption
 
-	AgentPort              int
 	AgentCompactThriftPort int
 	AgentBinaryThriftPort  int
+	AgentHTTPPort          int
 }
 
 // Receiver type is used to receive spans that were originally intended to be sent to Jaeger.
@@ -72,13 +77,15 @@ type jReceiver struct {
 
 	config *Configuration
 
-	agent *agentapp.Agent
-
 	grpc            *grpc.Server
 	tchanServer     *jTchannelReceiver
 	collectorServer *http.Server
 
+	agentProcessors []processors.Processor
+	agentServer     *http.Server
+
 	defaultAgentCtx context.Context
+	logger          *zap.Logger
 }
 
 type jTchannelReceiver struct {
@@ -88,6 +95,10 @@ type jTchannelReceiver struct {
 }
 
 const (
+	defaultAgentQueueSize     = 1000
+	defaultAgentMaxPacketSize = 65000
+	defaultAgentServerWorkers = 10
+
 	// As per https://www.jaegertracing.io/docs/1.13/deployment/
 	// By default, the port used by jaeger-agent to send spans in model.proto format
 	defaultGRPCPort = 14250
@@ -96,18 +107,11 @@ const (
 	// By default, can accept spans directly from clients in jaeger.thrift format over binary thrift protocol
 	defaultCollectorHTTPPort = 14268
 
-	// As per https://www.jaegertracing.io/docs/1.7/deployment/#agent
-	// 5775	UDP accept zipkin.thrift over compact thrift protocol
-	// 6831	UDP accept jaeger.thrift over compact thrift protocol
-	// 6832	UDP accept jaeger.thrift over binary thrift protocol
-	defaultCompactThriftUDPPort = 6831
-	defaultBinaryThriftUDPPort  = 6832
-
 	traceSource string = "Jaeger"
 )
 
 // New creates a TraceReceiver that receives traffic as a collector with both Thrift and HTTP transports.
-func New(ctx context.Context, config *Configuration, nextConsumer consumer.TraceConsumer) (receiver.TraceReceiver, error) {
+func New(ctx context.Context, config *Configuration, nextConsumer consumer.TraceConsumer, logger *zap.Logger) (receiver.TraceReceiver, error) {
 	return &jReceiver{
 		config:          config,
 		defaultAgentCtx: observability.ContextWithReceiverName(context.Background(), "jaeger-agent"),
@@ -115,6 +119,7 @@ func New(ctx context.Context, config *Configuration, nextConsumer consumer.Trace
 		tchanServer: &jTchannelReceiver{
 			nextConsumer: nextConsumer,
 		},
+		logger: logger,
 	}, nil
 }
 
@@ -127,19 +132,6 @@ func (jr *jReceiver) collectorAddr() string {
 	}
 	if port <= 0 {
 		port = defaultCollectorHTTPPort
-	}
-	return fmt.Sprintf(":%d", port)
-}
-
-const defaultAgentPort = 5778
-
-func (jr *jReceiver) agentAddress() string {
-	var port int
-	if jr.config != nil {
-		port = jr.config.AgentPort
-	}
-	if port <= 0 {
-		port = defaultAgentPort
 	}
 	return fmt.Sprintf(":%d", port)
 }
@@ -173,10 +165,11 @@ func (jr *jReceiver) agentCompactThriftAddr() string {
 	if jr.config != nil {
 		port = jr.config.AgentCompactThriftPort
 	}
-	if port <= 0 {
-		port = defaultCompactThriftUDPPort
-	}
 	return fmt.Sprintf(":%d", port)
+}
+
+func (jr *jReceiver) agentCompactThriftEnabled() bool {
+	return jr.config != nil && jr.config.AgentCompactThriftPort > 0
 }
 
 func (jr *jReceiver) agentBinaryThriftAddr() string {
@@ -184,10 +177,23 @@ func (jr *jReceiver) agentBinaryThriftAddr() string {
 	if jr.config != nil {
 		port = jr.config.AgentBinaryThriftPort
 	}
-	if port <= 0 {
-		port = defaultBinaryThriftUDPPort
+	return fmt.Sprintf(":%d", port)
+}
+
+func (jr *jReceiver) agentBinaryThriftEnabled() bool {
+	return jr.config != nil && jr.config.AgentBinaryThriftPort > 0
+}
+
+func (jr *jReceiver) agentHTTPPortAddr() string {
+	var port int
+	if jr.config != nil {
+		port = jr.config.AgentHTTPPort
 	}
 	return fmt.Sprintf(":%d", port)
+}
+
+func (jr *jReceiver) agentHTTPEnabled() bool {
+	return jr.config != nil && jr.config.AgentHTTPPort > 0
 }
 
 func (jr *jReceiver) TraceSource() string {
@@ -227,9 +233,14 @@ func (jr *jReceiver) stopTraceReceptionLocked() error {
 	jr.stopOnce.Do(func() {
 		var errs []error
 
-		if jr.agent != nil {
-			jr.agent.Stop()
-			jr.agent = nil
+		if jr.agentServer != nil {
+			if aerr := jr.agentServer.Close(); aerr != nil {
+				errs = append(errs, aerr)
+			}
+			jr.agentServer = nil
+		}
+		for _, processor := range jr.agentProcessors {
+			processor.Stop()
 		}
 
 		if jr.collectorServer != nil {
@@ -302,8 +313,8 @@ func (jtr *jTchannelReceiver) SubmitBatches(ctx thrift.Context, batches []*jaege
 }
 
 var _ reporter.Reporter = (*jReceiver)(nil)
-var _ agentapp.CollectorProxy = (*jReceiver)(nil)
 var _ api_v2.CollectorServiceServer = (*jReceiver)(nil)
+var _ configmanager.ClientConfigManager = (*jReceiver)(nil)
 
 // EmitZipkinBatch implements cmd/agent/reporter.Reporter and it forwards
 // Zipkin spans received by the Jaeger agent processor.
@@ -315,6 +326,7 @@ func (jr *jReceiver) EmitZipkinBatch(spans []*zipkincore.Span) error {
 // Jaeger spans received by the Jaeger agent processor.
 func (jr *jReceiver) EmitBatch(batch *jaeger.Batch) error {
 	td, err := jaegertranslator.ThriftBatchToOCProto(batch)
+	td.SourceFormat = "jaeger"
 	if err != nil {
 		observability.RecordMetricsForTraceReceiver(jr.defaultAgentCtx, len(batch.Spans), len(batch.Spans))
 		return err
@@ -324,14 +336,6 @@ func (jr *jReceiver) EmitBatch(batch *jaeger.Batch) error {
 	observability.RecordMetricsForTraceReceiver(jr.defaultAgentCtx, len(batch.Spans), len(batch.Spans)-len(td.Spans))
 
 	return err
-}
-
-func (jr *jReceiver) GetReporter() reporter.Reporter {
-	return jr
-}
-
-func (jr *jReceiver) GetManager() configmanager.ClientConfigManager {
-	return jr
 }
 
 func (jr *jReceiver) GetSamplingStrategy(serviceName string) (*sampling.SamplingStrategyResponse, error) {
@@ -362,45 +366,58 @@ func (jr *jReceiver) PostSpans(ctx context.Context, r *api_v2.PostSpansRequest) 
 }
 
 func (jr *jReceiver) startAgent(_ receiver.Host) error {
-	processorConfigs := []agentapp.ProcessorConfiguration{
-		{
-			// Compact Thrift running by default on 6831.
-			Model:    "jaeger",
-			Protocol: "compact",
-			Server: agentapp.ServerConfiguration{
-				HostPort: jr.agentCompactThriftAddr(),
-			},
-		},
-		{
-			// Binary Thrift running by default on 6832.
-			Model:    "jaeger",
-			Protocol: "binary",
-			Server: agentapp.ServerConfiguration{
-				HostPort: jr.agentBinaryThriftAddr(),
-			},
-		},
+	if !jr.agentBinaryThriftEnabled() && !jr.agentCompactThriftEnabled() && !jr.agentHTTPEnabled() {
+		return nil
 	}
 
-	builder := agentapp.Builder{
-		Processors: processorConfigs,
-		HTTPServer: agentapp.HTTPServerConfiguration{
-			HostPort: jr.agentAddress(),
-		},
+	if jr.agentBinaryThriftEnabled() {
+		processor, err := jr.buildProcessor(jr.agentBinaryThriftAddr(), apacheThrift.NewTBinaryProtocolFactoryDefault())
+		if err != nil {
+			return err
+		}
+		jr.agentProcessors = append(jr.agentProcessors, processor)
 	}
 
-	agent, err := builder.CreateAgent(jr, zap.NewNop(), metrics.NullFactory)
-	if err != nil {
-		return err
+	if jr.agentCompactThriftEnabled() {
+		processor, err := jr.buildProcessor(jr.agentCompactThriftAddr(), apacheThrift.NewTCompactProtocolFactory())
+		if err != nil {
+			return err
+		}
+		jr.agentProcessors = append(jr.agentProcessors, processor)
 	}
 
-	if err := agent.Run(); err != nil {
-		return err
+	for _, processor := range jr.agentProcessors {
+		go processor.Serve()
 	}
 
-	// Otherwise no error was encountered,
-	jr.agent = agent
+	if jr.agentHTTPEnabled() {
+		jr.agentServer = httpserver.NewHTTPServer(jr.agentHTTPPortAddr(), jr, metrics.NullFactory)
+
+		go func() {
+			if err := jr.agentServer.ListenAndServe(); err != nil {
+				jr.logger.Error("http server failure", zap.Error(err))
+			}
+		}()
+	}
 
 	return nil
+}
+
+func (jr *jReceiver) buildProcessor(address string, factory apacheThrift.TProtocolFactory) (processors.Processor, error) {
+	handler := jaegerThrift.NewAgentProcessor(jr)
+	transport, err := thriftudp.NewTUDPServerTransport(address)
+	if err != nil {
+		return nil, err
+	}
+	server, err := servers.NewTBufferedServer(transport, defaultAgentQueueSize, defaultAgentMaxPacketSize, metrics.NullFactory)
+	if err != nil {
+		return nil, err
+	}
+	processor, err := processors.NewThriftProcessor(server, defaultAgentServerWorkers, metrics.NullFactory, factory, handler, jr.logger)
+	if err != nil {
+		return nil, err
+	}
+	return processor, nil
 }
 
 func (jr *jReceiver) startCollector(host receiver.Host) error {

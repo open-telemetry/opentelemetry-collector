@@ -22,6 +22,8 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/jaegerreceiver"
@@ -109,7 +111,7 @@ func (mb *MockBackend) Start(backendType BackendType) error {
 		jaegerCfg := jaegerreceiver.Configuration{
 			CollectorHTTPPort: 14268,
 		}
-		mb.jaegerReceiver, err = jaegerreceiver.New(context.Background(), &jaegerCfg, mb.tc)
+		mb.jaegerReceiver, err = jaegerreceiver.New(context.Background(), &jaegerCfg, mb.tc, zap.NewNop())
 		if err != nil {
 			return err
 		}

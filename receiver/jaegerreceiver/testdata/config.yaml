@@ -15,6 +15,10 @@ receivers:
         endpoint: ":3456"
       thrift-tchannel:
         endpoint: "0.0.0.0:123"
+      thrift-compact:
+        endpoint: "0.0.0.0:456"
+      thrift-binary:
+        endpoint: "0.0.0.0:789"
 
   # The following demonstrates disabling the receiver.
   # All of the protocols need to be disabled for the receiver to be disabled.
@@ -29,6 +33,10 @@ receivers:
       thrift-http:
         disabled: true
       thrift-tchannel:
+        disabled: true
+      thrift-compact:
+        disabled: true
+      thrift-binary:
         disabled: true
 
   # The following demonstrates specifying different endpoints.

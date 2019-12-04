@@ -41,6 +41,8 @@ const (
 	// TODO https://github.com/open-telemetry/opentelemetry-collector/issues/267
 	//	Remove ThriftTChannel support.
 	protoThriftTChannel = "thrift-tchannel"
+	protoThriftBinary   = "thrift-binary"
+	protoThriftCompact  = "thrift-compact"
 
 	// Default endpoints to bind to.
 	defaultGRPCBindEndpoint     = "localhost:14250"
@@ -103,6 +105,8 @@ func (f *Factory) CreateTraceReceiver(
 	protoGRPC := rCfg.Protocols[protoGRPC]
 	protoHTTP := rCfg.Protocols[protoThriftHTTP]
 	protoTChannel := rCfg.Protocols[protoThriftTChannel]
+	protoThriftCompact := rCfg.Protocols[protoThriftCompact]
+	protoThriftBinary := rCfg.Protocols[protoThriftBinary]
 
 	config := Configuration{}
 	var grpcServerOptions []grpc.ServerOption
@@ -141,19 +145,37 @@ func (f *Factory) CreateTraceReceiver(
 		}
 	}
 
-	if (protoGRPC == nil && protoHTTP == nil && protoTChannel == nil) ||
-		(config.CollectorGRPCPort == 0 && config.CollectorHTTPPort == 0 && config.CollectorThriftPort == 0) {
-		err := fmt.Errorf("either %v, %v, or %v protocol endpoint with non-zero port must be enabled for %s receiver",
+	if protoThriftBinary != nil && protoThriftBinary.IsEnabled() {
+		var err error
+		config.AgentBinaryThriftPort, err = extractPortFromEndpoint(protoThriftBinary.Endpoint)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if protoThriftCompact != nil && protoThriftCompact.IsEnabled() {
+		var err error
+		config.AgentCompactThriftPort, err = extractPortFromEndpoint(protoThriftCompact.Endpoint)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if (protoGRPC == nil && protoHTTP == nil && protoTChannel == nil && protoThriftBinary == nil && protoThriftCompact == nil) ||
+		(config.CollectorGRPCPort == 0 && config.CollectorHTTPPort == 0 && config.CollectorThriftPort == 0 && config.AgentBinaryThriftPort == 0 && config.AgentCompactThriftPort == 0) {
+		err := fmt.Errorf("either %v, %v, %v, %v, or %v protocol endpoint with non-zero port must be enabled for %s receiver",
 			protoGRPC,
 			protoThriftHTTP,
 			protoThriftTChannel,
+			protoThriftCompact,
+			protoThriftBinary,
 			typeStr,
 		)
 		return nil, err
 	}
 
 	// Create the receiver.
-	return New(ctx, &config, nextConsumer)
+	return New(ctx, &config, nextConsumer, logger)
 }
 
 // CreateMetricsReceiver creates a metrics receiver based on provided config.

@@ -15,6 +15,7 @@
 package testutils
 
 import (
+	"fmt"
 	"net"
 	"strconv"
 	"testing"
@@ -31,6 +32,22 @@ func TestGetAvailablePort(t *testing.T) {
 	require.NotEqual(t, "", portStr)
 
 	testEndpointAvailable(t, "localhost:"+portStr)
+}
+
+func TestWaitForPort(t *testing.T) {
+	port := GetAvailablePort(t)
+	err := WaitForPort(t, port)
+	require.Error(t, err)
+
+	port = GetAvailablePort(t)
+	l, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", port))
+	require.NoError(t, err)
+
+	err = WaitForPort(t, port)
+	require.NoError(t, err)
+
+	err = l.Close()
+	require.NoError(t, err)
 }
 
 func testEndpointAvailable(t *testing.T, endpoint string) {

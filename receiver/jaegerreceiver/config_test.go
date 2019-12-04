@@ -65,6 +65,16 @@ func TestLoadConfig(t *testing.T) {
 						Endpoint: "0.0.0.0:123",
 					},
 				},
+				"thrift-compact": {
+					ReceiverSettings: configmodels.ReceiverSettings{
+						Endpoint: "0.0.0.0:456",
+					},
+				},
+				"thrift-binary": {
+					ReceiverSettings: configmodels.ReceiverSettings{
+						Endpoint: "0.0.0.0:789",
+					},
+				},
 			},
 		})
 

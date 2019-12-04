@@ -16,9 +16,11 @@ package testutils
 
 import (
 	"encoding/json"
+	"fmt"
 	"net"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -66,4 +68,24 @@ func GetAvailablePort(t *testing.T) uint16 {
 	require.NoError(t, err)
 
 	return uint16(portInt)
+}
+
+// WaitForPort repeatedly attempts to open a local port until it either succeeds or 5 seconds pass
+// It is useful if you need to asynchronously start a service and wait for it to start
+func WaitForPort(t *testing.T, port uint16) error {
+	t.Helper()
+
+	totalDuration := 5 * time.Second
+	wait := 100 * time.Millisecond
+	address := fmt.Sprintf("localhost:%d", port)
+	for i := totalDuration; i > 0; i -= wait {
+		conn, err := net.Dial("tcp", address)
+
+		if err == nil && conn != nil {
+			conn.Close()
+			return nil
+		}
+		time.Sleep(wait)
+	}
+	return fmt.Errorf("failed to wait for port %d", port)
 }

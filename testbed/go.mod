@@ -11,6 +11,7 @@ require (
 	github.com/spf13/viper v1.4.1-0.20190911140308-99520c81d86e
 	github.com/stretchr/testify v1.4.0
 	go.opencensus.io v0.22.1
+	go.uber.org/zap v1.10.0
 )
 
 replace github.com/open-telemetry/opentelemetry-collector => ../

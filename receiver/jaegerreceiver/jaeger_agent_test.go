@@ -17,6 +17,8 @@ package jaegerreceiver
 import (
 	"context"
 	"fmt"
+	"net"
+	"net/http"
 	"testing"
 	"time"
 
@@ -24,11 +26,14 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/google/go-cmp/cmp"
+	"github.com/stretchr/testify/assert"
 	"go.opencensus.io/trace"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-collector/internal"
+	"github.com/open-telemetry/opentelemetry-collector/internal/testutils"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/receivertest"
 )
 
@@ -38,6 +43,22 @@ func TestJaegerAgentUDP_ThriftCompact_6831(t *testing.T) {
 	testJaegerAgent(t, addrForClient, &Configuration{
 		AgentCompactThriftPort: port,
 	})
+}
+
+func TestJaegerAgentUDP_ThriftCompact_InvalidPort(t *testing.T) {
+	port := 999999
+
+	config := &Configuration{
+		AgentCompactThriftPort: int(port),
+	}
+	jr, err := New(context.Background(), config, nil, zap.NewNop())
+	assert.NoError(t, err, "Failed to create new Jaeger Receiver")
+
+	mh := receivertest.NewMockHost()
+	err = jr.StartTraceReception(mh)
+	assert.Error(t, err, "should not have been able to startTraceReception")
+
+	jr.StopTraceReception()
 }
 
 func TestJaegerAgentUDP_ThriftBinary_6832(t *testing.T) {
@@ -50,19 +71,95 @@ func TestJaegerAgentUDP_ThriftBinary_6832(t *testing.T) {
 	})
 }
 
-func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *Configuration) {
-	// 1. Create the Jaeger receiver aka "server"
-	sink := new(exportertest.SinkTraceExporter)
-	jr, err := New(context.Background(), receiverConfig, sink)
-	if err != nil {
-		t.Fatalf("Failed to create new Jaeger Receiver: %v", err)
+func TestJaegerAgentUDP_ThriftBinary_PortInUse(t *testing.T) {
+	// This test confirms that the thrift binary port is opened correctly.  This is all we can test at the moment.  See above.
+	port := testutils.GetAvailablePort(t)
+
+	config := &Configuration{
+		AgentBinaryThriftPort: int(port),
 	}
+	jr, err := New(context.Background(), config, nil, zap.NewNop())
+	assert.NoError(t, err, "Failed to create new Jaeger Receiver")
+
+	mh := receivertest.NewMockHost()
+	err = jr.(*jReceiver).startAgent(mh)
+	assert.NoError(t, err, "StartTraceReception failed")
+	defer jr.StopTraceReception()
+
+	l, err := net.Listen("udp", fmt.Sprintf("localhost:%d", port))
+	assert.Error(t, err, "should not have been able to listen to the port")
+
+	if l != nil {
+		l.Close()
+	}
+}
+
+func TestJaegerAgentUDP_ThriftBinary_InvalidPort(t *testing.T) {
+	port := 999999
+
+	config := &Configuration{
+		AgentBinaryThriftPort: int(port),
+	}
+	jr, err := New(context.Background(), config, nil, zap.NewNop())
+	assert.NoError(t, err, "Failed to create new Jaeger Receiver")
+
+	mh := receivertest.NewMockHost()
+	err = jr.StartTraceReception(mh)
+	assert.Error(t, err, "should not have been able to startTraceReception")
+
+	jr.StopTraceReception()
+}
+
+func TestJaegerHTTP(t *testing.T) {
+	port := testutils.GetAvailablePort(t)
+	config := &Configuration{
+		AgentHTTPPort: int(port),
+	}
+	jr, err := New(context.Background(), config, nil, zap.NewNop())
+	assert.NoError(t, err, "Failed to create new Jaeger Receiver")
 	defer jr.StopTraceReception()
 
 	mh := receivertest.NewMockHost()
-	if err := jr.StartTraceReception(mh); err != nil {
-		t.Fatalf("StartTraceReception failed: %v", err)
+	err = jr.StartTraceReception(mh)
+	assert.NoError(t, err, "StartTraceReception failed")
+
+	// allow http server to start
+	err = testutils.WaitForPort(t, port)
+	assert.NoError(t, err, "WaitForPort failed")
+
+	// this functionality is just stubbed out at the moment.  just confirm they 200.
+	testURL := fmt.Sprintf("http://localhost:%d/sampling?service=test", port)
+	resp, err := http.Get(testURL)
+	assert.NoError(t, err, "should not have failed to make request")
+	if resp != nil {
+		assert.Equal(t, 200, resp.StatusCode, "should have returned 200")
 	}
+
+	testURL = fmt.Sprintf("http://localhost:%d/sampling?service=test", port)
+	resp, err = http.Get(testURL)
+	assert.NoError(t, err, "should not have failed to make request")
+	if resp != nil {
+		assert.Equal(t, 200, resp.StatusCode, "should have returned 200")
+	}
+
+	testURL = fmt.Sprintf("http://localhost:%d/baggageRestrictions?service=test", port)
+	resp, err = http.Get(testURL)
+	assert.NoError(t, err, "should not have failed to make request")
+	if resp != nil {
+		assert.Equal(t, 200, resp.StatusCode, "should have returned 200")
+	}
+}
+
+func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *Configuration) {
+	// 1. Create the Jaeger receiver aka "server"
+	sink := new(exportertest.SinkTraceExporter)
+	jr, err := New(context.Background(), receiverConfig, sink, zap.NewNop())
+	assert.NoError(t, err, "Failed to create new Jaeger Receiver")
+	defer jr.StopTraceReception()
+
+	mh := receivertest.NewMockHost()
+	err = jr.StartTraceReception(mh)
+	assert.NoError(t, err, "StartTraceReception failed")
 
 	now := time.Unix(1542158650, 536343000).UTC()
 	nowPlus10min := now.Add(10 * time.Minute)
@@ -81,9 +178,7 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *Configu
 			},
 		},
 	})
-	if err != nil {
-		t.Fatalf("Failed to create the Jaeger OpenCensus exporter for the live application: %v", err)
-	}
+	assert.NoError(t, err, "Failed to create the Jaeger OpenCensus exporter for the live application")
 
 	// 3. Now finally send some spans
 	spandata := []*trace.SpanData{
@@ -220,6 +315,7 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *Configu
 					},
 				},
 			},
+			SourceFormat: "jaeger",
 		},
 	}
 

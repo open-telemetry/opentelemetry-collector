@@ -167,6 +167,10 @@ receivers:
         endpoint: "localhost:14268"
       thrift-tchannel:
         endpoint: "localhost:14267"
+      thrift-compact:
+        endpoint: "localhost:6831"
+      thrift-binary:
+        endpoint: "localhost:6832"
 
   prometheus:
     config:
