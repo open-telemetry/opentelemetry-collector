@@ -126,7 +126,7 @@ func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
 		"Unfortunately did not receive an exported span data. Please check this library's implementation or go.opencensus.io/trace",
 	)
 
-	gotSpanData := ocSpansSaver.spanData[:]
+	gotSpanData := ocSpansSaver.spanData
 	if g, w := len(gotSpanData), n+1; g != w {
 		blob, _ := json.MarshalIndent(gotSpanData, "  ", " ")
 		t.Fatalf("Spandata count: Got %d Want %d\n\nData: %s", g, w, blob)
