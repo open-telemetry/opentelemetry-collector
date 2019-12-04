@@ -60,11 +60,11 @@ depending on requirements. Currently the OpenTelemetry Collector consists of a
 single binary and two deployment methods:
 
 1. Agent running with the application or on the same host as the application
-(e.g. binary, sidecar, or daemonset) 
+(e.g. binary, sidecar, or daemonset)
 2. Collector running as a standalone application (e.g. container or deployment)
 
 While the same binary is used for either deployment method, the configuration
-between the two may differ depending on requirements (e.g. queue size and 
+between the two may differ depending on requirements (e.g. queue size and
 feature-set enabled).
 
 ![deployment-models](https://i.imgur.com/Tj384ap.png)
@@ -120,7 +120,7 @@ exporting will resume.
 
 ## <a name="config"></a>Configuration
 
-The OpenTelemetry Collector is configured via a YAML file. 
+The OpenTelemetry Collector is configured via a YAML file.
 In general, at least one enabled receiver and one enabled exporter
 needs to be configured.
 
@@ -234,10 +234,10 @@ exporters:
 
   logging:
     loglevel: debug
-  
+
   jaeger_grpc:
     endpoint: "http://localhost:14250"
-  
+
   jaeger_thrift_http:
     headers: {"X-test-header": "test-header"}
     timeout: 5
@@ -245,7 +245,7 @@ exporters:
 
   zipkin:
     url: "http://localhost:9411/api/v2/spans"
-    
+
   prometheus:
     endpoint: "localhost:8889"
     namespace: "default"
