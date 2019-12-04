@@ -18,7 +18,7 @@ import tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/
 
 type stringAttributeFilter struct {
 	key    string
-	values map[string]bool
+	values map[string]struct{}
 }
 
 var _ PolicyEvaluator = (*stringAttributeFilter)(nil)
@@ -26,10 +26,10 @@ var _ PolicyEvaluator = (*stringAttributeFilter)(nil)
 // NewStringAttributeFilter creates a policy evaluator that samples all traces with
 // the given attribute in the given numeric range.
 func NewStringAttributeFilter(key string, values []string) PolicyEvaluator {
-	valuesMap := make(map[string]bool)
+	valuesMap := make(map[string]struct{})
 	for _, value := range values {
 		if value != "" {
-			valuesMap[value] = true
+			valuesMap[value] = struct{}{}
 		}
 	}
 	return &stringAttributeFilter{
