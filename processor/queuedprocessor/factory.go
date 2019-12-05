@@ -66,6 +66,7 @@ func (f *Factory) CreateTraceProcessor(
 		Options.WithQueueSize(oCfg.QueueSize),
 		Options.WithRetryOnProcessingFailures(oCfg.RetryOnFailure),
 		Options.WithBackoffDelay(oCfg.BackoffDelay),
+		Options.WithLogger(logger),
 	), nil
 }
 
