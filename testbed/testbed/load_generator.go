@@ -22,13 +22,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"contrib.go.opencensus.io/exporter/jaeger"
 	"go.opencensus.io/trace"
 )
 
 // LoadGenerator is a simple load generator.
 type LoadGenerator struct {
-	exporter *jaeger.Exporter
+	exporter TraceExporter
 
 	tracesSent uint64
 	spansSent  uint64
@@ -53,23 +52,15 @@ type LoadOptions struct {
 	Attributes map[string]interface{}
 }
 
-// NewLoadGenerator creates a load generator.
-func NewLoadGenerator() (*LoadGenerator, error) {
-	lg := &LoadGenerator{}
-
-	lg.stopSignal = make(chan struct{})
-
-	opts := jaeger.Options{
-		CollectorEndpoint: "http://localhost:14268/api/traces",
-		Process: jaeger.Process{
-			ServiceName: "load-generator",
-		},
+// NewLoadGenerator creates a load generator that sends data using specified exporter.
+func NewLoadGenerator(exporter TraceExporter) (*LoadGenerator, error) {
+	if exporter == nil {
+		return nil, fmt.Errorf("cannot create load generator without TraceExporter")
 	}
 
-	var err error
-	lg.exporter, err = jaeger.NewExporter(opts)
-	if err != nil {
-		return nil, err
+	lg := &LoadGenerator{
+		stopSignal: make(chan struct{}),
+		exporter:   exporter,
 	}
 
 	return lg, nil
@@ -142,6 +133,7 @@ func (lg *LoadGenerator) generate() {
 
 func (lg *LoadGenerator) generateTrace() {
 
+	var spans []*trace.SpanData
 	traceID := atomic.AddUint64(&lg.tracesSent, 1)
 	for i := uint(0); i < lg.options.SpansPerTrace; i++ {
 
@@ -170,8 +162,9 @@ func (lg *LoadGenerator) generateTrace() {
 			span.Attributes[k] = v
 		}
 
-		lg.exporter.ExportSpan(span)
+		spans = append(spans, span)
 	}
+	lg.exporter.ExportSpans(spans)
 }
 
 func generateTraceID(id uint64) trace.TraceID {
