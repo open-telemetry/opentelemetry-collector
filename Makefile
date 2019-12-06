@@ -34,10 +34,10 @@ all-pkgs:
 all-srcs:
 	@echo $(ALL_SRC) | tr ' ' '\n' | sort
 
-.DEFAULT_GOAL := addlicense-fmt-impi-vet-lint-goimports-misspell-staticcheck-test
+.DEFAULT_GOAL := all
 
-.PHONY: addlicense-fmt-impi-vet-lint-goimports-misspell-staticcheck-test
-addlicense-fmt-impi-vet-lint-goimports-misspell-staticcheck-test: addlicense fmt impi vet lint goimports misspell staticcheck test
+.PHONY: all
+all: addlicense impi lint misspell test otelcol
 
 .PHONY: e2e-test
 e2e-test: otelcol
@@ -52,7 +52,7 @@ benchmark:
 	$(GOTEST) -bench=. -run=notests $(ALL_PKGS)
 
 .PHONY: travis-ci
-travis-ci: impi lint misspell test-with-cover otelcol
+travis-ci: all test-with-cover
 	$(MAKE) -C testbed install-tools
 	$(MAKE) -C testbed runtests
 

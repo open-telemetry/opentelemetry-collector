@@ -24,7 +24,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/extension/extensiontest"
-	"github.com/open-telemetry/opentelemetry-collector/internal/testutils"
+	"github.com/open-telemetry/opentelemetry-collector/testutils"
 )
 
 func TestPerformanceProfilerExtensionUsage(t *testing.T) {

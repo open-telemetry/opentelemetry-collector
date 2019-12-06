@@ -27,7 +27,7 @@ import (
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/internal/testutils"
+	"github.com/open-telemetry/opentelemetry-collector/testutils"
 	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 )
 
