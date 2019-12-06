@@ -39,7 +39,12 @@ func TestBallastMemory(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		tc := testbed.NewTestCase(t, testbed.WithSkipResults())
+		tc := testbed.NewTestCase(
+			t,
+			testbed.NewJaegerExporter(testbed.DefaultJaegerPort),
+			&testbed.OCReceiver{},
+			testbed.WithSkipResults(),
+		)
 		tc.SetExpectedMaxRAM(test.maxRSS)
 
 		tc.StartAgent("--mem-ballast-size-mib", strconv.Itoa(int(test.ballastSize)))

@@ -15,7 +15,9 @@
 package testbed
 
 import (
+	"fmt"
 	"log"
+	"net"
 	"os"
 	"path"
 	"path/filepath"
@@ -62,8 +64,13 @@ type TestCase struct {
 
 const mibibyte = 1024 * 1024
 
-// NewTestCase creates a new TestCase. It expected agent-config.yaml in the specified directory.
-func NewTestCase(t *testing.T, opts ...TestCaseOption) *TestCase {
+// NewTestCase creates a new TestCase. It expects agent-config.yaml in the specified directory.
+func NewTestCase(
+	t *testing.T,
+	exporter TraceExporter,
+	receiver Receiver,
+	opts ...TestCaseOption,
+) *TestCase {
 	tc := TestCase{}
 
 	tc.t = t
@@ -100,12 +107,12 @@ func NewTestCase(t *testing.T, opts ...TestCaseOption) *TestCase {
 		tc.t.Fatalf("Cannot resolve filename: %s", err.Error())
 	}
 
-	tc.LoadGenerator, err = NewLoadGenerator()
+	tc.LoadGenerator, err = NewLoadGenerator(exporter)
 	if err != nil {
 		t.Fatalf("Cannot create generator: %s", err.Error())
 	}
 
-	tc.MockBackend = NewMockBackend(tc.composeTestResultFileName("backend.log"))
+	tc.MockBackend = NewMockBackend(tc.composeTestResultFileName("backend.log"), receiver)
 
 	go tc.logStats()
 
@@ -162,9 +169,13 @@ func (tc *TestCase) StartAgent(args ...string) {
 		}
 	}()
 
-	// Wait a bit for agent to start. This is a hack. We need to have a way to
-	// wait for agent to start properly.
-	time.Sleep(200 * time.Millisecond)
+	// Wait for agent to start. We consider the agent started when we can
+	// connect to the port to which we intend to send load.
+	tc.WaitFor(func() bool {
+		_, err := net.Dial("tcp",
+			fmt.Sprintf("localhost:%d", tc.LoadGenerator.exporter.GetCollectorPort()))
+		return err == nil
+	})
 }
 
 // StopAgent stops agent process.
@@ -184,8 +195,8 @@ func (tc *TestCase) StopLoad() {
 }
 
 // StartBackend starts the specified backend type.
-func (tc *TestCase) StartBackend(backendType BackendType) {
-	if err := tc.MockBackend.Start(backendType); err != nil {
+func (tc *TestCase) StartBackend() {
+	if err := tc.MockBackend.Start(); err != nil {
 		tc.t.Fatalf("Cannot start backend: %s", err.Error())
 	}
 }

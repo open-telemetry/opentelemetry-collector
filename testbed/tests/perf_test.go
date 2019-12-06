@@ -19,12 +19,15 @@ package tests
 
 import (
 	"fmt"
+	"io/ioutil"
+	"log"
 	"math/rand"
 	"os"
 	"path"
 	"testing"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector/internal/testutils"
 	"github.com/open-telemetry/opentelemetry-collector/testbed/testbed"
 )
 
@@ -54,7 +57,7 @@ func genRandByteString(len int) string {
 }
 
 func TestIdleMode(t *testing.T) {
-	tc := testbed.NewTestCase(t)
+	tc := testbed.NewTestCase(t, testbed.NewJaegerExporter(testbed.DefaultJaegerPort), &testbed.OCReceiver{})
 	defer tc.Stop()
 
 	tc.SetExpectedMaxCPU(4)
@@ -65,14 +68,55 @@ func TestIdleMode(t *testing.T) {
 	tc.Sleep(10 * time.Second)
 }
 
-func Test10kSPS(t *testing.T) {
-	tc := testbed.NewTestCase(t)
+// createConfigFile creates a collector config file that corresponds to the
+// exporter and receiver used in the test and returns the config file name.
+func createConfigFile(exporter testbed.TraceExporter, receiver testbed.Receiver) string {
+	// Create a config. Note that our exporter is used to generate a config for Collector's
+	// receiver and our receiver is used to generate a config for Collector's exporter.
+	// This is because our exporter sends to Collector's receiver and our receiver
+	// receives from Collector's exporter.
+	config := fmt.Sprintf(`
+receivers:%v
+exporters:%v
+processors:
+  queued_retry:
+
+service:
+  pipelines:
+    traces:
+      receivers: [%v]
+      processors: [queued_retry]
+      exporters: [%v]
+`, exporter.GenConfigYAMLStr(), receiver.GenConfigYAMLStr(), exporter.ProtocolName(), receiver.ProtocolName())
+
+	file, err := ioutil.TempFile("", "agent*.yaml")
+	if err != nil {
+		log.Fatal(err)
+		return ""
+	}
+
+	_, err = file.WriteString(config)
+	if err != nil {
+		fmt.Println(err)
+		file.Close()
+		return ""
+	}
+
+	return file.Name()
+}
+
+// Run 10k spans/sec test using specified exporter and receiver protocols.
+func RunTest10kSPS(t *testing.T, exporter testbed.TraceExporter, receiver testbed.Receiver) {
+	configFile := createConfigFile(exporter, receiver)
+	defer os.Remove(configFile)
+
+	tc := testbed.NewTestCase(t, exporter, receiver, testbed.WithConfigFile(configFile))
 	defer tc.Stop()
 
 	tc.SetExpectedMaxCPU(150)
 	tc.SetExpectedMaxRAM(70)
 
-	tc.StartBackend(testbed.BackendOC)
+	tc.StartBackend()
 	tc.StartAgent()
 	tc.StartLoad(testbed.LoadOptions{SpansPerSecond: 10000})
 
@@ -88,8 +132,24 @@ func Test10kSPS(t *testing.T) {
 	tc.ValidateData()
 }
 
+func Test10kSPS(t *testing.T) {
+	tests := []struct {
+		name     string
+		receiver testbed.Receiver
+	}{
+		{"JaegerRx", testbed.NewJaegerReceiver(int(testutils.GetAvailablePort(t)))},
+		{"OpenCensusRx", &testbed.OCReceiver{}},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			RunTest10kSPS(t, testbed.NewJaegerExporter(int(testutils.GetAvailablePort(t))), test.receiver)
+		})
+	}
+}
+
 func TestNoBackend10kSPS(t *testing.T) {
-	tc := testbed.NewTestCase(t)
+	tc := testbed.NewTestCase(t, testbed.NewJaegerExporter(testbed.DefaultJaegerPort), &testbed.OCReceiver{})
 	defer tc.Stop()
 
 	tc.SetExpectedMaxCPU(200)
@@ -108,17 +168,17 @@ type testCase struct {
 	expectedMaxRAM uint32
 }
 
-func test1000SPSWithAttributes(t *testing.T, args []string, tests []testCase, opts ...testbed.TestCaseOption) {
+func test1kSPSWithAttrs(t *testing.T, args []string, tests []testCase, opts ...testbed.TestCaseOption) {
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("%d*%dbytes", test.attrCount, test.attrSizeByte), func(t *testing.T) {
 
-			tc := testbed.NewTestCase(t, opts...)
+			tc := testbed.NewTestCase(t, testbed.NewJaegerExporter(testbed.DefaultJaegerPort), &testbed.OCReceiver{}, opts...)
 			defer tc.Stop()
 
 			tc.SetExpectedMaxCPU(test.expectedMaxCPU)
 			tc.SetExpectedMaxRAM(test.expectedMaxRAM)
 
-			tc.StartBackend(testbed.BackendOC)
+			tc.StartBackend()
 			tc.StartAgent(args...)
 
 			options := testbed.LoadOptions{SpansPerSecond: 1000}
@@ -144,8 +204,8 @@ func test1000SPSWithAttributes(t *testing.T, args []string, tests []testCase, op
 	}
 }
 
-func Test1000SPSWithAttributes(t *testing.T) {
-	test1000SPSWithAttributes(t, []string{}, []testCase{
+func Test1kSPSWithAttrs(t *testing.T) {
+	test1kSPSWithAttrs(t, []string{}, []testCase{
 		// No attributes.
 		{
 			attrCount:      0,
@@ -182,9 +242,9 @@ func Test1000SPSWithAttributes(t *testing.T) {
 	})
 }
 
-func TestBallast1000SPSWithAttributes(t *testing.T) {
+func TestBallast1kSPSWithAttrs(t *testing.T) {
 	args := []string{"--mem-ballast-size-mib", "1000"}
-	test1000SPSWithAttributes(t, args, []testCase{
+	test1kSPSWithAttrs(t, args, []testCase{
 		// No attributes.
 		{
 			attrCount:      0,
@@ -213,9 +273,9 @@ func TestBallast1000SPSWithAttributes(t *testing.T) {
 	})
 }
 
-func TestBallast1000SPSWithAttributesAddAttributesProcessor(t *testing.T) {
+func TestBallast1kSPSWithAttrsAddAttributes(t *testing.T) {
 	args := []string{"--mem-ballast-size-mib", "1000"}
-	test1000SPSWithAttributes(
+	test1kSPSWithAttrs(
 		t,
 		args,
 		[]testCase{

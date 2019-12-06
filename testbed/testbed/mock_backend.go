@@ -22,12 +22,8 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"go.uber.org/zap"
-
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/receiver"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/jaegerreceiver"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/opencensusreceiver"
 )
 
 // MockBackend is a backend that allows receiving the data locally.
@@ -36,35 +32,25 @@ type MockBackend struct {
 	tc *mockTraceConsumer
 	mc *mockMetricConsumer
 
-	// Receivers
-	ocReceiver     *opencensusreceiver.Receiver
-	jaegerReceiver receiver.TraceReceiver
-	jaegerErrChan  chan error
+	receiver Receiver
 
 	// Log file
 	logFilePath string
 	logFile     *os.File
 
 	// Start/stop flags
-	isStarted  bool
-	stopOnce   sync.Once
-	doneSignal chan struct{}
+	isStarted bool
+	stopOnce  sync.Once
 }
 
-type BackendType int
-
-const (
-	BackendJaeger BackendType = iota
-	BackendOC
-)
-
-// NewMockBackend creates a new mock backend.
-func NewMockBackend(logFilePath string) *MockBackend {
+// NewMockBackend creates a new mock backend that receives data using specified receiver.
+func NewMockBackend(logFilePath string, receiver Receiver) *MockBackend {
 	mb := &MockBackend{
 		logFilePath: logFilePath,
+		receiver:    receiver,
+		tc:          &mockTraceConsumer{},
+		mc:          &mockMetricConsumer{},
 	}
-	mb.tc = &mockTraceConsumer{}
-	mb.mc = &mockMetricConsumer{}
 	return mb
 }
 
@@ -78,9 +64,8 @@ func (mb *MockBackend) ReportFatalError(err error) {
 	log.Printf("Fatal error reported: %v", err)
 }
 
-// Start a backend of specified type. Only one backend type
-// can be started at a time.
-func (mb *MockBackend) Start(backendType BackendType) error {
+// Start a backend.
+func (mb *MockBackend) Start() error {
 	log.Printf("Starting mock backend...")
 
 	var err error
@@ -91,45 +76,12 @@ func (mb *MockBackend) Start(backendType BackendType) error {
 		return err
 	}
 
-	mb.doneSignal = make(chan struct{})
-	mb.jaegerErrChan = make(chan error)
-
-	switch backendType {
-	case BackendOC:
-		addr := "localhost:56565"
-		mb.ocReceiver, err = opencensusreceiver.New(addr, mb.tc, mb.mc)
-		if err != nil {
-			return err
-		}
-
-		err := mb.ocReceiver.StartTraceReception(mb)
-		if err != nil {
-			return err
-		}
-
-	case BackendJaeger:
-		jaegerCfg := jaegerreceiver.Configuration{
-			CollectorHTTPPort: 14268,
-		}
-		mb.jaegerReceiver, err = jaegerreceiver.New(context.Background(), &jaegerCfg, mb.tc, zap.NewNop())
-		if err != nil {
-			return err
-		}
-
-		go func() {
-			for err := range mb.jaegerErrChan {
-				log.Printf("Error from Jaeger receiver: %s", err.Error())
-			}
-		}()
-
-		err := mb.jaegerReceiver.StartTraceReception(mb)
-		if err != nil {
-			return err
-		}
+	err = mb.receiver.Start(mb.tc, mb.mc)
+	if err != nil {
+		return err
 	}
 
 	mb.isStarted = true
-
 	return nil
 }
 
@@ -142,20 +94,8 @@ func (mb *MockBackend) Stop() {
 
 		log.Printf("Stopping mock backend...")
 
-		close(mb.doneSignal)
-
 		mb.logFile.Close()
-
-		if mb.ocReceiver != nil {
-			_ = mb.ocReceiver.StopTraceReception()
-		}
-
-		if mb.jaegerReceiver != nil {
-			if err := mb.jaegerReceiver.StopTraceReception(); err != nil {
-				log.Printf("Cannot stop Jaeger receiver: %s", err.Error())
-			}
-		}
-		close(mb.jaegerErrChan)
+		mb.receiver.Stop()
 
 		// Print stats.
 		log.Printf("Stopped backend. %s", mb.GetStats())
