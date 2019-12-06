@@ -76,6 +76,9 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 			},
+			RemoteSampling: map[string]string{
+				"fetch_endpoint": "jaeger-collector:1234",
+			},
 		})
 
 	tlsConfig := cfg.Receivers["jaeger/tls"].(*Config)

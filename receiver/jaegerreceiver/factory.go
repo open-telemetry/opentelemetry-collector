@@ -165,8 +165,8 @@ func (f *Factory) CreateTraceReceiver(
 		}
 	}
 
-	if remoteSamplingEndpoint != nil {
-		config.RemoteSamplingEndpoint = remoteSamplingEndpoint.Endpoint
+	if remoteSamplingEndpoint != "" {
+		config.RemoteSamplingEndpoint = remoteSamplingEndpoint
 	}
 
 	if (protoGRPC == nil && protoHTTP == nil && protoTChannel == nil && protoThriftBinary == nil && protoThriftCompact == nil) ||

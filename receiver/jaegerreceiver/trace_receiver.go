@@ -359,7 +359,11 @@ func (jr *jReceiver) GetSamplingStrategy(serviceName string) (*sampling.Sampling
 }
 
 func (jr *jReceiver) GetBaggageRestrictions(serviceName string) ([]*baggage.BaggageRestriction, error) {
-	return jr.agentSamplingManager.GetBaggageRestrictions(serviceName)
+	br, err := jr.agentSamplingManager.GetBaggageRestrictions(serviceName)
+	if err != nil {
+		return nil, nil
+	}
+	return br, nil
 }
 
 func (jr *jReceiver) PostSpans(ctx context.Context, r *api_v2.PostSpansRequest) (*api_v2.PostSpansResponse, error) {
