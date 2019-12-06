@@ -48,6 +48,9 @@ const (
 	defaultGRPCBindEndpoint     = "localhost:14250"
 	defaultHTTPBindEndpoint     = "localhost:14268"
 	defaultTChannelBindEndpoint = "localhost:14267"
+
+	// Endpoint to fetch remote sampling config
+	fetchEndpoint = "fetch_endpoint"
 )
 
 // Factory is the factory for Jaeger receiver.
@@ -107,6 +110,7 @@ func (f *Factory) CreateTraceReceiver(
 	protoTChannel := rCfg.Protocols[protoThriftTChannel]
 	protoThriftCompact := rCfg.Protocols[protoThriftCompact]
 	protoThriftBinary := rCfg.Protocols[protoThriftBinary]
+	remoteSamplingEndpoint := rCfg.RemoteSampling[fetchEndpoint]
 
 	config := Configuration{}
 	var grpcServerOptions []grpc.ServerOption
@@ -159,6 +163,10 @@ func (f *Factory) CreateTraceReceiver(
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	if remoteSamplingEndpoint != nil {
+		config.RemoteSamplingEndpoint = remoteSamplingEndpoint.Endpoint
 	}
 
 	if (protoGRPC == nil && protoHTTP == nil && protoTChannel == nil && protoThriftBinary == nil && protoThriftCompact == nil) ||

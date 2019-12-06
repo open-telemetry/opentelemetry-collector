@@ -20,9 +20,10 @@ import (
 
 // Config defines configuration for Jaeger receiver.
 type Config struct {
-	TypeVal   string                                      `mapstructure:"-"`
-	NameVal   string                                      `mapstructure:"-"`
-	Protocols map[string]*receiver.SecureReceiverSettings `mapstructure:"protocols"`
+	TypeVal        string                                      `mapstructure:"-"`
+	NameVal        string                                      `mapstructure:"-"`
+	Protocols      map[string]*receiver.SecureReceiverSettings `mapstructure:"protocols"`
+	RemoteSampling map[string]*receiver.SecureReceiverSettings `mapstructure:"remotesampling"`
 }
 
 // Name gets the receiver name.

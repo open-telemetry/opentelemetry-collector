@@ -26,6 +26,7 @@ import (
 	apacheThrift "github.com/apache/thrift/lib/go/thrift"
 	"github.com/gorilla/mux"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/configmanager"
+	jSamplingConfig "github.com/jaegertracing/jaeger/cmd/agent/app/configmanager/grpc"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/httpserver"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/processors"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/reporter"
@@ -62,6 +63,7 @@ type Configuration struct {
 	AgentCompactThriftPort int
 	AgentBinaryThriftPort  int
 	AgentHTTPPort          int
+	RemoteSamplingEndpoint string
 }
 
 // Receiver type is used to receive spans that were originally intended to be sent to Jaeger.
@@ -81,8 +83,9 @@ type jReceiver struct {
 	tchanServer     *jTchannelReceiver
 	collectorServer *http.Server
 
-	agentProcessors []processors.Processor
-	agentServer     *http.Server
+	agentSamplingManager *jSamplingConfig.SamplingManager
+	agentProcessors      []processors.Processor
+	agentServer          *http.Server
 
 	defaultAgentCtx context.Context
 	logger          *zap.Logger
@@ -112,7 +115,7 @@ const (
 
 // New creates a TraceReceiver that receives traffic as a collector with both Thrift and HTTP transports.
 func New(ctx context.Context, config *Configuration, nextConsumer consumer.TraceConsumer, logger *zap.Logger) (receiver.TraceReceiver, error) {
-	return &jReceiver{
+	jR := &jReceiver{
 		config:          config,
 		defaultAgentCtx: observability.ContextWithReceiverName(context.Background(), "jaeger-agent"),
 		nextConsumer:    nextConsumer,
@@ -120,7 +123,20 @@ func New(ctx context.Context, config *Configuration, nextConsumer consumer.Trace
 			nextConsumer: nextConsumer,
 		},
 		logger: logger,
-	}, nil
+	}
+
+	if config.RemoteSamplingEndpoint != "" {
+		// Create upstream grpc client
+		conn, err := grpc.Dial(config.RemoteSamplingEndpoint, grpc.WithInsecure())
+		if err != nil {
+			logger.Error("Error creating grpc connection to jaeger remote sampling endpoint", zap.String("endpoint", config.RemoteSamplingEndpoint))
+			return nil, err
+		}
+
+		jR.agentSamplingManager = jSamplingConfig.NewConfigManager(conn)
+	}
+
+	return jR, nil
 }
 
 var _ receiver.TraceReceiver = (*jReceiver)(nil)
@@ -339,11 +355,11 @@ func (jr *jReceiver) EmitBatch(batch *jaeger.Batch) error {
 }
 
 func (jr *jReceiver) GetSamplingStrategy(serviceName string) (*sampling.SamplingStrategyResponse, error) {
-	return &sampling.SamplingStrategyResponse{}, nil
+	return jr.agentSamplingManager.GetSamplingStrategy(serviceName)
 }
 
 func (jr *jReceiver) GetBaggageRestrictions(serviceName string) ([]*baggage.BaggageRestriction, error) {
-	return nil, nil
+	return jr.agentSamplingManager.GetBaggageRestrictions(serviceName)
 }
 
 func (jr *jReceiver) PostSpans(ctx context.Context, r *api_v2.PostSpansRequest) (*api_v2.PostSpansResponse, error) {
