@@ -28,13 +28,13 @@ A pipeline configuration typically looks like this:
 ```yaml
 service:
   pipelines: # section that can contain multiple subsections, one per pipeline
-    traces:  # type of the pipeline 
+    traces:  # type of the pipeline
       receivers: [opencensus, jaeger, zipkin]
       processors: [tags, tail_sampling, batch, queued_retry]
       exporters: [opencensus, jaeger, stackdriver, zipkin]
 ```
 
-The above example defines a pipeline for “traces” type of telemetry data, with 3 receivers, 4 processors and 4 exporters. 
+The above example defines a pipeline for “traces” type of telemetry data, with 3 receivers, 4 processors and 4 exporters.
 
 For details of config file format see [this document](https://docs.google.com/document/d/1GWOzV0H0RTN1adiwo7fTmkjfCATDDFGuOB4jp3ldCc8/edit#).
 
@@ -45,21 +45,21 @@ Receivers typically listen on a network port and receive telemetry data. Usually
 ```yaml
 receivers:
   opencensus:
-    endpoint: "localhost:55678”
+    endpoint: "localhost:55678"
 
 service:
   pipelines:
     traces:  # a pipeline of “traces” type
       receivers: [opencensus]
       processors: [tags, tail_sampling, batch, queued_retry]
-        exporters: [jaeger]
-      traces/2:  # another pipeline of “traces” type
-        receivers: [opencensus]
-        processors: [batch]
-        exporters: [opencensus]
+      exporters: [jaeger]
+    traces/2:  # another pipeline of “traces” type
+      receivers: [opencensus]
+      processors: [batch]
+      exporters: [opencensus]
 ```
 
-In the above example “opencensus” receiver will send the same data to pipeline “traces” and to pipeline “traces/2”. (Note: the configuration uses composite key names in the form of `type[/name]` as defined in this [this document](https://docs.google.com/document/d/1GWOzV0H0RTN1adiwo7fTmkjfCATDDFGuOB4jp3ldCc8/edit#)).
+In the above example “opencensus” receiver will send the same data to pipeline “traces” and to pipeline “traces/2”. (Note: the configuration uses composite key names in the form of `type[/name]` as defined in [this document](https://docs.google.com/document/d/1GWOzV0H0RTN1adiwo7fTmkjfCATDDFGuOB4jp3ldCc8/edit#)).
 
 When the Collector loads this config the result will look like this (part of processors and exporters are omitted from the diagram for brevity):
 
@@ -69,16 +69,16 @@ Important: when the same receiver is referenced in more than one pipeline the Co
 
 ### Exporters
 
-Exporters typically forward the data they get to a destination on a network (but they can also send it elsewhere, e.g “logging” exporter writes the telemetry data to a local file). 
+Exporters typically forward the data they get to a destination on a network (but they can also send it elsewhere, e.g “logging” exporter writes the telemetry data to a local file).
 
 The configuration allows to have multiple exporters of the same type, even in the same pipeline. For example one can have 2 “opencensus” exporters defined each one sending to a different opencensus endpoint, e.g.:
 
 ```yaml
 exporters:
   opencensus/1:
-    endpoint: "example.com:14250”
+    endpoint: "example.com:14250"
   opencensus/2:
-    endpoint: "localhost:14250”
+    endpoint: "localhost:14250"
 ```
 
 Usually an exporter gets the data from one pipeline, however it is possible to configure multiple pipelines to send data to the same exporter, e.g.:
@@ -88,7 +88,7 @@ exporters:
   jaeger:
     protocols:
       grpc:
-        endpoint: "localhost:14250”
+        endpoint: "localhost:14250"
 
 service:
   pipelines:
@@ -175,7 +175,7 @@ TODO: update the diagram below.
 
 ![agent-architecture](https://user-images.githubusercontent.com/10536136/48792454-2a69b900-eca9-11e8-96eb-c65b2b1e4e83.png)
 
-For developers/maintainers of other libraries: Agent can also 
+For developers/maintainers of other libraries: Agent can also
 accept spans/stats/metrics from other tracing/monitoring libraries, such as
 Zipkin, Prometheus, etc. This is done by adding specific receivers. See
 [Receivers](#receivers) for details.
