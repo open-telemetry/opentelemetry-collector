@@ -29,6 +29,9 @@ type TraceExporter interface {
 	ExportSpans(spans []*trace.SpanData)
 	Flush()
 
+	// Return the port to which this exporter will send data.
+	GetCollectorPort() int
+
 	// Generate a config string to place in receiver part of collector config
 	// so that it can receive data from this exporter.
 	GenConfigStr() string
@@ -93,6 +96,10 @@ func (je *jaegerExporter) GenConfigStr() string {
         endpoint: "localhost:8374"
       thrift-http:
         endpoint: "localhost:%d"`, je.port)
+}
+
+func (je *jaegerExporter) GetCollectorPort() int {
+	return je.port
 }
 
 func (je *jaegerExporter) ProtocolName() string {

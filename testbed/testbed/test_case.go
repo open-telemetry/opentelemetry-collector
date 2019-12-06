@@ -15,7 +15,9 @@
 package testbed
 
 import (
+	"fmt"
 	"log"
+	"net"
 	"os"
 	"path"
 	"path/filepath"
@@ -167,9 +169,13 @@ func (tc *TestCase) StartAgent(args ...string) {
 		}
 	}()
 
-	// Wait a bit for agent to start. This is a hack. We need to have a way to
-	// wait for agent to start properly.
-	time.Sleep(200 * time.Millisecond)
+	// Wait for agent to start. We consider the agent started when we can
+	// connect to the port to which we intend to send load.
+	tc.WaitFor(func() bool {
+		_, err := net.Dial("tcp",
+			fmt.Sprintf("localhost:%d", tc.LoadGenerator.exporter.GetCollectorPort()))
+		return err == nil
+	})
 }
 
 // StopAgent stops agent process.
