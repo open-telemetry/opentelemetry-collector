@@ -71,6 +71,10 @@ func TestIdleMode(t *testing.T) {
 // createConfigFile creates a collector config file that corresponds to the
 // exporter and receiver used in the test and returns the config file name.
 func createConfigFile(exporter testbed.TraceExporter, receiver testbed.Receiver) string {
+	// Create a config. Note that our exporter is used to generate a config for Collector's
+	// receiver and our receiver is used to generate a config for Collector's exporter.
+	// This is because our exporter sends to Collector's receiver and our receiver
+	// receives from Collector's exporter.
 	config := fmt.Sprintf(`
 receivers:%v
 exporters:%v
@@ -83,7 +87,7 @@ service:
       receivers: [%v]
       processors: [queued_retry]
       exporters: [%v]
-`, exporter.GenConfigStr(), receiver.GenConfigStr(), exporter.ProtocolName(), receiver.ProtocolName())
+`, exporter.GenConfigYAMLStr(), receiver.GenConfigYAMLStr(), exporter.ProtocolName(), receiver.ProtocolName())
 
 	file, err := ioutil.TempFile("", "agent*.yaml")
 	if err != nil {

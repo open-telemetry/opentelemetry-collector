@@ -43,13 +43,6 @@ type MockBackend struct {
 	stopOnce  sync.Once
 }
 
-type BackendType int
-
-const (
-	BackendJaeger BackendType = iota
-	BackendOC
-)
-
 // NewMockBackend creates a new mock backend that receives data using specified receiver.
 func NewMockBackend(logFilePath string, receiver Receiver) *MockBackend {
 	mb := &MockBackend{
@@ -71,8 +64,7 @@ func (mb *MockBackend) ReportFatalError(err error) {
 	log.Printf("Fatal error reported: %v", err)
 }
 
-// Start a backend of specified type. Only one backend type
-// can be started at a time.
+// Start a backend.
 func (mb *MockBackend) Start() error {
 	log.Printf("Starting mock backend...")
 

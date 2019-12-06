@@ -37,7 +37,7 @@ type Receiver interface {
 
 	// Generate a config string to place in exporter part of collector config
 	// so that it can send data to this receiver.
-	GenConfigStr() string
+	GenConfigYAMLStr() string
 
 	// Return protocol name to use in collector config pipeline.
 	ProtocolName() string
@@ -78,7 +78,7 @@ func (or *OCReceiver) Stop() {
 	or.receiver.StopTraceReception()
 }
 
-func (or *OCReceiver) GenConfigStr() string {
+func (or *OCReceiver) GenConfigYAMLStr() string {
 	// Note that this generates an exporter config for agent.
 	return `
   opencensus:
@@ -123,7 +123,7 @@ func (jr *jaegerReceiver) Stop() {
 	}
 }
 
-func (jr *jaegerReceiver) GenConfigStr() string {
+func (jr *jaegerReceiver) GenConfigYAMLStr() string {
 	// Note that this generates an exporter config for agent.
 	return fmt.Sprintf(`
   jaeger_thrift_http:

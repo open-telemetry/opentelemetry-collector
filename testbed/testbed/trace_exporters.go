@@ -34,7 +34,7 @@ type TraceExporter interface {
 
 	// Generate a config string to place in receiver part of collector config
 	// so that it can receive data from this exporter.
-	GenConfigStr() string
+	GenConfigYAMLStr() string
 
 	// Return protocol name to use in collector config pipeline.
 	ProtocolName() string
@@ -73,11 +73,11 @@ func (je *jaegerExporter) Flush() {
 	je.exporter.Flush()
 }
 
-func (je *jaegerExporter) GenConfigStr() string {
+func (je *jaegerExporter) GenConfigYAMLStr() string {
 	// Note that this generates a receiver config for agent.
 	// We only need to enable thrift-http protocol because that's what we use in tests.
 	// Due to bug in Jaeger receiver (https://github.com/open-telemetry/opentelemetry-collector/issues/445)
-	// which makes impossible to disable protocols that we don't need to receive on we
+	// which makes it impossible to disable protocols that we don't need to receive on we
 	// have to use fake ports for all endpoints except thrift-http, otherwise it is
 	// impossible to start the Collector because the standard ports for those protocols
 	// are already listened by mock Jaeger backend that is part of the tests.
