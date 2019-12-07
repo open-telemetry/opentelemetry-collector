@@ -70,6 +70,24 @@ func TestCreateDefaultGRPCEndpoint(t *testing.T) {
 	assert.Equal(t, 14250, r.(*jReceiver).config.CollectorGRPCPort, "grpc port should be default")
 }
 
+func TestCreateTLSGPRCEndpoint(t *testing.T) {
+	factory := Factory{}
+	cfg := factory.CreateDefaultConfig()
+	rCfg := cfg.(*Config)
+
+	rCfg.Protocols[protoGRPC], _ = defaultsForProtocol(protoGRPC)
+	rCfg.Protocols[protoGRPC].TLSCredentials = &receiver.TLSCredentials{}
+	_, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
+	assert.Error(t, err, "tls-enabled receiver creation with no credentials must fail")
+
+	rCfg.Protocols[protoGRPC].TLSCredentials = &receiver.TLSCredentials{
+		CertFile: "./testdata/certificate.pem",
+		KeyFile:  "./testdata/key.pem",
+	}
+	_, err = factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
+	assert.NoError(t, err, "tls-enabled receiver creation failed")
+}
+
 func TestCreateInvalidHTTPEndpoint(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
