@@ -76,8 +76,8 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 			},
-			RemoteSampling: map[string]string{
-				"fetch_endpoint": "jaeger-collector:1234",
+			RemoteSampling: &RemoteSamplingConfig{
+				FetchEndpoint: "jaeger-collector:1234",
 			},
 		})
 

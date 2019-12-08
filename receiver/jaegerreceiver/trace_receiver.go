@@ -361,6 +361,9 @@ func (jr *jReceiver) GetSamplingStrategy(serviceName string) (*sampling.Sampling
 func (jr *jReceiver) GetBaggageRestrictions(serviceName string) ([]*baggage.BaggageRestriction, error) {
 	br, err := jr.agentSamplingManager.GetBaggageRestrictions(serviceName)
 	if err != nil {
+		// Baggage restrictions are not yet implemented - refer to - https://github.com/jaegertracing/jaeger/issues/373
+		// As of today, GetBaggageRestrictions() always returns an error.
+		// However, we `return nil, nil` here in order to serve a valid `200 OK` response.
 		return nil, nil
 	}
 	return br, nil
