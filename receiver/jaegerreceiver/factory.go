@@ -165,7 +165,7 @@ func (f *Factory) CreateTraceReceiver(
 		}
 	}
 
-	if remoteSamplingConfig.FetchEndpoint != "" {
+	if remoteSamplingConfig != nil {
 		config.RemoteSamplingEndpoint = remoteSamplingConfig.FetchEndpoint
 	}
 
