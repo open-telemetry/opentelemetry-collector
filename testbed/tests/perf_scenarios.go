@@ -96,7 +96,8 @@ func Scenario10kSPS(t *testing.T, exporter testbed.TraceExporter, receiver testb
 	tc.ValidateData()
 }
 
-type testCase struct {
+// TestCase for Scenario1kSPSWithAttrs func.
+type TestCase struct {
 	attrCount      int
 	attrSizeByte   int
 	expectedMaxCPU uint32
@@ -111,7 +112,9 @@ func genRandByteString(len int) string {
 	return string(b)
 }
 
-func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []testCase, opts ...testbed.TestCaseOption) {
+// Scenario1kSPSWithAttrs runs a performance test at 1k sps with specified span attributes
+// and test options.
+func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, opts ...testbed.TestCaseOption) {
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("%d*%dbytes", test.attrCount, test.attrSizeByte), func(t *testing.T) {
 

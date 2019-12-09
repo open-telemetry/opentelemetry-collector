@@ -76,7 +76,7 @@ func TestNoBackend10kSPS(t *testing.T) {
 }
 
 func Test1kSPSWithAttrs(t *testing.T) {
-	Scenario1kSPSWithAttrs(t, []string{}, []testCase{
+	Scenario1kSPSWithAttrs(t, []string{}, []TestCase{
 		// No attributes.
 		{
 			attrCount:      0,
@@ -115,7 +115,7 @@ func Test1kSPSWithAttrs(t *testing.T) {
 
 func TestBallast1kSPSWithAttrs(t *testing.T) {
 	args := []string{"--mem-ballast-size-mib", "1000"}
-	Scenario1kSPSWithAttrs(t, args, []testCase{
+	Scenario1kSPSWithAttrs(t, args, []TestCase{
 		// No attributes.
 		{
 			attrCount:      0,
@@ -149,7 +149,7 @@ func TestBallast1kSPSWithAttrsAddAttributes(t *testing.T) {
 	Scenario1kSPSWithAttrs(
 		t,
 		args,
-		[]testCase{
+		[]TestCase{
 			{
 				attrCount:      0,
 				attrSizeByte:   0,
