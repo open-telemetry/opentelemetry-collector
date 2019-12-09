@@ -24,7 +24,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-collector/internal/testutils"
+	"github.com/open-telemetry/opentelemetry-collector/testutils"
 )
 
 func TestFactory_Type(t *testing.T) {

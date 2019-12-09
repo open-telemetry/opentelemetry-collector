@@ -33,8 +33,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-collector/internal"
-	"github.com/open-telemetry/opentelemetry-collector/internal/testutils"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/receivertest"
+	"github.com/open-telemetry/opentelemetry-collector/testutils"
 )
 
 func TestJaegerAgentUDP_ThriftCompact_6831(t *testing.T) {

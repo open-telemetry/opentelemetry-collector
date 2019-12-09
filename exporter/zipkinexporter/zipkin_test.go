@@ -33,10 +33,10 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/internal/testutils"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/receivertest"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/zipkinreceiver"
+	"github.com/open-telemetry/opentelemetry-collector/testutils"
 	"github.com/open-telemetry/opentelemetry-collector/translator/trace/zipkin"
 )
 

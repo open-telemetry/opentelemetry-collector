@@ -39,10 +39,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/zipkinexporter"
 	"github.com/open-telemetry/opentelemetry-collector/internal"
-	"github.com/open-telemetry/opentelemetry-collector/internal/testutils"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/receivertest"
+	"github.com/open-telemetry/opentelemetry-collector/testutils"
 	"github.com/open-telemetry/opentelemetry-collector/translator/trace/zipkin"
 )
 
