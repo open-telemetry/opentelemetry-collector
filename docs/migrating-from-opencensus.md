@@ -29,7 +29,7 @@ The new codebase will contain improvements which are already in progress and whi
 
 - Introduction of receiver and exporter factories that can be individually registered to activate them.
 
-- Implementation of the [new configuration format](https://docs.google.com/document/d/1GWOzV0H0RTN1adiwo7fTmkjfCATDDFGuOB4jp3ldCc8/edit#) that makes use of factories and allows for greater flexibility in the configuration.
+- Implementation of the [new configuration format](https://docs.google.com/document/d/1NeheFG7DmcUYo_h2vLtNRlia9x5wOJMlV4QKEK05FhQ/edit#) that makes use of factories and allows for greater flexibility in the configuration.
 
 The functionally of the new `otsvc` will heavily lean on existing implementation and will be mostly a superset of the current agent/collector functionality when considering core receivers and exporters only (however we will allow deviations if it saves significant implementation effort and makes the service better).
 
