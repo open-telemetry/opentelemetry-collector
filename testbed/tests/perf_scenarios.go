@@ -23,7 +23,6 @@ import (
 	"math/rand"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector/testbed/testbed"
 )
@@ -84,7 +83,7 @@ func Scenario10kSPS(t *testing.T, exporter testbed.TraceExporter, receiver testb
 	tc.StartAgent()
 	tc.StartLoad(testbed.LoadOptions{SpansPerSecond: 10000})
 
-	tc.Sleep(15 * time.Second)
+	tc.Sleep(tc.Duration)
 
 	tc.StopLoad()
 
@@ -137,7 +136,7 @@ func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, opts 
 			}
 
 			tc.StartLoad(options)
-			tc.Sleep(10 * time.Second)
+			tc.Sleep(tc.Duration)
 			tc.StopLoad()
 
 			tc.WaitFor(func() bool { return tc.LoadGenerator.SpansSent() == tc.MockBackend.SpansReceived() },
