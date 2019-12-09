@@ -36,7 +36,7 @@ service:
 
 The above example defines a pipeline for “traces” type of telemetry data, with 3 receivers, 4 processors and 4 exporters.
 
-For details of config file format see [this document](https://docs.google.com/document/d/1GWOzV0H0RTN1adiwo7fTmkjfCATDDFGuOB4jp3ldCc8/edit#).
+For details of config file format see [this document](https://docs.google.com/document/d/1NeheFG7DmcUYo_h2vLtNRlia9x5wOJMlV4QKEK05FhQ/edit#).
 
 ### Receivers
 
@@ -59,7 +59,7 @@ service:
       exporters: [opencensus]
 ```
 
-In the above example “opencensus” receiver will send the same data to pipeline “traces” and to pipeline “traces/2”. (Note: the configuration uses composite key names in the form of `type[/name]` as defined in [this document](https://docs.google.com/document/d/1GWOzV0H0RTN1adiwo7fTmkjfCATDDFGuOB4jp3ldCc8/edit#)).
+In the above example “opencensus” receiver will send the same data to pipeline “traces” and to pipeline “traces/2”. (Note: the configuration uses composite key names in the form of `type[/name]` as defined in [this document](https://docs.google.com/document/d/1NeheFG7DmcUYo_h2vLtNRlia9x5wOJMlV4QKEK05FhQ/edit#)).
 
 When the Collector loads this config the result will look like this (part of processors and exporters are omitted from the diagram for brevity):
 

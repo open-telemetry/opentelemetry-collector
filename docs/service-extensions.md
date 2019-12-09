@@ -72,7 +72,7 @@ The configuration, analogous to pipelines, allows to have multiple extensions of
 the same type. Implementers of extensions need to take care to return error 
 if it can only execute a single instance. (Note: the configuration uses composite
 key names in the form of `type[/name]` 
-as defined in this [this document](https://docs.google.com/document/d/1GWOzV0H0RTN1adiwo7fTmkjfCATDDFGuOB4jp3ldCc8/edit#)).
+as defined in this [this document](https://docs.google.com/document/d/1NeheFG7DmcUYo_h2vLtNRlia9x5wOJMlV4QKEK05FhQ/edit#)).
 
 The factory follows the same pattern established for pipeline configuration:
 
