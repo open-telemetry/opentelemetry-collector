@@ -59,10 +59,15 @@ type TestCase struct {
 	// logged, this is only an indicator on which you can wait to be informed.
 	ErrorSignal chan struct{}
 
+	// Duration is the requested duration of the tests. Configured via TESTBED_DURATION
+	// env variable and defaults to 15 seconds if env variable is unspecified.
+	Duration time.Duration
+
 	doneSignal chan struct{}
 }
 
 const mibibyte = 1024 * 1024
+const TESTBED_DURATION_VAR = "TESTBED_DURATION"
 
 // NewTestCase creates a new TestCase. It expects agent-config.yaml in the specified directory.
 func NewTestCase(
@@ -78,11 +83,21 @@ func NewTestCase(
 	tc.doneSignal = make(chan struct{})
 	tc.startTime = time.Now()
 
+	// Get requested test duration from env variable.
+	duration := os.Getenv(TESTBED_DURATION_VAR)
+	if duration == "" {
+		duration = "15s"
+	}
+	var err error
+	tc.Duration, err = time.ParseDuration(duration)
+	if err != nil {
+		log.Fatalf("Invalid "+TESTBED_DURATION_VAR+": %v. Expecting a valid duration string.", duration)
+	}
+
 	for _, opt := range opts {
 		opt.Apply(&tc)
 	}
 
-	var err error
 	tc.resultDir, err = filepath.Abs(path.Join("results", t.Name()))
 	if err != nil {
 		t.Fatalf("Cannot resolve %s: %v", t.Name(), err)
@@ -94,6 +109,10 @@ func NewTestCase(
 
 	// Set default resource check period.
 	tc.resourceSpec.resourceCheckPeriod = 3 * time.Second
+	if tc.Duration < tc.resourceSpec.resourceCheckPeriod {
+		// Resource check period should not be longer than entire test duration.
+		tc.resourceSpec.resourceCheckPeriod = tc.Duration
+	}
 
 	configFile := tc.agentConfigFile
 	if configFile == "" {

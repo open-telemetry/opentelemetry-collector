@@ -23,7 +23,6 @@ package tests
 import (
 	"path"
 	"testing"
-	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector/testbed/testbed"
 	"github.com/open-telemetry/opentelemetry-collector/testutils"
@@ -43,7 +42,7 @@ func TestIdleMode(t *testing.T) {
 
 	tc.StartAgent()
 
-	tc.Sleep(10 * time.Second)
+	tc.Sleep(tc.Duration)
 }
 
 func Test10kSPS(t *testing.T) {
@@ -72,7 +71,7 @@ func TestNoBackend10kSPS(t *testing.T) {
 	tc.StartAgent()
 	tc.StartLoad(testbed.LoadOptions{SpansPerSecond: 10000})
 
-	tc.Sleep(10 * time.Second)
+	tc.Sleep(tc.Duration)
 }
 
 func Test1kSPSWithAttrs(t *testing.T) {
