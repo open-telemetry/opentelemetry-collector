@@ -64,15 +64,17 @@ type TestCase struct {
 	Duration time.Duration
 
 	doneSignal chan struct{}
+
+	errorCause string
 }
 
 const mibibyte = 1024 * 1024
-const TESTBED_DURATION_VAR = "TESTBED_DURATION"
+const TESTCASE_DURATION_VAR = "TESTCASE_DURATION"
 
 // NewTestCase creates a new TestCase. It expects agent-config.yaml in the specified directory.
 func NewTestCase(
 	t *testing.T,
-	exporter TraceExporter,
+	exporter Exporter,
 	receiver Receiver,
 	opts ...TestCaseOption,
 ) *TestCase {
@@ -83,21 +85,23 @@ func NewTestCase(
 	tc.doneSignal = make(chan struct{})
 	tc.startTime = time.Now()
 
-	// Get requested test duration from env variable.
-	duration := os.Getenv(TESTBED_DURATION_VAR)
+	// Get requested test case duration from env variable.
+	duration := os.Getenv(TESTCASE_DURATION_VAR)
 	if duration == "" {
 		duration = "15s"
 	}
 	var err error
 	tc.Duration, err = time.ParseDuration(duration)
 	if err != nil {
-		log.Fatalf("Invalid "+TESTBED_DURATION_VAR+": %v. Expecting a valid duration string.", duration)
+		log.Fatalf("Invalid "+TESTCASE_DURATION_VAR+": %v. Expecting a valid duration string.", duration)
 	}
 
+	// Apply all provided options.
 	for _, opt := range opts {
 		opt.Apply(&tc)
 	}
 
+	// Prepare directory for results.
 	tc.resultDir, err = filepath.Abs(path.Join("results", t.Name()))
 	if err != nil {
 		t.Fatalf("Cannot resolve %s: %v", t.Name(), err)
@@ -260,21 +264,25 @@ func (tc *TestCase) Stop() {
 		result = "PASS"
 	}
 
+	// Remove "Test" prefix from test name.
+	testName := tc.t.Name()[4:]
+
 	results.Add(tc.t.Name(), &TestResult{
-		testName:          tc.t.Name(),
+		testName:          testName,
 		result:            result,
-		receivedSpanCount: tc.MockBackend.SpansReceived(),
-		sentSpanCount:     tc.LoadGenerator.SpansSent(),
+		receivedSpanCount: tc.MockBackend.DataItemsReceived(),
+		sentSpanCount:     tc.LoadGenerator.DataItemsSent(),
 		duration:          time.Since(tc.startTime),
 		cpuPercentageAvg:  rc.CPUPercentAvg,
 		cpuPercentageMax:  rc.CPUPercentMax,
 		ramMibAvg:         rc.RAMMiBAvg,
 		ramMibMax:         rc.RAMMiBMax,
+		errorCause:        tc.errorCause,
 	})
 }
 
-// ValidateData validates data by comparing the number of spans sent by load generator
-// and number of spans received by mock backend.
+// ValidateData validates data by comparing the number of items sent by load generator
+// and number of items received by mock backend.
 func (tc *TestCase) ValidateData() {
 	select {
 	case <-tc.ErrorSignal:
@@ -283,8 +291,8 @@ func (tc *TestCase) ValidateData() {
 	default:
 	}
 
-	if assert.EqualValues(tc.t, tc.LoadGenerator.SpansSent(), tc.MockBackend.SpansReceived(),
-		"Received and sent span counters do not match.") {
+	if assert.EqualValues(tc.t, tc.LoadGenerator.DataItemsSent(), tc.MockBackend.DataItemsReceived(),
+		"Received and sent counters do not match.") {
 		log.Printf("Sent and received data matches.")
 	}
 }
@@ -342,6 +350,8 @@ func (tc *TestCase) indicateError(err error) {
 
 	// Indicate error for the test
 	tc.t.Error(err.Error())
+
+	tc.errorCause = err.Error()
 
 	// Signal the error via channel
 	close(tc.ErrorSignal)

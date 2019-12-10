@@ -28,6 +28,22 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/testbed/testbed"
 )
 
+func TestIdleMode(t *testing.T) {
+	tc := testbed.NewTestCase(
+		t,
+		testbed.NewJaegerExporter(testbed.DefaultJaegerPort),
+		testbed.NewOCReceiver(testbed.DefaultOCPort),
+	)
+	defer tc.Stop()
+
+	tc.SetExpectedMaxCPU(4)
+	tc.SetExpectedMaxRAM(50)
+
+	tc.StartAgent()
+
+	tc.Sleep(tc.Duration)
+}
+
 func TestBallastMemory(t *testing.T) {
 	tests := []struct {
 		ballastSize uint32
@@ -42,7 +58,7 @@ func TestBallastMemory(t *testing.T) {
 		tc := testbed.NewTestCase(
 			t,
 			testbed.NewJaegerExporter(testbed.DefaultJaegerPort),
-			&testbed.OCReceiver{},
+			testbed.NewOCReceiver(testbed.DefaultOCPort),
 			testbed.WithSkipResults(),
 		)
 		tc.SetExpectedMaxRAM(test.maxRSS)

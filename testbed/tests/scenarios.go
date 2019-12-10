@@ -29,12 +29,16 @@ import (
 
 // createConfigFile creates a collector config file that corresponds to the
 // exporter and receiver used in the test and returns the config file name.
-func createConfigFile(exporter testbed.TraceExporter, receiver testbed.Receiver) string {
+func createConfigFile(exporter testbed.Exporter, receiver testbed.Receiver) string {
 	// Create a config. Note that our exporter is used to generate a config for Collector's
 	// receiver and our receiver is used to generate a config for Collector's exporter.
 	// This is because our exporter sends to Collector's receiver and our receiver
 	// receives from Collector's exporter.
-	config := fmt.Sprintf(`
+
+	var format string
+	if _, ok := exporter.(testbed.TraceExporter); ok {
+		// This is a trace test. Create appropriate config template.
+		format = `
 receivers:%v
 exporters:%v
 processors:
@@ -46,8 +50,31 @@ service:
       receivers: [%v]
       processors: [queued_retry]
       exporters: [%v]
-`, exporter.GenConfigYAMLStr(), receiver.GenConfigYAMLStr(), exporter.ProtocolName(), receiver.ProtocolName())
+`
+	} else {
+		// This is a metric test. Create appropriate config template.
+		format = `
+receivers:%v
+exporters:%v
 
+service:
+  pipelines:
+    METRICS:
+      receivers: [%v]
+      exporters: [%v]
+`
+	}
+
+	// Put corresponding elements into the config template to generate the final config.
+	config := fmt.Sprintf(
+		format,
+		exporter.GenConfigYAMLStr(),
+		receiver.GenConfigYAMLStr(),
+		exporter.ProtocolName(),
+		receiver.ProtocolName(),
+	)
+
+	// Write the config string to a temporary file.
 	file, err := ioutil.TempFile("", "agent*.yaml")
 	if err != nil {
 		fmt.Print(err)
@@ -61,11 +88,17 @@ service:
 		return ""
 	}
 
+	// Return config file name.
 	return file.Name()
 }
 
-// Run 10k spans/sec test using specified exporter and receiver protocols.
-func Scenario10kSPS(t *testing.T, exporter testbed.TraceExporter, receiver testbed.Receiver) {
+// Run 10k data items/sec test using specified exporter and receiver protocols.
+func Scenario10kItemsPerSecond(
+	t *testing.T,
+	exporter testbed.Exporter,
+	receiver testbed.Receiver,
+	loadOptions testbed.LoadOptions,
+) {
 	configFile := createConfigFile(exporter, receiver)
 	defer os.Remove(configFile)
 
@@ -81,14 +114,19 @@ func Scenario10kSPS(t *testing.T, exporter testbed.TraceExporter, receiver testb
 
 	tc.StartBackend()
 	tc.StartAgent()
-	tc.StartLoad(testbed.LoadOptions{SpansPerSecond: 10000})
+
+	if loadOptions.DataItemsPerSecond == 0 {
+		// Use 10k spans or metric data points per second by default.
+		loadOptions.DataItemsPerSecond = 10000
+	}
+	tc.StartLoad(loadOptions)
 
 	tc.Sleep(tc.Duration)
 
 	tc.StopLoad()
 
-	tc.WaitFor(func() bool { return tc.LoadGenerator.SpansSent() == tc.MockBackend.SpansReceived() },
-		"all spans received")
+	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() == tc.MockBackend.DataItemsReceived() },
+		"all data items received")
 
 	tc.StopAgent()
 
@@ -117,7 +155,12 @@ func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, opts 
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("%d*%dbytes", test.attrCount, test.attrSizeByte), func(t *testing.T) {
 
-			tc := testbed.NewTestCase(t, testbed.NewJaegerExporter(testbed.DefaultJaegerPort), &testbed.OCReceiver{}, opts...)
+			tc := testbed.NewTestCase(
+				t,
+				testbed.NewJaegerExporter(testbed.DefaultJaegerPort),
+				testbed.NewOCReceiver(testbed.DefaultOCPort),
+				opts...,
+			)
 			defer tc.Stop()
 
 			tc.SetExpectedMaxCPU(test.expectedMaxCPU)
@@ -126,8 +169,8 @@ func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, opts 
 			tc.StartBackend()
 			tc.StartAgent(args...)
 
-			options := testbed.LoadOptions{SpansPerSecond: 1000}
-			options.Attributes = make(map[string]interface{})
+			options := testbed.LoadOptions{DataItemsPerSecond: 1000}
+			options.Attributes = make(map[string]string)
 
 			// Generate attributes.
 			for i := 0; i < test.attrCount; i++ {
@@ -139,7 +182,7 @@ func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, opts 
 			tc.Sleep(tc.Duration)
 			tc.StopLoad()
 
-			tc.WaitFor(func() bool { return tc.LoadGenerator.SpansSent() == tc.MockBackend.SpansReceived() },
+			tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() == tc.MockBackend.DataItemsReceived() },
 				"all spans received")
 
 			tc.StopAgent()

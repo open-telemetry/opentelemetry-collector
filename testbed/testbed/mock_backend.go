@@ -103,11 +103,11 @@ func (mb *MockBackend) Stop() {
 }
 
 func (mb *MockBackend) GetStats() string {
-	return fmt.Sprintf("Received:%5d spans", mb.SpansReceived())
+	return fmt.Sprintf("Received:%5d items", mb.DataItemsReceived())
 }
 
-func (mb *MockBackend) SpansReceived() uint64 {
-	return atomic.LoadUint64(&mb.tc.spansReceived)
+func (mb *MockBackend) DataItemsReceived() uint64 {
+	return atomic.LoadUint64(&mb.tc.spansReceived) + atomic.LoadUint64(&mb.mc.metricsReceived)
 }
 
 type mockTraceConsumer struct {
@@ -140,9 +140,17 @@ func (tc *mockTraceConsumer) ConsumeTraceData(ctx context.Context, td consumerda
 }
 
 type mockMetricConsumer struct {
+	metricsReceived uint64
 }
 
 func (mc *mockMetricConsumer) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
-	// Metrics backend is not implemented yet.
+	dataPoints := 0
+	for _, metric := range md.Metrics {
+		for _, ts := range metric.Timeseries {
+			dataPoints += len(ts.Points)
+		}
+	}
+
+	atomic.AddUint64(&mc.metricsReceived, uint64(dataPoints))
 	return nil
 }
