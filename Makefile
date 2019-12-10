@@ -87,6 +87,7 @@ misspell-correction:
 .PHONY: lint
 lint:
 	$(LINT) run
+	$(MAKE) -C testbed lint
 
 .PHONY: impi
 impi:

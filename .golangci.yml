@@ -113,3 +113,6 @@ issues:
     - path: _test\.go
       linters:
         - scopelint
+    - path: perf_scenarios\.go
+      linters:
+        - scopelint

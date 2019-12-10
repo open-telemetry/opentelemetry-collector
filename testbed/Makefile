@@ -1,51 +1,26 @@
 GOTEST_OPT?=-v -race -timeout 30s
 GOTEST_OPT_WITH_COVERAGE = $(GOTEST_OPT) -coverprofile=coverage.txt -covermode=atomic
 GOTEST=go test
-GOFMT=gofmt
-GOLINT=golint
-GOVET=go vet
+LINT=golangci-lint
 GOOS=$(shell go env GOOS)
 
-.DEFAULT_GOAL := fmt-vet-lint-test
+.DEFAULT_GOAL := lint-test
 
-.PHONY: fmt-vet-lint-test
-fmt-vet-lint-test: fmt vet lint test
+.PHONY: lint-test
+fmt-vet-lint-test: lint test
 
 .PHONY: test
 test:
 	$(GOTEST) $(GOTEST_OPT) ./...
 
+.PHONY: lint
+lint:
+	$(LINT) run -c ../.golangci.yml
+
 .PHONY: runtests
 runtests: test
 	./runtests.sh
 
-.PHONY: fmt
-fmt:
-	@FMTOUT=`$(GOFMT) -s -l ./.. 2>&1`; \
-	if [ "$$FMTOUT" ]; then \
-		echo "$(GOFMT) FAILED => gofmt the following files:\n"; \
-		echo "$$FMTOUT\n"; \
-		exit 1; \
-	else \
-	    echo "Fmt finished successfully"; \
-	fi
-
-.PHONY: lint
-lint:
-	@LINTOUT=`$(GOLINT) $(ALL_PKGS) 2>&1`; \
-	if [ "$$LINTOUT" ]; then \
-		echo "$(GOLINT) FAILED => clean the following lint errors:\n"; \
-		echo "$$LINTOUT\n"; \
-		exit 1; \
-	else \
-	    echo "Lint finished successfully"; \
-	fi
-
-.PHONY: vet
-vet:
-	$(GOVET) ./...
-
 .PHONY: install-tools
 install-tools:
-	go install golang.org/x/lint/golint
 	go install github.com/jstemmer/go-junit-report
