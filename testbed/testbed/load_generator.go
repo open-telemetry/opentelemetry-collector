@@ -260,7 +260,7 @@ func (lg *LoadGenerator) generateMetrics() {
 			startTime := time.Now()
 			value := atomic.AddUint64(&lg.dataItemsSent, 1)
 
-			// Create a span.
+			// Create a data point.
 			point := &metricspb.Point{
 				Timestamp: timeToTimestamp(startTime),
 				Value:     &metricspb.Point_Int64Value{Int64Value: int64(value)},

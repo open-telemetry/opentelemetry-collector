@@ -65,18 +65,22 @@ type MetricExporter interface {
 	ExportMetrics(metrics consumerdata.MetricsData) error
 }
 
-// jaegerExporter implements TraceExporter for Jaeger Thrift-HTTP protocol.
-type jaegerExporter struct {
+// JaegerExporter implements TraceExporter for Jaeger Thrift-HTTP protocol.
+type JaegerExporter struct {
 	exporter *jaeger.Exporter
 	port     int
 }
 
-// Create a new Jaeger protocol exporter.
-func NewJaegerExporter(port int) *jaegerExporter {
-	return &jaegerExporter{port: port}
+// Ensure JaegerExporter implements TraceExporter.
+var _ TraceExporter = (*JaegerExporter)(nil)
+
+// NewJaegerExporter creates a new Jaeger protocol exporter that will send
+// to the specified port after Start is called.
+func NewJaegerExporter(port int) *JaegerExporter {
+	return &JaegerExporter{port: port}
 }
 
-func (je *jaegerExporter) Start() error {
+func (je *JaegerExporter) Start() error {
 	opts := jaeger.Options{
 		// Use standard URL for Jaeger.
 		CollectorEndpoint: fmt.Sprintf("http://localhost:%d/api/traces", je.port),
@@ -90,18 +94,18 @@ func (je *jaegerExporter) Start() error {
 	return err
 }
 
-func (je *jaegerExporter) ExportSpans(spans []*trace.SpanData) error {
+func (je *JaegerExporter) ExportSpans(spans []*trace.SpanData) error {
 	for _, span := range spans {
 		je.exporter.ExportSpan(span)
 	}
 	return nil
 }
 
-func (je *jaegerExporter) Flush() {
+func (je *JaegerExporter) Flush() {
 	je.exporter.Flush()
 }
 
-func (je *jaegerExporter) GenConfigYAMLStr() string {
+func (je *JaegerExporter) GenConfigYAMLStr() string {
 	// Note that this generates a receiver config for agent.
 	// We only need to enable thrift-http protocol because that's what we use in tests.
 	// Due to bug in Jaeger receiver (https://github.com/open-telemetry/opentelemetry-collector/issues/445)
@@ -126,26 +130,30 @@ func (je *jaegerExporter) GenConfigYAMLStr() string {
         endpoint: "localhost:%d"`, je.port)
 }
 
-func (je *jaegerExporter) GetCollectorPort() int {
+func (je *JaegerExporter) GetCollectorPort() int {
 	return je.port
 }
 
-func (je *jaegerExporter) ProtocolName() string {
+func (je *JaegerExporter) ProtocolName() string {
 	return "jaeger"
 }
 
-// ocMetricsExporter implements MetricExporter for OpenCensus metrics protocol.
-type ocMetricsExporter struct {
+// OcMetricsExporter implements MetricExporter for OpenCensus metrics protocol.
+type OcMetricsExporter struct {
 	exporter exporter.MetricsExporter
 	port     int
 }
 
-// Create a new OpenCensus metric protocol exporter.
-func NewOcMetricExporter(port int) *ocMetricsExporter {
-	return &ocMetricsExporter{port: port}
+// Ensure OcMetricsExporter implements MetricExporter.
+var _ MetricExporter = (*OcMetricsExporter)(nil)
+
+// NewOcMetricExporter creates a new OpenCensus metric protocol exporter that will send
+// to the specified port after Start is called.
+func NewOcMetricExporter(port int) *OcMetricsExporter {
+	return &OcMetricsExporter{port: port}
 }
 
-func (ome *ocMetricsExporter) Start() error {
+func (ome *OcMetricsExporter) Start() error {
 	cfg := &opencensusexporter.Config{
 		GRPCSettings: configgrpc.GRPCSettings{
 			Endpoint: fmt.Sprintf("localhost:%d", ome.port),
@@ -163,24 +171,24 @@ func (ome *ocMetricsExporter) Start() error {
 	return nil
 }
 
-func (ome *ocMetricsExporter) ExportMetrics(metrics consumerdata.MetricsData) error {
+func (ome *OcMetricsExporter) ExportMetrics(metrics consumerdata.MetricsData) error {
 	return ome.exporter.ConsumeMetricsData(context.Background(), metrics)
 }
 
-func (ome *ocMetricsExporter) Flush() {
+func (ome *OcMetricsExporter) Flush() {
 }
 
-func (ome *ocMetricsExporter) GenConfigYAMLStr() string {
+func (ome *OcMetricsExporter) GenConfigYAMLStr() string {
 	// Note that this generates a receiver config for agent.
 	return fmt.Sprintf(`
   opencensus:
     endpoint: "localhost:%d"`, ome.port)
 }
 
-func (ome *ocMetricsExporter) GetCollectorPort() int {
+func (ome *OcMetricsExporter) GetCollectorPort() int {
 	return ome.port
 }
 
-func (ome *ocMetricsExporter) ProtocolName() string {
+func (ome *OcMetricsExporter) ProtocolName() string {
 	return "opencensus"
 }

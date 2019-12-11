@@ -62,8 +62,13 @@ type OCReceiver struct {
 	receiver *opencensusreceiver.Receiver
 }
 
+// Ensure OCReceiver implements MetricExporter.
+var _ Receiver = (*OCReceiver)(nil)
+
 const DefaultOCPort = 56565
 
+// NewOCReceiver creates a new OCReceiver that will listen on the specified port after Start
+// is called.
 func NewOCReceiver(port int) *OCReceiver {
 	return &OCReceiver{ReceiverBase: ReceiverBase{port: port}}
 }
