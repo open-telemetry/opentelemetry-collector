@@ -136,7 +136,7 @@ interaction with a human (such as this Collector).
 ### Startup Error Handling
 
 Verify configuration during startup and fail fast if the configuration is invalid.
-This will bring attention of a human to the problem as it is more typical for humans
+This will bring the attention of a human to the problem as it is more typical for humans
 to notice problems when the process is starting as opposed to problems that may arise
 sometime (potentially long time) after process startup. Monitoring systems are likely
 to automatically flag processes that exit with failure during startup, making it
@@ -149,17 +149,16 @@ exit cleanly with a process exit code.
 
 Do not crash or exit the Collector process after the startup sequence is finished.
 A running Collector typically contains data that is received but not yet exported further
-(e.g. is stored in the queues and other processors). Crashing or exiting Collector
-process will result in losing this data since typically the receiver have
+(e.g. is stored in the queues and other processors). Crashing or exiting the Collector
+process will result in losing this data since typically the receiver has
 already acknowledged the receipt for this data and the senders of the data will
-not send that data again. This recommendation may change in the future if we
-implement persistent queues in the Collector.
+not send that data again.
 
 ### Bad Input Handling
 
 Do not crash on bad input in receivers or elsewhere in the pipeline.
 [Crash-only software](https://en.wikipedia.org/wiki/Crash-only_software)
-is valid in certain cases however this is not a correct approach for Collector (except
+is valid in certain cases; however, this is not a correct approach for Collector (except
 during startup, see above). The reason is that many senders from which Collector
 receives data have built-in automatic retries of the _same_ data if no
 acknowledgment is received from the Collector. If you crash on bad input
@@ -167,13 +166,18 @@ chances are high that after the Collector is restarted it will see the same
 data in the input and will crash again. This will likely result in infinite
 crashing loop if you have automatic retries in place.
 
+Typically bad input when detected in a receiver should be reported back to the
+sender. If it is elsewhere in the pipeline it may be too late to send a response
+to the sender (particularly in processors which are not synchronously processing
+data). In either case it is recommended to keep a metric that counts bad input data.
+
 ### Error Handling and Retries
 
 Be rigorous in error handling. Don't ignore errors. Think carefully about each
 error and decide if it is a fatal problem or a transient problem that may go away
-when retried. For fatal errors that the users of Collector need to be aware of
-log them or have an internal metric that counts occurrences. For transient
-errors come up with a retrying strategy and implement it. Typically you will
+when retried. Fatal errors should be logged or recorded in an internal metric to
+provide visibility to users of the Collector. For transient errors come up with a
+retrying strategy and implement it. Typically you will
 want to implement retries with some sort of exponential back-off strategy. For
 connection or sending retries use jitter for back-off intervals to avoid overwhelming
 your destination when network is restored or the destination is recovered.
@@ -199,8 +203,8 @@ understanding of what happened and in what context.
 
 ### Resource Usage
 
-Limit usage of CPU, RAM or other resources that the code can use. Do not let the code
-to consume a resource in an uncontrolled manner. For example if you have a queue
+Limit usage of CPU, RAM or other resources that the code can use. Do not write code
+that consumes resources in an uncontrolled manner. For example if you have a queue
 that can contain unprocessed messages always limit the size of the queue unless you
 have other ways to guarantee that the queue will be consumed faster than items are
 added to it.
