@@ -25,7 +25,6 @@ import (
 	"testing"
 
 	"github.com/open-telemetry/opentelemetry-collector/testbed/testbed"
-	"github.com/open-telemetry/opentelemetry-collector/testutils"
 )
 
 // TestMain is used to initiate setup, execution and tear down of testbed.
@@ -33,48 +32,45 @@ func TestMain(m *testing.M) {
 	testbed.DoTestMain(m)
 }
 
-func TestIdleMode(t *testing.T) {
-	tc := testbed.NewTestCase(t, testbed.NewJaegerExporter(testbed.DefaultJaegerPort), &testbed.OCReceiver{})
-	defer tc.Stop()
-
-	tc.SetExpectedMaxCPU(4)
-	tc.SetExpectedMaxRAM(50)
-
-	tc.StartAgent()
-
-	tc.Sleep(tc.Duration)
-}
-
-func Test10kSPS(t *testing.T) {
+func TestTrace10kSPS(t *testing.T) {
 	tests := []struct {
 		name     string
 		receiver testbed.Receiver
 	}{
-		{"JaegerRx", testbed.NewJaegerReceiver(int(testutils.GetAvailablePort(t)))},
-		{"OpenCensusRx", &testbed.OCReceiver{}},
+		{"JaegerReceiver", testbed.NewJaegerReceiver(testbed.GetAvailablePort(t))},
+		{"OpenCensusReceiver", testbed.NewOCReceiver(testbed.DefaultOCPort)},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			Scenario10kSPS(t, testbed.NewJaegerExporter(int(testutils.GetAvailablePort(t))), test.receiver)
+			Scenario10kItemsPerSecond(
+				t,
+				testbed.NewJaegerExporter(testbed.GetAvailablePort(t)),
+				test.receiver,
+				testbed.LoadOptions{},
+			)
 		})
 	}
 }
 
-func TestNoBackend10kSPS(t *testing.T) {
-	tc := testbed.NewTestCase(t, testbed.NewJaegerExporter(testbed.DefaultJaegerPort), &testbed.OCReceiver{})
+func TestTraceNoBackend10kSPSJaeger(t *testing.T) {
+	tc := testbed.NewTestCase(
+		t,
+		testbed.NewJaegerExporter(testbed.DefaultJaegerPort),
+		testbed.NewOCReceiver(testbed.DefaultOCPort),
+	)
 	defer tc.Stop()
 
 	tc.SetExpectedMaxCPU(200)
 	tc.SetExpectedMaxRAM(200)
 
 	tc.StartAgent()
-	tc.StartLoad(testbed.LoadOptions{SpansPerSecond: 10000})
+	tc.StartLoad(testbed.LoadOptions{DataItemsPerSecond: 10000})
 
 	tc.Sleep(tc.Duration)
 }
 
-func Test1kSPSWithAttrs(t *testing.T) {
+func TestTrace1kSPSWithAttrs(t *testing.T) {
 	Scenario1kSPSWithAttrs(t, []string{}, []TestCase{
 		// No attributes.
 		{
@@ -112,7 +108,7 @@ func Test1kSPSWithAttrs(t *testing.T) {
 	})
 }
 
-func TestBallast1kSPSWithAttrs(t *testing.T) {
+func TestTraceBallast1kSPSWithAttrs(t *testing.T) {
 	args := []string{"--mem-ballast-size-mib", "1000"}
 	Scenario1kSPSWithAttrs(t, args, []TestCase{
 		// No attributes.
@@ -143,7 +139,7 @@ func TestBallast1kSPSWithAttrs(t *testing.T) {
 	})
 }
 
-func TestBallast1kSPSWithAttrsAddAttributes(t *testing.T) {
+func TestTraceBallast1kSPSAddAttrs(t *testing.T) {
 	args := []string{"--mem-ballast-size-mib", "1000"}
 	Scenario1kSPSWithAttrs(
 		t,

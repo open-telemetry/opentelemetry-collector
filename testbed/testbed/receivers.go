@@ -44,7 +44,9 @@ type Receiver interface {
 }
 
 // ReceiverBase implement basic functions needed by all receivers.
-type ReceiverBase struct{}
+type ReceiverBase struct {
+	port int
+}
 
 func (mb *ReceiverBase) Context() context.Context {
 	return context.Background()
@@ -60,29 +62,42 @@ type OCReceiver struct {
 	receiver *opencensusreceiver.Receiver
 }
 
+// Ensure OCReceiver implements MetricExporter.
+var _ Receiver = (*OCReceiver)(nil)
+
+const DefaultOCPort = 56565
+
+// NewOCReceiver creates a new OCReceiver that will listen on the specified port after Start
+// is called.
+func NewOCReceiver(port int) *OCReceiver {
+	return &OCReceiver{ReceiverBase: ReceiverBase{port: port}}
+}
+
 func (or *OCReceiver) Start(tc *mockTraceConsumer, mc *mockMetricConsumer) error {
-	// TODO: make the port dynamic.
-	addr := "localhost:56565"
+	addr := fmt.Sprintf("localhost:%d", or.port)
 	var err error
 	or.receiver, err = opencensusreceiver.New(addr, tc, mc)
 	if err != nil {
 		return err
 	}
 
-	// TODO: add metric support.
-	return or.receiver.StartTraceReception(or)
+	err = or.receiver.StartTraceReception(or)
+	if err != nil {
+		return err
+	}
+	return or.receiver.StartMetricsReception(or)
 }
 
 func (or *OCReceiver) Stop() {
-	// TODO: add metric support.
 	or.receiver.StopTraceReception()
+	or.receiver.StopMetricsReception()
 }
 
 func (or *OCReceiver) GenConfigYAMLStr() string {
 	// Note that this generates an exporter config for agent.
-	return `
+	return fmt.Sprintf(`
   opencensus:
-    endpoint: "localhost:56565"`
+    endpoint: "localhost:%d"`, or.port)
 }
 
 func (or *OCReceiver) ProtocolName() string {
@@ -93,13 +108,12 @@ func (or *OCReceiver) ProtocolName() string {
 type jaegerReceiver struct {
 	ReceiverBase
 	receiver receiver.TraceReceiver
-	port     int
 }
 
 const DefaultJaegerPort = 14268
 
 func NewJaegerReceiver(port int) *jaegerReceiver {
-	return &jaegerReceiver{port: port}
+	return &jaegerReceiver{ReceiverBase: ReceiverBase{port: port}}
 }
 
 func (jr *jaegerReceiver) Start(tc *mockTraceConsumer, mc *mockMetricConsumer) error {

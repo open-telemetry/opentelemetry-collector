@@ -15,6 +15,7 @@
 package testbed
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -277,9 +278,9 @@ func (cp *childProcess) watchResourceConsumption() error {
 			cp.fetchRAMUsage()
 			cp.fetchCPUUsage()
 
-			if !cp.isAllowedResourceUsage() {
+			if err := cp.checkAllowedResourceUsage(); err != nil {
 				cp.stop()
-				return fmt.Errorf("%s exceeded expected resource consumption", cp.name)
+				return err
 			}
 
 		case <-cp.doneSignal:
@@ -341,23 +342,27 @@ func (cp *childProcess) fetchCPUUsage() {
 	atomic.StoreUint32(&cp.cpuPercentX1000Cur, curCPUPercentageX1000)
 }
 
-func (cp *childProcess) isAllowedResourceUsage() bool {
+func (cp *childProcess) checkAllowedResourceUsage() error {
 	// Check if current CPU usage exceeds expected.
-	exceeded := false
+	var errMsg string
 	if cp.resourceSpec.expectedMaxCPU != 0 && cp.cpuPercentX1000Cur/1000 > cp.resourceSpec.expectedMaxCPU {
-		log.Printf("Performance error: CPU consumption is %.1f%%, max expected is %d%%",
+		errMsg = fmt.Sprintf("CPU consumption is %.1f%%, max expected is %d%%",
 			float64(cp.cpuPercentX1000Cur)/1000.0, cp.resourceSpec.expectedMaxCPU)
-		exceeded = true
 	}
 
 	// Check if current RAM usage exceeds expected.
 	if cp.resourceSpec.expectedMaxRAM != 0 && cp.ramMiBCur > cp.resourceSpec.expectedMaxRAM {
-		exceeded = true
-		log.Printf("Performance error: RAM consumption is %d MiB, max expected is %d MiB",
+		errMsg = fmt.Sprintf("RAM consumption is %d MiB, max expected is %d MiB",
 			cp.ramMiBCur, cp.resourceSpec.expectedMaxRAM)
 	}
 
-	return !exceeded
+	if errMsg == "" {
+		return nil
+	}
+
+	log.Printf("Performance error: %s", errMsg)
+
+	return errors.New(errMsg)
 }
 
 // GetResourceConsumption returns resource consumption as a string

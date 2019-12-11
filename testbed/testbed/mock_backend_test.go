@@ -20,15 +20,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/open-telemetry/opentelemetry-collector/testutils"
 )
 
 func TestGeneratorAndBackend(t *testing.T) {
-	port := int(testutils.GetAvailablePort(t))
+	port := GetAvailablePort(t)
 	mb := NewMockBackend("mockbackend.log", NewJaegerReceiver(port))
 
-	assert.EqualValues(t, 0, mb.SpansReceived())
+	assert.EqualValues(t, 0, mb.DataItemsReceived())
 
 	err := mb.Start()
 	require.NoError(t, err, "Cannot start backend")
@@ -38,18 +36,18 @@ func TestGeneratorAndBackend(t *testing.T) {
 	lg, err := NewLoadGenerator(NewJaegerExporter(port))
 	require.NoError(t, err, "Cannot start load generator")
 
-	assert.EqualValues(t, 0, lg.spansSent)
+	assert.EqualValues(t, 0, lg.dataItemsSent)
 
 	// Generate at 1000 SPS
-	lg.Start(LoadOptions{SpansPerSecond: 1000})
+	lg.Start(LoadOptions{DataItemsPerSecond: 1000})
 
 	// Wait until at least 50 spans are sent
-	WaitFor(t, func() bool { return lg.SpansSent() > 50 }, "SpansSent > 50")
+	WaitFor(t, func() bool { return lg.DataItemsSent() > 50 }, "DataItemsSent > 50")
 
 	lg.Stop()
 
 	// The backend should receive everything generated.
-	assert.Equal(t, lg.SpansSent(), mb.SpansReceived())
+	assert.Equal(t, lg.DataItemsSent(), mb.DataItemsReceived())
 }
 
 // WaitFor the specific condition for up to 10 seconds. Records a test error
