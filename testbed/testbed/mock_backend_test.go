@@ -24,7 +24,7 @@ import (
 
 func TestGeneratorAndBackend(t *testing.T) {
 	port := GetAvailablePort(t)
-	mb := NewMockBackend("mockbackend.log", NewJaegerReceiver(port))
+	mb := NewMockBackend("mockbackend.log", NewJaegerDataReceiver(port))
 
 	assert.EqualValues(t, 0, mb.DataItemsReceived())
 
@@ -33,7 +33,7 @@ func TestGeneratorAndBackend(t *testing.T) {
 
 	defer mb.Stop()
 
-	lg, err := NewLoadGenerator(NewJaegerExporter(port))
+	lg, err := NewLoadGenerator(NewJaegerDataSender(port))
 	require.NoError(t, err, "Cannot start load generator")
 
 	assert.EqualValues(t, 0, lg.dataItemsSent)

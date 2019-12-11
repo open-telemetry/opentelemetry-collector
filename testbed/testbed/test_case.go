@@ -74,8 +74,8 @@ const TESTCASE_DURATION_VAR = "TESTCASE_DURATION"
 // NewTestCase creates a new TestCase. It expects agent-config.yaml in the specified directory.
 func NewTestCase(
 	t *testing.T,
-	exporter Exporter,
-	receiver Receiver,
+	sender DataSender,
+	receiver DataReceiver,
 	opts ...TestCaseOption,
 ) *TestCase {
 	tc := TestCase{}
@@ -130,7 +130,7 @@ func NewTestCase(
 		tc.t.Fatalf("Cannot resolve filename: %s", err.Error())
 	}
 
-	tc.LoadGenerator, err = NewLoadGenerator(exporter)
+	tc.LoadGenerator, err = NewLoadGenerator(sender)
 	if err != nil {
 		t.Fatalf("Cannot create generator: %s", err.Error())
 	}
@@ -196,7 +196,7 @@ func (tc *TestCase) StartAgent(args ...string) {
 	// connect to the port to which we intend to send load.
 	tc.WaitFor(func() bool {
 		_, err := net.Dial("tcp",
-			fmt.Sprintf("localhost:%d", tc.LoadGenerator.exporter.GetCollectorPort()))
+			fmt.Sprintf("localhost:%d", tc.LoadGenerator.sender.GetCollectorPort()))
 		return err == nil
 	})
 }

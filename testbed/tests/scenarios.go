@@ -28,15 +28,15 @@ import (
 )
 
 // createConfigFile creates a collector config file that corresponds to the
-// exporter and receiver used in the test and returns the config file name.
-func createConfigFile(exporter testbed.Exporter, receiver testbed.Receiver) string {
-	// Create a config. Note that our exporter is used to generate a config for Collector's
-	// receiver and our receiver is used to generate a config for Collector's exporter.
-	// This is because our exporter sends to Collector's receiver and our receiver
+// sender and receiver used in the test and returns the config file name.
+func createConfigFile(sender testbed.DataSender, receiver testbed.DataReceiver) string {
+	// Create a config. Note that our DataSender is used to generate a config for Collector's
+	// receiver and our DataReceiver is used to generate a config for Collector's exporter.
+	// This is because our DataSender sends to Collector's receiver and our DataReceiver
 	// receives from Collector's exporter.
 
 	var format string
-	if _, ok := exporter.(testbed.TraceExporter); ok {
+	if _, ok := sender.(testbed.TraceDataSender); ok {
 		// This is a trace test. Create appropriate config template.
 		format = `
 receivers:%v
@@ -68,9 +68,9 @@ service:
 	// Put corresponding elements into the config template to generate the final config.
 	config := fmt.Sprintf(
 		format,
-		exporter.GenConfigYAMLStr(),
+		sender.GenConfigYAMLStr(),
 		receiver.GenConfigYAMLStr(),
-		exporter.ProtocolName(),
+		sender.ProtocolName(),
 		receiver.ProtocolName(),
 	)
 
@@ -92,21 +92,21 @@ service:
 	return file.Name()
 }
 
-// Run 10k data items/sec test using specified exporter and receiver protocols.
+// Run 10k data items/sec test using specified sender and receiver protocols.
 func Scenario10kItemsPerSecond(
 	t *testing.T,
-	exporter testbed.Exporter,
-	receiver testbed.Receiver,
+	sender testbed.DataSender,
+	receiver testbed.DataReceiver,
 	loadOptions testbed.LoadOptions,
 ) {
-	configFile := createConfigFile(exporter, receiver)
+	configFile := createConfigFile(sender, receiver)
 	defer os.Remove(configFile)
 
 	if configFile == "" {
 		t.Fatal("Cannot create config file")
 	}
 
-	tc := testbed.NewTestCase(t, exporter, receiver, testbed.WithConfigFile(configFile))
+	tc := testbed.NewTestCase(t, sender, receiver, testbed.WithConfigFile(configFile))
 	defer tc.Stop()
 
 	tc.SetExpectedMaxCPU(150)
@@ -157,8 +157,8 @@ func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, opts 
 
 			tc := testbed.NewTestCase(
 				t,
-				testbed.NewJaegerExporter(testbed.DefaultJaegerPort),
-				testbed.NewOCReceiver(testbed.DefaultOCPort),
+				testbed.NewJaegerDataSender(testbed.DefaultJaegerPort),
+				testbed.NewOCDataReceiver(testbed.DefaultOCPort),
 				opts...,
 			)
 			defer tc.Stop()

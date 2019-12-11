@@ -31,8 +31,8 @@ import (
 func TestIdleMode(t *testing.T) {
 	tc := testbed.NewTestCase(
 		t,
-		testbed.NewJaegerExporter(testbed.DefaultJaegerPort),
-		testbed.NewOCReceiver(testbed.DefaultOCPort),
+		testbed.NewJaegerDataSender(testbed.DefaultJaegerPort),
+		testbed.NewOCDataReceiver(testbed.DefaultOCPort),
 	)
 	defer tc.Stop()
 
@@ -57,8 +57,8 @@ func TestBallastMemory(t *testing.T) {
 	for _, test := range tests {
 		tc := testbed.NewTestCase(
 			t,
-			testbed.NewJaegerExporter(testbed.DefaultJaegerPort),
-			testbed.NewOCReceiver(testbed.DefaultOCPort),
+			testbed.NewJaegerDataSender(testbed.DefaultJaegerPort),
+			testbed.NewOCDataReceiver(testbed.DefaultOCPort),
 			testbed.WithSkipResults(),
 		)
 		tc.SetExpectedMaxRAM(test.maxRSS)
