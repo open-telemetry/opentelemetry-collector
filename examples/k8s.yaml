@@ -15,6 +15,14 @@ data:
     exporters:
       opencensus:
         endpoint: "otel-collector.default:55678" # TODO: Update me
+    extensions:
+      zpages: {}
+    services:
+      extensions: [zpages]
+      pipelines:
+        traces:
+          receivers: [opencensus]
+          exporters: [opencensus]
 ---
 apiVersion: extensions/v1beta1
 kind: DaemonSet
@@ -32,9 +40,9 @@ spec:
     spec:
       containers:
       - command:
-          - "/otelsvc_agent_linux"
+          - "/usr/bin/otelcol"
           - "--config=/conf/otel-agent-config.yaml"
-        image: omnition/opencensus-agent:0.1.6
+        image: omnition/opentelemetry-collectort:v0.2.0
         name: otel-agent
         resources:
           limits:
@@ -45,10 +53,10 @@ spec:
             memory: 100Mi
         ports:
         - containerPort: 55678
-        - containerPort: 55679
-#        - containerPort: 14267
-#        - containerPort: 14268
-#        - containerPort: 9411
+        - containerPort: 55679 # ZPages endpint
+#        - containerPort: 14267 # Default Jaeger TChannel port
+#        - containerPort: 14268 # Default Jaeger HTTP receiver port
+#        - containerPort: 9411 # Default Zipkin receiver port
         volumeMounts:
         - name: otel-agent-config-vol
           mountPath: /conf
@@ -78,27 +86,32 @@ data:
             max_connection_age-grace: 30s
       jaeger: {}
       zipkin: {}
-# Can only use one exporter
-#    exporters:
-#      jaeger:
-#        collector_endpoint: "http://jaeger.default:14268/api/traces"
-#      zipkin: {}
-    queued-exporters:
-      omnition:
-        batching:
-          enable: true
-          timeout: 5s
-          send_batch_size: 1024
+    processors:
+      queued_retry:
         num_workers: 16
         queue_size: 10000
         retry_on_failure: true
-        opencensus:
-          compression: "gzip"
-          endpoint: "ingest.omnition.io:443"
-          headers: { "x-omnition-api-key":"00000000-0000-0000-0000-000000000001" } # TODO: Update me
-          num_workers: 8
-          reconnection_delay: 2s
-          secure: true
+      batch:
+        send_batch_size: 1024
+        timeout: 5s
+    extensions:
+      health_check: {}
+    exporters:
+      opencensus:
+        compression: "gzip"
+        endpoint: "someendpoint.provider.com:443" # Replace with a real endpoint
+        num_workers: 8
+        reconnection_delay: 2s
+        secure: true
+      zipkin: {}
+      jaeger: {}
+    services:
+      extensions: [health_check]
+      pipelines:
+        traces:
+          receivers: [opencensus, jaeger, zipkin]
+          processors: [batch, queued_retry]
+          exporters: [opencensus, zipkin, jaeger]
 ---
 apiVersion: v1
 kind: Service
@@ -113,12 +126,14 @@ spec:
     port: 55678
     protocol: TCP
     targetPort: 55678
-#  - name: jaeger-tchannel
-#    port: 14267
-#  - name: jaeger_thrift_http
-#    port: 14268
-#  - name: zipkin
-#    port: 9411
+  - name: jaeger-tchannel
+    port: 14267
+  - name: jaeger_thrift_http
+    port: 14268
+  - name: zipkin
+    port: 9411
+  - name: metrics
+    port: 8888
   selector:
     component: otel-collector
 ---
@@ -132,7 +147,7 @@ metadata:
 spec:
   minReadySeconds: 5
   progressDeadlineSeconds: 120
-  replicas: 1
+  replicas: 1 #TODO - adjust this to your own requirements
   template:
     metadata:
       annotations:
@@ -145,12 +160,12 @@ spec:
     spec:
       containers:
       - command:
-          - "/otelsvc_collector_linux"
+          - "/usr/bin/otelcol"
           - "--config=/conf/otel-collector-config.yaml"
         env:
         - name: GOGC
           value: "80"
-        image: omnition/opencensus-collector:0.1.6
+        image: omnition/opentelemetry-collector:v0.2.0
         name: otel-collector
         resources:
           limits:
@@ -161,9 +176,10 @@ spec:
             memory: 400Mi
         ports:
         - containerPort: 55678
-#        - containerPort: 14267
-#        - containerPort: 14268
-#        - containerPort: 9411
+        - containerPort: 14267
+        - containerPort: 14268
+        - containerPort: 9411
+        - containerPort: 8888
         volumeMounts:
         - name: otel-collector-config-vol
           mountPath: /conf
