@@ -148,7 +148,7 @@ receivers:
 
 ### Remote Sampling
 The Jaeger receiver also supports fetching sampling configuration from a remote collector.
-It works proxying client requests for remote sampling configuration to the configured collector.
+It works by proxying client requests for remote sampling configuration to the configured collector.
 
 +---------------+                   +--------------+              +-----------------+
 |               |       get         |              |    proxy     |                 |

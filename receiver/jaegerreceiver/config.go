@@ -28,7 +28,7 @@ type Config struct {
 	TypeVal        string                                      `mapstructure:"-"`
 	NameVal        string                                      `mapstructure:"-"`
 	Protocols      map[string]*receiver.SecureReceiverSettings `mapstructure:"protocols"`
-	RemoteSampling *RemoteSamplingConfig                       `mapstructure:"remotesampling"`
+	RemoteSampling *RemoteSamplingConfig                       `mapstructure:"remote_sampling"`
 }
 
 // Name gets the receiver name.

@@ -20,7 +20,7 @@ receivers:
       thrift-binary:
         endpoint: "0.0.0.0:789"
     remotesampling:
-        fetch_endpoint: "jaeger-collector:1234"
+      fetch_endpoint: "jaeger-collector:1234"
 
   # The following demonstrates disabling the receiver.
   # All of the protocols need to be disabled for the receiver to be disabled.
@@ -69,4 +69,3 @@ service:
      receivers: [jaeger]
      processors: [exampleprocessor]
      exporters: [exampleexporter]
-
