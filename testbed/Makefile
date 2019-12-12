@@ -21,14 +21,7 @@ runtests: test
 
 .PHONY: fmt
 fmt:
-	@FMTOUT=`$(GOFMT) -s -l ./.. 2>&1`; \
-	if [ "$$FMTOUT" ]; then \
-		echo "$(GOFMT) FAILED => gofmt the following files:\n"; \
-		echo "$$FMTOUT\n"; \
-		exit 1; \
-	else \
-	    echo "Fmt finished successfully"; \
-	fi
+	$(GOFMT) -s -l ./..
 
 .PHONY: lint
 lint:

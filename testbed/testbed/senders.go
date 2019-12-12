@@ -17,14 +17,14 @@ package testbed
 import (
 	"context"
 	"fmt"
+	"time"
 
-	"contrib.go.opencensus.io/exporter/jaeger"
-	"go.opencensus.io/trace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/config/configgrpc"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter"
+	"github.com/open-telemetry/opentelemetry-collector/exporter/jaeger/jaegerthrifthttpexporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/opencensusexporter"
 )
 
@@ -55,7 +55,7 @@ type DataSender interface {
 // to send a batch of Spans to the DataSender interface.
 type TraceDataSender interface {
 	DataSender
-	SendSpans(spans []*trace.SpanData) error
+	SendSpans(traces consumerdata.TraceData) error
 }
 
 // MetricDataSender defines the interface that allows sending metric data. It adds ability
@@ -67,7 +67,8 @@ type MetricDataSender interface {
 
 // JaegerDataSender implements TraceDataSender for Jaeger Thrift-HTTP protocol.
 type JaegerDataSender struct {
-	exporter *jaeger.Exporter
+	// exporter *jaeger.Exporter
+	exporter exporter.TraceExporter
 	port     int
 }
 
@@ -81,28 +82,29 @@ func NewJaegerDataSender(port int) *JaegerDataSender {
 }
 
 func (je *JaegerDataSender) Start() error {
-	opts := jaeger.Options{
+	cfg := &jaegerthrifthttpexporter.Config{
 		// Use standard URL for Jaeger.
-		CollectorEndpoint: fmt.Sprintf("http://localhost:%d/api/traces", je.port),
-		Process: jaeger.Process{
-			ServiceName: "load-generator",
-		},
+		URL:     fmt.Sprintf("http://localhost:%d/api/traces", je.port),
+		Timeout: 5 * time.Second,
 	}
 
 	var err error
-	je.exporter, err = jaeger.NewExporter(opts)
+	factory := jaegerthrifthttpexporter.Factory{}
+	exporter, err := factory.CreateTraceExporter(zap.L(), cfg)
+
+	if err != nil {
+		return err
+	}
+
+	je.exporter = exporter
 	return err
 }
 
-func (je *JaegerDataSender) SendSpans(spans []*trace.SpanData) error {
-	for _, span := range spans {
-		je.exporter.ExportSpan(span)
-	}
-	return nil
+func (je *JaegerDataSender) SendSpans(traces consumerdata.TraceData) error {
+	return je.exporter.ConsumeTraceData(context.Background(), traces)
 }
 
 func (je *JaegerDataSender) Flush() {
-	je.exporter.Flush()
 }
 
 func (je *JaegerDataSender) GenConfigYAMLStr() string {
