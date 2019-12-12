@@ -42,7 +42,7 @@ spec:
       - command:
           - "/usr/bin/otelcol"
           - "--config=/conf/otel-agent-config.yaml"
-        image: omnition/opentelemetry-collectort:v0.2.0
+        image: omnition/opentelemetry-collector:v0.2.0
         name: otel-agent
         resources:
           limits:
@@ -52,11 +52,11 @@ spec:
             cpu: 100m
             memory: 100Mi
         ports:
-        - containerPort: 55678
-        - containerPort: 55679 # ZPages endpint
-#        - containerPort: 14267 # Default Jaeger TChannel port
-#        - containerPort: 14268 # Default Jaeger HTTP receiver port
-#        - containerPort: 9411 # Default Zipkin receiver port
+        - containerPort: 55678 # Default Opencensus receiver port.
+        - containerPort: 55679 # ZPages endpoint.
+#        - containerPort: 14267 # Default Jaeger TChannel port.
+#        - containerPort: 14268 # Default Jaeger HTTP receiver port.
+#        - containerPort: 9411 # Default Zipkin receiver port.
         volumeMounts:
         - name: otel-agent-config-vol
           mountPath: /conf
@@ -99,19 +99,25 @@ data:
     exporters:
       opencensus:
         compression: "gzip"
-        endpoint: "someendpoint.provider.com:443" # Replace with a real endpoint
+        endpoint: "someopencensus.target.com:443" # Replace with a real endpoint.
         num_workers: 8
         reconnection_delay: 2s
         secure: true
-      zipkin: {}
-      jaeger: {}
+      zipkin:
+        url: "http://somezipkin.target.com:9411/api/v2/spans" # Replace with a real endpoint.
+      jaeger_grpc:
+        endpoint: "somejaegergrpc.target.com:55678" # Replace with a real endpoint.
     services:
       extensions: [health_check]
       pipelines:
-        traces:
-          receivers: [opencensus, jaeger, zipkin]
+        traces/1:
+          receivers: [opencensus, zipkin]
           processors: [batch, queued_retry]
-          exporters: [opencensus, zipkin, jaeger]
+          exporters: [opencensus, zipkin]
+        traces/2:
+          receivers: [opencensus, jaeger]
+          processors: [batch, queued_retry]
+          exporters: [jaeger_grpc]
 ---
 apiVersion: v1
 kind: Service
@@ -122,17 +128,17 @@ metadata:
     component: otel-collector
 spec:
   ports:
-  - name: opencensus
+  - name: opencensus # Default endpoint for Opencensus receiver.
     port: 55678
     protocol: TCP
     targetPort: 55678
-  - name: jaeger-tchannel
+  - name: jaeger_tchannel  # Default endpoint for Jaeger TChannel receiver.
     port: 14267
-  - name: jaeger_thrift_http
+  - name: jaeger_thrift_http # Default endpoint for Jaeger HTTP receiver.
     port: 14268
-  - name: zipkin
+  - name: zipkin # Default endpoint for Zipkin receiver.
     port: 9411
-  - name: metrics
+  - name: metrics # Default endpoint for querying metrics.
     port: 8888
   selector:
     component: otel-collector
@@ -175,11 +181,11 @@ spec:
             cpu: 200m
             memory: 400Mi
         ports:
-        - containerPort: 55678
-        - containerPort: 14267
-        - containerPort: 14268
-        - containerPort: 9411
-        - containerPort: 8888
+        - containerPort: 55678 # Default endpoint for Opencensus receiver.
+        - containerPort: 14267 # Default endpoint for Jaeger TChannel receiver.
+        - containerPort: 14268 # Default endpoint for Jaeger HTTP receiver.
+        - containerPort: 9411 # Default endpoint for Zipkin receiver.
+        - containerPort: 8888  # Default endpoint for querying metrics.
         volumeMounts:
         - name: otel-collector-config-vol
           mountPath: /conf
@@ -188,11 +194,11 @@ spec:
         livenessProbe:
           httpGet:
             path: /
-            port: 13133
+            port: 13133 # Health Check extension default port.
         readinessProbe:
           httpGet:
             path: /
-            port: 13133
+            port: 13133 # Health Check extension default port.
       volumes:
         - configMap:
             name: otel-collector-conf
