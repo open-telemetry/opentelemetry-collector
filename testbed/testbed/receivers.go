@@ -26,12 +26,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/receiver/opencensusreceiver"
 )
 
-// Receiver allows to receive traces or metrics. This is an interface that must
+// DataReceiver allows to receive traces or metrics. This is an interface that must
 // be implemented by all protocols that want to be used in MockBackend.
-// Note the terminology: testbed.Receiver is something that can listen and receive data
+// Note the terminology: testbed.DataReceiver is something that can listen and receive data
 // from Collector and the corresponding entity in the Collector that sends this data is
 // an exporter.
-type Receiver interface {
+type DataReceiver interface {
 	Start(tc *mockTraceConsumer, mc *mockMetricConsumer) error
 	Stop()
 
@@ -43,37 +43,37 @@ type Receiver interface {
 	ProtocolName() string
 }
 
-// ReceiverBase implement basic functions needed by all receivers.
-type ReceiverBase struct {
+// DataReceiverBase implement basic functions needed by all receivers.
+type DataReceiverBase struct {
 	port int
 }
 
-func (mb *ReceiverBase) Context() context.Context {
+func (mb *DataReceiverBase) Context() context.Context {
 	return context.Background()
 }
 
-func (mb *ReceiverBase) ReportFatalError(err error) {
+func (mb *DataReceiverBase) ReportFatalError(err error) {
 	log.Printf("Fatal error reported: %v", err)
 }
 
-// OCReceiver implements OpenCensus format receiver.
-type OCReceiver struct {
-	ReceiverBase
+// OCDataReceiver implements OpenCensus format receiver.
+type OCDataReceiver struct {
+	DataReceiverBase
 	receiver *opencensusreceiver.Receiver
 }
 
-// Ensure OCReceiver implements MetricExporter.
-var _ Receiver = (*OCReceiver)(nil)
+// Ensure OCDataReceiver implements MetricDataSender.
+var _ DataReceiver = (*OCDataReceiver)(nil)
 
 const DefaultOCPort = 56565
 
-// NewOCReceiver creates a new OCReceiver that will listen on the specified port after Start
+// NewOCDataReceiver creates a new OCDataReceiver that will listen on the specified port after Start
 // is called.
-func NewOCReceiver(port int) *OCReceiver {
-	return &OCReceiver{ReceiverBase: ReceiverBase{port: port}}
+func NewOCDataReceiver(port int) *OCDataReceiver {
+	return &OCDataReceiver{DataReceiverBase: DataReceiverBase{port: port}}
 }
 
-func (or *OCReceiver) Start(tc *mockTraceConsumer, mc *mockMetricConsumer) error {
+func (or *OCDataReceiver) Start(tc *mockTraceConsumer, mc *mockMetricConsumer) error {
 	addr := fmt.Sprintf("localhost:%d", or.port)
 	var err error
 	or.receiver, err = opencensusreceiver.New(addr, tc, mc)
@@ -88,35 +88,35 @@ func (or *OCReceiver) Start(tc *mockTraceConsumer, mc *mockMetricConsumer) error
 	return or.receiver.StartMetricsReception(or)
 }
 
-func (or *OCReceiver) Stop() {
+func (or *OCDataReceiver) Stop() {
 	or.receiver.StopTraceReception()
 	or.receiver.StopMetricsReception()
 }
 
-func (or *OCReceiver) GenConfigYAMLStr() string {
+func (or *OCDataReceiver) GenConfigYAMLStr() string {
 	// Note that this generates an exporter config for agent.
 	return fmt.Sprintf(`
   opencensus:
     endpoint: "localhost:%d"`, or.port)
 }
 
-func (or *OCReceiver) ProtocolName() string {
+func (or *OCDataReceiver) ProtocolName() string {
 	return "opencensus"
 }
 
-// jaegerReceiver implements Jaeger format receiver.
-type jaegerReceiver struct {
-	ReceiverBase
+// JaegerDataReceiver implements Jaeger format receiver.
+type JaegerDataReceiver struct {
+	DataReceiverBase
 	receiver receiver.TraceReceiver
 }
 
 const DefaultJaegerPort = 14268
 
-func NewJaegerReceiver(port int) *jaegerReceiver {
-	return &jaegerReceiver{ReceiverBase: ReceiverBase{port: port}}
+func NewJaegerDataReceiver(port int) *JaegerDataReceiver {
+	return &JaegerDataReceiver{DataReceiverBase: DataReceiverBase{port: port}}
 }
 
-func (jr *jaegerReceiver) Start(tc *mockTraceConsumer, mc *mockMetricConsumer) error {
+func (jr *JaegerDataReceiver) Start(tc *mockTraceConsumer, mc *mockMetricConsumer) error {
 	jaegerCfg := jaegerreceiver.Configuration{
 		CollectorHTTPPort: jr.port,
 	}
@@ -129,7 +129,7 @@ func (jr *jaegerReceiver) Start(tc *mockTraceConsumer, mc *mockMetricConsumer) e
 	return jr.receiver.StartTraceReception(jr)
 }
 
-func (jr *jaegerReceiver) Stop() {
+func (jr *JaegerDataReceiver) Stop() {
 	if jr.receiver != nil {
 		if err := jr.receiver.StopTraceReception(); err != nil {
 			log.Printf("Cannot stop Jaeger receiver: %s", err.Error())
@@ -137,13 +137,13 @@ func (jr *jaegerReceiver) Stop() {
 	}
 }
 
-func (jr *jaegerReceiver) GenConfigYAMLStr() string {
+func (jr *JaegerDataReceiver) GenConfigYAMLStr() string {
 	// Note that this generates an exporter config for agent.
 	return fmt.Sprintf(`
   jaeger_thrift_http:
     url: "http://localhost:%d/api/traces"`, jr.port)
 }
 
-func (jr *jaegerReceiver) ProtocolName() string {
+func (jr *JaegerDataReceiver) ProtocolName() string {
 	return "jaeger_thrift_http"
 }

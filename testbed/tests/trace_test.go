@@ -35,17 +35,17 @@ func TestMain(m *testing.M) {
 func TestTrace10kSPS(t *testing.T) {
 	tests := []struct {
 		name     string
-		receiver testbed.Receiver
+		receiver testbed.DataReceiver
 	}{
-		{"JaegerReceiver", testbed.NewJaegerReceiver(testbed.GetAvailablePort(t))},
-		{"OpenCensusReceiver", testbed.NewOCReceiver(testbed.DefaultOCPort)},
+		{"JaegerReceiver", testbed.NewJaegerDataReceiver(testbed.GetAvailablePort(t))},
+		{"OpenCensusReceiver", testbed.NewOCDataReceiver(testbed.DefaultOCPort)},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			Scenario10kItemsPerSecond(
 				t,
-				testbed.NewJaegerExporter(testbed.GetAvailablePort(t)),
+				testbed.NewJaegerDataSender(testbed.GetAvailablePort(t)),
 				test.receiver,
 				testbed.LoadOptions{},
 			)
@@ -56,8 +56,8 @@ func TestTrace10kSPS(t *testing.T) {
 func TestTraceNoBackend10kSPSJaeger(t *testing.T) {
 	tc := testbed.NewTestCase(
 		t,
-		testbed.NewJaegerExporter(testbed.DefaultJaegerPort),
-		testbed.NewOCReceiver(testbed.DefaultOCPort),
+		testbed.NewJaegerDataSender(testbed.DefaultJaegerPort),
+		testbed.NewOCDataReceiver(testbed.DefaultOCPort),
 	)
 	defer tc.Stop()
 

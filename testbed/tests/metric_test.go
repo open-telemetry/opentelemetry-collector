@@ -26,8 +26,8 @@ import (
 func TestMetricNoBackend10kDPSOpenCensus(t *testing.T) {
 	tc := testbed.NewTestCase(
 		t,
-		testbed.NewOcMetricExporter(55678),
-		testbed.NewOCReceiver(testbed.DefaultOCPort),
+		testbed.NewOCMetricDataSender(55678),
+		testbed.NewOCDataReceiver(testbed.DefaultOCPort),
 	)
 	defer tc.Stop()
 
@@ -44,13 +44,13 @@ func TestMetricNoBackend10kDPSOpenCensus(t *testing.T) {
 func TestMetric10kDPS(t *testing.T) {
 	tests := []struct {
 		name     string
-		exporter testbed.Exporter
-		receiver testbed.Receiver
+		sender   testbed.DataSender
+		receiver testbed.DataReceiver
 	}{
 		{
 			"OpenCensus",
-			testbed.NewOcMetricExporter(testbed.GetAvailablePort(t)),
-			testbed.NewOCReceiver(testbed.GetAvailablePort(t)),
+			testbed.NewOCMetricDataSender(testbed.GetAvailablePort(t)),
+			testbed.NewOCDataReceiver(testbed.GetAvailablePort(t)),
 		},
 	}
 
@@ -58,7 +58,7 @@ func TestMetric10kDPS(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			Scenario10kItemsPerSecond(
 				t,
-				test.exporter,
+				test.sender,
 				test.receiver,
 				testbed.LoadOptions{ItemsPerBatch: 100},
 			)

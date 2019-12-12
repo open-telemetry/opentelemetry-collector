@@ -33,7 +33,7 @@ import (
 
 // LoadGenerator is a simple load generator.
 type LoadGenerator struct {
-	exporter Exporter
+	sender DataSender
 
 	// Number of batches of data items sent.
 	batchesSent uint64
@@ -62,15 +62,15 @@ type LoadOptions struct {
 	Attributes map[string]string
 }
 
-// NewLoadGenerator creates a load generator that sends data using specified exporter.
-func NewLoadGenerator(exporter Exporter) (*LoadGenerator, error) {
-	if exporter == nil {
-		return nil, fmt.Errorf("cannot create load generator without Exporter")
+// NewLoadGenerator creates a load generator that sends data using specified sender.
+func NewLoadGenerator(sender DataSender) (*LoadGenerator, error) {
+	if sender == nil {
+		return nil, fmt.Errorf("cannot create load generator without DataSender")
 	}
 
 	lg := &LoadGenerator{
 		stopSignal: make(chan struct{}),
-		exporter:   exporter,
+		sender:     sender,
 	}
 
 	return lg, nil
@@ -125,9 +125,9 @@ func (lg *LoadGenerator) generate() {
 		return
 	}
 
-	err := lg.exporter.Start()
+	err := lg.sender.Start()
 	if err != nil {
-		log.Printf("Cannot start exporter: %v", err)
+		log.Printf("Cannot start sender: %v", err)
 		return
 	}
 
@@ -137,8 +137,8 @@ func (lg *LoadGenerator) generate() {
 	for !done {
 		select {
 		case <-t.C:
-			_, isTraceExporter := lg.exporter.(TraceExporter)
-			if isTraceExporter {
+			_, isTraceSender := lg.sender.(TraceDataSender)
+			if isTraceSender {
 				lg.generateTrace()
 			} else {
 				lg.generateMetrics()
@@ -149,12 +149,12 @@ func (lg *LoadGenerator) generate() {
 		}
 	}
 	// Send all pending generated data.
-	lg.exporter.Flush()
+	lg.sender.Flush()
 }
 
 func (lg *LoadGenerator) generateTrace() {
 
-	traceExporter := lg.exporter.(TraceExporter)
+	traceSender := lg.sender.(TraceDataSender)
 
 	var spans []*trace.SpanData
 	traceID := atomic.AddUint64(&lg.batchesSent, 1)
@@ -187,9 +187,9 @@ func (lg *LoadGenerator) generateTrace() {
 
 		spans = append(spans, span)
 	}
-	err := traceExporter.ExportSpans(spans)
+	err := traceSender.SendSpans(spans)
 	if err != nil {
-		log.Printf("Cannot export traces: %v", err)
+		log.Printf("Cannot send traces: %v", err)
 	}
 }
 
@@ -207,7 +207,7 @@ func generateSpanID(id uint64) trace.SpanID {
 
 func (lg *LoadGenerator) generateMetrics() {
 
-	metricExporter := lg.exporter.(MetricExporter)
+	metricSender := lg.sender.(MetricDataSender)
 
 	resource := &resourcepb.Resource{
 		Labels: lg.options.Attributes,
@@ -283,9 +283,9 @@ func (lg *LoadGenerator) generateMetrics() {
 		Metrics:  metrics,
 	}
 
-	err := metricExporter.ExportMetrics(metricData)
+	err := metricSender.SendMetrics(metricData)
 	if err != nil {
-		log.Printf("Cannot export metrics: %v", err)
+		log.Printf("Cannot send metrics: %v", err)
 	}
 }
 

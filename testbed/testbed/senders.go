@@ -28,59 +28,59 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/exporter/opencensusexporter"
 )
 
-// Exporter defines the interface that allows sending data. This is an interface
+// DataSender defines the interface that allows sending data. This is an interface
 // that must be implemented by all protocols that want to be used in LoadGenerator.
-// Note the terminology: testbed.Exporter is something that sends data to Collector
+// Note the terminology: testbed.DataSender is something that sends data to Collector
 // and the corresponding entity that receives the data in the Collector is a receiver.
-type Exporter interface {
-	// Start exporter and connect to the configured endpoint. Must be called before
-	// exporting data.
+type DataSender interface {
+	// Start sender and connect to the configured endpoint. Must be called before
+	// sending data.
 	Start() error
 
 	// Send any accumulated data.
 	Flush()
 
-	// Return the port to which this exporter will send data.
+	// Return the port to which this sender will send data.
 	GetCollectorPort() int
 
 	// Generate a config string to place in receiver part of collector config
-	// so that it can receive data from this exporter.
+	// so that it can receive data from this sender.
 	GenConfigYAMLStr() string
 
 	// Return protocol name to use in collector config pipeline.
 	ProtocolName() string
 }
 
-// TraceExporter defines the interface that allows sending trace data. It adds ability
-// to export a batch of Spans to the Exporter interface.
-type TraceExporter interface {
-	Exporter
-	ExportSpans(spans []*trace.SpanData) error
+// TraceDataSender defines the interface that allows sending trace data. It adds ability
+// to send a batch of Spans to the DataSender interface.
+type TraceDataSender interface {
+	DataSender
+	SendSpans(spans []*trace.SpanData) error
 }
 
-// MetricExporter defines the interface that allows sending metric data. It adds ability
-// to export a batch of Metrics to the Exporter interface.
-type MetricExporter interface {
-	Exporter
-	ExportMetrics(metrics consumerdata.MetricsData) error
+// MetricDataSender defines the interface that allows sending metric data. It adds ability
+// to send a batch of Metrics to the DataSender interface.
+type MetricDataSender interface {
+	DataSender
+	SendMetrics(metrics consumerdata.MetricsData) error
 }
 
-// JaegerExporter implements TraceExporter for Jaeger Thrift-HTTP protocol.
-type JaegerExporter struct {
+// JaegerDataSender implements TraceDataSender for Jaeger Thrift-HTTP protocol.
+type JaegerDataSender struct {
 	exporter *jaeger.Exporter
 	port     int
 }
 
-// Ensure JaegerExporter implements TraceExporter.
-var _ TraceExporter = (*JaegerExporter)(nil)
+// Ensure JaegerDataSender implements TraceDataSender.
+var _ TraceDataSender = (*JaegerDataSender)(nil)
 
-// NewJaegerExporter creates a new Jaeger protocol exporter that will send
+// NewJaegerDataSender creates a new Jaeger protocol sender that will send
 // to the specified port after Start is called.
-func NewJaegerExporter(port int) *JaegerExporter {
-	return &JaegerExporter{port: port}
+func NewJaegerDataSender(port int) *JaegerDataSender {
+	return &JaegerDataSender{port: port}
 }
 
-func (je *JaegerExporter) Start() error {
+func (je *JaegerDataSender) Start() error {
 	opts := jaeger.Options{
 		// Use standard URL for Jaeger.
 		CollectorEndpoint: fmt.Sprintf("http://localhost:%d/api/traces", je.port),
@@ -94,18 +94,18 @@ func (je *JaegerExporter) Start() error {
 	return err
 }
 
-func (je *JaegerExporter) ExportSpans(spans []*trace.SpanData) error {
+func (je *JaegerDataSender) SendSpans(spans []*trace.SpanData) error {
 	for _, span := range spans {
 		je.exporter.ExportSpan(span)
 	}
 	return nil
 }
 
-func (je *JaegerExporter) Flush() {
+func (je *JaegerDataSender) Flush() {
 	je.exporter.Flush()
 }
 
-func (je *JaegerExporter) GenConfigYAMLStr() string {
+func (je *JaegerDataSender) GenConfigYAMLStr() string {
 	// Note that this generates a receiver config for agent.
 	// We only need to enable thrift-http protocol because that's what we use in tests.
 	// Due to bug in Jaeger receiver (https://github.com/open-telemetry/opentelemetry-collector/issues/445)
@@ -130,30 +130,30 @@ func (je *JaegerExporter) GenConfigYAMLStr() string {
         endpoint: "localhost:%d"`, je.port)
 }
 
-func (je *JaegerExporter) GetCollectorPort() int {
+func (je *JaegerDataSender) GetCollectorPort() int {
 	return je.port
 }
 
-func (je *JaegerExporter) ProtocolName() string {
+func (je *JaegerDataSender) ProtocolName() string {
 	return "jaeger"
 }
 
-// OcMetricsExporter implements MetricExporter for OpenCensus metrics protocol.
-type OcMetricsExporter struct {
+// OCMetricsDataSender implements MetricDataSender for OpenCensus metrics protocol.
+type OCMetricsDataSender struct {
 	exporter exporter.MetricsExporter
 	port     int
 }
 
-// Ensure OcMetricsExporter implements MetricExporter.
-var _ MetricExporter = (*OcMetricsExporter)(nil)
+// Ensure OCMetricsDataSender implements MetricDataSender.
+var _ MetricDataSender = (*OCMetricsDataSender)(nil)
 
-// NewOcMetricExporter creates a new OpenCensus metric protocol exporter that will send
+// NewOCMetricDataSender creates a new OpenCensus metric protocol sender that will send
 // to the specified port after Start is called.
-func NewOcMetricExporter(port int) *OcMetricsExporter {
-	return &OcMetricsExporter{port: port}
+func NewOCMetricDataSender(port int) *OCMetricsDataSender {
+	return &OCMetricsDataSender{port: port}
 }
 
-func (ome *OcMetricsExporter) Start() error {
+func (ome *OCMetricsDataSender) Start() error {
 	cfg := &opencensusexporter.Config{
 		GRPCSettings: configgrpc.GRPCSettings{
 			Endpoint: fmt.Sprintf("localhost:%d", ome.port),
@@ -171,24 +171,24 @@ func (ome *OcMetricsExporter) Start() error {
 	return nil
 }
 
-func (ome *OcMetricsExporter) ExportMetrics(metrics consumerdata.MetricsData) error {
+func (ome *OCMetricsDataSender) SendMetrics(metrics consumerdata.MetricsData) error {
 	return ome.exporter.ConsumeMetricsData(context.Background(), metrics)
 }
 
-func (ome *OcMetricsExporter) Flush() {
+func (ome *OCMetricsDataSender) Flush() {
 }
 
-func (ome *OcMetricsExporter) GenConfigYAMLStr() string {
+func (ome *OCMetricsDataSender) GenConfigYAMLStr() string {
 	// Note that this generates a receiver config for agent.
 	return fmt.Sprintf(`
   opencensus:
     endpoint: "localhost:%d"`, ome.port)
 }
 
-func (ome *OcMetricsExporter) GetCollectorPort() int {
+func (ome *OCMetricsDataSender) GetCollectorPort() int {
 	return ome.port
 }
 
-func (ome *OcMetricsExporter) ProtocolName() string {
+func (ome *OCMetricsDataSender) ProtocolName() string {
 	return "opencensus"
 }
