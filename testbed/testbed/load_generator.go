@@ -25,8 +25,8 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
-	"go.opencensus.io/trace"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 )
@@ -156,7 +156,7 @@ func (lg *LoadGenerator) generateTrace() {
 
 	traceSender := lg.sender.(TraceDataSender)
 
-	var spans []*trace.SpanData
+	var spans []*tracepb.Span
 	traceID := atomic.AddUint64(&lg.batchesSent, 1)
 	for i := uint(0); i < lg.options.ItemsPerBatch; i++ {
 
@@ -165,44 +165,55 @@ func (lg *LoadGenerator) generateTrace() {
 		spanID := atomic.AddUint64(&lg.dataItemsSent, 1)
 
 		// Create a span.
-		span := &trace.SpanData{
-			SpanContext: trace.SpanContext{
-				TraceID: generateTraceID(traceID),
-				SpanID:  generateSpanID(spanID),
+		span := &tracepb.Span{
+			TraceId: generateTraceID(traceID),
+			SpanId:  generateSpanID(spanID),
+			Name:    &tracepb.TruncatableString{Value: "load-generator-span"},
+			Kind:    tracepb.Span_CLIENT,
+			Attributes: &tracepb.Span_Attributes{
+				AttributeMap: map[string]*tracepb.AttributeValue{
+					"load_generator.span_seq_num": &tracepb.AttributeValue{
+						Value: &tracepb.AttributeValue_IntValue{IntValue: int64(spanID)},
+					},
+					"load_generator.trace_seq_num": &tracepb.AttributeValue{
+						Value: &tracepb.AttributeValue_IntValue{IntValue: int64(traceID)},
+					},
+				},
 			},
-			Name:     "load-generator-span",
-			SpanKind: trace.SpanKindClient,
-			Attributes: map[string]interface{}{
-				"load_generator.span_seq_num":  int64(spanID),
-				"load_generator.trace_seq_num": int64(traceID),
-			},
-			StartTime: startTime,
-			EndTime:   startTime.Add(time.Duration(time.Millisecond)),
+			StartTime: timeToTimestamp(startTime),
+			EndTime:   timeToTimestamp(startTime.Add(time.Duration(time.Millisecond))),
 		}
 
 		// Append attributes.
 		for k, v := range lg.options.Attributes {
-			span.Attributes[k] = v
+			span.Attributes.AttributeMap[k] = &tracepb.AttributeValue{
+				Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: v}},
+			}
 		}
 
 		spans = append(spans, span)
 	}
-	err := traceSender.SendSpans(spans)
+
+	traceData := consumerdata.TraceData{
+		Spans: spans,
+	}
+
+	err := traceSender.SendSpans(traceData)
 	if err != nil {
 		log.Printf("Cannot send traces: %v", err)
 	}
 }
 
-func generateTraceID(id uint64) trace.TraceID {
-	var traceID trace.TraceID
+func generateTraceID(id uint64) []byte {
+	var traceID [16]byte
 	binary.PutUvarint(traceID[:], id)
-	return traceID
+	return traceID[:]
 }
 
-func generateSpanID(id uint64) trace.SpanID {
-	var spanID trace.SpanID
+func generateSpanID(id uint64) []byte {
+	var spanID [8]byte
 	binary.PutUvarint(spanID[:], id)
-	return spanID
+	return spanID[:]
 }
 
 func (lg *LoadGenerator) generateMetrics() {
