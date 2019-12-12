@@ -165,7 +165,7 @@ receivers:
       grpc:
       .
       .
-    remotesampling:
+    remote_sampling:
       fetch_endpoint: "jaeger-collector:1234"
 ``` 
 
