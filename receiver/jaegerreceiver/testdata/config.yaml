@@ -19,7 +19,7 @@ receivers:
         endpoint: "0.0.0.0:456"
       thrift-binary:
         endpoint: "0.0.0.0:789"
-    remotesampling:
+    remote_sampling:
       fetch_endpoint: "jaeger-collector:1234"
 
   # The following demonstrates disabling the receiver.

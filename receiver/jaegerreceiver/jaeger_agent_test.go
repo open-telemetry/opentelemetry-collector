@@ -28,6 +28,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -115,11 +116,11 @@ func TestJaegerAgentUDP_ThriftBinary_InvalidPort(t *testing.T) {
 func initializeGRPCTestServer(t *testing.T, beforeServe func(server *grpc.Server)) (*grpc.Server, net.Addr) {
 	server := grpc.NewServer()
 	lis, err := net.Listen("tcp", "localhost:0")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	beforeServe(server)
 	go func() {
 		err := server.Serve(lis)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	}()
 	return server, lis.Addr()
 }

@@ -115,7 +115,7 @@ const (
 
 // New creates a TraceReceiver that receives traffic as a collector with both Thrift and HTTP transports.
 func New(ctx context.Context, config *Configuration, nextConsumer consumer.TraceConsumer, logger *zap.Logger) (receiver.TraceReceiver, error) {
-	jR := &jReceiver{
+	return &jReceiver{
 		config:          config,
 		defaultAgentCtx: observability.ContextWithReceiverName(context.Background(), "jaeger-agent"),
 		nextConsumer:    nextConsumer,
@@ -123,20 +123,7 @@ func New(ctx context.Context, config *Configuration, nextConsumer consumer.Trace
 			nextConsumer: nextConsumer,
 		},
 		logger: logger,
-	}
-
-	if config.RemoteSamplingEndpoint != "" {
-		// Create upstream grpc client
-		conn, err := grpc.Dial(config.RemoteSamplingEndpoint, grpc.WithInsecure())
-		if err != nil {
-			logger.Error("Error creating grpc connection to jaeger remote sampling endpoint", zap.String("endpoint", config.RemoteSamplingEndpoint))
-			return nil, err
-		}
-
-		jR.agentSamplingManager = jSamplingConfig.NewConfigManager(conn)
-	}
-
-	return jR, nil
+	}, nil
 }
 
 var _ receiver.TraceReceiver = (*jReceiver)(nil)
@@ -411,6 +398,17 @@ func (jr *jReceiver) startAgent(_ receiver.Host) error {
 
 	for _, processor := range jr.agentProcessors {
 		go processor.Serve()
+	}
+
+	// Start upstream grpc client before serving sampling endpoints over HTTP
+	if jr.config.RemoteSamplingEndpoint != "" {
+		conn, err := grpc.Dial(jr.config.RemoteSamplingEndpoint, grpc.WithInsecure())
+		if err != nil {
+			jr.logger.Error("Error creating grpc connection to jaeger remote sampling endpoint", zap.String("endpoint", jr.config.RemoteSamplingEndpoint))
+			return err
+		}
+
+		jr.agentSamplingManager = jSamplingConfig.NewConfigManager(conn)
 	}
 
 	if jr.agentHTTPEnabled() {

@@ -48,9 +48,6 @@ const (
 	defaultGRPCBindEndpoint     = "localhost:14250"
 	defaultHTTPBindEndpoint     = "localhost:14268"
 	defaultTChannelBindEndpoint = "localhost:14267"
-
-	// Endpoint to fetch remote sampling config
-	fetchEndpoint = "fetch_endpoint"
 )
 
 // Factory is the factory for Jaeger receiver.
