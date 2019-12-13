@@ -29,8 +29,8 @@ import (
 // MockBackend is a backend that allows receiving the data locally.
 type MockBackend struct {
 	// Metric and trace consumers
-	tc *mockTraceConsumer
-	mc *mockMetricConsumer
+	tc *MockTraceConsumer
+	mc *MockMetricConsumer
 
 	receiver DataReceiver
 
@@ -48,8 +48,8 @@ func NewMockBackend(logFilePath string, receiver DataReceiver) *MockBackend {
 	mb := &MockBackend{
 		logFilePath: logFilePath,
 		receiver:    receiver,
-		tc:          &mockTraceConsumer{},
-		mc:          &mockMetricConsumer{},
+		tc:          &MockTraceConsumer{},
+		mc:          &MockMetricConsumer{},
 	}
 	return mb
 }
@@ -110,11 +110,11 @@ func (mb *MockBackend) DataItemsReceived() uint64 {
 	return atomic.LoadUint64(&mb.tc.spansReceived) + atomic.LoadUint64(&mb.mc.metricsReceived)
 }
 
-type mockTraceConsumer struct {
+type MockTraceConsumer struct {
 	spansReceived uint64
 }
 
-func (tc *mockTraceConsumer) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
+func (tc *MockTraceConsumer) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	atomic.AddUint64(&tc.spansReceived, uint64(len(td.Spans)))
 
 	for _, span := range td.Spans {
@@ -139,11 +139,11 @@ func (tc *mockTraceConsumer) ConsumeTraceData(ctx context.Context, td consumerda
 	return nil
 }
 
-type mockMetricConsumer struct {
+type MockMetricConsumer struct {
 	metricsReceived uint64
 }
 
-func (mc *mockMetricConsumer) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
+func (mc *MockMetricConsumer) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
 	dataPoints := 0
 	for _, metric := range md.Metrics {
 		for _, ts := range metric.Timeseries {

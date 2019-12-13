@@ -32,7 +32,7 @@ import (
 // from Collector and the corresponding entity in the Collector that sends this data is
 // an exporter.
 type DataReceiver interface {
-	Start(tc *mockTraceConsumer, mc *mockMetricConsumer) error
+	Start(tc *MockTraceConsumer, mc *MockMetricConsumer) error
 	Stop()
 
 	// Generate a config string to place in exporter part of collector config
@@ -45,7 +45,8 @@ type DataReceiver interface {
 
 // DataReceiverBase implement basic functions needed by all receivers.
 type DataReceiverBase struct {
-	port int
+	// Port on which to listen.
+	Port int
 }
 
 func (mb *DataReceiverBase) Context() context.Context {
@@ -70,11 +71,11 @@ const DefaultOCPort = 56565
 // NewOCDataReceiver creates a new OCDataReceiver that will listen on the specified port after Start
 // is called.
 func NewOCDataReceiver(port int) *OCDataReceiver {
-	return &OCDataReceiver{DataReceiverBase: DataReceiverBase{port: port}}
+	return &OCDataReceiver{DataReceiverBase: DataReceiverBase{Port: port}}
 }
 
-func (or *OCDataReceiver) Start(tc *mockTraceConsumer, mc *mockMetricConsumer) error {
-	addr := fmt.Sprintf("localhost:%d", or.port)
+func (or *OCDataReceiver) Start(tc *MockTraceConsumer, mc *MockMetricConsumer) error {
+	addr := fmt.Sprintf("localhost:%d", or.Port)
 	var err error
 	or.receiver, err = opencensusreceiver.New(addr, tc, mc)
 	if err != nil {
@@ -97,7 +98,7 @@ func (or *OCDataReceiver) GenConfigYAMLStr() string {
 	// Note that this generates an exporter config for agent.
 	return fmt.Sprintf(`
   opencensus:
-    endpoint: "localhost:%d"`, or.port)
+    endpoint: "localhost:%d"`, or.Port)
 }
 
 func (or *OCDataReceiver) ProtocolName() string {
@@ -113,12 +114,12 @@ type JaegerDataReceiver struct {
 const DefaultJaegerPort = 14268
 
 func NewJaegerDataReceiver(port int) *JaegerDataReceiver {
-	return &JaegerDataReceiver{DataReceiverBase: DataReceiverBase{port: port}}
+	return &JaegerDataReceiver{DataReceiverBase: DataReceiverBase{Port: port}}
 }
 
-func (jr *JaegerDataReceiver) Start(tc *mockTraceConsumer, mc *mockMetricConsumer) error {
+func (jr *JaegerDataReceiver) Start(tc *MockTraceConsumer, mc *MockMetricConsumer) error {
 	jaegerCfg := jaegerreceiver.Configuration{
-		CollectorHTTPPort: jr.port,
+		CollectorHTTPPort: jr.Port,
 	}
 	var err error
 	jr.receiver, err = jaegerreceiver.New(context.Background(), &jaegerCfg, tc, zap.NewNop())
@@ -141,7 +142,7 @@ func (jr *JaegerDataReceiver) GenConfigYAMLStr() string {
 	// Note that this generates an exporter config for agent.
 	return fmt.Sprintf(`
   jaeger_thrift_http:
-    url: "http://localhost:%d/api/traces"`, jr.port)
+    url: "http://localhost:%d/api/traces"`, jr.Port)
 }
 
 func (jr *JaegerDataReceiver) ProtocolName() string {
