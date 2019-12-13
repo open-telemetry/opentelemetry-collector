@@ -42,13 +42,14 @@ func createConfigFile(sender testbed.DataSender, receiver testbed.DataReceiver) 
 receivers:%v
 exporters:%v
 processors:
+  batch:
   queued_retry:
 
 service:
   pipelines:
     traces:
       receivers: [%v]
-      processors: [queued_retry]
+      processors: [batch,queued_retry]
       exporters: [%v]
 `
 	} else {
@@ -59,7 +60,7 @@ exporters:%v
 
 service:
   pipelines:
-    METRICS:
+    metrics:
       receivers: [%v]
       exporters: [%v]
 `
@@ -110,7 +111,7 @@ func Scenario10kItemsPerSecond(
 	defer tc.Stop()
 
 	tc.SetExpectedMaxCPU(150)
-	tc.SetExpectedMaxRAM(70)
+	tc.SetExpectedMaxRAM(90)
 
 	tc.StartBackend()
 	tc.StartAgent()
