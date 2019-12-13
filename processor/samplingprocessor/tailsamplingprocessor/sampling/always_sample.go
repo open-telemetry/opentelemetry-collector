@@ -15,9 +15,8 @@
 package sampling
 
 import (
-	"go.uber.org/zap"
-
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"go.uber.org/zap"
 )
 
 type alwaysSample struct {

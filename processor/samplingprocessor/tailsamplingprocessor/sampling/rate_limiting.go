@@ -17,9 +17,8 @@ package sampling
 import (
 	"time"
 
-	"go.uber.org/zap"
-
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"go.uber.org/zap"
 )
 
 type rateLimiting struct {
