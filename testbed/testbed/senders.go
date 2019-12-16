@@ -65,26 +65,48 @@ type MetricDataSender interface {
 	SendMetrics(metrics consumerdata.MetricsData) error
 }
 
-// JaegerDataSender implements TraceDataSender for Jaeger Thrift-HTTP protocol.
-type JaegerDataSender struct {
-	// exporter *jaeger.Exporter
+// DataSenderOverTraceExporter partially implements TraceDataSender via a TraceExporter.
+type DataSenderOverTraceExporter struct {
 	exporter exporter.TraceExporter
-	port     int
+	Port     int
 }
 
-// Ensure JaegerDataSender implements TraceDataSender.
-var _ TraceDataSender = (*JaegerDataSender)(nil)
-
-// NewJaegerDataSender creates a new Jaeger protocol sender that will send
+// NewDataSenderOverExporter creates a new sender that will send
 // to the specified port after Start is called.
-func NewJaegerDataSender(port int) *JaegerDataSender {
-	return &JaegerDataSender{port: port}
+func NewDataSenderOverExporter(port int) *DataSenderOverTraceExporter {
+	return &DataSenderOverTraceExporter{Port: port}
 }
 
-func (je *JaegerDataSender) Start() error {
+func (ds *DataSenderOverTraceExporter) SendSpans(traces consumerdata.TraceData) error {
+	return ds.exporter.ConsumeTraceData(context.Background(), traces)
+}
+
+func (ds *DataSenderOverTraceExporter) Flush() {
+	// TraceExporter interface does not support Flush, so nothing to do.
+}
+
+func (ds *DataSenderOverTraceExporter) GetCollectorPort() int {
+	return ds.Port
+}
+
+// JaegerThriftDataSender implements TraceDataSender for Jaeger Thrift-HTTP protocol.
+type JaegerThriftDataSender struct {
+	DataSenderOverTraceExporter
+}
+
+// Ensure JaegerThriftDataSender implements TraceDataSender.
+var _ TraceDataSender = (*JaegerThriftDataSender)(nil)
+
+// NewJaegerThriftDataSender creates a new Jaeger protocol sender that will send
+// to the specified port after Start is called.
+func NewJaegerThriftDataSender(port int) *JaegerThriftDataSender {
+	return &JaegerThriftDataSender{DataSenderOverTraceExporter{Port: port}}
+}
+
+func (je *JaegerThriftDataSender) Start() error {
 	cfg := &jaegerthrifthttpexporter.Config{
 		// Use standard URL for Jaeger.
-		URL:     fmt.Sprintf("http://localhost:%d/api/traces", je.port),
+		URL:     fmt.Sprintf("http://localhost:%d/api/traces", je.Port),
 		Timeout: 5 * time.Second,
 	}
 
@@ -100,14 +122,7 @@ func (je *JaegerDataSender) Start() error {
 	return err
 }
 
-func (je *JaegerDataSender) SendSpans(traces consumerdata.TraceData) error {
-	return je.exporter.ConsumeTraceData(context.Background(), traces)
-}
-
-func (je *JaegerDataSender) Flush() {
-}
-
-func (je *JaegerDataSender) GenConfigYAMLStr() string {
+func (je *JaegerThriftDataSender) GenConfigYAMLStr() string {
 	// Note that this generates a receiver config for agent.
 	// We only need to enable thrift-http protocol because that's what we use in tests.
 	// Due to bug in Jaeger receiver (https://github.com/open-telemetry/opentelemetry-collector/issues/445)
@@ -129,15 +144,54 @@ func (je *JaegerDataSender) GenConfigYAMLStr() string {
       thrift-binary:
         endpoint: "localhost:8374"
       thrift-http:
-        endpoint: "localhost:%d"`, je.port)
+        endpoint: "localhost:%d"`, je.Port)
 }
 
-func (je *JaegerDataSender) GetCollectorPort() int {
-	return je.port
-}
-
-func (je *JaegerDataSender) ProtocolName() string {
+func (je *JaegerThriftDataSender) ProtocolName() string {
 	return "jaeger"
+}
+
+// OCTraceDataSender implements TraceDataSender for OpenCensus trace protocol.
+type OCTraceDataSender struct {
+	DataSenderOverTraceExporter
+}
+
+// Ensure OCTraceDataSender implements TraceDataSender.
+var _ TraceDataSender = (*OCTraceDataSender)(nil)
+
+// NewOCTraceDataSender creates a new OCTraceDataSender that will send
+// to the specified port after Start is called.
+func NewOCTraceDataSender(port int) *OCTraceDataSender {
+	return &OCTraceDataSender{DataSenderOverTraceExporter{Port: port}}
+}
+
+func (ote *OCTraceDataSender) Start() error {
+	cfg := &opencensusexporter.Config{
+		GRPCSettings: configgrpc.GRPCSettings{
+			Endpoint: fmt.Sprintf("localhost:%d", ote.Port),
+		},
+	}
+
+	factory := opencensusexporter.Factory{}
+	exporter, err := factory.CreateTraceExporter(zap.L(), cfg)
+
+	if err != nil {
+		return err
+	}
+
+	ote.exporter = exporter
+	return err
+}
+
+func (ote *OCTraceDataSender) GenConfigYAMLStr() string {
+	// Note that this generates a receiver config for agent.
+	return fmt.Sprintf(`
+  opencensus:
+    endpoint: "localhost:%d"`, ote.Port)
+}
+
+func (ote *OCTraceDataSender) ProtocolName() string {
+	return "opencensus"
 }
 
 // OCMetricsDataSender implements MetricDataSender for OpenCensus metrics protocol.

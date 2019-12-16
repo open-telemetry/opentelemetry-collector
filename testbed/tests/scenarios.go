@@ -158,7 +158,7 @@ func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, opts 
 
 			tc := testbed.NewTestCase(
 				t,
-				testbed.NewJaegerDataSender(testbed.DefaultJaegerPort),
+				testbed.NewJaegerThriftDataSender(testbed.DefaultJaegerPort),
 				testbed.NewOCDataReceiver(testbed.DefaultOCPort),
 				opts...,
 			)
