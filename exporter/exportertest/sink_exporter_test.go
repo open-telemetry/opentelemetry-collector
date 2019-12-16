@@ -38,8 +38,6 @@ func TestSinkTraceExporter(t *testing.T) {
 	}
 	got := sink.AllTraces()
 	assert.Equal(t, want, got)
-
-	assert.Equal(t, "sink_trace", sink.Name())
 }
 
 func TestSinkMetricsExporter(t *testing.T) {
@@ -55,6 +53,4 @@ func TestSinkMetricsExporter(t *testing.T) {
 	}
 	got := sink.AllMetrics()
 	assert.Equal(t, want, got)
-
-	assert.Equal(t, "sink_metrics", sink.Name())
 }

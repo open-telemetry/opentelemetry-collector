@@ -160,10 +160,6 @@ func extractStringAttribute(
 	return value, ok
 }
 
-func (ze *zipkinExporter) Name() string {
-	return ze.defaultServiceName
-}
-
 func (ze *zipkinExporter) Start(host exporter.Host) error {
 	return nil
 }
