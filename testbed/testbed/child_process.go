@@ -30,29 +30,29 @@ import (
 	"github.com/shirou/gopsutil/process"
 )
 
-// resourceSpec is a resource consumption specification.
-type resourceSpec struct {
+// ResourceSpec is a resource consumption specification.
+type ResourceSpec struct {
 	// Percentage of one core the process is expected to consume at most.
 	// Test is aborted and failed if consumption during
-	// resourceCheckPeriod exceeds this number. If 0 the CPU
+	// ResourceCheckPeriod exceeds this number. If 0 the CPU
 	// consumption is not monitored and does not affect the test result.
-	expectedMaxCPU uint32
+	ExpectedMaxCPU uint32
 
 	// Maximum RAM in MiB the process is expected to consume.
 	// Test is aborted and failed if consumption exceeds this number.
 	// If 0 memory consumption is not monitored and does not affect
 	// the test result.
-	expectedMaxRAM uint32
+	ExpectedMaxRAM uint32
 
 	// Period during which CPU and RAM of the process are measured.
 	// Bigger numbers will result in more averaging of short spikes.
-	resourceCheckPeriod time.Duration
+	ResourceCheckPeriod time.Duration
 }
 
-// isSpecified returns true if any part of resourceSpec is specified,
+// isSpecified returns true if any part of ResourceSpec is specified,
 // i.e. has non-zero value.
-func (rs *resourceSpec) isSpecified() bool {
-	return rs != nil && (rs.expectedMaxCPU != 0 || rs.expectedMaxRAM != 0)
+func (rs *ResourceSpec) isSpecified() bool {
+	return rs != nil && (rs.ExpectedMaxCPU != 0 || rs.ExpectedMaxRAM != 0)
 }
 
 // childProcess is a child process that can be monitored and the output
@@ -74,7 +74,7 @@ type childProcess struct {
 	doneSignal chan struct{}
 
 	// Resource specification that must be monitored for.
-	resourceSpec *resourceSpec
+	resourceSpec *ResourceSpec
 
 	// Process monitoring data.
 	processMon *process.Process
@@ -112,7 +112,7 @@ type startParams struct {
 	logFilePath  string
 	cmd          string
 	cmdArgs      []string
-	resourceSpec *resourceSpec
+	resourceSpec *ResourceSpec
 }
 
 type ResourceConsumption struct {
@@ -268,8 +268,8 @@ func (cp *childProcess) watchResourceConsumption() error {
 			cp.cmd.Process.Pid, err.Error())
 	}
 
-	// Measure every resourceCheckPeriod.
-	ticker := time.NewTicker(cp.resourceSpec.resourceCheckPeriod)
+	// Measure every ResourceCheckPeriod.
+	ticker := time.NewTicker(cp.resourceSpec.ResourceCheckPeriod)
 	defer ticker.Stop()
 
 	for {
@@ -345,15 +345,15 @@ func (cp *childProcess) fetchCPUUsage() {
 func (cp *childProcess) checkAllowedResourceUsage() error {
 	// Check if current CPU usage exceeds expected.
 	var errMsg string
-	if cp.resourceSpec.expectedMaxCPU != 0 && cp.cpuPercentX1000Cur/1000 > cp.resourceSpec.expectedMaxCPU {
+	if cp.resourceSpec.ExpectedMaxCPU != 0 && cp.cpuPercentX1000Cur/1000 > cp.resourceSpec.ExpectedMaxCPU {
 		errMsg = fmt.Sprintf("CPU consumption is %.1f%%, max expected is %d%%",
-			float64(cp.cpuPercentX1000Cur)/1000.0, cp.resourceSpec.expectedMaxCPU)
+			float64(cp.cpuPercentX1000Cur)/1000.0, cp.resourceSpec.ExpectedMaxCPU)
 	}
 
 	// Check if current RAM usage exceeds expected.
-	if cp.resourceSpec.expectedMaxRAM != 0 && cp.ramMiBCur > cp.resourceSpec.expectedMaxRAM {
+	if cp.resourceSpec.ExpectedMaxRAM != 0 && cp.ramMiBCur > cp.resourceSpec.ExpectedMaxRAM {
 		errMsg = fmt.Sprintf("RAM consumption is %d MiB, max expected is %d MiB",
-			cp.ramMiBCur, cp.resourceSpec.expectedMaxRAM)
+			cp.ramMiBCur, cp.resourceSpec.ExpectedMaxRAM)
 	}
 
 	if errMsg == "" {

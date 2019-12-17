@@ -36,9 +36,7 @@ func TestIdleMode(t *testing.T) {
 	)
 	defer tc.Stop()
 
-	tc.SetExpectedMaxCPU(4)
-	tc.SetExpectedMaxRAM(50)
-
+	tc.SetResourceLimits(testbed.ResourceSpec{ExpectedMaxCPU: 4, ExpectedMaxRAM: 50})
 	tc.StartAgent()
 
 	tc.Sleep(tc.Duration)
@@ -61,7 +59,7 @@ func TestBallastMemory(t *testing.T) {
 			testbed.NewOCDataReceiver(testbed.DefaultOCPort),
 			testbed.WithSkipResults(),
 		)
-		tc.SetExpectedMaxRAM(test.maxRSS)
+		tc.SetResourceLimits(testbed.ResourceSpec{ExpectedMaxRAM: test.maxRSS})
 
 		tc.StartAgent("--mem-ballast-size-mib", strconv.Itoa(int(test.ballastSize)))
 

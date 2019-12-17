@@ -34,19 +34,28 @@ func TestMain(m *testing.M) {
 
 func TestTrace10kSPS(t *testing.T) {
 	tests := []struct {
-		name     string
-		sender   testbed.DataSender
-		receiver testbed.DataReceiver
+		name         string
+		sender       testbed.DataSender
+		receiver     testbed.DataReceiver
+		resourceSpec testbed.ResourceSpec
 	}{
 		{
 			"JaegerThrift",
 			testbed.NewJaegerThriftDataSender(testbed.GetAvailablePort(t)),
 			testbed.NewJaegerDataReceiver(testbed.GetAvailablePort(t)),
+			testbed.ResourceSpec{
+				ExpectedMaxCPU: 44,
+				ExpectedMaxRAM: 84,
+			},
 		},
 		{
 			"OpenCensus",
 			testbed.NewOCTraceDataSender(testbed.GetAvailablePort(t)),
 			testbed.NewOCDataReceiver(testbed.GetAvailablePort(t)),
+			testbed.ResourceSpec{
+				ExpectedMaxCPU: 32,
+				ExpectedMaxRAM: 84,
+			},
 		},
 	}
 
@@ -57,6 +66,7 @@ func TestTrace10kSPS(t *testing.T) {
 				test.sender,
 				test.receiver,
 				testbed.LoadOptions{},
+				test.resourceSpec,
 			)
 		})
 	}
@@ -70,8 +80,10 @@ func TestTraceNoBackend10kSPSJaeger(t *testing.T) {
 	)
 	defer tc.Stop()
 
-	tc.SetExpectedMaxCPU(200)
-	tc.SetExpectedMaxRAM(200)
+	tc.SetResourceLimits(testbed.ResourceSpec{
+		ExpectedMaxCPU: 45,
+		ExpectedMaxRAM: 198,
+	})
 
 	tc.StartAgent()
 	tc.StartLoad(testbed.LoadOptions{DataItemsPerSecond: 10000})

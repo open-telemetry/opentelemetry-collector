@@ -31,9 +31,7 @@ func TestMetricNoBackend10kDPSOpenCensus(t *testing.T) {
 	)
 	defer tc.Stop()
 
-	tc.SetExpectedMaxCPU(200)
-	tc.SetExpectedMaxRAM(200)
-
+	tc.SetResourceLimits(testbed.ResourceSpec{ExpectedMaxCPU: 200, ExpectedMaxRAM: 200})
 	tc.StartAgent()
 
 	tc.StartLoad(testbed.LoadOptions{DataItemsPerSecond: 10000})
@@ -43,14 +41,19 @@ func TestMetricNoBackend10kDPSOpenCensus(t *testing.T) {
 
 func TestMetric10kDPS(t *testing.T) {
 	tests := []struct {
-		name     string
-		sender   testbed.DataSender
-		receiver testbed.DataReceiver
+		name         string
+		sender       testbed.DataSender
+		receiver     testbed.DataReceiver
+		resourceSpec testbed.ResourceSpec
 	}{
 		{
 			"OpenCensus",
 			testbed.NewOCMetricDataSender(testbed.GetAvailablePort(t)),
 			testbed.NewOCDataReceiver(testbed.GetAvailablePort(t)),
+			testbed.ResourceSpec{
+				ExpectedMaxCPU: 8,
+				ExpectedMaxRAM: 60,
+			},
 		},
 	}
 
@@ -61,6 +64,7 @@ func TestMetric10kDPS(t *testing.T) {
 				test.sender,
 				test.receiver,
 				testbed.LoadOptions{ItemsPerBatch: 100},
+				test.resourceSpec,
 			)
 		})
 	}
