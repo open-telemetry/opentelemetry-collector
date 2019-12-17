@@ -145,6 +145,31 @@ receivers:
           cert_file: /cert.pem # path to certificate
         endpoint: "localhost:9876"
 ``` 
+
+### Remote Sampling
+The Jaeger receiver also supports fetching sampling configuration from a remote collector.
+It works by proxying client requests for remote sampling configuration to the configured collector.
+
++---------------+                   +--------------+              +-----------------+
+|               |       get         |              |    proxy     |                 |
+|    client     +---  sampling ---->+    agent     +------------->+    collector    |
+|               |     strategy      |              |              |                 |
++---------------+                   +--------------+              +-----------------+
+
+Remote sampling can be enabled by specifying the following lines in the jaeger receiver config:
+
+```yaml
+receivers:
+  jaeger:
+    protocols:
+      grpc:
+      .
+      .
+    remote_sampling:
+      fetch_endpoint: "jaeger-collector:1234"
+``` 
+
+
 ## <a name="prometheus"></a>Prometheus Receiver
 **Only metrics are supported.**
 

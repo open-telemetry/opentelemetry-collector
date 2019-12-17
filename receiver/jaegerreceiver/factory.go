@@ -107,6 +107,7 @@ func (f *Factory) CreateTraceReceiver(
 	protoTChannel := rCfg.Protocols[protoThriftTChannel]
 	protoThriftCompact := rCfg.Protocols[protoThriftCompact]
 	protoThriftBinary := rCfg.Protocols[protoThriftBinary]
+	remoteSamplingConfig := rCfg.RemoteSampling
 
 	config := Configuration{}
 	var grpcServerOptions []grpc.ServerOption
@@ -159,6 +160,10 @@ func (f *Factory) CreateTraceReceiver(
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	if remoteSamplingConfig != nil {
+		config.RemoteSamplingEndpoint = remoteSamplingConfig.FetchEndpoint
 	}
 
 	if (protoGRPC == nil && protoHTTP == nil && protoTChannel == nil && protoThriftBinary == nil && protoThriftCompact == nil) ||

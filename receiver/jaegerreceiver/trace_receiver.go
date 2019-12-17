@@ -26,6 +26,7 @@ import (
 	apacheThrift "github.com/apache/thrift/lib/go/thrift"
 	"github.com/gorilla/mux"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/configmanager"
+	jSamplingConfig "github.com/jaegertracing/jaeger/cmd/agent/app/configmanager/grpc"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/httpserver"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/processors"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/reporter"
@@ -62,6 +63,7 @@ type Configuration struct {
 	AgentCompactThriftPort int
 	AgentBinaryThriftPort  int
 	AgentHTTPPort          int
+	RemoteSamplingEndpoint string
 }
 
 // Receiver type is used to receive spans that were originally intended to be sent to Jaeger.
@@ -81,8 +83,9 @@ type jReceiver struct {
 	tchanServer     *jTchannelReceiver
 	collectorServer *http.Server
 
-	agentProcessors []processors.Processor
-	agentServer     *http.Server
+	agentSamplingManager *jSamplingConfig.SamplingManager
+	agentProcessors      []processors.Processor
+	agentServer          *http.Server
 
 	defaultAgentCtx context.Context
 	logger          *zap.Logger
@@ -339,11 +342,18 @@ func (jr *jReceiver) EmitBatch(batch *jaeger.Batch) error {
 }
 
 func (jr *jReceiver) GetSamplingStrategy(serviceName string) (*sampling.SamplingStrategyResponse, error) {
-	return &sampling.SamplingStrategyResponse{}, nil
+	return jr.agentSamplingManager.GetSamplingStrategy(serviceName)
 }
 
 func (jr *jReceiver) GetBaggageRestrictions(serviceName string) ([]*baggage.BaggageRestriction, error) {
-	return nil, nil
+	br, err := jr.agentSamplingManager.GetBaggageRestrictions(serviceName)
+	if err != nil {
+		// Baggage restrictions are not yet implemented - refer to - https://github.com/jaegertracing/jaeger/issues/373
+		// As of today, GetBaggageRestrictions() always returns an error.
+		// However, we `return nil, nil` here in order to serve a valid `200 OK` response.
+		return nil, nil
+	}
+	return br, nil
 }
 
 func (jr *jReceiver) PostSpans(ctx context.Context, r *api_v2.PostSpansRequest) (*api_v2.PostSpansResponse, error) {
@@ -388,6 +398,17 @@ func (jr *jReceiver) startAgent(_ receiver.Host) error {
 
 	for _, processor := range jr.agentProcessors {
 		go processor.Serve()
+	}
+
+	// Start upstream grpc client before serving sampling endpoints over HTTP
+	if jr.config.RemoteSamplingEndpoint != "" {
+		conn, err := grpc.Dial(jr.config.RemoteSamplingEndpoint, grpc.WithInsecure())
+		if err != nil {
+			jr.logger.Error("Error creating grpc connection to jaeger remote sampling endpoint", zap.String("endpoint", jr.config.RemoteSamplingEndpoint))
+			return err
+		}
+
+		jr.agentSamplingManager = jSamplingConfig.NewConfigManager(conn)
 	}
 
 	if jr.agentHTTPEnabled() {

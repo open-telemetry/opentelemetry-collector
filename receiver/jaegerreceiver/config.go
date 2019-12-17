@@ -18,11 +18,17 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/receiver"
 )
 
+// RemoteSamplingConfig defines config key for remote sampling fetch endpoint
+type RemoteSamplingConfig struct {
+	FetchEndpoint string `mapstructure:"fetch_endpoint"`
+}
+
 // Config defines configuration for Jaeger receiver.
 type Config struct {
-	TypeVal   string                                      `mapstructure:"-"`
-	NameVal   string                                      `mapstructure:"-"`
-	Protocols map[string]*receiver.SecureReceiverSettings `mapstructure:"protocols"`
+	TypeVal        string                                      `mapstructure:"-"`
+	NameVal        string                                      `mapstructure:"-"`
+	Protocols      map[string]*receiver.SecureReceiverSettings `mapstructure:"protocols"`
+	RemoteSampling *RemoteSamplingConfig                       `mapstructure:"remote_sampling"`
 }
 
 // Name gets the receiver name.

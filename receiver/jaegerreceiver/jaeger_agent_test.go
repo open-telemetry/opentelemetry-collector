@@ -26,9 +26,12 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/google/go-cmp/cmp"
+	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
@@ -110,10 +113,35 @@ func TestJaegerAgentUDP_ThriftBinary_InvalidPort(t *testing.T) {
 	jr.StopTraceReception()
 }
 
+func initializeGRPCTestServer(t *testing.T, beforeServe func(server *grpc.Server)) (*grpc.Server, net.Addr) {
+	server := grpc.NewServer()
+	lis, err := net.Listen("tcp", "localhost:0")
+	require.NoError(t, err)
+	beforeServe(server)
+	go func() {
+		err := server.Serve(lis)
+		require.NoError(t, err)
+	}()
+	return server, lis.Addr()
+}
+
+type mockSamplingHandler struct {
+}
+
+func (*mockSamplingHandler) GetSamplingStrategy(context.Context, *api_v2.SamplingStrategyParameters) (*api_v2.SamplingStrategyResponse, error) {
+	return &api_v2.SamplingStrategyResponse{StrategyType: api_v2.SamplingStrategyType_PROBABILISTIC}, nil
+}
+
 func TestJaegerHTTP(t *testing.T) {
+	s, addr := initializeGRPCTestServer(t, func(s *grpc.Server) {
+		api_v2.RegisterSamplingManagerServer(s, &mockSamplingHandler{})
+	})
+	defer s.GracefulStop()
+
 	port := testutils.GetAvailablePort(t)
 	config := &Configuration{
-		AgentHTTPPort: int(port),
+		AgentHTTPPort:          int(port),
+		RemoteSamplingEndpoint: addr.String(),
 	}
 	jr, err := New(context.Background(), config, nil, zap.NewNop())
 	assert.NoError(t, err, "Failed to create new Jaeger Receiver")
@@ -127,7 +155,6 @@ func TestJaegerHTTP(t *testing.T) {
 	err = testutils.WaitForPort(t, port)
 	assert.NoError(t, err, "WaitForPort failed")
 
-	// this functionality is just stubbed out at the moment.  just confirm they 200.
 	testURL := fmt.Sprintf("http://localhost:%d/sampling?service=test", port)
 	resp, err := http.Get(testURL)
 	assert.NoError(t, err, "should not have failed to make request")
