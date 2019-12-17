@@ -25,7 +25,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/processor"
 )
 
+// samplingPriority has the semantic result of parsing the "sampling.priority"
+// attribute per OpenTracing semantic conventions.
+type samplingPriority int
+
 const (
+	deferDecision samplingPriority = iota
+	mustSampleSpan
+	doNotSampleSpan
+
 	// The constants help translate user friendly percentages to numbers direct used in sampling.
 	numHashBuckets        = 0x4000 // Using a power of 2 to avoid division.
 	bitMaskHashBuckets    = numHashBuckets - 1
@@ -57,9 +65,6 @@ func NewTraceProcessor(nextConsumer consumer.TraceConsumer, cfg Config) (process
 
 func (tsp *tracesamplerprocessor) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	scaledSamplingRate := tsp.scaledSamplingRate
-	if scaledSamplingRate >= numHashBuckets {
-		return tsp.nextConsumer.ConsumeTraceData(ctx, td)
-	}
 
 	sampledTraceData := consumerdata.TraceData{
 		Node:         td.Node,
@@ -69,10 +74,21 @@ func (tsp *tracesamplerprocessor) ConsumeTraceData(ctx context.Context, td consu
 
 	sampledSpans := make([]*tracepb.Span, 0, len(td.Spans))
 	for _, span := range td.Spans {
-		// If one assumes random trace ids hashing may seems avoidable, however, traces can be coming from sources
-		// with various different criteria to generate trace id and perhaps were already sampled without hashing.
-		// Hashing here prevents bias due to such systems.
-		if hash(span.TraceId, tsp.hashSeed)&bitMaskHashBuckets < scaledSamplingRate {
+		samplingPriority := parseSpanSamplingPriority(span)
+		if samplingPriority == doNotSampleSpan {
+			// Take a restrictive approach since some may use this to remove spans from traces.
+			continue
+		}
+
+		sampled :=
+			// First check sampling priority per OpenTracing semantics.
+			samplingPriority == mustSampleSpan ||
+				// If one assumes random trace ids hashing may seems avoidable, however, traces can be coming from sources
+				// with various different criteria to generate trace id and perhaps were already sampled without hashing.
+				// Hashing here prevents bias due to such systems.
+				hash(span.TraceId, tsp.hashSeed)&bitMaskHashBuckets < scaledSamplingRate
+
+		if sampled {
 			sampledSpans = append(sampledSpans, span)
 		}
 	}
@@ -89,6 +105,30 @@ func (tsp *tracesamplerprocessor) GetCapabilities() processor.Capabilities {
 // Shutdown is invoked during service shutdown.
 func (tsp *tracesamplerprocessor) Shutdown() error {
 	return nil
+}
+
+// parseSpanSamplingPriority checks if the span has the "sampling.priority" tag to
+// decide if the span should be sampled or not. The usage of the tag follows the
+// OpenTracing semantic tags:
+// https://github.com/opentracing/specification/blob/master/semantic_conventions.md#span-tags-table
+func parseSpanSamplingPriority(span *tracepb.Span) samplingPriority {
+	attribMap := span.GetAttributes().GetAttributeMap()
+	if attribMap == nil {
+		return deferDecision
+	}
+
+	samplingPriorityAttrib := attribMap["sampling.priority"]
+	if samplingPriorityAttrib == nil {
+		return deferDecision
+	}
+
+	// Use a restrict approach: if not set per OpenTracing semantic conventions
+	// as an integer different than zero assume do not sample.
+	if samplingPriorityAttrib.GetIntValue() != 0 {
+		return mustSampleSpan
+	}
+
+	return doNotSampleSpan
 }
 
 // hash is a murmur3 hash function, see http://en.wikipedia.org/wiki/MurmurHash.
