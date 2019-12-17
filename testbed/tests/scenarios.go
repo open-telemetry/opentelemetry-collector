@@ -99,6 +99,7 @@ func Scenario10kItemsPerSecond(
 	sender testbed.DataSender,
 	receiver testbed.DataReceiver,
 	loadOptions testbed.LoadOptions,
+	resourceSpec testbed.ResourceSpec,
 ) {
 	configFile := createConfigFile(sender, receiver)
 	defer os.Remove(configFile)
@@ -110,9 +111,7 @@ func Scenario10kItemsPerSecond(
 	tc := testbed.NewTestCase(t, sender, receiver, testbed.WithConfigFile(configFile))
 	defer tc.Stop()
 
-	tc.SetExpectedMaxCPU(150)
-	tc.SetExpectedMaxRAM(90)
-
+	tc.SetResourceLimits(resourceSpec)
 	tc.StartBackend()
 	tc.StartAgent()
 
@@ -164,8 +163,10 @@ func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, opts 
 			)
 			defer tc.Stop()
 
-			tc.SetExpectedMaxCPU(test.expectedMaxCPU)
-			tc.SetExpectedMaxRAM(test.expectedMaxRAM)
+			tc.SetResourceLimits(testbed.ResourceSpec{
+				ExpectedMaxCPU: test.expectedMaxCPU,
+				ExpectedMaxRAM: test.expectedMaxRAM,
+			})
 
 			tc.StartBackend()
 			tc.StartAgent(args...)

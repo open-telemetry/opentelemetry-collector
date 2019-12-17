@@ -44,7 +44,7 @@ type TestCase struct {
 	// loadSpecFile string
 
 	// Resource spec for agent.
-	resourceSpec resourceSpec
+	resourceSpec ResourceSpec
 
 	// Agent process.
 	agentProc childProcess
@@ -112,10 +112,10 @@ func NewTestCase(
 	}
 
 	// Set default resource check period.
-	tc.resourceSpec.resourceCheckPeriod = 3 * time.Second
-	if tc.Duration < tc.resourceSpec.resourceCheckPeriod {
+	tc.resourceSpec.ResourceCheckPeriod = 3 * time.Second
+	if tc.Duration < tc.resourceSpec.ResourceCheckPeriod {
 		// Resource check period should not be longer than entire test duration.
-		tc.resourceSpec.resourceCheckPeriod = tc.Duration
+		tc.resourceSpec.ResourceCheckPeriod = tc.Duration
 	}
 
 	configFile := tc.agentConfigFile
@@ -150,18 +150,20 @@ func (tc *TestCase) composeTestResultFileName(fileName string) string {
 	return fileName
 }
 
-// SetExpectedMaxCPU sets the percentage of one core agent is expected to consume at most.
-// Error is signalled if consumption during resourceCheckPeriod exceeds this number.
-// If this function is not called the CPU consumption does not affect the test result.
-func (tc *TestCase) SetExpectedMaxCPU(cpuPercentage uint32) {
-	tc.resourceSpec.expectedMaxCPU = cpuPercentage
-}
-
-// SetExpectedMaxRAM sets the maximum RAM in MiB the agent is expected to consume.
-// Error is signalled if consumption during resourceCheckPeriod exceeds this number.
-// If this function is not called the RAM consumption does not affect the test result.
-func (tc *TestCase) SetExpectedMaxRAM(ramMiB uint32) {
-	tc.resourceSpec.expectedMaxRAM = ramMiB
+// SetResourceLimits sets expected limits for resource consmption.
+// Error is signalled if consumption during ResourceCheckPeriod exceeds the limits.
+// Limits are modified only for non-zero fields of resourceSpec, all zero-value fields
+// fo resourceSpec are ignored and their previous values remain in effect.
+func (tc *TestCase) SetResourceLimits(resourceSpec ResourceSpec) {
+	if resourceSpec.ExpectedMaxCPU > 0 {
+		tc.resourceSpec.ExpectedMaxCPU = resourceSpec.ExpectedMaxCPU
+	}
+	if resourceSpec.ExpectedMaxRAM > 0 {
+		tc.resourceSpec.ExpectedMaxRAM = resourceSpec.ExpectedMaxRAM
+	}
+	if resourceSpec.ResourceCheckPeriod > 0 {
+		tc.resourceSpec.ResourceCheckPeriod = resourceSpec.ResourceCheckPeriod
+	}
 }
 
 // StartAgent starts the agent and redirects its standard output and standard error
