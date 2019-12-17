@@ -54,10 +54,6 @@ const (
 	nopMetricsExporterName = "nop_metrics"
 )
 
-func (ne *nopExporter) Name() string {
-	return ne.name
-}
-
 // NewNopTraceExporter creates an TraceExporter that just drops the received data.
 func NewNopTraceExporter(options ...NopExporterOption) exporter.TraceExporter {
 	return newNopTraceExporter(options...)

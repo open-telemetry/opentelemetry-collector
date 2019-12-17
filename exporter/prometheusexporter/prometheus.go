@@ -49,10 +49,6 @@ func (pe *prometheusExporter) ConsumeMetricsData(ctx context.Context, md consume
 	return nil
 }
 
-func (pe *prometheusExporter) Name() string {
-	return pe.name
-}
-
 // Shutdown stops the exporter and is invoked during shutdown.
 func (pe *prometheusExporter) Shutdown() error {
 	return pe.shutdown()

@@ -52,11 +52,6 @@ const (
 	sinkMetricsExportFormat = "sink_metrics"
 )
 
-// Name returns the name of this TraceExporter.
-func (ste *SinkTraceExporter) Name() string {
-	return sinkTraceExportFormat
-}
-
 // AllTraces returns the traces sent to the test sink.
 func (ste *SinkTraceExporter) AllTraces() []consumerdata.TraceData {
 	ste.mu.Lock()
@@ -93,11 +88,6 @@ func (sme *SinkMetricsExporter) ConsumeMetricsData(ctx context.Context, md consu
 	sme.metrics = append(sme.metrics, md)
 
 	return nil
-}
-
-// Name returns the name of this MetricsExporter.
-func (sme *SinkMetricsExporter) Name() string {
-	return sinkMetricsExportFormat
 }
 
 // AllMetrics returns the metrics sent to the test sink.
