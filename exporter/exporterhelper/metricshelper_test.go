@@ -204,7 +204,7 @@ func checkWrapSpanForMetricsExporter(t *testing.T, me exporter.MetricsExporter, 
 
 	require.NotEqual(t, 0, len(ocSpansSaver.spanData), "No exported span data")
 
-	gotSpanData := ocSpansSaver.spanData[:]
+	gotSpanData := ocSpansSaver.spanData
 	require.Equal(t, numRequests+1, len(gotSpanData))
 
 	parentSpan := gotSpanData[numRequests]

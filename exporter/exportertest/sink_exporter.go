@@ -57,7 +57,7 @@ func (ste *SinkTraceExporter) AllTraces() []consumerdata.TraceData {
 	ste.mu.Lock()
 	defer ste.mu.Unlock()
 
-	return ste.traces[:]
+	return ste.traces
 }
 
 // Shutdown stops the exporter and is invoked during shutdown.
@@ -95,7 +95,7 @@ func (sme *SinkMetricsExporter) AllMetrics() []consumerdata.MetricsData {
 	sme.mu.Lock()
 	defer sme.mu.Unlock()
 
-	return sme.metrics[:]
+	return sme.metrics
 }
 
 // Shutdown stops the exporter and is invoked during shutdown.
