@@ -81,7 +81,7 @@ func TestTraceNoBackend10kSPSJaeger(t *testing.T) {
 	defer tc.Stop()
 
 	tc.SetResourceLimits(testbed.ResourceSpec{
-		ExpectedMaxCPU: 45,
+		ExpectedMaxCPU: 60,
 		ExpectedMaxRAM: 198,
 	})
 
