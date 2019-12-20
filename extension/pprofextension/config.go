@@ -36,4 +36,8 @@ type Config struct {
 	// disables profiling. See https://golang.org/pkg/runtime/#SetMutexProfileFraction
 	// for details.
 	MutexProfileFraction int `mapstructure:"mutex_profile_fraction"`
+
+	// Optional file name to save the CPU profile to. The profiling starts when the
+	// Collector starts and is saved to the file when the Collector is terminated.
+	SaveToFile string `mapstructure:"save_to_file"`
 }

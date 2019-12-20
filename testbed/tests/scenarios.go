@@ -22,6 +22,8 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"os"
+	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/open-telemetry/opentelemetry-collector/testbed/testbed"
@@ -29,7 +31,7 @@ import (
 
 // createConfigFile creates a collector config file that corresponds to the
 // sender and receiver used in the test and returns the config file name.
-func createConfigFile(sender testbed.DataSender, receiver testbed.DataReceiver) string {
+func createConfigFile(sender testbed.DataSender, receiver testbed.DataReceiver, resultDir string) string {
 	// Create a config. Note that our DataSender is used to generate a config for Collector's
 	// receiver and our DataReceiver is used to generate a config for Collector's exporter.
 	// This is because our DataSender sends to Collector's receiver and our DataReceiver
@@ -45,7 +47,12 @@ processors:
   batch:
   queued_retry:
 
+extensions:
+  pprof:
+    save_to_file: %v/cpu.prof
+
 service:
+  extensions: [pprof]
   pipelines:
     traces:
       receivers: [%v]
@@ -58,7 +65,12 @@ service:
 receivers:%v
 exporters:%v
 
+extensions:
+  pprof:
+    save_to_file: %v/cpu.prof
+
 service:
+  extensions: [pprof]
   pipelines:
     metrics:
       receivers: [%v]
@@ -71,6 +83,7 @@ service:
 		format,
 		sender.GenConfigYAMLStr(),
 		receiver.GenConfigYAMLStr(),
+		resultDir,
 		sender.ProtocolName(),
 		receiver.ProtocolName(),
 	)
@@ -101,7 +114,12 @@ func Scenario10kItemsPerSecond(
 	loadOptions testbed.LoadOptions,
 	resourceSpec testbed.ResourceSpec,
 ) {
-	configFile := createConfigFile(sender, receiver)
+	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	configFile := createConfigFile(sender, receiver, resultDir)
 	defer os.Remove(configFile)
 
 	if configFile == "" {
