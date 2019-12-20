@@ -89,6 +89,14 @@ func (zr *ZipkinReceiver) address() string {
 
 const traceSource string = "Zipkin"
 
+func (zr *ZipkinReceiver) WithHTTPServer(s *http.Server) *ZipkinReceiver {
+	if s.Handler == nil {
+		s.Handler = zr
+	}
+	zr.server = s
+	return zr
+}
+
 // TraceSource returns the name of the trace data source.
 func (zr *ZipkinReceiver) TraceSource() string {
 	return traceSource
@@ -113,10 +121,11 @@ func (zr *ZipkinReceiver) StartTraceReception(host receiver.Host) error {
 		}
 
 		zr.host = host
-		server := &http.Server{Handler: zr}
-		zr.server = server
+		if zr.server == nil {
+			zr.server = &http.Server{Handler: zr}
+		}
 		go func() {
-			host.ReportFatalError(server.Serve(ln))
+			host.ReportFatalError(zr.server.Serve(ln))
 		}()
 
 		err = nil
