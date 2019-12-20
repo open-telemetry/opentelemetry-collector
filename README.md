@@ -207,10 +207,14 @@ processors:
       separator: "::"
   queued_retry: {}
   tail_sampling:
-    policy:
-      name: policy1
-      type: rate_limiting
-      spans_per_second: 100
+    policies:
+      [
+        {
+          name: policy1,
+          type: rate_limiting,
+          rate_limiting: {spans_per_second: 100}
+        }
+      ]
 ```
 
 ### <a name="config-exporters"></a>Exporters
