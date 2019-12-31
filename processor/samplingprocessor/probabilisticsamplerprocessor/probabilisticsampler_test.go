@@ -205,6 +205,26 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			sampled: true,
 		},
 		{
+			name: "must_sample_double",
+			cfg: Config{
+				SamplingPercentage: 0.0,
+			},
+			td: singleSpanWithAttrib(
+				"sampling.priority",
+				&tracepb.AttributeValue{Value: &tracepb.AttributeValue_DoubleValue{DoubleValue: 1}}),
+			sampled: true,
+		},
+		{
+			name: "must_sample_string",
+			cfg: Config{
+				SamplingPercentage: 0.0,
+			},
+			td: singleSpanWithAttrib(
+				"sampling.priority",
+				&tracepb.AttributeValue{Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "1"}}}),
+			sampled: true,
+		},
+		{
 			name: "must_not_sample",
 			cfg: Config{
 				SamplingPercentage: 100.0,
@@ -212,6 +232,24 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			td: singleSpanWithAttrib(
 				"sampling.priority",
 				&tracepb.AttributeValue{Value: &tracepb.AttributeValue_IntValue{IntValue: 0}}),
+		},
+		{
+			name: "must_not_sample_double",
+			cfg: Config{
+				SamplingPercentage: 100.0,
+			},
+			td: singleSpanWithAttrib(
+				"sampling.priority",
+				&tracepb.AttributeValue{Value: &tracepb.AttributeValue_DoubleValue{DoubleValue: 0}}),
+		},
+		{
+			name: "must_not_sample_string",
+			cfg: Config{
+				SamplingPercentage: 100.0,
+			},
+			td: singleSpanWithAttrib(
+				"sampling.priority",
+				&tracepb.AttributeValue{Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "0"}}}),
 		},
 		{
 			name: "defer_sample_expect_not_sampled",
@@ -295,7 +333,7 @@ func Test_parseSpanSamplingPriority(t *testing.T) {
 			want: deferDecision,
 		},
 		{
-			name: "sampling_priority_zero",
+			name: "sampling_priority_int_zero",
 			span: &tracepb.Span{
 				Attributes: &tracepb.Span_Attributes{
 					AttributeMap: map[string]*tracepb.AttributeValue{
@@ -306,7 +344,7 @@ func Test_parseSpanSamplingPriority(t *testing.T) {
 			want: doNotSampleSpan,
 		},
 		{
-			name: "sampling_priority_int_non_zero",
+			name: "sampling_priority_int_gt_zero",
 			span: &tracepb.Span{
 				Attributes: &tracepb.Span_Attributes{
 					AttributeMap: map[string]*tracepb.AttributeValue{
@@ -317,7 +355,29 @@ func Test_parseSpanSamplingPriority(t *testing.T) {
 			want: mustSampleSpan,
 		},
 		{
-			name: "sampling_priority_double_non_zero",
+			name: "sampling_priority_int_lt_zero",
+			span: &tracepb.Span{
+				Attributes: &tracepb.Span_Attributes{
+					AttributeMap: map[string]*tracepb.AttributeValue{
+						"sampling.priority": {Value: &tracepb.AttributeValue_IntValue{IntValue: -1}},
+					},
+				},
+			},
+			want: deferDecision,
+		},
+		{
+			name: "sampling_priority_double_zero",
+			span: &tracepb.Span{
+				Attributes: &tracepb.Span_Attributes{
+					AttributeMap: map[string]*tracepb.AttributeValue{
+						"sampling.priority": {Value: &tracepb.AttributeValue_DoubleValue{}},
+					},
+				},
+			},
+			want: doNotSampleSpan,
+		},
+		{
+			name: "sampling_priority_double_gt_zero",
 			span: &tracepb.Span{
 				Attributes: &tracepb.Span_Attributes{
 					AttributeMap: map[string]*tracepb.AttributeValue{
@@ -325,7 +385,70 @@ func Test_parseSpanSamplingPriority(t *testing.T) {
 					},
 				},
 			},
+			want: mustSampleSpan,
+		},
+		{
+			name: "sampling_priority_double_lt_zero",
+			span: &tracepb.Span{
+				Attributes: &tracepb.Span_Attributes{
+					AttributeMap: map[string]*tracepb.AttributeValue{
+						"sampling.priority": {Value: &tracepb.AttributeValue_DoubleValue{DoubleValue: -1}},
+					},
+				},
+			},
+			want: deferDecision,
+		},
+		{
+			name: "sampling_priority_string_zero",
+			span: &tracepb.Span{
+				Attributes: &tracepb.Span_Attributes{
+					AttributeMap: map[string]*tracepb.AttributeValue{
+						"sampling.priority": {Value: &tracepb.AttributeValue_StringValue{
+							StringValue: &tracepb.TruncatableString{Value: "0.0"},
+						}},
+					},
+				},
+			},
 			want: doNotSampleSpan,
+		},
+		{
+			name: "sampling_priority_string_gt_zero",
+			span: &tracepb.Span{
+				Attributes: &tracepb.Span_Attributes{
+					AttributeMap: map[string]*tracepb.AttributeValue{
+						"sampling.priority": {Value: &tracepb.AttributeValue_StringValue{
+							StringValue: &tracepb.TruncatableString{Value: "0.5"},
+						}},
+					},
+				},
+			},
+			want: mustSampleSpan,
+		},
+		{
+			name: "sampling_priority_string_lt_zero",
+			span: &tracepb.Span{
+				Attributes: &tracepb.Span_Attributes{
+					AttributeMap: map[string]*tracepb.AttributeValue{
+						"sampling.priority": {Value: &tracepb.AttributeValue_StringValue{
+							StringValue: &tracepb.TruncatableString{Value: "-0.5"},
+						}},
+					},
+				},
+			},
+			want: deferDecision,
+		},
+		{
+			name: "sampling_priority_string_NaN",
+			span: &tracepb.Span{
+				Attributes: &tracepb.Span_Attributes{
+					AttributeMap: map[string]*tracepb.AttributeValue{
+						"sampling.priority": {Value: &tracepb.AttributeValue_StringValue{
+							StringValue: &tracepb.TruncatableString{Value: "NaN"},
+						}},
+					},
+				},
+			},
+			want: deferDecision,
 		},
 	}
 	for _, tt := range tests {

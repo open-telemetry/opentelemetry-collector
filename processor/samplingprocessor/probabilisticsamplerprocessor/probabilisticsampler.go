@@ -16,6 +16,7 @@ package probabilisticsamplerprocessor
 
 import (
 	"context"
+	"strconv"
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 
@@ -80,13 +81,11 @@ func (tsp *tracesamplerprocessor) ConsumeTraceData(ctx context.Context, td consu
 			continue
 		}
 
-		sampled :=
-			// First check sampling priority per OpenTracing semantics.
-			samplingPriority == mustSampleSpan ||
-				// If one assumes random trace ids hashing may seems avoidable, however, traces can be coming from sources
-				// with various different criteria to generate trace id and perhaps were already sampled without hashing.
-				// Hashing here prevents bias due to such systems.
-				hash(span.TraceId, tsp.hashSeed)&bitMaskHashBuckets < scaledSamplingRate
+		// If one assumes random trace ids hashing may seems avoidable, however, traces can be coming from sources
+		// with various different criteria to generate trace id and perhaps were already sampled without hashing.
+		// Hashing here prevents bias due to such systems.
+		sampled := samplingPriority == mustSampleSpan ||
+			hash(span.TraceId, tsp.hashSeed)&bitMaskHashBuckets < scaledSamplingRate
 
 		if sampled {
 			sampledSpans = append(sampledSpans, span)
@@ -122,13 +121,41 @@ func parseSpanSamplingPriority(span *tracepb.Span) samplingPriority {
 		return deferDecision
 	}
 
-	// Use a restrict approach: if not set per OpenTracing semantic conventions
-	// as an integer different than zero assume do not sample.
-	if samplingPriorityAttrib.GetIntValue() != 0 {
-		return mustSampleSpan
+	// By default defer the decision only satisfying the exact
+	decision := deferDecision
+
+	// Try check for different types since there are various client libraries
+	// using different conventions regarding "sampling.priority". Besides the
+	// client libraries it is also possible that the type was lost in translation
+	// between different formats.
+	switch samplingPriorityAttrib.Value.(type) {
+	case *tracepb.AttributeValue_IntValue:
+		value := samplingPriorityAttrib.GetIntValue()
+		if value == 0 {
+			decision = doNotSampleSpan
+		} else if value > 0 {
+			decision = mustSampleSpan
+		}
+	case *tracepb.AttributeValue_DoubleValue:
+		value := samplingPriorityAttrib.GetDoubleValue()
+		if value == 0.0 {
+			decision = doNotSampleSpan
+		} else if value > 0.0 {
+			decision = mustSampleSpan
+		}
+	case *tracepb.AttributeValue_StringValue:
+		if attribVal := samplingPriorityAttrib.GetStringValue().GetValue(); attribVal != "" {
+			if value, err := strconv.ParseFloat(attribVal, 64); err == nil {
+				if value == 0.0 {
+					decision = doNotSampleSpan
+				} else if value > 0.0 {
+					decision = mustSampleSpan
+				}
+			}
+		}
 	}
 
-	return doNotSampleSpan
+	return decision
 }
 
 // hash is a murmur3 hash function, see http://en.wikipedia.org/wiki/MurmurHash.
