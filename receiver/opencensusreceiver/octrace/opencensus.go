@@ -15,14 +15,12 @@
 package octrace
 
 import (
-	"context"
 	"errors"
 	"io"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"go.opencensus.io/trace"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
@@ -30,23 +28,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
 )
 
-const (
-	defaultNumWorkers = 4
-
-	messageChannelSize = 64
-)
-
 // Receiver is the type used to handle spans from OpenCensus exporters.
 type Receiver struct {
 	nextConsumer consumer.TraceConsumer
-	numWorkers   int
-	workers      []*receiverWorker
-	messageChan  chan *traceDataWithCtx
-}
-
-type traceDataWithCtx struct {
-	data *consumerdata.TraceData
-	ctx  context.Context
 }
 
 // New creates a new opencensus.Receiver reference.
@@ -55,24 +39,12 @@ func New(nextConsumer consumer.TraceConsumer, opts ...Option) (*Receiver, error)
 		return nil, oterr.ErrNilNextConsumer
 	}
 
-	messageChan := make(chan *traceDataWithCtx, messageChannelSize)
 	ocr := &Receiver{
 		nextConsumer: nextConsumer,
-		numWorkers:   defaultNumWorkers,
-		messageChan:  messageChan,
 	}
 	for _, opt := range opts {
 		opt(ocr)
 	}
-
-	// Setup and startup worker pool
-	workers := make([]*receiverWorker, 0, ocr.numWorkers)
-	for index := 0; index < ocr.numWorkers; index++ {
-		worker := newReceiverWorker(ocr)
-		go worker.listenOn(messageChan)
-		workers = append(workers, worker)
-	}
-	ocr.workers = workers
 
 	return ocr, nil
 }
@@ -123,14 +95,14 @@ func (ocr *Receiver) Export(tes agenttracepb.TraceService_ExportServer) error {
 			resource = recv.Resource
 		}
 
-		td := &consumerdata.TraceData{
+		td := consumerdata.TraceData{
 			Node:         lastNonNilNode,
 			Resource:     resource,
 			Spans:        recv.Spans,
 			SourceFormat: "oc_trace",
 		}
 
-		ocr.messageChan <- &traceDataWithCtx{data: td, ctx: ctxWithReceiverName}
+		ocr.nextConsumer.ConsumeTraceData(ctxWithReceiverName, td)
 
 		observability.RecordMetricsForTraceReceiver(ctxWithReceiverName, len(td.Spans), 0)
 
@@ -144,65 +116,4 @@ func (ocr *Receiver) Export(tes agenttracepb.TraceService_ExportServer) error {
 			return err
 		}
 	}
-}
-
-// Stop the receiver and its workers
-func (ocr *Receiver) Stop() {
-	for _, worker := range ocr.workers {
-		worker.stopListening()
-	}
-}
-
-type receiverWorker struct {
-	receiver *Receiver
-	cancel   chan struct{}
-}
-
-func newReceiverWorker(receiver *Receiver) *receiverWorker {
-	return &receiverWorker{
-		receiver: receiver,
-		cancel:   make(chan struct{}),
-	}
-}
-
-func (rw *receiverWorker) listenOn(cn <-chan *traceDataWithCtx) {
-	for {
-		select {
-		case tdWithCtx := <-cn:
-			rw.export(tdWithCtx.ctx, tdWithCtx.data)
-		case <-rw.cancel:
-			return
-		}
-	}
-}
-
-func (rw *receiverWorker) stopListening() {
-	close(rw.cancel)
-}
-
-func (rw *receiverWorker) export(longLivedCtx context.Context, tracedata *consumerdata.TraceData) {
-	if tracedata == nil {
-		return
-	}
-
-	if len(tracedata.Spans) == 0 {
-		return
-	}
-
-	// Trace this method
-	ctx, span := trace.StartSpan(context.Background(), "OpenCensusTraceReceiver.Export")
-	defer span.End()
-
-	// TODO: (@odeke-em) investigate if it is necessary
-	// to group nodes with their respective spans during
-	// spansAndNode list unfurling then send spans grouped per node
-
-	// If the starting RPC has a parent span, then add it as a parent link.
-	observability.SetParentLink(longLivedCtx, span)
-
-	rw.receiver.nextConsumer.ConsumeTraceData(ctx, *tracedata)
-
-	span.Annotate([]trace.Attribute{
-		trace.Int64Attribute("num_spans", int64(len(tracedata.Spans))),
-	}, "")
 }

@@ -210,10 +210,6 @@ func (ocr *Receiver) stop() error {
 	ocr.stopOnce.Do(func() {
 		err = nil
 
-		if ocr.traceReceiver != nil {
-			ocr.traceReceiver.Stop()
-		}
-
 		// Currently there is no symmetric stop for metrics receiver.
 
 		if ocr.serverHTTP != nil {

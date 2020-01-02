@@ -18,11 +18,3 @@ package octrace
 //
 // WithReceiver applies the configuration to the given receiver.
 type Option func(*Receiver)
-
-// WithWorkerCount sets the number of worker goroutines that will be started
-// for the receiver
-func WithWorkerCount(workerCount int) Option {
-	return func(r *Receiver) {
-		r.numWorkers = workerCount
-	}
-}

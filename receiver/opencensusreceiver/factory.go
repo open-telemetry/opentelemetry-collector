@@ -27,6 +27,10 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "opencensus"
+	// The endpoint for the trace receiver to listen on
+	listendEndpoint = "localhost:55678"
+	// The default number of concurrent workers used in the trace receiver
+	defaultMaxConcurrentStreams = 4
 )
 
 // Factory is the Factory for receiver.
@@ -50,10 +54,11 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal:  typeStr,
 				NameVal:  typeStr,
-				Endpoint: "localhost:55678",
+				Endpoint: listendEndpoint,
 				// Disable: false - This receiver is enabled by default.
 			},
 		},
+		MaxConcurrentStreams: defaultMaxConcurrentStreams,
 	}
 }
 
