@@ -121,7 +121,7 @@ func parseSpanSamplingPriority(span *tracepb.Span) samplingPriority {
 		return deferDecision
 	}
 
-	decideForDoubleFn := func (value float64) samplingPriority {
+	decideForDoubleFn := func(value float64) samplingPriority {
 		if value == 0.0 {
 			return doNotSampleSpan
 		} else if value > 0.0 {
