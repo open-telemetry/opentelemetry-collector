@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
+	"net"
 	"path"
 	"testing"
 	"time"
@@ -98,6 +99,43 @@ func TestReception(t *testing.T) {
 
 	if diff := cmp.Diff(got, want); diff != "" {
 		t.Errorf("Mismatched responses\n-Got +Want:\n\t%s", diff)
+	}
+}
+
+func TestPortsNotOpen(t *testing.T) {
+	// an empty config should result in no open ports
+	config := &Configuration{}
+
+	sink := new(exportertest.SinkTraceExporter)
+
+	jr, err := New(context.Background(), config, sink, zap.NewNop())
+	assert.NoError(t, err, "should not have failed to create a new receiver")
+	defer jr.StopTraceReception()
+
+	mh := receivertest.NewMockHost()
+	err = jr.StartTraceReception(mh)
+
+	time.Sleep(1)
+
+	l, err := net.Listen("tcp", "localhost:14250")
+	assert.NoError(t, err, "should have been able to listen on 14250.  jaeger receiver incorrectly started grpc")
+
+	if l != nil {
+		l.Close()
+	}
+
+	l, err = net.Listen("tcp", "localhost:14268")
+	assert.NoError(t, err, "should have been able to listen on 14268.  jaeger receiver incorrectly started thrift-http")
+
+	if l != nil {
+		l.Close()
+	}
+
+	l, err = net.Listen("tcp", "localhost:14267")
+	assert.NoError(t, err, "should have been able to listen on 14267.  jaeger receiver incorrectly started thrift-tchannel")
+
+	if l != nil {
+		l.Close()
 	}
 }
 
