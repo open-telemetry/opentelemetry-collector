@@ -102,14 +102,6 @@ const (
 	defaultAgentMaxPacketSize = 65000
 	defaultAgentServerWorkers = 10
 
-	// As per https://www.jaegertracing.io/docs/1.13/deployment/
-	// By default, the port used by jaeger-agent to send spans in model.proto format
-	defaultGRPCPort = 14250
-	// By default, the port used by jaeger-agent to send spans in jaeger.thrift format
-	defaultTChannelPort = 14267
-	// By default, can accept spans directly from clients in jaeger.thrift format over binary thrift protocol
-	defaultCollectorHTTPPort = 14268
-
 	traceSource string = "Jaeger"
 )
 

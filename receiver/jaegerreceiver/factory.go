@@ -48,6 +48,9 @@ const (
 	defaultGRPCBindEndpoint     = "localhost:14250"
 	defaultHTTPBindEndpoint     = "localhost:14268"
 	defaultTChannelBindEndpoint = "localhost:14267"
+
+	defaultThriftCompactBindEndpoint = "localhost:6831"
+	defaultThriftBinaryBindEndpoint  = "localhost:6832"
 )
 
 // Factory is the factory for Jaeger receiver.
@@ -115,7 +118,11 @@ func (f *Factory) CreateTraceReceiver(
 	// Set ports
 	if protoGRPC != nil && protoGRPC.IsEnabled() {
 		var err error
-		config.CollectorGRPCPort, err = extractPortFromEndpoint(protoGRPC.Endpoint)
+		endpoint := protoGRPC.Endpoint
+		if endpoint == "" {
+			endpoint = defaultGRPCBindEndpoint
+		}
+		config.CollectorGRPCPort, err = extractPortFromEndpoint(endpoint)
 		if err != nil {
 			return nil, err
 		}
@@ -132,7 +139,11 @@ func (f *Factory) CreateTraceReceiver(
 
 	if protoHTTP != nil && protoHTTP.IsEnabled() {
 		var err error
-		config.CollectorHTTPPort, err = extractPortFromEndpoint(protoHTTP.Endpoint)
+		endpoint := protoHTTP.Endpoint
+		if endpoint == "" {
+			endpoint = defaultHTTPBindEndpoint
+		}
+		config.CollectorHTTPPort, err = extractPortFromEndpoint(endpoint)
 		if err != nil {
 			return nil, err
 		}
@@ -140,7 +151,11 @@ func (f *Factory) CreateTraceReceiver(
 
 	if protoTChannel != nil && protoTChannel.IsEnabled() {
 		var err error
-		config.CollectorThriftPort, err = extractPortFromEndpoint(protoTChannel.Endpoint)
+		endpoint := protoTChannel.Endpoint
+		if endpoint == "" {
+			endpoint = defaultTChannelBindEndpoint
+		}
+		config.CollectorThriftPort, err = extractPortFromEndpoint(endpoint)
 		if err != nil {
 			return nil, err
 		}
@@ -148,7 +163,11 @@ func (f *Factory) CreateTraceReceiver(
 
 	if protoThriftBinary != nil && protoThriftBinary.IsEnabled() {
 		var err error
-		config.AgentBinaryThriftPort, err = extractPortFromEndpoint(protoThriftBinary.Endpoint)
+		endpoint := protoThriftBinary.Endpoint
+		if endpoint == "" {
+			endpoint = defaultThriftBinaryBindEndpoint
+		}
+		config.AgentBinaryThriftPort, err = extractPortFromEndpoint(endpoint)
 		if err != nil {
 			return nil, err
 		}
@@ -156,7 +175,11 @@ func (f *Factory) CreateTraceReceiver(
 
 	if protoThriftCompact != nil && protoThriftCompact.IsEnabled() {
 		var err error
-		config.AgentCompactThriftPort, err = extractPortFromEndpoint(protoThriftCompact.Endpoint)
+		endpoint := protoThriftCompact.Endpoint
+		if endpoint == "" {
+			endpoint = defaultThriftCompactBindEndpoint
+		}
+		config.AgentCompactThriftPort, err = extractPortFromEndpoint(endpoint)
 		if err != nil {
 			return nil, err
 		}

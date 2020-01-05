@@ -47,14 +47,17 @@ func TestCreateReceiver(t *testing.T) {
 	assert.Nil(t, mReceiver)
 }
 
-func TestCreateInvalidGRPCEndpoint(t *testing.T) {
+// default ports retrieved from https://www.jaegertracing.io/docs/1.16/deployment/
+func TestCreateDefaultGRPCEndpoint(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
 	rCfg.Protocols[protoGRPC].Endpoint = ""
-	_, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
-	assert.Error(t, err, "receiver creation with no endpoints must fail")
+	r, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
+
+	assert.NoError(t, err, "unexpected error creating receiver")
+	assert.Equal(t, 14250, r.(*jReceiver).config.CollectorGRPCPort, "grpc port should be default")
 }
 
 func TestCreateInvalidHTTPEndpoint(t *testing.T) {
@@ -63,8 +66,10 @@ func TestCreateInvalidHTTPEndpoint(t *testing.T) {
 	rCfg := cfg.(*Config)
 
 	rCfg.Protocols[protoThriftHTTP].Endpoint = ""
-	_, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
-	assert.Error(t, err, "receiver creation with no endpoints must fail")
+	r, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
+
+	assert.NoError(t, err, "unexpected error creating receiver")
+	assert.Equal(t, 14268, r.(*jReceiver).config.CollectorHTTPPort, "http port should be default")
 }
 
 func TestCreateInvalidTChannelEndpoint(t *testing.T) {
@@ -73,8 +78,10 @@ func TestCreateInvalidTChannelEndpoint(t *testing.T) {
 	rCfg := cfg.(*Config)
 
 	rCfg.Protocols[protoThriftTChannel].Endpoint = ""
-	_, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
-	assert.Error(t, err, "receiver creation with invalid tchannel endpoint must fail")
+	r, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
+
+	assert.NoError(t, err, "unexpected error creating receiver")
+	assert.Equal(t, 14267, r.(*jReceiver).config.CollectorThriftPort, "thrift port should be default")
 }
 
 func TestCreateInvalidThriftBinaryEndpoint(t *testing.T) {
@@ -87,8 +94,10 @@ func TestCreateInvalidThriftBinaryEndpoint(t *testing.T) {
 			Endpoint: "",
 		},
 	}
-	_, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
-	assert.Error(t, err, "receiver creation with no endpoints must fail")
+	r, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
+
+	assert.NoError(t, err, "unexpected error creating receiver")
+	assert.Equal(t, 6832, r.(*jReceiver).config.AgentBinaryThriftPort, "thrift port should be default")
 }
 
 func TestCreateInvalidThriftCompactEndpoint(t *testing.T) {
@@ -101,8 +110,10 @@ func TestCreateInvalidThriftCompactEndpoint(t *testing.T) {
 			Endpoint: "",
 		},
 	}
-	_, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
-	assert.Error(t, err, "receiver creation with no endpoints must fail")
+	r, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
+
+	assert.NoError(t, err, "unexpected error creating receiver")
+	assert.Equal(t, 6831, r.(*jReceiver).config.AgentCompactThriftPort, "thrift port should be default")
 }
 
 func TestCreateNoPort(t *testing.T) {
