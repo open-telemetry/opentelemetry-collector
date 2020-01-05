@@ -449,38 +449,41 @@ func (jr *jReceiver) startCollector(host receiver.Host) error {
 		return nil
 	}
 
-	tch, terr := tchannel.NewChannel("jaeger-collector", new(tchannel.ChannelOptions))
-	if terr != nil {
-		return fmt.Errorf("failed to create NewTChannel: %v", terr)
+	if jr.collectorThriftEnabled() {
+		tch, terr := tchannel.NewChannel("jaeger-collector", new(tchannel.ChannelOptions))
+		if terr != nil {
+			return fmt.Errorf("failed to create NewTChannel: %v", terr)
+		}
+
+		server := thrift.NewServer(tch)
+		server.Register(jaeger.NewTChanCollectorServer(jr.tchanServer))
+
+		taddr := jr.collectorThriftAddr()
+		tln, terr := net.Listen("tcp", taddr)
+		if terr != nil {
+			return fmt.Errorf("failed to bind to TChannel address %q: %v", taddr, terr)
+		}
+		tch.Serve(tln)
+		jr.tchanServer.tchannel = tch
 	}
 
-	server := thrift.NewServer(tch)
-	server.Register(jaeger.NewTChanCollectorServer(jr.tchanServer))
+	if jr.collectorHTTPEnabled() {
+		// Now the collector that runs over HTTP
+		caddr := jr.collectorHTTPAddr()
+		cln, cerr := net.Listen("tcp", caddr)
+		if cerr != nil {
+			// Abort and close tch
+			return fmt.Errorf("failed to bind to Collector address %q: %v", caddr, cerr)
+		}
 
-	taddr := jr.collectorThriftAddr()
-	tln, terr := net.Listen("tcp", taddr)
-	if terr != nil {
-		return fmt.Errorf("failed to bind to TChannel address %q: %v", taddr, terr)
+		nr := mux.NewRouter()
+		apiHandler := app.NewAPIHandler(jr)
+		apiHandler.RegisterRoutes(nr)
+		jr.collectorServer = &http.Server{Handler: nr}
+		go func() {
+			_ = jr.collectorServer.Serve(cln)
+		}()
 	}
-	tch.Serve(tln)
-	jr.tchanServer.tchannel = tch
-
-	// Now the collector that runs over HTTP
-	caddr := jr.collectorHTTPAddr()
-	cln, cerr := net.Listen("tcp", caddr)
-	if cerr != nil {
-		// Abort and close tch
-		tch.Close()
-		return fmt.Errorf("failed to bind to Collector address %q: %v", caddr, cerr)
-	}
-
-	nr := mux.NewRouter()
-	apiHandler := app.NewAPIHandler(jr)
-	apiHandler.RegisterRoutes(nr)
-	jr.collectorServer = &http.Server{Handler: nr}
-	go func() {
-		_ = jr.collectorServer.Serve(cln)
-	}()
 
 	if jr.collectorGRPCEnabled() {
 		jr.grpc = grpc.NewServer(jr.config.CollectorGRPCOptions...)
@@ -488,8 +491,6 @@ func (jr *jReceiver) startCollector(host receiver.Host) error {
 		gln, gerr := net.Listen("tcp", gaddr)
 		if gerr != nil {
 			// Abort and close tch, cln
-			tch.Close()
-			cln.Close()
 			return fmt.Errorf("failed to bind to gRPC address %q: %v", gaddr, gerr)
 		}
 
