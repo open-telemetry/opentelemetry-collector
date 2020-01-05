@@ -41,6 +41,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/internal"
 	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/receivertest"
+	"github.com/open-telemetry/opentelemetry-collector/testutils"
 	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 )
 
@@ -115,22 +116,19 @@ func TestPortsNotOpen(t *testing.T) {
 	mh := receivertest.NewMockHost()
 	err = jr.StartTraceReception(mh)
 
-	time.Sleep(1)
-
+	// there is a race condition here that we're ignoring.
+	//   this test may occasionally pass incorrectly, but it will not fail incorrectly
 	l, err := net.Listen("tcp", "localhost:14250")
 	assert.NoError(t, err, "should have been able to listen on 14250.  jaeger receiver incorrectly started grpc")
-
 	if l != nil {
 		l.Close()
 	}
 
 	l, err = net.Listen("tcp", "localhost:14268")
 	assert.NoError(t, err, "should have been able to listen on 14268.  jaeger receiver incorrectly started thrift-http")
-
 	if l != nil {
 		l.Close()
 	}
-
 	l, err = net.Listen("tcp", "localhost:14267")
 	assert.NoError(t, err, "should have been able to listen on 14267.  jaeger receiver incorrectly started thrift-tchannel")
 
@@ -198,8 +196,9 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 
 	grpcServerOptions = append(grpcServerOptions, tlsOption)
 
+	port := testutils.GetAvailablePort(t)
 	config := &Configuration{
-		CollectorGRPCPort:    0, // will dynamically find a free port
+		CollectorGRPCPort:    int(port),
 		CollectorGRPCOptions: grpcServerOptions,
 	}
 	sink := new(exportertest.SinkTraceExporter)
@@ -215,7 +214,7 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 
 	creds, err := credentials.NewClientTLSFromFile(path.Join(".", "testdata", "certificate.pem"), "opentelemetry.io")
 	require.NoError(t, err)
-	conn, err := grpc.Dial(jr.(*jReceiver).grpcAddr(), grpc.WithTransportCredentials(creds))
+	conn, err := grpc.Dial(jr.(*jReceiver).collectorGRPCAddr(), grpc.WithTransportCredentials(creds))
 	require.NoError(t, err)
 	defer conn.Close()
 
