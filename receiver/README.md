@@ -124,15 +124,20 @@ It also supports the Jaeger Agent protocols:
 - Thrift Compact
 - Thrift Binary
 
-By default, these services are not started unless an endpoint is explicitly defined.
+By default, these services are not started unless they are explicitly referenced in
+the configuration.  Referencing any protocol with an absent endpoint will choose the
+default ports.
+
+```yaml
+receivers:
+  jaeger:
+    thrift-compact:
+```
 
 It is possible to configure the protocols on different ports, refer to
 [config.yaml](jaegerreceiver/testdata/config.yaml) for detailed config
 examples.
 
-// TODO Issue https://github.com/open-telemetry/opentelemetry-collector/issues/158
-// The Jaeger receiver enables all protocols even when one is specified or a
-// subset is enabled. The documentation should be updated when that fix occurs.
 ### Communicating over TLS
 This receiver supports communication using Transport Layer Security (TLS), but only using the gRPC protocol. It can be configured by specifying a `tls-crendentials` object in the gRPC receiver configuration.   
 ```yaml
