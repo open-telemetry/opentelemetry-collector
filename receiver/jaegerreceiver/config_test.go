@@ -37,12 +37,12 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	// The receiver `jaeger/disabled` doesn't count because disabled receivers
+	// The receiver `jaeger/disabled` and `jaeger` don't count because disabled receivers
 	// are excluded from the final list.
-	assert.Equal(t, len(cfg.Receivers), 3)
+	assert.Equal(t, len(cfg.Receivers), 4)
 
 	r0 := cfg.Receivers["jaeger"]
-	assert.Equal(t, r0, factory.CreateDefaultConfig())
+	assert.Nil(t, r0)
 
 	r1 := cfg.Receivers["jaeger/customname"].(*Config)
 	assert.Equal(t, r1,
@@ -78,6 +78,59 @@ func TestLoadConfig(t *testing.T) {
 			},
 			RemoteSampling: &RemoteSamplingConfig{
 				FetchEndpoint: "jaeger-collector:1234",
+			},
+		})
+
+	rDefaults := cfg.Receivers["jaeger/defaults"].(*Config)
+	assert.Equal(t, rDefaults,
+		&Config{
+			TypeVal: typeStr,
+			NameVal: "jaeger/defaults",
+			Protocols: map[string]*receiver.SecureReceiverSettings{
+				"grpc": {
+					ReceiverSettings: configmodels.ReceiverSettings{
+						Endpoint: defaultGRPCBindEndpoint,
+					},
+				},
+				"thrift-http": {
+					ReceiverSettings: configmodels.ReceiverSettings{
+						Endpoint: defaultHTTPBindEndpoint,
+					},
+				},
+				"thrift-tchannel": {
+					ReceiverSettings: configmodels.ReceiverSettings{
+						Endpoint: defaultTChannelBindEndpoint,
+					},
+				},
+				"thrift-compact": {
+					ReceiverSettings: configmodels.ReceiverSettings{
+						Endpoint: defaultThriftCompactBindEndpoint,
+					},
+				},
+				"thrift-binary": {
+					ReceiverSettings: configmodels.ReceiverSettings{
+						Endpoint: defaultThriftBinaryBindEndpoint,
+					},
+				},
+			},
+		})
+
+	rMixed := cfg.Receivers["jaeger/mixed"].(*Config)
+	assert.Equal(t, rMixed,
+		&Config{
+			TypeVal: typeStr,
+			NameVal: "jaeger/mixed",
+			Protocols: map[string]*receiver.SecureReceiverSettings{
+				"grpc": {
+					ReceiverSettings: configmodels.ReceiverSettings{
+						Endpoint: "localhost:9876",
+					},
+				},
+				"thrift-compact": {
+					ReceiverSettings: configmodels.ReceiverSettings{
+						Endpoint: defaultThriftCompactBindEndpoint,
+					},
+				},
 			},
 		})
 

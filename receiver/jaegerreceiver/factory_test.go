@@ -37,6 +37,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateReceiver(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
+	// have to enable at least one protocol for the jaeger receiver to be created
+	cfg.(*Config).Protocols[protoGRPC] = defaultsForProtocol(protoGRPC)
 
 	tReceiver, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
 	assert.NoError(t, err, "receiver creation failed")
@@ -53,7 +55,7 @@ func TestCreateDefaultGRPCEndpoint(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
-	rCfg.Protocols[protoGRPC].Endpoint = ""
+	rCfg.Protocols[protoGRPC] = defaultsForProtocol(protoGRPC)
 	r, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
 
 	assert.NoError(t, err, "unexpected error creating receiver")
@@ -65,7 +67,7 @@ func TestCreateInvalidHTTPEndpoint(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
-	rCfg.Protocols[protoThriftHTTP].Endpoint = ""
+	rCfg.Protocols[protoThriftHTTP] = defaultsForProtocol(protoThriftHTTP)
 	r, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
 
 	assert.NoError(t, err, "unexpected error creating receiver")
@@ -77,7 +79,7 @@ func TestCreateInvalidTChannelEndpoint(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
-	rCfg.Protocols[protoThriftTChannel].Endpoint = ""
+	rCfg.Protocols[protoThriftTChannel] = defaultsForProtocol(protoThriftTChannel)
 	r, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
 
 	assert.NoError(t, err, "unexpected error creating receiver")
@@ -89,11 +91,7 @@ func TestCreateInvalidThriftBinaryEndpoint(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
-	rCfg.Protocols[protoThriftBinary] = &receiver.SecureReceiverSettings{
-		ReceiverSettings: configmodels.ReceiverSettings{
-			Endpoint: "",
-		},
-	}
+	rCfg.Protocols[protoThriftBinary] = defaultsForProtocol(protoThriftBinary)
 	r, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
 
 	assert.NoError(t, err, "unexpected error creating receiver")
@@ -105,11 +103,7 @@ func TestCreateInvalidThriftCompactEndpoint(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
-	rCfg.Protocols[protoThriftCompact] = &receiver.SecureReceiverSettings{
-		ReceiverSettings: configmodels.ReceiverSettings{
-			Endpoint: "",
-		},
-	}
+	rCfg.Protocols[protoThriftCompact] = defaultsForProtocol(protoThriftCompact)
 	r, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
 
 	assert.NoError(t, err, "unexpected error creating receiver")
@@ -121,7 +115,11 @@ func TestCreateNoPort(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
-	rCfg.Protocols[protoThriftHTTP].Endpoint = "localhost:"
+	rCfg.Protocols[protoThriftHTTP] = &receiver.SecureReceiverSettings{
+		ReceiverSettings: configmodels.ReceiverSettings{
+			Endpoint: "localhost:",
+		},
+	}
 	_, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
 	assert.Error(t, err, "receiver creation with no port number must fail")
 }
@@ -131,7 +129,11 @@ func TestCreateLargePort(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
-	rCfg.Protocols[protoThriftHTTP].Endpoint = "localhost:65536"
+	rCfg.Protocols[protoThriftHTTP] = &receiver.SecureReceiverSettings{
+		ReceiverSettings: configmodels.ReceiverSettings{
+			Endpoint: "localhost:65536",
+		},
+	}
 	_, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
 	assert.Error(t, err, "receiver creation with too large port number must fail")
 }
@@ -141,20 +143,8 @@ func TestCreateNoProtocols(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
-	delete(rCfg.Protocols, protoGRPC)
-	delete(rCfg.Protocols, protoThriftHTTP)
-	delete(rCfg.Protocols, protoThriftTChannel)
+	rCfg.Protocols = make(map[string]*receiver.SecureReceiverSettings)
+
 	_, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
 	assert.Error(t, err, "receiver creation with no protocols must fail")
-}
-
-func TestCreateWithoutThrift(t *testing.T) {
-	factory := Factory{}
-	cfg := factory.CreateDefaultConfig()
-	rCfg := cfg.(*Config)
-
-	delete(rCfg.Protocols, protoThriftHTTP)
-	delete(rCfg.Protocols, protoThriftTChannel)
-	_, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
-	assert.NoError(t, err, "receiver creation without the Thrift protocols must not fail")
 }

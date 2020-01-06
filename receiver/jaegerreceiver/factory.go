@@ -22,6 +22,8 @@ import (
 	"net"
 	"strconv"
 
+	"github.com/mitchellh/mapstructure"
+	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
@@ -62,33 +64,36 @@ func (f *Factory) Type() string {
 	return typeStr
 }
 
-// CustomUnmarshaler returns nil because we don't need custom unmarshaling for this config.
+// CustomUnmarshaler is used to add defaults for named but empty protocols
 func (f *Factory) CustomUnmarshaler() receiver.CustomUnmarshaler {
-	return nil
+	return func(v *viper.Viper, viperKey string, intoCfg interface{}) error {
+		err := v.UnmarshalKey(viperKey, intoCfg, func(decoderCfg *mapstructure.DecoderConfig) {})
+		if err != nil {
+			return err
+		}
+
+		receiverCfg, ok := intoCfg.(*Config)
+		if !ok {
+			return fmt.Errorf("config type not *jaegerreceiver.Config")
+		}
+
+		// any protocol for which k exists, but v is nil needs to have defaults injected
+		for k, v := range receiverCfg.Protocols {
+			if v == nil {
+				receiverCfg.Protocols[k] = defaultsForProtocol(k)
+			}
+		}
+
+		return nil
+	}
 }
 
 // CreateDefaultConfig creates the default configuration for Jaeger receiver.
 func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 	return &Config{
-		TypeVal: typeStr,
-		NameVal: typeStr,
-		Protocols: map[string]*receiver.SecureReceiverSettings{
-			protoGRPC: {
-				ReceiverSettings: configmodels.ReceiverSettings{
-					Endpoint: defaultGRPCBindEndpoint,
-				},
-			},
-			protoThriftTChannel: {
-				ReceiverSettings: configmodels.ReceiverSettings{
-					Endpoint: defaultTChannelBindEndpoint,
-				},
-			},
-			protoThriftHTTP: {
-				ReceiverSettings: configmodels.ReceiverSettings{
-					Endpoint: defaultHTTPBindEndpoint,
-				},
-			},
-		},
+		TypeVal:   typeStr,
+		NameVal:   typeStr,
+		Protocols: map[string]*receiver.SecureReceiverSettings{},
 	}
 }
 
@@ -118,11 +123,7 @@ func (f *Factory) CreateTraceReceiver(
 	// Set ports
 	if protoGRPC != nil && protoGRPC.IsEnabled() {
 		var err error
-		endpoint := protoGRPC.Endpoint
-		if endpoint == "" {
-			endpoint = defaultGRPCBindEndpoint
-		}
-		config.CollectorGRPCPort, err = extractPortFromEndpoint(endpoint)
+		config.CollectorGRPCPort, err = extractPortFromEndpoint(protoGRPC.Endpoint)
 		if err != nil {
 			return nil, err
 		}
@@ -139,11 +140,7 @@ func (f *Factory) CreateTraceReceiver(
 
 	if protoHTTP != nil && protoHTTP.IsEnabled() {
 		var err error
-		endpoint := protoHTTP.Endpoint
-		if endpoint == "" {
-			endpoint = defaultHTTPBindEndpoint
-		}
-		config.CollectorHTTPPort, err = extractPortFromEndpoint(endpoint)
+		config.CollectorHTTPPort, err = extractPortFromEndpoint(protoHTTP.Endpoint)
 		if err != nil {
 			return nil, err
 		}
@@ -151,11 +148,7 @@ func (f *Factory) CreateTraceReceiver(
 
 	if protoTChannel != nil && protoTChannel.IsEnabled() {
 		var err error
-		endpoint := protoTChannel.Endpoint
-		if endpoint == "" {
-			endpoint = defaultTChannelBindEndpoint
-		}
-		config.CollectorThriftPort, err = extractPortFromEndpoint(endpoint)
+		config.CollectorThriftPort, err = extractPortFromEndpoint(protoTChannel.Endpoint)
 		if err != nil {
 			return nil, err
 		}
@@ -163,11 +156,7 @@ func (f *Factory) CreateTraceReceiver(
 
 	if protoThriftBinary != nil && protoThriftBinary.IsEnabled() {
 		var err error
-		endpoint := protoThriftBinary.Endpoint
-		if endpoint == "" {
-			endpoint = defaultThriftBinaryBindEndpoint
-		}
-		config.AgentBinaryThriftPort, err = extractPortFromEndpoint(endpoint)
+		config.AgentBinaryThriftPort, err = extractPortFromEndpoint(protoThriftBinary.Endpoint)
 		if err != nil {
 			return nil, err
 		}
@@ -175,11 +164,7 @@ func (f *Factory) CreateTraceReceiver(
 
 	if protoThriftCompact != nil && protoThriftCompact.IsEnabled() {
 		var err error
-		endpoint := protoThriftCompact.Endpoint
-		if endpoint == "" {
-			endpoint = defaultThriftCompactBindEndpoint
-		}
-		config.AgentCompactThriftPort, err = extractPortFromEndpoint(endpoint)
+		config.AgentCompactThriftPort, err = extractPortFromEndpoint(protoThriftCompact.Endpoint)
 		if err != nil {
 			return nil, err
 		}
@@ -230,4 +215,28 @@ func extractPortFromEndpoint(endpoint string) (int, error) {
 		return 0, fmt.Errorf("port number must be between 1 and 65535")
 	}
 	return int(port), nil
+}
+
+// returns a default value for a protocol name.  this really just boils down to the endpoint
+func defaultsForProtocol(proto string) *receiver.SecureReceiverSettings {
+	var defaultEndpoint string
+
+	switch proto {
+	case protoGRPC:
+		defaultEndpoint = defaultGRPCBindEndpoint
+	case protoThriftHTTP:
+		defaultEndpoint = defaultHTTPBindEndpoint
+	case protoThriftTChannel:
+		defaultEndpoint = defaultTChannelBindEndpoint
+	case protoThriftBinary:
+		defaultEndpoint = defaultThriftBinaryBindEndpoint
+	case protoThriftCompact:
+		defaultEndpoint = defaultThriftCompactBindEndpoint
+	}
+
+	return &receiver.SecureReceiverSettings{
+		ReceiverSettings: configmodels.ReceiverSettings{
+			Endpoint: defaultEndpoint,
+		},
+	}
 }
