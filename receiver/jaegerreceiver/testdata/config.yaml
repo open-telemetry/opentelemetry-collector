@@ -1,6 +1,6 @@
 receivers:
   # The following demonstrates initializing the default jaeger receiver.
-  # By default this configuration enables nothing and will not server no jaeger protocols
+  # By default this configuration enables nothing and will serve no jaeger protocols
   jaeger:
   # The following demonstrates specifying different endpoints.
   # The Jaeger receiver connects to ports on all available network interfaces.
