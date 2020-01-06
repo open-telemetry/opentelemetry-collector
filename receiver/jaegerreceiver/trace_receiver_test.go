@@ -27,10 +27,12 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/google/go-cmp/cmp"
+	"github.com/jaegertracing/jaeger/cmd/agent/app/reporter/tchannel"
 	"github.com/jaegertracing/jaeger/model"
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/uber/jaeger-lib/metrics"
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -43,6 +45,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/receiver/receivertest"
 	"github.com/open-telemetry/opentelemetry-collector/testutils"
 	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
+	jaegertranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace/jaeger"
 )
 
 func TestTraceSource(t *testing.T) {
@@ -240,6 +243,53 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 
 	assert.Len(t, req.Batch.Spans, len(want[0].Spans), "got a conflicting amount of spans")
 	assert.Equal(t, "", cmp.Diff(got, want))
+}
+
+func TestThriftTChannelReception(t *testing.T) {
+	port := testutils.GetAvailablePort(t)
+	config := &Configuration{
+		CollectorThriftPort: int(port),
+	}
+	sink := new(exportertest.SinkTraceExporter)
+
+	jr, err := New(context.Background(), config, sink, zap.NewNop())
+	assert.NoError(t, err, "should not have failed to create a new receiver")
+	defer jr.StopTraceReception()
+
+	mh := receivertest.NewMockHost()
+	err = jr.StartTraceReception(mh)
+	assert.NoError(t, err, "should not have failed to start trace reception")
+	t.Log("StartTraceReception")
+
+	b := tchannel.NewBuilder()
+	b.CollectorHostPorts = []string{fmt.Sprintf("localhost:%d", port)}
+
+	p, err := tchannel.NewCollectorProxy(b, metrics.NullFactory, zap.NewNop())
+	assert.NoError(t, err, "should not have failed to create collector proxy")
+
+	now := time.Unix(1542158650, 536343000).UTC()
+	d10min := 10 * time.Minute
+	d2sec := 2 * time.Second
+	nowPlus10min := now.Add(d10min)
+	nowPlus10min2sec := now.Add(d10min).Add(d2sec)
+
+	want := expectedTraceData(now, nowPlus10min, nowPlus10min2sec)
+	batch, err := jaegertranslator.OCProtoToJaegerThrift(want[0])
+	assert.NoError(t, err, "should not have failed proto/thrift translation")
+
+	//confirm port is open before attempting
+	err = testutils.WaitForPort(t, port)
+	assert.NoError(t, err, "WaitForPort failed")
+
+	err = p.GetReporter().EmitBatch(batch)
+	assert.NoError(t, err, "should not have failed to emit batch")
+
+	got := sink.AllTraces()
+	assert.Len(t, batch.Spans, len(want[0].Spans), "got a conflicting amount of spans")
+
+	if diff := cmp.Diff(got, want); diff != "" {
+		t.Errorf("Mismatched responses\n-Got +Want:\n\t%s", diff)
+	}
 }
 
 func expectedTraceData(t1, t2, t3 time.Time) []consumerdata.TraceData {
