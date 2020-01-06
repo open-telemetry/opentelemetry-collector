@@ -15,6 +15,11 @@ data:
     exporters:
       opencensus:
         endpoint: "otel-collector.default:55678" # TODO: Update me
+    processors:
+      queued_retry:
+        num_workers: 4
+        queue_size: 100
+        retry_on_failure: true
     extensions:
       zpages: {}
     services:
@@ -22,6 +27,7 @@ data:
       pipelines:
         traces:
           receivers: [opencensus]
+          processors: [queued_retry]
           exporters: [opencensus]
 ---
 apiVersion: extensions/v1beta1
