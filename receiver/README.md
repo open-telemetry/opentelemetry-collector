@@ -120,7 +120,8 @@ receiver with only gRPC enabled on the default port.
 ```yaml
 receivers:
   jaeger:
-    grpc:
+    protocols:
+      grpc:
 ```
 
 It is possible to configure the protocols on different ports, refer to
