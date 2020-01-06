@@ -24,6 +24,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/extension"
 )
 
@@ -35,7 +36,7 @@ type pprofExtension struct {
 
 var _ (extension.ServiceExtension) = (*pprofExtension)(nil)
 
-func (p *pprofExtension) Start(host extension.Host) error {
+func (p *pprofExtension) Start(host component.Host) error {
 	// Start the listener here so we can have earlier failure if port is
 	// already in use.
 	ln, err := net.Listen("tcp", p.config.Endpoint)

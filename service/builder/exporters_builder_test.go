@@ -21,12 +21,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configgrpc"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/exporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/opencensusexporter"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/receivertest"
 )
 
 func TestExportersBuilder_Build(t *testing.T) {
@@ -72,7 +72,7 @@ func TestExportersBuilder_Build(t *testing.T) {
 	assert.Nil(t, e1.me)
 
 	// Ensure it can be started.
-	mh := receivertest.NewMockHost()
+	mh := component.NewMockHost()
 	err = exporters.StartAll(zap.NewNop(), mh)
 	assert.NoError(t, err)
 
@@ -116,7 +116,7 @@ func TestExportersBuilder_StartAll(t *testing.T) {
 	assert.False(t, traceExporter.ExporterStarted)
 	assert.False(t, metricExporter.ExporterStarted)
 
-	mh := receivertest.NewMockHost()
+	mh := component.NewMockHost()
 	err := exporters.StartAll(zap.NewNop(), mh)
 	assert.NoError(t, err)
 

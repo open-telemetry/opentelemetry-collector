@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
@@ -96,6 +97,10 @@ func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 	assert.NoError(t, err)
 	require.NotNil(t, pipelineProcessors)
 
+	mh := component.NewMockHost()
+	err = pipelineProcessors.StartProcessors(zap.NewNop(), mh)
+	assert.NoError(t, err)
+
 	processor := pipelineProcessors[cfg.Service.Pipelines[pipelineName]]
 
 	// Ensure pipeline has its fields correctly populated.
@@ -153,6 +158,9 @@ func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 		assert.Equal(t, int64(12345),
 			consumer.Traces[0].Spans[0].Attributes.AttributeMap["attr1"].GetIntValue())
 	}
+
+	err = pipelineProcessors.ShutdownProcessors(zap.NewNop())
+	assert.NoError(t, err)
 }
 
 func TestPipelinesBuilder_Error(t *testing.T) {

@@ -25,6 +25,7 @@ import (
 	"go.opencensus.io/tag"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumererror"
@@ -102,6 +103,11 @@ func newQueuedSpanProcessor(sender consumer.TraceConsumer, opts options) *queued
 		backoffDelay:             opts.backoffDelay,
 		stopCh:                   make(chan struct{}),
 	}
+}
+
+// Start is invoked during service startup.
+func (sp *queuedSpanProcessor) Start(host component.Host) error {
+	return nil
 }
 
 // Stop halts the span processor and all its goroutines.

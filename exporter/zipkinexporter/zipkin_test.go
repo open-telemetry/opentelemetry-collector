@@ -32,9 +32,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/receivertest"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/zipkinreceiver"
 	"github.com/open-telemetry/opentelemetry-collector/testutils"
 	"github.com/open-telemetry/opentelemetry-collector/translator/trace/zipkin"
@@ -171,9 +171,9 @@ func TestZipkinExporter_roundtripJSON(t *testing.T) {
 	assert.NoError(t, err)
 	require.NotNil(t, zi)
 
-	mh := receivertest.NewMockHost()
-	require.NoError(t, zi.StartTraceReception(mh))
-	defer zi.StopTraceReception()
+	mh := component.NewMockHost()
+	require.NoError(t, zi.Start(mh))
+	defer zi.Shutdown()
 
 	// Let the receiver receive "uploaded Zipkin spans from a Java client application"
 	req, _ := http.NewRequest("POST", "https://tld.org/", strings.NewReader(zipkinSpansJSONJavaLibrary))
@@ -391,10 +391,10 @@ func TestZipkinExporter_roundtripProto(t *testing.T) {
 	zi, err := zipkinreceiver.New(fmt.Sprintf(":%d", port), zexp)
 	require.NoError(t, err)
 
-	mh := receivertest.NewMockHost()
-	err = zi.StartTraceReception(mh)
+	mh := component.NewMockHost()
+	err = zi.Start(mh)
 	require.NoError(t, err)
-	defer zi.StopTraceReception()
+	defer zi.Shutdown()
 
 	// Let the receiver receive "uploaded Zipkin spans from a Java client application"
 	req, _ := http.NewRequest("POST", "https://tld.org/", strings.NewReader(zipkinSpansJSONJavaLibrary))

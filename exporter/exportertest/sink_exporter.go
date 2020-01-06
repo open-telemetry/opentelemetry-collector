@@ -18,6 +18,7 @@ import (
 	"context"
 	"sync"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter"
 )
@@ -33,7 +34,7 @@ var _ exporter.TraceExporter = (*SinkTraceExporter)(nil)
 // Start tells the exporter to start. The exporter may prepare for exporting
 // by connecting to the endpoint. Host parameter can be used for communicating
 // with the host after Start() has already returned.
-func (ste *SinkTraceExporter) Start(host exporter.Host) error {
+func (ste *SinkTraceExporter) Start(host component.Host) error {
 	return nil
 }
 
@@ -76,7 +77,7 @@ var _ exporter.MetricsExporter = (*SinkMetricsExporter)(nil)
 // Start tells the exporter to start. The exporter may prepare for exporting
 // by connecting to the endpoint. Host parameter can be used for communicating
 // with the host after Start() has already returned.
-func (sme *SinkMetricsExporter) Start(host exporter.Host) error {
+func (sme *SinkMetricsExporter) Start(host component.Host) error {
 	return nil
 }
 

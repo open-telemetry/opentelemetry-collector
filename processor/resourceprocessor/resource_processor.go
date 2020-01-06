@@ -19,6 +19,7 @@ import (
 
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
@@ -54,6 +55,11 @@ func (rtp *resourceTraceProcessor) GetCapabilities() processor.Capabilities {
 	return rtp.capabilities
 }
 
+// Start is invoked during service startup.
+func (*resourceTraceProcessor) Start(host component.Host) error {
+	return nil
+}
+
 // Shutdown is invoked during service shutdown.
 func (*resourceTraceProcessor) Shutdown() error {
 	return nil
@@ -77,6 +83,11 @@ func newResourceMetricProcessor(next consumer.MetricsConsumer, cfg *Config) *res
 // GetCapabilities returns the Capabilities assocciated with the resource processor.
 func (rmp *resourceMetricProcessor) GetCapabilities() processor.Capabilities {
 	return rmp.capabilities
+}
+
+// Start is invoked during service startup.
+func (*resourceMetricProcessor) Start(host component.Host) error {
+	return nil
 }
 
 // Shutdown is invoked during service shutdown.

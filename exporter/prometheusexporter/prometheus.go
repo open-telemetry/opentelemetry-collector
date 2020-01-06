@@ -22,9 +22,9 @@ import (
 	// official census-ecosystem location, update this import path.
 	"github.com/orijtech/prometheus-go-metrics-exporter"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/exporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
 )
 
@@ -38,7 +38,7 @@ type prometheusExporter struct {
 
 var _ consumer.MetricsConsumer = (*prometheusExporter)(nil)
 
-func (pe *prometheusExporter) Start(host exporter.Host) error {
+func (pe *prometheusExporter) Start(host component.Host) error {
 	return nil
 }
 

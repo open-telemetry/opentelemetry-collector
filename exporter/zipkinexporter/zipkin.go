@@ -29,9 +29,9 @@ import (
 	zipkinhttp "github.com/openzipkin/zipkin-go/reporter/http"
 	"go.opencensus.io/trace"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumererror"
-	"github.com/open-telemetry/opentelemetry-collector/exporter"
 	"github.com/open-telemetry/opentelemetry-collector/observability"
 	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 	spandatatranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace/spandata"
@@ -160,7 +160,7 @@ func extractStringAttribute(
 	return value, ok
 }
 
-func (ze *zipkinExporter) Start(host exporter.Host) error {
+func (ze *zipkinExporter) Start(host component.Host) error {
 	return nil
 }
 

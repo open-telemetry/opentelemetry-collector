@@ -17,27 +17,13 @@
 // to the service, examples: health check endpoint, z-pages, etc.
 package extension
 
-// Host represents the entity where the extension is being hosted.
-// It is used to allow communication between the extension and its host.
-type Host interface {
-	// ReportFatalError is used to report to the host that the extension
-	// encountered a fatal error (i.e.: an error that the instance can't recover
-	// from) after its start function had already returned.
-	ReportFatalError(err error)
-}
+import "github.com/open-telemetry/opentelemetry-collector/component"
 
 // ServiceExtension is the interface for objects hosted by the OpenTelemetry Collector that
 // don't participate directly on data pipelines but provide some functionality
 // to the service, examples: health check endpoint, z-pages, etc.
 type ServiceExtension interface {
-	// Start the ServiceExtension object hosted by the given host. At this point in the
-	// process life-cycle the receivers are not started and the host did not
-	// receive any data yet.
-	Start(host Host) error
-
-	// Shutdown the ServiceExtension instance. This happens after the pipelines were
-	// shutdown.
-	Shutdown() error
+	component.Component
 }
 
 // PipelineWatcher is an extra interface for ServiceExtension hosted by the OpenTelemetry

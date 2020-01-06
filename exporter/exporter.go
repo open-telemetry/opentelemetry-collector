@@ -16,28 +16,13 @@
 package exporter
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 )
 
-// Host represents the entity where the exporter is being hosted. It is used to
-// allow communication between the exporter and its host.
-type Host interface {
-	// ReportFatalError is used to report to the host that the exporter encountered
-	// a fatal error (i.e.: an error that the instance can't recover from) after
-	// its start function has already returned.
-	ReportFatalError(err error)
-}
-
 // Exporter defines functions that trace and metric exporters must implement.
 type Exporter interface {
-	// Start tells the exporter to start. The exporter may prepare for exporting
-	// by connecting to the endpoint. Host parameter can be used for communicating
-	// with the host after Start() has already returned. If error is returned by
-	// Start() then the collector startup will be aborted.
-	Start(host Host) error
-
-	// Shutdown is invoked during service shutdown.
-	Shutdown() error
+	component.Component
 }
 
 // TraceExporter composes TraceConsumer with some additional exporter-specific functions.

@@ -19,6 +19,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
@@ -43,6 +44,11 @@ func (np *nopProcessor) ConsumeMetricsData(ctx context.Context, md consumerdata.
 
 func (np *nopProcessor) GetCapabilities() processor.Capabilities {
 	return processor.Capabilities{MutatesConsumedData: false}
+}
+
+// Start is invoked during service startup.
+func (np *nopProcessor) Start(host component.Host) error {
+	return nil
 }
 
 // Shutdown is invoked during service shutdown.

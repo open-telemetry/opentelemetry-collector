@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
@@ -320,6 +321,11 @@ func (p *mockSpanProcessor) ConsumeTraceData(ctx context.Context, td consumerdat
 
 func (p *mockSpanProcessor) GetCapabilities() processor.Capabilities {
 	return processor.Capabilities{MutatesConsumedData: false}
+}
+
+// Start is invoked during service startup.
+func (p *mockSpanProcessor) Start(host component.Host) error {
+	return nil
 }
 
 // Shutdown is invoked during service shutdown.
