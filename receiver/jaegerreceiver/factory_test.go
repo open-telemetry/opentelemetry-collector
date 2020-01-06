@@ -129,13 +129,27 @@ func TestCreateLargePort(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
-	rCfg.Protocols[protoThriftHTTP] = &receiver.SecureReceiverSettings{
+	rCfg.Protocols[protoThriftTChannel] = &receiver.SecureReceiverSettings{
 		ReceiverSettings: configmodels.ReceiverSettings{
 			Endpoint: "localhost:65536",
 		},
 	}
 	_, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
 	assert.Error(t, err, "receiver creation with too large port number must fail")
+}
+
+func TestCreateInvalidHost(t *testing.T) {
+	factory := Factory{}
+	cfg := factory.CreateDefaultConfig()
+	rCfg := cfg.(*Config)
+
+	rCfg.Protocols[protoGRPC] = &receiver.SecureReceiverSettings{
+		ReceiverSettings: configmodels.ReceiverSettings{
+			Endpoint: "1234",
+		},
+	}
+	_, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
+	assert.Error(t, err, "receiver creation with bad hostname must fail")
 }
 
 func TestCreateNoProtocols(t *testing.T) {
@@ -147,4 +161,50 @@ func TestCreateNoProtocols(t *testing.T) {
 
 	_, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
 	assert.Error(t, err, "receiver creation with no protocols must fail")
+}
+
+func TestThriftBinaryBadPort(t *testing.T) {
+	factory := Factory{}
+	cfg := factory.CreateDefaultConfig()
+	rCfg := cfg.(*Config)
+
+	rCfg.Protocols[protoThriftBinary] = &receiver.SecureReceiverSettings{
+		ReceiverSettings: configmodels.ReceiverSettings{
+			Endpoint: "localhost:65536",
+		},
+	}
+
+	_, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
+	assert.Error(t, err, "receiver creation with a bad thrift binary port must fail")
+}
+
+func TestThriftCompactBadPort(t *testing.T) {
+	factory := Factory{}
+	cfg := factory.CreateDefaultConfig()
+	rCfg := cfg.(*Config)
+
+	rCfg.Protocols[protoThriftCompact] = &receiver.SecureReceiverSettings{
+		ReceiverSettings: configmodels.ReceiverSettings{
+			Endpoint: "localhost:65536",
+		},
+	}
+
+	_, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
+	assert.Error(t, err, "receiver creation with a bad thrift compact port must fail")
+}
+
+func TestRemoteSamplingConfigPropagation(t *testing.T) {
+	factory := Factory{}
+	cfg := factory.CreateDefaultConfig()
+	rCfg := cfg.(*Config)
+
+	endpoint := "localhost:1234"
+	rCfg.Protocols[protoThriftCompact] = defaultsForProtocol(protoThriftCompact)
+	rCfg.RemoteSampling = &RemoteSamplingConfig{
+		FetchEndpoint: endpoint,
+	}
+	r, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
+
+	assert.NoError(t, err, "create trace receiver should not error")
+	assert.Equal(t, endpoint, r.(*jReceiver).config.RemoteSamplingEndpoint)
 }
