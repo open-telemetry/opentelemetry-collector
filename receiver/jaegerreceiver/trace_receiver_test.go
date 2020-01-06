@@ -115,6 +115,7 @@ func TestPortsNotOpen(t *testing.T) {
 
 	mh := receivertest.NewMockHost()
 	err = jr.StartTraceReception(mh)
+	assert.NoError(t, err, "should not have failed to start trace reception")
 
 	// there is a race condition here that we're ignoring.
 	//   this test may occasionally pass incorrectly, but it will not fail incorrectly
