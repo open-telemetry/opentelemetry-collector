@@ -18,6 +18,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
@@ -26,6 +27,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/receiver"
 )
+
+func TestTypeStr(t *testing.T) {
+	factory := Factory{}
+
+	assert.Equal(t, "jaeger", factory.Type())
+}
 
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := Factory{}
@@ -207,4 +214,18 @@ func TestRemoteSamplingConfigPropagation(t *testing.T) {
 
 	assert.NoError(t, err, "create trace receiver should not error")
 	assert.Equal(t, endpoint, r.(*jReceiver).config.RemoteSamplingEndpoint)
+}
+
+func TestCustomUnmarshalErrors(t *testing.T) {
+	factory := Factory{}
+	v := viper.New()
+
+	f := factory.CustomUnmarshaler()
+	assert.NotNil(t, f, "custom unmarshal function should not be nil")
+
+	err := f(v, "", nil)
+	assert.Error(t, err, "should not have been able to marshal to a nil config")
+
+	err = f(v, "", &RemoteSamplingConfig{})
+	assert.Error(t, err, "should not have been able to marshal to a non-jaegerreceiver config")
 }
