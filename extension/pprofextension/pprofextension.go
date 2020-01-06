@@ -18,7 +18,9 @@ import (
 	"net"
 	"net/http"
 	_ "net/http/pprof" // Needed to enable the performance profiler
+	"os"
 	"runtime"
+	"runtime/pprof"
 
 	"go.uber.org/zap"
 
@@ -52,10 +54,21 @@ func (p *pprofExtension) Start(host extension.Host) error {
 		}
 	}()
 
+	if p.config.SaveToFile != "" {
+		f, err := os.Create(p.config.SaveToFile)
+		if err != nil {
+			return err
+		}
+		pprof.StartCPUProfile(f)
+	}
+
 	return nil
 }
 
 func (p *pprofExtension) Shutdown() error {
+	if p.config.SaveToFile != "" {
+		pprof.StopCPUProfile()
+	}
 	return p.server.Close()
 }
 
