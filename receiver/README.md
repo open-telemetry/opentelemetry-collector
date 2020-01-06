@@ -107,31 +107,20 @@ This receiver receives traces in the [Jaeger](https://www.jaegertracing.io)
 format. It translates them into the internal format and sends
 it to processors and exporters.
 
-It supports the Jaeger Collector protocols:
+It supports the Jaeger Collector and Agent protocols:
+- gRPC
 - Thrift HTTP
 - Thrift TChannel
-- gRPC
-
-By default, the Jaeger receiver supports all three protocols on the default ports
-specified in [factory.go](jaegerreceiver/factory.go). The following demonstrates
-how to specify the default Jaeger receiver.
-```yaml
-receivers:
-  jaeger:
-```
-
-It also supports the Jaeger Agent protocols:
 - Thrift Compact
 - Thrift Binary
 
-By default, these services are not started unless they are explicitly referenced in
-the configuration.  Referencing any protocol with an absent endpoint will choose the
-default ports.
-
+By default, the Jaeger receiver will not serve any protocol. A protocol must be named
+for the jaeger receiver to start.  The following demonstrates how to start the Jaeger
+receiver with only gRPC enabled on the default port.
 ```yaml
 receivers:
   jaeger:
-    thrift-compact:
+    grpc:
 ```
 
 It is possible to configure the protocols on different ports, refer to
