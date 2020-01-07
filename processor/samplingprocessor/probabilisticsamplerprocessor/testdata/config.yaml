@@ -15,10 +15,13 @@ processors:
     # "sample all traces".
     sampling_percentage: 15.3
     # hash_seed allows one to configure the hashing seed. This is important in
-    # scenarios where multiple layers of collectors have different sampling
-    # rates: if all layers use the same seed, all data passing one layer may
-    # pass the next even if they have different sampling rates. Having different
-    # seeds at different layers avoid that problem.
+    # scenarios where multiple layers of collectors are used to achieve the
+    # desired sampling rate, eg.: 10% on first layer and 10% on the
+    # second, resulting in an overall sampling rate of 1% (10% x 10%).
+    # If all layers use the same seed, all data passing one layer will also pass
+    # the next one, independent of the configured sampling rate. Having different
+    # seeds at different layers ensures that sampling rate in each layer work as
+    # intended.
     hash_seed: 22
 
 exporters:

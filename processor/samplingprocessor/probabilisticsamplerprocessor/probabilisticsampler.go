@@ -132,15 +132,6 @@ func parseSpanSamplingPriority(span *tracepb.Span) samplingPriority {
 		return deferDecision
 	}
 
-	decideForDoubleFn := func(value float64) samplingPriority {
-		if value == 0.0 {
-			return doNotSampleSpan
-		} else if value > 0.0 {
-			return mustSampleSpan
-		}
-		return deferDecision
-	}
-
 	// By default defer the decision.
 	decision := deferDecision
 
@@ -158,11 +149,18 @@ func parseSpanSamplingPriority(span *tracepb.Span) samplingPriority {
 		}
 	case *tracepb.AttributeValue_DoubleValue:
 		value := samplingPriorityAttrib.GetDoubleValue()
-		decision = decideForDoubleFn(value)
+		if value == 0.0 {
+			decision = doNotSampleSpan
+		} else if value > 0.0 {
+			decision = mustSampleSpan
+		}
 	case *tracepb.AttributeValue_StringValue:
-		if attribVal := samplingPriorityAttrib.GetStringValue().GetValue(); attribVal != "" {
-			if value, err := strconv.ParseFloat(attribVal, 64); err == nil {
-				decision = decideForDoubleFn(value)
+		attribVal := samplingPriorityAttrib.GetStringValue().GetValue()
+		if value, err := strconv.ParseFloat(attribVal, 64); err == nil {
+			if value == 0.0 {
+				decision = doNotSampleSpan
+			} else if value > 0.0 {
+				decision = mustSampleSpan
 			}
 		}
 	}
