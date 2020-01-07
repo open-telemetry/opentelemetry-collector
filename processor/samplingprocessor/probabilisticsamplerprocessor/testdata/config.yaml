@@ -4,9 +4,11 @@ receivers:
 processors:
   # The probabilistic_sampler sets trace sampling by hashing the trace id of
   # each span and making the sampling decision based on the hashed value. It
-  # also obeys the "sampling.priority" semantic convention as defined by
+  # also implements the "sampling.priority" semantic convention as defined by
   # OpenTracing. See
   # https://github.com/opentracing/specification/blob/master/semantic_conventions.md#span-tags-table
+  # The "sampling.priority" semantics have priority over trace id hashing and
+  # can be used to control if given spans are sampled, ie.: forwarded, or not.
   probabilistic_sampler:
     # the percentage rate at which traces are going to be sampled. Defaults to
     # zero, i.e.: no sample. Values greater or equal 100 are treated as

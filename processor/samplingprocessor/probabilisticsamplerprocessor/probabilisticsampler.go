@@ -31,8 +31,17 @@ import (
 type samplingPriority int
 
 const (
+	// deferDecision means that the decision if a span will be "sampled" (ie.:
+	// forwarded by the collector) is made by hashing the trace ID according
+	// to the configured sampling rate.
 	deferDecision samplingPriority = iota
+	// mustSampleSpan indicates that the span had a "sampling.priority" attribute
+	// greater than zero and it is going to be sampled, ie.: forwarded by the
+	// collector.
 	mustSampleSpan
+	// doNotSampleSpan indicates that the span had a "sampling.priority" attribute
+	// equal zero and it is NOT going to be sampled, ie.: it won't be forwarded
+	// by the collector.
 	doNotSampleSpan
 
 	// The constants help translate user friendly percentages to numbers direct used in sampling.
@@ -77,7 +86,9 @@ func (tsp *tracesamplerprocessor) ConsumeTraceData(ctx context.Context, td consu
 	for _, span := range td.Spans {
 		samplingPriority := parseSpanSamplingPriority(span)
 		if samplingPriority == doNotSampleSpan {
-			// Take a restrictive approach since some may use this to remove spans from traces.
+			// The OpenTelemetry mentions this as a "hint" we take a stronger
+			// approach and do not sample the span since some may use it to
+			// remove specific spans from traces.
 			continue
 		}
 
