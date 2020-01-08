@@ -150,6 +150,15 @@ func TestZipkinReceiverPortAlreadyInUse(t *testing.T) {
 	}
 }
 
+func TestCustomHTTPServer(t *testing.T) {
+	zr, err := New("localhost:9411", exportertest.NewNopTraceExporter())
+	require.NoError(t, err, "Failed to create receiver: %v", err)
+
+	server := &http.Server{}
+	zr = zr.WithHTTPServer(server)
+	assert.True(t, assert.ObjectsAreEqual(server, zr.server), "custom server passed to New was not used")
+}
+
 func TestConvertSpansToTraceSpans_json(t *testing.T) {
 	// Using Adrian Cole's sample at https://gist.github.com/adriancole/e8823c19dfed64e2eb71
 	blob, err := ioutil.ReadFile("./testdata/sample1.json")
