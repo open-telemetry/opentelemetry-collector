@@ -45,7 +45,7 @@ func TestCreateReceiver(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
 	// have to enable at least one protocol for the jaeger receiver to be created
-	cfg.(*Config).Protocols[protoGRPC] = defaultsForProtocol(protoGRPC)
+	cfg.(*Config).Protocols[protoGRPC], _ = defaultsForProtocol(protoGRPC)
 
 	tReceiver, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
 	assert.NoError(t, err, "receiver creation failed")
@@ -62,7 +62,7 @@ func TestCreateDefaultGRPCEndpoint(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
-	rCfg.Protocols[protoGRPC] = defaultsForProtocol(protoGRPC)
+	rCfg.Protocols[protoGRPC], _ = defaultsForProtocol(protoGRPC)
 	r, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
 
 	assert.NoError(t, err, "unexpected error creating receiver")
@@ -74,7 +74,7 @@ func TestCreateInvalidHTTPEndpoint(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
-	rCfg.Protocols[protoThriftHTTP] = defaultsForProtocol(protoThriftHTTP)
+	rCfg.Protocols[protoThriftHTTP], _ = defaultsForProtocol(protoThriftHTTP)
 	r, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
 
 	assert.NoError(t, err, "unexpected error creating receiver")
@@ -86,7 +86,7 @@ func TestCreateInvalidTChannelEndpoint(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
-	rCfg.Protocols[protoThriftTChannel] = defaultsForProtocol(protoThriftTChannel)
+	rCfg.Protocols[protoThriftTChannel], _ = defaultsForProtocol(protoThriftTChannel)
 	r, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
 
 	assert.NoError(t, err, "unexpected error creating receiver")
@@ -98,7 +98,7 @@ func TestCreateInvalidThriftBinaryEndpoint(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
-	rCfg.Protocols[protoThriftBinary] = defaultsForProtocol(protoThriftBinary)
+	rCfg.Protocols[protoThriftBinary], _ = defaultsForProtocol(protoThriftBinary)
 	r, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
 
 	assert.NoError(t, err, "unexpected error creating receiver")
@@ -110,7 +110,7 @@ func TestCreateInvalidThriftCompactEndpoint(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
-	rCfg.Protocols[protoThriftCompact] = defaultsForProtocol(protoThriftCompact)
+	rCfg.Protocols[protoThriftCompact], _ = defaultsForProtocol(protoThriftCompact)
 	r, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
 
 	assert.NoError(t, err, "unexpected error creating receiver")
@@ -206,7 +206,7 @@ func TestRemoteSamplingConfigPropagation(t *testing.T) {
 	rCfg := cfg.(*Config)
 
 	endpoint := "localhost:1234"
-	rCfg.Protocols[protoThriftCompact] = defaultsForProtocol(protoThriftCompact)
+	rCfg.Protocols[protoThriftCompact], _ = defaultsForProtocol(protoThriftCompact)
 	rCfg.RemoteSampling = &RemoteSamplingConfig{
 		FetchEndpoint: endpoint,
 	}
@@ -228,4 +228,11 @@ func TestCustomUnmarshalErrors(t *testing.T) {
 
 	err = f(v, "", &RemoteSamplingConfig{})
 	assert.Error(t, err, "should not have been able to marshal to a non-jaegerreceiver config")
+}
+
+func TestDefaultsForProtocolError(t *testing.T) {
+	d, err := defaultsForProtocol("badproto")
+
+	assert.Nil(t, d, "defaultsForProtocol should have returned nil")
+	assert.Error(t, err, "defaultsForProtocol should have errored")
 }

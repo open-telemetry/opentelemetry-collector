@@ -80,7 +80,9 @@ func (f *Factory) CustomUnmarshaler() receiver.CustomUnmarshaler {
 		// any protocol for which k exists, but v is nil needs to have defaults injected
 		for k, v := range receiverCfg.Protocols {
 			if v == nil {
-				receiverCfg.Protocols[k] = defaultsForProtocol(k)
+				if receiverCfg.Protocols[k], err = defaultsForProtocol(k); err != nil {
+					return err
+				}
 			}
 		}
 
@@ -218,7 +220,7 @@ func extractPortFromEndpoint(endpoint string) (int, error) {
 }
 
 // returns a default value for a protocol name.  this really just boils down to the endpoint
-func defaultsForProtocol(proto string) *receiver.SecureReceiverSettings {
+func defaultsForProtocol(proto string) (*receiver.SecureReceiverSettings, error) {
 	var defaultEndpoint string
 
 	switch proto {
@@ -232,11 +234,13 @@ func defaultsForProtocol(proto string) *receiver.SecureReceiverSettings {
 		defaultEndpoint = defaultThriftBinaryBindEndpoint
 	case protoThriftCompact:
 		defaultEndpoint = defaultThriftCompactBindEndpoint
+	default:
+		return nil, fmt.Errorf("unknown jaeger protocol %s", proto)
 	}
 
 	return &receiver.SecureReceiverSettings{
 		ReceiverSettings: configmodels.ReceiverSettings{
 			Endpoint: defaultEndpoint,
 		},
-	}
+	}, nil
 }
