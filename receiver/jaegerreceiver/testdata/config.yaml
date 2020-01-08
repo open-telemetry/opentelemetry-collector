@@ -21,7 +21,7 @@ receivers:
     remote_sampling:
       fetch_endpoint: "jaeger-collector:1234"
   # The following demonstrates how to enable protocols with defaults
-  jaeger/defaults:
+  jaeger:
     protocols:
       grpc:
       thrift-http:

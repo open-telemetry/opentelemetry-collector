@@ -41,9 +41,6 @@ func TestLoadConfig(t *testing.T) {
 	// are excluded from the final list.
 	assert.Equal(t, len(cfg.Receivers), 4)
 
-	r0 := cfg.Receivers["jaeger"]
-	assert.Nil(t, r0)
-
 	r1 := cfg.Receivers["jaeger/customname"].(*Config)
 	assert.Equal(t, r1,
 		&Config{
@@ -81,11 +78,11 @@ func TestLoadConfig(t *testing.T) {
 			},
 		})
 
-	rDefaults := cfg.Receivers["jaeger/defaults"].(*Config)
+	rDefaults := cfg.Receivers["jaeger"].(*Config)
 	assert.Equal(t, rDefaults,
 		&Config{
 			TypeVal: typeStr,
-			NameVal: "jaeger/defaults",
+			NameVal: "jaeger",
 			Protocols: map[string]*receiver.SecureReceiverSettings{
 				"grpc": {
 					ReceiverSettings: configmodels.ReceiverSettings{
@@ -162,4 +159,17 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		})
+}
+
+func TestFailedLoadConfig(t *testing.T) {
+	factories, err := config.ExampleComponents()
+	assert.Nil(t, err)
+
+	factory := &Factory{}
+	factories.Receivers[typeStr] = factory
+	_, err = config.LoadConfigFile(t, path.Join(".", "testdata", "bad_proto_config.yaml"), factories)
+	assert.NotNil(t, err)
+
+	_, err = config.LoadConfigFile(t, path.Join(".", "testdata", "no_proto_config.yaml"), factories)
+	assert.NotNil(t, err)
 }
