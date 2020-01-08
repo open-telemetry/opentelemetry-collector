@@ -77,6 +77,10 @@ func (f *Factory) CustomUnmarshaler() receiver.CustomUnmarshaler {
 			return fmt.Errorf("config type not *jaegerreceiver.Config")
 		}
 
+		if len(receiverCfg.Protocols) == 0 {
+			return fmt.Errorf("must specify at least one protocol when using the Jaeger receiver")
+		}
+
 		// any protocol for which k exists, but v is nil needs to have defaults injected
 		for k, v := range receiverCfg.Protocols {
 			if v == nil {
@@ -235,7 +239,7 @@ func defaultsForProtocol(proto string) (*receiver.SecureReceiverSettings, error)
 	case protoThriftCompact:
 		defaultEndpoint = defaultThriftCompactBindEndpoint
 	default:
-		return nil, fmt.Errorf("unknown jaeger protocol %s", proto)
+		return nil, fmt.Errorf("unknown Jaeger protocol %s", proto)
 	}
 
 	return &receiver.SecureReceiverSettings{
