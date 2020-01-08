@@ -16,6 +16,7 @@ package probabilisticsamplerprocessor
 
 import (
 	"context"
+	"strconv"
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 
@@ -25,7 +26,24 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/processor"
 )
 
+// samplingPriority has the semantic result of parsing the "sampling.priority"
+// attribute per OpenTracing semantic conventions.
+type samplingPriority int
+
 const (
+	// deferDecision means that the decision if a span will be "sampled" (ie.:
+	// forwarded by the collector) is made by hashing the trace ID according
+	// to the configured sampling rate.
+	deferDecision samplingPriority = iota
+	// mustSampleSpan indicates that the span had a "sampling.priority" attribute
+	// greater than zero and it is going to be sampled, ie.: forwarded by the
+	// collector.
+	mustSampleSpan
+	// doNotSampleSpan indicates that the span had a "sampling.priority" attribute
+	// equal zero and it is NOT going to be sampled, ie.: it won't be forwarded
+	// by the collector.
+	doNotSampleSpan
+
 	// The constants help translate user friendly percentages to numbers direct used in sampling.
 	numHashBuckets        = 0x4000 // Using a power of 2 to avoid division.
 	bitMaskHashBuckets    = numHashBuckets - 1
@@ -57,9 +75,6 @@ func NewTraceProcessor(nextConsumer consumer.TraceConsumer, cfg Config) (process
 
 func (tsp *tracesamplerprocessor) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	scaledSamplingRate := tsp.scaledSamplingRate
-	if scaledSamplingRate >= numHashBuckets {
-		return tsp.nextConsumer.ConsumeTraceData(ctx, td)
-	}
 
 	sampledTraceData := consumerdata.TraceData{
 		Node:         td.Node,
@@ -69,10 +84,21 @@ func (tsp *tracesamplerprocessor) ConsumeTraceData(ctx context.Context, td consu
 
 	sampledSpans := make([]*tracepb.Span, 0, len(td.Spans))
 	for _, span := range td.Spans {
+		samplingPriority := parseSpanSamplingPriority(span)
+		if samplingPriority == doNotSampleSpan {
+			// The OpenTelemetry mentions this as a "hint" we take a stronger
+			// approach and do not sample the span since some may use it to
+			// remove specific spans from traces.
+			continue
+		}
+
 		// If one assumes random trace ids hashing may seems avoidable, however, traces can be coming from sources
 		// with various different criteria to generate trace id and perhaps were already sampled without hashing.
 		// Hashing here prevents bias due to such systems.
-		if hash(span.TraceId, tsp.hashSeed)&bitMaskHashBuckets < scaledSamplingRate {
+		sampled := samplingPriority == mustSampleSpan ||
+			hash(span.TraceId, tsp.hashSeed)&bitMaskHashBuckets < scaledSamplingRate
+
+		if sampled {
 			sampledSpans = append(sampledSpans, span)
 		}
 	}
@@ -89,6 +115,57 @@ func (tsp *tracesamplerprocessor) GetCapabilities() processor.Capabilities {
 // Shutdown is invoked during service shutdown.
 func (tsp *tracesamplerprocessor) Shutdown() error {
 	return nil
+}
+
+// parseSpanSamplingPriority checks if the span has the "sampling.priority" tag to
+// decide if the span should be sampled or not. The usage of the tag follows the
+// OpenTracing semantic tags:
+// https://github.com/opentracing/specification/blob/master/semantic_conventions.md#span-tags-table
+func parseSpanSamplingPriority(span *tracepb.Span) samplingPriority {
+	attribMap := span.GetAttributes().GetAttributeMap()
+	if attribMap == nil {
+		return deferDecision
+	}
+
+	samplingPriorityAttrib := attribMap["sampling.priority"]
+	if samplingPriorityAttrib == nil {
+		return deferDecision
+	}
+
+	// By default defer the decision.
+	decision := deferDecision
+
+	// Try check for different types since there are various client libraries
+	// using different conventions regarding "sampling.priority". Besides the
+	// client libraries it is also possible that the type was lost in translation
+	// between different formats.
+	switch samplingPriorityAttrib.Value.(type) {
+	case *tracepb.AttributeValue_IntValue:
+		value := samplingPriorityAttrib.GetIntValue()
+		if value == 0 {
+			decision = doNotSampleSpan
+		} else if value > 0 {
+			decision = mustSampleSpan
+		}
+	case *tracepb.AttributeValue_DoubleValue:
+		value := samplingPriorityAttrib.GetDoubleValue()
+		if value == 0.0 {
+			decision = doNotSampleSpan
+		} else if value > 0.0 {
+			decision = mustSampleSpan
+		}
+	case *tracepb.AttributeValue_StringValue:
+		attribVal := samplingPriorityAttrib.GetStringValue().GetValue()
+		if value, err := strconv.ParseFloat(attribVal, 64); err == nil {
+			if value == 0.0 {
+				decision = doNotSampleSpan
+			} else if value > 0.0 {
+				decision = mustSampleSpan
+			}
+		}
+	}
+
+	return decision
 }
 
 // hash is a murmur3 hash function, see http://en.wikipedia.org/wiki/MurmurHash.
