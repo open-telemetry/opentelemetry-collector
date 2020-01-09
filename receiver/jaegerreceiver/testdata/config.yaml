@@ -1,7 +1,4 @@
 receivers:
-  # The following demonstrates initializing the default jaeger receiver.
-  # By default this configuration enables nothing and will serve no jaeger protocols.
-  jaeger:
   # The following demonstrates specifying different endpoints.
   # The Jaeger receiver connects to ports on all available network interfaces.
   # Ex: `endpoint: "9876"` is incorrect.
@@ -21,7 +18,7 @@ receivers:
     remote_sampling:
       fetch_endpoint: "jaeger-collector:1234"
   # The following demonstrates how to enable protocols with defaults.
-  jaeger:
+  jaeger/defaults:
     protocols:
       grpc:
       thrift-http:
@@ -73,6 +70,6 @@ exporters:
 service:
   pipelines:
     traces:
-     receivers: [jaeger]
+     receivers: [jaeger/defaults]
      processors: [exampleprocessor]
      exporters: [exampleexporter]

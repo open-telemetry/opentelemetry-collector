@@ -22,11 +22,11 @@ import (
 	"net"
 	"strconv"
 
-	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
+	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
@@ -67,7 +67,9 @@ func (f *Factory) Type() string {
 // CustomUnmarshaler is used to add defaults for named but empty protocols
 func (f *Factory) CustomUnmarshaler() receiver.CustomUnmarshaler {
 	return func(v *viper.Viper, viperKey string, intoCfg interface{}) error {
-		err := v.UnmarshalKey(viperKey, intoCfg, func(decoderCfg *mapstructure.DecoderConfig) {})
+		// first load the config normally
+		vReceiverCfg := config.GetConfigSection(v, viperKey)
+		err := vReceiverCfg.UnmarshalExact(intoCfg)
 		if err != nil {
 			return err
 		}
@@ -77,13 +79,18 @@ func (f *Factory) CustomUnmarshaler() receiver.CustomUnmarshaler {
 			return fmt.Errorf("config type not *jaegerreceiver.Config")
 		}
 
-		if len(receiverCfg.Protocols) == 0 {
+		// next manually search for protocols in viper that do not appear in the normally loaded config
+		// these protocols were excluded during normal loading and we need to add defaults for them
+		vSub := v.Sub(viperKey)
+		if vSub == nil {
+			return fmt.Errorf("Jaeger receiver config is empty")
+		}
+		protocols := vSub.GetStringMap("protocols")
+		if len(protocols) == 0 {
 			return fmt.Errorf("must specify at least one protocol when using the Jaeger receiver")
 		}
-
-		// any protocol for which k exists, but v is nil needs to have defaults injected
-		for k, v := range receiverCfg.Protocols {
-			if v == nil {
+		for k := range protocols {
+			if _, ok := receiverCfg.Protocols[k]; !ok {
 				if receiverCfg.Protocols[k], err = defaultsForProtocol(k); err != nil {
 					return err
 				}

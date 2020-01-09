@@ -78,11 +78,11 @@ func TestLoadConfig(t *testing.T) {
 			},
 		})
 
-	rDefaults := cfg.Receivers["jaeger"].(*Config)
+	rDefaults := cfg.Receivers["jaeger/defaults"].(*Config)
 	assert.Equal(t, rDefaults,
 		&Config{
 			TypeVal: typeStr,
-			NameVal: "jaeger",
+			NameVal: "jaeger/defaults",
 			Protocols: map[string]*receiver.SecureReceiverSettings{
 				"grpc": {
 					ReceiverSettings: configmodels.ReceiverSettings{
@@ -170,6 +170,9 @@ func TestFailedLoadConfig(t *testing.T) {
 	_, err = config.LoadConfigFile(t, path.Join(".", "testdata", "bad_proto_config.yaml"), factories)
 	assert.EqualError(t, err, `error reading settings for receiver type "jaeger": unknown Jaeger protocol badproto`)
 
-	_, err = config.LoadConfigFile(t, path.Join(".", "testdata", "no_proto_config.yaml"), factories)
+	_, err = config.LoadConfigFile(t, path.Join(".", "testdata", "bad_no_proto_config.yaml"), factories)
 	assert.EqualError(t, err, `error reading settings for receiver type "jaeger": must specify at least one protocol when using the Jaeger receiver`)
+
+	_, err = config.LoadConfigFile(t, path.Join(".", "testdata", "bad_empty_config.yaml"), factories)
+	assert.EqualError(t, err, `error reading settings for receiver type "jaeger": Jaeger receiver config is empty`)
 }

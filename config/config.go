@@ -190,6 +190,20 @@ func Load(
 	return &config, nil
 }
 
+// GetConfigSection returns a sub-config from the viper config that has the corresponding given key.
+// It also expands all the string values.
+func GetConfigSection(v *viper.Viper, key string) *viper.Viper {
+	// Unmarshal only the subconfig for this processor.
+	sv := v.Sub(key)
+	if sv == nil {
+		// When the config for this key is empty Sub returns nil. In order to avoid nil checks
+		// just return an empty config.
+		return viper.New()
+	}
+	// Before unmarshaling first expand all environment variables.
+	return expandEnvConfig(sv)
+}
+
 // decodeTypeAndName decodes a key in type[/name] format into type and fullName.
 // fullName is the key normalized such that type and name components have spaces trimmed.
 // The "type" part must be present, the forward slash and "name" are optional.
@@ -264,7 +278,7 @@ func loadExtensions(v *viper.Viper, factories map[string]extension.Factory) (con
 		extensionCfg.SetName(fullName)
 
 		// Unmarshal only the subconfig for this exporter.
-		sv := getConfigSection(subViper, key)
+		sv := GetConfigSection(subViper, key)
 
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
@@ -290,7 +304,7 @@ func loadExtensions(v *viper.Viper, factories map[string]extension.Factory) (con
 
 func loadService(v *viper.Viper) (configmodels.Service, error) {
 	var service configmodels.Service
-	serviceSub := getConfigSection(v, serviceKeyName)
+	serviceSub := GetConfigSection(v, serviceKeyName)
 
 	// Process the pipelines first so in case of error on them it can be properly
 	// reported.
@@ -359,7 +373,7 @@ func loadReceivers(v *viper.Viper, factories map[string]receiver.Factory) (confi
 		receiverCfg.SetName(fullName)
 
 		// Unmarshal only the subconfig for this exporter.
-		sv := getConfigSection(subViper, key)
+		sv := GetConfigSection(subViper, key)
 
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
@@ -434,7 +448,7 @@ func loadExporters(v *viper.Viper, factories map[string]exporter.Factory) (confi
 		exporterCfg.SetName(fullName)
 
 		// Unmarshal only the subconfig for this exporter.
-		sv := getConfigSection(subViper, key)
+		sv := GetConfigSection(subViper, key)
 
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
@@ -494,7 +508,7 @@ func loadProcessors(v *viper.Viper, factories map[string]processor.Factory) (con
 		processorCfg.SetName(fullName)
 
 		// Unmarshal only the subconfig for this exporter.
-		sv := getConfigSection(subViper, key)
+		sv := GetConfigSection(subViper, key)
 
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
@@ -852,20 +866,6 @@ func validateProcessors(cfg *configmodels.Config) {
 			delete(cfg.Processors, name)
 		}
 	}
-}
-
-// getConfigSection returns a sub-config from the viper config that has the corresponding given key.
-// It also expands all the string values.
-func getConfigSection(v *viper.Viper, key string) *viper.Viper {
-	// Unmarshal only the subconfig for this processor.
-	sv := v.Sub(key)
-	if sv == nil {
-		// When the config for this key is empty Sub returns nil. In order to avoid nil checks
-		// just return an empty config.
-		return viper.New()
-	}
-	// Before unmarshaling first expand all environment variables.
-	return expandEnvConfig(sv)
 }
 
 // expandEnvConfig creates a new viper config with expanded values for all the values (simple, list or map value).
