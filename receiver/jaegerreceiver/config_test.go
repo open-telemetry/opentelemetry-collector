@@ -168,8 +168,8 @@ func TestFailedLoadConfig(t *testing.T) {
 	factory := &Factory{}
 	factories.Receivers[typeStr] = factory
 	_, err = config.LoadConfigFile(t, path.Join(".", "testdata", "bad_proto_config.yaml"), factories)
-	assert.NotNil(t, err)
+	assert.EqualError(t, err, `error reading settings for receiver type "jaeger": unknown Jaeger protocol badproto`)
 
 	_, err = config.LoadConfigFile(t, path.Join(".", "testdata", "no_proto_config.yaml"), factories)
-	assert.NotNil(t, err)
+	assert.EqualError(t, err, `error reading settings for receiver type "jaeger": must specify at least one protocol when using the Jaeger receiver`)
 }
