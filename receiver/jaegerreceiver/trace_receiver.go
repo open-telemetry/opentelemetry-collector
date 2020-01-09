@@ -464,7 +464,6 @@ func (jr *jReceiver) startCollector(host receiver.Host) error {
 		caddr := jr.collectorHTTPAddr()
 		cln, cerr := net.Listen("tcp", caddr)
 		if cerr != nil {
-			// Abort and close tch
 			return fmt.Errorf("failed to bind to Collector address %q: %v", caddr, cerr)
 		}
 
@@ -482,7 +481,6 @@ func (jr *jReceiver) startCollector(host receiver.Host) error {
 		gaddr := jr.collectorGRPCAddr()
 		gln, gerr := net.Listen("tcp", gaddr)
 		if gerr != nil {
-			// Abort and close tch, cln
 			return fmt.Errorf("failed to bind to gRPC address %q: %v", gaddr, gerr)
 		}
 
