@@ -22,6 +22,7 @@ import (
 	"github.com/jaegertracing/jaeger/pkg/healthcheck"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/extension"
 )
 
@@ -35,7 +36,7 @@ type healthCheckExtension struct {
 var _ (extension.ServiceExtension) = (*healthCheckExtension)(nil)
 var _ (extension.PipelineWatcher) = (*healthCheckExtension)(nil)
 
-func (hc *healthCheckExtension) Start(host extension.Host) error {
+func (hc *healthCheckExtension) Start(host component.Host) error {
 
 	hc.logger.Info("Starting health_check extension", zap.Any("config", hc.config))
 

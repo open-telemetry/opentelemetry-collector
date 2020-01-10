@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
@@ -31,7 +32,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/processortest"
 	"github.com/open-telemetry/opentelemetry-collector/receiver"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/receivertest"
 )
 
 type testCase struct {
@@ -115,17 +115,7 @@ func testReceivers(
 	// Ensure receiver has its fields correctly populated.
 	require.NotNil(t, receiver)
 
-	if test.hasTraces {
-		assert.NotNil(t, receiver.trace)
-	} else {
-		assert.Nil(t, receiver.trace)
-	}
-
-	if test.hasMetrics {
-		assert.NotNil(t, receiver.metrics)
-	} else {
-		assert.Nil(t, receiver.metrics)
-	}
+	assert.NotNil(t, receiver.receiver)
 
 	// Compose the list of created exporters.
 	var exporters []*builtExporter
@@ -154,7 +144,7 @@ func testReceivers(
 		},
 	}
 	if test.hasTraces {
-		traceProducer := receiver.trace.(*config.ExampleReceiverProducer)
+		traceProducer := receiver.receiver.(*config.ExampleReceiverProducer)
 		traceProducer.TraceConsumer.ConsumeTraceData(context.Background(), traceData)
 	}
 
@@ -164,7 +154,7 @@ func testReceivers(
 		},
 	}
 	if test.hasMetrics {
-		metricsProducer := receiver.metrics.(*config.ExampleReceiverProducer)
+		metricsProducer := receiver.receiver.(*config.ExampleReceiverProducer)
 		metricsProducer.MetricsConsumer.ConsumeMetricsData(context.Background(), metricsData)
 	}
 
@@ -237,19 +227,16 @@ func TestReceiversBuilder_StartAll(t *testing.T) {
 	receiver := &config.ExampleReceiverProducer{}
 
 	receivers[rcvCfg] = &builtReceiver{
-		trace:   receiver,
-		metrics: receiver,
+		receiver: receiver,
 	}
 
-	assert.Equal(t, false, receiver.TraceStarted)
-	assert.Equal(t, false, receiver.MetricsStarted)
+	assert.Equal(t, false, receiver.Started)
 
-	mh := receivertest.NewMockHost()
+	mh := component.NewMockHost()
 	err := receivers.StartAll(zap.NewNop(), mh)
 	assert.Nil(t, err)
 
-	assert.Equal(t, true, receiver.TraceStarted)
-	assert.Equal(t, true, receiver.MetricsStarted)
+	assert.Equal(t, true, receiver.Started)
 }
 
 func TestReceiversBuilder_StopAll(t *testing.T) {
@@ -259,17 +246,14 @@ func TestReceiversBuilder_StopAll(t *testing.T) {
 	receiver := &config.ExampleReceiverProducer{}
 
 	receivers[rcvCfg] = &builtReceiver{
-		trace:   receiver,
-		metrics: receiver,
+		receiver: receiver,
 	}
 
-	assert.Equal(t, false, receiver.TraceStopped)
-	assert.Equal(t, false, receiver.MetricsStopped)
+	assert.Equal(t, false, receiver.Stopped)
 
 	receivers.StopAll()
 
-	assert.Equal(t, true, receiver.TraceStopped)
-	assert.Equal(t, true, receiver.MetricsStopped)
+	assert.Equal(t, true, receiver.Stopped)
 }
 
 func TestReceiversBuilder_ErrorOnNilReceiver(t *testing.T) {

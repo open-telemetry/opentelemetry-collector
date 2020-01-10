@@ -30,11 +30,11 @@ import (
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/extension"
-	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	"github.com/open-telemetry/opentelemetry-collector/service/builder"
 )
 
@@ -46,6 +46,7 @@ type Application struct {
 	logger         *zap.Logger
 	exporters      builder.Exporters
 	builtReceivers builder.Receivers
+	builtPipelines builder.BuiltPipelines
 
 	factories config.Factories
 	config    *configmodels.Config
@@ -77,7 +78,7 @@ type ApplicationStartInfo struct {
 	GitHash string
 }
 
-var _ receiver.Host = (*Application)(nil)
+var _ component.Host = (*Application)(nil)
 
 // Context returns a context provided by the host to be used on the receiver
 // operations.
@@ -253,13 +254,19 @@ func (app *Application) setupPipelines() {
 
 	// Create pipelines and their processors and plug exporters to the
 	// end of the pipelines.
-	pipelines, err := builder.NewPipelinesBuilder(app.logger, app.config, app.exporters, app.factories.Processors).Build()
+	app.builtPipelines, err = builder.NewPipelinesBuilder(app.logger, app.config, app.exporters, app.factories.Processors).Build()
 	if err != nil {
 		log.Fatalf("Cannot build pipelines: %v", err)
 	}
 
+	app.logger.Info("Starting processors...")
+	err = app.builtPipelines.StartProcessors(app.logger, app)
+	if err != nil {
+		log.Fatalf("Cannot start processors: %v", err)
+	}
+
 	// Create receivers and plug them into the start of the pipelines.
-	app.builtReceivers, err = builder.NewReceiversBuilder(app.logger, app.config, pipelines, app.factories.Receivers).Build()
+	app.builtReceivers, err = builder.NewReceiversBuilder(app.logger, app.config, app.builtPipelines, app.factories.Receivers).Build()
 	if err != nil {
 		log.Fatalf("Cannot build receivers: %v", err)
 	}
@@ -309,8 +316,8 @@ func (app *Application) shutdownPipelines() {
 	app.logger.Info("Stopping receivers...")
 	app.builtReceivers.StopAll()
 
-	// TODO: shutdown processors by calling Shutdown() for each processor in the
-	// order they are arranged in the pipeline.
+	app.logger.Info("Stopping processors...")
+	app.builtPipelines.ShutdownProcessors(app.logger)
 
 	app.logger.Info("Shutting down exporters...")
 	app.exporters.ShutdownAll()

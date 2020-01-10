@@ -18,10 +18,13 @@ import (
 	"net"
 	"net/http"
 	_ "net/http/pprof" // Needed to enable the performance profiler
+	"os"
 	"runtime"
+	"runtime/pprof"
 
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/extension"
 )
 
@@ -33,7 +36,7 @@ type pprofExtension struct {
 
 var _ (extension.ServiceExtension) = (*pprofExtension)(nil)
 
-func (p *pprofExtension) Start(host extension.Host) error {
+func (p *pprofExtension) Start(host component.Host) error {
 	// Start the listener here so we can have earlier failure if port is
 	// already in use.
 	ln, err := net.Listen("tcp", p.config.Endpoint)
@@ -52,10 +55,21 @@ func (p *pprofExtension) Start(host extension.Host) error {
 		}
 	}()
 
+	if p.config.SaveToFile != "" {
+		f, err := os.Create(p.config.SaveToFile)
+		if err != nil {
+			return err
+		}
+		pprof.StartCPUProfile(f)
+	}
+
 	return nil
 }
 
 func (p *pprofExtension) Shutdown() error {
+	if p.config.SaveToFile != "" {
+		pprof.StopCPUProfile()
+	}
 	return p.server.Close()
 }
 

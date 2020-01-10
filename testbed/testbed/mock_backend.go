@@ -22,8 +22,8 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/receiver"
 )
 
 // MockBackend is a backend that allows receiving the data locally.
@@ -54,7 +54,7 @@ func NewMockBackend(logFilePath string, receiver DataReceiver) *MockBackend {
 	return mb
 }
 
-var _ receiver.Host = (*MockBackend)(nil)
+var _ component.Host = (*MockBackend)(nil)
 
 func (mb *MockBackend) Context() context.Context {
 	return context.Background()

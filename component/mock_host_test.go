@@ -14,7 +14,7 @@
 
 // Package receivertest define types and functions used to help test packages
 // implementing the receiver package interfaces.
-package receivertest
+package component
 
 import (
 	"errors"

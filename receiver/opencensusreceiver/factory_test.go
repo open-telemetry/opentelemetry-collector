@@ -23,11 +23,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-collector/receiver"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/receivertest"
 	"github.com/open-telemetry/opentelemetry-collector/testutils"
 )
 
@@ -111,10 +111,10 @@ func TestCreateTraceReceiver(t *testing.T) {
 				return
 			}
 			if tr != nil {
-				mh := receivertest.NewMockHost()
-				err := tr.StartTraceReception(mh)
-				require.NoError(t, err, "StartTraceReception() error = %v", err)
-				tr.StopTraceReception()
+				mh := component.NewMockHost()
+				err := tr.Start(mh)
+				require.NoError(t, err, "Start() error = %v", err)
+				tr.Shutdown()
 			}
 		})
 	}
@@ -182,10 +182,10 @@ func TestCreateMetricReceiver(t *testing.T) {
 				return
 			}
 			if tc != nil {
-				mh := receivertest.NewMockHost()
-				err := tc.StartMetricsReception(mh)
-				require.NoError(t, err, "StartTraceReception() error = %v", err)
-				tc.StopMetricsReception()
+				mh := component.NewMockHost()
+				err := tc.Start(mh)
+				require.NoError(t, err, "Start() error = %v", err)
+				tc.Shutdown()
 			}
 		})
 	}

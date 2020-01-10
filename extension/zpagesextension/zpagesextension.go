@@ -21,6 +21,7 @@ import (
 	"go.opencensus.io/zpages"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/extension"
 )
 
@@ -32,7 +33,7 @@ type zpagesExtension struct {
 
 var _ (extension.ServiceExtension) = (*zpagesExtension)(nil)
 
-func (zpe *zpagesExtension) Start(host extension.Host) error {
+func (zpe *zpagesExtension) Start(host component.Host) error {
 	zPagesMux := http.NewServeMux()
 	zpages.Handle(zPagesMux, "/debug")
 
