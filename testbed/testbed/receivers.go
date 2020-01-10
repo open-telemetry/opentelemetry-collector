@@ -82,16 +82,11 @@ func (or *OCDataReceiver) Start(tc *MockTraceConsumer, mc *MockMetricConsumer) e
 		return err
 	}
 
-	err = or.receiver.StartTraceReception(or)
-	if err != nil {
-		return err
-	}
-	return or.receiver.StartMetricsReception(or)
+	return or.receiver.Start(or)
 }
 
 func (or *OCDataReceiver) Stop() {
-	or.receiver.StopTraceReception()
-	or.receiver.StopMetricsReception()
+	or.receiver.Shutdown()
 }
 
 func (or *OCDataReceiver) GenConfigYAMLStr() string {
@@ -127,12 +122,12 @@ func (jr *JaegerDataReceiver) Start(tc *MockTraceConsumer, mc *MockMetricConsume
 		return err
 	}
 
-	return jr.receiver.StartTraceReception(jr)
+	return jr.receiver.Start(jr)
 }
 
 func (jr *JaegerDataReceiver) Stop() {
 	if jr.receiver != nil {
-		if err := jr.receiver.StopTraceReception(); err != nil {
+		if err := jr.receiver.Shutdown(); err != nil {
 			log.Printf("Cannot stop Jaeger receiver: %s", err.Error())
 		}
 	}

@@ -20,6 +20,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
@@ -82,7 +83,20 @@ func (f *ExampleReceiverFactory) CreateTraceReceiver(
 	if cfg.(*ExampleReceiver).FailTraceCreation {
 		return nil, configerror.ErrDataTypeIsNotSupported
 	}
-	return &ExampleReceiverProducer{TraceConsumer: nextConsumer}, nil
+
+	// There must be one receiver for both metrics and traces. We maintain a map of
+	// receivers per config.
+
+	// Check to see if there is already a receiver for this config.
+	receiver, ok := exampleReceivers[cfg]
+	if !ok {
+		receiver = &ExampleReceiverProducer{}
+		// Remember the receiver in the map
+		exampleReceivers[cfg] = receiver
+	}
+	receiver.TraceConsumer = nextConsumer
+
+	return receiver, nil
 }
 
 // CreateMetricsReceiver creates a metrics receiver based on this config.
@@ -94,17 +108,28 @@ func (f *ExampleReceiverFactory) CreateMetricsReceiver(
 	if cfg.(*ExampleReceiver).FailMetricsCreation {
 		return nil, configerror.ErrDataTypeIsNotSupported
 	}
-	return &ExampleReceiverProducer{MetricsConsumer: nextConsumer}, nil
+
+	// There must be one receiver for both metrics and traces. We maintain a map of
+	// receivers per config.
+
+	// Check to see if there is already a receiver for this config.
+	receiver, ok := exampleReceivers[cfg]
+	if !ok {
+		receiver = &ExampleReceiverProducer{}
+		// Remember the receiver in the map
+		exampleReceivers[cfg] = receiver
+	}
+	receiver.MetricsConsumer = nextConsumer
+
+	return receiver, nil
 }
 
 // ExampleReceiverProducer allows producing traces and metrics for testing purposes.
 type ExampleReceiverProducer struct {
 	TraceConsumer   consumer.TraceConsumer
-	TraceStarted    bool
-	TraceStopped    bool
+	Started         bool
+	Stopped         bool
 	MetricsConsumer consumer.MetricsConsumer
-	MetricsStarted  bool
-	MetricsStopped  bool
 }
 
 // TraceSource returns the name of the trace data source.
@@ -112,15 +137,15 @@ func (erp *ExampleReceiverProducer) TraceSource() string {
 	return ""
 }
 
-// StartTraceReception tells the receiver to start its processing.
-func (erp *ExampleReceiverProducer) StartTraceReception(host receiver.Host) error {
-	erp.TraceStarted = true
+// Start tells the receiver to start its processing.
+func (erp *ExampleReceiverProducer) Start(host component.Host) error {
+	erp.Started = true
 	return nil
 }
 
-// StopTraceReception tells the receiver that should stop reception,
-func (erp *ExampleReceiverProducer) StopTraceReception() error {
-	erp.TraceStopped = true
+// Shutdown tells the receiver that should stop reception,
+func (erp *ExampleReceiverProducer) Shutdown() error {
+	erp.Stopped = true
 	return nil
 }
 
@@ -129,17 +154,11 @@ func (erp *ExampleReceiverProducer) MetricsSource() string {
 	return ""
 }
 
-// StartMetricsReception tells the receiver to start its processing.
-func (erp *ExampleReceiverProducer) StartMetricsReception(host receiver.Host) error {
-	erp.MetricsStarted = true
-	return nil
-}
-
-// StopMetricsReception tells the receiver that should stop reception,
-func (erp *ExampleReceiverProducer) StopMetricsReception() error {
-	erp.MetricsStopped = true
-	return nil
-}
+// This is the map of already created example receivers for particular configurations.
+// We maintain this map because the Factory is asked trace and metric receivers separately
+// when it gets CreateTraceReceiver() and CreateMetricsReceiver() but they must not
+// create separate objects, they must use one Receiver object per configuration.
+var exampleReceivers = map[configmodels.Receiver]*ExampleReceiverProducer{}
 
 // MultiProtoReceiver is for testing purposes. We are defining an example multi protocol
 // config and factory for "multireceiver" receiver type.
@@ -293,7 +312,7 @@ type ExampleExporterConsumer struct {
 // Start tells the exporter to start. The exporter may prepare for exporting
 // by connecting to the endpoint. Host parameter can be used for communicating
 // with the host after Start() has already returned.
-func (exp *ExampleExporterConsumer) Start(host exporter.Host) error {
+func (exp *ExampleExporterConsumer) Start(host component.Host) error {
 	exp.ExporterStarted = true
 	return nil
 }

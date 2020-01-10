@@ -19,6 +19,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/exporter"
@@ -33,7 +34,7 @@ type builtExporter struct {
 }
 
 // Start the exporter.
-func (exp *builtExporter) Start(host exporter.Host) error {
+func (exp *builtExporter) Start(host component.Host) error {
 	var errors []error
 	if exp.te != nil {
 		err := exp.te.Start(host)
@@ -74,7 +75,7 @@ func (exp *builtExporter) Shutdown() error {
 type Exporters map[configmodels.Exporter]*builtExporter
 
 // StartAll starts all exporters.
-func (exps Exporters) StartAll(logger *zap.Logger, host exporter.Host) error {
+func (exps Exporters) StartAll(logger *zap.Logger, host component.Host) error {
 	for cfg, exp := range exps {
 		logger.Info("Exporter is starting...", zap.String("exporter", cfg.Name()))
 

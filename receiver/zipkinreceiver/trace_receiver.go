@@ -36,6 +36,7 @@ import (
 	zipkinproto "github.com/openzipkin/zipkin-go/proto/v2"
 	"go.opencensus.io/trace"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal"
@@ -53,7 +54,7 @@ type ZipkinReceiver struct {
 
 	// addr is the address onto which the HTTP server will be bound
 	addr         string
-	host         receiver.Host
+	host         component.Host
 	nextConsumer consumer.TraceConsumer
 
 	startOnce sync.Once
@@ -102,8 +103,8 @@ func (zr *ZipkinReceiver) TraceSource() string {
 	return traceSource
 }
 
-// StartTraceReception spins up the receiver's HTTP server and makes the receiver start its processing.
-func (zr *ZipkinReceiver) StartTraceReception(host receiver.Host) error {
+// Start spins up the receiver's HTTP server and makes the receiver start its processing.
+func (zr *ZipkinReceiver) Start(host component.Host) error {
 	if host == nil {
 		return errors.New("nil host")
 	}
@@ -239,10 +240,10 @@ func (zr *ZipkinReceiver) deserializeFromJSON(jsonBlob []byte, debugWasSet bool)
 	return zs, nil
 }
 
-// StopTraceReception tells the receiver that should stop reception,
+// Shutdown tells the receiver that should stop reception,
 // giving it a chance to perform any necessary clean-up and shutting down
 // its HTTP server.
-func (zr *ZipkinReceiver) StopTraceReception() error {
+func (zr *ZipkinReceiver) Shutdown() error {
 	var err = oterr.ErrAlreadyStopped
 	zr.stopOnce.Do(func() {
 		err = zr.server.Close()

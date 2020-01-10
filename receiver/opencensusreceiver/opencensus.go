@@ -29,6 +29,7 @@ import (
 	"github.com/soheilhy/cmux"
 	"google.golang.org/grpc"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/observability"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
@@ -98,9 +99,9 @@ func (ocr *Receiver) TraceSource() string {
 	return source
 }
 
-// StartTraceReception runs the trace receiver on the gRPC server. Currently
+// Start runs the trace receiver on the gRPC server. Currently
 // it also enables the metrics receiver too.
-func (ocr *Receiver) StartTraceReception(host receiver.Host) error {
+func (ocr *Receiver) Start(host component.Host) error {
 	return ocr.start(host)
 }
 
@@ -121,12 +122,6 @@ func (ocr *Receiver) registerTraceConsumer() error {
 // MetricsSource returns the name of the metrics data source.
 func (ocr *Receiver) MetricsSource() string {
 	return source
-}
-
-// StartMetricsReception runs the metrics receiver on the gRPC server. Currently
-// it also enables the trace receiver too.
-func (ocr *Receiver) StartMetricsReception(host receiver.Host) error {
-	return ocr.start(host)
 }
 
 func (ocr *Receiver) registerMetricsConsumer() error {
@@ -153,18 +148,8 @@ func (ocr *Receiver) grpcServer() *grpc.Server {
 	return ocr.serverGRPC
 }
 
-// StopTraceReception is a method to turn off receiving traces. It stops
-// metrics reception too.
-func (ocr *Receiver) StopTraceReception() error {
-	if err := ocr.stop(); err != oterr.ErrAlreadyStopped {
-		return err
-	}
-	return nil
-}
-
-// StopMetricsReception is a method to turn off receiving metrics. It stops
-// trace reception too.
-func (ocr *Receiver) StopMetricsReception() error {
+// Shutdown is a method to turn off receiving.
+func (ocr *Receiver) Shutdown() error {
 	if err := ocr.stop(); err != oterr.ErrAlreadyStopped {
 		return err
 	}
@@ -172,7 +157,7 @@ func (ocr *Receiver) StopMetricsReception() error {
 }
 
 // start runs all the receivers/services namely, Trace and Metrics services.
-func (ocr *Receiver) start(host receiver.Host) error {
+func (ocr *Receiver) start(host component.Host) error {
 	hasConsumer := false
 	if ocr.traceConsumer != nil {
 		hasConsumer = true
@@ -250,7 +235,7 @@ func (ocr *Receiver) httpServer() *http.Server {
 	return ocr.serverHTTP
 }
 
-func (ocr *Receiver) startServer(host receiver.Host) error {
+func (ocr *Receiver) startServer(host component.Host) error {
 	err := oterr.ErrAlreadyStarted
 	ocr.startServerOnce.Do(func() {
 		err = nil

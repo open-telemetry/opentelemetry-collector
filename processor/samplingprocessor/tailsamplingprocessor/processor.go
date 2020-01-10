@@ -27,6 +27,7 @@ import (
 	"go.opencensus.io/tag"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/observability"
@@ -314,6 +315,11 @@ func (tsp *tailSamplingSpanProcessor) ConsumeTraceData(ctx context.Context, td c
 
 func (tsp *tailSamplingSpanProcessor) GetCapabilities() processor.Capabilities {
 	return processor.Capabilities{MutatesConsumedData: false}
+}
+
+// Start is invoked during service startup.
+func (tsp *tailSamplingSpanProcessor) Start(host component.Host) error {
+	return nil
 }
 
 // Shutdown is invoked during service shutdown.

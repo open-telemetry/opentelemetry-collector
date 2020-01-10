@@ -35,11 +35,11 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-collector/internal"
 	"github.com/open-telemetry/opentelemetry-collector/receiver"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/receivertest"
 	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 )
 
@@ -58,16 +58,16 @@ func TestReception(t *testing.T) {
 	sink := new(exportertest.SinkTraceExporter)
 
 	jr, err := New(context.Background(), config, sink, zap.NewNop())
-	defer jr.StopTraceReception()
+	defer jr.Shutdown()
 	assert.NoError(t, err, "should not have failed to create the Jaeger received")
 
 	t.Log("Starting")
 
-	mh := receivertest.NewMockHost()
-	err = jr.StartTraceReception(mh)
+	mh := component.NewMockHost()
+	err = jr.Start(mh)
 	assert.NoError(t, err, "should not have failed to start trace reception")
 
-	t.Log("StartTraceReception")
+	t.Log("Start")
 
 	now := time.Unix(1542158650, 536343000).UTC()
 	nowPlus10min := now.Add(10 * time.Minute)
@@ -110,12 +110,12 @@ func TestGRPCReception(t *testing.T) {
 
 	jr, err := New(context.Background(), config, sink, zap.NewNop())
 	assert.NoError(t, err, "should not have failed to create a new receiver")
-	defer jr.StopTraceReception()
+	defer jr.Shutdown()
 
-	mh := receivertest.NewMockHost()
-	err = jr.StartTraceReception(mh)
+	mh := component.NewMockHost()
+	err = jr.Start(mh)
 	assert.NoError(t, err, "should not have failed to start trace reception")
-	t.Log("StartTraceReception")
+	t.Log("Start")
 
 	conn, err := grpc.Dial(fmt.Sprintf("0.0.0.0:%d", config.CollectorGRPCPort), grpc.WithInsecure())
 	require.NoError(t, err)
@@ -168,12 +168,12 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 
 	jr, err := New(context.Background(), config, sink, zap.NewNop())
 	assert.NoError(t, err, "should not have failed to create a new receiver")
-	defer jr.StopTraceReception()
+	defer jr.Shutdown()
 
-	mh := receivertest.NewMockHost()
-	err = jr.StartTraceReception(mh)
+	mh := component.NewMockHost()
+	err = jr.Start(mh)
 	assert.NoError(t, err, "should not have failed to start trace reception")
-	t.Log("StartTraceReception")
+	t.Log("Start")
 
 	creds, err := credentials.NewClientTLSFromFile(path.Join(".", "testdata", "certificate.pem"), "opentelemetry.io")
 	require.NoError(t, err)

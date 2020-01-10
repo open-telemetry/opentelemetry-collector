@@ -19,6 +19,7 @@ import (
 
 	"go.opencensus.io/trace"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter"
@@ -37,7 +38,7 @@ type traceExporter struct {
 
 var _ (exporter.TraceExporter) = (*traceExporter)(nil)
 
-func (te *traceExporter) Start(host exporter.Host) error {
+func (te *traceExporter) Start(host component.Host) error {
 	return nil
 }
 

@@ -21,6 +21,7 @@ import (
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
@@ -59,6 +60,11 @@ func (sp *spanProcessor) ConsumeTraceData(ctx context.Context, td consumerdata.T
 
 func (sp *spanProcessor) GetCapabilities() processor.Capabilities {
 	return processor.Capabilities{MutatesConsumedData: true}
+}
+
+// Start is invoked during service startup.
+func (sp *spanProcessor) Start(host component.Host) error {
+	return nil
 }
 
 // Shutdown is invoked during service shutdown.

@@ -20,6 +20,7 @@ import (
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
@@ -110,6 +111,11 @@ func (tsp *tracesamplerprocessor) ConsumeTraceData(ctx context.Context, td consu
 
 func (tsp *tracesamplerprocessor) GetCapabilities() processor.Capabilities {
 	return processor.Capabilities{MutatesConsumedData: false}
+}
+
+// Start is invoked during service startup.
+func (tsp *tracesamplerprocessor) Start(host component.Host) error {
+	return nil
 }
 
 // Shutdown is invoked during service shutdown.

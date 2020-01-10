@@ -17,6 +17,7 @@ package exportertest
 import (
 	"context"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter"
 )
@@ -32,7 +33,7 @@ type nopExporter struct {
 var _ exporter.TraceExporter = (*nopExporter)(nil)
 var _ exporter.MetricsExporter = (*nopExporter)(nil)
 
-func (ne *nopExporter) Start(host exporter.Host) error {
+func (ne *nopExporter) Start(host component.Host) error {
 	return nil
 }
 
