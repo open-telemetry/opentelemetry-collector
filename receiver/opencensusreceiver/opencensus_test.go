@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -28,14 +29,19 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-collector/internal"
+	"github.com/open-telemetry/opentelemetry-collector/observability/observabilitytest"
 	"github.com/open-telemetry/opentelemetry-collector/testutils"
 )
 
@@ -364,4 +370,170 @@ func TestStartWithoutConsumersShouldFail(t *testing.T) {
 
 	mh := component.NewMockHost()
 	require.Error(t, r.Start(mh))
+}
+
+// TestOCReceiverTrace_HandleNextConsumerResponse checks if the trace receiver
+// is returning the proper response (return and metrics) when the next consumer
+// in the pipeline reports error. The test changes the responses returned by the
+// next trace consumer, checks if data was passed down the pipeline and if
+// proper metrics were recorded. It also uses all endpoints supported by the
+// trace receiver.
+func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
+	type ingestionStateTest struct {
+		okToIngest   bool
+		expectedCode codes.Code
+	}
+	tests := []struct {
+		name                         string
+		expectedReceivedBatches      int
+		expectedIngestionBlockedRPCs int
+		ingestionStates              []ingestionStateTest
+	}{
+		{
+			name:                         "IngestTest",
+			expectedReceivedBatches:      2,
+			expectedIngestionBlockedRPCs: 1,
+			ingestionStates: []ingestionStateTest{
+				{
+					okToIngest:   true,
+					expectedCode: codes.OK,
+				},
+				{
+					okToIngest:   false,
+					expectedCode: codes.OK,
+				},
+				{
+					okToIngest:   true,
+					expectedCode: codes.OK,
+				},
+			},
+		},
+	}
+
+	addr := testutils.GetAvailableLocalAddress(t)
+	msg := &agenttracepb.ExportTraceServiceRequest{
+		Node: &commonpb.Node{
+			ServiceInfo: &commonpb.ServiceInfo{Name: "test-svc"},
+		},
+		Spans: []*tracepb.Span{
+			{
+				TraceId: []byte{
+					0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+					0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10,
+				},
+			},
+		},
+	}
+
+	exportBidiFn := func(
+		t *testing.T,
+		cc *grpc.ClientConn,
+		msg *agenttracepb.ExportTraceServiceRequest) error {
+
+		acc := agenttracepb.NewTraceServiceClient(cc)
+		stream, err := acc.Export(context.Background())
+		require.NoError(t, err)
+		require.NotNil(t, stream)
+
+		err = stream.Send(msg)
+		stream.CloseSend()
+		if err == nil {
+			for {
+				if _, err = stream.Recv(); err != nil {
+					if err == io.EOF {
+						err = nil
+					}
+					break
+				}
+			}
+		}
+
+		return err
+	}
+
+	exporters := []struct {
+		receiverTag string
+		exportFn    func(
+			t *testing.T,
+			cc *grpc.ClientConn,
+			msg *agenttracepb.ExportTraceServiceRequest) error
+	}{
+		{
+			receiverTag: "oc_trace",
+			exportFn:    exportBidiFn,
+		},
+	}
+	for _, exporter := range exporters {
+		for _, tt := range tests {
+			t.Run(tt.name+"/"+exporter.receiverTag, func(t *testing.T) {
+				doneFn := observabilitytest.SetupRecordedMetricsTest()
+				defer doneFn()
+
+				sink := new(sinkTraceConsumer)
+
+				var opts []Option
+				ocr, err := New(addr, nil, nil, opts...)
+				require.Nil(t, err)
+				require.NotNil(t, ocr)
+
+				ocr.traceConsumer = sink
+				err = ocr.Start(component.NewMockHost())
+				require.Nil(t, err)
+				defer ocr.Shutdown()
+
+				cc, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithBlock())
+				if err != nil {
+					t.Errorf("grpc.Dial: %v", err)
+				}
+				defer cc.Close()
+
+				for _, ingestionState := range tt.ingestionStates {
+					if ingestionState.okToIngest {
+						sink.SetConsumeTraceError(nil)
+					} else {
+						sink.SetConsumeTraceError(fmt.Errorf("%q: consumer error", tt.name))
+					}
+
+					err = exporter.exportFn(t, cc, msg)
+
+					status, ok := status.FromError(err)
+					require.True(t, ok)
+					assert.Equal(t, ingestionState.expectedCode, status.Code())
+				}
+
+				require.Equal(t, tt.expectedReceivedBatches, len(sink.AllTraces()))
+				require.Nil(
+					t,
+					observabilitytest.CheckValueViewReceiverReceivedSpans(
+						exporter.receiverTag,
+						tt.expectedReceivedBatches),
+				)
+			})
+		}
+	}
+}
+
+type sinkTraceConsumer struct {
+	// consumeTraceError is the error to be returned when ConsumeTraceData is
+	// called
+	consumeTraceError error
+
+	traces []consumerdata.TraceData
+}
+
+var _ consumer.TraceConsumer = (*sinkTraceConsumer)(nil)
+
+func (stc *sinkTraceConsumer) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
+	if stc.consumeTraceError == nil {
+		stc.traces = append(stc.traces, td)
+	}
+	return stc.consumeTraceError
+}
+
+func (stc *sinkTraceConsumer) SetConsumeTraceError(err error) {
+	stc.consumeTraceError = err
+}
+
+func (stc *sinkTraceConsumer) AllTraces() []consumerdata.TraceData {
+	return stc.traces[:]
 }
