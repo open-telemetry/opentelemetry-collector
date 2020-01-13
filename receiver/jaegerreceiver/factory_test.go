@@ -223,10 +223,10 @@ func TestCustomUnmarshalErrors(t *testing.T) {
 	f := factory.CustomUnmarshaler()
 	assert.NotNil(t, f, "custom unmarshal function should not be nil")
 
-	err := f(v, "", nil)
+	err := f(v, "", nil, viper.New())
 	assert.Error(t, err, "should not have been able to marshal to a nil config")
 
-	err = f(v, "", &RemoteSamplingConfig{})
+	err = f(v, "", &RemoteSamplingConfig{}, viper.New())
 	assert.Error(t, err, "should not have been able to marshal to a non-jaegerreceiver config")
 }
 

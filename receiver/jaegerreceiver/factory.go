@@ -26,7 +26,6 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
-	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
@@ -66,10 +65,9 @@ func (f *Factory) Type() string {
 
 // CustomUnmarshaler is used to add defaults for named but empty protocols
 func (f *Factory) CustomUnmarshaler() receiver.CustomUnmarshaler {
-	return func(v *viper.Viper, viperKey string, intoCfg interface{}) error {
+	return func(v *viper.Viper, viperKey string, intoCfg interface{}, sourceViperSection *viper.Viper) error {
 		// first load the config normally
-		vReceiverCfg := config.GetConfigSection(v, viperKey)
-		err := vReceiverCfg.UnmarshalExact(intoCfg)
+		err := sourceViperSection.UnmarshalExact(intoCfg)
 		if err != nil {
 			return err
 		}
