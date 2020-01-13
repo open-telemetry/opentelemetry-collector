@@ -121,7 +121,8 @@ func TestPortsNotOpen(t *testing.T) {
 	assert.NoError(t, err, "should not have failed to start trace reception")
 
 	// there is a race condition here that we're ignoring.
-	//   this test may occasionally pass incorrectly, but it will not fail incorrectly
+	//  this test may occasionally pass incorrectly, but it will not fail incorrectly
+	//  TODO: consider adding a way for a receiver to asynchronously signal that is ready to receive spans to eliminate races/arbitrary waits
 	l, err := net.Listen("tcp", "localhost:14250")
 	assert.NoError(t, err, "should have been able to listen on 14250.  jaeger receiver incorrectly started grpc")
 	if l != nil {
