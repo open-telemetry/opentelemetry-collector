@@ -24,6 +24,8 @@ import (
 	"path"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/open-telemetry/opentelemetry-collector/testbed/testbed"
 )
 
@@ -73,22 +75,49 @@ func TestTrace10kSPS(t *testing.T) {
 }
 
 func TestTraceNoBackend10kSPSJaeger(t *testing.T) {
-	tc := testbed.NewTestCase(
-		t,
-		testbed.NewJaegerThriftDataSender(testbed.DefaultJaegerPort),
-		testbed.NewOCDataReceiver(testbed.DefaultOCPort),
-	)
-	defer tc.Stop()
+	tests := []struct {
+		name                string
+		configFileName      string
+		expectedMaxRAM      uint32
+		expectedMinFinalRAM uint32
+	}{
+		{name: "NoMemoryLimiter", configFileName: "agent-config.yaml", expectedMaxRAM: 200, expectedMinFinalRAM: 100},
 
-	tc.SetResourceLimits(testbed.ResourceSpec{
-		ExpectedMaxCPU: 60,
-		ExpectedMaxRAM: 198,
-	})
+		// Memory limiter in memory-limiter.yaml is configured to allow max 10MiB of heap size.
+		// However, heap is not the only memory user, so the total limit we set for this
+		// test is 60MiB. Note: to ensure this test verifies memorylimiter correctly
+		// expectedMaxRAM of this test case must be lower than expectedMinFinalRAM of the
+		// previous test case (which runs without memorylimiter).
+		{name: "MemoryLimiter", configFileName: "memory-limiter.yaml", expectedMaxRAM: 60, expectedMinFinalRAM: 10},
+	}
 
-	tc.StartAgent()
-	tc.StartLoad(testbed.LoadOptions{DataItemsPerSecond: 10000})
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 
-	tc.Sleep(tc.Duration)
+			configFilePath := path.Join("testdata", test.configFileName)
+
+			tc := testbed.NewTestCase(
+				t,
+				testbed.NewJaegerThriftDataSender(testbed.DefaultJaegerPort),
+				testbed.NewOCDataReceiver(testbed.DefaultOCPort),
+				testbed.WithConfigFile(configFilePath),
+			)
+			defer tc.Stop()
+
+			tc.SetResourceLimits(testbed.ResourceSpec{
+				ExpectedMaxCPU: 60,
+				ExpectedMaxRAM: 198,
+			})
+
+			tc.StartAgent()
+			tc.StartLoad(testbed.LoadOptions{DataItemsPerSecond: 10000})
+
+			tc.Sleep(tc.Duration)
+
+			rss, _, _ := tc.AgentMemoryInfo()
+			assert.True(t, rss > test.expectedMinFinalRAM)
+		})
+	}
 }
 
 func TestTrace1kSPSWithAttrs(t *testing.T) {

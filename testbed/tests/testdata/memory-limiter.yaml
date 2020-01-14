@@ -1,0 +1,29 @@
+receivers:
+  jaeger:
+    protocols:
+      thrift-http:
+        endpoint: "localhost:14268"
+  opencensus:
+    endpoint: "localhost:55678"
+
+exporters:
+  opencensus:
+    endpoint: "localhost:56565"
+  logging:
+    loglevel: debug
+
+processors:
+  queued_retry:
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 10
+
+service:
+  pipelines:
+    traces:
+      receivers: [jaeger]
+      processors: [memory_limiter,queued_retry]
+      exporters: [opencensus,logging]
+    metrics:
+      receivers: [opencensus]
+      exporters: [opencensus,logging]

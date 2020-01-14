@@ -32,6 +32,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/processor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/batchprocessor"
+	"github.com/open-telemetry/opentelemetry-collector/processor/memorylimiter"
 	"github.com/open-telemetry/opentelemetry-collector/processor/queuedprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/samplingprocessor/probabilisticsamplerprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/samplingprocessor/tailsamplingprocessor"
@@ -87,6 +88,7 @@ func Components() (
 		&attributesprocessor.Factory{},
 		&queuedprocessor.Factory{},
 		&batchprocessor.Factory{},
+		&memorylimiter.Factory{},
 		&tailsamplingprocessor.Factory{},
 		&probabilisticsamplerprocessor.Factory{},
 	)
