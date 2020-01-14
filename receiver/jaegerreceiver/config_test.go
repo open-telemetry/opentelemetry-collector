@@ -37,12 +37,9 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	// The receiver `jaeger/disabled` doesn't count because disabled receivers
+	// The receiver `jaeger/disabled` and `jaeger` don't count because disabled receivers
 	// are excluded from the final list.
-	assert.Equal(t, len(cfg.Receivers), 3)
-
-	r0 := cfg.Receivers["jaeger"]
-	assert.Equal(t, r0, factory.CreateDefaultConfig())
+	assert.Equal(t, len(cfg.Receivers), 4)
 
 	r1 := cfg.Receivers["jaeger/customname"].(*Config)
 	assert.Equal(t, r1,
@@ -81,6 +78,59 @@ func TestLoadConfig(t *testing.T) {
 			},
 		})
 
+	rDefaults := cfg.Receivers["jaeger/defaults"].(*Config)
+	assert.Equal(t, rDefaults,
+		&Config{
+			TypeVal: typeStr,
+			NameVal: "jaeger/defaults",
+			Protocols: map[string]*receiver.SecureReceiverSettings{
+				"grpc": {
+					ReceiverSettings: configmodels.ReceiverSettings{
+						Endpoint: defaultGRPCBindEndpoint,
+					},
+				},
+				"thrift-http": {
+					ReceiverSettings: configmodels.ReceiverSettings{
+						Endpoint: defaultHTTPBindEndpoint,
+					},
+				},
+				"thrift-tchannel": {
+					ReceiverSettings: configmodels.ReceiverSettings{
+						Endpoint: defaultTChannelBindEndpoint,
+					},
+				},
+				"thrift-compact": {
+					ReceiverSettings: configmodels.ReceiverSettings{
+						Endpoint: defaultThriftCompactBindEndpoint,
+					},
+				},
+				"thrift-binary": {
+					ReceiverSettings: configmodels.ReceiverSettings{
+						Endpoint: defaultThriftBinaryBindEndpoint,
+					},
+				},
+			},
+		})
+
+	rMixed := cfg.Receivers["jaeger/mixed"].(*Config)
+	assert.Equal(t, rMixed,
+		&Config{
+			TypeVal: typeStr,
+			NameVal: "jaeger/mixed",
+			Protocols: map[string]*receiver.SecureReceiverSettings{
+				"grpc": {
+					ReceiverSettings: configmodels.ReceiverSettings{
+						Endpoint: "localhost:9876",
+					},
+				},
+				"thrift-compact": {
+					ReceiverSettings: configmodels.ReceiverSettings{
+						Endpoint: defaultThriftCompactBindEndpoint,
+					},
+				},
+			},
+		})
+
 	tlsConfig := cfg.Receivers["jaeger/tls"].(*Config)
 
 	assert.Equal(t, tlsConfig,
@@ -109,4 +159,20 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		})
+}
+
+func TestFailedLoadConfig(t *testing.T) {
+	factories, err := config.ExampleComponents()
+	assert.Nil(t, err)
+
+	factory := &Factory{}
+	factories.Receivers[typeStr] = factory
+	_, err = config.LoadConfigFile(t, path.Join(".", "testdata", "bad_proto_config.yaml"), factories)
+	assert.EqualError(t, err, `error reading settings for receiver type "jaeger": unknown Jaeger protocol badproto`)
+
+	_, err = config.LoadConfigFile(t, path.Join(".", "testdata", "bad_no_proto_config.yaml"), factories)
+	assert.EqualError(t, err, `error reading settings for receiver type "jaeger": must specify at least one protocol when using the Jaeger receiver`)
+
+	_, err = config.LoadConfigFile(t, path.Join(".", "testdata", "bad_empty_config.yaml"), factories)
+	assert.EqualError(t, err, `error reading settings for receiver type "jaeger": Jaeger receiver config is empty`)
 }

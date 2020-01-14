@@ -1,12 +1,8 @@
 receivers:
-  # The following demonstrates initializing the default jaeger receiver.
-  # By default all three protocols (grpc, thrift-http, thrift-tchannel)
-  # are enabled and the default endpoints are specified in factory.go
-  jaeger:
   # The following demonstrates specifying different endpoints.
   # The Jaeger receiver connects to ports on all available network interfaces.
   # Ex: `endpoint: "9876"` is incorrect.
-  # Ex: `endpoint: "1.2.3.4:9876"`  and ":9876" is correct
+  # Ex: `endpoint: "1.2.3.4:9876"`  and ":9876" is correct.
   jaeger/customname:
     protocols:
       grpc:
@@ -21,13 +17,22 @@ receivers:
         endpoint: "0.0.0.0:789"
     remote_sampling:
       fetch_endpoint: "jaeger-collector:1234"
-
-  # The following demonstrates disabling the receiver.
-  # All of the protocols need to be disabled for the receiver to be disabled.
-  # If a subset of the protocols are disabled, the disabled flags are ignored
-  # and all protocols are enabled.
-  # This is to be fixed with issue
-  # https://github.com/open-telemetry/opentelemetry-collector/issues/158
+  # The following demonstrates how to enable protocols with defaults.
+  jaeger/defaults:
+    protocols:
+      grpc:
+      thrift-http:
+      thrift-tchannel:
+      thrift-compact:
+      thrift-binary:
+  # The following demonstrates only enabling certain protocols with defaults/overrides.
+  jaeger/mixed:
+    protocols:
+      grpc:
+        endpoint: "localhost:9876"
+      thrift-compact:
+  # The following demonstrates how to disable a protocol.  This particular config
+  # will not start any jaeger protocols.
   jaeger/disabled:
     protocols:
       grpc:
@@ -40,11 +45,10 @@ receivers:
         disabled: true
       thrift-binary:
         disabled: true
-
   # The following demonstrates specifying different endpoints.
   # The Jaeger receiver connects to ports on all available network interfaces.
   # Ex: `endpoint: "9876"` is incorrect.
-  # Ex: `endpoint: "1.2.3.4:9876"`  and ":9876" is correct
+  # Ex: `endpoint: "1.2.3.4:9876"`  and ":9876" is correct.
   jaeger/tls:
     protocols:
       grpc:
@@ -66,6 +70,6 @@ exporters:
 service:
   pipelines:
     traces:
-     receivers: [jaeger]
+     receivers: [jaeger/defaults]
      processors: [exampleprocessor]
      exporters: [exampleexporter]

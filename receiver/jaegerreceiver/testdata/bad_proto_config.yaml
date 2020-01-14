@@ -1,0 +1,18 @@
+receivers:
+  # The following demonstrates how to enable protocols with defaults
+  jaeger:
+    protocols:
+      badproto:
+
+processors:
+  exampleprocessor:
+
+exporters:
+  exampleexporter:
+
+service:
+  pipelines:
+    traces:
+     receivers: [jaeger]
+     processors: [exampleprocessor]
+     exporters: [exampleexporter]

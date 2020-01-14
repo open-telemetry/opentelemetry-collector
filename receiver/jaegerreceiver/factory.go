@@ -22,6 +22,7 @@ import (
 	"net"
 	"strconv"
 
+	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
@@ -48,6 +49,9 @@ const (
 	defaultGRPCBindEndpoint     = "localhost:14250"
 	defaultHTTPBindEndpoint     = "localhost:14268"
 	defaultTChannelBindEndpoint = "localhost:14267"
+
+	defaultThriftCompactBindEndpoint = "localhost:6831"
+	defaultThriftBinaryBindEndpoint  = "localhost:6832"
 )
 
 // Factory is the factory for Jaeger receiver.
@@ -59,33 +63,48 @@ func (f *Factory) Type() string {
 	return typeStr
 }
 
-// CustomUnmarshaler returns nil because we don't need custom unmarshaling for this config.
+// CustomUnmarshaler is used to add defaults for named but empty protocols
 func (f *Factory) CustomUnmarshaler() receiver.CustomUnmarshaler {
-	return nil
+	return func(v *viper.Viper, viperKey string, sourceViperSection *viper.Viper, intoCfg interface{}) error {
+		// first load the config normally
+		err := sourceViperSection.UnmarshalExact(intoCfg)
+		if err != nil {
+			return err
+		}
+
+		receiverCfg, ok := intoCfg.(*Config)
+		if !ok {
+			return fmt.Errorf("config type not *jaegerreceiver.Config")
+		}
+
+		// next manually search for protocols in viper that do not appear in the normally loaded config
+		// these protocols were excluded during normal loading and we need to add defaults for them
+		vSub := v.Sub(viperKey)
+		if vSub == nil {
+			return fmt.Errorf("Jaeger receiver config is empty")
+		}
+		protocols := vSub.GetStringMap(protocolsFieldName)
+		if len(protocols) == 0 {
+			return fmt.Errorf("must specify at least one protocol when using the Jaeger receiver")
+		}
+		for k := range protocols {
+			if _, ok := receiverCfg.Protocols[k]; !ok {
+				if receiverCfg.Protocols[k], err = defaultsForProtocol(k); err != nil {
+					return err
+				}
+			}
+		}
+
+		return nil
+	}
 }
 
 // CreateDefaultConfig creates the default configuration for Jaeger receiver.
 func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 	return &Config{
-		TypeVal: typeStr,
-		NameVal: typeStr,
-		Protocols: map[string]*receiver.SecureReceiverSettings{
-			protoGRPC: {
-				ReceiverSettings: configmodels.ReceiverSettings{
-					Endpoint: defaultGRPCBindEndpoint,
-				},
-			},
-			protoThriftTChannel: {
-				ReceiverSettings: configmodels.ReceiverSettings{
-					Endpoint: defaultTChannelBindEndpoint,
-				},
-			},
-			protoThriftHTTP: {
-				ReceiverSettings: configmodels.ReceiverSettings{
-					Endpoint: defaultHTTPBindEndpoint,
-				},
-			},
-		},
+		TypeVal:   typeStr,
+		NameVal:   typeStr,
+		Protocols: map[string]*receiver.SecureReceiverSettings{},
 	}
 }
 
@@ -207,4 +226,30 @@ func extractPortFromEndpoint(endpoint string) (int, error) {
 		return 0, fmt.Errorf("port number must be between 1 and 65535")
 	}
 	return int(port), nil
+}
+
+// returns a default value for a protocol name.  this really just boils down to the endpoint
+func defaultsForProtocol(proto string) (*receiver.SecureReceiverSettings, error) {
+	var defaultEndpoint string
+
+	switch proto {
+	case protoGRPC:
+		defaultEndpoint = defaultGRPCBindEndpoint
+	case protoThriftHTTP:
+		defaultEndpoint = defaultHTTPBindEndpoint
+	case protoThriftTChannel:
+		defaultEndpoint = defaultTChannelBindEndpoint
+	case protoThriftBinary:
+		defaultEndpoint = defaultThriftBinaryBindEndpoint
+	case protoThriftCompact:
+		defaultEndpoint = defaultThriftCompactBindEndpoint
+	default:
+		return nil, fmt.Errorf("unknown Jaeger protocol %s", proto)
+	}
+
+	return &receiver.SecureReceiverSettings{
+		ReceiverSettings: configmodels.ReceiverSettings{
+			Endpoint: defaultEndpoint,
+		},
+	}, nil
 }

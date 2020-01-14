@@ -1,5 +1,7 @@
 receivers:
   jaeger:
+    protocols:
+      grpc:
 
 exporters:
   opencensus:

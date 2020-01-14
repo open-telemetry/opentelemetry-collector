@@ -59,7 +59,17 @@ type Factory interface {
 
 // CustomUnmarshaler is a function that un-marshals a viper data into a config struct
 // in a custom way.
-type CustomUnmarshaler func(v *viper.Viper, viperKey string, intoCfg interface{}) error
+// v *viper.Viper
+//   A viper instance at the "receivers" node in the config yaml.  v.Sub(viperKey) is
+//   the raw config this function should load.
+// viperKey string
+//   The name of this config.  i.e. "jaeger/custom".  v.Sub(viperKey) is the raw config
+//   this function should load.
+// sourceViperSection *viper.Viper
+//   The value of v.Sub(viperKey) with all environment substitution complete.
+// intoCfg interface{}
+//   An empty interface wrapping a pointer to the config struct to unmarshal into.
+type CustomUnmarshaler func(v *viper.Viper, viperKey string, sourceViperSection *viper.Viper, intoCfg interface{}) error
 
 // Build takes a list of receiver factories and returns a map of type map[string]Factory
 // with factory type as keys. It returns a non-nil error when more than one factories
