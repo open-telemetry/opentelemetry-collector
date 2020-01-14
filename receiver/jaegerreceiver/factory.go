@@ -65,7 +65,7 @@ func (f *Factory) Type() string {
 
 // CustomUnmarshaler is used to add defaults for named but empty protocols
 func (f *Factory) CustomUnmarshaler() receiver.CustomUnmarshaler {
-	return func(v *viper.Viper, viperKey string, intoCfg interface{}, sourceViperSection *viper.Viper) error {
+	return func(v *viper.Viper, viperKey string, sourceViperSection *viper.Viper, intoCfg interface{}) error {
 		// first load the config normally
 		err := sourceViperSection.UnmarshalExact(intoCfg)
 		if err != nil {
@@ -83,7 +83,7 @@ func (f *Factory) CustomUnmarshaler() receiver.CustomUnmarshaler {
 		if vSub == nil {
 			return fmt.Errorf("Jaeger receiver config is empty")
 		}
-		protocols := vSub.GetStringMap("protocols")
+		protocols := vSub.GetStringMap(protocolsFieldName)
 		if len(protocols) == 0 {
 			return fmt.Errorf("must specify at least one protocol when using the Jaeger receiver")
 		}
