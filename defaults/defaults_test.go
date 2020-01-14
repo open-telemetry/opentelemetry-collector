@@ -36,6 +36,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/processor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/batchprocessor"
+	"github.com/open-telemetry/opentelemetry-collector/processor/memorylimiter"
 	"github.com/open-telemetry/opentelemetry-collector/processor/queuedprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/samplingprocessor/probabilisticsamplerprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/samplingprocessor/tailsamplingprocessor"
@@ -64,6 +65,7 @@ func TestDefaultComponents(t *testing.T) {
 		"attributes":            &attributesprocessor.Factory{},
 		"queued_retry":          &queuedprocessor.Factory{},
 		"batch":                 &batchprocessor.Factory{},
+		"memory_limiter":        &memorylimiter.Factory{},
 		"tail_sampling":         &tailsamplingprocessor.Factory{},
 		"probabilistic_sampler": &probabilisticsamplerprocessor.Factory{},
 	}

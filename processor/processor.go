@@ -41,6 +41,12 @@ type MetricsProcessor interface {
 	Processor
 }
 
+type DualTypeProcessor interface {
+	consumer.TraceConsumer
+	consumer.MetricsConsumer
+	Processor
+}
+
 // Capabilities describes the capabilities of TraceProcessor or MetricsProcessor.
 type Capabilities struct {
 	// MutatesConsumedData is set to true if ConsumeTraceData or ConsumeMetricsData
