@@ -9,7 +9,10 @@ recommended you use the
 [![Gitter chat][gitter-image]][gitter-url]
 [![Coverage Status][codecov-image]][codecov-url]
 
+We hold regular meetings. See details at [community page](https://github.com/open-telemetry/community#agentcollector).
+
 # Table of contents
+- [Owners](#owners)
 - [Introduction](#introduction)
 - [Deployment](#deploy)
 - [Getting Started](#getting-started)
@@ -22,6 +25,26 @@ recommended you use the
     - [Exporters](#config-exporters)
     - [Extensions](#config-extensions)
     - [Service](#config-service)
+
+## Owners
+
+Approvers ([@open-telemetry/collector-approvers](https://github.com/orgs/open-telemetry/teams/collector-approvers)):
+
+- [Steve Flanders](https://github.com/flands), Splunk
+- [Steven Karis](https://github.com/sjkaris), Splunk
+- [Yang Song](https://github.com/songy23), Google
+- [Owais Lone](https://github.com/owais), Splunk
+- [Rahul Patel](https://github.com/rghetia), Google
+
+*Find more about the approver role in [community repository](https://github.com/open-telemetry/community/blob/master/community-membership.md#approver).*
+
+Maintainers ([@open-telemetry/collector-maintainers](https://github.com/orgs/open-telemetry/teams/collector-maintainers)):
+
+- [Bogdan Drutu](https://github.com/BogdanDrutu), Google
+- [Paulo Janotti](https://github.com/pjanotti), Splunk
+- [Tigran Najaryan](https://github.com/tigrannajaryan), Splunk
+
+*Find more about the maintainer role in [community repository](https://github.com/open-telemetry/community/blob/master/community-membership.md#maintainer).*
 
 ## Introduction
 
