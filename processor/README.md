@@ -27,7 +27,7 @@ processors. The intent is reported by each processor via `MutatesConsumedData` f
 the struct returned by `GetCapabilities` function. If any processor in the pipeline
 declares an intent to modify the data then that pipeline will work in exclusive ownership
 mode. In addition any other pipeline that receives data from a receiver that is attached
-to a pipeline with exclusive ownership mode will be also operating in exclusive ownership 
+to a pipeline with exclusive ownership mode will be also operating in exclusive ownership
 mode.
 
 ### Exclusive Ownership
@@ -129,7 +129,7 @@ Please refer to [config.go](attributesprocessor/config.go) for the config spec.
 ### Include/Exclude Spans
 It is optional to provide a set of properties of a span to match against to determine
 if the span should be included or excluded from the processor. By default, all
-spans are processed by the processor. 
+spans are processed by the processor.
 
 To configure this option, under `include` and/or `exclude`:
 - at least one of or both `services` and `attributes` is required.
@@ -145,7 +145,7 @@ attributes:
       # At least one of services or attributes must be specified. It is supported
       # to have both specified, but both `services` and `attributes` must evaluate
       # to true for a match to occur.
-    
+
       # Services specify the list of service name to match against.
       # A match occurs if the span service name is in this list.
       # Note: This is an optional field.
@@ -158,7 +158,7 @@ attributes:
         - key: <key>
           # Value specifies the exact value to match against.
           # If not specified, a match occurs if the key is present in the attributes.
-          value: {value} 
+          value: {value}
 ```
 
 ### Example
@@ -193,8 +193,31 @@ examples on using the processor.
 ## <a name="probabilistic_sampler"></a>Probabilistic Sampler Processor
 <FILL ME IN - I'M LONELY!>
 
-## <a name="queued"></a>Queued Processor
-<FILL ME IN - I'M LONELY!>
+## <a name="queued"></a>Queued Retry Processor
+The queued retry processor uses a bounded queue to relay trace data from the
+receiver or previous processor to the next processor.
+Received trace data is enqueued immediately if the queue is not full . At the
+same time, the processor has one or more workers which consume the trace
+data in the queue by sending them to the next processor. If relaying the trace
+data to the next processor or exporter in the pipeline fails, the processor
+retries after some backoff delay depending on the configuration (see below).
+
+### Example configuration
+
+To change the behavior of the default queued processor, the `num_workers`,
+`queue_size`, `retry_on_failure`, `backoff_delay` could be configured.
+
+```yaml
+processors:
+  queued_retry/example:
+    num_workers: 2
+    queue_size: 10
+    retry_on_failure: true
+    backoff_delay: 5s
+```
+
+Refer to [config.yaml](queuedprocessor/testdata/config.yaml) for detailed
+examples on using the processor.
 
 ## <a name="span"></a>Span Processor
 The span processor modifies top level settings of a span. Currently, only
