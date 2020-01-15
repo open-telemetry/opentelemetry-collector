@@ -14,22 +14,27 @@
 
 package sampling
 
-import tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+import (
+	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"go.uber.org/zap"
+)
 
 type numericAttributeFilter struct {
 	key                string
 	minValue, maxValue int64
+	logger             *zap.Logger
 }
 
 var _ PolicyEvaluator = (*numericAttributeFilter)(nil)
 
 // NewNumericAttributeFilter creates a policy evaluator that samples all traces with
 // the given attribute in the given numeric range.
-func NewNumericAttributeFilter(key string, minValue, maxValue int64) PolicyEvaluator {
+func NewNumericAttributeFilter(logger *zap.Logger, key string, minValue, maxValue int64) PolicyEvaluator {
 	return &numericAttributeFilter{
 		key:      key,
 		minValue: minValue,
 		maxValue: maxValue,
+		logger:   logger,
 	}
 }
 
@@ -38,11 +43,13 @@ func NewNumericAttributeFilter(key string, minValue, maxValue int64) PolicyEvalu
 // This gives the evaluator a chance to log any message/metrics and/or update any
 // related internal state.
 func (naf *numericAttributeFilter) OnLateArrivingSpans(earlyDecision Decision, spans []*tracepb.Span) error {
+	naf.logger.Debug("Triggering action for late arriving spans in numeric-attribute filter")
 	return nil
 }
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
 func (naf *numericAttributeFilter) Evaluate(traceID []byte, trace *TraceData) (Decision, error) {
+	naf.logger.Debug("Evaluating spans in numeric-attribute filter")
 	trace.Lock()
 	batches := trace.ReceivedBatches
 	trace.Unlock()
@@ -66,5 +73,6 @@ func (naf *numericAttributeFilter) Evaluate(traceID []byte, trace *TraceData) (D
 // OnDroppedSpans is called when the trace needs to be dropped, due to memory
 // pressure, before the decision_wait time has been reached.
 func (naf *numericAttributeFilter) OnDroppedSpans(traceID []byte, trace *TraceData) (Decision, error) {
+	naf.logger.Debug("Triggering action for dropped spans in numeric-attribute filter")
 	return NotSampled, nil
 }

@@ -95,7 +95,7 @@ func NewTraceProcessor(logger *zap.Logger, nextConsumer consumer.TraceConsumer, 
 		if err != nil {
 			return nil, err
 		}
-		eval, err := getPolicyEvaluator(policyCfg)
+		eval, err := getPolicyEvaluator(logger, policyCfg)
 		if err != nil {
 			return nil, err
 		}
@@ -122,19 +122,19 @@ func NewTraceProcessor(logger *zap.Logger, nextConsumer consumer.TraceConsumer, 
 	return tsp, nil
 }
 
-func getPolicyEvaluator(cfg *PolicyCfg) (sampling.PolicyEvaluator, error) {
+func getPolicyEvaluator(logger *zap.Logger, cfg *PolicyCfg) (sampling.PolicyEvaluator, error) {
 	switch cfg.Type {
 	case AlwaysSample:
-		return sampling.NewAlwaysSample(), nil
+		return sampling.NewAlwaysSample(logger), nil
 	case NumericAttribute:
 		nafCfg := cfg.NumericAttributeCfg
-		return sampling.NewNumericAttributeFilter(nafCfg.Key, nafCfg.MinValue, nafCfg.MaxValue), nil
+		return sampling.NewNumericAttributeFilter(logger, nafCfg.Key, nafCfg.MinValue, nafCfg.MaxValue), nil
 	case StringAttribute:
 		safCfg := cfg.StringAttributeCfg
-		return sampling.NewStringAttributeFilter(safCfg.Key, safCfg.Values), nil
+		return sampling.NewStringAttributeFilter(logger, safCfg.Key, safCfg.Values), nil
 	case RateLimiting:
 		rlfCfg := cfg.RateLimitingCfg
-		return sampling.NewRateLimiting(rlfCfg.SpansPerSecond), nil
+		return sampling.NewRateLimiting(logger, rlfCfg.SpansPerSecond), nil
 	default:
 		return nil, fmt.Errorf("unknown sampling policy type %s", cfg.Type)
 	}
