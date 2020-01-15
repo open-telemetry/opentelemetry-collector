@@ -9,19 +9,23 @@ recommended you use the
 [![Gitter chat][gitter-image]][gitter-url]
 [![Coverage Status][codecov-image]][codecov-url]
 
-# Table of contents
+We hold regular meetings. See details at [community page](https://github.com/open-telemetry/community#agentcollector).
+
+**Table of contents:**
+
 - [Introduction](#introduction)
 - [Deployment](#deploy)
 - [Getting Started](#getting-started)
-    - [Demo](#getting-started-demo)
-    - [Kubernetes](#getting-started-k8s)
-    - [Standalone](#getting-started-standalone)
+  - [Demo](#getting-started-demo)
+  - [Kubernetes](#getting-started-k8s)
+  - [Standalone](#getting-started-standalone)
 - [Configuration](#config)
-    - [Receivers](#config-receivers)
-    - [Processors](#config-processors)
-    - [Exporters](#config-exporters)
-    - [Extensions](#config-extensions)
-    - [Service](#config-service)
+  - [Receivers](#config-receivers)
+  - [Processors](#config-processors)
+  - [Exporters](#config-exporters)
+  - [Extensions](#config-extensions)
+  - [Service](#config-service)
+- [Owners](#owners)
 
 ## Introduction
 
@@ -129,6 +133,7 @@ needs to be configured.
 refer to the [issues page](https://github.com/open-telemetry/opentelemetry-collector/issues).
 
 The configuration consists of the following sections:
+
 ```yaml
 receivers:
   ...
@@ -297,6 +302,7 @@ a receiver/exporter is reference by all the pipelines.
 
 The following is an example pipeline configuration. For more information, refer
 to [pipeline documentation](docs/pipelines.md)
+
 ```yaml
 service:
   pipelines:
@@ -305,6 +311,26 @@ service:
       processors: [batch, queued_retry]
       exporters: [opencensus, zipkin]
 ```
+
+## Owners
+
+Approvers ([@open-telemetry/collector-approvers](https://github.com/orgs/open-telemetry/teams/collector-approvers)):
+
+- [Steve Flanders](https://github.com/flands), Splunk
+- [Steven Karis](https://github.com/sjkaris), Splunk
+- [Yang Song](https://github.com/songy23), Google
+- [Owais Lone](https://github.com/owais), Splunk
+- [Rahul Patel](https://github.com/rghetia), Google
+
+*Find more about the approver role in [community repository](https://github.com/open-telemetry/community/blob/master/community-membership.md#approver).*
+
+Maintainers ([@open-telemetry/collector-maintainers](https://github.com/orgs/open-telemetry/teams/collector-maintainers)):
+
+- [Bogdan Drutu](https://github.com/BogdanDrutu), Google
+- [Paulo Janotti](https://github.com/pjanotti), Splunk
+- [Tigran Najaryan](https://github.com/tigrannajaryan), Splunk
+
+*Find more about the maintainer role in [community repository](https://github.com/open-telemetry/community/blob/master/community-membership.md#maintainer).*
 
 [travis-image]: https://travis-ci.org/open-telemetry/opentelemetry-service.svg?branch=master
 [travis-url]: https://travis-ci.org/open-telemetry/opentelemetry-service
