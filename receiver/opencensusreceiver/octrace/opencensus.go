@@ -24,6 +24,7 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"go.opencensus.io/trace"
 
+	"github.com/open-telemetry/opentelemetry-collector/client"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/observability"
@@ -141,8 +142,13 @@ func (ocr *Receiver) sendToNextConsumer(longLivedCtx context.Context, tracedata 
 		return nil
 	}
 
+	ctx := context.Background()
+	if c, ok := client.FromGRPC(longLivedCtx); ok {
+		ctx = client.NewContext(ctx, c)
+	}
+
 	// Trace this method
-	ctx, span := trace.StartSpan(context.Background(), "OpenCensusTraceReceiver.Export")
+	ctx, span := trace.StartSpan(ctx, "OpenCensusTraceReceiver.Export")
 	defer span.End()
 
 	// If the starting RPC has a parent span, then add it as a parent link.
