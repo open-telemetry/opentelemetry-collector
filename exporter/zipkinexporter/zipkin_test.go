@@ -24,13 +24,13 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-	"time"
 
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	zipkinproto "github.com/openzipkin/zipkin-go/proto/v2"
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
@@ -149,20 +149,25 @@ func TestZipkinEndpointFromNode(t *testing.T) {
 // The rest of the fields should match up exactly
 func TestZipkinExporter_roundtripJSON(t *testing.T) {
 	buf := new(bytes.Buffer)
+	sizes := []int64{}
 	cst := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		io.Copy(buf, r.Body)
+		s, _ := io.Copy(buf, r.Body)
+		sizes = append(sizes, s)
 		r.Body.Close()
 	}))
 	defer cst.Close()
 
-	tes, err := newZipkinExporter(cst.URL, "", time.Millisecond, "json")
+	config := &Config{
+		URL:    cst.URL,
+		Format: "json",
+	}
+	tes, err := NewTraceExporter(zap.NewNop(), config)
 	assert.NoError(t, err)
 	require.NotNil(t, tes)
 
 	// The test requires the spans from zipkinSpansJSONJavaLibrary to be sent in a single batch, use
 	// a mock to ensure that this happens as intended.
 	mzr := newMockZipkinReporter(cst.URL)
-	tes.reporter = mzr
 
 	// Run the Zipkin receiver to "receive spans upload from a client application"
 	zexp := processor.NewTraceFanOutConnector([]consumer.TraceConsumer{tes})
@@ -185,46 +190,47 @@ func TestZipkinExporter_roundtripJSON(t *testing.T) {
 	require.NoError(t, mzr.Flush())
 
 	// We expect back the exact JSON that was received
-	want := testutils.GenerateNormalizedJSON(t, `
-[{
-  "traceId": "4d1e00c0db9010db86154a4ba6e91385","parentId": "86154a4ba6e91385","id": "4d1e00c0db9010db",
-  "kind": "CLIENT","name": "get",
-  "timestamp": 1472470996199000,"duration": 207000,
-  "localEndpoint": {"serviceName": "frontend","ipv6": "7::80:807f"},
-  "remoteEndpoint": {"serviceName": "backend","ipv4": "192.168.99.101","port": 9000},
-  "annotations": [
-    {"timestamp": 1472470996238000,"value": "foo"},
-    {"timestamp": 1472470996403000,"value": "bar"}
-  ],
-  "tags": {"http.path": "/api","clnt/finagle.version": "6.45.0"}
-},
-{
-  "traceId": "4d1e00c0db9010db86154a4ba6e91385","parentId": "86154a4ba6e91386","id": "4d1e00c0db9010db",
-  "kind": "SERVER","name": "put",
-  "timestamp": 1472470996199000,"duration": 207000,
-  "localEndpoint": {"serviceName": "frontend","ipv6": "7::80:807f"},
-  "remoteEndpoint": {"serviceName": "frontend", "ipv4": "192.168.99.101","port": 9000},
-  "annotations": [
-    {"timestamp": 1472470996238000,"value": "foo"},
-    {"timestamp": 1472470996403000,"value": "bar"}
-  ],
-  "tags": {"http.path": "/api","clnt/finagle.version": "6.45.0"}
-},
-{
-  "traceId": "4d1e00c0db9010db86154a4ba6e91385",
-  "parentId": "86154a4ba6e91386",
-  "id": "4d1e00c0db9010db",
-  "kind": "SERVER",
-  "name": "put",
-  "timestamp": 1472470996199000,
-  "duration": 207000
-}]`)
-
-	// Finally we need to inspect the output
-	gotBytes, _ := ioutil.ReadAll(buf)
-	got := testutils.GenerateNormalizedJSON(t, string(gotBytes))
-	if got != want {
-		t.Errorf("RoundTrip result do not match:\nGot\n %s\n\nWant\n: %s\n", got, want)
+	wants := []string{`
+		[{
+		  "traceId": "4d1e00c0db9010db86154a4ba6e91385","parentId": "86154a4ba6e91385","id": "4d1e00c0db9010db",
+		  "kind": "CLIENT","name": "get",
+		  "timestamp": 1472470996199000,"duration": 207000,
+		  "localEndpoint": {"serviceName": "frontend","ipv6": "7::80:807f"},
+		  "remoteEndpoint": {"serviceName": "backend","ipv4": "192.168.99.101","port": 9000},
+		  "annotations": [
+		    {"timestamp": 1472470996238000,"value": "foo"},
+		    {"timestamp": 1472470996403000,"value": "bar"}
+		  ],
+		  "tags": {"http.path": "/api","clnt/finagle.version": "6.45.0"}
+		},
+		{
+		  "traceId": "4d1e00c0db9010db86154a4ba6e91385","parentId": "86154a4ba6e91386","id": "4d1e00c0db9010db",
+		  "kind": "SERVER","name": "put",
+		  "timestamp": 1472470996199000,"duration": 207000,
+		  "localEndpoint": {"serviceName": "frontend","ipv6": "7::80:807f"},
+		  "remoteEndpoint": {"serviceName": "frontend", "ipv4": "192.168.99.101","port": 9000},
+		  "annotations": [
+		    {"timestamp": 1472470996238000,"value": "foo"},
+		    {"timestamp": 1472470996403000,"value": "bar"}
+		  ],
+		  "tags": {"http.path": "/api","clnt/finagle.version": "6.45.0"}
+		}]
+		`, `
+		[{
+		  "traceId": "4d1e00c0db9010db86154a4ba6e91385",
+		  "parentId": "86154a4ba6e91386",
+		  "id": "4d1e00c0db9010db",
+		  "kind": "SERVER",
+		  "name": "put",
+		  "timestamp": 1472470996199000,
+		  "duration": 207000
+		}]
+		`}
+	for i, s := range wants {
+		want := testutils.GenerateNormalizedJSON(t, s)
+		gotBytes := buf.Next(int(sizes[i]))
+		got := testutils.GenerateNormalizedJSON(t, string(gotBytes))
+		assert.Equal(t, want, got)
 	}
 }
 
@@ -360,7 +366,12 @@ const zipkinSpansJSONJavaLibrary = `
 `
 
 func TestZipkinExporter_invalidFormat(t *testing.T) {
-	_, err := newZipkinExporter("", "", 0, "foobar")
+	config := &Config{
+		URL:    "1.2.3.4",
+		Format: "foobar",
+	}
+	f := &Factory{}
+	_, err := f.CreateTraceExporter(zap.NewNop(), config)
 	require.Error(t, err)
 }
 
@@ -375,13 +386,16 @@ func TestZipkinExporter_roundtripProto(t *testing.T) {
 	}))
 	defer cst.Close()
 
-	tes, err := newZipkinExporter(cst.URL, "", time.Millisecond, "proto")
+	config := &Config{
+		URL:    cst.URL,
+		Format: "proto",
+	}
+	tes, err := NewTraceExporter(zap.NewNop(), config)
 	require.NoError(t, err)
 
 	// The test requires the spans from zipkinSpansJSONJavaLibrary to be sent in a single batch, use
 	// a mock to ensure that this happens as intended.
 	mzr := newMockZipkinReporter(cst.URL)
-	tes.reporter = mzr
 
 	mzr.serializer = zipkinproto.SpanSerializer{}
 

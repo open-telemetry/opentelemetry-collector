@@ -15,24 +15,26 @@
 package zipkinexporter
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"net"
+	"net/http"
 	"strconv"
-	"sync"
 	"time"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	zipkinproto "github.com/openzipkin/zipkin-go/proto/v2"
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
-	zipkinhttp "github.com/openzipkin/zipkin-go/reporter/http"
 	"go.opencensus.io/trace"
+	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumererror"
-	"github.com/open-telemetry/opentelemetry-collector/observability"
+	"github.com/open-telemetry/opentelemetry-collector/exporter"
+	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
 	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 	spandatatranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace/spandata"
 	"github.com/open-telemetry/opentelemetry-collector/translator/trace/zipkin"
@@ -44,40 +46,65 @@ import (
 // Zipkin servers and then transform them back to the final form when creating an
 // OpenCensus spandata.
 type zipkinExporter struct {
-	// mu protects the fields below
-	mu sync.Mutex
-
 	defaultServiceName string
 
-	reporter zipkinreporter.Reporter
+	url        string
+	client     *http.Client
+	serializer zipkinreporter.SpanSerializer
 }
 
 // Default values for Zipkin endpoint.
 const (
+	defaultTimeout = time.Second * 5
+
+	defaultServiceName string = "<missing service name>"
+
 	DefaultZipkinEndpointHostPort = "localhost:9411"
 	DefaultZipkinEndpointURL      = "http://" + DefaultZipkinEndpointHostPort + "/api/v2/spans"
 )
 
-func newZipkinExporter(finalEndpointURI, defaultServiceName string, uploadPeriod time.Duration, format string) (*zipkinExporter, error) {
-	var opts []zipkinhttp.ReporterOption
-	if uploadPeriod > 0 {
-		opts = append(opts, zipkinhttp.BatchInterval(uploadPeriod))
+// NewTraceExporter creates an zipkin trace exporter.
+func NewTraceExporter(logger *zap.Logger, config configmodels.Exporter) (exporter.TraceExporter, error) {
+	ze, err := createZipkinExporter(logger, config)
+	if err != nil {
+		return nil, err
 	}
-	// default is json
-	switch format {
+	zexp, err := exporterhelper.NewTraceExporter(
+		config,
+		ze.PushTraceData,
+		exporterhelper.WithTracing(true),
+		exporterhelper.WithMetrics(true))
+	if err != nil {
+		return nil, err
+	}
+
+	return zexp, nil
+}
+
+func createZipkinExporter(logger *zap.Logger, config configmodels.Exporter) (*zipkinExporter, error) {
+	zCfg := config.(*Config)
+
+	serviceName := defaultServiceName
+	if zCfg.DefaultServiceName != "" {
+		serviceName = zCfg.DefaultServiceName
+	}
+
+	ze := &zipkinExporter{
+		defaultServiceName: serviceName,
+		url:                zCfg.URL,
+		client:             &http.Client{Timeout: defaultTimeout},
+	}
+
+	switch zCfg.Format {
 	case "json":
-		break
+		ze.serializer = zipkinreporter.JSONSerializer{}
 	case "proto":
-		opts = append(opts, zipkinhttp.Serializer(zipkinproto.SpanSerializer{}))
+		ze.serializer = zipkinproto.SpanSerializer{}
 	default:
-		return nil, fmt.Errorf("%s is not one of json or proto", format)
+		return nil, fmt.Errorf("%s is not one of json or proto", zCfg.Format)
 	}
-	reporter := zipkinhttp.NewReporter(finalEndpointURI, opts...)
-	zle := &zipkinExporter{
-		defaultServiceName: defaultServiceName,
-		reporter:           reporter,
-	}
-	return zle, nil
+
+	return ze, nil
 }
 
 // zipkinEndpointFromAttributes extracts zipkin endpoint information
@@ -160,48 +187,37 @@ func extractStringAttribute(
 	return value, ok
 }
 
-func (ze *zipkinExporter) Start(host component.Host) error {
-	return nil
-}
-
-func (ze *zipkinExporter) Shutdown() error {
-	ze.mu.Lock()
-	defer ze.mu.Unlock()
-
-	return ze.reporter.Close()
-}
-
-func (ze *zipkinExporter) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) (zerr error) {
-	ctx, span := trace.StartSpan(ctx,
-		"opencensus.service.exporter.zipkin.ExportTrace",
-		trace.WithSampler(trace.NeverSample()))
-
-	defer func() {
-		if zerr != nil && span.IsRecordingEvents() {
-			span.SetStatus(trace.Status{Code: trace.StatusCodeInternal, Message: zerr.Error()})
-		}
-		span.End()
-	}()
-
-	goodSpans := 0
+func (ze *zipkinExporter) PushTraceData(ctx context.Context, td consumerdata.TraceData) (droppedSpans int, err error) {
+	tbatch := []*zipkinmodel.SpanModel{}
 	for _, span := range td.Spans {
 		sd, err := spandatatranslator.ProtoSpanToOCSpanData(span)
 		if err != nil {
-			return consumererror.Permanent(err)
+			return len(td.Spans), consumererror.Permanent(err)
 		}
 		zs := ze.zipkinSpan(td.Node, sd)
-		// ze.reporter can get closed in the midst of a Send
-		// so avoid a read/write during that mutation.
-		ze.mu.Lock()
-		ze.reporter.Send(zs)
-		ze.mu.Unlock()
-		goodSpans++
+		tbatch = append(tbatch, &zs)
 	}
 
-	// And finally record metrics on the number of exported spans.
-	observability.RecordMetricsForTraceExporter(observability.ContextWithExporterName(ctx, "zipkin"), len(td.Spans), len(td.Spans)-goodSpans)
+	body, err := ze.serializer.Serialize(tbatch)
+	if err != nil {
+		return len(td.Spans), err
+	}
 
-	return nil
+	req, err := http.NewRequest("POST", ze.url, bytes.NewReader(body))
+	if err != nil {
+		return len(td.Spans), err
+	}
+	req.Header.Set("Content-Type", ze.serializer.ContentType())
+
+	resp, err := ze.client.Do(req)
+	if err != nil {
+		return len(td.Spans), err
+	}
+	_ = resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+		return len(td.Spans), fmt.Errorf("failed the request with status code %d", resp.StatusCode)
+	}
+	return 0, nil
 }
 
 // This code from down below is mostly copied from
