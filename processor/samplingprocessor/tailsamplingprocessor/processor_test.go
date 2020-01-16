@@ -26,6 +26,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
+	"github.com/open-telemetry/opentelemetry-collector/extension"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/samplingprocessor/tailsamplingprocessor/idbatcher"
 	"github.com/open-telemetry/opentelemetry-collector/processor/samplingprocessor/tailsamplingprocessor/sampling"
@@ -324,5 +325,9 @@ func (p *mockSpanProcessor) GetCapabilities() processor.Capabilities {
 
 // Shutdown is invoked during service shutdown.
 func (p *mockSpanProcessor) Shutdown() error {
+	return nil
+}
+
+func (p *mockSpanProcessor) AddSupportExtensions(exts ...extension.SupportExtension) error {
 	return nil
 }

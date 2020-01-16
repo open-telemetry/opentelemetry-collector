@@ -23,6 +23,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/extension"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
 )
@@ -114,4 +115,8 @@ func (sp *spanProcessor) nameSpan(span *tracepb.Span) {
 		}
 	}
 	span.Name = &tracepb.TruncatableString{Value: sb.String()}
+}
+
+func (sp *spanProcessor) AddSupportExtensions(exts ...extension.SupportExtension) error {
+	return nil
 }

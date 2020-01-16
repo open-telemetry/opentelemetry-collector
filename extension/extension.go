@@ -56,3 +56,9 @@ type PipelineWatcher interface {
 	// appropriate action before that happens.
 	NotReady() error
 }
+
+// SupportExtension is a helper extension for other components of the pipeline.
+type SupportExtension interface {
+	// GetState fetches the state of the attributes monitored by this extension
+	GetState() (interface{}, error)
+}

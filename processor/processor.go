@@ -17,6 +17,7 @@ package processor
 
 import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
+	"github.com/open-telemetry/opentelemetry-collector/extension"
 )
 
 // Processor defines the common functions that must be implemented by TraceProcessor
@@ -34,6 +35,7 @@ type Processor interface {
 type TraceProcessor interface {
 	consumer.TraceConsumer
 	Processor
+	AddSupportExtensions(exts ...extension.SupportExtension) error
 }
 
 // MetricsProcessor composes MetricsConsumer with some additional processor-specific functions.

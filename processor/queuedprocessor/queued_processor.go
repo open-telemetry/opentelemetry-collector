@@ -28,6 +28,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumererror"
+	"github.com/open-telemetry/opentelemetry-collector/extension"
 	"github.com/open-telemetry/opentelemetry-collector/internal/collector/telemetry"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/batchprocessor"
@@ -138,6 +139,10 @@ func (sp *queuedSpanProcessor) GetCapabilities() processor.Capabilities {
 // Shutdown is invoked during service shutdown.
 func (sp *queuedSpanProcessor) Shutdown() error {
 	// TODO: flush the queue.
+	return nil
+}
+
+func (sp *queuedSpanProcessor) AddSupportExtensions(exts ...extension.SupportExtension) error {
 	return nil
 }
 

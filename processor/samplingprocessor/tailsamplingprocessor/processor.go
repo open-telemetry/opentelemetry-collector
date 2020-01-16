@@ -29,6 +29,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/extension"
 	"github.com/open-telemetry/opentelemetry-collector/observability"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
@@ -65,6 +66,7 @@ type tailSamplingSpanProcessor struct {
 	decisionBatcher idbatcher.Batcher
 	deleteChan      chan traceKey
 	numTracesOnMap  uint64
+	forwarder       forwarder
 }
 
 const (
@@ -230,6 +232,15 @@ func (tsp *tailSamplingSpanProcessor) ConsumeTraceData(ctx context.Context, td c
 			continue
 		}
 		traceKey := traceKey(span.TraceId)
+		// Check if ring membership extension is configured
+		if tsp.forwarder != nil {
+			// Check if this span should be forwarded to another collector
+			// If span is forwarded, do not add to current span map.
+			if tsp.forwarder.process(span) {
+				continue
+			}
+		}
+
 		idToSpans[traceKey] = append(idToSpans[traceKey], span)
 	}
 
@@ -346,6 +357,22 @@ func (tsp *tailSamplingSpanProcessor) dropTrace(traceID traceKey, deletionTime t
 			}
 		}
 	}
+}
+
+func (tsp *tailSamplingSpanProcessor) AddSupportExtensions(exts ...extension.SupportExtension) error {
+	// for now just enable ringmembershipextension for the forwarded
+	// in the future, there might be other support extensions required by this processor.
+
+	for _, v := range exts {
+		if v.(extension.Factory).Type() == "ring_membership" {
+			// Create new SpanForwarder instance
+			if f, err := newSpanForwarder(tsp.logger); err != nil {
+				tsp.forwarder = f
+			}
+			tsp.forwarder.addRingMembershipExtension(v)
+		}
+	}
+	return nil
 }
 
 func prepareTraceBatch(spans []*tracepb.Span, singleTrace bool, td consumerdata.TraceData) consumerdata.TraceData {

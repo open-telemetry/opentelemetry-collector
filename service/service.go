@@ -34,6 +34,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/extension"
+	"github.com/open-telemetry/opentelemetry-collector/processor"
 	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	"github.com/open-telemetry/opentelemetry-collector/service/builder"
 )
@@ -230,6 +231,21 @@ func (app *Application) setupExtensions() error {
 		}
 
 		app.extensions = append(app.extensions, ext)
+	}
+
+	for procName, proc := range app.config.Processors {
+		// Pass SupportExtension pointer to the processor.
+
+		// only if procName is tail sampling
+		if procName == "tail_sampling" {
+			traceProc := proc.(processor.TraceProcessor)
+
+			for k, v := range app.config.Extensions {
+				if k == "ring_membership" {
+					traceProc.AddSupportExtensions(v.(extension.SupportExtension))
+				}
+			}
+		}
 	}
 
 	return nil
