@@ -16,6 +16,7 @@ package jaegerreceiver
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/spf13/viper"
@@ -205,15 +206,18 @@ func TestRemoteSamplingConfigPropagation(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
+	hostPort := 5778
 	endpoint := "localhost:1234"
 	rCfg.Protocols[protoThriftCompact], _ = defaultsForProtocol(protoThriftCompact)
 	rCfg.RemoteSampling = &RemoteSamplingConfig{
 		FetchEndpoint: endpoint,
+		HostEndpoint:  fmt.Sprintf("localhost:%d", hostPort),
 	}
 	r, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
 
 	assert.NoError(t, err, "create trace receiver should not error")
 	assert.Equal(t, endpoint, r.(*jReceiver).config.RemoteSamplingEndpoint)
+	assert.Equal(t, hostPort, r.(*jReceiver).config.AgentHTTPPort, "agent http port should be configured value")
 }
 
 func TestCustomUnmarshalErrors(t *testing.T) {

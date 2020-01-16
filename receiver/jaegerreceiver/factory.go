@@ -183,6 +183,12 @@ func (f *Factory) CreateTraceReceiver(
 
 	if remoteSamplingConfig != nil {
 		config.RemoteSamplingEndpoint = remoteSamplingConfig.FetchEndpoint
+
+		var err error
+		config.AgentHTTPPort, err = extractPortFromEndpoint(remoteSamplingConfig.HostEndpoint)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if (protoGRPC == nil && protoHTTP == nil && protoTChannel == nil && protoThriftBinary == nil && protoThriftCompact == nil) ||
