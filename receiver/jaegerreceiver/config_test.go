@@ -74,6 +74,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 			RemoteSampling: &RemoteSamplingConfig{
+				HostEndpoint:  "0.0.0.0:5778",
 				FetchEndpoint: "jaeger-collector:1234",
 			},
 		})
