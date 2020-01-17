@@ -50,8 +50,9 @@ const (
 	defaultHTTPBindEndpoint     = "localhost:14268"
 	defaultTChannelBindEndpoint = "localhost:14267"
 
-	defaultThriftCompactBindEndpoint = "localhost:6831"
-	defaultThriftBinaryBindEndpoint  = "localhost:6832"
+	defaultThriftCompactBindEndpoint   = "localhost:6831"
+	defaultThriftBinaryBindEndpoint    = "localhost:6832"
+	defaultAgentRemoteSamplingHTTPPort = 5778
 )
 
 // Factory is the factory for Jaeger receiver.
@@ -184,10 +185,14 @@ func (f *Factory) CreateTraceReceiver(
 	if remoteSamplingConfig != nil {
 		config.RemoteSamplingEndpoint = remoteSamplingConfig.FetchEndpoint
 
-		var err error
-		config.AgentHTTPPort, err = extractPortFromEndpoint(remoteSamplingConfig.HostEndpoint)
-		if err != nil {
-			return nil, err
+		if len(remoteSamplingConfig.HostEndpoint) == 0 {
+			config.AgentHTTPPort = defaultAgentRemoteSamplingHTTPPort
+		} else {
+			var err error
+			config.AgentHTTPPort, err = extractPortFromEndpoint(remoteSamplingConfig.HostEndpoint)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 

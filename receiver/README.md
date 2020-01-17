@@ -161,7 +161,6 @@ receivers:
       .
       .
     remote_sampling:
-      host_endpoint: "0.0.0.0:5778"
       fetch_endpoint: "jaeger-collector:1234"
 ``` 
 
