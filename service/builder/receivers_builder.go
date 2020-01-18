@@ -16,6 +16,7 @@ package builder
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.uber.org/zap"
@@ -27,6 +28,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/processor"
 	"github.com/open-telemetry/opentelemetry-collector/receiver"
 )
+
+var errUnusedReceiver = errors.New("receiver defined but not used by any pipeline")
 
 // builtReceiver is a receiver that is built based on a config. It can have
 // a trace and/or a metrics component.
@@ -93,6 +96,10 @@ func (rb *ReceiversBuilder) Build() (Receivers, error) {
 	for _, cfg := range rb.config.Receivers {
 		rcv, err := rb.buildReceiver(cfg)
 		if err != nil {
+			if err == errUnusedReceiver {
+				rb.logger.Info("Ignoring receiver as it is not used by any pipeline", zap.String("receiver", cfg.Name()))
+				continue
+			}
 			return nil, err
 		}
 		receivers[cfg] = rcv
@@ -234,6 +241,10 @@ func (rb *ReceiversBuilder) buildReceiver(config configmodels.Receiver) (*builtR
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	if rcv.receiver == nil {
+		return nil, errUnusedReceiver
 	}
 
 	return rcv, nil
