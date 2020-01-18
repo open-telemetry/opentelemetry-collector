@@ -130,12 +130,12 @@ func TestPortsNotOpen(t *testing.T) {
 	}
 
 	l, err = net.Listen("tcp", "localhost:14268")
-	assert.NoError(t, err, "should have been able to listen on 14268.  jaeger receiver incorrectly started thrift-http")
+	assert.NoError(t, err, "should have been able to listen on 14268.  jaeger receiver incorrectly started thrift_http")
 	if l != nil {
 		l.Close()
 	}
 	l, err = net.Listen("tcp", "localhost:14267")
-	assert.NoError(t, err, "should have been able to listen on 14267.  jaeger receiver incorrectly started thrift-tchannel")
+	assert.NoError(t, err, "should have been able to listen on 14267.  jaeger receiver incorrectly started thrift_tchannel")
 
 	if l != nil {
 		l.Close()

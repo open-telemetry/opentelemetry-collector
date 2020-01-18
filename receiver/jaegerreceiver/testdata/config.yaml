@@ -7,13 +7,13 @@ receivers:
     protocols:
       grpc:
         endpoint: "localhost:9876"
-      thrift-http:
+      thrift_http:
         endpoint: ":3456"
-      thrift-tchannel:
+      thrift_tchannel:
         endpoint: "0.0.0.0:123"
-      thrift-compact:
+      thrift_compact:
         endpoint: "0.0.0.0:456"
-      thrift-binary:
+      thrift_binary:
         endpoint: "0.0.0.0:789"
     remote_sampling:
       host_endpoint: "0.0.0.0:5778"
@@ -22,29 +22,29 @@ receivers:
   jaeger/defaults:
     protocols:
       grpc:
-      thrift-http:
-      thrift-tchannel:
-      thrift-compact:
-      thrift-binary:
+      thrift_http:
+      thrift_tchannel:
+      thrift_compact:
+      thrift_binary:
   # The following demonstrates only enabling certain protocols with defaults/overrides.
   jaeger/mixed:
     protocols:
       grpc:
         endpoint: "localhost:9876"
-      thrift-compact:
+      thrift_compact:
   # The following demonstrates how to disable a protocol.  This particular config
   # will not start any jaeger protocols.
   jaeger/disabled:
     protocols:
       grpc:
         disabled: true
-      thrift-http:
+      thrift_http:
         disabled: true
-      thrift-tchannel:
+      thrift_tchannel:
         disabled: true
-      thrift-compact:
+      thrift_compact:
         disabled: true
-      thrift-binary:
+      thrift_binary:
         disabled: true
   # The following demonstrates specifying different endpoints.
   # The Jaeger receiver connects to ports on all available network interfaces.
@@ -57,9 +57,9 @@ receivers:
           cert_file: /test.crt
           key_file: /test.key
         endpoint: "localhost:9876"
-      thrift-http:
+      thrift_http:
         endpoint: ":3456"
-      thrift-tchannel:
+      thrift_tchannel:
         endpoint: "0.0.0.0:123"
 
 processors:
