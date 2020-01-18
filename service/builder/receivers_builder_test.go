@@ -32,6 +32,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/processortest"
 	"github.com/open-telemetry/opentelemetry-collector/receiver"
+	"github.com/open-telemetry/opentelemetry-collector/receiver/zipkinreceiver"
 )
 
 type testCase struct {
@@ -292,6 +293,32 @@ func TestReceiversBuilder_ErrorOnNilReceiver(t *testing.T) {
 	receivers, err = NewReceiversBuilder(zap.NewNop(), cfg, pipelineProcessors, factories.Receivers).Build()
 	assert.Error(t, err)
 	assert.Zero(t, len(receivers))
+}
+
+func TestReceiversBuilder_Unused(t *testing.T) {
+	factories, err := config.ExampleComponents()
+	assert.Nil(t, err)
+
+	attrFactory := &attributesprocessor.Factory{}
+	factories.Processors[attrFactory.Type()] = attrFactory
+
+	zpkFactory := &zipkinreceiver.Factory{}
+	factories.Receivers[zpkFactory.Type()] = zpkFactory
+	cfg, err := config.LoadConfigFile(t, "testdata/unused_receiver.yaml", factories)
+	assert.Nil(t, err)
+
+	// Build the pipeline
+	allExporters, err := NewExportersBuilder(zap.NewNop(), cfg, factories.Exporters).Build()
+	assert.NoError(t, err)
+	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), cfg, allExporters, factories.Processors).Build()
+	assert.NoError(t, err)
+	receivers, err := NewReceiversBuilder(zap.NewNop(), cfg, pipelineProcessors, factories.Receivers).Build()
+	assert.NoError(t, err)
+	assert.NotNil(t, receivers)
+
+	mh := component.NewMockHost()
+	receivers.StartAll(zap.NewNop(), mh)
+	receivers.StopAll()
 }
 
 // badReceiverFactory is a factory that returns no error but returns a nil object.
