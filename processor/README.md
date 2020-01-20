@@ -132,24 +132,28 @@ if the span should be included or excluded from the processor. By default, all
 spans are processed by the processor.
 
 To configure this option, under `include` and/or `exclude`:
-- at least one of or both `services` and `attributes` is required.
+- at least one of `services`, `span_names` or `attributes` is required.
 
 Note: If both `include` and `exclude` are specified, the `include` properties
 are checked before the `exclude` properties.
+
+Items in `span_names` array are regular expression patterns.
 
 ```yaml
 attributes:
     # include and/or exclude can be specified. However, the include properties
     # are always checked before the exclude properties.
     {include, exclude}:
-      # At least one of services or attributes must be specified. It is supported
-      # to have both specified, but both `services` and `attributes` must evaluate
-      # to true for a match to occur.
+      # At least one of services, span_names or attributes must be specified.
+      # It is supported to have more than one specified, but all of the specified
+      # conditions must evaluate to true for a match to occur.
 
       # Services specify the list of service name to match against.
       # A match occurs if the span service name is in this list.
       # Note: This is an optional field.
       services: [<key1>, ..., <keyN>]
+      # The span name must match "login.*" or "auth.*" pattern.
+      span_names: ["login.*", "auth.*"]
       # Attributes specifies the list of attributes to match against.
       # All of these attributes must match exactly for a match to occur.
       # Note: This is an optional field.

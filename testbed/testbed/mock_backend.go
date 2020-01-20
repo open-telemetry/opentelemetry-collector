@@ -41,6 +41,12 @@ type MockBackend struct {
 	// Start/stop flags
 	isStarted bool
 	stopOnce  sync.Once
+
+	// Recording fields.
+	isRecording     bool
+	recordMutex     sync.Mutex
+	ReceivedTraces  []consumerdata.TraceData
+	ReceivedMetrics []consumerdata.MetricsData
 }
 
 // NewMockBackend creates a new mock backend that receives data using specified receiver.
@@ -51,6 +57,8 @@ func NewMockBackend(logFilePath string, receiver DataReceiver) *MockBackend {
 		tc:          &MockTraceConsumer{},
 		mc:          &MockMetricConsumer{},
 	}
+	mb.tc.backend = mb
+	mb.mc.backend = mb
 	return mb
 }
 
@@ -102,16 +110,50 @@ func (mb *MockBackend) Stop() {
 	})
 }
 
+// EnableRecording enables recording of all data received by MockBackend.
+func (mb *MockBackend) EnableRecording() {
+	mb.recordMutex.Lock()
+	defer mb.recordMutex.Unlock()
+	mb.isRecording = true
+}
+
 func (mb *MockBackend) GetStats() string {
 	return fmt.Sprintf("Received:%5d items", mb.DataItemsReceived())
 }
 
+// DataItemsReceived returns total number of received spans and metrics.
 func (mb *MockBackend) DataItemsReceived() uint64 {
 	return atomic.LoadUint64(&mb.tc.spansReceived) + atomic.LoadUint64(&mb.mc.metricsReceived)
 }
 
+// ClearReceivedItems clears the list of received traces and metrics. Note: counters
+// return by DataItemsReceived() are not cleared, they are cumulative.
+func (mb *MockBackend) ClearReceivedItems() {
+	mb.recordMutex.Lock()
+	defer mb.recordMutex.Unlock()
+	mb.ReceivedTraces = nil
+	mb.ReceivedMetrics = nil
+}
+
+func (mb *MockBackend) ConsumeTrace(td consumerdata.TraceData) {
+	mb.recordMutex.Lock()
+	defer mb.recordMutex.Unlock()
+	if mb.isRecording {
+		mb.ReceivedTraces = append(mb.ReceivedTraces, td)
+	}
+}
+
+func (mb *MockBackend) ConsumeMetric(md consumerdata.MetricsData) {
+	mb.recordMutex.Lock()
+	defer mb.recordMutex.Unlock()
+	if mb.isRecording {
+		mb.ReceivedMetrics = append(mb.ReceivedMetrics, md)
+	}
+}
+
 type MockTraceConsumer struct {
 	spansReceived uint64
+	backend       *MockBackend
 }
 
 func (tc *MockTraceConsumer) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
@@ -121,19 +163,23 @@ func (tc *MockTraceConsumer) ConsumeTraceData(ctx context.Context, td consumerda
 		var spanSeqnum int64
 		var traceSeqnum int64
 
-		seqnumAttr, ok := span.Attributes.AttributeMap["load_generator.span_seq_num"]
-		if ok {
-			spanSeqnum = seqnumAttr.GetIntValue()
+		if span.Attributes != nil {
+			seqnumAttr, ok := span.Attributes.AttributeMap["load_generator.span_seq_num"]
+			if ok {
+				spanSeqnum = seqnumAttr.GetIntValue()
+			}
+
+			seqnumAttr, ok = span.Attributes.AttributeMap["load_generator.trace_seq_num"]
+			if ok {
+				traceSeqnum = seqnumAttr.GetIntValue()
+			}
+
+			// Ignore the seqnums for now. We will use them later.
+			_ = spanSeqnum
+			_ = traceSeqnum
 		}
 
-		seqnumAttr, ok = span.Attributes.AttributeMap["load_generator.trace_seq_num"]
-		if ok {
-			traceSeqnum = seqnumAttr.GetIntValue()
-		}
-
-		// Ignore the seqnums for now. We will use them later.
-		_ = spanSeqnum
-		_ = traceSeqnum
+		tc.backend.ConsumeTrace(td)
 	}
 
 	return nil
@@ -141,6 +187,7 @@ func (tc *MockTraceConsumer) ConsumeTraceData(ctx context.Context, td consumerda
 
 type MockMetricConsumer struct {
 	metricsReceived uint64
+	backend         *MockBackend
 }
 
 func (mc *MockMetricConsumer) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
@@ -152,5 +199,8 @@ func (mc *MockMetricConsumer) ConsumeMetricsData(ctx context.Context, md consume
 	}
 
 	atomic.AddUint64(&mc.metricsReceived, uint64(dataPoints))
+
+	mc.backend.ConsumeMetric(md)
+
 	return nil
 }
