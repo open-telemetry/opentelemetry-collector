@@ -20,6 +20,7 @@ import (
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/gobwas/glob"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -867,6 +868,27 @@ func TestAttributes_Matching_False(t *testing.T) {
 				Attributes: []matchAttribute{},
 			},
 		},
+
+		{
+			name: "span name doesn't match",
+			properties: matchingProperties{
+				SpanNames:  []glob.Glob{glob.MustCompile("spanNo*Name")},
+				Attributes: []matchAttribute{},
+			},
+		},
+
+		{
+			name: "span name doesn't match any",
+			properties: matchingProperties{
+				SpanNames: []glob.Glob{
+					glob.MustCompile("spanNo*Name"),
+					glob.MustCompile("non-matching?glob"),
+					glob.MustCompile("regular string"),
+				},
+				Attributes: []matchAttribute{},
+			},
+		},
+
 		{
 			name: "wrong property value",
 			properties: matchingProperties{
@@ -914,6 +936,7 @@ func TestAttributes_Matching_False(t *testing.T) {
 	}
 
 	span := &tracepb.Span{
+		Name: &tracepb.TruncatableString{Value: "spanName"},
 		Attributes: &tracepb.Span_Attributes{
 			AttributeMap: map[string]*tracepb.AttributeValue{
 				"keyInt": {
@@ -1039,6 +1062,25 @@ func TestAttributes_Matching_True(t *testing.T) {
 			},
 		},
 		{
+			name: "span name match",
+			properties: matchingProperties{
+				SpanNames:  []glob.Glob{glob.MustCompile("span*")},
+				Attributes: []matchAttribute{},
+			},
+		},
+		{
+			name: "span name second match",
+			properties: matchingProperties{
+				SpanNames: []glob.Glob{
+					glob.MustCompile("wrong*pattern"),
+					glob.MustCompile("span*"),
+					glob.MustCompile("yet another?pattern"),
+					glob.MustCompile("non-glob-string"),
+				},
+				Attributes: []matchAttribute{},
+			},
+		},
+		{
 			name: "property exact value match",
 			properties: matchingProperties{
 				Services: map[string]bool{},
@@ -1115,6 +1157,7 @@ func TestAttributes_Matching_True(t *testing.T) {
 	}
 
 	span := &tracepb.Span{
+		Name: &tracepb.TruncatableString{Value: "spanName"},
 		Attributes: &tracepb.Span_Attributes{
 			AttributeMap: map[string]*tracepb.AttributeValue{
 				"keyString": {
@@ -1210,6 +1253,84 @@ func TestAttributes_FilterSpans(t *testing.T) {
 		Attributes: []Attribute{
 			{Key: "NoModification", Value: true},
 		},
+	}
+	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), cfg)
+	require.Nil(t, err)
+	require.NotNil(t, tp)
+
+	for _, tt := range testCases {
+		runIndividualTestCase(t, tt, tp)
+	}
+}
+
+func TestAttributes_FilterSpansByName(t *testing.T) {
+	testCases := []testCase{
+		{
+			name:            "apply processor",
+			nodeName:        "svcB",
+			inputAttributes: map[string]*tracepb.AttributeValue{},
+			expectedAttributes: map[string]*tracepb.AttributeValue{
+				"attribute1": {
+					Value: &tracepb.AttributeValue_IntValue{IntValue: 123},
+				},
+			},
+		},
+		{
+			name:     "apply processor with different value for exclude property",
+			nodeName: "svcB",
+			inputAttributes: map[string]*tracepb.AttributeValue{
+				"NoModification": {
+					Value: &tracepb.AttributeValue_BoolValue{BoolValue: false},
+				},
+			},
+			expectedAttributes: map[string]*tracepb.AttributeValue{
+				"attribute1": {
+					Value: &tracepb.AttributeValue_IntValue{IntValue: 123},
+				},
+				"NoModification": {
+					Value: &tracepb.AttributeValue_BoolValue{BoolValue: false},
+				},
+			},
+		},
+		{
+			name:               "incorrect name for include property",
+			nodeName:           "noname",
+			inputAttributes:    map[string]*tracepb.AttributeValue{},
+			expectedAttributes: map[string]*tracepb.AttributeValue{},
+		},
+		{
+			name:               "don't apply incorrect span name",
+			nodeName:           "svcB",
+			inputAttributes:    map[string]*tracepb.AttributeValue{},
+			expectedAttributes: map[string]*tracepb.AttributeValue{},
+		},
+		{
+			name:     "attribute match for exclude property",
+			nodeName: "svcB",
+			inputAttributes: map[string]*tracepb.AttributeValue{
+				"NoModification": {
+					Value: &tracepb.AttributeValue_BoolValue{BoolValue: true},
+				},
+			},
+			expectedAttributes: map[string]*tracepb.AttributeValue{
+				"NoModification": {
+					Value: &tracepb.AttributeValue_BoolValue{BoolValue: true},
+				},
+			},
+		},
+	}
+
+	factory := Factory{}
+	cfg := factory.CreateDefaultConfig()
+	oCfg := cfg.(*Config)
+	oCfg.Actions = []ActionKeyValue{
+		{Key: "attribute1", Action: INSERT, Value: 123},
+	}
+	oCfg.Include = &MatchProperties{
+		SpanNames: []string{"apply processor*"},
+	}
+	oCfg.Exclude = &MatchProperties{
+		SpanNames: []string{"don't apply*"},
 	}
 	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), cfg)
 	require.Nil(t, err)

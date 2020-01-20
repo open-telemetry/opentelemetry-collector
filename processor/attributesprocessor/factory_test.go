@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/gobwas/glob"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -214,6 +215,7 @@ func TestFactory_validateMatchesConfiguration(t *testing.T) {
 				Services: map[string]bool{"a": true, "b": true, "c": true},
 			},
 		},
+
 		{
 			name: "attributes build",
 			input: MatchProperties{
@@ -242,6 +244,7 @@ func TestFactory_validateMatchesConfiguration(t *testing.T) {
 				},
 			},
 		},
+
 		{
 			name: "both set of attributes",
 			input: MatchProperties{
@@ -273,6 +276,17 @@ func TestFactory_validateMatchesConfiguration(t *testing.T) {
 				},
 			},
 		},
+
+		{
+			name: "glob span_names",
+			input: MatchProperties{
+				SpanNames: []string{"auth*"},
+			},
+			output: matchingProperties{
+				Services:  map[string]bool{},
+				SpanNames: []glob.Glob{glob.MustCompile("auth*")},
+			},
+		},
 	}
 	for _, tc := range testcase {
 		t.Run(tc.name, func(t *testing.T) {
@@ -292,15 +306,15 @@ func TestFactory_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 		{
 			name:        "empty property",
 			property:    MatchProperties{},
-			errorString: "error creating \"attributes\" processor. At least one field \"services\" or \"attributes\" must be specified",
+			errorString: errAtLeastOneMatchFieldNeeded.Error(),
 		},
 		{
-			name: "empty service and attributes",
+			name: "empty service, span names and attributes",
 			property: MatchProperties{
 				Services:   []string{},
 				Attributes: []Attribute{},
 			},
-			errorString: "error creating \"attributes\" processor. At least one field \"services\" or \"attributes\" must be specified",
+			errorString: errAtLeastOneMatchFieldNeeded.Error(),
 		},
 		{
 			name: "empty service name in services list",
@@ -308,6 +322,13 @@ func TestFactory_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 				Services: []string{""},
 			},
 			errorString: "error creating \"attributes\" processor. Can't have empty string for service name in list of services",
+		},
+		{
+			name: "invalid glob pattern",
+			property: MatchProperties{
+				SpanNames: []string{"["},
+			},
+			errorString: "error creating \"attributes\" processor. [ is not a valid span name pattern",
 		},
 		{
 			name: "empty key name in attributes list",
@@ -326,6 +347,7 @@ func TestFactory_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			output, err := buildMatchProperties(&tc.property)
 			assert.Nil(t, output)
+			require.NotNil(t, err)
 			assert.Equal(t, tc.errorString, err.Error())
 		})
 	}

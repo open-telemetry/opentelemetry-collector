@@ -117,6 +117,10 @@ func (lg *LoadGenerator) DataItemsSent() uint64 {
 	return atomic.LoadUint64(&lg.dataItemsSent)
 }
 
+func (lg *LoadGenerator) IncDataItemsSent() {
+	atomic.AddUint64(&lg.dataItemsSent, 1)
+}
+
 func (lg *LoadGenerator) generate() {
 	// Indicate that generation is done at the end
 	defer lg.stopWait.Done()
@@ -166,8 +170,8 @@ func (lg *LoadGenerator) generateTrace() {
 
 		// Create a span.
 		span := &tracepb.Span{
-			TraceId: generateTraceID(traceID),
-			SpanId:  generateSpanID(spanID),
+			TraceId: GenerateTraceID(traceID),
+			SpanId:  GenerateSpanID(spanID),
 			Name:    &tracepb.TruncatableString{Value: "load-generator-span"},
 			Kind:    tracepb.Span_CLIENT,
 			Attributes: &tracepb.Span_Attributes{
@@ -204,13 +208,13 @@ func (lg *LoadGenerator) generateTrace() {
 	}
 }
 
-func generateTraceID(id uint64) []byte {
+func GenerateTraceID(id uint64) []byte {
 	var traceID [16]byte
 	binary.PutUvarint(traceID[:], id)
 	return traceID[:]
 }
 
-func generateSpanID(id uint64) []byte {
+func GenerateSpanID(id uint64) []byte {
 	var spanID [8]byte
 	binary.PutUvarint(spanID[:], id)
 	return spanID[:]

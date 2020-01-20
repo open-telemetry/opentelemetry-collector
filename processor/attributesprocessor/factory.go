@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/gobwas/glob"
 	"github.com/spf13/cast"
 	"go.uber.org/zap"
 
@@ -32,6 +33,11 @@ import (
 const (
 	// typeStr is the value of "type" key in configuration.
 	typeStr = "attributes"
+)
+
+var (
+	errAtLeastOneMatchFieldNeeded = errors.New(
+		"error creating \"attributes\" processor. At least one field \"services\", \"span_names\" or \"attributes\" must be specified")
 )
 
 // Factory is the factory for Attributes processor.
@@ -168,8 +174,8 @@ func buildMatchProperties(config *MatchProperties) (*matchingProperties, error) 
 		return nil, nil
 	}
 
-	if len(config.Services) == 0 && len(config.Attributes) == 0 {
-		return nil, errors.New("error creating \"attributes\" processor. At least one field \"services\" or \"attributes\" must be specified")
+	if len(config.Services) == 0 && len(config.SpanNames) == 0 && len(config.Attributes) == 0 {
+		return nil, errAtLeastOneMatchFieldNeeded
 	}
 	properties := &matchingProperties{}
 	for _, serviceName := range config.Services {
@@ -183,6 +189,18 @@ func buildMatchProperties(config *MatchProperties) (*matchingProperties, error) 
 	}
 	// Copy the list of service names after each one has been validated. If the list is empty, that is okay because the match properties too will be empty.
 	properties.Services = svcNames
+
+	// Precompile span name glob patterns.
+	for _, pattern := range config.SpanNames {
+		g, err := glob.Compile(pattern)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"error creating \"attributes\" processor. %s is not a valid span name pattern",
+				pattern,
+			)
+		}
+		properties.SpanNames = append(properties.SpanNames, g)
+	}
 
 	var rawAttributes []matchAttribute
 	for _, attribute := range config.Attributes {

@@ -18,6 +18,7 @@ import (
 	"context"
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/gobwas/glob"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
@@ -57,6 +58,7 @@ type attributeAction struct {
 // 2. the attribute values are stored in the internal format.
 type matchingProperties struct {
 	Services   map[string]bool
+	SpanNames  []glob.Glob
 	Attributes []matchAttribute
 }
 
@@ -207,6 +209,24 @@ func matchSpanToProperties(mp matchingProperties, span *tracepb.Span, serviceNam
 
 	if len(mp.Services) != 0 {
 		if serviceFound := mp.Services[serviceName]; !serviceFound {
+			return false
+		}
+	}
+
+	if len(mp.SpanNames) > 0 {
+		var spanName string
+		if span.Name != nil {
+			spanName = span.Name.Value
+		}
+		// Verify span name matches at least one glob patterns.
+		matched := false
+		for _, g := range mp.SpanNames {
+			if g.Match(spanName) {
+				matched = true
+				break
+			}
+		}
+		if !matched {
 			return false
 		}
 	}

@@ -14,6 +14,7 @@ require (
 	github.com/client9/misspell v0.3.4
 	github.com/codahale/hdrhistogram v0.0.0-20161010025455-3a0bb77429bd // indirect
 	github.com/go-kit/kit v0.9.0
+	github.com/gobwas/glob v0.2.3
 	github.com/gogo/googleapis v1.3.0 // indirect
 	github.com/golang/protobuf v1.3.2
 	github.com/golangci/golangci-lint v1.21.0
