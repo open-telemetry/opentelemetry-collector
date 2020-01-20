@@ -1340,3 +1340,117 @@ func TestAttributes_FilterSpansByName(t *testing.T) {
 		runIndividualTestCase(t, tt, tp)
 	}
 }
+
+func BenchmarkAttributes_FilterSpansByName(b *testing.B) {
+	testCases := []testCase{
+		{
+			name:            "apply processor",
+			nodeName:        "svcB",
+			inputAttributes: map[string]*tracepb.AttributeValue{},
+			expectedAttributes: map[string]*tracepb.AttributeValue{
+				"attribute1": {
+					Value: &tracepb.AttributeValue_IntValue{IntValue: 123},
+				},
+			},
+		},
+		{
+			name:     "apply processor with different value for exclude property",
+			nodeName: "svcB",
+			inputAttributes: map[string]*tracepb.AttributeValue{
+				"NoModification": {
+					Value: &tracepb.AttributeValue_BoolValue{BoolValue: false},
+				},
+			},
+			expectedAttributes: map[string]*tracepb.AttributeValue{
+				"attribute1": {
+					Value: &tracepb.AttributeValue_IntValue{IntValue: 123},
+				},
+				"NoModification": {
+					Value: &tracepb.AttributeValue_BoolValue{BoolValue: false},
+				},
+			},
+		},
+		{
+			name:               "incorrect name for include property",
+			nodeName:           "noname",
+			inputAttributes:    map[string]*tracepb.AttributeValue{},
+			expectedAttributes: map[string]*tracepb.AttributeValue{},
+		},
+		{
+			name:               "don't apply incorrect span name",
+			nodeName:           "svcB",
+			inputAttributes:    map[string]*tracepb.AttributeValue{},
+			expectedAttributes: map[string]*tracepb.AttributeValue{},
+		},
+		{
+			name:     "attribute match for exclude property",
+			nodeName: "svcB",
+			inputAttributes: map[string]*tracepb.AttributeValue{
+				"NoModification": {
+					Value: &tracepb.AttributeValue_BoolValue{BoolValue: true},
+				},
+			},
+			expectedAttributes: map[string]*tracepb.AttributeValue{
+				"NoModification": {
+					Value: &tracepb.AttributeValue_BoolValue{BoolValue: true},
+				},
+			},
+		},
+	}
+
+	factory := Factory{}
+	cfg := factory.CreateDefaultConfig()
+	oCfg := cfg.(*Config)
+	oCfg.Actions = []ActionKeyValue{
+		{Key: "attribute1", Action: INSERT, Value: 123},
+	}
+	oCfg.Include = &MatchProperties{
+		SpanNames: []string{"apply processor*"},
+	}
+	oCfg.Exclude = &MatchProperties{
+		SpanNames: []string{"don't apply*"},
+	}
+	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), cfg)
+	require.Nil(b, err)
+	require.NotNil(b, tp)
+
+	for _, tt := range testCases {
+		traceData := consumerdata.TraceData{
+			Node: &commonpb.Node{
+				ServiceInfo: &commonpb.ServiceInfo{
+					Name: tt.nodeName,
+				},
+			},
+			Spans: []*tracepb.Span{
+				{
+					Name: &tracepb.TruncatableString{Value: tt.name},
+					Attributes: &tracepb.Span_Attributes{
+						AttributeMap: tt.inputAttributes,
+					},
+				},
+			},
+		}
+
+		b.Run(tt.name, func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				assert.NoError(b, tp.ConsumeTraceData(context.Background(), traceData))
+			}
+		})
+
+		require.Equal(b, consumerdata.TraceData{
+			Node: &commonpb.Node{
+				ServiceInfo: &commonpb.ServiceInfo{
+					Name: tt.nodeName,
+				},
+			},
+			Spans: []*tracepb.Span{
+				{
+					Name: &tracepb.TruncatableString{Value: tt.name},
+					Attributes: &tracepb.Span_Attributes{
+						AttributeMap: tt.expectedAttributes,
+					},
+				},
+			},
+		}, traceData)
+	}
+}
