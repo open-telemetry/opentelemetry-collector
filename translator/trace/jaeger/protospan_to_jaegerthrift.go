@@ -240,7 +240,10 @@ func ocLinksToJaegerReferences(ocSpanLinks *tracepb.Span_Links) ([]*jaeger.SpanR
 	jRefs := make([]*jaeger.SpanRef, 0, len(ocLinks))
 	for _, ocLink := range ocLinks {
 		traceIDHigh, traceIDLow, err := tracetranslator.BytesToInt64TraceID(ocLink.TraceId)
-		if err != nil {
+		if err == tracetranslator.ErrNilTraceID {
+			traceIDLow = 0
+			traceIDHigh = 0
+		} else if err != nil {
 			return nil, fmt.Errorf("OC link has invalid trace ID: %v", err)
 		}
 
@@ -255,7 +258,9 @@ func ocLinksToJaegerReferences(ocSpanLinks *tracepb.Span_Links) ([]*jaeger.SpanR
 		}
 
 		spanID, err := tracetranslator.BytesToInt64SpanID(ocLink.SpanId)
-		if err != nil {
+		if err == tracetranslator.ErrNilSpanID {
+			spanID = 0
+		} else if err != nil {
 			return nil, fmt.Errorf("OC link has invalid span ID: %v", err)
 		}
 

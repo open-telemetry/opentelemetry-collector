@@ -38,6 +38,9 @@
               "refType": "FOLLOWS_FROM",
               "traceIdLow": 5951113872249657919,
               "spanId": 6866147
+            },
+            {
+              "refType": "FOLLOWS_FROM"
             }
           ],
           "startTime": 1485467191639875,
