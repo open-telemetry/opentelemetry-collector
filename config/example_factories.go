@@ -132,11 +132,6 @@ type ExampleReceiverProducer struct {
 	MetricsConsumer consumer.MetricsConsumer
 }
 
-// TraceSource returns the name of the trace data source.
-func (erp *ExampleReceiverProducer) TraceSource() string {
-	return ""
-}
-
 // Start tells the receiver to start its processing.
 func (erp *ExampleReceiverProducer) Start(host component.Host) error {
 	erp.Started = true
@@ -147,11 +142,6 @@ func (erp *ExampleReceiverProducer) Start(host component.Host) error {
 func (erp *ExampleReceiverProducer) Shutdown() error {
 	erp.Stopped = true
 	return nil
-}
-
-// MetricsSource returns the name of the metrics data source.
-func (erp *ExampleReceiverProducer) MetricsSource() string {
-	return ""
 }
 
 // This is the map of already created example receivers for particular configurations.

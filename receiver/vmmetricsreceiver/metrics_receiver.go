@@ -34,13 +34,6 @@ type Receiver struct {
 	startOnce sync.Once
 }
 
-const metricsSource string = "VMMetrics"
-
-// MetricsSource returns the name of the metrics data source.
-func (vmr *Receiver) MetricsSource() string {
-	return metricsSource
-}
-
 // Start scrapes VM metrics based on the OS platform.
 func (vmr *Receiver) Start(host component.Host) error {
 	vmr.mu.Lock()

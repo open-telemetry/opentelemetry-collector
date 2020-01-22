@@ -51,8 +51,7 @@ import (
 func TestTraceSource(t *testing.T) {
 	jr, err := New(context.Background(), &Configuration{}, nil, zap.NewNop())
 	assert.NoError(t, err, "should not have failed to create the Jaeger receiver")
-
-	assert.Equal(t, traceSource, jr.TraceSource())
+	require.NotNil(t, jr)
 }
 
 func TestReception(t *testing.T) {
