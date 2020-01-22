@@ -128,7 +128,11 @@ func TestNew(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := New(tt.args.address, tt.args.nextConsumer)
 			require.Equal(t, tt.wantErr, err)
-			assert.Equal(t, traceSource, got.TraceSource())
+			if tt.wantErr == nil {
+				require.NotNil(t, got)
+			} else {
+				require.Nil(t, got)
+			}
 		})
 	}
 }

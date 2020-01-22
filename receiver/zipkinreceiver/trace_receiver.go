@@ -89,19 +89,12 @@ func (zr *ZipkinReceiver) address() string {
 	return addr
 }
 
-const traceSource string = "Zipkin"
-
 func (zr *ZipkinReceiver) WithHTTPServer(s *http.Server) *ZipkinReceiver {
 	if s.Handler == nil {
 		s.Handler = zr
 	}
 	zr.server = s
 	return zr
-}
-
-// TraceSource returns the name of the trace data source.
-func (zr *ZipkinReceiver) TraceSource() string {
-	return traceSource
 }
 
 // Start spins up the receiver's HTTP server and makes the receiver start its processing.

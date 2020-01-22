@@ -103,8 +103,6 @@ const (
 	defaultAgentQueueSize     = 1000
 	defaultAgentMaxPacketSize = 65000
 	defaultAgentServerWorkers = 10
-
-	traceSource string = "Jaeger"
 )
 
 // New creates a TraceReceiver that receives traffic as a collector with both Thrift and HTTP transports.
@@ -194,10 +192,6 @@ func (jr *jReceiver) collectorThriftAddr() string {
 
 func (jr *jReceiver) collectorThriftEnabled() bool {
 	return jr.config != nil && jr.config.CollectorThriftPort > 0
-}
-
-func (jr *jReceiver) TraceSource() string {
-	return traceSource
 }
 
 func (jr *jReceiver) Start(host component.Host) error {
