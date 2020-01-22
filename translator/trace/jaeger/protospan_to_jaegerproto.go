@@ -201,6 +201,9 @@ func ocLinksToJaegerReferencesProto(ocSpanLinks *tracepb.Span_Links) ([]jaeger.S
 			return nil, err
 		}
 
+		if uSpanID == 0 {
+			return nil, errZeroSpanID
+		}
 		spanID = jaeger.SpanID(uSpanID)
 
 		var jRefType jaeger.SpanRefType
