@@ -21,6 +21,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
+	"github.com/open-telemetry/opentelemetry-collector/extension"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
 )
 
@@ -41,10 +42,11 @@ type BuiltPipelines map[*configmodels.Pipeline]*builtPipeline
 
 // PipelinesBuilder builds pipelines from config.
 type PipelinesBuilder struct {
-	logger    *zap.Logger
-	config    *configmodels.Config
-	exporters Exporters
-	factories map[string]processor.Factory
+	logger       *zap.Logger
+	config       *configmodels.Config
+	exporters    Exporters
+	factories    map[string]processor.Factory
+	extNameToExt map[string]extension.ServiceExtension
 }
 
 // NewPipelinesBuilder creates a new PipelinesBuilder. Requires exporters to be already
@@ -54,8 +56,9 @@ func NewPipelinesBuilder(
 	config *configmodels.Config,
 	exporters Exporters,
 	factories map[string]processor.Factory,
+	extNameToExt map[string]extension.ServiceExtension,
 ) *PipelinesBuilder {
-	return &PipelinesBuilder{logger, config, exporters, factories}
+	return &PipelinesBuilder{logger, config, exporters, factories, extNameToExt}
 }
 
 // Build pipeline processors from config.
@@ -113,6 +116,11 @@ func (pb *PipelinesBuilder) buildPipeline(
 		case configmodels.TracesDataType:
 			var proc processor.TraceProcessor
 			proc, err = factory.CreateTraceProcessor(pb.logger, tc, procCfg)
+			if procName == "tail_sampling" {
+				if pb.extNameToExt != nil {
+					proc.AddSupportExtensions(pb.extNameToExt["ring_membership"].(extension.SupportExtension))
+				}
+			}
 			if proc != nil {
 				mutatesConsumedData = mutatesConsumedData || proc.GetCapabilities().MutatesConsumedData
 			}

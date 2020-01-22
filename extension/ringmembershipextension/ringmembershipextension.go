@@ -48,6 +48,8 @@ func (a ByOrder) Less(i, j int) bool { return a[i] < a[j] }
 func (rm *ringMembershipExtension) Start(host extension.Host) error {
 	rm.logger.Info("Starting ring membership extension")
 
+	rm.quit = make(chan int, 1)
+
 	go rm.Watch()
 
 	return nil
@@ -61,10 +63,10 @@ func (rm *ringMembershipExtension) Watch() error {
 			return nil
 		case <-t.C:
 			// poll a dns endpoint
-			ips, err := net.LookupIP("otelcol.svc.local")
+			ips, err := net.LookupIP("otelcol.default.svc.cluster.local")
 			if err != nil {
 				rm.logger.Error("DNS lookup error", zap.Error(err))
-				return err
+				break
 			}
 
 			// check if this list has diverged from the current list
@@ -109,6 +111,7 @@ func (rm *ringMembershipExtension) Shutdown() error {
 }
 
 func (rm *ringMembershipExtension) GetState() (interface{}, error) {
+	rm.logger.Info("GetState called in ringmembershipextension")
 	rm.RLock()
 	curList := rm.ipList
 	rm.RUnlock()

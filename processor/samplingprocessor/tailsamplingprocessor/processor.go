@@ -364,13 +364,14 @@ func (tsp *tailSamplingSpanProcessor) AddSupportExtensions(exts ...extension.Sup
 	// in the future, there might be other support extensions required by this processor.
 
 	for _, v := range exts {
-		if v.(extension.Factory).Type() == "ring_membership" {
-			// Create new SpanForwarder instance
-			if f, err := newSpanForwarder(tsp.logger); err != nil {
-				tsp.forwarder = f
-			}
-			tsp.forwarder.addRingMembershipExtension(v)
+		// FIXME(@annanay25) : Make sure the extension name is "ring_membership"
+		// Create new SpanForwarder instance
+		f, err := newSpanForwarder(tsp.logger)
+		if err != nil {
+			tsp.logger.Fatal("Error in creating span forwarder")
 		}
+		tsp.forwarder = f
+		tsp.forwarder.addRingMembershipExtension(v)
 	}
 	return nil
 }
