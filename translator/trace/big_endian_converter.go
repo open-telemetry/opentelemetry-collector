@@ -20,12 +20,8 @@ import (
 )
 
 var (
-	// ErrNilTraceID error returned when the TraceID is nil
-	ErrNilTraceID = errors.New("TraceID is nil")
 	// ErrWrongLenTraceID error returned when the TraceID does not have 16 bytes.
 	ErrWrongLenTraceID = errors.New("TraceID does not have 16 bytes")
-	// ErrNilSpanID error returned when the SpanID is nil
-	ErrNilSpanID = errors.New("SpanID is nil")
 	// ErrWrongLenSpanID error returned when the SpanID does not have 8 bytes.
 	ErrWrongLenSpanID = errors.New("SpanID does not have 8 bytes")
 )
@@ -52,7 +48,7 @@ func Int64ToByteTraceID(high, low int64) []byte {
 // converts it to a two uint64 representation.
 func BytesToUInt64TraceID(traceID []byte) (uint64, uint64, error) {
 	if traceID == nil {
-		return 0, 0, ErrNilTraceID
+		return 0, 0, nil
 	}
 	if len(traceID) != 16 {
 		return 0, 0, ErrWrongLenTraceID
@@ -88,7 +84,7 @@ func Int64ToByteSpanID(id int64) []byte {
 // converts it to a uint64 representation.
 func BytesToUInt64SpanID(b []byte) (uint64, error) {
 	if b == nil {
-		return 0, ErrNilSpanID
+		return 0, nil
 	}
 	if len(b) != 8 {
 		return 0, ErrWrongLenSpanID

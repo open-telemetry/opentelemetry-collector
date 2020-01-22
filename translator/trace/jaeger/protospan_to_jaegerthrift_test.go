@@ -41,12 +41,6 @@ func TestThriftInvalidOCProtoIDs(t *testing.T) {
 		wrappedError error // when wantErr is nil we expect this error to have been wrapped by the one received
 	}{
 		{
-			name:         "nil TraceID",
-			ocSpans:      []*tracepb.Span{{}},
-			wantErr:      nil,
-			wrappedError: tracetranslator.ErrNilTraceID,
-		},
-		{
 			name:         "empty TraceID",
 			ocSpans:      []*tracepb.Span{{TraceId: []byte{}}},
 			wantErr:      nil,
@@ -56,12 +50,6 @@ func TestThriftInvalidOCProtoIDs(t *testing.T) {
 			name:    "zero TraceID",
 			ocSpans: []*tracepb.Span{{TraceId: []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}},
 			wantErr: errZeroTraceID,
-		},
-		{
-			name:         "nil SpanID",
-			ocSpans:      []*tracepb.Span{{TraceId: fakeTraceID}},
-			wantErr:      nil,
-			wrappedError: tracetranslator.ErrNilSpanID,
 		},
 		{
 			name:         "empty SpanID",
