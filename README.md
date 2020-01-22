@@ -167,10 +167,10 @@ receivers:
   jaeger:
     protocols:
       grpc:
-      thrift-http:
-      thrift-tchannel:
-      thrift-compact:
-      thrift-binary:
+      thrift_http:
+      thrift_tchannel:
+      thrift_compact:
+      thrift_binary:
 
   prometheus:
     config:

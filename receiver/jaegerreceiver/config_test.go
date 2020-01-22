@@ -52,22 +52,22 @@ func TestLoadConfig(t *testing.T) {
 						Endpoint: "localhost:9876",
 					},
 				},
-				"thrift-http": {
+				"thrift_http": {
 					ReceiverSettings: configmodels.ReceiverSettings{
 						Endpoint: ":3456",
 					},
 				},
-				"thrift-tchannel": {
+				"thrift_tchannel": {
 					ReceiverSettings: configmodels.ReceiverSettings{
 						Endpoint: "0.0.0.0:123",
 					},
 				},
-				"thrift-compact": {
+				"thrift_compact": {
 					ReceiverSettings: configmodels.ReceiverSettings{
 						Endpoint: "0.0.0.0:456",
 					},
 				},
-				"thrift-binary": {
+				"thrift_binary": {
 					ReceiverSettings: configmodels.ReceiverSettings{
 						Endpoint: "0.0.0.0:789",
 					},
@@ -90,22 +90,22 @@ func TestLoadConfig(t *testing.T) {
 						Endpoint: defaultGRPCBindEndpoint,
 					},
 				},
-				"thrift-http": {
+				"thrift_http": {
 					ReceiverSettings: configmodels.ReceiverSettings{
 						Endpoint: defaultHTTPBindEndpoint,
 					},
 				},
-				"thrift-tchannel": {
+				"thrift_tchannel": {
 					ReceiverSettings: configmodels.ReceiverSettings{
 						Endpoint: defaultTChannelBindEndpoint,
 					},
 				},
-				"thrift-compact": {
+				"thrift_compact": {
 					ReceiverSettings: configmodels.ReceiverSettings{
 						Endpoint: defaultThriftCompactBindEndpoint,
 					},
 				},
-				"thrift-binary": {
+				"thrift_binary": {
 					ReceiverSettings: configmodels.ReceiverSettings{
 						Endpoint: defaultThriftBinaryBindEndpoint,
 					},
@@ -124,7 +124,7 @@ func TestLoadConfig(t *testing.T) {
 						Endpoint: "localhost:9876",
 					},
 				},
-				"thrift-compact": {
+				"thrift_compact": {
 					ReceiverSettings: configmodels.ReceiverSettings{
 						Endpoint: defaultThriftCompactBindEndpoint,
 					},
@@ -148,12 +148,12 @@ func TestLoadConfig(t *testing.T) {
 						KeyFile:  "/test.key",
 					},
 				},
-				"thrift-http": {
+				"thrift_http": {
 					ReceiverSettings: configmodels.ReceiverSettings{
 						Endpoint: ":3456",
 					},
 				},
-				"thrift-tchannel": {
+				"thrift_tchannel": {
 					ReceiverSettings: configmodels.ReceiverSettings{
 						Endpoint: "0.0.0.0:123",
 					},

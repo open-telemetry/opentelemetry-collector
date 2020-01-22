@@ -38,12 +38,12 @@ const (
 
 	// Protocol values.
 	protoGRPC       = "grpc"
-	protoThriftHTTP = "thrift-http"
+	protoThriftHTTP = "thrift_http"
 	// TODO https://github.com/open-telemetry/opentelemetry-collector/issues/267
 	//	Remove ThriftTChannel support.
-	protoThriftTChannel = "thrift-tchannel"
-	protoThriftBinary   = "thrift-binary"
-	protoThriftCompact  = "thrift-compact"
+	protoThriftTChannel = "thrift_tchannel"
+	protoThriftBinary   = "thrift_binary"
+	protoThriftCompact  = "thrift_compact"
 
 	// Default endpoints to bind to.
 	defaultGRPCBindEndpoint     = "localhost:14250"
