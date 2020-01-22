@@ -187,10 +187,7 @@ func ocLinksToJaegerReferencesProto(ocSpanLinks *tracepb.Span_Links) ([]jaeger.S
 		var traceID jaeger.TraceID
 		// Checks for nil/wrongLen traceID are already done in ocSpansToJaegerSpansProto()
 		traceIDHigh, traceIDLow, err := tracetranslator.BytesToUInt64TraceID(ocLink.TraceId)
-		if err == tracetranslator.ErrNilTraceID {
-			traceIDLow = 0
-			traceIDHigh = 0
-		} else if err != nil {
+		if err != nil {
 			return nil, err
 		}
 		traceID = jaeger.TraceID{
@@ -200,12 +197,13 @@ func ocLinksToJaegerReferencesProto(ocSpanLinks *tracepb.Span_Links) ([]jaeger.S
 
 		var spanID jaeger.SpanID
 		uSpanID, err := tracetranslator.BytesToUInt64SpanID(ocLink.SpanId)
-		if err == tracetranslator.ErrNilSpanID {
-			uSpanID = 0
-		} else if err != nil {
+		if err != nil {
 			return nil, err
 		}
 
+		if uSpanID == 0 {
+			return nil, errZeroSpanID
+		}
 		spanID = jaeger.SpanID(uSpanID)
 
 		var jRefType jaeger.SpanRefType
