@@ -16,6 +16,7 @@ package jaegergrpcexporter
 
 import (
 	"context"
+
 	jaegerproto "github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
@@ -45,7 +46,7 @@ func New(config *Config) (exporter.TraceExporter, error) {
 
 	collectorServiceClient := jaegerproto.NewCollectorServiceClient(client)
 	s := &protoGRPCSender{
-		client: collectorServiceClient,
+		client:  collectorServiceClient,
 		headers: config.GRPCSettings.Headers,
 	}
 
@@ -61,7 +62,7 @@ func New(config *Config) (exporter.TraceExporter, error) {
 // protoGRPCSender forwards spans encoded in the jaeger proto
 // format, to a grpc server.
 type protoGRPCSender struct {
-	client jaegerproto.CollectorServiceClient
+	client  jaegerproto.CollectorServiceClient
 	headers map[string]string
 }
 
