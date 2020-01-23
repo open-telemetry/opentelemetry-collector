@@ -6,7 +6,7 @@ cache:
 go_import_path: github.com/open-telemetry/opentelemetry-collector
 
 go:
-  - 1.12.x
+  - 1.13.x
 
 env:
   global:
@@ -17,7 +17,7 @@ install:
   - make install-tools
 
 script:
-  - make travis-ci
+  - make ci
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)

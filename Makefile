@@ -51,8 +51,8 @@ test:
 benchmark:
 	$(GOTEST) -bench=. -run=notests $(ALL_PKGS)
 
-.PHONY: travis-ci
-travis-ci: all test-with-cover
+.PHONY: ci
+ci: all test-with-cover
 	$(MAKE) -C testbed install-tools
 	$(MAKE) -C testbed runtests
 

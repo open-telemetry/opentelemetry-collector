@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector
 
-go 1.12
+go 1.13
 
 require (
 	contrib.go.opencensus.io/exporter/jaeger v0.1.1-0.20190430175949-e8b55949d948
@@ -53,3 +53,5 @@ require (
 	gopkg.in/yaml.v2 v2.2.4
 	k8s.io/client-go v12.0.0+incompatible // indirect
 )
+
+replace k8s.io/client-go => k8s.io/client-go v0.0.0-20190620085101-78d2af792bab
