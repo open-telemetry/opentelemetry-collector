@@ -21,9 +21,9 @@ import (
 )
 
 func TestUInt64ToBytesTraceIDConversion(t *testing.T) {
-	if nil != UInt64ToByteTraceID(0, 0) {
-		t.Errorf("Failed to convert 0 TraceID:\n\tGot: %v\nWant: nil", UInt64ToByteTraceID(0, 0))
-	}
+	assertEqual(t, UInt64ToByteTraceID(0, 0),
+		[]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+		"Failed 0 conversion:")
 	assertEqual(t, UInt64ToByteTraceID(256*256+256+1, 256+1),
 		[]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01},
 		"Failed simple conversion:")
@@ -39,9 +39,9 @@ func TestUInt64ToBytesTraceIDConversion(t *testing.T) {
 }
 
 func TestInt64ToBytesTraceIDConversion(t *testing.T) {
-	if nil != Int64ToByteTraceID(0, 0) {
-		t.Errorf("Failed to convert 0 TraceID:\n\tGot: %v\nWant: nil", Int64ToByteTraceID(0, 0))
-	}
+	assertEqual(t, Int64ToByteTraceID(0, 0),
+		[]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+		"Failed 0 conversion:")
 	assertEqual(t, Int64ToByteTraceID(0, -1),
 		[]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},
 		"Failed to convert negative low:")
@@ -64,9 +64,9 @@ func TestBytesToUInt64TraceIDErrors(t *testing.T) {
 }
 
 func TestUInt64ToBytesSpanIDConversion(t *testing.T) {
-	if nil != UInt64ToByteSpanID(0) {
-		t.Errorf("Failed to convert 0 SpanID:\n\tGot: %v\nWant: nil", UInt64ToByteSpanID(0))
-	}
+	assertEqual(t, UInt64ToByteSpanID(0),
+		[]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+		"Failed 0 conversion:")
 	assertEqual(t, UInt64ToByteSpanID(256*256+256+1),
 		[]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x01},
 		"Failed simple conversion:")
@@ -76,9 +76,9 @@ func TestUInt64ToBytesSpanIDConversion(t *testing.T) {
 }
 
 func TestInt64ToBytesSpanIDConversion(t *testing.T) {
-	if nil != Int64ToByteSpanID(0) {
-		t.Errorf("Failed to convert 0 SpanID:\n\tGot: %v\nWant: nil", Int64ToByteSpanID(0))
-	}
+	assertEqual(t, Int64ToByteSpanID(0),
+		[]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+		"Failed 0 conversion:")
 	assertEqual(t, Int64ToByteSpanID(5),
 		[]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x05},
 		"Failed to convert positive id:")
