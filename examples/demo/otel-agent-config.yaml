@@ -3,7 +3,7 @@ receivers:
     endpoint: 0.0.0.0:55678
   jaeger:
     protocols:
-      thrift-http:
+      thrift_http:
         endpoint: "0.0.0.0:14268"
 
 

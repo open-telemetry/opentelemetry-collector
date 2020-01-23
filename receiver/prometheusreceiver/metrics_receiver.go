@@ -53,13 +53,6 @@ func newPrometheusReceiver(logger *zap.Logger, cfg *Config, next consumer.Metric
 	return pr
 }
 
-const metricsSource string = "Prometheus"
-
-// MetricsSource returns the name of the metrics data source.
-func (pr *Preceiver) MetricsSource() string {
-	return metricsSource
-}
-
 // Start is the method that starts Prometheus scraping and it
 // is controlled by having previously defined a Configuration using perhaps New.
 func (pr *Preceiver) Start(host component.Host) error {

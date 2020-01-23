@@ -16,7 +16,6 @@ package receiver
 
 import (
 	"github.com/open-telemetry/opentelemetry-collector/component"
-	_ "github.com/open-telemetry/opentelemetry-collector/compression/grpc" // load in supported grpc compression encodings
 )
 
 // Receiver defines functions that trace and metric receivers must implement.
@@ -33,9 +32,6 @@ type Receiver interface {
 // Zipkin spans into *tracepb.Span-s.
 type TraceReceiver interface {
 	Receiver
-
-	// TraceSource returns the name of the trace data source.
-	TraceSource() string
 }
 
 // A MetricsReceiver is an "arbitrary data"-to-"metric proto" converter.
@@ -47,7 +43,4 @@ type TraceReceiver interface {
 // Prometheus metrics into *metricpb.Metric-s.
 type MetricsReceiver interface {
 	Receiver
-
-	// MetricsSource returns the name of the metrics data source.
-	MetricsSource() string
 }

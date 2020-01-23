@@ -66,8 +66,6 @@ type Receiver struct {
 var _ receiver.MetricsReceiver = (*Receiver)(nil)
 var _ receiver.TraceReceiver = (*Receiver)(nil)
 
-const source string = "OpenCensus"
-
 // New just creates the OpenCensus receiver services. It is the caller's
 // responsibility to invoke the respective Start*Reception methods as well
 // as the various Stop*Reception methods to end it.
@@ -94,11 +92,6 @@ func New(addr string, tc consumer.TraceConsumer, mc consumer.MetricsConsumer, op
 	return ocr, nil
 }
 
-// TraceSource returns the name of the trace data source.
-func (ocr *Receiver) TraceSource() string {
-	return source
-}
-
 // Start runs the trace receiver on the gRPC server. Currently
 // it also enables the metrics receiver too.
 func (ocr *Receiver) Start(host component.Host) error {
@@ -117,11 +110,6 @@ func (ocr *Receiver) registerTraceConsumer() error {
 	})
 
 	return err
-}
-
-// MetricsSource returns the name of the metrics data source.
-func (ocr *Receiver) MetricsSource() string {
-	return source
 }
 
 func (ocr *Receiver) registerMetricsConsumer() error {

@@ -20,6 +20,7 @@ const (
 	AttributeServiceName      = "service.name"
 	AttributeServiceNamespace = "service.namespace"
 	AttributeServiceInstance  = "service.instance.id"
+	AttributeServiceVersion   = "service.version"
 	AttributeLibraryName      = "library.name"
 	AttributeLibraryLanguage  = "library.language"
 	AttributeLibraryVersion   = "library.version"
@@ -34,6 +35,9 @@ const (
 	AttributeHostID           = "host.id"
 	AttributeHostName         = "host.name"
 	AttributeHostType         = "host.type"
+	AttributeHostImageName    = "host.image.name"
+	AttributeHostImageID      = "host.image.id"
+	AttributeHostImageVersion = "host.image.version"
 	AttributeCloudProvider    = "cloud.provider"
 	AttributeCloudAccount     = "cloud.account.id"
 	AttributeCloudRegion      = "cloud.region"
@@ -41,17 +45,19 @@ const (
 )
 
 // OpenTelemetry Semantic Convention values for general Span attribute names.
-// See: https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/data-semantic-conventions.md
-// Peer attributes currently defined in database conventions
-// See: https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/data-database.md
+// See: https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/data-span-general.md
 const (
-	AttributeComponent   = "component"
-	AttributePeerAddress = "peer.address"  // to be obsoleted
-	AttributePeerHost    = "peer.hostname" // to be obsoleted
-	AttributePeerIpv4    = "peer.ipv4"     // to be obsoleted
-	AttributePeerIpv6    = "peer.ipv6"     // to be obsoleted
-	AttributePeerPort    = "peer.port"     // to be obsoleted
-	AttributePeerService = "peer.service"  // to be obsoleted
+	AttributeComponent    = "component"
+	AttributeNetTransport = "net.transport"
+	AttributeNetPeerIP    = "net.peer.ip"
+	AttributeNetPeerPort  = "net.peer.port"
+	AttributeNetPeerName  = "net.peer.name"
+	AttributeNetHostIP    = "net.host.ip"
+	AttributeNetHostPort  = "net.host.port"
+	AttributeNetHostName  = "net.host.name"
+	AttributeEnduserID    = "enduser.id"
+	AttributeEnduserRole  = "enduser.role"
+	AttributeEnduserScope = "enduser.scope"
 )
 
 // OpenTelemetry Semantic Convention values for component attribute values.
@@ -77,6 +83,7 @@ const (
 	AttributeHTTPHostPort   = "host.port"
 	AttributeHTTPRoute      = "http.route"
 	AttributeHTTPClientIP   = "http.client_ip"
+	AttributeHTTPUserAgent  = "http.user_agent"
 )
 
 // OpenTelemetry Semantic Convention attribute names for database related attributes
@@ -91,6 +98,7 @@ const (
 // OpenTelemetry Semantic Convention attribute names for gRPC related attributes
 // See: https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/data-rpc.md
 const (
+	AttributeRPCService              = "rpc.service"
 	EventTypeMessage                 = "message"
 	AttributeMessageType             = "message.type"
 	MessageTypeReceived              = "RECEIVED"
