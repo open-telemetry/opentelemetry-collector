@@ -93,6 +93,7 @@ const (
 	AttributeDBInstance  = "db.instance"
 	AttributeDBStatement = "db.statement"
 	AttributeDBUser      = "db.user"
+	AttributeDBURL       = "db.url"
 )
 
 // OpenTelemetry Semantic Convention attribute names for gRPC related attributes
