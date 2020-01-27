@@ -33,6 +33,9 @@
               "ref_type": 1,
               "trace_id": "AAAAAAAAAABSlpqJVVcaPw==",
               "span_id": "AAAAAABoxOM="
+            },
+            {
+              "ref_type": 1
             }
           ],
           "start_time": "2017-01-26T21:46:31.639875Z",

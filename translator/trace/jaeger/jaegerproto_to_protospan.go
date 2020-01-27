@@ -101,16 +101,19 @@ func jProtoSpansToOCProtoSpans(jspans []*model.Span) []*tracepb.Span {
 			TraceId: tracetranslator.UInt64ToByteTraceID(jspan.TraceID.High, jspan.TraceID.Low),
 			SpanId:  tracetranslator.UInt64ToByteSpanID(uint64(jspan.SpanID)),
 			// TODO: Tracestate: Check RFC status and if is applicable,
-			ParentSpanId: tracetranslator.UInt64ToByteSpanID(uint64(jspan.ParentSpanID())),
-			Name:         strToTruncatableString(jspan.OperationName),
-			Kind:         sKind,
-			StartTime:    internal.TimeToTimestamp(jspan.StartTime),
-			EndTime:      internal.TimeToTimestamp(jspan.StartTime.Add(jspan.Duration)),
-			Attributes:   sAttributes,
+			Name:       strToTruncatableString(jspan.OperationName),
+			Kind:       sKind,
+			StartTime:  internal.TimeToTimestamp(jspan.StartTime),
+			EndTime:    internal.TimeToTimestamp(jspan.StartTime.Add(jspan.Duration)),
+			Attributes: sAttributes,
 			// TODO: StackTrace: OpenTracing defines a semantic key for "stack", should we attempt to its content to StackTrace?
 			TimeEvents: jProtoLogsToOCProtoTimeEvents(jspan.Logs),
 			Links:      jProtoReferencesToOCProtoLinks(jspan.References),
 			Status:     sStatus,
+		}
+
+		if jspan.ParentSpanID() != 0 {
+			span.ParentSpanId = tracetranslator.UInt64ToByteSpanID(uint64(jspan.ParentSpanID()))
 		}
 
 		spans = append(spans, span)
