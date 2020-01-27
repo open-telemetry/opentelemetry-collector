@@ -74,6 +74,7 @@ func TestCreateTraceReceiver(t *testing.T) {
 					ReceiverSettings: defaultReceiverSettings,
 					TLSCredentials:   nil,
 				},
+				Transport: "tcp",
 			},
 		},
 		{
@@ -86,6 +87,7 @@ func TestCreateTraceReceiver(t *testing.T) {
 						Endpoint: "localhost:112233",
 					},
 				},
+				Transport: "tcp",
 			},
 			wantErr: true,
 		},
@@ -95,6 +97,7 @@ func TestCreateTraceReceiver(t *testing.T) {
 				SecureReceiverSettings: receiver.SecureReceiverSettings{
 					ReceiverSettings: defaultReceiverSettings,
 				},
+				Transport:            "tcp",
 				MaxRecvMsgSizeMiB:    32,
 				MaxConcurrentStreams: 16,
 			},
@@ -139,6 +142,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 				SecureReceiverSettings: receiver.SecureReceiverSettings{
 					ReceiverSettings: defaultReceiverSettings,
 				},
+				Transport: "tcp",
 			},
 		},
 		{
@@ -151,6 +155,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 						Endpoint: "327.0.0.1:1122",
 					},
 				},
+				Transport: "tcp",
 			},
 			wantErr: true,
 		},
@@ -160,6 +165,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 				SecureReceiverSettings: receiver.SecureReceiverSettings{
 					ReceiverSettings: defaultReceiverSettings,
 				},
+				Transport: "tcp",
 				Keepalive: &serverParametersAndEnforcementPolicy{
 					ServerParameters: &keepaliveServerParameters{
 						MaxConnectionAge: 60 * time.Second,

@@ -40,6 +40,10 @@ receivers:
     tls_credentials:
       cert_file: test.crt
       key_file: test.key
+  # The following entry demonstrates how to specify a Unix Domain Socket for the server.
+  opencensus/uds:
+    transport: unix
+    endpoint: /tmp/opencensus.sock
   # The following entry demonstrates how to disable a receiver using the disabled flag from the common receiver settings.
   # Note: The current implementation removes disabled receivers from the global list of receivers so the total count
   # of receivers in the test will not include this one.

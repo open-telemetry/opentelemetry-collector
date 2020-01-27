@@ -77,7 +77,7 @@ func NewOCDataReceiver(port int) *OCDataReceiver {
 func (or *OCDataReceiver) Start(tc *MockTraceConsumer, mc *MockMetricConsumer) error {
 	addr := fmt.Sprintf("localhost:%d", or.Port)
 	var err error
-	or.receiver, err = opencensusreceiver.New(addr, tc, mc)
+	or.receiver, err = opencensusreceiver.New("tcp", addr, tc, mc)
 	if err != nil {
 		return err
 	}

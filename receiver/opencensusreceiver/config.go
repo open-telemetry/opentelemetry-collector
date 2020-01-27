@@ -27,6 +27,10 @@ import (
 // Config defines configuration for OpenCensus receiver.
 type Config struct {
 	receiver.SecureReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+
+	// Transport to use: one of tcp or unix, defaults to tcp
+	Transport string `mapstructure:"transport"`
+
 	// CorsOrigins are the allowed CORS origins for HTTP/JSON requests to grpc-gateway adapter
 	// for the OpenCensus receiver. See github.com/rs/cors
 	// An empty list means that CORS is not enabled at all. A wildcard (*) can be

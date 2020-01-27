@@ -22,7 +22,9 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"os"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -51,7 +53,7 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 
 	// Set the buffer count to 1 to make it flush the test span immediately.
 	sink := new(exportertest.SinkTraceExporter)
-	ocr, err := New(addr, sink, nil)
+	ocr, err := New("tcp", addr, sink, nil)
 	require.NoError(t, err, "Failed to create trace receiver: %v", err)
 
 	mh := component.NewMockHost()
@@ -155,7 +157,7 @@ func TestTraceGrpcGatewayCors_endToEnd(t *testing.T) {
 	corsOrigins := []string{"allowed-*.com"}
 
 	sink := new(exportertest.SinkTraceExporter)
-	ocr, err := New(addr, sink, nil, WithCorsOrigins(corsOrigins))
+	ocr, err := New("tcp", addr, sink, nil, WithCorsOrigins(corsOrigins))
 	require.NoError(t, err, "Failed to create trace receiver: %v", err)
 	defer ocr.Shutdown()
 
@@ -181,7 +183,7 @@ func TestMetricsGrpcGatewayCors_endToEnd(t *testing.T) {
 	corsOrigins := []string{"allowed-*.com"}
 
 	sink := new(exportertest.SinkMetricsExporter)
-	ocr, err := New(addr, nil, sink, WithCorsOrigins(corsOrigins))
+	ocr, err := New("tcp", addr, nil, sink, WithCorsOrigins(corsOrigins))
 	require.NoError(t, err, "Failed to create metrics receiver: %v", err)
 	defer ocr.Shutdown()
 
@@ -210,7 +212,7 @@ func TestAcceptAllGRPCProtoAffiliatedContentTypes(t *testing.T) {
 
 	addr := testutils.GetAvailableLocalAddress(t)
 	cbts := new(exportertest.SinkTraceExporter)
-	ocr, err := New(addr, cbts, nil)
+	ocr, err := New("tcp", addr, cbts, nil)
 	require.NoError(t, err, "Failed to create trace receiver: %v", err)
 
 	mh := component.NewMockHost()
@@ -334,7 +336,7 @@ func verifyCorsResp(t *testing.T, url string, origin string, wantStatus int, wan
 
 func TestStopWithoutStartNeverCrashes(t *testing.T) {
 	addr := testutils.GetAvailableLocalAddress(t)
-	ocr, err := New(addr, nil, nil)
+	ocr, err := New("tcp", addr, nil, nil)
 	require.NoError(t, err, "Failed to create an OpenCensus receiver: %v", err)
 	// Stop it before ever invoking Start*.
 	ocr.stop()
@@ -346,14 +348,14 @@ func TestNewPortAlreadyUsed(t *testing.T) {
 	require.NoError(t, err, "failed to listen on %q: %v", addr, err)
 	defer ln.Close()
 
-	r, err := New(addr, nil, nil)
+	r, err := New("tcp", addr, nil, nil)
 	require.Error(t, err)
 	require.Nil(t, r)
 }
 
 func TestMultipleStopReceptionShouldNotError(t *testing.T) {
 	addr := testutils.GetAvailableLocalAddress(t)
-	r, err := New(addr, new(exportertest.SinkTraceExporter), new(exportertest.SinkMetricsExporter))
+	r, err := New("tcp", addr, new(exportertest.SinkTraceExporter), new(exportertest.SinkMetricsExporter))
 	require.NoError(t, err)
 	require.NotNil(t, r)
 
@@ -364,12 +366,70 @@ func TestMultipleStopReceptionShouldNotError(t *testing.T) {
 
 func TestStartWithoutConsumersShouldFail(t *testing.T) {
 	addr := testutils.GetAvailableLocalAddress(t)
-	r, err := New(addr, nil, nil)
+	r, err := New("tcp", addr, nil, nil)
 	require.NoError(t, err)
 	require.NotNil(t, r)
 
 	mh := component.NewMockHost()
 	require.Error(t, r.Start(mh))
+}
+
+func tempSocketName(t *testing.T) string {
+	tmpfile, err := ioutil.TempFile("", "sock")
+	require.NoError(t, err)
+	socket := tmpfile.Name()
+	err = os.Remove(socket)
+	require.NoError(t, err)
+
+	return socket
+}
+
+func TestReceiveOnUnixDomainSocket_endToEnd(t *testing.T) {
+	socketName := tempSocketName(t)
+	cbts := new(exportertest.SinkTraceExporter)
+	r, err := New("unix", socketName, cbts, nil)
+	require.NoError(t, err)
+	require.NotNil(t, r)
+	mh := component.NewMockHost()
+	err = r.Start(mh)
+	require.NoError(t, err)
+	defer r.Shutdown()
+
+	// Wait for the servers to start
+	<-time.After(10 * time.Millisecond)
+
+	span := `
+{
+ "node": {
+ },
+ "spans": [
+   {
+     "trace_id": "YpsR8/le4OgjwSSxhjlrEg==",
+     "span_id": "2CogcbJh7Ko=",
+     "socket": {
+       "value": "/abc",
+       "truncated_byte_count": 0
+     },
+     "kind": "SPAN_KIND_UNSPECIFIED",
+     "start_time": "2020-01-09T11:13:53.187Z",
+     "end_time": "2020-01-09T11:13:53.187Z"
+	}
+ ]
+}
+`
+	c := http.Client{
+		Transport: &http.Transport{
+			DialContext: func(ctx context.Context, network, addr string) (conn net.Conn, err error) {
+				return net.Dial("unix", socketName)
+			},
+		},
+	}
+
+	response, err := c.Post("http://unix/v1/trace", "application/json", strings.NewReader(span))
+	require.NoError(t, err)
+	defer response.Body.Close()
+
+	require.Equal(t, 200, response.StatusCode)
 }
 
 // TestOCReceiverTrace_HandleNextConsumerResponse checks if the trace receiver
@@ -472,7 +532,7 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 				sink := new(sinkTraceConsumer)
 
 				var opts []Option
-				ocr, err := New(addr, nil, nil, opts...)
+				ocr, err := New("tcp", addr, nil, nil, opts...)
 				require.Nil(t, err)
 				require.NotNil(t, ocr)
 

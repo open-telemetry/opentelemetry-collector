@@ -69,9 +69,9 @@ var _ receiver.TraceReceiver = (*Receiver)(nil)
 // New just creates the OpenCensus receiver services. It is the caller's
 // responsibility to invoke the respective Start*Reception methods as well
 // as the various Stop*Reception methods to end it.
-func New(addr string, tc consumer.TraceConsumer, mc consumer.MetricsConsumer, opts ...Option) (*Receiver, error) {
+func New(transport string, addr string, tc consumer.TraceConsumer, mc consumer.MetricsConsumer, opts ...Option) (*Receiver, error) {
 	// TODO: (@odeke-em) use options to enable address binding changes.
-	ln, err := net.Listen("tcp", addr)
+	ln, err := net.Listen(transport, addr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to bind to address %q: %v", addr, err)
 	}
@@ -225,6 +225,11 @@ func (ocr *Receiver) startServer(host component.Host) error {
 		c := context.Background()
 		opts := []grpc.DialOption{grpc.WithInsecure()}
 		endpoint := ocr.ln.Addr().String()
+
+		_, ok := ocr.ln.(*net.UnixListener)
+		if ok {
+			endpoint = "unix:" + endpoint
+		}
 
 		err = agenttracepb.RegisterTraceServiceHandlerFromEndpoint(c, ocr.gatewayMux, endpoint, opts)
 		if err != nil {

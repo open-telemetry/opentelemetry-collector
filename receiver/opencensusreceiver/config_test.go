@@ -40,17 +40,22 @@ func TestLoadConfig(t *testing.T) {
 
 	// Currently disabled receivers are removed from the total list of receivers so 'opencensus/disabled' doesn't
 	// contribute to the count.
-	assert.Equal(t, len(cfg.Receivers), 6)
+	assert.Equal(t, len(cfg.Receivers), 7)
 
 	r0 := cfg.Receivers["opencensus"]
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
 
 	r1 := cfg.Receivers["opencensus/customname"].(*Config)
-	assert.Equal(t, r1.ReceiverSettings,
-		configmodels.ReceiverSettings{
-			TypeVal:  typeStr,
-			NameVal:  "opencensus/customname",
-			Endpoint: "0.0.0.0:9090",
+	assert.Equal(t, r1,
+		&Config{
+			SecureReceiverSettings: receiver.SecureReceiverSettings{
+				ReceiverSettings: configmodels.ReceiverSettings{
+					TypeVal:  typeStr,
+					NameVal:  "opencensus/customname",
+					Endpoint: "0.0.0.0:9090",
+				},
+			},
+			Transport: "tcp",
 		})
 
 	r2 := cfg.Receivers["opencensus/keepalive"].(*Config)
@@ -64,6 +69,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 				TLSCredentials: nil,
 			},
+			Transport: "tcp",
 			Keepalive: &serverParametersAndEnforcementPolicy{
 				ServerParameters: &keepaliveServerParameters{
 					MaxConnectionIdle:     11 * time.Second,
@@ -89,6 +95,7 @@ func TestLoadConfig(t *testing.T) {
 					Endpoint: "localhost:55678",
 				},
 			},
+			Transport:            "tcp",
 			MaxRecvMsgSizeMiB:    32,
 			MaxConcurrentStreams: 16,
 			Keepalive: &serverParametersAndEnforcementPolicy{
@@ -114,6 +121,7 @@ func TestLoadConfig(t *testing.T) {
 					KeyFile:  "test.key",
 				},
 			},
+			Transport: "tcp",
 		})
 
 	r5 := cfg.Receivers["opencensus/cors"].(*Config)
@@ -126,6 +134,20 @@ func TestLoadConfig(t *testing.T) {
 					Endpoint: "localhost:55678",
 				},
 			},
+			Transport:   "tcp",
 			CorsOrigins: []string{"https://*.test.com", "https://test.com"},
+		})
+
+	r6 := cfg.Receivers["opencensus/uds"].(*Config)
+	assert.Equal(t, r6,
+		&Config{
+			SecureReceiverSettings: receiver.SecureReceiverSettings{
+				ReceiverSettings: configmodels.ReceiverSettings{
+					TypeVal:  typeStr,
+					NameVal:  "opencensus/uds",
+					Endpoint: "/tmp/opencensus.sock",
+				},
+			},
+			Transport: "unix",
 		})
 }
