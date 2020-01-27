@@ -15,10 +15,13 @@
 package tailsamplingprocessor
 
 import (
+	"bytes"
 	"context"
+	"encoding/binary"
 	"errors"
 	"net"
 	"reflect"
+	"runtime"
 	"strconv"
 	"sync"
 	"time"
@@ -72,17 +75,18 @@ type spanForwarder struct {
 }
 
 func (c *collectorPeer) batchDispatchOnTick() {
+	c.logger.Info("Collector peer batchDispatchOnTick invoked")
 	batchIds, _ := c.peerBatcher.CloseCurrentAndTakeFirstBatch()
 	// create batch from batchIds
 	var td consumerdata.TraceData
 	for _, v := range batchIds {
-		span, _ := c.idToSpans.Load(v)
+		span, _ := c.idToSpans.Load(string(v))
 		if span != nil {
 			td.Spans = append(td.Spans, span.(*v1.Span))
 		}
 	}
 	// simply post this batch via grpc to the collector peer
-	c.logger.Debug("Sending batch to collector peer")
+	c.logger.Info("Sending batch to collector peer")
 	c.exporter.ConsumeTraceData(context.Background(), td)
 }
 
@@ -93,12 +97,20 @@ func newCollectorPeer(logger *zap.Logger, ip string) *collectorPeer {
 
 	exporter, err := opencensusexporter.NewTraceExporter(logger, config)
 	if err != nil {
+		logger.Fatal("Could not create span exporter", zap.Error(err))
+		return nil
+	}
+
+	batcher, err := idbatcher.New(10, 64, uint64(runtime.NumCPU()))
+	if err != nil {
+		logger.Fatal("Could not create id batcher", zap.Error(err))
 		return nil
 	}
 
 	cp := &collectorPeer{
-		exporter: exporter,
-		logger:   logger,
+		exporter:    exporter,
+		logger:      logger,
+		peerBatcher: batcher,
 	}
 	cp.spanDispatchTicker = &policyTicker{onTick: cp.batchDispatchOnTick}
 	return cp
@@ -113,21 +125,20 @@ func (sf *spanForwarder) memberSyncOnTick() {
 	}
 
 	newMembers := state.([]string)
+	curMembers := make([]string, 0, len(sf.peerQueues))
+
 	sf.RLock()
-	curMembers := reflect.ValueOf(sf.peerQueues).MapKeys()
+	for k := range sf.peerQueues {
+		curMembers = append(curMembers, k)
+	}
 	sf.RUnlock()
 
-	var stringCurMembers []string
-	for _, m := range curMembers {
-		stringCurMembers = append(stringCurMembers, reflect.ValueOf(m).Interface().(string))
-	}
-
-	// checking if stringCurMembers == newMembers
+	// checking if curMembers == newMembers
 	isEqual := true
-	if len(stringCurMembers) != len(newMembers) {
+	if len(curMembers) != len(newMembers) {
 		isEqual = false
 	} else {
-		for k, v := range stringCurMembers {
+		for k, v := range curMembers {
 			if v != newMembers[k] {
 				isEqual = false
 			}
@@ -137,7 +148,7 @@ func (sf *spanForwarder) memberSyncOnTick() {
 	if !isEqual {
 		// Remove old members
 		// Find diff(curMembers, newMembers)
-		for _, c := range stringCurMembers {
+		for _, c := range curMembers {
 			// check if v is part of newMembers
 			flag := 0
 			for _, n := range newMembers {
@@ -223,18 +234,26 @@ func newSpanForwarder(logger *zap.Logger) (forwarder, error) {
 		sf.selfMemberIP = ip
 	}
 
+	sf.peerQueues = make(map[string]*collectorPeer)
 	sf.memberSyncTicker = &policyTicker{onTick: sf.memberSyncOnTick}
 
 	return sf, nil
 }
 
-func getHash(traceID string) int64 {
+func getHash(traceID []byte) int64 {
+	var n int64
 	// simplistic for now
-	i, err := strconv.ParseInt(traceID, 10, 64)
-	if err != nil {
-		panic(err)
-	}
-	return i
+	buf := bytes.NewBuffer(traceID)
+	binary.Read(buf, binary.LittleEndian, &n)
+	return n
+}
+
+func bytesToInt(spanID []byte) int64 {
+	var n int64
+	// simplistic for now
+	buf := bytes.NewBuffer(spanID)
+	binary.Read(buf, binary.LittleEndian, &n)
+	return n
 }
 
 // TODO: Use batch here instead of span
@@ -242,11 +261,13 @@ func (sf *spanForwarder) process(span *tracepb.Span) bool {
 	// Start member sync
 	sf.start.Do(func() {
 		sf.logger.Info("First span received, starting member sync timer")
+		// Run first one manually
+		sf.memberSyncOnTick()
 		sf.memberSyncTicker.Start(100 * time.Millisecond)
 	})
 
 	// check hash of traceid
-	traceIDHash := getHash(string(span.TraceId))
+	traceIDHash := getHash(span.TraceId)
 
 	// The only time we need to acquire the lock is to see peer list
 	sf.RLock()
@@ -272,7 +293,7 @@ func (sf *spanForwarder) process(span *tracepb.Span) bool {
 	peer.peerBatcher.AddToCurrentBatch(span.SpanId)
 
 	// Store the span in idToSpans
-	peer.idToSpans.Store(span.SpanId, span)
+	peer.idToSpans.Store(string(span.SpanId), span)
 
 	return true
 }

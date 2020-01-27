@@ -63,7 +63,7 @@ func (rm *ringMembershipExtension) Watch() error {
 			return nil
 		case <-t.C:
 			// poll a dns endpoint
-			ips, err := net.LookupIP("otelcol.default.svc.cluster.local")
+			ips, err := net.LookupIP("otelcol-headless.default.svc.cluster.local.")
 			if err != nil {
 				rm.logger.Error("DNS lookup error", zap.Error(err))
 				break
@@ -99,7 +99,7 @@ func (rm *ringMembershipExtension) Watch() error {
 				rm.Lock()
 				rm.ipList = ipStrings
 				rm.Unlock()
-				rm.logger.Info("Memberlist updated")
+				rm.logger.Info("Memberlist updated", zap.Strings("Members", ipStrings))
 			}
 		}
 	}
