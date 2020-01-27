@@ -43,6 +43,28 @@ processors:
     name:
       from_attributes: [db.svc, operation, id]
 
+  # The following extracts attributes from span name and replaces extracted
+  # parts with attribute names.
+  # to_attributes is a list of rules that extract attribute values from span name and
+  # replace them by attributes names in the span name. Each rule in the list is
+  # regex pattern string. Span name is checked against the regex and if the regex matches
+  # all named subexpressions from the regex then the matches are extracted as attributes
+  # and added to the span. Subexpression name becomes the attribute name and
+  # subexpression matched portion becomes the attribute value. The matched portion
+  # in the span name is replaced by extracted attribute name. If the attributes exist
+  # they will be overwritten. Checks are performed for elements in this array in the
+  # order they are specified.
+  #
+  # Example:
+  # Let's assume input span name is /api/v1/document/12345678/update
+  # Applying the following results in output span name /api/v1/document/{documentId}/update
+  # and will add a new attribute "documentId"="12345678" to the span.
+  span/to_attributes:
+    name:
+      to_attributes:
+        rules:
+          - ^\/api\/v1\/document\/(?P<documentId>.*)\/update$
+
 exporters:
   exampleexporter:
 

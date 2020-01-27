@@ -227,9 +227,10 @@ examples on using the processor.
 The span processor modifies top level settings of a span. Currently, only
 renaming a span is supported.
 
-### Name a span
-It takes a list of `from_attributes` and an optional `separator` string. The
-attribute value for the keys are used to create a new name in the order
+### Name a span from attributes or extract attributes from span name.
+
+In the first form it takes a list of `from_attributes` and an optional `separator` string.
+The attribute value for the keys are used to create a new name in the order
 specified in the configuration. If a separator is specified, it will separate
 values.
 
@@ -248,6 +249,37 @@ span:
     separator: <value>
 ```
 
+In the second form it takes a list of regular expressions to match span name against
+and extract attributes from based on subexpressions.
+
+`rules` is a list of rules to extract attribute values from span name. The values
+in the span name are replaced by extracted attribute names. Each rule in the list
+is regex pattern string. Span name is checked against the regex and if the regex
+matches then all named subexpressions of the regex are extracted as attributes
+and are added to the span. Each subexpression name becomes an attribute name and
+subexpression matched portion becomes the attribute value. The matched portion
+in the span name is replaced by extracted attribute name. If the attributes
+already exist in the span then they will be overwritten. The process is repeated
+for all rules in the order they are specified. Each subsequent rule works on the
+span name that is the output after processing the previous rule.
+
+`break_after_match` specifies if processing of rules should stop after the first
+match. If it is false rule processing will continue to be performed over the
+modified span name. The default value for this option is false.
+
+```yaml
+span/to_attributes:
+name:
+  to_attributes:
+    rules:
+      - regexp-rule1
+      - regexp-rule2
+      - regexp-rule3
+      ...
+    break_after_match: {true, false}
+      
+```
+
 ### Example configuration
 For more examples with detailed comments, refer to [config.yaml](spanprocessor/testdata/config.yaml)
 ```yaml
@@ -256,6 +288,19 @@ span:
     from_attributes: ["db.svc", "operation"]
     separator: "::"
 ```
+
+
+```yaml
+# Let's assume input span name is /api/v1/document/12345678/update
+# Applying the following results in output span name /api/v1/document/{documentId}/update
+# and will add a new attribute "documentId"="12345678" to the span.
+span/to_attributes:
+name:
+  to_attributes:
+    rules:
+      - ^\/api\/v1\/document\/(?P<documentId>.*)\/update$
+```
+
 
 ## <a name="tail_sampling"></a>Tail Sampling Processor
 <FILL ME IN - I'M LONELY!>

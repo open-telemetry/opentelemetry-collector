@@ -59,4 +59,17 @@ func TestLoadConfig(t *testing.T) {
 			Separator:      "",
 		},
 	})
+
+	p2 := config.Processors["span/to_attributes"]
+	assert.Equal(t, p2, &Config{
+		ProcessorSettings: configmodels.ProcessorSettings{
+			TypeVal: typeStr,
+			NameVal: "span/to_attributes",
+		},
+		Rename: Name{
+			ToAttributes: &ToAttributes{
+				Rules: []string{`^\/api\/v1\/document\/(?P<documentId>.*)\/update$`},
+			},
+		},
+	})
 }

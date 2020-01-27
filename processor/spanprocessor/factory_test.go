@@ -15,6 +15,7 @@
 package spanprocessor
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -59,11 +60,38 @@ func TestFactory_CreateTraceProcessor(t *testing.T) {
 // returns an error.
 func TestFactory_CreateTraceProcessor_InvalidConfig(t *testing.T) {
 	factory := &Factory{}
-	cfg := factory.CreateDefaultConfig()
 
-	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), cfg)
-	require.Nil(t, tp)
-	assert.Equal(t, err, errMissingRequiredField)
+	testcases := []struct {
+		name string
+		cfg  Name
+		err  error
+	}{
+		{
+			name: "missing_config",
+			err:  errMissingRequiredField,
+		},
+
+		{
+			name: "invalid_regexp",
+			cfg: Name{
+				ToAttributes: &ToAttributes{
+					Rules: []string{"\\"},
+				},
+			},
+			err: fmt.Errorf("invalid regexp pattern \\"),
+		},
+	}
+
+	for _, test := range testcases {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := factory.CreateDefaultConfig().(*Config)
+			cfg.Rename = test.cfg
+
+			tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), cfg)
+			require.Nil(t, tp)
+			assert.EqualValues(t, err, test.err)
+		})
+	}
 }
 
 func TestFactory_CreateMetricProcessor(t *testing.T) {
