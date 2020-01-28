@@ -210,15 +210,17 @@ func TestFactory_validateMatchesConfiguration(t *testing.T) {
 				Services: []string{
 					"a", "b", "c",
 				},
+				MatchType: MatchTypeRegexp,
 			},
-			output: matchingProperties{
-				Services: map[string]bool{"a": true, "b": true, "c": true},
+			output: &regexpMatchingProperties{
+				Services: []*regexp.Regexp{regexp.MustCompile("a"), regexp.MustCompile("b"), regexp.MustCompile("c")},
 			},
 		},
 
 		{
 			name: "attributes_build",
 			input: MatchProperties{
+				MatchType: MatchTypeStrict,
 				Attributes: []Attribute{
 					{
 						Key: "key1",
@@ -229,8 +231,7 @@ func TestFactory_validateMatchesConfiguration(t *testing.T) {
 					},
 				},
 			},
-			output: matchingProperties{
-				Services: map[string]bool{},
+			output: &strictMatchingProperties{
 				Attributes: []matchAttribute{
 					{
 						Key: "key1",
@@ -248,6 +249,7 @@ func TestFactory_validateMatchesConfiguration(t *testing.T) {
 		{
 			name: "both_set_of_attributes",
 			input: MatchProperties{
+				MatchType: MatchTypeStrict,
 				Services: []string{
 					"a", "b", "c",
 				},
@@ -261,8 +263,10 @@ func TestFactory_validateMatchesConfiguration(t *testing.T) {
 					},
 				},
 			},
-			output: matchingProperties{
-				Services: map[string]bool{"a": true, "b": true, "c": true},
+			output: &strictMatchingProperties{
+				Services: []string{
+					"a", "b", "c",
+				},
 				Attributes: []matchAttribute{
 					{
 						Key: "key1",
@@ -280,10 +284,10 @@ func TestFactory_validateMatchesConfiguration(t *testing.T) {
 		{
 			name: "regexp_span_names",
 			input: MatchProperties{
+				MatchType: MatchTypeRegexp,
 				SpanNames: []string{"auth.*"},
 			},
-			output: matchingProperties{
-				Services:  map[string]bool{},
+			output: &regexpMatchingProperties{
 				SpanNames: []*regexp.Regexp{regexp.MustCompile("auth.*")},
 			},
 		},
@@ -292,7 +296,7 @@ func TestFactory_validateMatchesConfiguration(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			output, err := buildMatchProperties(&tc.input)
 			require.NoError(t, err)
-			assert.Equal(t, &tc.output, output)
+			assert.Equal(t, tc.output, output)
 		})
 	}
 }
@@ -317,15 +321,42 @@ func TestFactory_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 			errorString: errAtLeastOneMatchFieldNeeded.Error(),
 		},
 		{
-			name: "empty_service_name_in_services_list",
+			name: "invalid_match_type",
 			property: MatchProperties{
-				Services: []string{""},
+				MatchType: MatchType("wrong_match_type"),
+				Services:  []string{"abc"},
 			},
-			errorString: "error creating \"attributes\" processor. Can't have empty string for service name in list of services",
+			errorString: errInvalidMatchType.Error(),
+		},
+		{
+			name: "missing_match_type",
+			property: MatchProperties{
+				Services: []string{"abc"},
+			},
+			errorString: errInvalidMatchType.Error(),
+		},
+		{
+			name: "regexp_match_type_for_attributes",
+			property: MatchProperties{
+				MatchType: MatchTypeRegexp,
+				Attributes: []Attribute{
+					{Key: "key", Value: "value"},
+				},
+			},
+			errorString: `match_type=regexp is not supported for "attributes"`,
 		},
 		{
 			name: "invalid_regexp_pattern",
 			property: MatchProperties{
+				MatchType: MatchTypeRegexp,
+				Services:  []string{"["},
+			},
+			errorString: "error creating \"attributes\" processor. [ is not a valid service name regexp pattern",
+		},
+		{
+			name: "invalid_regexp_pattern2",
+			property: MatchProperties{
+				MatchType: MatchTypeRegexp,
 				SpanNames: []string{"["},
 			},
 			errorString: "error creating \"attributes\" processor. [ is not a valid span name regexp pattern",
@@ -333,14 +364,15 @@ func TestFactory_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 		{
 			name: "empty_key_name_in_attributes_list",
 			property: MatchProperties{
-				Services: []string{"a"},
+				MatchType: MatchTypeStrict,
+				Services:  []string{"a"},
 				Attributes: []Attribute{
 					{
 						Key: "",
 					},
 				},
 			},
-			errorString: "error creating \"attributes\" processor. Can't have empty string for service name in list of attributes",
+			errorString: "error creating \"attributes\" processor. Can't have empty key in the list of attributes",
 		},
 	}
 	for _, tc := range testcases {

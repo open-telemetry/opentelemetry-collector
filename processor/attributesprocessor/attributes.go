@@ -37,8 +37,8 @@ type attributesProcessor struct {
 // raw format from the configuration.
 type attributesConfig struct {
 	actions []attributeAction
-	include *matchingProperties
-	exclude *matchingProperties
+	include matchingProperties
+	exclude matchingProperties
 }
 
 type attributeAction struct {
@@ -52,17 +52,38 @@ type attributeAction struct {
 	AttributeValue *tracepb.AttributeValue
 }
 
-// matchingProperties stores the MatchProperties config in a format that simplifies
-// and makes property checking faster.
-type matchingProperties struct {
-	// The list of service names is stored in a map for quick lookup.
-	Services map[string]bool
+// matchingProperties is an interface that allows matching a span against a configuration
+// of a match.
+type matchingProperties interface {
+	matchSpan(span *tracepb.Span, serviceName string) bool
+}
+
+type matchAttributes []matchAttribute
+
+// strictMatchingProperties allows matching a span against a "strict" match type
+// configuration.
+type strictMatchingProperties struct {
+	// Service names to compare to.
+	Services []string
+
+	// Span names to compare to.
+	SpanNames []string
+
+	// The attribute values are stored in the internal format.
+	Attributes matchAttributes
+}
+
+// strictMatchingProperties allows matching a span against a "regexp" match type
+// configuration.
+type regexpMatchingProperties struct {
+	// Precompiled service name regexp-es.
+	Services []*regexp.Regexp
 
 	// Precompiled span name regexp-es.
 	SpanNames []*regexp.Regexp
 
 	// The attribute values are stored in the internal format.
-	Attributes []matchAttribute
+	Attributes matchAttributes
 }
 
 // matchAttribute is a attribute key/value pair to match to.
@@ -187,14 +208,14 @@ func (a *attributesProcessor) skipSpan(span *tracepb.Span, serviceName string) b
 
 	if a.config.include != nil {
 		// A false returned in this case means the span should not be processed.
-		if include := matchSpanToProperties(*a.config.include, span, serviceName); !include {
+		if include := a.config.include.matchSpan(span, serviceName); !include {
 			return true
 		}
 	}
 
 	if a.config.exclude != nil {
 		// A true returned in this case means the span should not be processed.
-		if exclude := matchSpanToProperties(*a.config.exclude, span, serviceName); exclude {
+		if exclude := a.config.exclude.matchSpan(span, serviceName); exclude {
 			return true
 		}
 	}
@@ -202,18 +223,71 @@ func (a *attributesProcessor) skipSpan(span *tracepb.Span, serviceName string) b
 	return false
 }
 
-// matchProperties matches a span and service to a set of properties.
-// There are two sets of properties to match against.
-// The service name is checked first, if specified. The attributes are checked
-// afterwards, if specified.
-// At least one of services or attributes must be specified. It is supported
-// to have both specified, but both `services` and `attributes` must evaluate
+// matchSpan matches a span and service to a set of properties.
+// There are 3 sets of properties to match against.
+// The service name is checked first, if specified. Then span names are matched, if specified.
+// The attributes are checked last, if specified.
+// At least one of services, span names or attributes must be specified. It is supported
+// to have more than one of these specified, and all specified must evaluate
 // to true for a match to occur.
-func matchSpanToProperties(mp matchingProperties, span *tracepb.Span, serviceName string) bool {
+func (mp *strictMatchingProperties) matchSpan(span *tracepb.Span, serviceName string) bool {
 
-	if len(mp.Services) != 0 {
-		// Services condition is specified. Check if the service is one the specified.
-		if serviceFound := mp.Services[serviceName]; !serviceFound {
+	if len(mp.Services) > 0 {
+		// Verify service name matches at least one of the items.
+		matched := false
+		for _, item := range mp.Services {
+			if item == serviceName {
+				matched = true
+				break
+			}
+		}
+		if !matched {
+			return false
+		}
+	}
+
+	if len(mp.SpanNames) > 0 {
+		// SpanNames condition is specified. Check if span name matches the condition.
+		var spanName string
+		if span.Name != nil {
+			spanName = span.Name.Value
+		}
+		// Verify span name matches at least one of the items.
+		matched := false
+		for _, item := range mp.SpanNames {
+			if item == spanName {
+				matched = true
+				break
+			}
+		}
+		if !matched {
+			return false
+		}
+	}
+
+	// Service name and span name matched. Now match attributes.
+	return mp.Attributes.match(span)
+}
+
+// matchSpan matches a span and service to a set of properties.
+// There are 3 sets of properties to match against.
+// The service name is checked first, if specified. Then span names are matched, if specified.
+// The attributes are checked last, if specified.
+// At least one of services, span names or attributes must be specified. It is supported
+// to have more than one of these specified, and all specified must evaluate
+// to true for a match to occur.
+func (mp *regexpMatchingProperties) matchSpan(span *tracepb.Span, serviceName string) bool {
+
+	if len(mp.Services) > 0 {
+		// Verify service name matches at least one of the regexp patterns.
+		matched := false
+		for _, re := range mp.Services {
+			if re.MatchString(serviceName) {
+				matched = true
+				break
+			}
+		}
+		if !matched {
 			return false
 		}
 	}
@@ -237,19 +311,25 @@ func matchSpanToProperties(mp matchingProperties, span *tracepb.Span, serviceNam
 		}
 	}
 
+	// Service name and span name matched. Now match attributes.
+	return mp.Attributes.match(span)
+}
+
+// match attributes specification against a span.
+func (ma matchAttributes) match(span *tracepb.Span) bool {
 	// If there are no attributes to match against, the span matches.
-	if len(mp.Attributes) == 0 {
+	if len(ma) == 0 {
 		return true
 	}
 
 	// At this point, it is expected of the span to have attributes because of
-	// len (mp.Attributes) != 0. For spans with no attributes, it does not match.
+	// len(ma) != 0. This means for spans with no attributes, it does not match.
 	if span.Attributes == nil || len(span.Attributes.AttributeMap) == 0 {
 		return false
 	}
 
 	// Check that all expected properties are set.
-	for _, property := range mp.Attributes {
+	for _, property := range ma {
 		val, exist := span.Attributes.AttributeMap[property.Key]
 		if !exist {
 			return false
@@ -283,7 +363,5 @@ func matchSpanToProperties(mp matchingProperties, span *tracepb.Span, serviceNam
 			return false
 		}
 	}
-
-	// All properties have been satisfied so the span does match.
 	return true
 }
