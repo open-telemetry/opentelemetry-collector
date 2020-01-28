@@ -34,7 +34,7 @@ const (
 // is not specified.
 // TODO https://github.com/open-telemetry/opentelemetry-collector/issues/215
 //	Move this to the error package that allows for span name and field to be specified.
-var errMissingRequiredField = errors.New("error creating \"span\" processor due to missing required field \"from_attributes\" in \"name:\"")
+var errMissingRequiredField = errors.New("error creating \"span\" processor: either \"from_attributes\" or \"to_attributes\" must be specified in \"name:\"")
 
 // Factory is the factory for the Span processor.
 type Factory struct {
@@ -61,10 +61,11 @@ func (f *Factory) CreateTraceProcessor(
 	nextConsumer consumer.TraceConsumer,
 	cfg configmodels.Processor) (processor.TraceProcessor, error) {
 
-	// 'from_attributes' under 'name' has to be set for the span processor to be valid.
-	// If not set and not enforced, the processor would do no work.
+	// 'from_attributes' or 'to_attributes' under 'name' has to be set for the span
+	// processor to be valid. If not set and not enforced, the processor would do no work.
 	oCfg := cfg.(*Config)
-	if len(oCfg.Rename.FromAttributes) == 0 {
+	if len(oCfg.Rename.FromAttributes) == 0 &&
+		(oCfg.Rename.ToAttributes == nil || len(oCfg.Rename.ToAttributes.Rules) == 0) {
 		return nil, errMissingRequiredField
 	}
 

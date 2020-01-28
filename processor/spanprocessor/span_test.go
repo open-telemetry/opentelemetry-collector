@@ -569,3 +569,100 @@ func TestSpanProcessor_NilName(t *testing.T) {
 		},
 	}, traceData)
 }
+
+// TestSpanProcessor_ToAttributes
+func TestSpanProcessor_ToAttributes(t *testing.T) {
+
+	testCases := []struct {
+		rules           []string
+		breakAfterMatch bool
+		testCase
+	}{
+		{
+			rules: []string{`^\/api\/v1\/document\/(?P<documentId>.*)\/update$`},
+			testCase: testCase{
+				inputName:       "/api/v1/document/321083210/update",
+				inputAttributes: map[string]*tracepb.AttributeValue{},
+				outputName:      "/api/v1/document/{documentId}/update",
+				outputAttributes: map[string]*tracepb.AttributeValue{
+					"documentId": {
+						Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "321083210"}},
+					},
+				},
+			},
+		},
+
+		{
+			rules: []string{`^\/api\/(?P<version>.*)\/document\/(?P<documentId>.*)\/update$`},
+			testCase: testCase{
+				inputName:  "/api/v1/document/321083210/update",
+				outputName: "/api/{version}/document/{documentId}/update",
+				outputAttributes: map[string]*tracepb.AttributeValue{
+					"documentId": {
+						Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "321083210"}},
+					},
+					"version": {
+						Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "v1"}},
+					},
+				},
+			},
+		},
+
+		{
+			rules: []string{`^\/api\/.*\/document\/(?P<documentId>.*)\/update$`,
+				`^\/api\/(?P<version>.*)\/document\/.*\/update$`},
+			testCase: testCase{
+				inputName:  "/api/v1/document/321083210/update",
+				outputName: "/api/{version}/document/{documentId}/update",
+				outputAttributes: map[string]*tracepb.AttributeValue{
+					"documentId": {
+						Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "321083210"}},
+					},
+					"version": {
+						Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "v1"}},
+					},
+				},
+			},
+			breakAfterMatch: false,
+		},
+
+		{
+			rules: []string{`^\/api\/v1\/document\/(?P<documentId>.*)\/update$`,
+				`^\/api\/(?P<version>.*)\/document\/(?P<documentId>.*)\/update$`},
+			testCase: testCase{
+				inputName:  "/api/v1/document/321083210/update",
+				outputName: "/api/v1/document/{documentId}/update",
+				outputAttributes: map[string]*tracepb.AttributeValue{
+					"documentId": {
+						Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "321083210"}},
+					},
+				},
+			},
+			breakAfterMatch: true,
+		},
+
+		{
+			rules: []string{"rule"},
+			testCase: testCase{
+				inputName:        "",
+				outputName:       "",
+				outputAttributes: nil,
+			},
+		},
+	}
+
+	factory := Factory{}
+	cfg := factory.CreateDefaultConfig()
+	oCfg := cfg.(*Config)
+	oCfg.Rename.ToAttributes = &ToAttributes{}
+
+	for _, tc := range testCases {
+		oCfg.Rename.ToAttributes.Rules = tc.rules
+		oCfg.Rename.ToAttributes.BreakAfterMatch = tc.breakAfterMatch
+		tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), oCfg)
+		require.Nil(t, err)
+		require.NotNil(t, tp)
+
+		runIndividualTestCase(t, tc.testCase, tp)
+	}
+}
