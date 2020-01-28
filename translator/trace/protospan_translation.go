@@ -32,3 +32,19 @@ const (
 	TagZipkinCensusCode = "census.status_code"
 	TagZipkinCensusMsg  = "census.status_description"
 )
+
+// OpenTracingSpanKind are possible values for TagSpanKind and match the OpenTracing
+// conventions: https://github.com/opentracing/specification/blob/master/semantic_conventions.md
+// These values are also used for representing internally span kinds that have no
+// equivalents in OpenCensus format. They are stored as values of TagSpanKind
+// Note: this internal usage needs to be eliminated when we move to OTLP for internal
+// in-memory representation since OTLP has the equivalents.
+type OpenTracingSpanKind string
+
+const (
+	OpenTracingSpanKindUnspecified OpenTracingSpanKind = ""
+	OpenTracingSpanKindClient      OpenTracingSpanKind = "client"
+	OpenTracingSpanKindServer      OpenTracingSpanKind = "server"
+	OpenTracingSpanKindConsumer    OpenTracingSpanKind = "consumer"
+	OpenTracingSpanKindProducer    OpenTracingSpanKind = "producer"
+)
