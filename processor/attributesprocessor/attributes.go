@@ -16,6 +16,7 @@ package attributesprocessor
 
 import (
 	"context"
+	"regexp"
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 
@@ -51,15 +52,20 @@ type attributeAction struct {
 	AttributeValue *tracepb.AttributeValue
 }
 
-// matchingProperties stores the MatchProperties in a format to simplify
-// property checking:
-// 1. the list of service names is stored in a map for quick lookup.
-// 2. the attribute values are stored in the internal format.
+// matchingProperties stores the MatchProperties config in a format that simplifies
+// and makes property checking faster.
 type matchingProperties struct {
-	Services   map[string]bool
+	// The list of service names is stored in a map for quick lookup.
+	Services map[string]bool
+
+	// Precompiled span name regexp-es.
+	SpanNames []*regexp.Regexp
+
+	// The attribute values are stored in the internal format.
 	Attributes []matchAttribute
 }
 
+// matchAttribute is a attribute key/value pair to match to.
 type matchAttribute struct {
 	Key            string
 	AttributeValue *tracepb.AttributeValue
@@ -206,7 +212,27 @@ func (a *attributesProcessor) skipSpan(span *tracepb.Span, serviceName string) b
 func matchSpanToProperties(mp matchingProperties, span *tracepb.Span, serviceName string) bool {
 
 	if len(mp.Services) != 0 {
+		// Services condition is specified. Check if the service is one the specified.
 		if serviceFound := mp.Services[serviceName]; !serviceFound {
+			return false
+		}
+	}
+
+	if len(mp.SpanNames) > 0 {
+		// SpanNames condition is specified. Check if span name matches the condition.
+		var spanName string
+		if span.Name != nil {
+			spanName = span.Name.Value
+		}
+		// Verify span name matches at least one of the regexp patterns.
+		matched := false
+		for _, re := range mp.SpanNames {
+			if re.MatchString(spanName) {
+				matched = true
+				break
+			}
+		}
+		if !matched {
 			return false
 		}
 	}
@@ -256,7 +282,6 @@ func matchSpanToProperties(mp matchingProperties, span *tracepb.Span, serviceNam
 		if !isMatch {
 			return false
 		}
-
 	}
 
 	// All properties have been satisfied so the span does match.

@@ -192,6 +192,25 @@ processors:
       - key: account_password
         action: delete
 
+  # The following demonstrates how to process spans that have a specified service name and
+  # span name that matches the regexp pattern. This processor will remove "token" attribute
+  # and will obfuscate "password" attribute in spans where service name is "auth"
+  # and where span name does not match "login.*".
+  attributes/regexp:
+    # Specifies the span properties that must exist for the processor to be applied.
+    include:
+      # The span service name must be "auth".
+      services: ["auth"]
+    exclude:
+      # The span name must not match "login.*" pattern.
+      span_names: ["login.*"]
+    actions:
+      - key: password
+        action: update
+        value: "obfuscated"
+      - key: token
+        action: delete
+
 receivers:
   examplereceiver:
 

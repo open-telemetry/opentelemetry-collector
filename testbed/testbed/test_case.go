@@ -49,6 +49,9 @@ type TestCase struct {
 	// Agent process.
 	agentProc childProcess
 
+	Sender   DataSender
+	Receiver DataReceiver
+
 	LoadGenerator *LoadGenerator
 	MockBackend   *MockBackend
 
@@ -84,6 +87,8 @@ func NewTestCase(
 	tc.ErrorSignal = make(chan struct{})
 	tc.doneSignal = make(chan struct{})
 	tc.startTime = time.Now()
+	tc.Sender = sender
+	tc.Receiver = receiver
 
 	// Get requested test case duration from env variable.
 	duration := os.Getenv(TESTCASE_DURATION_VAR)
@@ -229,6 +234,11 @@ func (tc *TestCase) StartBackend() {
 // StopBackend stops the backend.
 func (tc *TestCase) StopBackend() {
 	tc.MockBackend.Stop()
+}
+
+// EnableRecording enables recording of all data received by MockBackend.
+func (tc *TestCase) EnableRecording() {
+	tc.MockBackend.EnableRecording()
 }
 
 // AgentMemoryInfo returns raw memory info struct about the agent

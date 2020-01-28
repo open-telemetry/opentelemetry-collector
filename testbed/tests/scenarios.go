@@ -31,11 +31,37 @@ import (
 
 // createConfigFile creates a collector config file that corresponds to the
 // sender and receiver used in the test and returns the config file name.
-func createConfigFile(sender testbed.DataSender, receiver testbed.DataReceiver, resultDir string) string {
+func createConfigFile(
+	sender testbed.DataSender, // Sender to send test data.
+	receiver testbed.DataReceiver, // Receiver to receive test data.
+	resultDir string, // Directory to write config file to.
+
+	// Map of extra processor names to their configs. Config is in YAML and must be
+	// indented by 2 spaces. Processors will be placed between batch and queue for traces
+	// pipeline. For metrics pipeline these will be sole processors.
+	extraProcessors map[string]string,
+) string {
+
 	// Create a config. Note that our DataSender is used to generate a config for Collector's
 	// receiver and our DataReceiver is used to generate a config for Collector's exporter.
 	// This is because our DataSender sends to Collector's receiver and our DataReceiver
 	// receives from Collector's exporter.
+
+	// Prepare extra processor config section and comma-separated list of extra processor
+	// names to use in corresponding "processors" settings.
+	extraProcessorsSections := ""
+	extraProcessorsList := ""
+	if len(extraProcessors) > 0 {
+		first := true
+		for name, cfg := range extraProcessors {
+			extraProcessorsSections += cfg + "\n"
+			if !first {
+				extraProcessorsList += ","
+			}
+			extraProcessorsList += name
+			first = false
+		}
+	}
 
 	var format string
 	if _, ok := sender.(testbed.TraceDataSender); ok {
@@ -46,6 +72,7 @@ exporters:%v
 processors:
   batch:
   queued_retry:
+  %s
 
 extensions:
   pprof:
@@ -56,14 +83,21 @@ service:
   pipelines:
     traces:
       receivers: [%v]
-      processors: [batch,queued_retry]
+      processors: [batch%s,queued_retry]
       exporters: [%v]
 `
+
+		if extraProcessorsList != "" {
+			// Trace test has some processors by default. Add the rest after a comma.
+			extraProcessorsList = "," + extraProcessorsList
+		}
 	} else {
 		// This is a metric test. Create appropriate config template.
 		format = `
 receivers:%v
 exporters:%v
+processors:
+  %s
 
 extensions:
   pprof:
@@ -74,6 +108,7 @@ service:
   pipelines:
     metrics:
       receivers: [%v]
+      processors: [%s]
       exporters: [%v]
 `
 	}
@@ -83,8 +118,10 @@ service:
 		format,
 		sender.GenConfigYAMLStr(),
 		receiver.GenConfigYAMLStr(),
+		extraProcessorsSections,
 		resultDir,
 		sender.ProtocolName(),
+		extraProcessorsList,
 		receiver.ProtocolName(),
 	)
 
@@ -119,7 +156,7 @@ func Scenario10kItemsPerSecond(
 		t.Fatal(err)
 	}
 
-	configFile := createConfigFile(sender, receiver, resultDir)
+	configFile := createConfigFile(sender, receiver, resultDir, nil)
 	defer os.Remove(configFile)
 
 	if configFile == "" {

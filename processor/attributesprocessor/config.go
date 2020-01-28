@@ -132,18 +132,22 @@ const (
 // Please refer to testdata/config.yaml for valid configurations.
 type MatchProperties struct {
 
+	// Note: one of Services, SpanNames or Attributes must be specified with a
+	// non-empty value for a valid configuration.
+
 	// Services specify the list of service name to match against.
-	// A match occurs if the span service name is in this list.
-	// Note: This is an optional field. However, one of services or
-	// attributes must be specified with a non empty value for a valid
-	// configuration.
+	// A match occurs if the span's service name is in this list.
+	// This is an optional field.
 	Services []string `mapstructure:"services"`
+
+	// SpanNames specify the list of regexps to match span name against.
+	// A match occurs if the span name matches at least one regexp item in this list.
+	// This is an optional field.
+	SpanNames []string `mapstructure:"span_names"`
 
 	// Attributes specifies the list of attributes to match against.
 	// All of these attributes must match exactly for a match to occur.
-	// Note: This is an optional field. However, one of services or
-	// attributes must be specified with a non empty value for a valid
-	// configuration.
+	// This is an optional field.
 	Attributes []Attribute `mapstructure:"attributes"`
 }
 

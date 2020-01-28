@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
@@ -33,7 +34,7 @@ func TestLoadingConifg(t *testing.T) {
 	config, err := config.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 
 	assert.Nil(t, err)
-	assert.NotNil(t, config)
+	require.NotNil(t, config)
 
 	p0 := config.Processors["attributes/insert"]
 	assert.Equal(t, p0, &Config{
@@ -165,4 +166,21 @@ func TestLoadingConifg(t *testing.T) {
 		},
 	})
 
+	p9 := config.Processors["attributes/regexp"]
+	assert.Equal(t, p9, &Config{
+		ProcessorSettings: configmodels.ProcessorSettings{
+			NameVal: "attributes/regexp",
+			TypeVal: typeStr,
+		},
+		Include: &MatchProperties{
+			Services: []string{"auth"},
+		},
+		Exclude: &MatchProperties{
+			SpanNames: []string{"login.*"},
+		},
+		Actions: []ActionKeyValue{
+			{Key: "password", Action: UPDATE, Value: "obfuscated"},
+			{Key: "token", Action: DELETE},
+		},
+	})
 }
