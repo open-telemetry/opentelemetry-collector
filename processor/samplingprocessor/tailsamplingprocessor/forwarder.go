@@ -240,12 +240,19 @@ func newSpanForwarder(logger *zap.Logger) (forwarder, error) {
 	return sf, nil
 }
 
-func getHash(traceID []byte) int64 {
-	var n int64
-	// simplistic for now
-	buf := bytes.NewBuffer(traceID)
-	binary.Read(buf, binary.LittleEndian, &n)
-	return n
+// Copied from github.com/dgryski/go-jump/blob/master/jump.go
+func jumpHash(key uint64, numBuckets int) int32 {
+
+	var b int64 = -1
+	var j int64
+
+	for j < int64(numBuckets) {
+		b = j
+		key = key*2862933555777941757 + 1
+		j = int64(float64(b+1) * (float64(int64(1)<<31) / float64((key>>33)+1)))
+	}
+
+	return int32(b)
 }
 
 func bytesToInt(spanID []byte) int64 {
@@ -266,12 +273,11 @@ func (sf *spanForwarder) process(span *tracepb.Span) bool {
 		sf.memberSyncTicker.Start(100 * time.Millisecond)
 	})
 
-	// check hash of traceid
-	traceIDHash := getHash(span.TraceId)
-
 	// The only time we need to acquire the lock is to see peer list
 	sf.RLock()
-	memberNum := traceIDHash % int64(len(sf.peerQueues))
+	// check hash of traceid
+	traceIDHash := bytesToInt(span.TraceId)
+	memberNum := int64(jumpHash(uint64(traceIDHash), len(sf.peerQueues)))
 	memberID := reflect.ValueOf(sf.peerQueues).MapKeys()[memberNum].Interface().(string)
 	sf.RUnlock()
 

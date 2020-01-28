@@ -16,12 +16,12 @@ package ringmembershipextension
 
 import (
 	"net"
-	"sort"
 	"sync"
 	"time"
 
 	"go.uber.org/zap"
 
+	"github.com/facette/natsort"
 	"github.com/open-telemetry/opentelemetry-collector/extension"
 )
 
@@ -36,13 +36,6 @@ type ringMembershipExtension struct {
 
 var _ (extension.SupportExtension) = (*ringMembershipExtension)(nil)
 var _ (extension.ServiceExtension) = (*ringMembershipExtension)(nil)
-
-// ByOrder implements sort.Interface for []string
-type ByOrder []string
-
-func (a ByOrder) Len() int           { return len(a) }
-func (a ByOrder) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a ByOrder) Less(i, j int) bool { return a[i] < a[j] }
 
 // Starts the ring membership extension
 func (rm *ringMembershipExtension) Start(host extension.Host) error {
@@ -75,8 +68,7 @@ func (rm *ringMembershipExtension) Watch() error {
 				ipStrings = append(ipStrings, v.String())
 			}
 
-			// sort list of strings in-place
-			sort.Sort(ByOrder(ipStrings))
+			natsort.Sort(ipStrings)
 
 			// check if its the same as the current member list
 			rm.RLock()
