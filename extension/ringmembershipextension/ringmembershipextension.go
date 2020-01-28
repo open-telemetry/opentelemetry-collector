@@ -49,12 +49,13 @@ func (rm *ringMembershipExtension) Start(host extension.Host) error {
 }
 
 func (rm *ringMembershipExtension) Watch() error {
-	t := time.NewTimer(10 * time.Millisecond)
+	t := time.NewTicker(100 * time.Millisecond)
 	for {
 		select {
 		case <-rm.quit:
 			return nil
 		case <-t.C:
+			rm.logger.Debug("Pooling a dns endpoint")
 			// poll a dns endpoint
 			ips, err := net.LookupIP("otelcol-headless.default.svc.cluster.local.")
 			if err != nil {
@@ -93,6 +94,8 @@ func (rm *ringMembershipExtension) Watch() error {
 				rm.Unlock()
 				rm.logger.Info("Memberlist updated", zap.Strings("Members", ipStrings))
 			}
+		default:
+			// rm.logger.Info("Hitting default case")
 		}
 	}
 }
@@ -103,7 +106,7 @@ func (rm *ringMembershipExtension) Shutdown() error {
 }
 
 func (rm *ringMembershipExtension) GetState() (interface{}, error) {
-	rm.logger.Info("GetState called in ringmembershipextension")
+	rm.logger.Debug("GetState called in ringmembershipextension")
 	rm.RLock()
 	curList := rm.ipList
 	rm.RUnlock()

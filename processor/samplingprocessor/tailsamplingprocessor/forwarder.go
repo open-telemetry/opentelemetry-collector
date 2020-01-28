@@ -75,18 +75,20 @@ type spanForwarder struct {
 }
 
 func (c *collectorPeer) batchDispatchOnTick() {
-	c.logger.Info("Collector peer batchDispatchOnTick invoked")
+	c.logger.Debug("Collector peer batchDispatchOnTick invoked")
 	batchIds, _ := c.peerBatcher.CloseCurrentAndTakeFirstBatch()
 	// create batch from batchIds
 	var td consumerdata.TraceData
 	for _, v := range batchIds {
 		span, _ := c.idToSpans.Load(string(v))
 		if span != nil {
-			td.Spans = append(td.Spans, span.(*v1.Span))
+			castedSpan := span.(*v1.Span)
+			td.Spans = append(td.Spans, castedSpan)
+			c.logger.Info("Forwarding this span", zap.ByteString("Span ID", castedSpan.GetSpanId()))
 		}
 	}
 	// simply post this batch via grpc to the collector peer
-	c.logger.Info("Sending batch to collector peer")
+	c.logger.Debug("Sending batch to collector peer")
 	c.exporter.ConsumeTraceData(context.Background(), td)
 }
 
@@ -95,6 +97,7 @@ func newCollectorPeer(logger *zap.Logger, ip string) *collectorPeer {
 	config := factory.CreateDefaultConfig()
 	config.(*opencensusexporter.Config).GRPCSettings.Endpoint = ip + ":" + strconv.Itoa(55678)
 
+	logger.Info("Creating new collector peer instance for", zap.String("PeerIP", ip))
 	exporter, err := opencensusexporter.NewTraceExporter(logger, config)
 	if err != nil {
 		logger.Fatal("Could not create span exporter", zap.Error(err))
@@ -172,6 +175,11 @@ func (sf *spanForwarder) memberSyncOnTick() {
 		for _, v := range newMembers {
 			if _, ok := sf.peerQueues[v]; ok {
 				// exists, do nothing
+			} else if v == sf.selfMemberIP {
+				// Need a write lock here
+				sf.Lock()
+				sf.peerQueues[v] = nil
+				sf.Unlock()
 			} else {
 				newPeer := newCollectorPeer(sf.logger, v)
 				if newPeer == nil {
@@ -273,12 +281,18 @@ func (sf *spanForwarder) process(span *tracepb.Span) bool {
 		sf.memberSyncTicker.Start(100 * time.Millisecond)
 	})
 
+	var memberID string
+
 	// The only time we need to acquire the lock is to see peer list
 	sf.RLock()
 	// check hash of traceid
 	traceIDHash := bytesToInt(span.TraceId)
 	memberNum := int64(jumpHash(uint64(traceIDHash), len(sf.peerQueues)))
-	memberID := reflect.ValueOf(sf.peerQueues).MapKeys()[memberNum].Interface().(string)
+	if memberNum == -1 {
+		memberID = sf.selfMemberIP
+	} else {
+		memberID = reflect.ValueOf(sf.peerQueues).MapKeys()[memberNum].Interface().(string)
+	}
 	sf.RUnlock()
 
 	if memberID == sf.selfMemberIP {

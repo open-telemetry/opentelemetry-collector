@@ -241,6 +241,7 @@ func (tsp *tailSamplingSpanProcessor) ConsumeTraceData(ctx context.Context, td c
 			}
 		}
 
+		tsp.logger.Info("Span processed by self", zap.ByteString("SpanID:", span.GetSpanId()))
 		idToSpans[traceKey] = append(idToSpans[traceKey], span)
 	}
 
