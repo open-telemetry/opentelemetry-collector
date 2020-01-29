@@ -18,6 +18,7 @@ package defaults
 import (
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/exporter"
+	"github.com/open-telemetry/opentelemetry-collector/exporter/fileexporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/jaeger/jaegergrpcexporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/jaeger/jaegerthrifthttpexporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/loggingexporter"
@@ -79,6 +80,7 @@ func Components() (
 		&zipkinexporter.Factory{},
 		&jaegergrpcexporter.Factory{},
 		&jaegerthrifthttpexporter.Factory{},
+		&fileexporter.Factory{},
 	)
 	if err != nil {
 		errs = append(errs, err)

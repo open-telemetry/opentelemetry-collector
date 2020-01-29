@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/open-telemetry/opentelemetry-collector/exporter"
+	"github.com/open-telemetry/opentelemetry-collector/exporter/fileexporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/jaeger/jaegergrpcexporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/jaeger/jaegerthrifthttpexporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/loggingexporter"
@@ -76,6 +77,7 @@ func TestDefaultComponents(t *testing.T) {
 		"zipkin":             &zipkinexporter.Factory{},
 		"jaeger_grpc":        &jaegergrpcexporter.Factory{},
 		"jaeger_thrift_http": &jaegerthrifthttpexporter.Factory{},
+		"file":               &fileexporter.Factory{},
 	}
 
 	factories, err := Components()
