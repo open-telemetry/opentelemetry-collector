@@ -46,8 +46,8 @@ func New(config *Config) (exporter.TraceExporter, error) {
 
 	collectorServiceClient := jaegerproto.NewCollectorServiceClient(client)
 	s := &protoGRPCSender{
-		client:  collectorServiceClient,
-		headers: config.GRPCSettings.Headers,
+		client:   collectorServiceClient,
+		metadata: metadata.New(config.GRPCSettings.Headers),
 	}
 
 	exp, err := exporterhelper.NewTraceExporter(
@@ -62,8 +62,8 @@ func New(config *Config) (exporter.TraceExporter, error) {
 // protoGRPCSender forwards spans encoded in the jaeger proto
 // format, to a grpc server.
 type protoGRPCSender struct {
-	client  jaegerproto.CollectorServiceClient
-	headers map[string]string
+	client   jaegerproto.CollectorServiceClient
+	metadata metadata.MD
 }
 
 func (s *protoGRPCSender) pushTraceData(
@@ -76,14 +76,8 @@ func (s *protoGRPCSender) pushTraceData(
 		return len(td.Spans), consumererror.Permanent(err)
 	}
 
-	octx := context.Background()
-
-	if len(s.headers) > 0 {
-		octx = metadata.NewOutgoingContext(octx, metadata.New(s.headers))
-	}
-
 	_, err = s.client.PostSpans(
-		octx,
+		metadata.NewOutgoingContext(ctx, s.metadata),
 		&jaegerproto.PostSpansRequest{Batch: *protoBatch})
 
 	if err != nil {
