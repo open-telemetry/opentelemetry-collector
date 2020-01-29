@@ -16,6 +16,7 @@ package probabilisticsamplerprocessor
 
 import (
 	"context"
+	"encoding/hex"
 	"strconv"
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
@@ -46,9 +47,10 @@ const (
 	doNotSampleSpan
 
 	// The constants help translate user friendly percentages to numbers direct used in sampling.
-	numHashBuckets        = 0x4000 // Using a power of 2 to avoid division.
-	bitMaskHashBuckets    = numHashBuckets - 1
-	percentageScaleFactor = numHashBuckets / 100.0
+	numHashBuckets           = 0x4000 // Using a power of 2 to avoid division.
+	bitMaskHashBuckets       = numHashBuckets - 1
+	percentageScaleFactor    = numHashBuckets / 100.0
+	traceFlagsBitMaskSampled = byte(0x01)
 )
 
 type tracesamplerprocessor struct {
@@ -85,6 +87,10 @@ func (tsp *tracesamplerprocessor) ConsumeTraceData(ctx context.Context, td consu
 
 	sampledSpans := make([]*tracepb.Span, 0, len(td.Spans))
 	for _, span := range td.Spans {
+		if !parseSpanTracestateSampled(span) {
+			continue
+		}
+
 		samplingPriority := parseSpanSamplingPriority(span)
 		if samplingPriority == doNotSampleSpan {
 			// The OpenTelemetry mentions this as a "hint" we take a stronger
@@ -121,6 +127,29 @@ func (tsp *tracesamplerprocessor) Start(host component.Host) error {
 // Shutdown is invoked during service shutdown.
 func (tsp *tracesamplerprocessor) Shutdown() error {
 	return nil
+}
+
+// parseSpanTracestateSampled checks if the span has the "sampled" tag in
+// tracestate todecide if the span should be sampled or not. The default returns
+// true.
+// https://w3c.github.io/trace-context/#tracestate-header
+func parseSpanTracestateSampled(span *tracepb.Span) bool {
+	tracestateEntries := span.GetTracestate().GetEntries()
+	if tracestateEntries == nil {
+		return true
+	}
+
+	for _, e := range tracestateEntries {
+		if e.GetKey() == "sampled" {
+			sf, err := hex.DecodeString(e.GetValue())
+			if err != nil || len(sf) < 1 || (sf[0] > 2) {
+				return true
+			}
+			sampled := (sf[0] & traceFlagsBitMaskSampled) == traceFlagsBitMaskSampled
+			return sampled
+		}
+	}
+	return true
 }
 
 // parseSpanSamplingPriority checks if the span has the "sampling.priority" tag to

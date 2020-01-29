@@ -287,6 +287,64 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 	}
 }
 
+// Test_parseSpanTracestateSampled ensures that the function parsing the attributes is taking "sampled"
+// flag correctly.
+func Test_parseSpanTracestateSampled(t *testing.T) {
+	tests := []struct {
+		name string
+		span *tracepb.Span
+		want bool
+	}{
+		{
+			name: "nil_span",
+			span: &tracepb.Span{},
+			want: true,
+		},
+		{
+			name: "empty tracestate",
+			span: &tracepb.Span{
+				Tracestate: &tracepb.Span_Tracestate{
+					Entries: []*tracepb.Span_Tracestate_Entry{},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "sampled_flag is false",
+			span: &tracepb.Span{
+				Tracestate: &tracepb.Span_Tracestate{
+					Entries: []*tracepb.Span_Tracestate_Entry{
+						{
+							Key:   "sampled",
+							Value: "00",
+						},
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "sampled_flag is true",
+			span: &tracepb.Span{
+				Tracestate: &tracepb.Span_Tracestate{
+					Entries: []*tracepb.Span_Tracestate_Entry{
+						{
+							Key:   "sampled",
+							Value: "01",
+						},
+					},
+				},
+			},
+			want: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, parseSpanTracestateSampled(tt.span))
+		})
+	}
+}
+
 // Test_parseSpanSamplingPriority ensures that the function parsing the attributes is taking "sampling.priority"
 // attribute correctly.
 func Test_parseSpanSamplingPriority(t *testing.T) {
