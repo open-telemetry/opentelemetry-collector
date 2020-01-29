@@ -232,6 +232,12 @@ func (tsp *tailSamplingSpanProcessor) ConsumeTraceData(ctx context.Context, td c
 			continue
 		}
 		traceKey := traceKey(span.TraceId)
+
+		// Check if this span has been forwarder.
+		if val, ok := span.GetAttributes().AttributeMap["otelcol.ttl"]; ok {
+			tsp.logger.Info("FORWARDED SPAN!!!!!!!!!!!!!!!!!", zap.ByteString("SpanID", span.GetSpanId()), zap.Any("Value of otelcol.ttl", val))
+		}
+
 		// Check if ring membership extension is configured
 		if tsp.forwarder != nil {
 			// Check if this span should be forwarded to another collector

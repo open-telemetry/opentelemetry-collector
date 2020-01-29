@@ -30,6 +30,8 @@ import (
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	v1 "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/open-telemetry/opentelemetry-collector/config/configgrpc"
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/opencensusexporter"
@@ -82,9 +84,13 @@ func (c *collectorPeer) batchDispatchOnTick() {
 	for _, v := range batchIds {
 		span, _ := c.idToSpans.Load(string(v))
 		if span != nil {
-			castedSpan := span.(*v1.Span)
-			td.Spans = append(td.Spans, castedSpan)
-			c.logger.Info("Forwarding this span", zap.ByteString("Span ID", castedSpan.GetSpanId()))
+			span.(*v1.Span).Attributes.AttributeMap["otelcol.ttl"] = &v1.AttributeValue{
+				Value: &v1.AttributeValue_IntValue{
+					IntValue: 1,
+				},
+			}
+			td.Spans = append(td.Spans, span.(*v1.Span))
+			c.logger.Info("Forwarding this span", zap.ByteString("Span ID", span.(*v1.Span).GetSpanId()))
 		}
 	}
 	// simply post this batch via grpc to the collector peer
@@ -95,10 +101,16 @@ func (c *collectorPeer) batchDispatchOnTick() {
 func newCollectorPeer(logger *zap.Logger, ip string) *collectorPeer {
 	factory := &opencensusexporter.Factory{}
 	config := factory.CreateDefaultConfig()
-	config.(*opencensusexporter.Config).GRPCSettings.Endpoint = ip + ":" + strconv.Itoa(55678)
+	config.(*opencensusexporter.Config).ExporterSettings = configmodels.ExporterSettings{
+		NameVal: "opencensus",
+		TypeVal: "opencensus",
+	}
+	config.(*opencensusexporter.Config).GRPCSettings = configgrpc.GRPCSettings{
+		Endpoint: ip + ":" + strconv.Itoa(55678),
+	}
 
 	logger.Info("Creating new collector peer instance for", zap.String("PeerIP", ip))
-	exporter, err := opencensusexporter.NewTraceExporter(logger, config)
+	exporter, err := factory.CreateTraceExporter(logger, config)
 	if err != nil {
 		logger.Fatal("Could not create span exporter", zap.Error(err))
 		return nil

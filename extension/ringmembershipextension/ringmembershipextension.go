@@ -49,7 +49,7 @@ func (rm *ringMembershipExtension) Start(host extension.Host) error {
 }
 
 func (rm *ringMembershipExtension) Watch() error {
-	t := time.NewTicker(100 * time.Millisecond)
+	t := time.NewTicker(time.Second)
 	for {
 		select {
 		case <-rm.quit:
