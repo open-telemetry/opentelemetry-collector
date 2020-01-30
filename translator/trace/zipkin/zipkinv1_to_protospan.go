@@ -174,7 +174,29 @@ func zipkinV1ToOCSpan(zSpan *zipkinV1Span) (*tracepb.Span, *annotationParseResul
 		ocSpan.Name = &tracepb.TruncatableString{Value: zSpan.Name}
 	}
 
+	setSpanKind(ocSpan, parsedAnnotations.Kind, parsedAnnotations.ExtendedKind)
+
 	return ocSpan, parsedAnnotations, nil
+}
+
+func setSpanKind(ocSpan *tracepb.Span, kind tracepb.Span_SpanKind, extendedKind tracetranslator.OpenTracingSpanKind) {
+	if kind == tracepb.Span_SPAN_KIND_UNSPECIFIED &&
+		extendedKind != tracetranslator.OpenTracingSpanKindUnspecified {
+		// Span kind has no equivalent in OC, so we cannot represent it in the Kind field.
+		// We will set a TagSpanKind attribute in the span. This will successfully transfer
+		// in the pipeline until it reaches the exporter which is responsible for
+		// reverse translation.
+		if ocSpan.Attributes == nil {
+			ocSpan.Attributes = &tracepb.Span_Attributes{}
+		}
+		if ocSpan.Attributes.AttributeMap == nil {
+			ocSpan.Attributes.AttributeMap = make(map[string]*tracepb.AttributeValue, 1)
+		}
+		ocSpan.Attributes.AttributeMap[tracetranslator.TagSpanKind] =
+			&tracepb.AttributeValue{Value: &tracepb.AttributeValue_StringValue{
+				StringValue: &tracepb.TruncatableString{Value: string(extendedKind)},
+			}}
+	}
 }
 
 func zipkinV1BinAnnotationsToOCAttributes(binAnnotations []*binaryAnnotation) (attributes *tracepb.Span_Attributes, status *tracepb.Status, fallbackServiceName string) {
@@ -238,6 +260,7 @@ type annotationParseResult struct {
 	Endpoint            *endpoint
 	TimeEvents          *tracepb.Span_TimeEvents
 	Kind                tracepb.Span_SpanKind
+	ExtendedKind        tracetranslator.OpenTracingSpanKind
 	EarlyAnnotationTime *timestamp.Timestamp
 	LateAnnotationTime  *timestamp.Timestamp
 }
@@ -251,6 +274,12 @@ func parseZipkinV1Annotations(annotations []*annotation) *annotationParseResult 
 	lateAnnotationTimestamp := int64(math.MinInt64)
 	res := &annotationParseResult{}
 	timeEvents := make([]*tracepb.Span_TimeEvent, 0, len(annotations))
+
+	// We want to set the span kind from the first annotation that contains information
+	// about the span kind. This flags ensures we only set span kind once from
+	// the first annotation.
+	spanKindIsSet := false
+
 	for _, currAnnotation := range annotations {
 		if currAnnotation == nil && currAnnotation.Value == "" {
 			continue
@@ -261,24 +290,44 @@ func parseZipkinV1Annotations(annotations []*annotation) *annotationParseResult 
 			endpointName = currAnnotation.Endpoint.ServiceName
 		}
 
-		// Specially important annotations used by zipkin v1 these are the most important ones.
+		// Check if annotation has span kind information.
+		annotationHasSpanKind := false
 		switch currAnnotation.Value {
-		case "cs":
-			fallthrough
-		case "cr":
-			if res.Kind == tracepb.Span_SPAN_KIND_UNSPECIFIED {
+		case "cs", "cr", "ms", "mr", "ss", "sr":
+			annotationHasSpanKind = true
+		}
+
+		// Populate the endpoint if it is not already populated and current endpoint
+		// has a service name and span kind.
+		if res.Endpoint == nil && endpointName != unknownServiceName && annotationHasSpanKind {
+			res.Endpoint = currAnnotation.Endpoint
+		}
+
+		if !spanKindIsSet && annotationHasSpanKind {
+			// We have not yet populated span kind, do it now.
+			// Translate from Zipkin span kind stored in Value field to Kind/ExternalKind
+			// pair of internal fields.
+			switch currAnnotation.Value {
+			case "cs", "cr":
 				res.Kind = tracepb.Span_CLIENT
-			}
-			fallthrough
-		case "ss":
-			fallthrough
-		case "sr":
-			if res.Kind == tracepb.Span_SPAN_KIND_UNSPECIFIED {
+				res.ExtendedKind = tracetranslator.OpenTracingSpanKindClient
+
+			case "ms":
+				// "ms" and "mr" are PRODUCER and CONSUMER kinds which have no equivalent
+				// representation in OC. We keep res.Kind unspecified and will use
+				// ExtendedKind for translations.
+				res.ExtendedKind = tracetranslator.OpenTracingSpanKindProducer
+
+			case "mr":
+				res.ExtendedKind = tracetranslator.OpenTracingSpanKindConsumer
+
+			case "ss", "sr":
 				res.Kind = tracepb.Span_SERVER
+				res.ExtendedKind = tracetranslator.OpenTracingSpanKindServer
 			}
-			if res.Endpoint == nil && endpointName != unknownServiceName {
-				res.Endpoint = currAnnotation.Endpoint
-			}
+
+			// Remember that we populated the span kind, so that we don't do it again.
+			spanKindIsSet = true
 		}
 
 		ts := epochMicrosecondsToTimestamp(currAnnotation.Timestamp)

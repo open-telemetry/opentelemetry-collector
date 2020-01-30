@@ -295,20 +295,21 @@ func appendJaegerThriftTagFromOCStatus(jTags []*jaeger.Tag, ocStatus *tracepb.St
 }
 
 func appendJaegerTagFromOCSpanKind(jTags []*jaeger.Tag, ocSpanKind tracepb.Span_SpanKind) []*jaeger.Tag {
+	// Follow OpenTracing conventions to set span kind value as a tag.
 
-	// TODO: (@pjanotti): Replace any OpenTracing literals by importing github.com/opentracing/opentracing-go/ext?
 	var tagValue string
 	switch ocSpanKind {
 	case tracepb.Span_CLIENT:
-		tagValue = "client"
+		tagValue = string(tracetranslator.OpenTracingSpanKindClient)
 	case tracepb.Span_SERVER:
-		tagValue = "server"
+		tagValue = string(tracetranslator.OpenTracingSpanKindServer)
 	}
 
 	if tagValue != "" {
 		jTag := &jaeger.Tag{
-			Key:  tracetranslator.TagSpanKind,
-			VStr: &tagValue,
+			Key:   tracetranslator.TagSpanKind,
+			VStr:  &tagValue,
+			VType: jaeger.TagType_STRING,
 		}
 		jTags = append(jTags, jTag)
 	}

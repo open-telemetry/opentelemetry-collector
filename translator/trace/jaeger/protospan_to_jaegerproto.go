@@ -362,13 +362,14 @@ func ocMessageEventToJaegerTagsProto(msgEvent *tracepb.Span_TimeEvent_MessageEve
 
 // Replica of protospan_to_jaegerthrift appendJaegerTagFromOCSpanKind
 func appendJaegerTagFromOCSpanKindProto(jTags []jaeger.KeyValue, ocSpanKind tracepb.Span_SpanKind) []jaeger.KeyValue {
-	// TODO: (@pjanotti): Replace any OpenTracing literals by importing github.com/opentracing/opentracing-go/ext?
+	// Follow OpenTracing conventions to set span kind value as a tag.
+
 	var tagValue string
 	switch ocSpanKind {
 	case tracepb.Span_CLIENT:
-		tagValue = "client"
+		tagValue = string(tracetranslator.OpenTracingSpanKindClient)
 	case tracepb.Span_SERVER:
-		tagValue = "server"
+		tagValue = string(tracetranslator.OpenTracingSpanKindServer)
 	}
 
 	if tagValue != "" {
