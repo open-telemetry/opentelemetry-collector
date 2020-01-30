@@ -76,8 +76,12 @@ func (s *protoGRPCSender) pushTraceData(
 		return len(td.Spans), consumererror.Permanent(err)
 	}
 
+	if s.metadata.Len() > 0 {
+		ctx = metadata.NewOutgoingContext(ctx, s.metadata)
+	}
+
 	_, err = s.client.PostSpans(
-		metadata.NewOutgoingContext(ctx, s.metadata),
+		ctx,
 		&jaegerproto.PostSpansRequest{Batch: *protoBatch})
 
 	if err != nil {
