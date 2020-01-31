@@ -224,6 +224,15 @@ func (tsp *tailSamplingSpanProcessor) ConsumeTraceData(ctx context.Context, td c
 		tsp.policyTicker.Start(1 * time.Second)
 	})
 
+	// Check if this batch has been forwarded.
+	if _, ok := td.Spans[0].GetAttributes().AttributeMap["otelcol.ttl"]; ok {
+		tsp.logger.Info("FORWARDED BATCH!!!!!!!!!!!!!!!!!", zap.Int("Number of spans in the batch", len(td.Spans)))
+
+		stats.Record(
+			context.Background(),
+			statCountForwardedSpansRcvd.M(int64(len(td.Spans))))
+	}
+
 	// Groupd spans per their traceId to minimize contention on idToTrace
 	idToSpans := make(map[traceKey][]*tracepb.Span)
 	for _, span := range td.Spans {
@@ -232,11 +241,6 @@ func (tsp *tailSamplingSpanProcessor) ConsumeTraceData(ctx context.Context, td c
 			continue
 		}
 		traceKey := traceKey(span.TraceId)
-
-		// Check if this span has been forwarder.
-		if val, ok := span.GetAttributes().AttributeMap["otelcol.ttl"]; ok {
-			tsp.logger.Info("FORWARDED SPAN!!!!!!!!!!!!!!!!!", zap.ByteString("SpanID", span.GetSpanId()), zap.Any("Value of otelcol.ttl", val))
-		}
 
 		// Check if ring membership extension is configured
 		if tsp.forwarder != nil {

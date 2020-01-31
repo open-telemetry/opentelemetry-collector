@@ -26,6 +26,7 @@ import (
 	"sync"
 	"time"
 
+	"go.opencensus.io/stats"
 	"go.uber.org/zap"
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
@@ -93,6 +94,11 @@ func (c *collectorPeer) batchDispatchOnTick() {
 			c.logger.Info("Forwarding this span", zap.ByteString("Span ID", span.(*v1.Span).GetSpanId()))
 		}
 	}
+
+	stats.Record(
+		context.Background(),
+		statCountSpansForwarded.M(int64(len(batchIds))))
+
 	// simply post this batch via grpc to the collector peer
 	c.logger.Debug("Sending batch to collector peer")
 	c.exporter.ConsumeTraceData(context.Background(), td)
