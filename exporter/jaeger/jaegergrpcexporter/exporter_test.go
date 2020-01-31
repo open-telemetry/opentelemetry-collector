@@ -50,6 +50,22 @@ func TestNew(t *testing.T) {
 			},
 		},
 		{
+			name: "createExporterWithHeaders",
+			args: args{
+				config: Config{
+					GRPCSettings: configgrpc.GRPCSettings{
+						Headers:             map[string]string{"extra-header": "header-value"},
+						Endpoint:            "foo.bar",
+						Compression:         "",
+						CertPemFile:         "",
+						UseSecure:           true,
+						ServerNameOverride:  "",
+						KeepaliveParameters: nil,
+					},
+				},
+			},
+		},
+		{
 			name: "createBasicSecureExporter",
 			args: args{
 				config: Config{
