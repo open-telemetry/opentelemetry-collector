@@ -42,6 +42,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/internal"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	"github.com/open-telemetry/opentelemetry-collector/testutils"
+	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 	"github.com/open-telemetry/opentelemetry-collector/translator/trace/zipkin"
 )
 
@@ -423,6 +424,56 @@ func TestStartTraceReception(t *testing.T) {
 			assert.Equal(t, tt.wantErr, err != nil)
 			if !tt.wantErr {
 				require.Nil(t, zr.Shutdown())
+			}
+		})
+	}
+}
+
+func TestSpanKindTranslation(t *testing.T) {
+	tests := []struct {
+		zipkinKind zipkinmodel.Kind
+		ocKind     tracepb.Span_SpanKind
+		otKind     tracetranslator.OpenTracingSpanKind
+	}{
+		{
+			zipkinKind: zipkinmodel.Client,
+			ocKind:     tracepb.Span_CLIENT,
+			otKind:     "",
+		},
+		{
+			zipkinKind: zipkinmodel.Server,
+			ocKind:     tracepb.Span_SERVER,
+			otKind:     "",
+		},
+		{
+			zipkinKind: zipkinmodel.Producer,
+			ocKind:     tracepb.Span_SPAN_KIND_UNSPECIFIED,
+			otKind:     tracetranslator.OpenTracingSpanKindProducer,
+		},
+		{
+			zipkinKind: zipkinmodel.Consumer,
+			ocKind:     tracepb.Span_SPAN_KIND_UNSPECIFIED,
+			otKind:     tracetranslator.OpenTracingSpanKindConsumer,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(string(tt.zipkinKind), func(t *testing.T) {
+			zs := &zipkinmodel.SpanModel{
+				SpanContext: zipkinmodel.SpanContext{
+					TraceID: zipkinmodel.TraceID{Low: 123},
+					ID:      456,
+				},
+				Kind: tt.zipkinKind,
+			}
+			ocSpan, _, err := zipkinSpanToTraceSpan(zs)
+			require.NoError(t, err)
+			assert.EqualValues(t, tt.ocKind, ocSpan.Kind)
+			if tt.otKind != "" {
+				otSpanKind := ocSpan.Attributes.AttributeMap[tracetranslator.TagSpanKind]
+				assert.EqualValues(t, tt.otKind, otSpanKind.GetStringValue().Value)
+			} else {
+				assert.True(t, ocSpan.Attributes == nil)
 			}
 		})
 	}
