@@ -28,6 +28,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal"
+	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 	"github.com/open-telemetry/opentelemetry-collector/translator/trace/zipkin"
 )
 
@@ -130,6 +131,7 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 							zipkin.RemoteEndpointServiceName: {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "memcached"}}},
 							zipkin.RemoteEndpointIPv6:        {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "fe80::1453:a77c:da4d:d21b"}}},
 							zipkin.RemoteEndpointPort:        {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "11211"}}},
+							tracetranslator.TagSpanKind:      {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: string(tracetranslator.OpenTracingSpanKindConsumer)}}},
 						},
 					},
 				},
@@ -156,6 +158,7 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 							zipkin.RemoteEndpointServiceName: {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "redis"}}},
 							zipkin.RemoteEndpointIPv6:        {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "fe80::1453:a77c:da4d:d21b"}}},
 							zipkin.RemoteEndpointPort:        {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "6379"}}},
+							tracetranslator.TagSpanKind:      {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: string(tracetranslator.OpenTracingSpanKindProducer)}}},
 						},
 					},
 					TimeEvents: &tracepb.Span_TimeEvents{
