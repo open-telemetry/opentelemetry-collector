@@ -224,8 +224,7 @@ func (sp *queuedSpanProcessor) processItemFromQueue(item *queueItem) {
 
 func (sp *queuedSpanProcessor) onItemDropped(item *queueItem, statsTags []tag.Mutator) {
 	numSpans := len(item.td.Spans)
-	stats.RecordWithTags(context.Background(), statsTags, processor.StatDroppedSpanCount.M(int64(numSpans)))
-	stats.RecordWithTags(context.Background(), statsTags, processor.StatBatchesDroppedCount.M(int64(1)))
+	stats.RecordWithTags(context.Background(), statsTags, processor.StatDroppedSpanCount.M(int64(numSpans)), processor.StatBatchesDroppedCount.M(int64(1)))
 
 	sp.logger.Warn("Span batch dropped",
 		zap.String("processor", sp.name),
