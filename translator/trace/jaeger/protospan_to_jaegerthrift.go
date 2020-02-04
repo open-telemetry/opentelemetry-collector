@@ -30,6 +30,8 @@ import (
 
 var (
 	unknownProcess = &jaeger.Process{ServiceName: "unknown-service-name"}
+	errorTag       = "error"
+	errorMessage   = "errorMessage"
 )
 
 // OCProtoToJaegerThrift translates OpenCensus trace data into the Jaeger Thrift format.
@@ -444,6 +446,10 @@ func ocSpanAttributesToJaegerTags(ocAttribs *tracepb.Span_Attributes) []*jaeger.
 		}
 
 		jTag := &jaeger.Tag{Key: key}
+		if key == errorTag {
+			jTag, jTags = handleError(jTag, jTags)
+		}
+
 		switch attribValue := attrib.Value.(type) {
 		case *tracepb.AttributeValue_StringValue:
 			// Jaeger-to-OC maps binary tags to string attributes and encodes them as
@@ -472,4 +478,13 @@ func ocSpanAttributesToJaegerTags(ocAttribs *tracepb.Span_Attributes) []*jaeger.
 	}
 
 	return jTags
+}
+
+func handleError(jTag *jaeger.Tag, jTags []*jaeger.Tag) (*jaeger.Tag, []*jaeger.Tag) {
+	b := true
+	jTag.VBool = &b
+	jTag.VType = jaeger.TagType_BOOL
+	jTags = append(jTags, jTag)
+	jTag = &jaeger.Tag{Key: errorMessage}
+	return jTag, jTags
 }
