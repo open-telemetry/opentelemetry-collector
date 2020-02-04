@@ -92,6 +92,9 @@ func (c *collectorPeer) batchDispatchOnTick() {
 			}
 			td.Spans = append(td.Spans, span.(*v1.Span))
 			c.logger.Info("Forwarding this span", zap.ByteString("Span ID", span.(*v1.Span).GetSpanId()))
+
+			// Null-out the map entry
+			c.idToSpans.Delete(string(v))
 		}
 	}
 
