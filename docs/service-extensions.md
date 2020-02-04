@@ -46,7 +46,7 @@ these sections would look like in the configuration file:
 
 ```yaml
 
-# Example of the extensions available OOB with the Collector. The list below
+# Example of the extensions available with the core Collector. The list below
 # includes all configurable options and their respective default value.
 extensions:
   health_check:
