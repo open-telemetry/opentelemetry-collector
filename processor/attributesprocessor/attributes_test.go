@@ -860,18 +860,24 @@ func TestAttributes_Matching_False(t *testing.T) {
 		properties matchingProperties
 	}{
 		{
-			name: "service_name_doesnt_match",
-			properties: matchingProperties{
-				Services: map[string]bool{
-					"svcA": true,
-				},
+			name: "service_name_doesnt_match_regexp",
+			properties: &regexpMatchingProperties{
+				Services:   []*regexp.Regexp{regexp.MustCompile("svcA")},
+				Attributes: []matchAttribute{},
+			},
+		},
+
+		{
+			name: "service_name_doesnt_match_strict",
+			properties: &strictMatchingProperties{
+				Services:   []string{"svcA"},
 				Attributes: []matchAttribute{},
 			},
 		},
 
 		{
 			name: "span_name_doesnt_match",
-			properties: matchingProperties{
+			properties: &regexpMatchingProperties{
 				SpanNames:  []*regexp.Regexp{regexp.MustCompile("spanNo.*Name")},
 				Attributes: []matchAttribute{},
 			},
@@ -879,7 +885,7 @@ func TestAttributes_Matching_False(t *testing.T) {
 
 		{
 			name: "span_name_doesnt_match_any",
-			properties: matchingProperties{
+			properties: &regexpMatchingProperties{
 				SpanNames: []*regexp.Regexp{
 					regexp.MustCompile("spanNo.*Name"),
 					regexp.MustCompile("non-matching?pattern"),
@@ -891,8 +897,8 @@ func TestAttributes_Matching_False(t *testing.T) {
 
 		{
 			name: "wrong_property_value",
-			properties: matchingProperties{
-				Services: map[string]bool{},
+			properties: &regexpMatchingProperties{
+				Services: []*regexp.Regexp{},
 				Attributes: []matchAttribute{
 					{
 						Key: "keyInt",
@@ -907,8 +913,8 @@ func TestAttributes_Matching_False(t *testing.T) {
 		},
 		{
 			name: "incompatible_property_value",
-			properties: matchingProperties{
-				Services: map[string]bool{},
+			properties: &regexpMatchingProperties{
+				Services: []*regexp.Regexp{},
 				Attributes: []matchAttribute{
 					{
 						Key: "keyInt",
@@ -923,8 +929,8 @@ func TestAttributes_Matching_False(t *testing.T) {
 		},
 		{
 			name: "property_key_does_not_exist",
-			properties: matchingProperties{
-				Services: map[string]bool{},
+			properties: &regexpMatchingProperties{
+				Services: []*regexp.Regexp{},
 				Attributes: []matchAttribute{
 					{
 						Key:            "doesnotexist",
@@ -947,18 +953,14 @@ func TestAttributes_Matching_False(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			assert.False(t, matchSpanToProperties(tc.properties, span, "wrongSvc"))
-
+			assert.False(t, tc.properties.matchSpan(span, "wrongSvc"))
 		})
 	}
-
 }
 
 func TestAttributes_MatchingCornerCases(t *testing.T) {
-	mp := matchingProperties{
-		Services: map[string]bool{
-			"svcA": true,
-		},
+	mp := &regexpMatchingProperties{
+		Services: []*regexp.Regexp{regexp.MustCompile("svcA")},
 		Attributes: []matchAttribute{
 			{
 				Key:            "keyOne",
@@ -994,17 +996,14 @@ func TestAttributes_MatchingCornerCases(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			assert.False(t, matchSpanToProperties(mp, tc.span, "svcA"))
-
+			assert.False(t, mp.matchSpan(tc.span, "svcA"))
 		})
 	}
 }
 
 func TestAttributes_MissingServiceName(t *testing.T) {
-	mp := matchingProperties{
-		Services: map[string]bool{
-			"svcA": true,
-		},
+	mp := &regexpMatchingProperties{
+		Services: []*regexp.Regexp{regexp.MustCompile("svcA")},
 	}
 	testcases := []struct {
 		name string
@@ -1034,8 +1033,7 @@ func TestAttributes_MissingServiceName(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			assert.False(t, matchSpanToProperties(mp, tc.span, ""))
-
+			assert.False(t, mp.matchSpan(tc.span, ""))
 		})
 	}
 }
@@ -1047,30 +1045,35 @@ func TestAttributes_Matching_True(t *testing.T) {
 	}{
 		{
 			name: "empty_match_properties",
-			properties: matchingProperties{
-				Services:   map[string]bool{},
+			properties: &regexpMatchingProperties{
+				Services:   []*regexp.Regexp{},
 				Attributes: []matchAttribute{},
 			},
 		},
 		{
-			name: "service_name_match",
-			properties: matchingProperties{
-				Services: map[string]bool{
-					"svcA": true,
-				},
+			name: "service_name_match_regexp",
+			properties: &regexpMatchingProperties{
+				Services:   []*regexp.Regexp{regexp.MustCompile("svcA")},
+				Attributes: []matchAttribute{},
+			},
+		},
+		{
+			name: "service_name_match_strict",
+			properties: &strictMatchingProperties{
+				Services:   []string{"svcA"},
 				Attributes: []matchAttribute{},
 			},
 		},
 		{
 			name: "span_name_match",
-			properties: matchingProperties{
+			properties: &regexpMatchingProperties{
 				SpanNames:  []*regexp.Regexp{regexp.MustCompile("span.*")},
 				Attributes: []matchAttribute{},
 			},
 		},
 		{
 			name: "span_name_second_match",
-			properties: matchingProperties{
+			properties: &regexpMatchingProperties{
 				SpanNames: []*regexp.Regexp{
 					regexp.MustCompile("wrong.*pattern"),
 					regexp.MustCompile("span.*"),
@@ -1082,8 +1085,8 @@ func TestAttributes_Matching_True(t *testing.T) {
 		},
 		{
 			name: "property_exact_value_match",
-			properties: matchingProperties{
-				Services: map[string]bool{},
+			properties: &regexpMatchingProperties{
+				Services: []*regexp.Regexp{},
 				Attributes: []matchAttribute{
 					{
 						Key: "keyString",
@@ -1120,10 +1123,8 @@ func TestAttributes_Matching_True(t *testing.T) {
 		},
 		{
 			name: "property_exists",
-			properties: matchingProperties{
-				Services: map[string]bool{
-					"svcA": true,
-				},
+			properties: &regexpMatchingProperties{
+				Services: []*regexp.Regexp{regexp.MustCompile("svcA")},
 				Attributes: []matchAttribute{
 					{
 						Key:            "keyExists",
@@ -1134,10 +1135,8 @@ func TestAttributes_Matching_True(t *testing.T) {
 		},
 		{
 			name: "match_all_settings_exists",
-			properties: matchingProperties{
-				Services: map[string]bool{
-					"svcA": true,
-				},
+			properties: &regexpMatchingProperties{
+				Services: []*regexp.Regexp{regexp.MustCompile("svcA")},
 				Attributes: []matchAttribute{
 					{
 						Key:            "keyExists",
@@ -1183,7 +1182,7 @@ func TestAttributes_Matching_True(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			assert.True(t, matchSpanToProperties(tc.properties, span, "svcA"))
+			assert.True(t, tc.properties.matchSpan(span, "svcA"))
 
 		})
 	}
@@ -1247,12 +1246,14 @@ func TestAttributes_FilterSpans(t *testing.T) {
 		{Key: "attribute1", Action: INSERT, Value: 123},
 	}
 	oCfg.Include = &MatchProperties{
-		Services: []string{"svcA", "svcB"},
+		Services:  []string{"svcA", "svcB.*"},
+		MatchType: MatchTypeRegexp,
 	}
 	oCfg.Exclude = &MatchProperties{
 		Attributes: []Attribute{
 			{Key: "NoModification", Value: true},
 		},
+		MatchType: MatchTypeStrict,
 	}
 	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), cfg)
 	require.Nil(t, err)
@@ -1263,7 +1264,87 @@ func TestAttributes_FilterSpans(t *testing.T) {
 	}
 }
 
-func TestAttributes_FilterSpansByName(t *testing.T) {
+func TestAttributes_FilterSpansByNameStrict(t *testing.T) {
+	testCases := []testCase{
+		{
+			name:            "apply",
+			nodeName:        "svcB",
+			inputAttributes: map[string]*tracepb.AttributeValue{},
+			expectedAttributes: map[string]*tracepb.AttributeValue{
+				"attribute1": {
+					Value: &tracepb.AttributeValue_IntValue{IntValue: 123},
+				},
+			},
+		},
+		{
+			name:     "apply",
+			nodeName: "svcB",
+			inputAttributes: map[string]*tracepb.AttributeValue{
+				"NoModification": {
+					Value: &tracepb.AttributeValue_BoolValue{BoolValue: false},
+				},
+			},
+			expectedAttributes: map[string]*tracepb.AttributeValue{
+				"attribute1": {
+					Value: &tracepb.AttributeValue_IntValue{IntValue: 123},
+				},
+				"NoModification": {
+					Value: &tracepb.AttributeValue_BoolValue{BoolValue: false},
+				},
+			},
+		},
+		{
+			name:               "incorrect_span_name",
+			nodeName:           "svcB",
+			inputAttributes:    map[string]*tracepb.AttributeValue{},
+			expectedAttributes: map[string]*tracepb.AttributeValue{},
+		},
+		{
+			name:               "dont_apply",
+			nodeName:           "svcB",
+			inputAttributes:    map[string]*tracepb.AttributeValue{},
+			expectedAttributes: map[string]*tracepb.AttributeValue{},
+		},
+		{
+			name:     "incorrect_span_name_with_attr",
+			nodeName: "svcB",
+			inputAttributes: map[string]*tracepb.AttributeValue{
+				"NoModification": {
+					Value: &tracepb.AttributeValue_BoolValue{BoolValue: true},
+				},
+			},
+			expectedAttributes: map[string]*tracepb.AttributeValue{
+				"NoModification": {
+					Value: &tracepb.AttributeValue_BoolValue{BoolValue: true},
+				},
+			},
+		},
+	}
+
+	factory := Factory{}
+	cfg := factory.CreateDefaultConfig()
+	oCfg := cfg.(*Config)
+	oCfg.Actions = []ActionKeyValue{
+		{Key: "attribute1", Action: INSERT, Value: 123},
+	}
+	oCfg.Include = &MatchProperties{
+		SpanNames: []string{"apply", "dont_apply"},
+		MatchType: MatchTypeStrict,
+	}
+	oCfg.Exclude = &MatchProperties{
+		SpanNames: []string{"dont_apply"},
+		MatchType: MatchTypeStrict,
+	}
+	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), cfg)
+	require.Nil(t, err)
+	require.NotNil(t, tp)
+
+	for _, tt := range testCases {
+		runIndividualTestCase(t, tt, tp)
+	}
+}
+
+func TestAttributes_FilterSpansByNameRegexp(t *testing.T) {
 	testCases := []testCase{
 		{
 			name:            "apply_to_span_with_no_attrs",
@@ -1328,9 +1409,11 @@ func TestAttributes_FilterSpansByName(t *testing.T) {
 	}
 	oCfg.Include = &MatchProperties{
 		SpanNames: []string{"^apply.*"},
+		MatchType: MatchTypeRegexp,
 	}
 	oCfg.Exclude = &MatchProperties{
 		SpanNames: []string{".*dont_apply$"},
+		MatchType: MatchTypeRegexp,
 	}
 	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), cfg)
 	require.Nil(t, err)

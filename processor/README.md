@@ -148,15 +148,24 @@ attributes:
       # It is supported to have more than one specified, but all of the specified
       # conditions must evaluate to true for a match to occur.
 
-      # Services specify the list of service name to match against.
-      # A match occurs if the span service name is in this list.
-      # Note: This is an optional field.
-      services: [<key1>, ..., <keyN>]
-      # The span name must match "login.*" or "auth.*" pattern.
-      span_names: ["login.*", "auth.*"]
+      # match_type controls how items in "services" and "span_names" arrays are
+      # interpreted. Possible values are "regexp" or "strict".
+      # This is a required field.
+      match_type: {strict, regexp}
+
+      # services specify an array of items to match the service name against.
+      # A match occurs if the span service name matches at least of the items.
+      # This is an optional field.
+      services: [<item1>, ..., <itemN>]
+
+      # The span name must match at least one of the items.
+      # This is an optional field.
+      span_names: [<item1>, ..., <itemN>]
+
       # Attributes specifies the list of attributes to match against.
       # All of these attributes must match exactly for a match to occur.
-      # Note: This is an optional field.
+      # Only match_type=strict is allowed if "attributes" are specified.
+      # This is an optional field.
       attributes:
           # Key specifies the attribute to match against.
         - key: <key>

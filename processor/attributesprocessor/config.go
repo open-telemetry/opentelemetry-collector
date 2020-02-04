@@ -132,24 +132,43 @@ const (
 // Please refer to testdata/config.yaml for valid configurations.
 type MatchProperties struct {
 
+	// MatchType controls how items in "services" and "span_names" arrays are
+	// interpreted. Possible values are "regexp" or "strict".
+	MatchType MatchType `mapstructure:"match_type"`
+
 	// Note: one of Services, SpanNames or Attributes must be specified with a
 	// non-empty value for a valid configuration.
 
-	// Services specify the list of service name to match against.
-	// A match occurs if the span's service name is in this list.
+	// Services specify the list of of items to match service name against.
+	// A match occurs if the span's service name matches at least one item in this list.
 	// This is an optional field.
 	Services []string `mapstructure:"services"`
 
-	// SpanNames specify the list of regexps to match span name against.
-	// A match occurs if the span name matches at least one regexp item in this list.
+	// SpanNames specify the list of items to match span name against.
+	// A match occurs if the span name matches at least one item in this list.
 	// This is an optional field.
 	SpanNames []string `mapstructure:"span_names"`
 
 	// Attributes specifies the list of attributes to match against.
 	// All of these attributes must match exactly for a match to occur.
+	// Only match_type=strict is allowed if "attributes" are specified.
 	// This is an optional field.
 	Attributes []Attribute `mapstructure:"attributes"`
 }
+
+// MatchType defines possible match types.
+type MatchType string
+
+const (
+	MatchTypeRegexp MatchType = "regexp"
+	MatchTypeStrict MatchType = "strict"
+)
+
+// MatchTypeFieldName is the mapstructure field name for MatchProperties.MatchType field.
+const MatchTypeFieldName = "match_type"
+
+// MatchTypeFieldName is the mapstructure field name for MatchProperties.Attributes field.
+const AttributesFieldName = "attributes"
 
 // Attribute specifies the attribute key and optional value to match against.
 type Attribute struct {

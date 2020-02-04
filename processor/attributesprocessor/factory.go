@@ -39,6 +39,9 @@ var (
 	errAtLeastOneMatchFieldNeeded = errors.New(
 		`error creating "attributes" processor. At least one ` +
 			`of "services", "span_names" or "attributes" field must be specified"`)
+
+	errInvalidMatchType = fmt.Errorf(
+		`match_type must be either %q or %q`, MatchTypeStrict, MatchTypeRegexp)
 )
 
 // Factory is the factory for Attributes processor.
@@ -170,7 +173,7 @@ func buildAttributesConfiguration(config Config) ([]attributeAction, error) {
 	return attributeActions, nil
 }
 
-func buildMatchProperties(config *MatchProperties) (*matchingProperties, error) {
+func buildMatchProperties(config *MatchProperties) (matchingProperties, error) {
 	if config == nil {
 		return nil, nil
 	}
@@ -179,18 +182,52 @@ func buildMatchProperties(config *MatchProperties) (*matchingProperties, error) 
 		return nil, errAtLeastOneMatchFieldNeeded
 	}
 
-	properties := &matchingProperties{}
-	for _, serviceName := range config.Services {
-		if serviceName == "" {
-			return nil, errors.New("error creating \"attributes\" processor. Can't have empty string for service name in list of services")
+	var properties matchingProperties
+	var err error
+	switch config.MatchType {
+	case MatchTypeStrict:
+		properties, err = buildStrictMatchingProperties(config)
+	case MatchTypeRegexp:
+		properties, err = buildRegexpMatchingProperties(config)
+	default:
+		return nil, errInvalidMatchType
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return properties, nil
+}
+
+func buildStrictMatchingProperties(config *MatchProperties) (*strictMatchingProperties, error) {
+	properties := &strictMatchingProperties{
+		Services:  config.Services,
+		SpanNames: config.SpanNames,
+	}
+
+	var err error
+	properties.Attributes, err = buildAttributesMatches(config)
+	if err != nil {
+		return nil, err
+	}
+
+	return properties, nil
+}
+
+func buildRegexpMatchingProperties(config *MatchProperties) (*regexpMatchingProperties, error) {
+	properties := &regexpMatchingProperties{}
+
+	// Precompile Services regexp patterns.
+	for _, pattern := range config.Services {
+		g, err := regexp.Compile(pattern)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"error creating \"attributes\" processor. %s is not a valid service name regexp pattern",
+				pattern,
+			)
 		}
+		properties.Services = append(properties.Services, g)
 	}
-	svcNames := make(map[string]bool, len(config.Services))
-	for _, name := range config.Services {
-		svcNames[name] = true
-	}
-	// Copy the list of service names after each one has been validated. If the list is empty, that is okay because the match properties too will be empty.
-	properties.Services = svcNames
 
 	// Precompile SpanNames regexp patterns.
 	for _, pattern := range config.SpanNames {
@@ -204,12 +241,23 @@ func buildMatchProperties(config *MatchProperties) (*matchingProperties, error) 
 		properties.SpanNames = append(properties.SpanNames, g)
 	}
 
+	if len(config.Attributes) > 0 {
+		return nil, fmt.Errorf(
+			"%s=%s is not supported for %q",
+			MatchTypeFieldName, MatchTypeRegexp, AttributesFieldName,
+		)
+	}
+
+	return properties, nil
+}
+
+func buildAttributesMatches(config *MatchProperties) (matchAttributes, error) {
 	// Convert attribute values from config representation to in-memory representation.
 	var rawAttributes []matchAttribute
 	for _, attribute := range config.Attributes {
 
 		if attribute.Key == "" {
-			return nil, errors.New("error creating \"attributes\" processor. Can't have empty string for service name in list of attributes")
+			return nil, errors.New("error creating \"attributes\" processor. Can't have empty key in the list of attributes")
 		}
 
 		entry := matchAttribute{
@@ -224,8 +272,6 @@ func buildMatchProperties(config *MatchProperties) (*matchingProperties, error) 
 		}
 
 		rawAttributes = append(rawAttributes, entry)
-
 	}
-	properties.Attributes = rawAttributes
-	return properties, nil
+	return rawAttributes, nil
 }

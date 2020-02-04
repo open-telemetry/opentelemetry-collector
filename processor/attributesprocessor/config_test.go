@@ -91,7 +91,8 @@ func TestLoadingConifg(t *testing.T) {
 			TypeVal: typeStr,
 		},
 		Exclude: &MatchProperties{
-			Services: []string{"svcA", "svcB"},
+			MatchType: MatchTypeStrict,
+			Services:  []string{"svcA", "svcB"},
 			Attributes: []Attribute{
 				{Key: "env", Value: "dev"},
 				{Key: "test_request"},
@@ -110,7 +111,8 @@ func TestLoadingConifg(t *testing.T) {
 			TypeVal: typeStr,
 		},
 		Include: &MatchProperties{
-			Services: []string{"svcA", "svcB"},
+			MatchType: MatchTypeRegexp,
+			Services:  []string{"auth.*", "login.*"},
 		},
 		Actions: []ActionKeyValue{
 			{Key: "credit_card", Action: DELETE},
@@ -125,9 +127,11 @@ func TestLoadingConifg(t *testing.T) {
 			TypeVal: typeStr,
 		},
 		Include: &MatchProperties{
-			Services: []string{"svcA", "svcB"},
+			MatchType: MatchTypeStrict,
+			Services:  []string{"svcA", "svcB"},
 		},
 		Exclude: &MatchProperties{
+			MatchType: MatchTypeStrict,
 			Attributes: []Attribute{
 				{Key: "redact_trace", Value: false},
 			},
@@ -173,9 +177,11 @@ func TestLoadingConifg(t *testing.T) {
 			TypeVal: typeStr,
 		},
 		Include: &MatchProperties{
-			Services: []string{"auth"},
+			MatchType: MatchTypeRegexp,
+			Services:  []string{"auth.*"},
 		},
 		Exclude: &MatchProperties{
+			MatchType: MatchTypeRegexp,
 			SpanNames: []string{"login.*"},
 		},
 		Actions: []ActionKeyValue{
