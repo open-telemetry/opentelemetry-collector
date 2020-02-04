@@ -30,22 +30,22 @@ import (
 )
 
 var (
-	mReceiverReceivedSpans      = stats.Int64("otelcol/receiver/received_spans", "Counts the number of spans received by the receiver", "1")
-	mReceiverDroppedSpans       = stats.Int64("otelcol/receiver/dropped_spans", "Counts the number of spans dropped by the receiver", "1")
-	mReceiverReceivedTimeSeries = stats.Int64("otelcol/receiver/received_timeseries", "Counts the number of timeseries received by the receiver", "1")
-	mReceiverDroppedTimeSeries  = stats.Int64("otelcol/receiver/dropped_timeseries", "Counts the number of timeseries dropped by the receiver", "1")
+	mReceiverReceivedSpans      = stats.Int64("receiver/received_spans", "Counts the number of spans received by the receiver", "1")
+	mReceiverDroppedSpans       = stats.Int64("receiver/dropped_spans", "Counts the number of spans dropped by the receiver", "1")
+	mReceiverReceivedTimeSeries = stats.Int64("receiver/received_timeseries", "Counts the number of timeseries received by the receiver", "1")
+	mReceiverDroppedTimeSeries  = stats.Int64("receiver/dropped_timeseries", "Counts the number of timeseries dropped by the receiver", "1")
 
-	mExporterReceivedSpans      = stats.Int64("otelcol/exporter/received_spans", "Counts the number of spans received by the exporter", "1")
-	mExporterDroppedSpans       = stats.Int64("otelcol/exporter/dropped_spans", "Counts the number of spans received by the exporter", "1")
-	mExporterReceivedTimeSeries = stats.Int64("otelcol/exporter/received_timeseries", "Counts the number of timeseries received by the exporter", "1")
-	mExporterDroppedTimeSeries  = stats.Int64("otelcol/exporter/dropped_timeseries", "Counts the number of timeseries received by the exporter", "1")
+	mExporterReceivedSpans      = stats.Int64("exporter/received_spans", "Counts the number of spans received by the exporter", "1")
+	mExporterDroppedSpans       = stats.Int64("exporter/dropped_spans", "Counts the number of spans received by the exporter", "1")
+	mExporterReceivedTimeSeries = stats.Int64("exporter/received_timeseries", "Counts the number of timeseries received by the exporter", "1")
+	mExporterDroppedTimeSeries  = stats.Int64("exporter/dropped_timeseries", "Counts the number of timeseries received by the exporter", "1")
 )
 
 // TagKeyReceiver defines tag key for Receiver.
-var TagKeyReceiver, _ = tag.NewKey("otelsvc_receiver")
+var TagKeyReceiver, _ = tag.NewKey("receiver")
 
 // TagKeyExporter defines tag key for Exporter.
-var TagKeyExporter, _ = tag.NewKey("otelsvc_exporter")
+var TagKeyExporter, _ = tag.NewKey("exporter")
 
 // ViewReceiverReceivedSpans defines the view for the receiver received spans metric.
 var ViewReceiverReceivedSpans = &view.View{
@@ -131,7 +131,7 @@ var AllViews = []*view.View{
 	ViewExporterDroppedTimeSeries,
 }
 
-// ContextWithReceiverName adds the tag "otelsvc_receiver" and the name of the receiver as the value,
+// ContextWithReceiverName adds the tag "receiver" and the name of the receiver as the value,
 // and returns the newly created context. For receivers that can receive multiple signals it is
 // recommended to encode the signal as suffix (e.g. "oc_trace" and "oc_metrics").
 func ContextWithReceiverName(ctx context.Context, receiverName string) context.Context {
@@ -151,7 +151,7 @@ func RecordMetricsForMetricsReceiver(ctxWithTraceReceiverName context.Context, r
 	stats.Record(ctxWithTraceReceiverName, mReceiverReceivedTimeSeries.M(int64(receivedTimeSeries)), mReceiverDroppedTimeSeries.M(int64(droppedTimeSeries)))
 }
 
-// ContextWithExporterName adds the tag "otelsvc_exporter" and the name of the exporter as the value,
+// ContextWithExporterName adds the tag "exporter" and the name of the exporter as the value,
 // and returns the newly created context. For exporters that can export multiple signals it is
 // recommended to encode the signal as suffix (e.g. "oc_trace" and "oc_metrics").
 func ContextWithExporterName(ctx context.Context, exporterName string) context.Context {
