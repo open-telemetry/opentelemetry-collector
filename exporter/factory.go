@@ -22,8 +22,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 )
 
-// Factory interface for exporters.
-type Factory interface {
+// BaseFactory defines the common functions for all exporter factories.
+type BaseFactory interface {
 	// Type gets the type of the Exporter created by this factory.
 	Type() string
 
@@ -35,12 +35,30 @@ type Factory interface {
 	// 'conifgcheck.ValidateConfig'. It is recommended to have such check in the
 	// tests of any implementation of the Factory interface.
 	CreateDefaultConfig() configmodels.Exporter
+}
+
+// Factory can create TraceExporter and MetricsExporter.
+type Factory interface {
+	BaseFactory
 
 	// CreateTraceExporter creates a trace exporter based on this config.
 	CreateTraceExporter(logger *zap.Logger, cfg configmodels.Exporter) (TraceExporter, error)
 
 	// CreateMetricsExporter creates a metrics exporter based on this config.
 	CreateMetricsExporter(logger *zap.Logger, cfg configmodels.Exporter) (MetricsExporter, error)
+}
+
+// OTLPFactory can create OTLPTraceExporter and OTLPMetricsExporter. This is the
+// new factory type that can create OTLP-based exporters.
+type OTLPFactory interface {
+	BaseFactory
+
+	// CreateOTLPTraceReceiver creates a trace receiver based on this config.
+	// If the receiver type does not support tracing or if the config is not valid
+	// error will be returned instead.
+	CreateOTLPTraceExporter(logger *zap.Logger, cfg configmodels.Exporter) (OTLPTraceExporter, error)
+
+	// TODO: Add CreateOTLPMetricsExporter.
 }
 
 // Build takes a list of exporter factories and returns a map of type map[string]Factory

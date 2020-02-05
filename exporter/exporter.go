@@ -25,13 +25,19 @@ type Exporter interface {
 	component.Component
 }
 
-// TraceExporter composes TraceConsumer with some additional exporter-specific functions.
+// TraceExporter is a TraceConsumer that is also an Exporter.
 type TraceExporter interface {
 	consumer.TraceConsumer
 	Exporter
 }
 
-// MetricsExporter composes MetricsConsumer with some additional exporter-specific functions.
+// OTLPTraceExporter is an OTLPTraceConsumer that is also an Exporter.
+type OTLPTraceExporter interface {
+	consumer.OTLPTraceConsumer
+	Exporter
+}
+
+// MetricsExporter is a MetricsConsumer that is also an Exporter.
 type MetricsExporter interface {
 	consumer.MetricsConsumer
 	Exporter
