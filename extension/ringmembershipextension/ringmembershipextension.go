@@ -27,11 +27,10 @@ import (
 
 type ringMembershipExtension struct {
 	sync.RWMutex
-	config  Config
-	logger  *zap.Logger
-	ipList  []string
-	quit    chan int
-	syncVar *chan interface{}
+	config Config
+	logger *zap.Logger
+	ipList []string
+	quit   chan int
 }
 
 var _ (extension.SupportExtension) = (*ringMembershipExtension)(nil)

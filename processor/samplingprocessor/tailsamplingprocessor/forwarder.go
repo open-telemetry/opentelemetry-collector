@@ -149,9 +149,9 @@ func (sf *spanForwarder) memberSyncOnTick() {
 	}
 
 	newMembers := state.([]string)
-	curMembers := make([]string, 0, len(sf.peerQueues))
 
 	sf.RLock()
+	curMembers := make([]string, 0, len(sf.peerQueues))
 	for k := range sf.peerQueues {
 		curMembers = append(curMembers, k)
 	}
@@ -307,8 +307,8 @@ func (sf *spanForwarder) process(span *tracepb.Span) bool {
 	// The only time we need to acquire the lock is to see peer list
 	sf.RLock()
 	// check hash of traceid
-	traceIDHash := bytesToInt(span.TraceId)
-	memberNum := int64(jumpHash(uint64(traceIDHash), len(sf.peerQueues)))
+	traceIDInt64 := bytesToInt(span.TraceId)
+	memberNum := int64(jumpHash(uint64(traceIDInt64), len(sf.peerQueues)))
 	if memberNum == -1 {
 		memberID = sf.selfMemberIP
 	} else {
