@@ -16,11 +16,35 @@ package spanprocessor
 
 import (
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-collector/processor/common"
 )
 
 // Config is the configuration for the span processor.
+// Prior to any actions being applied, each span is compared against
+// the include properties and then the exclude properties if they are specified.
+// This determines if a span is to be processed or not.
 type Config struct {
 	configmodels.ProcessorSettings `mapstructure:",squash"`
+
+	// Include specifies the set of span properties that must be present in order
+	// for this processor to apply to it.
+	// Note: If `exclude` is specified, the span is compared against those
+	// properties after the `include` properties.
+	// This is an optional field. If neither `include` and `exclude` are set, all spans
+	// are processed. If `include` is set and `exclude` isn't set, then all
+	// spans matching the properties in this structure are processed.
+	Include *common.MatchProperties `mapstructure:"include"`
+
+	// Exclude specifies when this processor will not be applied to the Spans
+	// which match the specified properties.
+	// Note: The `exclude` properties are checked after the `include` properties,
+	// if they exist, are checked.
+	// If `include` isn't specified, the `exclude` properties are checked against
+	// all spans.
+	// This is an optional field. If neither `include` and `exclude` are set, all spans
+	// are processed. If `exclude` is set and `include` isn't set, then all
+	// spans  that do no match the properties in this structure are processed.
+	Exclude *common.MatchProperties `mapstructure:"exclude"`
 
 	// Rename specifies the components required to re-name a span.
 	// The `from_attributes` field needs to be set for this processor to be properly

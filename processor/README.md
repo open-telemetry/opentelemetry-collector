@@ -83,6 +83,54 @@ data cloning described in Exclusive Ownership section.
 The order processors specified in a pipeline is important as this is the
 order in which each processor is applied to traces and metrics.
 
+
+### Include/Exclude Spans
+The [attribute processor](#attributes) and the [span processor](#span) expose
+the option to provide a set of properties of a span to match against to determine
+if the span should be included or excluded from the processor. By default, all
+spans are processed by the processor.
+
+To configure this option, under `include` and/or `exclude`:
+- at least one of `services`, `span_names` or `attributes` is required.
+
+Note: If both `include` and `exclude` are specified, the `include` properties
+are checked before the `exclude` properties.
+
+```yaml
+{span, attributes}:
+    # include and/or exclude can be specified. However, the include properties
+    # are always checked before the exclude properties.
+    {include, exclude}:
+      # At least one of services, span_names or attributes must be specified.
+      # It is supported to have more than one specified, but all of the specified
+      # conditions must evaluate to true for a match to occur.
+
+      # match_type controls how items in "services" and "span_names" arrays are
+      # interpreted. Possible values are "regexp" or "strict".
+      # This is a required field.
+      match_type: {strict, regexp}
+
+      # services specify an array of items to match the service name against.
+      # A match occurs if the span service name matches at least of the items.
+      # This is an optional field.
+      services: [<item1>, ..., <itemN>]
+
+      # The span name must match at least one of the items.
+      # This is an optional field.
+      span_names: [<item1>, ..., <itemN>]
+
+      # Attributes specifies the list of attributes to match against.
+      # All of these attributes must match exactly for a match to occur.
+      # Only match_type=strict is allowed if "attributes" are specified.
+      # This is an optional field.
+      attributes:
+          # Key specifies the attribute to match against.
+        - key: <key>
+          # Value specifies the exact value to match against.
+          # If not specified, a match occurs if the key is present in the attributes.
+          value: {value}
+```
+
 ## <a name="attributes"></a>Attributes Processor
 The attributes processor modifies attributes of a span.
 
@@ -125,54 +173,6 @@ For the `delete` action,
 ```
 
 Please refer to [config.go](attributesprocessor/config.go) for the config spec.
-
-### Include/Exclude Spans
-It is optional to provide a set of properties of a span to match against to determine
-if the span should be included or excluded from the processor. By default, all
-spans are processed by the processor.
-
-To configure this option, under `include` and/or `exclude`:
-- at least one of `services`, `span_names` or `attributes` is required.
-
-Note: If both `include` and `exclude` are specified, the `include` properties
-are checked before the `exclude` properties.
-
-Items in `span_names` array are regular expression patterns.
-
-```yaml
-attributes:
-    # include and/or exclude can be specified. However, the include properties
-    # are always checked before the exclude properties.
-    {include, exclude}:
-      # At least one of services, span_names or attributes must be specified.
-      # It is supported to have more than one specified, but all of the specified
-      # conditions must evaluate to true for a match to occur.
-
-      # match_type controls how items in "services" and "span_names" arrays are
-      # interpreted. Possible values are "regexp" or "strict".
-      # This is a required field.
-      match_type: {strict, regexp}
-
-      # services specify an array of items to match the service name against.
-      # A match occurs if the span service name matches at least of the items.
-      # This is an optional field.
-      services: [<item1>, ..., <itemN>]
-
-      # The span name must match at least one of the items.
-      # This is an optional field.
-      span_names: [<item1>, ..., <itemN>]
-
-      # Attributes specifies the list of attributes to match against.
-      # All of these attributes must match exactly for a match to occur.
-      # Only match_type=strict is allowed if "attributes" are specified.
-      # This is an optional field.
-      attributes:
-          # Key specifies the attribute to match against.
-        - key: <key>
-          # Value specifies the exact value to match against.
-          # If not specified, a match occurs if the key is present in the attributes.
-          value: {value}
-```
 
 ### Example
 The list of actions can be composed to create rich scenarios, such as

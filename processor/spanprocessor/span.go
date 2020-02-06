@@ -28,12 +28,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
+	"github.com/open-telemetry/opentelemetry-collector/processor/common"
 )
 
 type spanProcessor struct {
 	nextConsumer     consumer.TraceConsumer
 	config           Config
 	toAttributeRules []toAttributeRule
+	include          common.MatchingProperties
+	exclude          common.MatchingProperties
 }
 
 // toAttributeRule is the compiled equivalent of config.ToAttributes field.
@@ -51,9 +54,20 @@ func NewTraceProcessor(nextConsumer consumer.TraceConsumer, config Config) (proc
 		return nil, oterr.ErrNilNextConsumer
 	}
 
+	include, err := common.BuildMatchProperties(config.Include)
+	if err != nil {
+		return nil, err
+	}
+	exclude, err := common.BuildMatchProperties(config.Exclude)
+	if err != nil {
+		return nil, err
+	}
+
 	sp := &spanProcessor{
 		nextConsumer: nextConsumer,
 		config:       config,
+		include:      include,
+		exclude:      exclude,
 	}
 
 	// Compile ToAttributes regexp and extract attributes names.
@@ -78,8 +92,13 @@ func NewTraceProcessor(nextConsumer consumer.TraceConsumer, config Config) (proc
 }
 
 func (sp *spanProcessor) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
+	serviceName := processor.ServiceNameForNode(td.Node)
 	for _, span := range td.Spans {
 		if span == nil {
+			continue
+		}
+
+		if sp.skipSpan(span, serviceName) {
 			continue
 		}
 		sp.processFromAttributes(span)
@@ -237,4 +256,33 @@ func (sp *spanProcessor) processToAttributes(span *tracepb.Span) {
 			break
 		}
 	}
+}
+
+// skipSpan determines if a span should be processed.
+// True is returned when a span should be skipped.
+// False is returned when a span should not be skipped.
+// The logic determining if a span should be processed is set
+// in the attribute configuration with the include and exclude settings.
+// Include properties are checked before exclude settings are checked.
+func (sp *spanProcessor) skipSpan(span *tracepb.Span, serviceName string) bool {
+	// By default all spans are processed when no include and exclude properties are set.
+	if sp.include == nil && sp.exclude == nil {
+		return false
+	}
+
+	if sp.include != nil {
+		// A false returned in this case means the span should not be processed.
+		if include := sp.include.MatchSpan(span, serviceName); !include {
+			return true
+		}
+	}
+
+	if sp.exclude != nil {
+		// A true returned in this case means the span should not be processed.
+		if exclude := sp.exclude.MatchSpan(span, serviceName); exclude {
+			return true
+		}
+	}
+
+	return false
 }

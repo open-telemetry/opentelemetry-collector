@@ -23,6 +23,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-collector/processor/common"
 )
 
 func TestLoadingConifg(t *testing.T) {
@@ -90,10 +91,10 @@ func TestLoadingConifg(t *testing.T) {
 			NameVal: "attributes/excludemulti",
 			TypeVal: typeStr,
 		},
-		Exclude: &MatchProperties{
-			MatchType: MatchTypeStrict,
+		Exclude: &common.MatchProperties{
+			MatchType: common.MatchTypeStrict,
 			Services:  []string{"svcA", "svcB"},
-			Attributes: []Attribute{
+			Attributes: []common.Attribute{
 				{Key: "env", Value: "dev"},
 				{Key: "test_request"},
 			},
@@ -110,8 +111,8 @@ func TestLoadingConifg(t *testing.T) {
 			NameVal: "attributes/includeservices",
 			TypeVal: typeStr,
 		},
-		Include: &MatchProperties{
-			MatchType: MatchTypeRegexp,
+		Include: &common.MatchProperties{
+			MatchType: common.MatchTypeRegexp,
 			Services:  []string{"auth.*", "login.*"},
 		},
 		Actions: []ActionKeyValue{
@@ -126,13 +127,13 @@ func TestLoadingConifg(t *testing.T) {
 			NameVal: "attributes/selectiveprocessing",
 			TypeVal: typeStr,
 		},
-		Include: &MatchProperties{
-			MatchType: MatchTypeStrict,
+		Include: &common.MatchProperties{
+			MatchType: common.MatchTypeStrict,
 			Services:  []string{"svcA", "svcB"},
 		},
-		Exclude: &MatchProperties{
-			MatchType: MatchTypeStrict,
-			Attributes: []Attribute{
+		Exclude: &common.MatchProperties{
+			MatchType: common.MatchTypeStrict,
+			Attributes: []common.Attribute{
 				{Key: "redact_trace", Value: false},
 			},
 		},
@@ -176,12 +177,12 @@ func TestLoadingConifg(t *testing.T) {
 			NameVal: "attributes/regexp",
 			TypeVal: typeStr,
 		},
-		Include: &MatchProperties{
-			MatchType: MatchTypeRegexp,
+		Include: &common.MatchProperties{
+			MatchType: common.MatchTypeRegexp,
 			Services:  []string{"auth.*"},
 		},
-		Exclude: &MatchProperties{
-			MatchType: MatchTypeRegexp,
+		Exclude: &common.MatchProperties{
+			MatchType: common.MatchTypeRegexp,
 			SpanNames: []string{"login.*"},
 		},
 		Actions: []ActionKeyValue{
@@ -189,4 +190,5 @@ func TestLoadingConifg(t *testing.T) {
 			{Key: "token", Action: DELETE},
 		},
 	})
+
 }
