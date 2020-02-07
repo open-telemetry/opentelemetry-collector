@@ -16,8 +16,12 @@
 package service
 
 import (
+	"bufio"
+	"fmt"
+	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -38,27 +42,25 @@ func TestApplication_Start(t *testing.T) {
 	app, err := New(factories, ApplicationStartInfo{})
 	require.NoError(t, err)
 
+	const testPrefix = "a_test"
 	metricsPort := testutils.GetAvailablePort(t)
 	app.rootCmd.SetArgs([]string{
 		"--config=testdata/otelcol-config.yaml",
 		"--metrics-port=" + strconv.FormatUint(uint64(metricsPort), 10),
+		"--metrics-prefix=" + testPrefix,
 	})
 
 	appDone := make(chan struct{})
 	go func() {
 		defer close(appDone)
-		if err := app.Start(); err != nil {
-			t.Errorf("app.Start() got %v, want nil", err)
-			return
-		}
+		assert.NoError(t, app.Start())
 	}()
 
 	<-app.readyChan
 
-	// TODO: Add a way to change configuration files so we can get the ports dynamically
-	if !isAppAvailable(t, "http://localhost:13133") {
-		t.Fatalf("app didn't reach ready state")
-	}
+	require.True(t, isAppAvailable(t, "http://localhost:13133"))
+
+	assertMetricsPrefix(t, testPrefix, metricsPort)
 
 	close(app.stopTestChan)
 	<-appDone
@@ -69,11 +71,40 @@ func TestApplication_Start(t *testing.T) {
 func isAppAvailable(t *testing.T, healthCheckEndPoint string) bool {
 	client := &http.Client{}
 	resp, err := client.Get(healthCheckEndPoint)
-	if err != nil {
-		t.Fatalf("failed to get a response from health probe: %v", err)
-	}
+	require.NoError(t, err)
+
 	defer resp.Body.Close()
 	return resp.StatusCode == http.StatusOK
+}
+
+func assertMetricsPrefix(t *testing.T, prefix string, metricsPort uint16) {
+	client := &http.Client{}
+	resp, err := client.Get(fmt.Sprintf("http://localhost:%d/metrics", metricsPort))
+	require.NoError(t, err)
+
+	defer resp.Body.Close()
+	reader := bufio.NewReader(resp.Body)
+
+	for {
+		s, err := reader.ReadString('\n')
+		if err == io.EOF {
+			break
+		}
+
+		require.NoError(t, err)
+		if len(s) == 0 || s[0] == '#' {
+			// Skip this line since it is not a metric.
+			continue
+		}
+
+		// require is used here so test fails with a single message.
+		require.True(
+			t,
+			strings.HasPrefix(s, prefix),
+			"expected prefix %q but string starts with %q",
+			prefix,
+			s[:len(prefix)+1]+"...")
+	}
 }
 
 func TestApplication_setupExtensions(t *testing.T) {
