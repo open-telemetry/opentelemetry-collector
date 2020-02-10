@@ -65,6 +65,25 @@ processors:
         rules:
           - ^\/api\/v1\/document\/(?P<documentId>.*)\/update$
 
+  # The following demonstrates renaming the span name to `{operation_website}`
+  # and adding the attribute {Key: operation_website, Value: <old span name> }
+  # when the span has the following properties
+  # - Services names that contain the word `banks`.
+  # - The span name contains '/' anywhere in the string.
+  # - The span name is not 'donot/change'.
+  span/includeexclude:
+    include:
+      match_type: regexp
+      services: ["banks"]
+      span_names: ["^(.*?)/(.*?)$"]
+    exclude:
+      match_type: strict
+      span_names: ["donot/change"]
+    name:
+      to_attributes:
+        rules:
+          - "(?P<operation_website>.*?)$"
+
 exporters:
   exampleexporter:
 

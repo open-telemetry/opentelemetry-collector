@@ -15,33 +15,22 @@
 package attributesprocessor
 
 import (
-	"errors"
 	"fmt"
-	"regexp"
 	"strings"
 
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/spf13/cast"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
+	internal "github.com/open-telemetry/opentelemetry-collector/internal/processor"
+	"github.com/open-telemetry/opentelemetry-collector/internal/processor/span"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
 )
 
 const (
 	// typeStr is the value of "type" key in configuration.
 	typeStr = "attributes"
-)
-
-var (
-	errAtLeastOneMatchFieldNeeded = errors.New(
-		`error creating "attributes" processor. At least one ` +
-			`of "services", "span_names" or "attributes" field must be specified"`)
-
-	errInvalidMatchType = fmt.Errorf(
-		`match_type must be either %q or %q`, MatchTypeStrict, MatchTypeRegexp)
 )
 
 // Factory is the factory for Attributes processor.
@@ -76,11 +65,11 @@ func (f *Factory) CreateTraceProcessor(
 	if err != nil {
 		return nil, err
 	}
-	include, err := buildMatchProperties(oCfg.Include)
+	include, err := span.NewMatcher(oCfg.Include)
 	if err != nil {
 		return nil, err
 	}
-	exclude, err := buildMatchProperties(oCfg.Exclude)
+	exclude, err := span.NewMatcher(oCfg.Exclude)
 	if err != nil {
 		return nil, err
 	}
@@ -99,26 +88,6 @@ func (f *Factory) CreateMetricsProcessor(
 	cfg configmodels.Processor,
 ) (processor.MetricsProcessor, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
-}
-
-// attributeValue is used to convert the raw `value` from ActionKeyValue to the supported trace attribute values.
-func attributeValue(value interface{}) (*tracepb.AttributeValue, error) {
-	attrib := &tracepb.AttributeValue{}
-	switch val := value.(type) {
-	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
-		attrib.Value = &tracepb.AttributeValue_IntValue{IntValue: cast.ToInt64(val)}
-	case float32, float64:
-		attrib.Value = &tracepb.AttributeValue_DoubleValue{DoubleValue: cast.ToFloat64(val)}
-	case string:
-		attrib.Value = &tracepb.AttributeValue_StringValue{
-			StringValue: &tracepb.TruncatableString{Value: val},
-		}
-	case bool:
-		attrib.Value = &tracepb.AttributeValue_BoolValue{BoolValue: val}
-	default:
-		return nil, fmt.Errorf("error unsupported value type \"%T\"", value)
-	}
-	return attrib, nil
 }
 
 // buildAttributesConfiguration validates the input configuration has all of the required fields for the processor
@@ -152,7 +121,7 @@ func buildAttributesConfiguration(config Config) ([]attributeAction, error) {
 			}
 			// Convert the raw value from the configuration to the internal trace representation of the value.
 			if a.Value != nil {
-				val, err := attributeValue(a.Value)
+				val, err := internal.AttributeValue(a.Value)
 				if err != nil {
 					return nil, err
 				}
@@ -171,107 +140,4 @@ func buildAttributesConfiguration(config Config) ([]attributeAction, error) {
 		attributeActions = append(attributeActions, action)
 	}
 	return attributeActions, nil
-}
-
-func buildMatchProperties(config *MatchProperties) (matchingProperties, error) {
-	if config == nil {
-		return nil, nil
-	}
-
-	if len(config.Services) == 0 && len(config.SpanNames) == 0 && len(config.Attributes) == 0 {
-		return nil, errAtLeastOneMatchFieldNeeded
-	}
-
-	var properties matchingProperties
-	var err error
-	switch config.MatchType {
-	case MatchTypeStrict:
-		properties, err = buildStrictMatchingProperties(config)
-	case MatchTypeRegexp:
-		properties, err = buildRegexpMatchingProperties(config)
-	default:
-		return nil, errInvalidMatchType
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	return properties, nil
-}
-
-func buildStrictMatchingProperties(config *MatchProperties) (*strictMatchingProperties, error) {
-	properties := &strictMatchingProperties{
-		Services:  config.Services,
-		SpanNames: config.SpanNames,
-	}
-
-	var err error
-	properties.Attributes, err = buildAttributesMatches(config)
-	if err != nil {
-		return nil, err
-	}
-
-	return properties, nil
-}
-
-func buildRegexpMatchingProperties(config *MatchProperties) (*regexpMatchingProperties, error) {
-	properties := &regexpMatchingProperties{}
-
-	// Precompile Services regexp patterns.
-	for _, pattern := range config.Services {
-		g, err := regexp.Compile(pattern)
-		if err != nil {
-			return nil, fmt.Errorf(
-				"error creating \"attributes\" processor. %s is not a valid service name regexp pattern",
-				pattern,
-			)
-		}
-		properties.Services = append(properties.Services, g)
-	}
-
-	// Precompile SpanNames regexp patterns.
-	for _, pattern := range config.SpanNames {
-		g, err := regexp.Compile(pattern)
-		if err != nil {
-			return nil, fmt.Errorf(
-				"error creating \"attributes\" processor. %s is not a valid span name regexp pattern",
-				pattern,
-			)
-		}
-		properties.SpanNames = append(properties.SpanNames, g)
-	}
-
-	if len(config.Attributes) > 0 {
-		return nil, fmt.Errorf(
-			"%s=%s is not supported for %q",
-			MatchTypeFieldName, MatchTypeRegexp, AttributesFieldName,
-		)
-	}
-
-	return properties, nil
-}
-
-func buildAttributesMatches(config *MatchProperties) (matchAttributes, error) {
-	// Convert attribute values from config representation to in-memory representation.
-	var rawAttributes []matchAttribute
-	for _, attribute := range config.Attributes {
-
-		if attribute.Key == "" {
-			return nil, errors.New("error creating \"attributes\" processor. Can't have empty key in the list of attributes")
-		}
-
-		entry := matchAttribute{
-			Key: attribute.Key,
-		}
-		if attribute.Value != nil {
-			val, err := attributeValue(attribute.Value)
-			if err != nil {
-				return nil, err
-			}
-			entry.AttributeValue = val
-		}
-
-		rawAttributes = append(rawAttributes, entry)
-	}
-	return rawAttributes, nil
 }

@@ -18,6 +18,7 @@ import (
 	"context"
 	"testing"
 
+	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
@@ -26,6 +27,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
+	"github.com/open-telemetry/opentelemetry-collector/internal/processor/span"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
 )
@@ -109,6 +111,7 @@ func TestSpanProcessor_NilEmpty(t *testing.T) {
 
 // Common structure for the test cases.
 type testCase struct {
+	serviceName      string
 	inputName        string
 	inputAttributes  map[string]*tracepb.AttributeValue
 	outputName       string
@@ -119,6 +122,11 @@ type testCase struct {
 func runIndividualTestCase(t *testing.T, tt testCase, tp processor.TraceProcessor) {
 	t.Run(tt.inputName, func(t *testing.T) {
 		traceData := consumerdata.TraceData{
+			Node: &commonpb.Node{
+				ServiceInfo: &commonpb.ServiceInfo{
+					Name: tt.serviceName,
+				},
+			},
 			Spans: []*tracepb.Span{
 				{
 					Name: &tracepb.TruncatableString{Value: tt.inputName},
@@ -131,6 +139,11 @@ func runIndividualTestCase(t *testing.T, tt testCase, tp processor.TraceProcesso
 
 		assert.NoError(t, tp.ConsumeTraceData(context.Background(), traceData))
 		require.Equal(t, consumerdata.TraceData{
+			Node: &commonpb.Node{
+				ServiceInfo: &commonpb.ServiceInfo{
+					Name: tt.serviceName,
+				},
+			},
 			Spans: []*tracepb.Span{
 				{
 					Name: &tracepb.TruncatableString{Value: tt.outputName},
@@ -664,5 +677,83 @@ func TestSpanProcessor_ToAttributes(t *testing.T) {
 		require.NotNil(t, tp)
 
 		runIndividualTestCase(t, tc.testCase, tp)
+	}
+}
+
+func TestSpanProcessor_skipSpan(t *testing.T) {
+	testCases := []testCase{
+		{
+			serviceName: "bankss",
+			inputName:   "url/url",
+			outputName:  "url/url",
+		},
+		{
+			serviceName: "banks",
+			inputName:   "noslasheshere",
+			outputName:  "noslasheshere",
+		},
+		{
+			serviceName: "banks",
+			inputName:   "www.test.com/code",
+			outputName:  "{operation_website}",
+			outputAttributes: map[string]*tracepb.AttributeValue{
+				"operation_website": {
+					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "www.test.com/code"}},
+				},
+			},
+		},
+		{
+			serviceName: "banks",
+			inputName:   "donot/",
+			inputAttributes: map[string]*tracepb.AttributeValue{
+				"operation_website": {
+					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "www.test.com/code"}},
+				},
+			},
+			outputName: "{operation_website}",
+			outputAttributes: map[string]*tracepb.AttributeValue{
+				"operation_website": {
+					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "donot/"}},
+				},
+			},
+		},
+		{
+			serviceName: "banks",
+			inputName:   "donot/change",
+			inputAttributes: map[string]*tracepb.AttributeValue{
+				"operation_website": {
+					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "www.test.com/code"}},
+				},
+			},
+			outputName: "donot/change",
+			outputAttributes: map[string]*tracepb.AttributeValue{
+				"operation_website": {
+					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "www.test.com/code"}},
+				},
+			},
+		},
+	}
+
+	factory := Factory{}
+	cfg := factory.CreateDefaultConfig()
+	oCfg := cfg.(*Config)
+	oCfg.Include = &span.MatchProperties{
+		MatchType: span.MatchTypeRegexp,
+		Services:  []string{`^banks$`},
+		SpanNames: []string{"/"},
+	}
+	oCfg.Exclude = &span.MatchProperties{
+		MatchType: span.MatchTypeStrict,
+		SpanNames: []string{`donot/change`},
+	}
+	oCfg.Rename.ToAttributes = &ToAttributes{
+		Rules: []string{`(?P<operation_website>.*?)$`},
+	}
+	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), oCfg)
+	require.Nil(t, err)
+	require.NotNil(t, tp)
+
+	for _, tc := range testCases {
+		runIndividualTestCase(t, tc, tp)
 	}
 }

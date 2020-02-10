@@ -23,6 +23,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-collector/internal/processor/span"
 )
 
 func TestLoadingConifg(t *testing.T) {
@@ -90,12 +91,14 @@ func TestLoadingConifg(t *testing.T) {
 			NameVal: "attributes/excludemulti",
 			TypeVal: typeStr,
 		},
-		Exclude: &MatchProperties{
-			MatchType: MatchTypeStrict,
-			Services:  []string{"svcA", "svcB"},
-			Attributes: []Attribute{
-				{Key: "env", Value: "dev"},
-				{Key: "test_request"},
+		MatchConfig: span.MatchConfig{
+			Exclude: &span.MatchProperties{
+				MatchType: span.MatchTypeStrict,
+				Services:  []string{"svcA", "svcB"},
+				Attributes: []span.Attribute{
+					{Key: "env", Value: "dev"},
+					{Key: "test_request"},
+				},
 			},
 		},
 		Actions: []ActionKeyValue{
@@ -110,9 +113,11 @@ func TestLoadingConifg(t *testing.T) {
 			NameVal: "attributes/includeservices",
 			TypeVal: typeStr,
 		},
-		Include: &MatchProperties{
-			MatchType: MatchTypeRegexp,
-			Services:  []string{"auth.*", "login.*"},
+		MatchConfig: span.MatchConfig{
+			Include: &span.MatchProperties{
+				MatchType: span.MatchTypeRegexp,
+				Services:  []string{"auth.*", "login.*"},
+			},
 		},
 		Actions: []ActionKeyValue{
 			{Key: "credit_card", Action: DELETE},
@@ -126,14 +131,16 @@ func TestLoadingConifg(t *testing.T) {
 			NameVal: "attributes/selectiveprocessing",
 			TypeVal: typeStr,
 		},
-		Include: &MatchProperties{
-			MatchType: MatchTypeStrict,
-			Services:  []string{"svcA", "svcB"},
-		},
-		Exclude: &MatchProperties{
-			MatchType: MatchTypeStrict,
-			Attributes: []Attribute{
-				{Key: "redact_trace", Value: false},
+		MatchConfig: span.MatchConfig{
+			Include: &span.MatchProperties{
+				MatchType: span.MatchTypeStrict,
+				Services:  []string{"svcA", "svcB"},
+			},
+			Exclude: &span.MatchProperties{
+				MatchType: span.MatchTypeStrict,
+				Attributes: []span.Attribute{
+					{Key: "redact_trace", Value: false},
+				},
 			},
 		},
 		Actions: []ActionKeyValue{
@@ -176,17 +183,20 @@ func TestLoadingConifg(t *testing.T) {
 			NameVal: "attributes/regexp",
 			TypeVal: typeStr,
 		},
-		Include: &MatchProperties{
-			MatchType: MatchTypeRegexp,
-			Services:  []string{"auth.*"},
-		},
-		Exclude: &MatchProperties{
-			MatchType: MatchTypeRegexp,
-			SpanNames: []string{"login.*"},
+		MatchConfig: span.MatchConfig{
+			Include: &span.MatchProperties{
+				MatchType: span.MatchTypeRegexp,
+				Services:  []string{"auth.*"},
+			},
+			Exclude: &span.MatchProperties{
+				MatchType: span.MatchTypeRegexp,
+				SpanNames: []string{"login.*"},
+			},
 		},
 		Actions: []ActionKeyValue{
 			{Key: "password", Action: UPDATE, Value: "obfuscated"},
 			{Key: "token", Action: DELETE},
 		},
 	})
+
 }

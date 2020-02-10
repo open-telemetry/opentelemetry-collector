@@ -16,7 +16,6 @@ package attributesprocessor
 
 import (
 	"context"
-	"regexp"
 	"testing"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
@@ -28,6 +27,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
+	"github.com/open-telemetry/opentelemetry-collector/internal/processor/span"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
 )
 
@@ -854,340 +854,6 @@ func TestAttributes_Ordering(t *testing.T) {
 	}
 }
 
-func TestAttributes_Matching_False(t *testing.T) {
-	testcases := []struct {
-		name       string
-		properties matchingProperties
-	}{
-		{
-			name: "service_name_doesnt_match_regexp",
-			properties: &regexpMatchingProperties{
-				Services:   []*regexp.Regexp{regexp.MustCompile("svcA")},
-				Attributes: []matchAttribute{},
-			},
-		},
-
-		{
-			name: "service_name_doesnt_match_strict",
-			properties: &strictMatchingProperties{
-				Services:   []string{"svcA"},
-				Attributes: []matchAttribute{},
-			},
-		},
-
-		{
-			name: "span_name_doesnt_match",
-			properties: &regexpMatchingProperties{
-				SpanNames:  []*regexp.Regexp{regexp.MustCompile("spanNo.*Name")},
-				Attributes: []matchAttribute{},
-			},
-		},
-
-		{
-			name: "span_name_doesnt_match_any",
-			properties: &regexpMatchingProperties{
-				SpanNames: []*regexp.Regexp{
-					regexp.MustCompile("spanNo.*Name"),
-					regexp.MustCompile("non-matching?pattern"),
-					regexp.MustCompile("regular string"),
-				},
-				Attributes: []matchAttribute{},
-			},
-		},
-
-		{
-			name: "wrong_property_value",
-			properties: &regexpMatchingProperties{
-				Services: []*regexp.Regexp{},
-				Attributes: []matchAttribute{
-					{
-						Key: "keyInt",
-						AttributeValue: &tracepb.AttributeValue{
-							Value: &tracepb.AttributeValue_IntValue{
-								IntValue: 1234,
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "incompatible_property_value",
-			properties: &regexpMatchingProperties{
-				Services: []*regexp.Regexp{},
-				Attributes: []matchAttribute{
-					{
-						Key: "keyInt",
-						AttributeValue: &tracepb.AttributeValue{
-							Value: &tracepb.AttributeValue_StringValue{
-								StringValue: &tracepb.TruncatableString{Value: "123"},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "property_key_does_not_exist",
-			properties: &regexpMatchingProperties{
-				Services: []*regexp.Regexp{},
-				Attributes: []matchAttribute{
-					{
-						Key:            "doesnotexist",
-						AttributeValue: nil,
-					},
-				},
-			},
-		},
-	}
-
-	span := &tracepb.Span{
-		Name: &tracepb.TruncatableString{Value: "spanName"},
-		Attributes: &tracepb.Span_Attributes{
-			AttributeMap: map[string]*tracepb.AttributeValue{
-				"keyInt": {
-					Value: &tracepb.AttributeValue_IntValue{IntValue: 123},
-				},
-			},
-		},
-	}
-	for _, tc := range testcases {
-		t.Run(tc.name, func(t *testing.T) {
-			assert.False(t, tc.properties.matchSpan(span, "wrongSvc"))
-		})
-	}
-}
-
-func TestAttributes_MatchingCornerCases(t *testing.T) {
-	mp := &regexpMatchingProperties{
-		Services: []*regexp.Regexp{regexp.MustCompile("svcA")},
-		Attributes: []matchAttribute{
-			{
-				Key:            "keyOne",
-				AttributeValue: nil,
-			},
-		},
-	}
-	testcases := []struct {
-		name string
-		span *tracepb.Span
-	}{
-		{
-			name: "nil_attributes",
-			span: &tracepb.Span{
-				Attributes: nil,
-			},
-		},
-		{
-			name: "default_attributes",
-			span: &tracepb.Span{
-				Attributes: &tracepb.Span_Attributes{},
-			},
-		},
-		{
-			name: "empty_map",
-			span: &tracepb.Span{
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: map[string]*tracepb.AttributeValue{},
-				},
-			},
-		},
-	}
-
-	for _, tc := range testcases {
-		t.Run(tc.name, func(t *testing.T) {
-			assert.False(t, mp.matchSpan(tc.span, "svcA"))
-		})
-	}
-}
-
-func TestAttributes_MissingServiceName(t *testing.T) {
-	mp := &regexpMatchingProperties{
-		Services: []*regexp.Regexp{regexp.MustCompile("svcA")},
-	}
-	testcases := []struct {
-		name string
-		span *tracepb.Span
-	}{
-		{
-			name: "nil_attributes",
-			span: &tracepb.Span{
-				Attributes: nil,
-			},
-		},
-		{
-			name: "default_attributes",
-			span: &tracepb.Span{
-				Attributes: &tracepb.Span_Attributes{},
-			},
-		},
-		{
-			name: "empty_map",
-			span: &tracepb.Span{
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: map[string]*tracepb.AttributeValue{},
-				},
-			},
-		},
-	}
-
-	for _, tc := range testcases {
-		t.Run(tc.name, func(t *testing.T) {
-			assert.False(t, mp.matchSpan(tc.span, ""))
-		})
-	}
-}
-
-func TestAttributes_Matching_True(t *testing.T) {
-	testcases := []struct {
-		name       string
-		properties matchingProperties
-	}{
-		{
-			name: "empty_match_properties",
-			properties: &regexpMatchingProperties{
-				Services:   []*regexp.Regexp{},
-				Attributes: []matchAttribute{},
-			},
-		},
-		{
-			name: "service_name_match_regexp",
-			properties: &regexpMatchingProperties{
-				Services:   []*regexp.Regexp{regexp.MustCompile("svcA")},
-				Attributes: []matchAttribute{},
-			},
-		},
-		{
-			name: "service_name_match_strict",
-			properties: &strictMatchingProperties{
-				Services:   []string{"svcA"},
-				Attributes: []matchAttribute{},
-			},
-		},
-		{
-			name: "span_name_match",
-			properties: &regexpMatchingProperties{
-				SpanNames:  []*regexp.Regexp{regexp.MustCompile("span.*")},
-				Attributes: []matchAttribute{},
-			},
-		},
-		{
-			name: "span_name_second_match",
-			properties: &regexpMatchingProperties{
-				SpanNames: []*regexp.Regexp{
-					regexp.MustCompile("wrong.*pattern"),
-					regexp.MustCompile("span.*"),
-					regexp.MustCompile("yet another?pattern"),
-					regexp.MustCompile("regularstring"),
-				},
-				Attributes: []matchAttribute{},
-			},
-		},
-		{
-			name: "property_exact_value_match",
-			properties: &regexpMatchingProperties{
-				Services: []*regexp.Regexp{},
-				Attributes: []matchAttribute{
-					{
-						Key: "keyString",
-						AttributeValue: &tracepb.AttributeValue{
-							Value: &tracepb.AttributeValue_StringValue{
-								StringValue: &tracepb.TruncatableString{Value: "arithmetic"},
-							},
-						},
-					},
-					{
-						Key: "keyInt",
-						AttributeValue: &tracepb.AttributeValue{
-							Value: &tracepb.AttributeValue_IntValue{
-								IntValue: 123,
-							},
-						},
-					},
-					{
-						Key: "keyDouble",
-						AttributeValue: &tracepb.AttributeValue{
-							Value: &tracepb.AttributeValue_DoubleValue{
-								DoubleValue: cast.ToFloat64(3245.6),
-							},
-						},
-					},
-					{
-						Key: "keyBool",
-						AttributeValue: &tracepb.AttributeValue{
-							Value: &tracepb.AttributeValue_BoolValue{BoolValue: true},
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "property_exists",
-			properties: &regexpMatchingProperties{
-				Services: []*regexp.Regexp{regexp.MustCompile("svcA")},
-				Attributes: []matchAttribute{
-					{
-						Key:            "keyExists",
-						AttributeValue: nil,
-					},
-				},
-			},
-		},
-		{
-			name: "match_all_settings_exists",
-			properties: &regexpMatchingProperties{
-				Services: []*regexp.Regexp{regexp.MustCompile("svcA")},
-				Attributes: []matchAttribute{
-					{
-						Key:            "keyExists",
-						AttributeValue: nil,
-					},
-					{
-						Key: "keyString",
-						AttributeValue: &tracepb.AttributeValue{
-							Value: &tracepb.AttributeValue_StringValue{
-								StringValue: &tracepb.TruncatableString{Value: "arithmetic"},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	span := &tracepb.Span{
-		Name: &tracepb.TruncatableString{Value: "spanName"},
-		Attributes: &tracepb.Span_Attributes{
-			AttributeMap: map[string]*tracepb.AttributeValue{
-				"keyString": {
-					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "arithmetic"}},
-				},
-				"keyInt": {
-					Value: &tracepb.AttributeValue_IntValue{IntValue: 123},
-				},
-				"keyDouble": {
-					Value: &tracepb.AttributeValue_DoubleValue{
-						DoubleValue: cast.ToFloat64(3245.6),
-					},
-				},
-				"keyBool": {
-					Value: &tracepb.AttributeValue_BoolValue{BoolValue: true},
-				},
-				"keyExists": {
-					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "present"}},
-				},
-			},
-		},
-	}
-
-	for _, tc := range testcases {
-		t.Run(tc.name, func(t *testing.T) {
-			assert.True(t, tc.properties.matchSpan(span, "svcA"))
-
-		})
-	}
-}
-
 func TestAttributes_FilterSpans(t *testing.T) {
 	testCases := []testCase{
 		{
@@ -1245,15 +911,15 @@ func TestAttributes_FilterSpans(t *testing.T) {
 	oCfg.Actions = []ActionKeyValue{
 		{Key: "attribute1", Action: INSERT, Value: 123},
 	}
-	oCfg.Include = &MatchProperties{
+	oCfg.Include = &span.MatchProperties{
 		Services:  []string{"svcA", "svcB.*"},
-		MatchType: MatchTypeRegexp,
+		MatchType: span.MatchTypeRegexp,
 	}
-	oCfg.Exclude = &MatchProperties{
-		Attributes: []Attribute{
+	oCfg.Exclude = &span.MatchProperties{
+		Attributes: []span.Attribute{
 			{Key: "NoModification", Value: true},
 		},
-		MatchType: MatchTypeStrict,
+		MatchType: span.MatchTypeStrict,
 	}
 	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), cfg)
 	require.Nil(t, err)
@@ -1327,13 +993,13 @@ func TestAttributes_FilterSpansByNameStrict(t *testing.T) {
 	oCfg.Actions = []ActionKeyValue{
 		{Key: "attribute1", Action: INSERT, Value: 123},
 	}
-	oCfg.Include = &MatchProperties{
+	oCfg.Include = &span.MatchProperties{
 		SpanNames: []string{"apply", "dont_apply"},
-		MatchType: MatchTypeStrict,
+		MatchType: span.MatchTypeStrict,
 	}
-	oCfg.Exclude = &MatchProperties{
+	oCfg.Exclude = &span.MatchProperties{
 		SpanNames: []string{"dont_apply"},
-		MatchType: MatchTypeStrict,
+		MatchType: span.MatchTypeStrict,
 	}
 	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), cfg)
 	require.Nil(t, err)
@@ -1407,13 +1073,13 @@ func TestAttributes_FilterSpansByNameRegexp(t *testing.T) {
 	oCfg.Actions = []ActionKeyValue{
 		{Key: "attribute1", Action: INSERT, Value: 123},
 	}
-	oCfg.Include = &MatchProperties{
+	oCfg.Include = &span.MatchProperties{
 		SpanNames: []string{"^apply.*"},
-		MatchType: MatchTypeRegexp,
+		MatchType: span.MatchTypeRegexp,
 	}
-	oCfg.Exclude = &MatchProperties{
+	oCfg.Exclude = &span.MatchProperties{
 		SpanNames: []string{".*dont_apply$"},
-		MatchType: MatchTypeRegexp,
+		MatchType: span.MatchTypeRegexp,
 	}
 	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), cfg)
 	require.Nil(t, err)
@@ -1464,7 +1130,7 @@ func BenchmarkAttributes_FilterSpansByName(b *testing.B) {
 	oCfg.Actions = []ActionKeyValue{
 		{Key: "attribute1", Action: INSERT, Value: 123},
 	}
-	oCfg.Include = &MatchProperties{
+	oCfg.Include = &span.MatchProperties{
 		SpanNames: []string{"^apply.*"},
 	}
 	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), cfg)

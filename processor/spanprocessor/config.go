@@ -16,11 +16,17 @@ package spanprocessor
 
 import (
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-collector/internal/processor/span"
 )
 
 // Config is the configuration for the span processor.
+// Prior to any actions being applied, each span is compared against
+// the include properties and then the exclude properties if they are specified.
+// This determines if a span is to be processed or not.
 type Config struct {
 	configmodels.ProcessorSettings `mapstructure:",squash"`
+
+	span.MatchConfig `mapstructure:",squash"`
 
 	// Rename specifies the components required to re-name a span.
 	// The `from_attributes` field needs to be set for this processor to be properly

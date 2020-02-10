@@ -22,6 +22,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-collector/internal/processor/span"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -69,6 +70,30 @@ func TestLoadConfig(t *testing.T) {
 		Rename: Name{
 			ToAttributes: &ToAttributes{
 				Rules: []string{`^\/api\/v1\/document\/(?P<documentId>.*)\/update$`},
+			},
+		},
+	})
+
+	p3 := config.Processors["span/includeexclude"]
+	assert.Equal(t, p3, &Config{
+		ProcessorSettings: configmodels.ProcessorSettings{
+			TypeVal: typeStr,
+			NameVal: "span/includeexclude",
+		},
+		MatchConfig: span.MatchConfig{
+			Include: &span.MatchProperties{
+				MatchType: span.MatchTypeRegexp,
+				Services:  []string{`banks`},
+				SpanNames: []string{"^(.*?)/(.*?)$"},
+			},
+			Exclude: &span.MatchProperties{
+				MatchType: span.MatchTypeStrict,
+				SpanNames: []string{`donot/change`},
+			},
+		},
+		Rename: Name{
+			ToAttributes: &ToAttributes{
+				Rules: []string{`(?P<operation_website>.*?)$`},
 			},
 		},
 	})
