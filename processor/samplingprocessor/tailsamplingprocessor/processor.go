@@ -55,18 +55,19 @@ type traceKey string
 // tailSamplingSpanProcessor handles the incoming trace data and uses the given sampling
 // policy to sample traces.
 type tailSamplingSpanProcessor struct {
-	ctx             context.Context
-	nextConsumer    consumer.TraceConsumer
-	start           sync.Once
-	maxNumTraces    uint64
-	policies        []*Policy
-	logger          *zap.Logger
-	idToTrace       sync.Map
-	policyTicker    tTicker
-	decisionBatcher idbatcher.Batcher
-	deleteChan      chan traceKey
-	numTracesOnMap  uint64
-	forwarder       forwarder
+	ctx              context.Context
+	nextConsumer     consumer.TraceConsumer
+	start            sync.Once
+	maxNumTraces     uint64
+	policies         []*Policy
+	logger           *zap.Logger
+	idToTrace        sync.Map
+	policyTicker     tTicker
+	decisionBatcher  idbatcher.Batcher
+	deleteChan       chan traceKey
+	globalDeleteChan chan int
+	numTracesOnMap   uint64
+	forwarder        forwarder
 }
 
 const (
@@ -119,6 +120,7 @@ func NewTraceProcessor(logger *zap.Logger, nextConsumer consumer.TraceConsumer, 
 
 	tsp.policyTicker = &policyTicker{onTick: tsp.samplingPolicyOnTick}
 	tsp.deleteChan = make(chan traceKey, cfg.NumTraces)
+	tsp.globalDeleteChan = make(chan int, cfg.NumTraces)
 
 	return tsp, nil
 }
@@ -285,7 +287,8 @@ func (tsp *tailSamplingSpanProcessor) ConsumeTraceData(ctx context.Context, td c
 			currTime := time.Now()
 			for !postDeletion {
 				select {
-				case tsp.deleteChan <- id:
+				case tsp.globalDeleteChan <- 1:
+					tsp.deleteChan <- id
 					postDeletion = true
 				default:
 					traceKeyToDrop := <-tsp.deleteChan
@@ -380,7 +383,7 @@ func (tsp *tailSamplingSpanProcessor) AddSupportExtensions(exts ...extension.Sup
 	for _, v := range exts {
 		// FIXME(@annanay25) : Make sure the extension name is "ring_membership"
 		// Create new SpanForwarder instance
-		f, err := newSpanForwarder(tsp.logger)
+		f, err := newSpanForwarder(tsp.logger, tsp.globalDeleteChan)
 		if err != nil {
 			tsp.logger.Fatal("Error in creating span forwarder")
 		}

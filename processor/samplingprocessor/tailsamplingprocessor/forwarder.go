@@ -54,6 +54,7 @@ type collectorPeer struct {
 	logger             *zap.Logger
 	start              sync.Once
 	idToSpans          sync.Map
+	globalDeleteChan   chan int
 }
 
 // spanForwarder is the component that fowards spans to collector peers
@@ -75,6 +76,9 @@ type spanForwarder struct {
 	// Ownership should be with the component that requires it.
 	// However it will be Start()'ed by the Application service.
 	ring extension.SupportExtension
+	// channel to keep track of total number of traces in memory
+	// across all queues
+	globalDeleteChan chan int
 }
 
 func (c *collectorPeer) batchDispatchOnTick() {
@@ -83,18 +87,19 @@ func (c *collectorPeer) batchDispatchOnTick() {
 	// create batch from batchIds
 	var td consumerdata.TraceData
 	for _, v := range batchIds {
-		span, _ := c.idToSpans.Load(string(v))
-		if span != nil {
-			span.(*v1.Span).Attributes.AttributeMap["otelcol.ttl"] = &v1.AttributeValue{
-				Value: &v1.AttributeValue_IntValue{
-					IntValue: 1,
-				},
-			}
-			td.Spans = append(td.Spans, span.(*v1.Span))
-			c.logger.Info("Forwarding this span", zap.ByteString("Span ID", span.(*v1.Span).GetSpanId()))
+		if span, ok := c.idToSpans.Load(string(v)); ok {
+			if span != nil {
+				span.(*v1.Span).Attributes.AttributeMap["otelcol.ttl"] = &v1.AttributeValue{
+					Value: &v1.AttributeValue_IntValue{
+						IntValue: 1,
+					},
+				}
+				td.Spans = append(td.Spans, span.(*v1.Span))
+				c.logger.Info("Forwarding this span", zap.ByteString("Span ID", span.(*v1.Span).GetSpanId()))
 
-			// Null-out the map entry
-			c.idToSpans.Delete(string(v))
+				// Null-out the map entry
+				c.idToSpans.Delete(string(v))
+			}
 		}
 	}
 
@@ -107,7 +112,7 @@ func (c *collectorPeer) batchDispatchOnTick() {
 	c.exporter.ConsumeTraceData(context.Background(), td)
 }
 
-func newCollectorPeer(logger *zap.Logger, ip string) *collectorPeer {
+func newCollectorPeer(logger *zap.Logger, ip string, globalDeleteChan chan int) *collectorPeer {
 	factory := &opencensusexporter.Factory{}
 	config := factory.CreateDefaultConfig()
 	config.(*opencensusexporter.Config).ExporterSettings = configmodels.ExporterSettings{
@@ -202,7 +207,7 @@ func (sf *spanForwarder) memberSyncOnTick() {
 				sf.peerQueues[v] = nil
 				sf.Unlock()
 			} else {
-				newPeer := newCollectorPeer(sf.logger, v)
+				newPeer := newCollectorPeer(sf.logger, v, sf.globalDeleteChan)
 				if newPeer == nil {
 					return
 				}
@@ -253,10 +258,11 @@ func externalIP() (string, error) {
 	return "", errors.New("are you connected to the network?")
 }
 
-func newSpanForwarder(logger *zap.Logger) (forwarder, error) {
+func newSpanForwarder(logger *zap.Logger, globalDeleteChan chan int) (forwarder, error) {
 	sf := &spanForwarder{
-		logger:       logger,
-		selfMemberIP: "0.0.0.0",
+		logger:           logger,
+		selfMemberIP:     "0.0.0.0",
+		globalDeleteChan: globalDeleteChan,
 	}
 
 	if ip, err := externalIP(); err == nil {
@@ -334,7 +340,19 @@ func (sf *spanForwarder) process(span *tracepb.Span) bool {
 	peer.peerBatcher.AddToCurrentBatch(span.SpanId)
 
 	// Store the span in idToSpans
-	peer.idToSpans.Store(string(span.SpanId), span)
+
+	// FIXME(@annanay25): Is it good to use channels for this
+	// TODO: Only add id to batch if you're able to push an int into globalDeleteChan
+	postDeletion := false
+	for !postDeletion {
+		select {
+		case sf.globalDeleteChan <- 1:
+			peer.idToSpans.Store(string(span.SpanId), span)
+			postDeletion = true
+		default:
+			// don't store this span
+		}
+	}
 
 	return true
 }
