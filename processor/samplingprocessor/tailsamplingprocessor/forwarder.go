@@ -78,6 +78,7 @@ type spanForwarder struct {
 	ring extension.SupportExtension
 	// channel to keep track of total number of traces in memory
 	// across all queues
+	// TODO(@annanay25): Is it good to use channels for this
 	globalDeleteChan chan int
 }
 
@@ -261,12 +262,13 @@ func externalIP() (string, error) {
 func newSpanForwarder(logger *zap.Logger, globalDeleteChan chan int) (forwarder, error) {
 	sf := &spanForwarder{
 		logger:           logger,
-		selfMemberIP:     "0.0.0.0",
 		globalDeleteChan: globalDeleteChan,
 	}
 
 	if ip, err := externalIP(); err == nil {
 		sf.selfMemberIP = ip
+	} else {
+		return nil, err
 	}
 
 	sf.peerQueues = make(map[string]*collectorPeer)
@@ -292,13 +294,12 @@ func jumpHash(key uint64, numBuckets int) int32 {
 
 func bytesToInt(spanID []byte) int64 {
 	var n int64
-	// simplistic for now
 	buf := bytes.NewBuffer(spanID)
 	binary.Read(buf, binary.LittleEndian, &n)
 	return n
 }
 
-// TODO: Use batch here instead of span
+// TODO(@annanay25): Use batch here instead of span?
 func (sf *spanForwarder) process(span *tracepb.Span) bool {
 	// Start member sync
 	sf.start.Do(func() {
@@ -312,6 +313,8 @@ func (sf *spanForwarder) process(span *tracepb.Span) bool {
 
 	// The only time we need to acquire the lock is to see peer list
 	sf.RLock()
+	defer sf.RUnlock()
+
 	// check hash of traceid
 	traceIDInt64 := bytesToInt(span.TraceId)
 	memberNum := int64(jumpHash(uint64(traceIDInt64), len(sf.peerQueues)))
@@ -320,7 +323,6 @@ func (sf *spanForwarder) process(span *tracepb.Span) bool {
 	} else {
 		memberID = reflect.ValueOf(sf.peerQueues).MapKeys()[memberNum].Interface().(string)
 	}
-	sf.RUnlock()
 
 	if memberID == sf.selfMemberIP {
 		// span should be processed by this collector peer
@@ -339,19 +341,14 @@ func (sf *spanForwarder) process(span *tracepb.Span) bool {
 	// we don't want to build the trace here(?)
 	peer.peerBatcher.AddToCurrentBatch(span.SpanId)
 
-	// Store the span in idToSpans
-
-	// FIXME(@annanay25): Is it good to use channels for this
-	// TODO: Only add id to batch if you're able to push an int into globalDeleteChan
-	postDeletion := false
-	for !postDeletion {
-		select {
-		case sf.globalDeleteChan <- 1:
-			peer.idToSpans.Store(string(span.SpanId), span)
-			postDeletion = true
-		default:
-			// don't store this span
-		}
+	// FIXME(@annanay25): Don't insert to globalDeleteChan for every span
+	// ... Need to change this, track only trace constructions in memory.
+	select {
+	case sf.globalDeleteChan <- 1:
+		// Store the span in idToSpans
+		peer.idToSpans.Store(string(span.SpanId), span)
+	default:
+		// don't store this span
 	}
 
 	return true
