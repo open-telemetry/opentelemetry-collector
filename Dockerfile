@@ -9,12 +9,17 @@ COPY go.mod .
 COPY go.sum .
 RUN go mod download
 
-ADD . .
+COPY Makefile .
 RUN make install-tools
-RUN make otelcol
 
-FROM alpine:3.10
-COPY --from=build /src/bin/linux/otelcol /otelcol
+ADD . .
+ARG target=otelcol
+RUN make ${target}
+
+
+FROM scratch
+COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY --from=build /src/bin/linux/${target} /otel
 
 EXPOSE 55678 55679
-ENTRYPOINT ["/otelcol"]
+ENTRYPOINT ["/otel"]
