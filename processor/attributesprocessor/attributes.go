@@ -22,9 +22,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/internal/processor/span"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
-	"github.com/open-telemetry/opentelemetry-collector/processor/common"
 )
 
 type attributesProcessor struct {
@@ -37,8 +37,8 @@ type attributesProcessor struct {
 // raw format from the configuration.
 type attributesConfig struct {
 	actions []attributeAction
-	include common.MatchingProperties
-	exclude common.MatchingProperties
+	include span.Matcher
+	exclude span.Matcher
 }
 
 type attributeAction struct {
@@ -161,11 +161,6 @@ func setAttribute(action attributeAction, attributesMap map[string]*tracepb.Attr
 // in the attribute configuration with the include and exclude settings.
 // Include properties are checked before exclude settings are checked.
 func (a *attributesProcessor) skipSpan(span *tracepb.Span, serviceName string) bool {
-	// By default all spans are processed when no include and exclude properties are set.
-	if a.config.include == nil && a.config.exclude == nil {
-		return false
-	}
-
 	if a.config.include != nil {
 		// A false returned in this case means the span should not be processed.
 		if include := a.config.include.MatchSpan(span, serviceName); !include {

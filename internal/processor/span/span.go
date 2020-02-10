@@ -1,4 +1,4 @@
-// Copyright 2019, OpenTelemetry Authors
+// Copyright 2020, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package span
 
 import (
 	"errors"
@@ -20,11 +20,12 @@ import (
 	"regexp"
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/spf13/cast"
+
+	"github.com/open-telemetry/opentelemetry-collector/internal/processor"
 )
 
 var (
-	// TODO Add processor type invoking the BuildMatchProperties in error text.
+	// TODO Add processor type invoking the NewMatcher in error text.
 	errAtLeastOneMatchFieldNeeded = errors.New(
 		`error creating processor. At least one ` +
 			`of "services", "span_names" or "attributes" field must be specified"`)
@@ -33,17 +34,19 @@ var (
 		`match_type must be either %q or %q`, MatchTypeStrict, MatchTypeRegexp)
 )
 
-// matchingProperties is an interface that allows matching a span against a configuration
+// TODO: Modify Matcher to invoke both the include and exclude properties so
+// calling processors will always have the same logic.
+// Matcher is an interface that allows matching a span against a configuration
 // of a match.
-type MatchingProperties interface {
+type Matcher interface {
 	MatchSpan(span *tracepb.Span, serviceName string) bool
 }
 
-type matchAttributes []matchAttribute
+type attributesMatcher []attributeMatcher
 
-// strictMatchingProperties allows matching a span against a "strict" match type
+// strictPropertiesMatcher allows matching a span against a "strict" match type
 // configuration.
-type strictMatchingProperties struct {
+type strictPropertiesMatcher struct {
 	// Service names to compare to.
 	Services []string
 
@@ -51,12 +54,12 @@ type strictMatchingProperties struct {
 	SpanNames []string
 
 	// The attribute values are stored in the internal format.
-	Attributes matchAttributes
+	Attributes attributesMatcher
 }
 
-// strictMatchingProperties allows matching a span against a "regexp" match type
+// regexpPropertiesMatcher allows matching a span against a "regexp" match type
 // configuration.
-type regexpMatchingProperties struct {
+type regexpPropertiesMatcher struct {
 	// Precompiled service name regexp-es.
 	Services []*regexp.Regexp
 
@@ -64,16 +67,16 @@ type regexpMatchingProperties struct {
 	SpanNames []*regexp.Regexp
 
 	// The attribute values are stored in the internal format.
-	Attributes matchAttributes
+	Attributes attributesMatcher
 }
 
-// matchAttribute is a attribute key/value pair to match to.
-type matchAttribute struct {
+// attributeMatcher is a attribute key/value pair to match to.
+type attributeMatcher struct {
 	Key            string
 	AttributeValue *tracepb.AttributeValue
 }
 
-func BuildMatchProperties(config *MatchProperties) (MatchingProperties, error) {
+func NewMatcher(config *MatchProperties) (Matcher, error) {
 	if config == nil {
 		return nil, nil
 	}
@@ -82,13 +85,13 @@ func BuildMatchProperties(config *MatchProperties) (MatchingProperties, error) {
 		return nil, errAtLeastOneMatchFieldNeeded
 	}
 
-	var properties MatchingProperties
+	var properties Matcher
 	var err error
 	switch config.MatchType {
 	case MatchTypeStrict:
-		properties, err = buildStrictMatchingProperties(config)
+		properties, err = newStrictPropertiesMatcher(config)
 	case MatchTypeRegexp:
-		properties, err = buildRegexpMatchingProperties(config)
+		properties, err = newRegexpPropertiesMatcher(config)
 	default:
 		return nil, errInvalidMatchType
 	}
@@ -99,14 +102,14 @@ func BuildMatchProperties(config *MatchProperties) (MatchingProperties, error) {
 	return properties, nil
 }
 
-func buildStrictMatchingProperties(config *MatchProperties) (*strictMatchingProperties, error) {
-	properties := &strictMatchingProperties{
+func newStrictPropertiesMatcher(config *MatchProperties) (*strictPropertiesMatcher, error) {
+	properties := &strictPropertiesMatcher{
 		Services:  config.Services,
 		SpanNames: config.SpanNames,
 	}
 
 	var err error
-	properties.Attributes, err = buildAttributesMatches(config)
+	properties.Attributes, err = newAttributesMatcher(config)
 	if err != nil {
 		return nil, err
 	}
@@ -114,8 +117,8 @@ func buildStrictMatchingProperties(config *MatchProperties) (*strictMatchingProp
 	return properties, nil
 }
 
-func buildRegexpMatchingProperties(config *MatchProperties) (*regexpMatchingProperties, error) {
-	properties := &regexpMatchingProperties{}
+func newRegexpPropertiesMatcher(config *MatchProperties) (*regexpPropertiesMatcher, error) {
+	properties := &regexpPropertiesMatcher{}
 
 	// Precompile Services regexp patterns.
 	for _, pattern := range config.Services {
@@ -151,20 +154,20 @@ func buildRegexpMatchingProperties(config *MatchProperties) (*regexpMatchingProp
 	return properties, nil
 }
 
-func buildAttributesMatches(config *MatchProperties) (matchAttributes, error) {
+func newAttributesMatcher(config *MatchProperties) (attributesMatcher, error) {
 	// Convert attribute values from config representation to in-memory representation.
-	var rawAttributes []matchAttribute
+	var rawAttributes []attributeMatcher
 	for _, attribute := range config.Attributes {
 
 		if attribute.Key == "" {
 			return nil, errors.New("error creating processor. Can't have empty key in the list of attributes")
 		}
 
-		entry := matchAttribute{
+		entry := attributeMatcher{
 			Key: attribute.Key,
 		}
 		if attribute.Value != nil {
-			val, err := AttributeValue(attribute.Value)
+			val, err := processor.AttributeValue(attribute.Value)
 			if err != nil {
 				return nil, err
 			}
@@ -176,26 +179,6 @@ func buildAttributesMatches(config *MatchProperties) (matchAttributes, error) {
 	return rawAttributes, nil
 }
 
-// AttributeValue is used to convert the raw `value` from ActionKeyValue to the supported trace attribute values.
-func AttributeValue(value interface{}) (*tracepb.AttributeValue, error) {
-	attrib := &tracepb.AttributeValue{}
-	switch val := value.(type) {
-	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
-		attrib.Value = &tracepb.AttributeValue_IntValue{IntValue: cast.ToInt64(val)}
-	case float32, float64:
-		attrib.Value = &tracepb.AttributeValue_DoubleValue{DoubleValue: cast.ToFloat64(val)}
-	case string:
-		attrib.Value = &tracepb.AttributeValue_StringValue{
-			StringValue: &tracepb.TruncatableString{Value: val},
-		}
-	case bool:
-		attrib.Value = &tracepb.AttributeValue_BoolValue{BoolValue: val}
-	default:
-		return nil, fmt.Errorf("error unsupported value type \"%T\"", value)
-	}
-	return attrib, nil
-}
-
 // MatchSpan matches a span and service to a set of properties.
 // There are 3 sets of properties to match against.
 // The service name is checked first, if specified. Then span names are matched, if specified.
@@ -203,7 +186,7 @@ func AttributeValue(value interface{}) (*tracepb.AttributeValue, error) {
 // At least one of services, span names or attributes must be specified. It is supported
 // to have more than one of these specified, and all specified must evaluate
 // to true for a match to occur.
-func (mp *strictMatchingProperties) MatchSpan(span *tracepb.Span, serviceName string) bool {
+func (mp *strictPropertiesMatcher) MatchSpan(span *tracepb.Span, serviceName string) bool {
 
 	if len(mp.Services) > 0 {
 		// Verify service name matches at least one of the items.
@@ -249,7 +232,7 @@ func (mp *strictMatchingProperties) MatchSpan(span *tracepb.Span, serviceName st
 // At least one of services, span names or attributes must be specified. It is supported
 // to have more than one of these specified, and all specified must evaluate
 // to true for a match to occur.
-func (mp *regexpMatchingProperties) MatchSpan(span *tracepb.Span, serviceName string) bool {
+func (mp *regexpPropertiesMatcher) MatchSpan(span *tracepb.Span, serviceName string) bool {
 
 	if len(mp.Services) > 0 {
 		// Verify service name matches at least one of the regexp patterns.
@@ -289,7 +272,7 @@ func (mp *regexpMatchingProperties) MatchSpan(span *tracepb.Span, serviceName st
 }
 
 // match attributes specification against a span.
-func (ma matchAttributes) match(span *tracepb.Span) bool {
+func (ma attributesMatcher) match(span *tracepb.Span) bool {
 	// If there are no attributes to match against, the span matches.
 	if len(ma) == 0 {
 		return true

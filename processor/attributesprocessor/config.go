@@ -16,7 +16,7 @@ package attributesprocessor
 
 import (
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-collector/processor/common"
+	"github.com/open-telemetry/opentelemetry-collector/internal/processor/span"
 )
 
 // Config specifies the set of attributes to be inserted, updated, upserted and
@@ -29,25 +29,7 @@ import (
 type Config struct {
 	configmodels.ProcessorSettings `mapstructure:",squash"`
 
-	// Include specifies the set of span properties that must be present in order
-	// for this processor to apply to it.
-	// Note: If `exclude` is specified, the span is compared against those
-	// properties after the `include` properties.
-	// This is an optional field. If neither `include` and `exclude` are set, all spans
-	// are processed. If `include` is set and `exclude` isn't set, then all
-	// spans matching the properties in this structure are processed.
-	Include *common.MatchProperties `mapstructure:"include"`
-
-	// Exclude specifies when this processor will not be applied to the Spans
-	// which match the specified properties.
-	// Note: The `exclude` properties are checked after the `include` properties,
-	// if they exist, are checked.
-	// If `include` isn't specified, the `exclude` properties are checked against
-	// all spans.
-	// This is an optional field. If neither `include` and `exclude` are set, all spans
-	// are processed. If `exclude` is set and `include` isn't set, then all
-	// spans  that do no match the properties in this structure are processed.
-	Exclude *common.MatchProperties `mapstructure:"exclude"`
+	span.MatchConfig `mapstructure:",squash"`
 
 	// Actions specifies the list of attributes to act on.
 	// The set of actions are {INSERT, UPDATE, UPSERT, DELETE}.

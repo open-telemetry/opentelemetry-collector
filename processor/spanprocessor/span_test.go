@@ -27,9 +27,9 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
+	"github.com/open-telemetry/opentelemetry-collector/internal/processor/span"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
-	"github.com/open-telemetry/opentelemetry-collector/processor/common"
 )
 
 func TestNewTraceProcessor(t *testing.T) {
@@ -737,13 +737,13 @@ func TestSpanProcessor_skipSpan(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Include = &common.MatchProperties{
-		MatchType: common.MatchTypeRegexp,
+	oCfg.Include = &span.MatchProperties{
+		MatchType: span.MatchTypeRegexp,
 		Services:  []string{`^banks$`},
 		SpanNames: []string{"/"},
 	}
-	oCfg.Exclude = &common.MatchProperties{
-		MatchType: common.MatchTypeStrict,
+	oCfg.Exclude = &span.MatchProperties{
+		MatchType: span.MatchTypeStrict,
 		SpanNames: []string{`donot/change`},
 	}
 	oCfg.Rename.ToAttributes = &ToAttributes{

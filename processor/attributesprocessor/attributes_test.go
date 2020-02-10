@@ -27,8 +27,8 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
+	"github.com/open-telemetry/opentelemetry-collector/internal/processor/span"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
-	"github.com/open-telemetry/opentelemetry-collector/processor/common"
 )
 
 // Common structure for the
@@ -911,15 +911,15 @@ func TestAttributes_FilterSpans(t *testing.T) {
 	oCfg.Actions = []ActionKeyValue{
 		{Key: "attribute1", Action: INSERT, Value: 123},
 	}
-	oCfg.Include = &common.MatchProperties{
+	oCfg.Include = &span.MatchProperties{
 		Services:  []string{"svcA", "svcB.*"},
-		MatchType: common.MatchTypeRegexp,
+		MatchType: span.MatchTypeRegexp,
 	}
-	oCfg.Exclude = &common.MatchProperties{
-		Attributes: []common.Attribute{
+	oCfg.Exclude = &span.MatchProperties{
+		Attributes: []span.Attribute{
 			{Key: "NoModification", Value: true},
 		},
-		MatchType: common.MatchTypeStrict,
+		MatchType: span.MatchTypeStrict,
 	}
 	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), cfg)
 	require.Nil(t, err)
@@ -993,13 +993,13 @@ func TestAttributes_FilterSpansByNameStrict(t *testing.T) {
 	oCfg.Actions = []ActionKeyValue{
 		{Key: "attribute1", Action: INSERT, Value: 123},
 	}
-	oCfg.Include = &common.MatchProperties{
+	oCfg.Include = &span.MatchProperties{
 		SpanNames: []string{"apply", "dont_apply"},
-		MatchType: common.MatchTypeStrict,
+		MatchType: span.MatchTypeStrict,
 	}
-	oCfg.Exclude = &common.MatchProperties{
+	oCfg.Exclude = &span.MatchProperties{
 		SpanNames: []string{"dont_apply"},
-		MatchType: common.MatchTypeStrict,
+		MatchType: span.MatchTypeStrict,
 	}
 	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), cfg)
 	require.Nil(t, err)
@@ -1073,13 +1073,13 @@ func TestAttributes_FilterSpansByNameRegexp(t *testing.T) {
 	oCfg.Actions = []ActionKeyValue{
 		{Key: "attribute1", Action: INSERT, Value: 123},
 	}
-	oCfg.Include = &common.MatchProperties{
+	oCfg.Include = &span.MatchProperties{
 		SpanNames: []string{"^apply.*"},
-		MatchType: common.MatchTypeRegexp,
+		MatchType: span.MatchTypeRegexp,
 	}
-	oCfg.Exclude = &common.MatchProperties{
+	oCfg.Exclude = &span.MatchProperties{
 		SpanNames: []string{".*dont_apply$"},
-		MatchType: common.MatchTypeRegexp,
+		MatchType: span.MatchTypeRegexp,
 	}
 	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), cfg)
 	require.Nil(t, err)
@@ -1130,7 +1130,7 @@ func BenchmarkAttributes_FilterSpansByName(b *testing.B) {
 	oCfg.Actions = []ActionKeyValue{
 		{Key: "attribute1", Action: INSERT, Value: 123},
 	}
-	oCfg.Include = &common.MatchProperties{
+	oCfg.Include = &span.MatchProperties{
 		SpanNames: []string{"^apply.*"},
 	}
 	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), cfg)

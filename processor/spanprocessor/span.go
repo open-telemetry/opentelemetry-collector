@@ -26,17 +26,17 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/internal/processor/span"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
-	"github.com/open-telemetry/opentelemetry-collector/processor/common"
 )
 
 type spanProcessor struct {
 	nextConsumer     consumer.TraceConsumer
 	config           Config
 	toAttributeRules []toAttributeRule
-	include          common.MatchingProperties
-	exclude          common.MatchingProperties
+	include          span.Matcher
+	exclude          span.Matcher
 }
 
 // toAttributeRule is the compiled equivalent of config.ToAttributes field.
@@ -54,11 +54,11 @@ func NewTraceProcessor(nextConsumer consumer.TraceConsumer, config Config) (proc
 		return nil, oterr.ErrNilNextConsumer
 	}
 
-	include, err := common.BuildMatchProperties(config.Include)
+	include, err := span.NewMatcher(config.Include)
 	if err != nil {
 		return nil, err
 	}
-	exclude, err := common.BuildMatchProperties(config.Exclude)
+	exclude, err := span.NewMatcher(config.Exclude)
 	if err != nil {
 		return nil, err
 	}
@@ -265,11 +265,6 @@ func (sp *spanProcessor) processToAttributes(span *tracepb.Span) {
 // in the attribute configuration with the include and exclude settings.
 // Include properties are checked before exclude settings are checked.
 func (sp *spanProcessor) skipSpan(span *tracepb.Span, serviceName string) bool {
-	// By default all spans are processed when no include and exclude properties are set.
-	if sp.include == nil && sp.exclude == nil {
-		return false
-	}
-
 	if sp.include != nil {
 		// A false returned in this case means the span should not be processed.
 		if include := sp.include.MatchSpan(span, serviceName); !include {

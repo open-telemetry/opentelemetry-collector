@@ -23,8 +23,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
+	internal "github.com/open-telemetry/opentelemetry-collector/internal/processor"
+	"github.com/open-telemetry/opentelemetry-collector/internal/processor/span"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
-	"github.com/open-telemetry/opentelemetry-collector/processor/common"
 )
 
 const (
@@ -64,11 +65,11 @@ func (f *Factory) CreateTraceProcessor(
 	if err != nil {
 		return nil, err
 	}
-	include, err := common.BuildMatchProperties(oCfg.Include)
+	include, err := span.NewMatcher(oCfg.Include)
 	if err != nil {
 		return nil, err
 	}
-	exclude, err := common.BuildMatchProperties(oCfg.Exclude)
+	exclude, err := span.NewMatcher(oCfg.Exclude)
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +121,7 @@ func buildAttributesConfiguration(config Config) ([]attributeAction, error) {
 			}
 			// Convert the raw value from the configuration to the internal trace representation of the value.
 			if a.Value != nil {
-				val, err := common.AttributeValue(a.Value)
+				val, err := internal.AttributeValue(a.Value)
 				if err != nil {
 					return nil, err
 				}

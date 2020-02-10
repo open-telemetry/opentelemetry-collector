@@ -1,4 +1,4 @@
-// Copyright 2019, OpenTelemetry Authors
+// Copyright 2020, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package span
 
 import (
 	"regexp"
@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestCommon_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
+func TestSpan_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 	testcases := []struct {
 		name        string
 		property    MatchProperties
@@ -100,7 +100,7 @@ func TestCommon_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			output, err := BuildMatchProperties(&tc.property)
+			output, err := NewMatcher(&tc.property)
 			assert.Nil(t, output)
 			require.NotNil(t, err)
 			assert.Equal(t, tc.errorString, err.Error())
@@ -108,52 +108,52 @@ func TestCommon_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 	}
 }
 
-func TestCommon_Matching_False(t *testing.T) {
+func TestSpan_Matching_False(t *testing.T) {
 	testcases := []struct {
 		name       string
-		properties MatchingProperties
+		properties Matcher
 	}{
 		{
 			name: "service_name_doesnt_match_regexp",
-			properties: &regexpMatchingProperties{
+			properties: &regexpPropertiesMatcher{
 				Services:   []*regexp.Regexp{regexp.MustCompile("svcA")},
-				Attributes: []matchAttribute{},
+				Attributes: []attributeMatcher{},
 			},
 		},
 
 		{
 			name: "service_name_doesnt_match_strict",
-			properties: &strictMatchingProperties{
+			properties: &strictPropertiesMatcher{
 				Services:   []string{"svcA"},
-				Attributes: []matchAttribute{},
+				Attributes: []attributeMatcher{},
 			},
 		},
 
 		{
 			name: "span_name_doesnt_match",
-			properties: &regexpMatchingProperties{
+			properties: &regexpPropertiesMatcher{
 				SpanNames:  []*regexp.Regexp{regexp.MustCompile("spanNo.*Name")},
-				Attributes: []matchAttribute{},
+				Attributes: []attributeMatcher{},
 			},
 		},
 
 		{
 			name: "span_name_doesnt_match_any",
-			properties: &regexpMatchingProperties{
+			properties: &regexpPropertiesMatcher{
 				SpanNames: []*regexp.Regexp{
 					regexp.MustCompile("spanNo.*Name"),
 					regexp.MustCompile("non-matching?pattern"),
 					regexp.MustCompile("regular string"),
 				},
-				Attributes: []matchAttribute{},
+				Attributes: []attributeMatcher{},
 			},
 		},
 
 		{
 			name: "wrong_property_value",
-			properties: &regexpMatchingProperties{
+			properties: &regexpPropertiesMatcher{
 				Services: []*regexp.Regexp{},
-				Attributes: []matchAttribute{
+				Attributes: []attributeMatcher{
 					{
 						Key: "keyInt",
 						AttributeValue: &tracepb.AttributeValue{
@@ -167,9 +167,9 @@ func TestCommon_Matching_False(t *testing.T) {
 		},
 		{
 			name: "incompatible_property_value",
-			properties: &regexpMatchingProperties{
+			properties: &regexpPropertiesMatcher{
 				Services: []*regexp.Regexp{},
-				Attributes: []matchAttribute{
+				Attributes: []attributeMatcher{
 					{
 						Key: "keyInt",
 						AttributeValue: &tracepb.AttributeValue{
@@ -183,9 +183,9 @@ func TestCommon_Matching_False(t *testing.T) {
 		},
 		{
 			name: "property_key_does_not_exist",
-			properties: &regexpMatchingProperties{
+			properties: &regexpPropertiesMatcher{
 				Services: []*regexp.Regexp{},
-				Attributes: []matchAttribute{
+				Attributes: []attributeMatcher{
 					{
 						Key:            "doesnotexist",
 						AttributeValue: nil,
@@ -212,10 +212,10 @@ func TestCommon_Matching_False(t *testing.T) {
 	}
 }
 
-func TestCommon_MatchingCornerCases(t *testing.T) {
-	mp := &regexpMatchingProperties{
+func TestSpan_MatchingCornerCases(t *testing.T) {
+	mp := &regexpPropertiesMatcher{
 		Services: []*regexp.Regexp{regexp.MustCompile("svcA")},
-		Attributes: []matchAttribute{
+		Attributes: []attributeMatcher{
 			{
 				Key:            "keyOne",
 				AttributeValue: nil,
@@ -255,8 +255,8 @@ func TestCommon_MatchingCornerCases(t *testing.T) {
 	}
 }
 
-func TestCommon_MissingServiceName(t *testing.T) {
-	mp := &regexpMatchingProperties{
+func TestSpan_MissingServiceName(t *testing.T) {
+	mp := &regexpPropertiesMatcher{
 		Services: []*regexp.Regexp{regexp.MustCompile("svcA")},
 	}
 	testcases := []struct {
@@ -292,56 +292,56 @@ func TestCommon_MissingServiceName(t *testing.T) {
 	}
 }
 
-func TestCommon_Matching_True(t *testing.T) {
+func TestSpan_Matching_True(t *testing.T) {
 	testcases := []struct {
 		name       string
-		properties MatchingProperties
+		properties Matcher
 	}{
 		{
 			name: "empty_match_properties",
-			properties: &regexpMatchingProperties{
+			properties: &regexpPropertiesMatcher{
 				Services:   []*regexp.Regexp{},
-				Attributes: []matchAttribute{},
+				Attributes: []attributeMatcher{},
 			},
 		},
 		{
 			name: "service_name_match_regexp",
-			properties: &regexpMatchingProperties{
+			properties: &regexpPropertiesMatcher{
 				Services:   []*regexp.Regexp{regexp.MustCompile("svcA")},
-				Attributes: []matchAttribute{},
+				Attributes: []attributeMatcher{},
 			},
 		},
 		{
 			name: "service_name_match_strict",
-			properties: &strictMatchingProperties{
+			properties: &strictPropertiesMatcher{
 				Services:   []string{"svcA"},
-				Attributes: []matchAttribute{},
+				Attributes: []attributeMatcher{},
 			},
 		},
 		{
 			name: "span_name_match",
-			properties: &regexpMatchingProperties{
+			properties: &regexpPropertiesMatcher{
 				SpanNames:  []*regexp.Regexp{regexp.MustCompile("span.*")},
-				Attributes: []matchAttribute{},
+				Attributes: []attributeMatcher{},
 			},
 		},
 		{
 			name: "span_name_second_match",
-			properties: &regexpMatchingProperties{
+			properties: &regexpPropertiesMatcher{
 				SpanNames: []*regexp.Regexp{
 					regexp.MustCompile("wrong.*pattern"),
 					regexp.MustCompile("span.*"),
 					regexp.MustCompile("yet another?pattern"),
 					regexp.MustCompile("regularstring"),
 				},
-				Attributes: []matchAttribute{},
+				Attributes: []attributeMatcher{},
 			},
 		},
 		{
 			name: "property_exact_value_match",
-			properties: &regexpMatchingProperties{
+			properties: &regexpPropertiesMatcher{
 				Services: []*regexp.Regexp{},
-				Attributes: []matchAttribute{
+				Attributes: []attributeMatcher{
 					{
 						Key: "keyString",
 						AttributeValue: &tracepb.AttributeValue{
@@ -377,9 +377,9 @@ func TestCommon_Matching_True(t *testing.T) {
 		},
 		{
 			name: "property_exists",
-			properties: &regexpMatchingProperties{
+			properties: &regexpPropertiesMatcher{
 				Services: []*regexp.Regexp{regexp.MustCompile("svcA")},
-				Attributes: []matchAttribute{
+				Attributes: []attributeMatcher{
 					{
 						Key:            "keyExists",
 						AttributeValue: nil,
@@ -389,9 +389,9 @@ func TestCommon_Matching_True(t *testing.T) {
 		},
 		{
 			name: "match_all_settings_exists",
-			properties: &regexpMatchingProperties{
+			properties: &regexpPropertiesMatcher{
 				Services: []*regexp.Regexp{regexp.MustCompile("svcA")},
-				Attributes: []matchAttribute{
+				Attributes: []attributeMatcher{
 					{
 						Key:            "keyExists",
 						AttributeValue: nil,
@@ -442,11 +442,11 @@ func TestCommon_Matching_True(t *testing.T) {
 	}
 }
 
-func TestFactory_validateMatchesConfiguration(t *testing.T) {
+func TestSpan_validateMatchesConfiguration(t *testing.T) {
 	testcase := []struct {
 		name   string
 		input  MatchProperties
-		output MatchingProperties
+		output Matcher
 	}{
 		{
 			name: "service_name_build",
@@ -456,7 +456,7 @@ func TestFactory_validateMatchesConfiguration(t *testing.T) {
 				},
 				MatchType: MatchTypeRegexp,
 			},
-			output: &regexpMatchingProperties{
+			output: &regexpPropertiesMatcher{
 				Services: []*regexp.Regexp{regexp.MustCompile("a"), regexp.MustCompile("b"), regexp.MustCompile("c")},
 			},
 		},
@@ -475,8 +475,8 @@ func TestFactory_validateMatchesConfiguration(t *testing.T) {
 					},
 				},
 			},
-			output: &strictMatchingProperties{
-				Attributes: []matchAttribute{
+			output: &strictPropertiesMatcher{
+				Attributes: []attributeMatcher{
 					{
 						Key: "key1",
 					},
@@ -507,11 +507,11 @@ func TestFactory_validateMatchesConfiguration(t *testing.T) {
 					},
 				},
 			},
-			output: &strictMatchingProperties{
+			output: &strictPropertiesMatcher{
 				Services: []string{
 					"a", "b", "c",
 				},
-				Attributes: []matchAttribute{
+				Attributes: []attributeMatcher{
 					{
 						Key: "key1",
 					},
@@ -531,48 +531,16 @@ func TestFactory_validateMatchesConfiguration(t *testing.T) {
 				MatchType: MatchTypeRegexp,
 				SpanNames: []string{"auth.*"},
 			},
-			output: &regexpMatchingProperties{
+			output: &regexpPropertiesMatcher{
 				SpanNames: []*regexp.Regexp{regexp.MustCompile("auth.*")},
 			},
 		},
 	}
 	for _, tc := range testcase {
 		t.Run(tc.name, func(t *testing.T) {
-			output, err := BuildMatchProperties(&tc.input)
+			output, err := NewMatcher(&tc.input)
 			require.NoError(t, err)
 			assert.Equal(t, tc.output, output)
 		})
 	}
-}
-
-func TestCommon_AttributeValue(t *testing.T) {
-	val, err := AttributeValue(123)
-	assert.Equal(t, &tracepb.AttributeValue{
-		Value: &tracepb.AttributeValue_IntValue{IntValue: cast.ToInt64(123)}}, val)
-	assert.Nil(t, err)
-
-	val, err = AttributeValue(234.129312)
-	assert.Equal(t, &tracepb.AttributeValue{
-		Value: &tracepb.AttributeValue_DoubleValue{DoubleValue: cast.ToFloat64(234.129312)}}, val)
-	assert.Nil(t, err)
-
-	val, err = AttributeValue(true)
-	assert.Equal(t, &tracepb.AttributeValue{
-		Value: &tracepb.AttributeValue_BoolValue{BoolValue: true},
-	}, val)
-	assert.Nil(t, err)
-
-	val, err = AttributeValue("bob the builder")
-	assert.Equal(t, &tracepb.AttributeValue{
-		Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "bob the builder"}},
-	}, val)
-	assert.Nil(t, err)
-
-	val, err = AttributeValue(nil)
-	assert.Nil(t, val)
-	assert.Equal(t, "error unsupported value type \"<nil>\"", err.Error())
-
-	val, err = AttributeValue(MatchProperties{})
-	assert.Nil(t, val)
-	assert.Equal(t, "error unsupported value type \"common.MatchProperties\"", err.Error())
 }

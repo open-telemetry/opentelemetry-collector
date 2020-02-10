@@ -1,4 +1,4 @@
-// Copyright 2019, OpenTelemetry Authors
+// Copyright 2020, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package span
+
+// MatchConfig has two optional MatchProperties one to define what is processed
+// by the processor, captured under the 'include' and the second, exclude, to
+// define what is excluded from the processor.
+type MatchConfig struct {
+	// Include specifies the set of span properties that must be present in order
+	// for this processor to apply to it.
+	// Note: If `exclude` is specified, the span is compared against those
+	// properties after the `include` properties.
+	// This is an optional field. If neither `include` and `exclude` are set, all spans
+	// are processed. If `include` is set and `exclude` isn't set, then all
+	// spans matching the properties in this structure are processed.
+	Include *MatchProperties `mapstructure:"include"`
+
+	// Exclude specifies when this processor will not be applied to the Spans
+	// which match the specified properties.
+	// Note: The `exclude` properties are checked after the `include` properties,
+	// if they exist, are checked.
+	// If `include` isn't specified, the `exclude` properties are checked against
+	// all spans.
+	// This is an optional field. If neither `include` and `exclude` are set, all spans
+	// are processed. If `exclude` is set and `include` isn't set, then all
+	// spans  that do no match the properties in this structure are processed.
+	Exclude *MatchProperties `mapstructure:"exclude"`
+}
 
 // MatchProperties specifies the set of properties in a span to match against
 // and if the span should be included or excluded from the processor.
@@ -33,7 +58,8 @@ package common
 //      span_names:
 //      attributes:
 //    actions: ...
-// Please refer to attributesprocessor/testdata/config.yaml and spanprocessor/testdata/config.yaml for valid configurations.
+// Please refer to processor/attributesprocessor/testdata/config.yaml and
+// processor/spanprocessor/testdata/config.yaml for valid configurations.
 type MatchProperties struct {
 	// MatchType controls how items in "services" and "span_names" arrays are
 	// interpreted. Possible values are "regexp" or "strict".
