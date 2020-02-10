@@ -1,3 +1,7 @@
+FROM alpine:3.10 as certs
+RUN apk --update add ca-certificates
+
+
 FROM golang:1.13 as build
 WORKDIR /src
 
