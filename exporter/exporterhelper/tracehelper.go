@@ -26,17 +26,25 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/observability"
 )
 
-// PushTraceData is a helper function that is similar to ConsumeTraceData but also returns
-// the number of dropped spans.
-type PushTraceData func(ctx context.Context, td consumerdata.TraceData) (droppedSpans int, err error)
+// Suffix to use for span names emitted by exporter for observability purposes.
+const spanNameSuffix = ".ExportTraceData"
 
+// traceDataPusher is a helper function that is similar to ConsumeTraceData but also
+// returns the number of dropped spans.
+type traceDataPusher func(ctx context.Context, td consumerdata.TraceData) (droppedSpans int, err error)
+
+// otlpTraceDataPusher is a helper function that is similar to ConsumeTraceData but also
+// returns the number of dropped spans.
+type otlpTraceDataPusher func(ctx context.Context, td consumerdata.OTLPTraceData) (droppedSpans int, err error)
+
+// traceExporter implements the exporter with additional helper options.
 type traceExporter struct {
 	exporterFullName string
-	pushTraceData    PushTraceData
+	dataPusher       traceDataPusher
 	shutdown         Shutdown
 }
 
-var _ (exporter.TraceExporter) = (*traceExporter)(nil)
+var _ exporter.TraceExporter = (*traceExporter)(nil)
 
 func (te *traceExporter) Start(host component.Host) error {
 	return nil
@@ -44,7 +52,7 @@ func (te *traceExporter) Start(host component.Host) error {
 
 func (te *traceExporter) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	exporterCtx := observability.ContextWithExporterName(ctx, te.exporterFullName)
-	_, err := te.pushTraceData(exporterCtx, td)
+	_, err := te.dataPusher(exporterCtx, td)
 	return err
 }
 
@@ -53,28 +61,34 @@ func (te *traceExporter) Shutdown() error {
 	return te.shutdown()
 }
 
-// NewTraceExporter creates an TraceExporter that can record metrics and can wrap every request with a Span.
-// If no options are passed it just adds the exporter format as a tag in the Context.
-// TODO: Add support for retries.
-func NewTraceExporter(config configmodels.Exporter, pushTraceData PushTraceData, options ...ExporterOption) (exporter.TraceExporter, error) {
+// NewTraceExporter creates an TraceExporter that can record metrics and can wrap every
+// request with a Span. If no options are passed it just adds the exporter format as a
+// tag in the Context.
+func NewTraceExporter(
+	config configmodels.Exporter,
+	dataPusher traceDataPusher,
+	options ...ExporterOption,
+) (exporter.TraceExporter, error) {
+
 	if config == nil {
 		return nil, errNilConfig
 	}
 
-	if pushTraceData == nil {
+	if dataPusher == nil {
 		return nil, errNilPushTraceData
 	}
 
 	opts := newExporterOptions(options...)
 	if opts.recordMetrics {
-		pushTraceData = pushTraceDataWithMetrics(pushTraceData)
+		dataPusher = dataPusher.withMetrics()
 	}
 
 	if opts.recordTrace {
-		pushTraceData = pushTraceDataWithSpan(pushTraceData, config.Name()+".ExportTraceData")
+		spanName := config.Name() + spanNameSuffix
+		dataPusher = dataPusher.withSpan(spanName)
 	}
 
-	// The default shutdown function returns nil.
+	// The default shutdown function does nothing.
 	if opts.shutdown == nil {
 		opts.shutdown = func() error {
 			return nil
@@ -83,30 +97,139 @@ func NewTraceExporter(config configmodels.Exporter, pushTraceData PushTraceData,
 
 	return &traceExporter{
 		exporterFullName: config.Name(),
-		pushTraceData:    pushTraceData,
+		dataPusher:       dataPusher,
 		shutdown:         opts.shutdown,
 	}, nil
 }
 
-func pushTraceDataWithMetrics(next PushTraceData) PushTraceData {
+// withMetrics wraps the current pusher into a function that records the metrics of the
+// pusher execution.
+func (p traceDataPusher) withMetrics() traceDataPusher {
 	return func(ctx context.Context, td consumerdata.TraceData) (int, error) {
-		// TODO: Add retry logic here if we want to support because we need to record special metrics.
-		droppedSpans, err := next(ctx, td)
+		// Forward the data to the next consumer (this pusher is the next).
+		droppedSpans, err := p(ctx, td)
 		// TODO: How to record the reason of dropping?
 		observability.RecordMetricsForTraceExporter(ctx, len(td.Spans), droppedSpans)
 		return droppedSpans, err
 	}
 }
 
-func pushTraceDataWithSpan(next PushTraceData, spanName string) PushTraceData {
+// withSpan wraps the current pusher into a function that records a span during
+// pusher execution.
+func (p traceDataPusher) withSpan(spanName string) traceDataPusher {
 	return func(ctx context.Context, td consumerdata.TraceData) (int, error) {
 		ctx, span := trace.StartSpan(ctx, spanName)
 		defer span.End()
-		// Call next stage.
-		droppedSpans, err := next(ctx, td)
+		// Forward the data to the next consumer (this pusher is the next).
+		droppedSpans, err := p(ctx, td)
 		if span.IsRecordingEvents() {
 			span.AddAttributes(
 				trace.Int64Attribute(numReceivedSpansAttribute, int64(len(td.Spans))),
+				trace.Int64Attribute(numDroppedSpansAttribute, int64(droppedSpans)),
+			)
+			if err != nil {
+				span.SetStatus(errToStatus(err))
+			}
+		}
+		return droppedSpans, err
+	}
+}
+
+type otlpTraceExporter struct {
+	exporterFullName string
+	dataPusher       otlpTraceDataPusher
+	shutdown         Shutdown
+}
+
+var _ exporter.OTLPTraceExporter = (*otlpTraceExporter)(nil)
+
+func (te *otlpTraceExporter) Start(host component.Host) error {
+	return nil
+}
+
+func (te *otlpTraceExporter) ConsumeOTLPTrace(
+	ctx context.Context,
+	td consumerdata.OTLPTraceData,
+) error {
+	exporterCtx := observability.ContextWithExporterName(ctx, te.exporterFullName)
+	_, err := te.dataPusher(exporterCtx, td)
+	return err
+}
+
+// Shutdown stops the exporter and is invoked during shutdown.
+func (te *otlpTraceExporter) Shutdown() error {
+	return te.shutdown()
+}
+
+// NewOTLPTraceExporter creates an OTLPTraceExporter that can record metrics and can wrap
+// every request with a Span.
+func NewOTLPTraceExporter(
+	config configmodels.Exporter,
+	dataPusher otlpTraceDataPusher,
+	options ...ExporterOption,
+) (exporter.OTLPTraceExporter, error) {
+
+	if config == nil {
+		return nil, errNilConfig
+	}
+
+	if dataPusher == nil {
+		return nil, errNilPushTraceData
+	}
+
+	opts := newExporterOptions(options...)
+	if opts.recordMetrics {
+		dataPusher = dataPusher.withMetrics()
+	}
+
+	if opts.recordTrace {
+		spanName := config.Name() + spanNameSuffix
+		dataPusher = dataPusher.withSpan(spanName)
+	}
+
+	// The default shutdown function does nothing.
+	if opts.shutdown == nil {
+		opts.shutdown = func() error {
+			return nil
+		}
+	}
+
+	return &otlpTraceExporter{
+		exporterFullName: config.Name(),
+		dataPusher:       dataPusher,
+		shutdown:         opts.shutdown,
+	}, nil
+}
+
+// withMetrics wraps the current pusher into a function that records the metrics of the
+// pusher execution.
+func (p otlpTraceDataPusher) withMetrics() otlpTraceDataPusher {
+	return func(ctx context.Context, td consumerdata.OTLPTraceData) (int, error) {
+		// Forward the data to the next consumer (this pusher is the next).
+		droppedSpans, err := p(ctx, td)
+
+		// Record the results as metrics.
+		observability.RecordMetricsForTraceExporter(ctx, td.SpanCount(), droppedSpans)
+
+		return droppedSpans, err
+	}
+}
+
+// withSpan wraps the current pusher into a function that records a span during
+// pusher execution.
+func (p otlpTraceDataPusher) withSpan(spanName string) otlpTraceDataPusher {
+	return func(ctx context.Context, td consumerdata.OTLPTraceData) (int, error) {
+		// Start a span.
+		ctx, span := trace.StartSpan(ctx, spanName)
+
+		// End the span after this function is done.
+		defer span.End()
+
+		// Forward the data to the next consumer (this pusher is the next).
+		droppedSpans, err := p(ctx, td)
+		if span.IsRecordingEvents() {
+			span.AddAttributes(
+				trace.Int64Attribute(numReceivedSpansAttribute, int64(td.SpanCount())),
 				trace.Int64Attribute(numDroppedSpansAttribute, int64(droppedSpans)),
 			)
 			if err != nil {
