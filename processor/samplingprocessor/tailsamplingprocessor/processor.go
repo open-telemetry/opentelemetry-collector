@@ -64,7 +64,7 @@ type tailSamplingSpanProcessor struct {
 	idToTrace       sync.Map
 	policyTicker    tTicker
 	decisionBatcher idbatcher.Batcher
-	deleteChan      chan traceKey
+	deleteChan      chan int
 	numTracesOnMap  uint64
 }
 
@@ -117,7 +117,7 @@ func NewTraceProcessor(logger *zap.Logger, nextConsumer consumer.TraceConsumer, 
 	}
 
 	tsp.policyTicker = &policyTicker{onTick: tsp.samplingPolicyOnTick}
-	tsp.deleteChan = make(chan traceKey, cfg.NumTraces)
+	tsp.deleteChan = make(chan int, cfg.NumTraces)
 
 	return tsp, nil
 }
@@ -195,10 +195,11 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 			}
 		}
 
-		// Sampled or not, remove the batches
-		trace.Lock()
-		trace.ReceivedBatches = nil
-		trace.Unlock()
+		// Sampled or not, delete trace entry from idToTrace
+		tsp.idToTrace.Delete(id)
+		<-tsp.deleteChan
+		// Subtract one from numTracesOnMap per https://godoc.org/sync/atomic#AddUint64
+		atomic.AddUint64(&tsp.numTracesOnMap, ^uint64(0))
 	}
 
 	stats.Record(tsp.ctx,
@@ -248,25 +249,24 @@ func (tsp *tailSamplingSpanProcessor) ConsumeTraceData(ctx context.Context, td c
 			ArrivalTime: time.Now(),
 			SpanCount:   lenSpans,
 		}
-		d, loaded := tsp.idToTrace.LoadOrStore(traceKey(id), initialTraceData)
+		d, loaded := tsp.idToTrace.Load(traceKey(id))
 
-		actualData := d.(*sampling.TraceData)
+		var actualData *sampling.TraceData
 		if loaded {
+			actualData = d.(*sampling.TraceData)
 			atomic.AddInt64(&actualData.SpanCount, lenSpans)
 		} else {
-			newTraceIDs++
-			tsp.decisionBatcher.AddToCurrentBatch([]byte(id))
-			atomic.AddUint64(&tsp.numTracesOnMap, 1)
-			postDeletion := false
-			currTime := time.Now()
-			for !postDeletion {
-				select {
-				case tsp.deleteChan <- id:
-					postDeletion = true
-				default:
-					traceKeyToDrop := <-tsp.deleteChan
-					tsp.dropTrace(traceKeyToDrop, currTime)
-				}
+			select {
+			case tsp.deleteChan <- 1:
+				// Only add trace to map if deleteChan is free
+				newTraceIDs++
+				tsp.idToTrace.Store(traceKey(id), initialTraceData)
+				actualData = initialTraceData
+				tsp.decisionBatcher.AddToCurrentBatch([]byte(id))
+				atomic.AddUint64(&tsp.numTracesOnMap, 1)
+			default:
+				// Do nothing
+				continue
 			}
 		}
 
@@ -307,6 +307,7 @@ func (tsp *tailSamplingSpanProcessor) ConsumeTraceData(ctx context.Context, td c
 					zap.Int("decision", int(actualDecision)))
 			}
 		}
+
 	}
 
 	stats.Record(tsp.ctx, statNewTraceIDReceivedCount.M(newTraceIDs))
@@ -325,33 +326,6 @@ func (tsp *tailSamplingSpanProcessor) Start(host component.Host) error {
 // Shutdown is invoked during service shutdown.
 func (tsp *tailSamplingSpanProcessor) Shutdown() error {
 	return nil
-}
-
-func (tsp *tailSamplingSpanProcessor) dropTrace(traceID traceKey, deletionTime time.Time) {
-	var trace *sampling.TraceData
-	if d, ok := tsp.idToTrace.Load(traceID); ok {
-		trace = d.(*sampling.TraceData)
-		tsp.idToTrace.Delete(traceID)
-		// Subtract one from numTracesOnMap per https://godoc.org/sync/atomic#AddUint64
-		atomic.AddUint64(&tsp.numTracesOnMap, ^uint64(0))
-	}
-	if trace == nil {
-		tsp.logger.Error("Attempt to delete traceID not on table")
-		return
-	}
-	policiesLen := len(tsp.policies)
-	stats.Record(tsp.ctx, statTraceRemovalAgeSec.M(int64(deletionTime.Sub(trace.ArrivalTime)/time.Second)))
-	for j := 0; j < policiesLen; j++ {
-		if trace.Decisions[j] == sampling.Pending {
-			policy := tsp.policies[j]
-			if decision, err := policy.Evaluator.OnDroppedSpans([]byte(traceID), trace); err != nil {
-				tsp.logger.Warn("OnDroppedSpans",
-					zap.String("policy", policy.Name),
-					zap.Int("decision", int(decision)),
-					zap.Error(err))
-			}
-		}
-	}
 }
 
 func prepareTraceBatch(spans []*tracepb.Span, singleTrace bool, td consumerdata.TraceData) consumerdata.TraceData {
