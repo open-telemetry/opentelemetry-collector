@@ -1090,6 +1090,81 @@ func TestAttributes_FilterSpansByNameRegexp(t *testing.T) {
 	}
 }
 
+func TestAttributes_Hash(t *testing.T) {
+	testCases := []testCase{
+		{
+			name: "String",
+			inputAttributes: map[string]*tracepb.AttributeValue{
+				"user.email": {
+					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "john.doe@example.com"}},
+				},
+			},
+			expectedAttributes: map[string]*tracepb.AttributeValue{
+				"user.email": {
+					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "73ec53c4ba1747d485ae2a0d7bfafa6cda80a5a9"}},
+				},
+			},
+		},
+		{
+			name: "Int",
+			inputAttributes: map[string]*tracepb.AttributeValue{
+				"user.id": {
+					Value: &tracepb.AttributeValue_IntValue{IntValue: 10},
+				},
+			},
+			expectedAttributes: map[string]*tracepb.AttributeValue{
+				"user.id": {
+					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "71aa908aff1548c8c6cdecf63545261584738a25"}},
+				},
+			},
+		},
+		{
+			name: "Double",
+			inputAttributes: map[string]*tracepb.AttributeValue{
+				"user.balance": {
+					Value: &tracepb.AttributeValue_DoubleValue{DoubleValue: 99.1},
+				},
+			},
+			expectedAttributes: map[string]*tracepb.AttributeValue{
+				"user.balance": {
+					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "76429edab4855b03073f9429fd5d10313c28655e"}},
+				},
+			},
+		},
+		{
+			name: "Bool",
+			inputAttributes: map[string]*tracepb.AttributeValue{
+				"user.authenticated": {
+					Value: &tracepb.AttributeValue_BoolValue{BoolValue: true},
+				},
+			},
+			expectedAttributes: map[string]*tracepb.AttributeValue{
+				"user.authenticated": {
+					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "bf8b4530d8d246dd74ac53a13471bba17941dff7"}},
+				},
+			},
+		},
+	}
+
+	factory := Factory{}
+	cfg := factory.CreateDefaultConfig()
+	oCfg := cfg.(*Config)
+	oCfg.Actions = []ActionKeyValue{
+		{Key: "user.email", Action: HASH},
+		{Key: "user.id", Action: HASH},
+		{Key: "user.balance", Action: HASH},
+		{Key: "user.authenticated", Action: HASH},
+	}
+
+	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), cfg)
+	require.Nil(t, err)
+	require.NotNil(t, tp)
+
+	for _, tt := range testCases {
+		runIndividualTestCase(t, tt, tp)
+	}
+}
+
 func BenchmarkAttributes_FilterSpansByName(b *testing.B) {
 	testCases := []testCase{
 		{

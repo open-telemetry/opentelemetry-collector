@@ -142,6 +142,7 @@ The supported actions are:
   key does not already exist and updates an attribute in spans where the key
   does exist.
 - delete: Deletes an attribute from a span.
+- hash: Hashes (SHA1) an existing attribute value.
 
 For the actions `insert`, `update` and `upsert`,
  - `key`  is required
@@ -172,6 +173,15 @@ For the `delete` action,
   action: delete
 ```
 
+For the `hash` action,
+ - `key` is required
+ - `action: hash` is required.
+```yaml
+# Key specifies the attribute to act upon.
+- key: <key>
+  action: hash 
+```
+
 Please refer to [config.go](attributesprocessor/config.go) for the config spec.
 
 ### Example
@@ -195,6 +205,8 @@ processors:
         value: 2245
       - key: account_password
         action: delete
+      - key: account_email 
+        action: hash
 
 ```
 Refer to [config.yaml](attributesprocessor/testdata/config.yaml) for detailed

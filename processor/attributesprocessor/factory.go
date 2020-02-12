@@ -111,6 +111,7 @@ func buildAttributesConfiguration(config Config) ([]attributeAction, error) {
 			Key:    a.Key,
 			Action: a.Action,
 		}
+
 		switch a.Action {
 		case INSERT, UPDATE, UPSERT:
 			if a.Value == nil && a.FromAttribute == "" {
@@ -129,9 +130,10 @@ func buildAttributesConfiguration(config Config) ([]attributeAction, error) {
 			} else {
 				action.FromAttribute = a.FromAttribute
 			}
-
-		case DELETE:
-			// Do nothing since `key` is the only required field for `delete` action.
+		case HASH, DELETE:
+			if a.Value != nil || a.FromAttribute != "" {
+				return nil, fmt.Errorf("error creating \"attributes\" processor. Action \"%s\" does not use \"value\" or \"from_attribute\" field. These must not be specified for %d-th action of processor %q", a.Action, i, config.Name())
+			}
 
 		default:
 			return nil, fmt.Errorf("error creating \"attributes\" processor due to unsupported action %q at the %d-th actions of processor %q", a.Action, i, config.Name())

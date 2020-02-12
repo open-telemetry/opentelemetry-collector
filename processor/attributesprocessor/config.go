@@ -52,7 +52,7 @@ type ActionKeyValue struct {
 	FromAttribute string `mapstructure:"from_attribute"`
 
 	// Action specifies the type of action to perform.
-	// The set of values are {INSERT, UPDATE, UPSERT, DELETE}.
+	// The set of values are {INSERT, UPDATE, UPSERT, DELETE, HASH}.
 	// Both lower case and upper case are supported.
 	// INSERT - Inserts the key/value to spans when the key does not exist.
 	//          No action is applied to spans where the key already exists.
@@ -92,4 +92,8 @@ const (
 	// DELETE deletes the attribute from the span. If the key doesn't exist,
 	//no action is performed.
 	DELETE Action = "delete"
+
+	// HASH calculates the SHA-1 hash of an existing value and overwrites the value
+	// with it's SHA-1 hash result.
+	HASH Action = "hash"
 )
