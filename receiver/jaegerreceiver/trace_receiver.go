@@ -33,6 +33,8 @@ import (
 	"github.com/jaegertracing/jaeger/cmd/agent/app/servers"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/servers/thriftudp"
 	"github.com/jaegertracing/jaeger/cmd/collector/app"
+	collectorSampling "github.com/jaegertracing/jaeger/cmd/collector/app/sampling"
+	staticStrategyStore "github.com/jaegertracing/jaeger/plugin/sampling/strategystore/static"
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"github.com/jaegertracing/jaeger/thrift-gen/baggage"
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
@@ -485,6 +487,15 @@ func (jr *jReceiver) startCollector(host component.Host) error {
 		}
 
 		api_v2.RegisterCollectorServiceServer(jr.grpc, jr)
+
+		// init and register sampling strategy store
+		ss, gerr := staticStrategyStore.NewStrategyStore(staticStrategyStore.Options{
+			StrategiesFile: "",
+		}, jr.logger)
+		if gerr != nil {
+			return fmt.Errorf("failed to create collectory strategy store: %v", gerr)
+		}
+		api_v2.RegisterSamplingManagerServer(jr.grpc, collectorSampling.NewGRPCHandler(ss))
 
 		go func() {
 			if err := jr.grpc.Serve(gln); err != nil {
