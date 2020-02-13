@@ -64,10 +64,11 @@ type Configuration struct {
 	CollectorGRPCPort    int
 	CollectorGRPCOptions []grpc.ServerOption
 
-	AgentCompactThriftPort int
-	AgentBinaryThriftPort  int
-	AgentHTTPPort          int
-	RemoteSamplingEndpoint string
+	AgentCompactThriftPort     int
+	AgentBinaryThriftPort      int
+	AgentHTTPPort              int
+	RemoteSamplingEndpoint     string
+	RemoteSamplingStrategyFile string
 }
 
 // Receiver type is used to receive spans that were originally intended to be sent to Jaeger.
