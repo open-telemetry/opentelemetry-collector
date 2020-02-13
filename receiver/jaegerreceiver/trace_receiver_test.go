@@ -457,3 +457,33 @@ func grpcFixture(t1 time.Time, d1, d2 time.Duration) *api_v2.PostSpansRequest {
 		},
 	}
 }
+
+func TestSampling(t *testing.T) {
+	port := testutils.GetAvailablePort(t)
+	// prepare
+	config := &Configuration{
+		CollectorGRPCPort: int(port),
+	}
+	sink := new(exportertest.SinkTraceExporter)
+
+	jr, err := New(context.Background(), config, sink, zap.NewNop())
+	assert.NoError(t, err, "should not have failed to create a new receiver")
+	defer jr.Shutdown()
+
+	mh := component.NewMockHost()
+	err = jr.Start(mh)
+	assert.NoError(t, err, "should not have failed to start trace reception")
+	t.Log("Start")
+
+	conn, err := grpc.Dial(fmt.Sprintf("0.0.0.0:%d", config.CollectorGRPCPort), grpc.WithInsecure())
+	assert.NoError(t, err)
+	defer conn.Close()
+
+	cl := api_v2.NewSamplingManagerClient(conn)
+
+	resp, err := cl.GetSamplingStrategy(context.Background(), &api_v2.SamplingStrategyParameters{
+		ServiceName: "nothing",
+	})
+	assert.NoError(t, err)
+	assert.NotNil(t, resp)
+}
