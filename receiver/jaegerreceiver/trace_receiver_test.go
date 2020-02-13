@@ -489,13 +489,13 @@ func TestSampling(t *testing.T) {
 		OperationSampling: &api_v2.PerOperationSamplingStrategies{
 			DefaultSamplingProbability: 0.8,
 			PerOperationStrategies: []*api_v2.OperationSamplingStrategy{
-				&api_v2.OperationSamplingStrategy{
+				{
 					Operation: "op1",
 					ProbabilisticSampling: &api_v2.ProbabilisticSamplingStrategy{
 						SamplingRate: 0.2,
 					},
 				},
-				&api_v2.OperationSamplingStrategy{
+				{
 					Operation: "op2",
 					ProbabilisticSampling: &api_v2.ProbabilisticSamplingStrategy{
 						SamplingRate: 0.4,
