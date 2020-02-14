@@ -21,6 +21,7 @@ import (
 	"go.opencensus.io/tag"
 	"go.opencensus.io/trace"
 
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/observability"
 )
 
@@ -93,7 +94,7 @@ func EndTraceDataExportOp(
 		span,
 		numExportedSpans,
 		err,
-		traceData,
+		configmodels.TracesDataType,
 	)
 }
 
@@ -130,7 +131,7 @@ func EndMetricsExportOp(
 		span,
 		numExportedPoints,
 		err,
-		metricsData,
+		configmodels.MetricsDataType,
 	)
 }
 
@@ -171,7 +172,7 @@ func endExportOp(
 	span *trace.Span,
 	numExportedItems int,
 	err error,
-	dataType dataType,
+	dataType configmodels.DataType,
 ) {
 	numSent := numExportedItems
 	numFailedToSend := 0
@@ -183,12 +184,12 @@ func endExportOp(
 	var sentMeasure, failedToSendMeasure *stats.Int64Measure
 	var sentItemsKey, failedToSendItemsKey string
 	switch dataType {
-	case traceData:
+	case configmodels.TracesDataType:
 		sentMeasure = mExporterSentSpans
 		failedToSendMeasure = mExporterFailedToSendSpans
 		sentItemsKey = SentSpansKey
 		failedToSendItemsKey = FailedToSendSpansKey
-	case metricsData:
+	case configmodels.MetricsDataType:
 		sentMeasure = mExporterSentMetricPoints
 		failedToSendMeasure = mExporterFailedToSendMetricPoints
 		sentItemsKey = SentMetricPointsKey

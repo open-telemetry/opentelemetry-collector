@@ -23,14 +23,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/observability"
 )
 
-// Identifies the type of the observability data being received or exported.
-type dataType int
-
 const (
-	noDataType dataType = iota
-	traceData
-	metricsData
-
 	nameSep = "/"
 )
 

@@ -21,6 +21,7 @@ import (
 	"go.opencensus.io/tag"
 	"go.opencensus.io/trace"
 
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/observability"
 )
 
@@ -109,7 +110,7 @@ func EndTraceDataReceiveOp(
 		format,
 		numReceivedSpans,
 		err,
-		traceData,
+		configmodels.TracesDataType,
 	)
 }
 
@@ -155,7 +156,7 @@ func EndMetricsReceiveOp(
 		format,
 		numReceivedPoints,
 		err,
-		metricsData,
+		configmodels.MetricsDataType,
 	)
 }
 
@@ -210,7 +211,7 @@ func endReceiveOp(
 	format string,
 	numReceivedItems int,
 	err error,
-	dataType dataType,
+	dataType configmodels.DataType,
 ) {
 	numAccepted := numReceivedItems
 	numRefused := 0
@@ -222,12 +223,12 @@ func endReceiveOp(
 	var acceptedMeasure, refusedMeasure *stats.Int64Measure
 	var acceptedItemsKey, refusedItemsKey string
 	switch dataType {
-	case traceData:
+	case configmodels.TracesDataType:
 		acceptedMeasure = mReceiverAcceptedSpans
 		refusedMeasure = mReceiverRefusedSpans
 		acceptedItemsKey = AcceptedSpansKey
 		refusedItemsKey = RefusedSpansKey
-	case metricsData:
+	case configmodels.MetricsDataType:
 		acceptedMeasure = mReceiverAcceptedMetricPoints
 		refusedMeasure = mReceiverRefusedMetricPoints
 		acceptedItemsKey = AcceptedMetricPointsKey
