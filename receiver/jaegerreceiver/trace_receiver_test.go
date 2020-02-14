@@ -475,7 +475,7 @@ func TestSampling(t *testing.T) {
 	assert.NoError(t, err, "should not have failed to start trace reception")
 	t.Log("Start")
 
-	conn, err := grpc.Dial(fmt.Sprintf("0.0.0.0:%d", config.CollectorGRPCPort), grpc.WithInsecure())
+	conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", config.CollectorGRPCPort), grpc.WithInsecure())
 	assert.NoError(t, err)
 	defer conn.Close()
 
