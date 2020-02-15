@@ -495,7 +495,7 @@ func (jr *jReceiver) startCollector(host component.Host) error {
 				StrategiesFile: jr.config.RemoteSamplingStrategyFile,
 			}, jr.logger)
 			if gerr != nil {
-				return fmt.Errorf("failed to create collectory strategy store: %v", gerr)
+				return fmt.Errorf("failed to create collector strategy store: %v", gerr)
 			}
 			api_v2.RegisterSamplingManagerServer(jr.grpc, collectorSampling.NewGRPCHandler(ss))
 		}
