@@ -1,0 +1,27 @@
+receivers:
+    examplereceiver:
+
+processors:
+    filter:
+    filter/invalidMetricRegex:
+        action: include
+        metrics:
+            names:
+                match_type: regexp
+                matches:
+                    - (\W|^)stock\stips(\W|$)
+                    - ""
+
+exporters:
+    exampleexporter:
+
+service:
+    pipelines:
+        traces:
+            receivers: [examplereceiver]
+            processors: [filter/invalidMetricRegex]
+            exporters: [exampleexporter]
+        metrics:
+            receivers: [examplereceiver]
+            processors: [filter]
+            exporters: [exampleexporter]

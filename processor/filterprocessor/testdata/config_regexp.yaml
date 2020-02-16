@@ -1,0 +1,164 @@
+receivers:
+    examplereceiver:
+
+processors:
+    filter:
+    filter/include:
+        # any names NOT matching filters are excluded from remainder of pipeline
+        action: include
+        metrics:
+            names:
+                match_type: regexp
+                matches:
+                    # re2 regexp patterns
+                    - prefix/.*
+                    - prefix_.*
+                    - .*/suffix
+                    - .*_suffix
+                    - .*/contains/.*
+                    - .*_contains_.*
+                    - full/name/match
+                    - full_name_match
+        traces:
+            names:
+                match_type: regexp
+                matches:
+                    - prefix/.*
+                    - prefix_.*
+                    - .*/suffix
+                    - .*_suffix
+                    - .*/contains/.*
+                    - .*_contains_.*
+                    - full/name/match
+                    - full_name_match
+    filter/exclude:
+        # any names matching filters are excluded from remainder of pipeline
+        action: exclude
+        metrics:
+            names:
+                match_type: regexp
+                matches:
+                    - prefix/.*
+                    - prefix_.*
+                    - .*/suffix
+                    - .*_suffix
+                    - .*/contains/.*
+                    - .*_contains_.*
+                    - full/name/match
+                    - full_name_match
+        traces:
+            names:
+                match_type: regexp
+                matches:
+                    - prefix/.*
+                    - prefix_.*
+                    - .*/suffix
+                    - .*_suffix
+                    - .*/contains/.*
+                    - .*_contains_.*
+                    - full/name/match
+                    - full_name_match
+    filter/metricsonly:
+        action: include
+        metrics:
+            names:
+                match_type: regexp
+                matches:
+                    - prefix/.*
+                    - prefix_.*
+                    - .*/suffix
+                    - .*_suffix
+                    - .*/contains/.*
+                    - .*_contains_.*
+                    - full/name/match
+                    - full_name_match
+    filter/tracesonly:
+        action: exclude
+        traces:
+            names:
+                match_type: regexp
+                matches:
+                    - prefix/.*
+                    - prefix_.*
+                    - .*/suffix
+                    - .*_suffix
+                    - .*/contains/.*
+                    - .*_contains_.*
+                    - full/name/match
+                    - full_name_match
+    filter/unlimitedcache:
+        action: include
+        metrics:
+            names:
+                match_type: regexp
+                matches:
+                    - prefix/.*
+                    - prefix_.*
+                    - .*/suffix
+                    - .*_suffix
+                    - .*/contains/.*
+                    - .*_contains_.*
+                    - full/name/match
+                    - full_name_match
+                regexp:
+                    cacheenabled: true
+        traces:
+            names:
+                match_type: regexp
+                matches:
+                    - prefix/.*
+                    - prefix_.*
+                    - .*/suffix
+                    - .*_suffix
+                    - .*/contains/.*
+                    - .*_contains_.*
+                    - full/name/match
+                    - full_name_match
+                regexp:
+                    cacheenabled: true
+    filter/limitedcache:
+        action: exclude
+        metrics:
+            names:
+                match_type: regexp
+                matches:
+                    - prefix/.*
+                    - prefix_.*
+                    - .*/suffix
+                    - .*_suffix
+                    - .*/contains/.*
+                    - .*_contains_.*
+                    - full/name/match
+                    - full_name_match
+                regexp:
+                    cacheenabled: true
+                    cachesize: 10
+        traces:
+            names:
+                match_type: regexp
+                matches:
+                    - prefix/.*
+                    - prefix_.*
+                    - .*/suffix
+                    - .*_suffix
+                    - .*/contains/.*
+                    - .*_contains_.*
+                    - full/name/match
+                    - full_name_match
+                regexp:
+                    cacheenabled: true
+                    cachesize: 10
+
+exporters:
+    exampleexporter:
+
+service:
+    pipelines:
+        traces:
+            receivers: [examplereceiver]
+            processors: [filter]
+            exporters: [exampleexporter]
+        metrics:
+            receivers: [examplereceiver]
+            processors: [filter]
+            exporters: [exampleexporter]

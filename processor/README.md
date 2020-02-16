@@ -10,6 +10,7 @@ Supported processors (sorted alphabetically):
 - [Queued Processor](#queued)
 - [Span Processor](#span)
 - [Tail Sampling Processor](#tail_sampling)
+- [Filter Processor](#filter)
 
 ## Data Ownership
 
@@ -313,3 +314,64 @@ name:
 
 ## <a name="tail_sampling"></a>Tail Sampling Processor
 <FILL ME IN - I'M LONELY!>
+
+## <a name="filter"></a>Filter Processor
+The filter processor filters (drops) metrics and traces from a pipeline. The dropped metrics and traces will not be sent to any subsequent processors or exporters.
+
+Currently, filtering metrics by name and filtering traces by name is supported.
+
+
+### Example configuration
+
+```yaml
+processors:
+  filter/include:
+    action: include
+    traces:
+        names:
+            match_type: strict
+            matches:
+                - hello_world
+                - hello/world
+            strict:
+    metrics:
+        names:
+            match_type: regexp
+            matches:
+                - prefix/.*
+                - prefix_.*
+                - .*/suffix
+                - .*_suffix
+                - .*/contains/.*
+                - .*_contains_.*
+                - full/name/match
+                - full_name_match
+            regexp:
+                cacheenabled: true
+                cachesize: 10
+```
+
+`action` indicates whether data that matches the filter is kept or dropped.
+- **include**: all data matching the filter is kept, all other data is dropped
+- **exclude**: all data matching the filter is dropped, all other data is kept
+
+`traces` is the configuration section for traces. 
+- `names` is the filter configuration for filters that compare to the name field of trace spans
+
+`metrics` is the configuration section for metrics.
+- `names` is the filter configuration for filters that compare to the name field of metric metric descriptors
+
+### filter configuration
+Each field's filter can be independently configured.
+
+`match_type` (string) describes the type of pattern matching to use, two options are supported:
+- **strict**: full, exact string matches
+- **regexp**: [re2 regex patterns](https://github.com/google/re2/wiki/Syntax)
+
+`matches` (list of strings) are the patterns used for filtering. Metric and traces are matched against every pattern in this list.
+
+`regexp` is the configuration specific to filters with `match_type` **regexp**
+- `cacheenabled`: (bool) when true, filter matches are cached to speed up future matches
+- `cachesize`: (int) the size of the cache, ignored if `cacheenabled` is **false**
+
+`strict` is the configuration specific to filters with `match_type` **strict**. There are no strict configuration fields available currently.

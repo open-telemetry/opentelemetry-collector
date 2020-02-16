@@ -23,6 +23,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	ptest "github.com/open-telemetry/opentelemetry-collector/processor/processortest"
 )
 
 var (
@@ -85,12 +86,12 @@ func TestTraceResourceProcessor(t *testing.T) {
 	}
 	test := consumerdata.TraceData{}
 
-	ttn := &testTraceConsumer{}
-	rtp := newResourceTraceProcessor(ttn, cfg)
+	ctc := &ptest.CachingTraceConsumer{}
+	rtp := newResourceTraceProcessor(ctc, cfg)
 	assert.True(t, rtp.GetCapabilities().MutatesConsumedData)
 
 	rtp.ConsumeTraceData(context.Background(), test)
-	assert.Equal(t, ttn.td, want)
+	assert.Equal(t, ctc.Data, want)
 }
 
 func TestTraceResourceProcessorEmpty(t *testing.T) {
@@ -101,12 +102,12 @@ func TestTraceResourceProcessorEmpty(t *testing.T) {
 		Resource: resource2,
 	}
 
-	ttn := &testTraceConsumer{}
-	rtp := newResourceTraceProcessor(ttn, emptyCfg)
+	ctc := &ptest.CachingTraceConsumer{}
+	rtp := newResourceTraceProcessor(ctc, emptyCfg)
 	assert.False(t, rtp.GetCapabilities().MutatesConsumedData)
 
 	rtp.ConsumeTraceData(context.Background(), test)
-	assert.Equal(t, ttn.td, want)
+	assert.Equal(t, ctc.Data, want)
 }
 
 func TestTraceResourceProcessorNonEmptyIncomingResource(t *testing.T) {
@@ -116,10 +117,10 @@ func TestTraceResourceProcessorNonEmptyIncomingResource(t *testing.T) {
 	test := consumerdata.TraceData{
 		Resource: resource2,
 	}
-	ttn := &testTraceConsumer{}
-	rtp := newResourceTraceProcessor(ttn, cfg)
+	ctc := &ptest.CachingTraceConsumer{}
+	rtp := newResourceTraceProcessor(ctc, cfg)
 	rtp.ConsumeTraceData(context.Background(), test)
-	assert.Equal(t, ttn.td, want)
+	assert.Equal(t, ctc.Data, want)
 }
 
 func TestMetricResourceProcessor(t *testing.T) {
@@ -128,12 +129,12 @@ func TestMetricResourceProcessor(t *testing.T) {
 	}
 	test := consumerdata.MetricsData{}
 
-	tmn := &testMetricsConsumer{}
-	rmp := newResourceMetricProcessor(tmn, cfg)
+	cmc := &ptest.CachingMetricsConsumer{}
+	rmp := newResourceMetricProcessor(cmc, cfg)
 	assert.True(t, rmp.GetCapabilities().MutatesConsumedData)
 
 	rmp.ConsumeMetricsData(context.Background(), test)
-	assert.Equal(t, tmn.md, want)
+	assert.Equal(t, cmc.Data, want)
 }
 
 func TestMetricResourceProcessorEmpty(t *testing.T) {
@@ -144,12 +145,12 @@ func TestMetricResourceProcessorEmpty(t *testing.T) {
 		Resource: resource2,
 	}
 
-	tmn := &testMetricsConsumer{}
-	rmp := newResourceMetricProcessor(tmn, emptyCfg)
+	cmc := &ptest.CachingMetricsConsumer{}
+	rmp := newResourceMetricProcessor(cmc, emptyCfg)
 	assert.False(t, rmp.GetCapabilities().MutatesConsumedData)
 
 	rmp.ConsumeMetricsData(context.Background(), test)
-	assert.Equal(t, tmn.md, want)
+	assert.Equal(t, cmc.Data, want)
 }
 
 func TestMetricResourceProcessorNonEmptyIncomingResource(t *testing.T) {
@@ -160,32 +161,14 @@ func TestMetricResourceProcessorNonEmptyIncomingResource(t *testing.T) {
 		Resource: resource2,
 	}
 
-	tmn := &testMetricsConsumer{}
-	rmp := newResourceMetricProcessor(tmn, cfg)
+	cmc := &ptest.CachingMetricsConsumer{}
+	rmp := newResourceMetricProcessor(cmc, cfg)
 	rmp.ConsumeMetricsData(context.Background(), test)
-	assert.Equal(t, tmn.md, want)
+	assert.Equal(t, cmc.Data, want)
 }
 
 func TestMergeResourceWithNilLabels(t *testing.T) {
 	resourceNilLabels := &resourcepb.Resource{Type: "host"}
 	assert.Nil(t, resourceNilLabels.Labels)
 	assert.Equal(t, mergeResource(nil, resourceNilLabels), &resourcepb.Resource{Type: "host", Labels: map[string]string{}})
-}
-
-type testTraceConsumer struct {
-	td consumerdata.TraceData
-}
-
-func (ttn *testTraceConsumer) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
-	ttn.td = td
-	return nil
-}
-
-type testMetricsConsumer struct {
-	md consumerdata.MetricsData
-}
-
-func (tmn *testMetricsConsumer) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
-	tmn.md = md
-	return nil
 }

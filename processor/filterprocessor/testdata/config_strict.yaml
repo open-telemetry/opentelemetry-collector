@@ -1,0 +1,93 @@
+receivers:
+    examplereceiver:
+
+processors:
+    filter:
+    filter/include:
+        # any names NOT matching filters are excluded from remainder of pipeline
+        action: include
+        metrics:
+            names:
+                match_type: strict
+                matches:
+                    - hello_world
+                    - hello/world
+        traces:
+            names:
+                match_type: strict
+                matches:
+                    - hello_world
+                    - hello/world
+    filter/exclude:
+        # any names matching filters are excluded from remainder of pipeline
+        action: exclude
+        metrics:
+            names:
+                match_type: strict
+                matches:
+                    - hello_world
+                    - hello/world
+        traces:
+            names:
+                match_type: strict
+                matches:
+                    - hello_world
+                    - hello/world
+    filter/metricsonly:
+        action: include
+        metrics:
+            names:
+                match_type: strict
+                matches:
+                    - hello_world
+                    - hello/world
+    filter/tracesonly:
+        action: exclude
+        traces:
+            names:
+                match_type: strict
+                matches:
+                    - hello_world
+                    - hello/world
+    filter/strictmatchtypedefault:
+        action: exclude
+        metrics:
+            names:
+                matches:
+                    - hello_world
+                    - hello/world
+        traces:
+            names:
+                matches:
+                    - hello_world
+                    - hello/world
+    filter/strictconfig:
+        action: include
+        metrics:
+            names:
+                match_type: strict
+                matches:
+                    - hello_world
+                    - hello/world
+                strict:
+        traces:
+            names:
+                match_type: strict
+                matches:
+                    - hello_world
+                    - hello/world
+                strict:
+
+exporters:
+    exampleexporter:
+
+service:
+    pipelines:
+        traces:
+            receivers: [examplereceiver]
+            processors: [filter]
+            exporters: [exampleexporter]
+        metrics:
+            receivers: [examplereceiver]
+            processors: [filter]
+            exporters: [exampleexporter]
