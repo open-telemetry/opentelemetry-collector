@@ -7,12 +7,15 @@ A receiver is how data gets into OpenTelemetry Collector. Generally, a receiver
 accepts data in a specified format and can support traces and/or metrics. The
 format of the traces and metrics supported are receiver specific.
 
-Supported receivers (sorted alphabetically):
-- [OpenCensus Receiver](#opencensus)
+Supported trace receivers (sorted alphabetically):
 - [Jaeger Receiver](#jaeger)
+- [OpenCensus Receiver](#opencensus)
+- [Zipkin Receiver](#zipkin)
+
+Supported metric receivers (sorted alphabetically):
+- [OpenCensus Receiver](#opencensus)
 - [Prometheus Receiver](#prometheus)
 - [VM Metrics Receiver](#vmmetrics)
-- [Zipkin Receiver](#zipkin)
 
 ## Configuring Receiver(s)
 Receivers are configured via YAML under the top-level `receivers` tag. There
