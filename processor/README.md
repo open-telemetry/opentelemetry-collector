@@ -1,15 +1,15 @@
-# Processors
+# General Information
+
 *Note* This documentation is still in progress. For any questions, please reach
 out in the [OpenTelemetry Gitter](https://gitter.im/open-telemetry/opentelemetry-service)
 or refer to the [issues page](https://github.com/open-telemetry/opentelemetry-collector/issues).
 
 Supported processors (sorted alphabetically):
 - [Attributes Processor](#attributes)
-- [Node Batcher Processor](#node-batcher)
-- [Probabilistic Sampler Processor](#probabilistic_sampler)
+- [Batch Processor](#batch)
 - [Queued Processor](#queued)
+- [Sampling Processor](#sampling)
 - [Span Processor](#span)
-- [Tail Sampling Processor](#tail_sampling)
 
 ## Data Ownership
 
@@ -82,11 +82,11 @@ data cloning described in Exclusive Ownership section.
 
 ## Ordering Processors
 
-The order processors specified in a pipeline is important as this is the
+The order processors are specified in a pipeline is important as this is the
 order in which each processor is applied to traces and metrics.
 
-
 ### Include/Exclude Spans
+
 The [attribute processor](#attributes) and the [span processor](#span) expose
 the option to provide a set of properties of a span to match against to determine
 if the span should be included or excluded from the processor. By default, all
@@ -133,18 +133,23 @@ are checked before the `exclude` properties.
           value: {value}
 ```
 
+# Processors
+
 ## <a name="attributes"></a>Attributes Processor
 
-The attributes processor modifies attributes of a span.
+The attributes processor modifies attributes of a span. Please refer to
+[config.go](attributesprocessor/config.go) for the config spec.
+
+It optionally supports the ability to [include/exclude spans](#includeexclude-spans).
 
 It takes a list of actions which are performed in order specified in the config.
 The supported actions are:
-- insert: Inserts a new attribute in spans where the key does not already exist.
-- update: Updates an attribute in spans where the key does exist.
-- upsert: Performs insert or update. Inserts a new attribute in spans where the
+- `insert`: Inserts a new attribute in spans where the key does not already exist.
+- `update`: Updates an attribute in spans where the key does exist.
+- `upsert`: Performs insert or update. Inserts a new attribute in spans where the
   key does not already exist and updates an attribute in spans where the key
   does exist.
-- delete: Deletes an attribute from a span.
+- `delete`: Deletes an attribute from a span.
 
 For the actions `insert`, `update` and `upsert`,
  - `key`  is required
@@ -175,46 +180,6 @@ For the `delete` action,
   action: delete
 ```
 
-Please refer to [config.go](attributesprocessor/config.go) for the config spec.
-
-### Include/Exclude Spans
-
-It is optional to provide a set of properties of a span to match against to determine
-if the span should be included or excluded from the processor. By default, all
-spans are processed by the processor.
-
-To configure this option, under `include` and/or `exclude`:
-- at least one of or both `services` and `attributes` is required.
-
-Note: If both `include` and `exclude` are specified, the `include` properties
-are checked before the `exclude` properties.
-
-```yaml
-attributes:
-    # include and/or exclude can be specified. However, the include properties
-    # are always checked before the exclude properties.
-    {include, exclude}:
-      # At least one of services or attributes must be specified. It is supported
-      # to have both specified, but both `services` and `attributes` must evaluate
-      # to true for a match to occur.
-
-      # Services specify the list of service name to match against.
-      # A match occurs if the span service name is in this list.
-      # Note: This is an optional field.
-      services: [<key1>, ..., <keyN>]
-      # Attributes specifies the list of attributes to match against.
-      # All of these attributes must match exactly for a match to occur.
-      # Note: This is an optional field.
-      attributes:
-          # Key specifies the attribute to match against.
-        - key: <key>
-          # Value specifies the exact value to match against.
-          # If not specified, a match occurs if the key is present in the attributes.
-          value: {value}
-```
-
-### Example
-
 The list of actions can be composed to create rich scenarios, such as
 back filling attribute, copying values to a new key, redacting sensitive information.
 The following is a sample configuration.
@@ -237,47 +202,161 @@ processors:
         action: delete
 
 ```
+
 Refer to [config.yaml](attributesprocessor/testdata/config.yaml) for detailed
 examples on using the processor.
 
-## <a name="node-batcher"></a>Node Batcher Processor
+## <a name="batch"></a>Batch Processor
 
-<FILL ME IN - I'M LONELY!>
+The batch processor accepts spans and places them into batches grouped by node
+and resource. Batching helps better compress the data and reduce the number of
+outgoing connections required to transmit the data. This processor supports
+both size and time based batching. Please refer to
+[config.go](batchprocessor/config.go) for the config spec.
 
-## <a name="probabilistic_sampler"></a>Probabilistic Sampler Processor
+The following configuration options can be modified:
+- `num_tickers` (default = 4): the number of tickers that loop over batch buckets
+- `remove_after_ticks` (default = 10): the number of ticks passed without a span arriving for a node at which time batcher is deleted
+- `send_batch_size` (default = 8192): size after which a batch will be sent regardless of time
+- `tick_time` (default = 1): interval in seconds in which the tickers tick
+- `timeout` (default = 1): time in seconds after which a batch will be sent regardless of size
 
-<FILL ME IN - I'M LONELY!>
+```yaml
+processors:
+  batch:
+  batch/2:
+    num_tickers: 10
+    remove_after_ticks: 20
+    send_batch_size: 1000
+    tick_time: 5s
+    timeout: 10s
+```
 
-## <a name="queued"></a>Queued Retry Processor
-The queued retry processor uses a bounded queue to relay trace data from the
-receiver or previous processor to the next processor.
-Received trace data is enqueued immediately if the queue is not full . At the
-same time, the processor has one or more workers which consume the trace
-data in the queue by sending them to the next processor. If relaying the trace
-data to the next processor or exporter in the pipeline fails, the processor
-retries after some backoff delay depending on the configuration (see below).
+Refer to [config.yaml](batchprocessor/testdata/config.yaml) for detailed
+examples on using the processor.
 
-### Example configuration
 
-To change the behavior of the default queued processor, the `num_workers`,
-`queue_size`, `retry_on_failure`, `backoff_delay` could be configured.
+## <a name="queued"></a>Queued Processor
+
+The queued processor uses a bounded queue to relay trace data from the receiver
+or previous processor to the next processor. Received trace data is enqueued
+immediately if the queue is not full. At the same time, the processor has one
+or more workers which consume the trace data in the queue by sending them to
+the next processor. If relaying the trace data to the next processor or
+exporter in the pipeline fails, the processor retries after some backoff delay
+depending on the configuration (see below). Please refer to
+[config.go](queuedprocessor/config.go) for the config spec.
+
+The following configuration options can be modified:
+- `backoff_delay` (default = 5): time in seconds to wait before retrying
+- `num_workers` (default = 10): the number of workers that dequeue batches
+- `queue_size` (default = 5000): the maximum number of batches allowed before drop
+- `retry_on_failure` (default = true): whether to retry on failure or give up and drop
 
 ```yaml
 processors:
   queued_retry/example:
+    backoff_delay: 5s
     num_workers: 2
     queue_size: 10
     retry_on_failure: true
-    backoff_delay: 5s
 ```
 
 Refer to [config.yaml](queuedprocessor/testdata/config.yaml) for detailed
 examples on using the processor.
 
+
+## <a name="sampling"></a>Sampling Processor
+
+The sampling processor supports sampling spans. A couple of sampling processors
+are provided today and it is straight forward to add others.
+
+### <a name="tail_sampling"></a>Tail Sampling Processor
+
+The tail sampling processor samples traces based on a set of defined policies.
+Today, this processor only works with a single instance of the collector.
+Technically, trace ID aware load balancing could be used to support multiple
+collector instances, but this configuration has not been tested. Please refer to
+[config.go](samplingprocessor/tailsamplingprocessor/config.go) for the config spec.
+
+The following configuration options can be modified:
+- `decision_wait` (default = 30): number of seconds to wait since first span before making a sampling decision
+- `num_traces` (default = 50000): number of traces kept in memory
+- `expected_new_traces_per_sec` (default = ): expected number of new traces (helps in allocating data structures)
+- `policies` (default = ): sets the policies used to make a sampling decision
+
+Multiple policies exist today and it is straight forward to add more. These include:
+- `always_sample`: sample all traces
+- `numeric_attribute`: sample based on number attributes
+- `string_attribute`: sample based on string attributes
+- `rate_limiting`: sample based on rate
+
+```yaml
+processors:
+  tail_sampling:
+    decision_wait: 10s
+    num_traces: 100
+    expected_new_traces_per_sec: 10
+    policies:
+      [
+          {
+            name: test-policy-1,
+            type: always_sample
+          },
+          {
+            name: test-policy-2,
+            type: numeric_attribute,
+            numeric_attribute: {key: key1, min_value: 50, max_value: 100}
+          },
+          {
+            name: test-policy-3,
+            type: string_attribute,
+            string_attribute: {key: key2, values: [value1, value2]}
+          },
+          {
+            name: test-policy-4,
+            type: rate_limiting,
+            rate_limiting: {spans_per_second: 35}
+         }
+      ]
+```
+
+Refer to [config.yaml](samplingprocessor/tailsamplingprocessor/testdata/config.yaml) for detailed
+examples on using the processor.
+
+### <a name="prob_sampling"></a>Probabilistic Sampling Processor
+
+The probabilistic sampler sets trace sampling by hashing the trace id of each
+span and making the sampling decision based on the hashed value. It also
+implements the "sampling.priority" [semantic
+convention](https://github.com/opentracing/specification/blob/master/semantic_conventions.md#span-tags-table)
+as defined by OpenTracing. The "sampling.priority" semantic hash priority over
+trace id hashing. Please refer to
+[config.go](samplingprocessor/probabilisticprocessor/config.go) for the config spec.
+
+The following configuration options can be modified:
+- `hash_seed` (default = unset): all collectors for a given tier should have the same hash_seed
+- `sampling_percentage` (default = 0): the percentage at which traces are sampled; >= 100 samples all traces
+
+```yaml
+processors:
+  probabilistic_sampler:
+    hash_seed: 22
+    sampling_percentage: 15.3
+```
+
+Refer to [config.yaml](samplingprocessor/probabilisticprocessor/testdata/config.yaml) for detailed
+examples on using the processor.
+
 ## <a name="span"></a>Span Processor
 
-The span processor modifies top level settings of a span. Currently, only
-renaming a span is supported.
+The span processor modifies either the span name or attributes of a span based
+on the span name. Please refer to
+[config.go](spanprocessor/config.go) for the config spec.
+
+It optionally supports the ability to [include/exclude spans](#includeexclude-spans).
+
+Currently, only the name action is supported.
 
 ### Name a span
 
@@ -291,6 +370,7 @@ processor, ensure the `span` processor is specified after the `attributes`
 processor in the `pipeline` specification.
 
 For more information, refer to [config.go](spanprocessor/config.go)
+
 ```yaml
 span:
   name:
@@ -300,6 +380,9 @@ span:
     # Separator is the string used to concatenate various parts of the span name.
     separator: <value>
 ```
+
+Refer to [config.yaml](spanprocessor/testdata/config.yaml) for detailed
+examples on using the processor.
 
 ### Extract attributes from span name
 
@@ -323,19 +406,23 @@ modified span name. The default value for this option is false.
 
 ```yaml
 span/to_attributes:
-name:
-  to_attributes:
-    rules:
-      - regexp-rule1
-      - regexp-rule2
-      - regexp-rule3
-      ...
-    break_after_match: {true, false}
+  name:
+    to_attributes:
+      rules:
+        - regexp-rule1
+        - regexp-rule2
+        - regexp-rule3
+        ...
+      break_after_match: {true, false}
 
 ```
 
-### Example configuration
-For more examples with detailed comments, refer to [config.yaml](spanprocessor/testdata/config.yaml)
+### Examples
+
+Refer to [config.yaml](spanprocessor/testdata/config.yaml) for detailed
+examples on using the processor.
+
+
 ```yaml
 span:
   name:
@@ -349,13 +436,8 @@ span:
 # Applying the following results in output span name /api/v1/document/{documentId}/update
 # and will add a new attribute "documentId"="12345678" to the span.
 span/to_attributes:
-name:
-  to_attributes:
-    rules:
-      - ^\/api\/v1\/document\/(?P<documentId>.*)\/update$
+  name:
+    to_attributes:
+      rules:
+        - ^\/api\/v1\/document\/(?P<documentId>.*)\/update$
 ```
-
-
-## <a name="tail_sampling"></a>Tail Sampling Processor
-
-<FILL ME IN - I'M LONELY!>
