@@ -346,7 +346,7 @@ func checkRecordedMetricsForOTLPTraceExporter(t *testing.T, te exporter.OTLPTrac
 	defer doneFn()
 
 	spans := make([]*otlptrace.Span, 2)
-	td := consumerdata.OTLPTraceData{ResourceSpanList: []*otlptrace.ResourceSpans{{Spans: spans}}}
+	td := consumerdata.NewOTLPTraceData([]*otlptrace.ResourceSpans{{Spans: spans}})
 	ctx := observability.ContextWithReceiverName(context.Background(), fakeTraceReceiverName)
 	const numBatches = 7
 	for i := 0; i < numBatches; i++ {
@@ -361,7 +361,7 @@ func checkRecordedMetricsForOTLPTraceExporter(t *testing.T, te exporter.OTLPTrac
 }
 
 func generateOTLPTraceTraffic(t *testing.T, te exporter.OTLPTraceExporter, numRequests int, wantError error) {
-	td := consumerdata.OTLPTraceData{ResourceSpanList: []*otlptrace.ResourceSpans{{Spans: []*otlptrace.Span{{}}}}}
+	td := consumerdata.NewOTLPTraceData([]*otlptrace.ResourceSpans{{Spans: []*otlptrace.Span{{}}}})
 	ctx, span := trace.StartSpan(context.Background(), fakeTraceParentSpanName, trace.WithSampler(trace.AlwaysSample()))
 	defer span.End()
 	for i := 0; i < numRequests; i++ {
