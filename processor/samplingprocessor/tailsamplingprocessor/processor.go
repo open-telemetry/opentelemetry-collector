@@ -30,7 +30,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/observability"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/samplingprocessor/tailsamplingprocessor/idbatcher"
@@ -91,7 +90,7 @@ func NewTraceProcessor(logger *zap.Logger, nextConsumer consumer.TraceConsumer, 
 	policies := []*Policy{}
 	for i := range cfg.PolicyCfgs {
 		policyCfg := &cfg.PolicyCfgs[i]
-		policyCtx, err := tag.New(ctx, tag.Upsert(tagPolicyKey, policyCfg.Name), tag.Upsert(observability.TagKeyReceiver, sourceFormat))
+		policyCtx, err := tag.New(ctx, tag.Upsert(tagPolicyKey, policyCfg.Name), tag.Upsert(tagSourceFormat, sourceFormat))
 		if err != nil {
 			return nil, err
 		}

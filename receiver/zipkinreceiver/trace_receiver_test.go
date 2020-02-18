@@ -46,6 +46,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/translator/trace/zipkin"
 )
 
+const zipkinReceiver = "zipkin_receiver_test"
+
 func TestTraceIDConversion(t *testing.T) {
 	longID, _ := zipkinmodel.TraceIDFromHex("01020304050607080102030405060708")
 	shortID, _ := zipkinmodel.TraceIDFromHex("0102030405060708")
@@ -127,7 +129,7 @@ func TestNew(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := New(tt.args.address, tt.args.nextConsumer)
+			got, err := New(zipkinReceiver, tt.args.address, tt.args.nextConsumer)
 			require.Equal(t, tt.wantErr, err)
 			if tt.wantErr == nil {
 				require.NotNil(t, got)
@@ -144,7 +146,7 @@ func TestZipkinReceiverPortAlreadyInUse(t *testing.T) {
 	defer l.Close()
 	_, portStr, err := net.SplitHostPort(l.Addr().String())
 	require.NoError(t, err, "failed to split listener address: %v", err)
-	traceReceiver, err := New("localhost:"+portStr, exportertest.NewNopTraceExporter())
+	traceReceiver, err := New(zipkinReceiver, "localhost:"+portStr, exportertest.NewNopTraceExporter())
 	require.NoError(t, err, "Failed to create receiver: %v", err)
 	mh := component.NewMockHost()
 	err = traceReceiver.Start(mh)
@@ -155,7 +157,7 @@ func TestZipkinReceiverPortAlreadyInUse(t *testing.T) {
 }
 
 func TestCustomHTTPServer(t *testing.T) {
-	zr, err := New("localhost:9411", exportertest.NewNopTraceExporter())
+	zr, err := New(zipkinReceiver, "localhost:9411", exportertest.NewNopTraceExporter())
 	require.NoError(t, err, "Failed to create receiver: %v", err)
 
 	server := &http.Server{}
@@ -416,7 +418,7 @@ func TestStartTraceReception(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(exportertest.SinkTraceExporter)
-			zr, err := New("localhost:0", sink)
+			zr, err := New(zipkinReceiver, "localhost:0", sink)
 			require.Nil(t, err)
 			require.NotNil(t, zr)
 

@@ -22,28 +22,35 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"go.opencensus.io/trace"
 
 	"github.com/open-telemetry/opentelemetry-collector/client"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/observability"
+	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
+)
+
+const (
+	receiverTagValue  = "oc_trace"
+	receiverTransport = "grpc" // TODO: transport is being hard coded for now, investigate if info is available on context.
 )
 
 // Receiver is the type used to handle spans from OpenCensus exporters.
 type Receiver struct {
 	nextConsumer consumer.TraceConsumer
+	instanceName string
 }
 
 // New creates a new opencensus.Receiver reference.
-func New(nextConsumer consumer.TraceConsumer, opts ...Option) (*Receiver, error) {
+func New(instanceName string, nextConsumer consumer.TraceConsumer, opts ...Option) (*Receiver, error) {
 	if nextConsumer == nil {
 		return nil, oterr.ErrNilNextConsumer
 	}
 
 	ocr := &Receiver{
 		nextConsumer: nextConsumer,
+		instanceName: instanceName,
 	}
 	for _, opt := range opts {
 		opt(ocr)
@@ -68,7 +75,7 @@ var errTraceExportProtocolViolation = errors.New("protocol violation: Export's f
 // OpenCensus-traceproto compatible libraries/applications.
 func (ocr *Receiver) Export(tes agenttracepb.TraceService_ExportServer) error {
 	// We need to ensure that it propagates the receiver name as a tag
-	ctxWithReceiverName := observability.ContextWithReceiverName(tes.Context(), "oc_trace")
+	ctxWithReceiverName := obsreport.ReceiverContext(tes.Context(), ocr.instanceName, receiverTransport, receiverTagValue)
 
 	// The first message MUST have a non-nil Node.
 	recv, err := tes.Recv()
@@ -105,7 +112,7 @@ func (ocr *Receiver) Export(tes agenttracepb.TraceService_ExportServer) error {
 }
 
 func (ocr *Receiver) processReceivedMsg(
-	ctx context.Context,
+	longLivedRPCCtx context.Context,
 	lastNonNilNode *commonpb.Node,
 	resource *resourcepb.Resource,
 	recv *agenttracepb.ExportTraceServiceRequest,
@@ -128,45 +135,33 @@ func (ocr *Receiver) processReceivedMsg(
 		SourceFormat: "oc_trace",
 	}
 
-	err := ocr.sendToNextConsumer(ctx, td)
+	err := ocr.sendToNextConsumer(longLivedRPCCtx, td)
 	return lastNonNilNode, resource, err
 }
 
-func (ocr *Receiver) sendToNextConsumer(longLivedCtx context.Context, tracedata *consumerdata.TraceData) error {
-	if tracedata == nil {
-		return nil
-	}
+func (ocr *Receiver) sendToNextConsumer(longLivedRPCCtx context.Context, tracedata *consumerdata.TraceData) error {
+	// Do not use longLivedRPCCtx to start the span so this trace ends right at this
+	// function, and the span is not a child of any span from the stream context.
+	ctx, span := obsreport.StartTraceDataReceiveOp(
+		context.Background(),
+		ocr.instanceName,
+		receiverTransport)
 
-	if len(tracedata.Spans) == 0 {
-		observability.RecordMetricsForTraceReceiver(longLivedCtx, 0, 0)
-		return nil
-	}
+	// If the starting RPC has a parent span, then add it as a parent link.
+	observability.SetParentLink(longLivedRPCCtx, span)
 
-	ctx := context.Background()
-	if c, ok := client.FromGRPC(longLivedCtx); ok {
+	if c, ok := client.FromGRPC(longLivedRPCCtx); ok {
 		ctx = client.NewContext(ctx, c)
 	}
 
-	// Trace this method
-	ctx, span := trace.StartSpan(ctx, "OpenCensusTraceReceiver.Export")
-	defer span.End()
-
-	// If the starting RPC has a parent span, then add it as a parent link.
-	observability.SetParentLink(longLivedCtx, span)
-
-	err := ocr.nextConsumer.ConsumeTraceData(ctx, *tracedata)
-	if err != nil {
-		observability.RecordMetricsForTraceReceiver(longLivedCtx, 0, len(tracedata.Spans))
-		span.AddAttributes(trace.Int64Attribute("dropped_spans", int64(len(tracedata.Spans))))
-
-		span.SetStatus(trace.Status{
-			Code:    trace.StatusCodeUnknown,
-			Message: err.Error(),
-		})
-	} else {
-		observability.RecordMetricsForTraceReceiver(longLivedCtx, len(tracedata.Spans), 0)
-		span.AddAttributes(trace.Int64Attribute("num_spans", int64(len(tracedata.Spans))))
+	var err error
+	numSpans := 0
+	if tracedata != nil && len(tracedata.Spans) != 0 {
+		numSpans = len(tracedata.Spans)
+		err = ocr.nextConsumer.ConsumeTraceData(ctx, *tracedata)
 	}
+
+	obsreport.EndTraceDataReceiveOp(longLivedRPCCtx, span, "protobuf", numSpans, err)
 
 	return err
 }

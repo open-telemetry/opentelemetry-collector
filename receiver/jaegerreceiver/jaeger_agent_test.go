@@ -40,6 +40,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/testutils"
 )
 
+const jaegerAgent = "jaeger_agent_test"
+
 func TestJaegerAgentUDP_ThriftCompact_6831(t *testing.T) {
 	port := 6831
 	addrForClient := fmt.Sprintf(":%d", port)
@@ -54,7 +56,7 @@ func TestJaegerAgentUDP_ThriftCompact_InvalidPort(t *testing.T) {
 	config := &Configuration{
 		AgentCompactThriftPort: int(port),
 	}
-	jr, err := New(context.Background(), config, nil, zap.NewNop())
+	jr, err := New(jaegerAgent, config, nil, zap.NewNop())
 	assert.NoError(t, err, "Failed to create new Jaeger Receiver")
 
 	mh := component.NewMockHost()
@@ -81,7 +83,7 @@ func TestJaegerAgentUDP_ThriftBinary_PortInUse(t *testing.T) {
 	config := &Configuration{
 		AgentBinaryThriftPort: int(port),
 	}
-	jr, err := New(context.Background(), config, nil, zap.NewNop())
+	jr, err := New(jaegerAgent, config, nil, zap.NewNop())
 	assert.NoError(t, err, "Failed to create new Jaeger Receiver")
 
 	mh := component.NewMockHost()
@@ -103,7 +105,7 @@ func TestJaegerAgentUDP_ThriftBinary_InvalidPort(t *testing.T) {
 	config := &Configuration{
 		AgentBinaryThriftPort: int(port),
 	}
-	jr, err := New(context.Background(), config, nil, zap.NewNop())
+	jr, err := New(jaegerAgent, config, nil, zap.NewNop())
 	assert.NoError(t, err, "Failed to create new Jaeger Receiver")
 
 	mh := component.NewMockHost()
@@ -143,7 +145,7 @@ func TestJaegerHTTP(t *testing.T) {
 		AgentHTTPPort:          int(port),
 		RemoteSamplingEndpoint: addr.String(),
 	}
-	jr, err := New(context.Background(), config, nil, zap.NewNop())
+	jr, err := New(jaegerAgent, config, nil, zap.NewNop())
 	assert.NoError(t, err, "Failed to create new Jaeger Receiver")
 	defer jr.Shutdown()
 
@@ -180,7 +182,7 @@ func TestJaegerHTTP(t *testing.T) {
 func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *Configuration) {
 	// 1. Create the Jaeger receiver aka "server"
 	sink := new(exportertest.SinkTraceExporter)
-	jr, err := New(context.Background(), receiverConfig, sink, zap.NewNop())
+	jr, err := New(jaegerAgent, receiverConfig, sink, zap.NewNop())
 	assert.NoError(t, err, "Failed to create new Jaeger Receiver")
 	defer jr.Shutdown()
 

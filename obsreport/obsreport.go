@@ -15,6 +15,8 @@
 package obsreport
 
 import (
+	"context"
+
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
@@ -34,6 +36,24 @@ var (
 
 	okStatus = trace.Status{Code: trace.StatusCodeOK}
 )
+
+// SetParentLink tries to retrieve a span from sideCtx and if one exists
+// sets its SpanID, TraceID as a link in the span provided. It returns
+// true only if it retrieved a parent span from the context.
+func SetParentLink(sideCtx context.Context, span *trace.Span) bool {
+	parentSpanFromRPC := trace.FromContext(sideCtx)
+	if parentSpanFromRPC == nil {
+		return false
+	}
+
+	psc := parentSpanFromRPC.SpanContext()
+	span.AddLink(trace.Link{
+		SpanID:  psc.SpanID,
+		TraceID: psc.TraceID,
+		Type:    trace.LinkTypeParent,
+	})
+	return true
+}
 
 // Configure is used to control the settings that will be used by the obsreport
 // package.

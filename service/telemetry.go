@@ -123,7 +123,14 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 
 	view.RegisterExporter(pe)
 
-	logger.Info("Serving Prometheus metrics", zap.Int("port", port))
+	logger.Info(
+		"Serving Prometheus metrics",
+		zap.Int("port", port),
+		zap.Bool("legacy_metrics", *useLegacyMetricsPtr),
+		zap.Bool("new_metrics", *useNewMetricsPtr),
+		zap.Int8("level", int8(level)), // TODO: make it human friendly
+	)
+
 	go func() {
 		mux := http.NewServeMux()
 		mux.Handle("/metrics", pe)
