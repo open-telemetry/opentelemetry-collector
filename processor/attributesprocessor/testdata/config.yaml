@@ -62,6 +62,12 @@ processors:
       - key: duplicate_key
         action: delete
 
+  # The following demonstrates hash existing attribute values.
+  attributes/hash:
+    actions:
+      - key: user.email
+        action: hash 
+
 
   # The following demonstrates excluding spans from this attributes processor.
   # Ex. The following spans match the properties and won't be processed by the

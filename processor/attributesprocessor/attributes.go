@@ -104,6 +104,8 @@ func (a *attributesProcessor) ConsumeTraceData(ctx context.Context, td consumerd
 				// There is no need to check if the target key exists in the attribute map
 				// because the value is to be set regardless.
 				setAttribute(action, span.Attributes.AttributeMap)
+			case HASH:
+				hashAttribute(action, span.Attributes.AttributeMap)
 			}
 		}
 	}
@@ -151,6 +153,12 @@ func setAttribute(action attributeAction, attributesMap map[string]*tracepb.Attr
 	} else if value, fromAttributeExists := attributesMap[action.FromAttribute]; fromAttributeExists {
 		// Set the key with a value from another attribute, if it exists.
 		attributesMap[action.Key] = value
+	}
+}
+
+func hashAttribute(action attributeAction, attributesMap map[string]*tracepb.AttributeValue) {
+	if value, exists := attributesMap[action.Key]; exists {
+		attributesMap[action.Key] = SHA1AttributeHahser(value)
 	}
 }
 

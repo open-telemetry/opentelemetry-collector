@@ -85,8 +85,19 @@ func TestLoadingConifg(t *testing.T) {
 		},
 	})
 
-	p4 := config.Processors["attributes/excludemulti"]
+	p4 := config.Processors["attributes/hash"]
 	assert.Equal(t, p4, &Config{
+		ProcessorSettings: configmodels.ProcessorSettings{
+			NameVal: "attributes/hash",
+			TypeVal: typeStr,
+		},
+		Actions: []ActionKeyValue{
+			{Key: "user.email", Action: HASH},
+		},
+	})
+
+	p5 := config.Processors["attributes/excludemulti"]
+	assert.Equal(t, p5, &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
 			NameVal: "attributes/excludemulti",
 			TypeVal: typeStr,
@@ -107,8 +118,8 @@ func TestLoadingConifg(t *testing.T) {
 		},
 	})
 
-	p5 := config.Processors["attributes/includeservices"]
-	assert.Equal(t, p5, &Config{
+	p6 := config.Processors["attributes/includeservices"]
+	assert.Equal(t, p6, &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
 			NameVal: "attributes/includeservices",
 			TypeVal: typeStr,
@@ -125,8 +136,8 @@ func TestLoadingConifg(t *testing.T) {
 		},
 	})
 
-	p6 := config.Processors["attributes/selectiveprocessing"]
-	assert.Equal(t, p6, &Config{
+	p7 := config.Processors["attributes/selectiveprocessing"]
+	assert.Equal(t, p7, &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
 			NameVal: "attributes/selectiveprocessing",
 			TypeVal: typeStr,
@@ -149,8 +160,8 @@ func TestLoadingConifg(t *testing.T) {
 		},
 	})
 
-	p7 := config.Processors["attributes/complex"]
-	assert.Equal(t, p7, &Config{
+	p8 := config.Processors["attributes/complex"]
+	assert.Equal(t, p8, &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
 			NameVal: "attributes/complex",
 			TypeVal: typeStr,
@@ -162,8 +173,8 @@ func TestLoadingConifg(t *testing.T) {
 		},
 	})
 
-	p8 := config.Processors["attributes/example"]
-	assert.Equal(t, p8, &Config{
+	p9 := config.Processors["attributes/example"]
+	assert.Equal(t, p9, &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
 			NameVal: "attributes/example",
 			TypeVal: typeStr,
@@ -177,8 +188,8 @@ func TestLoadingConifg(t *testing.T) {
 		},
 	})
 
-	p9 := config.Processors["attributes/regexp"]
-	assert.Equal(t, p9, &Config{
+	p10 := config.Processors["attributes/regexp"]
+	assert.Equal(t, p10, &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
 			NameVal: "attributes/regexp",
 			TypeVal: typeStr,
