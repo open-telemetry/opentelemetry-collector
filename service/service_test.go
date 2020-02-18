@@ -41,6 +41,7 @@ func TestApplication_Start(t *testing.T) {
 
 	app, err := New(factories, ApplicationStartInfo{})
 	require.NoError(t, err)
+	assert.Equal(t, app.rootCmd, app.Command())
 
 	const testPrefix = "a_test"
 	metricsPort := testutils.GetAvailablePort(t)
