@@ -313,7 +313,7 @@ service:
       exporters: [opencensus, zipkin]
 ```
 
-## Extending the collector
+## Extensions
 
 The OpenTelemetry collector can be extended or embedded into other applications.
 
