@@ -19,6 +19,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/extension"
@@ -35,10 +36,42 @@ type builtPipeline struct {
 	// MutatesConsumedData is set to true if any processors in the pipeline
 	// can mutate the TraceData or MetricsData input argument.
 	MutatesConsumedData bool
+
+	processors []processor.Processor
 }
 
 // BuiltPipelines is a map of build pipelines created from pipeline configs.
 type BuiltPipelines map[*configmodels.Pipeline]*builtPipeline
+
+func (bps BuiltPipelines) StartProcessors(logger *zap.Logger, host component.Host) error {
+	for cfg, bp := range bps {
+		logger.Info("Pipeline is starting...", zap.String("pipeline", cfg.Name))
+		// Start in reverse order, starting from the back of processors pipeline.
+		// This is important so that processors that are earlier in the pipeline and
+		// reference processors that are later in the pipeline do not start sending
+		// data to later pipelines which are not yet started.
+		for i := len(bp.processors) - 1; i >= 0; i-- {
+			if err := bp.processors[i].Start(host); err != nil {
+				return err
+			}
+		}
+		logger.Info("Pipeline is started.", zap.String("pipeline", cfg.Name))
+	}
+	return nil
+}
+
+func (bps BuiltPipelines) ShutdownProcessors(logger *zap.Logger) error {
+	for cfg, bp := range bps {
+		logger.Info("Pipeline is shutting down...", zap.String("pipeline", cfg.Name))
+		for _, p := range bp.processors {
+			if err := p.Shutdown(); err != nil {
+				return err
+			}
+		}
+		logger.Info("Pipeline is shutdown.", zap.String("pipeline", cfg.Name))
+	}
+	return nil
+}
 
 // PipelinesBuilder builds pipelines from config.
 type PipelinesBuilder struct {
@@ -98,6 +131,8 @@ func (pb *PipelinesBuilder) buildPipeline(
 
 	mutatesConsumedData := false
 
+	processors := make([]processor.Processor, len(pipelineCfg.Processors))
+
 	// Now build the processors backwards, starting from the last one.
 	// The last processor points to consumer which fans out to exporters, then
 	// the processor itself becomes a consumer for the one that precedes it in
@@ -119,6 +154,7 @@ func (pb *PipelinesBuilder) buildPipeline(
 			if proc != nil {
 				mutatesConsumedData = mutatesConsumedData || proc.GetCapabilities().MutatesConsumedData
 			}
+			processors[i] = proc
 			tc = proc
 		case configmodels.MetricsDataType:
 			var proc processor.MetricsProcessor
@@ -126,6 +162,7 @@ func (pb *PipelinesBuilder) buildPipeline(
 			if proc != nil {
 				mutatesConsumedData = mutatesConsumedData || proc.GetCapabilities().MutatesConsumedData
 			}
+			processors[i] = proc
 			mc = proc
 		}
 
@@ -142,7 +179,14 @@ func (pb *PipelinesBuilder) buildPipeline(
 
 	pb.logger.Info("Pipeline is enabled.", zap.String("pipelines", pipelineCfg.Name))
 
-	return &builtPipeline{tc, mc, mutatesConsumedData}, nil
+	bp := &builtPipeline{
+		tc,
+		mc,
+		mutatesConsumedData,
+		processors,
+	}
+
+	return bp, nil
 }
 
 // Converts the list of exporter names to a list of corresponding builtExporters.

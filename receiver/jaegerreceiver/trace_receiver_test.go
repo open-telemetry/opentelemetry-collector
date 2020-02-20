@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
+	"net"
 	"path"
 	"testing"
 	"time"
@@ -26,28 +27,31 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/google/go-cmp/cmp"
+	"github.com/jaegertracing/jaeger/cmd/agent/app/reporter/tchannel"
 	"github.com/jaegertracing/jaeger/model"
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/uber/jaeger-lib/metrics"
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-collector/internal"
 	"github.com/open-telemetry/opentelemetry-collector/receiver"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/receivertest"
+	"github.com/open-telemetry/opentelemetry-collector/testutils"
 	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
+	jaegertranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace/jaeger"
 )
 
 func TestTraceSource(t *testing.T) {
 	jr, err := New(context.Background(), &Configuration{}, nil, zap.NewNop())
 	assert.NoError(t, err, "should not have failed to create the Jaeger receiver")
-
-	assert.Equal(t, traceSource, jr.TraceSource())
+	require.NotNil(t, jr)
 }
 
 func TestReception(t *testing.T) {
@@ -58,16 +62,16 @@ func TestReception(t *testing.T) {
 	sink := new(exportertest.SinkTraceExporter)
 
 	jr, err := New(context.Background(), config, sink, zap.NewNop())
-	defer jr.StopTraceReception()
+	defer jr.Shutdown()
 	assert.NoError(t, err, "should not have failed to create the Jaeger received")
 
 	t.Log("Starting")
 
-	mh := receivertest.NewMockHost()
-	err = jr.StartTraceReception(mh)
+	mh := component.NewMockHost()
+	err = jr.Start(mh)
 	assert.NoError(t, err, "should not have failed to start trace reception")
 
-	t.Log("StartTraceReception")
+	t.Log("Start")
 
 	now := time.Unix(1542158650, 536343000).UTC()
 	nowPlus10min := now.Add(10 * time.Minute)
@@ -101,6 +105,42 @@ func TestReception(t *testing.T) {
 	}
 }
 
+func TestPortsNotOpen(t *testing.T) {
+	// an empty config should result in no open ports
+	config := &Configuration{}
+
+	sink := new(exportertest.SinkTraceExporter)
+
+	jr, err := New(context.Background(), config, sink, zap.NewNop())
+	assert.NoError(t, err, "should not have failed to create a new receiver")
+	defer jr.Shutdown()
+
+	mh := component.NewMockHost()
+	err = jr.Start(mh)
+	assert.NoError(t, err, "should not have failed to start trace reception")
+
+	// there is a race condition here that we're ignoring.
+	//  this test may occasionally pass incorrectly, but it will not fail incorrectly
+	//  TODO: consider adding a way for a receiver to asynchronously signal that is ready to receive spans to eliminate races/arbitrary waits
+	l, err := net.Listen("tcp", "localhost:14250")
+	assert.NoError(t, err, "should have been able to listen on 14250.  jaeger receiver incorrectly started grpc")
+	if l != nil {
+		l.Close()
+	}
+
+	l, err = net.Listen("tcp", "localhost:14268")
+	assert.NoError(t, err, "should have been able to listen on 14268.  jaeger receiver incorrectly started thrift_http")
+	if l != nil {
+		l.Close()
+	}
+	l, err = net.Listen("tcp", "localhost:14267")
+	assert.NoError(t, err, "should have been able to listen on 14267.  jaeger receiver incorrectly started thrift_tchannel")
+
+	if l != nil {
+		l.Close()
+	}
+}
+
 func TestGRPCReception(t *testing.T) {
 	// prepare
 	config := &Configuration{
@@ -110,12 +150,12 @@ func TestGRPCReception(t *testing.T) {
 
 	jr, err := New(context.Background(), config, sink, zap.NewNop())
 	assert.NoError(t, err, "should not have failed to create a new receiver")
-	defer jr.StopTraceReception()
+	defer jr.Shutdown()
 
-	mh := receivertest.NewMockHost()
-	err = jr.StartTraceReception(mh)
+	mh := component.NewMockHost()
+	err = jr.Start(mh)
 	assert.NoError(t, err, "should not have failed to start trace reception")
-	t.Log("StartTraceReception")
+	t.Log("Start")
 
 	conn, err := grpc.Dial(fmt.Sprintf("0.0.0.0:%d", config.CollectorGRPCPort), grpc.WithInsecure())
 	require.NoError(t, err)
@@ -160,24 +200,25 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 
 	grpcServerOptions = append(grpcServerOptions, tlsOption)
 
+	port := testutils.GetAvailablePort(t)
 	config := &Configuration{
-		CollectorGRPCPort:    0, // will dynamically find a free port
+		CollectorGRPCPort:    int(port),
 		CollectorGRPCOptions: grpcServerOptions,
 	}
 	sink := new(exportertest.SinkTraceExporter)
 
 	jr, err := New(context.Background(), config, sink, zap.NewNop())
 	assert.NoError(t, err, "should not have failed to create a new receiver")
-	defer jr.StopTraceReception()
+	defer jr.Shutdown()
 
-	mh := receivertest.NewMockHost()
-	err = jr.StartTraceReception(mh)
+	mh := component.NewMockHost()
+	err = jr.Start(mh)
 	assert.NoError(t, err, "should not have failed to start trace reception")
-	t.Log("StartTraceReception")
+	t.Log("Start")
 
 	creds, err := credentials.NewClientTLSFromFile(path.Join(".", "testdata", "certificate.pem"), "opentelemetry.io")
 	require.NoError(t, err)
-	conn, err := grpc.Dial(jr.(*jReceiver).grpcAddr(), grpc.WithTransportCredentials(creds))
+	conn, err := grpc.Dial(jr.(*jReceiver).collectorGRPCAddr(), grpc.WithTransportCredentials(creds))
 	require.NoError(t, err)
 	defer conn.Close()
 
@@ -202,6 +243,53 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 
 	assert.Len(t, req.Batch.Spans, len(want[0].Spans), "got a conflicting amount of spans")
 	assert.Equal(t, "", cmp.Diff(got, want))
+}
+
+func TestThriftTChannelReception(t *testing.T) {
+	port := testutils.GetAvailablePort(t)
+	config := &Configuration{
+		CollectorThriftPort: int(port),
+	}
+	sink := new(exportertest.SinkTraceExporter)
+
+	jr, err := New(context.Background(), config, sink, zap.NewNop())
+	assert.NoError(t, err, "should not have failed to create a new receiver")
+	defer jr.Shutdown()
+
+	mh := component.NewMockHost()
+	err = jr.Start(mh)
+	assert.NoError(t, err, "should not have failed to start trace reception")
+	t.Log("StartTraceReception")
+
+	b := tchannel.NewBuilder()
+	b.CollectorHostPorts = []string{fmt.Sprintf("localhost:%d", port)}
+
+	p, err := tchannel.NewCollectorProxy(b, metrics.NullFactory, zap.NewNop())
+	assert.NoError(t, err, "should not have failed to create collector proxy")
+
+	now := time.Unix(1542158650, 536343000).UTC()
+	d10min := 10 * time.Minute
+	d2sec := 2 * time.Second
+	nowPlus10min := now.Add(d10min)
+	nowPlus10min2sec := now.Add(d10min).Add(d2sec)
+
+	want := expectedTraceData(now, nowPlus10min, nowPlus10min2sec)
+	batch, err := jaegertranslator.OCProtoToJaegerThrift(want[0])
+	assert.NoError(t, err, "should not have failed proto/thrift translation")
+
+	//confirm port is open before attempting
+	err = testutils.WaitForPort(t, port)
+	assert.NoError(t, err, "WaitForPort failed")
+
+	err = p.GetReporter().EmitBatch(batch)
+	assert.NoError(t, err, "should not have failed to emit batch")
+
+	got := sink.AllTraces()
+	assert.Len(t, batch.Spans, len(want[0].Spans), "got a conflicting amount of spans")
+
+	if diff := cmp.Diff(got, want); diff != "" {
+		t.Errorf("Mismatched responses\n-Got +Want:\n\t%s", diff)
+	}
 }
 
 func expectedTraceData(t1, t2, t3 time.Time) []consumerdata.TraceData {

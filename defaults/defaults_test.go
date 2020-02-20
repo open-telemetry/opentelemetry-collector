@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/open-telemetry/opentelemetry-collector/exporter"
+	"github.com/open-telemetry/opentelemetry-collector/exporter/fileexporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/jaeger/jaegergrpcexporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/jaeger/jaegerthrifthttpexporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/loggingexporter"
@@ -37,9 +38,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/processor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/batchprocessor"
+	"github.com/open-telemetry/opentelemetry-collector/processor/memorylimiter"
 	"github.com/open-telemetry/opentelemetry-collector/processor/queuedprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/samplingprocessor/probabilisticsamplerprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/samplingprocessor/tailsamplingprocessor"
+	"github.com/open-telemetry/opentelemetry-collector/processor/spanprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/jaegerreceiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/opencensusreceiver"
@@ -66,8 +69,10 @@ func TestDefaultComponents(t *testing.T) {
 		"attributes":            &attributesprocessor.Factory{},
 		"queued_retry":          &queuedprocessor.Factory{},
 		"batch":                 &batchprocessor.Factory{},
+		"memory_limiter":        &memorylimiter.Factory{},
 		"tail_sampling":         &tailsamplingprocessor.Factory{},
 		"probabilistic_sampler": &probabilisticsamplerprocessor.Factory{},
+		"span":                  &spanprocessor.Factory{},
 	}
 	expectedExporters := map[string]exporter.Factory{
 		"opencensus":         &opencensusexporter.Factory{},
@@ -76,6 +81,7 @@ func TestDefaultComponents(t *testing.T) {
 		"zipkin":             &zipkinexporter.Factory{},
 		"jaeger_grpc":        &jaegergrpcexporter.Factory{},
 		"jaeger_thrift_http": &jaegerthrifthttpexporter.Factory{},
+		"file":               &fileexporter.Factory{},
 	}
 
 	factories, err := Components()

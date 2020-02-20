@@ -31,7 +31,7 @@ var (
 )
 
 func loggerFlags(flags *flag.FlagSet) {
-	loggerLevelPtr = flags.String(logLevelCfg, "INFO", "Output level of logs (TRACE, DEBUG, INFO, WARN, ERROR, FATAL)")
+	loggerLevelPtr = flags.String(logLevelCfg, "INFO", "Output level of logs (DEBUG, INFO, WARN, ERROR, DPANIC, PANIC, FATAL)")
 }
 
 func newLogger() (*zap.Logger, error) {

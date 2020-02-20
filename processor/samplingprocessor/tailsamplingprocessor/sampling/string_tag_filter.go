@@ -14,18 +14,22 @@
 
 package sampling
 
-import tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+import (
+	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"go.uber.org/zap"
+)
 
 type stringAttributeFilter struct {
 	key    string
 	values map[string]struct{}
+	logger *zap.Logger
 }
 
 var _ PolicyEvaluator = (*stringAttributeFilter)(nil)
 
 // NewStringAttributeFilter creates a policy evaluator that samples all traces with
 // the given attribute in the given numeric range.
-func NewStringAttributeFilter(key string, values []string) PolicyEvaluator {
+func NewStringAttributeFilter(logger *zap.Logger, key string, values []string) PolicyEvaluator {
 	valuesMap := make(map[string]struct{})
 	for _, value := range values {
 		if value != "" {
@@ -35,6 +39,7 @@ func NewStringAttributeFilter(key string, values []string) PolicyEvaluator {
 	return &stringAttributeFilter{
 		key:    key,
 		values: valuesMap,
+		logger: logger,
 	}
 }
 
@@ -43,11 +48,13 @@ func NewStringAttributeFilter(key string, values []string) PolicyEvaluator {
 // This gives the evaluator a chance to log any message/metrics and/or update any
 // related internal state.
 func (saf *stringAttributeFilter) OnLateArrivingSpans(earlyDecision Decision, spans []*tracepb.Span) error {
+	saf.logger.Debug("Triggering action for late arriving spans in string-tag filter")
 	return nil
 }
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
 func (saf *stringAttributeFilter) Evaluate(traceID []byte, trace *TraceData) (Decision, error) {
+	saf.logger.Debug("Evaluting spans in string-tag filter")
 	trace.Lock()
 	batches := trace.ReceivedBatches
 	trace.Unlock()
@@ -81,5 +88,6 @@ func (saf *stringAttributeFilter) Evaluate(traceID []byte, trace *TraceData) (De
 // OnDroppedSpans is called when the trace needs to be dropped, due to memory
 // pressure, before the decision_wait time has been reached.
 func (saf *stringAttributeFilter) OnDroppedSpans(traceID []byte, trace *TraceData) (Decision, error) {
+	saf.logger.Debug("Triggering action for dropped spans in string-tag filter")
 	return NotSampled, nil
 }

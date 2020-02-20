@@ -33,9 +33,6 @@ var (
 // UInt64ToByteTraceID takes a two uint64 representation of a TraceID and
 // converts it to a []byte representation.
 func UInt64ToByteTraceID(high, low uint64) []byte {
-	if high == 0 && low == 0 {
-		return nil
-	}
 	traceID := make([]byte, 16)
 	binary.BigEndian.PutUint64(traceID[:8], high)
 	binary.BigEndian.PutUint64(traceID[8:], low)
@@ -70,9 +67,6 @@ func BytesToInt64TraceID(traceID []byte) (int64, int64, error) {
 // UInt64ToByteSpanID takes a uint64 representation of a SpanID and
 // converts it to a []byte representation.
 func UInt64ToByteSpanID(id uint64) []byte {
-	if id == 0 {
-		return nil
-	}
 	spanID := make([]byte, 8)
 	binary.BigEndian.PutUint64(spanID, id)
 	return spanID

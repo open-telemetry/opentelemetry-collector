@@ -31,3 +31,10 @@ func TimeToTimestamp(t time.Time) *timestamp.Timestamp {
 		Nanos:   int32(nanoTime % 1e9),
 	}
 }
+
+func TimestampToTime(ts *timestamp.Timestamp) (t time.Time) {
+	if ts == nil {
+		return
+	}
+	return time.Unix(ts.Seconds, int64(ts.Nanos))
+}

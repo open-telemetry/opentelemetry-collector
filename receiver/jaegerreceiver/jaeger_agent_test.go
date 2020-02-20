@@ -33,10 +33,10 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-collector/internal"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/receivertest"
 	"github.com/open-telemetry/opentelemetry-collector/testutils"
 )
 
@@ -57,11 +57,11 @@ func TestJaegerAgentUDP_ThriftCompact_InvalidPort(t *testing.T) {
 	jr, err := New(context.Background(), config, nil, zap.NewNop())
 	assert.NoError(t, err, "Failed to create new Jaeger Receiver")
 
-	mh := receivertest.NewMockHost()
-	err = jr.StartTraceReception(mh)
+	mh := component.NewMockHost()
+	err = jr.Start(mh)
 	assert.Error(t, err, "should not have been able to startTraceReception")
 
-	jr.StopTraceReception()
+	jr.Shutdown()
 }
 
 func TestJaegerAgentUDP_ThriftBinary_6832(t *testing.T) {
@@ -84,10 +84,10 @@ func TestJaegerAgentUDP_ThriftBinary_PortInUse(t *testing.T) {
 	jr, err := New(context.Background(), config, nil, zap.NewNop())
 	assert.NoError(t, err, "Failed to create new Jaeger Receiver")
 
-	mh := receivertest.NewMockHost()
+	mh := component.NewMockHost()
 	err = jr.(*jReceiver).startAgent(mh)
-	assert.NoError(t, err, "StartTraceReception failed")
-	defer jr.StopTraceReception()
+	assert.NoError(t, err, "Start failed")
+	defer jr.Shutdown()
 
 	l, err := net.Listen("udp", fmt.Sprintf("localhost:%d", port))
 	assert.Error(t, err, "should not have been able to listen to the port")
@@ -106,11 +106,11 @@ func TestJaegerAgentUDP_ThriftBinary_InvalidPort(t *testing.T) {
 	jr, err := New(context.Background(), config, nil, zap.NewNop())
 	assert.NoError(t, err, "Failed to create new Jaeger Receiver")
 
-	mh := receivertest.NewMockHost()
-	err = jr.StartTraceReception(mh)
+	mh := component.NewMockHost()
+	err = jr.Start(mh)
 	assert.Error(t, err, "should not have been able to startTraceReception")
 
-	jr.StopTraceReception()
+	jr.Shutdown()
 }
 
 func initializeGRPCTestServer(t *testing.T, beforeServe func(server *grpc.Server)) (*grpc.Server, net.Addr) {
@@ -145,11 +145,11 @@ func TestJaegerHTTP(t *testing.T) {
 	}
 	jr, err := New(context.Background(), config, nil, zap.NewNop())
 	assert.NoError(t, err, "Failed to create new Jaeger Receiver")
-	defer jr.StopTraceReception()
+	defer jr.Shutdown()
 
-	mh := receivertest.NewMockHost()
-	err = jr.StartTraceReception(mh)
-	assert.NoError(t, err, "StartTraceReception failed")
+	mh := component.NewMockHost()
+	err = jr.Start(mh)
+	assert.NoError(t, err, "Start failed")
 
 	// allow http server to start
 	err = testutils.WaitForPort(t, port)
@@ -182,11 +182,11 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *Configu
 	sink := new(exportertest.SinkTraceExporter)
 	jr, err := New(context.Background(), receiverConfig, sink, zap.NewNop())
 	assert.NoError(t, err, "Failed to create new Jaeger Receiver")
-	defer jr.StopTraceReception()
+	defer jr.Shutdown()
 
-	mh := receivertest.NewMockHost()
-	err = jr.StartTraceReception(mh)
-	assert.NoError(t, err, "StartTraceReception failed")
+	mh := component.NewMockHost()
+	err = jr.Start(mh)
+	assert.NoError(t, err, "Start failed")
 
 	now := time.Unix(1542158650, 536343000).UTC()
 	nowPlus10min := now.Add(10 * time.Minute)

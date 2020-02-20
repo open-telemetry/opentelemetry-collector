@@ -107,32 +107,27 @@ This receiver receives traces in the [Jaeger](https://www.jaegertracing.io)
 format. It translates them into the internal format and sends
 it to processors and exporters.
 
-It supports the Jaeger Collector protocols:
+It supports the Jaeger Collector and Agent protocols:
+- gRPC
 - Thrift HTTP
 - Thrift TChannel
-- gRPC
-
-By default, the Jaeger receiver supports all three protocols on the default ports
-specified in [factory.go](jaegerreceiver/factory.go). The following demonstrates
-how to specify the default Jaeger receiver.
-```yaml
-receivers:
-  jaeger:
-```
-
-It also supports the Jaeger Agent protocols:
 - Thrift Compact
 - Thrift Binary
 
-By default, these services are not started unless an endpoint is explicitly defined.
+By default, the Jaeger receiver will not serve any protocol. A protocol must be named
+for the jaeger receiver to start.  The following demonstrates how to start the Jaeger
+receiver with only gRPC enabled on the default port.
+```yaml
+receivers:
+  jaeger:
+    protocols:
+      grpc:
+```
 
 It is possible to configure the protocols on different ports, refer to
 [config.yaml](jaegerreceiver/testdata/config.yaml) for detailed config
 examples.
 
-// TODO Issue https://github.com/open-telemetry/opentelemetry-collector/issues/158
-// The Jaeger receiver enables all protocols even when one is specified or a
-// subset is enabled. The documentation should be updated when that fix occurs.
 ### Communicating over TLS
 This receiver supports communication using Transport Layer Security (TLS), but only using the gRPC protocol. It can be configured by specifying a `tls-crendentials` object in the gRPC receiver configuration.   
 ```yaml

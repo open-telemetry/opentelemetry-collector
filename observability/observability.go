@@ -131,7 +131,7 @@ var AllViews = []*view.View{
 	ViewExporterDroppedTimeSeries,
 }
 
-// ContextWithReceiverName adds the tag "otelsvc_receiver" and the name of the receiver as the value,
+// ContextWithReceiverName adds the tag "receiver" and the name of the receiver as the value,
 // and returns the newly created context. For receivers that can receive multiple signals it is
 // recommended to encode the signal as suffix (e.g. "oc_trace" and "oc_metrics").
 func ContextWithReceiverName(ctx context.Context, receiverName string) context.Context {
@@ -151,7 +151,7 @@ func RecordMetricsForMetricsReceiver(ctxWithTraceReceiverName context.Context, r
 	stats.Record(ctxWithTraceReceiverName, mReceiverReceivedTimeSeries.M(int64(receivedTimeSeries)), mReceiverDroppedTimeSeries.M(int64(droppedTimeSeries)))
 }
 
-// ContextWithExporterName adds the tag "otelsvc_exporter" and the name of the exporter as the value,
+// ContextWithExporterName adds the tag "exporter" and the name of the exporter as the value,
 // and returns the newly created context. For exporters that can export multiple signals it is
 // recommended to encode the signal as suffix (e.g. "oc_trace" and "oc_metrics").
 func ContextWithExporterName(ctx context.Context, exporterName string) context.Context {

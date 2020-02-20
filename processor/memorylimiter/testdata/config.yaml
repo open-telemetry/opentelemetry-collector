@@ -1,0 +1,36 @@
+receivers:
+  examplereceiver:
+
+processors:
+  memory_limiter:
+    # empty config
+
+  memory_limiter/with-settings:
+    # check_interval is the time between measurements of memory usage for the
+    # purposes of avoiding going over the limits. Defaults to zero, so no
+    # checks will be performed. Values below 1 second are not recommended since
+    # it can result in unnecessary CPU consumption.
+    check_interval: 5s
+
+    # Maximum amount of memory, in MiB, targeted to be allocated by the process heap.
+    # Note that typically the total memory usage of process will be about 50MiB higher
+    # than this value.
+    limit_mib: 4000
+
+    # The maximum, in MiB, spike expected between the measurements of memory usage.
+    spike_limit_mib: 500
+
+    # BallastSizeMiB is the size, in MiB, of the ballast size being used by the process.
+    # This must match the value of mem-ballast-size-mib command line option (if used)
+    # otherwise the memory limiter will not work correctly.
+    ballast_size_mib: 2000
+
+exporters:
+  exampleexporter:
+
+service:
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      processors: [memory_limiter/with-settings]
+      exporters: [exampleexporter]

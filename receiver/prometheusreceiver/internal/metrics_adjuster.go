@@ -53,7 +53,7 @@ import (
 // 1. If the job-level gc doesn't run often enough, or runs too often, a separate go routine can
 //    be spawned at JobMap creation time that gc's at periodic intervals. This approach potentially
 //    adds more contention and latency to each scrape so the current approach is used. Note that
-//    the go routine will need to be cancelled upon StopMetricsReception().
+//    the go routine will need to be cancelled upon Shutdown().
 // 2. If the gc of each timeseriesMap during the gc of the JobsMap causes too much contention,
 //    the gc of timeseriesMaps can be moved to the end of MetricsAdjuster().AdjustMetrics(). This
 //    approach requires adding 'lastGC' Time and (potentially) a gcInterval duration to

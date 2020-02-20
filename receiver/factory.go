@@ -25,8 +25,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 )
 
-// Factory is factory interface for receivers.
-type Factory interface {
+// BaseFactory defines the common functions for all receiver factories.
+type BaseFactory interface {
 	// Type gets the type of the Receiver created by this factory.
 	Type() string
 
@@ -35,7 +35,7 @@ type Factory interface {
 	// configuration and should not cause side-effects that prevent the creation
 	// of multiple instances of the Receiver.
 	// The object returned by this method needs to pass the checks implemented by
-	// 'conifgcheck.ValidateConfig'. It is recommended to have such check in the
+	// 'configcheck.ValidateConfig'. It is recommended to have such check in the
 	// tests of any implementation of the Factory interface.
 	CreateDefaultConfig() configmodels.Receiver
 
@@ -43,6 +43,25 @@ type Factory interface {
 	// there is no need for custom unmarshaling. This is typically used if viper.UnmarshalExact()
 	// is not sufficient to unmarshal correctly.
 	CustomUnmarshaler() CustomUnmarshaler
+}
+
+// CustomUnmarshaler is a function that un-marshals a viper data into a config struct
+// in a custom way.
+// v *viper.Viper
+//   A viper instance at the "receivers" node in the config yaml.  v.Sub(viperKey) is
+//   the raw config this function should load.
+// viperKey string
+//   The name of this config.  i.e. "jaeger/custom".  v.Sub(viperKey) is the raw config
+//   this function should load.
+// sourceViperSection *viper.Viper
+//   The value of v.Sub(viperKey) with all environment substitution complete.
+// intoCfg interface{}
+//   An empty interface wrapping a pointer to the config struct to unmarshal into.
+type CustomUnmarshaler func(v *viper.Viper, viperKey string, sourceViperSection *viper.Viper, intoCfg interface{}) error
+
+// Factory can create TraceReceiver and MetricsReceiver.
+type Factory interface {
+	BaseFactory
 
 	// CreateTraceReceiver creates a trace receiver based on this config.
 	// If the receiver type does not support tracing or if the config is not valid
@@ -57,9 +76,19 @@ type Factory interface {
 		consumer consumer.MetricsConsumer) (MetricsReceiver, error)
 }
 
-// CustomUnmarshaler is a function that un-marshals a viper data into a config struct
-// in a custom way.
-type CustomUnmarshaler func(v *viper.Viper, viperKey string, intoCfg interface{}) error
+// OTLPFactory can create OTLPTraceReceiver and OTLPMetricsReceiver. This is the
+// new factory type that can create OTLP-based receivers.
+type OTLPFactory interface {
+	BaseFactory
+
+	// CreateOTLPTraceReceiver creates a trace receiver based on this config.
+	// If the receiver type does not support tracing or if the config is not valid
+	// error will be returned instead.
+	CreateOTLPTraceReceiver(ctx context.Context, logger *zap.Logger, cfg configmodels.Receiver,
+		nextConsumer consumer.OTLPTraceConsumer) (TraceReceiver, error)
+
+	// TODO: add CreateOTLPMetricsReceiver.
+}
 
 // Build takes a list of receiver factories and returns a map of type map[string]Factory
 // with factory type as keys. It returns a non-nil error when more than one factories

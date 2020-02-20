@@ -15,17 +15,16 @@
 package attributesprocessor
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/spf13/cast"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
+	internal "github.com/open-telemetry/opentelemetry-collector/internal/processor"
+	"github.com/open-telemetry/opentelemetry-collector/internal/processor/span"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
 )
 
@@ -66,11 +65,11 @@ func (f *Factory) CreateTraceProcessor(
 	if err != nil {
 		return nil, err
 	}
-	include, err := buildMatchProperties(oCfg.Include)
+	include, err := span.NewMatcher(oCfg.Include)
 	if err != nil {
 		return nil, err
 	}
-	exclude, err := buildMatchProperties(oCfg.Exclude)
+	exclude, err := span.NewMatcher(oCfg.Exclude)
 	if err != nil {
 		return nil, err
 	}
@@ -89,26 +88,6 @@ func (f *Factory) CreateMetricsProcessor(
 	cfg configmodels.Processor,
 ) (processor.MetricsProcessor, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
-}
-
-// attributeValue is used to convert the raw `value` from ActionKeyValue to the supported trace attribute values.
-func attributeValue(value interface{}) (*tracepb.AttributeValue, error) {
-	attrib := &tracepb.AttributeValue{}
-	switch val := value.(type) {
-	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
-		attrib.Value = &tracepb.AttributeValue_IntValue{IntValue: cast.ToInt64(val)}
-	case float32, float64:
-		attrib.Value = &tracepb.AttributeValue_DoubleValue{DoubleValue: cast.ToFloat64(val)}
-	case string:
-		attrib.Value = &tracepb.AttributeValue_StringValue{
-			StringValue: &tracepb.TruncatableString{Value: val},
-		}
-	case bool:
-		attrib.Value = &tracepb.AttributeValue_BoolValue{BoolValue: val}
-	default:
-		return nil, fmt.Errorf("error unsupported value type \"%T\"", value)
-	}
-	return attrib, nil
 }
 
 // buildAttributesConfiguration validates the input configuration has all of the required fields for the processor
@@ -132,6 +111,7 @@ func buildAttributesConfiguration(config Config) ([]attributeAction, error) {
 			Key:    a.Key,
 			Action: a.Action,
 		}
+
 		switch a.Action {
 		case INSERT, UPDATE, UPSERT:
 			if a.Value == nil && a.FromAttribute == "" {
@@ -142,7 +122,7 @@ func buildAttributesConfiguration(config Config) ([]attributeAction, error) {
 			}
 			// Convert the raw value from the configuration to the internal trace representation of the value.
 			if a.Value != nil {
-				val, err := attributeValue(a.Value)
+				val, err := internal.AttributeValue(a.Value)
 				if err != nil {
 					return nil, err
 				}
@@ -150,9 +130,10 @@ func buildAttributesConfiguration(config Config) ([]attributeAction, error) {
 			} else {
 				action.FromAttribute = a.FromAttribute
 			}
-
-		case DELETE:
-			// Do nothing since `key` is the only required field for `delete` action.
+		case HASH, DELETE:
+			if a.Value != nil || a.FromAttribute != "" {
+				return nil, fmt.Errorf("error creating \"attributes\" processor. Action \"%s\" does not use \"value\" or \"from_attribute\" field. These must not be specified for %d-th action of processor %q", a.Action, i, config.Name())
+			}
 
 		default:
 			return nil, fmt.Errorf("error creating \"attributes\" processor due to unsupported action %q at the %d-th actions of processor %q", a.Action, i, config.Name())
@@ -161,50 +142,4 @@ func buildAttributesConfiguration(config Config) ([]attributeAction, error) {
 		attributeActions = append(attributeActions, action)
 	}
 	return attributeActions, nil
-}
-
-func buildMatchProperties(config *MatchProperties) (*matchingProperties, error) {
-	if config == nil {
-		return nil, nil
-	}
-
-	if len(config.Services) == 0 && len(config.Attributes) == 0 {
-		return nil, errors.New("error creating \"attributes\" processor. At least one field \"services\" or \"attributes\" must be specified")
-	}
-	properties := &matchingProperties{}
-	for _, serviceName := range config.Services {
-		if serviceName == "" {
-			return nil, errors.New("error creating \"attributes\" processor. Can't have empty string for service name in list of services")
-		}
-	}
-	svcNames := make(map[string]bool, len(config.Services))
-	for _, name := range config.Services {
-		svcNames[name] = true
-	}
-	// Copy the list of service names after each one has been validated. If the list is empty, that is okay because the match properties too will be empty.
-	properties.Services = svcNames
-
-	var rawAttributes []matchAttribute
-	for _, attribute := range config.Attributes {
-
-		if attribute.Key == "" {
-			return nil, errors.New("error creating \"attributes\" processor. Can't have empty string for service name in list of attributes")
-		}
-
-		entry := matchAttribute{
-			Key: attribute.Key,
-		}
-		if attribute.Value != nil {
-			val, err := attributeValue(attribute.Value)
-			if err != nil {
-				return nil, err
-			}
-			entry.AttributeValue = val
-		}
-
-		rawAttributes = append(rawAttributes, entry)
-
-	}
-	properties.Attributes = rawAttributes
-	return properties, nil
 }

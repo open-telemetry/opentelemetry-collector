@@ -21,9 +21,17 @@ package tests
 // coded in this file or use scenarios from perf_scenarios.go.
 
 import (
+	"os"
 	"path"
+	"path/filepath"
 	"testing"
 
+	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/testbed/testbed"
 )
 
@@ -73,22 +81,49 @@ func TestTrace10kSPS(t *testing.T) {
 }
 
 func TestTraceNoBackend10kSPSJaeger(t *testing.T) {
-	tc := testbed.NewTestCase(
-		t,
-		testbed.NewJaegerThriftDataSender(testbed.DefaultJaegerPort),
-		testbed.NewOCDataReceiver(testbed.DefaultOCPort),
-	)
-	defer tc.Stop()
+	tests := []struct {
+		name                string
+		configFileName      string
+		expectedMaxRAM      uint32
+		expectedMinFinalRAM uint32
+	}{
+		{name: "NoMemoryLimit", configFileName: "agent-config.yaml", expectedMaxRAM: 200, expectedMinFinalRAM: 100},
 
-	tc.SetResourceLimits(testbed.ResourceSpec{
-		ExpectedMaxCPU: 60,
-		ExpectedMaxRAM: 198,
-	})
+		// Memory limiter in memory-limiter.yaml is configured to allow max 10MiB of heap size.
+		// However, heap is not the only memory user, so the total limit we set for this
+		// test is 60MiB. Note: to ensure this test verifies memorylimiter correctly
+		// expectedMaxRAM of this test case must be lower than expectedMinFinalRAM of the
+		// previous test case (which runs without memorylimiter).
+		{name: "MemoryLimiter", configFileName: "memory-limiter.yaml", expectedMaxRAM: 60, expectedMinFinalRAM: 10},
+	}
 
-	tc.StartAgent()
-	tc.StartLoad(testbed.LoadOptions{DataItemsPerSecond: 10000})
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 
-	tc.Sleep(tc.Duration)
+			configFilePath := path.Join("testdata", test.configFileName)
+
+			tc := testbed.NewTestCase(
+				t,
+				testbed.NewJaegerThriftDataSender(testbed.DefaultJaegerPort),
+				testbed.NewOCDataReceiver(testbed.DefaultOCPort),
+				testbed.WithConfigFile(configFilePath),
+			)
+			defer tc.Stop()
+
+			tc.SetResourceLimits(testbed.ResourceSpec{
+				ExpectedMaxCPU: 60,
+				ExpectedMaxRAM: 198,
+			})
+
+			tc.StartAgent()
+			tc.StartLoad(testbed.LoadOptions{DataItemsPerSecond: 10000})
+
+			tc.Sleep(tc.Duration)
+
+			rss, _, _ := tc.AgentMemoryInfo()
+			assert.True(t, rss > test.expectedMinFinalRAM)
+		})
+	}
 }
 
 func TestTrace1kSPSWithAttrs(t *testing.T) {
@@ -193,4 +228,140 @@ func TestTraceBallast1kSPSAddAttrs(t *testing.T) {
 		},
 		testbed.WithConfigFile(path.Join("testdata", "add-attributes-config.yaml")),
 	)
+}
+
+// verifySingleSpan sends a single span to Collector, waits until the span is forwarded
+// and received by MockBackend and calls user-supplied verification function on
+// received span.
+func verifySingleSpan(
+	t *testing.T,
+	tc *testbed.TestCase,
+	node *commonpb.Node,
+	span *tracepb.Span,
+	verifyReceived func(span *tracepb.Span),
+) {
+
+	// Clear previously received traces.
+	tc.MockBackend.ClearReceivedItems()
+	startCounter := tc.MockBackend.DataItemsReceived()
+
+	// Add dummy IDs
+	span.TraceId = testbed.GenerateTraceID(1)
+	span.SpanId = testbed.GenerateSpanID(1)
+	td := consumerdata.TraceData{Node: node, Spans: []*tracepb.Span{span}}
+
+	sender := tc.Sender.(testbed.TraceDataSender)
+
+	// Send the span.
+	sender.SendSpans(td)
+
+	// We bypass the load generator in this test, but make sure to increment the
+	// counter since it is used in final reports.
+	tc.LoadGenerator.IncDataItemsSent()
+
+	// Wait until span is received.
+	tc.WaitFor(func() bool { return tc.MockBackend.DataItemsReceived() == startCounter+1 },
+		"span received")
+
+	// Verify received span.
+	count := 0
+	for _, td := range tc.MockBackend.ReceivedTraces {
+		for _, span := range td.Spans {
+			verifyReceived(span)
+			count++
+		}
+	}
+	assert.EqualValues(t, 1, count, "must receive one span")
+}
+
+func TestTraceAttributesProcessor(t *testing.T) {
+	tests := []struct {
+		name     string
+		sender   testbed.DataSender
+		receiver testbed.DataReceiver
+	}{
+		{
+			"JaegerThrift",
+			testbed.NewJaegerThriftDataSender(testbed.GetAvailablePort(t)),
+			testbed.NewJaegerDataReceiver(testbed.GetAvailablePort(t)),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			resultDir, err := filepath.Abs(path.Join("results", t.Name()))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			// Use processor to add attributes to certain spans.
+			processors := map[string]string{
+				"attributes": `
+  attributes:
+    include:
+      match_type: regexp
+      services: ["service-to-add.*"]
+      span_names: ["span-to-add-.*"]
+    actions:
+      - action: insert
+        key: "new_attr"
+        value: "string value"
+`,
+			}
+
+			configFile := createConfigFile(test.sender, test.receiver, resultDir, processors)
+			defer os.Remove(configFile)
+
+			if configFile == "" {
+				t.Fatal("Cannot create config file")
+			}
+
+			tc := testbed.NewTestCase(t, test.sender, test.receiver, testbed.WithConfigFile(configFile))
+			defer tc.Stop()
+
+			tc.StartBackend()
+			tc.StartAgent()
+			defer tc.StopAgent()
+
+			tc.EnableRecording()
+
+			sender := test.sender.(testbed.TraceDataSender)
+			sender.Start()
+
+			// Create a span that matches "include" filter.
+			spanToInclude := &tracepb.Span{
+				Name: &tracepb.TruncatableString{Value: "span-to-add-attr"},
+			}
+			// Create a service name that matches "include" filter.
+			nodeToInclude := &commonpb.Node{ServiceInfo: &commonpb.ServiceInfo{Name: "service-to-add-attr"}}
+
+			verifySingleSpan(t, tc, nodeToInclude, spanToInclude, func(span *tracepb.Span) {
+				// Verify attributes was added.
+				require.NotNil(t, span)
+				require.NotNil(t, span.Attributes)
+				require.NotNil(t, span.Attributes.AttributeMap)
+				attrVal, ok := span.Attributes.AttributeMap["new_attr"]
+				assert.True(t, ok)
+				assert.NotNil(t, attrVal)
+				assert.EqualValues(t, "string value", attrVal.GetStringValue().Value)
+			})
+
+			// Create a service name that does not match "include" filter.
+			nodeToExclude := &commonpb.Node{ServiceInfo: &commonpb.ServiceInfo{Name: "service-not-to-add-attr"}}
+
+			verifySingleSpan(t, tc, nodeToExclude, spanToInclude, func(span *tracepb.Span) {
+				// Verify attributes was not added.
+				assert.Nil(t, span.Attributes)
+			})
+
+			// Create another span that does not match "include" filter.
+			spanToExclude := &tracepb.Span{
+				Name: &tracepb.TruncatableString{Value: "span-not-to-add-attr"},
+			}
+			verifySingleSpan(t, tc, nodeToInclude, spanToExclude, func(span *tracepb.Span) {
+				// Verify attributes was not added.
+				assert.Nil(t, span.Attributes)
+			})
+		})
+	}
 }

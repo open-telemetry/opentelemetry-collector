@@ -1,4 +1,5 @@
 bin/
+local/
 
 # GoLand IDEA
 /.idea/

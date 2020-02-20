@@ -89,7 +89,7 @@ func (ds *DataSenderOverTraceExporter) GetCollectorPort() int {
 	return ds.Port
 }
 
-// JaegerThriftDataSender implements TraceDataSender for Jaeger Thrift-HTTP protocol.
+// JaegerThriftDataSender implements TraceDataSender for Jaeger thrift_http protocol.
 type JaegerThriftDataSender struct {
 	DataSenderOverTraceExporter
 }
@@ -124,10 +124,10 @@ func (je *JaegerThriftDataSender) Start() error {
 
 func (je *JaegerThriftDataSender) GenConfigYAMLStr() string {
 	// Note that this generates a receiver config for agent.
-	// We only need to enable thrift-http protocol because that's what we use in tests.
+	// We only need to enable thrift_http protocol because that's what we use in tests.
 	// Due to bug in Jaeger receiver (https://github.com/open-telemetry/opentelemetry-collector/issues/445)
 	// which makes it impossible to disable protocols that we don't need to receive on we
-	// have to use fake ports for all endpoints except thrift-http, otherwise it is
+	// have to use fake ports for all endpoints except thrift_http, otherwise it is
 	// impossible to start the Collector because the standard ports for those protocols
 	// are already listened by mock Jaeger backend that is part of the tests.
 	// As soon as the bug is fixed remove the endpoints and use "disabled: true" setting
@@ -137,13 +137,13 @@ func (je *JaegerThriftDataSender) GenConfigYAMLStr() string {
     protocols:
       grpc:
         endpoint: "localhost:8371"
-      thrift-tchannel:
+      thrift_tchannel:
         endpoint: "localhost:8372"
-      thrift-compact:
+      thrift_compact:
         endpoint: "localhost:8373"
-      thrift-binary:
+      thrift_binary:
         endpoint: "localhost:8374"
-      thrift-http:
+      thrift_http:
         endpoint: "localhost:%d"`, je.Port)
 }
 

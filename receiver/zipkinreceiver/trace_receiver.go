@@ -36,6 +36,8 @@ import (
 	zipkinproto "github.com/openzipkin/zipkin-go/proto/v2"
 	"go.opencensus.io/trace"
 
+	"github.com/open-telemetry/opentelemetry-collector/client"
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal"
@@ -53,7 +55,7 @@ type ZipkinReceiver struct {
 
 	// addr is the address onto which the HTTP server will be bound
 	addr         string
-	host         receiver.Host
+	host         component.Host
 	nextConsumer consumer.TraceConsumer
 
 	startOnce sync.Once
@@ -87,15 +89,16 @@ func (zr *ZipkinReceiver) address() string {
 	return addr
 }
 
-const traceSource string = "Zipkin"
-
-// TraceSource returns the name of the trace data source.
-func (zr *ZipkinReceiver) TraceSource() string {
-	return traceSource
+func (zr *ZipkinReceiver) WithHTTPServer(s *http.Server) *ZipkinReceiver {
+	if s.Handler == nil {
+		s.Handler = zr
+	}
+	zr.server = s
+	return zr
 }
 
-// StartTraceReception spins up the receiver's HTTP server and makes the receiver start its processing.
-func (zr *ZipkinReceiver) StartTraceReception(host receiver.Host) error {
+// Start spins up the receiver's HTTP server and makes the receiver start its processing.
+func (zr *ZipkinReceiver) Start(host component.Host) error {
 	if host == nil {
 		return errors.New("nil host")
 	}
@@ -113,10 +116,11 @@ func (zr *ZipkinReceiver) StartTraceReception(host receiver.Host) error {
 		}
 
 		zr.host = host
-		server := &http.Server{Handler: zr}
-		zr.server = server
+		if zr.server == nil {
+			zr.server = &http.Server{Handler: zr}
+		}
 		go func() {
-			host.ReportFatalError(server.Serve(ln))
+			host.ReportFatalError(zr.server.Serve(ln))
 		}()
 
 		err = nil
@@ -230,10 +234,10 @@ func (zr *ZipkinReceiver) deserializeFromJSON(jsonBlob []byte, debugWasSet bool)
 	return zs, nil
 }
 
-// StopTraceReception tells the receiver that should stop reception,
+// Shutdown tells the receiver that should stop reception,
 // giving it a chance to perform any necessary clean-up and shutting down
 // its HTTP server.
-func (zr *ZipkinReceiver) StopTraceReception() error {
+func (zr *ZipkinReceiver) Shutdown() error {
 	var err = oterr.ErrAlreadyStopped
 	zr.stopOnce.Do(func() {
 		err = zr.server.Close()
@@ -285,8 +289,12 @@ const (
 // The ZipkinReceiver receives spans from endpoint /api/v2 as JSON,
 // unmarshals them and sends them along to the nextConsumer.
 func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// Trace this method
 	parentCtx := r.Context()
+	if c, ok := client.FromHTTP(r); ok {
+		parentCtx = client.NewContext(parentCtx, c)
+	}
+
+	// Trace this method
 	ctx, span := trace.StartSpan(parentCtx, "ZipkinReceiver.Export")
 	defer span.End()
 
@@ -394,7 +402,7 @@ func zipkinSpanToTraceSpan(zs *zipkinmodel.SpanModel) (*tracepb.Span, *commonpb.
 		EndTime:      internal.TimeToTimestamp(zs.Timestamp.Add(zs.Duration)),
 		Kind:         zipkinSpanKindToProtoSpanKind(zs.Kind),
 		Status:       extractProtoStatus(zs),
-		Attributes:   zipkinTagsToTraceAttributes(zs.Tags),
+		Attributes:   zipkinTagsToTraceAttributes(zs.Tags, zs.Kind),
 		TimeEvents:   zipkinAnnotationsToProtoTimeEvents(zs.Annotations),
 	}
 
@@ -582,8 +590,20 @@ func zipkinAnnotationToProtoAnnotation(zas zipkinmodel.Annotation) *tracepb.Span
 	}
 }
 
-func zipkinTagsToTraceAttributes(tags map[string]string) *tracepb.Span_Attributes {
-	if len(tags) == 0 {
+func zipkinTagsToTraceAttributes(tags map[string]string, skind zipkinmodel.Kind) *tracepb.Span_Attributes {
+	// Produce and Consumer span kinds are not representable in OpenCensus format.
+	// We will represent them using TagSpanKind attribute, according to OpenTracing
+	// conventions. Check if it is one of those span kinds.
+	var spanKindTagVal tracetranslator.OpenTracingSpanKind
+	switch skind {
+	case zipkinmodel.Producer:
+		spanKindTagVal = tracetranslator.OpenTracingSpanKindProducer
+	case zipkinmodel.Consumer:
+		spanKindTagVal = tracetranslator.OpenTracingSpanKindConsumer
+	}
+
+	if len(tags) == 0 && spanKindTagVal == "" {
+		// No input tags and no need to add a span kind tag. Keep attributes map empty.
 		return nil
 	}
 
@@ -604,6 +624,19 @@ func zipkinTagsToTraceAttributes(tags map[string]string) *tracepb.Span_Attribute
 				},
 			}
 		}
+
 	}
+
+	if spanKindTagVal != "" {
+		// Set the previously translated span kind attribute (see top of this function).
+		// We do this after the "tags" map is translated so that we will overwrite
+		// the attribute if it exists.
+		amap[tracetranslator.TagSpanKind] = &tracepb.AttributeValue{
+			Value: &tracepb.AttributeValue_StringValue{
+				StringValue: &tracepb.TruncatableString{Value: string(spanKindTagVal)},
+			},
+		}
+	}
+
 	return &tracepb.Span_Attributes{AttributeMap: amap}
 }

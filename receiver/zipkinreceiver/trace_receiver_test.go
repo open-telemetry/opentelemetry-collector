@@ -33,6 +33,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
@@ -40,9 +41,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/exporter/zipkinexporter"
 	"github.com/open-telemetry/opentelemetry-collector/internal"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
-	"github.com/open-telemetry/opentelemetry-collector/receiver"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/receivertest"
 	"github.com/open-telemetry/opentelemetry-collector/testutils"
+	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 	"github.com/open-telemetry/opentelemetry-collector/translator/trace/zipkin"
 )
 
@@ -129,7 +129,11 @@ func TestNew(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := New(tt.args.address, tt.args.nextConsumer)
 			require.Equal(t, tt.wantErr, err)
-			assert.Equal(t, traceSource, got.TraceSource())
+			if tt.wantErr == nil {
+				require.NotNil(t, got)
+			} else {
+				require.Nil(t, got)
+			}
 		})
 	}
 }
@@ -142,12 +146,21 @@ func TestZipkinReceiverPortAlreadyInUse(t *testing.T) {
 	require.NoError(t, err, "failed to split listener address: %v", err)
 	traceReceiver, err := New("localhost:"+portStr, exportertest.NewNopTraceExporter())
 	require.NoError(t, err, "Failed to create receiver: %v", err)
-	mh := receivertest.NewMockHost()
-	err = traceReceiver.StartTraceReception(mh)
+	mh := component.NewMockHost()
+	err = traceReceiver.Start(mh)
 	if err == nil {
-		traceReceiver.StopTraceReception()
+		traceReceiver.Shutdown()
 		t.Fatal("conflict on port was expected")
 	}
+}
+
+func TestCustomHTTPServer(t *testing.T) {
+	zr, err := New("localhost:9411", exportertest.NewNopTraceExporter())
+	require.NoError(t, err, "Failed to create receiver: %v", err)
+
+	server := &http.Server{}
+	zr = zr.WithHTTPServer(server)
+	assert.True(t, assert.ObjectsAreEqual(server, zr.server), "custom server passed to New was not used")
 }
 
 func TestConvertSpansToTraceSpans_json(t *testing.T) {
@@ -364,7 +377,7 @@ func TestConversionRoundtrip(t *testing.T) {
 	ze, err := factory.CreateTraceExporter(zap.NewNop(), config)
 	require.NoError(t, err)
 	require.NotNil(t, ze)
-	mh := receivertest.NewMockHost()
+	mh := component.NewMockHost()
 	require.NoError(t, ze.Start(mh))
 
 	for _, treq := range ereqs {
@@ -387,7 +400,7 @@ func TestConversionRoundtrip(t *testing.T) {
 func TestStartTraceReception(t *testing.T) {
 	tests := []struct {
 		name    string
-		host    receiver.Host
+		host    component.Host
 		wantErr bool
 	}{
 		{
@@ -396,7 +409,7 @@ func TestStartTraceReception(t *testing.T) {
 		},
 		{
 			name: "valid_host",
-			host: receivertest.NewMockHost(),
+			host: component.NewMockHost(),
 		},
 	}
 
@@ -407,10 +420,60 @@ func TestStartTraceReception(t *testing.T) {
 			require.Nil(t, err)
 			require.NotNil(t, zr)
 
-			err = zr.StartTraceReception(tt.host)
+			err = zr.Start(tt.host)
 			assert.Equal(t, tt.wantErr, err != nil)
 			if !tt.wantErr {
-				require.Nil(t, zr.StopTraceReception())
+				require.Nil(t, zr.Shutdown())
+			}
+		})
+	}
+}
+
+func TestSpanKindTranslation(t *testing.T) {
+	tests := []struct {
+		zipkinKind zipkinmodel.Kind
+		ocKind     tracepb.Span_SpanKind
+		otKind     tracetranslator.OpenTracingSpanKind
+	}{
+		{
+			zipkinKind: zipkinmodel.Client,
+			ocKind:     tracepb.Span_CLIENT,
+			otKind:     "",
+		},
+		{
+			zipkinKind: zipkinmodel.Server,
+			ocKind:     tracepb.Span_SERVER,
+			otKind:     "",
+		},
+		{
+			zipkinKind: zipkinmodel.Producer,
+			ocKind:     tracepb.Span_SPAN_KIND_UNSPECIFIED,
+			otKind:     tracetranslator.OpenTracingSpanKindProducer,
+		},
+		{
+			zipkinKind: zipkinmodel.Consumer,
+			ocKind:     tracepb.Span_SPAN_KIND_UNSPECIFIED,
+			otKind:     tracetranslator.OpenTracingSpanKindConsumer,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(string(tt.zipkinKind), func(t *testing.T) {
+			zs := &zipkinmodel.SpanModel{
+				SpanContext: zipkinmodel.SpanContext{
+					TraceID: zipkinmodel.TraceID{Low: 123},
+					ID:      456,
+				},
+				Kind: tt.zipkinKind,
+			}
+			ocSpan, _, err := zipkinSpanToTraceSpan(zs)
+			require.NoError(t, err)
+			assert.EqualValues(t, tt.ocKind, ocSpan.Kind)
+			if tt.otKind != "" {
+				otSpanKind := ocSpan.Attributes.AttributeMap[tracetranslator.TagSpanKind]
+				assert.EqualValues(t, tt.otKind, otSpanKind.GetStringValue().Value)
+			} else {
+				assert.True(t, ocSpan.Attributes == nil)
 			}
 		})
 	}

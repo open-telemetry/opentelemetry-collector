@@ -12,26 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package receivertest define types and functions used to help test packages
-// implementing the receiver package interfaces.
-package receivertest
+package fileexporter
 
 import (
-	"errors"
-	"testing"
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 )
 
-func TestNewMockHost(t *testing.T) {
-	got := NewMockHost()
-	if got == nil {
-		t.Fatal("NewMockHost() = nil, want non-nil", got)
-	}
-	if ctx := got.Context(); ctx == nil {
-		t.Fatalf("Context() = nil, want non-nil")
-	}
-	_, ok := got.(*MockHost)
-	if !ok {
-		t.Fatal("got.(*MockHost) failed")
-	}
-	got.ReportFatalError(errors.New("TestError"))
+// Config defines configuration for file exporter.
+type Config struct {
+	configmodels.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+
+	// Path of the file to write to. Path is relative to current directory.
+	Path string `mapstructure:"path"`
 }

@@ -29,6 +29,7 @@ import (
 	"go.opencensus.io/stats"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/observability"
@@ -111,6 +112,11 @@ func (b *batcher) ConsumeTraceData(ctx context.Context, td consumerdata.TraceDat
 
 func (b *batcher) GetCapabilities() processor.Capabilities {
 	return processor.Capabilities{MutatesConsumedData: false}
+}
+
+// Start is invoked during service startup.
+func (b *batcher) Start(host component.Host) error {
+	return nil
 }
 
 // Shutdown is invoked during service shutdown.

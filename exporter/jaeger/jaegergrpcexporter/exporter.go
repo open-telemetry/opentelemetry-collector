@@ -19,6 +19,7 @@ import (
 
 	jaegerproto "github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 
 	"github.com/open-telemetry/opentelemetry-collector/config/configgrpc"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
@@ -45,7 +46,8 @@ func New(config *Config) (exporter.TraceExporter, error) {
 
 	collectorServiceClient := jaegerproto.NewCollectorServiceClient(client)
 	s := &protoGRPCSender{
-		client: collectorServiceClient,
+		client:   collectorServiceClient,
+		metadata: metadata.New(config.GRPCSettings.Headers),
 	}
 
 	exp, err := exporterhelper.NewTraceExporter(
@@ -60,7 +62,8 @@ func New(config *Config) (exporter.TraceExporter, error) {
 // protoGRPCSender forwards spans encoded in the jaeger proto
 // format, to a grpc server.
 type protoGRPCSender struct {
-	client jaegerproto.CollectorServiceClient
+	client   jaegerproto.CollectorServiceClient
+	metadata metadata.MD
 }
 
 func (s *protoGRPCSender) pushTraceData(
@@ -73,8 +76,12 @@ func (s *protoGRPCSender) pushTraceData(
 		return len(td.Spans), consumererror.Permanent(err)
 	}
 
+	if s.metadata.Len() > 0 {
+		ctx = metadata.NewOutgoingContext(ctx, s.metadata)
+	}
+
 	_, err = s.client.PostSpans(
-		context.Background(),
+		ctx,
 		&jaegerproto.PostSpansRequest{Batch: *protoBatch})
 
 	if err != nil {

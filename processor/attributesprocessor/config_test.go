@@ -19,9 +19,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-collector/internal/processor/span"
 )
 
 func TestLoadingConifg(t *testing.T) {
@@ -33,7 +35,7 @@ func TestLoadingConifg(t *testing.T) {
 	config, err := config.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 
 	assert.Nil(t, err)
-	assert.NotNil(t, config)
+	require.NotNil(t, config)
 
 	p0 := config.Processors["attributes/insert"]
 	assert.Equal(t, p0, &Config{
@@ -83,17 +85,31 @@ func TestLoadingConifg(t *testing.T) {
 		},
 	})
 
-	p4 := config.Processors["attributes/excludemulti"]
+	p4 := config.Processors["attributes/hash"]
 	assert.Equal(t, p4, &Config{
+		ProcessorSettings: configmodels.ProcessorSettings{
+			NameVal: "attributes/hash",
+			TypeVal: typeStr,
+		},
+		Actions: []ActionKeyValue{
+			{Key: "user.email", Action: HASH},
+		},
+	})
+
+	p5 := config.Processors["attributes/excludemulti"]
+	assert.Equal(t, p5, &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
 			NameVal: "attributes/excludemulti",
 			TypeVal: typeStr,
 		},
-		Exclude: &MatchProperties{
-			Services: []string{"svcA", "svcB"},
-			Attributes: []Attribute{
-				{Key: "env", Value: "dev"},
-				{Key: "test_request"},
+		MatchConfig: span.MatchConfig{
+			Exclude: &span.MatchProperties{
+				MatchType: span.MatchTypeStrict,
+				Services:  []string{"svcA", "svcB"},
+				Attributes: []span.Attribute{
+					{Key: "env", Value: "dev"},
+					{Key: "test_request"},
+				},
 			},
 		},
 		Actions: []ActionKeyValue{
@@ -102,33 +118,16 @@ func TestLoadingConifg(t *testing.T) {
 		},
 	})
 
-	p5 := config.Processors["attributes/includeservices"]
-	assert.Equal(t, p5, &Config{
+	p6 := config.Processors["attributes/includeservices"]
+	assert.Equal(t, p6, &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
 			NameVal: "attributes/includeservices",
 			TypeVal: typeStr,
 		},
-		Include: &MatchProperties{
-			Services: []string{"svcA", "svcB"},
-		},
-		Actions: []ActionKeyValue{
-			{Key: "credit_card", Action: DELETE},
-			{Key: "duplicate_key", Action: DELETE},
-		},
-	})
-
-	p6 := config.Processors["attributes/selectiveprocessing"]
-	assert.Equal(t, p6, &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
-			NameVal: "attributes/selectiveprocessing",
-			TypeVal: typeStr,
-		},
-		Include: &MatchProperties{
-			Services: []string{"svcA", "svcB"},
-		},
-		Exclude: &MatchProperties{
-			Attributes: []Attribute{
-				{Key: "redact_trace", Value: false},
+		MatchConfig: span.MatchConfig{
+			Include: &span.MatchProperties{
+				MatchType: span.MatchTypeRegexp,
+				Services:  []string{"auth.*", "login.*"},
 			},
 		},
 		Actions: []ActionKeyValue{
@@ -137,8 +136,32 @@ func TestLoadingConifg(t *testing.T) {
 		},
 	})
 
-	p7 := config.Processors["attributes/complex"]
+	p7 := config.Processors["attributes/selectiveprocessing"]
 	assert.Equal(t, p7, &Config{
+		ProcessorSettings: configmodels.ProcessorSettings{
+			NameVal: "attributes/selectiveprocessing",
+			TypeVal: typeStr,
+		},
+		MatchConfig: span.MatchConfig{
+			Include: &span.MatchProperties{
+				MatchType: span.MatchTypeStrict,
+				Services:  []string{"svcA", "svcB"},
+			},
+			Exclude: &span.MatchProperties{
+				MatchType: span.MatchTypeStrict,
+				Attributes: []span.Attribute{
+					{Key: "redact_trace", Value: false},
+				},
+			},
+		},
+		Actions: []ActionKeyValue{
+			{Key: "credit_card", Action: DELETE},
+			{Key: "duplicate_key", Action: DELETE},
+		},
+	})
+
+	p8 := config.Processors["attributes/complex"]
+	assert.Equal(t, p8, &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
 			NameVal: "attributes/complex",
 			TypeVal: typeStr,
@@ -150,8 +173,8 @@ func TestLoadingConifg(t *testing.T) {
 		},
 	})
 
-	p8 := config.Processors["attributes/example"]
-	assert.Equal(t, p8, &Config{
+	p9 := config.Processors["attributes/example"]
+	assert.Equal(t, p9, &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
 			NameVal: "attributes/example",
 			TypeVal: typeStr,
@@ -162,6 +185,28 @@ func TestLoadingConifg(t *testing.T) {
 			{Key: "copy_key", FromAttribute: "key_original", Action: UPDATE},
 			{Key: "account_id", Value: 2245, Action: INSERT},
 			{Key: "account_password", Action: DELETE},
+		},
+	})
+
+	p10 := config.Processors["attributes/regexp"]
+	assert.Equal(t, p10, &Config{
+		ProcessorSettings: configmodels.ProcessorSettings{
+			NameVal: "attributes/regexp",
+			TypeVal: typeStr,
+		},
+		MatchConfig: span.MatchConfig{
+			Include: &span.MatchProperties{
+				MatchType: span.MatchTypeRegexp,
+				Services:  []string{"auth.*"},
+			},
+			Exclude: &span.MatchProperties{
+				MatchType: span.MatchTypeRegexp,
+				SpanNames: []string{"login.*"},
+			},
+		},
+		Actions: []ActionKeyValue{
+			{Key: "password", Action: UPDATE, Value: "obfuscated"},
+			{Key: "token", Action: DELETE},
 		},
 	})
 

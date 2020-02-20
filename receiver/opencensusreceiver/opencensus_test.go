@@ -18,24 +18,32 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
+	"os"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-collector/internal"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/receivertest"
+	"github.com/open-telemetry/opentelemetry-collector/observability/observabilitytest"
 	"github.com/open-telemetry/opentelemetry-collector/testutils"
 )
 
@@ -45,13 +53,13 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 
 	// Set the buffer count to 1 to make it flush the test span immediately.
 	sink := new(exportertest.SinkTraceExporter)
-	ocr, err := New(addr, sink, nil)
+	ocr, err := New("tcp", addr, sink, nil)
 	require.NoError(t, err, "Failed to create trace receiver: %v", err)
 
-	mh := receivertest.NewMockHost()
-	err = ocr.StartTraceReception(mh)
+	mh := component.NewMockHost()
+	err = ocr.Start(mh)
 	require.NoError(t, err, "Failed to start trace receiver: %v", err)
-	defer ocr.StopTraceReception()
+	defer ocr.Shutdown()
 
 	// TODO(songy23): make starting server deterministic
 	// Wait for the servers to start
@@ -149,12 +157,12 @@ func TestTraceGrpcGatewayCors_endToEnd(t *testing.T) {
 	corsOrigins := []string{"allowed-*.com"}
 
 	sink := new(exportertest.SinkTraceExporter)
-	ocr, err := New(addr, sink, nil, WithCorsOrigins(corsOrigins))
+	ocr, err := New("tcp", addr, sink, nil, WithCorsOrigins(corsOrigins))
 	require.NoError(t, err, "Failed to create trace receiver: %v", err)
-	defer ocr.StopTraceReception()
+	defer ocr.Shutdown()
 
-	mh := receivertest.NewMockHost()
-	err = ocr.StartTraceReception(mh)
+	mh := component.NewMockHost()
+	err = ocr.Start(mh)
 	require.NoError(t, err, "Failed to start trace receiver: %v", err)
 
 	// TODO(songy23): make starting server deterministic
@@ -175,12 +183,12 @@ func TestMetricsGrpcGatewayCors_endToEnd(t *testing.T) {
 	corsOrigins := []string{"allowed-*.com"}
 
 	sink := new(exportertest.SinkMetricsExporter)
-	ocr, err := New(addr, nil, sink, WithCorsOrigins(corsOrigins))
+	ocr, err := New("tcp", addr, nil, sink, WithCorsOrigins(corsOrigins))
 	require.NoError(t, err, "Failed to create metrics receiver: %v", err)
-	defer ocr.StopMetricsReception()
+	defer ocr.Shutdown()
 
-	mh := receivertest.NewMockHost()
-	err = ocr.StartMetricsReception(mh)
+	mh := component.NewMockHost()
+	err = ocr.Start(mh)
 	require.NoError(t, err, "Failed to start metrics receiver: %v", err)
 
 	// TODO(songy23): make starting server deterministic
@@ -204,13 +212,13 @@ func TestAcceptAllGRPCProtoAffiliatedContentTypes(t *testing.T) {
 
 	addr := testutils.GetAvailableLocalAddress(t)
 	cbts := new(exportertest.SinkTraceExporter)
-	ocr, err := New(addr, cbts, nil)
+	ocr, err := New("tcp", addr, cbts, nil)
 	require.NoError(t, err, "Failed to create trace receiver: %v", err)
 
-	mh := receivertest.NewMockHost()
-	err = ocr.StartTraceReception(mh)
+	mh := component.NewMockHost()
+	err = ocr.Start(mh)
 	require.NoError(t, err, "Failed to start the trace receiver: %v", err)
-	defer ocr.StopTraceReception()
+	defer ocr.Shutdown()
 
 	// Now start the client with the various Proto affiliated gRPC Content-SubTypes as per:
 	//      https://godoc.org/google.golang.org/grpc#CallContentSubtype
@@ -328,7 +336,7 @@ func verifyCorsResp(t *testing.T, url string, origin string, wantStatus int, wan
 
 func TestStopWithoutStartNeverCrashes(t *testing.T) {
 	addr := testutils.GetAvailableLocalAddress(t)
-	ocr, err := New(addr, nil, nil)
+	ocr, err := New("tcp", addr, nil, nil)
 	require.NoError(t, err, "Failed to create an OpenCensus receiver: %v", err)
 	// Stop it before ever invoking Start*.
 	ocr.stop()
@@ -340,33 +348,252 @@ func TestNewPortAlreadyUsed(t *testing.T) {
 	require.NoError(t, err, "failed to listen on %q: %v", addr, err)
 	defer ln.Close()
 
-	r, err := New(addr, nil, nil)
+	r, err := New("tcp", addr, nil, nil)
 	require.Error(t, err)
 	require.Nil(t, r)
 }
 
 func TestMultipleStopReceptionShouldNotError(t *testing.T) {
 	addr := testutils.GetAvailableLocalAddress(t)
-	r, err := New(addr, new(exportertest.SinkTraceExporter), new(exportertest.SinkMetricsExporter))
+	r, err := New("tcp", addr, new(exportertest.SinkTraceExporter), new(exportertest.SinkMetricsExporter))
 	require.NoError(t, err)
 	require.NotNil(t, r)
 
-	mh := receivertest.NewMockHost()
-	require.NoError(t, r.StartTraceReception(mh))
-	require.NoError(t, r.StartMetricsReception(mh))
-
-	require.NoError(t, r.StopMetricsReception())
-	require.NoError(t, r.StopTraceReception())
+	mh := component.NewMockHost()
+	require.NoError(t, r.Start(mh))
+	require.NoError(t, r.Shutdown())
 }
 
 func TestStartWithoutConsumersShouldFail(t *testing.T) {
 	addr := testutils.GetAvailableLocalAddress(t)
-	r, err := New(addr, nil, nil)
+	r, err := New("tcp", addr, nil, nil)
 	require.NoError(t, err)
 	require.NotNil(t, r)
 
-	mh := receivertest.NewMockHost()
-	require.Error(t, r.StartTraceReception(mh))
-	require.Error(t, r.StartMetricsReception(mh))
+	mh := component.NewMockHost()
+	require.Error(t, r.Start(mh))
+}
 
+func tempSocketName(t *testing.T) string {
+	tmpfile, err := ioutil.TempFile("", "sock")
+	require.NoError(t, err)
+	socket := tmpfile.Name()
+	err = os.Remove(socket)
+	require.NoError(t, err)
+
+	return socket
+}
+
+func TestReceiveOnUnixDomainSocket_endToEnd(t *testing.T) {
+	socketName := tempSocketName(t)
+	cbts := new(exportertest.SinkTraceExporter)
+	r, err := New("unix", socketName, cbts, nil)
+	require.NoError(t, err)
+	require.NotNil(t, r)
+	mh := component.NewMockHost()
+	err = r.Start(mh)
+	require.NoError(t, err)
+	defer r.Shutdown()
+
+	// Wait for the servers to start
+	<-time.After(10 * time.Millisecond)
+
+	span := `
+{
+ "node": {
+ },
+ "spans": [
+   {
+     "trace_id": "YpsR8/le4OgjwSSxhjlrEg==",
+     "span_id": "2CogcbJh7Ko=",
+     "socket": {
+       "value": "/abc",
+       "truncated_byte_count": 0
+     },
+     "kind": "SPAN_KIND_UNSPECIFIED",
+     "start_time": "2020-01-09T11:13:53.187Z",
+     "end_time": "2020-01-09T11:13:53.187Z"
+	}
+ ]
+}
+`
+	c := http.Client{
+		Transport: &http.Transport{
+			DialContext: func(ctx context.Context, network, addr string) (conn net.Conn, err error) {
+				return net.Dial("unix", socketName)
+			},
+		},
+	}
+
+	response, err := c.Post("http://unix/v1/trace", "application/json", strings.NewReader(span))
+	require.NoError(t, err)
+	defer response.Body.Close()
+
+	require.Equal(t, 200, response.StatusCode)
+}
+
+// TestOCReceiverTrace_HandleNextConsumerResponse checks if the trace receiver
+// is returning the proper response (return and metrics) when the next consumer
+// in the pipeline reports error. The test changes the responses returned by the
+// next trace consumer, checks if data was passed down the pipeline and if
+// proper metrics were recorded. It also uses all endpoints supported by the
+// trace receiver.
+func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
+	type ingestionStateTest struct {
+		okToIngest   bool
+		expectedCode codes.Code
+	}
+	tests := []struct {
+		name                         string
+		expectedReceivedBatches      int
+		expectedIngestionBlockedRPCs int
+		ingestionStates              []ingestionStateTest
+	}{
+		{
+			name:                         "IngestTest",
+			expectedReceivedBatches:      2,
+			expectedIngestionBlockedRPCs: 1,
+			ingestionStates: []ingestionStateTest{
+				{
+					okToIngest:   true,
+					expectedCode: codes.OK,
+				},
+				{
+					okToIngest:   false,
+					expectedCode: codes.OK,
+				},
+				{
+					okToIngest:   true,
+					expectedCode: codes.OK,
+				},
+			},
+		},
+	}
+
+	addr := testutils.GetAvailableLocalAddress(t)
+	msg := &agenttracepb.ExportTraceServiceRequest{
+		Node: &commonpb.Node{
+			ServiceInfo: &commonpb.ServiceInfo{Name: "test-svc"},
+		},
+		Spans: []*tracepb.Span{
+			{
+				TraceId: []byte{
+					0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+					0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10,
+				},
+			},
+		},
+	}
+
+	exportBidiFn := func(
+		t *testing.T,
+		cc *grpc.ClientConn,
+		msg *agenttracepb.ExportTraceServiceRequest) error {
+
+		acc := agenttracepb.NewTraceServiceClient(cc)
+		stream, err := acc.Export(context.Background())
+		require.NoError(t, err)
+		require.NotNil(t, stream)
+
+		err = stream.Send(msg)
+		stream.CloseSend()
+		if err == nil {
+			for {
+				if _, err = stream.Recv(); err != nil {
+					if err == io.EOF {
+						err = nil
+					}
+					break
+				}
+			}
+		}
+
+		return err
+	}
+
+	exporters := []struct {
+		receiverTag string
+		exportFn    func(
+			t *testing.T,
+			cc *grpc.ClientConn,
+			msg *agenttracepb.ExportTraceServiceRequest) error
+	}{
+		{
+			receiverTag: "oc_trace",
+			exportFn:    exportBidiFn,
+		},
+	}
+	for _, exporter := range exporters {
+		for _, tt := range tests {
+			t.Run(tt.name+"/"+exporter.receiverTag, func(t *testing.T) {
+				doneFn := observabilitytest.SetupRecordedMetricsTest()
+				defer doneFn()
+
+				sink := new(sinkTraceConsumer)
+
+				var opts []Option
+				ocr, err := New("tcp", addr, nil, nil, opts...)
+				require.Nil(t, err)
+				require.NotNil(t, ocr)
+
+				ocr.traceConsumer = sink
+				err = ocr.Start(component.NewMockHost())
+				require.Nil(t, err)
+				defer ocr.Shutdown()
+
+				cc, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithBlock())
+				if err != nil {
+					t.Errorf("grpc.Dial: %v", err)
+				}
+				defer cc.Close()
+
+				for _, ingestionState := range tt.ingestionStates {
+					if ingestionState.okToIngest {
+						sink.SetConsumeTraceError(nil)
+					} else {
+						sink.SetConsumeTraceError(fmt.Errorf("%q: consumer error", tt.name))
+					}
+
+					err = exporter.exportFn(t, cc, msg)
+
+					status, ok := status.FromError(err)
+					require.True(t, ok)
+					assert.Equal(t, ingestionState.expectedCode, status.Code())
+				}
+
+				require.Equal(t, tt.expectedReceivedBatches, len(sink.AllTraces()))
+				require.Nil(
+					t,
+					observabilitytest.CheckValueViewReceiverReceivedSpans(
+						exporter.receiverTag,
+						tt.expectedReceivedBatches),
+				)
+			})
+		}
+	}
+}
+
+type sinkTraceConsumer struct {
+	// consumeTraceError is the error to be returned when ConsumeTraceData is
+	// called
+	consumeTraceError error
+
+	traces []consumerdata.TraceData
+}
+
+var _ consumer.TraceConsumer = (*sinkTraceConsumer)(nil)
+
+func (stc *sinkTraceConsumer) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
+	if stc.consumeTraceError == nil {
+		stc.traces = append(stc.traces, td)
+	}
+	return stc.consumeTraceError
+}
+
+func (stc *sinkTraceConsumer) SetConsumeTraceError(err error) {
+	stc.consumeTraceError = err
+}
+
+func (stc *sinkTraceConsumer) AllTraces() []consumerdata.TraceData {
+	return stc.traces[:]
 }

@@ -15,6 +15,20 @@ data:
     exporters:
       opencensus:
         endpoint: "otel-collector.default:55678" # TODO: Update me
+    processors:
+      queued_retry:
+        num_workers: 4
+        queue_size: 100
+        retry_on_failure: true
+    extensions:
+      zpages: {}
+    services:
+      extensions: [zpages]
+      pipelines:
+        traces:
+          receivers: [opencensus]
+          processors: [queued_retry]
+          exporters: [opencensus]
 ---
 apiVersion: extensions/v1beta1
 kind: DaemonSet
@@ -32,9 +46,9 @@ spec:
     spec:
       containers:
       - command:
-          - "/otelsvc_agent_linux"
+          - "/usr/bin/otelcol"
           - "--config=/conf/otel-agent-config.yaml"
-        image: omnition/opencensus-agent:0.1.6
+        image: omnition/opentelemetry-collector:v0.2.0
         name: otel-agent
         resources:
           limits:
@@ -44,11 +58,11 @@ spec:
             cpu: 100m
             memory: 100Mi
         ports:
-        - containerPort: 55678
-        - containerPort: 55679
-#        - containerPort: 14267
-#        - containerPort: 14268
-#        - containerPort: 9411
+        - containerPort: 55678 # Default Opencensus receiver port.
+        - containerPort: 55679 # ZPages endpoint.
+#        - containerPort: 14267 # Default Jaeger TChannel port.
+#        - containerPort: 14268 # Default Jaeger HTTP receiver port.
+#        - containerPort: 9411 # Default Zipkin receiver port.
         volumeMounts:
         - name: otel-agent-config-vol
           mountPath: /conf
@@ -78,27 +92,38 @@ data:
             max_connection_age-grace: 30s
       jaeger: {}
       zipkin: {}
-# Can only use one exporter
-#    exporters:
-#      jaeger:
-#        collector_endpoint: "http://jaeger.default:14268/api/traces"
-#      zipkin: {}
-    queued-exporters:
-      omnition:
-        batching:
-          enable: true
-          timeout: 5s
-          send_batch_size: 1024
+    processors:
+      queued_retry:
         num_workers: 16
         queue_size: 10000
         retry_on_failure: true
-        opencensus:
-          compression: "gzip"
-          endpoint: "ingest.omnition.io:443"
-          headers: { "x-omnition-api-key":"00000000-0000-0000-0000-000000000001" } # TODO: Update me
-          num_workers: 8
-          reconnection_delay: 2s
-          secure: true
+      batch:
+        send_batch_size: 1024
+        timeout: 5s
+    extensions:
+      health_check: {}
+    exporters:
+      opencensus:
+        compression: "gzip"
+        endpoint: "someopencensus.target.com:443" # Replace with a real endpoint.
+        num_workers: 8
+        reconnection_delay: 2s
+        secure: true
+      zipkin:
+        url: "http://somezipkin.target.com:9411/api/v2/spans" # Replace with a real endpoint.
+      jaeger_grpc:
+        endpoint: "somejaegergrpc.target.com:55678" # Replace with a real endpoint.
+    services:
+      extensions: [health_check]
+      pipelines:
+        traces/1:
+          receivers: [opencensus, zipkin]
+          processors: [batch, queued_retry]
+          exporters: [opencensus, zipkin]
+        traces/2:
+          receivers: [opencensus, jaeger]
+          processors: [batch, queued_retry]
+          exporters: [jaeger_grpc]
 ---
 apiVersion: v1
 kind: Service
@@ -109,16 +134,18 @@ metadata:
     component: otel-collector
 spec:
   ports:
-  - name: opencensus
+  - name: opencensus # Default endpoint for Opencensus receiver.
     port: 55678
     protocol: TCP
     targetPort: 55678
-#  - name: jaeger-tchannel
-#    port: 14267
-#  - name: jaeger_thrift_http
-#    port: 14268
-#  - name: zipkin
-#    port: 9411
+  - name: jaeger_tchannel  # Default endpoint for Jaeger TChannel receiver.
+    port: 14267
+  - name: jaeger_thrift_http # Default endpoint for Jaeger HTTP receiver.
+    port: 14268
+  - name: zipkin # Default endpoint for Zipkin receiver.
+    port: 9411
+  - name: metrics # Default endpoint for querying metrics.
+    port: 8888
   selector:
     component: otel-collector
 ---
@@ -132,7 +159,7 @@ metadata:
 spec:
   minReadySeconds: 5
   progressDeadlineSeconds: 120
-  replicas: 1
+  replicas: 1 #TODO - adjust this to your own requirements
   template:
     metadata:
       annotations:
@@ -145,12 +172,14 @@ spec:
     spec:
       containers:
       - command:
-          - "/otelsvc_collector_linux"
+          - "/usr/bin/otelcol"
           - "--config=/conf/otel-collector-config.yaml"
+#           Memory Ballast size should be max 1/3 to 1/2 of memory.
+          - "--mem-ballast-size-mib=683"
         env:
         - name: GOGC
           value: "80"
-        image: omnition/opencensus-collector:0.1.6
+        image: omnition/opentelemetry-collector:v0.2.0
         name: otel-collector
         resources:
           limits:
@@ -160,10 +189,11 @@ spec:
             cpu: 200m
             memory: 400Mi
         ports:
-        - containerPort: 55678
-#        - containerPort: 14267
-#        - containerPort: 14268
-#        - containerPort: 9411
+        - containerPort: 55678 # Default endpoint for Opencensus receiver.
+        - containerPort: 14267 # Default endpoint for Jaeger TChannel receiver.
+        - containerPort: 14268 # Default endpoint for Jaeger HTTP receiver.
+        - containerPort: 9411 # Default endpoint for Zipkin receiver.
+        - containerPort: 8888  # Default endpoint for querying metrics.
         volumeMounts:
         - name: otel-collector-config-vol
           mountPath: /conf
@@ -172,11 +202,11 @@ spec:
         livenessProbe:
           httpGet:
             path: /
-            port: 13133
+            port: 13133 # Health Check extension default port.
         readinessProbe:
           httpGet:
             path: /
-            port: 13133
+            port: 13133 # Health Check extension default port.
       volumes:
         - configMap:
             name: otel-collector-conf

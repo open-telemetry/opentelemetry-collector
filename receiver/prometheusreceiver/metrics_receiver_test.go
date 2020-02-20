@@ -38,9 +38,9 @@ import (
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v2"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/receivertest"
 )
 
 var logger = zap.NewNop()
@@ -1000,7 +1000,7 @@ process_start_time_seconds 400.8
 
 var startTimeMetricPageStartTimestamp = &timestamppb.Timestamp{Seconds: 400, Nanos: 800000000}
 
-const numStartTimeMetricPageTimeseries = 5
+const numStartTimeMetricPageTimeseries = 6
 
 func verifyStartTimeMetricPage(t *testing.T, td *testData, mds []consumerdata.MetricsData) {
 	numTimeseries := 0
@@ -1043,10 +1043,10 @@ func testEndToEnd(t *testing.T, targets []*testData, useStartTimeMetric bool) {
 	cms := new(exportertest.SinkMetricsExporter)
 	rcvr := newPrometheusReceiver(logger, &Config{PrometheusConfig: cfg, UseStartTimeMetric: useStartTimeMetric}, cms)
 
-	mh := receivertest.NewMockHost()
-	err = rcvr.StartMetricsReception(mh)
-	require.Nilf(t, err, "Failed to invoke StartMetricsReception: %v", err)
-	defer rcvr.StopMetricsReception()
+	mh := component.NewMockHost()
+	err = rcvr.Start(mh)
+	require.Nilf(t, err, "Failed to invoke Start: %v", err)
+	defer rcvr.Shutdown()
 
 	// wait for all provided data to be scraped
 	mp.wg.Wait()

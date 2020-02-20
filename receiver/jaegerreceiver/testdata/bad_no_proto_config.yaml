@@ -1,0 +1,16 @@
+receivers:
+  jaeger:
+    protocols:
+
+processors:
+  exampleprocessor:
+
+exporters:
+  exampleexporter:
+
+service:
+  pipelines:
+    traces:
+     receivers: [jaeger]
+     processors: [exampleprocessor]
+     exporters: [exampleexporter]

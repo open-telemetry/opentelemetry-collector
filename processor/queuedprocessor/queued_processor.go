@@ -25,6 +25,7 @@ import (
 	"go.opencensus.io/tag"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumererror"
@@ -59,6 +60,9 @@ type queueItem struct {
 func NewQueuedSpanProcessor(sender consumer.TraceConsumer, opts ...Option) processor.TraceProcessor {
 	options := Options.apply(opts...)
 	sp := newQueuedSpanProcessor(sender, options)
+
+	// emit 0's so that the metric is present and reported, rather than absent
+	stats.Record(context.Background(), processor.StatBatchesDroppedCount.M(int64(0)), processor.StatDroppedSpanCount.M(int64(0)))
 
 	sp.queue.StartConsumers(sp.numWorkers, func(item interface{}) {
 		value := item.(*queueItem)
@@ -104,6 +108,11 @@ func newQueuedSpanProcessor(sender consumer.TraceConsumer, opts options) *queued
 	}
 }
 
+// Start is invoked during service startup.
+func (sp *queuedSpanProcessor) Start(host component.Host) error {
+	return nil
+}
+
 // Stop halts the span processor and all its goroutines.
 func (sp *queuedSpanProcessor) Stop() {
 	sp.stopOnce.Do(func() {
@@ -144,11 +153,11 @@ func (sp *queuedSpanProcessor) Shutdown() error {
 func (sp *queuedSpanProcessor) processItemFromQueue(item *queueItem) {
 	startTime := time.Now()
 	err := sp.sender.ConsumeTraceData(item.ctx, item.td)
+	statsTags := processor.StatsTagsForBatch(sp.name, processor.ServiceNameForNode(item.td.Node), item.td.SourceFormat)
 	if err == nil {
 		// Record latency metrics and return
 		sendLatencyMs := int64(time.Since(startTime) / time.Millisecond)
 		inQueueLatencyMs := int64(time.Since(item.queuedTime) / time.Millisecond)
-		statsTags := processor.StatsTagsForBatch(sp.name, processor.ServiceNameForNode(item.td.Node), item.td.SourceFormat)
 		stats.RecordWithTags(context.Background(),
 			statsTags,
 			statSuccessSendOps.M(1),
@@ -159,7 +168,6 @@ func (sp *queuedSpanProcessor) processItemFromQueue(item *queueItem) {
 	}
 
 	// There was an error
-	statsTags := processor.StatsTagsForBatch(sp.name, processor.ServiceNameForNode(item.td.Node), item.td.SourceFormat)
 
 	// Immediately drop data on permanent errors. In this context permanent
 	// errors indicate some kind of bad data.
@@ -216,7 +224,7 @@ func (sp *queuedSpanProcessor) processItemFromQueue(item *queueItem) {
 
 func (sp *queuedSpanProcessor) onItemDropped(item *queueItem, statsTags []tag.Mutator) {
 	numSpans := len(item.td.Spans)
-	stats.RecordWithTags(context.Background(), statsTags, processor.StatDroppedSpanCount.M(int64(numSpans)))
+	stats.RecordWithTags(context.Background(), statsTags, processor.StatDroppedSpanCount.M(int64(numSpans)), processor.StatBatchesDroppedCount.M(int64(1)))
 
 	sp.logger.Warn("Span batch dropped",
 		zap.String("processor", sp.name),

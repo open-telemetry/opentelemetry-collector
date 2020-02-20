@@ -27,7 +27,7 @@ processors. The intent is reported by each processor via `MutatesConsumedData` f
 the struct returned by `GetCapabilities` function. If any processor in the pipeline
 declares an intent to modify the data then that pipeline will work in exclusive ownership
 mode. In addition any other pipeline that receives data from a receiver that is attached
-to a pipeline with exclusive ownership mode will be also operating in exclusive ownership 
+to a pipeline with exclusive ownership mode will be also operating in exclusive ownership
 mode.
 
 ### Exclusive Ownership
@@ -83,6 +83,54 @@ data cloning described in Exclusive Ownership section.
 The order processors specified in a pipeline is important as this is the
 order in which each processor is applied to traces and metrics.
 
+
+### Include/Exclude Spans
+The [attribute processor](#attributes) and the [span processor](#span) expose
+the option to provide a set of properties of a span to match against to determine
+if the span should be included or excluded from the processor. By default, all
+spans are processed by the processor.
+
+To configure this option, under `include` and/or `exclude`:
+- at least one of `services`, `span_names` or `attributes` is required.
+
+Note: If both `include` and `exclude` are specified, the `include` properties
+are checked before the `exclude` properties.
+
+```yaml
+{span, attributes}:
+    # include and/or exclude can be specified. However, the include properties
+    # are always checked before the exclude properties.
+    {include, exclude}:
+      # At least one of services, span_names or attributes must be specified.
+      # It is supported to have more than one specified, but all of the specified
+      # conditions must evaluate to true for a match to occur.
+
+      # match_type controls how items in "services" and "span_names" arrays are
+      # interpreted. Possible values are "regexp" or "strict".
+      # This is a required field.
+      match_type: {strict, regexp}
+
+      # services specify an array of items to match the service name against.
+      # A match occurs if the span service name matches at least of the items.
+      # This is an optional field.
+      services: [<item1>, ..., <itemN>]
+
+      # The span name must match at least one of the items.
+      # This is an optional field.
+      span_names: [<item1>, ..., <itemN>]
+
+      # Attributes specifies the list of attributes to match against.
+      # All of these attributes must match exactly for a match to occur.
+      # Only match_type=strict is allowed if "attributes" are specified.
+      # This is an optional field.
+      attributes:
+          # Key specifies the attribute to match against.
+        - key: <key>
+          # Value specifies the exact value to match against.
+          # If not specified, a match occurs if the key is present in the attributes.
+          value: {value}
+```
+
 ## <a name="attributes"></a>Attributes Processor
 The attributes processor modifies attributes of a span.
 
@@ -94,6 +142,7 @@ The supported actions are:
   key does not already exist and updates an attribute in spans where the key
   does exist.
 - delete: Deletes an attribute from a span.
+- hash: Hashes (SHA1) an existing attribute value.
 
 For the actions `insert`, `update` and `upsert`,
  - `key`  is required
@@ -124,42 +173,16 @@ For the `delete` action,
   action: delete
 ```
 
-Please refer to [config.go](attributesprocessor/config.go) for the config spec.
-
-### Include/Exclude Spans
-It is optional to provide a set of properties of a span to match against to determine
-if the span should be included or excluded from the processor. By default, all
-spans are processed by the processor. 
-
-To configure this option, under `include` and/or `exclude`:
-- at least one of or both `services` and `attributes` is required.
-
-Note: If both `include` and `exclude` are specified, the `include` properties
-are checked before the `exclude` properties.
-
+For the `hash` action,
+ - `key` is required
+ - `action: hash` is required.
 ```yaml
-attributes:
-    # include and/or exclude can be specified. However, the include properties
-    # are always checked before the exclude properties.
-    {include, exclude}:
-      # At least one of services or attributes must be specified. It is supported
-      # to have both specified, but both `services` and `attributes` must evaluate
-      # to true for a match to occur.
-    
-      # Services specify the list of service name to match against.
-      # A match occurs if the span service name is in this list.
-      # Note: This is an optional field.
-      services: [<key1>, ..., <keyN>]
-      # Attributes specifies the list of attributes to match against.
-      # All of these attributes must match exactly for a match to occur.
-      # Note: This is an optional field.
-      attributes:
-          # Key specifies the attribute to match against.
-        - key: <key>
-          # Value specifies the exact value to match against.
-          # If not specified, a match occurs if the key is present in the attributes.
-          value: {value} 
+# Key specifies the attribute to act upon.
+- key: <key>
+  action: hash 
 ```
+
+Please refer to [config.go](attributesprocessor/config.go) for the config spec.
 
 ### Example
 The list of actions can be composed to create rich scenarios, such as
@@ -182,6 +205,8 @@ processors:
         value: 2245
       - key: account_password
         action: delete
+      - key: account_email 
+        action: hash
 
 ```
 Refer to [config.yaml](attributesprocessor/testdata/config.yaml) for detailed
@@ -193,16 +218,40 @@ examples on using the processor.
 ## <a name="probabilistic_sampler"></a>Probabilistic Sampler Processor
 <FILL ME IN - I'M LONELY!>
 
-## <a name="queued"></a>Queued Processor
-<FILL ME IN - I'M LONELY!>
+## <a name="queued"></a>Queued Retry Processor
+The queued retry processor uses a bounded queue to relay trace data from the
+receiver or previous processor to the next processor.
+Received trace data is enqueued immediately if the queue is not full . At the
+same time, the processor has one or more workers which consume the trace
+data in the queue by sending them to the next processor. If relaying the trace
+data to the next processor or exporter in the pipeline fails, the processor
+retries after some backoff delay depending on the configuration (see below).
+
+### Example configuration
+
+To change the behavior of the default queued processor, the `num_workers`,
+`queue_size`, `retry_on_failure`, `backoff_delay` could be configured.
+
+```yaml
+processors:
+  queued_retry/example:
+    num_workers: 2
+    queue_size: 10
+    retry_on_failure: true
+    backoff_delay: 5s
+```
+
+Refer to [config.yaml](queuedprocessor/testdata/config.yaml) for detailed
+examples on using the processor.
 
 ## <a name="span"></a>Span Processor
 The span processor modifies top level settings of a span. Currently, only
 renaming a span is supported.
 
-### Name a span
-It takes a list of `from_attributes` and an optional `separator` string. The
-attribute value for the keys are used to create a new name in the order
+### Name a span from attributes or extract attributes from span name.
+
+In the first form it takes a list of `from_attributes` and an optional `separator` string.
+The attribute value for the keys are used to create a new name in the order
 specified in the configuration. If a separator is specified, it will separate
 values.
 
@@ -221,6 +270,37 @@ span:
     separator: <value>
 ```
 
+In the second form it takes a list of regular expressions to match span name against
+and extract attributes from based on subexpressions.
+
+`rules` is a list of rules to extract attribute values from span name. The values
+in the span name are replaced by extracted attribute names. Each rule in the list
+is regex pattern string. Span name is checked against the regex and if the regex
+matches then all named subexpressions of the regex are extracted as attributes
+and are added to the span. Each subexpression name becomes an attribute name and
+subexpression matched portion becomes the attribute value. The matched portion
+in the span name is replaced by extracted attribute name. If the attributes
+already exist in the span then they will be overwritten. The process is repeated
+for all rules in the order they are specified. Each subsequent rule works on the
+span name that is the output after processing the previous rule.
+
+`break_after_match` specifies if processing of rules should stop after the first
+match. If it is false rule processing will continue to be performed over the
+modified span name. The default value for this option is false.
+
+```yaml
+span/to_attributes:
+name:
+  to_attributes:
+    rules:
+      - regexp-rule1
+      - regexp-rule2
+      - regexp-rule3
+      ...
+    break_after_match: {true, false}
+      
+```
+
 ### Example configuration
 For more examples with detailed comments, refer to [config.yaml](spanprocessor/testdata/config.yaml)
 ```yaml
@@ -229,6 +309,19 @@ span:
     from_attributes: ["db.svc", "operation"]
     separator: "::"
 ```
+
+
+```yaml
+# Let's assume input span name is /api/v1/document/12345678/update
+# Applying the following results in output span name /api/v1/document/{documentId}/update
+# and will add a new attribute "documentId"="12345678" to the span.
+span/to_attributes:
+name:
+  to_attributes:
+    rules:
+      - ^\/api\/v1\/document\/(?P<documentId>.*)\/update$
+```
+
 
 ## <a name="tail_sampling"></a>Tail Sampling Processor
 <FILL ME IN - I'M LONELY!>

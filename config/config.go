@@ -366,7 +366,7 @@ func loadReceivers(v *viper.Viper, factories map[string]receiver.Factory) (confi
 		customUnmarshaler := factory.CustomUnmarshaler()
 		if customUnmarshaler != nil {
 			// This configuration requires a custom unmarshaler, use it.
-			err = customUnmarshaler(subViper, key, receiverCfg)
+			err = customUnmarshaler(subViper, key, sv, receiverCfg)
 		} else {
 			err = sv.UnmarshalExact(receiverCfg)
 		}

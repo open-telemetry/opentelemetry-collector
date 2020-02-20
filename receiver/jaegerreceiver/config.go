@@ -18,8 +18,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/receiver"
 )
 
+// The config field name to load the protocol map from
+const protocolsFieldName = "protocols"
+
 // RemoteSamplingConfig defines config key for remote sampling fetch endpoint
 type RemoteSamplingConfig struct {
+	HostEndpoint  string `mapstructure:"host_endpoint"`
 	FetchEndpoint string `mapstructure:"fetch_endpoint"`
 }
 

@@ -102,6 +102,8 @@ func zipkinV1ThriftToOCSpan(zSpan *zipkincore.Span) (*tracepb.Span, *annotationP
 		ocSpan.Name = &tracepb.TruncatableString{Value: zSpan.Name}
 	}
 
+	setSpanKind(ocSpan, parsedAnnotations.Kind, parsedAnnotations.ExtendedKind)
+
 	return ocSpan, parsedAnnotations, nil
 }
 
