@@ -41,13 +41,17 @@ type TraceData struct {
 // OTLPTraceData is a struct that groups proto spans with a resource. This is the
 // newer version of TraceData, using OTLP-based representation.
 type OTLPTraceData struct {
-	ResourceSpanList []*otlptrace.ResourceSpans
+	resourceSpanList []*otlptrace.ResourceSpans
+}
+
+func NewOTLPTraceData(resourceSpanList []*otlptrace.ResourceSpans) OTLPTraceData {
+	return OTLPTraceData{resourceSpanList}
 }
 
 // SpanCount calculates the total number of spans.
 func (td OTLPTraceData) SpanCount() int {
 	spanCount := 0
-	for _, rsl := range td.ResourceSpanList {
+	for _, rsl := range td.resourceSpanList {
 		spanCount += len(rsl.Spans)
 	}
 	return spanCount
