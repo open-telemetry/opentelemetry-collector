@@ -7,7 +7,7 @@ or refer to the [issues page](https://github.com/open-telemetry/opentelemetry-co
 Supported processors (sorted alphabetically):
 - [Attributes Processor](#attributes)
 - [Batch Processor](#batch)
-- [Queued Processor](#queued)
+- [Queued Processor](#queued_retry)
 - [Sampling Processor](#sampling)
 - [Span Processor](#span)
 
@@ -218,8 +218,8 @@ The following configuration options can be modified:
 - `num_tickers` (default = 4): the number of tickers that loop over batch buckets
 - `remove_after_ticks` (default = 10): the number of ticks passed without a span arriving for a node at which time batcher is deleted
 - `send_batch_size` (default = 8192): size after which a batch will be sent regardless of time
-- `tick_time` (default = 1): interval in seconds in which the tickers tick
-- `timeout` (default = 1): time in seconds after which a batch will be sent regardless of size
+- `tick_time` (default = 1s): interval in which the tickers tick
+- `timeout` (default = 1s): time duration after which a batch will be sent regardless of size
 
 ```yaml
 processors:
@@ -236,9 +236,9 @@ Refer to [config.yaml](batchprocessor/testdata/config.yaml) for detailed
 examples on using the processor.
 
 
-## <a name="queued"></a>Queued Processor
+## <a name="queued_retry"></a>Queued Processor
 
-The queued processor uses a bounded queue to relay trace data from the receiver
+The queued_retry processor uses a bounded queue to relay trace data from the receiver
 or previous processor to the next processor. Received trace data is enqueued
 immediately if the queue is not full. At the same time, the processor has one
 or more workers which consume the trace data in the queue by sending them to
@@ -248,7 +248,7 @@ depending on the configuration (see below). Please refer to
 [config.go](queuedprocessor/config.go) for the config spec.
 
 The following configuration options can be modified:
-- `backoff_delay` (default = 5): time in seconds to wait before retrying
+- `backoff_delay` (default = 5s): time interval to wait before retrying
 - `num_workers` (default = 10): the number of workers that dequeue batches
 - `queue_size` (default = 5000): the maximum number of batches allowed before drop
 - `retry_on_failure` (default = true): whether to retry on failure or give up and drop
@@ -280,9 +280,9 @@ collector instances, but this configuration has not been tested. Please refer to
 [config.go](samplingprocessor/tailsamplingprocessor/config.go) for the config spec.
 
 The following configuration options can be modified:
-- `decision_wait` (default = 30): number of seconds to wait since first span before making a sampling decision
+- `decision_wait` (default = 30s): wait time since the first span before making a sampling decision
 - `num_traces` (default = 50000): number of traces kept in memory
-- `expected_new_traces_per_sec` (default = ): expected number of new traces (helps in allocating data structures)
+- `expected_new_traces_per_sec` (default = 0): expected number of new traces (helps in allocating data structures)
 - `policies` (default = ): sets the policies used to make a sampling decision
 
 Multiple policies exist today and it is straight forward to add more. These include:
@@ -324,7 +324,7 @@ processors:
 Refer to [config.yaml](samplingprocessor/tailsamplingprocessor/testdata/config.yaml) for detailed
 examples on using the processor.
 
-### <a name="prob_sampling"></a>Probabilistic Sampling Processor
+### <a name="probabilistic_sampling"></a>Probabilistic Sampling Processor
 
 The probabilistic sampler sets trace sampling by hashing the trace id of each
 span and making the sampling decision based on the hashed value. It also
@@ -413,7 +413,7 @@ span/to_attributes:
         - regexp-rule2
         - regexp-rule3
         ...
-      break_after_match: {true, false}
+      break_after_match: <true|false>
 
 ```
 
