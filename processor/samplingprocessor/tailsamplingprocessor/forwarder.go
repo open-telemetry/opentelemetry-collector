@@ -18,8 +18,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"net"
+	"net/http"
 	"reflect"
 	"runtime"
 	"strconv"
@@ -36,15 +38,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/opencensusexporter"
-	"github.com/open-telemetry/opentelemetry-collector/extension"
 	"github.com/open-telemetry/opentelemetry-collector/processor/samplingprocessor/tailsamplingprocessor/idbatcher"
 )
 
 type forwarder interface {
 	// process span
 	process(span *tracepb.Span) bool
-	// add support extensions
-	addRingMembershipExtension(ext extension.SupportExtension)
 }
 
 type collectorPeer struct {
@@ -55,6 +54,11 @@ type collectorPeer struct {
 	start              sync.Once
 	idToSpans          sync.Map
 	globalDeleteChan   chan int
+}
+
+type ringMembershipExtensionClient struct {
+	client   *http.Client
+	endpoint string
 }
 
 // spanForwarder is the component that fowards spans to collector peers
@@ -75,7 +79,8 @@ type spanForwarder struct {
 	// The ringmembership extension (implements extension.SupportExtension)
 	// Ownership should be with the component that requires it.
 	// However it will be Start()'ed by the Application service.
-	ring extension.SupportExtension
+	// ringMembershipExtensionClient is an http client to get extension state
+	ring *ringMembershipExtensionClient
 	// channel to keep track of total number of traces in memory
 	// across all queues
 	// TODO(@annanay25): Is it good to use channels for this
@@ -149,12 +154,10 @@ func newCollectorPeer(logger *zap.Logger, ip string, globalDeleteChan chan int) 
 // At the set frequency, get the state of the collector peer list
 func (sf *spanForwarder) memberSyncOnTick() {
 	// Get sorted member list from the extension
-	state, err := sf.ring.GetState()
+	newMembers, err := sf.ring.GetState()
 	if err != nil {
 		return
 	}
-
-	newMembers := state.([]string)
 
 	sf.RLock()
 	curMembers := make([]string, 0, len(sf.peerQueues))
@@ -259,10 +262,18 @@ func externalIP() (string, error) {
 	return "", errors.New("are you connected to the network?")
 }
 
-func newSpanForwarder(logger *zap.Logger, globalDeleteChan chan int) (forwarder, error) {
+func newSpanForwarder(logger *zap.Logger, globalDeleteChan chan int, ringExtEndpoint string) (forwarder, error) {
+	if ringExtEndpoint == "" {
+		ringExtEndpoint = "127.0.0.1:13000"
+	}
+
 	sf := &spanForwarder{
 		logger:           logger,
 		globalDeleteChan: globalDeleteChan,
+		ring: &ringMembershipExtensionClient{
+			client:   &http.Client{},
+			endpoint: ringExtEndpoint,
+		},
 	}
 
 	if ip, err := externalIP(); err == nil {
@@ -354,7 +365,15 @@ func (sf *spanForwarder) process(span *tracepb.Span) bool {
 	return true
 }
 
-func (sf *spanForwarder) addRingMembershipExtension(ext extension.SupportExtension) {
-	sf.logger.Info("Added ring membership extension to span forwarder in tail_sampling processor")
-	sf.ring = ext
+func (r *ringMembershipExtensionClient) GetState() ([]string, error) {
+	// Make an http client to the extension and get members
+	resp, err := r.client.Get(r.endpoint + "/state")
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var result []string
+	json.NewDecoder(resp.Body).Decode(&result)
+	return result, nil
 }

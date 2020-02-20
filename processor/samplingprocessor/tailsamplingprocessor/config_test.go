@@ -46,6 +46,12 @@ func TestLoadConfig(t *testing.T) {
 			DecisionWait:            10 * time.Second,
 			NumTraces:               100,
 			ExpectedNewTracesPerSec: 10,
+			SupportExtensions: []ExtensionCfg{
+				ExtensionCfg{
+					Name:     "ring_membership",
+					Endpoint: "127.0.0.1:13000",
+				},
+			},
 			PolicyCfgs: []PolicyCfg{
 				{
 					Name: "test-policy-1",

@@ -21,7 +21,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/extension"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
 )
@@ -129,10 +128,6 @@ func (a *attributesProcessor) GetCapabilities() processor.Capabilities {
 
 // Shutdown is invoked during service shutdown.
 func (a *attributesProcessor) Shutdown() error {
-	return nil
-}
-
-func (a *attributesProcessor) AddSupportExtensions(exts ...extension.SupportExtension) error {
 	return nil
 }
 

@@ -116,7 +116,3 @@ func (sp *spanProcessor) nameSpan(span *tracepb.Span) {
 	}
 	span.Name = &tracepb.TruncatableString{Value: sb.String()}
 }
-
-func (sp *spanProcessor) AddSupportExtensions(exts ...extension.SupportExtension) error {
-	return nil
-}

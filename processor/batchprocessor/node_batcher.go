@@ -31,7 +31,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/extension"
 	"github.com/open-telemetry/opentelemetry-collector/observability"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
 )
@@ -117,10 +116,6 @@ func (b *batcher) GetCapabilities() processor.Capabilities {
 // Shutdown is invoked during service shutdown.
 func (b *batcher) Shutdown() error {
 	// TODO: flush accumulated data.
-	return nil
-}
-
-func (b *batcher) AddSupportExtensions(exts ...extension.SupportExtension) error {
 	return nil
 }
 

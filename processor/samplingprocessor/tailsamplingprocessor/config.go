@@ -77,6 +77,14 @@ type RateLimitingCfg struct {
 	SpansPerSecond int64 `mapstructure:"spans_per_second"`
 }
 
+// ExtensionCfg lists the name and endpoint of the extension to use
+type ExtensionCfg struct {
+	// Name of the extension
+	Name string `mapstructure:"name"`
+	// Endpoint of the extension
+	Endpoint string `mapstructure:"endpoint"`
+}
+
 // Config holds the configuration for tail-based sampling.
 type Config struct {
 	configmodels.ProcessorSettings `mapstructure:",squash"`
@@ -94,5 +102,5 @@ type Config struct {
 	PolicyCfgs []PolicyCfg `mapstructure:"policies"`
 	// SupportExtensions are extensions that provide extra functionality to the processor
 	// like discovery of peer members.
-	SupportExtensions []string `mapstructure:"support_extensions"`
+	SupportExtensions []ExtensionCfg `mapstructure:"support_extensions"`
 }

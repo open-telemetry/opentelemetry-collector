@@ -116,11 +116,6 @@ func (pb *PipelinesBuilder) buildPipeline(
 		case configmodels.TracesDataType:
 			var proc processor.TraceProcessor
 			proc, err = factory.CreateTraceProcessor(pb.logger, tc, procCfg)
-			if procName == "tail_sampling" {
-				if pb.extNameToExt != nil {
-					proc.AddSupportExtensions(pb.extNameToExt["ring_membership"].(extension.SupportExtension))
-				}
-			}
 			if proc != nil {
 				mutatesConsumedData = mutatesConsumedData || proc.GetCapabilities().MutatesConsumedData
 			}

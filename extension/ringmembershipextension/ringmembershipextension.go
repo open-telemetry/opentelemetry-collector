@@ -15,7 +15,9 @@
 package ringmembershipextension
 
 import (
+	"encoding/json"
 	"net"
+	"net/http"
 	"sync"
 	"time"
 
@@ -36,6 +38,16 @@ type ringMembershipExtension struct {
 var _ (extension.SupportExtension) = (*ringMembershipExtension)(nil)
 var _ (extension.ServiceExtension) = (*ringMembershipExtension)(nil)
 
+func (rm *ringMembershipExtension) serveState(w http.ResponseWriter, r *http.Request) {
+	m, err := json.Marshal(rm.ipList)
+	if err != nil {
+		w.WriteHeader(404)
+		return
+	}
+	w.Write(m)
+	return
+}
+
 // Starts the ring membership extension
 func (rm *ringMembershipExtension) Start(host extension.Host) error {
 	rm.logger.Info("Starting ring membership extension")
@@ -44,6 +56,11 @@ func (rm *ringMembershipExtension) Start(host extension.Host) error {
 
 	go rm.Watch()
 
+	// Also start serving state at "GET /state"
+	go func() {
+		http.HandleFunc("/state", rm.serveState)
+		http.ListenAndServe("127.0.0.1:13000", nil)
+	}()
 	return nil
 }
 
