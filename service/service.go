@@ -62,6 +62,11 @@ type Application struct {
 	asyncErrorChannel chan error
 }
 
+// Command returns Application's root command.
+func (app *Application) Command() *cobra.Command {
+	return app.rootCmd
+}
+
 // ApplicationStartInfo is the information that is logged at the application start.
 // This information can be overridden in custom builds.
 type ApplicationStartInfo struct {

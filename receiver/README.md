@@ -158,7 +158,7 @@ It works by proxying client requests for remote sampling configuration to the co
 |               |     strategy      |              |              |                 |
 +---------------+                   +--------------+              +-----------------+
 
-Remote sampling can be enabled by specifying the following lines in the jaeger receiver config:
+Remote sample proxying can be enabled by specifying the following lines in the jaeger receiver config:
 
 ```yaml
 receivers:
@@ -169,7 +169,20 @@ receivers:
       .
     remote_sampling:
       fetch_endpoint: "jaeger-collector:1234"
-```
+``` 
+
+Remote sampling can also be directly served by the collector by providing a sampling json file.
+
+```yaml
+receivers:
+  jaeger:
+    protocols:
+      grpc:
+    remote_sampling:
+      strategy_file: "/etc/strategy.json"
+``` 
+
+Note that GRPC must be enabled for this to work as Jaeger serves its remote sampling strategies over GRPC.
 
 ## <a name="prometheus"></a>Prometheus Receiver
 **Only metrics are supported.**
@@ -239,7 +252,7 @@ receivers:
     scrape_interval: 10s
     metric_prefix: "testmetric"
     mount_point: "/proc"
-    # process_mount_point: "/data/proc" # Should only be used for Daemon Set within a container.
+    #process_mount_point: "/data/proc" # Only using when running as an agent / daemonset
 ```
 
 ## <a name="zipkin"></a>Zipkin Receiver

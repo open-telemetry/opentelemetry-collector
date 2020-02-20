@@ -243,16 +243,34 @@ func TestRemoteSamplingConfigPropagation(t *testing.T) {
 
 	hostPort := 5778
 	endpoint := "localhost:1234"
-	rCfg.Protocols[protoThriftCompact], _ = defaultsForProtocol(protoThriftCompact)
+	strategyFile := "strategies.json"
+	rCfg.Protocols[protoGRPC], _ = defaultsForProtocol(protoGRPC)
 	rCfg.RemoteSampling = &RemoteSamplingConfig{
 		FetchEndpoint: endpoint,
 		HostEndpoint:  fmt.Sprintf("localhost:%d", hostPort),
+		StrategyFile:  strategyFile,
 	}
 	r, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
 
 	assert.NoError(t, err, "create trace receiver should not error")
 	assert.Equal(t, endpoint, r.(*jReceiver).config.RemoteSamplingEndpoint)
 	assert.Equal(t, hostPort, r.(*jReceiver).config.AgentHTTPPort, "agent http port should be configured value")
+	assert.Equal(t, strategyFile, r.(*jReceiver).config.RemoteSamplingStrategyFile)
+}
+
+func TestRemoteSamplingFileRequiresGRPC(t *testing.T) {
+	factory := Factory{}
+	cfg := factory.CreateDefaultConfig()
+	rCfg := cfg.(*Config)
+
+	strategyFile := "strategies.json"
+	rCfg.Protocols[protoThriftCompact], _ = defaultsForProtocol(protoThriftCompact)
+	rCfg.RemoteSampling = &RemoteSamplingConfig{
+		StrategyFile: strategyFile,
+	}
+	_, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
+
+	assert.Error(t, err, "create trace receiver should error")
 }
 
 func TestCustomUnmarshalErrors(t *testing.T) {

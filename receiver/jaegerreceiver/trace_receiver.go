@@ -33,6 +33,8 @@ import (
 	"github.com/jaegertracing/jaeger/cmd/agent/app/servers"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/servers/thriftudp"
 	"github.com/jaegertracing/jaeger/cmd/collector/app"
+	collectorSampling "github.com/jaegertracing/jaeger/cmd/collector/app/sampling"
+	staticStrategyStore "github.com/jaegertracing/jaeger/plugin/sampling/strategystore/static"
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"github.com/jaegertracing/jaeger/thrift-gen/baggage"
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
@@ -62,10 +64,11 @@ type Configuration struct {
 	CollectorGRPCPort    int
 	CollectorGRPCOptions []grpc.ServerOption
 
-	AgentCompactThriftPort int
-	AgentBinaryThriftPort  int
-	AgentHTTPPort          int
-	RemoteSamplingEndpoint string
+	AgentCompactThriftPort     int
+	AgentBinaryThriftPort      int
+	AgentHTTPPort              int
+	RemoteSamplingEndpoint     string
+	RemoteSamplingStrategyFile string
 }
 
 // Receiver type is used to receive spans that were originally intended to be sent to Jaeger.
@@ -485,6 +488,17 @@ func (jr *jReceiver) startCollector(host component.Host) error {
 		}
 
 		api_v2.RegisterCollectorServiceServer(jr.grpc, jr)
+
+		// init and register sampling strategy store
+		if len(jr.config.RemoteSamplingStrategyFile) != 0 {
+			ss, gerr := staticStrategyStore.NewStrategyStore(staticStrategyStore.Options{
+				StrategiesFile: jr.config.RemoteSamplingStrategyFile,
+			}, jr.logger)
+			if gerr != nil {
+				return fmt.Errorf("failed to create collector strategy store: %v", gerr)
+			}
+			api_v2.RegisterSamplingManagerServer(jr.grpc, collectorSampling.NewGRPCHandler(ss))
+		}
 
 		go func() {
 			if err := jr.grpc.Serve(gln); err != nil {

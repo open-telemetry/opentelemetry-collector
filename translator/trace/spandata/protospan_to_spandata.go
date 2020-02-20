@@ -17,13 +17,13 @@ package spandata
 
 import (
 	"errors"
-	"time"
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"go.opencensus.io/trace"
 	"go.opencensus.io/trace/tracestate"
+
+	"github.com/open-telemetry/opentelemetry-collector/internal"
 )
 
 var errNilSpan = errors.New("expected a non-nil span")
@@ -47,8 +47,8 @@ func ProtoSpanToOCSpanData(span *tracepb.Span) (*trace.SpanData, error) {
 	sd := &trace.SpanData{
 		SpanContext:     sc,
 		ParentSpanID:    parentSpanID,
-		StartTime:       timestampToTime(span.StartTime),
-		EndTime:         timestampToTime(span.EndTime),
+		StartTime:       internal.TimestampToTime(span.StartTime),
+		EndTime:         internal.TimestampToTime(span.EndTime),
 		Name:            derefTruncatableString(span.Name),
 		Attributes:      protoAttributesToOCAttributes(span.Attributes),
 		Links:           protoLinksToOCLinks(span.Links),
@@ -60,13 +60,6 @@ func ProtoSpanToOCSpanData(span *tracepb.Span) (*trace.SpanData, error) {
 	}
 
 	return sd, nil
-}
-
-func timestampToTime(ts *timestamp.Timestamp) (t time.Time) {
-	if ts == nil {
-		return
-	}
-	return time.Unix(ts.Seconds, int64(ts.Nanos))
 }
 
 func derefTruncatableString(ts *tracepb.TruncatableString) string {
@@ -189,7 +182,7 @@ func protoTimeEventsToOCMessageEvents(tes *tracepb.Span_TimeEvents) []trace.Mess
 		ocme.UncompressedByteSize = int64(me.UncompressedSize)
 		ocme.CompressedByteSize = int64(me.CompressedSize)
 		ocme.EventType = protoMessageEventTypeToOCEventType(me.Type)
-		ocme.Time = timestampToTime(te.Time)
+		ocme.Time = internal.TimestampToTime(te.Time)
 		ocmes = append(ocmes, ocme)
 	}
 
@@ -221,7 +214,7 @@ func protoTimeEventsToOCAnnotations(tes *tracepb.Span_TimeEvents) []trace.Annota
 		// they have these attributes as int64 yet the proto definitions
 		// are uint64, this could be a potential loss of precision particularly
 		// in very high traffic systems.
-		ocann.Time = timestampToTime(te.Time)
+		ocann.Time = internal.TimestampToTime(te.Time)
 		ocann.Message = me.Description.GetValue()
 		ocann.Attributes = protoSpanAttributesToOCAttributes(me.Attributes)
 		ocanns = append(ocanns, ocann)

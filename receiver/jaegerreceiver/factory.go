@@ -194,6 +194,15 @@ func (f *Factory) CreateTraceReceiver(
 				return nil, err
 			}
 		}
+
+		// strategies are served over grpc so if grpc is not enabled and strategies are present return an error
+		if len(remoteSamplingConfig.StrategyFile) != 0 {
+			if config.CollectorGRPCPort == 0 {
+				return nil, fmt.Errorf("strategy file requires the GRPC protocol to be enabled")
+			}
+
+			config.RemoteSamplingStrategyFile = remoteSamplingConfig.StrategyFile
+		}
 	}
 
 	if (protoGRPC == nil && protoHTTP == nil && protoTChannel == nil && protoThriftBinary == nil && protoThriftCompact == nil) ||
