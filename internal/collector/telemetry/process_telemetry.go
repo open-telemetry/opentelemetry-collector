@@ -32,7 +32,10 @@ type ProcessMetricsViews struct {
 	done             chan struct{}
 }
 
-var mRuntimeAllocMem = stats.Int64("oc.io/process/memory_alloc", "Number of bytes currently allocated in use", "By")
+var mRuntimeAllocMem = stats.Int64(
+	"process/runtime/heap_alloc_bytes",
+	"Bytes of allocated heap objects (see 'go doc runtime.MemStats.HeapAlloc')",
+	stats.UnitBytes)
 var viewAllocMem = &view.View{
 	Name:        mRuntimeAllocMem.Name(),
 	Description: mRuntimeAllocMem.Description(),
@@ -41,7 +44,10 @@ var viewAllocMem = &view.View{
 	TagKeys:     nil,
 }
 
-var mRuntimeTotalAllocMem = stats.Int64("oc.io/process/total_memory_alloc", "Number of allocations in total", "By")
+var mRuntimeTotalAllocMem = stats.Int64(
+	"process/runtime/total_alloc_bytes",
+	"Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')",
+	stats.UnitBytes)
 var viewTotalAllocMem = &view.View{
 	Name:        mRuntimeTotalAllocMem.Name(),
 	Description: mRuntimeTotalAllocMem.Description(),
@@ -50,7 +56,10 @@ var viewTotalAllocMem = &view.View{
 	TagKeys:     nil,
 }
 
-var mRuntimeSysMem = stats.Int64("oc.io/process/sys_memory_alloc", "Number of bytes given to the process to use in total", "By")
+var mRuntimeSysMem = stats.Int64(
+	"process/runtime/total_sys_memory_bytes",
+	"Total bytes of memory obtained from the OS (see 'go doc runtime.MemStats.Sys')",
+	stats.UnitBytes)
 var viewSysMem = &view.View{
 	Name:        mRuntimeSysMem.Name(),
 	Description: mRuntimeSysMem.Description(),
@@ -59,7 +68,10 @@ var viewSysMem = &view.View{
 	TagKeys:     nil,
 }
 
-var mCPUSeconds = stats.Int64("oc.io/process/cpu_seconds", "CPU seconds for this process", "1")
+var mCPUSeconds = stats.Int64(
+	"process/cpu_seconds",
+	"Total CPU user and system time in seconds",
+	stats.UnitDimensionless)
 var viewCPUSeconds = &view.View{
 	Name:        mCPUSeconds.Name(),
 	Description: mCPUSeconds.Description(),
