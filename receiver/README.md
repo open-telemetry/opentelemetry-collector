@@ -72,7 +72,7 @@ with detailed sample configurations [here](https://github.com/open-telemetry/ope
 
 ### Communicating over TLS
 This receiver supports communication using Transport Layer Security (TLS). TLS
-can be configured by specifying a `tls-crendentials` object in the receiver
+can be configured by specifying a `tls_credentials` object in the receiver
 configuration for receivers that support it.
 ```yaml
 receivers:
@@ -136,7 +136,7 @@ examples.
 ### Communicating over TLS
 This receiver supports communication using Transport Layer Security (TLS), but
 only using the gRPC protocol. It can be configured by specifying a
-`tls-crendentials` object in the gRPC receiver configuration.
+`tls_credentials` object in the gRPC receiver configuration.
 ```yaml
 receivers:
   jaeger:
@@ -236,7 +236,7 @@ OpenTelemetry Collector is running as an agent.
 ```yaml
 receivers:
   vmmetrics:
-    scrape_interval: 10
+    scrape_interval: 10s
     metric_prefix: "testmetric"
     mount_point: "/proc"
     # process_mount_point: "/data/proc" # Should only be used for Daemon Set within a container.
@@ -246,8 +246,8 @@ receivers:
 **Only traces are supported.**
 
 This receiver receives spans from Zipkin (V1 and V2) HTTP uploads and
-translates them into the internal span types that are then sent to the
-collector/exporters.
+translates them into the internal span types that are then pushed into trace
+pipelines according to the configuration.
 
 Its address can be configured in the YAML configuration file under section
 "receivers", subsection "zipkin" and field "address".  The syntax of the field
