@@ -119,13 +119,13 @@ func TestErrorTagSpanConversion(t *testing.T) {
 	}
 	zs := zipkinmodel.SpanModel{
 		SpanContext: zc,
-		Tags: tags,
+		Tags:        tags,
 	}
 
 	ocSpan, _, err := zipkinSpanToTraceSpan(&zs)
 	require.NoError(t, err, "unexpected error %v", err)
 	assert.Equal(t, error, ocSpan.Status.Message)
-	assert.Equal(t,  &tracepb.AttributeValue_BoolValue{BoolValue: true}, ocSpan.Attributes.AttributeMap["error"].Value)
+	assert.Equal(t, &tracepb.AttributeValue_BoolValue{BoolValue: true}, ocSpan.Attributes.AttributeMap["error"].Value)
 }
 
 func TestNew(t *testing.T) {
