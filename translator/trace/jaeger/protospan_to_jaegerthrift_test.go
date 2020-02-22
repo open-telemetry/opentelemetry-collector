@@ -253,24 +253,9 @@ func TestOCStatusToJaegerThriftTags(t *testing.T) {
 							StringValue: &tracepb.TruncatableString{Value: "Error"},
 						},
 					},
-					"error": {
-						Value: &tracepb.AttributeValue_StringValue{
-							StringValue: &tracepb.TruncatableString{Value: "Internal Server Error !!!"},
-						},
-					},
 				},
 			},
 			wantTags: []*jaeger.Tag{
-				{
-					Key:   errorTag,
-					VBool: func() *bool { v := true; return &v }(),
-					VType: jaeger.TagType_BOOL,
-				},
-				{
-					Key:   errorMessage,
-					VStr:  func() *string { v := "Internal Server Error !!!"; return &v }(),
-					VType: jaeger.TagType_STRING,
-				},
 				{
 					Key:   tracetranslator.TagStatusCode,
 					VLong: func() *int64 { v := int64(13); return &v }(),

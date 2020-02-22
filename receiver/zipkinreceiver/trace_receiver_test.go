@@ -103,6 +103,31 @@ func TestShortIDSpanConversion(t *testing.T) {
 	assert.Equal(t, want, ocSpan.TraceId)
 }
 
+func TestErrorTagSpanConversion(t *testing.T) {
+	shortID, _ := zipkinmodel.TraceIDFromHex("0102030405060708")
+	assert.Equal(t, uint64(0), shortID.High, "wanted 64bit traceID, so TraceID.High must be zero")
+
+	zc := zipkinmodel.SpanContext{
+		TraceID: shortID,
+		ID:      zipkinmodel.ID(shortID.Low),
+	}
+
+	error := "Internal Server Error"
+
+	tags := map[string]string{
+		"error": error,
+	}
+	zs := zipkinmodel.SpanModel{
+		SpanContext: zc,
+		Tags: tags,
+	}
+
+	ocSpan, _, err := zipkinSpanToTraceSpan(&zs)
+	require.NoError(t, err, "unexpected error %v", err)
+	assert.Equal(t, error, ocSpan.Status.Message)
+	assert.Equal(t,  &tracepb.AttributeValue_BoolValue{BoolValue: true}, ocSpan.Attributes.AttributeMap["error"].Value)
+}
+
 func TestNew(t *testing.T) {
 	type args struct {
 		address      string
