@@ -36,3 +36,10 @@ type MetricsConsumer interface {
 type TraceConsumer interface {
 	ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error
 }
+
+// OTLPTraceConsumer is an interface that receives consumerdata.OTLPTraceData, processes it
+// as needed, and sends it to the next processing node if any or to the destination.
+type OTLPTraceConsumer interface {
+	// ConsumeOTLPTrace receives consumerdata.OTLPTraceData for processing.
+	ConsumeOTLPTrace(ctx context.Context, td consumerdata.OTLPTraceData) error
+}

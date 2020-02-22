@@ -15,7 +15,6 @@
 package attributesprocessor
 
 import (
-	"regexp"
 	"testing"
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
@@ -78,38 +77,6 @@ func TestFactory_CreateMetricsProcessor(t *testing.T) {
 	mp, err := factory.CreateMetricsProcessor(zap.NewNop(), nil, cfg)
 	require.Nil(t, mp)
 	assert.Equal(t, err, configerror.ErrDataTypeIsNotSupported)
-}
-
-func TestFactory_attributeValue(t *testing.T) {
-	val, err := attributeValue(123)
-	assert.Equal(t, &tracepb.AttributeValue{
-		Value: &tracepb.AttributeValue_IntValue{IntValue: cast.ToInt64(123)}}, val)
-	assert.Nil(t, err)
-
-	val, err = attributeValue(234.129312)
-	assert.Equal(t, &tracepb.AttributeValue{
-		Value: &tracepb.AttributeValue_DoubleValue{DoubleValue: cast.ToFloat64(234.129312)}}, val)
-	assert.Nil(t, err)
-
-	val, err = attributeValue(true)
-	assert.Equal(t, &tracepb.AttributeValue{
-		Value: &tracepb.AttributeValue_BoolValue{BoolValue: true},
-	}, val)
-	assert.Nil(t, err)
-
-	val, err = attributeValue("bob the builder")
-	assert.Equal(t, &tracepb.AttributeValue{
-		Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "bob the builder"}},
-	}, val)
-	assert.Nil(t, err)
-
-	val, err = attributeValue(nil)
-	assert.Nil(t, val)
-	assert.Equal(t, "error unsupported value type \"<nil>\"", err.Error())
-
-	val, err = attributeValue(Factory{})
-	assert.Nil(t, val)
-	assert.Equal(t, "error unsupported value type \"attributesprocessor.Factory\"", err.Error())
 }
 
 func TestFactory_validateActionsConfiguration(t *testing.T) {
@@ -193,161 +160,6 @@ func TestFactory_validateActionsConfiguration_InvalidConfig(t *testing.T) {
 			oCfg.Actions = tc.actionLists
 			output, err := buildAttributesConfiguration(*oCfg)
 			assert.Nil(t, output)
-			assert.Equal(t, tc.errorString, err.Error())
-		})
-	}
-}
-
-func TestFactory_validateMatchesConfiguration(t *testing.T) {
-	testcase := []struct {
-		name   string
-		input  MatchProperties
-		output matchingProperties
-	}{
-		{
-			name: "service_name_build",
-			input: MatchProperties{
-				Services: []string{
-					"a", "b", "c",
-				},
-			},
-			output: matchingProperties{
-				Services: map[string]bool{"a": true, "b": true, "c": true},
-			},
-		},
-
-		{
-			name: "attributes_build",
-			input: MatchProperties{
-				Attributes: []Attribute{
-					{
-						Key: "key1",
-					},
-					{
-						Key:   "key2",
-						Value: 1234,
-					},
-				},
-			},
-			output: matchingProperties{
-				Services: map[string]bool{},
-				Attributes: []matchAttribute{
-					{
-						Key: "key1",
-					},
-					{
-						Key: "key2",
-						AttributeValue: &tracepb.AttributeValue{
-							Value: &tracepb.AttributeValue_IntValue{IntValue: cast.ToInt64(1234)},
-						},
-					},
-				},
-			},
-		},
-
-		{
-			name: "both_set_of_attributes",
-			input: MatchProperties{
-				Services: []string{
-					"a", "b", "c",
-				},
-				Attributes: []Attribute{
-					{
-						Key: "key1",
-					},
-					{
-						Key:   "key2",
-						Value: 1234,
-					},
-				},
-			},
-			output: matchingProperties{
-				Services: map[string]bool{"a": true, "b": true, "c": true},
-				Attributes: []matchAttribute{
-					{
-						Key: "key1",
-					},
-					{
-						Key: "key2",
-						AttributeValue: &tracepb.AttributeValue{
-							Value: &tracepb.AttributeValue_IntValue{IntValue: cast.ToInt64(1234)},
-						},
-					},
-				},
-			},
-		},
-
-		{
-			name: "regexp_span_names",
-			input: MatchProperties{
-				SpanNames: []string{"auth.*"},
-			},
-			output: matchingProperties{
-				Services:  map[string]bool{},
-				SpanNames: []*regexp.Regexp{regexp.MustCompile("auth.*")},
-			},
-		},
-	}
-	for _, tc := range testcase {
-		t.Run(tc.name, func(t *testing.T) {
-			output, err := buildMatchProperties(&tc.input)
-			require.NoError(t, err)
-			assert.Equal(t, &tc.output, output)
-		})
-	}
-}
-
-func TestFactory_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
-	testcases := []struct {
-		name        string
-		property    MatchProperties
-		errorString string
-	}{
-		{
-			name:        "empty_property",
-			property:    MatchProperties{},
-			errorString: errAtLeastOneMatchFieldNeeded.Error(),
-		},
-		{
-			name: "empty_service_span_names_and_attributes",
-			property: MatchProperties{
-				Services:   []string{},
-				Attributes: []Attribute{},
-			},
-			errorString: errAtLeastOneMatchFieldNeeded.Error(),
-		},
-		{
-			name: "empty_service_name_in_services_list",
-			property: MatchProperties{
-				Services: []string{""},
-			},
-			errorString: "error creating \"attributes\" processor. Can't have empty string for service name in list of services",
-		},
-		{
-			name: "invalid_regexp_pattern",
-			property: MatchProperties{
-				SpanNames: []string{"["},
-			},
-			errorString: "error creating \"attributes\" processor. [ is not a valid span name regexp pattern",
-		},
-		{
-			name: "empty_key_name_in_attributes_list",
-			property: MatchProperties{
-				Services: []string{"a"},
-				Attributes: []Attribute{
-					{
-						Key: "",
-					},
-				},
-			},
-			errorString: "error creating \"attributes\" processor. Can't have empty string for service name in list of attributes",
-		},
-	}
-	for _, tc := range testcases {
-		t.Run(tc.name, func(t *testing.T) {
-			output, err := buildMatchProperties(&tc.property)
-			assert.Nil(t, output)
-			require.NotNil(t, err)
 			assert.Equal(t, tc.errorString, err.Error())
 		})
 	}

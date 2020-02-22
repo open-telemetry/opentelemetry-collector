@@ -41,6 +41,11 @@ var (
 		"bad_batch_spans_dropped",
 		"counts the number of spans dropped due to being in bad batches",
 		stats.UnitDimensionless)
+
+	StatBatchesDroppedCount = stats.Int64(
+		"batches_dropped",
+		"counts the number of batches dropped",
+		stats.UnitDimensionless)
 )
 
 // MetricTagKeys returns the metric tag keys according to the given telemetry level.
@@ -78,11 +83,10 @@ func MetricViews(level telemetry.Level) []*view.View {
 		Aggregation: view.Count(),
 	}
 	droppedBatchesView := &view.View{
-		Name:        "batches_dropped",
-		Measure:     StatDroppedSpanCount,
+		Measure:     StatBatchesDroppedCount,
 		Description: "The number of span batches dropped.",
 		TagKeys:     tagKeys,
-		Aggregation: view.Count(),
+		Aggregation: view.Sum(),
 	}
 	droppedBadBatchesView := &view.View{
 		Name:        "bad_batches_dropped",

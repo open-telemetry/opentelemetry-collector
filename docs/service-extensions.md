@@ -1,6 +1,6 @@
 # OpenTelemetry Collector: Extensions
 
-Besides the pipeline elements (receivers, processors, and exporters) the OTelSvc
+Besides the pipeline elements (receivers, processors, and exporters) the Collector
 uses various service extensions (e.g.: healthcheck, z-pages, etc). 
 This document describes the “extensions” design and how they are implemented.
 
@@ -46,7 +46,7 @@ these sections would look like in the configuration file:
 
 ```yaml
 
-# Example of the extensions provided in OTelSvc core. The list below
+# Example of the extensions available with the core Collector. The list below
 # includes all configurable options and their respective default value.
 extensions:
   health_check:

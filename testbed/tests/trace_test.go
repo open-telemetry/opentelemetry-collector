@@ -26,8 +26,10 @@ import (
 	"path/filepath"
 	"testing"
 
+	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/testbed/testbed"
@@ -234,6 +236,7 @@ func TestTraceBallast1kSPSAddAttrs(t *testing.T) {
 func verifySingleSpan(
 	t *testing.T,
 	tc *testbed.TestCase,
+	node *commonpb.Node,
 	span *tracepb.Span,
 	verifyReceived func(span *tracepb.Span),
 ) {
@@ -245,7 +248,7 @@ func verifySingleSpan(
 	// Add dummy IDs
 	span.TraceId = testbed.GenerateTraceID(1)
 	span.SpanId = testbed.GenerateSpanID(1)
-	td := consumerdata.TraceData{Spans: []*tracepb.Span{span}}
+	td := consumerdata.TraceData{Node: node, Spans: []*tracepb.Span{span}}
 
 	sender := tc.Sender.(testbed.TraceDataSender)
 
@@ -282,11 +285,6 @@ func TestTraceAttributesProcessor(t *testing.T) {
 			testbed.NewJaegerThriftDataSender(testbed.GetAvailablePort(t)),
 			testbed.NewJaegerDataReceiver(testbed.GetAvailablePort(t)),
 		},
-		{
-			"OpenCensus",
-			testbed.NewOCTraceDataSender(testbed.GetAvailablePort(t)),
-			testbed.NewOCDataReceiver(testbed.GetAvailablePort(t)),
-		},
 	}
 
 	for _, test := range tests {
@@ -301,6 +299,8 @@ func TestTraceAttributesProcessor(t *testing.T) {
 				"attributes": `
   attributes:
     include:
+      match_type: regexp
+      services: ["service-to-add.*"]
       span_names: ["span-to-add-.*"]
     actions:
       - action: insert
@@ -329,23 +329,36 @@ func TestTraceAttributesProcessor(t *testing.T) {
 			sender.Start()
 
 			// Create a span that matches "include" filter.
-			span := &tracepb.Span{
+			spanToInclude := &tracepb.Span{
 				Name: &tracepb.TruncatableString{Value: "span-to-add-attr"},
 			}
+			// Create a service name that matches "include" filter.
+			nodeToInclude := &commonpb.Node{ServiceInfo: &commonpb.ServiceInfo{Name: "service-to-add-attr"}}
 
-			verifySingleSpan(t, tc, span, func(span *tracepb.Span) {
+			verifySingleSpan(t, tc, nodeToInclude, spanToInclude, func(span *tracepb.Span) {
 				// Verify attributes was added.
+				require.NotNil(t, span)
+				require.NotNil(t, span.Attributes)
+				require.NotNil(t, span.Attributes.AttributeMap)
 				attrVal, ok := span.Attributes.AttributeMap["new_attr"]
 				assert.True(t, ok)
 				assert.NotNil(t, attrVal)
 				assert.EqualValues(t, "string value", attrVal.GetStringValue().Value)
 			})
 
+			// Create a service name that does not match "include" filter.
+			nodeToExclude := &commonpb.Node{ServiceInfo: &commonpb.ServiceInfo{Name: "service-not-to-add-attr"}}
+
+			verifySingleSpan(t, tc, nodeToExclude, spanToInclude, func(span *tracepb.Span) {
+				// Verify attributes was not added.
+				assert.Nil(t, span.Attributes)
+			})
+
 			// Create another span that does not match "include" filter.
-			span = &tracepb.Span{
+			spanToExclude := &tracepb.Span{
 				Name: &tracepb.TruncatableString{Value: "span-not-to-add-attr"},
 			}
-			verifySingleSpan(t, tc, span, func(span *tracepb.Span) {
+			verifySingleSpan(t, tc, nodeToInclude, spanToExclude, func(span *tracepb.Span) {
 				// Verify attributes was not added.
 				assert.Nil(t, span.Attributes)
 			})

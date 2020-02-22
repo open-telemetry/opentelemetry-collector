@@ -25,8 +25,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 )
 
-// Factory is factory interface for receivers.
-type Factory interface {
+// BaseFactory defines the common functions for all receiver factories.
+type BaseFactory interface {
 	// Type gets the type of the Receiver created by this factory.
 	Type() string
 
@@ -43,18 +43,6 @@ type Factory interface {
 	// there is no need for custom unmarshaling. This is typically used if viper.UnmarshalExact()
 	// is not sufficient to unmarshal correctly.
 	CustomUnmarshaler() CustomUnmarshaler
-
-	// CreateTraceReceiver creates a trace receiver based on this config.
-	// If the receiver type does not support tracing or if the config is not valid
-	// error will be returned instead.
-	CreateTraceReceiver(ctx context.Context, logger *zap.Logger, cfg configmodels.Receiver,
-		nextConsumer consumer.TraceConsumer) (TraceReceiver, error)
-
-	// CreateMetricsReceiver creates a metrics receiver based on this config.
-	// If the receiver type does not support metrics or if the config is not valid
-	// error will be returned instead.
-	CreateMetricsReceiver(logger *zap.Logger, cfg configmodels.Receiver,
-		consumer consumer.MetricsConsumer) (MetricsReceiver, error)
 }
 
 // CustomUnmarshaler is a function that un-marshals a viper data into a config struct
@@ -70,6 +58,37 @@ type Factory interface {
 // intoCfg interface{}
 //   An empty interface wrapping a pointer to the config struct to unmarshal into.
 type CustomUnmarshaler func(v *viper.Viper, viperKey string, sourceViperSection *viper.Viper, intoCfg interface{}) error
+
+// Factory can create TraceReceiver and MetricsReceiver.
+type Factory interface {
+	BaseFactory
+
+	// CreateTraceReceiver creates a trace receiver based on this config.
+	// If the receiver type does not support tracing or if the config is not valid
+	// error will be returned instead.
+	CreateTraceReceiver(ctx context.Context, logger *zap.Logger, cfg configmodels.Receiver,
+		nextConsumer consumer.TraceConsumer) (TraceReceiver, error)
+
+	// CreateMetricsReceiver creates a metrics receiver based on this config.
+	// If the receiver type does not support metrics or if the config is not valid
+	// error will be returned instead.
+	CreateMetricsReceiver(logger *zap.Logger, cfg configmodels.Receiver,
+		consumer consumer.MetricsConsumer) (MetricsReceiver, error)
+}
+
+// OTLPFactory can create OTLPTraceReceiver and OTLPMetricsReceiver. This is the
+// new factory type that can create OTLP-based receivers.
+type OTLPFactory interface {
+	BaseFactory
+
+	// CreateOTLPTraceReceiver creates a trace receiver based on this config.
+	// If the receiver type does not support tracing or if the config is not valid
+	// error will be returned instead.
+	CreateOTLPTraceReceiver(ctx context.Context, logger *zap.Logger, cfg configmodels.Receiver,
+		nextConsumer consumer.OTLPTraceConsumer) (TraceReceiver, error)
+
+	// TODO: add CreateOTLPMetricsReceiver.
+}
 
 // Build takes a list of receiver factories and returns a map of type map[string]Factory
 // with factory type as keys. It returns a non-nil error when more than one factories

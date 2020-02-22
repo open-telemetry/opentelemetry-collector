@@ -457,3 +457,104 @@ func grpcFixture(t1 time.Time, d1, d2 time.Duration) *api_v2.PostSpansRequest {
 		},
 	}
 }
+
+func TestSampling(t *testing.T) {
+	port := testutils.GetAvailablePort(t)
+	config := &Configuration{
+		CollectorGRPCPort:          int(port),
+		RemoteSamplingStrategyFile: "testdata/strategies.json",
+	}
+	sink := new(exportertest.SinkTraceExporter)
+
+	jr, err := New(context.Background(), config, sink, zap.NewNop())
+	assert.NoError(t, err, "should not have failed to create a new receiver")
+	defer jr.Shutdown()
+
+	mh := component.NewMockHost()
+	err = jr.Start(mh)
+	assert.NoError(t, err, "should not have failed to start trace reception")
+	t.Log("Start")
+
+	conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", config.CollectorGRPCPort), grpc.WithInsecure())
+	assert.NoError(t, err)
+	defer conn.Close()
+
+	cl := api_v2.NewSamplingManagerClient(conn)
+
+	expected := &api_v2.SamplingStrategyResponse{
+		StrategyType: api_v2.SamplingStrategyType_PROBABILISTIC,
+		ProbabilisticSampling: &api_v2.ProbabilisticSamplingStrategy{
+			SamplingRate: 0.8,
+		},
+		OperationSampling: &api_v2.PerOperationSamplingStrategies{
+			DefaultSamplingProbability: 0.8,
+			PerOperationStrategies: []*api_v2.OperationSamplingStrategy{
+				{
+					Operation: "op1",
+					ProbabilisticSampling: &api_v2.ProbabilisticSamplingStrategy{
+						SamplingRate: 0.2,
+					},
+				},
+				{
+					Operation: "op2",
+					ProbabilisticSampling: &api_v2.ProbabilisticSamplingStrategy{
+						SamplingRate: 0.4,
+					},
+				},
+			},
+		},
+	}
+
+	resp, err := cl.GetSamplingStrategy(context.Background(), &api_v2.SamplingStrategyParameters{
+		ServiceName: "foo",
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, expected, resp)
+}
+
+func TestSamplingFailsOnNotConfigured(t *testing.T) {
+	port := testutils.GetAvailablePort(t)
+	// prepare
+	config := &Configuration{
+		CollectorGRPCPort: int(port),
+	}
+	sink := new(exportertest.SinkTraceExporter)
+
+	jr, err := New(context.Background(), config, sink, zap.NewNop())
+	assert.NoError(t, err, "should not have failed to create a new receiver")
+	defer jr.Shutdown()
+
+	mh := component.NewMockHost()
+	err = jr.Start(mh)
+	assert.NoError(t, err, "should not have failed to start trace reception")
+	t.Log("Start")
+
+	conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", config.CollectorGRPCPort), grpc.WithInsecure())
+	assert.NoError(t, err)
+	defer conn.Close()
+
+	cl := api_v2.NewSamplingManagerClient(conn)
+
+	_, err = cl.GetSamplingStrategy(context.Background(), &api_v2.SamplingStrategyParameters{
+		ServiceName: "nothing",
+	})
+	assert.Error(t, err)
+}
+
+func TestSamplingFailsOnBadFile(t *testing.T) {
+	port := testutils.GetAvailablePort(t)
+	// prepare
+	config := &Configuration{
+		CollectorGRPCPort:          int(port),
+		RemoteSamplingStrategyFile: "does-not-exist",
+	}
+	sink := new(exportertest.SinkTraceExporter)
+
+	jr, err := New(context.Background(), config, sink, zap.NewNop())
+	assert.NoError(t, err, "should not have failed to create a new receiver")
+	defer jr.Shutdown()
+
+	mh := component.NewMockHost()
+	err = jr.Start(mh)
+	assert.Error(t, err)
+}

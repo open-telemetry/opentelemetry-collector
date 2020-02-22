@@ -25,6 +25,7 @@ We hold regular meetings. See details at [community page](https://github.com/ope
   - [Exporters](#config-exporters)
   - [Extensions](#config-extensions)
   - [Service](#config-service)
+- [Extending the collector](#extending-the-collector)
 - [Owners](#owners)
 
 ## Introduction
@@ -311,6 +312,15 @@ service:
       processors: [batch, queued_retry]
       exporters: [opencensus, zipkin]
 ```
+
+## Extensions
+
+The OpenTelemetry collector can be extended or embedded into other applications.
+
+The list of applications extending the collector:
+
+* [opentelemetry-collector-contrib](https://github.com/open-telemetry/opentelemetry-collector-contrib)
+* [jaeger-opentelemetry-collector](https://github.com/jaegertracing/jaeger-opentemenetry-collector)
 
 ## Owners
 

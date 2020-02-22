@@ -105,7 +105,6 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 		return nil
 	} else if b.useStartTimeMetric && metricName == startTimeMetricName {
 		b.startTime = v
-		return nil
 	}
 
 	b.hasData = true
