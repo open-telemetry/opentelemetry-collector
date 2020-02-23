@@ -16,8 +16,8 @@ Supported metric receivers (sorted alphabetically):
 - [Prometheus Receiver](#prometheus)
 - [VM Metrics Receiver](#vmmetrics)
 
-In addition, a number of third-party or non-core receivers can also be found
-[here](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/master/receiver).
+The [contributors repository](https://github.com/open-telemetry/opentelemetry-service-contrib)
+ has more receivers that can be added to custom builds of the service.
 
 ## Configuring Receiver(s)
 Receivers are configured via YAML under the top-level `receivers` tag. There
