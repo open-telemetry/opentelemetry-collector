@@ -1,4 +1,4 @@
-# General
+# General Information
 A receiver is how data gets into the OpenTelemetry Collector. Generally, a receiver
 accepts data in a specified format, translates it into the internal format and
 passes it to [processors](../processor/README.md)
