@@ -71,7 +71,7 @@ While the same binary is used for either deployment method, the configuration
 between the two may differ depending on requirements (e.g. queue size and
 feature-set enabled).
 
-![deployment-models](https://i.imgur.com/Tj384ap.png)
+![deployment-models](docs/images/opentelemetry-service-deployment-models.png)
 
 ## <a name="getting-started"></a>Getting Started
 
