@@ -1,4 +1,4 @@
-# General
+# General Information
 
 An exporter is how data gets sent to different systems/back-ends. Generally, an
 exporter translate the internal format into another defined format.
