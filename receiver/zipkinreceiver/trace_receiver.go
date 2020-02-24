@@ -512,10 +512,10 @@ func extractProtoStatus(zs *zipkinmodel.SpanModel) *tracepb.Status {
 	message := zs.Tags["opencensus.status_description"]
 	if message == "" && canonicalCodeStr == "" {
 		return nil
-	} else {
-		zs.Tags["error"] = "true"
-		message = canonicalCodeStr
 	}
+	zs.Tags["error"] = "true"
+	message = canonicalCodeStr
+
 	code, set := canonicalCodesMap[canonicalCodeStr]
 	if !set {
 		// If not status code was set, then we should use UNKNOWN
