@@ -11,7 +11,7 @@ Supported processors (sorted alphabetically):
 - [Sampling Processor](#sampling)
 - [Span Processor](#span)
 
-The [contributors repository](https://github.com/open-telemetry/opentelemetry-service-contrib)
+The [contributors repository](https://github.com/open-telemetry/opentelemetry-collector-contrib)
  has more processors that can be added to custom builds of the Collector.
 
 ## Data Ownership
