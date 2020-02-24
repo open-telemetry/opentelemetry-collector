@@ -326,7 +326,7 @@ Approvers ([@open-telemetry/collector-approvers](https://github.com/orgs/open-te
 
 Maintainers ([@open-telemetry/collector-maintainers](https://github.com/orgs/open-telemetry/teams/collector-maintainers)):
 
-- [Bogdan Drutu](https://github.com/BogdanDrutu), Google
+- [Bogdan Drutu](https://github.com/BogdanDrutu), Splunk
 - [Paulo Janotti](https://github.com/pjanotti), Splunk
 - [Tigran Najaryan](https://github.com/tigrannajaryan), Splunk
 
