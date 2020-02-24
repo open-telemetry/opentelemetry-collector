@@ -1,7 +1,7 @@
 # General Information
 
 An exporter is how data gets sent to different systems/back-ends. Generally, an
-exporter translate the internal format into another defined format.
+exporter translates the internal format into another defined format.
 
 Supported trace exporters (sorted alphabetically):
 
@@ -16,6 +16,7 @@ Supported metric exporters (sorted alphabetically):
 
 Supported local exporters (sorted alphabetically):
 
+- [File](#file)
 - [Logging](#logging)
 
 The [contributors repository](https://github.com/open-telemetry/opentelemetry-service-contrib)
