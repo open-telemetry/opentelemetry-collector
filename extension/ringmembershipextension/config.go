@@ -21,4 +21,7 @@ import (
 // Config has the configuration for the extension enabling ring membership discovery
 type Config struct {
 	configmodels.ExtensionSettings `mapstructure:",squash"`
+	// DNS name used to discover peers
+	// The default value is jaeger-agent.default.svc.cluster.local
+	PeerDiscoveryDNSName string `mapstructure:"peer_discovery_dns_name"`
 }

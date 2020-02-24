@@ -24,6 +24,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/facette/natsort"
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/extension"
 )
 
@@ -49,7 +50,7 @@ func (rm *ringMembershipExtension) serveState(w http.ResponseWriter, r *http.Req
 }
 
 // Starts the ring membership extension
-func (rm *ringMembershipExtension) Start(host extension.Host) error {
+func (rm *ringMembershipExtension) Start(host component.Host) error {
 	rm.logger.Info("Starting ring membership extension")
 
 	rm.quit = make(chan int, 1)
@@ -73,7 +74,7 @@ func (rm *ringMembershipExtension) Watch() error {
 		case <-t.C:
 			rm.logger.Debug("Pooling a dns endpoint")
 			// poll a dns endpoint
-			ips, err := net.LookupIP("otelcol-headless.default.svc.cluster.local.")
+			ips, err := net.LookupIP(rm.config.PeerDiscoveryDNSName)
 			if err != nil {
 				rm.logger.Error("DNS lookup error", zap.Error(err))
 				break
@@ -131,6 +132,9 @@ func (rm *ringMembershipExtension) GetState() (interface{}, error) {
 }
 
 func newServer(config Config, logger *zap.Logger) (*ringMembershipExtension, error) {
+	if config.PeerDiscoveryDNSName == "" {
+		config.PeerDiscoveryDNSName = "jaeger-agent.default.svc.cluster.local"
+	}
 	rm := &ringMembershipExtension{
 		config: config,
 		logger: logger,

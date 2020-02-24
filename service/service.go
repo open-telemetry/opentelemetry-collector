@@ -257,12 +257,6 @@ func (app *Application) setupPipelines() {
 		log.Fatalf("Cannot start exporters: %v", err)
 	}
 
-	// Create map of ext name to extension
-	extNameToExt := make(map[string]extension.ServiceExtension)
-	for i, extName := range app.config.Service.Extensions {
-		extNameToExt[extName] = app.extensions[i]
-	}
-
 	// Create pipelines and their processors and plug exporters to the
 	// end of the pipelines.
 	app.builtPipelines, err = builder.NewPipelinesBuilder(app.logger, app.config, app.exporters, app.factories.Processors).Build()

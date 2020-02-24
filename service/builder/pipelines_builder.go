@@ -22,7 +22,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/extension"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
 )
 
@@ -75,11 +74,10 @@ func (bps BuiltPipelines) ShutdownProcessors(logger *zap.Logger) error {
 
 // PipelinesBuilder builds pipelines from config.
 type PipelinesBuilder struct {
-	logger       *zap.Logger
-	config       *configmodels.Config
-	exporters    Exporters
-	factories    map[string]processor.Factory
-	extNameToExt map[string]extension.ServiceExtension
+	logger    *zap.Logger
+	config    *configmodels.Config
+	exporters Exporters
+	factories map[string]processor.Factory
 }
 
 // NewPipelinesBuilder creates a new PipelinesBuilder. Requires exporters to be already
@@ -89,9 +87,8 @@ func NewPipelinesBuilder(
 	config *configmodels.Config,
 	exporters Exporters,
 	factories map[string]processor.Factory,
-	extNameToExt map[string]extension.ServiceExtension,
 ) *PipelinesBuilder {
-	return &PipelinesBuilder{logger, config, exporters, factories, extNameToExt}
+	return &PipelinesBuilder{logger, config, exporters, factories}
 }
 
 // Build pipeline processors from config.

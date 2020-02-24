@@ -156,6 +156,7 @@ func (sf *spanForwarder) memberSyncOnTick() {
 	// Get sorted member list from the extension
 	newMembers, err := sf.ring.GetState()
 	if err != nil {
+		sf.logger.Info("(memberSyncOnTick) Error fetching members", zap.Error(err))
 		return
 	}
 
@@ -198,6 +199,7 @@ func (sf *spanForwarder) memberSyncOnTick() {
 				// delete the key
 				delete(sf.peerQueues, c)
 				sf.Unlock()
+				sf.logger.Info("(memberSyncOnTick) Deleted member", zap.String("Member ip", c))
 			}
 		}
 
@@ -220,6 +222,7 @@ func (sf *spanForwarder) memberSyncOnTick() {
 				// build a new collectorPeer object
 				sf.peerQueues[v] = newPeer
 				sf.Unlock()
+				sf.logger.Info("(memberSyncOnTick) Added member", zap.String("Member ip", v))
 			}
 		}
 	}
@@ -367,7 +370,7 @@ func (sf *spanForwarder) process(span *tracepb.Span) bool {
 
 func (r *ringMembershipExtensionClient) GetState() ([]string, error) {
 	// Make an http client to the extension and get members
-	resp, err := r.client.Get(r.endpoint + "/state")
+	resp, err := r.client.Get("http://" + r.endpoint + "/state")
 	if err != nil {
 		return nil, err
 	}
