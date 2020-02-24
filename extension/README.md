@@ -41,7 +41,7 @@ extensions:
   health_check:
 ```
 
-The full list of settings exposed for this exporter are documented [here](healthextension/config.go)
+The full list of settings exposed for this exporter is documented [here](healthextension/config.go)
 with detailed sample configurations [here](healthextension/testdata/config.yaml).
 
 ## <a name="pprof"></a>Performance Profiler
