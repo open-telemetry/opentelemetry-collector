@@ -8,7 +8,7 @@ Supported service extensions (sorted alphabetically):
 - [zPages](#zpages)
 
 The [contributors repository](https://github.com/open-telemetry/opentelemetry-service-contrib)
- may have more extensions that can be added to custom builds of the service.
+ may have more extensions that can be added to custom builds of the Collector.
 
 ## Ordering Extensions
 The order extensions are specified for the service is important as this is the
