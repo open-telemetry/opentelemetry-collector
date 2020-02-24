@@ -1,6 +1,6 @@
 # General Information
 Processors are used at various stages of a [pipeline](../docs/pipelines.md).
-Generally, a processor is pre-processes data before it is exported (e.g.
+Generally, a processor pre-processes data before it is exported (e.g.
 modify attributes or sample) or helps ensure that data makes it through a
 pipeline successfully (e.g. batch/retry).
 
