@@ -19,7 +19,7 @@ Supported local exporters (sorted alphabetically):
 - [File](#file)
 - [Logging](#logging)
 
-The [contributors repository](https://github.com/open-telemetry/opentelemetry-service-contrib)
+The [contributors repository](https://github.com/open-telemetry/opentelemetry-collector-contrib)
  has more exporters that can be added to custom builds of the service.
 
 ## Proxy Support
