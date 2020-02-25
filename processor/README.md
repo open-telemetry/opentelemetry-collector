@@ -1,15 +1,18 @@
 # General Information
-
-*Note* This documentation is still in progress. For any questions, please reach
-out in the [OpenTelemetry Gitter](https://gitter.im/open-telemetry/opentelemetry-service)
-or refer to the [issues page](https://github.com/open-telemetry/opentelemetry-collector/issues).
+Processors are used at various stages of a [pipeline](../docs/pipelines.md).
+Generally, a processor pre-processes data before it is exported (e.g.
+modify attributes or sample) or helps ensure that data makes it through a
+pipeline successfully (e.g. batch/retry).
 
 Supported processors (sorted alphabetically):
 - [Attributes Processor](#attributes)
 - [Batch Processor](#batch)
-- [Queued Processor](#queued_retry)
+- [Queued Retry Processor](#queued_retry)
 - [Sampling Processor](#sampling)
 - [Span Processor](#span)
+
+The [contributors repository](https://github.com/open-telemetry/opentelemetry-collector-contrib)
+ has more processors that can be added to custom builds of the Collector.
 
 ## Data Ownership
 
@@ -191,10 +194,6 @@ For the `hash` action,
   action: hash 
 ```
 
-Please refer to [config.go](attributesprocessor/config.go) for the config spec.
-
-### Example
-
 The list of actions can be composed to create rich scenarios, such as
 back filling attribute, copying values to a new key, redacting sensitive information.
 The following is a sample configuration.
@@ -238,6 +237,8 @@ The following configuration options can be modified:
 - `tick_time` (default = 1s): interval in which the tickers tick
 - `timeout` (default = 1s): time duration after which a batch will be sent regardless of size
 
+Examples:
+
 ```yaml
 processors:
   batch:
@@ -253,7 +254,7 @@ Refer to [config.yaml](batchprocessor/testdata/config.yaml) for detailed
 examples on using the processor.
 
 
-## <a name="queued_retry"></a>Queued Processor
+## <a name="queued_retry"></a>Queued Retry Processor
 
 The queued_retry processor uses a bounded queue to relay trace data from the receiver
 or previous processor to the next processor. Received trace data is enqueued
@@ -269,6 +270,8 @@ The following configuration options can be modified:
 - `num_workers` (default = 10): the number of workers that dequeue batches
 - `queue_size` (default = 5000): the maximum number of batches allowed before drop
 - `retry_on_failure` (default = true): whether to retry on failure or give up and drop
+
+Examples:
 
 ```yaml
 processors:
@@ -307,6 +310,8 @@ Multiple policies exist today and it is straight forward to add more. These incl
 - `numeric_attribute`: sample based on number attributes
 - `string_attribute`: sample based on string attributes
 - `rate_limiting`: sample based on rate
+
+Examples:
 
 ```yaml
 processors:
@@ -352,8 +357,10 @@ trace id hashing. Please refer to
 [config.go](samplingprocessor/probabilisticprocessor/config.go) for the config spec.
 
 The following configuration options can be modified:
-- `hash_seed` (default = unset): all collectors for a given tier should have the same hash_seed
+- `hash_seed` (no default): all collectors for a given tier should have the same hash_seed
 - `sampling_percentage` (default = 0): the percentage at which traces are sampled; >= 100 samples all traces
+
+Examples:
 
 ```yaml
 processors:
@@ -373,20 +380,24 @@ on the span name. Please refer to
 
 It optionally supports the ability to [include/exclude spans](#includeexclude-spans).
 
-Currently, only the name action is supported.
+The following actions are supported:
+
+- `name`: Modify the name of attributes within a span
 
 ### Name a span
 
-Takes a list of `from_attributes` and an optional `separator` string. The
-attribute value for the keys are used to create a new name in the order
-specified in the configuration. If a separator is specified, it will separate
-values.
+The following settings are required:
 
-If renaming is dependent on attributes being modified by the `attributes`
+- `from_attributes`: The attribute value for the keys are used to create a
+new name in the order specified in the configuration.
+
+The following settings can be optionally configured:
+
+- `separator`: A string, which is specified will be used to split values
+
+Note: If renaming is dependent on attributes being modified by the `attributes`
 processor, ensure the `span` processor is specified after the `attributes`
 processor in the `pipeline` specification.
-
-For more information, refer to [config.go](spanprocessor/config.go)
 
 ```yaml
 span:
@@ -398,15 +409,27 @@ span:
     separator: <value>
 ```
 
+Example:
+
+```yaml
+span:
+  name:
+    from_attributes: ["db.svc", "operation"]
+    separator: "::"
+```
+
 Refer to [config.yaml](spanprocessor/testdata/config.yaml) for detailed
 examples on using the processor.
 
 ### Extract attributes from span name
 
 Takes a list of regular expressions to match span name against and extract
-attributes from based on subexpressions.
+attributes from it based on subexpressions. Must be specified under the
+`to_attributes` section.
 
-`rules` is a list of rules to extract attribute values from span name. The values
+The following settings are required:
+
+- `rules` is a list of rules to extract attribute values from span name. The values
 in the span name are replaced by extracted attribute names. Each rule in the list
 is regex pattern string. Span name is checked against the regex and if the regex
 matches then all named subexpressions of the regex are extracted as attributes
@@ -416,10 +439,9 @@ in the span name is replaced by extracted attribute name. If the attributes
 already exist in the span then they will be overwritten. The process is repeated
 for all rules in the order they are specified. Each subsequent rule works on the
 span name that is the output after processing the previous rule.
-
-`break_after_match` specifies if processing of rules should stop after the first
+- `break_after_match` (default = false): specifies if processing of rules should stop after the first
 match. If it is false rule processing will continue to be performed over the
-modified span name. The default value for this option is false.
+modified span name.
 
 ```yaml
 span/to_attributes:
@@ -434,19 +456,7 @@ span/to_attributes:
 
 ```
 
-### Examples
-
-Refer to [config.yaml](spanprocessor/testdata/config.yaml) for detailed
-examples on using the processor.
-
-
-```yaml
-span:
-  name:
-    from_attributes: ["db.svc", "operation"]
-    separator: "::"
-```
-
+Example:
 
 ```yaml
 # Let's assume input span name is /api/v1/document/12345678/update
@@ -458,3 +468,6 @@ span/to_attributes:
       rules:
         - ^\/api\/v1\/document\/(?P<documentId>.*)\/update$
 ```
+
+Refer to [config.yaml](spanprocessor/testdata/config.yaml) for detailed
+examples on using the processor.
