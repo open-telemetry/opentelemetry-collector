@@ -332,11 +332,11 @@ Maintainers ([@open-telemetry/collector-maintainers](https://github.com/orgs/ope
 
 *Find more about the maintainer role in [community repository](https://github.com/open-telemetry/community/blob/master/community-membership.md#maintainer).*
 
-[travis-image]: https://travis-ci.org/open-telemetry/opentelemetry-service.svg?branch=master
-[travis-url]: https://travis-ci.org/open-telemetry/opentelemetry-service
+[travis-image]: https://travis-ci.org/open-telemetry/opentelemetry-collector.svg?branch=master
+[travis-url]: https://travis-ci.org/open-telemetry/opentelemetry-collector
 [godoc-image]: https://godoc.org/github.com/open-telemetry/opentelemetry-collector?status.svg
 [godoc-url]: https://godoc.org/github.com/open-telemetry/opentelemetry-collector
-[gitter-image]: https://badges.gitter.im/open-telemetry/opentelemetry-service.svg
-[gitter-url]: https://gitter.im/open-telemetry/opentelemetry-service?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
-[codecov-image]: https://codecov.io/gh/open-telemetry/opentelemetry-service/branch/master/graph/badge.svg
-[codecov-url]: https://codecov.io/gh/open-telemetry/opentelemetry-service/branch/master/
+[gitter-image]: https://badges.gitter.im/open-telemetry/opentelemetry-collector.svg
+[gitter-url]: https://gitter.im/open-telemetry/opentelemetry-collector?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
+[codecov-image]: https://codecov.io/gh/open-telemetry/opentelemetry-collector/branch/master/graph/badge.svg
+[codecov-url]: https://codecov.io/gh/open-telemetry/opentelemetry-collector/branch/master/
