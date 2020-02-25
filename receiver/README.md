@@ -201,7 +201,7 @@ receivers:
 The full list of settings exposed for this receiver are documented [here](zipkinreceiver/config.go)
 with detailed sample configurations [here](zipkinreceiver/testdata/config.yaml).
 
-# <a name="meetric-receivers"></a>Metric Receivers
+# <a name="metric-receivers"></a>Metric Receivers
 
 ## <a name="opencensus-metrics"></a>OpenCensus Receiver
 
