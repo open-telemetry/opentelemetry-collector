@@ -21,7 +21,7 @@ We hold regular meetings. See details at [community page](https://github.com/ope
   - [Exporters](#config-exporters)
   - [Extensions](#config-extensions)
   - [Service](#config-service)
-- [Other Information]
+- [Other Information](#other-information)
   - [Extending the Collector](#extending-the-collector)
   - [Owners](#owners)
 
