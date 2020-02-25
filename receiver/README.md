@@ -80,7 +80,7 @@ receivers:
 It is possible to configure the protocols on different ports, refer to
 [config.yaml](jaegerreceiver/testdata/config.yaml) for detailed config
 examples. The full list of settings exposed for this receiver are
-documented [here](zipkinreceiver/config.go).
+documented [here](jaegerreceiver/config.go).
 
 ### Communicating over TLS
 The Jaeger receiver supports communication using Transport Layer Security (TLS), but
