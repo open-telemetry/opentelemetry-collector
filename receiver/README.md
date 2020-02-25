@@ -1,11 +1,10 @@
-**Note** This documentation is still in progress. For any questions, please
-reach out in the [OpenTelemetry Gitter](https://gitter.im/open-telemetry/opentelemetry-service)
-or refer to the [issues page](https://github.com/open-telemetry/opentelemetry-collector/issues).
-
-# Receivers
-A receiver is how data gets into OpenTelemetry Collector. Generally, a receiver
-accepts data in a specified format and can support traces and/or metrics. The
-format of the traces and metrics supported are receiver specific.
+# General Information
+A receiver is how data gets into the OpenTelemetry Collector. Generally, a receiver
+accepts data in a specified format, translates it into the internal format and
+passes it to [processors](../processor/README.md)
+and [exporters](../exporter/README.md)
+defined in the applicable [pipelines](../docs/pipelines.md).
+The format of the traces and metrics supported are receiver specific.
 
 Supported trace receivers (sorted alphabetically):
 - [Jaeger Receiver](#jaeger)
@@ -17,9 +16,12 @@ Supported metric receivers (sorted alphabetically):
 - [Prometheus Receiver](#prometheus)
 - [VM Metrics Receiver](#vmmetrics)
 
+The [contributors repository](https://github.com/open-telemetry/opentelemetry-collector-contrib)
+ has more receivers that can be added to custom builds of the collector.
+
 ## Configuring Receiver(s)
 Receivers are configured via YAML under the top-level `receivers` tag. There
-must be at least one enabled receiver for this configuration to be considered
+must be at least one enabled receiver for a configuration to be considered
 valid.
 
 The following is a sample configuration for the `examplereceiver`.
@@ -51,66 +53,12 @@ All receivers expose a setting to disable it, by default receivers are enabled.
 At least one receiver must be enabled per [pipeline](docs/pipelines.md) to be a
 valid configuration.
 
-## <a name="opencensus"></a>OpenCensus Receiver
-**Traces and metrics are supported.**
-
-This receiver receives trace and metrics from [OpenCensus](https://opencensus.io/)
-instrumented applications. It translates them into the internal format sent to
-processors and exporters in the pipeline.
-
-To get started, all that is required to enable the OpenCensus receiver is to
-include it in the receiver definitions. This will enable the default values as
-specified [here](https://github.com/open-telemetry/opentelemetry-collector/blob/master/receiver/opencensusreceiver/factory.go).
-The following is an example:
-```yaml
-receivers:
-  opencensus:
-```
-
-The full list of settings exposed for this receiver are documented [here](https://github.com/open-telemetry/opentelemetry-collector/blob/master/receiver/opencensusreceiver/config.go)
-with detailed sample configurations [here](https://github.com/open-telemetry/opentelemetry-collector/blob/master/receiver/opencensusreceiver/testdata/config.yaml).
-
-### Communicating over TLS
-This receiver supports communication using Transport Layer Security (TLS). TLS
-can be configured by specifying a `tls_credentials` object in the receiver
-configuration for receivers that support it.
-```yaml
-receivers:
-  opencensus:
-    tls_credentials:
-      key_file: /key.pem # path to private key
-      cert_file: /cert.pem # path to certificate
-```
-
-### Writing with HTTP/JSON
-The OpenCensus receiver can receive trace export calls via HTTP/JSON in
-addition to gRPC. The HTTP/JSON address is the same as gRPC as the protocol is
-recognized and processed accordingly.
-
-To write traces with HTTP/JSON, `POST` to `[address]/v1/trace`. The JSON message
-format parallels the gRPC protobuf format, see this
-[OpenApi spec for it](https://github.com/census-instrumentation/opencensus-proto/blob/master/gen-openapi/opencensus/proto/agent/trace/v1/trace_service.swagger.json).
-
-The HTTP/JSON endpoint can also optionally configure
-[CORS](https://fetch.spec.whatwg.org/#cors-protocol), which is enabled by
-specifying a list of allowed CORS origins in the `cors_allowed_origins` field:
-
-```yaml
-receivers:
-  opencensus:
-    endpoint: "localhost:55678"
-    cors_allowed_origins:
-    - http://test.com
-    # Origins can have wildcards with *, use * by itself to match any origin.
-    - https://*.example.com
-```
+# <a name="trace-receivers"></a>Trace Receivers
 
 ## <a name="jaeger"></a>Jaeger Receiver
-**Only traces are supported.**
 
-This receiver receives traces in the [Jaeger](https://www.jaegertracing.io)
-format. It translates them into the internal format and sends
-it to processors and exporters.
+This receiver supports [Jaeger](https://www.jaegertracing.io)
+formatted traces.
 
 It supports the Jaeger Collector and Agent protocols:
 - gRPC
@@ -131,10 +79,11 @@ receivers:
 
 It is possible to configure the protocols on different ports, refer to
 [config.yaml](jaegerreceiver/testdata/config.yaml) for detailed config
-examples.
+examples. The full list of settings exposed for this receiver are
+documented [here](jaegerreceiver/config.go).
 
 ### Communicating over TLS
-This receiver supports communication using Transport Layer Security (TLS), but
+The Jaeger receiver supports communication using Transport Layer Security (TLS), but
 only using the gRPC protocol. It can be configured by specifying a
 `tls_credentials` object in the gRPC receiver configuration.
 ```yaml
@@ -171,7 +120,7 @@ receivers:
       fetch_endpoint: "jaeger-collector:1234"
 ``` 
 
-Remote sampling can also be directly served by the collector by providing a sampling json file.
+Remote sampling can also be directly served by the collector by providing a sampling json file:
 
 ```yaml
 receivers:
@@ -182,10 +131,84 @@ receivers:
       strategy_file: "/etc/strategy.json"
 ``` 
 
-Note that GRPC must be enabled for this to work as Jaeger serves its remote sampling strategies over GRPC.
+Note: gRPC must be enabled for this to work as Jaeger serves its remote sampling strategies over gRPC.
+
+## <a name="opencensus-traces"></a>OpenCensus Receiver
+
+This receiver receives trace and metrics from [OpenCensus](https://opencensus.io/)
+instrumented applications.
+
+To get started, all that is required to enable the OpenCensus receiver is to
+include it in the receiver definitions. This will enable the default values as
+specified [here](opencensusreceiver/factory.go).
+The following is an example:
+```yaml
+receivers:
+  opencensus:
+```
+
+The full list of settings exposed for this receiver are documented [here](opencensusreceiver/config.go)
+with detailed sample configurations [here](opencensusreceiver/testdata/config.yaml).
+
+### Communicating over TLS
+This receiver supports communication using Transport Layer Security (TLS). TLS
+can be configured by specifying a `tls_credentials` object in the receiver
+configuration for receivers that support it.
+```yaml
+receivers:
+  opencensus:
+    tls_credentials:
+      key_file: /key.pem # path to private key
+      cert_file: /cert.pem # path to certificate
+```
+
+### Writing with HTTP/JSON
+The OpenCensus receiver can receive trace export calls via HTTP/JSON in
+addition to gRPC. The HTTP/JSON address is the same as gRPC as the protocol is
+recognized and processed accordingly.
+
+To write traces with HTTP/JSON, `POST` to `[address]/v1/trace`. The JSON message
+format parallels the gRPC protobuf format, see this
+[OpenApi spec for it](https://github.com/census-instrumentation/opencensus-proto/blob/master/gen-openapi/opencensus/proto/agent/trace/v1/trace_service.swagger.json).
+
+The HTTP/JSON endpoint can also optionally configure
+[CORS](https://fetch.spec.whatwg.org/#cors-protocol), which is enabled by
+specifying a list of allowed CORS origins in the `cors_allowed_origins` field:
+
+```yaml
+receivers:
+  opencensus:
+    endpoint: "localhost:55678"
+    cors_allowed_origins:
+    - http://test.com
+    # Origins can have wildcards with *, use * by itself to match any origin.
+    - https://*.example.com
+```
+
+## <a name="zipkin"></a>Zipkin Receiver
+
+This receiver receives spans from [Zipkin](https://zipkin.io/) (V1 and V2).
+
+To get started, all that is required to enable the Zipkin receiver is to
+include it in the receiver definitions. This will enable the default values as
+specified [here](zipkinreceiver/factory.go).
+The following is an example:
+```yaml
+receivers:
+  zipkin:
+```
+
+The full list of settings exposed for this receiver are documented [here](zipkinreceiver/config.go)
+with detailed sample configurations [here](zipkinreceiver/testdata/config.yaml).
+
+# <a name="metric-receivers"></a>Metric Receivers
+
+## <a name="opencensus-metrics"></a>OpenCensus Receiver
+
+The OpenCensus receiver supports both traces and metrics. Configuration
+information can be found under the trace section [here](#opencensus-traces).
 
 ## <a name="prometheus"></a>Prometheus Receiver
-**Only metrics are supported.**
 
 This receiver is a drop-in replacement for getting Prometheus to scrape your
 services. Just like you would write in a YAML configuration file before
@@ -241,8 +264,10 @@ receivers:
           ...
 ```
 
+The full list of settings exposed for this receiver are documented [here](prometheusreceiver/config.go)
+with detailed sample configurations [here](prometheusreceiver/testdata/config.yaml).
+
 ## <a name="vmmetrics"></a>VM Metrics Receiver
-**Only metrics are supported.**
 
 Collects metrics from the host operating system. This is applicable when the
 OpenTelemetry Collector is running as an agent.
@@ -255,21 +280,5 @@ receivers:
     #process_mount_point: "/data/proc" # Only using when running as an agent / daemonset
 ```
 
-## <a name="zipkin"></a>Zipkin Receiver
-**Only traces are supported.**
-
-This receiver receives spans from Zipkin (V1 and V2) HTTP uploads and
-translates them into the internal span types that are then pushed into trace
-pipelines according to the configuration.
-
-Its address can be configured in the YAML configuration file under section
-"receivers", subsection "zipkin" and field "address".  The syntax of the field
-"address" is `[address|host]:<port-number>`.
-
-For example:
-
-```yaml
-receivers:
-  zipkin:
-    address: "localhost:9411"
-```
+The full list of settings exposed for this receiver are documented [here](vmmetricsreceiver/config.go)
+with detailed sample configurations [here](vmmetricsreceiver/testdata/config.yaml).
