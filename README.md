@@ -1,9 +1,5 @@
 # OpenTelemetry Collector
 
-*IMPORTANT:* The OpenTelemetry Collector is in alpha. For now, it is
-recommended you use the
-[OpenCensus Service](https://github.com/census-instrumentation/opencensus-service).
-
 [![Build Status][travis-image]][travis-url]
 [![GoDoc][godoc-image]][godoc-url]
 [![Gitter chat][gitter-image]][gitter-url]
@@ -25,34 +21,37 @@ We hold regular meetings. See details at [community page](https://github.com/ope
   - [Exporters](#config-exporters)
   - [Extensions](#config-extensions)
   - [Service](#config-service)
-- [Extending the collector](#extending-the-collector)
-- [Owners](#owners)
+- [Other Information]
+  - [Extending the Collector](#extending-the-collector)
+  - [Owners](#owners)
 
 ## Introduction
 
 The OpenTelemetry Collector can receive traces and metrics from processes
 instrumented by OpenTelemetry or other monitoring/tracing libraries (e.g. Jaeger,
-Prometheus, etc.), handles aggregation and smart sampling, and exports traces
-and metrics to one or more monitoring/tracing backends.
+Prometheus, etc.), can pre-process received data including adding or removing
+attributes, handles aggregation and smart sampling, and exports traces
+and metrics to one or more open-soource or commercial monitoring/tracing
+backends.
 
 Some frameworks and ecosystems are now providing out-of-the-box instrumentation
 by using OpenTelemetry, but the user is still expected to register an exporter
-in order to send data. This is a problem during an incident. Even though our
-users can benefit from having more diagnostics data coming out of services
-already instrumented with OpenTelemetry, they have to modify their code to
-register an exporter and redeploy. Asking our users to recompile and redeploy is
-not an ideal during an incident. In addition, currently users need to decide
-which service backend they want to export to, before they distribute their
-binary instrumented by OpenTelemetry.
+to send data. This is a problem during an incident. Even though users can
+benefit from having more diagnostics data coming out of services already
+instrumented with OpenTelemetry, they have to modify their code to register an
+exporter and redeploy. Asking users to recompile and redeploy is not ideal
+during an incident. In addition, current users need to decide which service
+backend they want to export to before they distribute their binary instrumented
+by OpenTelemetry.
 
 The OpenTelemetry Collector is trying to eliminate these requirements. With the
 OpenTelemetry Collector, users do not need to redeploy or restart their
 applications as long as it has the OpenTelemetry exporter. All they need to do
-is just configure and deploy the OpenTelemetry Collector separately. The
+is configure and deploy the OpenTelemetry Collector separately. The
 OpenTelemetry Collector will then automatically receive traces and metrics and
 export to any backend of the user's choice.
 
-Some supplementail documents to review include:
+Some supplemental documents to review include:
 
 * [design.md](docs/design.md)
 * [performance.md](docs/performance.md)
@@ -61,18 +60,18 @@ Some supplementail documents to review include:
 ## <a name="deploy"></a>Deployment
 
 The OpenTelemetry Collector can be deployed in a variety of different ways
-depending on requirements. Currently the OpenTelemetry Collector consists of a
+depending on requirements. Currently, the OpenTelemetry Collector consists of a
 single binary and two deployment methods:
 
-1. Agent running with the application or on the same host as the application
+1. An agent running with the application or on the same host as the application
 (e.g. binary, sidecar, or daemonset)
-2. Collector running as a standalone application (e.g. container or deployment)
+2. A collector running as a standalone service (e.g. container or deployment)
 
 While the same binary is used for either deployment method, the configuration
 between the two may differ depending on requirements (e.g. queue size and
 feature-set enabled).
 
-![deployment-models](https://i.imgur.com/Tj384ap.png)
+![deployment-models](docs/images/opentelemetry-service-deployment-models.png)
 
 ## <a name="getting-started"></a>Getting Started
 
@@ -91,10 +90,7 @@ $ kubectl apply -f example/k8s.yaml
 
 ### <a name="getting-started-standalone"></a>Standalone
 
-Create an Agent [configuration](#config) file based on the options described
-below. By default, the Agent has the `opencensus` receiver enabled, but no
-exporters configured.
-
+Create an Agent [configuration](#config) file based on the example below.
 Build the Agent and start it with the example configuration:
 
 ```shell
@@ -102,10 +98,7 @@ $ ./bin/$(go env GOOS)/otelcol  --config ./examples/demo/otel-agent-config.yaml
 $ 2018/10/08 21:38:00 Running OpenTelemetry receiver as a gRPC service at "localhost:55678"
 ```
 
-Create an Collector [configuration](#config) file based on the options
-described below. By default, the Collector has the `opencensus` receiver
-enabled, but no exporters configured.
-
+Create a Collector [configuration](#config) file based on the example below.
 Build the Collector and start it with the example configuration:
 
 ```shell
@@ -120,7 +113,7 @@ $ go run "$(go env GOPATH)/src/github.com/open-telemetry/opentelemetry-collector
 ```
 
 You should be able to see the traces in your exporter(s) of choice. If you stop
-the `otelcol`, the example application will stop exporting. If you run it again,
+`otelcol`, the example application will stop exporting. If you run it again,
 exporting will resume.
 
 ## <a name="config"></a>Configuration
@@ -128,10 +121,6 @@ exporting will resume.
 The OpenTelemetry Collector is configured via a YAML file.
 In general, at least one enabled receiver and one enabled exporter
 needs to be configured.
-
-*Note* This documentation is still in progress. For any questions, please reach out in the
-[OpenTelemetry Gitter](https://gitter.im/open-telemetry/opentelemetry-service) or
-refer to the [issues page](https://github.com/open-telemetry/opentelemetry-collector/issues).
 
 The configuration consists of the following sections:
 
@@ -151,10 +140,10 @@ service:
 ### <a name="config-receivers"></a>Receivers
 
 A receiver is how data gets into the OpenTelemetry Collector. One or more receivers
-must be configured.
+must be configured. By default, no receivers are configured.
 
-A basic example of all available receivers is provided below. For detailed
-receiver configuration, please see the [receiver
+A basic example of all available receivers is provided below.
+For detailed receiver configuration, please see the [receiver
 README.md](receiver/README.md).
 
 ```yaml
@@ -184,11 +173,11 @@ receivers:
 
 ### <a name="config-processors"></a>Processors
 
-Processors are run on spans between being received and being exported.
-Processors are optional.
+Processors are run on data between being received and being exported.
+Processors are optional though some are recommended.
 
-A basic example of all available processors is provided below. For detailed
-processor configuration, please see the [processor
+A basic example of all available processors is provided below. For
+detailed processor configuration, please see the [processor
 README.md](processor/README.md).
 
 ```yaml
@@ -218,8 +207,7 @@ processors:
 ### <a name="config-exporters"></a>Exporters
 
 An exporter is how you send data to one or more backends/destinations. One or
-more exporters can be configured. By default, no exporters are configured on
-the OpenTelemetry Collector.
+more exporters must be configured. By default, no exporters are configured.
 
 A basic example of all available exporters is provided below. For detailed
 exporter configuration, please see the [exporter
@@ -256,7 +244,7 @@ exporters:
 ### <a name="config-extensions"></a>Extensions
 
 Extensions are provided to monitor the health of the OpenTelemetry
-Collector. Extensions are optional.
+Collector. Extensions are optional. By default, no extensions are configured.
 
 A basic example of all available extensions is provided below. For detailed
 extension configuration, please see the [extension
@@ -272,7 +260,7 @@ extensions:
 ### <a name="config-service"></a>Service
 
 The service section is used to configure what features are enabled in the
-OpenTelemetry Collector based on configuration found in the receivers,
+OpenTelemetry Collector based on the configuration found in the receivers,
 processors, exporters, and extensions sections. The service section
 consists of two sub-sections:
 
@@ -298,11 +286,11 @@ than one pipeline.
 
 *Note:* For processor(s) referenced in multiple pipelines, each pipeline will
 get a separate instance of that processor(s). This is in contrast to
-receiver(s)/exporter(s) referenced in multiple pipelines, one instance of
-a receiver/exporter is reference by all the pipelines.
+receiver(s)/exporter(s) referenced in multiple pipelines, where only one
+instance of a receiver/exporter is used for all pipelines.
 
 The following is an example pipeline configuration. For more information, refer
-to [pipeline documentation](docs/pipelines.md)
+to [pipeline documentation](docs/pipelines.md).
 
 ```yaml
 service:
@@ -313,7 +301,9 @@ service:
       exporters: [opencensus, zipkin]
 ```
 
-## Extensions
+## Other Information
+
+### Extending the Collector
 
 The OpenTelemetry collector can be extended or embedded into other applications.
 
@@ -322,21 +312,21 @@ The list of applications extending the collector:
 * [opentelemetry-collector-contrib](https://github.com/open-telemetry/opentelemetry-collector-contrib)
 * [jaeger-opentelemetry-collector](https://github.com/jaegertracing/jaeger-opentemenetry-collector)
 
-## Owners
+### Owners
 
 Approvers ([@open-telemetry/collector-approvers](https://github.com/orgs/open-telemetry/teams/collector-approvers)):
 
+- [Owais Lone](https://github.com/owais), Splunk
+- [Rahul Patel](https://github.com/rghetia), Google
 - [Steve Flanders](https://github.com/flands), Splunk
 - [Steven Karis](https://github.com/sjkaris), Splunk
 - [Yang Song](https://github.com/songy23), Google
-- [Owais Lone](https://github.com/owais), Splunk
-- [Rahul Patel](https://github.com/rghetia), Google
 
 *Find more about the approver role in [community repository](https://github.com/open-telemetry/community/blob/master/community-membership.md#approver).*
 
 Maintainers ([@open-telemetry/collector-maintainers](https://github.com/orgs/open-telemetry/teams/collector-maintainers)):
 
-- [Bogdan Drutu](https://github.com/BogdanDrutu), Google
+- [Bogdan Drutu](https://github.com/BogdanDrutu), Splunk
 - [Paulo Janotti](https://github.com/pjanotti), Splunk
 - [Tigran Najaryan](https://github.com/tigrannajaryan), Splunk
 
