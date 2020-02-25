@@ -90,7 +90,7 @@ exporters:
 The full list of settings exposed for this exporter are documented [here](jaeger/jaegergrpcpexporter/config.go)
 with detailed sample configurations [here](jaeger/jaegergrpcexporter/testdata/config.yaml).
 
-### <a name="jaeger_grpc"></a>Thrift HTTP
+### <a name="jaeger_thrift_http"></a>Thrift HTTP
 
 The following settings are required:
 
