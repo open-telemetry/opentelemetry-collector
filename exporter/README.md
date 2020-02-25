@@ -20,7 +20,7 @@ Supported local exporters (sorted alphabetically):
 - [Logging](#logging)
 
 The [contributors repository](https://github.com/open-telemetry/opentelemetry-collector-contrib)
- has more exporters that can be added to custom builds of the service.
+ has more exporters that can be added to custom builds of the Collector.
 
 ## Proxy Support
 
