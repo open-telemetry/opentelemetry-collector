@@ -17,17 +17,12 @@ package exporterhelper
 import (
 	"context"
 
-	"go.opencensus.io/trace"
-
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter"
-	"github.com/open-telemetry/opentelemetry-collector/observability"
+	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 )
-
-// Suffix to use for span names emitted by exporter for observability purposes.
-const spanNameSuffix = ".ExportTraceData"
 
 // traceDataPusher is a helper function that is similar to ConsumeTraceData but also
 // returns the number of dropped spans.
@@ -51,7 +46,7 @@ func (te *traceExporter) Start(host component.Host) error {
 }
 
 func (te *traceExporter) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
-	exporterCtx := observability.ContextWithExporterName(ctx, te.exporterFullName)
+	exporterCtx := obsreport.ExporterContext(ctx, te.exporterFullName)
 	_, err := te.dataPusher(exporterCtx, td)
 	return err
 }
@@ -79,14 +74,8 @@ func NewTraceExporter(
 	}
 
 	opts := newExporterOptions(options...)
-	if opts.recordMetrics {
-		dataPusher = dataPusher.withMetrics()
-	}
 
-	if opts.recordTrace {
-		spanName := config.Name() + spanNameSuffix
-		dataPusher = dataPusher.withSpan(spanName)
-	}
+	dataPusher = dataPusher.withObservability(config.Name())
 
 	// The default shutdown function does nothing.
 	if opts.shutdown == nil {
@@ -102,35 +91,19 @@ func NewTraceExporter(
 	}, nil
 }
 
-// withMetrics wraps the current pusher into a function that records the metrics of the
-// pusher execution.
-func (p traceDataPusher) withMetrics() traceDataPusher {
+// withObservability wraps the current pusher into a function that records
+// the observability signals during the pusher execution.
+func (p traceDataPusher) withObservability(exporterName string) traceDataPusher {
 	return func(ctx context.Context, td consumerdata.TraceData) (int, error) {
+		exporterCtx, span := obsreport.StartTraceDataExportOp(ctx, exporterName)
 		// Forward the data to the next consumer (this pusher is the next).
-		droppedSpans, err := p(ctx, td)
-		// TODO: How to record the reason of dropping?
-		observability.RecordMetricsForTraceExporter(ctx, len(td.Spans), droppedSpans)
-		return droppedSpans, err
-	}
-}
+		droppedSpans, err := p(exporterCtx, td)
 
-// withSpan wraps the current pusher into a function that records a span during
-// pusher execution.
-func (p traceDataPusher) withSpan(spanName string) traceDataPusher {
-	return func(ctx context.Context, td consumerdata.TraceData) (int, error) {
-		ctx, span := trace.StartSpan(ctx, spanName)
-		defer span.End()
-		// Forward the data to the next consumer (this pusher is the next).
-		droppedSpans, err := p(ctx, td)
-		if span.IsRecordingEvents() {
-			span.AddAttributes(
-				trace.Int64Attribute(numReceivedSpansAttribute, int64(len(td.Spans))),
-				trace.Int64Attribute(numDroppedSpansAttribute, int64(droppedSpans)),
-			)
-			if err != nil {
-				span.SetStatus(errToStatus(err))
-			}
-		}
+		// TODO: this is not ideal: it should come from the next function itself.
+		// 	temporarily loading it from internal format. Once full switch is done
+		// 	to new metrics will remove this.
+		numSpans := len(td.Spans)
+		obsreport.EndTraceDataExportOp(exporterCtx, span, numSpans, droppedSpans, err)
 		return droppedSpans, err
 	}
 }
@@ -151,7 +124,7 @@ func (te *otlpTraceExporter) ConsumeOTLPTrace(
 	ctx context.Context,
 	td consumerdata.OTLPTraceData,
 ) error {
-	exporterCtx := observability.ContextWithExporterName(ctx, te.exporterFullName)
+	exporterCtx := obsreport.ExporterContext(ctx, te.exporterFullName)
 	_, err := te.dataPusher(exporterCtx, td)
 	return err
 }
@@ -178,14 +151,8 @@ func NewOTLPTraceExporter(
 	}
 
 	opts := newExporterOptions(options...)
-	if opts.recordMetrics {
-		dataPusher = dataPusher.withMetrics()
-	}
 
-	if opts.recordTrace {
-		spanName := config.Name() + spanNameSuffix
-		dataPusher = dataPusher.withSpan(spanName)
-	}
+	dataPusher = dataPusher.withObservability(config.Name())
 
 	// The default shutdown function does nothing.
 	if opts.shutdown == nil {
@@ -201,41 +168,19 @@ func NewOTLPTraceExporter(
 	}, nil
 }
 
-// withMetrics wraps the current pusher into a function that records the metrics of the
-// pusher execution.
-func (p otlpTraceDataPusher) withMetrics() otlpTraceDataPusher {
+// withObservability wraps the current pusher into a function that records
+// the observability signals during the pusher execution.
+func (p otlpTraceDataPusher) withObservability(exporterName string) otlpTraceDataPusher {
 	return func(ctx context.Context, td consumerdata.OTLPTraceData) (int, error) {
+		exporterCtx, span := obsreport.StartTraceDataExportOp(ctx, exporterName)
 		// Forward the data to the next consumer (this pusher is the next).
-		droppedSpans, err := p(ctx, td)
+		droppedSpans, err := p(exporterCtx, td)
 
-		// Record the results as metrics.
-		observability.RecordMetricsForTraceExporter(ctx, td.SpanCount(), droppedSpans)
-
-		return droppedSpans, err
-	}
-}
-
-// withSpan wraps the current pusher into a function that records a span during
-// pusher execution.
-func (p otlpTraceDataPusher) withSpan(spanName string) otlpTraceDataPusher {
-	return func(ctx context.Context, td consumerdata.OTLPTraceData) (int, error) {
-		// Start a span.
-		ctx, span := trace.StartSpan(ctx, spanName)
-
-		// End the span after this function is done.
-		defer span.End()
-
-		// Forward the data to the next consumer (this pusher is the next).
-		droppedSpans, err := p(ctx, td)
-		if span.IsRecordingEvents() {
-			span.AddAttributes(
-				trace.Int64Attribute(numReceivedSpansAttribute, int64(td.SpanCount())),
-				trace.Int64Attribute(numDroppedSpansAttribute, int64(droppedSpans)),
-			)
-			if err != nil {
-				span.SetStatus(errToStatus(err))
-			}
-		}
+		// TODO: this is not ideal: it should come from the next function itself.
+		// 	temporarily loading it from internal format. Once full switch is done
+		// 	to new metrics will remove this.
+		numSpans := td.SpanCount()
+		obsreport.EndTraceDataExportOp(exporterCtx, span, numSpans, droppedSpans, err)
 		return droppedSpans, err
 	}
 }

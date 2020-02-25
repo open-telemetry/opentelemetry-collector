@@ -68,9 +68,7 @@ func NewTraceExporter(logger *zap.Logger, config configmodels.Exporter) (exporte
 	}
 	zexp, err := exporterhelper.NewTraceExporter(
 		config,
-		ze.PushTraceData,
-		exporterhelper.WithTracing(true),
-		exporterhelper.WithMetrics(true))
+		ze.PushTraceData)
 	if err != nil {
 		return nil, err
 	}

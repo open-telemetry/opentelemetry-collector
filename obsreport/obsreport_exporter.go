@@ -68,9 +68,12 @@ var (
 // StartTraceDataExportOp is called at the start of an Export operation.
 // The returned context should be used in other calls to the obsreport functions
 // dealing with the same export operation.
-func StartTraceDataExportOp(ctx context.Context, exporter string) (context.Context, *trace.Span) {
+func StartTraceDataExportOp(
+	operationCtx context.Context,
+	exporter string,
+) (context.Context, *trace.Span) {
 	return traceExportDataOp(
-		exporterContext(ctx, exporter),
+		operationCtx,
 		exporter,
 		exportTraceDataOperationSuffix)
 }
@@ -78,7 +81,7 @@ func StartTraceDataExportOp(ctx context.Context, exporter string) (context.Conte
 // EndTraceDataExportOp completes the export operation that was started with
 // StartTraceDataExportOp.
 func EndTraceDataExportOp(
-	ctx context.Context,
+	exporterCtx context.Context,
 	span *trace.Span,
 	numExportedSpans int,
 	numDroppedSpans int, // TODO: For legacy measurements, to be removed in the future.
@@ -86,11 +89,11 @@ func EndTraceDataExportOp(
 ) {
 	if useLegacy {
 		observability.RecordMetricsForTraceExporter(
-			ctx, numExportedSpans, numDroppedSpans)
+			exporterCtx, numExportedSpans, numDroppedSpans)
 	}
 
 	endExportOp(
-		ctx,
+		exporterCtx,
 		span,
 		numExportedSpans,
 		err,
@@ -102,11 +105,11 @@ func EndTraceDataExportOp(
 // The returned context should be used in other calls to the obsreport functions
 // dealing with the same export operation.
 func StartMetricsExportOp(
-	ctx context.Context,
+	operationCtx context.Context,
 	exporter string,
 ) (context.Context, *trace.Span) {
 	return traceExportDataOp(
-		exporterContext(ctx, exporter),
+		operationCtx,
 		exporter,
 		exportMetricsOperationSuffix)
 }
@@ -114,7 +117,7 @@ func StartMetricsExportOp(
 // EndMetricsExportOp completes the export operation that was started with
 // StartMetricsExportOp.
 func EndMetricsExportOp(
-	ctx context.Context,
+	exporterCtx context.Context,
 	span *trace.Span,
 	numExportedPoints int,
 	numExportedTimeSeries int, // TODO: For legacy measurements, to be removed in the future.
@@ -123,11 +126,11 @@ func EndMetricsExportOp(
 ) {
 	if useLegacy {
 		observability.RecordMetricsForMetricsExporter(
-			ctx, numExportedTimeSeries, numDroppedTimeSeries)
+			exporterCtx, numExportedTimeSeries, numDroppedTimeSeries)
 	}
 
 	endExportOp(
-		ctx,
+		exporterCtx,
 		span,
 		numExportedPoints,
 		err,
@@ -135,11 +138,11 @@ func EndMetricsExportOp(
 	)
 }
 
-// exporterContext adds the keys used when recording observability metrics to
+// ExporterContext adds the keys used when recording observability metrics to
 // the given context returning the newly created context. This context should
 // be used in related calls to the obsreport functions so metrics are properly
 // recorded.
-func exporterContext(
+func ExporterContext(
 	ctx context.Context,
 	exporter string,
 ) context.Context {
@@ -181,22 +184,17 @@ func endExportOp(
 		numFailedToSend = numExportedItems
 	}
 
-	var sentMeasure, failedToSendMeasure *stats.Int64Measure
-	var sentItemsKey, failedToSendItemsKey string
-	switch dataType {
-	case configmodels.TracesDataType:
-		sentMeasure = mExporterSentSpans
-		failedToSendMeasure = mExporterFailedToSendSpans
-		sentItemsKey = SentSpansKey
-		failedToSendItemsKey = FailedToSendSpansKey
-	case configmodels.MetricsDataType:
-		sentMeasure = mExporterSentMetricPoints
-		failedToSendMeasure = mExporterFailedToSendMetricPoints
-		sentItemsKey = SentMetricPointsKey
-		failedToSendItemsKey = FailedToSendMetricPointsKey
-	}
-
 	if useNew {
+		var sentMeasure, failedToSendMeasure *stats.Int64Measure
+		switch dataType {
+		case configmodels.TracesDataType:
+			sentMeasure = mExporterSentSpans
+			failedToSendMeasure = mExporterFailedToSendSpans
+		case configmodels.MetricsDataType:
+			sentMeasure = mExporterSentMetricPoints
+			failedToSendMeasure = mExporterFailedToSendMetricPoints
+		}
+
 		stats.Record(
 			exporterCtx,
 			sentMeasure.M(int64(numSent)),
@@ -205,6 +203,16 @@ func endExportOp(
 
 	// End span according to errors.
 	if span.IsRecordingEvents() {
+		var sentItemsKey, failedToSendItemsKey string
+		switch dataType {
+		case configmodels.TracesDataType:
+			sentItemsKey = SentSpansKey
+			failedToSendItemsKey = FailedToSendSpansKey
+		case configmodels.MetricsDataType:
+			sentItemsKey = SentMetricPointsKey
+			failedToSendItemsKey = FailedToSendMetricPointsKey
+		}
+
 		span.AddAttributes(
 			trace.Int64Attribute(
 				sentItemsKey, int64(numSent)),

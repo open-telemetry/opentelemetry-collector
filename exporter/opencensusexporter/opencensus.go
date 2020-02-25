@@ -70,8 +70,6 @@ func NewTraceExporter(logger *zap.Logger, config configmodels.Exporter, opts ...
 	oexp, err := exporterhelper.NewTraceExporter(
 		config,
 		oce.PushTraceData,
-		exporterhelper.WithTracing(true),
-		exporterhelper.WithMetrics(true),
 		exporterhelper.WithShutdown(oce.Shutdown))
 	if err != nil {
 		return nil, err
@@ -113,8 +111,6 @@ func NewMetricsExporter(logger *zap.Logger, config configmodels.Exporter, opts .
 	oexp, err := exporterhelper.NewMetricsExporter(
 		config,
 		oce.PushMetricsData,
-		exporterhelper.WithTracing(true),
-		exporterhelper.WithMetrics(true),
 		exporterhelper.WithShutdown(oce.Shutdown))
 	if err != nil {
 		return nil, err

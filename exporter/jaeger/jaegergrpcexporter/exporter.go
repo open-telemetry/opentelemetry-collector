@@ -52,9 +52,7 @@ func New(config *Config) (exporter.TraceExporter, error) {
 
 	exp, err := exporterhelper.NewTraceExporter(
 		config,
-		s.pushTraceData,
-		exporterhelper.WithTracing(true),
-		exporterhelper.WithMetrics(true))
+		s.pushTraceData)
 
 	return exp, err
 }

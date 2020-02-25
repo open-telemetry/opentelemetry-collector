@@ -72,13 +72,12 @@ var (
 // The returned context should be used in other calls to the obsreport functions
 // dealing with the same receive operation.
 func StartTraceDataReceiveOp(
-	ctx context.Context,
+	operationCtx context.Context,
 	receiver string,
 	transport string,
-	legacyName string,
 ) (context.Context, *trace.Span) {
 	return traceReceiveTraceDataOp(
-		receiverContext(ctx, receiver, transport, legacyName),
+		operationCtx,
 		receiver,
 		transport,
 		receiveTraceDataOperationSuffix)
@@ -87,7 +86,7 @@ func StartTraceDataReceiveOp(
 // EndTraceDataReceiveOp completes the receive operation that was started with
 // StartTraceDataReceiveOp.
 func EndTraceDataReceiveOp(
-	ctx context.Context,
+	receiverCtx context.Context,
 	span *trace.Span,
 	format string,
 	numReceivedSpans int,
@@ -101,11 +100,11 @@ func EndTraceDataReceiveOp(
 			numReceivedLegacy = 0
 		}
 		observability.RecordMetricsForTraceReceiver(
-			ctx, numReceivedLegacy, numDroppedSpans)
+			receiverCtx, numReceivedLegacy, numDroppedSpans)
 	}
 
 	endReceiveOp(
-		ctx,
+		receiverCtx,
 		span,
 		format,
 		numReceivedSpans,
@@ -118,13 +117,12 @@ func EndTraceDataReceiveOp(
 // The returned context should be used in other calls to the obsreport functions
 // dealing with the same receive operation.
 func StartMetricsReceiveOp(
-	ctx context.Context,
+	operationCtx context.Context,
 	receiver string,
 	transport string,
-	legacyName string,
 ) (context.Context, *trace.Span) {
 	return traceReceiveTraceDataOp(
-		receiverContext(ctx, receiver, transport, legacyName),
+		operationCtx,
 		receiver,
 		transport,
 		receiverMetricsOperationSuffix)
@@ -133,7 +131,7 @@ func StartMetricsReceiveOp(
 // EndMetricsReceiveOp completes the receive operation that was started with
 // StartMetricsReceiveOp.
 func EndMetricsReceiveOp(
-	ctx context.Context,
+	receiverCtx context.Context,
 	span *trace.Span,
 	format string,
 	numReceivedPoints int,
@@ -147,11 +145,11 @@ func EndMetricsReceiveOp(
 			numReceivedTimeSeries = 0
 		}
 		observability.RecordMetricsForMetricsReceiver(
-			ctx, numReceivedTimeSeries, numDroppedTimeSeries)
+			receiverCtx, numReceivedTimeSeries, numDroppedTimeSeries)
 	}
 
 	endReceiveOp(
-		ctx,
+		receiverCtx,
 		span,
 		format,
 		numReceivedPoints,
@@ -160,11 +158,11 @@ func EndMetricsReceiveOp(
 	)
 }
 
-// receiverContext adds the keys used when recording observability metrics to
+// ReceiverContext adds the keys used when recording observability metrics to
 // the given context returning the newly created context. This context should
 // be used in related calls to the obsreport functions so metrics are properly
 // recorded.
-func receiverContext(
+func ReceiverContext(
 	ctx context.Context,
 	receiver string,
 	transport string,
@@ -220,22 +218,17 @@ func endReceiveOp(
 		numRefused = numReceivedItems
 	}
 
-	var acceptedMeasure, refusedMeasure *stats.Int64Measure
-	var acceptedItemsKey, refusedItemsKey string
-	switch dataType {
-	case configmodels.TracesDataType:
-		acceptedMeasure = mReceiverAcceptedSpans
-		refusedMeasure = mReceiverRefusedSpans
-		acceptedItemsKey = AcceptedSpansKey
-		refusedItemsKey = RefusedSpansKey
-	case configmodels.MetricsDataType:
-		acceptedMeasure = mReceiverAcceptedMetricPoints
-		refusedMeasure = mReceiverRefusedMetricPoints
-		acceptedItemsKey = AcceptedMetricPointsKey
-		refusedItemsKey = RefusedMetricPointsKey
-	}
-
 	if useNew {
+		var acceptedMeasure, refusedMeasure *stats.Int64Measure
+		switch dataType {
+		case configmodels.TracesDataType:
+			acceptedMeasure = mReceiverAcceptedSpans
+			refusedMeasure = mReceiverRefusedSpans
+		case configmodels.MetricsDataType:
+			acceptedMeasure = mReceiverAcceptedMetricPoints
+			refusedMeasure = mReceiverRefusedMetricPoints
+		}
+
 		stats.Record(
 			receiverCtx,
 			acceptedMeasure.M(int64(numAccepted)),
@@ -244,6 +237,16 @@ func endReceiveOp(
 
 	// end span according to errors
 	if span.IsRecordingEvents() {
+		var acceptedItemsKey, refusedItemsKey string
+		switch dataType {
+		case configmodels.TracesDataType:
+			acceptedItemsKey = AcceptedSpansKey
+			refusedItemsKey = RefusedSpansKey
+		case configmodels.MetricsDataType:
+			acceptedItemsKey = AcceptedMetricPointsKey
+			refusedItemsKey = RefusedMetricPointsKey
+		}
+
 		span.AddAttributes(
 			trace.StringAttribute(
 				FormatKey, format),

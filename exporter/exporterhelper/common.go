@@ -27,31 +27,11 @@ type Shutdown func() error
 
 // ExporterOptions contains options concerning how an Exporter is configured.
 type ExporterOptions struct {
-	// TODO: Retry logic must be in the same place as metrics recording because
-	// if a request is retried we should not record metrics otherwise number of
-	// spans received + dropped will be different than the number of received spans
-	// in the receiver.
-	recordMetrics bool
-	recordTrace   bool
-	shutdown      Shutdown
+	shutdown Shutdown
 }
 
 // ExporterOption apply changes to ExporterOptions.
 type ExporterOption func(*ExporterOptions)
-
-// WithMetrics makes new Exporter to record metrics for every request.
-func WithMetrics(recordMetrics bool) ExporterOption {
-	return func(o *ExporterOptions) {
-		o.recordMetrics = recordMetrics
-	}
-}
-
-// WithTracing makes new Exporter to wrap every request with a trace Span.
-func WithTracing(recordTrace bool) ExporterOption {
-	return func(o *ExporterOptions) {
-		o.recordTrace = recordTrace
-	}
-}
 
 // WithShutdown overrides the default Shutdown function for an exporter.
 // The default shutdown function does nothing and always returns nil.
