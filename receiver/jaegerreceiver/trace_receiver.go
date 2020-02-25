@@ -32,7 +32,7 @@ import (
 	"github.com/jaegertracing/jaeger/cmd/agent/app/reporter"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/servers"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/servers/thriftudp"
-	"github.com/jaegertracing/jaeger/cmd/collector/app"
+	"github.com/jaegertracing/jaeger/cmd/collector/app/handler"
 	collectorSampling "github.com/jaegertracing/jaeger/cmd/collector/app/sampling"
 	staticStrategyStore "github.com/jaegertracing/jaeger/plugin/sampling/strategystore/static"
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
@@ -296,7 +296,7 @@ func consumeTraceData(ctx context.Context, batches []*jaeger.Batch, consumer con
 	return jbsr, nil
 }
 
-func (jr *jReceiver) SubmitBatches(batches []*jaeger.Batch, options app.SubmitBatchOptions) ([]*jaeger.BatchSubmitResponse, error) {
+func (jr *jReceiver) SubmitBatches(batches []*jaeger.Batch, options handler.SubmitBatchOptions) ([]*jaeger.BatchSubmitResponse, error) {
 	ctx := context.Background()
 	ctxWithReceiverName := observability.ContextWithReceiverName(ctx, collectorReceiverTagValue)
 
@@ -471,7 +471,7 @@ func (jr *jReceiver) startCollector(host component.Host) error {
 		}
 
 		nr := mux.NewRouter()
-		apiHandler := app.NewAPIHandler(jr)
+		apiHandler := handler.NewAPIHandler(jr)
 		apiHandler.RegisterRoutes(nr)
 		jr.collectorServer = &http.Server{Handler: nr}
 		go func() {
