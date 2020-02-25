@@ -17,7 +17,7 @@ Supported metric receivers (sorted alphabetically):
 - [VM Metrics Receiver](#vmmetrics)
 
 The [contributors repository](https://github.com/open-telemetry/opentelemetry-service-contrib)
- has more receivers that can be added to custom builds of the service.
+ has more receivers that can be added to custom builds of the collector.
 
 ## Configuring Receiver(s)
 Receivers are configured via YAML under the top-level `receivers` tag. There
