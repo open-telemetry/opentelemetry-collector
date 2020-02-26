@@ -235,15 +235,20 @@ examples on using the processor.
 The batch processor accepts spans and places them into batches grouped by node
 and resource. Batching helps better compress the data and reduce the number of
 outgoing connections required to transmit the data. This processor supports
-both size and time based batching. Please refer to
-[config.go](batchprocessor/config.go) for the config spec.
+both size and time based batching.
+
+It is highly recommended to configure the batch processor on every collector.
+The batch processor should be the second processor defined in the pipeline
+(immediately after the memory_limiter processor).
+
+Please refer to [config.go](batchprocessor/config.go) for the config spec.
 
 The following configuration options can be modified:
-- `num_tickers` (default = 4): the number of tickers that loop over batch buckets
-- `remove_after_ticks` (default = 10): the number of ticks passed without a span arriving for a node at which time batcher is deleted
-- `send_batch_size` (default = 8192): size after which a batch will be sent regardless of time
-- `tick_time` (default = 1s): interval in which the tickers tick
-- `timeout` (default = 1s): time duration after which a batch will be sent regardless of size
+- `num_tickers` (default = 4): Number of tickers that loop over batch buckets
+- `remove_after_ticks` (default = 10): Number of ticks passed without a span arriving for a node at which time batcher is deleted
+- `send_batch_size` (default = 8192): Size after which a batch will be sent regardless of time
+- `tick_time` (default = 1s): Interval in which the tickers tick
+- `timeout` (default = 1s): Time duration after which a batch will be sent regardless of size
 
 Examples:
 
@@ -269,34 +274,45 @@ the collector. Given that the amount and type of data a collector processes is
 environment specific and resource utilization of the collector is also dependent
 on the configured processors, it is important to put checks in place regarding
 memory usage. The memory_limiter processor offers the follow safeguards:
-- Ability to configure a ballast, which allocates memory and provides stability
-to the heap. In summary, the ballast increases the base size of the heap so that
-GC triggers are delayed and the number of GC cycles over time is reduced.
-- Ability to define a limit on memory usage at which time GC will be
-triggered to reduce memory consumption.
-- Ability to define a memory delta between two times which if exceed will trigger
-a GC to reduce memory consumption.
+- Ability to define an interval when memory usage will be checked and if memory
+usage exceeds a defined limit will trigger GC to reduce memory consumption.
+- Ability to define an interval when memory usage will be compared against the
+previous interval's value and if the delta exceeds a defined limit will trigger
+GC to reduce memory consumption.
+
+In addition, there is a command line option which can be used to define a ballast,
+which allocates memory and provides stability to the heap. If defined, the ballast
+increases the base size of the heap so that GC triggers are delayed and the number
+of GC cycles over time is reduced. While the ballast is configured via the command
+line, today the same value configured on the command line must also be defined in
+the memory_limiter processor.
 
 Note that while these configuration options can help mitigate out of memory
 situations, they are not a replacement for properly sizing the collector. Be
 aware that the ballast reserves memory that could otherwise be used for purposes
 including serving configured queues. In addition, if the limit or spike thresholds
-are crossed, the triggered GC will result in dropped data.
+are crossed, the triggered GC may result in dropped data.
+
+It is highly recommended to configure ballast command line option as well as the
+memory_limiter processor on every collector. The memory_limiter processor should
+be the first processor defined in the pipeline (immediately after the receivers).
+This is to ensure that backpressure can be sent to applicable receivers and
+minimize the likelihood of dropped data when the memory_limiter kicks in.
 
 Please refer to [config.go](memorylimiter/config.go) for the config spec.
 
 The following configuration options __must be changed__:
-- `check_interval` (default = 0s): The time between measurements of memory
+- `check_interval` (default = 0s): Time between measurements of memory
 usage. Values below 1 second are not recommended since it can result in
 unnecessary CPU consumption.
 - `limit_mib` (default = 0): Maximum amount of memory, in MiB, targeted to be
 allocated by the process heap. Note that typically the total memory usage of
 process will be about 50MiB higher than this value.
-- `spike_limit_mib` (default = 0): The maximum spike expected between the
+- `spike_limit_mib` (default = 0): Maximum spike expected between the
 measurements of memory usage. The value must be less than `limit_mib`.
 
 The following configuration options can also be modified:
-- `ballast_size_mib` (default = 0): The ballast size used by the proceess.
+- `ballast_size_mib` (default = 0): Ballast size used by the proceess.
 
 Note: The recommended configuration for the required options are ...
 
@@ -323,14 +339,19 @@ immediately if the queue is not full. At the same time, the processor has one
 or more workers which consume the trace data in the queue by sending them to
 the next processor. If relaying the trace data to the next processor or
 exporter in the pipeline fails, the processor retries after some backoff delay
-depending on the configuration (see below). Please refer to
-[config.go](queuedprocessor/config.go) for the config spec.
+depending on the configuration (see below).
+
+It is highly recommended to configure the queued_retry processor on every collector
+as it minimizes the likelihood of data being dropped due to delays in processing or
+issues exportering the data.
+
+Please refer to [config.go](queuedprocessor/config.go) for the config spec.
 
 The following configuration options can be modified:
-- `backoff_delay` (default = 5s): time interval to wait before retrying
-- `num_workers` (default = 10): the number of workers that dequeue batches
-- `queue_size` (default = 5000): the maximum number of batches allowed before drop
-- `retry_on_failure` (default = true): whether to retry on failure or give up and drop
+- `backoff_delay` (default = 5s): Time interval to wait before retrying
+- `num_workers` (default = 10): Number of workers that dequeue batches
+- `queue_size` (default = 5000): Maximum number of batches allowed before drop
+- `retry_on_failure` (default = true): Whether to retry on failure or give up and drop
 
 Examples:
 
@@ -353,9 +374,9 @@ The resource processor can be used to add attributes to a given resource.
 Please refer to [config.go](resourceprocessor/config.go) for the config spec.
 
 The following configuration options are required:
-- `type`: The type of resource to which labels should be applied. Only
+- `type`: Type of resource to which labels should be applied. Only
 applicable to `type` of `host` today.
-- `labels`: A map of key/value pairs that should be added to the defined `type`.
+- `labels`: Map of key/value pairs that should be added to the defined `type`.
 
 Examples:
 
@@ -388,16 +409,16 @@ collector instances, but this configuration has not been tested. Please refer to
 [config.go](samplingprocessor/tailsamplingprocessor/config.go) for the config spec.
 
 The following configuration options can be modified:
-- `decision_wait` (default = 30s): wait time since the first span before making a sampling decision
-- `num_traces` (default = 50000): number of traces kept in memory
-- `expected_new_traces_per_sec` (default = 0): expected number of new traces (helps in allocating data structures)
-- `policies` (default = ): sets the policies used to make a sampling decision
+- `decision_wait` (default = 30s): Wait time since the first span before making a sampling decision
+- `num_traces` (default = 50000): Number of traces kept in memory
+- `expected_new_traces_per_sec` (default = 0): Expected number of new traces (helps in allocating data structures)
+- `policies` (no default): Policies used to make a sampling decision
 
 Multiple policies exist today and it is straight forward to add more. These include:
-- `always_sample`: sample all traces
-- `numeric_attribute`: sample based on number attributes
-- `string_attribute`: sample based on string attributes
-- `rate_limiting`: sample based on rate
+- `always_sample`: Sample all traces
+- `numeric_attribute`: Sample based on number attributes
+- `string_attribute`: Sample based on string attributes
+- `rate_limiting`: Sample based on rate
 
 Examples:
 
@@ -436,17 +457,23 @@ examples on using the processor.
 
 ### <a name="probabilistic_sampling"></a>Probabilistic Sampling Processor
 
-The probabilistic sampler sets trace sampling by hashing the trace id of each
-span and making the sampling decision based on the hashed value. It also
-implements the "sampling.priority" [semantic
+The probabilistic sampler supports two types of sampling:
+
+1. `sampling.priority` [semantic
 convention](https://github.com/opentracing/specification/blob/master/semantic_conventions.md#span-tags-table)
-as defined by OpenTracing. The "sampling.priority" semantic hash priority over
-trace id hashing. Please refer to
+as defined by OpenTracing
+2. Trace ID hashing
+
+The `sampling.priority` semantic convention takes priority over trace ID hashing. As the name
+implies, trace ID hashing samples based on hash values determined by trace IDs. In order for
+trace ID hashing to work, all collectors for a given tier (e.g. behind the same load balancer)
+must have the same `hash_seed`. It is also possible to leverage a different `hash_seed` at
+different collector tiers to support additional sampling requirements. Please refer to
 [config.go](samplingprocessor/probabilisticprocessor/config.go) for the config spec.
 
 The following configuration options can be modified:
-- `hash_seed` (no default): all collectors for a given tier should have the same hash_seed
-- `sampling_percentage` (default = 0): the percentage at which traces are sampled; >= 100 samples all traces
+- `hash_seed` (no default): An integer used to compute the hash algorithm. Note that all collectors for a given tier (e.g. behind the same load balancer) should have the same hash_seed.
+- `sampling_percentage` (default = 0): Percentage at which traces are sampled; >= 100 samples all traces
 
 Examples:
 
@@ -517,7 +544,7 @@ attributes from it based on subexpressions. Must be specified under the
 
 The following settings are required:
 
-- `rules` is a list of rules to extract attribute values from span name. The values
+- `rules`: A list of rules to extract attribute values from span name. The values
 in the span name are replaced by extracted attribute names. Each rule in the list
 is regex pattern string. Span name is checked against the regex and if the regex
 matches then all named subexpressions of the regex are extracted as attributes
