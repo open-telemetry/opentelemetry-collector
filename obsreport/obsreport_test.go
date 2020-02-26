@@ -103,14 +103,11 @@ func Test_obsreport_ReceiveTraceDataOp(t *testing.T) {
 		t.Name(), trace.WithSampler(trace.AlwaysSample()))
 	defer parentSpan.End()
 
+	receiverCtx := ReceiverContext(parentCtx, receiver, transport, legacyName)
 	errs := []error{nil, errFake}
 	rcvdSpans := []int{13, 42}
 	for i, err := range errs {
-		ctx, span := StartTraceDataReceiveOp(
-			parentCtx,
-			receiver,
-			transport,
-			legacyName)
+		ctx, span := StartTraceDataReceiveOp(receiverCtx, receiver, transport)
 		assert.NotNil(t, ctx)
 		assert.NotNil(t, span)
 
@@ -167,15 +164,12 @@ func Test_obsreport_ReceiveMetricsOp(t *testing.T) {
 		t.Name(), trace.WithSampler(trace.AlwaysSample()))
 	defer parentSpan.End()
 
+	receiverCtx := ReceiverContext(parentCtx, receiver, transport, legacyName)
 	errs := []error{errFake, nil}
 	rcvdMetricPts := []int{23, 29}
 	rcvdTimeSeries := []int{2, 3}
 	for i, err := range errs {
-		ctx, span := StartMetricsReceiveOp(
-			parentCtx,
-			receiver,
-			transport,
-			legacyName)
+		ctx, span := StartMetricsReceiveOp(receiverCtx, receiver, transport)
 		assert.NotNil(t, ctx)
 		assert.NotNil(t, span)
 
@@ -240,10 +234,11 @@ func Test_obsreport_ExportTraceDataOp(t *testing.T) {
 	// receiver tags, adding that to parent span.
 	parentCtx = observability.ContextWithReceiverName(parentCtx, receiver)
 
+	exporterCtx := ExporterContext(parentCtx, exporter)
 	errs := []error{nil, errFake}
 	numExportedSpans := []int{22, 14}
 	for i, err := range errs {
-		ctx, span := StartTraceDataExportOp(parentCtx, exporter)
+		ctx, span := StartTraceDataExportOp(exporterCtx, exporter)
 		assert.NotNil(t, ctx)
 		assert.NotNil(t, span)
 
@@ -304,11 +299,12 @@ func Test_obsreport_ExportMetricsOp(t *testing.T) {
 	// receiver tags, adding that to parent span.
 	parentCtx = observability.ContextWithReceiverName(parentCtx, receiver)
 
+	exporterCtx := ExporterContext(parentCtx, exporter)
 	errs := []error{nil, errFake}
 	toSendMetricPts := []int{17, 23}
 	toSendTimeSeries := []int{3, 5}
 	for i, err := range errs {
-		ctx, span := StartMetricsExportOp(parentCtx, exporter)
+		ctx, span := StartMetricsExportOp(exporterCtx, exporter)
 		assert.NotNil(t, ctx)
 		assert.NotNil(t, span)
 

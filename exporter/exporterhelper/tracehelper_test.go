@@ -30,6 +30,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/exporter"
 	"github.com/open-telemetry/opentelemetry-collector/observability"
 	"github.com/open-telemetry/opentelemetry-collector/observability/observabilitytest"
+	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 )
 
 const (
@@ -83,7 +84,7 @@ func TestTraceExporter_Default_ReturnError(t *testing.T) {
 }
 
 func TestTraceExporter_WithRecordMetrics(t *testing.T) {
-	te, err := NewTraceExporter(fakeTraceExporterConfig, newPushTraceData(0, nil), WithMetrics(true))
+	te, err := NewTraceExporter(fakeTraceExporterConfig, newPushTraceData(0, nil))
 	require.Nil(t, err)
 	require.NotNil(t, te)
 
@@ -91,7 +92,7 @@ func TestTraceExporter_WithRecordMetrics(t *testing.T) {
 }
 
 func TestTraceExporter_WithRecordMetrics_NonZeroDropped(t *testing.T) {
-	te, err := NewTraceExporter(fakeTraceExporterConfig, newPushTraceData(1, nil), WithMetrics(true))
+	te, err := NewTraceExporter(fakeTraceExporterConfig, newPushTraceData(1, nil))
 	require.Nil(t, err)
 	require.NotNil(t, te)
 
@@ -100,7 +101,7 @@ func TestTraceExporter_WithRecordMetrics_NonZeroDropped(t *testing.T) {
 
 func TestTraceExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
-	te, err := NewTraceExporter(fakeTraceExporterConfig, newPushTraceData(0, want), WithMetrics(true))
+	te, err := NewTraceExporter(fakeTraceExporterConfig, newPushTraceData(0, want))
 	require.Nil(t, err)
 	require.NotNil(t, te)
 
@@ -108,15 +109,15 @@ func TestTraceExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 }
 
 func TestTraceExporter_WithSpan(t *testing.T) {
-	te, err := NewTraceExporter(fakeTraceExporterConfig, newPushTraceData(0, nil), WithTracing(true))
+	te, err := NewTraceExporter(fakeTraceExporterConfig, newPushTraceData(0, nil))
 	require.Nil(t, err)
 	require.NotNil(t, te)
 
-	checkWrapSpanForTraceExporter(t, te, nil, 0)
+	checkWrapSpanForTraceExporter(t, te, nil, 1)
 }
 
 func TestTraceExporter_WithSpan_NonZeroDropped(t *testing.T) {
-	te, err := NewTraceExporter(fakeTraceExporterConfig, newPushTraceData(1, nil), WithTracing(true))
+	te, err := NewTraceExporter(fakeTraceExporterConfig, newPushTraceData(1, nil))
 	require.Nil(t, err)
 	require.NotNil(t, te)
 
@@ -125,11 +126,11 @@ func TestTraceExporter_WithSpan_NonZeroDropped(t *testing.T) {
 
 func TestTraceExporter_WithSpan_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
-	te, err := NewTraceExporter(fakeTraceExporterConfig, newPushTraceData(0, want), WithTracing(true))
+	te, err := NewTraceExporter(fakeTraceExporterConfig, newPushTraceData(0, want))
 	require.Nil(t, err)
 	require.NotNil(t, te)
 
-	checkWrapSpanForTraceExporter(t, te, want, 0)
+	checkWrapSpanForTraceExporter(t, te, want, 1)
 }
 
 func TestTraceExporter_WithShutdown(t *testing.T) {
@@ -189,7 +190,7 @@ func generateTraceTraffic(t *testing.T, te exporter.TraceExporter, numRequests i
 	}
 }
 
-func checkWrapSpanForTraceExporter(t *testing.T, te exporter.TraceExporter, wantError error, droppedSpans int) {
+func checkWrapSpanForTraceExporter(t *testing.T, te exporter.TraceExporter, wantError error, numSpans int64) {
 	ocSpansSaver := new(testOCTraceExporter)
 	trace.RegisterExporter(ocSpansSaver)
 	defer trace.UnregisterExporter(ocSpansSaver)
@@ -212,8 +213,15 @@ func checkWrapSpanForTraceExporter(t *testing.T, te exporter.TraceExporter, want
 	for _, sd := range gotSpanData[:numRequests] {
 		require.Equalf(t, parentSpan.SpanContext.SpanID, sd.ParentSpanID, "Exporter span not a child\nSpanData %v", sd)
 		require.Equalf(t, errToStatus(wantError), sd.Status, "SpanData %v", sd)
-		require.Equalf(t, int64(1), sd.Attributes[numReceivedSpansAttribute], "SpanData %v", sd)
-		require.Equalf(t, int64(droppedSpans), sd.Attributes[numDroppedSpansAttribute], "SpanData %v", sd)
+
+		sentSpans := numSpans
+		var failedToSendSpans int64
+		if wantError != nil {
+			sentSpans = 0
+			failedToSendSpans = numSpans
+		}
+		require.Equalf(t, sentSpans, sd.Attributes[obsreport.SentSpansKey], "SpanData %v", sd)
+		require.Equalf(t, failedToSendSpans, sd.Attributes[obsreport.FailedToSendSpansKey], "SpanData %v", sd)
 	}
 }
 
@@ -263,7 +271,7 @@ func TestOTLPTraceExporter_Default_ReturnError(t *testing.T) {
 }
 
 func TestOTLPTraceExporter_WithRecordMetrics(t *testing.T) {
-	te, err := NewOTLPTraceExporter(fakeTraceExporterConfig, newPushOTLPTrace(0, nil), WithMetrics(true))
+	te, err := NewOTLPTraceExporter(fakeTraceExporterConfig, newPushOTLPTrace(0, nil))
 	require.Nil(t, err)
 	require.NotNil(t, te)
 
@@ -271,7 +279,7 @@ func TestOTLPTraceExporter_WithRecordMetrics(t *testing.T) {
 }
 
 func TestOTLPTraceExporter_WithRecordMetrics_NonZeroDropped(t *testing.T) {
-	te, err := NewOTLPTraceExporter(fakeTraceExporterConfig, newPushOTLPTrace(1, nil), WithMetrics(true))
+	te, err := NewOTLPTraceExporter(fakeTraceExporterConfig, newPushOTLPTrace(1, nil))
 	require.Nil(t, err)
 	require.NotNil(t, te)
 
@@ -280,7 +288,7 @@ func TestOTLPTraceExporter_WithRecordMetrics_NonZeroDropped(t *testing.T) {
 
 func TestOTLPTraceExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
-	te, err := NewOTLPTraceExporter(fakeTraceExporterConfig, newPushOTLPTrace(0, want), WithMetrics(true))
+	te, err := NewOTLPTraceExporter(fakeTraceExporterConfig, newPushOTLPTrace(0, want))
 	require.Nil(t, err)
 	require.NotNil(t, te)
 
@@ -288,15 +296,15 @@ func TestOTLPTraceExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 }
 
 func TestOTLPTraceExporter_WithSpan(t *testing.T) {
-	te, err := NewOTLPTraceExporter(fakeTraceExporterConfig, newPushOTLPTrace(0, nil), WithTracing(true))
+	te, err := NewOTLPTraceExporter(fakeTraceExporterConfig, newPushOTLPTrace(0, nil))
 	require.Nil(t, err)
 	require.NotNil(t, te)
 
-	checkWrapSpanForOTLPTraceExporter(t, te, nil, 0)
+	checkWrapSpanForOTLPTraceExporter(t, te, nil, 1)
 }
 
 func TestOTLPTraceExporter_WithSpan_NonZeroDropped(t *testing.T) {
-	te, err := NewOTLPTraceExporter(fakeTraceExporterConfig, newPushOTLPTrace(1, nil), WithTracing(true))
+	te, err := NewOTLPTraceExporter(fakeTraceExporterConfig, newPushOTLPTrace(1, nil))
 	require.Nil(t, err)
 	require.NotNil(t, te)
 
@@ -305,11 +313,11 @@ func TestOTLPTraceExporter_WithSpan_NonZeroDropped(t *testing.T) {
 
 func TestOTLPTraceExporter_WithSpan_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
-	te, err := NewOTLPTraceExporter(fakeTraceExporterConfig, newPushOTLPTrace(0, want), WithTracing(true))
+	te, err := NewOTLPTraceExporter(fakeTraceExporterConfig, newPushOTLPTrace(0, want))
 	require.Nil(t, err)
 	require.NotNil(t, te)
 
-	checkWrapSpanForOTLPTraceExporter(t, te, want, 0)
+	checkWrapSpanForOTLPTraceExporter(t, te, want, 1)
 }
 
 func TestOTLPTraceExporter_WithShutdown(t *testing.T) {
@@ -369,7 +377,7 @@ func generateOTLPTraceTraffic(t *testing.T, te exporter.OTLPTraceExporter, numRe
 	}
 }
 
-func checkWrapSpanForOTLPTraceExporter(t *testing.T, te exporter.OTLPTraceExporter, wantError error, droppedSpans int) {
+func checkWrapSpanForOTLPTraceExporter(t *testing.T, te exporter.OTLPTraceExporter, wantError error, numSpans int64) {
 	ocSpansSaver := new(testOCTraceExporter)
 	trace.RegisterExporter(ocSpansSaver)
 	defer trace.UnregisterExporter(ocSpansSaver)
@@ -392,7 +400,15 @@ func checkWrapSpanForOTLPTraceExporter(t *testing.T, te exporter.OTLPTraceExport
 	for _, sd := range gotSpanData[:numRequests] {
 		require.Equalf(t, parentSpan.SpanContext.SpanID, sd.ParentSpanID, "Exporter span not a child\nSpanData %v", sd)
 		require.Equalf(t, errToStatus(wantError), sd.Status, "SpanData %v", sd)
-		require.Equalf(t, int64(1), sd.Attributes[numReceivedSpansAttribute], "SpanData %v", sd)
-		require.Equalf(t, int64(droppedSpans), sd.Attributes[numDroppedSpansAttribute], "SpanData %v", sd)
+
+		sentSpans := numSpans
+		var failedToSendSpans int64
+		if wantError != nil {
+			sentSpans = 0
+			failedToSendSpans = numSpans
+		}
+
+		require.Equalf(t, sentSpans, sd.Attributes[obsreport.SentSpansKey], "SpanData %v", sd)
+		require.Equalf(t, failedToSendSpans, sd.Attributes[obsreport.FailedToSendSpansKey], "SpanData %v", sd)
 	}
 }

@@ -37,8 +37,6 @@ func NewTraceExporter(config configmodels.Exporter, logger *zap.Logger) (exporte
 			// TODO: Add ability to record the received data
 			return 0, nil
 		},
-		exporterhelper.WithTracing(true),
-		exporterhelper.WithMetrics(true),
 		exporterhelper.WithShutdown(logger.Sync),
 	)
 }
@@ -55,8 +53,6 @@ func NewMetricsExporter(config configmodels.Exporter, logger *zap.Logger) (expor
 			// TODO: Add ability to record the received data
 			return 0, nil
 		},
-		exporterhelper.WithTracing(true),
-		exporterhelper.WithMetrics(true),
 		exporterhelper.WithShutdown(logger.Sync),
 	)
 }

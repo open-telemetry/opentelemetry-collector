@@ -17,13 +17,11 @@ package exporterhelper
 import (
 	"context"
 
-	"go.opencensus.io/trace"
-
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter"
-	"github.com/open-telemetry/opentelemetry-collector/observability"
+	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 )
 
 // PushMetricsData is a helper function that is similar to ConsumeMetricsData but also returns
@@ -43,7 +41,7 @@ func (me *metricsExporter) Start(host component.Host) error {
 }
 
 func (me *metricsExporter) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
-	exporterCtx := observability.ContextWithExporterName(ctx, me.exporterFullName)
+	exporterCtx := obsreport.ExporterContext(ctx, me.exporterFullName)
 	_, err := me.pushMetricsData(exporterCtx, md)
 	return err
 }
@@ -66,13 +64,8 @@ func NewMetricsExporter(config configmodels.Exporter, pushMetricsData PushMetric
 	}
 
 	opts := newExporterOptions(options...)
-	if opts.recordMetrics {
-		pushMetricsData = pushMetricsDataWithMetrics(pushMetricsData)
-	}
 
-	if opts.recordTrace {
-		pushMetricsData = pushMetricsDataWithSpan(pushMetricsData, config.Name()+".ExportMetricsData")
-	}
+	pushMetricsData = pushMetricsWithObservability(pushMetricsData, config.Name())
 
 	// The default shutdown method always returns nil.
 	if opts.shutdown == nil {
@@ -86,33 +79,19 @@ func NewMetricsExporter(config configmodels.Exporter, pushMetricsData PushMetric
 	}, nil
 }
 
-func pushMetricsDataWithMetrics(next PushMetricsData) PushMetricsData {
+func pushMetricsWithObservability(next PushMetricsData, exporterName string) PushMetricsData {
 	return func(ctx context.Context, md consumerdata.MetricsData) (int, error) {
-		// TODO: Add retry logic here if we want to support because we need to record special metrics.
-		droppedTimeSeries, err := next(ctx, md)
-		// TODO: How to record the reason of dropping?
-		observability.RecordMetricsForMetricsExporter(ctx, NumTimeSeries(md), droppedTimeSeries)
-		return droppedTimeSeries, err
-	}
-}
+		exporterCtx, span := obsreport.StartMetricsExportOp(ctx, exporterName)
+		numDroppedTimeSeries, err := next(exporterCtx, md)
 
-func pushMetricsDataWithSpan(next PushMetricsData, spanName string) PushMetricsData {
-	return func(ctx context.Context, md consumerdata.MetricsData) (int, error) {
-		ctx, span := trace.StartSpan(ctx, spanName)
-		defer span.End()
-		// Call next stage.
-		droppedTimeSeries, err := next(ctx, md)
-		if span.IsRecordingEvents() {
-			receivedTimeSeries := NumTimeSeries(md)
-			span.AddAttributes(
-				trace.Int64Attribute(numReceivedTimeSeriesAttribute, int64(receivedTimeSeries)),
-				trace.Int64Attribute(numDroppedTimeSeriesAttribute, int64(droppedTimeSeries)),
-			)
-			if err != nil {
-				span.SetStatus(errToStatus(err))
-			}
-		}
-		return droppedTimeSeries, err
+		// TODO: this is not ideal: it should come from the next function itself.
+		// 	temporarily loading it from internal format. Once full switch is done
+		// 	to new metrics will remove this.
+		numReceivedTimeSeries, numPoints := measureMetricsExport(md)
+
+		obsreport.EndMetricsExportOp(
+			exporterCtx, span, numPoints, numReceivedTimeSeries, numDroppedTimeSeries, err)
+		return numDroppedTimeSeries, err
 	}
 }
 
@@ -123,4 +102,17 @@ func NumTimeSeries(md consumerdata.MetricsData) int {
 		receivedTimeSeries += len(metric.GetTimeseries())
 	}
 	return receivedTimeSeries
+}
+
+func measureMetricsExport(md consumerdata.MetricsData) (int, int) {
+	numTimeSeries := 0
+	numPoints := 0
+	for _, metric := range md.Metrics {
+		tss := metric.GetTimeseries()
+		numTimeSeries += len(metric.GetTimeseries())
+		for _, ts := range tss {
+			numPoints += len(ts.GetPoints())
+		}
+	}
+	return numTimeSeries, numPoints
 }
