@@ -4,17 +4,25 @@ Generally, a processor pre-processes data before it is exported (e.g.
 modify attributes or sample) or helps ensure that data makes it through a
 pipeline successfully (e.g. batch/retry).
 
+Some important aspects of pipelines and processors to be aware of:
+- [Data Ownership](#data-ownership)
+- [Exclusive Ownership](#exclusive-ownership)
+- [Shared Ownership](#shared-ownership)
+- [Ordering Processors](#ordering-processors)
+
 Supported processors (sorted alphabetically):
 - [Attributes Processor](#attributes)
 - [Batch Processor](#batch)
-- [Queued Retry Processor](#queued_retry)
+- [Memory Limiter Processor](#memory-limiter)
+- [Queued Retry Processor](#queued-retry)
+- [Resource Processor](#resource)
 - [Sampling Processor](#sampling)
 - [Span Processor](#span)
 
 The [contributors repository](https://github.com/open-telemetry/opentelemetry-collector-contrib)
  has more processors that can be added to custom builds of the Collector.
 
-## Data Ownership
+## <a name="data-ownership"></a>Data Ownership
 
 The ownership of the `TraceData` and `MetricsData` in a pipeline is passed as the data travels
 through the pipeline. The data is created by the receiver and then the ownership is passed
@@ -35,7 +43,7 @@ mode. In addition, any other pipeline that receives data from a receiver that is
 to a pipeline with exclusive ownership mode will be also operating in exclusive ownership
 mode.
 
-### Exclusive Ownership
+### <a name="exclusive-ownership"></a>Exclusive Ownership
 
 In exclusive ownership mode the data is owned exclusively by a particular processor at a
 given moment of time and the processor is free to modify the data it owns.
@@ -57,7 +65,7 @@ new owner.
 Exclusive Ownership mode allows to easily implement processors that need to modify
 the data by simply declaring such intent.
 
-### Shared Ownership
+### <a name="shared-ownership"></a>Shared Ownership
 
 In shared ownership mode no particular processor owns the data and no processor is
 allowed the modify the shared data.
@@ -83,7 +91,7 @@ to modify the original data by setting `MutatesConsumedData=false` in its capabi
 to avoid marking the pipeline for Exclusive ownership and to avoid the cost of
 data cloning described in Exclusive Ownership section.
 
-## Ordering Processors
+## <a name="ordering-processors"></a>Ordering Processors
 
 The order processors are specified in a pipeline is important as this is the
 order in which each processor is applied to traces and metrics.
@@ -254,7 +262,60 @@ Refer to [config.yaml](batchprocessor/testdata/config.yaml) for detailed
 examples on using the processor.
 
 
-## <a name="queued_retry"></a>Queued Retry Processor
+## <a name="memory-limiter"></a>Memory Limiter Processor
+
+The memory_limiter processor is used to prevent out of memory situations on
+the collector. Given that the amount and type of data a collector processes is
+environment specific and resource utilization of the collector is also dependent
+on the configured processors, it is important to put checks in place regarding
+memory usage. The memory_limiter processor offers the follow safeguards:
+- Ability to configure a ballast, which allocates memory and provides stability
+to the heap. In summary, the ballast increases the base size of the heap so that
+GC triggers are delayed and the number of GC cycles over time is reduced.
+- Ability to define a limit on memory usage at which time GC will be
+triggered to reduce memory consumption.
+- Ability to define a memory delta between two times which if exceed will trigger
+a GC to reduce memory consumption.
+
+Note that while these configuration options can help mitigate out of memory
+situations, they are not a replacement for properly sizing the collector. Be
+aware that the ballast reserves memory that could otherwise be used for purposes
+including serving configured queues. In addition, if the limit or spike thresholds
+are crossed, the triggered GC will result in dropped data.
+
+Please refer to [config.go](memorylimiter/config.go) for the config spec.
+
+The following configuration options __must be changed__:
+- `check_interval` (default = 0s): The time between measurements of memory
+usage. Values below 1 second are not recommended since it can result in
+unnecessary CPU consumption.
+- `limit_mib` (default = 0): Maximum amount of memory, in MiB, targeted to be
+allocated by the process heap. Note that typically the total memory usage of
+process will be about 50MiB higher than this value.
+- `spike_limit_mib` (default = 0): The maximum spike expected between the
+measurements of memory usage. The value must be less than `limit_mib`.
+
+The following configuration options can also be modified:
+- `ballast_size_mib` (default = 0): The ballast size used by the proceess.
+
+Note: The recommended configuration for the required options are ...
+
+Examples:
+
+```yaml
+processors:
+  memory_limiter:
+    ballast_size_mib: 2000
+    check_interval: 5s
+    limit_mib: 4000
+    spike_limit_mib: 500
+```
+
+Refer to [config.yaml](memorylimiter/testdata/config.yaml) for detailed
+examples on using the processor.
+
+
+## <a name="queued-retry"></a>Queued Retry Processor
 
 The queued_retry processor uses a bounded queue to relay trace data from the receiver
 or previous processor to the next processor. Received trace data is enqueued
@@ -283,6 +344,33 @@ processors:
 ```
 
 Refer to [config.yaml](queuedprocessor/testdata/config.yaml) for detailed
+examples on using the processor.
+
+
+## <a name="resource"></a>Resource Processor
+
+The resource processor can be used to add attributes to a given resource.
+Please refer to [config.go](resourceprocessor/config.go) for the config spec.
+
+The following configuration options are required:
+- `type`: The type of resource to which labels should be applied. Only
+applicable to `type` of `host` today.
+- `labels`: A map of key/value pairs that should be added to the defined `type`.
+
+Examples:
+
+```yaml
+processors:
+  resource:
+    type: "host"
+    labels: {
+      "cloud.zone": "zone-1",
+      "k8s.cluster.name": "k8s-cluster",
+      "host.name": "k8s-node",
+    }
+```
+
+Refer to [config.yaml](resourceprocessor/testdata/config.yaml) for detailed
 examples on using the processor.
 
 
