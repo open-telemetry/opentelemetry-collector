@@ -4,11 +4,14 @@ Generally, a processor pre-processes data before it is exported (e.g.
 modify attributes or sample) or helps ensure that data makes it through a
 pipeline successfully (e.g. batch/retry).
 
+**IMPORTANT: All processors only work with trace receivers/exporters today.**
+
 Some important aspects of pipelines and processors to be aware of:
 - [Data Ownership](#data-ownership)
 - [Exclusive Ownership](#exclusive-ownership)
 - [Shared Ownership](#shared-ownership)
 - [Ordering Processors](#ordering-processors)
+- [Recommended Processors](#recommended-processors)
 
 Supported processors (sorted alphabetically):
 - [Attributes Processor](#attributes)
@@ -144,6 +147,20 @@ are checked before the `exclude` properties.
           value: {value}
 ```
 
+## <a name="recommended-processors"></a>Recommended Processors
+
+No processors are enabled by default, however multiple processors are recommended to
+be enabled. These are:
+
+- memory_limiter
+- batch
+- <any other processors>
+- queued_retry
+
+In addition, it is important to note that the order of processors matters. The order
+above is the best practice. Refer to the individual processor documentation below
+for more information.
+
 # Processors
 
 ## <a name="attributes"></a>Attributes Processor
@@ -245,7 +262,8 @@ Please refer to [config.go](batchprocessor/config.go) for the config spec.
 
 The following configuration options can be modified:
 - `num_tickers` (default = 4): Number of tickers that loop over batch buckets
-- `remove_after_ticks` (default = 10): Number of ticks passed without a span arriving for a node at which time batcher is deleted
+- `remove_after_ticks` (default = 10): Number of ticks passed without a span
+arriving for a node at which time batcher is deleted
 - `send_batch_size` (default = 8192): Size after which a batch will be sent regardless of time
 - `tick_time` (default = 1s): Interval in which the tickers tick
 - `timeout` (default = 1s): Time duration after which a batch will be sent regardless of size
@@ -274,18 +292,19 @@ the collector. Given that the amount and type of data a collector processes is
 environment specific and resource utilization of the collector is also dependent
 on the configured processors, it is important to put checks in place regarding
 memory usage. The memory_limiter processor offers the follow safeguards:
+
 - Ability to define an interval when memory usage will be checked and if memory
 usage exceeds a defined limit will trigger GC to reduce memory consumption.
 - Ability to define an interval when memory usage will be compared against the
 previous interval's value and if the delta exceeds a defined limit will trigger
 GC to reduce memory consumption.
 
-In addition, there is a command line option which can be used to define a ballast,
-which allocates memory and provides stability to the heap. If defined, the ballast
-increases the base size of the heap so that GC triggers are delayed and the number
-of GC cycles over time is reduced. While the ballast is configured via the command
-line, today the same value configured on the command line must also be defined in
-the memory_limiter processor.
+In addition, there is a command line option (`mem-ballast-size-mib`) which can be
+used to define a ballast, which allocates memory and provides stability to the
+heap. If defined, the ballast increases the base size of the heap so that GC
+triggers are delayed and the number of GC cycles over time is reduced. While the
+ballast is configured via the command line, today the same value configured on the
+command line must also be defined in the memory_limiter processor.
 
 Note that while these configuration options can help mitigate out of memory
 situations, they are not a replacement for properly sizing the collector. Be
@@ -294,10 +313,12 @@ including serving configured queues. In addition, if the limit or spike threshol
 are crossed, the triggered GC may result in dropped data.
 
 It is highly recommended to configure ballast command line option as well as the
-memory_limiter processor on every collector. The memory_limiter processor should
-be the first processor defined in the pipeline (immediately after the receivers).
-This is to ensure that backpressure can be sent to applicable receivers and
-minimize the likelihood of dropped data when the memory_limiter kicks in.
+memory_limiter processor on every collector. The ballast should be configured to
+be 1/3 to 1/2 of the memory allocated to the collector. The memory_limiter
+processor should be the first processor defined in the pipeline (immediately after
+the receivers). This is to ensure that backpressure can be sent to applicable
+receivers and minimize the likelihood of dropped data when the memory_limiter kicks
+in.
 
 Please refer to [config.go](memorylimiter/config.go) for the config spec.
 
@@ -312,7 +333,8 @@ process will be about 50MiB higher than this value.
 measurements of memory usage. The value must be less than `limit_mib`.
 
 The following configuration options can also be modified:
-- `ballast_size_mib` (default = 0): Ballast size used by the proceess.
+- `ballast_size_mib` (default = 0): Must match the `mem-ballast-size-mib`
+command line option.
 
 Note: The recommended configuration for the required options are ...
 
@@ -333,17 +355,26 @@ examples on using the processor.
 
 ## <a name="queued-retry"></a>Queued Retry Processor
 
-The queued_retry processor uses a bounded queue to relay trace data from the receiver
-or previous processor to the next processor. Received trace data is enqueued
-immediately if the queue is not full. At the same time, the processor has one
-or more workers which consume the trace data in the queue by sending them to
-the next processor. If relaying the trace data to the next processor or
-exporter in the pipeline fails, the processor retries after some backoff delay
-depending on the configuration (see below).
+The queued_retry processor uses a bounded queue to relay batches from the receiver
+or previous processor to the next processor. Received data is enqueued immediately
+if the queue is not full. At the same time, the processor has one or more workers
+which consume the data in the queue by sending them to the next processor. If
+relaying the data to the next processor or exporter in the pipeline fails, the
+processor retries after some backoff delay depending on the configuration (see below).
+
+Given that if the queue is full the data will be dropped, it is important to size
+the queue appropriately. The queue is kept in memory today, so the larger the queue
+the more memory will be consumes by the collector that could otherwise be used for
+other purposes. Also, since the queue is based on batches and batche sizes are
+environment specific, it is not as easy to understand how much memory a queue will
+consume. Finally, the queue size is dependent on the deployment model of the
+collector. The agent deployment model typically has a smaller queue than the collector
+deployment model.
 
 It is highly recommended to configure the queued_retry processor on every collector
 as it minimizes the likelihood of data being dropped due to delays in processing or
-issues exportering the data.
+issues exportering the data. This processor should be the last processor defined in
+the pipeline because issues that require retry are typically due to exportering.
 
 Please refer to [config.go](queuedprocessor/config.go) for the config spec.
 
