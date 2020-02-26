@@ -153,6 +153,7 @@ No processors are enabled by default, however multiple processors are recommende
 be enabled. These are:
 
 - memory_limiter
+- <any sampling processors>
 - batch
 - <any other processors>
 - queued_retry
@@ -255,8 +256,9 @@ outgoing connections required to transmit the data. This processor supports
 both size and time based batching.
 
 It is highly recommended to configure the batch processor on every collector.
-The batch processor should be the second processor defined in the pipeline
-(immediately after the memory_limiter processor).
+The batch processor should be defined in the pipeline after the memory_limiter
+as well as any sampling processor. This is because batching should happen after
+any data drops such as sampling.
 
 Please refer to [config.go](batchprocessor/config.go) for the config spec.
 
@@ -264,9 +266,11 @@ The following configuration options can be modified:
 - `num_tickers` (default = 4): Number of tickers that loop over batch buckets
 - `remove_after_ticks` (default = 10): Number of ticks passed without a span
 arriving for a node at which time batcher is deleted
-- `send_batch_size` (default = 8192): Size after which a batch will be sent regardless of time
+- `send_batch_size` (default = 8192): Number of spans after which a batch will
+be sent regardless of time
 - `tick_time` (default = 1s): Interval in which the tickers tick
-- `timeout` (default = 1s): Time duration after which a batch will be sent regardless of size
+- `timeout` (default = 1s): Time duration after which a batch will be sent
+regardless of size
 
 Examples:
 
@@ -440,7 +444,7 @@ collector instances, but this configuration has not been tested. Please refer to
 [config.go](samplingprocessor/tailsamplingprocessor/config.go) for the config spec.
 
 The following configuration options can be modified:
-- `decision_wait` (default = 30s): Wait time since the first span before making a sampling decision
+- `decision_wait` (default = 30s): Wait time since the first span of a trace before making a sampling decision
 - `num_traces` (default = 50000): Number of traces kept in memory
 - `expected_new_traces_per_sec` (default = 0): Expected number of new traces (helps in allocating data structures)
 - `policies` (no default): Policies used to make a sampling decision
