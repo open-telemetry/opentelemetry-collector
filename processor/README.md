@@ -152,11 +152,11 @@ are checked before the `exclude` properties.
 No processors are enabled by default, however multiple processors are recommended to
 be enabled. These are:
 
-- memory_limiter
-- <any sampling processors>
-- batch
-- <any other processors>
-- queued_retry
+1. memory_limiter
+2. *any sampling processors*
+3. batch
+4. *any other processors*
+5. queued_retry
 
 In addition, it is important to note that the order of processors matters. The order
 above is the best practice. Refer to the individual processor documentation below
@@ -257,7 +257,7 @@ both size and time based batching.
 
 It is highly recommended to configure the batch processor on every collector.
 The batch processor should be defined in the pipeline after the memory_limiter
-as well as any sampling processor. This is because batching should happen after
+as well as any sampling processors. This is because batching should happen after
 any data drops such as sampling.
 
 Please refer to [config.go](batchprocessor/config.go) for the config spec.
@@ -311,22 +311,22 @@ ballast is configured via the command line, today the same value configured on t
 command line must also be defined in the memory_limiter processor.
 
 Note that while these configuration options can help mitigate out of memory
-situations, they are not a replacement for properly sizing the collector. Be
-aware that the ballast reserves memory that could otherwise be used for purposes
-including serving configured queues. In addition, if the limit or spike thresholds
-are crossed, the triggered GC may result in dropped data.
+situations, they are not a replacement for properly sizing and configuring the
+collector. Be aware that the ballast reserves memory that could otherwise be used
+for purposes including serving configured queues. In addition, if the limit or
+spike thresholds are crossed, the triggered GC may result in dropped data.
 
-It is highly recommended to configure ballast command line option as well as the
+It is highly recommended to configure the ballast command line option as well as the
 memory_limiter processor on every collector. The ballast should be configured to
 be 1/3 to 1/2 of the memory allocated to the collector. The memory_limiter
 processor should be the first processor defined in the pipeline (immediately after
 the receivers). This is to ensure that backpressure can be sent to applicable
-receivers and minimize the likelihood of dropped data when the memory_limiter kicks
-in.
+receivers and minimize the likelihood of dropped data when the memory_limiter gets
+triggered.
 
 Please refer to [config.go](memorylimiter/config.go) for the config spec.
 
-The following configuration options __must be changed__:
+The following configuration options **must be changed**:
 - `check_interval` (default = 0s): Time between measurements of memory
 usage. Values below 1 second are not recommended since it can result in
 unnecessary CPU consumption.
@@ -339,8 +339,6 @@ measurements of memory usage. The value must be less than `limit_mib`.
 The following configuration options can also be modified:
 - `ballast_size_mib` (default = 0): Must match the `mem-ballast-size-mib`
 command line option.
-
-Note: The recommended configuration for the required options are ...
 
 Examples:
 
@@ -362,14 +360,14 @@ examples on using the processor.
 The queued_retry processor uses a bounded queue to relay batches from the receiver
 or previous processor to the next processor. Received data is enqueued immediately
 if the queue is not full. At the same time, the processor has one or more workers
-which consume the data in the queue by sending them to the next processor. If
-relaying the data to the next processor or exporter in the pipeline fails, the
-processor retries after some backoff delay depending on the configuration (see below).
+which consume the data in the queue by sending them to the next processor or exporter.
+If relaying the data to the next processor or exporter in the pipeline fails, the
+processor retries after some backoff delay depending on the configuration.
 
 Given that if the queue is full the data will be dropped, it is important to size
 the queue appropriately. The queue is kept in memory today, so the larger the queue
-the more memory will be consumes by the collector that could otherwise be used for
-other purposes. Also, since the queue is based on batches and batche sizes are
+the more memory consumed by the collector that could otherwise be used for
+other purposes. Also, since the queue is based on batches and batch sizes are
 environment specific, it is not as easy to understand how much memory a queue will
 consume. Finally, the queue size is dependent on the deployment model of the
 collector. The agent deployment model typically has a smaller queue than the collector
@@ -443,10 +441,7 @@ Technically, trace ID aware load balancing could be used to support multiple
 collector instances, but this configuration has not been tested. Please refer to
 [config.go](samplingprocessor/tailsamplingprocessor/config.go) for the config spec.
 
-The following configuration options can be modified:
-- `decision_wait` (default = 30s): Wait time since the first span of a trace before making a sampling decision
-- `num_traces` (default = 50000): Number of traces kept in memory
-- `expected_new_traces_per_sec` (default = 0): Expected number of new traces (helps in allocating data structures)
+The following configuration options are required:
 - `policies` (no default): Policies used to make a sampling decision
 
 Multiple policies exist today and it is straight forward to add more. These include:
@@ -454,6 +449,11 @@ Multiple policies exist today and it is straight forward to add more. These incl
 - `numeric_attribute`: Sample based on number attributes
 - `string_attribute`: Sample based on string attributes
 - `rate_limiting`: Sample based on rate
+
+The following configuration options can also be modified:
+- `decision_wait` (default = 30s): Wait time since the first span of a trace before making a sampling decision
+- `num_traces` (default = 50000): Number of traces kept in memory
+- `expected_new_traces_per_sec` (default = 0): Expected number of new traces (helps in allocating data structures)
 
 Examples:
 
