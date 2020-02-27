@@ -45,6 +45,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/jaegerreceiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/opencensusreceiver"
+	"github.com/open-telemetry/opentelemetry-collector/receiver/otlpreceiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/vmmetricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/zipkinreceiver"
@@ -61,6 +62,7 @@ func TestDefaultComponents(t *testing.T) {
 		"zipkin":     &zipkinreceiver.Factory{},
 		"prometheus": &prometheusreceiver.Factory{},
 		"opencensus": &opencensusreceiver.Factory{},
+		"otlp":       &otlpreceiver.Factory{},
 		"vmmetrics":  &vmmetricsreceiver.Factory{},
 	}
 	expectedProcessors := map[string]processor.Factory{
