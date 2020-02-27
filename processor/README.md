@@ -4,17 +4,28 @@ Generally, a processor pre-processes data before it is exported (e.g.
 modify attributes or sample) or helps ensure that data makes it through a
 pipeline successfully (e.g. batch/retry).
 
+**IMPORTANT: All processors only work with trace receivers/exporters today.**
+
+Some important aspects of pipelines and processors to be aware of:
+- [Data Ownership](#data-ownership)
+- [Exclusive Ownership](#exclusive-ownership)
+- [Shared Ownership](#shared-ownership)
+- [Ordering Processors](#ordering-processors)
+- [Recommended Processors](#recommended-processors)
+
 Supported processors (sorted alphabetically):
 - [Attributes Processor](#attributes)
 - [Batch Processor](#batch)
-- [Queued Retry Processor](#queued_retry)
+- [Memory Limiter Processor](#memory-limiter)
+- [Queued Retry Processor](#queued-retry)
+- [Resource Processor](#resource)
 - [Sampling Processor](#sampling)
 - [Span Processor](#span)
 
 The [contributors repository](https://github.com/open-telemetry/opentelemetry-collector-contrib)
  has more processors that can be added to custom builds of the Collector.
 
-## Data Ownership
+## <a name="data-ownership"></a>Data Ownership
 
 The ownership of the `TraceData` and `MetricsData` in a pipeline is passed as the data travels
 through the pipeline. The data is created by the receiver and then the ownership is passed
@@ -35,7 +46,7 @@ mode. In addition, any other pipeline that receives data from a receiver that is
 to a pipeline with exclusive ownership mode will be also operating in exclusive ownership
 mode.
 
-### Exclusive Ownership
+### <a name="exclusive-ownership"></a>Exclusive Ownership
 
 In exclusive ownership mode the data is owned exclusively by a particular processor at a
 given moment of time and the processor is free to modify the data it owns.
@@ -57,7 +68,7 @@ new owner.
 Exclusive Ownership mode allows to easily implement processors that need to modify
 the data by simply declaring such intent.
 
-### Shared Ownership
+### <a name="shared-ownership"></a>Shared Ownership
 
 In shared ownership mode no particular processor owns the data and no processor is
 allowed the modify the shared data.
@@ -83,7 +94,7 @@ to modify the original data by setting `MutatesConsumedData=false` in its capabi
 to avoid marking the pipeline for Exclusive ownership and to avoid the cost of
 data cloning described in Exclusive Ownership section.
 
-## Ordering Processors
+## <a name="ordering-processors"></a>Ordering Processors
 
 The order processors are specified in a pipeline is important as this is the
 order in which each processor is applied to traces and metrics.
@@ -135,6 +146,21 @@ are checked before the `exclude` properties.
           # If not specified, a match occurs if the key is present in the attributes.
           value: {value}
 ```
+
+## <a name="recommended-processors"></a>Recommended Processors
+
+No processors are enabled by default, however multiple processors are recommended to
+be enabled. These are:
+
+1. memory_limiter
+2. *any sampling processors*
+3. batch
+4. *any other processors*
+5. queued_retry
+
+In addition, it is important to note that the order of processors matters. The order
+above is the best practice. Refer to the individual processor documentation below
+for more information.
 
 # Processors
 
@@ -227,15 +253,24 @@ examples on using the processor.
 The batch processor accepts spans and places them into batches grouped by node
 and resource. Batching helps better compress the data and reduce the number of
 outgoing connections required to transmit the data. This processor supports
-both size and time based batching. Please refer to
-[config.go](batchprocessor/config.go) for the config spec.
+both size and time based batching.
+
+It is highly recommended to configure the batch processor on every collector.
+The batch processor should be defined in the pipeline after the memory_limiter
+as well as any sampling processors. This is because batching should happen after
+any data drops such as sampling.
+
+Please refer to [config.go](batchprocessor/config.go) for the config spec.
 
 The following configuration options can be modified:
-- `num_tickers` (default = 4): the number of tickers that loop over batch buckets
-- `remove_after_ticks` (default = 10): the number of ticks passed without a span arriving for a node at which time batcher is deleted
-- `send_batch_size` (default = 8192): size after which a batch will be sent regardless of time
-- `tick_time` (default = 1s): interval in which the tickers tick
-- `timeout` (default = 1s): time duration after which a batch will be sent regardless of size
+- `num_tickers` (default = 4): Number of tickers that loop over batch buckets
+- `remove_after_ticks` (default = 10): Number of ticks passed without a span
+arriving for a node at which time batcher is deleted
+- `send_batch_size` (default = 8192): Number of spans after which a batch will
+be sent regardless of time
+- `tick_time` (default = 1s): Interval in which the tickers tick
+- `timeout` (default = 1s): Time duration after which a batch will be sent
+regardless of size
 
 Examples:
 
@@ -254,22 +289,103 @@ Refer to [config.yaml](batchprocessor/testdata/config.yaml) for detailed
 examples on using the processor.
 
 
-## <a name="queued_retry"></a>Queued Retry Processor
+## <a name="memory-limiter"></a>Memory Limiter Processor
 
-The queued_retry processor uses a bounded queue to relay trace data from the receiver
-or previous processor to the next processor. Received trace data is enqueued
-immediately if the queue is not full. At the same time, the processor has one
-or more workers which consume the trace data in the queue by sending them to
-the next processor. If relaying the trace data to the next processor or
-exporter in the pipeline fails, the processor retries after some backoff delay
-depending on the configuration (see below). Please refer to
-[config.go](queuedprocessor/config.go) for the config spec.
+The memory_limiter processor is used to prevent out of memory situations on
+the collector. Given that the amount and type of data a collector processes is
+environment specific and resource utilization of the collector is also dependent
+on the configured processors, it is important to put checks in place regarding
+memory usage. The memory_limiter processor offers the follow safeguards:
+
+- Ability to define an interval when memory usage will be checked and if memory
+usage exceeds a defined limit will trigger GC to reduce memory consumption.
+- Ability to define an interval when memory usage will be compared against the
+previous interval's value and if the delta exceeds a defined limit will trigger
+GC to reduce memory consumption.
+
+In addition, there is a command line option (`mem-ballast-size-mib`) which can be
+used to define a ballast, which allocates memory and provides stability to the
+heap. If defined, the ballast increases the base size of the heap so that GC
+triggers are delayed and the number of GC cycles over time is reduced. While the
+ballast is configured via the command line, today the same value configured on the
+command line must also be defined in the memory_limiter processor.
+
+Note that while these configuration options can help mitigate out of memory
+situations, they are not a replacement for properly sizing and configuring the
+collector. For example, if the limit or spike thresholds are crossed, the collector
+will return errors to all receive operations until enough memory is freed. This may
+result in dropped data.
+
+It is highly recommended to configure the ballast command line option as well as the
+memory_limiter processor on every collector. The ballast should be configured to
+be 1/3 to 1/2 of the memory allocated to the collector. The memory_limiter
+processor should be the first processor defined in the pipeline (immediately after
+the receivers). This is to ensure that backpressure can be sent to applicable
+receivers and minimize the likelihood of dropped data when the memory_limiter gets
+triggered.
+
+Please refer to [config.go](memorylimiter/config.go) for the config spec.
+
+The following configuration options **must be changed**:
+- `check_interval` (default = 0s): Time between measurements of memory
+usage. Values below 1 second are not recommended since it can result in
+unnecessary CPU consumption.
+- `limit_mib` (default = 0): Maximum amount of memory, in MiB, targeted to be
+allocated by the process heap. Note that typically the total memory usage of
+process will be about 50MiB higher than this value.
+- `spike_limit_mib` (default = 0): Maximum spike expected between the
+measurements of memory usage. The value must be less than `limit_mib`.
+
+The following configuration options can also be modified:
+- `ballast_size_mib` (default = 0): Must match the `mem-ballast-size-mib`
+command line option.
+
+Examples:
+
+```yaml
+processors:
+  memory_limiter:
+    ballast_size_mib: 2000
+    check_interval: 5s
+    limit_mib: 4000
+    spike_limit_mib: 500
+```
+
+Refer to [config.yaml](memorylimiter/testdata/config.yaml) for detailed
+examples on using the processor.
+
+
+## <a name="queued-retry"></a>Queued Retry Processor
+
+The queued_retry processor uses a bounded queue to relay batches from the receiver
+or previous processor to the next processor. Received data is enqueued immediately
+if the queue is not full. At the same time, the processor has one or more workers
+which consume the data in the queue by sending them to the next processor or exporter.
+If relaying the data to the next processor or exporter in the pipeline fails, the
+processor retries after some backoff delay depending on the configuration.
+
+Some important things to keep in mind with the queued_retry processor:
+- Given that if the queue is full the data will be dropped, it is important to size
+the queue appropriately.
+- Since the queue is based on batches and batch sizes are environment specific, it may
+not be easy to understand how much memory a queue will consume.
+- Finally, the queue size is dependent on the deployment model of the collector. The
+agent deployment model typically has a smaller queue than the collector deployment
+model.
+
+It is highly recommended to configure the queued_retry processor on every collector
+as it minimizes the likelihood of data being dropped due to delays in processing or
+issues exportering the data. This processor should be the last processor defined in
+the pipeline because issues that require retry are typically due to exportering.
+
+Please refer to [config.go](queuedprocessor/config.go) for the config spec.
 
 The following configuration options can be modified:
-- `backoff_delay` (default = 5s): time interval to wait before retrying
-- `num_workers` (default = 10): the number of workers that dequeue batches
-- `queue_size` (default = 5000): the maximum number of batches allowed before drop
-- `retry_on_failure` (default = true): whether to retry on failure or give up and drop
+- `backoff_delay` (default = 5s): Time interval to wait before retrying
+- `num_workers` (default = 10): Number of workers that dequeue batches
+- `queue_size` (default = 5000): Maximum number of batches kept in memory before data
+is dropped
+- `retry_on_failure` (default = true): Whether to retry on failure or give up and drop
 
 Examples:
 
@@ -286,6 +402,33 @@ Refer to [config.yaml](queuedprocessor/testdata/config.yaml) for detailed
 examples on using the processor.
 
 
+## <a name="resource"></a>Resource Processor
+
+The resource processor can be used to add attributes to a given resource.
+Please refer to [config.go](resourceprocessor/config.go) for the config spec.
+
+The following configuration options are required:
+- `type`: Type of resource to which labels should be applied. Only
+applicable to `type` of `host` today.
+- `labels`: Map of key/value pairs that should be added to the defined `type`.
+
+Examples:
+
+```yaml
+processors:
+  resource:
+    type: "host"
+    labels: {
+      "cloud.zone": "zone-1",
+      "k8s.cluster.name": "k8s-cluster",
+      "host.name": "k8s-node",
+    }
+```
+
+Refer to [config.yaml](resourceprocessor/testdata/config.yaml) for detailed
+examples on using the processor.
+
+
 ## <a name="sampling"></a>Sampling Processor
 
 The sampling processor supports sampling spans. A couple of sampling processors
@@ -299,17 +442,19 @@ Technically, trace ID aware load balancing could be used to support multiple
 collector instances, but this configuration has not been tested. Please refer to
 [config.go](samplingprocessor/tailsamplingprocessor/config.go) for the config spec.
 
-The following configuration options can be modified:
-- `decision_wait` (default = 30s): wait time since the first span before making a sampling decision
-- `num_traces` (default = 50000): number of traces kept in memory
-- `expected_new_traces_per_sec` (default = 0): expected number of new traces (helps in allocating data structures)
-- `policies` (default = ): sets the policies used to make a sampling decision
+The following configuration options are required:
+- `policies` (no default): Policies used to make a sampling decision
 
 Multiple policies exist today and it is straight forward to add more. These include:
-- `always_sample`: sample all traces
-- `numeric_attribute`: sample based on number attributes
-- `string_attribute`: sample based on string attributes
-- `rate_limiting`: sample based on rate
+- `always_sample`: Sample all traces
+- `numeric_attribute`: Sample based on number attributes
+- `string_attribute`: Sample based on string attributes
+- `rate_limiting`: Sample based on rate
+
+The following configuration options can also be modified:
+- `decision_wait` (default = 30s): Wait time since the first span of a trace before making a sampling decision
+- `num_traces` (default = 50000): Number of traces kept in memory
+- `expected_new_traces_per_sec` (default = 0): Expected number of new traces (helps in allocating data structures)
 
 Examples:
 
@@ -348,17 +493,23 @@ examples on using the processor.
 
 ### <a name="probabilistic_sampling"></a>Probabilistic Sampling Processor
 
-The probabilistic sampler sets trace sampling by hashing the trace id of each
-span and making the sampling decision based on the hashed value. It also
-implements the "sampling.priority" [semantic
+The probabilistic sampler supports two types of sampling:
+
+1. `sampling.priority` [semantic
 convention](https://github.com/opentracing/specification/blob/master/semantic_conventions.md#span-tags-table)
-as defined by OpenTracing. The "sampling.priority" semantic hash priority over
-trace id hashing. Please refer to
+as defined by OpenTracing
+2. Trace ID hashing
+
+The `sampling.priority` semantic convention takes priority over trace ID hashing. As the name
+implies, trace ID hashing samples based on hash values determined by trace IDs. In order for
+trace ID hashing to work, all collectors for a given tier (e.g. behind the same load balancer)
+must have the same `hash_seed`. It is also possible to leverage a different `hash_seed` at
+different collector tiers to support additional sampling requirements. Please refer to
 [config.go](samplingprocessor/probabilisticprocessor/config.go) for the config spec.
 
 The following configuration options can be modified:
-- `hash_seed` (no default): all collectors for a given tier should have the same hash_seed
-- `sampling_percentage` (default = 0): the percentage at which traces are sampled; >= 100 samples all traces
+- `hash_seed` (no default): An integer used to compute the hash algorithm. Note that all collectors for a given tier (e.g. behind the same load balancer) should have the same hash_seed.
+- `sampling_percentage` (default = 0): Percentage at which traces are sampled; >= 100 samples all traces
 
 Examples:
 
@@ -429,7 +580,7 @@ attributes from it based on subexpressions. Must be specified under the
 
 The following settings are required:
 
-- `rules` is a list of rules to extract attribute values from span name. The values
+- `rules`: A list of rules to extract attribute values from span name. The values
 in the span name are replaced by extracted attribute names. Each rule in the list
 is regex pattern string. Span name is checked against the regex and if the regex
 matches then all named subexpressions of the regex are extracted as attributes
