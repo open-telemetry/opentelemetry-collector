@@ -303,12 +303,12 @@ service:
 ```
 
 ### <a name="troubleshooting"></a>Troubleshooting
-The OpenTelemetry Collector by default exposes Prometheus metrics and logs for
+By default, the OpenTelemetry Collector exposes Prometheus metrics and logs for
 monitoring and troubleshooting. When troubleshooting live issues it is 
-recommended the use of the `zpages` [extension](#config-extensions).
+recommended to use `zpages` [extension](#config-extensions).
 
-The `zpages` extension provides live information about exporters and receivers
-latest operations. By default the `zpages` are available
+The `zpages` extension provides live information about receivers and exporters.
+By default, `zpages` is available
 at `http://localhost:55679/debug/tracez`. Click on the links of the displayed
 operations to see information about each individual operation. Operations that
 encountered errors are reported on the right most column.

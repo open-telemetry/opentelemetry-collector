@@ -148,26 +148,23 @@ func (ocr *Receiver) batchMetricExporting(longLivedRPCCtx context.Context, paylo
 	numTimeSeries := 0
 	numPoints := 0
 	var consumerErr error
-	if len(mds) != 0 {
-		for _, md := range mds {
-			if md == nil || len(md.Metrics) == 0 {
-				continue
-			}
-
-			// Legacy count number of time series, there was no legacy metric
-			// here before but count it anyway for consistency
-			for _, metric := range md.Metrics {
-				numTimeSeries += len(metric.Timeseries)
-				for _, ts := range metric.GetTimeseries() {
-					numPoints += len(ts.GetPoints())
-				}
-			}
-
-			if consumerErr != nil {
-				continue
-			}
-			consumerErr = ocr.nextConsumer.ConsumeMetricsData(ctx, *md)
+	for _, md := range mds {
+		if md == nil || len(md.Metrics) == 0 {
+			continue
 		}
+
+		// Count number of time series and data points.
+		for _, metric := range md.Metrics {
+			numTimeSeries += len(metric.Timeseries)
+			for _, ts := range metric.GetTimeseries() {
+				numPoints += len(ts.GetPoints())
+			}
+		}
+
+		if consumerErr != nil {
+			continue
+		}
+		consumerErr = ocr.nextConsumer.ConsumeMetricsData(ctx, *md)
 	}
 
 	obsreport.EndMetricsReceiveOp(
