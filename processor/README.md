@@ -312,8 +312,9 @@ command line must also be defined in the memory_limiter processor.
 
 Note that while these configuration options can help mitigate out of memory
 situations, they are not a replacement for properly sizing and configuring the
-collector. For example, if the limit or spike thresholds are crossed, the triggered
-GC may result in dropped data.
+collector. For example, if the limit or spike thresholds are crossed, the collector
+will return errors to all receive operations until enough memory is freed. This may
+result in dropped data.
 
 It is highly recommended to configure the ballast command line option as well as the
 memory_limiter processor on every collector. The ballast should be configured to
@@ -363,14 +364,14 @@ which consume the data in the queue by sending them to the next processor or exp
 If relaying the data to the next processor or exporter in the pipeline fails, the
 processor retries after some backoff delay depending on the configuration.
 
-Given that if the queue is full the data will be dropped, it is important to size
-the queue appropriately. The queue is kept in memory today, so the larger the queue
-the more memory consumed by the collector that could otherwise be used for
-other purposes. Also, since the queue is based on batches and batch sizes are
-environment specific, it is not as easy to understand how much memory a queue will
-consume. Finally, the queue size is dependent on the deployment model of the
-collector. The agent deployment model typically has a smaller queue than the collector
-deployment model.
+Some important things to keep in mind with the queued_retry processor:
+- Given that if the queue is full the data will be dropped, it is important to size
+the queue appropriately.
+- Since the queue is based on batches and batch sizes are environment specific, it may
+not be easy to understand how much memory a queue will consume.
+- Finally, the queue size is dependent on the deployment model of the collector. The
+agent deployment model typically has a smaller queue than the collector deployment
+model.
 
 It is highly recommended to configure the queued_retry processor on every collector
 as it minimizes the likelihood of data being dropped due to delays in processing or
@@ -382,7 +383,8 @@ Please refer to [config.go](queuedprocessor/config.go) for the config spec.
 The following configuration options can be modified:
 - `backoff_delay` (default = 5s): Time interval to wait before retrying
 - `num_workers` (default = 10): Number of workers that dequeue batches
-- `queue_size` (default = 5000): Maximum number of batches allowed before drop
+- `queue_size` (default = 5000): Maximum number of batches kept in memory before data
+is dropped
 - `retry_on_failure` (default = true): Whether to retry on failure or give up and drop
 
 Examples:
