@@ -302,7 +302,7 @@ service:
       exporters: [opencensus, zipkin]
 ```
 
-### <a name="troubleshooting">Troubleshooting</a>
+### <a name="troubleshooting"></a>Troubleshooting
 The OpenTelemetry Collector by default exposes Prometheus metrics and logs for
 monitoring and troubleshooting. When troubleshooting live issues it is 
 recommended the use of the `zpages` [extension](#config-extensions).
@@ -315,9 +315,9 @@ encountered errors are reported on the right most column.
 
 ![zpages-example](docs/images/zpages-example.png) 
 
-## <a name="other-information">Other Information</a>
+## <a name="other-information"></a>Other Information
 
-### <a name="extending-the-collector">Extending the Collector</a>
+### <a name="extending-the-collector"></a>Extending the Collector
 
 The OpenTelemetry collector can be extended or embedded into other applications.
 
@@ -326,7 +326,7 @@ The list of applications extending the collector:
 * [opentelemetry-collector-contrib](https://github.com/open-telemetry/opentelemetry-collector-contrib)
 * [jaeger-opentelemetry-collector](https://github.com/jaegertracing/jaeger-opentemenetry-collector)
 
-### <a name="owners">Owners</a>
+### <a name="owners"></a>Owners
 
 Approvers ([@open-telemetry/collector-approvers](https://github.com/orgs/open-telemetry/teams/collector-approvers)):
 
