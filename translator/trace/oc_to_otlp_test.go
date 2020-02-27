@@ -411,36 +411,36 @@ func TestOcToOtlp(t *testing.T) {
 	tests := []struct {
 		name string
 		oc   consumerdata.TraceData
-		otlp consumerdata.OTLPTraceData
+		otlp []*otlptrace.ResourceSpans
 	}{
 		{
 			name: "empty",
 			oc:   consumerdata.TraceData{},
-			otlp: consumerdata.OTLPTraceData{},
+			otlp: nil,
 		},
 
 		{
 			name: "nil-resource",
 			oc:   consumerdata.TraceData{Node: ocNode},
-			otlp: consumerdata.NewOTLPTraceData([]*otlptrace.ResourceSpans{
+			otlp: []*otlptrace.ResourceSpans{
 				{Resource: &otlpresource.Resource{}},
-			}),
+			},
 		},
 
 		{
 			name: "nil-node",
 			oc:   consumerdata.TraceData{Resource: ocResource},
-			otlp: consumerdata.NewOTLPTraceData([]*otlptrace.ResourceSpans{
+			otlp: []*otlptrace.ResourceSpans{
 				{Resource: &otlpresource.Resource{}},
-			}),
+			},
 		},
 
 		{
 			name: "no-spans",
 			oc:   consumerdata.TraceData{Node: ocNode, Resource: ocResource},
-			otlp: consumerdata.NewOTLPTraceData([]*otlptrace.ResourceSpans{
+			otlp: []*otlptrace.ResourceSpans{
 				{Resource: &otlpresource.Resource{}},
-			}),
+			},
 		},
 
 		{
@@ -450,12 +450,12 @@ func TestOcToOtlp(t *testing.T) {
 				Resource: ocResource,
 				Spans:    []*octrace.Span{ocSpan1},
 			},
-			otlp: consumerdata.NewOTLPTraceData([]*otlptrace.ResourceSpans{
+			otlp: []*otlptrace.ResourceSpans{
 				{
 					Resource: &otlpresource.Resource{},
 					Spans:    []*otlptrace.Span{otlpSpan1},
 				},
-			}),
+			},
 		},
 
 		{
@@ -465,12 +465,12 @@ func TestOcToOtlp(t *testing.T) {
 				Resource: ocResource,
 				Spans:    []*octrace.Span{ocSpan1, nil, ocSpan2},
 			},
-			otlp: consumerdata.NewOTLPTraceData([]*otlptrace.ResourceSpans{
+			otlp: []*otlptrace.ResourceSpans{
 				{
 					Resource: &otlpresource.Resource{},
 					Spans:    []*otlptrace.Span{otlpSpan1, otlpSpan2},
 				},
-			}),
+			},
 		},
 
 		{
@@ -480,7 +480,7 @@ func TestOcToOtlp(t *testing.T) {
 				Resource: ocResource,
 				Spans:    []*octrace.Span{ocSpan1, ocSpan2, ocSpan3},
 			},
-			otlp: consumerdata.NewOTLPTraceData([]*otlptrace.ResourceSpans{
+			otlp: []*otlptrace.ResourceSpans{
 				{
 					Resource: &otlpresource.Resource{},
 					Spans:    []*otlptrace.Span{otlpSpan1, otlpSpan2},
@@ -489,7 +489,7 @@ func TestOcToOtlp(t *testing.T) {
 					Resource: &otlpresource.Resource{},
 					Spans:    []*otlptrace.Span{otlpSpan3},
 				},
-			}),
+			},
 		},
 
 		{
@@ -499,7 +499,7 @@ func TestOcToOtlp(t *testing.T) {
 				Resource: ocResource,
 				Spans:    []*octrace.Span{ocSpan1, ocSpan3, ocSpan2},
 			},
-			otlp: consumerdata.NewOTLPTraceData([]*otlptrace.ResourceSpans{
+			otlp: []*otlptrace.ResourceSpans{
 				{
 					Resource: &otlpresource.Resource{},
 					Spans:    []*otlptrace.Span{otlpSpan1, otlpSpan2},
@@ -508,7 +508,7 @@ func TestOcToOtlp(t *testing.T) {
 					Resource: &otlpresource.Resource{},
 					Spans:    []*otlptrace.Span{otlpSpan3},
 				},
-			}),
+			},
 		},
 	}
 

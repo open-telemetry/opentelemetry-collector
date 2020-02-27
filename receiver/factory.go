@@ -76,18 +76,18 @@ type Factory interface {
 		consumer consumer.MetricsConsumer) (MetricsReceiver, error)
 }
 
-// OTLPFactory can create OTLPTraceReceiver and OTLPMetricsReceiver. This is the
-// new factory type that can create OTLP-based receivers.
-type OTLPFactory interface {
+// FactoryV2 can create TraceReceiverV2 and MetricsReceiverV2. This is the
+// new factory type that can create new style receivers.
+type FactoryV2 interface {
 	BaseFactory
 
-	// CreateOTLPTraceReceiver creates a trace receiver based on this config.
+	// CreateTraceReceiverV2 creates a trace receiver based on this config.
 	// If the receiver type does not support tracing or if the config is not valid
 	// error will be returned instead.
-	CreateOTLPTraceReceiver(ctx context.Context, logger *zap.Logger, cfg configmodels.Receiver,
-		nextConsumer consumer.OTLPTraceConsumer) (TraceReceiver, error)
+	CreateTraceReceiverV2(ctx context.Context, logger *zap.Logger, cfg configmodels.Receiver,
+		nextConsumer consumer.TraceConsumerV2) (TraceReceiver, error)
 
-	// TODO: add CreateOTLPMetricsReceiver.
+	// TODO: add CreateMetricsReceiverV2.
 }
 
 // Build takes a list of receiver factories and returns a map of type map[string]Factory
