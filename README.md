@@ -2,22 +2,36 @@
   <strong>
     <a href="https://opentelemetry.io/docs/collector/getting-started/">Getting Started<a/>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
-    [![Build Status][travis-image]][travis-url]
-    [![GoDoc][godoc-image]][godoc-url]
-    [![Gitter chat][gitter-image]][gitter-url]
-    [![Coverage Status][codecov-image]][codecov-url]
-    &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="https://github.com/open-telemetry/community#agentcollector">Getting Involved<a/>
+    &nbsp;&nbsp;&bull;&nbsp;&nbsp;
+    <a href="https://gitter.im/open-telemetry/opentelemetry-collector">Getting In Touch<a/>
   </strong>
 </p>
 
+<p align="center">
+  <a href="https://travis-ci.org/open-telemetry/opentelemetry-collector">
+    <img alt="Build Status" src="https://img.shields.io/travis/open-telemetry/opentelemetry-collector?style=for-the-badge">
+  </a>
+  <a href="https://goreportcard.com/report/github.com/open-telemetry/opentelemetry-collector">
+    <img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/open-telemetry/opentelemetry-collector?style=for-the-badge">
+  </a>
+  <a href="https://codecov.io/gh/open-telemetry/opentelemetry-collector/branch/master/">
+    <img alt="Codecov Status" src="https://img.shields.io/codecov/c/github/open-telemetry/opentelemetry-collector?style=for-the-badge">
+  </a>
+  <a href="releases">
+    <img alt="GitHub release (latest by date including pre-releases)" src="https://img.shields.io/github/v/release/open-telemetry/opentelemetry-collector?include_prereleases&style=for-the-badge">
+  </a>
+</p>
+    
 ---
 
-## About
+### About
 
+The OpenTelemetry Collector offers a vendor-agnostic implementation on how to receive, process, and export OpenTelemetry data in a seamless way. In addition, it removes the need to run, operate, and maintain multiple agents/collectors in order to support open-source observability data formats (e.g. Jaeger, Prometheus, etc.) and at the same time multiple open-source or commercial back-ends.
 
+### Contributing
 
-## Owners
+See [CONTRIBUTING.md](CONTRIBUTING.md)
 
 Approvers ([@open-telemetry/collector-approvers](https://github.com/orgs/open-telemetry/teams/collector-approvers)):
 
@@ -36,12 +50,3 @@ Maintainers ([@open-telemetry/collector-maintainers](https://github.com/orgs/ope
 - [Tigran Najaryan](https://github.com/tigrannajaryan), Splunk
 
 *Find more about the maintainer role in [community repository](https://github.com/open-telemetry/community/blob/master/community-membership.md#maintainer).*
-
-[travis-image]: https://travis-ci.org/open-telemetry/opentelemetry-collector.svg?branch=master
-[travis-url]: https://travis-ci.org/open-telemetry/opentelemetry-collector
-[godoc-image]: https://godoc.org/github.com/open-telemetry/opentelemetry-collector?status.svg
-[godoc-url]: https://godoc.org/github.com/open-telemetry/opentelemetry-collector
-[gitter-image]: https://badges.gitter.im/open-telemetry/opentelemetry-collector.svg
-[gitter-url]: https://gitter.im/open-telemetry/opentelemetry-collector?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
-[codecov-image]: https://codecov.io/gh/open-telemetry/opentelemetry-collector/branch/master/graph/badge.svg
-[codecov-url]: https://codecov.io/gh/open-telemetry/opentelemetry-collector/branch/master/
