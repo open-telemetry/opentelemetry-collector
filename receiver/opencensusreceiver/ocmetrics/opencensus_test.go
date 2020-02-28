@@ -354,7 +354,7 @@ func ocReceiverOnGRPCServer(t *testing.T, sr consumer.MetricsConsumer, opts ...O
 		t.Fatalf("Failed to create new agent: %v", err)
 	}
 
-	oci, err = New(sr, opts...)
+	oci, err = New(receiverTagValue, sr, opts...)
 	require.NoError(t, err, "Failed to create the Receiver: %v", err)
 
 	// Now run it as a gRPC server

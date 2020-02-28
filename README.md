@@ -21,6 +21,7 @@ We hold regular meetings. See details at [community page](https://github.com/ope
   - [Exporters](#config-exporters)
   - [Extensions](#config-extensions)
   - [Service](#config-service)
+- [Troubleshooting](#troubleshooting)
 - [Other Information](#other-information)
   - [Extending the Collector](#extending-the-collector)
   - [Owners](#owners)
@@ -301,9 +302,22 @@ service:
       exporters: [opencensus, zipkin]
 ```
 
-## Other Information
+### <a name="troubleshooting"></a>Troubleshooting
+By default, the OpenTelemetry Collector exposes Prometheus metrics and logs for
+monitoring and troubleshooting. When troubleshooting live issues it is 
+recommended to use `zpages` [extension](#config-extensions).
 
-### Extending the Collector
+The `zpages` extension provides live information about receivers and exporters.
+By default, `zpages` is available
+at `http://localhost:55679/debug/tracez`. Click on the links of the displayed
+operations to see information about each individual operation. Operations that
+encountered errors are reported on the right most column.
+
+![zpages-example](docs/images/zpages-example.png) 
+
+## <a name="other-information"></a>Other Information
+
+### <a name="extending-the-collector"></a>Extending the Collector
 
 The OpenTelemetry collector can be extended or embedded into other applications.
 
@@ -312,7 +326,7 @@ The list of applications extending the collector:
 * [opentelemetry-collector-contrib](https://github.com/open-telemetry/opentelemetry-collector-contrib)
 * [jaeger-opentelemetry-collector](https://github.com/jaegertracing/jaeger-opentemenetry-collector)
 
-### Owners
+### <a name="owners"></a>Owners
 
 Approvers ([@open-telemetry/collector-approvers](https://github.com/orgs/open-telemetry/teams/collector-approvers)):
 

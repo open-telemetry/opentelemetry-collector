@@ -48,8 +48,10 @@ import (
 	jaegertranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace/jaeger"
 )
 
+const jaegerReceiver = "jaeger_receiver_test"
+
 func TestTraceSource(t *testing.T) {
-	jr, err := New(context.Background(), &Configuration{}, nil, zap.NewNop())
+	jr, err := New(jaegerReceiver, &Configuration{}, nil, zap.NewNop())
 	assert.NoError(t, err, "should not have failed to create the Jaeger receiver")
 	require.NotNil(t, jr)
 }
@@ -61,7 +63,7 @@ func TestReception(t *testing.T) {
 	}
 	sink := new(exportertest.SinkTraceExporter)
 
-	jr, err := New(context.Background(), config, sink, zap.NewNop())
+	jr, err := New(jaegerReceiver, config, sink, zap.NewNop())
 	defer jr.Shutdown()
 	assert.NoError(t, err, "should not have failed to create the Jaeger received")
 
@@ -111,7 +113,7 @@ func TestPortsNotOpen(t *testing.T) {
 
 	sink := new(exportertest.SinkTraceExporter)
 
-	jr, err := New(context.Background(), config, sink, zap.NewNop())
+	jr, err := New(jaegerReceiver, config, sink, zap.NewNop())
 	assert.NoError(t, err, "should not have failed to create a new receiver")
 	defer jr.Shutdown()
 
@@ -148,7 +150,7 @@ func TestGRPCReception(t *testing.T) {
 	}
 	sink := new(exportertest.SinkTraceExporter)
 
-	jr, err := New(context.Background(), config, sink, zap.NewNop())
+	jr, err := New(jaegerReceiver, config, sink, zap.NewNop())
 	assert.NoError(t, err, "should not have failed to create a new receiver")
 	defer jr.Shutdown()
 
@@ -207,7 +209,7 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 	}
 	sink := new(exportertest.SinkTraceExporter)
 
-	jr, err := New(context.Background(), config, sink, zap.NewNop())
+	jr, err := New(jaegerReceiver, config, sink, zap.NewNop())
 	assert.NoError(t, err, "should not have failed to create a new receiver")
 	defer jr.Shutdown()
 
@@ -252,7 +254,7 @@ func TestThriftTChannelReception(t *testing.T) {
 	}
 	sink := new(exportertest.SinkTraceExporter)
 
-	jr, err := New(context.Background(), config, sink, zap.NewNop())
+	jr, err := New(jaegerReceiver, config, sink, zap.NewNop())
 	assert.NoError(t, err, "should not have failed to create a new receiver")
 	defer jr.Shutdown()
 
@@ -466,7 +468,7 @@ func TestSampling(t *testing.T) {
 	}
 	sink := new(exportertest.SinkTraceExporter)
 
-	jr, err := New(context.Background(), config, sink, zap.NewNop())
+	jr, err := New(jaegerReceiver, config, sink, zap.NewNop())
 	assert.NoError(t, err, "should not have failed to create a new receiver")
 	defer jr.Shutdown()
 
@@ -520,7 +522,7 @@ func TestSamplingFailsOnNotConfigured(t *testing.T) {
 	}
 	sink := new(exportertest.SinkTraceExporter)
 
-	jr, err := New(context.Background(), config, sink, zap.NewNop())
+	jr, err := New(jaegerReceiver, config, sink, zap.NewNop())
 	assert.NoError(t, err, "should not have failed to create a new receiver")
 	defer jr.Shutdown()
 
@@ -550,7 +552,7 @@ func TestSamplingFailsOnBadFile(t *testing.T) {
 	}
 	sink := new(exportertest.SinkTraceExporter)
 
-	jr, err := New(context.Background(), config, sink, zap.NewNop())
+	jr, err := New(jaegerReceiver, config, sink, zap.NewNop())
 	assert.NoError(t, err, "should not have failed to create a new receiver")
 	defer jr.Shutdown()
 

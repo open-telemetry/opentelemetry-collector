@@ -1,6 +1,8 @@
 receivers:
   opencensus:
     endpoint: 0.0.0.0:55678
+  zipkin:
+    endpoint: :9411
   jaeger:
     protocols:
       thrift_http:
@@ -19,16 +21,16 @@ processors:
 
 extensions:
   pprof:
-    endpoint: localhost:1777
+    endpoint: :1777
   zpages:
-    endpoint: localhost:55679
+    endpoint: :55679
   health_check:
 
 service:
   extensions: [health_check, pprof, zpages]
   pipelines:
     traces:
-      receivers: [opencensus, jaeger]
+      receivers: [opencensus, jaeger, zipkin]
       exporters: [opencensus, logging]
       processors: [batch, queued_retry]
     metrics:

@@ -24,28 +24,31 @@ import (
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"go.opencensus.io/trace"
 	"google.golang.org/api/support/bundler"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/observability"
+	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
 )
 
 // Receiver is the type used to handle metrics from OpenCensus exporters.
 type Receiver struct {
+	instanceName       string
 	nextConsumer       consumer.MetricsConsumer
 	metricBufferPeriod time.Duration
 	metricBufferCount  int
 }
 
 // New creates a new ocmetrics.Receiver reference.
-func New(nextConsumer consumer.MetricsConsumer, opts ...Option) (*Receiver, error) {
+func New(instanceName string, nextConsumer consumer.MetricsConsumer, opts ...Option) (*Receiver, error) {
 	if nextConsumer == nil {
 		return nil, oterr.ErrNilNextConsumer
 	}
-	ocr := &Receiver{nextConsumer: nextConsumer}
+	ocr := &Receiver{
+		instanceName: instanceName,
+		nextConsumer: nextConsumer,
+	}
 	for _, opt := range opts {
 		opt.WithReceiver(ocr)
 	}
@@ -56,14 +59,17 @@ var _ agentmetricspb.MetricsServiceServer = (*Receiver)(nil)
 
 var errMetricsExportProtocolViolation = errors.New("protocol violation: Export's first message must have a Node")
 
-const receiverTagValue = "oc_metrics"
+const (
+	receiverTagValue  = "oc_metrics"
+	receiverTransport = "grpc" // TODO: transport is being hard coded for now, investigate if info is available on context.
+)
 
 // Export is the gRPC method that receives streamed metrics from
 // OpenCensus-metricproto compatible libraries/applications.
 func (ocr *Receiver) Export(mes agentmetricspb.MetricsService_ExportServer) error {
 	// The bundler will receive batches of metrics i.e. []*metricspb.Metric
-	// We need to ensure that it propagates the receiver name as a tag
-	ctxWithReceiverName := observability.ContextWithReceiverName(mes.Context(), receiverTagValue)
+	ctxWithReceiverName := obsreport.ReceiverContext(
+		mes.Context(), ocr.instanceName, receiverTransport, receiverTagValue)
 	metricsBundler := bundler.NewBundler((*consumerdata.MetricsData)(nil), func(payload interface{}) {
 		ocr.batchMetricExporting(ctxWithReceiverName, payload)
 	})
@@ -130,29 +136,42 @@ func processReceivedMetrics(ni *commonpb.Node, resource *resourcepb.Resource, me
 }
 
 func (ocr *Receiver) batchMetricExporting(longLivedRPCCtx context.Context, payload interface{}) {
-	mds := payload.([]*consumerdata.MetricsData)
-	if len(mds) == 0 {
-		return
-	}
-
-	// Trace this method
-	ctx, span := trace.StartSpan(context.Background(), "OpenCensusMetricsReceiver.Export")
-	defer span.End()
-
-	// TODO: (@odeke-em) investigate if it is necessary
-	// to group nodes with their respective metrics during
-	// bundledMetrics list unfurling then send metrics grouped per node
+	ctx, span := obsreport.StartMetricsReceiveOp(
+		context.Background(),
+		ocr.instanceName,
+		receiverTransport)
 
 	// If the starting RPC has a parent span, then add it as a parent link.
-	observability.SetParentLink(longLivedRPCCtx, span)
+	obsreport.SetParentLink(longLivedRPCCtx, span)
 
-	nMetrics := int64(0)
+	mds := payload.([]*consumerdata.MetricsData)
+	numTimeSeries := 0
+	numPoints := 0
+	var consumerErr error
 	for _, md := range mds {
-		ocr.nextConsumer.ConsumeMetricsData(ctx, *md)
-		nMetrics += int64(len(md.Metrics))
+		if md == nil || len(md.Metrics) == 0 {
+			continue
+		}
+
+		// Count number of time series and data points.
+		for _, metric := range md.Metrics {
+			numTimeSeries += len(metric.Timeseries)
+			for _, ts := range metric.GetTimeseries() {
+				numPoints += len(ts.GetPoints())
+			}
+		}
+
+		if consumerErr != nil {
+			continue
+		}
+		consumerErr = ocr.nextConsumer.ConsumeMetricsData(ctx, *md)
 	}
 
-	span.Annotate([]trace.Attribute{
-		trace.Int64Attribute("num_metrics", nMetrics),
-	}, "")
+	obsreport.EndMetricsReceiveOp(
+		ctx,
+		span,
+		"protobuf",
+		numPoints,
+		numTimeSeries,
+		consumerErr)
 }

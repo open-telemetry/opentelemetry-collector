@@ -47,13 +47,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/testutils"
 )
 
+const ocReceiver = "oc_receiver_test"
+
 // TODO(ccaraman): Migrate tests to use assert for validating functionality.
 func TestGrpcGateway_endToEnd(t *testing.T) {
 	addr := testutils.GetAvailableLocalAddress(t)
 
 	// Set the buffer count to 1 to make it flush the test span immediately.
 	sink := new(exportertest.SinkTraceExporter)
-	ocr, err := New("tcp", addr, sink, nil)
+	ocr, err := New(ocReceiver, "tcp", addr, sink, nil)
 	require.NoError(t, err, "Failed to create trace receiver: %v", err)
 
 	mh := component.NewMockHost()
@@ -157,7 +159,7 @@ func TestTraceGrpcGatewayCors_endToEnd(t *testing.T) {
 	corsOrigins := []string{"allowed-*.com"}
 
 	sink := new(exportertest.SinkTraceExporter)
-	ocr, err := New("tcp", addr, sink, nil, WithCorsOrigins(corsOrigins))
+	ocr, err := New(ocReceiver, "tcp", addr, sink, nil, WithCorsOrigins(corsOrigins))
 	require.NoError(t, err, "Failed to create trace receiver: %v", err)
 	defer ocr.Shutdown()
 
@@ -183,7 +185,7 @@ func TestMetricsGrpcGatewayCors_endToEnd(t *testing.T) {
 	corsOrigins := []string{"allowed-*.com"}
 
 	sink := new(exportertest.SinkMetricsExporter)
-	ocr, err := New("tcp", addr, nil, sink, WithCorsOrigins(corsOrigins))
+	ocr, err := New(ocReceiver, "tcp", addr, nil, sink, WithCorsOrigins(corsOrigins))
 	require.NoError(t, err, "Failed to create metrics receiver: %v", err)
 	defer ocr.Shutdown()
 
@@ -212,7 +214,7 @@ func TestAcceptAllGRPCProtoAffiliatedContentTypes(t *testing.T) {
 
 	addr := testutils.GetAvailableLocalAddress(t)
 	cbts := new(exportertest.SinkTraceExporter)
-	ocr, err := New("tcp", addr, cbts, nil)
+	ocr, err := New(ocReceiver, "tcp", addr, cbts, nil)
 	require.NoError(t, err, "Failed to create trace receiver: %v", err)
 
 	mh := component.NewMockHost()
@@ -336,7 +338,7 @@ func verifyCorsResp(t *testing.T, url string, origin string, wantStatus int, wan
 
 func TestStopWithoutStartNeverCrashes(t *testing.T) {
 	addr := testutils.GetAvailableLocalAddress(t)
-	ocr, err := New("tcp", addr, nil, nil)
+	ocr, err := New(ocReceiver, "tcp", addr, nil, nil)
 	require.NoError(t, err, "Failed to create an OpenCensus receiver: %v", err)
 	// Stop it before ever invoking Start*.
 	ocr.stop()
@@ -348,14 +350,14 @@ func TestNewPortAlreadyUsed(t *testing.T) {
 	require.NoError(t, err, "failed to listen on %q: %v", addr, err)
 	defer ln.Close()
 
-	r, err := New("tcp", addr, nil, nil)
+	r, err := New(ocReceiver, "tcp", addr, nil, nil)
 	require.Error(t, err)
 	require.Nil(t, r)
 }
 
 func TestMultipleStopReceptionShouldNotError(t *testing.T) {
 	addr := testutils.GetAvailableLocalAddress(t)
-	r, err := New("tcp", addr, new(exportertest.SinkTraceExporter), new(exportertest.SinkMetricsExporter))
+	r, err := New(ocReceiver, "tcp", addr, new(exportertest.SinkTraceExporter), new(exportertest.SinkMetricsExporter))
 	require.NoError(t, err)
 	require.NotNil(t, r)
 
@@ -366,7 +368,7 @@ func TestMultipleStopReceptionShouldNotError(t *testing.T) {
 
 func TestStartWithoutConsumersShouldFail(t *testing.T) {
 	addr := testutils.GetAvailableLocalAddress(t)
-	r, err := New("tcp", addr, nil, nil)
+	r, err := New(ocReceiver, "tcp", addr, nil, nil)
 	require.NoError(t, err)
 	require.NotNil(t, r)
 
@@ -387,7 +389,7 @@ func tempSocketName(t *testing.T) string {
 func TestReceiveOnUnixDomainSocket_endToEnd(t *testing.T) {
 	socketName := tempSocketName(t)
 	cbts := new(exportertest.SinkTraceExporter)
-	r, err := New("unix", socketName, cbts, nil)
+	r, err := New(ocReceiver, "unix", socketName, cbts, nil)
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	mh := component.NewMockHost()
@@ -532,7 +534,7 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 				sink := new(sinkTraceConsumer)
 
 				var opts []Option
-				ocr, err := New("tcp", addr, nil, nil, opts...)
+				ocr, err := New(ocReceiver, "tcp", addr, nil, nil, opts...)
 				require.Nil(t, err)
 				require.NotNil(t, ocr)
 

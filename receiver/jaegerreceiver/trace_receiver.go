@@ -50,10 +50,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/client"
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/observability"
+	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	jaegertranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace/jaeger"
+)
+
+var (
+	batchSubmitNotOkResponse = &jaeger.BatchSubmitResponse{}
+	batchSubmitOkResponse    = &jaeger.BatchSubmitResponse{Ok: true}
 )
 
 // Configuration defines the behavior and the ports that
@@ -78,6 +83,7 @@ type jReceiver struct {
 	mu sync.Mutex
 
 	nextConsumer consumer.TraceConsumer
+	instanceName string
 
 	startOnce sync.Once
 	stopOnce  sync.Once
@@ -98,6 +104,7 @@ type jReceiver struct {
 
 type jTchannelReceiver struct {
 	nextConsumer consumer.TraceConsumer
+	instanceName string
 
 	tchannel *tchannel.Channel
 }
@@ -106,16 +113,38 @@ const (
 	defaultAgentQueueSize     = 1000
 	defaultAgentMaxPacketSize = 65000
 	defaultAgentServerWorkers = 10
+
+	// Legacy metrics receiver name tag values
+	collectorReceiverTagValue         = "jaeger-collector"
+	tchannelCollectorReceiverTagValue = "jaeger-tchannel-collector"
+	agentReceiverTagValue             = "jaeger-agent"
+
+	agentTransport             = "agent" // This is not 100% precise since it can be either compact or binary.
+	collectorHTTPTransport     = "collector_http"
+	collectorTChannelTransport = "collector_tchannel"
+	grpcTransport              = "grpc"
+
+	thriftFormat   = "thrift"
+	protobufFormat = "protobuf"
 )
 
-// New creates a TraceReceiver that receives traffic as a collector with both Thrift and HTTP transports.
-func New(ctx context.Context, config *Configuration, nextConsumer consumer.TraceConsumer, logger *zap.Logger) (receiver.TraceReceiver, error) {
+// New creates a TraceReceiver that receives traffic as a Jaeger collector, and
+// also as a Jaeger agent.
+func New(
+	instanceName string,
+	config *Configuration,
+	nextConsumer consumer.TraceConsumer,
+	logger *zap.Logger,
+) (receiver.TraceReceiver, error) {
 	return &jReceiver{
-		config:          config,
-		defaultAgentCtx: observability.ContextWithReceiverName(context.Background(), "jaeger-agent"),
-		nextConsumer:    nextConsumer,
+		config: config,
+		defaultAgentCtx: obsreport.ReceiverContext(
+			context.Background(), instanceName, agentTransport, agentReceiverTagValue),
+		nextConsumer: nextConsumer,
+		instanceName: instanceName,
 		tchanServer: &jTchannelReceiver{
 			nextConsumer: nextConsumer,
+			instanceName: instanceName,
 		},
 		logger: logger,
 	}, nil
@@ -269,44 +298,59 @@ func (jr *jReceiver) stopTraceReceptionLocked() error {
 	return err
 }
 
-const collectorReceiverTagValue = "jaeger-collector"
-const tchannelCollectorReceiverTagValue = "jaeger-tchannel-collector"
+func consumeTraceData(
+	ctx context.Context,
+	batches []*jaeger.Batch,
+	consumer consumer.TraceConsumer,
+) ([]*jaeger.BatchSubmitResponse, int, error) {
 
-func consumeTraceData(ctx context.Context, batches []*jaeger.Batch, consumer consumer.TraceConsumer) ([]*jaeger.BatchSubmitResponse, error) {
 	jbsr := make([]*jaeger.BatchSubmitResponse, 0, len(batches))
-
+	var consumerError error
+	numSpans := 0
 	for _, batch := range batches {
-		td, err := jaegertranslator.ThriftBatchToOCProto(batch)
-		// TODO: (@odeke-em) add this error for Jaeger observability
-		ok := false
-
-		if err == nil {
-			ok = true
-			td.SourceFormat = "jaeger"
-			consumer.ConsumeTraceData(ctx, td)
-			// We MUST unconditionally record metrics from this reception.
-			observability.RecordMetricsForTraceReceiver(ctx, len(batch.Spans), len(batch.Spans)-len(td.Spans))
+		numSpans += len(batch.Spans)
+		if consumerError != nil {
+			jbsr = append(jbsr, batchSubmitNotOkResponse)
+			continue
 		}
 
-		jbsr = append(jbsr, &jaeger.BatchSubmitResponse{
-			Ok: ok,
-		})
+		// TODO: function below never returns error, change the signature.
+		td, _ := jaegertranslator.ThriftBatchToOCProto(batch)
+		td.SourceFormat = "jaeger"
+		consumerError = consumer.ConsumeTraceData(ctx, td)
+		jsr := batchSubmitOkResponse
+		if consumerError != nil {
+			jsr = batchSubmitNotOkResponse
+		}
+		jbsr = append(jbsr, jsr)
 	}
 
-	return jbsr, nil
+	return jbsr, numSpans, consumerError
 }
 
 func (jr *jReceiver) SubmitBatches(batches []*jaeger.Batch, options handler.SubmitBatchOptions) ([]*jaeger.BatchSubmitResponse, error) {
 	ctx := context.Background()
-	ctxWithReceiverName := observability.ContextWithReceiverName(ctx, collectorReceiverTagValue)
+	receiverCtx := obsreport.ReceiverContext(
+		ctx, jr.instanceName, collectorHTTPTransport, collectorReceiverTagValue)
+	_, span := obsreport.StartTraceDataReceiveOp(
+		receiverCtx, jr.instanceName, collectorHTTPTransport)
 
-	return consumeTraceData(ctxWithReceiverName, batches, jr.nextConsumer)
+	jbsr, numSpans, err := consumeTraceData(receiverCtx, batches, jr.nextConsumer)
+	obsreport.EndTraceDataReceiveOp(receiverCtx, span, thriftFormat, numSpans, err)
+
+	return jbsr, err
 }
 
 func (jtr *jTchannelReceiver) SubmitBatches(ctx thrift.Context, batches []*jaeger.Batch) ([]*jaeger.BatchSubmitResponse, error) {
-	ctxWithReceiverName := observability.ContextWithReceiverName(ctx, tchannelCollectorReceiverTagValue)
+	receiverCtx := obsreport.ReceiverContext(
+		ctx, jtr.instanceName, collectorTChannelTransport, tchannelCollectorReceiverTagValue)
+	_, span := obsreport.StartTraceDataReceiveOp(
+		ctx, jtr.instanceName, collectorTChannelTransport)
 
-	return consumeTraceData(ctxWithReceiverName, batches, jtr.nextConsumer)
+	jbsr, numSpans, err := consumeTraceData(receiverCtx, batches, jtr.nextConsumer)
+	obsreport.EndTraceDataReceiveOp(receiverCtx, span, thriftFormat, numSpans, err)
+
+	return jbsr, err
 }
 
 var _ reporter.Reporter = (*jReceiver)(nil)
@@ -322,15 +366,14 @@ func (jr *jReceiver) EmitZipkinBatch(spans []*zipkincore.Span) error {
 // EmitBatch implements cmd/agent/reporter.Reporter and it forwards
 // Jaeger spans received by the Jaeger agent processor.
 func (jr *jReceiver) EmitBatch(batch *jaeger.Batch) error {
-	td, err := jaegertranslator.ThriftBatchToOCProto(batch)
+	_, span := obsreport.StartTraceDataReceiveOp(
+		context.Background(), jr.instanceName, agentTransport)
+	// TODO: call below never returns error it remove from the signature
+	td, _ := jaegertranslator.ThriftBatchToOCProto(batch)
 	td.SourceFormat = "jaeger"
-	if err != nil {
-		observability.RecordMetricsForTraceReceiver(jr.defaultAgentCtx, len(batch.Spans), len(batch.Spans))
-		return err
-	}
 
-	err = jr.nextConsumer.ConsumeTraceData(jr.defaultAgentCtx, td)
-	observability.RecordMetricsForTraceReceiver(jr.defaultAgentCtx, len(batch.Spans), len(batch.Spans)-len(td.Spans))
+	err := jr.nextConsumer.ConsumeTraceData(jr.defaultAgentCtx, td)
+	obsreport.EndTraceDataReceiveOp(jr.defaultAgentCtx, span, thriftFormat, len(batch.Spans), err)
 
 	return err
 }
@@ -355,22 +398,22 @@ func (jr *jReceiver) PostSpans(ctx context.Context, r *api_v2.PostSpansRequest) 
 		ctx = client.NewContext(ctx, c)
 	}
 
-	ctxWithReceiverName := observability.ContextWithReceiverName(ctx, collectorReceiverTagValue)
+	receiverCtx := obsreport.ReceiverContext(
+		ctx, jr.instanceName, grpcTransport, collectorReceiverTagValue)
+	_, span := obsreport.StartTraceDataReceiveOp(
+		ctx, jr.instanceName, grpcTransport)
 
-	td, err := jaegertranslator.ProtoBatchToOCProto(r.Batch)
+	// TODO: the function below never returns error, change its interface.
+	td, _ := jaegertranslator.ProtoBatchToOCProto(r.GetBatch())
 	td.SourceFormat = "jaeger"
-	if err != nil {
-		observability.RecordMetricsForTraceReceiver(ctxWithReceiverName, len(r.Batch.Spans), len(r.Batch.Spans))
-		return nil, err
-	}
 
-	err = jr.nextConsumer.ConsumeTraceData(ctx, td)
-	observability.RecordMetricsForTraceReceiver(ctxWithReceiverName, len(r.Batch.Spans), len(r.Batch.Spans)-len(td.Spans))
+	err := jr.nextConsumer.ConsumeTraceData(receiverCtx, td)
+	obsreport.EndTraceDataReceiveOp(receiverCtx, span, protobufFormat, len(r.GetBatch().Spans), err)
 	if err != nil {
 		return nil, err
 	}
 
-	return &api_v2.PostSpansResponse{}, err
+	return &api_v2.PostSpansResponse{}, nil
 }
 
 func (jr *jReceiver) startAgent(_ component.Host) error {

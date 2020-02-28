@@ -38,7 +38,7 @@ func Example_endToEnd() {
 		log.Fatalf("Failed to create logging exporter: %v", err)
 	}
 
-	tr, err := opencensusreceiver.New("tcp", "localhost:55678", lte, nil)
+	tr, err := opencensusreceiver.New("opencensus", "tcp", "localhost:55678", lte, nil)
 	if err != nil {
 		log.Fatalf("Failed to create trace receiver: %v", err)
 	}

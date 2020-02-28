@@ -24,8 +24,9 @@ import (
 
 // Variables related to metrics specific to tail sampling.
 var (
-	tagPolicyKey, _  = tag.NewKey("policy")
-	tagSampledKey, _ = tag.NewKey("sampled")
+	tagPolicyKey, _    = tag.NewKey("policy")
+	tagSampledKey, _   = tag.NewKey("sampled")
+	tagSourceFormat, _ = tag.NewKey("source_format")
 
 	statDecisionLatencyMicroSec  = stats.Int64("sampling_decision_latency", "Latency (in microseconds) of a given sampling policy", "µs")
 	statOverallDecisionLatencyµs = stats.Int64("sampling_decision_timer_latency", "Latency (in microseconds) of each run of the sampling decision timer", "µs")
