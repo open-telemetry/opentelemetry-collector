@@ -46,9 +46,9 @@ spec:
     spec:
       containers:
       - command:
-          - "/usr/bin/otelcol"
+          - "/otelcol"
           - "--config=/conf/otel-agent-config.yaml"
-        image: omnition/opentelemetry-collector:v0.2.0
+        image: omnition/opentelemetry-collector:v0.2.3
         name: otel-agent
         resources:
           limits:
@@ -172,14 +172,14 @@ spec:
     spec:
       containers:
       - command:
-          - "/usr/bin/otelcol"
+          - "/otelcol"
           - "--config=/conf/otel-collector-config.yaml"
 #           Memory Ballast size should be max 1/3 to 1/2 of memory.
           - "--mem-ballast-size-mib=683"
         env:
         - name: GOGC
           value: "80"
-        image: omnition/opentelemetry-collector:v0.2.0
+        image: omnition/opentelemetry-collector:v0.2.3
         name: otel-collector
         resources:
           limits:
