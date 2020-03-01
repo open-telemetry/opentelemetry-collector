@@ -32,7 +32,7 @@ The OpenTelemetry Collector can receive traces and metrics from processes
 instrumented by OpenTelemetry or other monitoring/tracing libraries (e.g. Jaeger,
 Prometheus, etc.), can pre-process received data including adding or removing
 attributes, handles aggregation and smart sampling, and exports traces
-and metrics to one or more open-soource or commercial monitoring/tracing
+and metrics to one or more open-source or commercial monitoring/tracing
 backends.
 
 Some frameworks and ecosystems are now providing out-of-the-box instrumentation
