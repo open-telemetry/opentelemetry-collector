@@ -48,6 +48,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, "zipkin/2", e1.(*Config).Name())
 	assert.Equal(t, "https://somedest:1234/api/v2/spans", e1.(*Config).URL)
 	assert.Equal(t, "proto", e1.(*Config).Format)
+	assert.Equal(t, false, *e1.(*Config).ExportResourceLabels)
 	_, err = factory.CreateTraceExporter(zap.NewNop(), e1)
 	require.NoError(t, err)
 }
