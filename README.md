@@ -42,13 +42,14 @@
 
 ### OpenTelemetry Collector
 
-The OpenTelemetry Collector offers a vendor-agnostic implementation on how to receive, process, and export telemetry data in a seamless way. In addition, it removes the need to run, operate, and maintain multiple agents/collectors in order to support open-source telemetry data formats (e.g. Jaeger, Prometheus, etc.) and at the same time multiple open-source or commercial back-ends.
+The OpenTelemetry Collector offers a vendor-agnostic implementation on how to receive, process, and export telemetry data in a seamless way. In addition, it removes the need to run, operate, and maintain multiple agents/collectors in order to support open-source telemetry data formats (e.g. Jaeger, Prometheus, etc.) sending to multiple open-source or commercial back-ends.
 
 Objectives:
 
+- Unified: Single codebase, deployable as an agent or collector with support for traces, metrics, and logs (future).
 - Usable: Reasonable default configuration, supports popular protocols, runs and collects out of the box.
 - Performant: Highly stable and performant under varying loads and configurations.
-- Observable: Be an exemplar of an observable service.
+- Observable: An exemplar of an observable service.
 - Extensible: Customizable without touching the core code.
 
 ### Community Roles
