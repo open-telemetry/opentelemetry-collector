@@ -45,10 +45,13 @@
 The OpenTelemetry Collector offers a vendor-agnostic implementation on how to receive, process, and export telemetry data in a seamless way. In addition, it removes the need to run, operate, and maintain multiple agents/collectors in order to support open-source telemetry data formats (e.g. Jaeger, Prometheus, etc.) and at the same time multiple open-source or commercial back-ends.
 
 Objectives:
+
 - Usable: Reasonable default configuration, supports popular protocols, runs and collects out of the box.
 - Performant: Highly stable and performant under varying loads and configurations.
 - Observable: Be an exemplar of an observable service.
 - Extensible: Customizable without touching the core code.
+
+### Community Roles
 
 Approvers ([@open-telemetry/collector-approvers](https://github.com/orgs/open-telemetry/teams/collector-approvers)):
 
@@ -58,12 +61,10 @@ Approvers ([@open-telemetry/collector-approvers](https://github.com/orgs/open-te
 - [Steven Karis](https://github.com/sjkaris), Splunk
 - [Yang Song](https://github.com/songy23), Google
 
-*Find more about the approver role in [community repository](https://github.com/open-telemetry/community/blob/master/community-membership.md#approver).*
-
 Maintainers ([@open-telemetry/collector-maintainers](https://github.com/orgs/open-telemetry/teams/collector-maintainers)):
 
 - [Bogdan Drutu](https://github.com/BogdanDrutu), Splunk
 - [Paulo Janotti](https://github.com/pjanotti), Splunk
 - [Tigran Najaryan](https://github.com/tigrannajaryan), Splunk
 
-*Find more about the maintainer role in [community repository](https://github.com/open-telemetry/community/blob/master/community-membership.md#maintainer).*
+Learn more about roles in the [community repository](https://github.com/open-telemetry/community/blob/master/community-membership.md).
