@@ -27,5 +27,8 @@ type Config struct {
 	URL    string `mapstructure:"url"`
 	Format string `mapstructure:"format"`
 
+	// Whether resource labels from TraceData are to be included in Span
+	ExportResourceLabels string `mapstructure:"export_resource_labels"`
+
 	DefaultServiceName string `mapstructure:"default_service_name"`
 }
