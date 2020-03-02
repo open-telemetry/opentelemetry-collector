@@ -28,17 +28,17 @@ Collector as it runs.
 
 ## Common Issues
 
-### Collector restarts
+### Collector exit/restart
 
-The Collector may restart if it is not
+The Collector may exit/restart if it is not
 [sized properly](https://github.com/open-telemetry/opentelemetry-collector/blob/master/docs/performance.md)
 or configured properly, for example a queue size configured higher than
 available memory. In most cases, restarts are due to memory
-pressure. To mitigate this, we recommend you pass the
-`--mem-ballast-size-mib` parameter to the `otelcol` process as well as
-configure the [memory_limiter](https://github.com/open-telemetry/opentelemetry-collector/tree/master/processor#memory-limiter)
-processor. Alternatively, restarts may be due to resource limits
-configured on the Colleector.
+pressure. To mitigate this, we recommend you configure the
+[memory_limiter](https://github.com/open-telemetry/opentelemetry-collector/tree/master/processor#memory-limiter)
+processor.
+
+Note: restarts may be due to resource limits configured on the Colleector.
 
 ### Data being dropped
 
@@ -59,6 +59,9 @@ either:
 - There is a network configuration issue
 - The receiver configuration is incorrect
 - The client configuration is incorrect
+
+**IMPORTANT:** For containerized environments, you will need to manually set the
+receiver address to `0.0.0.0` in order to receive data.
 
 ### Exporting data not working
 
