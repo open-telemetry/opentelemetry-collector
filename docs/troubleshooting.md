@@ -45,7 +45,7 @@ configured on the Colleector.
 Data may be dropped for a variety of reasons, but most commonly because of an:
 
 - [Improperly sized Collector](https://github.com/open-telemetry/opentelemetry-collector/blob/master/docs/performance.md)) resulting in Collector being unable to process and export the data as fast as it is received.
-- Exporter destination unavailable
+- Exporter destination unavailable or accepting the data too slowly.
 
 To mitigate drops, it is highly recommended to configure the
 [queued_retry](https://github.com/open-telemetry/opentelemetry-collector/tree/master/processor#queued-retry)
