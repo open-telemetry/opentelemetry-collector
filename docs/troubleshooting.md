@@ -67,7 +67,7 @@ either:
 
 - There is a network configuration issue
 - The exporter configuration is incorrect
-- The destination is available
+- The destination is unavailable
 
 More often than not, exporting data does not work because of a network
 configuration issue. This could be due to a firewall, DNS, or proxy
