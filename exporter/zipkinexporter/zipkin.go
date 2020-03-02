@@ -18,11 +18,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"net/http"
 	"time"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	zipkinproto "github.com/openzipkin/zipkin-go/proto/v2"
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
