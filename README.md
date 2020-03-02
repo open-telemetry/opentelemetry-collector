@@ -1,5 +1,3 @@
-# OpenTelemetry Collector
-
 ---
 
 <p align="center">
@@ -13,11 +11,11 @@
 </p>
 
 <p align="center">
-  <a href="https://travis-ci.org/open-telemetry/opentelemetry-collector">
-    <img alt="Build Status" src="https://img.shields.io/travis/open-telemetry/opentelemetry-collector?style=for-the-badge">
-  </a>
   <a href="https://goreportcard.com/report/github.com/open-telemetry/opentelemetry-collector">
     <img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/open-telemetry/opentelemetry-collector?style=for-the-badge">
+  </a>
+  <a href="https://travis-ci.org/open-telemetry/opentelemetry-collector">
+    <img alt="Build Status" src="https://img.shields.io/travis/open-telemetry/opentelemetry-collector?style=for-the-badge">
   </a>
   <a href="https://codecov.io/gh/open-telemetry/opentelemetry-collector/branch/master/">
     <img alt="Codecov Status" src="https://img.shields.io/codecov/c/github/open-telemetry/opentelemetry-collector?style=for-the-badge">
@@ -26,16 +24,24 @@
     <img alt="GitHub release (latest by date including pre-releases)" src="https://img.shields.io/github/v/release/open-telemetry/opentelemetry-collector?include_prereleases&style=for-the-badge">
   </a>
 </p>
-    
+
+<p align="center">
+  <strong>
+    <a href="CONTRIBUTING.md">Contributing<a/>
+    &nbsp;&nbsp;&bull;&nbsp;&nbsp;
+    <a href="docs/design.md">Design<a/>
+    &nbsp;&nbsp;&bull;&nbsp;&nbsp;
+    <a href="docs/performance.md">Performance<a/>
+    &nbsp;&nbsp;&bull;&nbsp;&nbsp;
+    <a href="docs/vision.md">Vision<a/>
+  </strong>
+</p>
+
 ---
 
-### About
+### OpenTelemetry Collector
 
 The OpenTelemetry Collector offers a vendor-agnostic implementation on how to receive, process, and export OpenTelemetry data in a seamless way. In addition, it removes the need to run, operate, and maintain multiple agents/collectors in order to support open-source observability data formats (e.g. Jaeger, Prometheus, etc.) and at the same time multiple open-source or commercial back-ends.
-
-### Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md)
 
 Approvers ([@open-telemetry/collector-approvers](https://github.com/orgs/open-telemetry/teams/collector-approvers)):
 
