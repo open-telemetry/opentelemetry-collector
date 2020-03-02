@@ -47,9 +47,9 @@ type zipkinExporter struct {
 	defaultServiceName string
 
 	exportResourceLabels bool
-	url        			 string
-	client     			 *http.Client
-	serializer 			 zipkinreporter.SpanSerializer
+	url                  string
+	client               *http.Client
+	serializer           zipkinreporter.SpanSerializer
 }
 
 // Default values for Zipkin endpoint.
@@ -58,7 +58,7 @@ const (
 
 	defaultServiceName string = "<missing service name>"
 
-	DefaultExportResourceLabels   = false
+	DefaultExportResourceLabels   = true
 	DefaultZipkinEndpointHostPort = "localhost:9411"
 	DefaultZipkinEndpointURL      = "http://" + DefaultZipkinEndpointHostPort + "/api/v2/spans"
 )
@@ -88,8 +88,8 @@ func createZipkinExporter(logger *zap.Logger, config configmodels.Exporter) (*zi
 	}
 
 	exportResourceLabels := DefaultExportResourceLabels
-	if zCfg.ExportResourceLabels != "" {
-		exportResourceLabels = zCfg.ExportResourceLabels == "true"
+	if zCfg.ExportResourceLabels != nil {
+		exportResourceLabels = *zCfg.ExportResourceLabels
 	}
 
 	ze := &zipkinExporter{

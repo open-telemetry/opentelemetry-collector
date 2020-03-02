@@ -17,11 +17,11 @@ package spandata
 import (
 	"bytes"
 	"encoding/json"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"reflect"
 	"testing"
 	"time"
 
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"go.opencensus.io/trace"
@@ -153,7 +153,7 @@ func TestProtoSpanToOCSpanData_endToEnd(t *testing.T) {
 		},
 		HasRemoteParent: true,
 		Attributes: map[string]interface{}{
-			"namespace": "kube-system",
+			"namespace":  "kube-system",
 			"timeout_ns": int64(12e9),
 			"agent":      "ocagent",
 			"cache_hit":  true,

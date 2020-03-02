@@ -17,8 +17,8 @@ package spandata
 
 import (
 	"errors"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"go.opencensus.io/trace"
@@ -132,7 +132,7 @@ func protoLinkTypeToOCLinkType(lt tracepb.Span_Link_Type) trace.LinkType {
 }
 
 func protoAttributesToOCAttributes(attrs *tracepb.Span_Attributes, resource *resourcepb.Resource) map[string]interface{} {
-	if attrs == nil {
+	if attrs == nil && resource == nil {
 		return nil
 	}
 
@@ -144,7 +144,7 @@ func protoAttributesToOCAttributes(attrs *tracepb.Span_Attributes, resource *res
 		}
 	}
 
-	if len(attrs.AttributeMap) == 0 {
+	if attrs == nil || len(attrs.AttributeMap) == 0 {
 		return ocAttrsMap
 	}
 	for key, attr := range attrs.AttributeMap {
