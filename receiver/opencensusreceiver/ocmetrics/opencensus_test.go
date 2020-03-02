@@ -52,7 +52,7 @@ import (
 func TestExportMultiplexing(t *testing.T) {
 	metricSink := newMetricAppender()
 
-	_, port, doneFn := ocReceiverOnGRPCServer(t, metricSink, WithMetricBufferPeriod(90*time.Millisecond))
+	_, port, doneFn := ocReceiverOnGRPCServer(t, metricSink)
 	defer doneFn()
 
 	metricsClient, metricsClientDoneFn, err := makeMetricsServiceClient(port)
@@ -162,7 +162,7 @@ func TestExportMultiplexing(t *testing.T) {
 func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 	metricSink := newMetricAppender()
 
-	_, port, doneFn := ocReceiverOnGRPCServer(t, metricSink, WithMetricBufferPeriod(90*time.Millisecond))
+	_, port, doneFn := ocReceiverOnGRPCServer(t, metricSink)
 	defer doneFn()
 
 	metricsClient, metricsClientDoneFn, err := makeMetricsServiceClient(port)
@@ -236,7 +236,7 @@ func TestExportProtocolConformation_metricsInFirstMessage(t *testing.T) {
 
 	metricSink := newMetricAppender()
 
-	_, port, doneFn := ocReceiverOnGRPCServer(t, metricSink, WithMetricBufferPeriod(70*time.Millisecond))
+	_, port, doneFn := ocReceiverOnGRPCServer(t, metricSink)
 	defer doneFn()
 
 	metricsClient, metricsClientDoneFn, err := makeMetricsServiceClient(port)
@@ -332,7 +332,7 @@ func (sa *metricAppender) ConsumeMetricsData(ctx context.Context, md consumerdat
 	return nil
 }
 
-func ocReceiverOnGRPCServer(t *testing.T, sr consumer.MetricsConsumer, opts ...Option) (oci *Receiver, port int, done func()) {
+func ocReceiverOnGRPCServer(t *testing.T, sr consumer.MetricsConsumer) (oci *Receiver, port int, done func()) {
 	ln, err := net.Listen("tcp", "localhost:")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 
@@ -354,7 +354,7 @@ func ocReceiverOnGRPCServer(t *testing.T, sr consumer.MetricsConsumer, opts ...O
 		t.Fatalf("Failed to create new agent: %v", err)
 	}
 
-	oci, err = New(receiverTagValue, sr, opts...)
+	oci, err = New(receiverTagValue, sr)
 	require.NoError(t, err, "Failed to create the Receiver: %v", err)
 
 	// Now run it as a gRPC server

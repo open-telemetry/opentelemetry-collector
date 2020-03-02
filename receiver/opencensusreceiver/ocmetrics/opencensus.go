@@ -18,13 +18,11 @@ import (
 	"context"
 	"errors"
 	"io"
-	"time"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"google.golang.org/api/support/bundler"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
@@ -34,23 +32,18 @@ import (
 
 // Receiver is the type used to handle metrics from OpenCensus exporters.
 type Receiver struct {
-	instanceName       string
-	nextConsumer       consumer.MetricsConsumer
-	metricBufferPeriod time.Duration
-	metricBufferCount  int
+	instanceName string
+	nextConsumer consumer.MetricsConsumer
 }
 
 // New creates a new ocmetrics.Receiver reference.
-func New(instanceName string, nextConsumer consumer.MetricsConsumer, opts ...Option) (*Receiver, error) {
+func New(instanceName string, nextConsumer consumer.MetricsConsumer) (*Receiver, error) {
 	if nextConsumer == nil {
 		return nil, oterr.ErrNilNextConsumer
 	}
 	ocr := &Receiver{
 		instanceName: instanceName,
 		nextConsumer: nextConsumer,
-	}
-	for _, opt := range opts {
-		opt.WithReceiver(ocr)
 	}
 	return ocr, nil
 }
@@ -67,25 +60,8 @@ const (
 // Export is the gRPC method that receives streamed metrics from
 // OpenCensus-metricproto compatible libraries/applications.
 func (ocr *Receiver) Export(mes agentmetricspb.MetricsService_ExportServer) error {
-	// The bundler will receive batches of metrics i.e. []*metricspb.Metric
-	ctxWithReceiverName := obsreport.ReceiverContext(
+	receiverCtx := obsreport.ReceiverContext(
 		mes.Context(), ocr.instanceName, receiverTransport, receiverTagValue)
-	metricsBundler := bundler.NewBundler((*consumerdata.MetricsData)(nil), func(payload interface{}) {
-		ocr.batchMetricExporting(ctxWithReceiverName, payload)
-	})
-
-	metricBufferPeriod := ocr.metricBufferPeriod
-	if metricBufferPeriod <= 0 {
-		metricBufferPeriod = 2 * time.Second // Arbitrary value
-	}
-	metricBufferCount := ocr.metricBufferCount
-	if metricBufferCount <= 0 {
-		// TODO: (@odeke-em) provide an option to disable any buffering
-		metricBufferCount = 50 // Arbitrary value
-	}
-
-	metricsBundler.DelayThreshold = metricBufferPeriod
-	metricsBundler.BundleCountThreshold = metricBufferCount
 
 	// Retrieve the first message. It MUST have a non-nil Node.
 	recv, err := mes.Recv()
@@ -113,7 +89,7 @@ func (ocr *Receiver) Export(mes agentmetricspb.MetricsService_ExportServer) erro
 			resource = recv.Resource
 		}
 
-		processReceivedMetrics(lastNonNilNode, resource, recv.Metrics, metricsBundler)
+		ocr.processReceivedMetrics(receiverCtx, lastNonNilNode, resource, recv.Metrics)
 
 		recv, err = mes.Recv()
 		if err != nil {
@@ -127,16 +103,17 @@ func (ocr *Receiver) Export(mes agentmetricspb.MetricsService_ExportServer) erro
 	}
 }
 
-func processReceivedMetrics(ni *commonpb.Node, resource *resourcepb.Resource, metrics []*metricspb.Metric, bundler *bundler.Bundler) {
-	// Firstly, we'll add them to the bundler.
+func (ocr *Receiver) processReceivedMetrics(longLivedRPCCtx context.Context, ni *commonpb.Node, resource *resourcepb.Resource, metrics []*metricspb.Metric) {
 	if len(metrics) > 0 {
-		bundlerPayload := &consumerdata.MetricsData{Node: ni, Metrics: metrics, Resource: resource}
-		bundler.Add(bundlerPayload, len(bundlerPayload.Metrics))
+		md := consumerdata.MetricsData{Node: ni, Metrics: metrics, Resource: resource}
+		ocr.sendToNextConsumer(longLivedRPCCtx, md)
 	}
 }
 
-func (ocr *Receiver) batchMetricExporting(longLivedRPCCtx context.Context, payload interface{}) {
-	ctx, span := obsreport.StartMetricsReceiveOp(
+func (ocr *Receiver) sendToNextConsumer(longLivedRPCCtx context.Context, md consumerdata.MetricsData) {
+	// Do not use longLivedRPCCtx to start the span so this trace ends right at this
+	// function, and the span is not a child of any span from the stream context.
+	_, span := obsreport.StartMetricsReceiveOp(
 		context.Background(),
 		ocr.instanceName,
 		receiverTransport)
@@ -144,31 +121,20 @@ func (ocr *Receiver) batchMetricExporting(longLivedRPCCtx context.Context, paylo
 	// If the starting RPC has a parent span, then add it as a parent link.
 	obsreport.SetParentLink(longLivedRPCCtx, span)
 
-	mds := payload.([]*consumerdata.MetricsData)
 	numTimeSeries := 0
 	numPoints := 0
-	var consumerErr error
-	for _, md := range mds {
-		if md == nil || len(md.Metrics) == 0 {
-			continue
+	// Count number of time series and data points.
+	for _, metric := range md.Metrics {
+		numTimeSeries += len(metric.Timeseries)
+		for _, ts := range metric.GetTimeseries() {
+			numPoints += len(ts.GetPoints())
 		}
-
-		// Count number of time series and data points.
-		for _, metric := range md.Metrics {
-			numTimeSeries += len(metric.Timeseries)
-			for _, ts := range metric.GetTimeseries() {
-				numPoints += len(ts.GetPoints())
-			}
-		}
-
-		if consumerErr != nil {
-			continue
-		}
-		consumerErr = ocr.nextConsumer.ConsumeMetricsData(ctx, *md)
 	}
 
+	consumerErr := ocr.nextConsumer.ConsumeMetricsData(longLivedRPCCtx, md)
+
 	obsreport.EndMetricsReceiveOp(
-		ctx,
+		longLivedRPCCtx,
 		span,
 		"protobuf",
 		numPoints,
