@@ -50,7 +50,7 @@ require (
 	go.opencensus.io v0.22.1
 	go.uber.org/zap v1.10.0
 	golang.org/x/sys v0.0.0-20190922100055-0a153f010e69
-	google.golang.org/api v0.10.0
+	google.golang.org/api v0.10.0 // indirect
 	google.golang.org/grpc v1.23.0
 	gopkg.in/yaml.v2 v2.2.4
 	k8s.io/client-go v12.0.0+incompatible // indirect
