@@ -243,7 +243,10 @@ Exports traces and/or metrics to the console via zap.Logger.
 
 The following settings can be configured:
 
-- `loglevel`: the log level of the logging export (debug|info|warn|error). Default is `info`.
+- `loglevel`: the log level of the logging export (debug|info|warn|error). Default is `info`. When it is set to `debug`, 
+the trace related data (e.g. node, attributes, spans, metadata) are verbosely logged.
+- `sampling_initial`: number of samples initially logged each second. Default is 5.
+- `sampling_thereafter`: sampling rate after the initial samples are logged. Default is 100.
 
 Example:
 
