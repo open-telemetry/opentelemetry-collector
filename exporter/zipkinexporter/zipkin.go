@@ -114,7 +114,7 @@ func createZipkinExporter(logger *zap.Logger, config configmodels.Exporter) (*zi
 func (ze *zipkinExporter) PushTraceData(ctx context.Context, td consumerdata.TraceData) (droppedSpans int, err error) {
 	tbatch := []*zipkinmodel.SpanModel{}
 
-	var resource *resourcepb.Resource = nil
+	var resource *resourcepb.Resource
 	if ze.exportResourceLabels {
 		resource = td.Resource
 	}
