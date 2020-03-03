@@ -38,7 +38,7 @@ pressure. To mitigate this, we recommend you configure the
 [memory_limiter](https://github.com/open-telemetry/opentelemetry-collector/tree/master/processor#memory-limiter)
 processor.
 
-Note: restarts may be due to resource limits configured on the Colleector.
+Note: restarts may be due to resource limits configured on the Collector.
 
 ### Data being dropped
 
