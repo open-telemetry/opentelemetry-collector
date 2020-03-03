@@ -19,8 +19,8 @@ extension, which by default is on port `13133`, can be used to ensure
 the Collector is functioning properly.
 
 - The [zpages](https://github.com/open-telemetry/opentelemetry-collector/blob/master/extension/README.md#zpages)
-extension, which by default is on port `55679`, can be used to check RPC
-stats via `/debug/rpcz` as well as trace data via `/debug/tracez`.
+extension, which by default is on port `55679`, can be used to check
+trace data via `/debug/tracez`.
 
 - The [pprof](https://github.com/open-telemetry/opentelemetry-collector/blob/master/extension/README.md#pprof)
 extension, which by default is on port `1777`, allows you to profile the
