@@ -17,7 +17,6 @@ package opencensusreceiver
 import (
 	"google.golang.org/grpc"
 
-	"github.com/open-telemetry/opentelemetry-collector/receiver/opencensusreceiver/ocmetrics"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/opencensusreceiver/octrace"
 )
 
@@ -42,22 +41,6 @@ func (tro *traceReceiverOptions) withReceiver(ocr *Receiver) {
 // passed to the New call for octrace.Receiver
 func WithTraceReceiverOptions(opts ...octrace.Option) Option {
 	return &traceReceiverOptions{opts: opts}
-}
-
-type metricsReceiverOptions struct {
-	opts []ocmetrics.Option
-}
-
-var _ Option = (*metricsReceiverOptions)(nil)
-
-func (mro *metricsReceiverOptions) withReceiver(ocr *Receiver) {
-	ocr.metricsReceiverOpts = mro.opts
-}
-
-// WithMetricsReceiverOptions is an option to specify the options that will be
-// passed to the New call for ocmetrics.Receiver
-func WithMetricsReceiverOptions(opts ...ocmetrics.Option) Option {
-	return &metricsReceiverOptions{opts: opts}
 }
 
 type corsOrigins struct {

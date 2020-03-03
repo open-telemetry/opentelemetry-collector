@@ -48,8 +48,7 @@ type Receiver struct {
 	corsOrigins       []string
 	grpcServerOptions []grpc.ServerOption
 
-	traceReceiverOpts   []octrace.Option
-	metricsReceiverOpts []ocmetrics.Option
+	traceReceiverOpts []octrace.Option
 
 	traceReceiver   *octrace.Receiver
 	metricsReceiver *ocmetrics.Receiver
@@ -128,7 +127,7 @@ func (ocr *Receiver) registerMetricsConsumer() error {
 
 	ocr.startMetricsReceiverOnce.Do(func() {
 		ocr.metricsReceiver, err = ocmetrics.New(
-			ocr.instanceName, ocr.metricsConsumer, ocr.metricsReceiverOpts...)
+			ocr.instanceName, ocr.metricsConsumer)
 		if err == nil {
 			srv := ocr.grpcServer()
 			agentmetricspb.RegisterMetricsServiceServer(srv, ocr.metricsReceiver)
