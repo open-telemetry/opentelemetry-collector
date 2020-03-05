@@ -15,6 +15,7 @@ require (
 	github.com/codahale/hdrhistogram v0.0.0-20161010025455-3a0bb77429bd // indirect
 	github.com/go-kit/kit v0.9.0
 	github.com/gogo/googleapis v1.3.0 // indirect
+	github.com/golang/groupcache v0.0.0-20190702054246-869f871628b6
 	github.com/golang/protobuf v1.3.2
 	github.com/golangci/golangci-lint v1.21.0
 	github.com/google/addlicense v0.0.0-20190510175307-22550fa7c1b0
