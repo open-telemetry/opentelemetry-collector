@@ -22,18 +22,22 @@ import (
 	"sync"
 	"testing"
 
+	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 	"go.opencensus.io/trace"
 
+	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/observability"
 	"github.com/open-telemetry/opentelemetry-collector/observability/observabilitytest"
 )
 
 const (
 	exporter   = "fakeExporter"
+	processor  = "fakeProcessor"
 	receiver   = "fakeReicever"
 	transport  = "fakeTransport"
 	format     = "fakeFormat"
@@ -417,6 +421,68 @@ func Test_obsreport_ReceiveWithLongLivedCtx(t *testing.T) {
 	}
 }
 
+func Test_obsreport_ProcessorTraceData(t *testing.T) {
+	doneFn, err := setupViews()
+	defer doneFn()
+	require.NoError(t, err)
+
+	const acceptedSpans = 27
+	const refusedSpans = 19
+	const droppedSpans = 13
+
+	processorCtx := ProcessorContext(context.Background(), processor)
+	td := consumerdata.TraceData{}
+
+	td.Spans = make([]*tracepb.Span, acceptedSpans)
+	ProcessorTraceDataAccepted(processorCtx, td)
+
+	td.Spans = make([]*tracepb.Span, refusedSpans)
+	ProcessorTraceDataRefused(processorCtx, td)
+
+	td.Spans = make([]*tracepb.Span, droppedSpans)
+	ProcessorTraceDataDropped(processorCtx, td)
+
+	processorTags := processorViewTags(processor)
+	checkValueForSumView(t, mProcessorAcceptedSpans.Name(), processorTags, acceptedSpans)
+	checkValueForSumView(t, mProcessorRefusedSpans.Name(), processorTags, refusedSpans)
+	checkValueForSumView(t, mProcessorDroppedSpans.Name(), processorTags, droppedSpans)
+}
+
+func Test_obsreport_ProcessorMetricsData(t *testing.T) {
+	doneFn, err := setupViews()
+	defer doneFn()
+	require.NoError(t, err)
+
+	const acceptedPoints = 29
+	const refusedPoints = 11
+	const droppedPoints = 17
+
+	processorCtx := ProcessorContext(context.Background(), processor)
+	md := consumerdata.MetricsData{}
+
+	md.Metrics = []*metricspb.Metric{
+		{
+			Timeseries: []*metricspb.TimeSeries{
+				{
+					Points: make([]*metricspb.Point, acceptedPoints),
+				},
+			},
+		},
+	}
+	ProcessorMetricsDataAccepted(processorCtx, md)
+
+	md.Metrics[0].Timeseries[0].Points = make([]*metricspb.Point, refusedPoints)
+	ProcessorMetricsDataRefused(processorCtx, md)
+
+	md.Metrics[0].Timeseries[0].Points = make([]*metricspb.Point, droppedPoints)
+	ProcessorMetricsDataDropped(processorCtx, md)
+
+	processorTags := processorViewTags(processor)
+	checkValueForSumView(t, mProcessorAcceptedMetricPoints.Name(), processorTags, acceptedPoints)
+	checkValueForSumView(t, mProcessorRefusedMetricPoints.Name(), processorTags, refusedPoints)
+	checkValueForSumView(t, mProcessorDroppedMetricPoints.Name(), processorTags, droppedPoints)
+}
+
 func setupViews() (doneFn func(), err error) {
 	genLegacy := true
 	genNew := true
@@ -458,6 +524,12 @@ func receiverViewTags(receiver, transport string) []tag.Tag {
 func exporterViewTags(exporter string) []tag.Tag {
 	return []tag.Tag{
 		{Key: tagKeyExporter, Value: exporter},
+	}
+}
+
+func processorViewTags(processor string) []tag.Tag {
+	return []tag.Tag{
+		{Key: tagKeyProcessor, Value: processor},
 	}
 }
 

@@ -20,6 +20,7 @@ import (
 	"go.opencensus.io/tag"
 
 	"github.com/open-telemetry/opentelemetry-collector/internal/collector/telemetry"
+	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 )
 
 // Variables related to metrics specific to tail sampling.
@@ -116,7 +117,7 @@ func SamplingProcessorMetricViews(level telemetry.Level) []*view.View {
 		Aggregation: view.LastValue(),
 	}
 
-	return []*view.View{
+	legacyViews := []*view.View{
 		decisionLatencyView,
 		overallDecisionLatencyView,
 
@@ -131,4 +132,6 @@ func SamplingProcessorMetricViews(level telemetry.Level) []*view.View {
 		countTraceIDArrivalView,
 		trackTracesOnMemorylView,
 	}
+
+	return obsreport.ProcessorMetricViews(typeStr, legacyViews)
 }
