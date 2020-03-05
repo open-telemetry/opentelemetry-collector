@@ -863,7 +863,7 @@ func TestSpanKindTranslation(t *testing.T) {
 			}
 
 			// Translate to OCSpanData.
-			sd, err := spandata.ProtoSpanToOCSpanData(ocSpan)
+			sd, err := spandata.ProtoSpanToOCSpanData(ocSpan, nil)
 			assert.NoError(t, err)
 			assert.EqualValues(t, test.ocKind, sd.SpanKind)
 
