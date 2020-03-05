@@ -289,6 +289,10 @@ func NewSpanEvent(timestamp TimestampUnixNano, name string, attributes Attribute
 	}
 }
 
+// TODO: see if we need a SpanEvents type that contains the slice of events and
+// the dropped counter (similar to how Attributes type is done).
+// The same applies to SpanLinks.
+
 // NewSpanEventSlice creates a slice of SpanEvents that are correctly initialized.
 func NewSpanEventSlice(len int) []SpanEvent {
 	origs := make([]otlptrace.Span_Event, len)

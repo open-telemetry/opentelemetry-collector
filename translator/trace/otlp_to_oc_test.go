@@ -88,12 +88,12 @@ func TestResourceSpansToTraceData(t *testing.T) {
 
 	otlpAttributes := []*otlpcommon.AttributeKeyValue{
 		{
-			Key:         ocAttributeResourceType,
+			Key:         conventions.OCAttributeResourceType,
 			Type:        otlpcommon.AttributeKeyValue_STRING,
 			StringValue: "good-resource",
 		},
 		{
-			Key:         ocAttributeProcessStartTime,
+			Key:         conventions.OCAttributeProcessStartTime,
 			Type:        otlpcommon.AttributeKeyValue_STRING,
 			StringValue: "2020-02-11T20:26:00Z",
 		},
@@ -103,7 +103,7 @@ func TestResourceSpansToTraceData(t *testing.T) {
 			StringValue: "host1",
 		},
 		{
-			Key:         ocAttributeProcessID,
+			Key:         conventions.OCAttributeProcessID,
 			Type:        otlpcommon.AttributeKeyValue_STRING,
 			StringValue: "123",
 		},
@@ -113,7 +113,7 @@ func TestResourceSpansToTraceData(t *testing.T) {
 			StringValue: "v2.0.1",
 		},
 		{
-			Key:         ocAttributeExporterVersion,
+			Key:         conventions.OCAttributeExporterVersion,
 			Type:        otlpcommon.AttributeKeyValue_STRING,
 			StringValue: "v1.2.0",
 		},

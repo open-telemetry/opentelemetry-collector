@@ -188,14 +188,14 @@ func resourceToOC(resource *otlpresource.Resource) (*occommon.Node, *ocresource.
 		val := attributeValueToString(attr)
 
 		switch key {
-		case ocAttributeResourceType:
+		case conventions.OCAttributeResourceType:
 			ocResource.Type = val
 		case conventions.AttributeServiceName:
 			if ocNode.ServiceInfo == nil {
 				ocNode.ServiceInfo = &occommon.ServiceInfo{}
 			}
 			ocNode.ServiceInfo.Name = val
-		case ocAttributeProcessStartTime:
+		case conventions.OCAttributeProcessStartTime:
 			t, err := time.Parse(time.RFC3339Nano, val)
 			if err != nil {
 				t = defaultTime
@@ -213,7 +213,7 @@ func resourceToOC(resource *otlpresource.Resource) (*occommon.Node, *ocresource.
 				ocNode.Identifier = &occommon.ProcessIdentifier{}
 			}
 			ocNode.Identifier.HostName = val
-		case ocAttributeProcessID:
+		case conventions.OCAttributeProcessID:
 			pid, err := strconv.Atoi(val)
 			if err != nil {
 				pid = defaultProcessID
@@ -227,7 +227,7 @@ func resourceToOC(resource *otlpresource.Resource) (*occommon.Node, *ocresource.
 				ocNode.LibraryInfo = &occommon.LibraryInfo{}
 			}
 			ocNode.LibraryInfo.CoreLibraryVersion = val
-		case ocAttributeExporterVersion:
+		case conventions.OCAttributeExporterVersion:
 			if ocNode.LibraryInfo == nil {
 				ocNode.LibraryInfo = &occommon.LibraryInfo{}
 			}
