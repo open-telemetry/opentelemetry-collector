@@ -20,7 +20,6 @@ import (
 	"testing"
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/trace"
@@ -28,6 +27,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter"
+	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector/observability"
 	"github.com/open-telemetry/opentelemetry-collector/observability/observabilitytest"
 	"github.com/open-telemetry/opentelemetry-collector/obsreport"
@@ -237,94 +237,94 @@ func (tote *testOCTraceExporter) ExportSpan(sd *trace.SpanData) {
 	tote.spanData = append(tote.spanData, sd)
 }
 
-func TestOTLPTraceExporter_InvalidName(t *testing.T) {
-	te, err := NewOTLPTraceExporter(nil, newPushOTLPTrace(0, nil))
+func TestTraceV2Exporter_InvalidName(t *testing.T) {
+	te, err := NewTraceExporterV2(nil, newPushTraceV2(0, nil))
 	require.Nil(t, te)
 	require.Equal(t, errNilConfig, err)
 }
 
-func TestOTLPTraceExporter_NilPushTraceData(t *testing.T) {
-	te, err := NewOTLPTraceExporter(fakeTraceExporterConfig, nil)
+func TestTraceV2Exporter_NilPushTraceData(t *testing.T) {
+	te, err := NewTraceExporterV2(fakeTraceExporterConfig, nil)
 	require.Nil(t, te)
 	require.Equal(t, errNilPushTraceData, err)
 }
 
-func TestOTLPTraceExporter_Default(t *testing.T) {
-	td := consumerdata.OTLPTraceData{}
-	te, err := NewOTLPTraceExporter(fakeTraceExporterConfig, newPushOTLPTrace(0, nil))
+func TestTraceV2Exporter_Default(t *testing.T) {
+	td := data.TraceData{}
+	te, err := NewTraceExporterV2(fakeTraceExporterConfig, newPushTraceV2(0, nil))
 	assert.NotNil(t, te)
 	assert.Nil(t, err)
 
-	assert.Nil(t, te.ConsumeOTLPTrace(context.Background(), td))
+	assert.Nil(t, te.ConsumeTraceV2(context.Background(), td))
 	assert.Nil(t, te.Shutdown())
 }
 
-func TestOTLPTraceExporter_Default_ReturnError(t *testing.T) {
-	td := consumerdata.OTLPTraceData{}
+func TestTraceV2Exporter_Default_ReturnError(t *testing.T) {
+	td := data.TraceData{}
 	want := errors.New("my_error")
-	te, err := NewOTLPTraceExporter(fakeTraceExporterConfig, newPushOTLPTrace(0, want))
+	te, err := NewTraceExporterV2(fakeTraceExporterConfig, newPushTraceV2(0, want))
 	require.Nil(t, err)
 	require.NotNil(t, te)
 
-	err = te.ConsumeOTLPTrace(context.Background(), td)
+	err = te.ConsumeTraceV2(context.Background(), td)
 	require.Equalf(t, want, err, "ConsumeTraceData returns: Want %v Got %v", want, err)
 }
 
-func TestOTLPTraceExporter_WithRecordMetrics(t *testing.T) {
-	te, err := NewOTLPTraceExporter(fakeTraceExporterConfig, newPushOTLPTrace(0, nil))
+func TestTraceV2Exporter_WithRecordMetrics(t *testing.T) {
+	te, err := NewTraceExporterV2(fakeTraceExporterConfig, newPushTraceV2(0, nil))
 	require.Nil(t, err)
 	require.NotNil(t, te)
 
-	checkRecordedMetricsForOTLPTraceExporter(t, te, nil, 0)
+	checkRecordedMetricsForTraceExporterV2(t, te, nil, 0)
 }
 
-func TestOTLPTraceExporter_WithRecordMetrics_NonZeroDropped(t *testing.T) {
-	te, err := NewOTLPTraceExporter(fakeTraceExporterConfig, newPushOTLPTrace(1, nil))
+func TestTraceV2Exporter_WithRecordMetrics_NonZeroDropped(t *testing.T) {
+	te, err := NewTraceExporterV2(fakeTraceExporterConfig, newPushTraceV2(1, nil))
 	require.Nil(t, err)
 	require.NotNil(t, te)
 
-	checkRecordedMetricsForOTLPTraceExporter(t, te, nil, 1)
+	checkRecordedMetricsForTraceExporterV2(t, te, nil, 1)
 }
 
-func TestOTLPTraceExporter_WithRecordMetrics_ReturnError(t *testing.T) {
+func TestTraceV2Exporter_WithRecordMetrics_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
-	te, err := NewOTLPTraceExporter(fakeTraceExporterConfig, newPushOTLPTrace(0, want))
+	te, err := NewTraceExporterV2(fakeTraceExporterConfig, newPushTraceV2(0, want))
 	require.Nil(t, err)
 	require.NotNil(t, te)
 
-	checkRecordedMetricsForOTLPTraceExporter(t, te, want, 0)
+	checkRecordedMetricsForTraceExporterV2(t, te, want, 0)
 }
 
-func TestOTLPTraceExporter_WithSpan(t *testing.T) {
-	te, err := NewOTLPTraceExporter(fakeTraceExporterConfig, newPushOTLPTrace(0, nil))
+func TestTraceV2Exporter_WithSpan(t *testing.T) {
+	te, err := NewTraceExporterV2(fakeTraceExporterConfig, newPushTraceV2(0, nil))
 	require.Nil(t, err)
 	require.NotNil(t, te)
 
-	checkWrapSpanForOTLPTraceExporter(t, te, nil, 1)
+	checkWrapSpanForTraceExporterV2(t, te, nil, 1)
 }
 
-func TestOTLPTraceExporter_WithSpan_NonZeroDropped(t *testing.T) {
-	te, err := NewOTLPTraceExporter(fakeTraceExporterConfig, newPushOTLPTrace(1, nil))
+func TestTraceV2Exporter_WithSpan_NonZeroDropped(t *testing.T) {
+	te, err := NewTraceExporterV2(fakeTraceExporterConfig, newPushTraceV2(1, nil))
 	require.Nil(t, err)
 	require.NotNil(t, te)
 
-	checkWrapSpanForOTLPTraceExporter(t, te, nil, 1)
+	checkWrapSpanForTraceExporterV2(t, te, nil, 1)
 }
 
-func TestOTLPTraceExporter_WithSpan_ReturnError(t *testing.T) {
+func TestTraceV2Exporter_WithSpan_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
-	te, err := NewOTLPTraceExporter(fakeTraceExporterConfig, newPushOTLPTrace(0, want))
+	te, err := NewTraceExporterV2(fakeTraceExporterConfig, newPushTraceV2(0, want))
 	require.Nil(t, err)
 	require.NotNil(t, te)
 
-	checkWrapSpanForOTLPTraceExporter(t, te, want, 1)
+	checkWrapSpanForTraceExporterV2(t, te, want, 1)
 }
 
-func TestOTLPTraceExporter_WithShutdown(t *testing.T) {
+func TestTraceV2Exporter_WithShutdown(t *testing.T) {
 	shutdownCalled := false
 	shutdown := func() error { shutdownCalled = true; return nil }
 
-	te, err := NewOTLPTraceExporter(fakeTraceExporterConfig, newPushOTLPTrace(0, nil), WithShutdown(shutdown))
+	te, err := NewTraceExporterV2(fakeTraceExporterConfig, newPushTraceV2(0, nil), WithShutdown(shutdown))
 	assert.NotNil(t, te)
 	assert.Nil(t, err)
 
@@ -332,33 +332,35 @@ func TestOTLPTraceExporter_WithShutdown(t *testing.T) {
 	assert.True(t, shutdownCalled)
 }
 
-func TestOTLPTraceExporter_WithShutdown_ReturnError(t *testing.T) {
+func TestTraceV2Exporter_WithShutdown_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
 	shutdownErr := func() error { return want }
 
-	te, err := NewOTLPTraceExporter(fakeTraceExporterConfig, newPushOTLPTrace(0, nil), WithShutdown(shutdownErr))
+	te, err := NewTraceExporterV2(fakeTraceExporterConfig, newPushTraceV2(0, nil), WithShutdown(shutdownErr))
 	assert.NotNil(t, te)
 	assert.Nil(t, err)
 
 	assert.Equal(t, te.Shutdown(), want)
 }
 
-func newPushOTLPTrace(droppedSpans int, retError error) otlpTraceDataPusher {
-	return func(ctx context.Context, td consumerdata.OTLPTraceData) (int, error) {
+func newPushTraceV2(droppedSpans int, retError error) traceV2DataPusher {
+	return func(ctx context.Context, td data.TraceData) (int, error) {
 		return droppedSpans, retError
 	}
 }
 
-func checkRecordedMetricsForOTLPTraceExporter(t *testing.T, te exporter.OTLPTraceExporter, wantError error, droppedSpans int) {
+func checkRecordedMetricsForTraceExporterV2(t *testing.T, te exporter.TraceExporterV2, wantError error, droppedSpans int) {
 	doneFn := observabilitytest.SetupRecordedMetricsTest()
 	defer doneFn()
 
-	spans := make([]*otlptrace.Span, 2)
-	td := consumerdata.NewOTLPTraceData([]*otlptrace.ResourceSpans{{Spans: spans}})
+	spans := make([]*data.Span, 2)
+	rs := data.NewResourceSpans(nil, nil)
+	rs.SetSpans(spans)
+	td := data.NewTraceData([]*data.ResourceSpans{rs})
 	ctx := observability.ContextWithReceiverName(context.Background(), fakeTraceReceiverName)
 	const numBatches = 7
 	for i := 0; i < numBatches; i++ {
-		require.Equal(t, wantError, te.ConsumeOTLPTrace(ctx, td))
+		require.Equal(t, wantError, te.ConsumeTraceV2(ctx, td))
 	}
 
 	err := observabilitytest.CheckValueViewExporterReceivedSpans(fakeTraceReceiverName, fakeTraceExporterName, numBatches*len(spans))
@@ -368,22 +370,25 @@ func checkRecordedMetricsForOTLPTraceExporter(t *testing.T, te exporter.OTLPTrac
 	require.Nilf(t, err, "CheckValueViewExporterDroppedSpans: Want nil Got %v", err)
 }
 
-func generateOTLPTraceTraffic(t *testing.T, te exporter.OTLPTraceExporter, numRequests int, wantError error) {
-	td := consumerdata.NewOTLPTraceData([]*otlptrace.ResourceSpans{{Spans: []*otlptrace.Span{{}}}})
+func generateTraceV2Traffic(t *testing.T, te exporter.TraceExporterV2, numRequests int, wantError error) {
+	spans := make([]*data.Span, 1)
+	rs := data.NewResourceSpans(nil, nil)
+	rs.SetSpans(spans)
+	td := data.NewTraceData([]*data.ResourceSpans{rs})
 	ctx, span := trace.StartSpan(context.Background(), fakeTraceParentSpanName, trace.WithSampler(trace.AlwaysSample()))
 	defer span.End()
 	for i := 0; i < numRequests; i++ {
-		require.Equal(t, wantError, te.ConsumeOTLPTrace(ctx, td))
+		require.Equal(t, wantError, te.ConsumeTraceV2(ctx, td))
 	}
 }
 
-func checkWrapSpanForOTLPTraceExporter(t *testing.T, te exporter.OTLPTraceExporter, wantError error, numSpans int64) {
+func checkWrapSpanForTraceExporterV2(t *testing.T, te exporter.TraceExporterV2, wantError error, numSpans int64) {
 	ocSpansSaver := new(testOCTraceExporter)
 	trace.RegisterExporter(ocSpansSaver)
 	defer trace.UnregisterExporter(ocSpansSaver)
 
 	const numRequests = 5
-	generateOTLPTraceTraffic(t, te, numRequests, wantError)
+	generateTraceV2Traffic(t, te, numRequests, wantError)
 
 	// Inspection time!
 	ocSpansSaver.mu.Lock()

@@ -46,10 +46,10 @@ const (
 	ocTimeEventMessageEventCSize = "opencensus.timeevent.messageevent.csize"
 )
 
-func ocToOtlp(td consumerdata.TraceData) consumerdata.OTLPTraceData {
+func ocToOtlp(td consumerdata.TraceData) []*otlptrace.ResourceSpans {
 
 	if td.Node == nil && td.Resource == nil && len(td.Spans) == 0 {
-		return consumerdata.OTLPTraceData{}
+		return nil
 	}
 
 	resource := ocNodeResourceToOtlp(td.Node, td.Resource)
@@ -85,7 +85,7 @@ func ocToOtlp(td consumerdata.TraceData) consumerdata.OTLPTraceData {
 		}
 	}
 
-	return consumerdata.NewOTLPTraceData(resourceSpanList)
+	return resourceSpanList
 }
 
 func timestampToUnixnano(ts *timestamp.Timestamp) uint64 {
