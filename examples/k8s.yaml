@@ -22,7 +22,7 @@ data:
         retry_on_failure: true
     extensions:
       zpages: {}
-    services:
+    service:
       extensions: [zpages]
       pipelines:
         traces:
@@ -113,7 +113,7 @@ data:
         url: "http://somezipkin.target.com:9411/api/v2/spans" # Replace with a real endpoint.
       jaeger_grpc:
         endpoint: "somejaegergrpc.target.com:55678" # Replace with a real endpoint.
-    services:
+    service:
       extensions: [health_check]
       pipelines:
         traces/1:
@@ -130,7 +130,7 @@ kind: Service
 metadata:
   name: otel-collector
   labels:
-    app: opencesus
+    app: opencensus
     component: otel-collector
 spec:
   ports:
@@ -138,9 +138,9 @@ spec:
     port: 55678
     protocol: TCP
     targetPort: 55678
-  - name: jaeger_tchannel  # Default endpoint for Jaeger TChannel receiver.
+  - name: jaeger-tchannel  # Default endpoint for Jaeger TChannel receiver.
     port: 14267
-  - name: jaeger_thrift_http # Default endpoint for Jaeger HTTP receiver.
+  - name: jaeger-thrift-http # Default endpoint for Jaeger HTTP receiver.
     port: 14268
   - name: zipkin # Default endpoint for Zipkin receiver.
     port: 9411
