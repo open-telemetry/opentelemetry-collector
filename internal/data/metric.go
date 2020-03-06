@@ -33,12 +33,20 @@ func NewMetricData(resourceMetrics []*ResourceMetrics) MetricData {
 }
 
 // MetricCount calculates the total number of metrics.
-func (td MetricData) MetricCount() int {
+func (md MetricData) MetricCount() int {
 	metricCount := 0
-	for _, rml := range td.resourceMetrics {
+	for _, rml := range md.resourceMetrics {
 		metricCount += len(rml.metrics)
 	}
 	return metricCount
+}
+
+func (md MetricData) ResourceMetrics() []*ResourceMetrics {
+	return md.resourceMetrics
+}
+
+func (md MetricData) SetResource(r []*ResourceMetrics) {
+	md.resourceMetrics = r
 }
 
 // A collection of metrics from a Resource.
@@ -58,25 +66,25 @@ func NewResourceMetrics(resource *Resource, metrics []*Metric) *ResourceMetrics 
 	return &ResourceMetrics{resource, metrics}
 }
 
-func (mr *ResourceMetrics) Resource() *Resource {
-	return mr.resource
+func (rm *ResourceMetrics) Resource() *Resource {
+	return rm.resource
 }
 
-func (mr *ResourceMetrics) SetResource(r *Resource) {
-	mr.resource = r
+func (rm *ResourceMetrics) SetResource(r *Resource) {
+	rm.resource = r
 }
 
-func (mr *ResourceMetrics) Metrics() []*Metric {
-	return mr.metrics
+func (rm *ResourceMetrics) Metrics() []*Metric {
+	return rm.metrics
 }
 
-func (mr *ResourceMetrics) SetMetrics(s []*Metric) {
-	mr.metrics = s
+func (rm *ResourceMetrics) SetMetrics(s []*Metric) {
+	rm.metrics = s
 }
 
 // Metric defines a metric which has a descriptor and one or more timeseries points.
 //
-// Must use NewSMetric* functions to create new instances.
+// Must use NewMetric* functions to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Metric struct {
 	// Wrap OTLP Metric.
