@@ -153,7 +153,7 @@ receivers:
     address: "localhost:55678"
 
   zipkin:
-    address: "localhost:9411"
+    endpoint: "0.0.0.0:9411"
 
   jaeger:
     protocols:
@@ -304,7 +304,7 @@ service:
 
 ### <a name="troubleshooting"></a>Troubleshooting
 By default, the OpenTelemetry Collector exposes Prometheus metrics and logs for
-monitoring and troubleshooting. When troubleshooting live issues it is 
+monitoring and troubleshooting. When troubleshooting live issues it is
 recommended to use `zpages` [extension](#config-extensions).
 
 The `zpages` extension provides live information about receivers and exporters.
@@ -313,7 +313,7 @@ at `http://localhost:55679/debug/tracez`. Click on the links of the displayed
 operations to see information about each individual operation. Operations that
 encountered errors are reported on the right most column.
 
-![zpages-example](docs/images/zpages-example.png) 
+![zpages-example](docs/images/zpages-example.png)
 
 ## <a name="other-information"></a>Other Information
 
