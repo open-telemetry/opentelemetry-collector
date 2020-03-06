@@ -227,7 +227,7 @@ exporters:
     loglevel: debug
 
   jaeger_grpc:
-    endpoint: "http://localhost:14250"
+    endpoint: "localhost:14250"
 
   jaeger_thrift_http:
     headers: {"X-test-header": "test-header"}
