@@ -150,7 +150,7 @@ README.md](receiver/README.md).
 ```yaml
 receivers:
   opencensus:
-    address: "localhost:55678"
+    endpoint: "0.0.0.0:55678"
 
   zipkin:
     endpoint: "0.0.0.0:9411"
