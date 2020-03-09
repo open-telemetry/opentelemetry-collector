@@ -26,7 +26,7 @@ require (
 	github.com/jaegertracing/jaeger v1.17.0
 	github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024
 	github.com/mitchellh/mapstructure v1.1.2
-	github.com/open-telemetry/opentelemetry-proto v0.0.0-20200227223449-a65b867510c0
+	github.com/open-telemetry/opentelemetry-proto v0.0.0-20200308012146-674ae1c8703f
 	github.com/openzipkin/zipkin-go v0.2.1
 	github.com/orijtech/prometheus-go-metrics-exporter v0.0.3-0.20190313163149-b321c5297f60
 	github.com/pavius/impi v0.0.0-20180302134524-c1cbdcb8df2b
