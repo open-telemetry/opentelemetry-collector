@@ -260,27 +260,27 @@ func (dp *Int64DataPoint) SetLabels(v Labels) {
 }
 
 func (dp *Int64DataPoint) StartTime() TimestampUnixNano {
-	return TimestampUnixNano(dp.orig.Value.StartTimeUnixnano)
+	return TimestampUnixNano(dp.orig.StartTimeUnixnano)
 }
 
 func (dp *Int64DataPoint) SetStartTime(v TimestampUnixNano) {
-	dp.orig.Value.StartTimeUnixnano = uint64(v)
+	dp.orig.StartTimeUnixnano = uint64(v)
 }
 
 func (dp *Int64DataPoint) Timestamp() TimestampUnixNano {
-	return TimestampUnixNano(dp.orig.Value.TimestampUnixnano)
+	return TimestampUnixNano(dp.orig.TimestampUnixnano)
 }
 
 func (dp *Int64DataPoint) SetTimestamp(v TimestampUnixNano) {
-	dp.orig.Value.TimestampUnixnano = uint64(v)
+	dp.orig.TimestampUnixnano = uint64(v)
 }
 
 func (dp *Int64DataPoint) Value() int64 {
-	return dp.orig.Value.Value
+	return dp.orig.Value
 }
 
 func (dp *Int64DataPoint) SetValue(v int64) {
-	dp.orig.Value.Value = v
+	dp.orig.Value = v
 }
 
 // DoubleDataPoint is a single data point in a timeseries that describes the time-varying
@@ -320,27 +320,27 @@ func (dp *DoubleDataPoint) SetLabels(v Labels) {
 }
 
 func (dp *DoubleDataPoint) StartTime() TimestampUnixNano {
-	return TimestampUnixNano(dp.orig.Value.StartTimeUnixnano)
+	return TimestampUnixNano(dp.orig.StartTimeUnixnano)
 }
 
 func (dp *DoubleDataPoint) SetStartTime(v TimestampUnixNano) {
-	dp.orig.Value.StartTimeUnixnano = uint64(v)
+	dp.orig.StartTimeUnixnano = uint64(v)
 }
 
 func (dp *DoubleDataPoint) Timestamp() TimestampUnixNano {
-	return TimestampUnixNano(dp.orig.Value.TimestampUnixnano)
+	return TimestampUnixNano(dp.orig.TimestampUnixnano)
 }
 
 func (dp *DoubleDataPoint) SetTimestamp(v TimestampUnixNano) {
-	dp.orig.Value.TimestampUnixnano = uint64(v)
+	dp.orig.TimestampUnixnano = uint64(v)
 }
 
 func (dp *DoubleDataPoint) Value() float64 {
-	return dp.orig.Value.Value
+	return dp.orig.Value
 }
 
 func (dp *DoubleDataPoint) SetValue(v float64) {
-	dp.orig.Value.Value = v
+	dp.orig.Value = v
 }
 
 // HistogramDataPoint is a single data point in a timeseries that describes the time-varying
@@ -381,37 +381,35 @@ func (dp *HistogramDataPoint) SetLabels(v Labels) {
 }
 
 func (dp *HistogramDataPoint) StartTime() TimestampUnixNano {
-	return TimestampUnixNano(dp.orig.Value.StartTimeUnixnano)
+	return TimestampUnixNano(dp.orig.StartTimeUnixnano)
 }
 
 func (dp *HistogramDataPoint) SetStartTime(v TimestampUnixNano) {
-	dp.orig.Value.StartTimeUnixnano = uint64(v)
+	dp.orig.StartTimeUnixnano = uint64(v)
 }
 
 func (dp *HistogramDataPoint) Timestamp() TimestampUnixNano {
-	return TimestampUnixNano(dp.orig.Value.TimestampUnixnano)
+	return TimestampUnixNano(dp.orig.TimestampUnixnano)
 }
 
 func (dp *HistogramDataPoint) SetTimestamp(v TimestampUnixNano) {
-	dp.orig.Value.TimestampUnixnano = uint64(v)
+	dp.orig.TimestampUnixnano = uint64(v)
 }
 
 func (dp *HistogramDataPoint) Count() uint64 {
-	// TODO: Remove conversion when proto and the generated code is fixed.
-	return uint64(dp.orig.Value.Count)
+	return dp.orig.Count
 }
 
 func (dp *HistogramDataPoint) SetCount(v uint64) {
-	// TODO: Remove conversion when proto and the generated code is fixed.
-	dp.orig.Value.Count = int64(v)
+	dp.orig.Count = v
 }
 
 func (dp *HistogramDataPoint) Sum() float64 {
-	return dp.orig.Value.Sum
+	return dp.orig.Sum
 }
 
 func (dp *HistogramDataPoint) SetSum(v float64) {
-	dp.orig.Value.Sum = v
+	dp.orig.Sum = v
 }
 
 func (dp *HistogramDataPoint) Buckets() []*HistogramBucket {
@@ -423,11 +421,11 @@ func (dp *HistogramDataPoint) SetBuckets(v []*HistogramBucket) {
 }
 
 func (dp *HistogramDataPoint) ExplicitBounds() []float64 {
-	return dp.orig.ExplicitBounds.Bounds
+	return dp.orig.ExplicitBounds
 }
 
 func (dp *HistogramDataPoint) SetExplicitBounds(v []float64) {
-	dp.orig.ExplicitBounds.Bounds = v
+	dp.orig.ExplicitBounds = v
 }
 
 // HistogramBucket contains values for a histogram bucket.
@@ -435,8 +433,8 @@ func (dp *HistogramDataPoint) SetExplicitBounds(v []float64) {
 // Must use NewHistogramBucket* functions to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type HistogramBucket struct {
-	// Wrap OTLP HistogramValue_Bucket.
-	orig *otlpmetric.HistogramValue_Bucket
+	// Wrap OTLP HistogramDataPoint_Bucket.
+	orig *otlpmetric.HistogramDataPoint_Bucket
 
 	// Override a few fields. These fields are the source of truth. Their counterparts
 	// stored in corresponding fields of "orig" are ignored.
@@ -444,12 +442,12 @@ type HistogramBucket struct {
 }
 
 func NewHistogramBucket() *HistogramBucket {
-	return &HistogramBucket{orig: &otlpmetric.HistogramValue_Bucket{}}
+	return &HistogramBucket{orig: &otlpmetric.HistogramDataPoint_Bucket{}}
 }
 
 // NewHistogramBucketSlice creates a slice of HistogramBucket that are correctly initialized.
 func NewHistogramBucketSlice(len int) []HistogramBucket {
-	origs := make([]otlpmetric.HistogramValue_Bucket, len)
+	origs := make([]otlpmetric.HistogramDataPoint_Bucket, len)
 	wrappers := make([]HistogramBucket, len)
 	for i := range origs {
 		wrappers[i].orig = &origs[i]
@@ -458,13 +456,11 @@ func NewHistogramBucketSlice(len int) []HistogramBucket {
 }
 
 func (hb *HistogramBucket) Count() uint64 {
-	// TODO: Remove conversion when proto and the generated code is fixed.
-	return uint64(hb.orig.Count)
+	return hb.orig.Count
 }
 
 func (hb *HistogramBucket) SetCount(v uint64) {
-	// TODO: Remove conversion when proto and the generated code is fixed.
-	hb.orig.Count = int64(v)
+	hb.orig.Count = v
 }
 
 func (hb *HistogramBucket) Exemplar() HistogramBucketExemplar {
@@ -481,8 +477,8 @@ func (hb *HistogramBucket) SetExemplar(v HistogramBucketExemplar) {
 // Must use NewHistogramBucketExemplar* functions to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type HistogramBucketExemplar struct {
-	// Wrap OTLP HistogramValue_Bucket_Exemplar.
-	orig *otlpmetric.HistogramValue_Bucket_Exemplar
+	// Wrap OTLP HistogramDataPoint_Bucket_Exemplar.
+	orig *otlpmetric.HistogramDataPoint_Bucket_Exemplar
 
 	// Override a few fields. These fields are the source of truth. Their counterparts
 	// stored in corresponding fields of "orig" are ignored.
@@ -490,7 +486,7 @@ type HistogramBucketExemplar struct {
 }
 
 func NewHistogramBucketExemplar() *HistogramBucketExemplar {
-	return &HistogramBucketExemplar{orig: &otlpmetric.HistogramValue_Bucket_Exemplar{}}
+	return &HistogramBucketExemplar{orig: &otlpmetric.HistogramDataPoint_Bucket_Exemplar{}}
 }
 
 func (hbe *HistogramBucketExemplar) Value() float64 {
@@ -555,35 +551,35 @@ func (dp *SummaryDataPoint) SetLabels(v Labels) {
 }
 
 func (dp *SummaryDataPoint) StartTime() TimestampUnixNano {
-	return TimestampUnixNano(dp.orig.Value.StartTimeUnixnano)
+	return TimestampUnixNano(dp.orig.StartTimeUnixnano)
 }
 
 func (dp *SummaryDataPoint) SetStartTime(v TimestampUnixNano) {
-	dp.orig.Value.StartTimeUnixnano = uint64(v)
+	dp.orig.StartTimeUnixnano = uint64(v)
 }
 
 func (dp *SummaryDataPoint) Timestamp() TimestampUnixNano {
-	return TimestampUnixNano(dp.orig.Value.TimestampUnixnano)
+	return TimestampUnixNano(dp.orig.TimestampUnixnano)
 }
 
 func (dp *SummaryDataPoint) SetTimestamp(v TimestampUnixNano) {
-	dp.orig.Value.TimestampUnixnano = uint64(v)
+	dp.orig.TimestampUnixnano = uint64(v)
 }
 
 func (dp *SummaryDataPoint) Count() uint64 {
-	return dp.orig.Value.Count
+	return dp.orig.Count
 }
 
 func (dp *SummaryDataPoint) SetCount(v uint64) {
-	dp.orig.Value.Count = v
+	dp.orig.Count = v
 }
 
 func (dp *SummaryDataPoint) Sum() float64 {
-	return dp.orig.Value.Sum
+	return dp.orig.Sum
 }
 
 func (dp *SummaryDataPoint) SetSum(v float64) {
-	dp.orig.Value.Sum = v
+	dp.orig.Sum = v
 }
 
 func (dp *SummaryDataPoint) ValueAtPercentiles() []*SummaryValueAtPercentile {
@@ -599,17 +595,17 @@ func (dp *SummaryDataPoint) SetValueAtPercentiles(v []*SummaryValueAtPercentile)
 // Must use NewSummaryValueAtPercentile* functions to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type SummaryValueAtPercentile struct {
-	// Wrap OTLP SummaryValue_ValueAtPercentile.
-	orig *otlpmetric.SummaryValue_ValueAtPercentile
+	// Wrap OTLP SummaryDataPoint_ValueAtPercentile.
+	orig *otlpmetric.SummaryDataPoint_ValueAtPercentile
 }
 
 func NewSummaryValueAtPercentile() *SummaryValueAtPercentile {
-	return &SummaryValueAtPercentile{orig: &otlpmetric.SummaryValue_ValueAtPercentile{}}
+	return &SummaryValueAtPercentile{orig: &otlpmetric.SummaryDataPoint_ValueAtPercentile{}}
 }
 
 // NewSummaryValueAtPercentileSlice creates a slice of SummaryValueAtPercentile that are correctly initialized.
 func NewSummaryValueAtPercentileSlice(len int) []SummaryValueAtPercentile {
-	origs := make([]otlpmetric.SummaryValue_ValueAtPercentile, len)
+	origs := make([]otlpmetric.SummaryDataPoint_ValueAtPercentile, len)
 	wrappers := make([]SummaryValueAtPercentile, len)
 	for i := range origs {
 		wrappers[i].orig = &origs[i]
