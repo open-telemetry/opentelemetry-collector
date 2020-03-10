@@ -381,6 +381,14 @@ func (app *Application) Run() error {
 	return app.rootCmd.Execute()
 }
 
+// Start starts the collector according to the command and configuration
+// given by the user, and waits for it to complete.
+//
+// Deprecated: use Run instead.
+func (app *Application) Start() error {
+	return app.Run()
+}
+
 func (app *Application) createMemoryBallast() ([]byte, uint64) {
 	ballastSizeMiB := builder.MemBallastSize()
 	if ballastSizeMiB > 0 {
