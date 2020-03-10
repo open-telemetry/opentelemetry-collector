@@ -54,7 +54,7 @@ func TestApplication_Start(t *testing.T) {
 	appDone := make(chan struct{})
 	go func() {
 		defer close(appDone)
-		assert.NoError(t, app.Start())
+		assert.NoError(t, app.Run())
 	}()
 
 	<-app.readyChan

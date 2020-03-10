@@ -375,9 +375,9 @@ func (app *Application) execute() {
 	app.logger.Info("Shutdown complete.")
 }
 
-// Start starts the collector according to the command and configuration
-// given by the user.
-func (app *Application) Start() error {
+// Run starts the collector according to the command and configuration
+// given by the user, and waits for it to complete.
+func (app *Application) Run() error {
 	return app.rootCmd.Execute()
 }
 

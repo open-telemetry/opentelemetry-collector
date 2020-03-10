@@ -44,6 +44,6 @@ func main() {
 	svc, err := service.New(factories, info)
 	handleErr(err)
 
-	err = svc.Start()
+	err = svc.Run()
 	handleErr(err)
 }
