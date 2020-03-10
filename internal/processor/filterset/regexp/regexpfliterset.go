@@ -33,7 +33,7 @@ type regexpFilterSet struct {
 
 // NewRegexpFilterSet constructs a FilterSet of re2 regex strings.
 // If any of the given filters fail to compile into re2, an error is returned.
-func NewRegexpFilterSet(filters []string, opts ...RFSOption) (filterset.FilterSet, error) {
+func NewRegexpFilterSet(filters []string, opts ...Option) (filterset.FilterSet, error) {
 	fs := &regexpFilterSet{
 		regexes: map[string]*regexp.Regexp{},
 	}
@@ -77,12 +77,12 @@ func (rfs *regexpFilterSet) Matches(toMatch string) bool {
 // All regexes are automatically anchored to enforce full string matches.
 func (rfs *regexpFilterSet) addFilters(filters []string) error {
 	for _, f := range filters {
+		// anchor all regexes to enforce full matches
 		anchored := fmt.Sprintf("^%s$", f)
 		if _, ok := rfs.regexes[anchored]; ok {
 			continue
 		}
 
-		// anchor all regexes to enforce full matches
 		if re, err := regexp.Compile(anchored); err == nil {
 			rfs.regexes[f] = re
 		} else {

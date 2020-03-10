@@ -111,7 +111,7 @@ func TestRegexpMatches(t *testing.T) {
 
 func TestRegexpMatchesCaches(t *testing.T) {
 	// 0 means unlimited cache
-	fs, err := NewRegexpFilterSet(validRegexpFilters, WithCacheSize(0))
+	fs, err := NewRegexpFilterSet(validRegexpFilters, WithCache(0))
 	assert.NotNil(t, fs)
 	assert.Nil(t, err)
 	assert.True(t, fs.(*regexpFilterSet).cacheEnabled)
@@ -155,7 +155,7 @@ func TestRegexpMatchesCaches(t *testing.T) {
 
 func TestWithCacheSize(t *testing.T) {
 	size := 3
-	fs, err := NewRegexpFilterSet(validRegexpFilters, WithCacheSize(size))
+	fs, err := NewRegexpFilterSet(validRegexpFilters, WithCache(size))
 	assert.NotNil(t, fs)
 	assert.Nil(t, err)
 

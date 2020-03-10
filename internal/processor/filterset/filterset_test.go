@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package strict
-
-// Option is the type for strict filtering options that can be passed to NewStrictFilterSet.
-type Option func(*strictFilterSet)
+// Empty test file so the CI build does not fail when enforcing a test file in every directory.
+// The filterset package only defines an interface so there's nothing to test.
+package filterset

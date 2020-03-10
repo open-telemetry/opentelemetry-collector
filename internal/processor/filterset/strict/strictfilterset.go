@@ -24,7 +24,7 @@ type strictFilterSet struct {
 }
 
 // NewStrictFilterSet constructs a FilterSet of exact string matches.
-func NewStrictFilterSet(filters []string, opts ...SFSOption) (filterset.FilterSet, error) {
+func NewStrictFilterSet(filters []string, opts ...Option) (filterset.FilterSet, error) {
 	fs := &strictFilterSet{
 		filters: map[string]bool{},
 	}

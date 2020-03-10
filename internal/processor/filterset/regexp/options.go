@@ -18,14 +18,14 @@ import (
 	"github.com/golang/groupcache/lru"
 )
 
-// RFSOption is the type for regexp filtering options that can be passed to NewRegexpFilterSet.
-type RFSOption func(*regexpFilterSet)
+// Option is the type for regexp filtering options that can be passed to NewRegexpFilterSet.
+type Option func(*regexpFilterSet)
 
-// WithCacheSize sets the regexp filterset's internal cache size to the given size.
-// The cache stores the results of previous calls to Matches.
-func WithCacheSize(size int) RFSOption {
+// WithCache enables an LRU cache that stores the previous results of calls to Matches.
+// The cache's max number of entries is set to maxNumEntries. Passing a value of 0 results in an unlimited cache size.
+func WithCache(maxNumEntries int) Option {
 	return func(rfs *regexpFilterSet) {
 		rfs.cacheEnabled = true
-		rfs.cache = lru.New(size)
+		rfs.cache = lru.New(maxNumEntries)
 	}
 }
