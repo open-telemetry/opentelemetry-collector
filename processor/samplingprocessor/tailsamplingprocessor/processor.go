@@ -240,7 +240,7 @@ func (tsp *tailSamplingSpanProcessor) ConsumeTraceData(ctx context.Context, td c
 	stats.RecordWithTags(context.Background(), statsTags, processor.StatReceivedSpanCount.M(int64(len(td.Spans))))
 
 	// Check if this batch has been forwarded.
-	if td.Spans != nil {
+	if td.Spans != nil && td.Spans[0].GetAttributes() != nil && td.Spans[0].GetAttributes().AttributeMap != nil {
 		if _, ok := td.Spans[0].GetAttributes().AttributeMap["otelcol.ttl"]; ok {
 			tsp.logger.Info("Forwarded batch", zap.Int("Number of spans in the batch", len(td.Spans)))
 
