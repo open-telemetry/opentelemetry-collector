@@ -95,6 +95,13 @@ func (c *collectorPeer) batchDispatchOnTick() {
 	for _, v := range batchIds {
 		if span, ok := c.idToSpans.Load(string(v)); ok {
 			if span != nil {
+				if span.(*v1.Span).Attributes == nil {
+					span.(*v1.Span).Attributes = &v1.Span_Attributes{
+						AttributeMap: make(map[string]*v1.AttributeValue),
+					}
+				} else if span.(*v1.Span).Attributes.AttributeMap == nil {
+					span.(*v1.Span).Attributes.AttributeMap = make(map[string]*v1.AttributeValue)
+				}
 				span.(*v1.Span).Attributes.AttributeMap["otelcol.ttl"] = &v1.AttributeValue{
 					Value: &v1.AttributeValue_IntValue{
 						IntValue: 1,
