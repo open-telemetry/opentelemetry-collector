@@ -33,7 +33,8 @@ type traceDataBuffer struct {
 }
 
 func (b *traceDataBuffer) logEntry(format string, a ...interface{}) {
-	b.str.WriteString(fmt.Sprintf(format+"\n", a...))
+	b.str.WriteString(fmt.Sprintf(format, a...))
+	b.str.WriteString("\n")
 }
 
 func (b *traceDataBuffer) logAttr(label string, value string) {
@@ -45,7 +46,7 @@ func (b *traceDataBuffer) logMap(label string, data *map[string]string) {
 		return
 	}
 
-	b.logEntry(label + ":")
+	b.logEntry("%s:", label)
 	for label, value := range *data {
 		b.logEntry("     -> %s: %s", label, value)
 	}

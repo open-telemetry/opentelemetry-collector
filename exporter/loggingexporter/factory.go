@@ -25,6 +25,8 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "logging"
+	defaultSamplingInitial = 2
+	defaultSamplingThereafter = 500
 )
 
 // Factory is the factory for logging exporter.
@@ -44,8 +46,8 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 			NameVal: typeStr,
 		},
 		LogLevel:           "info",
-		SamplingInitial:    5,
-		SamplingThereafter: 100,
+		SamplingInitial:    defaultSamplingInitial,
+		SamplingThereafter: defaultSamplingThereafter,
 	}
 }
 
