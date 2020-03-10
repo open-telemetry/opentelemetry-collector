@@ -40,6 +40,10 @@ func (td TraceData) SpanCount() int {
 	return spanCount
 }
 
+func (td TraceData) ResourceSpans() []*ResourceSpans {
+	return td.resourceSpans
+}
+
 // A collection of spans from a Resource.
 //
 // Must use NewResourceSpans functions to create new instances.
@@ -135,8 +139,16 @@ func (m *Span) TraceID() TraceID {
 	return TraceIDFromBytes(m.orig.TraceId)
 }
 
+func (m *Span) TraceIDBytes() []byte {
+	return m.orig.TraceId
+}
+
 func (m *Span) SpanID() SpanID {
 	return SpanIDFromBytes(m.orig.SpanId)
+}
+
+func (m *Span) SpanIDBytes() []byte {
+	return m.orig.SpanId
 }
 
 func (m *Span) TraceState() TraceState {
@@ -145,6 +157,10 @@ func (m *Span) TraceState() TraceState {
 
 func (m *Span) ParentSpanID() SpanID {
 	return SpanIDFromBytes(m.orig.ParentSpanId)
+}
+
+func (m *Span) ParentSpanIDBytes() []byte {
+	return m.orig.ParentSpanId
 }
 
 func (m *Span) Name() string {
@@ -250,6 +266,14 @@ func (m *Span) SetStatus(v SpanStatus) {
 
 type SpanStatus struct {
 	orig *otlptrace.Status
+}
+
+func (s *SpanStatus) Code() StatusCode {
+	return StatusCode(s.orig.Code)
+}
+
+func (s *SpanStatus) Message() string {
+	return s.orig.Message
 }
 
 // StatusCode mirrors the codes defined at
@@ -360,8 +384,16 @@ func (m *SpanLink) TraceID() TraceID {
 	return TraceIDFromBytes(m.orig.TraceId)
 }
 
+func (m *SpanLink) TraceIDBytes() []byte {
+	return m.orig.TraceId
+}
+
 func (m *SpanLink) SpanID() SpanID {
 	return SpanIDFromBytes(m.orig.SpanId)
+}
+
+func (m *SpanLink) SpanIDBytes() []byte {
+	return m.orig.SpanId
 }
 
 func (m *SpanLink) Attributes() AttributesMap {

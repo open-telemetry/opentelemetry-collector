@@ -29,6 +29,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/internal"
 	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 )
 
@@ -139,12 +140,12 @@ func TestResourceSpansToTraceData(t *testing.T) {
 		SpanId:    spanID,
 		Name:      &octrace.TruncatableString{Value: "operationB"},
 		Kind:      octrace.Span_SERVER,
-		StartTime: unixnanoToTimestamp(unixnanos),
-		EndTime:   unixnanoToTimestamp(unixnanos),
+		StartTime: internal.UnixnanoToTimestamp(unixnanos),
+		EndTime:   internal.UnixnanoToTimestamp(unixnanos),
 		TimeEvents: &octrace.Span_TimeEvents{
 			TimeEvent: []*octrace.Span_TimeEvent{
 				{
-					Time: unixnanoToTimestamp(unixnanos),
+					Time: internal.UnixnanoToTimestamp(unixnanos),
 					Value: &octrace.Span_TimeEvent_Annotation_{
 						Annotation: &octrace.Span_TimeEvent_Annotation{
 							Description: &octrace.TruncatableString{Value: "event1"},
@@ -193,8 +194,8 @@ func TestResourceSpansToTraceData(t *testing.T) {
 	ocSpan2 := &octrace.Span{
 		Name:      &octrace.TruncatableString{Value: "operationC"},
 		Kind:      octrace.Span_SPAN_KIND_UNSPECIFIED,
-		StartTime: unixnanoToTimestamp(unixnanos),
-		EndTime:   unixnanoToTimestamp(unixnanos),
+		StartTime: internal.UnixnanoToTimestamp(unixnanos),
+		EndTime:   internal.UnixnanoToTimestamp(unixnanos),
 		Attributes: &octrace.Span_Attributes{
 			AttributeMap: map[string]*octrace.AttributeValue{
 				TagSpanKind: {
