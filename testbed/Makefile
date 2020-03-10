@@ -5,6 +5,7 @@ GOFMT=gofmt
 GOLINT=golint
 GOVET=go vet
 GOOS=$(shell go env GOOS)
+GOARCH=$(shell go env GOARCH)
 
 .DEFAULT_GOAL := fmt-vet-lint-test
 

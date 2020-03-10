@@ -14,6 +14,7 @@ GOTEST_OPT?= -race -timeout 30s
 GOTEST_OPT_WITH_COVERAGE = $(GOTEST_OPT) -coverprofile=coverage.txt -covermode=atomic
 GOTEST=go test
 GOOS=$(shell go env GOOS)
+GOARCH=$(shell go env GOARCH)
 ADDLICENCESE= addlicense
 MISSPELL=misspell -error
 MISSPELL_CORRECTION=misspell -w
@@ -37,7 +38,7 @@ all-srcs:
 .DEFAULT_GOAL := all
 
 .PHONY: all
-all: addlicense impi lint misspell test otelcol
+all: addlicense impi lint misspell test binaries-all-sys
 
 .PHONY: e2e-test
 e2e-test: otelcol
@@ -102,12 +103,12 @@ install-tools:
 
 .PHONY: otelcol
 otelcol:
-	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/$(GOOS)/otelcol $(BUILD_INFO) ./cmd/otelcol
+	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/$(GOOS)_$(GOARCH)/otelcol $(BUILD_INFO) ./cmd/otelcol
 
 .PHONY: docker-component # Not intended to be used directly
 docker-component: check-component
 	GOOS=linux $(MAKE) $(COMPONENT)
-	cp ./bin/linux/$(COMPONENT) ./cmd/$(COMPONENT)/
+	cp ./bin/linux_amd64/$(COMPONENT) ./cmd/$(COMPONENT)/
 	docker build -t $(COMPONENT) ./cmd/$(COMPONENT)/
 	rm ./cmd/$(COMPONENT)/$(COMPONENT)
 
@@ -126,6 +127,7 @@ binaries: otelcol
 
 .PHONY: binaries-all-sys
 binaries-all-sys:
-	GOOS=darwin $(MAKE) binaries
-	GOOS=linux $(MAKE) binaries
-	GOOS=windows $(MAKE) binaries
+	GOOS=darwin GOARCH=amd64 $(MAKE) binaries
+	GOOS=linux GOARCH=amd64 $(MAKE) binaries
+	GOOS=linux GOARCH=arm64 $(MAKE) binaries
+	GOOS=windows GOARCH=amd64 $(MAKE) binaries

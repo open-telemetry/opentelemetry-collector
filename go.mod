@@ -18,7 +18,7 @@ require (
 	github.com/golang/protobuf v1.3.2
 	github.com/golangci/golangci-lint v1.21.0
 	github.com/google/addlicense v0.0.0-20190510175307-22550fa7c1b0
-	github.com/google/go-cmp v0.3.1
+	github.com/google/go-cmp v0.4.0
 	github.com/gorilla/handlers v1.4.2 // indirect
 	github.com/gorilla/mux v1.7.3
 	github.com/grpc-ecosystem/grpc-gateway v1.11.1
@@ -32,9 +32,9 @@ require (
 	github.com/pavius/impi v0.0.0-20180302134524-c1cbdcb8df2b
 	github.com/pkg/errors v0.8.1
 	github.com/prashantv/protectmem v0.0.0-20171002184600-e20412882b3a // indirect
-	github.com/prometheus/client_golang v1.1.0
-	github.com/prometheus/common v0.7.0
-	github.com/prometheus/procfs v0.0.3
+	github.com/prometheus/client_golang v1.5.0
+	github.com/prometheus/common v0.9.1
+	github.com/prometheus/procfs v0.0.8
 	github.com/prometheus/prometheus v1.8.2-0.20190924101040-52e0504f83ea
 	github.com/rs/cors v1.6.0
 	github.com/soheilhy/cmux v0.1.4
@@ -49,10 +49,10 @@ require (
 	github.com/uber/tchannel-go v1.10.0
 	go.opencensus.io v0.22.1
 	go.uber.org/zap v1.10.0
-	golang.org/x/sys v0.0.0-20190922100055-0a153f010e69
+	golang.org/x/sys v0.0.0-20200122134326-e047566fdf82
 	google.golang.org/api v0.10.0 // indirect
 	google.golang.org/grpc v1.23.0
-	gopkg.in/yaml.v2 v2.2.4
+	gopkg.in/yaml.v2 v2.2.5
 	k8s.io/client-go v12.0.0+incompatible // indirect
 )
 

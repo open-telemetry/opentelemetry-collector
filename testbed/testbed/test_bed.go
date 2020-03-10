@@ -76,9 +76,11 @@ func LoadConfig() error {
 	}
 
 	templateVars := struct {
-		GOOS string
+		GOOS   string
+		GOARCH string
 	}{
-		GOOS: runtime.GOOS,
+		GOOS:   runtime.GOOS,
+		GOARCH: runtime.GOARCH,
 	}
 	var buf bytes.Buffer
 	if err := cfgTemplate.Execute(&buf, templateVars); err != nil {
