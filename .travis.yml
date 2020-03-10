@@ -6,7 +6,7 @@ cache:
 go_import_path: github.com/open-telemetry/opentelemetry-collector
 
 go:
-  - 1.13.x
+  - 1.14.x
 
 env:
   global:
