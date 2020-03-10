@@ -48,6 +48,7 @@ type forwarder interface {
 
 type collectorPeer struct {
 	exporter           exporter.TraceExporter
+	ip                 string
 	peerBatcher        idbatcher.Batcher
 	spanDispatchTicker tTicker // to pop from the batcher and forward to peer
 	logger             *zap.Logger
@@ -108,7 +109,7 @@ func (c *collectorPeer) batchDispatchOnTick() {
 					},
 				}
 				td.Spans = append(td.Spans, span.(*v1.Span))
-				c.logger.Info("Forwarding this span", zap.ByteString("Span ID", span.(*v1.Span).GetSpanId()))
+				c.logger.Info("Forwarding this span", zap.ByteString("Span ID", span.(*v1.Span).GetSpanId()), zap.String("Peer", c.ip))
 
 				// Null-out the map entry
 				c.idToSpans.Delete(string(v))
@@ -153,6 +154,7 @@ func newCollectorPeer(logger *zap.Logger, ip string, globalDeleteChan chan int) 
 		exporter:    exporter,
 		logger:      logger,
 		peerBatcher: batcher,
+		ip:          ip,
 	}
 	cp.spanDispatchTicker = &policyTicker{onTick: cp.batchDispatchOnTick}
 	return cp
