@@ -68,7 +68,7 @@ func (s *loggingExporter) pushTraceData(
 	buf.logEntry("TraceData with %d spans", len(td.Spans))
 
 	if td.Resource != nil {
-		buf.logEntry("Resource %s with $d labels", td.Resource.Type, len(td.Resource.Labels))
+		buf.logEntry("Resource %s with %d labels", td.Resource.Type, len(td.Resource.Labels))
 		if debug {
 			buf.logMap("Resource labels", &td.Resource.Labels)
 		}
@@ -80,7 +80,7 @@ func (s *loggingExporter) pushTraceData(
 			id := td.Node.Identifier
 			if id != nil {
 				buf.logEntry("HostName: %s", id.HostName)
-				buf.logEntry("PID %s", id.Pid)
+				buf.logEntry("PID %d", id.Pid)
 			}
 			buf.logMap("Node attributes", &td.Node.Attributes)
 			li := td.Node.LibraryInfo

@@ -24,8 +24,8 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr = "logging"
-	defaultSamplingInitial = 2
+	typeStr                   = "logging"
+	defaultSamplingInitial    = 2
 	defaultSamplingThereafter = 500
 )
 
