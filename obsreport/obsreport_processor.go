@@ -25,10 +25,13 @@ import (
 )
 
 const (
+	// Key used to identify processors in metrics and traces.
 	ProcessorKey = "processor"
 
+	// Key used to identify spans dropped by the Collector.
 	DroppedSpansKey = "dropped_spans"
 
+	// Key used to identify metric points dropped by the Collector.
 	DroppedMetricPointsKey = "dropped_metric_points"
 )
 
@@ -41,11 +44,11 @@ var (
 	// of the collector since processors only deal with internal format.
 	mProcessorAcceptedSpans = stats.Int64(
 		processorPrefix+AcceptedSpansKey,
-		"Number of spans successfully pushed into the pipeline.",
+		"Number of spans successfully pushed into the next component in the pipeline.",
 		stats.UnitDimensionless)
 	mProcessorRefusedSpans = stats.Int64(
 		processorPrefix+RefusedSpansKey,
-		"Number of spans that could not be pushed into the pipeline.",
+		"Number of spans that were rejected by the next component in the pipeline.",
 		stats.UnitDimensionless)
 	mProcessorDroppedSpans = stats.Int64(
 		processorPrefix+DroppedSpansKey,
@@ -53,11 +56,11 @@ var (
 		stats.UnitDimensionless)
 	mProcessorAcceptedMetricPoints = stats.Int64(
 		processorPrefix+AcceptedMetricPointsKey,
-		"Number of metric points successfully pushed into the pipeline.",
+		"Number of metric points successfully pushed into the next component in the pipeline.",
 		stats.UnitDimensionless)
 	mProcessorRefusedMetricPoints = stats.Int64(
 		processorPrefix+RefusedMetricPointsKey,
-		"Number of metric points that could not be pushed into the pipeline.",
+		"Number of metric points that were rejected by the next component in the pipeline.",
 		stats.UnitDimensionless)
 	mProcessorDroppedMetricPoints = stats.Int64(
 		processorPrefix+DroppedMetricPointsKey,
@@ -111,7 +114,12 @@ func ProcessorTraceDataAccepted(
 	td consumerdata.TraceData,
 ) {
 	if useNew {
-		processorTraceOp(processorCtx, len(td.Spans), 0, 0)
+		stats.Record(
+			processorCtx,
+			mProcessorAcceptedSpans.M(int64(len(td.Spans))),
+			mProcessorRefusedSpans.M(0),
+			mProcessorDroppedSpans.M(0),
+		)
 	}
 }
 
@@ -121,7 +129,12 @@ func ProcessorTraceDataRefused(
 	td consumerdata.TraceData,
 ) {
 	if useNew {
-		processorTraceOp(processorCtx, 0, len(td.Spans), 0)
+		stats.Record(
+			processorCtx,
+			mProcessorAcceptedSpans.M(0),
+			mProcessorRefusedSpans.M(int64(len(td.Spans))),
+			mProcessorDroppedSpans.M(0),
+		)
 	}
 }
 
@@ -131,7 +144,12 @@ func ProcessorTraceDataDropped(
 	td consumerdata.TraceData,
 ) {
 	if useNew {
-		processorTraceOp(processorCtx, 0, 0, len(td.Spans))
+		stats.Record(
+			processorCtx,
+			mProcessorAcceptedSpans.M(0),
+			mProcessorRefusedSpans.M(0),
+			mProcessorDroppedSpans.M(int64(len(td.Spans))),
+		)
 	}
 }
 
@@ -142,7 +160,12 @@ func ProcessorMetricsDataAccepted(
 ) {
 	if useNew {
 		numPoints := calcNumPoints(md)
-		processorMetricsOp(processorCtx, numPoints, 0, 0)
+		stats.Record(
+			processorCtx,
+			mProcessorAcceptedMetricPoints.M(int64(numPoints)),
+			mProcessorRefusedMetricPoints.M(0),
+			mProcessorDroppedMetricPoints.M(0),
+		)
 	}
 }
 
@@ -153,7 +176,12 @@ func ProcessorMetricsDataRefused(
 ) {
 	if useNew {
 		numPoints := calcNumPoints(md)
-		processorMetricsOp(processorCtx, 0, numPoints, 0)
+		stats.Record(
+			processorCtx,
+			mProcessorAcceptedMetricPoints.M(0),
+			mProcessorRefusedMetricPoints.M(int64(numPoints)),
+			mProcessorDroppedMetricPoints.M(0),
+		)
 	}
 }
 
@@ -164,36 +192,13 @@ func ProcessorMetricsDataDropped(
 ) {
 	if useNew {
 		numPoints := calcNumPoints(md)
-		processorMetricsOp(processorCtx, 0, 0, numPoints)
+		stats.Record(
+			processorCtx,
+			mProcessorAcceptedMetricPoints.M(0),
+			mProcessorRefusedMetricPoints.M(0),
+			mProcessorDroppedMetricPoints.M(int64(numPoints)),
+		)
 	}
-}
-
-func processorTraceOp(
-	processorCtx context.Context,
-	numAccepted int,
-	numRefused int,
-	numDropped int,
-) {
-	stats.Record(
-		processorCtx,
-		mProcessorAcceptedSpans.M(int64(numAccepted)),
-		mProcessorRefusedSpans.M(int64(numRefused)),
-		mProcessorDroppedSpans.M(int64(numDropped)),
-	)
-}
-
-func processorMetricsOp(
-	processorCtx context.Context,
-	numAccepted int,
-	numRefused int,
-	numDropped int,
-) {
-	stats.Record(
-		processorCtx,
-		mProcessorAcceptedMetricPoints.M(int64(numAccepted)),
-		mProcessorRefusedMetricPoints.M(int64(numRefused)),
-		mProcessorDroppedMetricPoints.M(int64(numDropped)),
-	)
 }
 
 func calcNumPoints(md consumerdata.MetricsData) int {

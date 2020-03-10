@@ -16,6 +16,7 @@ package obsreport
 
 import (
 	"context"
+	"strings"
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
@@ -97,6 +98,9 @@ func CountMetricPoints(md consumerdata.MetricsData) (numTimeSeries int, numPoint
 }
 
 func buildComponentPrefix(componentPrefix, configType string) string {
+	if !strings.HasSuffix(componentPrefix, nameSep) {
+		componentPrefix += nameSep
+	}
 	if configType == "" {
 		return componentPrefix
 	}

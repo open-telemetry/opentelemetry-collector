@@ -26,12 +26,17 @@ import (
 )
 
 const (
+	// Key used to identify exporters in metrics and traces.
 	ExporterKey = "exporter"
 
-	SentSpansKey         = "sent_spans"
+	// Key used to track spans sent by exporters.
+	SentSpansKey = "sent_spans"
+	// Key used to track spans that failed to be sent by exporters.
 	FailedToSendSpansKey = "send_failed_spans"
 
-	SentMetricPointsKey         = "sent_metric_points"
+	// Key used to track metric points sent by exporters.
+	SentMetricPointsKey = "sent_metric_points"
+	// Key used to track metric points that failed to be sent by exporters.
 	FailedToSendMetricPointsKey = "send_failed_metric_points"
 )
 
