@@ -133,10 +133,10 @@ func ocSpanToInternal(dest *data.Span, src *octrace.Span) {
 	kind := ocSpanKindToInternal(src.Kind, src.Attributes)
 	attrs := ocAttrsToInternal(src.Attributes)
 
-	dest.SetTraceID(data.TraceIDFromBytes(src.TraceId))
-	dest.SetSpanID(data.SpanIDFromBytes(src.SpanId))
+	dest.SetTraceID(data.NewTraceID(src.TraceId))
+	dest.SetSpanID(data.NewSpanID(src.SpanId))
 	dest.SetTraceState(ocTraceStateToInternal(src.Tracestate))
-	dest.SetParentSpanID(data.SpanIDFromBytes(src.ParentSpanId))
+	dest.SetParentSpanID(data.NewSpanID(src.ParentSpanId))
 	dest.SetName(src.Name.GetValue())
 	dest.SetKind(kind)
 	dest.SetStartTime(internal.TimestampToUnixnano(src.StartTime))
@@ -319,8 +319,8 @@ func ocLinksToInternal(ocLinks *octrace.Span_Links) (links []*data.SpanLink, dro
 		link := links[i]
 		i++
 
-		link.SetTraceID(data.TraceIDFromBytes(ocLink.TraceId))
-		link.SetSpanID(data.SpanIDFromBytes(ocLink.SpanId))
+		link.SetTraceID(data.NewTraceID(ocLink.TraceId))
+		link.SetSpanID(data.NewSpanID(ocLink.SpanId))
 		link.SetTraceState(ocTraceStateToInternal(ocLink.Tracestate))
 		link.SetAttributes(ocAttrsToInternal(ocLink.Attributes))
 	}
