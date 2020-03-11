@@ -60,7 +60,6 @@ func (pr *Preceiver) Start(host component.Host) error {
 		ctx := host.Context()
 		c, cancel := context.WithCancel(ctx)
 		pr.cancel = cancel
-		// TODO: Use the name from the ReceiverSettings
 		c = obsreport.ReceiverContext(c, pr.cfg.Name(), "http", pr.cfg.Name())
 		var jobsMap *internal.JobsMap
 		if !pr.cfg.UseStartTimeMetric {
