@@ -32,7 +32,7 @@ func TestGeneratorAndBackend(t *testing.T) {
 
 	defer mb.Stop()
 
-	lg, err := NewLoadGenerator(NewJaegerThriftDataSender(port))
+	lg, err := NewLoadGenerator(NewJaegerGRPCDataSender(port))
 	require.NoError(t, err, "Cannot start load generator")
 
 	assert.EqualValues(t, 0, lg.dataItemsSent)
