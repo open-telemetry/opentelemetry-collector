@@ -26,7 +26,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/client"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/observability"
 	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
 )
@@ -148,7 +147,7 @@ func (ocr *Receiver) sendToNextConsumer(longLivedRPCCtx context.Context, traceda
 		receiverTransport)
 
 	// If the starting RPC has a parent span, then add it as a parent link.
-	observability.SetParentLink(longLivedRPCCtx, span)
+	obsreport.SetParentLink(longLivedRPCCtx, span)
 
 	if c, ok := client.FromGRPC(longLivedRPCCtx); ok {
 		ctx = client.NewContext(ctx, c)
