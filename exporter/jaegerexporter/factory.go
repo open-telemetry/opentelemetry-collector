@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jaegergrpcexporter
+package jaegerexporter
 
 import (
 	"fmt"
@@ -26,7 +26,7 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr = "jaeger_grpc"
+	typeStr = "jaeger"
 )
 
 // Factory is the factory for Jaeger gRPC exporter.

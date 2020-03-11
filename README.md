@@ -226,7 +226,7 @@ exporters:
   logging:
     loglevel: debug
 
-  jaeger_grpc:
+  jaeger:
     endpoint: "localhost:14250"
 
   jaeger_thrift_http:

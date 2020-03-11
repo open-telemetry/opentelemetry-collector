@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jaegergrpcexporter
+package jaegerexporter
 
 import (
 	"testing"
@@ -50,7 +50,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 		zap.NewNop(),
 		cfg)
 	assert.NotNil(t, err)
-	assert.Equal(t, "\"jaeger_grpc\" config requires a non-empty \"endpoint\"", err.Error())
+	assert.Equal(t, "\"jaeger\" config requires a non-empty \"endpoint\"", err.Error())
 	assert.Nil(t, exp)
 
 	// Endpoint doesn't have a default value so set it directly.

@@ -24,8 +24,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/exporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/fileexporter"
-	"github.com/open-telemetry/opentelemetry-collector/exporter/jaeger/jaegergrpcexporter"
-	"github.com/open-telemetry/opentelemetry-collector/exporter/jaeger/jaegerthrifthttpexporter"
+	"github.com/open-telemetry/opentelemetry-collector/exporter/jaegerexporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/loggingexporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/opencensusexporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/prometheusexporter"
@@ -73,13 +72,12 @@ func TestDefaultComponents(t *testing.T) {
 		"span":                  &spanprocessor.Factory{},
 	}
 	expectedExporters := map[string]exporter.Factory{
-		"opencensus":         &opencensusexporter.Factory{},
-		"prometheus":         &prometheusexporter.Factory{},
-		"logging":            &loggingexporter.Factory{},
-		"zipkin":             &zipkinexporter.Factory{},
-		"jaeger_grpc":        &jaegergrpcexporter.Factory{},
-		"jaeger_thrift_http": &jaegerthrifthttpexporter.Factory{},
-		"file":               &fileexporter.Factory{},
+		"opencensus": &opencensusexporter.Factory{},
+		"prometheus": &prometheusexporter.Factory{},
+		"logging":    &loggingexporter.Factory{},
+		"zipkin":     &zipkinexporter.Factory{},
+		"jaeger":     &jaegerexporter.Factory{},
+		"file":       &fileexporter.Factory{},
 	}
 
 	factories, err := Components()
