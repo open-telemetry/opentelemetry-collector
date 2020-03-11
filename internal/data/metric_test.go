@@ -22,31 +22,24 @@ import (
 )
 
 func TestMetricCount(t *testing.T) {
-	td := MetricData{}
-	assert.EqualValues(t, 0, td.MetricCount())
+	md := NewMetricData()
+	assert.EqualValues(t, 0, md.MetricCount())
 
-	td = MetricData{
-		resourceMetrics: []*ResourceMetrics{
-			NewResourceMetrics(nil, []*Metric{}),
-		},
-	}
-	assert.EqualValues(t, 0, td.MetricCount())
+	md.SetResourceMetrics([]ResourceMetrics{NewResourceMetrics()})
+	assert.EqualValues(t, 0, md.MetricCount())
 
-	td = MetricData{
-		resourceMetrics: []*ResourceMetrics{
-			NewResourceMetrics(nil, []*Metric{nil}),
-		},
-	}
-	assert.EqualValues(t, 1, td.MetricCount())
+	rm := NewResourceMetrics()
+	rm.SetMetrics(NewMetricSlice(1))
+	md.SetResourceMetrics([]ResourceMetrics{rm})
+	assert.EqualValues(t, 1, md.MetricCount())
 
-	td = MetricData{
-		resourceMetrics: []*ResourceMetrics{
-			NewResourceMetrics(nil, []*Metric{nil}),
-			NewResourceMetrics(nil, []*Metric{}),
-			NewResourceMetrics(nil, []*Metric{nil, nil, nil, nil, nil}),
-		},
-	}
-	assert.EqualValues(t, 6, td.MetricCount())
+	rm1 := NewResourceMetrics()
+	rm1.SetMetrics(NewMetricSlice(1))
+	rm2 := NewResourceMetrics()
+	rm3 := NewResourceMetrics()
+	rm3.SetMetrics(NewMetricSlice(5))
+	md.SetResourceMetrics([]ResourceMetrics{rm1, rm2, rm3})
+	assert.EqualValues(t, 6, md.MetricCount())
 }
 
 func TestNewMetricSlice(t *testing.T) {
