@@ -40,59 +40,108 @@ func ocToInternal(td consumerdata.TraceData) data.TraceData {
 	resourceSpans := data.NewResourceSpans(resource, nil)
 	resourceSpanList := []*data.ResourceSpans{resourceSpans}
 
-	spanCount := len(td.Spans)
-	if spanCount == 0 {
+	if len(td.Spans) == 0 {
 		return data.NewTraceData(resourceSpanList)
 	}
 
-	// Create slice that holds pointers and another slice that holds structs at once
-	// to avoid individual allocations of structs.
-	spans := data.NewSpanSlice(spanCount)
-	spanPtrs := make([]*data.Span, 0, spanCount)
+	// We may need to split OC spans into several ResourceSpans. OC Spans can have a
+	// Resource field inside them set to nil which indicates they use the Resource
+	// specified in "td.Resource", or they can have the Resource field inside them set
+	// to non-nil which indicates they have overridden Resource field and "td.Resource"
+	// does not apply to those spans.
+	//
+	// Each OC Span that has its own Resource field set to non-nil must be placed in a
+	// separate ResourceSpans instance, containing only that span. All other OC Spans
+	// that have nil Resource field must be placed in one other ResourceSpans instance,
+	// which will gets its Resource field from "td.Resource".
+	//
+	// We will end up with with one or more ResourceSpans like this:
+	//
+	// ResourceSpans           ResourceSpans  ResourceSpans
+	// +-----+-----+---+-----+ +------------+ +------------+
+	// |Span1|Span2|...|SpanM| |Span        | |Span        | ...
+	// +-----+-----+---+-----+ +------------+ +------------+
 
-	for i, ocSpan := range td.Spans {
+	// Count the number of spans that have nil Resource and need to be combined
+	// in one slice.
+	combinedSpanCount := 0
+	for _, ocSpan := range td.Spans {
+		if ocSpan == nil {
+			// Skip nil spans.
+			continue
+		}
+		if ocSpan.Resource == nil {
+			combinedSpanCount++
+		}
+	}
+
+	// Allocate a slice for spans that need to be combined into one ResourceSpans.
+	combinedSpans := data.NewSpanSlice(combinedSpanCount)
+	resourceSpans.SetSpans(combinedSpans)
+
+	// Now do the span translation and place them in appropriate ResourceSpans
+	// instances.
+
+	// Index to next available slot in "combinedSpans" slice.
+	i := 0
+	for _, ocSpan := range td.Spans {
 		if ocSpan == nil {
 			// Skip nil spans.
 			continue
 		}
 
-		// Point one element in slice of pointers to an element in slice of structs.
-		destSpan := &spans[i]
+		if ocSpan.Resource == nil {
+			// Add the span to the "combinedSpans". combinedSpans length is equal
+			// to combinedSpanCount. The loop above that calculates combinedSpanCount
+			// has exact same conditions as we have here in this loop.
+			destSpan := combinedSpans[i]
+			i++
 
-		ocSpanToInternal(destSpan, ocSpan)
-
-		if ocSpan.Resource != nil {
-			// Add a separate ResourceSpans item just for this span since it
-			// has a different Resource.
-			separateRS := data.NewResourceSpans(
-				ocNodeResourceToInternal(td.Node, ocSpan.Resource),
-				[]*data.Span{destSpan},
-			)
-			resourceSpanList = append(resourceSpanList, separateRS)
+			// Convert the span.
+			ocSpanToInternal(destSpan, ocSpan)
 		} else {
-			// Otherwise add the span to the first ResourceSpans item.
-			spanPtrs = append(spanPtrs, destSpan)
+			// This span has a different Resource and must be placed in a different
+			// ResourceSpans instance. Create a separate ResourceSpans item just for this span.
+			separateRS := ocSpanToResourceSpans(ocSpan, td.Node, ocSpan.Resource)
+
+			// Add the newly created ResourceSpans to the final list that we will return.
+			resourceSpanList = append(resourceSpanList, separateRS)
 		}
 	}
 
-	resourceSpans.SetSpans(spanPtrs)
-
 	return data.NewTraceData(resourceSpanList)
+}
+
+func ocSpanToResourceSpans(ocSpan *octrace.Span, node *occommon.Node, resource *ocresource.Resource) *data.ResourceSpans {
+	destSpan := data.NewSpan()
+	ocSpanToInternal(destSpan, ocSpan)
+
+	// Create a separate ResourceSpans item just for this span.
+	return data.NewResourceSpans(
+		ocNodeResourceToInternal(node, resource),
+		[]*data.Span{destSpan},
+	)
 }
 
 func ocSpanToInternal(dest *data.Span, src *octrace.Span) {
 	events, droppedEventCount := ocEventsToInternal(src.TimeEvents)
 	links, droppedLinkCount := ocLinksToInternal(src.Links)
 
+	// Note that ocSpanKindToInternal must be called before ocAttrsToInternal
+	// since it may modify src.Attributes (remove the attribute which represents the
+	// span kind).
+	kind := ocSpanKindToInternal(src.Kind, src.Attributes)
+	attrs := ocAttrsToInternal(src.Attributes)
+
 	dest.SetTraceID(data.TraceIDFromBytes(src.TraceId))
 	dest.SetSpanID(data.SpanIDFromBytes(src.SpanId))
 	dest.SetTraceState(ocTraceStateToInternal(src.Tracestate))
 	dest.SetParentSpanID(data.SpanIDFromBytes(src.ParentSpanId))
 	dest.SetName(src.Name.GetValue())
-	dest.SetKind(ocSpanKindToInternal(src.Kind, src.Attributes))
+	dest.SetKind(kind)
 	dest.SetStartTime(internal.TimestampToUnixnano(src.StartTime))
 	dest.SetEndTime(internal.TimestampToUnixnano(src.EndTime))
-	dest.SetAttributes(ocAttrsToInternal(src.Attributes))
+	dest.SetAttributes(attrs)
 	dest.SetEvents(events)
 	dest.SetDroppedEventsCount(droppedEventCount)
 	dest.SetLinks(links)
@@ -199,7 +248,7 @@ func ocSpanKindToInternal(ocKind octrace.Span_SpanKind, ocAttrs *octrace.Span_At
 	}
 }
 
-func ocEventsToInternal(ocEvents *octrace.Span_TimeEvents) (ptrs []*data.SpanEvent, droppedCount uint32) {
+func ocEventsToInternal(ocEvents *octrace.Span_TimeEvents) (events []*data.SpanEvent, droppedCount uint32) {
 	if ocEvents == nil {
 		return
 	}
@@ -211,19 +260,17 @@ func ocEventsToInternal(ocEvents *octrace.Span_TimeEvents) (ptrs []*data.SpanEve
 		return
 	}
 
-	// Create slice that holds pointers and another slice that holds structs at once
-	// to avoid individual allocations of structs.
-	ptrs = make([]*data.SpanEvent, 0, eventCount)
-	content := data.NewSpanEventSlice(eventCount)
+	events = data.NewSpanEventSlice(eventCount)
 
-	for i, ocEvent := range ocEvents.TimeEvent {
+	i := 0
+	for _, ocEvent := range ocEvents.TimeEvent {
 		if ocEvent == nil {
+			// Skip nil source events.
 			continue
 		}
 
-		// Point one element in slice of pointers to an element in slice of structs.
-		event := &content[i]
-		ptrs = append(ptrs, event)
+		event := events[i]
+		i++
 
 		event.SetTimestamp(internal.TimestampToUnixnano(ocEvent.Time))
 
@@ -242,10 +289,14 @@ func ocEventsToInternal(ocEvents *octrace.Span_TimeEvents) (ptrs []*data.SpanEve
 			event.SetName("An unknown OpenCensus TimeEvent type was detected when translating")
 		}
 	}
+
+	// Truncate the slice to only include populated items.
+	events = events[0:i]
+
 	return
 }
 
-func ocLinksToInternal(ocLinks *octrace.Span_Links) (ptrs []*data.SpanLink, droppedCount uint32) {
+func ocLinksToInternal(ocLinks *octrace.Span_Links) (links []*data.SpanLink, droppedCount uint32) {
 	if ocLinks == nil {
 		return
 	}
@@ -257,25 +308,26 @@ func ocLinksToInternal(ocLinks *octrace.Span_Links) (ptrs []*data.SpanLink, drop
 		return
 	}
 
-	// Create slice that holds pointers and another slice that holds structs at once
-	// to avoid individual allocations of structs.
-	ptrs = make([]*data.SpanLink, 0, linkCount)
-	content := data.NewSpanLinkSlice(linkCount)
+	links = data.NewSpanLinkSlice(linkCount)
 
-	for i, ocLink := range ocLinks.Link {
+	i := 0
+	for _, ocLink := range ocLinks.Link {
 		if ocLink == nil {
 			continue
 		}
 
-		// Point one element in slice of pointers to an element in slice of structs.
-		link := &content[i]
-		ptrs = append(ptrs, link)
+		link := links[i]
+		i++
 
 		link.SetTraceID(data.TraceIDFromBytes(ocLink.TraceId))
 		link.SetSpanID(data.SpanIDFromBytes(ocLink.SpanId))
 		link.SetTraceState(ocTraceStateToInternal(ocLink.Tracestate))
 		link.SetAttributes(ocAttrsToInternal(ocLink.Attributes))
 	}
+
+	// Truncate the slice to only include populated items.
+	links = links[0:i]
+
 	return
 }
 
