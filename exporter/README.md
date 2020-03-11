@@ -87,7 +87,7 @@ exporters:
     server_name_override: opentelemetry.io
 ```
 
-The full list of settings exposed for this exporter are documented [here](jaeger/jaegergrpcpexporter/config.go)
+The full list of settings exposed for this exporter are documented [here](jaeger/jaegergrpcexporter/config.go)
 with detailed sample configurations [here](jaeger/jaegergrpcexporter/testdata/config.yaml).
 
 ### <a name="jaeger_thrift_http"></a>Thrift HTTP
