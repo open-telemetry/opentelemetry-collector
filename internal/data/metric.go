@@ -28,6 +28,7 @@ type MetricData struct {
 	resourceMetrics []*ResourceMetrics
 }
 
+// NewMetricData creates a new MetricData.
 func NewMetricData(resourceMetrics []*ResourceMetrics) MetricData {
 	return MetricData{resourceMetrics}
 }
@@ -49,7 +50,7 @@ func (md MetricData) SetResource(r []*ResourceMetrics) {
 	md.resourceMetrics = r
 }
 
-// A collection of metrics from a Resource.
+// ResourceMetrics is a collection of metrics from a Resource.
 //
 // Must use NewResourceMetrics functions to create new instances.
 // Important: zero-initialized instance is not valid for use.
@@ -62,6 +63,7 @@ type ResourceMetrics struct {
 	metrics []*Metric
 }
 
+// NewResourceMetrics creates a new ResourceMetrics.
 func NewResourceMetrics(resource *Resource, metrics []*Metric) *ResourceMetrics {
 	return &ResourceMetrics{resource, metrics}
 }
@@ -99,18 +101,24 @@ type Metric struct {
 	summaryDataPoints   []*SummaryDataPoint
 }
 
+// NewMetric creates a new Metric.
 func NewMetric() *Metric {
 	return &Metric{orig: &otlpmetric.Metric{}}
 }
 
-// NewMetricSlice creates a slice of Metrics that are correctly initialized.
-func NewMetricSlice(len int) []Metric {
+// NewMetricSlice creates a slice of *Metrics that are correctly initialized.
+func NewMetricSlice(len int) []*Metric {
+	// Slice for underlying data.
 	origs := make([]otlpmetric.Metric, len)
+	// Slice for wrappers.
 	wrappers := make([]Metric, len)
+	// Slice for pointers to wrappers.
+	ptrs := make([]*Metric, len)
 	for i := range origs {
 		wrappers[i].orig = &origs[i]
+		ptrs[i] = &wrappers[i]
 	}
-	return wrappers
+	return ptrs
 }
 
 func (m *Metric) MetricDescriptor() MetricDescriptor {
@@ -166,6 +174,7 @@ type MetricDescriptor struct {
 	labels Labels
 }
 
+// NewMetricDescriptor creates a new MetricDescriptor.
 func NewMetricDescriptor() *MetricDescriptor {
 	return &MetricDescriptor{orig: &otlpmetric.MetricDescriptor{}}
 }
@@ -237,18 +246,24 @@ type Int64DataPoint struct {
 	labels Labels
 }
 
+// NewInt64DataPoint creates a new Int64DataPoint
 func NewInt64DataPoint() *Int64DataPoint {
 	return &Int64DataPoint{orig: &otlpmetric.Int64DataPoint{}}
 }
 
-// NewInt64DataPointSlice creates a slice of Int64DataPoint that are correctly initialized.
-func NewInt64DataPointSlice(len int) []Int64DataPoint {
+// NewInt64DataPointSlice creates a slice of *Int64DataPoint that are correctly initialized.
+func NewInt64DataPointSlice(len int) []*Int64DataPoint {
+	// Slice for underlying data.
 	origs := make([]otlpmetric.Int64DataPoint, len)
+	// Slice for wrappers.
 	wrappers := make([]Int64DataPoint, len)
+	// Slice for pointers to wrappers.
+	ptrs := make([]*Int64DataPoint, len)
 	for i := range origs {
 		wrappers[i].orig = &origs[i]
+		ptrs[i] = &wrappers[i]
 	}
-	return wrappers
+	return ptrs
 }
 
 func (dp *Int64DataPoint) Labels() Labels {
@@ -297,18 +312,24 @@ type DoubleDataPoint struct {
 	labels Labels
 }
 
+// NewDoubleDataPoint creates a new DoubleDataPoint.
 func NewDoubleDataPoint() *DoubleDataPoint {
 	return &DoubleDataPoint{orig: &otlpmetric.DoubleDataPoint{}}
 }
 
-// NewDoubleDataPointSlice creates a slice of DoubleDataPoint that are correctly initialized.
-func NewDoubleDataPointSlice(len int) []DoubleDataPoint {
+// NewDoubleDataPointSlice creates a slice of *DoubleDataPoint that are correctly initialized.
+func NewDoubleDataPointSlice(len int) []*DoubleDataPoint {
+	// Slice for underlying data.
 	origs := make([]otlpmetric.DoubleDataPoint, len)
+	// Slice for wrappers.
 	wrappers := make([]DoubleDataPoint, len)
+	// Slice for pointers to wrappers.
+	ptrs := make([]*DoubleDataPoint, len)
 	for i := range origs {
 		wrappers[i].orig = &origs[i]
+		ptrs[i] = &wrappers[i]
 	}
-	return wrappers
+	return ptrs
 }
 
 func (dp *DoubleDataPoint) Labels() Labels {
@@ -358,18 +379,24 @@ type HistogramDataPoint struct {
 	buckets []*HistogramBucket
 }
 
+// NewHistogramDataPoint creates a new HistogramDataPoint.
 func NewHistogramDataPoint() *HistogramDataPoint {
 	return &HistogramDataPoint{orig: &otlpmetric.HistogramDataPoint{}}
 }
 
-// NewHistogramDataPointSlice creates a slice of HistogramDataPoint that are correctly initialized.
-func NewHistogramDataPointSlice(len int) []HistogramDataPoint {
+// NewHistogramDataPointSlice creates a slice of *HistogramDataPoint that are correctly initialized.
+func NewHistogramDataPointSlice(len int) []*HistogramDataPoint {
+	// Slice for underlying data.
 	origs := make([]otlpmetric.HistogramDataPoint, len)
+	// Slice for wrappers.
 	wrappers := make([]HistogramDataPoint, len)
+	// Slice for pointers to wrappers.
+	ptrs := make([]*HistogramDataPoint, len)
 	for i := range origs {
 		wrappers[i].orig = &origs[i]
+		ptrs[i] = &wrappers[i]
 	}
-	return wrappers
+	return ptrs
 }
 
 func (dp *HistogramDataPoint) Labels() Labels {
@@ -441,18 +468,24 @@ type HistogramBucket struct {
 	exemplar HistogramBucketExemplar
 }
 
+// NewHistogramBucket creates a new HistogramBucket.
 func NewHistogramBucket() *HistogramBucket {
 	return &HistogramBucket{orig: &otlpmetric.HistogramDataPoint_Bucket{}}
 }
 
-// NewHistogramBucketSlice creates a slice of HistogramBucket that are correctly initialized.
-func NewHistogramBucketSlice(len int) []HistogramBucket {
+// NewHistogramBucketSlice creates a slice of *HistogramBucket that are correctly initialized.
+func NewHistogramBucketSlice(len int) []*HistogramBucket {
+	// Slice for underlying data.
 	origs := make([]otlpmetric.HistogramDataPoint_Bucket, len)
+	// Slice for wrappers.
 	wrappers := make([]HistogramBucket, len)
+	// Slice for pointers to wrappers.
+	ptrs := make([]*HistogramBucket, len)
 	for i := range origs {
 		wrappers[i].orig = &origs[i]
+		ptrs[i] = &wrappers[i]
 	}
-	return wrappers
+	return ptrs
 }
 
 func (hb *HistogramBucket) Count() uint64 {
@@ -471,7 +504,7 @@ func (hb *HistogramBucket) SetExemplar(v HistogramBucketExemplar) {
 	hb.exemplar = v
 }
 
-// HistogramBucket are example points that may be used to annotate aggregated Histogram values.
+// HistogramBucketExemplar are example points that may be used to annotate aggregated Histogram values.
 // They are metadata that gives information about a particular value added to a Histogram bucket.
 //
 // Must use NewHistogramBucketExemplar* functions to create new instances.
@@ -485,6 +518,7 @@ type HistogramBucketExemplar struct {
 	attachments Labels
 }
 
+// NewHistogramBucketExemplar creates a new HistogramBucketExemplar.
 func NewHistogramBucketExemplar() *HistogramBucketExemplar {
 	return &HistogramBucketExemplar{orig: &otlpmetric.HistogramDataPoint_Bucket_Exemplar{}}
 }
@@ -525,21 +559,27 @@ type SummaryDataPoint struct {
 	// Override a few fields. These fields are the source of truth. Their counterparts
 	// stored in corresponding fields of "orig" are ignored.
 	labels             Labels
-	valueAtPercentiles []*SummaryValueAtPercentile
+	valueAtPercentiles []SummaryValueAtPercentile
 }
 
+// NewSummaryDataPoint creates a new SummaryDataPoint.
 func NewSummaryDataPoint() *SummaryDataPoint {
 	return &SummaryDataPoint{orig: &otlpmetric.SummaryDataPoint{}}
 }
 
-// NewSummaryDataPointSlice creates a slice of SummaryDataPoint that are correctly initialized.
-func NewSummaryDataPointSlice(len int) []SummaryDataPoint {
+// NewSummaryDataPointSlice creates a slice of *SummaryDataPoint that are correctly initialized.
+func NewSummaryDataPointSlice(len int) []*SummaryDataPoint {
+	// Slice for underlying data.
 	origs := make([]otlpmetric.SummaryDataPoint, len)
+	// Slice for wrappers.
 	wrappers := make([]SummaryDataPoint, len)
+	// Slice for pointers to wrappers.
+	ptrs := make([]*SummaryDataPoint, len)
 	for i := range origs {
 		wrappers[i].orig = &origs[i]
+		ptrs[i] = &wrappers[i]
 	}
-	return wrappers
+	return ptrs
 }
 
 func (dp *SummaryDataPoint) Labels() Labels {
@@ -582,11 +622,11 @@ func (dp *SummaryDataPoint) SetSum(v float64) {
 	dp.orig.Sum = v
 }
 
-func (dp *SummaryDataPoint) ValueAtPercentiles() []*SummaryValueAtPercentile {
+func (dp *SummaryDataPoint) ValueAtPercentiles() []SummaryValueAtPercentile {
 	return dp.valueAtPercentiles
 }
 
-func (dp *SummaryDataPoint) SetValueAtPercentiles(v []*SummaryValueAtPercentile) {
+func (dp *SummaryDataPoint) SetValueAtPercentiles(v []SummaryValueAtPercentile) {
 	dp.valueAtPercentiles = v
 }
 
@@ -599,13 +639,16 @@ type SummaryValueAtPercentile struct {
 	orig *otlpmetric.SummaryDataPoint_ValueAtPercentile
 }
 
-func NewSummaryValueAtPercentile() *SummaryValueAtPercentile {
-	return &SummaryValueAtPercentile{orig: &otlpmetric.SummaryDataPoint_ValueAtPercentile{}}
+// NewSummaryValueAtPercentile creates a new SummaryValueAtPercentile.
+func NewSummaryValueAtPercentile() SummaryValueAtPercentile {
+	return SummaryValueAtPercentile{orig: &otlpmetric.SummaryDataPoint_ValueAtPercentile{}}
 }
 
 // NewSummaryValueAtPercentileSlice creates a slice of SummaryValueAtPercentile that are correctly initialized.
 func NewSummaryValueAtPercentileSlice(len int) []SummaryValueAtPercentile {
+	// Slice for underlying data.
 	origs := make([]otlpmetric.SummaryDataPoint_ValueAtPercentile, len)
+	// Slice for wrappers.
 	wrappers := make([]SummaryValueAtPercentile, len)
 	for i := range origs {
 		wrappers[i].orig = &origs[i]
@@ -613,19 +656,19 @@ func NewSummaryValueAtPercentileSlice(len int) []SummaryValueAtPercentile {
 	return wrappers
 }
 
-func (vp *SummaryValueAtPercentile) Percentile() float64 {
+func (vp SummaryValueAtPercentile) Percentile() float64 {
 	return vp.orig.Percentile
 }
 
-func (vp *SummaryValueAtPercentile) SetPercentile(v float64) {
+func (vp SummaryValueAtPercentile) SetPercentile(v float64) {
 	vp.orig.Percentile = v
 }
 
-func (vp *SummaryValueAtPercentile) Value() float64 {
+func (vp SummaryValueAtPercentile) Value() float64 {
 	return vp.orig.Value
 }
 
-func (vp *SummaryValueAtPercentile) SetValue(v float64) {
+func (vp SummaryValueAtPercentile) SetValue(v float64) {
 	vp.orig.Value = v
 }
 
