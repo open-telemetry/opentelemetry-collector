@@ -31,6 +31,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal"
+	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 )
 
@@ -85,8 +86,8 @@ func spanToOC(span *otlptrace.Span) *octrace.Span {
 			Value: span.Name,
 		},
 		Kind:           kindToOC(span.Kind),
-		StartTime:      unixnanoToTimestamp(span.StartTimeUnixnano),
-		EndTime:        unixnanoToTimestamp(span.EndTimeUnixnano),
+		StartTime:      internal.UnixnanoToTimestamp(data.TimestampUnixNano(span.StartTimeUnixnano)),
+		EndTime:        internal.UnixnanoToTimestamp(data.TimestampUnixNano(span.EndTimeUnixnano)),
 		Attributes:     attributes,
 		TimeEvents:     eventsToOC(span.Events, span.DroppedEventsCount),
 		Links:          linksToOC(span.Links, span.DroppedLinksCount),
@@ -144,7 +145,7 @@ func eventsToOCEvents(events []*otlptrace.Span_Event) []*octrace.Span_TimeEvent 
 	for _, event := range events {
 		ocAttributes := attributesToOCSpanAttributes(event.Attributes, event.DroppedAttributesCount)
 		ocEvent := &octrace.Span_TimeEvent{
-			Time: unixnanoToTimestamp(event.TimeUnixnano),
+			Time: internal.UnixnanoToTimestamp(data.TimestampUnixNano(event.TimeUnixnano)),
 			Value: &octrace.Span_TimeEvent_Annotation_{
 				Annotation: &octrace.Span_TimeEvent_Annotation{
 					Description: &octrace.TruncatableString{
@@ -401,8 +402,4 @@ func stringAttributeValue(val string) *octrace.AttributeValue {
 			},
 		},
 	}
-}
-
-func unixnanoToTimestamp(u uint64) *timestamp.Timestamp {
-	return internal.TimeToTimestamp(time.Unix(0, int64(u)))
 }

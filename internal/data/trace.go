@@ -40,6 +40,10 @@ func (td TraceData) SpanCount() int {
 	return spanCount
 }
 
+func (td TraceData) ResourceSpans() []*ResourceSpans {
+	return td.resourceSpans
+}
+
 // A collection of spans from a Resource.
 //
 // Must use NewResourceSpans functions to create new instances.
@@ -77,13 +81,21 @@ type TraceID struct {
 	bytes []byte
 }
 
-func TraceIDFromBytes(bytes []byte) TraceID { return TraceID{bytes} }
+func (t TraceID) Bytes() []byte {
+	return t.bytes
+}
+
+func NewTraceID(bytes []byte) TraceID { return TraceID{bytes} }
 
 type SpanID struct {
 	bytes []byte
 }
 
-func SpanIDFromBytes(bytes []byte) SpanID { return SpanID{bytes} }
+func (s SpanID) Bytes() []byte {
+	return s.bytes
+}
+
+func NewSpanID(bytes []byte) SpanID { return SpanID{bytes} }
 
 // TraceState in w3c-trace-context format: https://www.w3.org/TR/trace-context/#tracestate-header
 type TraceState string
@@ -142,11 +154,11 @@ func NewSpanSlice(len int) []*Span {
 }
 
 func (m *Span) TraceID() TraceID {
-	return TraceIDFromBytes(m.orig.TraceId)
+	return NewTraceID(m.orig.TraceId)
 }
 
 func (m *Span) SpanID() SpanID {
-	return SpanIDFromBytes(m.orig.SpanId)
+	return NewSpanID(m.orig.SpanId)
 }
 
 func (m *Span) TraceState() TraceState {
@@ -154,7 +166,7 @@ func (m *Span) TraceState() TraceState {
 }
 
 func (m *Span) ParentSpanID() SpanID {
-	return SpanIDFromBytes(m.orig.ParentSpanId)
+	return NewSpanID(m.orig.ParentSpanId)
 }
 
 func (m *Span) Name() string {
@@ -260,6 +272,14 @@ func (m *Span) SetStatus(v SpanStatus) {
 
 type SpanStatus struct {
 	orig *otlptrace.Status
+}
+
+func (s *SpanStatus) Code() StatusCode {
+	return StatusCode(s.orig.Code)
+}
+
+func (s *SpanStatus) Message() string {
+	return s.orig.Message
 }
 
 // StatusCode mirrors the codes defined at
@@ -391,11 +411,15 @@ func NewSpanLinkSlice(len int) []*SpanLink {
 }
 
 func (m *SpanLink) TraceID() TraceID {
-	return TraceIDFromBytes(m.orig.TraceId)
+	return NewTraceID(m.orig.TraceId)
 }
 
 func (m *SpanLink) SpanID() SpanID {
-	return SpanIDFromBytes(m.orig.SpanId)
+	return NewSpanID(m.orig.SpanId)
+}
+
+func (m *SpanLink) SpanIDBytes() []byte {
+	return m.orig.SpanId
 }
 
 func (m *SpanLink) Attributes() AttributesMap {

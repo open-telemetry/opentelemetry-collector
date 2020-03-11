@@ -44,3 +44,7 @@ func TimestampToTime(ts *timestamp.Timestamp) (t time.Time) {
 func TimestampToUnixnano(ts *timestamp.Timestamp) data.TimestampUnixNano {
 	return data.TimestampUnixNano(uint64(TimestampToTime(ts).UnixNano()))
 }
+
+func UnixnanoToTimestamp(u data.TimestampUnixNano) *timestamp.Timestamp {
+	return TimeToTimestamp(time.Unix(0, int64(u)))
+}
