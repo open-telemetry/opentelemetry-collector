@@ -15,6 +15,7 @@
 package data
 
 import (
+	otlpcommon "github.com/open-telemetry/opentelemetry-proto/gen/go/common/v1"
 	otlpmetric "github.com/open-telemetry/opentelemetry-proto/gen/go/metrics/v1"
 )
 
@@ -24,62 +25,82 @@ import (
 // MetricData is the top-level struct that is propagated through the metrics pipeline.
 // This is the newer version of consumerdata.MetricsData, but uses more efficient
 // in-memory representation.
+//
+// This is a reference type (like builtin map).
+//
+// Must use NewMetricData functions to create new instances.
+// Important: zero-initialized instance is not valid for use.
 type MetricData struct {
-	resourceMetrics []*ResourceMetrics
+	orig []*otlpmetric.ResourceMetrics
+
+	// Override a few fields. These fields are the source of truth. Their counterparts
+	// stored in corresponding fields of "orig" are ignored.
+	pimpl *internalMetricData
 }
 
-func NewMetricData(resourceMetrics []*ResourceMetrics) MetricData {
-	return MetricData{resourceMetrics}
+type internalMetricData struct {
+	resourceMetrics []ResourceMetrics
+}
+
+// NewMetricData creates a new MetricData.
+func NewMetricData() MetricData {
+	return MetricData{nil, &internalMetricData{}}
+}
+
+func (md MetricData) ResourceMetrics() []ResourceMetrics {
+	return md.pimpl.resourceMetrics
+}
+
+func (md MetricData) SetResourceMetrics(r []ResourceMetrics) {
+	md.pimpl.resourceMetrics = r
 }
 
 // MetricCount calculates the total number of metrics.
 func (md MetricData) MetricCount() int {
 	metricCount := 0
-	for _, rml := range md.resourceMetrics {
-		metricCount += len(rml.metrics)
+	// TODO: Do not access internal members, add a metricCount to ResourceMetrics.
+	for _, rm := range md.pimpl.resourceMetrics {
+		metricCount += len(rm.pimpl.metrics)
 	}
 	return metricCount
 }
 
-func (md MetricData) ResourceMetrics() []*ResourceMetrics {
-	return md.resourceMetrics
-}
-
-func (md MetricData) SetResource(r []*ResourceMetrics) {
-	md.resourceMetrics = r
-}
-
-// A collection of metrics from a Resource.
+// ResourceMetrics is a collection of metrics from a Resource.
 //
 // Must use NewResourceMetrics functions to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ResourceMetrics struct {
-	// The resource for the metrics in this message.
-	// If this field is not set then no resource info is known.
+	orig *otlpmetric.ResourceMetrics
+
+	// Override a few fields. These fields are the source of truth. Their counterparts
+	// stored in corresponding fields of "orig" are ignored.
+	pimpl *internalResourceMetrics
+}
+
+type internalResourceMetrics struct {
 	resource *Resource
-
-	// A list of Spans that originate from a resource.
-	metrics []*Metric
+	metrics  []Metric
 }
 
-func NewResourceMetrics(resource *Resource, metrics []*Metric) *ResourceMetrics {
-	return &ResourceMetrics{resource, metrics}
+// NewResourceMetrics creates a new ResourceMetrics.
+func NewResourceMetrics() ResourceMetrics {
+	return ResourceMetrics{&otlpmetric.ResourceMetrics{}, &internalResourceMetrics{}}
 }
 
-func (rm *ResourceMetrics) Resource() *Resource {
-	return rm.resource
+func (rm ResourceMetrics) Resource() *Resource {
+	return rm.pimpl.resource
 }
 
-func (rm *ResourceMetrics) SetResource(r *Resource) {
-	rm.resource = r
+func (rm ResourceMetrics) SetResource(r *Resource) {
+	rm.pimpl.resource = r
 }
 
-func (rm *ResourceMetrics) Metrics() []*Metric {
-	return rm.metrics
+func (rm ResourceMetrics) Metrics() []Metric {
+	return rm.pimpl.metrics
 }
 
-func (rm *ResourceMetrics) SetMetrics(s []*Metric) {
-	rm.metrics = s
+func (rm ResourceMetrics) SetMetrics(s []Metric) {
+	rm.pimpl.metrics = s
 }
 
 // Metric defines a metric which has a descriptor and one or more timeseries points.
@@ -92,65 +113,75 @@ type Metric struct {
 
 	// Override a few fields. These fields are the source of truth. Their counterparts
 	// stored in corresponding fields of "orig" are ignored.
-	metricDescriptor    MetricDescriptor
-	int64DataPoints     []*Int64DataPoint
-	doubleDataPoints    []*DoubleDataPoint
-	histogramDataPoints []*HistogramDataPoint
-	summaryDataPoints   []*SummaryDataPoint
+	pimpl *internalMetric
 }
 
-func NewMetric() *Metric {
-	return &Metric{orig: &otlpmetric.Metric{}}
+type internalMetric struct {
+	metricDescriptor    MetricDescriptor
+	int64DataPoints     []Int64DataPoint
+	doubleDataPoints    []DoubleDataPoint
+	histogramDataPoints []HistogramDataPoint
+	summaryDataPoints   []SummaryDataPoint
+}
+
+// NewMetric creates a new Metric.
+func NewMetric() Metric {
+	return Metric{&otlpmetric.Metric{}, &internalMetric{}}
 }
 
 // NewMetricSlice creates a slice of Metrics that are correctly initialized.
 func NewMetricSlice(len int) []Metric {
+	// Slice for underlying orig.
 	origs := make([]otlpmetric.Metric, len)
+	// Slice for underlying pimpl.
+	internals := make([]internalMetric, len)
+	// Slice for wrappers.
 	wrappers := make([]Metric, len)
 	for i := range origs {
 		wrappers[i].orig = &origs[i]
+		wrappers[i].pimpl = &internals[i]
 	}
 	return wrappers
 }
 
-func (m *Metric) MetricDescriptor() MetricDescriptor {
-	return m.metricDescriptor
+func (m Metric) MetricDescriptor() MetricDescriptor {
+	return m.pimpl.metricDescriptor
 }
 
-func (m *Metric) SetMetricDescriptor(r MetricDescriptor) {
-	m.metricDescriptor = r
+func (m Metric) SetMetricDescriptor(r MetricDescriptor) {
+	m.pimpl.metricDescriptor = r
 }
 
-func (m *Metric) Int64DataPoints() []*Int64DataPoint {
-	return m.int64DataPoints
+func (m Metric) Int64DataPoints() []Int64DataPoint {
+	return m.pimpl.int64DataPoints
 }
 
-func (m *Metric) SetInt64DataPoints(v []*Int64DataPoint) {
-	m.int64DataPoints = v
+func (m Metric) SetInt64DataPoints(v []Int64DataPoint) {
+	m.pimpl.int64DataPoints = v
 }
 
-func (m *Metric) DoubleDataPoints() []*DoubleDataPoint {
-	return m.doubleDataPoints
+func (m Metric) DoubleDataPoints() []DoubleDataPoint {
+	return m.pimpl.doubleDataPoints
 }
 
-func (m *Metric) SetDoubleDataPoints(v []*DoubleDataPoint) {
-	m.doubleDataPoints = v
+func (m Metric) SetDoubleDataPoints(v []DoubleDataPoint) {
+	m.pimpl.doubleDataPoints = v
 }
 
-func (m *Metric) HistogramDataPoints() []*HistogramDataPoint {
-	return m.histogramDataPoints
+func (m Metric) HistogramDataPoints() []HistogramDataPoint {
+	return m.pimpl.histogramDataPoints
 }
 
-func (m *Metric) SetHistogramDataPoints(v []*HistogramDataPoint) {
-	m.histogramDataPoints = v
+func (m Metric) SetHistogramDataPoints(v []HistogramDataPoint) {
+	m.pimpl.histogramDataPoints = v
 }
 
-func (m *Metric) SummaryDataPoints() []*SummaryDataPoint {
-	return m.summaryDataPoints
+func (m Metric) SummaryDataPoints() []SummaryDataPoint {
+	return m.pimpl.summaryDataPoints
 }
 
-func (m *Metric) SetSummaryDataPoints(v []*SummaryDataPoint) {
-	m.summaryDataPoints = v
+func (m Metric) SetSummaryDataPoints(v []SummaryDataPoint) {
+	m.pimpl.summaryDataPoints = v
 }
 
 // MetricDescriptor is the descriptor of a metric.
@@ -163,51 +194,56 @@ type MetricDescriptor struct {
 
 	// Override a few fields. These fields are the source of truth. Their counterparts
 	// stored in corresponding fields of "orig" are ignored.
+	pimpl *internalMetricDescriptor
+}
+
+type internalMetricDescriptor struct {
 	labels Labels
 }
 
-func NewMetricDescriptor() *MetricDescriptor {
-	return &MetricDescriptor{orig: &otlpmetric.MetricDescriptor{}}
+// NewMetricDescriptor creates a new MetricDescriptor.
+func NewMetricDescriptor() MetricDescriptor {
+	return MetricDescriptor{&otlpmetric.MetricDescriptor{}, &internalMetricDescriptor{}}
 }
 
-func (md *MetricDescriptor) Name() string {
+func (md MetricDescriptor) Name() string {
 	return md.orig.Name
 }
 
-func (md *MetricDescriptor) SetName(v string) {
+func (md MetricDescriptor) SetName(v string) {
 	md.orig.Name = v
 }
 
-func (md *MetricDescriptor) Description() string {
+func (md MetricDescriptor) Description() string {
 	return md.orig.Description
 }
 
-func (md *MetricDescriptor) SetDescription(v string) {
+func (md MetricDescriptor) SetDescription(v string) {
 	md.orig.Description = v
 }
 
-func (md *MetricDescriptor) Unit() string {
+func (md MetricDescriptor) Unit() string {
 	return md.orig.Unit
 }
 
-func (md *MetricDescriptor) SetUnit(v string) {
+func (md MetricDescriptor) SetUnit(v string) {
 	md.orig.Unit = v
 }
 
-func (md *MetricDescriptor) Type() MetricType {
+func (md MetricDescriptor) Type() MetricType {
 	return MetricType(md.orig.Type)
 }
 
-func (md *MetricDescriptor) SetMetricType(v MetricType) {
+func (md MetricDescriptor) SetMetricType(v MetricType) {
 	md.orig.Type = otlpmetric.MetricDescriptor_Type(v)
 }
 
-func (md *MetricDescriptor) Labels() Labels {
-	return md.labels
+func (md MetricDescriptor) Labels() Labels {
+	return md.pimpl.labels
 }
 
-func (md *MetricDescriptor) SetLabels(v Labels) {
-	md.labels = v
+func (md MetricDescriptor) SetLabels(v Labels) {
+	md.pimpl.labels = v
 }
 
 type MetricType otlpmetric.MetricDescriptor_Type
@@ -234,52 +270,62 @@ type Int64DataPoint struct {
 
 	// Override a few fields. These fields are the source of truth. Their counterparts
 	// stored in corresponding fields of "orig" are ignored.
+	pimpl *internalInt64DataPoint
+}
+
+type internalInt64DataPoint struct {
 	labels Labels
 }
 
-func NewInt64DataPoint() *Int64DataPoint {
-	return &Int64DataPoint{orig: &otlpmetric.Int64DataPoint{}}
+// NewInt64DataPoint creates a new Int64DataPoint
+func NewInt64DataPoint() Int64DataPoint {
+	return Int64DataPoint{&otlpmetric.Int64DataPoint{}, &internalInt64DataPoint{}}
 }
 
 // NewInt64DataPointSlice creates a slice of Int64DataPoint that are correctly initialized.
 func NewInt64DataPointSlice(len int) []Int64DataPoint {
+	// Slice for underlying orig.
 	origs := make([]otlpmetric.Int64DataPoint, len)
+	// Slice for underlying pimpl.
+	internals := make([]internalInt64DataPoint, len)
+	// Slice for wrappers.
 	wrappers := make([]Int64DataPoint, len)
 	for i := range origs {
 		wrappers[i].orig = &origs[i]
+		wrappers[i].pimpl = &internals[i]
 	}
 	return wrappers
 }
 
-func (dp *Int64DataPoint) Labels() Labels {
-	return dp.labels
+func (dp Int64DataPoint) Labels() Labels {
+	return dp.pimpl.labels
 }
 
-func (dp *Int64DataPoint) SetLabels(v Labels) {
-	dp.labels = v
+func (dp Int64DataPoint) SetLabels(v Labels) {
+	dp.pimpl.labels = v
 }
 
-func (dp *Int64DataPoint) StartTime() TimestampUnixNano {
+func (dp Int64DataPoint) StartTime() TimestampUnixNano {
 	return TimestampUnixNano(dp.orig.StartTimeUnixnano)
 }
 
-func (dp *Int64DataPoint) SetStartTime(v TimestampUnixNano) {
+func (dp Int64DataPoint) SetStartTime(v TimestampUnixNano) {
 	dp.orig.StartTimeUnixnano = uint64(v)
 }
 
-func (dp *Int64DataPoint) Timestamp() TimestampUnixNano {
+func (dp Int64DataPoint) Timestamp() TimestampUnixNano {
 	return TimestampUnixNano(dp.orig.TimestampUnixnano)
 }
 
-func (dp *Int64DataPoint) SetTimestamp(v TimestampUnixNano) {
+func (dp Int64DataPoint) SetTimestamp(v TimestampUnixNano) {
 	dp.orig.TimestampUnixnano = uint64(v)
 }
 
-func (dp *Int64DataPoint) Value() int64 {
+func (dp Int64DataPoint) Value() int64 {
 	return dp.orig.Value
 }
 
-func (dp *Int64DataPoint) SetValue(v int64) {
+func (dp Int64DataPoint) SetValue(v int64) {
 	dp.orig.Value = v
 }
 
@@ -294,52 +340,62 @@ type DoubleDataPoint struct {
 
 	// Override a few fields. These fields are the source of truth. Their counterparts
 	// stored in corresponding fields of "orig" are ignored.
+	pimpl *internalDoubleDataPoint
+}
+
+type internalDoubleDataPoint struct {
 	labels Labels
 }
 
+// NewDoubleDataPoint creates a new DoubleDataPoint.
 func NewDoubleDataPoint() *DoubleDataPoint {
-	return &DoubleDataPoint{orig: &otlpmetric.DoubleDataPoint{}}
+	return &DoubleDataPoint{&otlpmetric.DoubleDataPoint{}, &internalDoubleDataPoint{}}
 }
 
 // NewDoubleDataPointSlice creates a slice of DoubleDataPoint that are correctly initialized.
 func NewDoubleDataPointSlice(len int) []DoubleDataPoint {
+	// Slice for underlying orig.
 	origs := make([]otlpmetric.DoubleDataPoint, len)
+	// Slice for underlying pimpl.
+	internals := make([]internalDoubleDataPoint, len)
+	// Slice for wrappers.
 	wrappers := make([]DoubleDataPoint, len)
 	for i := range origs {
 		wrappers[i].orig = &origs[i]
+		wrappers[i].pimpl = &internals[i]
 	}
 	return wrappers
 }
 
-func (dp *DoubleDataPoint) Labels() Labels {
-	return dp.labels
+func (dp DoubleDataPoint) Labels() Labels {
+	return dp.pimpl.labels
 }
 
-func (dp *DoubleDataPoint) SetLabels(v Labels) {
-	dp.labels = v
+func (dp DoubleDataPoint) SetLabels(v Labels) {
+	dp.pimpl.labels = v
 }
 
-func (dp *DoubleDataPoint) StartTime() TimestampUnixNano {
+func (dp DoubleDataPoint) StartTime() TimestampUnixNano {
 	return TimestampUnixNano(dp.orig.StartTimeUnixnano)
 }
 
-func (dp *DoubleDataPoint) SetStartTime(v TimestampUnixNano) {
+func (dp DoubleDataPoint) SetStartTime(v TimestampUnixNano) {
 	dp.orig.StartTimeUnixnano = uint64(v)
 }
 
-func (dp *DoubleDataPoint) Timestamp() TimestampUnixNano {
+func (dp DoubleDataPoint) Timestamp() TimestampUnixNano {
 	return TimestampUnixNano(dp.orig.TimestampUnixnano)
 }
 
-func (dp *DoubleDataPoint) SetTimestamp(v TimestampUnixNano) {
+func (dp DoubleDataPoint) SetTimestamp(v TimestampUnixNano) {
 	dp.orig.TimestampUnixnano = uint64(v)
 }
 
-func (dp *DoubleDataPoint) Value() float64 {
+func (dp DoubleDataPoint) Value() float64 {
 	return dp.orig.Value
 }
 
-func (dp *DoubleDataPoint) SetValue(v float64) {
+func (dp DoubleDataPoint) SetValue(v float64) {
 	dp.orig.Value = v
 }
 
@@ -354,77 +410,87 @@ type HistogramDataPoint struct {
 
 	// Override a few fields. These fields are the source of truth. Their counterparts
 	// stored in corresponding fields of "orig" are ignored.
-	labels  Labels
-	buckets []*HistogramBucket
+	pimpl *internalHistogramDataPoint
 }
 
-func NewHistogramDataPoint() *HistogramDataPoint {
-	return &HistogramDataPoint{orig: &otlpmetric.HistogramDataPoint{}}
+type internalHistogramDataPoint struct {
+	labels  Labels
+	buckets []HistogramBucket
+}
+
+// NewHistogramDataPoint creates a new HistogramDataPoint.
+func NewHistogramDataPoint() HistogramDataPoint {
+	return HistogramDataPoint{&otlpmetric.HistogramDataPoint{}, &internalHistogramDataPoint{}}
 }
 
 // NewHistogramDataPointSlice creates a slice of HistogramDataPoint that are correctly initialized.
 func NewHistogramDataPointSlice(len int) []HistogramDataPoint {
+	// Slice for underlying orig.
 	origs := make([]otlpmetric.HistogramDataPoint, len)
+	// Slice for underlying pimpl.
+	internals := make([]internalHistogramDataPoint, len)
+	// Slice for wrappers.
 	wrappers := make([]HistogramDataPoint, len)
 	for i := range origs {
 		wrappers[i].orig = &origs[i]
+		wrappers[i].pimpl = &internals[i]
 	}
 	return wrappers
 }
 
-func (dp *HistogramDataPoint) Labels() Labels {
-	return dp.labels
+func (dp HistogramDataPoint) Labels() Labels {
+	return dp.pimpl.labels
 }
 
-func (dp *HistogramDataPoint) SetLabels(v Labels) {
-	dp.labels = v
+func (dp HistogramDataPoint) SetLabels(v Labels) {
+	dp.pimpl.labels = v
 }
 
-func (dp *HistogramDataPoint) StartTime() TimestampUnixNano {
+func (dp HistogramDataPoint) StartTime() TimestampUnixNano {
 	return TimestampUnixNano(dp.orig.StartTimeUnixnano)
 }
 
-func (dp *HistogramDataPoint) SetStartTime(v TimestampUnixNano) {
+func (dp HistogramDataPoint) SetStartTime(v TimestampUnixNano) {
 	dp.orig.StartTimeUnixnano = uint64(v)
 }
 
-func (dp *HistogramDataPoint) Timestamp() TimestampUnixNano {
+func (dp HistogramDataPoint) Timestamp() TimestampUnixNano {
 	return TimestampUnixNano(dp.orig.TimestampUnixnano)
 }
 
-func (dp *HistogramDataPoint) SetTimestamp(v TimestampUnixNano) {
+func (dp HistogramDataPoint) SetTimestamp(v TimestampUnixNano) {
 	dp.orig.TimestampUnixnano = uint64(v)
 }
 
-func (dp *HistogramDataPoint) Count() uint64 {
+func (dp HistogramDataPoint) Count() uint64 {
 	return dp.orig.Count
 }
 
-func (dp *HistogramDataPoint) SetCount(v uint64) {
+func (dp HistogramDataPoint) SetCount(v uint64) {
 	dp.orig.Count = v
 }
 
-func (dp *HistogramDataPoint) Sum() float64 {
+func (dp HistogramDataPoint) Sum() float64 {
 	return dp.orig.Sum
 }
 
-func (dp *HistogramDataPoint) SetSum(v float64) {
+func (dp HistogramDataPoint) SetSum(v float64) {
 	dp.orig.Sum = v
 }
 
-func (dp *HistogramDataPoint) Buckets() []*HistogramBucket {
-	return dp.buckets
+func (dp HistogramDataPoint) Buckets() []HistogramBucket {
+	return dp.pimpl.buckets
 }
 
-func (dp *HistogramDataPoint) SetBuckets(v []*HistogramBucket) {
-	dp.buckets = v
+func (dp HistogramDataPoint) SetBuckets(v []HistogramBucket) {
+	dp.pimpl.buckets = v
 }
 
-func (dp *HistogramDataPoint) ExplicitBounds() []float64 {
+func (dp HistogramDataPoint) ExplicitBounds() []float64 {
 	return dp.orig.ExplicitBounds
 }
 
-func (dp *HistogramDataPoint) SetExplicitBounds(v []float64) {
+func (dp HistogramDataPoint) SetExplicitBounds(v []float64) {
 	dp.orig.ExplicitBounds = v
 }
 
@@ -438,40 +504,50 @@ type HistogramBucket struct {
 
 	// Override a few fields. These fields are the source of truth. Their counterparts
 	// stored in corresponding fields of "orig" are ignored.
+	pimpl *internalHistogramBucket
+}
+
+type internalHistogramBucket struct {
 	exemplar HistogramBucketExemplar
 }
 
-func NewHistogramBucket() *HistogramBucket {
-	return &HistogramBucket{orig: &otlpmetric.HistogramDataPoint_Bucket{}}
+// NewHistogramBucket creates a new HistogramBucket.
+func NewHistogramBucket() HistogramBucket {
+	return HistogramBucket{&otlpmetric.HistogramDataPoint_Bucket{}, &internalHistogramBucket{}}
 }
 
 // NewHistogramBucketSlice creates a slice of HistogramBucket that are correctly initialized.
 func NewHistogramBucketSlice(len int) []HistogramBucket {
+	// Slice for underlying orig.
 	origs := make([]otlpmetric.HistogramDataPoint_Bucket, len)
+	// Slice for underlying pimpl.
+	internals := make([]internalHistogramBucket, len)
+	// Slice for wrappers.
 	wrappers := make([]HistogramBucket, len)
 	for i := range origs {
 		wrappers[i].orig = &origs[i]
+		wrappers[i].pimpl = &internals[i]
 	}
 	return wrappers
 }
 
-func (hb *HistogramBucket) Count() uint64 {
+func (hb HistogramBucket) Count() uint64 {
 	return hb.orig.Count
 }
 
-func (hb *HistogramBucket) SetCount(v uint64) {
+func (hb HistogramBucket) SetCount(v uint64) {
 	hb.orig.Count = v
 }
 
-func (hb *HistogramBucket) Exemplar() HistogramBucketExemplar {
-	return hb.exemplar
+func (hb HistogramBucket) Exemplar() HistogramBucketExemplar {
+	return hb.pimpl.exemplar
 }
 
-func (hb *HistogramBucket) SetExemplar(v HistogramBucketExemplar) {
-	hb.exemplar = v
+func (hb HistogramBucket) SetExemplar(v HistogramBucketExemplar) {
+	hb.pimpl.exemplar = v
 }
 
-// HistogramBucket are example points that may be used to annotate aggregated Histogram values.
+// HistogramBucketExemplar are example points that may be used to annotate aggregated Histogram values.
 // They are metadata that gives information about a particular value added to a Histogram bucket.
 //
 // Must use NewHistogramBucketExemplar* functions to create new instances.
@@ -482,35 +558,40 @@ type HistogramBucketExemplar struct {
 
 	// Override a few fields. These fields are the source of truth. Their counterparts
 	// stored in corresponding fields of "orig" are ignored.
+	pimpl *intenalHistogramBucketExemplar
+}
+
+type intenalHistogramBucketExemplar struct {
 	attachments Labels
 }
 
-func NewHistogramBucketExemplar() *HistogramBucketExemplar {
-	return &HistogramBucketExemplar{orig: &otlpmetric.HistogramDataPoint_Bucket_Exemplar{}}
+// NewHistogramBucketExemplar creates a new HistogramBucketExemplar.
+func NewHistogramBucketExemplar() HistogramBucketExemplar {
+	return HistogramBucketExemplar{&otlpmetric.HistogramDataPoint_Bucket_Exemplar{}, &intenalHistogramBucketExemplar{}}
 }
 
-func (hbe *HistogramBucketExemplar) Value() float64 {
+func (hbe HistogramBucketExemplar) Value() float64 {
 	return hbe.orig.Value
 }
 
-func (hbe *HistogramBucketExemplar) SetValue(v float64) {
+func (hbe HistogramBucketExemplar) SetValue(v float64) {
 	hbe.orig.Value = v
 }
 
-func (hbe *HistogramBucketExemplar) Timestamp() TimestampUnixNano {
+func (hbe HistogramBucketExemplar) Timestamp() TimestampUnixNano {
 	return TimestampUnixNano(hbe.orig.TimestampUnixnano)
 }
 
-func (hbe *HistogramBucketExemplar) SetTimestamp(v TimestampUnixNano) {
+func (hbe HistogramBucketExemplar) SetTimestamp(v TimestampUnixNano) {
 	hbe.orig.TimestampUnixnano = uint64(v)
 }
 
-func (hbe *HistogramBucketExemplar) Attachments() Labels {
-	return hbe.attachments
+func (hbe HistogramBucketExemplar) Attachments() Labels {
+	return hbe.pimpl.attachments
 }
 
-func (hbe *HistogramBucketExemplar) SetAttachments(v Labels) {
-	hbe.attachments = v
+func (hbe HistogramBucketExemplar) SetAttachments(v Labels) {
+	hbe.pimpl.attachments = v
 }
 
 // SummaryDataPoint is a single data point in a timeseries that describes the time-varying
@@ -524,70 +605,80 @@ type SummaryDataPoint struct {
 
 	// Override a few fields. These fields are the source of truth. Their counterparts
 	// stored in corresponding fields of "orig" are ignored.
-	labels             Labels
-	valueAtPercentiles []*SummaryValueAtPercentile
+	pimpl *intenalSummaryDataPoint
 }
 
-func NewSummaryDataPoint() *SummaryDataPoint {
-	return &SummaryDataPoint{orig: &otlpmetric.SummaryDataPoint{}}
+type intenalSummaryDataPoint struct {
+	labels             Labels
+	valueAtPercentiles []SummaryValueAtPercentile
+}
+
+// NewSummaryDataPoint creates a new SummaryDataPoint.
+func NewSummaryDataPoint() SummaryDataPoint {
+	return SummaryDataPoint{&otlpmetric.SummaryDataPoint{}, &intenalSummaryDataPoint{}}
 }
 
 // NewSummaryDataPointSlice creates a slice of SummaryDataPoint that are correctly initialized.
 func NewSummaryDataPointSlice(len int) []SummaryDataPoint {
+	// Slice for underlying orig.
 	origs := make([]otlpmetric.SummaryDataPoint, len)
+	// Slice for underlying pimpl.
+	internals := make([]intenalSummaryDataPoint, len)
+	// Slice for wrappers.
 	wrappers := make([]SummaryDataPoint, len)
 	for i := range origs {
 		wrappers[i].orig = &origs[i]
+		wrappers[i].pimpl = &internals[i]
 	}
 	return wrappers
 }
 
-func (dp *SummaryDataPoint) Labels() Labels {
-	return dp.labels
+func (dp SummaryDataPoint) Labels() Labels {
+	return dp.pimpl.labels
 }
 
-func (dp *SummaryDataPoint) SetLabels(v Labels) {
-	dp.labels = v
+func (dp SummaryDataPoint) SetLabels(v Labels) {
+	dp.pimpl.labels = v
 }
 
-func (dp *SummaryDataPoint) StartTime() TimestampUnixNano {
+func (dp SummaryDataPoint) StartTime() TimestampUnixNano {
 	return TimestampUnixNano(dp.orig.StartTimeUnixnano)
 }
 
-func (dp *SummaryDataPoint) SetStartTime(v TimestampUnixNano) {
+func (dp SummaryDataPoint) SetStartTime(v TimestampUnixNano) {
 	dp.orig.StartTimeUnixnano = uint64(v)
 }
 
-func (dp *SummaryDataPoint) Timestamp() TimestampUnixNano {
+func (dp SummaryDataPoint) Timestamp() TimestampUnixNano {
 	return TimestampUnixNano(dp.orig.TimestampUnixnano)
 }
 
-func (dp *SummaryDataPoint) SetTimestamp(v TimestampUnixNano) {
+func (dp SummaryDataPoint) SetTimestamp(v TimestampUnixNano) {
 	dp.orig.TimestampUnixnano = uint64(v)
 }
 
-func (dp *SummaryDataPoint) Count() uint64 {
+func (dp SummaryDataPoint) Count() uint64 {
 	return dp.orig.Count
 }
 
-func (dp *SummaryDataPoint) SetCount(v uint64) {
+func (dp SummaryDataPoint) SetCount(v uint64) {
 	dp.orig.Count = v
 }
 
-func (dp *SummaryDataPoint) Sum() float64 {
+func (dp SummaryDataPoint) Sum() float64 {
 	return dp.orig.Sum
 }
 
-func (dp *SummaryDataPoint) SetSum(v float64) {
+func (dp SummaryDataPoint) SetSum(v float64) {
 	dp.orig.Sum = v
 }
 
-func (dp *SummaryDataPoint) ValueAtPercentiles() []*SummaryValueAtPercentile {
-	return dp.valueAtPercentiles
+func (dp SummaryDataPoint) ValueAtPercentiles() []SummaryValueAtPercentile {
+	return dp.pimpl.valueAtPercentiles
 }
 
-func (dp *SummaryDataPoint) SetValueAtPercentiles(v []*SummaryValueAtPercentile) {
-	dp.valueAtPercentiles = v
+func (dp SummaryDataPoint) SetValueAtPercentiles(v []SummaryValueAtPercentile) {
+	dp.pimpl.valueAtPercentiles = v
 }
 
 // SummaryValueAtPercentile represents the value at a given percentile of a distribution.
@@ -599,13 +690,16 @@ type SummaryValueAtPercentile struct {
 	orig *otlpmetric.SummaryDataPoint_ValueAtPercentile
 }
 
-func NewSummaryValueAtPercentile() *SummaryValueAtPercentile {
-	return &SummaryValueAtPercentile{orig: &otlpmetric.SummaryDataPoint_ValueAtPercentile{}}
+// NewSummaryValueAtPercentile creates a new SummaryValueAtPercentile.
+func NewSummaryValueAtPercentile() SummaryValueAtPercentile {
+	return SummaryValueAtPercentile{&otlpmetric.SummaryDataPoint_ValueAtPercentile{}}
 }
 
 // NewSummaryValueAtPercentileSlice creates a slice of SummaryValueAtPercentile that are correctly initialized.
 func NewSummaryValueAtPercentileSlice(len int) []SummaryValueAtPercentile {
+	// Slice for underlying orig.
 	origs := make([]otlpmetric.SummaryDataPoint_ValueAtPercentile, len)
+	// Slice for wrappers.
 	wrappers := make([]SummaryValueAtPercentile, len)
 	for i := range origs {
 		wrappers[i].orig = &origs[i]
@@ -613,21 +707,47 @@ func NewSummaryValueAtPercentileSlice(len int) []SummaryValueAtPercentile {
 	return wrappers
 }
 
-func (vp *SummaryValueAtPercentile) Percentile() float64 {
+func (vp SummaryValueAtPercentile) Percentile() float64 {
 	return vp.orig.Percentile
 }
 
-func (vp *SummaryValueAtPercentile) SetPercentile(v float64) {
+func (vp SummaryValueAtPercentile) SetPercentile(v float64) {
 	vp.orig.Percentile = v
 }
 
-func (vp *SummaryValueAtPercentile) Value() float64 {
+func (vp SummaryValueAtPercentile) Value() float64 {
 	return vp.orig.Value
 }
 
-func (vp *SummaryValueAtPercentile) SetValue(v float64) {
+func (vp SummaryValueAtPercentile) SetValue(v float64) {
 	vp.orig.Value = v
 }
 
-// Labels stores a map of label keys to values.
-type Labels map[string]string
+// Labels stores the original representation of the labels and the internal LabelsMap representation.
+type Labels struct {
+	orig []*otlpcommon.StringKeyValue
+
+	// Override a few fields. These fields are the source of truth. Their counterparts
+	// stored in corresponding fields of "orig" are ignored.
+	pimpl *internalLabel
+}
+
+type internalLabel struct {
+	labelsMap LabelsMap
+}
+
+// NewLabels creates a new Labels.
+func NewLabels() Labels {
+	return Labels{nil, &internalLabel{}}
+}
+
+func (ls Labels) LabelsMap() LabelsMap {
+	return ls.pimpl.labelsMap
+}
+
+func (ls Labels) SetLabelsMap(v LabelsMap) {
+	ls.pimpl.labelsMap = v
+}
+
+// LabelsMap stores a map of label keys to values.
+type LabelsMap map[string]string
