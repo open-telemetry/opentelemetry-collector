@@ -41,7 +41,7 @@ func main() {
 		GitHash:  version.GitHash,
 	}
 
-	svc, err := service.New(factories, info)
+	svc, err := service.New(service.Parameters{ApplicationStartInfo: info, Factories: factories})
 	handleErr("Failed to construct the application", err)
 
 	err = svc.Start()

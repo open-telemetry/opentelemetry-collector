@@ -123,7 +123,6 @@ type Factories struct {
 func Load(
 	v *viper.Viper,
 	factories Factories,
-	logger *zap.Logger,
 ) (*configmodels.Config, error) {
 
 	var config configmodels.Config
@@ -180,12 +179,6 @@ func Load(
 		return nil, err
 	}
 	config.Service = service
-
-	// Config is loaded. Now validate it.
-
-	if err := validateConfig(&config, logger); err != nil {
-		return nil, err
-	}
 
 	return &config, nil
 }
@@ -579,7 +572,8 @@ func loadPipelines(v *viper.Viper) (configmodels.Pipelines, error) {
 	return pipelines, nil
 }
 
-func validateConfig(cfg *configmodels.Config, logger *zap.Logger) error {
+// ValidateConfig validates config.
+func ValidateConfig(cfg *configmodels.Config, logger *zap.Logger) error {
 	// This function performs basic validation of configuration. There may be more subtle
 	// invalid cases that we currently don't check for but which we may want to add in
 	// the future (e.g. disallowing receiving and exporting on the same endpoint).
