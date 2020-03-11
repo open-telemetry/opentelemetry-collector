@@ -22,6 +22,7 @@ import (
 	"go.opencensus.io/tag"
 	"go.opencensus.io/trace"
 
+	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/observability"
 )
 
@@ -81,6 +82,18 @@ func Configure(
 	}
 
 	return views
+}
+
+// CountMetricPoints is a helper to count the "amount" of metrics data.
+func CountMetricPoints(md consumerdata.MetricsData) (numTimeSeries int, numPoints int) {
+	for _, metric := range md.Metrics {
+		tss := metric.GetTimeseries()
+		numTimeSeries += len(tss)
+		for _, ts := range tss {
+			numPoints += len(ts.GetPoints())
+		}
+	}
+	return numTimeSeries, numPoints
 }
 
 func genAllViews() (views []*view.View) {

@@ -34,12 +34,15 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/observability"
+	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 )
 
 const (
 	portAttr   = "port"
 	schemeAttr = "scheme"
+
+	transport  = "http"
+	dataformat = "prometheus"
 )
 
 var errMetricNameNotFound = errors.New("metricName not found from labels")
@@ -144,16 +147,19 @@ func (tr *transaction) Commit() error {
 		return nil
 	}
 
+	ctx, span := obsreport.StartMetricsReceiveOp(tr.ctx, tr.receiverName, transport)
 	metrics, numTimeseries, droppedTimeseries, err := tr.metricBuilder.Build()
-	observability.RecordMetricsForMetricsReceiver(tr.ctx, numTimeseries, droppedTimeseries)
 	if err != nil {
+		// Only error by Build() is errNoDataToBuild, with numTimeseries and
+		// droppedTimeseries set to zero.
+		obsreport.EndMetricsReceiveOp(
+			ctx, span, dataformat, 0, 0, err)
 		return err
 	}
 
 	if tr.metricBuilder.hasInternalMetric {
 		m := ochttp.ClientRoundtripLatency.M(tr.metricBuilder.scrapeLatencyMs)
 		stats.RecordWithTags(tr.ctx, []tag.Mutator{
-			tag.Upsert(observability.TagKeyReceiver, tr.receiverName),
 			tag.Upsert(ochttp.KeyClientStatus, tr.metricBuilder.scrapeStatus),
 		}, m)
 
@@ -175,15 +181,18 @@ func (tr *transaction) Commit() error {
 		droppedTimeseries += dropped
 	}
 
-	observability.RecordMetricsForMetricsReceiver(tr.ctx, numTimeseries, droppedTimeseries)
+	numPoints := 0
 	if len(metrics) > 0 {
 		md := consumerdata.MetricsData{
 			Node:    tr.node,
 			Metrics: metrics,
 		}
-		return tr.sink.ConsumeMetricsData(tr.ctx, md)
+		numTimeseries, numPoints = obsreport.CountMetricPoints(md)
+		err = tr.sink.ConsumeMetricsData(tr.ctx, md)
 	}
-	return nil
+	obsreport.EndMetricsReceiveOp(
+		ctx, span, dataformat, numPoints, numTimeseries, err)
+	return err
 }
 
 func (tr *transaction) Rollback() error {

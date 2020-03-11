@@ -26,7 +26,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/observability"
+	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/prometheusreceiver/internal"
 )
@@ -60,8 +60,7 @@ func (pr *Preceiver) Start(host component.Host) error {
 		ctx := host.Context()
 		c, cancel := context.WithCancel(ctx)
 		pr.cancel = cancel
-		// TODO: Use the name from the ReceiverSettings
-		c = observability.ContextWithReceiverName(c, pr.cfg.Name())
+		c = obsreport.ReceiverContext(c, pr.cfg.Name(), "http", pr.cfg.Name())
 		var jobsMap *internal.JobsMap
 		if !pr.cfg.UseStartTimeMetric {
 			jobsMap = internal.NewJobsMap(time.Duration(2 * time.Minute))
