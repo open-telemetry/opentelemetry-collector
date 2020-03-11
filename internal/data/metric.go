@@ -26,6 +26,8 @@ import (
 // This is the newer version of consumerdata.MetricsData, but uses more efficient
 // in-memory representation.
 //
+// This is a reference type (like builtin map).
+//
 // Must use NewMetricData functions to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type MetricData struct {
@@ -33,7 +35,7 @@ type MetricData struct {
 
 	// Override a few fields. These fields are the source of truth. Their counterparts
 	// stored in corresponding fields of "orig" are ignored.
-	internal *internalMetricData
+	pimpl *internalMetricData
 }
 
 type internalMetricData struct {
@@ -42,23 +44,23 @@ type internalMetricData struct {
 
 // NewMetricData creates a new MetricData.
 func NewMetricData() MetricData {
-	return MetricData{[]*otlpmetric.ResourceMetrics{}, &internalMetricData{}}
+	return MetricData{nil, &internalMetricData{}}
 }
 
 func (md MetricData) ResourceMetrics() []ResourceMetrics {
-	return md.internal.resourceMetrics
+	return md.pimpl.resourceMetrics
 }
 
 func (md MetricData) SetResourceMetrics(r []ResourceMetrics) {
-	md.internal.resourceMetrics = r
+	md.pimpl.resourceMetrics = r
 }
 
 // MetricCount calculates the total number of metrics.
 func (md MetricData) MetricCount() int {
 	metricCount := 0
 	// TODO: Do not access internal members, add a metricCount to ResourceMetrics.
-	for _, rm := range md.internal.resourceMetrics {
-		metricCount += len(rm.internal.metrics)
+	for _, rm := range md.pimpl.resourceMetrics {
+		metricCount += len(rm.pimpl.metrics)
 	}
 	return metricCount
 }
@@ -72,7 +74,7 @@ type ResourceMetrics struct {
 
 	// Override a few fields. These fields are the source of truth. Their counterparts
 	// stored in corresponding fields of "orig" are ignored.
-	internal *internalResourceMetrics
+	pimpl *internalResourceMetrics
 }
 
 type internalResourceMetrics struct {
@@ -86,19 +88,19 @@ func NewResourceMetrics() ResourceMetrics {
 }
 
 func (rm ResourceMetrics) Resource() *Resource {
-	return rm.internal.resource
+	return rm.pimpl.resource
 }
 
 func (rm ResourceMetrics) SetResource(r *Resource) {
-	rm.internal.resource = r
+	rm.pimpl.resource = r
 }
 
 func (rm ResourceMetrics) Metrics() []Metric {
-	return rm.internal.metrics
+	return rm.pimpl.metrics
 }
 
 func (rm ResourceMetrics) SetMetrics(s []Metric) {
-	rm.internal.metrics = s
+	rm.pimpl.metrics = s
 }
 
 // Metric defines a metric which has a descriptor and one or more timeseries points.
@@ -111,7 +113,7 @@ type Metric struct {
 
 	// Override a few fields. These fields are the source of truth. Their counterparts
 	// stored in corresponding fields of "orig" are ignored.
-	internal *internalMetric
+	pimpl *internalMetric
 }
 
 type internalMetric struct {
@@ -127,59 +129,59 @@ func NewMetric() Metric {
 	return Metric{&otlpmetric.Metric{}, &internalMetric{}}
 }
 
-// NewMetricSlice creates a slice of *Metrics that are correctly initialized.
+// NewMetricSlice creates a slice of Metrics that are correctly initialized.
 func NewMetricSlice(len int) []Metric {
 	// Slice for underlying orig.
 	origs := make([]otlpmetric.Metric, len)
-	// Slice for underlying internal.
+	// Slice for underlying pimpl.
 	internals := make([]internalMetric, len)
 	// Slice for wrappers.
 	wrappers := make([]Metric, len)
 	for i := range origs {
 		wrappers[i].orig = &origs[i]
-		wrappers[i].internal = &internals[i]
+		wrappers[i].pimpl = &internals[i]
 	}
 	return wrappers
 }
 
 func (m Metric) MetricDescriptor() MetricDescriptor {
-	return m.internal.metricDescriptor
+	return m.pimpl.metricDescriptor
 }
 
 func (m Metric) SetMetricDescriptor(r MetricDescriptor) {
-	m.internal.metricDescriptor = r
+	m.pimpl.metricDescriptor = r
 }
 
 func (m Metric) Int64DataPoints() []Int64DataPoint {
-	return m.internal.int64DataPoints
+	return m.pimpl.int64DataPoints
 }
 
 func (m Metric) SetInt64DataPoints(v []Int64DataPoint) {
-	m.internal.int64DataPoints = v
+	m.pimpl.int64DataPoints = v
 }
 
 func (m Metric) DoubleDataPoints() []DoubleDataPoint {
-	return m.internal.doubleDataPoints
+	return m.pimpl.doubleDataPoints
 }
 
 func (m Metric) SetDoubleDataPoints(v []DoubleDataPoint) {
-	m.internal.doubleDataPoints = v
+	m.pimpl.doubleDataPoints = v
 }
 
 func (m Metric) HistogramDataPoints() []HistogramDataPoint {
-	return m.internal.histogramDataPoints
+	return m.pimpl.histogramDataPoints
 }
 
 func (m Metric) SetHistogramDataPoints(v []HistogramDataPoint) {
-	m.internal.histogramDataPoints = v
+	m.pimpl.histogramDataPoints = v
 }
 
 func (m Metric) SummaryDataPoints() []SummaryDataPoint {
-	return m.internal.summaryDataPoints
+	return m.pimpl.summaryDataPoints
 }
 
 func (m Metric) SetSummaryDataPoints(v []SummaryDataPoint) {
-	m.internal.summaryDataPoints = v
+	m.pimpl.summaryDataPoints = v
 }
 
 // MetricDescriptor is the descriptor of a metric.
@@ -192,7 +194,7 @@ type MetricDescriptor struct {
 
 	// Override a few fields. These fields are the source of truth. Their counterparts
 	// stored in corresponding fields of "orig" are ignored.
-	internal *internalMetricDescriptor
+	pimpl *internalMetricDescriptor
 }
 
 type internalMetricDescriptor struct {
@@ -237,11 +239,11 @@ func (md MetricDescriptor) SetMetricType(v MetricType) {
 }
 
 func (md MetricDescriptor) Labels() Labels {
-	return md.internal.labels
+	return md.pimpl.labels
 }
 
 func (md MetricDescriptor) SetLabels(v Labels) {
-	md.internal.labels = v
+	md.pimpl.labels = v
 }
 
 type MetricType otlpmetric.MetricDescriptor_Type
@@ -268,7 +270,7 @@ type Int64DataPoint struct {
 
 	// Override a few fields. These fields are the source of truth. Their counterparts
 	// stored in corresponding fields of "orig" are ignored.
-	internal *internalInt64DataPoint
+	pimpl *internalInt64DataPoint
 }
 
 type internalInt64DataPoint struct {
@@ -280,27 +282,27 @@ func NewInt64DataPoint() Int64DataPoint {
 	return Int64DataPoint{&otlpmetric.Int64DataPoint{}, &internalInt64DataPoint{}}
 }
 
-// NewInt64DataPointSlice creates a slice of *Int64DataPoint that are correctly initialized.
+// NewInt64DataPointSlice creates a slice of Int64DataPoint that are correctly initialized.
 func NewInt64DataPointSlice(len int) []Int64DataPoint {
 	// Slice for underlying orig.
 	origs := make([]otlpmetric.Int64DataPoint, len)
-	// Slice for underlying internal.
+	// Slice for underlying pimpl.
 	internals := make([]internalInt64DataPoint, len)
 	// Slice for wrappers.
 	wrappers := make([]Int64DataPoint, len)
 	for i := range origs {
 		wrappers[i].orig = &origs[i]
-		wrappers[i].internal = &internals[i]
+		wrappers[i].pimpl = &internals[i]
 	}
 	return wrappers
 }
 
 func (dp Int64DataPoint) Labels() Labels {
-	return dp.internal.labels
+	return dp.pimpl.labels
 }
 
 func (dp Int64DataPoint) SetLabels(v Labels) {
-	dp.internal.labels = v
+	dp.pimpl.labels = v
 }
 
 func (dp Int64DataPoint) StartTime() TimestampUnixNano {
@@ -338,7 +340,7 @@ type DoubleDataPoint struct {
 
 	// Override a few fields. These fields are the source of truth. Their counterparts
 	// stored in corresponding fields of "orig" are ignored.
-	internal *internalDoubleDataPoint
+	pimpl *internalDoubleDataPoint
 }
 
 type internalDoubleDataPoint struct {
@@ -350,27 +352,27 @@ func NewDoubleDataPoint() *DoubleDataPoint {
 	return &DoubleDataPoint{&otlpmetric.DoubleDataPoint{}, &internalDoubleDataPoint{}}
 }
 
-// NewDoubleDataPointSlice creates a slice of *DoubleDataPoint that are correctly initialized.
+// NewDoubleDataPointSlice creates a slice of DoubleDataPoint that are correctly initialized.
 func NewDoubleDataPointSlice(len int) []DoubleDataPoint {
 	// Slice for underlying orig.
 	origs := make([]otlpmetric.DoubleDataPoint, len)
-	// Slice for underlying internal.
+	// Slice for underlying pimpl.
 	internals := make([]internalDoubleDataPoint, len)
 	// Slice for wrappers.
 	wrappers := make([]DoubleDataPoint, len)
 	for i := range origs {
 		wrappers[i].orig = &origs[i]
-		wrappers[i].internal = &internals[i]
+		wrappers[i].pimpl = &internals[i]
 	}
 	return wrappers
 }
 
 func (dp DoubleDataPoint) Labels() Labels {
-	return dp.internal.labels
+	return dp.pimpl.labels
 }
 
 func (dp DoubleDataPoint) SetLabels(v Labels) {
-	dp.internal.labels = v
+	dp.pimpl.labels = v
 }
 
 func (dp DoubleDataPoint) StartTime() TimestampUnixNano {
@@ -408,7 +410,7 @@ type HistogramDataPoint struct {
 
 	// Override a few fields. These fields are the source of truth. Their counterparts
 	// stored in corresponding fields of "orig" are ignored.
-	internal *internalHistogramDataPoint
+	pimpl *internalHistogramDataPoint
 }
 
 type internalHistogramDataPoint struct {
@@ -421,27 +423,27 @@ func NewHistogramDataPoint() HistogramDataPoint {
 	return HistogramDataPoint{&otlpmetric.HistogramDataPoint{}, &internalHistogramDataPoint{}}
 }
 
-// NewHistogramDataPointSlice creates a slice of *HistogramDataPoint that are correctly initialized.
+// NewHistogramDataPointSlice creates a slice of HistogramDataPoint that are correctly initialized.
 func NewHistogramDataPointSlice(len int) []HistogramDataPoint {
 	// Slice for underlying orig.
 	origs := make([]otlpmetric.HistogramDataPoint, len)
-	// Slice for underlying internal.
+	// Slice for underlying pimpl.
 	internals := make([]internalHistogramDataPoint, len)
 	// Slice for wrappers.
 	wrappers := make([]HistogramDataPoint, len)
 	for i := range origs {
 		wrappers[i].orig = &origs[i]
-		wrappers[i].internal = &internals[i]
+		wrappers[i].pimpl = &internals[i]
 	}
 	return wrappers
 }
 
 func (dp HistogramDataPoint) Labels() Labels {
-	return dp.internal.labels
+	return dp.pimpl.labels
 }
 
 func (dp HistogramDataPoint) SetLabels(v Labels) {
-	dp.internal.labels = v
+	dp.pimpl.labels = v
 }
 
 func (dp HistogramDataPoint) StartTime() TimestampUnixNano {
@@ -477,11 +479,11 @@ func (dp HistogramDataPoint) SetSum(v float64) {
 }
 
 func (dp HistogramDataPoint) Buckets() []HistogramBucket {
-	return dp.internal.buckets
+	return dp.pimpl.buckets
 }
 
 func (dp HistogramDataPoint) SetBuckets(v []HistogramBucket) {
-	dp.internal.buckets = v
+	dp.pimpl.buckets = v
 }
 
 func (dp HistogramDataPoint) ExplicitBounds() []float64 {
@@ -502,7 +504,7 @@ type HistogramBucket struct {
 
 	// Override a few fields. These fields are the source of truth. Their counterparts
 	// stored in corresponding fields of "orig" are ignored.
-	internal *internalHistogramBucket
+	pimpl *internalHistogramBucket
 }
 
 type internalHistogramBucket struct {
@@ -514,17 +516,17 @@ func NewHistogramBucket() HistogramBucket {
 	return HistogramBucket{&otlpmetric.HistogramDataPoint_Bucket{}, &internalHistogramBucket{}}
 }
 
-// NewHistogramBucketSlice creates a slice of *HistogramBucket that are correctly initialized.
+// NewHistogramBucketSlice creates a slice of HistogramBucket that are correctly initialized.
 func NewHistogramBucketSlice(len int) []HistogramBucket {
 	// Slice for underlying orig.
 	origs := make([]otlpmetric.HistogramDataPoint_Bucket, len)
-	// Slice for underlying internal.
+	// Slice for underlying pimpl.
 	internals := make([]internalHistogramBucket, len)
 	// Slice for wrappers.
 	wrappers := make([]HistogramBucket, len)
 	for i := range origs {
 		wrappers[i].orig = &origs[i]
-		wrappers[i].internal = &internals[i]
+		wrappers[i].pimpl = &internals[i]
 	}
 	return wrappers
 }
@@ -538,11 +540,11 @@ func (hb HistogramBucket) SetCount(v uint64) {
 }
 
 func (hb HistogramBucket) Exemplar() HistogramBucketExemplar {
-	return hb.internal.exemplar
+	return hb.pimpl.exemplar
 }
 
 func (hb HistogramBucket) SetExemplar(v HistogramBucketExemplar) {
-	hb.internal.exemplar = v
+	hb.pimpl.exemplar = v
 }
 
 // HistogramBucketExemplar are example points that may be used to annotate aggregated Histogram values.
@@ -556,7 +558,7 @@ type HistogramBucketExemplar struct {
 
 	// Override a few fields. These fields are the source of truth. Their counterparts
 	// stored in corresponding fields of "orig" are ignored.
-	internal *intenalHistogramBucketExemplar
+	pimpl *intenalHistogramBucketExemplar
 }
 
 type intenalHistogramBucketExemplar struct {
@@ -585,11 +587,11 @@ func (hbe HistogramBucketExemplar) SetTimestamp(v TimestampUnixNano) {
 }
 
 func (hbe HistogramBucketExemplar) Attachments() Labels {
-	return hbe.internal.attachments
+	return hbe.pimpl.attachments
 }
 
 func (hbe HistogramBucketExemplar) SetAttachments(v Labels) {
-	hbe.internal.attachments = v
+	hbe.pimpl.attachments = v
 }
 
 // SummaryDataPoint is a single data point in a timeseries that describes the time-varying
@@ -603,7 +605,7 @@ type SummaryDataPoint struct {
 
 	// Override a few fields. These fields are the source of truth. Their counterparts
 	// stored in corresponding fields of "orig" are ignored.
-	internal *intenalSummaryDataPoint
+	pimpl *intenalSummaryDataPoint
 }
 
 type intenalSummaryDataPoint struct {
@@ -616,27 +618,27 @@ func NewSummaryDataPoint() SummaryDataPoint {
 	return SummaryDataPoint{&otlpmetric.SummaryDataPoint{}, &intenalSummaryDataPoint{}}
 }
 
-// NewSummaryDataPointSlice creates a slice of *SummaryDataPoint that are correctly initialized.
+// NewSummaryDataPointSlice creates a slice of SummaryDataPoint that are correctly initialized.
 func NewSummaryDataPointSlice(len int) []SummaryDataPoint {
 	// Slice for underlying orig.
 	origs := make([]otlpmetric.SummaryDataPoint, len)
-	// Slice for underlying internal.
+	// Slice for underlying pimpl.
 	internals := make([]intenalSummaryDataPoint, len)
 	// Slice for wrappers.
 	wrappers := make([]SummaryDataPoint, len)
 	for i := range origs {
 		wrappers[i].orig = &origs[i]
-		wrappers[i].internal = &internals[i]
+		wrappers[i].pimpl = &internals[i]
 	}
 	return wrappers
 }
 
 func (dp SummaryDataPoint) Labels() Labels {
-	return dp.internal.labels
+	return dp.pimpl.labels
 }
 
 func (dp SummaryDataPoint) SetLabels(v Labels) {
-	dp.internal.labels = v
+	dp.pimpl.labels = v
 }
 
 func (dp SummaryDataPoint) StartTime() TimestampUnixNano {
@@ -672,11 +674,11 @@ func (dp SummaryDataPoint) SetSum(v float64) {
 }
 
 func (dp SummaryDataPoint) ValueAtPercentiles() []SummaryValueAtPercentile {
-	return dp.internal.valueAtPercentiles
+	return dp.pimpl.valueAtPercentiles
 }
 
 func (dp SummaryDataPoint) SetValueAtPercentiles(v []SummaryValueAtPercentile) {
-	dp.internal.valueAtPercentiles = v
+	dp.pimpl.valueAtPercentiles = v
 }
 
 // SummaryValueAtPercentile represents the value at a given percentile of a distribution.
@@ -727,7 +729,7 @@ type Labels struct {
 
 	// Override a few fields. These fields are the source of truth. Their counterparts
 	// stored in corresponding fields of "orig" are ignored.
-	internal *internalLabel
+	pimpl *internalLabel
 }
 
 type internalLabel struct {
@@ -736,15 +738,15 @@ type internalLabel struct {
 
 // NewLabels creates a new Labels.
 func NewLabels() Labels {
-	return Labels{[]*otlpcommon.StringKeyValue{}, &internalLabel{}}
+	return Labels{nil, &internalLabel{}}
 }
 
 func (ls Labels) LabelsMap() LabelsMap {
-	return ls.internal.labelsMap
+	return ls.pimpl.labelsMap
 }
 
 func (ls Labels) SetLabelsMap(v LabelsMap) {
-	ls.internal.labelsMap = v
+	ls.pimpl.labelsMap = v
 }
 
 // LabelsMap stores a map of label keys to values.
