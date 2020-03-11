@@ -84,11 +84,11 @@ func Configure(
 	return views
 }
 
-// MeasureMetrics is a helper to count the "amount" of metrics data.
-func MeasureMetrics(md consumerdata.MetricsData) (numTimeSeries int, numPoints int) {
+// CountMetricPoints is a helper to count the "amount" of metrics data.
+func CountMetricPoints(md consumerdata.MetricsData) (numTimeSeries int, numPoints int) {
 	for _, metric := range md.Metrics {
 		tss := metric.GetTimeseries()
-		numTimeSeries += len(metric.GetTimeseries())
+		numTimeSeries += len(tss)
 		for _, ts := range tss {
 			numPoints += len(ts.GetPoints())
 		}

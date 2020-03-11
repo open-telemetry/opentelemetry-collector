@@ -187,7 +187,7 @@ func (tr *transaction) Commit() error {
 			Node:    tr.node,
 			Metrics: metrics,
 		}
-		numTimeseries, numPoints = obsreport.MeasureMetrics(md)
+		numTimeseries, numPoints = obsreport.CountMetricPoints(md)
 		err = tr.sink.ConsumeMetricsData(tr.ctx, md)
 	}
 	obsreport.EndMetricsReceiveOp(
