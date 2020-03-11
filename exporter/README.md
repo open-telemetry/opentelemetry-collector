@@ -51,17 +51,7 @@ Any approach that does not mutate the original `TraceData`/`MetricsData` argumen
 # <a name="trace-exporters"></a>Trace Exporters
 
 ## <a name="jaeger"></a>Jaeger Exporter
-Exports trace data to [Jaeger](https://www.jaegertracing.io/) collectors
-accepting one of the following protocols:
-
-- [gRPC](#jaeger_grpc)
-- [Thrift HTTP](#jaeger_thirft_http)
-
-Each different supported protocol has its own configuration settings.
-
-### <a name="jaeger_grpc"></a>gRPC
-
-The following settings are required:
+Exports trace data to [Jaeger](https://www.jaegertracing.io/) collectors. The following settings are required:
 
 - `endpoint` (no default): target to which the exporter is going to send Jaeger trace data,
 using the gRPC protocol. The valid syntax is described at
@@ -82,12 +72,13 @@ Example:
 
 ```yaml
 exporters:
-  jaeger_grpc:
+  jaeger:
     endpoint: jaeger-all-in-one:14250
     cert_pem_file: /my-cert.pem
     server_name_override: opentelemetry.io
 ```
 
+<<<<<<< HEAD
 The full list of settings exposed for this exporter are documented [here](jaeger/jaegergrpcexporter/config.go)
 with detailed sample configurations [here](jaeger/jaegergrpcexporter/testdata/config.yaml).
 
@@ -117,6 +108,10 @@ exporters:
 
 The full list of settings exposed for this exporter are documented [here](jaeger/jaegerthrifthttpexporter/config.go)
 with detailed sample configurations [here](jaeger/jaegerthrifthttpexporter/testdata/config.yaml).
+=======
+The full list of settings exposed for this exporter are documented [here](jaegerexporter/config.go)
+with detailed sample configurations [here](jaegerexporter/testdata/config.yaml).
+>>>>>>> 2ec62dc... Remove Jaeger thrift exporter and make the gRPC exporter the one and only Jaeger exporter
 
 ## <a name="opencensus-traces"></a>OpenCensus Exporter
 Exports traces and/or metrics to another Collector via gRPC using OpenCensus format.

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jaegergrpcexporter
+package jaegerexporter
 
 import (
 	"path"
@@ -36,7 +36,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e0 := cfg.Exporters["jaeger_grpc"]
+	e0 := cfg.Exporters["jaeger"]
 
 	// Endpoint doesn't have a default value so set it directly.
 	defaultCfg := factory.CreateDefaultConfig().(*Config)
@@ -44,8 +44,8 @@ func TestLoadConfig(t *testing.T) {
 	defaultCfg.GRPCSettings.Endpoint = defaultCfg.Endpoint
 	assert.Equal(t, defaultCfg, e0)
 
-	e1 := cfg.Exporters["jaeger_grpc/2"]
-	assert.Equal(t, "jaeger_grpc/2", e1.(*Config).Name())
+	e1 := cfg.Exporters["jaeger/2"]
+	assert.Equal(t, "jaeger/2", e1.(*Config).Name())
 	assert.Equal(t, "a.new.target:1234", e1.(*Config).Endpoint)
 	te, err := factory.CreateTraceExporter(zap.NewNop(), e1)
 	require.NoError(t, err)
