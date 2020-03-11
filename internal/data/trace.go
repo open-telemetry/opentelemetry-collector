@@ -121,14 +121,24 @@ func NewSpan() *Span {
 	return &Span{orig: &otlptrace.Span{}}
 }
 
-// NewSpanSlice creates a slice of Spans that are correctly initialized.
-func NewSpanSlice(len int) []Span {
+// NewSpanSlice creates a slice of pointers to Spans that are correctly initialized.
+func NewSpanSlice(len int) []*Span {
+	// Slice for underlying data.
 	origs := make([]otlptrace.Span, len)
+
+	// Slice for wrappers.
 	wrappers := make([]Span, len)
+
+	// Slice for pointers to wrappers.
+	ptrs := make([]*Span, len)
+
+	// TODO: see if we can make one allocation instead of 3 allocations above.
+
 	for i := range origs {
 		wrappers[i].orig = &origs[i]
+		ptrs[i] = &wrappers[i]
 	}
-	return wrappers
+	return ptrs
 }
 
 func (m *Span) TraceID() TraceID {
@@ -289,14 +299,28 @@ func NewSpanEvent(timestamp TimestampUnixNano, name string, attributes Attribute
 	}
 }
 
-// NewSpanEventSlice creates a slice of SpanEvents that are correctly initialized.
-func NewSpanEventSlice(len int) []SpanEvent {
+// TODO: see if we need a SpanEvents type that contains the slice of events and
+// the dropped counter (similar to how Attributes type is done).
+// The same applies to SpanLinks.
+
+// NewSpanEventSlice creates a slice of pointers to SpanEvent that are correctly initialized.
+func NewSpanEventSlice(len int) []*SpanEvent {
+	// Slice for underlying data.
 	origs := make([]otlptrace.Span_Event, len)
+
+	// Slice for wrappers.
 	wrappers := make([]SpanEvent, len)
+
+	// Slice for pointers to wrappers.
+	ptrs := make([]*SpanEvent, len)
+
+	// TODO: see if we can make one allocation instead of 3 allocations above.
+
 	for i := range origs {
 		wrappers[i].orig = &origs[i]
+		ptrs[i] = &wrappers[i]
 	}
-	return wrappers
+	return ptrs
 }
 
 func (m *SpanEvent) Timestamp() TimestampUnixNano {
@@ -346,14 +370,24 @@ func NewSpanLink() *SpanLink {
 	return &SpanLink{orig: &otlptrace.Span_Link{}}
 }
 
-// NewSpanLinkSlice creates a slice of SpanLinks that are correctly initialized.
-func NewSpanLinkSlice(len int) []SpanLink {
+// NewSpanLinkSlice creates a slice of pointers to SpanLinks that are correctly initialized.
+func NewSpanLinkSlice(len int) []*SpanLink {
+	// Slice for underlying data.
 	origs := make([]otlptrace.Span_Link, len)
+
+	// Slice for wrappers.
 	wrappers := make([]SpanLink, len)
+
+	// Slice for pointers to wrappers.
+	ptrs := make([]*SpanLink, len)
+
+	// TODO: see if we can make one allocation instead of 3 allocations above.
+
 	for i := range origs {
 		wrappers[i].orig = &origs[i]
+		ptrs[i] = &wrappers[i]
 	}
-	return wrappers
+	return ptrs
 }
 
 func (m *SpanLink) TraceID() TraceID {

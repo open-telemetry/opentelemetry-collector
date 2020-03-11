@@ -12,18 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tracetranslator
+package conventions
 
 // OTLP attributes to map certain OpenCensus proto fields. These fields don't have
 // corresponding fields in OTLP, nor are defined in OTLP semantic conventions.
 // TODO: decide if any of these must be in OTLP semantic conventions.
 const (
-	ocAttributeProcessStartTime  = "opencensus.starttime"
-	ocAttributeProcessID         = "opencensus.pid"
-	ocAttributeExporterVersion   = "opencensus.exporterversion"
-	ocAttributeResourceType      = "opencensus.resourcetype"
-	ocTimeEventMessageEventType  = "opencensus.timeevent.messageevent.type"
-	ocTimeEventMessageEventID    = "opencensus.timeevent.messageevent.id"
-	ocTimeEventMessageEventUSize = "opencensus.timeevent.messageevent.usize"
-	ocTimeEventMessageEventCSize = "opencensus.timeevent.messageevent.csize"
+	OCAttributeProcessStartTime  = "opencensus.starttime"
+	OCAttributeProcessID         = "opencensus.pid"
+	OCAttributeExporterVersion   = "opencensus.exporterversion"
+	OCAttributeResourceType      = "opencensus.resourcetype"
+	OCTimeEventMessageEventType  = "opencensus.timeevent.messageevent.type"
+	OCTimeEventMessageEventID    = "opencensus.timeevent.messageevent.id"
+	OCTimeEventMessageEventUSize = "opencensus.timeevent.messageevent.usize"
+	OCTimeEventMessageEventCSize = "opencensus.timeevent.messageevent.csize"
 )

@@ -1,4 +1,4 @@
-// Copyright 2019 OpenTelemetry Authors
+// Copyright 2020 OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tracetranslator
+package opencensus
 
 import (
 	"strings"
@@ -23,49 +23,28 @@ import (
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	octrace "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes"
-	otlpcommon "github.com/open-telemetry/opentelemetry-proto/gen/go/common/v1"
-	otlpresource "github.com/open-telemetry/opentelemetry-proto/gen/go/resource/v1"
 	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/internal"
+	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 )
 
-func TestAttrMapToOtlp(t *testing.T) {
-	ocAttrs := map[string]string{}
+func TestOcNodeResourceToInternal(t *testing.T) {
+	resource := ocNodeResourceToInternal(nil, nil)
+	assert.EqualValues(t, &data.Resource{}, resource)
 
-	otlpAttrs := attrMapToOtlp(ocAttrs)
-	assert.True(t, otlpAttrs == nil)
-
-	ocAttrs = map[string]string{"abc": "def"}
-	otlpAttrs = attrMapToOtlp(ocAttrs)
-	assert.EqualValues(t, []*otlpcommon.AttributeKeyValue{
-		{
-			Key:         "abc",
-			Type:        otlpcommon.AttributeKeyValue_STRING,
-			StringValue: "def",
-		},
-	}, otlpAttrs)
-}
-
-func TestOcNodeResourceToOtlp(t *testing.T) {
-	otlpResource := ocNodeResourceToOtlp(nil, nil)
-	assert.EqualValues(t, &otlpresource.Resource{
-		Attributes: nil,
-	}, otlpResource)
-
-	node := &occommon.Node{}
-	resource := &ocresource.Resource{}
-	otlpResource = ocNodeResourceToOtlp(node, resource)
-	assert.EqualValues(t, &otlpresource.Resource{
-		Attributes: nil,
-	}, otlpResource)
+	ocNode := &occommon.Node{}
+	ocResource := &ocresource.Resource{}
+	resource = ocNodeResourceToInternal(ocNode, ocResource)
+	assert.EqualValues(t, &data.Resource{}, resource)
 
 	ts, err := ptypes.TimestampProto(time.Date(2020, 2, 11, 20, 26, 0, 0, time.UTC))
 	assert.NoError(t, err)
 
-	node = &occommon.Node{
+	ocNode = &occommon.Node{
 		Identifier: &occommon.ProcessIdentifier{
 			HostName:       "host1",
 			Pid:            123,
@@ -83,31 +62,28 @@ func TestOcNodeResourceToOtlp(t *testing.T) {
 			"node-attr": "val1",
 		},
 	}
-	resource = &ocresource.Resource{
+	ocResource = &ocresource.Resource{
 		Type: "good-resource",
 		Labels: map[string]string{
 			"resource-attr": "val2",
 		},
 	}
-	otlpResource = ocNodeResourceToOtlp(node, resource)
+	resource = ocNodeResourceToInternal(ocNode, ocResource)
 
-	expectedAttrs := map[string]string{
-		conventions.AttributeHostHostname:       "host1",
-		conventions.OCAttributeProcessID:        "123",
-		conventions.OCAttributeProcessStartTime: "2020-02-11T20:26:00Z",
-		conventions.AttributeLibraryLanguage:    "CPP",
-		conventions.OCAttributeExporterVersion:  "v1.2.0",
-		conventions.AttributeLibraryVersion:     "v2.0.1",
-		conventions.AttributeServiceName:        "svcA",
-		"node-attr":                             "val1",
-		conventions.OCAttributeResourceType:     "good-resource",
-		"resource-attr":                         "val2",
+	expectedAttrs := data.AttributesMap{
+		conventions.AttributeHostHostname:       data.NewAttributeValueString("host1"),
+		conventions.OCAttributeProcessID:        data.NewAttributeValueInt(123),
+		conventions.OCAttributeProcessStartTime: data.NewAttributeValueString("2020-02-11T20:26:00Z"),
+		conventions.AttributeLibraryLanguage:    data.NewAttributeValueString("CPP"),
+		conventions.OCAttributeExporterVersion:  data.NewAttributeValueString("v1.2.0"),
+		conventions.AttributeLibraryVersion:     data.NewAttributeValueString("v2.0.1"),
+		conventions.AttributeServiceName:        data.NewAttributeValueString("svcA"),
+		"node-attr":                             data.NewAttributeValueString("val1"),
+		conventions.OCAttributeResourceType:     data.NewAttributeValueString("good-resource"),
+		"resource-attr":                         data.NewAttributeValueString("val2"),
 	}
 
-	assert.EqualValues(t, len(expectedAttrs), len(otlpResource.Attributes))
-	for k, v := range expectedAttrs {
-		assertHasAttrStr(t, otlpResource.Attributes, k, v)
-	}
+	assert.EqualValues(t, expectedAttrs, resource.Attributes())
 
 	// Make sure hard-coded fields override same-name values in Attributes.
 	// To do that add Attributes with same-name.
@@ -115,43 +91,20 @@ func TestOcNodeResourceToOtlp(t *testing.T) {
 		// Set all except "attr1" which is not a hard-coded field to some bogus values.
 
 		if strings.Index(k, "-attr") < 0 {
-			node.Attributes[k] = "this will be overridden 1"
+			ocNode.Attributes[k] = "this will be overridden 1"
 		}
 	}
-	resource.Labels[conventions.OCAttributeResourceType] = "this will be overridden 2"
+	ocResource.Labels[conventions.OCAttributeResourceType] = "this will be overridden 2"
 
 	// Convert again.
-	otlpResource = ocNodeResourceToOtlp(node, resource)
+	resource = ocNodeResourceToInternal(ocNode, ocResource)
 
 	// And verify that same-name attributes were ignored.
-	assert.EqualValues(t, len(expectedAttrs), len(otlpResource.Attributes))
-	for k, v := range expectedAttrs {
-		assertHasAttrStr(t, otlpResource.Attributes, k, v)
-	}
+	assert.EqualValues(t, expectedAttrs, resource.Attributes())
 }
 
-func assertHasAttrStr(t *testing.T, attrs []*otlpcommon.AttributeKeyValue, key string, val string) {
-	assertHasAttrVal(t, attrs, key, &otlpcommon.AttributeKeyValue{
-		Key:         key,
-		Type:        otlpcommon.AttributeKeyValue_STRING,
-		StringValue: val,
-	})
-}
-
-func assertHasAttrVal(t *testing.T, attrs []*otlpcommon.AttributeKeyValue, key string, val *otlpcommon.AttributeKeyValue) {
-	found := false
-	for _, attr := range attrs {
-		if attr != nil && attr.Key == key {
-			assert.EqualValues(t, false, found, "Duplicate key "+key)
-			assert.EqualValues(t, val, attr)
-			found = true
-		}
-	}
-	assert.EqualValues(t, true, found, "Cannot find key "+key)
-}
-
-func TestOcTraceStateToOtlp(t *testing.T) {
-	assert.EqualValues(t, "", ocTraceStateToOtlp(nil))
+func TestOcTraceStateToInternal(t *testing.T) {
+	assert.EqualValues(t, "", ocTraceStateToInternal(nil))
 
 	tracestate := &octrace.Span_Tracestate{
 		Entries: []*octrace.Span_Tracestate_Entry{
@@ -161,40 +114,36 @@ func TestOcTraceStateToOtlp(t *testing.T) {
 			},
 		},
 	}
-	assert.EqualValues(t, "abc=def", ocTraceStateToOtlp(tracestate))
+	assert.EqualValues(t, "abc=def", ocTraceStateToInternal(tracestate))
 
 	tracestate.Entries = append(tracestate.Entries,
 		&octrace.Span_Tracestate_Entry{
 			Key:   "123",
 			Value: "4567",
 		})
-	assert.EqualValues(t, "abc=def,123=4567", ocTraceStateToOtlp(tracestate))
+	assert.EqualValues(t, "abc=def,123=4567", ocTraceStateToInternal(tracestate))
 }
 
-func TestOcAttrsToOtlp(t *testing.T) {
-	otlpAttrs, droppedCount := ocAttrsToOtlp(nil)
-	assert.True(t, otlpAttrs == nil)
-	assert.EqualValues(t, 0, droppedCount)
+func TestOcAttrsToInternal(t *testing.T) {
+	attrs := ocAttrsToInternal(nil)
+	assert.EqualValues(t, data.NewAttributes(nil, 0), attrs)
 
 	ocAttrs := &octrace.Span_Attributes{}
-	otlpAttrs, droppedCount = ocAttrsToOtlp(ocAttrs)
-	assert.EqualValues(t, []*otlpcommon.AttributeKeyValue{}, otlpAttrs)
-	assert.EqualValues(t, 0, droppedCount)
+	attrs = ocAttrsToInternal(ocAttrs)
+	assert.EqualValues(t, data.NewAttributes(data.AttributesMap{}, 0), attrs)
 
 	ocAttrs = &octrace.Span_Attributes{
 		DroppedAttributesCount: 123,
 	}
-	otlpAttrs, droppedCount = ocAttrsToOtlp(ocAttrs)
-	assert.EqualValues(t, []*otlpcommon.AttributeKeyValue{}, otlpAttrs)
-	assert.EqualValues(t, 123, droppedCount)
+	attrs = ocAttrsToInternal(ocAttrs)
+	assert.EqualValues(t, data.NewAttributes(data.AttributesMap{}, 123), attrs)
 
 	ocAttrs = &octrace.Span_Attributes{
 		AttributeMap:           map[string]*octrace.AttributeValue{},
 		DroppedAttributesCount: 234,
 	}
-	otlpAttrs, droppedCount = ocAttrsToOtlp(ocAttrs)
-	assert.EqualValues(t, []*otlpcommon.AttributeKeyValue{}, otlpAttrs)
-	assert.EqualValues(t, 234, droppedCount)
+	attrs = ocAttrsToInternal(ocAttrs)
+	assert.EqualValues(t, data.NewAttributes(data.AttributesMap{}, 234), attrs)
 
 	ocAttrs = &octrace.Span_Attributes{
 		AttributeMap: map[string]*octrace.AttributeValue{
@@ -204,15 +153,14 @@ func TestOcAttrsToOtlp(t *testing.T) {
 		},
 		DroppedAttributesCount: 234,
 	}
-	otlpAttrs, droppedCount = ocAttrsToOtlp(ocAttrs)
-	assert.EqualValues(t, []*otlpcommon.AttributeKeyValue{
-		{
-			Key:         "abc",
-			Type:        otlpcommon.AttributeKeyValue_STRING,
-			StringValue: "def",
-		},
-	}, otlpAttrs)
-	assert.EqualValues(t, 234, droppedCount)
+	attrs = ocAttrsToInternal(ocAttrs)
+	assert.EqualValues(t,
+		data.NewAttributes(
+			data.AttributesMap{
+				"abc": data.NewAttributeValueString("def"),
+			},
+			234),
+		attrs)
 
 	ocAttrs.AttributeMap["intval"] = &octrace.AttributeValue{
 		Value: &octrace.AttributeValue_IntValue{IntValue: 345},
@@ -223,32 +171,18 @@ func TestOcAttrsToOtlp(t *testing.T) {
 	ocAttrs.AttributeMap["doubleval"] = &octrace.AttributeValue{
 		Value: &octrace.AttributeValue_DoubleValue{DoubleValue: 4.5},
 	}
-	otlpAttrs, droppedCount = ocAttrsToOtlp(ocAttrs)
-	assert.EqualValues(t, 234, droppedCount)
-	assert.EqualValues(t, 4, len(otlpAttrs))
-	assertHasAttrVal(t, otlpAttrs, "abc", &otlpcommon.AttributeKeyValue{
-		Key:         "abc",
-		Type:        otlpcommon.AttributeKeyValue_STRING,
-		StringValue: "def",
-	})
-	assertHasAttrVal(t, otlpAttrs, "intval", &otlpcommon.AttributeKeyValue{
-		Key:      "intval",
-		Type:     otlpcommon.AttributeKeyValue_INT,
-		IntValue: 345,
-	})
-	assertHasAttrVal(t, otlpAttrs, "boolval", &otlpcommon.AttributeKeyValue{
-		Key:       "boolval",
-		Type:      otlpcommon.AttributeKeyValue_BOOL,
-		BoolValue: true,
-	})
-	assertHasAttrVal(t, otlpAttrs, "doubleval", &otlpcommon.AttributeKeyValue{
-		Key:         "doubleval",
-		Type:        otlpcommon.AttributeKeyValue_DOUBLE,
-		DoubleValue: 4.5,
-	})
+	attrs = ocAttrsToInternal(ocAttrs)
+
+	expected := data.NewAttributes(data.AttributesMap{
+		"abc":       data.NewAttributeValueString("def"),
+		"intval":    data.NewAttributeValueInt(345),
+		"boolval":   data.NewAttributeValueBool(true),
+		"doubleval": data.NewAttributeValueDouble(4.5),
+	}, 234)
+	assert.EqualValues(t, expected, attrs)
 }
 
-func TestOcSpanKindToOtlp(t *testing.T) {
+func TestOcSpanKindToInternal(t *testing.T) {
 	tests := []struct {
 		ocAttrs  *octrace.Span_Attributes
 		ocKind   octrace.Span_SpanKind
@@ -310,14 +244,14 @@ func TestOcSpanKindToOtlp(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.otlpKind.String(), func(t *testing.T) {
-			got := ocSpanKindToOtlp(test.ocKind, test.ocAttrs)
+			got := ocSpanKindToInternal(test.ocKind, test.ocAttrs)
 			assert.EqualValues(t, test.otlpKind, got, "Expected "+test.otlpKind.String()+", got "+got.String())
 		})
 	}
 }
 
-func TestOcToOtlp(t *testing.T) {
-	ocNode := &occommon.Node{}
+func TestOcToInternal(t *testing.T) {
+	ocNode := &occommon.Node{Attributes: map[string]string{"nodeattr": "attrval123"}}
 	ocResource := &ocresource.Resource{}
 
 	timestampP, err := ptypes.TimestampProto(time.Date(2020, 2, 11, 20, 26, 0, 0, time.UTC))
@@ -372,75 +306,75 @@ func TestOcToOtlp(t *testing.T) {
 		Resource:  ocResource,
 	}
 
-	otlpSpan1 := &otlptrace.Span{
-		Name:              "operationB",
-		StartTimeUnixnano: timestampToUnixnano(timestampP),
-		EndTimeUnixnano:   timestampToUnixnano(timestampP),
-		Events: []*otlptrace.Span_Event{
-			{
-				TimeUnixnano: timestampToUnixnano(timestampP),
-				Name:         "event1",
-				Attributes: []*otlpcommon.AttributeKeyValue{
-					{
-						Key:         "eventattr1",
-						Type:        otlpcommon.AttributeKeyValue_STRING,
-						StringValue: "eventattrval1",
-					},
+	span1 := data.NewSpan()
+	span1.SetName("operationB")
+	span1.SetStartTime(internal.TimestampToUnixnano(timestampP))
+	span1.SetEndTime(internal.TimestampToUnixnano(timestampP))
+	span1.SetEvents([]*data.SpanEvent{
+		data.NewSpanEvent(
+			internal.TimestampToUnixnano(timestampP),
+			"event1",
+			data.NewAttributes(
+				data.AttributesMap{
+					"eventattr1": data.NewAttributeValueString("eventattrval1"),
 				},
-				DroppedAttributesCount: 4,
-			},
-		},
-		DroppedEventsCount: 3,
-		Status:             &otlptrace.Status{Message: "status-cancelled", Code: otlptrace.Status_Cancelled},
-	}
+				4,
+			),
+		),
+	})
+	span1.SetDroppedEventsCount(3)
+	span1.SetStatus(data.NewSpanStatus(data.StatusCode(1), "status-cancelled"))
 
-	otlpSpan2 := &otlptrace.Span{
-		Name:              "operationC",
-		StartTimeUnixnano: timestampToUnixnano(timestampP),
-		EndTimeUnixnano:   timestampToUnixnano(timestampP),
-		Links:             []*otlptrace.Span_Link{{}},
-		DroppedLinksCount: 1,
-	}
+	span2 := data.NewSpan()
+	span2.SetName("operationC")
+	span2.SetStartTime(internal.TimestampToUnixnano(timestampP))
+	span2.SetEndTime(internal.TimestampToUnixnano(timestampP))
+	span2.SetLinks([]*data.SpanLink{data.NewSpanLink()})
+	span2.SetDroppedLinksCount(1)
 
-	otlpSpan3 := &otlptrace.Span{
-		Name:              "operationD",
-		StartTimeUnixnano: timestampToUnixnano(timestampP),
-		EndTimeUnixnano:   timestampToUnixnano(timestampP),
-	}
+	span3 := data.NewSpan()
+	span3.SetName("operationD")
+	span3.SetStartTime(internal.TimestampToUnixnano(timestampP))
+	span3.SetEndTime(internal.TimestampToUnixnano(timestampP))
+
+	internalResource := data.NewResource()
+	internalResource.SetAttributes(
+		map[string]data.AttributeValue{"nodeattr": data.NewAttributeValueString("attrval123")},
+	)
 
 	tests := []struct {
 		name string
 		oc   consumerdata.TraceData
-		otlp []*otlptrace.ResourceSpans
+		itd  data.TraceData
 	}{
 		{
 			name: "empty",
 			oc:   consumerdata.TraceData{},
-			otlp: nil,
+			itd:  data.TraceData{},
 		},
 
 		{
 			name: "nil-resource",
 			oc:   consumerdata.TraceData{Node: ocNode},
-			otlp: []*otlptrace.ResourceSpans{
-				{Resource: &otlpresource.Resource{}},
-			},
+			itd: data.NewTraceData([]*data.ResourceSpans{
+				data.NewResourceSpans(internalResource, nil),
+			}),
 		},
 
 		{
 			name: "nil-node",
 			oc:   consumerdata.TraceData{Resource: ocResource},
-			otlp: []*otlptrace.ResourceSpans{
-				{Resource: &otlpresource.Resource{}},
-			},
+			itd: data.NewTraceData([]*data.ResourceSpans{
+				data.NewResourceSpans(data.NewResource(), nil),
+			}),
 		},
 
 		{
 			name: "no-spans",
 			oc:   consumerdata.TraceData{Node: ocNode, Resource: ocResource},
-			otlp: []*otlptrace.ResourceSpans{
-				{Resource: &otlpresource.Resource{}},
-			},
+			itd: data.NewTraceData([]*data.ResourceSpans{
+				data.NewResourceSpans(internalResource, nil),
+			}),
 		},
 
 		{
@@ -450,12 +384,9 @@ func TestOcToOtlp(t *testing.T) {
 				Resource: ocResource,
 				Spans:    []*octrace.Span{ocSpan1},
 			},
-			otlp: []*otlptrace.ResourceSpans{
-				{
-					Resource: &otlpresource.Resource{},
-					Spans:    []*otlptrace.Span{otlpSpan1},
-				},
-			},
+			itd: data.NewTraceData([]*data.ResourceSpans{
+				data.NewResourceSpans(internalResource, []*data.Span{span1}),
+			}),
 		},
 
 		{
@@ -465,12 +396,9 @@ func TestOcToOtlp(t *testing.T) {
 				Resource: ocResource,
 				Spans:    []*octrace.Span{ocSpan1, nil, ocSpan2},
 			},
-			otlp: []*otlptrace.ResourceSpans{
-				{
-					Resource: &otlpresource.Resource{},
-					Spans:    []*otlptrace.Span{otlpSpan1, otlpSpan2},
-				},
-			},
+			itd: data.NewTraceData([]*data.ResourceSpans{
+				data.NewResourceSpans(internalResource, []*data.Span{span1, span2}),
+			}),
 		},
 
 		{
@@ -480,16 +408,10 @@ func TestOcToOtlp(t *testing.T) {
 				Resource: ocResource,
 				Spans:    []*octrace.Span{ocSpan1, ocSpan2, ocSpan3},
 			},
-			otlp: []*otlptrace.ResourceSpans{
-				{
-					Resource: &otlpresource.Resource{},
-					Spans:    []*otlptrace.Span{otlpSpan1, otlpSpan2},
-				},
-				{
-					Resource: &otlpresource.Resource{},
-					Spans:    []*otlptrace.Span{otlpSpan3},
-				},
-			},
+			itd: data.NewTraceData([]*data.ResourceSpans{
+				data.NewResourceSpans(internalResource, []*data.Span{span1, span2}),
+				data.NewResourceSpans(internalResource, []*data.Span{span3}),
+			}),
 		},
 
 		{
@@ -499,23 +421,17 @@ func TestOcToOtlp(t *testing.T) {
 				Resource: ocResource,
 				Spans:    []*octrace.Span{ocSpan1, ocSpan3, ocSpan2},
 			},
-			otlp: []*otlptrace.ResourceSpans{
-				{
-					Resource: &otlpresource.Resource{},
-					Spans:    []*otlptrace.Span{otlpSpan1, otlpSpan2},
-				},
-				{
-					Resource: &otlpresource.Resource{},
-					Spans:    []*otlptrace.Span{otlpSpan3},
-				},
-			},
+			itd: data.NewTraceData([]*data.ResourceSpans{
+				data.NewResourceSpans(internalResource, []*data.Span{span1, span2}),
+				data.NewResourceSpans(internalResource, []*data.Span{span3}),
+			}),
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got := ocToOtlp(test.oc)
-			assert.EqualValues(t, test.otlp, got)
+			got := ocToInternal(test.oc)
+			assert.EqualValues(t, test.itd, got)
 		})
 	}
 }
