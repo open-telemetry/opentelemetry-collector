@@ -28,7 +28,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	translatorcommon "github.com/open-telemetry/opentelemetry-collector/translator/common"
 	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 )
 
@@ -153,7 +152,7 @@ func TestResourceMetricsToMetricsData(t *testing.T) {
 		},
 		Timeseries: []*ocmetrics.TimeSeries{
 			{
-				StartTimestamp: translatorcommon.UnixnanoToTimestamp(unixnanos1),
+				StartTimestamp: unixnanoToTimestamp(unixnanos1),
 				LabelValues: []*ocmetrics.LabelValue{
 					{
 						// key1
@@ -171,7 +170,7 @@ func TestResourceMetricsToMetricsData(t *testing.T) {
 				},
 				Points: []*ocmetrics.Point{
 					{
-						Timestamp: translatorcommon.UnixnanoToTimestamp(unixnanos2),
+						Timestamp: unixnanoToTimestamp(unixnanos2),
 						Value: &ocmetrics.Point_Int64Value{
 							Int64Value: 123,
 						},
@@ -179,7 +178,7 @@ func TestResourceMetricsToMetricsData(t *testing.T) {
 				},
 			},
 			{
-				StartTimestamp: translatorcommon.UnixnanoToTimestamp(unixnanos1),
+				StartTimestamp: unixnanoToTimestamp(unixnanos1),
 				LabelValues: []*ocmetrics.LabelValue{
 					{
 						// key1
@@ -197,7 +196,7 @@ func TestResourceMetricsToMetricsData(t *testing.T) {
 				},
 				Points: []*ocmetrics.Point{
 					{
-						Timestamp: translatorcommon.UnixnanoToTimestamp(unixnanos2),
+						Timestamp: unixnanoToTimestamp(unixnanos2),
 						Value: &ocmetrics.Point_Int64Value{
 							Int64Value: 456,
 						},
@@ -205,7 +204,7 @@ func TestResourceMetricsToMetricsData(t *testing.T) {
 				},
 			},
 			{
-				StartTimestamp: translatorcommon.UnixnanoToTimestamp(unixnanos1),
+				StartTimestamp: unixnanoToTimestamp(unixnanos1),
 				LabelValues: []*ocmetrics.LabelValue{
 					{
 						// key1
@@ -224,7 +223,7 @@ func TestResourceMetricsToMetricsData(t *testing.T) {
 				},
 				Points: []*ocmetrics.Point{
 					{
-						Timestamp: translatorcommon.UnixnanoToTimestamp(unixnanos2),
+						Timestamp: unixnanoToTimestamp(unixnanos2),
 						Value: &ocmetrics.Point_DoubleValue{
 							DoubleValue: 1.23,
 						},

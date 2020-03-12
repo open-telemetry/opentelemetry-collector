@@ -18,7 +18,10 @@ import (
 	"sort"
 
 	ocmetrics "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/open-telemetry/opentelemetry-collector/internal"
+	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 	otlpcommon "github.com/open-telemetry/opentelemetry-proto/gen/go/common/v1"
 	otlpmetrics "github.com/open-telemetry/opentelemetry-proto/gen/go/metrics/v1"
 
@@ -80,7 +83,7 @@ func allLabelKeys(metric *otlpmetrics.Metric) []*ocmetrics.LabelKey {
 	// - OC has a single "global" ordered list of label keys per metric in the MetricDescriptor;
 	// then, every data point has an ordered list of label values matching the key index.
 	// - In OTLP, every label is represented independently via StringKeyValue,
-	// i.e. theoretically points in a metric may have different set of labels.
+	// i.e. theoretically points in the same metric may have different set of labels.
 	//
 	// So what we do in this translator:
 	// - Scan all points and their labels to generate a unique set of all label keys
@@ -183,11 +186,11 @@ func dataPointsToTimeseries(metric *otlpmetrics.Metric, labelKeys []*ocmetrics.L
 
 func summaryPointToOC(point *otlpmetrics.SummaryDataPoint, labelKeys []*ocmetrics.LabelKey) *ocmetrics.TimeSeries {
 	return &ocmetrics.TimeSeries{
-		StartTimestamp: translatorcommon.UnixnanoToTimestamp(point.StartTimeUnixnano),
+		StartTimestamp: unixnanoToTimestamp(point.StartTimeUnixnano),
 		LabelValues:    labelsToOC(point.Labels, labelKeys),
 		Points: []*ocmetrics.Point{
 			{
-				Timestamp: translatorcommon.UnixnanoToTimestamp(point.TimestampUnixnano),
+				Timestamp: unixnanoToTimestamp(point.TimestampUnixnano),
 				Value: &ocmetrics.Point_SummaryValue{
 					SummaryValue: &ocmetrics.SummaryValue{
 						Count: int64Value(point.Count),
@@ -221,11 +224,11 @@ func percentileToOC(percentiles []*otlpmetrics.SummaryDataPoint_ValueAtPercentil
 
 func int64PointToOC(point *otlpmetrics.Int64DataPoint, labelKeys []*ocmetrics.LabelKey) *ocmetrics.TimeSeries {
 	return &ocmetrics.TimeSeries{
-		StartTimestamp: translatorcommon.UnixnanoToTimestamp(point.StartTimeUnixnano),
+		StartTimestamp: unixnanoToTimestamp(point.StartTimeUnixnano),
 		LabelValues:    labelsToOC(point.Labels, labelKeys),
 		Points: []*ocmetrics.Point{
 			{
-				Timestamp: translatorcommon.UnixnanoToTimestamp(point.TimestampUnixnano),
+				Timestamp: unixnanoToTimestamp(point.TimestampUnixnano),
 				Value: &ocmetrics.Point_Int64Value{
 					Int64Value: point.Value,
 				},
@@ -236,11 +239,11 @@ func int64PointToOC(point *otlpmetrics.Int64DataPoint, labelKeys []*ocmetrics.La
 
 func doublePointToOC(point *otlpmetrics.DoubleDataPoint, labelKeys []*ocmetrics.LabelKey) *ocmetrics.TimeSeries {
 	return &ocmetrics.TimeSeries{
-		StartTimestamp: translatorcommon.UnixnanoToTimestamp(point.StartTimeUnixnano),
+		StartTimestamp: unixnanoToTimestamp(point.StartTimeUnixnano),
 		LabelValues:    labelsToOC(point.Labels, labelKeys),
 		Points: []*ocmetrics.Point{
 			{
-				Timestamp: translatorcommon.UnixnanoToTimestamp(point.TimestampUnixnano),
+				Timestamp: unixnanoToTimestamp(point.TimestampUnixnano),
 				Value: &ocmetrics.Point_DoubleValue{
 					DoubleValue: point.Value,
 				},
@@ -251,11 +254,11 @@ func doublePointToOC(point *otlpmetrics.DoubleDataPoint, labelKeys []*ocmetrics.
 
 func histogramPointToOC(point *otlpmetrics.HistogramDataPoint, labelKeys []*ocmetrics.LabelKey) *ocmetrics.TimeSeries {
 	return &ocmetrics.TimeSeries{
-		StartTimestamp: translatorcommon.UnixnanoToTimestamp(point.StartTimeUnixnano),
+		StartTimestamp: unixnanoToTimestamp(point.StartTimeUnixnano),
 		LabelValues:    labelsToOC(point.Labels, labelKeys),
 		Points: []*ocmetrics.Point{
 			{
-				Timestamp: translatorcommon.UnixnanoToTimestamp(point.TimestampUnixnano),
+				Timestamp: unixnanoToTimestamp(point.TimestampUnixnano),
 				Value: &ocmetrics.Point_DistributionValue{
 					DistributionValue: &ocmetrics.DistributionValue{
 						Count:                 int64(point.Count),
@@ -306,7 +309,7 @@ func exemplarToOC(exemplar *otlpmetrics.HistogramDataPoint_Bucket_Exemplar) *ocm
 
 	return &ocmetrics.DistributionValue_Exemplar{
 		Value:       exemplar.Value,
-		Timestamp:   translatorcommon.UnixnanoToTimestamp(exemplar.TimestampUnixnano),
+		Timestamp:   unixnanoToTimestamp(exemplar.TimestampUnixnano),
 		Attachments: exemplarAttachmentsToOC(exemplar.Attachments),
 	}
 }
@@ -364,4 +367,8 @@ func doubleValue(val float64) *wrappers.DoubleValue {
 	return &wrappers.DoubleValue{
 		Value: val,
 	}
+}
+
+func unixnanoToTimestamp(u uint64) *timestamp.Timestamp {
+	return internal.UnixnanoToTimestamp(data.TimestampUnixNano(u))
 }
