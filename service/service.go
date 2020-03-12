@@ -18,14 +18,13 @@ package service
 
 import (
 	"context"
-	"errors"
 	"flag"
-	"fmt"
 	"os"
 	"os/signal"
 	"runtime"
 	"syscall"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -160,12 +159,12 @@ func (app *Application) init() error {
 
 	err := app.v.ReadInConfig()
 	if err != nil {
-		return fmt.Errorf("error loading config file %q: %v", file, err)
+		return errors.Wrapf(err, "error loading config file %q", file)
 	}
 
 	app.logger, err = newLogger()
 	if err != nil {
-		return fmt.Errorf("failed to get logger: %v", err)
+		return errors.Wrap(err, "failed to get logger")
 	}
 
 	return nil
@@ -176,7 +175,7 @@ func (app *Application) setupTelemetry(ballastSizeBytes uint64) error {
 
 	err := AppTelemetry.init(app.asyncErrorChannel, ballastSizeBytes, app.logger)
 	if err != nil {
-		return fmt.Errorf("failed to initialize telemetry: %v", err)
+		return errors.Wrap(err, "failed to initialize telemetry")
 	}
 
 	return nil
@@ -210,7 +209,7 @@ func (app *Application) setupConfigurationComponents() error {
 	app.logger.Info("Loading configuration...")
 	cfg, err := config.Load(app.v, app.factories, app.logger)
 	if err != nil {
-		return fmt.Errorf("cannot load configuration: %v", err)
+		return errors.Wrap(err, "cannot load configuration")
 	}
 
 	app.config = cfg
@@ -219,12 +218,12 @@ func (app *Application) setupConfigurationComponents() error {
 
 	err = app.setupExtensions()
 	if err != nil {
-		return fmt.Errorf("cannot setup extensions: %v", err)
+		return errors.Wrap(err, "cannot setup extensions")
 	}
 
 	err = app.setupPipelines()
 	if err != nil {
-		return fmt.Errorf("cannot setup pipelines: %v", err)
+		return errors.Wrap(err, "cannot setup pipelines")
 	}
 
 	return nil
@@ -234,26 +233,26 @@ func (app *Application) setupExtensions() error {
 	for _, extName := range app.config.Service.Extensions {
 		extCfg, exists := app.config.Extensions[extName]
 		if !exists {
-			return fmt.Errorf("extension %q is not configured", extName)
+			return errors.Errorf("extension %q is not configured", extName)
 		}
 
 		factory, exists := app.factories.Extensions[extCfg.Type()]
 		if !exists {
-			return fmt.Errorf("extension factory for type %q is not configured", extCfg.Type())
+			return errors.Errorf("extension factory for type %q is not configured", extCfg.Type())
 		}
 
 		ext, err := factory.CreateExtension(app.logger, extCfg)
 		if err != nil {
-			return fmt.Errorf("failed to create extension %q: %v", extName, err)
+			return errors.Wrapf(err, "failed to create extension %q", extName)
 		}
 
 		// Check if the factory really created the extension.
 		if ext == nil {
-			return fmt.Errorf("factory for %q produced a nil extension", extName)
+			return errors.Errorf("factory for %q produced a nil extension", extName)
 		}
 
 		if err := ext.Start(app); err != nil {
-			return fmt.Errorf("error starting extension %q: %v", extName, err)
+			return errors.Wrapf(err, "error starting extension %q", extName)
 		}
 
 		app.extensions = append(app.extensions, ext)
@@ -270,37 +269,37 @@ func (app *Application) setupPipelines() error {
 	var err error
 	app.exporters, err = builder.NewExportersBuilder(app.logger, app.config, app.factories.Exporters).Build()
 	if err != nil {
-		return fmt.Errorf("cannot build exporters: %v", err)
+		return errors.Wrap(err, "cannot build exporters")
 	}
 	app.logger.Info("Starting exporters...")
 	err = app.exporters.StartAll(app.logger, app)
 	if err != nil {
-		return fmt.Errorf("cannot start exporters: %v", err)
+		return errors.Wrap(err, "cannot start exporters")
 	}
 
 	// Create pipelines and their processors and plug exporters to the
 	// end of the pipelines.
 	app.builtPipelines, err = builder.NewPipelinesBuilder(app.logger, app.config, app.exporters, app.factories.Processors).Build()
 	if err != nil {
-		return fmt.Errorf("cannot build pipelines: %v", err)
+		return errors.Wrap(err, "cannot build pipelines")
 	}
 
 	app.logger.Info("Starting processors...")
 	err = app.builtPipelines.StartProcessors(app.logger, app)
 	if err != nil {
-		return fmt.Errorf("cannot start processors: %v", err)
+		return errors.Wrap(err, "cannot start processors")
 	}
 
 	// Create receivers and plug them into the start of the pipelines.
 	app.builtReceivers, err = builder.NewReceiversBuilder(app.logger, app.config, app.builtPipelines, app.factories.Receivers).Build()
 	if err != nil {
-		return fmt.Errorf("annot build receivers: %v", err)
+		return errors.Wrap(err, "cannot build receivers")
 	}
 
 	app.logger.Info("Starting receivers...")
 	err = app.builtReceivers.StartAll(app.logger, app)
 	if err != nil {
-		return fmt.Errorf("cannot start receivers: %v", err)
+		return errors.Wrap(err, "cannot start receivers")
 	}
 
 	return nil
@@ -310,10 +309,10 @@ func (app *Application) notifyPipelineReady() error {
 	for i, ext := range app.extensions {
 		if pw, ok := ext.(extension.PipelineWatcher); ok {
 			if err := pw.Ready(); err != nil {
-				return fmt.Errorf(
-					"error notifying extension %q that the pipeline was started: %v",
-					app.config.Service.Extensions[i],
+				return errors.Wrapf(
 					err,
+					"error notifying extension %q that the pipeline was started",
+					app.config.Service.Extensions[i],
 				)
 			}
 		}
@@ -349,7 +348,7 @@ func (app *Application) shutdownPipelines() error {
 	app.logger.Info("Stopping processors...")
 	err := app.builtPipelines.ShutdownProcessors(app.logger)
 	if err != nil {
-		return fmt.Errorf("failed to shutdown processors: %v", err)
+		return errors.Wrap(err, "failed to shutdown processors")
 	}
 
 	app.logger.Info("Shutting down exporters...")
