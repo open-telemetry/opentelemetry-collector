@@ -162,7 +162,7 @@ func ProcessorMetricsDataAccepted(
 		numPoints := calcNumPoints(md)
 		stats.Record(
 			processorCtx,
-			mProcessorAcceptedMetricPoints.M(int64(numPoints)),
+			mProcessorAcceptedMetricPoints.M(numPoints),
 			mProcessorRefusedMetricPoints.M(0),
 			mProcessorDroppedMetricPoints.M(0),
 		)
@@ -179,7 +179,7 @@ func ProcessorMetricsDataRefused(
 		stats.Record(
 			processorCtx,
 			mProcessorAcceptedMetricPoints.M(0),
-			mProcessorRefusedMetricPoints.M(int64(numPoints)),
+			mProcessorRefusedMetricPoints.M(numPoints),
 			mProcessorDroppedMetricPoints.M(0),
 		)
 	}
@@ -196,17 +196,17 @@ func ProcessorMetricsDataDropped(
 			processorCtx,
 			mProcessorAcceptedMetricPoints.M(0),
 			mProcessorRefusedMetricPoints.M(0),
-			mProcessorDroppedMetricPoints.M(int64(numPoints)),
+			mProcessorDroppedMetricPoints.M(numPoints),
 		)
 	}
 }
 
-func calcNumPoints(md consumerdata.MetricsData) int {
+func calcNumPoints(md consumerdata.MetricsData) int64 {
 	numMetricPoints := 0
 	for _, metric := range md.Metrics {
 		for _, ts := range metric.GetTimeseries() {
 			numMetricPoints += len(ts.GetPoints())
 		}
 	}
-	return numMetricPoints
+	return int64(numMetricPoints)
 }
