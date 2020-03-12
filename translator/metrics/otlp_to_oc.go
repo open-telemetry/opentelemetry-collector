@@ -76,6 +76,18 @@ func descriptorToOC(descriptor *otlpmetrics.MetricDescriptor, labelKeys []*ocmet
 }
 
 func allLabelKeys(metric *otlpmetrics.Metric) []*ocmetrics.LabelKey {
+	// NOTE: OpenTelemetry and OpenCensus have different representations of labels:
+	// - OC has a single "global" ordered list of label keys per metric in the MetricDescriptor;
+	// then, every data point has an ordered list of label values matching the key index.
+	// - In OTLP, every label is represented independently via StringKeyValue,
+	// i.e. theoretically points in a metric may have different set of labels.
+	//
+	// So what we do in this translator:
+	// - Scan all points and their labels to generate a unique set of all label keys
+	// used across the metric, sort them and set in MetricDescriptor.
+	// - For each point we generate an ordered list of label values,
+	// matching the order of label keys returned here (see `labelsToOC` function).
+
 	// First, collect a set of unique keys
 	uniqueKeys := make(map[string]struct{}, 0)
 	for _, point := range metric.Int64Datapoints {
