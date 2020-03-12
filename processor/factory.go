@@ -15,6 +15,7 @@
 package processor
 
 import (
+	"context"
 	"fmt"
 
 	"go.uber.org/zap"
@@ -23,8 +24,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 )
 
-// Factory is factory interface for processors.
-type Factory interface {
+// BaseFactory defines the common functions for all processor factories.
+type BaseFactory interface {
 	// Type gets the type of the Processor created by this factory.
 	Type() string
 
@@ -33,9 +34,14 @@ type Factory interface {
 	// configuration and should not cause side-effects that prevent the creation
 	// of multiple instances of the Processor.
 	// The object returned by this method needs to pass the checks implemented by
-	// 'conifgcheck.ValidateConfig'. It is recommended to have such check in the
+	// 'configcheck.ValidateConfig'. It is recommended to have such check in the
 	// tests of any implementation of the Factory interface.
 	CreateDefaultConfig() configmodels.Processor
+}
+
+// Factory is factory interface for processors.
+type Factory interface {
+	BaseFactory
 
 	// CreateTraceProcessor creates a trace processor based on this config.
 	// If the processor type does not support tracing or if the config is not valid
@@ -48,6 +54,31 @@ type Factory interface {
 	// error will be returned instead.
 	CreateMetricsProcessor(logger *zap.Logger, nextConsumer consumer.MetricsConsumer,
 		cfg configmodels.Processor) (MetricsProcessor, error)
+}
+
+// CreationParams is passed to Create* functions in FactoryV2.
+type CreationParams struct {
+	// Logger that the factory can use during creation and can pass to the created
+	// component to be used later as well.
+	Logger *zap.Logger
+}
+
+// FactoryV2 is factory interface for processors. This is the
+// new factory type that can create new style processors.
+type FactoryV2 interface {
+	BaseFactory
+
+	// CreateTraceProcessorV2 creates a trace processor based on this config.
+	// If the processor type does not support tracing or if the config is not valid
+	// error will be returned instead.
+	CreateTraceProcessorV2(ctx context.Context, params CreationParams,
+		nextConsumer consumer.TraceConsumerV2, cfg configmodels.Processor) (TraceProcessorV2, error)
+
+	// CreateMetricsProcessorV2 creates a metrics processor based on this config.
+	// If the processor type does not support metrics or if the config is not valid
+	// error will be returned instead.
+	CreateMetricsProcessorV2(ctx context.Context, params CreationParams,
+		nextConsumer consumer.MetricsConsumerV2, cfg configmodels.Processor) (MetricsProcessorV2, error)
 }
 
 // Build takes a list of processor factories and returns a map of type map[string]Factory

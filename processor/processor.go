@@ -41,6 +41,18 @@ type MetricsProcessor interface {
 	Processor
 }
 
+// TraceProcessorV2 composes TraceConsumerV2 with some additional processor-specific functions.
+type TraceProcessorV2 interface {
+	consumer.TraceConsumerV2
+	Processor
+}
+
+// MetricsProcessorV2 composes MetricsConsumerV2 with some additional processor-specific functions.
+type MetricsProcessorV2 interface {
+	consumer.MetricsConsumerV2
+	Processor
+}
+
 type DualTypeProcessor interface {
 	consumer.TraceConsumer
 	consumer.MetricsConsumer

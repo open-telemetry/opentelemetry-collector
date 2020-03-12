@@ -42,3 +42,9 @@ type MetricsExporter interface {
 	consumer.MetricsConsumer
 	Exporter
 }
+
+// MetricsExporterV2 is a MetricsConsumerV2 that is also an Exporter.
+type MetricsExporterV2 interface {
+	consumer.MetricsConsumerV2
+	Exporter
+}

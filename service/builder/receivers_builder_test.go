@@ -400,7 +400,7 @@ func (b *newStyleReceiverFactory) CustomUnmarshaler() receiver.CustomUnmarshaler
 
 func (b *newStyleReceiverFactory) CreateTraceReceiverV2(
 	ctx context.Context,
-	logger *zap.Logger,
+	params receiver.CreationParams,
 	cfg configmodels.Receiver,
 	nextConsumer consumer.TraceConsumerV2,
 ) (receiver.TraceReceiver, error) {
@@ -408,7 +408,8 @@ func (b *newStyleReceiverFactory) CreateTraceReceiverV2(
 }
 
 func (b *newStyleReceiverFactory) CreateMetricsReceiverV2(
-	logger *zap.Logger,
+	ctx context.Context,
+	params receiver.CreationParams,
 	cfg configmodels.Receiver,
 	consumer consumer.MetricsConsumerV2,
 ) (receiver.MetricsReceiver, error) {

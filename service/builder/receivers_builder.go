@@ -320,17 +320,18 @@ func createTraceReceiver(
 	nextConsumer consumer.BaseTraceConsumer,
 ) (receiver.TraceReceiver, error) {
 	if factoryV2, ok := factory.(receiver.FactoryV2); ok {
+		creationParams := receiver.CreationParams{Logger: logger}
 
 		// If both receiver and consumer are of the new type (can manipulate on internal data structure),
 		// use FactoryV2.CreateTraceReceiverV2.
 		if nextConsumerV2, ok := nextConsumer.(consumer.TraceConsumerV2); ok {
-			return factoryV2.CreateTraceReceiverV2(ctx, logger, cfg, nextConsumerV2)
+			return factoryV2.CreateTraceReceiverV2(ctx, creationParams, cfg, nextConsumerV2)
 		}
 
 		// If receiver is of the new type, but downstream consumer is of the old type,
 		// use internalToOCTraceConverter compatibility shim.
 		traceConverter := consumer.NewInternalToOCTraceConverter(nextConsumer.(consumer.TraceConsumer))
-		return factoryV2.CreateTraceReceiverV2(ctx, logger, cfg, traceConverter)
+		return factoryV2.CreateTraceReceiverV2(ctx, creationParams, cfg, traceConverter)
 	}
 
 	// If both receiver and consumer are of the old type (can manipulate on OC traces only),

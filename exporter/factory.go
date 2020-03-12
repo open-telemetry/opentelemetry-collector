@@ -15,6 +15,7 @@
 package exporter
 
 import (
+	"context"
 	"fmt"
 
 	"go.uber.org/zap"
@@ -32,7 +33,7 @@ type BaseFactory interface {
 	// configuration and should not cause side-effects that prevent the creation
 	// of multiple instances of the Exporter.
 	// The object returned by this method needs to pass the checks implemented by
-	// 'conifgcheck.ValidateConfig'. It is recommended to have such check in the
+	// 'configcheck.ValidateConfig'. It is recommended to have such check in the
 	// tests of any implementation of the Factory interface.
 	CreateDefaultConfig() configmodels.Exporter
 }
@@ -48,6 +49,13 @@ type Factory interface {
 	CreateMetricsExporter(logger *zap.Logger, cfg configmodels.Exporter) (MetricsExporter, error)
 }
 
+// CreationParams is passed to Create* functions in FactoryV2.
+type CreationParams struct {
+	// Logger that the factory can use during creation and can pass to the created
+	// component to be used later as well.
+	Logger *zap.Logger
+}
+
 // FactoryV2 can create TraceExporterV2 and MetricsExporterV2. This is the
 // new factory type that can create new style exporters.
 type FactoryV2 interface {
@@ -56,9 +64,12 @@ type FactoryV2 interface {
 	// CreateTraceReceiverV2 creates a trace receiver based on this config.
 	// If the receiver type does not support tracing or if the config is not valid
 	// error will be returned instead.
-	CreateTraceExporterV2(logger *zap.Logger, cfg configmodels.Exporter) (TraceExporterV2, error)
+	CreateTraceExporterV2(ctx context.Context, params CreationParams, cfg configmodels.Exporter) (TraceExporterV2, error)
 
-	// TODO: Add CreateMetricsExporterV2.
+	// CreateMetricsExporterV2 creates a metrics receiver based on this config.
+	// If the receiver type does not support metrics or if the config is not valid
+	// error will be returned instead.
+	CreateMetricsExporterV2(ctx context.Context, params CreationParams, cfg configmodels.Exporter) (MetricsExporterV2, error)
 }
 
 // Build takes a list of exporter factories and returns a map of type map[string]Factory
