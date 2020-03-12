@@ -107,13 +107,11 @@ func Test_obsreport_ReceiveTraceDataOp(t *testing.T) {
 	errs := []error{nil, errFake}
 	rcvdSpans := []int{13, 42}
 	for i, err := range errs {
-		ctx, span := StartTraceDataReceiveOp(receiverCtx, receiver, transport)
+		ctx := StartTraceDataReceiveOp(receiverCtx, receiver, transport)
 		assert.NotNil(t, ctx)
-		assert.NotNil(t, span)
 
 		EndTraceDataReceiveOp(
 			ctx,
-			span,
 			format,
 			rcvdSpans[i],
 			err)
@@ -169,13 +167,11 @@ func Test_obsreport_ReceiveMetricsOp(t *testing.T) {
 	rcvdMetricPts := []int{23, 29}
 	rcvdTimeSeries := []int{2, 3}
 	for i, err := range errs {
-		ctx, span := StartMetricsReceiveOp(receiverCtx, receiver, transport)
+		ctx := StartMetricsReceiveOp(receiverCtx, receiver, transport)
 		assert.NotNil(t, ctx)
-		assert.NotNil(t, span)
 
 		EndMetricsReceiveOp(
 			ctx,
-			span,
 			format,
 			rcvdMetricPts[i],
 			rcvdTimeSeries[i],
@@ -238,17 +234,15 @@ func Test_obsreport_ExportTraceDataOp(t *testing.T) {
 	errs := []error{nil, errFake}
 	numExportedSpans := []int{22, 14}
 	for i, err := range errs {
-		ctx, span := StartTraceDataExportOp(exporterCtx, exporter)
+		ctx := StartTraceDataExportOp(exporterCtx, exporter)
 		assert.NotNil(t, ctx)
-		assert.NotNil(t, span)
 
 		var numDroppedSpans int
 		if err != nil {
 			numDroppedSpans = numExportedSpans[i]
 		}
 
-		EndTraceDataExportOp(
-			ctx, span, numExportedSpans[i], numDroppedSpans, err)
+		EndTraceDataExportOp(ctx, numExportedSpans[i], numDroppedSpans, err)
 	}
 
 	spans := ss.PullAllSpans()
@@ -304,9 +298,8 @@ func Test_obsreport_ExportMetricsOp(t *testing.T) {
 	toSendMetricPts := []int{17, 23}
 	toSendTimeSeries := []int{3, 5}
 	for i, err := range errs {
-		ctx, span := StartMetricsExportOp(exporterCtx, exporter)
+		ctx := StartMetricsExportOp(exporterCtx, exporter)
 		assert.NotNil(t, ctx)
-		assert.NotNil(t, span)
 
 		var numDroppedTimeSeires int
 		if err != nil {
@@ -315,7 +308,6 @@ func Test_obsreport_ExportMetricsOp(t *testing.T) {
 
 		EndMetricsExportOp(
 			ctx,
-			span,
 			toSendMetricPts[i],
 			toSendTimeSeries[i],
 			numDroppedTimeSeires,

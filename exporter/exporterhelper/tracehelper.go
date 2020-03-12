@@ -96,15 +96,15 @@ func NewTraceExporter(
 // the observability signals during the pusher execution.
 func (p traceDataPusher) withObservability(exporterName string) traceDataPusher {
 	return func(ctx context.Context, td consumerdata.TraceData) (int, error) {
-		exporterCtx, span := obsreport.StartTraceDataExportOp(ctx, exporterName)
+		ctx = obsreport.StartTraceDataExportOp(ctx, exporterName)
 		// Forward the data to the next consumer (this pusher is the next).
-		droppedSpans, err := p(exporterCtx, td)
+		droppedSpans, err := p(ctx, td)
 
 		// TODO: this is not ideal: it should come from the next function itself.
 		// 	temporarily loading it from internal format. Once full switch is done
 		// 	to new metrics will remove this.
 		numSpans := len(td.Spans)
-		obsreport.EndTraceDataExportOp(exporterCtx, span, numSpans, droppedSpans, err)
+		obsreport.EndTraceDataExportOp(ctx, numSpans, droppedSpans, err)
 		return droppedSpans, err
 	}
 }
@@ -173,15 +173,15 @@ func NewTraceExporterV2(
 // the observability signals during the pusher execution.
 func (p traceV2DataPusher) withObservability(exporterName string) traceV2DataPusher {
 	return func(ctx context.Context, td data.TraceData) (int, error) {
-		exporterCtx, span := obsreport.StartTraceDataExportOp(ctx, exporterName)
+		ctx = obsreport.StartTraceDataExportOp(ctx, exporterName)
 		// Forward the data to the next consumer (this pusher is the next).
-		droppedSpans, err := p(exporterCtx, td)
+		droppedSpans, err := p(ctx, td)
 
 		// TODO: this is not ideal: it should come from the next function itself.
 		// 	temporarily loading it from internal format. Once full switch is done
 		// 	to new metrics will remove this.
 		numSpans := td.SpanCount()
-		obsreport.EndTraceDataExportOp(exporterCtx, span, numSpans, droppedSpans, err)
+		obsreport.EndTraceDataExportOp(ctx, numSpans, droppedSpans, err)
 		return droppedSpans, err
 	}
 }

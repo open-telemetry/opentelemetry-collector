@@ -81,16 +81,15 @@ func NewMetricsExporter(config configmodels.Exporter, pushMetricsData PushMetric
 
 func pushMetricsWithObservability(next PushMetricsData, exporterName string) PushMetricsData {
 	return func(ctx context.Context, md consumerdata.MetricsData) (int, error) {
-		exporterCtx, span := obsreport.StartMetricsExportOp(ctx, exporterName)
-		numDroppedTimeSeries, err := next(exporterCtx, md)
+		ctx = obsreport.StartMetricsExportOp(ctx, exporterName)
+		numDroppedTimeSeries, err := next(ctx, md)
 
 		// TODO: this is not ideal: it should come from the next function itself.
 		// 	temporarily loading it from internal format. Once full switch is done
 		// 	to new metrics will remove this.
 		numReceivedTimeSeries, numPoints := measureMetricsExport(md)
 
-		obsreport.EndMetricsExportOp(
-			exporterCtx, span, numPoints, numReceivedTimeSeries, numDroppedTimeSeries, err)
+		obsreport.EndMetricsExportOp(ctx, numPoints, numReceivedTimeSeries, numDroppedTimeSeries, err)
 		return numDroppedTimeSeries, err
 	}
 }

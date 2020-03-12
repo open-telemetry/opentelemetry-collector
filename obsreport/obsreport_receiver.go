@@ -75,7 +75,7 @@ func StartTraceDataReceiveOp(
 	operationCtx context.Context,
 	receiver string,
 	transport string,
-) (context.Context, *trace.Span) {
+) context.Context {
 	return traceReceiveTraceDataOp(
 		operationCtx,
 		receiver,
@@ -87,7 +87,6 @@ func StartTraceDataReceiveOp(
 // StartTraceDataReceiveOp.
 func EndTraceDataReceiveOp(
 	receiverCtx context.Context,
-	span *trace.Span,
 	format string,
 	numReceivedSpans int,
 	err error,
@@ -105,7 +104,6 @@ func EndTraceDataReceiveOp(
 
 	endReceiveOp(
 		receiverCtx,
-		span,
 		format,
 		numReceivedSpans,
 		err,
@@ -120,7 +118,7 @@ func StartMetricsReceiveOp(
 	operationCtx context.Context,
 	receiver string,
 	transport string,
-) (context.Context, *trace.Span) {
+) context.Context {
 	return traceReceiveTraceDataOp(
 		operationCtx,
 		receiver,
@@ -132,7 +130,6 @@ func StartMetricsReceiveOp(
 // StartMetricsReceiveOp.
 func EndMetricsReceiveOp(
 	receiverCtx context.Context,
-	span *trace.Span,
 	format string,
 	numReceivedPoints int,
 	numReceivedTimeSeries int, // For legacy measurements.
@@ -150,7 +147,6 @@ func EndMetricsReceiveOp(
 
 	endReceiveOp(
 		receiverCtx,
-		span,
 		format,
 		numReceivedPoints,
 		err,
@@ -194,18 +190,17 @@ func traceReceiveTraceDataOp(
 	receiverName string,
 	transport string,
 	operationSuffix string,
-) (context.Context, *trace.Span) {
+) context.Context {
 	spanName := receiverPrefix + receiverName + operationSuffix
 	ctx, span := trace.StartSpan(receiverCtx, spanName)
 	span.AddAttributes(trace.StringAttribute(
 		TransportKey, transport))
-	return ctx, span
+	return ctx
 }
 
 // endReceiveOp records the observability signals at the end of an operation.
 func endReceiveOp(
 	receiverCtx context.Context,
-	span *trace.Span,
 	format string,
 	numReceivedItems int,
 	err error,
@@ -217,6 +212,8 @@ func endReceiveOp(
 		numAccepted = 0
 		numRefused = numReceivedItems
 	}
+
+	span := trace.FromContext(receiverCtx)
 
 	if useNew {
 		var acceptedMeasure, refusedMeasure *stats.Int64Measure

@@ -71,7 +71,7 @@ var (
 func StartTraceDataExportOp(
 	operationCtx context.Context,
 	exporter string,
-) (context.Context, *trace.Span) {
+) context.Context {
 	return traceExportDataOp(
 		operationCtx,
 		exporter,
@@ -82,7 +82,6 @@ func StartTraceDataExportOp(
 // StartTraceDataExportOp.
 func EndTraceDataExportOp(
 	exporterCtx context.Context,
-	span *trace.Span,
 	numExportedSpans int,
 	numDroppedSpans int, // TODO: For legacy measurements, to be removed in the future.
 	err error,
@@ -94,7 +93,6 @@ func EndTraceDataExportOp(
 
 	endExportOp(
 		exporterCtx,
-		span,
 		numExportedSpans,
 		err,
 		configmodels.TracesDataType,
@@ -107,7 +105,7 @@ func EndTraceDataExportOp(
 func StartMetricsExportOp(
 	operationCtx context.Context,
 	exporter string,
-) (context.Context, *trace.Span) {
+) context.Context {
 	return traceExportDataOp(
 		operationCtx,
 		exporter,
@@ -118,7 +116,6 @@ func StartMetricsExportOp(
 // StartMetricsExportOp.
 func EndMetricsExportOp(
 	exporterCtx context.Context,
-	span *trace.Span,
 	numExportedPoints int,
 	numExportedTimeSeries int, // TODO: For legacy measurements, to be removed in the future.
 	numDroppedTimeSeries int, // TODO: For legacy measurements, to be removed in the future.
@@ -131,7 +128,6 @@ func EndMetricsExportOp(
 
 	endExportOp(
 		exporterCtx,
-		span,
 		numExportedPoints,
 		err,
 		configmodels.MetricsDataType,
@@ -164,15 +160,15 @@ func traceExportDataOp(
 	exporterCtx context.Context,
 	exporterName string,
 	operationSuffix string,
-) (context.Context, *trace.Span) {
+) context.Context {
 	spanName := exporterPrefix + exporterName + operationSuffix
-	return trace.StartSpan(exporterCtx, spanName)
+	ctx, _ := trace.StartSpan(exporterCtx, spanName)
+	return ctx
 }
 
 // endExportOp records the observability signals at the end of an operation.
 func endExportOp(
 	exporterCtx context.Context,
-	span *trace.Span,
 	numExportedItems int,
 	err error,
 	dataType configmodels.DataType,
@@ -201,6 +197,7 @@ func endExportOp(
 			failedToSendMeasure.M(int64(numFailedToSend)))
 	}
 
+	span := trace.FromContext(exporterCtx)
 	// End span according to errors.
 	if span.IsRecordingEvents() {
 		var sentItemsKey, failedToSendItemsKey string
