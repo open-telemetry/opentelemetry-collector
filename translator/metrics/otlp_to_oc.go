@@ -339,6 +339,7 @@ func labelsToOC(labels []*otlpcommon.StringKeyValue, labelKeys []*ocmetrics.Labe
 	}
 
 	labelValues := make([]*ocmetrics.LabelValue, len(labelKeys))
+	// Visit all label keys in order, and set the value for each of them
 	for i, key := range labelKeys {
 		var labelValue *ocmetrics.LabelValue
 		if val, ok := labelMap[key.Key]; ok {
@@ -347,6 +348,8 @@ func labelsToOC(labels []*otlpcommon.StringKeyValue, labelKeys []*ocmetrics.Labe
 				HasValue: true,
 			}
 		} else {
+			// Even if label value is missing, we need to set "empty" value
+			// to preserve the index
 			labelValue = &ocmetrics.LabelValue{
 				HasValue: false,
 			}
