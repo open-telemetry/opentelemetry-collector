@@ -83,11 +83,11 @@ func (rfs *regexpFilterSet) addFilters(filters []string) error {
 			continue
 		}
 
-		if re, err := regexp.Compile(anchored); err == nil {
-			rfs.regexes[f] = re
-		} else {
+		re, err := regexp.Compile(anchored)
+		if err != nil {
 			return err
 		}
+		rfs.regexes[f] = re
 	}
 
 	return nil

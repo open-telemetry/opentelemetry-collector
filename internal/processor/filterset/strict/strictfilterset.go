@@ -20,13 +20,13 @@ import (
 
 // strictFilterSet encapsulates a set of exact string match filters.
 type strictFilterSet struct {
-	filters map[string]bool
+	filters map[string]struct{}
 }
 
 // NewStrictFilterSet constructs a FilterSet of exact string matches.
 func NewStrictFilterSet(filters []string, opts ...Option) (filterset.FilterSet, error) {
 	fs := &strictFilterSet{
-		filters: map[string]bool{},
+		filters: map[string]struct{}{},
 	}
 
 	for _, o := range opts {
@@ -49,7 +49,7 @@ func (sfs *strictFilterSet) Matches(toMatch string) bool {
 // addFilters all the given filters.
 func (sfs *strictFilterSet) addFilters(filters []string) error {
 	for _, f := range filters {
-		sfs.filters[f] = true
+		sfs.filters[f] = struct{}{}
 	}
 
 	return nil
