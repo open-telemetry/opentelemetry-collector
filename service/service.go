@@ -34,6 +34,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/extension"
+	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	"github.com/open-telemetry/opentelemetry-collector/service/builder"
 )
 
@@ -342,17 +343,29 @@ func (app *Application) shutdownPipelines() error {
 	// giving senders a chance to send all their data. This may take time, the allowed
 	// time should be part of configuration.
 
+	var errs []error
+
 	app.logger.Info("Stopping receivers...")
-	app.builtReceivers.StopAll()
+	err := app.builtReceivers.StopAll()
+	if err != nil {
+		errs = append(errs, errors.Wrap(err, "failed to stop receivers"))
+	}
 
 	app.logger.Info("Stopping processors...")
-	err := app.builtPipelines.ShutdownProcessors(app.logger)
+	err = app.builtPipelines.ShutdownProcessors(app.logger)
 	if err != nil {
-		return errors.Wrap(err, "failed to shutdown processors")
+		errs = append(errs, errors.Wrap(err, "failed to shutdown processors"))
 	}
 
 	app.logger.Info("Shutting down exporters...")
-	app.exporters.ShutdownAll()
+	err = app.exporters.ShutdownAll()
+	if err != nil {
+		errs = append(errs, errors.Wrap(err, "failed to shutdown exporters"))
+	}
+
+	if len(errs) != 0 {
+		return oterr.CombineErrors(errs)
+	}
 
 	return nil
 }
@@ -402,6 +415,9 @@ func (app *Application) execute() error {
 	// Everything is ready, now run until an event requiring shutdown happens.
 	app.runAndWaitForShutdownEvent()
 
+	// Accumulate errors and proceed with shutting down remaining components.
+	var errs []error
+
 	// Begin shutdown sequence.
 	runtime.KeepAlive(ballast)
 	app.logger.Info("Starting shutdown...")
@@ -410,7 +426,7 @@ func (app *Application) execute() error {
 
 	err = app.shutdownPipelines()
 	if err != nil {
-		return err
+		errs = append(errs, errors.Wrap(err, "failed to shutdown pipelines"))
 	}
 
 	app.shutdownExtensions()
@@ -418,6 +434,10 @@ func (app *Application) execute() error {
 	AppTelemetry.shutdown()
 
 	app.logger.Info("Shutdown complete.")
+
+	if len(errs) != 0 {
+		return oterr.CombineErrors(errs)
+	}
 	return nil
 }
 

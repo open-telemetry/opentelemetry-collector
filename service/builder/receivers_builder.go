@@ -25,6 +25,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
+	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
 	"github.com/open-telemetry/opentelemetry-collector/receiver"
 )
@@ -51,10 +52,19 @@ func (rcv *builtReceiver) Start(host component.Host) error {
 type Receivers map[configmodels.Receiver]*builtReceiver
 
 // StopAll stops all receivers.
-func (rcvs Receivers) StopAll() {
+func (rcvs Receivers) StopAll() error {
+	var errs []error
 	for _, rcv := range rcvs {
-		rcv.Stop()
+		err := rcv.Stop()
+		if err != nil {
+			errs = append(errs, err)
+		}
 	}
+
+	if len(errs) != 0 {
+		return oterr.CombineErrors(errs)
+	}
+	return nil
 }
 
 // StartAll starts all receivers.
