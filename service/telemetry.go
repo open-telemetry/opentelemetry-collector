@@ -16,7 +16,7 @@ package service
 
 import (
 	"flag"
-	"log"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -89,7 +89,7 @@ func telemetryFlags(flags *flag.FlagSet) {
 func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) error {
 	level, err := telemetry.ParseLevel(*metricsLevelPtr)
 	if err != nil {
-		log.Fatalf("Failed to parse metrics level: %v", err)
+		return fmt.Errorf("failed to parse metrics level: %v", err)
 	}
 
 	if level == telemetry.None {

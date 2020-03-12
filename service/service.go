@@ -18,9 +18,9 @@ package service
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"runtime"
@@ -112,9 +112,18 @@ func New(
 	rootCmd := &cobra.Command{
 		Use:  appInfo.ExeName,
 		Long: appInfo.LongName,
-		Run: func(cmd *cobra.Command, args []string) {
-			app.init()
-			app.execute()
+		RunE: func(cmd *cobra.Command, args []string) error {
+			err := app.init()
+			if err != nil {
+				return err
+			}
+
+			err = app.execute()
+			if err != nil {
+				return err
+			}
+
+			return nil
 		},
 	}
 
@@ -142,29 +151,35 @@ func (app *Application) ReportFatalError(err error) {
 	app.asyncErrorChannel <- err
 }
 
-func (app *Application) init() {
+func (app *Application) init() error {
 	file := builder.GetConfigFile()
 	if file == "" {
-		log.Fatalf("Config file not specified")
+		return errors.New("config file not specified")
 	}
 	app.v.SetConfigFile(file)
+
 	err := app.v.ReadInConfig()
 	if err != nil {
-		log.Fatalf("Error loading config file %q: %v", file, err)
+		return fmt.Errorf("error loading config file %q: %v", file, err)
 	}
+
 	app.logger, err = newLogger()
 	if err != nil {
-		log.Fatalf("Failed to get logger: %v", err)
+		return fmt.Errorf("failed to get logger: %v", err)
 	}
+
+	return nil
 }
 
-func (app *Application) setupTelemetry(ballastSizeBytes uint64) {
+func (app *Application) setupTelemetry(ballastSizeBytes uint64) error {
 	app.logger.Info("Setting up own telemetry...")
+
 	err := AppTelemetry.init(app.asyncErrorChannel, ballastSizeBytes, app.logger)
 	if err != nil {
-		app.logger.Error("Failed to initialize telemetry", zap.Error(err))
-		os.Exit(1)
+		return fmt.Errorf("failed to initialize telemetry: %v", err)
 	}
+
+	return nil
 }
 
 // runAndWaitForShutdownEvent waits for one of the shutdown events that can happen.
@@ -190,23 +205,29 @@ func (app *Application) runAndWaitForShutdownEvent() {
 	}
 }
 
-func (app *Application) setupConfigurationComponents() {
+func (app *Application) setupConfigurationComponents() error {
 	// Load configuration.
 	app.logger.Info("Loading configuration...")
 	cfg, err := config.Load(app.v, app.factories, app.logger)
 	if err != nil {
-		log.Fatalf("Cannot load configuration: %v", err)
+		return fmt.Errorf("cannot load configuration: %v", err)
 	}
 
 	app.config = cfg
 
 	app.logger.Info("Applying configuration...")
 
-	if err := app.setupExtensions(); err != nil {
-		log.Fatalf("Cannot setup extensions: %v", err)
+	err = app.setupExtensions()
+	if err != nil {
+		return fmt.Errorf("cannot setup extensions: %v", err)
 	}
 
-	app.setupPipelines()
+	err = app.setupPipelines()
+	if err != nil {
+		return fmt.Errorf("cannot setup pipelines: %v", err)
+	}
+
+	return nil
 }
 
 func (app *Application) setupExtensions() error {
@@ -241,7 +262,7 @@ func (app *Application) setupExtensions() error {
 	return nil
 }
 
-func (app *Application) setupPipelines() {
+func (app *Application) setupPipelines() error {
 	// Pipeline is built backwards, starting from exporters, so that we create objects
 	// which are referenced before objects which reference them.
 
@@ -249,52 +270,56 @@ func (app *Application) setupPipelines() {
 	var err error
 	app.exporters, err = builder.NewExportersBuilder(app.logger, app.config, app.factories.Exporters).Build()
 	if err != nil {
-		log.Fatalf("Cannot build exporters: %v", err)
+		return fmt.Errorf("cannot build exporters: %v", err)
 	}
 	app.logger.Info("Starting exporters...")
 	err = app.exporters.StartAll(app.logger, app)
 	if err != nil {
-		log.Fatalf("Cannot start exporters: %v", err)
+		return fmt.Errorf("cannot start exporters: %v", err)
 	}
 
 	// Create pipelines and their processors and plug exporters to the
 	// end of the pipelines.
 	app.builtPipelines, err = builder.NewPipelinesBuilder(app.logger, app.config, app.exporters, app.factories.Processors).Build()
 	if err != nil {
-		log.Fatalf("Cannot build pipelines: %v", err)
+		return fmt.Errorf("cannot build pipelines: %v", err)
 	}
 
 	app.logger.Info("Starting processors...")
 	err = app.builtPipelines.StartProcessors(app.logger, app)
 	if err != nil {
-		log.Fatalf("Cannot start processors: %v", err)
+		return fmt.Errorf("cannot start processors: %v", err)
 	}
 
 	// Create receivers and plug them into the start of the pipelines.
 	app.builtReceivers, err = builder.NewReceiversBuilder(app.logger, app.config, app.builtPipelines, app.factories.Receivers).Build()
 	if err != nil {
-		log.Fatalf("Cannot build receivers: %v", err)
+		return fmt.Errorf("annot build receivers: %v", err)
 	}
 
 	app.logger.Info("Starting receivers...")
 	err = app.builtReceivers.StartAll(app.logger, app)
 	if err != nil {
-		log.Fatalf("Cannot start receivers: %v", err)
+		return fmt.Errorf("cannot start receivers: %v", err)
 	}
+
+	return nil
 }
 
-func (app *Application) notifyPipelineReady() {
+func (app *Application) notifyPipelineReady() error {
 	for i, ext := range app.extensions {
 		if pw, ok := ext.(extension.PipelineWatcher); ok {
 			if err := pw.Ready(); err != nil {
-				log.Fatalf(
-					"Error notifying extension %q that the pipeline was started: %v",
+				return fmt.Errorf(
+					"error notifying extension %q that the pipeline was started: %v",
 					app.config.Service.Extensions[i],
 					err,
 				)
 			}
 		}
 	}
+
+	return nil
 }
 
 func (app *Application) notifyPipelineNotReady() {
@@ -313,7 +338,7 @@ func (app *Application) notifyPipelineNotReady() {
 	}
 }
 
-func (app *Application) shutdownPipelines() {
+func (app *Application) shutdownPipelines() error {
 	// Shutdown order is the reverse of building: first receivers, then flushing pipelines
 	// giving senders a chance to send all their data. This may take time, the allowed
 	// time should be part of configuration.
@@ -322,10 +347,15 @@ func (app *Application) shutdownPipelines() {
 	app.builtReceivers.StopAll()
 
 	app.logger.Info("Stopping processors...")
-	app.builtPipelines.ShutdownProcessors(app.logger)
+	err := app.builtPipelines.ShutdownProcessors(app.logger)
+	if err != nil {
+		return fmt.Errorf("failed to shutdown processors: %v", err)
+	}
 
 	app.logger.Info("Shutting down exporters...")
 	app.exporters.ShutdownAll()
+
+	return nil
 }
 
 func (app *Application) shutdownExtensions() {
@@ -342,7 +372,7 @@ func (app *Application) shutdownExtensions() {
 	}
 }
 
-func (app *Application) execute() {
+func (app *Application) execute() error {
 	app.logger.Info("Starting "+app.info.LongName+"...",
 		zap.String("Version", app.info.Version),
 		zap.String("GitHash", app.info.GitHash),
@@ -355,9 +385,20 @@ func (app *Application) execute() {
 	app.asyncErrorChannel = make(chan error)
 
 	// Setup everything.
-	app.setupTelemetry(ballastSizeBytes)
-	app.setupConfigurationComponents()
-	app.notifyPipelineReady()
+	err := app.setupTelemetry(ballastSizeBytes)
+	if err != nil {
+		return err
+	}
+
+	err = app.setupConfigurationComponents()
+	if err != nil {
+		return err
+	}
+
+	err = app.notifyPipelineReady()
+	if err != nil {
+		return err
+	}
 
 	// Everything is ready, now run until an event requiring shutdown happens.
 	app.runAndWaitForShutdownEvent()
@@ -367,12 +408,18 @@ func (app *Application) execute() {
 	app.logger.Info("Starting shutdown...")
 
 	app.notifyPipelineNotReady()
-	app.shutdownPipelines()
+
+	err = app.shutdownPipelines()
+	if err != nil {
+		return err
+	}
+
 	app.shutdownExtensions()
 
 	AppTelemetry.shutdown()
 
 	app.logger.Info("Shutdown complete.")
+	return nil
 }
 
 // Start starts the collector according to the command and configuration
