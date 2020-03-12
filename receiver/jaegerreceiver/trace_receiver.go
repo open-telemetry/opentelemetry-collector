@@ -329,26 +329,24 @@ func consumeTraceData(
 }
 
 func (jr *jReceiver) SubmitBatches(batches []*jaeger.Batch, options handler.SubmitBatchOptions) ([]*jaeger.BatchSubmitResponse, error) {
-	ctx := context.Background()
-	receiverCtx := obsreport.ReceiverContext(
-		ctx, jr.instanceName, collectorHTTPTransport, collectorReceiverTagValue)
-	_, span := obsreport.StartTraceDataReceiveOp(
-		receiverCtx, jr.instanceName, collectorHTTPTransport)
+	ctx := obsreport.ReceiverContext(
+		context.Background(), jr.instanceName, collectorHTTPTransport, collectorReceiverTagValue)
+	ctx = obsreport.StartTraceDataReceiveOp(
+		ctx, jr.instanceName, collectorHTTPTransport)
 
-	jbsr, numSpans, err := consumeTraceData(receiverCtx, batches, jr.nextConsumer)
-	obsreport.EndTraceDataReceiveOp(receiverCtx, span, thriftFormat, numSpans, err)
+	jbsr, numSpans, err := consumeTraceData(ctx, batches, jr.nextConsumer)
+	obsreport.EndTraceDataReceiveOp(ctx, thriftFormat, numSpans, err)
 
 	return jbsr, err
 }
 
-func (jtr *jTchannelReceiver) SubmitBatches(ctx thrift.Context, batches []*jaeger.Batch) ([]*jaeger.BatchSubmitResponse, error) {
-	receiverCtx := obsreport.ReceiverContext(
-		ctx, jtr.instanceName, collectorTChannelTransport, tchannelCollectorReceiverTagValue)
-	_, span := obsreport.StartTraceDataReceiveOp(
-		ctx, jtr.instanceName, collectorTChannelTransport)
+func (jtr *jTchannelReceiver) SubmitBatches(thriftCtx thrift.Context, batches []*jaeger.Batch) ([]*jaeger.BatchSubmitResponse, error) {
+	ctx := obsreport.ReceiverContext(
+		thriftCtx, jtr.instanceName, collectorTChannelTransport, tchannelCollectorReceiverTagValue)
+	ctx = obsreport.StartTraceDataReceiveOp(ctx, jtr.instanceName, collectorTChannelTransport)
 
-	jbsr, numSpans, err := consumeTraceData(receiverCtx, batches, jtr.nextConsumer)
-	obsreport.EndTraceDataReceiveOp(receiverCtx, span, thriftFormat, numSpans, err)
+	jbsr, numSpans, err := consumeTraceData(ctx, batches, jtr.nextConsumer)
+	obsreport.EndTraceDataReceiveOp(ctx, thriftFormat, numSpans, err)
 
 	return jbsr, err
 }
@@ -366,14 +364,14 @@ func (jr *jReceiver) EmitZipkinBatch(spans []*zipkincore.Span) error {
 // EmitBatch implements cmd/agent/reporter.Reporter and it forwards
 // Jaeger spans received by the Jaeger agent processor.
 func (jr *jReceiver) EmitBatch(batch *jaeger.Batch) error {
-	_, span := obsreport.StartTraceDataReceiveOp(
-		context.Background(), jr.instanceName, agentTransport)
+	ctx := obsreport.StartTraceDataReceiveOp(
+		jr.defaultAgentCtx, jr.instanceName, agentTransport)
 	// TODO: call below never returns error it remove from the signature
 	td, _ := jaegertranslator.ThriftBatchToOCProto(batch)
 	td.SourceFormat = "jaeger"
 
-	err := jr.nextConsumer.ConsumeTraceData(jr.defaultAgentCtx, td)
-	obsreport.EndTraceDataReceiveOp(jr.defaultAgentCtx, span, thriftFormat, len(batch.Spans), err)
+	err := jr.nextConsumer.ConsumeTraceData(ctx, td)
+	obsreport.EndTraceDataReceiveOp(ctx, thriftFormat, len(batch.Spans), err)
 
 	return err
 }
@@ -398,17 +396,16 @@ func (jr *jReceiver) PostSpans(ctx context.Context, r *api_v2.PostSpansRequest) 
 		ctx = client.NewContext(ctx, c)
 	}
 
-	receiverCtx := obsreport.ReceiverContext(
+	ctx = obsreport.ReceiverContext(
 		ctx, jr.instanceName, grpcTransport, collectorReceiverTagValue)
-	_, span := obsreport.StartTraceDataReceiveOp(
-		ctx, jr.instanceName, grpcTransport)
+	ctx = obsreport.StartTraceDataReceiveOp(ctx, jr.instanceName, grpcTransport)
 
 	// TODO: the function below never returns error, change its interface.
 	td, _ := jaegertranslator.ProtoBatchToOCProto(r.GetBatch())
 	td.SourceFormat = "jaeger"
 
-	err := jr.nextConsumer.ConsumeTraceData(receiverCtx, td)
-	obsreport.EndTraceDataReceiveOp(receiverCtx, span, protobufFormat, len(r.GetBatch().Spans), err)
+	err := jr.nextConsumer.ConsumeTraceData(ctx, td)
+	obsreport.EndTraceDataReceiveOp(ctx, protobufFormat, len(r.GetBatch().Spans), err)
 	if err != nil {
 		return nil, err
 	}

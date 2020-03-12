@@ -147,13 +147,12 @@ func (tr *transaction) Commit() error {
 		return nil
 	}
 
-	ctx, span := obsreport.StartMetricsReceiveOp(tr.ctx, tr.receiverName, transport)
+	ctx := obsreport.StartMetricsReceiveOp(tr.ctx, tr.receiverName, transport)
 	metrics, numTimeseries, droppedTimeseries, err := tr.metricBuilder.Build()
 	if err != nil {
 		// Only error by Build() is errNoDataToBuild, with numTimeseries and
 		// droppedTimeseries set to zero.
-		obsreport.EndMetricsReceiveOp(
-			ctx, span, dataformat, 0, 0, err)
+		obsreport.EndMetricsReceiveOp(ctx, dataformat, 0, 0, err)
 		return err
 	}
 
@@ -188,10 +187,10 @@ func (tr *transaction) Commit() error {
 			Metrics: metrics,
 		}
 		numTimeseries, numPoints = obsreport.CountMetricPoints(md)
-		err = tr.sink.ConsumeMetricsData(tr.ctx, md)
+		err = tr.sink.ConsumeMetricsData(ctx, md)
 	}
 	obsreport.EndMetricsReceiveOp(
-		ctx, span, dataformat, numPoints, numTimeseries, err)
+		ctx, dataformat, numPoints, numTimeseries, err)
 	return err
 }
 
