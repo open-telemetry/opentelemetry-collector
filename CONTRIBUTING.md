@@ -146,6 +146,14 @@ explain the problem and exit with a non-zero code. It is acceptable to crash the
 during startup if there is no good way to exit cleanly but do your best to log and
 exit cleanly with a process exit code.
 
+### Propagate Errors to the Caller
+
+Do not crash or exit outside the `main()` function, e.g. via `log.Fatal` or `os.Exit`,
+even during startup. Instead, return detailed errors to be handled appropriately 
+by the caller. The code in packages other than `main` may be imported and used by
+third-party applications, and they should have full control over error handling 
+and process termination.
+
 ### Do not Crash after Startup
 
 Do not crash or exit the Collector process after the startup sequence is finished.
