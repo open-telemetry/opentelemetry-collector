@@ -16,11 +16,11 @@ package service
 
 import (
 	"flag"
-	"log"
 	"net/http"
 	"strconv"
 
 	"contrib.go.opencensus.io/exporter/prometheus"
+	"github.com/pkg/errors"
 	"go.opencensus.io/stats/view"
 	"go.uber.org/zap"
 
@@ -89,7 +89,7 @@ func telemetryFlags(flags *flag.FlagSet) {
 func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) error {
 	level, err := telemetry.ParseLevel(*metricsLevelPtr)
 	if err != nil {
-		log.Fatalf("Failed to parse metrics level: %v", err)
+		return errors.Wrap(err, "failed to parse metrics level")
 	}
 
 	if level == telemetry.None {
