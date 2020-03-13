@@ -71,7 +71,8 @@ var (
 // StartReceiveOptions has the options related to starting a receive operation.
 type StartReceiveOptions struct {
 	// LongLivedCtx when true indicates that the context passed in the call
-	// outlives the individual receive operation.
+	// outlives the individual receive operation. See WithLongLivedCtx() for
+	// more information.
 	LongLivedCtx bool
 }
 
@@ -79,7 +80,40 @@ type StartReceiveOptions struct {
 type StartReceiveOption func(*StartReceiveOptions)
 
 // WithLongLivedCtx indicates that the context passed in the call outlives the
-// individual receive operation.
+// receive operation at hand. Typically the long lived context is associated
+// to a connection, eg.: a gRPC stream or a TCP connection, for which many
+// batches of data are received in individual operations without a corresponding
+// new context per operation.
+//
+// Example:
+//
+//    func (r *receiver) ClientConnect(ctx context.Context, rcvChan <-chan consumerdata.TraceData) {
+//        longLivedCtx := ctx
+//        for {
+//            // Since the context outlives the individual receive operations call obsreport using
+//            // WithLongLivedCtx().
+//            ctx := obsreport.StartTraceDataReceiveOp(
+//                longLivedCtx,
+//                r.config.Name(),
+//                r.transport,
+//                obsreport.WithLongLivedCtx())
+//
+//            td, ok := <-rcvChan
+//            var err error
+//            if ok {
+//                err = r.nextConsumer.ConsumeTraceData(ctx, td)
+//            }
+//            obsreport.EndTraceDataReceiveOp(
+//                ctx,
+//                r.format,
+//                len(td.Spans),
+//                err)
+//            if !ok {
+//                break
+//            }
+//        }
+//    }
+//
 func WithLongLivedCtx() StartReceiveOption {
 	return func(opts *StartReceiveOptions) {
 		opts.LongLivedCtx = true
