@@ -33,9 +33,16 @@ const (
 	invalidMetricDescriptorType = ocmetrics.MetricDescriptor_Type(-1)
 )
 
+type labelKeys struct {
+	// ordered OC label keys
+	keys []*ocmetrics.LabelKey
+	// map from a label key literal
+	// to its index in the slice above
+	keyIndices map[string]int
+}
+
 // ResourceMetricsToMetricsData converts metrics from OTLP to internal (OpenCensus) format
 func ResourceMetricsToMetricsData(resourceMetrics *otlpmetrics.ResourceMetrics) consumerdata.MetricsData {
-
 	node, resource := translatorcommon.ResourceToOC(resourceMetrics.Resource)
 	md := consumerdata.MetricsData{
 		Node:     node,
@@ -56,7 +63,7 @@ func ResourceMetricsToMetricsData(resourceMetrics *otlpmetrics.ResourceMetrics) 
 }
 
 func metricToOC(metric *otlpmetrics.Metric) *ocmetrics.Metric {
-	labelKeys := allLabelKeys(metric)
+	labelKeys := labelKeysToOC(metric)
 	return &ocmetrics.Metric{
 		MetricDescriptor: descriptorToOC(metric.MetricDescriptor, labelKeys),
 		Timeseries:       dataPointsToTimeseries(metric, labelKeys),
@@ -64,7 +71,7 @@ func metricToOC(metric *otlpmetrics.Metric) *ocmetrics.Metric {
 	}
 }
 
-func descriptorToOC(descriptor *otlpmetrics.MetricDescriptor, labelKeys []*ocmetrics.LabelKey) *ocmetrics.MetricDescriptor {
+func descriptorToOC(descriptor *otlpmetrics.MetricDescriptor, labelKeys *labelKeys) *ocmetrics.MetricDescriptor {
 	if descriptor == nil {
 		return nil
 	}
@@ -74,11 +81,11 @@ func descriptorToOC(descriptor *otlpmetrics.MetricDescriptor, labelKeys []*ocmet
 		Description: descriptor.Description,
 		Unit:        descriptor.Unit,
 		Type:        descriptorTypeToOC(descriptor.Type),
-		LabelKeys:   labelKeys,
+		LabelKeys:   labelKeys.keys,
 	}
 }
 
-func allLabelKeys(metric *otlpmetrics.Metric) []*ocmetrics.LabelKey {
+func labelKeysToOC(metric *otlpmetrics.Metric) *labelKeys {
 	// NOTE: OpenTelemetry and OpenCensus have different representations of labels:
 	// - OC has a single "global" ordered list of label keys per metric in the MetricDescriptor;
 	// then, every data point has an ordered list of label values matching the key index.
@@ -87,49 +94,58 @@ func allLabelKeys(metric *otlpmetrics.Metric) []*ocmetrics.LabelKey {
 	//
 	// So what we do in this translator:
 	// - Scan all points and their labels to generate a unique set of all label keys
-	// used across the metric, sort them and set in MetricDescriptor.
+	// used across the metric, sort them and set in the MetricDescriptor.
 	// - For each point we generate an ordered list of label values,
-	// matching the order of label keys returned here (see `labelsToOC` function).
+	// matching the order of label keys returned here (see `labelValuesToOC` function).
+	// - If the value for particular label key is missing in the point, we set it to default
+	// to preserve 1:1 matching between label keys and values.
 
-	// First, collect a set of unique keys
-	uniqueKeys := make(map[string]struct{}, 0)
+	// First, collect a set of all labels present in the metric
+	keySet := make(map[string]struct{}, 0)
 	for _, point := range metric.Int64Datapoints {
-		addLabelKeys(uniqueKeys, point.Labels)
+		addLabelKeys(keySet, point.Labels)
 	}
 	for _, point := range metric.DoubleDatapoints {
-		addLabelKeys(uniqueKeys, point.Labels)
+		addLabelKeys(keySet, point.Labels)
 	}
 	for _, point := range metric.HistogramDatapoints {
-		addLabelKeys(uniqueKeys, point.Labels)
+		addLabelKeys(keySet, point.Labels)
 	}
 	for _, point := range metric.SummaryDatapoints {
-		addLabelKeys(uniqueKeys, point.Labels)
+		addLabelKeys(keySet, point.Labels)
 	}
 
-	// Sort keys (this is actually optional, just for stable order)
-	rawKeys := make([]string, 0, len(uniqueKeys))
-	for key := range uniqueKeys {
-		rawKeys = append(rawKeys, key)
+	// Sort keys: while not mandatory, this helps to make the
+	// output OC metric deterministic and easy to test, i.e.
+	// the same set of OTLP labels will always produce
+	// OC labels in the alphabetically sorted order.
+	sortedKeys := make([]string, 0, len(keySet))
+	for key := range keySet {
+		sortedKeys = append(sortedKeys, key)
 	}
-	sort.Strings(rawKeys)
+	sort.Strings(sortedKeys)
 
-	// Construct a list of label keys
-	// Note: Label values will have to match keys by index
-	labelKeys := make([]*ocmetrics.LabelKey, 0, len(rawKeys))
-	for _, key := range rawKeys {
-		labelKeys = append(labelKeys, &ocmetrics.LabelKey{
+	// Construct a resulting list of label keys
+	keys := make([]*ocmetrics.LabelKey, 0, len(sortedKeys))
+	// Label values will have to match keys by index
+	// so this map will help with fast lookups.
+	indices := make(map[string]int, len(sortedKeys))
+	for i, key := range sortedKeys {
+		keys = append(keys, &ocmetrics.LabelKey{
 			Key: key,
 		})
+		indices[key] = i
 	}
 
-	return labelKeys
+	return &labelKeys{
+		keys:       keys,
+		keyIndices: indices,
+	}
 }
 
-func addLabelKeys(uniqueKeys map[string]struct{}, labels []*otlpcommon.StringKeyValue) {
+func addLabelKeys(keySet map[string]struct{}, labels []*otlpcommon.StringKeyValue) {
 	for _, label := range labels {
-		if _, ok := uniqueKeys[label.Key]; !ok {
-			uniqueKeys[label.Key] = struct{}{}
-		}
+		keySet[label.Key] = struct{}{}
 	}
 }
 
@@ -156,7 +172,7 @@ func descriptorTypeToOC(t otlpmetrics.MetricDescriptor_Type) ocmetrics.MetricDes
 	}
 }
 
-func dataPointsToTimeseries(metric *otlpmetrics.Metric, labelKeys []*ocmetrics.LabelKey) []*ocmetrics.TimeSeries {
+func dataPointsToTimeseries(metric *otlpmetrics.Metric, labelKeys *labelKeys) []*ocmetrics.TimeSeries {
 	length := len(metric.Int64Datapoints) + len(metric.DoubleDatapoints) + len(metric.HistogramDatapoints) +
 		len(metric.SummaryDatapoints)
 	if length == 0 {
@@ -184,10 +200,10 @@ func dataPointsToTimeseries(metric *otlpmetrics.Metric, labelKeys []*ocmetrics.L
 	return timeseries
 }
 
-func summaryPointToOC(point *otlpmetrics.SummaryDataPoint, labelKeys []*ocmetrics.LabelKey) *ocmetrics.TimeSeries {
+func summaryPointToOC(point *otlpmetrics.SummaryDataPoint, labelKeys *labelKeys) *ocmetrics.TimeSeries {
 	return &ocmetrics.TimeSeries{
 		StartTimestamp: unixnanoToTimestamp(point.StartTimeUnixnano),
-		LabelValues:    labelsToOC(point.Labels, labelKeys),
+		LabelValues:    labelValuesToOC(point.Labels, labelKeys),
 		Points: []*ocmetrics.Point{
 			{
 				Timestamp: unixnanoToTimestamp(point.TimestampUnixnano),
@@ -222,10 +238,10 @@ func percentileToOC(percentiles []*otlpmetrics.SummaryDataPoint_ValueAtPercentil
 	return ocPercentiles
 }
 
-func int64PointToOC(point *otlpmetrics.Int64DataPoint, labelKeys []*ocmetrics.LabelKey) *ocmetrics.TimeSeries {
+func int64PointToOC(point *otlpmetrics.Int64DataPoint, labelKeys *labelKeys) *ocmetrics.TimeSeries {
 	return &ocmetrics.TimeSeries{
 		StartTimestamp: unixnanoToTimestamp(point.StartTimeUnixnano),
-		LabelValues:    labelsToOC(point.Labels, labelKeys),
+		LabelValues:    labelValuesToOC(point.Labels, labelKeys),
 		Points: []*ocmetrics.Point{
 			{
 				Timestamp: unixnanoToTimestamp(point.TimestampUnixnano),
@@ -237,10 +253,10 @@ func int64PointToOC(point *otlpmetrics.Int64DataPoint, labelKeys []*ocmetrics.La
 	}
 }
 
-func doublePointToOC(point *otlpmetrics.DoubleDataPoint, labelKeys []*ocmetrics.LabelKey) *ocmetrics.TimeSeries {
+func doublePointToOC(point *otlpmetrics.DoubleDataPoint, labelKeys *labelKeys) *ocmetrics.TimeSeries {
 	return &ocmetrics.TimeSeries{
 		StartTimestamp: unixnanoToTimestamp(point.StartTimeUnixnano),
-		LabelValues:    labelsToOC(point.Labels, labelKeys),
+		LabelValues:    labelValuesToOC(point.Labels, labelKeys),
 		Points: []*ocmetrics.Point{
 			{
 				Timestamp: unixnanoToTimestamp(point.TimestampUnixnano),
@@ -252,10 +268,10 @@ func doublePointToOC(point *otlpmetrics.DoubleDataPoint, labelKeys []*ocmetrics.
 	}
 }
 
-func histogramPointToOC(point *otlpmetrics.HistogramDataPoint, labelKeys []*ocmetrics.LabelKey) *ocmetrics.TimeSeries {
+func histogramPointToOC(point *otlpmetrics.HistogramDataPoint, labelKeys *labelKeys) *ocmetrics.TimeSeries {
 	return &ocmetrics.TimeSeries{
 		StartTimestamp: unixnanoToTimestamp(point.StartTimeUnixnano),
-		LabelValues:    labelsToOC(point.Labels, labelKeys),
+		LabelValues:    labelValuesToOC(point.Labels, labelKeys),
 		Points: []*ocmetrics.Point{
 			{
 				Timestamp: unixnanoToTimestamp(point.TimestampUnixnano),
@@ -326,35 +342,30 @@ func exemplarAttachmentsToOC(attachments []*otlpcommon.StringKeyValue) map[strin
 	return ocAttachments
 }
 
-func labelsToOC(labels []*otlpcommon.StringKeyValue, labelKeys []*ocmetrics.LabelKey) []*ocmetrics.LabelValue {
+func labelValuesToOC(labels []*otlpcommon.StringKeyValue, labelKeys *labelKeys) []*ocmetrics.LabelValue {
 	if len(labels) == 0 {
 		return nil
 	}
 
-	// NOTE: We need to set label values in the same order as keys, thus
-	// intermediate transformation to a map for fast lookups
-	labelMap := make(map[string]string, len(labels))
-	for _, label := range labels {
-		labelMap[label.Key] = label.Value
+	// Initialize label values with defaults
+	// (The order matches key indices)
+	labelValues := make([]*ocmetrics.LabelValue, len(labelKeys.keyIndices))
+	for i := 0; i < len(labelKeys.keys); i++ {
+		labelValues[i] = &ocmetrics.LabelValue{
+			HasValue: false,
+		}
 	}
 
-	labelValues := make([]*ocmetrics.LabelValue, len(labelKeys))
-	// Visit all label keys in order, and set the value for each of them
-	for i, key := range labelKeys {
-		var labelValue *ocmetrics.LabelValue
-		if val, ok := labelMap[key.Key]; ok {
-			labelValue = &ocmetrics.LabelValue{
-				Value:    val,
-				HasValue: true,
-			}
-		} else {
-			// Even if label value is missing, we need to set "empty" value
-			// to preserve the index
-			labelValue = &ocmetrics.LabelValue{
-				HasValue: false,
-			}
-		}
-		labelValues[i] = labelValue
+	// Visit all defined label values and
+	// override defaults with actual values
+	for _, label := range labels {
+		// Find the appropriate label value that we need to update
+		keyIndex := labelKeys.keyIndices[label.Key]
+		labelValue := labelValues[keyIndex]
+
+		// Update label value
+		labelValue.Value = label.Value
+		labelValue.HasValue = true
 	}
 
 	return labelValues
