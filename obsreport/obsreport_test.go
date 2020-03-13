@@ -353,6 +353,11 @@ func Test_obsreport_ReceiveWithLongLivedCtx(t *testing.T) {
 	trace.RegisterExporter(ss)
 	defer trace.UnregisterExporter(ss)
 
+	useAlwaysSample = true
+	defer func() {
+		useAlwaysSample = false
+	}()
+
 	parentCtx, parentSpan := trace.StartSpan(context.Background(),
 		t.Name(), trace.WithSampler(trace.AlwaysSample()))
 	defer parentSpan.End()
@@ -369,11 +374,10 @@ func Test_obsreport_ReceiveWithLongLivedCtx(t *testing.T) {
 		// Use a new context on each operation to simulate distinct operations
 		// under the same long lived context.
 		ctx := StartTraceDataReceiveOp(
-			context.Background(),
+			longLivedCtx,
 			receiver,
 			transport,
-			WithAlwaysSample(), // Needs to be used here to ensure the span is sampled.
-			WithLongLivedCtx(longLivedCtx))
+			WithLongLivedCtx())
 		assert.NotNil(t, ctx)
 
 		EndTraceDataReceiveOp(
@@ -387,6 +391,7 @@ func Test_obsreport_ReceiveWithLongLivedCtx(t *testing.T) {
 	require.Equal(t, len(ops), len(spans))
 
 	for i, span := range spans {
+		assert.Equal(t, trace.SpanID{}, span.ParentSpanID)
 		require.Equal(t, 1, len(span.Links))
 		link := span.Links[0]
 		assert.Equal(t, trace.LinkTypeParent, link.Type)

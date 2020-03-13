@@ -70,31 +70,19 @@ var (
 
 // StartReceiveOptions has the options related to starting a receive operation.
 type StartReceiveOptions struct {
-	// LongLivedCtx is used in cases when individual receive messages happen
-	// under a single long lived context.
-	LongLivedCtx context.Context
-
-	// AlwaysSample is used typically in tests to enforce the span added to the
-	// operation context to be sampled.
-	AlwaysSample bool
+	// LongLivedCtx when true indicates that the context passed in the call
+	// outlives the individual receive operation.
+	LongLivedCtx bool
 }
 
 // StartReceiveOption function applues changes to StartReceiveOptions.
 type StartReceiveOption func(*StartReceiveOptions)
 
-// WithLongLivedCtx starts a single receive operation under the long lived
-// context of the RPC or connection.
-func WithLongLivedCtx(longLivedCtx context.Context) StartReceiveOption {
+// WithLongLivedCtx indicates that the context passed in the call outlives the
+// individual receive operation.
+func WithLongLivedCtx() StartReceiveOption {
 	return func(opts *StartReceiveOptions) {
-		opts.LongLivedCtx = longLivedCtx
-	}
-}
-
-// WithAlwaysSample is used to force the span generated for the operation to be
-// sampled, typically it is used for tests.
-func WithAlwaysSample() StartReceiveOption {
-	return func(opts *StartReceiveOptions) {
-		opts.AlwaysSample = true
+		opts.LongLivedCtx = true
 	}
 }
 
@@ -232,7 +220,7 @@ func traceReceiveOp(
 	}
 
 	var sampleOption []trace.StartOption
-	if opts.AlwaysSample {
+	if useAlwaysSample {
 		sampleOption = []trace.StartOption{
 			trace.WithSampler(trace.AlwaysSample()),
 		}
@@ -241,18 +229,18 @@ func traceReceiveOp(
 	var ctx context.Context
 	var span *trace.Span
 	spanName := receiverPrefix + receiverName + operationSuffix
-	if opts.LongLivedCtx == nil {
+	if !opts.LongLivedCtx {
 		ctx, span = trace.StartSpan(receiverCtx, spanName, sampleOption...)
 	} else {
-		// Do not use LongLivedRPCCtx to start the span so this trace ends when
-		// the EndTraceDataReceiveOp is called. Here is safe to ignore the returned
-		// context since it is not used below.
-		_, span = trace.StartSpan(receiverCtx, spanName, sampleOption...)
+		// Since the receiverCtx is long lived do not use it to start the span.
+		// This way this trace ends when the EndTraceDataReceiveOp is called.
+		// Here is safe to ignore the returned context since it is not used below.
+		_, span = trace.StartSpan(context.Background(), spanName, sampleOption...)
 
 		// If the long lived context has a parent span, then add it as a parent link.
-		setParentLink(opts.LongLivedCtx, span)
+		setParentLink(receiverCtx, span)
 
-		ctx = trace.NewContext(opts.LongLivedCtx, span)
+		ctx = trace.NewContext(receiverCtx, span)
 	}
 
 	span.AddAttributes(trace.StringAttribute(

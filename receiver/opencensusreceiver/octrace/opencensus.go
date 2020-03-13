@@ -139,14 +139,11 @@ func (ocr *Receiver) processReceivedMsg(
 }
 
 func (ocr *Receiver) sendToNextConsumer(longLivedRPCCtx context.Context, tracedata *consumerdata.TraceData) error {
-	// Pass longLivedRPCCtx as an option and use a new context to start the
-	// observability of the operation so any tracing end right at this function,
-	// and the span is not a child of any span from the stream context.
 	ctx := obsreport.StartTraceDataReceiveOp(
-		context.Background(),
+		longLivedRPCCtx,
 		ocr.instanceName,
 		receiverTransport,
-		obsreport.WithLongLivedCtx(longLivedRPCCtx))
+		obsreport.WithLongLivedCtx())
 
 	if c, ok := client.FromGRPC(ctx); ok {
 		ctx = client.NewContext(ctx, c)

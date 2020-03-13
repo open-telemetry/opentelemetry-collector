@@ -111,14 +111,11 @@ func (ocr *Receiver) processReceivedMetrics(longLivedRPCCtx context.Context, ni 
 }
 
 func (ocr *Receiver) sendToNextConsumer(longLivedRPCCtx context.Context, md consumerdata.MetricsData) {
-	// Pass longLivedRPCCtx as an option and use a new context to start the
-	// observability of the operation so any tracing end right at this function,
-	// and the span is not a child of any span from the stream context.
 	ctx := obsreport.StartMetricsReceiveOp(
-		context.Background(),
+		longLivedRPCCtx,
 		ocr.instanceName,
 		receiverTransport,
-		obsreport.WithLongLivedCtx(longLivedRPCCtx))
+		obsreport.WithLongLivedCtx())
 
 	numTimeSeries := 0
 	numPoints := 0
