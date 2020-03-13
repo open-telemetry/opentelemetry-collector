@@ -36,9 +36,6 @@ var (
 	useNew    = true
 
 	okStatus = trace.Status{Code: trace.StatusCodeOK}
-
-	// useAlwaysSample is used in tests to force spans to be sampled.
-	useAlwaysSample bool
 )
 
 // setParentLink tries to retrieve a span from parentCtx and if one exists

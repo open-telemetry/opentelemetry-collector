@@ -353,13 +353,16 @@ func Test_obsreport_ReceiveWithLongLivedCtx(t *testing.T) {
 	trace.RegisterExporter(ss)
 	defer trace.UnregisterExporter(ss)
 
-	useAlwaysSample = true
+	trace.ApplyConfig(trace.Config{
+		DefaultSampler: trace.AlwaysSample(),
+	})
 	defer func() {
-		useAlwaysSample = false
+		trace.ApplyConfig(trace.Config{
+			DefaultSampler: trace.ProbabilitySampler(1e-4),
+		})
 	}()
 
-	parentCtx, parentSpan := trace.StartSpan(context.Background(),
-		t.Name(), trace.WithSampler(trace.AlwaysSample()))
+	parentCtx, parentSpan := trace.StartSpan(context.Background(), t.Name())
 	defer parentSpan.End()
 
 	longLivedCtx := ReceiverContext(parentCtx, receiver, transport, legacyName)
