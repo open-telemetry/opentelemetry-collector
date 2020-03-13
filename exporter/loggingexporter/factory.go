@@ -55,7 +55,7 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Exporter) (exporter.TraceExporter, error) {
 	cfg := config.(*Config)
 
-	exporterLogger, err := f.createLogger(cfg.LogLevel, cfg.SamplingInitial, cfg.SamplingThereafter)
+	exporterLogger, err := f.createLogger(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -67,35 +67,20 @@ func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Ex
 	return lexp, nil
 }
 
-func (f *Factory) createLogger(logLevel string, initial int, thereafter int) (*zap.Logger, error) {
+func (f *Factory) createLogger(cfg *Config) (*zap.Logger, error) {
 	var level zapcore.Level
-	err := (&level).UnmarshalText([]byte(logLevel))
+	err := (&level).UnmarshalText([]byte(cfg.LogLevel))
 	if err != nil {
 		return nil, err
 	}
 
-	encoderConf := zapcore.EncoderConfig{
-		// Keys can be anything except the empty string.
-		TimeKey:        "T",
-		MessageKey:     "M",
-		LineEnding:     zapcore.DefaultLineEnding,
-		EncodeLevel:    zapcore.CapitalLevelEncoder,
-		EncodeTime:     zapcore.ISO8601TimeEncoder,
-		EncodeDuration: zapcore.StringDurationEncoder,
-		EncodeCaller:   zapcore.ShortCallerEncoder,
-	}
-
-	conf := zap.Config{
-		Level:       zap.NewAtomicLevelAt(level),
-		Development: false,
-		Sampling: &zap.SamplingConfig{
-			Initial:    initial,
-			Thereafter: thereafter,
-		},
-		Encoding:         "console",
-		EncoderConfig:    encoderConf,
-		OutputPaths:      []string{"stderr"},
-		ErrorOutputPaths: []string{"stderr"},
+	// We take development config as the base since it matches the purpose
+	// of logging exporter being used for debugging reasons (so e.g. console encoder)
+	conf := zap.NewDevelopmentConfig()
+	conf.Level = zap.NewAtomicLevelAt(level)
+	conf.Sampling = &zap.SamplingConfig{
+		Initial:    cfg.SamplingInitial,
+		Thereafter: cfg.SamplingThereafter,
 	}
 
 	logginglogger, err := conf.Build()
@@ -109,7 +94,7 @@ func (f *Factory) createLogger(logLevel string, initial int, thereafter int) (*z
 func (f *Factory) CreateMetricsExporter(logger *zap.Logger, config configmodels.Exporter) (exporter.MetricsExporter, error) {
 	cfg := config.(*Config)
 
-	exporterLogger, err := f.createLogger(cfg.LogLevel, cfg.SamplingInitial, cfg.SamplingThereafter)
+	exporterLogger, err := f.createLogger(cfg)
 	if err != nil {
 		return nil, err
 	}
