@@ -39,7 +39,7 @@ func (b *traceDataBuffer) logEntry(format string, a ...interface{}) {
 }
 
 func (b *traceDataBuffer) logAttr(label string, value string) {
-	b.logEntry("    %-12s: %s", label, value)
+	b.logEntry("    %-15s: %s", label, value)
 }
 
 func (b *traceDataBuffer) logMap(label string, data map[string]string) {
@@ -68,7 +68,7 @@ func (s *loggingExporter) pushTraceData(
 	nodesInfo := ""
 
 	if td.Resource != nil {
-		resourceInfo = fmt.Sprintf(", resource %s (%d labels)", td.Resource.Type, len(td.Resource.Labels))
+		resourceInfo = fmt.Sprintf(", resource \"%s\" (%d labels)", td.Resource.Type, len(td.Resource.Labels))
 	}
 
 	if td.Node != nil {
@@ -85,14 +85,14 @@ func (s *loggingExporter) pushTraceData(
 		if td.Node != nil {
 			id := td.Node.Identifier
 			if id != nil {
-				buf.logEntry("HostName: %s", id.HostName)
-				buf.logEntry("PID %d", id.Pid)
+				buf.logEntry("%20s: %s", "HostName", id.HostName)
+				buf.logEntry("%20s: %s", "PID", id.Pid)
 			}
 			li := td.Node.LibraryInfo
 			if li != nil {
-				buf.logEntry("Library language: %s", li.Language.String())
-				buf.logEntry("Core library version: %s", li.CoreLibraryVersion)
-				buf.logEntry("Exporter version: %s", li.ExporterVersion)
+				buf.logEntry("%20s: %s", "Library language", li.Language.String())
+				buf.logEntry("%20s: %s", "Core library version", li.CoreLibraryVersion)
+				buf.logEntry("%20s: %s", "Exporter version", li.ExporterVersion)
 			}
 			buf.logMap("Node attributes", td.Node.Attributes)
 		}
