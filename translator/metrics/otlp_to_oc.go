@@ -93,8 +93,8 @@ func labelKeysToOC(metric *otlpmetrics.Metric) *labelKeys {
 	// i.e. theoretically points in the same metric may have different set of labels.
 	//
 	// So what we do in this translator:
-	// - Scan all points and their labels to generate a unique set of all label keys
-	// used across the metric, sort them and set in the MetricDescriptor.
+	// - Scan all points and their labels to find all label keys used across the metric,
+	// sort them and set in the MetricDescriptor.
 	// - For each point we generate an ordered list of label values,
 	// matching the order of label keys returned here (see `labelValuesToOC` function).
 	// - If the value for particular label key is missing in the point, we set it to default
