@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"go.opencensus.io/stats"
-	"go.opencensus.io/tag"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
@@ -69,10 +68,6 @@ type memoryLimiter struct {
 	// testing different values.
 	readMemStatsFn func(m *runtime.MemStats)
 
-	statsTags []tag.Mutator
-
-	processorCtx context.Context
-
 	// Fields used for logging.
 	procName               string
 	logger                 *zap.Logger
@@ -115,8 +110,6 @@ func New(
 		ballastSize:     ballastSize,
 		ticker:          time.NewTicker(checkInterval),
 		readMemStatsFn:  runtime.ReadMemStats,
-		statsTags:       processor.StatsTagsForBatch(name, "", ""),
-		processorCtx:    obsreport.ProcessorContext(context.Background(), name),
 		procName:        name,
 		logger:          logger,
 	}
@@ -131,11 +124,11 @@ func (ml *memoryLimiter) ConsumeTraceData(
 	td consumerdata.TraceData,
 ) error {
 
+	ctx = obsreport.ProcessorContext(ctx, ml.procName)
 	if ml.forcingDrop() {
 		numSpans := len(td.Spans)
-		stats.RecordWithTags(
+		stats.Record(
 			ctx,
-			ml.statsTags,
 			processor.StatDroppedSpanCount.M(int64(numSpans)),
 			processor.StatTraceBatchesDroppedCount.M(1))
 
@@ -144,14 +137,14 @@ func (ml *memoryLimiter) ConsumeTraceData(
 		// 	to a receiver (ie.: a receiver is on the call stack). For now it
 		// 	assumes that the pipeline is properly configured and a receiver is on the
 		// 	callstack.
-		obsreport.ProcessorTraceDataRefused(ml.processorCtx, td)
+		obsreport.ProcessorTraceDataRefused(ctx, td)
 
 		return errForcedDrop
 	}
 
 	// Even if the next consumer returns error record the data as accepted by
 	// this processor.
-	obsreport.ProcessorTraceDataAccepted(ml.processorCtx, td)
+	obsreport.ProcessorTraceDataAccepted(ctx, td)
 	return ml.traceConsumer.ConsumeTraceData(ctx, td)
 }
 
@@ -160,11 +153,11 @@ func (ml *memoryLimiter) ConsumeMetricsData(
 	md consumerdata.MetricsData,
 ) error {
 
+	ctx = obsreport.ProcessorContext(ctx, ml.procName)
 	if ml.forcingDrop() {
 		numMetrics := len(md.Metrics)
-		stats.RecordWithTags(
+		stats.Record(
 			ctx,
-			ml.statsTags,
 			processor.StatDroppedMetricCount.M(int64(numMetrics)),
 			processor.StatMetricBatchesDroppedCount.M(1))
 
@@ -173,14 +166,14 @@ func (ml *memoryLimiter) ConsumeMetricsData(
 		// 	to a receiver (ie.: a receiver is on the call stack). For now it
 		// 	assumes that the pipeline is properly configured and a receiver is on the
 		// 	callstack.
-		obsreport.ProcessorMetricsDataRefused(ml.processorCtx, md)
+		obsreport.ProcessorMetricsDataRefused(ctx, md)
 
 		return errForcedDrop
 	}
 
 	// Even if the next consumer returns error record the data as accepted by
 	// this processor.
-	obsreport.ProcessorMetricsDataAccepted(ml.processorCtx, md)
+	obsreport.ProcessorMetricsDataAccepted(ctx, md)
 	return ml.metricsConsumer.ConsumeMetricsData(ctx, md)
 }
 

@@ -36,7 +36,6 @@ import (
 
 type queuedSpanProcessor struct {
 	name                     string
-	processorCtx             context.Context
 	queue                    *queue.BoundedQueue
 	logger                   *zap.Logger
 	sender                   consumer.TraceConsumer
@@ -69,7 +68,6 @@ func newQueuedSpanProcessor(sender consumer.TraceConsumer, opts options) *queued
 	boundedQueue := queue.NewBoundedQueue(opts.queueSize, func(item interface{}) {})
 	return &queuedSpanProcessor{
 		name:                     opts.name,
-		processorCtx:             obsreport.ProcessorContext(context.Background(), opts.name),
 		queue:                    boundedQueue,
 		logger:                   opts.logger,
 		numWorkers:               opts.numWorkers,
@@ -83,7 +81,11 @@ func newQueuedSpanProcessor(sender consumer.TraceConsumer, opts options) *queued
 // Start is invoked during service startup.
 func (sp *queuedSpanProcessor) Start(host component.Host) error {
 	// emit 0's so that the metric is present and reported, rather than absent
-	stats.Record(sp.processorCtx, processor.StatTraceBatchesDroppedCount.M(int64(0)), processor.StatDroppedSpanCount.M(int64(0)))
+	ctx := obsreport.ProcessorContext(host.Context(), sp.name)
+	stats.Record(
+		ctx,
+		processor.StatTraceBatchesDroppedCount.M(int64(0)),
+		processor.StatDroppedSpanCount.M(int64(0)))
 
 	sp.queue.StartConsumers(sp.numWorkers, func(item interface{}) {
 		value := item.(*queueItem)
@@ -100,7 +102,7 @@ func (sp *queuedSpanProcessor) Start(host component.Host) error {
 				return
 			case <-ticker.C:
 				length := int64(sp.queue.Size())
-				stats.Record(sp.processorCtx, statQueueLength.M(length))
+				stats.Record(ctx, statQueueLength.M(length))
 			}
 		}
 	}()
@@ -118,6 +120,7 @@ func (sp *queuedSpanProcessor) Stop() {
 
 // ConsumeTraceData implements the SpanProcessor interface
 func (sp *queuedSpanProcessor) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
+	ctx = obsreport.ProcessorContext(ctx, sp.name)
 	item := &queueItem{
 		queuedTime: time.Now(),
 		td:         td,
@@ -126,7 +129,7 @@ func (sp *queuedSpanProcessor) ConsumeTraceData(ctx context.Context, td consumer
 
 	statsTags := processor.StatsTagsForBatch(sp.name, processor.ServiceNameForNode(td.Node), td.SourceFormat)
 	numSpans := len(td.Spans)
-	stats.RecordWithTags(context.Background(), statsTags, processor.StatReceivedSpanCount.M(int64(numSpans)))
+	stats.RecordWithTags(ctx, statsTags, processor.StatReceivedSpanCount.M(int64(numSpans)))
 
 	addedToQueue := sp.queue.Produce(item)
 	if !addedToQueue {
@@ -136,7 +139,7 @@ func (sp *queuedSpanProcessor) ConsumeTraceData(ctx context.Context, td consumer
 		// record this as "refused" instead of "dropped".
 		sp.onItemDropped(item, statsTags)
 	} else {
-		obsreport.ProcessorTraceDataAccepted(sp.processorCtx, td)
+		obsreport.ProcessorTraceDataAccepted(ctx, td)
 	}
 	return nil
 }
@@ -225,9 +228,9 @@ func (sp *queuedSpanProcessor) processItemFromQueue(item *queueItem) {
 
 func (sp *queuedSpanProcessor) onItemDropped(item *queueItem, statsTags []tag.Mutator) {
 	numSpans := len(item.td.Spans)
-	stats.RecordWithTags(context.Background(), statsTags, processor.StatDroppedSpanCount.M(int64(numSpans)), processor.StatTraceBatchesDroppedCount.M(int64(1)))
+	stats.RecordWithTags(item.ctx, statsTags, processor.StatDroppedSpanCount.M(int64(numSpans)), processor.StatTraceBatchesDroppedCount.M(int64(1)))
 
-	obsreport.ProcessorTraceDataDropped(sp.processorCtx, item.td)
+	obsreport.ProcessorTraceDataDropped(item.ctx, item.td)
 
 	sp.logger.Warn("Span batch dropped",
 		zap.String("processor", sp.name),
