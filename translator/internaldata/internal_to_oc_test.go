@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package internal
+package internaldata
 
 import (
 	"testing"
@@ -390,7 +390,7 @@ func TestInternalToOC(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got := internalToOC(test.internal)
+			got := InternalToOC(test.internal)
 			assert.EqualValues(t, test.oc, got)
 		})
 	}

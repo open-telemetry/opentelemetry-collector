@@ -107,7 +107,7 @@ const typeAndNameSeparator = "/"
 // can be handled by the Config.
 type Factories struct {
 	// Receivers maps receiver type names in the config to the respective factory.
-	Receivers map[string]receiver.Factory
+	Receivers map[string]receiver.BaseFactory
 
 	// Processors maps processor type names in the config to the respective factory.
 	Processors map[string]processor.Factory
@@ -314,7 +314,7 @@ func loadService(v *viper.Viper) (configmodels.Service, error) {
 	return service, nil
 }
 
-func loadReceivers(v *viper.Viper, factories map[string]receiver.Factory) (configmodels.Receivers, error) {
+func loadReceivers(v *viper.Viper, factories map[string]receiver.BaseFactory) (configmodels.Receivers, error) {
 	// Get the list of all "receivers" sub vipers from config source.
 	subViper := v.Sub(receiversKeyName)
 

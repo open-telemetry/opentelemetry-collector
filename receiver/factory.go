@@ -93,8 +93,8 @@ type FactoryV2 interface {
 // Build takes a list of receiver factories and returns a map of type map[string]Factory
 // with factory type as keys. It returns a non-nil error when more than one factories
 // have the same type.
-func Build(factories ...Factory) (map[string]Factory, error) {
-	fMap := map[string]Factory{}
+func Build(factories ...BaseFactory) (map[string]BaseFactory, error) {
+	fMap := map[string]BaseFactory{}
 	for _, f := range factories {
 		if _, ok := fMap[f.Type()]; ok {
 			return fMap, fmt.Errorf("duplicate receiver factory %q", f.Type())

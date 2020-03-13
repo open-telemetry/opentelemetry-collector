@@ -321,6 +321,32 @@ func TestReceiversBuilder_Unused(t *testing.T) {
 	receivers.StopAll()
 }
 
+func TestReceiversBuilder_InternalToOcTraceConverter(t *testing.T) {
+	factories, err := config.ExampleComponents()
+	assert.Nil(t, err)
+
+	npf := &processortest.NopProcessorFactory{}
+	factories.Processors[npf.Type()] = npf
+
+	newStyleReceiver := &newStyleReceiverFactory{}
+	factories.Receivers[newStyleReceiver.Type()] = newStyleReceiver
+
+	cfg, err := config.LoadConfigFile(t, "testdata/new_style_receiver_factory.yaml", factories)
+	require.Nil(t, err)
+
+	// Build the pipeline
+	allExporters, err := NewExportersBuilder(zap.NewNop(), cfg, factories.Exporters).Build()
+	assert.NoError(t, err)
+	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), cfg, allExporters, factories.Processors).Build()
+	assert.NoError(t, err)
+	receivers, err := NewReceiversBuilder(zap.NewNop(), cfg, pipelineProcessors, factories.Receivers).Build()
+	assert.NoError(t, err)
+	assert.NotNil(t, receivers)
+
+	receiver := receivers[cfg.Receivers["newstylereceiver"]].receiver
+	assert.NotNil(t, receiver)
+}
+
 // badReceiverFactory is a factory that returns no error but returns a nil object.
 type badReceiverFactory struct{}
 
@@ -353,4 +379,38 @@ func (b *badReceiverFactory) CreateMetricsReceiver(
 	consumer consumer.MetricsConsumer,
 ) (receiver.MetricsReceiver, error) {
 	return nil, nil
+}
+
+// newStyleReceiverFactory defines FactoryV2 interface
+type newStyleReceiverFactory struct{}
+
+var _ receiver.FactoryV2 = (*newStyleReceiverFactory)(nil)
+
+func (b *newStyleReceiverFactory) Type() string {
+	return "newstylereceiver"
+}
+
+func (b *newStyleReceiverFactory) CreateDefaultConfig() configmodels.Receiver {
+	return &configmodels.ReceiverSettings{}
+}
+
+func (b *newStyleReceiverFactory) CustomUnmarshaler() receiver.CustomUnmarshaler {
+	return nil
+}
+
+func (b *newStyleReceiverFactory) CreateTraceReceiverV2(
+	ctx context.Context,
+	logger *zap.Logger,
+	cfg configmodels.Receiver,
+	nextConsumer consumer.TraceConsumerV2,
+) (receiver.TraceReceiver, error) {
+	return &config.ExampleReceiverProducer{}, nil
+}
+
+func (b *newStyleReceiverFactory) CreateMetricsReceiverV2(
+	logger *zap.Logger,
+	cfg configmodels.Receiver,
+	consumer consumer.MetricsConsumerV2,
+) (receiver.MetricsReceiver, error) {
+	return &config.ExampleReceiverProducer{}, nil
 }
