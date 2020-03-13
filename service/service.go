@@ -322,20 +322,25 @@ func (app *Application) notifyPipelineReady() error {
 	return nil
 }
 
-func (app *Application) notifyPipelineNotReady() {
+func (app *Application) notifyPipelineNotReady() error {
 	// Notify on reverse order.
+	var errs []error
 	for i := len(app.extensions) - 1; i >= 0; i-- {
 		ext := app.extensions[i]
 		if pw, ok := ext.(extension.PipelineWatcher); ok {
 			if err := pw.NotReady(); err != nil {
-				app.logger.Warn(
-					"Error notifying extension that the pipeline was shutdown",
-					zap.Error(err),
-					zap.String("extension", app.config.Service.Extensions[i]),
-				)
+				errs = append(errs, errors.Wrapf(err,
+					"error notifying extension %q that the pipeline was shutdown",
+					app.config.Service.Extensions[i]))
 			}
 		}
 	}
+
+	if len(errs) != 0 {
+		return oterr.CombineErrors(errs)
+	}
+
+	return nil
 }
 
 func (app *Application) shutdownPipelines() error {
@@ -370,18 +375,23 @@ func (app *Application) shutdownPipelines() error {
 	return nil
 }
 
-func (app *Application) shutdownExtensions() {
+func (app *Application) shutdownExtensions() error {
 	// Shutdown on reverse order.
+	var errs []error
 	for i := len(app.extensions) - 1; i >= 0; i-- {
 		ext := app.extensions[i]
 		if err := ext.Shutdown(); err != nil {
-			app.logger.Warn(
-				"Error shutting down extension",
-				zap.Error(err),
-				zap.String("extension", app.config.Service.Extensions[i]),
-			)
+			errs = append(errs, errors.Wrapf(err,
+				"error shutting down extension %q",
+				app.config.Service.Extensions[i]))
 		}
 	}
+
+	if len(errs) != 0 {
+		return oterr.CombineErrors(errs)
+	}
+
+	return nil
 }
 
 func (app *Application) execute() error {
@@ -422,14 +432,20 @@ func (app *Application) execute() error {
 	runtime.KeepAlive(ballast)
 	app.logger.Info("Starting shutdown...")
 
-	app.notifyPipelineNotReady()
+	err = app.notifyPipelineNotReady()
+	if err != nil {
+		errs = append(errs, errors.Wrap(err, "failed to notify that pipeline is not ready"))
+	}
 
 	err = app.shutdownPipelines()
 	if err != nil {
 		errs = append(errs, errors.Wrap(err, "failed to shutdown pipelines"))
 	}
 
-	app.shutdownExtensions()
+	err = app.shutdownExtensions()
+	if err != nil {
+		errs = append(errs, errors.Wrap(err, "failed to shutdown extensions"))
+	}
 
 	AppTelemetry.shutdown()
 
