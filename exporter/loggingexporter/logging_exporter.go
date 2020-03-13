@@ -86,7 +86,7 @@ func (s *loggingExporter) pushTraceData(
 			id := td.Node.Identifier
 			if id != nil {
 				buf.logEntry("%20s: %s", "HostName", id.HostName)
-				buf.logEntry("%20s: %s", "PID", id.Pid)
+				buf.logEntry("%20s: %d", "PID", id.Pid)
 			}
 			li := td.Node.LibraryInfo
 			if li != nil {
