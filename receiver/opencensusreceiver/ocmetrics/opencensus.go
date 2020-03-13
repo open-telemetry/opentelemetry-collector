@@ -23,7 +23,6 @@ import (
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"go.opencensus.io/trace"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
@@ -112,19 +111,14 @@ func (ocr *Receiver) processReceivedMetrics(longLivedRPCCtx context.Context, ni 
 }
 
 func (ocr *Receiver) sendToNextConsumer(longLivedRPCCtx context.Context, md consumerdata.MetricsData) {
-	// Do not use longLivedRPCCtx to start the span so this trace ends right at this
-	// function, and the span is not a child of any span from the stream context.
-	tmpCtx := obsreport.StartMetricsReceiveOp(
+	// Pass longLivedRPCCtx as an option and use a new context to start the
+	// observability of the operation so any tracing end right at this function,
+	// and the span is not a child of any span from the stream context.
+	ctx := obsreport.StartMetricsReceiveOp(
 		context.Background(),
 		ocr.instanceName,
-		receiverTransport)
-
-	// If the starting RPC has a parent span, then add it as a parent link.
-	obsreport.SetParentLink(tmpCtx, longLivedRPCCtx)
-
-	// TODO: We should offer a version of StartTraceDataReceiveOp that starts the Span
-	// with as root, and links to the longLived context.
-	ctx := trace.NewContext(longLivedRPCCtx, trace.FromContext(tmpCtx))
+		receiverTransport,
+		obsreport.WithLongLivedCtx(longLivedRPCCtx))
 
 	numTimeSeries := 0
 	numPoints := 0

@@ -348,6 +348,67 @@ func Test_obsreport_ExportMetricsOp(t *testing.T) {
 	checkValueForSumView(t, mExporterFailedToSendMetricPoints.Name(), exporterTags, failedToSendPoints)
 }
 
+func Test_obsreport_ReceiveWithLongLivedCtx(t *testing.T) {
+	ss := &spanStore{}
+	trace.RegisterExporter(ss)
+	defer trace.UnregisterExporter(ss)
+
+	parentCtx, parentSpan := trace.StartSpan(context.Background(),
+		t.Name(), trace.WithSampler(trace.AlwaysSample()))
+	defer parentSpan.End()
+
+	longLivedCtx := ReceiverContext(parentCtx, receiver, transport, legacyName)
+	ops := []struct {
+		numSpans int
+		err      error
+	}{
+		{numSpans: 13},
+		{numSpans: 42, err: errFake},
+	}
+	for _, op := range ops {
+		// Use a new context on each operation to simulate distinct operations
+		// under the same long lived context.
+		ctx := StartTraceDataReceiveOp(
+			context.Background(),
+			receiver,
+			transport,
+			WithAlwaysSample(), // Needs to be used here to ensure the span is sampled.
+			WithLongLivedCtx(longLivedCtx))
+		assert.NotNil(t, ctx)
+
+		EndTraceDataReceiveOp(
+			ctx,
+			format,
+			op.numSpans,
+			op.err)
+	}
+
+	spans := ss.PullAllSpans()
+	require.Equal(t, len(ops), len(spans))
+
+	for i, span := range spans {
+		require.Equal(t, 1, len(span.Links))
+		link := span.Links[0]
+		assert.Equal(t, trace.LinkTypeParent, link.Type)
+		assert.Equal(t, parentSpan.SpanContext().TraceID, link.TraceID)
+		assert.Equal(t, parentSpan.SpanContext().SpanID, link.SpanID)
+		assert.Equal(t, receiverPrefix+receiver+receiveTraceDataOperationSuffix, span.Name)
+		assert.Equal(t, transport, span.Attributes[TransportKey])
+		switch ops[i].err {
+		case nil:
+			assert.Equal(t, int64(ops[i].numSpans), span.Attributes[AcceptedSpansKey])
+			assert.Equal(t, int64(0), span.Attributes[RefusedSpansKey])
+			assert.Equal(t, okStatus, span.Status)
+		case errFake:
+			assert.Equal(t, int64(0), span.Attributes[AcceptedSpansKey])
+			assert.Equal(t, int64(ops[i].numSpans), span.Attributes[RefusedSpansKey])
+			assert.Equal(t, ops[i].err.Error(), span.Status.Message)
+		default:
+			t.Fatalf("unexpected error: %v", ops[i].err)
+		}
+	}
+}
+
 func setupViews() (doneFn func(), err error) {
 	genLegacy := true
 	genNew := true

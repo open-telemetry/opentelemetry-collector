@@ -68,6 +68,36 @@ var (
 		stats.UnitDimensionless)
 )
 
+// StartReceiveOptions has the options related to starting a receive operation.
+type StartReceiveOptions struct {
+	// LongLivedCtx is used in cases when individual receive messages happen
+	// under a single long lived context.
+	LongLivedCtx context.Context
+
+	// AlwaysSample is used typically in tests to enforce the span added to the
+	// operation context to be sampled.
+	AlwaysSample bool
+}
+
+// StartReceiveOption function applues changes to StartReceiveOptions.
+type StartReceiveOption func(*StartReceiveOptions)
+
+// WithLongLivedCtx starts a single receive operation under the long lived
+// context of the RPC or connection.
+func WithLongLivedCtx(longLivedCtx context.Context) StartReceiveOption {
+	return func(opts *StartReceiveOptions) {
+		opts.LongLivedCtx = longLivedCtx
+	}
+}
+
+// WithAlwaysSample is used to force the span generated for the operation to be
+// sampled, typically it is used for tests.
+func WithAlwaysSample() StartReceiveOption {
+	return func(opts *StartReceiveOptions) {
+		opts.AlwaysSample = true
+	}
+}
+
 // StartTraceDataReceiveOp is called when a \request is received from a client.
 // The returned context should be used in other calls to the obsreport functions
 // dealing with the same receive operation.
@@ -75,12 +105,14 @@ func StartTraceDataReceiveOp(
 	operationCtx context.Context,
 	receiver string,
 	transport string,
+	opt ...StartReceiveOption,
 ) context.Context {
-	return traceReceiveTraceDataOp(
+	return traceReceiveOp(
 		operationCtx,
 		receiver,
 		transport,
-		receiveTraceDataOperationSuffix)
+		receiveTraceDataOperationSuffix,
+		opt...)
 }
 
 // EndTraceDataReceiveOp completes the receive operation that was started with
@@ -118,12 +150,14 @@ func StartMetricsReceiveOp(
 	operationCtx context.Context,
 	receiver string,
 	transport string,
+	opt ...StartReceiveOption,
 ) context.Context {
-	return traceReceiveTraceDataOp(
+	return traceReceiveOp(
 		operationCtx,
 		receiver,
 		transport,
-		receiverMetricsOperationSuffix)
+		receiverMetricsOperationSuffix,
+		opt...)
 }
 
 // EndMetricsReceiveOp completes the receive operation that was started with
@@ -183,16 +217,44 @@ func ReceiverContext(
 	return ctx
 }
 
-// traceReceiveTraceDataOp creates the span used to trace the operation. Returning
-// the updated context and the created span.
-func traceReceiveTraceDataOp(
+// traceReceiveOp creates the span used to trace the operation. Returning
+// the updated context with the created span.
+func traceReceiveOp(
 	receiverCtx context.Context,
 	receiverName string,
 	transport string,
 	operationSuffix string,
+	opt ...StartReceiveOption,
 ) context.Context {
+	var opts StartReceiveOptions
+	for _, o := range opt {
+		o(&opts)
+	}
+
+	var sampleOption []trace.StartOption
+	if opts.AlwaysSample {
+		sampleOption = []trace.StartOption{
+			trace.WithSampler(trace.AlwaysSample()),
+		}
+	}
+
+	var ctx context.Context
+	var span *trace.Span
 	spanName := receiverPrefix + receiverName + operationSuffix
-	ctx, span := trace.StartSpan(receiverCtx, spanName)
+	if opts.LongLivedCtx == nil {
+		ctx, span = trace.StartSpan(receiverCtx, spanName, sampleOption...)
+	} else {
+		// Do not use LongLivedRPCCtx to start the span so this trace ends when
+		// the EndTraceDataReceiveOp is called. Here is safe to ignore the returned
+		// context since it is not used below.
+		_, span = trace.StartSpan(receiverCtx, spanName, sampleOption...)
+
+		// If the long lived context has a parent span, then add it as a parent link.
+		setParentLink(opts.LongLivedCtx, span)
+
+		ctx = trace.NewContext(opts.LongLivedCtx, span)
+	}
+
 	span.AddAttributes(trace.StringAttribute(
 		TransportKey, transport))
 	return ctx
