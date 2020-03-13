@@ -88,7 +88,7 @@ type StartReceiveOption func(*StartReceiveOptions)
 // Example:
 //
 //    func (r *receiver) ClientConnect(ctx context.Context, rcvChan <-chan consumerdata.TraceData) {
-//        longLivedCtx := ctx
+//        longLivedCtx := obsreport.ReceiverContext(ctx, r.config.Name(), r.transport, "")
 //        for {
 //            // Since the context outlives the individual receive operations call obsreport using
 //            // WithLongLivedCtx().
