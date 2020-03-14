@@ -1,0 +1,13 @@
+receivers:
+  newstylereceiver:
+processors:
+  nop:
+exporters:
+  exampleexporter:
+
+service:
+  pipelines:
+    traces:
+      receivers: [newstylereceiver]
+      processors: [nop] # trace pipeline requires a processor
+      exporters: [exampleexporter]

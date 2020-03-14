@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package internal
+package internaldata
 
 import (
 	"fmt"
@@ -39,7 +39,7 @@ var (
 	emptyStatus      = data.SpanStatus{}
 )
 
-func internalToOC(td data.TraceData) []consumerdata.TraceData {
+func InternalToOC(td data.TraceData) []consumerdata.TraceData {
 	ocTraceData := consumerdata.TraceData{
 		SourceFormat: sourceFormat,
 	}

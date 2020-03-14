@@ -67,25 +67,25 @@ func (f *TestFactory) CreateMetricsReceiver(
 
 func TestFactoriesBuilder(t *testing.T) {
 	type testCase struct {
-		in  []Factory
-		out map[string]Factory
+		in  []BaseFactory
+		out map[string]BaseFactory
 		err bool
 	}
 
 	testCases := []testCase{
 		{
-			in: []Factory{
+			in: []BaseFactory{
 				&TestFactory{"e1"},
 				&TestFactory{"e2"},
 			},
-			out: map[string]Factory{
+			out: map[string]BaseFactory{
 				"e1": &TestFactory{"e1"},
 				"e2": &TestFactory{"e2"},
 			},
 			err: false,
 		},
 		{
-			in: []Factory{
+			in: []BaseFactory{
 				&TestFactory{"e1"},
 				&TestFactory{"e1"},
 			},

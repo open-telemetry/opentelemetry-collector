@@ -56,7 +56,7 @@ func TestDefaultComponents(t *testing.T) {
 		"pprof":        &pprofextension.Factory{},
 		"zpages":       &zpagesextension.Factory{},
 	}
-	expectedReceivers := map[string]receiver.Factory{
+	expectedReceivers := map[string]receiver.BaseFactory{
 		"jaeger":     &jaegerreceiver.Factory{},
 		"zipkin":     &zipkinreceiver.Factory{},
 		"prometheus": &prometheusreceiver.Factory{},
