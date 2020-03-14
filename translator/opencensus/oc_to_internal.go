@@ -353,7 +353,7 @@ func ocMessageEventToInternalAttrs(msgEvent *octrace.Span_TimeEvent_MessageEvent
 }
 
 func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Resource) *data.Resource {
-	resource := &data.Resource{}
+	resource := data.NewResource()
 
 	// Number of special fields in the Node. See the code below that deals with special fields.
 	const specialNodeAttrCount = 7

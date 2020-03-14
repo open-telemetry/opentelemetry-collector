@@ -182,7 +182,7 @@ func TestInternalToOC(t *testing.T) {
 	timestampP, err := ptypes.TimestampProto(time.Date(2020, 3, 9, 20, 26, 0, 0, time.UTC))
 	assert.NoError(t, err)
 
-	resource := &data.Resource{}
+	resource := data.NewResource()
 	resource.SetAttributes(
 		data.AttributesMap{
 			"label1": data.NewAttributeValueString("value1"),
@@ -232,7 +232,7 @@ func TestInternalToOC(t *testing.T) {
 	span3.SetStartTime(internal.TimestampToUnixnano(timestampP))
 	span3.SetEndTime(internal.TimestampToUnixnano(timestampP))
 	span3ResourceType := "resource2"
-	span3Resource := &data.Resource{}
+	span3Resource := data.NewResource()
 	span3Resource.SetAttributes(data.AttributesMap{
 		conventions.OCAttributeResourceType: data.NewAttributeValueString(span3ResourceType),
 	})
@@ -320,7 +320,7 @@ func TestInternalToOC(t *testing.T) {
 		{
 			name: "no-spans",
 			internal: data.NewTraceData([]*data.ResourceSpans{
-				data.NewResourceSpans(&data.Resource{}, []*data.Span{}),
+				data.NewResourceSpans(data.NewResource(), []*data.Span{}),
 			}),
 			oc: []consumerdata.TraceData{
 				{
@@ -350,7 +350,7 @@ func TestInternalToOC(t *testing.T) {
 		{
 			name: "two-spans",
 			internal: data.NewTraceData([]*data.ResourceSpans{
-				data.NewResourceSpans(&data.Resource{}, []*data.Span{span1, span2}),
+				data.NewResourceSpans(data.NewResource(), []*data.Span{span1, span2}),
 			}),
 			oc: []consumerdata.TraceData{
 				{

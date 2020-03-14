@@ -34,12 +34,12 @@ import (
 
 func TestOcNodeResourceToInternal(t *testing.T) {
 	resource := ocNodeResourceToInternal(nil, nil)
-	assert.EqualValues(t, &data.Resource{}, resource)
+	assert.EqualValues(t, data.NewResource(), resource)
 
 	ocNode := &occommon.Node{}
 	ocResource := &ocresource.Resource{}
 	resource = ocNodeResourceToInternal(ocNode, ocResource)
-	assert.EqualValues(t, &data.Resource{}, resource)
+	assert.EqualValues(t, data.NewResource(), resource)
 
 	ts, err := ptypes.TimestampProto(time.Date(2020, 2, 11, 20, 26, 0, 0, time.UTC))
 	assert.NoError(t, err)
