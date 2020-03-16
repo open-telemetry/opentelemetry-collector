@@ -68,6 +68,58 @@ var (
 		stats.UnitDimensionless)
 )
 
+// StartReceiveOptions has the options related to starting a receive operation.
+type StartReceiveOptions struct {
+	// LongLivedCtx when true indicates that the context passed in the call
+	// outlives the individual receive operation. See WithLongLivedCtx() for
+	// more information.
+	LongLivedCtx bool
+}
+
+// StartReceiveOption function applues changes to StartReceiveOptions.
+type StartReceiveOption func(*StartReceiveOptions)
+
+// WithLongLivedCtx indicates that the context passed in the call outlives the
+// receive operation at hand. Typically the long lived context is associated
+// to a connection, eg.: a gRPC stream or a TCP connection, for which many
+// batches of data are received in individual operations without a corresponding
+// new context per operation.
+//
+// Example:
+//
+//    func (r *receiver) ClientConnect(ctx context.Context, rcvChan <-chan consumerdata.TraceData) {
+//        longLivedCtx := obsreport.ReceiverContext(ctx, r.config.Name(), r.transport, "")
+//        for {
+//            // Since the context outlives the individual receive operations call obsreport using
+//            // WithLongLivedCtx().
+//            ctx := obsreport.StartTraceDataReceiveOp(
+//                longLivedCtx,
+//                r.config.Name(),
+//                r.transport,
+//                obsreport.WithLongLivedCtx())
+//
+//            td, ok := <-rcvChan
+//            var err error
+//            if ok {
+//                err = r.nextConsumer.ConsumeTraceData(ctx, td)
+//            }
+//            obsreport.EndTraceDataReceiveOp(
+//                ctx,
+//                r.format,
+//                len(td.Spans),
+//                err)
+//            if !ok {
+//                break
+//            }
+//        }
+//    }
+//
+func WithLongLivedCtx() StartReceiveOption {
+	return func(opts *StartReceiveOptions) {
+		opts.LongLivedCtx = true
+	}
+}
+
 // StartTraceDataReceiveOp is called when a \request is received from a client.
 // The returned context should be used in other calls to the obsreport functions
 // dealing with the same receive operation.
@@ -75,12 +127,14 @@ func StartTraceDataReceiveOp(
 	operationCtx context.Context,
 	receiver string,
 	transport string,
+	opt ...StartReceiveOption,
 ) context.Context {
-	return traceReceiveTraceDataOp(
+	return traceReceiveOp(
 		operationCtx,
 		receiver,
 		transport,
-		receiveTraceDataOperationSuffix)
+		receiveTraceDataOperationSuffix,
+		opt...)
 }
 
 // EndTraceDataReceiveOp completes the receive operation that was started with
@@ -118,12 +172,14 @@ func StartMetricsReceiveOp(
 	operationCtx context.Context,
 	receiver string,
 	transport string,
+	opt ...StartReceiveOption,
 ) context.Context {
-	return traceReceiveTraceDataOp(
+	return traceReceiveOp(
 		operationCtx,
 		receiver,
 		transport,
-		receiverMetricsOperationSuffix)
+		receiverMetricsOperationSuffix,
+		opt...)
 }
 
 // EndMetricsReceiveOp completes the receive operation that was started with
@@ -183,16 +239,37 @@ func ReceiverContext(
 	return ctx
 }
 
-// traceReceiveTraceDataOp creates the span used to trace the operation. Returning
-// the updated context and the created span.
-func traceReceiveTraceDataOp(
+// traceReceiveOp creates the span used to trace the operation. Returning
+// the updated context with the created span.
+func traceReceiveOp(
 	receiverCtx context.Context,
 	receiverName string,
 	transport string,
 	operationSuffix string,
+	opt ...StartReceiveOption,
 ) context.Context {
+	var opts StartReceiveOptions
+	for _, o := range opt {
+		o(&opts)
+	}
+
+	var ctx context.Context
+	var span *trace.Span
 	spanName := receiverPrefix + receiverName + operationSuffix
-	ctx, span := trace.StartSpan(receiverCtx, spanName)
+	if !opts.LongLivedCtx {
+		ctx, span = trace.StartSpan(receiverCtx, spanName)
+	} else {
+		// Since the receiverCtx is long lived do not use it to start the span.
+		// This way this trace ends when the EndTraceDataReceiveOp is called.
+		// Here is safe to ignore the returned context since it is not used below.
+		_, span = trace.StartSpan(context.Background(), spanName)
+
+		// If the long lived context has a parent span, then add it as a parent link.
+		setParentLink(receiverCtx, span)
+
+		ctx = trace.NewContext(receiverCtx, span)
+	}
+
 	span.AddAttributes(trace.StringAttribute(
 		TransportKey, transport))
 	return ctx

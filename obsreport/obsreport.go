@@ -38,8 +38,8 @@ var (
 	okStatus = trace.Status{Code: trace.StatusCodeOK}
 )
 
-// SetParentLink tries to retrieve a span from parentCtx and if one exists
-// sets its SpanID, TraceID as a link to the Span from the provided context.
+// setParentLink tries to retrieve a span from parentCtx and if one exists
+// sets its SpanID, TraceID as a link to the given child Span.
 // It returns true only if it retrieved a parent span from the context.
 //
 // This is typically used when the parentCtx may already have a trace and is
@@ -47,15 +47,14 @@ var (
 // traces for individual operations under the long lived trace associated to
 // the parentCtx. This function is a helper that encapsulates the work of
 // linking the short lived trace/span to the longer one.
-func SetParentLink(ctx, parentCtx context.Context) bool {
+func setParentLink(parentCtx context.Context, childSpan *trace.Span) bool {
 	parentSpanFromRPC := trace.FromContext(parentCtx)
 	if parentSpanFromRPC == nil {
 		return false
 	}
 
 	psc := parentSpanFromRPC.SpanContext()
-	span := trace.FromContext(ctx)
-	span.AddLink(trace.Link{
+	childSpan.AddLink(trace.Link{
 		SpanID:  psc.SpanID,
 		TraceID: psc.TraceID,
 		Type:    trace.LinkTypeParent,

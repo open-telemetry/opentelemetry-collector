@@ -22,7 +22,6 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"go.opencensus.io/trace"
 
 	"github.com/open-telemetry/opentelemetry-collector/client"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
@@ -140,19 +139,11 @@ func (ocr *Receiver) processReceivedMsg(
 }
 
 func (ocr *Receiver) sendToNextConsumer(longLivedRPCCtx context.Context, tracedata *consumerdata.TraceData) error {
-	// Do not use longLivedRPCCtx to start the span so this trace ends right at this
-	// function, and the span is not a child of any span from the stream context.
-	tmpCtx := obsreport.StartTraceDataReceiveOp(
-		context.Background(),
+	ctx := obsreport.StartTraceDataReceiveOp(
+		longLivedRPCCtx,
 		ocr.instanceName,
-		receiverTransport)
-
-	// If the starting RPC has a parent span, then add it as a parent link.
-	obsreport.SetParentLink(tmpCtx, longLivedRPCCtx)
-
-	// TODO: We should offer a version of StartTraceDataReceiveOp that starts the Span
-	// with as root, and links to the longLived context.
-	ctx := trace.NewContext(longLivedRPCCtx, trace.FromContext(tmpCtx))
+		receiverTransport,
+		obsreport.WithLongLivedCtx())
 
 	if c, ok := client.FromGRPC(ctx); ok {
 		ctx = client.NewContext(ctx, c)
