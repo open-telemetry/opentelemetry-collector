@@ -49,13 +49,13 @@ func ResourceMetricsToMetricsData(resourceMetrics *otlpmetrics.ResourceMetrics) 
 		Resource: resource,
 	}
 
-	// TODO: Do not ignore InstrumentationLibrary properties
-
 	if len(resourceMetrics.InstrumentationLibraryMetrics) == 0 {
 		return md
 	}
 
-	// This is a size approximation.
+	// Allocate slice with a capacity approximated for the case when there is only one
+	// InstrumentationLibrary or the first InstrumentationLibrary contains most of the data.
+	// This is a best guess only that reduced slice re-allocations.
 	metrics := make([]*ocmetrics.Metric, 0, len(resourceMetrics.InstrumentationLibraryMetrics[0].Metrics))
 	for _, il := range resourceMetrics.InstrumentationLibraryMetrics {
 		for _, metric := range il.Metrics {

@@ -52,13 +52,13 @@ func ResourceSpansToTraceData(resourceSpans *otlptrace.ResourceSpans) consumerda
 		SourceFormat: sourceFormat,
 	}
 
-	// TODO: Do not ignore InstrumentationLibrary properties
-
 	if len(resourceSpans.InstrumentationLibrarySpans) == 0 {
 		return td
 	}
 
-	// This is a size approximation.
+	// Allocate slice with a capacity approximated for the case when there is only one
+	// InstrumentationLibrary or the first InstrumentationLibrary contains most of the data.
+	// This is a best guess only that reduced slice re-allocations.
 	spans := make([]*octrace.Span, 0, len(resourceSpans.InstrumentationLibrarySpans[0].Spans))
 	for _, ils := range resourceSpans.InstrumentationLibrarySpans {
 		for _, span := range ils.Spans {
