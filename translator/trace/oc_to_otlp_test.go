@@ -453,7 +453,11 @@ func TestOcToOtlp(t *testing.T) {
 			otlp: []*otlptrace.ResourceSpans{
 				{
 					Resource: &otlpresource.Resource{},
-					Spans:    []*otlptrace.Span{otlpSpan1},
+					InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
+						{
+							Spans: []*otlptrace.Span{otlpSpan1},
+						},
+					},
 				},
 			},
 		},
@@ -468,7 +472,11 @@ func TestOcToOtlp(t *testing.T) {
 			otlp: []*otlptrace.ResourceSpans{
 				{
 					Resource: &otlpresource.Resource{},
-					Spans:    []*otlptrace.Span{otlpSpan1, otlpSpan2},
+					InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
+						{
+							Spans: []*otlptrace.Span{otlpSpan1, otlpSpan2},
+						},
+					},
 				},
 			},
 		},
@@ -483,11 +491,19 @@ func TestOcToOtlp(t *testing.T) {
 			otlp: []*otlptrace.ResourceSpans{
 				{
 					Resource: &otlpresource.Resource{},
-					Spans:    []*otlptrace.Span{otlpSpan1, otlpSpan2},
+					InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
+						{
+							Spans: []*otlptrace.Span{otlpSpan1, otlpSpan2},
+						},
+					},
 				},
 				{
 					Resource: &otlpresource.Resource{},
-					Spans:    []*otlptrace.Span{otlpSpan3},
+					InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
+						{
+							Spans: []*otlptrace.Span{otlpSpan3},
+						},
+					},
 				},
 			},
 		},
@@ -502,11 +518,19 @@ func TestOcToOtlp(t *testing.T) {
 			otlp: []*otlptrace.ResourceSpans{
 				{
 					Resource: &otlpresource.Resource{},
-					Spans:    []*otlptrace.Span{otlpSpan1, otlpSpan2},
+					InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
+						{
+							Spans: []*otlptrace.Span{otlpSpan1, otlpSpan2},
+						},
+					},
 				},
 				{
 					Resource: &otlpresource.Resource{},
-					Spans:    []*otlptrace.Span{otlpSpan3},
+					InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
+						{
+							Spans: []*otlptrace.Span{otlpSpan3},
+						},
+					},
 				},
 			},
 		},

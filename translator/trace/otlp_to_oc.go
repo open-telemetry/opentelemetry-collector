@@ -52,13 +52,18 @@ func ResourceSpansToTraceData(resourceSpans *otlptrace.ResourceSpans) consumerda
 		SourceFormat: sourceFormat,
 	}
 
-	if len(resourceSpans.Spans) == 0 {
+	// TODO: Do not ignore InstrumentationLibrary properties
+
+	if len(resourceSpans.InstrumentationLibrarySpans) == 0 {
 		return td
 	}
 
-	spans := make([]*octrace.Span, 0, len(resourceSpans.Spans))
-	for _, span := range resourceSpans.Spans {
-		spans = append(spans, spanToOC(span))
+	// This is a size approximation.
+	spans := make([]*octrace.Span, 0, len(resourceSpans.InstrumentationLibrarySpans[0].Spans))
+	for _, ils := range resourceSpans.InstrumentationLibrarySpans {
+		for _, span := range ils.Spans {
+			spans = append(spans, spanToOC(span))
+		}
 	}
 
 	td.Spans = spans
@@ -80,7 +85,7 @@ func spanToOC(span *otlptrace.Span) *octrace.Span {
 	return &octrace.Span{
 		TraceId:      span.TraceId,
 		SpanId:       span.SpanId,
-		Tracestate:   tracestateToOC(span.Tracestate),
+		Tracestate:   tracestateToOC(span.TraceState),
 		ParentSpanId: span.ParentSpanId,
 		Name: &octrace.TruncatableString{
 			Value: span.Name,
@@ -117,7 +122,7 @@ func linksToOCLinks(links []*otlptrace.Span_Link) []*octrace.Span_Link {
 		ocLink := &octrace.Span_Link{
 			TraceId:    link.TraceId,
 			SpanId:     link.SpanId,
-			Tracestate: tracestateToOC(link.Tracestate),
+			Tracestate: tracestateToOC(link.TraceState),
 			Attributes: attributesToOCSpanAttributes(link.Attributes, link.DroppedAttributesCount),
 		}
 		ocLinks = append(ocLinks, ocLink)

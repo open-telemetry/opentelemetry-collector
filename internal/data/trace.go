@@ -34,8 +34,10 @@ func NewTraceData(resourceSpans []*ResourceSpans) TraceData {
 // SpanCount calculates the total number of spans.
 func (td TraceData) SpanCount() int {
 	spanCount := 0
-	for _, rsl := range td.resourceSpans {
-		spanCount += len(rsl.spans)
+	for _, rs := range td.resourceSpans {
+		for _, ils := range rs.ils {
+			spanCount += len(ils.spans)
+		}
 	}
 	return spanCount
 }
@@ -54,11 +56,11 @@ type ResourceSpans struct {
 	resource *Resource
 
 	// A list of Spans that originate from a resource.
-	spans []*Span
+	ils []*InstrumentationLibrarySpans
 }
 
-func NewResourceSpans(resource *Resource, spans []*Span) *ResourceSpans {
-	return &ResourceSpans{resource, spans}
+func NewResourceSpans(resource *Resource, ils []*InstrumentationLibrarySpans) *ResourceSpans {
+	return &ResourceSpans{resource, ils}
 }
 
 func (m *ResourceSpans) Resource() *Resource {
@@ -69,12 +71,45 @@ func (m *ResourceSpans) SetResource(r *Resource) {
 	m.resource = r
 }
 
-func (m *ResourceSpans) Spans() []*Span {
-	return m.spans
+func (m *ResourceSpans) InstrumentationLibrarySpans() []*InstrumentationLibrarySpans {
+	return m.ils
 }
 
-func (m *ResourceSpans) SetSpans(s []*Span) {
-	m.spans = s
+func (m *ResourceSpans) SetInstrumentationLibrarySpans(s []*InstrumentationLibrarySpans) {
+	m.ils = s
+}
+
+// InstrumentationLibrarySpans represents a collection of spans from a InstrumentationLibrary.
+//
+// Must use NewInstrumentationLibrarySpans functions to create new instances.
+// Important: zero-initialized instance is not valid for use.
+type InstrumentationLibrarySpans struct {
+	// The InstrumentationLibrary for the spans in this message.
+	// If this field is not set then no resource info is known.
+	instrumentationLibrary InstrumentationLibrary
+
+	// A list of Spans that originate from a resource.
+	spans []*Span
+}
+
+func NewInstrumentationLibrarySpans(il InstrumentationLibrary, spans []*Span) *InstrumentationLibrarySpans {
+	return &InstrumentationLibrarySpans{il, spans}
+}
+
+func (ils *InstrumentationLibrarySpans) InstrumentationLibrary() InstrumentationLibrary {
+	return ils.instrumentationLibrary
+}
+
+func (ils *InstrumentationLibrarySpans) SetInstrumentationLibrary(il InstrumentationLibrary) {
+	ils.instrumentationLibrary = il
+}
+
+func (ils *InstrumentationLibrarySpans) Spans() []*Span {
+	return ils.spans
+}
+
+func (ils *InstrumentationLibrarySpans) SetSpans(s []*Span) {
+	ils.spans = s
 }
 
 type TraceID struct {
@@ -162,7 +197,7 @@ func (m *Span) SpanID() SpanID {
 }
 
 func (m *Span) TraceState() TraceState {
-	return TraceState(m.orig.Tracestate)
+	return TraceState(m.orig.TraceState)
 }
 
 func (m *Span) ParentSpanID() SpanID {
@@ -222,7 +257,7 @@ func (m *Span) SetSpanID(v SpanID) {
 }
 
 func (m *Span) SetTraceState(v TraceState) {
-	m.orig.Tracestate = string(v)
+	m.orig.TraceState = string(v)
 }
 
 func (m *Span) SetParentSpanID(v SpanID) {
@@ -431,7 +466,7 @@ func (m *SpanLink) DroppedAttributesCount() uint32 {
 }
 
 func (m *SpanLink) TraceState() TraceState {
-	return TraceState(m.orig.Tracestate)
+	return TraceState(m.orig.TraceState)
 }
 
 func (m *SpanLink) SetTraceID(v TraceID) {
@@ -443,7 +478,7 @@ func (m *SpanLink) SetSpanID(v SpanID) {
 }
 
 func (m *SpanLink) SetTraceState(v TraceState) {
-	m.orig.Tracestate = string(v)
+	m.orig.TraceState = string(v)
 }
 
 func (m *SpanLink) SetAttributes(v Attributes) {

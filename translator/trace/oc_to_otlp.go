@@ -46,7 +46,10 @@ func ocToOtlp(td consumerdata.TraceData) []*otlptrace.ResourceSpans {
 	resourceSpanList := []*otlptrace.ResourceSpans{resourceSpans}
 
 	if len(td.Spans) != 0 {
-		resourceSpans.Spans = make([]*otlptrace.Span, 0, len(td.Spans))
+		ils := &otlptrace.InstrumentationLibrarySpans{}
+		resourceSpans.InstrumentationLibrarySpans = []*otlptrace.InstrumentationLibrarySpans{ils}
+
+		ils.Spans = make([]*otlptrace.Span, 0, len(td.Spans))
 
 		for _, ocSpan := range td.Spans {
 			if ocSpan == nil {
@@ -60,13 +63,17 @@ func ocToOtlp(td consumerdata.TraceData) []*otlptrace.ResourceSpans {
 				// Add a separate ResourceSpans item just for this span since it
 				// has a different Resource.
 				separateRS := &otlptrace.ResourceSpans{
-					Resource: ocNodeResourceToOtlp(nil, ocSpan.Resource),
-					Spans:    []*otlptrace.Span{otlpSpan},
+					Resource: ocNodeResourceToOtlp(td.Node, ocSpan.Resource),
+					InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
+						{
+							Spans: []*otlptrace.Span{otlpSpan},
+						},
+					},
 				}
 				resourceSpanList = append(resourceSpanList, separateRS)
 			} else {
 				// Otherwise add the span to the first ResourceSpans item.
-				resourceSpans.Spans = append(resourceSpans.Spans, otlpSpan)
+				ils.Spans = append(ils.Spans, otlpSpan)
 			}
 		}
 	}
@@ -92,7 +99,7 @@ func ocSpanToOtlp(ocSpan *octrace.Span) *otlptrace.Span {
 	otlpSpan := &otlptrace.Span{
 		TraceId:                ocSpan.TraceId,
 		SpanId:                 ocSpan.SpanId,
-		Tracestate:             ocTraceStateToOtlp(ocSpan.Tracestate),
+		TraceState:             ocTraceStateToOtlp(ocSpan.Tracestate),
 		ParentSpanId:           ocSpan.ParentSpanId,
 		Name:                   truncableStringToStr(ocSpan.Name),
 		Kind:                   ocSpanKindToOtlp(ocSpan.Kind, ocSpan.Attributes),
@@ -274,7 +281,7 @@ func ocLinksToOtlp(ocLinks *octrace.Span_Links) (otlpLinks []*otlptrace.Span_Lin
 		otlpLink := &otlptrace.Span_Link{
 			TraceId:                ocLink.TraceId,
 			SpanId:                 ocLink.SpanId,
-			Tracestate:             ocTraceStateToOtlp(ocLink.Tracestate),
+			TraceState:             ocTraceStateToOtlp(ocLink.Tracestate),
 			Attributes:             attrs,
 			DroppedAttributesCount: droppedCount,
 		}

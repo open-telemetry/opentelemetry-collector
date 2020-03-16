@@ -355,7 +355,8 @@ func checkRecordedMetricsForTraceExporterV2(t *testing.T, te exporter.TraceExpor
 
 	spans := make([]*data.Span, 2)
 	rs := data.NewResourceSpans(nil, nil)
-	rs.SetSpans(spans)
+	ils := data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), spans)
+	rs.SetInstrumentationLibrarySpans([]*data.InstrumentationLibrarySpans{ils})
 	td := data.NewTraceData([]*data.ResourceSpans{rs})
 	ctx := observability.ContextWithReceiverName(context.Background(), fakeTraceReceiverName)
 	const numBatches = 7
@@ -373,7 +374,8 @@ func checkRecordedMetricsForTraceExporterV2(t *testing.T, te exporter.TraceExpor
 func generateTraceV2Traffic(t *testing.T, te exporter.TraceExporterV2, numRequests int, wantError error) {
 	spans := make([]*data.Span, 1)
 	rs := data.NewResourceSpans(nil, nil)
-	rs.SetSpans(spans)
+	ils := data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), spans)
+	rs.SetInstrumentationLibrarySpans([]*data.InstrumentationLibrarySpans{ils})
 	td := data.NewTraceData([]*data.ResourceSpans{rs})
 	ctx, span := trace.StartSpan(context.Background(), fakeTraceParentSpanName, trace.WithSampler(trace.AlwaysSample()))
 	defer span.End()

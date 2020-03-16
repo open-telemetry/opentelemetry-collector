@@ -49,13 +49,18 @@ func ResourceMetricsToMetricsData(resourceMetrics *otlpmetrics.ResourceMetrics) 
 		Resource: resource,
 	}
 
-	if len(resourceMetrics.Metrics) == 0 {
+	// TODO: Do not ignore InstrumentationLibrary properties
+
+	if len(resourceMetrics.InstrumentationLibraryMetrics) == 0 {
 		return md
 	}
 
-	metrics := make([]*ocmetrics.Metric, 0, len(resourceMetrics.Metrics))
-	for _, metric := range resourceMetrics.Metrics {
-		metrics = append(metrics, metricToOC(metric))
+	// This is a size approximation.
+	metrics := make([]*ocmetrics.Metric, 0, len(resourceMetrics.InstrumentationLibraryMetrics[0].Metrics))
+	for _, il := range resourceMetrics.InstrumentationLibraryMetrics {
+		for _, metric := range il.Metrics {
+			metrics = append(metrics, metricToOC(metric))
+		}
 	}
 
 	md.Metrics = metrics
@@ -102,16 +107,16 @@ func labelKeysToOC(metric *otlpmetrics.Metric) *labelKeys {
 
 	// First, collect a set of all labels present in the metric
 	keySet := make(map[string]struct{}, 0)
-	for _, point := range metric.Int64Datapoints {
+	for _, point := range metric.Int64DataPoints {
 		addLabelKeys(keySet, point.Labels)
 	}
-	for _, point := range metric.DoubleDatapoints {
+	for _, point := range metric.DoubleDataPoints {
 		addLabelKeys(keySet, point.Labels)
 	}
-	for _, point := range metric.HistogramDatapoints {
+	for _, point := range metric.HistogramDataPoints {
 		addLabelKeys(keySet, point.Labels)
 	}
-	for _, point := range metric.SummaryDatapoints {
+	for _, point := range metric.SummaryDataPoints {
 		addLabelKeys(keySet, point.Labels)
 	}
 
@@ -173,26 +178,26 @@ func descriptorTypeToOC(t otlpmetrics.MetricDescriptor_Type) ocmetrics.MetricDes
 }
 
 func dataPointsToTimeseries(metric *otlpmetrics.Metric, labelKeys *labelKeys) []*ocmetrics.TimeSeries {
-	length := len(metric.Int64Datapoints) + len(metric.DoubleDatapoints) + len(metric.HistogramDatapoints) +
-		len(metric.SummaryDatapoints)
+	length := len(metric.Int64DataPoints) + len(metric.DoubleDataPoints) + len(metric.HistogramDataPoints) +
+		len(metric.SummaryDataPoints)
 	if length == 0 {
 		return nil
 	}
 
 	timeseries := make([]*ocmetrics.TimeSeries, 0, length)
-	for _, point := range metric.Int64Datapoints {
+	for _, point := range metric.Int64DataPoints {
 		ts := int64PointToOC(point, labelKeys)
 		timeseries = append(timeseries, ts)
 	}
-	for _, point := range metric.DoubleDatapoints {
+	for _, point := range metric.DoubleDataPoints {
 		ts := doublePointToOC(point, labelKeys)
 		timeseries = append(timeseries, ts)
 	}
-	for _, point := range metric.HistogramDatapoints {
+	for _, point := range metric.HistogramDataPoints {
 		ts := histogramPointToOC(point, labelKeys)
 		timeseries = append(timeseries, ts)
 	}
-	for _, point := range metric.SummaryDatapoints {
+	for _, point := range metric.SummaryDataPoints {
 		ts := summaryPointToOC(point, labelKeys)
 		timeseries = append(timeseries, ts)
 	}

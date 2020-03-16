@@ -77,7 +77,9 @@ func (md MetricData) MetricCount() int {
 	metricCount := 0
 	// TODO: Do not access internal members, add a metricCount to ResourceMetrics.
 	for _, rm := range md.pimpl.resourceMetrics {
-		metricCount += len(rm.pimpl.metrics)
+		for _, ilm := range rm.pimpl.instrumentationLibraryMetrics {
+			metricCount += len(ilm.pimpl.metrics)
+		}
 	}
 	return metricCount
 }
@@ -124,8 +126,8 @@ type ResourceMetrics struct {
 }
 
 type internalResourceMetrics struct {
-	resource *Resource
-	metrics  []Metric
+	resource                      *Resource
+	instrumentationLibraryMetrics []InstrumentationLibraryMetrics
 	// True when the slice was replace.
 	sliceChanged bool
 	// True if the pimpl was initialized.
@@ -174,14 +176,14 @@ func (rm ResourceMetrics) SetResource(r *Resource) {
 	rm.pimpl.resource = r
 }
 
-func (rm ResourceMetrics) Metrics() []Metric {
+func (rm ResourceMetrics) InstrumentationLibraryMetrics() []InstrumentationLibraryMetrics {
 	rm.initInternallIfNeeded()
-	return rm.pimpl.metrics
+	return rm.pimpl.instrumentationLibraryMetrics
 }
 
-func (rm ResourceMetrics) SetMetrics(s []Metric) {
+func (rm ResourceMetrics) SetInstrumentationLibraryMetrics(s []InstrumentationLibraryMetrics) {
 	rm.initInternallIfNeeded()
-	rm.pimpl.metrics = s
+	rm.pimpl.instrumentationLibraryMetrics = s
 	// We don't update the orig slice because this may be called multiple times.
 	rm.pimpl.sliceChanged = true
 }
@@ -201,15 +203,15 @@ func (rm ResourceMetrics) flushInternal() {
 	if rm.pimpl.sliceChanged {
 		// Reconstruct the slice because we don't know what elements were removed/added.
 		// User may have changed internal fields in any Metric, flush all of them.
-		rm.orig.Metrics = make([]*otlpmetrics.Metric, len(rm.pimpl.metrics))
-		for i := range rm.pimpl.metrics {
-			rm.orig.Metrics[i] = rm.pimpl.metrics[i].getOrig()
-			rm.pimpl.metrics[i].flushInternal()
+		rm.orig.InstrumentationLibraryMetrics = make([]*otlpmetrics.InstrumentationLibraryMetrics, len(rm.pimpl.instrumentationLibraryMetrics))
+		for i := range rm.pimpl.instrumentationLibraryMetrics {
+			rm.orig.InstrumentationLibraryMetrics[i] = rm.pimpl.instrumentationLibraryMetrics[i].getOrig()
+			rm.pimpl.instrumentationLibraryMetrics[i].flushInternal()
 		}
 	} else {
 		// User may have changed internal fields in any Metric, flush all of them.
-		for i := range rm.pimpl.metrics {
-			rm.pimpl.metrics[i].flushInternal()
+		for i := range rm.pimpl.instrumentationLibraryMetrics {
+			rm.pimpl.instrumentationLibraryMetrics[i].flushInternal()
 		}
 	}
 }
@@ -217,8 +219,113 @@ func (rm ResourceMetrics) flushInternal() {
 func (rm ResourceMetrics) initInternallIfNeeded() {
 	if !rm.pimpl.initialized {
 		rm.pimpl.resource = newResource(rm.orig.Resource)
-		rm.pimpl.metrics = newMetricSliceFromOrig(rm.orig.Metrics)
+		rm.pimpl.instrumentationLibraryMetrics = newInstrumentationLibraryMetricsSliceFromOrig(rm.orig.InstrumentationLibraryMetrics)
 		rm.pimpl.initialized = true
+	}
+}
+
+// InstrumentationLibraryMetrics is a collection of metrics from a Resource.
+//
+// Must use NewResourceMetrics functions to create new instances.
+// Important: zero-initialized instance is not valid for use.
+type InstrumentationLibraryMetrics struct {
+	// Wrap OTLP InstrumentationLibraryMetric.
+	orig *otlpmetrics.InstrumentationLibraryMetrics
+
+	// Override a few fields. These fields are the source of truth. Their counterparts
+	// stored in corresponding fields of "orig" are ignored.
+	pimpl *internalInstrumentationLibraryMetrics
+}
+
+type internalInstrumentationLibraryMetrics struct {
+	instrumentationLibrary InstrumentationLibrary
+	metrics                []Metric
+	// True when the slice was replace.
+	sliceChanged bool
+	// True if the pimpl was initialized.
+	initialized bool
+}
+
+// NewInstrumentationLibraryMetricsSlice creates a slice of InstrumentationLibraryMetrics that are correctly initialized.
+func NewInstrumentationLibraryMetricsSlice(len int) []InstrumentationLibraryMetrics {
+	// Slice for underlying orig.
+	origs := make([]otlpmetrics.InstrumentationLibraryMetrics, len)
+	// Slice for underlying pimpl.
+	pimpls := make([]internalInstrumentationLibraryMetrics, len)
+	// Slice for wrappers.
+	wrappers := make([]InstrumentationLibraryMetrics, len)
+	for i := range origs {
+		wrappers[i].orig = &origs[i]
+		wrappers[i].pimpl = &pimpls[i]
+	}
+	return wrappers
+}
+
+func newInstrumentationLibraryMetricsSliceFromOrig(origs []*otlpmetrics.InstrumentationLibraryMetrics) []InstrumentationLibraryMetrics {
+	// Slice for underlying pimpl.
+	pimpls := make([]internalInstrumentationLibraryMetrics, len(origs))
+	// Slice for wrappers.
+	wrappers := make([]InstrumentationLibraryMetrics, len(origs))
+	for i := range origs {
+		wrappers[i].orig = origs[i]
+		wrappers[i].pimpl = &pimpls[i]
+	}
+	return wrappers
+}
+
+func (ilm InstrumentationLibraryMetrics) InstrumentationLibrary() InstrumentationLibrary {
+	ilm.initInternallIfNeeded()
+	return ilm.pimpl.instrumentationLibrary
+}
+
+func (ilm InstrumentationLibraryMetrics) SetResource(il InstrumentationLibrary) {
+	ilm.initInternallIfNeeded()
+	ilm.pimpl.instrumentationLibrary = il
+}
+
+func (ilm InstrumentationLibraryMetrics) Metrics() []Metric {
+	ilm.initInternallIfNeeded()
+	return ilm.pimpl.metrics
+}
+
+func (ilm InstrumentationLibraryMetrics) SetMetrics(ms []Metric) {
+	ilm.initInternallIfNeeded()
+	ilm.pimpl.metrics = ms
+	// We don't update the orig slice because this may be called multiple times.
+	ilm.pimpl.sliceChanged = true
+}
+
+func (ilm InstrumentationLibraryMetrics) initInternallIfNeeded() {
+	if !ilm.pimpl.initialized {
+		ilm.pimpl.instrumentationLibrary = newInstrumentationLibrary(ilm.orig.InstrumentationLibrary)
+		ilm.pimpl.metrics = newMetricSliceFromOrig(ilm.orig.Metrics)
+		ilm.pimpl.initialized = true
+	}
+}
+
+func (ilm InstrumentationLibraryMetrics) getOrig() *otlpmetrics.InstrumentationLibraryMetrics {
+	return ilm.orig
+}
+
+func (ilm InstrumentationLibraryMetrics) flushInternal() {
+	if !ilm.pimpl.initialized {
+		// Guaranteed no changes via internal fields.
+		return
+	}
+
+	if ilm.pimpl.sliceChanged {
+		// Reconstruct the slice because we don't know what elements were removed/added.
+		// User may have changed internal fields in any Metric, flush all of them.
+		ilm.orig.Metrics = make([]*otlpmetrics.Metric, len(ilm.pimpl.metrics))
+		for i := range ilm.pimpl.metrics {
+			ilm.orig.Metrics[i] = ilm.pimpl.metrics[i].getOrig()
+			ilm.pimpl.metrics[i].flushInternal()
+		}
+	} else {
+		// User may have changed internal fields in any Metric, flush all of them.
+		for i := range ilm.pimpl.metrics {
+			ilm.pimpl.metrics[i].flushInternal()
+		}
 	}
 }
 
@@ -337,10 +444,10 @@ func (m Metric) SetSummaryDataPoints(v []SummaryDataPoint) {
 func (m Metric) initInternallIfNeeded() {
 	if !m.pimpl.initialized {
 		m.pimpl.metricDescriptor = newMetricDescriptorFromOrig(m.orig.MetricDescriptor)
-		m.pimpl.int64DataPoints = newInt64DataPointSliceFromOrig(m.orig.Int64Datapoints)
-		m.pimpl.doubleDataPoints = newDoubleDataPointSliceFormOrgig(m.orig.DoubleDatapoints)
-		m.pimpl.histogramDataPoints = newHistogramDataPointSliceFromOrig(m.orig.HistogramDatapoints)
-		m.pimpl.summaryDataPoints = newSummaryDataPointSliceFromOrig(m.orig.SummaryDatapoints)
+		m.pimpl.int64DataPoints = newInt64DataPointSliceFromOrig(m.orig.Int64DataPoints)
+		m.pimpl.doubleDataPoints = newDoubleDataPointSliceFormOrgig(m.orig.DoubleDataPoints)
+		m.pimpl.histogramDataPoints = newHistogramDataPointSliceFromOrig(m.orig.HistogramDataPoints)
+		m.pimpl.summaryDataPoints = newSummaryDataPointSliceFromOrig(m.orig.SummaryDataPoints)
 		m.pimpl.initialized = true
 	}
 }
@@ -384,33 +491,33 @@ func (m Metric) flushInternal() {
 	}
 
 	if len(m.pimpl.int64DataPoints) != 0 {
-		m.orig.Int64Datapoints = make([]*otlpmetrics.Int64DataPoint, len(m.pimpl.int64DataPoints))
+		m.orig.Int64DataPoints = make([]*otlpmetrics.Int64DataPoint, len(m.pimpl.int64DataPoints))
 		for i := range m.pimpl.int64DataPoints {
-			m.orig.Int64Datapoints[i] = m.pimpl.int64DataPoints[i].getOrig()
+			m.orig.Int64DataPoints[i] = m.pimpl.int64DataPoints[i].getOrig()
 			m.pimpl.int64DataPoints[i].flushInternal()
 		}
 	}
 
 	if len(m.pimpl.doubleDataPoints) != 0 {
-		m.orig.DoubleDatapoints = make([]*otlpmetrics.DoubleDataPoint, len(m.pimpl.doubleDataPoints))
+		m.orig.DoubleDataPoints = make([]*otlpmetrics.DoubleDataPoint, len(m.pimpl.doubleDataPoints))
 		for i := range m.pimpl.doubleDataPoints {
-			m.orig.DoubleDatapoints[i] = m.pimpl.doubleDataPoints[i].getOrig()
+			m.orig.DoubleDataPoints[i] = m.pimpl.doubleDataPoints[i].getOrig()
 			m.pimpl.doubleDataPoints[i].flushInternal()
 		}
 	}
 
 	if len(m.pimpl.histogramDataPoints) != 0 {
-		m.orig.HistogramDatapoints = make([]*otlpmetrics.HistogramDataPoint, len(m.pimpl.histogramDataPoints))
+		m.orig.HistogramDataPoints = make([]*otlpmetrics.HistogramDataPoint, len(m.pimpl.histogramDataPoints))
 		for i := range m.pimpl.histogramDataPoints {
-			m.orig.HistogramDatapoints[i] = m.pimpl.histogramDataPoints[i].getOrig()
+			m.orig.HistogramDataPoints[i] = m.pimpl.histogramDataPoints[i].getOrig()
 			m.pimpl.histogramDataPoints[i].flushInternal()
 		}
 	}
 
 	if len(m.pimpl.summaryDataPoints) != 0 {
-		m.orig.SummaryDatapoints = make([]*otlpmetrics.SummaryDataPoint, len(m.pimpl.summaryDataPoints))
+		m.orig.SummaryDataPoints = make([]*otlpmetrics.SummaryDataPoint, len(m.pimpl.summaryDataPoints))
 		for i := range m.pimpl.summaryDataPoints {
-			m.orig.SummaryDatapoints[i] = m.pimpl.summaryDataPoints[i].getOrig()
+			m.orig.SummaryDataPoints[i] = m.pimpl.summaryDataPoints[i].getOrig()
 			m.pimpl.summaryDataPoints[i].flushInternal()
 		}
 
