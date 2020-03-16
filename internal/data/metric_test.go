@@ -18,7 +18,15 @@ import (
 	"math/rand"
 	"testing"
 
+	otlpcommon "github.com/open-telemetry/opentelemetry-proto/gen/go/common/v1"
+	otlpmetrics "github.com/open-telemetry/opentelemetry-proto/gen/go/metrics/v1"
+	otlpresource "github.com/open-telemetry/opentelemetry-proto/gen/go/resource/v1"
 	"github.com/stretchr/testify/assert"
+)
+
+const (
+	startTime = uint64(12578940000000012345)
+	endTime   = uint64(12578940000000054321)
 )
 
 func TestMetricCount(t *testing.T) {
@@ -123,5 +131,661 @@ func TestNewSummaryValueAtPercentileSlice(t *testing.T) {
 	assert.EqualValues(t, n, len(vps))
 	for link := range vps {
 		assert.NotNil(t, link)
+	}
+}
+
+func TestOtlpToInternalReadOnly(t *testing.T) {
+	metricData := MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{
+		{
+			Resource: generateTestResource(),
+			Metrics:  []*otlpmetrics.Metric{generateTestIntMetric(), generateTestDoubleMetric(), generateTestHistogramMetric(), generateTestSummaryMetric()},
+		},
+	})
+	resourceMetrics := metricData.ResourceMetrics()
+	assert.EqualValues(t, 1, len(resourceMetrics))
+	resourceMetric := resourceMetrics[0]
+	assert.EqualValues(t, newResource(generateTestResource()), resourceMetric.Resource())
+	metrics := resourceMetric.Metrics()
+	assert.EqualValues(t, 4, len(metrics))
+	metricInt := resourceMetric.Metrics()[0]
+	assert.EqualValues(t, "my_metric_int", metricInt.MetricDescriptor().Name())
+	assert.EqualValues(t, "My metric", metricInt.MetricDescriptor().Description())
+	assert.EqualValues(t, "ms", metricInt.MetricDescriptor().Unit())
+	assert.EqualValues(t, MetricTypeCounterInt64, metricInt.MetricDescriptor().Type())
+	assert.EqualValues(t, LabelsMap{}, metricInt.MetricDescriptor().Labels().LabelsMap())
+	// Check int64 points
+	int64DataPoints := metricInt.Int64DataPoints()
+	assert.EqualValues(t, 2, len(int64DataPoints))
+	assert.EqualValues(t, startTime, int64DataPoints[0].StartTime())
+	assert.EqualValues(t, endTime, int64DataPoints[0].Timestamp())
+	assert.EqualValues(t, 123, int64DataPoints[0].Value())
+	assert.EqualValues(t, LabelsMap{"key0": "value0"}, int64DataPoints[0].Labels().LabelsMap())
+	assert.EqualValues(t, startTime, int64DataPoints[1].StartTime())
+	assert.EqualValues(t, endTime, int64DataPoints[1].Timestamp())
+	assert.EqualValues(t, 456, int64DataPoints[1].Value())
+	assert.EqualValues(t, LabelsMap{"key1": "value1"}, int64DataPoints[1].Labels().LabelsMap())
+	// Check double points
+	metricDouble := resourceMetric.Metrics()[1]
+	assert.EqualValues(t, "my_metric_double", metricDouble.MetricDescriptor().Name())
+	assert.EqualValues(t, "My metric", metricDouble.MetricDescriptor().Description())
+	assert.EqualValues(t, "ms", metricDouble.MetricDescriptor().Unit())
+	assert.EqualValues(t, MetricTypeCounterDouble, metricDouble.MetricDescriptor().Type())
+	doubleDataPoints := metricDouble.DoubleDataPoints()
+	assert.EqualValues(t, 2, len(doubleDataPoints))
+	assert.EqualValues(t, startTime, doubleDataPoints[0].StartTime())
+	assert.EqualValues(t, endTime, doubleDataPoints[0].Timestamp())
+	assert.EqualValues(t, 123.1, doubleDataPoints[0].Value())
+	assert.EqualValues(t, LabelsMap{"key0": "value0"}, doubleDataPoints[0].Labels().LabelsMap())
+	assert.EqualValues(t, startTime, doubleDataPoints[1].StartTime())
+	assert.EqualValues(t, endTime, doubleDataPoints[1].Timestamp())
+	assert.EqualValues(t, 456.1, doubleDataPoints[1].Value())
+	assert.EqualValues(t, LabelsMap{"key1": "value1"}, doubleDataPoints[1].Labels().LabelsMap())
+	// Check histogram metric
+	metricHistogram := resourceMetric.Metrics()[2]
+	assert.EqualValues(t, "my_metric_histogram", metricHistogram.MetricDescriptor().Name())
+	assert.EqualValues(t, "My metric", metricHistogram.MetricDescriptor().Description())
+	assert.EqualValues(t, "ms", metricHistogram.MetricDescriptor().Unit())
+	assert.EqualValues(t, MetricTypeCumulativeHistogram, metricHistogram.MetricDescriptor().Type())
+	histogramDataPoints := metricHistogram.HistogramDataPoints()
+	assert.EqualValues(t, 2, len(histogramDataPoints))
+	assert.EqualValues(t, startTime, histogramDataPoints[0].StartTime())
+	assert.EqualValues(t, endTime, histogramDataPoints[0].Timestamp())
+	assert.EqualValues(t, []float64{1, 2}, histogramDataPoints[0].ExplicitBounds())
+	assert.EqualValues(t, LabelsMap{"key0": "value0"}, histogramDataPoints[0].Labels().LabelsMap())
+	assert.EqualValues(t, 3, len(histogramDataPoints[0].Buckets()))
+	assert.EqualValues(t, 10, histogramDataPoints[0].Buckets()[0].Count())
+	assert.EqualValues(t, 15, histogramDataPoints[0].Buckets()[1].Count())
+	assert.EqualValues(t, 1.5, histogramDataPoints[0].Buckets()[1].Exemplar().Value())
+	assert.EqualValues(t, startTime, histogramDataPoints[0].Buckets()[1].Exemplar().Timestamp())
+	assert.EqualValues(t, LabelsMap{"key_a1": "value_a1"}, histogramDataPoints[0].Buckets()[1].Exemplar().Attachments().LabelsMap())
+	assert.EqualValues(t, 1, histogramDataPoints[0].Buckets()[2].Count())
+	assert.EqualValues(t, startTime, histogramDataPoints[1].StartTime())
+	assert.EqualValues(t, endTime, histogramDataPoints[1].Timestamp())
+	assert.EqualValues(t, []float64{1}, histogramDataPoints[1].ExplicitBounds())
+	assert.EqualValues(t, LabelsMap{"key1": "value1"}, histogramDataPoints[1].Labels().LabelsMap())
+	assert.EqualValues(t, 2, len(histogramDataPoints[1].Buckets()))
+	assert.EqualValues(t, 10, histogramDataPoints[1].Buckets()[0].Count())
+	assert.EqualValues(t, 1, histogramDataPoints[1].Buckets()[1].Count())
+	// Check summary metric
+	metricSummary := resourceMetric.Metrics()[3]
+	assert.EqualValues(t, "my_metric_summary", metricSummary.MetricDescriptor().Name())
+	assert.EqualValues(t, "My metric", metricSummary.MetricDescriptor().Description())
+	assert.EqualValues(t, "ms", metricSummary.MetricDescriptor().Unit())
+	assert.EqualValues(t, MetricTypeSummary, metricSummary.MetricDescriptor().Type())
+	summaryDataPoints := metricSummary.SummaryDataPoints()
+	assert.EqualValues(t, 2, len(summaryDataPoints))
+	// First point
+	assert.EqualValues(t, startTime, summaryDataPoints[0].StartTime())
+	assert.EqualValues(t, endTime, summaryDataPoints[0].Timestamp())
+	assert.EqualValues(t, LabelsMap{"key0": "value0"}, summaryDataPoints[0].Labels().LabelsMap())
+	assert.EqualValues(t, 2, len(summaryDataPoints[0].ValueAtPercentiles()))
+	assert.EqualValues(t, 0.0, summaryDataPoints[0].ValueAtPercentiles()[0].Percentile())
+	assert.EqualValues(t, 1.23, summaryDataPoints[0].ValueAtPercentiles()[0].Value())
+	assert.EqualValues(t, 1.0, summaryDataPoints[0].ValueAtPercentiles()[1].Percentile())
+	assert.EqualValues(t, 4.56, summaryDataPoints[0].ValueAtPercentiles()[1].Value())
+	// Second point
+	assert.EqualValues(t, startTime, summaryDataPoints[1].StartTime())
+	assert.EqualValues(t, endTime, summaryDataPoints[1].Timestamp())
+	assert.EqualValues(t, LabelsMap{"key1": "value1"}, summaryDataPoints[1].Labels().LabelsMap())
+	assert.EqualValues(t, 2, len(summaryDataPoints[1].ValueAtPercentiles()))
+	assert.EqualValues(t, 0.5, summaryDataPoints[1].ValueAtPercentiles()[0].Percentile())
+	assert.EqualValues(t, 4.56, summaryDataPoints[1].ValueAtPercentiles()[0].Value())
+	assert.EqualValues(t, 0.9, summaryDataPoints[1].ValueAtPercentiles()[1].Percentile())
+	assert.EqualValues(t, 7.89, summaryDataPoints[1].ValueAtPercentiles()[1].Value())
+
+}
+func TestOtlpToFromInternalReadOnly(t *testing.T) {
+	metricData := MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{
+		{
+			Resource: generateTestResource(),
+			Metrics:  []*otlpmetrics.Metric{generateTestIntMetric(), generateTestDoubleMetric(), generateTestHistogramMetric(), generateTestSummaryMetric()},
+		},
+	})
+	// Test that nothing changed
+	assert.EqualValues(t, []*otlpmetrics.ResourceMetrics{
+		{
+			Resource: generateTestResource(),
+			Metrics:  []*otlpmetrics.Metric{generateTestIntMetric(), generateTestDoubleMetric(), generateTestHistogramMetric(), generateTestSummaryMetric()},
+		},
+	}, MetricDataToOtlp(metricData))
+}
+
+func TestOtlpToFromInternalIntPointsMutating(t *testing.T) {
+	newLabels := NewLabels()
+	newLabels.SetLabelsMap(LabelsMap{"k": "v"})
+
+	metricData := MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{
+		{
+			Resource: generateTestResource(),
+			Metrics:  []*otlpmetrics.Metric{generateTestIntMetric()},
+		},
+	})
+	resourceMetrics := metricData.ResourceMetrics()
+	metric := resourceMetrics[0].Metrics()[0]
+	// Mutate MetricDescriptor
+	metric.MetricDescriptor().SetName("new_my_metric_int")
+	assert.EqualValues(t, "new_my_metric_int", metric.MetricDescriptor().Name())
+	metric.MetricDescriptor().SetDescription("My new metric")
+	assert.EqualValues(t, "My new metric", metric.MetricDescriptor().Description())
+	metric.MetricDescriptor().SetUnit("1")
+	assert.EqualValues(t, "1", metric.MetricDescriptor().Unit())
+	metric.MetricDescriptor().SetMetricType(MetricTypeGaugeInt64)
+	assert.EqualValues(t, MetricTypeGaugeInt64, metric.MetricDescriptor().Type())
+	metric.MetricDescriptor().SetLabels(newLabels)
+	assert.EqualValues(t, newLabels.LabelsMap(), metric.MetricDescriptor().Labels().LabelsMap())
+	// Mutate DataPoints
+	int64DataPoints := metric.Int64DataPoints()[:1]
+	int64DataPoints[0].SetStartTime(TimestampUnixNano(startTime + 1))
+	assert.EqualValues(t, startTime+1, int64DataPoints[0].StartTime())
+	int64DataPoints[0].SetTimestamp(TimestampUnixNano(endTime + 1))
+	assert.EqualValues(t, endTime+1, int64DataPoints[0].Timestamp())
+	int64DataPoints[0].SetValue(124)
+	assert.EqualValues(t, 124, int64DataPoints[0].Value())
+	int64DataPoints[0].SetLabels(newLabels)
+	assert.EqualValues(t, newLabels.LabelsMap(), int64DataPoints[0].Labels().LabelsMap())
+
+	assert.EqualValues(t, 2, len(metric.Int64DataPoints()))
+	metric.SetInt64DataPoints(int64DataPoints)
+	assert.EqualValues(t, 1, len(metric.Int64DataPoints()))
+
+	// Test that everything is updated.
+	assert.EqualValues(t, []*otlpmetrics.ResourceMetrics{
+		{
+			Resource: generateTestResource(),
+			Metrics: []*otlpmetrics.Metric{
+				{
+					MetricDescriptor: &otlpmetrics.MetricDescriptor{
+						Name:        "new_my_metric_int",
+						Description: "My new metric",
+						Unit:        "1",
+						Type:        otlpmetrics.MetricDescriptor_GAUGE_INT64,
+						Labels: []*otlpcommon.StringKeyValue{
+							{
+								Key:   "k",
+								Value: "v",
+							},
+						},
+					},
+					Int64Datapoints: []*otlpmetrics.Int64DataPoint{
+						{
+							Labels: []*otlpcommon.StringKeyValue{
+								{
+									Key:   "k",
+									Value: "v",
+								},
+							},
+							StartTimeUnixnano: startTime + 1,
+							TimestampUnixnano: endTime + 1,
+							Value:             124,
+						},
+					},
+				},
+			},
+		},
+	}, MetricDataToOtlp(metricData))
+}
+
+func TestOtlpToFromInternalDoublePointsMutating(t *testing.T) {
+	newLabels := NewLabels()
+	newLabels.SetLabelsMap(LabelsMap{"k": "v"})
+
+	metricData := MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{
+		{
+			Resource: generateTestResource(),
+			Metrics:  []*otlpmetrics.Metric{generateTestDoubleMetric()},
+		},
+	})
+	resourceMetrics := metricData.ResourceMetrics()
+	metric := resourceMetrics[0].Metrics()[0]
+	// Mutate MetricDescriptor
+	metric.MetricDescriptor().SetName("new_my_metric_double")
+	assert.EqualValues(t, "new_my_metric_double", metric.MetricDescriptor().Name())
+	metric.MetricDescriptor().SetDescription("My new metric")
+	assert.EqualValues(t, "My new metric", metric.MetricDescriptor().Description())
+	metric.MetricDescriptor().SetUnit("1")
+	assert.EqualValues(t, "1", metric.MetricDescriptor().Unit())
+	metric.MetricDescriptor().SetMetricType(MetricTypeGaugeDouble)
+	assert.EqualValues(t, MetricTypeGaugeDouble, metric.MetricDescriptor().Type())
+	metric.MetricDescriptor().SetLabels(newLabels)
+	assert.EqualValues(t, newLabels.LabelsMap(), metric.MetricDescriptor().Labels().LabelsMap())
+	// Mutate DataPoints
+	doubleDataPoints := metric.DoubleDataPoints()[:1]
+	doubleDataPoints[0].SetStartTime(TimestampUnixNano(startTime + 1))
+	assert.EqualValues(t, startTime+1, doubleDataPoints[0].StartTime())
+	doubleDataPoints[0].SetTimestamp(TimestampUnixNano(endTime + 1))
+	assert.EqualValues(t, endTime+1, doubleDataPoints[0].Timestamp())
+	doubleDataPoints[0].SetValue(124.1)
+	assert.EqualValues(t, 124.1, doubleDataPoints[0].Value())
+	doubleDataPoints[0].SetLabels(newLabels)
+	assert.EqualValues(t, newLabels.LabelsMap(), doubleDataPoints[0].Labels().LabelsMap())
+
+	assert.EqualValues(t, 2, len(metric.DoubleDataPoints()))
+	metric.SetDoubleDataPoints(doubleDataPoints)
+	assert.EqualValues(t, 1, len(metric.DoubleDataPoints()))
+
+	// Test that everything is updated.
+	assert.EqualValues(t, []*otlpmetrics.ResourceMetrics{
+		{
+			Resource: generateTestResource(),
+			Metrics: []*otlpmetrics.Metric{
+				{
+					MetricDescriptor: &otlpmetrics.MetricDescriptor{
+						Name:        "new_my_metric_double",
+						Description: "My new metric",
+						Unit:        "1",
+						Type:        otlpmetrics.MetricDescriptor_GAUGE_DOUBLE,
+						Labels: []*otlpcommon.StringKeyValue{
+							{
+								Key:   "k",
+								Value: "v",
+							},
+						},
+					},
+					DoubleDatapoints: []*otlpmetrics.DoubleDataPoint{
+						{
+							Labels: []*otlpcommon.StringKeyValue{
+								{
+									Key:   "k",
+									Value: "v",
+								},
+							},
+							StartTimeUnixnano: startTime + 1,
+							TimestampUnixnano: endTime + 1,
+							Value:             124.1,
+						},
+					},
+				},
+			},
+		},
+	}, MetricDataToOtlp(metricData))
+}
+
+func TestOtlpToFromInternalHistogramPointsMutating(t *testing.T) {
+	newLabels := NewLabels()
+	newLabels.SetLabelsMap(LabelsMap{"k": "v"})
+
+	metricData := MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{
+		{
+			Resource: generateTestResource(),
+			Metrics:  []*otlpmetrics.Metric{generateTestHistogramMetric()},
+		},
+	})
+	resourceMetrics := metricData.ResourceMetrics()
+	metric := resourceMetrics[0].Metrics()[0]
+	// Mutate MetricDescriptor
+	metric.MetricDescriptor().SetName("new_my_metric_histogram")
+	assert.EqualValues(t, "new_my_metric_histogram", metric.MetricDescriptor().Name())
+	metric.MetricDescriptor().SetDescription("My new metric")
+	assert.EqualValues(t, "My new metric", metric.MetricDescriptor().Description())
+	metric.MetricDescriptor().SetUnit("1")
+	assert.EqualValues(t, "1", metric.MetricDescriptor().Unit())
+	metric.MetricDescriptor().SetMetricType(MetricTypeGaugeHistogram)
+	assert.EqualValues(t, MetricTypeGaugeHistogram, metric.MetricDescriptor().Type())
+	metric.MetricDescriptor().SetLabels(newLabels)
+	assert.EqualValues(t, newLabels.LabelsMap(), metric.MetricDescriptor().Labels().LabelsMap())
+	// Mutate DataPoints
+	histogramDataPoints := metric.HistogramDataPoints()[:1]
+	histogramDataPoints[0].SetStartTime(TimestampUnixNano(startTime + 1))
+	assert.EqualValues(t, startTime+1, histogramDataPoints[0].StartTime())
+	histogramDataPoints[0].SetTimestamp(TimestampUnixNano(endTime + 1))
+	assert.EqualValues(t, endTime+1, histogramDataPoints[0].Timestamp())
+	histogramDataPoints[0].SetLabels(newLabels)
+	assert.EqualValues(t, newLabels.LabelsMap(), histogramDataPoints[0].Labels().LabelsMap())
+	histogramDataPoints[0].SetExplicitBounds([]float64{1})
+	assert.EqualValues(t, []float64{1}, histogramDataPoints[0].ExplicitBounds())
+	buckets := histogramDataPoints[0].Buckets()[:2]
+	buckets[0].SetCount(21)
+	assert.EqualValues(t, 21, buckets[0].Count())
+	buckets[1].SetCount(32)
+	assert.EqualValues(t, 32, buckets[1].Count())
+	buckets[1].Exemplar().SetTimestamp(TimestampUnixNano(startTime + 1))
+	assert.EqualValues(t, startTime+1, buckets[1].Exemplar().Timestamp())
+	buckets[1].Exemplar().SetValue(10.5)
+	assert.EqualValues(t, 10.5, buckets[1].Exemplar().Value())
+	buckets[1].Exemplar().SetAttachments(newLabels)
+	assert.EqualValues(t, newLabels.LabelsMap(), buckets[1].Exemplar().Attachments().LabelsMap())
+	assert.EqualValues(t, 3, len(histogramDataPoints[0].Buckets()))
+	histogramDataPoints[0].SetBuckets(buckets)
+	assert.EqualValues(t, 2, len(histogramDataPoints[0].Buckets()))
+
+	assert.EqualValues(t, 2, len(metric.HistogramDataPoints()))
+	metric.SetHistogramDataPoints(histogramDataPoints)
+	assert.EqualValues(t, 1, len(metric.HistogramDataPoints()))
+
+	// Test that everything is updated.
+	assert.EqualValues(t, []*otlpmetrics.ResourceMetrics{
+		{
+			Resource: generateTestResource(),
+			Metrics: []*otlpmetrics.Metric{
+				{
+					MetricDescriptor: &otlpmetrics.MetricDescriptor{
+						Name:        "new_my_metric_histogram",
+						Description: "My new metric",
+						Unit:        "1",
+						Type:        otlpmetrics.MetricDescriptor_GAUGE_HISTOGRAM,
+						Labels: []*otlpcommon.StringKeyValue{
+							{
+								Key:   "k",
+								Value: "v",
+							},
+						},
+					},
+					HistogramDatapoints: []*otlpmetrics.HistogramDataPoint{
+						{
+							Labels: []*otlpcommon.StringKeyValue{
+								{
+									Key:   "k",
+									Value: "v",
+								},
+							},
+							StartTimeUnixnano: startTime + 1,
+							TimestampUnixnano: endTime + 1,
+							Buckets: []*otlpmetrics.HistogramDataPoint_Bucket{
+								{
+									Count: 21,
+								},
+								{
+									Count: 32,
+									Exemplar: &otlpmetrics.HistogramDataPoint_Bucket_Exemplar{
+										Value:             10.5,
+										TimestampUnixnano: startTime + 1,
+										Attachments: []*otlpcommon.StringKeyValue{
+											{
+												Key:   "k",
+												Value: "v",
+											},
+										},
+									},
+								},
+							},
+							ExplicitBounds: []float64{1},
+						},
+					},
+				},
+			},
+		},
+	}, MetricDataToOtlp(metricData))
+}
+
+func TestOtlpToFromInternalSummaryPointsMutating(t *testing.T) {
+	newLabels := NewLabels()
+	newLabels.SetLabelsMap(LabelsMap{"k": "v"})
+
+	metricData := MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{
+		{
+			Resource: generateTestResource(),
+			Metrics:  []*otlpmetrics.Metric{generateTestSummaryMetric()},
+		},
+	})
+	resourceMetrics := metricData.ResourceMetrics()
+	metric := resourceMetrics[0].Metrics()[0]
+	// Mutate MetricDescriptor
+	metric.MetricDescriptor().SetName("new_my_metric_summary")
+	assert.EqualValues(t, "new_my_metric_summary", metric.MetricDescriptor().Name())
+	metric.MetricDescriptor().SetDescription("My new metric")
+	assert.EqualValues(t, "My new metric", metric.MetricDescriptor().Description())
+	metric.MetricDescriptor().SetUnit("1")
+	assert.EqualValues(t, "1", metric.MetricDescriptor().Unit())
+	metric.MetricDescriptor().SetLabels(newLabels)
+	assert.EqualValues(t, newLabels.LabelsMap(), metric.MetricDescriptor().Labels().LabelsMap())
+	// Mutate DataPoints
+	summaryDataPoints := metric.SummaryDataPoints()[:1]
+	summaryDataPoints[0].SetStartTime(TimestampUnixNano(startTime + 1))
+	assert.EqualValues(t, startTime+1, summaryDataPoints[0].StartTime())
+	summaryDataPoints[0].SetTimestamp(TimestampUnixNano(endTime + 1))
+	assert.EqualValues(t, endTime+1, summaryDataPoints[0].Timestamp())
+	summaryDataPoints[0].SetLabels(newLabels)
+	assert.EqualValues(t, newLabels.LabelsMap(), summaryDataPoints[0].Labels().LabelsMap())
+	// Mutate ValueAtPercentiles
+	valueAtPercentiles := summaryDataPoints[0].ValueAtPercentiles()[:1]
+	valueAtPercentiles[0].SetValue(1.24)
+	assert.EqualValues(t, 1.24, valueAtPercentiles[0].Value())
+	valueAtPercentiles[0].SetPercentile(0.1)
+	assert.EqualValues(t, 0.1, valueAtPercentiles[0].Percentile())
+	assert.EqualValues(t, 2, len(summaryDataPoints[0].ValueAtPercentiles()))
+	summaryDataPoints[0].SetValueAtPercentiles(valueAtPercentiles)
+	assert.EqualValues(t, 1, len(summaryDataPoints[0].ValueAtPercentiles()))
+
+	assert.EqualValues(t, 2, len(metric.SummaryDataPoints()))
+	metric.SetSummaryDataPoints(summaryDataPoints)
+	assert.EqualValues(t, 1, len(metric.SummaryDataPoints()))
+
+	// Test that everything is updated.
+	assert.EqualValues(t, []*otlpmetrics.ResourceMetrics{
+		{
+			Resource: generateTestResource(),
+			Metrics: []*otlpmetrics.Metric{
+				{
+					MetricDescriptor: &otlpmetrics.MetricDescriptor{
+						Name:        "new_my_metric_summary",
+						Description: "My new metric",
+						Unit:        "1",
+						Type:        otlpmetrics.MetricDescriptor_SUMMARY,
+						Labels: []*otlpcommon.StringKeyValue{
+							{
+								Key:   "k",
+								Value: "v",
+							},
+						},
+					},
+					SummaryDatapoints: []*otlpmetrics.SummaryDataPoint{
+						{
+							Labels: []*otlpcommon.StringKeyValue{
+								{
+									Key:   "k",
+									Value: "v",
+								},
+							},
+							StartTimeUnixnano: startTime + 1,
+							TimestampUnixnano: endTime + 1,
+							PercentileValues: []*otlpmetrics.SummaryDataPoint_ValueAtPercentile{
+								{
+									Percentile: 0.1,
+									Value:      1.24,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}, MetricDataToOtlp(metricData))
+}
+
+func generateTestResource() *otlpresource.Resource {
+	return &otlpresource.Resource{
+		Attributes: []*otlpcommon.AttributeKeyValue{
+			{
+				Key:         "string",
+				Type:        otlpcommon.AttributeKeyValue_STRING,
+				StringValue: "string-resource",
+			},
+		},
+	}
+}
+
+func generateTestIntMetric() *otlpmetrics.Metric {
+	return &otlpmetrics.Metric{
+		MetricDescriptor: &otlpmetrics.MetricDescriptor{
+			Name:        "my_metric_int",
+			Description: "My metric",
+			Unit:        "ms",
+			Type:        otlpmetrics.MetricDescriptor_COUNTER_INT64,
+		},
+		Int64Datapoints: []*otlpmetrics.Int64DataPoint{
+			{
+				Labels: []*otlpcommon.StringKeyValue{
+					{
+						Key:   "key0",
+						Value: "value0",
+					},
+				},
+				StartTimeUnixnano: startTime,
+				TimestampUnixnano: endTime,
+				Value:             123,
+			},
+			{
+				Labels: []*otlpcommon.StringKeyValue{
+					{
+						Key:   "key1",
+						Value: "value1",
+					},
+				},
+				StartTimeUnixnano: startTime,
+				TimestampUnixnano: endTime,
+				Value:             456,
+			},
+		},
+	}
+}
+func generateTestDoubleMetric() *otlpmetrics.Metric {
+	return &otlpmetrics.Metric{
+		MetricDescriptor: &otlpmetrics.MetricDescriptor{
+			Name:        "my_metric_double",
+			Description: "My metric",
+			Unit:        "ms",
+			Type:        otlpmetrics.MetricDescriptor_COUNTER_DOUBLE,
+		},
+		DoubleDatapoints: []*otlpmetrics.DoubleDataPoint{
+			{
+				Labels: []*otlpcommon.StringKeyValue{
+					{
+						Key:   "key0",
+						Value: "value0",
+					},
+				},
+				StartTimeUnixnano: startTime,
+				TimestampUnixnano: endTime,
+				Value:             123.1,
+			},
+			{
+				Labels: []*otlpcommon.StringKeyValue{
+					{
+						Key:   "key1",
+						Value: "value1",
+					},
+				},
+				StartTimeUnixnano: startTime,
+				TimestampUnixnano: endTime,
+				Value:             456.1,
+			},
+		},
+	}
+}
+
+func generateTestHistogramMetric() *otlpmetrics.Metric {
+	return &otlpmetrics.Metric{
+		MetricDescriptor: &otlpmetrics.MetricDescriptor{
+			Name:        "my_metric_histogram",
+			Description: "My metric",
+			Unit:        "ms",
+			Type:        otlpmetrics.MetricDescriptor_CUMULATIVE_HISTOGRAM,
+		},
+		HistogramDatapoints: []*otlpmetrics.HistogramDataPoint{
+			{
+				Labels: []*otlpcommon.StringKeyValue{
+					{
+						Key:   "key0",
+						Value: "value0",
+					},
+				},
+				StartTimeUnixnano: startTime,
+				TimestampUnixnano: endTime,
+				Buckets: []*otlpmetrics.HistogramDataPoint_Bucket{
+					{
+						Count: 10,
+					},
+					{
+						Count: 15,
+						Exemplar: &otlpmetrics.HistogramDataPoint_Bucket_Exemplar{
+							Value:             1.5,
+							TimestampUnixnano: startTime,
+							Attachments: []*otlpcommon.StringKeyValue{
+								{
+									Key:   "key_a1",
+									Value: "value_a1",
+								},
+							},
+						},
+					},
+					{
+						Count: 1,
+					},
+				},
+				ExplicitBounds: []float64{1, 2},
+			},
+			{
+				Labels: []*otlpcommon.StringKeyValue{
+					{
+						Key:   "key1",
+						Value: "value1",
+					},
+				},
+				StartTimeUnixnano: startTime,
+				TimestampUnixnano: endTime,
+				Buckets: []*otlpmetrics.HistogramDataPoint_Bucket{
+					{
+						Count: 10,
+					},
+					{
+						Count: 1,
+					},
+				},
+				ExplicitBounds: []float64{1},
+			},
+		},
+	}
+}
+
+func generateTestSummaryMetric() *otlpmetrics.Metric {
+	return &otlpmetrics.Metric{
+		MetricDescriptor: &otlpmetrics.MetricDescriptor{
+			Name:        "my_metric_summary",
+			Description: "My metric",
+			Unit:        "ms",
+			Type:        otlpmetrics.MetricDescriptor_SUMMARY,
+		},
+		SummaryDatapoints: []*otlpmetrics.SummaryDataPoint{
+			{
+				Labels: []*otlpcommon.StringKeyValue{
+					{
+						Key:   "key0",
+						Value: "value0",
+					},
+				},
+				StartTimeUnixnano: startTime,
+				TimestampUnixnano: endTime,
+				PercentileValues: []*otlpmetrics.SummaryDataPoint_ValueAtPercentile{
+					{
+						Percentile: 0.0,
+						Value:      1.23,
+					},
+					{
+						Percentile: 1.0,
+						Value:      4.56,
+					},
+				},
+			},
+			{
+				Labels: []*otlpcommon.StringKeyValue{
+					{
+						Key:   "key1",
+						Value: "value1",
+					},
+				},
+				StartTimeUnixnano: startTime,
+				TimestampUnixnano: endTime,
+				PercentileValues: []*otlpmetrics.SummaryDataPoint_ValueAtPercentile{
+					{
+						Percentile: 0.5,
+						Value:      4.56,
+					},
+					{
+						Percentile: 0.9,
+						Value:      7.89,
+					},
+				},
+			},
+		},
 	}
 }
