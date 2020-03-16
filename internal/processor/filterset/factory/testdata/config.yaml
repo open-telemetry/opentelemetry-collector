@@ -1,0 +1,23 @@
+# Yaml form of the configuration for FilterSets
+# This configuration can be embedded into other component's yamls
+# The top level here are just test names and do not represent part of the actual configuration.
+
+regexp/default:
+    match_type: regexp
+regexp/emptyoptions:
+    match_type: regexp
+    regexp:
+regexp/cachedisabledwithsize:
+    match_type: regexp
+    regexp:
+        cacheenabled: false
+        cachemaxnumentries: 10
+regexp/cacheenablednosize:
+    match_type: regexp
+    regexp:
+        cacheenabled: true
+strict/default:
+    match_type: strict
+strict/emptyoptions:
+    match_type: strict
+    strict:

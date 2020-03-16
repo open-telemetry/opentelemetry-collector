@@ -1,0 +1,31 @@
+# Yaml form of the configuration for matching metrics
+# This configuration can be embedded into other component's yamls
+# The top level here are just test names and do not represent part of the actual configuration.
+
+config/regexp:
+    match_type: regexp
+    metric_names: [prefix/.*, .*contains.*, .*_suffix, full_name_match]
+config/regexpoptions:
+    match_type: regexp
+    regexp:
+        cacheenabled: true
+        cachemaxnumentries: 5
+    metric_names:
+        - prefix/.*
+        - .*contains.*
+        - .*_suffix
+        - full_name_match
+config/strict:
+    match_type: strict
+    metric_names:
+        - exact_string_match
+config/strictoptions:
+    match_type: strict
+    # There is no additional configuration for strict match type, but it can still be
+    # specified for consistency.
+    strict:
+    metric_names:
+        - exact_string_match
+config/emptyproperties:
+    match_type: regexp
+    metric_names:

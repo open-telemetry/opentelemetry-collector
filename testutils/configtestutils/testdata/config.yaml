@@ -1,0 +1,10 @@
+# Yaml configuration tests
+
+test/fullyaml:
+    topvalue: toplevelvalue
+    nested:
+        nestedvalue: nestedvalue
+    nestedvalue: squashedvalue
+test/partialyaml:
+    topvalue: toplevelvalue
+    nestedvalue: squashedvalue
