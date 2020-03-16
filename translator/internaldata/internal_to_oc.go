@@ -51,8 +51,10 @@ func InternalToOC(td data.TraceData) []consumerdata.TraceData {
 	for _, resourceSpans := range resourceSpansList {
 		ocTraceData.Node, ocTraceData.Resource = internalResourceToOC(resourceSpans.Resource())
 		ocSpans := make([]*octrace.Span, 0, td.SpanCount())
-		for _, span := range resourceSpans.Spans() {
-			ocSpans = append(ocSpans, spanToOC(span))
+		for _, il := range resourceSpans.InstrumentationLibrarySpans() {
+			for _, span := range il.Spans() {
+				ocSpans = append(ocSpans, spanToOC(span))
+			}
 		}
 		ocTraceData.Spans = ocSpans
 		ocResourceSpansList = append(ocResourceSpansList, ocTraceData)

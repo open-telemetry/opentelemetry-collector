@@ -77,7 +77,8 @@ func ocToInternal(td consumerdata.TraceData) data.TraceData {
 
 	// Allocate a slice for spans that need to be combined into one ResourceSpans.
 	combinedSpans := data.NewSpanSlice(combinedSpanCount)
-	resourceSpans.SetSpans(combinedSpans)
+	resourceSpans.SetInstrumentationLibrarySpans([]*data.InstrumentationLibrarySpans{
+		data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), combinedSpans)})
 
 	// Now do the span translation and place them in appropriate ResourceSpans
 	// instances.
@@ -119,7 +120,8 @@ func ocSpanToResourceSpans(ocSpan *octrace.Span, node *occommon.Node, resource *
 	// Create a separate ResourceSpans item just for this span.
 	return data.NewResourceSpans(
 		ocNodeResourceToInternal(node, resource),
-		[]*data.Span{destSpan},
+		[]*data.InstrumentationLibrarySpans{
+			data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []*data.Span{destSpan})},
 	)
 }
 

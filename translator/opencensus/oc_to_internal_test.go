@@ -385,7 +385,8 @@ func TestOcToInternal(t *testing.T) {
 				Spans:    []*octrace.Span{ocSpan1},
 			},
 			itd: data.NewTraceData([]*data.ResourceSpans{
-				data.NewResourceSpans(internalResource, []*data.Span{span1}),
+				data.NewResourceSpans(internalResource, []*data.InstrumentationLibrarySpans{
+					data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []*data.Span{span1})}),
 			}),
 		},
 
@@ -397,7 +398,8 @@ func TestOcToInternal(t *testing.T) {
 				Spans:    []*octrace.Span{ocSpan1, nil, ocSpan2},
 			},
 			itd: data.NewTraceData([]*data.ResourceSpans{
-				data.NewResourceSpans(internalResource, []*data.Span{span1, span2}),
+				data.NewResourceSpans(internalResource, []*data.InstrumentationLibrarySpans{
+					data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []*data.Span{span1, span2})}),
 			}),
 		},
 
@@ -409,8 +411,10 @@ func TestOcToInternal(t *testing.T) {
 				Spans:    []*octrace.Span{ocSpan1, ocSpan2, ocSpan3},
 			},
 			itd: data.NewTraceData([]*data.ResourceSpans{
-				data.NewResourceSpans(internalResource, []*data.Span{span1, span2}),
-				data.NewResourceSpans(internalResource, []*data.Span{span3}),
+				data.NewResourceSpans(internalResource, []*data.InstrumentationLibrarySpans{
+					data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []*data.Span{span1, span2})}),
+				data.NewResourceSpans(internalResource, []*data.InstrumentationLibrarySpans{
+					data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []*data.Span{span3})}),
 			}),
 		},
 
@@ -422,8 +426,10 @@ func TestOcToInternal(t *testing.T) {
 				Spans:    []*octrace.Span{ocSpan1, ocSpan3, ocSpan2},
 			},
 			itd: data.NewTraceData([]*data.ResourceSpans{
-				data.NewResourceSpans(internalResource, []*data.Span{span1, span2}),
-				data.NewResourceSpans(internalResource, []*data.Span{span3}),
+				data.NewResourceSpans(internalResource, []*data.InstrumentationLibrarySpans{
+					data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []*data.Span{span1, span2})}),
+				data.NewResourceSpans(internalResource, []*data.InstrumentationLibrarySpans{
+					data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []*data.Span{span3})}),
 			}),
 		},
 	}

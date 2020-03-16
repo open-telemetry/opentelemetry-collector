@@ -45,7 +45,7 @@ func TestResourceMetricsToMetricsData(t *testing.T) {
 			Unit:        "ms",
 			Type:        otlpmetrics.MetricDescriptor_COUNTER_INT64,
 		},
-		Int64Datapoints: []*otlpmetrics.Int64DataPoint{
+		Int64DataPoints: []*otlpmetrics.Int64DataPoint{
 			{
 				Labels: []*otlpcommon.StringKeyValue{
 					{
@@ -71,7 +71,7 @@ func TestResourceMetricsToMetricsData(t *testing.T) {
 		},
 		// NOTE: According to spec, only one type of data points can be set at a time,
 		// but we still support translating "as is"
-		DoubleDatapoints: []*otlpmetrics.DoubleDataPoint{
+		DoubleDataPoints: []*otlpmetrics.DoubleDataPoint{
 			{
 				Labels: []*otlpcommon.StringKeyValue{
 					{
@@ -252,8 +252,8 @@ func TestResourceMetricsToMetricsData(t *testing.T) {
 		{
 			name: "no-metrics",
 			otlp: otlpmetrics.ResourceMetrics{
-				Resource: &otlpresource.Resource{},
-				Metrics:  []*otlpmetrics.Metric{},
+				Resource:                      &otlpresource.Resource{},
+				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{},
 			},
 			oc: consumerdata.MetricsData{
 				Node:     &occommon.Node{},
@@ -268,7 +268,11 @@ func TestResourceMetricsToMetricsData(t *testing.T) {
 				Resource: &otlpresource.Resource{
 					Attributes: otlpAttributes,
 				},
-				Metrics: []*otlpmetrics.Metric{otlpMetric},
+				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+					{
+						Metrics: []*otlpmetrics.Metric{otlpMetric},
+					},
+				},
 			},
 			oc: consumerdata.MetricsData{
 				Node: &occommon.Node{

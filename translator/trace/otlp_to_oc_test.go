@@ -76,7 +76,7 @@ func TestResourceSpansToTraceData(t *testing.T) {
 		DroppedAttributesCount: 1,
 		DroppedEventsCount:     2,
 		Status:                 &otlptrace.Status{Message: "status-cancelled", Code: otlptrace.Status_Cancelled},
-		Tracestate:             "a=text,b=123",
+		TraceState:             "a=text,b=123",
 	}
 
 	otlpSpan2 := &otlptrace.Span{
@@ -250,8 +250,8 @@ func TestResourceSpansToTraceData(t *testing.T) {
 		{
 			name: "no-spans",
 			otlp: otlptrace.ResourceSpans{
-				Resource: &otlpresource.Resource{},
-				Spans:    []*otlptrace.Span{},
+				Resource:                    &otlpresource.Resource{},
+				InstrumentationLibrarySpans: nil,
 			},
 			oc: consumerdata.TraceData{
 				Node:         &occommon.Node{},
@@ -267,7 +267,11 @@ func TestResourceSpansToTraceData(t *testing.T) {
 				Resource: &otlpresource.Resource{
 					Attributes: otlpAttributes,
 				},
-				Spans: []*otlptrace.Span{otlpSpan1},
+				InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
+					{
+						Spans: []*otlptrace.Span{otlpSpan1},
+					},
+				},
 			},
 			oc: consumerdata.TraceData{
 				Node: &occommon.Node{
@@ -295,7 +299,11 @@ func TestResourceSpansToTraceData(t *testing.T) {
 			name: "two-spans",
 			otlp: otlptrace.ResourceSpans{
 				Resource: &otlpresource.Resource{},
-				Spans:    []*otlptrace.Span{otlpSpan1, otlpSpan2},
+				InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
+					{
+						Spans: []*otlptrace.Span{otlpSpan1, otlpSpan2},
+					},
+				},
 			},
 			oc: consumerdata.TraceData{
 				Node:         &occommon.Node{},

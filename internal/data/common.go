@@ -139,3 +139,36 @@ type Attributes struct {
 func NewAttributes(m AttributesMap, droppedCount uint32) Attributes {
 	return Attributes{m, droppedCount}
 }
+
+// InstrumentationLibrary is a message representing the instrumentation library information.
+//
+// Must use NewResource functions to create new instances.
+// Important: zero-initialized instance is not valid for use.
+type InstrumentationLibrary struct {
+	orig *otlpcommon.InstrumentationLibrary
+}
+
+// NewInstrumentationLibrary creates a new InstrumentationLibrary.
+func NewInstrumentationLibrary() InstrumentationLibrary {
+	return InstrumentationLibrary{}
+}
+
+func newInstrumentationLibrary(orig *otlpcommon.InstrumentationLibrary) InstrumentationLibrary {
+	return InstrumentationLibrary{orig}
+}
+
+func (il InstrumentationLibrary) Name() string {
+	return il.orig.Name
+}
+
+func (il InstrumentationLibrary) SetName(r string) {
+	il.orig.Name = r
+}
+
+func (il InstrumentationLibrary) Version() string {
+	return il.orig.Version
+}
+
+func (il InstrumentationLibrary) SetVersion(r string) {
+	il.orig.Version = r
+}

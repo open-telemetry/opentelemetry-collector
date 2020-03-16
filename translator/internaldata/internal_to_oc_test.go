@@ -236,7 +236,8 @@ func TestInternalToOC(t *testing.T) {
 	span3Resource.SetAttributes(data.AttributesMap{
 		conventions.OCAttributeResourceType: data.NewAttributeValueString(span3ResourceType),
 	})
-	resourceSpans3 := data.NewResourceSpans(span3Resource, []*data.Span{span3})
+	resourceSpans3 := data.NewResourceSpans(span3Resource, []*data.InstrumentationLibrarySpans{
+		data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []*data.Span{span3})})
 
 	ocNode := &occommon.Node{}
 	ocResource := &ocresource.Resource{
@@ -320,7 +321,8 @@ func TestInternalToOC(t *testing.T) {
 		{
 			name: "no-spans",
 			internal: data.NewTraceData([]*data.ResourceSpans{
-				data.NewResourceSpans(data.NewResource(), []*data.Span{}),
+				data.NewResourceSpans(data.NewResource(), []*data.InstrumentationLibrarySpans{
+					data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []*data.Span{})}),
 			}),
 			oc: []consumerdata.TraceData{
 				{
@@ -335,7 +337,8 @@ func TestInternalToOC(t *testing.T) {
 		{
 			name: "one-spans",
 			internal: data.NewTraceData([]*data.ResourceSpans{
-				data.NewResourceSpans(resource, []*data.Span{span1}),
+				data.NewResourceSpans(resource, []*data.InstrumentationLibrarySpans{
+					data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []*data.Span{span1})}),
 			}),
 			oc: []consumerdata.TraceData{
 				{
@@ -350,7 +353,8 @@ func TestInternalToOC(t *testing.T) {
 		{
 			name: "two-spans",
 			internal: data.NewTraceData([]*data.ResourceSpans{
-				data.NewResourceSpans(data.NewResource(), []*data.Span{span1, span2}),
+				data.NewResourceSpans(data.NewResource(), []*data.InstrumentationLibrarySpans{
+					data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []*data.Span{span1, span2})}),
 			}),
 			oc: []consumerdata.TraceData{
 				{
@@ -365,7 +369,8 @@ func TestInternalToOC(t *testing.T) {
 		{
 			name: "two-spans-plus-one-separate",
 			internal: data.NewTraceData([]*data.ResourceSpans{
-				data.NewResourceSpans(resource, []*data.Span{span1, span2}),
+				data.NewResourceSpans(resource, []*data.InstrumentationLibrarySpans{
+					data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []*data.Span{span1, span2})}),
 				resourceSpans3,
 			}),
 			oc: []consumerdata.TraceData{
