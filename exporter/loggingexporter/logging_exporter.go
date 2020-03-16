@@ -18,8 +18,10 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
+	"syscall"
 
 	"go.uber.org/zap"
 
@@ -158,7 +160,7 @@ func NewTraceExporter(config configmodels.Exporter, level string, logger *zap.Lo
 	return exporterhelper.NewTraceExporter(
 		config,
 		s.pushTraceData,
-		exporterhelper.WithShutdown(logger.Sync),
+		exporterhelper.WithShutdown(loggerSync(logger)),
 	)
 }
 
@@ -174,6 +176,27 @@ func NewMetricsExporter(config configmodels.Exporter, logger *zap.Logger) (expor
 			// TODO: Add ability to record the received data
 			return 0, nil
 		},
-		exporterhelper.WithShutdown(logger.Sync),
+		exporterhelper.WithShutdown(loggerSync(logger)),
 	)
+}
+
+func loggerSync(logger *zap.Logger) func() error {
+	return func() error {
+		// Currently Sync() on stdout and stderr return errors on Linux and macOS,
+		// respectively:
+		//
+		// - sync /dev/stdout: invalid argument
+		// - sync /dev/stdout: inappropriate ioctl for device
+		//
+		// Since these are not actionable ignore them.
+		err := logger.Sync()
+		if osErr, ok := err.(*os.PathError); ok {
+			wrappedErr := osErr.Unwrap()
+			switch wrappedErr {
+			case syscall.EINVAL, syscall.ENOTSUP, syscall.ENOTTY:
+				err = nil
+			}
+		}
+		return err
+	}
 }

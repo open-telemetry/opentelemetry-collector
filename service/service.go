@@ -460,6 +460,9 @@ func (app *Application) execute() error {
 // Start starts the collector according to the command and configuration
 // given by the user.
 func (app *Application) Start() error {
+	// From this point on do not show usage in case of error.
+	app.rootCmd.SilenceUsage = true
+
 	return app.rootCmd.Execute()
 }
 
