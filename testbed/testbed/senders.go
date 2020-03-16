@@ -138,8 +138,6 @@ func (je *JaegerThriftDataSender) GenConfigYAMLStr() string {
     protocols:
       grpc:
         endpoint: "localhost:8371"
-      thrift_tchannel:
-        endpoint: "localhost:8372"
       thrift_compact:
         endpoint: "localhost:8373"
       thrift_binary:
