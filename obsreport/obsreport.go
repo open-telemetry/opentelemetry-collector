@@ -16,6 +16,7 @@ package obsreport
 
 import (
 	"context"
+	"strings"
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
@@ -96,6 +97,16 @@ func CountMetricPoints(md consumerdata.MetricsData) (numTimeSeries int, numPoint
 	return numTimeSeries, numPoints
 }
 
+func buildComponentPrefix(componentPrefix, configType string) string {
+	if !strings.HasSuffix(componentPrefix, nameSep) {
+		componentPrefix += nameSep
+	}
+	if configType == "" {
+		return componentPrefix
+	}
+	return componentPrefix + configType + nameSep
+}
+
 func genAllViews() (views []*view.View) {
 	// Receiver views.
 	measures := []*stats.Int64Measure{
@@ -114,6 +125,19 @@ func genAllViews() (views []*view.View) {
 		mExporterSentMetricPoints, mExporterFailedToSendMetricPoints,
 	}
 	tagKeys = []tag.Key{tagKeyExporter}
+	views = append(views, genViews(
+		measures, tagKeys, view.Sum())...)
+
+	// Processor views.
+	measures = []*stats.Int64Measure{
+		mProcessorAcceptedSpans,
+		mProcessorRefusedSpans,
+		mProcessorDroppedSpans,
+		mProcessorAcceptedMetricPoints,
+		mProcessorRefusedMetricPoints,
+		mProcessorDroppedMetricPoints,
+	}
+	tagKeys = []tag.Key{tagKeyProcessor}
 	views = append(views, genViews(
 		measures, tagKeys, view.Sum())...)
 

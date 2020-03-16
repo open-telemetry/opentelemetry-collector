@@ -30,8 +30,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumererror"
 	"github.com/open-telemetry/opentelemetry-collector/internal/collector/telemetry"
+	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
-	"github.com/open-telemetry/opentelemetry-collector/processor/batchprocessor"
 )
 
 type queuedSpanProcessor struct {
@@ -61,36 +61,6 @@ func NewQueuedSpanProcessor(sender consumer.TraceConsumer, opts ...Option) proce
 	options := Options.apply(opts...)
 	sp := newQueuedSpanProcessor(sender, options)
 
-	// emit 0's so that the metric is present and reported, rather than absent
-	stats.Record(context.Background(), processor.StatBatchesDroppedCount.M(int64(0)), processor.StatDroppedSpanCount.M(int64(0)))
-
-	sp.queue.StartConsumers(sp.numWorkers, func(item interface{}) {
-		value := item.(*queueItem)
-		sp.processItemFromQueue(value)
-	})
-
-	// Start a timer to report the queue length.
-	ctx, _ := tag.New(context.Background(), tag.Upsert(processor.TagProcessorNameKey, sp.name))
-	ticker := time.NewTicker(1 * time.Second)
-	go func(ctx context.Context) {
-		defer ticker.Stop()
-		for {
-			select {
-			case <-sp.stopCh:
-				return
-			case <-ticker.C:
-				length := int64(sp.queue.Size())
-				stats.Record(ctx, statQueueLength.M(length))
-			}
-		}
-	}(ctx)
-
-	if options.batchingEnabled {
-		sp.logger.Info("Using queued processor with batching.")
-		batcher := batchprocessor.NewBatcher(sp.name, sp.logger, sp, options.batchingOptions...)
-		return batcher
-	}
-
 	return sp
 }
 
@@ -110,6 +80,33 @@ func newQueuedSpanProcessor(sender consumer.TraceConsumer, opts options) *queued
 
 // Start is invoked during service startup.
 func (sp *queuedSpanProcessor) Start(host component.Host) error {
+	// emit 0's so that the metric is present and reported, rather than absent
+	ctx := obsreport.ProcessorContext(host.Context(), sp.name)
+	stats.Record(
+		ctx,
+		processor.StatTraceBatchesDroppedCount.M(int64(0)),
+		processor.StatDroppedSpanCount.M(int64(0)))
+
+	sp.queue.StartConsumers(sp.numWorkers, func(item interface{}) {
+		value := item.(*queueItem)
+		sp.processItemFromQueue(value)
+	})
+
+	// Start a timer to report the queue length.
+	ticker := time.NewTicker(1 * time.Second)
+	go func() {
+		defer ticker.Stop()
+		for {
+			select {
+			case <-sp.stopCh:
+				return
+			case <-ticker.C:
+				length := int64(sp.queue.Size())
+				stats.Record(ctx, statQueueLength.M(length))
+			}
+		}
+	}()
+
 	return nil
 }
 
@@ -123,6 +120,7 @@ func (sp *queuedSpanProcessor) Stop() {
 
 // ConsumeTraceData implements the SpanProcessor interface
 func (sp *queuedSpanProcessor) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
+	ctx = obsreport.ProcessorContext(ctx, sp.name)
 	item := &queueItem{
 		queuedTime: time.Now(),
 		td:         td,
@@ -131,11 +129,17 @@ func (sp *queuedSpanProcessor) ConsumeTraceData(ctx context.Context, td consumer
 
 	statsTags := processor.StatsTagsForBatch(sp.name, processor.ServiceNameForNode(td.Node), td.SourceFormat)
 	numSpans := len(td.Spans)
-	stats.RecordWithTags(context.Background(), statsTags, processor.StatReceivedSpanCount.M(int64(numSpans)))
+	stats.RecordWithTags(ctx, statsTags, processor.StatReceivedSpanCount.M(int64(numSpans)))
 
 	addedToQueue := sp.queue.Produce(item)
 	if !addedToQueue {
+		// TODO: in principle this may not end in data loss because this can be
+		// in the same call stack as the receiver, ie.: the call from the receiver
+		// to here is synchronous. This means that actually it could be proper to
+		// record this as "refused" instead of "dropped".
 		sp.onItemDropped(item, statsTags)
+	} else {
+		obsreport.ProcessorTraceDataAccepted(ctx, td)
 	}
 	return nil
 }
@@ -224,7 +228,9 @@ func (sp *queuedSpanProcessor) processItemFromQueue(item *queueItem) {
 
 func (sp *queuedSpanProcessor) onItemDropped(item *queueItem, statsTags []tag.Mutator) {
 	numSpans := len(item.td.Spans)
-	stats.RecordWithTags(context.Background(), statsTags, processor.StatDroppedSpanCount.M(int64(numSpans)), processor.StatBatchesDroppedCount.M(int64(1)))
+	stats.RecordWithTags(item.ctx, statsTags, processor.StatDroppedSpanCount.M(int64(numSpans)), processor.StatTraceBatchesDroppedCount.M(int64(1)))
+
+	obsreport.ProcessorTraceDataDropped(item.ctx, item.td)
 
 	sp.logger.Warn("Span batch dropped",
 		zap.String("processor", sp.name),
@@ -259,21 +265,21 @@ func MetricViews(level telemetry.Level) []*view.View {
 	queueLengthView := &view.View{
 		Name:        statQueueLength.Name(),
 		Measure:     statQueueLength,
-		Description: "Current number of batches in the queued exporter",
+		Description: "Current number of batches in the queue",
 		TagKeys:     processorTagKeys,
 		Aggregation: view.LastValue(),
 	}
 	countSuccessSendView := &view.View{
 		Name:        statSuccessSendOps.Name(),
 		Measure:     statSuccessSendOps,
-		Description: "The number of successful send operations performed by queued exporter",
+		Description: "The number of successful send operations performed by queued_retry processor",
 		TagKeys:     tagKeys,
 		Aggregation: view.Sum(),
 	}
 	countFailuresSendView := &view.View{
 		Name:        statFailedSendOps.Name(),
 		Measure:     statFailedSendOps,
-		Description: "The number of failed send operations performed by queued exporter",
+		Description: "The number of failed send operations performed by queued_retry processor",
 		TagKeys:     tagKeys,
 		Aggregation: view.Sum(),
 	}
@@ -295,5 +301,7 @@ func MetricViews(level telemetry.Level) []*view.View {
 		Aggregation: latencyDistributionAggregation,
 	}
 
-	return []*view.View{queueLengthView, countSuccessSendView, countFailuresSendView, sendLatencyView, inQueueLatencyView}
+	legacyViews := []*view.View{queueLengthView, countSuccessSendView, countFailuresSendView, sendLatencyView, inQueueLatencyView}
+
+	return obsreport.ProcessorMetricViews(typeStr, legacyViews)
 }
