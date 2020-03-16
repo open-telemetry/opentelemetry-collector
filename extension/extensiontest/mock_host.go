@@ -61,3 +61,8 @@ func (mh *MockHost) WaitForFatalError(timeout time.Duration) (receivedError bool
 
 	return
 }
+
+// GetFactories of the specified kind. Returns a map of component types to factories.
+func (mh *MockHost) GetFactories(kind component.Kind) map[string]component.Factory {
+	return nil
+}

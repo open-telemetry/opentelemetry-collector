@@ -21,6 +21,7 @@ import (
 	"flag"
 	"os"
 	"os/signal"
+	"reflect"
 	"runtime"
 	"syscall"
 
@@ -48,8 +49,9 @@ type Application struct {
 	builtReceivers builder.Receivers
 	builtPipelines builder.BuiltPipelines
 
-	factories config.Factories
-	config    *configmodels.Config
+	factories   config.Factories
+	factoryMaps factoryMaps
+	config      *configmodels.Config
 
 	extensions []extension.ServiceExtension
 
@@ -85,6 +87,13 @@ type ApplicationStartInfo struct {
 
 var _ component.Host = (*Application)(nil)
 
+type factoryMaps struct {
+	receivers  map[string]component.Factory
+	processors map[string]component.Factory
+	exporters  map[string]component.Factory
+	extensions map[string]component.Factory
+}
+
 // Context returns a context provided by the host to be used on the receiver
 // operations.
 func (app *Application) Context() context.Context {
@@ -103,10 +112,11 @@ func New(
 	}
 
 	app := &Application{
-		info:      appInfo,
-		v:         viper.New(),
-		readyChan: make(chan struct{}),
-		factories: factories,
+		info:        appInfo,
+		v:           viper.New(),
+		readyChan:   make(chan struct{}),
+		factories:   factories,
+		factoryMaps: createFactoryMaps(factories),
 	}
 
 	rootCmd := &cobra.Command{
@@ -144,11 +154,45 @@ func New(
 	return app, nil
 }
 
+func createFactoryMaps(factories config.Factories) factoryMaps {
+	return factoryMaps{
+		receivers:  toComponentFactoryMap(factories.Receivers),
+		processors: toComponentFactoryMap(factories.Processors),
+		exporters:  toComponentFactoryMap(factories.Exporters),
+		extensions: toComponentFactoryMap(factories.Extensions),
+	}
+}
+
 // ReportFatalError is used to report to the host that the receiver encountered
 // a fatal error (i.e.: an error that the instance can't recover from) after
 // its start function has already returned.
 func (app *Application) ReportFatalError(err error) {
 	app.asyncErrorChannel <- err
+}
+
+func toComponentFactoryMap(m interface{}) map[string]component.Factory {
+	r := make(map[string]component.Factory)
+	iter := reflect.ValueOf(m).MapRange()
+	for iter.Next() {
+		k := iter.Key().String()
+		v := iter.Value().Interface().(component.Factory)
+		r[k] = v
+	}
+	return r
+}
+
+func (app *Application) GetFactories(kind component.Kind) map[string]component.Factory {
+	switch kind {
+	case component.KindReceiver:
+		return app.factoryMaps.receivers
+	case component.KindProcessor:
+		return app.factoryMaps.processors
+	case component.KindExporter:
+		return app.factoryMaps.exporters
+	case component.KindExtension:
+		return app.factoryMaps.extensions
+	}
+	return nil
 }
 
 func (app *Application) init() error {

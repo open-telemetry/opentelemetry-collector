@@ -21,14 +21,14 @@ import (
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 )
 
 // BaseFactory defines the common functions for all receiver factories.
 type BaseFactory interface {
-	// Type gets the type of the Receiver created by this factory.
-	Type() string
+	component.Factory
 
 	// CreateDefaultConfig creates the default configuration for the Receiver.
 	// This method can be called multiple times depending on the pipeline

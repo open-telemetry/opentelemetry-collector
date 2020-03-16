@@ -28,6 +28,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/defaults"
@@ -236,4 +237,21 @@ func (b badExtensionFactory) CreateExtension(
 	cfg configmodels.Extension,
 ) (extension.ServiceExtension, error) {
 	return nil, nil
+}
+
+func TestApplication_GetFactories(t *testing.T) {
+	exampleExtensionFactory := &config.ExampleExtensionFactory{}
+	factories := config.Factories{
+		Extensions: map[string]extension.Factory{
+			exampleExtensionFactory.Type(): exampleExtensionFactory,
+		},
+	}
+
+	app, err := New(factories, ApplicationStartInfo{})
+	require.NoError(t, err)
+
+	fMap := app.GetFactories(component.KindExtension)
+	assert.EqualValues(t, exampleExtensionFactory, fMap[exampleExtensionFactory.Type()])
+
+	// TODO: test the rest of factory maps.
 }

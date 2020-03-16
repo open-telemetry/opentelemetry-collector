@@ -29,6 +29,22 @@ type Component interface {
 	Shutdown() error
 }
 
+type Factory interface {
+	// Type gets the type of the Receiver created by this factory.
+	Type() string
+}
+
+// Kind specified one of the 4 components kinds, see consts below.
+type Kind int
+
+const (
+	_ Kind = iota // skip 0, start types from 1.
+	KindReceiver
+	KindProcessor
+	KindExporter
+	KindExtension
+)
+
 // Host represents the entity that is hosting a Component. It is used to allow communication
 // between the Component and its host (normally the service.Application is the host).
 type Host interface {
@@ -40,4 +56,17 @@ type Host interface {
 	// Context returns a context provided by the host to be used on the component
 	// operations.
 	Context() context.Context
+
+	// GetFactories of the specified kind. Returns a map of component types to factories.
+	// This allows components to create other components. For example:
+	//   func (r MyReceiver) Start(host component.Host) error {
+	//     factories := host.GetFactories(KindReceiver)
+	//     apacheFactory := factories["apache"].(receiver.Factory)
+	//     receiver, err := apacheFactory.CreateMetricsReceiver(...)
+	//     ...
+	//   }
+	// GetFactories can be called by the component anytime after Start() begins and
+	// until Shutdown() is called. Note that the component is responsible for destroying
+	// other components that it creates.
+	GetFactories(kind Kind) map[string]Factory
 }
