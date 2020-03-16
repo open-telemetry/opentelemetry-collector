@@ -76,6 +76,13 @@ type Factory interface {
 		consumer consumer.MetricsConsumer) (MetricsReceiver, error)
 }
 
+// CreationParams is passed to Create* functions in FactoryV2.
+type CreationParams struct {
+	// Logger that the factory can use during creation and can pass to the created
+	// component to be used later as well.
+	Logger *zap.Logger
+}
+
 // FactoryV2 can create TraceReceiverV2 and MetricsReceiverV2. This is the
 // new factory type that can create new style receivers.
 type FactoryV2 interface {
@@ -84,10 +91,14 @@ type FactoryV2 interface {
 	// CreateTraceReceiverV2 creates a trace receiver based on this config.
 	// If the receiver type does not support tracing or if the config is not valid
 	// error will be returned instead.
-	CreateTraceReceiverV2(ctx context.Context, logger *zap.Logger, cfg configmodels.Receiver,
+	CreateTraceReceiverV2(ctx context.Context, params CreationParams, cfg configmodels.Receiver,
 		nextConsumer consumer.TraceConsumerV2) (TraceReceiver, error)
 
-	// TODO: add CreateMetricsReceiverV2.
+	// CreateMetricsReceiverV2 creates a metrics receiver based on this config.
+	// If the receiver type does not support metrics or if the config is not valid
+	// error will be returned instead.
+	CreateMetricsReceiverV2(ctx context.Context, params CreationParams, cfg configmodels.Receiver,
+		nextConsumer consumer.MetricsConsumerV2) (MetricsReceiver, error)
 }
 
 // Build takes a list of receiver factories and returns a map of type map[string]Factory
