@@ -33,7 +33,7 @@ type MetricsConsumer interface {
 // MetricsConsumerV2 is the new metrics consumer interface that receives data.MetricData, processes it
 // as needed, and sends it to the next processing node if any or to the destination.
 type MetricsConsumerV2 interface {
-	ConsumeMetricsV2(ctx context.Context, md data.MetricData) error
+	ConsumeMetrics(ctx context.Context, md data.MetricData) error
 }
 
 // BaseTraceConsumer defines a common interface for TraceConsumer and TraceConsumerV2.
@@ -52,6 +52,6 @@ type TraceConsumer interface {
 // as needed, and sends it to the next processing node if any or to the destination.
 type TraceConsumerV2 interface {
 	BaseTraceConsumer
-	// ConsumeTraceV2 receives data.TraceData for processing.
-	ConsumeTraceV2(ctx context.Context, td data.TraceData) error
+	// ConsumeTrace receives data.TraceData for processing.
+	ConsumeTrace(ctx context.Context, td data.TraceData) error
 }

@@ -121,7 +121,7 @@ func (te *traceExporterV2) Start(host component.Host) error {
 	return nil
 }
 
-func (te *traceExporterV2) ConsumeTraceV2(
+func (te *traceExporterV2) ConsumeTrace(
 	ctx context.Context,
 	td data.TraceData,
 ) error {

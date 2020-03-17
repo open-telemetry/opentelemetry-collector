@@ -61,15 +61,15 @@ type CreationParams struct {
 type FactoryV2 interface {
 	BaseFactory
 
-	// CreateTraceReceiverV2 creates a trace receiver based on this config.
-	// If the receiver type does not support tracing or if the config is not valid
+	// CreateTraceExporter creates a trace exporter based on this config.
+	// If the exporter type does not support tracing or if the config is not valid
 	// error will be returned instead.
-	CreateTraceExporterV2(ctx context.Context, params CreationParams, cfg configmodels.Exporter) (TraceExporterV2, error)
+	CreateTraceExporter(ctx context.Context, params CreationParams, cfg configmodels.Exporter) (TraceExporterV2, error)
 
-	// CreateMetricsExporterV2 creates a metrics receiver based on this config.
-	// If the receiver type does not support metrics or if the config is not valid
+	// CreateMetricsExporter creates a metrics exporter based on this config.
+	// If the exporter type does not support metrics or if the config is not valid
 	// error will be returned instead.
-	CreateMetricsExporterV2(ctx context.Context, params CreationParams, cfg configmodels.Exporter) (MetricsExporterV2, error)
+	CreateMetricsExporter(ctx context.Context, params CreationParams, cfg configmodels.Exporter) (MetricsExporterV2, error)
 }
 
 // Build takes a list of exporter factories and returns a map of type map[string]Factory

@@ -88,16 +88,16 @@ type CreationParams struct {
 type FactoryV2 interface {
 	BaseFactory
 
-	// CreateTraceReceiverV2 creates a trace receiver based on this config.
+	// CreateTraceReceiver creates a trace receiver based on this config.
 	// If the receiver type does not support tracing or if the config is not valid
 	// error will be returned instead.
-	CreateTraceReceiverV2(ctx context.Context, params CreationParams, cfg configmodels.Receiver,
+	CreateTraceReceiver(ctx context.Context, params CreationParams, cfg configmodels.Receiver,
 		nextConsumer consumer.TraceConsumerV2) (TraceReceiver, error)
 
-	// CreateMetricsReceiverV2 creates a metrics receiver based on this config.
+	// CreateMetricsReceiver creates a metrics receiver based on this config.
 	// If the receiver type does not support metrics or if the config is not valid
 	// error will be returned instead.
-	CreateMetricsReceiverV2(ctx context.Context, params CreationParams, cfg configmodels.Receiver,
+	CreateMetricsReceiver(ctx context.Context, params CreationParams, cfg configmodels.Receiver,
 		nextConsumer consumer.MetricsConsumerV2) (MetricsReceiver, error)
 }
 
