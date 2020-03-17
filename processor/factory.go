@@ -68,16 +68,16 @@ type CreationParams struct {
 type FactoryV2 interface {
 	BaseFactory
 
-	// CreateTraceProcessorV2 creates a trace processor based on this config.
+	// CreateTraceProcessor creates a trace processor based on this config.
 	// If the processor type does not support tracing or if the config is not valid
 	// error will be returned instead.
-	CreateTraceProcessorV2(ctx context.Context, params CreationParams,
+	CreateTraceProcessor(ctx context.Context, params CreationParams,
 		nextConsumer consumer.TraceConsumerV2, cfg configmodels.Processor) (TraceProcessorV2, error)
 
-	// CreateMetricsProcessorV2 creates a metrics processor based on this config.
+	// CreateMetricsProcessor creates a metrics processor based on this config.
 	// If the processor type does not support metrics or if the config is not valid
 	// error will be returned instead.
-	CreateMetricsProcessorV2(ctx context.Context, params CreationParams,
+	CreateMetricsProcessor(ctx context.Context, params CreationParams,
 		nextConsumer consumer.MetricsConsumerV2, cfg configmodels.Processor) (MetricsProcessorV2, error)
 }
 

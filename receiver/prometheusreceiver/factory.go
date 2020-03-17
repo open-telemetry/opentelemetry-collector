@@ -31,7 +31,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/receiver"
 )
 
-// This file implements config V2 for Prometheus receiver.
+// This file implements config for Prometheus receiver.
 
 var _ (receiver.Factory) = (*Factory)(nil)
 

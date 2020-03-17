@@ -255,7 +255,7 @@ func TestTraceV2Exporter_Default(t *testing.T) {
 	assert.NotNil(t, te)
 	assert.Nil(t, err)
 
-	assert.Nil(t, te.ConsumeTraceV2(context.Background(), td))
+	assert.Nil(t, te.ConsumeTrace(context.Background(), td))
 	assert.Nil(t, te.Shutdown())
 }
 
@@ -266,7 +266,7 @@ func TestTraceV2Exporter_Default_ReturnError(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, te)
 
-	err = te.ConsumeTraceV2(context.Background(), td)
+	err = te.ConsumeTrace(context.Background(), td)
 	require.Equalf(t, want, err, "ConsumeTraceData returns: Want %v Got %v", want, err)
 }
 
@@ -361,7 +361,7 @@ func checkRecordedMetricsForTraceExporterV2(t *testing.T, te exporter.TraceExpor
 	ctx := observability.ContextWithReceiverName(context.Background(), fakeTraceReceiverName)
 	const numBatches = 7
 	for i := 0; i < numBatches; i++ {
-		require.Equal(t, wantError, te.ConsumeTraceV2(ctx, td))
+		require.Equal(t, wantError, te.ConsumeTrace(ctx, td))
 	}
 
 	err := observabilitytest.CheckValueViewExporterReceivedSpans(fakeTraceReceiverName, fakeTraceExporterName, numBatches*len(spans))
@@ -380,7 +380,7 @@ func generateTraceV2Traffic(t *testing.T, te exporter.TraceExporterV2, numReques
 	ctx, span := trace.StartSpan(context.Background(), fakeTraceParentSpanName, trace.WithSampler(trace.AlwaysSample()))
 	defer span.End()
 	for i := 0; i < numRequests; i++ {
-		require.Equal(t, wantError, te.ConsumeTraceV2(ctx, td))
+		require.Equal(t, wantError, te.ConsumeTrace(ctx, td))
 	}
 }
 

@@ -398,7 +398,7 @@ func (b *newStyleReceiverFactory) CustomUnmarshaler() receiver.CustomUnmarshaler
 	return nil
 }
 
-func (b *newStyleReceiverFactory) CreateTraceReceiverV2(
+func (b *newStyleReceiverFactory) CreateTraceReceiver(
 	ctx context.Context,
 	params receiver.CreationParams,
 	cfg configmodels.Receiver,
@@ -407,7 +407,7 @@ func (b *newStyleReceiverFactory) CreateTraceReceiverV2(
 	return &config.ExampleReceiverProducer{}, nil
 }
 
-func (b *newStyleReceiverFactory) CreateMetricsReceiverV2(
+func (b *newStyleReceiverFactory) CreateMetricsReceiver(
 	ctx context.Context,
 	params receiver.CreationParams,
 	cfg configmodels.Receiver,
