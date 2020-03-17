@@ -38,10 +38,12 @@ const (
 	typeStr = "jaeger"
 
 	// Protocol values.
-	protoGRPC          = "grpc"
-	protoThriftHTTP    = "thrift_http"
-	protoThriftBinary  = "thrift_binary"
-	protoThriftCompact = "thrift_compact"
+	protoGRPC       = "grpc"
+	protoThriftHTTP = "thrift_http"
+	// Deprecated, see https://github.com/open-telemetry/opentelemetry-collector/issues/267
+	protoThriftTChannel = "thrift_tchannel"
+	protoThriftBinary   = "thrift_binary"
+	protoThriftCompact  = "thrift_compact"
 
 	// Default endpoints to bind to.
 	defaultGRPCBindEndpoint = "localhost:14250"
@@ -121,6 +123,7 @@ func (f *Factory) CreateTraceReceiver(
 
 	protoGRPC := rCfg.Protocols[protoGRPC]
 	protoHTTP := rCfg.Protocols[protoThriftHTTP]
+	protoTChannel := rCfg.Protocols[protoThriftTChannel]
 	protoThriftCompact := rCfg.Protocols[protoThriftCompact]
 	protoThriftBinary := rCfg.Protocols[protoThriftBinary]
 	remoteSamplingConfig := rCfg.RemoteSampling
@@ -152,6 +155,10 @@ func (f *Factory) CreateTraceReceiver(
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	if protoTChannel != nil && protoTChannel.IsEnabled() {
+		logger.Warn("Protocol unknown or not supported", zap.String("protocol", protoThriftTChannel))
 	}
 
 	if protoThriftBinary != nil && protoThriftBinary.IsEnabled() {
