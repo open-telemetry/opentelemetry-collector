@@ -48,7 +48,7 @@ spec:
       - command:
           - "/otelcol"
           - "--config=/conf/otel-agent-config.yaml"
-        image: omnition/opentelemetry-collector:v0.2.3
+        image: omnition/opentelemetry-collector-contrib:0.2.7
         name: otel-agent
         resources:
           limits:
@@ -179,7 +179,7 @@ spec:
         env:
         - name: GOGC
           value: "80"
-        image: omnition/opentelemetry-collector:v0.2.3
+        image: omnition/opentelemetry-collector-contrib:0.2.7
         name: otel-collector
         resources:
           limits:
