@@ -10,6 +10,7 @@ require (
 	github.com/VividCortex/gohistogram v1.0.0 // indirect
 	github.com/apache/thrift v0.0.0-20161221203622-b2a4d4ae21c7
 	github.com/bmizerany/perks v0.0.0-20141205001514-d9a9656a3a4b // indirect
+	github.com/cenkalti/backoff v0.0.0-20181003080854-62661b46c409
 	github.com/census-instrumentation/opencensus-proto v0.2.1
 	github.com/client9/misspell v0.3.4
 	github.com/codahale/hdrhistogram v0.0.0-20161010025455-3a0bb77429bd // indirect
@@ -52,6 +53,7 @@ require (
 	go.uber.org/zap v1.10.0
 	golang.org/x/sys v0.0.0-20190922100055-0a153f010e69
 	google.golang.org/api v0.10.0 // indirect
+	google.golang.org/genproto v0.0.0-20190801165951-fa694d86fc64
 	google.golang.org/grpc v1.23.0
 	gopkg.in/yaml.v2 v2.2.4
 	k8s.io/client-go v12.0.0+incompatible // indirect

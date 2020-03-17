@@ -17,11 +17,15 @@ package configgrpc
 
 import (
 	"crypto/x509"
+	"fmt"
 	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
+
+	"github.com/open-telemetry/opentelemetry-collector/compression"
+	compressiongrpc "github.com/open-telemetry/opentelemetry-collector/compression/grpc"
 )
 
 // GRPCSettings defines common settings for a gRPC configuration.
@@ -65,6 +69,15 @@ type KeepaliveConfig struct {
 // GrpcSettingsToDialOptions maps configgrpc.GRPCSettings to a slice of dial options for gRPC
 func GrpcSettingsToDialOptions(settings GRPCSettings) ([]grpc.DialOption, error) {
 	opts := []grpc.DialOption{}
+
+	if settings.Compression != "" {
+		if compressionKey := compressiongrpc.GetGRPCCompressionKey(settings.Compression); compressionKey != compression.Unsupported {
+			opts = append(opts, grpc.WithDefaultCallOptions(grpc.UseCompressor(compressionKey)))
+		} else {
+			return nil, fmt.Errorf("unsupported compression type %q", settings.Compression)
+		}
+	}
+
 	if settings.CertPemFile != "" {
 		creds, err := credentials.NewClientTLSFromFile(settings.CertPemFile, settings.ServerNameOverride)
 		if err != nil {

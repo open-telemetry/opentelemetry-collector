@@ -538,7 +538,7 @@ func TestOcToOtlp(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got := ocToOtlp(test.oc)
+			got := OCToOTLP(test.oc)
 			assert.EqualValues(t, test.otlp, got)
 		})
 	}
