@@ -185,6 +185,7 @@ func (rm ResourceMetrics) SetInstrumentationLibraryMetrics(s []InstrumentationLi
 		return
 	}
 
+	// TODO: reuse orig slice if capacity is enough.
 	// Reconstruct the slice because we don't know what elements were removed/added.
 	rm.orig.InstrumentationLibraryMetrics = make([]*otlpmetrics.InstrumentationLibraryMetrics, len(rm.pimpl.instrumentationLibraryMetrics))
 	for i := range rm.pimpl.instrumentationLibraryMetrics {
@@ -199,7 +200,6 @@ func (rm ResourceMetrics) flushInternal() {
 	}
 
 	rm.orig.Resource = rm.pimpl.resource.toOrig()
-
 	// User may have changed internal fields in any InstrumentationLibraryMetrics, flush all of them.
 	for i := range rm.pimpl.instrumentationLibraryMetrics {
 		rm.pimpl.instrumentationLibraryMetrics[i].flushInternal()
@@ -285,6 +285,7 @@ func (ilm InstrumentationLibraryMetrics) SetMetrics(ms []Metric) {
 		return
 	}
 
+	// TODO: reuse orig slice if capacity is enough.
 	// Reconstruct the slice because we don't know what elements were removed/added.
 	ilm.orig.Metrics = make([]*otlpmetrics.Metric, len(ilm.pimpl.metrics))
 	for i := range ilm.pimpl.metrics {
@@ -386,6 +387,7 @@ func (m Metric) SetInt64DataPoints(v []Int64DataPoint) {
 		return
 	}
 
+	// TODO: reuse orig slice if capacity is enough.
 	// Reconstruct the slice because we don't know what elements were removed/added.
 	m.orig.Int64DataPoints = make([]*otlpmetrics.Int64DataPoint, len(m.pimpl.int64DataPoints))
 	for i := range m.pimpl.int64DataPoints {
@@ -407,6 +409,7 @@ func (m Metric) SetDoubleDataPoints(v []DoubleDataPoint) {
 		return
 	}
 
+	// TODO: reuse orig slice if capacity is enough.
 	// Reconstruct the slice because we don't know what elements were removed/added.
 	m.orig.DoubleDataPoints = make([]*otlpmetrics.DoubleDataPoint, len(m.pimpl.doubleDataPoints))
 	for i := range m.pimpl.doubleDataPoints {
@@ -428,6 +431,7 @@ func (m Metric) SetHistogramDataPoints(v []HistogramDataPoint) {
 		return
 	}
 
+	// TODO: reuse orig slice if capacity is enough.
 	// Reconstruct the slice because we don't know what elements were removed/added.
 	m.orig.HistogramDataPoints = make([]*otlpmetrics.HistogramDataPoint, len(m.pimpl.histogramDataPoints))
 	for i := range m.pimpl.histogramDataPoints {
@@ -450,6 +454,7 @@ func (m Metric) SetSummaryDataPoints(v []SummaryDataPoint) {
 		return
 	}
 
+	// TODO: reuse orig slice if capacity is enough.
 	// Reconstruct the slice because we don't know what elements were removed/added.
 	m.orig.SummaryDataPoints = make([]*otlpmetrics.SummaryDataPoint, len(m.pimpl.summaryDataPoints))
 	for i := range m.pimpl.summaryDataPoints {
@@ -567,7 +572,7 @@ func (md MetricDescriptor) SetMetricType(v MetricType) {
 }
 
 func (md MetricDescriptor) LabelsMap() LabelsMap {
-	return md.labels.getLabelsMap(md.orig.Labels)
+	return md.labels.initAndGetMap(md.orig.Labels)
 }
 
 func (md MetricDescriptor) SetLabelsMap(lm LabelsMap) {
@@ -638,7 +643,7 @@ func newInt64DataPointSliceFromOrig(origs []*otlpmetrics.Int64DataPoint) []Int64
 }
 
 func (dp Int64DataPoint) LabelsMap() LabelsMap {
-	return dp.labels.getLabelsMap(dp.orig.Labels)
+	return dp.labels.initAndGetMap(dp.orig.Labels)
 }
 
 func (dp Int64DataPoint) SetLabelsMap(lm LabelsMap) {
@@ -720,7 +725,7 @@ func newDoubleDataPointSliceFormOrgig(origs []*otlpmetrics.DoubleDataPoint) []Do
 }
 
 func (dp DoubleDataPoint) LabelsMap() LabelsMap {
-	return dp.labels.getLabelsMap(dp.orig.Labels)
+	return dp.labels.initAndGetMap(dp.orig.Labels)
 }
 
 func (dp DoubleDataPoint) SetLabelsMap(lm LabelsMap) {
@@ -809,7 +814,7 @@ func newHistogramDataPointSliceFromOrig(origs []*otlpmetrics.HistogramDataPoint)
 }
 
 func (dp HistogramDataPoint) LabelsMap() LabelsMap {
-	return dp.pimpl.labels.getLabelsMap(dp.orig.Labels)
+	return dp.pimpl.labels.initAndGetMap(dp.orig.Labels)
 }
 
 func (dp HistogramDataPoint) SetLabelsMap(lm LabelsMap) {
@@ -863,6 +868,8 @@ func (dp HistogramDataPoint) SetBuckets(v []HistogramBucket) {
 		dp.orig.Buckets = nil
 		return
 	}
+
+	// TODO: reuse orig slice if capacity is enough.
 	// Reconstruct the slice because we don't know what elements were removed/added.
 	dp.orig.Buckets = make([]*otlpmetrics.HistogramDataPoint_Bucket, len(dp.pimpl.buckets))
 	for i := range dp.pimpl.buckets {
@@ -901,7 +908,7 @@ type HistogramBucket struct {
 	// Wrap OTLP HistogramDataPoint_Bucket.
 	orig *otlpmetrics.HistogramDataPoint_Bucket
 
-	// Override a few fields. These fields are the source of truth. Their counterparts
+	// Override labels. If initialized internal fields are the source of truth. Their counterparts
 	// stored in corresponding fields of "orig" are ignored.
 	labels *internalLabels
 }
@@ -975,7 +982,7 @@ type HistogramBucketExemplar struct {
 	// Wrap OTLP HistogramDataPoint_Bucket_Exemplar.
 	orig *otlpmetrics.HistogramDataPoint_Bucket_Exemplar
 
-	// Override a few fields. These fields are the source of truth. Their counterparts
+	// Override labels. If initialized internal fields are the source of truth. Their counterparts
 	// stored in corresponding fields of "orig" are ignored.
 	labels *internalLabels
 }
@@ -1006,7 +1013,7 @@ func (hbe HistogramBucketExemplar) SetTimestamp(v TimestampUnixNano) {
 }
 
 func (hbe HistogramBucketExemplar) Attachments() LabelsMap {
-	return hbe.labels.getLabelsMap(hbe.orig.Attachments)
+	return hbe.labels.initAndGetMap(hbe.orig.Attachments)
 }
 
 func (hbe HistogramBucketExemplar) SetAttachments(lm LabelsMap) {
@@ -1071,7 +1078,7 @@ func newSummaryDataPointSliceFromOrig(origs []*otlpmetrics.SummaryDataPoint) []S
 }
 
 func (dp SummaryDataPoint) LabelsMap() LabelsMap {
-	return dp.pimpl.labels.getLabelsMap(dp.orig.Labels)
+	return dp.pimpl.labels.initAndGetMap(dp.orig.Labels)
 }
 
 func (dp SummaryDataPoint) SetLabelsMap(lm LabelsMap) {
@@ -1126,6 +1133,7 @@ func (dp SummaryDataPoint) SetValueAtPercentiles(v []SummaryValueAtPercentile) {
 		return
 	}
 
+	// TODO: reuse orig slice if capacity is enough.
 	// Reconstruct the slice because we don't know what elements were removed/added.
 	dp.orig.PercentileValues = make([]*otlpmetrics.SummaryDataPoint_ValueAtPercentile, len(dp.pimpl.valueAtPercentiles))
 	for i := range dp.pimpl.valueAtPercentiles {
@@ -1195,7 +1203,7 @@ type internalLabels struct {
 	initialized bool
 }
 
-func (ils *internalLabels) getLabelsMap(orig []*otlpcommon.StringKeyValue) LabelsMap {
+func (ils *internalLabels) initAndGetMap(orig []*otlpcommon.StringKeyValue) LabelsMap {
 	if !ils.initialized {
 		ils.initialized = true
 		if len(orig) == 0 {
