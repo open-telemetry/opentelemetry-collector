@@ -43,5 +43,13 @@ func LoadConfigFile(t *testing.T, fileName string, factories Factories) (*config
 	}
 
 	// Load the config from viper using the given factories.
-	return Load(v, factories, zap.NewNop())
+	cfg, err := Load(v, factories)
+	if err != nil {
+		return nil, err
+	}
+	err = ValidateConfig(cfg, zap.NewNop())
+	if err != nil {
+		return nil, err
+	}
+	return cfg, nil
 }

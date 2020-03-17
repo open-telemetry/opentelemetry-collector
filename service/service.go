@@ -19,6 +19,7 @@ package service
 import (
 	"context"
 	"flag"
+	"fmt"
 	"os"
 	"os/signal"
 	"runtime"
@@ -92,33 +93,64 @@ func (app *Application) Context() context.Context {
 	return context.Background()
 }
 
-// New creates and returns a new instance of Application.
-func New(
-	factories config.Factories,
-	appInfo ApplicationStartInfo,
-) (*Application, error) {
+// Parameters holds configuration for creating a new Application.
+type Parameters struct {
+	// Factories component factories.
+	Factories config.Factories
+	// ApplicationStartInfo provides application start information.
+	ApplicationStartInfo ApplicationStartInfo
+	// ConfigFactory that creates the configuration.
+	// If it is not provided the default factory will be used.
+	// The default factory loads the configuration specified as a command line flag.
+	ConfigFactory ConfigFactory
+}
 
-	if err := configcheck.ValidateConfigFromFactories(factories); err != nil {
+// ConfigFactory creates config.
+type ConfigFactory func(v *viper.Viper, factories config.Factories) (*configmodels.Config, error)
+
+func fileLoaderConfigFactory(v *viper.Viper, factories config.Factories) (*configmodels.Config, error) {
+	file := builder.GetConfigFile()
+	if file == "" {
+		return nil, errors.New("config file not specified")
+	}
+	v.SetConfigFile(file)
+	err := v.ReadInConfig()
+	if err != nil {
+		return nil, fmt.Errorf("error loading config file %q: %v", file, err)
+	}
+	return config.Load(v, factories)
+}
+
+// New creates and returns a new instance of Application.
+func New(params Parameters) (*Application, error) {
+
+	if err := configcheck.ValidateConfigFromFactories(params.Factories); err != nil {
 		return nil, err
 	}
 
 	app := &Application{
-		info:      appInfo,
+		info:      params.ApplicationStartInfo,
 		v:         viper.New(),
 		readyChan: make(chan struct{}),
-		factories: factories,
+		factories: params.Factories,
+	}
+
+	factory := params.ConfigFactory
+	if factory == nil {
+		// use default factory that loads the configuration file
+		factory = fileLoaderConfigFactory
 	}
 
 	rootCmd := &cobra.Command{
-		Use:  appInfo.ExeName,
-		Long: appInfo.LongName,
+		Use:  params.ApplicationStartInfo.ExeName,
+		Long: params.ApplicationStartInfo.LongName,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			err := app.init()
 			if err != nil {
 				return err
 			}
 
-			err = app.execute()
+			err = app.execute(factory)
 			if err != nil {
 				return err
 			}
@@ -152,22 +184,11 @@ func (app *Application) ReportFatalError(err error) {
 }
 
 func (app *Application) init() error {
-	file := builder.GetConfigFile()
-	if file == "" {
-		return errors.New("config file not specified")
-	}
-	app.v.SetConfigFile(file)
-
-	err := app.v.ReadInConfig()
-	if err != nil {
-		return errors.Wrapf(err, "error loading config file %q", file)
-	}
-
-	app.logger, err = newLogger()
+	l, err := newLogger()
 	if err != nil {
 		return errors.Wrap(err, "failed to get logger")
 	}
-
+	app.logger = l
 	return nil
 }
 
@@ -205,16 +226,18 @@ func (app *Application) runAndWaitForShutdownEvent() {
 	}
 }
 
-func (app *Application) setupConfigurationComponents() error {
-	// Load configuration.
+func (app *Application) setupConfigurationComponents(factory ConfigFactory) error {
 	app.logger.Info("Loading configuration...")
-	cfg, err := config.Load(app.v, app.factories, app.logger)
+	cfg, err := factory(app.v, app.factories)
+	if err != nil {
+		return errors.Wrap(err, "cannot load configuration")
+	}
+	err = config.ValidateConfig(cfg, app.logger)
 	if err != nil {
 		return errors.Wrap(err, "cannot load configuration")
 	}
 
 	app.config = cfg
-
 	app.logger.Info("Applying configuration...")
 
 	err = app.setupExtensions()
@@ -394,7 +417,7 @@ func (app *Application) shutdownExtensions() error {
 	return nil
 }
 
-func (app *Application) execute() error {
+func (app *Application) execute(factory ConfigFactory) error {
 	app.logger.Info("Starting "+app.info.LongName+"...",
 		zap.String("Version", app.info.Version),
 		zap.String("GitHash", app.info.GitHash),
@@ -412,7 +435,7 @@ func (app *Application) execute() error {
 		return err
 	}
 
-	err = app.setupConfigurationComponents()
+	err = app.setupConfigurationComponents(factory)
 	if err != nil {
 		return err
 	}
