@@ -653,6 +653,110 @@ func TestOtlpToFromInternalSummaryPointsMutating(t *testing.T) {
 	}, MetricDataToOtlp(metricData))
 }
 
+func BenchmarkOtlpToFromInternal_PassThrough(b *testing.B) {
+	resourceMetricsList := []*otlpmetrics.ResourceMetrics{
+		{
+			Resource: generateTestResource(),
+			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+				{
+					InstrumentationLibrary: generateTestInstrumentationLibrary(),
+					Metrics:                []*otlpmetrics.Metric{generateTestIntMetric(), generateTestDoubleMetric(), generateTestHistogramMetric(), generateTestSummaryMetric()},
+				},
+			},
+		},
+	}
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		md := MetricDataFromOtlp(resourceMetricsList)
+		MetricDataToOtlp(md)
+	}
+}
+
+func BenchmarkOtlpToFromInternal_Int64Points_MutateOneLabel(b *testing.B) {
+	resourceMetricsList := []*otlpmetrics.ResourceMetrics{
+		{
+			Resource: generateTestResource(),
+			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+				{
+					InstrumentationLibrary: generateTestInstrumentationLibrary(),
+					Metrics:                []*otlpmetrics.Metric{generateTestIntMetric()},
+				},
+			},
+		},
+	}
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		md := MetricDataFromOtlp(resourceMetricsList)
+		md.ResourceMetrics()[0].InstrumentationLibraryMetrics()[0].Metrics()[0].Int64DataPoints()[0].Labels().LabelsMap()["key0"] = "value0"
+		MetricDataToOtlp(md)
+	}
+}
+
+func BenchmarkOtlpToFromInternal_DoublePoints_MutateOneLabel(b *testing.B) {
+	resourceMetricsList := []*otlpmetrics.ResourceMetrics{
+		{
+			Resource: generateTestResource(),
+			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+				{
+					InstrumentationLibrary: generateTestInstrumentationLibrary(),
+					Metrics:                []*otlpmetrics.Metric{generateTestDoubleMetric()},
+				},
+			},
+		},
+	}
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		md := MetricDataFromOtlp(resourceMetricsList)
+		md.ResourceMetrics()[0].InstrumentationLibraryMetrics()[0].Metrics()[0].DoubleDataPoints()[0].Labels().LabelsMap()["key0"] = "value0"
+		MetricDataToOtlp(md)
+	}
+}
+
+func BenchmarkOtlpToFromInternal_HistogramPoints_MutateOneLabel(b *testing.B) {
+	resourceMetricsList := []*otlpmetrics.ResourceMetrics{
+		{
+			Resource: generateTestResource(),
+			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+				{
+					InstrumentationLibrary: generateTestInstrumentationLibrary(),
+					Metrics:                []*otlpmetrics.Metric{generateTestHistogramMetric()},
+				},
+			},
+		},
+	}
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		md := MetricDataFromOtlp(resourceMetricsList)
+		md.ResourceMetrics()[0].InstrumentationLibraryMetrics()[0].Metrics()[0].HistogramDataPoints()[0].Labels().LabelsMap()["key0"] = "value0"
+		MetricDataToOtlp(md)
+	}
+}
+
+func BenchmarkOtlpToFromInternal_SummaryPoints_MutateOneLabel(b *testing.B) {
+	resourceMetricsList := []*otlpmetrics.ResourceMetrics{
+		{
+			Resource: generateTestResource(),
+			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+				{
+					InstrumentationLibrary: generateTestInstrumentationLibrary(),
+					Metrics:                []*otlpmetrics.Metric{generateTestSummaryMetric()},
+				},
+			},
+		},
+	}
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		md := MetricDataFromOtlp(resourceMetricsList)
+		md.ResourceMetrics()[0].InstrumentationLibraryMetrics()[0].Metrics()[0].SummaryDataPoints()[0].Labels().LabelsMap()["key0"] = "value0"
+		MetricDataToOtlp(md)
+	}
+}
+
 func generateTestResource() *otlpresource.Resource {
 	return &otlpresource.Resource{
 		Attributes: []*otlpcommon.AttributeKeyValue{
