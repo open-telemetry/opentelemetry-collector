@@ -46,11 +46,11 @@ The OpenTelemetry Collector offers a vendor-agnostic implementation on how to re
 
 Objectives:
 
-- Unified: Single codebase, deployable as an agent or collector with support for traces, metrics, and logs (future).
 - Usable: Reasonable default configuration, supports popular protocols, runs and collects out of the box.
 - Performant: Highly stable and performant under varying loads and configurations.
 - Observable: An exemplar of an observable service.
 - Extensible: Customizable without touching the core code.
+- Unified: Single codebase, deployable as an agent or collector with support for traces, metrics, and logs (future).
 
 ### Community Roles
 
