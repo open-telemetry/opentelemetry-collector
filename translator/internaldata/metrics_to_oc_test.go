@@ -78,7 +78,7 @@ func TestResourceMetricsToMetricsData(t *testing.T) {
 		"str1":                                  data.NewAttributeValueString("text"),
 		"int2":                                  data.NewAttributeValueInt(123),
 	}
-	resource.SetAttributes(attrs)
+	resource.SetAttributes(data.NewAttributeMap(attrs))
 
 	ilm := data.NewInstrumentationLibraryMetricsSlice(1)
 	ilm[0].SetMetrics(metrics)

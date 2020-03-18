@@ -70,7 +70,7 @@ func TestOcNodeResourceToInternal(t *testing.T) {
 	}
 	resource = ocNodeResourceToInternal(ocNode, ocResource)
 
-	expectedAttrs := data.AttributesMap{
+	expectedAttrs := data.NewAttributeMap(map[string]data.AttributeValue{
 		conventions.AttributeHostHostname:       data.NewAttributeValueString("host1"),
 		conventions.OCAttributeProcessID:        data.NewAttributeValueInt(123),
 		conventions.OCAttributeProcessStartTime: data.NewAttributeValueString("2020-02-11T20:26:00Z"),
@@ -81,17 +81,17 @@ func TestOcNodeResourceToInternal(t *testing.T) {
 		"node-attr":                             data.NewAttributeValueString("val1"),
 		conventions.OCAttributeResourceType:     data.NewAttributeValueString("good-resource"),
 		"resource-attr":                         data.NewAttributeValueString("val2"),
-	}
+	})
 
-	assert.EqualValues(t, expectedAttrs, resource.Attributes())
+	assert.EqualValues(t, expectedAttrs.Sort(), resource.Attributes().Sort())
 
 	// Make sure hard-coded fields override same-name values in Attributes.
 	// To do that add Attributes with same-name.
-	for k := range expectedAttrs {
+	for i := 0; i < expectedAttrs.Len(); i++ {
 		// Set all except "attr1" which is not a hard-coded field to some bogus values.
 
-		if strings.Index(k, "-attr") < 0 {
-			ocNode.Attributes[k] = "this will be overridden 1"
+		if strings.Index(expectedAttrs.GetAttribute(i).Key(), "-attr") < 0 {
+			ocNode.Attributes[expectedAttrs.GetAttribute(i).Key()] = "this will be overridden 1"
 		}
 	}
 	ocResource.Labels[conventions.OCAttributeResourceType] = "this will be overridden 2"
@@ -100,7 +100,7 @@ func TestOcNodeResourceToInternal(t *testing.T) {
 	resource = ocNodeResourceToInternal(ocNode, ocResource)
 
 	// And verify that same-name attributes were ignored.
-	assert.EqualValues(t, expectedAttrs, resource.Attributes())
+	assert.EqualValues(t, expectedAttrs.Sort(), resource.Attributes().Sort())
 }
 
 func TestOcTraceStateToInternal(t *testing.T) {
@@ -339,8 +339,7 @@ func TestOcToInternal(t *testing.T) {
 
 	internalResource := data.NewResource()
 	internalResource.SetAttributes(
-		map[string]data.AttributeValue{"nodeattr": data.NewAttributeValueString("attrval123")},
-	)
+		data.NewAttributeMap(map[string]data.AttributeValue{"nodeattr": data.NewAttributeValueString("attrval123")}))
 
 	tests := []struct {
 		name string

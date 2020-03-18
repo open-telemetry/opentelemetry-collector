@@ -183,11 +183,7 @@ func TestInternalToOC(t *testing.T) {
 	assert.NoError(t, err)
 
 	resource := data.NewResource()
-	resource.SetAttributes(
-		data.AttributesMap{
-			"label1": data.NewAttributeValueString("value1"),
-		},
-	)
+	resource.SetAttributes(data.NewAttributeMap(map[string]data.AttributeValue{"label1": data.NewAttributeValueString("value1")}))
 
 	span1 := data.NewSpan()
 	span1.SetName("operationB")
@@ -233,9 +229,8 @@ func TestInternalToOC(t *testing.T) {
 	span3.SetEndTime(internal.TimestampToUnixnano(timestampP))
 	span3ResourceType := "resource2"
 	span3Resource := data.NewResource()
-	span3Resource.SetAttributes(data.AttributesMap{
-		conventions.OCAttributeResourceType: data.NewAttributeValueString(span3ResourceType),
-	})
+	span3Resource.SetAttributes(data.NewAttributeMap(map[string]data.AttributeValue{
+		conventions.OCAttributeResourceType: data.NewAttributeValueString(span3ResourceType)}))
 	resourceSpans3 := data.NewResourceSpans(span3Resource, []*data.InstrumentationLibrarySpans{
 		data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []*data.Span{span3})})
 

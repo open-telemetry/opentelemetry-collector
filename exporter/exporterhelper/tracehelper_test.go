@@ -354,7 +354,7 @@ func checkRecordedMetricsForTraceExporterV2(t *testing.T, te exporter.TraceExpor
 	defer doneFn()
 
 	spans := make([]*data.Span, 2)
-	rs := data.NewResourceSpans(nil, nil)
+	rs := data.NewResourceSpans(data.NewResource(), nil)
 	ils := data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), spans)
 	rs.SetInstrumentationLibrarySpans([]*data.InstrumentationLibrarySpans{ils})
 	td := data.NewTraceData([]*data.ResourceSpans{rs})
@@ -373,7 +373,7 @@ func checkRecordedMetricsForTraceExporterV2(t *testing.T, te exporter.TraceExpor
 
 func generateTraceV2Traffic(t *testing.T, te exporter.TraceExporterV2, numRequests int, wantError error) {
 	spans := make([]*data.Span, 1)
-	rs := data.NewResourceSpans(nil, nil)
+	rs := data.NewResourceSpans(data.NewResource(), nil)
 	ils := data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), spans)
 	rs.SetInstrumentationLibrarySpans([]*data.InstrumentationLibrarySpans{ils})
 	td := data.NewTraceData([]*data.ResourceSpans{rs})

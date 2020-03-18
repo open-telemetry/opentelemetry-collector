@@ -15,7 +15,6 @@
 package data
 
 import (
-	otlpcommon "github.com/open-telemetry/opentelemetry-proto/gen/go/common/v1"
 	otlpresource "github.com/open-telemetry/opentelemetry-proto/gen/go/resource/v1"
 )
 
@@ -24,46 +23,24 @@ import (
 // Must use NewResource functions to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Resource struct {
-	// Set of attributes that describe the resource.
-	attributes AttributesMap
+	orig *otlpresource.Resource
 }
 
-func NewResource() *Resource {
-	return &Resource{}
+// NewResource creates a new empty Resource.
+func NewResource() Resource {
+	return Resource{&otlpresource.Resource{}}
 }
 
-func newResource(orig *otlpresource.Resource) *Resource {
-	if orig == nil {
-		return &Resource{}
-	}
-	origAttr := orig.Attributes
-	attr := make(AttributesMap, len(origAttr))
-	for i := range origAttr {
-		attr[origAttr[i].GetKey()] = AttributeValue{origAttr[i]}
-	}
-	return &Resource{attr}
+func newResource(orig *otlpresource.Resource) Resource {
+	return Resource{orig}
 }
 
-func (r *Resource) Attributes() AttributesMap {
-	return r.attributes
+// Attributes returns the AttributesMap associated with this Resource.
+func (r Resource) Attributes() AttributeMap {
+	return AttributeMap{&r.orig.Attributes}
 }
 
-func (r *Resource) SetAttributes(v AttributesMap) {
-	r.attributes = v
-}
-
-func (r *Resource) toOrig() *otlpresource.Resource {
-	if r.attributes == nil {
-		return nil
-	}
-	attrs := make([]otlpcommon.AttributeKeyValue, len(r.attributes))
-	wrappers := make([]*otlpcommon.AttributeKeyValue, len(r.attributes))
-	i := 0
-	for k, v := range r.attributes {
-		attrs[i] = *v.orig
-		attrs[i].Key = k
-		wrappers[i] = &attrs[i]
-		i++
-	}
-	return &otlpresource.Resource{Attributes: wrappers}
+// SetAttributes repaces the AttributesMap associated with this Resource.
+func (r Resource) SetAttributes(v AttributeMap) {
+	r.orig.Attributes = *v.orig
 }

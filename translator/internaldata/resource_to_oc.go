@@ -27,21 +27,22 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 )
 
-func internalResourceToOC(resource *data.Resource) (*occommon.Node, *ocresource.Resource) {
+func internalResourceToOC(resource data.Resource) (*occommon.Node, *ocresource.Resource) {
 	attrs := resource.Attributes()
 
 	ocNode := occommon.Node{}
 	ocResource := ocresource.Resource{}
 
-	if len(attrs) == 0 {
+	if attrs.Len() == 0 {
 		return &ocNode, &ocResource
 	}
 
-	labels := make(map[string]string, len(attrs))
-	for key, attributeValue := range attrs {
-		val := attributeValueToString(attributeValue)
+	labels := make(map[string]string, attrs.Len())
+	for i := 0; i < attrs.Len(); i++ {
+		akv := attrs.GetAttribute(i)
+		val := attributeValueToString(akv.Value())
 
-		switch key {
+		switch akv.Key() {
 		case conventions.OCAttributeResourceType:
 			ocResource.Type = val
 		case conventions.AttributeServiceName:
@@ -95,7 +96,7 @@ func internalResourceToOC(resource *data.Resource) (*occommon.Node, *ocresource.
 			}
 		default:
 			// Not a special attribute, put it into resource labels
-			labels[key] = val
+			labels[akv.Key()] = val
 		}
 	}
 	ocResource.Labels = labels

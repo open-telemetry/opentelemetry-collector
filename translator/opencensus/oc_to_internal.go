@@ -354,7 +354,7 @@ func ocMessageEventToInternalAttrs(msgEvent *octrace.Span_TimeEvent_MessageEvent
 		0)
 }
 
-func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Resource) *data.Resource {
+func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Resource) data.Resource {
 	resource := data.NewResource()
 
 	// Number of special fields in the Node. See the code below that deals with special fields.
@@ -430,7 +430,9 @@ func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Reso
 	}
 
 	if len(attrs) != 0 {
-		resource.SetAttributes(attrs)
+		// TODO: Re-evaluate if we want to construct a map first, or we can construct directly
+		// a slice of AttributeKeyValue.
+		resource.SetAttributes(data.NewAttributeMap(attrs))
 	}
 
 	return resource

@@ -16,6 +16,7 @@ package data
 
 import (
 	otlpmetrics "github.com/open-telemetry/opentelemetry-proto/gen/go/metrics/v1"
+	otlpresource "github.com/open-telemetry/opentelemetry-proto/gen/go/resource/v1"
 )
 
 // This file defines in-memory data structures to represent metrics.
@@ -50,7 +51,7 @@ func MetricDataFromOtlp(orig []*otlpmetrics.ResourceMetrics) MetricData {
 
 // MetricDataToOtlp converts the internal MetricData to the OTLP.
 func MetricDataToOtlp(md MetricData) []*otlpmetrics.ResourceMetrics {
-	return md.toOrig()
+	return md.orig
 }
 
 // NewMetricData creates a new MetricData.
@@ -91,20 +92,6 @@ func (md MetricData) MetricCount() int {
 	return metricCount
 }
 
-func (md MetricData) toOrig() []*otlpmetrics.ResourceMetrics {
-	if !md.pimpl.initializedSlice {
-		// Guaranteed no changes in the resourceMetrics fields.
-		return md.orig
-	}
-
-	// User may have changed internal fields in any ResourceMetrics, flush all of them.
-	for i := range md.pimpl.resourceMetrics {
-		md.pimpl.resourceMetrics[i].flushInternal()
-	}
-
-	return md.orig
-}
-
 // ResourceMetrics is a collection of metrics from a Resource.
 //
 // Must use NewResourceMetrics functions to create new instances.
@@ -118,7 +105,6 @@ type ResourceMetrics struct {
 }
 
 type internalResourceMetrics struct {
-	resource                      *Resource
 	instrumentationLibraryMetrics []InstrumentationLibraryMetrics
 	// True if the pimpl was initialized.
 	initialized bool
@@ -156,14 +142,15 @@ func newResourceMetricsSliceFromOrig(origs []*otlpmetrics.ResourceMetrics) []Res
 	return wrappers
 }
 
-func (rm ResourceMetrics) Resource() *Resource {
-	rm.initInternallIfNeeded()
-	return rm.pimpl.resource
+func (rm ResourceMetrics) Resource() Resource {
+	if rm.orig.Resource == nil {
+		rm.orig.Resource = &otlpresource.Resource{}
+	}
+	return newResource(rm.orig.Resource)
 }
 
-func (rm ResourceMetrics) SetResource(r *Resource) {
-	rm.initInternallIfNeeded()
-	rm.pimpl.resource = r
+func (rm ResourceMetrics) SetResource(r Resource) {
+	rm.orig.Resource = r.orig
 }
 
 func (rm ResourceMetrics) InstrumentationLibraryMetrics() []InstrumentationLibraryMetrics {
@@ -197,18 +184,8 @@ func (rm ResourceMetrics) MetricCount() int {
 	return metricCount
 }
 
-func (rm ResourceMetrics) flushInternal() {
-	if !rm.pimpl.initialized {
-		// Guaranteed no changes via internal fields.
-		return
-	}
-
-	rm.orig.Resource = rm.pimpl.resource.toOrig()
-}
-
 func (rm ResourceMetrics) initInternallIfNeeded() {
 	if !rm.pimpl.initialized {
-		rm.pimpl.resource = newResource(rm.orig.Resource)
 		rm.pimpl.instrumentationLibraryMetrics = newInstrumentationLibraryMetricsSliceFromOrig(rm.orig.InstrumentationLibraryMetrics)
 		rm.pimpl.initialized = true
 	}

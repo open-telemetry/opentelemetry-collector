@@ -48,11 +48,11 @@ func TestResourceToOC(t *testing.T) {
 		"str1":                                  data.NewAttributeValueString("text"),
 		"int2":                                  data.NewAttributeValueInt(123),
 	}
-	resource.SetAttributes(attrs)
+	resource.SetAttributes(data.NewAttributeMap(attrs))
 
 	tests := []struct {
 		name       string
-		resource   *data.Resource
+		resource   data.Resource
 		ocNode     *occommon.Node
 		ocResource *ocresource.Resource
 	}{
