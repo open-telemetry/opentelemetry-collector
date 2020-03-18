@@ -50,8 +50,9 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal:  typeStr,
 				NameVal:  typeStr,
-				Endpoint: "localhost:55678",
-				// Disable: false - This receiver is enabled by default.
+				Endpoint: "localhost:55680",
+				// This receiver is enabled by default.
+				Disabled: false,
 			},
 		},
 		Transport: "tcp",
