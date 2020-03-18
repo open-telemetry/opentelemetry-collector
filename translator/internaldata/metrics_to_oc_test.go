@@ -46,21 +46,21 @@ func TestResourceMetricsToMetricsData(t *testing.T) {
 	metrics[0].SetMetricDescriptor(metricDescriptor)
 
 	int64DataPoints := data.NewInt64DataPointSlice(2)
-	int64DataPoints[0].SetLabelsMap(data.LabelsMap{"key1": "value1"})
+	int64DataPoints[0].SetLabelsMap(data.NewStringMap(map[string]string{"key1": "value1"}))
 	int64DataPoints[0].SetStartTime(ts1)
 	int64DataPoints[0].SetTimestamp(ts2)
 	int64DataPoints[0].SetValue(123)
-	int64DataPoints[1].SetLabelsMap(data.LabelsMap{"key2": "value2"})
+	int64DataPoints[1].SetLabelsMap(data.NewStringMap(map[string]string{"key2": "value2"}))
 	int64DataPoints[1].SetStartTime(ts1)
 	int64DataPoints[1].SetTimestamp(ts2)
 	int64DataPoints[1].SetValue(456)
 	metrics[0].SetInt64DataPoints(int64DataPoints)
 
 	doubleDataPoints := data.NewDoubleDataPointSlice(1)
-	doubleDataPoints[0].SetLabelsMap(data.LabelsMap{
+	doubleDataPoints[0].SetLabelsMap(data.NewStringMap(map[string]string{
 		"key1": "double-value1",
 		"key3": "double-value3",
-	})
+	}))
 	doubleDataPoints[0].SetStartTime(ts1)
 	doubleDataPoints[0].SetTimestamp(ts2)
 	doubleDataPoints[0].SetValue(1.23)

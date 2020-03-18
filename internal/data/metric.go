@@ -15,7 +15,6 @@
 package data
 
 import (
-	otlpcommon "github.com/open-telemetry/opentelemetry-proto/gen/go/common/v1"
 	otlpmetrics "github.com/open-telemetry/opentelemetry-proto/gen/go/metrics/v1"
 )
 
@@ -80,7 +79,6 @@ func (md MetricData) SetResourceMetrics(r []ResourceMetrics) {
 	md.orig = make([]*otlpmetrics.ResourceMetrics, len(md.pimpl.resourceMetrics))
 	for i := range md.pimpl.resourceMetrics {
 		md.orig[i] = md.pimpl.resourceMetrics[i].orig
-		md.pimpl.resourceMetrics[i].flushInternal()
 	}
 }
 
@@ -206,10 +204,6 @@ func (rm ResourceMetrics) flushInternal() {
 	}
 
 	rm.orig.Resource = rm.pimpl.resource.toOrig()
-	// User may have changed internal fields in any InstrumentationLibraryMetrics, flush all of them.
-	for i := range rm.pimpl.instrumentationLibraryMetrics {
-		rm.pimpl.instrumentationLibraryMetrics[i].flushInternal()
-	}
 }
 
 func (rm ResourceMetrics) initInternallIfNeeded() {
@@ -299,18 +293,6 @@ func (ilm InstrumentationLibraryMetrics) SetMetrics(ms []Metric) {
 	}
 }
 
-func (ilm InstrumentationLibraryMetrics) flushInternal() {
-	if !ilm.pimpl.initializedSlice {
-		// Guaranteed no changes via internal fields.
-		return
-	}
-
-	// User may have changed internal fields in any Metric, flush all of them.
-	for i := range ilm.pimpl.metrics {
-		ilm.pimpl.metrics[i].flushInternal()
-	}
-}
-
 // Metric defines a metric which has a descriptor and one or more timeseries points.
 //
 // Must use NewMetric* functions to create new instances.
@@ -325,7 +307,6 @@ type Metric struct {
 }
 
 type internalMetric struct {
-	labels              internalLabels
 	int64DataPoints     []Int64DataPoint
 	doubleDataPoints    []DoubleDataPoint
 	histogramDataPoints []HistogramDataPoint
@@ -371,12 +352,11 @@ func (m Metric) MetricDescriptor() MetricDescriptor {
 		// No MetricDescriptor available, initialize one to make all operations available.
 		m.orig.MetricDescriptor = &otlpmetrics.MetricDescriptor{}
 	}
-	return newMetricDescriptor(m.orig.MetricDescriptor, &m.pimpl.labels)
+	return newMetricDescriptor(m.orig.MetricDescriptor)
 }
 
 func (m Metric) SetMetricDescriptor(md MetricDescriptor) {
 	m.orig.MetricDescriptor = md.orig
-	m.pimpl.labels.copy(md.labels)
 }
 
 func (m Metric) Int64DataPoints() []Int64DataPoint {
@@ -486,43 +466,6 @@ func (m Metric) initInternallIfNeeded() {
 	}
 }
 
-func (m Metric) flushInternal() {
-	// If we have a MetricDescriptor then flush the internals.
-	if m.orig.MetricDescriptor != nil {
-		newMetricDescriptor(m.orig.MetricDescriptor, &m.pimpl.labels).flushInternal()
-	}
-
-	if !m.pimpl.initializedSlices {
-		// Guaranteed no changes to any slice.
-		return
-	}
-
-	// User may have changed internal fields in any Int64DataPoint, flush all of them.
-	if len(m.pimpl.int64DataPoints) != 0 {
-		for i := range m.pimpl.int64DataPoints {
-			m.pimpl.int64DataPoints[i].flushInternal()
-		}
-	}
-	// User may have changed internal fields in any DoubleDataPoint, flush all of them.
-	if len(m.pimpl.doubleDataPoints) != 0 {
-		for i := range m.pimpl.doubleDataPoints {
-			m.pimpl.doubleDataPoints[i].flushInternal()
-		}
-	}
-	// User may have changed internal fields in any HistogramDataPoint, flush all of them.
-	if len(m.pimpl.histogramDataPoints) != 0 {
-		for i := range m.pimpl.histogramDataPoints {
-			m.pimpl.histogramDataPoints[i].flushInternal()
-		}
-	}
-	// User may have changed internal fields in any SummaryDataPoint, flush all of them.
-	if len(m.pimpl.summaryDataPoints) != 0 {
-		for i := range m.pimpl.summaryDataPoints {
-			m.pimpl.summaryDataPoints[i].flushInternal()
-		}
-	}
-}
-
 // MetricDescriptor is the descriptor of a metric.
 //
 // Must use NewMetricDescriptor* functions to create new instances.
@@ -530,19 +473,15 @@ func (m Metric) flushInternal() {
 type MetricDescriptor struct {
 	// Wrap OTLP MetricDescriptor.
 	orig *otlpmetrics.MetricDescriptor
-
-	// Override a few fields. These fields are the source of truth. Their counterparts
-	// stored in corresponding fields of "orig" are ignored.
-	labels *internalLabels
 }
 
 // NewMetricDescriptor creates a new MetricDescriptor.
 func NewMetricDescriptor() MetricDescriptor {
-	return MetricDescriptor{&otlpmetrics.MetricDescriptor{}, &internalLabels{}}
+	return MetricDescriptor{&otlpmetrics.MetricDescriptor{}}
 }
 
-func newMetricDescriptor(orig *otlpmetrics.MetricDescriptor, labels *internalLabels) MetricDescriptor {
-	return MetricDescriptor{orig, labels}
+func newMetricDescriptor(orig *otlpmetrics.MetricDescriptor) MetricDescriptor {
+	return MetricDescriptor{orig}
 }
 
 func (md MetricDescriptor) Name() string {
@@ -577,16 +516,12 @@ func (md MetricDescriptor) SetMetricType(v MetricType) {
 	md.orig.Type = otlpmetrics.MetricDescriptor_Type(v)
 }
 
-func (md MetricDescriptor) LabelsMap() LabelsMap {
-	return md.labels.initAndGetMap(md.orig.Labels)
+func (md MetricDescriptor) LabelsMap() StringMap {
+	return newStringMap(&md.orig.Labels)
 }
 
-func (md MetricDescriptor) SetLabelsMap(lm LabelsMap) {
-	md.labels.setLabelsMap(lm)
-}
-
-func (md MetricDescriptor) flushInternal() {
-	md.orig.Labels = md.labels.toOrig(md.orig.Labels)
+func (md MetricDescriptor) SetLabelsMap(sm StringMap) {
+	md.orig.Labels = *sm.orig
 }
 
 type MetricType otlpmetrics.MetricDescriptor_Type
@@ -610,50 +545,40 @@ const (
 type Int64DataPoint struct {
 	// Wrap OTLP Int64DataPoint.
 	orig *otlpmetrics.Int64DataPoint
-
-	// Override a few fields. These fields are the source of truth. Their counterparts
-	// stored in corresponding fields of "orig" are ignored.
-	labels *internalLabels
 }
 
 // NewInt64DataPoint creates a new Int64DataPoint
 func NewInt64DataPoint() Int64DataPoint {
-	return Int64DataPoint{&otlpmetrics.Int64DataPoint{}, &internalLabels{}}
+	return Int64DataPoint{&otlpmetrics.Int64DataPoint{}}
 }
 
 // NewInt64DataPointSlice creates a slice of Int64DataPoint that are correctly initialized.
 func NewInt64DataPointSlice(len int) []Int64DataPoint {
 	// Slice for underlying orig.
 	origs := make([]otlpmetrics.Int64DataPoint, len)
-	// Slice for underlying pimpl.
-	pimpls := make([]internalLabels, len)
 	// Slice for wrappers.
 	wrappers := make([]Int64DataPoint, len)
 	for i := range origs {
 		wrappers[i].orig = &origs[i]
-		wrappers[i].labels = &pimpls[i]
 	}
 	return wrappers
 }
 
 func newInt64DataPointSliceFromOrig(origs []*otlpmetrics.Int64DataPoint) []Int64DataPoint {
-	// Slice for underlying pimpl.
-	pimpls := make([]internalLabels, len(origs))
 	// Slice for wrappers.
 	wrappers := make([]Int64DataPoint, len(origs))
 	for i := range origs {
 		wrappers[i].orig = origs[i]
-		wrappers[i].labels = &pimpls[i]
 	}
 	return wrappers
 }
 
-func (dp Int64DataPoint) LabelsMap() LabelsMap {
-	return dp.labels.initAndGetMap(dp.orig.Labels)
+func (dp Int64DataPoint) LabelsMap() StringMap {
+	return newStringMap(&dp.orig.Labels)
 }
 
-func (dp Int64DataPoint) SetLabelsMap(lm LabelsMap) {
-	dp.labels.setLabelsMap(lm)
+func (dp Int64DataPoint) SetLabelsMap(sm StringMap) {
+	dp.orig.Labels = *sm.orig
 }
 
 func (dp Int64DataPoint) StartTime() TimestampUnixNano {
@@ -680,10 +605,6 @@ func (dp Int64DataPoint) SetValue(v int64) {
 	dp.orig.Value = v
 }
 
-func (dp Int64DataPoint) flushInternal() {
-	dp.orig.Labels = dp.labels.toOrig(dp.orig.Labels)
-}
-
 // DoubleDataPoint is a single data point in a timeseries that describes the time-varying
 // value of a double metric.
 //
@@ -692,50 +613,40 @@ func (dp Int64DataPoint) flushInternal() {
 type DoubleDataPoint struct {
 	// Wrap OTLP DoubleDataPoint.
 	orig *otlpmetrics.DoubleDataPoint
-
-	// Override a few fields. These fields are the source of truth. Their counterparts
-	// stored in corresponding fields of "orig" are ignored.
-	labels *internalLabels
 }
 
 // NewDoubleDataPoint creates a new DoubleDataPoint.
 func NewDoubleDataPoint() *DoubleDataPoint {
-	return &DoubleDataPoint{&otlpmetrics.DoubleDataPoint{}, &internalLabels{}}
+	return &DoubleDataPoint{&otlpmetrics.DoubleDataPoint{}}
 }
 
 // NewDoubleDataPointSlice creates a slice of DoubleDataPoint that are correctly initialized.
 func NewDoubleDataPointSlice(len int) []DoubleDataPoint {
 	// Slice for underlying orig.
 	origs := make([]otlpmetrics.DoubleDataPoint, len)
-	// Slice for underlying pimpl.
-	pimpls := make([]internalLabels, len)
 	// Slice for wrappers.
 	wrappers := make([]DoubleDataPoint, len)
 	for i := range origs {
 		wrappers[i].orig = &origs[i]
-		wrappers[i].labels = &pimpls[i]
 	}
 	return wrappers
 }
 
 func newDoubleDataPointSliceFormOrgig(origs []*otlpmetrics.DoubleDataPoint) []DoubleDataPoint {
-	// Slice for underlying pimpl.
-	pimpls := make([]internalLabels, len(origs))
 	// Slice for wrappers.
 	wrappers := make([]DoubleDataPoint, len(origs))
 	for i := range origs {
 		wrappers[i].orig = origs[i]
-		wrappers[i].labels = &pimpls[i]
 	}
 	return wrappers
 }
 
-func (dp DoubleDataPoint) LabelsMap() LabelsMap {
-	return dp.labels.initAndGetMap(dp.orig.Labels)
+func (dp DoubleDataPoint) LabelsMap() StringMap {
+	return newStringMap(&dp.orig.Labels)
 }
 
-func (dp DoubleDataPoint) SetLabelsMap(lm LabelsMap) {
-	dp.labels.setLabelsMap(lm)
+func (dp DoubleDataPoint) SetLabelsMap(sm StringMap) {
+	dp.orig.Labels = *sm.orig
 }
 
 func (dp DoubleDataPoint) StartTime() TimestampUnixNano {
@@ -762,10 +673,6 @@ func (dp DoubleDataPoint) SetValue(v float64) {
 	dp.orig.Value = v
 }
 
-func (dp DoubleDataPoint) flushInternal() {
-	dp.orig.Labels = dp.labels.toOrig(dp.orig.Labels)
-}
-
 // HistogramDataPoint is a single data point in a timeseries that describes the time-varying
 // values of a Histogram.
 //
@@ -781,7 +688,6 @@ type HistogramDataPoint struct {
 }
 
 type internalHistogramDataPoint struct {
-	labels  internalLabels
 	buckets []HistogramBucket
 	// True if the buckets slice was initialized.
 	initializedSlice bool
@@ -819,12 +725,12 @@ func newHistogramDataPointSliceFromOrig(origs []*otlpmetrics.HistogramDataPoint)
 	return wrappers
 }
 
-func (dp HistogramDataPoint) LabelsMap() LabelsMap {
-	return dp.pimpl.labels.initAndGetMap(dp.orig.Labels)
+func (dp HistogramDataPoint) LabelsMap() StringMap {
+	return newStringMap(&dp.orig.Labels)
 }
 
-func (dp HistogramDataPoint) SetLabelsMap(lm LabelsMap) {
-	dp.pimpl.labels.setLabelsMap(lm)
+func (dp HistogramDataPoint) SetLabelsMap(sm StringMap) {
+	dp.orig.Labels = *sm.orig
 }
 
 func (dp HistogramDataPoint) StartTime() TimestampUnixNano {
@@ -880,7 +786,6 @@ func (dp HistogramDataPoint) SetBuckets(v []HistogramBucket) {
 	dp.orig.Buckets = make([]*otlpmetrics.HistogramDataPoint_Bucket, len(dp.pimpl.buckets))
 	for i := range dp.pimpl.buckets {
 		dp.orig.Buckets[i] = dp.pimpl.buckets[i].orig
-		dp.pimpl.buckets[i].flushInternal()
 	}
 }
 
@@ -892,20 +797,6 @@ func (dp HistogramDataPoint) SetExplicitBounds(v []float64) {
 	dp.orig.ExplicitBounds = v
 }
 
-func (dp HistogramDataPoint) flushInternal() {
-	dp.orig.Labels = dp.pimpl.labels.toOrig(dp.orig.Labels)
-
-	if !dp.pimpl.initializedSlice {
-		// Guaranteed no changes in the buckets fields.
-		return
-	}
-
-	// User may have changed internal fields in any ResourceMetrics, flush all of them.
-	for i := range dp.pimpl.buckets {
-		dp.pimpl.buckets[i].flushInternal()
-	}
-}
-
 // HistogramBucket contains values for a histogram bucket.
 //
 // Must use NewHistogramBucket* functions to create new instances.
@@ -913,40 +804,30 @@ func (dp HistogramDataPoint) flushInternal() {
 type HistogramBucket struct {
 	// Wrap OTLP HistogramDataPoint_Bucket.
 	orig *otlpmetrics.HistogramDataPoint_Bucket
-
-	// Override labels. If initialized internal fields are the source of truth. Their counterparts
-	// stored in corresponding fields of "orig" are ignored.
-	labels *internalLabels
 }
 
 // NewHistogramBucket creates a new HistogramBucket.
 func NewHistogramBucket() HistogramBucket {
-	return HistogramBucket{&otlpmetrics.HistogramDataPoint_Bucket{}, &internalLabels{}}
+	return HistogramBucket{&otlpmetrics.HistogramDataPoint_Bucket{}}
 }
 
 // NewHistogramBucketSlice creates a slice of HistogramBucket that are correctly initialized.
 func NewHistogramBucketSlice(len int) []HistogramBucket {
 	// Slice for underlying orig.
 	origs := make([]otlpmetrics.HistogramDataPoint_Bucket, len)
-	// Slice for underlying pimpl.
-	pimpls := make([]internalLabels, len)
 	// Slice for wrappers.
 	wrappers := make([]HistogramBucket, len)
 	for i := range origs {
 		wrappers[i].orig = &origs[i]
-		wrappers[i].labels = &pimpls[i]
 	}
 	return wrappers
 }
 
 func newHistogramBucketSliceFromOrig(origs []*otlpmetrics.HistogramDataPoint_Bucket) []HistogramBucket {
-	// Slice for underlying pimpl.
-	pimpls := make([]internalLabels, len(origs))
 	// Slice for wrappers.
 	wrappers := make([]HistogramBucket, len(origs))
 	for i := range origs {
 		wrappers[i].orig = origs[i]
-		wrappers[i].labels = &pimpls[i]
 	}
 	return wrappers
 }
@@ -964,19 +845,11 @@ func (hb HistogramBucket) Exemplar() HistogramBucketExemplar {
 		// No Exemplar available, initialize one to make all operations available.
 		hb.orig.Exemplar = &otlpmetrics.HistogramDataPoint_Bucket_Exemplar{}
 	}
-	return newHistogramBucketExemplar(hb.orig.Exemplar, hb.labels)
+	return newHistogramBucketExemplar(hb.orig.Exemplar)
 }
 
 func (hb HistogramBucket) SetExemplar(v HistogramBucketExemplar) {
 	hb.orig.Exemplar = v.orig
-	hb.labels.copy(v.labels)
-}
-
-func (hb HistogramBucket) flushInternal() {
-	// If we have an Exemplar then flush the internals.
-	if hb.orig.Exemplar != nil {
-		newHistogramBucketExemplar(hb.orig.Exemplar, hb.labels).flushInternal()
-	}
 }
 
 // HistogramBucketExemplar are example points that may be used to annotate aggregated Histogram values.
@@ -987,19 +860,15 @@ func (hb HistogramBucket) flushInternal() {
 type HistogramBucketExemplar struct {
 	// Wrap OTLP HistogramDataPoint_Bucket_Exemplar.
 	orig *otlpmetrics.HistogramDataPoint_Bucket_Exemplar
-
-	// Override labels. If initialized internal fields are the source of truth. Their counterparts
-	// stored in corresponding fields of "orig" are ignored.
-	labels *internalLabels
 }
 
 // NewHistogramBucketExemplar creates a new HistogramBucketExemplar.
 func NewHistogramBucketExemplar() HistogramBucketExemplar {
-	return HistogramBucketExemplar{&otlpmetrics.HistogramDataPoint_Bucket_Exemplar{}, &internalLabels{}}
+	return HistogramBucketExemplar{&otlpmetrics.HistogramDataPoint_Bucket_Exemplar{}}
 }
 
-func newHistogramBucketExemplar(orig *otlpmetrics.HistogramDataPoint_Bucket_Exemplar, labels *internalLabels) HistogramBucketExemplar {
-	return HistogramBucketExemplar{orig, labels}
+func newHistogramBucketExemplar(orig *otlpmetrics.HistogramDataPoint_Bucket_Exemplar) HistogramBucketExemplar {
+	return HistogramBucketExemplar{orig}
 }
 
 func (hbe HistogramBucketExemplar) Value() float64 {
@@ -1018,16 +887,12 @@ func (hbe HistogramBucketExemplar) SetTimestamp(v TimestampUnixNano) {
 	hbe.orig.TimestampUnixnano = uint64(v)
 }
 
-func (hbe HistogramBucketExemplar) Attachments() LabelsMap {
-	return hbe.labels.initAndGetMap(hbe.orig.Attachments)
+func (hbe HistogramBucketExemplar) Attachments() StringMap {
+	return newStringMap(&hbe.orig.Attachments)
 }
 
-func (hbe HistogramBucketExemplar) SetAttachments(lm LabelsMap) {
-	hbe.labels.setLabelsMap(lm)
-}
-
-func (hbe HistogramBucketExemplar) flushInternal() {
-	hbe.orig.Attachments = hbe.labels.toOrig(hbe.orig.Attachments)
+func (hbe HistogramBucketExemplar) SetAttachments(sm StringMap) {
+	hbe.orig.Attachments = *sm.orig
 }
 
 // SummaryDataPoint is a single data point in a timeseries that describes the time-varying
@@ -1045,7 +910,6 @@ type SummaryDataPoint struct {
 }
 
 type intenalSummaryDataPoint struct {
-	labels             internalLabels
 	valueAtPercentiles []SummaryValueAtPercentile
 	// True if the valueAtPercentiles was initialized.
 	initializedSlice bool
@@ -1083,12 +947,12 @@ func newSummaryDataPointSliceFromOrig(origs []*otlpmetrics.SummaryDataPoint) []S
 	return wrappers
 }
 
-func (dp SummaryDataPoint) LabelsMap() LabelsMap {
-	return dp.pimpl.labels.initAndGetMap(dp.orig.Labels)
+func (dp SummaryDataPoint) LabelsMap() StringMap {
+	return newStringMap(&dp.orig.Labels)
 }
 
-func (dp SummaryDataPoint) SetLabelsMap(lm LabelsMap) {
-	dp.pimpl.labels.setLabelsMap(lm)
+func (dp SummaryDataPoint) SetLabelsMap(sm StringMap) {
+	dp.orig.Labels = *sm.orig
 }
 
 func (dp SummaryDataPoint) StartTime() TimestampUnixNano {
@@ -1147,10 +1011,6 @@ func (dp SummaryDataPoint) SetValueAtPercentiles(v []SummaryValueAtPercentile) {
 	}
 }
 
-func (dp SummaryDataPoint) flushInternal() {
-	dp.orig.Labels = dp.pimpl.labels.toOrig(dp.orig.Labels)
-}
-
 // SummaryValueAtPercentile represents the value at a given percentile of a distribution.
 //
 // Must use NewSummaryValueAtPercentile* functions to create new instances.
@@ -1201,66 +1061,3 @@ func (vp SummaryValueAtPercentile) Value() float64 {
 func (vp SummaryValueAtPercentile) SetValue(v float64) {
 	vp.orig.Value = v
 }
-
-type internalLabels struct {
-	// Cannot track changes in the map, so if this is initialized then always reconstruct the labels.
-	labelsMap LabelsMap
-	// True if the labelsMap was initialized from the original source.
-	initialized bool
-}
-
-func (ils *internalLabels) initAndGetMap(orig []*otlpcommon.StringKeyValue) LabelsMap {
-	if !ils.initialized {
-		ils.initialized = true
-		if len(orig) == 0 {
-			ils.labelsMap = LabelsMap{}
-			return ils.labelsMap
-		}
-		labels := make(LabelsMap, len(orig))
-		for i := range orig {
-			labels[orig[i].GetKey()] = orig[i].GetValue()
-		}
-		ils.labelsMap = labels
-	}
-	return ils.labelsMap
-}
-
-func (ils *internalLabels) setLabelsMap(labelsMap LabelsMap) {
-	ils.labelsMap = labelsMap
-	ils.initialized = true
-}
-
-func (ils *internalLabels) copy(c *internalLabels) {
-	ils.setLabelsMap(c.labelsMap)
-}
-
-func (ils *internalLabels) toOrig(orig []*otlpcommon.StringKeyValue) []*otlpcommon.StringKeyValue {
-	if !ils.initialized {
-		// Guaranteed no changes via LabelsMap field.
-		return orig
-	}
-
-	if len(ils.labelsMap) == 0 {
-		return []*otlpcommon.StringKeyValue{}
-	}
-
-	if len(orig) != len(ils.labelsMap) {
-		skvs := make([]otlpcommon.StringKeyValue, len(ils.labelsMap))
-		orig = make([]*otlpcommon.StringKeyValue, len(ils.labelsMap))
-		for i := range orig {
-			orig[i] = &skvs[i]
-		}
-	}
-
-	i := 0
-	for k, v := range ils.labelsMap {
-		orig[i].Key = k
-		orig[i].Value = v
-		i++
-	}
-
-	return orig
-}
-
-// LabelsMap stores a map of label keys to values.
-type LabelsMap map[string]string
