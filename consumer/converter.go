@@ -48,3 +48,30 @@ func (tc *internalToOCTraceConverter) ConsumeTrace(ctx context.Context, td data.
 }
 
 var _ TraceConsumerV2 = (*internalToOCTraceConverter)(nil)
+
+// NewInternalToOCMetricsConverter creates new internalToOCMetricsConverter that takes MetricsConsumer and
+// implements ConsumeTrace interface.
+func NewInternalToOCMetricsConverter(tc MetricsConsumer) MetricsConsumerV2 {
+	return &internalToOCMetricsConverter{tc}
+}
+
+// internalToOCMetricsConverter is a internal to oc translation shim that takes MetricsConsumer and
+// implements ConsumeMetrics interface.
+type internalToOCMetricsConverter struct {
+	metricsConsumer MetricsConsumer
+}
+
+// ConsumeMetrics takes new-style data.MetricData method, converts it to OC and uses old-style ConsumeMetricsData method
+// to process the metrics data.
+func (tc *internalToOCMetricsConverter) ConsumeMetrics(ctx context.Context, td data.MetricData) error {
+	ocMetrics := internaldata.MetricDataToOC(td)
+	for i := range ocMetrics {
+		err := tc.metricsConsumer.ConsumeMetricsData(ctx, ocMetrics[i])
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+var _ MetricsConsumerV2 = (*internalToOCMetricsConverter)(nil)
