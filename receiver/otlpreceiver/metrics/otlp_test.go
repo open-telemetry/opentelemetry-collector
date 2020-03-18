@@ -54,7 +54,7 @@ func TestExport(t *testing.T) {
 	defer doneFn()
 
 	metricsClient, metricsClientDoneFn, err := makeMetricsServiceClient(port)
-	require.NoError(t, err, "Failed to create the gRPC MetricsService_ExportClient: %v", err)
+	require.NoError(t, err, "Failed to create the MetricsServiceClient: %v", err)
 	defer metricsClientDoneFn()
 
 	// when
@@ -200,7 +200,6 @@ func TestExport(t *testing.T) {
 	assert.EqualValues(t, metricsData, metricSink.metricsDataList[0])
 }
 
-// Helper functions from here on below
 func makeMetricsServiceClient(port int) (collectormetrics.MetricsServiceClient, func(), error) {
 	addr := fmt.Sprintf(":%d", port)
 	cc, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithBlock())
