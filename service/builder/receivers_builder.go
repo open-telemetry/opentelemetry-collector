@@ -182,7 +182,7 @@ func (rb *ReceiversBuilder) attachReceiverToPipelines(
 
 	case configmodels.MetricsDataType:
 		junction := buildFanoutMetricConsumer(builtPipelines)
-		createdReceiver, err = createMetricsReceiver(factory, rb.logger, config, junction)
+		createdReceiver, err = createMetricsReceiver(context.Background(), factory, rb.logger, config, junction)
 	}
 
 	if err != nil {
@@ -344,17 +344,36 @@ func createTraceReceiver(
 	return nil, errors.New("OC Traces -> internal data format translation is not supported")
 }
 
-// createMetricsReceiver is a helper function that creates metric receiver based on the current receiver type
-// and type of the next consumer.
-// TODO: It's just a placeholder until internal metrics data structure -> OC metrics translator is implemented.
+// createMetricsReceiver is a helper function that creates metric receiver based
+// on the current receiver type and type of the next consumer.
 func createMetricsReceiver(
+	ctx context.Context,
 	factory receiver.BaseFactory,
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
-	nextConsumer consumer.MetricsConsumer,
+	nextConsumer consumer.BaseMetricsConsumer,
 ) (receiver.MetricsReceiver, error) {
-	if _, ok := factory.(receiver.FactoryV2); ok {
-		return nil, errors.New("FactoryV2 is not yet supported for metrics")
+	if factoryV2, ok := factory.(receiver.FactoryV2); ok {
+		creationParams := receiver.CreationParams{Logger: logger}
+
+		// If both receiver and consumer are of the new type (can manipulate on internal data structure),
+		// use FactoryV2.CreateMetricsReceiver.
+		if nextConsumerV2, ok := nextConsumer.(consumer.MetricsConsumerV2); ok {
+			return factoryV2.CreateMetricsReceiver(ctx, creationParams, cfg, nextConsumerV2)
+		}
+
+		// If receiver is of the new type, but downstream consumer is of the old type,
+		// use internalToOCMetricsConverter compatibility shim.
+		metricsConverter := consumer.NewInternalToOCMetricsConverter(nextConsumer.(consumer.MetricsConsumer))
+		return factoryV2.CreateMetricsReceiver(ctx, creationParams, cfg, metricsConverter)
 	}
-	return factory.(receiver.Factory).CreateMetricsReceiver(logger, cfg, nextConsumer)
+
+	// If both receiver and consumer are of the old type (can manipulate on OC metrics only),
+	// use Factory.CreateMetricsReceiver.
+	if nextConsumer, ok := nextConsumer.(consumer.MetricsConsumer); ok {
+		return factory.(receiver.Factory).CreateMetricsReceiver(logger, cfg, nextConsumer)
+	}
+
+	// Old type receiver and a new type consumer usecase is not supported.
+	return nil, errors.New("OC Metrics -> internal data format translation is not supported")
 }

@@ -22,17 +22,22 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 )
 
+// BaseMetricsConsumer defines a common interface for MetricsConsumer and MetricsConsumerV2.
+type BaseMetricsConsumer interface{}
+
 // MetricsConsumer is an interface that receives consumerdata.MetricsData, process it as needed, and
 // sends it to the next processing node if any or to the destination.
 //
 // ConsumeMetricsData receives consumerdata.MetricsData for processing by the MetricsConsumer.
 type MetricsConsumer interface {
+	BaseMetricsConsumer
 	ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error
 }
 
 // MetricsConsumerV2 is the new metrics consumer interface that receives data.MetricData, processes it
 // as needed, and sends it to the next processing node if any or to the destination.
 type MetricsConsumerV2 interface {
+	BaseMetricsConsumer
 	ConsumeMetrics(ctx context.Context, md data.MetricData) error
 }
 
