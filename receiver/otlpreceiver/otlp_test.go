@@ -53,7 +53,7 @@ import (
 
 const otlpReceiver = "otlp_receiver_test"
 
-// TODO(nislamov): Migrate tests to use assert for validating functionality.
+// TODO(nilebox): Migrate tests to use assert for validating functionality.
 func TestGrpcGateway_endToEnd(t *testing.T) {
 	addr := testutils.GetAvailableLocalAddress(t)
 
@@ -67,7 +67,7 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 	require.NoError(t, err, "Failed to start trace receiver: %v", err)
 	defer ocr.Shutdown()
 
-	// TODO(nislamov): make starting server deterministic
+	// TODO(nilebox): make starting server deterministic
 	// Wait for the servers to start
 	<-time.After(10 * time.Millisecond)
 
@@ -188,7 +188,7 @@ func TestTraceGrpcGatewayCors_endToEnd(t *testing.T) {
 	err = ocr.Start(mh)
 	require.NoError(t, err, "Failed to start trace receiver: %v", err)
 
-	// TODO(nislamov): make starting server deterministic
+	// TODO(nilebox): make starting server deterministic
 	// Wait for the servers to start
 	<-time.After(10 * time.Millisecond)
 
@@ -214,7 +214,7 @@ func TestMetricsGrpcGatewayCors_endToEnd(t *testing.T) {
 	err = ocr.Start(mh)
 	require.NoError(t, err, "Failed to start metrics receiver: %v", err)
 
-	// TODO(nislamov): make starting server deterministic
+	// TODO(nilebox): make starting server deterministic
 	// Wait for the servers to start
 	<-time.After(10 * time.Millisecond)
 

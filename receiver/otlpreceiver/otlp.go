@@ -200,7 +200,7 @@ func (r *Receiver) stop() error {
 			_ = r.ln.Close()
 		}
 
-		// TODO(nislamov): investigate, takes too long
+		// TODO(nilebox): investigate, takes too long
 		//  r.serverGRPC.Stop()
 	})
 	return err
