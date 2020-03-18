@@ -37,7 +37,7 @@ type internalToOCTraceConverter struct {
 // ConsumeTrace takes new-style data.TraceData method, converts it to OC and uses old-style ConsumeTraceData method
 // to process the trace data.
 func (tc *internalToOCTraceConverter) ConsumeTrace(ctx context.Context, td data.TraceData) error {
-	ocTraces := internaldata.InternalToOC(td)
+	ocTraces := internaldata.TraceDataToOC(td)
 	for i := range ocTraces {
 		err := tc.traceConsumer.ConsumeTraceData(ctx, ocTraces[i])
 		if err != nil {

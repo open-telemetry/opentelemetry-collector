@@ -395,7 +395,7 @@ func TestInternalToOC(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got := InternalToOC(test.internal)
+			got := TraceDataToOC(test.internal)
 			assert.EqualValues(t, test.oc, got)
 		})
 	}

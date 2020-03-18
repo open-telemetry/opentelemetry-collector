@@ -87,11 +87,8 @@ func (md MetricData) SetResourceMetrics(r []ResourceMetrics) {
 // MetricCount calculates the total number of metrics.
 func (md MetricData) MetricCount() int {
 	metricCount := 0
-	// TODO: Do not access internal members, add a metricCount to ResourceMetrics.
-	for _, rm := range md.pimpl.resourceMetrics {
-		for _, ilm := range rm.pimpl.instrumentationLibraryMetrics {
-			metricCount += len(ilm.pimpl.metrics)
-		}
+	for _, rm := range md.ResourceMetrics() {
+		metricCount += rm.MetricCount()
 	}
 	return metricCount
 }
@@ -191,6 +188,15 @@ func (rm ResourceMetrics) SetInstrumentationLibraryMetrics(s []InstrumentationLi
 	for i := range rm.pimpl.instrumentationLibraryMetrics {
 		rm.orig.InstrumentationLibraryMetrics[i] = rm.pimpl.instrumentationLibraryMetrics[i].orig
 	}
+}
+
+// MetricCount calculates the total number of metrics.
+func (rm ResourceMetrics) MetricCount() int {
+	metricCount := 0
+	for _, ilm := range rm.InstrumentationLibraryMetrics() {
+		metricCount += len(ilm.pimpl.metrics)
+	}
+	return metricCount
 }
 
 func (rm ResourceMetrics) flushInternal() {
