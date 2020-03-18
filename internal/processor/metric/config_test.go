@@ -18,10 +18,10 @@ import (
 	"path"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/open-telemetry/opentelemetry-collector/internal/processor/filterset/factory"
 	"github.com/open-telemetry/opentelemetry-collector/testutils/configtestutils"
-
-	"github.com/stretchr/testify/assert"
 )
 
 var (

@@ -48,7 +48,7 @@ func TestCreateViperYamlUnmarshaler(t *testing.T) {
 	squashedvalue := "squashedvalue"
 
 	expectedConfigs := map[string]TestConfig{
-		"test/fullyaml": TestConfig{
+		"test/fullyaml": {
 			Value: topLevelValue,
 			Nested: NestedStruct{
 				Value: nestedValue,
@@ -57,7 +57,7 @@ func TestCreateViperYamlUnmarshaler(t *testing.T) {
 				Value: squashedvalue,
 			},
 		},
-		"test/partialyaml": TestConfig{
+		"test/partialyaml": {
 			Value: topLevelValue,
 			Squashed: NestedStruct{
 				Value: squashedvalue,

@@ -17,10 +17,10 @@ package metric
 import (
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector/internal/processor/filterset/factory"
-
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/open-telemetry/opentelemetry-collector/internal/processor/filterset/factory"
 )
 
 var (

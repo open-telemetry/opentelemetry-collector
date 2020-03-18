@@ -15,9 +15,9 @@
 package metric
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector/internal/processor/filterset/factory"
-
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+
+	"github.com/open-telemetry/opentelemetry-collector/internal/processor/filterset/factory"
 )
 
 func createMetric(name string) *metricspb.Metric {

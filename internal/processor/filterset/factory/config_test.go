@@ -18,9 +18,9 @@ import (
 	"path"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector/testutils/configtestutils"
-
 	"github.com/stretchr/testify/assert"
+
+	"github.com/open-telemetry/opentelemetry-collector/testutils/configtestutils"
 )
 
 func TestConfig(t *testing.T) {
@@ -36,29 +36,29 @@ func TestConfig(t *testing.T) {
 	}
 
 	expectedConfigs := map[string]MatchConfig{
-		"regexp/default": MatchConfig{
+		"regexp/default": {
 			MatchType: REGEXP,
 		},
-		"regexp/emptyoptions": MatchConfig{
+		"regexp/emptyoptions": {
 			MatchType: REGEXP,
 		},
-		"regexp/cachedisabledwithsize": MatchConfig{
+		"regexp/cachedisabledwithsize": {
 			MatchType: REGEXP,
 			Regexp: &RegexpConfig{
 				CacheEnabled:       false,
 				CacheMaxNumEntries: 10,
 			},
 		},
-		"regexp/cacheenablednosize": MatchConfig{
+		"regexp/cacheenablednosize": {
 			MatchType: REGEXP,
 			Regexp: &RegexpConfig{
 				CacheEnabled: true,
 			},
 		},
-		"strict/default": MatchConfig{
+		"strict/default": {
 			MatchType: STRICT,
 		},
-		"strict/emptyoptions": MatchConfig{
+		"strict/emptyoptions": {
 			MatchType: STRICT,
 		},
 	}
