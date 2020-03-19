@@ -73,7 +73,7 @@ section of general project contributing guide.
 Working with the project sources requires the following tools:
 
 1. [git](https://git-scm.com/)
-2. [go](https://golang.org/) (version 1.12.5 and up)
+2. [go](https://golang.org/) (version 1.14 and up)
 3. [make](https://www.gnu.org/software/make/)
 4. [docker](https://www.docker.com/)
 
@@ -116,7 +116,7 @@ $ git push fork feature
 
 ## General Notes
 
-This project uses Go 1.12.5 and Travis for CI.
+This project uses Go 1.14.* and Travis for CI.
 
 Travis CI uses the Makefile with the default target, it is recommended to
 run it before submitting your PR. It runs `gofmt -s` (simplify) and `golint`.
