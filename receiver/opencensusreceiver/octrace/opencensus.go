@@ -136,7 +136,7 @@ func (ocr *Receiver) processReceivedMsg(
 		resource = recv.Resource
 	}
 
-	td := &consumerdata.TraceData{
+	td := consumerdata.TraceData{
 		Node:         lastNonNilNode,
 		Resource:     resource,
 		Spans:        recv.Spans,
@@ -147,7 +147,7 @@ func (ocr *Receiver) processReceivedMsg(
 	return lastNonNilNode, resource, err
 }
 
-func (ocr *Receiver) sendToNextConsumer(longLivedRPCCtx context.Context, tracedata *consumerdata.TraceData) error {
+func (ocr *Receiver) sendToNextConsumer(longLivedRPCCtx context.Context, tracedata consumerdata.TraceData) error {
 	ctx := obsreport.StartTraceDataReceiveOp(
 		longLivedRPCCtx,
 		ocr.instanceName,
@@ -156,9 +156,8 @@ func (ocr *Receiver) sendToNextConsumer(longLivedRPCCtx context.Context, traceda
 
 	var err error
 	numSpans := len(tracedata.Spans)
-	if tracedata != nil && len(tracedata.Spans) != 0 {
-		numSpans = len(tracedata.Spans)
-		err = ocr.nextConsumer.ConsumeTraceData(ctx, *tracedata)
+	if numSpans != 0 {
+		err = ocr.nextConsumer.ConsumeTraceData(ctx, tracedata)
 	}
 
 	obsreport.EndTraceDataReceiveOp(ctx, receiverDataFormat, numSpans, err)
