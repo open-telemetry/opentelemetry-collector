@@ -39,6 +39,11 @@ func (mh *MockHost) ReportFatalError(err error) {
 	// Do nothing for now.
 }
 
+// GetFactory of the specified kind. Returns the factory for a component type.
+func (mh *MockHost) GetFactory(kind Kind, componentType string) Factory {
+	return nil
+}
+
 // NewMockHost returns a new instance of MockHost with proper defaults for most
 // tests.
 func NewMockHost() Host {

@@ -52,7 +52,7 @@ func TestTrace10kSPS(t *testing.T) {
 			testbed.NewJaegerGRPCDataSender(testbed.GetAvailablePort(t)),
 			testbed.NewJaegerDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
-				ExpectedMaxCPU: 53,
+				ExpectedMaxCPU: 69,
 				ExpectedMaxRAM: 89,
 			},
 		},

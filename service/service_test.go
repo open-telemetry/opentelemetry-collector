@@ -236,3 +236,52 @@ func (b badExtensionFactory) CreateExtension(
 ) (component.ServiceExtension, error) {
 	return nil, nil
 }
+
+func TestApplication_GetFactory(t *testing.T) {
+	// Create some factories.
+	exampleReceiverFactory := &config.ExampleReceiverFactory{}
+	exampleProcessorFactory := &config.ExampleProcessorFactory{}
+	exampleExporterFactory := &config.ExampleExporterFactory{}
+	exampleExtensionFactory := &config.ExampleExtensionFactory{}
+
+	factories := config.Factories{
+		Receivers: map[string]component.ReceiverFactoryBase{
+			exampleReceiverFactory.Type(): exampleReceiverFactory,
+		},
+		Processors: map[string]component.ProcessorFactoryBase{
+			exampleProcessorFactory.Type(): exampleProcessorFactory,
+		},
+		Exporters: map[string]component.ExporterFactoryBase{
+			exampleExporterFactory.Type(): exampleExporterFactory,
+		},
+		Extensions: map[string]component.ExtensionFactory{
+			exampleExtensionFactory.Type(): exampleExtensionFactory,
+		},
+	}
+
+	// Create an App with factories.
+	app, err := New(Parameters{Factories: factories})
+	require.NoError(t, err)
+
+	// Verify GetFactory call for all component kinds.
+
+	factory := app.GetFactory(component.KindReceiver, exampleReceiverFactory.Type())
+	assert.EqualValues(t, exampleReceiverFactory, factory)
+	factory = app.GetFactory(component.KindReceiver, "wrongtype")
+	assert.EqualValues(t, nil, factory)
+
+	factory = app.GetFactory(component.KindProcessor, exampleProcessorFactory.Type())
+	assert.EqualValues(t, exampleProcessorFactory, factory)
+	factory = app.GetFactory(component.KindProcessor, "wrongtype")
+	assert.EqualValues(t, nil, factory)
+
+	factory = app.GetFactory(component.KindExporter, exampleExporterFactory.Type())
+	assert.EqualValues(t, exampleExporterFactory, factory)
+	factory = app.GetFactory(component.KindExporter, "wrongtype")
+	assert.EqualValues(t, nil, factory)
+
+	factory = app.GetFactory(component.KindExtension, exampleExtensionFactory.Type())
+	assert.EqualValues(t, exampleExtensionFactory, factory)
+	factory = app.GetFactory(component.KindExtension, "wrongtype")
+	assert.EqualValues(t, nil, factory)
+}

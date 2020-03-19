@@ -17,6 +17,8 @@ package extensiontest
 import (
 	"context"
 	"time"
+
+	"github.com/open-telemetry/opentelemetry-collector/component"
 )
 
 // MockHost mocks an component.Host for test purposes.
@@ -56,4 +58,9 @@ func (mh *MockHost) WaitForFatalError(timeout time.Duration) (receivedError bool
 	}
 
 	return
+}
+
+// GetFactory of the specified kind. Returns the factory for a component type.
+func (mh *MockHost) GetFactory(kind component.Kind, componentType string) component.Factory {
+	return nil
 }

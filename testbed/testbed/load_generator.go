@@ -134,7 +134,7 @@ func (lg *LoadGenerator) generate() {
 	// Indicate that generation is done at the end
 	defer lg.stopWait.Done()
 
-	if lg.options.DataItemsPerSecond <= 0 {
+	if lg.options.DataItemsPerSecond == 0 {
 		return
 	}
 
