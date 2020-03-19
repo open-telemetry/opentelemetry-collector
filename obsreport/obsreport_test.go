@@ -26,6 +26,7 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 	"go.opencensus.io/trace"
@@ -149,8 +150,8 @@ func Test_obsreport_ReceiveTraceDataOp(t *testing.T) {
 	assert.NoError(t, observabilitytest.CheckValueViewReceiverDroppedSpans(legacyName, refusedSpans))
 	// Check new metrics.
 	receiverTags := receiverViewTags(receiver, transport)
-	checkValueForSumView(t, mReceiverAcceptedSpans.Name(), receiverTags, acceptedSpans)
-	checkValueForSumView(t, mReceiverRefusedSpans.Name(), receiverTags, refusedSpans)
+	checkValueForSumView(t, "receiver/accepted_spans", receiverTags, acceptedSpans)
+	checkValueForSumView(t, "receiver/refused_spans", receiverTags, refusedSpans)
 }
 
 func Test_obsreport_ReceiveMetricsOp(t *testing.T) {
@@ -213,8 +214,8 @@ func Test_obsreport_ReceiveMetricsOp(t *testing.T) {
 	assert.NoError(t, observabilitytest.CheckValueViewReceiverDroppedTimeSeries(legacyName, droppedTimeSeries))
 	// Check new metrics.
 	receiverTags := receiverViewTags(receiver, transport)
-	checkValueForSumView(t, mReceiverAcceptedMetricPoints.Name(), receiverTags, acceptedMetricPoints)
-	checkValueForSumView(t, mReceiverRefusedMetricPoints.Name(), receiverTags, refusedMetricPoints)
+	checkValueForSumView(t, "receiver/accepted_metric_points", receiverTags, acceptedMetricPoints)
+	checkValueForSumView(t, "receiver/refused_metric_points", receiverTags, refusedMetricPoints)
 }
 
 func Test_obsreport_ExportTraceDataOp(t *testing.T) {
@@ -276,8 +277,8 @@ func Test_obsreport_ExportTraceDataOp(t *testing.T) {
 	assert.NoError(t, observabilitytest.CheckValueViewExporterDroppedSpans(receiver, exporter, failedToSendSpans))
 	// Check new metrics.
 	exporterTags := exporterViewTags(exporter)
-	checkValueForSumView(t, mExporterSentSpans.Name(), exporterTags, sentSpans)
-	checkValueForSumView(t, mExporterFailedToSendSpans.Name(), exporterTags, failedToSendSpans)
+	checkValueForSumView(t, "exporter/sent_spans", exporterTags, sentSpans)
+	checkValueForSumView(t, "exporter/send_failed_spans", exporterTags, failedToSendSpans)
 }
 
 func Test_obsreport_ExportMetricsOp(t *testing.T) {
@@ -348,8 +349,8 @@ func Test_obsreport_ExportMetricsOp(t *testing.T) {
 	assert.NoError(t, observabilitytest.CheckValueViewExporterDroppedTimeSeries(receiver, exporter, droppedTimeSeries))
 	// Check new metrics.
 	exporterTags := exporterViewTags(exporter)
-	checkValueForSumView(t, mExporterSentMetricPoints.Name(), exporterTags, sentPoints)
-	checkValueForSumView(t, mExporterFailedToSendMetricPoints.Name(), exporterTags, failedToSendPoints)
+	checkValueForSumView(t, "exporter/sent_metric_points", exporterTags, sentPoints)
+	checkValueForSumView(t, "exporter/send_failed_metric_points", exporterTags, failedToSendPoints)
 }
 
 func Test_obsreport_ReceiveWithLongLivedCtx(t *testing.T) {
@@ -443,9 +444,9 @@ func Test_obsreport_ProcessorTraceData(t *testing.T) {
 	ProcessorTraceDataDropped(processorCtx, td)
 
 	processorTags := processorViewTags(processor)
-	checkValueForSumView(t, mProcessorAcceptedSpans.Name(), processorTags, acceptedSpans)
-	checkValueForSumView(t, mProcessorRefusedSpans.Name(), processorTags, refusedSpans)
-	checkValueForSumView(t, mProcessorDroppedSpans.Name(), processorTags, droppedSpans)
+	checkValueForSumView(t, "processor/accepted_spans", processorTags, acceptedSpans)
+	checkValueForSumView(t, "processor/refused_spans", processorTags, refusedSpans)
+	checkValueForSumView(t, "processor/dropped_spans", processorTags, droppedSpans)
 }
 
 func Test_obsreport_ProcessorMetricsData(t *testing.T) {
@@ -478,11 +479,76 @@ func Test_obsreport_ProcessorMetricsData(t *testing.T) {
 	ProcessorMetricsDataDropped(processorCtx, md)
 
 	processorTags := processorViewTags(processor)
-	checkValueForSumView(t, mProcessorAcceptedMetricPoints.Name(), processorTags, acceptedPoints)
-	checkValueForSumView(t, mProcessorRefusedMetricPoints.Name(), processorTags, refusedPoints)
-	checkValueForSumView(t, mProcessorDroppedMetricPoints.Name(), processorTags, droppedPoints)
+	checkValueForSumView(t, "processor/accepted_metric_points", processorTags, acceptedPoints)
+	checkValueForSumView(t, "processor/refused_metric_points", processorTags, refusedPoints)
+	checkValueForSumView(t, "processor/dropped_metric_points", processorTags, droppedPoints)
 }
 
+func Test_obsreport_ProcessorMetricViews(t *testing.T) {
+	measures := []stats.Measure{
+		stats.Int64("firstMeasure", "test firstMeasure", stats.UnitDimensionless),
+		stats.Int64("secondMeasure", "test secondMeasure", stats.UnitBytes),
+	}
+	legacyViews := []*view.View{
+		{
+			Name:        measures[0].Name(),
+			Description: measures[0].Description(),
+			Measure:     measures[0],
+			Aggregation: view.Sum(),
+		},
+		{
+			Measure:     measures[1],
+			Aggregation: view.Count(),
+		},
+	}
+
+	// Ensure that the settings for useLegace and useNew a restored.
+	defer func(prevUseLegacy, prevUseNew bool) {
+		useLegacy = prevUseLegacy
+		useNew = prevUseNew
+	}(useLegacy, useNew)
+
+	tests := []struct {
+		name       string
+		withLegacy bool
+		withNew    bool
+		want       []*view.View
+	}{
+		{
+			name: "none",
+		},
+		{
+			name:       "legacy_only",
+			withLegacy: true,
+			want:       legacyViews,
+		},
+		{
+			name:    "new_only",
+			withNew: true,
+			want: []*view.View{
+				{
+					Name:        "processor/test_type/" + measures[0].Name(),
+					Description: measures[0].Description(),
+					Measure:     measures[0],
+					Aggregation: view.Sum(),
+				},
+				{
+					Name:        "processor/test_type/" + measures[1].Name(),
+					Measure:     measures[1],
+					Aggregation: view.Count(),
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			useLegacy = tt.withLegacy
+			useNew = tt.withNew
+			got := ProcessorMetricViews("test_type", legacyViews)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
 func setupViews() (doneFn func(), err error) {
 	genLegacy := true
 	genNew := true
