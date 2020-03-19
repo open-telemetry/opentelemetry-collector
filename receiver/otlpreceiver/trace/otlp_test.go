@@ -17,18 +17,13 @@ package trace
 import (
 	"context"
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"net"
-	"strconv"
-	"strings"
-	"sync"
 	"testing"
 
 	occommon "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	octrace "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	collectortrace "github.com/open-telemetry/opentelemetry-proto/gen/go/collector/trace/v1"
 	otlpcommon "github.com/open-telemetry/opentelemetry-proto/gen/go/common/v1"
 	otlpresource "github.com/open-telemetry/opentelemetry-proto/gen/go/resource/v1"
@@ -42,6 +37,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/internal"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector/observability"
+	"github.com/open-telemetry/opentelemetry-collector/receiver/receivertest"
+	"github.com/open-telemetry/opentelemetry-collector/testutils"
 )
 
 var _ collectortrace.TraceServiceServer = (*Receiver)(nil)
@@ -49,7 +46,7 @@ var _ collectortrace.TraceServiceServer = (*Receiver)(nil)
 func TestExport(t *testing.T) {
 	// given
 
-	traceSink := newMetricAppender()
+	traceSink := receivertest.NewTraceAppender()
 
 	_, port, doneFn := otlpReceiverOnGRPCServer(t, traceSink)
 	defer doneFn()
@@ -131,8 +128,8 @@ func TestExport(t *testing.T) {
 
 	// assert
 
-	require.Equal(t, 1, len(traceSink.traceDataList),
-		"unexpected length: %v", len(traceSink.traceDataList))
+	require.Equal(t, 1, len(traceSink.TraceDataList),
+		"unexpected length: %v", len(traceSink.TraceDataList))
 
 	traceData := consumerdata.TraceData{
 		Node: &occommon.Node{},
@@ -201,7 +198,7 @@ func TestExport(t *testing.T) {
 		SourceFormat: "otlp_trace",
 	}
 
-	assert.EqualValues(t, traceData, traceSink.traceDataList[0])
+	assert.EqualValues(t, traceData, traceSink.TraceDataList[0])
 }
 
 func makeTraceServiceClient(port int) (collectortrace.TraceServiceClient, func(), error) {
@@ -228,7 +225,7 @@ func otlpReceiverOnGRPCServer(t *testing.T, tc consumer.TraceConsumer) (r *Recei
 		}
 	}
 
-	_, port, err = hostPortFromAddr(ln.Addr())
+	_, port, err = testutils.HostPortFromAddr(ln.Addr())
 	if err != nil {
 		done()
 		t.Fatalf("Failed to parse host:port from listener address: %s error: %v", ln.Addr(), err)
@@ -245,39 +242,4 @@ func otlpReceiverOnGRPCServer(t *testing.T, tc consumer.TraceConsumer) (r *Recei
 	}()
 
 	return r, port, done
-}
-
-func hostPortFromAddr(addr net.Addr) (host string, port int, err error) {
-	addrStr := addr.String()
-	sepIndex := strings.LastIndex(addrStr, ":")
-	if sepIndex < 0 {
-		return "", -1, errors.New("failed to parse host:port")
-	}
-	host, portStr := addrStr[:sepIndex], addrStr[sepIndex+1:]
-	port, err = strconv.Atoi(portStr)
-	return host, port, err
-}
-
-type traceAppender struct {
-	sync.RWMutex
-	traceDataList []consumerdata.TraceData
-}
-
-func newMetricAppender() *traceAppender {
-	return &traceAppender{}
-}
-
-var _ consumer.TraceConsumer = (*traceAppender)(nil)
-
-func (ma *traceAppender) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
-	ma.Lock()
-	defer ma.Unlock()
-
-	ma.traceDataList = append(ma.traceDataList, td)
-
-	return nil
-}
-
-func unixnanoToTimestamp(u uint64) *timestamp.Timestamp {
-	return internal.UnixnanoToTimestamp(data.TimestampUnixNano(u))
 }

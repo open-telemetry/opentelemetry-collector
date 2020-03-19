@@ -16,12 +16,8 @@ package metrics
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net"
-	"strconv"
-	"strings"
-	"sync"
 	"testing"
 
 	occommon "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
@@ -41,6 +37,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/internal"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector/observability"
+	"github.com/open-telemetry/opentelemetry-collector/receiver/receivertest"
+	"github.com/open-telemetry/opentelemetry-collector/testutils"
 )
 
 var _ collectormetrics.MetricsServiceServer = (*Receiver)(nil)
@@ -48,7 +46,7 @@ var _ collectormetrics.MetricsServiceServer = (*Receiver)(nil)
 func TestExport(t *testing.T) {
 	// given
 
-	metricSink := newMetricAppender()
+	metricSink := receivertest.NewMetricAppender()
 
 	_, port, doneFn := otlpReceiverOnGRPCServer(t, metricSink)
 	defer doneFn()
@@ -125,8 +123,8 @@ func TestExport(t *testing.T) {
 
 	// assert
 
-	require.Equal(t, 1, len(metricSink.metricsDataList),
-		"unexpected length: %v", len(metricSink.metricsDataList))
+	require.Equal(t, 1, len(metricSink.MetricsDataList),
+		"unexpected length: %v", len(metricSink.MetricsDataList))
 
 	metricsData := consumerdata.MetricsData{
 		Node: &occommon.Node{},
@@ -197,7 +195,7 @@ func TestExport(t *testing.T) {
 		},
 	}
 
-	assert.EqualValues(t, metricsData, metricSink.metricsDataList[0])
+	assert.EqualValues(t, metricsData, metricSink.MetricsDataList[0])
 }
 
 func makeMetricsServiceClient(port int) (collectormetrics.MetricsServiceClient, func(), error) {
@@ -224,7 +222,7 @@ func otlpReceiverOnGRPCServer(t *testing.T, mc consumer.MetricsConsumer) (r *Rec
 		}
 	}
 
-	_, port, err = hostPortFromAddr(ln.Addr())
+	_, port, err = testutils.HostPortFromAddr(ln.Addr())
 	if err != nil {
 		done()
 		t.Fatalf("Failed to parse host:port from listener address: %s error: %v", ln.Addr(), err)
@@ -241,37 +239,6 @@ func otlpReceiverOnGRPCServer(t *testing.T, mc consumer.MetricsConsumer) (r *Rec
 	}()
 
 	return r, port, done
-}
-
-func hostPortFromAddr(addr net.Addr) (host string, port int, err error) {
-	addrStr := addr.String()
-	sepIndex := strings.LastIndex(addrStr, ":")
-	if sepIndex < 0 {
-		return "", -1, errors.New("failed to parse host:port")
-	}
-	host, portStr := addrStr[:sepIndex], addrStr[sepIndex+1:]
-	port, err = strconv.Atoi(portStr)
-	return host, port, err
-}
-
-type metricAppender struct {
-	sync.RWMutex
-	metricsDataList []consumerdata.MetricsData
-}
-
-func newMetricAppender() *metricAppender {
-	return &metricAppender{}
-}
-
-var _ consumer.MetricsConsumer = (*metricAppender)(nil)
-
-func (ma *metricAppender) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
-	ma.Lock()
-	defer ma.Unlock()
-
-	ma.metricsDataList = append(ma.metricsDataList, md)
-
-	return nil
 }
 
 func unixnanoToTimestamp(u uint64) *timestamp.Timestamp {

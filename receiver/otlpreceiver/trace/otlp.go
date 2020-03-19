@@ -28,6 +28,10 @@ import (
 	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 )
 
+const (
+	dataFormatProtobuf = "protobuf"
+)
+
 // Receiver is the type used to handle spans from OpenTelemetry exporters.
 type Receiver struct {
 	instanceName string
@@ -93,7 +97,7 @@ func (r *Receiver) sendToNextConsumer(ctx context.Context, td *consumerdata.Trac
 		consumerErr = r.nextConsumer.ConsumeTraceData(ctx, *td)
 	}
 
-	obsreport.EndTraceDataReceiveOp(ctx, "protobuf", numSpans, consumerErr)
+	obsreport.EndTraceDataReceiveOp(ctx, dataFormatProtobuf, numSpans, consumerErr)
 
 	return consumerErr
 }

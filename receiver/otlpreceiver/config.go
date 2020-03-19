@@ -44,6 +44,7 @@ type Config struct {
 	MaxRecvMsgSizeMiB uint64 `mapstructure:"max_recv_msg_size_mib,omitempty"`
 
 	// MaxConcurrentStreams sets the limit on the number of concurrent streams to each ServerTransport.
+	// TODO(nilebox): This setting affecting HTTP/2 streams need to be tested
 	MaxConcurrentStreams uint32 `mapstructure:"max_concurrent_streams,omitempty"`
 }
 

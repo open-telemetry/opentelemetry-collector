@@ -18,12 +18,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net"
 	"reflect"
-	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -43,6 +41,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal"
 	"github.com/open-telemetry/opentelemetry-collector/observability"
+	"github.com/open-telemetry/opentelemetry-collector/testutils"
 )
 
 func TestReceiver_endToEnd(t *testing.T) {
@@ -469,15 +468,10 @@ func ocReceiverOnGRPCServer(t *testing.T, sr consumer.TraceConsumer, opts ...Opt
 		}
 	}
 
-	_, port, err = hostPortFromAddr(ln.Addr())
+	_, port, err = testutils.HostPortFromAddr(ln.Addr())
 	if err != nil {
 		done()
 		t.Fatalf("Failed to parse host:port from listener address: %s error: %v", ln.Addr(), err)
-	}
-
-	if err != nil {
-		done()
-		t.Fatalf("Failed to create new agent: %v", err)
 	}
 
 	oci, err = New(receiverTagValue, sr, opts...)
@@ -491,17 +485,6 @@ func ocReceiverOnGRPCServer(t *testing.T, sr consumer.TraceConsumer, opts ...Opt
 	}()
 
 	return oci, port, done
-}
-
-func hostPortFromAddr(addr net.Addr) (host string, port int, err error) {
-	addrStr := addr.String()
-	sepIndex := strings.LastIndex(addrStr, ":")
-	if sepIndex < 0 {
-		return "", -1, errors.New("failed to parse host:port")
-	}
-	host, portStr := addrStr[:sepIndex], addrStr[sepIndex+1:]
-	port, err = strconv.Atoi(portStr)
-	return host, port, err
 }
 
 func (sa *spanAppender) forEachEntry(fn func(*commonpb.Node, []*tracepb.Span)) {

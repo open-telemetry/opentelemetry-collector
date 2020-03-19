@@ -16,9 +16,11 @@ package testutils
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -88,4 +90,16 @@ func WaitForPort(t *testing.T, port uint16) error {
 		time.Sleep(wait)
 	}
 	return fmt.Errorf("failed to wait for port %d", port)
+}
+
+// HostPortFromAddr extracts host and port from a network address
+func HostPortFromAddr(addr net.Addr) (host string, port int, err error) {
+	addrStr := addr.String()
+	sepIndex := strings.LastIndex(addrStr, ":")
+	if sepIndex < 0 {
+		return "", -1, errors.New("failed to parse host:port")
+	}
+	host, portStr := addrStr[:sepIndex], addrStr[sepIndex+1:]
+	port, err = strconv.Atoi(portStr)
+	return host, port, err
 }
