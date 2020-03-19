@@ -27,14 +27,14 @@ func TestSpanCount(t *testing.T) {
 
 	td = TraceData{
 		resourceSpans: []*ResourceSpans{
-			NewResourceSpans(nil, []*InstrumentationLibrarySpans{}),
+			NewResourceSpans(NewResource(), []*InstrumentationLibrarySpans{}),
 		},
 	}
 	assert.EqualValues(t, 0, td.SpanCount())
 
 	td = TraceData{
 		resourceSpans: []*ResourceSpans{
-			NewResourceSpans(nil, []*InstrumentationLibrarySpans{
+			NewResourceSpans(NewResource(), []*InstrumentationLibrarySpans{
 				NewInstrumentationLibrarySpans(NewInstrumentationLibrary(), []*Span{})}),
 		},
 	}
@@ -42,7 +42,7 @@ func TestSpanCount(t *testing.T) {
 
 	td = TraceData{
 		resourceSpans: []*ResourceSpans{
-			NewResourceSpans(nil, []*InstrumentationLibrarySpans{
+			NewResourceSpans(NewResource(), []*InstrumentationLibrarySpans{
 				NewInstrumentationLibrarySpans(NewInstrumentationLibrary(), []*Span{nil})}),
 		},
 	}
@@ -50,11 +50,11 @@ func TestSpanCount(t *testing.T) {
 
 	td = TraceData{
 		resourceSpans: []*ResourceSpans{
-			NewResourceSpans(nil, []*InstrumentationLibrarySpans{
+			NewResourceSpans(NewResource(), []*InstrumentationLibrarySpans{
 				NewInstrumentationLibrarySpans(NewInstrumentationLibrary(), []*Span{nil})}),
-			NewResourceSpans(nil, []*InstrumentationLibrarySpans{
+			NewResourceSpans(NewResource(), []*InstrumentationLibrarySpans{
 				NewInstrumentationLibrarySpans(NewInstrumentationLibrary(), []*Span{})}),
-			NewResourceSpans(nil, []*InstrumentationLibrarySpans{
+			NewResourceSpans(NewResource(), []*InstrumentationLibrarySpans{
 				NewInstrumentationLibrarySpans(NewInstrumentationLibrary(), []*Span{nil, nil, nil, nil, nil})}),
 		},
 	}

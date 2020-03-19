@@ -53,21 +53,21 @@ func (td TraceData) ResourceSpans() []*ResourceSpans {
 type ResourceSpans struct {
 	// The resource for the spans in this message.
 	// If this field is not set then no resource info is known.
-	resource *Resource
+	resource Resource
 
 	// A list of Spans that originate from a resource.
 	ils []*InstrumentationLibrarySpans
 }
 
-func NewResourceSpans(resource *Resource, ils []*InstrumentationLibrarySpans) *ResourceSpans {
+func NewResourceSpans(resource Resource, ils []*InstrumentationLibrarySpans) *ResourceSpans {
 	return &ResourceSpans{resource, ils}
 }
 
-func (m *ResourceSpans) Resource() *Resource {
+func (m *ResourceSpans) Resource() Resource {
 	return m.resource
 }
 
-func (m *ResourceSpans) SetResource(r *Resource) {
+func (m *ResourceSpans) SetResource(r Resource) {
 	m.resource = r
 }
 
