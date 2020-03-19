@@ -436,7 +436,7 @@ type InstrumentationLibrary struct {
 
 // NewInstrumentationLibrary creates a new InstrumentationLibrary.
 func NewInstrumentationLibrary() InstrumentationLibrary {
-	return InstrumentationLibrary{}
+	return InstrumentationLibrary{&otlpcommon.InstrumentationLibrary{}}
 }
 
 func newInstrumentationLibrary(orig *otlpcommon.InstrumentationLibrary) InstrumentationLibrary {

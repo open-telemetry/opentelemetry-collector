@@ -250,8 +250,48 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	assert.EqualValues(t, 4.56, summaryDataPoints[1].ValueAtPercentiles()[0].Value())
 	assert.EqualValues(t, 0.9, summaryDataPoints[1].ValueAtPercentiles()[1].Percentile())
 	assert.EqualValues(t, 7.89, summaryDataPoints[1].ValueAtPercentiles()[1].Value())
-
 }
+
+func TestHasMessages(t *testing.T) {
+	metricData := MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{
+		{
+			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+				{
+					Metrics: []*otlpmetrics.Metric{
+						{
+							HistogramDataPoints: []*otlpmetrics.HistogramDataPoint{
+								{
+									Buckets: []*otlpmetrics.HistogramDataPoint_Bucket{{}},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	})
+
+	rm := metricData.ResourceMetrics()[0]
+	assert.EqualValues(t, false, rm.HasResource())
+	assert.EqualValues(t, NewResource(), rm.Resource())
+	assert.EqualValues(t, true, rm.HasResource())
+
+	ilms := rm.InstrumentationLibraryMetrics()[0]
+	assert.EqualValues(t, false, ilms.HasInstrumentationLibrary())
+	assert.EqualValues(t, NewInstrumentationLibrary(), ilms.InstrumentationLibrary())
+	assert.EqualValues(t, true, ilms.HasInstrumentationLibrary())
+
+	m := ilms.Metrics()[0]
+	assert.EqualValues(t, false, m.HasMetricDescriptor())
+	assert.EqualValues(t, NewMetricDescriptor(), m.MetricDescriptor())
+	assert.EqualValues(t, true, m.HasMetricDescriptor())
+
+	hb := m.HistogramDataPoints()[0].Buckets()[0]
+	assert.EqualValues(t, false, hb.HasExemplar())
+	assert.EqualValues(t, NewHistogramBucketExemplar(), hb.Exemplar())
+	assert.EqualValues(t, true, hb.HasExemplar())
+}
+
 func TestOtlpToFromInternalReadOnly(t *testing.T) {
 	metricData := MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{
 		{

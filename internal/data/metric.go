@@ -15,6 +15,7 @@
 package data
 
 import (
+	otlpcommon "github.com/open-telemetry/opentelemetry-proto/gen/go/common/v1"
 	otlpmetrics "github.com/open-telemetry/opentelemetry-proto/gen/go/metrics/v1"
 	otlpresource "github.com/open-telemetry/opentelemetry-proto/gen/go/resource/v1"
 )
@@ -144,9 +145,14 @@ func newResourceMetricsSliceFromOrig(origs []*otlpmetrics.ResourceMetrics) []Res
 
 func (rm ResourceMetrics) Resource() Resource {
 	if rm.orig.Resource == nil {
+		// No Resource available, initialize one to make all operations available.
 		rm.orig.Resource = &otlpresource.Resource{}
 	}
 	return newResource(rm.orig.Resource)
+}
+
+func (rm ResourceMetrics) HasResource() bool {
+	return rm.orig.Resource != nil
 }
 
 func (rm ResourceMetrics) SetResource(r Resource) {
@@ -238,7 +244,15 @@ func newInstrumentationLibraryMetricsSliceFromOrig(origs []*otlpmetrics.Instrume
 }
 
 func (ilm InstrumentationLibraryMetrics) InstrumentationLibrary() InstrumentationLibrary {
+	if ilm.orig.InstrumentationLibrary == nil {
+		// No InstrumentationLibrary available, initialize one to make all operations available.
+		ilm.orig.InstrumentationLibrary = &otlpcommon.InstrumentationLibrary{}
+	}
 	return newInstrumentationLibrary(ilm.orig.InstrumentationLibrary)
+}
+
+func (ilm InstrumentationLibraryMetrics) HasInstrumentationLibrary() bool {
+	return ilm.orig.InstrumentationLibrary != nil
 }
 
 func (ilm InstrumentationLibraryMetrics) SetInstrumentationLibrary(il InstrumentationLibrary) {
@@ -330,6 +344,10 @@ func (m Metric) MetricDescriptor() MetricDescriptor {
 		m.orig.MetricDescriptor = &otlpmetrics.MetricDescriptor{}
 	}
 	return newMetricDescriptor(m.orig.MetricDescriptor)
+}
+
+func (m Metric) HasMetricDescriptor() bool {
+	return m.orig.MetricDescriptor != nil
 }
 
 func (m Metric) SetMetricDescriptor(md MetricDescriptor) {
@@ -823,6 +841,10 @@ func (hb HistogramBucket) Exemplar() HistogramBucketExemplar {
 		hb.orig.Exemplar = &otlpmetrics.HistogramDataPoint_Bucket_Exemplar{}
 	}
 	return newHistogramBucketExemplar(hb.orig.Exemplar)
+}
+
+func (hb HistogramBucket) HasExemplar() bool {
+	return hb.orig.Exemplar != nil
 }
 
 func (hb HistogramBucket) SetExemplar(v HistogramBucketExemplar) {
