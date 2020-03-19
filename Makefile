@@ -37,7 +37,7 @@ all-srcs:
 .DEFAULT_GOAL := all
 
 .PHONY: all
-all: addlicense impi lint misspell test otelcol
+all: checklicense impi lint misspell test otelcol
 
 .PHONY: e2e-test
 e2e-test: otelcol
@@ -67,13 +67,18 @@ test-with-cover:
 
 .PHONY: addlicense
 addlicense:
-	@ADDLICENCESEOUT=`$(ADDLICENCESE) -y '' -c 'OpenTelemetry Authors' $(ALL_SRC) 2>&1`; \
+	$(ADDLICENCESE) -y '' -c 'OpenTelemetry Authors' $(ALL_SRC)
+
+.PHONY: checklicense
+checklicense:
+	@ADDLICENCESEOUT=`$(ADDLICENCESE) -check $(ALL_SRC) 2>&1`; \
 		if [ "$$ADDLICENCESEOUT" ]; then \
 			echo "$(ADDLICENCESE) FAILED => add License errors:\n"; \
 			echo "$$ADDLICENCESEOUT\n"; \
+			echo "Use 'make addlicense' to fix this."; \
 			exit 1; \
 		else \
-			echo "Add License finished successfully"; \
+			echo "Check License finished successfully"; \
 		fi
 
 .PHONY: misspell
