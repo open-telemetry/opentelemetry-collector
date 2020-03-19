@@ -183,10 +183,11 @@ func Load(
 	return &config, nil
 }
 
-// decodeTypeAndName decodes a key in type[/name] format into type and fullName.
+// DecodeTypeAndName decodes a key in type[/name] format into type and fullName.
 // fullName is the key normalized such that type and name components have spaces trimmed.
-// The "type" part must be present, the forward slash and "name" are optional.
-func decodeTypeAndName(key string) (typeStr, fullName string, err error) {
+// The "type" part must be present, the forward slash and "name" are optional. typeStr
+// will be non-empty if err is nil.
+func DecodeTypeAndName(key string) (typeStr, fullName string, err error) {
 	items := strings.SplitN(key, typeAndNameSeparator, 2)
 
 	if len(items) >= 1 {
@@ -234,8 +235,8 @@ func loadExtensions(v *viper.Viper, factories map[string]extension.Factory) (con
 	// Iterate over extensions and create a config for each.
 	for key := range keyMap {
 		// Decode the key into type and fullName components.
-		typeStr, fullName, err := decodeTypeAndName(key)
-		if err != nil || typeStr == "" {
+		typeStr, fullName, err := DecodeTypeAndName(key)
+		if err != nil {
 			return nil, &configError{
 				code: errInvalidTypeAndNameKey,
 				msg:  fmt.Sprintf("invalid key %q: %s", key, err.Error()),
@@ -310,8 +311,8 @@ func loadService(v *viper.Viper) (configmodels.Service, error) {
 // LoadReceiver loads a receiver config from v under the subkey receiverKey using the provided factories.
 func LoadReceiver(receiverKey string, v *viper.Viper, factories map[string]receiver.BaseFactory) (configmodels.Receiver, error) {
 	// Decode the key into type and fullName components.
-	typeStr, fullName, err := decodeTypeAndName(receiverKey)
-	if err != nil || typeStr == "" {
+	typeStr, fullName, err := DecodeTypeAndName(receiverKey)
+	if err != nil {
 		return nil, &configError{
 			code: errInvalidTypeAndNameKey,
 			msg:  fmt.Sprintf("invalid key %q: %s", receiverKey, err.Error()),
@@ -416,8 +417,8 @@ func loadExporters(v *viper.Viper, factories map[string]exporter.Factory) (confi
 	// Iterate over exporters and create a config for each.
 	for key := range keyMap {
 		// Decode the key into type and fullName components.
-		typeStr, fullName, err := decodeTypeAndName(key)
-		if err != nil || typeStr == "" {
+		typeStr, fullName, err := DecodeTypeAndName(key)
+		if err != nil {
 			return nil, &configError{
 				code: errInvalidTypeAndNameKey,
 				msg:  fmt.Sprintf("invalid key %q: %s", key, err.Error()),
@@ -476,8 +477,8 @@ func loadProcessors(v *viper.Viper, factories map[string]processor.Factory) (con
 	// Iterate over processors and create a config for each.
 	for key := range keyMap {
 		// Decode the key into type and fullName components.
-		typeStr, fullName, err := decodeTypeAndName(key)
-		if err != nil || typeStr == "" {
+		typeStr, fullName, err := DecodeTypeAndName(key)
+		if err != nil {
 			return nil, &configError{
 				code: errInvalidTypeAndNameKey,
 				msg:  fmt.Sprintf("invalid key %q: %s", key, err.Error()),
@@ -536,8 +537,8 @@ func loadPipelines(v *viper.Viper) (configmodels.Pipelines, error) {
 	// Iterate over input map and create a config for each.
 	for key := range keyMap {
 		// Decode the key into type and name components.
-		typeStr, name, err := decodeTypeAndName(key)
-		if err != nil || typeStr == "" {
+		typeStr, name, err := DecodeTypeAndName(key)
+		if err != nil {
 			return nil, &configError{
 				code: errInvalidTypeAndNameKey,
 				msg:  fmt.Sprintf("invalid key %q: %s", key, err.Error()),
