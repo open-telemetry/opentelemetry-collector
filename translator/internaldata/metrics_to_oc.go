@@ -127,9 +127,9 @@ func collectLabelKeys(metric data.Metric) *labelKeys {
 	}
 }
 
-func addLabelKeys(keySet map[string]struct{}, labels data.LabelsMap) {
-	for label := range labels {
-		keySet[label] = struct{}{}
+func addLabelKeys(keySet map[string]struct{}, labels data.StringMap) {
+	for i := 0; i < labels.Len(); i++ {
+		keySet[labels.GetStringKeyValue(i).Key()] = struct{}{}
 	}
 }
 
@@ -275,10 +275,16 @@ func histogramBucketsToOC(buckets []data.HistogramBucket) []*ocmetrics.Distribut
 }
 
 func exemplarToOC(exemplar data.HistogramBucketExemplar) *ocmetrics.DistributionValue_Exemplar {
+	attachments := exemplar.Attachments()
+	labels := make(map[string]string, attachments.Len())
+	for i := 0; i < attachments.Len(); i++ {
+		skv := attachments.GetStringKeyValue(i)
+		labels[skv.Key()] = skv.Value()
+	}
 	return &ocmetrics.DistributionValue_Exemplar{
 		Value:       exemplar.Value(),
 		Timestamp:   internal.UnixnanoToTimestamp(exemplar.Timestamp()),
-		Attachments: exemplar.Attachments(),
+		Attachments: labels,
 	}
 }
 
@@ -320,8 +326,8 @@ func percentileToOC(percentiles []data.SummaryValueAtPercentile) []*ocmetrics.Su
 	return ocPercentiles
 }
 
-func labelValuesToOC(labelsMap data.LabelsMap, labelKeys *labelKeys) []*ocmetrics.LabelValue {
-	if len(labelsMap) == 0 {
+func labelValuesToOC(labels data.StringMap, labelKeys *labelKeys) []*ocmetrics.LabelValue {
+	if labels.Len() == 0 {
 		return nil
 	}
 
@@ -336,13 +342,14 @@ func labelValuesToOC(labelsMap data.LabelsMap, labelKeys *labelKeys) []*ocmetric
 
 	// Visit all defined label values and
 	// override defaults with actual values
-	for key, val := range labelsMap {
+	for i := 0; i < labels.Len(); i++ {
+		skv := labels.GetStringKeyValue(i)
 		// Find the appropriate label value that we need to update
-		keyIndex := labelKeys.keyIndices[key]
+		keyIndex := labelKeys.keyIndices[skv.Key()]
 		labelValue := labelValues[keyIndex]
 
 		// Update label value
-		labelValue.Value = val
+		labelValue.Value = skv.Value()
 		labelValue.HasValue = true
 	}
 
