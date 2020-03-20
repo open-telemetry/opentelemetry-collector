@@ -131,13 +131,14 @@ func TestNewSummaryDataPointSlice(t *testing.T) {
 
 func TestNewSummaryValueAtPercentileSlice(t *testing.T) {
 	vps := NewSummaryValueAtPercentileSlice(0)
-	assert.EqualValues(t, 0, len(vps))
+	assert.EqualValues(t, 0, vps.Len())
 
 	n := rand.Intn(10)
 	vps = NewSummaryValueAtPercentileSlice(n)
-	assert.EqualValues(t, n, len(vps))
-	for link := range vps {
-		assert.NotNil(t, link)
+	defaultVp := NewSummaryValueAtPercentile()
+	assert.EqualValues(t, n, vps.Len())
+	for i := 0; i < vps.Len(); i++ {
+		assert.EqualValues(t, defaultVp, vps.Get(i))
 	}
 }
 
@@ -236,21 +237,20 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	assert.EqualValues(t, startTime, summaryDataPoints[0].StartTime())
 	assert.EqualValues(t, endTime, summaryDataPoints[0].Timestamp())
 	assert.EqualValues(t, NewStringMap(map[string]string{"key0": "value0"}), summaryDataPoints[0].LabelsMap())
-	assert.EqualValues(t, 2, len(summaryDataPoints[0].ValueAtPercentiles()))
-	assert.EqualValues(t, 0.0, summaryDataPoints[0].ValueAtPercentiles()[0].Percentile())
-	assert.EqualValues(t, 1.23, summaryDataPoints[0].ValueAtPercentiles()[0].Value())
-	assert.EqualValues(t, 1.0, summaryDataPoints[0].ValueAtPercentiles()[1].Percentile())
-	assert.EqualValues(t, 4.56, summaryDataPoints[0].ValueAtPercentiles()[1].Value())
+	assert.EqualValues(t, 2, summaryDataPoints[0].ValueAtPercentiles().Len())
+	assert.EqualValues(t, 0.0, summaryDataPoints[0].ValueAtPercentiles().Get(0).Percentile())
+	assert.EqualValues(t, 1.23, summaryDataPoints[0].ValueAtPercentiles().Get(0).Value())
+	assert.EqualValues(t, 1.0, summaryDataPoints[0].ValueAtPercentiles().Get(1).Percentile())
+	assert.EqualValues(t, 4.56, summaryDataPoints[0].ValueAtPercentiles().Get(1).Value())
 	// Second point
 	assert.EqualValues(t, startTime, summaryDataPoints[1].StartTime())
 	assert.EqualValues(t, endTime, summaryDataPoints[1].Timestamp())
 	assert.EqualValues(t, NewStringMap(map[string]string{"key1": "value1"}), summaryDataPoints[1].LabelsMap())
-	assert.EqualValues(t, 2, len(summaryDataPoints[1].ValueAtPercentiles()))
-	assert.EqualValues(t, 0.5, summaryDataPoints[1].ValueAtPercentiles()[0].Percentile())
-	assert.EqualValues(t, 4.56, summaryDataPoints[1].ValueAtPercentiles()[0].Value())
-	assert.EqualValues(t, 0.9, summaryDataPoints[1].ValueAtPercentiles()[1].Percentile())
-	assert.EqualValues(t, 7.89, summaryDataPoints[1].ValueAtPercentiles()[1].Value())
-
+	assert.EqualValues(t, 2, summaryDataPoints[1].ValueAtPercentiles().Len())
+	assert.EqualValues(t, 0.5, summaryDataPoints[1].ValueAtPercentiles().Get(0).Percentile())
+	assert.EqualValues(t, 4.56, summaryDataPoints[1].ValueAtPercentiles().Get(0).Value())
+	assert.EqualValues(t, 0.9, summaryDataPoints[1].ValueAtPercentiles().Get(1).Percentile())
+	assert.EqualValues(t, 7.89, summaryDataPoints[1].ValueAtPercentiles().Get(1).Value())
 }
 func TestOtlpToFromInternalReadOnly(t *testing.T) {
 	metricData := MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{
@@ -595,15 +595,14 @@ func TestOtlpToFromInternalSummaryPointsMutating(t *testing.T) {
 	summaryDataPoints[0].SetLabelsMap(newLabels)
 	assert.EqualValues(t, newLabels, summaryDataPoints[0].LabelsMap())
 	// Mutate ValueAtPercentiles
-	valueAtPercentiles := summaryDataPoints[0].ValueAtPercentiles()[:1]
-	valueAtPercentiles[0].SetValue(1.24)
-	assert.EqualValues(t, 1.24, valueAtPercentiles[0].Value())
-	valueAtPercentiles[0].SetPercentile(0.1)
-	assert.EqualValues(t, 0.1, valueAtPercentiles[0].Percentile())
-	assert.EqualValues(t, 2, len(summaryDataPoints[0].ValueAtPercentiles()))
-	summaryDataPoints[0].SetValueAtPercentiles(valueAtPercentiles)
-	assert.EqualValues(t, 1, len(summaryDataPoints[0].ValueAtPercentiles()))
-
+	assert.EqualValues(t, 2, summaryDataPoints[0].ValueAtPercentiles().Len())
+	summaryDataPoints[0].ValueAtPercentiles().Remove(1)
+	assert.EqualValues(t, 1, summaryDataPoints[0].ValueAtPercentiles().Len())
+	valueAtPercentile := summaryDataPoints[0].ValueAtPercentiles().Get(0)
+	valueAtPercentile.SetValue(1.24)
+	assert.EqualValues(t, 1.24, valueAtPercentile.Value())
+	valueAtPercentile.SetPercentile(0.1)
+	assert.EqualValues(t, 0.1, valueAtPercentile.Percentile())
 	assert.EqualValues(t, 2, len(metric.SummaryDataPoints()))
 	metric.SetSummaryDataPoints(summaryDataPoints)
 	assert.EqualValues(t, 1, len(metric.SummaryDataPoints()))
