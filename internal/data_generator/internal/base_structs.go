@@ -79,7 +79,7 @@ func (es ${structName}) Resize(from, to int) {
 	*es.orig = (*es.orig)[from:to]
 }`
 
-const messageTemplate = `// ${structName} ${description}.
+const messageTemplate = `${description}
 //
 // This is a reference type, if passsed by value and callee modifies it the
 // caller will see the modification.
