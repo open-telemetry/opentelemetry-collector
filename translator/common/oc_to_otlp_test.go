@@ -94,7 +94,7 @@ func TestOcNodeResourceToOtlp(t *testing.T) {
 	for k := range expectedAttrs {
 		// Set all except "attr1" which is not a hard-coded field to some bogus values.
 
-		if strings.Index(k, "-attr") < 0 {
+		if !strings.Contains(k, "-attr") {
 			node.Attributes[k] = "this will be overridden 1"
 		}
 	}

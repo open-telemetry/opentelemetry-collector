@@ -82,7 +82,7 @@ func (f *Factory) CustomUnmarshaler() receiver.CustomUnmarshaler {
 		// these protocols were excluded during normal loading and we need to add defaults for them
 		vSub := v.Sub(viperKey)
 		if vSub == nil {
-			return fmt.Errorf("Jaeger receiver config is empty")
+			return fmt.Errorf("empty config for Jaeger receiver")
 		}
 		protocols := vSub.GetStringMap(protocolsFieldName)
 		if len(protocols) == 0 {

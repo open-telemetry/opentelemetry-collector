@@ -19,6 +19,8 @@ MISSPELL=misspell -error
 MISSPELL_CORRECTION=misspell -w
 LINT=golangci-lint
 IMPI=impi
+GOSEC=gosec
+STATIC_CHECK=staticcheck
 
 GIT_SHA=$(shell git rev-parse --short HEAD)
 BUILD_INFO_IMPORT_PATH=github.com/open-telemetry/opentelemetry-collector/internal/version
@@ -89,8 +91,23 @@ misspell:
 misspell-correction:
 	$(MISSPELL_CORRECTION) $(ALL_DOC)
 
+.PHONY: lint-gosec
+lint-gosec:
+	$(GOSEC) -quiet -exclude=G104,G107 ./...
+
+.PHONY: lint-static-check
+lint-static-check:
+	@STATIC_CHECK_OUT=`$(STATIC_CHECK) ./... 2>&1`; \
+		if [ "$$STATIC_CHECK_OUT" ]; then \
+			echo "$(STATIC_CHECK) FAILED => static check errors:\n"; \
+			echo "$$STATIC_CHECK_OUT\n"; \
+			exit 1; \
+		else \
+			echo "Static check finished successfully"; \
+		fi
+
 .PHONY: lint
-lint:
+lint: lint-static-check
 	$(LINT) run
 
 .PHONY: impi
@@ -99,11 +116,12 @@ impi:
 
 .PHONY: install-tools
 install-tools:
-	GO111MODULE=on go install \
-	  github.com/google/addlicense \
-	  github.com/golangci/golangci-lint/cmd/golangci-lint \
-	  github.com/client9/misspell/cmd/misspell \
-	  github.com/pavius/impi/cmd/impi
+	go install github.com/google/addlicense
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint
+	go install github.com/client9/misspell/cmd/misspell
+	go install github.com/pavius/impi/cmd/impi
+	go install github.com/securego/gosec/cmd/gosec
+	go install honnef.co/go/tools/cmd/staticcheck
 
 .PHONY: otelcol
 otelcol:

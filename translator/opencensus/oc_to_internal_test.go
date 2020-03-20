@@ -90,7 +90,7 @@ func TestOcNodeResourceToInternal(t *testing.T) {
 	for i := 0; i < expectedAttrs.Len(); i++ {
 		// Set all except "attr1" which is not a hard-coded field to some bogus values.
 
-		if strings.Index(expectedAttrs.GetAttribute(i).Key(), "-attr") < 0 {
+		if !strings.Contains(expectedAttrs.GetAttribute(i).Key(), "-attr") {
 			ocNode.Attributes[expectedAttrs.GetAttribute(i).Key()] = "this will be overridden 1"
 		}
 	}

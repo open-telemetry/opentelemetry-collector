@@ -48,11 +48,6 @@ func (ste *SinkTraceExporter) ConsumeTraceData(ctx context.Context, td consumerd
 	return nil
 }
 
-const (
-	sinkTraceExportFormat   = "sink_trace"
-	sinkMetricsExportFormat = "sink_metrics"
-)
-
 // AllTraces returns the traces sent to the test sink.
 func (ste *SinkTraceExporter) AllTraces() []consumerdata.TraceData {
 	ste.mu.Lock()
