@@ -307,6 +307,54 @@ func loadService(v *viper.Viper) (configmodels.Service, error) {
 	return service, nil
 }
 
+// LoadReceiver loads a receiver config from v under the subkey receiverKey using the provided factories.
+func LoadReceiver(receiverKey string, v *viper.Viper, factories map[string]receiver.BaseFactory) (configmodels.Receiver, error) {
+	// Decode the key into type and fullName components.
+	typeStr, fullName, err := decodeTypeAndName(receiverKey)
+	if err != nil || typeStr == "" {
+		return nil, &configError{
+			code: errInvalidTypeAndNameKey,
+			msg:  fmt.Sprintf("invalid key %q: %s", receiverKey, err.Error()),
+		}
+	}
+
+	// Find receiver factory based on "type" that we read from config source
+	factory := factories[typeStr]
+	if factory == nil {
+		return nil, &configError{
+			code: errUnknownReceiverType,
+			msg:  fmt.Sprintf("unknown receiver type %q", typeStr),
+		}
+	}
+
+	// Create the default config for this receiver.
+	receiverCfg := factory.CreateDefaultConfig()
+	receiverCfg.SetType(typeStr)
+	receiverCfg.SetName(fullName)
+
+	// Unmarshal only the subconfig for this exporter.
+	sv := getConfigSection(v, receiverKey)
+
+	// Now that the default config struct is created we can Unmarshal into it
+	// and it will apply user-defined config on top of the default.
+	customUnmarshaler := factory.CustomUnmarshaler()
+	if customUnmarshaler != nil {
+		// This configuration requires a custom unmarshaler, use it.
+		err = customUnmarshaler(v, receiverKey, sv, receiverCfg)
+	} else {
+		err = sv.UnmarshalExact(receiverCfg)
+	}
+
+	if err != nil {
+		return nil, &configError{
+			code: errUnmarshalErrorOnReceiver,
+			msg:  fmt.Sprintf("error reading settings for receiver type %q: %v", typeStr, err),
+		}
+	}
+
+	return receiverCfg, nil
+}
+
 func loadReceivers(v *viper.Viper, factories map[string]receiver.BaseFactory) (configmodels.Receivers, error) {
 	// Get the list of all "receivers" sub vipers from config source.
 	subViper := v.Sub(receiversKeyName)
@@ -328,56 +376,20 @@ func loadReceivers(v *viper.Viper, factories map[string]receiver.BaseFactory) (c
 
 	// Iterate over input map and create a config for each.
 	for key := range keyMap {
-		// Decode the key into type and fullName components.
-		typeStr, fullName, err := decodeTypeAndName(key)
-		if err != nil || typeStr == "" {
-			return nil, &configError{
-				code: errInvalidTypeAndNameKey,
-				msg:  fmt.Sprintf("invalid key %q: %s", key, err.Error()),
-			}
-		}
-
-		// Find receiver factory based on "type" that we read from config source
-		factory := factories[typeStr]
-		if factory == nil {
-			return nil, &configError{
-				code: errUnknownReceiverType,
-				msg:  fmt.Sprintf("unknown receiver type %q", typeStr),
-			}
-		}
-
-		// Create the default config for this receiver.
-		receiverCfg := factory.CreateDefaultConfig()
-		receiverCfg.SetType(typeStr)
-		receiverCfg.SetName(fullName)
-
-		// Unmarshal only the subconfig for this exporter.
-		sv := getConfigSection(subViper, key)
-
-		// Now that the default config struct is created we can Unmarshal into it
-		// and it will apply user-defined config on top of the default.
-		customUnmarshaler := factory.CustomUnmarshaler()
-		if customUnmarshaler != nil {
-			// This configuration requires a custom unmarshaler, use it.
-			err = customUnmarshaler(subViper, key, sv, receiverCfg)
-		} else {
-			err = sv.UnmarshalExact(receiverCfg)
-		}
+		receiverCfg, err := LoadReceiver(key, subViper, factories)
 
 		if err != nil {
-			return nil, &configError{
-				code: errUnmarshalErrorOnReceiver,
-				msg:  fmt.Sprintf("error reading settings for receiver type %q: %v", typeStr, err),
-			}
+			// LoadReceiver already wraps the error.
+			return nil, err
 		}
 
-		if receivers[fullName] != nil {
+		if receivers[receiverCfg.Name()] != nil {
 			return nil, &configError{
 				code: errDuplicateReceiverName,
-				msg:  fmt.Sprintf("duplicate receiver name %q", fullName),
+				msg:  fmt.Sprintf("duplicate receiver name %q", receiverCfg.Name()),
 			}
 		}
-		receivers[fullName] = receiverCfg
+		receivers[receiverCfg.Name()] = receiverCfg
 	}
 
 	return receivers, nil
