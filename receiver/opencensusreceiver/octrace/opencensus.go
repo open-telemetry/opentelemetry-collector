@@ -102,9 +102,7 @@ func (ocr *Receiver) Export(tes agenttracepb.TraceService_ExportServer) error {
 			resource,
 			recv)
 		if err != nil {
-			// Metrics and z-pages record data loss but there is no back pressure.
-			// However, cause the stream to be closed.
-			return nil
+			return err
 		}
 
 		recv, err = tes.Recv()

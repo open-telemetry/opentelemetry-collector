@@ -84,7 +84,7 @@ func (ocr *Receiver) Export(mes agentmetricspb.MetricsService_ExportServer) erro
 			resource,
 			recv)
 		if err != nil {
-			return nil
+			return err
 		}
 
 		recv, err = mes.Recv()

@@ -29,7 +29,9 @@ import (
 	"time"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
+	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -462,7 +464,7 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 				},
 				{
 					okToIngest:   false,
-					expectedCode: codes.OK,
+					expectedCode: codes.Unknown,
 				},
 				{
 					okToIngest:   true,
@@ -575,6 +577,160 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 	}
 }
 
+// TestOCReceiverMetrics_HandleNextConsumerResponse checks if the metrics receiver
+// is returning the proper response (return and metrics) when the next consumer
+// in the pipeline reports error. The test changes the responses returned by the
+// next trace consumer, checks if data was passed down the pipeline and if
+// proper metrics were recorded. It also uses all endpoints supported by the
+// metrics receiver.
+func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
+	type ingestionStateTest struct {
+		okToIngest   bool
+		expectedCode codes.Code
+	}
+	tests := []struct {
+		name                         string
+		expectedReceivedBatches      int
+		expectedIngestionBlockedRPCs int
+		ingestionStates              []ingestionStateTest
+	}{
+		{
+			name:                         "IngestTest",
+			expectedReceivedBatches:      2,
+			expectedIngestionBlockedRPCs: 1,
+			ingestionStates: []ingestionStateTest{
+				{
+					okToIngest:   true,
+					expectedCode: codes.OK,
+				},
+				{
+					okToIngest:   false,
+					expectedCode: codes.Unknown,
+				},
+				{
+					okToIngest:   true,
+					expectedCode: codes.OK,
+				},
+			},
+		},
+	}
+
+	descriptor := &metricspb.MetricDescriptor{
+		Name:        "testMetric",
+		Description: "metric descriptor",
+		Unit:        "1",
+		Type:        metricspb.MetricDescriptor_GAUGE_INT64,
+	}
+	point := &metricspb.Point{
+		Timestamp: internal.TimeToTimestamp(time.Now().UTC()),
+		Value: &metricspb.Point_Int64Value{
+			Int64Value: int64(1),
+		},
+	}
+	ts := &metricspb.TimeSeries{
+		Points: []*metricspb.Point{point},
+	}
+	metric := &metricspb.Metric{
+		MetricDescriptor: descriptor,
+		Timeseries:       []*metricspb.TimeSeries{ts},
+	}
+
+	addr := testutils.GetAvailableLocalAddress(t)
+	msg := &agentmetricspb.ExportMetricsServiceRequest{
+		Node: &commonpb.Node{
+			ServiceInfo: &commonpb.ServiceInfo{Name: "test-svc"},
+		},
+		Metrics: []*metricspb.Metric{metric},
+	}
+
+	exportBidiFn := func(
+		t *testing.T,
+		cc *grpc.ClientConn,
+		msg *agentmetricspb.ExportMetricsServiceRequest) error {
+
+		acc := agentmetricspb.NewMetricsServiceClient(cc)
+		stream, err := acc.Export(context.Background())
+		require.NoError(t, err)
+		require.NotNil(t, stream)
+
+		err = stream.Send(msg)
+		stream.CloseSend()
+		if err == nil {
+			for {
+				if _, err = stream.Recv(); err != nil {
+					if err == io.EOF {
+						err = nil
+					}
+					break
+				}
+			}
+		}
+
+		return err
+	}
+
+	exporters := []struct {
+		receiverTag string
+		exportFn    func(
+			t *testing.T,
+			cc *grpc.ClientConn,
+			msg *agentmetricspb.ExportMetricsServiceRequest) error
+	}{
+		{
+			receiverTag: "oc_metrics",
+			exportFn:    exportBidiFn,
+		},
+	}
+	for _, exporter := range exporters {
+		for _, tt := range tests {
+			t.Run(tt.name+"/"+exporter.receiverTag, func(t *testing.T) {
+				doneFn := observabilitytest.SetupRecordedMetricsTest()
+				defer doneFn()
+
+				sink := new(sinkMetricsConsumer)
+
+				var opts []Option
+				ocr, err := New(ocReceiver, "tcp", addr, nil, nil, opts...)
+				require.Nil(t, err)
+				require.NotNil(t, ocr)
+
+				ocr.metricsConsumer = sink
+				err = ocr.Start(component.NewMockHost())
+				require.Nil(t, err)
+				defer ocr.Shutdown()
+
+				cc, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithBlock())
+				if err != nil {
+					t.Errorf("grpc.Dial: %v", err)
+				}
+				defer cc.Close()
+
+				for _, ingestionState := range tt.ingestionStates {
+					if ingestionState.okToIngest {
+						sink.SetConsumeMetricsError(nil)
+					} else {
+						sink.SetConsumeMetricsError(fmt.Errorf("%q: consumer error", tt.name))
+					}
+
+					err = exporter.exportFn(t, cc, msg)
+
+					status, ok := status.FromError(err)
+					require.True(t, ok)
+					assert.Equal(t, ingestionState.expectedCode, status.Code())
+				}
+
+				require.Equal(t, tt.expectedReceivedBatches, len(sink.AllMetrics()))
+				require.Nil(
+					t,
+					observabilitytest.CheckValueViewReceiverReceivedTimeSeries(
+						exporter.receiverTag,
+						tt.expectedReceivedBatches),
+				)
+			})
+		}
+	}
+}
+
 type sinkTraceConsumer struct {
 	// consumeTraceError is the error to be returned when ConsumeTraceData is
 	// called
@@ -598,4 +754,29 @@ func (stc *sinkTraceConsumer) SetConsumeTraceError(err error) {
 
 func (stc *sinkTraceConsumer) AllTraces() []consumerdata.TraceData {
 	return stc.traces[:]
+}
+
+type sinkMetricsConsumer struct {
+	// consumeMetricsError is the error to be returned when ConsumeMetricsData is
+	// called
+	consumeMetricsError error
+
+	metrics []consumerdata.MetricsData
+}
+
+var _ consumer.MetricsConsumer = (*sinkMetricsConsumer)(nil)
+
+func (smc *sinkMetricsConsumer) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
+	if smc.consumeMetricsError == nil {
+		smc.metrics = append(smc.metrics, md)
+	}
+	return smc.consumeMetricsError
+}
+
+func (smc *sinkMetricsConsumer) SetConsumeMetricsError(err error) {
+	smc.consumeMetricsError = err
+}
+
+func (smc *sinkMetricsConsumer) AllMetrics() []consumerdata.MetricsData {
+	return smc.metrics[:]
 }
