@@ -453,10 +453,6 @@ func (m *SpanLink) SpanID() SpanID {
 	return NewSpanID(m.orig.SpanId)
 }
 
-func (m *SpanLink) SpanIDBytes() []byte {
-	return m.orig.SpanId
-}
-
 func (m *SpanLink) Attributes() AttributesMap {
 	return m.attributes
 }
