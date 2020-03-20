@@ -89,8 +89,8 @@ func spanToOC(span *data.Span) *octrace.Span {
 	}
 }
 
-func attributesMapToOCSpanAttributes(attributes data.AttributesMap, droppedCount uint32) *octrace.Span_Attributes {
-	if len(attributes) == 0 && droppedCount == 0 {
+func attributesMapToOCSpanAttributes(attributes data.AttributeMap, droppedCount uint32) *octrace.Span_Attributes {
+	if attributes.Len() == 0 && droppedCount == 0 {
 		return nil
 	}
 
@@ -100,14 +100,15 @@ func attributesMapToOCSpanAttributes(attributes data.AttributesMap, droppedCount
 	}
 }
 
-func attributesMapToOCAttributeMap(attributes data.AttributesMap) map[string]*octrace.AttributeValue {
-	if len(attributes) == 0 {
+func attributesMapToOCAttributeMap(attributes data.AttributeMap) map[string]*octrace.AttributeValue {
+	if attributes.Len() == 0 {
 		return nil
 	}
 
-	ocAttributes := make(map[string]*octrace.AttributeValue, len(attributes))
-	for key, attr := range attributes {
-		ocAttributes[key] = attributeValueToOC(attr)
+	ocAttributes := make(map[string]*octrace.AttributeValue, attributes.Len())
+	for i := 0; i < attributes.Len(); i++ {
+		attr := attributes.GetAttribute(i)
+		ocAttributes[attr.Key()] = attributeValueToOC(attr.Value())
 	}
 	return ocAttributes
 }
@@ -228,7 +229,7 @@ func spanKindToOC(kind data.SpanKind) octrace.Span_SpanKind {
 	return octrace.Span_SPAN_KIND_UNSPECIFIED
 }
 
-func eventsToOC(events []*data.SpanEvent, droppedCount uint32) *octrace.Span_TimeEvents {
+func eventsToOC(events []data.SpanEvent, droppedCount uint32) *octrace.Span_TimeEvents {
 	if len(events) == 0 && droppedCount == 0 {
 		return nil
 	}
@@ -244,7 +245,7 @@ func eventsToOC(events []*data.SpanEvent, droppedCount uint32) *octrace.Span_Tim
 	}
 }
 
-func eventToOC(event *data.SpanEvent) *octrace.Span_TimeEvent {
+func eventToOC(event data.SpanEvent) *octrace.Span_TimeEvent {
 	attrs := event.Attributes()
 
 	// Consider TimeEvent to be of MessageEvent type if all and only relevant attributes are set
@@ -254,14 +255,15 @@ func eventToOC(event *data.SpanEvent) *octrace.Span_TimeEvent {
 		conventions.OCTimeEventMessageEventUSize,
 		conventions.OCTimeEventMessageEventCSize,
 	}
-	if len(attrs) == len(ocMessageEventAttrs) {
+	if attrs.Len() == len(ocMessageEventAttrs) {
 		ocMessageEventAttrValues := map[string]data.AttributeValue{}
 		var ocMessageEventAttrFound bool
 		for _, attr := range ocMessageEventAttrs {
-			ocMessageEventAttrValues[attr], ocMessageEventAttrFound = attrs[attr]
-			if !ocMessageEventAttrFound {
-				break
+			akv, found := attrs.Get(attr)
+			if found {
+				ocMessageEventAttrFound = true
 			}
+			ocMessageEventAttrValues[attr] = akv.Value()
 		}
 		if ocMessageEventAttrFound {
 			ocMessageEventType := ocMessageEventAttrValues[conventions.OCTimeEventMessageEventType]
@@ -294,7 +296,7 @@ func eventToOC(event *data.SpanEvent) *octrace.Span_TimeEvent {
 	}
 }
 
-func linksToOC(links []*data.SpanLink, droppedCount uint32) *octrace.Span_Links {
+func linksToOC(links []data.SpanLink, droppedCount uint32) *octrace.Span_Links {
 	if len(links) == 0 && droppedCount == 0 {
 		return nil
 	}
@@ -305,7 +307,7 @@ func linksToOC(links []*data.SpanLink, droppedCount uint32) *octrace.Span_Links 
 	}
 }
 
-func linksToOCLinks(links []*data.SpanLink) []*octrace.Span_Link {
+func linksToOCLinks(links []data.SpanLink) []*octrace.Span_Link {
 	if len(links) == 0 {
 		return nil
 	}

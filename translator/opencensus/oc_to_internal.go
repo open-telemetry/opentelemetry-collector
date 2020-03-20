@@ -133,7 +133,7 @@ func ocSpanToInternal(dest *data.Span, src *octrace.Span) {
 	// since it may modify src.Attributes (remove the attribute which represents the
 	// span kind).
 	kind := ocSpanKindToInternal(src.Kind, src.Attributes)
-	attrs := ocAttrsToInternal(src.Attributes)
+	attrs, droppedAttrs := ocAttrsToInternal(src.Attributes)
 
 	dest.SetTraceID(data.NewTraceID(src.TraceId))
 	dest.SetSpanID(data.NewSpanID(src.SpanId))
@@ -144,6 +144,7 @@ func ocSpanToInternal(dest *data.Span, src *octrace.Span) {
 	dest.SetStartTime(internal.TimestampToUnixnano(src.StartTime))
 	dest.SetEndTime(internal.TimestampToUnixnano(src.EndTime))
 	dest.SetAttributes(attrs)
+	dest.SetDroppedAttributesCount(droppedAttrs)
 	dest.SetEvents(events)
 	dest.SetDroppedEventsCount(droppedEventCount)
 	dest.SetLinks(links)
@@ -155,7 +156,10 @@ func ocStatusToInternal(ocStatus *octrace.Status) data.SpanStatus {
 	if ocStatus == nil {
 		return data.SpanStatus{}
 	}
-	return data.NewSpanStatus(data.StatusCode(ocStatus.Code), ocStatus.Message)
+	ss := data.NewSpanStatus()
+	ss.SetCode(data.StatusCode(ocStatus.Code))
+	ss.SetMessage(ocStatus.Message)
+	return ss
 }
 
 // Convert tracestate to W3C format. See the https://w3c.github.io/trace-context/
@@ -176,9 +180,9 @@ func ocTraceStateToInternal(ocTracestate *octrace.Span_Tracestate) data.TraceSta
 	return data.TraceState(sb.String())
 }
 
-func ocAttrsToInternal(ocAttrs *octrace.Span_Attributes) data.Attributes {
+func ocAttrsToInternal(ocAttrs *octrace.Span_Attributes) (data.AttributeMap, uint32) {
 	if ocAttrs == nil {
-		return data.Attributes{}
+		return data.NewAttributeMap(nil), 0
 	}
 
 	attrCount := len(ocAttrs.AttributeMap)
@@ -208,8 +212,7 @@ func ocAttrsToInternal(ocAttrs *octrace.Span_Attributes) data.Attributes {
 			i++
 		}
 	}
-	droppedCount := uint32(ocAttrs.DroppedAttributesCount)
-	return data.NewAttributes(attrMap, droppedCount)
+	return data.NewAttributeMap(attrMap), uint32(ocAttrs.DroppedAttributesCount)
 }
 
 func ocSpanKindToInternal(ocKind octrace.Span_SpanKind, ocAttrs *octrace.Span_Attributes) data.SpanKind {
@@ -250,7 +253,7 @@ func ocSpanKindToInternal(ocKind octrace.Span_SpanKind, ocAttrs *octrace.Span_At
 	}
 }
 
-func ocEventsToInternal(ocEvents *octrace.Span_TimeEvents) (events []*data.SpanEvent, droppedCount uint32) {
+func ocEventsToInternal(ocEvents *octrace.Span_TimeEvents) (events []data.SpanEvent, droppedCount uint32) {
 	if ocEvents == nil {
 		return
 	}
@@ -280,12 +283,15 @@ func ocEventsToInternal(ocEvents *octrace.Span_TimeEvents) (events []*data.SpanE
 		case *octrace.Span_TimeEvent_Annotation_:
 			if teValue.Annotation != nil {
 				event.SetName(teValue.Annotation.Description.GetValue())
-				attrs := ocAttrsToInternal(teValue.Annotation.Attributes)
+				attrs, droppedAttrs := ocAttrsToInternal(teValue.Annotation.Attributes)
 				event.SetAttributes(attrs)
+				event.SetDroppedAttributesCount(droppedAttrs)
 			}
 
 		case *octrace.Span_TimeEvent_MessageEvent_:
-			event.SetAttributes(ocMessageEventToInternalAttrs(teValue.MessageEvent))
+			attrs, droppedAttrs := ocMessageEventToInternalAttrs(teValue.MessageEvent)
+			event.SetAttributes(attrs)
+			event.SetDroppedAttributesCount(droppedAttrs)
 
 		default:
 			event.SetName("An unknown OpenCensus TimeEvent type was detected when translating")
@@ -298,7 +304,7 @@ func ocEventsToInternal(ocEvents *octrace.Span_TimeEvents) (events []*data.SpanE
 	return
 }
 
-func ocLinksToInternal(ocLinks *octrace.Span_Links) (links []*data.SpanLink, droppedCount uint32) {
+func ocLinksToInternal(ocLinks *octrace.Span_Links) (links []data.SpanLink, droppedCount uint32) {
 	if ocLinks == nil {
 		return
 	}
@@ -324,7 +330,9 @@ func ocLinksToInternal(ocLinks *octrace.Span_Links) (links []*data.SpanLink, dro
 		link.SetTraceID(data.NewTraceID(ocLink.TraceId))
 		link.SetSpanID(data.NewSpanID(ocLink.SpanId))
 		link.SetTraceState(ocTraceStateToInternal(ocLink.Tracestate))
-		link.SetAttributes(ocAttrsToInternal(ocLink.Attributes))
+		attr, droppedAttr := ocAttrsToInternal(ocLink.Attributes)
+		link.SetAttributes(attr)
+		link.SetDroppedAttributesCount(droppedAttr)
 	}
 
 	// Truncate the slice to only include populated items.
@@ -333,9 +341,9 @@ func ocLinksToInternal(ocLinks *octrace.Span_Links) (links []*data.SpanLink, dro
 	return
 }
 
-func ocMessageEventToInternalAttrs(msgEvent *octrace.Span_TimeEvent_MessageEvent) data.Attributes {
+func ocMessageEventToInternalAttrs(msgEvent *octrace.Span_TimeEvent_MessageEvent) (data.AttributeMap, uint32) {
 	if msgEvent == nil {
-		return data.Attributes{}
+		return data.NewAttributeMap(nil), 0
 	}
 
 	attrs := data.NewAttributeValueSlice(4)
@@ -344,14 +352,12 @@ func ocMessageEventToInternalAttrs(msgEvent *octrace.Span_TimeEvent_MessageEvent
 	attrs[2].SetInt(int64(msgEvent.UncompressedSize))
 	attrs[3].SetInt(int64(msgEvent.CompressedSize))
 
-	return data.NewAttributes(
-		map[string]data.AttributeValue{
-			conventions.OCTimeEventMessageEventType:  attrs[0],
-			conventions.OCTimeEventMessageEventID:    attrs[1],
-			conventions.OCTimeEventMessageEventUSize: attrs[2],
-			conventions.OCTimeEventMessageEventCSize: attrs[3],
-		},
-		0)
+	return data.NewAttributeMap(data.AttributesMap{
+		conventions.OCTimeEventMessageEventType:  attrs[0],
+		conventions.OCTimeEventMessageEventID:    attrs[1],
+		conventions.OCTimeEventMessageEventUSize: attrs[2],
+		conventions.OCTimeEventMessageEventCSize: attrs[3],
+	}), 0
 }
 
 func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Resource) data.Resource {

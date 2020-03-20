@@ -125,25 +125,29 @@ func TestOcTraceStateToInternal(t *testing.T) {
 }
 
 func TestOcAttrsToInternal(t *testing.T) {
-	attrs := ocAttrsToInternal(nil)
-	assert.EqualValues(t, data.NewAttributes(nil, 0), attrs)
+	attrs, droppedAttr := ocAttrsToInternal(nil)
+	assert.EqualValues(t, data.NewAttributeMap(nil), attrs)
+	assert.EqualValues(t, 0, droppedAttr)
 
 	ocAttrs := &octrace.Span_Attributes{}
-	attrs = ocAttrsToInternal(ocAttrs)
-	assert.EqualValues(t, data.NewAttributes(data.AttributesMap{}, 0), attrs)
+	attrs, droppedAttr = ocAttrsToInternal(ocAttrs)
+	assert.EqualValues(t, data.NewAttributeMap(data.AttributesMap{}), attrs)
+	assert.EqualValues(t, 0, droppedAttr)
 
 	ocAttrs = &octrace.Span_Attributes{
 		DroppedAttributesCount: 123,
 	}
-	attrs = ocAttrsToInternal(ocAttrs)
-	assert.EqualValues(t, data.NewAttributes(data.AttributesMap{}, 123), attrs)
+	attrs, droppedAttr = ocAttrsToInternal(ocAttrs)
+	assert.EqualValues(t, data.NewAttributeMap(data.AttributesMap{}), attrs)
+	assert.EqualValues(t, 123, droppedAttr)
 
 	ocAttrs = &octrace.Span_Attributes{
 		AttributeMap:           map[string]*octrace.AttributeValue{},
 		DroppedAttributesCount: 234,
 	}
-	attrs = ocAttrsToInternal(ocAttrs)
-	assert.EqualValues(t, data.NewAttributes(data.AttributesMap{}, 234), attrs)
+	attrs, droppedAttr = ocAttrsToInternal(ocAttrs)
+	assert.EqualValues(t, data.NewAttributeMap(data.AttributesMap{}), attrs)
+	assert.EqualValues(t, 234, droppedAttr)
 
 	ocAttrs = &octrace.Span_Attributes{
 		AttributeMap: map[string]*octrace.AttributeValue{
@@ -153,14 +157,14 @@ func TestOcAttrsToInternal(t *testing.T) {
 		},
 		DroppedAttributesCount: 234,
 	}
-	attrs = ocAttrsToInternal(ocAttrs)
+	attrs, droppedAttr = ocAttrsToInternal(ocAttrs)
 	assert.EqualValues(t,
-		data.NewAttributes(
+		data.NewAttributeMap(
 			data.AttributesMap{
 				"abc": data.NewAttributeValueString("def"),
-			},
-			234),
+			}),
 		attrs)
+	assert.EqualValues(t, 234, droppedAttr)
 
 	ocAttrs.AttributeMap["intval"] = &octrace.AttributeValue{
 		Value: &octrace.AttributeValue_IntValue{IntValue: 345},
@@ -171,15 +175,16 @@ func TestOcAttrsToInternal(t *testing.T) {
 	ocAttrs.AttributeMap["doubleval"] = &octrace.AttributeValue{
 		Value: &octrace.AttributeValue_DoubleValue{DoubleValue: 4.5},
 	}
-	attrs = ocAttrsToInternal(ocAttrs)
+	attrs, droppedAttr = ocAttrsToInternal(ocAttrs)
 
-	expected := data.NewAttributes(data.AttributesMap{
+	expectedAttr := data.NewAttributeMap(data.AttributesMap{
 		"abc":       data.NewAttributeValueString("def"),
 		"intval":    data.NewAttributeValueInt(345),
 		"boolval":   data.NewAttributeValueBool(true),
 		"doubleval": data.NewAttributeValueDouble(4.5),
-	}, 234)
-	assert.EqualValues(t, expected, attrs)
+	})
+	assert.EqualValues(t, expectedAttr.Sort(), attrs.Sort())
+	assert.EqualValues(t, 234, droppedAttr)
 }
 
 func TestOcSpanKindToInternal(t *testing.T) {
@@ -310,26 +315,26 @@ func TestOcToInternal(t *testing.T) {
 	span1.SetName("operationB")
 	span1.SetStartTime(internal.TimestampToUnixnano(timestampP))
 	span1.SetEndTime(internal.TimestampToUnixnano(timestampP))
-	span1.SetEvents([]*data.SpanEvent{
-		data.NewSpanEvent(
-			internal.TimestampToUnixnano(timestampP),
-			"event1",
-			data.NewAttributes(
-				data.AttributesMap{
-					"eventattr1": data.NewAttributeValueString("eventattrval1"),
-				},
-				4,
-			),
-		),
-	})
+	se := data.NewSpanEvent()
+	se.SetTimestamp(internal.TimestampToUnixnano(timestampP))
+	se.SetName("event1")
+	se.SetAttributes(data.NewAttributeMap(
+		data.AttributesMap{
+			"eventattr1": data.NewAttributeValueString("eventattrval1"),
+		}))
+	se.SetDroppedAttributesCount(4)
+	span1.SetEvents([]data.SpanEvent{se})
 	span1.SetDroppedEventsCount(3)
-	span1.SetStatus(data.NewSpanStatus(data.StatusCode(1), "status-cancelled"))
+	status := data.NewSpanStatus()
+	status.SetCode(data.StatusCode(1))
+	status.SetMessage("status-cancelled")
+	span1.SetStatus(status)
 
 	span2 := data.NewSpan()
 	span2.SetName("operationC")
 	span2.SetStartTime(internal.TimestampToUnixnano(timestampP))
 	span2.SetEndTime(internal.TimestampToUnixnano(timestampP))
-	span2.SetLinks([]*data.SpanLink{data.NewSpanLink()})
+	span2.SetLinks([]data.SpanLink{data.NewSpanLink()})
 	span2.SetDroppedLinksCount(1)
 
 	span3 := data.NewSpan()
