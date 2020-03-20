@@ -311,13 +311,14 @@ func summaryPointToOC(point data.SummaryDataPoint, labelKeys *labelKeys) *ocmetr
 	}
 }
 
-func percentileToOC(percentiles []data.SummaryValueAtPercentile) []*ocmetrics.SummaryValue_Snapshot_ValueAtPercentile {
-	if len(percentiles) == 0 {
+func percentileToOC(percentiles data.SummaryValueAtPercentileSlice) []*ocmetrics.SummaryValue_Snapshot_ValueAtPercentile {
+	if percentiles.Len() == 0 {
 		return nil
 	}
 
-	ocPercentiles := make([]*ocmetrics.SummaryValue_Snapshot_ValueAtPercentile, 0, len(percentiles))
-	for _, p := range percentiles {
+	ocPercentiles := make([]*ocmetrics.SummaryValue_Snapshot_ValueAtPercentile, 0, percentiles.Len())
+	for i := 0; i < percentiles.Len(); i++ {
+		p := percentiles.Get(i)
 		ocPercentiles = append(ocPercentiles, &ocmetrics.SummaryValue_Snapshot_ValueAtPercentile{
 			Percentile: p.Percentile(),
 			Value:      p.Value(),

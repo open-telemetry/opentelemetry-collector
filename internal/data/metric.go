@@ -297,6 +297,10 @@ func NewMetric() Metric {
 	return Metric{&otlpmetrics.Metric{}, &internalMetric{}}
 }
 
+func newMetric(orig *otlpmetrics.Metric) Metric {
+	return Metric{orig, &internalMetric{}}
+}
+
 // NewMetricSlice creates a slice of Metrics that are correctly initialized.
 func NewMetricSlice(len int) []Metric {
 	// Slice for underlying orig.
@@ -872,169 +876,23 @@ func (hbe HistogramBucketExemplar) SetAttachments(sm StringMap) {
 	hbe.orig.Attachments = *sm.orig
 }
 
-// SummaryDataPoint is a single data point in a timeseries that describes the time-varying
-// values of a Summary metric.
-//
-// Must use NewSummaryDataPoint* functions to create new instances.
-// Important: zero-initialized instance is not valid for use.
-type SummaryDataPoint struct {
-	// Wrap OTLP SummaryDataPoint.
-	orig *otlpmetrics.SummaryDataPoint
-
-	// Override a few fields. These fields are the source of truth. Their counterparts
-	// stored in corresponding fields of "orig" are ignored.
-	pimpl *intenalSummaryDataPoint
-}
-
-type intenalSummaryDataPoint struct {
-	valueAtPercentiles []SummaryValueAtPercentile
-	// True if the valueAtPercentiles was initialized.
-	initializedSlice bool
-}
-
-// NewSummaryDataPoint creates a new SummaryDataPoint.
-func NewSummaryDataPoint() SummaryDataPoint {
-	return SummaryDataPoint{&otlpmetrics.SummaryDataPoint{}, &intenalSummaryDataPoint{}}
-}
-
 // NewSummaryDataPointSlice creates a slice of SummaryDataPoint that are correctly initialized.
 func NewSummaryDataPointSlice(len int) []SummaryDataPoint {
 	// Slice for underlying orig.
 	origs := make([]otlpmetrics.SummaryDataPoint, len)
-	// Slice for underlying pimpl.
-	pimpls := make([]intenalSummaryDataPoint, len)
 	// Slice for wrappers.
 	wrappers := make([]SummaryDataPoint, len)
 	for i := range origs {
 		wrappers[i].orig = &origs[i]
-		wrappers[i].pimpl = &pimpls[i]
 	}
 	return wrappers
 }
 
 func newSummaryDataPointSliceFromOrig(origs []*otlpmetrics.SummaryDataPoint) []SummaryDataPoint {
-	// Slice for underlying pimpl.
-	pimpls := make([]intenalSummaryDataPoint, len(origs))
 	// Slice for wrappers.
 	wrappers := make([]SummaryDataPoint, len(origs))
 	for i := range origs {
 		wrappers[i].orig = origs[i]
-		wrappers[i].pimpl = &pimpls[i]
 	}
 	return wrappers
-}
-
-func (dp SummaryDataPoint) LabelsMap() StringMap {
-	return newStringMap(&dp.orig.Labels)
-}
-
-func (dp SummaryDataPoint) SetLabelsMap(sm StringMap) {
-	dp.orig.Labels = *sm.orig
-}
-
-func (dp SummaryDataPoint) StartTime() TimestampUnixNano {
-	return TimestampUnixNano(dp.orig.StartTimeUnixnano)
-}
-
-func (dp SummaryDataPoint) SetStartTime(v TimestampUnixNano) {
-	dp.orig.StartTimeUnixnano = uint64(v)
-}
-
-func (dp SummaryDataPoint) Timestamp() TimestampUnixNano {
-	return TimestampUnixNano(dp.orig.TimestampUnixnano)
-}
-
-func (dp SummaryDataPoint) SetTimestamp(v TimestampUnixNano) {
-	dp.orig.TimestampUnixnano = uint64(v)
-}
-
-func (dp SummaryDataPoint) Count() uint64 {
-	return dp.orig.Count
-}
-
-func (dp SummaryDataPoint) SetCount(v uint64) {
-	dp.orig.Count = v
-}
-
-func (dp SummaryDataPoint) Sum() float64 {
-	return dp.orig.Sum
-}
-
-func (dp SummaryDataPoint) SetSum(v float64) {
-	dp.orig.Sum = v
-}
-
-func (dp SummaryDataPoint) ValueAtPercentiles() []SummaryValueAtPercentile {
-	if !dp.pimpl.initializedSlice {
-		dp.pimpl.valueAtPercentiles = newSummaryValueAtPercentileSliceFromOrig(dp.orig.PercentileValues)
-		dp.pimpl.initializedSlice = true
-	}
-	return dp.pimpl.valueAtPercentiles
-}
-
-func (dp SummaryDataPoint) SetValueAtPercentiles(v []SummaryValueAtPercentile) {
-	dp.pimpl.valueAtPercentiles = v
-	dp.pimpl.initializedSlice = true
-	if len(dp.pimpl.valueAtPercentiles) == 0 {
-		dp.orig.PercentileValues = nil
-		return
-	}
-
-	// TODO: reuse orig slice if capacity is enough.
-	// Reconstruct the slice because we don't know what elements were removed/added.
-	dp.orig.PercentileValues = make([]*otlpmetrics.SummaryDataPoint_ValueAtPercentile, len(dp.pimpl.valueAtPercentiles))
-	for i := range dp.pimpl.valueAtPercentiles {
-		dp.orig.PercentileValues[i] = dp.pimpl.valueAtPercentiles[i].orig
-	}
-}
-
-// SummaryValueAtPercentile represents the value at a given percentile of a distribution.
-//
-// Must use NewSummaryValueAtPercentile* functions to create new instances.
-// Important: zero-initialized instance is not valid for use.
-type SummaryValueAtPercentile struct {
-	// Wrap OTLP SummaryDataPoint_ValueAtPercentile.
-	orig *otlpmetrics.SummaryDataPoint_ValueAtPercentile
-}
-
-// NewSummaryValueAtPercentile creates a new SummaryValueAtPercentile.
-func NewSummaryValueAtPercentile() SummaryValueAtPercentile {
-	return SummaryValueAtPercentile{&otlpmetrics.SummaryDataPoint_ValueAtPercentile{}}
-}
-
-// NewSummaryValueAtPercentileSlice creates a slice of SummaryValueAtPercentile that are correctly initialized.
-func NewSummaryValueAtPercentileSlice(len int) []SummaryValueAtPercentile {
-	// Slice for underlying orig.
-	origs := make([]otlpmetrics.SummaryDataPoint_ValueAtPercentile, len)
-	// Slice for wrappers.
-	wrappers := make([]SummaryValueAtPercentile, len)
-	for i := range origs {
-		wrappers[i].orig = &origs[i]
-	}
-	return wrappers
-}
-
-func newSummaryValueAtPercentileSliceFromOrig(origs []*otlpmetrics.SummaryDataPoint_ValueAtPercentile) []SummaryValueAtPercentile {
-	// Slice for wrappers.
-	wrappers := make([]SummaryValueAtPercentile, len(origs))
-	for i := range origs {
-		wrappers[i].orig = origs[i]
-	}
-	return wrappers
-}
-
-func (vp SummaryValueAtPercentile) Percentile() float64 {
-	return vp.orig.Percentile
-}
-
-func (vp SummaryValueAtPercentile) SetPercentile(v float64) {
-	vp.orig.Percentile = v
-}
-
-func (vp SummaryValueAtPercentile) Value() float64 {
-	return vp.orig.Value
-}
-
-func (vp SummaryValueAtPercentile) SetValue(v float64) {
-	vp.orig.Value = v
 }
