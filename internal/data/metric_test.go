@@ -107,13 +107,14 @@ func TestNewHistogramDataPointSlice(t *testing.T) {
 
 func TestNewHistogramBucketSlice(t *testing.T) {
 	hbs := NewHistogramBucketSlice(0)
-	assert.EqualValues(t, 0, len(hbs))
+	assert.EqualValues(t, 0, hbs.Len())
 
 	n := rand.Intn(10)
 	hbs = NewHistogramBucketSlice(n)
-	assert.EqualValues(t, n, len(hbs))
-	for event := range hbs {
-		assert.NotNil(t, event)
+	defaultVal := NewHistogramBucket()
+	assert.EqualValues(t, n, hbs.Len())
+	for i := 0; i < hbs.Len(); i++ {
+		assert.EqualValues(t, defaultVal, hbs.Get(i))
 	}
 }
 
@@ -135,10 +136,10 @@ func TestNewSummaryValueAtPercentileSlice(t *testing.T) {
 
 	n := rand.Intn(10)
 	vps = NewSummaryValueAtPercentileSlice(n)
-	defaultVp := NewSummaryValueAtPercentile()
+	defaultVal := NewSummaryValueAtPercentile()
 	assert.EqualValues(t, n, vps.Len())
 	for i := 0; i < vps.Len(); i++ {
-		assert.EqualValues(t, defaultVp, vps.Get(i))
+		assert.EqualValues(t, defaultVal, vps.Get(i))
 	}
 }
 
@@ -210,21 +211,21 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	assert.EqualValues(t, endTime, histogramDataPoints[0].Timestamp())
 	assert.EqualValues(t, []float64{1, 2}, histogramDataPoints[0].ExplicitBounds())
 	assert.EqualValues(t, NewStringMap(map[string]string{"key0": "value0"}), histogramDataPoints[0].LabelsMap())
-	assert.EqualValues(t, 3, len(histogramDataPoints[0].Buckets()))
-	assert.EqualValues(t, 10, histogramDataPoints[0].Buckets()[0].Count())
-	assert.EqualValues(t, 15, histogramDataPoints[0].Buckets()[1].Count())
-	assert.EqualValues(t, 1.5, histogramDataPoints[0].Buckets()[1].Exemplar().Value())
-	assert.EqualValues(t, startTime, histogramDataPoints[0].Buckets()[1].Exemplar().Timestamp())
-	assert.EqualValues(t, NewStringMap(map[string]string{"key_a1": "value_a1"}), histogramDataPoints[0].Buckets()[1].Exemplar().Attachments())
-	assert.EqualValues(t, 1, histogramDataPoints[0].Buckets()[2].Count())
+	assert.EqualValues(t, 3, histogramDataPoints[0].Buckets().Len())
+	assert.EqualValues(t, 10, histogramDataPoints[0].Buckets().Get(0).Count())
+	assert.EqualValues(t, 15, histogramDataPoints[0].Buckets().Get(1).Count())
+	assert.EqualValues(t, 1.5, histogramDataPoints[0].Buckets().Get(1).Exemplar().Value())
+	assert.EqualValues(t, startTime, histogramDataPoints[0].Buckets().Get(1).Exemplar().Timestamp())
+	assert.EqualValues(t, NewStringMap(map[string]string{"key_a1": "value_a1"}), histogramDataPoints[0].Buckets().Get(1).Exemplar().Attachments())
+	assert.EqualValues(t, 1, histogramDataPoints[0].Buckets().Get(2).Count())
 	// Second point
 	assert.EqualValues(t, startTime, histogramDataPoints[1].StartTime())
 	assert.EqualValues(t, endTime, histogramDataPoints[1].Timestamp())
 	assert.EqualValues(t, []float64{1}, histogramDataPoints[1].ExplicitBounds())
 	assert.EqualValues(t, NewStringMap(map[string]string{"key1": "value1"}), histogramDataPoints[1].LabelsMap())
-	assert.EqualValues(t, 2, len(histogramDataPoints[1].Buckets()))
-	assert.EqualValues(t, 10, histogramDataPoints[1].Buckets()[0].Count())
-	assert.EqualValues(t, 1, histogramDataPoints[1].Buckets()[1].Count())
+	assert.EqualValues(t, 2, histogramDataPoints[1].Buckets().Len())
+	assert.EqualValues(t, 10, histogramDataPoints[1].Buckets().Get(0).Count())
+	assert.EqualValues(t, 1, histogramDataPoints[1].Buckets().Get(1).Count())
 	// Check summary metric
 	metricSummary := metrics[3]
 	assert.EqualValues(t, "my_metric_summary", metricSummary.MetricDescriptor().Name())
@@ -483,20 +484,20 @@ func TestOtlpToFromInternalHistogramPointsMutating(t *testing.T) {
 	assert.EqualValues(t, newLabels, histogramDataPoints[0].LabelsMap())
 	histogramDataPoints[0].SetExplicitBounds([]float64{1})
 	assert.EqualValues(t, []float64{1}, histogramDataPoints[0].ExplicitBounds())
-	buckets := histogramDataPoints[0].Buckets()[:2]
-	buckets[0].SetCount(21)
-	assert.EqualValues(t, 21, buckets[0].Count())
-	buckets[1].SetCount(32)
-	assert.EqualValues(t, 32, buckets[1].Count())
-	buckets[1].Exemplar().SetTimestamp(TimestampUnixNano(startTime + 1))
-	assert.EqualValues(t, startTime+1, buckets[1].Exemplar().Timestamp())
-	buckets[1].Exemplar().SetValue(10.5)
-	assert.EqualValues(t, 10.5, buckets[1].Exemplar().Value())
-	buckets[1].Exemplar().SetAttachments(newLabels)
-	assert.EqualValues(t, newLabels, buckets[1].Exemplar().Attachments())
-	assert.EqualValues(t, 3, len(histogramDataPoints[0].Buckets()))
-	histogramDataPoints[0].SetBuckets(buckets)
-	assert.EqualValues(t, 2, len(histogramDataPoints[0].Buckets()))
+	assert.EqualValues(t, 3, histogramDataPoints[0].Buckets().Len())
+	histogramDataPoints[0].Buckets().Resize(0, 2)
+	assert.EqualValues(t, 2, histogramDataPoints[0].Buckets().Len())
+	buckets := histogramDataPoints[0].Buckets()
+	buckets.Get(0).SetCount(21)
+	assert.EqualValues(t, 21, buckets.Get(0).Count())
+	buckets.Get(1).SetCount(32)
+	assert.EqualValues(t, 32, buckets.Get(1).Count())
+	buckets.Get(1).Exemplar().SetTimestamp(TimestampUnixNano(startTime + 1))
+	assert.EqualValues(t, startTime+1, buckets.Get(1).Exemplar().Timestamp())
+	buckets.Get(1).Exemplar().SetValue(10.5)
+	assert.EqualValues(t, 10.5, buckets.Get(1).Exemplar().Value())
+	buckets.Get(1).Exemplar().SetAttachments(newLabels)
+	assert.EqualValues(t, newLabels, buckets.Get(1).Exemplar().Attachments())
 
 	assert.EqualValues(t, 2, len(metric.HistogramDataPoints()))
 	metric.SetHistogramDataPoints(histogramDataPoints)

@@ -259,13 +259,14 @@ func histogramExplicitBoundsToOC(bounds []float64) *ocmetrics.DistributionValue_
 	}
 }
 
-func histogramBucketsToOC(buckets []data.HistogramBucket) []*ocmetrics.DistributionValue_Bucket {
-	if len(buckets) == 0 {
+func histogramBucketsToOC(buckets data.HistogramBucketSlice) []*ocmetrics.DistributionValue_Bucket {
+	if buckets.Len() == 0 {
 		return nil
 	}
 
-	ocBuckets := make([]*ocmetrics.DistributionValue_Bucket, 0, len(buckets))
-	for _, bucket := range buckets {
+	ocBuckets := make([]*ocmetrics.DistributionValue_Bucket, 0, buckets.Len())
+	for i := 0; i < buckets.Len(); i++ {
+		bucket := buckets.Get(i)
 		ocBuckets = append(ocBuckets, &ocmetrics.DistributionValue_Bucket{
 			Count:    int64(bucket.Count()),
 			Exemplar: exemplarToOC(bucket.Exemplar()),

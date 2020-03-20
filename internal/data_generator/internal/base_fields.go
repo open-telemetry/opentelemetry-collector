@@ -31,16 +31,16 @@ func (ms ${structName}) Set${fieldName}(v ${returnType}) {
 
 const accessorMessageTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
 func (ms ${structName}) ${fieldName}() ${returnType} {
-	if rm.orig.${originFieldName} == nil {
+	if ms.orig.${originFieldName} == nil {
 		// No ${originFieldName} available, initialize one to make all operations on ${returnType} available.
-		rm.orig.${originFieldName} = &${structOriginFullName}{}
+		ms.orig.${originFieldName} = &${structOriginFullName}{}
 	}
-	return new${returnType}(&ms.orig.${originFieldName})
+	return new${returnType}(ms.orig.${originFieldName})
 }
 
 // Set${fieldName} replaces the ${lowerFieldName} associated with this ${structName}.
 func (ms ${structName}) Set${fieldName}(v ${returnType}) {
-	ms.orig.${originFieldName} = *v.orig
+	ms.orig.${originFieldName} = v.orig
 }`
 
 const accessorPrimitiveTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.

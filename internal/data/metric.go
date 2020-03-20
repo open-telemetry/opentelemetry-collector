@@ -518,21 +518,6 @@ const (
 	MetricTypeSummary             MetricType = MetricType(otlpmetrics.MetricDescriptor_SUMMARY)
 )
 
-// Int64DataPoint is a single data point in a timeseries that describes the time-varying
-// values of a int64 metric.
-//
-// Must use NewInt64DataPoint* functions to create new instances.
-// Important: zero-initialized instance is not valid for use.
-type Int64DataPoint struct {
-	// Wrap OTLP Int64DataPoint.
-	orig *otlpmetrics.Int64DataPoint
-}
-
-// NewInt64DataPoint creates a new Int64DataPoint
-func NewInt64DataPoint() Int64DataPoint {
-	return Int64DataPoint{&otlpmetrics.Int64DataPoint{}}
-}
-
 // NewInt64DataPointSlice creates a slice of Int64DataPoint that are correctly initialized.
 func NewInt64DataPointSlice(len int) []Int64DataPoint {
 	// Slice for underlying orig.
@@ -552,53 +537,6 @@ func newInt64DataPointSliceFromOrig(origs []*otlpmetrics.Int64DataPoint) []Int64
 		wrappers[i].orig = origs[i]
 	}
 	return wrappers
-}
-
-func (dp Int64DataPoint) LabelsMap() StringMap {
-	return newStringMap(&dp.orig.Labels)
-}
-
-func (dp Int64DataPoint) SetLabelsMap(sm StringMap) {
-	dp.orig.Labels = *sm.orig
-}
-
-func (dp Int64DataPoint) StartTime() TimestampUnixNano {
-	return TimestampUnixNano(dp.orig.StartTimeUnixnano)
-}
-
-func (dp Int64DataPoint) SetStartTime(v TimestampUnixNano) {
-	dp.orig.StartTimeUnixnano = uint64(v)
-}
-
-func (dp Int64DataPoint) Timestamp() TimestampUnixNano {
-	return TimestampUnixNano(dp.orig.TimestampUnixnano)
-}
-
-func (dp Int64DataPoint) SetTimestamp(v TimestampUnixNano) {
-	dp.orig.TimestampUnixnano = uint64(v)
-}
-
-func (dp Int64DataPoint) Value() int64 {
-	return dp.orig.Value
-}
-
-func (dp Int64DataPoint) SetValue(v int64) {
-	dp.orig.Value = v
-}
-
-// DoubleDataPoint is a single data point in a timeseries that describes the time-varying
-// value of a double metric.
-//
-// Must use NewDoubleDataPoint* functions to create new instances.
-// Important: zero-initialized instance is not valid for use.
-type DoubleDataPoint struct {
-	// Wrap OTLP DoubleDataPoint.
-	orig *otlpmetrics.DoubleDataPoint
-}
-
-// NewDoubleDataPoint creates a new DoubleDataPoint.
-func NewDoubleDataPoint() *DoubleDataPoint {
-	return &DoubleDataPoint{&otlpmetrics.DoubleDataPoint{}}
 }
 
 // NewDoubleDataPointSlice creates a slice of DoubleDataPoint that are correctly initialized.
@@ -622,258 +560,25 @@ func newDoubleDataPointSliceFormOrgig(origs []*otlpmetrics.DoubleDataPoint) []Do
 	return wrappers
 }
 
-func (dp DoubleDataPoint) LabelsMap() StringMap {
-	return newStringMap(&dp.orig.Labels)
-}
-
-func (dp DoubleDataPoint) SetLabelsMap(sm StringMap) {
-	dp.orig.Labels = *sm.orig
-}
-
-func (dp DoubleDataPoint) StartTime() TimestampUnixNano {
-	return TimestampUnixNano(dp.orig.StartTimeUnixnano)
-}
-
-func (dp DoubleDataPoint) SetStartTime(v TimestampUnixNano) {
-	dp.orig.StartTimeUnixnano = uint64(v)
-}
-
-func (dp DoubleDataPoint) Timestamp() TimestampUnixNano {
-	return TimestampUnixNano(dp.orig.TimestampUnixnano)
-}
-
-func (dp DoubleDataPoint) SetTimestamp(v TimestampUnixNano) {
-	dp.orig.TimestampUnixnano = uint64(v)
-}
-
-func (dp DoubleDataPoint) Value() float64 {
-	return dp.orig.Value
-}
-
-func (dp DoubleDataPoint) SetValue(v float64) {
-	dp.orig.Value = v
-}
-
-// HistogramDataPoint is a single data point in a timeseries that describes the time-varying
-// values of a Histogram.
-//
-// Must use NewHistogramDataPoint* functions to create new instances.
-// Important: zero-initialized instance is not valid for use.
-type HistogramDataPoint struct {
-	// Wrap OTLP HistogramDataPoint.
-	orig *otlpmetrics.HistogramDataPoint
-
-	// Override a few fields. These fields are the source of truth. Their counterparts
-	// stored in corresponding fields of "orig" are ignored.
-	pimpl *internalHistogramDataPoint
-}
-
-type internalHistogramDataPoint struct {
-	buckets []HistogramBucket
-	// True if the buckets slice was initialized.
-	initializedSlice bool
-}
-
-// NewHistogramDataPoint creates a new HistogramDataPoint.
-func NewHistogramDataPoint() HistogramDataPoint {
-	return HistogramDataPoint{&otlpmetrics.HistogramDataPoint{}, &internalHistogramDataPoint{}}
-}
-
 // NewHistogramDataPointSlice creates a slice of HistogramDataPoint that are correctly initialized.
 func NewHistogramDataPointSlice(len int) []HistogramDataPoint {
 	// Slice for underlying orig.
 	origs := make([]otlpmetrics.HistogramDataPoint, len)
-	// Slice for underlying pimpl.
-	internals := make([]internalHistogramDataPoint, len)
 	// Slice for wrappers.
 	wrappers := make([]HistogramDataPoint, len)
 	for i := range origs {
 		wrappers[i].orig = &origs[i]
-		wrappers[i].pimpl = &internals[i]
 	}
 	return wrappers
 }
 
 func newHistogramDataPointSliceFromOrig(origs []*otlpmetrics.HistogramDataPoint) []HistogramDataPoint {
-	// Slice for underlying pimpl.
-	pimpls := make([]internalHistogramDataPoint, len(origs))
 	// Slice for wrappers.
 	wrappers := make([]HistogramDataPoint, len(origs))
 	for i := range origs {
 		wrappers[i].orig = origs[i]
-		wrappers[i].pimpl = &pimpls[i]
 	}
 	return wrappers
-}
-
-func (dp HistogramDataPoint) LabelsMap() StringMap {
-	return newStringMap(&dp.orig.Labels)
-}
-
-func (dp HistogramDataPoint) SetLabelsMap(sm StringMap) {
-	dp.orig.Labels = *sm.orig
-}
-
-func (dp HistogramDataPoint) StartTime() TimestampUnixNano {
-	return TimestampUnixNano(dp.orig.StartTimeUnixnano)
-}
-
-func (dp HistogramDataPoint) SetStartTime(v TimestampUnixNano) {
-	dp.orig.StartTimeUnixnano = uint64(v)
-}
-
-func (dp HistogramDataPoint) Timestamp() TimestampUnixNano {
-	return TimestampUnixNano(dp.orig.TimestampUnixnano)
-}
-
-func (dp HistogramDataPoint) SetTimestamp(v TimestampUnixNano) {
-	dp.orig.TimestampUnixnano = uint64(v)
-}
-
-func (dp HistogramDataPoint) Count() uint64 {
-	return dp.orig.Count
-}
-
-func (dp HistogramDataPoint) SetCount(v uint64) {
-	dp.orig.Count = v
-}
-
-func (dp HistogramDataPoint) Sum() float64 {
-	return dp.orig.Sum
-}
-
-func (dp HistogramDataPoint) SetSum(v float64) {
-	dp.orig.Sum = v
-}
-
-func (dp HistogramDataPoint) Buckets() []HistogramBucket {
-	if !dp.pimpl.initializedSlice {
-		dp.pimpl.buckets = newHistogramBucketSliceFromOrig(dp.orig.Buckets)
-		dp.pimpl.initializedSlice = true
-	}
-	return dp.pimpl.buckets
-}
-
-func (dp HistogramDataPoint) SetBuckets(v []HistogramBucket) {
-	dp.pimpl.buckets = v
-	dp.pimpl.initializedSlice = true
-	if len(dp.pimpl.buckets) == 0 {
-		dp.orig.Buckets = nil
-		return
-	}
-
-	// TODO: reuse orig slice if capacity is enough.
-	// Reconstruct the slice because we don't know what elements were removed/added.
-	dp.orig.Buckets = make([]*otlpmetrics.HistogramDataPoint_Bucket, len(dp.pimpl.buckets))
-	for i := range dp.pimpl.buckets {
-		dp.orig.Buckets[i] = dp.pimpl.buckets[i].orig
-	}
-}
-
-func (dp HistogramDataPoint) ExplicitBounds() []float64 {
-	return dp.orig.ExplicitBounds
-}
-
-func (dp HistogramDataPoint) SetExplicitBounds(v []float64) {
-	dp.orig.ExplicitBounds = v
-}
-
-// HistogramBucket contains values for a histogram bucket.
-//
-// Must use NewHistogramBucket* functions to create new instances.
-// Important: zero-initialized instance is not valid for use.
-type HistogramBucket struct {
-	// Wrap OTLP HistogramDataPoint_Bucket.
-	orig *otlpmetrics.HistogramDataPoint_Bucket
-}
-
-// NewHistogramBucket creates a new HistogramBucket.
-func NewHistogramBucket() HistogramBucket {
-	return HistogramBucket{&otlpmetrics.HistogramDataPoint_Bucket{}}
-}
-
-// NewHistogramBucketSlice creates a slice of HistogramBucket that are correctly initialized.
-func NewHistogramBucketSlice(len int) []HistogramBucket {
-	// Slice for underlying orig.
-	origs := make([]otlpmetrics.HistogramDataPoint_Bucket, len)
-	// Slice for wrappers.
-	wrappers := make([]HistogramBucket, len)
-	for i := range origs {
-		wrappers[i].orig = &origs[i]
-	}
-	return wrappers
-}
-
-func newHistogramBucketSliceFromOrig(origs []*otlpmetrics.HistogramDataPoint_Bucket) []HistogramBucket {
-	// Slice for wrappers.
-	wrappers := make([]HistogramBucket, len(origs))
-	for i := range origs {
-		wrappers[i].orig = origs[i]
-	}
-	return wrappers
-}
-
-func (hb HistogramBucket) Count() uint64 {
-	return hb.orig.Count
-}
-
-func (hb HistogramBucket) SetCount(v uint64) {
-	hb.orig.Count = v
-}
-
-func (hb HistogramBucket) Exemplar() HistogramBucketExemplar {
-	if hb.orig.Exemplar == nil {
-		// No Exemplar available, initialize one to make all operations available.
-		hb.orig.Exemplar = &otlpmetrics.HistogramDataPoint_Bucket_Exemplar{}
-	}
-	return newHistogramBucketExemplar(hb.orig.Exemplar)
-}
-
-func (hb HistogramBucket) SetExemplar(v HistogramBucketExemplar) {
-	hb.orig.Exemplar = v.orig
-}
-
-// HistogramBucketExemplar are example points that may be used to annotate aggregated Histogram values.
-// They are metadata that gives information about a particular value added to a Histogram bucket.
-//
-// Must use NewHistogramBucketExemplar* functions to create new instances.
-// Important: zero-initialized instance is not valid for use.
-type HistogramBucketExemplar struct {
-	// Wrap OTLP HistogramDataPoint_Bucket_Exemplar.
-	orig *otlpmetrics.HistogramDataPoint_Bucket_Exemplar
-}
-
-// NewHistogramBucketExemplar creates a new HistogramBucketExemplar.
-func NewHistogramBucketExemplar() HistogramBucketExemplar {
-	return HistogramBucketExemplar{&otlpmetrics.HistogramDataPoint_Bucket_Exemplar{}}
-}
-
-func newHistogramBucketExemplar(orig *otlpmetrics.HistogramDataPoint_Bucket_Exemplar) HistogramBucketExemplar {
-	return HistogramBucketExemplar{orig}
-}
-
-func (hbe HistogramBucketExemplar) Value() float64 {
-	return hbe.orig.Value
-}
-
-func (hbe HistogramBucketExemplar) SetValue(v float64) {
-	hbe.orig.Value = v
-}
-
-func (hbe HistogramBucketExemplar) Timestamp() TimestampUnixNano {
-	return TimestampUnixNano(hbe.orig.TimestampUnixnano)
-}
-
-func (hbe HistogramBucketExemplar) SetTimestamp(v TimestampUnixNano) {
-	hbe.orig.TimestampUnixnano = uint64(v)
-}
-
-func (hbe HistogramBucketExemplar) Attachments() StringMap {
-	return newStringMap(&hbe.orig.Attachments)
-}
-
-func (hbe HistogramBucketExemplar) SetAttachments(sm StringMap) {
-	hbe.orig.Attachments = *sm.orig
 }
 
 // NewSummaryDataPointSlice creates a slice of SummaryDataPoint that are correctly initialized.
