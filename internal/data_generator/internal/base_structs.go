@@ -32,7 +32,6 @@ type ${structName} struct {
 
 // New${structName} creates a ${structName} with "len" empty elements.
 //
-// Caller must initialize all the allocated elements.
 // es := New${structName}(4)
 // for i := 0; i < es.Len(); i++ {
 //     e := es.Get(i)

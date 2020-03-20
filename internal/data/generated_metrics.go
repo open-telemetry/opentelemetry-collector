@@ -34,7 +34,6 @@ type SummaryDataPointGeneratedSlice struct {
 
 // NewSummaryDataPointGeneratedSlice creates a SummaryDataPointGeneratedSlice with "len" empty elements.
 //
-// Caller must initialize all the allocated elements.
 // es := NewSummaryDataPointGeneratedSlice(4)
 // for i := 0; i < es.Len(); i++ {
 //     e := es.Get(i)
@@ -176,7 +175,6 @@ type SummaryValueAtPercentileSlice struct {
 
 // NewSummaryValueAtPercentileSlice creates a SummaryValueAtPercentileSlice with "len" empty elements.
 //
-// Caller must initialize all the allocated elements.
 // es := NewSummaryValueAtPercentileSlice(4)
 // for i := 0; i < es.Len(); i++ {
 //     e := es.Get(i)
