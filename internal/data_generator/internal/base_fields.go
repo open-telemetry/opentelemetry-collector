@@ -82,8 +82,6 @@ func (mf *sliceField) generateAccessors(ms *messageStruct, sb *strings.Builder) 
 			return mf.fieldMame
 		case "returnType":
 			return mf.returnSlice.structName
-		case "elementStructName":
-			return mf.returnSlice.element.structName
 		case "originFieldName":
 			return mf.originFieldName
 		default:
