@@ -21,7 +21,7 @@ import (
 	otlpresource "github.com/open-telemetry/opentelemetry-proto/gen/go/resource/v1"
 )
 
-// Resource // Resource information..
+// Resource information.
 //
 // This is a reference type, if passsed by value and callee modifies it the
 // caller will see the modification.

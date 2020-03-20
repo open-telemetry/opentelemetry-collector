@@ -33,7 +33,7 @@ type Int64DataPoint struct {
 	orig *otlpmetrics.Int64DataPoint
 }
 
-// NewInt64DataPoint creates a new Int64DataPoint.
+// NewInt64DataPoint creates a new empty Int64DataPoint.
 func NewInt64DataPoint() Int64DataPoint {
 	return Int64DataPoint{&otlpmetrics.Int64DataPoint{}}
 }
@@ -94,7 +94,7 @@ type DoubleDataPoint struct {
 	orig *otlpmetrics.DoubleDataPoint
 }
 
-// NewDoubleDataPoint creates a new DoubleDataPoint.
+// NewDoubleDataPoint creates a new empty DoubleDataPoint.
 func NewDoubleDataPoint() DoubleDataPoint {
 	return DoubleDataPoint{&otlpmetrics.DoubleDataPoint{}}
 }
@@ -155,7 +155,7 @@ type HistogramDataPoint struct {
 	orig *otlpmetrics.HistogramDataPoint
 }
 
-// NewHistogramDataPoint creates a new HistogramDataPoint.
+// NewHistogramDataPoint creates a new empty HistogramDataPoint.
 func NewHistogramDataPoint() HistogramDataPoint {
 	return HistogramDataPoint{&otlpmetrics.HistogramDataPoint{}}
 }
@@ -306,7 +306,7 @@ type HistogramBucket struct {
 	orig *otlpmetrics.HistogramDataPoint_Bucket
 }
 
-// NewHistogramBucket creates a new HistogramBucket.
+// NewHistogramBucket creates a new empty HistogramBucket.
 func NewHistogramBucket() HistogramBucket {
 	return HistogramBucket{&otlpmetrics.HistogramDataPoint_Bucket{}}
 }
@@ -352,7 +352,7 @@ type HistogramBucketExemplar struct {
 	orig *otlpmetrics.HistogramDataPoint_Bucket_Exemplar
 }
 
-// NewHistogramBucketExemplar creates a new HistogramBucketExemplar.
+// NewHistogramBucketExemplar creates a new empty HistogramBucketExemplar.
 func NewHistogramBucketExemplar() HistogramBucketExemplar {
 	return HistogramBucketExemplar{&otlpmetrics.HistogramDataPoint_Bucket_Exemplar{}}
 }
