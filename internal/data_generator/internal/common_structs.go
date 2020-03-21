@@ -31,3 +31,30 @@ var attributeMap = &sliceStruct{
 }
 
 var attributeKeyValue = &messageStruct{}
+
+var startTimeField = &primitiveTypedField{
+	fieldMame:       "StartTime",
+	originFieldName: "StartTimeUnixnano",
+	returnType:      "TimestampUnixNano",
+	rawType:         "uint64",
+}
+
+var timestampField = &primitiveTypedField{
+	fieldMame:       "Timestamp",
+	originFieldName: "TimestampUnixnano",
+	returnType:      "TimestampUnixNano",
+	rawType:         "uint64",
+}
+
+var timeField = &primitiveTypedField{
+	fieldMame:       "Timestamp",
+	originFieldName: "TimeUnixnano",
+	returnType:      "TimestampUnixNano",
+	rawType:         "uint64",
+}
+
+var attributes = &sliceField{
+	fieldMame:       "Attributes",
+	originFieldName: "Attributes",
+	returnSlice:     attributeMap,
+}

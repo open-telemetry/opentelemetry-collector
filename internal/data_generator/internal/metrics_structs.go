@@ -42,8 +42,8 @@ var int64DataPoint = &messageStruct{
 			originFieldName: "Labels",
 			returnSlice:     stringMap,
 		},
-		startTimeFiled,
-		timestampFiled,
+		startTimeField,
+		timestampField,
 		&primitiveField{
 			fieldMame:       "Value",
 			originFieldName: "Value",
@@ -62,8 +62,8 @@ var doubleDataPoint = &messageStruct{
 			originFieldName: "Labels",
 			returnSlice:     stringMap,
 		},
-		startTimeFiled,
-		timestampFiled,
+		startTimeField,
+		timestampField,
 		&primitiveField{
 			fieldMame:       "Value",
 			originFieldName: "Value",
@@ -82,8 +82,8 @@ var histogramDataPoint = &messageStruct{
 			originFieldName: "Labels",
 			returnSlice:     stringMap,
 		},
-		startTimeFiled,
-		timestampFiled,
+		startTimeField,
+		timestampField,
 		countField,
 		sumField,
 		&sliceField{
@@ -124,7 +124,7 @@ var histogramBucketExemplar = &messageStruct{
 		"// They are metadata that gives information about a particular value added to a Histogram bucket.",
 	originFullName: "otlpmetrics.HistogramDataPoint_Bucket_Exemplar",
 	fields: []baseField{
-		timestampFiled,
+		timestampField,
 		&primitiveField{
 			fieldMame:       "Value",
 			originFieldName: "Value",
@@ -148,8 +148,8 @@ var summaryDataPoint = &messageStruct{
 			originFieldName: "Labels",
 			returnSlice:     stringMap,
 		},
-		startTimeFiled,
-		timestampFiled,
+		startTimeField,
+		timestampField,
 		countField,
 		sumField,
 		&sliceField{
@@ -193,18 +193,4 @@ var sumField = &primitiveField{
 	fieldMame:       "Sum",
 	originFieldName: "Sum",
 	returnType:      "float64",
-}
-
-var startTimeFiled = &primitiveTypedField{
-	fieldMame:       "StartTime",
-	originFieldName: "StartTimeUnixnano",
-	returnType:      "TimestampUnixNano",
-	rawType:         "uint64",
-}
-
-var timestampFiled = &primitiveTypedField{
-	fieldMame:       "Timestamp",
-	originFieldName: "TimestampUnixnano",
-	returnType:      "TimestampUnixNano",
-	rawType:         "uint64",
 }

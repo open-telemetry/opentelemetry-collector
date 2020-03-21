@@ -159,9 +159,8 @@ type Span struct {
 
 	// Override a few fields. These fields are the source of truth. Their counterparts
 	// stored in corresponding fields of "orig" are ignored.
-	attributes AttributesMap
-	events     []*SpanEvent
-	links      []*SpanLink
+	events []SpanEvent
+	links  []SpanLink
 }
 
 func NewSpan() *Span {
@@ -220,15 +219,15 @@ func (m *Span) EndTime() TimestampUnixNano {
 	return TimestampUnixNano(m.orig.EndTimeUnixnano)
 }
 
-func (m *Span) Attributes() AttributesMap {
-	return m.attributes
+func (m *Span) Attributes() AttributeMap {
+	return newAttributeMap(&m.orig.Attributes)
 }
 
 func (m *Span) DroppedAttributesCount() uint32 {
 	return m.orig.DroppedAttributesCount
 }
 
-func (m *Span) Events() []*SpanEvent {
+func (m *Span) Events() []SpanEvent {
 	return m.events
 }
 
@@ -236,7 +235,7 @@ func (m *Span) DroppedEventsCount() uint32 {
 	return m.orig.DroppedEventsCount
 }
 
-func (m *Span) Links() []*SpanLink {
+func (m *Span) Links() []SpanLink {
 	return m.links
 }
 
@@ -280,12 +279,15 @@ func (m *Span) SetEndTime(v TimestampUnixNano) {
 	m.orig.EndTimeUnixnano = uint64(v)
 }
 
-func (m *Span) SetAttributes(v Attributes) {
-	m.attributes = v.attrs
-	m.orig.DroppedAttributesCount = v.droppedCount
+func (m *Span) SetAttributes(v AttributeMap) {
+	m.orig.Attributes = *v.orig
 }
 
-func (m *Span) SetEvents(v []*SpanEvent) {
+func (m *Span) SetDroppedAttributesCount(v uint32) {
+	m.orig.DroppedAttributesCount = v
+}
+
+func (m *Span) SetEvents(v []SpanEvent) {
 	m.events = v
 }
 
@@ -293,7 +295,7 @@ func (m *Span) SetDroppedEventsCount(v uint32) {
 	m.orig.DroppedEventsCount = v
 }
 
-func (m *Span) SetLinks(v []*SpanLink) {
+func (m *Span) SetLinks(v []SpanLink) {
 	m.links = v
 }
 
@@ -305,105 +307,29 @@ func (m *Span) SetStatus(v SpanStatus) {
 	m.orig.Status = v.orig
 }
 
-type SpanStatus struct {
-	orig *otlptrace.Status
-}
-
-func (s *SpanStatus) Code() StatusCode {
-	return StatusCode(s.orig.Code)
-}
-
-func (s *SpanStatus) Message() string {
-	return s.orig.Message
-}
-
 // StatusCode mirrors the codes defined at
 // https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/api-tracing.md#statuscanonicalcode
 // and is numerically equal to Standard GRPC codes https://github.com/grpc/grpc/blob/master/doc/statuscodes.md
 type StatusCode otlptrace.Status_StatusCode
-
-func NewSpanStatus(code StatusCode, message string) SpanStatus {
-	return SpanStatus{orig: &otlptrace.Status{
-		Code:    otlptrace.Status_StatusCode(code),
-		Message: message,
-	}}
-}
-
-// SpanEvent is a time-stamped annotation of the span, consisting of user-supplied
-// text description and key-value pairs. See OTLP for event definition.
-//
-// Must use NewSpanEvent* function to create new instances.
-// Important: zero-initialized instance is not valid for use.
-type SpanEvent struct {
-	// Wrap OTLP Event.
-	orig *otlptrace.Span_Event
-
-	// Override attributes. This field is the source of truth for attributes.
-	// The counterpart stored in corresponding field of "orig" is ignored.
-	attributes AttributesMap
-}
-
-func NewSpanEvent(timestamp TimestampUnixNano, name string, attributes Attributes) *SpanEvent {
-	return &SpanEvent{
-		orig: &otlptrace.Span_Event{
-			TimeUnixnano:           uint64(timestamp),
-			Name:                   name,
-			DroppedAttributesCount: attributes.droppedCount,
-		},
-		attributes: attributes.attrs,
-	}
-}
 
 // TODO: see if we need a SpanEvents type that contains the slice of events and
 // the dropped counter (similar to how Attributes type is done).
 // The same applies to SpanLinks.
 
 // NewSpanEventSlice creates a slice of pointers to SpanEvent that are correctly initialized.
-func NewSpanEventSlice(len int) []*SpanEvent {
+func NewSpanEventSlice(len int) []SpanEvent {
 	// Slice for underlying data.
 	origs := make([]otlptrace.Span_Event, len)
 
 	// Slice for wrappers.
 	wrappers := make([]SpanEvent, len)
 
-	// Slice for pointers to wrappers.
-	ptrs := make([]*SpanEvent, len)
-
 	// TODO: see if we can make one allocation instead of 3 allocations above.
 
 	for i := range origs {
 		wrappers[i].orig = &origs[i]
-		ptrs[i] = &wrappers[i]
 	}
-	return ptrs
-}
-
-func (m *SpanEvent) Timestamp() TimestampUnixNano {
-	return TimestampUnixNano(m.orig.TimeUnixnano)
-}
-
-func (m *SpanEvent) Name() string {
-	return m.orig.Name
-}
-
-func (m *SpanEvent) Attributes() AttributesMap {
-	return m.attributes
-}
-func (m *SpanEvent) DroppedAttributesCount() uint32 {
-	return m.orig.DroppedAttributesCount
-}
-
-func (m *SpanEvent) SetTimestamp(v TimestampUnixNano) {
-	m.orig.TimeUnixnano = uint64(v)
-}
-
-func (m *SpanEvent) SetName(v string) {
-	m.orig.Name = v
-}
-
-func (m *SpanEvent) SetAttributes(v Attributes) {
-	m.attributes = v.attrs
-	m.orig.DroppedAttributesCount = v.droppedCount
+	return wrappers
 }
 
 // SpanLink is a pointer from the current span to another span in the same trace or in a
@@ -414,35 +340,27 @@ func (m *SpanEvent) SetAttributes(v Attributes) {
 type SpanLink struct {
 	// Wrap OTLP Link.
 	orig *otlptrace.Span_Link
-
-	// Override attributes. This field is the source of truth for attributes.
-	// The counterpart stored in corresponding field of "orig" is ignored.
-	attributes AttributesMap
 }
 
 // NewSpanLink creates a SpanLink that is correctly initialized.
-func NewSpanLink() *SpanLink {
-	return &SpanLink{orig: &otlptrace.Span_Link{}}
+func NewSpanLink() SpanLink {
+	return SpanLink{orig: &otlptrace.Span_Link{}}
 }
 
 // NewSpanLinkSlice creates a slice of pointers to SpanLinks that are correctly initialized.
-func NewSpanLinkSlice(len int) []*SpanLink {
+func NewSpanLinkSlice(len int) []SpanLink {
 	// Slice for underlying data.
 	origs := make([]otlptrace.Span_Link, len)
 
 	// Slice for wrappers.
 	wrappers := make([]SpanLink, len)
 
-	// Slice for pointers to wrappers.
-	ptrs := make([]*SpanLink, len)
-
 	// TODO: see if we can make one allocation instead of 3 allocations above.
 
 	for i := range origs {
 		wrappers[i].orig = &origs[i]
-		ptrs[i] = &wrappers[i]
 	}
-	return ptrs
+	return wrappers
 }
 
 func (m *SpanLink) TraceID() TraceID {
@@ -453,8 +371,8 @@ func (m *SpanLink) SpanID() SpanID {
 	return NewSpanID(m.orig.SpanId)
 }
 
-func (m *SpanLink) Attributes() AttributesMap {
-	return m.attributes
+func (m *SpanLink) Attributes() AttributeMap {
+	return newAttributeMap(&m.orig.Attributes)
 }
 
 func (m *SpanLink) DroppedAttributesCount() uint32 {
@@ -477,7 +395,10 @@ func (m *SpanLink) SetTraceState(v TraceState) {
 	m.orig.TraceState = string(v)
 }
 
-func (m *SpanLink) SetAttributes(v Attributes) {
-	m.attributes = v.attrs
-	m.orig.DroppedAttributesCount = v.droppedCount
+func (m *SpanLink) SetAttributes(v AttributeMap) {
+	m.orig.Attributes = *v.orig
+}
+
+func (m *SpanLink) SetDroppedAttributesCount(v uint32) {
+	m.orig.DroppedAttributesCount = v
 }

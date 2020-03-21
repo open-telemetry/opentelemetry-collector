@@ -39,6 +39,7 @@ package data`
 var AllFiles = []*File{
 	metricsFile,
 	resourceFile,
+	traceFile,
 }
 
 // File represents the struct for one generated file.

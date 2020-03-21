@@ -192,6 +192,10 @@ type AttributeMap struct {
 
 // NewAttributeMap creates a new AttributeMap from the given map[string]AttributeValue.
 func NewAttributeMap(attrMap map[string]AttributeValue) AttributeMap {
+	if len(attrMap) == 0 {
+		var orig []*otlpcommon.AttributeKeyValue
+		return AttributeMap{&orig}
+	}
 	origs := make([]otlpcommon.AttributeKeyValue, len(attrMap))
 	wrappers := make([]*otlpcommon.AttributeKeyValue, len(attrMap))
 
@@ -288,18 +292,6 @@ func (am AttributeMap) GetAttribute(ix int) AttributeKeyValue {
 // AttributesMap stores a map of attribute keys to values.
 // TODO: Remove usage of this and use AttributeMap
 type AttributesMap map[string]AttributeValue
-
-// Attributes stores the map of attributes and a number of dropped attributes.
-// Typically used by translator functions to easily pass the pair.
-type Attributes struct {
-	attrs        AttributesMap
-	droppedCount uint32
-}
-
-// NewAttributes creates a new Attributes with the given AttributesMap and droppedCount.
-func NewAttributes(m AttributesMap, droppedCount uint32) Attributes {
-	return Attributes{m, droppedCount}
-}
 
 // StringKeyValue stores a key and value pair.
 type StringKeyValue struct {

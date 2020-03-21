@@ -54,12 +54,12 @@ func TestInternalTraceStateToOC(t *testing.T) {
 }
 
 func TestAttributesMapToOC(t *testing.T) {
-	assert.EqualValues(t, (*v1.Span_Attributes)(nil), attributesMapToOCSpanAttributes(data.AttributesMap{}, 0))
+	assert.EqualValues(t, (*v1.Span_Attributes)(nil), attributesMapToOCSpanAttributes(data.NewAttributeMap(nil), 0))
 
 	ocAttrs := &octrace.Span_Attributes{
 		DroppedAttributesCount: 123,
 	}
-	assert.EqualValues(t, ocAttrs, attributesMapToOCSpanAttributes(data.AttributesMap{}, 123))
+	assert.EqualValues(t, ocAttrs, attributesMapToOCSpanAttributes(data.NewAttributeMap(nil), 123))
 
 	ocAttrs = &octrace.Span_Attributes{
 		AttributeMap: map[string]*octrace.AttributeValue{
@@ -71,9 +71,9 @@ func TestAttributesMapToOC(t *testing.T) {
 	}
 	assert.EqualValues(t, ocAttrs,
 		attributesMapToOCSpanAttributes(
-			data.AttributesMap{
+			data.NewAttributeMap(data.AttributesMap{
 				"abc": data.NewAttributeValueString("def"),
-			},
+			}),
 			234))
 
 	ocAttrs.AttributeMap["intval"] = &octrace.AttributeValue{
@@ -86,13 +86,13 @@ func TestAttributesMapToOC(t *testing.T) {
 		Value: &octrace.AttributeValue_DoubleValue{DoubleValue: 4.5},
 	}
 	assert.EqualValues(t, ocAttrs,
-		attributesMapToOCSpanAttributes(
+		attributesMapToOCSpanAttributes(data.NewAttributeMap(
 			data.AttributesMap{
 				"abc":       data.NewAttributeValueString("def"),
 				"intval":    data.NewAttributeValueInt(345),
 				"boolval":   data.NewAttributeValueBool(true),
 				"doubleval": data.NewAttributeValueDouble(4.5),
-			},
+			}),
 			234))
 }
 
@@ -189,39 +189,39 @@ func TestInternalToOC(t *testing.T) {
 	span1.SetName("operationB")
 	span1.SetStartTime(internal.TimestampToUnixnano(timestampP))
 	span1.SetEndTime(internal.TimestampToUnixnano(timestampP))
-	span1.SetEvents([]*data.SpanEvent{
-		data.NewSpanEvent(
-			internal.TimestampToUnixnano(timestampP),
-			"event1",
-			data.NewAttributes(
-				data.AttributesMap{
-					"eventattr1": data.NewAttributeValueString("eventattrval1"),
-				},
-				4),
-		),
-	})
+	se := data.NewSpanEvent()
+	se.SetTimestamp(internal.TimestampToUnixnano(timestampP))
+	se.SetName("event1")
+	se.SetAttributes(data.NewAttributeMap(
+		data.AttributesMap{
+			"eventattr1": data.NewAttributeValueString("eventattrval1"),
+		}))
+	se.SetDroppedAttributesCount(4)
+	span1.SetEvents([]data.SpanEvent{se})
 	span1.SetDroppedEventsCount(3)
-	span1.SetStatus(data.NewSpanStatus(data.StatusCode(1), "status-cancelled"))
+	status := data.NewSpanStatus()
+	status.SetCode(data.StatusCode(1))
+	status.SetMessage("status-cancelled")
+	span1.SetStatus(status)
 
 	span2 := data.NewSpan()
 	span2.SetName("operationC")
 	span2.SetStartTime(internal.TimestampToUnixnano(timestampP))
 	span2.SetEndTime(internal.TimestampToUnixnano(timestampP))
-	span2.SetLinks([]*data.SpanLink{data.NewSpanLink()})
+	span2.SetLinks([]data.SpanLink{data.NewSpanLink()})
 	span2.SetDroppedLinksCount(1)
-	span2event := data.NewSpanEvent(
-		internal.TimestampToUnixnano(timestampP),
-		"",
-		data.NewAttributes(
-			data.AttributesMap{
-				conventions.OCTimeEventMessageEventType:  data.NewAttributeValueString(octrace.Span_TimeEvent_MessageEvent_SENT.String()),
-				conventions.OCTimeEventMessageEventID:    data.NewAttributeValueInt(123),
-				conventions.OCTimeEventMessageEventUSize: data.NewAttributeValueInt(345),
-				conventions.OCTimeEventMessageEventCSize: data.NewAttributeValueInt(234),
-			},
-			0),
-	)
-	span2.SetEvents([]*data.SpanEvent{span2event})
+	se2 := data.NewSpanEvent()
+	se2.SetTimestamp(internal.TimestampToUnixnano(timestampP))
+	se2.SetName("")
+	se2.SetAttributes(data.NewAttributeMap(
+		data.AttributesMap{
+			conventions.OCTimeEventMessageEventType:  data.NewAttributeValueString(octrace.Span_TimeEvent_MessageEvent_SENT.String()),
+			conventions.OCTimeEventMessageEventID:    data.NewAttributeValueInt(123),
+			conventions.OCTimeEventMessageEventUSize: data.NewAttributeValueInt(345),
+			conventions.OCTimeEventMessageEventCSize: data.NewAttributeValueInt(234),
+		}))
+	se2.SetDroppedAttributesCount(0)
+	span2.SetEvents([]data.SpanEvent{se2})
 
 	span3 := data.NewSpan()
 	span3.SetName("operationD")
