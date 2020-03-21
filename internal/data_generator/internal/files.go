@@ -37,6 +37,7 @@ package data`
 
 // AllFiles is a list of all files that needs to be generated.
 var AllFiles = []*File{
+	commonFile,
 	metricsFile,
 	resourceFile,
 	traceFile,

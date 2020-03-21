@@ -18,8 +18,502 @@
 package data
 
 import (
+	otlpcommon "github.com/open-telemetry/opentelemetry-proto/gen/go/common/v1"
 	otlpmetrics "github.com/open-telemetry/opentelemetry-proto/gen/go/metrics/v1"
+	otlpresource "github.com/open-telemetry/opentelemetry-proto/gen/go/resource/v1"
 )
+
+// ResourceMetricsSlice logically represents a slice of ResourceMetrics.
+//
+// This is a reference type, if passsed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewResourceMetricsSlice function to create new instances.
+// Important: zero-initialized instance is not valid for use.
+type ResourceMetricsSlice struct {
+	orig *[]*otlpmetrics.ResourceMetrics
+}
+
+// NewResourceMetricsSlice creates a ResourceMetricsSlice with "len" empty elements.
+//
+// es := NewResourceMetricsSlice(4)
+// for i := 0; i < es.Len(); i++ {
+//     e := es.Get(i)
+//     // Here should set all the values for e.
+// }
+func NewResourceMetricsSlice(len int) ResourceMetricsSlice {
+	if len == 0 {
+		orig := []*otlpmetrics.ResourceMetrics(nil)
+		return ResourceMetricsSlice{&orig}
+	}
+	// Slice for underlying orig.
+	origs := make([]otlpmetrics.ResourceMetrics, len)
+	// Slice for wrappers.
+	wrappers := make([]*otlpmetrics.ResourceMetrics, len)
+	for i := range origs {
+		wrappers[i] = &origs[i]
+	}
+	return ResourceMetricsSlice{&wrappers}
+}
+
+func newResourceMetricsSlice(orig *[]*otlpmetrics.ResourceMetrics) ResourceMetricsSlice {
+	return ResourceMetricsSlice{orig}
+}
+
+// Len returns the number of elements in the slice.
+func (es ResourceMetricsSlice) Len() int {
+	return len(*es.orig)
+}
+
+// Get returns the element associated with the given index.
+//
+// This function is used mostly for iterating over all the values in the slice:
+// for i := 0; i < es.Len(); i++ {
+//     e := es.Get(i)
+//     ... // Do something with the element
+// }
+func (es ResourceMetricsSlice) Get(ix int) ResourceMetrics {
+	return newResourceMetrics((*es.orig)[ix])
+}
+
+// Remove removes the element from the given index from the slice.
+func (es ResourceMetricsSlice) Remove(ix int) {
+	(*es.orig)[ix] = (*es.orig)[len(*es.orig)-1]
+	*es.orig = (*es.orig)[:len(*es.orig)-1]
+}
+
+// Resize resizes the slice. This operation is equivalent with slice[to:from].
+func (es ResourceMetricsSlice) Resize(from, to int) {
+	*es.orig = (*es.orig)[from:to]
+}
+
+// InstrumentationLibraryMetrics is a collection of metrics from a LibraryInstrumentation.
+//
+// This is a reference type, if passsed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewResourceMetrics function to create new instances.
+// Important: zero-initialized instance is not valid for use.
+type ResourceMetrics struct {
+	// Wrap OTLP otlpmetrics.ResourceMetrics.
+	orig *otlpmetrics.ResourceMetrics
+}
+
+// NewResourceMetrics creates a new empty ResourceMetrics.
+func NewResourceMetrics() ResourceMetrics {
+	return ResourceMetrics{&otlpmetrics.ResourceMetrics{}}
+}
+
+func newResourceMetrics(orig *otlpmetrics.ResourceMetrics) ResourceMetrics {
+	return ResourceMetrics{orig}
+}
+
+// Resource returns the resource associated with this ResourceMetrics.
+func (ms ResourceMetrics) Resource() Resource {
+	if ms.orig.Resource == nil {
+		// No Resource available, initialize one to make all operations on Resource available.
+		ms.orig.Resource = &otlpresource.Resource{}
+	}
+	return newResource(ms.orig.Resource)
+}
+
+// SetResource replaces the resource associated with this ResourceMetrics.
+func (ms ResourceMetrics) SetResource(v Resource) {
+	ms.orig.Resource = v.orig
+}
+
+// InstrumentationLibraryMetrics returns the InstrumentationLibraryMetrics associated with this ResourceMetrics.
+func (ms ResourceMetrics) InstrumentationLibraryMetrics() InstrumentationLibraryMetricsSlice {
+	return newInstrumentationLibraryMetricsSlice(&ms.orig.InstrumentationLibraryMetrics)
+}
+
+// SetInstrumentationLibraryMetrics replaces the InstrumentationLibraryMetrics associated with this ResourceMetrics.
+func (ms ResourceMetrics) SetInstrumentationLibraryMetrics(v InstrumentationLibraryMetricsSlice) {
+	ms.orig.InstrumentationLibraryMetrics = *v.orig
+}
+
+// InstrumentationLibraryMetricsSlice logically represents a slice of InstrumentationLibraryMetrics.
+//
+// This is a reference type, if passsed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewInstrumentationLibraryMetricsSlice function to create new instances.
+// Important: zero-initialized instance is not valid for use.
+type InstrumentationLibraryMetricsSlice struct {
+	orig *[]*otlpmetrics.InstrumentationLibraryMetrics
+}
+
+// NewInstrumentationLibraryMetricsSlice creates a InstrumentationLibraryMetricsSlice with "len" empty elements.
+//
+// es := NewInstrumentationLibraryMetricsSlice(4)
+// for i := 0; i < es.Len(); i++ {
+//     e := es.Get(i)
+//     // Here should set all the values for e.
+// }
+func NewInstrumentationLibraryMetricsSlice(len int) InstrumentationLibraryMetricsSlice {
+	if len == 0 {
+		orig := []*otlpmetrics.InstrumentationLibraryMetrics(nil)
+		return InstrumentationLibraryMetricsSlice{&orig}
+	}
+	// Slice for underlying orig.
+	origs := make([]otlpmetrics.InstrumentationLibraryMetrics, len)
+	// Slice for wrappers.
+	wrappers := make([]*otlpmetrics.InstrumentationLibraryMetrics, len)
+	for i := range origs {
+		wrappers[i] = &origs[i]
+	}
+	return InstrumentationLibraryMetricsSlice{&wrappers}
+}
+
+func newInstrumentationLibraryMetricsSlice(orig *[]*otlpmetrics.InstrumentationLibraryMetrics) InstrumentationLibraryMetricsSlice {
+	return InstrumentationLibraryMetricsSlice{orig}
+}
+
+// Len returns the number of elements in the slice.
+func (es InstrumentationLibraryMetricsSlice) Len() int {
+	return len(*es.orig)
+}
+
+// Get returns the element associated with the given index.
+//
+// This function is used mostly for iterating over all the values in the slice:
+// for i := 0; i < es.Len(); i++ {
+//     e := es.Get(i)
+//     ... // Do something with the element
+// }
+func (es InstrumentationLibraryMetricsSlice) Get(ix int) InstrumentationLibraryMetrics {
+	return newInstrumentationLibraryMetrics((*es.orig)[ix])
+}
+
+// Remove removes the element from the given index from the slice.
+func (es InstrumentationLibraryMetricsSlice) Remove(ix int) {
+	(*es.orig)[ix] = (*es.orig)[len(*es.orig)-1]
+	*es.orig = (*es.orig)[:len(*es.orig)-1]
+}
+
+// Resize resizes the slice. This operation is equivalent with slice[to:from].
+func (es InstrumentationLibraryMetricsSlice) Resize(from, to int) {
+	*es.orig = (*es.orig)[from:to]
+}
+
+// InstrumentationLibraryMetrics is a collection of metrics from a LibraryInstrumentation.
+//
+// This is a reference type, if passsed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewInstrumentationLibraryMetrics function to create new instances.
+// Important: zero-initialized instance is not valid for use.
+type InstrumentationLibraryMetrics struct {
+	// Wrap OTLP otlpmetrics.InstrumentationLibraryMetrics.
+	orig *otlpmetrics.InstrumentationLibraryMetrics
+}
+
+// NewInstrumentationLibraryMetrics creates a new empty InstrumentationLibraryMetrics.
+func NewInstrumentationLibraryMetrics() InstrumentationLibraryMetrics {
+	return InstrumentationLibraryMetrics{&otlpmetrics.InstrumentationLibraryMetrics{}}
+}
+
+func newInstrumentationLibraryMetrics(orig *otlpmetrics.InstrumentationLibraryMetrics) InstrumentationLibraryMetrics {
+	return InstrumentationLibraryMetrics{orig}
+}
+
+// InstrumentationLibrary returns the instrumentationlibrary associated with this InstrumentationLibraryMetrics.
+func (ms InstrumentationLibraryMetrics) InstrumentationLibrary() InstrumentationLibrary {
+	if ms.orig.InstrumentationLibrary == nil {
+		// No InstrumentationLibrary available, initialize one to make all operations on InstrumentationLibrary available.
+		ms.orig.InstrumentationLibrary = &otlpcommon.InstrumentationLibrary{}
+	}
+	return newInstrumentationLibrary(ms.orig.InstrumentationLibrary)
+}
+
+// SetInstrumentationLibrary replaces the instrumentationlibrary associated with this InstrumentationLibraryMetrics.
+func (ms InstrumentationLibraryMetrics) SetInstrumentationLibrary(v InstrumentationLibrary) {
+	ms.orig.InstrumentationLibrary = v.orig
+}
+
+// Metrics returns the Metrics associated with this InstrumentationLibraryMetrics.
+func (ms InstrumentationLibraryMetrics) Metrics() MetricSlice {
+	return newMetricSlice(&ms.orig.Metrics)
+}
+
+// SetMetrics replaces the Metrics associated with this InstrumentationLibraryMetrics.
+func (ms InstrumentationLibraryMetrics) SetMetrics(v MetricSlice) {
+	ms.orig.Metrics = *v.orig
+}
+
+// MetricSlice logically represents a slice of Metric.
+//
+// This is a reference type, if passsed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewMetricSlice function to create new instances.
+// Important: zero-initialized instance is not valid for use.
+type MetricSlice struct {
+	orig *[]*otlpmetrics.Metric
+}
+
+// NewMetricSlice creates a MetricSlice with "len" empty elements.
+//
+// es := NewMetricSlice(4)
+// for i := 0; i < es.Len(); i++ {
+//     e := es.Get(i)
+//     // Here should set all the values for e.
+// }
+func NewMetricSlice(len int) MetricSlice {
+	if len == 0 {
+		orig := []*otlpmetrics.Metric(nil)
+		return MetricSlice{&orig}
+	}
+	// Slice for underlying orig.
+	origs := make([]otlpmetrics.Metric, len)
+	// Slice for wrappers.
+	wrappers := make([]*otlpmetrics.Metric, len)
+	for i := range origs {
+		wrappers[i] = &origs[i]
+	}
+	return MetricSlice{&wrappers}
+}
+
+func newMetricSlice(orig *[]*otlpmetrics.Metric) MetricSlice {
+	return MetricSlice{orig}
+}
+
+// Len returns the number of elements in the slice.
+func (es MetricSlice) Len() int {
+	return len(*es.orig)
+}
+
+// Get returns the element associated with the given index.
+//
+// This function is used mostly for iterating over all the values in the slice:
+// for i := 0; i < es.Len(); i++ {
+//     e := es.Get(i)
+//     ... // Do something with the element
+// }
+func (es MetricSlice) Get(ix int) Metric {
+	return newMetric((*es.orig)[ix])
+}
+
+// Remove removes the element from the given index from the slice.
+func (es MetricSlice) Remove(ix int) {
+	(*es.orig)[ix] = (*es.orig)[len(*es.orig)-1]
+	*es.orig = (*es.orig)[:len(*es.orig)-1]
+}
+
+// Resize resizes the slice. This operation is equivalent with slice[to:from].
+func (es MetricSlice) Resize(from, to int) {
+	*es.orig = (*es.orig)[from:to]
+}
+
+// MetricDescriptor is the descriptor of a metric.
+//
+// This is a reference type, if passsed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewMetric function to create new instances.
+// Important: zero-initialized instance is not valid for use.
+type Metric struct {
+	// Wrap OTLP otlpmetrics.Metric.
+	orig *otlpmetrics.Metric
+}
+
+// NewMetric creates a new empty Metric.
+func NewMetric() Metric {
+	return Metric{&otlpmetrics.Metric{}}
+}
+
+func newMetric(orig *otlpmetrics.Metric) Metric {
+	return Metric{orig}
+}
+
+// MetricDescriptor returns the metricdescriptor associated with this Metric.
+func (ms Metric) MetricDescriptor() MetricDescriptor {
+	if ms.orig.MetricDescriptor == nil {
+		// No MetricDescriptor available, initialize one to make all operations on MetricDescriptor available.
+		ms.orig.MetricDescriptor = &otlpmetrics.MetricDescriptor{}
+	}
+	return newMetricDescriptor(ms.orig.MetricDescriptor)
+}
+
+// SetMetricDescriptor replaces the metricdescriptor associated with this Metric.
+func (ms Metric) SetMetricDescriptor(v MetricDescriptor) {
+	ms.orig.MetricDescriptor = v.orig
+}
+
+// Int64DataPoints returns the Int64DataPoints associated with this Metric.
+func (ms Metric) Int64DataPoints() Int64DataPointSlice {
+	return newInt64DataPointSlice(&ms.orig.Int64DataPoints)
+}
+
+// SetInt64DataPoints replaces the Int64DataPoints associated with this Metric.
+func (ms Metric) SetInt64DataPoints(v Int64DataPointSlice) {
+	ms.orig.Int64DataPoints = *v.orig
+}
+
+// DoubleDataPoints returns the DoubleDataPoints associated with this Metric.
+func (ms Metric) DoubleDataPoints() DoubleDataPointSlice {
+	return newDoubleDataPointSlice(&ms.orig.DoubleDataPoints)
+}
+
+// SetDoubleDataPoints replaces the DoubleDataPoints associated with this Metric.
+func (ms Metric) SetDoubleDataPoints(v DoubleDataPointSlice) {
+	ms.orig.DoubleDataPoints = *v.orig
+}
+
+// HistogramDataPoints returns the HistogramDataPoints associated with this Metric.
+func (ms Metric) HistogramDataPoints() HistogramDataPointSlice {
+	return newHistogramDataPointSlice(&ms.orig.HistogramDataPoints)
+}
+
+// SetHistogramDataPoints replaces the HistogramDataPoints associated with this Metric.
+func (ms Metric) SetHistogramDataPoints(v HistogramDataPointSlice) {
+	ms.orig.HistogramDataPoints = *v.orig
+}
+
+// SummaryDataPoints returns the SummaryDataPoints associated with this Metric.
+func (ms Metric) SummaryDataPoints() SummaryDataPointSlice {
+	return newSummaryDataPointSlice(&ms.orig.SummaryDataPoints)
+}
+
+// SetSummaryDataPoints replaces the SummaryDataPoints associated with this Metric.
+func (ms Metric) SetSummaryDataPoints(v SummaryDataPointSlice) {
+	ms.orig.SummaryDataPoints = *v.orig
+}
+
+// MetricDescriptor is the descriptor of a metric.
+//
+// This is a reference type, if passsed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewMetricDescriptor function to create new instances.
+// Important: zero-initialized instance is not valid for use.
+type MetricDescriptor struct {
+	// Wrap OTLP otlpmetrics.MetricDescriptor.
+	orig *otlpmetrics.MetricDescriptor
+}
+
+// NewMetricDescriptor creates a new empty MetricDescriptor.
+func NewMetricDescriptor() MetricDescriptor {
+	return MetricDescriptor{&otlpmetrics.MetricDescriptor{}}
+}
+
+func newMetricDescriptor(orig *otlpmetrics.MetricDescriptor) MetricDescriptor {
+	return MetricDescriptor{orig}
+}
+
+// Name returns the name associated with this MetricDescriptor.
+func (ms MetricDescriptor) Name() string {
+	return ms.orig.GetName()
+}
+
+// SetName replaces the name associated with this MetricDescriptor.
+func (ms MetricDescriptor) SetName(v string) {
+	ms.orig.Name = v
+}
+
+// Description returns the description associated with this MetricDescriptor.
+func (ms MetricDescriptor) Description() string {
+	return ms.orig.GetDescription()
+}
+
+// SetDescription replaces the description associated with this MetricDescriptor.
+func (ms MetricDescriptor) SetDescription(v string) {
+	ms.orig.Description = v
+}
+
+// Unit returns the unit associated with this MetricDescriptor.
+func (ms MetricDescriptor) Unit() string {
+	return ms.orig.GetUnit()
+}
+
+// SetUnit replaces the unit associated with this MetricDescriptor.
+func (ms MetricDescriptor) SetUnit(v string) {
+	ms.orig.Unit = v
+}
+
+// Type returns the type associated with this MetricDescriptor.
+func (ms MetricDescriptor) Type() MetricType {
+	return MetricType(ms.orig.GetType())
+}
+
+// SetType replaces the type associated with this MetricDescriptor.
+func (ms MetricDescriptor) SetType(v MetricType) {
+	ms.orig.Type = otlpmetrics.MetricDescriptor_Type(v)
+}
+
+// LabelsMap returns the Labels associated with this MetricDescriptor.
+func (ms MetricDescriptor) LabelsMap() StringMap {
+	return newStringMap(&ms.orig.Labels)
+}
+
+// SetLabelsMap replaces the Labels associated with this MetricDescriptor.
+func (ms MetricDescriptor) SetLabelsMap(v StringMap) {
+	ms.orig.Labels = *v.orig
+}
+
+// Int64DataPointSlice logically represents a slice of Int64DataPoint.
+//
+// This is a reference type, if passsed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewInt64DataPointSlice function to create new instances.
+// Important: zero-initialized instance is not valid for use.
+type Int64DataPointSlice struct {
+	orig *[]*otlpmetrics.Int64DataPoint
+}
+
+// NewInt64DataPointSlice creates a Int64DataPointSlice with "len" empty elements.
+//
+// es := NewInt64DataPointSlice(4)
+// for i := 0; i < es.Len(); i++ {
+//     e := es.Get(i)
+//     // Here should set all the values for e.
+// }
+func NewInt64DataPointSlice(len int) Int64DataPointSlice {
+	if len == 0 {
+		orig := []*otlpmetrics.Int64DataPoint(nil)
+		return Int64DataPointSlice{&orig}
+	}
+	// Slice for underlying orig.
+	origs := make([]otlpmetrics.Int64DataPoint, len)
+	// Slice for wrappers.
+	wrappers := make([]*otlpmetrics.Int64DataPoint, len)
+	for i := range origs {
+		wrappers[i] = &origs[i]
+	}
+	return Int64DataPointSlice{&wrappers}
+}
+
+func newInt64DataPointSlice(orig *[]*otlpmetrics.Int64DataPoint) Int64DataPointSlice {
+	return Int64DataPointSlice{orig}
+}
+
+// Len returns the number of elements in the slice.
+func (es Int64DataPointSlice) Len() int {
+	return len(*es.orig)
+}
+
+// Get returns the element associated with the given index.
+//
+// This function is used mostly for iterating over all the values in the slice:
+// for i := 0; i < es.Len(); i++ {
+//     e := es.Get(i)
+//     ... // Do something with the element
+// }
+func (es Int64DataPointSlice) Get(ix int) Int64DataPoint {
+	return newInt64DataPoint((*es.orig)[ix])
+}
+
+// Remove removes the element from the given index from the slice.
+func (es Int64DataPointSlice) Remove(ix int) {
+	(*es.orig)[ix] = (*es.orig)[len(*es.orig)-1]
+	*es.orig = (*es.orig)[:len(*es.orig)-1]
+}
+
+// Resize resizes the slice. This operation is equivalent with slice[to:from].
+func (es Int64DataPointSlice) Resize(from, to int) {
+	*es.orig = (*es.orig)[from:to]
+}
 
 // Int64DataPoint is a single data point in a timeseries that describes the time-varying values of a int64 metric.
 //
@@ -82,6 +576,70 @@ func (ms Int64DataPoint) SetValue(v int64) {
 	ms.orig.Value = v
 }
 
+// DoubleDataPointSlice logically represents a slice of DoubleDataPoint.
+//
+// This is a reference type, if passsed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewDoubleDataPointSlice function to create new instances.
+// Important: zero-initialized instance is not valid for use.
+type DoubleDataPointSlice struct {
+	orig *[]*otlpmetrics.DoubleDataPoint
+}
+
+// NewDoubleDataPointSlice creates a DoubleDataPointSlice with "len" empty elements.
+//
+// es := NewDoubleDataPointSlice(4)
+// for i := 0; i < es.Len(); i++ {
+//     e := es.Get(i)
+//     // Here should set all the values for e.
+// }
+func NewDoubleDataPointSlice(len int) DoubleDataPointSlice {
+	if len == 0 {
+		orig := []*otlpmetrics.DoubleDataPoint(nil)
+		return DoubleDataPointSlice{&orig}
+	}
+	// Slice for underlying orig.
+	origs := make([]otlpmetrics.DoubleDataPoint, len)
+	// Slice for wrappers.
+	wrappers := make([]*otlpmetrics.DoubleDataPoint, len)
+	for i := range origs {
+		wrappers[i] = &origs[i]
+	}
+	return DoubleDataPointSlice{&wrappers}
+}
+
+func newDoubleDataPointSlice(orig *[]*otlpmetrics.DoubleDataPoint) DoubleDataPointSlice {
+	return DoubleDataPointSlice{orig}
+}
+
+// Len returns the number of elements in the slice.
+func (es DoubleDataPointSlice) Len() int {
+	return len(*es.orig)
+}
+
+// Get returns the element associated with the given index.
+//
+// This function is used mostly for iterating over all the values in the slice:
+// for i := 0; i < es.Len(); i++ {
+//     e := es.Get(i)
+//     ... // Do something with the element
+// }
+func (es DoubleDataPointSlice) Get(ix int) DoubleDataPoint {
+	return newDoubleDataPoint((*es.orig)[ix])
+}
+
+// Remove removes the element from the given index from the slice.
+func (es DoubleDataPointSlice) Remove(ix int) {
+	(*es.orig)[ix] = (*es.orig)[len(*es.orig)-1]
+	*es.orig = (*es.orig)[:len(*es.orig)-1]
+}
+
+// Resize resizes the slice. This operation is equivalent with slice[to:from].
+func (es DoubleDataPointSlice) Resize(from, to int) {
+	*es.orig = (*es.orig)[from:to]
+}
+
 // DoubleDataPoint is a single data point in a timeseries that describes the time-varying value of a double metric.
 //
 // This is a reference type, if passsed by value and callee modifies it the
@@ -141,6 +699,70 @@ func (ms DoubleDataPoint) Value() float64 {
 // SetValue replaces the value associated with this DoubleDataPoint.
 func (ms DoubleDataPoint) SetValue(v float64) {
 	ms.orig.Value = v
+}
+
+// HistogramDataPointSlice logically represents a slice of HistogramDataPoint.
+//
+// This is a reference type, if passsed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewHistogramDataPointSlice function to create new instances.
+// Important: zero-initialized instance is not valid for use.
+type HistogramDataPointSlice struct {
+	orig *[]*otlpmetrics.HistogramDataPoint
+}
+
+// NewHistogramDataPointSlice creates a HistogramDataPointSlice with "len" empty elements.
+//
+// es := NewHistogramDataPointSlice(4)
+// for i := 0; i < es.Len(); i++ {
+//     e := es.Get(i)
+//     // Here should set all the values for e.
+// }
+func NewHistogramDataPointSlice(len int) HistogramDataPointSlice {
+	if len == 0 {
+		orig := []*otlpmetrics.HistogramDataPoint(nil)
+		return HistogramDataPointSlice{&orig}
+	}
+	// Slice for underlying orig.
+	origs := make([]otlpmetrics.HistogramDataPoint, len)
+	// Slice for wrappers.
+	wrappers := make([]*otlpmetrics.HistogramDataPoint, len)
+	for i := range origs {
+		wrappers[i] = &origs[i]
+	}
+	return HistogramDataPointSlice{&wrappers}
+}
+
+func newHistogramDataPointSlice(orig *[]*otlpmetrics.HistogramDataPoint) HistogramDataPointSlice {
+	return HistogramDataPointSlice{orig}
+}
+
+// Len returns the number of elements in the slice.
+func (es HistogramDataPointSlice) Len() int {
+	return len(*es.orig)
+}
+
+// Get returns the element associated with the given index.
+//
+// This function is used mostly for iterating over all the values in the slice:
+// for i := 0; i < es.Len(); i++ {
+//     e := es.Get(i)
+//     ... // Do something with the element
+// }
+func (es HistogramDataPointSlice) Get(ix int) HistogramDataPoint {
+	return newHistogramDataPoint((*es.orig)[ix])
+}
+
+// Remove removes the element from the given index from the slice.
+func (es HistogramDataPointSlice) Remove(ix int) {
+	(*es.orig)[ix] = (*es.orig)[len(*es.orig)-1]
+	*es.orig = (*es.orig)[:len(*es.orig)-1]
+}
+
+// Resize resizes the slice. This operation is equivalent with slice[to:from].
+func (es HistogramDataPointSlice) Resize(from, to int) {
+	*es.orig = (*es.orig)[from:to]
 }
 
 // HistogramDataPoint is a single data point in a timeseries that describes the time-varying values of a Histogram.
@@ -253,6 +875,10 @@ type HistogramBucketSlice struct {
 //     // Here should set all the values for e.
 // }
 func NewHistogramBucketSlice(len int) HistogramBucketSlice {
+	if len == 0 {
+		orig := []*otlpmetrics.HistogramDataPoint_Bucket(nil)
+		return HistogramBucketSlice{&orig}
+	}
 	// Slice for underlying orig.
 	origs := make([]otlpmetrics.HistogramDataPoint_Bucket, len)
 	// Slice for wrappers.
@@ -391,6 +1017,70 @@ func (ms HistogramBucketExemplar) SetAttachments(v StringMap) {
 	ms.orig.Attachments = *v.orig
 }
 
+// SummaryDataPointSlice logically represents a slice of SummaryDataPoint.
+//
+// This is a reference type, if passsed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewSummaryDataPointSlice function to create new instances.
+// Important: zero-initialized instance is not valid for use.
+type SummaryDataPointSlice struct {
+	orig *[]*otlpmetrics.SummaryDataPoint
+}
+
+// NewSummaryDataPointSlice creates a SummaryDataPointSlice with "len" empty elements.
+//
+// es := NewSummaryDataPointSlice(4)
+// for i := 0; i < es.Len(); i++ {
+//     e := es.Get(i)
+//     // Here should set all the values for e.
+// }
+func NewSummaryDataPointSlice(len int) SummaryDataPointSlice {
+	if len == 0 {
+		orig := []*otlpmetrics.SummaryDataPoint(nil)
+		return SummaryDataPointSlice{&orig}
+	}
+	// Slice for underlying orig.
+	origs := make([]otlpmetrics.SummaryDataPoint, len)
+	// Slice for wrappers.
+	wrappers := make([]*otlpmetrics.SummaryDataPoint, len)
+	for i := range origs {
+		wrappers[i] = &origs[i]
+	}
+	return SummaryDataPointSlice{&wrappers}
+}
+
+func newSummaryDataPointSlice(orig *[]*otlpmetrics.SummaryDataPoint) SummaryDataPointSlice {
+	return SummaryDataPointSlice{orig}
+}
+
+// Len returns the number of elements in the slice.
+func (es SummaryDataPointSlice) Len() int {
+	return len(*es.orig)
+}
+
+// Get returns the element associated with the given index.
+//
+// This function is used mostly for iterating over all the values in the slice:
+// for i := 0; i < es.Len(); i++ {
+//     e := es.Get(i)
+//     ... // Do something with the element
+// }
+func (es SummaryDataPointSlice) Get(ix int) SummaryDataPoint {
+	return newSummaryDataPoint((*es.orig)[ix])
+}
+
+// Remove removes the element from the given index from the slice.
+func (es SummaryDataPointSlice) Remove(ix int) {
+	(*es.orig)[ix] = (*es.orig)[len(*es.orig)-1]
+	*es.orig = (*es.orig)[:len(*es.orig)-1]
+}
+
+// Resize resizes the slice. This operation is equivalent with slice[to:from].
+func (es SummaryDataPointSlice) Resize(from, to int) {
+	*es.orig = (*es.orig)[from:to]
+}
+
 // SummaryDataPoint is a single data point in a timeseries that describes the time-varying values of a Summary metric.
 //
 // This is a reference type, if passsed by value and callee modifies it the
@@ -491,6 +1181,10 @@ type SummaryValueAtPercentileSlice struct {
 //     // Here should set all the values for e.
 // }
 func NewSummaryValueAtPercentileSlice(len int) SummaryValueAtPercentileSlice {
+	if len == 0 {
+		orig := []*otlpmetrics.SummaryDataPoint_ValueAtPercentile(nil)
+		return SummaryValueAtPercentileSlice{&orig}
+	}
 	// Slice for underlying orig.
 	origs := make([]otlpmetrics.SummaryDataPoint_ValueAtPercentile, len)
 	// Slice for wrappers.

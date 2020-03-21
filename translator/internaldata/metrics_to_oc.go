@@ -37,21 +37,31 @@ type labelKeys struct {
 	keyIndices map[string]int
 }
 
-func MetricDataToOC(td data.MetricData) []consumerdata.MetricsData {
-	ocMetricsData := consumerdata.MetricsData{}
+func MetricDataToOC(md data.MetricData) []consumerdata.MetricsData {
+	resourceMetrics := md.ResourceMetrics()
 
-	resourceMetricsList := td.ResourceMetrics()
+	if resourceMetrics.Len() == 0 {
+		return nil
+	}
 
-	ocResourceMetricsList := make([]consumerdata.MetricsData, 0, len(resourceMetricsList))
-
-	for _, resourceMetrics := range resourceMetricsList {
-		ocMetricsData.Node, ocMetricsData.Resource = internalResourceToOC(resourceMetrics.Resource())
-		ocMetrics := make([]*ocmetrics.Metric, 0, resourceMetrics.MetricCount())
-		for _, instrumentationLibraryMetrics := range resourceMetrics.InstrumentationLibraryMetrics() {
+	ocResourceMetricsList := make([]consumerdata.MetricsData, 0, resourceMetrics.Len())
+	for i := 0; i < resourceMetrics.Len(); i++ {
+		rm := resourceMetrics.Get(i)
+		ocMetricsData := consumerdata.MetricsData{}
+		ocMetricsData.Node, ocMetricsData.Resource = internalResourceToOC(rm.Resource())
+		ilms := rm.InstrumentationLibraryMetrics()
+		if ilms.Len() == 0 {
+			ocResourceMetricsList = append(ocResourceMetricsList, ocMetricsData)
+			continue
+		}
+		// Approximate the number of the metrics as the number of the metrics in the first
+		// instrumentation library info.
+		ocMetrics := make([]*ocmetrics.Metric, 0, ilms.Get(0).Metrics().Len())
+		for j := 0; j < ilms.Len(); j++ {
 			// TODO: Handle instrumentation library name and version.
-			metrics := instrumentationLibraryMetrics.Metrics()
-			for _, metric := range metrics {
-				ocMetrics = append(ocMetrics, metricToOC(metric))
+			metrics := ilms.Get(0).Metrics()
+			for k := 0; k < metrics.Len(); k++ {
+				ocMetrics = append(ocMetrics, metricToOC(metrics.Get(k)))
 			}
 		}
 		ocMetricsData.Metrics = ocMetrics
@@ -86,17 +96,21 @@ func collectLabelKeys(metric data.Metric) *labelKeys {
 
 	// First, collect a set of all labels present in the metric
 	keySet := make(map[string]struct{})
-	for _, point := range metric.Int64DataPoints() {
-		addLabelKeys(keySet, point.LabelsMap())
+	ips := metric.Int64DataPoints()
+	for i := 0; i < ips.Len(); i++ {
+		addLabelKeys(keySet, ips.Get(i).LabelsMap())
 	}
-	for _, point := range metric.DoubleDataPoints() {
-		addLabelKeys(keySet, point.LabelsMap())
+	dps := metric.DoubleDataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		addLabelKeys(keySet, dps.Get(i).LabelsMap())
 	}
-	for _, point := range metric.HistogramDataPoints() {
-		addLabelKeys(keySet, point.LabelsMap())
+	hps := metric.HistogramDataPoints()
+	for i := 0; i < hps.Len(); i++ {
+		addLabelKeys(keySet, hps.Get(i).LabelsMap())
 	}
-	for _, point := range metric.SummaryDataPoints() {
-		addLabelKeys(keySet, point.LabelsMap())
+	sps := metric.SummaryDataPoints()
+	for i := 0; i < sps.Len(); i++ {
+		addLabelKeys(keySet, sps.Get(i).LabelsMap())
 	}
 
 	// Sort keys: while not mandatory, this helps to make the
@@ -167,27 +181,31 @@ func descriptorTypeToOC(t data.MetricType) ocmetrics.MetricDescriptor_Type {
 }
 
 func dataPointsToTimeseries(metric data.Metric, labelKeys *labelKeys) []*ocmetrics.TimeSeries {
-	length := len(metric.Int64DataPoints()) + len(metric.DoubleDataPoints()) + len(metric.HistogramDataPoints()) +
-		len(metric.SummaryDataPoints())
+	length := metric.Int64DataPoints().Len() + metric.DoubleDataPoints().Len() +
+		metric.HistogramDataPoints().Len() + metric.SummaryDataPoints().Len()
 	if length == 0 {
 		return nil
 	}
 
 	timeseries := make([]*ocmetrics.TimeSeries, 0, length)
-	for _, point := range metric.Int64DataPoints() {
-		ts := int64PointToOC(point, labelKeys)
+	ips := metric.Int64DataPoints()
+	for i := 0; i < ips.Len(); i++ {
+		ts := int64PointToOC(ips.Get(i), labelKeys)
 		timeseries = append(timeseries, ts)
 	}
-	for _, point := range metric.DoubleDataPoints() {
-		ts := doublePointToOC(point, labelKeys)
+	dps := metric.DoubleDataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		ts := doublePointToOC(dps.Get(i), labelKeys)
 		timeseries = append(timeseries, ts)
 	}
-	for _, point := range metric.HistogramDataPoints() {
-		ts := histogramPointToOC(point, labelKeys)
+	hps := metric.HistogramDataPoints()
+	for i := 0; i < hps.Len(); i++ {
+		ts := histogramPointToOC(hps.Get(i), labelKeys)
 		timeseries = append(timeseries, ts)
 	}
-	for _, point := range metric.SummaryDataPoints() {
-		ts := summaryPointToOC(point, labelKeys)
+	sps := metric.SummaryDataPoints()
+	for i := 0; i < sps.Len(); i++ {
+		ts := summaryPointToOC(sps.Get(i), labelKeys)
 		timeseries = append(timeseries, ts)
 	}
 

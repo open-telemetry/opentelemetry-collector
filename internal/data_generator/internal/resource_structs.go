@@ -36,3 +36,9 @@ var resource = &messageStruct{
 		},
 	},
 }
+
+var resourceField = &messageField{
+	fieldMame:       "Resource",
+	originFieldName: "Resource",
+	returnMessage:   resource,
+}

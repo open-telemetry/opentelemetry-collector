@@ -37,35 +37,6 @@ func TestResourceMetricsToMetricsData(t *testing.T) {
 	ts1 := data.TimestampUnixNano(12578940000000012345)
 	ts2 := data.TimestampUnixNano(12578940000000054321)
 
-	metrics := data.NewMetricSlice(1)
-	metricDescriptor := data.NewMetricDescriptor()
-	metricDescriptor.SetName("mymetric")
-	metricDescriptor.SetDescription("My metric")
-	metricDescriptor.SetUnit("ms")
-	metricDescriptor.SetMetricType(data.MetricTypeCounterInt64)
-	metrics[0].SetMetricDescriptor(metricDescriptor)
-
-	int64DataPoints := data.NewInt64DataPointSlice(2)
-	int64DataPoints[0].SetLabelsMap(data.NewStringMap(map[string]string{"key1": "value1"}))
-	int64DataPoints[0].SetStartTime(ts1)
-	int64DataPoints[0].SetTimestamp(ts2)
-	int64DataPoints[0].SetValue(123)
-	int64DataPoints[1].SetLabelsMap(data.NewStringMap(map[string]string{"key2": "value2"}))
-	int64DataPoints[1].SetStartTime(ts1)
-	int64DataPoints[1].SetTimestamp(ts2)
-	int64DataPoints[1].SetValue(456)
-	metrics[0].SetInt64DataPoints(int64DataPoints)
-
-	doubleDataPoints := data.NewDoubleDataPointSlice(1)
-	doubleDataPoints[0].SetLabelsMap(data.NewStringMap(map[string]string{
-		"key1": "double-value1",
-		"key3": "double-value3",
-	}))
-	doubleDataPoints[0].SetStartTime(ts1)
-	doubleDataPoints[0].SetTimestamp(ts2)
-	doubleDataPoints[0].SetValue(1.23)
-	metrics[0].SetDoubleDataPoints(doubleDataPoints)
-
 	resource := data.NewResource()
 	attrs := data.AttributesMap{
 		conventions.OCAttributeProcessStartTime: data.NewAttributeValueString("2020-02-11T20:26:00Z"),
@@ -80,17 +51,46 @@ func TestResourceMetricsToMetricsData(t *testing.T) {
 	}
 	resource.SetAttributes(data.NewAttributeMap(attrs))
 
-	ilm := data.NewInstrumentationLibraryMetricsSlice(1)
-	ilm[0].SetMetrics(metrics)
-	resourceMetricsSlice := data.NewResourceMetricsSlice(1)
-	resourceMetricsSlice[0].SetInstrumentationLibraryMetrics(ilm)
-	resourceMetricsSlice[0].SetResource(resource)
-
 	metricData := data.NewMetricData()
-	metricData.SetResourceMetrics(resourceMetricsSlice)
+	metricData.SetResourceMetrics(data.NewResourceMetricsSlice(1))
+
+	rms := metricData.ResourceMetrics()
+	rms.Get(0).SetInstrumentationLibraryMetrics(data.NewInstrumentationLibraryMetricsSlice(1))
+	rms.Get(0).SetResource(resource)
+
+	ilms := rms.Get(0).InstrumentationLibraryMetrics()
+	ilms.Get(0).SetMetrics(data.NewMetricSlice(1))
+
+	metrics := ilms.Get(0).Metrics()
+	metricDescriptor := metrics.Get(0).MetricDescriptor()
+	metricDescriptor.SetName("mymetric")
+	metricDescriptor.SetDescription("My metric")
+	metricDescriptor.SetUnit("ms")
+	metricDescriptor.SetType(data.MetricTypeCounterInt64)
+
+	metrics.Get(0).SetInt64DataPoints(data.NewInt64DataPointSlice(2))
+	int64DataPoints := metrics.Get(0).Int64DataPoints()
+	int64DataPoints.Get(0).SetLabelsMap(data.NewStringMap(map[string]string{"key1": "value1"}))
+	int64DataPoints.Get(0).SetStartTime(ts1)
+	int64DataPoints.Get(0).SetTimestamp(ts2)
+	int64DataPoints.Get(0).SetValue(123)
+	int64DataPoints.Get(1).SetLabelsMap(data.NewStringMap(map[string]string{"key2": "value2"}))
+	int64DataPoints.Get(1).SetStartTime(ts1)
+	int64DataPoints.Get(1).SetTimestamp(ts2)
+	int64DataPoints.Get(1).SetValue(456)
+
+	metrics.Get(0).SetDoubleDataPoints(data.NewDoubleDataPointSlice(1))
+	doubleDataPoints := metrics.Get(0).DoubleDataPoints()
+	doubleDataPoints.Get(0).SetLabelsMap(data.NewStringMap(map[string]string{
+		"key1": "double-value1",
+		"key3": "double-value3",
+	}))
+	doubleDataPoints.Get(0).SetStartTime(ts1)
+	doubleDataPoints.Get(0).SetTimestamp(ts2)
+	doubleDataPoints.Get(0).SetValue(1.23)
 
 	emptyMetricData := data.NewMetricData()
-	emptyMetricData.SetResourceMetrics([]data.ResourceMetrics{data.NewResourceMetrics()})
+	emptyMetricData.SetResourceMetrics(data.NewResourceMetricsSlice(1))
 
 	ocMetric := &ocmetrics.Metric{
 		MetricDescriptor: &ocmetrics.MetricDescriptor{
@@ -200,7 +200,7 @@ func TestResourceMetricsToMetricsData(t *testing.T) {
 		{
 			name:     "none",
 			internal: data.NewMetricData(),
-			oc:       []consumerdata.MetricsData{},
+			oc:       []consumerdata.MetricsData(nil),
 		},
 
 		{
@@ -210,7 +210,7 @@ func TestResourceMetricsToMetricsData(t *testing.T) {
 				{
 					Node:     &occommon.Node{},
 					Resource: &ocresource.Resource{},
-					Metrics:  []*ocmetrics.Metric{},
+					Metrics:  []*ocmetrics.Metric(nil),
 				},
 			},
 		},
