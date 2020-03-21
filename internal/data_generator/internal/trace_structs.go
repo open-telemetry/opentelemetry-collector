@@ -19,6 +19,12 @@ var traceFile = &File{
 	imports: []string{
 		`otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"`,
 	},
+	testImports: []string{
+		`"testing"`,
+		``,
+		`otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"`,
+		`"github.com/stretchr/testify/assert"`,
+	},
 	structs: []baseStruct{
 		spanEvent,
 		spanStatus,
@@ -32,11 +38,7 @@ var spanEvent = &messageStruct{
 	originFullName: "otlptrace.Span_Event",
 	fields: []baseField{
 		timeField,
-		&primitiveField{
-			fieldMame:       "Name",
-			originFieldName: "Name",
-			returnType:      "string",
-		},
+		nameField,
 		attributes,
 		droppedAttributesCount,
 	},
@@ -53,11 +55,15 @@ var spanStatus = &messageStruct{
 			originFieldName: "Code",
 			returnType:      "StatusCode",
 			rawType:         "otlptrace.Status_StatusCode",
+			defaultVal:      "StatusCode(0)",
+			testVal:         "StatusCode(1)",
 		},
 		&primitiveField{
 			fieldMame:       "Message",
 			originFieldName: "Message",
 			returnType:      "string",
+			defaultVal:      `""`,
+			testVal:         `"cancelled"`,
 		},
 	},
 }
@@ -66,4 +72,6 @@ var droppedAttributesCount = &primitiveField{
 	fieldMame:       "DroppedAttributesCount",
 	originFieldName: "DroppedAttributesCount",
 	returnType:      "uint32",
+	defaultVal:      "uint32(0)",
+	testVal:         "uint32(17)",
 }

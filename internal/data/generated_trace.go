@@ -45,7 +45,7 @@ func newSpanEvent(orig *otlptrace.Span_Event) SpanEvent {
 
 // Timestamp returns the timestamp associated with this SpanEvent.
 func (ms SpanEvent) Timestamp() TimestampUnixNano {
-	return TimestampUnixNano(ms.orig.GetTimeUnixnano())
+	return TimestampUnixNano(ms.orig.TimeUnixnano)
 }
 
 // SetTimestamp replaces the timestamp associated with this SpanEvent.
@@ -55,7 +55,7 @@ func (ms SpanEvent) SetTimestamp(v TimestampUnixNano) {
 
 // Name returns the name associated with this SpanEvent.
 func (ms SpanEvent) Name() string {
-	return ms.orig.GetName()
+	return ms.orig.Name
 }
 
 // SetName replaces the name associated with this SpanEvent.
@@ -75,7 +75,7 @@ func (ms SpanEvent) SetAttributes(v AttributeMap) {
 
 // DroppedAttributesCount returns the droppedattributescount associated with this SpanEvent.
 func (ms SpanEvent) DroppedAttributesCount() uint32 {
-	return ms.orig.GetDroppedAttributesCount()
+	return ms.orig.DroppedAttributesCount
 }
 
 // SetDroppedAttributesCount replaces the droppedattributescount associated with this SpanEvent.
@@ -107,7 +107,7 @@ func newSpanStatus(orig *otlptrace.Status) SpanStatus {
 
 // Code returns the code associated with this SpanStatus.
 func (ms SpanStatus) Code() StatusCode {
-	return StatusCode(ms.orig.GetCode())
+	return StatusCode(ms.orig.Code)
 }
 
 // SetCode replaces the code associated with this SpanStatus.
@@ -117,11 +117,10 @@ func (ms SpanStatus) SetCode(v StatusCode) {
 
 // Message returns the message associated with this SpanStatus.
 func (ms SpanStatus) Message() string {
-	return ms.orig.GetMessage()
+	return ms.orig.Message
 }
 
 // SetMessage replaces the message associated with this SpanStatus.
 func (ms SpanStatus) SetMessage(v string) {
 	ms.orig.Message = v
 }
-

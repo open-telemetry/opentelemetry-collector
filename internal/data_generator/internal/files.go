@@ -45,8 +45,9 @@ var AllFiles = []*File{
 
 // File represents the struct for one generated file.
 type File struct {
-	Name    string
-	imports []string
+	Name        string
+	imports     []string
+	testImports []string
 	// Can be any of sliceStruct or messageStruct
 	structs []baseStruct
 }
@@ -63,11 +64,38 @@ func (f *File) GenerateFile() string {
 	for _, i := range f.imports {
 		sb.WriteString("\t" + i + newLine)
 	}
-	sb.WriteString(")" + newLine + newLine)
+	sb.WriteString(")")
 	// Write all structs
 	for _, s := range f.structs {
-		s.generateStruct(&sb)
 		sb.WriteString(newLine + newLine)
+		s.generateStruct(&sb)
 	}
+	sb.WriteString(newLine)
+	return sb.String()
+}
+
+func (f *File) GenerateTestFile() string {
+	var sb strings.Builder
+
+	// Write headers
+	sb.WriteString(header)
+	sb.WriteString(newLine + newLine)
+	// Add imports
+	sb.WriteString("import (" + newLine)
+	for _, i := range f.testImports {
+		sb.WriteString("\t" + i + newLine)
+	}
+	sb.WriteString(")")
+	// Write all tests
+	for _, s := range f.structs {
+		sb.WriteString(newLine + newLine)
+		s.generateTests(&sb)
+	}
+	// Write all tests generate value
+	for _, s := range f.structs {
+		sb.WriteString(newLine + newLine)
+		s.generateTestValueHelpers(&sb)
+	}
+	sb.WriteString(newLine)
 	return sb.String()
 }

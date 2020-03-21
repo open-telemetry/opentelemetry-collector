@@ -193,7 +193,7 @@ type AttributeMap struct {
 // NewAttributeMap creates a new AttributeMap from the given map[string]AttributeValue.
 func NewAttributeMap(attrMap map[string]AttributeValue) AttributeMap {
 	if len(attrMap) == 0 {
-		var orig []*otlpcommon.AttributeKeyValue
+		orig := []*otlpcommon.AttributeKeyValue(nil)
 		return AttributeMap{&orig}
 	}
 	origs := make([]otlpcommon.AttributeKeyValue, len(attrMap))
@@ -330,7 +330,7 @@ func newStringMap(orig *[]*otlpcommon.StringKeyValue) StringMap {
 // NewStringMap creates a new StringMap from the given map[string]string.
 func NewStringMap(attrMap map[string]string) StringMap {
 	if len(attrMap) == 0 {
-		var orig []*otlpcommon.StringKeyValue
+		orig := []*otlpcommon.StringKeyValue(nil)
 		return StringMap{&orig}
 	}
 	origs := make([]otlpcommon.StringKeyValue, len(attrMap))

@@ -21,6 +21,12 @@ var metricsFile = &File{
 		`otlpmetrics "github.com/open-telemetry/opentelemetry-proto/gen/go/metrics/v1"`,
 		`otlpresource "github.com/open-telemetry/opentelemetry-proto/gen/go/resource/v1"`,
 	},
+	testImports: []string{
+		`"testing"`,
+		``,
+		`otlpmetrics "github.com/open-telemetry/opentelemetry-proto/gen/go/metrics/v1"`,
+		`"github.com/stretchr/testify/assert"`,
+	},
 	structs: []baseStruct{
 		resourceMetricsSlice,
 		resourceMetrics,
@@ -57,9 +63,10 @@ var resourceMetrics = &messageStruct{
 	fields: []baseField{
 		resourceField,
 		&sliceField{
-			fieldMame:       "InstrumentationLibraryMetrics",
-			originFieldName: "InstrumentationLibraryMetrics",
-			returnSlice:     instrumentationLibraryMetricsSlice,
+			fieldMame:               "InstrumentationLibraryMetrics",
+			originFieldName:         "InstrumentationLibraryMetrics",
+			returnSlice:             instrumentationLibraryMetricsSlice,
+			constructorDefaultValue: "0",
 		},
 	},
 }
@@ -76,9 +83,10 @@ var instrumentationLibraryMetrics = &messageStruct{
 	fields: []baseField{
 		instrumentationLibraryField,
 		&sliceField{
-			fieldMame:       "Metrics",
-			originFieldName: "Metrics",
-			returnSlice:     metricSlice,
+			fieldMame:               "Metrics",
+			originFieldName:         "Metrics",
+			returnSlice:             metricSlice,
+			constructorDefaultValue: "0",
 		},
 	},
 }
@@ -99,24 +107,28 @@ var metric = &messageStruct{
 			returnMessage:   metricDescriptor,
 		},
 		&sliceField{
-			fieldMame:       "Int64DataPoints",
-			originFieldName: "Int64DataPoints",
-			returnSlice:     int64DataPointSlice,
+			fieldMame:               "Int64DataPoints",
+			originFieldName:         "Int64DataPoints",
+			returnSlice:             int64DataPointSlice,
+			constructorDefaultValue: "0",
 		},
 		&sliceField{
-			fieldMame:       "DoubleDataPoints",
-			originFieldName: "DoubleDataPoints",
-			returnSlice:     doubleDataPointSlice,
+			fieldMame:               "DoubleDataPoints",
+			originFieldName:         "DoubleDataPoints",
+			returnSlice:             doubleDataPointSlice,
+			constructorDefaultValue: "0",
 		},
 		&sliceField{
-			fieldMame:       "HistogramDataPoints",
-			originFieldName: "HistogramDataPoints",
-			returnSlice:     histogramDataPointSlice,
+			fieldMame:               "HistogramDataPoints",
+			originFieldName:         "HistogramDataPoints",
+			returnSlice:             histogramDataPointSlice,
+			constructorDefaultValue: "0",
 		},
 		&sliceField{
-			fieldMame:       "SummaryDataPoints",
-			originFieldName: "SummaryDataPoints",
-			returnSlice:     summaryDataPointSlice,
+			fieldMame:               "SummaryDataPoints",
+			originFieldName:         "SummaryDataPoints",
+			returnSlice:             summaryDataPointSlice,
+			constructorDefaultValue: "0",
 		},
 	},
 }
@@ -126,32 +138,30 @@ var metricDescriptor = &messageStruct{
 	description:    "// MetricDescriptor is the descriptor of a metric.",
 	originFullName: "otlpmetrics.MetricDescriptor",
 	fields: []baseField{
-		&primitiveField{
-			fieldMame:       "Name",
-			originFieldName: "Name",
-			returnType:      "string",
-		},
+		nameField,
 		&primitiveField{
 			fieldMame:       "Description",
 			originFieldName: "Description",
 			returnType:      "string",
+			defaultVal:      `""`,
+			testVal:         `"test_description"`,
 		},
 		&primitiveField{
 			fieldMame:       "Unit",
 			originFieldName: "Unit",
 			returnType:      "string",
+			defaultVal:      `""`,
+			testVal:         `"1"`,
 		},
 		&primitiveTypedField{
 			fieldMame:       "Type",
 			originFieldName: "Type",
 			returnType:      "MetricType",
 			rawType:         "otlpmetrics.MetricDescriptor_Type",
+			defaultVal:      "MetricTypeUnspecified",
+			testVal:         "MetricTypeGaugeInt64",
 		},
-		&sliceField{
-			fieldMame:       "LabelsMap",
-			originFieldName: "Labels",
-			returnSlice:     stringMap,
-		},
+		labelsField,
 	},
 }
 
@@ -165,18 +175,10 @@ var int64DataPoint = &messageStruct{
 	description:    "// Int64DataPoint is a single data point in a timeseries that describes the time-varying values of a int64 metric.",
 	originFullName: "otlpmetrics.Int64DataPoint",
 	fields: []baseField{
-		&sliceField{
-			fieldMame:       "LabelsMap",
-			originFieldName: "Labels",
-			returnSlice:     stringMap,
-		},
+		labelsField,
 		startTimeField,
 		timestampField,
-		&primitiveField{
-			fieldMame:       "Value",
-			originFieldName: "Value",
-			returnType:      "int64",
-		},
+		valueInt64Field,
 	},
 }
 
@@ -190,18 +192,10 @@ var doubleDataPoint = &messageStruct{
 	description:    "// DoubleDataPoint is a single data point in a timeseries that describes the time-varying value of a double metric.",
 	originFullName: "otlpmetrics.DoubleDataPoint",
 	fields: []baseField{
-		&sliceField{
-			fieldMame:       "LabelsMap",
-			originFieldName: "Labels",
-			returnSlice:     stringMap,
-		},
+		labelsField,
 		startTimeField,
 		timestampField,
-		&primitiveField{
-			fieldMame:       "Value",
-			originFieldName: "Value",
-			returnType:      "float64",
-		},
+		valueFloat64Field,
 	},
 }
 
@@ -215,25 +209,18 @@ var histogramDataPoint = &messageStruct{
 	description:    "// HistogramDataPoint is a single data point in a timeseries that describes the time-varying values of a Histogram.",
 	originFullName: "otlpmetrics.HistogramDataPoint",
 	fields: []baseField{
-		&sliceField{
-			fieldMame:       "LabelsMap",
-			originFieldName: "Labels",
-			returnSlice:     stringMap,
-		},
+		labelsField,
 		startTimeField,
 		timestampField,
 		countField,
 		sumField,
 		&sliceField{
-			fieldMame:       "Buckets",
-			originFieldName: "Buckets",
-			returnSlice:     histogramBucketSlice,
+			fieldMame:               "Buckets",
+			originFieldName:         "Buckets",
+			returnSlice:             histogramBucketSlice,
+			constructorDefaultValue: "0",
 		},
-		&primitiveField{
-			fieldMame:       "ExplicitBounds",
-			originFieldName: "ExplicitBounds",
-			returnType:      "[]float64",
-		},
+		explicitBoundsField,
 	},
 }
 
@@ -263,15 +250,12 @@ var histogramBucketExemplar = &messageStruct{
 	originFullName: "otlpmetrics.HistogramDataPoint_Bucket_Exemplar",
 	fields: []baseField{
 		timestampField,
-		&primitiveField{
-			fieldMame:       "Value",
-			originFieldName: "Value",
-			returnType:      "float64",
-		},
+		valueFloat64Field,
 		&sliceField{
-			fieldMame:       "Attachments",
-			originFieldName: "Attachments",
-			returnSlice:     stringMap,
+			fieldMame:               "Attachments",
+			originFieldName:         "Attachments",
+			returnSlice:             stringMap,
+			constructorDefaultValue: "nil",
 		},
 	},
 }
@@ -286,19 +270,16 @@ var summaryDataPoint = &messageStruct{
 	description:    "// SummaryDataPoint is a single data point in a timeseries that describes the time-varying values of a Summary metric.",
 	originFullName: "otlpmetrics.SummaryDataPoint",
 	fields: []baseField{
-		&sliceField{
-			fieldMame:       "LabelsMap",
-			originFieldName: "Labels",
-			returnSlice:     stringMap,
-		},
+		labelsField,
 		startTimeField,
 		timestampField,
 		countField,
 		sumField,
 		&sliceField{
-			fieldMame:       "ValueAtPercentiles",
-			originFieldName: "PercentileValues",
-			returnSlice:     summaryValueAtPercentileSlice,
+			fieldMame:               "ValueAtPercentiles",
+			originFieldName:         "PercentileValues",
+			returnSlice:             summaryValueAtPercentileSlice,
+			constructorDefaultValue: "0",
 		},
 	},
 }
@@ -313,27 +294,62 @@ var summaryValueAtPercentile = &messageStruct{
 	description:    "// SummaryValueAtPercentile represents the value at a given percentile of a distribution.",
 	originFullName: "otlpmetrics.SummaryDataPoint_ValueAtPercentile",
 	fields: []baseField{
-		&primitiveField{
-			fieldMame:       "Percentile",
-			originFieldName: "Percentile",
-			returnType:      "float64",
-		},
-		&primitiveField{
-			fieldMame:       "Value",
-			originFieldName: "Value",
-			returnType:      "float64",
-		},
+		percentileField,
+		valueFloat64Field,
 	},
+}
+
+var labelsField = &sliceField{
+	fieldMame:               "LabelsMap",
+	originFieldName:         "Labels",
+	returnSlice:             stringMap,
+	constructorDefaultValue: "nil",
 }
 
 var countField = &primitiveField{
 	fieldMame:       "Count",
 	originFieldName: "Count",
 	returnType:      "uint64",
+	defaultVal:      "uint64(0)",
+	testVal:         "uint64(17)",
 }
 
 var sumField = &primitiveField{
 	fieldMame:       "Sum",
 	originFieldName: "Sum",
 	returnType:      "float64",
+	defaultVal:      "float64(0.0)",
+	testVal:         "float64(17.13)",
+}
+
+var valueInt64Field = &primitiveField{
+	fieldMame:       "Value",
+	originFieldName: "Value",
+	returnType:      "int64",
+	defaultVal:      "int64(0)",
+	testVal:         "int64(-17)",
+}
+
+var valueFloat64Field = &primitiveField{
+	fieldMame:       "Value",
+	originFieldName: "Value",
+	returnType:      "float64",
+	defaultVal:      "float64(0.0)",
+	testVal:         "float64(17.13)",
+}
+
+var percentileField = &primitiveField{
+	fieldMame:       "Percentile",
+	originFieldName: "Percentile",
+	returnType:      "float64",
+	defaultVal:      "float64(0.0)",
+	testVal:         "float64(0.90)",
+}
+
+var explicitBoundsField = &primitiveField{
+	fieldMame:       "ExplicitBounds",
+	originFieldName: "ExplicitBounds",
+	returnType:      "[]float64",
+	defaultVal:      "[]float64(nil)",
+	testVal:         "[]float64{1, 2, 3}",
 }
