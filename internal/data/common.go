@@ -206,6 +206,10 @@ func NewAttributeMap(attrMap map[string]AttributeValue) AttributeMap {
 	return AttributeMap{&wrappers}
 }
 
+func newAttributeMap(orig *[]*otlpcommon.AttributeKeyValue) AttributeMap {
+	return AttributeMap{orig}
+}
+
 // Get returns the AttributeKeyValue associated with the key and true,
 // otherwise an invalid instance of the AttributeKeyValue and false.
 func (am AttributeMap) Get(key string) (AttributeKeyValue, bool) {

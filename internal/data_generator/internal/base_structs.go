@@ -91,7 +91,7 @@ type ${structName} struct {
 	orig *${originName}
 }
 
-// New${structName} creates a new ${structName}.
+// New${structName} creates a new empty ${structName}.
 func New${structName}() ${structName} {
 	return ${structName}{&${originName}{}}
 }
