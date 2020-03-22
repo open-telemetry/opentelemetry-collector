@@ -58,7 +58,7 @@ func TraceDataToOC(td data.TraceData) []consumerdata.TraceData {
 	return ocResourceSpansList
 }
 
-func spanToOC(span *data.Span) *octrace.Span {
+func spanToOC(span data.Span) *octrace.Span {
 	attributes := attributesMapToOCSpanAttributes(span.Attributes(), span.DroppedAttributesCount())
 	if kindAttr := spanKindToOCAttribute(span.Kind()); kindAttr != nil {
 		if attributes == nil {
@@ -229,14 +229,20 @@ func spanKindToOC(kind data.SpanKind) octrace.Span_SpanKind {
 	return octrace.Span_SPAN_KIND_UNSPECIFIED
 }
 
-func eventsToOC(events []data.SpanEvent, droppedCount uint32) *octrace.Span_TimeEvents {
-	if len(events) == 0 && droppedCount == 0 {
-		return nil
+func eventsToOC(events data.SpanEventSlice, droppedCount uint32) *octrace.Span_TimeEvents {
+	if events.Len() == 0 {
+		if droppedCount == 0 {
+			return nil
+		}
+		return &octrace.Span_TimeEvents{
+			TimeEvent:                 nil,
+			DroppedMessageEventsCount: int32(droppedCount),
+		}
 	}
 
-	ocEvents := make([]*octrace.Span_TimeEvent, 0, len(events))
-	for _, event := range events {
-		ocEvents = append(ocEvents, eventToOC(event))
+	ocEvents := make([]*octrace.Span_TimeEvent, 0, events.Len())
+	for i := 0; i < events.Len(); i++ {
+		ocEvents = append(ocEvents, eventToOC(events.Get(i)))
 	}
 
 	return &octrace.Span_TimeEvents{
@@ -296,24 +302,20 @@ func eventToOC(event data.SpanEvent) *octrace.Span_TimeEvent {
 	}
 }
 
-func linksToOC(links []data.SpanLink, droppedCount uint32) *octrace.Span_Links {
-	if len(links) == 0 && droppedCount == 0 {
-		return nil
+func linksToOC(links data.SpanLinkSlice, droppedCount uint32) *octrace.Span_Links {
+	if links.Len() == 0 {
+		if droppedCount == 0 {
+			return nil
+		}
+		return &octrace.Span_Links{
+			Link:              nil,
+			DroppedLinksCount: int32(droppedCount),
+		}
 	}
 
-	return &octrace.Span_Links{
-		Link:              linksToOCLinks(links),
-		DroppedLinksCount: int32(droppedCount),
-	}
-}
-
-func linksToOCLinks(links []data.SpanLink) []*octrace.Span_Link {
-	if len(links) == 0 {
-		return nil
-	}
-
-	ocLinks := make([]*octrace.Span_Link, 0, len(links))
-	for _, link := range links {
+	ocLinks := make([]*octrace.Span_Link, 0, links.Len())
+	for i := 0; i < links.Len(); i++ {
+		link := links.Get(i)
 		ocLink := &octrace.Span_Link{
 			TraceId:    link.TraceID().Bytes(),
 			SpanId:     link.SpanID().Bytes(),
@@ -322,7 +324,11 @@ func linksToOCLinks(links []data.SpanLink) []*octrace.Span_Link {
 		}
 		ocLinks = append(ocLinks, ocLink)
 	}
-	return ocLinks
+
+	return &octrace.Span_Links{
+		Link:              ocLinks,
+		DroppedLinksCount: int32(droppedCount),
+	}
 }
 
 func statusToOC(status data.SpanStatus) *octrace.Status {
