@@ -65,6 +65,15 @@ func TestTrace10kSPS(t *testing.T) {
 				ExpectedMaxRAM: 84,
 			},
 		},
+		{
+			"OTLP",
+			testbed.NewOTLPTraceDataSender(testbed.GetAvailablePort(t)),
+			testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
+			testbed.ResourceSpec{
+				ExpectedMaxCPU: 55,
+				ExpectedMaxRAM: 84,
+			},
+		},
 	}
 
 	for _, test := range tests {
@@ -284,6 +293,11 @@ func TestTraceAttributesProcessor(t *testing.T) {
 			"JaegerThrift",
 			testbed.NewJaegerThriftDataSender(testbed.GetAvailablePort(t)),
 			testbed.NewJaegerDataReceiver(testbed.GetAvailablePort(t)),
+		},
+		{
+			"OTLP",
+			testbed.NewOTLPTraceDataSender(testbed.GetAvailablePort(t)),
+			testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
 		},
 	}
 

@@ -23,6 +23,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/exporter/jaeger/jaegerthrifthttpexporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/loggingexporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/opencensusexporter"
+	"github.com/open-telemetry/opentelemetry-collector/exporter/otlpexporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/prometheusexporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/zipkinexporter"
 	"github.com/open-telemetry/opentelemetry-collector/extension"
@@ -84,6 +85,7 @@ func Components() (
 		&jaegergrpcexporter.Factory{},
 		&jaegerthrifthttpexporter.Factory{},
 		&fileexporter.Factory{},
+		&otlpexporter.Factory{},
 	)
 	if err != nil {
 		errs = append(errs, err)
