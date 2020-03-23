@@ -584,18 +584,21 @@ func receiverViewTags(receiver, transport string) []tag.Tag {
 	return []tag.Tag{
 		{Key: tagKeyReceiver, Value: receiver},
 		{Key: tagKeyTransport, Value: transport},
+		{Key: tagKeyInstanceID, Value: InstanceID()},
 	}
 }
 
 func exporterViewTags(exporter string) []tag.Tag {
 	return []tag.Tag{
 		{Key: tagKeyExporter, Value: exporter},
+		{Key: tagKeyInstanceID, Value: InstanceID()},
 	}
 }
 
 func processorViewTags(processor string) []tag.Tag {
 	return []tag.Tag{
 		{Key: tagKeyProcessor, Value: processor},
+		{Key: tagKeyInstanceID, Value: InstanceID()},
 	}
 }
 

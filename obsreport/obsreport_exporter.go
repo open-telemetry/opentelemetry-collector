@@ -152,8 +152,10 @@ func ExporterContext(
 	}
 
 	if useNew {
-		ctx, _ = tag.New(ctx, tag.Upsert(
-			tagKeyExporter, exporter, tag.WithTTL(tag.TTLNoPropagation)))
+		ctx, _ = tag.New(ctx,
+			tag.Upsert(tagKeyExporter, exporter, tag.WithTTL(tag.TTLNoPropagation)),
+			tag.Upsert(tagKeyInstanceID, instanceID, tag.WithTTL(tag.TTLNoPropagation)),
+		)
 	}
 
 	return ctx

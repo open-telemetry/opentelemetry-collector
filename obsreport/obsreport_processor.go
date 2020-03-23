@@ -112,7 +112,10 @@ func ProcessorContext(
 ) context.Context {
 	if useNew {
 		ctx, _ = tag.New(
-			ctx, tag.Upsert(tagKeyProcessor, processor, tag.WithTTL(tag.TTLNoPropagation)))
+			ctx,
+			tag.Upsert(tagKeyProcessor, processor, tag.WithTTL(tag.TTLNoPropagation)),
+			tag.Upsert(tagKeyInstanceID, instanceID, tag.WithTTL(tag.TTLNoPropagation)),
+		)
 	}
 
 	return ctx

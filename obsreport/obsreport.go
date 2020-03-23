@@ -15,9 +15,9 @@
 package obsreport
 
 import (
-	"context"
 	"strings"
 
+	"github.com/google/uuid"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
@@ -32,36 +32,20 @@ const (
 )
 
 var (
+	// InstanceIDKey is used to identify the process instance of the Collector.
+	InstanceIDKey = "instance_id"
+
 	// Variables to control the usage of legacy and new metrics.
 	useLegacy = true
 	useNew    = true
 
 	okStatus = trace.Status{Code: trace.StatusCodeOK}
+
+	instanceUUID, _ = uuid.NewRandom()
+	instanceID      = instanceUUID.String()
+
+	tagKeyInstanceID, _ = tag.NewKey(InstanceIDKey)
 )
-
-// setParentLink tries to retrieve a span from parentCtx and if one exists
-// sets its SpanID, TraceID as a link to the given child Span.
-// It returns true only if it retrieved a parent span from the context.
-//
-// This is typically used when the parentCtx may already have a trace and is
-// long lived (eg.: an gRPC stream, or TCP connection) and one desires distinct
-// traces for individual operations under the long lived trace associated to
-// the parentCtx. This function is a helper that encapsulates the work of
-// linking the short lived trace/span to the longer one.
-func setParentLink(parentCtx context.Context, childSpan *trace.Span) bool {
-	parentSpanFromRPC := trace.FromContext(parentCtx)
-	if parentSpanFromRPC == nil {
-		return false
-	}
-
-	psc := parentSpanFromRPC.SpanContext()
-	childSpan.AddLink(trace.Link{
-		SpanID:  psc.SpanID,
-		TraceID: psc.TraceID,
-		Type:    trace.LinkTypeParent,
-	})
-	return true
-}
 
 // Configure is used to control the settings that will be used by the obsreport
 // package.
@@ -83,6 +67,12 @@ func Configure(
 	}
 
 	return views
+}
+
+// InstanceID is a string used to uniquely identify the process instance across
+// different types of environments and deployments.
+func InstanceID() string {
+	return instanceID
 }
 
 // CountMetricPoints is a helper to count the "amount" of metrics data.
@@ -114,7 +104,7 @@ func genAllViews() (views []*view.View) {
 		mReceiverAcceptedMetricPoints, mReceiverRefusedMetricPoints,
 	}
 	tagKeys := []tag.Key{
-		tagKeyReceiver, tagKeyTransport,
+		tagKeyReceiver, tagKeyTransport, tagKeyInstanceID,
 	}
 	views = append(views, genViews(
 		measures, tagKeys, view.Sum())...)
@@ -124,7 +114,9 @@ func genAllViews() (views []*view.View) {
 		mExporterSentSpans, mExporterFailedToSendSpans,
 		mExporterSentMetricPoints, mExporterFailedToSendMetricPoints,
 	}
-	tagKeys = []tag.Key{tagKeyExporter}
+	tagKeys = []tag.Key{
+		tagKeyExporter, tagKeyInstanceID,
+	}
 	views = append(views, genViews(
 		measures, tagKeys, view.Sum())...)
 
@@ -137,7 +129,9 @@ func genAllViews() (views []*view.View) {
 		mProcessorRefusedMetricPoints,
 		mProcessorDroppedMetricPoints,
 	}
-	tagKeys = []tag.Key{tagKeyProcessor}
+	tagKeys = []tag.Key{
+		tagKeyProcessor, tagKeyInstanceID,
+	}
 	views = append(views, genViews(
 		measures, tagKeys, view.Sum())...)
 

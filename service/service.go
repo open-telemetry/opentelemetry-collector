@@ -35,6 +35,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/extension"
+	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	"github.com/open-telemetry/opentelemetry-collector/service/builder"
 )
@@ -422,6 +423,7 @@ func (app *Application) execute(factory ConfigFactory) error {
 		zap.String("Version", app.info.Version),
 		zap.String("GitHash", app.info.GitHash),
 		zap.Int("NumCPU", runtime.NumCPU()),
+		zap.String(obsreport.InstanceIDKey, obsreport.InstanceID()),
 	)
 
 	// Set memory ballast
