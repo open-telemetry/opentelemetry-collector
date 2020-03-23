@@ -54,7 +54,6 @@ type collectorPeer struct {
 	logger             *zap.Logger
 	start              sync.Once
 	idToSpans          sync.Map
-	globalDeleteChan   chan int
 }
 
 type ringMembershipExtensionClient struct {
@@ -82,10 +81,6 @@ type spanForwarder struct {
 	// However it will be Start()'ed by the Application service.
 	// ringMembershipExtensionClient is an http client to get extension state
 	ring *ringMembershipExtensionClient
-	// channel to keep track of total number of traces in memory
-	// across all queues
-	// TODO(@annanay25): Is it good to use channels for this
-	globalDeleteChan chan int
 }
 
 func (c *collectorPeer) batchDispatchOnTick() {
@@ -126,7 +121,7 @@ func (c *collectorPeer) batchDispatchOnTick() {
 	c.exporter.ConsumeTraceData(context.Background(), td)
 }
 
-func newCollectorPeer(logger *zap.Logger, ip string, globalDeleteChan chan int) *collectorPeer {
+func newCollectorPeer(logger *zap.Logger, ip string) *collectorPeer {
 	factory := &opencensusexporter.Factory{}
 	config := factory.CreateDefaultConfig()
 	config.(*opencensusexporter.Config).ExporterSettings = configmodels.ExporterSettings{
@@ -222,7 +217,7 @@ func (sf *spanForwarder) memberSyncOnTick() {
 				sf.peerQueues[v] = nil
 				sf.Unlock()
 			} else {
-				newPeer := newCollectorPeer(sf.logger, v, sf.globalDeleteChan)
+				newPeer := newCollectorPeer(sf.logger, v)
 				if newPeer == nil {
 					return
 				}
@@ -274,14 +269,13 @@ func externalIP() (string, error) {
 	return "", errors.New("are you connected to the network?")
 }
 
-func newSpanForwarder(logger *zap.Logger, globalDeleteChan chan int, ringExtEndpoint string) (forwarder, error) {
+func newSpanForwarder(logger *zap.Logger, ringExtEndpoint string) (forwarder, error) {
 	if ringExtEndpoint == "" {
 		ringExtEndpoint = "127.0.0.1:13000"
 	}
 
 	sf := &spanForwarder{
-		logger:           logger,
-		globalDeleteChan: globalDeleteChan,
+		logger: logger,
 		ring: &ringMembershipExtensionClient{
 			client:   &http.Client{},
 			endpoint: ringExtEndpoint,
@@ -364,15 +358,8 @@ func (sf *spanForwarder) process(span *tracepb.Span) bool {
 	// we don't want to build the trace here(?)
 	peer.peerBatcher.AddToCurrentBatch(span.SpanId)
 
-	// FIXME(@annanay25): Don't insert to globalDeleteChan for every span
-	// ... Need to change this, track only trace constructions in memory.
-	select {
-	case sf.globalDeleteChan <- 1:
-		// Store the span in idToSpans
-		peer.idToSpans.Store(string(span.SpanId), span)
-	default:
-		// don't store this span
-	}
+	// Store the span in idToSpans
+	peer.idToSpans.Store(string(span.SpanId), span)
 
 	return true
 }

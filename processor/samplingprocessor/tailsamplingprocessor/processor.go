@@ -54,19 +54,18 @@ type traceKey string
 // tailSamplingSpanProcessor handles the incoming trace data and uses the given sampling
 // policy to sample traces.
 type tailSamplingSpanProcessor struct {
-	ctx              context.Context
-	nextConsumer     consumer.TraceConsumer
-	start            sync.Once
-	maxNumTraces     uint64
-	policies         []*Policy
-	logger           *zap.Logger
-	idToTrace        sync.Map
-	policyTicker     tTicker
-	decisionBatcher  idbatcher.Batcher
-	deleteChan       chan traceKey
-	globalDeleteChan chan int
-	numTracesOnMap   uint64
-	forwarder        forwarder
+	ctx             context.Context
+	nextConsumer    consumer.TraceConsumer
+	start           sync.Once
+	maxNumTraces    uint64
+	policies        []*Policy
+	logger          *zap.Logger
+	idToTrace       sync.Map
+	policyTicker    tTicker
+	decisionBatcher idbatcher.Batcher
+	deleteChan      chan traceKey
+	numTracesOnMap  uint64
+	forwarder       forwarder
 }
 
 const (
@@ -119,11 +118,10 @@ func NewTraceProcessor(logger *zap.Logger, nextConsumer consumer.TraceConsumer, 
 
 	tsp.policyTicker = &policyTicker{onTick: tsp.samplingPolicyOnTick}
 	tsp.deleteChan = make(chan traceKey, cfg.NumTraces)
-	tsp.globalDeleteChan = make(chan int, cfg.NumTraces)
 
 	for _, ext := range cfg.SupportExtensions {
 		if ext.Name == "ring_membership" {
-			f, err := newSpanForwarder(tsp.logger, tsp.globalDeleteChan, ext.Endpoint)
+			f, err := newSpanForwarder(tsp.logger, ext.Endpoint)
 			if err != nil {
 				return nil, err
 			}
@@ -298,8 +296,7 @@ func (tsp *tailSamplingSpanProcessor) ConsumeTraceData(ctx context.Context, td c
 			currTime := time.Now()
 			for !postDeletion {
 				select {
-				case tsp.globalDeleteChan <- 1:
-					tsp.deleteChan <- id
+				case tsp.deleteChan <- id:
 					postDeletion = true
 				default:
 					traceKeyToDrop := <-tsp.deleteChan
