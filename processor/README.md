@@ -375,8 +375,8 @@ model.
 
 It is highly recommended to configure the queued_retry processor on every collector
 as it minimizes the likelihood of data being dropped due to delays in processing or
-issues exportering the data. This processor should be the last processor defined in
-the pipeline because issues that require retry are typically due to exportering.
+issues exporting the data. This processor should be the last processor defined in
+the pipeline because issues that require retry are typically due to exporting.
 
 Please refer to [config.go](queuedprocessor/config.go) for the config spec.
 
