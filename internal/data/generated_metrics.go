@@ -65,7 +65,7 @@ func (es ResourceMetricsSlice) Len() int {
 	return len(*es.orig)
 }
 
-// Get returns the element associated with the given index.
+// Get the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
 // for i := 0; i < es.Len(); i++ {
@@ -76,13 +76,16 @@ func (es ResourceMetricsSlice) Get(ix int) ResourceMetrics {
 	return newResourceMetrics((*es.orig)[ix])
 }
 
-// Remove removes the element from the given index from the slice.
+// Remove the element at the given index from the slice.
+// Elements after the removed one are shifted to fill the emptied space.
+// The length of the slice is reduced by one.
 func (es ResourceMetricsSlice) Remove(ix int) {
 	(*es.orig)[ix] = (*es.orig)[len(*es.orig)-1]
+	(*es.orig)[len(*es.orig)-1] = nil
 	*es.orig = (*es.orig)[:len(*es.orig)-1]
 }
 
-// Resize resizes the slice. This operation is equivalent with slice[to:from].
+// Resize the slice. This operation is equivalent with slice[from:to].
 func (es ResourceMetricsSlice) Resize(from, to int) {
 	*es.orig = (*es.orig)[from:to]
 }
@@ -174,7 +177,7 @@ func (es InstrumentationLibraryMetricsSlice) Len() int {
 	return len(*es.orig)
 }
 
-// Get returns the element associated with the given index.
+// Get the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
 // for i := 0; i < es.Len(); i++ {
@@ -185,13 +188,16 @@ func (es InstrumentationLibraryMetricsSlice) Get(ix int) InstrumentationLibraryM
 	return newInstrumentationLibraryMetrics((*es.orig)[ix])
 }
 
-// Remove removes the element from the given index from the slice.
+// Remove the element at the given index from the slice.
+// Elements after the removed one are shifted to fill the emptied space.
+// The length of the slice is reduced by one.
 func (es InstrumentationLibraryMetricsSlice) Remove(ix int) {
 	(*es.orig)[ix] = (*es.orig)[len(*es.orig)-1]
+	(*es.orig)[len(*es.orig)-1] = nil
 	*es.orig = (*es.orig)[:len(*es.orig)-1]
 }
 
-// Resize resizes the slice. This operation is equivalent with slice[to:from].
+// Resize the slice. This operation is equivalent with slice[from:to].
 func (es InstrumentationLibraryMetricsSlice) Resize(from, to int) {
 	*es.orig = (*es.orig)[from:to]
 }
@@ -283,7 +289,7 @@ func (es MetricSlice) Len() int {
 	return len(*es.orig)
 }
 
-// Get returns the element associated with the given index.
+// Get the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
 // for i := 0; i < es.Len(); i++ {
@@ -294,13 +300,16 @@ func (es MetricSlice) Get(ix int) Metric {
 	return newMetric((*es.orig)[ix])
 }
 
-// Remove removes the element from the given index from the slice.
+// Remove the element at the given index from the slice.
+// Elements after the removed one are shifted to fill the emptied space.
+// The length of the slice is reduced by one.
 func (es MetricSlice) Remove(ix int) {
 	(*es.orig)[ix] = (*es.orig)[len(*es.orig)-1]
+	(*es.orig)[len(*es.orig)-1] = nil
 	*es.orig = (*es.orig)[:len(*es.orig)-1]
 }
 
-// Resize resizes the slice. This operation is equivalent with slice[to:from].
+// Resize the slice. This operation is equivalent with slice[from:to].
 func (es MetricSlice) Resize(from, to int) {
 	*es.orig = (*es.orig)[from:to]
 }
@@ -493,7 +502,7 @@ func (es Int64DataPointSlice) Len() int {
 	return len(*es.orig)
 }
 
-// Get returns the element associated with the given index.
+// Get the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
 // for i := 0; i < es.Len(); i++ {
@@ -504,13 +513,16 @@ func (es Int64DataPointSlice) Get(ix int) Int64DataPoint {
 	return newInt64DataPoint((*es.orig)[ix])
 }
 
-// Remove removes the element from the given index from the slice.
+// Remove the element at the given index from the slice.
+// Elements after the removed one are shifted to fill the emptied space.
+// The length of the slice is reduced by one.
 func (es Int64DataPointSlice) Remove(ix int) {
 	(*es.orig)[ix] = (*es.orig)[len(*es.orig)-1]
+	(*es.orig)[len(*es.orig)-1] = nil
 	*es.orig = (*es.orig)[:len(*es.orig)-1]
 }
 
-// Resize resizes the slice. This operation is equivalent with slice[to:from].
+// Resize the slice. This operation is equivalent with slice[from:to].
 func (es Int64DataPointSlice) Resize(from, to int) {
 	*es.orig = (*es.orig)[from:to]
 }
@@ -618,7 +630,7 @@ func (es DoubleDataPointSlice) Len() int {
 	return len(*es.orig)
 }
 
-// Get returns the element associated with the given index.
+// Get the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
 // for i := 0; i < es.Len(); i++ {
@@ -629,13 +641,16 @@ func (es DoubleDataPointSlice) Get(ix int) DoubleDataPoint {
 	return newDoubleDataPoint((*es.orig)[ix])
 }
 
-// Remove removes the element from the given index from the slice.
+// Remove the element at the given index from the slice.
+// Elements after the removed one are shifted to fill the emptied space.
+// The length of the slice is reduced by one.
 func (es DoubleDataPointSlice) Remove(ix int) {
 	(*es.orig)[ix] = (*es.orig)[len(*es.orig)-1]
+	(*es.orig)[len(*es.orig)-1] = nil
 	*es.orig = (*es.orig)[:len(*es.orig)-1]
 }
 
-// Resize resizes the slice. This operation is equivalent with slice[to:from].
+// Resize the slice. This operation is equivalent with slice[from:to].
 func (es DoubleDataPointSlice) Resize(from, to int) {
 	*es.orig = (*es.orig)[from:to]
 }
@@ -743,7 +758,7 @@ func (es HistogramDataPointSlice) Len() int {
 	return len(*es.orig)
 }
 
-// Get returns the element associated with the given index.
+// Get the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
 // for i := 0; i < es.Len(); i++ {
@@ -754,13 +769,16 @@ func (es HistogramDataPointSlice) Get(ix int) HistogramDataPoint {
 	return newHistogramDataPoint((*es.orig)[ix])
 }
 
-// Remove removes the element from the given index from the slice.
+// Remove the element at the given index from the slice.
+// Elements after the removed one are shifted to fill the emptied space.
+// The length of the slice is reduced by one.
 func (es HistogramDataPointSlice) Remove(ix int) {
 	(*es.orig)[ix] = (*es.orig)[len(*es.orig)-1]
+	(*es.orig)[len(*es.orig)-1] = nil
 	*es.orig = (*es.orig)[:len(*es.orig)-1]
 }
 
-// Resize resizes the slice. This operation is equivalent with slice[to:from].
+// Resize the slice. This operation is equivalent with slice[from:to].
 func (es HistogramDataPointSlice) Resize(from, to int) {
 	*es.orig = (*es.orig)[from:to]
 }
@@ -898,7 +916,7 @@ func (es HistogramBucketSlice) Len() int {
 	return len(*es.orig)
 }
 
-// Get returns the element associated with the given index.
+// Get the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
 // for i := 0; i < es.Len(); i++ {
@@ -909,13 +927,16 @@ func (es HistogramBucketSlice) Get(ix int) HistogramBucket {
 	return newHistogramBucket((*es.orig)[ix])
 }
 
-// Remove removes the element from the given index from the slice.
+// Remove the element at the given index from the slice.
+// Elements after the removed one are shifted to fill the emptied space.
+// The length of the slice is reduced by one.
 func (es HistogramBucketSlice) Remove(ix int) {
 	(*es.orig)[ix] = (*es.orig)[len(*es.orig)-1]
+	(*es.orig)[len(*es.orig)-1] = nil
 	*es.orig = (*es.orig)[:len(*es.orig)-1]
 }
 
-// Resize resizes the slice. This operation is equivalent with slice[to:from].
+// Resize the slice. This operation is equivalent with slice[from:to].
 func (es HistogramBucketSlice) Resize(from, to int) {
 	*es.orig = (*es.orig)[from:to]
 }
@@ -1059,7 +1080,7 @@ func (es SummaryDataPointSlice) Len() int {
 	return len(*es.orig)
 }
 
-// Get returns the element associated with the given index.
+// Get the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
 // for i := 0; i < es.Len(); i++ {
@@ -1070,13 +1091,16 @@ func (es SummaryDataPointSlice) Get(ix int) SummaryDataPoint {
 	return newSummaryDataPoint((*es.orig)[ix])
 }
 
-// Remove removes the element from the given index from the slice.
+// Remove the element at the given index from the slice.
+// Elements after the removed one are shifted to fill the emptied space.
+// The length of the slice is reduced by one.
 func (es SummaryDataPointSlice) Remove(ix int) {
 	(*es.orig)[ix] = (*es.orig)[len(*es.orig)-1]
+	(*es.orig)[len(*es.orig)-1] = nil
 	*es.orig = (*es.orig)[:len(*es.orig)-1]
 }
 
-// Resize resizes the slice. This operation is equivalent with slice[to:from].
+// Resize the slice. This operation is equivalent with slice[from:to].
 func (es SummaryDataPointSlice) Resize(from, to int) {
 	*es.orig = (*es.orig)[from:to]
 }
@@ -1204,7 +1228,7 @@ func (es SummaryValueAtPercentileSlice) Len() int {
 	return len(*es.orig)
 }
 
-// Get returns the element associated with the given index.
+// Get the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
 // for i := 0; i < es.Len(); i++ {
@@ -1215,13 +1239,16 @@ func (es SummaryValueAtPercentileSlice) Get(ix int) SummaryValueAtPercentile {
 	return newSummaryValueAtPercentile((*es.orig)[ix])
 }
 
-// Remove removes the element from the given index from the slice.
+// Remove the element at the given index from the slice.
+// Elements after the removed one are shifted to fill the emptied space.
+// The length of the slice is reduced by one.
 func (es SummaryValueAtPercentileSlice) Remove(ix int) {
 	(*es.orig)[ix] = (*es.orig)[len(*es.orig)-1]
+	(*es.orig)[len(*es.orig)-1] = nil
 	*es.orig = (*es.orig)[:len(*es.orig)-1]
 }
 
-// Resize resizes the slice. This operation is equivalent with slice[to:from].
+// Resize the slice. This operation is equivalent with slice[from:to].
 func (es SummaryValueAtPercentileSlice) Resize(from, to int) {
 	*es.orig = (*es.orig)[from:to]
 }
