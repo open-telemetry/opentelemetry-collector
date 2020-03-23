@@ -65,7 +65,7 @@ var (
 		"Number of metric points successfully sent to destination.",
 		stats.UnitDimensionless)
 	mExporterFailedToSendMetricPoints = stats.Int64(
-		exporterPrefix+RefusedMetricPointsKey,
+		exporterPrefix+FailedToSendMetricPointsKey,
 		"Number of metric points in failed attempts to send to destination.",
 		stats.UnitDimensionless)
 )
