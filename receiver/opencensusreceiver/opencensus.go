@@ -48,8 +48,7 @@ type Receiver struct {
 	corsOrigins       []string
 	grpcServerOptions []grpc.ServerOption
 
-	traceReceiverOpts   []octrace.Option
-	metricsReceiverOpts []ocmetrics.Option
+	traceReceiverOpts []octrace.Option
 
 	traceReceiver   *octrace.Receiver
 	metricsReceiver *ocmetrics.Receiver
@@ -61,6 +60,8 @@ type Receiver struct {
 	startServerOnce          sync.Once
 	startTraceReceiverOnce   sync.Once
 	startMetricsReceiverOnce sync.Once
+
+	instanceName string
 }
 
 var _ receiver.MetricsReceiver = (*Receiver)(nil)
@@ -69,7 +70,14 @@ var _ receiver.TraceReceiver = (*Receiver)(nil)
 // New just creates the OpenCensus receiver services. It is the caller's
 // responsibility to invoke the respective Start*Reception methods as well
 // as the various Stop*Reception methods to end it.
-func New(transport string, addr string, tc consumer.TraceConsumer, mc consumer.MetricsConsumer, opts ...Option) (*Receiver, error) {
+func New(
+	instanceName string,
+	transport string,
+	addr string,
+	tc consumer.TraceConsumer,
+	mc consumer.MetricsConsumer,
+	opts ...Option,
+) (*Receiver, error) {
 	// TODO: (@odeke-em) use options to enable address binding changes.
 	ln, err := net.Listen(transport, addr)
 	if err != nil {
@@ -86,6 +94,7 @@ func New(transport string, addr string, tc consumer.TraceConsumer, mc consumer.M
 		opt.withReceiver(ocr)
 	}
 
+	ocr.instanceName = instanceName
 	ocr.traceConsumer = tc
 	ocr.metricsConsumer = mc
 
@@ -102,7 +111,8 @@ func (ocr *Receiver) registerTraceConsumer() error {
 	var err = oterr.ErrAlreadyStarted
 
 	ocr.startTraceReceiverOnce.Do(func() {
-		ocr.traceReceiver, err = octrace.New(ocr.traceConsumer, ocr.traceReceiverOpts...)
+		ocr.traceReceiver, err = octrace.New(
+			ocr.instanceName, ocr.traceConsumer, ocr.traceReceiverOpts...)
 		if err == nil {
 			srv := ocr.grpcServer()
 			agenttracepb.RegisterTraceServiceServer(srv, ocr.traceReceiver)
@@ -116,7 +126,8 @@ func (ocr *Receiver) registerMetricsConsumer() error {
 	var err = oterr.ErrAlreadyStarted
 
 	ocr.startMetricsReceiverOnce.Do(func() {
-		ocr.metricsReceiver, err = ocmetrics.New(ocr.metricsConsumer, ocr.metricsReceiverOpts...)
+		ocr.metricsReceiver, err = ocmetrics.New(
+			ocr.instanceName, ocr.metricsConsumer)
 		if err == nil {
 			srv := ocr.grpcServer()
 			agentmetricspb.RegisterMetricsServiceServer(srv, ocr.metricsReceiver)

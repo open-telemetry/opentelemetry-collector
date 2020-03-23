@@ -68,7 +68,7 @@ func (f *Factory) CreateTraceReceiver(
 ) (receiver.TraceReceiver, error) {
 
 	rCfg := cfg.(*Config)
-	return New(rCfg.Endpoint, nextConsumer)
+	return New(rCfg.Name(), rCfg.Endpoint, nextConsumer)
 }
 
 // CreateMetricsReceiver creates a metrics receiver based on provided config.

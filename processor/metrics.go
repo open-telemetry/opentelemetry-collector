@@ -21,6 +21,7 @@ import (
 	"go.opencensus.io/tag"
 
 	"github.com/open-telemetry/opentelemetry-collector/internal/collector/telemetry"
+	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 )
 
 // Keys and stats for telemetry.
@@ -42,9 +43,19 @@ var (
 		"counts the number of spans dropped due to being in bad batches",
 		stats.UnitDimensionless)
 
-	StatBatchesDroppedCount = stats.Int64(
-		"batches_dropped",
-		"counts the number of batches dropped",
+	StatTraceBatchesDroppedCount = stats.Int64(
+		"trace_batches_dropped",
+		"counts the number of trace batches dropped",
+		stats.UnitDimensionless)
+
+	StatDroppedMetricCount = stats.Int64(
+		"metrics_dropped",
+		"counts the number of metrics dropped",
+		stats.UnitDimensionless)
+
+	StatMetricBatchesDroppedCount = stats.Int64(
+		"metric_batches_dropped",
+		"counts the number of metric batches dropped",
 		stats.UnitDimensionless)
 )
 
@@ -83,7 +94,7 @@ func MetricViews(level telemetry.Level) []*view.View {
 		Aggregation: view.Count(),
 	}
 	droppedBatchesView := &view.View{
-		Measure:     StatBatchesDroppedCount,
+		Measure:     StatTraceBatchesDroppedCount,
 		Description: "The number of span batches dropped.",
 		TagKeys:     tagKeys,
 		Aggregation: view.Sum(),
@@ -117,7 +128,7 @@ func MetricViews(level telemetry.Level) []*view.View {
 		Aggregation: view.Sum(),
 	}
 
-	return []*view.View{
+	legacyViews := []*view.View{
 		receivedBatchesView,
 		droppedBatchesView,
 		receivedSpansView,
@@ -125,6 +136,8 @@ func MetricViews(level telemetry.Level) []*view.View {
 		droppedBadBatchesView,
 		droppedSpansFromBadBatchesView,
 	}
+
+	return obsreport.ProcessorMetricViews("", legacyViews)
 }
 
 // ServiceNameForNode gets the service name for a specified node. Used for metrics.

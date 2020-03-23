@@ -20,7 +20,6 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
 )
 
 // MetricsData is a struct that groups proto metrics with a unique node and a resource.
@@ -36,23 +35,4 @@ type TraceData struct {
 	Resource     *resourcepb.Resource
 	Spans        []*tracepb.Span
 	SourceFormat string
-}
-
-// OTLPTraceData is a struct that groups proto spans with a resource. This is the
-// newer version of TraceData, using OTLP-based representation.
-type OTLPTraceData struct {
-	resourceSpanList []*otlptrace.ResourceSpans
-}
-
-func NewOTLPTraceData(resourceSpanList []*otlptrace.ResourceSpans) OTLPTraceData {
-	return OTLPTraceData{resourceSpanList}
-}
-
-// SpanCount calculates the total number of spans.
-func (td OTLPTraceData) SpanCount() int {
-	spanCount := 0
-	for _, rsl := range td.resourceSpanList {
-		spanCount += len(rsl.Spans)
-	}
-	return spanCount
 }

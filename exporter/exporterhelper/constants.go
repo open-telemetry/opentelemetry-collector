@@ -26,10 +26,3 @@ var (
 	// errNilPushMetricsData is returned when a nil pushMetricsData is given.
 	errNilPushMetricsData = errors.New("nil pushMetricsData")
 )
-
-const (
-	numDroppedTimeSeriesAttribute  = "num_dropped_timeseries"
-	numReceivedTimeSeriesAttribute = "num_received_timeseries"
-	numDroppedSpansAttribute       = "num_dropped_spans"
-	numReceivedSpansAttribute      = "num_received_spans"
-)

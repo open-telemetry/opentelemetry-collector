@@ -39,7 +39,7 @@ func TestApplication_Start(t *testing.T) {
 	factories, err := defaults.Components()
 	require.NoError(t, err)
 
-	app, err := New(factories, ApplicationStartInfo{})
+	app, err := New(Parameters{Factories: factories, ApplicationStartInfo: ApplicationStartInfo{}})
 	require.NoError(t, err)
 	assert.Equal(t, app.rootCmd, app.Command())
 

@@ -31,14 +31,20 @@ type TraceExporter interface {
 	Exporter
 }
 
-// OTLPTraceExporter is an OTLPTraceConsumer that is also an Exporter.
-type OTLPTraceExporter interface {
-	consumer.OTLPTraceConsumer
+// TraceExporterV2 is an TraceConsumerV2 that is also an Exporter.
+type TraceExporterV2 interface {
+	consumer.TraceConsumerV2
 	Exporter
 }
 
 // MetricsExporter is a MetricsConsumer that is also an Exporter.
 type MetricsExporter interface {
 	consumer.MetricsConsumer
+	Exporter
+}
+
+// MetricsExporterV2 is a MetricsConsumerV2 that is also an Exporter.
+type MetricsExporterV2 interface {
+	consumer.MetricsConsumerV2
 	Exporter
 }

@@ -1,12 +1,13 @@
 module github.com/open-telemetry/opentelemetry-collector
 
-go 1.13
+go 1.14
 
 require (
 	contrib.go.opencensus.io/exporter/jaeger v0.1.1-0.20190430175949-e8b55949d948
 	contrib.go.opencensus.io/exporter/ocagent v0.6.0
 	contrib.go.opencensus.io/exporter/prometheus v0.1.0
 	contrib.go.opencensus.io/resource v0.1.2
+	github.com/VividCortex/gohistogram v1.0.0 // indirect
 	github.com/apache/thrift v0.0.0-20161221203622-b2a4d4ae21c7
 	github.com/bmizerany/perks v0.0.0-20141205001514-d9a9656a3a4b // indirect
 	github.com/census-instrumentation/opencensus-proto v0.2.1
@@ -15,17 +16,19 @@ require (
 	github.com/facette/natsort v0.0.0-20181210072756-2cd4dd1e2dcb
 	github.com/go-kit/kit v0.9.0
 	github.com/gogo/googleapis v1.3.0 // indirect
+	github.com/golang/groupcache v0.0.0-20190702054246-869f871628b6
 	github.com/golang/protobuf v1.3.2
 	github.com/golangci/golangci-lint v1.21.0
-	github.com/google/addlicense v0.0.0-20190510175307-22550fa7c1b0
+	github.com/google/addlicense v0.0.0-20200301095109-7c013a14f2e2
 	github.com/google/go-cmp v0.3.1
+	github.com/gorilla/handlers v1.4.2 // indirect
 	github.com/gorilla/mux v1.7.3
 	github.com/grpc-ecosystem/grpc-gateway v1.11.1
 	github.com/hashicorp/consul/api v1.2.0 // indirect
-	github.com/jaegertracing/jaeger v1.14.0
+	github.com/jaegertracing/jaeger v1.17.0
 	github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024
 	github.com/mitchellh/mapstructure v1.1.2
-	github.com/open-telemetry/opentelemetry-proto v0.0.0-20200211051721-ff5f19c6217d
+	github.com/open-telemetry/opentelemetry-proto v0.0.0-20200316171511-e76584d22418
 	github.com/openzipkin/zipkin-go v0.2.1
 	github.com/orijtech/prometheus-go-metrics-exporter v0.0.3-0.20190313163149-b321c5297f60
 	github.com/pavius/impi v0.0.0-20180302134524-c1cbdcb8df2b
@@ -49,7 +52,7 @@ require (
 	go.opencensus.io v0.22.1
 	go.uber.org/zap v1.10.0
 	golang.org/x/sys v0.0.0-20190922100055-0a153f010e69
-	google.golang.org/api v0.10.0
+	google.golang.org/api v0.10.0 // indirect
 	google.golang.org/grpc v1.23.0
 	gopkg.in/yaml.v2 v2.2.4
 	k8s.io/client-go v12.0.0+incompatible // indirect

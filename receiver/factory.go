@@ -76,25 +76,36 @@ type Factory interface {
 		consumer consumer.MetricsConsumer) (MetricsReceiver, error)
 }
 
-// OTLPFactory can create OTLPTraceReceiver and OTLPMetricsReceiver. This is the
-// new factory type that can create OTLP-based receivers.
-type OTLPFactory interface {
+// CreationParams is passed to Create* functions in FactoryV2.
+type CreationParams struct {
+	// Logger that the factory can use during creation and can pass to the created
+	// component to be used later as well.
+	Logger *zap.Logger
+}
+
+// FactoryV2 can create TraceReceiverV2 and MetricsReceiverV2. This is the
+// new factory type that can create new style receivers.
+type FactoryV2 interface {
 	BaseFactory
 
-	// CreateOTLPTraceReceiver creates a trace receiver based on this config.
+	// CreateTraceReceiver creates a trace receiver based on this config.
 	// If the receiver type does not support tracing or if the config is not valid
 	// error will be returned instead.
-	CreateOTLPTraceReceiver(ctx context.Context, logger *zap.Logger, cfg configmodels.Receiver,
-		nextConsumer consumer.OTLPTraceConsumer) (TraceReceiver, error)
+	CreateTraceReceiver(ctx context.Context, params CreationParams, cfg configmodels.Receiver,
+		nextConsumer consumer.TraceConsumerV2) (TraceReceiver, error)
 
-	// TODO: add CreateOTLPMetricsReceiver.
+	// CreateMetricsReceiver creates a metrics receiver based on this config.
+	// If the receiver type does not support metrics or if the config is not valid
+	// error will be returned instead.
+	CreateMetricsReceiver(ctx context.Context, params CreationParams, cfg configmodels.Receiver,
+		nextConsumer consumer.MetricsConsumerV2) (MetricsReceiver, error)
 }
 
 // Build takes a list of receiver factories and returns a map of type map[string]Factory
 // with factory type as keys. It returns a non-nil error when more than one factories
 // have the same type.
-func Build(factories ...Factory) (map[string]Factory, error) {
-	fMap := map[string]Factory{}
+func Build(factories ...BaseFactory) (map[string]BaseFactory, error) {
+	fMap := map[string]BaseFactory{}
 	for _, f := range factories {
 		if _, ok := fMap[f.Type()]; ok {
 			return fMap, fmt.Errorf("duplicate receiver factory %q", f.Type())

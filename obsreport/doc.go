@@ -80,4 +80,33 @@
 //		* Data "filtered out" should have its own metrics and not be confused
 //		  with dropped data.
 //
+// Naming Convention for New Metrics
+//
+// Common Metrics:
+// Metrics shared by different components should follow the convention below:
+//
+// `<component>/<metric_name>`
+//
+// As a label the metric should have at least `{<component>="<name>"}` where
+// `<name>` is the name used in the configuration for the instance of the
+// component, eg.:
+//
+// `receiver/accepted_spans{receiver="opencensus",...}`
+// `exporter/sent_spans{exporter="jaeger/prod",...}`
+//
+// Component Specific Metrics:
+// These metrics are implemented by specific components, eg.: batch processor.
+// The general pattern is the same as the common metrics but with the addition
+// of the component type (as it appears in the configuration) before the actual
+// metric:
+//
+// `<component>/<type>/<metric_name>`
+//
+// Even metrics exclusive to a single type should follow the conventions above
+// and also include the type (as written in the configuration) as part of the
+// metric name since there could be multiple instances of the same type in
+// different pipelines, eg.:
+//
+// `processor/batch/batch_size_trigger_send{processor="batch/dev",...}`
+//
 package obsreport

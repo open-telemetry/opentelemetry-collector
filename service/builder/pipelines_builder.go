@@ -22,6 +22,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
+	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
 )
 
@@ -60,14 +61,19 @@ func (bps BuiltPipelines) StartProcessors(logger *zap.Logger, host component.Hos
 }
 
 func (bps BuiltPipelines) ShutdownProcessors(logger *zap.Logger) error {
+	var errs []error
 	for cfg, bp := range bps {
 		logger.Info("Pipeline is shutting down...", zap.String("pipeline", cfg.Name))
 		for _, p := range bp.processors {
 			if err := p.Shutdown(); err != nil {
-				return err
+				errs = append(errs, err)
 			}
 		}
 		logger.Info("Pipeline is shutdown.", zap.String("pipeline", cfg.Name))
+	}
+
+	if len(errs) != 0 {
+		return oterr.CombineErrors(errs)
 	}
 	return nil
 }

@@ -17,7 +17,9 @@ import (
 	"context"
 	"testing"
 
+	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -28,13 +30,43 @@ import (
 )
 
 func TestLoggingTraceExporterNoErrors(t *testing.T) {
-	lte, err := NewTraceExporter(&configmodels.ExporterSettings{}, zap.NewNop())
+	lte, err := NewTraceExporter(&configmodels.ExporterSettings{}, "debug", zap.NewNop())
 	require.NotNil(t, lte)
 	assert.NoError(t, err)
 
 	td := consumerdata.TraceData{
-		Spans: make([]*tracepb.Span, 7),
+		Node: &commonpb.Node{
+			ServiceInfo: &commonpb.ServiceInfo{
+				Name: "some-service",
+			},
+		},
+		Resource: &resourcepb.Resource{
+			Type:   "ServiceA",
+			Labels: map[string]string{"attr1": "value1"},
+		},
+		Spans: []*tracepb.Span{
+			{
+				TraceId: []byte("123"),
+				SpanId:  []byte("456"),
+				Name:    &tracepb.TruncatableString{Value: "Checkout"},
+				Kind:    tracepb.Span_CLIENT,
+			},
+			{
+				TraceId: []byte("123"),
+				SpanId:  []byte("457"),
+				Name:    &tracepb.TruncatableString{Value: "Frontend"},
+				Kind:    tracepb.Span_SERVER,
+				Attributes: &tracepb.Span_Attributes{
+					AttributeMap: map[string]*tracepb.AttributeValue{
+						"foo": {
+							Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "bar"}},
+						},
+					},
+				},
+			},
+		},
 	}
+
 	assert.NoError(t, lte.ConsumeTraceData(context.Background(), td))
 	assert.NoError(t, lte.Shutdown())
 }

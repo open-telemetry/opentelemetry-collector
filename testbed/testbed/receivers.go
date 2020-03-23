@@ -77,7 +77,7 @@ func NewOCDataReceiver(port int) *OCDataReceiver {
 func (or *OCDataReceiver) Start(tc *MockTraceConsumer, mc *MockMetricConsumer) error {
 	addr := fmt.Sprintf("localhost:%d", or.Port)
 	var err error
-	or.receiver, err = opencensusreceiver.New("tcp", addr, tc, mc)
+	or.receiver, err = opencensusreceiver.New("opencensus","tcp", addr, tc, mc)
 	if err != nil {
 		return err
 	}
@@ -117,7 +117,7 @@ func (jr *JaegerDataReceiver) Start(tc *MockTraceConsumer, mc *MockMetricConsume
 		CollectorHTTPPort: jr.Port,
 	}
 	var err error
-	jr.receiver, err = jaegerreceiver.New(context.Background(), &jaegerCfg, tc, zap.NewNop())
+	jr.receiver, err = jaegerreceiver.New("jaeger", &jaegerCfg, tc, zap.NewNop())
 	if err != nil {
 		return err
 	}

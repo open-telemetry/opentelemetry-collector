@@ -10,7 +10,7 @@ exporters:
   opencensus:
     endpoint: "localhost:56565"
   logging:
-    loglevel: debug
+    loglevel: info
 
 processors:
   queued_retry:

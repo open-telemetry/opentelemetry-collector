@@ -17,35 +17,11 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/trace"
 )
 
-func TestDefaultOptions(t *testing.T) {
-	checkRecordMetrics(t, newExporterOptions(), false)
-	checkRecordTrace(t, newExporterOptions(), false)
-}
-
-func TestWithRecordMetrics(t *testing.T) {
-	checkRecordMetrics(t, newExporterOptions(WithMetrics(true)), true)
-	checkRecordMetrics(t, newExporterOptions(WithMetrics(false)), false)
-}
-
-func TestWithSpanName(t *testing.T) {
-	checkRecordTrace(t, newExporterOptions(WithTracing(true)), true)
-	checkRecordTrace(t, newExporterOptions(WithTracing(false)), false)
-}
-
 func TestErrorToStatus(t *testing.T) {
 	require.Equal(t, okStatus, errToStatus(nil))
 	require.Equal(t, trace.Status{Code: trace.StatusCodeUnknown, Message: "my_error"}, errToStatus(errors.New("my_error")))
-}
-
-func checkRecordMetrics(t *testing.T, opts ExporterOptions, recordMetrics bool) {
-	assert.Equalf(t, opts.recordMetrics, recordMetrics, "Wrong recordMetrics Want: %t Got: %t", opts.recordMetrics, recordMetrics)
-}
-
-func checkRecordTrace(t *testing.T, opts ExporterOptions, recordTrace bool) {
-	assert.Equalf(t, opts.recordTrace, recordTrace, "Wrong spanName Want: %s Got: %s", opts.recordTrace, recordTrace)
 }

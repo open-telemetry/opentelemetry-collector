@@ -32,24 +32,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 )
 
-// OTLP attributes to map certain OpenCensus proto fields. These fields don't have
-// corresponding fields in OTLP, nor are defined in OTLP semantic conventions.
-// TODO: decide if any of these must be in OTLP semantic conventions.
-const (
-	ocAttributeProcessStartTime  = "opencensus.starttime"
-	ocAttributeProcessID         = "opencensus.pid"
-	ocAttributeExporterVersion   = "opencensus.exporterversion"
-	ocAttributeResourceType      = "opencensus.resourcetype"
-	ocTimeEventMessageEventType  = "opencensus.timeevent.messageevent.type"
-	ocTimeEventMessageEventID    = "opencensus.timeevent.messageevent.id"
-	ocTimeEventMessageEventUSize = "opencensus.timeevent.messageevent.usize"
-	ocTimeEventMessageEventCSize = "opencensus.timeevent.messageevent.csize"
-)
-
-func ocToOtlp(td consumerdata.TraceData) consumerdata.OTLPTraceData {
+func ocToOtlp(td consumerdata.TraceData) []*otlptrace.ResourceSpans {
 
 	if td.Node == nil && td.Resource == nil && len(td.Spans) == 0 {
-		return consumerdata.OTLPTraceData{}
+		return nil
 	}
 
 	resource := ocNodeResourceToOtlp(td.Node, td.Resource)
@@ -60,7 +46,10 @@ func ocToOtlp(td consumerdata.TraceData) consumerdata.OTLPTraceData {
 	resourceSpanList := []*otlptrace.ResourceSpans{resourceSpans}
 
 	if len(td.Spans) != 0 {
-		resourceSpans.Spans = make([]*otlptrace.Span, 0, len(td.Spans))
+		ils := &otlptrace.InstrumentationLibrarySpans{}
+		resourceSpans.InstrumentationLibrarySpans = []*otlptrace.InstrumentationLibrarySpans{ils}
+
+		ils.Spans = make([]*otlptrace.Span, 0, len(td.Spans))
 
 		for _, ocSpan := range td.Spans {
 			if ocSpan == nil {
@@ -74,22 +63,26 @@ func ocToOtlp(td consumerdata.TraceData) consumerdata.OTLPTraceData {
 				// Add a separate ResourceSpans item just for this span since it
 				// has a different Resource.
 				separateRS := &otlptrace.ResourceSpans{
-					Resource: ocNodeResourceToOtlp(nil, ocSpan.Resource),
-					Spans:    []*otlptrace.Span{otlpSpan},
+					Resource: ocNodeResourceToOtlp(td.Node, ocSpan.Resource),
+					InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
+						{
+							Spans: []*otlptrace.Span{otlpSpan},
+						},
+					},
 				}
 				resourceSpanList = append(resourceSpanList, separateRS)
 			} else {
 				// Otherwise add the span to the first ResourceSpans item.
-				resourceSpans.Spans = append(resourceSpans.Spans, otlpSpan)
+				ils.Spans = append(ils.Spans, otlpSpan)
 			}
 		}
 	}
 
-	return consumerdata.NewOTLPTraceData(resourceSpanList)
+	return resourceSpanList
 }
 
 func timestampToUnixnano(ts *timestamp.Timestamp) uint64 {
-	return uint64(internal.TimestampToTime(ts).UnixNano())
+	return uint64(internal.TimestampToUnixnano(ts))
 }
 
 func ocSpanToOtlp(ocSpan *octrace.Span) *otlptrace.Span {
@@ -101,11 +94,12 @@ func ocSpanToOtlp(ocSpan *octrace.Span) *otlptrace.Span {
 	if ocSpan.ChildSpanCount != nil {
 		childSpanCount = int32(ocSpan.ChildSpanCount.Value)
 	}
+	_ = childSpanCount // TODO(nilebox): Handle once OTLP supports it
 
 	otlpSpan := &otlptrace.Span{
 		TraceId:                ocSpan.TraceId,
 		SpanId:                 ocSpan.SpanId,
-		Tracestate:             ocTraceStateToOtlp(ocSpan.Tracestate),
+		TraceState:             ocTraceStateToOtlp(ocSpan.Tracestate),
 		ParentSpanId:           ocSpan.ParentSpanId,
 		Name:                   truncableStringToStr(ocSpan.Name),
 		Kind:                   ocSpanKindToOtlp(ocSpan.Kind, ocSpan.Attributes),
@@ -118,7 +112,6 @@ func ocSpanToOtlp(ocSpan *octrace.Span) *otlptrace.Span {
 		Links:                  links,
 		DroppedLinksCount:      droppedLinkCount,
 		Status:                 ocStatusToOtlp(ocSpan.Status),
-		LocalChildSpanCount:    childSpanCount,
 	}
 
 	return otlpSpan
@@ -288,7 +281,7 @@ func ocLinksToOtlp(ocLinks *octrace.Span_Links) (otlpLinks []*otlptrace.Span_Lin
 		otlpLink := &otlptrace.Span_Link{
 			TraceId:                ocLink.TraceId,
 			SpanId:                 ocLink.SpanId,
-			Tracestate:             ocTraceStateToOtlp(ocLink.Tracestate),
+			TraceState:             ocTraceStateToOtlp(ocLink.Tracestate),
 			Attributes:             attrs,
 			DroppedAttributesCount: droppedCount,
 		}
@@ -305,22 +298,22 @@ func ocMessageEventToOtlpAttrs(msgEvent *octrace.Span_TimeEvent_MessageEvent) []
 
 	return []*otlpcommon.AttributeKeyValue{
 		{
-			Key:         ocTimeEventMessageEventType,
+			Key:         conventions.OCTimeEventMessageEventType,
 			StringValue: msgEvent.Type.String(),
 			Type:        otlpcommon.AttributeKeyValue_STRING,
 		},
 		{
-			Key:      ocTimeEventMessageEventID,
+			Key:      conventions.OCTimeEventMessageEventID,
 			IntValue: int64(msgEvent.Id),
 			Type:     otlpcommon.AttributeKeyValue_INT,
 		},
 		{
-			Key:      ocTimeEventMessageEventUSize,
+			Key:      conventions.OCTimeEventMessageEventUSize,
 			IntValue: int64(msgEvent.UncompressedSize),
 			Type:     otlpcommon.AttributeKeyValue_INT,
 		},
 		{
-			Key:      ocTimeEventMessageEventCSize,
+			Key:      conventions.OCTimeEventMessageEventCSize,
 			IntValue: int64(msgEvent.CompressedSize),
 			Type:     otlpcommon.AttributeKeyValue_INT,
 		},
@@ -374,13 +367,13 @@ func ocNodeResourceToOtlp(node *occommon.Node, resource *ocresource.Resource) *o
 		}
 		if node.Identifier != nil {
 			if node.Identifier.StartTimestamp != nil {
-				attrs[ocAttributeProcessStartTime] = ptypes.TimestampString(node.Identifier.StartTimestamp)
+				attrs[conventions.OCAttributeProcessStartTime] = ptypes.TimestampString(node.Identifier.StartTimestamp)
 			}
 			if node.Identifier.HostName != "" {
 				attrs[conventions.AttributeHostHostname] = node.Identifier.HostName
 			}
 			if node.Identifier.Pid != 0 {
-				attrs[ocAttributeProcessID] = strconv.Itoa(int(node.Identifier.Pid))
+				attrs[conventions.OCAttributeProcessID] = strconv.Itoa(int(node.Identifier.Pid))
 			}
 		}
 		if node.LibraryInfo != nil {
@@ -388,7 +381,7 @@ func ocNodeResourceToOtlp(node *occommon.Node, resource *ocresource.Resource) *o
 				attrs[conventions.AttributeLibraryVersion] = node.LibraryInfo.CoreLibraryVersion
 			}
 			if node.LibraryInfo.ExporterVersion != "" {
-				attrs[ocAttributeExporterVersion] = node.LibraryInfo.ExporterVersion
+				attrs[conventions.OCAttributeExporterVersion] = node.LibraryInfo.ExporterVersion
 			}
 			if node.LibraryInfo.Language != occommon.LibraryInfo_LANGUAGE_UNSPECIFIED {
 				attrs[conventions.AttributeLibraryLanguage] = node.LibraryInfo.Language.String()
@@ -403,7 +396,7 @@ func ocNodeResourceToOtlp(node *occommon.Node, resource *ocresource.Resource) *o
 		}
 		// Add special fields.
 		if resource.Type != "" {
-			attrs[ocAttributeResourceType] = resource.Type
+			attrs[conventions.OCAttributeResourceType] = resource.Type
 		}
 	}
 

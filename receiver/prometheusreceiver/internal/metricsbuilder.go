@@ -124,7 +124,8 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 	return b.currentMf.Add(metricName, ls, t, v)
 }
 
-// Build is to build an opencensus data.MetricsData based on all added data complexValue
+// Build an opencensus data.MetricsData based on all added data complexValue.
+// The only error returned by this function is errNoDataToBuild.
 func (b *metricBuilder) Build() ([]*metricspb.Metric, int, int, error) {
 	if !b.hasData {
 		if b.hasInternalMetric {

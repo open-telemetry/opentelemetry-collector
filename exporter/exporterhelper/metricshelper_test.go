@@ -28,6 +28,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/exporter"
 	"github.com/open-telemetry/opentelemetry-collector/observability"
 	"github.com/open-telemetry/opentelemetry-collector/observability/observabilitytest"
+	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 )
 
 const (
@@ -77,7 +78,7 @@ func TestMetricsExporter_Default_ReturnError(t *testing.T) {
 }
 
 func TestMetricsExporter_WithRecordMetrics(t *testing.T) {
-	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(0, nil), WithMetrics(true))
+	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(0, nil))
 	require.Nil(t, err)
 	require.NotNil(t, me)
 
@@ -85,7 +86,7 @@ func TestMetricsExporter_WithRecordMetrics(t *testing.T) {
 }
 
 func TestMetricsExporter_WithRecordMetrics_NonZeroDropped(t *testing.T) {
-	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(1, nil), WithMetrics(true))
+	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(1, nil))
 	require.Nil(t, err)
 	require.NotNil(t, me)
 
@@ -94,7 +95,7 @@ func TestMetricsExporter_WithRecordMetrics_NonZeroDropped(t *testing.T) {
 
 func TestMetricsExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
-	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(0, want), WithMetrics(true))
+	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(0, want))
 	require.Nil(t, err)
 	require.NotNil(t, me)
 
@@ -102,14 +103,14 @@ func TestMetricsExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 }
 
 func TestMetricsExporter_WithSpan(t *testing.T) {
-	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(0, nil), WithTracing(true))
+	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(0, nil))
 	require.Nil(t, err)
 	require.NotNil(t, me)
-	checkWrapSpanForMetricsExporter(t, me, nil, 0)
+	checkWrapSpanForMetricsExporter(t, me, nil, 1)
 }
 
 func TestMetricsExporter_WithSpan_NonZeroDropped(t *testing.T) {
-	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(1, nil), WithTracing(true))
+	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(1, nil))
 	require.Nil(t, err)
 	require.NotNil(t, me)
 	checkWrapSpanForMetricsExporter(t, me, nil, 1)
@@ -117,10 +118,10 @@ func TestMetricsExporter_WithSpan_NonZeroDropped(t *testing.T) {
 
 func TestMetricsExporter_WithSpan_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
-	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(0, want), WithTracing(true))
+	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(0, want))
 	require.Nil(t, err)
 	require.NotNil(t, me)
-	checkWrapSpanForMetricsExporter(t, me, want, 0)
+	checkWrapSpanForMetricsExporter(t, me, want, 1)
 }
 
 func TestMetricsExporter_WithShutdown(t *testing.T) {
@@ -180,7 +181,12 @@ func checkRecordedMetricsForMetricsExporter(t *testing.T, me exporter.MetricsExp
 func generateMetricsTraffic(t *testing.T, me exporter.MetricsExporter, numRequests int, wantError error) {
 	md := consumerdata.MetricsData{Metrics: []*metricspb.Metric{
 		{
-			Timeseries: make([]*metricspb.TimeSeries, 1),
+			// Create a empty timeseries with one point.
+			Timeseries: []*metricspb.TimeSeries{
+				{
+					Points: []*metricspb.Point{{}},
+				},
+			},
 		},
 	}}
 	ctx, span := trace.StartSpan(context.Background(), fakeMetricsParentSpanName, trace.WithSampler(trace.AlwaysSample()))
@@ -190,7 +196,7 @@ func generateMetricsTraffic(t *testing.T, me exporter.MetricsExporter, numReques
 	}
 }
 
-func checkWrapSpanForMetricsExporter(t *testing.T, me exporter.MetricsExporter, wantError error, droppedSpans int) {
+func checkWrapSpanForMetricsExporter(t *testing.T, me exporter.MetricsExporter, wantError error, numMetricPoints int64) {
 	ocSpansSaver := new(testOCTraceExporter)
 	trace.RegisterExporter(ocSpansSaver)
 	defer trace.UnregisterExporter(ocSpansSaver)
@@ -213,7 +219,14 @@ func checkWrapSpanForMetricsExporter(t *testing.T, me exporter.MetricsExporter, 
 	for _, sd := range gotSpanData[:numRequests] {
 		require.Equalf(t, parentSpan.SpanContext.SpanID, sd.ParentSpanID, "Exporter span not a child\nSpanData %v", sd)
 		require.Equalf(t, errToStatus(wantError), sd.Status, "SpanData %v", sd)
-		require.Equalf(t, int64(1), sd.Attributes[numReceivedTimeSeriesAttribute], "SpanData %v", sd)
-		require.Equalf(t, int64(droppedSpans), sd.Attributes[numDroppedTimeSeriesAttribute], "SpanData %v", sd)
+
+		sentMetricPoints := numMetricPoints
+		var failedToSendMetricPoints int64
+		if wantError != nil {
+			sentMetricPoints = 0
+			failedToSendMetricPoints = numMetricPoints
+		}
+		require.Equalf(t, sentMetricPoints, sd.Attributes[obsreport.SentMetricPointsKey], "SpanData %v", sd)
+		require.Equalf(t, failedToSendMetricPoints, sd.Attributes[obsreport.FailedToSendMetricPointsKey], "SpanData %v", sd)
 	}
 }

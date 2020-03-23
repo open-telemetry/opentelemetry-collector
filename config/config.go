@@ -107,7 +107,7 @@ const typeAndNameSeparator = "/"
 // can be handled by the Config.
 type Factories struct {
 	// Receivers maps receiver type names in the config to the respective factory.
-	Receivers map[string]receiver.Factory
+	Receivers map[string]receiver.BaseFactory
 
 	// Processors maps processor type names in the config to the respective factory.
 	Processors map[string]processor.Factory
@@ -123,7 +123,6 @@ type Factories struct {
 func Load(
 	v *viper.Viper,
 	factories Factories,
-	logger *zap.Logger,
 ) (*configmodels.Config, error) {
 
 	var config configmodels.Config
@@ -181,19 +180,14 @@ func Load(
 	}
 	config.Service = service
 
-	// Config is loaded. Now validate it.
-
-	if err := validateConfig(&config, logger); err != nil {
-		return nil, err
-	}
-
 	return &config, nil
 }
 
-// decodeTypeAndName decodes a key in type[/name] format into type and fullName.
+// DecodeTypeAndName decodes a key in type[/name] format into type and fullName.
 // fullName is the key normalized such that type and name components have spaces trimmed.
-// The "type" part must be present, the forward slash and "name" are optional.
-func decodeTypeAndName(key string) (typeStr, fullName string, err error) {
+// The "type" part must be present, the forward slash and "name" are optional. typeStr
+// will be non-empty if err is nil.
+func DecodeTypeAndName(key string) (typeStr, fullName string, err error) {
 	items := strings.SplitN(key, typeAndNameSeparator, 2)
 
 	if len(items) >= 1 {
@@ -241,8 +235,8 @@ func loadExtensions(v *viper.Viper, factories map[string]extension.Factory) (con
 	// Iterate over extensions and create a config for each.
 	for key := range keyMap {
 		// Decode the key into type and fullName components.
-		typeStr, fullName, err := decodeTypeAndName(key)
-		if err != nil || typeStr == "" {
+		typeStr, fullName, err := DecodeTypeAndName(key)
+		if err != nil {
 			return nil, &configError{
 				code: errInvalidTypeAndNameKey,
 				msg:  fmt.Sprintf("invalid key %q: %s", key, err.Error()),
@@ -314,7 +308,55 @@ func loadService(v *viper.Viper) (configmodels.Service, error) {
 	return service, nil
 }
 
-func loadReceivers(v *viper.Viper, factories map[string]receiver.Factory) (configmodels.Receivers, error) {
+// LoadReceiver loads a receiver config from v under the subkey receiverKey using the provided factories.
+func LoadReceiver(receiverKey string, v *viper.Viper, factories map[string]receiver.BaseFactory) (configmodels.Receiver, error) {
+	// Decode the key into type and fullName components.
+	typeStr, fullName, err := DecodeTypeAndName(receiverKey)
+	if err != nil {
+		return nil, &configError{
+			code: errInvalidTypeAndNameKey,
+			msg:  fmt.Sprintf("invalid key %q: %s", receiverKey, err.Error()),
+		}
+	}
+
+	// Find receiver factory based on "type" that we read from config source
+	factory := factories[typeStr]
+	if factory == nil {
+		return nil, &configError{
+			code: errUnknownReceiverType,
+			msg:  fmt.Sprintf("unknown receiver type %q", typeStr),
+		}
+	}
+
+	// Create the default config for this receiver.
+	receiverCfg := factory.CreateDefaultConfig()
+	receiverCfg.SetType(typeStr)
+	receiverCfg.SetName(fullName)
+
+	// Unmarshal only the subconfig for this exporter.
+	sv := getConfigSection(v, receiverKey)
+
+	// Now that the default config struct is created we can Unmarshal into it
+	// and it will apply user-defined config on top of the default.
+	customUnmarshaler := factory.CustomUnmarshaler()
+	if customUnmarshaler != nil {
+		// This configuration requires a custom unmarshaler, use it.
+		err = customUnmarshaler(v, receiverKey, sv, receiverCfg)
+	} else {
+		err = sv.UnmarshalExact(receiverCfg)
+	}
+
+	if err != nil {
+		return nil, &configError{
+			code: errUnmarshalErrorOnReceiver,
+			msg:  fmt.Sprintf("error reading settings for receiver type %q: %v", typeStr, err),
+		}
+	}
+
+	return receiverCfg, nil
+}
+
+func loadReceivers(v *viper.Viper, factories map[string]receiver.BaseFactory) (configmodels.Receivers, error) {
 	// Get the list of all "receivers" sub vipers from config source.
 	subViper := v.Sub(receiversKeyName)
 
@@ -335,56 +377,20 @@ func loadReceivers(v *viper.Viper, factories map[string]receiver.Factory) (confi
 
 	// Iterate over input map and create a config for each.
 	for key := range keyMap {
-		// Decode the key into type and fullName components.
-		typeStr, fullName, err := decodeTypeAndName(key)
-		if err != nil || typeStr == "" {
-			return nil, &configError{
-				code: errInvalidTypeAndNameKey,
-				msg:  fmt.Sprintf("invalid key %q: %s", key, err.Error()),
-			}
-		}
-
-		// Find receiver factory based on "type" that we read from config source
-		factory := factories[typeStr]
-		if factory == nil {
-			return nil, &configError{
-				code: errUnknownReceiverType,
-				msg:  fmt.Sprintf("unknown receiver type %q", typeStr),
-			}
-		}
-
-		// Create the default config for this receiver.
-		receiverCfg := factory.CreateDefaultConfig()
-		receiverCfg.SetType(typeStr)
-		receiverCfg.SetName(fullName)
-
-		// Unmarshal only the subconfig for this exporter.
-		sv := getConfigSection(subViper, key)
-
-		// Now that the default config struct is created we can Unmarshal into it
-		// and it will apply user-defined config on top of the default.
-		customUnmarshaler := factory.CustomUnmarshaler()
-		if customUnmarshaler != nil {
-			// This configuration requires a custom unmarshaler, use it.
-			err = customUnmarshaler(subViper, key, sv, receiverCfg)
-		} else {
-			err = sv.UnmarshalExact(receiverCfg)
-		}
+		receiverCfg, err := LoadReceiver(key, subViper, factories)
 
 		if err != nil {
-			return nil, &configError{
-				code: errUnmarshalErrorOnReceiver,
-				msg:  fmt.Sprintf("error reading settings for receiver type %q: %v", typeStr, err),
-			}
+			// LoadReceiver already wraps the error.
+			return nil, err
 		}
 
-		if receivers[fullName] != nil {
+		if receivers[receiverCfg.Name()] != nil {
 			return nil, &configError{
 				code: errDuplicateReceiverName,
-				msg:  fmt.Sprintf("duplicate receiver name %q", fullName),
+				msg:  fmt.Sprintf("duplicate receiver name %q", receiverCfg.Name()),
 			}
 		}
-		receivers[fullName] = receiverCfg
+		receivers[receiverCfg.Name()] = receiverCfg
 	}
 
 	return receivers, nil
@@ -411,8 +417,8 @@ func loadExporters(v *viper.Viper, factories map[string]exporter.Factory) (confi
 	// Iterate over exporters and create a config for each.
 	for key := range keyMap {
 		// Decode the key into type and fullName components.
-		typeStr, fullName, err := decodeTypeAndName(key)
-		if err != nil || typeStr == "" {
+		typeStr, fullName, err := DecodeTypeAndName(key)
+		if err != nil {
 			return nil, &configError{
 				code: errInvalidTypeAndNameKey,
 				msg:  fmt.Sprintf("invalid key %q: %s", key, err.Error()),
@@ -471,8 +477,8 @@ func loadProcessors(v *viper.Viper, factories map[string]processor.Factory) (con
 	// Iterate over processors and create a config for each.
 	for key := range keyMap {
 		// Decode the key into type and fullName components.
-		typeStr, fullName, err := decodeTypeAndName(key)
-		if err != nil || typeStr == "" {
+		typeStr, fullName, err := DecodeTypeAndName(key)
+		if err != nil {
 			return nil, &configError{
 				code: errInvalidTypeAndNameKey,
 				msg:  fmt.Sprintf("invalid key %q: %s", key, err.Error()),
@@ -531,8 +537,8 @@ func loadPipelines(v *viper.Viper) (configmodels.Pipelines, error) {
 	// Iterate over input map and create a config for each.
 	for key := range keyMap {
 		// Decode the key into type and name components.
-		typeStr, name, err := decodeTypeAndName(key)
-		if err != nil || typeStr == "" {
+		typeStr, name, err := DecodeTypeAndName(key)
+		if err != nil {
 			return nil, &configError{
 				code: errInvalidTypeAndNameKey,
 				msg:  fmt.Sprintf("invalid key %q: %s", key, err.Error()),
@@ -579,7 +585,8 @@ func loadPipelines(v *viper.Viper) (configmodels.Pipelines, error) {
 	return pipelines, nil
 }
 
-func validateConfig(cfg *configmodels.Config, logger *zap.Logger) error {
+// ValidateConfig validates config.
+func ValidateConfig(cfg *configmodels.Config, logger *zap.Logger) error {
 	// This function performs basic validation of configuration. There may be more subtle
 	// invalid cases that we currently don't check for but which we may want to add in
 	// the future (e.g. disallowing receiving and exporting on the same endpoint).

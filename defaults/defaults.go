@@ -42,6 +42,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/jaegerreceiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/opencensusreceiver"
+	"github.com/open-telemetry/opentelemetry-collector/receiver/otlpreceiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/vmmetricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/zipkinreceiver"
@@ -70,6 +71,7 @@ func Components() (
 		&zipkinreceiver.Factory{},
 		&prometheusreceiver.Factory{},
 		&opencensusreceiver.Factory{},
+		&otlpreceiver.Factory{},
 		&vmmetricsreceiver.Factory{},
 	)
 	if err != nil {
