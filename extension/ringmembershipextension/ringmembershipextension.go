@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"net"
 	"net/http"
+	_ "net/http/pprof"
 	"sync"
 	"time"
 
