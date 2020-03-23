@@ -26,12 +26,14 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/internal"
+	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 )
 
 func TestOCToOTLP(t *testing.T) {
-	unixnanos1 := uint64(12578940000000012345)
-	unixnanos2 := uint64(12578940000000054321)
+	unixnanos1 := data.TimestampUnixNano(uint64(12578940000000012345))
+	unixnanos2 := data.TimestampUnixNano(uint64(12578940000000054321))
 
 	int64OCMetric := &ocmetrics.Metric{
 		MetricDescriptor: &ocmetrics.MetricDescriptor{
@@ -46,7 +48,7 @@ func TestOCToOTLP(t *testing.T) {
 		},
 		Timeseries: []*ocmetrics.TimeSeries{
 			{
-				StartTimestamp: unixnanoToTimestamp(unixnanos1),
+				StartTimestamp: internal.UnixNanoToTimestamp(unixnanos1),
 				LabelValues: []*ocmetrics.LabelValue{
 					{
 						// key1
@@ -60,7 +62,7 @@ func TestOCToOTLP(t *testing.T) {
 				},
 				Points: []*ocmetrics.Point{
 					{
-						Timestamp: unixnanoToTimestamp(unixnanos2),
+						Timestamp: internal.UnixNanoToTimestamp(unixnanos2),
 						Value: &ocmetrics.Point_Int64Value{
 							Int64Value: 123,
 						},
@@ -68,7 +70,7 @@ func TestOCToOTLP(t *testing.T) {
 				},
 			},
 			{
-				StartTimestamp: unixnanoToTimestamp(unixnanos1),
+				StartTimestamp: internal.UnixNanoToTimestamp(unixnanos1),
 				LabelValues: []*ocmetrics.LabelValue{
 					{
 						// key1
@@ -82,7 +84,7 @@ func TestOCToOTLP(t *testing.T) {
 				},
 				Points: []*ocmetrics.Point{
 					{
-						Timestamp: unixnanoToTimestamp(unixnanos2),
+						Timestamp: internal.UnixNanoToTimestamp(unixnanos2),
 						Value: &ocmetrics.Point_Int64Value{
 							Int64Value: 456,
 						},
@@ -106,7 +108,7 @@ func TestOCToOTLP(t *testing.T) {
 		},
 		Timeseries: []*ocmetrics.TimeSeries{
 			{
-				StartTimestamp: unixnanoToTimestamp(unixnanos1),
+				StartTimestamp: internal.UnixNanoToTimestamp(unixnanos1),
 				LabelValues: []*ocmetrics.LabelValue{
 					{
 						// key1
@@ -125,7 +127,7 @@ func TestOCToOTLP(t *testing.T) {
 				},
 				Points: []*ocmetrics.Point{
 					{
-						Timestamp: unixnanoToTimestamp(unixnanos2),
+						Timestamp: internal.UnixNanoToTimestamp(unixnanos2),
 						Value: &ocmetrics.Point_DoubleValue{
 							DoubleValue: 1.23,
 						},
@@ -133,7 +135,7 @@ func TestOCToOTLP(t *testing.T) {
 				},
 			},
 			{
-				StartTimestamp: unixnanoToTimestamp(unixnanos1),
+				StartTimestamp: internal.UnixNanoToTimestamp(unixnanos1),
 				LabelValues: []*ocmetrics.LabelValue{
 					{
 						// key1
@@ -152,7 +154,7 @@ func TestOCToOTLP(t *testing.T) {
 				},
 				Points: []*ocmetrics.Point{
 					{
-						Timestamp: unixnanoToTimestamp(unixnanos2),
+						Timestamp: internal.UnixNanoToTimestamp(unixnanos2),
 						Value: &ocmetrics.Point_DoubleValue{
 							DoubleValue: 3.45,
 						},
@@ -175,7 +177,7 @@ func TestOCToOTLP(t *testing.T) {
 		},
 		Timeseries: []*ocmetrics.TimeSeries{
 			{
-				StartTimestamp: unixnanoToTimestamp(unixnanos1),
+				StartTimestamp: internal.UnixNanoToTimestamp(unixnanos1),
 				LabelValues: []*ocmetrics.LabelValue{
 					{
 						// key1
@@ -190,7 +192,7 @@ func TestOCToOTLP(t *testing.T) {
 				},
 				Points: []*ocmetrics.Point{
 					{
-						Timestamp: unixnanoToTimestamp(unixnanos2),
+						Timestamp: internal.UnixNanoToTimestamp(unixnanos2),
 						Value: &ocmetrics.Point_DistributionValue{
 							DistributionValue: &ocmetrics.DistributionValue{
 								Count: 48,
@@ -207,7 +209,7 @@ func TestOCToOTLP(t *testing.T) {
 										Count: 12,
 										Exemplar: &ocmetrics.DistributionValue_Exemplar{
 											Value:     1.1,
-											Timestamp: unixnanoToTimestamp(unixnanos2),
+											Timestamp: internal.UnixNanoToTimestamp(unixnanos2),
 											Attachments: map[string]string{
 												"key1": "value1",
 											},
@@ -217,7 +219,7 @@ func TestOCToOTLP(t *testing.T) {
 										Count: 24,
 										Exemplar: &ocmetrics.DistributionValue_Exemplar{
 											Value:     2.2,
-											Timestamp: unixnanoToTimestamp(unixnanos2),
+											Timestamp: internal.UnixNanoToTimestamp(unixnanos2),
 											Attachments: map[string]string{
 												"key2": "value2",
 											},
@@ -227,7 +229,7 @@ func TestOCToOTLP(t *testing.T) {
 										Count: 12,
 										Exemplar: &ocmetrics.DistributionValue_Exemplar{
 											Value:     7.1,
-											Timestamp: unixnanoToTimestamp(unixnanos2),
+											Timestamp: internal.UnixNanoToTimestamp(unixnanos2),
 											Attachments: map[string]string{
 												"key3": "value3",
 											},
@@ -257,8 +259,8 @@ func TestOCToOTLP(t *testing.T) {
 						Value: "value1",
 					},
 				},
-				StartTimeUnixNano: unixnanos1,
-				TimeUnixNano:      unixnanos2,
+				StartTimeUnixNano: uint64(unixnanos1),
+				TimeUnixNano:      uint64(unixnanos2),
 				Value:             123,
 			},
 			{
@@ -268,8 +270,8 @@ func TestOCToOTLP(t *testing.T) {
 						Value: "value2",
 					},
 				},
-				StartTimeUnixNano: unixnanos1,
-				TimeUnixNano:      unixnanos2,
+				StartTimeUnixNano: uint64(unixnanos1),
+				TimeUnixNano:      uint64(unixnanos2),
 				Value:             456,
 			},
 		},
@@ -294,8 +296,8 @@ func TestOCToOTLP(t *testing.T) {
 						Value: "value2",
 					},
 				},
-				StartTimeUnixNano: unixnanos1,
-				TimeUnixNano:      unixnanos2,
+				StartTimeUnixNano: uint64(unixnanos1),
+				TimeUnixNano:      uint64(unixnanos2),
 				Value:             1.23,
 			},
 			{
@@ -309,8 +311,8 @@ func TestOCToOTLP(t *testing.T) {
 						Value: "value3",
 					},
 				},
-				StartTimeUnixNano: unixnanos1,
-				TimeUnixNano:      unixnanos2,
+				StartTimeUnixNano: uint64(unixnanos1),
+				TimeUnixNano:      uint64(unixnanos2),
 				Value:             3.45,
 			},
 		},
@@ -325,8 +327,8 @@ func TestOCToOTLP(t *testing.T) {
 		},
 		HistogramDataPoints: []*otlpmetrics.HistogramDataPoint{
 			{
-				StartTimeUnixNano: unixnanos1,
-				TimeUnixNano:      unixnanos2,
+				StartTimeUnixNano: uint64(unixnanos1),
+				TimeUnixNano:      uint64(unixnanos2),
 				Labels: []*otlpcommon.StringKeyValue{
 					{
 						Key:   "key1",
@@ -345,7 +347,7 @@ func TestOCToOTLP(t *testing.T) {
 						Count: 12,
 						Exemplar: &otlpmetrics.HistogramDataPoint_Bucket_Exemplar{
 							Value:        1.1,
-							TimeUnixNano: unixnanos2,
+							TimeUnixNano: uint64(unixnanos2),
 							Attachments: []*otlpcommon.StringKeyValue{
 								{
 									Key:   "key1",
@@ -358,7 +360,7 @@ func TestOCToOTLP(t *testing.T) {
 						Count: 24,
 						Exemplar: &otlpmetrics.HistogramDataPoint_Bucket_Exemplar{
 							Value:        2.2,
-							TimeUnixNano: unixnanos2,
+							TimeUnixNano: uint64(unixnanos2),
 							Attachments: []*otlpcommon.StringKeyValue{
 								{
 									Key:   "key2",
@@ -371,7 +373,7 @@ func TestOCToOTLP(t *testing.T) {
 						Count: 12,
 						Exemplar: &otlpmetrics.HistogramDataPoint_Bucket_Exemplar{
 							Value:        7.1,
-							TimeUnixNano: unixnanos2,
+							TimeUnixNano: uint64(unixnanos2),
 							Attachments: []*otlpcommon.StringKeyValue{
 								{
 									Key:   "key3",

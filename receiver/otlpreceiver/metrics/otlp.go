@@ -18,13 +18,13 @@ import (
 	"context"
 
 	collectormetrics "github.com/open-telemetry/opentelemetry-proto/gen/go/collector/metrics/v1"
-	otlpmetrics "github.com/open-telemetry/opentelemetry-proto/gen/go/metrics/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
-	"github.com/open-telemetry/opentelemetry-collector/translator/metrics"
+	"github.com/open-telemetry/opentelemetry-collector/translator/internaldata"
 )
 
 const (
@@ -57,23 +57,20 @@ const (
 func (r *Receiver) Export(ctx context.Context, req *collectormetrics.ExportMetricsServiceRequest) (*collectormetrics.ExportMetricsServiceResponse, error) {
 	receiverCtx := obsreport.ReceiverContext(ctx, r.instanceName, receiverTransport, receiverTagValue)
 
-	for _, resourceMetrics := range req.ResourceMetrics {
-		err := r.processReceivedMetrics(receiverCtx, resourceMetrics)
+	md := data.MetricDataFromOtlp(req.ResourceMetrics)
+	rms := md.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		ocmd := internaldata.ResourceMetricsToOC(rms.Get(i))
+		if len(ocmd.Metrics) == 0 {
+			continue
+		}
+		err := r.sendToNextConsumer(receiverCtx, ocmd)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	return &collectormetrics.ExportMetricsServiceResponse{}, nil
-}
-
-func (r *Receiver) processReceivedMetrics(receiverCtx context.Context, resourceMetrics *otlpmetrics.ResourceMetrics) error {
-	if len(resourceMetrics.InstrumentationLibraryMetrics) == 0 {
-		return nil
-	}
-
-	md := metrics.ResourceMetricsToMetricsData(resourceMetrics)
-	return r.sendToNextConsumer(receiverCtx, md)
 }
 
 func (r *Receiver) sendToNextConsumer(ctx context.Context, md consumerdata.MetricsData) error {

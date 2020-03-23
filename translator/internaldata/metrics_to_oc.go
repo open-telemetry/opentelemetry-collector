@@ -46,29 +46,31 @@ func MetricDataToOC(md data.MetricData) []consumerdata.MetricsData {
 
 	ocResourceMetricsList := make([]consumerdata.MetricsData, 0, resourceMetrics.Len())
 	for i := 0; i < resourceMetrics.Len(); i++ {
-		rm := resourceMetrics.Get(i)
-		ocMetricsData := consumerdata.MetricsData{}
-		ocMetricsData.Node, ocMetricsData.Resource = internalResourceToOC(rm.Resource())
-		ilms := rm.InstrumentationLibraryMetrics()
-		if ilms.Len() == 0 {
-			ocResourceMetricsList = append(ocResourceMetricsList, ocMetricsData)
-			continue
-		}
-		// Approximate the number of the metrics as the number of the metrics in the first
-		// instrumentation library info.
-		ocMetrics := make([]*ocmetrics.Metric, 0, ilms.Get(0).Metrics().Len())
-		for j := 0; j < ilms.Len(); j++ {
-			// TODO: Handle instrumentation library name and version.
-			metrics := ilms.Get(0).Metrics()
-			for k := 0; k < metrics.Len(); k++ {
-				ocMetrics = append(ocMetrics, metricToOC(metrics.Get(k)))
-			}
-		}
-		ocMetricsData.Metrics = ocMetrics
-		ocResourceMetricsList = append(ocResourceMetricsList, ocMetricsData)
+		ocResourceMetricsList = append(ocResourceMetricsList, ResourceMetricsToOC(resourceMetrics.Get(i)))
 	}
 
 	return ocResourceMetricsList
+}
+
+func ResourceMetricsToOC(rm data.ResourceMetrics) consumerdata.MetricsData {
+	ocMetricsData := consumerdata.MetricsData{}
+	ocMetricsData.Node, ocMetricsData.Resource = internalResourceToOC(rm.Resource())
+	ilms := rm.InstrumentationLibraryMetrics()
+	if ilms.Len() == 0 {
+		return ocMetricsData
+	}
+	// Approximate the number of the metrics as the number of the metrics in the first
+	// instrumentation library info.
+	ocMetrics := make([]*ocmetrics.Metric, 0, ilms.Get(0).Metrics().Len())
+	for j := 0; j < ilms.Len(); j++ {
+		// TODO: Handle instrumentation library name and version.
+		metrics := ilms.Get(0).Metrics()
+		for k := 0; k < metrics.Len(); k++ {
+			ocMetrics = append(ocMetrics, metricToOC(metrics.Get(k)))
+		}
+	}
+	ocMetricsData.Metrics = ocMetrics
+	return ocMetricsData
 }
 
 func metricToOC(metric data.Metric) *ocmetrics.Metric {
