@@ -21,6 +21,7 @@ We hold regular meetings. See details at [community page](https://github.com/ope
   - [Exporters](#config-exporters)
   - [Extensions](#config-extensions)
   - [Service](#config-service)
+- [Monitoring](#omnitoring)
 - [Troubleshooting](#troubleshooting)
 - [Other Information](#other-information)
   - [Extending the Collector](#extending-the-collector)
@@ -302,6 +303,11 @@ service:
       exporters: [opencensus, zipkin]
 ```
 
+### <a name="operating"></a>Monitoring
+Many metrics are provided by the Collector for its monitoring. For specific
+recommendations see [Monitoring](docs/monitoring.md).
+
+
 ### <a name="troubleshooting"></a>Troubleshooting
 By default, the OpenTelemetry Collector exposes Prometheus metrics and logs for
 monitoring and troubleshooting. When troubleshooting live issues it is
@@ -314,6 +320,8 @@ operations to see information about each individual operation. Operations that
 encountered errors are reported on the right most column.
 
 ![zpages-example](docs/images/zpages-example.png)
+
+For more information, refer to [Troubleshooting](docs/troubleshooting.md).
 
 ## <a name="other-information"></a>Other Information
 
