@@ -21,7 +21,6 @@ import (
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
@@ -53,14 +52,15 @@ var _ agentmetricspb.MetricsServiceServer = (*Receiver)(nil)
 var errMetricsExportProtocolViolation = errors.New("protocol violation: Export's first message must have a Node")
 
 const (
-	receiverTagValue  = "oc_metrics"
-	receiverTransport = "grpc" // TODO: transport is being hard coded for now, investigate if info is available on context.
+	receiverTagValue   = "oc_metrics"
+	receiverTransport  = "grpc" // TODO: transport is being hard coded for now, investigate if info is available on context.
+	receiverDataFormat = "protobuf"
 )
 
 // Export is the gRPC method that receives streamed metrics from
 // OpenCensus-metricproto compatible libraries/applications.
 func (ocr *Receiver) Export(mes agentmetricspb.MetricsService_ExportServer) error {
-	receiverCtx := obsreport.ReceiverContext(
+	longLivedRPCCtx := obsreport.ReceiverContext(
 		mes.Context(), ocr.instanceName, receiverTransport, receiverTagValue)
 
 	// Retrieve the first message. It MUST have a non-nil Node.
@@ -78,18 +78,14 @@ func (ocr *Receiver) Export(mes agentmetricspb.MetricsService_ExportServer) erro
 	var resource *resourcepb.Resource
 	// Now that we've got the first message with a Node, we can start to receive streamed up metrics.
 	for {
-		// If a Node has been sent from downstream, save and use it.
-		if recv.Node != nil {
-			lastNonNilNode = recv.Node
+		lastNonNilNode, resource, err = ocr.processReceivedMsg(
+			longLivedRPCCtx,
+			lastNonNilNode,
+			resource,
+			recv)
+		if err != nil {
+			return err
 		}
-
-		// TODO(songya): differentiate between unset and nil resource. See
-		// https://github.com/census-instrumentation/opencensus-proto/issues/146.
-		if recv.Resource != nil {
-			resource = recv.Resource
-		}
-
-		ocr.processReceivedMetrics(receiverCtx, lastNonNilNode, resource, recv.Metrics)
 
 		recv, err = mes.Recv()
 		if err != nil {
@@ -103,14 +99,34 @@ func (ocr *Receiver) Export(mes agentmetricspb.MetricsService_ExportServer) erro
 	}
 }
 
-func (ocr *Receiver) processReceivedMetrics(longLivedRPCCtx context.Context, ni *commonpb.Node, resource *resourcepb.Resource, metrics []*metricspb.Metric) {
-	if len(metrics) > 0 {
-		md := consumerdata.MetricsData{Node: ni, Metrics: metrics, Resource: resource}
-		ocr.sendToNextConsumer(longLivedRPCCtx, md)
+func (ocr *Receiver) processReceivedMsg(
+	longLivedRPCCtx context.Context,
+	lastNonNilNode *commonpb.Node,
+	resource *resourcepb.Resource,
+	recv *agentmetricspb.ExportMetricsServiceRequest,
+) (*commonpb.Node, *resourcepb.Resource, error) {
+	// If a Node has been sent from downstream, save and use it.
+	if recv.Node != nil {
+		lastNonNilNode = recv.Node
 	}
+
+	// TODO(songya): differentiate between unset and nil resource. See
+	// https://github.com/census-instrumentation/opencensus-proto/issues/146.
+	if recv.Resource != nil {
+		resource = recv.Resource
+	}
+
+	md := consumerdata.MetricsData{
+		Node:     lastNonNilNode,
+		Resource: resource,
+		Metrics:  recv.Metrics,
+	}
+
+	err := ocr.sendToNextConsumer(longLivedRPCCtx, md)
+	return lastNonNilNode, resource, err
 }
 
-func (ocr *Receiver) sendToNextConsumer(longLivedRPCCtx context.Context, md consumerdata.MetricsData) {
+func (ocr *Receiver) sendToNextConsumer(longLivedRPCCtx context.Context, md consumerdata.MetricsData) error {
 	ctx := obsreport.StartMetricsReceiveOp(
 		longLivedRPCCtx,
 		ocr.instanceName,
@@ -127,12 +143,17 @@ func (ocr *Receiver) sendToNextConsumer(longLivedRPCCtx context.Context, md cons
 		}
 	}
 
-	consumerErr := ocr.nextConsumer.ConsumeMetricsData(ctx, md)
+	var consumerErr error
+	if len(md.Metrics) > 0 {
+		consumerErr = ocr.nextConsumer.ConsumeMetricsData(ctx, md)
+	}
 
 	obsreport.EndMetricsReceiveOp(
 		ctx,
-		"protobuf",
+		receiverDataFormat,
 		numPoints,
 		numTimeSeries,
 		consumerErr)
+
+	return consumerErr
 }

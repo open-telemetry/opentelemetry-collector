@@ -31,8 +31,9 @@ import (
 )
 
 const (
-	receiverTagValue  = "oc_trace"
-	receiverTransport = "grpc" // TODO: transport is being hard coded for now, investigate if info is available on context.
+	receiverTagValue   = "oc_trace"
+	receiverTransport  = "grpc" // TODO: transport is being hard coded for now, investigate if info is available on context.
+	receiverDataFormat = "protobuf"
 )
 
 // Receiver is the type used to handle spans from OpenCensus exporters.
@@ -73,8 +74,12 @@ var errTraceExportProtocolViolation = errors.New("protocol violation: Export's f
 // Export is the gRPC method that receives streamed traces from
 // OpenCensus-traceproto compatible libraries/applications.
 func (ocr *Receiver) Export(tes agenttracepb.TraceService_ExportServer) error {
-	// We need to ensure that it propagates the receiver name as a tag
-	ctxWithReceiverName := obsreport.ReceiverContext(tes.Context(), ocr.instanceName, receiverTransport, receiverTagValue)
+	ctx := tes.Context()
+	if c, ok := client.FromGRPC(ctx); ok {
+		ctx = client.NewContext(ctx, c)
+	}
+
+	longLivedRPCCtx := obsreport.ReceiverContext(ctx, ocr.instanceName, receiverTransport, receiverTagValue)
 
 	// The first message MUST have a non-nil Node.
 	recv, err := tes.Recv()
@@ -91,11 +96,13 @@ func (ocr *Receiver) Export(tes agenttracepb.TraceService_ExportServer) error {
 	var resource *resourcepb.Resource
 	// Now that we've got the first message with a Node, we can start to receive streamed up spans.
 	for {
-		lastNonNilNode, resource, err = ocr.processReceivedMsg(ctxWithReceiverName, lastNonNilNode, resource, recv)
+		lastNonNilNode, resource, err = ocr.processReceivedMsg(
+			longLivedRPCCtx,
+			lastNonNilNode,
+			resource,
+			recv)
 		if err != nil {
-			// Metrics and z-pages record data loss but there is no back pressure.
-			// However, cause the stream to be closed.
-			return nil
+			return err
 		}
 
 		recv, err = tes.Recv()
@@ -127,7 +134,7 @@ func (ocr *Receiver) processReceivedMsg(
 		resource = recv.Resource
 	}
 
-	td := &consumerdata.TraceData{
+	td := consumerdata.TraceData{
 		Node:         lastNonNilNode,
 		Resource:     resource,
 		Spans:        recv.Spans,
@@ -138,25 +145,20 @@ func (ocr *Receiver) processReceivedMsg(
 	return lastNonNilNode, resource, err
 }
 
-func (ocr *Receiver) sendToNextConsumer(longLivedRPCCtx context.Context, tracedata *consumerdata.TraceData) error {
+func (ocr *Receiver) sendToNextConsumer(longLivedRPCCtx context.Context, tracedata consumerdata.TraceData) error {
 	ctx := obsreport.StartTraceDataReceiveOp(
 		longLivedRPCCtx,
 		ocr.instanceName,
 		receiverTransport,
 		obsreport.WithLongLivedCtx())
 
-	if c, ok := client.FromGRPC(ctx); ok {
-		ctx = client.NewContext(ctx, c)
-	}
-
 	var err error
-	numSpans := 0
-	if tracedata != nil && len(tracedata.Spans) != 0 {
-		numSpans = len(tracedata.Spans)
-		err = ocr.nextConsumer.ConsumeTraceData(ctx, *tracedata)
+	numSpans := len(tracedata.Spans)
+	if numSpans != 0 {
+		err = ocr.nextConsumer.ConsumeTraceData(ctx, tracedata)
 	}
 
-	obsreport.EndTraceDataReceiveOp(ctx, "protobuf", numSpans, err)
+	obsreport.EndTraceDataReceiveOp(ctx, receiverDataFormat, numSpans, err)
 
 	return err
 }
