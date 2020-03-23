@@ -104,27 +104,27 @@ const sliceTestTemplate = `func Test${structName}(t *testing.T) {
 	// Test resize.
 	const resizeLo = 2
 	const resizeHi = 10
-	expectedEs := make(map[*${originName}]bool, resizeHi-resizeLo)
+	expectedEs := make(map[${elementName}]bool, resizeHi-resizeLo)
 	for i := resizeLo; i < resizeHi; i++ {
-		expectedEs[es.Get(i).orig] = true
+		expectedEs[es.Get(i)] = true
 	}
 	assert.EqualValues(t, resizeHi-resizeLo, len(expectedEs))
 	es.Resize(resizeLo, resizeHi)
 	assert.EqualValues(t, resizeHi-resizeLo, es.Len())
-	foundEs := make(map[*${originName}]bool, resizeHi-resizeLo)
+	foundEs := make(map[${elementName}]bool, resizeHi-resizeLo)
 	for i := 0; i < es.Len(); i++ {
-		foundEs[es.Get(i).orig] = true
+		foundEs[es.Get(i)] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 
 	// Test remove.
 	const removePos = 2
-	delete(expectedEs, es.Get(removePos).orig)
+	delete(expectedEs, es.Get(removePos))
 	es.Remove(removePos)
 	assert.EqualValues(t, resizeHi-resizeLo-1, es.Len())
-	foundEs = make(map[*${originName}]bool, resizeHi-resizeLo)
+	foundEs = make(map[${elementName}]bool, resizeHi-resizeLo)
 	for i := 0; i < es.Len(); i++ {
-		foundEs[es.Get(i).orig] = true
+		foundEs[es.Get(i)] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 }`
