@@ -177,7 +177,7 @@ var int64DataPoint = &messageStruct{
 	fields: []baseField{
 		labelsField,
 		startTimeField,
-		timestampField,
+		timeField,
 		valueInt64Field,
 	},
 }
@@ -194,7 +194,7 @@ var doubleDataPoint = &messageStruct{
 	fields: []baseField{
 		labelsField,
 		startTimeField,
-		timestampField,
+		timeField,
 		valueFloat64Field,
 	},
 }
@@ -211,7 +211,7 @@ var histogramDataPoint = &messageStruct{
 	fields: []baseField{
 		labelsField,
 		startTimeField,
-		timestampField,
+		timeField,
 		countField,
 		sumField,
 		&sliceField{
@@ -249,7 +249,7 @@ var histogramBucketExemplar = &messageStruct{
 		"// They are metadata that gives information about a particular value added to a Histogram bucket.",
 	originFullName: "otlpmetrics.HistogramDataPoint_Bucket_Exemplar",
 	fields: []baseField{
-		timestampField,
+		timeField,
 		valueFloat64Field,
 		&sliceField{
 			fieldMame:               "Attachments",
@@ -272,7 +272,7 @@ var summaryDataPoint = &messageStruct{
 	fields: []baseField{
 		labelsField,
 		startTimeField,
-		timestampField,
+		timeField,
 		countField,
 		sumField,
 		&sliceField{

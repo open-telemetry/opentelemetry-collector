@@ -91,8 +91,8 @@ func spanToOC(span *otlptrace.Span) *octrace.Span {
 			Value: span.Name,
 		},
 		Kind:           kindToOC(span.Kind),
-		StartTime:      internal.UnixnanoToTimestamp(data.TimestampUnixNano(span.StartTimeUnixnano)),
-		EndTime:        internal.UnixnanoToTimestamp(data.TimestampUnixNano(span.EndTimeUnixnano)),
+		StartTime:      internal.UnixNanoToTimestamp(data.TimestampUnixNano(span.StartTimeUnixNano)),
+		EndTime:        internal.UnixNanoToTimestamp(data.TimestampUnixNano(span.EndTimeUnixNano)),
 		Attributes:     attributes,
 		TimeEvents:     eventsToOC(span.Events, span.DroppedEventsCount),
 		Links:          linksToOC(span.Links, span.DroppedLinksCount),
@@ -150,7 +150,7 @@ func eventsToOCEvents(events []*otlptrace.Span_Event) []*octrace.Span_TimeEvent 
 	for _, event := range events {
 		ocAttributes := attributesToOCSpanAttributes(event.Attributes, event.DroppedAttributesCount)
 		ocEvent := &octrace.Span_TimeEvent{
-			Time: internal.UnixnanoToTimestamp(data.TimestampUnixNano(event.TimeUnixnano)),
+			Time: internal.UnixNanoToTimestamp(data.TimestampUnixNano(event.TimeUnixNano)),
 			Value: &octrace.Span_TimeEvent_Annotation_{
 				Annotation: &octrace.Span_TimeEvent_Annotation{
 					Description: &octrace.TruncatableString{

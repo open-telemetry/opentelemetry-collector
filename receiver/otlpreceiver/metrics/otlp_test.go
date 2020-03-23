@@ -93,8 +93,8 @@ func TestExport(t *testing.T) {
 												Value: "value1",
 											},
 										},
-										StartTimeUnixnano: unixnanos1,
-										TimestampUnixnano: unixnanos2,
+										StartTimeUnixNano: unixnanos1,
+										TimeUnixNano:      unixnanos2,
 										Value:             123,
 									},
 									{
@@ -104,8 +104,8 @@ func TestExport(t *testing.T) {
 												Value: "value2",
 											},
 										},
-										StartTimeUnixnano: unixnanos1,
-										TimestampUnixnano: unixnanos2,
+										StartTimeUnixNano: unixnanos1,
+										TimeUnixNano:      unixnanos2,
 										Value:             456,
 									},
 								},
@@ -242,5 +242,5 @@ func otlpReceiverOnGRPCServer(t *testing.T, mc consumer.MetricsConsumer) (r *Rec
 }
 
 func unixnanoToTimestamp(u uint64) *timestamp.Timestamp {
-	return internal.UnixnanoToTimestamp(data.TimestampUnixNano(u))
+	return internal.UnixNanoToTimestamp(data.TimestampUnixNano(u))
 }

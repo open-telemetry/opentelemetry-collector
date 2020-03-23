@@ -72,16 +72,7 @@ var instrumentationLibraryField = &messageField{
 
 var startTimeField = &primitiveTypedField{
 	fieldMame:       "StartTime",
-	originFieldName: "StartTimeUnixnano",
-	returnType:      "TimestampUnixNano",
-	rawType:         "uint64",
-	defaultVal:      "TimestampUnixNano(0)",
-	testVal:         "TimestampUnixNano(1234567890)",
-}
-
-var timestampField = &primitiveTypedField{
-	fieldMame:       "Timestamp",
-	originFieldName: "TimestampUnixnano",
+	originFieldName: "StartTimeUnixNano",
 	returnType:      "TimestampUnixNano",
 	rawType:         "uint64",
 	defaultVal:      "TimestampUnixNano(0)",
@@ -90,7 +81,7 @@ var timestampField = &primitiveTypedField{
 
 var timeField = &primitiveTypedField{
 	fieldMame:       "Timestamp",
-	originFieldName: "TimeUnixnano",
+	originFieldName: "TimeUnixNano",
 	returnType:      "TimestampUnixNano",
 	rawType:         "uint64",
 	defaultVal:      "TimestampUnixNano(0)",

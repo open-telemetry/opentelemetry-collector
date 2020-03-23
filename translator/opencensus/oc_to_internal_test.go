@@ -313,10 +313,10 @@ func TestOcToInternal(t *testing.T) {
 
 	span1 := data.NewSpan()
 	span1.SetName("operationB")
-	span1.SetStartTime(internal.TimestampToUnixnano(timestampP))
-	span1.SetEndTime(internal.TimestampToUnixnano(timestampP))
+	span1.SetStartTime(internal.TimestampToUnixNano(timestampP))
+	span1.SetEndTime(internal.TimestampToUnixNano(timestampP))
 	se := data.NewSpanEvent()
-	se.SetTimestamp(internal.TimestampToUnixnano(timestampP))
+	se.SetTimestamp(internal.TimestampToUnixNano(timestampP))
 	se.SetName("event1")
 	se.SetAttributes(data.NewAttributeMap(
 		data.AttributesMap{
@@ -332,15 +332,15 @@ func TestOcToInternal(t *testing.T) {
 
 	span2 := data.NewSpan()
 	span2.SetName("operationC")
-	span2.SetStartTime(internal.TimestampToUnixnano(timestampP))
-	span2.SetEndTime(internal.TimestampToUnixnano(timestampP))
+	span2.SetStartTime(internal.TimestampToUnixNano(timestampP))
+	span2.SetEndTime(internal.TimestampToUnixNano(timestampP))
 	span2.SetLinks([]data.SpanLink{data.NewSpanLink()})
 	span2.SetDroppedLinksCount(1)
 
 	span3 := data.NewSpan()
 	span3.SetName("operationD")
-	span3.SetStartTime(internal.TimestampToUnixnano(timestampP))
-	span3.SetEndTime(internal.TimestampToUnixnano(timestampP))
+	span3.SetStartTime(internal.TimestampToUnixNano(timestampP))
+	span3.SetEndTime(internal.TimestampToUnixNano(timestampP))
 
 	internalResource := data.NewResource()
 	internalResource.SetAttributes(

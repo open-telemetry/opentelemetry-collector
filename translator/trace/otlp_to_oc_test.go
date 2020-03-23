@@ -51,11 +51,11 @@ func TestResourceSpansToTraceData(t *testing.T) {
 		SpanId:            spanID,
 		Name:              "operationB",
 		Kind:              otlptrace.Span_SERVER,
-		StartTimeUnixnano: unixnanos,
-		EndTimeUnixnano:   unixnanos,
+		StartTimeUnixNano: unixnanos,
+		EndTimeUnixNano:   unixnanos,
 		Events: []*otlptrace.Span_Event{
 			{
-				TimeUnixnano: unixnanos,
+				TimeUnixNano: unixnanos,
 				Name:         "event1",
 				Attributes: []*otlpcommon.AttributeKeyValue{
 					{
@@ -81,8 +81,8 @@ func TestResourceSpansToTraceData(t *testing.T) {
 
 	otlpSpan2 := &otlptrace.Span{
 		Name:              "operationC",
-		StartTimeUnixnano: unixnanos,
-		EndTimeUnixnano:   unixnanos,
+		StartTimeUnixNano: unixnanos,
+		EndTimeUnixNano:   unixnanos,
 		Kind:              otlptrace.Span_CONSUMER,
 		Links:             []*otlptrace.Span_Link{{}},
 		DroppedLinksCount: 1,
@@ -141,12 +141,12 @@ func TestResourceSpansToTraceData(t *testing.T) {
 		SpanId:    spanID,
 		Name:      &octrace.TruncatableString{Value: "operationB"},
 		Kind:      octrace.Span_SERVER,
-		StartTime: internal.UnixnanoToTimestamp(data.TimestampUnixNano(unixnanos)),
-		EndTime:   internal.UnixnanoToTimestamp(data.TimestampUnixNano(unixnanos)),
+		StartTime: internal.UnixNanoToTimestamp(data.TimestampUnixNano(unixnanos)),
+		EndTime:   internal.UnixNanoToTimestamp(data.TimestampUnixNano(unixnanos)),
 		TimeEvents: &octrace.Span_TimeEvents{
 			TimeEvent: []*octrace.Span_TimeEvent{
 				{
-					Time: internal.UnixnanoToTimestamp(data.TimestampUnixNano(unixnanos)),
+					Time: internal.UnixNanoToTimestamp(data.TimestampUnixNano(unixnanos)),
 					Value: &octrace.Span_TimeEvent_Annotation_{
 						Annotation: &octrace.Span_TimeEvent_Annotation{
 							Description: &octrace.TruncatableString{Value: "event1"},
@@ -195,8 +195,8 @@ func TestResourceSpansToTraceData(t *testing.T) {
 	ocSpan2 := &octrace.Span{
 		Name:      &octrace.TruncatableString{Value: "operationC"},
 		Kind:      octrace.Span_SPAN_KIND_UNSPECIFIED,
-		StartTime: internal.UnixnanoToTimestamp(data.TimestampUnixNano(unixnanos)),
-		EndTime:   internal.UnixnanoToTimestamp(data.TimestampUnixNano(unixnanos)),
+		StartTime: internal.UnixNanoToTimestamp(data.TimestampUnixNano(unixnanos)),
+		EndTime:   internal.UnixNanoToTimestamp(data.TimestampUnixNano(unixnanos)),
 		Attributes: &octrace.Span_Attributes{
 			AttributeMap: map[string]*octrace.AttributeValue{
 				TagSpanKind: {

@@ -212,11 +212,11 @@ func (m *Span) Kind() SpanKind {
 }
 
 func (m *Span) StartTime() TimestampUnixNano {
-	return TimestampUnixNano(m.orig.StartTimeUnixnano)
+	return TimestampUnixNano(m.orig.StartTimeUnixNano)
 }
 
 func (m *Span) EndTime() TimestampUnixNano {
-	return TimestampUnixNano(m.orig.EndTimeUnixnano)
+	return TimestampUnixNano(m.orig.EndTimeUnixNano)
 }
 
 func (m *Span) Attributes() AttributeMap {
@@ -272,11 +272,11 @@ func (m *Span) SetKind(v SpanKind) {
 }
 
 func (m *Span) SetStartTime(v TimestampUnixNano) {
-	m.orig.StartTimeUnixnano = uint64(v)
+	m.orig.StartTimeUnixNano = uint64(v)
 }
 
 func (m *Span) SetEndTime(v TimestampUnixNano) {
-	m.orig.EndTimeUnixnano = uint64(v)
+	m.orig.EndTimeUnixNano = uint64(v)
 }
 
 func (m *Span) SetAttributes(v AttributeMap) {
