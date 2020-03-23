@@ -61,7 +61,7 @@ func (es ${structName}) Len() int {
 	return len(*es.orig)
 }
 
-// Get returns the element associated with the given index.
+// Get the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
 // for i := 0; i < es.Len(); i++ {
@@ -72,13 +72,16 @@ func (es ${structName}) Get(ix int) ${elementName} {
 	return new${elementName}((*es.orig)[ix])
 }
 
-// Remove removes the element from the given index from the slice.
+// Remove the element at the given index from the slice.
+// Elements after the removed one are shifted to fill the emptied space.
+// The length of the slice is reduced by one.
 func (es ${structName}) Remove(ix int) {
 	(*es.orig)[ix] = (*es.orig)[len(*es.orig)-1]
+	(*es.orig)[len(*es.orig)-1] = nil
 	*es.orig = (*es.orig)[:len(*es.orig)-1]
 }
 
-// Resize resizes the slice. This operation is equivalent with slice[to:from].
+// Resize the slice. This operation is equivalent with slice[from:to].
 func (es ${structName}) Resize(from, to int) {
 	*es.orig = (*es.orig)[from:to]
 }`
