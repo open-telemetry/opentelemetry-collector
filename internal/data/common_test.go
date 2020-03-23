@@ -158,3 +158,15 @@ func TestStringMapIteration(t *testing.T) {
 		assert.EqualValues(t, "v"+strconv.Itoa(i), skv.Value())
 	}
 }
+
+func generateTestStringMap() StringMap {
+	return NewStringMap(map[string]string{
+		"k": "v",
+	})
+}
+
+func generateTestAttributeMap() AttributeMap {
+	return NewAttributeMap(map[string]AttributeValue{
+		"k": NewAttributeValueString("v"),
+	})
+}

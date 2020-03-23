@@ -19,6 +19,12 @@ var commonFile = &File{
 	imports: []string{
 		`otlpcommon "github.com/open-telemetry/opentelemetry-proto/gen/go/common/v1"`,
 	},
+	testImports: []string{
+		`"testing"`,
+		``,
+		`otlpcommon "github.com/open-telemetry/opentelemetry-proto/gen/go/common/v1"`,
+		`"github.com/stretchr/testify/assert"`,
+	},
 	structs: []baseStruct{
 		instrumentationLibrary,
 	},
@@ -34,6 +40,8 @@ var instrumentationLibrary = &messageStruct{
 			fieldMame:       "Version",
 			originFieldName: "Version",
 			returnType:      "string",
+			defaultVal:      `""`,
+			testVal:         `"test_version"`,
 		},
 	},
 }
@@ -67,6 +75,8 @@ var startTimeField = &primitiveTypedField{
 	originFieldName: "StartTimeUnixnano",
 	returnType:      "TimestampUnixNano",
 	rawType:         "uint64",
+	defaultVal:      "TimestampUnixNano(0)",
+	testVal:         "TimestampUnixNano(1234567890)",
 }
 
 var timestampField = &primitiveTypedField{
@@ -74,6 +84,8 @@ var timestampField = &primitiveTypedField{
 	originFieldName: "TimestampUnixnano",
 	returnType:      "TimestampUnixNano",
 	rawType:         "uint64",
+	defaultVal:      "TimestampUnixNano(0)",
+	testVal:         "TimestampUnixNano(1234567890)",
 }
 
 var timeField = &primitiveTypedField{
@@ -81,16 +93,21 @@ var timeField = &primitiveTypedField{
 	originFieldName: "TimeUnixnano",
 	returnType:      "TimestampUnixNano",
 	rawType:         "uint64",
+	defaultVal:      "TimestampUnixNano(0)",
+	testVal:         "TimestampUnixNano(1234567890)",
 }
 
 var attributes = &sliceField{
-	fieldMame:       "Attributes",
-	originFieldName: "Attributes",
-	returnSlice:     attributeMap,
+	fieldMame:               "Attributes",
+	originFieldName:         "Attributes",
+	returnSlice:             attributeMap,
+	constructorDefaultValue: "nil",
 }
 
 var nameField = &primitiveField{
 	fieldMame:       "Name",
 	originFieldName: "Name",
 	returnType:      "string",
+	defaultVal:      `""`,
+	testVal:         `"test_name"`,
 }

@@ -403,7 +403,7 @@ func newMetricDescriptor(orig *otlpmetrics.MetricDescriptor) MetricDescriptor {
 
 // Name returns the name associated with this MetricDescriptor.
 func (ms MetricDescriptor) Name() string {
-	return ms.orig.GetName()
+	return ms.orig.Name
 }
 
 // SetName replaces the name associated with this MetricDescriptor.
@@ -413,7 +413,7 @@ func (ms MetricDescriptor) SetName(v string) {
 
 // Description returns the description associated with this MetricDescriptor.
 func (ms MetricDescriptor) Description() string {
-	return ms.orig.GetDescription()
+	return ms.orig.Description
 }
 
 // SetDescription replaces the description associated with this MetricDescriptor.
@@ -423,7 +423,7 @@ func (ms MetricDescriptor) SetDescription(v string) {
 
 // Unit returns the unit associated with this MetricDescriptor.
 func (ms MetricDescriptor) Unit() string {
-	return ms.orig.GetUnit()
+	return ms.orig.Unit
 }
 
 // SetUnit replaces the unit associated with this MetricDescriptor.
@@ -433,7 +433,7 @@ func (ms MetricDescriptor) SetUnit(v string) {
 
 // Type returns the type associated with this MetricDescriptor.
 func (ms MetricDescriptor) Type() MetricType {
-	return MetricType(ms.orig.GetType())
+	return MetricType(ms.orig.Type)
 }
 
 // SetType replaces the type associated with this MetricDescriptor.
@@ -548,7 +548,7 @@ func (ms Int64DataPoint) SetLabelsMap(v StringMap) {
 
 // StartTime returns the starttime associated with this Int64DataPoint.
 func (ms Int64DataPoint) StartTime() TimestampUnixNano {
-	return TimestampUnixNano(ms.orig.GetStartTimeUnixnano())
+	return TimestampUnixNano(ms.orig.StartTimeUnixnano)
 }
 
 // SetStartTime replaces the starttime associated with this Int64DataPoint.
@@ -558,7 +558,7 @@ func (ms Int64DataPoint) SetStartTime(v TimestampUnixNano) {
 
 // Timestamp returns the timestamp associated with this Int64DataPoint.
 func (ms Int64DataPoint) Timestamp() TimestampUnixNano {
-	return TimestampUnixNano(ms.orig.GetTimestampUnixnano())
+	return TimestampUnixNano(ms.orig.TimestampUnixnano)
 }
 
 // SetTimestamp replaces the timestamp associated with this Int64DataPoint.
@@ -568,7 +568,7 @@ func (ms Int64DataPoint) SetTimestamp(v TimestampUnixNano) {
 
 // Value returns the value associated with this Int64DataPoint.
 func (ms Int64DataPoint) Value() int64 {
-	return ms.orig.GetValue()
+	return ms.orig.Value
 }
 
 // SetValue replaces the value associated with this Int64DataPoint.
@@ -673,7 +673,7 @@ func (ms DoubleDataPoint) SetLabelsMap(v StringMap) {
 
 // StartTime returns the starttime associated with this DoubleDataPoint.
 func (ms DoubleDataPoint) StartTime() TimestampUnixNano {
-	return TimestampUnixNano(ms.orig.GetStartTimeUnixnano())
+	return TimestampUnixNano(ms.orig.StartTimeUnixnano)
 }
 
 // SetStartTime replaces the starttime associated with this DoubleDataPoint.
@@ -683,7 +683,7 @@ func (ms DoubleDataPoint) SetStartTime(v TimestampUnixNano) {
 
 // Timestamp returns the timestamp associated with this DoubleDataPoint.
 func (ms DoubleDataPoint) Timestamp() TimestampUnixNano {
-	return TimestampUnixNano(ms.orig.GetTimestampUnixnano())
+	return TimestampUnixNano(ms.orig.TimestampUnixnano)
 }
 
 // SetTimestamp replaces the timestamp associated with this DoubleDataPoint.
@@ -693,7 +693,7 @@ func (ms DoubleDataPoint) SetTimestamp(v TimestampUnixNano) {
 
 // Value returns the value associated with this DoubleDataPoint.
 func (ms DoubleDataPoint) Value() float64 {
-	return ms.orig.GetValue()
+	return ms.orig.Value
 }
 
 // SetValue replaces the value associated with this DoubleDataPoint.
@@ -798,7 +798,7 @@ func (ms HistogramDataPoint) SetLabelsMap(v StringMap) {
 
 // StartTime returns the starttime associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) StartTime() TimestampUnixNano {
-	return TimestampUnixNano(ms.orig.GetStartTimeUnixnano())
+	return TimestampUnixNano(ms.orig.StartTimeUnixnano)
 }
 
 // SetStartTime replaces the starttime associated with this HistogramDataPoint.
@@ -808,7 +808,7 @@ func (ms HistogramDataPoint) SetStartTime(v TimestampUnixNano) {
 
 // Timestamp returns the timestamp associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) Timestamp() TimestampUnixNano {
-	return TimestampUnixNano(ms.orig.GetTimestampUnixnano())
+	return TimestampUnixNano(ms.orig.TimestampUnixnano)
 }
 
 // SetTimestamp replaces the timestamp associated with this HistogramDataPoint.
@@ -818,7 +818,7 @@ func (ms HistogramDataPoint) SetTimestamp(v TimestampUnixNano) {
 
 // Count returns the count associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) Count() uint64 {
-	return ms.orig.GetCount()
+	return ms.orig.Count
 }
 
 // SetCount replaces the count associated with this HistogramDataPoint.
@@ -828,7 +828,7 @@ func (ms HistogramDataPoint) SetCount(v uint64) {
 
 // Sum returns the sum associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) Sum() float64 {
-	return ms.orig.GetSum()
+	return ms.orig.Sum
 }
 
 // SetSum replaces the sum associated with this HistogramDataPoint.
@@ -848,7 +848,7 @@ func (ms HistogramDataPoint) SetBuckets(v HistogramBucketSlice) {
 
 // ExplicitBounds returns the explicitbounds associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) ExplicitBounds() []float64 {
-	return ms.orig.GetExplicitBounds()
+	return ms.orig.ExplicitBounds
 }
 
 // SetExplicitBounds replaces the explicitbounds associated with this HistogramDataPoint.
@@ -943,7 +943,7 @@ func newHistogramBucket(orig *otlpmetrics.HistogramDataPoint_Bucket) HistogramBu
 
 // Count returns the count associated with this HistogramBucket.
 func (ms HistogramBucket) Count() uint64 {
-	return ms.orig.GetCount()
+	return ms.orig.Count
 }
 
 // SetCount replaces the count associated with this HistogramBucket.
@@ -989,7 +989,7 @@ func newHistogramBucketExemplar(orig *otlpmetrics.HistogramDataPoint_Bucket_Exem
 
 // Timestamp returns the timestamp associated with this HistogramBucketExemplar.
 func (ms HistogramBucketExemplar) Timestamp() TimestampUnixNano {
-	return TimestampUnixNano(ms.orig.GetTimestampUnixnano())
+	return TimestampUnixNano(ms.orig.TimestampUnixnano)
 }
 
 // SetTimestamp replaces the timestamp associated with this HistogramBucketExemplar.
@@ -999,7 +999,7 @@ func (ms HistogramBucketExemplar) SetTimestamp(v TimestampUnixNano) {
 
 // Value returns the value associated with this HistogramBucketExemplar.
 func (ms HistogramBucketExemplar) Value() float64 {
-	return ms.orig.GetValue()
+	return ms.orig.Value
 }
 
 // SetValue replaces the value associated with this HistogramBucketExemplar.
@@ -1114,7 +1114,7 @@ func (ms SummaryDataPoint) SetLabelsMap(v StringMap) {
 
 // StartTime returns the starttime associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) StartTime() TimestampUnixNano {
-	return TimestampUnixNano(ms.orig.GetStartTimeUnixnano())
+	return TimestampUnixNano(ms.orig.StartTimeUnixnano)
 }
 
 // SetStartTime replaces the starttime associated with this SummaryDataPoint.
@@ -1124,7 +1124,7 @@ func (ms SummaryDataPoint) SetStartTime(v TimestampUnixNano) {
 
 // Timestamp returns the timestamp associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) Timestamp() TimestampUnixNano {
-	return TimestampUnixNano(ms.orig.GetTimestampUnixnano())
+	return TimestampUnixNano(ms.orig.TimestampUnixnano)
 }
 
 // SetTimestamp replaces the timestamp associated with this SummaryDataPoint.
@@ -1134,7 +1134,7 @@ func (ms SummaryDataPoint) SetTimestamp(v TimestampUnixNano) {
 
 // Count returns the count associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) Count() uint64 {
-	return ms.orig.GetCount()
+	return ms.orig.Count
 }
 
 // SetCount replaces the count associated with this SummaryDataPoint.
@@ -1144,7 +1144,7 @@ func (ms SummaryDataPoint) SetCount(v uint64) {
 
 // Sum returns the sum associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) Sum() float64 {
-	return ms.orig.GetSum()
+	return ms.orig.Sum
 }
 
 // SetSum replaces the sum associated with this SummaryDataPoint.
@@ -1249,7 +1249,7 @@ func newSummaryValueAtPercentile(orig *otlpmetrics.SummaryDataPoint_ValueAtPerce
 
 // Percentile returns the percentile associated with this SummaryValueAtPercentile.
 func (ms SummaryValueAtPercentile) Percentile() float64 {
-	return ms.orig.GetPercentile()
+	return ms.orig.Percentile
 }
 
 // SetPercentile replaces the percentile associated with this SummaryValueAtPercentile.
@@ -1259,11 +1259,10 @@ func (ms SummaryValueAtPercentile) SetPercentile(v float64) {
 
 // Value returns the value associated with this SummaryValueAtPercentile.
 func (ms SummaryValueAtPercentile) Value() float64 {
-	return ms.orig.GetValue()
+	return ms.orig.Value
 }
 
 // SetValue replaces the value associated with this SummaryValueAtPercentile.
 func (ms SummaryValueAtPercentile) SetValue(v float64) {
 	ms.orig.Value = v
 }
-

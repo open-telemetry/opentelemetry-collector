@@ -54,11 +54,11 @@ func TestMetricCount(t *testing.T) {
 func TestOtlpToInternalReadOnly(t *testing.T) {
 	metricData := MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{
 		{
-			Resource: generateTestResource(),
+			Resource: generateTestProtoResource(),
 			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
 				{
-					InstrumentationLibrary: generateTestInstrumentationLibrary(),
-					Metrics:                []*otlpmetrics.Metric{generateTestIntMetric(), generateTestDoubleMetric(), generateTestHistogramMetric(), generateTestSummaryMetric()},
+					InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
+					Metrics:                []*otlpmetrics.Metric{generateTestProtoIntMetric(), generateTestProtoDoubleMetric(), generateTestProtoHistogramMetric(), generateTestProtoSummaryMetric()},
 				},
 			},
 		},
@@ -66,7 +66,7 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	resourceMetrics := metricData.ResourceMetrics()
 	assert.EqualValues(t, 1, resourceMetrics.Len())
 	resourceMetric := resourceMetrics.Get(0)
-	assert.EqualValues(t, newResource(generateTestResource()), resourceMetric.Resource())
+	assert.EqualValues(t, newResource(generateTestProtoResource()), resourceMetric.Resource())
 	metrics := resourceMetric.InstrumentationLibraryMetrics().Get(0).Metrics()
 	assert.EqualValues(t, 4, metrics.Len())
 	// Check int64 metric
@@ -164,11 +164,11 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 func TestOtlpToFromInternalReadOnly(t *testing.T) {
 	metricData := MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{
 		{
-			Resource: generateTestResource(),
+			Resource: generateTestProtoResource(),
 			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
 				{
-					InstrumentationLibrary: generateTestInstrumentationLibrary(),
-					Metrics:                []*otlpmetrics.Metric{generateTestIntMetric(), generateTestDoubleMetric(), generateTestHistogramMetric(), generateTestSummaryMetric()},
+					InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
+					Metrics:                []*otlpmetrics.Metric{generateTestProtoIntMetric(), generateTestProtoDoubleMetric(), generateTestProtoHistogramMetric(), generateTestProtoSummaryMetric()},
 				},
 			},
 		},
@@ -176,11 +176,11 @@ func TestOtlpToFromInternalReadOnly(t *testing.T) {
 	// Test that nothing changed
 	assert.EqualValues(t, []*otlpmetrics.ResourceMetrics{
 		{
-			Resource: generateTestResource(),
+			Resource: generateTestProtoResource(),
 			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
 				{
-					InstrumentationLibrary: generateTestInstrumentationLibrary(),
-					Metrics:                []*otlpmetrics.Metric{generateTestIntMetric(), generateTestDoubleMetric(), generateTestHistogramMetric(), generateTestSummaryMetric()},
+					InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
+					Metrics:                []*otlpmetrics.Metric{generateTestProtoIntMetric(), generateTestProtoDoubleMetric(), generateTestProtoHistogramMetric(), generateTestProtoSummaryMetric()},
 				},
 			},
 		},
@@ -192,11 +192,11 @@ func TestOtlpToFromInternalIntPointsMutating(t *testing.T) {
 
 	metricData := MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{
 		{
-			Resource: generateTestResource(),
+			Resource: generateTestProtoResource(),
 			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
 				{
-					InstrumentationLibrary: generateTestInstrumentationLibrary(),
-					Metrics:                []*otlpmetrics.Metric{generateTestIntMetric()},
+					InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
+					Metrics:                []*otlpmetrics.Metric{generateTestProtoIntMetric()},
 				},
 			},
 		},
@@ -231,10 +231,10 @@ func TestOtlpToFromInternalIntPointsMutating(t *testing.T) {
 	// Test that everything is updated.
 	assert.EqualValues(t, []*otlpmetrics.ResourceMetrics{
 		{
-			Resource: generateTestResource(),
+			Resource: generateTestProtoResource(),
 			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
 				{
-					InstrumentationLibrary: generateTestInstrumentationLibrary(),
+					InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
 					Metrics: []*otlpmetrics.Metric{
 						{
 							MetricDescriptor: &otlpmetrics.MetricDescriptor{
@@ -275,11 +275,11 @@ func TestOtlpToFromInternalDoublePointsMutating(t *testing.T) {
 
 	metricData := MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{
 		{
-			Resource: generateTestResource(),
+			Resource: generateTestProtoResource(),
 			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
 				{
-					InstrumentationLibrary: generateTestInstrumentationLibrary(),
-					Metrics:                []*otlpmetrics.Metric{generateTestDoubleMetric()},
+					InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
+					Metrics:                []*otlpmetrics.Metric{generateTestProtoDoubleMetric()},
 				},
 			},
 		},
@@ -314,10 +314,10 @@ func TestOtlpToFromInternalDoublePointsMutating(t *testing.T) {
 	// Test that everything is updated.
 	assert.EqualValues(t, []*otlpmetrics.ResourceMetrics{
 		{
-			Resource: generateTestResource(),
+			Resource: generateTestProtoResource(),
 			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
 				{
-					InstrumentationLibrary: generateTestInstrumentationLibrary(),
+					InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
 					Metrics: []*otlpmetrics.Metric{
 						{
 							MetricDescriptor: &otlpmetrics.MetricDescriptor{
@@ -358,11 +358,11 @@ func TestOtlpToFromInternalHistogramPointsMutating(t *testing.T) {
 
 	metricData := MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{
 		{
-			Resource: generateTestResource(),
+			Resource: generateTestProtoResource(),
 			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
 				{
-					InstrumentationLibrary: generateTestInstrumentationLibrary(),
-					Metrics:                []*otlpmetrics.Metric{generateTestHistogramMetric()},
+					InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
+					Metrics:                []*otlpmetrics.Metric{generateTestProtoHistogramMetric()},
 				},
 			},
 		},
@@ -411,10 +411,10 @@ func TestOtlpToFromInternalHistogramPointsMutating(t *testing.T) {
 	// Test that everything is updated.
 	assert.EqualValues(t, []*otlpmetrics.ResourceMetrics{
 		{
-			Resource: generateTestResource(),
+			Resource: generateTestProtoResource(),
 			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
 				{
-					InstrumentationLibrary: generateTestInstrumentationLibrary(),
+					InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
 					Metrics: []*otlpmetrics.Metric{
 						{
 							MetricDescriptor: &otlpmetrics.MetricDescriptor{
@@ -472,11 +472,11 @@ func TestOtlpToFromInternalSummaryPointsMutating(t *testing.T) {
 	newLabels := NewStringMap(map[string]string{"k": "v"})
 	metricData := MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{
 		{
-			Resource: generateTestResource(),
+			Resource: generateTestProtoResource(),
 			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
 				{
-					InstrumentationLibrary: generateTestInstrumentationLibrary(),
-					Metrics:                []*otlpmetrics.Metric{generateTestSummaryMetric()},
+					InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
+					Metrics:                []*otlpmetrics.Metric{generateTestProtoSummaryMetric()},
 				},
 			},
 		},
@@ -516,10 +516,10 @@ func TestOtlpToFromInternalSummaryPointsMutating(t *testing.T) {
 	// Test that everything is updated.
 	assert.EqualValues(t, []*otlpmetrics.ResourceMetrics{
 		{
-			Resource: generateTestResource(),
+			Resource: generateTestProtoResource(),
 			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
 				{
-					InstrumentationLibrary: generateTestInstrumentationLibrary(),
+					InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
 					Metrics: []*otlpmetrics.Metric{
 						{
 							MetricDescriptor: &otlpmetrics.MetricDescriptor{
@@ -563,11 +563,11 @@ func TestOtlpToFromInternalSummaryPointsMutating(t *testing.T) {
 func BenchmarkOtlpToFromInternal_PassThrough(b *testing.B) {
 	resourceMetricsList := []*otlpmetrics.ResourceMetrics{
 		{
-			Resource: generateTestResource(),
+			Resource: generateTestProtoResource(),
 			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
 				{
-					InstrumentationLibrary: generateTestInstrumentationLibrary(),
-					Metrics:                []*otlpmetrics.Metric{generateTestIntMetric(), generateTestDoubleMetric(), generateTestHistogramMetric(), generateTestSummaryMetric()},
+					InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
+					Metrics:                []*otlpmetrics.Metric{generateTestProtoIntMetric(), generateTestProtoDoubleMetric(), generateTestProtoHistogramMetric(), generateTestProtoSummaryMetric()},
 				},
 			},
 		},
@@ -583,11 +583,11 @@ func BenchmarkOtlpToFromInternal_PassThrough(b *testing.B) {
 func BenchmarkOtlpToFromInternal_Int64Points_MutateOneLabel(b *testing.B) {
 	resourceMetricsList := []*otlpmetrics.ResourceMetrics{
 		{
-			Resource: generateTestResource(),
+			Resource: generateTestProtoResource(),
 			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
 				{
-					InstrumentationLibrary: generateTestInstrumentationLibrary(),
-					Metrics:                []*otlpmetrics.Metric{generateTestIntMetric()},
+					InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
+					Metrics:                []*otlpmetrics.Metric{generateTestProtoIntMetric()},
 				},
 			},
 		},
@@ -604,11 +604,11 @@ func BenchmarkOtlpToFromInternal_Int64Points_MutateOneLabel(b *testing.B) {
 func BenchmarkOtlpToFromInternal_DoublePoints_MutateOneLabel(b *testing.B) {
 	resourceMetricsList := []*otlpmetrics.ResourceMetrics{
 		{
-			Resource: generateTestResource(),
+			Resource: generateTestProtoResource(),
 			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
 				{
-					InstrumentationLibrary: generateTestInstrumentationLibrary(),
-					Metrics:                []*otlpmetrics.Metric{generateTestDoubleMetric()},
+					InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
+					Metrics:                []*otlpmetrics.Metric{generateTestProtoDoubleMetric()},
 				},
 			},
 		},
@@ -625,11 +625,11 @@ func BenchmarkOtlpToFromInternal_DoublePoints_MutateOneLabel(b *testing.B) {
 func BenchmarkOtlpToFromInternal_HistogramPoints_MutateOneLabel(b *testing.B) {
 	resourceMetricsList := []*otlpmetrics.ResourceMetrics{
 		{
-			Resource: generateTestResource(),
+			Resource: generateTestProtoResource(),
 			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
 				{
-					InstrumentationLibrary: generateTestInstrumentationLibrary(),
-					Metrics:                []*otlpmetrics.Metric{generateTestHistogramMetric()},
+					InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
+					Metrics:                []*otlpmetrics.Metric{generateTestProtoHistogramMetric()},
 				},
 			},
 		},
@@ -646,11 +646,11 @@ func BenchmarkOtlpToFromInternal_HistogramPoints_MutateOneLabel(b *testing.B) {
 func BenchmarkOtlpToFromInternal_SummaryPoints_MutateOneLabel(b *testing.B) {
 	resourceMetricsList := []*otlpmetrics.ResourceMetrics{
 		{
-			Resource: generateTestResource(),
+			Resource: generateTestProtoResource(),
 			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
 				{
-					InstrumentationLibrary: generateTestInstrumentationLibrary(),
-					Metrics:                []*otlpmetrics.Metric{generateTestSummaryMetric()},
+					InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
+					Metrics:                []*otlpmetrics.Metric{generateTestProtoSummaryMetric()},
 				},
 			},
 		},
@@ -664,7 +664,7 @@ func BenchmarkOtlpToFromInternal_SummaryPoints_MutateOneLabel(b *testing.B) {
 	}
 }
 
-func generateTestResource() *otlpresource.Resource {
+func generateTestProtoResource() *otlpresource.Resource {
 	return &otlpresource.Resource{
 		Attributes: []*otlpcommon.AttributeKeyValue{
 			{
@@ -676,14 +676,14 @@ func generateTestResource() *otlpresource.Resource {
 	}
 }
 
-func generateTestInstrumentationLibrary() *otlpcommon.InstrumentationLibrary {
+func generateTestProtoInstrumentationLibrary() *otlpcommon.InstrumentationLibrary {
 	return &otlpcommon.InstrumentationLibrary{
 		Name:    "test",
 		Version: "",
 	}
 }
 
-func generateTestIntMetric() *otlpmetrics.Metric {
+func generateTestProtoIntMetric() *otlpmetrics.Metric {
 	return &otlpmetrics.Metric{
 		MetricDescriptor: &otlpmetrics.MetricDescriptor{
 			Name:        "my_metric_int",
@@ -717,7 +717,7 @@ func generateTestIntMetric() *otlpmetrics.Metric {
 		},
 	}
 }
-func generateTestDoubleMetric() *otlpmetrics.Metric {
+func generateTestProtoDoubleMetric() *otlpmetrics.Metric {
 	return &otlpmetrics.Metric{
 		MetricDescriptor: &otlpmetrics.MetricDescriptor{
 			Name:        "my_metric_double",
@@ -752,7 +752,7 @@ func generateTestDoubleMetric() *otlpmetrics.Metric {
 	}
 }
 
-func generateTestHistogramMetric() *otlpmetrics.Metric {
+func generateTestProtoHistogramMetric() *otlpmetrics.Metric {
 	return &otlpmetrics.Metric{
 		MetricDescriptor: &otlpmetrics.MetricDescriptor{
 			Name:        "my_metric_histogram",
@@ -816,7 +816,7 @@ func generateTestHistogramMetric() *otlpmetrics.Metric {
 	}
 }
 
-func generateTestSummaryMetric() *otlpmetrics.Metric {
+func generateTestProtoSummaryMetric() *otlpmetrics.Metric {
 	return &otlpmetrics.Metric{
 		MetricDescriptor: &otlpmetrics.MetricDescriptor{
 			Name:        "my_metric_summary",

@@ -44,7 +44,7 @@ func newInstrumentationLibrary(orig *otlpcommon.InstrumentationLibrary) Instrume
 
 // Name returns the name associated with this InstrumentationLibrary.
 func (ms InstrumentationLibrary) Name() string {
-	return ms.orig.GetName()
+	return ms.orig.Name
 }
 
 // SetName replaces the name associated with this InstrumentationLibrary.
@@ -54,11 +54,10 @@ func (ms InstrumentationLibrary) SetName(v string) {
 
 // Version returns the version associated with this InstrumentationLibrary.
 func (ms InstrumentationLibrary) Version() string {
-	return ms.orig.GetVersion()
+	return ms.orig.Version
 }
 
 // SetVersion replaces the version associated with this InstrumentationLibrary.
 func (ms InstrumentationLibrary) SetVersion(v string) {
 	ms.orig.Version = v
 }
-
