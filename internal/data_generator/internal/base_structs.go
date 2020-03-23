@@ -38,6 +38,10 @@ type ${structName} struct {
 //     // Here should set all the values for e.
 // }
 func New${structName}(len int) ${structName} {
+	if len == 0 {
+		orig := []*${originName}(nil)
+		return ${structName}{&orig}
+	}
 	// Slice for underlying orig.
 	origs := make([]${originName}, len)
 	// Slice for wrappers.
