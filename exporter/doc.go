@@ -12,32 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package receivertest
-
-import (
-	"context"
-	"sync"
-
-	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-)
-
-type TraceAppender struct {
-	sync.RWMutex
-	TraceDataList []consumerdata.TraceData
-}
-
-func NewTraceAppender() *TraceAppender {
-	return &TraceAppender{}
-}
-
-var _ consumer.TraceConsumerOld = (*TraceAppender)(nil)
-
-func (ma *TraceAppender) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
-	ma.Lock()
-	defer ma.Unlock()
-
-	ma.TraceDataList = append(ma.TraceDataList, td)
-
-	return nil
-}
+// Package exporter contains implementations of Exporter components.
+//
+// To implement a custom exporter you will need to implement component.ExporterFactory
+// interface and component.Exporter interface.
+//
+// To make the custom exporter part of the Collector build the factory must be added
+// to defaults.Components() function.
+package exporter

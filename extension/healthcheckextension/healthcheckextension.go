@@ -23,7 +23,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/extension"
 )
 
 type healthCheckExtension struct {
@@ -33,8 +32,7 @@ type healthCheckExtension struct {
 	server http.Server
 }
 
-var _ (extension.ServiceExtension) = (*healthCheckExtension)(nil)
-var _ (extension.PipelineWatcher) = (*healthCheckExtension)(nil)
+var _ (component.PipelineWatcher) = (*healthCheckExtension)(nil)
 
 func (hc *healthCheckExtension) Start(host component.Host) error {
 

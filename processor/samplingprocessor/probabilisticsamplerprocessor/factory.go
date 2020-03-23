@@ -17,10 +17,10 @@ package probabilisticsamplerprocessor
 import (
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/processor"
 )
 
 const (
@@ -50,9 +50,9 @@ func (f *Factory) CreateDefaultConfig() configmodels.Processor {
 // CreateTraceProcessor creates a trace processor based on this config.
 func (f *Factory) CreateTraceProcessor(
 	logger *zap.Logger,
-	nextConsumer consumer.TraceConsumer,
+	nextConsumer consumer.TraceConsumerOld,
 	cfg configmodels.Processor,
-) (processor.TraceProcessor, error) {
+) (component.TraceProcessorOld, error) {
 	oCfg := cfg.(*Config)
 	return NewTraceProcessor(nextConsumer, *oCfg)
 }
@@ -60,8 +60,8 @@ func (f *Factory) CreateTraceProcessor(
 // CreateMetricsProcessor creates a metrics processor based on this config.
 func (f *Factory) CreateMetricsProcessor(
 	logger *zap.Logger,
-	nextConsumer consumer.MetricsConsumer,
+	nextConsumer consumer.MetricsConsumerOld,
 	cfg configmodels.Processor,
-) (processor.MetricsProcessor, error) {
+) (component.MetricsProcessorOld, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }

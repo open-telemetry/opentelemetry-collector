@@ -25,15 +25,13 @@ import (
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v2"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/receiver"
 )
 
 // This file implements config for Prometheus receiver.
-
-var _ (receiver.Factory) = (*Factory)(nil)
 
 const (
 	// The value of "type" key in configuration.
@@ -57,7 +55,7 @@ func (f *Factory) Type() string {
 }
 
 // CustomUnmarshaler returns custom unmarshaler for this config.
-func (f *Factory) CustomUnmarshaler() receiver.CustomUnmarshaler {
+func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 	return CustomUnmarshalerFunc
 }
 
@@ -117,8 +115,8 @@ func (f *Factory) CreateTraceReceiver(
 	ctx context.Context,
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
-	nextConsumer consumer.TraceConsumer,
-) (receiver.TraceReceiver, error) {
+	nextConsumer consumer.TraceConsumerOld,
+) (component.TraceReceiver, error) {
 	// Prometheus does not support traces
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
@@ -127,8 +125,8 @@ func (f *Factory) CreateTraceReceiver(
 func (f *Factory) CreateMetricsReceiver(
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
-	consumer consumer.MetricsConsumer,
-) (receiver.MetricsReceiver, error) {
+	consumer consumer.MetricsConsumerOld,
+) (component.MetricsReceiver, error) {
 	config := cfg.(*Config)
 	if config.PrometheusConfig == nil || len(config.PrometheusConfig.ScrapeConfigs) == 0 {
 		return nil, errNilScrapeConfig

@@ -108,7 +108,7 @@ func TestShortIDSpanConversion(t *testing.T) {
 func TestNew(t *testing.T) {
 	type args struct {
 		address      string
-		nextConsumer consumer.TraceConsumer
+		nextConsumer consumer.TraceConsumerOld
 	}
 	tests := []struct {
 		name    string

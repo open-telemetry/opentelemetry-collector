@@ -41,3 +41,9 @@ type Host interface {
 	// operations.
 	Context() context.Context
 }
+
+// Factory interface must be implemented by all component factories.
+type Factory interface {
+	// Type gets the type of the component created by this factory.
+	Type() string
+}

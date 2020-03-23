@@ -214,7 +214,7 @@ func makeTraceServiceClient(port int) (collectortrace.TraceServiceClient, func()
 	return metricsClient, doneFn, nil
 }
 
-func otlpReceiverOnGRPCServer(t *testing.T, tc consumer.TraceConsumer) (r *Receiver, port int, done func()) {
+func otlpReceiverOnGRPCServer(t *testing.T, tc consumer.TraceConsumerOld) (r *Receiver, port int, done func()) {
 	ln, err := net.Listen("tcp", "localhost:")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 

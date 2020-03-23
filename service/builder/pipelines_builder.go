@@ -30,14 +30,14 @@ import (
 // It can have a trace and/or a metrics consumer (the consumer is either the first
 // processor in the pipeline or the exporter if pipeline has no processors).
 type builtPipeline struct {
-	firstTC consumer.TraceConsumer
-	firstMC consumer.MetricsConsumer
+	firstTC consumer.TraceConsumerOld
+	firstMC consumer.MetricsConsumerOld
 
 	// MutatesConsumedData is set to true if any processors in the pipeline
 	// can mutate the TraceData or MetricsData input argument.
 	MutatesConsumedData bool
 
-	processors []processor.Processor
+	processors []component.Processor
 }
 
 // BuiltPipelines is a map of build pipelines created from pipeline configs.
@@ -83,21 +83,21 @@ type PipelinesBuilder struct {
 	logger    *zap.Logger
 	config    *configmodels.Config
 	exporters Exporters
-	factories map[string]processor.Factory
+	factories map[string]component.ProcessorFactoryBase
 }
 
 // NewPipelinesBuilder creates a new PipelinesBuilder. Requires exporters to be already
-// built via ExportersBuilder. Call Build() on the returned value.
+// built via ExportersBuilder. Call BuildProcessors() on the returned value.
 func NewPipelinesBuilder(
 	logger *zap.Logger,
 	config *configmodels.Config,
 	exporters Exporters,
-	factories map[string]processor.Factory,
+	factories map[string]component.ProcessorFactoryBase,
 ) *PipelinesBuilder {
 	return &PipelinesBuilder{logger, config, exporters, factories}
 }
 
-// Build pipeline processors from config.
+// BuildProcessors pipeline processors from config.
 func (pb *PipelinesBuilder) Build() (BuiltPipelines, error) {
 	pipelineProcessors := make(BuiltPipelines)
 
@@ -119,11 +119,11 @@ func (pb *PipelinesBuilder) buildPipeline(
 	pipelineCfg *configmodels.Pipeline,
 ) (*builtPipeline, error) {
 
-	// Build the pipeline backwards.
+	// BuildProcessors the pipeline backwards.
 
 	// First create a consumer junction point that fans out the data to all exporters.
-	var tc consumer.TraceConsumer
-	var mc consumer.MetricsConsumer
+	var tc consumer.TraceConsumerOld
+	var mc consumer.MetricsConsumerOld
 
 	switch pipelineCfg.InputType {
 	case configmodels.TracesDataType:
@@ -134,7 +134,7 @@ func (pb *PipelinesBuilder) buildPipeline(
 
 	mutatesConsumedData := false
 
-	processors := make([]processor.Processor, len(pipelineCfg.Processors))
+	processors := make([]component.Processor, len(pipelineCfg.Processors))
 
 	// Now build the processors backwards, starting from the last one.
 	// The last processor points to consumer which fans out to exporters, then
@@ -146,22 +146,27 @@ func (pb *PipelinesBuilder) buildPipeline(
 
 		factory := pb.factories[procCfg.Type()]
 
+		factoryV1, ok := factory.(component.ProcessorFactoryOld)
+		if !ok {
+			return nil, fmt.Errorf("processor factory must implement ExporterFactoryOld: %s", procCfg.Type())
+		}
+
 		// This processor must point to the next consumer and then
 		// it becomes the next for the previous one (previous in the pipeline,
 		// which we will build in the next loop iteration).
 		var err error
 		switch pipelineCfg.InputType {
 		case configmodels.TracesDataType:
-			var proc processor.TraceProcessor
-			proc, err = factory.CreateTraceProcessor(pb.logger, tc, procCfg)
+			var proc component.TraceProcessorOld
+			proc, err = factoryV1.CreateTraceProcessor(pb.logger, tc, procCfg)
 			if proc != nil {
 				mutatesConsumedData = mutatesConsumedData || proc.GetCapabilities().MutatesConsumedData
 			}
 			processors[i] = proc
 			tc = proc
 		case configmodels.MetricsDataType:
-			var proc processor.MetricsProcessor
-			proc, err = factory.CreateMetricsProcessor(pb.logger, mc, procCfg)
+			var proc component.MetricsProcessorOld
+			proc, err = factoryV1.CreateMetricsProcessor(pb.logger, mc, procCfg)
 			if proc != nil {
 				mutatesConsumedData = mutatesConsumedData || proc.GetCapabilities().MutatesConsumedData
 			}
@@ -203,7 +208,7 @@ func (pb *PipelinesBuilder) getBuiltExportersByNames(exporterNames []string) []*
 	return result
 }
 
-func (pb *PipelinesBuilder) buildFanoutExportersTraceConsumer(exporterNames []string) consumer.TraceConsumer {
+func (pb *PipelinesBuilder) buildFanoutExportersTraceConsumer(exporterNames []string) consumer.TraceConsumerOld {
 	builtExporters := pb.getBuiltExportersByNames(exporterNames)
 
 	// Optimize for the case when there is only one exporter, no need to create junction point.
@@ -211,7 +216,7 @@ func (pb *PipelinesBuilder) buildFanoutExportersTraceConsumer(exporterNames []st
 		return builtExporters[0].te
 	}
 
-	var exporters []consumer.TraceConsumer
+	var exporters []consumer.TraceConsumerOld
 	for _, builtExp := range builtExporters {
 		exporters = append(exporters, builtExp.te)
 	}
@@ -220,7 +225,7 @@ func (pb *PipelinesBuilder) buildFanoutExportersTraceConsumer(exporterNames []st
 	return processor.NewTraceFanOutConnector(exporters)
 }
 
-func (pb *PipelinesBuilder) buildFanoutExportersMetricsConsumer(exporterNames []string) consumer.MetricsConsumer {
+func (pb *PipelinesBuilder) buildFanoutExportersMetricsConsumer(exporterNames []string) consumer.MetricsConsumerOld {
 	builtExporters := pb.getBuiltExportersByNames(exporterNames)
 
 	// Optimize for the case when there is only one exporter, no need to create junction point.
@@ -228,7 +233,7 @@ func (pb *PipelinesBuilder) buildFanoutExportersMetricsConsumer(exporterNames []
 		return builtExporters[0].me
 	}
 
-	var exporters []consumer.MetricsConsumer
+	var exporters []consumer.MetricsConsumerOld
 	for _, builtExp := range builtExporters {
 		exporters = append(exporters, builtExp.me)
 	}

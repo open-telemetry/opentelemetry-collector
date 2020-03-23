@@ -23,9 +23,9 @@ import (
 	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/collector/trace/v1"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/exporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	metricstranslator "github.com/open-telemetry/opentelemetry-collector/translator/metrics"
@@ -59,7 +59,7 @@ const (
 )
 
 // NewTraceExporter creates an OTLP trace exporter.
-func NewTraceExporter(logger *zap.Logger, config configmodels.Exporter) (exporter.TraceExporter, error) {
+func NewTraceExporter(logger *zap.Logger, config configmodels.Exporter) (component.TraceExporterOld, error) {
 	oce, err := createOTLPExporter(logger, config)
 	if err != nil {
 		return nil, err
@@ -76,7 +76,7 @@ func NewTraceExporter(logger *zap.Logger, config configmodels.Exporter) (exporte
 }
 
 // NewMetricsExporter creates an OTLP metrics exporter.
-func NewMetricsExporter(logger *zap.Logger, config configmodels.Exporter) (exporter.MetricsExporter, error) {
+func NewMetricsExporter(logger *zap.Logger, config configmodels.Exporter) (component.MetricsExporterOld, error) {
 	oce, err := createOTLPExporter(logger, config)
 	if err != nil {
 		return nil, err

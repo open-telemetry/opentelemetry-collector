@@ -38,7 +38,7 @@ type queuedSpanProcessor struct {
 	name                     string
 	queue                    *queue.BoundedQueue
 	logger                   *zap.Logger
-	sender                   consumer.TraceConsumer
+	sender                   consumer.TraceConsumerOld
 	numWorkers               int
 	retryOnProcessingFailure bool
 	backoffDelay             time.Duration
@@ -46,7 +46,7 @@ type queuedSpanProcessor struct {
 	stopOnce                 sync.Once
 }
 
-var _ consumer.TraceConsumer = (*queuedSpanProcessor)(nil)
+var _ consumer.TraceConsumerOld = (*queuedSpanProcessor)(nil)
 
 type queueItem struct {
 	queuedTime time.Time
@@ -57,14 +57,14 @@ type queueItem struct {
 // NewQueuedSpanProcessor returns a span processor that maintains a bounded
 // in-memory queue of span batches, and sends out span batches using the
 // provided sender
-func NewQueuedSpanProcessor(sender consumer.TraceConsumer, opts ...Option) processor.TraceProcessor {
+func NewQueuedSpanProcessor(sender consumer.TraceConsumerOld, opts ...Option) component.TraceProcessorOld {
 	options := Options.apply(opts...)
 	sp := newQueuedSpanProcessor(sender, options)
 
 	return sp
 }
 
-func newQueuedSpanProcessor(sender consumer.TraceConsumer, opts options) *queuedSpanProcessor {
+func newQueuedSpanProcessor(sender consumer.TraceConsumerOld, opts options) *queuedSpanProcessor {
 	boundedQueue := queue.NewBoundedQueue(opts.queueSize, func(item interface{}) {})
 	return &queuedSpanProcessor{
 		name:                     opts.name,
@@ -144,8 +144,8 @@ func (sp *queuedSpanProcessor) ConsumeTraceData(ctx context.Context, td consumer
 	return nil
 }
 
-func (sp *queuedSpanProcessor) GetCapabilities() processor.Capabilities {
-	return processor.Capabilities{MutatesConsumedData: false}
+func (sp *queuedSpanProcessor) GetCapabilities() component.ProcessorCapabilities {
+	return component.ProcessorCapabilities{MutatesConsumedData: false}
 }
 
 // Shutdown is invoked during service shutdown.

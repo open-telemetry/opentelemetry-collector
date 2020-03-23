@@ -31,7 +31,7 @@ import (
 )
 
 func TestTraceProcessorCloningMultiplexing(t *testing.T) {
-	processors := make([]consumer.TraceConsumer, 3)
+	processors := make([]consumer.TraceConsumerOld, 3)
 	for i := range processors {
 		processors[i] = &mockTraceConsumer{}
 	}
@@ -67,7 +67,7 @@ func TestTraceProcessorCloningMultiplexing(t *testing.T) {
 }
 
 func TestMetricsProcessorCloningMultiplexing(t *testing.T) {
-	processors := make([]consumer.MetricsConsumer, 3)
+	processors := make([]consumer.MetricsConsumerOld, 3)
 	for i := range processors {
 		processors[i] = &mockMetricsConsumer{}
 	}

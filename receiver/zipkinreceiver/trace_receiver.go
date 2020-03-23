@@ -43,7 +43,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/internal"
 	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
-	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 	"github.com/open-telemetry/opentelemetry-collector/translator/trace/zipkin"
 )
@@ -62,7 +61,7 @@ type ZipkinReceiver struct {
 	// addr is the address onto which the HTTP server will be bound
 	addr         string
 	host         component.Host
-	nextConsumer consumer.TraceConsumer
+	nextConsumer consumer.TraceConsumerOld
 	instanceName string
 
 	startOnce sync.Once
@@ -70,11 +69,10 @@ type ZipkinReceiver struct {
 	server    *http.Server
 }
 
-var _ receiver.TraceReceiver = (*ZipkinReceiver)(nil)
 var _ http.Handler = (*ZipkinReceiver)(nil)
 
 // New creates a new zipkinreceiver.ZipkinReceiver reference.
-func New(instanceName, address string, nextConsumer consumer.TraceConsumer) (*ZipkinReceiver, error) {
+func New(instanceName, address string, nextConsumer consumer.TraceConsumerOld) (*ZipkinReceiver, error) {
 	if nextConsumer == nil {
 		return nil, oterr.ErrNilNextConsumer
 	}

@@ -36,7 +36,7 @@ type prometheusExporter struct {
 	shutdown exporterhelper.Shutdown
 }
 
-var _ consumer.MetricsConsumer = (*prometheusExporter)(nil)
+var _ consumer.MetricsConsumerOld = (*prometheusExporter)(nil)
 
 func (pe *prometheusExporter) Start(host component.Host) error {
 	return nil

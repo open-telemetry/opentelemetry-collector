@@ -17,16 +17,12 @@ package extensiontest
 import (
 	"context"
 	"time"
-
-	"github.com/open-telemetry/opentelemetry-collector/component"
 )
 
 // MockHost mocks an component.Host for test purposes.
 type MockHost struct {
 	errorChan chan error
 }
-
-var _ component.Host = (*MockHost)(nil)
 
 // NewMockHost returns a new instance of MockHost with proper defaults for most
 // tests.

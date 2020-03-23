@@ -34,11 +34,11 @@ const (
 // Receiver is the type used to handle metrics from OpenTelemetry exporters.
 type Receiver struct {
 	instanceName string
-	nextConsumer consumer.MetricsConsumer
+	nextConsumer consumer.MetricsConsumerOld
 }
 
 // New creates a new Receiver reference.
-func New(instanceName string, nextConsumer consumer.MetricsConsumer) (*Receiver, error) {
+func New(instanceName string, nextConsumer consumer.MetricsConsumerOld) (*Receiver, error) {
 	if nextConsumer == nil {
 		return nil, oterr.ErrNilNextConsumer
 	}

@@ -25,10 +25,10 @@ import (
 
 	"github.com/apache/thrift/lib/go/thrift"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumererror"
-	"github.com/open-telemetry/opentelemetry-collector/exporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
 	jaegertranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace/jaeger"
 )
@@ -49,7 +49,7 @@ func New(
 	httpAddress string,
 	headers map[string]string,
 	timeout time.Duration,
-) (exporter.TraceExporter, error) {
+) (component.TraceExporterOld, error) {
 
 	clientTimeout := defaultHTTPTimeout
 	if timeout != 0 {

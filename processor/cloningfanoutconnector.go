@@ -34,13 +34,13 @@ import (
 // own copy of data and is free to modify it.
 
 // NewMetricsCloningFanOutConnector wraps multiple metrics consumers in a single one.
-func NewMetricsCloningFanOutConnector(mcs []consumer.MetricsConsumer) consumer.MetricsConsumer {
+func NewMetricsCloningFanOutConnector(mcs []consumer.MetricsConsumerOld) consumer.MetricsConsumerOld {
 	return metricsCloningFanOutConnector(mcs)
 }
 
-type metricsCloningFanOutConnector []consumer.MetricsConsumer
+type metricsCloningFanOutConnector []consumer.MetricsConsumerOld
 
-var _ consumer.MetricsConsumer = (*metricsCloningFanOutConnector)(nil)
+var _ consumer.MetricsConsumerOld = (*metricsCloningFanOutConnector)(nil)
 
 // ConsumeMetricsData exports the MetricsData to all consumers wrapped by the current one.
 func (mfc metricsCloningFanOutConnector) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
@@ -67,13 +67,13 @@ func (mfc metricsCloningFanOutConnector) ConsumeMetricsData(ctx context.Context,
 }
 
 // NewTraceCloningFanOutConnector wraps multiple trace consumers in a single one.
-func NewTraceCloningFanOutConnector(tcs []consumer.TraceConsumer) consumer.TraceConsumer {
+func NewTraceCloningFanOutConnector(tcs []consumer.TraceConsumerOld) consumer.TraceConsumerOld {
 	return traceCloningFanOutConnector(tcs)
 }
 
-type traceCloningFanOutConnector []consumer.TraceConsumer
+type traceCloningFanOutConnector []consumer.TraceConsumerOld
 
-var _ consumer.TraceConsumer = (*traceCloningFanOutConnector)(nil)
+var _ consumer.TraceConsumerOld = (*traceCloningFanOutConnector)(nil)
 
 // ConsumeTraceData exports the span data to all trace consumers wrapped by the current one.
 func (tfc traceCloningFanOutConnector) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {

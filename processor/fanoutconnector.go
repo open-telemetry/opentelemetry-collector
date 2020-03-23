@@ -26,13 +26,13 @@ import (
 // that fan out the data to multiple other consumers.
 
 // NewMetricsFanOutConnector wraps multiple metrics consumers in a single one.
-func NewMetricsFanOutConnector(mcs []consumer.MetricsConsumer) consumer.MetricsConsumer {
+func NewMetricsFanOutConnector(mcs []consumer.MetricsConsumerOld) consumer.MetricsConsumerOld {
 	return metricsFanOutConnector(mcs)
 }
 
-type metricsFanOutConnector []consumer.MetricsConsumer
+type metricsFanOutConnector []consumer.MetricsConsumerOld
 
-var _ consumer.MetricsConsumer = (*metricsFanOutConnector)(nil)
+var _ consumer.MetricsConsumerOld = (*metricsFanOutConnector)(nil)
 
 // ConsumeMetricsData exports the MetricsData to all consumers wrapped by the current one.
 func (mfc metricsFanOutConnector) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
@@ -46,13 +46,13 @@ func (mfc metricsFanOutConnector) ConsumeMetricsData(ctx context.Context, md con
 }
 
 // NewTraceFanOutConnector wraps multiple trace consumers in a single one.
-func NewTraceFanOutConnector(tcs []consumer.TraceConsumer) consumer.TraceConsumer {
+func NewTraceFanOutConnector(tcs []consumer.TraceConsumerOld) consumer.TraceConsumerOld {
 	return traceFanOutConnector(tcs)
 }
 
-type traceFanOutConnector []consumer.TraceConsumer
+type traceFanOutConnector []consumer.TraceConsumerOld
 
-var _ consumer.TraceConsumer = (*traceFanOutConnector)(nil)
+var _ consumer.TraceConsumerOld = (*traceFanOutConnector)(nil)
 
 // ConsumeTraceData exports the span data to all trace consumers wrapped by the current one.
 func (tfc traceFanOutConnector) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {

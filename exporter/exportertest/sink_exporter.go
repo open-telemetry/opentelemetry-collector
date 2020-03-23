@@ -20,7 +20,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/exporter"
 )
 
 // SinkTraceExporter acts as a trace receiver for use in tests.
@@ -28,8 +27,6 @@ type SinkTraceExporter struct {
 	mu     sync.Mutex
 	traces []consumerdata.TraceData
 }
-
-var _ exporter.TraceExporter = (*SinkTraceExporter)(nil)
 
 // Start tells the exporter to start. The exporter may prepare for exporting
 // by connecting to the endpoint. Host parameter can be used for communicating
@@ -66,8 +63,6 @@ type SinkMetricsExporter struct {
 	mu      sync.Mutex
 	metrics []consumerdata.MetricsData
 }
-
-var _ exporter.MetricsExporter = (*SinkMetricsExporter)(nil)
 
 // Start tells the exporter to start. The exporter may prepare for exporting
 // by connecting to the endpoint. Host parameter can be used for communicating
