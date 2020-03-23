@@ -32,7 +32,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 )
 
-func ocToOtlp(td consumerdata.TraceData) []*otlptrace.ResourceSpans {
+func OCToOTLP(td consumerdata.TraceData) []*otlptrace.ResourceSpans {
 
 	if td.Node == nil && td.Resource == nil && len(td.Spans) == 0 {
 		return nil
