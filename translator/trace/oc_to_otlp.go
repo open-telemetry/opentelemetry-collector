@@ -15,20 +15,16 @@
 package tracetranslator
 
 import (
-	"strconv"
 	"strings"
 
-	occommon "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	octrace "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	otlpcommon "github.com/open-telemetry/opentelemetry-proto/gen/go/common/v1"
-	otlpresource "github.com/open-telemetry/opentelemetry-proto/gen/go/resource/v1"
 	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal"
+	translatorcommon "github.com/open-telemetry/opentelemetry-collector/translator/common"
 	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 )
 
@@ -38,7 +34,7 @@ func OCToOTLP(td consumerdata.TraceData) []*otlptrace.ResourceSpans {
 		return nil
 	}
 
-	resource := ocNodeResourceToOtlp(td.Node, td.Resource)
+	resource := translatorcommon.OCNodeResourceToOtlp(td.Node, td.Resource)
 
 	resourceSpans := &otlptrace.ResourceSpans{
 		Resource: resource,
@@ -63,7 +59,7 @@ func OCToOTLP(td consumerdata.TraceData) []*otlptrace.ResourceSpans {
 				// Add a separate ResourceSpans item just for this span since it
 				// has a different Resource.
 				separateRS := &otlptrace.ResourceSpans{
-					Resource: ocNodeResourceToOtlp(td.Node, ocSpan.Resource),
+					Resource: translatorcommon.OCNodeResourceToOtlp(td.Node, ocSpan.Resource),
 					InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
 						{
 							Spans: []*otlptrace.Span{otlpSpan},
@@ -325,105 +321,4 @@ func truncableStringToStr(ts *octrace.TruncatableString) string {
 		return ""
 	}
 	return ts.Value
-}
-
-func ocNodeResourceToOtlp(node *occommon.Node, resource *ocresource.Resource) *otlpresource.Resource {
-	otlpResource := &otlpresource.Resource{}
-
-	// Move all special fields in Node and in Resource to a temporary attributes map.
-	// After that we will build the attributes slice in OTLP format from this map.
-	// This ensures there are no attributes with duplicate keys.
-
-	// Number of special fields in the Node. See the code below that deals with special fields.
-	const specialNodeAttrCount = 7
-
-	// Number of special fields in the Resource.
-	const specialResourceAttrCount = 1
-
-	// Calculate maximum total number of attributes. It is OK if we are a bit higher than
-	// the exact number since this is only needed for capacity reservation.
-	totalAttrCount := 0
-	if node != nil {
-		totalAttrCount += len(node.Attributes) + specialNodeAttrCount
-	}
-	if resource != nil {
-		totalAttrCount += len(resource.Labels) + specialResourceAttrCount
-	}
-
-	// Create a temporary map where we will place all attributes from the Node and Resource.
-	attrs := make(map[string]string, totalAttrCount)
-
-	if node != nil {
-		// Copy all Attributes.
-		for k, v := range node.Attributes {
-			attrs[k] = v
-		}
-
-		// Add all special fields.
-		if node.ServiceInfo != nil {
-			if node.ServiceInfo.Name != "" {
-				attrs[conventions.AttributeServiceName] = node.ServiceInfo.Name
-			}
-		}
-		if node.Identifier != nil {
-			if node.Identifier.StartTimestamp != nil {
-				attrs[conventions.OCAttributeProcessStartTime] = ptypes.TimestampString(node.Identifier.StartTimestamp)
-			}
-			if node.Identifier.HostName != "" {
-				attrs[conventions.AttributeHostHostname] = node.Identifier.HostName
-			}
-			if node.Identifier.Pid != 0 {
-				attrs[conventions.OCAttributeProcessID] = strconv.Itoa(int(node.Identifier.Pid))
-			}
-		}
-		if node.LibraryInfo != nil {
-			if node.LibraryInfo.CoreLibraryVersion != "" {
-				attrs[conventions.AttributeLibraryVersion] = node.LibraryInfo.CoreLibraryVersion
-			}
-			if node.LibraryInfo.ExporterVersion != "" {
-				attrs[conventions.OCAttributeExporterVersion] = node.LibraryInfo.ExporterVersion
-			}
-			if node.LibraryInfo.Language != occommon.LibraryInfo_LANGUAGE_UNSPECIFIED {
-				attrs[conventions.AttributeLibraryLanguage] = node.LibraryInfo.Language.String()
-			}
-		}
-	}
-
-	if resource != nil {
-		// Copy resource Labels.
-		for k, v := range resource.Labels {
-			attrs[k] = v
-		}
-		// Add special fields.
-		if resource.Type != "" {
-			attrs[conventions.OCAttributeResourceType] = resource.Type
-		}
-	}
-
-	// Convert everything from the temporary matp to OTLP format.
-	otlpResource.Attributes = attrMapToOtlp(attrs)
-
-	return otlpResource
-}
-
-func attrMapToOtlp(ocAttrs map[string]string) []*otlpcommon.AttributeKeyValue {
-	if len(ocAttrs) == 0 {
-		return nil
-	}
-
-	otlpAttrs := make([]*otlpcommon.AttributeKeyValue, len(ocAttrs))
-	i := 0
-	for k, v := range ocAttrs {
-		otlpAttrs[i] = otlpStringAttr(k, v)
-		i++
-	}
-	return otlpAttrs
-}
-
-func otlpStringAttr(key string, val string) *otlpcommon.AttributeKeyValue {
-	return &otlpcommon.AttributeKeyValue{
-		Key:         key,
-		Type:        otlpcommon.AttributeKeyValue_STRING,
-		StringValue: val,
-	}
 }

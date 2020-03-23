@@ -23,12 +23,12 @@ import (
 	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/collector/trace/v1"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
+	metricstranslator "github.com/open-telemetry/opentelemetry-collector/translator/metrics"
 	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 )
 
@@ -81,7 +81,7 @@ func NewMetricsExporter(logger *zap.Logger, config configmodels.Exporter) (expor
 	if err != nil {
 		return nil, err
 	}
-	_, err = exporterhelper.NewMetricsExporter(
+	oexp, err := exporterhelper.NewMetricsExporter(
 		config,
 		oce.pushMetricsData,
 		exporterhelper.WithShutdown(oce.Shutdown),
@@ -90,8 +90,7 @@ func NewMetricsExporter(logger *zap.Logger, config configmodels.Exporter) (expor
 		return nil, err
 	}
 
-	// TODO: return created exporter after metric support is finalized in PushMetricsData()
-	return nil, configerror.ErrDataTypeIsNotSupported
+	return oexp, nil
 }
 
 // createOTLPExporter creates an OTLP exporter.
@@ -195,7 +194,7 @@ func (oce *otlpExporter) pushMetricsData(ctx context.Context, md consumerdata.Me
 
 	// Perform the request.
 	request := &otlpmetrics.ExportMetricsServiceRequest{
-		// TODO: translate from md to ResourceMetrics field
+		ResourceMetrics: metricstranslator.OCToOTLP(md),
 	}
 	err := exporter.exportMetrics(ctx, request)
 
