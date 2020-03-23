@@ -6,7 +6,7 @@
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="https://github.com/open-telemetry/community#agentcollector">Getting Involved<a/>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
-    <a href="https://gitter.im/open-telemetry/opentelemetry-collector">Getting In Touch<a/>
+    <a href="https://gitter.im/open-telemetry/opentelemetry-service">Getting In Touch<a/>
   </strong>
 </p>
 
