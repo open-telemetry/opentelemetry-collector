@@ -16,9 +16,11 @@ package testutils
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -88,4 +90,46 @@ func WaitForPort(t *testing.T, port uint16) error {
 		time.Sleep(wait)
 	}
 	return fmt.Errorf("failed to wait for port %d", port)
+}
+
+// HostPortFromAddr extracts host and port from a network address
+func HostPortFromAddr(addr net.Addr) (host string, port int, err error) {
+	addrStr := addr.String()
+	sepIndex := strings.LastIndex(addrStr, ":")
+	if sepIndex < 0 {
+		return "", -1, errors.New("failed to parse host:port")
+	}
+	host, portStr := addrStr[:sepIndex], addrStr[sepIndex+1:]
+	port, err = strconv.Atoi(portStr)
+	return host, port, err
+}
+
+// WaitFor the specific condition for up to 10 seconds. Records a test error
+// if condition does not become true.
+func WaitFor(t *testing.T, cond func() bool, errMsg ...interface{}) bool {
+	t.Helper()
+
+	startTime := time.Now()
+
+	// Start with 5 ms waiting interval between condition re-evaluation.
+	waitInterval := time.Millisecond * 5
+
+	for {
+		time.Sleep(waitInterval)
+
+		// Increase waiting interval exponentially up to 500 ms.
+		if waitInterval < time.Millisecond*500 {
+			waitInterval = waitInterval * 2
+		}
+
+		if cond() {
+			return true
+		}
+
+		if time.Since(startTime) > time.Second*10 {
+			// Waited too long
+			t.Error("Time out waiting for", errMsg)
+			return false
+		}
+	}
 }

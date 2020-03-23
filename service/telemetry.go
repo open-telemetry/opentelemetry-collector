@@ -16,11 +16,11 @@ package service
 
 import (
 	"flag"
-	"log"
 	"net/http"
 	"strconv"
 
 	"contrib.go.opencensus.io/exporter/prometheus"
+	"github.com/pkg/errors"
 	"go.opencensus.io/stats/view"
 	"go.uber.org/zap"
 
@@ -89,7 +89,7 @@ func telemetryFlags(flags *flag.FlagSet) {
 func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) error {
 	level, err := telemetry.ParseLevel(*metricsLevelPtr)
 	if err != nil {
-		log.Fatalf("Failed to parse metrics level: %v", err)
+		return errors.Wrap(err, "failed to parse metrics level")
 	}
 
 	if level == telemetry.None {
@@ -98,8 +98,9 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 
 	port := int(*metricsPortPtr)
 
-	views := processor.MetricViews(level)
+	var views []*view.View
 	views = append(views, obsreport.Configure(*useLegacyMetricsPtr, *useNewMetricsPtr)...)
+	views = append(views, processor.MetricViews(level)...)
 	views = append(views, queuedprocessor.MetricViews(level)...)
 	views = append(views, batchprocessor.MetricViews(level)...)
 	views = append(views, tailsamplingprocessor.SamplingProcessorMetricViews(level)...)
@@ -123,7 +124,14 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 
 	view.RegisterExporter(pe)
 
-	logger.Info("Serving Prometheus metrics", zap.Int("port", port))
+	logger.Info(
+		"Serving Prometheus metrics",
+		zap.Int("port", port),
+		zap.Bool("legacy_metrics", *useLegacyMetricsPtr),
+		zap.Bool("new_metrics", *useNewMetricsPtr),
+		zap.Int8("level", int8(level)), // TODO: make it human friendly
+	)
+
 	go func() {
 		mux := http.NewServeMux()
 		mux.Handle("/metrics", pe)

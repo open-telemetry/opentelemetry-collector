@@ -46,6 +46,8 @@ func TestLoadConfig(t *testing.T) {
 				NameVal: "logging/2",
 				TypeVal: "logging",
 			},
-			LogLevel: "debug",
+			LogLevel:           "debug",
+			SamplingInitial:    10,
+			SamplingThereafter: 50,
 		})
 }

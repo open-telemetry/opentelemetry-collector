@@ -28,6 +28,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/stats/view"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumererror"
@@ -53,6 +54,8 @@ func TestQueuedProcessor_noEnqueueOnPermanentError(t *testing.T) {
 		Options.WithQueueSize(2),
 	).(*queuedSpanProcessor)
 
+	mh := component.MockHost{}
+	require.NoError(t, qp.Start(&mh))
 	c.Add(1)
 	require.Nil(t, qp.ConsumeTraceData(ctx, td))
 	c.Wait()
@@ -102,6 +105,8 @@ func TestQueueProcessorHappyPath(t *testing.T) {
 
 	mockProc := newMockConcurrentSpanProcessor()
 	qp := NewQueuedSpanProcessor(mockProc)
+	mockHost := component.MockHost{}
+	require.NoError(t, qp.Start(&mockHost))
 	goFn := func(td consumerdata.TraceData) {
 		qp.ConsumeTraceData(context.Background(), td)
 	}
@@ -134,7 +139,7 @@ func TestQueueProcessorHappyPath(t *testing.T) {
 	require.Len(t, data, 1)
 	assert.Equal(t, 0.0, data[0].Data.(*view.SumData).Value)
 
-	data, err = view.RetrieveData("batches_dropped")
+	data, err = view.RetrieveData(processor.StatTraceBatchesDroppedCount.Name())
 	require.NoError(t, err)
 	assert.Equal(t, 0.0, data[0].Data.(*view.SumData).Value)
 }

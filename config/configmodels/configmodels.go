@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package configmodels defines the data models for entities. This file defines the
-// models for V2 configuration format. The defined entities are:
+// models for configuration format. The defined entities are:
 // Config (the top-level structure), Receivers, Exporters, Processors, Pipelines.
 package configmodels
 

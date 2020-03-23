@@ -20,17 +20,16 @@ import (
 	"go.opencensus.io/tag"
 
 	"github.com/open-telemetry/opentelemetry-collector/internal/collector/telemetry"
+	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
 )
 
 var (
-	statBatchSize               = stats.Int64("batch_size", "Size of batches sent from the batcher (in span)", stats.UnitDimensionless)
 	statNodesAddedToBatches     = stats.Int64("nodes_added_to_batches", "Count of nodes that are being batched.", stats.UnitDimensionless)
 	statNodesRemovedFromBatches = stats.Int64("nodes_removed_from_batches", "Number of nodes that have been removed from batching.", stats.UnitDimensionless)
 
 	statBatchSizeTriggerSend = stats.Int64("batch_size_trigger_send", "Number of times the batch was sent due to a size trigger", stats.UnitDimensionless)
 	statTimeoutTriggerSend   = stats.Int64("timeout_trigger_send", "Number of times the batch was sent due to a timeout trigger", stats.UnitDimensionless)
-	statBatchOnDeadNode      = stats.Int64("removed_node_send", "Number of times the batch was sent due to spans being added for a no longer active node", stats.UnitDimensionless)
 )
 
 // MetricViews returns the metrics views related to batching
@@ -45,16 +44,6 @@ func MetricViews(level telemetry.Level) []*view.View {
 	}
 
 	processorTagKeys := []tag.Key{processor.TagProcessorNameKey}
-
-	batchSizeAggregation := view.Distribution(10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 10000, 20000, 30000, 50000, 100000)
-
-	batchSizeView := &view.View{
-		Name:        statBatchSize.Name(),
-		Measure:     statBatchSize,
-		Description: statBatchSize.Description(),
-		TagKeys:     processorTagKeys,
-		Aggregation: batchSizeAggregation,
-	}
 
 	nodesAddedToBatchesView := &view.View{
 		Name:        statNodesAddedToBatches.Name(),
@@ -88,20 +77,12 @@ func MetricViews(level telemetry.Level) []*view.View {
 		Aggregation: view.Sum(),
 	}
 
-	countBatchOnDeadNode := &view.View{
-		Name:        statBatchOnDeadNode.Name(),
-		Measure:     statBatchOnDeadNode,
-		Description: statBatchOnDeadNode.Description(),
-		TagKeys:     tagKeys,
-		Aggregation: view.Sum(),
-	}
-
-	return []*view.View{
-		batchSizeView,
+	legacyViews := []*view.View{
 		nodesAddedToBatchesView,
 		nodesRemovedFromBatchesView,
 		countBatchSizeTriggerSendView,
 		countTimeoutTriggerSendView,
-		countBatchOnDeadNode,
 	}
+
+	return obsreport.ProcessorMetricViews(typeStr, legacyViews)
 }

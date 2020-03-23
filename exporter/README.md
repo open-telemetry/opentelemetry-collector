@@ -6,12 +6,13 @@ exporter translates the internal format into another defined format.
 Supported trace exporters (sorted alphabetically):
 
 - [Jaeger](#jaeger)
-- [OpenCensus](#opencensus)
+- [OpenCensus](#opencensus-traces)
+- [OTLP](#otlp)
 - [Zipkin](#zipkin)
 
 Supported metric exporters (sorted alphabetically):
 
-- [OpenCensus](#opencensus)
+- [OpenCensus](#opencensus-metrics)
 - [Prometheus](#prometheus)
 
 Supported local exporters (sorted alphabetically):
@@ -87,7 +88,7 @@ exporters:
     server_name_override: opentelemetry.io
 ```
 
-The full list of settings exposed for this exporter are documented [here](jaeger/jaegergrpcpexporter/config.go)
+The full list of settings exposed for this exporter are documented [here](jaeger/jaegergrpcexporter/config.go)
 with detailed sample configurations [here](jaeger/jaegergrpcexporter/testdata/config.yaml).
 
 ### <a name="jaeger_thrift_http"></a>Thrift HTTP
@@ -154,6 +155,43 @@ exporters:
 The full list of settings exposed for this exporter are documented [here](opencensusexporter/config.go)
 with detailed sample configurations [here](opencensusexporter/testdata/config.yaml).
 
+## <a name="otlp-traces"></a>OTLP Exporter
+Exports traces and/or metrics to another Collector via gRPC using OTLP format.
+
+The following settings are required:
+
+- `endpoint`: target to which the exporter is going to send traces or metrics,
+using the gRPC protocol. The valid syntax is described at
+https://github.com/grpc/grpc/blob/master/doc/naming.md.
+
+The following settings can be optionally configured:
+
+- `cert_pem_file`: certificate file for TLS credentials of gRPC client. Should
+only be used if `secure` is set to true.
+- `compression`: compression key for supported compression types within
+collector. Currently the only supported mode is `gzip`.
+- `headers`: the headers associated with gRPC requests.
+- `keepalive`: keepalive parameters for client gRPC. See
+[grpc.WithKeepaliveParams()](https://godoc.org/google.golang.org/grpc#WithKeepaliveParams).
+- `num_workers` (default = 2): number of workers that send the gRPC requests. Optional.
+- `reconnection_delay`: time period between each reconnection performed by the
+exporter.
+- `secure`: whether to enable client transport security for the exporter's gRPC
+connection. See [grpc.WithInsecure()](https://godoc.org/google.golang.org/grpc#WithInsecure).
+
+Example:
+
+```yaml
+exporters:
+  otlp:
+    endpoint: localhost:14250
+    reconnection_delay: 60s
+    secure: false
+```
+
+The full list of settings exposed for this exporter are documented [here](otlpexporter/config.go)
+with detailed sample configurations [here](otlpexporter/testdata/config.yaml).
+
 ## <a name="zipkin"></a>Zipkin Exporter
 Exports trace data to a [Zipkin](https://zipkin.io/) back-end.
 
@@ -164,6 +202,9 @@ The following settings are required:
 
 The following settings can be optionally configured:
 
+- (temporary flag) `export_resource_labels` (default = true): Whether Resource labels are going to be merged with span attributes
+Note: this flag was added to aid the migration to new (fixed and symmetric) behavior and is going to be 
+removed soon. See https://github.com/open-telemetry/opentelemetry-collector/issues/595 for more details
 - `defaultservicename` (no default): What to name services missing this information
 
 Example:
@@ -236,17 +277,26 @@ The full list of settings exposed for this exporter are documented [here](fileex
 with detailed sample configurations [here](fileexporter/testdata/config.yaml).
 
 ## <a name="logging"></a>Logging Exporter
-Exports traces and/or metrics to the console via zap.Logger.
+Exports traces and/or metrics to the console via zap.Logger. This includes generic information
+about the package (with `info` loglevel) or details of the trace (when `debug` is set)
 
 The following settings can be configured:
 
-- `loglevel`: the log level of the logging export (debug|info|warn|error). Default is `info`.
+- `loglevel`: the log level of the logging export (debug|info|warn|error). Default is `info`. When it is set to `debug`, 
+the trace related data (e.g. node, attributes, spans, metadata) are verbosely logged.
+- `sampling_initial`: number of messages initially logged each second. Default is 2. 
+- `sampling_thereafter`: sampling rate after the initial messages are logged (every Mth message 
+is logged). Default is 500.  Refer to [Zap docs](https://godoc.org/go.uber.org/zap/zapcore#NewSampler) for 
+more details on how sampling parameters impact number of messages.
 
 Example:
 
 ```yaml
 exporters:
   logging:
+    loglevel: info
+    sampling_initial: 5
+    sampling_thereafter: 200
 ```
 
 The full list of settings exposed for this exporter are documented [here](loggingexporter/config.go)

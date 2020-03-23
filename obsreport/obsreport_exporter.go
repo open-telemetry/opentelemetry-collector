@@ -26,12 +26,17 @@ import (
 )
 
 const (
+	// Key used to identify exporters in metrics and traces.
 	ExporterKey = "exporter"
 
-	SentSpansKey         = "sent_spans"
+	// Key used to track spans sent by exporters.
+	SentSpansKey = "sent_spans"
+	// Key used to track spans that failed to be sent by exporters.
 	FailedToSendSpansKey = "send_failed_spans"
 
-	SentMetricPointsKey         = "sent_metric_points"
+	// Key used to track metric points sent by exporters.
+	SentMetricPointsKey = "sent_metric_points"
+	// Key used to track metric points that failed to be sent by exporters.
 	FailedToSendMetricPointsKey = "send_failed_metric_points"
 )
 
@@ -60,7 +65,7 @@ var (
 		"Number of metric points successfully sent to destination.",
 		stats.UnitDimensionless)
 	mExporterFailedToSendMetricPoints = stats.Int64(
-		exporterPrefix+RefusedMetricPointsKey,
+		exporterPrefix+FailedToSendMetricPointsKey,
 		"Number of metric points in failed attempts to send to destination.",
 		stats.UnitDimensionless)
 )
@@ -71,7 +76,7 @@ var (
 func StartTraceDataExportOp(
 	operationCtx context.Context,
 	exporter string,
-) (context.Context, *trace.Span) {
+) context.Context {
 	return traceExportDataOp(
 		operationCtx,
 		exporter,
@@ -82,7 +87,6 @@ func StartTraceDataExportOp(
 // StartTraceDataExportOp.
 func EndTraceDataExportOp(
 	exporterCtx context.Context,
-	span *trace.Span,
 	numExportedSpans int,
 	numDroppedSpans int, // TODO: For legacy measurements, to be removed in the future.
 	err error,
@@ -94,7 +98,6 @@ func EndTraceDataExportOp(
 
 	endExportOp(
 		exporterCtx,
-		span,
 		numExportedSpans,
 		err,
 		configmodels.TracesDataType,
@@ -107,7 +110,7 @@ func EndTraceDataExportOp(
 func StartMetricsExportOp(
 	operationCtx context.Context,
 	exporter string,
-) (context.Context, *trace.Span) {
+) context.Context {
 	return traceExportDataOp(
 		operationCtx,
 		exporter,
@@ -118,7 +121,6 @@ func StartMetricsExportOp(
 // StartMetricsExportOp.
 func EndMetricsExportOp(
 	exporterCtx context.Context,
-	span *trace.Span,
 	numExportedPoints int,
 	numExportedTimeSeries int, // TODO: For legacy measurements, to be removed in the future.
 	numDroppedTimeSeries int, // TODO: For legacy measurements, to be removed in the future.
@@ -131,7 +133,6 @@ func EndMetricsExportOp(
 
 	endExportOp(
 		exporterCtx,
-		span,
 		numExportedPoints,
 		err,
 		configmodels.MetricsDataType,
@@ -164,15 +165,15 @@ func traceExportDataOp(
 	exporterCtx context.Context,
 	exporterName string,
 	operationSuffix string,
-) (context.Context, *trace.Span) {
+) context.Context {
 	spanName := exporterPrefix + exporterName + operationSuffix
-	return trace.StartSpan(exporterCtx, spanName)
+	ctx, _ := trace.StartSpan(exporterCtx, spanName)
+	return ctx
 }
 
 // endExportOp records the observability signals at the end of an operation.
 func endExportOp(
 	exporterCtx context.Context,
-	span *trace.Span,
 	numExportedItems int,
 	err error,
 	dataType configmodels.DataType,
@@ -201,6 +202,7 @@ func endExportOp(
 			failedToSendMeasure.M(int64(numFailedToSend)))
 	}
 
+	span := trace.FromContext(exporterCtx)
 	// End span according to errors.
 	if span.IsRecordingEvents() {
 		var sentItemsKey, failedToSendItemsKey string

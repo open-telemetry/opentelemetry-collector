@@ -22,12 +22,12 @@ import (
 	"time"
 
 	"go.opencensus.io/stats"
-	"go.opencensus.io/tag"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
 )
 
@@ -67,8 +67,6 @@ type memoryLimiter struct {
 	// The function to read the mem values is set as a reference to help with
 	// testing different values.
 	readMemStatsFn func(m *runtime.MemStats)
-
-	statsTags []tag.Mutator
 
 	// Fields used for logging.
 	procName               string
@@ -112,12 +110,9 @@ func New(
 		ballastSize:     ballastSize,
 		ticker:          time.NewTicker(checkInterval),
 		readMemStatsFn:  runtime.ReadMemStats,
-		statsTags:       statsTagsForBatch(name),
 		procName:        name,
 		logger:          logger,
 	}
-
-	initMetrics()
 
 	ml.startMonitoring()
 
@@ -129,15 +124,27 @@ func (ml *memoryLimiter) ConsumeTraceData(
 	td consumerdata.TraceData,
 ) error {
 
+	ctx = obsreport.ProcessorContext(ctx, ml.procName)
 	if ml.forcingDrop() {
 		numSpans := len(td.Spans)
-		stats.RecordWithTags(
-			context.Background(),
-			ml.statsTags,
-			StatDroppedSpanCount.M(int64(numSpans)))
+		stats.Record(
+			ctx,
+			processor.StatDroppedSpanCount.M(int64(numSpans)),
+			processor.StatTraceBatchesDroppedCount.M(1))
+
+		// TODO: actually to be 100% sure that this is "refused" and not "dropped"
+		// 	it is necessary to check the pipeline to see if this is directly connected
+		// 	to a receiver (ie.: a receiver is on the call stack). For now it
+		// 	assumes that the pipeline is properly configured and a receiver is on the
+		// 	callstack.
+		obsreport.ProcessorTraceDataRefused(ctx, td)
 
 		return errForcedDrop
 	}
+
+	// Even if the next consumer returns error record the data as accepted by
+	// this processor.
+	obsreport.ProcessorTraceDataAccepted(ctx, td)
 	return ml.traceConsumer.ConsumeTraceData(ctx, td)
 }
 
@@ -146,15 +153,27 @@ func (ml *memoryLimiter) ConsumeMetricsData(
 	md consumerdata.MetricsData,
 ) error {
 
+	ctx = obsreport.ProcessorContext(ctx, ml.procName)
 	if ml.forcingDrop() {
 		numMetrics := len(md.Metrics)
-		stats.RecordWithTags(
-			context.Background(),
-			ml.statsTags,
-			StatDroppedMetricCount.M(int64(numMetrics)))
+		stats.Record(
+			ctx,
+			processor.StatDroppedMetricCount.M(int64(numMetrics)),
+			processor.StatMetricBatchesDroppedCount.M(1))
+
+		// TODO: actually to be 100% sure that this is "refused" and not "dropped"
+		// 	it is necessary to check the pipeline to see if this is directly connected
+		// 	to a receiver (ie.: a receiver is on the call stack). For now it
+		// 	assumes that the pipeline is properly configured and a receiver is on the
+		// 	callstack.
+		obsreport.ProcessorMetricsDataRefused(ctx, md)
 
 		return errForcedDrop
 	}
+
+	// Even if the next consumer returns error record the data as accepted by
+	// this processor.
+	obsreport.ProcessorMetricsDataAccepted(ctx, md)
 	return ml.metricsConsumer.ConsumeMetricsData(ctx, md)
 }
 

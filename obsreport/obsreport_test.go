@@ -22,18 +22,23 @@ import (
 	"sync"
 	"testing"
 
+	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 	"go.opencensus.io/trace"
 
+	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/observability"
 	"github.com/open-telemetry/opentelemetry-collector/observability/observabilitytest"
 )
 
 const (
 	exporter   = "fakeExporter"
+	processor  = "fakeProcessor"
 	receiver   = "fakeReicever"
 	transport  = "fakeTransport"
 	format     = "fakeFormat"
@@ -107,13 +112,11 @@ func Test_obsreport_ReceiveTraceDataOp(t *testing.T) {
 	errs := []error{nil, errFake}
 	rcvdSpans := []int{13, 42}
 	for i, err := range errs {
-		ctx, span := StartTraceDataReceiveOp(receiverCtx, receiver, transport)
+		ctx := StartTraceDataReceiveOp(receiverCtx, receiver, transport)
 		assert.NotNil(t, ctx)
-		assert.NotNil(t, span)
 
 		EndTraceDataReceiveOp(
 			ctx,
-			span,
 			format,
 			rcvdSpans[i],
 			err)
@@ -147,8 +150,8 @@ func Test_obsreport_ReceiveTraceDataOp(t *testing.T) {
 	assert.NoError(t, observabilitytest.CheckValueViewReceiverDroppedSpans(legacyName, refusedSpans))
 	// Check new metrics.
 	receiverTags := receiverViewTags(receiver, transport)
-	checkValueForSumView(t, mReceiverAcceptedSpans.Name(), receiverTags, acceptedSpans)
-	checkValueForSumView(t, mReceiverRefusedSpans.Name(), receiverTags, refusedSpans)
+	checkValueForSumView(t, "receiver/accepted_spans", receiverTags, acceptedSpans)
+	checkValueForSumView(t, "receiver/refused_spans", receiverTags, refusedSpans)
 }
 
 func Test_obsreport_ReceiveMetricsOp(t *testing.T) {
@@ -169,13 +172,11 @@ func Test_obsreport_ReceiveMetricsOp(t *testing.T) {
 	rcvdMetricPts := []int{23, 29}
 	rcvdTimeSeries := []int{2, 3}
 	for i, err := range errs {
-		ctx, span := StartMetricsReceiveOp(receiverCtx, receiver, transport)
+		ctx := StartMetricsReceiveOp(receiverCtx, receiver, transport)
 		assert.NotNil(t, ctx)
-		assert.NotNil(t, span)
 
 		EndMetricsReceiveOp(
 			ctx,
-			span,
 			format,
 			rcvdMetricPts[i],
 			rcvdTimeSeries[i],
@@ -213,8 +214,8 @@ func Test_obsreport_ReceiveMetricsOp(t *testing.T) {
 	assert.NoError(t, observabilitytest.CheckValueViewReceiverDroppedTimeSeries(legacyName, droppedTimeSeries))
 	// Check new metrics.
 	receiverTags := receiverViewTags(receiver, transport)
-	checkValueForSumView(t, mReceiverAcceptedMetricPoints.Name(), receiverTags, acceptedMetricPoints)
-	checkValueForSumView(t, mReceiverRefusedMetricPoints.Name(), receiverTags, refusedMetricPoints)
+	checkValueForSumView(t, "receiver/accepted_metric_points", receiverTags, acceptedMetricPoints)
+	checkValueForSumView(t, "receiver/refused_metric_points", receiverTags, refusedMetricPoints)
 }
 
 func Test_obsreport_ExportTraceDataOp(t *testing.T) {
@@ -238,17 +239,15 @@ func Test_obsreport_ExportTraceDataOp(t *testing.T) {
 	errs := []error{nil, errFake}
 	numExportedSpans := []int{22, 14}
 	for i, err := range errs {
-		ctx, span := StartTraceDataExportOp(exporterCtx, exporter)
+		ctx := StartTraceDataExportOp(exporterCtx, exporter)
 		assert.NotNil(t, ctx)
-		assert.NotNil(t, span)
 
 		var numDroppedSpans int
 		if err != nil {
 			numDroppedSpans = numExportedSpans[i]
 		}
 
-		EndTraceDataExportOp(
-			ctx, span, numExportedSpans[i], numDroppedSpans, err)
+		EndTraceDataExportOp(ctx, numExportedSpans[i], numDroppedSpans, err)
 	}
 
 	spans := ss.PullAllSpans()
@@ -278,8 +277,8 @@ func Test_obsreport_ExportTraceDataOp(t *testing.T) {
 	assert.NoError(t, observabilitytest.CheckValueViewExporterDroppedSpans(receiver, exporter, failedToSendSpans))
 	// Check new metrics.
 	exporterTags := exporterViewTags(exporter)
-	checkValueForSumView(t, mExporterSentSpans.Name(), exporterTags, sentSpans)
-	checkValueForSumView(t, mExporterFailedToSendSpans.Name(), exporterTags, failedToSendSpans)
+	checkValueForSumView(t, "exporter/sent_spans", exporterTags, sentSpans)
+	checkValueForSumView(t, "exporter/send_failed_spans", exporterTags, failedToSendSpans)
 }
 
 func Test_obsreport_ExportMetricsOp(t *testing.T) {
@@ -304,9 +303,8 @@ func Test_obsreport_ExportMetricsOp(t *testing.T) {
 	toSendMetricPts := []int{17, 23}
 	toSendTimeSeries := []int{3, 5}
 	for i, err := range errs {
-		ctx, span := StartMetricsExportOp(exporterCtx, exporter)
+		ctx := StartMetricsExportOp(exporterCtx, exporter)
 		assert.NotNil(t, ctx)
-		assert.NotNil(t, span)
 
 		var numDroppedTimeSeires int
 		if err != nil {
@@ -315,7 +313,6 @@ func Test_obsreport_ExportMetricsOp(t *testing.T) {
 
 		EndMetricsExportOp(
 			ctx,
-			span,
 			toSendMetricPts[i],
 			toSendTimeSeries[i],
 			numDroppedTimeSeires,
@@ -352,10 +349,206 @@ func Test_obsreport_ExportMetricsOp(t *testing.T) {
 	assert.NoError(t, observabilitytest.CheckValueViewExporterDroppedTimeSeries(receiver, exporter, droppedTimeSeries))
 	// Check new metrics.
 	exporterTags := exporterViewTags(exporter)
-	checkValueForSumView(t, mExporterSentMetricPoints.Name(), exporterTags, sentPoints)
-	checkValueForSumView(t, mExporterFailedToSendMetricPoints.Name(), exporterTags, failedToSendPoints)
+	checkValueForSumView(t, "exporter/sent_metric_points", exporterTags, sentPoints)
+	checkValueForSumView(t, "exporter/send_failed_metric_points", exporterTags, failedToSendPoints)
 }
 
+func Test_obsreport_ReceiveWithLongLivedCtx(t *testing.T) {
+	ss := &spanStore{}
+	trace.RegisterExporter(ss)
+	defer trace.UnregisterExporter(ss)
+
+	trace.ApplyConfig(trace.Config{
+		DefaultSampler: trace.AlwaysSample(),
+	})
+	defer func() {
+		trace.ApplyConfig(trace.Config{
+			DefaultSampler: trace.ProbabilitySampler(1e-4),
+		})
+	}()
+
+	parentCtx, parentSpan := trace.StartSpan(context.Background(), t.Name())
+	defer parentSpan.End()
+
+	longLivedCtx := ReceiverContext(parentCtx, receiver, transport, legacyName)
+	ops := []struct {
+		numSpans int
+		err      error
+	}{
+		{numSpans: 13},
+		{numSpans: 42, err: errFake},
+	}
+	for _, op := range ops {
+		// Use a new context on each operation to simulate distinct operations
+		// under the same long lived context.
+		ctx := StartTraceDataReceiveOp(
+			longLivedCtx,
+			receiver,
+			transport,
+			WithLongLivedCtx())
+		assert.NotNil(t, ctx)
+
+		EndTraceDataReceiveOp(
+			ctx,
+			format,
+			op.numSpans,
+			op.err)
+	}
+
+	spans := ss.PullAllSpans()
+	require.Equal(t, len(ops), len(spans))
+
+	for i, span := range spans {
+		assert.Equal(t, trace.SpanID{}, span.ParentSpanID)
+		require.Equal(t, 1, len(span.Links))
+		link := span.Links[0]
+		assert.Equal(t, trace.LinkTypeParent, link.Type)
+		assert.Equal(t, parentSpan.SpanContext().TraceID, link.TraceID)
+		assert.Equal(t, parentSpan.SpanContext().SpanID, link.SpanID)
+		assert.Equal(t, receiverPrefix+receiver+receiveTraceDataOperationSuffix, span.Name)
+		assert.Equal(t, transport, span.Attributes[TransportKey])
+		switch ops[i].err {
+		case nil:
+			assert.Equal(t, int64(ops[i].numSpans), span.Attributes[AcceptedSpansKey])
+			assert.Equal(t, int64(0), span.Attributes[RefusedSpansKey])
+			assert.Equal(t, okStatus, span.Status)
+		case errFake:
+			assert.Equal(t, int64(0), span.Attributes[AcceptedSpansKey])
+			assert.Equal(t, int64(ops[i].numSpans), span.Attributes[RefusedSpansKey])
+			assert.Equal(t, ops[i].err.Error(), span.Status.Message)
+		default:
+			t.Fatalf("unexpected error: %v", ops[i].err)
+		}
+	}
+}
+
+func Test_obsreport_ProcessorTraceData(t *testing.T) {
+	doneFn, err := setupViews()
+	defer doneFn()
+	require.NoError(t, err)
+
+	const acceptedSpans = 27
+	const refusedSpans = 19
+	const droppedSpans = 13
+
+	processorCtx := ProcessorContext(context.Background(), processor)
+	td := consumerdata.TraceData{}
+
+	td.Spans = make([]*tracepb.Span, acceptedSpans)
+	ProcessorTraceDataAccepted(processorCtx, td)
+
+	td.Spans = make([]*tracepb.Span, refusedSpans)
+	ProcessorTraceDataRefused(processorCtx, td)
+
+	td.Spans = make([]*tracepb.Span, droppedSpans)
+	ProcessorTraceDataDropped(processorCtx, td)
+
+	processorTags := processorViewTags(processor)
+	checkValueForSumView(t, "processor/accepted_spans", processorTags, acceptedSpans)
+	checkValueForSumView(t, "processor/refused_spans", processorTags, refusedSpans)
+	checkValueForSumView(t, "processor/dropped_spans", processorTags, droppedSpans)
+}
+
+func Test_obsreport_ProcessorMetricsData(t *testing.T) {
+	doneFn, err := setupViews()
+	defer doneFn()
+	require.NoError(t, err)
+
+	const acceptedPoints = 29
+	const refusedPoints = 11
+	const droppedPoints = 17
+
+	processorCtx := ProcessorContext(context.Background(), processor)
+	md := consumerdata.MetricsData{}
+
+	md.Metrics = []*metricspb.Metric{
+		{
+			Timeseries: []*metricspb.TimeSeries{
+				{
+					Points: make([]*metricspb.Point, acceptedPoints),
+				},
+			},
+		},
+	}
+	ProcessorMetricsDataAccepted(processorCtx, md)
+
+	md.Metrics[0].Timeseries[0].Points = make([]*metricspb.Point, refusedPoints)
+	ProcessorMetricsDataRefused(processorCtx, md)
+
+	md.Metrics[0].Timeseries[0].Points = make([]*metricspb.Point, droppedPoints)
+	ProcessorMetricsDataDropped(processorCtx, md)
+
+	processorTags := processorViewTags(processor)
+	checkValueForSumView(t, "processor/accepted_metric_points", processorTags, acceptedPoints)
+	checkValueForSumView(t, "processor/refused_metric_points", processorTags, refusedPoints)
+	checkValueForSumView(t, "processor/dropped_metric_points", processorTags, droppedPoints)
+}
+
+func Test_obsreport_ProcessorMetricViews(t *testing.T) {
+	measures := []stats.Measure{
+		stats.Int64("firstMeasure", "test firstMeasure", stats.UnitDimensionless),
+		stats.Int64("secondMeasure", "test secondMeasure", stats.UnitBytes),
+	}
+	legacyViews := []*view.View{
+		{
+			Name:        measures[0].Name(),
+			Description: measures[0].Description(),
+			Measure:     measures[0],
+			Aggregation: view.Sum(),
+		},
+		{
+			Measure:     measures[1],
+			Aggregation: view.Count(),
+		},
+	}
+
+	// Ensure that the settings for useLegace and useNew a restored.
+	defer func(prevUseLegacy, prevUseNew bool) {
+		useLegacy = prevUseLegacy
+		useNew = prevUseNew
+	}(useLegacy, useNew)
+
+	tests := []struct {
+		name       string
+		withLegacy bool
+		withNew    bool
+		want       []*view.View
+	}{
+		{
+			name: "none",
+		},
+		{
+			name:       "legacy_only",
+			withLegacy: true,
+			want:       legacyViews,
+		},
+		{
+			name:    "new_only",
+			withNew: true,
+			want: []*view.View{
+				{
+					Name:        "processor/test_type/" + measures[0].Name(),
+					Description: measures[0].Description(),
+					Measure:     measures[0],
+					Aggregation: view.Sum(),
+				},
+				{
+					Name:        "processor/test_type/" + measures[1].Name(),
+					Measure:     measures[1],
+					Aggregation: view.Count(),
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			useLegacy = tt.withLegacy
+			useNew = tt.withNew
+			got := ProcessorMetricViews("test_type", legacyViews)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
 func setupViews() (doneFn func(), err error) {
 	genLegacy := true
 	genNew := true
@@ -397,6 +590,12 @@ func receiverViewTags(receiver, transport string) []tag.Tag {
 func exporterViewTags(exporter string) []tag.Tag {
 	return []tag.Tag{
 		{Key: tagKeyExporter, Value: exporter},
+	}
+}
+
+func processorViewTags(processor string) []tag.Tag {
+	return []tag.Tag{
+		{Key: tagKeyProcessor, Value: processor},
 	}
 }
 

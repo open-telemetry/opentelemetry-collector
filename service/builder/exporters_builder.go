@@ -88,10 +88,19 @@ func (exps Exporters) StartAll(logger *zap.Logger, host component.Host) error {
 }
 
 // ShutdownAll stops all exporters.
-func (exps Exporters) ShutdownAll() {
+func (exps Exporters) ShutdownAll() error {
+	var errs []error
 	for _, exp := range exps {
-		exp.Shutdown()
+		err := exp.Shutdown()
+		if err != nil {
+			errs = append(errs, err)
+		}
 	}
+
+	if len(errs) != 0 {
+		return oterr.CombineErrors(errs)
+	}
+	return nil
 }
 
 type dataTypeRequirement struct {

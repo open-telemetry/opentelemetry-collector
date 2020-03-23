@@ -21,6 +21,7 @@ import (
 	"testing"
 	"time"
 
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"go.opencensus.io/trace"
@@ -101,7 +102,14 @@ func TestProtoSpanToOCSpanData_endToEnd(t *testing.T) {
 		},
 	}
 
-	gotOCSpanData, err := ProtoSpanToOCSpanData(protoSpan)
+	resource := &resourcepb.Resource{
+		Type: "k8s",
+		Labels: map[string]string{
+			"namespace": "kube-system",
+		},
+	}
+
+	gotOCSpanData, err := ProtoSpanToOCSpanData(protoSpan, resource)
 	if err != nil {
 		t.Fatalf("Failed to convert from ProtoSpan to OCSpanData: %v", err)
 	}
@@ -145,6 +153,7 @@ func TestProtoSpanToOCSpanData_endToEnd(t *testing.T) {
 		},
 		HasRemoteParent: true,
 		Attributes: map[string]interface{}{
+			"namespace":  "kube-system",
 			"timeout_ns": int64(12e9),
 			"agent":      "ocagent",
 			"cache_hit":  true,

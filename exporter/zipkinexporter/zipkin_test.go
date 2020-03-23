@@ -72,7 +72,7 @@ func TestZipkinExporter_roundtripJSON(t *testing.T) {
 	// Run the Zipkin receiver to "receive spans upload from a client application"
 	zexp := processor.NewTraceFanOutConnector([]consumer.TraceConsumer{tes})
 	addr := testutils.GetAvailableLocalAddress(t)
-	zi, err := zipkinreceiver.New(addr, zexp)
+	zi, err := zipkinreceiver.New("zipkin_receiver", addr, zexp)
 	assert.NoError(t, err)
 	require.NotNil(t, zi)
 
@@ -302,7 +302,8 @@ func TestZipkinExporter_roundtripProto(t *testing.T) {
 	// Run the Zipkin receiver to "receive spans upload from a client application"
 	zexp := processor.NewTraceFanOutConnector([]consumer.TraceConsumer{tes})
 	port := testutils.GetAvailablePort(t)
-	zi, err := zipkinreceiver.New(fmt.Sprintf(":%d", port), zexp)
+	zi, err := zipkinreceiver.New(
+		"zipkin_receiver", fmt.Sprintf(":%d", port), zexp)
 	require.NoError(t, err)
 
 	mh := component.NewMockHost()
@@ -327,5 +328,4 @@ func TestZipkinExporter_roundtripProto(t *testing.T) {
 
 	_, err = zipkinproto.ParseSpans(gotBytes, false)
 	require.NoError(t, err)
-
 }

@@ -22,6 +22,7 @@ import (
 	"time"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	zipkinproto "github.com/openzipkin/zipkin-go/proto/v2"
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
@@ -45,9 +46,10 @@ import (
 type zipkinExporter struct {
 	defaultServiceName string
 
-	url        string
-	client     *http.Client
-	serializer zipkinreporter.SpanSerializer
+	exportResourceLabels bool
+	url                  string
+	client               *http.Client
+	serializer           zipkinreporter.SpanSerializer
 }
 
 // Default values for Zipkin endpoint.
@@ -56,6 +58,7 @@ const (
 
 	defaultServiceName string = "<missing service name>"
 
+	DefaultExportResourceLabels   = true
 	DefaultZipkinEndpointHostPort = "localhost:9411"
 	DefaultZipkinEndpointURL      = "http://" + DefaultZipkinEndpointHostPort + "/api/v2/spans"
 )
@@ -84,10 +87,16 @@ func createZipkinExporter(logger *zap.Logger, config configmodels.Exporter) (*zi
 		serviceName = zCfg.DefaultServiceName
 	}
 
+	exportResourceLabels := DefaultExportResourceLabels
+	if zCfg.ExportResourceLabels != nil {
+		exportResourceLabels = *zCfg.ExportResourceLabels
+	}
+
 	ze := &zipkinExporter{
-		defaultServiceName: serviceName,
-		url:                zCfg.URL,
-		client:             &http.Client{Timeout: defaultTimeout},
+		defaultServiceName:   serviceName,
+		exportResourceLabels: exportResourceLabels,
+		url:                  zCfg.URL,
+		client:               &http.Client{Timeout: defaultTimeout},
 	}
 
 	switch zCfg.Format {
@@ -104,8 +113,14 @@ func createZipkinExporter(logger *zap.Logger, config configmodels.Exporter) (*zi
 
 func (ze *zipkinExporter) PushTraceData(ctx context.Context, td consumerdata.TraceData) (droppedSpans int, err error) {
 	tbatch := []*zipkinmodel.SpanModel{}
+
+	var resource *resourcepb.Resource
+	if ze.exportResourceLabels {
+		resource = td.Resource
+	}
+
 	for _, span := range td.Spans {
-		sd, err := spandatatranslator.ProtoSpanToOCSpanData(span)
+		sd, err := spandatatranslator.ProtoSpanToOCSpanData(span, resource)
 		if err != nil {
 			return len(td.Spans), consumererror.Permanent(err)
 		}
