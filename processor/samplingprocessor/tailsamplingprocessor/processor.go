@@ -199,7 +199,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 				stats.RecordWithTags(
 					policy.ctx,
 					[]tag.Mutator{tag.Insert(tagSampledKey, "false")},
-					statCountTracesSampled.M(int64(1)),
+					statCountTracesNotSampled.M(int64(1)),
 				)
 				decisionNotSampled++
 			}
@@ -265,7 +265,7 @@ func (tsp *tailSamplingSpanProcessor) ConsumeTraceData(ctx context.Context, td c
 			}
 		}
 
-		tsp.logger.Info("Span processed by self", zap.ByteString("SpanID:", span.GetSpanId()))
+		tsp.logger.Debug("Span processed by self", zap.ByteString("SpanID:", span.GetSpanId()))
 		idToSpans[traceKey] = append(idToSpans[traceKey], span)
 	}
 

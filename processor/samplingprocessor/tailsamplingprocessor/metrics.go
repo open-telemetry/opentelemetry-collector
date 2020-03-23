@@ -37,7 +37,8 @@ var (
 
 	statPolicyEvaluationErrorCount = stats.Int64("sampling_policy_evaluation_error", "Count of sampling policy evaluation errors", stats.UnitDimensionless)
 
-	statCountTracesSampled = stats.Int64("count_traces_sampled", "Count of traces that were sampled or not", stats.UnitDimensionless)
+	statCountTracesSampled    = stats.Int64("count_traces_sampled", "Count of traces that were sampled", stats.UnitDimensionless)
+	statCountTracesNotSampled = stats.Int64("count_traces_not_sampled", "Count of traces that were not sampled", stats.UnitDimensionless)
 
 	statDroppedTooEarlyCount    = stats.Int64("sampling_trace_dropped_too_early", "Count of traces that needed to be dropped the configured wait time", stats.UnitDimensionless)
 	statNewTraceIDReceivedCount = stats.Int64("new_trace_id_received", "Counts the arrival of new traces", stats.UnitDimensionless)
@@ -100,6 +101,13 @@ func SamplingProcessorMetricViews(level telemetry.Level) []*view.View {
 		TagKeys:     sampledTagKeys,
 		Aggregation: view.Sum(),
 	}
+	countTracesNotSampledView := &view.View{
+		Name:        statCountTracesNotSampled.Name(),
+		Measure:     statCountTracesNotSampled,
+		Description: statCountTracesNotSampled.Description(),
+		TagKeys:     sampledTagKeys,
+		Aggregation: view.Sum(),
+	}
 
 	countTraceDroppedTooEarlyView := &view.View{
 		Name:        statDroppedTooEarlyCount.Name(),
@@ -144,6 +152,7 @@ func SamplingProcessorMetricViews(level telemetry.Level) []*view.View {
 		countPolicyEvaluationErrorView,
 
 		countTracesSampledView,
+		countTracesNotSampledView,
 
 		countTraceDroppedTooEarlyView,
 		countTraceIDArrivalView,
