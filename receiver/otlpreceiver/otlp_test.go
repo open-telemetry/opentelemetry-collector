@@ -96,8 +96,8 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 				  "trace_id": "W47/95gDgQPSabYzgT/GDA==",
 				  "span_id": "7uGbfsPBsXM=",
 				  "name": "testSpan",
-				  "start_time_unixnano": 1544712660000000000,
-				  "end_time_unixnano": 1544712661000000000,
+				  "start_time_unix_nano": 1544712660000000000,
+				  "end_time_unix_nano": 1544712661000000000,
 				  "attributes": [
 					{
 					  "key": "attr1",
@@ -439,8 +439,8 @@ func TestReceiveOnUnixDomainSocket_endToEnd(t *testing.T) {
 				  "trace_id": "YpsR8/le4OgjwSSxhjlrEg==",
 				  "span_id": "2CogcbJh7Ko=",
 				  "name": "testSpan",
-				  "start_time_unixnano": 1544712660000000000,
-				  "end_time_unixnano": 1544712661000000000
+				  "start_time_unix_nano": 1544712660000000000,
+				  "end_time_unix_nano": 1544712661000000000
 				}
 			  ]
 			}

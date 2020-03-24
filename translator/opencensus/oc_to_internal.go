@@ -141,8 +141,8 @@ func ocSpanToInternal(dest *data.Span, src *octrace.Span) {
 	dest.SetParentSpanID(data.NewSpanID(src.ParentSpanId))
 	dest.SetName(src.Name.GetValue())
 	dest.SetKind(kind)
-	dest.SetStartTime(internal.TimestampToUnixnano(src.StartTime))
-	dest.SetEndTime(internal.TimestampToUnixnano(src.EndTime))
+	dest.SetStartTime(internal.TimestampToUnixNano(src.StartTime))
+	dest.SetEndTime(internal.TimestampToUnixNano(src.EndTime))
 	dest.SetAttributes(attrs)
 	dest.SetDroppedAttributesCount(droppedAttrs)
 	dest.SetEvents(events)
@@ -277,7 +277,7 @@ func ocEventsToInternal(ocEvents *octrace.Span_TimeEvents) (events []data.SpanEv
 		event := events[i]
 		i++
 
-		event.SetTimestamp(internal.TimestampToUnixnano(ocEvent.Time))
+		event.SetTimestamp(internal.TimestampToUnixNano(ocEvent.Time))
 
 		switch teValue := ocEvent.Value.(type) {
 		case *octrace.Span_TimeEvent_Annotation_:

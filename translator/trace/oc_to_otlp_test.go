@@ -254,11 +254,11 @@ func TestOcToOtlp(t *testing.T) {
 
 	otlpSpan1 := &otlptrace.Span{
 		Name:              "operationB",
-		StartTimeUnixnano: timestampToUnixnano(timestampP),
-		EndTimeUnixnano:   timestampToUnixnano(timestampP),
+		StartTimeUnixNano: timestampToUnixNano(timestampP),
+		EndTimeUnixNano:   timestampToUnixNano(timestampP),
 		Events: []*otlptrace.Span_Event{
 			{
-				TimeUnixnano: timestampToUnixnano(timestampP),
+				TimeUnixNano: timestampToUnixNano(timestampP),
 				Name:         "event1",
 				Attributes: []*otlpcommon.AttributeKeyValue{
 					{
@@ -276,16 +276,16 @@ func TestOcToOtlp(t *testing.T) {
 
 	otlpSpan2 := &otlptrace.Span{
 		Name:              "operationC",
-		StartTimeUnixnano: timestampToUnixnano(timestampP),
-		EndTimeUnixnano:   timestampToUnixnano(timestampP),
+		StartTimeUnixNano: timestampToUnixNano(timestampP),
+		EndTimeUnixNano:   timestampToUnixNano(timestampP),
 		Links:             []*otlptrace.Span_Link{{}},
 		DroppedLinksCount: 1,
 	}
 
 	otlpSpan3 := &otlptrace.Span{
 		Name:              "operationD",
-		StartTimeUnixnano: timestampToUnixnano(timestampP),
-		EndTimeUnixnano:   timestampToUnixnano(timestampP),
+		StartTimeUnixNano: timestampToUnixNano(timestampP),
+		EndTimeUnixNano:   timestampToUnixNano(timestampP),
 	}
 
 	tests := []struct {

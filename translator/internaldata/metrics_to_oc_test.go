@@ -106,7 +106,7 @@ func TestResourceMetricsToMetricsData(t *testing.T) {
 		},
 		Timeseries: []*ocmetrics.TimeSeries{
 			{
-				StartTimestamp: internal.UnixnanoToTimestamp(ts1),
+				StartTimestamp: internal.UnixNanoToTimestamp(ts1),
 				LabelValues: []*ocmetrics.LabelValue{
 					{
 						// key1
@@ -124,7 +124,7 @@ func TestResourceMetricsToMetricsData(t *testing.T) {
 				},
 				Points: []*ocmetrics.Point{
 					{
-						Timestamp: internal.UnixnanoToTimestamp(ts2),
+						Timestamp: internal.UnixNanoToTimestamp(ts2),
 						Value: &ocmetrics.Point_Int64Value{
 							Int64Value: 123,
 						},
@@ -132,7 +132,7 @@ func TestResourceMetricsToMetricsData(t *testing.T) {
 				},
 			},
 			{
-				StartTimestamp: internal.UnixnanoToTimestamp(ts1),
+				StartTimestamp: internal.UnixNanoToTimestamp(ts1),
 				LabelValues: []*ocmetrics.LabelValue{
 					{
 						// key1
@@ -150,7 +150,7 @@ func TestResourceMetricsToMetricsData(t *testing.T) {
 				},
 				Points: []*ocmetrics.Point{
 					{
-						Timestamp: internal.UnixnanoToTimestamp(ts2),
+						Timestamp: internal.UnixNanoToTimestamp(ts2),
 						Value: &ocmetrics.Point_Int64Value{
 							Int64Value: 456,
 						},
@@ -158,7 +158,7 @@ func TestResourceMetricsToMetricsData(t *testing.T) {
 				},
 			},
 			{
-				StartTimestamp: internal.UnixnanoToTimestamp(ts1),
+				StartTimestamp: internal.UnixNanoToTimestamp(ts1),
 				LabelValues: []*ocmetrics.LabelValue{
 					{
 						// key1
@@ -177,7 +177,7 @@ func TestResourceMetricsToMetricsData(t *testing.T) {
 				},
 				Points: []*ocmetrics.Point{
 					{
-						Timestamp: internal.UnixnanoToTimestamp(ts2),
+						Timestamp: internal.UnixNanoToTimestamp(ts2),
 						Value: &ocmetrics.Point_DoubleValue{
 							DoubleValue: 1.23,
 						},

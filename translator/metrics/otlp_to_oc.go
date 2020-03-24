@@ -209,11 +209,11 @@ func dataPointsToTimeseries(metric *otlpmetrics.Metric, labelKeys *labelKeys) []
 
 func summaryPointToOC(point *otlpmetrics.SummaryDataPoint, labelKeys *labelKeys) *ocmetrics.TimeSeries {
 	return &ocmetrics.TimeSeries{
-		StartTimestamp: unixnanoToTimestamp(point.StartTimeUnixnano),
+		StartTimestamp: unixnanoToTimestamp(point.StartTimeUnixNano),
 		LabelValues:    labelValuesToOC(point.Labels, labelKeys),
 		Points: []*ocmetrics.Point{
 			{
-				Timestamp: unixnanoToTimestamp(point.TimestampUnixnano),
+				Timestamp: unixnanoToTimestamp(point.TimeUnixNano),
 				Value: &ocmetrics.Point_SummaryValue{
 					SummaryValue: &ocmetrics.SummaryValue{
 						Count: int64Value(point.Count),
@@ -247,11 +247,11 @@ func percentileToOC(percentiles []*otlpmetrics.SummaryDataPoint_ValueAtPercentil
 
 func int64PointToOC(point *otlpmetrics.Int64DataPoint, labelKeys *labelKeys) *ocmetrics.TimeSeries {
 	return &ocmetrics.TimeSeries{
-		StartTimestamp: unixnanoToTimestamp(point.StartTimeUnixnano),
+		StartTimestamp: unixnanoToTimestamp(point.StartTimeUnixNano),
 		LabelValues:    labelValuesToOC(point.Labels, labelKeys),
 		Points: []*ocmetrics.Point{
 			{
-				Timestamp: unixnanoToTimestamp(point.TimestampUnixnano),
+				Timestamp: unixnanoToTimestamp(point.TimeUnixNano),
 				Value: &ocmetrics.Point_Int64Value{
 					Int64Value: point.Value,
 				},
@@ -262,11 +262,11 @@ func int64PointToOC(point *otlpmetrics.Int64DataPoint, labelKeys *labelKeys) *oc
 
 func doublePointToOC(point *otlpmetrics.DoubleDataPoint, labelKeys *labelKeys) *ocmetrics.TimeSeries {
 	return &ocmetrics.TimeSeries{
-		StartTimestamp: unixnanoToTimestamp(point.StartTimeUnixnano),
+		StartTimestamp: unixnanoToTimestamp(point.StartTimeUnixNano),
 		LabelValues:    labelValuesToOC(point.Labels, labelKeys),
 		Points: []*ocmetrics.Point{
 			{
-				Timestamp: unixnanoToTimestamp(point.TimestampUnixnano),
+				Timestamp: unixnanoToTimestamp(point.TimeUnixNano),
 				Value: &ocmetrics.Point_DoubleValue{
 					DoubleValue: point.Value,
 				},
@@ -277,11 +277,11 @@ func doublePointToOC(point *otlpmetrics.DoubleDataPoint, labelKeys *labelKeys) *
 
 func histogramPointToOC(point *otlpmetrics.HistogramDataPoint, labelKeys *labelKeys) *ocmetrics.TimeSeries {
 	return &ocmetrics.TimeSeries{
-		StartTimestamp: unixnanoToTimestamp(point.StartTimeUnixnano),
+		StartTimestamp: unixnanoToTimestamp(point.StartTimeUnixNano),
 		LabelValues:    labelValuesToOC(point.Labels, labelKeys),
 		Points: []*ocmetrics.Point{
 			{
-				Timestamp: unixnanoToTimestamp(point.TimestampUnixnano),
+				Timestamp: unixnanoToTimestamp(point.TimeUnixNano),
 				Value: &ocmetrics.Point_DistributionValue{
 					DistributionValue: &ocmetrics.DistributionValue{
 						Count:                 int64(point.Count),
@@ -332,7 +332,7 @@ func exemplarToOC(exemplar *otlpmetrics.HistogramDataPoint_Bucket_Exemplar) *ocm
 
 	return &ocmetrics.DistributionValue_Exemplar{
 		Value:       exemplar.Value,
-		Timestamp:   unixnanoToTimestamp(exemplar.TimestampUnixnano),
+		Timestamp:   unixnanoToTimestamp(exemplar.TimeUnixNano),
 		Attachments: exemplarAttachmentsToOC(exemplar.Attachments),
 	}
 }
@@ -391,5 +391,5 @@ func doubleValue(val float64) *wrappers.DoubleValue {
 }
 
 func unixnanoToTimestamp(u uint64) *timestamp.Timestamp {
-	return internal.UnixnanoToTimestamp(data.TimestampUnixNano(u))
+	return internal.UnixNanoToTimestamp(data.TimestampUnixNano(u))
 }

@@ -560,22 +560,22 @@ func (ms Int64DataPoint) SetLabelsMap(v StringMap) {
 
 // StartTime returns the starttime associated with this Int64DataPoint.
 func (ms Int64DataPoint) StartTime() TimestampUnixNano {
-	return TimestampUnixNano(ms.orig.StartTimeUnixnano)
+	return TimestampUnixNano(ms.orig.StartTimeUnixNano)
 }
 
 // SetStartTime replaces the starttime associated with this Int64DataPoint.
 func (ms Int64DataPoint) SetStartTime(v TimestampUnixNano) {
-	ms.orig.StartTimeUnixnano = uint64(v)
+	ms.orig.StartTimeUnixNano = uint64(v)
 }
 
 // Timestamp returns the timestamp associated with this Int64DataPoint.
 func (ms Int64DataPoint) Timestamp() TimestampUnixNano {
-	return TimestampUnixNano(ms.orig.TimestampUnixnano)
+	return TimestampUnixNano(ms.orig.TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this Int64DataPoint.
 func (ms Int64DataPoint) SetTimestamp(v TimestampUnixNano) {
-	ms.orig.TimestampUnixnano = uint64(v)
+	ms.orig.TimeUnixNano = uint64(v)
 }
 
 // Value returns the value associated with this Int64DataPoint.
@@ -688,22 +688,22 @@ func (ms DoubleDataPoint) SetLabelsMap(v StringMap) {
 
 // StartTime returns the starttime associated with this DoubleDataPoint.
 func (ms DoubleDataPoint) StartTime() TimestampUnixNano {
-	return TimestampUnixNano(ms.orig.StartTimeUnixnano)
+	return TimestampUnixNano(ms.orig.StartTimeUnixNano)
 }
 
 // SetStartTime replaces the starttime associated with this DoubleDataPoint.
 func (ms DoubleDataPoint) SetStartTime(v TimestampUnixNano) {
-	ms.orig.StartTimeUnixnano = uint64(v)
+	ms.orig.StartTimeUnixNano = uint64(v)
 }
 
 // Timestamp returns the timestamp associated with this DoubleDataPoint.
 func (ms DoubleDataPoint) Timestamp() TimestampUnixNano {
-	return TimestampUnixNano(ms.orig.TimestampUnixnano)
+	return TimestampUnixNano(ms.orig.TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this DoubleDataPoint.
 func (ms DoubleDataPoint) SetTimestamp(v TimestampUnixNano) {
-	ms.orig.TimestampUnixnano = uint64(v)
+	ms.orig.TimeUnixNano = uint64(v)
 }
 
 // Value returns the value associated with this DoubleDataPoint.
@@ -816,22 +816,22 @@ func (ms HistogramDataPoint) SetLabelsMap(v StringMap) {
 
 // StartTime returns the starttime associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) StartTime() TimestampUnixNano {
-	return TimestampUnixNano(ms.orig.StartTimeUnixnano)
+	return TimestampUnixNano(ms.orig.StartTimeUnixNano)
 }
 
 // SetStartTime replaces the starttime associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) SetStartTime(v TimestampUnixNano) {
-	ms.orig.StartTimeUnixnano = uint64(v)
+	ms.orig.StartTimeUnixNano = uint64(v)
 }
 
 // Timestamp returns the timestamp associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) Timestamp() TimestampUnixNano {
-	return TimestampUnixNano(ms.orig.TimestampUnixnano)
+	return TimestampUnixNano(ms.orig.TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) SetTimestamp(v TimestampUnixNano) {
-	ms.orig.TimestampUnixnano = uint64(v)
+	ms.orig.TimeUnixNano = uint64(v)
 }
 
 // Count returns the count associated with this HistogramDataPoint.
@@ -1010,12 +1010,12 @@ func newHistogramBucketExemplar(orig *otlpmetrics.HistogramDataPoint_Bucket_Exem
 
 // Timestamp returns the timestamp associated with this HistogramBucketExemplar.
 func (ms HistogramBucketExemplar) Timestamp() TimestampUnixNano {
-	return TimestampUnixNano(ms.orig.TimestampUnixnano)
+	return TimestampUnixNano(ms.orig.TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this HistogramBucketExemplar.
 func (ms HistogramBucketExemplar) SetTimestamp(v TimestampUnixNano) {
-	ms.orig.TimestampUnixnano = uint64(v)
+	ms.orig.TimeUnixNano = uint64(v)
 }
 
 // Value returns the value associated with this HistogramBucketExemplar.
@@ -1138,22 +1138,22 @@ func (ms SummaryDataPoint) SetLabelsMap(v StringMap) {
 
 // StartTime returns the starttime associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) StartTime() TimestampUnixNano {
-	return TimestampUnixNano(ms.orig.StartTimeUnixnano)
+	return TimestampUnixNano(ms.orig.StartTimeUnixNano)
 }
 
 // SetStartTime replaces the starttime associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) SetStartTime(v TimestampUnixNano) {
-	ms.orig.StartTimeUnixnano = uint64(v)
+	ms.orig.StartTimeUnixNano = uint64(v)
 }
 
 // Timestamp returns the timestamp associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) Timestamp() TimestampUnixNano {
-	return TimestampUnixNano(ms.orig.TimestampUnixnano)
+	return TimestampUnixNano(ms.orig.TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) SetTimestamp(v TimestampUnixNano) {
-	ms.orig.TimestampUnixnano = uint64(v)
+	ms.orig.TimeUnixNano = uint64(v)
 }
 
 // Count returns the count associated with this SummaryDataPoint.

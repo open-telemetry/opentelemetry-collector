@@ -214,11 +214,11 @@ func dataPointsToTimeseries(metric data.Metric, labelKeys *labelKeys) []*ocmetri
 
 func int64PointToOC(point data.Int64DataPoint, labelKeys *labelKeys) *ocmetrics.TimeSeries {
 	return &ocmetrics.TimeSeries{
-		StartTimestamp: internal.UnixnanoToTimestamp(point.StartTime()),
+		StartTimestamp: internal.UnixNanoToTimestamp(point.StartTime()),
 		LabelValues:    labelValuesToOC(point.LabelsMap(), labelKeys),
 		Points: []*ocmetrics.Point{
 			{
-				Timestamp: internal.UnixnanoToTimestamp(point.Timestamp()),
+				Timestamp: internal.UnixNanoToTimestamp(point.Timestamp()),
 				Value: &ocmetrics.Point_Int64Value{
 					Int64Value: point.Value(),
 				},
@@ -229,11 +229,11 @@ func int64PointToOC(point data.Int64DataPoint, labelKeys *labelKeys) *ocmetrics.
 
 func doublePointToOC(point data.DoubleDataPoint, labelKeys *labelKeys) *ocmetrics.TimeSeries {
 	return &ocmetrics.TimeSeries{
-		StartTimestamp: internal.UnixnanoToTimestamp(point.StartTime()),
+		StartTimestamp: internal.UnixNanoToTimestamp(point.StartTime()),
 		LabelValues:    labelValuesToOC(point.LabelsMap(), labelKeys),
 		Points: []*ocmetrics.Point{
 			{
-				Timestamp: internal.UnixnanoToTimestamp(point.Timestamp()),
+				Timestamp: internal.UnixNanoToTimestamp(point.Timestamp()),
 				Value: &ocmetrics.Point_DoubleValue{
 					DoubleValue: point.Value(),
 				},
@@ -244,11 +244,11 @@ func doublePointToOC(point data.DoubleDataPoint, labelKeys *labelKeys) *ocmetric
 
 func histogramPointToOC(point data.HistogramDataPoint, labelKeys *labelKeys) *ocmetrics.TimeSeries {
 	return &ocmetrics.TimeSeries{
-		StartTimestamp: internal.UnixnanoToTimestamp(point.StartTime()),
+		StartTimestamp: internal.UnixNanoToTimestamp(point.StartTime()),
 		LabelValues:    labelValuesToOC(point.LabelsMap(), labelKeys),
 		Points: []*ocmetrics.Point{
 			{
-				Timestamp: internal.UnixnanoToTimestamp(point.Timestamp()),
+				Timestamp: internal.UnixNanoToTimestamp(point.Timestamp()),
 				Value: &ocmetrics.Point_DistributionValue{
 					DistributionValue: &ocmetrics.DistributionValue{
 						Count:                 int64(point.Count()),
@@ -302,18 +302,18 @@ func exemplarToOC(exemplar data.HistogramBucketExemplar) *ocmetrics.Distribution
 	}
 	return &ocmetrics.DistributionValue_Exemplar{
 		Value:       exemplar.Value(),
-		Timestamp:   internal.UnixnanoToTimestamp(exemplar.Timestamp()),
+		Timestamp:   internal.UnixNanoToTimestamp(exemplar.Timestamp()),
 		Attachments: labels,
 	}
 }
 
 func summaryPointToOC(point data.SummaryDataPoint, labelKeys *labelKeys) *ocmetrics.TimeSeries {
 	return &ocmetrics.TimeSeries{
-		StartTimestamp: internal.UnixnanoToTimestamp(point.StartTime()),
+		StartTimestamp: internal.UnixNanoToTimestamp(point.StartTime()),
 		LabelValues:    labelValuesToOC(point.LabelsMap(), labelKeys),
 		Points: []*ocmetrics.Point{
 			{
-				Timestamp: internal.UnixnanoToTimestamp(point.Timestamp()),
+				Timestamp: internal.UnixNanoToTimestamp(point.Timestamp()),
 				Value: &ocmetrics.Point_SummaryValue{
 					SummaryValue: &ocmetrics.SummaryValue{
 						Count: int64Value(point.Count()),

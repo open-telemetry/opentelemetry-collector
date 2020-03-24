@@ -77,8 +77,8 @@ func OCToOTLP(td consumerdata.TraceData) []*otlptrace.ResourceSpans {
 	return resourceSpanList
 }
 
-func timestampToUnixnano(ts *timestamp.Timestamp) uint64 {
-	return uint64(internal.TimestampToUnixnano(ts))
+func timestampToUnixNano(ts *timestamp.Timestamp) uint64 {
+	return uint64(internal.TimestampToUnixNano(ts))
 }
 
 func ocSpanToOtlp(ocSpan *octrace.Span) *otlptrace.Span {
@@ -99,8 +99,8 @@ func ocSpanToOtlp(ocSpan *octrace.Span) *otlptrace.Span {
 		ParentSpanId:           ocSpan.ParentSpanId,
 		Name:                   truncableStringToStr(ocSpan.Name),
 		Kind:                   ocSpanKindToOtlp(ocSpan.Kind, ocSpan.Attributes),
-		StartTimeUnixnano:      timestampToUnixnano(ocSpan.StartTime),
-		EndTimeUnixnano:        timestampToUnixnano(ocSpan.EndTime),
+		StartTimeUnixNano:      timestampToUnixNano(ocSpan.StartTime),
+		EndTimeUnixNano:        timestampToUnixNano(ocSpan.EndTime),
 		Attributes:             attrs,
 		DroppedAttributesCount: droppedAttrCount,
 		Events:                 events,
@@ -232,7 +232,7 @@ func ocEventsToOtlp(ocEvents *octrace.Span_TimeEvents) (otlpEvents []*otlptrace.
 		}
 
 		otlpEvent := &otlptrace.Span_Event{
-			TimeUnixnano: timestampToUnixnano(ocEvent.Time),
+			TimeUnixNano: timestampToUnixNano(ocEvent.Time),
 		}
 
 		switch teValue := ocEvent.Value.(type) {

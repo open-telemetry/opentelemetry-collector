@@ -45,12 +45,12 @@ func newSpanEvent(orig *otlptrace.Span_Event) SpanEvent {
 
 // Timestamp returns the timestamp associated with this SpanEvent.
 func (ms SpanEvent) Timestamp() TimestampUnixNano {
-	return TimestampUnixNano(ms.orig.TimeUnixnano)
+	return TimestampUnixNano(ms.orig.TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this SpanEvent.
 func (ms SpanEvent) SetTimestamp(v TimestampUnixNano) {
-	ms.orig.TimeUnixnano = uint64(v)
+	ms.orig.TimeUnixNano = uint64(v)
 }
 
 // Name returns the name associated with this SpanEvent.

@@ -257,8 +257,8 @@ func TestOtlpToFromInternalIntPointsMutating(t *testing.T) {
 											Value: "v",
 										},
 									},
-									StartTimeUnixnano: startTime + 1,
-									TimestampUnixnano: endTime + 1,
+									StartTimeUnixNano: startTime + 1,
+									TimeUnixNano:      endTime + 1,
 									Value:             124,
 								},
 							},
@@ -340,8 +340,8 @@ func TestOtlpToFromInternalDoublePointsMutating(t *testing.T) {
 											Value: "v",
 										},
 									},
-									StartTimeUnixnano: startTime + 1,
-									TimestampUnixnano: endTime + 1,
+									StartTimeUnixNano: startTime + 1,
+									TimeUnixNano:      endTime + 1,
 									Value:             124.1,
 								},
 							},
@@ -437,8 +437,8 @@ func TestOtlpToFromInternalHistogramPointsMutating(t *testing.T) {
 											Value: "v",
 										},
 									},
-									StartTimeUnixnano: startTime + 1,
-									TimestampUnixnano: endTime + 1,
+									StartTimeUnixNano: startTime + 1,
+									TimeUnixNano:      endTime + 1,
 									Buckets: []*otlpmetrics.HistogramDataPoint_Bucket{
 										{
 											Count: 21,
@@ -446,8 +446,8 @@ func TestOtlpToFromInternalHistogramPointsMutating(t *testing.T) {
 										{
 											Count: 32,
 											Exemplar: &otlpmetrics.HistogramDataPoint_Bucket_Exemplar{
-												Value:             10.5,
-												TimestampUnixnano: startTime + 1,
+												Value:        10.5,
+												TimeUnixNano: startTime + 1,
 												Attachments: []*otlpcommon.StringKeyValue{
 													{
 														Key:   "k",
@@ -542,8 +542,8 @@ func TestOtlpToFromInternalSummaryPointsMutating(t *testing.T) {
 											Value: "v",
 										},
 									},
-									StartTimeUnixnano: startTime + 1,
-									TimestampUnixnano: endTime + 1,
+									StartTimeUnixNano: startTime + 1,
+									TimeUnixNano:      endTime + 1,
 									PercentileValues: []*otlpmetrics.SummaryDataPoint_ValueAtPercentile{
 										{
 											Percentile: 0.1,
@@ -699,8 +699,8 @@ func generateTestProtoIntMetric() *otlpmetrics.Metric {
 						Value: "value0",
 					},
 				},
-				StartTimeUnixnano: startTime,
-				TimestampUnixnano: endTime,
+				StartTimeUnixNano: startTime,
+				TimeUnixNano:      endTime,
 				Value:             123,
 			},
 			{
@@ -710,8 +710,8 @@ func generateTestProtoIntMetric() *otlpmetrics.Metric {
 						Value: "value1",
 					},
 				},
-				StartTimeUnixnano: startTime,
-				TimestampUnixnano: endTime,
+				StartTimeUnixNano: startTime,
+				TimeUnixNano:      endTime,
 				Value:             456,
 			},
 		},
@@ -733,8 +733,8 @@ func generateTestProtoDoubleMetric() *otlpmetrics.Metric {
 						Value: "value0",
 					},
 				},
-				StartTimeUnixnano: startTime,
-				TimestampUnixnano: endTime,
+				StartTimeUnixNano: startTime,
+				TimeUnixNano:      endTime,
 				Value:             123.1,
 			},
 			{
@@ -744,8 +744,8 @@ func generateTestProtoDoubleMetric() *otlpmetrics.Metric {
 						Value: "value1",
 					},
 				},
-				StartTimeUnixnano: startTime,
-				TimestampUnixnano: endTime,
+				StartTimeUnixNano: startTime,
+				TimeUnixNano:      endTime,
 				Value:             456.1,
 			},
 		},
@@ -768,8 +768,8 @@ func generateTestProtoHistogramMetric() *otlpmetrics.Metric {
 						Value: "value0",
 					},
 				},
-				StartTimeUnixnano: startTime,
-				TimestampUnixnano: endTime,
+				StartTimeUnixNano: startTime,
+				TimeUnixNano:      endTime,
 				Buckets: []*otlpmetrics.HistogramDataPoint_Bucket{
 					{
 						Count: 10,
@@ -777,8 +777,8 @@ func generateTestProtoHistogramMetric() *otlpmetrics.Metric {
 					{
 						Count: 15,
 						Exemplar: &otlpmetrics.HistogramDataPoint_Bucket_Exemplar{
-							Value:             1.5,
-							TimestampUnixnano: startTime,
+							Value:        1.5,
+							TimeUnixNano: startTime,
 							Attachments: []*otlpcommon.StringKeyValue{
 								{
 									Key:   "key_a1",
@@ -800,8 +800,8 @@ func generateTestProtoHistogramMetric() *otlpmetrics.Metric {
 						Value: "value1",
 					},
 				},
-				StartTimeUnixnano: startTime,
-				TimestampUnixnano: endTime,
+				StartTimeUnixNano: startTime,
+				TimeUnixNano:      endTime,
 				Buckets: []*otlpmetrics.HistogramDataPoint_Bucket{
 					{
 						Count: 10,
@@ -832,8 +832,8 @@ func generateTestProtoSummaryMetric() *otlpmetrics.Metric {
 						Value: "value0",
 					},
 				},
-				StartTimeUnixnano: startTime,
-				TimestampUnixnano: endTime,
+				StartTimeUnixNano: startTime,
+				TimeUnixNano:      endTime,
 				PercentileValues: []*otlpmetrics.SummaryDataPoint_ValueAtPercentile{
 					{
 						Percentile: 0.0,
@@ -852,8 +852,8 @@ func generateTestProtoSummaryMetric() *otlpmetrics.Metric {
 						Value: "value1",
 					},
 				},
-				StartTimeUnixnano: startTime,
-				TimestampUnixnano: endTime,
+				StartTimeUnixNano: startTime,
+				TimeUnixNano:      endTime,
 				PercentileValues: []*otlpmetrics.SummaryDataPoint_ValueAtPercentile{
 					{
 						Percentile: 0.5,
