@@ -322,24 +322,24 @@ func TestOCToOTLP(t *testing.T) {
 			Description: "My metric",
 			Unit:        "ms",
 			Type:        otlpmetrics.MetricDescriptor_GAUGE_HISTOGRAM,
-			Labels: []*otlpcommon.StringKeyValue{
-				{
-					Key:   "key1",
-					Value: "value1",
-				},
-				{
-					Key:   "key2",
-					Value: "value2",
-				},
-			},
 		},
 		HistogramDataPoints: []*otlpmetrics.HistogramDataPoint{
 			{
 				StartTimeUnixnano: unixnanos1,
 				TimestampUnixnano: unixnanos2,
-				Count:             48,
-				Sum:               123.45,
-				ExplicitBounds:    []float64{1.2, 4.5},
+				Labels: []*otlpcommon.StringKeyValue{
+					{
+						Key:   "key1",
+						Value: "value1",
+					},
+					{
+						Key:   "key2",
+						Value: "value2",
+					},
+				},
+				Count:          48,
+				Sum:            123.45,
+				ExplicitBounds: []float64{1.2, 4.5},
 				Buckets: []*otlpmetrics.HistogramDataPoint_Bucket{
 					{
 						Count: 12,

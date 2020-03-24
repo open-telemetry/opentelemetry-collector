@@ -87,10 +87,7 @@ func metricToOtlp(ocMetric *ocmetrics.Metric) *otlpmetrics.Metric {
 	if metricDescriptor == nil {
 		return otlpMetric
 	}
-	commonLabels, labels := getOtlpLabels(ocMetric)
-	if commonLabels != nil {
-		otlpMetric.MetricDescriptor.Labels = commonLabels
-	}
+	labels := getOtlpLabels(ocMetric)
 	setDataPoints(otlpMetric, ocMetric, labels)
 	return otlpMetric
 }
@@ -114,72 +111,30 @@ func setDataPoints(
 	}
 }
 
-// getOtlpLabels scans OC metric labels and returns labels in OTLP format as two collections of StringKeyValue.
-// The first collection is a slice of labels that were found in all of OC metric timeseries.
-// The second collection is map of OTLP labels by OC timeseries indexes.
-func getOtlpLabels(ocMetric *ocmetrics.Metric) ([]*otlpcommon.StringKeyValue, [][]*otlpcommon.StringKeyValue) {
+// getOtlpLabels scans OC metric labels and returns OC timeseries idx -> OTLP labels map.
+func getOtlpLabels(ocMetric *ocmetrics.Metric) [][]*otlpcommon.StringKeyValue {
 	ocLabelsKeys := ocMetric.GetMetricDescriptor().GetLabelKeys()
 	labelsCount := len(ocLabelsKeys)
 	timeseriesCount := len(ocMetric.GetTimeseries())
 	if labelsCount == 0 || timeseriesCount == 0 {
-		return nil, nil
+		return nil
 	}
 
 	labelsByTimeseriesIdx := make([][]*otlpcommon.StringKeyValue, timeseriesCount)
 
-	// Scan the first OC timeseries and prepare slice of common and its own OTLP labels
-	commonLabelsByIdx := make([]*otlpcommon.StringKeyValue, labelsCount)
-	labelsByTimeseriesIdx[0] = make([]*otlpcommon.StringKeyValue, labelsCount)
-	for i := 0; i < labelsCount; i++ {
-		otlpLabel := ocLabelToOtlp(ocLabelsKeys[i], ocMetric.GetTimeseries()[0].GetLabelValues()[i])
-		commonLabelsByIdx[i] = otlpLabel
-		labelsByTimeseriesIdx[0][i] = otlpLabel
-	}
-
-	// Scan other timeseries and drop common labels that are not repeated
-	for i := 1; i < timeseriesCount; i++ {
+	// Scan timeseries and fill the OC timeseries idx -> OTLP labels map
+	for i := 0; i < timeseriesCount; i++ {
 		ts := ocMetric.GetTimeseries()[i]
-		labelsByTimeseriesIdx[i] = make([]*otlpcommon.StringKeyValue, labelsCount)
+		labelsByTimeseriesIdx[i] = make([]*otlpcommon.StringKeyValue, 0, labelsCount)
 		for l := 0; l < labelsCount; l++ {
 			otlpLabel := ocLabelToOtlp(ocLabelsKeys[l], ts.GetLabelValues()[l])
-			labelsByTimeseriesIdx[i][l] = otlpLabel
-			if otlpLabel == nil || otlpLabel.GetValue() != commonLabelsByIdx[l].GetValue() {
-				commonLabelsByIdx[l] = nil
+			if otlpLabel != nil {
+				labelsByTimeseriesIdx[i] = append(labelsByTimeseriesIdx[i], otlpLabel)
 			}
 		}
 	}
 
-	// Clean the common labels collection from nil values
-	commonLabels := make([]*otlpcommon.StringKeyValue, 0, labelsCount)
-	for l := 0; l < labelsCount; l++ {
-		if commonLabelsByIdx[l] != nil {
-			commonLabels = append(commonLabels, commonLabelsByIdx[l])
-
-			// Make sure labels are not duplicated at per timeseries level if they are set as common
-			for i := 1; i < timeseriesCount; i++ {
-				labelsByTimeseriesIdx[i][l] = nil
-			}
-		}
-	}
-	if len(commonLabels) == 0 {
-		commonLabels = nil
-	}
-
-	// Clean the timeseriesIdx->OtlpLabels collection from nil values
-	timeseriesLabels := make([][]*otlpcommon.StringKeyValue, timeseriesCount)
-	for i := 0; i < timeseriesCount; i++ {
-		timeseriesLabels[i] = make([]*otlpcommon.StringKeyValue, 0, labelsCount)
-		for l := 0; l < labelsCount; l++ {
-			if labelsByTimeseriesIdx[i][l] != nil && commonLabelsByIdx[l] == nil {
-				timeseriesLabels[i] = append(timeseriesLabels[i], labelsByTimeseriesIdx[i][l])
-			}
-		}
-		if len(timeseriesLabels[i]) == 0 {
-			timeseriesLabels[i] = nil
-		}
-	}
-
-	return commonLabels, timeseriesLabels
+	return labelsByTimeseriesIdx
 }
 
 func ocLabelToOtlp(ocLabelKey *ocmetrics.LabelKey, ocLabelValue *ocmetrics.LabelValue) *otlpcommon.StringKeyValue {
