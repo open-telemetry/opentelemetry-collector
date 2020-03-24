@@ -105,6 +105,8 @@ func labelKeysToOC(metric *otlpmetrics.Metric) *labelKeys {
 	// - If the value for particular label key is missing in the point, we set it to default
 	// to preserve 1:1 matching between label keys and values.
 
+	// TODO: Support common labels from otlpmetrics.MetricDescriptor.Labels
+
 	// First, collect a set of all labels present in the metric
 	keySet := make(map[string]struct{}, 0)
 	for _, point := range metric.Int64DataPoints {

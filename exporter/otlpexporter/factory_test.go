@@ -41,8 +41,8 @@ func TestCreateMetricsExporter(t *testing.T) {
 	cfg.GRPCSettings.Endpoint = testutils.GetAvailableLocalAddress(t)
 
 	oexp, err := factory.CreateMetricsExporter(zap.NewNop(), cfg)
-	require.Error(t, err)
-	require.Nil(t, oexp)
+	require.Nil(t, err)
+	require.NotNil(t, oexp)
 }
 
 func TestCreateTraceExporter(t *testing.T) {
