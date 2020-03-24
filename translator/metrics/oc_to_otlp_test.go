@@ -257,8 +257,8 @@ func TestOCToOTLP(t *testing.T) {
 						Value: "value1",
 					},
 				},
-				StartTimeUnixnano: unixnanos1,
-				TimestampUnixnano: unixnanos2,
+				StartTimeUnixNano: unixnanos1,
+				TimeUnixNano:      unixnanos2,
 				Value:             123,
 			},
 			{
@@ -268,8 +268,8 @@ func TestOCToOTLP(t *testing.T) {
 						Value: "value2",
 					},
 				},
-				StartTimeUnixnano: unixnanos1,
-				TimestampUnixnano: unixnanos2,
+				StartTimeUnixNano: unixnanos1,
+				TimeUnixNano:      unixnanos2,
 				Value:             456,
 			},
 		},
@@ -294,8 +294,8 @@ func TestOCToOTLP(t *testing.T) {
 						Value: "value2",
 					},
 				},
-				StartTimeUnixnano: unixnanos1,
-				TimestampUnixnano: unixnanos2,
+				StartTimeUnixNano: unixnanos1,
+				TimeUnixNano:      unixnanos2,
 				Value:             1.23,
 			},
 			{
@@ -309,8 +309,8 @@ func TestOCToOTLP(t *testing.T) {
 						Value: "value3",
 					},
 				},
-				StartTimeUnixnano: unixnanos1,
-				TimestampUnixnano: unixnanos2,
+				StartTimeUnixNano: unixnanos1,
+				TimeUnixNano:      unixnanos2,
 				Value:             3.45,
 			},
 		},
@@ -325,8 +325,8 @@ func TestOCToOTLP(t *testing.T) {
 		},
 		HistogramDataPoints: []*otlpmetrics.HistogramDataPoint{
 			{
-				StartTimeUnixnano: unixnanos1,
-				TimestampUnixnano: unixnanos2,
+				StartTimeUnixNano: unixnanos1,
+				TimeUnixNano:      unixnanos2,
 				Labels: []*otlpcommon.StringKeyValue{
 					{
 						Key:   "key1",
@@ -344,8 +344,8 @@ func TestOCToOTLP(t *testing.T) {
 					{
 						Count: 12,
 						Exemplar: &otlpmetrics.HistogramDataPoint_Bucket_Exemplar{
-							Value:             1.1,
-							TimestampUnixnano: unixnanos2,
+							Value:        1.1,
+							TimeUnixNano: unixnanos2,
 							Attachments: []*otlpcommon.StringKeyValue{
 								{
 									Key:   "key1",
@@ -357,8 +357,8 @@ func TestOCToOTLP(t *testing.T) {
 					{
 						Count: 24,
 						Exemplar: &otlpmetrics.HistogramDataPoint_Bucket_Exemplar{
-							Value:             2.2,
-							TimestampUnixnano: unixnanos2,
+							Value:        2.2,
+							TimeUnixNano: unixnanos2,
 							Attachments: []*otlpcommon.StringKeyValue{
 								{
 									Key:   "key2",
@@ -370,8 +370,8 @@ func TestOCToOTLP(t *testing.T) {
 					{
 						Count: 12,
 						Exemplar: &otlpmetrics.HistogramDataPoint_Bucket_Exemplar{
-							Value:             7.1,
-							TimestampUnixnano: unixnanos2,
+							Value:        7.1,
+							TimeUnixNano: unixnanos2,
 							Attachments: []*otlpcommon.StringKeyValue{
 								{
 									Key:   "key3",

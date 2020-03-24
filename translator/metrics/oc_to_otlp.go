@@ -156,8 +156,8 @@ func getInt64DataPoints(
 		startTimestamp := timeseries.GetStartTimestamp()
 		for _, point := range timeseries.GetPoints() {
 			int64DataPoints = append(int64DataPoints, &otlpmetrics.Int64DataPoint{
-				StartTimeUnixnano: ocTimestampToNanos(startTimestamp),
-				TimestampUnixnano: ocTimestampToNanos(point.GetTimestamp()),
+				StartTimeUnixNano: ocTimestampToNanos(startTimestamp),
+				TimeUnixNano:      ocTimestampToNanos(point.GetTimestamp()),
 				Value:             point.GetInt64Value(),
 				Labels:            labels[i],
 			})
@@ -175,8 +175,8 @@ func getDoubleDataPoints(
 		startTimestamp := timeseries.GetStartTimestamp()
 		for _, point := range timeseries.GetPoints() {
 			int64DataPoints = append(int64DataPoints, &otlpmetrics.DoubleDataPoint{
-				StartTimeUnixnano: ocTimestampToNanos(startTimestamp),
-				TimestampUnixnano: ocTimestampToNanos(point.GetTimestamp()),
+				StartTimeUnixNano: ocTimestampToNanos(startTimestamp),
+				TimeUnixNano:      ocTimestampToNanos(point.GetTimestamp()),
 				Value:             point.GetDoubleValue(),
 				Labels:            labels[i],
 			})
@@ -198,8 +198,8 @@ func getHistogramDataPoints(
 				continue
 			}
 			histogramDataPoints = append(histogramDataPoints, &otlpmetrics.HistogramDataPoint{
-				StartTimeUnixnano: ocTimestampToNanos(startTimestamp),
-				TimestampUnixnano: ocTimestampToNanos(point.GetTimestamp()),
+				StartTimeUnixNano: ocTimestampToNanos(startTimestamp),
+				TimeUnixNano:      ocTimestampToNanos(point.GetTimestamp()),
 				Count:             uint64(distributionValue.GetCount()),
 				Sum:               distributionValue.GetSum(),
 				Buckets:           histogramBucketsToOtlp(distributionValue.Buckets),
@@ -224,8 +224,8 @@ func getSummaryDataPoints(
 				continue
 			}
 			summaryDataPoints = append(summaryDataPoints, &otlpmetrics.SummaryDataPoint{
-				StartTimeUnixnano: ocTimestampToNanos(startTimestamp),
-				TimestampUnixnano: ocTimestampToNanos(point.GetTimestamp()),
+				StartTimeUnixNano: ocTimestampToNanos(startTimestamp),
+				TimeUnixNano:      ocTimestampToNanos(point.GetTimestamp()),
 				Count:             uint64(ocSummaryValue.GetCount().GetValue()),
 				Sum:               ocSummaryValue.GetSum().GetValue(),
 				PercentileValues:  percentileToOtlp(ocSummaryValue.GetSnapshot().GetPercentileValues()),
@@ -272,9 +272,9 @@ func exemplarToOtlp(ocExemplar *ocmetrics.DistributionValue_Exemplar) *otlpmetri
 	}
 
 	return &otlpmetrics.HistogramDataPoint_Bucket_Exemplar{
-		Value:             ocExemplar.Value,
-		TimestampUnixnano: ocTimestampToNanos(ocExemplar.Timestamp),
-		Attachments:       exemplarAttachmentsToOtlp(ocExemplar.Attachments),
+		Value:        ocExemplar.Value,
+		TimeUnixNano: ocTimestampToNanos(ocExemplar.Timestamp),
+		Attachments:  exemplarAttachmentsToOtlp(ocExemplar.Attachments),
 	}
 }
 
@@ -294,7 +294,7 @@ func exemplarAttachmentsToOtlp(ocAttachments map[string]string) []*otlpcommon.St
 }
 
 func ocTimestampToNanos(ts *timestamp.Timestamp) uint64 {
-	return uint64(internal.TimestampToUnixnano(ts))
+	return uint64(internal.TimestampToUnixNano(ts))
 }
 
 func getPointsCount(ocMetric *ocmetrics.Metric) int {
