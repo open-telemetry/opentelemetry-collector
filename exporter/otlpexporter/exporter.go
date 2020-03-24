@@ -62,9 +62,9 @@ type exporterImp struct {
 var (
 	errAlreadyStarted = errors.New("already started")
 	errNotStarted     = errors.New("not started")
-	errTimeout        = errors.New("Timeout")
-	errStopped        = errors.New("Stopped")
-	errFatalError     = errors.New("Fatal error sending to server")
+	errTimeout        = errors.New("timeout")
+	errStopped        = errors.New("stopped")
+	errFatalError     = errors.New("fatal error sending to server")
 )
 
 // Crete new exporter and start it. The exporter will begin connecting but

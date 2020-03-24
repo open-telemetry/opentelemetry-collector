@@ -39,6 +39,7 @@ require (
 	github.com/prometheus/procfs v0.0.3
 	github.com/prometheus/prometheus v1.8.2-0.20190924101040-52e0504f83ea
 	github.com/rs/cors v1.6.0
+	github.com/securego/gosec v0.0.0-20200316084457-7da9f46445fd
 	github.com/soheilhy/cmux v0.1.4
 	github.com/spf13/cast v1.3.0
 	github.com/spf13/cobra v0.0.5
@@ -51,11 +52,12 @@ require (
 	github.com/uber/tchannel-go v1.10.0
 	go.opencensus.io v0.22.1
 	go.uber.org/zap v1.10.0
-	golang.org/x/sys v0.0.0-20190922100055-0a153f010e69
+	golang.org/x/sys v0.0.0-20191120155948-bd437916bb0e
 	google.golang.org/api v0.10.0 // indirect
 	google.golang.org/genproto v0.0.0-20190801165951-fa694d86fc64
 	google.golang.org/grpc v1.23.0
-	gopkg.in/yaml.v2 v2.2.4
+	gopkg.in/yaml.v2 v2.2.8
+	honnef.co/go/tools v0.0.1-2019.2.3
 	k8s.io/client-go v12.0.0+incompatible // indirect
 )
 

@@ -30,14 +30,6 @@ import (
 // Connection implementation is borrowed and adapted from OpenTelemetry Go SDK implementation:
 // https://github.com/open-telemetry/opentelemetry-go/blob/e0406dd3eb7aa826aba19287e8a14ca016bf8578/exporters/otlp/connection.go#L15
 
-func (e *exporterImp) lastConnectError() error {
-	errPtr := (*error)(atomic.LoadPointer(&e.lastConnectErrPtr))
-	if errPtr == nil {
-		return nil
-	}
-	return *errPtr
-}
-
 func (e *exporterImp) saveLastConnectError(err error) {
 	var errPtr *error
 	if err != nil {
@@ -56,10 +48,6 @@ func (e *exporterImp) setStateDisconnected(err error) {
 
 func (e *exporterImp) setStateConnected() {
 	e.saveLastConnectError(nil)
-}
-
-func (e *exporterImp) connected() bool {
-	return e.lastConnectError() == nil
 }
 
 const defaultConnReattemptPeriod = 10 * time.Second

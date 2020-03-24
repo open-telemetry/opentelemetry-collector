@@ -173,7 +173,7 @@ func (akv AttributeKeyValue) Key() string {
 
 // Value returns the value associated with this AttributeKeyValue.
 func (akv AttributeKeyValue) Value() AttributeValue {
-	return AttributeValue{akv.orig}
+	return AttributeValue(akv)
 }
 
 // SetValue replaces the value associated with this AttributeKeyValue.
