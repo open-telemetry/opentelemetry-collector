@@ -189,28 +189,27 @@ func TestInternalToOC(t *testing.T) {
 	span1.SetName("operationB")
 	span1.SetStartTime(internal.TimestampToUnixNano(timestampP))
 	span1.SetEndTime(internal.TimestampToUnixNano(timestampP))
-	se := data.NewSpanEvent()
-	se.SetTimestamp(internal.TimestampToUnixNano(timestampP))
-	se.SetName("event1")
-	se.SetAttributes(data.NewAttributeMap(
+	span1.SetEvents(data.NewSpanEventSlice(1))
+	se1 := span1.Events().Get(0)
+	se1.SetTimestamp(internal.TimestampToUnixNano(timestampP))
+	se1.SetName("event1")
+	se1.SetAttributes(data.NewAttributeMap(
 		data.AttributesMap{
 			"eventattr1": data.NewAttributeValueString("eventattrval1"),
 		}))
-	se.SetDroppedAttributesCount(4)
-	span1.SetEvents([]data.SpanEvent{se})
+	se1.SetDroppedAttributesCount(4)
 	span1.SetDroppedEventsCount(3)
-	status := data.NewSpanStatus()
-	status.SetCode(data.StatusCode(1))
-	status.SetMessage("status-cancelled")
-	span1.SetStatus(status)
+	span1.Status().SetCode(data.StatusCode(1))
+	span1.Status().SetMessage("status-cancelled")
 
 	span2 := data.NewSpan()
 	span2.SetName("operationC")
 	span2.SetStartTime(internal.TimestampToUnixNano(timestampP))
 	span2.SetEndTime(internal.TimestampToUnixNano(timestampP))
-	span2.SetLinks([]data.SpanLink{data.NewSpanLink()})
+	span2.SetLinks(data.NewSpanLinkSlice(1))
 	span2.SetDroppedLinksCount(1)
-	se2 := data.NewSpanEvent()
+	span2.SetEvents(data.NewSpanEventSlice(1))
+	se2 := span2.Events().Get(0)
 	se2.SetTimestamp(internal.TimestampToUnixNano(timestampP))
 	se2.SetName("")
 	se2.SetAttributes(data.NewAttributeMap(
@@ -221,7 +220,6 @@ func TestInternalToOC(t *testing.T) {
 			conventions.OCTimeEventMessageEventCSize: data.NewAttributeValueInt(234),
 		}))
 	se2.SetDroppedAttributesCount(0)
-	span2.SetEvents([]data.SpanEvent{se2})
 
 	span3 := data.NewSpan()
 	span3.SetName("operationD")
@@ -232,7 +230,7 @@ func TestInternalToOC(t *testing.T) {
 	span3Resource.SetAttributes(data.NewAttributeMap(map[string]data.AttributeValue{
 		conventions.OCAttributeResourceType: data.NewAttributeValueString(span3ResourceType)}))
 	resourceSpans3 := data.NewResourceSpans(span3Resource, []*data.InstrumentationLibrarySpans{
-		data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []*data.Span{span3})})
+		data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []data.Span{span3})})
 
 	ocNode := &occommon.Node{}
 	ocResource := &ocresource.Resource{
@@ -294,12 +292,18 @@ func TestInternalToOC(t *testing.T) {
 				},
 			},
 		},
+		// TODO: Remove this if there is a way in internal to know if Status was set.
+		// https://github.com/open-telemetry/opentelemetry-collector/pull/666
+		Status: &octrace.Status{},
 	}
 
 	ocSpan3 := &octrace.Span{
 		Name:      &octrace.TruncatableString{Value: "operationD"},
 		StartTime: timestampP,
 		EndTime:   timestampP,
+		// TODO: Remove this if there is a way in internal to know if Status was set.
+		// https://github.com/open-telemetry/opentelemetry-collector/pull/666
+		Status: &octrace.Status{},
 	}
 
 	tests := []struct {
@@ -317,7 +321,7 @@ func TestInternalToOC(t *testing.T) {
 			name: "no-spans",
 			internal: data.NewTraceData([]*data.ResourceSpans{
 				data.NewResourceSpans(data.NewResource(), []*data.InstrumentationLibrarySpans{
-					data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []*data.Span{})}),
+					data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []data.Span{})}),
 			}),
 			oc: []consumerdata.TraceData{
 				{
@@ -333,7 +337,7 @@ func TestInternalToOC(t *testing.T) {
 			name: "one-spans",
 			internal: data.NewTraceData([]*data.ResourceSpans{
 				data.NewResourceSpans(resource, []*data.InstrumentationLibrarySpans{
-					data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []*data.Span{span1})}),
+					data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []data.Span{span1})}),
 			}),
 			oc: []consumerdata.TraceData{
 				{
@@ -349,7 +353,7 @@ func TestInternalToOC(t *testing.T) {
 			name: "two-spans",
 			internal: data.NewTraceData([]*data.ResourceSpans{
 				data.NewResourceSpans(data.NewResource(), []*data.InstrumentationLibrarySpans{
-					data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []*data.Span{span1, span2})}),
+					data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []data.Span{span1, span2})}),
 			}),
 			oc: []consumerdata.TraceData{
 				{
@@ -365,7 +369,7 @@ func TestInternalToOC(t *testing.T) {
 			name: "two-spans-plus-one-separate",
 			internal: data.NewTraceData([]*data.ResourceSpans{
 				data.NewResourceSpans(resource, []*data.InstrumentationLibrarySpans{
-					data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []*data.Span{span1, span2})}),
+					data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []data.Span{span1, span2})}),
 				resourceSpans3,
 			}),
 			oc: []consumerdata.TraceData{

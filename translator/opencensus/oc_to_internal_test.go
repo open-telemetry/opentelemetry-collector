@@ -315,7 +315,8 @@ func TestOcToInternal(t *testing.T) {
 	span1.SetName("operationB")
 	span1.SetStartTime(internal.TimestampToUnixNano(timestampP))
 	span1.SetEndTime(internal.TimestampToUnixNano(timestampP))
-	se := data.NewSpanEvent()
+	span1.SetEvents(data.NewSpanEventSlice(1))
+	se := span1.Events().Get(0)
 	se.SetTimestamp(internal.TimestampToUnixNano(timestampP))
 	se.SetName("event1")
 	se.SetAttributes(data.NewAttributeMap(
@@ -323,18 +324,15 @@ func TestOcToInternal(t *testing.T) {
 			"eventattr1": data.NewAttributeValueString("eventattrval1"),
 		}))
 	se.SetDroppedAttributesCount(4)
-	span1.SetEvents([]data.SpanEvent{se})
 	span1.SetDroppedEventsCount(3)
-	status := data.NewSpanStatus()
-	status.SetCode(data.StatusCode(1))
-	status.SetMessage("status-cancelled")
-	span1.SetStatus(status)
+	span1.Status().SetCode(data.StatusCode(1))
+	span1.Status().SetMessage("status-cancelled")
 
 	span2 := data.NewSpan()
 	span2.SetName("operationC")
 	span2.SetStartTime(internal.TimestampToUnixNano(timestampP))
 	span2.SetEndTime(internal.TimestampToUnixNano(timestampP))
-	span2.SetLinks([]data.SpanLink{data.NewSpanLink()})
+	span2.SetLinks(data.NewSpanLinkSlice(1))
 	span2.SetDroppedLinksCount(1)
 
 	span3 := data.NewSpan()
@@ -382,7 +380,7 @@ func TestOcToInternal(t *testing.T) {
 		},
 
 		{
-			name: "one-spans",
+			name: "one-span",
 			oc: consumerdata.TraceData{
 				Node:     ocNode,
 				Resource: ocResource,
@@ -390,7 +388,7 @@ func TestOcToInternal(t *testing.T) {
 			},
 			itd: data.NewTraceData([]*data.ResourceSpans{
 				data.NewResourceSpans(internalResource, []*data.InstrumentationLibrarySpans{
-					data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []*data.Span{span1})}),
+					data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []data.Span{span1})}),
 			}),
 		},
 
@@ -403,7 +401,7 @@ func TestOcToInternal(t *testing.T) {
 			},
 			itd: data.NewTraceData([]*data.ResourceSpans{
 				data.NewResourceSpans(internalResource, []*data.InstrumentationLibrarySpans{
-					data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []*data.Span{span1, span2})}),
+					data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []data.Span{span1, span2})}),
 			}),
 		},
 
@@ -416,9 +414,9 @@ func TestOcToInternal(t *testing.T) {
 			},
 			itd: data.NewTraceData([]*data.ResourceSpans{
 				data.NewResourceSpans(internalResource, []*data.InstrumentationLibrarySpans{
-					data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []*data.Span{span1, span2})}),
+					data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []data.Span{span1, span2})}),
 				data.NewResourceSpans(internalResource, []*data.InstrumentationLibrarySpans{
-					data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []*data.Span{span3})}),
+					data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []data.Span{span3})}),
 			}),
 		},
 
@@ -431,9 +429,9 @@ func TestOcToInternal(t *testing.T) {
 			},
 			itd: data.NewTraceData([]*data.ResourceSpans{
 				data.NewResourceSpans(internalResource, []*data.InstrumentationLibrarySpans{
-					data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []*data.Span{span1, span2})}),
+					data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []data.Span{span1, span2})}),
 				data.NewResourceSpans(internalResource, []*data.InstrumentationLibrarySpans{
-					data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []*data.Span{span3})}),
+					data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []data.Span{span3})}),
 			}),
 		},
 	}

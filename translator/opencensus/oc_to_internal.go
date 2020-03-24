@@ -121,11 +121,11 @@ func ocSpanToResourceSpans(ocSpan *octrace.Span, node *occommon.Node, resource *
 	return data.NewResourceSpans(
 		ocNodeResourceToInternal(node, resource),
 		[]*data.InstrumentationLibrarySpans{
-			data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []*data.Span{destSpan})},
+			data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []data.Span{destSpan})},
 	)
 }
 
-func ocSpanToInternal(dest *data.Span, src *octrace.Span) {
+func ocSpanToInternal(dest data.Span, src *octrace.Span) {
 	events, droppedEventCount := ocEventsToInternal(src.TimeEvents)
 	links, droppedLinkCount := ocLinksToInternal(src.Links)
 
@@ -253,19 +253,18 @@ func ocSpanKindToInternal(ocKind octrace.Span_SpanKind, ocAttrs *octrace.Span_At
 	}
 }
 
-func ocEventsToInternal(ocEvents *octrace.Span_TimeEvents) (events []data.SpanEvent, droppedCount uint32) {
+func ocEventsToInternal(ocEvents *octrace.Span_TimeEvents) (data.SpanEventSlice, uint32) {
 	if ocEvents == nil {
-		return
+		return data.NewSpanEventSlice(0), 0
 	}
 
-	droppedCount = uint32(ocEvents.DroppedMessageEventsCount + ocEvents.DroppedAnnotationsCount)
+	droppedCount := uint32(ocEvents.DroppedMessageEventsCount + ocEvents.DroppedAnnotationsCount)
 
-	eventCount := len(ocEvents.TimeEvent)
-	if eventCount == 0 {
-		return
+	if len(ocEvents.TimeEvent) == 0 {
+		return data.NewSpanEventSlice(0), droppedCount
 	}
 
-	events = data.NewSpanEventSlice(eventCount)
+	events := data.NewSpanEventSlice(len(ocEvents.TimeEvent))
 
 	i := 0
 	for _, ocEvent := range ocEvents.TimeEvent {
@@ -274,7 +273,7 @@ func ocEventsToInternal(ocEvents *octrace.Span_TimeEvents) (events []data.SpanEv
 			continue
 		}
 
-		event := events[i]
+		event := events.Get(i)
 		i++
 
 		event.SetTimestamp(internal.TimestampToUnixNano(ocEvent.Time))
@@ -299,24 +298,21 @@ func ocEventsToInternal(ocEvents *octrace.Span_TimeEvents) (events []data.SpanEv
 	}
 
 	// Truncate the slice to only include populated items.
-	events = events[0:i]
+	events.Resize(0, i)
 
-	return
+	return events, droppedCount
 }
 
-func ocLinksToInternal(ocLinks *octrace.Span_Links) (links []data.SpanLink, droppedCount uint32) {
+func ocLinksToInternal(ocLinks *octrace.Span_Links) (data.SpanLinkSlice, uint32) {
 	if ocLinks == nil {
-		return
+		return data.NewSpanLinkSlice(0), 0
 	}
 
-	droppedCount = uint32(ocLinks.DroppedLinksCount)
-
-	linkCount := len(ocLinks.Link)
-	if linkCount == 0 {
-		return
+	if len(ocLinks.Link) == 0 {
+		return data.NewSpanLinkSlice(0), uint32(ocLinks.DroppedLinksCount)
 	}
 
-	links = data.NewSpanLinkSlice(linkCount)
+	links := data.NewSpanLinkSlice(len(ocLinks.Link))
 
 	i := 0
 	for _, ocLink := range ocLinks.Link {
@@ -324,7 +320,7 @@ func ocLinksToInternal(ocLinks *octrace.Span_Links) (links []data.SpanLink, drop
 			continue
 		}
 
-		link := links[i]
+		link := links.Get(i)
 		i++
 
 		link.SetTraceID(data.NewTraceID(ocLink.TraceId))
@@ -336,9 +332,9 @@ func ocLinksToInternal(ocLinks *octrace.Span_Links) (links []data.SpanLink, drop
 	}
 
 	// Truncate the slice to only include populated items.
-	links = links[0:i]
+	links.Resize(0, i)
 
-	return
+	return links, uint32(ocLinks.DroppedLinksCount)
 }
 
 func ocMessageEventToInternalAttrs(msgEvent *octrace.Span_TimeEvent_MessageEvent) (data.AttributeMap, uint32) {

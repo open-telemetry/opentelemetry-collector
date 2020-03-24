@@ -35,7 +35,7 @@ func TestSpanCount(t *testing.T) {
 	td = TraceData{
 		resourceSpans: []*ResourceSpans{
 			NewResourceSpans(NewResource(), []*InstrumentationLibrarySpans{
-				NewInstrumentationLibrarySpans(NewInstrumentationLibrary(), []*Span{})}),
+				NewInstrumentationLibrarySpans(NewInstrumentationLibrary(), []Span{})}),
 		},
 	}
 	assert.EqualValues(t, 0, td.SpanCount())
@@ -43,7 +43,7 @@ func TestSpanCount(t *testing.T) {
 	td = TraceData{
 		resourceSpans: []*ResourceSpans{
 			NewResourceSpans(NewResource(), []*InstrumentationLibrarySpans{
-				NewInstrumentationLibrarySpans(NewInstrumentationLibrary(), []*Span{nil})}),
+				NewInstrumentationLibrarySpans(NewInstrumentationLibrary(), NewSpanSlice(1))}),
 		},
 	}
 	assert.EqualValues(t, 1, td.SpanCount())
@@ -51,11 +51,11 @@ func TestSpanCount(t *testing.T) {
 	td = TraceData{
 		resourceSpans: []*ResourceSpans{
 			NewResourceSpans(NewResource(), []*InstrumentationLibrarySpans{
-				NewInstrumentationLibrarySpans(NewInstrumentationLibrary(), []*Span{nil})}),
+				NewInstrumentationLibrarySpans(NewInstrumentationLibrary(), NewSpanSlice(1))}),
 			NewResourceSpans(NewResource(), []*InstrumentationLibrarySpans{
-				NewInstrumentationLibrarySpans(NewInstrumentationLibrary(), []*Span{})}),
+				NewInstrumentationLibrarySpans(NewInstrumentationLibrary(), []Span{})}),
 			NewResourceSpans(NewResource(), []*InstrumentationLibrarySpans{
-				NewInstrumentationLibrarySpans(NewInstrumentationLibrary(), []*Span{nil, nil, nil, nil, nil})}),
+				NewInstrumentationLibrarySpans(NewInstrumentationLibrary(), NewSpanSlice(5))}),
 		},
 	}
 	assert.EqualValues(t, 6, td.SpanCount())
@@ -70,30 +70,6 @@ func TestNewSpanSlice(t *testing.T) {
 	assert.EqualValues(t, n, len(spans))
 	for span := range spans {
 		assert.NotNil(t, span)
-	}
-}
-
-func TestNewSpanEventSlice(t *testing.T) {
-	events := NewSpanEventSlice(0)
-	assert.EqualValues(t, 0, len(events))
-
-	n := rand.Intn(10)
-	events = NewSpanEventSlice(n)
-	assert.EqualValues(t, n, len(events))
-	for event := range events {
-		assert.NotNil(t, event)
-	}
-}
-
-func TestNewSpanLinkSlice(t *testing.T) {
-	links := NewSpanLinkSlice(0)
-	assert.EqualValues(t, 0, len(links))
-
-	n := rand.Intn(10)
-	links = NewSpanLinkSlice(n)
-	assert.EqualValues(t, n, len(links))
-	for link := range links {
-		assert.NotNil(t, link)
 	}
 }
 

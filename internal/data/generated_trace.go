@@ -21,6 +21,249 @@ import (
 	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
 )
 
+// Span represents a single operation within a trace.
+// See Span definition in OTLP: https://github.com/open-telemetry/opentelemetry-proto/blob/master/opentelemetry/proto/trace/v1/trace.proto#L37
+//
+// This is a reference type, if passsed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewSpan function to create new instances.
+// Important: zero-initialized instance is not valid for use.
+type Span struct {
+	// Wrap OTLP otlptrace.Span.
+	orig *otlptrace.Span
+}
+
+// NewSpan creates a new empty Span.
+func NewSpan() Span {
+	return Span{&otlptrace.Span{}}
+}
+
+func newSpan(orig *otlptrace.Span) Span {
+	return Span{orig}
+}
+
+// TraceID returns the traceid associated with this Span.
+func (ms Span) TraceID() TraceID {
+	return TraceID(ms.orig.TraceId)
+}
+
+// SetTraceID replaces the traceid associated with this Span.
+func (ms Span) SetTraceID(v TraceID) {
+	ms.orig.TraceId = []byte(v)
+}
+
+// SpanID returns the spanid associated with this Span.
+func (ms Span) SpanID() SpanID {
+	return SpanID(ms.orig.SpanId)
+}
+
+// SetSpanID replaces the spanid associated with this Span.
+func (ms Span) SetSpanID(v SpanID) {
+	ms.orig.SpanId = []byte(v)
+}
+
+// TraceState returns the tracestate associated with this Span.
+func (ms Span) TraceState() TraceState {
+	return TraceState(ms.orig.TraceState)
+}
+
+// SetTraceState replaces the tracestate associated with this Span.
+func (ms Span) SetTraceState(v TraceState) {
+	ms.orig.TraceState = string(v)
+}
+
+// ParentSpanID returns the parentspanid associated with this Span.
+func (ms Span) ParentSpanID() SpanID {
+	return SpanID(ms.orig.ParentSpanId)
+}
+
+// SetParentSpanID replaces the parentspanid associated with this Span.
+func (ms Span) SetParentSpanID(v SpanID) {
+	ms.orig.ParentSpanId = []byte(v)
+}
+
+// Name returns the name associated with this Span.
+func (ms Span) Name() string {
+	return ms.orig.Name
+}
+
+// SetName replaces the name associated with this Span.
+func (ms Span) SetName(v string) {
+	ms.orig.Name = v
+}
+
+// Kind returns the kind associated with this Span.
+func (ms Span) Kind() SpanKind {
+	return SpanKind(ms.orig.Kind)
+}
+
+// SetKind replaces the kind associated with this Span.
+func (ms Span) SetKind(v SpanKind) {
+	ms.orig.Kind = otlptrace.Span_SpanKind(v)
+}
+
+// StartTime returns the starttime associated with this Span.
+func (ms Span) StartTime() TimestampUnixNano {
+	return TimestampUnixNano(ms.orig.StartTimeUnixNano)
+}
+
+// SetStartTime replaces the starttime associated with this Span.
+func (ms Span) SetStartTime(v TimestampUnixNano) {
+	ms.orig.StartTimeUnixNano = uint64(v)
+}
+
+// EndTime returns the endtime associated with this Span.
+func (ms Span) EndTime() TimestampUnixNano {
+	return TimestampUnixNano(ms.orig.EndTimeUnixNano)
+}
+
+// SetEndTime replaces the endtime associated with this Span.
+func (ms Span) SetEndTime(v TimestampUnixNano) {
+	ms.orig.EndTimeUnixNano = uint64(v)
+}
+
+// Attributes returns the Attributes associated with this Span.
+func (ms Span) Attributes() AttributeMap {
+	return newAttributeMap(&ms.orig.Attributes)
+}
+
+// SetAttributes replaces the Attributes associated with this Span.
+func (ms Span) SetAttributes(v AttributeMap) {
+	ms.orig.Attributes = *v.orig
+}
+
+// DroppedAttributesCount returns the droppedattributescount associated with this Span.
+func (ms Span) DroppedAttributesCount() uint32 {
+	return ms.orig.DroppedAttributesCount
+}
+
+// SetDroppedAttributesCount replaces the droppedattributescount associated with this Span.
+func (ms Span) SetDroppedAttributesCount(v uint32) {
+	ms.orig.DroppedAttributesCount = v
+}
+
+// Events returns the Events associated with this Span.
+func (ms Span) Events() SpanEventSlice {
+	return newSpanEventSlice(&ms.orig.Events)
+}
+
+// SetEvents replaces the Events associated with this Span.
+func (ms Span) SetEvents(v SpanEventSlice) {
+	ms.orig.Events = *v.orig
+}
+
+// DroppedEventsCount returns the droppedeventscount associated with this Span.
+func (ms Span) DroppedEventsCount() uint32 {
+	return ms.orig.DroppedEventsCount
+}
+
+// SetDroppedEventsCount replaces the droppedeventscount associated with this Span.
+func (ms Span) SetDroppedEventsCount(v uint32) {
+	ms.orig.DroppedEventsCount = v
+}
+
+// Links returns the Links associated with this Span.
+func (ms Span) Links() SpanLinkSlice {
+	return newSpanLinkSlice(&ms.orig.Links)
+}
+
+// SetLinks replaces the Links associated with this Span.
+func (ms Span) SetLinks(v SpanLinkSlice) {
+	ms.orig.Links = *v.orig
+}
+
+// DroppedLinksCount returns the droppedlinkscount associated with this Span.
+func (ms Span) DroppedLinksCount() uint32 {
+	return ms.orig.DroppedLinksCount
+}
+
+// SetDroppedLinksCount replaces the droppedlinkscount associated with this Span.
+func (ms Span) SetDroppedLinksCount(v uint32) {
+	ms.orig.DroppedLinksCount = v
+}
+
+// Status returns the status associated with this Span.
+func (ms Span) Status() SpanStatus {
+	if ms.orig.Status == nil {
+		// No Status available, initialize one to make all operations on SpanStatus available.
+		ms.orig.Status = &otlptrace.Status{}
+	}
+	return newSpanStatus(ms.orig.Status)
+}
+
+// SetStatus replaces the status associated with this Span.
+func (ms Span) SetStatus(v SpanStatus) {
+	ms.orig.Status = v.orig
+}
+
+// SpanEventSlice logically represents a slice of SpanEvent.
+//
+// This is a reference type, if passsed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewSpanEventSlice function to create new instances.
+// Important: zero-initialized instance is not valid for use.
+type SpanEventSlice struct {
+	orig *[]*otlptrace.Span_Event
+}
+
+// NewSpanEventSlice creates a SpanEventSlice with "len" empty elements.
+//
+// es := NewSpanEventSlice(4)
+// for i := 0; i < es.Len(); i++ {
+//     e := es.Get(i)
+//     // Here should set all the values for e.
+// }
+func NewSpanEventSlice(len int) SpanEventSlice {
+	if len == 0 {
+		orig := []*otlptrace.Span_Event(nil)
+		return SpanEventSlice{&orig}
+	}
+	// Slice for underlying orig.
+	origs := make([]otlptrace.Span_Event, len)
+	// Slice for wrappers.
+	wrappers := make([]*otlptrace.Span_Event, len)
+	for i := range origs {
+		wrappers[i] = &origs[i]
+	}
+	return SpanEventSlice{&wrappers}
+}
+
+func newSpanEventSlice(orig *[]*otlptrace.Span_Event) SpanEventSlice {
+	return SpanEventSlice{orig}
+}
+
+// Len returns the number of elements in the slice.
+func (es SpanEventSlice) Len() int {
+	return len(*es.orig)
+}
+
+// Get the element at the given index.
+//
+// This function is used mostly for iterating over all the values in the slice:
+// for i := 0; i < es.Len(); i++ {
+//     e := es.Get(i)
+//     ... // Do something with the element
+// }
+func (es SpanEventSlice) Get(ix int) SpanEvent {
+	return newSpanEvent((*es.orig)[ix])
+}
+
+// Remove the element at the given index from the slice.
+// Elements after the removed one are shifted to fill the emptied space.
+// The length of the slice is reduced by one.
+func (es SpanEventSlice) Remove(ix int) {
+	(*es.orig)[ix] = (*es.orig)[len(*es.orig)-1]
+	(*es.orig)[len(*es.orig)-1] = nil
+	*es.orig = (*es.orig)[:len(*es.orig)-1]
+}
+
+// Resize the slice. This operation is equivalent with slice[from:to].
+func (es SpanEventSlice) Resize(from, to int) {
+	*es.orig = (*es.orig)[from:to]
+}
+
 // SpanEvent is a time-stamped annotation of the span, consisting of user-supplied
 // text description and key-value pairs. See OTLP for event definition.
 //
@@ -80,6 +323,145 @@ func (ms SpanEvent) DroppedAttributesCount() uint32 {
 
 // SetDroppedAttributesCount replaces the droppedattributescount associated with this SpanEvent.
 func (ms SpanEvent) SetDroppedAttributesCount(v uint32) {
+	ms.orig.DroppedAttributesCount = v
+}
+
+// SpanLinkSlice logically represents a slice of SpanLink.
+//
+// This is a reference type, if passsed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewSpanLinkSlice function to create new instances.
+// Important: zero-initialized instance is not valid for use.
+type SpanLinkSlice struct {
+	orig *[]*otlptrace.Span_Link
+}
+
+// NewSpanLinkSlice creates a SpanLinkSlice with "len" empty elements.
+//
+// es := NewSpanLinkSlice(4)
+// for i := 0; i < es.Len(); i++ {
+//     e := es.Get(i)
+//     // Here should set all the values for e.
+// }
+func NewSpanLinkSlice(len int) SpanLinkSlice {
+	if len == 0 {
+		orig := []*otlptrace.Span_Link(nil)
+		return SpanLinkSlice{&orig}
+	}
+	// Slice for underlying orig.
+	origs := make([]otlptrace.Span_Link, len)
+	// Slice for wrappers.
+	wrappers := make([]*otlptrace.Span_Link, len)
+	for i := range origs {
+		wrappers[i] = &origs[i]
+	}
+	return SpanLinkSlice{&wrappers}
+}
+
+func newSpanLinkSlice(orig *[]*otlptrace.Span_Link) SpanLinkSlice {
+	return SpanLinkSlice{orig}
+}
+
+// Len returns the number of elements in the slice.
+func (es SpanLinkSlice) Len() int {
+	return len(*es.orig)
+}
+
+// Get the element at the given index.
+//
+// This function is used mostly for iterating over all the values in the slice:
+// for i := 0; i < es.Len(); i++ {
+//     e := es.Get(i)
+//     ... // Do something with the element
+// }
+func (es SpanLinkSlice) Get(ix int) SpanLink {
+	return newSpanLink((*es.orig)[ix])
+}
+
+// Remove the element at the given index from the slice.
+// Elements after the removed one are shifted to fill the emptied space.
+// The length of the slice is reduced by one.
+func (es SpanLinkSlice) Remove(ix int) {
+	(*es.orig)[ix] = (*es.orig)[len(*es.orig)-1]
+	(*es.orig)[len(*es.orig)-1] = nil
+	*es.orig = (*es.orig)[:len(*es.orig)-1]
+}
+
+// Resize the slice. This operation is equivalent with slice[from:to].
+func (es SpanLinkSlice) Resize(from, to int) {
+	*es.orig = (*es.orig)[from:to]
+}
+
+// SpanLink is a pointer from the current span to another span in the same trace or in a
+// different trace. See OTLP for link definition.
+//
+// This is a reference type, if passsed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewSpanLink function to create new instances.
+// Important: zero-initialized instance is not valid for use.
+type SpanLink struct {
+	// Wrap OTLP otlptrace.Span_Link.
+	orig *otlptrace.Span_Link
+}
+
+// NewSpanLink creates a new empty SpanLink.
+func NewSpanLink() SpanLink {
+	return SpanLink{&otlptrace.Span_Link{}}
+}
+
+func newSpanLink(orig *otlptrace.Span_Link) SpanLink {
+	return SpanLink{orig}
+}
+
+// TraceID returns the traceid associated with this SpanLink.
+func (ms SpanLink) TraceID() TraceID {
+	return TraceID(ms.orig.TraceId)
+}
+
+// SetTraceID replaces the traceid associated with this SpanLink.
+func (ms SpanLink) SetTraceID(v TraceID) {
+	ms.orig.TraceId = []byte(v)
+}
+
+// SpanID returns the spanid associated with this SpanLink.
+func (ms SpanLink) SpanID() SpanID {
+	return SpanID(ms.orig.SpanId)
+}
+
+// SetSpanID replaces the spanid associated with this SpanLink.
+func (ms SpanLink) SetSpanID(v SpanID) {
+	ms.orig.SpanId = []byte(v)
+}
+
+// TraceState returns the tracestate associated with this SpanLink.
+func (ms SpanLink) TraceState() TraceState {
+	return TraceState(ms.orig.TraceState)
+}
+
+// SetTraceState replaces the tracestate associated with this SpanLink.
+func (ms SpanLink) SetTraceState(v TraceState) {
+	ms.orig.TraceState = string(v)
+}
+
+// Attributes returns the Attributes associated with this SpanLink.
+func (ms SpanLink) Attributes() AttributeMap {
+	return newAttributeMap(&ms.orig.Attributes)
+}
+
+// SetAttributes replaces the Attributes associated with this SpanLink.
+func (ms SpanLink) SetAttributes(v AttributeMap) {
+	ms.orig.Attributes = *v.orig
+}
+
+// DroppedAttributesCount returns the droppedattributescount associated with this SpanLink.
+func (ms SpanLink) DroppedAttributesCount() uint32 {
+	return ms.orig.DroppedAttributesCount
+}
+
+// SetDroppedAttributesCount replaces the droppedattributescount associated with this SpanLink.
+func (ms SpanLink) SetDroppedAttributesCount(v uint32) {
 	ms.orig.DroppedAttributesCount = v
 }
 

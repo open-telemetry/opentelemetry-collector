@@ -353,7 +353,7 @@ func checkRecordedMetricsForTraceExporterV2(t *testing.T, te exporter.TraceExpor
 	doneFn := observabilitytest.SetupRecordedMetricsTest()
 	defer doneFn()
 
-	spans := make([]*data.Span, 2)
+	spans := data.NewSpanSlice(2)
 	rs := data.NewResourceSpans(data.NewResource(), nil)
 	ils := data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), spans)
 	rs.SetInstrumentationLibrarySpans([]*data.InstrumentationLibrarySpans{ils})
@@ -372,7 +372,7 @@ func checkRecordedMetricsForTraceExporterV2(t *testing.T, te exporter.TraceExpor
 }
 
 func generateTraceV2Traffic(t *testing.T, te exporter.TraceExporterV2, numRequests int, wantError error) {
-	spans := make([]*data.Span, 1)
+	spans := data.NewSpanSlice(1)
 	rs := data.NewResourceSpans(data.NewResource(), nil)
 	ils := data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), spans)
 	rs.SetInstrumentationLibrarySpans([]*data.InstrumentationLibrarySpans{ils})
