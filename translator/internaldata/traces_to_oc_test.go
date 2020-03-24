@@ -257,9 +257,6 @@ func TestInternalToOC(t *testing.T) {
 			},
 			DroppedLinksCount: 3,
 		},
-		// TODO: Remove this if there is a way in internal to know if Status was set.
-		// https://github.com/open-telemetry/opentelemetry-collector/pull/666
-		Status: &octrace.Status{},
 	}
 
 	ocSpan3 := &octrace.Span{
@@ -277,9 +274,6 @@ func TestInternalToOC(t *testing.T) {
 			},
 			DroppedAttributesCount: 5,
 		},
-		// TODO: Remove this if there is a way in internal to know if Status was set.
-		// https://github.com/open-telemetry/opentelemetry-collector/pull/666
-		Status: &octrace.Status{},
 	}
 
 	tests := []struct {
@@ -298,8 +292,8 @@ func TestInternalToOC(t *testing.T) {
 			td:   testdata.GenerateTraceDataOneEmptyResourceSpans(),
 			oc: []consumerdata.TraceData{
 				{
-					Node:         ocNode,
-					Resource:     &ocresource.Resource{},
+					Node:         nil,
+					Resource:     nil,
 					Spans:        []*octrace.Span(nil),
 					SourceFormat: sourceFormat,
 				},
@@ -337,8 +331,8 @@ func TestInternalToOC(t *testing.T) {
 			td:   testdata.GenerateTraceDataOneSpanNoResource(),
 			oc: []consumerdata.TraceData{
 				{
-					Node:         ocNode,
-					Resource:     &ocresource.Resource{},
+					Node:         nil,
+					Resource:     nil,
 					Spans:        []*octrace.Span{ocSpan1},
 					SourceFormat: sourceFormat,
 				},

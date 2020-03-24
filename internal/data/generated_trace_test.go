@@ -30,11 +30,10 @@ func TestResourceSpansSlice(t *testing.T) {
 	es = newResourceSpansSlice(&[]*otlptrace.ResourceSpans{})
 	assert.EqualValues(t, 0, es.Len())
 	es = NewResourceSpansSlice(13)
-	defaultVal := NewResourceSpans()
 	testVal := generateTestResourceSpans()
 	assert.EqualValues(t, 13, es.Len())
 	for i := 0; i < es.Len(); i++ {
-		assert.EqualValues(t, defaultVal, es.Get(i))
+		assert.EqualValues(t, NewEmptyResourceSpans(), es.Get(i))
 		fillTestResourceSpans(es.Get(i))
 		assert.EqualValues(t, testVal, es.Get(i))
 	}
@@ -68,13 +67,18 @@ func TestResourceSpansSlice(t *testing.T) {
 }
 
 func TestResourceSpans(t *testing.T) {
-	ms := NewResourceSpans()
-	assert.EqualValues(t, newResourceSpans(&otlptrace.ResourceSpans{}), ms)
+	assert.EqualValues(t, true, newResourceSpans(nil).IsNil())
+	ms := newResourceSpans(&otlptrace.ResourceSpans{})
+	assert.EqualValues(t, false, ms.IsNil())
 
-	assert.EqualValues(t, NewResource(), ms.Resource())
+	assert.EqualValues(t, true, ms.Resource().IsNil())
+	ms.InitResourceIfNil()
+	assert.EqualValues(t, false, ms.Resource().IsNil())
+	assert.EqualValues(t, NewEmptyResource(), ms.Resource())
 	testValResource := generateTestResource()
-	ms.SetResource(testValResource)
+	fillTestResource(ms.Resource())
 	assert.EqualValues(t, testValResource, ms.Resource())
+	assert.EqualValues(t, false, ms.Resource().IsNil())
 
 	assert.EqualValues(t, NewInstrumentationLibrarySpansSlice(0), ms.InstrumentationLibrarySpans())
 	testValInstrumentationLibrarySpans := generateTestInstrumentationLibrarySpansSlice()
@@ -90,11 +94,10 @@ func TestInstrumentationLibrarySpansSlice(t *testing.T) {
 	es = newInstrumentationLibrarySpansSlice(&[]*otlptrace.InstrumentationLibrarySpans{})
 	assert.EqualValues(t, 0, es.Len())
 	es = NewInstrumentationLibrarySpansSlice(13)
-	defaultVal := NewInstrumentationLibrarySpans()
 	testVal := generateTestInstrumentationLibrarySpans()
 	assert.EqualValues(t, 13, es.Len())
 	for i := 0; i < es.Len(); i++ {
-		assert.EqualValues(t, defaultVal, es.Get(i))
+		assert.EqualValues(t, NewEmptyInstrumentationLibrarySpans(), es.Get(i))
 		fillTestInstrumentationLibrarySpans(es.Get(i))
 		assert.EqualValues(t, testVal, es.Get(i))
 	}
@@ -128,13 +131,18 @@ func TestInstrumentationLibrarySpansSlice(t *testing.T) {
 }
 
 func TestInstrumentationLibrarySpans(t *testing.T) {
-	ms := NewInstrumentationLibrarySpans()
-	assert.EqualValues(t, newInstrumentationLibrarySpans(&otlptrace.InstrumentationLibrarySpans{}), ms)
+	assert.EqualValues(t, true, newInstrumentationLibrarySpans(nil).IsNil())
+	ms := newInstrumentationLibrarySpans(&otlptrace.InstrumentationLibrarySpans{})
+	assert.EqualValues(t, false, ms.IsNil())
 
-	assert.EqualValues(t, NewInstrumentationLibrary(), ms.InstrumentationLibrary())
+	assert.EqualValues(t, true, ms.InstrumentationLibrary().IsNil())
+	ms.InitInstrumentationLibraryIfNil()
+	assert.EqualValues(t, false, ms.InstrumentationLibrary().IsNil())
+	assert.EqualValues(t, NewEmptyInstrumentationLibrary(), ms.InstrumentationLibrary())
 	testValInstrumentationLibrary := generateTestInstrumentationLibrary()
-	ms.SetInstrumentationLibrary(testValInstrumentationLibrary)
+	fillTestInstrumentationLibrary(ms.InstrumentationLibrary())
 	assert.EqualValues(t, testValInstrumentationLibrary, ms.InstrumentationLibrary())
+	assert.EqualValues(t, false, ms.InstrumentationLibrary().IsNil())
 
 	assert.EqualValues(t, NewSpanSlice(0), ms.Spans())
 	testValSpans := generateTestSpanSlice()
@@ -150,11 +158,10 @@ func TestSpanSlice(t *testing.T) {
 	es = newSpanSlice(&[]*otlptrace.Span{})
 	assert.EqualValues(t, 0, es.Len())
 	es = NewSpanSlice(13)
-	defaultVal := NewSpan()
 	testVal := generateTestSpan()
 	assert.EqualValues(t, 13, es.Len())
 	for i := 0; i < es.Len(); i++ {
-		assert.EqualValues(t, defaultVal, es.Get(i))
+		assert.EqualValues(t, NewEmptySpan(), es.Get(i))
 		fillTestSpan(es.Get(i))
 		assert.EqualValues(t, testVal, es.Get(i))
 	}
@@ -188,8 +195,9 @@ func TestSpanSlice(t *testing.T) {
 }
 
 func TestSpan(t *testing.T) {
-	ms := NewSpan()
-	assert.EqualValues(t, newSpan(&otlptrace.Span{}), ms)
+	assert.EqualValues(t, true, newSpan(nil).IsNil())
+	ms := newSpan(&otlptrace.Span{})
+	assert.EqualValues(t, false, ms.IsNil())
 
 	assert.EqualValues(t, NewTraceID(nil), ms.TraceID())
 	testValTraceID := NewTraceID([]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
@@ -261,10 +269,14 @@ func TestSpan(t *testing.T) {
 	ms.SetDroppedLinksCount(testValDroppedLinksCount)
 	assert.EqualValues(t, testValDroppedLinksCount, ms.DroppedLinksCount())
 
-	assert.EqualValues(t, NewSpanStatus(), ms.Status())
+	assert.EqualValues(t, true, ms.Status().IsNil())
+	ms.InitStatusIfNil()
+	assert.EqualValues(t, false, ms.Status().IsNil())
+	assert.EqualValues(t, NewEmptySpanStatus(), ms.Status())
 	testValStatus := generateTestSpanStatus()
-	ms.SetStatus(testValStatus)
+	fillTestSpanStatus(ms.Status())
 	assert.EqualValues(t, testValStatus, ms.Status())
+	assert.EqualValues(t, false, ms.Status().IsNil())
 
 	assert.EqualValues(t, generateTestSpan(), ms)
 }
@@ -275,11 +287,10 @@ func TestSpanEventSlice(t *testing.T) {
 	es = newSpanEventSlice(&[]*otlptrace.Span_Event{})
 	assert.EqualValues(t, 0, es.Len())
 	es = NewSpanEventSlice(13)
-	defaultVal := NewSpanEvent()
 	testVal := generateTestSpanEvent()
 	assert.EqualValues(t, 13, es.Len())
 	for i := 0; i < es.Len(); i++ {
-		assert.EqualValues(t, defaultVal, es.Get(i))
+		assert.EqualValues(t, NewEmptySpanEvent(), es.Get(i))
 		fillTestSpanEvent(es.Get(i))
 		assert.EqualValues(t, testVal, es.Get(i))
 	}
@@ -313,8 +324,9 @@ func TestSpanEventSlice(t *testing.T) {
 }
 
 func TestSpanEvent(t *testing.T) {
-	ms := NewSpanEvent()
-	assert.EqualValues(t, newSpanEvent(&otlptrace.Span_Event{}), ms)
+	assert.EqualValues(t, true, newSpanEvent(nil).IsNil())
+	ms := newSpanEvent(&otlptrace.Span_Event{})
+	assert.EqualValues(t, false, ms.IsNil())
 
 	assert.EqualValues(t, TimestampUnixNano(0), ms.Timestamp())
 	testValTimestamp := TimestampUnixNano(1234567890)
@@ -345,11 +357,10 @@ func TestSpanLinkSlice(t *testing.T) {
 	es = newSpanLinkSlice(&[]*otlptrace.Span_Link{})
 	assert.EqualValues(t, 0, es.Len())
 	es = NewSpanLinkSlice(13)
-	defaultVal := NewSpanLink()
 	testVal := generateTestSpanLink()
 	assert.EqualValues(t, 13, es.Len())
 	for i := 0; i < es.Len(); i++ {
-		assert.EqualValues(t, defaultVal, es.Get(i))
+		assert.EqualValues(t, NewEmptySpanLink(), es.Get(i))
 		fillTestSpanLink(es.Get(i))
 		assert.EqualValues(t, testVal, es.Get(i))
 	}
@@ -383,8 +394,9 @@ func TestSpanLinkSlice(t *testing.T) {
 }
 
 func TestSpanLink(t *testing.T) {
-	ms := NewSpanLink()
-	assert.EqualValues(t, newSpanLink(&otlptrace.Span_Link{}), ms)
+	assert.EqualValues(t, true, newSpanLink(nil).IsNil())
+	ms := newSpanLink(&otlptrace.Span_Link{})
+	assert.EqualValues(t, false, ms.IsNil())
 
 	assert.EqualValues(t, NewTraceID(nil), ms.TraceID())
 	testValTraceID := NewTraceID([]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
@@ -415,8 +427,9 @@ func TestSpanLink(t *testing.T) {
 }
 
 func TestSpanStatus(t *testing.T) {
-	ms := NewSpanStatus()
-	assert.EqualValues(t, newSpanStatus(&otlptrace.Status{}), ms)
+	assert.EqualValues(t, true, newSpanStatus(nil).IsNil())
+	ms := newSpanStatus(&otlptrace.Status{})
+	assert.EqualValues(t, false, ms.IsNil())
 
 	assert.EqualValues(t, StatusCode(0), ms.Code())
 	testValCode := StatusCode(1)
@@ -440,14 +453,14 @@ func generateTestResourceSpansSlice() ResourceSpansSlice {
 }
 
 func generateTestResourceSpans() ResourceSpans {
-	tv := NewResourceSpans()
-	tv.SetResource(generateTestResource())
-	tv.SetInstrumentationLibrarySpans(generateTestInstrumentationLibrarySpansSlice())
+	tv := newResourceSpans(&otlptrace.ResourceSpans{})
+	fillTestResourceSpans(tv)
 	return tv
 }
 
 func fillTestResourceSpans(tv ResourceSpans) {
-	tv.SetResource(generateTestResource())
+	tv.InitResourceIfNil()
+	fillTestResource(tv.Resource())
 	tv.SetInstrumentationLibrarySpans(generateTestInstrumentationLibrarySpansSlice())
 }
 
@@ -460,14 +473,14 @@ func generateTestInstrumentationLibrarySpansSlice() InstrumentationLibrarySpansS
 }
 
 func generateTestInstrumentationLibrarySpans() InstrumentationLibrarySpans {
-	tv := NewInstrumentationLibrarySpans()
-	tv.SetInstrumentationLibrary(generateTestInstrumentationLibrary())
-	tv.SetSpans(generateTestSpanSlice())
+	tv := newInstrumentationLibrarySpans(&otlptrace.InstrumentationLibrarySpans{})
+	fillTestInstrumentationLibrarySpans(tv)
 	return tv
 }
 
 func fillTestInstrumentationLibrarySpans(tv InstrumentationLibrarySpans) {
-	tv.SetInstrumentationLibrary(generateTestInstrumentationLibrary())
+	tv.InitInstrumentationLibraryIfNil()
+	fillTestInstrumentationLibrary(tv.InstrumentationLibrary())
 	tv.SetSpans(generateTestSpanSlice())
 }
 
@@ -480,22 +493,8 @@ func generateTestSpanSlice() SpanSlice {
 }
 
 func generateTestSpan() Span {
-	tv := NewSpan()
-	tv.SetTraceID(NewTraceID([]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
-	tv.SetSpanID(NewSpanID([]byte{1, 2, 3, 4, 5, 6, 7, 8}))
-	tv.SetTraceState(TraceState("congo=congos"))
-	tv.SetParentSpanID(NewSpanID([]byte{8, 7, 6, 5, 4, 3, 2, 1}))
-	tv.SetName("test_name")
-	tv.SetKind(SpanKindSERVER)
-	tv.SetStartTime(TimestampUnixNano(1234567890))
-	tv.SetEndTime(TimestampUnixNano(1234567890))
-	tv.SetAttributes(generateTestAttributeMap())
-	tv.SetDroppedAttributesCount(uint32(17))
-	tv.SetEvents(generateTestSpanEventSlice())
-	tv.SetDroppedEventsCount(uint32(17))
-	tv.SetLinks(generateTestSpanLinkSlice())
-	tv.SetDroppedLinksCount(uint32(17))
-	tv.SetStatus(generateTestSpanStatus())
+	tv := newSpan(&otlptrace.Span{})
+	fillTestSpan(tv)
 	return tv
 }
 
@@ -514,7 +513,8 @@ func fillTestSpan(tv Span) {
 	tv.SetDroppedEventsCount(uint32(17))
 	tv.SetLinks(generateTestSpanLinkSlice())
 	tv.SetDroppedLinksCount(uint32(17))
-	tv.SetStatus(generateTestSpanStatus())
+	tv.InitStatusIfNil()
+	fillTestSpanStatus(tv.Status())
 }
 
 func generateTestSpanEventSlice() SpanEventSlice {
@@ -526,11 +526,8 @@ func generateTestSpanEventSlice() SpanEventSlice {
 }
 
 func generateTestSpanEvent() SpanEvent {
-	tv := NewSpanEvent()
-	tv.SetTimestamp(TimestampUnixNano(1234567890))
-	tv.SetName("test_name")
-	tv.SetAttributes(generateTestAttributeMap())
-	tv.SetDroppedAttributesCount(uint32(17))
+	tv := newSpanEvent(&otlptrace.Span_Event{})
+	fillTestSpanEvent(tv)
 	return tv
 }
 
@@ -550,12 +547,8 @@ func generateTestSpanLinkSlice() SpanLinkSlice {
 }
 
 func generateTestSpanLink() SpanLink {
-	tv := NewSpanLink()
-	tv.SetTraceID(NewTraceID([]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
-	tv.SetSpanID(NewSpanID([]byte{1, 2, 3, 4, 5, 6, 7, 8}))
-	tv.SetTraceState(TraceState("congo=congos"))
-	tv.SetAttributes(generateTestAttributeMap())
-	tv.SetDroppedAttributesCount(uint32(17))
+	tv := newSpanLink(&otlptrace.Span_Link{})
+	fillTestSpanLink(tv)
 	return tv
 }
 
@@ -568,8 +561,12 @@ func fillTestSpanLink(tv SpanLink) {
 }
 
 func generateTestSpanStatus() SpanStatus {
-	tv := NewSpanStatus()
+	tv := newSpanStatus(&otlptrace.Status{})
+	fillTestSpanStatus(tv)
+	return tv
+}
+
+func fillTestSpanStatus(tv SpanStatus) {
 	tv.SetCode(StatusCode(1))
 	tv.SetMessage("cancelled")
-	return tv
 }

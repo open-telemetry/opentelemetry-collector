@@ -95,42 +95,57 @@ func (es ResourceSpansSlice) Resize(from, to int) {
 // This is a reference type, if passsed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewResourceSpans function to create new instances.
+// Must use NewEmptyResourceSpans function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ResourceSpans struct {
 	// Wrap OTLP otlptrace.ResourceSpans.
 	orig *otlptrace.ResourceSpans
 }
 
-// NewResourceSpans creates a new empty ResourceSpans.
-func NewResourceSpans() ResourceSpans {
-	return ResourceSpans{&otlptrace.ResourceSpans{}}
-}
-
 func newResourceSpans(orig *otlptrace.ResourceSpans) ResourceSpans {
 	return ResourceSpans{orig}
 }
 
+// NewEmptyResourceSpans creates a new empty ResourceSpans.
+//
+// This must be used only in testing code since no "Set" method available.
+func NewEmptyResourceSpans() ResourceSpans {
+	return newResourceSpans(&otlptrace.ResourceSpans{})
+}
+
+// IsNil returns true if the underlying data are nil.
+// 
+// Important: All other functions will cause a runtime error if this returns "true".
+func (ms ResourceSpans) IsNil() bool {
+	return ms.orig == nil
+}
+
 // Resource returns the resource associated with this ResourceSpans.
+// If no resource available, it creates an empty message and associates it with this ResourceSpans.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms ResourceSpans) Resource() Resource {
-	if ms.orig.Resource == nil {
-		// No Resource available, initialize one to make all operations on Resource available.
-		ms.orig.Resource = &otlpresource.Resource{}
-	}
 	return newResource(ms.orig.Resource)
 }
 
-// SetResource replaces the resource associated with this ResourceSpans.
-func (ms ResourceSpans) SetResource(v Resource) {
-	ms.orig.Resource = v.orig
+// InitResourceIfNil() initialize the resource with an empty message if and only if
+// the current value is "nil".
+func (ms ResourceSpans) InitResourceIfNil() {
+	if ms.orig.Resource == nil {
+		ms.orig.Resource = &otlpresource.Resource{}
+	}
 }
 
 // InstrumentationLibrarySpans returns the InstrumentationLibrarySpans associated with this ResourceSpans.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms ResourceSpans) InstrumentationLibrarySpans() InstrumentationLibrarySpansSlice {
 	return newInstrumentationLibrarySpansSlice(&ms.orig.InstrumentationLibrarySpans)
 }
 
 // SetInstrumentationLibrarySpans replaces the InstrumentationLibrarySpans associated with this ResourceSpans.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms ResourceSpans) SetInstrumentationLibrarySpans(v InstrumentationLibrarySpansSlice) {
 	ms.orig.InstrumentationLibrarySpans = *v.orig
 }
@@ -207,42 +222,57 @@ func (es InstrumentationLibrarySpansSlice) Resize(from, to int) {
 // This is a reference type, if passsed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewInstrumentationLibrarySpans function to create new instances.
+// Must use NewEmptyInstrumentationLibrarySpans function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type InstrumentationLibrarySpans struct {
 	// Wrap OTLP otlptrace.InstrumentationLibrarySpans.
 	orig *otlptrace.InstrumentationLibrarySpans
 }
 
-// NewInstrumentationLibrarySpans creates a new empty InstrumentationLibrarySpans.
-func NewInstrumentationLibrarySpans() InstrumentationLibrarySpans {
-	return InstrumentationLibrarySpans{&otlptrace.InstrumentationLibrarySpans{}}
-}
-
 func newInstrumentationLibrarySpans(orig *otlptrace.InstrumentationLibrarySpans) InstrumentationLibrarySpans {
 	return InstrumentationLibrarySpans{orig}
 }
 
+// NewEmptyInstrumentationLibrarySpans creates a new empty InstrumentationLibrarySpans.
+//
+// This must be used only in testing code since no "Set" method available.
+func NewEmptyInstrumentationLibrarySpans() InstrumentationLibrarySpans {
+	return newInstrumentationLibrarySpans(&otlptrace.InstrumentationLibrarySpans{})
+}
+
+// IsNil returns true if the underlying data are nil.
+// 
+// Important: All other functions will cause a runtime error if this returns "true".
+func (ms InstrumentationLibrarySpans) IsNil() bool {
+	return ms.orig == nil
+}
+
 // InstrumentationLibrary returns the instrumentationlibrary associated with this InstrumentationLibrarySpans.
+// If no instrumentationlibrary available, it creates an empty message and associates it with this InstrumentationLibrarySpans.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms InstrumentationLibrarySpans) InstrumentationLibrary() InstrumentationLibrary {
-	if ms.orig.InstrumentationLibrary == nil {
-		// No InstrumentationLibrary available, initialize one to make all operations on InstrumentationLibrary available.
-		ms.orig.InstrumentationLibrary = &otlpcommon.InstrumentationLibrary{}
-	}
 	return newInstrumentationLibrary(ms.orig.InstrumentationLibrary)
 }
 
-// SetInstrumentationLibrary replaces the instrumentationlibrary associated with this InstrumentationLibrarySpans.
-func (ms InstrumentationLibrarySpans) SetInstrumentationLibrary(v InstrumentationLibrary) {
-	ms.orig.InstrumentationLibrary = v.orig
+// InitInstrumentationLibraryIfNil() initialize the instrumentationlibrary with an empty message if and only if
+// the current value is "nil".
+func (ms InstrumentationLibrarySpans) InitInstrumentationLibraryIfNil() {
+	if ms.orig.InstrumentationLibrary == nil {
+		ms.orig.InstrumentationLibrary = &otlpcommon.InstrumentationLibrary{}
+	}
 }
 
 // Spans returns the Spans associated with this InstrumentationLibrarySpans.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms InstrumentationLibrarySpans) Spans() SpanSlice {
 	return newSpanSlice(&ms.orig.Spans)
 }
 
 // SetSpans replaces the Spans associated with this InstrumentationLibrarySpans.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms InstrumentationLibrarySpans) SetSpans(v SpanSlice) {
 	ms.orig.Spans = *v.orig
 }
@@ -320,174 +350,241 @@ func (es SpanSlice) Resize(from, to int) {
 // This is a reference type, if passsed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewSpan function to create new instances.
+// Must use NewEmptySpan function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Span struct {
 	// Wrap OTLP otlptrace.Span.
 	orig *otlptrace.Span
 }
 
-// NewSpan creates a new empty Span.
-func NewSpan() Span {
-	return Span{&otlptrace.Span{}}
-}
-
 func newSpan(orig *otlptrace.Span) Span {
 	return Span{orig}
 }
 
+// NewEmptySpan creates a new empty Span.
+//
+// This must be used only in testing code since no "Set" method available.
+func NewEmptySpan() Span {
+	return newSpan(&otlptrace.Span{})
+}
+
+// IsNil returns true if the underlying data are nil.
+// 
+// Important: All other functions will cause a runtime error if this returns "true".
+func (ms Span) IsNil() bool {
+	return ms.orig == nil
+}
+
 // TraceID returns the traceid associated with this Span.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Span) TraceID() TraceID {
 	return TraceID(ms.orig.TraceId)
 }
 
 // SetTraceID replaces the traceid associated with this Span.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Span) SetTraceID(v TraceID) {
 	ms.orig.TraceId = []byte(v)
 }
 
 // SpanID returns the spanid associated with this Span.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Span) SpanID() SpanID {
 	return SpanID(ms.orig.SpanId)
 }
 
 // SetSpanID replaces the spanid associated with this Span.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Span) SetSpanID(v SpanID) {
 	ms.orig.SpanId = []byte(v)
 }
 
 // TraceState returns the tracestate associated with this Span.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Span) TraceState() TraceState {
 	return TraceState(ms.orig.TraceState)
 }
 
 // SetTraceState replaces the tracestate associated with this Span.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Span) SetTraceState(v TraceState) {
 	ms.orig.TraceState = string(v)
 }
 
 // ParentSpanID returns the parentspanid associated with this Span.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Span) ParentSpanID() SpanID {
 	return SpanID(ms.orig.ParentSpanId)
 }
 
 // SetParentSpanID replaces the parentspanid associated with this Span.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Span) SetParentSpanID(v SpanID) {
 	ms.orig.ParentSpanId = []byte(v)
 }
 
 // Name returns the name associated with this Span.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Span) Name() string {
 	return ms.orig.Name
 }
 
 // SetName replaces the name associated with this Span.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Span) SetName(v string) {
 	ms.orig.Name = v
 }
 
 // Kind returns the kind associated with this Span.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Span) Kind() SpanKind {
 	return SpanKind(ms.orig.Kind)
 }
 
 // SetKind replaces the kind associated with this Span.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Span) SetKind(v SpanKind) {
 	ms.orig.Kind = otlptrace.Span_SpanKind(v)
 }
 
 // StartTime returns the starttime associated with this Span.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Span) StartTime() TimestampUnixNano {
 	return TimestampUnixNano(ms.orig.StartTimeUnixNano)
 }
 
 // SetStartTime replaces the starttime associated with this Span.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Span) SetStartTime(v TimestampUnixNano) {
 	ms.orig.StartTimeUnixNano = uint64(v)
 }
 
 // EndTime returns the endtime associated with this Span.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Span) EndTime() TimestampUnixNano {
 	return TimestampUnixNano(ms.orig.EndTimeUnixNano)
 }
 
 // SetEndTime replaces the endtime associated with this Span.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Span) SetEndTime(v TimestampUnixNano) {
 	ms.orig.EndTimeUnixNano = uint64(v)
 }
 
 // Attributes returns the Attributes associated with this Span.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Span) Attributes() AttributeMap {
 	return newAttributeMap(&ms.orig.Attributes)
 }
 
 // SetAttributes replaces the Attributes associated with this Span.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Span) SetAttributes(v AttributeMap) {
 	ms.orig.Attributes = *v.orig
 }
 
 // DroppedAttributesCount returns the droppedattributescount associated with this Span.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Span) DroppedAttributesCount() uint32 {
 	return ms.orig.DroppedAttributesCount
 }
 
 // SetDroppedAttributesCount replaces the droppedattributescount associated with this Span.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Span) SetDroppedAttributesCount(v uint32) {
 	ms.orig.DroppedAttributesCount = v
 }
 
 // Events returns the Events associated with this Span.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Span) Events() SpanEventSlice {
 	return newSpanEventSlice(&ms.orig.Events)
 }
 
 // SetEvents replaces the Events associated with this Span.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Span) SetEvents(v SpanEventSlice) {
 	ms.orig.Events = *v.orig
 }
 
 // DroppedEventsCount returns the droppedeventscount associated with this Span.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Span) DroppedEventsCount() uint32 {
 	return ms.orig.DroppedEventsCount
 }
 
 // SetDroppedEventsCount replaces the droppedeventscount associated with this Span.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Span) SetDroppedEventsCount(v uint32) {
 	ms.orig.DroppedEventsCount = v
 }
 
 // Links returns the Links associated with this Span.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Span) Links() SpanLinkSlice {
 	return newSpanLinkSlice(&ms.orig.Links)
 }
 
 // SetLinks replaces the Links associated with this Span.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Span) SetLinks(v SpanLinkSlice) {
 	ms.orig.Links = *v.orig
 }
 
 // DroppedLinksCount returns the droppedlinkscount associated with this Span.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Span) DroppedLinksCount() uint32 {
 	return ms.orig.DroppedLinksCount
 }
 
 // SetDroppedLinksCount replaces the droppedlinkscount associated with this Span.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Span) SetDroppedLinksCount(v uint32) {
 	ms.orig.DroppedLinksCount = v
 }
 
 // Status returns the status associated with this Span.
+// If no status available, it creates an empty message and associates it with this Span.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Span) Status() SpanStatus {
-	if ms.orig.Status == nil {
-		// No Status available, initialize one to make all operations on SpanStatus available.
-		ms.orig.Status = &otlptrace.Status{}
-	}
 	return newSpanStatus(ms.orig.Status)
 }
 
-// SetStatus replaces the status associated with this Span.
-func (ms Span) SetStatus(v SpanStatus) {
-	ms.orig.Status = v.orig
+// InitStatusIfNil() initialize the status with an empty message if and only if
+// the current value is "nil".
+func (ms Span) InitStatusIfNil() {
+	if ms.orig.Status == nil {
+		ms.orig.Status = &otlptrace.Status{}
+	}
 }
 
 // SpanEventSlice logically represents a slice of SpanEvent.
@@ -563,58 +660,83 @@ func (es SpanEventSlice) Resize(from, to int) {
 // This is a reference type, if passsed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewSpanEvent function to create new instances.
+// Must use NewEmptySpanEvent function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type SpanEvent struct {
 	// Wrap OTLP otlptrace.Span_Event.
 	orig *otlptrace.Span_Event
 }
 
-// NewSpanEvent creates a new empty SpanEvent.
-func NewSpanEvent() SpanEvent {
-	return SpanEvent{&otlptrace.Span_Event{}}
-}
-
 func newSpanEvent(orig *otlptrace.Span_Event) SpanEvent {
 	return SpanEvent{orig}
 }
 
+// NewEmptySpanEvent creates a new empty SpanEvent.
+//
+// This must be used only in testing code since no "Set" method available.
+func NewEmptySpanEvent() SpanEvent {
+	return newSpanEvent(&otlptrace.Span_Event{})
+}
+
+// IsNil returns true if the underlying data are nil.
+// 
+// Important: All other functions will cause a runtime error if this returns "true".
+func (ms SpanEvent) IsNil() bool {
+	return ms.orig == nil
+}
+
 // Timestamp returns the timestamp associated with this SpanEvent.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms SpanEvent) Timestamp() TimestampUnixNano {
 	return TimestampUnixNano(ms.orig.TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this SpanEvent.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms SpanEvent) SetTimestamp(v TimestampUnixNano) {
 	ms.orig.TimeUnixNano = uint64(v)
 }
 
 // Name returns the name associated with this SpanEvent.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms SpanEvent) Name() string {
 	return ms.orig.Name
 }
 
 // SetName replaces the name associated with this SpanEvent.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms SpanEvent) SetName(v string) {
 	ms.orig.Name = v
 }
 
 // Attributes returns the Attributes associated with this SpanEvent.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms SpanEvent) Attributes() AttributeMap {
 	return newAttributeMap(&ms.orig.Attributes)
 }
 
 // SetAttributes replaces the Attributes associated with this SpanEvent.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms SpanEvent) SetAttributes(v AttributeMap) {
 	ms.orig.Attributes = *v.orig
 }
 
 // DroppedAttributesCount returns the droppedattributescount associated with this SpanEvent.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms SpanEvent) DroppedAttributesCount() uint32 {
 	return ms.orig.DroppedAttributesCount
 }
 
 // SetDroppedAttributesCount replaces the droppedattributescount associated with this SpanEvent.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms SpanEvent) SetDroppedAttributesCount(v uint32) {
 	ms.orig.DroppedAttributesCount = v
 }
@@ -692,68 +814,97 @@ func (es SpanLinkSlice) Resize(from, to int) {
 // This is a reference type, if passsed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewSpanLink function to create new instances.
+// Must use NewEmptySpanLink function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type SpanLink struct {
 	// Wrap OTLP otlptrace.Span_Link.
 	orig *otlptrace.Span_Link
 }
 
-// NewSpanLink creates a new empty SpanLink.
-func NewSpanLink() SpanLink {
-	return SpanLink{&otlptrace.Span_Link{}}
-}
-
 func newSpanLink(orig *otlptrace.Span_Link) SpanLink {
 	return SpanLink{orig}
 }
 
+// NewEmptySpanLink creates a new empty SpanLink.
+//
+// This must be used only in testing code since no "Set" method available.
+func NewEmptySpanLink() SpanLink {
+	return newSpanLink(&otlptrace.Span_Link{})
+}
+
+// IsNil returns true if the underlying data are nil.
+// 
+// Important: All other functions will cause a runtime error if this returns "true".
+func (ms SpanLink) IsNil() bool {
+	return ms.orig == nil
+}
+
 // TraceID returns the traceid associated with this SpanLink.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms SpanLink) TraceID() TraceID {
 	return TraceID(ms.orig.TraceId)
 }
 
 // SetTraceID replaces the traceid associated with this SpanLink.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms SpanLink) SetTraceID(v TraceID) {
 	ms.orig.TraceId = []byte(v)
 }
 
 // SpanID returns the spanid associated with this SpanLink.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms SpanLink) SpanID() SpanID {
 	return SpanID(ms.orig.SpanId)
 }
 
 // SetSpanID replaces the spanid associated with this SpanLink.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms SpanLink) SetSpanID(v SpanID) {
 	ms.orig.SpanId = []byte(v)
 }
 
 // TraceState returns the tracestate associated with this SpanLink.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms SpanLink) TraceState() TraceState {
 	return TraceState(ms.orig.TraceState)
 }
 
 // SetTraceState replaces the tracestate associated with this SpanLink.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms SpanLink) SetTraceState(v TraceState) {
 	ms.orig.TraceState = string(v)
 }
 
 // Attributes returns the Attributes associated with this SpanLink.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms SpanLink) Attributes() AttributeMap {
 	return newAttributeMap(&ms.orig.Attributes)
 }
 
 // SetAttributes replaces the Attributes associated with this SpanLink.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms SpanLink) SetAttributes(v AttributeMap) {
 	ms.orig.Attributes = *v.orig
 }
 
 // DroppedAttributesCount returns the droppedattributescount associated with this SpanLink.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms SpanLink) DroppedAttributesCount() uint32 {
 	return ms.orig.DroppedAttributesCount
 }
 
 // SetDroppedAttributesCount replaces the droppedattributescount associated with this SpanLink.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms SpanLink) SetDroppedAttributesCount(v uint32) {
 	ms.orig.DroppedAttributesCount = v
 }
@@ -764,38 +915,55 @@ func (ms SpanLink) SetDroppedAttributesCount(v uint32) {
 // This is a reference type, if passsed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewSpanStatus function to create new instances.
+// Must use NewEmptySpanStatus function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type SpanStatus struct {
 	// Wrap OTLP otlptrace.Status.
 	orig *otlptrace.Status
 }
 
-// NewSpanStatus creates a new empty SpanStatus.
-func NewSpanStatus() SpanStatus {
-	return SpanStatus{&otlptrace.Status{}}
-}
-
 func newSpanStatus(orig *otlptrace.Status) SpanStatus {
 	return SpanStatus{orig}
 }
 
+// NewEmptySpanStatus creates a new empty SpanStatus.
+//
+// This must be used only in testing code since no "Set" method available.
+func NewEmptySpanStatus() SpanStatus {
+	return newSpanStatus(&otlptrace.Status{})
+}
+
+// IsNil returns true if the underlying data are nil.
+// 
+// Important: All other functions will cause a runtime error if this returns "true".
+func (ms SpanStatus) IsNil() bool {
+	return ms.orig == nil
+}
+
 // Code returns the code associated with this SpanStatus.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms SpanStatus) Code() StatusCode {
 	return StatusCode(ms.orig.Code)
 }
 
 // SetCode replaces the code associated with this SpanStatus.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms SpanStatus) SetCode(v StatusCode) {
 	ms.orig.Code = otlptrace.Status_StatusCode(v)
 }
 
 // Message returns the message associated with this SpanStatus.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms SpanStatus) Message() string {
 	return ms.orig.Message
 }
 
 // SetMessage replaces the message associated with this SpanStatus.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms SpanStatus) SetMessage(v string) {
 	ms.orig.Message = v
 }

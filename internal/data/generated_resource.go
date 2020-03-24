@@ -26,28 +26,41 @@ import (
 // This is a reference type, if passsed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewResource function to create new instances.
+// Must use NewEmptyResource function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Resource struct {
 	// Wrap OTLP otlpresource.Resource.
 	orig *otlpresource.Resource
 }
 
-// NewResource creates a new empty Resource.
-func NewResource() Resource {
-	return Resource{&otlpresource.Resource{}}
-}
-
 func newResource(orig *otlpresource.Resource) Resource {
 	return Resource{orig}
 }
 
+// NewEmptyResource creates a new empty Resource.
+//
+// This must be used only in testing code since no "Set" method available.
+func NewEmptyResource() Resource {
+	return newResource(&otlpresource.Resource{})
+}
+
+// IsNil returns true if the underlying data are nil.
+// 
+// Important: All other functions will cause a runtime error if this returns "true".
+func (ms Resource) IsNil() bool {
+	return ms.orig == nil
+}
+
 // Attributes returns the Attributes associated with this Resource.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Resource) Attributes() AttributeMap {
 	return newAttributeMap(&ms.orig.Attributes)
 }
 
 // SetAttributes replaces the Attributes associated with this Resource.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Resource) SetAttributes(v AttributeMap) {
 	ms.orig.Attributes = *v.orig
 }

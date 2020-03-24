@@ -20,11 +20,15 @@ import (
 )
 
 const accessorSliceTemplate = `// ${fieldName} returns the ${originFieldName} associated with this ${structName}.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms ${structName}) ${fieldName}() ${returnType} {
 	return new${returnType}(&ms.orig.${originFieldName})
 }
 
 // Set${fieldName} replaces the ${originFieldName} associated with this ${structName}.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms ${structName}) Set${fieldName}(v ${returnType}) {
 	ms.orig.${originFieldName} = *v.orig
 }`
@@ -35,30 +39,40 @@ const accessorsSliceTestTemplate = `	assert.EqualValues(t, New${returnType}(${co
 	assert.EqualValues(t, testVal${fieldName}, ms.${fieldName}())`
 
 const accessorsMessageTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
+// If no ${lowerFieldName} available, it creates an empty message and associates it with this ${structName}.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms ${structName}) ${fieldName}() ${returnType} {
-	if ms.orig.${originFieldName} == nil {
-		// No ${originFieldName} available, initialize one to make all operations on ${returnType} available.
-		ms.orig.${originFieldName} = &${structOriginFullName}{}
-	}
 	return new${returnType}(ms.orig.${originFieldName})
 }
 
-// Set${fieldName} replaces the ${lowerFieldName} associated with this ${structName}.
-func (ms ${structName}) Set${fieldName}(v ${returnType}) {
-	ms.orig.${originFieldName} = v.orig
+// Init${fieldName}IfNil() initialize the ${lowerFieldName} with an empty message if and only if
+// the current value is "nil".
+func (ms ${structName}) Init${fieldName}IfNil() {
+	if ms.orig.${originFieldName} == nil {
+		ms.orig.${originFieldName} = &${structOriginFullName}{}
+	}
 }`
 
-const accessorsMessageTestTemplate = `	assert.EqualValues(t, New${returnType}(), ms.${fieldName}())
+const accessorsMessageTestTemplate = `	assert.EqualValues(t, true, ms.${fieldName}().IsNil())
+	ms.Init${fieldName}IfNil()
+	assert.EqualValues(t, false, ms.${fieldName}().IsNil())
+	assert.EqualValues(t, NewEmpty${returnType}(), ms.${fieldName}())
 	testVal${fieldName} := generateTest${returnType}()
-	ms.Set${fieldName}(testVal${fieldName})
-	assert.EqualValues(t, testVal${fieldName}, ms.${fieldName}())`
+	fillTest${returnType}(ms.${fieldName}())
+	assert.EqualValues(t, testVal${fieldName}, ms.${fieldName}())
+	assert.EqualValues(t, false, ms.${fieldName}().IsNil())`
 
 const accessorsPrimitiveTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms ${structName}) ${fieldName}() ${returnType} {
 	return ms.orig.${originFieldName}
 }
 
 // Set${fieldName} replaces the ${lowerFieldName} associated with this ${structName}.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms ${structName}) Set${fieldName}(v ${returnType}) {
 	ms.orig.${originFieldName} = v
 }`
@@ -69,11 +83,15 @@ const accessorsPrimitiveTestTemplate = `	assert.EqualValues(t, ${defaultVal}, ms
 	assert.EqualValues(t, testVal${fieldName}, ms.${fieldName}())`
 
 const accessorsPrimitiveTypedTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms ${structName}) ${fieldName}() ${returnType} {
 	return ${returnType}(ms.orig.${originFieldName})
 }
 
 // Set${fieldName} replaces the ${lowerFieldName} associated with this ${structName}.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms ${structName}) Set${fieldName}(v ${returnType}) {
 	ms.orig.${originFieldName} = ${rawType}(v)
 }`
@@ -172,7 +190,8 @@ func (mf *messageField) generateAccessorsTests(ms *messageStruct, sb *strings.Bu
 }
 
 func (mf *messageField) generateSetWithTestValue(sb *strings.Builder) {
-	sb.WriteString("\ttv.Set" + mf.fieldMame + "(generateTest" + mf.returnMessage.structName + "())")
+	sb.WriteString("\ttv.Init" + mf.fieldMame + "IfNil()\n")
+	sb.WriteString("\tfillTest" + mf.returnMessage.structName + "(tv." + mf.fieldMame + "())")
 }
 
 var _ baseField = (*messageField)(nil)

@@ -52,12 +52,28 @@ func TestTraceID(t *testing.T) {
 	assert.EqualValues(t, []byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}, tid.Bytes())
 }
 
-func TestSpanID(t *testing.T) {
-	sid := NewSpanID(nil)
-	assert.EqualValues(t, []byte(nil), sid.Bytes())
+func TestAttrs(t *testing.T) {
+	attrs := NewAttributeMap(AttributesMap{"attr1": NewAttributeValueString("abc")})
 
-	sid = NewSpanID([]byte{1, 2, 3, 4, 5, 6, 7, 8})
-	assert.EqualValues(t, []byte{1, 2, 3, 4, 5, 6, 7, 8}, sid.Bytes())
+	span := NewEmptySpan()
+	assert.EqualValues(t, 0, span.DroppedAttributesCount())
+	span.SetAttributes(attrs)
+	assert.EqualValues(t, attrs, span.Attributes())
+	span.SetDroppedAttributesCount(123)
+	assert.EqualValues(t, 123, span.DroppedAttributesCount())
+
+	event := NewEmptySpanEvent()
+	event.SetAttributes(attrs)
+	assert.EqualValues(t, attrs, event.Attributes())
+	event.SetDroppedAttributesCount(234)
+	assert.EqualValues(t, 234, event.DroppedAttributesCount())
+
+	link := NewEmptySpanLink()
+	assert.EqualValues(t, 0, link.DroppedAttributesCount())
+	link.SetAttributes(attrs)
+	assert.EqualValues(t, attrs, link.Attributes())
+	link.SetDroppedAttributesCount(456)
+	assert.EqualValues(t, 456, link.DroppedAttributesCount())
 }
 
 func TestToFromOtlp(t *testing.T) {

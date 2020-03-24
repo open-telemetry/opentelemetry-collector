@@ -25,8 +25,9 @@ import (
 )
 
 func TestInstrumentationLibrary(t *testing.T) {
-	ms := NewInstrumentationLibrary()
-	assert.EqualValues(t, newInstrumentationLibrary(&otlpcommon.InstrumentationLibrary{}), ms)
+	assert.EqualValues(t, true, newInstrumentationLibrary(nil).IsNil())
+	ms := newInstrumentationLibrary(&otlpcommon.InstrumentationLibrary{})
+	assert.EqualValues(t, false, ms.IsNil())
 
 	assert.EqualValues(t, "", ms.Name())
 	testValName := "test_name"
@@ -42,8 +43,12 @@ func TestInstrumentationLibrary(t *testing.T) {
 }
 
 func generateTestInstrumentationLibrary() InstrumentationLibrary {
-	tv := NewInstrumentationLibrary()
+	tv := newInstrumentationLibrary(&otlpcommon.InstrumentationLibrary{})
+	fillTestInstrumentationLibrary(tv)
+	return tv
+}
+
+func fillTestInstrumentationLibrary(tv InstrumentationLibrary) {
 	tv.SetName("test_name")
 	tv.SetVersion("test_version")
-	return tv
 }
