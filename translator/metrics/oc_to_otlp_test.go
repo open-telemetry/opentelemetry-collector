@@ -103,10 +103,10 @@ func TestOCToOTLP(t *testing.T) {
 		},
 		Timeseries: []*ocmetrics.TimeSeries{
 			{
-				StartTimestamp: unixnanoToTimestamp(unixnanos1),
+				StartTimestamp: internal.UnixNanoToTimestamp(unixnanos1),
 				Points: []*ocmetrics.Point{
 					{
-						Timestamp: unixnanoToTimestamp(unixnanos2),
+						Timestamp: internal.UnixNanoToTimestamp(unixnanos2),
 						Value: &ocmetrics.Point_Int64Value{
 							Int64Value: 123,
 						},
@@ -308,8 +308,8 @@ func TestOCToOTLP(t *testing.T) {
 		},
 		Int64DataPoints: []*otlpmetrics.Int64DataPoint{
 			{
-				StartTimeUnixNano: unixnanos1,
-				TimeUnixNano:      unixnanos2,
+				StartTimeUnixNano: uint64(unixnanos1),
+				TimeUnixNano:      uint64(unixnanos2),
 				Value:             123,
 			},
 		},
