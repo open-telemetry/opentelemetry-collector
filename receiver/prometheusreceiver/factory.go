@@ -89,7 +89,7 @@ func CustomUnmarshalerFunc(v *viper.Viper, viperKey string, sourceViperSection *
 	out = []byte(os.ExpandEnv(string(out)))
 	config := intoCfg.(*Config)
 
-	err = yaml.Unmarshal(out, &config.PrometheusConfig)
+	err = yaml.UnmarshalStrict(out, &config.PrometheusConfig)
 	if err != nil {
 		return fmt.Errorf("prometheus receiver failed to unmarshal yaml to prometheus config: %s", err)
 	}

@@ -93,3 +93,20 @@ func TestLoadConfigFailsOnUnknownSection(t *testing.T) {
 	require.Error(t, err)
 	require.Nil(t, cfg)
 }
+
+// As one of the config parameters is consuming prometheus
+// configuration as a subkey, ensure that invalid configuration
+// within the subkey will also raise an error.
+func TestLoadConfigFailsOnUnknownPrometheusSection(t *testing.T) {
+	factories, err := config.ExampleComponents()
+	assert.Nil(t, err)
+
+	factory := &Factory{}
+	factories.Receivers[typeStr] = factory
+	cfg, err := config.LoadConfigFile(
+		t,
+		path.Join(".", "testdata", "invalid-config-prometheus-section.yaml"), factories)
+
+	require.Error(t, err)
+	require.Nil(t, cfg)
+}
