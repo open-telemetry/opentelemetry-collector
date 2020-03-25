@@ -50,7 +50,7 @@ func New(config *Config) (component.TraceExporterOld, error) {
 		metadata: metadata.New(config.GRPCSettings.Headers),
 	}
 
-	exp, err := exporterhelper.NewTraceExporter(
+	exp, err := exporterhelper.NewTraceExporterOld(
 		config,
 		s.pushTraceData)
 

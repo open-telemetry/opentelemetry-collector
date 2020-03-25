@@ -106,7 +106,7 @@ type ReceiverCreateParams struct {
 	Logger *zap.Logger
 }
 
-// ReceiverFactory can create TraceReceiverV2 and MetricsReceiverV2. This is the
+// ReceiverFactory can create TraceReceiver and MetricsReceiver. This is the
 // new factory type that can create new style receivers.
 type ReceiverFactory interface {
 	ReceiverFactoryBase

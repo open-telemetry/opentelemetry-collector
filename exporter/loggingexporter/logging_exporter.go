@@ -157,7 +157,7 @@ func NewTraceExporter(config configmodels.Exporter, level string, logger *zap.Lo
 		logger: logger,
 	}
 
-	return exporterhelper.NewTraceExporter(
+	return exporterhelper.NewTraceExporterOld(
 		config,
 		s.pushTraceData,
 		exporterhelper.WithShutdown(loggerSync(logger)),

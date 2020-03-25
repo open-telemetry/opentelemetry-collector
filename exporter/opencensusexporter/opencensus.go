@@ -67,7 +67,7 @@ func NewTraceExporter(logger *zap.Logger, config configmodels.Exporter, opts ...
 	if err != nil {
 		return nil, err
 	}
-	oexp, err := exporterhelper.NewTraceExporter(
+	oexp, err := exporterhelper.NewTraceExporterOld(
 		config,
 		oce.PushTraceData,
 		exporterhelper.WithShutdown(oce.Shutdown))
