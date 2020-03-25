@@ -24,17 +24,180 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestResourceSpansSlice(t *testing.T) {
+	es := NewResourceSpansSlice(0)
+	assert.EqualValues(t, 0, es.Len())
+	es = newResourceSpansSlice(&[]*otlptrace.ResourceSpans{})
+	assert.EqualValues(t, 0, es.Len())
+	es = NewResourceSpansSlice(13)
+	defaultVal := NewResourceSpans()
+	testVal := generateTestResourceSpans()
+	assert.EqualValues(t, 13, es.Len())
+	for i := 0; i < es.Len(); i++ {
+		assert.EqualValues(t, defaultVal, es.Get(i))
+		fillTestResourceSpans(es.Get(i))
+		assert.EqualValues(t, testVal, es.Get(i))
+	}
+
+	// Test resize.
+	const resizeLo = 2
+	const resizeHi = 10
+	expectedEs := make(map[ResourceSpans]bool, resizeHi-resizeLo)
+	for i := resizeLo; i < resizeHi; i++ {
+		expectedEs[es.Get(i)] = true
+	}
+	assert.EqualValues(t, resizeHi-resizeLo, len(expectedEs))
+	es.Resize(resizeLo, resizeHi)
+	assert.EqualValues(t, resizeHi-resizeLo, es.Len())
+	foundEs := make(map[ResourceSpans]bool, resizeHi-resizeLo)
+	for i := 0; i < es.Len(); i++ {
+		foundEs[es.Get(i)] = true
+	}
+	assert.EqualValues(t, expectedEs, foundEs)
+
+	// Test remove.
+	const removePos = 2
+	delete(expectedEs, es.Get(removePos))
+	es.Remove(removePos)
+	assert.EqualValues(t, resizeHi-resizeLo-1, es.Len())
+	foundEs = make(map[ResourceSpans]bool, resizeHi-resizeLo)
+	for i := 0; i < es.Len(); i++ {
+		foundEs[es.Get(i)] = true
+	}
+	assert.EqualValues(t, expectedEs, foundEs)
+}
+
+func TestResourceSpans(t *testing.T) {
+	ms := NewResourceSpans()
+	assert.EqualValues(t, newResourceSpans(&otlptrace.ResourceSpans{}), ms)
+
+	assert.EqualValues(t, NewResource(), ms.Resource())
+	testValResource := generateTestResource()
+	ms.SetResource(testValResource)
+	assert.EqualValues(t, testValResource, ms.Resource())
+
+	assert.EqualValues(t, NewInstrumentationLibrarySpansSlice(0), ms.InstrumentationLibrarySpans())
+	testValInstrumentationLibrarySpans := generateTestInstrumentationLibrarySpansSlice()
+	ms.SetInstrumentationLibrarySpans(testValInstrumentationLibrarySpans)
+	assert.EqualValues(t, testValInstrumentationLibrarySpans, ms.InstrumentationLibrarySpans())
+
+	assert.EqualValues(t, generateTestResourceSpans(), ms)
+}
+
+func TestInstrumentationLibrarySpansSlice(t *testing.T) {
+	es := NewInstrumentationLibrarySpansSlice(0)
+	assert.EqualValues(t, 0, es.Len())
+	es = newInstrumentationLibrarySpansSlice(&[]*otlptrace.InstrumentationLibrarySpans{})
+	assert.EqualValues(t, 0, es.Len())
+	es = NewInstrumentationLibrarySpansSlice(13)
+	defaultVal := NewInstrumentationLibrarySpans()
+	testVal := generateTestInstrumentationLibrarySpans()
+	assert.EqualValues(t, 13, es.Len())
+	for i := 0; i < es.Len(); i++ {
+		assert.EqualValues(t, defaultVal, es.Get(i))
+		fillTestInstrumentationLibrarySpans(es.Get(i))
+		assert.EqualValues(t, testVal, es.Get(i))
+	}
+
+	// Test resize.
+	const resizeLo = 2
+	const resizeHi = 10
+	expectedEs := make(map[InstrumentationLibrarySpans]bool, resizeHi-resizeLo)
+	for i := resizeLo; i < resizeHi; i++ {
+		expectedEs[es.Get(i)] = true
+	}
+	assert.EqualValues(t, resizeHi-resizeLo, len(expectedEs))
+	es.Resize(resizeLo, resizeHi)
+	assert.EqualValues(t, resizeHi-resizeLo, es.Len())
+	foundEs := make(map[InstrumentationLibrarySpans]bool, resizeHi-resizeLo)
+	for i := 0; i < es.Len(); i++ {
+		foundEs[es.Get(i)] = true
+	}
+	assert.EqualValues(t, expectedEs, foundEs)
+
+	// Test remove.
+	const removePos = 2
+	delete(expectedEs, es.Get(removePos))
+	es.Remove(removePos)
+	assert.EqualValues(t, resizeHi-resizeLo-1, es.Len())
+	foundEs = make(map[InstrumentationLibrarySpans]bool, resizeHi-resizeLo)
+	for i := 0; i < es.Len(); i++ {
+		foundEs[es.Get(i)] = true
+	}
+	assert.EqualValues(t, expectedEs, foundEs)
+}
+
+func TestInstrumentationLibrarySpans(t *testing.T) {
+	ms := NewInstrumentationLibrarySpans()
+	assert.EqualValues(t, newInstrumentationLibrarySpans(&otlptrace.InstrumentationLibrarySpans{}), ms)
+
+	assert.EqualValues(t, NewInstrumentationLibrary(), ms.InstrumentationLibrary())
+	testValInstrumentationLibrary := generateTestInstrumentationLibrary()
+	ms.SetInstrumentationLibrary(testValInstrumentationLibrary)
+	assert.EqualValues(t, testValInstrumentationLibrary, ms.InstrumentationLibrary())
+
+	assert.EqualValues(t, NewSpanSlice(0), ms.Spans())
+	testValSpans := generateTestSpanSlice()
+	ms.SetSpans(testValSpans)
+	assert.EqualValues(t, testValSpans, ms.Spans())
+
+	assert.EqualValues(t, generateTestInstrumentationLibrarySpans(), ms)
+}
+
+func TestSpanSlice(t *testing.T) {
+	es := NewSpanSlice(0)
+	assert.EqualValues(t, 0, es.Len())
+	es = newSpanSlice(&[]*otlptrace.Span{})
+	assert.EqualValues(t, 0, es.Len())
+	es = NewSpanSlice(13)
+	defaultVal := NewSpan()
+	testVal := generateTestSpan()
+	assert.EqualValues(t, 13, es.Len())
+	for i := 0; i < es.Len(); i++ {
+		assert.EqualValues(t, defaultVal, es.Get(i))
+		fillTestSpan(es.Get(i))
+		assert.EqualValues(t, testVal, es.Get(i))
+	}
+
+	// Test resize.
+	const resizeLo = 2
+	const resizeHi = 10
+	expectedEs := make(map[Span]bool, resizeHi-resizeLo)
+	for i := resizeLo; i < resizeHi; i++ {
+		expectedEs[es.Get(i)] = true
+	}
+	assert.EqualValues(t, resizeHi-resizeLo, len(expectedEs))
+	es.Resize(resizeLo, resizeHi)
+	assert.EqualValues(t, resizeHi-resizeLo, es.Len())
+	foundEs := make(map[Span]bool, resizeHi-resizeLo)
+	for i := 0; i < es.Len(); i++ {
+		foundEs[es.Get(i)] = true
+	}
+	assert.EqualValues(t, expectedEs, foundEs)
+
+	// Test remove.
+	const removePos = 2
+	delete(expectedEs, es.Get(removePos))
+	es.Remove(removePos)
+	assert.EqualValues(t, resizeHi-resizeLo-1, es.Len())
+	foundEs = make(map[Span]bool, resizeHi-resizeLo)
+	for i := 0; i < es.Len(); i++ {
+		foundEs[es.Get(i)] = true
+	}
+	assert.EqualValues(t, expectedEs, foundEs)
+}
+
 func TestSpan(t *testing.T) {
 	ms := NewSpan()
 	assert.EqualValues(t, newSpan(&otlptrace.Span{}), ms)
 
-	assert.EqualValues(t, []byte(nil), ms.TraceID())
-	testValTraceID := []byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}
+	assert.EqualValues(t, NewTraceID(nil), ms.TraceID())
+	testValTraceID := NewTraceID([]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 	ms.SetTraceID(testValTraceID)
 	assert.EqualValues(t, testValTraceID, ms.TraceID())
 
-	assert.EqualValues(t, []byte(nil), ms.SpanID())
-	testValSpanID := []byte{1, 2, 3, 4, 5, 6, 7, 8}
+	assert.EqualValues(t, NewSpanID(nil), ms.SpanID())
+	testValSpanID := NewSpanID([]byte{1, 2, 3, 4, 5, 6, 7, 8})
 	ms.SetSpanID(testValSpanID)
 	assert.EqualValues(t, testValSpanID, ms.SpanID())
 
@@ -43,8 +206,8 @@ func TestSpan(t *testing.T) {
 	ms.SetTraceState(testValTraceState)
 	assert.EqualValues(t, testValTraceState, ms.TraceState())
 
-	assert.EqualValues(t, []byte(nil), ms.ParentSpanID())
-	testValParentSpanID := []byte{8, 7, 6, 5, 4, 3, 2, 1}
+	assert.EqualValues(t, NewSpanID(nil), ms.ParentSpanID())
+	testValParentSpanID := NewSpanID([]byte{8, 7, 6, 5, 4, 3, 2, 1})
 	ms.SetParentSpanID(testValParentSpanID)
 	assert.EqualValues(t, testValParentSpanID, ms.ParentSpanID())
 
@@ -223,13 +386,13 @@ func TestSpanLink(t *testing.T) {
 	ms := NewSpanLink()
 	assert.EqualValues(t, newSpanLink(&otlptrace.Span_Link{}), ms)
 
-	assert.EqualValues(t, []byte(nil), ms.TraceID())
-	testValTraceID := []byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}
+	assert.EqualValues(t, NewTraceID(nil), ms.TraceID())
+	testValTraceID := NewTraceID([]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 	ms.SetTraceID(testValTraceID)
 	assert.EqualValues(t, testValTraceID, ms.TraceID())
 
-	assert.EqualValues(t, []byte(nil), ms.SpanID())
-	testValSpanID := []byte{1, 2, 3, 4, 5, 6, 7, 8}
+	assert.EqualValues(t, NewSpanID(nil), ms.SpanID())
+	testValSpanID := NewSpanID([]byte{1, 2, 3, 4, 5, 6, 7, 8})
 	ms.SetSpanID(testValSpanID)
 	assert.EqualValues(t, testValSpanID, ms.SpanID())
 
@@ -268,12 +431,60 @@ func TestSpanStatus(t *testing.T) {
 	assert.EqualValues(t, generateTestSpanStatus(), ms)
 }
 
+func generateTestResourceSpansSlice() ResourceSpansSlice {
+	tv := NewResourceSpansSlice(13)
+	for i := 0; i < tv.Len(); i++ {
+		fillTestResourceSpans(tv.Get(i))
+	}
+	return tv
+}
+
+func generateTestResourceSpans() ResourceSpans {
+	tv := NewResourceSpans()
+	tv.SetResource(generateTestResource())
+	tv.SetInstrumentationLibrarySpans(generateTestInstrumentationLibrarySpansSlice())
+	return tv
+}
+
+func fillTestResourceSpans(tv ResourceSpans) {
+	tv.SetResource(generateTestResource())
+	tv.SetInstrumentationLibrarySpans(generateTestInstrumentationLibrarySpansSlice())
+}
+
+func generateTestInstrumentationLibrarySpansSlice() InstrumentationLibrarySpansSlice {
+	tv := NewInstrumentationLibrarySpansSlice(13)
+	for i := 0; i < tv.Len(); i++ {
+		fillTestInstrumentationLibrarySpans(tv.Get(i))
+	}
+	return tv
+}
+
+func generateTestInstrumentationLibrarySpans() InstrumentationLibrarySpans {
+	tv := NewInstrumentationLibrarySpans()
+	tv.SetInstrumentationLibrary(generateTestInstrumentationLibrary())
+	tv.SetSpans(generateTestSpanSlice())
+	return tv
+}
+
+func fillTestInstrumentationLibrarySpans(tv InstrumentationLibrarySpans) {
+	tv.SetInstrumentationLibrary(generateTestInstrumentationLibrary())
+	tv.SetSpans(generateTestSpanSlice())
+}
+
+func generateTestSpanSlice() SpanSlice {
+	tv := NewSpanSlice(13)
+	for i := 0; i < tv.Len(); i++ {
+		fillTestSpan(tv.Get(i))
+	}
+	return tv
+}
+
 func generateTestSpan() Span {
 	tv := NewSpan()
-	tv.SetTraceID([]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
-	tv.SetSpanID([]byte{1, 2, 3, 4, 5, 6, 7, 8})
+	tv.SetTraceID(NewTraceID([]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
+	tv.SetSpanID(NewSpanID([]byte{1, 2, 3, 4, 5, 6, 7, 8}))
 	tv.SetTraceState(TraceState("congo=congos"))
-	tv.SetParentSpanID([]byte{8, 7, 6, 5, 4, 3, 2, 1})
+	tv.SetParentSpanID(NewSpanID([]byte{8, 7, 6, 5, 4, 3, 2, 1}))
 	tv.SetName("test_name")
 	tv.SetKind(SpanKindSERVER)
 	tv.SetStartTime(TimestampUnixNano(1234567890))
@@ -286,6 +497,24 @@ func generateTestSpan() Span {
 	tv.SetDroppedLinksCount(uint32(17))
 	tv.SetStatus(generateTestSpanStatus())
 	return tv
+}
+
+func fillTestSpan(tv Span) {
+	tv.SetTraceID(NewTraceID([]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
+	tv.SetSpanID(NewSpanID([]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+	tv.SetTraceState(TraceState("congo=congos"))
+	tv.SetParentSpanID(NewSpanID([]byte{8, 7, 6, 5, 4, 3, 2, 1}))
+	tv.SetName("test_name")
+	tv.SetKind(SpanKindSERVER)
+	tv.SetStartTime(TimestampUnixNano(1234567890))
+	tv.SetEndTime(TimestampUnixNano(1234567890))
+	tv.SetAttributes(generateTestAttributeMap())
+	tv.SetDroppedAttributesCount(uint32(17))
+	tv.SetEvents(generateTestSpanEventSlice())
+	tv.SetDroppedEventsCount(uint32(17))
+	tv.SetLinks(generateTestSpanLinkSlice())
+	tv.SetDroppedLinksCount(uint32(17))
+	tv.SetStatus(generateTestSpanStatus())
 }
 
 func generateTestSpanEventSlice() SpanEventSlice {
@@ -322,8 +551,8 @@ func generateTestSpanLinkSlice() SpanLinkSlice {
 
 func generateTestSpanLink() SpanLink {
 	tv := NewSpanLink()
-	tv.SetTraceID([]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
-	tv.SetSpanID([]byte{1, 2, 3, 4, 5, 6, 7, 8})
+	tv.SetTraceID(NewTraceID([]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
+	tv.SetSpanID(NewSpanID([]byte{1, 2, 3, 4, 5, 6, 7, 8}))
 	tv.SetTraceState(TraceState("congo=congos"))
 	tv.SetAttributes(generateTestAttributeMap())
 	tv.SetDroppedAttributesCount(uint32(17))
@@ -331,8 +560,8 @@ func generateTestSpanLink() SpanLink {
 }
 
 func fillTestSpanLink(tv SpanLink) {
-	tv.SetTraceID([]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
-	tv.SetSpanID([]byte{1, 2, 3, 4, 5, 6, 7, 8})
+	tv.SetTraceID(NewTraceID([]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
+	tv.SetSpanID(NewSpanID([]byte{1, 2, 3, 4, 5, 6, 7, 8}))
 	tv.SetTraceState(TraceState("congo=congos"))
 	tv.SetAttributes(generateTestAttributeMap())
 	tv.SetDroppedAttributesCount(uint32(17))

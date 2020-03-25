@@ -30,18 +30,16 @@ import (
 )
 
 func ocToInternal(td consumerdata.TraceData) data.TraceData {
-
+	traceData := data.NewTraceData()
 	if td.Node == nil && td.Resource == nil && len(td.Spans) == 0 {
-		return data.TraceData{}
+		return traceData
 	}
 
-	resource := ocNodeResourceToInternal(td.Node, td.Resource)
-
-	resourceSpans := data.NewResourceSpans(resource, nil)
-	resourceSpanList := []*data.ResourceSpans{resourceSpans}
-
 	if len(td.Spans) == 0 {
-		return data.NewTraceData(resourceSpanList)
+		// At least one of the td.Node or td.Resource is not nil. Set the resource and return.
+		traceData.SetResourceSpans(data.NewResourceSpansSlice(1))
+		ocNodeResourceToInternal(td.Node, td.Resource, traceData.ResourceSpans().Get(0))
+		return traceData
 	}
 
 	// We may need to split OC spans into several ResourceSpans. OC Spans can have a
@@ -65,6 +63,7 @@ func ocToInternal(td consumerdata.TraceData) data.TraceData {
 	// Count the number of spans that have nil Resource and need to be combined
 	// in one slice.
 	combinedSpanCount := 0
+	distinctResourceCount := 0
 	for _, ocSpan := range td.Spans {
 		if ocSpan == nil {
 			// Skip nil spans.
@@ -72,19 +71,29 @@ func ocToInternal(td consumerdata.TraceData) data.TraceData {
 		}
 		if ocSpan.Resource == nil {
 			combinedSpanCount++
+		} else {
+			distinctResourceCount++
 		}
 	}
+	// Total number of resources is equal to:
+	// 1 (for all spans with nil resource) + numSpansWithResource (distinctResourceCount).
+	traceData.SetResourceSpans(data.NewResourceSpansSlice(distinctResourceCount + 1))
+	rs0 := traceData.ResourceSpans().Get(0)
+	ocNodeResourceToInternal(td.Node, td.Resource, rs0)
 
-	// Allocate a slice for spans that need to be combined into one ResourceSpans.
-	combinedSpans := data.NewSpanSlice(combinedSpanCount)
-	resourceSpans.SetInstrumentationLibrarySpans([]*data.InstrumentationLibrarySpans{
-		data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), combinedSpans)})
+	// Allocate a slice for spans that need to be combined into first ResourceSpans.
+	rs0.SetInstrumentationLibrarySpans(data.NewInstrumentationLibrarySpansSlice(1))
+	ils0 := rs0.InstrumentationLibrarySpans().Get(0)
+	ils0.SetSpans(data.NewSpanSlice(combinedSpanCount))
+	combinedSpans := ils0.Spans()
 
 	// Now do the span translation and place them in appropriate ResourceSpans
 	// instances.
 
 	// Index to next available slot in "combinedSpans" slice.
-	i := 0
+	combinedSpanIdx := 0
+	// First resourcespan is used for the default resource, so start with 1.
+	resourceSpanIdx := 1
 	for _, ocSpan := range td.Spans {
 		if ocSpan == nil {
 			// Skip nil spans.
@@ -95,34 +104,25 @@ func ocToInternal(td consumerdata.TraceData) data.TraceData {
 			// Add the span to the "combinedSpans". combinedSpans length is equal
 			// to combinedSpanCount. The loop above that calculates combinedSpanCount
 			// has exact same conditions as we have here in this loop.
-			destSpan := combinedSpans[i]
-			i++
-
-			// Convert the span.
-			ocSpanToInternal(destSpan, ocSpan)
+			ocSpanToInternal(combinedSpans.Get(combinedSpanIdx), ocSpan)
+			combinedSpanIdx++
 		} else {
 			// This span has a different Resource and must be placed in a different
 			// ResourceSpans instance. Create a separate ResourceSpans item just for this span.
-			separateRS := ocSpanToResourceSpans(ocSpan, td.Node, ocSpan.Resource)
-
-			// Add the newly created ResourceSpans to the final list that we will return.
-			resourceSpanList = append(resourceSpanList, separateRS)
+			ocSpanToResourceSpans(ocSpan, td.Node, traceData.ResourceSpans().Get(resourceSpanIdx))
+			resourceSpanIdx++
 		}
 	}
 
-	return data.NewTraceData(resourceSpanList)
+	return traceData
 }
 
-func ocSpanToResourceSpans(ocSpan *octrace.Span, node *occommon.Node, resource *ocresource.Resource) *data.ResourceSpans {
-	destSpan := data.NewSpan()
-	ocSpanToInternal(destSpan, ocSpan)
-
-	// Create a separate ResourceSpans item just for this span.
-	return data.NewResourceSpans(
-		ocNodeResourceToInternal(node, resource),
-		[]*data.InstrumentationLibrarySpans{
-			data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []data.Span{destSpan})},
-	)
+func ocSpanToResourceSpans(ocSpan *octrace.Span, node *occommon.Node, out data.ResourceSpans) {
+	ocNodeResourceToInternal(node, ocSpan.Resource, out)
+	out.SetInstrumentationLibrarySpans(data.NewInstrumentationLibrarySpansSlice(1))
+	ils0 := out.InstrumentationLibrarySpans().Get(0)
+	ils0.SetSpans(data.NewSpanSlice(1))
+	ocSpanToInternal(ils0.Spans().Get(0), ocSpan)
 }
 
 func ocSpanToInternal(dest data.Span, src *octrace.Span) {
@@ -356,9 +356,7 @@ func ocMessageEventToInternalAttrs(msgEvent *octrace.Span_TimeEvent_MessageEvent
 	}), 0
 }
 
-func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Resource) data.Resource {
-	resource := data.NewResource()
-
+func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Resource, out data.ResourceSpans) {
 	// Number of special fields in the Node. See the code below that deals with special fields.
 	const specialNodeAttrCount = 7
 
@@ -434,8 +432,6 @@ func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Reso
 	if len(attrs) != 0 {
 		// TODO: Re-evaluate if we want to construct a map first, or we can construct directly
 		// a slice of AttributeKeyValue.
-		resource.SetAttributes(data.NewAttributeMap(attrs))
+		out.Resource().SetAttributes(data.NewAttributeMap(attrs))
 	}
-
-	return resource
 }

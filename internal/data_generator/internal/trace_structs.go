@@ -17,6 +17,8 @@ package internal
 var traceFile = &File{
 	Name: "trace",
 	imports: []string{
+		`otlpcommon "github.com/open-telemetry/opentelemetry-proto/gen/go/common/v1"`,
+		`otlpresource "github.com/open-telemetry/opentelemetry-proto/gen/go/resource/v1"`,
 		`otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"`,
 	},
 	testImports: []string{
@@ -26,6 +28,11 @@ var traceFile = &File{
 		`"github.com/stretchr/testify/assert"`,
 	},
 	structs: []baseStruct{
+		resourceSpansSlice,
+		resourceSpans,
+		instrumentationLibrarySpansSlice,
+		instrumentationLibrarySpans,
+		spanSlice,
 		span,
 		spanEventSlice,
 		spanEvent,
@@ -33,6 +40,51 @@ var traceFile = &File{
 		spanLink,
 		spanStatus,
 	},
+}
+
+var resourceSpansSlice = &sliceStruct{
+	structName: "ResourceSpansSlice",
+	element:    resourceSpans,
+}
+
+var resourceSpans = &messageStruct{
+	structName:     "ResourceSpans",
+	description:    "// InstrumentationLibrarySpans is a collection of spans from a LibraryInstrumentation.",
+	originFullName: "otlptrace.ResourceSpans",
+	fields: []baseField{
+		resourceField,
+		&sliceField{
+			fieldMame:               "InstrumentationLibrarySpans",
+			originFieldName:         "InstrumentationLibrarySpans",
+			returnSlice:             instrumentationLibrarySpansSlice,
+			constructorDefaultValue: "0",
+		},
+	},
+}
+
+var instrumentationLibrarySpansSlice = &sliceStruct{
+	structName: "InstrumentationLibrarySpansSlice",
+	element:    instrumentationLibrarySpans,
+}
+
+var instrumentationLibrarySpans = &messageStruct{
+	structName:     "InstrumentationLibrarySpans",
+	description:    "// InstrumentationLibrarySpans is a collection of spans from a LibraryInstrumentation.",
+	originFullName: "otlptrace.InstrumentationLibrarySpans",
+	fields: []baseField{
+		instrumentationLibraryField,
+		&sliceField{
+			fieldMame:               "Spans",
+			originFieldName:         "Spans",
+			returnSlice:             spanSlice,
+			constructorDefaultValue: "0",
+		},
+	},
+}
+
+var spanSlice = &sliceStruct{
+	structName: "SpanSlice",
+	element:    span,
 }
 
 var span = &messageStruct{
@@ -158,8 +210,8 @@ var traceIDField = &primitiveTypedField{
 	originFieldName: "TraceId",
 	returnType:      "TraceID",
 	rawType:         "[]byte",
-	defaultVal:      "[]byte(nil)",
-	testVal:         "[]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}",
+	defaultVal:      "NewTraceID(nil)",
+	testVal:         "NewTraceID([]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})",
 }
 
 var spanIDField = &primitiveTypedField{
@@ -167,8 +219,8 @@ var spanIDField = &primitiveTypedField{
 	originFieldName: "SpanId",
 	returnType:      "SpanID",
 	rawType:         "[]byte",
-	defaultVal:      "[]byte(nil)",
-	testVal:         "[]byte{1, 2, 3, 4, 5, 6, 7, 8}",
+	defaultVal:      "NewSpanID(nil)",
+	testVal:         "NewSpanID([]byte{1, 2, 3, 4, 5, 6, 7, 8})",
 }
 
 var parentSpanIDField = &primitiveTypedField{
@@ -176,8 +228,8 @@ var parentSpanIDField = &primitiveTypedField{
 	originFieldName: "ParentSpanId",
 	returnType:      "SpanID",
 	rawType:         "[]byte",
-	defaultVal:      "[]byte(nil)",
-	testVal:         "[]byte{8, 7, 6, 5, 4, 3, 2, 1}",
+	defaultVal:      "NewSpanID(nil)",
+	testVal:         "NewSpanID([]byte{8, 7, 6, 5, 4, 3, 2, 1})",
 }
 
 var traceStateField = &primitiveTypedField{

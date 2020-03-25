@@ -27,19 +27,21 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/internal"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
+	"github.com/open-telemetry/opentelemetry-collector/internal/data/testdata"
 	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 )
 
 func TestOcNodeResourceToInternal(t *testing.T) {
-	resource := ocNodeResourceToInternal(nil, nil)
-	assert.EqualValues(t, data.NewResource(), resource)
+	resourceSpans := data.NewResourceSpans()
+	ocNodeResourceToInternal(nil, nil, resourceSpans)
+	assert.EqualValues(t, data.NewResource(), resourceSpans.Resource())
 
+	resourceSpans = data.NewResourceSpans()
 	ocNode := &occommon.Node{}
 	ocResource := &ocresource.Resource{}
-	resource = ocNodeResourceToInternal(ocNode, ocResource)
-	assert.EqualValues(t, data.NewResource(), resource)
+	ocNodeResourceToInternal(ocNode, ocResource, resourceSpans)
+	assert.EqualValues(t, data.NewResource(), resourceSpans.Resource())
 
 	ts, err := ptypes.TimestampProto(time.Date(2020, 2, 11, 20, 26, 0, 0, time.UTC))
 	assert.NoError(t, err)
@@ -68,8 +70,6 @@ func TestOcNodeResourceToInternal(t *testing.T) {
 			"resource-attr": "val2",
 		},
 	}
-	resource = ocNodeResourceToInternal(ocNode, ocResource)
-
 	expectedAttrs := data.NewAttributeMap(map[string]data.AttributeValue{
 		conventions.AttributeHostHostname:       data.NewAttributeValueString("host1"),
 		conventions.OCAttributeProcessID:        data.NewAttributeValueInt(123),
@@ -83,7 +83,9 @@ func TestOcNodeResourceToInternal(t *testing.T) {
 		"resource-attr":                         data.NewAttributeValueString("val2"),
 	})
 
-	assert.EqualValues(t, expectedAttrs.Sort(), resource.Attributes().Sort())
+	resourceSpans = data.NewResourceSpans()
+	ocNodeResourceToInternal(ocNode, ocResource, resourceSpans)
+	assert.EqualValues(t, expectedAttrs.Sort(), resourceSpans.Resource().Attributes().Sort())
 
 	// Make sure hard-coded fields override same-name values in Attributes.
 	// To do that add Attributes with same-name.
@@ -97,10 +99,10 @@ func TestOcNodeResourceToInternal(t *testing.T) {
 	ocResource.Labels[conventions.OCAttributeResourceType] = "this will be overridden 2"
 
 	// Convert again.
-	resource = ocNodeResourceToInternal(ocNode, ocResource)
-
+	resourceSpans = data.NewResourceSpans()
+	ocNodeResourceToInternal(ocNode, ocResource, resourceSpans)
 	// And verify that same-name attributes were ignored.
-	assert.EqualValues(t, expectedAttrs.Sort(), resource.Attributes().Sort())
+	assert.EqualValues(t, expectedAttrs.Sort(), resourceSpans.Resource().Attributes().Sort())
 }
 
 func TestOcTraceStateToInternal(t *testing.T) {
@@ -256,93 +258,105 @@ func TestOcSpanKindToInternal(t *testing.T) {
 }
 
 func TestOcToInternal(t *testing.T) {
-	ocNode := &occommon.Node{Attributes: map[string]string{"nodeattr": "attrval123"}}
-	ocResource := &ocresource.Resource{}
+	ocNode := &occommon.Node{}
+	ocResource1 := &ocresource.Resource{Labels: map[string]string{"resource-attr": "resource-attr-val-1"}}
+	ocResource2 := &ocresource.Resource{Labels: map[string]string{"resource-attr": "resource-attr-val-2"}}
 
-	timestampP, err := ptypes.TimestampProto(time.Date(2020, 2, 11, 20, 26, 0, 0, time.UTC))
+	startTime, err := ptypes.TimestampProto(testdata.TestStartTime)
+	assert.NoError(t, err)
+	eventTime, err := ptypes.TimestampProto(testdata.TestEventTime)
+	assert.NoError(t, err)
+	endTime, err := ptypes.TimestampProto(testdata.TestEndTime)
 	assert.NoError(t, err)
 
 	ocSpan1 := &octrace.Span{
-		Name:      &octrace.TruncatableString{Value: "operationB"},
-		StartTime: timestampP,
-		EndTime:   timestampP,
+		Name:      &octrace.TruncatableString{Value: "operationA"},
+		StartTime: startTime,
+		EndTime:   endTime,
 		TimeEvents: &octrace.Span_TimeEvents{
 			TimeEvent: []*octrace.Span_TimeEvent{
 				{
-					Time: timestampP,
+					Time: eventTime,
 					Value: &octrace.Span_TimeEvent_Annotation_{
 						Annotation: &octrace.Span_TimeEvent_Annotation{
-							Description: &octrace.TruncatableString{Value: "event1"},
+							Description: &octrace.TruncatableString{Value: "event-with-attr"},
 							Attributes: &octrace.Span_Attributes{
 								AttributeMap: map[string]*octrace.AttributeValue{
-									"eventattr1": {
+									"event-attr": {
 										Value: &octrace.AttributeValue_StringValue{
-											StringValue: &octrace.TruncatableString{Value: "eventattrval1"},
+											StringValue: &octrace.TruncatableString{Value: "event-attr-val"},
 										},
 									},
 								},
-								DroppedAttributesCount: 4,
+								DroppedAttributesCount: 2,
 							},
 						},
 					},
 				},
-				nil,
+				{
+					Time: eventTime,
+					Value: &octrace.Span_TimeEvent_Annotation_{
+						Annotation: &octrace.Span_TimeEvent_Annotation{
+							Description: &octrace.TruncatableString{Value: "event"},
+							Attributes: &octrace.Span_Attributes{
+								DroppedAttributesCount: 2,
+							},
+						},
+					},
+				},
 			},
-			DroppedAnnotationsCount:   1,
-			DroppedMessageEventsCount: 2,
+			DroppedAnnotationsCount: 1,
+		},
+		Attributes: &octrace.Span_Attributes{
+			DroppedAttributesCount: 1,
 		},
 		Status: &octrace.Status{Message: "status-cancelled", Code: 1},
 	}
 
 	ocSpan2 := &octrace.Span{
-		Name:      &octrace.TruncatableString{Value: "operationC"},
-		StartTime: timestampP,
-		EndTime:   timestampP,
+		Name:      &octrace.TruncatableString{Value: "operationB"},
+		StartTime: startTime,
+		EndTime:   endTime,
 		Links: &octrace.Span_Links{
-			Link:              []*octrace.Span_Link{{}, nil},
-			DroppedLinksCount: 1,
+			Link: []*octrace.Span_Link{
+				{
+					Attributes: &octrace.Span_Attributes{
+						AttributeMap: map[string]*octrace.AttributeValue{
+							"link-attr": {
+								Value: &octrace.AttributeValue_StringValue{
+									StringValue: &octrace.TruncatableString{Value: "link-attr-val"},
+								},
+							},
+						},
+						DroppedAttributesCount: 4,
+					},
+				},
+				{
+					Attributes: &octrace.Span_Attributes{
+						DroppedAttributesCount: 4,
+					},
+				},
+			},
+			DroppedLinksCount: 3,
 		},
 	}
 
 	ocSpan3 := &octrace.Span{
-		Name:      &octrace.TruncatableString{Value: "operationD"},
-		StartTime: timestampP,
-		EndTime:   timestampP,
-		Resource:  ocResource,
+		Name:      &octrace.TruncatableString{Value: "operationC"},
+		StartTime: startTime,
+		EndTime:   endTime,
+		Resource:  ocResource2,
+		Attributes: &octrace.Span_Attributes{
+			AttributeMap: map[string]*octrace.AttributeValue{
+				"span-attr": {
+					Value: &octrace.AttributeValue_StringValue{
+						StringValue: &octrace.TruncatableString{Value: "span-attr-val"},
+					},
+				},
+			},
+			DroppedAttributesCount: 5,
+		},
 	}
-
-	span1 := data.NewSpan()
-	span1.SetName("operationB")
-	span1.SetStartTime(internal.TimestampToUnixNano(timestampP))
-	span1.SetEndTime(internal.TimestampToUnixNano(timestampP))
-	span1.SetEvents(data.NewSpanEventSlice(1))
-	se := span1.Events().Get(0)
-	se.SetTimestamp(internal.TimestampToUnixNano(timestampP))
-	se.SetName("event1")
-	se.SetAttributes(data.NewAttributeMap(
-		data.AttributesMap{
-			"eventattr1": data.NewAttributeValueString("eventattrval1"),
-		}))
-	se.SetDroppedAttributesCount(4)
-	span1.SetDroppedEventsCount(3)
-	span1.Status().SetCode(data.StatusCode(1))
-	span1.Status().SetMessage("status-cancelled")
-
-	span2 := data.NewSpan()
-	span2.SetName("operationC")
-	span2.SetStartTime(internal.TimestampToUnixNano(timestampP))
-	span2.SetEndTime(internal.TimestampToUnixNano(timestampP))
-	span2.SetLinks(data.NewSpanLinkSlice(1))
-	span2.SetDroppedLinksCount(1)
-
-	span3 := data.NewSpan()
-	span3.SetName("operationD")
-	span3.SetStartTime(internal.TimestampToUnixNano(timestampP))
-	span3.SetEndTime(internal.TimestampToUnixNano(timestampP))
-
-	internalResource := data.NewResource()
-	internalResource.SetAttributes(
-		data.NewAttributeMap(map[string]data.AttributeValue{"nodeattr": data.NewAttributeValueString("attrval123")}))
 
 	tests := []struct {
 		name string
@@ -352,87 +366,65 @@ func TestOcToInternal(t *testing.T) {
 		{
 			name: "empty",
 			oc:   consumerdata.TraceData{},
-			itd:  data.TraceData{},
+			itd:  data.NewTraceData(),
 		},
 
 		{
 			name: "nil-resource",
 			oc:   consumerdata.TraceData{Node: ocNode},
-			itd: data.NewTraceData([]*data.ResourceSpans{
-				data.NewResourceSpans(internalResource, nil),
-			}),
+			itd:  testdata.GenerateTraceDataOneEmptyResourceSpans(),
 		},
 
 		{
 			name: "nil-node",
-			oc:   consumerdata.TraceData{Resource: ocResource},
-			itd: data.NewTraceData([]*data.ResourceSpans{
-				data.NewResourceSpans(data.NewResource(), nil),
-			}),
+			oc:   consumerdata.TraceData{Resource: ocResource1},
+			itd:  testdata.GenerateTraceDataNoLibraries(),
 		},
 
 		{
 			name: "no-spans",
-			oc:   consumerdata.TraceData{Node: ocNode, Resource: ocResource},
-			itd: data.NewTraceData([]*data.ResourceSpans{
-				data.NewResourceSpans(internalResource, nil),
-			}),
+			oc:   consumerdata.TraceData{Node: ocNode, Resource: ocResource1},
+			itd:  testdata.GenerateTraceDataNoLibraries(),
 		},
 
 		{
 			name: "one-span",
 			oc: consumerdata.TraceData{
 				Node:     ocNode,
-				Resource: ocResource,
+				Resource: ocResource1,
 				Spans:    []*octrace.Span{ocSpan1},
 			},
-			itd: data.NewTraceData([]*data.ResourceSpans{
-				data.NewResourceSpans(internalResource, []*data.InstrumentationLibrarySpans{
-					data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []data.Span{span1})}),
-			}),
+			itd: testdata.GenerateTraceDataOneSpan(),
 		},
 
 		{
 			name: "two-spans",
 			oc: consumerdata.TraceData{
 				Node:     ocNode,
-				Resource: ocResource,
+				Resource: ocResource1,
 				Spans:    []*octrace.Span{ocSpan1, nil, ocSpan2},
 			},
-			itd: data.NewTraceData([]*data.ResourceSpans{
-				data.NewResourceSpans(internalResource, []*data.InstrumentationLibrarySpans{
-					data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []data.Span{span1, span2})}),
-			}),
+			itd: testdata.GenerateTraceDataSameResourcewoSpans(),
 		},
 
 		{
 			name: "two-spans-plus-one-separate",
 			oc: consumerdata.TraceData{
 				Node:     ocNode,
-				Resource: ocResource,
+				Resource: ocResource1,
 				Spans:    []*octrace.Span{ocSpan1, ocSpan2, ocSpan3},
 			},
-			itd: data.NewTraceData([]*data.ResourceSpans{
-				data.NewResourceSpans(internalResource, []*data.InstrumentationLibrarySpans{
-					data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []data.Span{span1, span2})}),
-				data.NewResourceSpans(internalResource, []*data.InstrumentationLibrarySpans{
-					data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []data.Span{span3})}),
-			}),
+			itd: testdata.GenerateTraceDataTwoSpansSameResourceOneDifferent(),
 		},
 
 		{
 			name: "two-spans-and-separate-in-the-middle",
 			oc: consumerdata.TraceData{
 				Node:     ocNode,
-				Resource: ocResource,
+				Resource: ocResource1,
 				Spans:    []*octrace.Span{ocSpan1, ocSpan3, ocSpan2},
 			},
-			itd: data.NewTraceData([]*data.ResourceSpans{
-				data.NewResourceSpans(internalResource, []*data.InstrumentationLibrarySpans{
-					data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []data.Span{span1, span2})}),
-				data.NewResourceSpans(internalResource, []*data.InstrumentationLibrarySpans{
-					data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []data.Span{span3})}),
-			}),
+			itd: testdata.GenerateTraceDataTwoSpansSameResourceOneDifferent(),
 		},
 	}
 

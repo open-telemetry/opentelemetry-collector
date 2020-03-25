@@ -18,8 +18,301 @@
 package data
 
 import (
+	otlpcommon "github.com/open-telemetry/opentelemetry-proto/gen/go/common/v1"
+	otlpresource "github.com/open-telemetry/opentelemetry-proto/gen/go/resource/v1"
 	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
 )
+
+// ResourceSpansSlice logically represents a slice of ResourceSpans.
+//
+// This is a reference type, if passsed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewResourceSpansSlice function to create new instances.
+// Important: zero-initialized instance is not valid for use.
+type ResourceSpansSlice struct {
+	orig *[]*otlptrace.ResourceSpans
+}
+
+// NewResourceSpansSlice creates a ResourceSpansSlice with "len" empty elements.
+//
+// es := NewResourceSpansSlice(4)
+// for i := 0; i < es.Len(); i++ {
+//     e := es.Get(i)
+//     // Here should set all the values for e.
+// }
+func NewResourceSpansSlice(len int) ResourceSpansSlice {
+	if len == 0 {
+		orig := []*otlptrace.ResourceSpans(nil)
+		return ResourceSpansSlice{&orig}
+	}
+	// Slice for underlying orig.
+	origs := make([]otlptrace.ResourceSpans, len)
+	// Slice for wrappers.
+	wrappers := make([]*otlptrace.ResourceSpans, len)
+	for i := range origs {
+		wrappers[i] = &origs[i]
+	}
+	return ResourceSpansSlice{&wrappers}
+}
+
+func newResourceSpansSlice(orig *[]*otlptrace.ResourceSpans) ResourceSpansSlice {
+	return ResourceSpansSlice{orig}
+}
+
+// Len returns the number of elements in the slice.
+func (es ResourceSpansSlice) Len() int {
+	return len(*es.orig)
+}
+
+// Get the element at the given index.
+//
+// This function is used mostly for iterating over all the values in the slice:
+// for i := 0; i < es.Len(); i++ {
+//     e := es.Get(i)
+//     ... // Do something with the element
+// }
+func (es ResourceSpansSlice) Get(ix int) ResourceSpans {
+	return newResourceSpans((*es.orig)[ix])
+}
+
+// Remove the element at the given index from the slice.
+// Elements after the removed one are shifted to fill the emptied space.
+// The length of the slice is reduced by one.
+func (es ResourceSpansSlice) Remove(ix int) {
+	(*es.orig)[ix] = (*es.orig)[len(*es.orig)-1]
+	(*es.orig)[len(*es.orig)-1] = nil
+	*es.orig = (*es.orig)[:len(*es.orig)-1]
+}
+
+// Resize the slice. This operation is equivalent with slice[from:to].
+func (es ResourceSpansSlice) Resize(from, to int) {
+	*es.orig = (*es.orig)[from:to]
+}
+
+// InstrumentationLibrarySpans is a collection of spans from a LibraryInstrumentation.
+//
+// This is a reference type, if passsed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewResourceSpans function to create new instances.
+// Important: zero-initialized instance is not valid for use.
+type ResourceSpans struct {
+	// Wrap OTLP otlptrace.ResourceSpans.
+	orig *otlptrace.ResourceSpans
+}
+
+// NewResourceSpans creates a new empty ResourceSpans.
+func NewResourceSpans() ResourceSpans {
+	return ResourceSpans{&otlptrace.ResourceSpans{}}
+}
+
+func newResourceSpans(orig *otlptrace.ResourceSpans) ResourceSpans {
+	return ResourceSpans{orig}
+}
+
+// Resource returns the resource associated with this ResourceSpans.
+func (ms ResourceSpans) Resource() Resource {
+	if ms.orig.Resource == nil {
+		// No Resource available, initialize one to make all operations on Resource available.
+		ms.orig.Resource = &otlpresource.Resource{}
+	}
+	return newResource(ms.orig.Resource)
+}
+
+// SetResource replaces the resource associated with this ResourceSpans.
+func (ms ResourceSpans) SetResource(v Resource) {
+	ms.orig.Resource = v.orig
+}
+
+// InstrumentationLibrarySpans returns the InstrumentationLibrarySpans associated with this ResourceSpans.
+func (ms ResourceSpans) InstrumentationLibrarySpans() InstrumentationLibrarySpansSlice {
+	return newInstrumentationLibrarySpansSlice(&ms.orig.InstrumentationLibrarySpans)
+}
+
+// SetInstrumentationLibrarySpans replaces the InstrumentationLibrarySpans associated with this ResourceSpans.
+func (ms ResourceSpans) SetInstrumentationLibrarySpans(v InstrumentationLibrarySpansSlice) {
+	ms.orig.InstrumentationLibrarySpans = *v.orig
+}
+
+// InstrumentationLibrarySpansSlice logically represents a slice of InstrumentationLibrarySpans.
+//
+// This is a reference type, if passsed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewInstrumentationLibrarySpansSlice function to create new instances.
+// Important: zero-initialized instance is not valid for use.
+type InstrumentationLibrarySpansSlice struct {
+	orig *[]*otlptrace.InstrumentationLibrarySpans
+}
+
+// NewInstrumentationLibrarySpansSlice creates a InstrumentationLibrarySpansSlice with "len" empty elements.
+//
+// es := NewInstrumentationLibrarySpansSlice(4)
+// for i := 0; i < es.Len(); i++ {
+//     e := es.Get(i)
+//     // Here should set all the values for e.
+// }
+func NewInstrumentationLibrarySpansSlice(len int) InstrumentationLibrarySpansSlice {
+	if len == 0 {
+		orig := []*otlptrace.InstrumentationLibrarySpans(nil)
+		return InstrumentationLibrarySpansSlice{&orig}
+	}
+	// Slice for underlying orig.
+	origs := make([]otlptrace.InstrumentationLibrarySpans, len)
+	// Slice for wrappers.
+	wrappers := make([]*otlptrace.InstrumentationLibrarySpans, len)
+	for i := range origs {
+		wrappers[i] = &origs[i]
+	}
+	return InstrumentationLibrarySpansSlice{&wrappers}
+}
+
+func newInstrumentationLibrarySpansSlice(orig *[]*otlptrace.InstrumentationLibrarySpans) InstrumentationLibrarySpansSlice {
+	return InstrumentationLibrarySpansSlice{orig}
+}
+
+// Len returns the number of elements in the slice.
+func (es InstrumentationLibrarySpansSlice) Len() int {
+	return len(*es.orig)
+}
+
+// Get the element at the given index.
+//
+// This function is used mostly for iterating over all the values in the slice:
+// for i := 0; i < es.Len(); i++ {
+//     e := es.Get(i)
+//     ... // Do something with the element
+// }
+func (es InstrumentationLibrarySpansSlice) Get(ix int) InstrumentationLibrarySpans {
+	return newInstrumentationLibrarySpans((*es.orig)[ix])
+}
+
+// Remove the element at the given index from the slice.
+// Elements after the removed one are shifted to fill the emptied space.
+// The length of the slice is reduced by one.
+func (es InstrumentationLibrarySpansSlice) Remove(ix int) {
+	(*es.orig)[ix] = (*es.orig)[len(*es.orig)-1]
+	(*es.orig)[len(*es.orig)-1] = nil
+	*es.orig = (*es.orig)[:len(*es.orig)-1]
+}
+
+// Resize the slice. This operation is equivalent with slice[from:to].
+func (es InstrumentationLibrarySpansSlice) Resize(from, to int) {
+	*es.orig = (*es.orig)[from:to]
+}
+
+// InstrumentationLibrarySpans is a collection of spans from a LibraryInstrumentation.
+//
+// This is a reference type, if passsed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewInstrumentationLibrarySpans function to create new instances.
+// Important: zero-initialized instance is not valid for use.
+type InstrumentationLibrarySpans struct {
+	// Wrap OTLP otlptrace.InstrumentationLibrarySpans.
+	orig *otlptrace.InstrumentationLibrarySpans
+}
+
+// NewInstrumentationLibrarySpans creates a new empty InstrumentationLibrarySpans.
+func NewInstrumentationLibrarySpans() InstrumentationLibrarySpans {
+	return InstrumentationLibrarySpans{&otlptrace.InstrumentationLibrarySpans{}}
+}
+
+func newInstrumentationLibrarySpans(orig *otlptrace.InstrumentationLibrarySpans) InstrumentationLibrarySpans {
+	return InstrumentationLibrarySpans{orig}
+}
+
+// InstrumentationLibrary returns the instrumentationlibrary associated with this InstrumentationLibrarySpans.
+func (ms InstrumentationLibrarySpans) InstrumentationLibrary() InstrumentationLibrary {
+	if ms.orig.InstrumentationLibrary == nil {
+		// No InstrumentationLibrary available, initialize one to make all operations on InstrumentationLibrary available.
+		ms.orig.InstrumentationLibrary = &otlpcommon.InstrumentationLibrary{}
+	}
+	return newInstrumentationLibrary(ms.orig.InstrumentationLibrary)
+}
+
+// SetInstrumentationLibrary replaces the instrumentationlibrary associated with this InstrumentationLibrarySpans.
+func (ms InstrumentationLibrarySpans) SetInstrumentationLibrary(v InstrumentationLibrary) {
+	ms.orig.InstrumentationLibrary = v.orig
+}
+
+// Spans returns the Spans associated with this InstrumentationLibrarySpans.
+func (ms InstrumentationLibrarySpans) Spans() SpanSlice {
+	return newSpanSlice(&ms.orig.Spans)
+}
+
+// SetSpans replaces the Spans associated with this InstrumentationLibrarySpans.
+func (ms InstrumentationLibrarySpans) SetSpans(v SpanSlice) {
+	ms.orig.Spans = *v.orig
+}
+
+// SpanSlice logically represents a slice of Span.
+//
+// This is a reference type, if passsed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewSpanSlice function to create new instances.
+// Important: zero-initialized instance is not valid for use.
+type SpanSlice struct {
+	orig *[]*otlptrace.Span
+}
+
+// NewSpanSlice creates a SpanSlice with "len" empty elements.
+//
+// es := NewSpanSlice(4)
+// for i := 0; i < es.Len(); i++ {
+//     e := es.Get(i)
+//     // Here should set all the values for e.
+// }
+func NewSpanSlice(len int) SpanSlice {
+	if len == 0 {
+		orig := []*otlptrace.Span(nil)
+		return SpanSlice{&orig}
+	}
+	// Slice for underlying orig.
+	origs := make([]otlptrace.Span, len)
+	// Slice for wrappers.
+	wrappers := make([]*otlptrace.Span, len)
+	for i := range origs {
+		wrappers[i] = &origs[i]
+	}
+	return SpanSlice{&wrappers}
+}
+
+func newSpanSlice(orig *[]*otlptrace.Span) SpanSlice {
+	return SpanSlice{orig}
+}
+
+// Len returns the number of elements in the slice.
+func (es SpanSlice) Len() int {
+	return len(*es.orig)
+}
+
+// Get the element at the given index.
+//
+// This function is used mostly for iterating over all the values in the slice:
+// for i := 0; i < es.Len(); i++ {
+//     e := es.Get(i)
+//     ... // Do something with the element
+// }
+func (es SpanSlice) Get(ix int) Span {
+	return newSpan((*es.orig)[ix])
+}
+
+// Remove the element at the given index from the slice.
+// Elements after the removed one are shifted to fill the emptied space.
+// The length of the slice is reduced by one.
+func (es SpanSlice) Remove(ix int) {
+	(*es.orig)[ix] = (*es.orig)[len(*es.orig)-1]
+	(*es.orig)[len(*es.orig)-1] = nil
+	*es.orig = (*es.orig)[:len(*es.orig)-1]
+}
+
+// Resize the slice. This operation is equivalent with slice[from:to].
+func (es SpanSlice) Resize(from, to int) {
+	*es.orig = (*es.orig)[from:to]
+}
 
 // Span represents a single operation within a trace.
 // See Span definition in OTLP: https://github.com/open-telemetry/opentelemetry-proto/blob/master/opentelemetry/proto/trace/v1/trace.proto#L37

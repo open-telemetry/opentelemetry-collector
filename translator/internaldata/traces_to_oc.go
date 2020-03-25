@@ -35,27 +35,42 @@ var (
 )
 
 func TraceDataToOC(td data.TraceData) []consumerdata.TraceData {
-	ocTraceData := consumerdata.TraceData{
-		SourceFormat: sourceFormat,
+	resourceSpans := td.ResourceSpans()
+
+	if resourceSpans.Len() == 0 {
+		return nil
 	}
 
-	resourceSpansList := td.ResourceSpans()
+	ocResourceSpansList := make([]consumerdata.TraceData, 0, resourceSpans.Len())
 
-	ocResourceSpansList := make([]consumerdata.TraceData, 0, len(resourceSpansList))
-
-	for _, resourceSpans := range resourceSpansList {
-		ocTraceData.Node, ocTraceData.Resource = internalResourceToOC(resourceSpans.Resource())
-		ocSpans := make([]*octrace.Span, 0, td.SpanCount())
-		for _, il := range resourceSpans.InstrumentationLibrarySpans() {
-			for _, span := range il.Spans() {
-				ocSpans = append(ocSpans, spanToOC(span))
-			}
-		}
-		ocTraceData.Spans = ocSpans
-		ocResourceSpansList = append(ocResourceSpansList, ocTraceData)
+	for i := 0; i < resourceSpans.Len(); i++ {
+		ocResourceSpansList = append(ocResourceSpansList, ResourceSpansToOC(resourceSpans.Get(i)))
 	}
 
 	return ocResourceSpansList
+}
+
+func ResourceSpansToOC(rs data.ResourceSpans) consumerdata.TraceData {
+	ocTraceData := consumerdata.TraceData{
+		SourceFormat: sourceFormat,
+	}
+	ocTraceData.Node, ocTraceData.Resource = internalResourceToOC(rs.Resource())
+	ilss := rs.InstrumentationLibrarySpans()
+	if ilss.Len() == 0 {
+		return ocTraceData
+	}
+	// Approximate the number of the metrics as the number of the metrics in the first
+	// instrumentation library info.
+	ocSpans := make([]*octrace.Span, 0, ilss.Get(0).Spans().Len())
+	for i := 0; i < ilss.Len(); i++ {
+		// TODO: Handle instrumentation library name and version.
+		spans := ilss.Get(i).Spans()
+		for j := 0; j < spans.Len(); j++ {
+			ocSpans = append(ocSpans, spanToOC(spans.Get(j)))
+		}
+	}
+	ocTraceData.Spans = ocSpans
+	return ocTraceData
 }
 
 func spanToOC(span data.Span) *octrace.Span {
@@ -246,8 +261,8 @@ func eventsToOC(events data.SpanEventSlice, droppedCount uint32) *octrace.Span_T
 	}
 
 	return &octrace.Span_TimeEvents{
-		TimeEvent:                 ocEvents,
-		DroppedMessageEventsCount: int32(droppedCount),
+		TimeEvent:               ocEvents,
+		DroppedAnnotationsCount: int32(droppedCount),
 	}
 }
 
