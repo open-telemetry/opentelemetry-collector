@@ -24,9 +24,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/trace"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/exporter"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector/observability"
 	"github.com/open-telemetry/opentelemetry-collector/observability/observabilitytest"
@@ -162,7 +162,7 @@ func newPushTraceData(droppedSpans int, retError error) traceDataPusher {
 	}
 }
 
-func checkRecordedMetricsForTraceExporter(t *testing.T, te exporter.TraceExporter, wantError error, droppedSpans int) {
+func checkRecordedMetricsForTraceExporter(t *testing.T, te component.TraceExporterOld, wantError error, droppedSpans int) {
 	doneFn := observabilitytest.SetupRecordedMetricsTest()
 	defer doneFn()
 
@@ -181,7 +181,7 @@ func checkRecordedMetricsForTraceExporter(t *testing.T, te exporter.TraceExporte
 	require.Nilf(t, err, "CheckValueViewExporterDroppedSpans: Want nil Got %v", err)
 }
 
-func generateTraceTraffic(t *testing.T, te exporter.TraceExporter, numRequests int, wantError error) {
+func generateTraceTraffic(t *testing.T, te component.TraceExporterOld, numRequests int, wantError error) {
 	td := consumerdata.TraceData{Spans: make([]*tracepb.Span, 1)}
 	ctx, span := trace.StartSpan(context.Background(), fakeTraceParentSpanName, trace.WithSampler(trace.AlwaysSample()))
 	defer span.End()
@@ -190,7 +190,7 @@ func generateTraceTraffic(t *testing.T, te exporter.TraceExporter, numRequests i
 	}
 }
 
-func checkWrapSpanForTraceExporter(t *testing.T, te exporter.TraceExporter, wantError error, numSpans int64) {
+func checkWrapSpanForTraceExporter(t *testing.T, te component.TraceExporterOld, wantError error, numSpans int64) {
 	ocSpansSaver := new(testOCTraceExporter)
 	trace.RegisterExporter(ocSpansSaver)
 	defer trace.UnregisterExporter(ocSpansSaver)
@@ -349,7 +349,7 @@ func newPushTraceV2(droppedSpans int, retError error) traceV2DataPusher {
 	}
 }
 
-func checkRecordedMetricsForTraceExporterV2(t *testing.T, te exporter.TraceExporterV2, wantError error, droppedSpans int) {
+func checkRecordedMetricsForTraceExporterV2(t *testing.T, te component.TraceExporter, wantError error, droppedSpans int) {
 	doneFn := observabilitytest.SetupRecordedMetricsTest()
 	defer doneFn()
 
@@ -371,7 +371,7 @@ func checkRecordedMetricsForTraceExporterV2(t *testing.T, te exporter.TraceExpor
 	require.Nilf(t, err, "CheckValueViewExporterDroppedSpans: Want nil Got %v", err)
 }
 
-func generateTraceV2Traffic(t *testing.T, te exporter.TraceExporterV2, numRequests int, wantError error) {
+func generateTraceV2Traffic(t *testing.T, te component.TraceExporter, numRequests int, wantError error) {
 	spans := data.NewSpanSlice(1)
 	rs := data.NewResourceSpans(data.NewResource(), nil)
 	ils := data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), spans)
@@ -384,7 +384,7 @@ func generateTraceV2Traffic(t *testing.T, te exporter.TraceExporterV2, numReques
 	}
 }
 
-func checkWrapSpanForTraceExporterV2(t *testing.T, te exporter.TraceExporterV2, wantError error, numSpans int64) {
+func checkWrapSpanForTraceExporterV2(t *testing.T, te component.TraceExporter, wantError error, numSpans int64) {
 	ocSpansSaver := new(testOCTraceExporter)
 	trace.RegisterExporter(ocSpansSaver)
 	defer trace.UnregisterExporter(ocSpansSaver)

@@ -27,11 +27,8 @@ import (
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-collector/exporter"
-	"github.com/open-telemetry/opentelemetry-collector/extension"
-	"github.com/open-telemetry/opentelemetry-collector/processor"
-	"github.com/open-telemetry/opentelemetry-collector/receiver"
 )
 
 // These are errors that can be returned by Load(). Note that error codes are not part
@@ -107,16 +104,16 @@ const typeAndNameSeparator = "/"
 // can be handled by the Config.
 type Factories struct {
 	// Receivers maps receiver type names in the config to the respective factory.
-	Receivers map[string]receiver.BaseFactory
+	Receivers map[string]component.ReceiverFactoryBase
 
 	// Processors maps processor type names in the config to the respective factory.
-	Processors map[string]processor.Factory
+	Processors map[string]component.ProcessorFactoryBase
 
 	// Exporters maps exporter type names in the config to the respective factory.
-	Exporters map[string]exporter.Factory
+	Exporters map[string]component.ExporterFactoryBase
 
 	// Extensions maps extension type names in the config to the respective factory.
-	Extensions map[string]extension.Factory
+	Extensions map[string]component.ExtensionFactory
 }
 
 // Load loads a Config from Viper.
@@ -222,7 +219,7 @@ func DecodeTypeAndName(key string) (typeStr, fullName string, err error) {
 	return
 }
 
-func loadExtensions(v *viper.Viper, factories map[string]extension.Factory) (configmodels.Extensions, error) {
+func loadExtensions(v *viper.Viper, factories map[string]component.ExtensionFactory) (configmodels.Extensions, error) {
 	// Get the list of all "extensions" sub vipers from config source.
 	subViper := v.Sub(extensionsKeyName)
 
@@ -309,7 +306,7 @@ func loadService(v *viper.Viper) (configmodels.Service, error) {
 }
 
 // LoadReceiver loads a receiver config from v under the subkey receiverKey using the provided factories.
-func LoadReceiver(receiverKey string, v *viper.Viper, factories map[string]receiver.BaseFactory) (configmodels.Receiver, error) {
+func LoadReceiver(receiverKey string, v *viper.Viper, factories map[string]component.ReceiverFactoryBase) (configmodels.Receiver, error) {
 	// Decode the key into type and fullName components.
 	typeStr, fullName, err := DecodeTypeAndName(receiverKey)
 	if err != nil {
@@ -356,7 +353,7 @@ func LoadReceiver(receiverKey string, v *viper.Viper, factories map[string]recei
 	return receiverCfg, nil
 }
 
-func loadReceivers(v *viper.Viper, factories map[string]receiver.BaseFactory) (configmodels.Receivers, error) {
+func loadReceivers(v *viper.Viper, factories map[string]component.ReceiverFactoryBase) (configmodels.Receivers, error) {
 	// Get the list of all "receivers" sub vipers from config source.
 	subViper := v.Sub(receiversKeyName)
 
@@ -396,7 +393,7 @@ func loadReceivers(v *viper.Viper, factories map[string]receiver.BaseFactory) (c
 	return receivers, nil
 }
 
-func loadExporters(v *viper.Viper, factories map[string]exporter.Factory) (configmodels.Exporters, error) {
+func loadExporters(v *viper.Viper, factories map[string]component.ExporterFactoryBase) (configmodels.Exporters, error) {
 	// Get the list of all "exporters" sub vipers from config source.
 	subViper := v.Sub(exportersKeyName)
 
@@ -464,7 +461,7 @@ func loadExporters(v *viper.Viper, factories map[string]exporter.Factory) (confi
 	return exporters, nil
 }
 
-func loadProcessors(v *viper.Viper, factories map[string]processor.Factory) (configmodels.Processors, error) {
+func loadProcessors(v *viper.Viper, factories map[string]component.ProcessorFactoryBase) (configmodels.Processors, error) {
 	// Get the list of all "processors" sub vipers from config source.
 	subViper := v.Sub(processorsKeyName)
 

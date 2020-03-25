@@ -21,7 +21,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector/receiver"
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/jaegerreceiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/opencensusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/otlpreceiver"
@@ -104,7 +104,7 @@ func (or *OCDataReceiver) ProtocolName() string {
 // JaegerDataReceiver implements Jaeger format receiver.
 type JaegerDataReceiver struct {
 	DataReceiverBase
-	receiver receiver.TraceReceiver
+	receiver component.TraceReceiver
 }
 
 const DefaultJaegerPort = 14268

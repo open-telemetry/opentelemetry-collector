@@ -616,7 +616,7 @@ type sinkTraceConsumer struct {
 	traces []consumerdata.TraceData
 }
 
-var _ consumer.TraceConsumer = (*sinkTraceConsumer)(nil)
+var _ consumer.TraceConsumerOld = (*sinkTraceConsumer)(nil)
 
 func (stc *sinkTraceConsumer) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	if stc.consumeTraceError == nil {

@@ -20,7 +20,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/exporter"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 )
@@ -39,8 +38,6 @@ type traceExporter struct {
 	dataPusher       traceDataPusher
 	shutdown         Shutdown
 }
-
-var _ exporter.TraceExporter = (*traceExporter)(nil)
 
 func (te *traceExporter) Start(host component.Host) error {
 	return nil
@@ -64,7 +61,7 @@ func NewTraceExporter(
 	config configmodels.Exporter,
 	dataPusher traceDataPusher,
 	options ...ExporterOption,
-) (exporter.TraceExporter, error) {
+) (component.TraceExporterOld, error) {
 
 	if config == nil {
 		return nil, errNilConfig
@@ -115,8 +112,6 @@ type traceExporterV2 struct {
 	shutdown         Shutdown
 }
 
-var _ exporter.TraceExporterV2 = (*traceExporterV2)(nil)
-
 func (te *traceExporterV2) Start(host component.Host) error {
 	return nil
 }
@@ -135,13 +130,13 @@ func (te *traceExporterV2) Shutdown() error {
 	return te.shutdown()
 }
 
-// NewTraceExporterV2 creates a TraceExporterV2 that can record metrics and can wrap
+// NewTraceExporterV2 creates a TraceExporter that can record metrics and can wrap
 // every request with a Span.
 func NewTraceExporterV2(
 	config configmodels.Exporter,
 	dataPusher traceV2DataPusher,
 	options ...ExporterOption,
-) (exporter.TraceExporterV2, error) {
+) (component.TraceExporter, error) {
 
 	if config == nil {
 		return nil, errNilConfig

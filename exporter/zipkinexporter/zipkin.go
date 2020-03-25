@@ -29,10 +29,10 @@ import (
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumererror"
-	"github.com/open-telemetry/opentelemetry-collector/exporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
 	spandatatranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace/spandata"
 	"github.com/open-telemetry/opentelemetry-collector/translator/trace/zipkin"
@@ -64,7 +64,7 @@ const (
 )
 
 // NewTraceExporter creates an zipkin trace exporter.
-func NewTraceExporter(logger *zap.Logger, config configmodels.Exporter) (exporter.TraceExporter, error) {
+func NewTraceExporter(logger *zap.Logger, config configmodels.Exporter) (component.TraceExporterOld, error) {
 	ze, err := createZipkinExporter(logger, config)
 	if err != nil {
 		return nil, err

@@ -1,10 +1,10 @@
-// Copyright 2019, OpenTelemetry Authors
+// Copyright  OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package receiver
+package component
 
 import (
 	"context"
@@ -25,76 +25,76 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 )
 
-type TestFactory struct {
+type TestReceiverFactory struct {
 	name string
 }
 
 // Type gets the type of the Receiver config created by this factory.
-func (f *TestFactory) Type() string {
+func (f *TestReceiverFactory) Type() string {
 	return f.name
 }
 
 // CustomUnmarshaler returns nil because we don't need custom unmarshaling for this factory.
-func (f *TestFactory) CustomUnmarshaler() CustomUnmarshaler {
+func (f *TestReceiverFactory) CustomUnmarshaler() CustomUnmarshaler {
 	return nil
 }
 
 // CreateDefaultConfig creates the default configuration for the Receiver.
-func (f *TestFactory) CreateDefaultConfig() configmodels.Receiver {
+func (f *TestReceiverFactory) CreateDefaultConfig() configmodels.Receiver {
 	return nil
 }
 
 // CreateTraceReceiver creates a trace receiver based on this config.
-func (f *TestFactory) CreateTraceReceiver(
+func (f *TestReceiverFactory) CreateTraceReceiver(
 	ctx context.Context,
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
-	nextConsumer consumer.TraceConsumer,
+	nextConsumer consumer.TraceConsumerOld,
 ) (TraceReceiver, error) {
 	// Not used for this test, just return nil
 	return nil, nil
 }
 
 // CreateMetricsReceiver creates a metrics receiver based on this config.
-func (f *TestFactory) CreateMetricsReceiver(
+func (f *TestReceiverFactory) CreateMetricsReceiver(
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
-	consumer consumer.MetricsConsumer,
+	consumer consumer.MetricsConsumerOld,
 ) (MetricsReceiver, error) {
 	// Not used for this test, just return nil
 	return nil, nil
 }
 
-func TestFactoriesBuilder(t *testing.T) {
+func TestBuildReceivers(t *testing.T) {
 	type testCase struct {
-		in  []BaseFactory
-		out map[string]BaseFactory
+		in  []ReceiverFactoryBase
+		out map[string]ReceiverFactoryBase
 		err bool
 	}
 
 	testCases := []testCase{
 		{
-			in: []BaseFactory{
-				&TestFactory{"e1"},
-				&TestFactory{"e2"},
+			in: []ReceiverFactoryBase{
+				&TestReceiverFactory{"e1"},
+				&TestReceiverFactory{"e2"},
 			},
-			out: map[string]BaseFactory{
-				"e1": &TestFactory{"e1"},
-				"e2": &TestFactory{"e2"},
+			out: map[string]ReceiverFactoryBase{
+				"e1": &TestReceiverFactory{"e1"},
+				"e2": &TestReceiverFactory{"e2"},
 			},
 			err: false,
 		},
 		{
-			in: []BaseFactory{
-				&TestFactory{"e1"},
-				&TestFactory{"e1"},
+			in: []ReceiverFactoryBase{
+				&TestReceiverFactory{"e1"},
+				&TestReceiverFactory{"e1"},
 			},
 			err: true,
 		},
 	}
 
 	for _, c := range testCases {
-		out, err := Build(c.in...)
+		out, err := MakeReceiverFactoryMap(c.in...)
 		if c.err {
 			assert.NotNil(t, err)
 			continue

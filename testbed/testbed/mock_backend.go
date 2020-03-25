@@ -22,7 +22,6 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 )
 
@@ -61,8 +60,6 @@ func NewMockBackend(logFilePath string, receiver DataReceiver) *MockBackend {
 	mb.mc.backend = mb
 	return mb
 }
-
-var _ component.Host = (*MockBackend)(nil)
 
 func (mb *MockBackend) Context() context.Context {
 	return context.Background()

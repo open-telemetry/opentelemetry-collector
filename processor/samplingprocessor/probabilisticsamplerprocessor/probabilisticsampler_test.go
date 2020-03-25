@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
@@ -36,9 +37,9 @@ import (
 func TestNewTraceProcessor(t *testing.T) {
 	tests := []struct {
 		name         string
-		nextConsumer consumer.TraceConsumer
+		nextConsumer consumer.TraceConsumerOld
 		cfg          Config
-		want         processor.TraceProcessor
+		want         component.TraceProcessorOld
 		wantErr      bool
 	}{
 		{

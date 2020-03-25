@@ -28,7 +28,7 @@ import (
 )
 
 type attributesProcessor struct {
-	nextConsumer consumer.TraceConsumer
+	nextConsumer consumer.TraceConsumerOld
 	config       attributesConfig
 }
 
@@ -55,7 +55,7 @@ type attributeAction struct {
 // newTraceProcessor returns a processor that modifies attributes of a span.
 // To construct the attributes processors, the use of the factory methods are required
 // in order to validate the inputs.
-func newTraceProcessor(nextConsumer consumer.TraceConsumer, config attributesConfig) (processor.TraceProcessor, error) {
+func newTraceProcessor(nextConsumer consumer.TraceConsumerOld, config attributesConfig) (component.TraceProcessorOld, error) {
 	if nextConsumer == nil {
 		return nil, oterr.ErrNilNextConsumer
 	}
@@ -112,8 +112,8 @@ func (a *attributesProcessor) ConsumeTraceData(ctx context.Context, td consumerd
 	return a.nextConsumer.ConsumeTraceData(ctx, td)
 }
 
-func (a *attributesProcessor) GetCapabilities() processor.Capabilities {
-	return processor.Capabilities{MutatesConsumedData: true}
+func (a *attributesProcessor) GetCapabilities() component.ProcessorCapabilities {
+	return component.ProcessorCapabilities{MutatesConsumedData: true}
 }
 
 // Start is invoked during service startup.

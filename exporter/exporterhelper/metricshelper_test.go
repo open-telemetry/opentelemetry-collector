@@ -23,9 +23,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/trace"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/exporter"
 	"github.com/open-telemetry/opentelemetry-collector/observability"
 	"github.com/open-telemetry/opentelemetry-collector/observability/observabilitytest"
 	"github.com/open-telemetry/opentelemetry-collector/obsreport"
@@ -153,7 +153,7 @@ func newPushMetricsData(droppedTimeSeries int, retError error) PushMetricsData {
 	}
 }
 
-func checkRecordedMetricsForMetricsExporter(t *testing.T, me exporter.MetricsExporter, wantError error, droppedTimeSeries int) {
+func checkRecordedMetricsForMetricsExporter(t *testing.T, me component.MetricsExporterOld, wantError error, droppedTimeSeries int) {
 	doneFn := observabilitytest.SetupRecordedMetricsTest()
 	defer doneFn()
 	metrics := []*metricspb.Metric{
@@ -178,7 +178,7 @@ func checkRecordedMetricsForMetricsExporter(t *testing.T, me exporter.MetricsExp
 	require.Nilf(t, err, "CheckValueViewExporterTimeSeries: Want nil Got %v", err)
 }
 
-func generateMetricsTraffic(t *testing.T, me exporter.MetricsExporter, numRequests int, wantError error) {
+func generateMetricsTraffic(t *testing.T, me component.MetricsExporterOld, numRequests int, wantError error) {
 	md := consumerdata.MetricsData{Metrics: []*metricspb.Metric{
 		{
 			// Create a empty timeseries with one point.
@@ -196,7 +196,7 @@ func generateMetricsTraffic(t *testing.T, me exporter.MetricsExporter, numReques
 	}
 }
 
-func checkWrapSpanForMetricsExporter(t *testing.T, me exporter.MetricsExporter, wantError error, numMetricPoints int64) {
+func checkWrapSpanForMetricsExporter(t *testing.T, me component.MetricsExporterOld, wantError error, numMetricPoints int64) {
 	ocSpansSaver := new(testOCTraceExporter)
 	trace.RegisterExporter(ocSpansSaver)
 	defer trace.UnregisterExporter(ocSpansSaver)

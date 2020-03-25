@@ -1,10 +1,10 @@
-// Copyright 2019, OpenTelemetry Authors
+// Copyright  OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,18 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package extension defines service extensions that can be added to the OpenTelemetry
-// service but that not interact if the data pipelines, but provide some functionality
-// to the service, examples: health check endpoint, z-pages, etc.
-package extension
+package component
 
-import "github.com/open-telemetry/opentelemetry-collector/component"
+import (
+	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+)
 
 // ServiceExtension is the interface for objects hosted by the OpenTelemetry Collector that
 // don't participate directly on data pipelines but provide some functionality
 // to the service, examples: health check endpoint, z-pages, etc.
 type ServiceExtension interface {
-	component.Component
+	Component
 }
 
 // PipelineWatcher is an extra interface for ServiceExtension hosted by the OpenTelemetry
@@ -41,4 +42,21 @@ type PipelineWatcher interface {
 	// This is sent before receivers are stopped, so the ServiceExtension can take any
 	// appropriate action before that happens.
 	NotReady() error
+}
+
+// ExtensionFactory is a factory interface for extensions to the service.
+type ExtensionFactory interface {
+	Factory
+
+	// CreateDefaultConfig creates the default configuration for the Extension.
+	// This method can be called multiple times depending on the pipeline
+	// configuration and should not cause side-effects that prevent the creation
+	// of multiple instances of the Extension.
+	// The object returned by this method needs to pass the checks implemented by
+	// 'configcheck.ValidateConfig'. It is recommended to have such check in the
+	// tests of any implementation of the Factory interface.
+	CreateDefaultConfig() configmodels.Extension
+
+	// CreateExtension creates a service extension based on the given config.
+	CreateExtension(logger *zap.Logger, cfg configmodels.Extension) (ServiceExtension, error)
 }

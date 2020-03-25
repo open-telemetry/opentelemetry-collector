@@ -33,7 +33,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/observability"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
-	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/opencensusreceiver/ocmetrics"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/opencensusreceiver/octrace"
 )
@@ -53,8 +52,8 @@ type Receiver struct {
 	traceReceiver   *octrace.Receiver
 	metricsReceiver *ocmetrics.Receiver
 
-	traceConsumer   consumer.TraceConsumer
-	metricsConsumer consumer.MetricsConsumer
+	traceConsumer   consumer.TraceConsumerOld
+	metricsConsumer consumer.MetricsConsumerOld
 
 	stopOnce                 sync.Once
 	startServerOnce          sync.Once
@@ -64,9 +63,6 @@ type Receiver struct {
 	instanceName string
 }
 
-var _ receiver.MetricsReceiver = (*Receiver)(nil)
-var _ receiver.TraceReceiver = (*Receiver)(nil)
-
 // New just creates the OpenCensus receiver services. It is the caller's
 // responsibility to invoke the respective Start*Reception methods as well
 // as the various Stop*Reception methods to end it.
@@ -74,8 +70,8 @@ func New(
 	instanceName string,
 	transport string,
 	addr string,
-	tc consumer.TraceConsumer,
-	mc consumer.MetricsConsumer,
+	tc consumer.TraceConsumerOld,
+	mc consumer.MetricsConsumerOld,
 	opts ...Option,
 ) (*Receiver, error) {
 	// TODO: (@odeke-em) use options to enable address binding changes.

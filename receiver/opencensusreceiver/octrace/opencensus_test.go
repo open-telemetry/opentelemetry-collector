@@ -447,7 +447,7 @@ func newSpanAppender() *spanAppender {
 	return &spanAppender{spansPerNode: make(map[*commonpb.Node][]*tracepb.Span)}
 }
 
-var _ consumer.TraceConsumer = (*spanAppender)(nil)
+var _ consumer.TraceConsumerOld = (*spanAppender)(nil)
 
 func (sa *spanAppender) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	sa.Lock()
@@ -457,7 +457,7 @@ func (sa *spanAppender) ConsumeTraceData(ctx context.Context, td consumerdata.Tr
 	return nil
 }
 
-func ocReceiverOnGRPCServer(t *testing.T, sr consumer.TraceConsumer, opts ...Option) (oci *Receiver, port int, done func()) {
+func ocReceiverOnGRPCServer(t *testing.T, sr consumer.TraceConsumerOld, opts ...Option) (oci *Receiver, port int, done func()) {
 	ln, err := net.Listen("tcp", "localhost:0")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 

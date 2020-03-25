@@ -20,8 +20,8 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-collector/extension"
 )
 
 const (
@@ -29,11 +29,9 @@ const (
 	typeStr = "pprof"
 )
 
-// Factory is the factory for the extension.
+// ExtensionFactory is the factory for the extension.
 type Factory struct {
 }
-
-var _ (extension.Factory) = (*Factory)(nil)
 
 // Type gets the type of the config created by this factory.
 func (f *Factory) Type() string {
@@ -55,7 +53,7 @@ func (f *Factory) CreateDefaultConfig() configmodels.Extension {
 func (f *Factory) CreateExtension(
 	logger *zap.Logger,
 	cfg configmodels.Extension,
-) (extension.ServiceExtension, error) {
+) (component.ServiceExtension, error) {
 	config := cfg.(*Config)
 	if config.Endpoint == "" {
 		return nil, errors.New("\"endpoint\" is required when using the \"pprof\" extension")

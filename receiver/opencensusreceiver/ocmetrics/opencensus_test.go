@@ -320,7 +320,7 @@ func newMetricAppender() *metricAppender {
 	return &metricAppender{metricsPerNode: make(map[*commonpb.Node][]*metricspb.Metric)}
 }
 
-var _ consumer.MetricsConsumer = (*metricAppender)(nil)
+var _ consumer.MetricsConsumerOld = (*metricAppender)(nil)
 
 func (sa *metricAppender) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
 	sa.Lock()
@@ -331,7 +331,7 @@ func (sa *metricAppender) ConsumeMetricsData(ctx context.Context, md consumerdat
 	return nil
 }
 
-func ocReceiverOnGRPCServer(t *testing.T, sr consumer.MetricsConsumer) (oci *Receiver, port int, done func()) {
+func ocReceiverOnGRPCServer(t *testing.T, sr consumer.MetricsConsumerOld) (oci *Receiver, port int, done func()) {
 	ln, err := net.Listen("tcp", "localhost:")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 

@@ -38,12 +38,12 @@ const (
 
 // Receiver is the type used to handle spans from OpenCensus exporters.
 type Receiver struct {
-	nextConsumer consumer.TraceConsumer
+	nextConsumer consumer.TraceConsumerOld
 	instanceName string
 }
 
 // New creates a new opencensus.Receiver reference.
-func New(instanceName string, nextConsumer consumer.TraceConsumer, opts ...Option) (*Receiver, error) {
+func New(instanceName string, nextConsumer consumer.TraceConsumerOld, opts ...Option) (*Receiver, error) {
 	if nextConsumer == nil {
 		return nil, oterr.ErrNilNextConsumer
 	}

@@ -23,9 +23,9 @@ import (
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/loggingexporter"
-	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/opencensusreceiver"
 )
 
@@ -44,7 +44,7 @@ func Example_endToEnd() {
 	}
 
 	// The agent will combine all trace receivers like this.
-	trl := []receiver.TraceReceiver{tr}
+	trl := []component.TraceReceiver{tr}
 
 	// Once we have the span receiver which will connect to the
 	// various exporter pipeline i.e. *tracepb.Span->OpenCensus.SpanData

@@ -29,7 +29,7 @@ import (
 )
 
 func TestTraceProcessorMultiplexing(t *testing.T) {
-	processors := make([]consumer.TraceConsumer, 3)
+	processors := make([]consumer.TraceConsumerOld, 3)
 	for i := range processors {
 		processors[i] = &mockTraceConsumer{}
 	}
@@ -60,7 +60,7 @@ func TestTraceProcessorMultiplexing(t *testing.T) {
 }
 
 func TestTraceProcessorWhenOneErrors(t *testing.T) {
-	processors := make([]consumer.TraceConsumer, 3)
+	processors := make([]consumer.TraceConsumerOld, 3)
 	for i := range processors {
 		processors[i] = &mockTraceConsumer{}
 	}
@@ -93,7 +93,7 @@ func TestTraceProcessorWhenOneErrors(t *testing.T) {
 }
 
 func TestMetricsProcessorMultiplexing(t *testing.T) {
-	processors := make([]consumer.MetricsConsumer, 3)
+	processors := make([]consumer.MetricsConsumerOld, 3)
 	for i := range processors {
 		processors[i] = &mockMetricsConsumer{}
 	}
@@ -121,7 +121,7 @@ func TestMetricsProcessorMultiplexing(t *testing.T) {
 }
 
 func TestMetricsProcessorWhenOneErrors(t *testing.T) {
-	processors := make([]consumer.MetricsConsumer, 3)
+	processors := make([]consumer.MetricsConsumerOld, 3)
 	for i := range processors {
 		processors[i] = &mockMetricsConsumer{}
 	}
@@ -159,7 +159,7 @@ type mockTraceConsumer struct {
 	MustFail   bool
 }
 
-var _ consumer.TraceConsumer = &mockTraceConsumer{}
+var _ consumer.TraceConsumerOld = &mockTraceConsumer{}
 
 func (p *mockTraceConsumer) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	p.Traces = append(p.Traces, &td)
@@ -177,7 +177,7 @@ type mockMetricsConsumer struct {
 	MustFail     bool
 }
 
-var _ consumer.MetricsConsumer = &mockMetricsConsumer{}
+var _ consumer.MetricsConsumerOld = &mockMetricsConsumer{}
 
 func (p *mockMetricsConsumer) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
 	p.Metrics = append(p.Metrics, &md)

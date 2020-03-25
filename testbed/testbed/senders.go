@@ -21,9 +21,9 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configgrpc"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/exporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/jaeger/jaegerthrifthttpexporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/opencensusexporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/otlpexporter"
@@ -68,7 +68,7 @@ type MetricDataSender interface {
 
 // DataSenderOverTraceExporter partially implements TraceDataSender via a TraceExporter.
 type DataSenderOverTraceExporter struct {
-	exporter exporter.TraceExporter
+	exporter component.TraceExporterOld
 	Port     int
 }
 
@@ -197,7 +197,7 @@ func (ote *OCTraceDataSender) ProtocolName() string {
 
 // OCMetricsDataSender implements MetricDataSender for OpenCensus metrics protocol.
 type OCMetricsDataSender struct {
-	exporter exporter.MetricsExporter
+	exporter component.MetricsExporterOld
 	port     int
 }
 
@@ -295,7 +295,7 @@ func (ote *OTLPTraceDataSender) ProtocolName() string {
 
 // OTLPMetricsDataSender implements MetricDataSender for OpenCensus metrics protocol.
 type OTLPMetricsDataSender struct {
-	exporter exporter.MetricsExporter
+	exporter component.MetricsExporterOld
 	port     int
 }
 

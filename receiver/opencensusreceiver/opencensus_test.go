@@ -739,7 +739,7 @@ type sinkTraceConsumer struct {
 	traces []consumerdata.TraceData
 }
 
-var _ consumer.TraceConsumer = (*sinkTraceConsumer)(nil)
+var _ consumer.TraceConsumerOld = (*sinkTraceConsumer)(nil)
 
 func (stc *sinkTraceConsumer) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	if stc.consumeTraceError == nil {
@@ -764,7 +764,7 @@ type sinkMetricsConsumer struct {
 	metrics []consumerdata.MetricsData
 }
 
-var _ consumer.MetricsConsumer = (*sinkMetricsConsumer)(nil)
+var _ consumer.MetricsConsumerOld = (*sinkMetricsConsumer)(nil)
 
 func (smc *sinkMetricsConsumer) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
 	if smc.consumeMetricsError == nil {

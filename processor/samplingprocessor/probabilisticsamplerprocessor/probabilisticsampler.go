@@ -24,7 +24,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
-	"github.com/open-telemetry/opentelemetry-collector/processor"
 )
 
 // samplingPriority has the semantic result of parsing the "sampling.priority"
@@ -52,16 +51,14 @@ const (
 )
 
 type tracesamplerprocessor struct {
-	nextConsumer       consumer.TraceConsumer
+	nextConsumer       consumer.TraceConsumerOld
 	scaledSamplingRate uint32
 	hashSeed           uint32
 }
 
-var _ processor.TraceProcessor = (*tracesamplerprocessor)(nil)
-
 // NewTraceProcessor returns a processor.TraceProcessor that will perform head sampling according to the given
 // configuration.
-func NewTraceProcessor(nextConsumer consumer.TraceConsumer, cfg Config) (processor.TraceProcessor, error) {
+func NewTraceProcessor(nextConsumer consumer.TraceConsumerOld, cfg Config) (component.TraceProcessorOld, error) {
 	if nextConsumer == nil {
 		return nil, oterr.ErrNilNextConsumer
 	}
@@ -109,8 +106,8 @@ func (tsp *tracesamplerprocessor) ConsumeTraceData(ctx context.Context, td consu
 	return tsp.nextConsumer.ConsumeTraceData(ctx, sampledTraceData)
 }
 
-func (tsp *tracesamplerprocessor) GetCapabilities() processor.Capabilities {
-	return processor.Capabilities{MutatesConsumedData: false}
+func (tsp *tracesamplerprocessor) GetCapabilities() component.ProcessorCapabilities {
+	return component.ProcessorCapabilities{MutatesConsumedData: false}
 }
 
 // Start is invoked during service startup.

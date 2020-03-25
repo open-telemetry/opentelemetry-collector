@@ -27,7 +27,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
-	"github.com/open-telemetry/opentelemetry-collector/processor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/samplingprocessor/tailsamplingprocessor/idbatcher"
 	"github.com/open-telemetry/opentelemetry-collector/processor/samplingprocessor/tailsamplingprocessor/sampling"
 	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
@@ -311,16 +310,14 @@ type mockSpanProcessor struct {
 	TotalSpans int
 }
 
-var _ processor.TraceProcessor = &mockSpanProcessor{}
-
 func (p *mockSpanProcessor) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	batchSize := len(td.Spans)
 	p.TotalSpans += batchSize
 	return nil
 }
 
-func (p *mockSpanProcessor) GetCapabilities() processor.Capabilities {
-	return processor.Capabilities{MutatesConsumedData: false}
+func (p *mockSpanProcessor) GetCapabilities() component.ProcessorCapabilities {
+	return component.ProcessorCapabilities{MutatesConsumedData: false}
 }
 
 // Start is invoked during service startup.

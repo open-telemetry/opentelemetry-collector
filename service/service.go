@@ -34,7 +34,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-collector/extension"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	"github.com/open-telemetry/opentelemetry-collector/service/builder"
 )
@@ -52,7 +51,7 @@ type Application struct {
 	factories config.Factories
 	config    *configmodels.Config
 
-	extensions []extension.ServiceExtension
+	extensions []component.ServiceExtension
 
 	// stopTestChan is used to terminate the application in end to end tests.
 	stopTestChan chan struct{}
@@ -83,8 +82,6 @@ type ApplicationStartInfo struct {
 	// Git hash of the source code.
 	GitHash string
 }
-
-var _ component.Host = (*Application)(nil)
 
 // Context returns a context provided by the host to be used on the receiver
 // operations.
@@ -331,7 +328,7 @@ func (app *Application) setupPipelines() error {
 
 func (app *Application) notifyPipelineReady() error {
 	for i, ext := range app.extensions {
-		if pw, ok := ext.(extension.PipelineWatcher); ok {
+		if pw, ok := ext.(component.PipelineWatcher); ok {
 			if err := pw.Ready(); err != nil {
 				return errors.Wrapf(
 					err,
@@ -350,7 +347,7 @@ func (app *Application) notifyPipelineNotReady() error {
 	var errs []error
 	for i := len(app.extensions) - 1; i >= 0; i-- {
 		ext := app.extensions[i]
-		if pw, ok := ext.(extension.PipelineWatcher); ok {
+		if pw, ok := ext.(component.PipelineWatcher); ok {
 			if err := pw.NotReady(); err != nil {
 				errs = append(errs, errors.Wrapf(err,
 					"error notifying extension %q that the pipeline was shutdown",

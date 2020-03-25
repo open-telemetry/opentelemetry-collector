@@ -36,7 +36,7 @@ import (
 
 // VMMetricsCollector is a struct that collects and reports VM and process metrics (cpu, mem, etc).
 type VMMetricsCollector struct {
-	consumer consumer.MetricsConsumer
+	consumer consumer.MetricsConsumerOld
 
 	startTime time.Time
 
@@ -58,7 +58,7 @@ var rsc *resourcepb.Resource
 var resourceDetectionSync sync.Once
 
 // NewVMMetricsCollector creates a new set of VM and Process Metrics (mem, cpu).
-func NewVMMetricsCollector(si time.Duration, mountPoint, processMountPoint, prefix string, consumer consumer.MetricsConsumer) (*VMMetricsCollector, error) {
+func NewVMMetricsCollector(si time.Duration, mountPoint, processMountPoint, prefix string, consumer consumer.MetricsConsumerOld) (*VMMetricsCollector, error) {
 	if mountPoint == "" {
 		mountPoint = defaultMountPoint
 	}

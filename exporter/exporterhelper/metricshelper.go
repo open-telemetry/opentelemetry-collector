@@ -20,7 +20,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/exporter"
 	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 )
 
@@ -33,8 +32,6 @@ type metricsExporter struct {
 	pushMetricsData  PushMetricsData
 	shutdown         Shutdown
 }
-
-var _ (exporter.MetricsExporter) = (*metricsExporter)(nil)
 
 func (me *metricsExporter) Start(host component.Host) error {
 	return nil
@@ -54,7 +51,7 @@ func (me *metricsExporter) Shutdown() error {
 // NewMetricsExporter creates an MetricsExporter that can record metrics and can wrap every request with a Span.
 // If no options are passed it just adds the exporter format as a tag in the Context.
 // TODO: Add support for retries.
-func NewMetricsExporter(config configmodels.Exporter, pushMetricsData PushMetricsData, options ...ExporterOption) (exporter.MetricsExporter, error) {
+func NewMetricsExporter(config configmodels.Exporter, pushMetricsData PushMetricsData, options ...ExporterOption) (component.MetricsExporterOld, error) {
 	if config == nil {
 		return nil, errNilConfig
 	}

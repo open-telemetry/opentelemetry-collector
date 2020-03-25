@@ -19,10 +19,10 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/processor"
 )
 
 const (
@@ -58,8 +58,8 @@ func (f *Factory) CreateDefaultConfig() configmodels.Processor {
 // CreateTraceProcessor creates a trace processor based on this config.
 func (f *Factory) CreateTraceProcessor(
 	logger *zap.Logger,
-	nextConsumer consumer.TraceConsumer,
-	cfg configmodels.Processor) (processor.TraceProcessor, error) {
+	nextConsumer consumer.TraceConsumerOld,
+	cfg configmodels.Processor) (component.TraceProcessorOld, error) {
 
 	// 'from_attributes' or 'to_attributes' under 'name' has to be set for the span
 	// processor to be valid. If not set and not enforced, the processor would do no work.
@@ -75,8 +75,8 @@ func (f *Factory) CreateTraceProcessor(
 // CreateMetricsProcessor creates a metric processor based on this config.
 func (f *Factory) CreateMetricsProcessor(
 	logger *zap.Logger,
-	nextConsumer consumer.MetricsConsumer,
-	cfg configmodels.Processor) (processor.MetricsProcessor, error) {
+	nextConsumer consumer.MetricsConsumerOld,
+	cfg configmodels.Processor) (component.MetricsProcessorOld, error) {
 	// Span Processor does not support Metrics.
 	return nil, configerror.ErrDataTypeIsNotSupported
 }

@@ -31,7 +31,7 @@ func NewMetricAppender() *MetricAppender {
 	return &MetricAppender{}
 }
 
-var _ consumer.MetricsConsumer = (*MetricAppender)(nil)
+var _ consumer.MetricsConsumerOld = (*MetricAppender)(nil)
 
 func (ma *MetricAppender) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
 	ma.Lock()

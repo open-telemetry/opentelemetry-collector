@@ -25,11 +25,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-collector/internal/processor/span"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
-	"github.com/open-telemetry/opentelemetry-collector/processor"
 )
 
 func TestNewTraceProcessor(t *testing.T) {
@@ -119,7 +119,7 @@ type testCase struct {
 }
 
 // runIndividualTestCase is the common logic of passing trace data through a configured attributes processor.
-func runIndividualTestCase(t *testing.T, tt testCase, tp processor.TraceProcessor) {
+func runIndividualTestCase(t *testing.T, tt testCase, tp component.TraceProcessorOld) {
 	t.Run(tt.inputName, func(t *testing.T) {
 		traceData := consumerdata.TraceData{
 			Node: &commonpb.Node{

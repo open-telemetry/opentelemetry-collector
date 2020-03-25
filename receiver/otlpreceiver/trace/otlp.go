@@ -35,11 +35,11 @@ const (
 // Receiver is the type used to handle spans from OpenTelemetry exporters.
 type Receiver struct {
 	instanceName string
-	nextConsumer consumer.TraceConsumer
+	nextConsumer consumer.TraceConsumerOld
 }
 
 // New creates a new Receiver reference.
-func New(instanceName string, nextConsumer consumer.TraceConsumer) (*Receiver, error) {
+func New(instanceName string, nextConsumer consumer.TraceConsumerOld) (*Receiver, error) {
 	if nextConsumer == nil {
 		return nil, oterr.ErrNilNextConsumer
 	}
