@@ -24,92 +24,34 @@ import (
 // This is the newer version of consumerdata.TraceData, but uses more efficient
 // in-memory representation.
 type TraceData struct {
-	resourceSpans []*ResourceSpans
+	orig *[]*otlptrace.ResourceSpans
 }
 
-func NewTraceData(resourceSpans []*ResourceSpans) TraceData {
-	return TraceData{resourceSpans}
+// NewTraceData creates a new TraceData.
+func NewTraceData() TraceData {
+	orig := []*otlptrace.ResourceSpans(nil)
+	return TraceData{&orig}
 }
 
 // SpanCount calculates the total number of spans.
 func (td TraceData) SpanCount() int {
 	spanCount := 0
-	for _, rs := range td.resourceSpans {
-		for _, ils := range rs.ils {
-			spanCount += len(ils.spans)
+	rss := td.ResourceSpans()
+	for i := 0; i < rss.Len(); i++ {
+		ils := rss.Get(i).InstrumentationLibrarySpans()
+		for j := 0; j < ils.Len(); j++ {
+			spanCount += ils.Get(j).Spans().Len()
 		}
 	}
 	return spanCount
 }
 
-func (td TraceData) ResourceSpans() []*ResourceSpans {
-	return td.resourceSpans
+func (td TraceData) ResourceSpans() ResourceSpansSlice {
+	return newResourceSpansSlice(td.orig)
 }
 
-// A collection of spans from a Resource.
-//
-// Must use NewResourceSpans functions to create new instances.
-// Important: zero-initialized instance is not valid for use.
-type ResourceSpans struct {
-	// The resource for the spans in this message.
-	// If this field is not set then no resource info is known.
-	resource Resource
-
-	// A list of Spans that originate from a resource.
-	ils []*InstrumentationLibrarySpans
-}
-
-func NewResourceSpans(resource Resource, ils []*InstrumentationLibrarySpans) *ResourceSpans {
-	return &ResourceSpans{resource, ils}
-}
-
-func (m *ResourceSpans) Resource() Resource {
-	return m.resource
-}
-
-func (m *ResourceSpans) SetResource(r Resource) {
-	m.resource = r
-}
-
-func (m *ResourceSpans) InstrumentationLibrarySpans() []*InstrumentationLibrarySpans {
-	return m.ils
-}
-
-func (m *ResourceSpans) SetInstrumentationLibrarySpans(s []*InstrumentationLibrarySpans) {
-	m.ils = s
-}
-
-// InstrumentationLibrarySpans represents a collection of spans from a InstrumentationLibrary.
-//
-// Must use NewInstrumentationLibrarySpans functions to create new instances.
-// Important: zero-initialized instance is not valid for use.
-type InstrumentationLibrarySpans struct {
-	// The InstrumentationLibrary for the spans in this message.
-	// If this field is not set then no resource info is known.
-	instrumentationLibrary InstrumentationLibrary
-
-	// A list of Spans that originate from a resource.
-	spans []Span
-}
-
-func NewInstrumentationLibrarySpans(il InstrumentationLibrary, spans []Span) *InstrumentationLibrarySpans {
-	return &InstrumentationLibrarySpans{il, spans}
-}
-
-func (ils *InstrumentationLibrarySpans) InstrumentationLibrary() InstrumentationLibrary {
-	return ils.instrumentationLibrary
-}
-
-func (ils *InstrumentationLibrarySpans) SetInstrumentationLibrary(il InstrumentationLibrary) {
-	ils.instrumentationLibrary = il
-}
-
-func (ils *InstrumentationLibrarySpans) Spans() []Span {
-	return ils.spans
-}
-
-func (ils *InstrumentationLibrarySpans) SetSpans(s []Span) {
-	ils.spans = s
+func (td TraceData) SetResourceSpans(v ResourceSpansSlice) {
+	*td.orig = *v.orig
 }
 
 type TraceID []byte
@@ -148,17 +90,3 @@ const (
 // https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/api-tracing.md#statuscanonicalcode
 // and is numerically equal to Standard GRPC codes https://github.com/grpc/grpc/blob/master/doc/statuscodes.md
 type StatusCode otlptrace.Status_StatusCode
-
-// NewSpanSlice creates a slice of pointers to Spans that are correctly initialized.
-func NewSpanSlice(len int) []Span {
-	// Slice for underlying data.
-	origs := make([]otlptrace.Span, len)
-
-	// Slice for wrappers.
-	wrappers := make([]Span, len)
-
-	for i := range origs {
-		wrappers[i].orig = &origs[i]
-	}
-	return wrappers
-}

@@ -16,7 +16,6 @@ package internaldata
 
 import (
 	"testing"
-	"time"
 
 	occommon "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
@@ -26,9 +25,8 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/internal"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
-	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
+	"github.com/open-telemetry/opentelemetry-collector/internal/data/testdata"
 	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 )
 
@@ -179,118 +177,86 @@ func TestSpanKindToOCAttribute(t *testing.T) {
 }
 
 func TestInternalToOC(t *testing.T) {
-	timestampP, err := ptypes.TimestampProto(time.Date(2020, 3, 9, 20, 26, 0, 0, time.UTC))
+	ocNode := &occommon.Node{}
+	ocResource1 := &ocresource.Resource{Labels: map[string]string{"resource-attr": "resource-attr-val-1"}}
+	ocResource2 := &ocresource.Resource{Labels: map[string]string{"resource-attr": "resource-attr-val-2"}}
+
+	startTime, err := ptypes.TimestampProto(testdata.TestStartTime)
+	assert.NoError(t, err)
+	eventTime, err := ptypes.TimestampProto(testdata.TestEventTime)
+	assert.NoError(t, err)
+	endTime, err := ptypes.TimestampProto(testdata.TestEndTime)
 	assert.NoError(t, err)
 
-	resource := data.NewResource()
-	resource.SetAttributes(data.NewAttributeMap(map[string]data.AttributeValue{"label1": data.NewAttributeValueString("value1")}))
-
-	span1 := data.NewSpan()
-	span1.SetName("operationB")
-	span1.SetStartTime(internal.TimestampToUnixNano(timestampP))
-	span1.SetEndTime(internal.TimestampToUnixNano(timestampP))
-	span1.SetEvents(data.NewSpanEventSlice(1))
-	se1 := span1.Events().Get(0)
-	se1.SetTimestamp(internal.TimestampToUnixNano(timestampP))
-	se1.SetName("event1")
-	se1.SetAttributes(data.NewAttributeMap(
-		data.AttributesMap{
-			"eventattr1": data.NewAttributeValueString("eventattrval1"),
-		}))
-	se1.SetDroppedAttributesCount(4)
-	span1.SetDroppedEventsCount(3)
-	span1.Status().SetCode(data.StatusCode(1))
-	span1.Status().SetMessage("status-cancelled")
-
-	span2 := data.NewSpan()
-	span2.SetName("operationC")
-	span2.SetStartTime(internal.TimestampToUnixNano(timestampP))
-	span2.SetEndTime(internal.TimestampToUnixNano(timestampP))
-	span2.SetLinks(data.NewSpanLinkSlice(1))
-	span2.SetDroppedLinksCount(1)
-	span2.SetEvents(data.NewSpanEventSlice(1))
-	se2 := span2.Events().Get(0)
-	se2.SetTimestamp(internal.TimestampToUnixNano(timestampP))
-	se2.SetName("")
-	se2.SetAttributes(data.NewAttributeMap(
-		data.AttributesMap{
-			conventions.OCTimeEventMessageEventType:  data.NewAttributeValueString(octrace.Span_TimeEvent_MessageEvent_SENT.String()),
-			conventions.OCTimeEventMessageEventID:    data.NewAttributeValueInt(123),
-			conventions.OCTimeEventMessageEventUSize: data.NewAttributeValueInt(345),
-			conventions.OCTimeEventMessageEventCSize: data.NewAttributeValueInt(234),
-		}))
-	se2.SetDroppedAttributesCount(0)
-
-	span3 := data.NewSpan()
-	span3.SetName("operationD")
-	span3.SetStartTime(internal.TimestampToUnixNano(timestampP))
-	span3.SetEndTime(internal.TimestampToUnixNano(timestampP))
-	span3ResourceType := "resource2"
-	span3Resource := data.NewResource()
-	span3Resource.SetAttributes(data.NewAttributeMap(map[string]data.AttributeValue{
-		conventions.OCAttributeResourceType: data.NewAttributeValueString(span3ResourceType)}))
-	resourceSpans3 := data.NewResourceSpans(span3Resource, []*data.InstrumentationLibrarySpans{
-		data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []data.Span{span3})})
-
-	ocNode := &occommon.Node{}
-	ocResource := &ocresource.Resource{
-		Labels: map[string]string{
-			"label1": "value1",
-		},
-	}
-
 	ocSpan1 := &octrace.Span{
-		Name:      &octrace.TruncatableString{Value: "operationB"},
-		StartTime: timestampP,
-		EndTime:   timestampP,
+		Name:      &octrace.TruncatableString{Value: "operationA"},
+		StartTime: startTime,
+		EndTime:   endTime,
 		TimeEvents: &octrace.Span_TimeEvents{
 			TimeEvent: []*octrace.Span_TimeEvent{
 				{
-					Time: timestampP,
+					Time: eventTime,
 					Value: &octrace.Span_TimeEvent_Annotation_{
 						Annotation: &octrace.Span_TimeEvent_Annotation{
-							Description: &octrace.TruncatableString{Value: "event1"},
+							Description: &octrace.TruncatableString{Value: "event-with-attr"},
 							Attributes: &octrace.Span_Attributes{
 								AttributeMap: map[string]*octrace.AttributeValue{
-									"eventattr1": {
+									"event-attr": {
 										Value: &octrace.AttributeValue_StringValue{
-											StringValue: &octrace.TruncatableString{Value: "eventattrval1"},
+											StringValue: &octrace.TruncatableString{Value: "event-attr-val"},
 										},
 									},
 								},
-								DroppedAttributesCount: 4,
+								DroppedAttributesCount: 2,
+							},
+						},
+					},
+				},
+				{
+					Time: eventTime,
+					Value: &octrace.Span_TimeEvent_Annotation_{
+						Annotation: &octrace.Span_TimeEvent_Annotation{
+							Description: &octrace.TruncatableString{Value: "event"},
+							Attributes: &octrace.Span_Attributes{
+								DroppedAttributesCount: 2,
 							},
 						},
 					},
 				},
 			},
-			DroppedMessageEventsCount: 3,
+			DroppedAnnotationsCount: 1,
+		},
+		Attributes: &octrace.Span_Attributes{
+			DroppedAttributesCount: 1,
 		},
 		Status: &octrace.Status{Message: "status-cancelled", Code: 1},
 	}
 
 	ocSpan2 := &octrace.Span{
-		Name:      &octrace.TruncatableString{Value: "operationC"},
-		StartTime: timestampP,
-		EndTime:   timestampP,
+		Name:      &octrace.TruncatableString{Value: "operationB"},
+		StartTime: startTime,
+		EndTime:   endTime,
 		Links: &octrace.Span_Links{
-			Link:              []*octrace.Span_Link{{}},
-			DroppedLinksCount: 1,
-		},
-		TimeEvents: &octrace.Span_TimeEvents{
-			TimeEvent: []*octrace.Span_TimeEvent{
+			Link: []*octrace.Span_Link{
 				{
-					Time: timestampP,
-					Value: &octrace.Span_TimeEvent_MessageEvent_{
-						MessageEvent: &octrace.Span_TimeEvent_MessageEvent{
-							Type:             octrace.Span_TimeEvent_MessageEvent_SENT,
-							Id:               123,
-							UncompressedSize: 345,
-							CompressedSize:   234,
+					Attributes: &octrace.Span_Attributes{
+						AttributeMap: map[string]*octrace.AttributeValue{
+							"link-attr": {
+								Value: &octrace.AttributeValue_StringValue{
+									StringValue: &octrace.TruncatableString{Value: "link-attr-val"},
+								},
+							},
 						},
+						DroppedAttributesCount: 4,
+					},
+				},
+				{
+					Attributes: &octrace.Span_Attributes{
+						DroppedAttributesCount: 4,
 					},
 				},
 			},
+			DroppedLinksCount: 3,
 		},
 		// TODO: Remove this if there is a way in internal to know if Status was set.
 		// https://github.com/open-telemetry/opentelemetry-collector/pull/666
@@ -298,9 +264,20 @@ func TestInternalToOC(t *testing.T) {
 	}
 
 	ocSpan3 := &octrace.Span{
-		Name:      &octrace.TruncatableString{Value: "operationD"},
-		StartTime: timestampP,
-		EndTime:   timestampP,
+		Name:      &octrace.TruncatableString{Value: "operationC"},
+		StartTime: startTime,
+		EndTime:   endTime,
+		// TODO: Set resource here and put it in the same TraceDataOld.
+		Attributes: &octrace.Span_Attributes{
+			AttributeMap: map[string]*octrace.AttributeValue{
+				"span-attr": {
+					Value: &octrace.AttributeValue_StringValue{
+						StringValue: &octrace.TruncatableString{Value: "span-attr-val"},
+					},
+				},
+			},
+			DroppedAttributesCount: 5,
+		},
 		// TODO: Remove this if there is a way in internal to know if Status was set.
 		// https://github.com/open-telemetry/opentelemetry-collector/pull/666
 		Status: &octrace.Status{},
@@ -313,20 +290,43 @@ func TestInternalToOC(t *testing.T) {
 	}{
 		{
 			name:     "empty",
-			internal: data.TraceData{},
-			oc:       []consumerdata.TraceData{},
+			internal: data.NewTraceData(),
+			oc:       []consumerdata.TraceData(nil),
 		},
 
 		{
-			name: "no-spans",
-			internal: data.NewTraceData([]*data.ResourceSpans{
-				data.NewResourceSpans(data.NewResource(), []*data.InstrumentationLibrarySpans{
-					data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []data.Span{})}),
-			}),
+			name:     "empty-resource-spans",
+			internal: testdata.GenerateTraceDataOneEmptyResourceSpans(),
 			oc: []consumerdata.TraceData{
 				{
 					Node:         ocNode,
 					Resource:     &ocresource.Resource{},
+					Spans:        []*octrace.Span(nil),
+					SourceFormat: sourceFormat,
+				},
+			},
+		},
+
+		{
+			name:     "empty-libraries-spans",
+			internal: testdata.GenerateTraceDataNoLibraries(),
+			oc: []consumerdata.TraceData{
+				{
+					Node:         ocNode,
+					Resource:     ocResource1,
+					Spans:        []*octrace.Span(nil),
+					SourceFormat: sourceFormat,
+				},
+			},
+		},
+
+		{
+			name:     "no-spans",
+			internal: testdata.GenerateTraceDataNoSpans(),
+			oc: []consumerdata.TraceData{
+				{
+					Node:         ocNode,
+					Resource:     ocResource1,
 					Spans:        []*octrace.Span{},
 					SourceFormat: sourceFormat,
 				},
@@ -334,15 +334,12 @@ func TestInternalToOC(t *testing.T) {
 		},
 
 		{
-			name: "one-spans",
-			internal: data.NewTraceData([]*data.ResourceSpans{
-				data.NewResourceSpans(resource, []*data.InstrumentationLibrarySpans{
-					data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []data.Span{span1})}),
-			}),
+			name:     "one-spans",
+			internal: testdata.GenerateTraceDataOneSpan(),
 			oc: []consumerdata.TraceData{
 				{
 					Node:         ocNode,
-					Resource:     ocResource,
+					Resource:     ocResource1,
 					Spans:        []*octrace.Span{ocSpan1},
 					SourceFormat: sourceFormat,
 				},
@@ -350,15 +347,12 @@ func TestInternalToOC(t *testing.T) {
 		},
 
 		{
-			name: "two-spans",
-			internal: data.NewTraceData([]*data.ResourceSpans{
-				data.NewResourceSpans(data.NewResource(), []*data.InstrumentationLibrarySpans{
-					data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []data.Span{span1, span2})}),
-			}),
+			name:     "two-spans",
+			internal: testdata.GenerateTraceDataSameResourcewoSpans(),
 			oc: []consumerdata.TraceData{
 				{
 					Node:         ocNode,
-					Resource:     &ocresource.Resource{},
+					Resource:     ocResource1,
 					Spans:        []*octrace.Span{ocSpan1, ocSpan2},
 					SourceFormat: sourceFormat,
 				},
@@ -366,25 +360,18 @@ func TestInternalToOC(t *testing.T) {
 		},
 
 		{
-			name: "two-spans-plus-one-separate",
-			internal: data.NewTraceData([]*data.ResourceSpans{
-				data.NewResourceSpans(resource, []*data.InstrumentationLibrarySpans{
-					data.NewInstrumentationLibrarySpans(data.NewInstrumentationLibrary(), []data.Span{span1, span2})}),
-				resourceSpans3,
-			}),
+			name:     "two-spans-plus-one-separate",
+			internal: testdata.GenerateTraceDataTwoSpansSameResourceOneDifferent(),
 			oc: []consumerdata.TraceData{
 				{
 					Node:         ocNode,
-					Resource:     ocResource,
+					Resource:     ocResource1,
 					Spans:        []*octrace.Span{ocSpan1, ocSpan2},
 					SourceFormat: sourceFormat,
 				},
 				{
-					Node: ocNode,
-					Resource: &ocresource.Resource{
-						Type:   span3ResourceType,
-						Labels: map[string]string{},
-					},
+					Node:         ocNode,
+					Resource:     ocResource2,
 					Spans:        []*octrace.Span{ocSpan3},
 					SourceFormat: sourceFormat,
 				},

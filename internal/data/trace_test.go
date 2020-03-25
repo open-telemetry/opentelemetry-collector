@@ -15,84 +15,46 @@
 package data
 
 import (
-	"math/rand"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestSpanCount(t *testing.T) {
-	td := TraceData{}
-	assert.EqualValues(t, 0, td.SpanCount())
+	md := NewTraceData()
+	assert.EqualValues(t, 0, md.SpanCount())
 
-	td = TraceData{
-		resourceSpans: []*ResourceSpans{
-			NewResourceSpans(NewResource(), []*InstrumentationLibrarySpans{}),
-		},
-	}
-	assert.EqualValues(t, 0, td.SpanCount())
+	md.SetResourceSpans(NewResourceSpansSlice(1))
+	assert.EqualValues(t, 0, md.SpanCount())
 
-	td = TraceData{
-		resourceSpans: []*ResourceSpans{
-			NewResourceSpans(NewResource(), []*InstrumentationLibrarySpans{
-				NewInstrumentationLibrarySpans(NewInstrumentationLibrary(), []Span{})}),
-		},
-	}
-	assert.EqualValues(t, 0, td.SpanCount())
+	md.ResourceSpans().Get(0).SetInstrumentationLibrarySpans(NewInstrumentationLibrarySpansSlice(1))
+	assert.EqualValues(t, 0, md.SpanCount())
 
-	td = TraceData{
-		resourceSpans: []*ResourceSpans{
-			NewResourceSpans(NewResource(), []*InstrumentationLibrarySpans{
-				NewInstrumentationLibrarySpans(NewInstrumentationLibrary(), NewSpanSlice(1))}),
-		},
-	}
-	assert.EqualValues(t, 1, td.SpanCount())
+	md.ResourceSpans().Get(0).InstrumentationLibrarySpans().Get(0).SetSpans(NewSpanSlice(1))
+	assert.EqualValues(t, 1, md.SpanCount())
 
-	td = TraceData{
-		resourceSpans: []*ResourceSpans{
-			NewResourceSpans(NewResource(), []*InstrumentationLibrarySpans{
-				NewInstrumentationLibrarySpans(NewInstrumentationLibrary(), NewSpanSlice(1))}),
-			NewResourceSpans(NewResource(), []*InstrumentationLibrarySpans{
-				NewInstrumentationLibrarySpans(NewInstrumentationLibrary(), []Span{})}),
-			NewResourceSpans(NewResource(), []*InstrumentationLibrarySpans{
-				NewInstrumentationLibrarySpans(NewInstrumentationLibrary(), NewSpanSlice(5))}),
-		},
-	}
-	assert.EqualValues(t, 6, td.SpanCount())
+	rms := NewResourceSpansSlice(3)
+	rms.Get(0).SetInstrumentationLibrarySpans(NewInstrumentationLibrarySpansSlice(1))
+	rms.Get(0).InstrumentationLibrarySpans().Get(0).SetSpans(NewSpanSlice(1))
+	rms.Get(1).SetInstrumentationLibrarySpans(NewInstrumentationLibrarySpansSlice(1))
+	rms.Get(2).SetInstrumentationLibrarySpans(NewInstrumentationLibrarySpansSlice(1))
+	rms.Get(2).InstrumentationLibrarySpans().Get(0).SetSpans(NewSpanSlice(5))
+	md.SetResourceSpans(rms)
+	assert.EqualValues(t, 6, md.SpanCount())
 }
 
-func TestNewSpanSlice(t *testing.T) {
-	spans := NewSpanSlice(0)
-	assert.EqualValues(t, 0, len(spans))
+func TestTraceID(t *testing.T) {
+	tid := NewTraceID(nil)
+	assert.EqualValues(t, []byte(nil), tid.Bytes())
 
-	n := rand.Intn(10)
-	spans = NewSpanSlice(n)
-	assert.EqualValues(t, n, len(spans))
-	for span := range spans {
-		assert.NotNil(t, span)
-	}
+	tid = NewTraceID([]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+	assert.EqualValues(t, []byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}, tid.Bytes())
 }
 
-func TestAttrs(t *testing.T) {
-	attrs := NewAttributeMap(AttributesMap{"attr1": NewAttributeValueString("abc")})
+func TestSpanID(t *testing.T) {
+	sid := NewSpanID(nil)
+	assert.EqualValues(t, []byte(nil), sid.Bytes())
 
-	span := NewSpan()
-	assert.EqualValues(t, 0, span.DroppedAttributesCount())
-	span.SetAttributes(attrs)
-	assert.EqualValues(t, attrs, span.Attributes())
-	span.SetDroppedAttributesCount(123)
-	assert.EqualValues(t, 123, span.DroppedAttributesCount())
-
-	event := NewSpanEvent()
-	event.SetAttributes(attrs)
-	assert.EqualValues(t, attrs, event.Attributes())
-	event.SetDroppedAttributesCount(234)
-	assert.EqualValues(t, 234, event.DroppedAttributesCount())
-
-	link := NewSpanLink()
-	assert.EqualValues(t, 0, link.DroppedAttributesCount())
-	link.SetAttributes(attrs)
-	assert.EqualValues(t, attrs, link.Attributes())
-	link.SetDroppedAttributesCount(456)
-	assert.EqualValues(t, 456, link.DroppedAttributesCount())
+	sid = NewSpanID([]byte{1, 2, 3, 4, 5, 6, 7, 8})
+	assert.EqualValues(t, []byte{1, 2, 3, 4, 5, 6, 7, 8}, sid.Bytes())
 }
