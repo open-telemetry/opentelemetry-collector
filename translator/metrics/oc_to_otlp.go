@@ -116,11 +116,15 @@ func getOtlpLabels(ocMetric *ocmetrics.Metric) [][]*otlpcommon.StringKeyValue {
 	ocLabelsKeys := ocMetric.GetMetricDescriptor().GetLabelKeys()
 	labelsCount := len(ocLabelsKeys)
 	timeseriesCount := len(ocMetric.GetTimeseries())
-	if labelsCount == 0 || timeseriesCount == 0 {
+	if timeseriesCount == 0 {
 		return nil
 	}
 
 	labelsByTimeseriesIdx := make([][]*otlpcommon.StringKeyValue, timeseriesCount)
+
+	if labelsCount == 0 {
+		return labelsByTimeseriesIdx
+	}
 
 	// Scan timeseries and fill the OC timeseries idx -> OTLP labels map
 	for i := 0; i < timeseriesCount; i++ {
