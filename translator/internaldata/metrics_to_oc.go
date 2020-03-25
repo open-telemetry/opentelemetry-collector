@@ -69,7 +69,9 @@ func ResourceMetricsToOC(rm data.ResourceMetrics) consumerdata.MetricsData {
 			ocMetrics = append(ocMetrics, metricToOC(metrics.Get(k)))
 		}
 	}
-	ocMetricsData.Metrics = ocMetrics
+	if len(ocMetrics) != 0 {
+		ocMetricsData.Metrics = ocMetrics
+	}
 	return ocMetricsData
 }
 
@@ -113,6 +115,13 @@ func collectLabelKeys(metric data.Metric) *labelKeys {
 	sps := metric.SummaryDataPoints()
 	for i := 0; i < sps.Len(); i++ {
 		addLabelKeys(keySet, sps.Get(i).LabelsMap())
+	}
+
+	if len(keySet) == 0 {
+		return &labelKeys{
+			keys:       nil,
+			keyIndices: nil,
+		}
 	}
 
 	// Sort keys: while not mandatory, this helps to make the
@@ -297,6 +306,14 @@ func histogramBucketsToOC(buckets data.HistogramBucketSlice) []*ocmetrics.Distri
 
 func exemplarToOC(exemplar data.HistogramBucketExemplar) *ocmetrics.DistributionValue_Exemplar {
 	attachments := exemplar.Attachments()
+	if attachments.Len() == 0 {
+		return &ocmetrics.DistributionValue_Exemplar{
+			Value:       exemplar.Value(),
+			Timestamp:   internal.UnixNanoToTimestamp(exemplar.Timestamp()),
+			Attachments: nil,
+		}
+	}
+
 	labels := make(map[string]string, attachments.Len())
 	for i := 0; i < attachments.Len(); i++ {
 		skv := attachments.GetStringKeyValue(i)
@@ -318,13 +335,9 @@ func summaryPointToOC(point data.SummaryDataPoint, labelKeys *labelKeys) *ocmetr
 				Timestamp: internal.UnixNanoToTimestamp(point.Timestamp()),
 				Value: &ocmetrics.Point_SummaryValue{
 					SummaryValue: &ocmetrics.SummaryValue{
-						Count: int64Value(point.Count()),
-						Sum:   doubleValue(point.Sum()),
-						Snapshot: &ocmetrics.SummaryValue_Snapshot{
-							Count:            nil,
-							Sum:              nil,
-							PercentileValues: percentileToOC(point.ValueAtPercentiles()),
-						},
+						Count:    int64Value(point.Count()),
+						Sum:      doubleValue(point.Sum()),
+						Snapshot: percentileToOC(point.ValueAtPercentiles()),
 					},
 				},
 			},
@@ -332,7 +345,7 @@ func summaryPointToOC(point data.SummaryDataPoint, labelKeys *labelKeys) *ocmetr
 	}
 }
 
-func percentileToOC(percentiles data.SummaryValueAtPercentileSlice) []*ocmetrics.SummaryValue_Snapshot_ValueAtPercentile {
+func percentileToOC(percentiles data.SummaryValueAtPercentileSlice) *ocmetrics.SummaryValue_Snapshot {
 	if percentiles.Len() == 0 {
 		return nil
 	}
@@ -345,7 +358,11 @@ func percentileToOC(percentiles data.SummaryValueAtPercentileSlice) []*ocmetrics
 			Value:      p.Value(),
 		})
 	}
-	return ocPercentiles
+	return &ocmetrics.SummaryValue_Snapshot{
+		Count:            nil,
+		Sum:              nil,
+		PercentileValues: ocPercentiles,
+	}
 }
 
 func labelValuesToOC(labels data.StringMap, labelKeys *labelKeys) []*ocmetrics.LabelValue {
