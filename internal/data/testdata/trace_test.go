@@ -20,7 +20,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGenerate(t *testing.T) {
+func TestGenerateTestData(t *testing.T) {
+	assert.EqualValues(t, GenerateTraceDataOneEmptyResourceSpans(), GenerateTraceDataOneEmptyResourceSpans())
 	assert.EqualValues(t, GenerateTraceDataNoLibraries(), GenerateTraceDataNoLibraries())
 	assert.EqualValues(t, GenerateTraceDataNoSpans(), GenerateTraceDataNoSpans())
 	assert.EqualValues(t, GenerateTraceDataOneSpanNoResource(), GenerateTraceDataOneSpanNoResource())

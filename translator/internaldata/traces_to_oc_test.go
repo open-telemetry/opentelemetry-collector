@@ -180,11 +180,11 @@ func TestInternalToOC(t *testing.T) {
 	ocResource1 := &ocresource.Resource{Labels: map[string]string{"resource-attr": "resource-attr-val-1"}}
 	ocResource2 := &ocresource.Resource{Labels: map[string]string{"resource-attr": "resource-attr-val-2"}}
 
-	startTime, err := ptypes.TimestampProto(testdata.TestStartTime)
+	startTime, err := ptypes.TimestampProto(testdata.TestSpanStartTime)
 	assert.NoError(t, err)
-	eventTime, err := ptypes.TimestampProto(testdata.TestEventTime)
+	eventTime, err := ptypes.TimestampProto(testdata.TestSpanEventTime)
 	assert.NoError(t, err)
-	endTime, err := ptypes.TimestampProto(testdata.TestEndTime)
+	endTime, err := ptypes.TimestampProto(testdata.TestSpanEndTime)
 	assert.NoError(t, err)
 
 	ocSpan1 := &octrace.Span{

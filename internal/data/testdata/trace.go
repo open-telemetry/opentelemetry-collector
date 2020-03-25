@@ -21,20 +21,18 @@ import (
 )
 
 var (
-	resourceAttributes1 = map[string]data.AttributeValue{"resource-attr": data.NewAttributeValueString("resource-attr-val-1")}
-	resourceAttributes2 = map[string]data.AttributeValue{"resource-attr": data.NewAttributeValueString("resource-attr-val-2")}
-	eventAttributes     = map[string]data.AttributeValue{"event-attr": data.NewAttributeValueString("event-attr-val")}
-	linkAttributes      = map[string]data.AttributeValue{"link-attr": data.NewAttributeValueString("link-attr-val")}
-	spanAttributes      = map[string]data.AttributeValue{"span-attr": data.NewAttributeValueString("span-attr-val")}
+	eventAttributes = map[string]data.AttributeValue{"event-attr": data.NewAttributeValueString("event-attr-val")}
+	linkAttributes  = map[string]data.AttributeValue{"link-attr": data.NewAttributeValueString("link-attr-val")}
+	spanAttributes  = map[string]data.AttributeValue{"span-attr": data.NewAttributeValueString("span-attr-val")}
 
-	TestStartTime      = time.Date(2020, 2, 11, 20, 26, 12, 321, time.UTC)
-	TestStartTimestamp = data.TimestampUnixNano(TestStartTime.UnixNano())
+	TestSpanStartTime      = time.Date(2020, 2, 11, 20, 26, 12, 321, time.UTC)
+	TestSpanStartTimestamp = data.TimestampUnixNano(TestSpanStartTime.UnixNano())
 
-	TestEventTime      = time.Date(2020, 2, 11, 20, 26, 13, 123, time.UTC)
-	TestEventTimestamp = data.TimestampUnixNano(TestEventTime.UnixNano())
+	TestSpanEventTime      = time.Date(2020, 2, 11, 20, 26, 13, 123, time.UTC)
+	TestSpanEventTimestamp = data.TimestampUnixNano(TestSpanEventTime.UnixNano())
 
-	TestEndTime      = time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC)
-	TestEndTimestamp = data.TimestampUnixNano(TestEndTime.UnixNano())
+	TestSpanEndTime      = time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC)
+	TestSpanEndTimestamp = data.TimestampUnixNano(TestSpanEndTime.UnixNano())
 )
 
 func GenerateTraceDataOneEmptyResourceSpans() data.TraceData {
@@ -46,7 +44,7 @@ func GenerateTraceDataOneEmptyResourceSpans() data.TraceData {
 func GenerateTraceDataNoLibraries() data.TraceData {
 	td := GenerateTraceDataOneEmptyResourceSpans()
 	rs0 := td.ResourceSpans().Get(0)
-	rs0.Resource().SetAttributes(data.NewAttributeMap(resourceAttributes1))
+	rs0.Resource().SetAttributes(generateResourceAttributes1())
 	return td
 }
 
@@ -88,14 +86,14 @@ func GenerateTraceDataTwoSpansSameResourceOneDifferent() data.TraceData {
 	td := data.NewTraceData()
 	td.SetResourceSpans(data.NewResourceSpansSlice(2))
 	rs0 := td.ResourceSpans().Get(0)
-	rs0.Resource().SetAttributes(data.NewAttributeMap(resourceAttributes1))
+	rs0.Resource().SetAttributes(generateResourceAttributes1())
 	rs0.SetInstrumentationLibrarySpans(data.NewInstrumentationLibrarySpansSlice(1))
 	rs0ils0 := rs0.InstrumentationLibrarySpans().Get(0)
 	rs0ils0.SetSpans(data.NewSpanSlice(2))
 	fillSpanOne(rs0ils0.Spans().Get(0))
 	fillSpanTwo(rs0ils0.Spans().Get(1))
 	rs1 := td.ResourceSpans().Get(1)
-	rs1.Resource().SetAttributes(data.NewAttributeMap(resourceAttributes2))
+	rs1.Resource().SetAttributes(generateResourceAttributes2())
 	rs1.SetInstrumentationLibrarySpans(data.NewInstrumentationLibrarySpansSlice(1))
 	rs1ils0 := rs1.InstrumentationLibrarySpans().Get(0)
 	rs1ils0.SetSpans(data.NewSpanSlice(1))
@@ -105,17 +103,17 @@ func GenerateTraceDataTwoSpansSameResourceOneDifferent() data.TraceData {
 
 func fillSpanOne(span data.Span) {
 	span.SetName("operationA")
-	span.SetStartTime(TestStartTimestamp)
-	span.SetEndTime(TestEndTimestamp)
+	span.SetStartTime(TestSpanStartTimestamp)
+	span.SetEndTime(TestSpanEndTimestamp)
 	span.SetDroppedAttributesCount(1)
 	span.SetEvents(data.NewSpanEventSlice(2))
 	ev0 := span.Events().Get(0)
-	ev0.SetTimestamp(TestEventTimestamp)
+	ev0.SetTimestamp(TestSpanEventTimestamp)
 	ev0.SetName("event-with-attr")
 	ev0.SetAttributes(data.NewAttributeMap(eventAttributes))
 	ev0.SetDroppedAttributesCount(2)
 	ev1 := span.Events().Get(1)
-	ev1.SetTimestamp(TestEventTimestamp)
+	ev1.SetTimestamp(TestSpanEventTimestamp)
 	ev1.SetName("event")
 	ev1.SetDroppedAttributesCount(2)
 	span.SetDroppedEventsCount(1)
@@ -125,8 +123,8 @@ func fillSpanOne(span data.Span) {
 
 func fillSpanTwo(span data.Span) {
 	span.SetName("operationB")
-	span.SetStartTime(TestStartTimestamp)
-	span.SetEndTime(TestEndTimestamp)
+	span.SetStartTime(TestSpanStartTimestamp)
+	span.SetEndTime(TestSpanEndTimestamp)
 	span.SetLinks(data.NewSpanLinkSlice(2))
 	span.Links().Get(0).SetAttributes(data.NewAttributeMap(linkAttributes))
 	span.Links().Get(0).SetDroppedAttributesCount(4)
@@ -136,8 +134,8 @@ func fillSpanTwo(span data.Span) {
 
 func fillSpanThree(span data.Span) {
 	span.SetName("operationC")
-	span.SetStartTime(TestStartTimestamp)
-	span.SetEndTime(TestEndTimestamp)
+	span.SetStartTime(TestSpanStartTimestamp)
+	span.SetEndTime(TestSpanEndTimestamp)
 	span.SetAttributes(data.NewAttributeMap(spanAttributes))
 	span.SetDroppedAttributesCount(5)
 }
