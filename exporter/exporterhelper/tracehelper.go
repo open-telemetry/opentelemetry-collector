@@ -24,15 +24,88 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 )
 
+// traceDataPusherOld is a helper function that is similar to ConsumeTraceData but also
+// returns the number of dropped spans.
+type traceDataPusherOld func(ctx context.Context, td consumerdata.TraceData) (droppedSpans int, err error)
+
 // traceDataPusher is a helper function that is similar to ConsumeTraceData but also
 // returns the number of dropped spans.
-type traceDataPusher func(ctx context.Context, td consumerdata.TraceData) (droppedSpans int, err error)
+type traceDataPusher func(ctx context.Context, td data.TraceData) (droppedSpans int, err error)
 
-// traceV2DataPusher is a helper function that is similar to ConsumeTraceData but also
-// returns the number of dropped spans.
-type traceV2DataPusher func(ctx context.Context, td data.TraceData) (droppedSpans int, err error)
+// traceExporterOld implements the exporter with additional helper options.
+type traceExporterOld struct {
+	exporterFullName string
+	dataPusher       traceDataPusherOld
+	shutdown         Shutdown
+}
 
-// traceExporter implements the exporter with additional helper options.
+func (te *traceExporterOld) Start(host component.Host) error {
+	return nil
+}
+
+func (te *traceExporterOld) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
+	exporterCtx := obsreport.ExporterContext(ctx, te.exporterFullName)
+	_, err := te.dataPusher(exporterCtx, td)
+	return err
+}
+
+// Shutdown stops the exporter and is invoked during shutdown.
+func (te *traceExporterOld) Shutdown() error {
+	return te.shutdown()
+}
+
+// NewTraceExporterOld creates an TraceExporterOld that can record metrics and can wrap every
+// request with a Span. If no options are passed it just adds the exporter format as a
+// tag in the Context.
+func NewTraceExporterOld(
+	config configmodels.Exporter,
+	dataPusher traceDataPusherOld,
+	options ...ExporterOption,
+) (component.TraceExporterOld, error) {
+
+	if config == nil {
+		return nil, errNilConfig
+	}
+
+	if dataPusher == nil {
+		return nil, errNilPushTraceData
+	}
+
+	opts := newExporterOptions(options...)
+
+	dataPusher = dataPusher.withObservability(config.Name())
+
+	// The default shutdown function does nothing.
+	if opts.shutdown == nil {
+		opts.shutdown = func() error {
+			return nil
+		}
+	}
+
+	return &traceExporterOld{
+		exporterFullName: config.Name(),
+		dataPusher:       dataPusher,
+		shutdown:         opts.shutdown,
+	}, nil
+}
+
+// withObservability wraps the current pusher into a function that records
+// the observability signals during the pusher execution.
+func (p traceDataPusherOld) withObservability(exporterName string) traceDataPusherOld {
+	return func(ctx context.Context, td consumerdata.TraceData) (int, error) {
+		ctx = obsreport.StartTraceDataExportOp(ctx, exporterName)
+		// Forward the data to the next consumer (this pusher is the next).
+		droppedSpans, err := p(ctx, td)
+
+		// TODO: this is not ideal: it should come from the next function itself.
+		// 	temporarily loading it from internal format. Once full switch is done
+		// 	to new metrics will remove this.
+		numSpans := len(td.Spans)
+		obsreport.EndTraceDataExportOp(ctx, numSpans, droppedSpans, err)
+		return droppedSpans, err
+	}
+}
+
 type traceExporter struct {
 	exporterFullName string
 	dataPusher       traceDataPusher
@@ -43,7 +116,10 @@ func (te *traceExporter) Start(host component.Host) error {
 	return nil
 }
 
-func (te *traceExporter) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
+func (te *traceExporter) ConsumeTrace(
+	ctx context.Context,
+	td data.TraceData,
+) error {
 	exporterCtx := obsreport.ExporterContext(ctx, te.exporterFullName)
 	_, err := te.dataPusher(exporterCtx, td)
 	return err
@@ -54,14 +130,13 @@ func (te *traceExporter) Shutdown() error {
 	return te.shutdown()
 }
 
-// NewTraceExporter creates an TraceExporter that can record metrics and can wrap every
-// request with a Span. If no options are passed it just adds the exporter format as a
-// tag in the Context.
+// NewTraceExporter creates a TraceExporter that can record metrics and can wrap
+// every request with a Span.
 func NewTraceExporter(
 	config configmodels.Exporter,
 	dataPusher traceDataPusher,
 	options ...ExporterOption,
-) (component.TraceExporterOld, error) {
+) (component.TraceExporter, error) {
 
 	if config == nil {
 		return nil, errNilConfig
@@ -92,81 +167,6 @@ func NewTraceExporter(
 // withObservability wraps the current pusher into a function that records
 // the observability signals during the pusher execution.
 func (p traceDataPusher) withObservability(exporterName string) traceDataPusher {
-	return func(ctx context.Context, td consumerdata.TraceData) (int, error) {
-		ctx = obsreport.StartTraceDataExportOp(ctx, exporterName)
-		// Forward the data to the next consumer (this pusher is the next).
-		droppedSpans, err := p(ctx, td)
-
-		// TODO: this is not ideal: it should come from the next function itself.
-		// 	temporarily loading it from internal format. Once full switch is done
-		// 	to new metrics will remove this.
-		numSpans := len(td.Spans)
-		obsreport.EndTraceDataExportOp(ctx, numSpans, droppedSpans, err)
-		return droppedSpans, err
-	}
-}
-
-type traceExporterV2 struct {
-	exporterFullName string
-	dataPusher       traceV2DataPusher
-	shutdown         Shutdown
-}
-
-func (te *traceExporterV2) Start(host component.Host) error {
-	return nil
-}
-
-func (te *traceExporterV2) ConsumeTrace(
-	ctx context.Context,
-	td data.TraceData,
-) error {
-	exporterCtx := obsreport.ExporterContext(ctx, te.exporterFullName)
-	_, err := te.dataPusher(exporterCtx, td)
-	return err
-}
-
-// Shutdown stops the exporter and is invoked during shutdown.
-func (te *traceExporterV2) Shutdown() error {
-	return te.shutdown()
-}
-
-// NewTraceExporterV2 creates a TraceExporter that can record metrics and can wrap
-// every request with a Span.
-func NewTraceExporterV2(
-	config configmodels.Exporter,
-	dataPusher traceV2DataPusher,
-	options ...ExporterOption,
-) (component.TraceExporter, error) {
-
-	if config == nil {
-		return nil, errNilConfig
-	}
-
-	if dataPusher == nil {
-		return nil, errNilPushTraceData
-	}
-
-	opts := newExporterOptions(options...)
-
-	dataPusher = dataPusher.withObservability(config.Name())
-
-	// The default shutdown function does nothing.
-	if opts.shutdown == nil {
-		opts.shutdown = func() error {
-			return nil
-		}
-	}
-
-	return &traceExporterV2{
-		exporterFullName: config.Name(),
-		dataPusher:       dataPusher,
-		shutdown:         opts.shutdown,
-	}, nil
-}
-
-// withObservability wraps the current pusher into a function that records
-// the observability signals during the pusher execution.
-func (p traceV2DataPusher) withObservability(exporterName string) traceV2DataPusher {
 	return func(ctx context.Context, td data.TraceData) (int, error) {
 		ctx = obsreport.StartTraceDataExportOp(ctx, exporterName)
 		// Forward the data to the next consumer (this pusher is the next).
