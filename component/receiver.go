@@ -82,7 +82,7 @@ type ReceiverFactoryBase interface {
 //   An empty interface wrapping a pointer to the config struct to unmarshal into.
 type CustomUnmarshaler func(v *viper.Viper, viperKey string, sourceViperSection *viper.Viper, intoCfg interface{}) error
 
-// ReceiverFactoryOld can create TraceReceiverOld and MetricsReceiverOld.
+// ReceiverFactoryOld can create TraceReceiver and MetricsReceiver.
 type ReceiverFactoryOld interface {
 	ReceiverFactoryBase
 
