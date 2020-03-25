@@ -45,51 +45,61 @@ func GenerateTraceDataOneEmptyResourceSpans() data.TraceData {
 
 func GenerateTraceDataNoLibraries() data.TraceData {
 	td := GenerateTraceDataOneEmptyResourceSpans()
-	td.ResourceSpans().Get(0).Resource().SetAttributes(data.NewAttributeMap(resourceAttributes1))
+	rs0 := td.ResourceSpans().Get(0)
+	rs0.Resource().SetAttributes(data.NewAttributeMap(resourceAttributes1))
 	return td
 }
 
 func GenerateTraceDataNoSpans() data.TraceData {
 	td := GenerateTraceDataNoLibraries()
-	td.ResourceSpans().Get(0).SetInstrumentationLibrarySpans(data.NewInstrumentationLibrarySpansSlice(1))
+	rs0 := td.ResourceSpans().Get(0)
+	rs0.SetInstrumentationLibrarySpans(data.NewInstrumentationLibrarySpansSlice(1))
 	return td
 }
 
 func GenerateTraceDataOneSpanNoResource() data.TraceData {
 	td := GenerateTraceDataOneEmptyResourceSpans()
-	td.ResourceSpans().Get(0).SetInstrumentationLibrarySpans(data.NewInstrumentationLibrarySpansSlice(1))
-	td.ResourceSpans().Get(0).InstrumentationLibrarySpans().Get(0).SetSpans(data.NewSpanSlice(1))
-	fillSpanOne(td.ResourceSpans().Get(0).InstrumentationLibrarySpans().Get(0).Spans().Get(0))
+	rs0 := td.ResourceSpans().Get(0)
+	rs0.SetInstrumentationLibrarySpans(data.NewInstrumentationLibrarySpansSlice(1))
+	rs0ils0 := rs0.InstrumentationLibrarySpans().Get(0)
+	rs0ils0.SetSpans(data.NewSpanSlice(1))
+	fillSpanOne(rs0ils0.Spans().Get(0))
 	return td
 }
 
 func GenerateTraceDataOneSpan() data.TraceData {
 	td := GenerateTraceDataNoSpans()
-	td.ResourceSpans().Get(0).InstrumentationLibrarySpans().Get(0).SetSpans(data.NewSpanSlice(1))
-	fillSpanOne(td.ResourceSpans().Get(0).InstrumentationLibrarySpans().Get(0).Spans().Get(0))
+	rs0ils0 := td.ResourceSpans().Get(0).InstrumentationLibrarySpans().Get(0)
+	rs0ils0.SetSpans(data.NewSpanSlice(1))
+	fillSpanOne(rs0ils0.Spans().Get(0))
 	return td
 }
 
 func GenerateTraceDataSameResourcewoSpans() data.TraceData {
 	td := GenerateTraceDataNoSpans()
-	td.ResourceSpans().Get(0).InstrumentationLibrarySpans().Get(0).SetSpans(data.NewSpanSlice(2))
-	fillSpanOne(td.ResourceSpans().Get(0).InstrumentationLibrarySpans().Get(0).Spans().Get(0))
-	fillSpanTwo(td.ResourceSpans().Get(0).InstrumentationLibrarySpans().Get(0).Spans().Get(1))
+	rs0ils0 := td.ResourceSpans().Get(0).InstrumentationLibrarySpans().Get(0)
+	rs0ils0.SetSpans(data.NewSpanSlice(2))
+	fillSpanOne(rs0ils0.Spans().Get(0))
+	fillSpanTwo(rs0ils0.Spans().Get(1))
 	return td
 }
 
 func GenerateTraceDataTwoSpansSameResourceOneDifferent() data.TraceData {
 	td := data.NewTraceData()
 	td.SetResourceSpans(data.NewResourceSpansSlice(2))
-	td.ResourceSpans().Get(0).Resource().SetAttributes(data.NewAttributeMap(resourceAttributes1))
-	td.ResourceSpans().Get(0).SetInstrumentationLibrarySpans(data.NewInstrumentationLibrarySpansSlice(1))
-	td.ResourceSpans().Get(0).InstrumentationLibrarySpans().Get(0).SetSpans(data.NewSpanSlice(2))
-	fillSpanOne(td.ResourceSpans().Get(0).InstrumentationLibrarySpans().Get(0).Spans().Get(0))
-	fillSpanTwo(td.ResourceSpans().Get(0).InstrumentationLibrarySpans().Get(0).Spans().Get(1))
-	td.ResourceSpans().Get(1).Resource().SetAttributes(data.NewAttributeMap(resourceAttributes2))
-	td.ResourceSpans().Get(1).SetInstrumentationLibrarySpans(data.NewInstrumentationLibrarySpansSlice(1))
-	td.ResourceSpans().Get(1).InstrumentationLibrarySpans().Get(0).SetSpans(data.NewSpanSlice(1))
-	fillSpanThree(td.ResourceSpans().Get(1).InstrumentationLibrarySpans().Get(0).Spans().Get(0))
+	rs0 := td.ResourceSpans().Get(0)
+	rs0.Resource().SetAttributes(data.NewAttributeMap(resourceAttributes1))
+	rs0.SetInstrumentationLibrarySpans(data.NewInstrumentationLibrarySpansSlice(1))
+	rs0ils0 := rs0.InstrumentationLibrarySpans().Get(0)
+	rs0ils0.SetSpans(data.NewSpanSlice(2))
+	fillSpanOne(rs0ils0.Spans().Get(0))
+	fillSpanTwo(rs0ils0.Spans().Get(1))
+	rs1 := td.ResourceSpans().Get(1)
+	rs1.Resource().SetAttributes(data.NewAttributeMap(resourceAttributes2))
+	rs1.SetInstrumentationLibrarySpans(data.NewInstrumentationLibrarySpansSlice(1))
+	rs1ils0 := rs1.InstrumentationLibrarySpans().Get(0)
+	rs1ils0.SetSpans(data.NewSpanSlice(1))
+	fillSpanThree(rs1ils0.Spans().Get(0))
 	return td
 }
 
@@ -99,13 +109,15 @@ func fillSpanOne(span data.Span) {
 	span.SetEndTime(TestEndTimestamp)
 	span.SetDroppedAttributesCount(1)
 	span.SetEvents(data.NewSpanEventSlice(2))
-	span.Events().Get(0).SetTimestamp(TestEventTimestamp)
-	span.Events().Get(0).SetName("event-with-attr")
-	span.Events().Get(0).SetAttributes(data.NewAttributeMap(eventAttributes))
-	span.Events().Get(0).SetDroppedAttributesCount(2)
-	span.Events().Get(1).SetTimestamp(TestEventTimestamp)
-	span.Events().Get(1).SetName("event")
-	span.Events().Get(1).SetDroppedAttributesCount(2)
+	ev0 := span.Events().Get(0)
+	ev0.SetTimestamp(TestEventTimestamp)
+	ev0.SetName("event-with-attr")
+	ev0.SetAttributes(data.NewAttributeMap(eventAttributes))
+	ev0.SetDroppedAttributesCount(2)
+	ev1 := span.Events().Get(1)
+	ev1.SetTimestamp(TestEventTimestamp)
+	ev1.SetName("event")
+	ev1.SetDroppedAttributesCount(2)
 	span.SetDroppedEventsCount(1)
 	span.Status().SetCode(data.StatusCode(1))
 	span.Status().SetMessage("status-cancelled")

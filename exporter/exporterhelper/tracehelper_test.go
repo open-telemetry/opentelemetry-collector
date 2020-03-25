@@ -251,7 +251,7 @@ func TestTraceExporter_NilPushTraceData(t *testing.T) {
 
 func TestTraceExporter_Default(t *testing.T) {
 	td := data.NewTraceData()
-	te, err := NewTraceExporterV2(fakeTraceExporterConfig, newPushTraceV2(0, nil))
+	te, err := NewTraceExporter(fakeTraceExporterConfig, newTraceDataPusher(0, nil))
 	assert.NotNil(t, te)
 	assert.Nil(t, err)
 

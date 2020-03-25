@@ -64,7 +64,7 @@ func ResourceSpansToOC(rs data.ResourceSpans) consumerdata.TraceData {
 	ocSpans := make([]*octrace.Span, 0, ilss.Get(0).Spans().Len())
 	for i := 0; i < ilss.Len(); i++ {
 		// TODO: Handle instrumentation library name and version.
-		spans := ilss.Get(0).Spans()
+		spans := ilss.Get(i).Spans()
 		for j := 0; j < spans.Len(); j++ {
 			ocSpans = append(ocSpans, spanToOC(spans.Get(j)))
 		}
