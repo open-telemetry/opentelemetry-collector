@@ -45,7 +45,7 @@ function is called. Exporters MUST NOT modify the `TraceData`/`MetricsData` argu
 these functions. If the exporter needs to modify the data while performing the exporting
 the exporter can clone the data and perform the modification on the clone or use a
 copy-on-write approach for individual sub-parts of `TraceData`/`MetricsData` argument.
-Any approach that does not mutate the original `TraceData`/`MetricsData` argument 
+Any approach that does not mutate the original `TraceData`/`MetricsData` argument
 (including referenced data, such as `Node`, `Resource`, `Spans`, etc) is allowed.
 
 # <a name="trace-exporters"></a>Trace Exporters
@@ -75,7 +75,7 @@ only be used if `secure` is set to true.
 [grpc.WithKeepaliveParams()](https://godoc.org/google.golang.org/grpc#WithKeepaliveParams).
 - `secure`: whether to enable client transport security for the exporter's gRPC
 connection. See [grpc.WithInsecure()](https://godoc.org/google.golang.org/grpc#WithInsecure).
-- `server_name_override`: If set to a non empty string, it will override the virtual host name 
+- `server_name_override`: If set to a non empty string, it will override the virtual host name
 of authority (e.g. :authority header field) in requests (typically used for testing).
 
 Example:
@@ -107,7 +107,7 @@ Example:
 
 ```yaml
 exporters:
-  jaeger:
+  jaeger_thrift_http:
     url: "http://some.other.location/api/traces"
     timeout: 2s
     headers:
@@ -203,7 +203,7 @@ The following settings are required:
 The following settings can be optionally configured:
 
 - (temporary flag) `export_resource_labels` (default = true): Whether Resource labels are going to be merged with span attributes
-Note: this flag was added to aid the migration to new (fixed and symmetric) behavior and is going to be 
+Note: this flag was added to aid the migration to new (fixed and symmetric) behavior and is going to be
 removed soon. See https://github.com/open-telemetry/opentelemetry-collector/issues/595 for more details
 - `defaultservicename` (no default): What to name services missing this information
 
@@ -282,11 +282,11 @@ about the package (with `info` loglevel) or details of the trace (when `debug` i
 
 The following settings can be configured:
 
-- `loglevel`: the log level of the logging export (debug|info|warn|error). Default is `info`. When it is set to `debug`, 
+- `loglevel`: the log level of the logging export (debug|info|warn|error). Default is `info`. When it is set to `debug`,
 the trace related data (e.g. node, attributes, spans, metadata) are verbosely logged.
-- `sampling_initial`: number of messages initially logged each second. Default is 2. 
-- `sampling_thereafter`: sampling rate after the initial messages are logged (every Mth message 
-is logged). Default is 500.  Refer to [Zap docs](https://godoc.org/go.uber.org/zap/zapcore#NewSampler) for 
+- `sampling_initial`: number of messages initially logged each second. Default is 2.
+- `sampling_thereafter`: sampling rate after the initial messages are logged (every Mth message
+is logged). Default is 500.  Refer to [Zap docs](https://godoc.org/go.uber.org/zap/zapcore#NewSampler) for
 more details on how sampling parameters impact number of messages.
 
 Example:
