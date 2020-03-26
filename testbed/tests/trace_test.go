@@ -323,7 +323,7 @@ func TestTraceAttributesProcessor(t *testing.T) {
 `,
 			}
 
-			configFile := createConfigFile(test.sender, test.receiver, resultDir, processors)
+			configFile := createConfigFile(t, test.sender, test.receiver, resultDir, processors)
 			defer os.Remove(configFile)
 
 			if configFile == "" {
