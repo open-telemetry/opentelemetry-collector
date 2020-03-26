@@ -151,23 +151,20 @@ docker-otelcol:
 binaries: otelcol
 
 .PHONY: binaries-all-sys
-binaries-all-sys:
-	GOOS=darwin  GOARCH=amd64 $(MAKE) binaries
-	GOOS=linux   GOARCH=amd64 $(MAKE) binaries
-	GOOS=linux   GOARCH=arm64 $(MAKE) binaries
-	GOOS=windows GOARCH=amd64 $(MAKE) binaries
+binaries-all-sys: binaries-darwin_amd64 binaries-linux_amd64 binaries-linux_arm64 binaries-windows_amd64
 
-.PHONY: binaries-all-sys-ci
-binaries-all-sys-ci:
-	ifeq ($$((0 % $(CIRCLE_NODE_TOTAL))), $(CIRCLE_NODE_INDEX))
+.PHONY: binaries-darwin_amd64
+binaries-darwin_amd64:
 	GOOS=darwin  GOARCH=amd64 $(MAKE) binaries
-	endif
-	ifeq ($$((1 % $(CIRCLE_NODE_TOTAL))), $(CIRCLE_NODE_INDEX))
+
+.PHONY: binaries-linux_amd64
+binaries-linux_amd64:
 	GOOS=linux   GOARCH=amd64 $(MAKE) binaries
-	endif
-	ifeq ($$((2 % $(CIRCLE_NODE_TOTAL))), $(CIRCLE_NODE_INDEX))
+
+.PHONY: binaries-linux_arm64
+binaries-linux_arm64:
 	GOOS=linux   GOARCH=arm64 $(MAKE) binaries
-	endif
-	ifeq ($$((3 % $(CIRCLE_NODE_TOTAL))), $(CIRCLE_NODE_INDEX))
+
+.PHONY: binaries-windows_amd64
+binaries-windows_amd64:
 	GOOS=windows GOARCH=amd64 $(MAKE) binaries
-	endif

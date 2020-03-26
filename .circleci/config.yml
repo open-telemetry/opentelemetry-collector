@@ -105,7 +105,7 @@ jobs:
       - attach_to_workspace
       - run:
           name: Build collector for all archs
-          command: make binaries-all-sys-ci
+          command: grep ^binaries-all-sys Makefile|fmt -w 1|tail -n +2|circleci tests split|xargs make
       - persist_to_workspace:
           root: ~/
           paths: project/bin
