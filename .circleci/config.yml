@@ -70,6 +70,9 @@ jobs:
       - run:
           name: Install tools
           command: make install-tools
+      - run:
+          name: Install loadtest tools
+          command: make -C testbed install-tools
       - persist_to_workspace:
           root: ~/
           paths: go/bin
