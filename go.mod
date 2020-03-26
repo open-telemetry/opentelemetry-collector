@@ -62,3 +62,5 @@ require (
 )
 
 replace k8s.io/client-go => k8s.io/client-go v0.0.0-20190620085101-78d2af792bab
+
+replace github.com/spf13/viper => github.com/spf13/viper v1.4.1-0.20190911140308-99520c81d86e
