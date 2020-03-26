@@ -259,13 +259,13 @@ func (rb *ReceiversBuilder) buildReceiver(config configmodels.Receiver) (*builtR
 	return rcv, nil
 }
 
-func buildFanoutTraceConsumer(pipelines []*builtPipeline) consumer.TraceConsumerOld {
+func buildFanoutTraceConsumer(pipelines []*builtPipeline) consumer.TraceConsumerBase {
 	// Optimize for the case when there is only one processor, no need to create junction point.
 	if len(pipelines) == 1 {
 		return pipelines[0].firstTC
 	}
 
-	var pipelineConsumers []consumer.TraceConsumerOld
+	var pipelineConsumers []consumer.TraceConsumerBase
 	anyPipelineMutatesData := false
 	for _, pipeline := range pipelines {
 		pipelineConsumers = append(pipelineConsumers, pipeline.firstTC)
@@ -279,18 +279,18 @@ func buildFanoutTraceConsumer(pipelines []*builtPipeline) consumer.TraceConsumer
 		// TODO: if there are more than 2 pipelines only clone data for pipelines that
 		// declare the intent to mutate the data. Pipelines that do not mutate the data
 		// can consume shared data.
-		return processor.NewTraceCloningFanOutConnector(pipelineConsumers)
+		return processor.CreateTraceCloningFanOutConnector(pipelineConsumers)
 	}
-	return processor.NewTraceFanOutConnector(pipelineConsumers)
+	return processor.CreateTraceFanOutConnector(pipelineConsumers)
 }
 
-func buildFanoutMetricConsumer(pipelines []*builtPipeline) consumer.MetricsConsumerOld {
+func buildFanoutMetricConsumer(pipelines []*builtPipeline) consumer.MetricsConsumerBase {
 	// Optimize for the case when there is only one processor, no need to create junction point.
 	if len(pipelines) == 1 {
 		return pipelines[0].firstMC
 	}
 
-	var pipelineConsumers []consumer.MetricsConsumerOld
+	var pipelineConsumers []consumer.MetricsConsumerBase
 	anyPipelineMutatesData := false
 	for _, pipeline := range pipelines {
 		pipelineConsumers = append(pipelineConsumers, pipeline.firstMC)
@@ -304,9 +304,9 @@ func buildFanoutMetricConsumer(pipelines []*builtPipeline) consumer.MetricsConsu
 		// TODO: if there are more than 2 pipelines only clone data for pipelines that
 		// declare the intent to mutate the data. Pipelines that do not mutate the data
 		// can consume shared data.
-		return processor.NewMetricsCloningFanOutConnector(pipelineConsumers)
+		return processor.CreateMetricsCloningFanOutConnector(pipelineConsumers)
 	}
-	return processor.NewMetricsFanOutConnector(pipelineConsumers)
+	return processor.CreateMetricsFanOutConnector(pipelineConsumers)
 }
 
 // createTraceReceiver is a helper function that creates trace receiver based on the current receiver type
@@ -316,7 +316,7 @@ func createTraceReceiver(
 	factory component.ReceiverFactoryBase,
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
-	nextConsumer consumer.BaseTraceConsumer,
+	nextConsumer consumer.TraceConsumerBase,
 ) (component.TraceReceiver, error) {
 	if factoryV2, ok := factory.(component.ReceiverFactory); ok {
 		creationParams := component.ReceiverCreateParams{Logger: logger}
@@ -340,6 +340,7 @@ func createTraceReceiver(
 	}
 
 	// Old type receiver and a new type consumer usecase is not supported.
+	// TODO: This case can be supported since we have OC->internal traces translation function
 	return nil, errors.New("OC Traces -> internal data format translation is not supported")
 }
 
@@ -350,7 +351,7 @@ func createMetricsReceiver(
 	factory component.ReceiverFactoryBase,
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
-	nextConsumer consumer.BaseMetricsConsumer,
+	nextConsumer consumer.MetricsConsumerBase,
 ) (component.MetricsReceiver, error) {
 	if factoryV2, ok := factory.(component.ReceiverFactory); ok {
 		creationParams := component.ReceiverCreateParams{Logger: logger}
@@ -374,5 +375,6 @@ func createMetricsReceiver(
 	}
 
 	// Old type receiver and a new type consumer usecase is not supported.
+	// TODO: This case can be supported once we have OC->internal metrics translation function
 	return nil, errors.New("OC Metrics -> internal data format translation is not supported")
 }

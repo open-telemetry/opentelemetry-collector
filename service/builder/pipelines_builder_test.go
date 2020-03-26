@@ -142,7 +142,7 @@ func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 			Type: "resourcetype",
 		},
 	}
-	processor.firstTC.ConsumeTraceData(context.Background(), traceData)
+	processor.firstTC.(consumer.TraceConsumerOld).ConsumeTraceData(context.Background(), traceData)
 
 	// Now verify received data.
 	for _, consumer := range exporterConsumers {
