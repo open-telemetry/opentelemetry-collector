@@ -1,18 +1,57 @@
-version: 2
+version: 2.1
+
+executors:
+  golang:
+    docker:
+      - image: cimg/go:1.14
+
+commands:
+  attach_to_workspace:
+    steps:
+      - attach_workspace:
+          at: ~/
+
+  save_module_cache:
+    steps:
+      - save_cache:
+          key: cimg-go-pkg-mod-{{ checksum "go.sum" }}
+          paths:
+            - "/home/circleci/go/pkg/mod"
+
+  restore_module_cache:
+    steps:
+      - restore_cache: # restores saved cache if no changes are detected since last run
+          keys:
+            - cimg-go-pkg-mod-{{ checksum "go.sum" }}
+      - persist_to_workspace:
+          root: ~/
+          paths: go/pkg/mod
 
 workflows:
   version: 2
-  build-publish:
+  build-and-test:
     jobs:
+      - setup
+      - lint:
+          requires:
+            - setup
       - build:
-          filters:
-            branches:
-              only: /.*/
-            tags:
-              only: /.*/
-      - publish:
+          requires:
+            - lint
+      - loadtest:
           requires:
             - build
+      - test:
+          requires:
+            - lint
+      - coverage:
+          requires:
+            - lint
+      - publish:
+          requires:
+            - loadtest
+            - test
+            - coverage
           filters:
             branches:
               ignore: /.*/
@@ -20,41 +59,75 @@ workflows:
               only: /^v[0-9].[0-9].[0-9]+.*/
 
 jobs:
-  build:
-    docker:
-      - image: cimg/go:1.14
+  setup:
+    executor: golang
     steps:
       - checkout
-      - run:
-          name: Install packages.
-          command: sudo apt update && sudo apt-get install bzr time
+      - restore_module_cache
+      - persist_to_workspace:
+          root: ~/
+          paths: project
       - run:
           name: Install tools
           command: make install-tools
-      - restore_cache: # restores saved cache if no changes are detected since last run
-          keys:
-            - cimg-go-pkg-mod-{{ checksum "go.sum" }}
+      - persist_to_workspace:
+          root: ~/
+          paths: go/bin
+
+  lint:
+    executor: golang
+    steps:
+      - attach_to_workspace
       - run:
-          name: Verify
-          command: make ci
+          name: Lint
+          command: make checklicense impi lint misspell
+
+  build:
+    executor: golang
+    steps:
+      - attach_to_workspace
       - run:
           name: Build collector 
-          command: make otelcol
-      - save_cache:
-          key: cimg-go-pkg-mod-{{ checksum "go.sum" }}
-          paths:
-            - "/home/circleci/go/pkg/mod"
+          command: make binaries-all-sys
+      - persist_to_workspace:
+          root: ~/
+          paths: project/bin
+
+  loadtest:
+    executor: golang
+    steps:
+      - attach_to_workspace
+      - run:
+          name: Loadtest
+          command: make -C testbed runtests
       - store_artifacts:
           path: testbed/tests/results
       - store_test_results:
           path: testbed/tests/results/junit
+
+  test:
+    executor: golang
+    steps:
+      - attach_to_workspace
+      - run:
+          name: Unit tests
+          command: make test
+      - save_module_cache
+
+  coverage:
+    executor: golang
+    steps:
+      - attach_to_workspace
+      - run:
+          name: Install packages.
+          command: sudo apt update && sudo apt-get install bzr time
+      - run:
+          name: Coverage tests
+          command: make test-with-cover
       - run:
           name: Code coverage
           command: bash <(curl -s https://codecov.io/bash)
-      - persist_to_workspace:
-          root: .
-          paths:
-            - .
+
   publish:
     docker:
       - image: cimg/go:1.14
