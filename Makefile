@@ -48,7 +48,7 @@ e2e-test: otelcol
 
 .PHONY: test
 test:
-	$(GOTEST) $(GOTEST_OPT) $(ALL_PKGS)
+	echo $(ALL_PKGS) | xargs -n 10 $(GOTEST) $(GOTEST_OPT)
 
 .PHONY: benchmark
 benchmark:
