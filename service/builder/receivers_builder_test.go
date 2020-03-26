@@ -81,7 +81,8 @@ func TestReceiversBuilder_Build(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
+	for i := range tests {
+		test := tests[i]
 		t.Run(test.name, func(t *testing.T) {
 			testReceivers(t, test)
 		})

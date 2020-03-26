@@ -69,7 +69,8 @@ func TestNewTraceProcessor(t *testing.T) {
 			},
 		},
 	}
-	for _, tt := range tests {
+	for i := range tests {
+		tt := tests[i]
 		t.Run(tt.name, func(t *testing.T) {
 			if !tt.wantErr {
 				// The truncation below with uint32 cannot be defined at initialization (compiler error), performing it at runtime.
@@ -144,7 +145,8 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 		},
 	}
 	const testSvcName = "test-svc"
-	for _, tt := range tests {
+	for i := range tests {
+		tt := tests[i]
 		t.Run(tt.name, func(t *testing.T) {
 			sink := &exportertest.SinkTraceExporter{}
 			tsp, err := NewTraceProcessor(sink, tt.cfg)
@@ -272,7 +274,8 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			sampled: true,
 		},
 	}
-	for _, tt := range tests {
+	for i := range tests {
+		tt := tests[i]
 		t.Run(tt.name, func(t *testing.T) {
 			sink := &exportertest.SinkTraceExporter{}
 			tsp, err := NewTraceProcessor(sink, tt.cfg)
@@ -452,7 +455,8 @@ func Test_parseSpanSamplingPriority(t *testing.T) {
 			want: deferDecision,
 		},
 	}
-	for _, tt := range tests {
+	for i := range tests {
+		tt := tests[i]
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Equal(t, tt.want, parseSpanSamplingPriority(tt.span))
 		})

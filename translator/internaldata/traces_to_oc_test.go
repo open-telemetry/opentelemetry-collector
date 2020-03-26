@@ -120,7 +120,8 @@ func TestSpanKindToOC(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
+	for i := range tests {
+		test := tests[i]
 		t.Run(test.kind.String(), func(t *testing.T) {
 			got := spanKindToOC(test.kind)
 			assert.EqualValues(t, test.ocKind, got, "Expected "+test.ocKind.String()+", got "+got.String())
@@ -167,7 +168,8 @@ func TestSpanKindToOCAttribute(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
+	for i := range tests {
+		test := tests[i]
 		t.Run(test.kind.String(), func(t *testing.T) {
 			got := spanKindToOCAttribute(test.kind)
 			assert.EqualValues(t, test.ocAttribute, got, "Expected "+test.ocAttribute.String()+", got "+got.String())
@@ -378,7 +380,8 @@ func TestInternalToOC(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
+	for i := range tests {
+		test := tests[i]
 		t.Run(test.name, func(t *testing.T) {
 			got := TraceDataToOC(test.internal)
 			assert.EqualValues(t, test.oc, got)

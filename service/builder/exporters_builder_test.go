@@ -159,7 +159,8 @@ func TestExportersBuilder_ErrorOnNilExporter(t *testing.T) {
 		},
 	}
 
-	for _, pipeline := range pipelines {
+	for i := range pipelines {
+		pipeline := pipelines[i]
 		t.Run(pipeline.Name, func(t *testing.T) {
 
 			cfg := &configmodels.Config{

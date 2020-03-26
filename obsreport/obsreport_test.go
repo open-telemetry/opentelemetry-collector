@@ -87,7 +87,8 @@ func TestConfigure(t *testing.T) {
 				genAllViews()...),
 		},
 	}
-	for _, tt := range tests {
+	for i := range tests {
+		tt := tests[i]
 		t.Run(tt.name, func(t *testing.T) {
 			gotViews := Configure(tt.args.generateLegacy, tt.args.generateNew)
 			assert.Equal(t, tt.wantViews, gotViews)
@@ -540,7 +541,8 @@ func Test_obsreport_ProcessorMetricViews(t *testing.T) {
 			},
 		},
 	}
-	for _, tt := range tests {
+	for i := range tests {
+		tt := tests[i]
 		t.Run(tt.name, func(t *testing.T) {
 			useLegacy = tt.withLegacy
 			useNew = tt.withNew

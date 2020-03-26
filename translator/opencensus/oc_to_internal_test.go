@@ -249,7 +249,8 @@ func TestOcSpanKindToInternal(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
+	for i := range tests {
+		test := tests[i]
 		t.Run(test.otlpKind.String(), func(t *testing.T) {
 			got := ocSpanKindToInternal(test.ocKind, test.ocAttrs)
 			assert.EqualValues(t, test.otlpKind, got, "Expected "+test.otlpKind.String()+", got "+got.String())
@@ -428,7 +429,8 @@ func TestOcToInternal(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
+	for i := range tests {
+		test := tests[i]
 		t.Run(test.name, func(t *testing.T) {
 			got := ocToInternal(test.oc)
 			assert.EqualValues(t, test.itd, got)

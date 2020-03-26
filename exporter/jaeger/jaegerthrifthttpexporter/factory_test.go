@@ -124,7 +124,8 @@ func TestFactory_CreateTraceExporterFails(t *testing.T) {
 			errorMessage: "\"jaeger_thrift_http\" config requires a positive value for \"timeout\"",
 		},
 	}
-	for _, tt := range tests {
+	for i := range tests {
+		tt := tests[i]
 		t.Run(tt.name, func(t *testing.T) {
 			f := &Factory{}
 			te, err := f.CreateTraceExporter(zap.NewNop(), tt.config)

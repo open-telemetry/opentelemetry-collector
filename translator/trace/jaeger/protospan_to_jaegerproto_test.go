@@ -94,8 +94,8 @@ func sortJaegerProtoBatch(batch *jaeger.Batch) {
 		return batch.Process.Tags[i].Key < batch.Process.Tags[j].Key
 	})
 	// Sort the span tags and the span log fields.
-	for _, jSpan := range batch.Spans {
-
+	for i := range batch.Spans {
+		jSpan := batch.Spans[i]
 		// cmp.Diff ends up comparing batch.Spans[].Process where it doesn't handle nil references well.
 		// For reading purposes https://github.com/google/go-cmp/issues/61
 		// To make cmp.Diff bypass the panic, set the Process of the Span to be that of the Batch only for
@@ -107,7 +107,8 @@ func sortJaegerProtoBatch(batch *jaeger.Batch) {
 		sort.Slice(jSpan.Tags, func(i, j int) bool {
 			return jSpan.Tags[i].Key < jSpan.Tags[j].Key
 		})
-		for _, jSpanLog := range jSpan.Logs {
+		for i := range jSpan.Logs {
+			jSpanLog := jSpan.Logs[i]
 			sort.Slice(jSpanLog.Fields, func(i, j int) bool {
 				return jSpanLog.Fields[i].Key < jSpanLog.Fields[j].Key
 			})

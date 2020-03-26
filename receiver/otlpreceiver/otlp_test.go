@@ -560,8 +560,10 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 			exportFn:    exportBidiFn,
 		},
 	}
-	for _, exporter := range exporters {
-		for _, tt := range tests {
+	for i := range exporters {
+		exporter := exporters[i]
+		for i := range tests {
+			tt := tests[i]
 			t.Run(tt.name+"/"+exporter.receiverTag, func(t *testing.T) {
 				doneFn := observabilitytest.SetupRecordedMetricsTest()
 				defer doneFn()
@@ -584,7 +586,8 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 				}
 				defer cc.Close()
 
-				for _, ingestionState := range tt.ingestionStates {
+				for j := range tt.ingestionStates {
+					ingestionState := tt.ingestionStates[j]
 					if ingestionState.okToIngest {
 						sink.SetConsumeTraceError(nil)
 					} else {

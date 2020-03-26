@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//lint:file-ignore U1000 t.Skip() flaky test causes unused function warning.
-
 package opencensusreceiver
 
 import (
@@ -529,8 +527,10 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 			exportFn:    exportBidiFn,
 		},
 	}
-	for _, exporter := range exporters {
-		for _, tt := range tests {
+	for i := range exporters {
+		exporter := exporters[i]
+		for j := range tests {
+			tt := tests[j]
 			t.Run(tt.name+"/"+exporter.receiverTag, func(t *testing.T) {
 				doneFn := observabilitytest.SetupRecordedMetricsTest()
 				defer doneFn()
@@ -683,8 +683,10 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 			exportFn:    exportBidiFn,
 		},
 	}
-	for _, exporter := range exporters {
-		for _, tt := range tests {
+	for i := range exporters {
+		exporter := exporters[i]
+		for i := range tests {
+			tt := tests[i]
 			t.Run(tt.name+"/"+exporter.receiverTag, func(t *testing.T) {
 				doneFn := observabilitytest.SetupRecordedMetricsTest()
 				defer doneFn()
@@ -707,7 +709,8 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 				}
 				defer cc.Close()
 
-				for _, ingestionState := range tt.ingestionStates {
+				for i := range tt.ingestionStates {
+					ingestionState := tt.ingestionStates[i]
 					if ingestionState.okToIngest {
 						sink.SetConsumeMetricsError(nil)
 					} else {

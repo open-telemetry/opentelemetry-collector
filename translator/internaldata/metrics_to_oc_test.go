@@ -78,7 +78,8 @@ func TestResourceMetricsToMetricsData(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
+	for i := range tests {
+		test := tests[i]
 		t.Run(test.name, func(t *testing.T) {
 			got := MetricDataToOC(test.internal)
 			if test.name == "sample-metric" {

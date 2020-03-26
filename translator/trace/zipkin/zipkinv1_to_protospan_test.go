@@ -75,7 +75,8 @@ func Test_hexIDToOCID(t *testing.T) {
 			wantErr: nil,
 		},
 	}
-	for _, tt := range tests {
+	for i := range tests {
+		tt := tests[i]
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := hexIDToOCID(tt.hexStr)
 			if tt.wantErr != nil && tt.wantErr != err {
@@ -127,7 +128,8 @@ func Test_hexTraceIDToOCTraceID(t *testing.T) {
 			wantErr: nil,
 		},
 	}
-	for _, tt := range tests {
+	for i := range tests {
+		tt := tests[i]
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := hexTraceIDToOCTraceID(tt.hexStr)
 			if tt.wantErr != nil && tt.wantErr != err {
@@ -220,7 +222,8 @@ func TestMultipleJSONV1BatchesToOCProto(t *testing.T) {
 
 		// Coalesce the nodes otherwise they will differ due to multiple
 		// nodes representing same logical service
-		for _, tsr := range g {
+		for i := range g {
+			tsr := g[i]
 			key := tsr.Node.String()
 			if pTsr, ok := nodeToTraceReqs[key]; ok {
 				pTsr.Spans = append(pTsr.Spans, tsr.Spans...)
@@ -834,7 +837,8 @@ func TestSpanKindTranslation(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
+	for i := range tests {
+		test := tests[i]
 		t.Run(test.zipkinV1Kind, func(t *testing.T) {
 			// Create Zipkin V1 span.
 			zSpan := &zipkinV1Span{

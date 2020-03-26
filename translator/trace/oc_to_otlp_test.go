@@ -188,7 +188,8 @@ func TestOcSpanKindToOtlp(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
+	for i := range tests {
+		test := tests[i]
 		t.Run(test.otlpKind.String(), func(t *testing.T) {
 			got := ocSpanKindToOtlp(test.ocKind, test.ocAttrs)
 			assert.EqualValues(t, test.otlpKind, got, "Expected "+test.otlpKind.String()+", got "+got.String())
@@ -416,7 +417,8 @@ func TestOcToOtlp(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
+	for i := range tests {
+		test := tests[i]
 		t.Run(test.name, func(t *testing.T) {
 			got := OCToOTLP(test.oc)
 			assert.EqualValues(t, test.otlp, got)

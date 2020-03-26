@@ -38,7 +38,8 @@ func TestBatcherNew(t *testing.T) {
 		{"invalid batchChannelSize", 1, 0, 0, ErrInvalidBatchChannelSize},
 		{"valid", 1, 0, 1, nil},
 	}
-	for _, tt := range tests {
+	for i := range tests {
+		tt := tests[i]
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := New(tt.numBatches, tt.newBatchesInitialCapacity, tt.batchChannelSize)
 			if err != tt.wantErr {

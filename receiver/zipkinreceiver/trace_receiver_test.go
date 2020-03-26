@@ -127,7 +127,8 @@ func TestNew(t *testing.T) {
 			},
 		},
 	}
-	for _, tt := range tests {
+	for i := range tests {
+		tt := tests[i]
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := New(zipkinReceiver, tt.args.address, tt.args.nextConsumer)
 			require.Equal(t, tt.wantErr, err)
@@ -415,7 +416,8 @@ func TestStartTraceReception(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
+	for i := range tests {
+		tt := tests[i]
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(exportertest.SinkTraceExporter)
 			zr, err := New(zipkinReceiver, "localhost:0", sink)
@@ -459,7 +461,8 @@ func TestSpanKindTranslation(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
+	for i := range tests {
+		tt := tests[i]
 		t.Run(string(tt.zipkinKind), func(t *testing.T) {
 			zs := &zipkinmodel.SpanModel{
 				SpanContext: zipkinmodel.SpanContext{

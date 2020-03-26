@@ -57,7 +57,8 @@ func TestNewRegexpFilterSet(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
+	for i := range tests {
+		test := tests[i]
 		t.Run(test.name, func(t *testing.T) {
 			fs, err := NewRegexpFilterSet(test.filters)
 			assert.Equal(t, test.success, fs != nil)
@@ -88,7 +89,8 @@ func TestRegexpMatches(t *testing.T) {
 		"test_contains_match",
 	}
 
-	for _, m := range matches {
+	for i := range matches {
+		m := matches[i]
 		t.Run(m, func(t *testing.T) {
 			assert.True(t, fs.Matches(m))
 		})
@@ -102,7 +104,8 @@ func TestRegexpMatches(t *testing.T) {
 		"c",
 	}
 
-	for _, m := range mismatches {
+	for i := range mismatches {
+		m := mismatches[i]
 		t.Run(m, func(t *testing.T) {
 			assert.False(t, fs.Matches(m))
 		})
@@ -127,7 +130,8 @@ func TestRegexpMatchesCaches(t *testing.T) {
 		"test_contains_match",
 	}
 
-	for _, m := range matches {
+	for i := range matches {
+		m := matches[i]
 		t.Run(m, func(t *testing.T) {
 			assert.True(t, fs.Matches(m))
 
@@ -143,7 +147,8 @@ func TestRegexpMatchesCaches(t *testing.T) {
 		"not_exact_string_match",
 	}
 
-	for _, m := range mismatches {
+	for i := range mismatches {
+		m := mismatches[i]
 		t.Run(m, func(t *testing.T) {
 			assert.False(t, fs.Matches(m))
 

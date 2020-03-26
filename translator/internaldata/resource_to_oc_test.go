@@ -85,7 +85,8 @@ func TestResourceToOC(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
+	for i := range tests {
+		test := tests[i]
 		t.Run(test.name, func(t *testing.T) {
 			ocNode, ocResource := internalResourceToOC(test.resource)
 			assert.EqualValues(t, test.ocNode, ocNode)

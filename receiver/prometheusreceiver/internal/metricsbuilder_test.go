@@ -86,7 +86,8 @@ func createDataPoint(mname string, value float64, tagPairs ...string) *testDataP
 }
 
 func runBuilderTests(t *testing.T, tests []buildTestData) {
-	for _, tt := range tests {
+	for i := range tests {
+		tt := tests[i]
 		t.Run(tt.name, func(t *testing.T) {
 			if len(tt.inputs) != len(tt.wants) {
 				t.Errorf("wrong test data, make sure length of tt.inputs %v and tt.wants %v is same", len(tt.inputs), len(tt.wants))
@@ -1124,7 +1125,8 @@ func Test_isUsefulLabel(t *testing.T) {
 		{"other", args{metricspb.MetricDescriptor_GAUGE_DOUBLE, "other"}, true},
 		{"empty", args{metricspb.MetricDescriptor_GAUGE_DOUBLE, ""}, true},
 	}
-	for _, tt := range tests {
+	for i := range tests {
+		tt := tests[i]
 		t.Run(tt.name, func(t *testing.T) {
 			if got := isUsefulLabel(tt.args.mType, tt.args.labelKey); got != tt.want {
 				t.Errorf("isUsefulLabel() = %v, want %v", got, tt.want)
@@ -1147,7 +1149,8 @@ func Test_dpgSignature(t *testing.T) {
 		{"extra label", labels.FromStrings("a", "va", "b", "vb", "x", "xa"), `[]string{"a=va", "b=vb"}`},
 		{"different order", labels.FromStrings("b", "vb", "a", "va"), `[]string{"a=va", "b=vb"}`},
 	}
-	for _, tt := range tests {
+	for i := range tests {
+		tt := tests[i]
 		t.Run(tt.name, func(t *testing.T) {
 			if got := dpgSignature(knownLabelKeys, tt.ls); got != tt.want {
 				t.Errorf("dpgSignature() = %v, want %v", got, tt.want)
@@ -1180,7 +1183,8 @@ func Test_normalizeMetricName(t *testing.T) {
 		{"sum", "foo_sum", "foo"},
 		{"no_prefix", "_sum", "_sum"},
 	}
-	for _, tt := range tests {
+	for i := range tests {
+		tt := tests[i]
 		t.Run(tt.name, func(t *testing.T) {
 			if got := normalizeMetricName(tt.mname); got != tt.want {
 				t.Errorf("normalizeMetricName() = %v, want %v", got, tt.want)
@@ -1210,7 +1214,8 @@ func Test_getBoundary(t *testing.T) {
 		{"summary", args{metricspb.MetricDescriptor_SUMMARY, ls}, 0.5, false},
 		{"otherType", args{metricspb.MetricDescriptor_GAUGE_DOUBLE, ls}, 0, true},
 	}
-	for _, tt := range tests {
+	for i := range tests {
+		tt := tests[i]
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := getBoundary(tt.args.metricType, tt.args.labels)
 			if (err != nil) != tt.wantErr {
@@ -1239,7 +1244,8 @@ func Test_convToOCAMetricType(t *testing.T) {
 		{"stateset", textparse.MetricTypeStateset, metricspb.MetricDescriptor_UNSPECIFIED},
 		{"unknown", textparse.MetricTypeUnknown, metricspb.MetricDescriptor_UNSPECIFIED},
 	}
-	for _, tt := range tests {
+	for i := range tests {
+		tt := tests[i]
 		t.Run(tt.name, func(t *testing.T) {
 			if got := convToOCAMetricType(tt.metricType); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("convToOCAMetricType() = %v, want %v", got, tt.want)
@@ -1298,7 +1304,8 @@ func Test_heuristicalMetricAndKnownUnits(t *testing.T) {
 		{"test_milimetres", "", "mm"},
 		{"test_mm", "", "mm"},
 	}
-	for _, tt := range tests {
+	for i := range tests {
+		tt := tests[i]
 		t.Run(tt.metricName, func(t *testing.T) {
 			if got := heuristicalMetricAndKnownUnits(tt.metricName, tt.parsedUnit); got != tt.want {
 				t.Errorf("heuristicalMetricAndKnownUnits() = %v, want %v", got, tt.want)

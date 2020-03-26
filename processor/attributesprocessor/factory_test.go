@@ -155,7 +155,8 @@ func TestFactory_validateActionsConfiguration_InvalidConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
 	oCfg.NameVal = "attributes/error"
-	for _, tc := range testcase {
+	for i := range testcase {
+		tc := testcase[i]
 		t.Run(tc.name, func(t *testing.T) {
 			oCfg.Actions = tc.actionLists
 			output, err := buildAttributesConfiguration(*oCfg)

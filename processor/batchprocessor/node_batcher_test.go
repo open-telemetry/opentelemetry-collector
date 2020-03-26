@@ -57,7 +57,9 @@ func BenchmarkGenBucketID(b *testing.B) {
 	}
 
 	for genName, gen := range gens {
+		gen := gen
 		for name, input := range map[string]bucketIDTestInput{"smallInput": inputSmall, "bigInput": inputBig} {
+			input := input
 			b.Run(genName+"-"+name, func(b *testing.B) {
 				for n := 0; n < b.N; n++ {
 					gen(input.node, input.resource, input.format)
@@ -121,7 +123,8 @@ func TestGenBucketID(t *testing.T) {
 			},
 		},
 	}
-	for _, tc := range testCases {
+	for i := range testCases {
+		tc := testCases[i]
 		t.Run(tc.name, func(t *testing.T) {
 			sender := newTestSender()
 			batcher := NewBatcher("test", zap.NewNop(), sender).(*batcher)

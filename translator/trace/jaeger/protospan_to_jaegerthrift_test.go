@@ -75,7 +75,8 @@ func TestThriftInvalidOCProtoIDs(t *testing.T) {
 			wantErr: errZeroSpanID,
 		},
 	}
-	for _, tt := range tests {
+	for i := range tests {
+		tt := tests[i]
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := ocSpansToJaegerSpans(tt.ocSpans)
 			if err == nil {
@@ -158,12 +159,13 @@ func sortJaegerThriftBatch(batch *jaeger.Batch) {
 		return batch.Process.Tags[i].Key < batch.Process.Tags[j].Key
 	})
 	// Sort the span tags and the span log fields.
-	for _, jSpan := range batch.Spans {
-
+	for i := range batch.Spans {
+		jSpan := batch.Spans[i]
 		sort.Slice(jSpan.Tags, func(i, j int) bool {
 			return jSpan.Tags[i].Key < jSpan.Tags[j].Key
 		})
-		for _, jSpanLog := range jSpan.Logs {
+		for i := range jSpan.Logs {
+			jSpanLog := jSpan.Logs[i]
 			sort.Slice(jSpanLog.Fields, func(i, j int) bool {
 				return jSpanLog.Fields[i].Key < jSpanLog.Fields[j].Key
 			})

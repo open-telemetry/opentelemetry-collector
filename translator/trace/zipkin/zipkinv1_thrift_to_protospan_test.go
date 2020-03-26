@@ -498,7 +498,8 @@ func Test_bytesInt16ToInt64(t *testing.T) {
 			wantErr: nil,
 		},
 	}
-	for _, tt := range tests {
+	for i := range tests {
+		tt := tests[i]
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := bytesInt16ToInt64(tt.bytes)
 			if err != tt.wantErr {
@@ -538,7 +539,8 @@ func Test_bytesInt32ToInt64(t *testing.T) {
 			wantErr: nil,
 		},
 	}
-	for _, tt := range tests {
+	for i := range tests {
+		tt := tests[i]
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := bytesInt32ToInt64(tt.bytes)
 			if err != tt.wantErr {
@@ -578,7 +580,8 @@ func Test_bytesInt64ToInt64(t *testing.T) {
 			wantErr: nil,
 		},
 	}
-	for _, tt := range tests {
+	for i := range tests {
+		tt := tests[i]
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := bytesInt64ToInt64(tt.bytes)
 			if err != tt.wantErr {
@@ -618,7 +621,8 @@ func Test_bytesFloat64ToFloat64(t *testing.T) {
 			wantErr: nil,
 		},
 	}
-	for _, tt := range tests {
+	for i := range tests {
+		tt := tests[i]
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := bytesFloat64ToFloat64(tt.bytes)
 			if err != tt.wantErr {

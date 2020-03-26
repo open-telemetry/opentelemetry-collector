@@ -98,7 +98,8 @@ func TestSpan_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 			errorString: "error creating processor. Can't have empty key in the list of attributes",
 		},
 	}
-	for _, tc := range testcases {
+	for i := range testcases {
+		tc := testcases[i]
 		t.Run(tc.name, func(t *testing.T) {
 			output, err := NewMatcher(&tc.property)
 			assert.Nil(t, output)
@@ -205,7 +206,8 @@ func TestSpan_Matching_False(t *testing.T) {
 			},
 		},
 	}
-	for _, tc := range testcases {
+	for i := range testcases {
+		tc := testcases[i]
 		t.Run(tc.name, func(t *testing.T) {
 			assert.False(t, tc.properties.MatchSpan(span, "wrongSvc"))
 		})
@@ -248,7 +250,8 @@ func TestSpan_MatchingCornerCases(t *testing.T) {
 		},
 	}
 
-	for _, tc := range testcases {
+	for i := range testcases {
+		tc := testcases[i]
 		t.Run(tc.name, func(t *testing.T) {
 			assert.False(t, mp.MatchSpan(tc.span, "svcA"))
 		})
@@ -285,7 +288,8 @@ func TestSpan_MissingServiceName(t *testing.T) {
 		},
 	}
 
-	for _, tc := range testcases {
+	for i := range testcases {
+		tc := testcases[i]
 		t.Run(tc.name, func(t *testing.T) {
 			assert.False(t, mp.MatchSpan(tc.span, ""))
 		})
@@ -434,7 +438,8 @@ func TestSpan_Matching_True(t *testing.T) {
 		},
 	}
 
-	for _, tc := range testcases {
+	for i := range testcases {
+		tc := testcases[i]
 		t.Run(tc.name, func(t *testing.T) {
 			assert.True(t, tc.properties.MatchSpan(span, "svcA"))
 
@@ -536,7 +541,8 @@ func TestSpan_validateMatchesConfiguration(t *testing.T) {
 			},
 		},
 	}
-	for _, tc := range testcase {
+	for i := range testcase {
+		tc := testcase[i]
 		t.Run(tc.name, func(t *testing.T) {
 			output, err := NewMatcher(&tc.input)
 			require.NoError(t, err)

@@ -80,7 +80,8 @@ func TestThriftBatchToOCProto_Roundtrip(t *testing.T) {
 		var jSpans []*jaeger.Span
 		jSpans = append(jSpans, gotJBatch.Spans...)
 		jSpans = append(jSpans, wantJBatch.Spans...)
-		for _, jSpan := range jSpans {
+		for i := range jSpans {
+			jSpan := jSpans[i]
 			sort.Slice(jSpan.Tags, func(i, j int) bool {
 				return jSpan.Tags[i].Key < jSpan.Tags[j].Key
 			})
@@ -580,7 +581,8 @@ func TestJaegerStatusTagsToOCStatus(t *testing.T) {
 
 func TestHTTPToGRPCStatusCode(t *testing.T) {
 	for i := int64(100); i <= 600; i++ {
-		wantStatus := tracetranslator.OCStatusCodeFromHTTP(int32(i))
+		val := i
+		wantStatus := tracetranslator.OCStatusCodeFromHTTP(int32(val))
 		gb, err := ThriftBatchToOCProto(&jaeger.Batch{
 			Process: nil,
 			Spans: []*jaeger.Span{{
@@ -589,18 +591,18 @@ func TestHTTPToGRPCStatusCode(t *testing.T) {
 				SpanId:      0x1011121314151617,
 				Tags: []*jaeger.Tag{{
 					Key:   "http.status_code",
-					VLong: &i,
+					VLong: &val,
 					VType: jaeger.TagType_LONG,
 				}},
 			}},
 		})
 		if err != nil {
-			t.Errorf("#%d: Unexpected error: %v", i, err)
+			t.Errorf("#%d: Unexpected error: %v", val, err)
 			continue
 		}
 		gs := gb.Spans[0]
 		if !reflect.DeepEqual(gs.Status.Code, wantStatus) {
-			t.Fatalf("Unsuccessful conversion: %d\nGot:\n\t%v\nWant:\n\t%v", i, gs.Status, wantStatus)
+			t.Fatalf("Unsuccessful conversion: %d\nGot:\n\t%v\nWant:\n\t%v", val, gs.Status, wantStatus)
 		}
 	}
 }

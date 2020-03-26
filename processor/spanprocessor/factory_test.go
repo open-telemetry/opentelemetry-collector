@@ -82,7 +82,8 @@ func TestFactory_CreateTraceProcessor_InvalidConfig(t *testing.T) {
 		},
 	}
 
-	for _, test := range testcases {
+	for i := range testcases {
+		test := testcases[i]
 		t.Run(test.name, func(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.Rename = test.cfg
