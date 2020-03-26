@@ -43,7 +43,7 @@ require (
 	github.com/soheilhy/cmux v0.1.4
 	github.com/spf13/cast v1.3.0
 	github.com/spf13/cobra v0.0.5
-	github.com/spf13/viper v1.6.1
+	github.com/spf13/viper v1.6.2
 	github.com/streadway/quantile v0.0.0-20150917103942-b0c588724d25 // indirect
 	github.com/stretchr/testify v1.4.0
 	github.com/uber-go/atomic v1.4.0 // indirect
@@ -62,5 +62,3 @@ require (
 )
 
 replace k8s.io/client-go => k8s.io/client-go v0.0.0-20190620085101-78d2af792bab
-
-replace github.com/spf13/viper => github.com/spf13/viper v1.4.1-0.20190911140308-99520c81d86e

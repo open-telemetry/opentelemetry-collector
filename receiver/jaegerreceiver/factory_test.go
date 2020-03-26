@@ -19,10 +19,10 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
@@ -275,15 +275,15 @@ func TestRemoteSamplingFileRequiresGRPC(t *testing.T) {
 
 func TestCustomUnmarshalErrors(t *testing.T) {
 	factory := Factory{}
-	v := viper.New()
+	v := config.NewViper()
 
 	f := factory.CustomUnmarshaler()
 	assert.NotNil(t, f, "custom unmarshal function should not be nil")
 
-	err := f(v, "", viper.New(), nil)
+	err := f(v, "", config.NewViper(), nil)
 	assert.Error(t, err, "should not have been able to marshal to a nil config")
 
-	err = f(v, "", viper.New(), &RemoteSamplingConfig{})
+	err = f(v, "", config.NewViper(), &RemoteSamplingConfig{})
 	assert.Error(t, err, "should not have been able to marshal to a non-jaegerreceiver config")
 }
 

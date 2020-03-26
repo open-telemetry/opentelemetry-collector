@@ -127,7 +127,7 @@ func New(params Parameters) (*Application, error) {
 
 	app := &Application{
 		info:      params.ApplicationStartInfo,
-		v:         viper.New(),
+		v:         config.NewViper(),
 		readyChan: make(chan struct{}),
 		factories: params.Factories,
 	}

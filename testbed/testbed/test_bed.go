@@ -35,7 +35,7 @@ import (
 	"testing"
 	"text/template"
 
-	"github.com/spf13/viper"
+	"github.com/open-telemetry/opentelemetry-collector/config"
 )
 
 // GlobalConfig defines test bed configuration.
@@ -89,7 +89,7 @@ func LoadConfig() error {
 	}
 
 	// Read the config.
-	v := viper.New()
+	v := config.NewViper()
 	v.SetConfigType("yaml")
 	if err = v.ReadConfig(bytes.NewBuffer(buf.Bytes())); err != nil {
 		log.Fatalf("Cannot load test bed config from %q: %s",
