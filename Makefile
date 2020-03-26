@@ -10,7 +10,7 @@ ALL_DOC := $(shell find . \( -name "*.md" -o -name "*.yaml" \) \
 # ALL_PKGS is used with 'go cover'
 ALL_PKGS := $(shell go list $(sort $(dir $(ALL_SRC))))
 
-GOTEST_OPT?= -race -timeout 300s
+GOTEST_OPT?= -race -timeout 600s
 GOTEST_OPT_WITH_COVERAGE = $(GOTEST_OPT) -coverprofile=coverage.txt -covermode=atomic
 GOTEST=go test
 GOOS=$(shell go env GOOS)
