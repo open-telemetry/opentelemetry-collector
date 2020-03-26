@@ -17,14 +17,36 @@ package testdata
 import (
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGenerate(t *testing.T) {
-	assert.EqualValues(t, GenerateTraceDataNoLibraries(), GenerateTraceDataNoLibraries())
-	assert.EqualValues(t, GenerateTraceDataNoSpans(), GenerateTraceDataNoSpans())
-	assert.EqualValues(t, GenerateTraceDataOneSpanNoResource(), GenerateTraceDataOneSpanNoResource())
-	assert.EqualValues(t, GenerateTraceDataOneSpan(), GenerateTraceDataOneSpan())
-	assert.EqualValues(t, GenerateTraceDataSameResourcewoSpans(), GenerateTraceDataSameResourcewoSpans())
-	assert.EqualValues(t, GenerateTraceDataTwoSpansSameResourceOneDifferent(), GenerateTraceDataTwoSpansSameResourceOneDifferent())
+func TestGeneratedTraceData(t *testing.T) {
+	assert.EqualValues(t, generateTraceDataNoLibraries(), generateTraceDataNoLibraries())
+	assert.EqualValues(t, generateTraceDataNoSpans(), generateTraceDataNoSpans())
+	assert.EqualValues(t, generateTraceDataOneSpanNoResource(), generateTraceDataOneSpanNoResource())
+	assert.EqualValues(t, generateTraceDataOneSpan(), generateTraceDataOneSpan())
+	assert.EqualValues(t, generateTraceDataSameResourceTwoSpans(), generateTraceDataSameResourceTwoSpans())
+	assert.EqualValues(t, generateTraceDataTwoSpansSameResourceOneDifferent(), generateTraceDataTwoSpansSameResourceOneDifferent())
+}
+
+func TestGeneratedTraceOtlp(t *testing.T) {
+	assert.EqualValues(t, generateTraceOtlpNoLibraries(), generateTraceOtlpNoLibraries())
+	assert.EqualValues(t, generateTraceOtlpNoSpans(), generateTraceOtlpNoSpans())
+	assert.EqualValues(t, generateTraceOtlpOneSpanNoResource(), generateTraceOtlpOneSpanNoResource())
+	assert.EqualValues(t, generateTraceOtlpOneSpan(), generateTraceOtlpOneSpan())
+	assert.EqualValues(t, generateTraceOtlpSameResourceTwoSpans(), generateTraceOtlpSameResourceTwoSpans())
+	assert.EqualValues(t, generateTraceOtlpTwoSpansSameResourceOneDifferent(), generateTraceOtlpTwoSpansSameResourceOneDifferent())
+}
+
+func TestToFromOtlp(t *testing.T) {
+	for i := range AllTraceTestCases {
+		test := AllTraceTestCases[i]
+		t.Run(test.Name, func(t *testing.T) {
+			td := data.TraceDataFromOtlp(test.OtlpData)
+			assert.EqualValues(t, test.TraceData, td)
+			otlp := data.TraceDataToOtlp(td)
+			assert.EqualValues(t, test.OtlpData, otlp)
+		})
+	}
 }
