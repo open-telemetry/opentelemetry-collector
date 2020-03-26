@@ -38,6 +38,9 @@ workflows:
       - build:
           requires:
             - lint
+      - cross-compile:
+          requires:
+            - build
       - loadtest:
           requires:
             - build
@@ -49,6 +52,7 @@ workflows:
             - lint
       - publish:
           requires:
+            - cross-compile
             - loadtest
             - test
             - coverage
@@ -79,18 +83,33 @@ jobs:
 
   lint:
     executor: golang
+    parallelism: 3
     steps:
       - attach_to_workspace
       - run:
           name: Lint
-          command: make checklicense impi lint misspell
+          command: make $(echo checklicense impi lint misspell | fmt -w 1 | circleci tests split)
+      - run:
+          name: Lint testbed
+          command: make -C testbed $(echo fmt vet lint | fmt -w 1 | circleci tests split)
 
   build:
     executor: golang
     steps:
       - attach_to_workspace
       - run:
-          name: Build collector 
+          name: Build collector for linux_amd64
+          command: make binaries
+      - persist_to_workspace:
+          root: ~/
+          paths: project/bin
+
+  cross-compile:
+    executor: golang
+    steps:
+      - attach_to_workspace
+      - run:
+          name: Build collector for all archs
           command: make binaries-all-sys
       - persist_to_workspace:
           root: ~/

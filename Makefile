@@ -152,7 +152,7 @@ binaries: otelcol
 
 .PHONY: binaries-all-sys
 binaries-all-sys:
-	GOOS=darwin GOARCH=amd64 $(MAKE) binaries
-	GOOS=linux GOARCH=amd64 $(MAKE) binaries
-	GOOS=linux GOARCH=arm64 $(MAKE) binaries
+	GOOS=darwin  GOARCH=amd64 $(MAKE) binaries
+	GOOS=linux   GOARCH=amd64 $(MAKE) binaries
+	GOOS=linux   GOARCH=arm64 $(MAKE) binaries
 	GOOS=windows GOARCH=amd64 $(MAKE) binaries
