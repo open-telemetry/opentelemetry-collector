@@ -159,15 +159,15 @@ binaries-all-sys:
 
 .PHONY: binaries-all-sys-ci
 binaries-all-sys-ci:
-	ifeq ($$((0 % $CIRCLE_NODE_TOTAL)), $CIRCLE_NODE_INDEX)
+	ifeq ($$((0 % $(CIRCLE_NODE_TOTAL))), $(CIRCLE_NODE_INDEX))
 	GOOS=darwin  GOARCH=amd64 $(MAKE) binaries
 	endif
-	ifeq ($$((1 % $CIRCLE_NODE_TOTAL)), $CIRCLE_NODE_INDEX)
+	ifeq ($$((1 % $(CIRCLE_NODE_TOTAL))), $(CIRCLE_NODE_INDEX))
 	GOOS=linux   GOARCH=amd64 $(MAKE) binaries
 	endif
-	ifeq ($$((2 % $CIRCLE_NODE_TOTAL)), $CIRCLE_NODE_INDEX)
+	ifeq ($$((2 % $(CIRCLE_NODE_TOTAL))), $(CIRCLE_NODE_INDEX))
 	GOOS=linux   GOARCH=arm64 $(MAKE) binaries
 	endif
-	ifeq ($$((3 % $CIRCLE_NODE_TOTAL)), $CIRCLE_NODE_INDEX)
+	ifeq ($$((3 % $(CIRCLE_NODE_TOTAL))), $(CIRCLE_NODE_INDEX))
 	GOOS=windows GOARCH=amd64 $(MAKE) binaries
 	endif
