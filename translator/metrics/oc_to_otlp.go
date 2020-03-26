@@ -312,8 +312,11 @@ func getPointsCount(ocMetric *ocmetrics.Metric) int {
 }
 
 func descriptorToOtlp(descriptor *ocmetrics.MetricDescriptor) *otlpmetrics.MetricDescriptor {
+	if descriptor == nil {
+		return nil
+	}
 	descriptorType := descriptorTypeToOtlp(descriptor.Type)
-	if descriptor == nil || descriptorType == invalidOtlpMetricDescriptorType {
+	if descriptorType == invalidOtlpMetricDescriptorType {
 		return nil
 	}
 
