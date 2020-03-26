@@ -18,7 +18,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
@@ -34,7 +33,7 @@ func LoadConfigFile(t *testing.T, fileName string, factories Factories) (*config
 	}
 
 	// Read yaml config from file
-	v := viper.New()
+	v := NewViper()
 	v.SetConfigType("yaml")
 	err = v.ReadConfig(file)
 	if err != nil {
