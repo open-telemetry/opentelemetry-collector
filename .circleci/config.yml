@@ -116,7 +116,7 @@ jobs:
       - attach_to_workspace
       - run:
           name: Loadtest
-          command: TEST_ARGS="-test.run='$(make -C testbed listtests | circleci tests split|xargs echo|sed 's/ /|/g')'" make -C testbed runtests
+          command: TEST_ARGS="-test.run='$(make -s -C testbed listtests | circleci tests split|xargs echo|sed 's/ /|/g')'" make -C testbed runtests
       - store_artifacts:
           path: testbed/tests/results
       - store_test_results:
