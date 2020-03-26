@@ -33,7 +33,7 @@ import (
 func TestTraceProcessorCloningMultiplexing(t *testing.T) {
 	processors := make([]consumer.TraceConsumerOld, 3)
 	for i := range processors {
-		processors[i] = &mockTraceConsumer{}
+		processors[i] = &mockTraceConsumerOld{}
 	}
 
 	tfc := NewTraceCloningFanOutConnector(processors)
@@ -55,7 +55,7 @@ func TestTraceProcessorCloningMultiplexing(t *testing.T) {
 	}
 
 	for i, p := range processors {
-		m := p.(*mockTraceConsumer)
+		m := p.(*mockTraceConsumerOld)
 		assert.Equal(t, wantSpansCount, m.TotalSpans)
 		if i < len(processors)-1 {
 			assert.True(t, td.Resource != m.Traces[0].Resource)
@@ -69,7 +69,7 @@ func TestTraceProcessorCloningMultiplexing(t *testing.T) {
 func TestMetricsProcessorCloningMultiplexing(t *testing.T) {
 	processors := make([]consumer.MetricsConsumerOld, 3)
 	for i := range processors {
-		processors[i] = &mockMetricsConsumer{}
+		processors[i] = &mockMetricsConsumerOld{}
 	}
 
 	mfc := NewMetricsCloningFanOutConnector(processors)
@@ -91,7 +91,7 @@ func TestMetricsProcessorCloningMultiplexing(t *testing.T) {
 	}
 
 	for i, p := range processors {
-		m := p.(*mockMetricsConsumer)
+		m := p.(*mockMetricsConsumerOld)
 		assert.Equal(t, wantMetricsCount, m.TotalMetrics)
 		if i < len(processors)-1 {
 			assert.True(t, md.Resource != m.Metrics[0].Resource)

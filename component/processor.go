@@ -32,28 +32,38 @@ type Processor interface {
 	GetCapabilities() ProcessorCapabilities
 }
 
+// TraceProcessorBase is a common interface for TraceProcessor and TraceProcessorOld
+type TraceProcessorBase interface {
+	Processor
+}
+
 // TraceProcessorOld composes TraceConsumer with some additional processor-specific functions.
 type TraceProcessorOld interface {
 	consumer.TraceConsumerOld
+	TraceProcessorBase
+}
+
+// TraceProcessor composes TraceConsumer with some additional processor-specific functions.
+type TraceProcessor interface {
+	consumer.TraceConsumer
+	TraceProcessorBase
+}
+
+// MetricsProcessorBase is a common interface for MetricsProcessor and MetricsProcessorV2
+type MetricsProcessorBase interface {
 	Processor
 }
 
 // MetricsProcessor composes MetricsConsumer with some additional processor-specific functions.
 type MetricsProcessorOld interface {
 	consumer.MetricsConsumerOld
-	Processor
-}
-
-// TraceProcessor composes TraceConsumer with some additional processor-specific functions.
-type TraceProcessor interface {
-	consumer.TraceConsumer
-	Processor
+	MetricsProcessorBase
 }
 
 // MetricsProcessor composes MetricsConsumer with some additional processor-specific functions.
 type MetricsProcessor interface {
 	consumer.MetricsConsumer
-	Processor
+	MetricsProcessorBase
 }
 
 // ProcessorCapabilities describes the capabilities of a Processor.

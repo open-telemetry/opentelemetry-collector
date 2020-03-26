@@ -26,15 +26,17 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/internal/data"
+	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 )
 
 func TestTraceProcessorMultiplexing(t *testing.T) {
 	processors := make([]consumer.TraceConsumerOld, 3)
 	for i := range processors {
-		processors[i] = &mockTraceConsumer{}
+		processors[i] = &mockTraceConsumerOld{}
 	}
 
-	tfc := NewTraceFanOutConnector(processors)
+	tfc := NewTraceFanOutConnectorOld(processors)
 	td := consumerdata.TraceData{
 		Spans: make([]*tracepb.Span, 7),
 		Resource: &resourcepb.Resource{
@@ -53,7 +55,7 @@ func TestTraceProcessorMultiplexing(t *testing.T) {
 	}
 
 	for _, p := range processors {
-		m := p.(*mockTraceConsumer)
+		m := p.(*mockTraceConsumerOld)
 		assert.Equal(t, wantSpansCount, m.TotalSpans)
 		assert.True(t, td.Resource == m.Traces[0].Resource)
 	}
@@ -62,13 +64,13 @@ func TestTraceProcessorMultiplexing(t *testing.T) {
 func TestTraceProcessorWhenOneErrors(t *testing.T) {
 	processors := make([]consumer.TraceConsumerOld, 3)
 	for i := range processors {
-		processors[i] = &mockTraceConsumer{}
+		processors[i] = &mockTraceConsumerOld{}
 	}
 
 	// Make one processor return error
-	processors[1].(*mockTraceConsumer).MustFail = true
+	processors[1].(*mockTraceConsumerOld).MustFail = true
 
-	tfc := NewTraceFanOutConnector(processors)
+	tfc := NewTraceFanOutConnectorOld(processors)
 	td := consumerdata.TraceData{
 		Spans: make([]*tracepb.Span, 5),
 	}
@@ -84,7 +86,7 @@ func TestTraceProcessorWhenOneErrors(t *testing.T) {
 	}
 
 	for _, p := range processors {
-		m := p.(*mockTraceConsumer)
+		m := p.(*mockTraceConsumerOld)
 		if m.TotalSpans != wantSpansCount {
 			t.Errorf("Wanted %d spans for every processor but got %d", wantSpansCount, m.TotalSpans)
 			return
@@ -95,10 +97,10 @@ func TestTraceProcessorWhenOneErrors(t *testing.T) {
 func TestMetricsProcessorMultiplexing(t *testing.T) {
 	processors := make([]consumer.MetricsConsumerOld, 3)
 	for i := range processors {
-		processors[i] = &mockMetricsConsumer{}
+		processors[i] = &mockMetricsConsumerOld{}
 	}
 
-	mfc := NewMetricsFanOutConnector(processors)
+	mfc := NewMetricsFanOutConnectorOld(processors)
 	md := consumerdata.MetricsData{
 		Metrics: make([]*metricspb.Metric, 7),
 	}
@@ -114,7 +116,7 @@ func TestMetricsProcessorMultiplexing(t *testing.T) {
 	}
 
 	for _, p := range processors {
-		m := p.(*mockMetricsConsumer)
+		m := p.(*mockMetricsConsumerOld)
 		assert.Equal(t, wantMetricsCount, m.TotalMetrics)
 		assert.True(t, md.Resource == m.Metrics[0].Resource)
 	}
@@ -123,13 +125,13 @@ func TestMetricsProcessorMultiplexing(t *testing.T) {
 func TestMetricsProcessorWhenOneErrors(t *testing.T) {
 	processors := make([]consumer.MetricsConsumerOld, 3)
 	for i := range processors {
-		processors[i] = &mockMetricsConsumer{}
+		processors[i] = &mockMetricsConsumerOld{}
 	}
 
 	// Make one processor return error
-	processors[1].(*mockMetricsConsumer).MustFail = true
+	processors[1].(*mockMetricsConsumerOld).MustFail = true
 
-	mfc := NewMetricsFanOutConnector(processors)
+	mfc := NewMetricsFanOutConnectorOld(processors)
 	md := consumerdata.MetricsData{
 		Metrics: make([]*metricspb.Metric, 5),
 	}
@@ -145,7 +147,7 @@ func TestMetricsProcessorWhenOneErrors(t *testing.T) {
 	}
 
 	for _, p := range processors {
-		m := p.(*mockMetricsConsumer)
+		m := p.(*mockMetricsConsumerOld)
 		if m.TotalMetrics != wantMetricsCount {
 			t.Errorf("Wanted %d metrics for every processor but got %d", wantMetricsCount, m.TotalMetrics)
 			return
@@ -153,15 +155,89 @@ func TestMetricsProcessorWhenOneErrors(t *testing.T) {
 	}
 }
 
-type mockTraceConsumer struct {
+func TestCreateTraceFanOutConnectorWithConvertion(t *testing.T) {
+	traceConsumerOld := &mockTraceConsumerOld{}
+	traceConsumer := &mockTraceConsumer{}
+	processors := []consumer.TraceConsumerBase{
+		traceConsumerOld,
+		traceConsumer,
+	}
+
+	resourceTypeName := "good-resource"
+
+	resource := data.NewResource()
+	resource.SetAttributes(data.NewAttributeMap(data.AttributesMap{
+		conventions.OCAttributeResourceType: data.NewAttributeValueString(resourceTypeName),
+	}))
+	td := data.NewTraceData()
+	td.SetResourceSpans(data.NewResourceSpansSlice(1))
+	td.ResourceSpans().Get(0).SetResource(resource)
+	td.ResourceSpans().Get(0).SetInstrumentationLibrarySpans(data.NewInstrumentationLibrarySpansSlice(1))
+	td.ResourceSpans().Get(0).InstrumentationLibrarySpans().Get(0).SetSpans(data.NewSpanSlice(3))
+
+	tfc := CreateTraceFanOutConnector(processors).(consumer.TraceConsumer)
+
+	var wantSpansCount = 0
+	for i := 0; i < 2; i++ {
+		wantSpansCount += td.SpanCount()
+		err := tfc.ConsumeTrace(context.Background(), td)
+		assert.NoError(t, err)
+	}
+
+	assert.Equal(t, wantSpansCount, traceConsumerOld.TotalSpans)
+	assert.Equal(t, resourceTypeName, traceConsumerOld.Traces[0].Resource.Type)
+
+	assert.Equal(t, wantSpansCount, traceConsumer.TotalSpans)
+	assert.Equal(t, resource, traceConsumer.Traces[0].ResourceSpans().Get(0).Resource())
+}
+
+func TestCreateMetricsFanOutConnectorWithConvertion(t *testing.T) {
+	metricsConsumerOld := &mockMetricsConsumerOld{}
+	metricsConsumer := &mockMetricsConsumer{}
+	processors := []consumer.MetricsConsumerBase{
+		metricsConsumerOld,
+		metricsConsumer,
+	}
+
+	resourceTypeName := "good-resource"
+
+	md := data.NewMetricData()
+	rms := data.NewResourceMetricsSlice(1)
+	md.SetResourceMetrics(rms)
+	rm := rms.Get(0)
+	resource := data.NewResource()
+	resource.SetAttributes(data.NewAttributeMap(data.AttributesMap{
+		conventions.OCAttributeResourceType: data.NewAttributeValueString(resourceTypeName),
+	}))
+	rm.SetResource(resource)
+	rm.SetInstrumentationLibraryMetrics(data.NewInstrumentationLibraryMetricsSlice(1))
+	rm.InstrumentationLibraryMetrics().Get(0).SetMetrics(data.NewMetricSlice(4))
+
+	mfc := CreateMetricsFanOutConnector(processors).(consumer.MetricsConsumer)
+
+	var wantSpansCount = 0
+	for i := 0; i < 2; i++ {
+		wantSpansCount += md.MetricCount()
+		err := mfc.ConsumeMetrics(context.Background(), md)
+		assert.NoError(t, err)
+	}
+
+	assert.Equal(t, wantSpansCount, metricsConsumerOld.TotalMetrics)
+	assert.Equal(t, resourceTypeName, metricsConsumerOld.Metrics[0].Resource.Type)
+
+	assert.Equal(t, wantSpansCount, metricsConsumer.TotalMetrics)
+	assert.Equal(t, resource, metricsConsumer.Metrics[0].ResourceMetrics().Get(0).Resource())
+}
+
+type mockTraceConsumerOld struct {
 	Traces     []*consumerdata.TraceData
 	TotalSpans int
 	MustFail   bool
 }
 
-var _ consumer.TraceConsumerOld = &mockTraceConsumer{}
+var _ consumer.TraceConsumerOld = &mockTraceConsumerOld{}
 
-func (p *mockTraceConsumer) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
+func (p *mockTraceConsumerOld) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	p.Traces = append(p.Traces, &td)
 	p.TotalSpans += len(td.Spans)
 	if p.MustFail {
@@ -171,20 +247,55 @@ func (p *mockTraceConsumer) ConsumeTraceData(ctx context.Context, td consumerdat
 	return nil
 }
 
-type mockMetricsConsumer struct {
+type mockTraceConsumer struct {
+	Traces     []*data.TraceData
+	TotalSpans int
+	MustFail   bool
+}
+
+var _ consumer.TraceConsumer = &mockTraceConsumer{}
+
+func (p *mockTraceConsumer) ConsumeTrace(ctx context.Context, td data.TraceData) error {
+	p.Traces = append(p.Traces, &td)
+	p.TotalSpans += td.SpanCount()
+	if p.MustFail {
+		return fmt.Errorf("this processor must fail")
+	}
+	return nil
+
+}
+
+type mockMetricsConsumerOld struct {
 	Metrics      []*consumerdata.MetricsData
 	TotalMetrics int
 	MustFail     bool
 }
 
-var _ consumer.MetricsConsumerOld = &mockMetricsConsumer{}
+var _ consumer.MetricsConsumerOld = &mockMetricsConsumerOld{}
 
-func (p *mockMetricsConsumer) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
+func (p *mockMetricsConsumerOld) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
 	p.Metrics = append(p.Metrics, &md)
 	p.TotalMetrics += len(md.Metrics)
 	if p.MustFail {
 		return fmt.Errorf("this processor must fail")
 	}
 
+	return nil
+}
+
+type mockMetricsConsumer struct {
+	Metrics      []*data.MetricData
+	TotalMetrics int
+	MustFail     bool
+}
+
+var _ consumer.MetricsConsumer = &mockMetricsConsumer{}
+
+func (p *mockMetricsConsumer) ConsumeMetrics(ctx context.Context, md data.MetricData) error {
+	p.Metrics = append(p.Metrics, &md)
+	p.TotalMetrics += md.MetricCount()
+	if p.MustFail {
+		return fmt.Errorf("this processor must fail")
+	}
 	return nil
 }

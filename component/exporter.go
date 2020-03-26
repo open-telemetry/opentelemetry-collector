@@ -28,28 +28,38 @@ type Exporter interface {
 	Component
 }
 
+// TraceExporterBase defines a common interface for TraceExporter and TraceExporterOld
+type TraceExporterBase interface {
+	Exporter
+}
+
 // TraceExporterOld is a TraceConsumer that is also an Exporter.
 type TraceExporterOld interface {
 	consumer.TraceConsumerOld
-	Exporter
+	TraceExporterBase
 }
 
 // TraceExporter is an TraceConsumer that is also an Exporter.
 type TraceExporter interface {
 	consumer.TraceConsumer
+	TraceExporterBase
+}
+
+// MetricsExporterBase defines a common interface for MetricsExporter and MetricsExporterOld
+type MetricsExporterBase interface {
 	Exporter
 }
 
 // MetricsExporterOld is a MetricsConsumer that is also an Exporter.
 type MetricsExporterOld interface {
 	consumer.MetricsConsumerOld
-	Exporter
+	MetricsExporterBase
 }
 
 // MetricsExporter is a MetricsConsumer that is also an Exporter.
 type MetricsExporter interface {
 	consumer.MetricsConsumer
-	Exporter
+	MetricsExporterBase
 }
 
 // ExporterFactoryBase defines the common functions for all exporter factories.

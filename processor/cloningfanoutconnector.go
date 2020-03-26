@@ -33,6 +33,22 @@ import (
 // clones of data before fanning out, which ensures each consumer gets their
 // own copy of data and is free to modify it.
 
+// CreateMetricsCloningFanOutConnector is a placeholder function for now.
+// It supposed to create an old type connector or a new type connector based on type of provided metrics consumer.
+func CreateMetricsCloningFanOutConnector(baseMetricsConsumers []consumer.MetricsConsumerBase) consumer.MetricsConsumerOld {
+	// TODO: CreateMetricsCloningFanOutConnector doesn't support new type of consumers
+	// until internal data structure provides Clone method.
+	metricsConsumers := make([]consumer.MetricsConsumerOld, 0, len(baseMetricsConsumers))
+	for _, baseMetricsConsumer := range baseMetricsConsumers {
+		metricsConsumer, ok := baseMetricsConsumer.(consumer.MetricsConsumerOld)
+		if !ok {
+			panic("CreateMetricsCloningFanOutConnector does not support new type of MetricsConsumer")
+		}
+		metricsConsumers = append(metricsConsumers, metricsConsumer)
+	}
+	return NewMetricsCloningFanOutConnector(metricsConsumers)
+}
+
 // NewMetricsCloningFanOutConnector wraps multiple metrics consumers in a single one.
 func NewMetricsCloningFanOutConnector(mcs []consumer.MetricsConsumerOld) consumer.MetricsConsumerOld {
 	return metricsCloningFanOutConnector(mcs)
@@ -64,6 +80,22 @@ func (mfc metricsCloningFanOutConnector) ConsumeMetricsData(ctx context.Context,
 	}
 
 	return oterr.CombineErrors(errs)
+}
+
+// CreateTraceCloningFanOutConnector is a placeholder function for now.
+// It supposed to create an old type connector or a new type connector based on type of provided trace consumer.
+func CreateTraceCloningFanOutConnector(baseTraceConsumers []consumer.TraceConsumerBase) consumer.TraceConsumerOld {
+	// TODO: CreateTraceCloningFanOutConnector doesn't support new type of consumers
+	// until internal data structure provides Clone functionality
+	traceConsumers := make([]consumer.TraceConsumerOld, 0, len(baseTraceConsumers))
+	for _, baseTraceConsumer := range baseTraceConsumers {
+		traceConsumer, ok := baseTraceConsumer.(consumer.TraceConsumerOld)
+		if !ok {
+			panic("CreateTraceCloningFanOutConnector does not support new type of TraceConsumer")
+		}
+		traceConsumers = append(traceConsumers, traceConsumer)
+	}
+	return NewTraceCloningFanOutConnector(traceConsumers)
 }
 
 // NewTraceCloningFanOutConnector wraps multiple trace consumers in a single one.
