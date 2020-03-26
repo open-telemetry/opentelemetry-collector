@@ -100,18 +100,19 @@ jobs:
 
   cross-compile:
     executor: golang
+    parallelism: 4
     steps:
       - attach_to_workspace
       - run:
           name: Build collector for all archs
-          command: make binaries-all-sys
+          command: make binaries-all-sys-ci
       - persist_to_workspace:
           root: ~/
           paths: project/bin
 
   loadtest:
     executor: golang
-    parallelism: 5
+    parallelism: 10
     steps:
       - attach_to_workspace
       - run:

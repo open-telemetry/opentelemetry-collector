@@ -156,3 +156,18 @@ binaries-all-sys:
 	GOOS=linux   GOARCH=amd64 $(MAKE) binaries
 	GOOS=linux   GOARCH=arm64 $(MAKE) binaries
 	GOOS=windows GOARCH=amd64 $(MAKE) binaries
+
+.PHONY: binaries-all-sys-ci
+binaries-all-sys-ci:
+	ifeq ($$((0 % $CIRCLE_NODE_TOTAL)), $CIRCLE_NODE_INDEX)
+	GOOS=darwin  GOARCH=amd64 $(MAKE) binaries
+	endif
+	ifeq ($$((1 % $CIRCLE_NODE_TOTAL)), $CIRCLE_NODE_INDEX)
+	GOOS=linux   GOARCH=amd64 $(MAKE) binaries
+	endif
+	ifeq ($$((2 % $CIRCLE_NODE_TOTAL)), $CIRCLE_NODE_INDEX)
+	GOOS=linux   GOARCH=arm64 $(MAKE) binaries
+	endif
+	ifeq ($$((3 % $CIRCLE_NODE_TOTAL)), $CIRCLE_NODE_INDEX)
+	GOOS=windows GOARCH=amd64 $(MAKE) binaries
+	endif
