@@ -17,6 +17,7 @@ package batchprocessor
 import (
 	"context"
 	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -161,18 +162,24 @@ func TestConcurrentNodeAdds(t *testing.T) {
 	if err != nil {
 		t.Errorf("failed to wait for sender %s", err)
 	}
+	sender.mtx.RLock()
 	if len(sender.spansReceivedByName) != requestCount*spansPerRequest {
 		t.Errorf("Did not receive the correct number of spans. Got %d != expected %d.", len(sender.spansReceivedByName), requestCount*spansPerRequest)
+		sender.mtx.RUnlock()
 		return
 	}
+	sender.mtx.RUnlock()
 
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
 			name := getTestSpanName(requestNum, spanIndex).Value
+			sender.mtx.RLock()
 			if sender.spansReceivedByName[name] == nil {
 				t.Errorf("Did not receive span %s.", name)
+				sender.mtx.RUnlock()
 				return
 			}
+			sender.mtx.RUnlock()
 		}
 	}
 }
@@ -290,6 +297,7 @@ func TestConcurrentBatchAdds(t *testing.T) {
 	if err != nil {
 		t.Errorf("failed to wait for sender %s", err)
 	}
+	sender.mtx.RLock()
 	if len(sender.spansReceivedByName) != requestCount*spansPerRequest {
 		t.Errorf("Did not receive the correct number of spans. %d != %d", len(sender.spansReceivedByName), requestCount*spansPerRequest)
 	}
@@ -301,6 +309,7 @@ func TestConcurrentBatchAdds(t *testing.T) {
 			}
 		}
 	}
+	sender.mtx.RUnlock()
 }
 
 func BenchmarkConcurrentBatchAdds(b *testing.B) {
@@ -351,6 +360,7 @@ type testSender struct {
 	batchesReceived     int
 	spansReceived       int
 	spansReceivedByName map[string]*tracepb.Span
+	mtx                 sync.RWMutex
 }
 
 func newTestSender() *testSender {
@@ -371,9 +381,11 @@ func (ts *testSender) waitFor(spans int, timeout time.Duration) chan error {
 		for {
 			select {
 			case request := <-ts.reqChan:
+				ts.mtx.Lock()
 				for _, span := range request.Spans {
 					ts.spansReceivedByName[span.Name.Value] = span
 				}
+				ts.mtx.Unlock()
 				ts.batchesReceived = ts.batchesReceived + 1
 				ts.spansReceived = ts.spansReceived + len(request.Spans)
 				if ts.spansReceived == spans {

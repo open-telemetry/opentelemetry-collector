@@ -1,0 +1,164 @@
+version: 2.1
+
+executors:
+  golang:
+    docker:
+      - image: cimg/go:1.14
+
+commands:
+  attach_to_workspace:
+    steps:
+      - attach_workspace:
+          at: ~/
+
+  save_module_cache:
+    steps:
+      - save_cache:
+          key: cimg-go-pkg-mod-{{ checksum "go.sum" }}
+          paths:
+            - "/home/circleci/go/pkg/mod"
+
+  restore_module_cache:
+    steps:
+      - restore_cache: # restores saved cache if no changes are detected since last run
+          keys:
+            - cimg-go-pkg-mod-{{ checksum "go.sum" }}
+      - persist_to_workspace:
+          root: ~/
+          paths: go/pkg/mod
+
+workflows:
+  version: 2
+  build-and-test:
+    jobs:
+      - setup-and-lint
+      - build:
+          requires:
+            - setup-and-lint
+      - cross-compile:
+          requires:
+            - build
+      - loadtest:
+          requires:
+            - build
+      - test:
+          requires:
+            - setup-and-lint
+      - coverage:
+          requires:
+            - setup-and-lint
+      - publish:
+          requires:
+            - cross-compile
+            - loadtest
+            - test
+            - coverage
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v[0-9].[0-9].[0-9]+.*/
+
+jobs:
+  setup-and-lint:
+    executor: golang
+    steps:
+      - checkout
+      - restore_module_cache
+      - persist_to_workspace:
+          root: ~/
+          paths: project
+      - run:
+          name: Install tools
+          command: make install-tools
+      - run:
+          name: Install loadtest tools
+          command: make -C testbed install-tools
+      - persist_to_workspace:
+          root: ~/
+          paths: go/bin
+      - run:
+          name: Lint
+          command: make checklicense impi lint misspell
+      - run:
+          name: Lint testbed
+          command: make -C testbed fmt vet lint
+
+  build:
+    executor: golang
+    steps:
+      - attach_to_workspace
+      - run:
+          name: Build collector for linux_amd64
+          command: make binaries
+      - persist_to_workspace:
+          root: ~/
+          paths: project/bin
+
+  cross-compile:
+    executor: golang
+    steps:
+      - attach_to_workspace
+      - run:
+          name: Build collector for all archs
+          command: make binaries-all-sys
+      - persist_to_workspace:
+          root: ~/
+          paths: project/bin
+
+  loadtest:
+    executor: golang
+    steps:
+      - attach_to_workspace
+      - run:
+          name: Loadtest
+          command: make -C testbed runtests
+      - store_artifacts:
+          path: testbed/tests/results
+      - store_test_results:
+          path: testbed/tests/results/junit
+
+  test:
+    executor: golang
+    steps:
+      - attach_to_workspace
+      - run:
+          name: Unit tests
+          command: make test
+      - save_module_cache
+
+  coverage:
+    executor: golang
+    steps:
+      - attach_to_workspace
+      - run:
+          name: Install packages.
+          command: sudo apt update && sudo apt-get install bzr time
+      - run:
+          name: Coverage tests
+          command: make test-with-cover
+      - run:
+          name: Code coverage
+          command: bash <(curl -s https://codecov.io/bash)
+
+  publish:
+    docker:
+      - image: cimg/go:1.14
+    steps:
+      - attach_workspace:
+          at: .
+      - setup_remote_docker
+      - run:
+          name: Build image
+          command: |
+            make docker-otelcol
+            docker tag otelcol:latest omnition/opentelemetry-collector:${CIRCLE_TAG:1}
+            docker tag otelcol:latest omnition/opentelemetry-collector:latest
+      - run:
+          name: Login to Docker Hub
+          command: docker login -u $DOCKER_HUB_USERNAME -p $DOCKER_HUB_PASSWORD
+      - run:
+          name: Push image
+          command: |
+            docker push omnition/opentelemetry-collector:${CIRCLE_TAG:1}
+            docker push omnition/opentelemetry-collector:latest
