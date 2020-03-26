@@ -16,6 +16,7 @@ package config
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/spf13/viper"
@@ -27,11 +28,18 @@ import (
 // LoadConfigFile loads a config from file.
 func LoadConfigFile(t *testing.T, fileName string, factories Factories) (*configmodels.Config, error) {
 	// Open the file for reading.
-	file, err := os.Open(fileName)
+	file, err := os.Open(filepath.Clean(fileName))
 	if err != nil {
 		t.Error(err)
 		return nil, err
 	}
+
+	defer func() {
+		err := file.Close()
+		if err != nil {
+			t.Error(err)
+		}
+	}()
 
 	// Read yaml config from file
 	v := viper.New()
