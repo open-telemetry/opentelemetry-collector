@@ -287,12 +287,12 @@ func TestInternalToOC(t *testing.T) {
 		oc []consumerdata.TraceData
 	}{
 		{
-			testdata.NoResourceSpansTraceTestCate,
+			testdata.NoResourceSpansTraceTestCase,
 			[]consumerdata.TraceData(nil),
 		},
 
 		{
-			testdata.OneEmptyResourceSpansTraceTestCate,
+			testdata.OneEmptyResourceSpansTraceTestCase,
 			[]consumerdata.TraceData{
 				{
 					Node:         ocNode,
@@ -304,7 +304,7 @@ func TestInternalToOC(t *testing.T) {
 		},
 
 		{
-			testdata.NoLibrariesTraceTestCate,
+			testdata.NoLibrariesTraceTestCase,
 			[]consumerdata.TraceData{
 				{
 					Node:         ocNode,
@@ -316,7 +316,7 @@ func TestInternalToOC(t *testing.T) {
 		},
 
 		{
-			testdata.NoSpansTraceTestCate,
+			testdata.NoSpansTraceTestCase,
 			[]consumerdata.TraceData{
 				{
 					Node:         ocNode,
@@ -328,7 +328,7 @@ func TestInternalToOC(t *testing.T) {
 		},
 
 		{
-			testdata.OneSpanNoResourceTraceTestCate,
+			testdata.OneSpanNoResourceTraceTestCase,
 			[]consumerdata.TraceData{
 				{
 					Node:         ocNode,
@@ -340,7 +340,7 @@ func TestInternalToOC(t *testing.T) {
 		},
 
 		{
-			testdata.OneSpanTraceTestCate,
+			testdata.OneSpanTraceTestCase,
 			[]consumerdata.TraceData{
 				{
 					Node:         ocNode,
@@ -352,7 +352,7 @@ func TestInternalToOC(t *testing.T) {
 		},
 
 		{
-			testdata.TwoSpansSameResourceTraceTestCate,
+			testdata.TwoSpansSameResourceTraceTestCase,
 			[]consumerdata.TraceData{
 				{
 					Node:         ocNode,
@@ -364,7 +364,7 @@ func TestInternalToOC(t *testing.T) {
 		},
 
 		{
-			testdata.TwoSpansSameResourceOneDifferentTraceTestCate,
+			testdata.TwoSpansSameResourceOneDifferentTraceTestCase,
 			[]consumerdata.TraceData{
 				{
 					Node:         ocNode,

@@ -40,42 +40,42 @@ type TraceTestCase struct {
 }
 
 var (
-	NoResourceSpansTraceTestCate = TraceTestCase{
+	NoResourceSpansTraceTestCase = TraceTestCase{
 		Name:      "no-resource-spans",
 		TraceData: data.NewTraceData(),
 		OtlpData:  []*otlptrace.ResourceSpans(nil),
 	}
-	OneEmptyResourceSpansTraceTestCate = TraceTestCase{
+	OneEmptyResourceSpansTraceTestCase = TraceTestCase{
 		Name:      "one-empty-resource-spans",
 		TraceData: generateTraceDataOneEmptyResourceSpans(),
 		OtlpData:  generateTraceOtlpOneEmptyResourceSpans(),
 	}
-	NoLibrariesTraceTestCate = TraceTestCase{
+	NoLibrariesTraceTestCase = TraceTestCase{
 		Name:      "no-libraries",
 		TraceData: generateTraceDataNoLibraries(),
 		OtlpData:  generateTraceOtlpNoLibraries(),
 	}
-	NoSpansTraceTestCate = TraceTestCase{
+	NoSpansTraceTestCase = TraceTestCase{
 		Name:      "no-spans",
 		TraceData: generateTraceDataNoSpans(),
 		OtlpData:  generateTraceOtlpNoSpans(),
 	}
-	OneSpanNoResourceTraceTestCate = TraceTestCase{
+	OneSpanNoResourceTraceTestCase = TraceTestCase{
 		Name:      "one-span-no-resource",
 		TraceData: generateTraceDataOneSpanNoResource(),
 		OtlpData:  generateTraceOtlpOneSpanNoResource(),
 	}
-	OneSpanTraceTestCate = TraceTestCase{
+	OneSpanTraceTestCase = TraceTestCase{
 		Name:      "one-span",
 		TraceData: generateTraceDataOneSpan(),
 		OtlpData:  generateTraceOtlpOneSpan(),
 	}
-	TwoSpansSameResourceTraceTestCate = TraceTestCase{
+	TwoSpansSameResourceTraceTestCase = TraceTestCase{
 		Name:      "two-spans-same-resource",
 		TraceData: generateTraceDataSameResourceTwoSpans(),
 		OtlpData:  generateTraceOtlpSameResourceTwoSpans(),
 	}
-	TwoSpansSameResourceOneDifferentTraceTestCate = TraceTestCase{
+	TwoSpansSameResourceOneDifferentTraceTestCase = TraceTestCase{
 		Name:      "two-spans-same-resource-one-different",
 		TraceData: generateTraceDataTwoSpansSameResourceOneDifferent(),
 		OtlpData:  generateTraceOtlpTwoSpansSameResourceOneDifferent(),
@@ -83,14 +83,14 @@ var (
 
 	// AllTraceTestCases represents a set of test cases.
 	AllTraceTestCases = []TraceTestCase{
-		NoResourceSpansTraceTestCate,
-		OneEmptyResourceSpansTraceTestCate,
-		NoLibrariesTraceTestCate,
-		NoSpansTraceTestCate,
-		OneSpanNoResourceTraceTestCate,
-		OneSpanTraceTestCate,
-		TwoSpansSameResourceTraceTestCate,
-		TwoSpansSameResourceOneDifferentTraceTestCate,
+		NoResourceSpansTraceTestCase,
+		OneEmptyResourceSpansTraceTestCase,
+		NoLibrariesTraceTestCase,
+		NoSpansTraceTestCase,
+		OneSpanNoResourceTraceTestCase,
+		OneSpanTraceTestCase,
+		TwoSpansSameResourceTraceTestCase,
+		TwoSpansSameResourceOneDifferentTraceTestCase,
 	}
 )
 

@@ -363,22 +363,22 @@ func TestOcToInternal(t *testing.T) {
 		oc consumerdata.TraceData
 	}{
 		{
-			testdata.NoResourceSpansTraceTestCate,
+			testdata.NoResourceSpansTraceTestCase,
 			consumerdata.TraceData{},
 		},
 
 		{
-			testdata.OneEmptyResourceSpansTraceTestCate,
+			testdata.OneEmptyResourceSpansTraceTestCase,
 			consumerdata.TraceData{Node: ocNode},
 		},
 
 		{
-			testdata.NoLibrariesTraceTestCate,
+			testdata.NoLibrariesTraceTestCase,
 			consumerdata.TraceData{Resource: ocResource1},
 		},
 
 		{
-			testdata.OneSpanNoResourceTraceTestCate,
+			testdata.OneSpanNoResourceTraceTestCase,
 			consumerdata.TraceData{
 				Node:     ocNode,
 				Resource: &ocresource.Resource{},
@@ -387,7 +387,7 @@ func TestOcToInternal(t *testing.T) {
 		},
 
 		{
-			testdata.OneSpanTraceTestCate,
+			testdata.OneSpanTraceTestCase,
 			consumerdata.TraceData{
 				Node:     ocNode,
 				Resource: ocResource1,
@@ -396,7 +396,7 @@ func TestOcToInternal(t *testing.T) {
 		},
 
 		{
-			testdata.TwoSpansSameResourceTraceTestCate,
+			testdata.TwoSpansSameResourceTraceTestCase,
 			consumerdata.TraceData{
 				Node:     ocNode,
 				Resource: ocResource1,
@@ -405,7 +405,7 @@ func TestOcToInternal(t *testing.T) {
 		},
 
 		{
-			testdata.TwoSpansSameResourceOneDifferentTraceTestCate,
+			testdata.TwoSpansSameResourceOneDifferentTraceTestCase,
 			consumerdata.TraceData{
 				Node:     ocNode,
 				Resource: ocResource1,
@@ -416,7 +416,7 @@ func TestOcToInternal(t *testing.T) {
 		{
 			testdata.TraceTestCase{
 				Name:      "two-spans-and-separate-in-the-middle",
-				TraceData: testdata.TwoSpansSameResourceOneDifferentTraceTestCate.TraceData,
+				TraceData: testdata.TwoSpansSameResourceOneDifferentTraceTestCase.TraceData,
 			},
 			consumerdata.TraceData{
 				Node:     ocNode,
@@ -426,7 +426,7 @@ func TestOcToInternal(t *testing.T) {
 		},
 	}
 
-	// Result for NoSpansTraceTestCate is the same as for NoLibrariesTraceTestCate
+	// Result for NoSpansTraceTestCase is the same as for NoLibrariesTraceTestCase
 	assert.EqualValues(t, len(testdata.AllTraceTestCases), len(tests))
 
 	for _, test := range tests {
