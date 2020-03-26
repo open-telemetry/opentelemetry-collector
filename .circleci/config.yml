@@ -1,0 +1,71 @@
+version: 2
+
+workflows:
+  version: 2
+  build-publish:
+    jobs:
+      - build:
+          filters:
+            branches:
+              only: /.*/
+            tags:
+              only: /.*/
+      - publish:
+          requires:
+            - build
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v[0-9].[0-9].[0-9]+.*/
+
+jobs:
+  build:
+    docker:
+      - image: cimg/go:1.14
+    steps:
+      - checkout
+      - run:
+          name: Install bazzar
+          command: sudo apt update && sudo apt-get install bzr -y
+      - run:
+          name: Install tools
+          command: make install-tools
+      - run:
+          name: Verify
+          command: make ci
+      - run:
+          name: Build collector 
+          command: make otelcol
+      - store_artifacts:
+          path: testbed/tests/results
+      - store_test_results:
+          path: testbed/tests/results/junit
+      - run:
+          name: Code coverage
+          command: bash <(curl -s https://codecov.io/bash)
+      - persist_to_workspace:
+          root: .
+          paths:
+            - .
+  publish:
+    docker:
+      - image: cimg/go:1.14
+    steps:
+      - attach_workspace:
+          at: .
+      - setup_remote_docker
+      - run:
+          name: Build image
+          command: |
+            make docker-otelcol
+            docker tag otelcol:latest omnition/opentelemetry-collector:${CIRCLE_TAG:1}
+            docker tag otelcol:latest omnition/opentelemetry-collector:latest
+      - run:
+          name: Login to Docker Hub
+          command: docker login -u $DOCKER_HUB_USERNAME -p $DOCKER_HUB_PASSWORD
+      - run:
+          name: Push image
+          command: |
+            docker push omnition/opentelemetry-collector:${CIRCLE_TAG:1}
+            docker push omnition/opentelemetry-collector:latest
