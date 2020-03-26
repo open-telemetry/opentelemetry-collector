@@ -82,7 +82,7 @@ jobs:
           paths: go/bin
       - run:
           name: Lint
-          command: make checklicense impi lint misspell
+          command: make -j4 checklicense impi lint misspell
       - run:
           name: Lint testbed
           command: make -C testbed fmt vet lint
