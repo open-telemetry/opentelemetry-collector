@@ -20,6 +20,10 @@ test:
 runtests: test
 	./runtests.sh
 
+.PHONY: listtests
+listtests:
+	TESTBED_CONFIG=local.yaml $(GOTEST) -v ./tests --test.list '.*'|head -n -1
+
 .PHONY: fmt
 fmt:
 	$(GOFMT) -s -l ./..
