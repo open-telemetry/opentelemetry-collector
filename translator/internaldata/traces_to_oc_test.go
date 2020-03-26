@@ -20,7 +20,6 @@ import (
 	occommon "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	octrace "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	v1 "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/stretchr/testify/assert"
 
@@ -31,7 +30,7 @@ import (
 )
 
 func TestInternalTraceStateToOC(t *testing.T) {
-	assert.Equal(t, (*v1.Span_Tracestate)(nil), traceStateToOC(data.TraceState("")))
+	assert.Equal(t, (*octrace.Span_Tracestate)(nil), traceStateToOC(data.TraceState("")))
 
 	ocTracestate := &octrace.Span_Tracestate{
 		Entries: []*octrace.Span_Tracestate_Entry{
@@ -52,7 +51,7 @@ func TestInternalTraceStateToOC(t *testing.T) {
 }
 
 func TestAttributesMapToOC(t *testing.T) {
-	assert.EqualValues(t, (*v1.Span_Attributes)(nil), attributesMapToOCSpanAttributes(data.NewAttributeMap(nil), 0))
+	assert.EqualValues(t, (*octrace.Span_Attributes)(nil), attributesMapToOCSpanAttributes(data.NewAttributeMap(nil), 0))
 
 	ocAttrs := &octrace.Span_Attributes{
 		DroppedAttributesCount: 123,

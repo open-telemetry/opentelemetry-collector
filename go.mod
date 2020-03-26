@@ -18,7 +18,7 @@ require (
 	github.com/gogo/googleapis v1.3.0 // indirect
 	github.com/golang/groupcache v0.0.0-20190702054246-869f871628b6
 	github.com/golang/protobuf v1.3.2
-	github.com/golangci/golangci-lint v1.21.0
+	github.com/golangci/golangci-lint v1.24.0
 	github.com/google/addlicense v0.0.0-20200301095109-7c013a14f2e2
 	github.com/google/go-cmp v0.3.1
 	github.com/gorilla/handlers v1.4.2 // indirect
@@ -43,7 +43,7 @@ require (
 	github.com/soheilhy/cmux v0.1.4
 	github.com/spf13/cast v1.3.0
 	github.com/spf13/cobra v0.0.5
-	github.com/spf13/viper v1.4.1-0.20190911140308-99520c81d86e
+	github.com/spf13/viper v1.6.1
 	github.com/streadway/quantile v0.0.0-20150917103942-b0c588724d25 // indirect
 	github.com/stretchr/testify v1.4.0
 	github.com/uber-go/atomic v1.4.0 // indirect
@@ -57,8 +57,10 @@ require (
 	google.golang.org/genproto v0.0.0-20190801165951-fa694d86fc64
 	google.golang.org/grpc v1.23.0
 	gopkg.in/yaml.v2 v2.2.8
-	honnef.co/go/tools v0.0.1-2019.2.3
+	honnef.co/go/tools v0.0.1-2020.1.3
 	k8s.io/client-go v12.0.0+incompatible // indirect
 )
 
 replace k8s.io/client-go => k8s.io/client-go v0.0.0-20190620085101-78d2af792bab
+
+replace github.com/spf13/viper => github.com/spf13/viper v1.4.1-0.20190911140308-99520c81d86e

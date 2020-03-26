@@ -162,7 +162,7 @@ func (oce *otlpExporter) pushTraceData(ctx context.Context, td consumerdata.Trac
 	if !ok {
 		err := &exporterError{
 			code: errAlreadyStopped,
-			msg:  fmt.Sprintf("OpenCensus exporter was already stopped."),
+			msg:  "OpenTelemetry exporter was already stopped.",
 		}
 		return len(td.Spans), err
 	}
@@ -187,7 +187,7 @@ func (oce *otlpExporter) pushMetricsData(ctx context.Context, md consumerdata.Me
 	if !ok {
 		err := &exporterError{
 			code: errAlreadyStopped,
-			msg:  fmt.Sprintf("OpenCensus exporter was already stopped."),
+			msg:  "OpenTelemetry exporter was already stopped.",
 		}
 		return exporterhelper.NumTimeSeries(md), err
 	}

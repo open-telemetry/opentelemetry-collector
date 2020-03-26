@@ -154,7 +154,7 @@ func (oce *ocAgentExporter) PushTraceData(ctx context.Context, td consumerdata.T
 	if !ok {
 		err := &ocExporterError{
 			code: errAlreadyStopped,
-			msg:  fmt.Sprintf("OpenCensus exporter was already stopped."),
+			msg:  "OpenCensus exporter was already stopped.",
 		}
 		return len(td.Spans), err
 	}
@@ -179,7 +179,7 @@ func (oce *ocAgentExporter) PushMetricsData(ctx context.Context, md consumerdata
 	if !ok {
 		err := &ocExporterError{
 			code: errAlreadyStopped,
-			msg:  fmt.Sprintf("OpenCensus exporter was already stopped."),
+			msg:  "OpenCensus exporter was already stopped.",
 		}
 		return exporterhelper.NumTimeSeries(md), err
 	}
