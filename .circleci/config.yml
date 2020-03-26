@@ -31,13 +31,10 @@ workflows:
   version: 2
   build-and-test:
     jobs:
-      - setup
-      - lint:
-          requires:
-            - setup
+      - setup-and-lint
       - build:
           requires:
-            - lint
+            - setup-and-lint
       - cross-compile:
           requires:
             - build
@@ -46,10 +43,10 @@ workflows:
             - build
       - test:
           requires:
-            - lint
+            - setup-and-lint
       - coverage:
           requires:
-            - lint
+            - setup-and-lint
       - publish:
           requires:
             - cross-compile
@@ -63,7 +60,7 @@ workflows:
               only: /^v[0-9].[0-9].[0-9]+.*/
 
 jobs:
-  setup:
+  setup-and-lint:
     executor: golang
     steps:
       - checkout
@@ -80,18 +77,12 @@ jobs:
       - persist_to_workspace:
           root: ~/
           paths: go/bin
-
-  lint:
-    executor: golang
-    parallelism: 3
-    steps:
-      - attach_to_workspace
       - run:
           name: Lint
-          command: make $(echo checklicense impi lint misspell | fmt -w 1 | circleci tests split)
+          command: make checklicense impi lint misspell
       - run:
           name: Lint testbed
-          command: make -C testbed $(echo fmt vet lint | fmt -w 1 | circleci tests split)
+          command: make -C testbed fmt vet lint
 
   build:
     executor: golang
