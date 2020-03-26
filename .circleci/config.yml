@@ -26,17 +26,24 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Install bazzar
-          command: sudo apt update && sudo apt-get install bzr -y
+          name: Install packages.
+          command: sudo apt update && sudo apt-get install bzr time
       - run:
           name: Install tools
           command: make install-tools
+      - restore_cache: # restores saved cache if no changes are detected since last run
+          keys:
+            - cimg-go-pkg-mod-{{ checksum "go.sum" }}
       - run:
           name: Verify
           command: make ci
       - run:
           name: Build collector 
           command: make otelcol
+      - save_cache:
+          key: cimg-go-pkg-mod-{{ checksum "go.sum" }}
+          paths:
+            - "/home/circleci/go/pkg/mod"
       - store_artifacts:
           path: testbed/tests/results
       - store_test_results:
