@@ -45,7 +45,7 @@ func (t *mService) Get(job, instance string) (MetadataCache, error) {
 
 	// from the same targetGroup, instance is not going to be duplicated
 	for _, target := range targetGroup {
-		if target.DiscoveredLabels().Get(model.AddressLabel) == instance {
+		if target.Labels().Get(model.InstanceLabel) == instance {
 			return &mCache{target}, nil
 		}
 	}
