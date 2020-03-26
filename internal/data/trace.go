@@ -27,6 +27,16 @@ type TraceData struct {
 	orig *[]*otlptrace.ResourceSpans
 }
 
+// TraceDataFromOtlp creates the internal TraceData representation from the OTLP.
+func TraceDataFromOtlp(orig []*otlptrace.ResourceSpans) TraceData {
+	return TraceData{&orig}
+}
+
+// TraceDataToOtlp converts the internal TraceData to the OTLP.
+func TraceDataToOtlp(md TraceData) []*otlptrace.ResourceSpans {
+	return *md.orig
+}
+
 // NewTraceData creates a new TraceData.
 func NewTraceData() TraceData {
 	orig := []*otlptrace.ResourceSpans(nil)
