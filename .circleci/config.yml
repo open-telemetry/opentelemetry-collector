@@ -20,6 +20,9 @@ commands:
 
   restore_module_cache:
     steps:
+      - run:
+          name: create modules dir
+          command: mkdir -p ~/go/pkg/mod
       - restore_cache: # restores saved cache if no changes are detected since last run
           keys:
             - cimg-go-pkg-mod-{{ checksum "go.sum" }}
