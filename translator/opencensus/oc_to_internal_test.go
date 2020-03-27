@@ -282,9 +282,9 @@ func TestOcToInternal(t *testing.T) {
 							Description: &octrace.TruncatableString{Value: "event-with-attr"},
 							Attributes: &octrace.Span_Attributes{
 								AttributeMap: map[string]*octrace.AttributeValue{
-									"event-attr": {
+									"span-event-attr": {
 										Value: &octrace.AttributeValue_StringValue{
-											StringValue: &octrace.TruncatableString{Value: "event-attr-val"},
+											StringValue: &octrace.TruncatableString{Value: "span-event-attr-val"},
 										},
 									},
 								},
@@ -322,9 +322,9 @@ func TestOcToInternal(t *testing.T) {
 				{
 					Attributes: &octrace.Span_Attributes{
 						AttributeMap: map[string]*octrace.AttributeValue{
-							"link-attr": {
+							"span-link-attr": {
 								Value: &octrace.AttributeValue_StringValue{
-									StringValue: &octrace.TruncatableString{Value: "link-attr-val"},
+									StringValue: &octrace.TruncatableString{Value: "span-link-attr-val"},
 								},
 							},
 						},
@@ -359,79 +359,80 @@ func TestOcToInternal(t *testing.T) {
 	}
 
 	tests := []struct {
-		name string
-		oc   consumerdata.TraceData
-		itd  data.TraceData
+		testdata.TraceTestCase
+		oc consumerdata.TraceData
 	}{
 		{
-			name: "empty",
-			oc:   consumerdata.TraceData{},
-			itd:  data.NewTraceData(),
+			testdata.NoResourceSpansTraceTestCase,
+			consumerdata.TraceData{},
 		},
 
 		{
-			name: "nil-resource",
-			oc:   consumerdata.TraceData{Node: ocNode},
-			itd:  testdata.GenerateTraceDataOneEmptyResourceSpans(),
+			testdata.OneEmptyResourceSpansTraceTestCase,
+			consumerdata.TraceData{Node: ocNode},
 		},
 
 		{
-			name: "nil-node",
-			oc:   consumerdata.TraceData{Resource: ocResource1},
-			itd:  testdata.GenerateTraceDataNoLibraries(),
+			testdata.NoLibrariesTraceTestCase,
+			consumerdata.TraceData{Resource: ocResource1},
 		},
 
 		{
-			name: "no-spans",
-			oc:   consumerdata.TraceData{Node: ocNode, Resource: ocResource1},
-			itd:  testdata.GenerateTraceDataNoLibraries(),
+			testdata.OneSpanNoResourceTraceTestCase,
+			consumerdata.TraceData{
+				Node:     ocNode,
+				Resource: &ocresource.Resource{},
+				Spans:    []*octrace.Span{ocSpan1},
+			},
 		},
 
 		{
-			name: "one-span",
-			oc: consumerdata.TraceData{
+			testdata.OneSpanTraceTestCase,
+			consumerdata.TraceData{
 				Node:     ocNode,
 				Resource: ocResource1,
 				Spans:    []*octrace.Span{ocSpan1},
 			},
-			itd: testdata.GenerateTraceDataOneSpan(),
 		},
 
 		{
-			name: "two-spans",
-			oc: consumerdata.TraceData{
+			testdata.TwoSpansSameResourceTraceTestCase,
+			consumerdata.TraceData{
 				Node:     ocNode,
 				Resource: ocResource1,
 				Spans:    []*octrace.Span{ocSpan1, nil, ocSpan2},
 			},
-			itd: testdata.GenerateTraceDataSameResourcewoSpans(),
 		},
 
 		{
-			name: "two-spans-plus-one-separate",
-			oc: consumerdata.TraceData{
+			testdata.TwoSpansSameResourceOneDifferentTraceTestCase,
+			consumerdata.TraceData{
 				Node:     ocNode,
 				Resource: ocResource1,
 				Spans:    []*octrace.Span{ocSpan1, ocSpan2, ocSpan3},
 			},
-			itd: testdata.GenerateTraceDataTwoSpansSameResourceOneDifferent(),
 		},
 
 		{
-			name: "two-spans-and-separate-in-the-middle",
-			oc: consumerdata.TraceData{
+			testdata.TraceTestCase{
+				Name:      "two-spans-and-separate-in-the-middle",
+				TraceData: testdata.TwoSpansSameResourceOneDifferentTraceTestCase.TraceData,
+			},
+			consumerdata.TraceData{
 				Node:     ocNode,
 				Resource: ocResource1,
 				Spans:    []*octrace.Span{ocSpan1, ocSpan3, ocSpan2},
 			},
-			itd: testdata.GenerateTraceDataTwoSpansSameResourceOneDifferent(),
 		},
 	}
 
+	// Result for NoSpansTraceTestCase is the same as for NoLibrariesTraceTestCase
+	assert.EqualValues(t, len(testdata.AllTraceTestCases), len(tests))
+
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+		t.Run(test.Name, func(t *testing.T) {
 			got := ocToInternal(test.oc)
-			assert.EqualValues(t, test.itd, got)
+			assert.EqualValues(t, test.TraceData, got)
 		})
 	}
 }

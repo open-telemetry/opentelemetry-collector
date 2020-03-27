@@ -17,6 +17,7 @@ package data
 import (
 	"testing"
 
+	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -57,4 +58,13 @@ func TestSpanID(t *testing.T) {
 
 	sid = NewSpanID([]byte{1, 2, 3, 4, 5, 6, 7, 8})
 	assert.EqualValues(t, []byte{1, 2, 3, 4, 5, 6, 7, 8}, sid.Bytes())
+}
+
+func TestToFromOtlp(t *testing.T) {
+	otlp := []*otlptrace.ResourceSpans(nil)
+	td := TraceDataFromOtlp(otlp)
+	assert.EqualValues(t, NewTraceData(), td)
+	assert.EqualValues(t, otlp, TraceDataToOtlp(td))
+	// More tests in ./tracedata/trace_test.go. Cannot have them here because of
+	// circular dependency.
 }
