@@ -32,70 +32,21 @@ var (
 	TestSpanEndTimestamp = data.TimestampUnixNano(TestSpanEndTime.UnixNano())
 )
 
-// TraceTestCase represents one test case with the coresponding TraceData and OTLP representation.
-type TraceTestCase struct {
-	Name      string
-	TraceData data.TraceData
-	OtlpData  []*otlptrace.ResourceSpans
-}
-
-var (
-	NoResourceSpansTraceTestCase = TraceTestCase{
-		Name:      "no-resource-spans",
-		TraceData: data.NewTraceData(),
-		OtlpData:  []*otlptrace.ResourceSpans(nil),
-	}
-	OneEmptyResourceSpansTraceTestCase = TraceTestCase{
-		Name:      "one-empty-resource-spans",
-		TraceData: GenerateTraceDataOneEmptyResourceSpans(),
-		OtlpData:  generateTraceOtlpOneEmptyResourceSpans(),
-	}
-	NoLibrariesTraceTestCase = TraceTestCase{
-		Name:      "no-libraries",
-		TraceData: GenerateTraceDataNoLibraries(),
-		OtlpData:  generateTraceOtlpNoLibraries(),
-	}
-	NoSpansTraceTestCase = TraceTestCase{
-		Name:      "no-spans",
-		TraceData: GenerateTraceDataNoSpans(),
-		OtlpData:  generateTraceOtlpNoSpans(),
-	}
-	OneSpanNoResourceTraceTestCase = TraceTestCase{
-		Name:      "one-span-no-resource",
-		TraceData: GenerateTraceDataOneSpanNoResource(),
-		OtlpData:  generateTraceOtlpOneSpanNoResource(),
-	}
-	OneSpanTraceTestCase = TraceTestCase{
-		Name:      "one-span",
-		TraceData: GenerateTraceDataOneSpan(),
-		OtlpData:  generateTraceOtlpOneSpan(),
-	}
-	TwoSpansSameResourceTraceTestCase = TraceTestCase{
-		Name:      "two-spans-same-resource",
-		TraceData: GenerateTraceDataSameResourceTwoSpans(),
-		OtlpData:  generateTraceOtlpSameResourceTwoSpans(),
-	}
-	TwoSpansSameResourceOneDifferentTraceTestCase = TraceTestCase{
-		Name:      "two-spans-same-resource-one-different",
-		TraceData: GenerateTraceDataTwoSpansSameResourceOneDifferent(),
-		OtlpData:  generateTraceOtlpTwoSpansSameResourceOneDifferent(),
-	}
-
-	// AllTraceTestCases represents a set of test cases.
-	AllTraceTestCases = []TraceTestCase{
-		NoResourceSpansTraceTestCase,
-		OneEmptyResourceSpansTraceTestCase,
-		NoLibrariesTraceTestCase,
-		NoSpansTraceTestCase,
-		OneSpanNoResourceTraceTestCase,
-		OneSpanTraceTestCase,
-		TwoSpansSameResourceTraceTestCase,
-		TwoSpansSameResourceOneDifferentTraceTestCase,
-	}
+const (
+	NumTraceTests = 8
 )
 
-func GenerateTraceDataOneEmptyResourceSpans() data.TraceData {
+func GenerateTraceDataEmpty() data.TraceData {
 	td := data.NewTraceData()
+	return td
+}
+
+func generateTraceOtlpEmpty() []*otlptrace.ResourceSpans {
+	return []*otlptrace.ResourceSpans(nil)
+}
+
+func GenerateTraceDataOneEmptyResourceSpans() data.TraceData {
+	td := GenerateTraceDataEmpty()
 	td.SetResourceSpans(data.NewResourceSpansSlice(1))
 	return td
 }
@@ -191,7 +142,7 @@ func generateTraceOtlpOneSpan() []*otlptrace.ResourceSpans {
 	}
 }
 
-func GenerateTraceDataSameResourceTwoSpans() data.TraceData {
+func GenerateTraceDataTwoSpansSameResource() data.TraceData {
 	td := GenerateTraceDataNoSpans()
 	rs0ils0 := td.ResourceSpans().Get(0).InstrumentationLibrarySpans().Get(0)
 	rs0ils0.SetSpans(data.NewSpanSlice(2))

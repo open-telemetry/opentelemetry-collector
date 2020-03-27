@@ -283,17 +283,20 @@ func TestInternalToOC(t *testing.T) {
 	}
 
 	tests := []struct {
-		testdata.TraceTestCase
-		oc []consumerdata.TraceData
+		name string
+		td   data.TraceData
+		oc   []consumerdata.TraceData
 	}{
 		{
-			testdata.NoResourceSpansTraceTestCase,
-			[]consumerdata.TraceData(nil),
+			name: "empty",
+			td:   testdata.GenerateTraceDataEmpty(),
+			oc:   []consumerdata.TraceData(nil),
 		},
 
 		{
-			testdata.OneEmptyResourceSpansTraceTestCase,
-			[]consumerdata.TraceData{
+			name: "one-empty-resource-spans",
+			td:   testdata.GenerateTraceDataOneEmptyResourceSpans(),
+			oc: []consumerdata.TraceData{
 				{
 					Node:         ocNode,
 					Resource:     &ocresource.Resource{},
@@ -304,8 +307,9 @@ func TestInternalToOC(t *testing.T) {
 		},
 
 		{
-			testdata.NoLibrariesTraceTestCase,
-			[]consumerdata.TraceData{
+			name: "no-libraries",
+			td:   testdata.GenerateTraceDataNoLibraries(),
+			oc: []consumerdata.TraceData{
 				{
 					Node:         ocNode,
 					Resource:     ocResource1,
@@ -316,8 +320,9 @@ func TestInternalToOC(t *testing.T) {
 		},
 
 		{
-			testdata.NoSpansTraceTestCase,
-			[]consumerdata.TraceData{
+			name: "no-spans",
+			td:   testdata.GenerateTraceDataNoSpans(),
+			oc: []consumerdata.TraceData{
 				{
 					Node:         ocNode,
 					Resource:     ocResource1,
@@ -328,8 +333,9 @@ func TestInternalToOC(t *testing.T) {
 		},
 
 		{
-			testdata.OneSpanNoResourceTraceTestCase,
-			[]consumerdata.TraceData{
+			name: "one-span-no-resource",
+			td:   testdata.GenerateTraceDataOneSpanNoResource(),
+			oc: []consumerdata.TraceData{
 				{
 					Node:         ocNode,
 					Resource:     &ocresource.Resource{},
@@ -340,8 +346,9 @@ func TestInternalToOC(t *testing.T) {
 		},
 
 		{
-			testdata.OneSpanTraceTestCase,
-			[]consumerdata.TraceData{
+			name: "one-span",
+			td:   testdata.GenerateTraceDataOneSpan(),
+			oc: []consumerdata.TraceData{
 				{
 					Node:         ocNode,
 					Resource:     ocResource1,
@@ -352,8 +359,9 @@ func TestInternalToOC(t *testing.T) {
 		},
 
 		{
-			testdata.TwoSpansSameResourceTraceTestCase,
-			[]consumerdata.TraceData{
+			name: "two-spans-same-resource",
+			td:   testdata.GenerateTraceDataTwoSpansSameResource(),
+			oc: []consumerdata.TraceData{
 				{
 					Node:         ocNode,
 					Resource:     ocResource1,
@@ -364,8 +372,9 @@ func TestInternalToOC(t *testing.T) {
 		},
 
 		{
-			testdata.TwoSpansSameResourceOneDifferentTraceTestCase,
-			[]consumerdata.TraceData{
+			name: "two-spans-same-resource-one-different",
+			td:   testdata.GenerateTraceDataTwoSpansSameResourceOneDifferent(),
+			oc: []consumerdata.TraceData{
 				{
 					Node:         ocNode,
 					Resource:     ocResource1,
@@ -382,12 +391,11 @@ func TestInternalToOC(t *testing.T) {
 		},
 	}
 
-	assert.EqualValues(t, len(testdata.AllTraceTestCases), len(tests))
+	assert.EqualValues(t, testdata.NumTraceTests, len(tests))
 
 	for _, test := range tests {
-		t.Run(test.Name, func(t *testing.T) {
-			got := TraceDataToOC(test.TraceData)
-			assert.EqualValues(t, test.oc, got)
+		t.Run(test.name, func(t *testing.T) {
+			assert.EqualValues(t, test.oc, TraceDataToOC(test.td))
 		})
 	}
 }

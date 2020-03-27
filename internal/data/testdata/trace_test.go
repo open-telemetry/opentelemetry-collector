@@ -18,8 +18,60 @@ import (
 	"testing"
 
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
+	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
 	"github.com/stretchr/testify/assert"
 )
+
+type traceTestCase struct {
+	name string
+	td   data.TraceData
+	otlp []*otlptrace.ResourceSpans
+}
+
+func generateAllTraceTestCases() []traceTestCase {
+	return []traceTestCase{
+		{
+			name: "empty",
+			td:   GenerateTraceDataEmpty(),
+			otlp: generateTraceOtlpEmpty(),
+		},
+		{
+			name: "one-empty-resource-spans",
+			td:   GenerateTraceDataOneEmptyResourceSpans(),
+			otlp: generateTraceOtlpOneEmptyResourceSpans(),
+		},
+		{
+			name: "no-libraries",
+			td:   GenerateTraceDataNoLibraries(),
+			otlp: generateTraceOtlpNoLibraries(),
+		},
+		{
+			name: "no-spans",
+			td:   GenerateTraceDataNoSpans(),
+			otlp: generateTraceOtlpNoSpans(),
+		},
+		{
+			name: "one-span-no-resource",
+			td:   GenerateTraceDataOneSpanNoResource(),
+			otlp: generateTraceOtlpOneSpanNoResource(),
+		},
+		{
+			name: "one-span",
+			td:   GenerateTraceDataOneSpan(),
+			otlp: generateTraceOtlpOneSpan(),
+		},
+		{
+			name: "two-spans-same-resource",
+			td:   GenerateTraceDataTwoSpansSameResource(),
+			otlp: generateTraceOtlpSameResourceTwoSpans(),
+		},
+		{
+			name: "two-spans-same-resource-one-different",
+			td:   GenerateTraceDataTwoSpansSameResourceOneDifferent(),
+			otlp: generateTraceOtlpTwoSpansSameResourceOneDifferent(),
+		},
+	}
+}
 
 func TestGenerateTraceData(t *testing.T) {
 	assert.EqualValues(t, GenerateTraceDataOneEmptyResourceSpans(), GenerateTraceDataOneEmptyResourceSpans())
@@ -27,7 +79,7 @@ func TestGenerateTraceData(t *testing.T) {
 	assert.EqualValues(t, GenerateTraceDataNoSpans(), GenerateTraceDataNoSpans())
 	assert.EqualValues(t, GenerateTraceDataOneSpanNoResource(), GenerateTraceDataOneSpanNoResource())
 	assert.EqualValues(t, GenerateTraceDataOneSpan(), GenerateTraceDataOneSpan())
-	assert.EqualValues(t, GenerateTraceDataSameResourceTwoSpans(), GenerateTraceDataSameResourceTwoSpans())
+	assert.EqualValues(t, GenerateTraceDataTwoSpansSameResource(), GenerateTraceDataTwoSpansSameResource())
 	assert.EqualValues(t, GenerateTraceDataTwoSpansSameResourceOneDifferent(), GenerateTraceDataTwoSpansSameResourceOneDifferent())
 }
 
@@ -41,13 +93,16 @@ func TestGeneratedTraceOtlp(t *testing.T) {
 }
 
 func TestToFromOtlp(t *testing.T) {
-	for i := range AllTraceTestCases {
-		test := AllTraceTestCases[i]
-		t.Run(test.Name, func(t *testing.T) {
-			td := data.TraceDataFromOtlp(test.OtlpData)
-			assert.EqualValues(t, test.TraceData, td)
+	allTestCases := generateAllTraceTestCases()
+	// Ensure NumTraceTests gets updated.
+	assert.EqualValues(t, NumTraceTests, len(allTestCases))
+	for i := range allTestCases {
+		test := allTestCases[i]
+		t.Run(test.name, func(t *testing.T) {
+			td := data.TraceDataFromOtlp(test.otlp)
+			assert.EqualValues(t, test.td, td)
 			otlp := data.TraceDataToOtlp(td)
-			assert.EqualValues(t, test.OtlpData, otlp)
+			assert.EqualValues(t, test.otlp, otlp)
 		})
 	}
 }
