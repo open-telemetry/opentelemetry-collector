@@ -167,7 +167,7 @@ func TestExport(t *testing.T) {
 							},
 						},
 					},
-					DroppedMessageEventsCount: 2,
+					DroppedAnnotationsCount: 2,
 				},
 				Links: &octrace.Span_Links{
 					Link: []*octrace.Span_Link{

@@ -18,14 +18,14 @@ import (
 	"context"
 
 	collectortrace "github.com/open-telemetry/opentelemetry-proto/gen/go/collector/trace/v1"
-	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector/client"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
-	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
+	"github.com/open-telemetry/opentelemetry-collector/translator/internaldata"
 )
 
 const (
@@ -61,23 +61,23 @@ func (r *Receiver) Export(ctx context.Context, req *collectortrace.ExportTraceSe
 	// We need to ensure that it propagates the receiver name as a tag
 	ctxWithReceiverName := obsreport.ReceiverContext(ctx, r.instanceName, receiverTransport, receiverTagValue)
 
-	for _, resourceMetrics := range req.ResourceSpans {
-		err := r.processReceivedSpans(ctxWithReceiverName, resourceMetrics)
+	td := data.TraceDataFromOtlp(req.ResourceSpans)
+	rss := td.ResourceSpans()
+	for i := 0; i < rss.Len(); i++ {
+		rs := rss.Get(i)
+
+		if rs.InstrumentationLibrarySpans().Len() == 0 {
+			continue
+		}
+
+		octd := internaldata.ResourceSpansToOC(rs)
+		err := r.sendToNextConsumer(ctxWithReceiverName, &octd)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	return &collectortrace.ExportTraceServiceResponse{}, nil
-}
-
-func (r *Receiver) processReceivedSpans(ctx context.Context, resourceSpans *otlptrace.ResourceSpans) error {
-	if len(resourceSpans.InstrumentationLibrarySpans) == 0 {
-		return nil
-	}
-
-	td := tracetranslator.ResourceSpansToTraceData(resourceSpans)
-	return r.sendToNextConsumer(ctx, &td)
 }
 
 func (r *Receiver) sendToNextConsumer(ctx context.Context, td *consumerdata.TraceData) error {
