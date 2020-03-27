@@ -11,7 +11,7 @@ ALL_DOC := $(shell find . \( -name "*.md" -o -name "*.yaml" \) \
 ALL_PKGS := $(shell go list $(sort $(dir $(ALL_SRC))))
 
 GOTEST_OPT?= -race -timeout 180s
-GOTEST_OPT_WITH_COVERAGE = $(GOTEST_OPT) -coverprofile=coverage.txt -covermode=atomic
+GO_ACC=go-acc
 GOTEST=go test
 GOOS=$(shell go env GOOS)
 GOARCH=$(shell go env GOARCH)
@@ -65,9 +65,8 @@ test-with-cover:
 	@scripts/check-test-files.sh $(subst github.com/open-telemetry/opentelemetry-collector/,./,$(ALL_PKGS))
 	@echo pre-compiling tests
 	@time go test -i $(ALL_PKGS)
-	echo "mode: atomic" > coverage_all.txt
-	echo $(ALL_PKGS) | xargs -n 10 bash -c 'mv coverage_all.txt coverage_old.txt; $(GOTEST) $(GOTEST_OPT_WITH_COVERAGE) "$$@"; gocovmerge coverage_old.txt coverage.txt > coverage_all.txt' ''
-	go tool cover -html=coverage_all.txt -o coverage.html
+	$(GO_ACC) $(ALL_PKGS)
+	go tool cover -html=coverage.txt -o coverage.html
 
 .PHONY: addlicense
 addlicense:
@@ -124,7 +123,7 @@ install-tools:
 	go install github.com/pavius/impi/cmd/impi
 	go install github.com/securego/gosec/cmd/gosec
 	go install honnef.co/go/tools/cmd/staticcheck
-	go install github.com/wadey/gocovmerge
+	go install github.com/ory/go-acc
 
 .PHONY: otelcol
 otelcol:
