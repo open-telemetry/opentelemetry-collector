@@ -21,13 +21,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGeneratedTraceData(t *testing.T) {
-	assert.EqualValues(t, generateTraceDataNoLibraries(), generateTraceDataNoLibraries())
-	assert.EqualValues(t, generateTraceDataNoSpans(), generateTraceDataNoSpans())
-	assert.EqualValues(t, generateTraceDataOneSpanNoResource(), generateTraceDataOneSpanNoResource())
-	assert.EqualValues(t, generateTraceDataOneSpan(), generateTraceDataOneSpan())
-	assert.EqualValues(t, generateTraceDataSameResourceTwoSpans(), generateTraceDataSameResourceTwoSpans())
-	assert.EqualValues(t, generateTraceDataTwoSpansSameResourceOneDifferent(), generateTraceDataTwoSpansSameResourceOneDifferent())
+func TestGenerateTraceData(t *testing.T) {
+	assert.EqualValues(t, GenerateTraceDataOneEmptyResourceSpans(), GenerateTraceDataOneEmptyResourceSpans())
+	assert.EqualValues(t, GenerateTraceDataNoLibraries(), GenerateTraceDataNoLibraries())
+	assert.EqualValues(t, GenerateTraceDataNoSpans(), GenerateTraceDataNoSpans())
+	assert.EqualValues(t, GenerateTraceDataOneSpanNoResource(), GenerateTraceDataOneSpanNoResource())
+	assert.EqualValues(t, GenerateTraceDataOneSpan(), GenerateTraceDataOneSpan())
+	assert.EqualValues(t, GenerateTraceDataSameResourceTwoSpans(), GenerateTraceDataSameResourceTwoSpans())
+	assert.EqualValues(t, GenerateTraceDataTwoSpansSameResourceOneDifferent(), GenerateTraceDataTwoSpansSameResourceOneDifferent())
 }
 
 func TestGeneratedTraceOtlp(t *testing.T) {

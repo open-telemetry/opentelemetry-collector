@@ -15,6 +15,7 @@
 package data
 
 import (
+	"github.com/golang/protobuf/proto"
 	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
 )
 
@@ -33,14 +34,25 @@ func TraceDataFromOtlp(orig []*otlptrace.ResourceSpans) TraceData {
 }
 
 // TraceDataToOtlp converts the internal TraceData to the OTLP.
-func TraceDataToOtlp(md TraceData) []*otlptrace.ResourceSpans {
-	return *md.orig
+func TraceDataToOtlp(td TraceData) []*otlptrace.ResourceSpans {
+	return *td.orig
 }
 
 // NewTraceData creates a new TraceData.
 func NewTraceData() TraceData {
 	orig := []*otlptrace.ResourceSpans(nil)
 	return TraceData{&orig}
+}
+
+// Clone returns a copy of TraceData.
+func (td TraceData) Clone() TraceData {
+	otlp := TraceDataToOtlp(td)
+	resourceSpansClones := make([]*otlptrace.ResourceSpans, 0, len(otlp))
+	for _, resourceSpans := range otlp {
+		resourceSpansClones = append(resourceSpansClones,
+			proto.Clone(resourceSpans).(*otlptrace.ResourceSpans))
+	}
+	return TraceDataFromOtlp(resourceSpansClones)
 }
 
 // SpanCount calculates the total number of spans.
