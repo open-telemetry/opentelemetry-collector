@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package opencensus
+package internaldata
 
 import (
 	"strings"
@@ -431,7 +431,7 @@ func TestOcToInternal(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
-			got := ocToInternal(test.oc)
+			got := OCToTraceData(test.oc)
 			assert.EqualValues(t, test.TraceData, got)
 		})
 	}

@@ -27,7 +27,7 @@ import (
 	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 )
 
-const sourceFormat = "otel_internal_trace"
+const sourceFormat = "otlp_trace"
 
 var (
 	defaultProcessID = 0

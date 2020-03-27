@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package opencensus
+package internaldata
 
 import (
 	"strings"
@@ -29,7 +29,8 @@ import (
 	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 )
 
-func ocToInternal(td consumerdata.TraceData) data.TraceData {
+// OCToTraceData converts OC data format to TraceData.
+func OCToTraceData(td consumerdata.TraceData) data.TraceData {
 	traceData := data.NewTraceData()
 	if td.Node == nil && td.Resource == nil && len(td.Spans) == 0 {
 		return traceData
