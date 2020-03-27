@@ -29,10 +29,20 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
+	"github.com/open-telemetry/opentelemetry-collector/internal/data/testdata"
 	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 )
 
 func TestResourceMetricsToMetricsData(t *testing.T) {
+
+	sampleMetricData := testdata.GenerateMetricDataWithCountersHistogramAndSummary()
+	attrs := sampleMetricData.ResourceMetrics().Get(0).Resource().Attributes()
+	attrs.Upsert(data.NewAttributeKeyValueString(conventions.AttributeHostHostname, "host1"))
+	attrs.Upsert(data.NewAttributeKeyValueString(conventions.OCAttributeProcessID, "123"))
+	attrs.Upsert(data.NewAttributeKeyValueString(conventions.OCAttributeProcessStartTime, "2020-02-11T20:26:00Z"))
+	attrs.Upsert(data.NewAttributeKeyValueString(conventions.AttributeLibraryLanguage, "CPP"))
+	attrs.Upsert(data.NewAttributeKeyValueString(conventions.AttributeLibraryVersion, "v2.0.1"))
+	attrs.Upsert(data.NewAttributeKeyValueString(conventions.OCAttributeExporterVersion, "v1.2.0"))
 
 	tests := []struct {
 		name     string
@@ -47,7 +57,7 @@ func TestResourceMetricsToMetricsData(t *testing.T) {
 
 		{
 			name:     "no-libraries",
-			internal: generateInternalTestDataNoLibraries(),
+			internal: testdata.GenerateMetricDataNoLibraries(),
 			oc: []consumerdata.MetricsData{
 				generateOcTestDataNoMetrics(),
 			},
@@ -55,7 +65,7 @@ func TestResourceMetricsToMetricsData(t *testing.T) {
 
 		{
 			name:     "no-metrics",
-			internal: generateInternalTestDataNoMetrics(),
+			internal: testdata.GenerateMetricDataNoMetrics(),
 			oc: []consumerdata.MetricsData{
 				generateOcTestDataNoMetrics(),
 			},
@@ -63,7 +73,7 @@ func TestResourceMetricsToMetricsData(t *testing.T) {
 
 		{
 			name:     "no-points",
-			internal: generateInternalTestDataNoPoints(),
+			internal: testdata.GenerateMetricDataAllTypesNoDataPoints(),
 			oc: []consumerdata.MetricsData{
 				generateOcTestDataNoPoints(),
 			},
@@ -71,7 +81,7 @@ func TestResourceMetricsToMetricsData(t *testing.T) {
 
 		{
 			name:     "sample-metric",
-			internal: generateInternalTestData(),
+			internal: sampleMetricData,
 			oc: []consumerdata.MetricsData{
 				generateOcTestData(t),
 			},
@@ -81,162 +91,82 @@ func TestResourceMetricsToMetricsData(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			got := MetricDataToOC(test.internal)
-			if test.name == "sample-metric" {
-				edv := test.oc[0].Metrics[2].Timeseries[1].Points[0].GetDistributionValue()
-				gdv := got[0].Metrics[2].Timeseries[1].Points[0].GetDistributionValue()
-				assert.EqualValues(t, edv, gdv)
-				assert.EqualValues(t, edv.Buckets[0].Exemplar, gdv.Buckets[0].Exemplar)
-			}
 			assert.EqualValues(t, test.oc, got)
 		})
 	}
 }
 
-const startTimeUnixNano = data.TimestampUnixNano(1585012403000000789)
-const timeUnixNano = data.TimestampUnixNano(1585012403000000789)
-
-func generateInternalTestDataNoLibraries() data.MetricData {
-	metricDataNoLibraries := data.NewMetricData()
-	metricDataNoLibraries.SetResourceMetrics(data.NewResourceMetricsSlice(1))
-	return metricDataNoLibraries
-}
-
-func generateInternalTestDataNoMetrics() data.MetricData {
-	metricDataNoMetrics := data.NewMetricData()
-	metricDataNoMetrics.SetResourceMetrics(data.NewResourceMetricsSlice(1))
-	metricDataNoMetrics.ResourceMetrics().Get(0).SetInstrumentationLibraryMetrics(data.NewInstrumentationLibraryMetricsSlice(1))
-	return metricDataNoMetrics
-}
-
-func generateInternalTestDataNoPoints() data.MetricData {
-	metricDataNoPoints := data.NewMetricData()
-	metricDataNoPoints.SetResourceMetrics(data.NewResourceMetricsSlice(1))
-	metricDataNoPoints.ResourceMetrics().Get(0).SetInstrumentationLibraryMetrics(data.NewInstrumentationLibraryMetricsSlice(1))
-	metricDataNoPoints.ResourceMetrics().Get(0).InstrumentationLibraryMetrics().Get(0).SetMetrics(data.NewMetricSlice(1))
-	fillMetricDescriptor(
-		metricDataNoPoints.ResourceMetrics().Get(0).InstrumentationLibraryMetrics().Get(0).Metrics().Get(0).MetricDescriptor(), "no-points", data.MetricTypeGaugeDouble)
-	return metricDataNoPoints
-}
-
-func generateInternalTestData() data.MetricData {
-	metricData := data.NewMetricData()
-	metricData.SetResourceMetrics(data.NewResourceMetricsSlice(1))
-
-	rms := metricData.ResourceMetrics()
-	rms.Get(0).SetInstrumentationLibraryMetrics(data.NewInstrumentationLibraryMetricsSlice(1))
-	rms.Get(0).Resource().SetAttributes(data.NewAttributeMap(data.AttributesMap{
-		conventions.OCAttributeProcessStartTime: data.NewAttributeValueString("2020-02-11T20:26:00Z"),
-		conventions.AttributeHostHostname:       data.NewAttributeValueString("host1"),
-		conventions.OCAttributeProcessID:        data.NewAttributeValueString("123"),
-		conventions.AttributeLibraryVersion:     data.NewAttributeValueString("v2.0.1"),
-		conventions.OCAttributeExporterVersion:  data.NewAttributeValueString("v1.2.0"),
-		conventions.AttributeLibraryLanguage:    data.NewAttributeValueString("CPP"),
-		conventions.OCAttributeResourceType:     data.NewAttributeValueString("good-resource"),
-		"str1":                                  data.NewAttributeValueString("text"),
-		"int2":                                  data.NewAttributeValueInt(123),
-	}))
-
-	ilms := rms.Get(0).InstrumentationLibraryMetrics()
-	ilms.Get(0).SetMetrics(data.NewMetricSlice(4))
-
-	metrics := ilms.Get(0).Metrics()
-
-	intMetric := metrics.Get(0)
-	fillMetricDescriptor(intMetric.MetricDescriptor(), "mymetric-int", data.MetricTypeCounterInt64)
-	intMetric.SetInt64DataPoints(data.NewInt64DataPointSlice(2))
-	int64DataPoints := intMetric.Int64DataPoints()
-	int64DataPoints.Get(0).SetLabelsMap(data.NewStringMap(map[string]string{"key1": "value1"}))
-	int64DataPoints.Get(0).SetStartTime(startTimeUnixNano)
-	int64DataPoints.Get(0).SetTimestamp(timeUnixNano)
-	int64DataPoints.Get(0).SetValue(123)
-	int64DataPoints.Get(1).SetLabelsMap(data.NewStringMap(map[string]string{"key2": "value2"}))
-	int64DataPoints.Get(1).SetStartTime(startTimeUnixNano)
-	int64DataPoints.Get(1).SetTimestamp(timeUnixNano)
-	int64DataPoints.Get(1).SetValue(456)
-
-	doubleMetric := metrics.Get(1)
-	doubleMetric.SetDoubleDataPoints(data.NewDoubleDataPointSlice(1))
-	fillMetricDescriptor(doubleMetric.MetricDescriptor(), "mymetric-double", data.MetricTypeCounterDouble)
-	doubleDataPoints := doubleMetric.DoubleDataPoints()
-	doubleDataPoints.Get(0).SetStartTime(startTimeUnixNano)
-	doubleDataPoints.Get(0).SetTimestamp(timeUnixNano)
-	doubleDataPoints.Get(0).SetValue(1.23)
-
-	histogramMetric := metrics.Get(2)
-	histogramMetric.SetHistogramDataPoints(data.NewHistogramDataPointSlice(2))
-	fillMetricDescriptor(histogramMetric.MetricDescriptor(), "mymetric-histogram", data.MetricTypeCumulativeHistogram)
-
-	histogramDataPoints := histogramMetric.HistogramDataPoints()
-	histogramDataPoints.Get(0).SetLabelsMap(data.NewStringMap(map[string]string{
-		"key1": "histogram-value1",
-		"key3": "histogram-value3",
-	}))
-	histogramDataPoints.Get(0).SetStartTime(startTimeUnixNano)
-	histogramDataPoints.Get(0).SetTimestamp(timeUnixNano)
-	histogramDataPoints.Get(0).SetCount(1)
-	histogramDataPoints.Get(0).SetSum(15)
-	histogramDataPoints.Get(1).SetLabelsMap(data.NewStringMap(map[string]string{
-		"key2": "histogram-value2",
-	}))
-	histogramDataPoints.Get(1).SetStartTime(startTimeUnixNano)
-	histogramDataPoints.Get(1).SetTimestamp(timeUnixNano)
-	histogramDataPoints.Get(1).SetCount(1)
-	histogramDataPoints.Get(1).SetSum(15)
-	histogramDataPoints.Get(1).SetBuckets(data.NewHistogramBucketSlice(2))
-	histogramDataPoints.Get(1).Buckets().Get(0).SetCount(0)
-	histogramDataPoints.Get(1).Buckets().Get(1).SetCount(1)
-	histogramDataPoints.Get(1).Buckets().Get(1).Exemplar().SetTimestamp(startTimeUnixNano)
-	histogramDataPoints.Get(1).Buckets().Get(1).Exemplar().SetValue(15)
-	histogramDataPoints.Get(1).Buckets().Get(1).Exemplar().SetAttachments(data.NewStringMap(map[string]string{
-		"key": "value",
-	}))
-	histogramDataPoints.Get(1).SetExplicitBounds([]float64{1})
-
-	summaryMetric := metrics.Get(3)
-	summaryMetric.SetSummaryDataPoints(data.NewSummaryDataPointSlice(2))
-	fillMetricDescriptor(summaryMetric.MetricDescriptor(), "mymetric-summary", data.MetricTypeSummary)
-
-	summaryDataPoints := summaryMetric.SummaryDataPoints()
-	summaryDataPoints.Get(0).SetLabelsMap(data.NewStringMap(map[string]string{
-		"key1": "summary-value1",
-	}))
-	summaryDataPoints.Get(0).SetStartTime(startTimeUnixNano)
-	summaryDataPoints.Get(0).SetTimestamp(timeUnixNano)
-	summaryDataPoints.Get(0).SetCount(1)
-	summaryDataPoints.Get(0).SetSum(15)
-	summaryDataPoints.Get(1).SetLabelsMap(data.NewStringMap(map[string]string{
-		"key1": "summary-value2",
-	}))
-	summaryDataPoints.Get(1).SetStartTime(startTimeUnixNano)
-	summaryDataPoints.Get(1).SetTimestamp(timeUnixNano)
-	summaryDataPoints.Get(1).SetCount(1)
-	summaryDataPoints.Get(1).SetSum(15)
-	summaryDataPoints.Get(1).SetValueAtPercentiles(data.NewSummaryValueAtPercentileSlice(1))
-	summaryDataPoints.Get(1).ValueAtPercentiles().Get(0).SetPercentile(1)
-	summaryDataPoints.Get(1).ValueAtPercentiles().Get(0).SetValue(15)
-
-	return metricData
-}
-
 func generateOcTestDataNoMetrics() consumerdata.MetricsData {
 	return consumerdata.MetricsData{
-		Node:     &occommon.Node{},
-		Resource: &ocresource.Resource{},
-		Metrics:  []*ocmetrics.Metric(nil),
+		Node: &occommon.Node{},
+		Resource: &ocresource.Resource{
+			Labels: map[string]string{"resource-attr": "resource-attr-val-1"},
+		},
+		Metrics: []*ocmetrics.Metric(nil),
 	}
 }
 
 func generateOcTestDataNoPoints() consumerdata.MetricsData {
 	return consumerdata.MetricsData{
-		Node:     &occommon.Node{},
-		Resource: &ocresource.Resource{},
+		Node: &occommon.Node{},
+		Resource: &ocresource.Resource{
+			Labels: map[string]string{"resource-attr": "resource-attr-val-1"},
+		},
 		Metrics: []*ocmetrics.Metric{
 			{
 				MetricDescriptor: &ocmetrics.MetricDescriptor{
-					Name:        "no-points",
-					Description: "My metric",
-					Unit:        "ms",
+					Name:        "gauge-double",
+					Description: "",
+					Unit:        "1",
 					Type:        ocmetrics.MetricDescriptor_GAUGE_DOUBLE,
+				},
+			},
+			{
+				MetricDescriptor: &ocmetrics.MetricDescriptor{
+					Name:        "gauge-int",
+					Description: "",
+					Unit:        "1",
+					Type:        ocmetrics.MetricDescriptor_GAUGE_INT64,
+				},
+			},
+			{
+				MetricDescriptor: &ocmetrics.MetricDescriptor{
+					Name:        "counter-double",
+					Description: "",
+					Unit:        "1",
+					Type:        ocmetrics.MetricDescriptor_CUMULATIVE_DOUBLE,
+				},
+			},
+			{
+				MetricDescriptor: &ocmetrics.MetricDescriptor{
+					Name:        "counter-int",
+					Description: "",
+					Unit:        "1",
+					Type:        ocmetrics.MetricDescriptor_CUMULATIVE_INT64,
+				},
+			},
+			{
+				MetricDescriptor: &ocmetrics.MetricDescriptor{
+					Name:        "gauge-histogram",
+					Description: "",
+					Unit:        "1",
+					Type:        ocmetrics.MetricDescriptor_GAUGE_DISTRIBUTION,
+				},
+			},
+			{
+				MetricDescriptor: &ocmetrics.MetricDescriptor{
+					Name:        "cumulative-histogram",
+					Description: "",
+					Unit:        "1",
+					Type:        ocmetrics.MetricDescriptor_CUMULATIVE_DISTRIBUTION,
+				},
+			},
+			{
+				MetricDescriptor: &ocmetrics.MetricDescriptor{
+					Name:        "summary",
+					Description: "",
+					Unit:        "1",
+					Type:        ocmetrics.MetricDescriptor_SUMMARY,
 				},
 			},
 		},
@@ -249,22 +179,22 @@ func generateOcTestData(t *testing.T) consumerdata.MetricsData {
 
 	ocMetricInt := &ocmetrics.Metric{
 		MetricDescriptor: &ocmetrics.MetricDescriptor{
-			Name:        "mymetric-int",
-			Description: "My metric",
-			Unit:        "ms",
+			Name:        testdata.TestCounterIntMetricName,
+			Description: "",
+			Unit:        "1",
 			Type:        ocmetrics.MetricDescriptor_CUMULATIVE_INT64,
 			LabelKeys: []*ocmetrics.LabelKey{
-				{Key: "key1"},
-				{Key: "key2"},
+				{Key: "int-label-1"},
+				{Key: "int-label-2"},
 			},
 		},
 		Timeseries: []*ocmetrics.TimeSeries{
 			{
-				StartTimestamp: internal.UnixNanoToTimestamp(startTimeUnixNano),
+				StartTimestamp: internal.TimeToTimestamp(testdata.TestMetricStartTime),
 				LabelValues: []*ocmetrics.LabelValue{
 					{
 						// key1
-						Value:    "value1",
+						Value:    "int-label-value-1",
 						HasValue: true,
 					},
 					{
@@ -274,7 +204,7 @@ func generateOcTestData(t *testing.T) consumerdata.MetricsData {
 				},
 				Points: []*ocmetrics.Point{
 					{
-						Timestamp: internal.UnixNanoToTimestamp(timeUnixNano),
+						Timestamp: internal.TimeToTimestamp(testdata.TestMetricTime),
 						Value: &ocmetrics.Point_Int64Value{
 							Int64Value: 123,
 						},
@@ -282,7 +212,7 @@ func generateOcTestData(t *testing.T) consumerdata.MetricsData {
 				},
 			},
 			{
-				StartTimestamp: internal.UnixNanoToTimestamp(startTimeUnixNano),
+				StartTimestamp: internal.TimeToTimestamp(testdata.TestMetricStartTime),
 				LabelValues: []*ocmetrics.LabelValue{
 					{
 						// key1
@@ -290,13 +220,13 @@ func generateOcTestData(t *testing.T) consumerdata.MetricsData {
 					},
 					{
 						// key2
-						Value:    "value2",
+						Value:    "int-label-value-2",
 						HasValue: true,
 					},
 				},
 				Points: []*ocmetrics.Point{
 					{
-						Timestamp: internal.UnixNanoToTimestamp(timeUnixNano),
+						Timestamp: internal.TimeToTimestamp(testdata.TestMetricTime),
 						Value: &ocmetrics.Point_Int64Value{
 							Int64Value: 456,
 						},
@@ -307,17 +237,17 @@ func generateOcTestData(t *testing.T) consumerdata.MetricsData {
 	}
 	ocMetricDouble := &ocmetrics.Metric{
 		MetricDescriptor: &ocmetrics.MetricDescriptor{
-			Name:        "mymetric-double",
-			Description: "My metric",
-			Unit:        "ms",
+			Name:        testdata.TestCounterDoubleMetricName,
+			Description: "",
+			Unit:        "1",
 			Type:        ocmetrics.MetricDescriptor_CUMULATIVE_DOUBLE,
 		},
 		Timeseries: []*ocmetrics.TimeSeries{
 			{
-				StartTimestamp: internal.UnixNanoToTimestamp(startTimeUnixNano),
+				StartTimestamp: internal.TimeToTimestamp(testdata.TestMetricStartTime),
 				Points: []*ocmetrics.Point{
 					{
-						Timestamp: internal.UnixNanoToTimestamp(timeUnixNano),
+						Timestamp: internal.TimeToTimestamp(testdata.TestMetricTime),
 						Value: &ocmetrics.Point_DoubleValue{
 							DoubleValue: 1.23,
 						},
@@ -328,23 +258,23 @@ func generateOcTestData(t *testing.T) consumerdata.MetricsData {
 	}
 	ocMetricHistogram := &ocmetrics.Metric{
 		MetricDescriptor: &ocmetrics.MetricDescriptor{
-			Name:        "mymetric-histogram",
-			Description: "My metric",
-			Unit:        "ms",
+			Name:        testdata.TestCumulativeHistogramMetricName,
+			Description: "",
+			Unit:        "1",
 			Type:        ocmetrics.MetricDescriptor_CUMULATIVE_DISTRIBUTION,
 			LabelKeys: []*ocmetrics.LabelKey{
-				{Key: "key1"},
-				{Key: "key2"},
-				{Key: "key3"},
+				{Key: "histogram-label-1"},
+				{Key: "histogram-label-2"},
+				{Key: "histogram-label-3"},
 			},
 		},
 		Timeseries: []*ocmetrics.TimeSeries{
 			{
-				StartTimestamp: internal.UnixNanoToTimestamp(startTimeUnixNano),
+				StartTimestamp: internal.TimeToTimestamp(testdata.TestMetricStartTime),
 				LabelValues: []*ocmetrics.LabelValue{
 					{
 						// key1
-						Value:    "histogram-value1",
+						Value:    "histogram-label-value-1",
 						HasValue: true,
 					},
 					{
@@ -353,13 +283,13 @@ func generateOcTestData(t *testing.T) consumerdata.MetricsData {
 					},
 					{
 						// key3
-						Value:    "histogram-value3",
+						Value:    "histogram-label-value-3",
 						HasValue: true,
 					},
 				},
 				Points: []*ocmetrics.Point{
 					{
-						Timestamp: internal.UnixNanoToTimestamp(timeUnixNano),
+						Timestamp: internal.TimeToTimestamp(testdata.TestMetricTime),
 						Value: &ocmetrics.Point_DistributionValue{
 							DistributionValue: &ocmetrics.DistributionValue{
 								Count: 1,
@@ -370,7 +300,7 @@ func generateOcTestData(t *testing.T) consumerdata.MetricsData {
 				},
 			},
 			{
-				StartTimestamp: internal.UnixNanoToTimestamp(startTimeUnixNano),
+				StartTimestamp: internal.TimeToTimestamp(testdata.TestMetricStartTime),
 				LabelValues: []*ocmetrics.LabelValue{
 					{
 						// key1
@@ -378,7 +308,7 @@ func generateOcTestData(t *testing.T) consumerdata.MetricsData {
 					},
 					{
 						// key2
-						Value:    "histogram-value2",
+						Value:    "histogram-label-value-2",
 						HasValue: true,
 					},
 					{
@@ -388,7 +318,7 @@ func generateOcTestData(t *testing.T) consumerdata.MetricsData {
 				},
 				Points: []*ocmetrics.Point{
 					{
-						Timestamp: internal.UnixNanoToTimestamp(timeUnixNano),
+						Timestamp: internal.TimeToTimestamp(testdata.TestMetricTime),
 						Value: &ocmetrics.Point_DistributionValue{
 							DistributionValue: &ocmetrics.DistributionValue{
 								Count: 1,
@@ -412,9 +342,9 @@ func generateOcTestData(t *testing.T) consumerdata.MetricsData {
 									{
 										Count: 1,
 										Exemplar: &ocmetrics.DistributionValue_Exemplar{
-											Timestamp:   internal.UnixNanoToTimestamp(timeUnixNano),
+											Timestamp:   internal.TimeToTimestamp(testdata.TestMetricExemplarTime),
 											Value:       15,
-											Attachments: map[string]string{"key": "value"},
+											Attachments: map[string]string{"exemplar-attachment": "exemplar-attachment-value"},
 										},
 									},
 								},
@@ -427,27 +357,27 @@ func generateOcTestData(t *testing.T) consumerdata.MetricsData {
 	}
 	ocMetricSummary := &ocmetrics.Metric{
 		MetricDescriptor: &ocmetrics.MetricDescriptor{
-			Name:        "mymetric-summary",
-			Description: "My metric",
-			Unit:        "ms",
+			Name:        testdata.TestSummaryMetricName,
+			Description: "",
+			Unit:        "1",
 			Type:        ocmetrics.MetricDescriptor_SUMMARY,
 			LabelKeys: []*ocmetrics.LabelKey{
-				{Key: "key1"},
+				{Key: "summary-label"},
 			},
 		},
 		Timeseries: []*ocmetrics.TimeSeries{
 			{
-				StartTimestamp: internal.UnixNanoToTimestamp(startTimeUnixNano),
+				StartTimestamp: internal.TimeToTimestamp(testdata.TestMetricStartTime),
 				LabelValues: []*ocmetrics.LabelValue{
 					{
 						// key1
-						Value:    "summary-value1",
+						Value:    "summary-label-value-1",
 						HasValue: true,
 					},
 				},
 				Points: []*ocmetrics.Point{
 					{
-						Timestamp: internal.UnixNanoToTimestamp(timeUnixNano),
+						Timestamp: internal.TimeToTimestamp(testdata.TestMetricTime),
 						Value: &ocmetrics.Point_SummaryValue{
 							SummaryValue: &ocmetrics.SummaryValue{
 								Count: &wrappers.Int64Value{
@@ -462,17 +392,17 @@ func generateOcTestData(t *testing.T) consumerdata.MetricsData {
 				},
 			},
 			{
-				StartTimestamp: internal.UnixNanoToTimestamp(startTimeUnixNano),
+				StartTimestamp: internal.TimeToTimestamp(testdata.TestMetricStartTime),
 				LabelValues: []*ocmetrics.LabelValue{
 					{
 						// key1
-						Value:    "summary-value2",
+						Value:    "summary-label-value-2",
 						HasValue: true,
 					},
 				},
 				Points: []*ocmetrics.Point{
 					{
-						Timestamp: internal.UnixNanoToTimestamp(timeUnixNano),
+						Timestamp: internal.TimeToTimestamp(testdata.TestMetricTime),
 						Value: &ocmetrics.Point_SummaryValue{
 							SummaryValue: &ocmetrics.SummaryValue{
 								Count: &wrappers.Int64Value{
@@ -511,19 +441,10 @@ func generateOcTestData(t *testing.T) consumerdata.MetricsData {
 			},
 		},
 		Resource: &ocresource.Resource{
-			Type: "good-resource",
 			Labels: map[string]string{
-				"str1": "text",
-				"int2": "123",
+				"resource-attr": "resource-attr-val-1",
 			},
 		},
 		Metrics: []*ocmetrics.Metric{ocMetricInt, ocMetricDouble, ocMetricHistogram, ocMetricSummary},
 	}
-}
-
-func fillMetricDescriptor(md data.MetricDescriptor, name string, ty data.MetricType) {
-	md.SetName(name)
-	md.SetDescription("My metric")
-	md.SetUnit("ms")
-	md.SetType(ty)
 }

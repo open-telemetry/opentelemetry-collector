@@ -15,6 +15,7 @@
 package data
 
 import (
+	"github.com/golang/protobuf/proto"
 	otlpmetrics "github.com/open-telemetry/opentelemetry-proto/gen/go/metrics/v1"
 )
 
@@ -47,6 +48,17 @@ func MetricDataToOtlp(md MetricData) []*otlpmetrics.ResourceMetrics {
 func NewMetricData() MetricData {
 	orig := []*otlpmetrics.ResourceMetrics(nil)
 	return MetricData{&orig}
+}
+
+// Clone returns a copy of MetricData.
+func (md MetricData) Clone() MetricData {
+	otlp := MetricDataToOtlp(md)
+	resourceMetricsClones := make([]*otlpmetrics.ResourceMetrics, 0, len(otlp))
+	for _, resourceMetrics := range otlp {
+		resourceMetricsClones = append(resourceMetricsClones,
+			proto.Clone(resourceMetrics).(*otlpmetrics.ResourceMetrics))
+	}
+	return MetricDataFromOtlp(resourceMetricsClones)
 }
 
 func (md MetricData) ResourceMetrics() ResourceMetricsSlice {
