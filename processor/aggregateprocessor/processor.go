@@ -15,11 +15,10 @@
 package aggregateprocessor
 
 import (
-	"bytes"
 	"context"
-	"encoding/binary"
 	"errors"
 	"fmt"
+	"hash/fnv"
 	"net"
 	"strconv"
 	"sync"
@@ -249,11 +248,10 @@ func jumpHash(key uint64, numBuckets int) int32 {
 	return int32(b)
 }
 
-func bytesToInt(spanID []byte) int64 {
-	var n int64
-	buf := bytes.NewBuffer(spanID)
-	binary.Read(buf, binary.LittleEndian, &n)
-	return n
+func fingerprint(b []byte) uint64 {
+	hash := fnv.New64a()
+	hash.Write(b)
+	return hash.Sum64()
 }
 
 func (ap *aggregatingProcessor) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
@@ -291,9 +289,7 @@ func (ap *aggregatingProcessor) ConsumeTraceData(ctx context.Context, td consume
 	noHashBatch := []*v1.Span{}
 
 	for _, span := range td.Spans {
-		// check hash of traceid
-		traceIDInt64 := bytesToInt(span.TraceId)
-		memberNum := jumpHash(uint64(traceIDInt64), len(peersSorted))
+		memberNum := jumpHash(fingerprint(span.TraceId), len(peersSorted))
 		ap.logger.Debug("", zap.Int("memberNum", int(memberNum)))
 		if memberNum == -1 {
 			// Any spans having a hash error -> self processed
