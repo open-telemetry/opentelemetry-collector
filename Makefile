@@ -151,8 +151,20 @@ docker-otelcol:
 binaries: otelcol
 
 .PHONY: binaries-all-sys
-binaries-all-sys:
+binaries-all-sys: binaries-darwin_amd64 binaries-linux_amd64 binaries-linux_arm64 binaries-windows_amd64
+
+.PHONY: binaries-darwin_amd64
+binaries-darwin_amd64:
 	GOOS=darwin  GOARCH=amd64 $(MAKE) binaries
+
+.PHONY: binaries-linux_amd64
+binaries-linux_amd64:
 	GOOS=linux   GOARCH=amd64 $(MAKE) binaries
+
+.PHONY: binaries-linux_arm64
+binaries-linux_arm64:
 	GOOS=linux   GOARCH=arm64 $(MAKE) binaries
+
+.PHONY: binaries-windows_amd64
+binaries-windows_amd64:
 	GOOS=windows GOARCH=amd64 $(MAKE) binaries
