@@ -12,15 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ringmembershipextension
+package aggregateprocessor
 
 import (
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 )
 
-// Config has the configuration for the extension enabling ring membership discovery
+// Config holds configuration settings for this processor to discover collector peers
+// using any of the available service discovery mechanisms
 type Config struct {
-	configmodels.ExtensionSettings `mapstructure:",squash"`
+	configmodels.ProcessorSettings `mapstructure:",squash"`
+
 	// DNS name used to discover peers
 	// The default value is jaeger-agent.default.svc.cluster.local
 	PeerDiscoveryDNSName string `mapstructure:"peer_discovery_dns_name"`

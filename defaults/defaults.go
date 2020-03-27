@@ -28,10 +28,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/extension"
 	"github.com/open-telemetry/opentelemetry-collector/extension/healthcheckextension"
 	"github.com/open-telemetry/opentelemetry-collector/extension/pprofextension"
-	"github.com/open-telemetry/opentelemetry-collector/extension/ringmembershipextension"
 	"github.com/open-telemetry/opentelemetry-collector/extension/zpagesextension"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
+	"github.com/open-telemetry/opentelemetry-collector/processor/aggregateprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/batchprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/memorylimiter"
@@ -60,7 +60,6 @@ func Components() (
 		&healthcheckextension.Factory{},
 		&pprofextension.Factory{},
 		&zpagesextension.Factory{},
-		&ringmembershipextension.Factory{},
 	)
 	if err != nil {
 		errs = append(errs, err)
@@ -93,6 +92,7 @@ func Components() (
 
 	processors, err := processor.Build(
 		&attributesprocessor.Factory{},
+		&aggregateprocessor.Factory{},
 		&queuedprocessor.Factory{},
 		&batchprocessor.Factory{},
 		&memorylimiter.Factory{},

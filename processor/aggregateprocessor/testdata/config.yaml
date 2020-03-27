@@ -1,0 +1,17 @@
+receivers:
+  examplereceiver:
+
+exporters:
+  exampleexporter:
+
+processors:
+  aggregate:
+    peer_discovery_dns_name: "jaeger-agent.my-ns.svc.cluster.local"
+
+
+service:
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      processors: [aggregate]
+      exporters: [exampleexporter]

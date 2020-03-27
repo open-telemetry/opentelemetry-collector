@@ -27,6 +27,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/internal/collector/telemetry"
 	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
+	"github.com/open-telemetry/opentelemetry-collector/processor/aggregateprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/batchprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/queuedprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/samplingprocessor/tailsamplingprocessor"
@@ -101,6 +102,7 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 	var views []*view.View
 	views = append(views, obsreport.Configure(*useLegacyMetricsPtr, *useNewMetricsPtr)...)
 	views = append(views, processor.MetricViews(level)...)
+	views = append(views, aggregateprocessor.MetricViews(level)...)
 	views = append(views, queuedprocessor.MetricViews(level)...)
 	views = append(views, batchprocessor.MetricViews(level)...)
 	views = append(views, tailsamplingprocessor.SamplingProcessorMetricViews(level)...)

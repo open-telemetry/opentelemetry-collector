@@ -9,9 +9,6 @@ processors:
     decision_wait: 10s
     num_traces: 100
     expected_new_traces_per_sec: 10
-    support_extensions:
-      - name: ring_membership
-        endpoint: 127.0.0.1:13000
     policies:
       [
           {

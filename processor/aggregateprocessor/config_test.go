@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ringmembershipextension
+package aggregateprocessor
 
 import (
 	"path"
@@ -25,31 +25,23 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 )
 
-func TestLoadConfig(t *testing.T) {
+func TestLoadingConifg(t *testing.T) {
 	factories, err := config.ExampleComponents()
 	assert.Nil(t, err)
 
 	factory := &Factory{}
-	factories.Extensions[typeStr] = factory
-	cfg, err := config.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
+	factories.Processors[typeStr] = factory
+	config, err := config.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 
-	require.Nil(t, err)
-	require.NotNil(t, cfg)
+	assert.Nil(t, err)
+	require.NotNil(t, config)
 
-	ext0 := cfg.Extensions["ring_membership"]
-	assert.Equal(t, factory.CreateDefaultConfig(), ext0)
-
-	ext1 := cfg.Extensions["ring_membership/1"]
-	assert.Equal(t,
-		&Config{
-			ExtensionSettings: configmodels.ExtensionSettings{
-				TypeVal: "ring_membership",
-				NameVal: "ring_membership/1",
-			},
-			PeerDiscoveryDNSName: "random.dns.name",
+	p0 := config.Processors["aggregate"]
+	assert.Equal(t, p0, &Config{
+		ProcessorSettings: configmodels.ProcessorSettings{
+			NameVal: "aggregate",
+			TypeVal: typeStr,
 		},
-		ext1)
-
-	assert.Equal(t, 1, len(cfg.Service.Extensions))
-	assert.Equal(t, "ring_membership/1", cfg.Service.Extensions[0])
+		PeerDiscoveryDNSName: "jaeger-agent.my-ns.svc.cluster.local",
+	})
 }

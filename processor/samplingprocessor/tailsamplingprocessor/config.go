@@ -100,7 +100,4 @@ type Config struct {
 	// PolicyCfgs sets the tail-based sampling policy which makes a sampling decision
 	// for a given trace when requested.
 	PolicyCfgs []PolicyCfg `mapstructure:"policies"`
-	// SupportExtensions are extensions that provide extra functionality to the processor
-	// like discovery of peer members.
-	SupportExtensions []ExtensionCfg `mapstructure:"support_extensions"`
 }

@@ -33,9 +33,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/extension"
 	"github.com/open-telemetry/opentelemetry-collector/extension/healthcheckextension"
 	"github.com/open-telemetry/opentelemetry-collector/extension/pprofextension"
-	"github.com/open-telemetry/opentelemetry-collector/extension/ringmembershipextension"
 	"github.com/open-telemetry/opentelemetry-collector/extension/zpagesextension"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
+	"github.com/open-telemetry/opentelemetry-collector/processor/aggregateprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/batchprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/memorylimiter"
@@ -54,10 +54,9 @@ import (
 
 func TestDefaultComponents(t *testing.T) {
 	expectedExtensions := map[string]extension.Factory{
-		"health_check":    &healthcheckextension.Factory{},
-		"pprof":           &pprofextension.Factory{},
-		"zpages":          &zpagesextension.Factory{},
-		"ring_membership": &ringmembershipextension.Factory{},
+		"health_check": &healthcheckextension.Factory{},
+		"pprof":        &pprofextension.Factory{},
+		"zpages":       &zpagesextension.Factory{},
 	}
 	expectedReceivers := map[string]receiver.BaseFactory{
 		"jaeger":     &jaegerreceiver.Factory{},
@@ -68,6 +67,7 @@ func TestDefaultComponents(t *testing.T) {
 		"vmmetrics":  &vmmetricsreceiver.Factory{},
 	}
 	expectedProcessors := map[string]processor.Factory{
+		"aggregate":             &aggregateprocessor.Factory{},
 		"attributes":            &attributesprocessor.Factory{},
 		"queued_retry":          &queuedprocessor.Factory{},
 		"batch":                 &batchprocessor.Factory{},

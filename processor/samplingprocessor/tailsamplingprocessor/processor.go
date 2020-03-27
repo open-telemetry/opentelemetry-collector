@@ -65,7 +65,6 @@ type tailSamplingSpanProcessor struct {
 	decisionBatcher idbatcher.Batcher
 	deleteChan      chan traceKey
 	numTracesOnMap  uint64
-	forwarder       forwarder
 }
 
 const (
@@ -118,16 +117,6 @@ func NewTraceProcessor(logger *zap.Logger, nextConsumer consumer.TraceConsumer, 
 
 	tsp.policyTicker = &policyTicker{onTick: tsp.samplingPolicyOnTick}
 	tsp.deleteChan = make(chan traceKey, cfg.NumTraces)
-
-	for _, ext := range cfg.SupportExtensions {
-		if ext.Name == "ring_membership" {
-			f, err := newSpanForwarder(tsp.logger, ext.Endpoint)
-			if err != nil {
-				return nil, err
-			}
-			tsp.forwarder = f
-		}
-	}
 
 	return tsp, nil
 }
@@ -236,17 +225,6 @@ func (tsp *tailSamplingSpanProcessor) ConsumeTraceData(ctx context.Context, td c
 	statsTags := processor.StatsTagsForBatch("tail_sampling_processor", processor.ServiceNameForNode(td.Node), td.SourceFormat)
 	stats.RecordWithTags(context.Background(), statsTags, processor.StatReceivedSpanCount.M(int64(len(td.Spans))))
 
-	// Check if this batch has been forwarded.
-	if td.Spans != nil && td.Spans[0].GetAttributes() != nil && td.Spans[0].GetAttributes().AttributeMap != nil {
-		if _, ok := td.Spans[0].GetAttributes().AttributeMap["otelcol.ttl"]; ok {
-			tsp.logger.Info("Forwarded batch", zap.Int("Number of spans in the batch", len(td.Spans)))
-
-			stats.Record(
-				context.Background(),
-				statCountForwardedSpansRcvd.M(int64(len(td.Spans))))
-		}
-	}
-
 	// Groupd spans per their traceId to minimize contention on idToTrace
 	idToSpans := make(map[traceKey][]*tracepb.Span)
 	for _, span := range td.Spans {
@@ -255,17 +233,6 @@ func (tsp *tailSamplingSpanProcessor) ConsumeTraceData(ctx context.Context, td c
 			continue
 		}
 		traceKey := traceKey(span.TraceId)
-
-		// Check if ring membership extension is configured
-		if tsp.forwarder != nil {
-			// Check if this span should be forwarded to another collector
-			// If span is forwarded, do not add to current span map.
-			if tsp.forwarder.process(span) {
-				continue
-			}
-		}
-
-		tsp.logger.Debug("Span processed by self", zap.ByteString("SpanID:", span.GetSpanId()))
 		idToSpans[traceKey] = append(idToSpans[traceKey], span)
 	}
 

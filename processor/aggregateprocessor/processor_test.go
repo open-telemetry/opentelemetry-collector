@@ -1,4 +1,4 @@
-package tailsamplingprocessor
+package aggregateprocessor
 
 import (
 	"math/rand"
