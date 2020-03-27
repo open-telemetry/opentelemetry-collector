@@ -82,7 +82,7 @@ jobs:
           paths: go/bin
       - run:
           name: Lint
-          command: make checklicense impi lint misspell
+          command: make -j4 checklicense impi lint misspell
       - run:
           name: Lint testbed
           command: make -C testbed fmt vet lint
@@ -100,22 +100,24 @@ jobs:
 
   cross-compile:
     executor: golang
+    parallelism: 4
     steps:
       - attach_to_workspace
       - run:
           name: Build collector for all archs
-          command: make binaries-all-sys
+          command: grep ^binaries-all-sys Makefile|fmt -w 1|tail -n +2|circleci tests split|xargs make
       - persist_to_workspace:
           root: ~/
           paths: project/bin
 
   loadtest:
     executor: golang
+    parallelism: 10
     steps:
       - attach_to_workspace
       - run:
           name: Loadtest
-          command: make -C testbed runtests
+          command: TEST_ARGS="-test.run=$(make -s -C testbed listtests | circleci tests split|xargs echo|sed 's/ /|/g')" make -C testbed runtests
       - store_artifacts:
           path: testbed/tests/results
       - store_test_results:
