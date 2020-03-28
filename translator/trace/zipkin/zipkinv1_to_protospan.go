@@ -281,7 +281,7 @@ func parseZipkinV1Annotations(annotations []*annotation) *annotationParseResult 
 	spanKindIsSet := false
 
 	for _, currAnnotation := range annotations {
-		if currAnnotation == nil && currAnnotation.Value == "" {
+		if currAnnotation == nil || currAnnotation.Value == "" {
 			continue
 		}
 
