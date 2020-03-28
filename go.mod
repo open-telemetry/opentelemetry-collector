@@ -13,7 +13,6 @@ require (
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/census-instrumentation/opencensus-proto v0.2.1
 	github.com/client9/misspell v0.3.4
-	github.com/codahale/hdrhistogram v0.0.0-20161010025455-3a0bb77429bd // indirect
 	github.com/go-kit/kit v0.9.0
 	github.com/gogo/googleapis v1.3.0 // indirect
 	github.com/golang/groupcache v0.0.0-20190702054246-869f871628b6
@@ -21,6 +20,7 @@ require (
 	github.com/golangci/golangci-lint v1.24.0
 	github.com/google/addlicense v0.0.0-20200301095109-7c013a14f2e2
 	github.com/google/go-cmp v0.3.1
+	github.com/google/uuid v1.1.1
 	github.com/gorilla/handlers v1.4.2 // indirect
 	github.com/gorilla/mux v1.7.3
 	github.com/grpc-ecosystem/grpc-gateway v1.11.1
@@ -31,7 +31,7 @@ require (
 	github.com/open-telemetry/opentelemetry-proto v0.3.0
 	github.com/openzipkin/zipkin-go v0.2.1
 	github.com/orijtech/prometheus-go-metrics-exporter v0.0.3-0.20190313163149-b321c5297f60
-	github.com/ory/go-acc v0.2.1 // indirect
+	github.com/ory/go-acc v0.2.1
 	github.com/ory/x v0.0.109 // indirect
 	github.com/pavius/impi v0.0.0-20180302134524-c1cbdcb8df2b
 	github.com/pkg/errors v0.9.1

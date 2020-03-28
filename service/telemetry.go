@@ -20,6 +20,7 @@ import (
 	"strconv"
 
 	"contrib.go.opencensus.io/exporter/prometheus"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"go.opencensus.io/stats/view"
 	"go.uber.org/zap"
@@ -30,6 +31,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/processor/batchprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/queuedprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/samplingprocessor/tailsamplingprocessor"
+	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 )
 
 const (
@@ -114,8 +116,13 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 	processMetricsViews.StartCollection()
 
 	// Until we can use a generic metrics exporter, default to Prometheus.
+	instanceUUID, _ := uuid.NewRandom()
+	instanceID := instanceUUID.String()
 	opts := prometheus.Options{
 		Namespace: *metricsPrefixPtr,
+		ConstLabels: map[string]string{
+			conventions.AttributeServiceInstance: instanceID,
+		},
 	}
 	pe, err := prometheus.NewExporter(opts)
 	if err != nil {
@@ -130,6 +137,7 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 		zap.Bool("legacy_metrics", *useLegacyMetricsPtr),
 		zap.Bool("new_metrics", *useNewMetricsPtr),
 		zap.Int8("level", int8(level)), // TODO: make it human friendly
+		zap.String(conventions.AttributeServiceInstance, instanceID),
 	)
 
 	go func() {
