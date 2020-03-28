@@ -49,6 +49,7 @@ func TestApplication_Start(t *testing.T) {
 		"--config=testdata/otelcol-config.yaml",
 		"--metrics-port=" + strconv.FormatUint(uint64(metricsPort), 10),
 		"--metrics-prefix=" + testPrefix,
+		"--add-instance-id=true",
 	})
 
 	appDone := make(chan struct{})

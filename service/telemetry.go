@@ -18,6 +18,8 @@ import (
 	"flag"
 	"net/http"
 	"strconv"
+	"strings"
+	"unicode"
 
 	"contrib.go.opencensus.io/exporter/prometheus"
 	"github.com/google/uuid"
@@ -51,6 +53,7 @@ var (
 
 	useLegacyMetricsPtr *bool
 	useNewMetricsPtr    *bool
+	addInstanceIDPtr    *bool
 )
 
 type appTelemetry struct {
@@ -86,6 +89,11 @@ func telemetryFlags(flags *flag.FlagSet) {
 		false,
 		"Flag to control usage of new metrics",
 	)
+
+	addInstanceIDPtr = flags.Bool(
+		"add-instance-id",
+		false,
+		"Flag to control the addition of 'service.instance.id' to the collector metrics.")
 }
 
 func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) error {
@@ -116,14 +124,19 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 	processMetricsViews.StartCollection()
 
 	// Until we can use a generic metrics exporter, default to Prometheus.
-	instanceUUID, _ := uuid.NewRandom()
-	instanceID := instanceUUID.String()
 	opts := prometheus.Options{
 		Namespace: *metricsPrefixPtr,
-		ConstLabels: map[string]string{
-			conventions.AttributeServiceInstance: instanceID,
-		},
 	}
+
+	var instanceID string
+	if *addInstanceIDPtr {
+		instanceUUID, _ := uuid.NewRandom()
+		instanceID = instanceUUID.String()
+		opts.ConstLabels = map[string]string{
+			sanitizePrometheusKey(conventions.AttributeServiceInstance): instanceID,
+		}
+	}
+
 	pe, err := prometheus.NewExporter(opts)
 	if err != nil {
 		return err
@@ -154,4 +167,14 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 
 func (tel *appTelemetry) shutdown() {
 	view.Unregister(tel.views...)
+}
+
+func sanitizePrometheusKey(str string) string {
+	runeFilterMap := func (r rune) rune {
+		if unicode.IsDigit(r) || unicode.IsLetter(r) || r == '_' {
+			return r
+		}
+		return '_'
+	}
+	return strings.Map(runeFilterMap, str)
 }
