@@ -72,7 +72,7 @@ type TestCase struct {
 }
 
 const mibibyte = 1024 * 1024
-const TESTCASE_DURATION_VAR = "TESTCASE_DURATION"
+const testcaseDurationVar = "TESTCASE_DURATION"
 
 // NewTestCase creates a new TestCase. It expects agent-config.yaml in the specified directory.
 func NewTestCase(
@@ -91,14 +91,14 @@ func NewTestCase(
 	tc.Receiver = receiver
 
 	// Get requested test case duration from env variable.
-	duration := os.Getenv(TESTCASE_DURATION_VAR)
+	duration := os.Getenv(testcaseDurationVar)
 	if duration == "" {
 		duration = "15s"
 	}
 	var err error
 	tc.Duration, err = time.ParseDuration(duration)
 	if err != nil {
-		log.Fatalf("Invalid "+TESTCASE_DURATION_VAR+": %v. Expecting a valid duration string.", duration)
+		log.Fatalf("Invalid "+testcaseDurationVar+": %v. Expecting a valid duration string.", duration)
 	}
 
 	// Apply all provided options.
@@ -156,7 +156,7 @@ func (tc *TestCase) composeTestResultFileName(fileName string) string {
 }
 
 // SetResourceLimits sets expected limits for resource consmption.
-// Error is signalled if consumption during ResourceCheckPeriod exceeds the limits.
+// Error is signaled if consumption during ResourceCheckPeriod exceeds the limits.
 // Limits are modified only for non-zero fields of resourceSpec, all zero-value fields
 // fo resourceSpec are ignored and their previous values remain in effect.
 func (tc *TestCase) SetResourceLimits(resourceSpec ResourceSpec) {
@@ -309,7 +309,7 @@ func (tc *TestCase) ValidateData() {
 	}
 }
 
-// Sleep for specified duration or until error is signalled.
+// Sleep for specified duration or until error is signaled.
 func (tc *TestCase) Sleep(d time.Duration) {
 	select {
 	case <-time.After(d):
@@ -318,9 +318,9 @@ func (tc *TestCase) Sleep(d time.Duration) {
 }
 
 // WaitForN the specific condition for up to a specified duration. Records a test error
-// if time is out and condition does not become true. If error is signalled
+// if time is out and condition does not become true. If error is signaled
 // while waiting the function will return false, but will not record additional
-// test error (we assume that signalled error is already recorded in indicateError()).
+// test error (we assume that signaled error is already recorded in indicateError()).
 func (tc *TestCase) WaitForN(cond func() bool, duration time.Duration, errMsg ...interface{}) bool {
 	startTime := time.Now()
 

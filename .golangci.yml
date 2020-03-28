@@ -17,11 +17,10 @@ run:
   # default value is empty list, but default dirs are skipped independently
   # from this option's value (see skip-dirs-use-default).
   skip-dirs:
-    - testbed
 
   # default is true. Enables skipping of directories:
   #   vendor$, third_party$, testdata$, examples$, Godeps$, builtin$
-  skip-dirs-use-default: true
+  skip-dirs-use-default: false
 
   # which files to skip: they will be analyzed, but issues from them
   # won't be reported. Default value is empty list, but there is

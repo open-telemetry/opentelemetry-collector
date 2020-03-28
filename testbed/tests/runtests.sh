@@ -2,8 +2,6 @@
 
 set -e
 
-cd tests
-
 SED="sed"
 
 PASS_COLOR=$(printf "\033[32mPASS\033[0m")

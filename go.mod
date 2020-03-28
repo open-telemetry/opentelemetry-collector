@@ -42,6 +42,7 @@ require (
 	github.com/prometheus/prometheus v1.8.2-0.20190924101040-52e0504f83ea
 	github.com/rs/cors v1.6.0
 	github.com/securego/gosec v0.0.0-20200316084457-7da9f46445fd
+	github.com/shirou/gopsutil v0.0.0-20190901111213-e4ec7b275ada
 	github.com/sirupsen/logrus v1.5.0 // indirect
 	github.com/soheilhy/cmux v0.1.4
 	github.com/spf13/cast v1.3.1

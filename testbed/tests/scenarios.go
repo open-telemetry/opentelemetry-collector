@@ -134,14 +134,13 @@ service:
 	}
 
 	defer func() {
-		err := file.Close()
-		if err != nil {
+		errClose := file.Close()
+		if errClose != nil {
 			t.Error(err)
 		}
 	}()
 
-	_, err = file.WriteString(config)
-	if err != nil {
+	if _, err = file.WriteString(config); err != nil {
 		t.Error(err)
 		return ""
 	}
@@ -214,7 +213,8 @@ func genRandByteString(len int) string {
 // Scenario1kSPSWithAttrs runs a performance test at 1k sps with specified span attributes
 // and test options.
 func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, opts ...testbed.TestCaseOption) {
-	for _, test := range tests {
+	for i := range tests {
+		test := tests[i]
 		t.Run(fmt.Sprintf("%d*%dbytes", test.attrCount, test.attrSizeByte), func(t *testing.T) {
 
 			tc := testbed.NewTestCase(
