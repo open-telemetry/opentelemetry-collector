@@ -35,6 +35,7 @@ func (e *exporterImp) saveLastConnectError(err error) {
 	if err != nil {
 		errPtr = &err
 	}
+	// #nosec
 	atomic.StorePointer(&e.lastConnectErrPtr, unsafe.Pointer(errPtr))
 }
 

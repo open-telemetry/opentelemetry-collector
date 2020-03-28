@@ -15,6 +15,7 @@
 package attributesprocessor
 
 import (
+	// #nosec
 	"crypto/sha1"
 	"encoding/binary"
 	"encoding/hex"
@@ -58,6 +59,7 @@ func SHA1AttributeHahser(attr *tracepb.AttributeValue) *tracepb.AttributeValue {
 
 	var hashed string
 	if len(val) > 0 {
+		// #nosec
 		h := sha1.New()
 		h.Write(val)
 		val = h.Sum(nil)

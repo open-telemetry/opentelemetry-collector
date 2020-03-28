@@ -47,6 +47,9 @@ workflows:
       - test:
           requires:
             - setup-and-lint
+      - gosec:
+          requires:
+            - setup-and-lint
       - coverage:
           requires:
             - setup-and-lint
@@ -55,6 +58,7 @@ workflows:
             - cross-compile
             - loadtest
             - test
+            - gosec
             - coverage
           filters:
             branches:
@@ -66,6 +70,7 @@ workflows:
             - cross-compile
             - loadtest
             - test
+            - gosec
             - coverage
           filters:
             branches:
@@ -142,6 +147,14 @@ jobs:
           name: Unit tests
           command: make test
       - save_module_cache
+
+  gosec:
+    executor: golang
+    steps:
+      - attach_to_workspace
+      - run:
+          name: Golang Security Checker
+          command: make lint-gosec
 
   coverage:
     executor: golang

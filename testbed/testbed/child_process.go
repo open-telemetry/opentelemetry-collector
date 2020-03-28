@@ -146,6 +146,7 @@ func (cp *childProcess) start(params startParams) error {
 	log.Printf("Writing %s log to %s", cp.name, params.logFilePath)
 
 	// Prepare to start the process.
+	// #nosec
 	cp.cmd = exec.Command(params.cmd, params.cmdArgs...)
 
 	// Capture standard output and standard error.
