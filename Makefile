@@ -94,7 +94,8 @@ misspell-correction:
 
 .PHONY: lint-gosec
 lint-gosec:
-	$(GOSEC) -quiet -exclude=G104,G107 ./...
+	# TODO: Consider to use gosec from golangci-lint
+	$(GOSEC) -quiet -exclude=G104 ./...
 
 .PHONY: lint-static-check
 lint-static-check:

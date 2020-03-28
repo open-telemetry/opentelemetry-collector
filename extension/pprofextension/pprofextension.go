@@ -17,7 +17,7 @@ package pprofextension
 import (
 	"net"
 	"net/http"
-	_ "net/http/pprof" // Needed to enable the performance profiler
+	_ "net/http/pprof" // #nosec Needed to enable the performance profiler
 	"os"
 	"runtime"
 	"runtime/pprof"
