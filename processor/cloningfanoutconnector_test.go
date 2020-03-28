@@ -159,7 +159,7 @@ func TestTraceProcessorCloningMultiplexing(t *testing.T) {
 	}
 
 	tfc := NewTraceCloningFanOutConnector(processors)
-	td := testdata.GenerateTraceDataSameResourceTwoSpans()
+	td := testdata.GenerateTraceDataTwoSpansSameResource()
 
 	var wantSpansCount = 0
 	for i := 0; i < 2; i++ {
@@ -281,7 +281,7 @@ func TestCreateTraceCloningFanOutConnectorWithConvertion(t *testing.T) {
 
 	resourceTypeName := "good-resource"
 
-	td := testdata.GenerateTraceDataSameResourceTwoSpans()
+	td := testdata.GenerateTraceDataTwoSpansSameResource()
 	resource := td.ResourceSpans().Get(0).Resource()
 	resource.Attributes().Upsert(data.NewAttributeKeyValueString(conventions.OCAttributeResourceType, resourceTypeName))
 
