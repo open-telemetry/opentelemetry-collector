@@ -226,8 +226,8 @@ func (tsp *tailSamplingSpanProcessor) ConsumeTraceData(ctx context.Context, td c
 			tsp.logger.Warn("Span without valid TraceId", zap.String("SourceFormat", td.SourceFormat))
 			continue
 		}
-		traceKey := traceKey(span.TraceId)
-		idToSpans[traceKey] = append(idToSpans[traceKey], span)
+		tk := traceKey(span.TraceId)
+		idToSpans[tk] = append(idToSpans[tk], span)
 	}
 
 	var newTraceIDs int64

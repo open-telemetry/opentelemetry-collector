@@ -159,12 +159,8 @@ func (vmc *VMMetricsCollector) scrapeAndExport() {
 		},
 	)
 
-	var proc procfs.Proc
-	var err error
-	proc, err = vmc.processFs.Proc(vmc.pid)
-	if err == nil {
-		procStat, err := proc.Stat()
-		if err == nil {
+	if proc, err := vmc.processFs.Proc(vmc.pid); err == nil {
+		if procStat, errStat := proc.Stat(); errStat == nil {
 			metrics = append(
 				metrics,
 				&metricspb.Metric{
@@ -173,14 +169,14 @@ func (vmc *VMMetricsCollector) scrapeAndExport() {
 					Timeseries:       []*metricspb.TimeSeries{vmc.getDoubleTimeSeries(procStat.CPUTime(), nil)},
 				},
 			)
+		} else {
+			errs = append(errs, errStat)
 		}
-	}
-	if err != nil {
+	} else {
 		errs = append(errs, err)
 	}
 
-	stat, err := vmc.fs.Stat()
-	if err == nil {
+	if stat, err := vmc.fs.Stat(); err == nil {
 		cpuStat := stat.CPUTotal
 		metrics = append(
 			metrics,

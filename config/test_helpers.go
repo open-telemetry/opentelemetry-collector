@@ -34,9 +34,8 @@ func LoadConfigFile(t *testing.T, fileName string, factories Factories) (*config
 	}
 
 	defer func() {
-		err := file.Close()
-		if err != nil {
-			t.Error(err)
+		if errClose := file.Close(); errClose != nil {
+			t.Error(errClose)
 		}
 	}()
 

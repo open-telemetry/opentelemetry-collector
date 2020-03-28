@@ -250,18 +250,18 @@ func (r *Receiver) startServer(host component.Host) error {
 
 		httpL := m.Match(cmux.Any())
 		go func() {
-			if err := r.serverGRPC.Serve(grpcL); err != nil {
-				host.ReportFatalError(err)
+			if errGrpc := r.serverGRPC.Serve(grpcL); errGrpc != nil {
+				host.ReportFatalError(errGrpc)
 			}
 		}()
 		go func() {
-			if err := r.httpServer().Serve(httpL); err != nil {
-				host.ReportFatalError(err)
+			if errHTTP := r.httpServer().Serve(httpL); errHTTP != nil {
+				host.ReportFatalError(errHTTP)
 			}
 		}()
 		go func() {
-			if err := m.Serve(); err != nil {
-				host.ReportFatalError(err)
+			if errServe := m.Serve(); errServe != nil {
+				host.ReportFatalError(errServe)
 			}
 		}()
 	})
