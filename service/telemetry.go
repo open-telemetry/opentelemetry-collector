@@ -170,7 +170,7 @@ func (tel *appTelemetry) shutdown() {
 }
 
 func sanitizePrometheusKey(str string) string {
-	runeFilterMap := func (r rune) rune {
+	runeFilterMap := func(r rune) rune {
 		if unicode.IsDigit(r) || unicode.IsLetter(r) || r == '_' {
 			return r
 		}
