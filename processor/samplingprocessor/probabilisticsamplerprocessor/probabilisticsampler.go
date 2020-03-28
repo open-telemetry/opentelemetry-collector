@@ -82,8 +82,8 @@ func (tsp *tracesamplerprocessor) ConsumeTraceData(ctx context.Context, td consu
 
 	sampledSpans := make([]*tracepb.Span, 0, len(td.Spans))
 	for _, span := range td.Spans {
-		samplingPriority := parseSpanSamplingPriority(span)
-		if samplingPriority == doNotSampleSpan {
+		sp := parseSpanSamplingPriority(span)
+		if sp == doNotSampleSpan {
 			// The OpenTelemetry mentions this as a "hint" we take a stronger
 			// approach and do not sample the span since some may use it to
 			// remove specific spans from traces.
@@ -93,7 +93,7 @@ func (tsp *tracesamplerprocessor) ConsumeTraceData(ctx context.Context, td consu
 		// If one assumes random trace ids hashing may seems avoidable, however, traces can be coming from sources
 		// with various different criteria to generate trace id and perhaps were already sampled without hashing.
 		// Hashing here prevents bias due to such systems.
-		sampled := samplingPriority == mustSampleSpan ||
+		sampled := sp == mustSampleSpan ||
 			hash(span.TraceId, tsp.hashSeed)&bitMaskHashBuckets < scaledSamplingRate
 
 		if sampled {

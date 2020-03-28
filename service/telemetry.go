@@ -117,7 +117,7 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 	processMetricsViews := telemetry.NewProcessMetricsViews(ballastSizeBytes)
 	views = append(views, processMetricsViews.Views()...)
 	tel.views = views
-	if err := view.Register(views...); err != nil {
+	if err = view.Register(views...); err != nil {
 		return err
 	}
 

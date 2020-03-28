@@ -49,7 +49,7 @@ func Example_endToEnd() {
 	// Once we have the span receiver which will connect to the
 	// various exporter pipeline i.e. *tracepb.Span->OpenCensus.SpanData
 	for _, tr := range trl {
-		if err := tr.Start(nil); err != nil {
+		if err = tr.Start(nil); err != nil {
 			log.Fatalf("Failed to start trace receiver: %v", err)
 		}
 	}
@@ -79,13 +79,13 @@ func Example_endToEnd() {
 	log.Println("Starting loop")
 	ctx, span := trace.StartSpan(context.Background(), "ClientLibrarySpan")
 	for i := 0; i < 10; i++ {
-		_, span := trace.StartSpan(ctx, "ChildSpan")
-		span.Annotatef([]trace.Attribute{
+		_, childSpan := trace.StartSpan(ctx, "ChildSpan")
+		childSpan.Annotatef([]trace.Attribute{
 			trace.StringAttribute("type", "Child"),
 			trace.Int64Attribute("i", int64(i)),
 		}, "This is an annotation")
 		<-time.After(100 * time.Millisecond)
-		span.End()
+		childSpan.End()
 		oce.Flush()
 	}
 	span.End()

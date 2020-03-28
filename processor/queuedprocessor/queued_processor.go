@@ -58,8 +58,8 @@ type queueItem struct {
 // in-memory queue of span batches, and sends out span batches using the
 // provided sender
 func NewQueuedSpanProcessor(sender consumer.TraceConsumerOld, opts ...Option) component.TraceProcessorOld {
-	options := Options.apply(opts...)
-	sp := newQueuedSpanProcessor(sender, options)
+	opt := Options.apply(opts...)
+	sp := newQueuedSpanProcessor(sender, opt)
 
 	return sp
 }

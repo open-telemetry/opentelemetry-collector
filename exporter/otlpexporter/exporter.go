@@ -109,7 +109,7 @@ func (e *exporterImp) start() error {
 		// An optimistic first connection attempt to ensure that
 		// applications under heavy load can immediately process
 		// data. See https://github.com/census-ecosystem/opencensus-go-exporter-ocagent/pull/63
-		if err := e.connect(); err == nil {
+		if err = e.connect(); err == nil {
 			e.setStateConnected()
 		} else {
 			e.setStateDisconnected(err)

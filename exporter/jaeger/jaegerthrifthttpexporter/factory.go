@@ -68,7 +68,7 @@ func (f *Factory) CreateTraceExporter(
 	}
 
 	if expCfg.Timeout <= 0 {
-		err := fmt.Errorf(
+		err = fmt.Errorf(
 			"%q config requires a positive value for \"timeout\"",
 			expCfg.Name())
 		return nil, err
