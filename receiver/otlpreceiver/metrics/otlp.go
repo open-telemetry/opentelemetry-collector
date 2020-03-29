@@ -20,11 +20,9 @@ import (
 	collectormetrics "github.com/open-telemetry/opentelemetry-proto/gen/go/collector/metrics/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
-	"github.com/open-telemetry/opentelemetry-collector/translator/internaldata"
 )
 
 const (
@@ -34,11 +32,11 @@ const (
 // Receiver is the type used to handle metrics from OpenTelemetry exporters.
 type Receiver struct {
 	instanceName string
-	nextConsumer consumer.MetricsConsumerOld
+	nextConsumer consumer.MetricsConsumer
 }
 
 // New creates a new Receiver reference.
-func New(instanceName string, nextConsumer consumer.MetricsConsumerOld) (*Receiver, error) {
+func New(instanceName string, nextConsumer consumer.MetricsConsumer) (*Receiver, error) {
 	if nextConsumer == nil {
 		return nil, oterr.ErrNilNextConsumer
 	}
@@ -58,37 +56,24 @@ func (r *Receiver) Export(ctx context.Context, req *collectormetrics.ExportMetri
 	receiverCtx := obsreport.ReceiverContext(ctx, r.instanceName, receiverTransport, receiverTagValue)
 
 	md := data.MetricDataFromOtlp(req.ResourceMetrics)
-	rms := md.ResourceMetrics()
-	for i := 0; i < rms.Len(); i++ {
-		ocmd := internaldata.ResourceMetricsToOC(rms.At(i))
-		if len(ocmd.Metrics) == 0 {
-			continue
-		}
-		err := r.sendToNextConsumer(receiverCtx, ocmd)
-		if err != nil {
-			return nil, err
-		}
+
+	err := r.sendToNextConsumer(receiverCtx, md)
+	if err != nil {
+		return nil, err
 	}
 
 	return &collectormetrics.ExportMetricsServiceResponse{}, nil
 }
 
-func (r *Receiver) sendToNextConsumer(ctx context.Context, md consumerdata.MetricsData) error {
-	ctx = obsreport.StartMetricsReceiveOp(ctx, r.instanceName, receiverTransport)
-
-	numTimeSeries := 0
-	numPoints := 0
-	// Count number of time series and data points.
-	for _, metric := range md.Metrics {
-		numTimeSeries += len(metric.Timeseries)
-		for _, ts := range metric.GetTimeseries() {
-			numPoints += len(ts.GetPoints())
-		}
+func (r *Receiver) sendToNextConsumer(ctx context.Context, md data.MetricData) error {
+	metricCount, dataPointCount := md.MetricAndDataPointCount()
+	if metricCount == 0 {
+		return nil
 	}
 
-	consumerErr := r.nextConsumer.ConsumeMetricsData(ctx, md)
+	ctx = obsreport.StartMetricsReceiveOp(ctx, r.instanceName, receiverTransport)
+	err := r.nextConsumer.ConsumeMetrics(ctx, md)
+	obsreport.EndMetricsReceiveOp(ctx, dataFormatProtobuf, dataPointCount, metricCount, err)
 
-	obsreport.EndMetricsReceiveOp(ctx, dataFormatProtobuf, numPoints, numTimeSeries, consumerErr)
-
-	return consumerErr
+	return err
 }

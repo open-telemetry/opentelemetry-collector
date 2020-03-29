@@ -107,7 +107,7 @@ func TestCreateTraceReceiver(t *testing.T) {
 	logger := zap.NewNop()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sink := new(exportertest.SinkTraceExporter)
+			sink := new(exportertest.SinkTraceExporterOld)
 			tr, err := factory.CreateTraceReceiver(ctx, logger, tt.cfg, sink)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("factory.CreateTraceReceiver() error = %v, wantErr %v", err, tt.wantErr)
@@ -181,7 +181,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 	logger := zap.NewNop()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sink := new(exportertest.SinkMetricsExporter)
+			sink := new(exportertest.SinkMetricsExporterOld)
 			tc, err := factory.CreateMetricsReceiver(logger, tt.cfg, sink)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("factory.CreateMetricsReceiver() error = %v, wantErr %v", err, tt.wantErr)

@@ -20,10 +20,6 @@ import (
 	"net"
 	"testing"
 
-	occommon "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	ocmetrics "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	collectormetrics "github.com/open-telemetry/opentelemetry-proto/gen/go/collector/metrics/v1"
 	otlpcommon "github.com/open-telemetry/opentelemetry-proto/gen/go/common/v1"
 	otlpmetrics "github.com/open-telemetry/opentelemetry-proto/gen/go/metrics/v1"
@@ -33,11 +29,9 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/internal"
+	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector/observability"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/receivertest"
 	"github.com/open-telemetry/opentelemetry-collector/testutils"
 )
 
@@ -46,7 +40,7 @@ var _ collectormetrics.MetricsServiceServer = (*Receiver)(nil)
 func TestExport(t *testing.T) {
 	// given
 
-	metricSink := receivertest.NewMetricAppender()
+	metricSink := new(exportertest.SinkMetricsExporter)
 
 	_, port, doneFn := otlpReceiverOnGRPCServer(t, metricSink)
 	defer doneFn()
@@ -60,54 +54,52 @@ func TestExport(t *testing.T) {
 	unixnanos1 := uint64(12578940000000012345)
 	unixnanos2 := uint64(12578940000000054321)
 
-	req := &collectormetrics.ExportMetricsServiceRequest{
-		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
-			{
-				Resource: &otlpresource.Resource{
-					Attributes: []*otlpcommon.AttributeKeyValue{
-						{
-							Key:         "key1",
-							StringValue: "value1",
-						},
+	resourceMetrics := []*otlpmetrics.ResourceMetrics{
+		{
+			Resource: &otlpresource.Resource{
+				Attributes: []*otlpcommon.AttributeKeyValue{
+					{
+						Key:         "key1",
+						StringValue: "value1",
 					},
 				},
-				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
-					{
-						InstrumentationLibrary: &otlpcommon.InstrumentationLibrary{
-							Name:    "name1",
-							Version: "version1",
-						},
-						Metrics: []*otlpmetrics.Metric{
-							{
-								MetricDescriptor: &otlpmetrics.MetricDescriptor{
-									Name:        "mymetric",
-									Description: "My metric",
-									Unit:        "ms",
-									Type:        otlpmetrics.MetricDescriptor_COUNTER_INT64,
+			},
+			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+				{
+					InstrumentationLibrary: &otlpcommon.InstrumentationLibrary{
+						Name:    "name1",
+						Version: "version1",
+					},
+					Metrics: []*otlpmetrics.Metric{
+						{
+							MetricDescriptor: &otlpmetrics.MetricDescriptor{
+								Name:        "mymetric",
+								Description: "My metric",
+								Unit:        "ms",
+								Type:        otlpmetrics.MetricDescriptor_COUNTER_INT64,
+							},
+							Int64DataPoints: []*otlpmetrics.Int64DataPoint{
+								{
+									Labels: []*otlpcommon.StringKeyValue{
+										{
+											Key:   "key1",
+											Value: "value1",
+										},
+									},
+									StartTimeUnixNano: unixnanos1,
+									TimeUnixNano:      unixnanos2,
+									Value:             123,
 								},
-								Int64DataPoints: []*otlpmetrics.Int64DataPoint{
-									{
-										Labels: []*otlpcommon.StringKeyValue{
-											{
-												Key:   "key1",
-												Value: "value1",
-											},
+								{
+									Labels: []*otlpcommon.StringKeyValue{
+										{
+											Key:   "key2",
+											Value: "value2",
 										},
-										StartTimeUnixNano: unixnanos1,
-										TimeUnixNano:      unixnanos2,
-										Value:             123,
 									},
-									{
-										Labels: []*otlpcommon.StringKeyValue{
-											{
-												Key:   "key2",
-												Value: "value2",
-											},
-										},
-										StartTimeUnixNano: unixnanos1,
-										TimeUnixNano:      unixnanos2,
-										Value:             456,
-									},
+									StartTimeUnixNano: unixnanos1,
+									TimeUnixNano:      unixnanos2,
+									Value:             456,
 								},
 							},
 						},
@@ -115,6 +107,14 @@ func TestExport(t *testing.T) {
 				},
 			},
 		},
+	}
+
+	// Keep metric data to compare the test result against it
+	// Clone needed because OTLP proto XXX_ fields are altered in the GRPC downstream
+	metricData := data.MetricDataFromOtlp(resourceMetrics).Clone()
+
+	req := &collectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: resourceMetrics,
 	}
 
 	resp, err := metricsClient.Export(context.Background(), req)
@@ -123,79 +123,10 @@ func TestExport(t *testing.T) {
 
 	// assert
 
-	require.Equal(t, 1, len(metricSink.MetricsDataList),
-		"unexpected length: %v", len(metricSink.MetricsDataList))
+	require.Equal(t, 1, len(metricSink.AllMetrics()),
+		"unexpected length: %v", len(metricSink.AllMetrics()))
 
-	metricsData := consumerdata.MetricsData{
-		Node: &occommon.Node{},
-		Resource: &ocresource.Resource{
-			Labels: map[string]string{
-				"key1": "value1",
-			},
-		},
-		Metrics: []*ocmetrics.Metric{
-			{
-				MetricDescriptor: &ocmetrics.MetricDescriptor{
-					Name:        "mymetric",
-					Description: "My metric",
-					Unit:        "ms",
-					Type:        ocmetrics.MetricDescriptor_CUMULATIVE_INT64,
-					LabelKeys: []*ocmetrics.LabelKey{
-						{Key: "key1"},
-						{Key: "key2"},
-					},
-				},
-				Timeseries: []*ocmetrics.TimeSeries{
-					{
-						StartTimestamp: unixnanoToTimestamp(unixnanos1),
-						LabelValues: []*ocmetrics.LabelValue{
-							{
-								// key1
-								Value:    "value1",
-								HasValue: true,
-							},
-							{
-								// key2
-								HasValue: false,
-							},
-						},
-						Points: []*ocmetrics.Point{
-							{
-								Timestamp: unixnanoToTimestamp(unixnanos2),
-								Value: &ocmetrics.Point_Int64Value{
-									Int64Value: 123,
-								},
-							},
-						},
-					},
-					{
-						StartTimestamp: unixnanoToTimestamp(unixnanos1),
-						LabelValues: []*ocmetrics.LabelValue{
-							{
-								// key1
-								HasValue: false,
-							},
-							{
-								// key2
-								Value:    "value2",
-								HasValue: true,
-							},
-						},
-						Points: []*ocmetrics.Point{
-							{
-								Timestamp: unixnanoToTimestamp(unixnanos2),
-								Value: &ocmetrics.Point_Int64Value{
-									Int64Value: 456,
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	assert.EqualValues(t, metricsData, metricSink.MetricsDataList[0])
+	assert.EqualValues(t, metricData, metricSink.AllMetrics()[0])
 }
 
 func makeMetricsServiceClient(port int) (collectormetrics.MetricsServiceClient, func(), error) {
@@ -211,7 +142,7 @@ func makeMetricsServiceClient(port int) (collectormetrics.MetricsServiceClient, 
 	return metricsClient, doneFn, nil
 }
 
-func otlpReceiverOnGRPCServer(t *testing.T, mc consumer.MetricsConsumerOld) (r *Receiver, port int, done func()) {
+func otlpReceiverOnGRPCServer(t *testing.T, mc consumer.MetricsConsumer) (r *Receiver, port int, done func()) {
 	ln, err := net.Listen("tcp", "localhost:")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 
@@ -239,8 +170,4 @@ func otlpReceiverOnGRPCServer(t *testing.T, mc consumer.MetricsConsumerOld) (r *
 	}()
 
 	return r, port, done
-}
-
-func unixnanoToTimestamp(u uint64) *timestamp.Timestamp {
-	return internal.UnixNanoToTimestamp(data.TimestampUnixNano(u))
 }

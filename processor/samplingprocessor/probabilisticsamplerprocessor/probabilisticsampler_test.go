@@ -48,23 +48,23 @@ func TestNewTraceProcessor(t *testing.T) {
 		},
 		{
 			name:         "happy_path",
-			nextConsumer: &exportertest.SinkTraceExporter{},
+			nextConsumer: &exportertest.SinkTraceExporterOld{},
 			cfg: Config{
 				SamplingPercentage: 15.5,
 			},
 			want: &tracesamplerprocessor{
-				nextConsumer: &exportertest.SinkTraceExporter{},
+				nextConsumer: &exportertest.SinkTraceExporterOld{},
 			},
 		},
 		{
 			name:         "happy_path_hash_seed",
-			nextConsumer: &exportertest.SinkTraceExporter{},
+			nextConsumer: &exportertest.SinkTraceExporterOld{},
 			cfg: Config{
 				SamplingPercentage: 13.33,
 				HashSeed:           4321,
 			},
 			want: &tracesamplerprocessor{
-				nextConsumer: &exportertest.SinkTraceExporter{},
+				nextConsumer: &exportertest.SinkTraceExporterOld{},
 				hashSeed:     4321,
 			},
 		},
@@ -146,7 +146,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 	const testSvcName = "test-svc"
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sink := &exportertest.SinkTraceExporter{}
+			sink := &exportertest.SinkTraceExporterOld{}
 			tsp, err := NewTraceProcessor(sink, tt.cfg)
 			if err != nil {
 				t.Errorf("error when creating tracesamplerprocessor: %v", err)
@@ -274,7 +274,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sink := &exportertest.SinkTraceExporter{}
+			sink := &exportertest.SinkTraceExporterOld{}
 			tsp, err := NewTraceProcessor(sink, tt.cfg)
 			require.NoError(t, err)
 

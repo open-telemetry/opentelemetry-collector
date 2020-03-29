@@ -63,7 +63,7 @@ func TestCreateTraceExporter(t *testing.T) {
 		context.Background(),
 		zap.NewNop(),
 		rcvCfg,
-		new(exportertest.SinkTraceExporter))
+		new(exportertest.SinkTraceExporterOld))
 	require.NotNil(t, rcv)
 	require.Nil(t, err)
 	require.Nil(t, rcv.Start(component.NewMockHost()))

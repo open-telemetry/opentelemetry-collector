@@ -45,11 +45,12 @@ func TestCreateReceiver(t *testing.T) {
 	config := cfg.(*Config)
 	config.Endpoint = testutils.GetAvailableLocalAddress(t)
 
-	tReceiver, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
+	creationParams := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	tReceiver, err := factory.CreateTraceReceiver(context.Background(), creationParams, cfg, nil)
 	assert.NotNil(t, tReceiver)
 	assert.Nil(t, err)
 
-	mReceiver, err := factory.CreateMetricsReceiver(zap.NewNop(), cfg, nil)
+	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), creationParams, cfg, nil)
 	assert.NotNil(t, mReceiver)
 	assert.Nil(t, err)
 }
@@ -104,11 +105,11 @@ func TestCreateTraceReceiver(t *testing.T) {
 		},
 	}
 	ctx := context.Background()
-	logger := zap.NewNop()
+	creationParams := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(exportertest.SinkTraceExporter)
-			tr, err := factory.CreateTraceReceiver(ctx, logger, tt.cfg, sink)
+			tr, err := factory.CreateTraceReceiver(ctx, creationParams, tt.cfg, sink)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("factory.CreateTraceReceiver() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -178,11 +179,12 @@ func TestCreateMetricReceiver(t *testing.T) {
 			},
 		},
 	}
-	logger := zap.NewNop()
+	ctx := context.Background()
+	creationParams := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(exportertest.SinkMetricsExporter)
-			tc, err := factory.CreateMetricsReceiver(logger, tt.cfg, sink)
+			tc, err := factory.CreateMetricsReceiver(ctx, creationParams, tt.cfg, sink)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("factory.CreateMetricsReceiver() error = %v, wantErr %v", err, tt.wantErr)
 				return

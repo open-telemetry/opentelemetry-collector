@@ -58,7 +58,7 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 	addr := testutils.GetAvailableLocalAddress(t)
 
 	// Set the buffer count to 1 to make it flush the test span immediately.
-	sink := new(exportertest.SinkTraceExporter)
+	sink := new(exportertest.SinkTraceExporterOld)
 	ocr, err := New(ocReceiver, "tcp", addr, sink, nil)
 	require.NoError(t, err, "Failed to create trace receiver: %v", err)
 
@@ -162,7 +162,7 @@ func TestTraceGrpcGatewayCors_endToEnd(t *testing.T) {
 	addr := testutils.GetAvailableLocalAddress(t)
 	corsOrigins := []string{"allowed-*.com"}
 
-	sink := new(exportertest.SinkTraceExporter)
+	sink := new(exportertest.SinkTraceExporterOld)
 	ocr, err := New(ocReceiver, "tcp", addr, sink, nil, WithCorsOrigins(corsOrigins))
 	require.NoError(t, err, "Failed to create trace receiver: %v", err)
 	defer ocr.Shutdown()
@@ -188,7 +188,7 @@ func TestMetricsGrpcGatewayCors_endToEnd(t *testing.T) {
 	addr := testutils.GetAvailableLocalAddress(t)
 	corsOrigins := []string{"allowed-*.com"}
 
-	sink := new(exportertest.SinkMetricsExporter)
+	sink := new(exportertest.SinkMetricsExporterOld)
 	ocr, err := New(ocReceiver, "tcp", addr, nil, sink, WithCorsOrigins(corsOrigins))
 	require.NoError(t, err, "Failed to create metrics receiver: %v", err)
 	defer ocr.Shutdown()
@@ -217,7 +217,7 @@ func TestAcceptAllGRPCProtoAffiliatedContentTypes(t *testing.T) {
 	t.Skip("Currently a flaky test as we need a way to flush all written traces")
 
 	addr := testutils.GetAvailableLocalAddress(t)
-	cbts := new(exportertest.SinkTraceExporter)
+	cbts := new(exportertest.SinkTraceExporterOld)
 	ocr, err := New(ocReceiver, "tcp", addr, cbts, nil)
 	require.NoError(t, err, "Failed to create trace receiver: %v", err)
 
@@ -361,7 +361,7 @@ func TestNewPortAlreadyUsed(t *testing.T) {
 
 func TestMultipleStopReceptionShouldNotError(t *testing.T) {
 	addr := testutils.GetAvailableLocalAddress(t)
-	r, err := New(ocReceiver, "tcp", addr, new(exportertest.SinkTraceExporter), new(exportertest.SinkMetricsExporter))
+	r, err := New(ocReceiver, "tcp", addr, new(exportertest.SinkTraceExporterOld), new(exportertest.SinkMetricsExporterOld))
 	require.NoError(t, err)
 	require.NotNil(t, r)
 
@@ -392,7 +392,7 @@ func tempSocketName(t *testing.T) string {
 
 func TestReceiveOnUnixDomainSocket_endToEnd(t *testing.T) {
 	socketName := tempSocketName(t)
-	cbts := new(exportertest.SinkTraceExporter)
+	cbts := new(exportertest.SinkTraceExporterOld)
 	r, err := New(ocReceiver, "unix", socketName, cbts, nil)
 	require.NoError(t, err)
 	require.NotNil(t, r)
