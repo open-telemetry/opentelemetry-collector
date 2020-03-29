@@ -15,11 +15,11 @@ require (
 	github.com/client9/misspell v0.3.4
 	github.com/go-kit/kit v0.9.0
 	github.com/gogo/googleapis v1.3.0 // indirect
-	github.com/golang/groupcache v0.0.0-20190702054246-869f871628b6
-	github.com/golang/protobuf v1.3.2
+	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
+	github.com/golang/protobuf v1.3.5
 	github.com/golangci/golangci-lint v1.24.0
 	github.com/google/addlicense v0.0.0-20200301095109-7c013a14f2e2
-	github.com/google/go-cmp v0.3.1
+	github.com/google/go-cmp v0.4.0
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/handlers v1.4.2 // indirect
 	github.com/gorilla/mux v1.7.3
@@ -30,15 +30,15 @@ require (
 	github.com/mitchellh/mapstructure v1.2.2
 	github.com/open-telemetry/opentelemetry-proto v0.3.0
 	github.com/openzipkin/zipkin-go v0.2.1
-	github.com/orijtech/prometheus-go-metrics-exporter v0.0.3-0.20190313163149-b321c5297f60
+	github.com/orijtech/prometheus-go-metrics-exporter v0.0.4
 	github.com/ory/go-acc v0.2.1
 	github.com/ory/x v0.0.109 // indirect
 	github.com/pavius/impi v0.0.0-20180302134524-c1cbdcb8df2b
 	github.com/pkg/errors v0.9.1
 	github.com/prashantv/protectmem v0.0.0-20171002184600-e20412882b3a // indirect
-	github.com/prometheus/client_golang v1.1.0
-	github.com/prometheus/common v0.7.0
-	github.com/prometheus/procfs v0.0.3
+	github.com/prometheus/client_golang v1.5.1
+	github.com/prometheus/common v0.9.1
+	github.com/prometheus/procfs v0.0.11
 	github.com/prometheus/prometheus v1.8.2-0.20190924101040-52e0504f83ea
 	github.com/rs/cors v1.6.0
 	github.com/securego/gosec v0.0.0-20200316084457-7da9f46445fd
@@ -52,7 +52,7 @@ require (
 	github.com/uber-go/atomic v1.4.0 // indirect
 	github.com/uber/jaeger-lib v2.2.0+incompatible
 	github.com/uber/tchannel-go v1.10.0
-	go.opencensus.io v0.22.1
+	go.opencensus.io v0.22.3
 	go.uber.org/zap v1.10.0
 	golang.org/x/sys v0.0.0-20200327173247-9dae0f8f5775
 	google.golang.org/api v0.10.0 // indirect
