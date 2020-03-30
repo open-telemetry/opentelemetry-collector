@@ -83,7 +83,7 @@ func LoadConfig() error {
 		GOARCH: runtime.GOARCH,
 	}
 	var buf bytes.Buffer
-	if err := cfgTemplate.Execute(&buf, templateVars); err != nil {
+	if err = cfgTemplate.Execute(&buf, templateVars); err != nil {
 		log.Fatalf("Configuration template failed to run on file %q: %s",
 			testBedConfigFile, err.Error())
 	}

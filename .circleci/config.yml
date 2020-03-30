@@ -90,18 +90,12 @@ jobs:
       - run:
           name: Install tools
           command: make install-tools
-      - run:
-          name: Install loadtest tools
-          command: make -C testbed install-tools
       - persist_to_workspace:
           root: ~/
           paths: go/bin
       - run:
           name: Lint
           command: make -j4 checklicense impi lint misspell
-      - run:
-          name: Lint testbed
-          command: make -C testbed fmt vet lint
 
   build:
     executor: golang
@@ -133,7 +127,7 @@ jobs:
       - attach_to_workspace
       - run:
           name: Loadtest
-          command: TEST_ARGS="-test.run=$(make -s -C testbed listtests | circleci tests split|xargs echo|sed 's/ /|/g')" make -C testbed runtests
+          command: TEST_ARGS="-test.run=$(make -s testbed-listtests | circleci tests split|xargs echo|sed 's/ /|/g')" make testbed-runtests
       - store_artifacts:
           path: testbed/tests/results
       - store_test_results:
