@@ -1,14 +1,21 @@
 # More exclusions can be added similar with: -not -path './testbed/*'
 ALL_SRC := $(shell find . -name '*.go' \
-                                -not -path './testbed/*' \
                                 -type f | sort)
+
+# More exclusions can be added similar with: -not -path './testbed/*'
+ALL_SRC_NO_TESTBED := $(shell find . -name '*.go' \
+                                            -not -path './testbed/*' \
+                                            -type f | sort)
 
 # All source code and documents. Used in spell check.
 ALL_DOC := $(shell find . \( -name "*.md" -o -name "*.yaml" \) \
                                 -type f | sort)
 
-# ALL_PKGS is used with 'go cover'
-ALL_PKGS := $(shell go list $(sort $(dir $(ALL_SRC))))
+# ALL_PKGS is used with 'go test'
+ALL_PKGS:= $(shell go list $(sort $(dir $(ALL_SRC))))
+
+# ALL_PKGS_NO_TESTBED is used with 'go cover'
+ALL_PKGS_NO_TESTBED := $(shell go list $(sort $(dir $(ALL_SRC_NO_TESTBED))))
 
 GOTEST_OPT?= -race -timeout 180s
 GO_ACC=go-acc
@@ -31,20 +38,24 @@ BUILD_X2=-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)
 endif
 BUILD_INFO=-ldflags "${BUILD_X1} ${BUILD_X2}"
 
-all-pkgs:
-	@echo $(ALL_PKGS) | tr ' ' '\n' | sort
-
 all-srcs:
 	@echo $(ALL_SRC) | tr ' ' '\n' | sort
+
+all-pkgs:
+	@echo $(ALL_PKGS) | tr ' ' '\n' | sort
 
 .DEFAULT_GOAL := all
 
 .PHONY: all
 all: checklicense impi lint misspell test otelcol
 
-.PHONY: e2e-test
-e2e-test: otelcol
-	$(MAKE) -C testbed runtests
+.PHONY: testbed-runtests
+testbed-runtests: otelcol
+	cd ./testbed/tests && ./runtests.sh
+
+.PHONY: testbed-listtests
+testbed-listtests:
+	TESTBED_CONFIG=local.yaml $(GOTEST) -v ./testbed/tests --test.list '.*'|head -n -1
 
 .PHONY: test
 test:
@@ -52,20 +63,15 @@ test:
 
 .PHONY: benchmark
 benchmark:
-	$(GOTEST) -bench=. -run=notests $(ALL_PKGS)
-
-.PHONY: ci
-ci: all binaries-all-sys test-with-cover
-	$(MAKE) -C testbed install-tools
-	$(MAKE) -C testbed runtests
+	$(GOTEST) -bench=. -run=notests $(ALL_PKGS_NO_TESTBED)
 
 .PHONY: test-with-cover
 test-with-cover:
 	@echo Verifying that all packages have test files to count in coverage
-	@scripts/check-test-files.sh $(subst github.com/open-telemetry/opentelemetry-collector/,./,$(ALL_PKGS))
+	@scripts/check-test-files.sh $(subst github.com/open-telemetry/opentelemetry-collector/,./,$(ALL_PKGS_NO_TESTBED))
 	@echo pre-compiling tests
-	@time go test -i $(ALL_PKGS)
-	$(GO_ACC) $(ALL_PKGS)
+	@time go test -i $(ALL_PKGS_NO_TESTBED)
+	$(GO_ACC) $(ALL_PKGS_NO_TESTBED)
 	go tool cover -html=coverage.txt -o coverage.html
 
 .PHONY: addlicense
@@ -118,13 +124,14 @@ impi:
 
 .PHONY: install-tools
 install-tools:
+	go install github.com/client9/misspell/cmd/misspell
 	go install github.com/google/addlicense
 	go install github.com/golangci/golangci-lint/cmd/golangci-lint
-	go install github.com/client9/misspell/cmd/misspell
+	go install github.com/jstemmer/go-junit-report
+	go install github.com/ory/go-acc
 	go install github.com/pavius/impi/cmd/impi
 	go install github.com/securego/gosec/cmd/gosec
 	go install honnef.co/go/tools/cmd/staticcheck
-	go install github.com/ory/go-acc
 
 .PHONY: otelcol
 otelcol:

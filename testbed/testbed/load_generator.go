@@ -185,10 +185,10 @@ func (lg *LoadGenerator) generateTrace() {
 			Kind:    tracepb.Span_CLIENT,
 			Attributes: &tracepb.Span_Attributes{
 				AttributeMap: map[string]*tracepb.AttributeValue{
-					"load_generator.span_seq_num": &tracepb.AttributeValue{
+					"load_generator.span_seq_num": {
 						Value: &tracepb.AttributeValue_IntValue{IntValue: int64(spanID)},
 					},
-					"load_generator.trace_seq_num": &tracepb.AttributeValue{
+					"load_generator.trace_seq_num": {
 						Value: &tracepb.AttributeValue_IntValue{IntValue: int64(traceID)},
 					},
 				},
