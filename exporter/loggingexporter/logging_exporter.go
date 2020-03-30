@@ -74,7 +74,7 @@ func (s *loggingExporter) pushTraceData(
 		resourceInfo = fmt.Sprintf(", resource \"%s\" (%d labels)", td.Resource.Type, len(td.Resource.Labels))
 	}
 
-	if td.Node != nil {
+	if td.Node != nil && td.Node.ServiceInfo != nil {
 		nodesInfo = fmt.Sprintf(", node service: %s", td.Node.ServiceInfo.Name)
 	}
 
