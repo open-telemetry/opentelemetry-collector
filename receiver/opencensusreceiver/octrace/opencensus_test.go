@@ -309,7 +309,8 @@ func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 	require.NoError(t, err, "Unexpectedly failed to send the first message: %v", err)
 
 	longDuration := 2 * time.Second
-	testDone := make(chan bool, 1)
+	testDone := make(chan struct{})
+	goroutineDone := make(chan struct{})
 	go func() {
 		// Our insurance policy to ensure that this test doesn't hang
 		// forever and should quickly report if/when we regress.
@@ -320,6 +321,7 @@ func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 			traceClientDoneFn()
 			t.Errorf("Test took too long (%s) and is likely still hanging so this is a regression", longDuration)
 		}
+		close(goroutineDone)
 	}()
 
 	// Now the response should return an error and should have been torn down
@@ -354,6 +356,7 @@ func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 	}
 
 	close(testDone)
+	<-goroutineDone
 }
 
 // If the first message is valid (has a non-nil Node) and has spans, those
