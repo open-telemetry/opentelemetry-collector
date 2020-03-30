@@ -65,18 +65,6 @@ workflows:
               ignore: /.*/
             tags:
               only: /^v[0-9].[0-9].[0-9]+.*/
-      - publish-dev:
-          requires:
-            - cross-compile
-            - loadtest
-            - test
-            - gosec
-            - coverage
-          filters:
-            branches:
-              only: master
-            tags:
-              ignore: /.*/
 
 jobs:
   setup-and-lint:
@@ -190,25 +178,4 @@ jobs:
       - run:
           name: Create Github release and upload artifacts
           command: ghr -t $GITHUB_TOKEN -u $CIRCLE_PROJECT_USERNAME -r $CIRCLE_PROJECT_REPONAME --replace $CIRCLE_TAG bin/
-
-  publish-dev:
-    docker:
-      - image: circleci/golang:1.14
-    steps:
-      - attach_to_workspace
-      - setup_remote_docker
-      - run:
-          name: Build image
-          command: |
-            make docker-otelcol
-            docker tag otelcol:latest otel/opentelemetry-collector-dev:${CIRCLE_SHA1}
-            docker tag otelcol:latest otel/opentelemetry-collector-dev:latest
-      - run:
-          name: Login to Docker Hub
-          command: docker login -u $DOCKER_HUB_USERNAME -p $DOCKER_HUB_PASSWORD
-      - run:
-          name: Push image
-          command: |
-            docker push otel/opentelemetry-collector-dev:${CIRCLE_SHA1}
-            docker push otel/opentelemetry-collector-dev:latest
 
