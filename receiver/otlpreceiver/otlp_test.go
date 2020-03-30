@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//lint:file-ignore U1000 t.Skip() flaky test causes unused function warning.
+
 package otlpreceiver
 
 import (
@@ -96,8 +98,8 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 				  "trace_id": "W47/95gDgQPSabYzgT/GDA==",
 				  "span_id": "7uGbfsPBsXM=",
 				  "name": "testSpan",
-				  "start_time_unixnano": 1544712660000000000,
-				  "end_time_unixnano": 1544712661000000000,
+				  "start_time_unix_nano": 1544712660000000000,
+				  "end_time_unix_nano": 1544712661000000000,
 				  "attributes": [
 					{
 					  "key": "attr1",
@@ -161,6 +163,9 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 							},
 						},
 					},
+					// TODO: Remove this after PR:691 is merged
+					// https://github.com/open-telemetry/opentelemetry-collector/pull/691
+					Status: &octrace.Status{},
 				},
 			},
 			SourceFormat: "otlp_trace",
@@ -439,8 +444,8 @@ func TestReceiveOnUnixDomainSocket_endToEnd(t *testing.T) {
 				  "trace_id": "YpsR8/le4OgjwSSxhjlrEg==",
 				  "span_id": "2CogcbJh7Ko=",
 				  "name": "testSpan",
-				  "start_time_unixnano": 1544712660000000000,
-				  "end_time_unixnano": 1544712661000000000
+				  "start_time_unix_nano": 1544712660000000000,
+				  "end_time_unix_nano": 1544712661000000000
 				}
 			  ]
 			}
@@ -616,7 +621,7 @@ type sinkTraceConsumer struct {
 	traces []consumerdata.TraceData
 }
 
-var _ consumer.TraceConsumer = (*sinkTraceConsumer)(nil)
+var _ consumer.TraceConsumerOld = (*sinkTraceConsumer)(nil)
 
 func (stc *sinkTraceConsumer) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	if stc.consumeTraceError == nil {

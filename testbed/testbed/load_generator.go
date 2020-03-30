@@ -46,6 +46,9 @@ type LoadGenerator struct {
 	stopSignal chan struct{}
 
 	options LoadOptions
+
+	// Record information about previous errors to avoid flood of error messages.
+	prevErr error
 }
 
 // LoadOptions defines the options to use for generating the load.
@@ -182,10 +185,10 @@ func (lg *LoadGenerator) generateTrace() {
 			Kind:    tracepb.Span_CLIENT,
 			Attributes: &tracepb.Span_Attributes{
 				AttributeMap: map[string]*tracepb.AttributeValue{
-					"load_generator.span_seq_num": &tracepb.AttributeValue{
+					"load_generator.span_seq_num": {
 						Value: &tracepb.AttributeValue_IntValue{IntValue: int64(spanID)},
 					},
-					"load_generator.trace_seq_num": &tracepb.AttributeValue{
+					"load_generator.trace_seq_num": {
 						Value: &tracepb.AttributeValue_IntValue{IntValue: int64(traceID)},
 					},
 				},
@@ -209,7 +212,10 @@ func (lg *LoadGenerator) generateTrace() {
 	}
 
 	err := traceSender.SendSpans(traceData)
-	if err != nil {
+	if err == nil {
+		lg.prevErr = nil
+	} else if lg.prevErr == nil || lg.prevErr.Error() != err.Error() {
+		lg.prevErr = err
 		log.Printf("Cannot send traces: %v", err)
 	}
 }
@@ -305,7 +311,10 @@ func (lg *LoadGenerator) generateMetrics() {
 	}
 
 	err := metricSender.SendMetrics(metricData)
-	if err != nil {
+	if err == nil {
+		lg.prevErr = nil
+	} else if lg.prevErr == nil || lg.prevErr.Error() != err.Error() {
+		lg.prevErr = err
 		log.Printf("Cannot send metrics: %v", err)
 	}
 }

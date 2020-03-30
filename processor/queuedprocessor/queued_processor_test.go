@@ -78,15 +78,15 @@ type waitGroupTraceConsumer struct {
 	consumeTraceDataError error
 }
 
-var _ consumer.TraceConsumer = (*waitGroupTraceConsumer)(nil)
+var _ consumer.TraceConsumerOld = (*waitGroupTraceConsumer)(nil)
 
 func (c *waitGroupTraceConsumer) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	defer c.Done()
 	return c.consumeTraceDataError
 }
 
-func (c *waitGroupTraceConsumer) GetCapabilities() processor.Capabilities {
-	return processor.Capabilities{MutatesConsumedData: false}
+func (c *waitGroupTraceConsumer) GetCapabilities() component.ProcessorCapabilities {
+	return component.ProcessorCapabilities{MutatesConsumedData: false}
 }
 
 func findViewNamed(views []*view.View, name string) (*view.View, error) {
@@ -150,7 +150,7 @@ type mockConcurrentSpanProcessor struct {
 	spanCount  int32
 }
 
-var _ consumer.TraceConsumer = (*mockConcurrentSpanProcessor)(nil)
+var _ consumer.TraceConsumerOld = (*mockConcurrentSpanProcessor)(nil)
 
 func (p *mockConcurrentSpanProcessor) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	atomic.AddInt32(&p.batchCount, 1)
@@ -159,8 +159,8 @@ func (p *mockConcurrentSpanProcessor) ConsumeTraceData(ctx context.Context, td c
 	return nil
 }
 
-func (p *mockConcurrentSpanProcessor) GetCapabilities() processor.Capabilities {
-	return processor.Capabilities{MutatesConsumedData: false}
+func (p *mockConcurrentSpanProcessor) GetCapabilities() component.ProcessorCapabilities {
+	return component.ProcessorCapabilities{MutatesConsumedData: false}
 }
 
 func newMockConcurrentSpanProcessor() *mockConcurrentSpanProcessor {

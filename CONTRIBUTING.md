@@ -116,9 +116,9 @@ $ git push fork feature
 
 ## General Notes
 
-This project uses Go 1.14.* and Travis for CI.
+This project uses Go 1.14.* and CircleCI.
 
-Travis CI uses the Makefile with the default target, it is recommended to
+CircleCI uses the Makefile with the `ci` target, it is recommended to
 run it before submitting your PR. It runs `gofmt -s` (simplify) and `golint`.
 
 The dependencies are managed with `go mod` if you work with the sources under your

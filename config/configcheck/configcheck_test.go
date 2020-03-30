@@ -23,9 +23,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/defaults"
-	"github.com/open-telemetry/opentelemetry-collector/extension"
 )
 
 func TestValidateConfigFromFactories_Success(t *testing.T) {
@@ -187,8 +187,6 @@ func TestValidateConfig(t *testing.T) {
 // a config not satisfying the validation.
 type badConfigExtensionFactory struct{}
 
-var _ extension.Factory = (*badConfigExtensionFactory)(nil)
-
 func (b badConfigExtensionFactory) Type() string {
 	return "bad_config"
 }
@@ -203,6 +201,6 @@ func (b badConfigExtensionFactory) CreateDefaultConfig() configmodels.Extension 
 func (b badConfigExtensionFactory) CreateExtension(
 	logger *zap.Logger,
 	cfg configmodels.Extension,
-) (extension.ServiceExtension, error) {
+) (component.ServiceExtension, error) {
 	return nil, nil
 }

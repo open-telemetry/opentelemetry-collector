@@ -25,10 +25,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/exporter"
-	"github.com/open-telemetry/opentelemetry-collector/extension"
-	"github.com/open-telemetry/opentelemetry-collector/processor"
-	"github.com/open-telemetry/opentelemetry-collector/receiver"
 )
 
 // ExampleReceiver is for testing purposes. We are defining an example config and factory
@@ -56,7 +52,7 @@ func (f *ExampleReceiverFactory) Type() string {
 }
 
 // CustomUnmarshaler returns nil because we don't need custom unmarshaling for this factory.
-func (f *ExampleReceiverFactory) CustomUnmarshaler() receiver.CustomUnmarshaler {
+func (f *ExampleReceiverFactory) CustomUnmarshaler() component.CustomUnmarshaler {
 	return nil
 }
 
@@ -78,8 +74,8 @@ func (f *ExampleReceiverFactory) CreateTraceReceiver(
 	ctx context.Context,
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
-	nextConsumer consumer.TraceConsumer,
-) (receiver.TraceReceiver, error) {
+	nextConsumer consumer.TraceConsumerOld,
+) (component.TraceReceiver, error) {
 	if cfg.(*ExampleReceiver).FailTraceCreation {
 		return nil, configerror.ErrDataTypeIsNotSupported
 	}
@@ -103,8 +99,8 @@ func (f *ExampleReceiverFactory) CreateTraceReceiver(
 func (f *ExampleReceiverFactory) CreateMetricsReceiver(
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
-	nextConsumer consumer.MetricsConsumer,
-) (receiver.MetricsReceiver, error) {
+	nextConsumer consumer.MetricsConsumerOld,
+) (component.MetricsReceiver, error) {
 	if cfg.(*ExampleReceiver).FailMetricsCreation {
 		return nil, configerror.ErrDataTypeIsNotSupported
 	}
@@ -126,10 +122,10 @@ func (f *ExampleReceiverFactory) CreateMetricsReceiver(
 
 // ExampleReceiverProducer allows producing traces and metrics for testing purposes.
 type ExampleReceiverProducer struct {
-	TraceConsumer   consumer.TraceConsumer
+	TraceConsumer   consumer.TraceConsumerOld
 	Started         bool
 	Stopped         bool
-	MetricsConsumer consumer.MetricsConsumer
+	MetricsConsumer consumer.MetricsConsumerOld
 }
 
 // Start tells the receiver to start its processing.
@@ -145,7 +141,7 @@ func (erp *ExampleReceiverProducer) Shutdown() error {
 }
 
 // This is the map of already created example receivers for particular configurations.
-// We maintain this map because the Factory is asked trace and metric receivers separately
+// We maintain this map because the ReceiverFactoryBase is asked trace and metric receivers separately
 // when it gets CreateTraceReceiver() and CreateMetricsReceiver() but they must not
 // create separate objects, they must use one Receiver object per configuration.
 var exampleReceivers = map[configmodels.Receiver]*ExampleReceiverProducer{}
@@ -209,7 +205,7 @@ func (f *MultiProtoReceiverFactory) Type() string {
 }
 
 // CustomUnmarshaler returns nil because we don't need custom unmarshaling for this factory.
-func (f *MultiProtoReceiverFactory) CustomUnmarshaler() receiver.CustomUnmarshaler {
+func (f *MultiProtoReceiverFactory) CustomUnmarshaler() component.CustomUnmarshaler {
 	return nil
 }
 
@@ -235,8 +231,8 @@ func (f *MultiProtoReceiverFactory) CreateTraceReceiver(
 	ctx context.Context,
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
-	nextConsumer consumer.TraceConsumer,
-) (receiver.TraceReceiver, error) {
+	nextConsumer consumer.TraceConsumerOld,
+) (component.TraceReceiver, error) {
 	// Not used for this test, just return nil
 	return nil, nil
 }
@@ -245,8 +241,8 @@ func (f *MultiProtoReceiverFactory) CreateTraceReceiver(
 func (f *MultiProtoReceiverFactory) CreateMetricsReceiver(
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
-	consumer consumer.MetricsConsumer,
-) (receiver.MetricsReceiver, error) {
+	consumer consumer.MetricsConsumerOld,
+) (component.MetricsReceiver, error) {
 	// Not used for this test, just return nil
 	return nil, nil
 }
@@ -282,12 +278,12 @@ func (f *ExampleExporterFactory) CreateDefaultConfig() configmodels.Exporter {
 }
 
 // CreateTraceExporter creates a trace exporter based on this config.
-func (f *ExampleExporterFactory) CreateTraceExporter(logger *zap.Logger, cfg configmodels.Exporter) (exporter.TraceExporter, error) {
+func (f *ExampleExporterFactory) CreateTraceExporter(logger *zap.Logger, cfg configmodels.Exporter) (component.TraceExporterOld, error) {
 	return &ExampleExporterConsumer{}, nil
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *ExampleExporterFactory) CreateMetricsExporter(logger *zap.Logger, cfg configmodels.Exporter) (exporter.MetricsExporter, error) {
+func (f *ExampleExporterFactory) CreateMetricsExporter(logger *zap.Logger, cfg configmodels.Exporter) (component.MetricsExporterOld, error) {
 	return &ExampleExporterConsumer{}, nil
 }
 
@@ -361,18 +357,18 @@ func (f *ExampleProcessorFactory) CreateDefaultConfig() configmodels.Processor {
 // CreateTraceProcessor creates a trace processor based on this config.
 func (f *ExampleProcessorFactory) CreateTraceProcessor(
 	logger *zap.Logger,
-	nextConsumer consumer.TraceConsumer,
+	nextConsumer consumer.TraceConsumerOld,
 	cfg configmodels.Processor,
-) (processor.TraceProcessor, error) {
+) (component.TraceProcessorOld, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
 // CreateMetricsProcessor creates a metrics processor based on this config.
 func (f *ExampleProcessorFactory) CreateMetricsProcessor(
 	logger *zap.Logger,
-	nextConsumer consumer.MetricsConsumer,
+	nextConsumer consumer.MetricsConsumerOld,
 	cfg configmodels.Processor,
-) (processor.MetricsProcessor, error) {
+) (component.MetricsProcessorOld, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
@@ -408,22 +404,20 @@ func (f *ExampleExtensionFactory) CreateDefaultConfig() configmodels.Extension {
 func (f *ExampleExtensionFactory) CreateExtension(
 	logger *zap.Logger,
 	cfg configmodels.Extension,
-) (extension.ServiceExtension, error) {
+) (component.ServiceExtension, error) {
 	return nil, fmt.Errorf("cannot create %q extension type", f.Type())
 }
-
-var _ (extension.Factory) = (*ExampleExtensionFactory)(nil)
 
 // ExampleComponents registers example factories. This is only used by tests.
 func ExampleComponents() (
 	factories Factories,
 	err error,
 ) {
-	if factories.Extensions, err = extension.Build(&ExampleExtensionFactory{}); err != nil {
+	if factories.Extensions, err = component.MakeExtensionFactoryMap(&ExampleExtensionFactory{}); err != nil {
 		return
 	}
 
-	factories.Receivers, err = receiver.Build(
+	factories.Receivers, err = component.MakeReceiverFactoryMap(
 		&ExampleReceiverFactory{},
 		&MultiProtoReceiverFactory{},
 	)
@@ -431,12 +425,12 @@ func ExampleComponents() (
 		return
 	}
 
-	factories.Exporters, err = exporter.Build(&ExampleExporterFactory{})
+	factories.Exporters, err = component.MakeExporterFactoryMap(&ExampleExporterFactory{})
 	if err != nil {
 		return
 	}
 
-	factories.Processors, err = processor.Build(&ExampleProcessorFactory{})
+	factories.Processors, err = component.MakeProcessorFactoryMap(&ExampleProcessorFactory{})
 
 	return
 }

@@ -59,7 +59,7 @@ type transaction struct {
 	id                 int64
 	ctx                context.Context
 	isNew              bool
-	sink               consumer.MetricsConsumer
+	sink               consumer.MetricsConsumerOld
 	job                string
 	instance           string
 	jobsMap            *JobsMap
@@ -71,7 +71,7 @@ type transaction struct {
 	logger             *zap.Logger
 }
 
-func newTransaction(ctx context.Context, jobsMap *JobsMap, useStartTimeMetric bool, receiverName string, ms MetadataService, sink consumer.MetricsConsumer, logger *zap.Logger) *transaction {
+func newTransaction(ctx context.Context, jobsMap *JobsMap, useStartTimeMetric bool, receiverName string, ms MetadataService, sink consumer.MetricsConsumerOld, logger *zap.Logger) *transaction {
 	return &transaction{
 		id:                 atomic.AddInt64(&idSeq, 1),
 		ctx:                ctx,

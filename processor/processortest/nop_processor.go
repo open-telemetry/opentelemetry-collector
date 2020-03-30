@@ -23,16 +23,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/processor"
 )
 
 type nopProcessor struct {
-	nextTraceProcessor   consumer.TraceConsumer
-	nextMetricsProcessor consumer.MetricsConsumer
+	nextTraceProcessor   consumer.TraceConsumerOld
+	nextMetricsProcessor consumer.MetricsConsumerOld
 }
-
-var _ processor.TraceProcessor = (*nopProcessor)(nil)
-var _ processor.MetricsProcessor = (*nopProcessor)(nil)
 
 func (np *nopProcessor) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	return np.nextTraceProcessor.ConsumeTraceData(ctx, td)
@@ -42,8 +38,8 @@ func (np *nopProcessor) ConsumeMetricsData(ctx context.Context, md consumerdata.
 	return np.nextMetricsProcessor.ConsumeMetricsData(ctx, md)
 }
 
-func (np *nopProcessor) GetCapabilities() processor.Capabilities {
-	return processor.Capabilities{MutatesConsumedData: false}
+func (np *nopProcessor) GetCapabilities() component.ProcessorCapabilities {
+	return component.ProcessorCapabilities{MutatesConsumedData: false}
 }
 
 // Start is invoked during service startup.
@@ -57,20 +53,18 @@ func (np *nopProcessor) Shutdown() error {
 }
 
 // NewNopTraceProcessor creates an TraceProcessor that just pass the received data to the nextTraceProcessor.
-func NewNopTraceProcessor(nextTraceProcessor consumer.TraceConsumer) consumer.TraceConsumer {
+func NewNopTraceProcessor(nextTraceProcessor consumer.TraceConsumerOld) consumer.TraceConsumerOld {
 	return &nopProcessor{nextTraceProcessor: nextTraceProcessor}
 }
 
 // NewNopMetricsProcessor creates an MetricsProcessor that just pass the received data to the nextMetricsProcessor.
-func NewNopMetricsProcessor(nextMetricsProcessor consumer.MetricsConsumer) consumer.MetricsConsumer {
+func NewNopMetricsProcessor(nextMetricsProcessor consumer.MetricsConsumerOld) consumer.MetricsConsumerOld {
 	return &nopProcessor{nextMetricsProcessor: nextMetricsProcessor}
 }
 
 // NopProcessorFactory allows the creation of the no operation processor via
 // config, so it can be used in tests that cannot create it directly.
 type NopProcessorFactory struct{}
-
-var _ processor.Factory = (*NopProcessorFactory)(nil)
 
 // Type gets the type of the Processor created by this factory.
 func (npf *NopProcessorFactory) Type() string {
@@ -90,9 +84,9 @@ func (npf *NopProcessorFactory) CreateDefaultConfig() configmodels.Processor {
 // error will be returned instead.
 func (npf *NopProcessorFactory) CreateTraceProcessor(
 	logger *zap.Logger,
-	nextConsumer consumer.TraceConsumer,
+	nextConsumer consumer.TraceConsumerOld,
 	cfg configmodels.Processor,
-) (processor.TraceProcessor, error) {
+) (component.TraceProcessorOld, error) {
 	return &nopProcessor{nextTraceProcessor: nextConsumer}, nil
 }
 
@@ -101,8 +95,8 @@ func (npf *NopProcessorFactory) CreateTraceProcessor(
 // error will be returned instead.
 func (npf *NopProcessorFactory) CreateMetricsProcessor(
 	logger *zap.Logger,
-	nextConsumer consumer.MetricsConsumer,
+	nextConsumer consumer.MetricsConsumerOld,
 	cfg configmodels.Processor,
-) (processor.MetricsProcessor, error) {
+) (component.MetricsProcessorOld, error) {
 	return &nopProcessor{nextMetricsProcessor: nextConsumer}, nil
 }

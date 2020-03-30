@@ -32,7 +32,7 @@ import (
 )
 
 type spanProcessor struct {
-	nextConsumer     consumer.TraceConsumer
+	nextConsumer     consumer.TraceConsumerOld
 	config           Config
 	toAttributeRules []toAttributeRule
 	include          span.Matcher
@@ -49,7 +49,7 @@ type toAttributeRule struct {
 }
 
 // NewTraceProcessor returns the span processor.
-func NewTraceProcessor(nextConsumer consumer.TraceConsumer, config Config) (processor.TraceProcessor, error) {
+func NewTraceProcessor(nextConsumer consumer.TraceConsumerOld, config Config) (component.TraceProcessorOld, error) {
 	if nextConsumer == nil {
 		return nil, oterr.ErrNilNextConsumer
 	}
@@ -107,8 +107,8 @@ func (sp *spanProcessor) ConsumeTraceData(ctx context.Context, td consumerdata.T
 	return sp.nextConsumer.ConsumeTraceData(ctx, td)
 }
 
-func (sp *spanProcessor) GetCapabilities() processor.Capabilities {
-	return processor.Capabilities{MutatesConsumedData: true}
+func (sp *spanProcessor) GetCapabilities() component.ProcessorCapabilities {
+	return component.ProcessorCapabilities{MutatesConsumedData: true}
 }
 
 // Start is invoked during service startup.

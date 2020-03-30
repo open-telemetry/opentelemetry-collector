@@ -51,4 +51,3 @@ func (ms Resource) Attributes() AttributeMap {
 func (ms Resource) SetAttributes(v AttributeMap) {
 	ms.orig.Attributes = *v.orig
 }
-

@@ -52,7 +52,7 @@ func TestTrace10kSPS(t *testing.T) {
 			testbed.NewJaegerThriftDataSender(testbed.GetAvailablePort(t)),
 			testbed.NewJaegerDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
-				ExpectedMaxCPU: 52,
+				ExpectedMaxCPU: 53,
 				ExpectedMaxRAM: 89,
 			},
 		},
@@ -62,6 +62,15 @@ func TestTrace10kSPS(t *testing.T) {
 			testbed.NewOCDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 42,
+				ExpectedMaxRAM: 84,
+			},
+		},
+		{
+			"OTLP",
+			testbed.NewOTLPTraceDataSender(testbed.GetAvailablePort(t)),
+			testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
+			testbed.ResourceSpec{
+				ExpectedMaxCPU: 60,
 				ExpectedMaxRAM: 84,
 			},
 		},
@@ -285,6 +294,11 @@ func TestTraceAttributesProcessor(t *testing.T) {
 			testbed.NewJaegerThriftDataSender(testbed.GetAvailablePort(t)),
 			testbed.NewJaegerDataReceiver(testbed.GetAvailablePort(t)),
 		},
+		{
+			"OTLP",
+			testbed.NewOTLPTraceDataSender(testbed.GetAvailablePort(t)),
+			testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
+		},
 	}
 
 	for _, test := range tests {
@@ -309,7 +323,7 @@ func TestTraceAttributesProcessor(t *testing.T) {
 `,
 			}
 
-			configFile := createConfigFile(test.sender, test.receiver, resultDir, processors)
+			configFile := createConfigFile(t, test.sender, test.receiver, resultDir, processors)
 			defer os.Remove(configFile)
 
 			if configFile == "" {

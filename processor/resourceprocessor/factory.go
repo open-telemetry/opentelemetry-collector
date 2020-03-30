@@ -17,9 +17,9 @@ package resourceprocessor
 import (
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/processor"
 )
 
 const (
@@ -30,8 +30,6 @@ const (
 // Factory is the factory for OpenCensus exporter.
 type Factory struct {
 }
-
-var _ processor.Factory = Factory{}
 
 // Type gets the type of the Option config created by this factory.
 func (Factory) Type() string {
@@ -51,13 +49,13 @@ func (Factory) CreateDefaultConfig() configmodels.Processor {
 }
 
 // CreateTraceProcessor creates a trace processor based on this config.
-func (Factory) CreateTraceProcessor(logger *zap.Logger, nextConsumer consumer.TraceConsumer, cfg configmodels.Processor) (processor.TraceProcessor, error) {
+func (Factory) CreateTraceProcessor(logger *zap.Logger, nextConsumer consumer.TraceConsumerOld, cfg configmodels.Processor) (component.TraceProcessorOld, error) {
 	oCfg := cfg.(*Config)
 	return newResourceTraceProcessor(nextConsumer, oCfg), nil
 }
 
 // CreateMetricsProcessor creates a metrics processor based on this config.
-func (Factory) CreateMetricsProcessor(logger *zap.Logger, nextConsumer consumer.MetricsConsumer, cfg configmodels.Processor) (processor.MetricsProcessor, error) {
+func (Factory) CreateMetricsProcessor(logger *zap.Logger, nextConsumer consumer.MetricsConsumerOld, cfg configmodels.Processor) (component.MetricsProcessorOld, error) {
 	oCfg := cfg.(*Config)
 	return newResourceMetricProcessor(nextConsumer, oCfg), nil
 }

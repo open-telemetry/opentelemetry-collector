@@ -88,11 +88,11 @@ func TestExport(t *testing.T) {
 								SpanId:            spanID,
 								Name:              "operationB",
 								Kind:              otlptrace.Span_SERVER,
-								StartTimeUnixnano: unixnanos,
-								EndTimeUnixnano:   unixnanos,
+								StartTimeUnixNano: unixnanos,
+								EndTimeUnixNano:   unixnanos,
 								Events: []*otlptrace.Span_Event{
 									{
-										TimeUnixnano: unixnanos,
+										TimeUnixNano: unixnanos,
 										Name:         "event1",
 										Attributes: []*otlpcommon.AttributeKeyValue{
 											{
@@ -144,12 +144,12 @@ func TestExport(t *testing.T) {
 				SpanId:    spanID,
 				Name:      &octrace.TruncatableString{Value: "operationB"},
 				Kind:      octrace.Span_SERVER,
-				StartTime: internal.UnixnanoToTimestamp(data.TimestampUnixNano(unixnanos)),
-				EndTime:   internal.UnixnanoToTimestamp(data.TimestampUnixNano(unixnanos)),
+				StartTime: internal.UnixNanoToTimestamp(data.TimestampUnixNano(unixnanos)),
+				EndTime:   internal.UnixNanoToTimestamp(data.TimestampUnixNano(unixnanos)),
 				TimeEvents: &octrace.Span_TimeEvents{
 					TimeEvent: []*octrace.Span_TimeEvent{
 						{
-							Time: internal.UnixnanoToTimestamp(data.TimestampUnixNano(unixnanos)),
+							Time: internal.UnixNanoToTimestamp(data.TimestampUnixNano(unixnanos)),
 							Value: &octrace.Span_TimeEvent_Annotation_{
 								Annotation: &octrace.Span_TimeEvent_Annotation{
 									Description: &octrace.TruncatableString{Value: "event1"},
@@ -167,7 +167,7 @@ func TestExport(t *testing.T) {
 							},
 						},
 					},
-					DroppedMessageEventsCount: 2,
+					DroppedAnnotationsCount: 2,
 				},
 				Links: &octrace.Span_Links{
 					Link: []*octrace.Span_Link{
@@ -214,7 +214,7 @@ func makeTraceServiceClient(port int) (collectortrace.TraceServiceClient, func()
 	return metricsClient, doneFn, nil
 }
 
-func otlpReceiverOnGRPCServer(t *testing.T, tc consumer.TraceConsumer) (r *Receiver, port int, done func()) {
+func otlpReceiverOnGRPCServer(t *testing.T, tc consumer.TraceConsumerOld) (r *Receiver, port int, done func()) {
 	ln, err := net.Listen("tcp", "localhost:")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 

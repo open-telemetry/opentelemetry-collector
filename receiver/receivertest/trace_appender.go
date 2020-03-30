@@ -31,7 +31,7 @@ func NewTraceAppender() *TraceAppender {
 	return &TraceAppender{}
 }
 
-var _ consumer.TraceConsumer = (*TraceAppender)(nil)
+var _ consumer.TraceConsumerOld = (*TraceAppender)(nil)
 
 func (ma *TraceAppender) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	ma.Lock()

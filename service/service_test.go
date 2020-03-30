@@ -28,10 +28,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/defaults"
-	"github.com/open-telemetry/opentelemetry-collector/extension"
 	"github.com/open-telemetry/opentelemetry-collector/testutils"
 )
 
@@ -49,6 +49,7 @@ func TestApplication_Start(t *testing.T) {
 		"--config=testdata/otelcol-config.yaml",
 		"--metrics-port=" + strconv.FormatUint(uint64(metricsPort), 10),
 		"--metrics-prefix=" + testPrefix,
+		"--add-instance-id=true",
 	})
 
 	appDone := make(chan struct{})
@@ -157,7 +158,7 @@ func TestApplication_setupExtensions(t *testing.T) {
 		{
 			name: "error_on_create_extension",
 			factories: config.Factories{
-				Extensions: map[string]extension.Factory{
+				Extensions: map[string]component.ExtensionFactory{
 					exampleExtensionFactory.Type(): exampleExtensionFactory,
 				},
 			},
@@ -176,7 +177,7 @@ func TestApplication_setupExtensions(t *testing.T) {
 		{
 			name: "bad_factory",
 			factories: config.Factories{
-				Extensions: map[string]extension.Factory{
+				Extensions: map[string]component.ExtensionFactory{
 					badExtensionFactory.Type(): badExtensionFactory,
 				},
 			},
@@ -221,8 +222,6 @@ func TestApplication_setupExtensions(t *testing.T) {
 // badExtensionFactory is a factory that returns no error but returns a nil object.
 type badExtensionFactory struct{}
 
-var _ extension.Factory = (*badExtensionFactory)(nil)
-
 func (b badExtensionFactory) Type() string {
 	return "bf"
 }
@@ -234,6 +233,6 @@ func (b badExtensionFactory) CreateDefaultConfig() configmodels.Extension {
 func (b badExtensionFactory) CreateExtension(
 	logger *zap.Logger,
 	cfg configmodels.Extension,
-) (extension.ServiceExtension, error) {
+) (component.ServiceExtension, error) {
 	return nil, nil
 }

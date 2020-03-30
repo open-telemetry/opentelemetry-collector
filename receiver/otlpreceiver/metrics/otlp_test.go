@@ -93,8 +93,8 @@ func TestExport(t *testing.T) {
 												Value: "value1",
 											},
 										},
-										StartTimeUnixnano: unixnanos1,
-										TimestampUnixnano: unixnanos2,
+										StartTimeUnixNano: unixnanos1,
+										TimeUnixNano:      unixnanos2,
 										Value:             123,
 									},
 									{
@@ -104,8 +104,8 @@ func TestExport(t *testing.T) {
 												Value: "value2",
 											},
 										},
-										StartTimeUnixnano: unixnanos1,
-										TimestampUnixnano: unixnanos2,
+										StartTimeUnixNano: unixnanos1,
+										TimeUnixNano:      unixnanos2,
 										Value:             456,
 									},
 								},
@@ -211,7 +211,7 @@ func makeMetricsServiceClient(port int) (collectormetrics.MetricsServiceClient, 
 	return metricsClient, doneFn, nil
 }
 
-func otlpReceiverOnGRPCServer(t *testing.T, mc consumer.MetricsConsumer) (r *Receiver, port int, done func()) {
+func otlpReceiverOnGRPCServer(t *testing.T, mc consumer.MetricsConsumerOld) (r *Receiver, port int, done func()) {
 	ln, err := net.Listen("tcp", "localhost:")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 
@@ -242,5 +242,5 @@ func otlpReceiverOnGRPCServer(t *testing.T, mc consumer.MetricsConsumer) (r *Rec
 }
 
 func unixnanoToTimestamp(u uint64) *timestamp.Timestamp {
-	return internal.UnixnanoToTimestamp(data.TimestampUnixNano(u))
+	return internal.UnixNanoToTimestamp(data.TimestampUnixNano(u))
 }

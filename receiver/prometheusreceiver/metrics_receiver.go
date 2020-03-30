@@ -27,7 +27,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/obsreport"
-	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/prometheusreceiver/internal"
 )
 
@@ -36,15 +35,13 @@ type Preceiver struct {
 	startOnce sync.Once
 	stopOnce  sync.Once
 	cfg       *Config
-	consumer  consumer.MetricsConsumer
+	consumer  consumer.MetricsConsumerOld
 	cancel    context.CancelFunc
 	logger    *zap.Logger
 }
 
-var _ receiver.MetricsReceiver = (*Preceiver)(nil)
-
 // New creates a new prometheus.Receiver reference.
-func newPrometheusReceiver(logger *zap.Logger, cfg *Config, next consumer.MetricsConsumer) *Preceiver {
+func newPrometheusReceiver(logger *zap.Logger, cfg *Config, next consumer.MetricsConsumerOld) *Preceiver {
 	pr := &Preceiver{
 		cfg:      cfg,
 		consumer: next,

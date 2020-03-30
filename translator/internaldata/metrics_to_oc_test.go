@@ -22,175 +22,27 @@ import (
 	ocmetrics "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/golang/protobuf/ptypes"
+	"github.com/golang/protobuf/ptypes/timestamp"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
+	"github.com/open-telemetry/opentelemetry-collector/internal/data/testdata"
 	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 )
 
 func TestResourceMetricsToMetricsData(t *testing.T) {
-	ts, err := ptypes.TimestampProto(time.Date(2020, 2, 11, 20, 26, 0, 0, time.UTC))
-	assert.NoError(t, err)
 
-	ts1 := data.TimestampUnixNano(12578940000000012345)
-	ts2 := data.TimestampUnixNano(12578940000000054321)
-
-	metrics := data.NewMetricSlice(1)
-	metricDescriptor := data.NewMetricDescriptor()
-	metricDescriptor.SetName("mymetric")
-	metricDescriptor.SetDescription("My metric")
-	metricDescriptor.SetUnit("ms")
-	metricDescriptor.SetMetricType(data.MetricTypeCounterInt64)
-	metrics[0].SetMetricDescriptor(metricDescriptor)
-
-	int64DataPoints := data.NewInt64DataPointSlice(2)
-	int64DataPoints[0].SetLabelsMap(data.NewStringMap(map[string]string{"key1": "value1"}))
-	int64DataPoints[0].SetStartTime(ts1)
-	int64DataPoints[0].SetTimestamp(ts2)
-	int64DataPoints[0].SetValue(123)
-	int64DataPoints[1].SetLabelsMap(data.NewStringMap(map[string]string{"key2": "value2"}))
-	int64DataPoints[1].SetStartTime(ts1)
-	int64DataPoints[1].SetTimestamp(ts2)
-	int64DataPoints[1].SetValue(456)
-	metrics[0].SetInt64DataPoints(int64DataPoints)
-
-	doubleDataPoints := data.NewDoubleDataPointSlice(1)
-	doubleDataPoints[0].SetLabelsMap(data.NewStringMap(map[string]string{
-		"key1": "double-value1",
-		"key3": "double-value3",
-	}))
-	doubleDataPoints[0].SetStartTime(ts1)
-	doubleDataPoints[0].SetTimestamp(ts2)
-	doubleDataPoints[0].SetValue(1.23)
-	metrics[0].SetDoubleDataPoints(doubleDataPoints)
-
-	resource := data.NewResource()
-	attrs := data.AttributesMap{
-		conventions.OCAttributeProcessStartTime: data.NewAttributeValueString("2020-02-11T20:26:00Z"),
-		conventions.AttributeHostHostname:       data.NewAttributeValueString("host1"),
-		conventions.OCAttributeProcessID:        data.NewAttributeValueString("123"),
-		conventions.AttributeLibraryVersion:     data.NewAttributeValueString("v2.0.1"),
-		conventions.OCAttributeExporterVersion:  data.NewAttributeValueString("v1.2.0"),
-		conventions.AttributeLibraryLanguage:    data.NewAttributeValueString("CPP"),
-		conventions.OCAttributeResourceType:     data.NewAttributeValueString("good-resource"),
-		"str1":                                  data.NewAttributeValueString("text"),
-		"int2":                                  data.NewAttributeValueInt(123),
-	}
-	resource.SetAttributes(data.NewAttributeMap(attrs))
-
-	ilm := data.NewInstrumentationLibraryMetricsSlice(1)
-	ilm[0].SetMetrics(metrics)
-	resourceMetricsSlice := data.NewResourceMetricsSlice(1)
-	resourceMetricsSlice[0].SetInstrumentationLibraryMetrics(ilm)
-	resourceMetricsSlice[0].SetResource(resource)
-
-	metricData := data.NewMetricData()
-	metricData.SetResourceMetrics(resourceMetricsSlice)
-
-	emptyMetricData := data.NewMetricData()
-	emptyMetricData.SetResourceMetrics([]data.ResourceMetrics{data.NewResourceMetrics()})
-
-	ocMetric := &ocmetrics.Metric{
-		MetricDescriptor: &ocmetrics.MetricDescriptor{
-			Name:        "mymetric",
-			Description: "My metric",
-			Unit:        "ms",
-			Type:        ocmetrics.MetricDescriptor_CUMULATIVE_INT64,
-			LabelKeys: []*ocmetrics.LabelKey{
-				{Key: "key1"},
-				{Key: "key2"},
-				{Key: "key3"},
-			},
-		},
-		Timeseries: []*ocmetrics.TimeSeries{
-			{
-				StartTimestamp: internal.UnixnanoToTimestamp(ts1),
-				LabelValues: []*ocmetrics.LabelValue{
-					{
-						// key1
-						Value:    "value1",
-						HasValue: true,
-					},
-					{
-						// key2
-						HasValue: false,
-					},
-					{
-						// key3
-						HasValue: false,
-					},
-				},
-				Points: []*ocmetrics.Point{
-					{
-						Timestamp: internal.UnixnanoToTimestamp(ts2),
-						Value: &ocmetrics.Point_Int64Value{
-							Int64Value: 123,
-						},
-					},
-				},
-			},
-			{
-				StartTimestamp: internal.UnixnanoToTimestamp(ts1),
-				LabelValues: []*ocmetrics.LabelValue{
-					{
-						// key1
-						HasValue: false,
-					},
-					{
-						// key2
-						Value:    "value2",
-						HasValue: true,
-					},
-					{
-						// key3
-						HasValue: false,
-					},
-				},
-				Points: []*ocmetrics.Point{
-					{
-						Timestamp: internal.UnixnanoToTimestamp(ts2),
-						Value: &ocmetrics.Point_Int64Value{
-							Int64Value: 456,
-						},
-					},
-				},
-			},
-			{
-				StartTimestamp: internal.UnixnanoToTimestamp(ts1),
-				LabelValues: []*ocmetrics.LabelValue{
-					{
-						// key1
-						Value:    "double-value1",
-						HasValue: true,
-					},
-					{
-						// key2
-						HasValue: false,
-					},
-					{
-						// key3
-						Value:    "double-value3",
-						HasValue: true,
-					},
-				},
-				Points: []*ocmetrics.Point{
-					{
-						Timestamp: internal.UnixnanoToTimestamp(ts2),
-						Value: &ocmetrics.Point_DoubleValue{
-							DoubleValue: 1.23,
-						},
-					},
-				},
-			},
-		},
-	}
-
-	ocAttributes := map[string]string{
-		"str1": "text",
-		"int2": "123",
-	}
+	sampleMetricData := testdata.GenerateMetricDataWithCountersHistogramAndSummary()
+	attrs := sampleMetricData.ResourceMetrics().Get(0).Resource().Attributes()
+	attrs.Upsert(data.NewAttributeKeyValueString(conventions.AttributeHostHostname, "host1"))
+	attrs.Upsert(data.NewAttributeKeyValueString(conventions.OCAttributeProcessID, "123"))
+	attrs.Upsert(data.NewAttributeKeyValueString(conventions.OCAttributeProcessStartTime, "2020-02-11T20:26:00Z"))
+	attrs.Upsert(data.NewAttributeKeyValueString(conventions.AttributeLibraryLanguage, "CPP"))
+	attrs.Upsert(data.NewAttributeKeyValueString(conventions.AttributeLibraryVersion, "v2.0.1"))
+	attrs.Upsert(data.NewAttributeKeyValueString(conventions.OCAttributeExporterVersion, "v1.2.0"))
 
 	tests := []struct {
 		name     string
@@ -200,44 +52,38 @@ func TestResourceMetricsToMetricsData(t *testing.T) {
 		{
 			name:     "none",
 			internal: data.NewMetricData(),
-			oc:       []consumerdata.MetricsData{},
+			oc:       []consumerdata.MetricsData(nil),
 		},
 
 		{
-			name:     "empty",
-			internal: emptyMetricData,
+			name:     "no-libraries",
+			internal: testdata.GenerateMetricDataNoLibraries(),
 			oc: []consumerdata.MetricsData{
-				{
-					Node:     &occommon.Node{},
-					Resource: &ocresource.Resource{},
-					Metrics:  []*ocmetrics.Metric{},
-				},
+				generateOcTestDataNoMetrics(),
+			},
+		},
+
+		{
+			name:     "no-metrics",
+			internal: testdata.GenerateMetricDataNoMetrics(),
+			oc: []consumerdata.MetricsData{
+				generateOcTestDataNoMetrics(),
+			},
+		},
+
+		{
+			name:     "no-points",
+			internal: testdata.GenerateMetricDataAllTypesNoDataPoints(),
+			oc: []consumerdata.MetricsData{
+				generateOcTestDataNoPoints(),
 			},
 		},
 
 		{
 			name:     "sample-metric",
-			internal: metricData,
+			internal: sampleMetricData,
 			oc: []consumerdata.MetricsData{
-				{
-					Node: &occommon.Node{
-						Identifier: &occommon.ProcessIdentifier{
-							HostName:       "host1",
-							Pid:            123,
-							StartTimestamp: ts,
-						},
-						LibraryInfo: &occommon.LibraryInfo{
-							Language:           occommon.LibraryInfo_CPP,
-							ExporterVersion:    "v1.2.0",
-							CoreLibraryVersion: "v2.0.1",
-						},
-					},
-					Resource: &ocresource.Resource{
-						Type:   "good-resource",
-						Labels: ocAttributes,
-					},
-					Metrics: []*ocmetrics.Metric{ocMetric},
-				},
+				generateOcTestData(t),
 			},
 		},
 	}
@@ -247,5 +93,358 @@ func TestResourceMetricsToMetricsData(t *testing.T) {
 			got := MetricDataToOC(test.internal)
 			assert.EqualValues(t, test.oc, got)
 		})
+	}
+}
+
+func generateOcTestDataNoMetrics() consumerdata.MetricsData {
+	return consumerdata.MetricsData{
+		Node: &occommon.Node{},
+		Resource: &ocresource.Resource{
+			Labels: map[string]string{"resource-attr": "resource-attr-val-1"},
+		},
+		Metrics: []*ocmetrics.Metric(nil),
+	}
+}
+
+func generateOcTestDataNoPoints() consumerdata.MetricsData {
+	return consumerdata.MetricsData{
+		Node: &occommon.Node{},
+		Resource: &ocresource.Resource{
+			Labels: map[string]string{"resource-attr": "resource-attr-val-1"},
+		},
+		Metrics: []*ocmetrics.Metric{
+			{
+				MetricDescriptor: &ocmetrics.MetricDescriptor{
+					Name:        "gauge-double",
+					Description: "",
+					Unit:        "1",
+					Type:        ocmetrics.MetricDescriptor_GAUGE_DOUBLE,
+				},
+			},
+			{
+				MetricDescriptor: &ocmetrics.MetricDescriptor{
+					Name:        "gauge-int",
+					Description: "",
+					Unit:        "1",
+					Type:        ocmetrics.MetricDescriptor_GAUGE_INT64,
+				},
+			},
+			{
+				MetricDescriptor: &ocmetrics.MetricDescriptor{
+					Name:        "counter-double",
+					Description: "",
+					Unit:        "1",
+					Type:        ocmetrics.MetricDescriptor_CUMULATIVE_DOUBLE,
+				},
+			},
+			{
+				MetricDescriptor: &ocmetrics.MetricDescriptor{
+					Name:        "counter-int",
+					Description: "",
+					Unit:        "1",
+					Type:        ocmetrics.MetricDescriptor_CUMULATIVE_INT64,
+				},
+			},
+			{
+				MetricDescriptor: &ocmetrics.MetricDescriptor{
+					Name:        "gauge-histogram",
+					Description: "",
+					Unit:        "1",
+					Type:        ocmetrics.MetricDescriptor_GAUGE_DISTRIBUTION,
+				},
+			},
+			{
+				MetricDescriptor: &ocmetrics.MetricDescriptor{
+					Name:        "cumulative-histogram",
+					Description: "",
+					Unit:        "1",
+					Type:        ocmetrics.MetricDescriptor_CUMULATIVE_DISTRIBUTION,
+				},
+			},
+			{
+				MetricDescriptor: &ocmetrics.MetricDescriptor{
+					Name:        "summary",
+					Description: "",
+					Unit:        "1",
+					Type:        ocmetrics.MetricDescriptor_SUMMARY,
+				},
+			},
+		},
+	}
+}
+
+func generateOcTestData(t *testing.T) consumerdata.MetricsData {
+	ts, err := ptypes.TimestampProto(time.Date(2020, 2, 11, 20, 26, 0, 0, time.UTC))
+	assert.NoError(t, err)
+
+	ocMetricInt := &ocmetrics.Metric{
+		MetricDescriptor: &ocmetrics.MetricDescriptor{
+			Name:        testdata.TestCounterIntMetricName,
+			Description: "",
+			Unit:        "1",
+			Type:        ocmetrics.MetricDescriptor_CUMULATIVE_INT64,
+			LabelKeys: []*ocmetrics.LabelKey{
+				{Key: "int-label-1"},
+				{Key: "int-label-2"},
+			},
+		},
+		Timeseries: []*ocmetrics.TimeSeries{
+			{
+				StartTimestamp: internal.TimeToTimestamp(testdata.TestMetricStartTime),
+				LabelValues: []*ocmetrics.LabelValue{
+					{
+						// key1
+						Value:    "int-label-value-1",
+						HasValue: true,
+					},
+					{
+						// key2
+						HasValue: false,
+					},
+				},
+				Points: []*ocmetrics.Point{
+					{
+						Timestamp: internal.TimeToTimestamp(testdata.TestMetricTime),
+						Value: &ocmetrics.Point_Int64Value{
+							Int64Value: 123,
+						},
+					},
+				},
+			},
+			{
+				StartTimestamp: internal.TimeToTimestamp(testdata.TestMetricStartTime),
+				LabelValues: []*ocmetrics.LabelValue{
+					{
+						// key1
+						HasValue: false,
+					},
+					{
+						// key2
+						Value:    "int-label-value-2",
+						HasValue: true,
+					},
+				},
+				Points: []*ocmetrics.Point{
+					{
+						Timestamp: internal.TimeToTimestamp(testdata.TestMetricTime),
+						Value: &ocmetrics.Point_Int64Value{
+							Int64Value: 456,
+						},
+					},
+				},
+			},
+		},
+	}
+	ocMetricDouble := &ocmetrics.Metric{
+		MetricDescriptor: &ocmetrics.MetricDescriptor{
+			Name:        testdata.TestCounterDoubleMetricName,
+			Description: "",
+			Unit:        "1",
+			Type:        ocmetrics.MetricDescriptor_CUMULATIVE_DOUBLE,
+		},
+		Timeseries: []*ocmetrics.TimeSeries{
+			{
+				StartTimestamp: internal.TimeToTimestamp(testdata.TestMetricStartTime),
+				Points: []*ocmetrics.Point{
+					{
+						Timestamp: internal.TimeToTimestamp(testdata.TestMetricTime),
+						Value: &ocmetrics.Point_DoubleValue{
+							DoubleValue: 1.23,
+						},
+					},
+				},
+			},
+		},
+	}
+	ocMetricHistogram := &ocmetrics.Metric{
+		MetricDescriptor: &ocmetrics.MetricDescriptor{
+			Name:        testdata.TestCumulativeHistogramMetricName,
+			Description: "",
+			Unit:        "1",
+			Type:        ocmetrics.MetricDescriptor_CUMULATIVE_DISTRIBUTION,
+			LabelKeys: []*ocmetrics.LabelKey{
+				{Key: "histogram-label-1"},
+				{Key: "histogram-label-2"},
+				{Key: "histogram-label-3"},
+			},
+		},
+		Timeseries: []*ocmetrics.TimeSeries{
+			{
+				StartTimestamp: internal.TimeToTimestamp(testdata.TestMetricStartTime),
+				LabelValues: []*ocmetrics.LabelValue{
+					{
+						// key1
+						Value:    "histogram-label-value-1",
+						HasValue: true,
+					},
+					{
+						// key2
+						HasValue: false,
+					},
+					{
+						// key3
+						Value:    "histogram-label-value-3",
+						HasValue: true,
+					},
+				},
+				Points: []*ocmetrics.Point{
+					{
+						Timestamp: internal.TimeToTimestamp(testdata.TestMetricTime),
+						Value: &ocmetrics.Point_DistributionValue{
+							DistributionValue: &ocmetrics.DistributionValue{
+								Count: 1,
+								Sum:   15,
+							},
+						},
+					},
+				},
+			},
+			{
+				StartTimestamp: internal.TimeToTimestamp(testdata.TestMetricStartTime),
+				LabelValues: []*ocmetrics.LabelValue{
+					{
+						// key1
+						HasValue: false,
+					},
+					{
+						// key2
+						Value:    "histogram-label-value-2",
+						HasValue: true,
+					},
+					{
+						// key3
+						HasValue: false,
+					},
+				},
+				Points: []*ocmetrics.Point{
+					{
+						Timestamp: internal.TimeToTimestamp(testdata.TestMetricTime),
+						Value: &ocmetrics.Point_DistributionValue{
+							DistributionValue: &ocmetrics.DistributionValue{
+								Count: 1,
+								Sum:   15,
+								BucketOptions: &ocmetrics.DistributionValue_BucketOptions{
+									Type: &ocmetrics.DistributionValue_BucketOptions_Explicit_{
+										Explicit: &ocmetrics.DistributionValue_BucketOptions_Explicit{
+											Bounds: []float64{1},
+										},
+									},
+								},
+								Buckets: []*ocmetrics.DistributionValue_Bucket{
+									{
+										Count: 0,
+										// TODO: Fix this when we have a way to know if the value is default.
+										// https://github.com/open-telemetry/opentelemetry-collector/pull/691
+										Exemplar: &ocmetrics.DistributionValue_Exemplar{
+											Timestamp: &timestamp.Timestamp{},
+										},
+									},
+									{
+										Count: 1,
+										Exemplar: &ocmetrics.DistributionValue_Exemplar{
+											Timestamp:   internal.TimeToTimestamp(testdata.TestMetricExemplarTime),
+											Value:       15,
+											Attachments: map[string]string{"exemplar-attachment": "exemplar-attachment-value"},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	ocMetricSummary := &ocmetrics.Metric{
+		MetricDescriptor: &ocmetrics.MetricDescriptor{
+			Name:        testdata.TestSummaryMetricName,
+			Description: "",
+			Unit:        "1",
+			Type:        ocmetrics.MetricDescriptor_SUMMARY,
+			LabelKeys: []*ocmetrics.LabelKey{
+				{Key: "summary-label"},
+			},
+		},
+		Timeseries: []*ocmetrics.TimeSeries{
+			{
+				StartTimestamp: internal.TimeToTimestamp(testdata.TestMetricStartTime),
+				LabelValues: []*ocmetrics.LabelValue{
+					{
+						// key1
+						Value:    "summary-label-value-1",
+						HasValue: true,
+					},
+				},
+				Points: []*ocmetrics.Point{
+					{
+						Timestamp: internal.TimeToTimestamp(testdata.TestMetricTime),
+						Value: &ocmetrics.Point_SummaryValue{
+							SummaryValue: &ocmetrics.SummaryValue{
+								Count: &wrappers.Int64Value{
+									Value: 1,
+								},
+								Sum: &wrappers.DoubleValue{
+									Value: 15,
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				StartTimestamp: internal.TimeToTimestamp(testdata.TestMetricStartTime),
+				LabelValues: []*ocmetrics.LabelValue{
+					{
+						// key1
+						Value:    "summary-label-value-2",
+						HasValue: true,
+					},
+				},
+				Points: []*ocmetrics.Point{
+					{
+						Timestamp: internal.TimeToTimestamp(testdata.TestMetricTime),
+						Value: &ocmetrics.Point_SummaryValue{
+							SummaryValue: &ocmetrics.SummaryValue{
+								Count: &wrappers.Int64Value{
+									Value: 1,
+								},
+								Sum: &wrappers.DoubleValue{
+									Value: 15,
+								},
+								Snapshot: &ocmetrics.SummaryValue_Snapshot{
+									PercentileValues: []*ocmetrics.SummaryValue_Snapshot_ValueAtPercentile{
+										{
+											Percentile: 1,
+											Value:      15,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	return consumerdata.MetricsData{
+		Node: &occommon.Node{
+			Identifier: &occommon.ProcessIdentifier{
+				HostName:       "host1",
+				Pid:            123,
+				StartTimestamp: ts,
+			},
+			LibraryInfo: &occommon.LibraryInfo{
+				Language:           occommon.LibraryInfo_CPP,
+				ExporterVersion:    "v1.2.0",
+				CoreLibraryVersion: "v2.0.1",
+			},
+		},
+		Resource: &ocresource.Resource{
+			Labels: map[string]string{
+				"resource-attr": "resource-attr-val-1",
+			},
+		},
+		Metrics: []*ocmetrics.Metric{ocMetricInt, ocMetricDouble, ocMetricHistogram, ocMetricSummary},
 	}
 }

@@ -51,8 +51,8 @@ var (
 )
 
 type memoryLimiter struct {
-	traceConsumer   consumer.TraceConsumer
-	metricsConsumer consumer.MetricsConsumer
+	traceConsumer   consumer.TraceConsumerOld
+	metricsConsumer consumer.MetricsConsumerOld
 
 	memAllocLimit uint64
 	memSpikeLimit uint64
@@ -74,19 +74,17 @@ type memoryLimiter struct {
 	configMismatchedLogged bool
 }
 
-var _ processor.DualTypeProcessor = (*memoryLimiter)(nil)
-
 // New returns a new memorylimiter processor.
 func New(
 	name string,
-	traceConsumer consumer.TraceConsumer,
-	metricsConsumer consumer.MetricsConsumer,
+	traceConsumer consumer.TraceConsumerOld,
+	metricsConsumer consumer.MetricsConsumerOld,
 	checkInterval time.Duration,
 	memAllocLimit uint64,
 	memSpikeLimit uint64,
 	ballastSize uint64,
 	logger *zap.Logger,
-) (processor.DualTypeProcessor, error) {
+) (DualTypeProcessor, error) {
 
 	if traceConsumer == nil && metricsConsumer == nil {
 		return nil, errNilNextConsumer
@@ -177,8 +175,8 @@ func (ml *memoryLimiter) ConsumeMetricsData(
 	return ml.metricsConsumer.ConsumeMetricsData(ctx, md)
 }
 
-func (ml *memoryLimiter) GetCapabilities() processor.Capabilities {
-	return processor.Capabilities{MutatesConsumedData: false}
+func (ml *memoryLimiter) GetCapabilities() component.ProcessorCapabilities {
+	return component.ProcessorCapabilities{MutatesConsumedData: false}
 }
 
 func (ml *memoryLimiter) Start(host component.Host) error {

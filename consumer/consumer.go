@@ -22,41 +22,41 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 )
 
-// BaseMetricsConsumer defines a common interface for MetricsConsumer and MetricsConsumerV2.
-type BaseMetricsConsumer interface{}
+// MetricsConsumerBase defines a common interface for MetricsConsumerOld and MetricsConsumer.
+type MetricsConsumerBase interface{}
 
-// MetricsConsumer is an interface that receives consumerdata.MetricsData, process it as needed, and
+// MetricsConsumerOld is an interface that receives consumerdata.MetricsData, process it as needed, and
 // sends it to the next processing node if any or to the destination.
 //
 // ConsumeMetricsData receives consumerdata.MetricsData for processing by the MetricsConsumer.
-type MetricsConsumer interface {
-	BaseMetricsConsumer
+type MetricsConsumerOld interface {
+	MetricsConsumerBase
 	ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error
 }
 
-// MetricsConsumerV2 is the new metrics consumer interface that receives data.MetricData, processes it
+// MetricsConsumer is the new metrics consumer interface that receives data.MetricData, processes it
 // as needed, and sends it to the next processing node if any or to the destination.
-type MetricsConsumerV2 interface {
-	BaseMetricsConsumer
+type MetricsConsumer interface {
+	MetricsConsumerBase
 	ConsumeMetrics(ctx context.Context, md data.MetricData) error
 }
 
-// BaseTraceConsumer defines a common interface for TraceConsumer and TraceConsumerV2.
-type BaseTraceConsumer interface{}
+// TraceConsumerBase defines a common interface for TraceConsumerOld and TraceConsumer.
+type TraceConsumerBase interface{}
 
-// TraceConsumer is an interface that receives consumerdata.TraceData, process it as needed, and
+// TraceConsumerOld is an interface that receives consumerdata.TraceData, process it as needed, and
 // sends it to the next processing node if any or to the destination.
 //
 // ConsumeTraceData receives consumerdata.TraceData for processing by the TraceConsumer.
-type TraceConsumer interface {
-	BaseTraceConsumer
+type TraceConsumerOld interface {
+	TraceConsumerBase
 	ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error
 }
 
-// TraceConsumerV2 is an interface that receives data.TraceData, processes it
+// TraceConsumer is an interface that receives data.TraceData, processes it
 // as needed, and sends it to the next processing node if any or to the destination.
-type TraceConsumerV2 interface {
-	BaseTraceConsumer
+type TraceConsumer interface {
+	TraceConsumerBase
 	// ConsumeTrace receives data.TraceData for processing.
 	ConsumeTrace(ctx context.Context, td data.TraceData) error
 }

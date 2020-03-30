@@ -83,8 +83,18 @@ func ProcessorMetricViews(configType string, legacyViews []*view.View) []*view.V
 	}
 	if useNew {
 		for _, legacyView := range legacyViews {
+			// Ignore any nil entry and views without measure or aggregation.
+			// These can't be registered but some code registering legacy views may
+			// ignore the errors.
+			if legacyView == nil || legacyView.Measure == nil || legacyView.Aggregation == nil {
+				continue
+			}
 			newView := *legacyView
-			newView.Name = BuildProcessorCustomMetricName(configType, legacyView.Name)
+			viewName := legacyView.Name
+			if viewName == "" {
+				viewName = legacyView.Measure.Name()
+			}
+			newView.Name = BuildProcessorCustomMetricName(configType, viewName)
 			allViews = append(allViews, &newView)
 		}
 	}

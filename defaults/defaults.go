@@ -16,21 +16,20 @@
 package defaults
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config"
-	"github.com/open-telemetry/opentelemetry-collector/exporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/fileexporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/jaeger/jaegergrpcexporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/jaeger/jaegerthrifthttpexporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/loggingexporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/opencensusexporter"
+	"github.com/open-telemetry/opentelemetry-collector/exporter/otlpexporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/prometheusexporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/zipkinexporter"
-	"github.com/open-telemetry/opentelemetry-collector/extension"
 	"github.com/open-telemetry/opentelemetry-collector/extension/healthcheckextension"
 	"github.com/open-telemetry/opentelemetry-collector/extension/pprofextension"
 	"github.com/open-telemetry/opentelemetry-collector/extension/zpagesextension"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
-	"github.com/open-telemetry/opentelemetry-collector/processor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/aggregateprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/batchprocessor"
@@ -39,7 +38,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/processor/samplingprocessor/probabilisticsamplerprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/samplingprocessor/tailsamplingprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/spanprocessor"
-	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/jaegerreceiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/opencensusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/otlpreceiver"
@@ -56,7 +54,7 @@ func Components() (
 ) {
 	errs := []error{}
 
-	extensions, err := extension.Build(
+	extensions, err := component.MakeExtensionFactoryMap(
 		&healthcheckextension.Factory{},
 		&pprofextension.Factory{},
 		&zpagesextension.Factory{},
@@ -65,7 +63,7 @@ func Components() (
 		errs = append(errs, err)
 	}
 
-	receivers, err := receiver.Build(
+	receivers, err := component.MakeReceiverFactoryMap(
 		&jaegerreceiver.Factory{},
 		&zipkinreceiver.Factory{},
 		&prometheusreceiver.Factory{},
@@ -77,7 +75,7 @@ func Components() (
 		errs = append(errs, err)
 	}
 
-	exporters, err := exporter.Build(
+	exporters, err := component.MakeExporterFactoryMap(
 		&opencensusexporter.Factory{},
 		&prometheusexporter.Factory{},
 		&loggingexporter.Factory{},
@@ -85,12 +83,13 @@ func Components() (
 		&jaegergrpcexporter.Factory{},
 		&jaegerthrifthttpexporter.Factory{},
 		&fileexporter.Factory{},
+		&otlpexporter.Factory{},
 	)
 	if err != nil {
 		errs = append(errs, err)
 	}
 
-	processors, err := processor.Build(
+	processors, err := component.MakeProcessorFactoryMap(
 		&attributesprocessor.Factory{},
 		&aggregateprocessor.Factory{},
 		&queuedprocessor.Factory{},

@@ -35,7 +35,7 @@ import (
 	"testing"
 	"text/template"
 
-	"github.com/spf13/viper"
+	"github.com/open-telemetry/opentelemetry-collector/config"
 )
 
 // GlobalConfig defines test bed configuration.
@@ -76,18 +76,20 @@ func LoadConfig() error {
 	}
 
 	templateVars := struct {
-		GOOS string
+		GOOS   string
+		GOARCH string
 	}{
-		GOOS: runtime.GOOS,
+		GOOS:   runtime.GOOS,
+		GOARCH: runtime.GOARCH,
 	}
 	var buf bytes.Buffer
-	if err := cfgTemplate.Execute(&buf, templateVars); err != nil {
+	if err = cfgTemplate.Execute(&buf, templateVars); err != nil {
 		log.Fatalf("Configuration template failed to run on file %q: %s",
 			testBedConfigFile, err.Error())
 	}
 
 	// Read the config.
-	v := viper.New()
+	v := config.NewViper()
 	v.SetConfigType("yaml")
 	if err = v.ReadConfig(bytes.NewBuffer(buf.Bytes())); err != nil {
 		log.Fatalf("Cannot load test bed config from %q: %s",

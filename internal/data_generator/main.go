@@ -32,7 +32,11 @@ func main() {
 		check(err)
 		_, err = f.WriteString(fp.GenerateFile())
 		check(err)
-
-		defer f.Close()
+		check(f.Close())
+		f, err = os.Create("./internal/data/generated_" + fp.Name + "_test.go")
+		check(err)
+		_, err = f.WriteString(fp.GenerateTestFile())
+		check(err)
+		check(f.Close())
 	}
 }

@@ -21,9 +21,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-collector/processor"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -53,7 +53,7 @@ func TestLoadConfig(t *testing.T) {
 func TestLoadConfigEmpty(t *testing.T) {
 	factories, err := config.ExampleComponents()
 	require.NoError(t, err)
-	factories.Processors, err = processor.Build(&Factory{})
+	factories.Processors, err = component.MakeProcessorFactoryMap(&Factory{})
 	require.NotNil(t, factories.Processors)
 	require.NoError(t, err)
 

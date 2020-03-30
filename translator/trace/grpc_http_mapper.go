@@ -56,8 +56,8 @@ func OCStatusCodeFromHTTP(code int32) int32 {
 	if code >= 100 && code < 400 {
 		return OCOK
 	}
-	if code, ok := httpToOCCodeMap[code]; ok {
-		return code
+	if c, ok := httpToOCCodeMap[code]; ok {
+		return c
 	}
 	if code >= 400 && code < 500 {
 		return OCInvalidArgument
@@ -91,8 +91,8 @@ var ocToHTTPCodeMap = map[int32]int32{
 // HTTPStatusCodeFromOCStatus takes an OpenTelemetry status code and return the appropriate HTTP status code
 // See: https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/data-http.md
 func HTTPStatusCodeFromOCStatus(code int32) int32 {
-	if code, ok := ocToHTTPCodeMap[code]; ok {
-		return code
+	if c, ok := ocToHTTPCodeMap[code]; ok {
+		return c
 	}
 	return http.StatusInternalServerError
 }

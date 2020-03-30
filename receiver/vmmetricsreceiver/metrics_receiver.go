@@ -19,10 +19,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
-	"github.com/open-telemetry/opentelemetry-collector/receiver"
 )
-
-var _ receiver.MetricsReceiver = (*Receiver)(nil)
 
 // Receiver is the type used to handle metrics from VM metrics.
 type Receiver struct {

@@ -173,7 +173,7 @@ func (akv AttributeKeyValue) Key() string {
 
 // Value returns the value associated with this AttributeKeyValue.
 func (akv AttributeKeyValue) Value() AttributeValue {
-	return AttributeValue{akv.orig}
+	return AttributeValue(akv)
 }
 
 // SetValue replaces the value associated with this AttributeKeyValue.
@@ -193,7 +193,7 @@ type AttributeMap struct {
 // NewAttributeMap creates a new AttributeMap from the given map[string]AttributeValue.
 func NewAttributeMap(attrMap map[string]AttributeValue) AttributeMap {
 	if len(attrMap) == 0 {
-		var orig []*otlpcommon.AttributeKeyValue
+		orig := []*otlpcommon.AttributeKeyValue(nil)
 		return AttributeMap{&orig}
 	}
 	origs := make([]otlpcommon.AttributeKeyValue, len(attrMap))
@@ -330,7 +330,7 @@ func newStringMap(orig *[]*otlpcommon.StringKeyValue) StringMap {
 // NewStringMap creates a new StringMap from the given map[string]string.
 func NewStringMap(attrMap map[string]string) StringMap {
 	if len(attrMap) == 0 {
-		var orig []*otlpcommon.StringKeyValue
+		orig := []*otlpcommon.StringKeyValue(nil)
 		return StringMap{&orig}
 	}
 	origs := make([]otlpcommon.StringKeyValue, len(attrMap))
@@ -420,37 +420,4 @@ func (sm StringMap) GetStringKeyValue(ix int) StringKeyValue {
 func (sm StringMap) Sort() StringMap {
 	sort.SliceStable(*sm.orig, func(i, j int) bool { return (*sm.orig)[i].Key < (*sm.orig)[j].Key })
 	return sm
-}
-
-// InstrumentationLibrary is a message representing the instrumentation library information.
-//
-// Must use NewResource functions to create new instances.
-// Important: zero-initialized instance is not valid for use.
-type InstrumentationLibrary struct {
-	orig *otlpcommon.InstrumentationLibrary
-}
-
-// NewInstrumentationLibrary creates a new InstrumentationLibrary.
-func NewInstrumentationLibrary() InstrumentationLibrary {
-	return InstrumentationLibrary{}
-}
-
-func newInstrumentationLibrary(orig *otlpcommon.InstrumentationLibrary) InstrumentationLibrary {
-	return InstrumentationLibrary{orig}
-}
-
-func (il InstrumentationLibrary) Name() string {
-	return il.orig.Name
-}
-
-func (il InstrumentationLibrary) SetName(r string) {
-	il.orig.Name = r
-}
-
-func (il InstrumentationLibrary) Version() string {
-	return il.orig.Version
-}
-
-func (il InstrumentationLibrary) SetVersion(r string) {
-	il.orig.Version = r
 }

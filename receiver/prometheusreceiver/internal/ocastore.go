@@ -50,7 +50,7 @@ type OcaStore interface {
 type ocaStore struct {
 	running            int32
 	logger             *zap.Logger
-	sink               consumer.MetricsConsumer
+	sink               consumer.MetricsConsumerOld
 	mc                 *mService
 	once               *sync.Once
 	ctx                context.Context
@@ -60,7 +60,7 @@ type ocaStore struct {
 }
 
 // NewOcaStore returns an ocaStore instance, which can be acted as prometheus' scrape.Appendable
-func NewOcaStore(ctx context.Context, sink consumer.MetricsConsumer, logger *zap.Logger, jobsMap *JobsMap, useStartTimeMetric bool, receiverName string) OcaStore {
+func NewOcaStore(ctx context.Context, sink consumer.MetricsConsumerOld, logger *zap.Logger, jobsMap *JobsMap, useStartTimeMetric bool, receiverName string) OcaStore {
 	return &ocaStore{
 		running:            runningStateInit,
 		ctx:                ctx,

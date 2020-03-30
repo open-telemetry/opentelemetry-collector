@@ -24,9 +24,9 @@ import (
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/exporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
 )
@@ -62,12 +62,12 @@ const (
 )
 
 // NewTraceExporter creates an Open Census trace exporter.
-func NewTraceExporter(logger *zap.Logger, config configmodels.Exporter, opts ...ocagent.ExporterOption) (exporter.TraceExporter, error) {
+func NewTraceExporter(logger *zap.Logger, config configmodels.Exporter, opts ...ocagent.ExporterOption) (component.TraceExporterOld, error) {
 	oce, err := createOCAgentExporter(logger, config, opts...)
 	if err != nil {
 		return nil, err
 	}
-	oexp, err := exporterhelper.NewTraceExporter(
+	oexp, err := exporterhelper.NewTraceExporterOld(
 		config,
 		oce.PushTraceData,
 		exporterhelper.WithShutdown(oce.Shutdown))
@@ -103,7 +103,7 @@ func createOCAgentExporter(logger *zap.Logger, config configmodels.Exporter, opt
 }
 
 // NewMetricsExporter creates an Open Census metrics exporter.
-func NewMetricsExporter(logger *zap.Logger, config configmodels.Exporter, opts ...ocagent.ExporterOption) (exporter.MetricsExporter, error) {
+func NewMetricsExporter(logger *zap.Logger, config configmodels.Exporter, opts ...ocagent.ExporterOption) (component.MetricsExporterOld, error) {
 	oce, err := createOCAgentExporter(logger, config, opts...)
 	if err != nil {
 		return nil, err
@@ -154,7 +154,7 @@ func (oce *ocAgentExporter) PushTraceData(ctx context.Context, td consumerdata.T
 	if !ok {
 		err := &ocExporterError{
 			code: errAlreadyStopped,
-			msg:  fmt.Sprintf("OpenCensus exporter was already stopped."),
+			msg:  "OpenCensus exporter was already stopped.",
 		}
 		return len(td.Spans), err
 	}
@@ -179,7 +179,7 @@ func (oce *ocAgentExporter) PushMetricsData(ctx context.Context, md consumerdata
 	if !ok {
 		err := &ocExporterError{
 			code: errAlreadyStopped,
-			msg:  fmt.Sprintf("OpenCensus exporter was already stopped."),
+			msg:  "OpenCensus exporter was already stopped.",
 		}
 		return exporterhelper.NumTimeSeries(md), err
 	}

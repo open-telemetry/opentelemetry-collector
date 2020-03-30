@@ -18,23 +18,29 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang/protobuf/ptypes/timestamp"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/open-telemetry/opentelemetry-collector/internal"
+	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 )
 
 func TestTimeConverters(t *testing.T) {
 	// Ensure that we nanoseconds but that they are also preserved.
 	t1 := time.Date(2018, 10, 31, 19, 43, 35, 789, time.UTC)
-	ts := internal.TimeToTimestamp(t1)
-	t2 := time.Unix(ts.Seconds, int64(ts.Nanos))
 
-	// Verification for paranoia
-	if g, w := int64(1541015015000000789), t1.UnixNano(); g != w {
-		t.Errorf("InitialTime time nanos mismatch\nGot: %d\nWant:%d", g, w)
-	}
-	if g, w := int64(1541015015000000789), t2.UnixNano(); g != w {
-		t.Errorf("Convertedback time nanos mismatch\nGot: %d\nWant:%d", g, w)
-	}
-	if g, w := t1.UnixNano(), t2.UnixNano(); g != w {
-		t.Errorf("Convertedback time does not match original time\nGot: %d\nWant:%d", g, w)
-	}
+	assert.EqualValues(t, int64(1541015015000000789), t1.UnixNano())
+	tp := internal.TimeToTimestamp(t1)
+	assert.EqualValues(t, &timestamp.Timestamp{Seconds: 1541015015, Nanos: 789}, tp)
+	assert.EqualValues(t, int64(1541015015000000789), internal.TimestampToTime(tp).UnixNano())
+}
+
+func TestUnixNanosConverters(t *testing.T) {
+	t1 := time.Date(2020, 03, 24, 1, 13, 23, 789, time.UTC)
+	tun := data.TimestampUnixNano(t1.UnixNano())
+
+	assert.EqualValues(t, uint64(1585012403000000789), tun)
+	tp := internal.UnixNanoToTimestamp(tun)
+	assert.EqualValues(t, &timestamp.Timestamp{Seconds: 1585012403, Nanos: 789}, tp)
+	assert.EqualValues(t, tun, internal.TimestampToUnixNano(tp))
 }

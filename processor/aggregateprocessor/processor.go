@@ -34,10 +34,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/exporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/opencensusexporter"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
-	"github.com/open-telemetry/opentelemetry-collector/processor"
 )
 
 // aggregatingProcessor is the component that fowards spans to collector peers
@@ -48,7 +46,7 @@ type aggregatingProcessor struct {
 	// member lock
 	lock sync.RWMutex
 	// nextConsumer
-	nextConsumer consumer.TraceConsumer
+	nextConsumer consumer.TraceConsumerOld
 	// logger
 	logger *zap.Logger
 	// peerDiscoveryName
@@ -58,12 +56,12 @@ type aggregatingProcessor struct {
 	// ticker to call ring.GetState() and sync member list
 	memberSyncTicker tTicker
 	// stores queues for each of the collector peers
-	collectorPeers map[string]exporter.TraceExporter
+	collectorPeers map[string]component.TraceExporterOld
 }
 
-var _ processor.TraceProcessor = (*aggregatingProcessor)(nil)
+var _ component.TraceProcessorOld = (*aggregatingProcessor)(nil)
 
-func newTraceProcessor(logger *zap.Logger, nextConsumer consumer.TraceConsumer, cfg *Config) (processor.TraceProcessor, error) {
+func newTraceProcessor(logger *zap.Logger, nextConsumer consumer.TraceConsumerOld, cfg *Config) (component.TraceProcessorOld, error) {
 	if nextConsumer == nil {
 		return nil, oterr.ErrNilNextConsumer
 	}
@@ -77,7 +75,7 @@ func newTraceProcessor(logger *zap.Logger, nextConsumer consumer.TraceConsumer, 
 		nextConsumer:      nextConsumer,
 		logger:            logger,
 		peerDiscoveryName: peerDiscoveryName,
-		collectorPeers:    make(map[string]exporter.TraceExporter),
+		collectorPeers:    make(map[string]component.TraceExporterOld),
 	}
 
 	if ip, err := externalIP(); err == nil {
@@ -91,7 +89,7 @@ func newTraceProcessor(logger *zap.Logger, nextConsumer consumer.TraceConsumer, 
 	return ap, nil
 }
 
-func newTraceExporter(logger *zap.Logger, ip string) exporter.TraceExporter {
+func newTraceExporter(logger *zap.Logger, ip string) component.TraceExporterOld {
 	factory := &opencensusexporter.Factory{}
 	config := factory.CreateDefaultConfig()
 	config.(*opencensusexporter.Config).ExporterSettings = configmodels.ExporterSettings{
@@ -319,8 +317,8 @@ func (ap *aggregatingProcessor) ConsumeTraceData(ctx context.Context, td consume
 	return nil
 }
 
-func (ap *aggregatingProcessor) GetCapabilities() processor.Capabilities {
-	return processor.Capabilities{MutatesConsumedData: false}
+func (ap *aggregatingProcessor) GetCapabilities() component.ProcessorCapabilities {
+	return component.ProcessorCapabilities{MutatesConsumedData: false}
 }
 
 // Start is invoked during service startup.

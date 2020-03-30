@@ -21,17 +21,16 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"reflect"
 	"strings"
 
 	"github.com/mitchellh/mapstructure"
+	"github.com/spf13/cast"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-collector/exporter"
-	"github.com/open-telemetry/opentelemetry-collector/extension"
-	"github.com/open-telemetry/opentelemetry-collector/processor"
-	"github.com/open-telemetry/opentelemetry-collector/receiver"
 )
 
 // These are errors that can be returned by Load(). Note that error codes are not part
@@ -107,16 +106,22 @@ const typeAndNameSeparator = "/"
 // can be handled by the Config.
 type Factories struct {
 	// Receivers maps receiver type names in the config to the respective factory.
-	Receivers map[string]receiver.BaseFactory
+	Receivers map[string]component.ReceiverFactoryBase
 
 	// Processors maps processor type names in the config to the respective factory.
-	Processors map[string]processor.Factory
+	Processors map[string]component.ProcessorFactoryBase
 
 	// Exporters maps exporter type names in the config to the respective factory.
-	Exporters map[string]exporter.Factory
+	Exporters map[string]component.ExporterFactoryBase
 
 	// Extensions maps extension type names in the config to the respective factory.
-	Extensions map[string]extension.Factory
+	Extensions map[string]component.ExtensionFactory
+}
+
+// Creates a new Viper instance with a different key-delimitor "::" instead of the
+// default ".". This way configs can have keys that contain ".".
+func NewViper() *viper.Viper {
+	return viper.NewWithOptions(viper.KeyDelimiter("::"))
 }
 
 // Load loads a Config from Viper.
@@ -222,9 +227,9 @@ func DecodeTypeAndName(key string) (typeStr, fullName string, err error) {
 	return
 }
 
-func loadExtensions(v *viper.Viper, factories map[string]extension.Factory) (configmodels.Extensions, error) {
+func loadExtensions(v *viper.Viper, factories map[string]component.ExtensionFactory) (configmodels.Extensions, error) {
 	// Get the list of all "extensions" sub vipers from config source.
-	subViper := v.Sub(extensionsKeyName)
+	subViper := viperSub(v, extensionsKeyName)
 
 	// Get the map of "extensions" sub-keys.
 	keyMap := v.GetStringMap(extensionsKeyName)
@@ -309,7 +314,7 @@ func loadService(v *viper.Viper) (configmodels.Service, error) {
 }
 
 // LoadReceiver loads a receiver config from v under the subkey receiverKey using the provided factories.
-func LoadReceiver(receiverKey string, v *viper.Viper, factories map[string]receiver.BaseFactory) (configmodels.Receiver, error) {
+func LoadReceiver(receiverKey string, v *viper.Viper, factories map[string]component.ReceiverFactoryBase) (configmodels.Receiver, error) {
 	// Decode the key into type and fullName components.
 	typeStr, fullName, err := DecodeTypeAndName(receiverKey)
 	if err != nil {
@@ -356,9 +361,9 @@ func LoadReceiver(receiverKey string, v *viper.Viper, factories map[string]recei
 	return receiverCfg, nil
 }
 
-func loadReceivers(v *viper.Viper, factories map[string]receiver.BaseFactory) (configmodels.Receivers, error) {
+func loadReceivers(v *viper.Viper, factories map[string]component.ReceiverFactoryBase) (configmodels.Receivers, error) {
 	// Get the list of all "receivers" sub vipers from config source.
-	subViper := v.Sub(receiversKeyName)
+	subViper := viperSub(v, receiversKeyName)
 
 	// Get the map of "receivers" sub-keys.
 	keyMap := v.GetStringMap(receiversKeyName)
@@ -396,9 +401,9 @@ func loadReceivers(v *viper.Viper, factories map[string]receiver.BaseFactory) (c
 	return receivers, nil
 }
 
-func loadExporters(v *viper.Viper, factories map[string]exporter.Factory) (configmodels.Exporters, error) {
+func loadExporters(v *viper.Viper, factories map[string]component.ExporterFactoryBase) (configmodels.Exporters, error) {
 	// Get the list of all "exporters" sub vipers from config source.
-	subViper := v.Sub(exportersKeyName)
+	subViper := viperSub(v, exportersKeyName)
 
 	// Get the map of "exporters" sub-keys.
 	keyMap := v.GetStringMap(exportersKeyName)
@@ -464,9 +469,9 @@ func loadExporters(v *viper.Viper, factories map[string]exporter.Factory) (confi
 	return exporters, nil
 }
 
-func loadProcessors(v *viper.Viper, factories map[string]processor.Factory) (configmodels.Processors, error) {
+func loadProcessors(v *viper.Viper, factories map[string]component.ProcessorFactoryBase) (configmodels.Processors, error) {
 	// Get the list of all "processors" sub vipers from config source.
-	subViper := v.Sub(processorsKeyName)
+	subViper := viperSub(v, processorsKeyName)
 
 	// Get the map of "processors" sub-keys.
 	keyMap := v.GetStringMap(processorsKeyName)
@@ -526,7 +531,7 @@ func loadProcessors(v *viper.Viper, factories map[string]processor.Factory) (con
 
 func loadPipelines(v *viper.Viper) (configmodels.Pipelines, error) {
 	// Get the list of all "pipelines" sub vipers from config source.
-	subViper := v.Sub(pipelinesKeyName)
+	subViper := viperSub(v, pipelinesKeyName)
 
 	// Get the map of "pipelines" sub-keys.
 	keyMap := v.GetStringMap(pipelinesKeyName)
@@ -865,28 +870,18 @@ func validateProcessors(cfg *configmodels.Config) {
 // It also expands all the string values.
 func getConfigSection(v *viper.Viper, key string) *viper.Viper {
 	// Unmarshal only the subconfig for this processor.
-	sv := v.Sub(key)
-	if sv == nil {
-		// When the config for this key is empty Sub returns nil. In order to avoid nil checks
-		// just return an empty config.
-		return viper.New()
-	}
+	sv := viperSub(v, key)
+	expandEnvConfig(sv)
 	// Before unmarshaling first expand all environment variables.
-	return expandEnvConfig(sv)
+	return sv
 }
 
 // expandEnvConfig creates a new viper config with expanded values for all the values (simple, list or map value).
 // It does not expand the keys.
-// Need to copy everything because of a bug in Viper: Set a value "map[string]interface{}" where a key has a ".",
-// then AllSettings will return the previous value not the newly set one.
-func expandEnvConfig(v *viper.Viper) *viper.Viper {
-	newCfg := make(map[string]interface{})
-	for k, val := range v.AllSettings() {
-		newCfg[k] = expandStringValues(val)
+func expandEnvConfig(v *viper.Viper) {
+	for _, k := range v.AllKeys() {
+		v.Set(k, expandStringValues(v.Get(k)))
 	}
-	newVip := viper.New()
-	newVip.MergeConfigMap(newCfg)
-	return newVip
 }
 
 func expandStringValues(value interface{}) interface{} {
@@ -902,14 +897,23 @@ func expandStringValues(value interface{}) interface{} {
 			nslice = append(nslice, expandStringValues(vint))
 		}
 		return nslice
-	case map[string]interface{}:
-		nmap := make(map[string]interface{}, len(v))
-		// Viper treats all the maps as [string]interface{} (at least in what the otelcol tests).
-		for k, vint := range v {
-			nmap[k] = expandStringValues(vint)
-		}
-		return nmap
 	}
+}
+
+// Copied from the Viper but changed to use the same delimiter.
+// See https://github.com/spf13/viper/issues/871
+func viperSub(v *viper.Viper, key string) *viper.Viper {
+	subv := NewViper()
+	data := v.Get(key)
+	if data == nil {
+		return subv
+	}
+
+	if reflect.TypeOf(data).Kind() == reflect.Map {
+		subv.MergeConfigMap(cast.ToStringMap(data))
+		return subv
+	}
+	return subv
 }
 
 // errorOnUnused sets the decoder configuration to error in case of unused sections

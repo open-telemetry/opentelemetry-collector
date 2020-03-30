@@ -38,7 +38,6 @@ import (
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"github.com/jaegertracing/jaeger/thrift-gen/baggage"
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
-	jaegerThrift "github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 	"github.com/jaegertracing/jaeger/thrift-gen/sampling"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"github.com/uber/jaeger-lib/metrics"
@@ -52,7 +51,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
-	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	jaegertranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace/jaeger"
 )
 
@@ -82,7 +80,7 @@ type jReceiver struct {
 	// mu protects the fields of this type
 	mu sync.Mutex
 
-	nextConsumer consumer.TraceConsumer
+	nextConsumer consumer.TraceConsumerOld
 	instanceName string
 
 	startOnce sync.Once
@@ -103,7 +101,7 @@ type jReceiver struct {
 }
 
 type jTchannelReceiver struct {
-	nextConsumer consumer.TraceConsumer
+	nextConsumer consumer.TraceConsumerOld
 	instanceName string
 
 	tchannel *tchannel.Channel
@@ -133,9 +131,9 @@ const (
 func New(
 	instanceName string,
 	config *Configuration,
-	nextConsumer consumer.TraceConsumer,
+	nextConsumer consumer.TraceConsumerOld,
 	logger *zap.Logger,
-) (receiver.TraceReceiver, error) {
+) (component.TraceReceiver, error) {
 	return &jReceiver{
 		config: config,
 		defaultAgentCtx: obsreport.ReceiverContext(
@@ -149,8 +147,6 @@ func New(
 		logger: logger,
 	}, nil
 }
-
-var _ receiver.TraceReceiver = (*jReceiver)(nil)
 
 func (jr *jReceiver) agentCompactThriftAddr() string {
 	var port int
@@ -301,7 +297,7 @@ func (jr *jReceiver) stopTraceReceptionLocked() error {
 func consumeTraceData(
 	ctx context.Context,
 	batches []*jaeger.Batch,
-	consumer consumer.TraceConsumer,
+	consumer consumer.TraceConsumerOld,
 ) ([]*jaeger.BatchSubmitResponse, int, error) {
 
 	jbsr := make([]*jaeger.BatchSubmitResponse, 0, len(batches))
@@ -463,7 +459,7 @@ func (jr *jReceiver) startAgent(_ component.Host) error {
 }
 
 func (jr *jReceiver) buildProcessor(address string, factory apacheThrift.TProtocolFactory) (processors.Processor, error) {
-	handler := jaegerThrift.NewAgentProcessor(jr)
+	handler := jaeger.NewAgentProcessor(jr)
 	transport, err := thriftudp.NewTUDPServerTransport(address)
 	if err != nil {
 		return nil, err

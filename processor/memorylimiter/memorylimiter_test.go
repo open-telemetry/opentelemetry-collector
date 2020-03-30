@@ -30,7 +30,7 @@ import (
 
 func TestNew(t *testing.T) {
 	type args struct {
-		nextConsumer  consumer.TraceConsumer
+		nextConsumer  consumer.TraceConsumerOld
 		checkInterval time.Duration
 		memAllocLimit uint64
 		memSpikeLimit uint64
