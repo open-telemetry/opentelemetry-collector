@@ -184,6 +184,12 @@ jobs:
           command: |
             docker push otel/opentelemetry-collector:${CIRCLE_TAG:1}
             docker push otel/opentelemetry-collector:latest
+      - run:
+          name: Calculate checksums 
+          command: shasum -a 256 bin/* > bin/checksums.txt
+      - run:
+          name: Create Github release and upload artifacts
+          command: ghr -t $GITHUB_TOKEN -u $CIRCLE_PROJECT_USERNAME -r $CIRCLE_PROJECT_REPONAME --replace $CIRCLE_TAG bin/
 
   publish-dev:
     docker:
@@ -195,7 +201,7 @@ jobs:
           name: Build image
           command: |
             make docker-otelcol
-            docker tag otelcol:latest otel/opentelemetry-collector-dev:${CIRCLE_SHA1:1}
+            docker tag otelcol:latest otel/opentelemetry-collector-dev:${CIRCLE_SHA1}
             docker tag otelcol:latest otel/opentelemetry-collector-dev:latest
       - run:
           name: Login to Docker Hub
@@ -203,6 +209,6 @@ jobs:
       - run:
           name: Push image
           command: |
-            docker push otel/opentelemetry-collector-dev:${CIRCLE_SHA1:1}
+            docker push otel/opentelemetry-collector-dev:${CIRCLE_SHA1}
             docker push otel/opentelemetry-collector-dev:latest
 
