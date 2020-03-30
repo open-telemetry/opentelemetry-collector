@@ -65,6 +65,20 @@ workflows:
               ignore: /.*/
             tags:
               only: /^v[0-9].[0-9].[0-9]+.*/
+  release:
+    jobs:
+      - setup-and-lint
+      - build:
+          requires:
+            - setup-and-lint
+      - publish-stable:
+          requires:
+            - build
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v[0-9].[0-9].[0-9]+.*/
 
 jobs:
   setup-and-lint:
