@@ -91,7 +91,7 @@ func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 	// BuildProcessors the pipeline
 	allExporters, err := NewExportersBuilder(zap.NewNop(), cfg, factories.Exporters).Build()
 	assert.NoError(t, err)
-	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), cfg, allExporters, factories.Processors, nil).Build()
+	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), cfg, allExporters, factories.Processors).Build()
 
 	assert.NoError(t, err)
 	require.NotNil(t, pipelineProcessors)
@@ -181,7 +181,7 @@ func TestPipelinesBuilder_Error(t *testing.T) {
 
 	// This should fail because "attributes" processor defined in the config does
 	// not support metrics data type.
-	_, err = NewPipelinesBuilder(zap.NewNop(), cfg, exporters, factories.Processors, nil).Build()
+	_, err = NewPipelinesBuilder(zap.NewNop(), cfg, exporters, factories.Processors).Build()
 
 	assert.NotNil(t, err)
 }
@@ -204,7 +204,7 @@ func TestProcessorsBuilder_ErrorOnNilProcessor(t *testing.T) {
 	delete(cfg.Service.Pipelines, "metrics")
 	require.Equal(t, 1, len(cfg.Service.Pipelines))
 
-	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), cfg, allExporters, factories.Processors, nil).Build()
+	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), cfg, allExporters, factories.Processors).Build()
 	assert.Error(t, err)
 	assert.Zero(t, len(pipelineProcessors))
 
@@ -213,7 +213,7 @@ func TestProcessorsBuilder_ErrorOnNilProcessor(t *testing.T) {
 	cfg.Service.Pipelines["metrics"] = metricsPipeline
 	require.Equal(t, 1, len(cfg.Service.Pipelines))
 
-	pipelineProcessors, err = NewPipelinesBuilder(zap.NewNop(), cfg, allExporters, factories.Processors, nil).Build()
+	pipelineProcessors, err = NewPipelinesBuilder(zap.NewNop(), cfg, allExporters, factories.Processors).Build()
 	assert.Error(t, err)
 	assert.Zero(t, len(pipelineProcessors))
 }

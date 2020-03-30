@@ -55,7 +55,7 @@ type aggregatingProcessor struct {
 	selfIP string
 	// ticker to call ring.GetState() and sync member list
 	memberSyncTicker tTicker
-	// stores queues for each of the collector peers
+	// exporters for each of the collector peers
 	collectorPeers map[string]component.TraceExporterOld
 }
 
@@ -66,15 +66,14 @@ func newTraceProcessor(logger *zap.Logger, nextConsumer consumer.TraceConsumerOl
 		return nil, oterr.ErrNilNextConsumer
 	}
 
-	peerDiscoveryName := "jaeger-agent.default.svc.cluster.local"
 	if cfg.PeerDiscoveryDNSName != "" {
-		peerDiscoveryName = cfg.PeerDiscoveryDNSName
+		return nil, fmt.Errorf("Peer discovery DNS name not provided")
 	}
 
 	ap := &aggregatingProcessor{
 		nextConsumer:      nextConsumer,
 		logger:            logger,
-		peerDiscoveryName: peerDiscoveryName,
+		peerDiscoveryName: cfg.PeerDiscoveryDNSName,
 		collectorPeers:    make(map[string]component.TraceExporterOld),
 	}
 

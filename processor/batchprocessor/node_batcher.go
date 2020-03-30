@@ -104,7 +104,6 @@ func NewBatcher(name string, logger *zap.Logger, sender consumer.TraceConsumerOl
 // ConsumeTraceData implements batcher as a SpanProcessor and takes the provided spans and adds them to
 // batches
 func (b *batcher) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
-	b.logger.Debug("Processing data in batch processor", zap.Int("Span count", len(td.Spans)))
 	bucketID := b.genBucketID(td.Node, td.Resource, td.SourceFormat)
 	bucket := b.getOrAddBucket(bucketID, td.Node, td.Resource, td.SourceFormat)
 	bucket.add(td.Spans)

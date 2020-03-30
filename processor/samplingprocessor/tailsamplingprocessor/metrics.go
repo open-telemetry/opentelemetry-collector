@@ -37,15 +37,11 @@ var (
 
 	statPolicyEvaluationErrorCount = stats.Int64("sampling_policy_evaluation_error", "Count of sampling policy evaluation errors", stats.UnitDimensionless)
 
-	statCountTracesSampled    = stats.Int64("count_traces_sampled", "Count of traces that were sampled", stats.UnitDimensionless)
-	statCountTracesNotSampled = stats.Int64("count_traces_not_sampled", "Count of traces that were not sampled", stats.UnitDimensionless)
+	statCountTracesSampled = stats.Int64("count_traces_sampled", "Count of traces that were sampled or not", stats.UnitDimensionless)
 
 	statDroppedTooEarlyCount    = stats.Int64("sampling_trace_dropped_too_early", "Count of traces that needed to be dropped the configured wait time", stats.UnitDimensionless)
 	statNewTraceIDReceivedCount = stats.Int64("new_trace_id_received", "Counts the arrival of new traces", stats.UnitDimensionless)
 	statTracesOnMemoryGauge     = stats.Int64("sampling_traces_on_memory", "Tracks the number of traces current on memory", stats.UnitDimensionless)
-
-	statCountSpansForwarded     = stats.Int64("count_spans_forwarded", "Count of spans that were forwarded to a collector peer", stats.UnitDimensionless)
-	statCountForwardedSpansRcvd = stats.Int64("count_hopped_spans", "Count of spans that were received after a hop (forwarded by a peer)", stats.UnitDimensionless)
 )
 
 // SamplingProcessorMetricViews return the metrics views according to given telemetry level.
@@ -101,13 +97,6 @@ func SamplingProcessorMetricViews(level telemetry.Level) []*view.View {
 		TagKeys:     sampledTagKeys,
 		Aggregation: view.Sum(),
 	}
-	countTracesNotSampledView := &view.View{
-		Name:        statCountTracesNotSampled.Name(),
-		Measure:     statCountTracesNotSampled,
-		Description: statCountTracesNotSampled.Description(),
-		TagKeys:     sampledTagKeys,
-		Aggregation: view.Sum(),
-	}
 
 	countTraceDroppedTooEarlyView := &view.View{
 		Name:        statDroppedTooEarlyCount.Name(),
@@ -128,20 +117,6 @@ func SamplingProcessorMetricViews(level telemetry.Level) []*view.View {
 		Aggregation: view.LastValue(),
 	}
 
-	countSpansForwardedView := &view.View{
-		Name:        statCountSpansForwarded.Name(),
-		Measure:     statCountSpansForwarded,
-		Description: statCountSpansForwarded.Description(),
-		Aggregation: view.Sum(),
-	}
-
-	countForwardedSpansRcvdView := &view.View{
-		Name:        statCountForwardedSpansRcvd.Name(),
-		Measure:     statCountForwardedSpansRcvd,
-		Description: statCountForwardedSpansRcvd.Description(),
-		Aggregation: view.Sum(),
-	}
-
 	legacyViews := []*view.View{
 		decisionLatencyView,
 		overallDecisionLatencyView,
@@ -152,14 +127,10 @@ func SamplingProcessorMetricViews(level telemetry.Level) []*view.View {
 		countPolicyEvaluationErrorView,
 
 		countTracesSampledView,
-		countTracesNotSampledView,
 
 		countTraceDroppedTooEarlyView,
 		countTraceIDArrivalView,
 		trackTracesOnMemorylView,
-
-		countSpansForwardedView,
-		countForwardedSpansRcvdView,
 	}
 
 	return obsreport.ProcessorMetricViews(typeStr, legacyViews)

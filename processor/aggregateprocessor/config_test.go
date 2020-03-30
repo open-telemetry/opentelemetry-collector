@@ -42,6 +42,6 @@ func TestLoadingConifg(t *testing.T) {
 			NameVal: "aggregate",
 			TypeVal: typeStr,
 		},
-		PeerDiscoveryDNSName: "jaeger-agent.my-ns.svc.cluster.local",
+		PeerDiscoveryDNSName: "otel-agent.my-ns.svc.cluster.local",
 	})
 }

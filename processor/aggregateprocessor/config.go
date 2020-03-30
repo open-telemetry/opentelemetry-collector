@@ -24,6 +24,5 @@ type Config struct {
 	configmodels.ProcessorSettings `mapstructure:",squash"`
 
 	// DNS name used to discover peers
-	// The default value is jaeger-agent.default.svc.cluster.local
 	PeerDiscoveryDNSName string `mapstructure:"peer_discovery_dns_name"`
 }

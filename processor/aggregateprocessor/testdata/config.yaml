@@ -6,7 +6,7 @@ exporters:
 
 processors:
   aggregate:
-    peer_discovery_dns_name: "jaeger-agent.my-ns.svc.cluster.local"
+    peer_discovery_dns_name: "otel-agent.my-ns.svc.cluster.local"
 
 
 service:

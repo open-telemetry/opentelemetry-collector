@@ -31,7 +31,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
-	"github.com/open-telemetry/opentelemetry-collector/processor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/samplingprocessor/tailsamplingprocessor/idbatcher"
 	"github.com/open-telemetry/opentelemetry-collector/processor/samplingprocessor/tailsamplingprocessor/sampling"
 )
@@ -186,7 +185,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 				stats.RecordWithTags(
 					policy.ctx,
 					[]tag.Mutator{tag.Insert(tagSampledKey, "false")},
-					statCountTracesNotSampled.M(int64(1)),
+					statCountTracesSampled.M(int64(1)),
 				)
 				decisionNotSampled++
 			}
@@ -219,9 +218,6 @@ func (tsp *tailSamplingSpanProcessor) ConsumeTraceData(ctx context.Context, td c
 		tsp.logger.Info("First trace data arrived, starting tail_sampling timers")
 		tsp.policyTicker.Start(1 * time.Second)
 	})
-
-	statsTags := processor.StatsTagsForBatch("tail_sampling_processor", processor.ServiceNameForNode(td.Node), td.SourceFormat)
-	stats.RecordWithTags(context.Background(), statsTags, processor.StatReceivedSpanCount.M(int64(len(td.Spans))))
 
 	// Groupd spans per their traceId to minimize contention on idToTrace
 	idToSpans := make(map[traceKey][]*tracepb.Span)
