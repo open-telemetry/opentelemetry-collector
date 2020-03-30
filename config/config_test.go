@@ -366,7 +366,6 @@ func TestDecodeConfig_Invalid(t *testing.T) {
 		{name: "pipeline-must-have-receiver", expected: errPipelineMustHaveReceiver},
 		{name: "pipeline-exporter-not-exists", expected: errPipelineExporterNotExists},
 		{name: "pipeline-processor-not-exists", expected: errPipelineProcessorNotExists},
-		{name: "pipeline-must-have-processors", expected: errPipelineMustHaveProcessors},
 		{name: "unknown-extension-type", expected: errUnknownExtensionType},
 		{name: "unknown-receiver-type", expected: errUnknownReceiverType},
 		{name: "unknown-exporter-type", expected: errUnknownExporterType},
