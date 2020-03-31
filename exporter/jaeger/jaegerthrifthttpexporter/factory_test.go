@@ -98,7 +98,7 @@ func TestFactory_CreateTraceExporterFails(t *testing.T) {
 					NameVal: typeStr,
 				},
 			},
-			errorMessage: "\"jaeger_thrift_http\" config requires a valid \"url\": parse : empty url",
+			errorMessage: "\"jaeger_thrift_http\" config requires a valid \"url\": parse \"\": empty url",
 		},
 		{
 			name: "invalid_url",
@@ -109,7 +109,7 @@ func TestFactory_CreateTraceExporterFails(t *testing.T) {
 				},
 				URL: ".localhost:123",
 			},
-			errorMessage: "\"jaeger_thrift_http\" config requires a valid \"url\": parse .localhost:123: invalid URI for request",
+			errorMessage: "\"jaeger_thrift_http\" config requires a valid \"url\": parse \".localhost:123\": invalid URI for request",
 		},
 		{
 			name: "negative_duration",
