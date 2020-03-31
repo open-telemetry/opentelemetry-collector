@@ -159,6 +159,9 @@ func addLabelKeys(keySet map[string]struct{}, labels data.StringMap) {
 }
 
 func descriptorToOC(descriptor data.MetricDescriptor, labelKeys *labelKeys) *ocmetrics.MetricDescriptor {
+	if descriptor.IsNil() {
+		return nil
+	}
 	return &ocmetrics.MetricDescriptor{
 		Name:        descriptor.Name(),
 		Description: descriptor.Description(),
@@ -305,6 +308,9 @@ func histogramBucketsToOC(buckets data.HistogramBucketSlice) []*ocmetrics.Distri
 }
 
 func exemplarToOC(exemplar data.HistogramBucketExemplar) *ocmetrics.DistributionValue_Exemplar {
+	if exemplar.IsNil() {
+		return nil
+	}
 	attachments := exemplar.Attachments()
 	if attachments.Len() == 0 {
 		return &ocmetrics.DistributionValue_Exemplar{

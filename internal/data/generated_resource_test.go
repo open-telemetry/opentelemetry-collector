@@ -25,8 +25,9 @@ import (
 )
 
 func TestResource(t *testing.T) {
-	ms := NewResource()
-	assert.EqualValues(t, newResource(&otlpresource.Resource{}), ms)
+	assert.EqualValues(t, true, newResource(nil).IsNil())
+	ms := newResource(&otlpresource.Resource{})
+	assert.EqualValues(t, false, ms.IsNil())
 
 	assert.EqualValues(t, NewAttributeMap(nil), ms.Attributes())
 	testValAttributes := generateTestAttributeMap()
@@ -37,7 +38,11 @@ func TestResource(t *testing.T) {
 }
 
 func generateTestResource() Resource {
-	tv := NewResource()
-	tv.SetAttributes(generateTestAttributeMap())
+	tv := newResource(&otlpresource.Resource{})
+	fillTestResource(tv)
 	return tv
+}
+
+func fillTestResource(tv Resource) {
+	tv.SetAttributes(generateTestAttributeMap())
 }

@@ -163,9 +163,6 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 							},
 						},
 					},
-					// TODO: Remove this after PR:691 is merged
-					// https://github.com/open-telemetry/opentelemetry-collector/pull/691
-					Status: &octrace.Status{},
 				},
 			},
 			SourceFormat: "otlp_trace",

@@ -49,7 +49,9 @@ func GenerateMetricDataOneEmptyResourceMetrics() data.MetricData {
 
 func GenerateMetricDataNoLibraries() data.MetricData {
 	md := GenerateMetricDataOneEmptyResourceMetrics()
-	md.ResourceMetrics().Get(0).Resource().SetAttributes(generateResourceAttributes1())
+	ms0 := md.ResourceMetrics().Get(0)
+	ms0.InitResourceIfNil()
+	fillResource1(ms0.Resource())
 	return md
 }
 
@@ -64,18 +66,25 @@ func GenerateMetricDataAllTypesNoDataPoints() data.MetricData {
 	ilm0 := md.ResourceMetrics().Get(0).InstrumentationLibraryMetrics().Get(0)
 	ilm0.SetMetrics(data.NewMetricSlice(7))
 	ms := ilm0.Metrics()
+	ms.Get(0).InitMetricDescriptorIfNil()
 	fillMetricDescriptor(
 		ms.Get(0).MetricDescriptor(), TestGaugeDoubleMetricName, data.MetricTypeGaugeDouble)
+	ms.Get(1).InitMetricDescriptorIfNil()
 	fillMetricDescriptor(
 		ms.Get(1).MetricDescriptor(), TestGaugeIntMetricName, data.MetricTypeGaugeInt64)
+	ms.Get(2).InitMetricDescriptorIfNil()
 	fillMetricDescriptor(
 		ms.Get(2).MetricDescriptor(), TestCounterDoubleMetricName, data.MetricTypeCounterDouble)
+	ms.Get(3).InitMetricDescriptorIfNil()
 	fillMetricDescriptor(
 		ms.Get(3).MetricDescriptor(), TestCounterIntMetricName, data.MetricTypeCounterInt64)
+	ms.Get(4).InitMetricDescriptorIfNil()
 	fillMetricDescriptor(
 		ms.Get(4).MetricDescriptor(), TestGaugeHistogramMetricName, data.MetricTypeGaugeHistogram)
+	ms.Get(5).InitMetricDescriptorIfNil()
 	fillMetricDescriptor(
 		ms.Get(5).MetricDescriptor(), TestCumulativeHistogramMetricName, data.MetricTypeCumulativeHistogram)
+	ms.Get(6).InitMetricDescriptorIfNil()
 	fillMetricDescriptor(
 		ms.Get(6).MetricDescriptor(), TestSummaryMetricName, data.MetricTypeSummary)
 	return md
@@ -87,7 +96,8 @@ func GenerateMetricDataWithCountersHistogramAndSummary() data.MetricData {
 
 	rms := metricData.ResourceMetrics()
 	rms.Get(0).SetInstrumentationLibraryMetrics(data.NewInstrumentationLibraryMetricsSlice(1))
-	rms.Get(0).Resource().SetAttributes(generateResourceAttributes1())
+	rms.Get(0).InitResourceIfNil()
+	fillResource1(rms.Get(0).Resource())
 
 	ilms := rms.Get(0).InstrumentationLibraryMetrics()
 	ilms.Get(0).SetMetrics(data.NewMetricSlice(4))
@@ -128,7 +138,9 @@ func GenerateMetricDataTwoMetrics() data.MetricData {
 }
 
 func fillCounterIntMetric(im data.Metric) {
+	im.InitMetricDescriptorIfNil()
 	fillMetricDescriptor(im.MetricDescriptor(), TestCounterIntMetricName, data.MetricTypeCounterInt64)
+
 	im.SetInt64DataPoints(data.NewInt64DataPointSlice(2))
 	idp0 := im.Int64DataPoints().Get(0)
 	idp0.SetLabelsMap(data.NewStringMap(map[string]string{"int-label-1": "int-label-value-1"}))
@@ -143,8 +155,10 @@ func fillCounterIntMetric(im data.Metric) {
 }
 
 func fillCounterDoubleMetric(dm data.Metric) {
-	dm.SetDoubleDataPoints(data.NewDoubleDataPointSlice(1))
+	dm.InitMetricDescriptorIfNil()
 	fillMetricDescriptor(dm.MetricDescriptor(), TestCounterDoubleMetricName, data.MetricTypeCounterDouble)
+
+	dm.SetDoubleDataPoints(data.NewDoubleDataPointSlice(1))
 	ddp0 := dm.DoubleDataPoints().Get(0)
 	ddp0.SetStartTime(TestMetricStartTimestamp)
 	ddp0.SetTimestamp(TestMetricTimestamp)
@@ -152,9 +166,10 @@ func fillCounterDoubleMetric(dm data.Metric) {
 }
 
 func fillCumulativeHistogramMetric(hm data.Metric) {
-	hm.SetHistogramDataPoints(data.NewHistogramDataPointSlice(2))
+	hm.InitMetricDescriptorIfNil()
 	fillMetricDescriptor(hm.MetricDescriptor(), TestCumulativeHistogramMetricName, data.MetricTypeCumulativeHistogram)
 
+	hm.SetHistogramDataPoints(data.NewHistogramDataPointSlice(2))
 	hdp0 := hm.HistogramDataPoints().Get(0)
 	hdp0.SetLabelsMap(data.NewStringMap(map[string]string{
 		"histogram-label-1": "histogram-label-value-1",
@@ -175,6 +190,7 @@ func fillCumulativeHistogramMetric(hm data.Metric) {
 	hdp1.SetBuckets(data.NewHistogramBucketSlice(2))
 	hdp1.Buckets().Get(0).SetCount(0)
 	hdp1.Buckets().Get(1).SetCount(1)
+	hdp1.Buckets().Get(1).InitExemplarIfNil()
 	hdp1.Buckets().Get(1).Exemplar().SetTimestamp(TestMetricExemplarTimestamp)
 	hdp1.Buckets().Get(1).Exemplar().SetValue(15)
 	hdp1.Buckets().Get(1).Exemplar().SetAttachments(data.NewStringMap(map[string]string{
@@ -184,9 +200,10 @@ func fillCumulativeHistogramMetric(hm data.Metric) {
 }
 
 func fillSummaryMetric(sm data.Metric) {
-	sm.SetSummaryDataPoints(data.NewSummaryDataPointSlice(2))
+	sm.InitMetricDescriptorIfNil()
 	fillMetricDescriptor(sm.MetricDescriptor(), TestSummaryMetricName, data.MetricTypeSummary)
 
+	sm.SetSummaryDataPoints(data.NewSummaryDataPointSlice(2))
 	sdps := sm.SummaryDataPoints()
 	sdp0 := sdps.Get(0)
 	sdp0.SetLabelsMap(data.NewStringMap(map[string]string{

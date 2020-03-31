@@ -33,15 +33,15 @@ import (
 )
 
 func TestOcNodeResourceToInternal(t *testing.T) {
-	resourceSpans := data.NewResourceSpans()
+	resourceSpans := data.NewEmptyResourceSpans()
 	ocNodeResourceToInternal(nil, nil, resourceSpans)
-	assert.EqualValues(t, data.NewResource(), resourceSpans.Resource())
+	assert.EqualValues(t, true, resourceSpans.Resource().IsNil())
 
-	resourceSpans = data.NewResourceSpans()
+	resourceSpans = data.NewEmptyResourceSpans()
 	ocNode := &occommon.Node{}
 	ocResource := &ocresource.Resource{}
 	ocNodeResourceToInternal(ocNode, ocResource, resourceSpans)
-	assert.EqualValues(t, data.NewResource(), resourceSpans.Resource())
+	assert.EqualValues(t, true, resourceSpans.Resource().IsNil())
 
 	ts, err := ptypes.TimestampProto(time.Date(2020, 2, 11, 20, 26, 0, 0, time.UTC))
 	assert.NoError(t, err)
@@ -83,7 +83,7 @@ func TestOcNodeResourceToInternal(t *testing.T) {
 		"resource-attr":                         data.NewAttributeValueString("val2"),
 	})
 
-	resourceSpans = data.NewResourceSpans()
+	resourceSpans = data.NewEmptyResourceSpans()
 	ocNodeResourceToInternal(ocNode, ocResource, resourceSpans)
 	assert.EqualValues(t, expectedAttrs.Sort(), resourceSpans.Resource().Attributes().Sort())
 
@@ -99,7 +99,7 @@ func TestOcNodeResourceToInternal(t *testing.T) {
 	ocResource.Labels[conventions.OCAttributeResourceType] = "this will be overridden 2"
 
 	// Convert again.
-	resourceSpans = data.NewResourceSpans()
+	resourceSpans = data.NewEmptyResourceSpans()
 	ocNodeResourceToInternal(ocNode, ocResource, resourceSpans)
 	// And verify that same-name attributes were ignored.
 	assert.EqualValues(t, expectedAttrs.Sort(), resourceSpans.Resource().Attributes().Sort())

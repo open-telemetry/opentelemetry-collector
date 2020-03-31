@@ -95,42 +95,57 @@ func (es ResourceMetricsSlice) Resize(from, to int) {
 // This is a reference type, if passsed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewResourceMetrics function to create new instances.
+// Must use NewEmptyResourceMetrics function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ResourceMetrics struct {
 	// Wrap OTLP otlpmetrics.ResourceMetrics.
 	orig *otlpmetrics.ResourceMetrics
 }
 
-// NewResourceMetrics creates a new empty ResourceMetrics.
-func NewResourceMetrics() ResourceMetrics {
-	return ResourceMetrics{&otlpmetrics.ResourceMetrics{}}
-}
-
 func newResourceMetrics(orig *otlpmetrics.ResourceMetrics) ResourceMetrics {
 	return ResourceMetrics{orig}
 }
 
+// NewEmptyResourceMetrics creates a new empty ResourceMetrics.
+//
+// This must be used only in testing code since no "Set" method available.
+func NewEmptyResourceMetrics() ResourceMetrics {
+	return newResourceMetrics(&otlpmetrics.ResourceMetrics{})
+}
+
+// IsNil returns true if the underlying data are nil.
+// 
+// Important: All other functions will cause a runtime error if this returns "true".
+func (ms ResourceMetrics) IsNil() bool {
+	return ms.orig == nil
+}
+
 // Resource returns the resource associated with this ResourceMetrics.
+// If no resource available, it creates an empty message and associates it with this ResourceMetrics.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms ResourceMetrics) Resource() Resource {
-	if ms.orig.Resource == nil {
-		// No Resource available, initialize one to make all operations on Resource available.
-		ms.orig.Resource = &otlpresource.Resource{}
-	}
 	return newResource(ms.orig.Resource)
 }
 
-// SetResource replaces the resource associated with this ResourceMetrics.
-func (ms ResourceMetrics) SetResource(v Resource) {
-	ms.orig.Resource = v.orig
+// InitResourceIfNil() initialize the resource with an empty message if and only if
+// the current value is "nil".
+func (ms ResourceMetrics) InitResourceIfNil() {
+	if ms.orig.Resource == nil {
+		ms.orig.Resource = &otlpresource.Resource{}
+	}
 }
 
 // InstrumentationLibraryMetrics returns the InstrumentationLibraryMetrics associated with this ResourceMetrics.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms ResourceMetrics) InstrumentationLibraryMetrics() InstrumentationLibraryMetricsSlice {
 	return newInstrumentationLibraryMetricsSlice(&ms.orig.InstrumentationLibraryMetrics)
 }
 
 // SetInstrumentationLibraryMetrics replaces the InstrumentationLibraryMetrics associated with this ResourceMetrics.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms ResourceMetrics) SetInstrumentationLibraryMetrics(v InstrumentationLibraryMetricsSlice) {
 	ms.orig.InstrumentationLibraryMetrics = *v.orig
 }
@@ -207,42 +222,57 @@ func (es InstrumentationLibraryMetricsSlice) Resize(from, to int) {
 // This is a reference type, if passsed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewInstrumentationLibraryMetrics function to create new instances.
+// Must use NewEmptyInstrumentationLibraryMetrics function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type InstrumentationLibraryMetrics struct {
 	// Wrap OTLP otlpmetrics.InstrumentationLibraryMetrics.
 	orig *otlpmetrics.InstrumentationLibraryMetrics
 }
 
-// NewInstrumentationLibraryMetrics creates a new empty InstrumentationLibraryMetrics.
-func NewInstrumentationLibraryMetrics() InstrumentationLibraryMetrics {
-	return InstrumentationLibraryMetrics{&otlpmetrics.InstrumentationLibraryMetrics{}}
-}
-
 func newInstrumentationLibraryMetrics(orig *otlpmetrics.InstrumentationLibraryMetrics) InstrumentationLibraryMetrics {
 	return InstrumentationLibraryMetrics{orig}
 }
 
+// NewEmptyInstrumentationLibraryMetrics creates a new empty InstrumentationLibraryMetrics.
+//
+// This must be used only in testing code since no "Set" method available.
+func NewEmptyInstrumentationLibraryMetrics() InstrumentationLibraryMetrics {
+	return newInstrumentationLibraryMetrics(&otlpmetrics.InstrumentationLibraryMetrics{})
+}
+
+// IsNil returns true if the underlying data are nil.
+// 
+// Important: All other functions will cause a runtime error if this returns "true".
+func (ms InstrumentationLibraryMetrics) IsNil() bool {
+	return ms.orig == nil
+}
+
 // InstrumentationLibrary returns the instrumentationlibrary associated with this InstrumentationLibraryMetrics.
+// If no instrumentationlibrary available, it creates an empty message and associates it with this InstrumentationLibraryMetrics.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms InstrumentationLibraryMetrics) InstrumentationLibrary() InstrumentationLibrary {
-	if ms.orig.InstrumentationLibrary == nil {
-		// No InstrumentationLibrary available, initialize one to make all operations on InstrumentationLibrary available.
-		ms.orig.InstrumentationLibrary = &otlpcommon.InstrumentationLibrary{}
-	}
 	return newInstrumentationLibrary(ms.orig.InstrumentationLibrary)
 }
 
-// SetInstrumentationLibrary replaces the instrumentationlibrary associated with this InstrumentationLibraryMetrics.
-func (ms InstrumentationLibraryMetrics) SetInstrumentationLibrary(v InstrumentationLibrary) {
-	ms.orig.InstrumentationLibrary = v.orig
+// InitInstrumentationLibraryIfNil() initialize the instrumentationlibrary with an empty message if and only if
+// the current value is "nil".
+func (ms InstrumentationLibraryMetrics) InitInstrumentationLibraryIfNil() {
+	if ms.orig.InstrumentationLibrary == nil {
+		ms.orig.InstrumentationLibrary = &otlpcommon.InstrumentationLibrary{}
+	}
 }
 
 // Metrics returns the Metrics associated with this InstrumentationLibraryMetrics.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms InstrumentationLibraryMetrics) Metrics() MetricSlice {
 	return newMetricSlice(&ms.orig.Metrics)
 }
 
 // SetMetrics replaces the Metrics associated with this InstrumentationLibraryMetrics.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms InstrumentationLibraryMetrics) SetMetrics(v MetricSlice) {
 	ms.orig.Metrics = *v.orig
 }
@@ -319,72 +349,99 @@ func (es MetricSlice) Resize(from, to int) {
 // This is a reference type, if passsed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewMetric function to create new instances.
+// Must use NewEmptyMetric function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Metric struct {
 	// Wrap OTLP otlpmetrics.Metric.
 	orig *otlpmetrics.Metric
 }
 
-// NewMetric creates a new empty Metric.
-func NewMetric() Metric {
-	return Metric{&otlpmetrics.Metric{}}
-}
-
 func newMetric(orig *otlpmetrics.Metric) Metric {
 	return Metric{orig}
 }
 
+// NewEmptyMetric creates a new empty Metric.
+//
+// This must be used only in testing code since no "Set" method available.
+func NewEmptyMetric() Metric {
+	return newMetric(&otlpmetrics.Metric{})
+}
+
+// IsNil returns true if the underlying data are nil.
+// 
+// Important: All other functions will cause a runtime error if this returns "true".
+func (ms Metric) IsNil() bool {
+	return ms.orig == nil
+}
+
 // MetricDescriptor returns the metricdescriptor associated with this Metric.
+// If no metricdescriptor available, it creates an empty message and associates it with this Metric.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Metric) MetricDescriptor() MetricDescriptor {
-	if ms.orig.MetricDescriptor == nil {
-		// No MetricDescriptor available, initialize one to make all operations on MetricDescriptor available.
-		ms.orig.MetricDescriptor = &otlpmetrics.MetricDescriptor{}
-	}
 	return newMetricDescriptor(ms.orig.MetricDescriptor)
 }
 
-// SetMetricDescriptor replaces the metricdescriptor associated with this Metric.
-func (ms Metric) SetMetricDescriptor(v MetricDescriptor) {
-	ms.orig.MetricDescriptor = v.orig
+// InitMetricDescriptorIfNil() initialize the metricdescriptor with an empty message if and only if
+// the current value is "nil".
+func (ms Metric) InitMetricDescriptorIfNil() {
+	if ms.orig.MetricDescriptor == nil {
+		ms.orig.MetricDescriptor = &otlpmetrics.MetricDescriptor{}
+	}
 }
 
 // Int64DataPoints returns the Int64DataPoints associated with this Metric.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Metric) Int64DataPoints() Int64DataPointSlice {
 	return newInt64DataPointSlice(&ms.orig.Int64DataPoints)
 }
 
 // SetInt64DataPoints replaces the Int64DataPoints associated with this Metric.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Metric) SetInt64DataPoints(v Int64DataPointSlice) {
 	ms.orig.Int64DataPoints = *v.orig
 }
 
 // DoubleDataPoints returns the DoubleDataPoints associated with this Metric.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Metric) DoubleDataPoints() DoubleDataPointSlice {
 	return newDoubleDataPointSlice(&ms.orig.DoubleDataPoints)
 }
 
 // SetDoubleDataPoints replaces the DoubleDataPoints associated with this Metric.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Metric) SetDoubleDataPoints(v DoubleDataPointSlice) {
 	ms.orig.DoubleDataPoints = *v.orig
 }
 
 // HistogramDataPoints returns the HistogramDataPoints associated with this Metric.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Metric) HistogramDataPoints() HistogramDataPointSlice {
 	return newHistogramDataPointSlice(&ms.orig.HistogramDataPoints)
 }
 
 // SetHistogramDataPoints replaces the HistogramDataPoints associated with this Metric.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Metric) SetHistogramDataPoints(v HistogramDataPointSlice) {
 	ms.orig.HistogramDataPoints = *v.orig
 }
 
 // SummaryDataPoints returns the SummaryDataPoints associated with this Metric.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Metric) SummaryDataPoints() SummaryDataPointSlice {
 	return newSummaryDataPointSlice(&ms.orig.SummaryDataPoints)
 }
 
 // SetSummaryDataPoints replaces the SummaryDataPoints associated with this Metric.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Metric) SetSummaryDataPoints(v SummaryDataPointSlice) {
 	ms.orig.SummaryDataPoints = *v.orig
 }
@@ -394,68 +451,97 @@ func (ms Metric) SetSummaryDataPoints(v SummaryDataPointSlice) {
 // This is a reference type, if passsed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewMetricDescriptor function to create new instances.
+// Must use NewEmptyMetricDescriptor function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type MetricDescriptor struct {
 	// Wrap OTLP otlpmetrics.MetricDescriptor.
 	orig *otlpmetrics.MetricDescriptor
 }
 
-// NewMetricDescriptor creates a new empty MetricDescriptor.
-func NewMetricDescriptor() MetricDescriptor {
-	return MetricDescriptor{&otlpmetrics.MetricDescriptor{}}
-}
-
 func newMetricDescriptor(orig *otlpmetrics.MetricDescriptor) MetricDescriptor {
 	return MetricDescriptor{orig}
 }
 
+// NewEmptyMetricDescriptor creates a new empty MetricDescriptor.
+//
+// This must be used only in testing code since no "Set" method available.
+func NewEmptyMetricDescriptor() MetricDescriptor {
+	return newMetricDescriptor(&otlpmetrics.MetricDescriptor{})
+}
+
+// IsNil returns true if the underlying data are nil.
+// 
+// Important: All other functions will cause a runtime error if this returns "true".
+func (ms MetricDescriptor) IsNil() bool {
+	return ms.orig == nil
+}
+
 // Name returns the name associated with this MetricDescriptor.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms MetricDescriptor) Name() string {
 	return ms.orig.Name
 }
 
 // SetName replaces the name associated with this MetricDescriptor.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms MetricDescriptor) SetName(v string) {
 	ms.orig.Name = v
 }
 
 // Description returns the description associated with this MetricDescriptor.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms MetricDescriptor) Description() string {
 	return ms.orig.Description
 }
 
 // SetDescription replaces the description associated with this MetricDescriptor.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms MetricDescriptor) SetDescription(v string) {
 	ms.orig.Description = v
 }
 
 // Unit returns the unit associated with this MetricDescriptor.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms MetricDescriptor) Unit() string {
 	return ms.orig.Unit
 }
 
 // SetUnit replaces the unit associated with this MetricDescriptor.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms MetricDescriptor) SetUnit(v string) {
 	ms.orig.Unit = v
 }
 
 // Type returns the type associated with this MetricDescriptor.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms MetricDescriptor) Type() MetricType {
 	return MetricType(ms.orig.Type)
 }
 
 // SetType replaces the type associated with this MetricDescriptor.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms MetricDescriptor) SetType(v MetricType) {
 	ms.orig.Type = otlpmetrics.MetricDescriptor_Type(v)
 }
 
 // LabelsMap returns the Labels associated with this MetricDescriptor.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms MetricDescriptor) LabelsMap() StringMap {
 	return newStringMap(&ms.orig.Labels)
 }
 
 // SetLabelsMap replaces the Labels associated with this MetricDescriptor.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms MetricDescriptor) SetLabelsMap(v StringMap) {
 	ms.orig.Labels = *v.orig
 }
@@ -532,58 +618,83 @@ func (es Int64DataPointSlice) Resize(from, to int) {
 // This is a reference type, if passsed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewInt64DataPoint function to create new instances.
+// Must use NewEmptyInt64DataPoint function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Int64DataPoint struct {
 	// Wrap OTLP otlpmetrics.Int64DataPoint.
 	orig *otlpmetrics.Int64DataPoint
 }
 
-// NewInt64DataPoint creates a new empty Int64DataPoint.
-func NewInt64DataPoint() Int64DataPoint {
-	return Int64DataPoint{&otlpmetrics.Int64DataPoint{}}
-}
-
 func newInt64DataPoint(orig *otlpmetrics.Int64DataPoint) Int64DataPoint {
 	return Int64DataPoint{orig}
 }
 
+// NewEmptyInt64DataPoint creates a new empty Int64DataPoint.
+//
+// This must be used only in testing code since no "Set" method available.
+func NewEmptyInt64DataPoint() Int64DataPoint {
+	return newInt64DataPoint(&otlpmetrics.Int64DataPoint{})
+}
+
+// IsNil returns true if the underlying data are nil.
+// 
+// Important: All other functions will cause a runtime error if this returns "true".
+func (ms Int64DataPoint) IsNil() bool {
+	return ms.orig == nil
+}
+
 // LabelsMap returns the Labels associated with this Int64DataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Int64DataPoint) LabelsMap() StringMap {
 	return newStringMap(&ms.orig.Labels)
 }
 
 // SetLabelsMap replaces the Labels associated with this Int64DataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Int64DataPoint) SetLabelsMap(v StringMap) {
 	ms.orig.Labels = *v.orig
 }
 
 // StartTime returns the starttime associated with this Int64DataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Int64DataPoint) StartTime() TimestampUnixNano {
 	return TimestampUnixNano(ms.orig.StartTimeUnixNano)
 }
 
 // SetStartTime replaces the starttime associated with this Int64DataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Int64DataPoint) SetStartTime(v TimestampUnixNano) {
 	ms.orig.StartTimeUnixNano = uint64(v)
 }
 
 // Timestamp returns the timestamp associated with this Int64DataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Int64DataPoint) Timestamp() TimestampUnixNano {
 	return TimestampUnixNano(ms.orig.TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this Int64DataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Int64DataPoint) SetTimestamp(v TimestampUnixNano) {
 	ms.orig.TimeUnixNano = uint64(v)
 }
 
 // Value returns the value associated with this Int64DataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Int64DataPoint) Value() int64 {
 	return ms.orig.Value
 }
 
 // SetValue replaces the value associated with this Int64DataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Int64DataPoint) SetValue(v int64) {
 	ms.orig.Value = v
 }
@@ -660,58 +771,83 @@ func (es DoubleDataPointSlice) Resize(from, to int) {
 // This is a reference type, if passsed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewDoubleDataPoint function to create new instances.
+// Must use NewEmptyDoubleDataPoint function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type DoubleDataPoint struct {
 	// Wrap OTLP otlpmetrics.DoubleDataPoint.
 	orig *otlpmetrics.DoubleDataPoint
 }
 
-// NewDoubleDataPoint creates a new empty DoubleDataPoint.
-func NewDoubleDataPoint() DoubleDataPoint {
-	return DoubleDataPoint{&otlpmetrics.DoubleDataPoint{}}
-}
-
 func newDoubleDataPoint(orig *otlpmetrics.DoubleDataPoint) DoubleDataPoint {
 	return DoubleDataPoint{orig}
 }
 
+// NewEmptyDoubleDataPoint creates a new empty DoubleDataPoint.
+//
+// This must be used only in testing code since no "Set" method available.
+func NewEmptyDoubleDataPoint() DoubleDataPoint {
+	return newDoubleDataPoint(&otlpmetrics.DoubleDataPoint{})
+}
+
+// IsNil returns true if the underlying data are nil.
+// 
+// Important: All other functions will cause a runtime error if this returns "true".
+func (ms DoubleDataPoint) IsNil() bool {
+	return ms.orig == nil
+}
+
 // LabelsMap returns the Labels associated with this DoubleDataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms DoubleDataPoint) LabelsMap() StringMap {
 	return newStringMap(&ms.orig.Labels)
 }
 
 // SetLabelsMap replaces the Labels associated with this DoubleDataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms DoubleDataPoint) SetLabelsMap(v StringMap) {
 	ms.orig.Labels = *v.orig
 }
 
 // StartTime returns the starttime associated with this DoubleDataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms DoubleDataPoint) StartTime() TimestampUnixNano {
 	return TimestampUnixNano(ms.orig.StartTimeUnixNano)
 }
 
 // SetStartTime replaces the starttime associated with this DoubleDataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms DoubleDataPoint) SetStartTime(v TimestampUnixNano) {
 	ms.orig.StartTimeUnixNano = uint64(v)
 }
 
 // Timestamp returns the timestamp associated with this DoubleDataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms DoubleDataPoint) Timestamp() TimestampUnixNano {
 	return TimestampUnixNano(ms.orig.TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this DoubleDataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms DoubleDataPoint) SetTimestamp(v TimestampUnixNano) {
 	ms.orig.TimeUnixNano = uint64(v)
 }
 
 // Value returns the value associated with this DoubleDataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms DoubleDataPoint) Value() float64 {
 	return ms.orig.Value
 }
 
 // SetValue replaces the value associated with this DoubleDataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms DoubleDataPoint) SetValue(v float64) {
 	ms.orig.Value = v
 }
@@ -788,88 +924,125 @@ func (es HistogramDataPointSlice) Resize(from, to int) {
 // This is a reference type, if passsed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewHistogramDataPoint function to create new instances.
+// Must use NewEmptyHistogramDataPoint function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type HistogramDataPoint struct {
 	// Wrap OTLP otlpmetrics.HistogramDataPoint.
 	orig *otlpmetrics.HistogramDataPoint
 }
 
-// NewHistogramDataPoint creates a new empty HistogramDataPoint.
-func NewHistogramDataPoint() HistogramDataPoint {
-	return HistogramDataPoint{&otlpmetrics.HistogramDataPoint{}}
-}
-
 func newHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint) HistogramDataPoint {
 	return HistogramDataPoint{orig}
 }
 
+// NewEmptyHistogramDataPoint creates a new empty HistogramDataPoint.
+//
+// This must be used only in testing code since no "Set" method available.
+func NewEmptyHistogramDataPoint() HistogramDataPoint {
+	return newHistogramDataPoint(&otlpmetrics.HistogramDataPoint{})
+}
+
+// IsNil returns true if the underlying data are nil.
+// 
+// Important: All other functions will cause a runtime error if this returns "true".
+func (ms HistogramDataPoint) IsNil() bool {
+	return ms.orig == nil
+}
+
 // LabelsMap returns the Labels associated with this HistogramDataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms HistogramDataPoint) LabelsMap() StringMap {
 	return newStringMap(&ms.orig.Labels)
 }
 
 // SetLabelsMap replaces the Labels associated with this HistogramDataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms HistogramDataPoint) SetLabelsMap(v StringMap) {
 	ms.orig.Labels = *v.orig
 }
 
 // StartTime returns the starttime associated with this HistogramDataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms HistogramDataPoint) StartTime() TimestampUnixNano {
 	return TimestampUnixNano(ms.orig.StartTimeUnixNano)
 }
 
 // SetStartTime replaces the starttime associated with this HistogramDataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms HistogramDataPoint) SetStartTime(v TimestampUnixNano) {
 	ms.orig.StartTimeUnixNano = uint64(v)
 }
 
 // Timestamp returns the timestamp associated with this HistogramDataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms HistogramDataPoint) Timestamp() TimestampUnixNano {
 	return TimestampUnixNano(ms.orig.TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this HistogramDataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms HistogramDataPoint) SetTimestamp(v TimestampUnixNano) {
 	ms.orig.TimeUnixNano = uint64(v)
 }
 
 // Count returns the count associated with this HistogramDataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms HistogramDataPoint) Count() uint64 {
 	return ms.orig.Count
 }
 
 // SetCount replaces the count associated with this HistogramDataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms HistogramDataPoint) SetCount(v uint64) {
 	ms.orig.Count = v
 }
 
 // Sum returns the sum associated with this HistogramDataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms HistogramDataPoint) Sum() float64 {
 	return ms.orig.Sum
 }
 
 // SetSum replaces the sum associated with this HistogramDataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms HistogramDataPoint) SetSum(v float64) {
 	ms.orig.Sum = v
 }
 
 // Buckets returns the Buckets associated with this HistogramDataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms HistogramDataPoint) Buckets() HistogramBucketSlice {
 	return newHistogramBucketSlice(&ms.orig.Buckets)
 }
 
 // SetBuckets replaces the Buckets associated with this HistogramDataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms HistogramDataPoint) SetBuckets(v HistogramBucketSlice) {
 	ms.orig.Buckets = *v.orig
 }
 
 // ExplicitBounds returns the explicitbounds associated with this HistogramDataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms HistogramDataPoint) ExplicitBounds() []float64 {
 	return ms.orig.ExplicitBounds
 }
 
 // SetExplicitBounds replaces the explicitbounds associated with this HistogramDataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms HistogramDataPoint) SetExplicitBounds(v []float64) {
 	ms.orig.ExplicitBounds = v
 }
@@ -946,44 +1119,59 @@ func (es HistogramBucketSlice) Resize(from, to int) {
 // This is a reference type, if passsed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewHistogramBucket function to create new instances.
+// Must use NewEmptyHistogramBucket function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type HistogramBucket struct {
 	// Wrap OTLP otlpmetrics.HistogramDataPoint_Bucket.
 	orig *otlpmetrics.HistogramDataPoint_Bucket
 }
 
-// NewHistogramBucket creates a new empty HistogramBucket.
-func NewHistogramBucket() HistogramBucket {
-	return HistogramBucket{&otlpmetrics.HistogramDataPoint_Bucket{}}
-}
-
 func newHistogramBucket(orig *otlpmetrics.HistogramDataPoint_Bucket) HistogramBucket {
 	return HistogramBucket{orig}
 }
 
+// NewEmptyHistogramBucket creates a new empty HistogramBucket.
+//
+// This must be used only in testing code since no "Set" method available.
+func NewEmptyHistogramBucket() HistogramBucket {
+	return newHistogramBucket(&otlpmetrics.HistogramDataPoint_Bucket{})
+}
+
+// IsNil returns true if the underlying data are nil.
+// 
+// Important: All other functions will cause a runtime error if this returns "true".
+func (ms HistogramBucket) IsNil() bool {
+	return ms.orig == nil
+}
+
 // Count returns the count associated with this HistogramBucket.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms HistogramBucket) Count() uint64 {
 	return ms.orig.Count
 }
 
 // SetCount replaces the count associated with this HistogramBucket.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms HistogramBucket) SetCount(v uint64) {
 	ms.orig.Count = v
 }
 
 // Exemplar returns the exemplar associated with this HistogramBucket.
+// If no exemplar available, it creates an empty message and associates it with this HistogramBucket.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms HistogramBucket) Exemplar() HistogramBucketExemplar {
-	if ms.orig.Exemplar == nil {
-		// No Exemplar available, initialize one to make all operations on HistogramBucketExemplar available.
-		ms.orig.Exemplar = &otlpmetrics.HistogramDataPoint_Bucket_Exemplar{}
-	}
 	return newHistogramBucketExemplar(ms.orig.Exemplar)
 }
 
-// SetExemplar replaces the exemplar associated with this HistogramBucket.
-func (ms HistogramBucket) SetExemplar(v HistogramBucketExemplar) {
-	ms.orig.Exemplar = v.orig
+// InitExemplarIfNil() initialize the exemplar with an empty message if and only if
+// the current value is "nil".
+func (ms HistogramBucket) InitExemplarIfNil() {
+	if ms.orig.Exemplar == nil {
+		ms.orig.Exemplar = &otlpmetrics.HistogramDataPoint_Bucket_Exemplar{}
+	}
 }
 
 // HistogramBucketExemplar are example points that may be used to annotate aggregated Histogram values.
@@ -992,48 +1180,69 @@ func (ms HistogramBucket) SetExemplar(v HistogramBucketExemplar) {
 // This is a reference type, if passsed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewHistogramBucketExemplar function to create new instances.
+// Must use NewEmptyHistogramBucketExemplar function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type HistogramBucketExemplar struct {
 	// Wrap OTLP otlpmetrics.HistogramDataPoint_Bucket_Exemplar.
 	orig *otlpmetrics.HistogramDataPoint_Bucket_Exemplar
 }
 
-// NewHistogramBucketExemplar creates a new empty HistogramBucketExemplar.
-func NewHistogramBucketExemplar() HistogramBucketExemplar {
-	return HistogramBucketExemplar{&otlpmetrics.HistogramDataPoint_Bucket_Exemplar{}}
-}
-
 func newHistogramBucketExemplar(orig *otlpmetrics.HistogramDataPoint_Bucket_Exemplar) HistogramBucketExemplar {
 	return HistogramBucketExemplar{orig}
 }
 
+// NewEmptyHistogramBucketExemplar creates a new empty HistogramBucketExemplar.
+//
+// This must be used only in testing code since no "Set" method available.
+func NewEmptyHistogramBucketExemplar() HistogramBucketExemplar {
+	return newHistogramBucketExemplar(&otlpmetrics.HistogramDataPoint_Bucket_Exemplar{})
+}
+
+// IsNil returns true if the underlying data are nil.
+// 
+// Important: All other functions will cause a runtime error if this returns "true".
+func (ms HistogramBucketExemplar) IsNil() bool {
+	return ms.orig == nil
+}
+
 // Timestamp returns the timestamp associated with this HistogramBucketExemplar.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms HistogramBucketExemplar) Timestamp() TimestampUnixNano {
 	return TimestampUnixNano(ms.orig.TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this HistogramBucketExemplar.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms HistogramBucketExemplar) SetTimestamp(v TimestampUnixNano) {
 	ms.orig.TimeUnixNano = uint64(v)
 }
 
 // Value returns the value associated with this HistogramBucketExemplar.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms HistogramBucketExemplar) Value() float64 {
 	return ms.orig.Value
 }
 
 // SetValue replaces the value associated with this HistogramBucketExemplar.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms HistogramBucketExemplar) SetValue(v float64) {
 	ms.orig.Value = v
 }
 
 // Attachments returns the Attachments associated with this HistogramBucketExemplar.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms HistogramBucketExemplar) Attachments() StringMap {
 	return newStringMap(&ms.orig.Attachments)
 }
 
 // SetAttachments replaces the Attachments associated with this HistogramBucketExemplar.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms HistogramBucketExemplar) SetAttachments(v StringMap) {
 	ms.orig.Attachments = *v.orig
 }
@@ -1110,78 +1319,111 @@ func (es SummaryDataPointSlice) Resize(from, to int) {
 // This is a reference type, if passsed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewSummaryDataPoint function to create new instances.
+// Must use NewEmptySummaryDataPoint function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type SummaryDataPoint struct {
 	// Wrap OTLP otlpmetrics.SummaryDataPoint.
 	orig *otlpmetrics.SummaryDataPoint
 }
 
-// NewSummaryDataPoint creates a new empty SummaryDataPoint.
-func NewSummaryDataPoint() SummaryDataPoint {
-	return SummaryDataPoint{&otlpmetrics.SummaryDataPoint{}}
-}
-
 func newSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint) SummaryDataPoint {
 	return SummaryDataPoint{orig}
 }
 
+// NewEmptySummaryDataPoint creates a new empty SummaryDataPoint.
+//
+// This must be used only in testing code since no "Set" method available.
+func NewEmptySummaryDataPoint() SummaryDataPoint {
+	return newSummaryDataPoint(&otlpmetrics.SummaryDataPoint{})
+}
+
+// IsNil returns true if the underlying data are nil.
+// 
+// Important: All other functions will cause a runtime error if this returns "true".
+func (ms SummaryDataPoint) IsNil() bool {
+	return ms.orig == nil
+}
+
 // LabelsMap returns the Labels associated with this SummaryDataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms SummaryDataPoint) LabelsMap() StringMap {
 	return newStringMap(&ms.orig.Labels)
 }
 
 // SetLabelsMap replaces the Labels associated with this SummaryDataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms SummaryDataPoint) SetLabelsMap(v StringMap) {
 	ms.orig.Labels = *v.orig
 }
 
 // StartTime returns the starttime associated with this SummaryDataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms SummaryDataPoint) StartTime() TimestampUnixNano {
 	return TimestampUnixNano(ms.orig.StartTimeUnixNano)
 }
 
 // SetStartTime replaces the starttime associated with this SummaryDataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms SummaryDataPoint) SetStartTime(v TimestampUnixNano) {
 	ms.orig.StartTimeUnixNano = uint64(v)
 }
 
 // Timestamp returns the timestamp associated with this SummaryDataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms SummaryDataPoint) Timestamp() TimestampUnixNano {
 	return TimestampUnixNano(ms.orig.TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this SummaryDataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms SummaryDataPoint) SetTimestamp(v TimestampUnixNano) {
 	ms.orig.TimeUnixNano = uint64(v)
 }
 
 // Count returns the count associated with this SummaryDataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms SummaryDataPoint) Count() uint64 {
 	return ms.orig.Count
 }
 
 // SetCount replaces the count associated with this SummaryDataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms SummaryDataPoint) SetCount(v uint64) {
 	ms.orig.Count = v
 }
 
 // Sum returns the sum associated with this SummaryDataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms SummaryDataPoint) Sum() float64 {
 	return ms.orig.Sum
 }
 
 // SetSum replaces the sum associated with this SummaryDataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms SummaryDataPoint) SetSum(v float64) {
 	ms.orig.Sum = v
 }
 
 // ValueAtPercentiles returns the PercentileValues associated with this SummaryDataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms SummaryDataPoint) ValueAtPercentiles() SummaryValueAtPercentileSlice {
 	return newSummaryValueAtPercentileSlice(&ms.orig.PercentileValues)
 }
 
 // SetValueAtPercentiles replaces the PercentileValues associated with this SummaryDataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms SummaryDataPoint) SetValueAtPercentiles(v SummaryValueAtPercentileSlice) {
 	ms.orig.PercentileValues = *v.orig
 }
@@ -1258,38 +1500,55 @@ func (es SummaryValueAtPercentileSlice) Resize(from, to int) {
 // This is a reference type, if passsed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewSummaryValueAtPercentile function to create new instances.
+// Must use NewEmptySummaryValueAtPercentile function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type SummaryValueAtPercentile struct {
 	// Wrap OTLP otlpmetrics.SummaryDataPoint_ValueAtPercentile.
 	orig *otlpmetrics.SummaryDataPoint_ValueAtPercentile
 }
 
-// NewSummaryValueAtPercentile creates a new empty SummaryValueAtPercentile.
-func NewSummaryValueAtPercentile() SummaryValueAtPercentile {
-	return SummaryValueAtPercentile{&otlpmetrics.SummaryDataPoint_ValueAtPercentile{}}
-}
-
 func newSummaryValueAtPercentile(orig *otlpmetrics.SummaryDataPoint_ValueAtPercentile) SummaryValueAtPercentile {
 	return SummaryValueAtPercentile{orig}
 }
 
+// NewEmptySummaryValueAtPercentile creates a new empty SummaryValueAtPercentile.
+//
+// This must be used only in testing code since no "Set" method available.
+func NewEmptySummaryValueAtPercentile() SummaryValueAtPercentile {
+	return newSummaryValueAtPercentile(&otlpmetrics.SummaryDataPoint_ValueAtPercentile{})
+}
+
+// IsNil returns true if the underlying data are nil.
+// 
+// Important: All other functions will cause a runtime error if this returns "true".
+func (ms SummaryValueAtPercentile) IsNil() bool {
+	return ms.orig == nil
+}
+
 // Percentile returns the percentile associated with this SummaryValueAtPercentile.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms SummaryValueAtPercentile) Percentile() float64 {
 	return ms.orig.Percentile
 }
 
 // SetPercentile replaces the percentile associated with this SummaryValueAtPercentile.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms SummaryValueAtPercentile) SetPercentile(v float64) {
 	ms.orig.Percentile = v
 }
 
 // Value returns the value associated with this SummaryValueAtPercentile.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms SummaryValueAtPercentile) Value() float64 {
 	return ms.orig.Value
 }
 
 // SetValue replaces the value associated with this SummaryValueAtPercentile.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
 func (ms SummaryValueAtPercentile) SetValue(v float64) {
 	ms.orig.Value = v
 }
