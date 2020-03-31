@@ -314,7 +314,7 @@ func ocAnnotationToJagerTagsProto(annotation *tracepb.Span_TimeEvent_Annotation)
 		return []jaeger.KeyValue{}
 	}
 
-	strDescription := truncableStringToStr(annotation.Description)
+	strDescription := truncatableStringToStr(annotation.Description)
 	if strDescription == "" {
 		return ocSpanAttributesToJaegerTagsProto(annotation.Attributes)
 	}
@@ -529,4 +529,11 @@ func ocSpansToJaegerSpansProto(ocSpans []*tracepb.Span) ([]*jaeger.Span, error) 
 	}
 
 	return jSpans, nil
+}
+
+func truncatableStringToStr(ts *tracepb.TruncatableString) string {
+	if ts == nil {
+		return ""
+	}
+	return ts.Value
 }
