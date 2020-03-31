@@ -9,8 +9,6 @@ receivers:
         endpoint: "localhost:9876"
       thrift_http:
         endpoint: ":3456"
-      thrift_tchannel:
-        endpoint: "0.0.0.0:123"
       thrift_compact:
         endpoint: "0.0.0.0:456"
       thrift_binary:
@@ -24,7 +22,6 @@ receivers:
     protocols:
       grpc:
       thrift_http:
-      thrift_tchannel:
       thrift_compact:
       thrift_binary:
   # The following demonstrates only enabling certain protocols with defaults/overrides.
@@ -40,8 +37,6 @@ receivers:
       grpc:
         disabled: true
       thrift_http:
-        disabled: true
-      thrift_tchannel:
         disabled: true
       thrift_compact:
         disabled: true
@@ -60,8 +55,6 @@ receivers:
         endpoint: "localhost:9876"
       thrift_http:
         endpoint: ":3456"
-      thrift_tchannel:
-        endpoint: "0.0.0.0:123"
 
 processors:
   exampleprocessor:

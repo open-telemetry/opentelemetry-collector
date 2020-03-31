@@ -40,16 +40,14 @@ const (
 	// Protocol values.
 	protoGRPC       = "grpc"
 	protoThriftHTTP = "thrift_http"
-	// TODO https://github.com/open-telemetry/opentelemetry-collector/issues/267
-	//	Remove ThriftTChannel support.
+	// Deprecated, see https://github.com/open-telemetry/opentelemetry-collector/issues/267
 	protoThriftTChannel = "thrift_tchannel"
 	protoThriftBinary   = "thrift_binary"
 	protoThriftCompact  = "thrift_compact"
 
 	// Default endpoints to bind to.
-	defaultGRPCBindEndpoint     = "localhost:14250"
-	defaultHTTPBindEndpoint     = "localhost:14268"
-	defaultTChannelBindEndpoint = "localhost:14267"
+	defaultGRPCBindEndpoint = "localhost:14250"
+	defaultHTTPBindEndpoint = "localhost:14268"
 
 	defaultThriftCompactBindEndpoint   = "localhost:6831"
 	defaultThriftBinaryBindEndpoint    = "localhost:6832"
@@ -160,11 +158,7 @@ func (f *Factory) CreateTraceReceiver(
 	}
 
 	if protoTChannel != nil && protoTChannel.IsEnabled() {
-		var err error
-		config.CollectorThriftPort, err = extractPortFromEndpoint(protoTChannel.Endpoint)
-		if err != nil {
-			return nil, err
-		}
+		logger.Warn("Protocol unknown or not supported", zap.String("protocol", protoThriftTChannel))
 	}
 
 	if protoThriftBinary != nil && protoThriftBinary.IsEnabled() {
@@ -206,12 +200,11 @@ func (f *Factory) CreateTraceReceiver(
 		}
 	}
 
-	if (protoGRPC == nil && protoHTTP == nil && protoTChannel == nil && protoThriftBinary == nil && protoThriftCompact == nil) ||
+	if (protoGRPC == nil && protoHTTP == nil && protoThriftBinary == nil && protoThriftCompact == nil) ||
 		(config.CollectorGRPCPort == 0 && config.CollectorHTTPPort == 0 && config.CollectorThriftPort == 0 && config.AgentBinaryThriftPort == 0 && config.AgentCompactThriftPort == 0) {
-		err := fmt.Errorf("either %v, %v, %v, %v, or %v protocol endpoint with non-zero port must be enabled for %s receiver",
+		err := fmt.Errorf("either %v, %v, %v, or %v protocol endpoint with non-zero port must be enabled for %s receiver",
 			protoGRPC,
 			protoThriftHTTP,
-			protoThriftTChannel,
 			protoThriftCompact,
 			protoThriftBinary,
 			typeStr,
@@ -258,8 +251,6 @@ func defaultsForProtocol(proto string) (*receiver.SecureReceiverSettings, error)
 		defaultEndpoint = defaultGRPCBindEndpoint
 	case protoThriftHTTP:
 		defaultEndpoint = defaultHTTPBindEndpoint
-	case protoThriftTChannel:
-		defaultEndpoint = defaultTChannelBindEndpoint
 	case protoThriftBinary:
 		defaultEndpoint = defaultThriftBinaryBindEndpoint
 	case protoThriftCompact:
