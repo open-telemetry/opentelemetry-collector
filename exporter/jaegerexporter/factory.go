@@ -12,11 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jaegerthrifthttpexporter
+package jaegerexporter
 
 import (
 	"fmt"
-	"net/url"
 
 	"go.uber.org/zap"
 
@@ -27,10 +26,10 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr = "jaeger_thrift_http"
+	typeStr = "jaeger"
 )
 
-// Factory is the factory for Jaeger Thrift over HTTP exporter.
+// Factory is the factory for Jaeger gRPC exporter.
 type Factory struct {
 }
 
@@ -46,7 +45,6 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		Timeout: defaultHTTPTimeout,
 	}
 }
 
@@ -57,28 +55,15 @@ func (f *Factory) CreateTraceExporter(
 ) (component.TraceExporterOld, error) {
 
 	expCfg := config.(*Config)
-	_, err := url.ParseRequestURI(expCfg.URL)
-	if err != nil {
+	if expCfg.Endpoint == "" {
 		// TODO: Improve error message, see #215
-		err = fmt.Errorf(
-			"%q config requires a valid \"url\": %v",
-			expCfg.Name(),
-			err)
-		return nil, err
-	}
-
-	if expCfg.Timeout <= 0 {
-		err = fmt.Errorf(
-			"%q config requires a positive value for \"timeout\"",
+		err := fmt.Errorf(
+			"%q config requires a non-empty \"endpoint\"",
 			expCfg.Name())
 		return nil, err
 	}
 
-	exp, err := New(
-		config,
-		expCfg.URL,
-		expCfg.Headers,
-		expCfg.Timeout)
+	exp, err := New(expCfg)
 	if err != nil {
 		return nil, err
 	}

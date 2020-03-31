@@ -14,7 +14,7 @@ exporters:
     url: "http://zipkin-all-in-one:9411/api/v2/spans"
     format: proto
 
-  jaeger_grpc:
+  jaeger:
     endpoint: jaeger-all-in-one:14250
 
 # Alternatively, use jaeger_thrift_http with the settings below. In this case
@@ -39,7 +39,7 @@ service:
   pipelines:
     traces:
       receivers: [opencensus]
-      exporters: [logging, zipkin, jaeger_grpc]
+      exporters: [logging, zipkin, jaeger]
       processors: [batch, queued_retry]
     metrics:
       receivers: [opencensus]

@@ -19,8 +19,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/fileexporter"
-	"github.com/open-telemetry/opentelemetry-collector/exporter/jaeger/jaegergrpcexporter"
-	"github.com/open-telemetry/opentelemetry-collector/exporter/jaeger/jaegerthrifthttpexporter"
+	"github.com/open-telemetry/opentelemetry-collector/exporter/jaegerexporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/loggingexporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/opencensusexporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/otlpexporter"
@@ -79,8 +78,7 @@ func Components() (
 		&prometheusexporter.Factory{},
 		&loggingexporter.Factory{},
 		&zipkinexporter.Factory{},
-		&jaegergrpcexporter.Factory{},
-		&jaegerthrifthttpexporter.Factory{},
+		&jaegerexporter.Factory{},
 		&fileexporter.Factory{},
 		&otlpexporter.Factory{},
 	)

@@ -5,9 +5,9 @@ processors:
   exampleprocessor:
 
 exporters:
-  jaeger_grpc:
+  jaeger:
     endpoint: "some.target:55678"
-  jaeger_grpc/2:
+  jaeger/2:
     endpoint: "a.new.target:1234"
 
 service:
@@ -15,4 +15,4 @@ service:
     traces:
       receivers: [examplereceiver]
       processors: [exampleprocessor]
-      exporters: [jaeger_grpc, jaeger_grpc/2]
+      exporters: [jaeger, jaeger/2]
