@@ -57,11 +57,6 @@ func TestLoadConfig(t *testing.T) {
 						Endpoint: ":3456",
 					},
 				},
-				"thrift_tchannel": {
-					ReceiverSettings: configmodels.ReceiverSettings{
-						Endpoint: "0.0.0.0:123",
-					},
-				},
 				"thrift_compact": {
 					ReceiverSettings: configmodels.ReceiverSettings{
 						Endpoint: "0.0.0.0:456",
@@ -94,11 +89,6 @@ func TestLoadConfig(t *testing.T) {
 				"thrift_http": {
 					ReceiverSettings: configmodels.ReceiverSettings{
 						Endpoint: defaultHTTPBindEndpoint,
-					},
-				},
-				"thrift_tchannel": {
-					ReceiverSettings: configmodels.ReceiverSettings{
-						Endpoint: defaultTChannelBindEndpoint,
 					},
 				},
 				"thrift_compact": {
@@ -152,11 +142,6 @@ func TestLoadConfig(t *testing.T) {
 				"thrift_http": {
 					ReceiverSettings: configmodels.ReceiverSettings{
 						Endpoint: ":3456",
-					},
-				},
-				"thrift_tchannel": {
-					ReceiverSettings: configmodels.ReceiverSettings{
-						Endpoint: "0.0.0.0:123",
 					},
 				},
 			},

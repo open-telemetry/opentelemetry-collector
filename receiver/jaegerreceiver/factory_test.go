@@ -100,18 +100,6 @@ func TestCreateInvalidHTTPEndpoint(t *testing.T) {
 	assert.Equal(t, 14268, r.(*jReceiver).config.CollectorHTTPPort, "http port should be default")
 }
 
-func TestCreateInvalidTChannelEndpoint(t *testing.T) {
-	factory := Factory{}
-	cfg := factory.CreateDefaultConfig()
-	rCfg := cfg.(*Config)
-
-	rCfg.Protocols[protoThriftTChannel], _ = defaultsForProtocol(protoThriftTChannel)
-	r, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
-
-	assert.NoError(t, err, "unexpected error creating receiver")
-	assert.Equal(t, 14267, r.(*jReceiver).config.CollectorThriftPort, "thrift port should be default")
-}
-
 func TestCreateInvalidThriftBinaryEndpoint(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
@@ -172,7 +160,7 @@ func TestCreateLargePort(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
-	rCfg.Protocols[protoThriftTChannel] = &receiver.SecureReceiverSettings{
+	rCfg.Protocols[protoThriftHTTP] = &receiver.SecureReceiverSettings{
 		ReceiverSettings: configmodels.ReceiverSettings{
 			Endpoint: "localhost:65536",
 		},

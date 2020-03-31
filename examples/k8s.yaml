@@ -60,7 +60,6 @@ spec:
         ports:
         - containerPort: 55678 # Default Opencensus receiver port.
         - containerPort: 55679 # ZPages endpoint.
-#        - containerPort: 14267 # Default Jaeger TChannel port.
 #        - containerPort: 14268 # Default Jaeger HTTP receiver port.
 #        - containerPort: 9411 # Default Zipkin receiver port.
         volumeMounts:
@@ -138,8 +137,6 @@ spec:
     port: 55678
     protocol: TCP
     targetPort: 55678
-  - name: jaeger-tchannel  # Default endpoint for Jaeger TChannel receiver.
-    port: 14267
   - name: jaeger-thrift-http # Default endpoint for Jaeger HTTP receiver.
     port: 14268
   - name: zipkin # Default endpoint for Zipkin receiver.
@@ -190,7 +187,6 @@ spec:
             memory: 400Mi
         ports:
         - containerPort: 55678 # Default endpoint for Opencensus receiver.
-        - containerPort: 14267 # Default endpoint for Jaeger TChannel receiver.
         - containerPort: 14268 # Default endpoint for Jaeger HTTP receiver.
         - containerPort: 9411 # Default endpoint for Zipkin receiver.
         - containerPort: 8888  # Default endpoint for querying metrics.
