@@ -53,7 +53,6 @@ const (
 	errMissingPipelines
 	errPipelineMustHaveReceiver
 	errPipelineMustHaveExporter
-	errPipelineMustHaveProcessors
 	errExtensionNotExists
 	errPipelineReceiverNotExists
 	errPipelineProcessorNotExists
