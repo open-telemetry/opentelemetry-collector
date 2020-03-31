@@ -74,9 +74,9 @@ func (md MetricData) MetricCount() int {
 	metricCount := 0
 	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
-		ils := rms.Get(i).InstrumentationLibraryMetrics()
+		ils := rms.At(i).InstrumentationLibraryMetrics()
 		for j := 0; j < ils.Len(); j++ {
-			metricCount += ils.Get(j).Metrics().Len()
+			metricCount += ils.At(j).Metrics().Len()
 		}
 	}
 	return metricCount

@@ -35,7 +35,7 @@ import (
 func TestResourceMetricsToMetricsData(t *testing.T) {
 
 	sampleMetricData := testdata.GenerateMetricDataWithCountersHistogramAndSummary()
-	attrs := sampleMetricData.ResourceMetrics().Get(0).Resource().Attributes()
+	attrs := sampleMetricData.ResourceMetrics().At(0).Resource().Attributes()
 	attrs.Upsert(data.NewAttributeKeyValueString(conventions.AttributeHostHostname, "host1"))
 	attrs.Upsert(data.NewAttributeKeyValueString(conventions.OCAttributeProcessID, "123"))
 	attrs.Upsert(data.NewAttributeKeyValueString(conventions.OCAttributeProcessStartTime, "2020-02-11T20:26:00Z"))

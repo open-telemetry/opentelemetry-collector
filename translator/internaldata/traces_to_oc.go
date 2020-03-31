@@ -43,7 +43,7 @@ func TraceDataToOC(td data.TraceData) []consumerdata.TraceData {
 	ocResourceSpansList := make([]consumerdata.TraceData, 0, resourceSpans.Len())
 
 	for i := 0; i < resourceSpans.Len(); i++ {
-		ocResourceSpansList = append(ocResourceSpansList, ResourceSpansToOC(resourceSpans.Get(i)))
+		ocResourceSpansList = append(ocResourceSpansList, ResourceSpansToOC(resourceSpans.At(i)))
 	}
 
 	return ocResourceSpansList
@@ -60,12 +60,12 @@ func ResourceSpansToOC(rs data.ResourceSpans) consumerdata.TraceData {
 	}
 	// Approximate the number of the metrics as the number of the metrics in the first
 	// instrumentation library info.
-	ocSpans := make([]*octrace.Span, 0, ilss.Get(0).Spans().Len())
+	ocSpans := make([]*octrace.Span, 0, ilss.At(0).Spans().Len())
 	for i := 0; i < ilss.Len(); i++ {
 		// TODO: Handle instrumentation library name and version.
-		spans := ilss.Get(i).Spans()
+		spans := ilss.At(i).Spans()
 		for j := 0; j < spans.Len(); j++ {
-			ocSpans = append(ocSpans, spanToOC(spans.Get(j)))
+			ocSpans = append(ocSpans, spanToOC(spans.At(j)))
 		}
 	}
 	ocTraceData.Spans = ocSpans
@@ -256,7 +256,7 @@ func eventsToOC(events data.SpanEventSlice, droppedCount uint32) *octrace.Span_T
 
 	ocEvents := make([]*octrace.Span_TimeEvent, 0, events.Len())
 	for i := 0; i < events.Len(); i++ {
-		ocEvents = append(ocEvents, eventToOC(events.Get(i)))
+		ocEvents = append(ocEvents, eventToOC(events.At(i)))
 	}
 
 	return &octrace.Span_TimeEvents{
@@ -329,7 +329,7 @@ func linksToOC(links data.SpanLinkSlice, droppedCount uint32) *octrace.Span_Link
 
 	ocLinks := make([]*octrace.Span_Link, 0, links.Len())
 	for i := 0; i < links.Len(); i++ {
-		link := links.Get(i)
+		link := links.At(i)
 		ocLink := &octrace.Span_Link{
 			TraceId:    link.TraceID().Bytes(),
 			SpanId:     link.SpanID().Bytes(),

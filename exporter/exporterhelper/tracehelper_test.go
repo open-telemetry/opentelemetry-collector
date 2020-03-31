@@ -355,9 +355,10 @@ func checkRecordedMetricsForTraceExporter(t *testing.T, te component.TraceExport
 
 	const spansLen = 2
 	td := data.NewTraceData()
-	td.SetResourceSpans(data.NewResourceSpansSlice(1))
-	td.ResourceSpans().Get(0).SetInstrumentationLibrarySpans(data.NewInstrumentationLibrarySpansSlice(1))
-	td.ResourceSpans().Get(0).InstrumentationLibrarySpans().Get(0).SetSpans(data.NewSpanSlice(spansLen))
+	rs := td.ResourceSpans()
+	rs.Resize(1)
+	rs.At(0).InstrumentationLibrarySpans().Resize(1)
+	rs.At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(spansLen)
 	ctx := observability.ContextWithReceiverName(context.Background(), fakeTraceReceiverName)
 	const numBatches = 7
 	for i := 0; i < numBatches; i++ {
@@ -373,9 +374,10 @@ func checkRecordedMetricsForTraceExporter(t *testing.T, te component.TraceExport
 
 func generateTraceTraffic(t *testing.T, te component.TraceExporter, numRequests int, wantError error) {
 	td := data.NewTraceData()
-	td.SetResourceSpans(data.NewResourceSpansSlice(1))
-	td.ResourceSpans().Get(0).SetInstrumentationLibrarySpans(data.NewInstrumentationLibrarySpansSlice(1))
-	td.ResourceSpans().Get(0).InstrumentationLibrarySpans().Get(0).SetSpans(data.NewSpanSlice(1))
+	rs := td.ResourceSpans()
+	rs.Resize(1)
+	rs.At(0).InstrumentationLibrarySpans().Resize(1)
+	rs.At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
 	ctx, span := trace.StartSpan(context.Background(), fakeTraceParentSpanName, trace.WithSampler(trace.AlwaysSample()))
 	defer span.End()
 	for i := 0; i < numRequests; i++ {

@@ -38,8 +38,9 @@ func OCToTraceData(td consumerdata.TraceData) data.TraceData {
 
 	if len(td.Spans) == 0 {
 		// At least one of the td.Node or td.Resource is not nil. Set the resource and return.
-		traceData.SetResourceSpans(data.NewResourceSpansSlice(1))
-		ocNodeResourceToInternal(td.Node, td.Resource, traceData.ResourceSpans().Get(0).Resource())
+		rss := traceData.ResourceSpans()
+		rss.Resize(1)
+		ocNodeResourceToInternal(td.Node, td.Resource, rss.At(0).Resource())
 		return traceData
 	}
 
@@ -78,15 +79,18 @@ func OCToTraceData(td consumerdata.TraceData) data.TraceData {
 	}
 	// Total number of resources is equal to:
 	// 1 (for all spans with nil resource) + numSpansWithResource (distinctResourceCount).
-	traceData.SetResourceSpans(data.NewResourceSpansSlice(distinctResourceCount + 1))
-	rs0 := traceData.ResourceSpans().Get(0)
+
+	rss := traceData.ResourceSpans()
+	rss.Resize(distinctResourceCount + 1)
+	rs0 := rss.At(0)
 	ocNodeResourceToInternal(td.Node, td.Resource, rs0.Resource())
 
 	// Allocate a slice for spans that need to be combined into first ResourceSpans.
-	rs0.SetInstrumentationLibrarySpans(data.NewInstrumentationLibrarySpansSlice(1))
-	ils0 := rs0.InstrumentationLibrarySpans().Get(0)
-	ils0.SetSpans(data.NewSpanSlice(combinedSpanCount))
+	ilss := rs0.InstrumentationLibrarySpans()
+	ilss.Resize(1)
+	ils0 := ilss.At(0)
 	combinedSpans := ils0.Spans()
+	combinedSpans.Resize(combinedSpanCount)
 
 	// Now do the span translation and place them in appropriate ResourceSpans
 	// instances.
@@ -105,12 +109,12 @@ func OCToTraceData(td consumerdata.TraceData) data.TraceData {
 			// Add the span to the "combinedSpans". combinedSpans length is equal
 			// to combinedSpanCount. The loop above that calculates combinedSpanCount
 			// has exact same conditions as we have here in this loop.
-			ocSpanToInternal(ocSpan, combinedSpans.Get(combinedSpanIdx))
+			ocSpanToInternal(ocSpan, combinedSpans.At(combinedSpanIdx))
 			combinedSpanIdx++
 		} else {
 			// This span has a different Resource and must be placed in a different
 			// ResourceSpans instance. Create a separate ResourceSpans item just for this span.
-			ocSpanToResourceSpans(ocSpan, td.Node, traceData.ResourceSpans().Get(resourceSpanIdx))
+			ocSpanToResourceSpans(ocSpan, td.Node, traceData.ResourceSpans().At(resourceSpanIdx))
 			resourceSpanIdx++
 		}
 	}
@@ -120,16 +124,15 @@ func OCToTraceData(td consumerdata.TraceData) data.TraceData {
 
 func ocSpanToResourceSpans(ocSpan *octrace.Span, node *occommon.Node, dest data.ResourceSpans) {
 	ocNodeResourceToInternal(node, ocSpan.Resource, dest.Resource())
-	dest.SetInstrumentationLibrarySpans(data.NewInstrumentationLibrarySpansSlice(1))
-	ils0 := dest.InstrumentationLibrarySpans().Get(0)
-	ils0.SetSpans(data.NewSpanSlice(1))
-	ocSpanToInternal(ocSpan, ils0.Spans().Get(0))
+	ilss := dest.InstrumentationLibrarySpans()
+	ilss.Resize(1)
+	ils0 := ilss.At(0)
+	spans := ils0.Spans()
+	spans.Resize(1)
+	ocSpanToInternal(ocSpan, spans.At(0))
 }
 
 func ocSpanToInternal(src *octrace.Span, dest data.Span) {
-	events, droppedEventCount := ocEventsToInternal(src.TimeEvents)
-	links, droppedLinkCount := ocLinksToInternal(src.Links)
-
 	// Note that ocSpanKindToInternal must be called before ocAttrsToInternal
 	// since it may modify src.Attributes (remove the attribute which represents the
 	// span kind).
@@ -146,10 +149,8 @@ func ocSpanToInternal(src *octrace.Span, dest data.Span) {
 	dest.SetEndTime(internal.TimestampToUnixNano(src.EndTime))
 	dest.SetAttributes(attrs)
 	dest.SetDroppedAttributesCount(droppedAttrs)
-	dest.SetEvents(events)
-	dest.SetDroppedEventsCount(droppedEventCount)
-	dest.SetLinks(links)
-	dest.SetDroppedLinksCount(droppedLinkCount)
+	ocEventsToInternal(src.TimeEvents, dest)
+	ocLinksToInternal(src.Links, dest)
 	ocStatusToInternal(src.Status, dest.Status())
 }
 
@@ -253,18 +254,19 @@ func ocSpanKindToInternal(ocKind octrace.Span_SpanKind, ocAttrs *octrace.Span_At
 	}
 }
 
-func ocEventsToInternal(ocEvents *octrace.Span_TimeEvents) (data.SpanEventSlice, uint32) {
+func ocEventsToInternal(ocEvents *octrace.Span_TimeEvents, dest data.Span) {
 	if ocEvents == nil {
-		return data.NewSpanEventSlice(0), 0
+		return
 	}
 
-	droppedCount := uint32(ocEvents.DroppedMessageEventsCount + ocEvents.DroppedAnnotationsCount)
+	dest.SetDroppedEventsCount(uint32(ocEvents.DroppedMessageEventsCount + ocEvents.DroppedAnnotationsCount))
 
 	if len(ocEvents.TimeEvent) == 0 {
-		return data.NewSpanEventSlice(0), droppedCount
+		return
 	}
 
-	events := data.NewSpanEventSlice(len(ocEvents.TimeEvent))
+	events := dest.Events()
+	events.Resize(len(ocEvents.TimeEvent))
 
 	i := 0
 	for _, ocEvent := range ocEvents.TimeEvent {
@@ -273,7 +275,7 @@ func ocEventsToInternal(ocEvents *octrace.Span_TimeEvents) (data.SpanEventSlice,
 			continue
 		}
 
-		event := events.Get(i)
+		event := events.At(i)
 		i++
 
 		event.SetTimestamp(internal.TimestampToUnixNano(ocEvent.Time))
@@ -298,21 +300,22 @@ func ocEventsToInternal(ocEvents *octrace.Span_TimeEvents) (data.SpanEventSlice,
 	}
 
 	// Truncate the slice to only include populated items.
-	events.Resize(0, i)
-
-	return events, droppedCount
+	events.Resize(i)
 }
 
-func ocLinksToInternal(ocLinks *octrace.Span_Links) (data.SpanLinkSlice, uint32) {
+func ocLinksToInternal(ocLinks *octrace.Span_Links, dest data.Span) {
 	if ocLinks == nil {
-		return data.NewSpanLinkSlice(0), 0
+		return
 	}
+
+	dest.SetDroppedLinksCount(uint32(ocLinks.DroppedLinksCount))
 
 	if len(ocLinks.Link) == 0 {
-		return data.NewSpanLinkSlice(0), uint32(ocLinks.DroppedLinksCount)
+		return
 	}
 
-	links := data.NewSpanLinkSlice(len(ocLinks.Link))
+	links := dest.Links()
+	links.Resize(len(ocLinks.Link))
 
 	i := 0
 	for _, ocLink := range ocLinks.Link {
@@ -320,7 +323,7 @@ func ocLinksToInternal(ocLinks *octrace.Span_Links) (data.SpanLinkSlice, uint32)
 			continue
 		}
 
-		link := links.Get(i)
+		link := links.At(i)
 		i++
 
 		link.SetTraceID(data.NewTraceID(ocLink.TraceId))
@@ -332,9 +335,7 @@ func ocLinksToInternal(ocLinks *octrace.Span_Links) (data.SpanLinkSlice, uint32)
 	}
 
 	// Truncate the slice to only include populated items.
-	links.Resize(0, i)
-
-	return links, uint32(ocLinks.DroppedLinksCount)
+	links.Resize(i)
 }
 
 func ocMessageEventToInternalAttrs(msgEvent *octrace.Span_TimeEvent_MessageEvent) (data.AttributeMap, uint32) {

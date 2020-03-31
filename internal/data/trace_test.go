@@ -25,22 +25,22 @@ func TestSpanCount(t *testing.T) {
 	md := NewTraceData()
 	assert.EqualValues(t, 0, md.SpanCount())
 
-	md.SetResourceSpans(NewResourceSpansSlice(1))
+	md.ResourceSpans().Resize(1)
 	assert.EqualValues(t, 0, md.SpanCount())
 
-	md.ResourceSpans().Get(0).SetInstrumentationLibrarySpans(NewInstrumentationLibrarySpansSlice(1))
+	md.ResourceSpans().At(0).InstrumentationLibrarySpans().Resize(1)
 	assert.EqualValues(t, 0, md.SpanCount())
 
-	md.ResourceSpans().Get(0).InstrumentationLibrarySpans().Get(0).SetSpans(NewSpanSlice(1))
+	md.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
 	assert.EqualValues(t, 1, md.SpanCount())
 
-	rms := NewResourceSpansSlice(3)
-	rms.Get(0).SetInstrumentationLibrarySpans(NewInstrumentationLibrarySpansSlice(1))
-	rms.Get(0).InstrumentationLibrarySpans().Get(0).SetSpans(NewSpanSlice(1))
-	rms.Get(1).SetInstrumentationLibrarySpans(NewInstrumentationLibrarySpansSlice(1))
-	rms.Get(2).SetInstrumentationLibrarySpans(NewInstrumentationLibrarySpansSlice(1))
-	rms.Get(2).InstrumentationLibrarySpans().Get(0).SetSpans(NewSpanSlice(5))
-	md.SetResourceSpans(rms)
+	rms := md.ResourceSpans()
+	rms.Resize(3)
+	rms.At(0).InstrumentationLibrarySpans().Resize(1)
+	rms.At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
+	rms.At(1).InstrumentationLibrarySpans().Resize(1)
+	rms.At(2).InstrumentationLibrarySpans().Resize(1)
+	rms.At(2).InstrumentationLibrarySpans().At(0).Spans().Resize(5)
 	assert.EqualValues(t, 6, md.SpanCount())
 }
 

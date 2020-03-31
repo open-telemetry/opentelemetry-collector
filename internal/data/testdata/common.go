@@ -15,8 +15,9 @@
 package testdata
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 	otlpcommon "github.com/open-telemetry/opentelemetry-proto/gen/go/common/v1"
+
+	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 )
 
 var (
@@ -33,7 +34,7 @@ func generateResourceAttributes1() data.AttributeMap {
 
 func generateOtlpResourceAttributes1() []*otlpcommon.AttributeKeyValue {
 	return []*otlpcommon.AttributeKeyValue{
-		&otlpcommon.AttributeKeyValue{
+		{
 			Key:         "resource-attr",
 			StringValue: "resource-attr-val-1",
 		},
@@ -46,7 +47,7 @@ func generateResourceAttributes2() data.AttributeMap {
 
 func generateOtlpResourceAttributes2() []*otlpcommon.AttributeKeyValue {
 	return []*otlpcommon.AttributeKeyValue{
-		&otlpcommon.AttributeKeyValue{
+		{
 			Key:         "resource-attr",
 			StringValue: "resource-attr-val-2",
 		},
@@ -59,7 +60,7 @@ func generateSpanAttributes() data.AttributeMap {
 
 func generateOtlpSpanAttributes() []*otlpcommon.AttributeKeyValue {
 	return []*otlpcommon.AttributeKeyValue{
-		&otlpcommon.AttributeKeyValue{
+		{
 			Key:         "span-attr",
 			StringValue: "span-attr-val",
 		},
@@ -72,7 +73,7 @@ func generateSpanEventAttributes() data.AttributeMap {
 
 func generateOtlpSpanEventAttributes() []*otlpcommon.AttributeKeyValue {
 	return []*otlpcommon.AttributeKeyValue{
-		&otlpcommon.AttributeKeyValue{
+		{
 			Key:         "span-event-attr",
 			StringValue: "span-event-attr-val",
 		},
@@ -85,7 +86,7 @@ func generateSpanLinkAttributes() data.AttributeMap {
 
 func generateOtlpSpanLinkAttributes() []*otlpcommon.AttributeKeyValue {
 	return []*otlpcommon.AttributeKeyValue{
-		&otlpcommon.AttributeKeyValue{
+		{
 			Key:         "span-link-attr",
 			StringValue: "span-link-attr-val",
 		},

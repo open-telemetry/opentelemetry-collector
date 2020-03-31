@@ -60,7 +60,7 @@ func (r *Receiver) Export(ctx context.Context, req *collectormetrics.ExportMetri
 	md := data.MetricDataFromOtlp(req.ResourceMetrics)
 	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
-		ocmd := internaldata.ResourceMetricsToOC(rms.Get(i))
+		ocmd := internaldata.ResourceMetricsToOC(rms.At(i))
 		if len(ocmd.Metrics) == 0 {
 			continue
 		}
