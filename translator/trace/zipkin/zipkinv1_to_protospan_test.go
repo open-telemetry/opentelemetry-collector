@@ -26,7 +26,6 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	jaegerproto "github.com/jaegertracing/jaeger/model"
-	jaegerthrift "github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -880,15 +879,6 @@ func TestSpanKindTranslation(t *testing.T) {
 				VType: jaegerproto.ValueType_STRING,
 				VStr:  test.jaegerSpanKind,
 			}, jSpansProto.Spans[0].Tags[0])
-
-			// Translate to Jaeger Thrift and verify that span kind is set as a tag.
-			jSpansThrift, err := jaeger.OCProtoToJaegerThrift(td)
-			assert.NoError(t, err)
-			assert.EqualValues(t, &jaegerthrift.Tag{
-				Key:   tracetranslator.TagSpanKind,
-				VType: jaegerthrift.TagType_STRING,
-				VStr:  &test.jaegerSpanKind,
-			}, jSpansThrift.Spans[0].Tags[0])
 
 			// Translate from Jaeger Proto to OC.
 			td, err = jaeger.ProtoBatchToOCProto(*jSpansProto)
