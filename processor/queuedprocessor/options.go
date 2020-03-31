@@ -18,8 +18,6 @@ import (
 	"time"
 
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector/processor/batchprocessor"
 )
 
 const (
@@ -37,8 +35,6 @@ type options struct {
 	backoffDelay             time.Duration
 	extraFormatTypes         []string
 	retryOnProcessingFailure bool
-	batchingEnabled          bool
-	batchingOptions          []batchprocessor.Option
 }
 
 // Option is a function that sets some option on the component.
@@ -93,21 +89,6 @@ func (options) WithExtraFormatTypes(extraFormatTypes []string) Option {
 func (options) WithRetryOnProcessingFailures(retryOnProcessingFailure bool) Option {
 	return func(b *options) {
 		b.retryOnProcessingFailure = retryOnProcessingFailure
-	}
-}
-
-// WithBatching creates an Option that enabled batching
-func (options) WithBatching(batchingEnabled bool) Option {
-	return func(b *options) {
-		b.batchingEnabled = batchingEnabled
-	}
-}
-
-// WithBatchingOptions creates an Option that will apply batcher options to
-// the batcher if batching is enabled.
-func (options) WithBatchingOptions(opts ...batchprocessor.Option) Option {
-	return func(b *options) {
-		b.batchingOptions = opts
 	}
 }
 

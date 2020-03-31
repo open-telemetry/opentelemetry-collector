@@ -1,0 +1,235 @@
+version: 2.1
+
+executors:
+  golang:
+    docker:
+      - image: cimg/go:1.14
+
+commands:
+  attach_to_workspace:
+    steps:
+      - attach_workspace:
+          at: ~/
+
+  save_module_cache:
+    steps:
+      - save_cache:
+          key: cimg-go-pkg-mod-{{ checksum "go.sum" }}
+          paths:
+            - "/home/circleci/go/pkg/mod"
+
+  restore_module_cache:
+    steps:
+      - run:
+          name: create modules dir
+          command: mkdir -p ~/go/pkg/mod
+      - restore_cache: # restores saved cache if no changes are detected since last run
+          keys:
+            - cimg-go-pkg-mod-{{ checksum "go.sum" }}
+      - persist_to_workspace:
+          root: ~/
+          paths: go/pkg/mod
+
+  publish_docker_images:
+    parameters:
+      repo:
+        type: string
+      tag:
+        type: string
+
+    steps:
+      - run:
+          name: Build image
+          command: |
+            make docker-otelcol
+            docker tag otelcol:latest otel/<< parameters.repo >>:<< parameters.tag >>
+            docker tag otelcol:latest otel/<< parameters.repo >>:latest
+      - run:
+          name: Login to Docker Hub
+          command: docker login -u $DOCKER_HUB_USERNAME -p $DOCKER_HUB_PASSWORD
+      - run:
+          name: Push image
+          command: |
+            docker push otel/<< parameters.repo >>:<< parameters.tag >>
+            docker push otel/<< parameters.repo >>:latest
+
+workflows:
+  version: 2
+  build-and-test:
+    jobs:
+      - setup-and-lint:
+          filters:
+            tags:
+              only: /^v([0-9])+.([0-9])+.([0-9])+.*/
+      - build:
+          requires:
+            - setup-and-lint
+          filters:
+            tags:
+              only: /^v([0-9])+.([0-9])+.([0-9])+.*/
+      - cross-compile:
+          requires:
+            - build
+          filters:
+            tags:
+              only: /^v([0-9])+.([0-9])+.([0-9])+.*/
+      - loadtest:
+          requires:
+            - build
+          filters:
+            tags:
+              only: /^v([0-9])+.([0-9])+.([0-9])+.*/
+      - test:
+          requires:
+            - setup-and-lint
+          filters:
+            tags:
+              only: /^v([0-9])+.([0-9])+.([0-9])+.*/
+      - gosec:
+          requires:
+            - setup-and-lint
+          filters:
+            tags:
+              only: /^v([0-9])+.([0-9])+.([0-9])+.*/
+      - coverage:
+          requires:
+            - setup-and-lint
+          filters:
+            tags:
+              only: /^v([0-9])+.([0-9])+.([0-9])+.*/
+      - publish-stable:
+          requires:
+            - cross-compile
+            - loadtest
+            - test
+            - gosec
+            - coverage
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v([0-9])+.([0-9])+.([0-9])+.*/
+      - publish-dev:
+          requires:
+            - cross-compile
+            - loadtest
+            - test
+            - gosec
+            - coverage
+          filters:
+            branches:
+              only: master
+            tags:
+              ignore: /.*/
+
+jobs:
+  setup-and-lint:
+    executor: golang
+    steps:
+      - checkout
+      - restore_module_cache
+      - persist_to_workspace:
+          root: ~/
+          paths: project
+      - run:
+          name: Install tools
+          command: make install-tools
+      - persist_to_workspace:
+          root: ~/
+          paths: go/bin
+      - run:
+          name: Lint
+          command: make -j4 checklicense impi lint misspell
+
+  build:
+    executor: golang
+    steps:
+      - attach_to_workspace
+      - run:
+          name: Build collector for linux_amd64
+          command: make binaries
+      - persist_to_workspace:
+          root: ~/
+          paths: project/bin
+
+  cross-compile:
+    executor: golang
+    parallelism: 4
+    steps:
+      - attach_to_workspace
+      - run:
+          name: Build collector for all archs
+          command: grep ^binaries-all-sys Makefile|fmt -w 1|tail -n +2|circleci tests split|xargs make
+      - persist_to_workspace:
+          root: ~/
+          paths: project/bin
+
+  loadtest:
+    executor: golang
+    parallelism: 10
+    steps:
+      - attach_to_workspace
+      - run:
+          name: Loadtest
+          command: TEST_ARGS="-test.run=$(make -s testbed-listtests | circleci tests split|xargs echo|sed 's/ /|/g')" make testbed-runtests
+      - store_artifacts:
+          path: testbed/tests/results
+      - store_test_results:
+          path: testbed/tests/results/junit
+
+  test:
+    executor: golang
+    steps:
+      - attach_to_workspace
+      - run:
+          name: Unit tests
+          command: make test
+      - save_module_cache
+
+  gosec:
+    executor: golang
+    steps:
+      - attach_to_workspace
+      - run:
+          name: Golang Security Checker
+          command: make lint-gosec
+
+  coverage:
+    executor: golang
+    steps:
+      - attach_to_workspace
+      - run:
+          name: Install packages.
+          command: sudo apt update && sudo apt-get install bzr time
+      - run:
+          name: Coverage tests
+          command: make test-with-cover
+      - run:
+          name: Code coverage
+          command: bash <(curl -s https://codecov.io/bash)
+
+  publish-stable:
+    docker:
+      - image: cimg/go:1.14
+    steps:
+      - attach_to_workspace
+      - setup_remote_docker
+      - publish_docker_images:
+          repo: opentelemetry-collector
+          tag: ${CIRCLE_TAG:1}
+      - run:
+          name: Calculate checksums 
+          command: cd bin && shasum -a 256 * > checksums.txt
+      - run:
+          name: Create Github release and upload artifacts
+          command: ghr -t $GITHUB_TOKEN -u $CIRCLE_PROJECT_USERNAME -r $CIRCLE_PROJECT_REPONAME --replace $CIRCLE_TAG bin/
+
+  publish-dev:
+    docker:
+      - image: cimg/go:1.14
+    steps:
+      - attach_to_workspace
+      - setup_remote_docker
+      - publish_docker_images:
+          repo: opentelemetry-collector-dev
+          tag: ${CIRCLE_SHA1}

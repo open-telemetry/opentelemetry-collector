@@ -21,11 +21,12 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configgrpc"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/exporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/jaeger/jaegerthrifthttpexporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/opencensusexporter"
+	"github.com/open-telemetry/opentelemetry-collector/exporter/otlpexporter"
 )
 
 // DataSender defines the interface that allows sending data. This is an interface
@@ -67,7 +68,7 @@ type MetricDataSender interface {
 
 // DataSenderOverTraceExporter partially implements TraceDataSender via a TraceExporter.
 type DataSenderOverTraceExporter struct {
-	exporter exporter.TraceExporter
+	exporter component.TraceExporterOld
 	Port     int
 }
 
@@ -196,7 +197,7 @@ func (ote *OCTraceDataSender) ProtocolName() string {
 
 // OCMetricsDataSender implements MetricDataSender for OpenCensus metrics protocol.
 type OCMetricsDataSender struct {
-	exporter exporter.MetricsExporter
+	exporter component.MetricsExporterOld
 	port     int
 }
 
@@ -247,4 +248,102 @@ func (ome *OCMetricsDataSender) GetCollectorPort() int {
 
 func (ome *OCMetricsDataSender) ProtocolName() string {
 	return "opencensus"
+}
+
+// OTLPTraceDataSender implements TraceDataSender for OpenCensus trace protocol.
+type OTLPTraceDataSender struct {
+	DataSenderOverTraceExporter
+}
+
+// Ensure OTLPTraceDataSender implements TraceDataSender.
+var _ TraceDataSender = (*OTLPTraceDataSender)(nil)
+
+// NewOTLPTraceDataSender creates a new OTLPTraceDataSender that will send
+// to the specified port after Start is called.
+func NewOTLPTraceDataSender(port int) *OTLPTraceDataSender {
+	return &OTLPTraceDataSender{DataSenderOverTraceExporter{Port: port}}
+}
+
+func (ote *OTLPTraceDataSender) Start() error {
+	cfg := &otlpexporter.Config{
+		GRPCSettings: configgrpc.GRPCSettings{
+			Endpoint: fmt.Sprintf("localhost:%d", ote.Port),
+		},
+	}
+
+	factory := otlpexporter.Factory{}
+	exporter, err := factory.CreateTraceExporter(zap.L(), cfg)
+
+	if err != nil {
+		return err
+	}
+
+	ote.exporter = exporter
+	return err
+}
+
+func (ote *OTLPTraceDataSender) GenConfigYAMLStr() string {
+	// Note that this generates a receiver config for agent.
+	return fmt.Sprintf(`
+  otlp:
+    endpoint: "localhost:%d"`, ote.Port)
+}
+
+func (ote *OTLPTraceDataSender) ProtocolName() string {
+	return "otlp"
+}
+
+// OTLPMetricsDataSender implements MetricDataSender for OpenCensus metrics protocol.
+type OTLPMetricsDataSender struct {
+	exporter component.MetricsExporterOld
+	port     int
+}
+
+// Ensure OTLPMetricsDataSender implements MetricDataSender.
+var _ MetricDataSender = (*OTLPMetricsDataSender)(nil)
+
+// NewOTLPMetricDataSender creates a new OpenCensus metric protocol sender that will send
+// to the specified port after Start is called.
+func NewOTLPMetricDataSender(port int) *OTLPMetricsDataSender {
+	return &OTLPMetricsDataSender{port: port}
+}
+
+func (ome *OTLPMetricsDataSender) Start() error {
+	cfg := &otlpexporter.Config{
+		GRPCSettings: configgrpc.GRPCSettings{
+			Endpoint: fmt.Sprintf("localhost:%d", ome.port),
+		},
+	}
+
+	factory := otlpexporter.Factory{}
+	exporter, err := factory.CreateMetricsExporter(zap.L(), cfg)
+
+	if err != nil {
+		return err
+	}
+
+	ome.exporter = exporter
+	return nil
+}
+
+func (ome *OTLPMetricsDataSender) SendMetrics(metrics consumerdata.MetricsData) error {
+	return ome.exporter.ConsumeMetricsData(context.Background(), metrics)
+}
+
+func (ome *OTLPMetricsDataSender) Flush() {
+}
+
+func (ome *OTLPMetricsDataSender) GenConfigYAMLStr() string {
+	// Note that this generates a receiver config for agent.
+	return fmt.Sprintf(`
+  otlp:
+    endpoint: "localhost:%d"`, ome.port)
+}
+
+func (ome *OTLPMetricsDataSender) GetCollectorPort() int {
+	return ome.port
+}
+
+func (ome *OTLPMetricsDataSender) ProtocolName() string {
+	return "otlp"
 }

@@ -1,0 +1,20 @@
+receivers:
+  prometheus:
+    config:
+      use_start_time_metric: true
+      scrape_configs:
+        - job_name: 'demo'
+          scrape_interval: 5s
+
+processors:
+  exampleprocessor:
+
+exporters:
+  exampleexporter:
+
+service:
+  pipelines:
+    traces:
+      receivers: [prometheus]
+      processors: [exampleprocessor]
+      exporters: [exampleexporter]

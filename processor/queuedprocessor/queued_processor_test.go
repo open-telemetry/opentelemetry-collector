@@ -28,6 +28,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/stats/view"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumererror"
@@ -53,6 +54,8 @@ func TestQueuedProcessor_noEnqueueOnPermanentError(t *testing.T) {
 		Options.WithQueueSize(2),
 	).(*queuedSpanProcessor)
 
+	mh := component.MockHost{}
+	require.NoError(t, qp.Start(&mh))
 	c.Add(1)
 	require.Nil(t, qp.ConsumeTraceData(ctx, td))
 	c.Wait()
@@ -75,15 +78,15 @@ type waitGroupTraceConsumer struct {
 	consumeTraceDataError error
 }
 
-var _ consumer.TraceConsumer = (*waitGroupTraceConsumer)(nil)
+var _ consumer.TraceConsumerOld = (*waitGroupTraceConsumer)(nil)
 
 func (c *waitGroupTraceConsumer) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	defer c.Done()
 	return c.consumeTraceDataError
 }
 
-func (c *waitGroupTraceConsumer) GetCapabilities() processor.Capabilities {
-	return processor.Capabilities{MutatesConsumedData: false}
+func (c *waitGroupTraceConsumer) GetCapabilities() component.ProcessorCapabilities {
+	return component.ProcessorCapabilities{MutatesConsumedData: false}
 }
 
 func findViewNamed(views []*view.View, name string) (*view.View, error) {
@@ -102,6 +105,8 @@ func TestQueueProcessorHappyPath(t *testing.T) {
 
 	mockProc := newMockConcurrentSpanProcessor()
 	qp := NewQueuedSpanProcessor(mockProc)
+	mockHost := component.MockHost{}
+	require.NoError(t, qp.Start(&mockHost))
 	goFn := func(td consumerdata.TraceData) {
 		qp.ConsumeTraceData(context.Background(), td)
 	}
@@ -134,7 +139,7 @@ func TestQueueProcessorHappyPath(t *testing.T) {
 	require.Len(t, data, 1)
 	assert.Equal(t, 0.0, data[0].Data.(*view.SumData).Value)
 
-	data, err = view.RetrieveData("batches_dropped")
+	data, err = view.RetrieveData(processor.StatTraceBatchesDroppedCount.Name())
 	require.NoError(t, err)
 	assert.Equal(t, 0.0, data[0].Data.(*view.SumData).Value)
 }
@@ -145,7 +150,7 @@ type mockConcurrentSpanProcessor struct {
 	spanCount  int32
 }
 
-var _ consumer.TraceConsumer = (*mockConcurrentSpanProcessor)(nil)
+var _ consumer.TraceConsumerOld = (*mockConcurrentSpanProcessor)(nil)
 
 func (p *mockConcurrentSpanProcessor) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	atomic.AddInt32(&p.batchCount, 1)
@@ -154,8 +159,8 @@ func (p *mockConcurrentSpanProcessor) ConsumeTraceData(ctx context.Context, td c
 	return nil
 }
 
-func (p *mockConcurrentSpanProcessor) GetCapabilities() processor.Capabilities {
-	return processor.Capabilities{MutatesConsumedData: false}
+func (p *mockConcurrentSpanProcessor) GetCapabilities() component.ProcessorCapabilities {
+	return component.ProcessorCapabilities{MutatesConsumedData: false}
 }
 
 func newMockConcurrentSpanProcessor() *mockConcurrentSpanProcessor {

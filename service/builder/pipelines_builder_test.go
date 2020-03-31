@@ -31,7 +31,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/processor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/attributesprocessor"
 )
 
@@ -89,7 +88,7 @@ func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 	// Load the config
 	require.Nil(t, err)
 
-	// Build the pipeline
+	// BuildProcessors the pipeline
 	allExporters, err := NewExportersBuilder(zap.NewNop(), cfg, factories.Exporters).Build()
 	assert.NoError(t, err)
 	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), cfg, allExporters, factories.Processors).Build()
@@ -143,7 +142,7 @@ func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 			Type: "resourcetype",
 		},
 	}
-	processor.firstTC.ConsumeTraceData(context.Background(), traceData)
+	processor.firstTC.(consumer.TraceConsumerOld).ConsumeTraceData(context.Background(), traceData)
 
 	// Now verify received data.
 	for _, consumer := range exporterConsumers {
@@ -222,8 +221,6 @@ func TestProcessorsBuilder_ErrorOnNilProcessor(t *testing.T) {
 // badProcessorFactory is a factory that returns no error but returns a nil object.
 type badProcessorFactory struct{}
 
-var _ processor.Factory = (*badProcessorFactory)(nil)
-
 func (b *badProcessorFactory) Type() string {
 	return "bf"
 }
@@ -234,16 +231,16 @@ func (b *badProcessorFactory) CreateDefaultConfig() configmodels.Processor {
 
 func (b *badProcessorFactory) CreateTraceProcessor(
 	logger *zap.Logger,
-	nextConsumer consumer.TraceConsumer,
+	nextConsumer consumer.TraceConsumerOld,
 	cfg configmodels.Processor,
-) (processor.TraceProcessor, error) {
+) (component.TraceProcessorOld, error) {
 	return nil, nil
 }
 
 func (b *badProcessorFactory) CreateMetricsProcessor(
 	logger *zap.Logger,
-	consumer consumer.MetricsConsumer,
+	consumer consumer.MetricsConsumerOld,
 	cfg configmodels.Processor,
-) (processor.MetricsProcessor, error) {
+) (component.MetricsProcessorOld, error) {
 	return nil, nil
 }

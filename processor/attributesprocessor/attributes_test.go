@@ -25,10 +25,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-collector/internal/processor/span"
-	"github.com/open-telemetry/opentelemetry-collector/processor"
 )
 
 // Common structure for the
@@ -40,7 +40,7 @@ type testCase struct {
 }
 
 // runIndividualTestCase is the common logic of passing trace data through a configured attributes processor.
-func runIndividualTestCase(t *testing.T, tt testCase, tp processor.TraceProcessor) {
+func runIndividualTestCase(t *testing.T, tt testCase, tp component.TraceProcessorOld) {
 	t.Run(tt.name, func(t *testing.T) {
 		traceData := consumerdata.TraceData{
 			Node: &commonpb.Node{
@@ -1081,6 +1081,81 @@ func TestAttributes_FilterSpansByNameRegexp(t *testing.T) {
 		SpanNames: []string{".*dont_apply$"},
 		MatchType: span.MatchTypeRegexp,
 	}
+	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), cfg)
+	require.Nil(t, err)
+	require.NotNil(t, tp)
+
+	for _, tt := range testCases {
+		runIndividualTestCase(t, tt, tp)
+	}
+}
+
+func TestAttributes_Hash(t *testing.T) {
+	testCases := []testCase{
+		{
+			name: "String",
+			inputAttributes: map[string]*tracepb.AttributeValue{
+				"user.email": {
+					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "john.doe@example.com"}},
+				},
+			},
+			expectedAttributes: map[string]*tracepb.AttributeValue{
+				"user.email": {
+					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "73ec53c4ba1747d485ae2a0d7bfafa6cda80a5a9"}},
+				},
+			},
+		},
+		{
+			name: "Int",
+			inputAttributes: map[string]*tracepb.AttributeValue{
+				"user.id": {
+					Value: &tracepb.AttributeValue_IntValue{IntValue: 10},
+				},
+			},
+			expectedAttributes: map[string]*tracepb.AttributeValue{
+				"user.id": {
+					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "71aa908aff1548c8c6cdecf63545261584738a25"}},
+				},
+			},
+		},
+		{
+			name: "Double",
+			inputAttributes: map[string]*tracepb.AttributeValue{
+				"user.balance": {
+					Value: &tracepb.AttributeValue_DoubleValue{DoubleValue: 99.1},
+				},
+			},
+			expectedAttributes: map[string]*tracepb.AttributeValue{
+				"user.balance": {
+					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "76429edab4855b03073f9429fd5d10313c28655e"}},
+				},
+			},
+		},
+		{
+			name: "Bool",
+			inputAttributes: map[string]*tracepb.AttributeValue{
+				"user.authenticated": {
+					Value: &tracepb.AttributeValue_BoolValue{BoolValue: true},
+				},
+			},
+			expectedAttributes: map[string]*tracepb.AttributeValue{
+				"user.authenticated": {
+					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "bf8b4530d8d246dd74ac53a13471bba17941dff7"}},
+				},
+			},
+		},
+	}
+
+	factory := Factory{}
+	cfg := factory.CreateDefaultConfig()
+	oCfg := cfg.(*Config)
+	oCfg.Actions = []ActionKeyValue{
+		{Key: "user.email", Action: HASH},
+		{Key: "user.id", Action: HASH},
+		{Key: "user.balance", Action: HASH},
+		{Key: "user.authenticated", Action: HASH},
+	}
+
 	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), cfg)
 	require.Nil(t, err)
 	require.NotNil(t, tp)

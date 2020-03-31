@@ -76,6 +76,7 @@ func TestLoadConfig(t *testing.T) {
 			RemoteSampling: &RemoteSamplingConfig{
 				HostEndpoint:  "0.0.0.0:5778",
 				FetchEndpoint: "jaeger-collector:1234",
+				StrategyFile:  "/etc/strategies.json",
 			},
 		})
 
@@ -175,5 +176,5 @@ func TestFailedLoadConfig(t *testing.T) {
 	assert.EqualError(t, err, `error reading settings for receiver type "jaeger": must specify at least one protocol when using the Jaeger receiver`)
 
 	_, err = config.LoadConfigFile(t, path.Join(".", "testdata", "bad_empty_config.yaml"), factories)
-	assert.EqualError(t, err, `error reading settings for receiver type "jaeger": Jaeger receiver config is empty`)
+	assert.EqualError(t, err, `error reading settings for receiver type "jaeger": empty config for Jaeger receiver`)
 }

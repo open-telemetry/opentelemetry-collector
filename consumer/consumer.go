@@ -19,20 +19,44 @@ import (
 	"context"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 )
 
-// MetricsConsumer is an interface that receives consumerdata.MetricsData, process it as needed, and
+// MetricsConsumerBase defines a common interface for MetricsConsumerOld and MetricsConsumer.
+type MetricsConsumerBase interface{}
+
+// MetricsConsumerOld is an interface that receives consumerdata.MetricsData, process it as needed, and
 // sends it to the next processing node if any or to the destination.
 //
 // ConsumeMetricsData receives consumerdata.MetricsData for processing by the MetricsConsumer.
-type MetricsConsumer interface {
+type MetricsConsumerOld interface {
+	MetricsConsumerBase
 	ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error
 }
 
-// TraceConsumer is an interface that receives consumerdata.TraceData, process it as needed, and
+// MetricsConsumer is the new metrics consumer interface that receives data.MetricData, processes it
+// as needed, and sends it to the next processing node if any or to the destination.
+type MetricsConsumer interface {
+	MetricsConsumerBase
+	ConsumeMetrics(ctx context.Context, md data.MetricData) error
+}
+
+// TraceConsumerBase defines a common interface for TraceConsumerOld and TraceConsumer.
+type TraceConsumerBase interface{}
+
+// TraceConsumerOld is an interface that receives consumerdata.TraceData, process it as needed, and
 // sends it to the next processing node if any or to the destination.
 //
 // ConsumeTraceData receives consumerdata.TraceData for processing by the TraceConsumer.
-type TraceConsumer interface {
+type TraceConsumerOld interface {
+	TraceConsumerBase
 	ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error
+}
+
+// TraceConsumer is an interface that receives data.TraceData, processes it
+// as needed, and sends it to the next processing node if any or to the destination.
+type TraceConsumer interface {
+	TraceConsumerBase
+	// ConsumeTrace receives data.TraceData for processing.
+	ConsumeTrace(ctx context.Context, td data.TraceData) error
 }

@@ -1,0 +1,71 @@
+receivers:
+  # The following entry initializes the default OTLP receiver.
+  # The full name of this receiver is `otlp` and can be referenced in pipelines by 'otlp'.
+  otlp:
+  # The following entry demonstrates configuring the common receiver settings:
+  # - endpoint
+  # This configuration is of type 'otlp' and has the name 'customname' with a full name of 'otlp/customname'
+  # ('<type>/<name>'. To reference this configuration in a pipeline, use the full name `otlp/customname`.
+  otlp/customname:
+    # The receiver will listen on endpoint: "0.0.0.0:9090".
+    endpoint: 0.0.0.0:9090
+  # The following entry configures all of the keep alive settings. These settings are used to configure the receiver.
+  otlp/keepalive:
+    keepalive:
+      server_parameters:
+        max_connection_idle: 11s
+        max_connection_age: 12s
+        max_connection_age_grace: 13s
+        time: 30s
+        timeout: 5s
+      enforcement_policy:
+        min_time: 10s
+        permit_without_stream: true
+  # The following demonstrates how to set maximum limits on stream, message size and connection idle time.
+  # Note: The test yaml has demonstrated configuration on a grouped by their structure; however, all of the settings can
+  # be mix and matched like adding the maximum connection idle setting in this example.
+  otlp/msg-size-conc-connect-max-idle:
+    max_recv_msg_size_mib: 32
+    max_concurrent_streams: 16
+    keepalive:
+      server_parameters:
+        max_connection_idle: 10s
+  # The following entry demonstrates how to specify TLS credentials for the server.
+  # Note: These files do not exist. If the receiver is started with this configuration, it will fail.
+  otlp/tlscredentials:
+    tls_credentials:
+      cert_file: test.crt
+      key_file: test.key
+  # The following entry demonstrates how to specify a Unix Domain Socket for the server.
+  otlp/uds:
+    transport: unix
+    endpoint: /tmp/otlp.sock
+  # The following entry demonstrates how to disable a receiver using the disabled flag from the common receiver settings.
+  # Note: The current implementation removes disabled receivers from the global list of receivers so the total count
+  # of receivers in the test will not include this one.
+  otlp/disabled:
+    # This receiver is disabled and won't receive any data.
+    disabled: true
+
+
+  # The following entry demonstrates how to configure the OTLP receiver to allow Cross-Origin Resource Sharing (CORS).
+  # Both fully qualified domain names and the use of wildcards are supported.
+  otlp/cors:
+    cors_allowed_origins:
+    - https://*.test.com # Wildcard subdomain. Allows domains like https://www.test.com and https://foo.test.com but not https://wwwtest.com.
+    - https://test.com # Fully qualified domain name. Allows https://test.com only.
+processors:
+  exampleprocessor:
+
+exporters:
+  exampleexporter:
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp/customname]
+      processors: [exampleprocessor]
+      exporters: [exampleexporter]
+    metrics:
+      receivers: [otlp]
+      exporters: [exampleexporter]

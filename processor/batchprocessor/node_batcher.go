@@ -62,7 +62,7 @@ const (
 //      tracking by node is no longer needed.
 type batcher struct {
 	buckets sync.Map
-	sender  consumer.TraceConsumer
+	sender  consumer.TraceConsumerOld
 	tickers []*bucketTicker
 	name    string
 	logger  *zap.Logger
@@ -74,10 +74,10 @@ type batcher struct {
 	timeout           time.Duration
 }
 
-var _ consumer.TraceConsumer = (*batcher)(nil)
+var _ consumer.TraceConsumerOld = (*batcher)(nil)
 
 // NewBatcher creates a new batcher that batches spans by node and resource
-func NewBatcher(name string, logger *zap.Logger, sender consumer.TraceConsumer, opts ...Option) processor.TraceProcessor {
+func NewBatcher(name string, logger *zap.Logger, sender consumer.TraceConsumerOld, opts ...Option) component.TraceProcessorOld {
 	// Init with defaults
 	b := &batcher{
 		name:   name,
@@ -110,8 +110,8 @@ func (b *batcher) ConsumeTraceData(ctx context.Context, td consumerdata.TraceDat
 	return nil
 }
 
-func (b *batcher) GetCapabilities() processor.Capabilities {
-	return processor.Capabilities{MutatesConsumedData: false}
+func (b *batcher) GetCapabilities() component.ProcessorCapabilities {
+	return component.ProcessorCapabilities{MutatesConsumedData: false}
 }
 
 // Start is invoked during service startup.

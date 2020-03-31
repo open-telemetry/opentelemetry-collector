@@ -22,19 +22,18 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/open-telemetry/opentelemetry-collector/exporter"
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/fileexporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/jaeger/jaegergrpcexporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/jaeger/jaegerthrifthttpexporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/loggingexporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/opencensusexporter"
+	"github.com/open-telemetry/opentelemetry-collector/exporter/otlpexporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/prometheusexporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/zipkinexporter"
-	"github.com/open-telemetry/opentelemetry-collector/extension"
 	"github.com/open-telemetry/opentelemetry-collector/extension/healthcheckextension"
 	"github.com/open-telemetry/opentelemetry-collector/extension/pprofextension"
 	"github.com/open-telemetry/opentelemetry-collector/extension/zpagesextension"
-	"github.com/open-telemetry/opentelemetry-collector/processor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/batchprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/memorylimiter"
@@ -42,28 +41,29 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/processor/samplingprocessor/probabilisticsamplerprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/samplingprocessor/tailsamplingprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/spanprocessor"
-	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/jaegerreceiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/opencensusreceiver"
+	"github.com/open-telemetry/opentelemetry-collector/receiver/otlpreceiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/vmmetricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/zipkinreceiver"
 )
 
 func TestDefaultComponents(t *testing.T) {
-	expectedExtensions := map[string]extension.Factory{
+	expectedExtensions := map[string]component.ExtensionFactory{
 		"health_check": &healthcheckextension.Factory{},
 		"pprof":        &pprofextension.Factory{},
 		"zpages":       &zpagesextension.Factory{},
 	}
-	expectedReceivers := map[string]receiver.Factory{
+	expectedReceivers := map[string]component.ReceiverFactoryBase{
 		"jaeger":     &jaegerreceiver.Factory{},
 		"zipkin":     &zipkinreceiver.Factory{},
 		"prometheus": &prometheusreceiver.Factory{},
 		"opencensus": &opencensusreceiver.Factory{},
+		"otlp":       &otlpreceiver.Factory{},
 		"vmmetrics":  &vmmetricsreceiver.Factory{},
 	}
-	expectedProcessors := map[string]processor.Factory{
+	expectedProcessors := map[string]component.ProcessorFactoryBase{
 		"attributes":            &attributesprocessor.Factory{},
 		"queued_retry":          &queuedprocessor.Factory{},
 		"batch":                 &batchprocessor.Factory{},
@@ -72,7 +72,7 @@ func TestDefaultComponents(t *testing.T) {
 		"probabilistic_sampler": &probabilisticsamplerprocessor.Factory{},
 		"span":                  &spanprocessor.Factory{},
 	}
-	expectedExporters := map[string]exporter.Factory{
+	expectedExporters := map[string]component.ExporterFactoryBase{
 		"opencensus":         &opencensusexporter.Factory{},
 		"prometheus":         &prometheusexporter.Factory{},
 		"logging":            &loggingexporter.Factory{},
@@ -80,6 +80,7 @@ func TestDefaultComponents(t *testing.T) {
 		"jaeger_grpc":        &jaegergrpcexporter.Factory{},
 		"jaeger_thrift_http": &jaegerthrifthttpexporter.Factory{},
 		"file":               &fileexporter.Factory{},
+		"otlp":               &otlpexporter.Factory{},
 	}
 
 	factories, err := Components()

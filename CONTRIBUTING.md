@@ -73,7 +73,7 @@ section of general project contributing guide.
 Working with the project sources requires the following tools:
 
 1. [git](https://git-scm.com/)
-2. [go](https://golang.org/) (version 1.12.5 and up)
+2. [go](https://golang.org/) (version 1.14 and up)
 3. [make](https://www.gnu.org/software/make/)
 4. [docker](https://www.docker.com/)
 
@@ -116,9 +116,9 @@ $ git push fork feature
 
 ## General Notes
 
-This project uses Go 1.12.5 and Travis for CI.
+This project uses Go 1.14.* and CircleCI.
 
-Travis CI uses the Makefile with the default target, it is recommended to
+CircleCI uses the Makefile with the `ci` target, it is recommended to
 run it before submitting your PR. It runs `gofmt -s` (simplify) and `golint`.
 
 The dependencies are managed with `go mod` if you work with the sources under your
@@ -145,6 +145,14 @@ easier to notice the problem. The Collector should print a reasonable log messag
 explain the problem and exit with a non-zero code. It is acceptable to crash the process
 during startup if there is no good way to exit cleanly but do your best to log and
 exit cleanly with a process exit code.
+
+### Propagate Errors to the Caller
+
+Do not crash or exit outside the `main()` function, e.g. via `log.Fatal` or `os.Exit`,
+even during startup. Instead, return detailed errors to be handled appropriately 
+by the caller. The code in packages other than `main` may be imported and used by
+third-party applications, and they should have full control over error handling 
+and process termination.
 
 ### Do not Crash after Startup
 

@@ -18,12 +18,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net"
 	"reflect"
-	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -43,6 +41,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal"
 	"github.com/open-telemetry/opentelemetry-collector/observability"
+	"github.com/open-telemetry/opentelemetry-collector/testutils"
 )
 
 func TestReceiver_endToEnd(t *testing.T) {
@@ -310,7 +309,8 @@ func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 	require.NoError(t, err, "Unexpectedly failed to send the first message: %v", err)
 
 	longDuration := 2 * time.Second
-	testDone := make(chan bool, 1)
+	testDone := make(chan struct{})
+	goroutineDone := make(chan struct{})
 	go func() {
 		// Our insurance policy to ensure that this test doesn't hang
 		// forever and should quickly report if/when we regress.
@@ -321,6 +321,7 @@ func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 			traceClientDoneFn()
 			t.Errorf("Test took too long (%s) and is likely still hanging so this is a regression", longDuration)
 		}
+		close(goroutineDone)
 	}()
 
 	// Now the response should return an error and should have been torn down
@@ -355,6 +356,7 @@ func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 	}
 
 	close(testDone)
+	<-goroutineDone
 }
 
 // If the first message is valid (has a non-nil Node) and has spans, those
@@ -448,7 +450,7 @@ func newSpanAppender() *spanAppender {
 	return &spanAppender{spansPerNode: make(map[*commonpb.Node][]*tracepb.Span)}
 }
 
-var _ consumer.TraceConsumer = (*spanAppender)(nil)
+var _ consumer.TraceConsumerOld = (*spanAppender)(nil)
 
 func (sa *spanAppender) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	sa.Lock()
@@ -458,7 +460,7 @@ func (sa *spanAppender) ConsumeTraceData(ctx context.Context, td consumerdata.Tr
 	return nil
 }
 
-func ocReceiverOnGRPCServer(t *testing.T, sr consumer.TraceConsumer, opts ...Option) (oci *Receiver, port int, done func()) {
+func ocReceiverOnGRPCServer(t *testing.T, sr consumer.TraceConsumerOld, opts ...Option) (oci *Receiver, port int, done func()) {
 	ln, err := net.Listen("tcp", "localhost:0")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 
@@ -469,18 +471,13 @@ func ocReceiverOnGRPCServer(t *testing.T, sr consumer.TraceConsumer, opts ...Opt
 		}
 	}
 
-	_, port, err = hostPortFromAddr(ln.Addr())
+	_, port, err = testutils.HostPortFromAddr(ln.Addr())
 	if err != nil {
 		done()
 		t.Fatalf("Failed to parse host:port from listener address: %s error: %v", ln.Addr(), err)
 	}
 
-	if err != nil {
-		done()
-		t.Fatalf("Failed to create new agent: %v", err)
-	}
-
-	oci, err = New(sr, opts...)
+	oci, err = New(receiverTagValue, sr, opts...)
 	require.NoError(t, err, "Failed to create the Receiver: %v", err)
 
 	// Now run it as a gRPC server
@@ -491,17 +488,6 @@ func ocReceiverOnGRPCServer(t *testing.T, sr consumer.TraceConsumer, opts ...Opt
 	}()
 
 	return oci, port, done
-}
-
-func hostPortFromAddr(addr net.Addr) (host string, port int, err error) {
-	addrStr := addr.String()
-	sepIndex := strings.LastIndex(addrStr, ":")
-	if sepIndex < 0 {
-		return "", -1, errors.New("failed to parse host:port")
-	}
-	host, portStr := addrStr[:sepIndex], addrStr[sepIndex+1:]
-	port, err = strconv.Atoi(portStr)
-	return host, port, err
 }
 
 func (sa *spanAppender) forEachEntry(fn func(*commonpb.Node, []*tracepb.Span)) {

@@ -32,6 +32,7 @@ import (
 // createConfigFile creates a collector config file that corresponds to the
 // sender and receiver used in the test and returns the config file name.
 func createConfigFile(
+	t *testing.T,
 	sender testbed.DataSender, // Sender to send test data.
 	receiver testbed.DataReceiver, // Receiver to receive test data.
 	resultDir string, // Directory to write config file to.
@@ -128,14 +129,19 @@ service:
 	// Write the config string to a temporary file.
 	file, err := ioutil.TempFile("", "agent*.yaml")
 	if err != nil {
-		fmt.Print(err)
+		t.Error(err)
 		return ""
 	}
-	defer file.Close()
 
-	_, err = file.WriteString(config)
-	if err != nil {
-		fmt.Print(err)
+	defer func() {
+		errClose := file.Close()
+		if errClose != nil {
+			t.Error(err)
+		}
+	}()
+
+	if _, err = file.WriteString(config); err != nil {
+		t.Error(err)
 		return ""
 	}
 
@@ -156,7 +162,7 @@ func Scenario10kItemsPerSecond(
 		t.Fatal(err)
 	}
 
-	configFile := createConfigFile(sender, receiver, resultDir, nil)
+	configFile := createConfigFile(t, sender, receiver, resultDir, nil)
 	defer os.Remove(configFile)
 
 	if configFile == "" {
@@ -207,7 +213,8 @@ func genRandByteString(len int) string {
 // Scenario1kSPSWithAttrs runs a performance test at 1k sps with specified span attributes
 // and test options.
 func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, opts ...testbed.TestCaseOption) {
-	for _, test := range tests {
+	for i := range tests {
+		test := tests[i]
 		t.Run(fmt.Sprintf("%d*%dbytes", test.attrCount, test.attrSizeByte), func(t *testing.T) {
 
 			tc := testbed.NewTestCase(

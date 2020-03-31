@@ -18,13 +18,15 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-collector/exporter"
 )
 
 const (
 	// The value of "type" key in configuration.
-	typeStr = "logging"
+	typeStr                   = "logging"
+	defaultSamplingInitial    = 2
+	defaultSamplingThereafter = 500
 )
 
 // Factory is the factory for logging exporter.
@@ -43,34 +45,44 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		LogLevel: "info",
+		LogLevel:           "info",
+		SamplingInitial:    defaultSamplingInitial,
+		SamplingThereafter: defaultSamplingThereafter,
 	}
 }
 
 // CreateTraceExporter creates a trace exporter based on this config.
-func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Exporter) (exporter.TraceExporter, error) {
+func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Exporter) (component.TraceExporterOld, error) {
 	cfg := config.(*Config)
 
-	exporterLogger, err := f.createLogger(cfg.LogLevel)
+	exporterLogger, err := f.createLogger(cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	lexp, err := NewTraceExporter(config, exporterLogger)
+	lexp, err := NewTraceExporter(config, cfg.LogLevel, exporterLogger)
 	if err != nil {
 		return nil, err
 	}
 	return lexp, nil
 }
 
-func (f *Factory) createLogger(logLevel string) (*zap.Logger, error) {
+func (f *Factory) createLogger(cfg *Config) (*zap.Logger, error) {
 	var level zapcore.Level
-	err := (&level).UnmarshalText([]byte(logLevel))
+	err := (&level).UnmarshalText([]byte(cfg.LogLevel))
 	if err != nil {
 		return nil, err
 	}
-	conf := zap.NewProductionConfig()
-	conf.Level.SetLevel(level)
+
+	// We take development config as the base since it matches the purpose
+	// of logging exporter being used for debugging reasons (so e.g. console encoder)
+	conf := zap.NewDevelopmentConfig()
+	conf.Level = zap.NewAtomicLevelAt(level)
+	conf.Sampling = &zap.SamplingConfig{
+		Initial:    cfg.SamplingInitial,
+		Thereafter: cfg.SamplingThereafter,
+	}
+
 	logginglogger, err := conf.Build()
 	if err != nil {
 		return nil, err
@@ -79,10 +91,10 @@ func (f *Factory) createLogger(logLevel string) (*zap.Logger, error) {
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *Factory) CreateMetricsExporter(logger *zap.Logger, config configmodels.Exporter) (exporter.MetricsExporter, error) {
+func (f *Factory) CreateMetricsExporter(logger *zap.Logger, config configmodels.Exporter) (component.MetricsExporterOld, error) {
 	cfg := config.(*Config)
 
-	exporterLogger, err := f.createLogger(cfg.LogLevel)
+	exporterLogger, err := f.createLogger(cfg)
 	if err != nil {
 		return nil, err
 	}

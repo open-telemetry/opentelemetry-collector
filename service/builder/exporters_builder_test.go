@@ -25,7 +25,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configgrpc"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-collector/exporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/opencensusexporter"
 )
 
@@ -143,7 +142,7 @@ func TestExportersBuilder_StopAll(t *testing.T) {
 
 func TestExportersBuilder_ErrorOnNilExporter(t *testing.T) {
 	bf := &badExporterFactory{}
-	fm := map[string]exporter.Factory{
+	fm := map[string]component.ExporterFactoryBase{
 		bf.Type(): bf,
 	}
 
@@ -187,8 +186,6 @@ func TestExportersBuilder_ErrorOnNilExporter(t *testing.T) {
 // badExporterFactory is a factory that returns no error but returns a nil object.
 type badExporterFactory struct{}
 
-var _ exporter.Factory = (*badExporterFactory)(nil)
-
 func (b *badExporterFactory) Type() string {
 	return "bf"
 }
@@ -197,10 +194,10 @@ func (b *badExporterFactory) CreateDefaultConfig() configmodels.Exporter {
 	return &configmodels.ExporterSettings{}
 }
 
-func (b *badExporterFactory) CreateTraceExporter(logger *zap.Logger, cfg configmodels.Exporter) (exporter.TraceExporter, error) {
+func (b *badExporterFactory) CreateTraceExporter(logger *zap.Logger, cfg configmodels.Exporter) (component.TraceExporterOld, error) {
 	return nil, nil
 }
 
-func (b *badExporterFactory) CreateMetricsExporter(logger *zap.Logger, cfg configmodels.Exporter) (exporter.MetricsExporter, error) {
+func (b *badExporterFactory) CreateMetricsExporter(logger *zap.Logger, cfg configmodels.Exporter) (component.MetricsExporterOld, error) {
 	return nil, nil
 }

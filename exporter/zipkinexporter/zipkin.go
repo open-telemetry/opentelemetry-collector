@@ -22,16 +22,17 @@ import (
 	"time"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	zipkinproto "github.com/openzipkin/zipkin-go/proto/v2"
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumererror"
-	"github.com/open-telemetry/opentelemetry-collector/exporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
 	spandatatranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace/spandata"
 	"github.com/open-telemetry/opentelemetry-collector/translator/trace/zipkin"
@@ -45,9 +46,10 @@ import (
 type zipkinExporter struct {
 	defaultServiceName string
 
-	url        string
-	client     *http.Client
-	serializer zipkinreporter.SpanSerializer
+	exportResourceLabels bool
+	url                  string
+	client               *http.Client
+	serializer           zipkinreporter.SpanSerializer
 }
 
 // Default values for Zipkin endpoint.
@@ -56,21 +58,20 @@ const (
 
 	defaultServiceName string = "<missing service name>"
 
+	DefaultExportResourceLabels   = true
 	DefaultZipkinEndpointHostPort = "localhost:9411"
 	DefaultZipkinEndpointURL      = "http://" + DefaultZipkinEndpointHostPort + "/api/v2/spans"
 )
 
 // NewTraceExporter creates an zipkin trace exporter.
-func NewTraceExporter(logger *zap.Logger, config configmodels.Exporter) (exporter.TraceExporter, error) {
+func NewTraceExporter(logger *zap.Logger, config configmodels.Exporter) (component.TraceExporterOld, error) {
 	ze, err := createZipkinExporter(logger, config)
 	if err != nil {
 		return nil, err
 	}
-	zexp, err := exporterhelper.NewTraceExporter(
+	zexp, err := exporterhelper.NewTraceExporterOld(
 		config,
-		ze.PushTraceData,
-		exporterhelper.WithTracing(true),
-		exporterhelper.WithMetrics(true))
+		ze.PushTraceData)
 	if err != nil {
 		return nil, err
 	}
@@ -86,10 +87,16 @@ func createZipkinExporter(logger *zap.Logger, config configmodels.Exporter) (*zi
 		serviceName = zCfg.DefaultServiceName
 	}
 
+	exportResourceLabels := DefaultExportResourceLabels
+	if zCfg.ExportResourceLabels != nil {
+		exportResourceLabels = *zCfg.ExportResourceLabels
+	}
+
 	ze := &zipkinExporter{
-		defaultServiceName: serviceName,
-		url:                zCfg.URL,
-		client:             &http.Client{Timeout: defaultTimeout},
+		defaultServiceName:   serviceName,
+		exportResourceLabels: exportResourceLabels,
+		url:                  zCfg.URL,
+		client:               &http.Client{Timeout: defaultTimeout},
 	}
 
 	switch zCfg.Format {
@@ -104,10 +111,16 @@ func createZipkinExporter(logger *zap.Logger, config configmodels.Exporter) (*zi
 	return ze, nil
 }
 
-func (ze *zipkinExporter) PushTraceData(ctx context.Context, td consumerdata.TraceData) (droppedSpans int, err error) {
+func (ze *zipkinExporter) PushTraceData(ctx context.Context, td consumerdata.TraceData) (int, error) {
 	tbatch := []*zipkinmodel.SpanModel{}
+
+	var resource *resourcepb.Resource
+	if ze.exportResourceLabels {
+		resource = td.Resource
+	}
+
 	for _, span := range td.Spans {
-		sd, err := spandatatranslator.ProtoSpanToOCSpanData(span)
+		sd, err := spandatatranslator.ProtoSpanToOCSpanData(span, resource)
 		if err != nil {
 			return len(td.Spans), consumererror.Permanent(err)
 		}

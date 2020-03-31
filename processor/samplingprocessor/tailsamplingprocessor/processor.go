@@ -30,9 +30,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/observability"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
-	"github.com/open-telemetry/opentelemetry-collector/processor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/samplingprocessor/tailsamplingprocessor/idbatcher"
 	"github.com/open-telemetry/opentelemetry-collector/processor/samplingprocessor/tailsamplingprocessor/sampling"
 )
@@ -56,7 +54,7 @@ type traceKey string
 // policy to sample traces.
 type tailSamplingSpanProcessor struct {
 	ctx             context.Context
-	nextConsumer    consumer.TraceConsumer
+	nextConsumer    consumer.TraceConsumerOld
 	start           sync.Once
 	maxNumTraces    uint64
 	policies        []*Policy
@@ -72,11 +70,9 @@ const (
 	sourceFormat = "tail_sampling"
 )
 
-var _ processor.TraceProcessor = (*tailSamplingSpanProcessor)(nil)
-
 // NewTraceProcessor returns a processor.TraceProcessor that will perform tail sampling according to the given
 // configuration.
-func NewTraceProcessor(logger *zap.Logger, nextConsumer consumer.TraceConsumer, cfg Config) (processor.TraceProcessor, error) {
+func NewTraceProcessor(logger *zap.Logger, nextConsumer consumer.TraceConsumerOld, cfg Config) (component.TraceProcessorOld, error) {
 	if nextConsumer == nil {
 		return nil, oterr.ErrNilNextConsumer
 	}
@@ -91,7 +87,7 @@ func NewTraceProcessor(logger *zap.Logger, nextConsumer consumer.TraceConsumer, 
 	policies := []*Policy{}
 	for i := range cfg.PolicyCfgs {
 		policyCfg := &cfg.PolicyCfgs[i]
-		policyCtx, err := tag.New(ctx, tag.Upsert(tagPolicyKey, policyCfg.Name), tag.Upsert(observability.TagKeyReceiver, sourceFormat))
+		policyCtx, err := tag.New(ctx, tag.Upsert(tagPolicyKey, policyCfg.Name), tag.Upsert(tagSourceFormat, sourceFormat))
 		if err != nil {
 			return nil, err
 		}
@@ -231,8 +227,8 @@ func (tsp *tailSamplingSpanProcessor) ConsumeTraceData(ctx context.Context, td c
 			tsp.logger.Warn("Span without valid TraceId", zap.String("SourceFormat", td.SourceFormat))
 			continue
 		}
-		traceKey := traceKey(span.TraceId)
-		idToSpans[traceKey] = append(idToSpans[traceKey], span)
+		tk := traceKey(span.TraceId)
+		idToSpans[tk] = append(idToSpans[tk], span)
 	}
 
 	var newTraceIDs int64
@@ -314,8 +310,8 @@ func (tsp *tailSamplingSpanProcessor) ConsumeTraceData(ctx context.Context, td c
 	return nil
 }
 
-func (tsp *tailSamplingSpanProcessor) GetCapabilities() processor.Capabilities {
-	return processor.Capabilities{MutatesConsumedData: false}
+func (tsp *tailSamplingSpanProcessor) GetCapabilities() component.ProcessorCapabilities {
+	return component.ProcessorCapabilities{MutatesConsumedData: false}
 }
 
 // Start is invoked during service startup.

@@ -22,20 +22,19 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/processor"
 )
 
 type resourceTraceProcessor struct {
 	resource     *resourcepb.Resource
-	capabilities processor.Capabilities
-	next         consumer.TraceConsumer
+	capabilities component.ProcessorCapabilities
+	next         consumer.TraceConsumerOld
 }
 
-func newResourceTraceProcessor(next consumer.TraceConsumer, cfg *Config) *resourceTraceProcessor {
+func newResourceTraceProcessor(next consumer.TraceConsumerOld, cfg *Config) *resourceTraceProcessor {
 	resource := createResource(cfg)
 	return &resourceTraceProcessor{
 		next:         next,
-		capabilities: processor.Capabilities{MutatesConsumedData: !isEmptyResource(resource)},
+		capabilities: component.ProcessorCapabilities{MutatesConsumedData: !isEmptyResource(resource)},
 		resource:     resource,
 	}
 }
@@ -50,8 +49,8 @@ func (rtp *resourceTraceProcessor) ConsumeTraceData(ctx context.Context, td cons
 	})
 }
 
-// GetCapabilities returns the Capabilities assocciated with the resource processor.
-func (rtp *resourceTraceProcessor) GetCapabilities() processor.Capabilities {
+// GetCapabilities returns the ProcessorCapabilities assocciated with the resource processor.
+func (rtp *resourceTraceProcessor) GetCapabilities() component.ProcessorCapabilities {
 	return rtp.capabilities
 }
 
@@ -67,21 +66,21 @@ func (*resourceTraceProcessor) Shutdown() error {
 
 type resourceMetricProcessor struct {
 	resource     *resourcepb.Resource
-	capabilities processor.Capabilities
-	next         consumer.MetricsConsumer
+	capabilities component.ProcessorCapabilities
+	next         consumer.MetricsConsumerOld
 }
 
-func newResourceMetricProcessor(next consumer.MetricsConsumer, cfg *Config) *resourceMetricProcessor {
+func newResourceMetricProcessor(next consumer.MetricsConsumerOld, cfg *Config) *resourceMetricProcessor {
 	resource := createResource(cfg)
 	return &resourceMetricProcessor{
 		resource:     resource,
-		capabilities: processor.Capabilities{MutatesConsumedData: !isEmptyResource(resource)},
+		capabilities: component.ProcessorCapabilities{MutatesConsumedData: !isEmptyResource(resource)},
 		next:         next,
 	}
 }
 
-// GetCapabilities returns the Capabilities assocciated with the resource processor.
-func (rmp *resourceMetricProcessor) GetCapabilities() processor.Capabilities {
+// GetCapabilities returns the ProcessorCapabilities assocciated with the resource processor.
+func (rmp *resourceMetricProcessor) GetCapabilities() component.ProcessorCapabilities {
 	return rmp.capabilities
 }
 

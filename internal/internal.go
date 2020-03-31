@@ -18,6 +18,8 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/ptypes/timestamp"
+
+	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 )
 
 // TimeToTimestamp converts a time.Time to a timestamp.Timestamp pointer.
@@ -30,4 +32,19 @@ func TimeToTimestamp(t time.Time) *timestamp.Timestamp {
 		Seconds: nanoTime / 1e9,
 		Nanos:   int32(nanoTime % 1e9),
 	}
+}
+
+func TimestampToTime(ts *timestamp.Timestamp) (t time.Time) {
+	if ts == nil {
+		return
+	}
+	return time.Unix(ts.Seconds, int64(ts.Nanos))
+}
+
+func TimestampToUnixNano(ts *timestamp.Timestamp) data.TimestampUnixNano {
+	return data.TimestampUnixNano(uint64(TimestampToTime(ts).UnixNano()))
+}
+
+func UnixNanoToTimestamp(u data.TimestampUnixNano) *timestamp.Timestamp {
+	return TimeToTimestamp(time.Unix(0, int64(u)))
 }

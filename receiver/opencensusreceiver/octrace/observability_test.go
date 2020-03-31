@@ -149,7 +149,7 @@ func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
 	if g, w := receiverSpanData.Links[0], wantLink; !reflect.DeepEqual(g, w) {
 		t.Errorf("Link:\nGot: %#v\nWant: %#v\n", g, w)
 	}
-	if g, w := receiverSpanData.Name, "OpenCensusTraceReceiver.Export"; g != w {
+	if g, w := receiverSpanData.Name, "receiver/oc_trace/TraceDataReceived"; g != w {
 		t.Errorf("ReceiverExport span's SpanData.Name:\nGot:  %q\nWant: %q\n", g, w)
 	}
 

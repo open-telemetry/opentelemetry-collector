@@ -24,11 +24,11 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/compression"
 	compressiongrpc "github.com/open-telemetry/opentelemetry-collector/compression/grpc"
 	"github.com/open-telemetry/opentelemetry-collector/config/configgrpc"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-collector/exporter"
 )
 
 const (
@@ -59,7 +59,7 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 }
 
 // CreateTraceExporter creates a trace exporter based on this config.
-func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Exporter) (exporter.TraceExporter, error) {
+func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Exporter) (component.TraceExporterOld, error) {
 	ocac := config.(*Config)
 	opts, err := f.OCAgentOptions(logger, ocac)
 	if err != nil {
@@ -127,7 +127,7 @@ func (f *Factory) OCAgentOptions(logger *zap.Logger, ocac *Config) ([]ocagent.Ex
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *Factory) CreateMetricsExporter(logger *zap.Logger, config configmodels.Exporter) (exporter.MetricsExporter, error) {
+func (f *Factory) CreateMetricsExporter(logger *zap.Logger, config configmodels.Exporter) (component.MetricsExporterOld, error) {
 	oCfg := config.(*Config)
 	opts, err := f.OCAgentOptions(logger, oCfg)
 	if err != nil {

@@ -36,7 +36,7 @@ import (
 
 // VMMetricsCollector is a struct that collects and reports VM and process metrics (cpu, mem, etc).
 type VMMetricsCollector struct {
-	consumer consumer.MetricsConsumer
+	consumer consumer.MetricsConsumerOld
 
 	startTime time.Time
 
@@ -58,7 +58,7 @@ var rsc *resourcepb.Resource
 var resourceDetectionSync sync.Once
 
 // NewVMMetricsCollector creates a new set of VM and Process Metrics (mem, cpu).
-func NewVMMetricsCollector(si time.Duration, mountPoint, processMountPoint, prefix string, consumer consumer.MetricsConsumer) (*VMMetricsCollector, error) {
+func NewVMMetricsCollector(si time.Duration, mountPoint, processMountPoint, prefix string, consumer consumer.MetricsConsumerOld) (*VMMetricsCollector, error) {
 	if mountPoint == "" {
 		mountPoint = defaultMountPoint
 	}
@@ -159,12 +159,8 @@ func (vmc *VMMetricsCollector) scrapeAndExport() {
 		},
 	)
 
-	var proc procfs.Proc
-	var err error
-	proc, err = vmc.processFs.Proc(vmc.pid)
-	if err == nil {
-		procStat, err := proc.Stat()
-		if err == nil {
+	if proc, err := vmc.processFs.Proc(vmc.pid); err == nil {
+		if procStat, errStat := proc.Stat(); errStat == nil {
 			metrics = append(
 				metrics,
 				&metricspb.Metric{
@@ -173,14 +169,14 @@ func (vmc *VMMetricsCollector) scrapeAndExport() {
 					Timeseries:       []*metricspb.TimeSeries{vmc.getDoubleTimeSeries(procStat.CPUTime(), nil)},
 				},
 			)
+		} else {
+			errs = append(errs, errStat)
 		}
-	}
-	if err != nil {
+	} else {
 		errs = append(errs, err)
 	}
 
-	stat, err := vmc.fs.Stat()
-	if err == nil {
+	if stat, err := vmc.fs.Stat(); err == nil {
 		cpuStat := stat.CPUTotal
 		metrics = append(
 			metrics,

@@ -26,6 +26,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
@@ -65,7 +66,7 @@ func (f *Factory) Type() string {
 }
 
 // CustomUnmarshaler is used to add defaults for named but empty protocols
-func (f *Factory) CustomUnmarshaler() receiver.CustomUnmarshaler {
+func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 	return func(v *viper.Viper, viperKey string, sourceViperSection *viper.Viper, intoCfg interface{}) error {
 		// first load the config normally
 		err := sourceViperSection.UnmarshalExact(intoCfg)
@@ -82,7 +83,7 @@ func (f *Factory) CustomUnmarshaler() receiver.CustomUnmarshaler {
 		// these protocols were excluded during normal loading and we need to add defaults for them
 		vSub := v.Sub(viperKey)
 		if vSub == nil {
-			return fmt.Errorf("Jaeger receiver config is empty")
+			return fmt.Errorf("empty config for Jaeger receiver")
 		}
 		protocols := vSub.GetStringMap(protocolsFieldName)
 		if len(protocols) == 0 {
@@ -114,8 +115,8 @@ func (f *Factory) CreateTraceReceiver(
 	ctx context.Context,
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
-	nextConsumer consumer.TraceConsumer,
-) (receiver.TraceReceiver, error) {
+	nextConsumer consumer.TraceConsumerOld,
+) (component.TraceReceiver, error) {
 
 	// Convert settings in the source config to Configuration struct
 	// that Jaeger receiver understands.
@@ -194,6 +195,15 @@ func (f *Factory) CreateTraceReceiver(
 				return nil, err
 			}
 		}
+
+		// strategies are served over grpc so if grpc is not enabled and strategies are present return an error
+		if len(remoteSamplingConfig.StrategyFile) != 0 {
+			if config.CollectorGRPCPort == 0 {
+				return nil, fmt.Errorf("strategy file requires the GRPC protocol to be enabled")
+			}
+
+			config.RemoteSamplingStrategyFile = remoteSamplingConfig.StrategyFile
+		}
 	}
 
 	if (protoGRPC == nil && protoHTTP == nil && protoTChannel == nil && protoThriftBinary == nil && protoThriftCompact == nil) ||
@@ -210,15 +220,15 @@ func (f *Factory) CreateTraceReceiver(
 	}
 
 	// Create the receiver.
-	return New(ctx, &config, nextConsumer, logger)
+	return New(rCfg.Name(), &config, nextConsumer, logger)
 }
 
 // CreateMetricsReceiver creates a metrics receiver based on provided config.
 func (f *Factory) CreateMetricsReceiver(
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
-	consumer consumer.MetricsConsumer,
-) (receiver.MetricsReceiver, error) {
+	consumer consumer.MetricsConsumerOld,
+) (component.MetricsReceiver, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 

@@ -27,5 +27,9 @@ import (
 	_ "github.com/golangci/golangci-lint/cmd/golangci-lint"
 	_ "github.com/google/addlicense"
 	_ "github.com/jstemmer/go-junit-report"
+	_ "github.com/ory/go-acc"
 	_ "github.com/pavius/impi/cmd/impi"
+	_ "github.com/securego/gosec/cmd/gosec"
+	_ "github.com/tcnksm/ghr"
+	_ "honnef.co/go/tools/cmd/staticcheck"
 )

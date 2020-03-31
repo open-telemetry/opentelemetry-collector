@@ -31,7 +31,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/processortest"
-	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/zipkinreceiver"
 )
 
@@ -321,10 +320,34 @@ func TestReceiversBuilder_Unused(t *testing.T) {
 	receivers.StopAll()
 }
 
+func TestReceiversBuilder_InternalToOcTraceConverter(t *testing.T) {
+	factories, err := config.ExampleComponents()
+	assert.Nil(t, err)
+
+	npf := &processortest.NopProcessorFactory{}
+	factories.Processors[npf.Type()] = npf
+
+	newStyleReceiver := &newStyleReceiverFactory{}
+	factories.Receivers[newStyleReceiver.Type()] = newStyleReceiver
+
+	cfg, err := config.LoadConfigFile(t, "testdata/new_style_receiver_factory.yaml", factories)
+	require.Nil(t, err)
+
+	// Build the pipeline
+	allExporters, err := NewExportersBuilder(zap.NewNop(), cfg, factories.Exporters).Build()
+	assert.NoError(t, err)
+	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), cfg, allExporters, factories.Processors).Build()
+	assert.NoError(t, err)
+	receivers, err := NewReceiversBuilder(zap.NewNop(), cfg, pipelineProcessors, factories.Receivers).Build()
+	assert.NoError(t, err)
+	assert.NotNil(t, receivers)
+
+	receiver := receivers[cfg.Receivers["newstylereceiver"]].receiver
+	assert.NotNil(t, receiver)
+}
+
 // badReceiverFactory is a factory that returns no error but returns a nil object.
 type badReceiverFactory struct{}
-
-var _ receiver.Factory = (*badReceiverFactory)(nil)
 
 func (b *badReceiverFactory) Type() string {
 	return "bf"
@@ -334,7 +357,7 @@ func (b *badReceiverFactory) CreateDefaultConfig() configmodels.Receiver {
 	return &configmodels.ReceiverSettings{}
 }
 
-func (b *badReceiverFactory) CustomUnmarshaler() receiver.CustomUnmarshaler {
+func (b *badReceiverFactory) CustomUnmarshaler() component.CustomUnmarshaler {
 	return nil
 }
 
@@ -342,15 +365,48 @@ func (b *badReceiverFactory) CreateTraceReceiver(
 	ctx context.Context,
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
-	nextConsumer consumer.TraceConsumer,
-) (receiver.TraceReceiver, error) {
+	nextConsumer consumer.TraceConsumerOld,
+) (component.TraceReceiver, error) {
 	return nil, nil
 }
 
 func (b *badReceiverFactory) CreateMetricsReceiver(
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
-	consumer consumer.MetricsConsumer,
-) (receiver.MetricsReceiver, error) {
+	consumer consumer.MetricsConsumerOld,
+) (component.MetricsReceiver, error) {
 	return nil, nil
+}
+
+// newStyleReceiverFactory defines FactoryV2 interface
+type newStyleReceiverFactory struct{}
+
+func (b *newStyleReceiverFactory) Type() string {
+	return "newstylereceiver"
+}
+
+func (b *newStyleReceiverFactory) CreateDefaultConfig() configmodels.Receiver {
+	return &configmodels.ReceiverSettings{}
+}
+
+func (b *newStyleReceiverFactory) CustomUnmarshaler() component.CustomUnmarshaler {
+	return nil
+}
+
+func (b *newStyleReceiverFactory) CreateTraceReceiver(
+	ctx context.Context,
+	params component.ReceiverCreateParams,
+	cfg configmodels.Receiver,
+	nextConsumer consumer.TraceConsumer,
+) (component.TraceReceiver, error) {
+	return &config.ExampleReceiverProducer{}, nil
+}
+
+func (b *newStyleReceiverFactory) CreateMetricsReceiver(
+	ctx context.Context,
+	params component.ReceiverCreateParams,
+	cfg configmodels.Receiver,
+	consumer consumer.MetricsConsumer,
+) (component.MetricsReceiver, error) {
+	return &config.ExampleReceiverProducer{}, nil
 }

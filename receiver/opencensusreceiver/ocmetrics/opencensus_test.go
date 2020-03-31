@@ -18,11 +18,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net"
-	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -39,6 +37,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal"
 	"github.com/open-telemetry/opentelemetry-collector/observability"
+	"github.com/open-telemetry/opentelemetry-collector/testutils"
 )
 
 // TODO: add E2E tests once ocagent implements metric service client.
@@ -52,7 +51,7 @@ import (
 func TestExportMultiplexing(t *testing.T) {
 	metricSink := newMetricAppender()
 
-	_, port, doneFn := ocReceiverOnGRPCServer(t, metricSink, WithMetricBufferPeriod(90*time.Millisecond))
+	_, port, doneFn := ocReceiverOnGRPCServer(t, metricSink)
 	defer doneFn()
 
 	metricsClient, metricsClientDoneFn, err := makeMetricsServiceClient(port)
@@ -162,7 +161,7 @@ func TestExportMultiplexing(t *testing.T) {
 func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 	metricSink := newMetricAppender()
 
-	_, port, doneFn := ocReceiverOnGRPCServer(t, metricSink, WithMetricBufferPeriod(90*time.Millisecond))
+	_, port, doneFn := ocReceiverOnGRPCServer(t, metricSink)
 	defer doneFn()
 
 	metricsClient, metricsClientDoneFn, err := makeMetricsServiceClient(port)
@@ -236,7 +235,7 @@ func TestExportProtocolConformation_metricsInFirstMessage(t *testing.T) {
 
 	metricSink := newMetricAppender()
 
-	_, port, doneFn := ocReceiverOnGRPCServer(t, metricSink, WithMetricBufferPeriod(70*time.Millisecond))
+	_, port, doneFn := ocReceiverOnGRPCServer(t, metricSink)
 	defer doneFn()
 
 	metricsClient, metricsClientDoneFn, err := makeMetricsServiceClient(port)
@@ -321,7 +320,7 @@ func newMetricAppender() *metricAppender {
 	return &metricAppender{metricsPerNode: make(map[*commonpb.Node][]*metricspb.Metric)}
 }
 
-var _ consumer.MetricsConsumer = (*metricAppender)(nil)
+var _ consumer.MetricsConsumerOld = (*metricAppender)(nil)
 
 func (sa *metricAppender) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
 	sa.Lock()
@@ -332,7 +331,7 @@ func (sa *metricAppender) ConsumeMetricsData(ctx context.Context, md consumerdat
 	return nil
 }
 
-func ocReceiverOnGRPCServer(t *testing.T, sr consumer.MetricsConsumer, opts ...Option) (oci *Receiver, port int, done func()) {
+func ocReceiverOnGRPCServer(t *testing.T, sr consumer.MetricsConsumerOld) (oci *Receiver, port int, done func()) {
 	ln, err := net.Listen("tcp", "localhost:")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 
@@ -343,18 +342,13 @@ func ocReceiverOnGRPCServer(t *testing.T, sr consumer.MetricsConsumer, opts ...O
 		}
 	}
 
-	_, port, err = hostPortFromAddr(ln.Addr())
+	_, port, err = testutils.HostPortFromAddr(ln.Addr())
 	if err != nil {
 		done()
 		t.Fatalf("Failed to parse host:port from listener address: %s error: %v", ln.Addr(), err)
 	}
 
-	if err != nil {
-		done()
-		t.Fatalf("Failed to create new agent: %v", err)
-	}
-
-	oci, err = New(sr, opts...)
+	oci, err = New(receiverTagValue, sr)
 	require.NoError(t, err, "Failed to create the Receiver: %v", err)
 
 	// Now run it as a gRPC server
@@ -365,17 +359,6 @@ func ocReceiverOnGRPCServer(t *testing.T, sr consumer.MetricsConsumer, opts ...O
 	}()
 
 	return oci, port, done
-}
-
-func hostPortFromAddr(addr net.Addr) (host string, port int, err error) {
-	addrStr := addr.String()
-	sepIndex := strings.LastIndex(addrStr, ":")
-	if sepIndex < 0 {
-		return "", -1, errors.New("failed to parse host:port")
-	}
-	host, portStr := addrStr[:sepIndex], addrStr[sepIndex+1:]
-	port, err = strconv.Atoi(portStr)
-	return host, port, err
 }
 
 func (sa *metricAppender) forEachEntry(fn func(*commonpb.Node, []*metricspb.Metric)) {

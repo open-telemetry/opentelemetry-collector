@@ -24,4 +24,10 @@ type Config struct {
 
 	// LogLevel defines log level of the logging exporter; options are debug, info, warn, error.
 	LogLevel string `mapstructure:"loglevel"`
+
+	// SamplingInitial defines how many samples are initially logged during each second.
+	SamplingInitial int `mapstructure:"sampling_initial"`
+
+	// SamplingThereafter defines the sampling rate after the initial samples are logged.
+	SamplingThereafter int `mapstructure:"sampling_thereafter"`
 }

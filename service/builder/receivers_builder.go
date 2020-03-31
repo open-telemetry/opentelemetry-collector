@@ -25,8 +25,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
+	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
-	"github.com/open-telemetry/opentelemetry-collector/receiver"
 )
 
 var errUnusedReceiver = errors.New("receiver defined but not used by any pipeline")
@@ -34,7 +34,7 @@ var errUnusedReceiver = errors.New("receiver defined but not used by any pipelin
 // builtReceiver is a receiver that is built based on a config. It can have
 // a trace and/or a metrics component.
 type builtReceiver struct {
-	receiver receiver.Receiver
+	receiver component.Receiver
 }
 
 // Stop the receiver.
@@ -51,10 +51,19 @@ func (rcv *builtReceiver) Start(host component.Host) error {
 type Receivers map[configmodels.Receiver]*builtReceiver
 
 // StopAll stops all receivers.
-func (rcvs Receivers) StopAll() {
+func (rcvs Receivers) StopAll() error {
+	var errs []error
 	for _, rcv := range rcvs {
-		rcv.Stop()
+		err := rcv.Stop()
+		if err != nil {
+			errs = append(errs, err)
+		}
 	}
+
+	if len(errs) != 0 {
+		return oterr.CombineErrors(errs)
+	}
+	return nil
 }
 
 // StartAll starts all receivers.
@@ -75,24 +84,24 @@ type ReceiversBuilder struct {
 	logger         *zap.Logger
 	config         *configmodels.Config
 	builtPipelines BuiltPipelines
-	factories      map[string]receiver.Factory
+	factories      map[string]component.ReceiverFactoryBase
 }
 
-// NewReceiversBuilder creates a new ReceiversBuilder. Call Build() on the returned value.
+// NewReceiversBuilder creates a new ReceiversBuilder. Call BuildProcessors() on the returned value.
 func NewReceiversBuilder(
 	logger *zap.Logger,
 	config *configmodels.Config,
 	builtPipelines BuiltPipelines,
-	factories map[string]receiver.Factory,
+	factories map[string]component.ReceiverFactoryBase,
 ) *ReceiversBuilder {
 	return &ReceiversBuilder{logger, config, builtPipelines, factories}
 }
 
-// Build receivers from config.
+// BuildProcessors receivers from config.
 func (rb *ReceiversBuilder) Build() (Receivers, error) {
 	receivers := make(Receivers)
 
-	// Build receivers based on configuration.
+	// BuildProcessors receivers based on configuration.
 	for _, cfg := range rb.config.Receivers {
 		rcv, err := rb.buildReceiver(cfg)
 		if err != nil {
@@ -150,7 +159,7 @@ func (rb *ReceiversBuilder) findPipelinesToAttach(config configmodels.Receiver) 
 }
 
 func (rb *ReceiversBuilder) attachReceiverToPipelines(
-	factory receiver.Factory,
+	factory component.ReceiverFactoryBase,
 	dataType configmodels.DataType,
 	config configmodels.Receiver,
 	rcv *builtReceiver,
@@ -160,7 +169,7 @@ func (rb *ReceiversBuilder) attachReceiverToPipelines(
 	// the receiver. Create the receiver of corresponding data type and make
 	// sure its output is fanned out to all attached pipelines.
 	var err error
-	var createdReceiver receiver.Receiver
+	var createdReceiver component.Receiver
 
 	switch dataType {
 	case configmodels.TracesDataType:
@@ -168,11 +177,11 @@ func (rb *ReceiversBuilder) attachReceiverToPipelines(
 		junction := buildFanoutTraceConsumer(builtPipelines)
 
 		// Now create the receiver and tell it to send to the junction point.
-		createdReceiver, err = factory.CreateTraceReceiver(context.Background(), rb.logger, config, junction)
+		createdReceiver, err = createTraceReceiver(context.Background(), factory, rb.logger, config, junction)
 
 	case configmodels.MetricsDataType:
 		junction := buildFanoutMetricConsumer(builtPipelines)
-		createdReceiver, err = factory.CreateMetricsReceiver(rb.logger, config, junction)
+		createdReceiver, err = createMetricsReceiver(context.Background(), factory, rb.logger, config, junction)
 	}
 
 	if err != nil {
@@ -250,13 +259,13 @@ func (rb *ReceiversBuilder) buildReceiver(config configmodels.Receiver) (*builtR
 	return rcv, nil
 }
 
-func buildFanoutTraceConsumer(pipelines []*builtPipeline) consumer.TraceConsumer {
+func buildFanoutTraceConsumer(pipelines []*builtPipeline) consumer.TraceConsumerBase {
 	// Optimize for the case when there is only one processor, no need to create junction point.
 	if len(pipelines) == 1 {
 		return pipelines[0].firstTC
 	}
 
-	var pipelineConsumers []consumer.TraceConsumer
+	var pipelineConsumers []consumer.TraceConsumerBase
 	anyPipelineMutatesData := false
 	for _, pipeline := range pipelines {
 		pipelineConsumers = append(pipelineConsumers, pipeline.firstTC)
@@ -270,18 +279,18 @@ func buildFanoutTraceConsumer(pipelines []*builtPipeline) consumer.TraceConsumer
 		// TODO: if there are more than 2 pipelines only clone data for pipelines that
 		// declare the intent to mutate the data. Pipelines that do not mutate the data
 		// can consume shared data.
-		return processor.NewTraceCloningFanOutConnector(pipelineConsumers)
+		return processor.CreateTraceCloningFanOutConnector(pipelineConsumers)
 	}
-	return processor.NewTraceFanOutConnector(pipelineConsumers)
+	return processor.CreateTraceFanOutConnector(pipelineConsumers)
 }
 
-func buildFanoutMetricConsumer(pipelines []*builtPipeline) consumer.MetricsConsumer {
+func buildFanoutMetricConsumer(pipelines []*builtPipeline) consumer.MetricsConsumerBase {
 	// Optimize for the case when there is only one processor, no need to create junction point.
 	if len(pipelines) == 1 {
 		return pipelines[0].firstMC
 	}
 
-	var pipelineConsumers []consumer.MetricsConsumer
+	var pipelineConsumers []consumer.MetricsConsumerBase
 	anyPipelineMutatesData := false
 	for _, pipeline := range pipelines {
 		pipelineConsumers = append(pipelineConsumers, pipeline.firstMC)
@@ -295,7 +304,77 @@ func buildFanoutMetricConsumer(pipelines []*builtPipeline) consumer.MetricsConsu
 		// TODO: if there are more than 2 pipelines only clone data for pipelines that
 		// declare the intent to mutate the data. Pipelines that do not mutate the data
 		// can consume shared data.
-		return processor.NewMetricsCloningFanOutConnector(pipelineConsumers)
+		return processor.CreateMetricsCloningFanOutConnector(pipelineConsumers)
 	}
-	return processor.NewMetricsFanOutConnector(pipelineConsumers)
+	return processor.CreateMetricsFanOutConnector(pipelineConsumers)
+}
+
+// createTraceReceiver is a helper function that creates trace receiver based on the current receiver type
+// and type of the next consumer.
+func createTraceReceiver(
+	ctx context.Context,
+	factory component.ReceiverFactoryBase,
+	logger *zap.Logger,
+	cfg configmodels.Receiver,
+	nextConsumer consumer.TraceConsumerBase,
+) (component.TraceReceiver, error) {
+	if factoryV2, ok := factory.(component.ReceiverFactory); ok {
+		creationParams := component.ReceiverCreateParams{Logger: logger}
+
+		// If both receiver and consumer are of the new type (can manipulate on internal data structure),
+		// use ProcessorFactory.CreateTraceReceiver.
+		if nextConsumerV2, ok := nextConsumer.(consumer.TraceConsumer); ok {
+			return factoryV2.CreateTraceReceiver(ctx, creationParams, cfg, nextConsumerV2)
+		}
+
+		// If receiver is of the new type, but downstream consumer is of the old type,
+		// use internalToOCTraceConverter compatibility shim.
+		traceConverter := consumer.NewInternalToOCTraceConverter(nextConsumer.(consumer.TraceConsumerOld))
+		return factoryV2.CreateTraceReceiver(ctx, creationParams, cfg, traceConverter)
+	}
+
+	// If both receiver and consumer are of the old type (can manipulate on OC traces only),
+	// use Factory.CreateTraceReceiver.
+	if nextConsumer, ok := nextConsumer.(consumer.TraceConsumerOld); ok {
+		return factory.(component.ReceiverFactoryOld).CreateTraceReceiver(ctx, logger, cfg, nextConsumer)
+	}
+
+	// Old type receiver and a new type consumer usecase is not supported.
+	// TODO: This case can be supported since we have OC->internal traces translation function
+	return nil, errors.New("OC Traces -> internal data format translation is not supported")
+}
+
+// createMetricsReceiver is a helper function that creates metric receiver based
+// on the current receiver type and type of the next consumer.
+func createMetricsReceiver(
+	ctx context.Context,
+	factory component.ReceiverFactoryBase,
+	logger *zap.Logger,
+	cfg configmodels.Receiver,
+	nextConsumer consumer.MetricsConsumerBase,
+) (component.MetricsReceiver, error) {
+	if factoryV2, ok := factory.(component.ReceiverFactory); ok {
+		creationParams := component.ReceiverCreateParams{Logger: logger}
+
+		// If both receiver and consumer are of the new type (can manipulate on internal data structure),
+		// use ProcessorFactory.CreateMetricsReceiver.
+		if nextConsumerV2, ok := nextConsumer.(consumer.MetricsConsumer); ok {
+			return factoryV2.CreateMetricsReceiver(ctx, creationParams, cfg, nextConsumerV2)
+		}
+
+		// If receiver is of the new type, but downstream consumer is of the old type,
+		// use internalToOCMetricsConverter compatibility shim.
+		metricsConverter := consumer.NewInternalToOCMetricsConverter(nextConsumer.(consumer.MetricsConsumerOld))
+		return factoryV2.CreateMetricsReceiver(ctx, creationParams, cfg, metricsConverter)
+	}
+
+	// If both receiver and consumer are of the old type (can manipulate on OC metrics only),
+	// use Factory.CreateMetricsReceiver.
+	if nextConsumer, ok := nextConsumer.(consumer.MetricsConsumerOld); ok {
+		return factory.(component.ReceiverFactoryOld).CreateMetricsReceiver(logger, cfg, nextConsumer)
+	}
+
+	// Old type receiver and a new type consumer usecase is not supported.
+	// TODO: This case can be supported once we have OC->internal metrics translation function
+	return nil, errors.New("OC Metrics -> internal data format translation is not supported")
 }

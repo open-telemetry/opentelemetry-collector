@@ -41,12 +41,17 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal"
-	"github.com/open-telemetry/opentelemetry-collector/observability"
+	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
-	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 	"github.com/open-telemetry/opentelemetry-collector/translator/trace/zipkin"
 )
+
+const (
+	receiverTransport = "http"
+)
+
+var errNextConsumerRespBody = []byte(`"Internal Server Error"`)
 
 // ZipkinReceiver type is used to handle spans received in the Zipkin format.
 type ZipkinReceiver struct {
@@ -56,18 +61,18 @@ type ZipkinReceiver struct {
 	// addr is the address onto which the HTTP server will be bound
 	addr         string
 	host         component.Host
-	nextConsumer consumer.TraceConsumer
+	nextConsumer consumer.TraceConsumerOld
+	instanceName string
 
 	startOnce sync.Once
 	stopOnce  sync.Once
 	server    *http.Server
 }
 
-var _ receiver.TraceReceiver = (*ZipkinReceiver)(nil)
 var _ http.Handler = (*ZipkinReceiver)(nil)
 
 // New creates a new zipkinreceiver.ZipkinReceiver reference.
-func New(address string, nextConsumer consumer.TraceConsumer) (*ZipkinReceiver, error) {
+func New(instanceName, address string, nextConsumer consumer.TraceConsumerOld) (*ZipkinReceiver, error) {
 	if nextConsumer == nil {
 		return nil, oterr.ErrNilNextConsumer
 	}
@@ -75,6 +80,7 @@ func New(address string, nextConsumer consumer.TraceConsumer) (*ZipkinReceiver, 
 	zr := &ZipkinReceiver{
 		addr:         address,
 		nextConsumer: nextConsumer,
+		instanceName: instanceName,
 	}
 	return zr, nil
 }
@@ -289,17 +295,10 @@ const (
 // The ZipkinReceiver receives spans from endpoint /api/v2 as JSON,
 // unmarshals them and sends them along to the nextConsumer.
 func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	parentCtx := r.Context()
+	ctx := r.Context()
 	if c, ok := client.FromHTTP(r); ok {
-		parentCtx = client.NewContext(parentCtx, c)
+		ctx = client.NewContext(ctx, c)
 	}
-
-	// Trace this method
-	ctx, span := trace.StartSpan(parentCtx, "ZipkinReceiver.Export")
-	defer span.End()
-
-	// If the starting RPC has a parent span, then add it as a parent link.
-	observability.SetParentLink(parentCtx, span)
 
 	// Now deserialize and process the spans.
 	asZipkinv1 := r.URL != nil && strings.Contains(r.URL.Path, "api/v1/spans")
@@ -311,7 +310,9 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		receiverTagValue = zipkinV2TagValue
 	}
 
-	ctxWithReceiverName := observability.ContextWithReceiverName(ctx, receiverTagValue)
+	ctx = obsreport.ReceiverContext(
+		ctx, zr.instanceName, receiverTransport, receiverTagValue)
+	ctx = obsreport.StartTraceDataReceiveOp(ctx, zr.instanceName, receiverTransport)
 
 	pr := processBodyIfNecessary(r)
 	slurp, _ := ioutil.ReadAll(pr)
@@ -329,7 +330,7 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		span.SetStatus(trace.Status{
+		trace.FromContext(ctx).SetStatus(trace.Status{
 			Code:    trace.StatusCodeInvalidArgument,
 			Message: err.Error(),
 		})
@@ -337,15 +338,27 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var consumerErr error
 	tdsSize := 0
 	for _, td := range tds {
-		td.SourceFormat = "zipkin"
-		zr.nextConsumer.ConsumeTraceData(ctxWithReceiverName, td)
 		tdsSize += len(td.Spans)
+		if consumerErr != nil {
+			// Do not attempt the remaining data, continue on the loop just to
+			// count all the data on the request.
+			continue
+		}
+		td.SourceFormat = "zipkin"
+		consumerErr = zr.nextConsumer.ConsumeTraceData(ctx, td)
 	}
 
-	// TODO: Get the number of dropped spans from the conversion failure.
-	observability.RecordMetricsForTraceReceiver(ctxWithReceiverName, tdsSize, 0)
+	obsreport.EndTraceDataReceiveOp(ctx, receiverTagValue, tdsSize, consumerErr)
+
+	if consumerErr != nil {
+		// Transient error, due to some internal condition.
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write(errNextConsumerRespBody)
+		return
+	}
 
 	// Finally send back the response "Accepted" as
 	// required at https://zipkin.io/zipkin-api/#/default/post_spans

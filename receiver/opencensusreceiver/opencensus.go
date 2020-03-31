@@ -33,7 +33,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/observability"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
-	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/opencensusreceiver/ocmetrics"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/opencensusreceiver/octrace"
 )
@@ -48,28 +47,33 @@ type Receiver struct {
 	corsOrigins       []string
 	grpcServerOptions []grpc.ServerOption
 
-	traceReceiverOpts   []octrace.Option
-	metricsReceiverOpts []ocmetrics.Option
+	traceReceiverOpts []octrace.Option
 
 	traceReceiver   *octrace.Receiver
 	metricsReceiver *ocmetrics.Receiver
 
-	traceConsumer   consumer.TraceConsumer
-	metricsConsumer consumer.MetricsConsumer
+	traceConsumer   consumer.TraceConsumerOld
+	metricsConsumer consumer.MetricsConsumerOld
 
 	stopOnce                 sync.Once
 	startServerOnce          sync.Once
 	startTraceReceiverOnce   sync.Once
 	startMetricsReceiverOnce sync.Once
-}
 
-var _ receiver.MetricsReceiver = (*Receiver)(nil)
-var _ receiver.TraceReceiver = (*Receiver)(nil)
+	instanceName string
+}
 
 // New just creates the OpenCensus receiver services. It is the caller's
 // responsibility to invoke the respective Start*Reception methods as well
 // as the various Stop*Reception methods to end it.
-func New(transport string, addr string, tc consumer.TraceConsumer, mc consumer.MetricsConsumer, opts ...Option) (*Receiver, error) {
+func New(
+	instanceName string,
+	transport string,
+	addr string,
+	tc consumer.TraceConsumerOld,
+	mc consumer.MetricsConsumerOld,
+	opts ...Option,
+) (*Receiver, error) {
 	// TODO: (@odeke-em) use options to enable address binding changes.
 	ln, err := net.Listen(transport, addr)
 	if err != nil {
@@ -86,6 +90,7 @@ func New(transport string, addr string, tc consumer.TraceConsumer, mc consumer.M
 		opt.withReceiver(ocr)
 	}
 
+	ocr.instanceName = instanceName
 	ocr.traceConsumer = tc
 	ocr.metricsConsumer = mc
 
@@ -102,7 +107,8 @@ func (ocr *Receiver) registerTraceConsumer() error {
 	var err = oterr.ErrAlreadyStarted
 
 	ocr.startTraceReceiverOnce.Do(func() {
-		ocr.traceReceiver, err = octrace.New(ocr.traceConsumer, ocr.traceReceiverOpts...)
+		ocr.traceReceiver, err = octrace.New(
+			ocr.instanceName, ocr.traceConsumer, ocr.traceReceiverOpts...)
 		if err == nil {
 			srv := ocr.grpcServer()
 			agenttracepb.RegisterTraceServiceServer(srv, ocr.traceReceiver)
@@ -116,7 +122,8 @@ func (ocr *Receiver) registerMetricsConsumer() error {
 	var err = oterr.ErrAlreadyStarted
 
 	ocr.startMetricsReceiverOnce.Do(func() {
-		ocr.metricsReceiver, err = ocmetrics.New(ocr.metricsConsumer, ocr.metricsReceiverOpts...)
+		ocr.metricsReceiver, err = ocmetrics.New(
+			ocr.instanceName, ocr.metricsConsumer)
 		if err == nil {
 			srv := ocr.grpcServer()
 			agentmetricspb.RegisterMetricsServiceServer(srv, ocr.metricsReceiver)
@@ -179,7 +186,7 @@ func (ocr *Receiver) stop() error {
 	ocr.mu.Lock()
 	defer ocr.mu.Unlock()
 
-	var err = oterr.ErrAlreadyStopped
+	err := oterr.ErrAlreadyStopped
 	ocr.stopOnce.Do(func() {
 		err = nil
 
@@ -249,18 +256,18 @@ func (ocr *Receiver) startServer(host component.Host) error {
 
 		httpL := m.Match(cmux.Any())
 		go func() {
-			if err := ocr.serverGRPC.Serve(grpcL); err != nil {
-				host.ReportFatalError(err)
+			if errGrpc := ocr.serverGRPC.Serve(grpcL); errGrpc != nil {
+				host.ReportFatalError(errGrpc)
 			}
 		}()
 		go func() {
-			if err := ocr.httpServer().Serve(httpL); err != nil {
-				host.ReportFatalError(err)
+			if errHTTP := ocr.httpServer().Serve(httpL); errHTTP != nil {
+				host.ReportFatalError(errHTTP)
 			}
 		}()
 		go func() {
-			if err := m.Serve(); err != nil {
-				host.ReportFatalError(err)
+			if errServe := m.Serve(); errServe != nil {
+				host.ReportFatalError(errServe)
 			}
 		}()
 	})

@@ -22,7 +22,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/extension"
 )
 
 type zpagesExtension struct {
@@ -30,8 +29,6 @@ type zpagesExtension struct {
 	logger *zap.Logger
 	server http.Server
 }
-
-var _ (extension.ServiceExtension) = (*zpagesExtension)(nil)
 
 func (zpe *zpagesExtension) Start(host component.Host) error {
 	zPagesMux := http.NewServeMux()

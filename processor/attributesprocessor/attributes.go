@@ -28,7 +28,7 @@ import (
 )
 
 type attributesProcessor struct {
-	nextConsumer consumer.TraceConsumer
+	nextConsumer consumer.TraceConsumerOld
 	config       attributesConfig
 }
 
@@ -55,7 +55,7 @@ type attributeAction struct {
 // newTraceProcessor returns a processor that modifies attributes of a span.
 // To construct the attributes processors, the use of the factory methods are required
 // in order to validate the inputs.
-func newTraceProcessor(nextConsumer consumer.TraceConsumer, config attributesConfig) (processor.TraceProcessor, error) {
+func newTraceProcessor(nextConsumer consumer.TraceConsumerOld, config attributesConfig) (component.TraceProcessorOld, error) {
 	if nextConsumer == nil {
 		return nil, oterr.ErrNilNextConsumer
 	}
@@ -104,14 +104,16 @@ func (a *attributesProcessor) ConsumeTraceData(ctx context.Context, td consumerd
 				// There is no need to check if the target key exists in the attribute map
 				// because the value is to be set regardless.
 				setAttribute(action, span.Attributes.AttributeMap)
+			case HASH:
+				hashAttribute(action, span.Attributes.AttributeMap)
 			}
 		}
 	}
 	return a.nextConsumer.ConsumeTraceData(ctx, td)
 }
 
-func (a *attributesProcessor) GetCapabilities() processor.Capabilities {
-	return processor.Capabilities{MutatesConsumedData: true}
+func (a *attributesProcessor) GetCapabilities() component.ProcessorCapabilities {
+	return component.ProcessorCapabilities{MutatesConsumedData: true}
 }
 
 // Start is invoked during service startup.
@@ -151,6 +153,12 @@ func setAttribute(action attributeAction, attributesMap map[string]*tracepb.Attr
 	} else if value, fromAttributeExists := attributesMap[action.FromAttribute]; fromAttributeExists {
 		// Set the key with a value from another attribute, if it exists.
 		attributesMap[action.Key] = value
+	}
+}
+
+func hashAttribute(action attributeAction, attributesMap map[string]*tracepb.AttributeValue) {
+	if value, exists := attributesMap[action.Key]; exists {
+		attributesMap[action.Key] = SHA1AttributeHahser(value)
 	}
 }
 

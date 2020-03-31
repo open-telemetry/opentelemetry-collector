@@ -3,8 +3,8 @@
 This is the long-term, draft Roadmap. Note that this a vision document that reflects our
 current desires. It is not a commitment to implement everything listed in this roadmap.
 The primary purpose of this document is to ensure all contributors work in alignment.
-As our vision changes over time maintainers reserve the right to modify this roadmap,
-add and _remove_ items from it.
+As our vision changes over time maintainers reserve the right to add, modify, and _remove_
+items from this roadmap.
 
 Description|Status|Links|
 -----------|------|-----|
@@ -17,8 +17,9 @@ Add code coverage collection to Contrib repository| |
 Add 2-stage build pipeline: separate build and certification jobs| |
 | |
 **Performance**|
-Convert internal memory representation to OTLP Protobuf| |[#478](https://github.com/open-telemetry/opentelemetry-collector/issues/478)
+Convert internal memory representation to OTLP Protobuf|In progress |[#478](https://github.com/open-telemetry/opentelemetry-collector/issues/478)
 Research: explore Fast pass-through mode| |[Partial Protobufs](https://blog.najaryan.net/posts/partial-protobuf-encoding/)
+Research: alternative compression algorithms| |
 | |
 **Observability**|
 Add pipeline metrics| |[observability.md](observability.md)
@@ -31,8 +32,10 @@ Research: OTLP over HTTP 1.1| |
 Add Logs and Events as new data type|
 | |
 **5 Min to Value**|
-Distribution packages for most common targets (e.g. Docker image, RPM, etc)|
-Detection and collection of environment metrics and tags (AWS, k8s, etc)|
+Distribution packages for most common targets (e.g. Docker, RPM, Windows, etc)|
+Detection and collection of environment metrics and tags (AWS, k8s, etc)|k8s Done|
 | |
 **Other Features**|
 Graceful shutdown (pipeline draining)| |[#483](https://github.com/open-telemetry/opentelemetry-collector/issues/483)
+Attribute SHA1 hashing|In progress |[#289](https://github.com/open-telemetry/opentelemetry-collector/issues/289)
+Common code for HTTP receivers and exporters| |[#505](https://github.com/open-telemetry/opentelemetry-collector/issues/505)

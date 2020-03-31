@@ -17,19 +17,21 @@ package spandata
 
 import (
 	"errors"
-	"time"
 
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"go.opencensus.io/trace"
 	"go.opencensus.io/trace/tracestate"
+
+	"github.com/open-telemetry/opentelemetry-collector/internal"
 )
 
 var errNilSpan = errors.New("expected a non-nil span")
 
 // ProtoSpanToOCSpanData transforms a protobuf span into the equivalent trace.SpanData one.
-func ProtoSpanToOCSpanData(span *tracepb.Span) (*trace.SpanData, error) {
+// When resource is not nil, then its labels are attached to span attributes
+func ProtoSpanToOCSpanData(span *tracepb.Span, resource *resourcepb.Resource) (*trace.SpanData, error) {
 	if span == nil {
 		return nil, errNilSpan
 	}
@@ -47,10 +49,10 @@ func ProtoSpanToOCSpanData(span *tracepb.Span) (*trace.SpanData, error) {
 	sd := &trace.SpanData{
 		SpanContext:     sc,
 		ParentSpanID:    parentSpanID,
-		StartTime:       timestampToTime(span.StartTime),
-		EndTime:         timestampToTime(span.EndTime),
+		StartTime:       internal.TimestampToTime(span.StartTime),
+		EndTime:         internal.TimestampToTime(span.EndTime),
 		Name:            derefTruncatableString(span.Name),
-		Attributes:      protoAttributesToOCAttributes(span.Attributes),
+		Attributes:      protoAttributesToOCAttributes(span.Attributes, resource),
 		Links:           protoLinksToOCLinks(span.Links),
 		Status:          protoStatusToOCStatus(span.Status),
 		SpanKind:        protoSpanKindToOCSpanKind(span.Kind),
@@ -60,13 +62,6 @@ func ProtoSpanToOCSpanData(span *tracepb.Span) (*trace.SpanData, error) {
 	}
 
 	return sd, nil
-}
-
-func timestampToTime(ts *timestamp.Timestamp) (t time.Time) {
-	if ts == nil {
-		return
-	}
-	return time.Unix(ts.Seconds, int64(ts.Nanos))
 }
 
 func derefTruncatableString(ts *tracepb.TruncatableString) string {
@@ -136,13 +131,20 @@ func protoLinkTypeToOCLinkType(lt tracepb.Span_Link_Type) trace.LinkType {
 	}
 }
 
-func protoAttributesToOCAttributes(attrs *tracepb.Span_Attributes) map[string]interface{} {
-	if attrs == nil {
+func protoAttributesToOCAttributes(attrs *tracepb.Span_Attributes, resource *resourcepb.Resource) map[string]interface{} {
+	if attrs == nil && resource == nil {
 		return nil
 	}
 
 	ocAttrsMap := make(map[string]interface{})
-	if len(attrs.AttributeMap) == 0 {
+
+	if resource != nil {
+		for key, value := range resource.Labels {
+			ocAttrsMap[key] = value
+		}
+	}
+
+	if attrs == nil || len(attrs.AttributeMap) == 0 {
 		return ocAttrsMap
 	}
 	for key, attr := range attrs.AttributeMap {
@@ -160,6 +162,7 @@ func protoAttributesToOCAttributes(attrs *tracepb.Span_Attributes) map[string]in
 			ocAttrsMap[key] = derefTruncatableString(value.StringValue)
 		}
 	}
+
 	return ocAttrsMap
 }
 
@@ -189,7 +192,7 @@ func protoTimeEventsToOCMessageEvents(tes *tracepb.Span_TimeEvents) []trace.Mess
 		ocme.UncompressedByteSize = int64(me.UncompressedSize)
 		ocme.CompressedByteSize = int64(me.CompressedSize)
 		ocme.EventType = protoMessageEventTypeToOCEventType(me.Type)
-		ocme.Time = timestampToTime(te.Time)
+		ocme.Time = internal.TimestampToTime(te.Time)
 		ocmes = append(ocmes, ocme)
 	}
 
@@ -221,7 +224,7 @@ func protoTimeEventsToOCAnnotations(tes *tracepb.Span_TimeEvents) []trace.Annota
 		// they have these attributes as int64 yet the proto definitions
 		// are uint64, this could be a potential loss of precision particularly
 		// in very high traffic systems.
-		ocann.Time = timestampToTime(te.Time)
+		ocann.Time = internal.TimestampToTime(te.Time)
 		ocann.Message = me.Description.GetValue()
 		ocann.Attributes = protoSpanAttributesToOCAttributes(me.Attributes)
 		ocanns = append(ocanns, ocann)
