@@ -92,11 +92,10 @@ const sliceTestTemplate = `func Test${structName}(t *testing.T) {
 	es = new${structName}(&[]*${originName}{})
 	assert.EqualValues(t, 0, es.Len())
 	es = New${structName}(13)
-	defaultVal := New${elementName}()
 	testVal := generateTest${elementName}()
 	assert.EqualValues(t, 13, es.Len())
 	for i := 0; i < es.Len(); i++ {
-		assert.EqualValues(t, defaultVal, es.Get(i))
+		assert.EqualValues(t, NewEmpty${elementName}(), es.Get(i))
 		fillTest${elementName}(es.Get(i))
 		assert.EqualValues(t, testVal, es.Get(i))
 	}
@@ -142,32 +141,43 @@ const messageTemplate = `${description}
 // This is a reference type, if passsed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use New${structName} function to create new instances.
+// Must use NewEmpty${structName} function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ${structName} struct {
 	// Wrap OTLP ${originName}.
 	orig *${originName}
 }
 
-// New${structName} creates a new empty ${structName}.
-func New${structName}() ${structName} {
-	return ${structName}{&${originName}{}}
-}
-
 func new${structName}(orig *${originName}) ${structName} {
 	return ${structName}{orig}
+}
+
+// NewEmpty${structName} creates a new empty ${structName}.
+//
+// This must be used only in testing code since no "Set" method available.
+func NewEmpty${structName}() ${structName} {
+	return new${structName}(&${originName}{})
+}
+
+// IsNil returns true if the underlying data are nil.
+// 
+// Important: All other functions will cause a runtime error if this returns "true".
+func (ms ${structName}) IsNil() bool {
+	return ms.orig == nil
 }`
 
 const messageTestHeaderTemplate = `func Test${structName}(t *testing.T) {
-	ms := New${structName}()
-	assert.EqualValues(t, new${structName}(&${originName}{}), ms)`
+	assert.EqualValues(t, true, new${structName}(nil).IsNil())
+	ms := new${structName}(&${originName}{})
+	assert.EqualValues(t, false, ms.IsNil())`
 
 const messageTestFooterTemplate = `	assert.EqualValues(t, generateTest${structName}(), ms)
 }`
 
-const messageGenerateTestHeaderTemplate = `func generateTest${structName}() ${structName} {
-	tv := New${structName}()`
-const messageGenerateTestFooterTemplate = `	return tv
+const messageGenerateTestTemplate = `func generateTest${structName}() ${structName} {
+	tv := new${structName}(&${originName}{})
+	fillTest${structName}(tv)
+	return tv
 }`
 
 const messageFillTestHeaderTemplate = `func fillTest${structName}(tv ${structName}) {`
@@ -217,7 +227,6 @@ func (ss *sliceStruct) generateTests(sb *strings.Builder) {
 			panic(name)
 		}
 	}))
-	ss.element.generateFillTest = true
 }
 
 func (ss *sliceStruct) generateTestValueHelpers(sb *strings.Builder) {
@@ -236,11 +245,10 @@ func (ss *sliceStruct) generateTestValueHelpers(sb *strings.Builder) {
 var _ baseStruct = (*sliceStruct)(nil)
 
 type messageStruct struct {
-	structName       string
-	description      string
-	originFullName   string
-	fields           []baseField
-	generateFillTest bool
+	structName     string
+	description    string
+	originFullName string
+	fields         []baseField
 }
 
 func (ms *messageStruct) generateStruct(sb *strings.Builder) {
@@ -291,7 +299,19 @@ func (ms *messageStruct) generateTests(sb *strings.Builder) {
 }
 
 func (ms *messageStruct) generateTestValueHelpers(sb *strings.Builder) {
-	sb.WriteString(os.Expand(messageGenerateTestHeaderTemplate, func(name string) string {
+	sb.WriteString(os.Expand(messageGenerateTestTemplate, func(name string) string {
+		switch name {
+		case "structName":
+			return ms.structName
+		case "originName":
+			return ms.originFullName
+		default:
+			panic(name)
+		}
+	}))
+
+	sb.WriteString(newLine + newLine)
+	sb.WriteString(os.Expand(messageFillTestHeaderTemplate, func(name string) string {
 		switch name {
 		case "structName":
 			return ms.structName
@@ -305,36 +325,12 @@ func (ms *messageStruct) generateTestValueHelpers(sb *strings.Builder) {
 		f.generateSetWithTestValue(sb)
 	}
 	sb.WriteString(newLine)
-	sb.WriteString(os.Expand(messageGenerateTestFooterTemplate, func(name string) string {
+	sb.WriteString(os.Expand(messageFillTestFooterTemplate, func(name string) string {
 		switch name {
 		default:
 			panic(name)
 		}
 	}))
-
-	if ms.generateFillTest {
-		sb.WriteString(newLine + newLine)
-		sb.WriteString(os.Expand(messageFillTestHeaderTemplate, func(name string) string {
-			switch name {
-			case "structName":
-				return ms.structName
-			default:
-				panic(name)
-			}
-		}))
-		// Write accessors test value for the struct
-		for _, f := range ms.fields {
-			sb.WriteString(newLine)
-			f.generateSetWithTestValue(sb)
-		}
-		sb.WriteString(newLine)
-		sb.WriteString(os.Expand(messageFillTestFooterTemplate, func(name string) string {
-			switch name {
-			default:
-				panic(name)
-			}
-		}))
-	}
 }
 
 var _ baseStruct = (*messageStruct)(nil)

@@ -30,11 +30,10 @@ func TestResourceMetricsSlice(t *testing.T) {
 	es = newResourceMetricsSlice(&[]*otlpmetrics.ResourceMetrics{})
 	assert.EqualValues(t, 0, es.Len())
 	es = NewResourceMetricsSlice(13)
-	defaultVal := NewResourceMetrics()
 	testVal := generateTestResourceMetrics()
 	assert.EqualValues(t, 13, es.Len())
 	for i := 0; i < es.Len(); i++ {
-		assert.EqualValues(t, defaultVal, es.Get(i))
+		assert.EqualValues(t, NewEmptyResourceMetrics(), es.Get(i))
 		fillTestResourceMetrics(es.Get(i))
 		assert.EqualValues(t, testVal, es.Get(i))
 	}
@@ -68,13 +67,18 @@ func TestResourceMetricsSlice(t *testing.T) {
 }
 
 func TestResourceMetrics(t *testing.T) {
-	ms := NewResourceMetrics()
-	assert.EqualValues(t, newResourceMetrics(&otlpmetrics.ResourceMetrics{}), ms)
+	assert.EqualValues(t, true, newResourceMetrics(nil).IsNil())
+	ms := newResourceMetrics(&otlpmetrics.ResourceMetrics{})
+	assert.EqualValues(t, false, ms.IsNil())
 
-	assert.EqualValues(t, NewResource(), ms.Resource())
+	assert.EqualValues(t, true, ms.Resource().IsNil())
+	ms.InitResourceIfNil()
+	assert.EqualValues(t, false, ms.Resource().IsNil())
+	assert.EqualValues(t, NewEmptyResource(), ms.Resource())
 	testValResource := generateTestResource()
-	ms.SetResource(testValResource)
+	fillTestResource(ms.Resource())
 	assert.EqualValues(t, testValResource, ms.Resource())
+	assert.EqualValues(t, false, ms.Resource().IsNil())
 
 	assert.EqualValues(t, NewInstrumentationLibraryMetricsSlice(0), ms.InstrumentationLibraryMetrics())
 	testValInstrumentationLibraryMetrics := generateTestInstrumentationLibraryMetricsSlice()
@@ -90,11 +94,10 @@ func TestInstrumentationLibraryMetricsSlice(t *testing.T) {
 	es = newInstrumentationLibraryMetricsSlice(&[]*otlpmetrics.InstrumentationLibraryMetrics{})
 	assert.EqualValues(t, 0, es.Len())
 	es = NewInstrumentationLibraryMetricsSlice(13)
-	defaultVal := NewInstrumentationLibraryMetrics()
 	testVal := generateTestInstrumentationLibraryMetrics()
 	assert.EqualValues(t, 13, es.Len())
 	for i := 0; i < es.Len(); i++ {
-		assert.EqualValues(t, defaultVal, es.Get(i))
+		assert.EqualValues(t, NewEmptyInstrumentationLibraryMetrics(), es.Get(i))
 		fillTestInstrumentationLibraryMetrics(es.Get(i))
 		assert.EqualValues(t, testVal, es.Get(i))
 	}
@@ -128,13 +131,18 @@ func TestInstrumentationLibraryMetricsSlice(t *testing.T) {
 }
 
 func TestInstrumentationLibraryMetrics(t *testing.T) {
-	ms := NewInstrumentationLibraryMetrics()
-	assert.EqualValues(t, newInstrumentationLibraryMetrics(&otlpmetrics.InstrumentationLibraryMetrics{}), ms)
+	assert.EqualValues(t, true, newInstrumentationLibraryMetrics(nil).IsNil())
+	ms := newInstrumentationLibraryMetrics(&otlpmetrics.InstrumentationLibraryMetrics{})
+	assert.EqualValues(t, false, ms.IsNil())
 
-	assert.EqualValues(t, NewInstrumentationLibrary(), ms.InstrumentationLibrary())
+	assert.EqualValues(t, true, ms.InstrumentationLibrary().IsNil())
+	ms.InitInstrumentationLibraryIfNil()
+	assert.EqualValues(t, false, ms.InstrumentationLibrary().IsNil())
+	assert.EqualValues(t, NewEmptyInstrumentationLibrary(), ms.InstrumentationLibrary())
 	testValInstrumentationLibrary := generateTestInstrumentationLibrary()
-	ms.SetInstrumentationLibrary(testValInstrumentationLibrary)
+	fillTestInstrumentationLibrary(ms.InstrumentationLibrary())
 	assert.EqualValues(t, testValInstrumentationLibrary, ms.InstrumentationLibrary())
+	assert.EqualValues(t, false, ms.InstrumentationLibrary().IsNil())
 
 	assert.EqualValues(t, NewMetricSlice(0), ms.Metrics())
 	testValMetrics := generateTestMetricSlice()
@@ -150,11 +158,10 @@ func TestMetricSlice(t *testing.T) {
 	es = newMetricSlice(&[]*otlpmetrics.Metric{})
 	assert.EqualValues(t, 0, es.Len())
 	es = NewMetricSlice(13)
-	defaultVal := NewMetric()
 	testVal := generateTestMetric()
 	assert.EqualValues(t, 13, es.Len())
 	for i := 0; i < es.Len(); i++ {
-		assert.EqualValues(t, defaultVal, es.Get(i))
+		assert.EqualValues(t, NewEmptyMetric(), es.Get(i))
 		fillTestMetric(es.Get(i))
 		assert.EqualValues(t, testVal, es.Get(i))
 	}
@@ -188,13 +195,18 @@ func TestMetricSlice(t *testing.T) {
 }
 
 func TestMetric(t *testing.T) {
-	ms := NewMetric()
-	assert.EqualValues(t, newMetric(&otlpmetrics.Metric{}), ms)
+	assert.EqualValues(t, true, newMetric(nil).IsNil())
+	ms := newMetric(&otlpmetrics.Metric{})
+	assert.EqualValues(t, false, ms.IsNil())
 
-	assert.EqualValues(t, NewMetricDescriptor(), ms.MetricDescriptor())
+	assert.EqualValues(t, true, ms.MetricDescriptor().IsNil())
+	ms.InitMetricDescriptorIfNil()
+	assert.EqualValues(t, false, ms.MetricDescriptor().IsNil())
+	assert.EqualValues(t, NewEmptyMetricDescriptor(), ms.MetricDescriptor())
 	testValMetricDescriptor := generateTestMetricDescriptor()
-	ms.SetMetricDescriptor(testValMetricDescriptor)
+	fillTestMetricDescriptor(ms.MetricDescriptor())
 	assert.EqualValues(t, testValMetricDescriptor, ms.MetricDescriptor())
+	assert.EqualValues(t, false, ms.MetricDescriptor().IsNil())
 
 	assert.EqualValues(t, NewInt64DataPointSlice(0), ms.Int64DataPoints())
 	testValInt64DataPoints := generateTestInt64DataPointSlice()
@@ -220,8 +232,9 @@ func TestMetric(t *testing.T) {
 }
 
 func TestMetricDescriptor(t *testing.T) {
-	ms := NewMetricDescriptor()
-	assert.EqualValues(t, newMetricDescriptor(&otlpmetrics.MetricDescriptor{}), ms)
+	assert.EqualValues(t, true, newMetricDescriptor(nil).IsNil())
+	ms := newMetricDescriptor(&otlpmetrics.MetricDescriptor{})
+	assert.EqualValues(t, false, ms.IsNil())
 
 	assert.EqualValues(t, "", ms.Name())
 	testValName := "test_name"
@@ -257,11 +270,10 @@ func TestInt64DataPointSlice(t *testing.T) {
 	es = newInt64DataPointSlice(&[]*otlpmetrics.Int64DataPoint{})
 	assert.EqualValues(t, 0, es.Len())
 	es = NewInt64DataPointSlice(13)
-	defaultVal := NewInt64DataPoint()
 	testVal := generateTestInt64DataPoint()
 	assert.EqualValues(t, 13, es.Len())
 	for i := 0; i < es.Len(); i++ {
-		assert.EqualValues(t, defaultVal, es.Get(i))
+		assert.EqualValues(t, NewEmptyInt64DataPoint(), es.Get(i))
 		fillTestInt64DataPoint(es.Get(i))
 		assert.EqualValues(t, testVal, es.Get(i))
 	}
@@ -295,8 +307,9 @@ func TestInt64DataPointSlice(t *testing.T) {
 }
 
 func TestInt64DataPoint(t *testing.T) {
-	ms := NewInt64DataPoint()
-	assert.EqualValues(t, newInt64DataPoint(&otlpmetrics.Int64DataPoint{}), ms)
+	assert.EqualValues(t, true, newInt64DataPoint(nil).IsNil())
+	ms := newInt64DataPoint(&otlpmetrics.Int64DataPoint{})
+	assert.EqualValues(t, false, ms.IsNil())
 
 	assert.EqualValues(t, NewStringMap(nil), ms.LabelsMap())
 	testValLabelsMap := generateTestStringMap()
@@ -327,11 +340,10 @@ func TestDoubleDataPointSlice(t *testing.T) {
 	es = newDoubleDataPointSlice(&[]*otlpmetrics.DoubleDataPoint{})
 	assert.EqualValues(t, 0, es.Len())
 	es = NewDoubleDataPointSlice(13)
-	defaultVal := NewDoubleDataPoint()
 	testVal := generateTestDoubleDataPoint()
 	assert.EqualValues(t, 13, es.Len())
 	for i := 0; i < es.Len(); i++ {
-		assert.EqualValues(t, defaultVal, es.Get(i))
+		assert.EqualValues(t, NewEmptyDoubleDataPoint(), es.Get(i))
 		fillTestDoubleDataPoint(es.Get(i))
 		assert.EqualValues(t, testVal, es.Get(i))
 	}
@@ -365,8 +377,9 @@ func TestDoubleDataPointSlice(t *testing.T) {
 }
 
 func TestDoubleDataPoint(t *testing.T) {
-	ms := NewDoubleDataPoint()
-	assert.EqualValues(t, newDoubleDataPoint(&otlpmetrics.DoubleDataPoint{}), ms)
+	assert.EqualValues(t, true, newDoubleDataPoint(nil).IsNil())
+	ms := newDoubleDataPoint(&otlpmetrics.DoubleDataPoint{})
+	assert.EqualValues(t, false, ms.IsNil())
 
 	assert.EqualValues(t, NewStringMap(nil), ms.LabelsMap())
 	testValLabelsMap := generateTestStringMap()
@@ -397,11 +410,10 @@ func TestHistogramDataPointSlice(t *testing.T) {
 	es = newHistogramDataPointSlice(&[]*otlpmetrics.HistogramDataPoint{})
 	assert.EqualValues(t, 0, es.Len())
 	es = NewHistogramDataPointSlice(13)
-	defaultVal := NewHistogramDataPoint()
 	testVal := generateTestHistogramDataPoint()
 	assert.EqualValues(t, 13, es.Len())
 	for i := 0; i < es.Len(); i++ {
-		assert.EqualValues(t, defaultVal, es.Get(i))
+		assert.EqualValues(t, NewEmptyHistogramDataPoint(), es.Get(i))
 		fillTestHistogramDataPoint(es.Get(i))
 		assert.EqualValues(t, testVal, es.Get(i))
 	}
@@ -435,8 +447,9 @@ func TestHistogramDataPointSlice(t *testing.T) {
 }
 
 func TestHistogramDataPoint(t *testing.T) {
-	ms := NewHistogramDataPoint()
-	assert.EqualValues(t, newHistogramDataPoint(&otlpmetrics.HistogramDataPoint{}), ms)
+	assert.EqualValues(t, true, newHistogramDataPoint(nil).IsNil())
+	ms := newHistogramDataPoint(&otlpmetrics.HistogramDataPoint{})
+	assert.EqualValues(t, false, ms.IsNil())
 
 	assert.EqualValues(t, NewStringMap(nil), ms.LabelsMap())
 	testValLabelsMap := generateTestStringMap()
@@ -482,11 +495,10 @@ func TestHistogramBucketSlice(t *testing.T) {
 	es = newHistogramBucketSlice(&[]*otlpmetrics.HistogramDataPoint_Bucket{})
 	assert.EqualValues(t, 0, es.Len())
 	es = NewHistogramBucketSlice(13)
-	defaultVal := NewHistogramBucket()
 	testVal := generateTestHistogramBucket()
 	assert.EqualValues(t, 13, es.Len())
 	for i := 0; i < es.Len(); i++ {
-		assert.EqualValues(t, defaultVal, es.Get(i))
+		assert.EqualValues(t, NewEmptyHistogramBucket(), es.Get(i))
 		fillTestHistogramBucket(es.Get(i))
 		assert.EqualValues(t, testVal, es.Get(i))
 	}
@@ -520,25 +532,31 @@ func TestHistogramBucketSlice(t *testing.T) {
 }
 
 func TestHistogramBucket(t *testing.T) {
-	ms := NewHistogramBucket()
-	assert.EqualValues(t, newHistogramBucket(&otlpmetrics.HistogramDataPoint_Bucket{}), ms)
+	assert.EqualValues(t, true, newHistogramBucket(nil).IsNil())
+	ms := newHistogramBucket(&otlpmetrics.HistogramDataPoint_Bucket{})
+	assert.EqualValues(t, false, ms.IsNil())
 
 	assert.EqualValues(t, uint64(0), ms.Count())
 	testValCount := uint64(17)
 	ms.SetCount(testValCount)
 	assert.EqualValues(t, testValCount, ms.Count())
 
-	assert.EqualValues(t, NewHistogramBucketExemplar(), ms.Exemplar())
+	assert.EqualValues(t, true, ms.Exemplar().IsNil())
+	ms.InitExemplarIfNil()
+	assert.EqualValues(t, false, ms.Exemplar().IsNil())
+	assert.EqualValues(t, NewEmptyHistogramBucketExemplar(), ms.Exemplar())
 	testValExemplar := generateTestHistogramBucketExemplar()
-	ms.SetExemplar(testValExemplar)
+	fillTestHistogramBucketExemplar(ms.Exemplar())
 	assert.EqualValues(t, testValExemplar, ms.Exemplar())
+	assert.EqualValues(t, false, ms.Exemplar().IsNil())
 
 	assert.EqualValues(t, generateTestHistogramBucket(), ms)
 }
 
 func TestHistogramBucketExemplar(t *testing.T) {
-	ms := NewHistogramBucketExemplar()
-	assert.EqualValues(t, newHistogramBucketExemplar(&otlpmetrics.HistogramDataPoint_Bucket_Exemplar{}), ms)
+	assert.EqualValues(t, true, newHistogramBucketExemplar(nil).IsNil())
+	ms := newHistogramBucketExemplar(&otlpmetrics.HistogramDataPoint_Bucket_Exemplar{})
+	assert.EqualValues(t, false, ms.IsNil())
 
 	assert.EqualValues(t, TimestampUnixNano(0), ms.Timestamp())
 	testValTimestamp := TimestampUnixNano(1234567890)
@@ -564,11 +582,10 @@ func TestSummaryDataPointSlice(t *testing.T) {
 	es = newSummaryDataPointSlice(&[]*otlpmetrics.SummaryDataPoint{})
 	assert.EqualValues(t, 0, es.Len())
 	es = NewSummaryDataPointSlice(13)
-	defaultVal := NewSummaryDataPoint()
 	testVal := generateTestSummaryDataPoint()
 	assert.EqualValues(t, 13, es.Len())
 	for i := 0; i < es.Len(); i++ {
-		assert.EqualValues(t, defaultVal, es.Get(i))
+		assert.EqualValues(t, NewEmptySummaryDataPoint(), es.Get(i))
 		fillTestSummaryDataPoint(es.Get(i))
 		assert.EqualValues(t, testVal, es.Get(i))
 	}
@@ -602,8 +619,9 @@ func TestSummaryDataPointSlice(t *testing.T) {
 }
 
 func TestSummaryDataPoint(t *testing.T) {
-	ms := NewSummaryDataPoint()
-	assert.EqualValues(t, newSummaryDataPoint(&otlpmetrics.SummaryDataPoint{}), ms)
+	assert.EqualValues(t, true, newSummaryDataPoint(nil).IsNil())
+	ms := newSummaryDataPoint(&otlpmetrics.SummaryDataPoint{})
+	assert.EqualValues(t, false, ms.IsNil())
 
 	assert.EqualValues(t, NewStringMap(nil), ms.LabelsMap())
 	testValLabelsMap := generateTestStringMap()
@@ -644,11 +662,10 @@ func TestSummaryValueAtPercentileSlice(t *testing.T) {
 	es = newSummaryValueAtPercentileSlice(&[]*otlpmetrics.SummaryDataPoint_ValueAtPercentile{})
 	assert.EqualValues(t, 0, es.Len())
 	es = NewSummaryValueAtPercentileSlice(13)
-	defaultVal := NewSummaryValueAtPercentile()
 	testVal := generateTestSummaryValueAtPercentile()
 	assert.EqualValues(t, 13, es.Len())
 	for i := 0; i < es.Len(); i++ {
-		assert.EqualValues(t, defaultVal, es.Get(i))
+		assert.EqualValues(t, NewEmptySummaryValueAtPercentile(), es.Get(i))
 		fillTestSummaryValueAtPercentile(es.Get(i))
 		assert.EqualValues(t, testVal, es.Get(i))
 	}
@@ -682,8 +699,9 @@ func TestSummaryValueAtPercentileSlice(t *testing.T) {
 }
 
 func TestSummaryValueAtPercentile(t *testing.T) {
-	ms := NewSummaryValueAtPercentile()
-	assert.EqualValues(t, newSummaryValueAtPercentile(&otlpmetrics.SummaryDataPoint_ValueAtPercentile{}), ms)
+	assert.EqualValues(t, true, newSummaryValueAtPercentile(nil).IsNil())
+	ms := newSummaryValueAtPercentile(&otlpmetrics.SummaryDataPoint_ValueAtPercentile{})
+	assert.EqualValues(t, false, ms.IsNil())
 
 	assert.EqualValues(t, float64(0.0), ms.Percentile())
 	testValPercentile := float64(0.90)
@@ -707,14 +725,14 @@ func generateTestResourceMetricsSlice() ResourceMetricsSlice {
 }
 
 func generateTestResourceMetrics() ResourceMetrics {
-	tv := NewResourceMetrics()
-	tv.SetResource(generateTestResource())
-	tv.SetInstrumentationLibraryMetrics(generateTestInstrumentationLibraryMetricsSlice())
+	tv := newResourceMetrics(&otlpmetrics.ResourceMetrics{})
+	fillTestResourceMetrics(tv)
 	return tv
 }
 
 func fillTestResourceMetrics(tv ResourceMetrics) {
-	tv.SetResource(generateTestResource())
+	tv.InitResourceIfNil()
+	fillTestResource(tv.Resource())
 	tv.SetInstrumentationLibraryMetrics(generateTestInstrumentationLibraryMetricsSlice())
 }
 
@@ -727,14 +745,14 @@ func generateTestInstrumentationLibraryMetricsSlice() InstrumentationLibraryMetr
 }
 
 func generateTestInstrumentationLibraryMetrics() InstrumentationLibraryMetrics {
-	tv := NewInstrumentationLibraryMetrics()
-	tv.SetInstrumentationLibrary(generateTestInstrumentationLibrary())
-	tv.SetMetrics(generateTestMetricSlice())
+	tv := newInstrumentationLibraryMetrics(&otlpmetrics.InstrumentationLibraryMetrics{})
+	fillTestInstrumentationLibraryMetrics(tv)
 	return tv
 }
 
 func fillTestInstrumentationLibraryMetrics(tv InstrumentationLibraryMetrics) {
-	tv.SetInstrumentationLibrary(generateTestInstrumentationLibrary())
+	tv.InitInstrumentationLibraryIfNil()
+	fillTestInstrumentationLibrary(tv.InstrumentationLibrary())
 	tv.SetMetrics(generateTestMetricSlice())
 }
 
@@ -747,17 +765,14 @@ func generateTestMetricSlice() MetricSlice {
 }
 
 func generateTestMetric() Metric {
-	tv := NewMetric()
-	tv.SetMetricDescriptor(generateTestMetricDescriptor())
-	tv.SetInt64DataPoints(generateTestInt64DataPointSlice())
-	tv.SetDoubleDataPoints(generateTestDoubleDataPointSlice())
-	tv.SetHistogramDataPoints(generateTestHistogramDataPointSlice())
-	tv.SetSummaryDataPoints(generateTestSummaryDataPointSlice())
+	tv := newMetric(&otlpmetrics.Metric{})
+	fillTestMetric(tv)
 	return tv
 }
 
 func fillTestMetric(tv Metric) {
-	tv.SetMetricDescriptor(generateTestMetricDescriptor())
+	tv.InitMetricDescriptorIfNil()
+	fillTestMetricDescriptor(tv.MetricDescriptor())
 	tv.SetInt64DataPoints(generateTestInt64DataPointSlice())
 	tv.SetDoubleDataPoints(generateTestDoubleDataPointSlice())
 	tv.SetHistogramDataPoints(generateTestHistogramDataPointSlice())
@@ -765,13 +780,17 @@ func fillTestMetric(tv Metric) {
 }
 
 func generateTestMetricDescriptor() MetricDescriptor {
-	tv := NewMetricDescriptor()
+	tv := newMetricDescriptor(&otlpmetrics.MetricDescriptor{})
+	fillTestMetricDescriptor(tv)
+	return tv
+}
+
+func fillTestMetricDescriptor(tv MetricDescriptor) {
 	tv.SetName("test_name")
 	tv.SetDescription("test_description")
 	tv.SetUnit("1")
 	tv.SetType(MetricTypeGaugeInt64)
 	tv.SetLabelsMap(generateTestStringMap())
-	return tv
 }
 
 func generateTestInt64DataPointSlice() Int64DataPointSlice {
@@ -783,11 +802,8 @@ func generateTestInt64DataPointSlice() Int64DataPointSlice {
 }
 
 func generateTestInt64DataPoint() Int64DataPoint {
-	tv := NewInt64DataPoint()
-	tv.SetLabelsMap(generateTestStringMap())
-	tv.SetStartTime(TimestampUnixNano(1234567890))
-	tv.SetTimestamp(TimestampUnixNano(1234567890))
-	tv.SetValue(int64(-17))
+	tv := newInt64DataPoint(&otlpmetrics.Int64DataPoint{})
+	fillTestInt64DataPoint(tv)
 	return tv
 }
 
@@ -807,11 +823,8 @@ func generateTestDoubleDataPointSlice() DoubleDataPointSlice {
 }
 
 func generateTestDoubleDataPoint() DoubleDataPoint {
-	tv := NewDoubleDataPoint()
-	tv.SetLabelsMap(generateTestStringMap())
-	tv.SetStartTime(TimestampUnixNano(1234567890))
-	tv.SetTimestamp(TimestampUnixNano(1234567890))
-	tv.SetValue(float64(17.13))
+	tv := newDoubleDataPoint(&otlpmetrics.DoubleDataPoint{})
+	fillTestDoubleDataPoint(tv)
 	return tv
 }
 
@@ -831,14 +844,8 @@ func generateTestHistogramDataPointSlice() HistogramDataPointSlice {
 }
 
 func generateTestHistogramDataPoint() HistogramDataPoint {
-	tv := NewHistogramDataPoint()
-	tv.SetLabelsMap(generateTestStringMap())
-	tv.SetStartTime(TimestampUnixNano(1234567890))
-	tv.SetTimestamp(TimestampUnixNano(1234567890))
-	tv.SetCount(uint64(17))
-	tv.SetSum(float64(17.13))
-	tv.SetBuckets(generateTestHistogramBucketSlice())
-	tv.SetExplicitBounds([]float64{1, 2, 3})
+	tv := newHistogramDataPoint(&otlpmetrics.HistogramDataPoint{})
+	fillTestHistogramDataPoint(tv)
 	return tv
 }
 
@@ -861,23 +868,27 @@ func generateTestHistogramBucketSlice() HistogramBucketSlice {
 }
 
 func generateTestHistogramBucket() HistogramBucket {
-	tv := NewHistogramBucket()
-	tv.SetCount(uint64(17))
-	tv.SetExemplar(generateTestHistogramBucketExemplar())
+	tv := newHistogramBucket(&otlpmetrics.HistogramDataPoint_Bucket{})
+	fillTestHistogramBucket(tv)
 	return tv
 }
 
 func fillTestHistogramBucket(tv HistogramBucket) {
 	tv.SetCount(uint64(17))
-	tv.SetExemplar(generateTestHistogramBucketExemplar())
+	tv.InitExemplarIfNil()
+	fillTestHistogramBucketExemplar(tv.Exemplar())
 }
 
 func generateTestHistogramBucketExemplar() HistogramBucketExemplar {
-	tv := NewHistogramBucketExemplar()
+	tv := newHistogramBucketExemplar(&otlpmetrics.HistogramDataPoint_Bucket_Exemplar{})
+	fillTestHistogramBucketExemplar(tv)
+	return tv
+}
+
+func fillTestHistogramBucketExemplar(tv HistogramBucketExemplar) {
 	tv.SetTimestamp(TimestampUnixNano(1234567890))
 	tv.SetValue(float64(17.13))
 	tv.SetAttachments(generateTestStringMap())
-	return tv
 }
 
 func generateTestSummaryDataPointSlice() SummaryDataPointSlice {
@@ -889,13 +900,8 @@ func generateTestSummaryDataPointSlice() SummaryDataPointSlice {
 }
 
 func generateTestSummaryDataPoint() SummaryDataPoint {
-	tv := NewSummaryDataPoint()
-	tv.SetLabelsMap(generateTestStringMap())
-	tv.SetStartTime(TimestampUnixNano(1234567890))
-	tv.SetTimestamp(TimestampUnixNano(1234567890))
-	tv.SetCount(uint64(17))
-	tv.SetSum(float64(17.13))
-	tv.SetValueAtPercentiles(generateTestSummaryValueAtPercentileSlice())
+	tv := newSummaryDataPoint(&otlpmetrics.SummaryDataPoint{})
+	fillTestSummaryDataPoint(tv)
 	return tv
 }
 
@@ -917,9 +923,8 @@ func generateTestSummaryValueAtPercentileSlice() SummaryValueAtPercentileSlice {
 }
 
 func generateTestSummaryValueAtPercentile() SummaryValueAtPercentile {
-	tv := NewSummaryValueAtPercentile()
-	tv.SetPercentile(float64(0.90))
-	tv.SetValue(float64(17.13))
+	tv := newSummaryValueAtPercentile(&otlpmetrics.SummaryDataPoint_ValueAtPercentile{})
+	fillTestSummaryValueAtPercentile(tv)
 	return tv
 }
 

@@ -150,17 +150,16 @@ func ocSpanToInternal(dest data.Span, src *octrace.Span) {
 	dest.SetDroppedEventsCount(droppedEventCount)
 	dest.SetLinks(links)
 	dest.SetDroppedLinksCount(droppedLinkCount)
-	dest.SetStatus(ocStatusToInternal(src.Status))
+	ocStatusToInternal(src.Status, dest)
 }
 
-func ocStatusToInternal(ocStatus *octrace.Status) data.SpanStatus {
+func ocStatusToInternal(ocStatus *octrace.Status, out data.Span) {
 	if ocStatus == nil {
-		return data.SpanStatus{}
+		return
 	}
-	ss := data.NewSpanStatus()
-	ss.SetCode(data.StatusCode(ocStatus.Code))
-	ss.SetMessage(ocStatus.Message)
-	return ss
+	out.InitStatusIfNil()
+	out.Status().SetCode(data.StatusCode(ocStatus.Code))
+	out.Status().SetMessage(ocStatus.Message)
 }
 
 // Convert tracestate to W3C format. See the https://w3c.github.io/trace-context/
@@ -431,6 +430,7 @@ func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Reso
 	}
 
 	if len(attrs) != 0 {
+		out.InitResourceIfNil()
 		// TODO: Re-evaluate if we want to construct a map first, or we can construct directly
 		// a slice of AttributeKeyValue.
 		out.Resource().SetAttributes(data.NewAttributeMap(attrs))

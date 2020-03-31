@@ -22,7 +22,6 @@ import (
 	ocmetrics "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/golang/protobuf/ptypes"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/stretchr/testify/assert"
 
@@ -333,11 +332,6 @@ func generateOcTestData(t *testing.T) consumerdata.MetricsData {
 								Buckets: []*ocmetrics.DistributionValue_Bucket{
 									{
 										Count: 0,
-										// TODO: Fix this when we have a way to know if the value is default.
-										// https://github.com/open-telemetry/opentelemetry-collector/pull/691
-										Exemplar: &ocmetrics.DistributionValue_Exemplar{
-											Timestamp: &timestamp.Timestamp{},
-										},
 									},
 									{
 										Count: 1,

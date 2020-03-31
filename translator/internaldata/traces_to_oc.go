@@ -31,7 +31,6 @@ const sourceFormat = "otlp_trace"
 
 var (
 	defaultProcessID = 0
-	emptyStatus      = data.SpanStatus{}
 )
 
 func TraceDataToOC(td data.TraceData) []consumerdata.TraceData {
@@ -347,7 +346,7 @@ func linksToOC(links data.SpanLinkSlice, droppedCount uint32) *octrace.Span_Link
 }
 
 func statusToOC(status data.SpanStatus) *octrace.Status {
-	if status == emptyStatus {
+	if status.IsNil() {
 		return nil
 	}
 	return &octrace.Status{

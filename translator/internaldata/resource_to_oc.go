@@ -28,6 +28,9 @@ import (
 )
 
 func internalResourceToOC(resource data.Resource) (*occommon.Node, *ocresource.Resource) {
+	if resource.IsNil() {
+		return nil, nil
+	}
 	attrs := resource.Attributes()
 
 	ocNode := occommon.Node{}
