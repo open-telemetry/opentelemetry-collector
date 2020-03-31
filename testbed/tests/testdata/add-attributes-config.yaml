@@ -1,8 +1,8 @@
 receivers:
   jaeger:
     protocols:
-      thrift_http:
-        endpoint: "localhost:14268"
+      grpc:
+        endpoint: "localhost:14250"
 
 exporters:
   opencensus:

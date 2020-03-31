@@ -107,7 +107,7 @@ type JaegerDataReceiver struct {
 	receiver component.TraceReceiver
 }
 
-const DefaultJaegerPort = 14268
+const DefaultJaegerPort = 14250
 
 func NewJaegerDataReceiver(port int) *JaegerDataReceiver {
 	return &JaegerDataReceiver{DataReceiverBase: DataReceiverBase{Port: port}}
@@ -115,7 +115,7 @@ func NewJaegerDataReceiver(port int) *JaegerDataReceiver {
 
 func (jr *JaegerDataReceiver) Start(tc *MockTraceConsumer, mc *MockMetricConsumer) error {
 	jaegerCfg := jaegerreceiver.Configuration{
-		CollectorHTTPPort: jr.Port,
+		CollectorGRPCPort: jr.Port,
 	}
 	var err error
 	jr.receiver, err = jaegerreceiver.New("jaeger", &jaegerCfg, tc, zap.NewNop())
@@ -137,12 +137,12 @@ func (jr *JaegerDataReceiver) Stop() {
 func (jr *JaegerDataReceiver) GenConfigYAMLStr() string {
 	// Note that this generates an exporter config for agent.
 	return fmt.Sprintf(`
-  jaeger_thrift_http:
-    url: "http://localhost:%d/api/traces"`, jr.Port)
+  jaeger:
+    endpoint: "localhost:%d"`, jr.Port)
 }
 
 func (jr *JaegerDataReceiver) ProtocolName() string {
-	return "jaeger_thrift_http"
+	return "jaeger"
 }
 
 // OTLPDataReceiver implements OTLP format receiver.

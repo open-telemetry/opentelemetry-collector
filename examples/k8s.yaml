@@ -110,7 +110,7 @@ data:
         secure: true
       zipkin:
         url: "http://somezipkin.target.com:9411/api/v2/spans" # Replace with a real endpoint.
-      jaeger_grpc:
+      jaeger:
         endpoint: "somejaegergrpc.target.com:55678" # Replace with a real endpoint.
     service:
       extensions: [health_check]
@@ -122,7 +122,7 @@ data:
         traces/2:
           receivers: [opencensus, jaeger]
           processors: [batch, queued_retry]
-          exporters: [jaeger_grpc]
+          exporters: [jaeger]
 ---
 apiVersion: v1
 kind: Service

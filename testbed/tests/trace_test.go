@@ -48,8 +48,8 @@ func TestTrace10kSPS(t *testing.T) {
 		resourceSpec testbed.ResourceSpec
 	}{
 		{
-			"JaegerThrift",
-			testbed.NewJaegerThriftDataSender(testbed.GetAvailablePort(t)),
+			"JaegerGRPC",
+			testbed.NewJaegerGRPCDataSender(testbed.GetAvailablePort(t)),
 			testbed.NewJaegerDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 53,
@@ -113,7 +113,7 @@ func TestTraceNoBackend10kSPSJaeger(t *testing.T) {
 
 			tc := testbed.NewTestCase(
 				t,
-				testbed.NewJaegerThriftDataSender(testbed.DefaultJaegerPort),
+				testbed.NewJaegerGRPCDataSender(testbed.DefaultJaegerPort),
 				testbed.NewOCDataReceiver(testbed.DefaultOCPort),
 				testbed.WithConfigFile(configFilePath),
 			)
@@ -290,8 +290,8 @@ func TestTraceAttributesProcessor(t *testing.T) {
 		receiver testbed.DataReceiver
 	}{
 		{
-			"JaegerThrift",
-			testbed.NewJaegerThriftDataSender(testbed.GetAvailablePort(t)),
+			"JaegerGRPC",
+			testbed.NewJaegerGRPCDataSender(testbed.GetAvailablePort(t)),
 			testbed.NewJaegerDataReceiver(testbed.GetAvailablePort(t)),
 		},
 		{
