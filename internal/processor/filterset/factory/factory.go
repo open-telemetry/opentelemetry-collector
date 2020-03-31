@@ -33,7 +33,7 @@ func (f *Factory) CreateFilterSet(filters []string, cfg *MatchConfig) (filterset
 	case STRICT:
 		return f.createStrictFilterSet(filters, cfg)
 	default:
-		return nil, fmt.Errorf("Unrecognized filter type: %v", cfg.MatchType)
+		return nil, fmt.Errorf("unrecognized filter type: %v", cfg.MatchType)
 	}
 }
 
