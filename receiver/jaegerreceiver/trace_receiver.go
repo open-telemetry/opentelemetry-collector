@@ -192,20 +192,6 @@ func (jr *jReceiver) collectorHTTPEnabled() bool {
 	return jr.config != nil && jr.config.CollectorHTTPPort > 0
 }
 
-// TODO https://github.com/open-telemetry/opentelemetry-collector/issues/267
-//	Remove ThriftTChannel support.
-func (jr *jReceiver) collectorThriftAddr() string {
-	var port int
-	if jr.config != nil {
-		port = jr.config.CollectorThriftPort
-	}
-	return fmt.Sprintf(":%d", port)
-}
-
-func (jr *jReceiver) collectorThriftEnabled() bool {
-	return jr.config != nil && jr.config.CollectorThriftPort > 0
-}
-
 func (jr *jReceiver) Start(host component.Host) error {
 	jr.mu.Lock()
 	defer jr.mu.Unlock()
