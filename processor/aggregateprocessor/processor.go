@@ -67,7 +67,7 @@ func newTraceProcessor(logger *zap.Logger, nextConsumer consumer.TraceConsumerOl
 	}
 
 	if cfg.PeerDiscoveryDNSName != "" {
-		return nil, fmt.Errorf("Peer discovery DNS name not provided")
+		return nil, fmt.Errorf("peer discovery DNS name not provided")
 	}
 
 	ap := &aggregatingProcessor{
@@ -261,7 +261,7 @@ func (ap *aggregatingProcessor) ConsumeTraceData(ctx context.Context, td consume
 	})
 
 	if td.Spans == nil {
-		return fmt.Errorf("Empty batch")
+		return fmt.Errorf("empty batch")
 	}
 	stats.Record(ctx, statCountSpansReceived.M(int64(len(td.Spans))))
 
