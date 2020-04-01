@@ -186,7 +186,7 @@ func ocAttrsToInternal(ocAttrs *octrace.Span_Attributes) (data.AttributeMap, uin
 	}
 
 	attrCount := len(ocAttrs.AttributeMap)
-	attrMap := make(data.AttributesMap, attrCount)
+	attrMap := make(map[string]data.AttributeValue, attrCount)
 	if attrCount > 0 {
 		values := data.NewAttributeValueSlice(attrCount)
 		i := 0
@@ -348,7 +348,7 @@ func ocMessageEventToInternalAttrs(msgEvent *octrace.Span_TimeEvent_MessageEvent
 	attrs[2].SetInt(int64(msgEvent.UncompressedSize))
 	attrs[3].SetInt(int64(msgEvent.CompressedSize))
 
-	return data.NewAttributeMap(data.AttributesMap{
+	return data.NewAttributeMap(map[string]data.AttributeValue{
 		conventions.OCTimeEventMessageEventType:  attrs[0],
 		conventions.OCTimeEventMessageEventID:    attrs[1],
 		conventions.OCTimeEventMessageEventUSize: attrs[2],
@@ -374,7 +374,7 @@ func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Reso
 	}
 
 	// Create a map where we will place all attributes from the Node and Resource.
-	attrs := make(data.AttributesMap, maxTotalAttrCount)
+	attrs := make(map[string]data.AttributeValue, maxTotalAttrCount)
 
 	if ocNode != nil {
 		// Copy all Attributes.

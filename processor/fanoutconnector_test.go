@@ -167,12 +167,14 @@ func TestCreateTraceFanOutConnectorWithConvertion(t *testing.T) {
 
 	td := data.NewTraceData()
 	td.SetResourceSpans(data.NewResourceSpansSlice(1))
-	td.ResourceSpans().Get(0).Resource().InitEmpty()
-	td.ResourceSpans().Get(0).Resource().SetAttributes(data.NewAttributeMap(data.AttributesMap{
+	rs0 := td.ResourceSpans().Get(0)
+	res := rs0.Resource()
+	res.InitEmpty()
+	res.SetAttributes(data.NewAttributeMap(map[string]data.AttributeValue{
 		conventions.OCAttributeResourceType: data.NewAttributeValueString(resourceTypeName),
 	}))
-	td.ResourceSpans().Get(0).SetInstrumentationLibrarySpans(data.NewInstrumentationLibrarySpansSlice(1))
-	td.ResourceSpans().Get(0).InstrumentationLibrarySpans().Get(0).SetSpans(data.NewSpanSlice(3))
+	rs0.SetInstrumentationLibrarySpans(data.NewInstrumentationLibrarySpansSlice(1))
+	rs0.InstrumentationLibrarySpans().Get(0).SetSpans(data.NewSpanSlice(3))
 
 	tfc := CreateTraceFanOutConnector(processors).(consumer.TraceConsumer)
 
@@ -187,7 +189,7 @@ func TestCreateTraceFanOutConnectorWithConvertion(t *testing.T) {
 	assert.Equal(t, resourceTypeName, traceConsumerOld.Traces[0].Resource.Type)
 
 	assert.Equal(t, wantSpansCount, traceConsumer.TotalSpans)
-	assert.Equal(t, data.NewAttributeMap(data.AttributesMap{
+	assert.Equal(t, data.NewAttributeMap(map[string]data.AttributeValue{
 		conventions.OCAttributeResourceType: data.NewAttributeValueString(resourceTypeName),
 	}), traceConsumer.Traces[0].ResourceSpans().Get(0).Resource().Attributes())
 }
@@ -206,8 +208,9 @@ func TestCreateMetricsFanOutConnectorWithConvertion(t *testing.T) {
 	rms := data.NewResourceMetricsSlice(1)
 	md.SetResourceMetrics(rms)
 	rm := rms.Get(0)
-	rm.Resource().InitEmpty()
-	rm.Resource().SetAttributes(data.NewAttributeMap(data.AttributesMap{
+	res := rm.Resource()
+	res.InitEmpty()
+	res.SetAttributes(data.NewAttributeMap(map[string]data.AttributeValue{
 		conventions.OCAttributeResourceType: data.NewAttributeValueString(resourceTypeName),
 	}))
 	rm.SetInstrumentationLibraryMetrics(data.NewInstrumentationLibraryMetricsSlice(1))
@@ -226,7 +229,7 @@ func TestCreateMetricsFanOutConnectorWithConvertion(t *testing.T) {
 	assert.Equal(t, resourceTypeName, metricsConsumerOld.Metrics[0].Resource.Type)
 
 	assert.Equal(t, wantSpansCount, metricsConsumer.TotalMetrics)
-	assert.Equal(t, data.NewAttributeMap(data.AttributesMap{
+	assert.Equal(t, data.NewAttributeMap(map[string]data.AttributeValue{
 		conventions.OCAttributeResourceType: data.NewAttributeValueString(resourceTypeName),
 	}), metricsConsumer.Metrics[0].ResourceMetrics().Get(0).Resource().Attributes())
 }
@@ -239,7 +242,7 @@ type mockTraceConsumerOld struct {
 
 var _ consumer.TraceConsumerOld = &mockTraceConsumerOld{}
 
-func (p *mockTraceConsumerOld) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
+func (p *mockTraceConsumerOld) ConsumeTraceData(_ context.Context, td consumerdata.TraceData) error {
 	p.Traces = append(p.Traces, &td)
 	p.TotalSpans += len(td.Spans)
 	if p.MustFail {
@@ -257,7 +260,7 @@ type mockTraceConsumer struct {
 
 var _ consumer.TraceConsumer = &mockTraceConsumer{}
 
-func (p *mockTraceConsumer) ConsumeTrace(ctx context.Context, td data.TraceData) error {
+func (p *mockTraceConsumer) ConsumeTrace(_ context.Context, td data.TraceData) error {
 	p.Traces = append(p.Traces, &td)
 	p.TotalSpans += td.SpanCount()
 	if p.MustFail {
@@ -275,7 +278,7 @@ type mockMetricsConsumerOld struct {
 
 var _ consumer.MetricsConsumerOld = &mockMetricsConsumerOld{}
 
-func (p *mockMetricsConsumerOld) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
+func (p *mockMetricsConsumerOld) ConsumeMetricsData(_ context.Context, md consumerdata.MetricsData) error {
 	p.Metrics = append(p.Metrics, &md)
 	p.TotalMetrics += len(md.Metrics)
 	if p.MustFail {
@@ -293,7 +296,7 @@ type mockMetricsConsumer struct {
 
 var _ consumer.MetricsConsumer = &mockMetricsConsumer{}
 
-func (p *mockMetricsConsumer) ConsumeMetrics(ctx context.Context, md data.MetricData) error {
+func (p *mockMetricsConsumer) ConsumeMetrics(_ context.Context, md data.MetricData) error {
 	p.Metrics = append(p.Metrics, &md)
 	p.TotalMetrics += md.MetricCount()
 	if p.MustFail {
