@@ -122,15 +122,15 @@ func attributesMapToOCAttributeMap(attributes data.AttributeMap) map[string]*oct
 	ocAttributes := make(map[string]*octrace.AttributeValue, attributes.Len())
 	for i := 0; i < attributes.Len(); i++ {
 		attr := attributes.GetAttribute(i)
-		ocAttributes[attr.Key()] = attributeValueToOC(attr.Value())
+		ocAttributes[attr.Key()] = attributeValueToOC(attr)
 	}
 	return ocAttributes
 }
 
-func attributeValueToOC(attr data.AttributeValue) *octrace.AttributeValue {
+func attributeValueToOC(attr data.AttributeKeyValue) *octrace.AttributeValue {
 	a := &octrace.AttributeValue{}
 
-	switch attr.Type() {
+	switch attr.ValType() {
 	case data.AttributeValueSTRING:
 		a.Value = &octrace.AttributeValue_StringValue{
 			StringValue: &octrace.TruncatableString{
@@ -152,7 +152,7 @@ func attributeValueToOC(attr data.AttributeValue) *octrace.AttributeValue {
 	default:
 		a.Value = &octrace.AttributeValue_StringValue{
 			StringValue: &octrace.TruncatableString{
-				Value: fmt.Sprintf("<Unknown OpenTelemetry attribute value type %q>", attr.Type()),
+				Value: fmt.Sprintf("<Unknown OpenTelemetry attribute value type %q>", attr.ValType()),
 			},
 		}
 	}
@@ -276,14 +276,14 @@ func eventToOC(event data.SpanEvent) *octrace.Span_TimeEvent {
 		conventions.OCTimeEventMessageEventCSize,
 	}
 	if attrs.Len() == len(ocMessageEventAttrs) {
-		ocMessageEventAttrValues := map[string]data.AttributeValue{}
+		ocMessageEventAttrValues := map[string]data.AttributeKeyValue{}
 		var ocMessageEventAttrFound bool
 		for _, attr := range ocMessageEventAttrs {
 			akv, found := attrs.Get(attr)
 			if found {
 				ocMessageEventAttrFound = true
 			}
-			ocMessageEventAttrValues[attr] = akv.Value()
+			ocMessageEventAttrValues[attr] = akv
 		}
 		if ocMessageEventAttrFound {
 			ocMessageEventType := ocMessageEventAttrValues[conventions.OCTimeEventMessageEventType]

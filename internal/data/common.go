@@ -32,10 +32,10 @@ type TimestampUnixNano uint64
 type AttributeValueType int32
 
 const (
-	AttributeValueSTRING AttributeValueType = AttributeValueType(otlpcommon.AttributeKeyValue_STRING)
-	AttributeValueINT    AttributeValueType = AttributeValueType(otlpcommon.AttributeKeyValue_INT)
-	AttributeValueDOUBLE AttributeValueType = AttributeValueType(otlpcommon.AttributeKeyValue_DOUBLE)
-	AttributeValueBOOL   AttributeValueType = AttributeValueType(otlpcommon.AttributeKeyValue_BOOL)
+	AttributeValueSTRING = AttributeValueType(otlpcommon.AttributeKeyValue_STRING)
+	AttributeValueINT    = AttributeValueType(otlpcommon.AttributeKeyValue_INT)
+	AttributeValueDOUBLE = AttributeValueType(otlpcommon.AttributeKeyValue_DOUBLE)
+	AttributeValueBOOL   = AttributeValueType(otlpcommon.AttributeKeyValue_BOOL)
 )
 
 // AttributeValue represents a value of an attribute. Typically used in an Attributes map.
@@ -141,28 +141,28 @@ func NewAttributeKeyValue(k string) AttributeKeyValue {
 // NewAttributeKeyValueString creates a new AttributeKeyValue with the given key and string value.
 func NewAttributeKeyValueString(k string, v string) AttributeKeyValue {
 	akv := AttributeKeyValue{&otlpcommon.AttributeKeyValue{Key: k}}
-	akv.Value().SetString(v)
+	akv.SetStringVal(v)
 	return akv
 }
 
 // NewAttributeKeyValueInt creates a new AttributeKeyValue with the given key and int64 value.
 func NewAttributeKeyValueInt(k string, v int64) AttributeKeyValue {
 	akv := AttributeKeyValue{&otlpcommon.AttributeKeyValue{Key: k}}
-	akv.Value().SetInt(v)
+	akv.SetIntVal(v)
 	return akv
 }
 
 // NewAttributeKeyValueDouble creates a new AttributeKeyValue with the given key and float64 value.
 func NewAttributeKeyValueDouble(k string, v float64) AttributeKeyValue {
 	akv := AttributeKeyValue{&otlpcommon.AttributeKeyValue{Key: k}}
-	akv.Value().SetDouble(v)
+	akv.SetDoubleVal(v)
 	return akv
 }
 
 // NewAttributeKeyValueBool creates a new AttributeKeyValue with the given key and bool value.
 func NewAttributeKeyValueBool(k string, v bool) AttributeKeyValue {
 	akv := AttributeKeyValue{&otlpcommon.AttributeKeyValue{Key: k}}
-	akv.Value().SetBool(v)
+	akv.SetBoolVal(v)
 	return akv
 }
 
@@ -171,13 +171,55 @@ func (akv AttributeKeyValue) Key() string {
 	return akv.orig.Key
 }
 
-// Value returns the value associated with this AttributeKeyValue.
-func (akv AttributeKeyValue) Value() AttributeValue {
-	return AttributeValue(akv)
+func (akv AttributeKeyValue) ValType() AttributeValueType {
+	return AttributeValueType(akv.orig.Type)
 }
 
-// SetValue replaces the value associated with this AttributeKeyValue.
-func (akv AttributeKeyValue) SetValue(av AttributeValue) {
+func (akv AttributeKeyValue) StringVal() string {
+	return akv.orig.StringValue
+}
+
+func (akv AttributeKeyValue) IntVal() int64 {
+	return akv.orig.IntValue
+}
+
+func (akv AttributeKeyValue) DoubleVal() float64 {
+	return akv.orig.DoubleValue
+}
+
+func (akv AttributeKeyValue) BoolVal() bool {
+	return akv.orig.BoolValue
+}
+
+func (akv AttributeKeyValue) SetStringVal(v string) {
+	akv.orig.Type = otlpcommon.AttributeKeyValue_STRING
+	akv.orig.StringValue = v
+}
+
+func (akv AttributeKeyValue) SetIntVal(v int64) {
+	akv.orig.Type = otlpcommon.AttributeKeyValue_INT
+	akv.orig.IntValue = v
+}
+
+func (akv AttributeKeyValue) SetDoubleVal(v float64) {
+	akv.orig.Type = otlpcommon.AttributeKeyValue_DOUBLE
+	akv.orig.DoubleValue = v
+}
+
+func (akv AttributeKeyValue) SetBoolVal(v bool) {
+	akv.orig.Type = otlpcommon.AttributeKeyValue_BOOL
+	akv.orig.BoolValue = v
+}
+
+func (akv AttributeKeyValue) setValue(av AttributeValue) {
+	akv.orig.Type = av.orig.Type
+	akv.orig.StringValue = av.orig.StringValue
+	akv.orig.IntValue = av.orig.IntValue
+	akv.orig.DoubleValue = av.orig.DoubleValue
+	akv.orig.BoolValue = av.orig.BoolValue
+}
+
+func (akv AttributeKeyValue) copyValue(av AttributeKeyValue) {
 	akv.orig.Type = av.orig.Type
 	akv.orig.StringValue = av.orig.StringValue
 	akv.orig.IntValue = av.orig.IntValue
@@ -203,7 +245,7 @@ func NewAttributeMap(attrMap map[string]AttributeValue) AttributeMap {
 	for k, v := range attrMap {
 		wrappers[ix] = &origs[ix]
 		wrappers[ix].Key = k
-		AttributeKeyValue{wrappers[ix]}.SetValue(v)
+		AttributeKeyValue{wrappers[ix]}.setValue(v)
 		ix++
 	}
 
@@ -250,7 +292,7 @@ func (am AttributeMap) Insert(akv AttributeKeyValue) {
 // No action is applied to the map where the key does not exist.
 func (am AttributeMap) Update(akv AttributeKeyValue) {
 	if av, existing := am.Get(akv.Key()); existing {
-		av.SetValue(akv.Value())
+		av.copyValue(akv)
 	}
 }
 
@@ -259,7 +301,7 @@ func (am AttributeMap) Update(akv AttributeKeyValue) {
 // updated to the map where the key already existed.
 func (am AttributeMap) Upsert(akv AttributeKeyValue) {
 	if av, existing := am.Get(akv.Key()); existing {
-		av.SetValue(akv.Value())
+		av.copyValue(akv)
 	} else {
 		*am.orig = append(*am.orig, akv.orig)
 	}
@@ -280,7 +322,7 @@ func (am AttributeMap) Sort() AttributeMap {
 
 // GetAttribute returns the AttributeKeyValue associated with the given index.
 //
-// This function is used mostly for itereting over all the values in the map:
+// This function is used mostly for iterating over all the values in the map:
 // for i := 1; i < am.Len(); i++ {
 //     akv := am.GetAttribute(i)
 //     ... // Do something with the attribute
@@ -288,10 +330,6 @@ func (am AttributeMap) Sort() AttributeMap {
 func (am AttributeMap) GetAttribute(ix int) AttributeKeyValue {
 	return AttributeKeyValue{(*am.orig)[ix]}
 }
-
-// AttributesMap stores a map of attribute keys to values.
-// TODO: Remove usage of this and use AttributeMap
-type AttributesMap map[string]AttributeValue
 
 // StringKeyValue stores a key and value pair.
 type StringKeyValue struct {

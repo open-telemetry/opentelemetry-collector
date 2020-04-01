@@ -19,41 +19,40 @@ import (
 	"strconv"
 	"testing"
 
-	otlp "github.com/open-telemetry/opentelemetry-proto/gen/go/common/v1"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestAttributeValue(t *testing.T) {
 	v := NewAttributeValueString("abc")
-	assert.EqualValues(t, otlp.AttributeKeyValue_STRING, v.Type())
+	assert.EqualValues(t, AttributeValueSTRING, v.Type())
 	assert.EqualValues(t, "abc", v.StringVal())
 
 	v = NewAttributeValueInt(123)
-	assert.EqualValues(t, otlp.AttributeKeyValue_INT, v.Type())
+	assert.EqualValues(t, AttributeValueINT, v.Type())
 	assert.EqualValues(t, 123, v.IntVal())
 
 	v = NewAttributeValueDouble(3.4)
-	assert.EqualValues(t, otlp.AttributeKeyValue_DOUBLE, v.Type())
+	assert.EqualValues(t, AttributeValueDOUBLE, v.Type())
 	assert.EqualValues(t, 3.4, v.DoubleVal())
 
 	v = NewAttributeValueBool(true)
-	assert.EqualValues(t, otlp.AttributeKeyValue_BOOL, v.Type())
+	assert.EqualValues(t, AttributeValueBOOL, v.Type())
 	assert.EqualValues(t, true, v.BoolVal())
 
 	v.SetString("abc")
-	assert.EqualValues(t, otlp.AttributeKeyValue_STRING, v.Type())
+	assert.EqualValues(t, AttributeValueSTRING, v.Type())
 	assert.EqualValues(t, "abc", v.StringVal())
 
 	v.SetInt(123)
-	assert.EqualValues(t, otlp.AttributeKeyValue_INT, v.Type())
+	assert.EqualValues(t, AttributeValueINT, v.Type())
 	assert.EqualValues(t, 123, v.IntVal())
 
 	v.SetDouble(3.4)
-	assert.EqualValues(t, otlp.AttributeKeyValue_DOUBLE, v.Type())
+	assert.EqualValues(t, AttributeValueDOUBLE, v.Type())
 	assert.EqualValues(t, 3.4, v.DoubleVal())
 
 	v.SetBool(true)
-	assert.EqualValues(t, otlp.AttributeKeyValue_BOOL, v.Type())
+	assert.EqualValues(t, AttributeValueBOOL, v.Type())
 	assert.EqualValues(t, true, v.BoolVal())
 }
 
@@ -67,6 +66,49 @@ func TestNewAttributeValueSlice(t *testing.T) {
 	for event := range events {
 		assert.NotNil(t, event)
 	}
+}
+
+func TestAttributeKeyValue(t *testing.T) {
+	v := NewAttributeKeyValueString("key_string", "abc")
+	assert.EqualValues(t, "key_string", v.Key())
+	assert.EqualValues(t, AttributeValueSTRING, v.ValType())
+	assert.EqualValues(t, "abc", v.StringVal())
+
+	v = NewAttributeKeyValueInt("int_string", 123)
+	assert.EqualValues(t, "int_string", v.Key())
+	assert.EqualValues(t, AttributeValueINT, v.ValType())
+	assert.EqualValues(t, 123, v.IntVal())
+
+	v = NewAttributeKeyValueDouble("double_string", 3.4)
+	assert.EqualValues(t, "double_string", v.Key())
+	assert.EqualValues(t, AttributeValueDOUBLE, v.ValType())
+	assert.EqualValues(t, 3.4, v.DoubleVal())
+
+	v = NewAttributeKeyValueBool("bool_string", true)
+	assert.EqualValues(t, "bool_string", v.Key())
+	assert.EqualValues(t, AttributeValueBOOL, v.ValType())
+	assert.EqualValues(t, true, v.BoolVal())
+
+	v = NewAttributeKeyValueBool("other_key", true)
+	v.SetStringVal("abc")
+	assert.EqualValues(t, "other_key", v.Key())
+	assert.EqualValues(t, AttributeValueSTRING, v.ValType())
+	assert.EqualValues(t, "abc", v.StringVal())
+
+	v.SetIntVal(123)
+	assert.EqualValues(t, "other_key", v.Key())
+	assert.EqualValues(t, AttributeValueINT, v.ValType())
+	assert.EqualValues(t, 123, v.IntVal())
+
+	v.SetDoubleVal(3.4)
+	assert.EqualValues(t, "other_key", v.Key())
+	assert.EqualValues(t, AttributeValueDOUBLE, v.ValType())
+	assert.EqualValues(t, 3.4, v.DoubleVal())
+
+	v.SetBoolVal(true)
+	assert.EqualValues(t, "other_key", v.Key())
+	assert.EqualValues(t, AttributeValueBOOL, v.ValType())
+	assert.EqualValues(t, true, v.BoolVal())
 }
 
 func TestNilStringMap(t *testing.T) {

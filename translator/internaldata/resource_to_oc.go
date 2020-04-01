@@ -43,7 +43,7 @@ func internalResourceToOC(resource data.Resource) (*occommon.Node, *ocresource.R
 	labels := make(map[string]string, attrs.Len())
 	for i := 0; i < attrs.Len(); i++ {
 		akv := attrs.GetAttribute(i)
-		val := attributeValueToString(akv.Value())
+		val := attributeValueToString(akv)
 
 		switch akv.Key() {
 		case conventions.OCAttributeResourceType:
@@ -107,8 +107,8 @@ func internalResourceToOC(resource data.Resource) (*occommon.Node, *ocresource.R
 	return &ocNode, &ocResource
 }
 
-func attributeValueToString(attr data.AttributeValue) string {
-	switch attr.Type() {
+func attributeValueToString(attr data.AttributeKeyValue) string {
+	switch attr.ValType() {
 	case data.AttributeValueSTRING:
 		return attr.StringVal()
 	case data.AttributeValueBOOL:
@@ -118,6 +118,6 @@ func attributeValueToString(attr data.AttributeValue) string {
 	case data.AttributeValueINT:
 		return strconv.FormatInt(attr.IntVal(), 10)
 	default:
-		return fmt.Sprintf("<Unknown OpenTelemetry attribute value type %q>", attr.Type())
+		return fmt.Sprintf("<Unknown OpenTelemetry attribute value type %q>", attr.ValType())
 	}
 }

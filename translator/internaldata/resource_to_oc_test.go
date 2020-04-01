@@ -36,7 +36,7 @@ func TestResourceToOC(t *testing.T) {
 		"int2": "123",
 	}
 
-	attrs := data.AttributesMap{
+	attrs := map[string]data.AttributeValue{
 		conventions.OCAttributeProcessStartTime: data.NewAttributeValueString("2020-02-11T20:26:00Z"),
 		conventions.AttributeHostHostname:       data.NewAttributeValueString("host1"),
 		conventions.OCAttributeProcessID:        data.NewAttributeValueString("123"),
