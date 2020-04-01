@@ -120,6 +120,14 @@ func GenerateMetricDataOneMetric() data.MetricData {
 	return md
 }
 
+func GenerateMetricDataOneMetricNoLabels() data.MetricData {
+	md := GenerateMetricDataOneMetric()
+	dps := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Int64DataPoints()
+	dps.At(0).LabelsMap().InitFromMap(map[string]string{})
+	dps.At(1).LabelsMap().InitFromMap(map[string]string{})
+	return md
+}
+
 func GenerateMetricDataTwoMetrics() data.MetricData {
 	md := GenerateMetricDataNoMetrics()
 	rm0ils0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
@@ -150,11 +158,21 @@ func initCounterDoubleMetric(dm data.Metric) {
 	initMetricDescriptor(dm.MetricDescriptor(), TestCounterDoubleMetricName, data.MetricTypeCounterDouble)
 
 	ddps := dm.DoubleDataPoints()
-	ddps.Resize(1)
+	ddps.Resize(2)
+
 	ddp0 := ddps.At(0)
+	ddp0.LabelsMap().Insert("double-label-1", "double-label-value-1")
+	ddp0.LabelsMap().Insert("double-label-2", "double-label-value-2")
 	ddp0.SetStartTime(TestMetricStartTimestamp)
 	ddp0.SetTimestamp(TestMetricTimestamp)
 	ddp0.SetValue(1.23)
+
+	ddp1 := ddps.At(1)
+	ddp1.LabelsMap().Insert("double-label-1", "double-label-different-value-1")
+	ddp1.LabelsMap().Insert("double-label-3", "double-label-value-3")
+	ddp1.SetStartTime(TestMetricStartTimestamp)
+	ddp1.SetTimestamp(TestMetricTimestamp)
+	ddp1.SetValue(4.56)
 }
 
 func initCumulativeHistogramMetric(hm data.Metric) {
@@ -163,10 +181,8 @@ func initCumulativeHistogramMetric(hm data.Metric) {
 	hdps := hm.HistogramDataPoints()
 	hdps.Resize(2)
 	hdp0 := hdps.At(0)
-	hdp0.LabelsMap().InitFromMap(map[string]string{
-		"histogram-label-1": "histogram-label-value-1",
-		"histogram-label-3": "histogram-label-value-3",
-	})
+	hdp0.LabelsMap().Insert("histogram-label-1", "histogram-label-value-1")
+	hdp0.LabelsMap().Insert("histogram-label-3", "histogram-label-value-3")
 	hdp0.SetStartTime(TestMetricStartTimestamp)
 	hdp0.SetTimestamp(TestMetricTimestamp)
 	hdp0.SetCount(1)
