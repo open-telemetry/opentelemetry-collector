@@ -10,8 +10,6 @@ data:
   otel-agent-config: |
     receivers:
       opencensus: {}
-#      jaeger: {}
-#      zipkin: {}
     exporters:
       opencensus:
         endpoint: "otel-collector.default:55678" # TODO: Update me
@@ -48,7 +46,7 @@ spec:
       - command:
           - "/otelcol"
           - "--config=/conf/otel-agent-config.yaml"
-        image: omnition/opentelemetry-collector:v0.2.3
+        image: otel/opentelemetry-collector-dev:latest
         name: otel-agent
         resources:
           limits:
@@ -89,7 +87,10 @@ data:
           server_parameters:
             max_connection_age: 120s
             max_connection_age-grace: 30s
-      jaeger: {}
+      jaeger:
+        protocols:
+          grpc:
+          thrift_http:
       zipkin: {}
     processors:
       queued_retry:
@@ -137,6 +138,8 @@ spec:
     port: 55678
     protocol: TCP
     targetPort: 55678
+  - name: jaeger-grpc # Default endpoing for Jaeger gRPC receiver
+    port: 14250
   - name: jaeger-thrift-http # Default endpoint for Jaeger HTTP receiver.
     port: 14268
   - name: zipkin # Default endpoint for Zipkin receiver.
@@ -176,7 +179,7 @@ spec:
         env:
         - name: GOGC
           value: "80"
-        image: omnition/opentelemetry-collector:v0.2.3
+        image: otel/opentelemetry-collector-dev:latest
         name: otel-collector
         resources:
           limits:
@@ -187,6 +190,7 @@ spec:
             memory: 400Mi
         ports:
         - containerPort: 55678 # Default endpoint for Opencensus receiver.
+        - containerPort: 14250 # Default endpoint for Jaeger HTTP receiver.
         - containerPort: 14268 # Default endpoint for Jaeger HTTP receiver.
         - containerPort: 9411 # Default endpoint for Zipkin receiver.
         - containerPort: 8888  # Default endpoint for querying metrics.
