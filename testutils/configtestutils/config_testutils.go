@@ -16,6 +16,7 @@ package configtestutils
 
 import (
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/viper"
 )
@@ -25,7 +26,7 @@ import (
 // Example usage for testing can be found in config_testutils_test.go
 func CreateViperYamlUnmarshaler(fileName string) (*viper.Viper, error) {
 	// Open the file for reading.
-	file, err := os.Open(fileName)
+	file, err := os.Open(filepath.Clean(fileName))
 	if err != nil {
 		return nil, err
 	}
