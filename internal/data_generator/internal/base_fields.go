@@ -23,14 +23,14 @@ const accessorSliceTemplate = `// ${fieldName} returns the ${originFieldName} as
 //
 // Important: This causes a runtime error if IsNil() returns "true".
 func (ms ${structName}) ${fieldName}() ${returnType} {
-	return new${returnType}(&ms.orig.${originFieldName})
+	return new${returnType}(&(*ms.orig).${originFieldName})
 }
 
 // Set${fieldName} replaces the ${originFieldName} associated with this ${structName}.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
 func (ms ${structName}) Set${fieldName}(v ${returnType}) {
-	ms.orig.${originFieldName} = *v.orig
+	(*ms.orig).${originFieldName} = *v.orig
 }`
 
 const accessorsSliceTestTemplate = `	assert.EqualValues(t, New${returnType}(${constructorDefaultValue}), ms.${fieldName}())
@@ -41,40 +41,31 @@ const accessorsSliceTestTemplate = `	assert.EqualValues(t, New${returnType}(${co
 const accessorsMessageTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
 // If no ${lowerFieldName} available, it creates an empty message and associates it with this ${structName}.
 //
+//  Empty initialized ${structName} will return "nil" ${returnType}.
+//
 // Important: This causes a runtime error if IsNil() returns "true".
 func (ms ${structName}) ${fieldName}() ${returnType} {
-	return new${returnType}(ms.orig.${originFieldName})
-}
-
-// Init${fieldName}IfNil() initialize the ${lowerFieldName} with an empty message if and only if
-// the current value is "nil".
-func (ms ${structName}) Init${fieldName}IfNil() {
-	if ms.orig.${originFieldName} == nil {
-		ms.orig.${originFieldName} = &${structOriginFullName}{}
-	}
+	return new${returnType}(&(*ms.orig).${originFieldName})
 }`
 
 const accessorsMessageTestTemplate = `	assert.EqualValues(t, true, ms.${fieldName}().IsNil())
-	ms.Init${fieldName}IfNil()
+	ms.${fieldName}().InitEmpty()
 	assert.EqualValues(t, false, ms.${fieldName}().IsNil())
-	assert.EqualValues(t, NewEmpty${returnType}(), ms.${fieldName}())
-	testVal${fieldName} := generateTest${returnType}()
 	fillTest${returnType}(ms.${fieldName}())
-	assert.EqualValues(t, testVal${fieldName}, ms.${fieldName}())
-	assert.EqualValues(t, false, ms.${fieldName}().IsNil())`
+	assert.EqualValues(t, generateTest${returnType}(), ms.${fieldName}())`
 
 const accessorsPrimitiveTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
 func (ms ${structName}) ${fieldName}() ${returnType} {
-	return ms.orig.${originFieldName}
+	return (*ms.orig).${originFieldName}
 }
 
 // Set${fieldName} replaces the ${lowerFieldName} associated with this ${structName}.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
 func (ms ${structName}) Set${fieldName}(v ${returnType}) {
-	ms.orig.${originFieldName} = v
+	(*ms.orig).${originFieldName} = v
 }`
 
 const accessorsPrimitiveTestTemplate = `	assert.EqualValues(t, ${defaultVal}, ms.${fieldName}())
@@ -86,14 +77,14 @@ const accessorsPrimitiveTypedTemplate = `// ${fieldName} returns the ${lowerFiel
 //
 // Important: This causes a runtime error if IsNil() returns "true".
 func (ms ${structName}) ${fieldName}() ${returnType} {
-	return ${returnType}(ms.orig.${originFieldName})
+	return ${returnType}((*ms.orig).${originFieldName})
 }
 
 // Set${fieldName} replaces the ${lowerFieldName} associated with this ${structName}.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
 func (ms ${structName}) Set${fieldName}(v ${returnType}) {
-	ms.orig.${originFieldName} = ${rawType}(v)
+	(*ms.orig).${originFieldName} = ${rawType}(v)
 }`
 
 type baseField interface {
@@ -190,7 +181,7 @@ func (mf *messageField) generateAccessorsTests(ms *messageStruct, sb *strings.Bu
 }
 
 func (mf *messageField) generateSetWithTestValue(sb *strings.Builder) {
-	sb.WriteString("\ttv.Init" + mf.fieldMame + "IfNil()\n")
+	sb.WriteString("\ttv." + mf.fieldMame + "().InitEmpty()\n")
 	sb.WriteString("\tfillTest" + mf.returnMessage.structName + "(tv." + mf.fieldMame + "())")
 }
 

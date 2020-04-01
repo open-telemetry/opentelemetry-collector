@@ -61,8 +61,7 @@ func generateTraceOtlpOneEmptyResourceSpans() []*otlptrace.ResourceSpans {
 func GenerateTraceDataNoLibraries() data.TraceData {
 	td := GenerateTraceDataOneEmptyResourceSpans()
 	rs0 := td.ResourceSpans().Get(0)
-	rs0.InitResourceIfNil()
-	fillResource1(rs0.Resource())
+	initResource1(rs0.Resource())
 	return td
 }
 
@@ -173,16 +172,14 @@ func GenerateTraceDataTwoSpansSameResourceOneDifferent() data.TraceData {
 	td := data.NewTraceData()
 	td.SetResourceSpans(data.NewResourceSpansSlice(2))
 	rs0 := td.ResourceSpans().Get(0)
-	rs0.InitResourceIfNil()
-	fillResource1(rs0.Resource())
+	initResource1(rs0.Resource())
 	rs0.SetInstrumentationLibrarySpans(data.NewInstrumentationLibrarySpansSlice(1))
 	rs0ils0 := rs0.InstrumentationLibrarySpans().Get(0)
 	rs0ils0.SetSpans(data.NewSpanSlice(2))
 	fillSpanOne(rs0ils0.Spans().Get(0))
 	fillSpanTwo(rs0ils0.Spans().Get(1))
 	rs1 := td.ResourceSpans().Get(1)
-	rs1.InitResourceIfNil()
-	fillResource2(rs1.Resource())
+	initResource2(rs1.Resource())
 	rs1.SetInstrumentationLibrarySpans(data.NewInstrumentationLibrarySpansSlice(1))
 	rs1ils0 := rs1.InstrumentationLibrarySpans().Get(0)
 	rs1ils0.SetSpans(data.NewSpanSlice(1))
@@ -233,7 +230,7 @@ func fillSpanOne(span data.Span) {
 	ev1.SetName("event")
 	ev1.SetDroppedAttributesCount(2)
 	span.SetDroppedEventsCount(1)
-	span.InitStatusIfNil()
+	span.Status().InitEmpty()
 	span.Status().SetCode(data.StatusCode(1))
 	span.Status().SetMessage("status-cancelled")
 }
@@ -298,7 +295,7 @@ func fillSpanThree(span data.Span) {
 	span.SetName("operationC")
 	span.SetStartTime(TestSpanStartTimestamp)
 	span.SetEndTime(TestSpanEndTimestamp)
-	span.SetAttributes(data.NewAttributeMap(spanAttributes))
+	span.SetAttributes(generateSpanAttributes())
 	span.SetDroppedAttributesCount(5)
 }
 

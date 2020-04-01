@@ -66,7 +66,7 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	resourceMetrics := metricData.ResourceMetrics()
 	assert.EqualValues(t, 1, resourceMetrics.Len())
 	resourceMetric := resourceMetrics.Get(0)
-	assert.EqualValues(t, newResource(generateTestProtoResource()), resourceMetric.Resource())
+	assert.EqualValues(t, generateTestProtoResource(), *resourceMetric.Resource().orig)
 	metrics := resourceMetric.InstrumentationLibraryMetrics().Get(0).Metrics()
 	assert.EqualValues(t, 4, metrics.Len())
 	// Check int64 metric

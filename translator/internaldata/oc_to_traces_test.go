@@ -33,15 +33,14 @@ import (
 )
 
 func TestOcNodeResourceToInternal(t *testing.T) {
-	resourceSpans := data.NewEmptyResourceSpans()
-	ocNodeResourceToInternal(nil, nil, resourceSpans)
-	assert.EqualValues(t, true, resourceSpans.Resource().IsNil())
+	resource := data.NewResource()
+	ocNodeResourceToInternal(nil, nil, resource)
+	assert.EqualValues(t, true, resource.IsNil())
 
-	resourceSpans = data.NewEmptyResourceSpans()
 	ocNode := &occommon.Node{}
 	ocResource := &ocresource.Resource{}
-	ocNodeResourceToInternal(ocNode, ocResource, resourceSpans)
-	assert.EqualValues(t, true, resourceSpans.Resource().IsNil())
+	ocNodeResourceToInternal(ocNode, ocResource, resource)
+	assert.EqualValues(t, true, resource.IsNil())
 
 	ts, err := ptypes.TimestampProto(time.Date(2020, 2, 11, 20, 26, 0, 0, time.UTC))
 	assert.NoError(t, err)
@@ -83,9 +82,8 @@ func TestOcNodeResourceToInternal(t *testing.T) {
 		"resource-attr":                         data.NewAttributeValueString("val2"),
 	})
 
-	resourceSpans = data.NewEmptyResourceSpans()
-	ocNodeResourceToInternal(ocNode, ocResource, resourceSpans)
-	assert.EqualValues(t, expectedAttrs.Sort(), resourceSpans.Resource().Attributes().Sort())
+	ocNodeResourceToInternal(ocNode, ocResource, resource)
+	assert.EqualValues(t, expectedAttrs.Sort(), resource.Attributes().Sort())
 
 	// Make sure hard-coded fields override same-name values in Attributes.
 	// To do that add Attributes with same-name.
@@ -99,10 +97,10 @@ func TestOcNodeResourceToInternal(t *testing.T) {
 	ocResource.Labels[conventions.OCAttributeResourceType] = "this will be overridden 2"
 
 	// Convert again.
-	resourceSpans = data.NewEmptyResourceSpans()
-	ocNodeResourceToInternal(ocNode, ocResource, resourceSpans)
+	resource = data.NewResource()
+	ocNodeResourceToInternal(ocNode, ocResource, resource)
 	// And verify that same-name attributes were ignored.
-	assert.EqualValues(t, expectedAttrs.Sort(), resourceSpans.Resource().Attributes().Sort())
+	assert.EqualValues(t, expectedAttrs.Sort(), resource.Attributes().Sort())
 }
 
 func TestOcTraceStateToInternal(t *testing.T) {

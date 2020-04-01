@@ -19,7 +19,8 @@ import (
 	otlpresource "github.com/open-telemetry/opentelemetry-proto/gen/go/resource/v1"
 )
 
-func fillResource1(r data.Resource) {
+func initResource1(r data.Resource) {
+	r.InitEmpty()
 	r.SetAttributes(generateResourceAttributes1())
 }
 
@@ -29,7 +30,8 @@ func generateOtlpResource1() *otlpresource.Resource {
 	}
 }
 
-func fillResource2(r data.Resource) {
+func initResource2(r data.Resource) {
+	r.InitEmpty()
 	r.SetAttributes(generateResourceAttributes2())
 }
 

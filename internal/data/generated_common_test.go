@@ -20,13 +20,13 @@ package data
 import (
 	"testing"
 	
-	otlpcommon "github.com/open-telemetry/opentelemetry-proto/gen/go/common/v1"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestInstrumentationLibrary(t *testing.T) {
-	assert.EqualValues(t, true, newInstrumentationLibrary(nil).IsNil())
-	ms := newInstrumentationLibrary(&otlpcommon.InstrumentationLibrary{})
+	ms := NewInstrumentationLibrary()
+	assert.EqualValues(t, true,ms.IsNil())
+	ms.InitEmpty()
 	assert.EqualValues(t, false, ms.IsNil())
 
 	assert.EqualValues(t, "", ms.Name())
@@ -43,7 +43,8 @@ func TestInstrumentationLibrary(t *testing.T) {
 }
 
 func generateTestInstrumentationLibrary() InstrumentationLibrary {
-	tv := newInstrumentationLibrary(&otlpcommon.InstrumentationLibrary{})
+	tv := NewInstrumentationLibrary()
+	tv.InitEmpty()
 	fillTestInstrumentationLibrary(tv)
 	return tv
 }

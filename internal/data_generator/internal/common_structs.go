@@ -22,7 +22,6 @@ var commonFile = &File{
 	testImports: []string{
 		`"testing"`,
 		``,
-		`otlpcommon "github.com/open-telemetry/opentelemetry-proto/gen/go/common/v1"`,
 		`"github.com/stretchr/testify/assert"`,
 	},
 	structs: []baseStruct{

@@ -20,13 +20,13 @@ package data
 import (
 	"testing"
 	
-	otlpresource "github.com/open-telemetry/opentelemetry-proto/gen/go/resource/v1"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestResource(t *testing.T) {
-	assert.EqualValues(t, true, newResource(nil).IsNil())
-	ms := newResource(&otlpresource.Resource{})
+	ms := NewResource()
+	assert.EqualValues(t, true,ms.IsNil())
+	ms.InitEmpty()
 	assert.EqualValues(t, false, ms.IsNil())
 
 	assert.EqualValues(t, NewAttributeMap(nil), ms.Attributes())
@@ -38,7 +38,8 @@ func TestResource(t *testing.T) {
 }
 
 func generateTestResource() Resource {
-	tv := newResource(&otlpresource.Resource{})
+	tv := NewResource()
+	tv.InitEmpty()
 	fillTestResource(tv)
 	return tv
 }

@@ -17,8 +17,6 @@ package internal
 var traceFile = &File{
 	Name: "trace",
 	imports: []string{
-		`otlpcommon "github.com/open-telemetry/opentelemetry-proto/gen/go/common/v1"`,
-		`otlpresource "github.com/open-telemetry/opentelemetry-proto/gen/go/resource/v1"`,
 		`otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"`,
 	},
 	testImports: []string{

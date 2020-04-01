@@ -27,6 +27,8 @@ const sliceTemplate = `// ${structName} logically represents a slice of ${elemen
 // Must use New${structName} function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ${structName} struct {
+	// orig points to the slice ${originName} field contained somewhere else.
+    // We use pointer-to-slice to be able to modify it in functions like Resize.
 	orig *[]*${originName}
 }
 
@@ -69,7 +71,7 @@ func (es ${structName}) Len() int {
 //     ... // Do something with the element
 // }
 func (es ${structName}) Get(ix int) ${elementName} {
-	return new${elementName}((*es.orig)[ix])
+	return new${elementName}(&(*es.orig)[ix])
 }
 
 // Remove the element at the given index from the slice.
@@ -92,10 +94,12 @@ const sliceTestTemplate = `func Test${structName}(t *testing.T) {
 	es = new${structName}(&[]*${originName}{})
 	assert.EqualValues(t, 0, es.Len())
 	es = New${structName}(13)
+	emptyVal :=  New${elementName}()
+	emptyVal.InitEmpty()
 	testVal := generateTest${elementName}()
 	assert.EqualValues(t, 13, es.Len())
 	for i := 0; i < es.Len(); i++ {
-		assert.EqualValues(t, NewEmpty${elementName}(), es.Get(i))
+		assert.EqualValues(t, emptyVal, es.Get(i))
 		fillTest${elementName}(es.Get(i))
 		assert.EqualValues(t, testVal, es.Get(i))
 	}
@@ -103,27 +107,27 @@ const sliceTestTemplate = `func Test${structName}(t *testing.T) {
 	// Test resize.
 	const resizeLo = 2
 	const resizeHi = 10
-	expectedEs := make(map[${elementName}]bool, resizeHi-resizeLo)
+	expectedEs := make(map[*${originName}]bool, resizeHi-resizeLo)
 	for i := resizeLo; i < resizeHi; i++ {
-		expectedEs[es.Get(i)] = true
+		expectedEs[*(es.Get(i).orig)] = true
 	}
 	assert.EqualValues(t, resizeHi-resizeLo, len(expectedEs))
 	es.Resize(resizeLo, resizeHi)
 	assert.EqualValues(t, resizeHi-resizeLo, es.Len())
-	foundEs := make(map[${elementName}]bool, resizeHi-resizeLo)
+	foundEs := make(map[*${originName}]bool, resizeHi-resizeLo)
 	for i := 0; i < es.Len(); i++ {
-		foundEs[es.Get(i)] = true
+		foundEs[*(es.Get(i).orig)] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 
 	// Test remove.
 	const removePos = 2
-	delete(expectedEs, es.Get(removePos))
+	delete(expectedEs, *(es.Get(removePos).orig))
 	es.Remove(removePos)
 	assert.EqualValues(t, resizeHi-resizeLo-1, es.Len())
-	foundEs = make(map[${elementName}]bool, resizeHi-resizeLo)
+	foundEs = make(map[*${originName}]bool, resizeHi-resizeLo)
 	for i := 0; i < es.Len(); i++ {
-		foundEs[es.Get(i)] = true
+		foundEs[*(es.Get(i).orig)] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 }`
@@ -141,41 +145,51 @@ const messageTemplate = `${description}
 // This is a reference type, if passsed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewEmpty${structName} function to create new instances.
+// Must use New${structName} function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ${structName} struct {
-	// Wrap OTLP ${originName}.
-	orig *${originName}
+	// orig points to the pointer ${originName} field contained somewhere else.
+    // We use pointer-to-pointer to be able to modify it in InitEmpty func.
+	orig **${originName}
 }
 
-func new${structName}(orig *${originName}) ${structName} {
+func new${structName}(orig **${originName}) ${structName} {
 	return ${structName}{orig}
 }
 
-// NewEmpty${structName} creates a new empty ${structName}.
+// New${structName} creates a new "nil" ${structName}.
+// To initialize the struct call "InitEmpty".
 //
 // This must be used only in testing code since no "Set" method available.
-func NewEmpty${structName}() ${structName} {
-	return new${structName}(&${originName}{})
+func New${structName}() ${structName} {
+	orig := (*${originName})(nil)
+	return new${structName}(&orig)
+}
+
+// InitEmpty overwrites the current value with empty.
+func (ms ${structName}) InitEmpty() {
+	*ms.orig = &${originName}{}
 }
 
 // IsNil returns true if the underlying data are nil.
 // 
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms ${structName}) IsNil() bool {
-	return ms.orig == nil
+	return *ms.orig == nil
 }`
 
 const messageTestHeaderTemplate = `func Test${structName}(t *testing.T) {
-	assert.EqualValues(t, true, new${structName}(nil).IsNil())
-	ms := new${structName}(&${originName}{})
+	ms := New${structName}()
+	assert.EqualValues(t, true,ms.IsNil())
+	ms.InitEmpty()
 	assert.EqualValues(t, false, ms.IsNil())`
 
 const messageTestFooterTemplate = `	assert.EqualValues(t, generateTest${structName}(), ms)
 }`
 
 const messageGenerateTestTemplate = `func generateTest${structName}() ${structName} {
-	tv := new${structName}(&${originName}{})
+	tv := New${structName}()
+	tv.InitEmpty()
 	fillTest${structName}(tv)
 	return tv
 }`

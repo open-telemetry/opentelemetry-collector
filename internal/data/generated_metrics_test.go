@@ -30,10 +30,12 @@ func TestResourceMetricsSlice(t *testing.T) {
 	es = newResourceMetricsSlice(&[]*otlpmetrics.ResourceMetrics{})
 	assert.EqualValues(t, 0, es.Len())
 	es = NewResourceMetricsSlice(13)
+	emptyVal :=  NewResourceMetrics()
+	emptyVal.InitEmpty()
 	testVal := generateTestResourceMetrics()
 	assert.EqualValues(t, 13, es.Len())
 	for i := 0; i < es.Len(); i++ {
-		assert.EqualValues(t, NewEmptyResourceMetrics(), es.Get(i))
+		assert.EqualValues(t, emptyVal, es.Get(i))
 		fillTestResourceMetrics(es.Get(i))
 		assert.EqualValues(t, testVal, es.Get(i))
 	}
@@ -41,44 +43,42 @@ func TestResourceMetricsSlice(t *testing.T) {
 	// Test resize.
 	const resizeLo = 2
 	const resizeHi = 10
-	expectedEs := make(map[ResourceMetrics]bool, resizeHi-resizeLo)
+	expectedEs := make(map[*otlpmetrics.ResourceMetrics]bool, resizeHi-resizeLo)
 	for i := resizeLo; i < resizeHi; i++ {
-		expectedEs[es.Get(i)] = true
+		expectedEs[*(es.Get(i).orig)] = true
 	}
 	assert.EqualValues(t, resizeHi-resizeLo, len(expectedEs))
 	es.Resize(resizeLo, resizeHi)
 	assert.EqualValues(t, resizeHi-resizeLo, es.Len())
-	foundEs := make(map[ResourceMetrics]bool, resizeHi-resizeLo)
+	foundEs := make(map[*otlpmetrics.ResourceMetrics]bool, resizeHi-resizeLo)
 	for i := 0; i < es.Len(); i++ {
-		foundEs[es.Get(i)] = true
+		foundEs[*(es.Get(i).orig)] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 
 	// Test remove.
 	const removePos = 2
-	delete(expectedEs, es.Get(removePos))
+	delete(expectedEs, *(es.Get(removePos).orig))
 	es.Remove(removePos)
 	assert.EqualValues(t, resizeHi-resizeLo-1, es.Len())
-	foundEs = make(map[ResourceMetrics]bool, resizeHi-resizeLo)
+	foundEs = make(map[*otlpmetrics.ResourceMetrics]bool, resizeHi-resizeLo)
 	for i := 0; i < es.Len(); i++ {
-		foundEs[es.Get(i)] = true
+		foundEs[*(es.Get(i).orig)] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 }
 
 func TestResourceMetrics(t *testing.T) {
-	assert.EqualValues(t, true, newResourceMetrics(nil).IsNil())
-	ms := newResourceMetrics(&otlpmetrics.ResourceMetrics{})
+	ms := NewResourceMetrics()
+	assert.EqualValues(t, true,ms.IsNil())
+	ms.InitEmpty()
 	assert.EqualValues(t, false, ms.IsNil())
 
 	assert.EqualValues(t, true, ms.Resource().IsNil())
-	ms.InitResourceIfNil()
+	ms.Resource().InitEmpty()
 	assert.EqualValues(t, false, ms.Resource().IsNil())
-	assert.EqualValues(t, NewEmptyResource(), ms.Resource())
-	testValResource := generateTestResource()
 	fillTestResource(ms.Resource())
-	assert.EqualValues(t, testValResource, ms.Resource())
-	assert.EqualValues(t, false, ms.Resource().IsNil())
+	assert.EqualValues(t, generateTestResource(), ms.Resource())
 
 	assert.EqualValues(t, NewInstrumentationLibraryMetricsSlice(0), ms.InstrumentationLibraryMetrics())
 	testValInstrumentationLibraryMetrics := generateTestInstrumentationLibraryMetricsSlice()
@@ -94,10 +94,12 @@ func TestInstrumentationLibraryMetricsSlice(t *testing.T) {
 	es = newInstrumentationLibraryMetricsSlice(&[]*otlpmetrics.InstrumentationLibraryMetrics{})
 	assert.EqualValues(t, 0, es.Len())
 	es = NewInstrumentationLibraryMetricsSlice(13)
+	emptyVal :=  NewInstrumentationLibraryMetrics()
+	emptyVal.InitEmpty()
 	testVal := generateTestInstrumentationLibraryMetrics()
 	assert.EqualValues(t, 13, es.Len())
 	for i := 0; i < es.Len(); i++ {
-		assert.EqualValues(t, NewEmptyInstrumentationLibraryMetrics(), es.Get(i))
+		assert.EqualValues(t, emptyVal, es.Get(i))
 		fillTestInstrumentationLibraryMetrics(es.Get(i))
 		assert.EqualValues(t, testVal, es.Get(i))
 	}
@@ -105,44 +107,42 @@ func TestInstrumentationLibraryMetricsSlice(t *testing.T) {
 	// Test resize.
 	const resizeLo = 2
 	const resizeHi = 10
-	expectedEs := make(map[InstrumentationLibraryMetrics]bool, resizeHi-resizeLo)
+	expectedEs := make(map[*otlpmetrics.InstrumentationLibraryMetrics]bool, resizeHi-resizeLo)
 	for i := resizeLo; i < resizeHi; i++ {
-		expectedEs[es.Get(i)] = true
+		expectedEs[*(es.Get(i).orig)] = true
 	}
 	assert.EqualValues(t, resizeHi-resizeLo, len(expectedEs))
 	es.Resize(resizeLo, resizeHi)
 	assert.EqualValues(t, resizeHi-resizeLo, es.Len())
-	foundEs := make(map[InstrumentationLibraryMetrics]bool, resizeHi-resizeLo)
+	foundEs := make(map[*otlpmetrics.InstrumentationLibraryMetrics]bool, resizeHi-resizeLo)
 	for i := 0; i < es.Len(); i++ {
-		foundEs[es.Get(i)] = true
+		foundEs[*(es.Get(i).orig)] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 
 	// Test remove.
 	const removePos = 2
-	delete(expectedEs, es.Get(removePos))
+	delete(expectedEs, *(es.Get(removePos).orig))
 	es.Remove(removePos)
 	assert.EqualValues(t, resizeHi-resizeLo-1, es.Len())
-	foundEs = make(map[InstrumentationLibraryMetrics]bool, resizeHi-resizeLo)
+	foundEs = make(map[*otlpmetrics.InstrumentationLibraryMetrics]bool, resizeHi-resizeLo)
 	for i := 0; i < es.Len(); i++ {
-		foundEs[es.Get(i)] = true
+		foundEs[*(es.Get(i).orig)] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 }
 
 func TestInstrumentationLibraryMetrics(t *testing.T) {
-	assert.EqualValues(t, true, newInstrumentationLibraryMetrics(nil).IsNil())
-	ms := newInstrumentationLibraryMetrics(&otlpmetrics.InstrumentationLibraryMetrics{})
+	ms := NewInstrumentationLibraryMetrics()
+	assert.EqualValues(t, true,ms.IsNil())
+	ms.InitEmpty()
 	assert.EqualValues(t, false, ms.IsNil())
 
 	assert.EqualValues(t, true, ms.InstrumentationLibrary().IsNil())
-	ms.InitInstrumentationLibraryIfNil()
+	ms.InstrumentationLibrary().InitEmpty()
 	assert.EqualValues(t, false, ms.InstrumentationLibrary().IsNil())
-	assert.EqualValues(t, NewEmptyInstrumentationLibrary(), ms.InstrumentationLibrary())
-	testValInstrumentationLibrary := generateTestInstrumentationLibrary()
 	fillTestInstrumentationLibrary(ms.InstrumentationLibrary())
-	assert.EqualValues(t, testValInstrumentationLibrary, ms.InstrumentationLibrary())
-	assert.EqualValues(t, false, ms.InstrumentationLibrary().IsNil())
+	assert.EqualValues(t, generateTestInstrumentationLibrary(), ms.InstrumentationLibrary())
 
 	assert.EqualValues(t, NewMetricSlice(0), ms.Metrics())
 	testValMetrics := generateTestMetricSlice()
@@ -158,10 +158,12 @@ func TestMetricSlice(t *testing.T) {
 	es = newMetricSlice(&[]*otlpmetrics.Metric{})
 	assert.EqualValues(t, 0, es.Len())
 	es = NewMetricSlice(13)
+	emptyVal :=  NewMetric()
+	emptyVal.InitEmpty()
 	testVal := generateTestMetric()
 	assert.EqualValues(t, 13, es.Len())
 	for i := 0; i < es.Len(); i++ {
-		assert.EqualValues(t, NewEmptyMetric(), es.Get(i))
+		assert.EqualValues(t, emptyVal, es.Get(i))
 		fillTestMetric(es.Get(i))
 		assert.EqualValues(t, testVal, es.Get(i))
 	}
@@ -169,44 +171,42 @@ func TestMetricSlice(t *testing.T) {
 	// Test resize.
 	const resizeLo = 2
 	const resizeHi = 10
-	expectedEs := make(map[Metric]bool, resizeHi-resizeLo)
+	expectedEs := make(map[*otlpmetrics.Metric]bool, resizeHi-resizeLo)
 	for i := resizeLo; i < resizeHi; i++ {
-		expectedEs[es.Get(i)] = true
+		expectedEs[*(es.Get(i).orig)] = true
 	}
 	assert.EqualValues(t, resizeHi-resizeLo, len(expectedEs))
 	es.Resize(resizeLo, resizeHi)
 	assert.EqualValues(t, resizeHi-resizeLo, es.Len())
-	foundEs := make(map[Metric]bool, resizeHi-resizeLo)
+	foundEs := make(map[*otlpmetrics.Metric]bool, resizeHi-resizeLo)
 	for i := 0; i < es.Len(); i++ {
-		foundEs[es.Get(i)] = true
+		foundEs[*(es.Get(i).orig)] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 
 	// Test remove.
 	const removePos = 2
-	delete(expectedEs, es.Get(removePos))
+	delete(expectedEs, *(es.Get(removePos).orig))
 	es.Remove(removePos)
 	assert.EqualValues(t, resizeHi-resizeLo-1, es.Len())
-	foundEs = make(map[Metric]bool, resizeHi-resizeLo)
+	foundEs = make(map[*otlpmetrics.Metric]bool, resizeHi-resizeLo)
 	for i := 0; i < es.Len(); i++ {
-		foundEs[es.Get(i)] = true
+		foundEs[*(es.Get(i).orig)] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 }
 
 func TestMetric(t *testing.T) {
-	assert.EqualValues(t, true, newMetric(nil).IsNil())
-	ms := newMetric(&otlpmetrics.Metric{})
+	ms := NewMetric()
+	assert.EqualValues(t, true,ms.IsNil())
+	ms.InitEmpty()
 	assert.EqualValues(t, false, ms.IsNil())
 
 	assert.EqualValues(t, true, ms.MetricDescriptor().IsNil())
-	ms.InitMetricDescriptorIfNil()
+	ms.MetricDescriptor().InitEmpty()
 	assert.EqualValues(t, false, ms.MetricDescriptor().IsNil())
-	assert.EqualValues(t, NewEmptyMetricDescriptor(), ms.MetricDescriptor())
-	testValMetricDescriptor := generateTestMetricDescriptor()
 	fillTestMetricDescriptor(ms.MetricDescriptor())
-	assert.EqualValues(t, testValMetricDescriptor, ms.MetricDescriptor())
-	assert.EqualValues(t, false, ms.MetricDescriptor().IsNil())
+	assert.EqualValues(t, generateTestMetricDescriptor(), ms.MetricDescriptor())
 
 	assert.EqualValues(t, NewInt64DataPointSlice(0), ms.Int64DataPoints())
 	testValInt64DataPoints := generateTestInt64DataPointSlice()
@@ -232,8 +232,9 @@ func TestMetric(t *testing.T) {
 }
 
 func TestMetricDescriptor(t *testing.T) {
-	assert.EqualValues(t, true, newMetricDescriptor(nil).IsNil())
-	ms := newMetricDescriptor(&otlpmetrics.MetricDescriptor{})
+	ms := NewMetricDescriptor()
+	assert.EqualValues(t, true,ms.IsNil())
+	ms.InitEmpty()
 	assert.EqualValues(t, false, ms.IsNil())
 
 	assert.EqualValues(t, "", ms.Name())
@@ -270,10 +271,12 @@ func TestInt64DataPointSlice(t *testing.T) {
 	es = newInt64DataPointSlice(&[]*otlpmetrics.Int64DataPoint{})
 	assert.EqualValues(t, 0, es.Len())
 	es = NewInt64DataPointSlice(13)
+	emptyVal :=  NewInt64DataPoint()
+	emptyVal.InitEmpty()
 	testVal := generateTestInt64DataPoint()
 	assert.EqualValues(t, 13, es.Len())
 	for i := 0; i < es.Len(); i++ {
-		assert.EqualValues(t, NewEmptyInt64DataPoint(), es.Get(i))
+		assert.EqualValues(t, emptyVal, es.Get(i))
 		fillTestInt64DataPoint(es.Get(i))
 		assert.EqualValues(t, testVal, es.Get(i))
 	}
@@ -281,34 +284,35 @@ func TestInt64DataPointSlice(t *testing.T) {
 	// Test resize.
 	const resizeLo = 2
 	const resizeHi = 10
-	expectedEs := make(map[Int64DataPoint]bool, resizeHi-resizeLo)
+	expectedEs := make(map[*otlpmetrics.Int64DataPoint]bool, resizeHi-resizeLo)
 	for i := resizeLo; i < resizeHi; i++ {
-		expectedEs[es.Get(i)] = true
+		expectedEs[*(es.Get(i).orig)] = true
 	}
 	assert.EqualValues(t, resizeHi-resizeLo, len(expectedEs))
 	es.Resize(resizeLo, resizeHi)
 	assert.EqualValues(t, resizeHi-resizeLo, es.Len())
-	foundEs := make(map[Int64DataPoint]bool, resizeHi-resizeLo)
+	foundEs := make(map[*otlpmetrics.Int64DataPoint]bool, resizeHi-resizeLo)
 	for i := 0; i < es.Len(); i++ {
-		foundEs[es.Get(i)] = true
+		foundEs[*(es.Get(i).orig)] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 
 	// Test remove.
 	const removePos = 2
-	delete(expectedEs, es.Get(removePos))
+	delete(expectedEs, *(es.Get(removePos).orig))
 	es.Remove(removePos)
 	assert.EqualValues(t, resizeHi-resizeLo-1, es.Len())
-	foundEs = make(map[Int64DataPoint]bool, resizeHi-resizeLo)
+	foundEs = make(map[*otlpmetrics.Int64DataPoint]bool, resizeHi-resizeLo)
 	for i := 0; i < es.Len(); i++ {
-		foundEs[es.Get(i)] = true
+		foundEs[*(es.Get(i).orig)] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 }
 
 func TestInt64DataPoint(t *testing.T) {
-	assert.EqualValues(t, true, newInt64DataPoint(nil).IsNil())
-	ms := newInt64DataPoint(&otlpmetrics.Int64DataPoint{})
+	ms := NewInt64DataPoint()
+	assert.EqualValues(t, true,ms.IsNil())
+	ms.InitEmpty()
 	assert.EqualValues(t, false, ms.IsNil())
 
 	assert.EqualValues(t, NewStringMap(nil), ms.LabelsMap())
@@ -340,10 +344,12 @@ func TestDoubleDataPointSlice(t *testing.T) {
 	es = newDoubleDataPointSlice(&[]*otlpmetrics.DoubleDataPoint{})
 	assert.EqualValues(t, 0, es.Len())
 	es = NewDoubleDataPointSlice(13)
+	emptyVal :=  NewDoubleDataPoint()
+	emptyVal.InitEmpty()
 	testVal := generateTestDoubleDataPoint()
 	assert.EqualValues(t, 13, es.Len())
 	for i := 0; i < es.Len(); i++ {
-		assert.EqualValues(t, NewEmptyDoubleDataPoint(), es.Get(i))
+		assert.EqualValues(t, emptyVal, es.Get(i))
 		fillTestDoubleDataPoint(es.Get(i))
 		assert.EqualValues(t, testVal, es.Get(i))
 	}
@@ -351,34 +357,35 @@ func TestDoubleDataPointSlice(t *testing.T) {
 	// Test resize.
 	const resizeLo = 2
 	const resizeHi = 10
-	expectedEs := make(map[DoubleDataPoint]bool, resizeHi-resizeLo)
+	expectedEs := make(map[*otlpmetrics.DoubleDataPoint]bool, resizeHi-resizeLo)
 	for i := resizeLo; i < resizeHi; i++ {
-		expectedEs[es.Get(i)] = true
+		expectedEs[*(es.Get(i).orig)] = true
 	}
 	assert.EqualValues(t, resizeHi-resizeLo, len(expectedEs))
 	es.Resize(resizeLo, resizeHi)
 	assert.EqualValues(t, resizeHi-resizeLo, es.Len())
-	foundEs := make(map[DoubleDataPoint]bool, resizeHi-resizeLo)
+	foundEs := make(map[*otlpmetrics.DoubleDataPoint]bool, resizeHi-resizeLo)
 	for i := 0; i < es.Len(); i++ {
-		foundEs[es.Get(i)] = true
+		foundEs[*(es.Get(i).orig)] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 
 	// Test remove.
 	const removePos = 2
-	delete(expectedEs, es.Get(removePos))
+	delete(expectedEs, *(es.Get(removePos).orig))
 	es.Remove(removePos)
 	assert.EqualValues(t, resizeHi-resizeLo-1, es.Len())
-	foundEs = make(map[DoubleDataPoint]bool, resizeHi-resizeLo)
+	foundEs = make(map[*otlpmetrics.DoubleDataPoint]bool, resizeHi-resizeLo)
 	for i := 0; i < es.Len(); i++ {
-		foundEs[es.Get(i)] = true
+		foundEs[*(es.Get(i).orig)] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 }
 
 func TestDoubleDataPoint(t *testing.T) {
-	assert.EqualValues(t, true, newDoubleDataPoint(nil).IsNil())
-	ms := newDoubleDataPoint(&otlpmetrics.DoubleDataPoint{})
+	ms := NewDoubleDataPoint()
+	assert.EqualValues(t, true,ms.IsNil())
+	ms.InitEmpty()
 	assert.EqualValues(t, false, ms.IsNil())
 
 	assert.EqualValues(t, NewStringMap(nil), ms.LabelsMap())
@@ -410,10 +417,12 @@ func TestHistogramDataPointSlice(t *testing.T) {
 	es = newHistogramDataPointSlice(&[]*otlpmetrics.HistogramDataPoint{})
 	assert.EqualValues(t, 0, es.Len())
 	es = NewHistogramDataPointSlice(13)
+	emptyVal :=  NewHistogramDataPoint()
+	emptyVal.InitEmpty()
 	testVal := generateTestHistogramDataPoint()
 	assert.EqualValues(t, 13, es.Len())
 	for i := 0; i < es.Len(); i++ {
-		assert.EqualValues(t, NewEmptyHistogramDataPoint(), es.Get(i))
+		assert.EqualValues(t, emptyVal, es.Get(i))
 		fillTestHistogramDataPoint(es.Get(i))
 		assert.EqualValues(t, testVal, es.Get(i))
 	}
@@ -421,34 +430,35 @@ func TestHistogramDataPointSlice(t *testing.T) {
 	// Test resize.
 	const resizeLo = 2
 	const resizeHi = 10
-	expectedEs := make(map[HistogramDataPoint]bool, resizeHi-resizeLo)
+	expectedEs := make(map[*otlpmetrics.HistogramDataPoint]bool, resizeHi-resizeLo)
 	for i := resizeLo; i < resizeHi; i++ {
-		expectedEs[es.Get(i)] = true
+		expectedEs[*(es.Get(i).orig)] = true
 	}
 	assert.EqualValues(t, resizeHi-resizeLo, len(expectedEs))
 	es.Resize(resizeLo, resizeHi)
 	assert.EqualValues(t, resizeHi-resizeLo, es.Len())
-	foundEs := make(map[HistogramDataPoint]bool, resizeHi-resizeLo)
+	foundEs := make(map[*otlpmetrics.HistogramDataPoint]bool, resizeHi-resizeLo)
 	for i := 0; i < es.Len(); i++ {
-		foundEs[es.Get(i)] = true
+		foundEs[*(es.Get(i).orig)] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 
 	// Test remove.
 	const removePos = 2
-	delete(expectedEs, es.Get(removePos))
+	delete(expectedEs, *(es.Get(removePos).orig))
 	es.Remove(removePos)
 	assert.EqualValues(t, resizeHi-resizeLo-1, es.Len())
-	foundEs = make(map[HistogramDataPoint]bool, resizeHi-resizeLo)
+	foundEs = make(map[*otlpmetrics.HistogramDataPoint]bool, resizeHi-resizeLo)
 	for i := 0; i < es.Len(); i++ {
-		foundEs[es.Get(i)] = true
+		foundEs[*(es.Get(i).orig)] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 }
 
 func TestHistogramDataPoint(t *testing.T) {
-	assert.EqualValues(t, true, newHistogramDataPoint(nil).IsNil())
-	ms := newHistogramDataPoint(&otlpmetrics.HistogramDataPoint{})
+	ms := NewHistogramDataPoint()
+	assert.EqualValues(t, true,ms.IsNil())
+	ms.InitEmpty()
 	assert.EqualValues(t, false, ms.IsNil())
 
 	assert.EqualValues(t, NewStringMap(nil), ms.LabelsMap())
@@ -495,10 +505,12 @@ func TestHistogramBucketSlice(t *testing.T) {
 	es = newHistogramBucketSlice(&[]*otlpmetrics.HistogramDataPoint_Bucket{})
 	assert.EqualValues(t, 0, es.Len())
 	es = NewHistogramBucketSlice(13)
+	emptyVal :=  NewHistogramBucket()
+	emptyVal.InitEmpty()
 	testVal := generateTestHistogramBucket()
 	assert.EqualValues(t, 13, es.Len())
 	for i := 0; i < es.Len(); i++ {
-		assert.EqualValues(t, NewEmptyHistogramBucket(), es.Get(i))
+		assert.EqualValues(t, emptyVal, es.Get(i))
 		fillTestHistogramBucket(es.Get(i))
 		assert.EqualValues(t, testVal, es.Get(i))
 	}
@@ -506,34 +518,35 @@ func TestHistogramBucketSlice(t *testing.T) {
 	// Test resize.
 	const resizeLo = 2
 	const resizeHi = 10
-	expectedEs := make(map[HistogramBucket]bool, resizeHi-resizeLo)
+	expectedEs := make(map[*otlpmetrics.HistogramDataPoint_Bucket]bool, resizeHi-resizeLo)
 	for i := resizeLo; i < resizeHi; i++ {
-		expectedEs[es.Get(i)] = true
+		expectedEs[*(es.Get(i).orig)] = true
 	}
 	assert.EqualValues(t, resizeHi-resizeLo, len(expectedEs))
 	es.Resize(resizeLo, resizeHi)
 	assert.EqualValues(t, resizeHi-resizeLo, es.Len())
-	foundEs := make(map[HistogramBucket]bool, resizeHi-resizeLo)
+	foundEs := make(map[*otlpmetrics.HistogramDataPoint_Bucket]bool, resizeHi-resizeLo)
 	for i := 0; i < es.Len(); i++ {
-		foundEs[es.Get(i)] = true
+		foundEs[*(es.Get(i).orig)] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 
 	// Test remove.
 	const removePos = 2
-	delete(expectedEs, es.Get(removePos))
+	delete(expectedEs, *(es.Get(removePos).orig))
 	es.Remove(removePos)
 	assert.EqualValues(t, resizeHi-resizeLo-1, es.Len())
-	foundEs = make(map[HistogramBucket]bool, resizeHi-resizeLo)
+	foundEs = make(map[*otlpmetrics.HistogramDataPoint_Bucket]bool, resizeHi-resizeLo)
 	for i := 0; i < es.Len(); i++ {
-		foundEs[es.Get(i)] = true
+		foundEs[*(es.Get(i).orig)] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 }
 
 func TestHistogramBucket(t *testing.T) {
-	assert.EqualValues(t, true, newHistogramBucket(nil).IsNil())
-	ms := newHistogramBucket(&otlpmetrics.HistogramDataPoint_Bucket{})
+	ms := NewHistogramBucket()
+	assert.EqualValues(t, true,ms.IsNil())
+	ms.InitEmpty()
 	assert.EqualValues(t, false, ms.IsNil())
 
 	assert.EqualValues(t, uint64(0), ms.Count())
@@ -542,20 +555,18 @@ func TestHistogramBucket(t *testing.T) {
 	assert.EqualValues(t, testValCount, ms.Count())
 
 	assert.EqualValues(t, true, ms.Exemplar().IsNil())
-	ms.InitExemplarIfNil()
+	ms.Exemplar().InitEmpty()
 	assert.EqualValues(t, false, ms.Exemplar().IsNil())
-	assert.EqualValues(t, NewEmptyHistogramBucketExemplar(), ms.Exemplar())
-	testValExemplar := generateTestHistogramBucketExemplar()
 	fillTestHistogramBucketExemplar(ms.Exemplar())
-	assert.EqualValues(t, testValExemplar, ms.Exemplar())
-	assert.EqualValues(t, false, ms.Exemplar().IsNil())
+	assert.EqualValues(t, generateTestHistogramBucketExemplar(), ms.Exemplar())
 
 	assert.EqualValues(t, generateTestHistogramBucket(), ms)
 }
 
 func TestHistogramBucketExemplar(t *testing.T) {
-	assert.EqualValues(t, true, newHistogramBucketExemplar(nil).IsNil())
-	ms := newHistogramBucketExemplar(&otlpmetrics.HistogramDataPoint_Bucket_Exemplar{})
+	ms := NewHistogramBucketExemplar()
+	assert.EqualValues(t, true,ms.IsNil())
+	ms.InitEmpty()
 	assert.EqualValues(t, false, ms.IsNil())
 
 	assert.EqualValues(t, TimestampUnixNano(0), ms.Timestamp())
@@ -582,10 +593,12 @@ func TestSummaryDataPointSlice(t *testing.T) {
 	es = newSummaryDataPointSlice(&[]*otlpmetrics.SummaryDataPoint{})
 	assert.EqualValues(t, 0, es.Len())
 	es = NewSummaryDataPointSlice(13)
+	emptyVal :=  NewSummaryDataPoint()
+	emptyVal.InitEmpty()
 	testVal := generateTestSummaryDataPoint()
 	assert.EqualValues(t, 13, es.Len())
 	for i := 0; i < es.Len(); i++ {
-		assert.EqualValues(t, NewEmptySummaryDataPoint(), es.Get(i))
+		assert.EqualValues(t, emptyVal, es.Get(i))
 		fillTestSummaryDataPoint(es.Get(i))
 		assert.EqualValues(t, testVal, es.Get(i))
 	}
@@ -593,34 +606,35 @@ func TestSummaryDataPointSlice(t *testing.T) {
 	// Test resize.
 	const resizeLo = 2
 	const resizeHi = 10
-	expectedEs := make(map[SummaryDataPoint]bool, resizeHi-resizeLo)
+	expectedEs := make(map[*otlpmetrics.SummaryDataPoint]bool, resizeHi-resizeLo)
 	for i := resizeLo; i < resizeHi; i++ {
-		expectedEs[es.Get(i)] = true
+		expectedEs[*(es.Get(i).orig)] = true
 	}
 	assert.EqualValues(t, resizeHi-resizeLo, len(expectedEs))
 	es.Resize(resizeLo, resizeHi)
 	assert.EqualValues(t, resizeHi-resizeLo, es.Len())
-	foundEs := make(map[SummaryDataPoint]bool, resizeHi-resizeLo)
+	foundEs := make(map[*otlpmetrics.SummaryDataPoint]bool, resizeHi-resizeLo)
 	for i := 0; i < es.Len(); i++ {
-		foundEs[es.Get(i)] = true
+		foundEs[*(es.Get(i).orig)] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 
 	// Test remove.
 	const removePos = 2
-	delete(expectedEs, es.Get(removePos))
+	delete(expectedEs, *(es.Get(removePos).orig))
 	es.Remove(removePos)
 	assert.EqualValues(t, resizeHi-resizeLo-1, es.Len())
-	foundEs = make(map[SummaryDataPoint]bool, resizeHi-resizeLo)
+	foundEs = make(map[*otlpmetrics.SummaryDataPoint]bool, resizeHi-resizeLo)
 	for i := 0; i < es.Len(); i++ {
-		foundEs[es.Get(i)] = true
+		foundEs[*(es.Get(i).orig)] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 }
 
 func TestSummaryDataPoint(t *testing.T) {
-	assert.EqualValues(t, true, newSummaryDataPoint(nil).IsNil())
-	ms := newSummaryDataPoint(&otlpmetrics.SummaryDataPoint{})
+	ms := NewSummaryDataPoint()
+	assert.EqualValues(t, true,ms.IsNil())
+	ms.InitEmpty()
 	assert.EqualValues(t, false, ms.IsNil())
 
 	assert.EqualValues(t, NewStringMap(nil), ms.LabelsMap())
@@ -662,10 +676,12 @@ func TestSummaryValueAtPercentileSlice(t *testing.T) {
 	es = newSummaryValueAtPercentileSlice(&[]*otlpmetrics.SummaryDataPoint_ValueAtPercentile{})
 	assert.EqualValues(t, 0, es.Len())
 	es = NewSummaryValueAtPercentileSlice(13)
+	emptyVal :=  NewSummaryValueAtPercentile()
+	emptyVal.InitEmpty()
 	testVal := generateTestSummaryValueAtPercentile()
 	assert.EqualValues(t, 13, es.Len())
 	for i := 0; i < es.Len(); i++ {
-		assert.EqualValues(t, NewEmptySummaryValueAtPercentile(), es.Get(i))
+		assert.EqualValues(t, emptyVal, es.Get(i))
 		fillTestSummaryValueAtPercentile(es.Get(i))
 		assert.EqualValues(t, testVal, es.Get(i))
 	}
@@ -673,34 +689,35 @@ func TestSummaryValueAtPercentileSlice(t *testing.T) {
 	// Test resize.
 	const resizeLo = 2
 	const resizeHi = 10
-	expectedEs := make(map[SummaryValueAtPercentile]bool, resizeHi-resizeLo)
+	expectedEs := make(map[*otlpmetrics.SummaryDataPoint_ValueAtPercentile]bool, resizeHi-resizeLo)
 	for i := resizeLo; i < resizeHi; i++ {
-		expectedEs[es.Get(i)] = true
+		expectedEs[*(es.Get(i).orig)] = true
 	}
 	assert.EqualValues(t, resizeHi-resizeLo, len(expectedEs))
 	es.Resize(resizeLo, resizeHi)
 	assert.EqualValues(t, resizeHi-resizeLo, es.Len())
-	foundEs := make(map[SummaryValueAtPercentile]bool, resizeHi-resizeLo)
+	foundEs := make(map[*otlpmetrics.SummaryDataPoint_ValueAtPercentile]bool, resizeHi-resizeLo)
 	for i := 0; i < es.Len(); i++ {
-		foundEs[es.Get(i)] = true
+		foundEs[*(es.Get(i).orig)] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 
 	// Test remove.
 	const removePos = 2
-	delete(expectedEs, es.Get(removePos))
+	delete(expectedEs, *(es.Get(removePos).orig))
 	es.Remove(removePos)
 	assert.EqualValues(t, resizeHi-resizeLo-1, es.Len())
-	foundEs = make(map[SummaryValueAtPercentile]bool, resizeHi-resizeLo)
+	foundEs = make(map[*otlpmetrics.SummaryDataPoint_ValueAtPercentile]bool, resizeHi-resizeLo)
 	for i := 0; i < es.Len(); i++ {
-		foundEs[es.Get(i)] = true
+		foundEs[*(es.Get(i).orig)] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 }
 
 func TestSummaryValueAtPercentile(t *testing.T) {
-	assert.EqualValues(t, true, newSummaryValueAtPercentile(nil).IsNil())
-	ms := newSummaryValueAtPercentile(&otlpmetrics.SummaryDataPoint_ValueAtPercentile{})
+	ms := NewSummaryValueAtPercentile()
+	assert.EqualValues(t, true,ms.IsNil())
+	ms.InitEmpty()
 	assert.EqualValues(t, false, ms.IsNil())
 
 	assert.EqualValues(t, float64(0.0), ms.Percentile())
@@ -725,13 +742,14 @@ func generateTestResourceMetricsSlice() ResourceMetricsSlice {
 }
 
 func generateTestResourceMetrics() ResourceMetrics {
-	tv := newResourceMetrics(&otlpmetrics.ResourceMetrics{})
+	tv := NewResourceMetrics()
+	tv.InitEmpty()
 	fillTestResourceMetrics(tv)
 	return tv
 }
 
 func fillTestResourceMetrics(tv ResourceMetrics) {
-	tv.InitResourceIfNil()
+	tv.Resource().InitEmpty()
 	fillTestResource(tv.Resource())
 	tv.SetInstrumentationLibraryMetrics(generateTestInstrumentationLibraryMetricsSlice())
 }
@@ -745,13 +763,14 @@ func generateTestInstrumentationLibraryMetricsSlice() InstrumentationLibraryMetr
 }
 
 func generateTestInstrumentationLibraryMetrics() InstrumentationLibraryMetrics {
-	tv := newInstrumentationLibraryMetrics(&otlpmetrics.InstrumentationLibraryMetrics{})
+	tv := NewInstrumentationLibraryMetrics()
+	tv.InitEmpty()
 	fillTestInstrumentationLibraryMetrics(tv)
 	return tv
 }
 
 func fillTestInstrumentationLibraryMetrics(tv InstrumentationLibraryMetrics) {
-	tv.InitInstrumentationLibraryIfNil()
+	tv.InstrumentationLibrary().InitEmpty()
 	fillTestInstrumentationLibrary(tv.InstrumentationLibrary())
 	tv.SetMetrics(generateTestMetricSlice())
 }
@@ -765,13 +784,14 @@ func generateTestMetricSlice() MetricSlice {
 }
 
 func generateTestMetric() Metric {
-	tv := newMetric(&otlpmetrics.Metric{})
+	tv := NewMetric()
+	tv.InitEmpty()
 	fillTestMetric(tv)
 	return tv
 }
 
 func fillTestMetric(tv Metric) {
-	tv.InitMetricDescriptorIfNil()
+	tv.MetricDescriptor().InitEmpty()
 	fillTestMetricDescriptor(tv.MetricDescriptor())
 	tv.SetInt64DataPoints(generateTestInt64DataPointSlice())
 	tv.SetDoubleDataPoints(generateTestDoubleDataPointSlice())
@@ -780,7 +800,8 @@ func fillTestMetric(tv Metric) {
 }
 
 func generateTestMetricDescriptor() MetricDescriptor {
-	tv := newMetricDescriptor(&otlpmetrics.MetricDescriptor{})
+	tv := NewMetricDescriptor()
+	tv.InitEmpty()
 	fillTestMetricDescriptor(tv)
 	return tv
 }
@@ -802,7 +823,8 @@ func generateTestInt64DataPointSlice() Int64DataPointSlice {
 }
 
 func generateTestInt64DataPoint() Int64DataPoint {
-	tv := newInt64DataPoint(&otlpmetrics.Int64DataPoint{})
+	tv := NewInt64DataPoint()
+	tv.InitEmpty()
 	fillTestInt64DataPoint(tv)
 	return tv
 }
@@ -823,7 +845,8 @@ func generateTestDoubleDataPointSlice() DoubleDataPointSlice {
 }
 
 func generateTestDoubleDataPoint() DoubleDataPoint {
-	tv := newDoubleDataPoint(&otlpmetrics.DoubleDataPoint{})
+	tv := NewDoubleDataPoint()
+	tv.InitEmpty()
 	fillTestDoubleDataPoint(tv)
 	return tv
 }
@@ -844,7 +867,8 @@ func generateTestHistogramDataPointSlice() HistogramDataPointSlice {
 }
 
 func generateTestHistogramDataPoint() HistogramDataPoint {
-	tv := newHistogramDataPoint(&otlpmetrics.HistogramDataPoint{})
+	tv := NewHistogramDataPoint()
+	tv.InitEmpty()
 	fillTestHistogramDataPoint(tv)
 	return tv
 }
@@ -868,19 +892,21 @@ func generateTestHistogramBucketSlice() HistogramBucketSlice {
 }
 
 func generateTestHistogramBucket() HistogramBucket {
-	tv := newHistogramBucket(&otlpmetrics.HistogramDataPoint_Bucket{})
+	tv := NewHistogramBucket()
+	tv.InitEmpty()
 	fillTestHistogramBucket(tv)
 	return tv
 }
 
 func fillTestHistogramBucket(tv HistogramBucket) {
 	tv.SetCount(uint64(17))
-	tv.InitExemplarIfNil()
+	tv.Exemplar().InitEmpty()
 	fillTestHistogramBucketExemplar(tv.Exemplar())
 }
 
 func generateTestHistogramBucketExemplar() HistogramBucketExemplar {
-	tv := newHistogramBucketExemplar(&otlpmetrics.HistogramDataPoint_Bucket_Exemplar{})
+	tv := NewHistogramBucketExemplar()
+	tv.InitEmpty()
 	fillTestHistogramBucketExemplar(tv)
 	return tv
 }
@@ -900,7 +926,8 @@ func generateTestSummaryDataPointSlice() SummaryDataPointSlice {
 }
 
 func generateTestSummaryDataPoint() SummaryDataPoint {
-	tv := newSummaryDataPoint(&otlpmetrics.SummaryDataPoint{})
+	tv := NewSummaryDataPoint()
+	tv.InitEmpty()
 	fillTestSummaryDataPoint(tv)
 	return tv
 }
@@ -923,7 +950,8 @@ func generateTestSummaryValueAtPercentileSlice() SummaryValueAtPercentileSlice {
 }
 
 func generateTestSummaryValueAtPercentile() SummaryValueAtPercentile {
-	tv := newSummaryValueAtPercentile(&otlpmetrics.SummaryDataPoint_ValueAtPercentile{})
+	tv := NewSummaryValueAtPercentile()
+	tv.InitEmpty()
 	fillTestSummaryValueAtPercentile(tv)
 	return tv
 }

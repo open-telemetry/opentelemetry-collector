@@ -26,55 +26,63 @@ import (
 // This is a reference type, if passsed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewEmptyInstrumentationLibrary function to create new instances.
+// Must use NewInstrumentationLibrary function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type InstrumentationLibrary struct {
-	// Wrap OTLP otlpcommon.InstrumentationLibrary.
-	orig *otlpcommon.InstrumentationLibrary
+	// orig points to the pointer otlpcommon.InstrumentationLibrary field contained somewhere else.
+    // We use pointer-to-pointer to be able to modify it in InitEmpty func.
+	orig **otlpcommon.InstrumentationLibrary
 }
 
-func newInstrumentationLibrary(orig *otlpcommon.InstrumentationLibrary) InstrumentationLibrary {
+func newInstrumentationLibrary(orig **otlpcommon.InstrumentationLibrary) InstrumentationLibrary {
 	return InstrumentationLibrary{orig}
 }
 
-// NewEmptyInstrumentationLibrary creates a new empty InstrumentationLibrary.
+// NewInstrumentationLibrary creates a new "nil" InstrumentationLibrary.
+// To initialize the struct call "InitEmpty".
 //
 // This must be used only in testing code since no "Set" method available.
-func NewEmptyInstrumentationLibrary() InstrumentationLibrary {
-	return newInstrumentationLibrary(&otlpcommon.InstrumentationLibrary{})
+func NewInstrumentationLibrary() InstrumentationLibrary {
+	orig := (*otlpcommon.InstrumentationLibrary)(nil)
+	return newInstrumentationLibrary(&orig)
+}
+
+// InitEmpty overwrites the current value with empty.
+func (ms InstrumentationLibrary) InitEmpty() {
+	*ms.orig = &otlpcommon.InstrumentationLibrary{}
 }
 
 // IsNil returns true if the underlying data are nil.
 // 
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms InstrumentationLibrary) IsNil() bool {
-	return ms.orig == nil
+	return *ms.orig == nil
 }
 
 // Name returns the name associated with this InstrumentationLibrary.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
 func (ms InstrumentationLibrary) Name() string {
-	return ms.orig.Name
+	return (*ms.orig).Name
 }
 
 // SetName replaces the name associated with this InstrumentationLibrary.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
 func (ms InstrumentationLibrary) SetName(v string) {
-	ms.orig.Name = v
+	(*ms.orig).Name = v
 }
 
 // Version returns the version associated with this InstrumentationLibrary.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
 func (ms InstrumentationLibrary) Version() string {
-	return ms.orig.Version
+	return (*ms.orig).Version
 }
 
 // SetVersion replaces the version associated with this InstrumentationLibrary.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
 func (ms InstrumentationLibrary) SetVersion(v string) {
-	ms.orig.Version = v
+	(*ms.orig).Version = v
 }

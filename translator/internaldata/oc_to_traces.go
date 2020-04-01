@@ -39,7 +39,7 @@ func OCToTraceData(td consumerdata.TraceData) data.TraceData {
 	if len(td.Spans) == 0 {
 		// At least one of the td.Node or td.Resource is not nil. Set the resource and return.
 		traceData.SetResourceSpans(data.NewResourceSpansSlice(1))
-		ocNodeResourceToInternal(td.Node, td.Resource, traceData.ResourceSpans().Get(0))
+		ocNodeResourceToInternal(td.Node, td.Resource, traceData.ResourceSpans().Get(0).Resource())
 		return traceData
 	}
 
@@ -80,7 +80,7 @@ func OCToTraceData(td consumerdata.TraceData) data.TraceData {
 	// 1 (for all spans with nil resource) + numSpansWithResource (distinctResourceCount).
 	traceData.SetResourceSpans(data.NewResourceSpansSlice(distinctResourceCount + 1))
 	rs0 := traceData.ResourceSpans().Get(0)
-	ocNodeResourceToInternal(td.Node, td.Resource, rs0)
+	ocNodeResourceToInternal(td.Node, td.Resource, rs0.Resource())
 
 	// Allocate a slice for spans that need to be combined into first ResourceSpans.
 	rs0.SetInstrumentationLibrarySpans(data.NewInstrumentationLibrarySpansSlice(1))
@@ -93,7 +93,7 @@ func OCToTraceData(td consumerdata.TraceData) data.TraceData {
 
 	// Index to next available slot in "combinedSpans" slice.
 	combinedSpanIdx := 0
-	// First resourcespan is used for the default resource, so start with 1.
+	// First ResourceSpans is used for the default resource, so start with 1.
 	resourceSpanIdx := 1
 	for _, ocSpan := range td.Spans {
 		if ocSpan == nil {
@@ -105,7 +105,7 @@ func OCToTraceData(td consumerdata.TraceData) data.TraceData {
 			// Add the span to the "combinedSpans". combinedSpans length is equal
 			// to combinedSpanCount. The loop above that calculates combinedSpanCount
 			// has exact same conditions as we have here in this loop.
-			ocSpanToInternal(combinedSpans.Get(combinedSpanIdx), ocSpan)
+			ocSpanToInternal(ocSpan, combinedSpans.Get(combinedSpanIdx))
 			combinedSpanIdx++
 		} else {
 			// This span has a different Resource and must be placed in a different
@@ -118,15 +118,15 @@ func OCToTraceData(td consumerdata.TraceData) data.TraceData {
 	return traceData
 }
 
-func ocSpanToResourceSpans(ocSpan *octrace.Span, node *occommon.Node, out data.ResourceSpans) {
-	ocNodeResourceToInternal(node, ocSpan.Resource, out)
-	out.SetInstrumentationLibrarySpans(data.NewInstrumentationLibrarySpansSlice(1))
-	ils0 := out.InstrumentationLibrarySpans().Get(0)
+func ocSpanToResourceSpans(ocSpan *octrace.Span, node *occommon.Node, dest data.ResourceSpans) {
+	ocNodeResourceToInternal(node, ocSpan.Resource, dest.Resource())
+	dest.SetInstrumentationLibrarySpans(data.NewInstrumentationLibrarySpansSlice(1))
+	ils0 := dest.InstrumentationLibrarySpans().Get(0)
 	ils0.SetSpans(data.NewSpanSlice(1))
-	ocSpanToInternal(ils0.Spans().Get(0), ocSpan)
+	ocSpanToInternal(ocSpan, ils0.Spans().Get(0))
 }
 
-func ocSpanToInternal(dest data.Span, src *octrace.Span) {
+func ocSpanToInternal(src *octrace.Span, dest data.Span) {
 	events, droppedEventCount := ocEventsToInternal(src.TimeEvents)
 	links, droppedLinkCount := ocLinksToInternal(src.Links)
 
@@ -150,16 +150,16 @@ func ocSpanToInternal(dest data.Span, src *octrace.Span) {
 	dest.SetDroppedEventsCount(droppedEventCount)
 	dest.SetLinks(links)
 	dest.SetDroppedLinksCount(droppedLinkCount)
-	ocStatusToInternal(src.Status, dest)
+	ocStatusToInternal(src.Status, dest.Status())
 }
 
-func ocStatusToInternal(ocStatus *octrace.Status, out data.Span) {
+func ocStatusToInternal(ocStatus *octrace.Status, dest data.SpanStatus) {
 	if ocStatus == nil {
 		return
 	}
-	out.InitStatusIfNil()
-	out.Status().SetCode(data.StatusCode(ocStatus.Code))
-	out.Status().SetMessage(ocStatus.Message)
+	dest.InitEmpty()
+	dest.SetCode(data.StatusCode(ocStatus.Code))
+	dest.SetMessage(ocStatus.Message)
 }
 
 // Convert tracestate to W3C format. See the https://w3c.github.io/trace-context/
@@ -356,7 +356,7 @@ func ocMessageEventToInternalAttrs(msgEvent *octrace.Span_TimeEvent_MessageEvent
 	}), 0
 }
 
-func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Resource, out data.ResourceSpans) {
+func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Resource, dest data.Resource) {
 	// Number of special fields in the Node. See the code below that deals with special fields.
 	const specialNodeAttrCount = 7
 
@@ -430,9 +430,9 @@ func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Reso
 	}
 
 	if len(attrs) != 0 {
-		out.InitResourceIfNil()
+		dest.InitEmpty()
 		// TODO: Re-evaluate if we want to construct a map first, or we can construct directly
 		// a slice of AttributeKeyValue.
-		out.Resource().SetAttributes(data.NewAttributeMap(attrs))
+		dest.SetAttributes(data.NewAttributeMap(attrs))
 	}
 }
