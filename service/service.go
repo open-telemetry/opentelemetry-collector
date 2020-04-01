@@ -180,6 +180,20 @@ func (app *Application) ReportFatalError(err error) {
 	app.asyncErrorChannel <- err
 }
 
+func (app *Application) GetFactory(kind component.Kind, componentType string) component.Factory {
+	switch kind {
+	case component.KindReceiver:
+		return app.factories.Receivers[componentType]
+	case component.KindProcessor:
+		return app.factories.Processors[componentType]
+	case component.KindExporter:
+		return app.factories.Exporters[componentType]
+	case component.KindExtension:
+		return app.factories.Extensions[componentType]
+	}
+	return nil
+}
+
 func (app *Application) init() error {
 	l, err := newLogger()
 	if err != nil {

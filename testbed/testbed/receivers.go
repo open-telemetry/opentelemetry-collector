@@ -58,6 +58,11 @@ func (mb *DataReceiverBase) ReportFatalError(err error) {
 	log.Printf("Fatal error reported: %v", err)
 }
 
+// GetFactory of the specified kind. Returns the factory for a component type.
+func (mb *DataReceiverBase) GetFactory(kind component.Kind, componentType string) component.Factory {
+	return nil
+}
+
 // OCDataReceiver implements OpenCensus format receiver.
 type OCDataReceiver struct {
 	DataReceiverBase

@@ -255,7 +255,6 @@ type ExampleExporter struct {
 	ExtraSetting                  string                   `mapstructure:"extra"`
 	ExtraMapSetting               map[string]string        `mapstructure:"extra_map"`
 	ExtraListSetting              []string                 `mapstructure:"extra_list"`
-	ExporterShutdown              bool
 }
 
 // ExampleExporterFactory is factory for ExampleExporter.
