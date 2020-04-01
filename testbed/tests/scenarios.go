@@ -26,6 +26,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/open-telemetry/opentelemetry-collector/testbed/testbed"
 )
 
@@ -234,4 +236,39 @@ func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, opts 
 			tc.ValidateData()
 		})
 	}
+}
+
+func ScenarioTestTraceNoBackend10kSPS(t *testing.T, sender testbed.DataSender, receiver testbed.DataReceiver,
+	resourceSpec testbed.ResourceSpec, configuration testbed.ProcConfiguration) {
+
+	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	configFile := createConfigFile(t, sender, receiver, resultDir, configuration.Processor)
+	defer os.Remove(configFile)
+
+	if configFile == "" {
+		t.Fatal("Cannot create config file")
+	}
+
+	tc := testbed.NewTestCase(
+		t,
+		sender,
+		receiver,
+		testbed.WithConfigFile(configFile),
+	)
+
+	defer tc.Stop()
+
+	tc.SetResourceLimits(resourceSpec)
+
+	tc.StartAgent()
+	tc.StartLoad(testbed.LoadOptions{DataItemsPerSecond: 10000})
+
+	tc.Sleep(tc.Duration)
+
+	rss, _, _ := tc.AgentMemoryInfo()
+	assert.True(t, rss > configuration.ExpectedMinFinalRAM)
 }
