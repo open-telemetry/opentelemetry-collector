@@ -46,7 +46,7 @@ func MetricDataToOC(md data.MetricData) []consumerdata.MetricsData {
 
 	ocResourceMetricsList := make([]consumerdata.MetricsData, 0, resourceMetrics.Len())
 	for i := 0; i < resourceMetrics.Len(); i++ {
-		ocResourceMetricsList = append(ocResourceMetricsList, ResourceMetricsToOC(resourceMetrics.Get(i)))
+		ocResourceMetricsList = append(ocResourceMetricsList, ResourceMetricsToOC(resourceMetrics.At(i)))
 	}
 
 	return ocResourceMetricsList
@@ -61,12 +61,12 @@ func ResourceMetricsToOC(rm data.ResourceMetrics) consumerdata.MetricsData {
 	}
 	// Approximate the number of the metrics as the number of the metrics in the first
 	// instrumentation library info.
-	ocMetrics := make([]*ocmetrics.Metric, 0, ilms.Get(0).Metrics().Len())
+	ocMetrics := make([]*ocmetrics.Metric, 0, ilms.At(0).Metrics().Len())
 	for j := 0; j < ilms.Len(); j++ {
 		// TODO: Handle instrumentation library name and version.
-		metrics := ilms.Get(0).Metrics()
+		metrics := ilms.At(0).Metrics()
 		for k := 0; k < metrics.Len(); k++ {
-			ocMetrics = append(ocMetrics, metricToOC(metrics.Get(k)))
+			ocMetrics = append(ocMetrics, metricToOC(metrics.At(k)))
 		}
 	}
 	if len(ocMetrics) != 0 {
@@ -102,19 +102,19 @@ func collectLabelKeys(metric data.Metric) *labelKeys {
 	keySet := make(map[string]struct{})
 	ips := metric.Int64DataPoints()
 	for i := 0; i < ips.Len(); i++ {
-		addLabelKeys(keySet, ips.Get(i).LabelsMap())
+		addLabelKeys(keySet, ips.At(i).LabelsMap())
 	}
 	dps := metric.DoubleDataPoints()
 	for i := 0; i < dps.Len(); i++ {
-		addLabelKeys(keySet, dps.Get(i).LabelsMap())
+		addLabelKeys(keySet, dps.At(i).LabelsMap())
 	}
 	hps := metric.HistogramDataPoints()
 	for i := 0; i < hps.Len(); i++ {
-		addLabelKeys(keySet, hps.Get(i).LabelsMap())
+		addLabelKeys(keySet, hps.At(i).LabelsMap())
 	}
 	sps := metric.SummaryDataPoints()
 	for i := 0; i < sps.Len(); i++ {
-		addLabelKeys(keySet, sps.Get(i).LabelsMap())
+		addLabelKeys(keySet, sps.At(i).LabelsMap())
 	}
 
 	if len(keySet) == 0 {
@@ -204,22 +204,22 @@ func dataPointsToTimeseries(metric data.Metric, labelKeys *labelKeys) []*ocmetri
 	timeseries := make([]*ocmetrics.TimeSeries, 0, length)
 	ips := metric.Int64DataPoints()
 	for i := 0; i < ips.Len(); i++ {
-		ts := int64PointToOC(ips.Get(i), labelKeys)
+		ts := int64PointToOC(ips.At(i), labelKeys)
 		timeseries = append(timeseries, ts)
 	}
 	dps := metric.DoubleDataPoints()
 	for i := 0; i < dps.Len(); i++ {
-		ts := doublePointToOC(dps.Get(i), labelKeys)
+		ts := doublePointToOC(dps.At(i), labelKeys)
 		timeseries = append(timeseries, ts)
 	}
 	hps := metric.HistogramDataPoints()
 	for i := 0; i < hps.Len(); i++ {
-		ts := histogramPointToOC(hps.Get(i), labelKeys)
+		ts := histogramPointToOC(hps.At(i), labelKeys)
 		timeseries = append(timeseries, ts)
 	}
 	sps := metric.SummaryDataPoints()
 	for i := 0; i < sps.Len(); i++ {
-		ts := summaryPointToOC(sps.Get(i), labelKeys)
+		ts := summaryPointToOC(sps.At(i), labelKeys)
 		timeseries = append(timeseries, ts)
 	}
 
@@ -298,7 +298,7 @@ func histogramBucketsToOC(buckets data.HistogramBucketSlice) []*ocmetrics.Distri
 
 	ocBuckets := make([]*ocmetrics.DistributionValue_Bucket, 0, buckets.Len())
 	for i := 0; i < buckets.Len(); i++ {
-		bucket := buckets.Get(i)
+		bucket := buckets.At(i)
 		ocBuckets = append(ocBuckets, &ocmetrics.DistributionValue_Bucket{
 			Count:    int64(bucket.Count()),
 			Exemplar: exemplarToOC(bucket.Exemplar()),
@@ -358,7 +358,7 @@ func percentileToOC(percentiles data.SummaryValueAtPercentileSlice) *ocmetrics.S
 
 	ocPercentiles := make([]*ocmetrics.SummaryValue_Snapshot_ValueAtPercentile, 0, percentiles.Len())
 	for i := 0; i < percentiles.Len(); i++ {
-		p := percentiles.Get(i)
+		p := percentiles.At(i)
 		ocPercentiles = append(ocPercentiles, &ocmetrics.SummaryValue_Snapshot_ValueAtPercentile{
 			Percentile: p.Percentile(),
 			Value:      p.Value(),

@@ -166,15 +166,16 @@ func TestCreateTraceFanOutConnectorWithConvertion(t *testing.T) {
 	resourceTypeName := "good-resource"
 
 	td := data.NewTraceData()
-	td.SetResourceSpans(data.NewResourceSpansSlice(1))
-	rs0 := td.ResourceSpans().Get(0)
+	rss := td.ResourceSpans()
+	rss.Resize(1)
+	rs0 := rss.At(0)
 	res := rs0.Resource()
 	res.InitEmpty()
 	res.SetAttributes(data.NewAttributeMap(map[string]data.AttributeValue{
 		conventions.OCAttributeResourceType: data.NewAttributeValueString(resourceTypeName),
 	}))
-	rs0.SetInstrumentationLibrarySpans(data.NewInstrumentationLibrarySpansSlice(1))
-	rs0.InstrumentationLibrarySpans().Get(0).SetSpans(data.NewSpanSlice(3))
+	rs0.InstrumentationLibrarySpans().Resize(1)
+	rs0.InstrumentationLibrarySpans().At(0).Spans().Resize(3)
 
 	tfc := CreateTraceFanOutConnector(processors).(consumer.TraceConsumer)
 
@@ -191,7 +192,7 @@ func TestCreateTraceFanOutConnectorWithConvertion(t *testing.T) {
 	assert.Equal(t, wantSpansCount, traceConsumer.TotalSpans)
 	assert.Equal(t, data.NewAttributeMap(map[string]data.AttributeValue{
 		conventions.OCAttributeResourceType: data.NewAttributeValueString(resourceTypeName),
-	}), traceConsumer.Traces[0].ResourceSpans().Get(0).Resource().Attributes())
+	}), traceConsumer.Traces[0].ResourceSpans().At(0).Resource().Attributes())
 }
 
 func TestCreateMetricsFanOutConnectorWithConvertion(t *testing.T) {
@@ -205,16 +206,16 @@ func TestCreateMetricsFanOutConnectorWithConvertion(t *testing.T) {
 	resourceTypeName := "good-resource"
 
 	md := data.NewMetricData()
-	rms := data.NewResourceMetricsSlice(1)
-	md.SetResourceMetrics(rms)
-	rm := rms.Get(0)
-	res := rm.Resource()
+	rms := md.ResourceMetrics()
+	rms.Resize(1)
+	rm0 := rms.At(0)
+	res := rm0.Resource()
 	res.InitEmpty()
 	res.SetAttributes(data.NewAttributeMap(map[string]data.AttributeValue{
 		conventions.OCAttributeResourceType: data.NewAttributeValueString(resourceTypeName),
 	}))
-	rm.SetInstrumentationLibraryMetrics(data.NewInstrumentationLibraryMetricsSlice(1))
-	rm.InstrumentationLibraryMetrics().Get(0).SetMetrics(data.NewMetricSlice(4))
+	rm0.InstrumentationLibraryMetrics().Resize(1)
+	rm0.InstrumentationLibraryMetrics().At(0).Metrics().Resize(4)
 
 	mfc := CreateMetricsFanOutConnector(processors).(consumer.MetricsConsumer)
 
@@ -231,7 +232,7 @@ func TestCreateMetricsFanOutConnectorWithConvertion(t *testing.T) {
 	assert.Equal(t, wantSpansCount, metricsConsumer.TotalMetrics)
 	assert.Equal(t, data.NewAttributeMap(map[string]data.AttributeValue{
 		conventions.OCAttributeResourceType: data.NewAttributeValueString(resourceTypeName),
-	}), metricsConsumer.Metrics[0].ResourceMetrics().Get(0).Resource().Attributes())
+	}), metricsConsumer.Metrics[0].ResourceMetrics().At(0).Resource().Attributes())
 }
 
 type mockTraceConsumerOld struct {

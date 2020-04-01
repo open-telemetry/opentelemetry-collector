@@ -60,9 +60,9 @@ func (td TraceData) SpanCount() int {
 	spanCount := 0
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
-		ils := rss.Get(i).InstrumentationLibrarySpans()
+		ils := rss.At(i).InstrumentationLibrarySpans()
 		for j := 0; j < ils.Len(); j++ {
-			spanCount += ils.Get(j).Spans().Len()
+			spanCount += ils.At(j).Spans().Len()
 		}
 	}
 	return spanCount

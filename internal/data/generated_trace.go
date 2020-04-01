@@ -34,60 +34,64 @@ type ResourceSpansSlice struct {
 	orig *[]*otlptrace.ResourceSpans
 }
 
-// NewResourceSpansSlice creates a ResourceSpansSlice with "len" empty elements.
-//
-// es := NewResourceSpansSlice(4)
-// for i := 0; i < es.Len(); i++ {
-//     e := es.Get(i)
-//     // Here should set all the values for e.
-// }
-func NewResourceSpansSlice(len int) ResourceSpansSlice {
-	if len == 0 {
-		orig := []*otlptrace.ResourceSpans(nil)
-		return ResourceSpansSlice{&orig}
-	}
-	// Slice for underlying orig.
-	origs := make([]otlptrace.ResourceSpans, len)
-	// Slice for wrappers.
-	wrappers := make([]*otlptrace.ResourceSpans, len)
-	for i := range origs {
-		wrappers[i] = &origs[i]
-	}
-	return ResourceSpansSlice{&wrappers}
-}
-
 func newResourceSpansSlice(orig *[]*otlptrace.ResourceSpans) ResourceSpansSlice {
 	return ResourceSpansSlice{orig}
 }
 
+// NewResourceSpansSlice creates a ResourceSpansSlice with 0 elements.
+// Can use "Resize" to initialize with a given length.
+func NewResourceSpansSlice() ResourceSpansSlice {
+	orig := []*otlptrace.ResourceSpans(nil)
+	return ResourceSpansSlice{&orig}
+}
+
 // Len returns the number of elements in the slice.
+//
+// Returns "0" for a newly instance created with "NewResourceSpansSlice()".
 func (es ResourceSpansSlice) Len() int {
 	return len(*es.orig)
 }
 
-// Get the element at the given index.
+// At returns the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
 // for i := 0; i < es.Len(); i++ {
-//     e := es.Get(i)
+//     e := es.At(i)
 //     ... // Do something with the element
 // }
-func (es ResourceSpansSlice) Get(ix int) ResourceSpans {
+func (es ResourceSpansSlice) At(ix int) ResourceSpans {
 	return newResourceSpans(&(*es.orig)[ix])
 }
 
-// Remove the element at the given index from the slice.
-// Elements after the removed one are shifted to fill the emptied space.
-// The length of the slice is reduced by one.
-func (es ResourceSpansSlice) Remove(ix int) {
-	(*es.orig)[ix] = (*es.orig)[len(*es.orig)-1]
-	(*es.orig)[len(*es.orig)-1] = nil
-	*es.orig = (*es.orig)[:len(*es.orig)-1]
-}
-
-// Resize the slice. This operation is equivalent with slice[from:to].
-func (es ResourceSpansSlice) Resize(from, to int) {
-	*es.orig = (*es.orig)[from:to]
+// Resize is an operation that resizes the slice:
+// 1. If newLen is 0 then the slice is replaced with a nil slice.
+// 2. If the newLen < len then equivalent with slice[0:newLen].
+// 3. If the newLen > len then (newLen - len) empty elements will be appended to the slice.
+//
+// Here is how a new ResourceSpansSlice can be initialized:
+// es := NewResourceSpansSlice()
+// es.Resize(4)
+// for i := 0; i < es.Len(); i++ {
+//     e := es.At(i)
+//     // Here should set all the values for e.
+// }
+func (es ResourceSpansSlice) Resize(newLen int) {
+	if newLen == 0 {
+		(*es.orig) = []*otlptrace.ResourceSpans(nil)
+		return
+	}
+	oldLen := len(*es.orig)
+	if newLen < oldLen {
+		(*es.orig) = (*es.orig)[0:newLen]
+		return
+	}
+	// TODO: Benchmark and optimize this logic.
+	extraOrigs := make([]otlptrace.ResourceSpans, newLen-oldLen)
+	oldOrig := (*es.orig)
+	for i := range extraOrigs {
+		oldOrig = append(oldOrig, &extraOrigs[i])
+	}
+	(*es.orig) = oldOrig
 }
 
 // InstrumentationLibrarySpans is a collection of spans from a LibraryInstrumentation.
@@ -145,13 +149,6 @@ func (ms ResourceSpans) InstrumentationLibrarySpans() InstrumentationLibrarySpan
 	return newInstrumentationLibrarySpansSlice(&(*ms.orig).InstrumentationLibrarySpans)
 }
 
-// SetInstrumentationLibrarySpans replaces the InstrumentationLibrarySpans associated with this ResourceSpans.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
-func (ms ResourceSpans) SetInstrumentationLibrarySpans(v InstrumentationLibrarySpansSlice) {
-	(*ms.orig).InstrumentationLibrarySpans = *v.orig
-}
-
 // InstrumentationLibrarySpansSlice logically represents a slice of InstrumentationLibrarySpans.
 //
 // This is a reference type, if passsed by value and callee modifies it the
@@ -165,60 +162,64 @@ type InstrumentationLibrarySpansSlice struct {
 	orig *[]*otlptrace.InstrumentationLibrarySpans
 }
 
-// NewInstrumentationLibrarySpansSlice creates a InstrumentationLibrarySpansSlice with "len" empty elements.
-//
-// es := NewInstrumentationLibrarySpansSlice(4)
-// for i := 0; i < es.Len(); i++ {
-//     e := es.Get(i)
-//     // Here should set all the values for e.
-// }
-func NewInstrumentationLibrarySpansSlice(len int) InstrumentationLibrarySpansSlice {
-	if len == 0 {
-		orig := []*otlptrace.InstrumentationLibrarySpans(nil)
-		return InstrumentationLibrarySpansSlice{&orig}
-	}
-	// Slice for underlying orig.
-	origs := make([]otlptrace.InstrumentationLibrarySpans, len)
-	// Slice for wrappers.
-	wrappers := make([]*otlptrace.InstrumentationLibrarySpans, len)
-	for i := range origs {
-		wrappers[i] = &origs[i]
-	}
-	return InstrumentationLibrarySpansSlice{&wrappers}
-}
-
 func newInstrumentationLibrarySpansSlice(orig *[]*otlptrace.InstrumentationLibrarySpans) InstrumentationLibrarySpansSlice {
 	return InstrumentationLibrarySpansSlice{orig}
 }
 
+// NewInstrumentationLibrarySpansSlice creates a InstrumentationLibrarySpansSlice with 0 elements.
+// Can use "Resize" to initialize with a given length.
+func NewInstrumentationLibrarySpansSlice() InstrumentationLibrarySpansSlice {
+	orig := []*otlptrace.InstrumentationLibrarySpans(nil)
+	return InstrumentationLibrarySpansSlice{&orig}
+}
+
 // Len returns the number of elements in the slice.
+//
+// Returns "0" for a newly instance created with "NewInstrumentationLibrarySpansSlice()".
 func (es InstrumentationLibrarySpansSlice) Len() int {
 	return len(*es.orig)
 }
 
-// Get the element at the given index.
+// At returns the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
 // for i := 0; i < es.Len(); i++ {
-//     e := es.Get(i)
+//     e := es.At(i)
 //     ... // Do something with the element
 // }
-func (es InstrumentationLibrarySpansSlice) Get(ix int) InstrumentationLibrarySpans {
+func (es InstrumentationLibrarySpansSlice) At(ix int) InstrumentationLibrarySpans {
 	return newInstrumentationLibrarySpans(&(*es.orig)[ix])
 }
 
-// Remove the element at the given index from the slice.
-// Elements after the removed one are shifted to fill the emptied space.
-// The length of the slice is reduced by one.
-func (es InstrumentationLibrarySpansSlice) Remove(ix int) {
-	(*es.orig)[ix] = (*es.orig)[len(*es.orig)-1]
-	(*es.orig)[len(*es.orig)-1] = nil
-	*es.orig = (*es.orig)[:len(*es.orig)-1]
-}
-
-// Resize the slice. This operation is equivalent with slice[from:to].
-func (es InstrumentationLibrarySpansSlice) Resize(from, to int) {
-	*es.orig = (*es.orig)[from:to]
+// Resize is an operation that resizes the slice:
+// 1. If newLen is 0 then the slice is replaced with a nil slice.
+// 2. If the newLen < len then equivalent with slice[0:newLen].
+// 3. If the newLen > len then (newLen - len) empty elements will be appended to the slice.
+//
+// Here is how a new InstrumentationLibrarySpansSlice can be initialized:
+// es := NewInstrumentationLibrarySpansSlice()
+// es.Resize(4)
+// for i := 0; i < es.Len(); i++ {
+//     e := es.At(i)
+//     // Here should set all the values for e.
+// }
+func (es InstrumentationLibrarySpansSlice) Resize(newLen int) {
+	if newLen == 0 {
+		(*es.orig) = []*otlptrace.InstrumentationLibrarySpans(nil)
+		return
+	}
+	oldLen := len(*es.orig)
+	if newLen < oldLen {
+		(*es.orig) = (*es.orig)[0:newLen]
+		return
+	}
+	// TODO: Benchmark and optimize this logic.
+	extraOrigs := make([]otlptrace.InstrumentationLibrarySpans, newLen-oldLen)
+	oldOrig := (*es.orig)
+	for i := range extraOrigs {
+		oldOrig = append(oldOrig, &extraOrigs[i])
+	}
+	(*es.orig) = oldOrig
 }
 
 // InstrumentationLibrarySpans is a collection of spans from a LibraryInstrumentation.
@@ -276,13 +277,6 @@ func (ms InstrumentationLibrarySpans) Spans() SpanSlice {
 	return newSpanSlice(&(*ms.orig).Spans)
 }
 
-// SetSpans replaces the Spans associated with this InstrumentationLibrarySpans.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
-func (ms InstrumentationLibrarySpans) SetSpans(v SpanSlice) {
-	(*ms.orig).Spans = *v.orig
-}
-
 // SpanSlice logically represents a slice of Span.
 //
 // This is a reference type, if passsed by value and callee modifies it the
@@ -296,60 +290,64 @@ type SpanSlice struct {
 	orig *[]*otlptrace.Span
 }
 
-// NewSpanSlice creates a SpanSlice with "len" empty elements.
-//
-// es := NewSpanSlice(4)
-// for i := 0; i < es.Len(); i++ {
-//     e := es.Get(i)
-//     // Here should set all the values for e.
-// }
-func NewSpanSlice(len int) SpanSlice {
-	if len == 0 {
-		orig := []*otlptrace.Span(nil)
-		return SpanSlice{&orig}
-	}
-	// Slice for underlying orig.
-	origs := make([]otlptrace.Span, len)
-	// Slice for wrappers.
-	wrappers := make([]*otlptrace.Span, len)
-	for i := range origs {
-		wrappers[i] = &origs[i]
-	}
-	return SpanSlice{&wrappers}
-}
-
 func newSpanSlice(orig *[]*otlptrace.Span) SpanSlice {
 	return SpanSlice{orig}
 }
 
+// NewSpanSlice creates a SpanSlice with 0 elements.
+// Can use "Resize" to initialize with a given length.
+func NewSpanSlice() SpanSlice {
+	orig := []*otlptrace.Span(nil)
+	return SpanSlice{&orig}
+}
+
 // Len returns the number of elements in the slice.
+//
+// Returns "0" for a newly instance created with "NewSpanSlice()".
 func (es SpanSlice) Len() int {
 	return len(*es.orig)
 }
 
-// Get the element at the given index.
+// At returns the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
 // for i := 0; i < es.Len(); i++ {
-//     e := es.Get(i)
+//     e := es.At(i)
 //     ... // Do something with the element
 // }
-func (es SpanSlice) Get(ix int) Span {
+func (es SpanSlice) At(ix int) Span {
 	return newSpan(&(*es.orig)[ix])
 }
 
-// Remove the element at the given index from the slice.
-// Elements after the removed one are shifted to fill the emptied space.
-// The length of the slice is reduced by one.
-func (es SpanSlice) Remove(ix int) {
-	(*es.orig)[ix] = (*es.orig)[len(*es.orig)-1]
-	(*es.orig)[len(*es.orig)-1] = nil
-	*es.orig = (*es.orig)[:len(*es.orig)-1]
-}
-
-// Resize the slice. This operation is equivalent with slice[from:to].
-func (es SpanSlice) Resize(from, to int) {
-	*es.orig = (*es.orig)[from:to]
+// Resize is an operation that resizes the slice:
+// 1. If newLen is 0 then the slice is replaced with a nil slice.
+// 2. If the newLen < len then equivalent with slice[0:newLen].
+// 3. If the newLen > len then (newLen - len) empty elements will be appended to the slice.
+//
+// Here is how a new SpanSlice can be initialized:
+// es := NewSpanSlice()
+// es.Resize(4)
+// for i := 0; i < es.Len(); i++ {
+//     e := es.At(i)
+//     // Here should set all the values for e.
+// }
+func (es SpanSlice) Resize(newLen int) {
+	if newLen == 0 {
+		(*es.orig) = []*otlptrace.Span(nil)
+		return
+	}
+	oldLen := len(*es.orig)
+	if newLen < oldLen {
+		(*es.orig) = (*es.orig)[0:newLen]
+		return
+	}
+	// TODO: Benchmark and optimize this logic.
+	extraOrigs := make([]otlptrace.Span, newLen-oldLen)
+	oldOrig := (*es.orig)
+	for i := range extraOrigs {
+		oldOrig = append(oldOrig, &extraOrigs[i])
+	}
+	(*es.orig) = oldOrig
 }
 
 // Span represents a single operation within a trace.
@@ -538,13 +536,6 @@ func (ms Span) Events() SpanEventSlice {
 	return newSpanEventSlice(&(*ms.orig).Events)
 }
 
-// SetEvents replaces the Events associated with this Span.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
-func (ms Span) SetEvents(v SpanEventSlice) {
-	(*ms.orig).Events = *v.orig
-}
-
 // DroppedEventsCount returns the droppedeventscount associated with this Span.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
@@ -564,13 +555,6 @@ func (ms Span) SetDroppedEventsCount(v uint32) {
 // Important: This causes a runtime error if IsNil() returns "true".
 func (ms Span) Links() SpanLinkSlice {
 	return newSpanLinkSlice(&(*ms.orig).Links)
-}
-
-// SetLinks replaces the Links associated with this Span.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
-func (ms Span) SetLinks(v SpanLinkSlice) {
-	(*ms.orig).Links = *v.orig
 }
 
 // DroppedLinksCount returns the droppedlinkscount associated with this Span.
@@ -610,60 +594,64 @@ type SpanEventSlice struct {
 	orig *[]*otlptrace.Span_Event
 }
 
-// NewSpanEventSlice creates a SpanEventSlice with "len" empty elements.
-//
-// es := NewSpanEventSlice(4)
-// for i := 0; i < es.Len(); i++ {
-//     e := es.Get(i)
-//     // Here should set all the values for e.
-// }
-func NewSpanEventSlice(len int) SpanEventSlice {
-	if len == 0 {
-		orig := []*otlptrace.Span_Event(nil)
-		return SpanEventSlice{&orig}
-	}
-	// Slice for underlying orig.
-	origs := make([]otlptrace.Span_Event, len)
-	// Slice for wrappers.
-	wrappers := make([]*otlptrace.Span_Event, len)
-	for i := range origs {
-		wrappers[i] = &origs[i]
-	}
-	return SpanEventSlice{&wrappers}
-}
-
 func newSpanEventSlice(orig *[]*otlptrace.Span_Event) SpanEventSlice {
 	return SpanEventSlice{orig}
 }
 
+// NewSpanEventSlice creates a SpanEventSlice with 0 elements.
+// Can use "Resize" to initialize with a given length.
+func NewSpanEventSlice() SpanEventSlice {
+	orig := []*otlptrace.Span_Event(nil)
+	return SpanEventSlice{&orig}
+}
+
 // Len returns the number of elements in the slice.
+//
+// Returns "0" for a newly instance created with "NewSpanEventSlice()".
 func (es SpanEventSlice) Len() int {
 	return len(*es.orig)
 }
 
-// Get the element at the given index.
+// At returns the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
 // for i := 0; i < es.Len(); i++ {
-//     e := es.Get(i)
+//     e := es.At(i)
 //     ... // Do something with the element
 // }
-func (es SpanEventSlice) Get(ix int) SpanEvent {
+func (es SpanEventSlice) At(ix int) SpanEvent {
 	return newSpanEvent(&(*es.orig)[ix])
 }
 
-// Remove the element at the given index from the slice.
-// Elements after the removed one are shifted to fill the emptied space.
-// The length of the slice is reduced by one.
-func (es SpanEventSlice) Remove(ix int) {
-	(*es.orig)[ix] = (*es.orig)[len(*es.orig)-1]
-	(*es.orig)[len(*es.orig)-1] = nil
-	*es.orig = (*es.orig)[:len(*es.orig)-1]
-}
-
-// Resize the slice. This operation is equivalent with slice[from:to].
-func (es SpanEventSlice) Resize(from, to int) {
-	*es.orig = (*es.orig)[from:to]
+// Resize is an operation that resizes the slice:
+// 1. If newLen is 0 then the slice is replaced with a nil slice.
+// 2. If the newLen < len then equivalent with slice[0:newLen].
+// 3. If the newLen > len then (newLen - len) empty elements will be appended to the slice.
+//
+// Here is how a new SpanEventSlice can be initialized:
+// es := NewSpanEventSlice()
+// es.Resize(4)
+// for i := 0; i < es.Len(); i++ {
+//     e := es.At(i)
+//     // Here should set all the values for e.
+// }
+func (es SpanEventSlice) Resize(newLen int) {
+	if newLen == 0 {
+		(*es.orig) = []*otlptrace.Span_Event(nil)
+		return
+	}
+	oldLen := len(*es.orig)
+	if newLen < oldLen {
+		(*es.orig) = (*es.orig)[0:newLen]
+		return
+	}
+	// TODO: Benchmark and optimize this logic.
+	extraOrigs := make([]otlptrace.Span_Event, newLen-oldLen)
+	oldOrig := (*es.orig)
+	for i := range extraOrigs {
+		oldOrig = append(oldOrig, &extraOrigs[i])
+	}
+	(*es.orig) = oldOrig
 }
 
 // SpanEvent is a time-stamped annotation of the span, consisting of user-supplied
@@ -774,60 +762,64 @@ type SpanLinkSlice struct {
 	orig *[]*otlptrace.Span_Link
 }
 
-// NewSpanLinkSlice creates a SpanLinkSlice with "len" empty elements.
-//
-// es := NewSpanLinkSlice(4)
-// for i := 0; i < es.Len(); i++ {
-//     e := es.Get(i)
-//     // Here should set all the values for e.
-// }
-func NewSpanLinkSlice(len int) SpanLinkSlice {
-	if len == 0 {
-		orig := []*otlptrace.Span_Link(nil)
-		return SpanLinkSlice{&orig}
-	}
-	// Slice for underlying orig.
-	origs := make([]otlptrace.Span_Link, len)
-	// Slice for wrappers.
-	wrappers := make([]*otlptrace.Span_Link, len)
-	for i := range origs {
-		wrappers[i] = &origs[i]
-	}
-	return SpanLinkSlice{&wrappers}
-}
-
 func newSpanLinkSlice(orig *[]*otlptrace.Span_Link) SpanLinkSlice {
 	return SpanLinkSlice{orig}
 }
 
+// NewSpanLinkSlice creates a SpanLinkSlice with 0 elements.
+// Can use "Resize" to initialize with a given length.
+func NewSpanLinkSlice() SpanLinkSlice {
+	orig := []*otlptrace.Span_Link(nil)
+	return SpanLinkSlice{&orig}
+}
+
 // Len returns the number of elements in the slice.
+//
+// Returns "0" for a newly instance created with "NewSpanLinkSlice()".
 func (es SpanLinkSlice) Len() int {
 	return len(*es.orig)
 }
 
-// Get the element at the given index.
+// At returns the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
 // for i := 0; i < es.Len(); i++ {
-//     e := es.Get(i)
+//     e := es.At(i)
 //     ... // Do something with the element
 // }
-func (es SpanLinkSlice) Get(ix int) SpanLink {
+func (es SpanLinkSlice) At(ix int) SpanLink {
 	return newSpanLink(&(*es.orig)[ix])
 }
 
-// Remove the element at the given index from the slice.
-// Elements after the removed one are shifted to fill the emptied space.
-// The length of the slice is reduced by one.
-func (es SpanLinkSlice) Remove(ix int) {
-	(*es.orig)[ix] = (*es.orig)[len(*es.orig)-1]
-	(*es.orig)[len(*es.orig)-1] = nil
-	*es.orig = (*es.orig)[:len(*es.orig)-1]
-}
-
-// Resize the slice. This operation is equivalent with slice[from:to].
-func (es SpanLinkSlice) Resize(from, to int) {
-	*es.orig = (*es.orig)[from:to]
+// Resize is an operation that resizes the slice:
+// 1. If newLen is 0 then the slice is replaced with a nil slice.
+// 2. If the newLen < len then equivalent with slice[0:newLen].
+// 3. If the newLen > len then (newLen - len) empty elements will be appended to the slice.
+//
+// Here is how a new SpanLinkSlice can be initialized:
+// es := NewSpanLinkSlice()
+// es.Resize(4)
+// for i := 0; i < es.Len(); i++ {
+//     e := es.At(i)
+//     // Here should set all the values for e.
+// }
+func (es SpanLinkSlice) Resize(newLen int) {
+	if newLen == 0 {
+		(*es.orig) = []*otlptrace.Span_Link(nil)
+		return
+	}
+	oldLen := len(*es.orig)
+	if newLen < oldLen {
+		(*es.orig) = (*es.orig)[0:newLen]
+		return
+	}
+	// TODO: Benchmark and optimize this logic.
+	extraOrigs := make([]otlptrace.Span_Link, newLen-oldLen)
+	oldOrig := (*es.orig)
+	for i := range extraOrigs {
+		oldOrig = append(oldOrig, &extraOrigs[i])
+	}
+	(*es.orig) = oldOrig
 }
 
 // SpanLink is a pointer from the current span to another span in the same trace or in a

@@ -15,8 +15,9 @@
 package testdata
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 	otlpresource "github.com/open-telemetry/opentelemetry-proto/gen/go/resource/v1"
+
+	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 )
 
 func initResource1(r data.Resource) {

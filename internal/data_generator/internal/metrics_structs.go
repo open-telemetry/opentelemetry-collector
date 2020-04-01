@@ -61,10 +61,9 @@ var resourceMetrics = &messageStruct{
 	fields: []baseField{
 		resourceField,
 		&sliceField{
-			fieldMame:               "InstrumentationLibraryMetrics",
-			originFieldName:         "InstrumentationLibraryMetrics",
-			returnSlice:             instrumentationLibraryMetricsSlice,
-			constructorDefaultValue: "0",
+			fieldMame:       "InstrumentationLibraryMetrics",
+			originFieldName: "InstrumentationLibraryMetrics",
+			returnSlice:     instrumentationLibraryMetricsSlice,
 		},
 	},
 }
@@ -81,10 +80,9 @@ var instrumentationLibraryMetrics = &messageStruct{
 	fields: []baseField{
 		instrumentationLibraryField,
 		&sliceField{
-			fieldMame:               "Metrics",
-			originFieldName:         "Metrics",
-			returnSlice:             metricSlice,
-			constructorDefaultValue: "0",
+			fieldMame:       "Metrics",
+			originFieldName: "Metrics",
+			returnSlice:     metricSlice,
 		},
 	},
 }
@@ -105,28 +103,24 @@ var metric = &messageStruct{
 			returnMessage:   metricDescriptor,
 		},
 		&sliceField{
-			fieldMame:               "Int64DataPoints",
-			originFieldName:         "Int64DataPoints",
-			returnSlice:             int64DataPointSlice,
-			constructorDefaultValue: "0",
+			fieldMame:       "Int64DataPoints",
+			originFieldName: "Int64DataPoints",
+			returnSlice:     int64DataPointSlice,
 		},
 		&sliceField{
-			fieldMame:               "DoubleDataPoints",
-			originFieldName:         "DoubleDataPoints",
-			returnSlice:             doubleDataPointSlice,
-			constructorDefaultValue: "0",
+			fieldMame:       "DoubleDataPoints",
+			originFieldName: "DoubleDataPoints",
+			returnSlice:     doubleDataPointSlice,
 		},
 		&sliceField{
-			fieldMame:               "HistogramDataPoints",
-			originFieldName:         "HistogramDataPoints",
-			returnSlice:             histogramDataPointSlice,
-			constructorDefaultValue: "0",
+			fieldMame:       "HistogramDataPoints",
+			originFieldName: "HistogramDataPoints",
+			returnSlice:     histogramDataPointSlice,
 		},
 		&sliceField{
-			fieldMame:               "SummaryDataPoints",
-			originFieldName:         "SummaryDataPoints",
-			returnSlice:             summaryDataPointSlice,
-			constructorDefaultValue: "0",
+			fieldMame:       "SummaryDataPoints",
+			originFieldName: "SummaryDataPoints",
+			returnSlice:     summaryDataPointSlice,
 		},
 	},
 }
@@ -213,10 +207,9 @@ var histogramDataPoint = &messageStruct{
 		countField,
 		sumField,
 		&sliceField{
-			fieldMame:               "Buckets",
-			originFieldName:         "Buckets",
-			returnSlice:             histogramBucketSlice,
-			constructorDefaultValue: "0",
+			fieldMame:       "Buckets",
+			originFieldName: "Buckets",
+			returnSlice:     histogramBucketSlice,
 		},
 		explicitBoundsField,
 	},
@@ -249,7 +242,7 @@ var histogramBucketExemplar = &messageStruct{
 	fields: []baseField{
 		timeField,
 		valueFloat64Field,
-		&sliceField{
+		&mapField{
 			fieldMame:               "Attachments",
 			originFieldName:         "Attachments",
 			returnSlice:             stringMap,
@@ -274,10 +267,9 @@ var summaryDataPoint = &messageStruct{
 		countField,
 		sumField,
 		&sliceField{
-			fieldMame:               "ValueAtPercentiles",
-			originFieldName:         "PercentileValues",
-			returnSlice:             summaryValueAtPercentileSlice,
-			constructorDefaultValue: "0",
+			fieldMame:       "ValueAtPercentiles",
+			originFieldName: "PercentileValues",
+			returnSlice:     summaryValueAtPercentileSlice,
 		},
 	},
 }
@@ -297,7 +289,7 @@ var summaryValueAtPercentile = &messageStruct{
 	},
 }
 
-var labelsField = &sliceField{
+var labelsField = &mapField{
 	fieldMame:               "LabelsMap",
 	originFieldName:         "Labels",
 	returnSlice:             stringMap,

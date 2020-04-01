@@ -174,16 +174,16 @@ func TestTraceProcessorCloningMultiplexing(t *testing.T) {
 	for i, p := range processors {
 		m := p.(*mockTraceConsumer)
 		assert.Equal(t, wantSpansCount, m.TotalSpans)
-		spanOrig := td.ResourceSpans().Get(0).InstrumentationLibrarySpans().Get(0).Spans().Get(0)
-		spanClone := m.Traces[0].ResourceSpans().Get(0).InstrumentationLibrarySpans().Get(0).Spans().Get(0)
+		spanOrig := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
+		spanClone := m.Traces[0].ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
 		if i < len(processors)-1 {
-			assert.True(t, td.ResourceSpans().Get(0).Resource() != m.Traces[0].ResourceSpans().Get(0).Resource())
+			assert.True(t, td.ResourceSpans().At(0).Resource() != m.Traces[0].ResourceSpans().At(0).Resource())
 			assert.True(t, spanOrig != spanClone)
 		} else {
-			assert.True(t, td.ResourceSpans().Get(0).Resource() == m.Traces[0].ResourceSpans().Get(0).Resource())
+			assert.True(t, td.ResourceSpans().At(0).Resource() == m.Traces[0].ResourceSpans().At(0).Resource())
 			assert.True(t, spanOrig == spanClone)
 		}
-		assert.EqualValues(t, td.ResourceSpans().Get(0).Resource(), m.Traces[0].ResourceSpans().Get(0).Resource())
+		assert.EqualValues(t, td.ResourceSpans().At(0).Resource(), m.Traces[0].ResourceSpans().At(0).Resource())
 		assert.EqualValues(t, spanOrig, spanClone)
 	}
 }
@@ -210,16 +210,16 @@ func TestMetricsProcessorCloningMultiplexing(t *testing.T) {
 	for i, p := range processors {
 		m := p.(*mockMetricsConsumer)
 		assert.Equal(t, wantMetricsCount, m.TotalMetrics)
-		metricOrig := md.ResourceMetrics().Get(0).InstrumentationLibraryMetrics().Get(0).Metrics().Get(0)
-		metricClone := m.Metrics[0].ResourceMetrics().Get(0).InstrumentationLibraryMetrics().Get(0).Metrics().Get(0)
+		metricOrig := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
+		metricClone := m.Metrics[0].ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
 		if i < len(processors)-1 {
-			assert.True(t, md.ResourceMetrics().Get(0).Resource() != m.Metrics[0].ResourceMetrics().Get(0).Resource())
+			assert.True(t, md.ResourceMetrics().At(0).Resource() != m.Metrics[0].ResourceMetrics().At(0).Resource())
 			assert.True(t, metricOrig != metricClone)
 		} else {
-			assert.True(t, md.ResourceMetrics().Get(0).Resource() == m.Metrics[0].ResourceMetrics().Get(0).Resource())
+			assert.True(t, md.ResourceMetrics().At(0).Resource() == m.Metrics[0].ResourceMetrics().At(0).Resource())
 			assert.True(t, metricOrig == metricClone)
 		}
-		assert.EqualValues(t, md.ResourceMetrics().Get(0).Resource(), m.Metrics[0].ResourceMetrics().Get(0).Resource())
+		assert.EqualValues(t, md.ResourceMetrics().At(0).Resource(), m.Metrics[0].ResourceMetrics().At(0).Resource())
 		assert.EqualValues(t, metricOrig, metricClone)
 	}
 }
@@ -282,7 +282,7 @@ func TestCreateTraceCloningFanOutConnectorWithConvertion(t *testing.T) {
 	resourceTypeName := "good-resource"
 
 	td := testdata.GenerateTraceDataTwoSpansSameResource()
-	resource := td.ResourceSpans().Get(0).Resource()
+	resource := td.ResourceSpans().At(0).Resource()
 	resource.Attributes().Upsert(data.NewAttributeKeyValueString(conventions.OCAttributeResourceType, resourceTypeName))
 
 	tfc := CreateTraceCloningFanOutConnector(processors).(consumer.TraceConsumer)
@@ -298,7 +298,7 @@ func TestCreateTraceCloningFanOutConnectorWithConvertion(t *testing.T) {
 	assert.Equal(t, resourceTypeName, traceConsumerOld.Traces[0].Resource.Type)
 
 	assert.Equal(t, wantSpansCount, traceConsumer.TotalSpans)
-	assert.Equal(t, resource, traceConsumer.Traces[0].ResourceSpans().Get(0).Resource())
+	assert.Equal(t, resource, traceConsumer.Traces[0].ResourceSpans().At(0).Resource())
 }
 
 func TestCreateMetricsCloningFanOutConnectorWithConvertion(t *testing.T) {
@@ -312,7 +312,7 @@ func TestCreateMetricsCloningFanOutConnectorWithConvertion(t *testing.T) {
 	resourceTypeName := "good-resource"
 
 	md := testdata.GenerateMetricDataTwoMetrics()
-	resource := md.ResourceMetrics().Get(0).Resource()
+	resource := md.ResourceMetrics().At(0).Resource()
 	resource.Attributes().Upsert(data.NewAttributeKeyValueString(conventions.OCAttributeResourceType, resourceTypeName))
 
 	mfc := CreateMetricsCloningFanOutConnector(processors).(consumer.MetricsConsumer)
@@ -328,7 +328,7 @@ func TestCreateMetricsCloningFanOutConnectorWithConvertion(t *testing.T) {
 	assert.Equal(t, resourceTypeName, metricsConsumerOld.Metrics[0].Resource.Type)
 
 	assert.Equal(t, wantSpansCount, metricsConsumer.TotalMetrics)
-	assert.Equal(t, resource, metricsConsumer.Metrics[0].ResourceMetrics().Get(0).Resource())
+	assert.Equal(t, resource, metricsConsumer.Metrics[0].ResourceMetrics().At(0).Resource())
 }
 
 func genRandBytes(len int) []byte {

@@ -32,112 +32,133 @@ type ${structName} struct {
 	orig *[]*${originName}
 }
 
-// New${structName} creates a ${structName} with "len" empty elements.
-//
-// es := New${structName}(4)
-// for i := 0; i < es.Len(); i++ {
-//     e := es.Get(i)
-//     // Here should set all the values for e.
-// }
-func New${structName}(len int) ${structName} {
-	if len == 0 {
-		orig := []*${originName}(nil)
-		return ${structName}{&orig}
-	}
-	// Slice for underlying orig.
-	origs := make([]${originName}, len)
-	// Slice for wrappers.
-	wrappers := make([]*${originName}, len)
-	for i := range origs {
-		wrappers[i] = &origs[i]
-	}
-	return ${structName}{&wrappers}
-}
-
 func new${structName}(orig *[]*${originName}) ${structName} {
 	return ${structName}{orig}
 }
 
+// New${structName} creates a ${structName} with 0 elements.
+// Can use "Resize" to initialize with a given length.
+func New${structName}() ${structName} {
+	orig := []*${originName}(nil)
+	return ${structName}{&orig}
+}
+
 // Len returns the number of elements in the slice.
+//
+// Returns "0" for a newly instance created with "New${structName}()".
 func (es ${structName}) Len() int {
 	return len(*es.orig)
 }
 
-// Get the element at the given index.
+// At returns the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
 // for i := 0; i < es.Len(); i++ {
-//     e := es.Get(i)
+//     e := es.At(i)
 //     ... // Do something with the element
 // }
-func (es ${structName}) Get(ix int) ${elementName} {
+func (es ${structName}) At(ix int) ${elementName} {
 	return new${elementName}(&(*es.orig)[ix])
 }
 
-// Remove the element at the given index from the slice.
-// Elements after the removed one are shifted to fill the emptied space.
-// The length of the slice is reduced by one.
-func (es ${structName}) Remove(ix int) {
-	(*es.orig)[ix] = (*es.orig)[len(*es.orig)-1]
-	(*es.orig)[len(*es.orig)-1] = nil
-	*es.orig = (*es.orig)[:len(*es.orig)-1]
-}
-
-// Resize the slice. This operation is equivalent with slice[from:to].
-func (es ${structName}) Resize(from, to int) {
-	*es.orig = (*es.orig)[from:to]
+// Resize is an operation that resizes the slice:
+// 1. If newLen is 0 then the slice is replaced with a nil slice.
+// 2. If the newLen < len then equivalent with slice[0:newLen].
+// 3. If the newLen > len then (newLen - len) empty elements will be appended to the slice.
+//
+// Here is how a new ${structName} can be initialized:
+// es := New${structName}()
+// es.Resize(4)
+// for i := 0; i < es.Len(); i++ {
+//     e := es.At(i)
+//     // Here should set all the values for e.
+// }
+func (es ${structName}) Resize(newLen int) {
+	if newLen == 0 {
+		(*es.orig) = []*${originName}(nil)
+		return
+	}
+	oldLen := len(*es.orig)
+	if newLen < oldLen {
+		(*es.orig) = (*es.orig)[0:newLen]
+		return
+	}
+	// TODO: Benchmark and optimize this logic.
+	extraOrigs := make([]${originName}, newLen-oldLen)
+	oldOrig := (*es.orig)
+	for i := range extraOrigs {
+		oldOrig = append(oldOrig, &extraOrigs[i])
+	}
+	(*es.orig) = oldOrig
 }`
 
 const sliceTestTemplate = `func Test${structName}(t *testing.T) {
-	es := New${structName}(0)
+	es := New${structName}()
 	assert.EqualValues(t, 0, es.Len())
 	es = new${structName}(&[]*${originName}{})
 	assert.EqualValues(t, 0, es.Len())
-	es = New${structName}(13)
+
+	es.Resize(13)
 	emptyVal :=  New${elementName}()
 	emptyVal.InitEmpty()
 	testVal := generateTest${elementName}()
 	assert.EqualValues(t, 13, es.Len())
 	for i := 0; i < es.Len(); i++ {
-		assert.EqualValues(t, emptyVal, es.Get(i))
-		fillTest${elementName}(es.Get(i))
-		assert.EqualValues(t, testVal, es.Get(i))
+		assert.EqualValues(t, emptyVal, es.At(i))
+		fillTest${elementName}(es.At(i))
+		assert.EqualValues(t, testVal, es.At(i))
 	}
 
-	// Test resize.
-	const resizeLo = 2
-	const resizeHi = 10
-	expectedEs := make(map[*${originName}]bool, resizeHi-resizeLo)
-	for i := resizeLo; i < resizeHi; i++ {
-		expectedEs[*(es.Get(i).orig)] = true
+	// Test Resize less elements.
+	const resizeSmallLen = 10
+	expectedEs := make(map[*${originName}]bool, resizeSmallLen)
+	for i := 0; i < resizeSmallLen; i++ {
+		expectedEs[*(es.At(i).orig)] = true
 	}
-	assert.EqualValues(t, resizeHi-resizeLo, len(expectedEs))
-	es.Resize(resizeLo, resizeHi)
-	assert.EqualValues(t, resizeHi-resizeLo, es.Len())
-	foundEs := make(map[*${originName}]bool, resizeHi-resizeLo)
+	assert.EqualValues(t, resizeSmallLen, len(expectedEs))
+	es.Resize(resizeSmallLen)
+	assert.EqualValues(t, resizeSmallLen, es.Len())
+	foundEs := make(map[*${originName}]bool, resizeSmallLen)
 	for i := 0; i < es.Len(); i++ {
-		foundEs[*(es.Get(i).orig)] = true
+		foundEs[*(es.At(i).orig)] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 
-	// Test remove.
-	const removePos = 2
-	delete(expectedEs, *(es.Get(removePos).orig))
-	es.Remove(removePos)
-	assert.EqualValues(t, resizeHi-resizeLo-1, es.Len())
-	foundEs = make(map[*${originName}]bool, resizeHi-resizeLo)
-	for i := 0; i < es.Len(); i++ {
-		foundEs[*(es.Get(i).orig)] = true
+	// Test Resize more elements.
+	const resizeLargeLen = 13
+	oldLen := es.Len()
+	expectedEs = make(map[*${originName}]bool, oldLen)
+	for i := 0; i < oldLen; i++ {
+		expectedEs[*(es.At(i).orig)] = true
+	}
+	assert.EqualValues(t, oldLen, len(expectedEs))
+	es.Resize(resizeLargeLen)
+	assert.EqualValues(t, resizeLargeLen, es.Len())
+	foundEs = make(map[*${originName}]bool, oldLen)
+	for i := 0; i < oldLen; i++ {
+		foundEs[*(es.At(i).orig)] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
+	for i := oldLen; i < resizeLargeLen; i++ {
+		assert.EqualValues(t, emptyVal, es.At(i))
+	}
+
+	// Test Resize 0 elements.
+	es.Resize(0)
+	assert.EqualValues(t, New${structName}(), es)
 }`
 
 const sliceGenerateTest = `func generateTest${structName}() ${structName} {
-	tv := New${structName}(13)
-	for i := 0; i < tv.Len(); i++ {
-		fillTest${elementName}(tv.Get(i))
-	}
+	tv := New${structName}()
+	fillTest${structName}(tv)
 	return tv
+}
+
+func fillTest${structName}(tv ${structName}) {
+	tv.Resize(13)
+	for i := 0; i < tv.Len(); i++ {
+		fillTest${elementName}(tv.At(i))
+	}
 }`
 
 const messageTemplate = `${description}

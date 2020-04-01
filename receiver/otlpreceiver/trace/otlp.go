@@ -64,7 +64,7 @@ func (r *Receiver) Export(ctx context.Context, req *collectortrace.ExportTraceSe
 	td := data.TraceDataFromOtlp(req.ResourceSpans)
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
-		rs := rss.Get(i)
+		rs := rss.At(i)
 
 		if rs.InstrumentationLibrarySpans().Len() == 0 {
 			continue
