@@ -23,3 +23,10 @@ import (
 func GetAvailablePort(t *testing.T) int {
 	return int(testutils.GetAvailablePort(t))
 }
+
+type ProcConfiguration struct {
+	Name                string
+	Processor           map[string]string
+	ExpectedMaxRAM      uint32
+	ExpectedMinFinalRAM uint32
+}
