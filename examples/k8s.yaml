@@ -10,10 +10,6 @@ data:
   otel-agent-config: |
     receivers:
       opencensus: {}
-#        jaeger:
-#          thrift_compact:
-#          thrift_binary:
-#        zipkin: {}
     exporters:
       opencensus:
         endpoint: "otel-collector.default:55678" # TODO: Update me
@@ -142,6 +138,8 @@ spec:
     port: 55678
     protocol: TCP
     targetPort: 55678
+  - name: jaeger-grpc # Default endpoing for Jaeger gRPC receiver
+    port: 14250
   - name: jaeger-thrift-http # Default endpoint for Jaeger HTTP receiver.
     port: 14268
   - name: zipkin # Default endpoint for Zipkin receiver.
@@ -192,6 +190,7 @@ spec:
             memory: 400Mi
         ports:
         - containerPort: 55678 # Default endpoint for Opencensus receiver.
+        - containerPort: 14250 # Default endpoint for Jaeger HTTP receiver.
         - containerPort: 14268 # Default endpoint for Jaeger HTTP receiver.
         - containerPort: 9411 # Default endpoint for Zipkin receiver.
         - containerPort: 8888  # Default endpoint for querying metrics.
