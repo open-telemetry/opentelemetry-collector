@@ -29,6 +29,8 @@
   <strong>
     <a href="CONTRIBUTING.md">Contributing<a/>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
+    <a href="docs/vision.md">Vision<a/>
+    &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="docs/design.md">Design<a/>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="docs/monitoring.md">Monitoring<a/>
