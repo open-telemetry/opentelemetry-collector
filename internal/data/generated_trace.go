@@ -29,6 +29,8 @@ import (
 // Must use NewResourceSpansSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ResourceSpansSlice struct {
+	// orig points to the slice otlptrace.ResourceSpans field contained somewhere else.
+    // We use pointer-to-slice to be able to modify it in functions like Resize.
 	orig *[]*otlptrace.ResourceSpans
 }
 
@@ -96,7 +98,8 @@ func (es ResourceSpansSlice) Resize(from, to int) {
 // Must use NewResourceSpans function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ResourceSpans struct {
-	// Wrap OTLP otlptrace.ResourceSpans.
+	// orig points to the pointer otlptrace.ResourceSpans field contained somewhere else.
+    // We use pointer-to-pointer to be able to modify it in InitEmpty func.
 	orig **otlptrace.ResourceSpans
 }
 
@@ -128,6 +131,8 @@ func (ms ResourceSpans) IsNil() bool {
 // Resource returns the resource associated with this ResourceSpans.
 // If no resource available, it creates an empty message and associates it with this ResourceSpans.
 //
+//  Empty initialized ResourceSpans will return "nil" Resource.
+//
 // Important: This causes a runtime error if IsNil() returns "true".
 func (ms ResourceSpans) Resource() Resource {
 	return newResource(&(*ms.orig).Resource)
@@ -155,6 +160,8 @@ func (ms ResourceSpans) SetInstrumentationLibrarySpans(v InstrumentationLibraryS
 // Must use NewInstrumentationLibrarySpansSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type InstrumentationLibrarySpansSlice struct {
+	// orig points to the slice otlptrace.InstrumentationLibrarySpans field contained somewhere else.
+    // We use pointer-to-slice to be able to modify it in functions like Resize.
 	orig *[]*otlptrace.InstrumentationLibrarySpans
 }
 
@@ -222,7 +229,8 @@ func (es InstrumentationLibrarySpansSlice) Resize(from, to int) {
 // Must use NewInstrumentationLibrarySpans function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type InstrumentationLibrarySpans struct {
-	// Wrap OTLP otlptrace.InstrumentationLibrarySpans.
+	// orig points to the pointer otlptrace.InstrumentationLibrarySpans field contained somewhere else.
+    // We use pointer-to-pointer to be able to modify it in InitEmpty func.
 	orig **otlptrace.InstrumentationLibrarySpans
 }
 
@@ -254,6 +262,8 @@ func (ms InstrumentationLibrarySpans) IsNil() bool {
 // InstrumentationLibrary returns the instrumentationlibrary associated with this InstrumentationLibrarySpans.
 // If no instrumentationlibrary available, it creates an empty message and associates it with this InstrumentationLibrarySpans.
 //
+//  Empty initialized InstrumentationLibrarySpans will return "nil" InstrumentationLibrary.
+//
 // Important: This causes a runtime error if IsNil() returns "true".
 func (ms InstrumentationLibrarySpans) InstrumentationLibrary() InstrumentationLibrary {
 	return newInstrumentationLibrary(&(*ms.orig).InstrumentationLibrary)
@@ -281,6 +291,8 @@ func (ms InstrumentationLibrarySpans) SetSpans(v SpanSlice) {
 // Must use NewSpanSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type SpanSlice struct {
+	// orig points to the slice otlptrace.Span field contained somewhere else.
+    // We use pointer-to-slice to be able to modify it in functions like Resize.
 	orig *[]*otlptrace.Span
 }
 
@@ -349,7 +361,8 @@ func (es SpanSlice) Resize(from, to int) {
 // Must use NewSpan function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Span struct {
-	// Wrap OTLP otlptrace.Span.
+	// orig points to the pointer otlptrace.Span field contained somewhere else.
+    // We use pointer-to-pointer to be able to modify it in InitEmpty func.
 	orig **otlptrace.Span
 }
 
@@ -577,6 +590,8 @@ func (ms Span) SetDroppedLinksCount(v uint32) {
 // Status returns the status associated with this Span.
 // If no status available, it creates an empty message and associates it with this Span.
 //
+//  Empty initialized Span will return "nil" SpanStatus.
+//
 // Important: This causes a runtime error if IsNil() returns "true".
 func (ms Span) Status() SpanStatus {
 	return newSpanStatus(&(*ms.orig).Status)
@@ -590,6 +605,8 @@ func (ms Span) Status() SpanStatus {
 // Must use NewSpanEventSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type SpanEventSlice struct {
+	// orig points to the slice otlptrace.Span_Event field contained somewhere else.
+    // We use pointer-to-slice to be able to modify it in functions like Resize.
 	orig *[]*otlptrace.Span_Event
 }
 
@@ -658,7 +675,8 @@ func (es SpanEventSlice) Resize(from, to int) {
 // Must use NewSpanEvent function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type SpanEvent struct {
-	// Wrap OTLP otlptrace.Span_Event.
+	// orig points to the pointer otlptrace.Span_Event field contained somewhere else.
+    // We use pointer-to-pointer to be able to modify it in InitEmpty func.
 	orig **otlptrace.Span_Event
 }
 
@@ -751,6 +769,8 @@ func (ms SpanEvent) SetDroppedAttributesCount(v uint32) {
 // Must use NewSpanLinkSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type SpanLinkSlice struct {
+	// orig points to the slice otlptrace.Span_Link field contained somewhere else.
+    // We use pointer-to-slice to be able to modify it in functions like Resize.
 	orig *[]*otlptrace.Span_Link
 }
 
@@ -819,7 +839,8 @@ func (es SpanLinkSlice) Resize(from, to int) {
 // Must use NewSpanLink function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type SpanLink struct {
-	// Wrap OTLP otlptrace.Span_Link.
+	// orig points to the pointer otlptrace.Span_Link field contained somewhere else.
+    // We use pointer-to-pointer to be able to modify it in InitEmpty func.
 	orig **otlptrace.Span_Link
 }
 
@@ -927,7 +948,8 @@ func (ms SpanLink) SetDroppedAttributesCount(v uint32) {
 // Must use NewSpanStatus function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type SpanStatus struct {
-	// Wrap OTLP otlptrace.Status.
+	// orig points to the pointer otlptrace.Status field contained somewhere else.
+    // We use pointer-to-pointer to be able to modify it in InitEmpty func.
 	orig **otlptrace.Status
 }
 

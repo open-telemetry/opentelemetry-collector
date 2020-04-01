@@ -29,7 +29,8 @@ import (
 // Must use NewInstrumentationLibrary function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type InstrumentationLibrary struct {
-	// Wrap OTLP otlpcommon.InstrumentationLibrary.
+	// orig points to the pointer otlpcommon.InstrumentationLibrary field contained somewhere else.
+    // We use pointer-to-pointer to be able to modify it in InitEmpty func.
 	orig **otlpcommon.InstrumentationLibrary
 }
 

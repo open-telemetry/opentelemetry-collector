@@ -29,6 +29,8 @@ import (
 // Must use NewResourceMetricsSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ResourceMetricsSlice struct {
+	// orig points to the slice otlpmetrics.ResourceMetrics field contained somewhere else.
+    // We use pointer-to-slice to be able to modify it in functions like Resize.
 	orig *[]*otlpmetrics.ResourceMetrics
 }
 
@@ -96,7 +98,8 @@ func (es ResourceMetricsSlice) Resize(from, to int) {
 // Must use NewResourceMetrics function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ResourceMetrics struct {
-	// Wrap OTLP otlpmetrics.ResourceMetrics.
+	// orig points to the pointer otlpmetrics.ResourceMetrics field contained somewhere else.
+    // We use pointer-to-pointer to be able to modify it in InitEmpty func.
 	orig **otlpmetrics.ResourceMetrics
 }
 
@@ -128,6 +131,8 @@ func (ms ResourceMetrics) IsNil() bool {
 // Resource returns the resource associated with this ResourceMetrics.
 // If no resource available, it creates an empty message and associates it with this ResourceMetrics.
 //
+//  Empty initialized ResourceMetrics will return "nil" Resource.
+//
 // Important: This causes a runtime error if IsNil() returns "true".
 func (ms ResourceMetrics) Resource() Resource {
 	return newResource(&(*ms.orig).Resource)
@@ -155,6 +160,8 @@ func (ms ResourceMetrics) SetInstrumentationLibraryMetrics(v InstrumentationLibr
 // Must use NewInstrumentationLibraryMetricsSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type InstrumentationLibraryMetricsSlice struct {
+	// orig points to the slice otlpmetrics.InstrumentationLibraryMetrics field contained somewhere else.
+    // We use pointer-to-slice to be able to modify it in functions like Resize.
 	orig *[]*otlpmetrics.InstrumentationLibraryMetrics
 }
 
@@ -222,7 +229,8 @@ func (es InstrumentationLibraryMetricsSlice) Resize(from, to int) {
 // Must use NewInstrumentationLibraryMetrics function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type InstrumentationLibraryMetrics struct {
-	// Wrap OTLP otlpmetrics.InstrumentationLibraryMetrics.
+	// orig points to the pointer otlpmetrics.InstrumentationLibraryMetrics field contained somewhere else.
+    // We use pointer-to-pointer to be able to modify it in InitEmpty func.
 	orig **otlpmetrics.InstrumentationLibraryMetrics
 }
 
@@ -254,6 +262,8 @@ func (ms InstrumentationLibraryMetrics) IsNil() bool {
 // InstrumentationLibrary returns the instrumentationlibrary associated with this InstrumentationLibraryMetrics.
 // If no instrumentationlibrary available, it creates an empty message and associates it with this InstrumentationLibraryMetrics.
 //
+//  Empty initialized InstrumentationLibraryMetrics will return "nil" InstrumentationLibrary.
+//
 // Important: This causes a runtime error if IsNil() returns "true".
 func (ms InstrumentationLibraryMetrics) InstrumentationLibrary() InstrumentationLibrary {
 	return newInstrumentationLibrary(&(*ms.orig).InstrumentationLibrary)
@@ -281,6 +291,8 @@ func (ms InstrumentationLibraryMetrics) SetMetrics(v MetricSlice) {
 // Must use NewMetricSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type MetricSlice struct {
+	// orig points to the slice otlpmetrics.Metric field contained somewhere else.
+    // We use pointer-to-slice to be able to modify it in functions like Resize.
 	orig *[]*otlpmetrics.Metric
 }
 
@@ -348,7 +360,8 @@ func (es MetricSlice) Resize(from, to int) {
 // Must use NewMetric function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Metric struct {
-	// Wrap OTLP otlpmetrics.Metric.
+	// orig points to the pointer otlpmetrics.Metric field contained somewhere else.
+    // We use pointer-to-pointer to be able to modify it in InitEmpty func.
 	orig **otlpmetrics.Metric
 }
 
@@ -379,6 +392,8 @@ func (ms Metric) IsNil() bool {
 
 // MetricDescriptor returns the metricdescriptor associated with this Metric.
 // If no metricdescriptor available, it creates an empty message and associates it with this Metric.
+//
+//  Empty initialized Metric will return "nil" MetricDescriptor.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
 func (ms Metric) MetricDescriptor() MetricDescriptor {
@@ -449,7 +464,8 @@ func (ms Metric) SetSummaryDataPoints(v SummaryDataPointSlice) {
 // Must use NewMetricDescriptor function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type MetricDescriptor struct {
-	// Wrap OTLP otlpmetrics.MetricDescriptor.
+	// orig points to the pointer otlpmetrics.MetricDescriptor field contained somewhere else.
+    // We use pointer-to-pointer to be able to modify it in InitEmpty func.
 	orig **otlpmetrics.MetricDescriptor
 }
 
@@ -556,6 +572,8 @@ func (ms MetricDescriptor) SetLabelsMap(v StringMap) {
 // Must use NewInt64DataPointSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Int64DataPointSlice struct {
+	// orig points to the slice otlpmetrics.Int64DataPoint field contained somewhere else.
+    // We use pointer-to-slice to be able to modify it in functions like Resize.
 	orig *[]*otlpmetrics.Int64DataPoint
 }
 
@@ -623,7 +641,8 @@ func (es Int64DataPointSlice) Resize(from, to int) {
 // Must use NewInt64DataPoint function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Int64DataPoint struct {
-	// Wrap OTLP otlpmetrics.Int64DataPoint.
+	// orig points to the pointer otlpmetrics.Int64DataPoint field contained somewhere else.
+    // We use pointer-to-pointer to be able to modify it in InitEmpty func.
 	orig **otlpmetrics.Int64DataPoint
 }
 
@@ -716,6 +735,8 @@ func (ms Int64DataPoint) SetValue(v int64) {
 // Must use NewDoubleDataPointSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type DoubleDataPointSlice struct {
+	// orig points to the slice otlpmetrics.DoubleDataPoint field contained somewhere else.
+    // We use pointer-to-slice to be able to modify it in functions like Resize.
 	orig *[]*otlpmetrics.DoubleDataPoint
 }
 
@@ -783,7 +804,8 @@ func (es DoubleDataPointSlice) Resize(from, to int) {
 // Must use NewDoubleDataPoint function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type DoubleDataPoint struct {
-	// Wrap OTLP otlpmetrics.DoubleDataPoint.
+	// orig points to the pointer otlpmetrics.DoubleDataPoint field contained somewhere else.
+    // We use pointer-to-pointer to be able to modify it in InitEmpty func.
 	orig **otlpmetrics.DoubleDataPoint
 }
 
@@ -876,6 +898,8 @@ func (ms DoubleDataPoint) SetValue(v float64) {
 // Must use NewHistogramDataPointSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type HistogramDataPointSlice struct {
+	// orig points to the slice otlpmetrics.HistogramDataPoint field contained somewhere else.
+    // We use pointer-to-slice to be able to modify it in functions like Resize.
 	orig *[]*otlpmetrics.HistogramDataPoint
 }
 
@@ -943,7 +967,8 @@ func (es HistogramDataPointSlice) Resize(from, to int) {
 // Must use NewHistogramDataPoint function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type HistogramDataPoint struct {
-	// Wrap OTLP otlpmetrics.HistogramDataPoint.
+	// orig points to the pointer otlpmetrics.HistogramDataPoint field contained somewhere else.
+    // We use pointer-to-pointer to be able to modify it in InitEmpty func.
 	orig **otlpmetrics.HistogramDataPoint
 }
 
@@ -1078,6 +1103,8 @@ func (ms HistogramDataPoint) SetExplicitBounds(v []float64) {
 // Must use NewHistogramBucketSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type HistogramBucketSlice struct {
+	// orig points to the slice otlpmetrics.HistogramDataPoint_Bucket field contained somewhere else.
+    // We use pointer-to-slice to be able to modify it in functions like Resize.
 	orig *[]*otlpmetrics.HistogramDataPoint_Bucket
 }
 
@@ -1145,7 +1172,8 @@ func (es HistogramBucketSlice) Resize(from, to int) {
 // Must use NewHistogramBucket function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type HistogramBucket struct {
-	// Wrap OTLP otlpmetrics.HistogramDataPoint_Bucket.
+	// orig points to the pointer otlpmetrics.HistogramDataPoint_Bucket field contained somewhere else.
+    // We use pointer-to-pointer to be able to modify it in InitEmpty func.
 	orig **otlpmetrics.HistogramDataPoint_Bucket
 }
 
@@ -1191,6 +1219,8 @@ func (ms HistogramBucket) SetCount(v uint64) {
 // Exemplar returns the exemplar associated with this HistogramBucket.
 // If no exemplar available, it creates an empty message and associates it with this HistogramBucket.
 //
+//  Empty initialized HistogramBucket will return "nil" HistogramBucketExemplar.
+//
 // Important: This causes a runtime error if IsNil() returns "true".
 func (ms HistogramBucket) Exemplar() HistogramBucketExemplar {
 	return newHistogramBucketExemplar(&(*ms.orig).Exemplar)
@@ -1205,7 +1235,8 @@ func (ms HistogramBucket) Exemplar() HistogramBucketExemplar {
 // Must use NewHistogramBucketExemplar function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type HistogramBucketExemplar struct {
-	// Wrap OTLP otlpmetrics.HistogramDataPoint_Bucket_Exemplar.
+	// orig points to the pointer otlpmetrics.HistogramDataPoint_Bucket_Exemplar field contained somewhere else.
+    // We use pointer-to-pointer to be able to modify it in InitEmpty func.
 	orig **otlpmetrics.HistogramDataPoint_Bucket_Exemplar
 }
 
@@ -1284,6 +1315,8 @@ func (ms HistogramBucketExemplar) SetAttachments(v StringMap) {
 // Must use NewSummaryDataPointSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type SummaryDataPointSlice struct {
+	// orig points to the slice otlpmetrics.SummaryDataPoint field contained somewhere else.
+    // We use pointer-to-slice to be able to modify it in functions like Resize.
 	orig *[]*otlpmetrics.SummaryDataPoint
 }
 
@@ -1351,7 +1384,8 @@ func (es SummaryDataPointSlice) Resize(from, to int) {
 // Must use NewSummaryDataPoint function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type SummaryDataPoint struct {
-	// Wrap OTLP otlpmetrics.SummaryDataPoint.
+	// orig points to the pointer otlpmetrics.SummaryDataPoint field contained somewhere else.
+    // We use pointer-to-pointer to be able to modify it in InitEmpty func.
 	orig **otlpmetrics.SummaryDataPoint
 }
 
@@ -1472,6 +1506,8 @@ func (ms SummaryDataPoint) SetValueAtPercentiles(v SummaryValueAtPercentileSlice
 // Must use NewSummaryValueAtPercentileSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type SummaryValueAtPercentileSlice struct {
+	// orig points to the slice otlpmetrics.SummaryDataPoint_ValueAtPercentile field contained somewhere else.
+    // We use pointer-to-slice to be able to modify it in functions like Resize.
 	orig *[]*otlpmetrics.SummaryDataPoint_ValueAtPercentile
 }
 
@@ -1539,7 +1575,8 @@ func (es SummaryValueAtPercentileSlice) Resize(from, to int) {
 // Must use NewSummaryValueAtPercentile function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type SummaryValueAtPercentile struct {
-	// Wrap OTLP otlpmetrics.SummaryDataPoint_ValueAtPercentile.
+	// orig points to the pointer otlpmetrics.SummaryDataPoint_ValueAtPercentile field contained somewhere else.
+    // We use pointer-to-pointer to be able to modify it in InitEmpty func.
 	orig **otlpmetrics.SummaryDataPoint_ValueAtPercentile
 }
 

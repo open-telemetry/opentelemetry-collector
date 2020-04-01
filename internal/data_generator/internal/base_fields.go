@@ -41,6 +41,8 @@ const accessorsSliceTestTemplate = `	assert.EqualValues(t, New${returnType}(${co
 const accessorsMessageTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
 // If no ${lowerFieldName} available, it creates an empty message and associates it with this ${structName}.
 //
+//  Empty initialized ${structName} will return "nil" ${returnType}.
+//
 // Important: This causes a runtime error if IsNil() returns "true".
 func (ms ${structName}) ${fieldName}() ${returnType} {
 	return new${returnType}(&(*ms.orig).${originFieldName})

@@ -29,7 +29,8 @@ import (
 // Must use NewResource function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Resource struct {
-	// Wrap OTLP otlpresource.Resource.
+	// orig points to the pointer otlpresource.Resource field contained somewhere else.
+    // We use pointer-to-pointer to be able to modify it in InitEmpty func.
 	orig **otlpresource.Resource
 }
 

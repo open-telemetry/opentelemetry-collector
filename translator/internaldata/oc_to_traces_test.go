@@ -34,12 +34,12 @@ import (
 
 func TestOcNodeResourceToInternal(t *testing.T) {
 	resource := data.NewResource()
-	ocNodeResourceToInternal(resource, nil, nil)
+	ocNodeResourceToInternal(nil, nil, resource)
 	assert.EqualValues(t, true, resource.IsNil())
 
 	ocNode := &occommon.Node{}
 	ocResource := &ocresource.Resource{}
-	ocNodeResourceToInternal(resource, ocNode, ocResource)
+	ocNodeResourceToInternal(ocNode, ocResource, resource)
 	assert.EqualValues(t, true, resource.IsNil())
 
 	ts, err := ptypes.TimestampProto(time.Date(2020, 2, 11, 20, 26, 0, 0, time.UTC))
@@ -82,7 +82,7 @@ func TestOcNodeResourceToInternal(t *testing.T) {
 		"resource-attr":                         data.NewAttributeValueString("val2"),
 	})
 
-	ocNodeResourceToInternal(resource, ocNode, ocResource)
+	ocNodeResourceToInternal(ocNode, ocResource, resource)
 	assert.EqualValues(t, expectedAttrs.Sort(), resource.Attributes().Sort())
 
 	// Make sure hard-coded fields override same-name values in Attributes.
@@ -98,7 +98,7 @@ func TestOcNodeResourceToInternal(t *testing.T) {
 
 	// Convert again.
 	resource = data.NewResource()
-	ocNodeResourceToInternal(resource, ocNode, ocResource)
+	ocNodeResourceToInternal(ocNode, ocResource, resource)
 	// And verify that same-name attributes were ignored.
 	assert.EqualValues(t, expectedAttrs.Sort(), resource.Attributes().Sort())
 }
