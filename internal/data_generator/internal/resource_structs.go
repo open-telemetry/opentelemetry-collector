@@ -22,7 +22,6 @@ var resourceFile = &File{
 	testImports: []string{
 		`"testing"`,
 		``,
-		`otlpresource "github.com/open-telemetry/opentelemetry-proto/gen/go/resource/v1"`,
 		`"github.com/stretchr/testify/assert"`,
 	},
 	structs: []baseStruct{

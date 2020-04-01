@@ -39,7 +39,7 @@ func OCToTraceData(td consumerdata.TraceData) data.TraceData {
 	if len(td.Spans) == 0 {
 		// At least one of the td.Node or td.Resource is not nil. Set the resource and return.
 		traceData.SetResourceSpans(data.NewResourceSpansSlice(1))
-		ocNodeResourceToInternal(td.Node, td.Resource, traceData.ResourceSpans().Get(0))
+		ocNodeResourceToInternal(traceData.ResourceSpans().Get(0).Resource(), td.Node, td.Resource)
 		return traceData
 	}
 
@@ -80,7 +80,7 @@ func OCToTraceData(td consumerdata.TraceData) data.TraceData {
 	// 1 (for all spans with nil resource) + numSpansWithResource (distinctResourceCount).
 	traceData.SetResourceSpans(data.NewResourceSpansSlice(distinctResourceCount + 1))
 	rs0 := traceData.ResourceSpans().Get(0)
-	ocNodeResourceToInternal(td.Node, td.Resource, rs0)
+	ocNodeResourceToInternal(rs0.Resource(), td.Node, td.Resource)
 
 	// Allocate a slice for spans that need to be combined into first ResourceSpans.
 	rs0.SetInstrumentationLibrarySpans(data.NewInstrumentationLibrarySpansSlice(1))
@@ -119,7 +119,7 @@ func OCToTraceData(td consumerdata.TraceData) data.TraceData {
 }
 
 func ocSpanToResourceSpans(ocSpan *octrace.Span, node *occommon.Node, out data.ResourceSpans) {
-	ocNodeResourceToInternal(node, ocSpan.Resource, out)
+	ocNodeResourceToInternal(out.Resource(), node, ocSpan.Resource)
 	out.SetInstrumentationLibrarySpans(data.NewInstrumentationLibrarySpansSlice(1))
 	ils0 := out.InstrumentationLibrarySpans().Get(0)
 	ils0.SetSpans(data.NewSpanSlice(1))
@@ -150,16 +150,16 @@ func ocSpanToInternal(dest data.Span, src *octrace.Span) {
 	dest.SetDroppedEventsCount(droppedEventCount)
 	dest.SetLinks(links)
 	dest.SetDroppedLinksCount(droppedLinkCount)
-	ocStatusToInternal(src.Status, dest)
+	ocStatusToInternal(dest.Status(), src.Status)
 }
 
-func ocStatusToInternal(ocStatus *octrace.Status, out data.Span) {
+func ocStatusToInternal(dest data.SpanStatus, ocStatus *octrace.Status) {
 	if ocStatus == nil {
 		return
 	}
-	out.InitStatusIfNil()
-	out.Status().SetCode(data.StatusCode(ocStatus.Code))
-	out.Status().SetMessage(ocStatus.Message)
+	dest.InitEmpty()
+	dest.SetCode(data.StatusCode(ocStatus.Code))
+	dest.SetMessage(ocStatus.Message)
 }
 
 // Convert tracestate to W3C format. See the https://w3c.github.io/trace-context/
@@ -356,7 +356,7 @@ func ocMessageEventToInternalAttrs(msgEvent *octrace.Span_TimeEvent_MessageEvent
 	}), 0
 }
 
-func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Resource, out data.ResourceSpans) {
+func ocNodeResourceToInternal(dest data.Resource, ocNode *occommon.Node, ocResource *ocresource.Resource) {
 	// Number of special fields in the Node. See the code below that deals with special fields.
 	const specialNodeAttrCount = 7
 
@@ -430,9 +430,9 @@ func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Reso
 	}
 
 	if len(attrs) != 0 {
-		out.InitResourceIfNil()
+		dest.InitEmpty()
 		// TODO: Re-evaluate if we want to construct a map first, or we can construct directly
 		// a slice of AttributeKeyValue.
-		out.Resource().SetAttributes(data.NewAttributeMap(attrs))
+		dest.SetAttributes(data.NewAttributeMap(attrs))
 	}
 }

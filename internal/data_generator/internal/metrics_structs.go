@@ -17,9 +17,7 @@ package internal
 var metricsFile = &File{
 	Name: "metrics",
 	imports: []string{
-		`otlpcommon "github.com/open-telemetry/opentelemetry-proto/gen/go/common/v1"`,
 		`otlpmetrics "github.com/open-telemetry/opentelemetry-proto/gen/go/metrics/v1"`,
-		`otlpresource "github.com/open-telemetry/opentelemetry-proto/gen/go/resource/v1"`,
 	},
 	testImports: []string{
 		`"testing"`,

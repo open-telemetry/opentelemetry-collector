@@ -36,7 +36,6 @@ func TestResourceToOC(t *testing.T) {
 		"int2": "123",
 	}
 
-	resource := data.NewEmptyResource()
 	attrs := data.AttributesMap{
 		conventions.OCAttributeProcessStartTime: data.NewAttributeValueString("2020-02-11T20:26:00Z"),
 		conventions.AttributeHostHostname:       data.NewAttributeValueString("host1"),
@@ -48,7 +47,12 @@ func TestResourceToOC(t *testing.T) {
 		"str1":                                  data.NewAttributeValueString("text"),
 		"int2":                                  data.NewAttributeValueInt(123),
 	}
+	resource := data.NewResource()
+	resource.InitEmpty()
 	resource.SetAttributes(data.NewAttributeMap(attrs))
+
+	emptyResource := data.NewResource()
+	emptyResource.InitEmpty()
 
 	tests := []struct {
 		name       string
@@ -57,8 +61,15 @@ func TestResourceToOC(t *testing.T) {
 		ocResource *ocresource.Resource
 	}{
 		{
+			name:       "nil",
+			resource:   data.NewResource(),
+			ocNode:     nil,
+			ocResource: nil,
+		},
+
+		{
 			name:       "empty",
-			resource:   data.NewEmptyResource(),
+			resource:   emptyResource,
 			ocNode:     &occommon.Node{},
 			ocResource: &ocresource.Resource{},
 		},
