@@ -242,11 +242,10 @@ var histogramBucketExemplar = &messageStruct{
 	fields: []baseField{
 		timeField,
 		valueFloat64Field,
-		&mapField{
-			fieldMame:               "Attachments",
-			originFieldName:         "Attachments",
-			returnSlice:             stringMap,
-			constructorDefaultValue: "nil",
+		&sliceField{
+			fieldMame:       "Attachments",
+			originFieldName: "Attachments",
+			returnSlice:     stringMap,
 		},
 	},
 }
@@ -289,11 +288,10 @@ var summaryValueAtPercentile = &messageStruct{
 	},
 }
 
-var labelsField = &mapField{
-	fieldMame:               "LabelsMap",
-	originFieldName:         "Labels",
-	returnSlice:             stringMap,
-	constructorDefaultValue: "nil",
+var labelsField = &sliceField{
+	fieldMame:       "LabelsMap",
+	originFieldName: "Labels",
+	returnSlice:     stringMap,
 }
 
 var countField = &primitiveField{

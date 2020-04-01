@@ -28,8 +28,8 @@ var (
 	spanAttributes      = map[string]data.AttributeValue{"span-attr": data.NewAttributeValueString("span-attr-val")}
 )
 
-func generateResourceAttributes1() data.AttributeMap {
-	return data.NewAttributeMap(resourceAttributes1)
+func initResourceAttributes1(dest data.AttributeMap) {
+	dest.InitFromMap(resourceAttributes1)
 }
 
 func generateOtlpResourceAttributes1() []*otlpcommon.AttributeKeyValue {
@@ -41,8 +41,8 @@ func generateOtlpResourceAttributes1() []*otlpcommon.AttributeKeyValue {
 	}
 }
 
-func generateResourceAttributes2() data.AttributeMap {
-	return data.NewAttributeMap(resourceAttributes2)
+func initResourceAttributes2(dest data.AttributeMap) {
+	dest.InitFromMap(resourceAttributes2)
 }
 
 func generateOtlpResourceAttributes2() []*otlpcommon.AttributeKeyValue {
@@ -54,8 +54,8 @@ func generateOtlpResourceAttributes2() []*otlpcommon.AttributeKeyValue {
 	}
 }
 
-func generateSpanAttributes() data.AttributeMap {
-	return data.NewAttributeMap(spanAttributes)
+func initSpanAttributes(dest data.AttributeMap) {
+	dest.InitFromMap(spanAttributes)
 }
 
 func generateOtlpSpanAttributes() []*otlpcommon.AttributeKeyValue {
@@ -67,8 +67,8 @@ func generateOtlpSpanAttributes() []*otlpcommon.AttributeKeyValue {
 	}
 }
 
-func generateSpanEventAttributes() data.AttributeMap {
-	return data.NewAttributeMap(spanEventAttributes)
+func initSpanEventAttributes(dest data.AttributeMap) {
+	dest.InitFromMap(spanEventAttributes)
 }
 
 func generateOtlpSpanEventAttributes() []*otlpcommon.AttributeKeyValue {
@@ -80,8 +80,8 @@ func generateOtlpSpanEventAttributes() []*otlpcommon.AttributeKeyValue {
 	}
 }
 
-func generateSpanLinkAttributes() data.AttributeMap {
-	return data.NewAttributeMap(spanLinkAttributes)
+func initSpanLinkAttributes(dest data.AttributeMap) {
+	dest.InitFromMap(spanLinkAttributes)
 }
 
 func generateOtlpSpanLinkAttributes() []*otlpcommon.AttributeKeyValue {

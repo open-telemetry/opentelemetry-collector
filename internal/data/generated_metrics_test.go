@@ -293,9 +293,9 @@ func TestMetricDescriptor(t *testing.T) {
 	ms.SetType(testValType)
 	assert.EqualValues(t, testValType, ms.Type())
 
-	assert.EqualValues(t, NewStringMap(nil), ms.LabelsMap())
+	assert.EqualValues(t, NewStringMap(), ms.LabelsMap())
+	fillTestStringMap(ms.LabelsMap())
 	testValLabelsMap := generateTestStringMap()
-	ms.SetLabelsMap(testValLabelsMap)
 	assert.EqualValues(t, testValLabelsMap, ms.LabelsMap())
 
 	assert.EqualValues(t, generateTestMetricDescriptor(), ms)
@@ -363,9 +363,9 @@ func TestInt64DataPoint(t *testing.T) {
 	ms.InitEmpty()
 	assert.EqualValues(t, false, ms.IsNil())
 
-	assert.EqualValues(t, NewStringMap(nil), ms.LabelsMap())
+	assert.EqualValues(t, NewStringMap(), ms.LabelsMap())
+	fillTestStringMap(ms.LabelsMap())
 	testValLabelsMap := generateTestStringMap()
-	ms.SetLabelsMap(testValLabelsMap)
 	assert.EqualValues(t, testValLabelsMap, ms.LabelsMap())
 
 	assert.EqualValues(t, TimestampUnixNano(0), ms.StartTime())
@@ -448,9 +448,9 @@ func TestDoubleDataPoint(t *testing.T) {
 	ms.InitEmpty()
 	assert.EqualValues(t, false, ms.IsNil())
 
-	assert.EqualValues(t, NewStringMap(nil), ms.LabelsMap())
+	assert.EqualValues(t, NewStringMap(), ms.LabelsMap())
+	fillTestStringMap(ms.LabelsMap())
 	testValLabelsMap := generateTestStringMap()
-	ms.SetLabelsMap(testValLabelsMap)
 	assert.EqualValues(t, testValLabelsMap, ms.LabelsMap())
 
 	assert.EqualValues(t, TimestampUnixNano(0), ms.StartTime())
@@ -533,9 +533,9 @@ func TestHistogramDataPoint(t *testing.T) {
 	ms.InitEmpty()
 	assert.EqualValues(t, false, ms.IsNil())
 
-	assert.EqualValues(t, NewStringMap(nil), ms.LabelsMap())
+	assert.EqualValues(t, NewStringMap(), ms.LabelsMap())
+	fillTestStringMap(ms.LabelsMap())
 	testValLabelsMap := generateTestStringMap()
-	ms.SetLabelsMap(testValLabelsMap)
 	assert.EqualValues(t, testValLabelsMap, ms.LabelsMap())
 
 	assert.EqualValues(t, TimestampUnixNano(0), ms.StartTime())
@@ -663,9 +663,9 @@ func TestHistogramBucketExemplar(t *testing.T) {
 	ms.SetValue(testValValue)
 	assert.EqualValues(t, testValValue, ms.Value())
 
-	assert.EqualValues(t, NewStringMap(nil), ms.Attachments())
+	assert.EqualValues(t, NewStringMap(), ms.Attachments())
+	fillTestStringMap(ms.Attachments())
 	testValAttachments := generateTestStringMap()
-	ms.SetAttachments(testValAttachments)
 	assert.EqualValues(t, testValAttachments, ms.Attachments())
 
 	assert.EqualValues(t, generateTestHistogramBucketExemplar(), ms)
@@ -733,9 +733,9 @@ func TestSummaryDataPoint(t *testing.T) {
 	ms.InitEmpty()
 	assert.EqualValues(t, false, ms.IsNil())
 
-	assert.EqualValues(t, NewStringMap(nil), ms.LabelsMap())
+	assert.EqualValues(t, NewStringMap(), ms.LabelsMap())
+	fillTestStringMap(ms.LabelsMap())
 	testValLabelsMap := generateTestStringMap()
-	ms.SetLabelsMap(testValLabelsMap)
 	assert.EqualValues(t, testValLabelsMap, ms.LabelsMap())
 
 	assert.EqualValues(t, TimestampUnixNano(0), ms.StartTime())
@@ -934,7 +934,7 @@ func fillTestMetricDescriptor(tv MetricDescriptor) {
 	tv.SetDescription("test_description")
 	tv.SetUnit("1")
 	tv.SetType(MetricTypeGaugeInt64)
-	tv.SetLabelsMap(generateTestStringMap())
+	fillTestStringMap(tv.LabelsMap())
 }
 
 func generateTestInt64DataPointSlice() Int64DataPointSlice {
@@ -958,7 +958,7 @@ func generateTestInt64DataPoint() Int64DataPoint {
 }
 
 func fillTestInt64DataPoint(tv Int64DataPoint) {
-	tv.SetLabelsMap(generateTestStringMap())
+	fillTestStringMap(tv.LabelsMap())
 	tv.SetStartTime(TimestampUnixNano(1234567890))
 	tv.SetTimestamp(TimestampUnixNano(1234567890))
 	tv.SetValue(int64(-17))
@@ -985,7 +985,7 @@ func generateTestDoubleDataPoint() DoubleDataPoint {
 }
 
 func fillTestDoubleDataPoint(tv DoubleDataPoint) {
-	tv.SetLabelsMap(generateTestStringMap())
+	fillTestStringMap(tv.LabelsMap())
 	tv.SetStartTime(TimestampUnixNano(1234567890))
 	tv.SetTimestamp(TimestampUnixNano(1234567890))
 	tv.SetValue(float64(17.13))
@@ -1012,7 +1012,7 @@ func generateTestHistogramDataPoint() HistogramDataPoint {
 }
 
 func fillTestHistogramDataPoint(tv HistogramDataPoint) {
-	tv.SetLabelsMap(generateTestStringMap())
+	fillTestStringMap(tv.LabelsMap())
 	tv.SetStartTime(TimestampUnixNano(1234567890))
 	tv.SetTimestamp(TimestampUnixNano(1234567890))
 	tv.SetCount(uint64(17))
@@ -1057,7 +1057,7 @@ func generateTestHistogramBucketExemplar() HistogramBucketExemplar {
 func fillTestHistogramBucketExemplar(tv HistogramBucketExemplar) {
 	tv.SetTimestamp(TimestampUnixNano(1234567890))
 	tv.SetValue(float64(17.13))
-	tv.SetAttachments(generateTestStringMap())
+	fillTestStringMap(tv.Attachments())
 }
 
 func generateTestSummaryDataPointSlice() SummaryDataPointSlice {
@@ -1081,7 +1081,7 @@ func generateTestSummaryDataPoint() SummaryDataPoint {
 }
 
 func fillTestSummaryDataPoint(tv SummaryDataPoint) {
-	tv.SetLabelsMap(generateTestStringMap())
+	fillTestStringMap(tv.LabelsMap())
 	tv.SetStartTime(TimestampUnixNano(1234567890))
 	tv.SetTimestamp(TimestampUnixNano(1234567890))
 	tv.SetCount(uint64(17))

@@ -96,11 +96,10 @@ var endTimeField = &primitiveTypedField{
 	testVal:         "TimestampUnixNano(1234567890)",
 }
 
-var attributes = &mapField{
-	fieldMame:               "Attributes",
-	originFieldName:         "Attributes",
-	returnSlice:             attributeMap,
-	constructorDefaultValue: "nil",
+var attributes = &sliceField{
+	fieldMame:       "Attributes",
+	originFieldName: "Attributes",
+	returnSlice:     attributeMap,
 }
 
 var nameField = &primitiveField{

@@ -508,13 +508,6 @@ func (ms Span) Attributes() AttributeMap {
 	return newAttributeMap(&(*ms.orig).Attributes)
 }
 
-// SetAttributes replaces the Attributes associated with this Span.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
-func (ms Span) SetAttributes(v AttributeMap) {
-	(*ms.orig).Attributes = *v.orig
-}
-
 // DroppedAttributesCount returns the droppedattributescount associated with this Span.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
@@ -728,13 +721,6 @@ func (ms SpanEvent) Attributes() AttributeMap {
 	return newAttributeMap(&(*ms.orig).Attributes)
 }
 
-// SetAttributes replaces the Attributes associated with this SpanEvent.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
-func (ms SpanEvent) SetAttributes(v AttributeMap) {
-	(*ms.orig).Attributes = *v.orig
-}
-
 // DroppedAttributesCount returns the droppedattributescount associated with this SpanEvent.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
@@ -908,13 +894,6 @@ func (ms SpanLink) SetTraceState(v TraceState) {
 // Important: This causes a runtime error if IsNil() returns "true".
 func (ms SpanLink) Attributes() AttributeMap {
 	return newAttributeMap(&(*ms.orig).Attributes)
-}
-
-// SetAttributes replaces the Attributes associated with this SpanLink.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
-func (ms SpanLink) SetAttributes(v AttributeMap) {
-	(*ms.orig).Attributes = *v.orig
 }
 
 // DroppedAttributesCount returns the droppedattributescount associated with this SpanLink.

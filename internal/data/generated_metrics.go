@@ -527,13 +527,6 @@ func (ms MetricDescriptor) LabelsMap() StringMap {
 	return newStringMap(&(*ms.orig).Labels)
 }
 
-// SetLabelsMap replaces the Labels associated with this MetricDescriptor.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
-func (ms MetricDescriptor) SetLabelsMap(v StringMap) {
-	(*ms.orig).Labels = *v.orig
-}
-
 // Int64DataPointSlice logically represents a slice of Int64DataPoint.
 //
 // This is a reference type, if passsed by value and callee modifies it the
@@ -650,13 +643,6 @@ func (ms Int64DataPoint) IsNil() bool {
 // Important: This causes a runtime error if IsNil() returns "true".
 func (ms Int64DataPoint) LabelsMap() StringMap {
 	return newStringMap(&(*ms.orig).Labels)
-}
-
-// SetLabelsMap replaces the Labels associated with this Int64DataPoint.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
-func (ms Int64DataPoint) SetLabelsMap(v StringMap) {
-	(*ms.orig).Labels = *v.orig
 }
 
 // StartTime returns the starttime associated with this Int64DataPoint.
@@ -819,13 +805,6 @@ func (ms DoubleDataPoint) LabelsMap() StringMap {
 	return newStringMap(&(*ms.orig).Labels)
 }
 
-// SetLabelsMap replaces the Labels associated with this DoubleDataPoint.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
-func (ms DoubleDataPoint) SetLabelsMap(v StringMap) {
-	(*ms.orig).Labels = *v.orig
-}
-
 // StartTime returns the starttime associated with this DoubleDataPoint.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
@@ -984,13 +963,6 @@ func (ms HistogramDataPoint) IsNil() bool {
 // Important: This causes a runtime error if IsNil() returns "true".
 func (ms HistogramDataPoint) LabelsMap() StringMap {
 	return newStringMap(&(*ms.orig).Labels)
-}
-
-// SetLabelsMap replaces the Labels associated with this HistogramDataPoint.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
-func (ms HistogramDataPoint) SetLabelsMap(v StringMap) {
-	(*ms.orig).Labels = *v.orig
 }
 
 // StartTime returns the starttime associated with this HistogramDataPoint.
@@ -1279,13 +1251,6 @@ func (ms HistogramBucketExemplar) Attachments() StringMap {
 	return newStringMap(&(*ms.orig).Attachments)
 }
 
-// SetAttachments replaces the Attachments associated with this HistogramBucketExemplar.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
-func (ms HistogramBucketExemplar) SetAttachments(v StringMap) {
-	(*ms.orig).Attachments = *v.orig
-}
-
 // SummaryDataPointSlice logically represents a slice of SummaryDataPoint.
 //
 // This is a reference type, if passsed by value and callee modifies it the
@@ -1402,13 +1367,6 @@ func (ms SummaryDataPoint) IsNil() bool {
 // Important: This causes a runtime error if IsNil() returns "true".
 func (ms SummaryDataPoint) LabelsMap() StringMap {
 	return newStringMap(&(*ms.orig).Labels)
-}
-
-// SetLabelsMap replaces the Labels associated with this SummaryDataPoint.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
-func (ms SummaryDataPoint) SetLabelsMap(v StringMap) {
-	(*ms.orig).Labels = *v.orig
 }
 
 // StartTime returns the starttime associated with this SummaryDataPoint.

@@ -22,7 +22,7 @@ import (
 
 func initResource1(r data.Resource) {
 	r.InitEmpty()
-	r.SetAttributes(generateResourceAttributes1())
+	initResourceAttributes1(r.Attributes())
 }
 
 func generateOtlpResource1() *otlpresource.Resource {
@@ -33,7 +33,7 @@ func generateOtlpResource1() *otlpresource.Resource {
 
 func initResource2(r data.Resource) {
 	r.InitEmpty()
-	r.SetAttributes(generateResourceAttributes2())
+	initResourceAttributes2(r.Attributes())
 }
 
 func generateOtlpResource2() *otlpresource.Resource {
