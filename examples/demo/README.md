@@ -14,7 +14,7 @@ OpenTelemetry Collectors deployed:
  Jaeger, Zipkin, and Prometheus;
 
 This demo uses `docker-compose` and by default runs against the 
-`omnition/opentelemetry-collector-contrib:latest` image. To run the demo, switch
+`otel/opentelemetry-collector-dev:latest` image. To run the demo, switch
 to the `examples/demo` folder and run:
 
 ```shell
