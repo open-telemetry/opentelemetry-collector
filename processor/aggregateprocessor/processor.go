@@ -49,10 +49,10 @@ type aggregatingProcessor struct {
 	nextConsumer consumer.TraceConsumerOld
 	// logger
 	logger *zap.Logger
-	// peerDiscoveryName
-	peerDiscoveryName string
 	// self member IP
 	selfIP string
+	// ringMemberQuerier instance
+	ring ringMemberQuerier
 	// ticker to call ring.GetState() and sync member list
 	memberSyncTicker tTicker
 	// exporters for each of the collector peers
@@ -60,6 +60,41 @@ type aggregatingProcessor struct {
 }
 
 var _ component.TraceProcessorOld = (*aggregatingProcessor)(nil)
+
+type ringMemberQuerier interface {
+	getMembers() []string
+}
+
+type dnsClient struct {
+	// logger
+	logger *zap.Logger
+	// peerDiscoveryName
+	peerDiscoveryName string
+}
+
+func newRingMemberQuerier(logger *zap.Logger, peerDiscoveryName string) {
+	return &dnsClient{
+		logger:            logger,
+		peerDiscoveryName: peerDiscoveryName,
+	}
+}
+
+func (d *dnsClient) getMembers() []string {
+	d.logger.Debug("Pooling a dns endpoint")
+	// poll a dns endpoint
+	ips, err := net.LookupIP(d.peerDiscoveryName)
+	if err != nil {
+		d.logger.Info("DNS lookup error", zap.Error(err))
+		return
+	}
+	var newMembers []string
+	for _, v := range ips {
+		newMembers = append(newMembers, v.String())
+	}
+	return newMembers
+}
+
+var _ ringMemberQuerier = (*DNSClient)(nil)
 
 func newTraceProcessor(logger *zap.Logger, nextConsumer consumer.TraceConsumerOld, cfg *Config) (component.TraceProcessorOld, error) {
 	if nextConsumer == nil {
@@ -71,11 +106,12 @@ func newTraceProcessor(logger *zap.Logger, nextConsumer consumer.TraceConsumerOl
 	}
 
 	ap := &aggregatingProcessor{
-		nextConsumer:      nextConsumer,
-		logger:            logger,
-		peerDiscoveryName: cfg.PeerDiscoveryDNSName,
-		collectorPeers:    make(map[string]component.TraceExporterOld),
+		nextConsumer:   nextConsumer,
+		logger:         logger,
+		collectorPeers: make(map[string]component.TraceExporterOld),
 	}
+
+	ap.ring = newRingMemberQuerier(logger, peerDiscoveryName)
 
 	if ip, err := externalIP(); err == nil {
 		ap.selfIP = ip
@@ -111,19 +147,9 @@ func newTraceExporter(logger *zap.Logger, ip string) component.TraceExporterOld 
 
 // At the set frequency, get the state of the collector peer list
 func (ap *aggregatingProcessor) memberSyncOnTick() {
-	ap.logger.Debug("Pooling a dns endpoint")
-	// poll a dns endpoint
-	ips, err := net.LookupIP(ap.peerDiscoveryName)
-	if err != nil {
-		ap.logger.Info("DNS lookup error", zap.Error(err))
-		return
-	}
-	// check if this list has diverged from the current list
-	var newMembers []string
-	for _, v := range ips {
-		newMembers = append(newMembers, v.String())
-	}
+	newMembers := ap.ring.getMembers()
 
+	// check if member list has changed
 	ap.lock.RLock()
 	curMembers := make([]string, 0, len(ap.collectorPeers))
 	for k := range ap.collectorPeers {
