@@ -75,13 +75,13 @@ func TestNewTraceProcessor(t *testing.T) {
 				// The truncation below with uint32 cannot be defined at initialization (compiler error), performing it at runtime.
 				tt.want.(*tracesamplerprocessor).scaledSamplingRate = uint32(tt.cfg.SamplingPercentage * percentageScaleFactor)
 			}
-			got, err := NewTraceProcessor(tt.nextConsumer, tt.cfg)
+			got, err := newTraceProcessor(tt.nextConsumer, tt.cfg)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("NewTraceProcessor() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("newTraceProcessor() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewTraceProcessor() = %v, want %v", got, tt.want)
+				t.Errorf("newTraceProcessor() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -147,7 +147,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := &exportertest.SinkTraceExporterOld{}
-			tsp, err := NewTraceProcessor(sink, tt.cfg)
+			tsp, err := newTraceProcessor(sink, tt.cfg)
 			if err != nil {
 				t.Errorf("error when creating tracesamplerprocessor: %v", err)
 				return
@@ -275,7 +275,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := &exportertest.SinkTraceExporterOld{}
-			tsp, err := NewTraceProcessor(sink, tt.cfg)
+			tsp, err := newTraceProcessor(sink, tt.cfg)
 			require.NoError(t, err)
 
 			err = tsp.ConsumeTraceData(context.Background(), tt.td)

@@ -54,26 +54,16 @@ type queueItem struct {
 	ctx        context.Context
 }
 
-// NewQueuedSpanProcessor returns a span processor that maintains a bounded
-// in-memory queue of span batches, and sends out span batches using the
-// provided sender
-func NewQueuedSpanProcessor(sender consumer.TraceConsumerOld, opts ...Option) component.TraceProcessorOld {
-	opt := Options.apply(opts...)
-	sp := newQueuedSpanProcessor(sender, opt)
-
-	return sp
-}
-
-func newQueuedSpanProcessor(sender consumer.TraceConsumerOld, opts options) *queuedSpanProcessor {
-	boundedQueue := queue.NewBoundedQueue(opts.queueSize, func(item interface{}) {})
+func newQueuedSpanProcessor(logger *zap.Logger, sender consumer.TraceConsumerOld, cfg *Config) *queuedSpanProcessor {
+	boundedQueue := queue.NewBoundedQueue(cfg.QueueSize, func(item interface{}) {})
 	return &queuedSpanProcessor{
-		name:                     opts.name,
+		name:                     cfg.Name(),
 		queue:                    boundedQueue,
-		logger:                   opts.logger,
-		numWorkers:               opts.numWorkers,
+		logger:                   logger,
+		numWorkers:               cfg.NumWorkers,
 		sender:                   sender,
-		retryOnProcessingFailure: opts.retryOnProcessingFailure,
-		backoffDelay:             opts.backoffDelay,
+		retryOnProcessingFailure: cfg.RetryOnFailure,
+		backoffDelay:             cfg.BackoffDelay,
 		stopCh:                   make(chan struct{}),
 	}
 }

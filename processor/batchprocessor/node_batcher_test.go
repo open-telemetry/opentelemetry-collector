@@ -37,7 +37,7 @@ type bucketIDTestInput struct {
 
 func BenchmarkGenBucketID(b *testing.B) {
 	sender := newTestSender()
-	batcher := NewBatcher("test", zap.NewNop(), sender).(*batcher)
+	batcher := newBatchProcessor(zap.NewNop(), sender, generateDefaultConfig())
 	gens := map[string]func(*commonpb.Node, *resourcepb.Resource, string) string{
 		"composite-md5": batcher.genBucketID,
 	}
@@ -125,7 +125,7 @@ func TestGenBucketID(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			sender := newTestSender()
-			batcher := NewBatcher("test", zap.NewNop(), sender).(*batcher)
+			batcher := newBatchProcessor(zap.NewNop(), sender, generateDefaultConfig())
 
 			key1 := batcher.genBucketID(tc.input1.node, tc.input1.resource, tc.input1.format)
 			key2 := batcher.genBucketID(tc.input2.node, tc.input2.resource, tc.input2.format)
@@ -139,7 +139,7 @@ func TestGenBucketID(t *testing.T) {
 
 func TestConcurrentNodeAdds(t *testing.T) {
 	sender := newTestSender()
-	batcher := NewBatcher("test", zap.NewNop(), sender).(*batcher)
+	batcher := newBatchProcessor(zap.NewNop(), sender, generateDefaultConfig())
 	requestCount := 1000
 	spansPerRequest := 100
 	waitForCn := sender.waitFor(requestCount*spansPerRequest, 3*time.Second)
@@ -186,16 +186,12 @@ func TestConcurrentNodeAdds(t *testing.T) {
 
 func TestBucketRemove(t *testing.T) {
 	sender := newTestSender()
-	tickTime := 50 * time.Millisecond
-	removeAfterTicks := 2
-	batcher := NewBatcher(
-		"test",
-		zap.NewNop(),
-		sender,
-		WithTimeout(50*time.Millisecond),
-		WithTickTime(tickTime),
-		WithRemoveAfterTicks(removeAfterTicks),
-	).(*batcher)
+	cfg := generateDefaultConfig()
+	cfg.Timeout = 50 * time.Millisecond
+	cfg.TickTime = 50 * time.Millisecond
+	cfg.RemoveAfterTicks = 2
+	batcher := newBatchProcessor(zap.NewNop(), sender, cfg)
+
 	spansPerRequest := 3
 	waitForCn := sender.waitFor(spansPerRequest, 1*time.Second)
 	spans := make([]*tracepb.Span, 0, spansPerRequest)
@@ -221,7 +217,7 @@ func TestBucketRemove(t *testing.T) {
 	}
 
 	// Doesn't seem to be a great way to test this without waiting
-	<-time.After(2 * time.Duration(removeAfterTicks) * tickTime)
+	<-time.After(2 * time.Duration(cfg.RemoveAfterTicks) * cfg.TickTime)
 
 	if batcher.getBucket(batcher.genBucketID(request.Node, nil, "oc_trace")) != nil {
 		t.Errorf("Bucket should be deleted but is not.")
@@ -230,25 +226,20 @@ func TestBucketRemove(t *testing.T) {
 
 func TestBucketTickerStop(t *testing.T) {
 	sender := newTestSender()
-	tickTime := 50 * time.Millisecond
-	removeAfterTicks := 2
-	batcher := NewBatcher(
-		"test",
-		zap.NewNop(),
-		sender,
-		WithTimeout(50*time.Millisecond),
-		WithTickTime(tickTime),
-		WithRemoveAfterTicks(removeAfterTicks),
-	).(*batcher)
+	cfg := generateDefaultConfig()
+	cfg.Timeout = 50 * time.Millisecond
+	cfg.TickTime = 50 * time.Millisecond
+	cfg.RemoveAfterTicks = 2
+	batcher := newBatchProcessor(zap.NewNop(), sender, cfg)
 
 	// Stop all the tickers which should prevent the node batches from getting removed and the spans from timing
 	// out
 	for _, ticker := range batcher.tickers {
-		ticker.stop()
+		close(ticker.stopCn)
 	}
 
 	spansPerRequest := 3
-	waitForCn := sender.waitFor(spansPerRequest, 3*time.Duration(removeAfterTicks)*tickTime)
+	waitForCn := sender.waitFor(spansPerRequest, 3*time.Duration(cfg.RemoveAfterTicks)*cfg.TickTime)
 	spans := make([]*tracepb.Span, 0, spansPerRequest)
 	for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
 		spans = append(spans, &tracepb.Span{Name: getTestSpanName(0, spanIndex)})
@@ -274,7 +265,9 @@ func TestBucketTickerStop(t *testing.T) {
 
 func TestConcurrentBatchAdds(t *testing.T) {
 	sender := newTestSender()
-	batcher := NewBatcher("test", zap.NewNop(), sender, WithSendBatchSize(128)).(*batcher)
+	cfg := generateDefaultConfig()
+	cfg.SendBatchSize = 128
+	batcher := newBatchProcessor(zap.NewNop(), sender, cfg)
 	requestCount := 1000
 	spansPerRequest := 100
 	waitForCn := sender.waitFor(requestCount*spansPerRequest, 5*time.Second)
@@ -313,8 +306,7 @@ func TestConcurrentBatchAdds(t *testing.T) {
 }
 
 func BenchmarkConcurrentBatchAdds(b *testing.B) {
-	sender1 := newNopSender()
-	batcher := NewBatcher("test", zap.NewNop(), sender1).(*batcher)
+	batcher := newBatchProcessor(zap.NewNop(), newNopSender(), generateDefaultConfig())
 	spansPerRequest := 1000
 	var requests []consumerdata.TraceData
 	spans := make([]*tracepb.Span, 0, spansPerRequest)
@@ -351,7 +343,7 @@ func newNopSender() *nopSender {
 	return &nopSender{}
 }
 
-func (ts *nopSender) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
+func (ts *nopSender) ConsumeTraceData(_ context.Context, _ consumerdata.TraceData) error {
 	return nil
 }
 
@@ -370,7 +362,7 @@ func newTestSender() *testSender {
 	}
 }
 
-func (ts *testSender) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
+func (ts *testSender) ConsumeTraceData(_ context.Context, td consumerdata.TraceData) error {
 	ts.reqChan <- td
 	return nil
 }
