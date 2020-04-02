@@ -54,7 +54,7 @@ func (f *Factory) CreateTraceProcessor(
 	cfg configmodels.Processor,
 ) (component.TraceProcessorOld, error) {
 	oCfg := cfg.(*Config)
-	return NewTraceProcessor(nextConsumer, *oCfg)
+	return newTraceProcessor(nextConsumer, *oCfg)
 }
 
 // CreateMetricsProcessor creates a metrics processor based on this config.

@@ -30,11 +30,10 @@ import (
 
 func TestNew(t *testing.T) {
 	type args struct {
-		nextConsumer  consumer.TraceConsumerOld
-		checkInterval time.Duration
-		memAllocLimit uint64
-		memSpikeLimit uint64
-		ballastSize   uint64
+		nextConsumer        consumer.TraceConsumerOld
+		checkInterval       time.Duration
+		memoryLimitMiB      uint32
+		memorySpikeLimitMiB uint32
 	}
 	sink := new(exportertest.SinkTraceExporterOld)
 	tests := []struct {
@@ -64,35 +63,31 @@ func TestNew(t *testing.T) {
 		{
 			name: "memSpikeLimit_gt_memAllocLimit",
 			args: args{
-				nextConsumer:  sink,
-				checkInterval: 100 * time.Millisecond,
-				memAllocLimit: 1024,
-				memSpikeLimit: 2048,
+				nextConsumer:        sink,
+				checkInterval:       100 * time.Millisecond,
+				memoryLimitMiB:      1,
+				memorySpikeLimitMiB: 2,
 			},
 			wantErr: errMemSpikeLimitOutOfRange,
 		},
 		{
 			name: "success",
 			args: args{
-				nextConsumer:  sink,
-				checkInterval: 100 * time.Millisecond,
-				memAllocLimit: 1e10,
+				nextConsumer:   sink,
+				checkInterval:  100 * time.Millisecond,
+				memoryLimitMiB: 1024,
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := New(
-				"test",
-				tt.args.nextConsumer,
-				nil,
-				tt.args.checkInterval,
-				tt.args.memAllocLimit,
-				tt.args.memSpikeLimit,
-				tt.args.ballastSize,
-				zap.NewNop())
+			cfg := generateDefaultConfig()
+			cfg.CheckInterval = tt.args.checkInterval
+			cfg.MemoryLimitMiB = tt.args.memoryLimitMiB
+			cfg.MemorySpikeLimitMiB = tt.args.memorySpikeLimitMiB
+			got, err := newMemoryLimiter(zap.NewNop(), tt.args.nextConsumer, nil, cfg)
 			if err != tt.wantErr {
-				t.Errorf("New() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("newMemoryLimiter() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != nil {

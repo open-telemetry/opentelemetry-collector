@@ -41,6 +41,29 @@ func (f *Factory) Type() string {
 
 // CreateDefaultConfig creates the default configuration for exporter.
 func (f *Factory) CreateDefaultConfig() configmodels.Processor {
+	return generateDefaultConfig()
+}
+
+// CreateTraceProcessor creates a trace processor based on this config.
+func (f *Factory) CreateTraceProcessor(
+	logger *zap.Logger,
+	nextConsumer consumer.TraceConsumerOld,
+	cfg configmodels.Processor,
+) (component.TraceProcessorOld, error) {
+	oCfg := cfg.(*Config)
+	return newQueuedSpanProcessor(logger, nextConsumer, oCfg), nil
+}
+
+// CreateMetricsProcessor creates a metrics processor based on this config.
+func (f *Factory) CreateMetricsProcessor(
+	logger *zap.Logger,
+	nextConsumer consumer.MetricsConsumerOld,
+	cfg configmodels.Processor,
+) (component.MetricsProcessorOld, error) {
+	return nil, configerror.ErrDataTypeIsNotSupported
+}
+
+func generateDefaultConfig() *Config {
 	return &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
 			TypeVal: typeStr,
@@ -51,30 +74,4 @@ func (f *Factory) CreateDefaultConfig() configmodels.Processor {
 		RetryOnFailure: true,
 		BackoffDelay:   time.Second * 5,
 	}
-}
-
-// CreateTraceProcessor creates a trace processor based on this config.
-func (f *Factory) CreateTraceProcessor(
-	logger *zap.Logger,
-	nextConsumer consumer.TraceConsumerOld,
-	cfg configmodels.Processor,
-) (component.TraceProcessorOld, error) {
-	oCfg := cfg.(*Config)
-	return NewQueuedSpanProcessor(nextConsumer,
-		Options.WithName(oCfg.Name()),
-		Options.WithNumWorkers(oCfg.NumWorkers),
-		Options.WithQueueSize(oCfg.QueueSize),
-		Options.WithRetryOnProcessingFailures(oCfg.RetryOnFailure),
-		Options.WithBackoffDelay(oCfg.BackoffDelay),
-		Options.WithLogger(logger),
-	), nil
-}
-
-// CreateMetricsProcessor creates a metrics processor based on this config.
-func (f *Factory) CreateMetricsProcessor(
-	logger *zap.Logger,
-	nextConsumer consumer.MetricsConsumerOld,
-	cfg configmodels.Processor,
-) (component.MetricsProcessorOld, error) {
-	return nil, configerror.ErrDataTypeIsNotSupported
 }

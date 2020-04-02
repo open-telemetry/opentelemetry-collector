@@ -70,9 +70,9 @@ const (
 	sourceFormat = "tail_sampling"
 )
 
-// NewTraceProcessor returns a processor.TraceProcessor that will perform tail sampling according to the given
+// newTraceProcessor returns a processor.TraceProcessor that will perform tail sampling according to the given
 // configuration.
-func NewTraceProcessor(logger *zap.Logger, nextConsumer consumer.TraceConsumerOld, cfg Config) (component.TraceProcessorOld, error) {
+func newTraceProcessor(logger *zap.Logger, nextConsumer consumer.TraceConsumerOld, cfg Config) (component.TraceProcessorOld, error) {
 	if nextConsumer == nil {
 		return nil, oterr.ErrNilNextConsumer
 	}

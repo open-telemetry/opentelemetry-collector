@@ -48,8 +48,8 @@ type toAttributeRule struct {
 	attrNames []string
 }
 
-// NewTraceProcessor returns the span processor.
-func NewTraceProcessor(nextConsumer consumer.TraceConsumerOld, config Config) (component.TraceProcessorOld, error) {
+// newSpanProcessor returns the span processor.
+func newSpanProcessor(nextConsumer consumer.TraceConsumerOld, config Config) (*spanProcessor, error) {
 	if nextConsumer == nil {
 		return nil, oterr.ErrNilNextConsumer
 	}

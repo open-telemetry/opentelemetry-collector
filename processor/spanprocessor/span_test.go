@@ -36,11 +36,11 @@ func TestNewTraceProcessor(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	tp, err := NewTraceProcessor(nil, *oCfg)
+	tp, err := newSpanProcessor(nil, *oCfg)
 	require.Error(t, oterr.ErrNilNextConsumer, err)
 	require.Nil(t, tp)
 
-	tp, err = NewTraceProcessor(exportertest.NewNopTraceExporter(), *oCfg)
+	tp, err = newSpanProcessor(exportertest.NewNopTraceExporter(), *oCfg)
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 }

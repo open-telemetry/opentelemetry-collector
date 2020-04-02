@@ -74,22 +74,21 @@ type memoryLimiter struct {
 	configMismatchedLogged bool
 }
 
-// New returns a new memorylimiter processor.
-func New(
-	name string,
+// newMemoryLimiter returns a new memorylimiter processor.
+func newMemoryLimiter(
+	logger *zap.Logger,
 	traceConsumer consumer.TraceConsumerOld,
 	metricsConsumer consumer.MetricsConsumerOld,
-	checkInterval time.Duration,
-	memAllocLimit uint64,
-	memSpikeLimit uint64,
-	ballastSize uint64,
-	logger *zap.Logger,
-) (DualTypeProcessor, error) {
+	cfg *Config) (DualTypeProcessor, error) {
+	const mibBytes = 1024 * 1024
+	memAllocLimit := uint64(cfg.MemoryLimitMiB) * mibBytes
+	memSpikeLimit := uint64(cfg.MemorySpikeLimitMiB) * mibBytes
+	ballastSize := uint64(cfg.BallastSizeMiB) * mibBytes
 
 	if traceConsumer == nil && metricsConsumer == nil {
 		return nil, errNilNextConsumer
 	}
-	if checkInterval <= 0 {
+	if cfg.CheckInterval <= 0 {
 		return nil, errCheckIntervalOutOfRange
 	}
 	if memAllocLimit == 0 {
@@ -104,11 +103,11 @@ func New(
 		metricsConsumer: metricsConsumer,
 		memAllocLimit:   memAllocLimit,
 		memSpikeLimit:   memSpikeLimit,
-		memCheckWait:    checkInterval,
+		memCheckWait:    cfg.CheckInterval,
 		ballastSize:     ballastSize,
-		ticker:          time.NewTicker(checkInterval),
+		ticker:          time.NewTicker(cfg.CheckInterval),
 		readMemStatsFn:  runtime.ReadMemStats,
-		procName:        name,
+		procName:        cfg.Name(),
 		logger:          logger,
 	}
 

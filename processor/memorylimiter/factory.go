@@ -39,12 +39,7 @@ func (f *Factory) Type() string {
 // CreateDefaultConfig creates the default configuration for processor. Notice
 // that the default configuration is expected to fail for this processor.
 func (f *Factory) CreateDefaultConfig() configmodels.Processor {
-	return &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
-		},
-	}
+	return generateDefaultConfig()
 }
 
 // CreateTraceProcessor creates a trace processor based on this config.
@@ -77,16 +72,20 @@ func (f *Factory) createProcessor(
 	metricConsumer consumer.MetricsConsumerOld,
 	cfg configmodels.Processor,
 ) (DualTypeProcessor, error) {
-	const mibBytes = 1024 * 1024
 	pCfg := cfg.(*Config)
-	return New(
-		cfg.Name(),
+	return newMemoryLimiter(
+		logger,
 		traceConsumer,
 		metricConsumer,
-		pCfg.CheckInterval,
-		uint64(pCfg.MemoryLimitMiB)*mibBytes,
-		uint64(pCfg.MemorySpikeLimitMiB)*mibBytes,
-		uint64(pCfg.BallastSizeMiB)*mibBytes,
-		logger,
+		pCfg,
 	)
+}
+
+func generateDefaultConfig() *Config {
+	return &Config{
+		ProcessorSettings: configmodels.ProcessorSettings{
+			TypeVal: typeStr,
+			NameVal: typeStr,
+		},
+	}
 }

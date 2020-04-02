@@ -56,9 +56,9 @@ type tracesamplerprocessor struct {
 	hashSeed           uint32
 }
 
-// NewTraceProcessor returns a processor.TraceProcessor that will perform head sampling according to the given
+// newTraceProcessor returns a processor.TraceProcessor that will perform head sampling according to the given
 // configuration.
-func NewTraceProcessor(nextConsumer consumer.TraceConsumerOld, cfg Config) (component.TraceProcessorOld, error) {
+func newTraceProcessor(nextConsumer consumer.TraceConsumerOld, cfg Config) (component.TraceProcessorOld, error) {
 	if nextConsumer == nil {
 		return nil, oterr.ErrNilNextConsumer
 	}
