@@ -28,10 +28,10 @@ import (
 	"github.com/prometheus/procfs"
 	"go.opencensus.io/trace"
 
+	"github.com/open-telemetry/opentelemetry-collector/component/componenterr"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal"
-	"github.com/open-telemetry/opentelemetry-collector/oterr"
 )
 
 // VMMetricsCollector is a struct that collects and reports VM and process metrics (cpu, mem, etc).
@@ -212,7 +212,7 @@ func (vmc *VMMetricsCollector) scrapeAndExport() {
 	}
 
 	if len(errs) > 0 {
-		span.SetStatus(trace.Status{Code: trace.StatusCodeDataLoss, Message: fmt.Sprintf("Error(s) when scraping VM metrics: %v", oterr.CombineErrors(errs))})
+		span.SetStatus(trace.Status{Code: trace.StatusCodeDataLoss, Message: fmt.Sprintf("Error(s) when scraping VM metrics: %v", componenterr.CombineErrors(errs))})
 	}
 
 	if len(metrics) > 0 {

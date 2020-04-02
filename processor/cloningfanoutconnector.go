@@ -23,10 +23,10 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/proto"
 
+	"github.com/open-telemetry/opentelemetry-collector/component/componenterr"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
-	"github.com/open-telemetry/opentelemetry-collector/oterr"
 )
 
 // This file contains implementations of cloning Trace/Metrics connectors
@@ -87,7 +87,7 @@ func (mfc metricsCloningFanOutConnectorOld) ConsumeMetricsData(ctx context.Conte
 		}
 	}
 
-	return oterr.CombineErrors(errs)
+	return componenterr.CombineErrors(errs)
 }
 
 // NewMetricsCloningFanOutConnector wraps multiple metrics consumers in a single one.
@@ -120,7 +120,7 @@ func (mfc metricsCloningFanOutConnector) ConsumeMetrics(ctx context.Context, md 
 		}
 	}
 
-	return oterr.CombineErrors(errs)
+	return componenterr.CombineErrors(errs)
 }
 
 // CreateTraceCloningFanOutConnector is a placeholder function for now.
@@ -176,7 +176,7 @@ func (tfc traceCloningFanOutConnectorOld) ConsumeTraceData(ctx context.Context, 
 		}
 	}
 
-	return oterr.CombineErrors(errs)
+	return componenterr.CombineErrors(errs)
 }
 
 // NewTraceCloningFanOutConnector wraps multiple trace consumers in a single one.
@@ -209,7 +209,7 @@ func (tfc traceCloningFanOutConnector) ConsumeTrace(ctx context.Context, td data
 		}
 	}
 
-	return oterr.CombineErrors(errs)
+	return componenterr.CombineErrors(errs)
 }
 
 func cloneTraceDataOld(td *consumerdata.TraceData) *consumerdata.TraceData {

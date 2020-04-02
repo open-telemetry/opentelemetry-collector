@@ -22,10 +22,10 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenterr"
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
 )
 
@@ -61,7 +61,7 @@ func (rcvs Receivers) StopAll() error {
 	}
 
 	if len(errs) != 0 {
-		return oterr.CombineErrors(errs)
+		return componenterr.CombineErrors(errs)
 	}
 	return nil
 }

@@ -28,9 +28,9 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenterr"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	"github.com/open-telemetry/opentelemetry-collector/processor/samplingprocessor/tailsamplingprocessor/idbatcher"
 	"github.com/open-telemetry/opentelemetry-collector/processor/samplingprocessor/tailsamplingprocessor/sampling"
 )
@@ -74,7 +74,7 @@ const (
 // configuration.
 func newTraceProcessor(logger *zap.Logger, nextConsumer consumer.TraceConsumerOld, cfg Config) (component.TraceProcessorOld, error) {
 	if nextConsumer == nil {
-		return nil, oterr.ErrNilNextConsumer
+		return nil, componenterr.ErrNilNextConsumer
 	}
 
 	numDecisionBatches := uint64(cfg.DecisionWait.Seconds())

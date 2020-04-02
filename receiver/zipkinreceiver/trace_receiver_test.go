@@ -34,13 +34,13 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenterr"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/zipkinexporter"
 	"github.com/open-telemetry/opentelemetry-collector/internal"
-	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	"github.com/open-telemetry/opentelemetry-collector/testutils"
 	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 	"github.com/open-telemetry/opentelemetry-collector/translator/trace/zipkin"
@@ -118,7 +118,7 @@ func TestNew(t *testing.T) {
 		{
 			name:    "nil nextConsumer",
 			args:    args{},
-			wantErr: oterr.ErrNilNextConsumer,
+			wantErr: componenterr.ErrNilNextConsumer,
 		},
 		{
 			name: "happy path",

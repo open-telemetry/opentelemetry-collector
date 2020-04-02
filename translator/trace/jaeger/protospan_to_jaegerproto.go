@@ -23,7 +23,7 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/timestamp"
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	jaeger "github.com/jaegertracing/jaeger/model"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"

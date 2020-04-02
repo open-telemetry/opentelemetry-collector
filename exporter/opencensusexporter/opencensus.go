@@ -25,10 +25,10 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenterr"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
-	"github.com/open-telemetry/opentelemetry-collector/oterr"
 )
 
 type ocAgentExporter struct {
@@ -145,7 +145,7 @@ func (oce *ocAgentExporter) Shutdown() error {
 	wg.Wait()
 	close(oce.exporters)
 
-	return oterr.CombineErrors(errors)
+	return componenterr.CombineErrors(errors)
 }
 
 func (oce *ocAgentExporter) PushTraceData(ctx context.Context, td consumerdata.TraceData) (int, error) {

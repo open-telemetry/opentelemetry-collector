@@ -24,10 +24,10 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector/client"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenterr"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/obsreport"
-	"github.com/open-telemetry/opentelemetry-collector/oterr"
 )
 
 const (
@@ -45,7 +45,7 @@ type Receiver struct {
 // New creates a new opencensus.Receiver reference.
 func New(instanceName string, nextConsumer consumer.TraceConsumerOld, opts ...Option) (*Receiver, error) {
 	if nextConsumer == nil {
-		return nil, oterr.ErrNilNextConsumer
+		return nil, componenterr.ErrNilNextConsumer
 	}
 
 	ocr := &Receiver{
