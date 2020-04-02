@@ -225,7 +225,7 @@ func fillSpanOne(span data.Span) {
 	ev0 := evs.At(0)
 	ev0.SetTimestamp(TestSpanEventTimestamp)
 	ev0.SetName("event-with-attr")
-	ev0.SetAttributes(generateSpanEventAttributes())
+	initSpanEventAttributes(ev0.Attributes())
 	ev0.SetDroppedAttributesCount(2)
 	ev1 := evs.At(1)
 	ev1.SetTimestamp(TestSpanEventTimestamp)
@@ -270,7 +270,7 @@ func fillSpanTwo(span data.Span) {
 	span.SetStartTime(TestSpanStartTimestamp)
 	span.SetEndTime(TestSpanEndTimestamp)
 	span.Links().Resize(2)
-	span.Links().At(0).SetAttributes(generateSpanLinkAttributes())
+	initSpanLinkAttributes(span.Links().At(0).Attributes())
 	span.Links().At(0).SetDroppedAttributesCount(4)
 	span.Links().At(1).SetDroppedAttributesCount(4)
 	span.SetDroppedLinksCount(3)
@@ -298,7 +298,7 @@ func fillSpanThree(span data.Span) {
 	span.SetName("operationC")
 	span.SetStartTime(TestSpanStartTimestamp)
 	span.SetEndTime(TestSpanEndTimestamp)
-	span.SetAttributes(generateSpanAttributes())
+	initSpanAttributes(span.Attributes())
 	span.SetDroppedAttributesCount(5)
 }
 

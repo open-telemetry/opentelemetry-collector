@@ -31,25 +31,6 @@ const accessorsSliceTestTemplate = `	assert.EqualValues(t, New${returnType}(), m
 	testVal${fieldName} := generateTest${returnType}()
 	assert.EqualValues(t, testVal${fieldName}, ms.${fieldName}())`
 
-const accessorMapTemplate = `// ${fieldName} returns the ${originFieldName} associated with this ${structName}.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
-func (ms ${structName}) ${fieldName}() ${returnType} {
-	return new${returnType}(&(*ms.orig).${originFieldName})
-}
-
-// Set${fieldName} replaces the ${originFieldName} associated with this ${structName}.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
-func (ms ${structName}) Set${fieldName}(v ${returnType}) {
-	(*ms.orig).${originFieldName} = *v.orig
-}`
-
-const accessorsMapTestTemplate = `	assert.EqualValues(t, New${returnType}(${constructorDefaultValue}), ms.${fieldName}())
-	testVal${fieldName} := generateTest${returnType}()
-	ms.Set${fieldName}(testVal${fieldName})
-	assert.EqualValues(t, testVal${fieldName}, ms.${fieldName}())`
-
 const accessorsMessageTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
 // If no ${lowerFieldName} available, it creates an empty message and associates it with this ${structName}.
 //
@@ -105,49 +86,6 @@ type baseField interface {
 	generateAccessorsTests(ms *messageStruct, sb *strings.Builder)
 
 	generateSetWithTestValue(sb *strings.Builder)
-}
-
-type mapField struct {
-	fieldMame               string
-	originFieldName         string
-	returnSlice             *sliceStruct
-	constructorDefaultValue string
-}
-
-func (mf *mapField) generateAccessors(ms *messageStruct, sb *strings.Builder) {
-	sb.WriteString(os.Expand(accessorMapTemplate, func(name string) string {
-		switch name {
-		case "structName":
-			return ms.structName
-		case "fieldName":
-			return mf.fieldMame
-		case "returnType":
-			return mf.returnSlice.structName
-		case "originFieldName":
-			return mf.originFieldName
-		default:
-			panic(name)
-		}
-	}))
-}
-
-func (mf *mapField) generateAccessorsTests(ms *messageStruct, sb *strings.Builder) {
-	sb.WriteString(os.Expand(accessorsMapTestTemplate, func(name string) string {
-		switch name {
-		case "fieldName":
-			return mf.fieldMame
-		case "returnType":
-			return mf.returnSlice.structName
-		case "constructorDefaultValue":
-			return mf.constructorDefaultValue
-		default:
-			panic(name)
-		}
-	}))
-}
-
-func (mf *mapField) generateSetWithTestValue(sb *strings.Builder) {
-	sb.WriteString("\ttv.Set" + mf.fieldMame + "(generateTest" + mf.returnSlice.structName + "())")
 }
 
 type sliceField struct {

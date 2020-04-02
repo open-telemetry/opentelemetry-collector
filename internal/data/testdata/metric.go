@@ -135,12 +135,12 @@ func initCounterIntMetric(im data.Metric) {
 	idps := im.Int64DataPoints()
 	idps.Resize(2)
 	idp0 := idps.At(0)
-	idp0.SetLabelsMap(data.NewStringMap(map[string]string{"int-label-1": "int-label-value-1"}))
+	idp0.LabelsMap().InitFromMap(map[string]string{"int-label-1": "int-label-value-1"})
 	idp0.SetStartTime(TestMetricStartTimestamp)
 	idp0.SetTimestamp(TestMetricTimestamp)
 	idp0.SetValue(123)
 	idp1 := idps.At(1)
-	idp1.SetLabelsMap(data.NewStringMap(map[string]string{"int-label-2": "int-label-value-2"}))
+	idp1.LabelsMap().InitFromMap(map[string]string{"int-label-2": "int-label-value-2"})
 	idp1.SetStartTime(TestMetricStartTimestamp)
 	idp1.SetTimestamp(TestMetricTimestamp)
 	idp1.SetValue(456)
@@ -163,18 +163,18 @@ func initCumulativeHistogramMetric(hm data.Metric) {
 	hdps := hm.HistogramDataPoints()
 	hdps.Resize(2)
 	hdp0 := hdps.At(0)
-	hdp0.SetLabelsMap(data.NewStringMap(map[string]string{
+	hdp0.LabelsMap().InitFromMap(map[string]string{
 		"histogram-label-1": "histogram-label-value-1",
 		"histogram-label-3": "histogram-label-value-3",
-	}))
+	})
 	hdp0.SetStartTime(TestMetricStartTimestamp)
 	hdp0.SetTimestamp(TestMetricTimestamp)
 	hdp0.SetCount(1)
 	hdp0.SetSum(15)
 	hdp1 := hdps.At(1)
-	hdp1.SetLabelsMap(data.NewStringMap(map[string]string{
+	hdp1.LabelsMap().InitFromMap(map[string]string{
 		"histogram-label-2": "histogram-label-value-2",
-	}))
+	})
 	hdp1.SetStartTime(TestMetricStartTimestamp)
 	hdp1.SetTimestamp(TestMetricTimestamp)
 	hdp1.SetCount(1)
@@ -185,9 +185,9 @@ func initCumulativeHistogramMetric(hm data.Metric) {
 	hdp1.Buckets().At(1).Exemplar().InitEmpty()
 	hdp1.Buckets().At(1).Exemplar().SetTimestamp(TestMetricExemplarTimestamp)
 	hdp1.Buckets().At(1).Exemplar().SetValue(15)
-	hdp1.Buckets().At(1).Exemplar().SetAttachments(data.NewStringMap(map[string]string{
+	hdp1.Buckets().At(1).Exemplar().Attachments().InitFromMap(map[string]string{
 		"exemplar-attachment": "exemplar-attachment-value",
-	}))
+	})
 	hdp1.SetExplicitBounds([]float64{1})
 }
 
@@ -197,17 +197,17 @@ func initSummaryMetric(sm data.Metric) {
 	sdps := sm.SummaryDataPoints()
 	sdps.Resize(2)
 	sdp0 := sdps.At(0)
-	sdp0.SetLabelsMap(data.NewStringMap(map[string]string{
+	sdp0.LabelsMap().InitFromMap(map[string]string{
 		"summary-label": "summary-label-value-1",
-	}))
+	})
 	sdp0.SetStartTime(TestMetricStartTimestamp)
 	sdp0.SetTimestamp(TestMetricTimestamp)
 	sdp0.SetCount(1)
 	sdp0.SetSum(15)
 	sdp1 := sdps.At(1)
-	sdp1.SetLabelsMap(data.NewStringMap(map[string]string{
+	sdp1.LabelsMap().InitFromMap(map[string]string{
 		"summary-label": "summary-label-value-2",
-	}))
+	})
 	sdp1.SetStartTime(TestMetricStartTimestamp)
 	sdp1.SetTimestamp(TestMetricTimestamp)
 	sdp1.SetCount(1)

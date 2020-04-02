@@ -278,9 +278,9 @@ func TestSpan(t *testing.T) {
 	ms.SetEndTime(testValEndTime)
 	assert.EqualValues(t, testValEndTime, ms.EndTime())
 
-	assert.EqualValues(t, NewAttributeMap(nil), ms.Attributes())
+	assert.EqualValues(t, NewAttributeMap(), ms.Attributes())
+	fillTestAttributeMap(ms.Attributes())
 	testValAttributes := generateTestAttributeMap()
-	ms.SetAttributes(testValAttributes)
 	assert.EqualValues(t, testValAttributes, ms.Attributes())
 
 	assert.EqualValues(t, uint32(0), ms.DroppedAttributesCount())
@@ -389,9 +389,9 @@ func TestSpanEvent(t *testing.T) {
 	ms.SetName(testValName)
 	assert.EqualValues(t, testValName, ms.Name())
 
-	assert.EqualValues(t, NewAttributeMap(nil), ms.Attributes())
+	assert.EqualValues(t, NewAttributeMap(), ms.Attributes())
+	fillTestAttributeMap(ms.Attributes())
 	testValAttributes := generateTestAttributeMap()
-	ms.SetAttributes(testValAttributes)
 	assert.EqualValues(t, testValAttributes, ms.Attributes())
 
 	assert.EqualValues(t, uint32(0), ms.DroppedAttributesCount())
@@ -479,9 +479,9 @@ func TestSpanLink(t *testing.T) {
 	ms.SetTraceState(testValTraceState)
 	assert.EqualValues(t, testValTraceState, ms.TraceState())
 
-	assert.EqualValues(t, NewAttributeMap(nil), ms.Attributes())
+	assert.EqualValues(t, NewAttributeMap(), ms.Attributes())
+	fillTestAttributeMap(ms.Attributes())
 	testValAttributes := generateTestAttributeMap()
-	ms.SetAttributes(testValAttributes)
 	assert.EqualValues(t, testValAttributes, ms.Attributes())
 
 	assert.EqualValues(t, uint32(0), ms.DroppedAttributesCount())
@@ -592,7 +592,7 @@ func fillTestSpan(tv Span) {
 	tv.SetKind(SpanKindSERVER)
 	tv.SetStartTime(TimestampUnixNano(1234567890))
 	tv.SetEndTime(TimestampUnixNano(1234567890))
-	tv.SetAttributes(generateTestAttributeMap())
+	fillTestAttributeMap(tv.Attributes())
 	tv.SetDroppedAttributesCount(uint32(17))
 	fillTestSpanEventSlice(tv.Events())
 	tv.SetDroppedEventsCount(uint32(17))
@@ -625,7 +625,7 @@ func generateTestSpanEvent() SpanEvent {
 func fillTestSpanEvent(tv SpanEvent) {
 	tv.SetTimestamp(TimestampUnixNano(1234567890))
 	tv.SetName("test_name")
-	tv.SetAttributes(generateTestAttributeMap())
+	fillTestAttributeMap(tv.Attributes())
 	tv.SetDroppedAttributesCount(uint32(17))
 }
 
@@ -653,7 +653,7 @@ func fillTestSpanLink(tv SpanLink) {
 	tv.SetTraceID(NewTraceID([]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
 	tv.SetSpanID(NewSpanID([]byte{1, 2, 3, 4, 5, 6, 7, 8}))
 	tv.SetTraceState(TraceState("congo=congos"))
-	tv.SetAttributes(generateTestAttributeMap())
+	fillTestAttributeMap(tv.Attributes())
 	tv.SetDroppedAttributesCount(uint32(17))
 }
 

@@ -49,7 +49,7 @@ func TestResourceToOC(t *testing.T) {
 	}
 	resource := data.NewResource()
 	resource.InitEmpty()
-	resource.SetAttributes(data.NewAttributeMap(attrs))
+	resource.Attributes().InitFromMap(attrs)
 
 	emptyResource := data.NewResource()
 	emptyResource.InitEmpty()
