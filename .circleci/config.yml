@@ -167,6 +167,7 @@ jobs:
   loadtest:
     executor: golang
     parallelism: 10
+    resource_class: medium+
     steps:
       - attach_to_workspace
       - run:
