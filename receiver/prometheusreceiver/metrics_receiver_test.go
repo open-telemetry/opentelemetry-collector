@@ -1040,7 +1040,7 @@ func testEndToEnd(t *testing.T, targets []*testData, useStartTimeMetric bool) {
 	require.Nilf(t, err, "Failed to create Promtheus config: %v", err)
 	defer mp.Close()
 
-	cms := new(exportertest.SinkMetricsExporter)
+	cms := new(exportertest.SinkMetricsExporterOld)
 	rcvr := newPrometheusReceiver(logger, &Config{PrometheusConfig: cfg, UseStartTimeMetric: useStartTimeMetric}, cms)
 
 	mh := component.NewMockHost()

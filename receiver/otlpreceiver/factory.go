@@ -17,8 +17,6 @@ package otlpreceiver
 import (
 	"context"
 
-	"go.uber.org/zap"
-
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
@@ -63,9 +61,9 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 // CreateTraceReceiver creates a  trace receiver based on provided config.
 func (f *Factory) CreateTraceReceiver(
 	ctx context.Context,
-	logger *zap.Logger,
+	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
-	nextConsumer consumer.TraceConsumerOld,
+	nextConsumer consumer.TraceConsumer,
 ) (component.TraceReceiver, error) {
 	r, err := f.createReceiver(cfg)
 	if err != nil {
@@ -79,9 +77,10 @@ func (f *Factory) CreateTraceReceiver(
 
 // CreateMetricsReceiver creates a metrics receiver based on provided config.
 func (f *Factory) CreateMetricsReceiver(
-	logger *zap.Logger,
+	ctx context.Context,
+	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
-	consumer consumer.MetricsConsumerOld,
+	consumer consumer.MetricsConsumer,
 ) (component.MetricsReceiver, error) {
 
 	r, err := f.createReceiver(cfg)

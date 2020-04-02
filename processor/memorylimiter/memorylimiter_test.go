@@ -36,7 +36,7 @@ func TestNew(t *testing.T) {
 		memSpikeLimit uint64
 		ballastSize   uint64
 	}
-	sink := new(exportertest.SinkTraceExporter)
+	sink := new(exportertest.SinkTraceExporterOld)
 	tests := []struct {
 		name    string
 		args    args
@@ -106,7 +106,7 @@ func TestNew(t *testing.T) {
 // check expected side effects.
 func TestMetricsMemoryPressureResponse(t *testing.T) {
 	var currentMemAlloc uint64
-	sink := new(exportertest.SinkMetricsExporter)
+	sink := new(exportertest.SinkMetricsExporterOld)
 	ml := &memoryLimiter{
 		metricsConsumer: sink,
 		memAllocLimit:   1024,
@@ -163,7 +163,7 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 // check expected side effects.
 func TestTraceMemoryPressureResponse(t *testing.T) {
 	var currentMemAlloc uint64
-	sink := new(exportertest.SinkTraceExporter)
+	sink := new(exportertest.SinkTraceExporterOld)
 	ml := &memoryLimiter{
 		traceConsumer: sink,
 		memAllocLimit: 1024,

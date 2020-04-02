@@ -51,6 +51,52 @@ func TestMetricCount(t *testing.T) {
 	assert.EqualValues(t, 6, md.MetricCount())
 }
 
+func TestMetricAndDataPointCount(t *testing.T) {
+	md := NewMetricData()
+	ms, dps := md.MetricAndDataPointCount()
+	assert.EqualValues(t, 0, ms)
+	assert.EqualValues(t, 0, dps)
+
+	rms := md.ResourceMetrics()
+	rms.Resize(1)
+	ms, dps = md.MetricAndDataPointCount()
+	assert.EqualValues(t, 0, ms)
+	assert.EqualValues(t, 0, dps)
+
+	ilms := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics()
+	ilms.Resize(1)
+	ms, dps = md.MetricAndDataPointCount()
+	assert.EqualValues(t, 0, ms)
+	assert.EqualValues(t, 0, dps)
+
+	ilms.At(0).Metrics().Resize(1)
+	ms, dps = md.MetricAndDataPointCount()
+	assert.EqualValues(t, 1, ms)
+	assert.EqualValues(t, 0, dps)
+	ilms.At(0).Metrics().At(0).Int64DataPoints().Resize(3)
+	_, dps = md.MetricAndDataPointCount()
+	assert.EqualValues(t, 3, dps)
+
+	md = NewMetricData()
+	rms = md.ResourceMetrics()
+	rms.Resize(3)
+	rms.At(0).InstrumentationLibraryMetrics().Resize(1)
+	rms.At(0).InstrumentationLibraryMetrics().At(0).Metrics().Resize(1)
+	rms.At(1).InstrumentationLibraryMetrics().Resize(1)
+	rms.At(2).InstrumentationLibraryMetrics().Resize(1)
+	ilms = rms.At(2).InstrumentationLibraryMetrics()
+	ilms.Resize(1)
+	ilms.At(0).Metrics().Resize(5)
+	ms, dps = md.MetricAndDataPointCount()
+	assert.EqualValues(t, 6, ms)
+	assert.EqualValues(t, 0, dps)
+	ilms.At(0).Metrics().At(1).Int64DataPoints().Resize(1)
+	ilms.At(0).Metrics().At(3).Int64DataPoints().Resize(3)
+	ms, dps = md.MetricAndDataPointCount()
+	assert.EqualValues(t, 6, ms)
+	assert.EqualValues(t, 4, dps)
+}
+
 func TestOtlpToInternalReadOnly(t *testing.T) {
 	metricData := MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{
 		{

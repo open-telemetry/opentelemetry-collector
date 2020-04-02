@@ -32,6 +32,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector/testbed/testbed"
 )
 
@@ -240,14 +241,17 @@ func TestTraceBallast1kSPSAddAttrs(t *testing.T) {
 }
 
 // verifySingleSpan sends a single span to Collector, waits until the span is forwarded
-// and received by MockBackend and calls user-supplied verification function on
+// and received by MockBackend and calls user-supplied verification functions on
 // received span.
+// Temporarily, we need two verification functions in order to verify spans in
+// new and old format received by MockBackend.
 func verifySingleSpan(
 	t *testing.T,
 	tc *testbed.TestCase,
 	node *commonpb.Node,
 	span *tracepb.Span,
-	verifyReceived func(span *tracepb.Span),
+	verifyReceived func(span data.Span),
+	verifyReceivedOld func(span *tracepb.Span),
 ) {
 
 	// Clear previously received traces.
@@ -275,8 +279,21 @@ func verifySingleSpan(
 	// Verify received span.
 	count := 0
 	for _, td := range tc.MockBackend.ReceivedTraces {
+		rs := td.ResourceSpans()
+		for i := 0; i < rs.Len(); i++ {
+			ils := rs.At(i).InstrumentationLibrarySpans()
+			for j := 0; j < ils.Len(); j++ {
+				spans := ils.At(j).Spans()
+				for k := 0; k < spans.Len(); k++ {
+					verifyReceived(spans.At(k))
+					count++
+				}
+			}
+		}
+	}
+	for _, td := range tc.MockBackend.ReceivedTracesOld {
 		for _, span := range td.Spans {
-			verifyReceived(span)
+			verifyReceivedOld(span)
 			count++
 		}
 	}
@@ -349,8 +366,17 @@ func TestTraceAttributesProcessor(t *testing.T) {
 			// Create a service name that matches "include" filter.
 			nodeToInclude := &commonpb.Node{ServiceInfo: &commonpb.ServiceInfo{Name: "service-to-add-attr"}}
 
-			verifySingleSpan(t, tc, nodeToInclude, spanToInclude, func(span *tracepb.Span) {
-				// Verify attributes was added.
+			// verifySpan verifies that attributes was added to the internal data span.
+			verifySpan := func(span data.Span) {
+				require.NotNil(t, span)
+				require.Equal(t, span.Attributes().Len(), 1)
+				attrVal, ok := span.Attributes().Get("new_attr")
+				assert.True(t, ok)
+				assert.EqualValues(t, "string value", attrVal.StringVal())
+			}
+
+			// verifySpanOld verifies that attributes was added to the OC data span.
+			verifySpanOld := func(span *tracepb.Span) {
 				require.NotNil(t, span)
 				require.NotNil(t, span.Attributes)
 				require.NotNil(t, span.Attributes.AttributeMap)
@@ -358,13 +384,18 @@ func TestTraceAttributesProcessor(t *testing.T) {
 				assert.True(t, ok)
 				assert.NotNil(t, attrVal)
 				assert.EqualValues(t, "string value", attrVal.GetStringValue().Value)
-			})
+			}
+
+			verifySingleSpan(t, tc, nodeToInclude, spanToInclude, verifySpan, verifySpanOld)
 
 			// Create a service name that does not match "include" filter.
 			nodeToExclude := &commonpb.Node{ServiceInfo: &commonpb.ServiceInfo{Name: "service-not-to-add-attr"}}
 
-			verifySingleSpan(t, tc, nodeToExclude, spanToInclude, func(span *tracepb.Span) {
-				// Verify attributes was not added.
+			verifySingleSpan(t, tc, nodeToExclude, spanToInclude, func(span data.Span) {
+				// Verify attributes was not added to the new internal data span.
+				assert.Equal(t, span.Attributes().Len(), 0)
+			}, func(span *tracepb.Span) {
+				// Verify attributes was not added to the OC span.
 				assert.Nil(t, span.Attributes)
 			})
 
@@ -372,8 +403,11 @@ func TestTraceAttributesProcessor(t *testing.T) {
 			spanToExclude := &tracepb.Span{
 				Name: &tracepb.TruncatableString{Value: "span-not-to-add-attr"},
 			}
-			verifySingleSpan(t, tc, nodeToInclude, spanToExclude, func(span *tracepb.Span) {
-				// Verify attributes was not added.
+			verifySingleSpan(t, tc, nodeToInclude, spanToExclude, func(span data.Span) {
+				// Verify attributes was not added to the new internal data span.
+				assert.Equal(t, span.Attributes().Len(), 0)
+			}, func(span *tracepb.Span) {
+				// Verify attributes was not added to the OC span.
 				assert.Nil(t, span.Attributes)
 			})
 		})

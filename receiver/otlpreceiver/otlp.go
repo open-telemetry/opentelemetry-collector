@@ -50,8 +50,8 @@ type Receiver struct {
 	traceReceiver   *trace.Receiver
 	metricsReceiver *metrics.Receiver
 
-	traceConsumer   consumer.TraceConsumerOld
-	metricsConsumer consumer.MetricsConsumerOld
+	traceConsumer   consumer.TraceConsumer
+	metricsConsumer consumer.MetricsConsumer
 
 	stopOnce                 sync.Once
 	startServerOnce          sync.Once
@@ -68,8 +68,8 @@ func New(
 	instanceName string,
 	transport string,
 	addr string,
-	tc consumer.TraceConsumerOld,
-	mc consumer.MetricsConsumerOld,
+	tc consumer.TraceConsumer,
+	mc consumer.MetricsConsumer,
 	opts ...Option,
 ) (*Receiver, error) {
 	ln, err := net.Listen(transport, addr)

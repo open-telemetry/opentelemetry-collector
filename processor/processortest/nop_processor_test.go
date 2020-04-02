@@ -27,7 +27,7 @@ import (
 )
 
 func TestNopTraceProcessorNoErrors(t *testing.T) {
-	sink := new(exportertest.SinkTraceExporter)
+	sink := new(exportertest.SinkTraceExporterOld)
 	ntp := NewNopTraceProcessor(sink)
 	want := consumerdata.TraceData{
 		Spans: make([]*tracepb.Span, 7),
@@ -40,7 +40,7 @@ func TestNopTraceProcessorNoErrors(t *testing.T) {
 }
 
 func TestNopMetricsProcessorNoErrors(t *testing.T) {
-	sink := new(exportertest.SinkMetricsExporter)
+	sink := new(exportertest.SinkMetricsExporterOld)
 	nmp := NewNopMetricsProcessor(sink)
 	want := consumerdata.MetricsData{
 		Metrics: make([]*metricspb.Metric, 7),
@@ -58,14 +58,14 @@ func TestNopProcessorFactory(t *testing.T) {
 
 	tp, err := f.CreateTraceProcessor(
 		zap.NewNop(),
-		new(exportertest.SinkTraceExporter),
+		new(exportertest.SinkTraceExporterOld),
 		cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, tp)
 
 	mp, err := f.CreateMetricsProcessor(
 		zap.NewNop(),
-		new(exportertest.SinkMetricsExporter),
+		new(exportertest.SinkMetricsExporterOld),
 		cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, mp)
