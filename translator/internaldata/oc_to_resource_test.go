@@ -19,7 +19,9 @@ import (
 	"testing"
 
 	occommon "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
@@ -34,7 +36,7 @@ func TestOcNodeResourceToInternal(t *testing.T) {
 	ocNode := &occommon.Node{}
 	ocResource := &ocresource.Resource{}
 	ocNodeResourceToInternal(ocNode, ocResource, resource)
-	assert.EqualValues(t, true, resource.IsNil())
+	assert.EqualValues(t, false, resource.IsNil())
 
 	ocNode = generateOcNode()
 	ocResource = generateOcResource()
@@ -71,6 +73,30 @@ func BenchmarkOcNodeResourceToInternal(b *testing.B) {
 		resource := data.NewResource()
 		ocNodeResourceToInternal(ocNode, ocResource, resource)
 		if ocNode.Identifier.Pid != 123 {
+			b.Fail()
+		}
+	}
+}
+
+func BenchmarkOcResourceNodeUnmarshal(b *testing.B) {
+	oc := &agenttracepb.ExportTraceServiceRequest{
+		Node:     generateOcNode(),
+		Spans:    nil,
+		Resource: generateOcResource(),
+	}
+
+	buf := &proto.Buffer{}
+	if err := buf.Marshal(oc); err != nil {
+		b.Fail()
+	}
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		unmarshalOc := &agenttracepb.ExportTraceServiceRequest{}
+		if err := proto.Unmarshal(buf.Bytes(), unmarshalOc); err != nil {
+			b.Fail()
+		}
+		if unmarshalOc.Node.Identifier.Pid != 123 {
 			b.Fail()
 		}
 	}

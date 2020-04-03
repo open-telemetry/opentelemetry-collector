@@ -45,7 +45,7 @@ func TestOCToMetricData(t *testing.T) {
 				Node:     &occommon.Node{},
 				Resource: &ocresource.Resource{},
 			},
-			internal: testdata.GenerateMetricDataOneEmptyResourceMetrics(),
+			internal: wrapMetricsWithEmptyResource(testdata.GenerateMetricDataOneEmptyResourceMetrics()),
 		},
 
 		{
@@ -105,6 +105,12 @@ func TestOCToMetricData(t *testing.T) {
 			assert.EqualValues(t, test.internal, got)
 		})
 	}
+}
+
+// TODO: Try to avoid unnecessary Resource object allocation.
+func wrapMetricsWithEmptyResource(md data.MetricData) data.MetricData {
+	md.ResourceMetrics().At(0).Resource().InitEmpty()
+	return md
 }
 
 func BenchmarkMetricIntOCToInternal(b *testing.B) {
