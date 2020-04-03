@@ -20,13 +20,11 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/golang/protobuf/ptypes/wrappers"
-	"github.com/google/go-cmp/cmp"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/pkg/textparse"
 	"github.com/prometheus/prometheus/scrape"
-
-	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
+	"github.com/stretchr/testify/assert"
 )
 
 const startTs = int64(1555366610000)
@@ -88,10 +86,7 @@ func createDataPoint(mname string, value float64, tagPairs ...string) *testDataP
 func runBuilderTests(t *testing.T, tests []buildTestData) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if len(tt.inputs) != len(tt.wants) {
-				t.Errorf("wrong test data, make sure length of tt.inputs %v and tt.wants %v is same", len(tt.inputs), len(tt.wants))
-				return
-			}
+			assert.EqualValues(t, len(tt.wants), len(tt.inputs))
 			mc := newMockMetadataCache(testMetadata)
 			st := startTs
 			for i, page := range tt.inputs {
@@ -100,20 +95,11 @@ func runBuilderTests(t *testing.T, tests []buildTestData) {
 				for _, pt := range page.pts {
 					// set ts for testing
 					pt.t = st
-					if err := b.AddDataPoint(pt.lb, pt.t, pt.v); err != nil {
-						t.Error("unexpected error adding data", err)
-					}
+					assert.NoError(t, b.AddDataPoint(pt.lb, pt.t, pt.v))
 				}
 				metrics, _, _, err := b.Build()
-				if err != nil {
-					t.Error("unexpected error on build", err)
-				}
-				if !reflect.DeepEqual(metrics, tt.wants[i]) {
-					want := string(exportertest.ToJSON(tt.wants[i]))
-					got := string(exportertest.ToJSON(metrics))
-					diff := cmp.Diff(want, got)
-					t.Errorf("metricBuilder.Build() mismatch (-want[%d] +got[%d]):\n%v\n want=%v \n got=%v", i, i, diff, want, got)
-				}
+				assert.NoError(t, err)
+				assert.EqualValues(t, tt.wants[i], metrics)
 				st += interval
 			}
 		})

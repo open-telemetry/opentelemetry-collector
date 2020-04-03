@@ -21,7 +21,6 @@ import (
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/google/go-cmp/cmp"
 	"github.com/jaegertracing/jaeger/model"
 	"github.com/stretchr/testify/assert"
 	"go.opencensus.io/trace"
@@ -43,9 +42,7 @@ func TestOpenCensusToJaeger(t *testing.T) {
 
 	oc := expectedTraceData(now, nowPlus10min, nowPlus10min2sec)
 
-	if diff := cmp.Diff(jaeger, oc); diff != "" {
-		t.Errorf("Mismatched responses\n-Got +Want:\n\t%s", diff)
-	}
+	assert.EqualValues(t, oc, jaeger)
 }
 
 func expectedTraceData(t1, t2, t3 time.Time) consumerdata.TraceData {

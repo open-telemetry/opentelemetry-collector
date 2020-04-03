@@ -25,7 +25,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -150,12 +149,7 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 		},
 	}
 
-	if !reflect.DeepEqual(got, want) {
-		gj, wj := exportertest.ToJSON(got), exportertest.ToJSON(want)
-		if !bytes.Equal(gj, wj) {
-			t.Errorf("Mismatched responses\nGot:\n\t%v\n\t%s\nWant:\n\t%v\n\t%s", got, gj, want, wj)
-		}
-	}
+	assert.EqualValues(t, want, got)
 }
 
 func TestTraceGrpcGatewayCors_endToEnd(t *testing.T) {
