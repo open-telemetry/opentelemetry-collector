@@ -93,8 +93,9 @@ var metricSlice = &sliceStruct{
 }
 
 var metric = &messageStruct{
-	structName:     "Metric",
-	description:    "// MetricDescriptor is the descriptor of a metric.",
+	structName: "Metric",
+	description: "// Metric represents one metric as a collection of datapoints.\n" +
+		"// See Metric definition in OTLP: https://github.com/open-telemetry/opentelemetry-proto/blob/master/opentelemetry/proto/metrics/v1/metrics.proto#L96",
 	originFullName: "otlpmetrics.Metric",
 	fields: []baseField{
 		&messageField{

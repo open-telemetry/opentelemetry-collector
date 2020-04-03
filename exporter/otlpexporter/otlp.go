@@ -30,7 +30,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	"github.com/open-telemetry/opentelemetry-collector/translator/internaldata"
-	metricstranslator "github.com/open-telemetry/opentelemetry-collector/translator/metrics"
 )
 
 type otlpExporter struct {
@@ -195,7 +194,7 @@ func (oce *otlpExporter) pushMetricsData(ctx context.Context, md consumerdata.Me
 
 	// Perform the request.
 	request := &otlpmetrics.ExportMetricsServiceRequest{
-		ResourceMetrics: metricstranslator.OCToOTLP(md),
+		ResourceMetrics: data.MetricDataToOtlp(internaldata.OCToMetricData(md)),
 	}
 	err := exporter.exportMetrics(ctx, request)
 

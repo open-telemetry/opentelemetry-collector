@@ -350,7 +350,8 @@ func (es MetricSlice) Resize(newLen int) {
 	(*es.orig) = oldOrig
 }
 
-// MetricDescriptor is the descriptor of a metric.
+// Metric represents one metric as a collection of datapoints.
+// See Metric definition in OTLP: https://github.com/open-telemetry/opentelemetry-proto/blob/master/opentelemetry/proto/metrics/v1/metrics.proto
 //
 // This is a reference type, if passsed by value and callee modifies it the
 // caller will see the modification.
