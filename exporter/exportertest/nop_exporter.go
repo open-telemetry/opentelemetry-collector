@@ -19,30 +19,28 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 )
 
-// NopExporterOption represents options that can be applied to a NopExporter.
-type NopExporterOption func(*nopExporter)
-
-type nopExporter struct {
+type nopExporterOld struct {
 	name     string
 	retError error
 }
 
-func (ne *nopExporter) Start(host component.Host) error {
+func (ne *nopExporterOld) Start(_ component.Host) error {
 	return nil
 }
 
-func (ne *nopExporter) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
+func (ne *nopExporterOld) ConsumeTraceData(_ context.Context, _ consumerdata.TraceData) error {
 	return ne.retError
 }
 
-func (ne *nopExporter) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
+func (ne *nopExporterOld) ConsumeMetricsData(_ context.Context, _ consumerdata.MetricsData) error {
 	return ne.retError
 }
 
 // Shutdown stops the exporter and is invoked during shutdown.
-func (ne *nopExporter) Shutdown() error {
+func (ne *nopExporterOld) Shutdown() error {
 	return nil
 }
 
@@ -51,39 +49,56 @@ const (
 	nopMetricsExporterName = "nop_metrics"
 )
 
-// NewNopTraceExporter creates an TraceExporter that just drops the received data.
-func NewNopTraceExporter(options ...NopExporterOption) component.TraceExporterOld {
-	return newNopTraceExporter(options...)
-}
-
-// NewNopMetricsExporter creates an MetricsExporter that just drops the received data.
-func NewNopMetricsExporter(options ...NopExporterOption) component.MetricsExporterOld {
-	return newNopMetricsExporter(options...)
-}
-
-// WithReturnError returns a NopExporterOption that enforces the nop Exporters to return the given error.
-func WithReturnError(retError error) NopExporterOption {
-	return func(ne *nopExporter) {
-		ne.retError = retError
-	}
-}
-
-func newNopTraceExporter(options ...NopExporterOption) *nopExporter {
-	ne := &nopExporter{
+// NewNopTraceExporterOld creates an TraceExporter that just drops the received data.
+func NewNopTraceExporterOld() component.TraceExporterOld {
+	ne := &nopExporterOld{
 		name: nopTraceExporterName,
-	}
-	for _, opt := range options {
-		opt(ne)
 	}
 	return ne
 }
 
-func newNopMetricsExporter(options ...NopExporterOption) *nopExporter {
-	ne := &nopExporter{
+// NewNopMetricsExporterOld creates an MetricsExporter that just drops the received data.
+func NewNopMetricsExporterOld() component.MetricsExporterOld {
+	ne := &nopExporterOld{
 		name: nopMetricsExporterName,
 	}
-	for _, opt := range options {
-		opt(ne)
+	return ne
+}
+
+type nopExporter struct {
+	name     string
+	retError error
+}
+
+func (ne *nopExporter) Start(_ component.Host) error {
+	return nil
+}
+
+func (ne *nopExporter) ConsumeTrace(_ context.Context, _ data.TraceData) error {
+	return ne.retError
+}
+
+func (ne *nopExporter) ConsumeMetrics(_ context.Context, _ data.MetricData) error {
+	return ne.retError
+}
+
+// Shutdown stops the exporter and is invoked during shutdown.
+func (ne *nopExporter) Shutdown() error {
+	return nil
+}
+
+// NewNopTraceExporterOld creates an TraceExporter that just drops the received data.
+func NewNopTraceExporter() component.TraceExporter {
+	ne := &nopExporter{
+		name: nopTraceExporterName,
+	}
+	return ne
+}
+
+// NewNopMetricsExporterOld creates an MetricsExporter that just drops the received data.
+func NewNopMetricsExporter() component.MetricsExporter {
+	ne := &nopExporter{
+		name: nopMetricsExporterName,
 	}
 	return ne
 }

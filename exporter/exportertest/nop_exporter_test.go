@@ -15,7 +15,6 @@ package exportertest
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
@@ -23,44 +22,39 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 )
 
-func TestNopTraceExporter_NoErrors(t *testing.T) {
+func TestNopTraceExporterOld(t *testing.T) {
+	nte := NewNopTraceExporterOld()
+	require.NoError(t, nte.Start(nil))
+	td := consumerdata.TraceData{
+		Spans: make([]*tracepb.Span, 7),
+	}
+	require.NoError(t, nte.ConsumeTraceData(context.Background(), td))
+	require.NoError(t, nte.Shutdown())
+}
+
+func TestNopMetricsExporterOld(t *testing.T) {
+	nme := NewNopMetricsExporterOld()
+	require.NoError(t, nme.Start(nil))
+	md := consumerdata.MetricsData{
+		Metrics: make([]*metricspb.Metric, 7),
+	}
+	require.NoError(t, nme.ConsumeMetricsData(context.Background(), md))
+	require.NoError(t, nme.Shutdown())
+}
+
+func TestNopTraceExporter(t *testing.T) {
 	nte := NewNopTraceExporter()
-	td := consumerdata.TraceData{
-		Spans: make([]*tracepb.Span, 7),
-	}
-
-	err := nte.ConsumeTraceData(context.Background(), td)
-	require.Nil(t, err)
+	require.NoError(t, nte.Start(nil))
+	require.NoError(t, nte.ConsumeTrace(context.Background(), data.NewTraceData()))
+	require.NoError(t, nte.Shutdown())
 }
 
-func TestNopTraceExporter_WithErrors(t *testing.T) {
-	want := errors.New("MyError")
-	nte := NewNopTraceExporter(WithReturnError(want))
-	td := consumerdata.TraceData{
-		Spans: make([]*tracepb.Span, 7),
-	}
-
-	require.Equal(t, want, nte.ConsumeTraceData(context.Background(), td))
-}
-
-func TestNopMetricsExporter_NoErrors(t *testing.T) {
+func TestNopMetricsExporter(t *testing.T) {
 	nme := NewNopMetricsExporter()
-	md := consumerdata.MetricsData{
-		Metrics: make([]*metricspb.Metric, 7),
-	}
-	err := nme.ConsumeMetricsData(context.Background(), md)
-
-	require.Nil(t, err)
-}
-
-func TestNopMetricsExporter_WithErrors(t *testing.T) {
-	want := errors.New("MyError")
-	nme := NewNopMetricsExporter(WithReturnError(want))
-	md := consumerdata.MetricsData{
-		Metrics: make([]*metricspb.Metric, 7),
-	}
-
-	require.Equal(t, want, nme.ConsumeMetricsData(context.Background(), md))
+	require.NoError(t, nme.Start(nil))
+	require.NoError(t, nme.ConsumeMetrics(context.Background(), data.NewMetricData()))
+	require.NoError(t, nme.Shutdown())
 }

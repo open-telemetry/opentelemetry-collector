@@ -54,7 +54,7 @@ func TestFactory_CreateTraceProcessor(t *testing.T) {
 		{Key: "a key", Action: DELETE},
 	}
 
-	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), cfg)
+	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporterOld(), cfg)
 	assert.NotNil(t, tp)
 	assert.Nil(t, err)
 
@@ -65,7 +65,7 @@ func TestFactory_CreateTraceProcessor(t *testing.T) {
 	oCfg.Actions = []ActionKeyValue{
 		{Action: DELETE},
 	}
-	tp, err = factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), cfg)
+	tp, err = factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporterOld(), cfg)
 	assert.Nil(t, tp)
 	assert.NotNil(t, err)
 }

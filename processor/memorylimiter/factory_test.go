@@ -42,11 +42,11 @@ func TestCreateProcessor(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	// This processor can't be created with the default config.
-	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), cfg)
+	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporterOld(), cfg)
 	assert.Nil(t, tp)
 	assert.Error(t, err, "created processor with invalid settings")
 
-	mp, err := factory.CreateMetricsProcessor(zap.NewNop(), exportertest.NewNopMetricsExporter(), cfg)
+	mp, err := factory.CreateMetricsProcessor(zap.NewNop(), exportertest.NewNopMetricsExporterOld(), cfg)
 	assert.Nil(t, mp)
 	assert.Error(t, err, "created processor with invalid settings")
 
@@ -57,12 +57,12 @@ func TestCreateProcessor(t *testing.T) {
 	pCfg.BallastSizeMiB = 2048
 	pCfg.CheckInterval = 100 * time.Millisecond
 
-	tp, err = factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), cfg)
+	tp, err = factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporterOld(), cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, tp)
 	assert.NoError(t, tp.Shutdown())
 
-	mp, err = factory.CreateMetricsProcessor(zap.NewNop(), exportertest.NewNopMetricsExporter(), cfg)
+	mp, err = factory.CreateMetricsProcessor(zap.NewNop(), exportertest.NewNopMetricsExporterOld(), cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, mp)
 	assert.NoError(t, mp.Shutdown())
