@@ -43,5 +43,6 @@ func TestLoadingConifg(t *testing.T) {
 			TypeVal: typeStr,
 		},
 		PeerDiscoveryDNSName: "otel-agent.my-ns.svc.cluster.local",
+		PeerPort:             55678,
 	})
 }

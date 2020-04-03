@@ -7,6 +7,7 @@ exporters:
 processors:
   aggregate:
     peer_discovery_dns_name: "otel-agent.my-ns.svc.cluster.local"
+    peer_port: 55678
 
 
 service:

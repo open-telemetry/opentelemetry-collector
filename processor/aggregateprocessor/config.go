@@ -25,4 +25,7 @@ type Config struct {
 
 	// DNS name used to discover peers
 	PeerDiscoveryDNSName string `mapstructure:"peer_discovery_dns_name"`
+
+	// peer port to forward spans (oc exporter right now)
+	PeerPort int `mapstructure:"peer_port"`
 }

@@ -53,6 +53,8 @@ type aggregatingProcessor struct {
 	selfIP string
 	// ringMemberQuerier instance
 	ring ringMemberQuerier
+	// peer port
+	peerPort int
 	// ticker to call ring.GetState() and sync member list
 	memberSyncTicker tTicker
 	// exporters for each of the collector peers
@@ -60,41 +62,6 @@ type aggregatingProcessor struct {
 }
 
 var _ component.TraceProcessorOld = (*aggregatingProcessor)(nil)
-
-type ringMemberQuerier interface {
-	getMembers() []string
-}
-
-type dnsClient struct {
-	// logger
-	logger *zap.Logger
-	// peerDiscoveryName
-	peerDiscoveryName string
-}
-
-func newRingMemberQuerier(logger *zap.Logger, peerDiscoveryName string) {
-	return &dnsClient{
-		logger:            logger,
-		peerDiscoveryName: peerDiscoveryName,
-	}
-}
-
-func (d *dnsClient) getMembers() []string {
-	d.logger.Debug("Pooling a dns endpoint")
-	// poll a dns endpoint
-	ips, err := net.LookupIP(d.peerDiscoveryName)
-	if err != nil {
-		d.logger.Info("DNS lookup error", zap.Error(err))
-		return
-	}
-	var newMembers []string
-	for _, v := range ips {
-		newMembers = append(newMembers, v.String())
-	}
-	return newMembers
-}
-
-var _ ringMemberQuerier = (*DNSClient)(nil)
 
 func newTraceProcessor(logger *zap.Logger, nextConsumer consumer.TraceConsumerOld, cfg *Config) (component.TraceProcessorOld, error) {
 	if nextConsumer == nil {
@@ -105,13 +72,18 @@ func newTraceProcessor(logger *zap.Logger, nextConsumer consumer.TraceConsumerOl
 		return nil, fmt.Errorf("peer discovery DNS name not provided")
 	}
 
+	if cfg.PeerPort == 0 {
+		return nil, fmt.Errorf("nil peer port")
+	}
+
 	ap := &aggregatingProcessor{
 		nextConsumer:   nextConsumer,
 		logger:         logger,
 		collectorPeers: make(map[string]component.TraceExporterOld),
+		peerPort:       cfg.PeerPort,
 	}
 
-	ap.ring = newRingMemberQuerier(logger, peerDiscoveryName)
+	ap.ring = newRingMemberQuerier(logger, cfg.PeerDiscoveryDNSName)
 
 	if ip, err := externalIP(); err == nil {
 		ap.selfIP = ip
@@ -124,7 +96,7 @@ func newTraceProcessor(logger *zap.Logger, nextConsumer consumer.TraceConsumerOl
 	return ap, nil
 }
 
-func newTraceExporter(logger *zap.Logger, ip string) component.TraceExporterOld {
+func newTraceExporter(logger *zap.Logger, ip string, peerPort int) component.TraceExporterOld {
 	factory := &opencensusexporter.Factory{}
 	config := factory.CreateDefaultConfig()
 	config.(*opencensusexporter.Config).ExporterSettings = configmodels.ExporterSettings{
@@ -132,7 +104,7 @@ func newTraceExporter(logger *zap.Logger, ip string) component.TraceExporterOld 
 		TypeVal: "opencensus",
 	}
 	config.(*opencensusexporter.Config).GRPCSettings = configgrpc.GRPCSettings{
-		Endpoint: ip + ":" + strconv.Itoa(55678),
+		Endpoint: ip + ":" + strconv.Itoa(peerPort),
 	}
 
 	logger.Info("Creating new exporter for", zap.String("PeerIP", ip))
@@ -148,6 +120,9 @@ func newTraceExporter(logger *zap.Logger, ip string) component.TraceExporterOld 
 // At the set frequency, get the state of the collector peer list
 func (ap *aggregatingProcessor) memberSyncOnTick() {
 	newMembers := ap.ring.getMembers()
+	if newMembers == nil {
+		return
+	}
 
 	// check if member list has changed
 	ap.lock.RLock()
@@ -204,7 +179,7 @@ func (ap *aggregatingProcessor) memberSyncOnTick() {
 				ap.collectorPeers[v] = nil
 				ap.lock.Unlock()
 			} else {
-				newPeer := newTraceExporter(ap.logger, v)
+				newPeer := newTraceExporter(ap.logger, v, ap.peerPort)
 				if newPeer == nil {
 					return
 				}
