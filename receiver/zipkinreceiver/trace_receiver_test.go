@@ -123,7 +123,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "happy path",
 			args: args{
-				nextConsumer: exportertest.NewNopTraceExporter(),
+				nextConsumer: exportertest.NewNopTraceExporterOld(),
 			},
 		},
 	}
@@ -146,7 +146,7 @@ func TestZipkinReceiverPortAlreadyInUse(t *testing.T) {
 	defer l.Close()
 	_, portStr, err := net.SplitHostPort(l.Addr().String())
 	require.NoError(t, err, "failed to split listener address: %v", err)
-	traceReceiver, err := New(zipkinReceiver, "localhost:"+portStr, exportertest.NewNopTraceExporter())
+	traceReceiver, err := New(zipkinReceiver, "localhost:"+portStr, exportertest.NewNopTraceExporterOld())
 	require.NoError(t, err, "Failed to create receiver: %v", err)
 	mh := component.NewMockHost()
 	err = traceReceiver.Start(mh)
@@ -157,7 +157,7 @@ func TestZipkinReceiverPortAlreadyInUse(t *testing.T) {
 }
 
 func TestCustomHTTPServer(t *testing.T) {
-	zr, err := New(zipkinReceiver, "localhost:9411", exportertest.NewNopTraceExporter())
+	zr, err := New(zipkinReceiver, "localhost:9411", exportertest.NewNopTraceExporterOld())
 	require.NoError(t, err, "Failed to create receiver: %v", err)
 
 	server := &http.Server{}
@@ -265,7 +265,7 @@ func TestConversionRoundtrip(t *testing.T) {
   }
 }]`)
 
-	zi := &ZipkinReceiver{nextConsumer: exportertest.NewNopTraceExporter()}
+	zi := &ZipkinReceiver{nextConsumer: exportertest.NewNopTraceExporterOld()}
 	ereqs, err := zi.v2ToTraceSpans(receiverInputJSON, nil)
 	require.NoError(t, err)
 

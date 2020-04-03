@@ -43,7 +43,7 @@ func TestEnsureRecordedMetrics(t *testing.T) {
 	doneFn := observabilitytest.SetupRecordedMetricsTest()
 	defer doneFn()
 
-	_, port, doneReceiverFn := ocReceiverOnGRPCServer(t, exportertest.NewNopTraceExporter())
+	_, port, doneReceiverFn := ocReceiverOnGRPCServer(t, exportertest.NewNopTraceExporterOld())
 	defer doneReceiverFn()
 
 	n := 20
@@ -67,7 +67,7 @@ func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
 	doneFn := observabilitytest.SetupRecordedMetricsTest()
 	defer doneFn()
 
-	_, port, doneFn := ocReceiverOnGRPCServer(t, exportertest.NewNopTraceExporter())
+	_, port, doneFn := ocReceiverOnGRPCServer(t, exportertest.NewNopTraceExporterOld())
 	defer doneFn()
 
 	n := 20
@@ -100,7 +100,7 @@ func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
 	trace.RegisterExporter(ocSpansSaver)
 	defer trace.UnregisterExporter(ocSpansSaver)
 
-	_, port, doneFn := ocReceiverOnGRPCServer(t, exportertest.NewNopTraceExporter())
+	_, port, doneFn := ocReceiverOnGRPCServer(t, exportertest.NewNopTraceExporterOld())
 	defer doneFn()
 
 	traceSvcClient, traceSvcDoneFn, err := makeTraceServiceClient(port)
