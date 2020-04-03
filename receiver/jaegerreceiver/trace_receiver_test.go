@@ -58,7 +58,7 @@ func TestReception(t *testing.T) {
 	config := &Configuration{
 		CollectorHTTPPort: 14268, // that's the only one used by this test
 	}
-	sink := new(exportertest.SinkTraceExporter)
+	sink := new(exportertest.SinkTraceExporterOld)
 
 	jr, err := New(jaegerReceiver, config, sink, zap.NewNop())
 	defer jr.Shutdown()
@@ -108,7 +108,7 @@ func TestPortsNotOpen(t *testing.T) {
 	// an empty config should result in no open ports
 	config := &Configuration{}
 
-	sink := new(exportertest.SinkTraceExporter)
+	sink := new(exportertest.SinkTraceExporterOld)
 
 	jr, err := New(jaegerReceiver, config, sink, zap.NewNop())
 	assert.NoError(t, err, "should not have failed to create a new receiver")
@@ -139,7 +139,7 @@ func TestGRPCReception(t *testing.T) {
 	config := &Configuration{
 		CollectorGRPCPort: 14250, // that's the only one used by this test
 	}
-	sink := new(exportertest.SinkTraceExporter)
+	sink := new(exportertest.SinkTraceExporterOld)
 
 	jr, err := New(jaegerReceiver, config, sink, zap.NewNop())
 	assert.NoError(t, err, "should not have failed to create a new receiver")
@@ -198,7 +198,7 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 		CollectorGRPCPort:    int(port),
 		CollectorGRPCOptions: grpcServerOptions,
 	}
-	sink := new(exportertest.SinkTraceExporter)
+	sink := new(exportertest.SinkTraceExporterOld)
 
 	jr, err := New(jaegerReceiver, config, sink, zap.NewNop())
 	assert.NoError(t, err, "should not have failed to create a new receiver")
@@ -410,7 +410,7 @@ func TestSampling(t *testing.T) {
 		CollectorGRPCPort:          int(port),
 		RemoteSamplingStrategyFile: "testdata/strategies.json",
 	}
-	sink := new(exportertest.SinkTraceExporter)
+	sink := new(exportertest.SinkTraceExporterOld)
 
 	jr, err := New(jaegerReceiver, config, sink, zap.NewNop())
 	assert.NoError(t, err, "should not have failed to create a new receiver")
@@ -464,7 +464,7 @@ func TestSamplingFailsOnNotConfigured(t *testing.T) {
 	config := &Configuration{
 		CollectorGRPCPort: int(port),
 	}
-	sink := new(exportertest.SinkTraceExporter)
+	sink := new(exportertest.SinkTraceExporterOld)
 
 	jr, err := New(jaegerReceiver, config, sink, zap.NewNop())
 	assert.NoError(t, err, "should not have failed to create a new receiver")
@@ -494,7 +494,7 @@ func TestSamplingFailsOnBadFile(t *testing.T) {
 		CollectorGRPCPort:          int(port),
 		RemoteSamplingStrategyFile: "does-not-exist",
 	}
-	sink := new(exportertest.SinkTraceExporter)
+	sink := new(exportertest.SinkTraceExporterOld)
 
 	jr, err := New(jaegerReceiver, config, sink, zap.NewNop())
 	assert.NoError(t, err, "should not have failed to create a new receiver")

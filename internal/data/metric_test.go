@@ -51,6 +51,52 @@ func TestMetricCount(t *testing.T) {
 	assert.EqualValues(t, 6, md.MetricCount())
 }
 
+func TestMetricAndDataPointCount(t *testing.T) {
+	md := NewMetricData()
+	ms, dps := md.MetricAndDataPointCount()
+	assert.EqualValues(t, 0, ms)
+	assert.EqualValues(t, 0, dps)
+
+	rms := md.ResourceMetrics()
+	rms.Resize(1)
+	ms, dps = md.MetricAndDataPointCount()
+	assert.EqualValues(t, 0, ms)
+	assert.EqualValues(t, 0, dps)
+
+	ilms := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics()
+	ilms.Resize(1)
+	ms, dps = md.MetricAndDataPointCount()
+	assert.EqualValues(t, 0, ms)
+	assert.EqualValues(t, 0, dps)
+
+	ilms.At(0).Metrics().Resize(1)
+	ms, dps = md.MetricAndDataPointCount()
+	assert.EqualValues(t, 1, ms)
+	assert.EqualValues(t, 0, dps)
+	ilms.At(0).Metrics().At(0).Int64DataPoints().Resize(3)
+	_, dps = md.MetricAndDataPointCount()
+	assert.EqualValues(t, 3, dps)
+
+	md = NewMetricData()
+	rms = md.ResourceMetrics()
+	rms.Resize(3)
+	rms.At(0).InstrumentationLibraryMetrics().Resize(1)
+	rms.At(0).InstrumentationLibraryMetrics().At(0).Metrics().Resize(1)
+	rms.At(1).InstrumentationLibraryMetrics().Resize(1)
+	rms.At(2).InstrumentationLibraryMetrics().Resize(1)
+	ilms = rms.At(2).InstrumentationLibraryMetrics()
+	ilms.Resize(1)
+	ilms.At(0).Metrics().Resize(5)
+	ms, dps = md.MetricAndDataPointCount()
+	assert.EqualValues(t, 6, ms)
+	assert.EqualValues(t, 0, dps)
+	ilms.At(0).Metrics().At(1).Int64DataPoints().Resize(1)
+	ilms.At(0).Metrics().At(3).Int64DataPoints().Resize(3)
+	ms, dps = md.MetricAndDataPointCount()
+	assert.EqualValues(t, 6, ms)
+	assert.EqualValues(t, 4, dps)
+}
+
 func TestOtlpToInternalReadOnly(t *testing.T) {
 	metricData := MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{
 		{
@@ -70,25 +116,27 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	assert.EqualValues(t, generateTestProtoResource(), *resourceMetric.Resource().orig)
 	metrics := resourceMetric.InstrumentationLibraryMetrics().At(0).Metrics()
 	assert.EqualValues(t, 4, metrics.Len())
+
 	// Check int64 metric
 	metricInt := metrics.At(0)
 	assert.EqualValues(t, "my_metric_int", metricInt.MetricDescriptor().Name())
 	assert.EqualValues(t, "My metric", metricInt.MetricDescriptor().Description())
 	assert.EqualValues(t, "ms", metricInt.MetricDescriptor().Unit())
 	assert.EqualValues(t, MetricTypeCounterInt64, metricInt.MetricDescriptor().Type())
-	assert.EqualValues(t, NewStringMap(map[string]string{}), metricInt.MetricDescriptor().LabelsMap())
+	assert.EqualValues(t, NewStringMap(), metricInt.MetricDescriptor().LabelsMap())
 	int64DataPoints := metricInt.Int64DataPoints()
 	assert.EqualValues(t, 2, int64DataPoints.Len())
 	// First point
 	assert.EqualValues(t, startTime, int64DataPoints.At(0).StartTime())
 	assert.EqualValues(t, endTime, int64DataPoints.At(0).Timestamp())
 	assert.EqualValues(t, 123, int64DataPoints.At(0).Value())
-	assert.EqualValues(t, NewStringMap(map[string]string{"key0": "value0"}), int64DataPoints.At(0).LabelsMap())
+	assert.EqualValues(t, NewStringMap().InitFromMap(map[string]string{"key0": "value0"}), int64DataPoints.At(0).LabelsMap())
 	// Second point
 	assert.EqualValues(t, startTime, int64DataPoints.At(1).StartTime())
 	assert.EqualValues(t, endTime, int64DataPoints.At(1).Timestamp())
 	assert.EqualValues(t, 456, int64DataPoints.At(1).Value())
-	assert.EqualValues(t, NewStringMap(map[string]string{"key1": "value1"}), int64DataPoints.At(1).LabelsMap())
+	assert.EqualValues(t, NewStringMap().InitFromMap(map[string]string{"key1": "value1"}), int64DataPoints.At(1).LabelsMap())
+
 	// Check double metric
 	metricDouble := metrics.At(1)
 	assert.EqualValues(t, "my_metric_double", metricDouble.MetricDescriptor().Name())
@@ -101,12 +149,13 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	assert.EqualValues(t, startTime, doubleDataPoints.At(0).StartTime())
 	assert.EqualValues(t, endTime, doubleDataPoints.At(0).Timestamp())
 	assert.EqualValues(t, 123.1, doubleDataPoints.At(0).Value())
-	assert.EqualValues(t, NewStringMap(map[string]string{"key0": "value0"}), doubleDataPoints.At(0).LabelsMap())
+	assert.EqualValues(t, NewStringMap().InitFromMap(map[string]string{"key0": "value0"}), doubleDataPoints.At(0).LabelsMap())
 	// Second point
 	assert.EqualValues(t, startTime, doubleDataPoints.At(1).StartTime())
 	assert.EqualValues(t, endTime, doubleDataPoints.At(1).Timestamp())
 	assert.EqualValues(t, 456.1, doubleDataPoints.At(1).Value())
-	assert.EqualValues(t, NewStringMap(map[string]string{"key1": "value1"}), doubleDataPoints.At(1).LabelsMap())
+	assert.EqualValues(t, NewStringMap().InitFromMap(map[string]string{"key1": "value1"}), doubleDataPoints.At(1).LabelsMap())
+
 	// Check histogram metric
 	metricHistogram := metrics.At(2)
 	assert.EqualValues(t, "my_metric_histogram", metricHistogram.MetricDescriptor().Name())
@@ -119,22 +168,23 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	assert.EqualValues(t, startTime, histogramDataPoints.At(0).StartTime())
 	assert.EqualValues(t, endTime, histogramDataPoints.At(0).Timestamp())
 	assert.EqualValues(t, []float64{1, 2}, histogramDataPoints.At(0).ExplicitBounds())
-	assert.EqualValues(t, NewStringMap(map[string]string{"key0": "value0"}), histogramDataPoints.At(0).LabelsMap())
+	assert.EqualValues(t, NewStringMap().InitFromMap(map[string]string{"key0": "value0"}), histogramDataPoints.At(0).LabelsMap())
 	assert.EqualValues(t, 3, histogramDataPoints.At(0).Buckets().Len())
 	assert.EqualValues(t, 10, histogramDataPoints.At(0).Buckets().At(0).Count())
 	assert.EqualValues(t, 15, histogramDataPoints.At(0).Buckets().At(1).Count())
 	assert.EqualValues(t, 1.5, histogramDataPoints.At(0).Buckets().At(1).Exemplar().Value())
 	assert.EqualValues(t, startTime, histogramDataPoints.At(0).Buckets().At(1).Exemplar().Timestamp())
-	assert.EqualValues(t, NewStringMap(map[string]string{"key_a1": "value_a1"}), histogramDataPoints.At(0).Buckets().At(1).Exemplar().Attachments())
+	assert.EqualValues(t, NewStringMap().InitFromMap(map[string]string{"key_a1": "value_a1"}), histogramDataPoints.At(0).Buckets().At(1).Exemplar().Attachments())
 	assert.EqualValues(t, 1, histogramDataPoints.At(0).Buckets().At(2).Count())
 	// Second point
 	assert.EqualValues(t, startTime, histogramDataPoints.At(1).StartTime())
 	assert.EqualValues(t, endTime, histogramDataPoints.At(1).Timestamp())
 	assert.EqualValues(t, []float64{1}, histogramDataPoints.At(1).ExplicitBounds())
-	assert.EqualValues(t, NewStringMap(map[string]string{"key1": "value1"}), histogramDataPoints.At(1).LabelsMap())
+	assert.EqualValues(t, NewStringMap().InitFromMap(map[string]string{"key1": "value1"}), histogramDataPoints.At(1).LabelsMap())
 	assert.EqualValues(t, 2, histogramDataPoints.At(1).Buckets().Len())
 	assert.EqualValues(t, 10, histogramDataPoints.At(1).Buckets().At(0).Count())
 	assert.EqualValues(t, 1, histogramDataPoints.At(1).Buckets().At(1).Count())
+
 	// Check summary metric
 	metricSummary := metrics.At(3)
 	assert.EqualValues(t, "my_metric_summary", metricSummary.MetricDescriptor().Name())
@@ -146,7 +196,7 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	// First point
 	assert.EqualValues(t, startTime, summaryDataPoints.At(0).StartTime())
 	assert.EqualValues(t, endTime, summaryDataPoints.At(0).Timestamp())
-	assert.EqualValues(t, NewStringMap(map[string]string{"key0": "value0"}), summaryDataPoints.At(0).LabelsMap())
+	assert.EqualValues(t, NewStringMap().InitFromMap(map[string]string{"key0": "value0"}), summaryDataPoints.At(0).LabelsMap())
 	assert.EqualValues(t, 2, summaryDataPoints.At(0).ValueAtPercentiles().Len())
 	assert.EqualValues(t, 0.0, summaryDataPoints.At(0).ValueAtPercentiles().At(0).Percentile())
 	assert.EqualValues(t, 1.23, summaryDataPoints.At(0).ValueAtPercentiles().At(0).Value())
@@ -155,7 +205,7 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	// Second point
 	assert.EqualValues(t, startTime, summaryDataPoints.At(1).StartTime())
 	assert.EqualValues(t, endTime, summaryDataPoints.At(1).Timestamp())
-	assert.EqualValues(t, NewStringMap(map[string]string{"key1": "value1"}), summaryDataPoints.At(1).LabelsMap())
+	assert.EqualValues(t, NewStringMap().InitFromMap(map[string]string{"key1": "value1"}), summaryDataPoints.At(1).LabelsMap())
 	assert.EqualValues(t, 2, summaryDataPoints.At(1).ValueAtPercentiles().Len())
 	assert.EqualValues(t, 0.5, summaryDataPoints.At(1).ValueAtPercentiles().At(0).Percentile())
 	assert.EqualValues(t, 4.56, summaryDataPoints.At(1).ValueAtPercentiles().At(0).Value())
@@ -189,7 +239,7 @@ func TestOtlpToFromInternalReadOnly(t *testing.T) {
 }
 
 func TestOtlpToFromInternalIntPointsMutating(t *testing.T) {
-	newLabels := NewStringMap(map[string]string{"k": "v"})
+	newLabels := NewStringMap().InitFromMap(map[string]string{"k": "v"})
 
 	metricData := MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{
 		{
@@ -213,7 +263,7 @@ func TestOtlpToFromInternalIntPointsMutating(t *testing.T) {
 	assert.EqualValues(t, "1", metric.MetricDescriptor().Unit())
 	metric.MetricDescriptor().SetType(MetricTypeGaugeInt64)
 	assert.EqualValues(t, MetricTypeGaugeInt64, metric.MetricDescriptor().Type())
-	metric.MetricDescriptor().SetLabelsMap(newLabels)
+	metric.MetricDescriptor().LabelsMap().Insert("k", "v")
 	assert.EqualValues(t, newLabels, metric.MetricDescriptor().LabelsMap())
 	// Mutate DataPoints
 	assert.EqualValues(t, 2, metric.Int64DataPoints().Len())
@@ -226,7 +276,8 @@ func TestOtlpToFromInternalIntPointsMutating(t *testing.T) {
 	assert.EqualValues(t, endTime+1, int64DataPoints.At(0).Timestamp())
 	int64DataPoints.At(0).SetValue(124)
 	assert.EqualValues(t, 124, int64DataPoints.At(0).Value())
-	int64DataPoints.At(0).SetLabelsMap(newLabels)
+	int64DataPoints.At(0).LabelsMap().Delete("key0")
+	int64DataPoints.At(0).LabelsMap().Upsert("k", "v")
 	assert.EqualValues(t, newLabels, int64DataPoints.At(0).LabelsMap())
 
 	// Test that everything is updated.
@@ -272,7 +323,7 @@ func TestOtlpToFromInternalIntPointsMutating(t *testing.T) {
 }
 
 func TestOtlpToFromInternalDoublePointsMutating(t *testing.T) {
-	newLabels := NewStringMap(map[string]string{"k": "v"})
+	newLabels := NewStringMap().InitFromMap(map[string]string{"k": "v"})
 
 	metricData := MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{
 		{
@@ -296,7 +347,7 @@ func TestOtlpToFromInternalDoublePointsMutating(t *testing.T) {
 	assert.EqualValues(t, "1", metric.MetricDescriptor().Unit())
 	metric.MetricDescriptor().SetType(MetricTypeGaugeDouble)
 	assert.EqualValues(t, MetricTypeGaugeDouble, metric.MetricDescriptor().Type())
-	metric.MetricDescriptor().SetLabelsMap(newLabels)
+	metric.MetricDescriptor().LabelsMap().Insert("k", "v")
 	assert.EqualValues(t, newLabels, metric.MetricDescriptor().LabelsMap())
 	// Mutate DataPoints
 	assert.EqualValues(t, 2, metric.DoubleDataPoints().Len())
@@ -309,7 +360,8 @@ func TestOtlpToFromInternalDoublePointsMutating(t *testing.T) {
 	assert.EqualValues(t, endTime+1, doubleDataPoints.At(0).Timestamp())
 	doubleDataPoints.At(0).SetValue(124.1)
 	assert.EqualValues(t, 124.1, doubleDataPoints.At(0).Value())
-	doubleDataPoints.At(0).SetLabelsMap(newLabels)
+	doubleDataPoints.At(0).LabelsMap().Delete("key0")
+	doubleDataPoints.At(0).LabelsMap().Upsert("k", "v")
 	assert.EqualValues(t, newLabels, doubleDataPoints.At(0).LabelsMap())
 
 	// Test that everything is updated.
@@ -355,7 +407,7 @@ func TestOtlpToFromInternalDoublePointsMutating(t *testing.T) {
 }
 
 func TestOtlpToFromInternalHistogramPointsMutating(t *testing.T) {
-	newLabels := NewStringMap(map[string]string{"k": "v"})
+	newLabels := NewStringMap().InitFromMap(map[string]string{"k": "v"})
 
 	metricData := MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{
 		{
@@ -379,7 +431,7 @@ func TestOtlpToFromInternalHistogramPointsMutating(t *testing.T) {
 	assert.EqualValues(t, "1", metric.MetricDescriptor().Unit())
 	metric.MetricDescriptor().SetType(MetricTypeGaugeHistogram)
 	assert.EqualValues(t, MetricTypeGaugeHistogram, metric.MetricDescriptor().Type())
-	metric.MetricDescriptor().SetLabelsMap(newLabels)
+	metric.MetricDescriptor().LabelsMap().Insert("k", "v")
 	assert.EqualValues(t, newLabels, metric.MetricDescriptor().LabelsMap())
 	// Mutate DataPoints
 	assert.EqualValues(t, 2, metric.HistogramDataPoints().Len())
@@ -390,7 +442,8 @@ func TestOtlpToFromInternalHistogramPointsMutating(t *testing.T) {
 	assert.EqualValues(t, startTime+1, histogramDataPoints.At(0).StartTime())
 	histogramDataPoints.At(0).SetTimestamp(TimestampUnixNano(endTime + 1))
 	assert.EqualValues(t, endTime+1, histogramDataPoints.At(0).Timestamp())
-	histogramDataPoints.At(0).SetLabelsMap(newLabels)
+	histogramDataPoints.At(0).LabelsMap().Delete("key0")
+	histogramDataPoints.At(0).LabelsMap().Upsert("k", "v")
 	assert.EqualValues(t, newLabels, histogramDataPoints.At(0).LabelsMap())
 	histogramDataPoints.At(0).SetExplicitBounds([]float64{1})
 	assert.EqualValues(t, []float64{1}, histogramDataPoints.At(0).ExplicitBounds())
@@ -406,7 +459,8 @@ func TestOtlpToFromInternalHistogramPointsMutating(t *testing.T) {
 	assert.EqualValues(t, startTime+1, buckets.At(1).Exemplar().Timestamp())
 	buckets.At(1).Exemplar().SetValue(10.5)
 	assert.EqualValues(t, 10.5, buckets.At(1).Exemplar().Value())
-	buckets.At(1).Exemplar().SetAttachments(newLabels)
+	buckets.At(1).Exemplar().Attachments().Delete("key_a1")
+	buckets.At(1).Exemplar().Attachments().Upsert("k", "v")
 	assert.EqualValues(t, newLabels, buckets.At(1).Exemplar().Attachments())
 
 	// Test that everything is updated.
@@ -470,7 +524,7 @@ func TestOtlpToFromInternalHistogramPointsMutating(t *testing.T) {
 }
 
 func TestOtlpToFromInternalSummaryPointsMutating(t *testing.T) {
-	newLabels := NewStringMap(map[string]string{"k": "v"})
+	newLabels := NewStringMap().InitFromMap(map[string]string{"k": "v"})
 	metricData := MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{
 		{
 			Resource: generateTestProtoResource(),
@@ -491,7 +545,7 @@ func TestOtlpToFromInternalSummaryPointsMutating(t *testing.T) {
 	assert.EqualValues(t, "My new metric", metric.MetricDescriptor().Description())
 	metric.MetricDescriptor().SetUnit("1")
 	assert.EqualValues(t, "1", metric.MetricDescriptor().Unit())
-	metric.MetricDescriptor().SetLabelsMap(newLabels)
+	metric.MetricDescriptor().LabelsMap().Insert("k", "v")
 	assert.EqualValues(t, newLabels, metric.MetricDescriptor().LabelsMap())
 	// Mutate DataPoints
 	assert.EqualValues(t, 2, metric.SummaryDataPoints().Len())
@@ -502,7 +556,8 @@ func TestOtlpToFromInternalSummaryPointsMutating(t *testing.T) {
 	assert.EqualValues(t, startTime+1, summaryDataPoints.At(0).StartTime())
 	summaryDataPoints.At(0).SetTimestamp(TimestampUnixNano(endTime + 1))
 	assert.EqualValues(t, endTime+1, summaryDataPoints.At(0).Timestamp())
-	summaryDataPoints.At(0).SetLabelsMap(newLabels)
+	summaryDataPoints.At(0).LabelsMap().Delete("key0")
+	summaryDataPoints.At(0).LabelsMap().Upsert("k", "v")
 	assert.EqualValues(t, newLabels, summaryDataPoints.At(0).LabelsMap())
 	// Mutate ValueAtPercentiles
 	assert.EqualValues(t, 2, summaryDataPoints.At(0).ValueAtPercentiles().Len())

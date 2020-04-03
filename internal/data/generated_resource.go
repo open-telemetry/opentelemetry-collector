@@ -65,10 +65,3 @@ func (ms Resource) IsNil() bool {
 func (ms Resource) Attributes() AttributeMap {
 	return newAttributeMap(&(*ms.orig).Attributes)
 }
-
-// SetAttributes replaces the Attributes associated with this Resource.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
-func (ms Resource) SetAttributes(v AttributeMap) {
-	(*ms.orig).Attributes = *v.orig
-}

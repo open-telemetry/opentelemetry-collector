@@ -133,11 +133,6 @@ type AttributeKeyValue struct {
 	orig *otlpcommon.AttributeKeyValue
 }
 
-// NewAttributeKeyValue creates a new AttributeKeyValue with the given key.
-func NewAttributeKeyValue(k string) AttributeKeyValue {
-	return AttributeKeyValue{&otlpcommon.AttributeKeyValue{Key: k}}
-}
-
 // NewAttributeKeyValueString creates a new AttributeKeyValue with the given key and string value.
 func NewAttributeKeyValueString(k string, v string) AttributeKeyValue {
 	akv := AttributeKeyValue{&otlpcommon.AttributeKeyValue{Key: k}}
@@ -232,11 +227,25 @@ type AttributeMap struct {
 	orig *[]*otlpcommon.AttributeKeyValue
 }
 
-// NewAttributeMap creates a new AttributeMap from the given map[string]AttributeValue.
-func NewAttributeMap(attrMap map[string]AttributeValue) AttributeMap {
+// NewAttributeMap creates a AttributeMap with 0 elements.
+func NewAttributeMap() AttributeMap {
+	orig := []*otlpcommon.AttributeKeyValue(nil)
+	return AttributeMap{&orig}
+}
+
+func newAttributeMap(orig *[]*otlpcommon.AttributeKeyValue) AttributeMap {
+	return AttributeMap{orig}
+}
+
+// InitFromMap overwrites the entire AttributeMap and reconstructs the AttributeMap
+// with values from the given map[string]string.
+//
+// Returns the same instance to allow nicer code like:
+// assert.EqualValues(t, NewAttributeMap().InitFromMap(map[string]AttributeValue{...}), actual)
+func (am AttributeMap) InitFromMap(attrMap map[string]AttributeValue) AttributeMap {
 	if len(attrMap) == 0 {
-		orig := []*otlpcommon.AttributeKeyValue(nil)
-		return AttributeMap{&orig}
+		*am.orig = []*otlpcommon.AttributeKeyValue(nil)
+		return am
 	}
 	origs := make([]otlpcommon.AttributeKeyValue, len(attrMap))
 	wrappers := make([]*otlpcommon.AttributeKeyValue, len(attrMap))
@@ -249,11 +258,9 @@ func NewAttributeMap(attrMap map[string]AttributeValue) AttributeMap {
 		ix++
 	}
 
-	return AttributeMap{&wrappers}
-}
+	*am.orig = wrappers
 
-func newAttributeMap(orig *[]*otlpcommon.AttributeKeyValue) AttributeMap {
-	return AttributeMap{orig}
+	return am
 }
 
 // Get returns the AttributeKeyValue associated with the key and true,
@@ -361,15 +368,25 @@ type StringMap struct {
 	orig *[]*otlpcommon.StringKeyValue
 }
 
+// NewStringMap creates a StringMap with 0 elements.
+func NewStringMap() StringMap {
+	orig := []*otlpcommon.StringKeyValue(nil)
+	return StringMap{&orig}
+}
+
 func newStringMap(orig *[]*otlpcommon.StringKeyValue) StringMap {
 	return StringMap{orig}
 }
 
-// NewStringMap creates a new StringMap from the given map[string]string.
-func NewStringMap(attrMap map[string]string) StringMap {
+// InitFromMap overwrites the entire StringMap and reconstructs the StringMap
+// with values from the given map[string]string.
+//
+// Returns the same instance to allow nicer code like:
+// assert.EqualValues(t, NewStringMap().InitFromMap(map[string]string{...}), actual)
+func (sm StringMap) InitFromMap(attrMap map[string]string) StringMap {
 	if len(attrMap) == 0 {
-		orig := []*otlpcommon.StringKeyValue(nil)
-		return StringMap{&orig}
+		*sm.orig = []*otlpcommon.StringKeyValue(nil)
+		return sm
 	}
 	origs := make([]otlpcommon.StringKeyValue, len(attrMap))
 	wrappers := make([]*otlpcommon.StringKeyValue, len(attrMap))
@@ -381,8 +398,8 @@ func NewStringMap(attrMap map[string]string) StringMap {
 		wrappers[ix].Value = v
 		ix++
 	}
-
-	return StringMap{&wrappers}
+	*sm.orig = wrappers
+	return sm
 }
 
 // Get returns the StringKeyValue associated with the key and true,

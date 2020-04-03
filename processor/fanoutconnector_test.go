@@ -171,9 +171,9 @@ func TestCreateTraceFanOutConnectorWithConvertion(t *testing.T) {
 	rs0 := rss.At(0)
 	res := rs0.Resource()
 	res.InitEmpty()
-	res.SetAttributes(data.NewAttributeMap(map[string]data.AttributeValue{
+	res.Attributes().InitFromMap(map[string]data.AttributeValue{
 		conventions.OCAttributeResourceType: data.NewAttributeValueString(resourceTypeName),
-	}))
+	})
 	rs0.InstrumentationLibrarySpans().Resize(1)
 	rs0.InstrumentationLibrarySpans().At(0).Spans().Resize(3)
 
@@ -190,7 +190,7 @@ func TestCreateTraceFanOutConnectorWithConvertion(t *testing.T) {
 	assert.Equal(t, resourceTypeName, traceConsumerOld.Traces[0].Resource.Type)
 
 	assert.Equal(t, wantSpansCount, traceConsumer.TotalSpans)
-	assert.Equal(t, data.NewAttributeMap(map[string]data.AttributeValue{
+	assert.Equal(t, data.NewAttributeMap().InitFromMap(map[string]data.AttributeValue{
 		conventions.OCAttributeResourceType: data.NewAttributeValueString(resourceTypeName),
 	}), traceConsumer.Traces[0].ResourceSpans().At(0).Resource().Attributes())
 }
@@ -211,9 +211,9 @@ func TestCreateMetricsFanOutConnectorWithConvertion(t *testing.T) {
 	rm0 := rms.At(0)
 	res := rm0.Resource()
 	res.InitEmpty()
-	res.SetAttributes(data.NewAttributeMap(map[string]data.AttributeValue{
+	res.Attributes().InitFromMap(map[string]data.AttributeValue{
 		conventions.OCAttributeResourceType: data.NewAttributeValueString(resourceTypeName),
-	}))
+	})
 	rm0.InstrumentationLibraryMetrics().Resize(1)
 	rm0.InstrumentationLibraryMetrics().At(0).Metrics().Resize(4)
 
@@ -230,7 +230,7 @@ func TestCreateMetricsFanOutConnectorWithConvertion(t *testing.T) {
 	assert.Equal(t, resourceTypeName, metricsConsumerOld.Metrics[0].Resource.Type)
 
 	assert.Equal(t, wantSpansCount, metricsConsumer.TotalMetrics)
-	assert.Equal(t, data.NewAttributeMap(map[string]data.AttributeValue{
+	assert.Equal(t, data.NewAttributeMap().InitFromMap(map[string]data.AttributeValue{
 		conventions.OCAttributeResourceType: data.NewAttributeValueString(resourceTypeName),
 	}), metricsConsumer.Metrics[0].ResourceMetrics().At(0).Resource().Attributes())
 }

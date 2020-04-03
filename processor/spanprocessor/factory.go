@@ -69,7 +69,7 @@ func (f *Factory) CreateTraceProcessor(
 		return nil, errMissingRequiredField
 	}
 
-	return NewTraceProcessor(nextConsumer, *oCfg)
+	return newSpanProcessor(nextConsumer, *oCfg)
 }
 
 // CreateMetricsProcessor creates a metric processor based on this config.

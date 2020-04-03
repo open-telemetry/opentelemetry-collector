@@ -69,7 +69,7 @@ func TestOcNodeResourceToInternal(t *testing.T) {
 			"resource-attr": "val2",
 		},
 	}
-	expectedAttrs := data.NewAttributeMap(map[string]data.AttributeValue{
+	expectedAttrs := data.NewAttributeMap().InitFromMap(map[string]data.AttributeValue{
 		conventions.AttributeHostHostname:       data.NewAttributeValueString("host1"),
 		conventions.OCAttributeProcessID:        data.NewAttributeValueInt(123),
 		conventions.OCAttributeProcessStartTime: data.NewAttributeValueString("2020-02-11T20:26:00Z"),
@@ -125,29 +125,33 @@ func TestOcTraceStateToInternal(t *testing.T) {
 }
 
 func TestOcAttrsToInternal(t *testing.T) {
-	attrs, droppedAttr := ocAttrsToInternal(nil)
-	assert.EqualValues(t, data.NewAttributeMap(nil), attrs)
-	assert.EqualValues(t, 0, droppedAttr)
+	attrs := data.NewAttributeMap()
+	ocAttrsToInternal(nil, attrs)
+	assert.EqualValues(t, data.NewAttributeMap(), attrs)
+	assert.EqualValues(t, 0, ocAttrsToDroppedAttributes(nil))
 
 	ocAttrs := &octrace.Span_Attributes{}
-	attrs, droppedAttr = ocAttrsToInternal(ocAttrs)
-	assert.EqualValues(t, data.NewAttributeMap(map[string]data.AttributeValue{}), attrs)
-	assert.EqualValues(t, 0, droppedAttr)
+	attrs = data.NewAttributeMap()
+	ocAttrsToInternal(ocAttrs, attrs)
+	assert.EqualValues(t, data.NewAttributeMap(), attrs)
+	assert.EqualValues(t, 0, ocAttrsToDroppedAttributes(ocAttrs))
 
 	ocAttrs = &octrace.Span_Attributes{
 		DroppedAttributesCount: 123,
 	}
-	attrs, droppedAttr = ocAttrsToInternal(ocAttrs)
-	assert.EqualValues(t, data.NewAttributeMap(map[string]data.AttributeValue{}), attrs)
-	assert.EqualValues(t, 123, droppedAttr)
+	attrs = data.NewAttributeMap()
+	ocAttrsToInternal(ocAttrs, attrs)
+	assert.EqualValues(t, data.NewAttributeMap(), attrs)
+	assert.EqualValues(t, 123, ocAttrsToDroppedAttributes(ocAttrs))
 
 	ocAttrs = &octrace.Span_Attributes{
 		AttributeMap:           map[string]*octrace.AttributeValue{},
 		DroppedAttributesCount: 234,
 	}
-	attrs, droppedAttr = ocAttrsToInternal(ocAttrs)
-	assert.EqualValues(t, data.NewAttributeMap(map[string]data.AttributeValue{}), attrs)
-	assert.EqualValues(t, 234, droppedAttr)
+	attrs = data.NewAttributeMap()
+	ocAttrsToInternal(ocAttrs, attrs)
+	assert.EqualValues(t, data.NewAttributeMap(), attrs)
+	assert.EqualValues(t, 234, ocAttrsToDroppedAttributes(ocAttrs))
 
 	ocAttrs = &octrace.Span_Attributes{
 		AttributeMap: map[string]*octrace.AttributeValue{
@@ -157,14 +161,15 @@ func TestOcAttrsToInternal(t *testing.T) {
 		},
 		DroppedAttributesCount: 234,
 	}
-	attrs, droppedAttr = ocAttrsToInternal(ocAttrs)
+	attrs = data.NewAttributeMap()
+	ocAttrsToInternal(ocAttrs, attrs)
 	assert.EqualValues(t,
-		data.NewAttributeMap(
+		data.NewAttributeMap().InitFromMap(
 			map[string]data.AttributeValue{
 				"abc": data.NewAttributeValueString("def"),
 			}),
 		attrs)
-	assert.EqualValues(t, 234, droppedAttr)
+	assert.EqualValues(t, 234, ocAttrsToDroppedAttributes(ocAttrs))
 
 	ocAttrs.AttributeMap["intval"] = &octrace.AttributeValue{
 		Value: &octrace.AttributeValue_IntValue{IntValue: 345},
@@ -175,16 +180,17 @@ func TestOcAttrsToInternal(t *testing.T) {
 	ocAttrs.AttributeMap["doubleval"] = &octrace.AttributeValue{
 		Value: &octrace.AttributeValue_DoubleValue{DoubleValue: 4.5},
 	}
-	attrs, droppedAttr = ocAttrsToInternal(ocAttrs)
+	attrs = data.NewAttributeMap()
+	ocAttrsToInternal(ocAttrs, attrs)
 
-	expectedAttr := data.NewAttributeMap(map[string]data.AttributeValue{
+	expectedAttr := data.NewAttributeMap().InitFromMap(map[string]data.AttributeValue{
 		"abc":       data.NewAttributeValueString("def"),
 		"intval":    data.NewAttributeValueInt(345),
 		"boolval":   data.NewAttributeValueBool(true),
 		"doubleval": data.NewAttributeValueDouble(4.5),
 	})
 	assert.EqualValues(t, expectedAttr.Sort(), attrs.Sort())
-	assert.EqualValues(t, 234, droppedAttr)
+	assert.EqualValues(t, 234, ocAttrsToDroppedAttributes(ocAttrs))
 }
 
 func TestOcSpanKindToInternal(t *testing.T) {

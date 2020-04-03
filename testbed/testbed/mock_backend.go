@@ -23,6 +23,7 @@ import (
 	"sync/atomic"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 )
 
 // MockBackend is a backend that allows receiving the data locally.
@@ -42,10 +43,12 @@ type MockBackend struct {
 	stopOnce  sync.Once
 
 	// Recording fields.
-	isRecording     bool
-	recordMutex     sync.Mutex
-	ReceivedTraces  []consumerdata.TraceData
-	ReceivedMetrics []consumerdata.MetricsData
+	isRecording        bool
+	recordMutex        sync.Mutex
+	ReceivedTraces     []data.TraceData
+	ReceivedMetrics    []data.MetricData
+	ReceivedTracesOld  []consumerdata.TraceData
+	ReceivedMetricsOld []consumerdata.MetricsData
 }
 
 // NewMockBackend creates a new mock backend that receives data using specified receiver.
@@ -130,9 +133,11 @@ func (mb *MockBackend) ClearReceivedItems() {
 	defer mb.recordMutex.Unlock()
 	mb.ReceivedTraces = nil
 	mb.ReceivedMetrics = nil
+	mb.ReceivedTracesOld = nil
+	mb.ReceivedMetricsOld = nil
 }
 
-func (mb *MockBackend) ConsumeTrace(td consumerdata.TraceData) {
+func (mb *MockBackend) ConsumeTrace(td data.TraceData) {
 	mb.recordMutex.Lock()
 	defer mb.recordMutex.Unlock()
 	if mb.isRecording {
@@ -140,7 +145,16 @@ func (mb *MockBackend) ConsumeTrace(td consumerdata.TraceData) {
 	}
 }
 
-func (mb *MockBackend) ConsumeMetric(md consumerdata.MetricsData) {
+// ConsumeTraceOld consumes trace data in old representation
+func (mb *MockBackend) ConsumeTraceOld(td consumerdata.TraceData) {
+	mb.recordMutex.Lock()
+	defer mb.recordMutex.Unlock()
+	if mb.isRecording {
+		mb.ReceivedTracesOld = append(mb.ReceivedTracesOld, td)
+	}
+}
+
+func (mb *MockBackend) ConsumeMetric(md data.MetricData) {
 	mb.recordMutex.Lock()
 	defer mb.recordMutex.Unlock()
 	if mb.isRecording {
@@ -148,9 +162,54 @@ func (mb *MockBackend) ConsumeMetric(md consumerdata.MetricsData) {
 	}
 }
 
+// ConsumeMetricOld consumes metric data in old representation
+func (mb *MockBackend) ConsumeMetricOld(md consumerdata.MetricsData) {
+	mb.recordMutex.Lock()
+	defer mb.recordMutex.Unlock()
+	if mb.isRecording {
+		mb.ReceivedMetricsOld = append(mb.ReceivedMetricsOld, md)
+	}
+}
+
 type MockTraceConsumer struct {
 	spansReceived uint64
 	backend       *MockBackend
+}
+
+func (tc *MockTraceConsumer) ConsumeTrace(ctx context.Context, td data.TraceData) error {
+	atomic.AddUint64(&tc.spansReceived, uint64(td.SpanCount()))
+
+	rs := td.ResourceSpans()
+	for i := 0; i < rs.Len(); i++ {
+		ils := rs.At(i).InstrumentationLibrarySpans()
+		for j := 0; j < ils.Len(); j++ {
+			spans := ils.At(j).Spans()
+			for k := 0; k < spans.Len(); k++ {
+				span := spans.At(k)
+				var spanSeqnum int64
+				var traceSeqnum int64
+
+				seqnumAttr, ok := span.Attributes().Get("load_generator.span_seq_num")
+				if ok {
+					spanSeqnum = seqnumAttr.IntVal()
+				}
+
+				seqnumAttr, ok = span.Attributes().Get("load_generator.trace_seq_num")
+				if ok {
+					traceSeqnum = seqnumAttr.IntVal()
+				}
+
+				// Ignore the seqnums for now. We will use them later.
+				_ = spanSeqnum
+				_ = traceSeqnum
+
+			}
+		}
+	}
+
+	tc.backend.ConsumeTrace(td)
+
+	return nil
 }
 
 func (tc *MockTraceConsumer) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
@@ -176,8 +235,9 @@ func (tc *MockTraceConsumer) ConsumeTraceData(ctx context.Context, td consumerda
 			_ = traceSeqnum
 		}
 
-		tc.backend.ConsumeTrace(td)
 	}
+
+	tc.backend.ConsumeTraceOld(td)
 
 	return nil
 }
@@ -185,6 +245,13 @@ func (tc *MockTraceConsumer) ConsumeTraceData(ctx context.Context, td consumerda
 type MockMetricConsumer struct {
 	metricsReceived uint64
 	backend         *MockBackend
+}
+
+func (mc *MockMetricConsumer) ConsumeMetrics(ctx context.Context, md data.MetricData) error {
+	_, dataPoints := md.MetricAndDataPointCount()
+	atomic.AddUint64(&mc.metricsReceived, uint64(dataPoints))
+	mc.backend.ConsumeMetric(md)
+	return nil
 }
 
 func (mc *MockMetricConsumer) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
@@ -197,7 +264,7 @@ func (mc *MockMetricConsumer) ConsumeMetricsData(ctx context.Context, md consume
 
 	atomic.AddUint64(&mc.metricsReceived, uint64(dataPoints))
 
-	mc.backend.ConsumeMetric(md)
+	mc.backend.ConsumeMetricOld(md)
 
 	return nil
 }

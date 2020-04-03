@@ -40,12 +40,6 @@ const (
 	initialBatchCapacity     = uint32(16)
 	nodeStatusDead           = uint32(1)
 	tickerPendingNodesBuffer = 16
-
-	defaultRemoveAfterCycles = uint32(10)
-	defaultSendBatchSize     = uint32(8192)
-	defaultNumTickers        = 4
-	defaultTickTime          = 1 * time.Second
-	defaultTimeout           = 1 * time.Second
 )
 
 // batcher is a component that accepts spans, and places them into batches grouped by node and resource.
@@ -60,7 +54,7 @@ const (
 //   1) batcher should be removed and nodebatcher should be promoted to batcher
 //   2) bucketTicker should be simplified significantly and replaced with a single ticker, since
 //      tracking by node is no longer needed.
-type batcher struct {
+type batchProcessor struct {
 	buckets sync.Map
 	sender  consumer.TraceConsumerOld
 	tickers []*bucketTicker
@@ -74,26 +68,21 @@ type batcher struct {
 	timeout           time.Duration
 }
 
-var _ consumer.TraceConsumerOld = (*batcher)(nil)
+var _ consumer.TraceConsumerOld = (*batchProcessor)(nil)
 
-// NewBatcher creates a new batcher that batches spans by node and resource
-func NewBatcher(name string, logger *zap.Logger, sender consumer.TraceConsumerOld, opts ...Option) component.TraceProcessorOld {
+// newBatchProcessor creates a new batcher that batches spans by node and resource
+func newBatchProcessor(logger *zap.Logger, sender consumer.TraceConsumerOld, cfg *Config) *batchProcessor {
 	// Init with defaults
-	b := &batcher{
-		name:   name,
+	b := &batchProcessor{
+		name:   cfg.Name(),
 		sender: sender,
 		logger: logger,
 
-		removeAfterCycles: defaultRemoveAfterCycles,
-		sendBatchSize:     defaultSendBatchSize,
-		numTickers:        defaultNumTickers,
-		tickTime:          defaultTickTime,
-		timeout:           defaultTimeout,
-	}
-
-	// Override with options
-	for _, opt := range opts {
-		opt(b)
+		removeAfterCycles: cfg.RemoveAfterTicks,
+		sendBatchSize:     cfg.SendBatchSize,
+		numTickers:        cfg.NumTickers,
+		tickTime:          cfg.TickTime,
+		timeout:           cfg.Timeout,
 	}
 
 	// start tickers after options loaded in
@@ -103,29 +92,29 @@ func NewBatcher(name string, logger *zap.Logger, sender consumer.TraceConsumerOl
 
 // ConsumeTraceData implements batcher as a SpanProcessor and takes the provided spans and adds them to
 // batches
-func (b *batcher) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
+func (b *batchProcessor) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	bucketID := b.genBucketID(td.Node, td.Resource, td.SourceFormat)
 	bucket := b.getOrAddBucket(bucketID, td.Node, td.Resource, td.SourceFormat)
 	bucket.add(td.Spans)
 	return nil
 }
 
-func (b *batcher) GetCapabilities() component.ProcessorCapabilities {
+func (b *batchProcessor) GetCapabilities() component.ProcessorCapabilities {
 	return component.ProcessorCapabilities{MutatesConsumedData: false}
 }
 
 // Start is invoked during service startup.
-func (b *batcher) Start(host component.Host) error {
+func (b *batchProcessor) Start(host component.Host) error {
 	return nil
 }
 
 // Shutdown is invoked during service shutdown.
-func (b *batcher) Shutdown() error {
+func (b *batchProcessor) Shutdown() error {
 	// TODO: flush accumulated data.
 	return nil
 }
 
-func (b *batcher) genBucketID(node *commonpb.Node, resource *resourcepb.Resource, spanFormat string) string {
+func (b *batchProcessor) genBucketID(node *commonpb.Node, resource *resourcepb.Resource, spanFormat string) string {
 	h := sha256.New()
 	if node != nil {
 		nodeKey, err := proto.Marshal(node)
@@ -146,7 +135,7 @@ func (b *batcher) genBucketID(node *commonpb.Node, resource *resourcepb.Resource
 	return fmt.Sprintf("%x", h.Sum([]byte(spanFormat)))
 }
 
-func (b *batcher) getBucket(bucketID string) *nodeBatch {
+func (b *batchProcessor) getBucket(bucketID string) *nodeBatch {
 	bucket, ok := b.buckets.Load(bucketID)
 	if ok {
 		return bucket.(*nodeBatch)
@@ -154,7 +143,7 @@ func (b *batcher) getBucket(bucketID string) *nodeBatch {
 	return nil
 }
 
-func (b *batcher) getOrAddBucket(
+func (b *batchProcessor) getOrAddBucket(
 	bucketID string, node *commonpb.Node, resource *resourcepb.Resource, spanFormat string,
 ) *nodeBatch {
 	bucket, loaded := b.buckets.Load(bucketID)
@@ -173,7 +162,7 @@ func (b *batcher) getOrAddBucket(
 	return bucket.(*nodeBatch)
 }
 
-func (b *batcher) removeBucket(bucketID string) {
+func (b *batchProcessor) removeBucket(bucketID string) {
 	stats.Record(context.Background(), statNodesRemovedFromBatches.M(1))
 	b.buckets.Delete(bucketID)
 }
@@ -186,14 +175,14 @@ type nodeBatch struct {
 	dead            uint32
 	lastSent        int64
 
-	parent   *batcher
+	parent   *batchProcessor
 	format   string
 	node     *commonpb.Node
 	resource *resourcepb.Resource
 }
 
 func newNodeBatch(
-	parent *batcher,
+	parent *batchProcessor,
 	format string,
 	node *commonpb.Node,
 	resource *resourcepb.Resource,
@@ -262,13 +251,13 @@ func (nb *nodeBatch) getAndReset() ([][]*tracepb.Span, uint32) {
 type bucketTicker struct {
 	ticker       *time.Ticker
 	nodes        map[string]bool
-	parent       *batcher
+	parent       *batchProcessor
 	pendingNodes chan string
 	stopCn       chan struct{}
 	once         sync.Once
 }
 
-func newStartedBucketTickersForBatch(b *batcher) []*bucketTicker {
+func newStartedBucketTickersForBatch(b *batchProcessor) []*bucketTicker {
 	tickers := make([]*bucketTicker, 0, b.numTickers)
 	for ignored := 0; ignored < b.numTickers; ignored++ {
 		ticker := newBucketTicker(b, b.tickTime)
@@ -278,7 +267,7 @@ func newStartedBucketTickersForBatch(b *batcher) []*bucketTicker {
 	return tickers
 }
 
-func newBucketTicker(parent *batcher, tickTime time.Duration) *bucketTicker {
+func newBucketTicker(parent *batchProcessor, tickTime time.Duration) *bucketTicker {
 	return &bucketTicker{
 		ticker:       time.NewTicker(tickTime),
 		nodes:        make(map[string]bool),
@@ -343,8 +332,4 @@ func (bt *bucketTicker) processNodeBatch(nbKey string, nb *nodeBatch) {
 		}
 		nb.mu.Unlock()
 	}
-}
-
-func (bt *bucketTicker) stop() {
-	close(bt.stopCn)
 }

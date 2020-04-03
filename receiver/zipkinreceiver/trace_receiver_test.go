@@ -417,7 +417,7 @@ func TestStartTraceReception(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sink := new(exportertest.SinkTraceExporter)
+			sink := new(exportertest.SinkTraceExporterOld)
 			zr, err := New(zipkinReceiver, "localhost:0", sink)
 			require.Nil(t, err)
 			require.NotNil(t, zr)

@@ -82,6 +82,25 @@ func (md MetricData) MetricCount() int {
 	return metricCount
 }
 
+// MetricAndDataPointCount calculates the total number of metrics and datapoints.
+func (md MetricData) MetricAndDataPointCount() (metricCount int, dataPointCount int) {
+	rms := md.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		ilms := rms.At(i).InstrumentationLibraryMetrics()
+		for j := 0; j < ilms.Len(); j++ {
+			metrics := ilms.At(j).Metrics()
+			metricCount += metrics.Len()
+			for k := 0; k < metrics.Len(); k++ {
+				dataPointCount += metrics.At(k).Int64DataPoints().Len()
+				dataPointCount += metrics.At(k).DoubleDataPoints().Len()
+				dataPointCount += metrics.At(k).HistogramDataPoints().Len()
+				dataPointCount += metrics.At(k).SummaryDataPoints().Len()
+			}
+		}
+	}
+	return
+}
+
 type MetricType otlpmetrics.MetricDescriptor_Type
 
 const (

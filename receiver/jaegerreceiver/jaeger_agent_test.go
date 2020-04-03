@@ -181,7 +181,7 @@ func TestJaegerHTTP(t *testing.T) {
 
 func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *Configuration) {
 	// 1. Create the Jaeger receiver aka "server"
-	sink := new(exportertest.SinkTraceExporter)
+	sink := new(exportertest.SinkTraceExporterOld)
 	jr, err := New(jaegerAgent, receiverConfig, sink, zap.NewNop())
 	assert.NoError(t, err, "Failed to create new Jaeger Receiver")
 	defer jr.Shutdown()

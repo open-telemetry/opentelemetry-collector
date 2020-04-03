@@ -21,9 +21,6 @@ import (
 	"net"
 	"testing"
 
-	occommon "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	octrace "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	collectortrace "github.com/open-telemetry/opentelemetry-proto/gen/go/collector/trace/v1"
 	otlpcommon "github.com/open-telemetry/opentelemetry-proto/gen/go/common/v1"
 	otlpresource "github.com/open-telemetry/opentelemetry-proto/gen/go/resource/v1"
@@ -33,11 +30,9 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/internal"
+	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector/observability"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/receivertest"
 	"github.com/open-telemetry/opentelemetry-collector/testutils"
 )
 
@@ -46,7 +41,7 @@ var _ collectortrace.TraceServiceServer = (*Receiver)(nil)
 func TestExport(t *testing.T) {
 	// given
 
-	traceSink := receivertest.NewTraceAppender()
+	traceSink := new(exportertest.SinkTraceExporter)
 
 	_, port, doneFn := otlpReceiverOnGRPCServer(t, traceSink)
 	defer doneFn()
@@ -65,61 +60,67 @@ func TestExport(t *testing.T) {
 	spanID, err := base64.StdEncoding.DecodeString("QuHicGYRg4U=")
 	assert.NoError(t, err)
 
-	req := &collectortrace.ExportTraceServiceRequest{
-		ResourceSpans: []*otlptrace.ResourceSpans{
-			{
-				Resource: &otlpresource.Resource{
-					Attributes: []*otlpcommon.AttributeKeyValue{
-						{
-							Key:         "key1",
-							StringValue: "value1",
-						},
+	resourceSpans := []*otlptrace.ResourceSpans{
+		{
+			Resource: &otlpresource.Resource{
+				Attributes: []*otlpcommon.AttributeKeyValue{
+					{
+						Key:         "key1",
+						StringValue: "value1",
 					},
 				},
-				InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
-					{
-						InstrumentationLibrary: &otlpcommon.InstrumentationLibrary{
-							Name:    "name1",
-							Version: "version1",
-						},
-						Spans: []*otlptrace.Span{
-							{
-								TraceId:           traceID,
-								SpanId:            spanID,
-								Name:              "operationB",
-								Kind:              otlptrace.Span_SERVER,
-								StartTimeUnixNano: unixnanos,
-								EndTimeUnixNano:   unixnanos,
-								Events: []*otlptrace.Span_Event{
-									{
-										TimeUnixNano: unixnanos,
-										Name:         "event1",
-										Attributes: []*otlpcommon.AttributeKeyValue{
-											{
-												Key:         "eventattr1",
-												Type:        otlpcommon.AttributeKeyValue_STRING,
-												StringValue: "eventattrval1",
-											},
+			},
+			InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
+				{
+					InstrumentationLibrary: &otlpcommon.InstrumentationLibrary{
+						Name:    "name1",
+						Version: "version1",
+					},
+					Spans: []*otlptrace.Span{
+						{
+							TraceId:           traceID,
+							SpanId:            spanID,
+							Name:              "operationB",
+							Kind:              otlptrace.Span_SERVER,
+							StartTimeUnixNano: unixnanos,
+							EndTimeUnixNano:   unixnanos,
+							Events: []*otlptrace.Span_Event{
+								{
+									TimeUnixNano: unixnanos,
+									Name:         "event1",
+									Attributes: []*otlpcommon.AttributeKeyValue{
+										{
+											Key:         "eventattr1",
+											Type:        otlpcommon.AttributeKeyValue_STRING,
+											StringValue: "eventattrval1",
 										},
-										DroppedAttributesCount: 4,
 									},
+									DroppedAttributesCount: 4,
 								},
-								Links: []*otlptrace.Span_Link{
-									{
-										TraceId: traceID,
-										SpanId:  spanID,
-									},
-								},
-								DroppedAttributesCount: 1,
-								DroppedEventsCount:     2,
-								Status:                 &otlptrace.Status{Message: "status-cancelled", Code: otlptrace.Status_Cancelled},
-								TraceState:             "a=text,b=123",
 							},
+							Links: []*otlptrace.Span_Link{
+								{
+									TraceId: traceID,
+									SpanId:  spanID,
+								},
+							},
+							DroppedAttributesCount: 1,
+							DroppedEventsCount:     2,
+							Status:                 &otlptrace.Status{Message: "status-cancelled", Code: otlptrace.Status_Cancelled},
+							TraceState:             "a=text,b=123",
 						},
 					},
 				},
 			},
 		},
+	}
+
+	// Keep trace data to compare the test result against it
+	// Clone needed because OTLP proto XXX_ fields are altered in the GRPC downstream
+	traceData := data.TraceDataFromOtlp(resourceSpans).Clone()
+
+	req := &collectortrace.ExportTraceServiceRequest{
+		ResourceSpans: resourceSpans,
 	}
 
 	resp, err := traceClient.Export(context.Background(), req)
@@ -128,77 +129,9 @@ func TestExport(t *testing.T) {
 
 	// assert
 
-	require.Equal(t, 1, len(traceSink.TraceDataList),
-		"unexpected length: %v", len(traceSink.TraceDataList))
+	require.Equal(t, 1, len(traceSink.AllTraces()), "unexpected length: %v", len(traceSink.AllTraces()))
 
-	traceData := consumerdata.TraceData{
-		Node: &occommon.Node{},
-		Resource: &ocresource.Resource{
-			Labels: map[string]string{
-				"key1": "value1",
-			},
-		},
-		Spans: []*octrace.Span{
-			{
-				TraceId:   traceID,
-				SpanId:    spanID,
-				Name:      &octrace.TruncatableString{Value: "operationB"},
-				Kind:      octrace.Span_SERVER,
-				StartTime: internal.UnixNanoToTimestamp(data.TimestampUnixNano(unixnanos)),
-				EndTime:   internal.UnixNanoToTimestamp(data.TimestampUnixNano(unixnanos)),
-				TimeEvents: &octrace.Span_TimeEvents{
-					TimeEvent: []*octrace.Span_TimeEvent{
-						{
-							Time: internal.UnixNanoToTimestamp(data.TimestampUnixNano(unixnanos)),
-							Value: &octrace.Span_TimeEvent_Annotation_{
-								Annotation: &octrace.Span_TimeEvent_Annotation{
-									Description: &octrace.TruncatableString{Value: "event1"},
-									Attributes: &octrace.Span_Attributes{
-										AttributeMap: map[string]*octrace.AttributeValue{
-											"eventattr1": {
-												Value: &octrace.AttributeValue_StringValue{
-													StringValue: &octrace.TruncatableString{Value: "eventattrval1"},
-												},
-											},
-										},
-										DroppedAttributesCount: 4,
-									},
-								},
-							},
-						},
-					},
-					DroppedAnnotationsCount: 2,
-				},
-				Links: &octrace.Span_Links{
-					Link: []*octrace.Span_Link{
-						{
-							TraceId: traceID,
-							SpanId:  spanID,
-						},
-					},
-				},
-				Attributes: &octrace.Span_Attributes{
-					DroppedAttributesCount: 1,
-				},
-				Status: &octrace.Status{Message: "status-cancelled", Code: 1},
-				Tracestate: &octrace.Span_Tracestate{
-					Entries: []*octrace.Span_Tracestate_Entry{
-						{
-							Key:   "a",
-							Value: "text",
-						},
-						{
-							Key:   "b",
-							Value: "123",
-						},
-					},
-				},
-			},
-		},
-		SourceFormat: "otlp_trace",
-	}
-
-	assert.EqualValues(t, traceData, traceSink.TraceDataList[0])
+	assert.EqualValues(t, traceData, traceSink.AllTraces()[0])
 }
 
 func makeTraceServiceClient(port int) (collectortrace.TraceServiceClient, func(), error) {
@@ -214,7 +147,7 @@ func makeTraceServiceClient(port int) (collectortrace.TraceServiceClient, func()
 	return metricsClient, doneFn, nil
 }
 
-func otlpReceiverOnGRPCServer(t *testing.T, tc consumer.TraceConsumerOld) (r *Receiver, port int, done func()) {
+func otlpReceiverOnGRPCServer(t *testing.T, tc consumer.TraceConsumer) (r *Receiver, port int, done func()) {
 	ln, err := net.Listen("tcp", "localhost:")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 

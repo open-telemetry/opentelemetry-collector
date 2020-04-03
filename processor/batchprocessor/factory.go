@@ -15,6 +15,8 @@
 package batchprocessor
 
 import (
+	"time"
+
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
@@ -26,6 +28,12 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "batch"
+
+	defaultRemoveAfterCycles = uint32(10)
+	defaultSendBatchSize     = uint32(8192)
+	defaultNumTickers        = 4
+	defaultTickTime          = 1 * time.Second
+	defaultTimeout           = 1 * time.Second
 )
 
 // Factory is the factory for batch processor.
@@ -39,22 +47,7 @@ func (f *Factory) Type() string {
 
 // CreateDefaultConfig creates the default configuration for processor.
 func (f *Factory) CreateDefaultConfig() configmodels.Processor {
-	removeAfterTicks := int(defaultRemoveAfterCycles)
-	sendBatchSize := int(defaultSendBatchSize)
-	tickTime := defaultTickTime
-	timeout := defaultTimeout
-
-	return &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
-		},
-		RemoveAfterTicks: &removeAfterTicks,
-		SendBatchSize:    &sendBatchSize,
-		NumTickers:       defaultNumTickers,
-		TickTime:         &tickTime,
-		Timeout:          &timeout,
-	}
+	return generateDefaultConfig()
 }
 
 // CreateTraceProcessor creates a trace processor based on this config.
@@ -65,32 +58,7 @@ func (f *Factory) CreateTraceProcessor(
 ) (component.TraceProcessorOld, error) {
 	cfg := c.(*Config)
 
-	var batchingOptions []Option
-	if cfg.Timeout != nil {
-		batchingOptions = append(batchingOptions, WithTimeout(*cfg.Timeout))
-	}
-	if cfg.NumTickers > 0 {
-		batchingOptions = append(
-			batchingOptions, WithNumTickers(cfg.NumTickers),
-		)
-	}
-	if cfg.TickTime != nil {
-		batchingOptions = append(
-			batchingOptions, WithTickTime(*cfg.TickTime),
-		)
-	}
-	if cfg.SendBatchSize != nil {
-		batchingOptions = append(
-			batchingOptions, WithSendBatchSize(*cfg.SendBatchSize),
-		)
-	}
-	if cfg.RemoveAfterTicks != nil {
-		batchingOptions = append(
-			batchingOptions, WithRemoveAfterTicks(*cfg.RemoveAfterTicks),
-		)
-	}
-
-	return NewBatcher(cfg.NameVal, logger, nextConsumer, batchingOptions...), nil
+	return newBatchProcessor(logger, nextConsumer, cfg), nil
 }
 
 // CreateMetricsProcessor creates a metrics processor based on this config.
@@ -100,4 +68,18 @@ func (f *Factory) CreateMetricsProcessor(
 	cfg configmodels.Processor,
 ) (component.MetricsProcessorOld, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
+}
+
+func generateDefaultConfig() *Config {
+	return &Config{
+		ProcessorSettings: configmodels.ProcessorSettings{
+			TypeVal: typeStr,
+			NameVal: typeStr,
+		},
+		RemoveAfterTicks: defaultRemoveAfterCycles,
+		SendBatchSize:    defaultSendBatchSize,
+		NumTickers:       defaultNumTickers,
+		TickTime:         defaultTickTime,
+		Timeout:          defaultTimeout,
+	}
 }
