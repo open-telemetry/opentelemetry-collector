@@ -19,7 +19,7 @@ package data
 
 import (
 	"testing"
-	
+
 	otlpmetrics "github.com/open-telemetry/opentelemetry-proto/gen/go/metrics/v1"
 	"github.com/stretchr/testify/assert"
 )
@@ -31,7 +31,7 @@ func TestResourceMetricsSlice(t *testing.T) {
 	assert.EqualValues(t, 0, es.Len())
 
 	es.Resize(13)
-	emptyVal :=  NewResourceMetrics()
+	emptyVal := NewResourceMetrics()
 	emptyVal.InitEmpty()
 	testVal := generateTestResourceMetrics()
 	assert.EqualValues(t, 13, es.Len())
@@ -82,7 +82,7 @@ func TestResourceMetricsSlice(t *testing.T) {
 
 func TestResourceMetrics(t *testing.T) {
 	ms := NewResourceMetrics()
-	assert.EqualValues(t, true,ms.IsNil())
+	assert.EqualValues(t, true, ms.IsNil())
 	ms.InitEmpty()
 	assert.EqualValues(t, false, ms.IsNil())
 
@@ -107,7 +107,7 @@ func TestInstrumentationLibraryMetricsSlice(t *testing.T) {
 	assert.EqualValues(t, 0, es.Len())
 
 	es.Resize(13)
-	emptyVal :=  NewInstrumentationLibraryMetrics()
+	emptyVal := NewInstrumentationLibraryMetrics()
 	emptyVal.InitEmpty()
 	testVal := generateTestInstrumentationLibraryMetrics()
 	assert.EqualValues(t, 13, es.Len())
@@ -158,7 +158,7 @@ func TestInstrumentationLibraryMetricsSlice(t *testing.T) {
 
 func TestInstrumentationLibraryMetrics(t *testing.T) {
 	ms := NewInstrumentationLibraryMetrics()
-	assert.EqualValues(t, true,ms.IsNil())
+	assert.EqualValues(t, true, ms.IsNil())
 	ms.InitEmpty()
 	assert.EqualValues(t, false, ms.IsNil())
 
@@ -183,7 +183,7 @@ func TestMetricSlice(t *testing.T) {
 	assert.EqualValues(t, 0, es.Len())
 
 	es.Resize(13)
-	emptyVal :=  NewMetric()
+	emptyVal := NewMetric()
 	emptyVal.InitEmpty()
 	testVal := generateTestMetric()
 	assert.EqualValues(t, 13, es.Len())
@@ -234,7 +234,7 @@ func TestMetricSlice(t *testing.T) {
 
 func TestMetric(t *testing.T) {
 	ms := NewMetric()
-	assert.EqualValues(t, true,ms.IsNil())
+	assert.EqualValues(t, true, ms.IsNil())
 	ms.InitEmpty()
 	assert.EqualValues(t, false, ms.IsNil())
 
@@ -269,7 +269,7 @@ func TestMetric(t *testing.T) {
 
 func TestMetricDescriptor(t *testing.T) {
 	ms := NewMetricDescriptor()
-	assert.EqualValues(t, true,ms.IsNil())
+	assert.EqualValues(t, true, ms.IsNil())
 	ms.InitEmpty()
 	assert.EqualValues(t, false, ms.IsNil())
 
@@ -308,7 +308,7 @@ func TestInt64DataPointSlice(t *testing.T) {
 	assert.EqualValues(t, 0, es.Len())
 
 	es.Resize(13)
-	emptyVal :=  NewInt64DataPoint()
+	emptyVal := NewInt64DataPoint()
 	emptyVal.InitEmpty()
 	testVal := generateTestInt64DataPoint()
 	assert.EqualValues(t, 13, es.Len())
@@ -359,7 +359,7 @@ func TestInt64DataPointSlice(t *testing.T) {
 
 func TestInt64DataPoint(t *testing.T) {
 	ms := NewInt64DataPoint()
-	assert.EqualValues(t, true,ms.IsNil())
+	assert.EqualValues(t, true, ms.IsNil())
 	ms.InitEmpty()
 	assert.EqualValues(t, false, ms.IsNil())
 
@@ -393,7 +393,7 @@ func TestDoubleDataPointSlice(t *testing.T) {
 	assert.EqualValues(t, 0, es.Len())
 
 	es.Resize(13)
-	emptyVal :=  NewDoubleDataPoint()
+	emptyVal := NewDoubleDataPoint()
 	emptyVal.InitEmpty()
 	testVal := generateTestDoubleDataPoint()
 	assert.EqualValues(t, 13, es.Len())
@@ -444,7 +444,7 @@ func TestDoubleDataPointSlice(t *testing.T) {
 
 func TestDoubleDataPoint(t *testing.T) {
 	ms := NewDoubleDataPoint()
-	assert.EqualValues(t, true,ms.IsNil())
+	assert.EqualValues(t, true, ms.IsNil())
 	ms.InitEmpty()
 	assert.EqualValues(t, false, ms.IsNil())
 
@@ -478,7 +478,7 @@ func TestHistogramDataPointSlice(t *testing.T) {
 	assert.EqualValues(t, 0, es.Len())
 
 	es.Resize(13)
-	emptyVal :=  NewHistogramDataPoint()
+	emptyVal := NewHistogramDataPoint()
 	emptyVal.InitEmpty()
 	testVal := generateTestHistogramDataPoint()
 	assert.EqualValues(t, 13, es.Len())
@@ -529,7 +529,7 @@ func TestHistogramDataPointSlice(t *testing.T) {
 
 func TestHistogramDataPoint(t *testing.T) {
 	ms := NewHistogramDataPoint()
-	assert.EqualValues(t, true,ms.IsNil())
+	assert.EqualValues(t, true, ms.IsNil())
 	ms.InitEmpty()
 	assert.EqualValues(t, false, ms.IsNil())
 
@@ -578,7 +578,7 @@ func TestHistogramBucketSlice(t *testing.T) {
 	assert.EqualValues(t, 0, es.Len())
 
 	es.Resize(13)
-	emptyVal :=  NewHistogramBucket()
+	emptyVal := NewHistogramBucket()
 	emptyVal.InitEmpty()
 	testVal := generateTestHistogramBucket()
 	assert.EqualValues(t, 13, es.Len())
@@ -629,7 +629,7 @@ func TestHistogramBucketSlice(t *testing.T) {
 
 func TestHistogramBucket(t *testing.T) {
 	ms := NewHistogramBucket()
-	assert.EqualValues(t, true,ms.IsNil())
+	assert.EqualValues(t, true, ms.IsNil())
 	ms.InitEmpty()
 	assert.EqualValues(t, false, ms.IsNil())
 
@@ -649,7 +649,7 @@ func TestHistogramBucket(t *testing.T) {
 
 func TestHistogramBucketExemplar(t *testing.T) {
 	ms := NewHistogramBucketExemplar()
-	assert.EqualValues(t, true,ms.IsNil())
+	assert.EqualValues(t, true, ms.IsNil())
 	ms.InitEmpty()
 	assert.EqualValues(t, false, ms.IsNil())
 
@@ -678,7 +678,7 @@ func TestSummaryDataPointSlice(t *testing.T) {
 	assert.EqualValues(t, 0, es.Len())
 
 	es.Resize(13)
-	emptyVal :=  NewSummaryDataPoint()
+	emptyVal := NewSummaryDataPoint()
 	emptyVal.InitEmpty()
 	testVal := generateTestSummaryDataPoint()
 	assert.EqualValues(t, 13, es.Len())
@@ -729,7 +729,7 @@ func TestSummaryDataPointSlice(t *testing.T) {
 
 func TestSummaryDataPoint(t *testing.T) {
 	ms := NewSummaryDataPoint()
-	assert.EqualValues(t, true,ms.IsNil())
+	assert.EqualValues(t, true, ms.IsNil())
 	ms.InitEmpty()
 	assert.EqualValues(t, false, ms.IsNil())
 
@@ -773,7 +773,7 @@ func TestSummaryValueAtPercentileSlice(t *testing.T) {
 	assert.EqualValues(t, 0, es.Len())
 
 	es.Resize(13)
-	emptyVal :=  NewSummaryValueAtPercentile()
+	emptyVal := NewSummaryValueAtPercentile()
 	emptyVal.InitEmpty()
 	testVal := generateTestSummaryValueAtPercentile()
 	assert.EqualValues(t, 13, es.Len())
@@ -824,7 +824,7 @@ func TestSummaryValueAtPercentileSlice(t *testing.T) {
 
 func TestSummaryValueAtPercentile(t *testing.T) {
 	ms := NewSummaryValueAtPercentile()
-	assert.EqualValues(t, true,ms.IsNil())
+	assert.EqualValues(t, true, ms.IsNil())
 	ms.InitEmpty()
 	assert.EqualValues(t, false, ms.IsNil())
 

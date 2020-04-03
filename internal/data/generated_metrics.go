@@ -30,7 +30,7 @@ import (
 // Important: zero-initialized instance is not valid for use.
 type ResourceMetricsSlice struct {
 	// orig points to the slice otlpmetrics.ResourceMetrics field contained somewhere else.
-    // We use pointer-to-slice to be able to modify it in functions like Resize.
+	// We use pointer-to-slice to be able to modify it in functions like Resize.
 	orig *[]*otlpmetrics.ResourceMetrics
 }
 
@@ -103,7 +103,7 @@ func (es ResourceMetricsSlice) Resize(newLen int) {
 // Important: zero-initialized instance is not valid for use.
 type ResourceMetrics struct {
 	// orig points to the pointer otlpmetrics.ResourceMetrics field contained somewhere else.
-    // We use pointer-to-pointer to be able to modify it in InitEmpty func.
+	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
 	orig **otlpmetrics.ResourceMetrics
 }
 
@@ -126,7 +126,7 @@ func (ms ResourceMetrics) InitEmpty() {
 }
 
 // IsNil returns true if the underlying data are nil.
-// 
+//
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms ResourceMetrics) IsNil() bool {
 	return *ms.orig == nil
@@ -158,7 +158,7 @@ func (ms ResourceMetrics) InstrumentationLibraryMetrics() InstrumentationLibrary
 // Important: zero-initialized instance is not valid for use.
 type InstrumentationLibraryMetricsSlice struct {
 	// orig points to the slice otlpmetrics.InstrumentationLibraryMetrics field contained somewhere else.
-    // We use pointer-to-slice to be able to modify it in functions like Resize.
+	// We use pointer-to-slice to be able to modify it in functions like Resize.
 	orig *[]*otlpmetrics.InstrumentationLibraryMetrics
 }
 
@@ -231,7 +231,7 @@ func (es InstrumentationLibraryMetricsSlice) Resize(newLen int) {
 // Important: zero-initialized instance is not valid for use.
 type InstrumentationLibraryMetrics struct {
 	// orig points to the pointer otlpmetrics.InstrumentationLibraryMetrics field contained somewhere else.
-    // We use pointer-to-pointer to be able to modify it in InitEmpty func.
+	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
 	orig **otlpmetrics.InstrumentationLibraryMetrics
 }
 
@@ -254,7 +254,7 @@ func (ms InstrumentationLibraryMetrics) InitEmpty() {
 }
 
 // IsNil returns true if the underlying data are nil.
-// 
+//
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms InstrumentationLibraryMetrics) IsNil() bool {
 	return *ms.orig == nil
@@ -286,7 +286,7 @@ func (ms InstrumentationLibraryMetrics) Metrics() MetricSlice {
 // Important: zero-initialized instance is not valid for use.
 type MetricSlice struct {
 	// orig points to the slice otlpmetrics.Metric field contained somewhere else.
-    // We use pointer-to-slice to be able to modify it in functions like Resize.
+	// We use pointer-to-slice to be able to modify it in functions like Resize.
 	orig *[]*otlpmetrics.Metric
 }
 
@@ -359,7 +359,7 @@ func (es MetricSlice) Resize(newLen int) {
 // Important: zero-initialized instance is not valid for use.
 type Metric struct {
 	// orig points to the pointer otlpmetrics.Metric field contained somewhere else.
-    // We use pointer-to-pointer to be able to modify it in InitEmpty func.
+	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
 	orig **otlpmetrics.Metric
 }
 
@@ -382,7 +382,7 @@ func (ms Metric) InitEmpty() {
 }
 
 // IsNil returns true if the underlying data are nil.
-// 
+//
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms Metric) IsNil() bool {
 	return *ms.orig == nil
@@ -435,7 +435,7 @@ func (ms Metric) SummaryDataPoints() SummaryDataPointSlice {
 // Important: zero-initialized instance is not valid for use.
 type MetricDescriptor struct {
 	// orig points to the pointer otlpmetrics.MetricDescriptor field contained somewhere else.
-    // We use pointer-to-pointer to be able to modify it in InitEmpty func.
+	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
 	orig **otlpmetrics.MetricDescriptor
 }
 
@@ -458,7 +458,7 @@ func (ms MetricDescriptor) InitEmpty() {
 }
 
 // IsNil returns true if the underlying data are nil.
-// 
+//
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms MetricDescriptor) IsNil() bool {
 	return *ms.orig == nil
@@ -536,7 +536,7 @@ func (ms MetricDescriptor) LabelsMap() StringMap {
 // Important: zero-initialized instance is not valid for use.
 type Int64DataPointSlice struct {
 	// orig points to the slice otlpmetrics.Int64DataPoint field contained somewhere else.
-    // We use pointer-to-slice to be able to modify it in functions like Resize.
+	// We use pointer-to-slice to be able to modify it in functions like Resize.
 	orig *[]*otlpmetrics.Int64DataPoint
 }
 
@@ -609,7 +609,7 @@ func (es Int64DataPointSlice) Resize(newLen int) {
 // Important: zero-initialized instance is not valid for use.
 type Int64DataPoint struct {
 	// orig points to the pointer otlpmetrics.Int64DataPoint field contained somewhere else.
-    // We use pointer-to-pointer to be able to modify it in InitEmpty func.
+	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
 	orig **otlpmetrics.Int64DataPoint
 }
 
@@ -632,7 +632,7 @@ func (ms Int64DataPoint) InitEmpty() {
 }
 
 // IsNil returns true if the underlying data are nil.
-// 
+//
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms Int64DataPoint) IsNil() bool {
 	return *ms.orig == nil
@@ -696,7 +696,7 @@ func (ms Int64DataPoint) SetValue(v int64) {
 // Important: zero-initialized instance is not valid for use.
 type DoubleDataPointSlice struct {
 	// orig points to the slice otlpmetrics.DoubleDataPoint field contained somewhere else.
-    // We use pointer-to-slice to be able to modify it in functions like Resize.
+	// We use pointer-to-slice to be able to modify it in functions like Resize.
 	orig *[]*otlpmetrics.DoubleDataPoint
 }
 
@@ -769,7 +769,7 @@ func (es DoubleDataPointSlice) Resize(newLen int) {
 // Important: zero-initialized instance is not valid for use.
 type DoubleDataPoint struct {
 	// orig points to the pointer otlpmetrics.DoubleDataPoint field contained somewhere else.
-    // We use pointer-to-pointer to be able to modify it in InitEmpty func.
+	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
 	orig **otlpmetrics.DoubleDataPoint
 }
 
@@ -792,7 +792,7 @@ func (ms DoubleDataPoint) InitEmpty() {
 }
 
 // IsNil returns true if the underlying data are nil.
-// 
+//
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms DoubleDataPoint) IsNil() bool {
 	return *ms.orig == nil
@@ -856,7 +856,7 @@ func (ms DoubleDataPoint) SetValue(v float64) {
 // Important: zero-initialized instance is not valid for use.
 type HistogramDataPointSlice struct {
 	// orig points to the slice otlpmetrics.HistogramDataPoint field contained somewhere else.
-    // We use pointer-to-slice to be able to modify it in functions like Resize.
+	// We use pointer-to-slice to be able to modify it in functions like Resize.
 	orig *[]*otlpmetrics.HistogramDataPoint
 }
 
@@ -929,7 +929,7 @@ func (es HistogramDataPointSlice) Resize(newLen int) {
 // Important: zero-initialized instance is not valid for use.
 type HistogramDataPoint struct {
 	// orig points to the pointer otlpmetrics.HistogramDataPoint field contained somewhere else.
-    // We use pointer-to-pointer to be able to modify it in InitEmpty func.
+	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
 	orig **otlpmetrics.HistogramDataPoint
 }
 
@@ -952,7 +952,7 @@ func (ms HistogramDataPoint) InitEmpty() {
 }
 
 // IsNil returns true if the underlying data are nil.
-// 
+//
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms HistogramDataPoint) IsNil() bool {
 	return *ms.orig == nil
@@ -1051,7 +1051,7 @@ func (ms HistogramDataPoint) SetExplicitBounds(v []float64) {
 // Important: zero-initialized instance is not valid for use.
 type HistogramBucketSlice struct {
 	// orig points to the slice otlpmetrics.HistogramDataPoint_Bucket field contained somewhere else.
-    // We use pointer-to-slice to be able to modify it in functions like Resize.
+	// We use pointer-to-slice to be able to modify it in functions like Resize.
 	orig *[]*otlpmetrics.HistogramDataPoint_Bucket
 }
 
@@ -1124,7 +1124,7 @@ func (es HistogramBucketSlice) Resize(newLen int) {
 // Important: zero-initialized instance is not valid for use.
 type HistogramBucket struct {
 	// orig points to the pointer otlpmetrics.HistogramDataPoint_Bucket field contained somewhere else.
-    // We use pointer-to-pointer to be able to modify it in InitEmpty func.
+	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
 	orig **otlpmetrics.HistogramDataPoint_Bucket
 }
 
@@ -1147,7 +1147,7 @@ func (ms HistogramBucket) InitEmpty() {
 }
 
 // IsNil returns true if the underlying data are nil.
-// 
+//
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms HistogramBucket) IsNil() bool {
 	return *ms.orig == nil
@@ -1187,7 +1187,7 @@ func (ms HistogramBucket) Exemplar() HistogramBucketExemplar {
 // Important: zero-initialized instance is not valid for use.
 type HistogramBucketExemplar struct {
 	// orig points to the pointer otlpmetrics.HistogramDataPoint_Bucket_Exemplar field contained somewhere else.
-    // We use pointer-to-pointer to be able to modify it in InitEmpty func.
+	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
 	orig **otlpmetrics.HistogramDataPoint_Bucket_Exemplar
 }
 
@@ -1210,7 +1210,7 @@ func (ms HistogramBucketExemplar) InitEmpty() {
 }
 
 // IsNil returns true if the underlying data are nil.
-// 
+//
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms HistogramBucketExemplar) IsNil() bool {
 	return *ms.orig == nil
@@ -1260,7 +1260,7 @@ func (ms HistogramBucketExemplar) Attachments() StringMap {
 // Important: zero-initialized instance is not valid for use.
 type SummaryDataPointSlice struct {
 	// orig points to the slice otlpmetrics.SummaryDataPoint field contained somewhere else.
-    // We use pointer-to-slice to be able to modify it in functions like Resize.
+	// We use pointer-to-slice to be able to modify it in functions like Resize.
 	orig *[]*otlpmetrics.SummaryDataPoint
 }
 
@@ -1333,7 +1333,7 @@ func (es SummaryDataPointSlice) Resize(newLen int) {
 // Important: zero-initialized instance is not valid for use.
 type SummaryDataPoint struct {
 	// orig points to the pointer otlpmetrics.SummaryDataPoint field contained somewhere else.
-    // We use pointer-to-pointer to be able to modify it in InitEmpty func.
+	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
 	orig **otlpmetrics.SummaryDataPoint
 }
 
@@ -1356,7 +1356,7 @@ func (ms SummaryDataPoint) InitEmpty() {
 }
 
 // IsNil returns true if the underlying data are nil.
-// 
+//
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms SummaryDataPoint) IsNil() bool {
 	return *ms.orig == nil
@@ -1441,7 +1441,7 @@ func (ms SummaryDataPoint) ValueAtPercentiles() SummaryValueAtPercentileSlice {
 // Important: zero-initialized instance is not valid for use.
 type SummaryValueAtPercentileSlice struct {
 	// orig points to the slice otlpmetrics.SummaryDataPoint_ValueAtPercentile field contained somewhere else.
-    // We use pointer-to-slice to be able to modify it in functions like Resize.
+	// We use pointer-to-slice to be able to modify it in functions like Resize.
 	orig *[]*otlpmetrics.SummaryDataPoint_ValueAtPercentile
 }
 
@@ -1514,7 +1514,7 @@ func (es SummaryValueAtPercentileSlice) Resize(newLen int) {
 // Important: zero-initialized instance is not valid for use.
 type SummaryValueAtPercentile struct {
 	// orig points to the pointer otlpmetrics.SummaryDataPoint_ValueAtPercentile field contained somewhere else.
-    // We use pointer-to-pointer to be able to modify it in InitEmpty func.
+	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
 	orig **otlpmetrics.SummaryDataPoint_ValueAtPercentile
 }
 
@@ -1537,7 +1537,7 @@ func (ms SummaryValueAtPercentile) InitEmpty() {
 }
 
 // IsNil returns true if the underlying data are nil.
-// 
+//
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms SummaryValueAtPercentile) IsNil() bool {
 	return *ms.orig == nil

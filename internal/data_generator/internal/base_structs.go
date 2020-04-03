@@ -28,7 +28,7 @@ const sliceTemplate = `// ${structName} logically represents a slice of ${elemen
 // Important: zero-initialized instance is not valid for use.
 type ${structName} struct {
 	// orig points to the slice ${originName} field contained somewhere else.
-    // We use pointer-to-slice to be able to modify it in functions like Resize.
+	// We use pointer-to-slice to be able to modify it in functions like Resize.
 	orig *[]*${originName}
 }
 
@@ -99,7 +99,7 @@ const sliceTestTemplate = `func Test${structName}(t *testing.T) {
 	assert.EqualValues(t, 0, es.Len())
 
 	es.Resize(13)
-	emptyVal :=  New${elementName}()
+	emptyVal := New${elementName}()
 	emptyVal.InitEmpty()
 	testVal := generateTest${elementName}()
 	assert.EqualValues(t, 13, es.Len())
@@ -170,7 +170,7 @@ const messageTemplate = `${description}
 // Important: zero-initialized instance is not valid for use.
 type ${structName} struct {
 	// orig points to the pointer ${originName} field contained somewhere else.
-    // We use pointer-to-pointer to be able to modify it in InitEmpty func.
+	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
 	orig **${originName}
 }
 
@@ -193,7 +193,7 @@ func (ms ${structName}) InitEmpty() {
 }
 
 // IsNil returns true if the underlying data are nil.
-// 
+//
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms ${structName}) IsNil() bool {
 	return *ms.orig == nil
@@ -201,7 +201,7 @@ func (ms ${structName}) IsNil() bool {
 
 const messageTestHeaderTemplate = `func Test${structName}(t *testing.T) {
 	ms := New${structName}()
-	assert.EqualValues(t, true,ms.IsNil())
+	assert.EqualValues(t, true, ms.IsNil())
 	ms.InitEmpty()
 	assert.EqualValues(t, false, ms.IsNil())`
 
