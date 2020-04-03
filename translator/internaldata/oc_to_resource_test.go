@@ -17,11 +17,9 @@ package internaldata
 import (
 	"strings"
 	"testing"
-	"time"
 
 	occommon "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"github.com/golang/protobuf/ptypes"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
@@ -38,46 +36,11 @@ func TestOcNodeResourceToInternal(t *testing.T) {
 	ocNodeResourceToInternal(ocNode, ocResource, resource)
 	assert.EqualValues(t, true, resource.IsNil())
 
-	ts, err := ptypes.TimestampProto(time.Date(2020, 2, 11, 20, 26, 0, 0, time.UTC))
-	assert.NoError(t, err)
-
-	ocNode = &occommon.Node{
-		Identifier: &occommon.ProcessIdentifier{
-			HostName:       "host1",
-			Pid:            123,
-			StartTimestamp: ts,
-		},
-		LibraryInfo: &occommon.LibraryInfo{
-			Language:           occommon.LibraryInfo_CPP,
-			ExporterVersion:    "v1.2.0",
-			CoreLibraryVersion: "v2.0.1",
-		},
-		ServiceInfo: &occommon.ServiceInfo{
-			Name: "svcA",
-		},
-		Attributes: map[string]string{
-			"node-attr": "val1",
-		},
-	}
-	ocResource = &ocresource.Resource{
-		Type: "good-resource",
-		Labels: map[string]string{
-			"resource-attr": "val2",
-		},
-	}
-	expectedAttrs := data.NewAttributeMap().InitFromMap(map[string]data.AttributeValue{
-		conventions.AttributeHostHostname:       data.NewAttributeValueString("host1"),
-		conventions.OCAttributeProcessID:        data.NewAttributeValueInt(123),
-		conventions.OCAttributeProcessStartTime: data.NewAttributeValueString("2020-02-11T20:26:00Z"),
-		conventions.AttributeLibraryLanguage:    data.NewAttributeValueString("CPP"),
-		conventions.OCAttributeExporterVersion:  data.NewAttributeValueString("v1.2.0"),
-		conventions.AttributeLibraryVersion:     data.NewAttributeValueString("v2.0.1"),
-		conventions.AttributeServiceName:        data.NewAttributeValueString("svcA"),
-		"node-attr":                             data.NewAttributeValueString("val1"),
-		conventions.OCAttributeResourceType:     data.NewAttributeValueString("good-resource"),
-		"resource-attr":                         data.NewAttributeValueString("val2"),
-	})
-
+	ocNode = generateOcNode()
+	ocResource = generateOcResource()
+	expectedAttrs := generateResourceWithOcNodeAndResource().Attributes()
+	// We don't have type information in ocResource, so need to make int attr string
+	expectedAttrs.Upsert(data.NewAttributeKeyValueString("resource-int-attr", "123"))
 	ocNodeResourceToInternal(ocNode, ocResource, resource)
 	assert.EqualValues(t, expectedAttrs.Sort(), resource.Attributes().Sort())
 
@@ -97,4 +60,18 @@ func TestOcNodeResourceToInternal(t *testing.T) {
 	ocNodeResourceToInternal(ocNode, ocResource, resource)
 	// And verify that same-name attributes were ignored.
 	assert.EqualValues(t, expectedAttrs.Sort(), resource.Attributes().Sort())
+}
+
+func BenchmarkOcNodeResourceToInternal(b *testing.B) {
+	ocNode := generateOcNode()
+	ocResource := generateOcResource()
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		resource := data.NewResource()
+		ocNodeResourceToInternal(ocNode, ocResource, resource)
+		if ocNode.Identifier.Pid != 123 {
+			b.Fail()
+		}
+	}
 }

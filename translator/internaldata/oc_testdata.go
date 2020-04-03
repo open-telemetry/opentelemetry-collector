@@ -16,6 +16,8 @@
 package internaldata
 
 import (
+	"time"
+
 	occommon "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	ocmetrics "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
@@ -23,7 +25,9 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal"
+	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data/testdata"
+	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 )
 
 func generateOCTestDataNoMetrics() consumerdata.MetricsData {
@@ -444,6 +448,54 @@ func generateOCTestMetricSummary() *ocmetrics.Metric {
 					},
 				},
 			},
+		},
+	}
+}
+
+func generateResourceWithOcNodeAndResource() data.Resource {
+	resource := data.NewResource()
+	resource.InitEmpty()
+	resource.Attributes().InitFromMap(map[string]data.AttributeValue{
+		conventions.OCAttributeProcessStartTime: data.NewAttributeValueString("2020-02-11T20:26:00Z"),
+		conventions.AttributeHostHostname:       data.NewAttributeValueString("host1"),
+		conventions.OCAttributeProcessID:        data.NewAttributeValueInt(123),
+		conventions.AttributeLibraryVersion:     data.NewAttributeValueString("v2.0.1"),
+		conventions.OCAttributeExporterVersion:  data.NewAttributeValueString("v1.2.0"),
+		conventions.AttributeLibraryLanguage:    data.NewAttributeValueString("CPP"),
+		conventions.OCAttributeResourceType:     data.NewAttributeValueString("good-resource"),
+		"node-str-attr":                         data.NewAttributeValueString("node-str-attr-val"),
+		"resource-str-attr":                     data.NewAttributeValueString("resource-str-attr-val"),
+		"resource-int-attr":                     data.NewAttributeValueInt(123),
+	})
+	return resource
+}
+
+func generateOcNode() *occommon.Node {
+	ts := internal.TimeToTimestamp(time.Date(2020, 2, 11, 20, 26, 0, 0, time.UTC))
+
+	return &occommon.Node{
+		Identifier: &occommon.ProcessIdentifier{
+			HostName:       "host1",
+			Pid:            123,
+			StartTimestamp: ts,
+		},
+		LibraryInfo: &occommon.LibraryInfo{
+			Language:           occommon.LibraryInfo_CPP,
+			ExporterVersion:    "v1.2.0",
+			CoreLibraryVersion: "v2.0.1",
+		},
+		Attributes: map[string]string{
+			"node-str-attr": "node-str-attr-val",
+		},
+	}
+}
+
+func generateOcResource() *ocresource.Resource {
+	return &ocresource.Resource{
+		Type: "good-resource",
+		Labels: map[string]string{
+			"resource-str-attr": "resource-str-attr-val",
+			"resource-int-attr": "123",
 		},
 	}
 }
