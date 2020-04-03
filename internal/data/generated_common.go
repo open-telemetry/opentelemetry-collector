@@ -30,7 +30,7 @@ import (
 // Important: zero-initialized instance is not valid for use.
 type InstrumentationLibrary struct {
 	// orig points to the pointer otlpcommon.InstrumentationLibrary field contained somewhere else.
-    // We use pointer-to-pointer to be able to modify it in InitEmpty func.
+	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
 	orig **otlpcommon.InstrumentationLibrary
 }
 
@@ -53,7 +53,7 @@ func (ms InstrumentationLibrary) InitEmpty() {
 }
 
 // IsNil returns true if the underlying data are nil.
-// 
+//
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms InstrumentationLibrary) IsNil() bool {
 	return *ms.orig == nil

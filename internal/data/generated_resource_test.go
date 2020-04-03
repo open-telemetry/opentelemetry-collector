@@ -19,13 +19,13 @@ package data
 
 import (
 	"testing"
-	
+
 	"github.com/stretchr/testify/assert"
 )
 
 func TestResource(t *testing.T) {
 	ms := NewResource()
-	assert.EqualValues(t, true,ms.IsNil())
+	assert.EqualValues(t, true, ms.IsNil())
 	ms.InitEmpty()
 	assert.EqualValues(t, false, ms.IsNil())
 
