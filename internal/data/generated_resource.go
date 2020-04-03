@@ -30,7 +30,7 @@ import (
 // Important: zero-initialized instance is not valid for use.
 type Resource struct {
 	// orig points to the pointer otlpresource.Resource field contained somewhere else.
-    // We use pointer-to-pointer to be able to modify it in InitEmpty func.
+	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
 	orig **otlpresource.Resource
 }
 
@@ -53,7 +53,7 @@ func (ms Resource) InitEmpty() {
 }
 
 // IsNil returns true if the underlying data are nil.
-// 
+//
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms Resource) IsNil() bool {
 	return *ms.orig == nil

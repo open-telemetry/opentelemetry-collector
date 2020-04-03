@@ -19,7 +19,7 @@ package data
 
 import (
 	"testing"
-	
+
 	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
 	"github.com/stretchr/testify/assert"
 )
@@ -31,7 +31,7 @@ func TestResourceSpansSlice(t *testing.T) {
 	assert.EqualValues(t, 0, es.Len())
 
 	es.Resize(13)
-	emptyVal :=  NewResourceSpans()
+	emptyVal := NewResourceSpans()
 	emptyVal.InitEmpty()
 	testVal := generateTestResourceSpans()
 	assert.EqualValues(t, 13, es.Len())
@@ -82,7 +82,7 @@ func TestResourceSpansSlice(t *testing.T) {
 
 func TestResourceSpans(t *testing.T) {
 	ms := NewResourceSpans()
-	assert.EqualValues(t, true,ms.IsNil())
+	assert.EqualValues(t, true, ms.IsNil())
 	ms.InitEmpty()
 	assert.EqualValues(t, false, ms.IsNil())
 
@@ -107,7 +107,7 @@ func TestInstrumentationLibrarySpansSlice(t *testing.T) {
 	assert.EqualValues(t, 0, es.Len())
 
 	es.Resize(13)
-	emptyVal :=  NewInstrumentationLibrarySpans()
+	emptyVal := NewInstrumentationLibrarySpans()
 	emptyVal.InitEmpty()
 	testVal := generateTestInstrumentationLibrarySpans()
 	assert.EqualValues(t, 13, es.Len())
@@ -158,7 +158,7 @@ func TestInstrumentationLibrarySpansSlice(t *testing.T) {
 
 func TestInstrumentationLibrarySpans(t *testing.T) {
 	ms := NewInstrumentationLibrarySpans()
-	assert.EqualValues(t, true,ms.IsNil())
+	assert.EqualValues(t, true, ms.IsNil())
 	ms.InitEmpty()
 	assert.EqualValues(t, false, ms.IsNil())
 
@@ -183,7 +183,7 @@ func TestSpanSlice(t *testing.T) {
 	assert.EqualValues(t, 0, es.Len())
 
 	es.Resize(13)
-	emptyVal :=  NewSpan()
+	emptyVal := NewSpan()
 	emptyVal.InitEmpty()
 	testVal := generateTestSpan()
 	assert.EqualValues(t, 13, es.Len())
@@ -234,7 +234,7 @@ func TestSpanSlice(t *testing.T) {
 
 func TestSpan(t *testing.T) {
 	ms := NewSpan()
-	assert.EqualValues(t, true,ms.IsNil())
+	assert.EqualValues(t, true, ms.IsNil())
 	ms.InitEmpty()
 	assert.EqualValues(t, false, ms.IsNil())
 
@@ -324,7 +324,7 @@ func TestSpanEventSlice(t *testing.T) {
 	assert.EqualValues(t, 0, es.Len())
 
 	es.Resize(13)
-	emptyVal :=  NewSpanEvent()
+	emptyVal := NewSpanEvent()
 	emptyVal.InitEmpty()
 	testVal := generateTestSpanEvent()
 	assert.EqualValues(t, 13, es.Len())
@@ -375,7 +375,7 @@ func TestSpanEventSlice(t *testing.T) {
 
 func TestSpanEvent(t *testing.T) {
 	ms := NewSpanEvent()
-	assert.EqualValues(t, true,ms.IsNil())
+	assert.EqualValues(t, true, ms.IsNil())
 	ms.InitEmpty()
 	assert.EqualValues(t, false, ms.IsNil())
 
@@ -409,7 +409,7 @@ func TestSpanLinkSlice(t *testing.T) {
 	assert.EqualValues(t, 0, es.Len())
 
 	es.Resize(13)
-	emptyVal :=  NewSpanLink()
+	emptyVal := NewSpanLink()
 	emptyVal.InitEmpty()
 	testVal := generateTestSpanLink()
 	assert.EqualValues(t, 13, es.Len())
@@ -460,7 +460,7 @@ func TestSpanLinkSlice(t *testing.T) {
 
 func TestSpanLink(t *testing.T) {
 	ms := NewSpanLink()
-	assert.EqualValues(t, true,ms.IsNil())
+	assert.EqualValues(t, true, ms.IsNil())
 	ms.InitEmpty()
 	assert.EqualValues(t, false, ms.IsNil())
 
@@ -494,7 +494,7 @@ func TestSpanLink(t *testing.T) {
 
 func TestSpanStatus(t *testing.T) {
 	ms := NewSpanStatus()
-	assert.EqualValues(t, true,ms.IsNil())
+	assert.EqualValues(t, true, ms.IsNil())
 	ms.InitEmpty()
 	assert.EqualValues(t, false, ms.IsNil())
 

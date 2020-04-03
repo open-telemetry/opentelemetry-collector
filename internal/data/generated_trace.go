@@ -30,7 +30,7 @@ import (
 // Important: zero-initialized instance is not valid for use.
 type ResourceSpansSlice struct {
 	// orig points to the slice otlptrace.ResourceSpans field contained somewhere else.
-    // We use pointer-to-slice to be able to modify it in functions like Resize.
+	// We use pointer-to-slice to be able to modify it in functions like Resize.
 	orig *[]*otlptrace.ResourceSpans
 }
 
@@ -103,7 +103,7 @@ func (es ResourceSpansSlice) Resize(newLen int) {
 // Important: zero-initialized instance is not valid for use.
 type ResourceSpans struct {
 	// orig points to the pointer otlptrace.ResourceSpans field contained somewhere else.
-    // We use pointer-to-pointer to be able to modify it in InitEmpty func.
+	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
 	orig **otlptrace.ResourceSpans
 }
 
@@ -126,7 +126,7 @@ func (ms ResourceSpans) InitEmpty() {
 }
 
 // IsNil returns true if the underlying data are nil.
-// 
+//
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms ResourceSpans) IsNil() bool {
 	return *ms.orig == nil
@@ -158,7 +158,7 @@ func (ms ResourceSpans) InstrumentationLibrarySpans() InstrumentationLibrarySpan
 // Important: zero-initialized instance is not valid for use.
 type InstrumentationLibrarySpansSlice struct {
 	// orig points to the slice otlptrace.InstrumentationLibrarySpans field contained somewhere else.
-    // We use pointer-to-slice to be able to modify it in functions like Resize.
+	// We use pointer-to-slice to be able to modify it in functions like Resize.
 	orig *[]*otlptrace.InstrumentationLibrarySpans
 }
 
@@ -231,7 +231,7 @@ func (es InstrumentationLibrarySpansSlice) Resize(newLen int) {
 // Important: zero-initialized instance is not valid for use.
 type InstrumentationLibrarySpans struct {
 	// orig points to the pointer otlptrace.InstrumentationLibrarySpans field contained somewhere else.
-    // We use pointer-to-pointer to be able to modify it in InitEmpty func.
+	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
 	orig **otlptrace.InstrumentationLibrarySpans
 }
 
@@ -254,7 +254,7 @@ func (ms InstrumentationLibrarySpans) InitEmpty() {
 }
 
 // IsNil returns true if the underlying data are nil.
-// 
+//
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms InstrumentationLibrarySpans) IsNil() bool {
 	return *ms.orig == nil
@@ -286,7 +286,7 @@ func (ms InstrumentationLibrarySpans) Spans() SpanSlice {
 // Important: zero-initialized instance is not valid for use.
 type SpanSlice struct {
 	// orig points to the slice otlptrace.Span field contained somewhere else.
-    // We use pointer-to-slice to be able to modify it in functions like Resize.
+	// We use pointer-to-slice to be able to modify it in functions like Resize.
 	orig *[]*otlptrace.Span
 }
 
@@ -360,7 +360,7 @@ func (es SpanSlice) Resize(newLen int) {
 // Important: zero-initialized instance is not valid for use.
 type Span struct {
 	// orig points to the pointer otlptrace.Span field contained somewhere else.
-    // We use pointer-to-pointer to be able to modify it in InitEmpty func.
+	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
 	orig **otlptrace.Span
 }
 
@@ -383,7 +383,7 @@ func (ms Span) InitEmpty() {
 }
 
 // IsNil returns true if the underlying data are nil.
-// 
+//
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms Span) IsNil() bool {
 	return *ms.orig == nil
@@ -583,7 +583,7 @@ func (ms Span) Status() SpanStatus {
 // Important: zero-initialized instance is not valid for use.
 type SpanEventSlice struct {
 	// orig points to the slice otlptrace.Span_Event field contained somewhere else.
-    // We use pointer-to-slice to be able to modify it in functions like Resize.
+	// We use pointer-to-slice to be able to modify it in functions like Resize.
 	orig *[]*otlptrace.Span_Event
 }
 
@@ -657,7 +657,7 @@ func (es SpanEventSlice) Resize(newLen int) {
 // Important: zero-initialized instance is not valid for use.
 type SpanEvent struct {
 	// orig points to the pointer otlptrace.Span_Event field contained somewhere else.
-    // We use pointer-to-pointer to be able to modify it in InitEmpty func.
+	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
 	orig **otlptrace.Span_Event
 }
 
@@ -680,7 +680,7 @@ func (ms SpanEvent) InitEmpty() {
 }
 
 // IsNil returns true if the underlying data are nil.
-// 
+//
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms SpanEvent) IsNil() bool {
 	return *ms.orig == nil
@@ -744,7 +744,7 @@ func (ms SpanEvent) SetDroppedAttributesCount(v uint32) {
 // Important: zero-initialized instance is not valid for use.
 type SpanLinkSlice struct {
 	// orig points to the slice otlptrace.Span_Link field contained somewhere else.
-    // We use pointer-to-slice to be able to modify it in functions like Resize.
+	// We use pointer-to-slice to be able to modify it in functions like Resize.
 	orig *[]*otlptrace.Span_Link
 }
 
@@ -818,7 +818,7 @@ func (es SpanLinkSlice) Resize(newLen int) {
 // Important: zero-initialized instance is not valid for use.
 type SpanLink struct {
 	// orig points to the pointer otlptrace.Span_Link field contained somewhere else.
-    // We use pointer-to-pointer to be able to modify it in InitEmpty func.
+	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
 	orig **otlptrace.Span_Link
 }
 
@@ -841,7 +841,7 @@ func (ms SpanLink) InitEmpty() {
 }
 
 // IsNil returns true if the underlying data are nil.
-// 
+//
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms SpanLink) IsNil() bool {
 	return *ms.orig == nil
@@ -920,7 +920,7 @@ func (ms SpanLink) SetDroppedAttributesCount(v uint32) {
 // Important: zero-initialized instance is not valid for use.
 type SpanStatus struct {
 	// orig points to the pointer otlptrace.Status field contained somewhere else.
-    // We use pointer-to-pointer to be able to modify it in InitEmpty func.
+	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
 	orig **otlptrace.Status
 }
 
@@ -943,7 +943,7 @@ func (ms SpanStatus) InitEmpty() {
 }
 
 // IsNil returns true if the underlying data are nil.
-// 
+//
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms SpanStatus) IsNil() bool {
 	return *ms.orig == nil
