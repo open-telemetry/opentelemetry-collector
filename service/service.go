@@ -17,7 +17,6 @@
 package service
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"os"
@@ -81,13 +80,6 @@ type ApplicationStartInfo struct {
 
 	// Git hash of the source code.
 	GitHash string
-}
-
-// Context returns a context provided by the host to be used on the receiver
-// operations.
-func (app *Application) Context() context.Context {
-	// For now simply the background context.
-	return context.Background()
 }
 
 // Parameters holds configuration for creating a new Application.

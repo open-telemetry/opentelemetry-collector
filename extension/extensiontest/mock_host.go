@@ -15,7 +15,6 @@
 package extensiontest
 
 import (
-	"context"
 	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
@@ -39,12 +38,6 @@ func NewMockHost() *MockHost {
 // its start function has already returned.
 func (mh *MockHost) ReportFatalError(err error) {
 	mh.errorChan <- err
-}
-
-// Context returns a context provided by the host to be used on the component
-// operations.
-func (mh *MockHost) Context() context.Context {
-	return context.Background()
 }
 
 // WaitForFatalError waits the given amount of time until an error is reported via

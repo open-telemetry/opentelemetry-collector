@@ -14,8 +14,6 @@
 
 package component
 
-import "context"
-
 // Component is either a receiver, exporter, processor or extension.
 type Component interface {
 	// Start tells the component to start. Host parameter can be used for communicating
@@ -47,10 +45,6 @@ type Host interface {
 	// encountered a fatal error (i.e.: an error that the instance can't recover
 	// from) after its start function had already returned.
 	ReportFatalError(err error)
-
-	// Context returns a context provided by the host to be used on the component
-	// operations.
-	Context() context.Context
 
 	// GetFactory of the specified kind. Returns the factory for a component type.
 	// This allows components to create other components. For example:

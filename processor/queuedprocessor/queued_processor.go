@@ -71,7 +71,7 @@ func newQueuedSpanProcessor(logger *zap.Logger, sender consumer.TraceConsumerOld
 // Start is invoked during service startup.
 func (sp *queuedSpanProcessor) Start(host component.Host) error {
 	// emit 0's so that the metric is present and reported, rather than absent
-	ctx := obsreport.ProcessorContext(host.Context(), sp.name)
+	ctx := obsreport.ProcessorContext(context.Background(), sp.name)
 	stats.Record(
 		ctx,
 		processor.StatTraceBatchesDroppedCount.M(int64(0)),

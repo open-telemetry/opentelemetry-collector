@@ -54,7 +54,7 @@ func newPrometheusReceiver(logger *zap.Logger, cfg *Config, next consumer.Metric
 // is controlled by having previously defined a Configuration using perhaps New.
 func (pr *Preceiver) Start(host component.Host) error {
 	pr.startOnce.Do(func() {
-		ctx := host.Context()
+		ctx := context.Background()
 		c, cancel := context.WithCancel(ctx)
 		pr.cancel = cancel
 		c = obsreport.ReceiverContext(c, pr.cfg.Name(), "http", pr.cfg.Name())
