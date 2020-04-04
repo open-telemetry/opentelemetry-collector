@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
 	"github.com/open-telemetry/opentelemetry-collector/compression"
 	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
 	"github.com/open-telemetry/opentelemetry-collector/config/configgrpc"
@@ -66,7 +66,7 @@ func TestCreateTraceExporter(t *testing.T) {
 		new(exportertest.SinkTraceExporterOld))
 	require.NotNil(t, rcv)
 	require.Nil(t, err)
-	require.Nil(t, rcv.Start(context.Background(), component.NewMockHost()))
+	require.Nil(t, rcv.Start(context.Background(), componenttest.NewNopHost()))
 	defer rcv.Shutdown(context.Background())
 
 	tests := []struct {

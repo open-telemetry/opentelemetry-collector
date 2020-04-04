@@ -12,6 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package extensiontest define types and functions used to help test packages
-// implementing the extension package interfaces.
-package extensiontest
+package componenttest
+
+import (
+	"errors"
+	"testing"
+)
+
+func TestNewNopHost(t *testing.T) {
+	got := NewNopHost()
+	if got == nil {
+		t.Fatal("NewNopHost() = nil, want non-nil", got)
+	}
+	_, ok := got.(*NopHost)
+	if !ok {
+		t.Fatal("got.(*NopHost) failed")
+	}
+	got.ReportFatalError(errors.New("TestError"))
+}

@@ -32,7 +32,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-collector/internal"
@@ -58,8 +58,7 @@ func TestJaegerAgentUDP_ThriftCompact_InvalidPort(t *testing.T) {
 	jr, err := New(jaegerAgent, config, nil, zap.NewNop())
 	assert.NoError(t, err, "Failed to create new Jaeger Receiver")
 
-	mh := component.NewMockHost()
-	err = jr.Start(context.Background(), mh)
+	err = jr.Start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err, "should not have been able to startTraceReception")
 
 	jr.Shutdown(context.Background())
@@ -85,8 +84,7 @@ func TestJaegerAgentUDP_ThriftBinary_PortInUse(t *testing.T) {
 	jr, err := New(jaegerAgent, config, nil, zap.NewNop())
 	assert.NoError(t, err, "Failed to create new Jaeger Receiver")
 
-	mh := component.NewMockHost()
-	err = jr.(*jReceiver).startAgent(mh)
+	err = jr.(*jReceiver).startAgent(componenttest.NewNopHost())
 	assert.NoError(t, err, "Start failed")
 	defer jr.Shutdown(context.Background())
 
@@ -107,8 +105,7 @@ func TestJaegerAgentUDP_ThriftBinary_InvalidPort(t *testing.T) {
 	jr, err := New(jaegerAgent, config, nil, zap.NewNop())
 	assert.NoError(t, err, "Failed to create new Jaeger Receiver")
 
-	mh := component.NewMockHost()
-	err = jr.Start(context.Background(), mh)
+	err = jr.Start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err, "should not have been able to startTraceReception")
 
 	jr.Shutdown(context.Background())
@@ -148,8 +145,7 @@ func TestJaegerHTTP(t *testing.T) {
 	assert.NoError(t, err, "Failed to create new Jaeger Receiver")
 	defer jr.Shutdown(context.Background())
 
-	mh := component.NewMockHost()
-	err = jr.Start(context.Background(), mh)
+	err = jr.Start(context.Background(), componenttest.NewNopHost())
 	assert.NoError(t, err, "Start failed")
 
 	// allow http server to start
@@ -185,8 +181,7 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *Configu
 	assert.NoError(t, err, "Failed to create new Jaeger Receiver")
 	defer jr.Shutdown(context.Background())
 
-	mh := component.NewMockHost()
-	err = jr.Start(context.Background(), mh)
+	err = jr.Start(context.Background(), componenttest.NewNopHost())
 	assert.NoError(t, err, "Start failed")
 
 	now := time.Unix(1542158650, 536343000).UTC()

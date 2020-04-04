@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package extensiontest
+package componenttest
 
 import (
 	"time"
@@ -20,15 +20,17 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/component"
 )
 
-// MockHost mocks an component.Host for test purposes.
-type MockHost struct {
+// ErrorWaitingHost mocks an component.Host for test purposes.
+type ErrorWaitingHost struct {
 	errorChan chan error
 }
 
-// NewMockHost returns a new instance of MockHost with proper defaults for most
+var _ component.Host = (*ErrorWaitingHost)(nil)
+
+// NewErrorWaitingHost returns a new instance of ErrorWaitingHost with proper defaults for most
 // tests.
-func NewMockHost() *MockHost {
-	return &MockHost{
+func NewErrorWaitingHost() *ErrorWaitingHost {
+	return &ErrorWaitingHost{
 		errorChan: make(chan error, 1),
 	}
 }
@@ -36,16 +38,16 @@ func NewMockHost() *MockHost {
 // ReportFatalError is used to report to the host that the extension encountered
 // a fatal error (i.e.: an error that the instance can't recover from) after
 // its start function has already returned.
-func (mh *MockHost) ReportFatalError(err error) {
-	mh.errorChan <- err
+func (ews *ErrorWaitingHost) ReportFatalError(err error) {
+	ews.errorChan <- err
 }
 
 // WaitForFatalError waits the given amount of time until an error is reported via
 // ReportFatalError. It returns the error, if any, and a bool to indicated if
 // an error was received before the time out.
-func (mh *MockHost) WaitForFatalError(timeout time.Duration) (receivedError bool, err error) {
+func (ews *ErrorWaitingHost) WaitForFatalError(timeout time.Duration) (receivedError bool, err error) {
 	select {
-	case err = <-mh.errorChan:
+	case err = <-ews.errorChan:
 		receivedError = true
 	case <-time.After(timeout):
 	}
@@ -54,6 +56,6 @@ func (mh *MockHost) WaitForFatalError(timeout time.Duration) (receivedError bool
 }
 
 // GetFactory of the specified kind. Returns the factory for a component type.
-func (mh *MockHost) GetFactory(kind component.Kind, componentType string) component.Factory {
+func (ews *ErrorWaitingHost) GetFactory(_ component.Kind, _ string) component.Factory {
 	return nil
 }

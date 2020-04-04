@@ -12,30 +12,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package receivertest define types and functions used to help test packages
-// implementing the receiver package interfaces.
-package component
+package componenttest
 
-// MockHost mocks a receiver.ReceiverHost for test purposes.
-type MockHost struct {
+import (
+	"github.com/open-telemetry/opentelemetry-collector/component"
+)
+
+// NopHost mocks a receiver.ReceiverHost for test purposes.
+type NopHost struct {
 }
 
-var _ Host = (*MockHost)(nil)
+var _ component.Host = (*NopHost)(nil)
+
+// NewNopHost returns a new instance of NopHost with proper defaults for most
+// tests.
+func NewNopHost() component.Host {
+	return &NopHost{}
+}
 
 // ReportFatalError is used to report to the host that the receiver encountered
 // a fatal error (i.e.: an error that the instance can't recover from) after
 // its start function has already returned.
-func (mh *MockHost) ReportFatalError(err error) {
+func (nh *NopHost) ReportFatalError(_ error) {
 	// Do nothing for now.
 }
 
 // GetFactory of the specified kind. Returns the factory for a component type.
-func (mh *MockHost) GetFactory(kind Kind, componentType string) Factory {
+func (nh *NopHost) GetFactory(_ component.Kind, _ string) component.Factory {
 	return nil
-}
-
-// NewMockHost returns a new instance of MockHost with proper defaults for most
-// tests.
-func NewMockHost() Host {
-	return &MockHost{}
 }

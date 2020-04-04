@@ -36,7 +36,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
 	"github.com/open-telemetry/opentelemetry-collector/config/configgrpc"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal"
@@ -129,7 +129,7 @@ func TestSendData(t *testing.T) {
 	require.NotNil(t, exp)
 	defer exp.Shutdown(context.Background())
 
-	host := component.NewMockHost()
+	host := componenttest.NewNopHost()
 
 	err = exp.Start(context.Background(), host)
 	assert.NoError(t, err)

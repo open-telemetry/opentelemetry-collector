@@ -37,7 +37,7 @@ import (
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v2"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
 )
@@ -1037,9 +1037,7 @@ func testEndToEnd(t *testing.T, targets []*testData, useStartTimeMetric bool) {
 	cms := new(exportertest.SinkMetricsExporterOld)
 	rcvr := newPrometheusReceiver(logger, &Config{PrometheusConfig: cfg, UseStartTimeMetric: useStartTimeMetric}, cms)
 
-	mh := component.NewMockHost()
-	err = rcvr.Start(context.Background(), mh)
-	require.Nilf(t, err, "Failed to invoke Start: %v", err)
+	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()), "Failed to invoke Start: %v", err)
 	defer rcvr.Shutdown(context.Background())
 
 	// wait for all provided data to be scraped

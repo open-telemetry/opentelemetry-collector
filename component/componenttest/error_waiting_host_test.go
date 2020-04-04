@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package extensiontest
+package componenttest
 
 import (
 	"errors"
@@ -22,8 +22,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewMockHost(t *testing.T) {
-	mh := NewMockHost()
+func TestNewErrorWaitingHost(t *testing.T) {
+	mh := NewErrorWaitingHost()
 	require.NotNil(t, mh)
 
 	reportedErr := errors.New("TestError")
