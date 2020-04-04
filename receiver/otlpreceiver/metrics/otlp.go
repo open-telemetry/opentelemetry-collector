@@ -19,10 +19,10 @@ import (
 
 	collectormetrics "github.com/open-telemetry/opentelemetry-proto/gen/go/collector/metrics/v1"
 
+	"github.com/open-telemetry/opentelemetry-collector/component/componenterr"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector/obsreport"
-	"github.com/open-telemetry/opentelemetry-collector/oterr"
 )
 
 const (
@@ -38,7 +38,7 @@ type Receiver struct {
 // New creates a new Receiver reference.
 func New(instanceName string, nextConsumer consumer.MetricsConsumer) (*Receiver, error) {
 	if nextConsumer == nil {
-		return nil, oterr.ErrNilNextConsumer
+		return nil, componenterr.ErrNilNextConsumer
 	}
 	r := &Receiver{
 		instanceName: instanceName,

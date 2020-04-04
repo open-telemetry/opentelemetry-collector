@@ -38,11 +38,11 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/client"
 	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenterr"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal"
 	"github.com/open-telemetry/opentelemetry-collector/obsreport"
-	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 	"github.com/open-telemetry/opentelemetry-collector/translator/trace/zipkin"
 )
@@ -74,7 +74,7 @@ var _ http.Handler = (*ZipkinReceiver)(nil)
 // New creates a new zipkinreceiver.ZipkinReceiver reference.
 func New(instanceName, address string, nextConsumer consumer.TraceConsumerOld) (*ZipkinReceiver, error) {
 	if nextConsumer == nil {
-		return nil, oterr.ErrNilNextConsumer
+		return nil, componenterr.ErrNilNextConsumer
 	}
 
 	zr := &ZipkinReceiver{
@@ -112,7 +112,7 @@ func (zr *ZipkinReceiver) Start(host component.Host) error {
 	zr.mu.Lock()
 	defer zr.mu.Unlock()
 
-	var err = oterr.ErrAlreadyStarted
+	var err = componenterr.ErrAlreadyStarted
 
 	zr.startOnce.Do(func() {
 		ln, lerr := net.Listen("tcp", zr.address())
@@ -244,7 +244,7 @@ func (zr *ZipkinReceiver) deserializeFromJSON(jsonBlob []byte, debugWasSet bool)
 // giving it a chance to perform any necessary clean-up and shutting down
 // its HTTP server.
 func (zr *ZipkinReceiver) Shutdown() error {
-	var err = oterr.ErrAlreadyStopped
+	var err = componenterr.ErrAlreadyStopped
 	zr.stopOnce.Do(func() {
 		err = zr.server.Close()
 	})

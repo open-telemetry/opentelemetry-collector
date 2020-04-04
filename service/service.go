@@ -30,10 +30,10 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenterr"
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	"github.com/open-telemetry/opentelemetry-collector/service/builder"
 )
 
@@ -362,7 +362,7 @@ func (app *Application) notifyPipelineNotReady() error {
 	}
 
 	if len(errs) != 0 {
-		return oterr.CombineErrors(errs)
+		return componenterr.CombineErrors(errs)
 	}
 
 	return nil
@@ -394,7 +394,7 @@ func (app *Application) shutdownPipelines() error {
 	}
 
 	if len(errs) != 0 {
-		return oterr.CombineErrors(errs)
+		return componenterr.CombineErrors(errs)
 	}
 
 	return nil
@@ -413,7 +413,7 @@ func (app *Application) shutdownExtensions() error {
 	}
 
 	if len(errs) != 0 {
-		return oterr.CombineErrors(errs)
+		return componenterr.CombineErrors(errs)
 	}
 
 	return nil
@@ -477,7 +477,7 @@ func (app *Application) execute(factory ConfigFactory) error {
 	app.logger.Info("Shutdown complete.")
 
 	if len(errs) != 0 {
-		return oterr.CombineErrors(errs)
+		return componenterr.CombineErrors(errs)
 	}
 	return nil
 }

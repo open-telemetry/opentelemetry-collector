@@ -22,7 +22,7 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/google/go-cmp/cmp"
-	model "github.com/jaegertracing/jaeger/model"
+	"github.com/jaegertracing/jaeger/model"
 	"github.com/stretchr/testify/assert"
 	"go.opencensus.io/trace"
 

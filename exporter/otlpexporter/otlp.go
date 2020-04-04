@@ -24,11 +24,11 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenterr"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
-	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	"github.com/open-telemetry/opentelemetry-collector/translator/internaldata"
 )
 
@@ -153,7 +153,7 @@ func (oce *otlpExporter) Shutdown() error {
 	wg.Wait()
 	close(oce.exporters)
 
-	return oterr.CombineErrors(errors)
+	return componenterr.CombineErrors(errors)
 }
 
 func (oce *otlpExporter) pushTraceData(ctx context.Context, td consumerdata.TraceData) (int, error) {

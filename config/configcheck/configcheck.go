@@ -24,8 +24,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/open-telemetry/opentelemetry-collector/component/componenterr"
 	"github.com/open-telemetry/opentelemetry-collector/config"
-	"github.com/open-telemetry/opentelemetry-collector/oterr"
 )
 
 // The regular expression for valid config field tag.
@@ -56,7 +56,7 @@ func ValidateConfigFromFactories(factories config.Factories) error {
 		}
 	}
 
-	return oterr.CombineErrors(errs)
+	return componenterr.CombineErrors(errs)
 }
 
 // ValidateConfig enforces that given configuration object is following the patterns
@@ -109,7 +109,7 @@ func validateConfigDataType(t reflect.Type) error {
 		// reflect.UnsafePointer.
 	}
 
-	if err := oterr.CombineErrors(errs); err != nil {
+	if err := componenterr.CombineErrors(errs); err != nil {
 		return fmt.Errorf(
 			"type %q from package %q has invalid config settings: %v",
 			t.Name(),

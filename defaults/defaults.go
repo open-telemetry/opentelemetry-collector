@@ -17,6 +17,7 @@ package defaults
 
 import (
 	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenterr"
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/fileexporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/jaegerexporter"
@@ -28,7 +29,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/extension/healthcheckextension"
 	"github.com/open-telemetry/opentelemetry-collector/extension/pprofextension"
 	"github.com/open-telemetry/opentelemetry-collector/extension/zpagesextension"
-	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	"github.com/open-telemetry/opentelemetry-collector/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/batchprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/memorylimiter"
@@ -106,5 +106,5 @@ func Components() (
 		Exporters:  exporters,
 	}
 
-	return factories, oterr.CombineErrors(errs)
+	return factories, componenterr.CombineErrors(errs)
 }
