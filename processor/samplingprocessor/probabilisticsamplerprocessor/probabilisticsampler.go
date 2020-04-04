@@ -21,7 +21,7 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/component/componenterr"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 )
@@ -60,7 +60,7 @@ type tracesamplerprocessor struct {
 // configuration.
 func newTraceProcessor(nextConsumer consumer.TraceConsumerOld, cfg Config) (component.TraceProcessorOld, error) {
 	if nextConsumer == nil {
-		return nil, componenterr.ErrNilNextConsumer
+		return nil, componenterror.ErrNilNextConsumer
 	}
 
 	return &tracesamplerprocessor{

@@ -14,7 +14,7 @@
 
 // Package oterr provides helper functions to create and process
 // OpenTelemetry specific errors
-package componenterr
+package componenterror
 
 import (
 	"errors"

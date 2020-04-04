@@ -19,7 +19,7 @@ import (
 	"sync"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/component/componenterr"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
 )
 
 // Receiver is the type used to handle metrics from VM metrics.
@@ -37,7 +37,7 @@ func (vmr *Receiver) Start(ctx context.Context, host component.Host) error {
 	vmr.mu.Lock()
 	defer vmr.mu.Unlock()
 
-	var err = componenterr.ErrAlreadyStarted
+	var err = componenterror.ErrAlreadyStarted
 	vmr.startOnce.Do(func() {
 		vmr.vmc.StartCollection()
 		err = nil
@@ -50,7 +50,7 @@ func (vmr *Receiver) Shutdown(context.Context) error {
 	vmr.mu.Lock()
 	defer vmr.mu.Unlock()
 
-	var err = componenterr.ErrAlreadyStopped
+	var err = componenterror.ErrAlreadyStopped
 	vmr.stopOnce.Do(func() {
 		vmr.vmc.StopCollection()
 		err = nil

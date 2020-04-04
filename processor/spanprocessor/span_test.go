@@ -26,7 +26,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/component/componenterr"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-collector/internal/processor/span"
@@ -37,7 +37,7 @@ func TestNewTraceProcessor(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
 	tp, err := newSpanProcessor(nil, *oCfg)
-	require.Error(t, componenterr.ErrNilNextConsumer, err)
+	require.Error(t, componenterror.ErrNilNextConsumer, err)
 	require.Nil(t, tp)
 
 	tp, err = newSpanProcessor(exportertest.NewNopTraceExporterOld(), *oCfg)

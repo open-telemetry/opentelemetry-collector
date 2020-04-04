@@ -23,7 +23,7 @@ import (
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 
-	"github.com/open-telemetry/opentelemetry-collector/component/componenterr"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/obsreport"
@@ -38,7 +38,7 @@ type Receiver struct {
 // New creates a new ocmetrics.Receiver reference.
 func New(instanceName string, nextConsumer consumer.MetricsConsumerOld) (*Receiver, error) {
 	if nextConsumer == nil {
-		return nil, componenterr.ErrNilNextConsumer
+		return nil, componenterror.ErrNilNextConsumer
 	}
 	ocr := &Receiver{
 		instanceName: instanceName,

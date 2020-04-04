@@ -46,7 +46,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/client"
 	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/component/componenterr"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 	jaegertranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace/jaeger"
@@ -196,14 +196,14 @@ func (jr *jReceiver) Start(ctx context.Context, host component.Host) error {
 	jr.mu.Lock()
 	defer jr.mu.Unlock()
 
-	var err = componenterr.ErrAlreadyStarted
+	var err = componenterror.ErrAlreadyStarted
 	jr.startOnce.Do(func() {
-		if err = jr.startAgent(host); err != nil && err != componenterr.ErrAlreadyStarted {
+		if err = jr.startAgent(host); err != nil && err != componenterror.ErrAlreadyStarted {
 			jr.stopTraceReceptionLocked()
 			return
 		}
 
-		if err = jr.startCollector(host); err != nil && err != componenterr.ErrAlreadyStarted {
+		if err = jr.startCollector(host); err != nil && err != componenterror.ErrAlreadyStarted {
 			jr.stopTraceReceptionLocked()
 			return
 		}
@@ -221,7 +221,7 @@ func (jr *jReceiver) Shutdown(context.Context) error {
 }
 
 func (jr *jReceiver) stopTraceReceptionLocked() error {
-	var err = componenterr.ErrAlreadyStopped
+	var err = componenterror.ErrAlreadyStopped
 	jr.stopOnce.Do(func() {
 		var errs []error
 

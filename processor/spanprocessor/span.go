@@ -24,7 +24,7 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/component/componenterr"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal/processor/span"
@@ -51,7 +51,7 @@ type toAttributeRule struct {
 // newSpanProcessor returns the span processor.
 func newSpanProcessor(nextConsumer consumer.TraceConsumerOld, config Config) (*spanProcessor, error) {
 	if nextConsumer == nil {
-		return nil, componenterr.ErrNilNextConsumer
+		return nil, componenterror.ErrNilNextConsumer
 	}
 
 	include, err := span.NewMatcher(config.Include)

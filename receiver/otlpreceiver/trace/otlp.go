@@ -20,7 +20,7 @@ import (
 	collectortrace "github.com/open-telemetry/opentelemetry-proto/gen/go/collector/trace/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector/client"
-	"github.com/open-telemetry/opentelemetry-collector/component/componenterr"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector/obsreport"
@@ -39,7 +39,7 @@ type Receiver struct {
 // New creates a new Receiver reference.
 func New(instanceName string, nextConsumer consumer.TraceConsumer) (*Receiver, error) {
 	if nextConsumer == nil {
-		return nil, componenterr.ErrNilNextConsumer
+		return nil, componenterror.ErrNilNextConsumer
 	}
 
 	r := &Receiver{
