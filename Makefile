@@ -68,7 +68,7 @@ benchmark:
 .PHONY: test-with-cover
 test-with-cover:
 	@echo Verifying that all packages have test files to count in coverage
-	@scripts/check-test-files.sh $(subst github.com/open-telemetry/opentelemetry-collector/,./,$(ALL_PKGS_NO_TESTBED))
+	@internal/buildscripts/check-test-files.sh $(subst github.com/open-telemetry/opentelemetry-collector/,./,$(ALL_PKGS_NO_TESTBED))
 	@echo pre-compiling tests
 	@time go test -i $(ALL_PKGS_NO_TESTBED)
 	$(GO_ACC) $(ALL_PKGS_NO_TESTBED)
