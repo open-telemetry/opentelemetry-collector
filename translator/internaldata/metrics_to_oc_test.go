@@ -34,12 +34,12 @@ func TestResourceMetricsToMetricsData(t *testing.T) {
 
 	sampleMetricData := testdata.GenerateMetricDataWithCountersHistogramAndSummary()
 	attrs := sampleMetricData.ResourceMetrics().At(0).Resource().Attributes()
-	attrs.Upsert(data.NewAttributeKeyValueString(conventions.AttributeHostHostname, "host1"))
-	attrs.Upsert(data.NewAttributeKeyValueInt(conventions.OCAttributeProcessID, 123))
-	attrs.Upsert(data.NewAttributeKeyValueString(conventions.OCAttributeProcessStartTime, "2020-02-11T20:26:00Z"))
-	attrs.Upsert(data.NewAttributeKeyValueString(conventions.AttributeLibraryLanguage, "CPP"))
-	attrs.Upsert(data.NewAttributeKeyValueString(conventions.AttributeLibraryVersion, "v2.0.1"))
-	attrs.Upsert(data.NewAttributeKeyValueString(conventions.OCAttributeExporterVersion, "v1.2.0"))
+	attrs.Upsert(conventions.AttributeHostHostname, data.NewAttributeValueString("host1"))
+	attrs.Upsert(conventions.OCAttributeProcessID, data.NewAttributeValueInt(123))
+	attrs.Upsert(conventions.OCAttributeProcessStartTime, data.NewAttributeValueString("2020-02-11T20:26:00Z"))
+	attrs.Upsert(conventions.AttributeLibraryLanguage, data.NewAttributeValueString("CPP"))
+	attrs.Upsert(conventions.AttributeLibraryVersion, data.NewAttributeValueString("v2.0.1"))
+	attrs.Upsert(conventions.OCAttributeExporterVersion, data.NewAttributeValueString("v1.2.0"))
 
 	tests := []struct {
 		name     string

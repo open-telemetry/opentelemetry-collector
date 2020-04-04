@@ -38,6 +38,8 @@ const (
 	AttributeValueBOOL   = AttributeValueType(otlpcommon.AttributeKeyValue_BOOL)
 )
 
+var emptyAttributeKeyValue = &otlpcommon.AttributeKeyValue{}
+
 // AttributeValue represents a value of an attribute. Typically used in an Attributes map.
 // Must use one of NewAttributeValue* functions below to create new instances.
 // Important: zero-initialized instance is not valid for use.
@@ -46,11 +48,11 @@ const (
 // value representation. For the same reason passing by value and calling setters
 // will modify the original, e.g.:
 //
-//   function f1(val AttributeValue) { val.SetInt(234) }
+//   function f1(val AttributeValue) { val.SetIntVal(234) }
 //   function f2() {
 //   	v := NewAttributeValueString("a string")
 //      f1(v)
-//      _ := v.GetType() // this will return AttributeValueINT
+//      _ := v.Type() // this will return AttributeValueINT
 //   }
 type AttributeValue struct {
 	orig *otlpcommon.AttributeKeyValue
@@ -108,118 +110,70 @@ func (a AttributeValue) BoolVal() bool {
 	return a.orig.BoolValue
 }
 
-func (a AttributeValue) SetString(v string) {
+func (a AttributeValue) SetStringVal(v string) {
+	a.copyValues(emptyAttributeKeyValue)
 	a.orig.Type = otlpcommon.AttributeKeyValue_STRING
 	a.orig.StringValue = v
 }
 
-func (a AttributeValue) SetInt(v int64) {
+func (a AttributeValue) SetIntVal(v int64) {
+	a.copyValues(emptyAttributeKeyValue)
 	a.orig.Type = otlpcommon.AttributeKeyValue_INT
 	a.orig.IntValue = v
 }
 
-func (a AttributeValue) SetDouble(v float64) {
+func (a AttributeValue) SetDoubleVal(v float64) {
+	a.copyValues(emptyAttributeKeyValue)
 	a.orig.Type = otlpcommon.AttributeKeyValue_DOUBLE
 	a.orig.DoubleValue = v
 }
 
-func (a AttributeValue) SetBool(v bool) {
+func (a AttributeValue) SetBoolVal(v bool) {
+	a.copyValues(emptyAttributeKeyValue)
 	a.orig.Type = otlpcommon.AttributeKeyValue_BOOL
 	a.orig.BoolValue = v
 }
 
-// AttributeKeyValue stores a key and AttributeValue pair.
-type AttributeKeyValue struct {
-	orig *otlpcommon.AttributeKeyValue
+func (a AttributeValue) SetValue(av AttributeValue) {
+	a.copyValues(av.orig)
 }
 
-// NewAttributeKeyValueString creates a new AttributeKeyValue with the given key and string value.
-func NewAttributeKeyValueString(k string, v string) AttributeKeyValue {
-	akv := AttributeKeyValue{&otlpcommon.AttributeKeyValue{Key: k}}
+func (a AttributeValue) copyValues(akv *otlpcommon.AttributeKeyValue) {
+	a.orig.Type = akv.Type
+	a.orig.StringValue = akv.StringValue
+	a.orig.IntValue = akv.IntValue
+	a.orig.DoubleValue = akv.DoubleValue
+	a.orig.BoolValue = akv.BoolValue
+}
+
+func newAttributeKeyValueString(k string, v string) *otlpcommon.AttributeKeyValue {
+	akv := AttributeValue{&otlpcommon.AttributeKeyValue{Key: k}}
 	akv.SetStringVal(v)
-	return akv
+	return akv.orig
 }
 
-// NewAttributeKeyValueInt creates a new AttributeKeyValue with the given key and int64 value.
-func NewAttributeKeyValueInt(k string, v int64) AttributeKeyValue {
-	akv := AttributeKeyValue{&otlpcommon.AttributeKeyValue{Key: k}}
+func newAttributeKeyValueInt(k string, v int64) *otlpcommon.AttributeKeyValue {
+	akv := AttributeValue{&otlpcommon.AttributeKeyValue{Key: k}}
 	akv.SetIntVal(v)
-	return akv
+	return akv.orig
 }
 
-// NewAttributeKeyValueDouble creates a new AttributeKeyValue with the given key and float64 value.
-func NewAttributeKeyValueDouble(k string, v float64) AttributeKeyValue {
-	akv := AttributeKeyValue{&otlpcommon.AttributeKeyValue{Key: k}}
+func newAttributeKeyValueDouble(k string, v float64) *otlpcommon.AttributeKeyValue {
+	akv := AttributeValue{&otlpcommon.AttributeKeyValue{Key: k}}
 	akv.SetDoubleVal(v)
-	return akv
+	return akv.orig
 }
 
-// NewAttributeKeyValueBool creates a new AttributeKeyValue with the given key and bool value.
-func NewAttributeKeyValueBool(k string, v bool) AttributeKeyValue {
-	akv := AttributeKeyValue{&otlpcommon.AttributeKeyValue{Key: k}}
+func newAttributeKeyValueBool(k string, v bool) *otlpcommon.AttributeKeyValue {
+	akv := AttributeValue{&otlpcommon.AttributeKeyValue{Key: k}}
 	akv.SetBoolVal(v)
-	return akv
+	return akv.orig
 }
 
-// Key returns the key associated with this AttributeKeyValue.
-func (akv AttributeKeyValue) Key() string {
-	return akv.orig.Key
-}
-
-func (akv AttributeKeyValue) ValType() AttributeValueType {
-	return AttributeValueType(akv.orig.Type)
-}
-
-func (akv AttributeKeyValue) StringVal() string {
-	return akv.orig.StringValue
-}
-
-func (akv AttributeKeyValue) IntVal() int64 {
-	return akv.orig.IntValue
-}
-
-func (akv AttributeKeyValue) DoubleVal() float64 {
-	return akv.orig.DoubleValue
-}
-
-func (akv AttributeKeyValue) BoolVal() bool {
-	return akv.orig.BoolValue
-}
-
-func (akv AttributeKeyValue) SetStringVal(v string) {
-	akv.orig.Type = otlpcommon.AttributeKeyValue_STRING
-	akv.orig.StringValue = v
-}
-
-func (akv AttributeKeyValue) SetIntVal(v int64) {
-	akv.orig.Type = otlpcommon.AttributeKeyValue_INT
-	akv.orig.IntValue = v
-}
-
-func (akv AttributeKeyValue) SetDoubleVal(v float64) {
-	akv.orig.Type = otlpcommon.AttributeKeyValue_DOUBLE
-	akv.orig.DoubleValue = v
-}
-
-func (akv AttributeKeyValue) SetBoolVal(v bool) {
-	akv.orig.Type = otlpcommon.AttributeKeyValue_BOOL
-	akv.orig.BoolValue = v
-}
-
-func (akv AttributeKeyValue) setValue(av AttributeValue) {
-	akv.orig.Type = av.orig.Type
-	akv.orig.StringValue = av.orig.StringValue
-	akv.orig.IntValue = av.orig.IntValue
-	akv.orig.DoubleValue = av.orig.DoubleValue
-	akv.orig.BoolValue = av.orig.BoolValue
-}
-
-func (akv AttributeKeyValue) copyValue(av AttributeKeyValue) {
-	akv.orig.Type = av.orig.Type
-	akv.orig.StringValue = av.orig.StringValue
-	akv.orig.IntValue = av.orig.IntValue
-	akv.orig.DoubleValue = av.orig.DoubleValue
-	akv.orig.BoolValue = av.orig.BoolValue
+func newAttributeKeyValue(k string, av AttributeValue) *otlpcommon.AttributeKeyValue {
+	akv := AttributeValue{&otlpcommon.AttributeKeyValue{Key: k}}
+	akv.SetValue(av)
+	return akv.orig
 }
 
 // AttributeMap stores a map of attribute keys to values.
@@ -254,7 +208,7 @@ func (am AttributeMap) InitFromMap(attrMap map[string]AttributeValue) AttributeM
 	for k, v := range attrMap {
 		wrappers[ix] = &origs[ix]
 		wrappers[ix].Key = k
-		AttributeKeyValue{wrappers[ix]}.setValue(v)
+		AttributeValue{wrappers[ix]}.SetValue(v)
 		ix++
 	}
 
@@ -265,13 +219,13 @@ func (am AttributeMap) InitFromMap(attrMap map[string]AttributeValue) AttributeM
 
 // Get returns the AttributeKeyValue associated with the key and true,
 // otherwise an invalid instance of the AttributeKeyValue and false.
-func (am AttributeMap) Get(key string) (AttributeKeyValue, bool) {
+func (am AttributeMap) Get(key string) (AttributeValue, bool) {
 	for _, a := range *am.orig {
 		if a.Key == key {
-			return AttributeKeyValue{a}, true
+			return AttributeValue{a}, true
 		}
 	}
-	return AttributeKeyValue{nil}, false
+	return AttributeValue{nil}, false
 }
 
 // Delete deletes the entry associated with the key and returns true if the key
@@ -287,30 +241,147 @@ func (am AttributeMap) Delete(key string) bool {
 	return false
 }
 
-// Insert adds the AttributeKeyValue to the map when the key does not exist.
+// Insert adds the AttributeValue to the map when the key does not exist.
 // No action is applied to the map where the key already exists.
-func (am AttributeMap) Insert(akv AttributeKeyValue) {
-	if _, existing := am.Get(akv.Key()); !existing {
-		*am.orig = append(*am.orig, akv.orig)
+//
+// Important: this function should not be used if the caller has access to
+// the raw value to avoid an extra allocation.
+func (am AttributeMap) Insert(k string, v AttributeValue) {
+	if _, existing := am.Get(k); !existing {
+		*am.orig = append(*am.orig, newAttributeKeyValue(k, v))
 	}
 }
 
-// Update updates an existing AttributeKeyValue with a value.
+// Insert adds the string Value to the map when the key does not exist.
+// No action is applied to the map where the key already exists.
+func (am AttributeMap) InsertString(k string, v string) {
+	if _, existing := am.Get(k); !existing {
+		*am.orig = append(*am.orig, newAttributeKeyValueString(k, v))
+	}
+}
+
+// Insert adds the int Value to the map when the key does not exist.
+// No action is applied to the map where the key already exists.
+func (am AttributeMap) InsertInt(k string, v int64) {
+	if _, existing := am.Get(k); !existing {
+		*am.orig = append(*am.orig, newAttributeKeyValueInt(k, v))
+	}
+}
+
+// Insert adds the double Value to the map when the key does not exist.
+// No action is applied to the map where the key already exists.
+func (am AttributeMap) InsertDouble(k string, v float64) {
+	if _, existing := am.Get(k); !existing {
+		*am.orig = append(*am.orig, newAttributeKeyValueDouble(k, v))
+	}
+}
+
+// Insert adds the bool Value to the map when the key does not exist.
+// No action is applied to the map where the key already exists.
+func (am AttributeMap) InsertBool(k string, v bool) {
+	if _, existing := am.Get(k); !existing {
+		*am.orig = append(*am.orig, newAttributeKeyValueBool(k, v))
+	}
+}
+
+// Update updates an existing AttributeValue with a value.
 // No action is applied to the map where the key does not exist.
-func (am AttributeMap) Update(akv AttributeKeyValue) {
-	if av, existing := am.Get(akv.Key()); existing {
-		av.copyValue(akv)
+//
+// Important: this function should not be used if the caller has access to
+// the raw value to avoid an extra allocation.
+func (am AttributeMap) Update(k string, v AttributeValue) {
+	if av, existing := am.Get(k); existing {
+		av.SetValue(v)
 	}
 }
 
-// Upsert performs the Insert or Insert action. The AttributeKeyValue is
+// Update updates an existing string Value with a value.
+// No action is applied to the map where the key does not exist.
+func (am AttributeMap) UpdateString(k string, v string) {
+	if av, existing := am.Get(k); existing {
+		av.SetStringVal(v)
+	}
+}
+
+// Update updates an existing int Value with a value.
+// No action is applied to the map where the key does not exist.
+func (am AttributeMap) UpdateInt(k string, v int64) {
+	if av, existing := am.Get(k); existing {
+		av.SetIntVal(v)
+	}
+}
+
+// Update updates an existing double Value with a value.
+// No action is applied to the map where the key does not exist.
+func (am AttributeMap) UpdateDouble(k string, v float64) {
+	if av, existing := am.Get(k); existing {
+		av.SetDoubleVal(v)
+	}
+}
+
+// Update updates an existing bool Value with a value.
+// No action is applied to the map where the key does not exist.
+func (am AttributeMap) UpdateBool(k string, v bool) {
+	if av, existing := am.Get(k); existing {
+		av.SetBoolVal(v)
+	}
+}
+
+// Upsert performs the Insert or Update action. The AttributeValue is
 // insert to the map that did not originally have the key. The key/value is
 // updated to the map where the key already existed.
-func (am AttributeMap) Upsert(akv AttributeKeyValue) {
-	if av, existing := am.Get(akv.Key()); existing {
-		av.copyValue(akv)
+//
+// Important: this function should not be used if the caller has access to
+// the raw value to avoid an extra allocation.
+func (am AttributeMap) Upsert(k string, v AttributeValue) {
+	if av, existing := am.Get(k); existing {
+		av.SetValue(v)
 	} else {
-		*am.orig = append(*am.orig, akv.orig)
+		*am.orig = append(*am.orig, newAttributeKeyValue(k, v))
+	}
+}
+
+// Upsert performs the Insert or Update action. The AttributeValue is
+// insert to the map that did not originally have the key. The key/value is
+// updated to the map where the key already existed.
+func (am AttributeMap) UpsertString(k string, v string) {
+	if av, existing := am.Get(k); existing {
+		av.SetStringVal(v)
+	} else {
+		*am.orig = append(*am.orig, newAttributeKeyValueString(k, v))
+	}
+}
+
+// Upsert performs the Insert or Update action. The int Value is
+// insert to the map that did not originally have the key. The key/value is
+// updated to the map where the key already existed.
+func (am AttributeMap) UpsertInt(k string, v int64) {
+	if av, existing := am.Get(k); existing {
+		av.SetIntVal(v)
+	} else {
+		*am.orig = append(*am.orig, newAttributeKeyValueInt(k, v))
+	}
+}
+
+// Upsert performs the Insert or Update action. The double Value is
+// insert to the map that did not originally have the key. The key/value is
+// updated to the map where the key already existed.
+func (am AttributeMap) UpsertDouble(k string, v float64) {
+	if av, existing := am.Get(k); existing {
+		av.SetDoubleVal(v)
+	} else {
+		*am.orig = append(*am.orig, newAttributeKeyValueDouble(k, v))
+	}
+}
+
+// Upsert performs the Insert or Update action. The bool Value is
+// insert to the map that did not originally have the key. The key/value is
+// updated to the map where the key already existed.
+func (am AttributeMap) UpsertBool(k string, v bool) {
+	if av, existing := am.Get(k); existing {
+		av.SetBoolVal(v)
+	} else {
+		*am.orig = append(*am.orig, newAttributeKeyValueBool(k, v))
 	}
 }
 
@@ -334,8 +405,8 @@ func (am AttributeMap) Sort() AttributeMap {
 //     akv := am.GetAttribute(i)
 //     ... // Do something with the attribute
 // }
-func (am AttributeMap) GetAttribute(ix int) AttributeKeyValue {
-	return AttributeKeyValue{(*am.orig)[ix]}
+func (am AttributeMap) GetAttribute(ix int) (string, AttributeValue) {
+	return (*am.orig)[ix].Key, AttributeValue{(*am.orig)[ix]}
 }
 
 // StringKeyValue stores a key and value pair.
