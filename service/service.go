@@ -120,11 +120,6 @@ func fileLoaderConfigFactory(v *viper.Viper, factories config.Factories) (*confi
 
 // New creates and returns a new instance of Application.
 func New(params Parameters) (*Application, error) {
-
-	if err := configcheck.ValidateConfigFromFactories(params.Factories); err != nil {
-		return nil, err
-	}
-
 	app := &Application{
 		info:      params.ApplicationStartInfo,
 		v:         config.NewViper(),
@@ -238,6 +233,10 @@ func (app *Application) runAndWaitForShutdownEvent() {
 }
 
 func (app *Application) setupConfigurationComponents(factory ConfigFactory) error {
+	if err := configcheck.ValidateConfigFromFactories(app.factories); err != nil {
+		return err
+	}
+
 	app.logger.Info("Loading configuration...")
 	cfg, err := factory(app.v, app.factories)
 	if err != nil {
