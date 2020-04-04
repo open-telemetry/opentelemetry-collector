@@ -26,7 +26,6 @@ import (
 	"contrib.go.opencensus.io/exporter/jaeger"
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/google/go-cmp/cmp"
 	"github.com/jaegertracing/jaeger/model"
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"github.com/stretchr/testify/assert"
@@ -99,9 +98,7 @@ func TestReception(t *testing.T) {
 	got := sink.AllTraces()
 	want := expectedTraceData(now, nowPlus10min, nowPlus10min2sec)
 
-	if diff := cmp.Diff(got, want); diff != "" {
-		t.Errorf("Mismatched responses\n-Got +Want:\n\t%s", diff)
-	}
+	assert.EqualValues(t, want, got)
 }
 
 func TestPortsNotOpen(t *testing.T) {
@@ -175,10 +172,7 @@ func TestGRPCReception(t *testing.T) {
 
 	assert.Len(t, req.Batch.Spans, len(want[0].Spans), "got a conflicting amount of spans")
 
-	if diff := cmp.Diff(got, want); diff != "" {
-		t.Errorf("Mismatched responses\n-Got +Want:\n\t%s", diff)
-	}
-
+	assert.EqualValues(t, want, got)
 }
 
 func TestGRPCReceptionWithTLS(t *testing.T) {
@@ -235,7 +229,7 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 	want := expectedTraceData(now, nowPlus10min, nowPlus10min2sec)
 
 	assert.Len(t, req.Batch.Spans, len(want[0].Spans), "got a conflicting amount of spans")
-	assert.Equal(t, "", cmp.Diff(got, want))
+	assert.EqualValues(t, want, got)
 }
 
 func expectedTraceData(t1, t2, t3 time.Time) []consumerdata.TraceData {

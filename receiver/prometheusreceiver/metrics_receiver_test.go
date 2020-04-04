@@ -21,7 +21,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"reflect"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -31,7 +30,6 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	timestamppb "github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/golang/protobuf/ptypes/wrappers"
-	"github.com/google/go-cmp/cmp"
 	promcfg "github.com/prometheus/prometheus/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -177,12 +175,7 @@ func verifyNumScrapeResults(t *testing.T, td *testData, mds []consumerdata.Metri
 
 func doCompare(name string, t *testing.T, want, got interface{}) {
 	t.Run(name, func(t *testing.T) {
-		if !reflect.DeepEqual(got, want) {
-			ww := string(exportertest.ToJSON(want))
-			gg := string(exportertest.ToJSON(got))
-			diff := cmp.Diff(ww, gg)
-			t.Errorf("metricBuilder.Build() mismatch (-want +got):\n%v\n want=%v \n got=%v\n", diff, ww, gg)
-		}
+		assert.EqualValues(t, want, got)
 	})
 }
 

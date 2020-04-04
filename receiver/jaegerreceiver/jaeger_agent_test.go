@@ -25,7 +25,6 @@ import (
 	"contrib.go.opencensus.io/exporter/jaeger"
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/google/go-cmp/cmp"
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -348,7 +347,5 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *Configu
 		},
 	}
 
-	if diff := cmp.Diff(got, want); diff != "" {
-		t.Errorf("Mismatched responses\n-Got +Want:\n\t%s", diff)
-	}
+	assert.EqualValues(t, want, got)
 }
