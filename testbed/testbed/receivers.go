@@ -15,7 +15,6 @@
 package testbed
 
 import (
-	"context"
 	"fmt"
 	"log"
 
@@ -48,10 +47,6 @@ type DataReceiver interface {
 type DataReceiverBase struct {
 	// Port on which to listen.
 	Port int
-}
-
-func (mb *DataReceiverBase) Context() context.Context {
-	return context.Background()
 }
 
 func (mb *DataReceiverBase) ReportFatalError(err error) {

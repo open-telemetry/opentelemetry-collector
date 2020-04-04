@@ -26,9 +26,6 @@ func TestNewMockHost(t *testing.T) {
 	if got == nil {
 		t.Fatal("NewMockHost() = nil, want non-nil", got)
 	}
-	if ctx := got.Context(); ctx == nil {
-		t.Fatalf("Context() = nil, want non-nil")
-	}
 	_, ok := got.(*MockHost)
 	if !ok {
 		t.Fatal("got.(*MockHost) failed")

@@ -64,10 +64,6 @@ func NewMockBackend(logFilePath string, receiver DataReceiver) *MockBackend {
 	return mb
 }
 
-func (mb *MockBackend) Context() context.Context {
-	return context.Background()
-}
-
 func (mb *MockBackend) ReportFatalError(err error) {
 	log.Printf("Fatal error reported: %v", err)
 }
