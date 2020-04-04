@@ -404,13 +404,12 @@ examples on using the processor.
 
 ## <a name="resource"></a>Resource Processor
 
-The resource processor can be used to add attributes to a given resource.
+The resource processor can be used to override a resource.
 Please refer to [config.go](resourceprocessor/config.go) for the config spec.
 
 The following configuration options are required:
-- `type`: Type of resource to which labels should be applied. Only
-applicable to `type` of `host` today.
-- `labels`: Map of key/value pairs that should be added to the defined `type`.
+- `type`: Resource type to be applied. This value overrides the original resource type.
+- `labels`: Map of key/value pairs that should be added to the resource.
 
 Examples:
 
