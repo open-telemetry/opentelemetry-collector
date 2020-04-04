@@ -24,6 +24,10 @@ import (
 )
 
 func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Resource, dest data.Resource) {
+	if ocNode == nil && ocResource == nil {
+		return
+	}
+
 	// Number of special fields in the Node. See the code below that deals with special fields.
 	const specialNodeAttrCount = 7
 
@@ -40,47 +44,41 @@ func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Reso
 		maxTotalAttrCount += len(ocResource.Labels) + specialResourceAttrCount
 	}
 
-	// Create a map where we will place all attributes from the Node and Resource.
-	attrs := make(map[string]data.AttributeValue, maxTotalAttrCount)
+	dest.InitEmpty()
+	attrs := dest.Attributes()
 
 	if ocNode != nil {
 		// Copy all Attributes.
 		for k, v := range ocNode.Attributes {
-			attrs[k] = data.NewAttributeValueString(v)
+			attrs.Insert(data.NewAttributeKeyValueString(k, v))
 		}
 
 		// Add all special fields.
 		if ocNode.ServiceInfo != nil {
 			if ocNode.ServiceInfo.Name != "" {
-				attrs[conventions.AttributeServiceName] = data.NewAttributeValueString(
-					ocNode.ServiceInfo.Name)
+				attrs.Upsert(data.NewAttributeKeyValueString(conventions.AttributeServiceName, ocNode.ServiceInfo.Name))
 			}
 		}
 		if ocNode.Identifier != nil {
 			if ocNode.Identifier.StartTimestamp != nil {
-				attrs[conventions.OCAttributeProcessStartTime] = data.NewAttributeValueString(
-					ptypes.TimestampString(ocNode.Identifier.StartTimestamp))
+				attrs.Upsert(data.NewAttributeKeyValueString(conventions.OCAttributeProcessStartTime, ptypes.TimestampString(ocNode.Identifier.StartTimestamp)))
 			}
 			if ocNode.Identifier.HostName != "" {
-				attrs[conventions.AttributeHostHostname] = data.NewAttributeValueString(
-					ocNode.Identifier.HostName)
+				attrs.Upsert(data.NewAttributeKeyValueString(conventions.AttributeHostHostname, ocNode.Identifier.HostName))
 			}
 			if ocNode.Identifier.Pid != 0 {
-				attrs[conventions.OCAttributeProcessID] = data.NewAttributeValueInt(int64(ocNode.Identifier.Pid))
+				attrs.Upsert(data.NewAttributeKeyValueInt(conventions.OCAttributeProcessID, int64(ocNode.Identifier.Pid)))
 			}
 		}
 		if ocNode.LibraryInfo != nil {
 			if ocNode.LibraryInfo.CoreLibraryVersion != "" {
-				attrs[conventions.AttributeLibraryVersion] = data.NewAttributeValueString(
-					ocNode.LibraryInfo.CoreLibraryVersion)
+				attrs.Upsert(data.NewAttributeKeyValueString(conventions.AttributeLibraryVersion, ocNode.LibraryInfo.CoreLibraryVersion))
 			}
 			if ocNode.LibraryInfo.ExporterVersion != "" {
-				attrs[conventions.OCAttributeExporterVersion] = data.NewAttributeValueString(
-					ocNode.LibraryInfo.ExporterVersion)
+				attrs.Upsert(data.NewAttributeKeyValueString(conventions.OCAttributeExporterVersion, ocNode.LibraryInfo.ExporterVersion))
 			}
 			if ocNode.LibraryInfo.Language != occommon.LibraryInfo_LANGUAGE_UNSPECIFIED {
-				attrs[conventions.AttributeLibraryLanguage] = data.NewAttributeValueString(
-					ocNode.LibraryInfo.Language.String())
+				attrs.Upsert(data.NewAttributeKeyValueString(conventions.AttributeLibraryLanguage, ocNode.LibraryInfo.Language.String()))
 			}
 		}
 	}
@@ -88,18 +86,11 @@ func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Reso
 	if ocResource != nil {
 		// Copy resource Labels.
 		for k, v := range ocResource.Labels {
-			attrs[k] = data.NewAttributeValueString(v)
+			attrs.Insert(data.NewAttributeKeyValueString(k, v))
 		}
 		// Add special fields.
 		if ocResource.Type != "" {
-			attrs[conventions.OCAttributeResourceType] = data.NewAttributeValueString(ocResource.Type)
+			attrs.Upsert(data.NewAttributeKeyValueString(conventions.OCAttributeResourceType, ocResource.Type))
 		}
-	}
-
-	if len(attrs) != 0 {
-		dest.InitEmpty()
-		// TODO: Re-evaluate if we want to construct a map first, or we can construct directly
-		// a slice of AttributeKeyValue.
-		dest.Attributes().InitFromMap(attrs)
 	}
 }

@@ -301,7 +301,7 @@ func TestOcToInternal(t *testing.T) {
 
 		{
 			name: "one-empty-resource-spans",
-			td:   testdata.GenerateTraceDataOneEmptyResourceSpans(),
+			td:   wrapTraceWithEmptyResource(testdata.GenerateTraceDataOneEmptyResourceSpans()),
 			oc:   consumerdata.TraceData{Node: ocNode},
 		},
 
@@ -313,7 +313,7 @@ func TestOcToInternal(t *testing.T) {
 
 		{
 			name: "one-span-no-resource",
-			td:   testdata.GenerateTraceDataOneSpanNoResource(),
+			td:   wrapTraceWithEmptyResource(testdata.GenerateTraceDataOneSpanNoResource()),
 			oc: consumerdata.TraceData{
 				Node:     ocNode,
 				Resource: &ocresource.Resource{},
@@ -372,4 +372,10 @@ func TestOcToInternal(t *testing.T) {
 			assert.EqualValues(t, test.td, OCToTraceData(test.oc))
 		})
 	}
+}
+
+// TODO: Try to avoid unnecessary Resource object allocation.
+func wrapTraceWithEmptyResource(td data.TraceData) data.TraceData {
+	td.ResourceSpans().At(0).Resource().InitEmpty()
+	return td
 }
