@@ -14,7 +14,7 @@
 
 // Program otelcol is the OpenTelemetry Collector that collects stats
 // and traces and exports to a configured backend.
-package defaults
+package defaultcomponents
 
 import (
 	"fmt"

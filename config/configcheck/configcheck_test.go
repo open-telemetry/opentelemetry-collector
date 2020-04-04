@@ -25,11 +25,11 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-collector/defaults"
+	"github.com/open-telemetry/opentelemetry-collector/service/defaultcomponents"
 )
 
 func TestValidateConfigFromFactories_Success(t *testing.T) {
-	factories, err := defaults.Components()
+	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
 
 	err = ValidateConfigFromFactories(factories)
@@ -37,7 +37,7 @@ func TestValidateConfigFromFactories_Success(t *testing.T) {
 }
 
 func TestValidateConfigFromFactories_Failure(t *testing.T) {
-	factories, err := defaults.Components()
+	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
 
 	// Add a factory returning config not following pattern to force error.

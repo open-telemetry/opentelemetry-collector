@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package defaults composes the default set of components used by the otel service
-package defaults
+// Package defaultcomponents composes the default set of components used by the otel service
+package defaultcomponents
 
 import (
 	"github.com/open-telemetry/opentelemetry-collector/component"
