@@ -74,9 +74,17 @@ func (md MetricData) MetricCount() int {
 	metricCount := 0
 	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
-		ils := rms.At(i).InstrumentationLibraryMetrics()
-		for j := 0; j < ils.Len(); j++ {
-			metricCount += ils.At(j).Metrics().Len()
+		rm := rms.At(i)
+		if rm.IsNil() {
+			continue
+		}
+		ilms := rm.InstrumentationLibraryMetrics()
+		for j := 0; j < ilms.Len(); j++ {
+			ilm := ilms.At(j)
+			if ilm.IsNil() {
+				continue
+			}
+			metricCount += ilm.Metrics().Len()
 		}
 	}
 	return metricCount
@@ -104,12 +112,12 @@ func (md MetricData) MetricAndDataPointCount() (metricCount int, dataPointCount 
 type MetricType otlpmetrics.MetricDescriptor_Type
 
 const (
-	MetricTypeUnspecified         MetricType = MetricType(otlpmetrics.MetricDescriptor_UNSPECIFIED)
-	MetricTypeGaugeInt64          MetricType = MetricType(otlpmetrics.MetricDescriptor_GAUGE_INT64)
-	MetricTypeGaugeDouble         MetricType = MetricType(otlpmetrics.MetricDescriptor_GAUGE_DOUBLE)
-	MetricTypeGaugeHistogram      MetricType = MetricType(otlpmetrics.MetricDescriptor_GAUGE_HISTOGRAM)
-	MetricTypeCounterInt64        MetricType = MetricType(otlpmetrics.MetricDescriptor_COUNTER_INT64)
-	MetricTypeCounterDouble       MetricType = MetricType(otlpmetrics.MetricDescriptor_COUNTER_DOUBLE)
-	MetricTypeCumulativeHistogram MetricType = MetricType(otlpmetrics.MetricDescriptor_CUMULATIVE_HISTOGRAM)
-	MetricTypeSummary             MetricType = MetricType(otlpmetrics.MetricDescriptor_SUMMARY)
+	MetricTypeUnspecified         = MetricType(otlpmetrics.MetricDescriptor_UNSPECIFIED)
+	MetricTypeGaugeInt64          = MetricType(otlpmetrics.MetricDescriptor_GAUGE_INT64)
+	MetricTypeGaugeDouble         = MetricType(otlpmetrics.MetricDescriptor_GAUGE_DOUBLE)
+	MetricTypeGaugeHistogram      = MetricType(otlpmetrics.MetricDescriptor_GAUGE_HISTOGRAM)
+	MetricTypeCounterInt64        = MetricType(otlpmetrics.MetricDescriptor_COUNTER_INT64)
+	MetricTypeCounterDouble       = MetricType(otlpmetrics.MetricDescriptor_COUNTER_DOUBLE)
+	MetricTypeCumulativeHistogram = MetricType(otlpmetrics.MetricDescriptor_CUMULATIVE_HISTOGRAM)
+	MetricTypeSummary             = MetricType(otlpmetrics.MetricDescriptor_SUMMARY)
 )

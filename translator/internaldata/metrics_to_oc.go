@@ -46,7 +46,11 @@ func MetricDataToOC(md data.MetricData) []consumerdata.MetricsData {
 
 	ocResourceMetricsList := make([]consumerdata.MetricsData, 0, resourceMetrics.Len())
 	for i := 0; i < resourceMetrics.Len(); i++ {
-		ocResourceMetricsList = append(ocResourceMetricsList, ResourceMetricsToOC(resourceMetrics.At(i)))
+		rs := resourceMetrics.At(i)
+		if rs.IsNil() {
+			continue
+		}
+		ocResourceMetricsList = append(ocResourceMetricsList, ResourceMetricsToOC(rs))
 	}
 
 	return ocResourceMetricsList
@@ -62,11 +66,19 @@ func ResourceMetricsToOC(rm data.ResourceMetrics) consumerdata.MetricsData {
 	// Approximate the number of the metrics as the number of the metrics in the first
 	// instrumentation library info.
 	ocMetrics := make([]*ocmetrics.Metric, 0, ilms.At(0).Metrics().Len())
-	for j := 0; j < ilms.Len(); j++ {
+	for i := 0; i < ilms.Len(); i++ {
+		ilm := ilms.At(i)
+		if ilm.IsNil() {
+			continue
+		}
 		// TODO: Handle instrumentation library name and version.
-		metrics := ilms.At(0).Metrics()
-		for k := 0; k < metrics.Len(); k++ {
-			ocMetrics = append(ocMetrics, metricToOC(metrics.At(k)))
+		metrics := ilm.Metrics()
+		for j := 0; j < metrics.Len(); j++ {
+			m := metrics.At(j)
+			if m.IsNil() {
+				continue
+			}
+			ocMetrics = append(ocMetrics, metricToOC(m))
 		}
 	}
 	if len(ocMetrics) != 0 {
@@ -100,21 +112,41 @@ func collectLabelKeys(metric data.Metric) *labelKeys {
 
 	// First, collect a set of all labels present in the metric
 	keySet := make(map[string]struct{})
+	md := metric.MetricDescriptor()
+	if !md.IsNil() {
+		addLabelKeys(keySet, md.LabelsMap())
+	}
 	ips := metric.Int64DataPoints()
 	for i := 0; i < ips.Len(); i++ {
-		addLabelKeys(keySet, ips.At(i).LabelsMap())
+		ip := ips.At(i)
+		if ip.IsNil() {
+			continue
+		}
+		addLabelKeys(keySet, ip.LabelsMap())
 	}
 	dps := metric.DoubleDataPoints()
 	for i := 0; i < dps.Len(); i++ {
-		addLabelKeys(keySet, dps.At(i).LabelsMap())
+		dp := dps.At(i)
+		if dp.IsNil() {
+			continue
+		}
+		addLabelKeys(keySet, dp.LabelsMap())
 	}
 	hps := metric.HistogramDataPoints()
 	for i := 0; i < hps.Len(); i++ {
-		addLabelKeys(keySet, hps.At(i).LabelsMap())
+		hp := hps.At(i)
+		if hp.IsNil() {
+			continue
+		}
+		addLabelKeys(keySet, hp.LabelsMap())
 	}
 	sps := metric.SummaryDataPoints()
 	for i := 0; i < sps.Len(); i++ {
-		addLabelKeys(keySet, sps.At(i).LabelsMap())
+		sp := sps.At(i)
+		if sp.IsNil() {
+			continue
+		}
+		addLabelKeys(keySet, sp.LabelsMap())
 	}
 
 	if len(keySet) == 0 {
@@ -204,32 +236,48 @@ func dataPointsToTimeseries(metric data.Metric, labelKeys *labelKeys) []*ocmetri
 	timeseries := make([]*ocmetrics.TimeSeries, 0, length)
 	ips := metric.Int64DataPoints()
 	for i := 0; i < ips.Len(); i++ {
-		ts := int64PointToOC(ips.At(i), labelKeys)
+		ip := ips.At(i)
+		if ip.IsNil() {
+			continue
+		}
+		ts := int64PointToOC(metric.MetricDescriptor(), ip, labelKeys)
 		timeseries = append(timeseries, ts)
 	}
 	dps := metric.DoubleDataPoints()
 	for i := 0; i < dps.Len(); i++ {
-		ts := doublePointToOC(dps.At(i), labelKeys)
+		dp := dps.At(i)
+		if dp.IsNil() {
+			continue
+		}
+		ts := doublePointToOC(metric.MetricDescriptor(), dp, labelKeys)
 		timeseries = append(timeseries, ts)
 	}
 	hps := metric.HistogramDataPoints()
 	for i := 0; i < hps.Len(); i++ {
-		ts := histogramPointToOC(hps.At(i), labelKeys)
+		hp := hps.At(i)
+		if hp.IsNil() {
+			continue
+		}
+		ts := histogramPointToOC(metric.MetricDescriptor(), hp, labelKeys)
 		timeseries = append(timeseries, ts)
 	}
 	sps := metric.SummaryDataPoints()
 	for i := 0; i < sps.Len(); i++ {
-		ts := summaryPointToOC(sps.At(i), labelKeys)
+		sp := sps.At(i)
+		if sp.IsNil() {
+			continue
+		}
+		ts := summaryPointToOC(metric.MetricDescriptor(), sp, labelKeys)
 		timeseries = append(timeseries, ts)
 	}
 
 	return timeseries
 }
 
-func int64PointToOC(point data.Int64DataPoint, labelKeys *labelKeys) *ocmetrics.TimeSeries {
+func int64PointToOC(md data.MetricDescriptor, point data.Int64DataPoint, labelKeys *labelKeys) *ocmetrics.TimeSeries {
 	return &ocmetrics.TimeSeries{
 		StartTimestamp: internal.UnixNanoToTimestamp(point.StartTime()),
-		LabelValues:    labelValuesToOC(point.LabelsMap(), labelKeys),
+		LabelValues:    labelValuesToOC(md, point.LabelsMap(), labelKeys),
 		Points: []*ocmetrics.Point{
 			{
 				Timestamp: internal.UnixNanoToTimestamp(point.Timestamp()),
@@ -241,10 +289,10 @@ func int64PointToOC(point data.Int64DataPoint, labelKeys *labelKeys) *ocmetrics.
 	}
 }
 
-func doublePointToOC(point data.DoubleDataPoint, labelKeys *labelKeys) *ocmetrics.TimeSeries {
+func doublePointToOC(md data.MetricDescriptor, point data.DoubleDataPoint, labelKeys *labelKeys) *ocmetrics.TimeSeries {
 	return &ocmetrics.TimeSeries{
 		StartTimestamp: internal.UnixNanoToTimestamp(point.StartTime()),
-		LabelValues:    labelValuesToOC(point.LabelsMap(), labelKeys),
+		LabelValues:    labelValuesToOC(md, point.LabelsMap(), labelKeys),
 		Points: []*ocmetrics.Point{
 			{
 				Timestamp: internal.UnixNanoToTimestamp(point.Timestamp()),
@@ -256,10 +304,10 @@ func doublePointToOC(point data.DoubleDataPoint, labelKeys *labelKeys) *ocmetric
 	}
 }
 
-func histogramPointToOC(point data.HistogramDataPoint, labelKeys *labelKeys) *ocmetrics.TimeSeries {
+func histogramPointToOC(md data.MetricDescriptor, point data.HistogramDataPoint, labelKeys *labelKeys) *ocmetrics.TimeSeries {
 	return &ocmetrics.TimeSeries{
 		StartTimestamp: internal.UnixNanoToTimestamp(point.StartTime()),
-		LabelValues:    labelValuesToOC(point.LabelsMap(), labelKeys),
+		LabelValues:    labelValuesToOC(md, point.LabelsMap(), labelKeys),
 		Points: []*ocmetrics.Point{
 			{
 				Timestamp: internal.UnixNanoToTimestamp(point.Timestamp()),
@@ -332,10 +380,10 @@ func exemplarToOC(exemplar data.HistogramBucketExemplar) *ocmetrics.Distribution
 	}
 }
 
-func summaryPointToOC(point data.SummaryDataPoint, labelKeys *labelKeys) *ocmetrics.TimeSeries {
+func summaryPointToOC(md data.MetricDescriptor, point data.SummaryDataPoint, labelKeys *labelKeys) *ocmetrics.TimeSeries {
 	return &ocmetrics.TimeSeries{
 		StartTimestamp: internal.UnixNanoToTimestamp(point.StartTime()),
-		LabelValues:    labelValuesToOC(point.LabelsMap(), labelKeys),
+		LabelValues:    labelValuesToOC(md, point.LabelsMap(), labelKeys),
 		Points: []*ocmetrics.Point{
 			{
 				Timestamp: internal.UnixNanoToTimestamp(point.Timestamp()),
@@ -371,22 +419,37 @@ func percentileToOC(percentiles data.SummaryValueAtPercentileSlice) *ocmetrics.S
 	}
 }
 
-func labelValuesToOC(labels data.StringMap, labelKeys *labelKeys) []*ocmetrics.LabelValue {
-	if labels.Len() == 0 {
+func labelValuesToOC(md data.MetricDescriptor, labels data.StringMap, labelKeys *labelKeys) []*ocmetrics.LabelValue {
+	if len(labelKeys.keys) == 0 {
 		return nil
 	}
 
 	// Initialize label values with defaults
 	// (The order matches key indices)
-	labelValues := make([]*ocmetrics.LabelValue, len(labelKeys.keyIndices))
+	labelValuesOrig := make([]ocmetrics.LabelValue, len(labelKeys.keys))
+	labelValues := make([]*ocmetrics.LabelValue, len(labelKeys.keys))
 	for i := 0; i < len(labelKeys.keys); i++ {
-		labelValues[i] = &ocmetrics.LabelValue{
-			HasValue: false,
+		labelValues[i] = &labelValuesOrig[i]
+	}
+
+	// Visit all defined labels in the MetricDescriptor and override defaults with actual values
+	if !md.IsNil() {
+		// TODO: Pre-construct the labelValuesOrig and labelValues with the metrics from the descriptor and copy them
+		//  instead of starting from new slices.
+		cls := md.LabelsMap()
+		for i := 0; i < cls.Len(); i++ {
+			skv := cls.GetStringKeyValue(i)
+			// Find the appropriate label value that we need to update
+			keyIndex := labelKeys.keyIndices[skv.Key()]
+			labelValue := labelValues[keyIndex]
+
+			// Update label value
+			labelValue.Value = skv.Value()
+			labelValue.HasValue = true
 		}
 	}
 
-	// Visit all defined label values and
-	// override defaults with actual values
+	// Visit all defined labels in the point and override defaults with actual values
 	for i := 0; i < labels.Len(); i++ {
 		skv := labels.GetStringKeyValue(i)
 		// Find the appropriate label value that we need to update

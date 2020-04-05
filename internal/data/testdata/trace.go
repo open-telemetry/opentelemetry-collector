@@ -34,7 +34,7 @@ var (
 )
 
 const (
-	NumTraceTests = 8
+	NumTraceTests = 11
 )
 
 func GenerateTraceDataEmpty() data.TraceData {
@@ -52,10 +52,21 @@ func GenerateTraceDataOneEmptyResourceSpans() data.TraceData {
 	return td
 }
 
-// generateTraceOtlpOneEmptyResourceSpans returns the OTLP representation of the GenerateTraceDataOneEmptyResourceSpans
 func generateTraceOtlpOneEmptyResourceSpans() []*otlptrace.ResourceSpans {
 	return []*otlptrace.ResourceSpans{
 		{},
+	}
+}
+
+func GenerateTraceDataOneEmptyOneNilResourceSpans() data.TraceData {
+	return data.TraceDataFromOtlp(generateTraceOtlpOneEmptyOneNilResourceSpans())
+
+}
+
+func generateTraceOtlpOneEmptyOneNilResourceSpans() []*otlptrace.ResourceSpans {
+	return []*otlptrace.ResourceSpans{
+		{},
+		nil,
 	}
 }
 
@@ -66,7 +77,6 @@ func GenerateTraceDataNoLibraries() data.TraceData {
 	return td
 }
 
-// generateTraceOtlpDataNoLibraries returns the OTLP representation of the GenerateTraceDataNoLibraries.
 func generateTraceOtlpNoLibraries() []*otlptrace.ResourceSpans {
 	return []*otlptrace.ResourceSpans{
 		{
@@ -75,20 +85,35 @@ func generateTraceOtlpNoLibraries() []*otlptrace.ResourceSpans {
 	}
 }
 
-func GenerateTraceDataNoSpans() data.TraceData {
+func GenerateTraceDataOneEmptyInstrumentationLibrary() data.TraceData {
 	td := GenerateTraceDataNoLibraries()
 	rs0 := td.ResourceSpans().At(0)
 	rs0.InstrumentationLibrarySpans().Resize(1)
 	return td
 }
 
-// generateTraceOtlpNoSpans returns the OTLP representation of the GenerateTraceDataNoSpans.
-func generateTraceOtlpNoSpans() []*otlptrace.ResourceSpans {
+func generateTraceOtlpOneEmptyInstrumentationLibrary() []*otlptrace.ResourceSpans {
 	return []*otlptrace.ResourceSpans{
 		{
 			Resource: generateOtlpResource1(),
 			InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
 				{},
+			},
+		},
+	}
+}
+
+func GenerateTraceDataOneEmptyOneNilInstrumentationLibrary() data.TraceData {
+	return data.TraceDataFromOtlp(generateTraceOtlpOneEmptyOneNilInstrumentationLibrary())
+}
+
+func generateTraceOtlpOneEmptyOneNilInstrumentationLibrary() []*otlptrace.ResourceSpans {
+	return []*otlptrace.ResourceSpans{
+		{
+			Resource: generateOtlpResource1(),
+			InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
+				{},
+				nil,
 			},
 		},
 	}
@@ -104,7 +129,6 @@ func GenerateTraceDataOneSpanNoResource() data.TraceData {
 	return td
 }
 
-// generateTraceOtlpOneSpanNoResource returns the OTLP representation of the GenerateTraceDataOneSpanNoResource.
 func generateTraceOtlpOneSpanNoResource() []*otlptrace.ResourceSpans {
 	return []*otlptrace.ResourceSpans{
 		{
@@ -120,14 +144,13 @@ func generateTraceOtlpOneSpanNoResource() []*otlptrace.ResourceSpans {
 }
 
 func GenerateTraceDataOneSpan() data.TraceData {
-	td := GenerateTraceDataNoSpans()
+	td := GenerateTraceDataOneEmptyInstrumentationLibrary()
 	rs0ils0 := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0)
 	rs0ils0.Spans().Resize(1)
 	fillSpanOne(rs0ils0.Spans().At(0))
 	return td
 }
 
-// generateTraceOtlpOneSpan returns the OTLP representation of the GenerateTraceDataOneSpan.
 func generateTraceOtlpOneSpan() []*otlptrace.ResourceSpans {
 	return []*otlptrace.ResourceSpans{
 		{
@@ -143,8 +166,28 @@ func generateTraceOtlpOneSpan() []*otlptrace.ResourceSpans {
 	}
 }
 
+func GenerateTraceDataOneSpanOneNil() data.TraceData {
+	return data.TraceDataFromOtlp(generateTraceOtlpOneSpanOneNil())
+}
+
+func generateTraceOtlpOneSpanOneNil() []*otlptrace.ResourceSpans {
+	return []*otlptrace.ResourceSpans{
+		{
+			Resource: generateOtlpResource1(),
+			InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
+				{
+					Spans: []*otlptrace.Span{
+						generateOtlpSpanOne(),
+						nil,
+					},
+				},
+			},
+		},
+	}
+}
+
 func GenerateTraceDataTwoSpansSameResource() data.TraceData {
-	td := GenerateTraceDataNoSpans()
+	td := GenerateTraceDataOneEmptyInstrumentationLibrary()
 	rs0ils0 := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0)
 	rs0ils0.Spans().Resize(2)
 	fillSpanOne(rs0ils0.Spans().At(0))
@@ -152,7 +195,6 @@ func GenerateTraceDataTwoSpansSameResource() data.TraceData {
 	return td
 }
 
-// generateTraceOtlpSameResourcewoSpans returns the OTLP representation of the generateTraceDataSameResourcewoSpans.
 func generateTraceOtlpSameResourceTwoSpans() []*otlptrace.ResourceSpans {
 	return []*otlptrace.ResourceSpans{
 		{
@@ -188,7 +230,6 @@ func GenerateTraceDataTwoSpansSameResourceOneDifferent() data.TraceData {
 	return td
 }
 
-// generateTraceOtlpTwoSpansSameResourceOneDifferent returns the OTLP representation of the GenerateTraceDataTwoSpansSameResourceOneDifferent.
 func generateTraceOtlpTwoSpansSameResourceOneDifferent() []*otlptrace.ResourceSpans {
 	return []*otlptrace.ResourceSpans{
 		{

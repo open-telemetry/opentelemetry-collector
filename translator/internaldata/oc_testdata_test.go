@@ -36,7 +36,6 @@ func generateOCTestDataNoMetrics() consumerdata.MetricsData {
 		Resource: &ocresource.Resource{
 			Labels: map[string]string{"resource-attr": "resource-attr-val-1"},
 		},
-		Metrics: []*ocmetrics.Metric(nil),
 	}
 }
 
@@ -108,44 +107,81 @@ func generateOCTestDataNoPoints() consumerdata.MetricsData {
 }
 
 func generateOCTestDataNoLabels() consumerdata.MetricsData {
+	m := generateOCTestMetricInt()
+	m.MetricDescriptor.LabelKeys = nil
+	m.Timeseries[0].LabelValues = nil
+	m.Timeseries[1].LabelValues = nil
 	return consumerdata.MetricsData{
 		Node: &occommon.Node{},
 		Resource: &ocresource.Resource{
 			Labels: map[string]string{"resource-attr": "resource-attr-val-1"},
 		},
-		Metrics: []*ocmetrics.Metric{
-			{
-				MetricDescriptor: &ocmetrics.MetricDescriptor{
-					Name: "counter-int",
-					Unit: "1",
-					Type: ocmetrics.MetricDescriptor_CUMULATIVE_INT64,
-				},
-				Timeseries: []*ocmetrics.TimeSeries{
-					{
-						StartTimestamp: internal.TimeToTimestamp(testdata.TestMetricStartTime),
-						Points: []*ocmetrics.Point{
-							{
-								Timestamp: internal.TimeToTimestamp(testdata.TestMetricTime),
-								Value: &ocmetrics.Point_Int64Value{
-									Int64Value: 123,
-								},
-							},
-						},
-					},
-					{
-						StartTimestamp: internal.TimeToTimestamp(testdata.TestMetricStartTime),
-						Points: []*ocmetrics.Point{
-							{
-								Timestamp: internal.TimeToTimestamp(testdata.TestMetricTime),
-								Value: &ocmetrics.Point_Int64Value{
-									Int64Value: 456,
-								},
-							},
-						},
-					},
-				},
-			},
+		Metrics: []*ocmetrics.Metric{m},
+	}
+}
+
+func generateOCTestDataMetricsInDescriptor() consumerdata.MetricsData {
+	m := generateOCTestMetricInt()
+	m.MetricDescriptor.LabelKeys = append(m.MetricDescriptor.LabelKeys, &ocmetrics.LabelKey{Key: testdata.TestLabelKey3})
+	m.Timeseries[0].LabelValues = append(m.Timeseries[0].LabelValues, &ocmetrics.LabelValue{
+		Value:    testdata.TestLabelValue3,
+		HasValue: true,
+	})
+	m.Timeseries[1].LabelValues = append(m.Timeseries[1].LabelValues, &ocmetrics.LabelValue{
+		Value:    testdata.TestLabelValue3,
+		HasValue: true,
+	})
+
+	return consumerdata.MetricsData{
+		Node: &occommon.Node{},
+		Resource: &ocresource.Resource{
+			Labels: map[string]string{"resource-attr": "resource-attr-val-1"},
 		},
+		Metrics: []*ocmetrics.Metric{m},
+	}
+}
+
+func generateOCTestDataMetricsOneMetric() consumerdata.MetricsData {
+	return consumerdata.MetricsData{
+		Node: &occommon.Node{},
+		Resource: &ocresource.Resource{
+			Labels: map[string]string{"resource-attr": "resource-attr-val-1"},
+		},
+		Metrics: []*ocmetrics.Metric{generateOCTestMetricInt()},
+	}
+}
+
+func generateOCTestDataMetricsOneMetricOneNil() consumerdata.MetricsData {
+	return consumerdata.MetricsData{
+		Node: &occommon.Node{},
+		Resource: &ocresource.Resource{
+			Labels: map[string]string{"resource-attr": "resource-attr-val-1"},
+		},
+		Metrics: []*ocmetrics.Metric{generateOCTestMetricInt(), nil},
+	}
+}
+
+func generateOCTestDataMetricsOneMetricOneNilTimeseries() consumerdata.MetricsData {
+	m := generateOCTestMetricInt()
+	m.Timeseries = append(m.Timeseries, nil)
+	return consumerdata.MetricsData{
+		Node: &occommon.Node{},
+		Resource: &ocresource.Resource{
+			Labels: map[string]string{"resource-attr": "resource-attr-val-1"},
+		},
+		Metrics: []*ocmetrics.Metric{m},
+	}
+}
+
+func generateOCTestDataMetricsOneMetricOneNilPoint() consumerdata.MetricsData {
+	m := generateOCTestMetricInt()
+	m.Timeseries[0].Points = append(m.Timeseries[0].Points, nil)
+	return consumerdata.MetricsData{
+		Node: &occommon.Node{},
+		Resource: &ocresource.Resource{
+			Labels: map[string]string{"resource-attr": "resource-attr-val-1"},
+		},
+		Metrics: []*ocmetrics.Metric{m},
 	}
 }
 
@@ -157,8 +193,8 @@ func generateOCTestMetricInt() *ocmetrics.Metric {
 			Unit:        "1",
 			Type:        ocmetrics.MetricDescriptor_CUMULATIVE_INT64,
 			LabelKeys: []*ocmetrics.LabelKey{
-				{Key: "int-label-1"},
-				{Key: "int-label-2"},
+				{Key: testdata.TestLabelKey1},
+				{Key: testdata.TestLabelKey2},
 			},
 		},
 		Timeseries: []*ocmetrics.TimeSeries{
@@ -167,7 +203,7 @@ func generateOCTestMetricInt() *ocmetrics.Metric {
 				LabelValues: []*ocmetrics.LabelValue{
 					{
 						// key1
-						Value:    "int-label-value-1",
+						Value:    testdata.TestLabelValue1,
 						HasValue: true,
 					},
 					{
@@ -193,7 +229,7 @@ func generateOCTestMetricInt() *ocmetrics.Metric {
 					},
 					{
 						// key2
-						Value:    "int-label-value-2",
+						Value:    testdata.TestLabelValue2,
 						HasValue: true,
 					},
 				},
@@ -217,9 +253,9 @@ func generateOCTestMetricDouble() *ocmetrics.Metric {
 			Unit: "1",
 			Type: ocmetrics.MetricDescriptor_CUMULATIVE_DOUBLE,
 			LabelKeys: []*ocmetrics.LabelKey{
-				{Key: "double-label-1"},
-				{Key: "double-label-2"},
-				{Key: "double-label-3"},
+				{Key: testdata.TestLabelKey1},
+				{Key: testdata.TestLabelKey2},
+				{Key: testdata.TestLabelKey3},
 			},
 		},
 		Timeseries: []*ocmetrics.TimeSeries{
@@ -228,12 +264,12 @@ func generateOCTestMetricDouble() *ocmetrics.Metric {
 				LabelValues: []*ocmetrics.LabelValue{
 					{
 						// key1
-						Value:    "double-label-value-1",
+						Value:    testdata.TestLabelValue1,
 						HasValue: true,
 					},
 					{
 						// key2
-						Value:    "double-label-value-2",
+						Value:    testdata.TestLabelValue2,
 						HasValue: true,
 					},
 					{
@@ -255,7 +291,7 @@ func generateOCTestMetricDouble() *ocmetrics.Metric {
 				LabelValues: []*ocmetrics.LabelValue{
 					{
 						// key1
-						Value:    "double-label-different-value-1",
+						Value:    testdata.TestLabelValue1,
 						HasValue: true,
 					},
 					{
@@ -264,7 +300,7 @@ func generateOCTestMetricDouble() *ocmetrics.Metric {
 					},
 					{
 						// key3
-						Value:    "double-label-value-3",
+						Value:    testdata.TestLabelValue3,
 						HasValue: true,
 					},
 				},
@@ -289,9 +325,9 @@ func generateOCTestMetricHistogram() *ocmetrics.Metric {
 			Unit:        "1",
 			Type:        ocmetrics.MetricDescriptor_CUMULATIVE_DISTRIBUTION,
 			LabelKeys: []*ocmetrics.LabelKey{
-				{Key: "histogram-label-1"},
-				{Key: "histogram-label-2"},
-				{Key: "histogram-label-3"},
+				{Key: testdata.TestLabelKey1},
+				{Key: testdata.TestLabelKey2},
+				{Key: testdata.TestLabelKey3},
 			},
 		},
 		Timeseries: []*ocmetrics.TimeSeries{
@@ -300,7 +336,7 @@ func generateOCTestMetricHistogram() *ocmetrics.Metric {
 				LabelValues: []*ocmetrics.LabelValue{
 					{
 						// key1
-						Value:    "histogram-label-value-1",
+						Value:    testdata.TestLabelValue1,
 						HasValue: true,
 					},
 					{
@@ -309,7 +345,7 @@ func generateOCTestMetricHistogram() *ocmetrics.Metric {
 					},
 					{
 						// key3
-						Value:    "histogram-label-value-3",
+						Value:    testdata.TestLabelValue3,
 						HasValue: true,
 					},
 				},
@@ -334,7 +370,7 @@ func generateOCTestMetricHistogram() *ocmetrics.Metric {
 					},
 					{
 						// key2
-						Value:    "histogram-label-value-2",
+						Value:    testdata.TestLabelValue2,
 						HasValue: true,
 					},
 					{
@@ -365,7 +401,7 @@ func generateOCTestMetricHistogram() *ocmetrics.Metric {
 										Exemplar: &ocmetrics.DistributionValue_Exemplar{
 											Timestamp:   internal.TimeToTimestamp(testdata.TestMetricExemplarTime),
 											Value:       15,
-											Attachments: map[string]string{"exemplar-attachment": "exemplar-attachment-value"},
+											Attachments: map[string]string{testdata.TestAttachmentKey: testdata.TestAttachmentValue},
 										},
 									},
 								},
@@ -386,7 +422,7 @@ func generateOCTestMetricSummary() *ocmetrics.Metric {
 			Unit:        "1",
 			Type:        ocmetrics.MetricDescriptor_SUMMARY,
 			LabelKeys: []*ocmetrics.LabelKey{
-				{Key: "summary-label"},
+				{Key: testdata.TestLabelKey},
 			},
 		},
 		Timeseries: []*ocmetrics.TimeSeries{
@@ -395,7 +431,7 @@ func generateOCTestMetricSummary() *ocmetrics.Metric {
 				LabelValues: []*ocmetrics.LabelValue{
 					{
 						// key1
-						Value:    "summary-label-value-1",
+						Value:    testdata.TestLabelValue1,
 						HasValue: true,
 					},
 				},
@@ -420,7 +456,7 @@ func generateOCTestMetricSummary() *ocmetrics.Metric {
 				LabelValues: []*ocmetrics.LabelValue{
 					{
 						// key1
-						Value:    "summary-label-value-2",
+						Value:    testdata.TestLabelValue2,
 						HasValue: true,
 					},
 				},

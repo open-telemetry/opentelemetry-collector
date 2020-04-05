@@ -30,7 +30,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 )
 
-func TestResourceMetricsToMetricsData(t *testing.T) {
+func TestMetricsDataToOC(t *testing.T) {
 
 	sampleMetricData := testdata.GenerateMetricDataWithCountersHistogramAndSummary()
 	attrs := sampleMetricData.ResourceMetrics().At(0).Resource().Attributes()
@@ -47,9 +47,25 @@ func TestResourceMetricsToMetricsData(t *testing.T) {
 		oc       []consumerdata.MetricsData
 	}{
 		{
-			name:     "none",
-			internal: data.NewMetricData(),
+			name:     "empty",
+			internal: testdata.GenerateMetricDataEmpty(),
 			oc:       []consumerdata.MetricsData(nil),
+		},
+
+		{
+			name:     "one-empty-resource-metrics",
+			internal: testdata.GenerateMetricDataOneEmptyResourceMetrics(),
+			oc: []consumerdata.MetricsData{
+				{},
+			},
+		},
+
+		{
+			name:     "one-empty-one-nil-resource-metrics",
+			internal: testdata.GenerateMetricDataOneEmptyOneNilResourceMetrics(),
+			oc: []consumerdata.MetricsData{
+				{},
+			},
 		},
 
 		{
@@ -61,26 +77,78 @@ func TestResourceMetricsToMetricsData(t *testing.T) {
 		},
 
 		{
-			name:     "no-metrics",
-			internal: testdata.GenerateMetricDataNoMetrics(),
+			name:     "one-empty-instrumentation-library",
+			internal: testdata.GenerateMetricDataOneEmptyInstrumentationLibrary(),
 			oc: []consumerdata.MetricsData{
 				generateOCTestDataNoMetrics(),
 			},
 		},
 
 		{
-			name:     "no-points",
-			internal: testdata.GenerateMetricDataAllTypesNoDataPoints(),
+			name:     "one-empty-one-nil-instrumentation-library",
+			internal: testdata.GenerateMetricDataOneEmptyOneNilInstrumentationLibrary(),
 			oc: []consumerdata.MetricsData{
-				generateOCTestDataNoPoints(),
+				generateOCTestDataNoMetrics(),
 			},
 		},
 
 		{
-			name:     "no-labels-metric",
+			name:     "one-metric-no-resource",
+			internal: testdata.GenerateMetricDataOneMetricNoResource(),
+			oc: []consumerdata.MetricsData{
+				{
+					Metrics: []*ocmetrics.Metric{
+						generateOCTestMetricInt(),
+					},
+				},
+			},
+		},
+
+		{
+			name:     "one-metric",
+			internal: testdata.GenerateMetricDataOneMetric(),
+			oc: []consumerdata.MetricsData{
+				generateOCTestDataMetricsOneMetric(),
+			},
+		},
+
+		{
+			name:     "one-metric-one-nil",
+			internal: testdata.GenerateMetricDataOneMetricOneNil(),
+			oc: []consumerdata.MetricsData{
+				generateOCTestDataMetricsOneMetric(),
+			},
+		},
+
+		{
+			name:     "one-metric-one-nil-point",
+			internal: testdata.GenerateMetricDataOneMetricOneNilPoint(),
+			oc: []consumerdata.MetricsData{
+				generateOCTestDataMetricsOneMetric(),
+			},
+		},
+
+		{
+			name:     "one-metric-no-labels",
 			internal: testdata.GenerateMetricDataOneMetricNoLabels(),
 			oc: []consumerdata.MetricsData{
 				generateOCTestDataNoLabels(),
+			},
+		},
+
+		{
+			name:     "one-metric-labels-in-descriptor",
+			internal: testdata.GenerateMetricDataOneMetricLabelsInDescriptor(),
+			oc: []consumerdata.MetricsData{
+				generateOCTestDataMetricsInDescriptor(),
+			},
+		},
+
+		{
+			name:     "all-types-no-data-points",
+			internal: testdata.GenerateMetricDataAllTypesNoDataPoints(),
+			oc: []consumerdata.MetricsData{
+				generateOCTestDataNoPoints(),
 			},
 		},
 

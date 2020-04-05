@@ -180,9 +180,15 @@ func setDataPoints(ocMetric *ocmetrics.Metric, metric data.Metric) {
 	ocLabelsKeys := ocMetric.GetMetricDescriptor().GetLabelKeys()
 	ocPointsCount := getPointsCount(ocMetric)
 	for _, timeseries := range ocMetric.GetTimeseries() {
+		if timeseries == nil {
+			continue
+		}
 		startTimestamp := internal.TimestampToUnixNano(timeseries.GetStartTimestamp())
 
 		for _, point := range timeseries.GetPoints() {
+			if point == nil {
+				continue
+			}
 			pointTimestamp := internal.TimestampToUnixNano(point.GetTimestamp())
 			switch point.Value.(type) {
 
@@ -235,6 +241,22 @@ func setDataPoints(ocMetric *ocmetrics.Metric, metric data.Metric) {
 				summaryDataPointsNum++
 			}
 		}
+	}
+
+	// If we allocated any of the data points slices, we did allocate them with empty points (resize),
+	// so make sure that we do not leave empty points at the end of any slice.
+
+	if metric.Int64DataPoints().Len() != 0 {
+		metric.Int64DataPoints().Resize(int64DataPointsNum)
+	}
+	if metric.DoubleDataPoints().Len() != 0 {
+		metric.DoubleDataPoints().Resize(doubleDataPointsNum)
+	}
+	if metric.HistogramDataPoints().Len() != 0 {
+		metric.HistogramDataPoints().Resize(histogramDataPointsNum)
+	}
+	if metric.SummaryDataPoints().Len() != 0 {
+		metric.SummaryDataPoints().Resize(summaryDataPointsNum)
 	}
 }
 
@@ -320,8 +342,7 @@ func getPointsCount(ocMetric *ocmetrics.Metric) int {
 	timeseriesSlice := ocMetric.GetTimeseries()
 	var count int
 	for _, timeseries := range timeseriesSlice {
-		points := timeseries.GetPoints()
-		count += len(points)
+		count += len(timeseries.GetPoints())
 	}
 	return count
 }

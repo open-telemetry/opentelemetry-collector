@@ -51,6 +51,24 @@ func TestMetricCount(t *testing.T) {
 	assert.EqualValues(t, 6, md.MetricCount())
 }
 
+func TestMetricCountWithNils(t *testing.T) {
+	assert.EqualValues(t, 0, MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{nil, {}}).MetricCount())
+	assert.EqualValues(t, 0, MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{
+		{
+			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{nil, {}},
+		},
+	}).MetricCount())
+	assert.EqualValues(t, 2, MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{
+		{
+			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+				{
+					Metrics: []*otlpmetrics.Metric{nil, {}},
+				},
+			},
+		},
+	}).MetricCount())
+}
+
 func TestMetricAndDataPointCount(t *testing.T) {
 	md := NewMetricData()
 	ms, dps := md.MetricAndDataPointCount()

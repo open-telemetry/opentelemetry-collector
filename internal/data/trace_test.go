@@ -44,6 +44,24 @@ func TestSpanCount(t *testing.T) {
 	assert.EqualValues(t, 6, md.SpanCount())
 }
 
+func TestSpanCountWithNils(t *testing.T) {
+	assert.EqualValues(t, 0, TraceDataFromOtlp([]*otlptrace.ResourceSpans{nil, {}}).SpanCount())
+	assert.EqualValues(t, 0, TraceDataFromOtlp([]*otlptrace.ResourceSpans{
+		{
+			InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{nil, {}},
+		},
+	}).SpanCount())
+	assert.EqualValues(t, 2, TraceDataFromOtlp([]*otlptrace.ResourceSpans{
+		{
+			InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
+				{
+					Spans: []*otlptrace.Span{nil, {}},
+				},
+			},
+		},
+	}).SpanCount())
+}
+
 func TestTraceID(t *testing.T) {
 	tid := NewTraceID(nil)
 	assert.EqualValues(t, []byte(nil), tid.Bytes())

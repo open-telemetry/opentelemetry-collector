@@ -36,11 +36,11 @@ func TestOCToMetricData(t *testing.T) {
 		{
 			name:     "empty",
 			oc:       consumerdata.MetricsData{},
-			internal: data.NewMetricData(),
+			internal: testdata.GenerateMetricDataEmpty(),
 		},
 
 		{
-			name: "empty-metrics",
+			name: "one-empty-resource-metrics",
 			oc: consumerdata.MetricsData{
 				Node:     &occommon.Node{},
 				Resource: &ocresource.Resource{},
@@ -55,33 +55,39 @@ func TestOCToMetricData(t *testing.T) {
 		},
 
 		{
-			name:     "no-points",
+			name:     "all-types-no-points",
 			oc:       generateOCTestDataNoPoints(),
 			internal: testdata.GenerateMetricDataAllTypesNoDataPoints(),
 		},
 
 		{
-			name:     "no-labels-metric",
+			name:     "one-metric-no-labels",
 			oc:       generateOCTestDataNoLabels(),
 			internal: testdata.GenerateMetricDataOneMetricNoLabels(),
 		},
 
 		{
-			name: "int64-metric",
-			oc: consumerdata.MetricsData{
-				Resource: generateOCTestResource(),
-				Metrics:  []*ocmetrics.Metric{generateOCTestMetricInt()},
-			},
+			name:     "one-metric",
+			oc:       generateOCTestDataMetricsOneMetric(),
 			internal: testdata.GenerateMetricDataOneMetric(),
 		},
 
 		{
-			name: "int64-and-double-metrics",
-			oc: consumerdata.MetricsData{
-				Resource: generateOCTestResource(),
-				Metrics:  []*ocmetrics.Metric{generateOCTestMetricInt(), generateOCTestMetricDouble()},
-			},
-			internal: testdata.GenerateMetricDataTwoMetrics(),
+			name:     "one-metric-one-nil",
+			oc:       generateOCTestDataMetricsOneMetricOneNil(),
+			internal: testdata.GenerateMetricDataOneMetric(),
+		},
+
+		{
+			name:     "one-metric-one-nil-timeseries",
+			oc:       generateOCTestDataMetricsOneMetricOneNilTimeseries(),
+			internal: testdata.GenerateMetricDataOneMetric(),
+		},
+
+		{
+			name:     "one-metric-one-nil-point",
+			oc:       generateOCTestDataMetricsOneMetricOneNilPoint(),
+			internal: testdata.GenerateMetricDataOneMetric(),
 		},
 
 		{
