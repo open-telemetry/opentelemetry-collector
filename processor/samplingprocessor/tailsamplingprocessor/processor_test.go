@@ -321,11 +321,11 @@ func (p *mockSpanProcessor) GetCapabilities() component.ProcessorCapabilities {
 }
 
 // Start is invoked during service startup.
-func (p *mockSpanProcessor) Start(host component.Host) error {
+func (p *mockSpanProcessor) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
 // Shutdown is invoked during service shutdown.
-func (p *mockSpanProcessor) Shutdown() error {
+func (p *mockSpanProcessor) Shutdown(context.Context) error {
 	return nil
 }

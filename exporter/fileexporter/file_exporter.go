@@ -197,11 +197,11 @@ func (e *Exporter) ConsumeMetricsData(ctx context.Context, md consumerdata.Metri
 	return nil
 }
 
-func (e *Exporter) Start(host component.Host) error {
+func (e *Exporter) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
 // Shutdown stops the exporter and is invoked during shutdown.
-func (e *Exporter) Shutdown() error {
+func (e *Exporter) Shutdown(context.Context) error {
 	return e.file.Close()
 }

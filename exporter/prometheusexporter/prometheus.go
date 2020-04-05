@@ -38,7 +38,7 @@ type prometheusExporter struct {
 
 var _ consumer.MetricsConsumerOld = (*prometheusExporter)(nil)
 
-func (pe *prometheusExporter) Start(host component.Host) error {
+func (pe *prometheusExporter) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
@@ -50,6 +50,6 @@ func (pe *prometheusExporter) ConsumeMetricsData(ctx context.Context, md consume
 }
 
 // Shutdown stops the exporter and is invoked during shutdown.
-func (pe *prometheusExporter) Shutdown() error {
+func (pe *prometheusExporter) Shutdown(context.Context) error {
 	return pe.shutdown()
 }

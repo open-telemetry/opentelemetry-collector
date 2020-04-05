@@ -111,12 +111,12 @@ func (tsp *tracesamplerprocessor) GetCapabilities() component.ProcessorCapabilit
 }
 
 // Start is invoked during service startup.
-func (tsp *tracesamplerprocessor) Start(host component.Host) error {
+func (tsp *tracesamplerprocessor) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
 // Shutdown is invoked during service shutdown.
-func (tsp *tracesamplerprocessor) Shutdown() error {
+func (tsp *tracesamplerprocessor) Shutdown(context.Context) error {
 	return nil
 }
 

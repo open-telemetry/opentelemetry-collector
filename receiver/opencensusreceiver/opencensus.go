@@ -99,7 +99,7 @@ func New(
 
 // Start runs the trace receiver on the gRPC server. Currently
 // it also enables the metrics receiver too.
-func (ocr *Receiver) Start(host component.Host) error {
+func (ocr *Receiver) Start(ctx context.Context, host component.Host) error {
 	return ocr.start(host)
 }
 
@@ -144,7 +144,7 @@ func (ocr *Receiver) grpcServer() *grpc.Server {
 }
 
 // Shutdown is a method to turn off receiving.
-func (ocr *Receiver) Shutdown() error {
+func (ocr *Receiver) Shutdown(context.Context) error {
 	if err := ocr.stop(); err != componenterr.ErrAlreadyStopped {
 		return err
 	}

@@ -59,10 +59,10 @@ func TestJaegerAgentUDP_ThriftCompact_InvalidPort(t *testing.T) {
 	assert.NoError(t, err, "Failed to create new Jaeger Receiver")
 
 	mh := component.NewMockHost()
-	err = jr.Start(mh)
+	err = jr.Start(context.Background(), mh)
 	assert.Error(t, err, "should not have been able to startTraceReception")
 
-	jr.Shutdown()
+	jr.Shutdown(context.Background())
 }
 
 func TestJaegerAgentUDP_ThriftBinary_6832(t *testing.T) {
@@ -88,7 +88,7 @@ func TestJaegerAgentUDP_ThriftBinary_PortInUse(t *testing.T) {
 	mh := component.NewMockHost()
 	err = jr.(*jReceiver).startAgent(mh)
 	assert.NoError(t, err, "Start failed")
-	defer jr.Shutdown()
+	defer jr.Shutdown(context.Background())
 
 	l, err := net.Listen("udp", fmt.Sprintf("localhost:%d", port))
 	assert.Error(t, err, "should not have been able to listen to the port")
@@ -108,10 +108,10 @@ func TestJaegerAgentUDP_ThriftBinary_InvalidPort(t *testing.T) {
 	assert.NoError(t, err, "Failed to create new Jaeger Receiver")
 
 	mh := component.NewMockHost()
-	err = jr.Start(mh)
+	err = jr.Start(context.Background(), mh)
 	assert.Error(t, err, "should not have been able to startTraceReception")
 
-	jr.Shutdown()
+	jr.Shutdown(context.Background())
 }
 
 func initializeGRPCTestServer(t *testing.T, beforeServe func(server *grpc.Server)) (*grpc.Server, net.Addr) {
@@ -146,10 +146,10 @@ func TestJaegerHTTP(t *testing.T) {
 	}
 	jr, err := New(jaegerAgent, config, nil, zap.NewNop())
 	assert.NoError(t, err, "Failed to create new Jaeger Receiver")
-	defer jr.Shutdown()
+	defer jr.Shutdown(context.Background())
 
 	mh := component.NewMockHost()
-	err = jr.Start(mh)
+	err = jr.Start(context.Background(), mh)
 	assert.NoError(t, err, "Start failed")
 
 	// allow http server to start
@@ -183,10 +183,10 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *Configu
 	sink := new(exportertest.SinkTraceExporterOld)
 	jr, err := New(jaegerAgent, receiverConfig, sink, zap.NewNop())
 	assert.NoError(t, err, "Failed to create new Jaeger Receiver")
-	defer jr.Shutdown()
+	defer jr.Shutdown(context.Background())
 
 	mh := component.NewMockHost()
-	err = jr.Start(mh)
+	err = jr.Start(context.Background(), mh)
 	assert.NoError(t, err, "Start failed")
 
 	now := time.Unix(1542158650, 536343000).UTC()

@@ -68,7 +68,7 @@ func TestLoggingTraceExporterNoErrors(t *testing.T) {
 	}
 
 	assert.NoError(t, lte.ConsumeTraceData(context.Background(), td))
-	assert.NoError(t, lte.Shutdown())
+	assert.NoError(t, lte.Shutdown(context.Background()))
 }
 
 func TestLoggingMetricsExporterNoErrors(t *testing.T) {
@@ -80,5 +80,5 @@ func TestLoggingMetricsExporterNoErrors(t *testing.T) {
 		Metrics: make([]*metricspb.Metric, 7),
 	}
 	assert.NoError(t, lme.ConsumeMetricsData(context.Background(), md))
-	assert.NoError(t, lme.Shutdown())
+	assert.NoError(t, lme.Shutdown(context.Background()))
 }

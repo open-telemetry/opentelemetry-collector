@@ -27,34 +27,34 @@ import (
 
 func TestNopTraceExporterOld(t *testing.T) {
 	nte := NewNopTraceExporterOld()
-	require.NoError(t, nte.Start(nil))
+	require.NoError(t, nte.Start(context.Background(), nil))
 	td := consumerdata.TraceData{
 		Spans: make([]*tracepb.Span, 7),
 	}
 	require.NoError(t, nte.ConsumeTraceData(context.Background(), td))
-	require.NoError(t, nte.Shutdown())
+	require.NoError(t, nte.Shutdown(context.Background()))
 }
 
 func TestNopMetricsExporterOld(t *testing.T) {
 	nme := NewNopMetricsExporterOld()
-	require.NoError(t, nme.Start(nil))
+	require.NoError(t, nme.Start(context.Background(), nil))
 	md := consumerdata.MetricsData{
 		Metrics: make([]*metricspb.Metric, 7),
 	}
 	require.NoError(t, nme.ConsumeMetricsData(context.Background(), md))
-	require.NoError(t, nme.Shutdown())
+	require.NoError(t, nme.Shutdown(context.Background()))
 }
 
 func TestNopTraceExporter(t *testing.T) {
 	nte := NewNopTraceExporter()
-	require.NoError(t, nte.Start(nil))
+	require.NoError(t, nte.Start(context.Background(), nil))
 	require.NoError(t, nte.ConsumeTrace(context.Background(), data.NewTraceData()))
-	require.NoError(t, nte.Shutdown())
+	require.NoError(t, nte.Shutdown(context.Background()))
 }
 
 func TestNopMetricsExporter(t *testing.T) {
 	nme := NewNopMetricsExporter()
-	require.NoError(t, nme.Start(nil))
+	require.NoError(t, nme.Start(context.Background(), nil))
 	require.NoError(t, nme.ConsumeMetrics(context.Background(), data.NewMetricData()))
-	require.NoError(t, nme.Shutdown())
+	require.NoError(t, nme.Shutdown(context.Background()))
 }

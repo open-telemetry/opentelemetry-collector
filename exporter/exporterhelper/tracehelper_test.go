@@ -69,7 +69,7 @@ func TestTraceExporterOld_Default(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Nil(t, te.ConsumeTraceData(context.Background(), td))
-	assert.Nil(t, te.Shutdown())
+	assert.Nil(t, te.Shutdown(context.Background()))
 }
 
 func TestTraceExporterOld_Default_ReturnError(t *testing.T) {
@@ -141,7 +141,7 @@ func TestTraceExporterOld_WithShutdown(t *testing.T) {
 	assert.NotNil(t, te)
 	assert.Nil(t, err)
 
-	assert.Nil(t, te.Shutdown())
+	assert.Nil(t, te.Shutdown(context.Background()))
 	assert.True(t, shutdownCalled)
 }
 
@@ -153,7 +153,7 @@ func TestTraceExporterOld_WithShutdown_ReturnError(t *testing.T) {
 	assert.NotNil(t, te)
 	assert.Nil(t, err)
 
-	assert.Equal(t, te.Shutdown(), want)
+	assert.Equal(t, te.Shutdown(context.Background()), want)
 }
 
 func newTraceDataPusherOld(droppedSpans int, retError error) traceDataPusherOld {
@@ -256,7 +256,7 @@ func TestTraceExporter_Default(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Nil(t, te.ConsumeTrace(context.Background(), td))
-	assert.Nil(t, te.Shutdown())
+	assert.Nil(t, te.Shutdown(context.Background()))
 }
 
 func TestTraceExporter_Default_ReturnError(t *testing.T) {
@@ -328,7 +328,7 @@ func TestTraceExporter_WithShutdown(t *testing.T) {
 	assert.NotNil(t, te)
 	assert.Nil(t, err)
 
-	assert.Nil(t, te.Shutdown())
+	assert.Nil(t, te.Shutdown(context.Background()))
 	assert.True(t, shutdownCalled)
 }
 
@@ -340,7 +340,7 @@ func TestTraceExporter_WithShutdown_ReturnError(t *testing.T) {
 	assert.NotNil(t, te)
 	assert.Nil(t, err)
 
-	assert.Equal(t, te.Shutdown(), want)
+	assert.Equal(t, te.Shutdown(context.Background()), want)
 }
 
 func newTraceDataPusher(droppedSpans int, retError error) traceDataPusher {

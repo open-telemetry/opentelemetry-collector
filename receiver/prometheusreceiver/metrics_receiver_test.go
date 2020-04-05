@@ -15,6 +15,7 @@
 package prometheusreceiver
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net"
@@ -1037,9 +1038,9 @@ func testEndToEnd(t *testing.T, targets []*testData, useStartTimeMetric bool) {
 	rcvr := newPrometheusReceiver(logger, &Config{PrometheusConfig: cfg, UseStartTimeMetric: useStartTimeMetric}, cms)
 
 	mh := component.NewMockHost()
-	err = rcvr.Start(mh)
+	err = rcvr.Start(context.Background(), mh)
 	require.Nilf(t, err, "Failed to invoke Start: %v", err)
-	defer rcvr.Shutdown()
+	defer rcvr.Shutdown(context.Background())
 
 	// wait for all provided data to be scraped
 	mp.wg.Wait()

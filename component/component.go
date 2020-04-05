@@ -14,6 +14,10 @@
 
 package component
 
+import (
+	"context"
+)
+
 // Component is either a receiver, exporter, processor or extension.
 type Component interface {
 	// Start tells the component to start. Host parameter can be used for communicating
@@ -21,10 +25,10 @@ type Component interface {
 	// Start() then the collector startup will be aborted.
 	// If this is an exporter component it may prepare for exporting
 	// by connecting to the endpoint.
-	Start(host Host) error
+	Start(ctx context.Context, host Host) error
 
 	// Shutdown is invoked during service shutdown.
-	Shutdown() error
+	Shutdown(ctx context.Context) error
 }
 
 // Kind specified one of the 4 components kinds, see consts below.

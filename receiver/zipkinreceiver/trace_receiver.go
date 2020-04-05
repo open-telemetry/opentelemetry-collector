@@ -17,6 +17,7 @@ package zipkinreceiver
 import (
 	"compress/gzip"
 	"compress/zlib"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -104,7 +105,7 @@ func (zr *ZipkinReceiver) WithHTTPServer(s *http.Server) *ZipkinReceiver {
 }
 
 // Start spins up the receiver's HTTP server and makes the receiver start its processing.
-func (zr *ZipkinReceiver) Start(host component.Host) error {
+func (zr *ZipkinReceiver) Start(ctx context.Context, host component.Host) error {
 	if host == nil {
 		return errors.New("nil host")
 	}
@@ -243,7 +244,7 @@ func (zr *ZipkinReceiver) deserializeFromJSON(jsonBlob []byte, debugWasSet bool)
 // Shutdown tells the receiver that should stop reception,
 // giving it a chance to perform any necessary clean-up and shutting down
 // its HTTP server.
-func (zr *ZipkinReceiver) Shutdown() error {
+func (zr *ZipkinReceiver) Shutdown(context.Context) error {
 	var err = componenterr.ErrAlreadyStopped
 	zr.stopOnce.Do(func() {
 		err = zr.server.Close()

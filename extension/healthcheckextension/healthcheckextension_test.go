@@ -15,6 +15,7 @@
 package healthcheckextension
 
 import (
+	"context"
 	"net"
 	"net/http"
 	"runtime"
@@ -39,8 +40,8 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 	require.NotNil(t, hcExt)
 
 	mh := extensiontest.NewMockHost()
-	require.NoError(t, hcExt.Start(mh))
-	defer hcExt.Shutdown()
+	require.NoError(t, hcExt.Start(context.Background(), mh))
+	defer hcExt.Shutdown(context.Background())
 
 	// Give a chance for the server goroutine to run.
 	runtime.Gosched()
@@ -91,7 +92,7 @@ func TestHealthCheckExtensionPortAlreadyInUse(t *testing.T) {
 	// Health check will report port already in use in a goroutine, use the mock
 	// host to get it.
 	mh := extensiontest.NewMockHost()
-	require.NoError(t, hcExt.Start(mh))
+	require.NoError(t, hcExt.Start(context.Background(), mh))
 
 	receivedError, receivedErr := mh.WaitForFatalError(500 * time.Millisecond)
 	require.True(t, receivedError)
@@ -108,12 +109,12 @@ func TestHealthCheckMultipleStarts(t *testing.T) {
 	require.NotNil(t, hcExt)
 
 	mh := extensiontest.NewMockHost()
-	require.NoError(t, hcExt.Start(mh))
-	defer hcExt.Shutdown()
+	require.NoError(t, hcExt.Start(context.Background(), mh))
+	defer hcExt.Shutdown(context.Background())
 
 	// Health check will report already in use in a goroutine, use the mock
 	// host to get it.
-	require.NoError(t, hcExt.Start(mh))
+	require.NoError(t, hcExt.Start(context.Background(), mh))
 
 	receivedError, receivedErr := mh.WaitForFatalError(500 * time.Millisecond)
 	require.True(t, receivedError)
@@ -130,10 +131,10 @@ func TestHealthCheckMultipleShutdowns(t *testing.T) {
 	require.NotNil(t, hcExt)
 
 	mh := extensiontest.NewMockHost()
-	require.NoError(t, hcExt.Start(mh))
+	require.NoError(t, hcExt.Start(context.Background(), mh))
 
-	require.NoError(t, hcExt.Shutdown())
-	require.NoError(t, hcExt.Shutdown())
+	require.NoError(t, hcExt.Shutdown(context.Background()))
+	require.NoError(t, hcExt.Shutdown(context.Background()))
 }
 
 func TestHealthCheckShutdownWithoutStart(t *testing.T) {
@@ -145,5 +146,5 @@ func TestHealthCheckShutdownWithoutStart(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, hcExt)
 
-	require.NoError(t, hcExt.Shutdown())
+	require.NoError(t, hcExt.Shutdown(context.Background()))
 }

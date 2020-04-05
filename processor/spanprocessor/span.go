@@ -112,12 +112,12 @@ func (sp *spanProcessor) GetCapabilities() component.ProcessorCapabilities {
 }
 
 // Start is invoked during service startup.
-func (sp *spanProcessor) Start(host component.Host) error {
+func (sp *spanProcessor) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
 // Shutdown is invoked during service shutdown.
-func (sp *spanProcessor) Shutdown() error {
+func (sp *spanProcessor) Shutdown(context.Context) error {
 	return nil
 }
 

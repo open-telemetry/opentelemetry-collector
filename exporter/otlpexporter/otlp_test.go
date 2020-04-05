@@ -127,11 +127,11 @@ func TestSendData(t *testing.T) {
 	exp, err := factory.CreateTraceExporter(zap.NewNop(), &config)
 	assert.Nil(t, err)
 	require.NotNil(t, exp)
-	defer exp.Shutdown()
+	defer exp.Shutdown(context.Background())
 
 	host := component.NewMockHost()
 
-	err = exp.Start(host)
+	err = exp.Start(context.Background(), host)
 	assert.NoError(t, err)
 
 	// Ensure that initially there is no data in the receiver.

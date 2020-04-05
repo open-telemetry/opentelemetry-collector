@@ -149,9 +149,9 @@ func TestZipkinReceiverPortAlreadyInUse(t *testing.T) {
 	traceReceiver, err := New(zipkinReceiver, "localhost:"+portStr, exportertest.NewNopTraceExporterOld())
 	require.NoError(t, err, "Failed to create receiver: %v", err)
 	mh := component.NewMockHost()
-	err = traceReceiver.Start(mh)
+	err = traceReceiver.Start(context.Background(), mh)
 	if err == nil {
-		traceReceiver.Shutdown()
+		traceReceiver.Shutdown(context.Background())
 		t.Fatal("conflict on port was expected")
 	}
 }
@@ -380,14 +380,14 @@ func TestConversionRoundtrip(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, ze)
 	mh := component.NewMockHost()
-	require.NoError(t, ze.Start(mh))
+	require.NoError(t, ze.Start(context.Background(), mh))
 
 	for _, treq := range ereqs {
 		require.NoError(t, ze.ConsumeTraceData(context.Background(), treq))
 	}
 
 	// Shutdown the exporter so it can flush any remaining data.
-	assert.NoError(t, ze.Shutdown())
+	assert.NoError(t, ze.Shutdown(context.Background()))
 	backend.Close()
 
 	// The received JSON messages are inside arrays, so reading then directly will
@@ -422,10 +422,10 @@ func TestStartTraceReception(t *testing.T) {
 			require.Nil(t, err)
 			require.NotNil(t, zr)
 
-			err = zr.Start(tt.host)
+			err = zr.Start(context.Background(), tt.host)
 			assert.Equal(t, tt.wantErr, err != nil)
 			if !tt.wantErr {
-				require.Nil(t, zr.Shutdown())
+				require.Nil(t, zr.Shutdown(context.Background()))
 			}
 		})
 	}

@@ -66,8 +66,8 @@ func TestCreateTraceExporter(t *testing.T) {
 		new(exportertest.SinkTraceExporterOld))
 	require.NotNil(t, rcv)
 	require.Nil(t, err)
-	require.Nil(t, rcv.Start(component.NewMockHost()))
-	defer rcv.Shutdown()
+	require.Nil(t, rcv.Start(context.Background(), component.NewMockHost()))
+	defer rcv.Shutdown(context.Background())
 
 	tests := []struct {
 		name     string
@@ -186,7 +186,7 @@ func TestCreateTraceExporter(t *testing.T) {
 				assert.Nil(t, err)
 				assert.NotNil(t, consumer)
 
-				err = consumer.Shutdown()
+				err = consumer.Shutdown(context.Background())
 				if err != nil {
 					// Since the endpoint of opencensus exporter doesn't actually exist,
 					// exporter may already stop because it cannot connect.

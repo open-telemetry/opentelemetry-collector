@@ -15,6 +15,7 @@
 package memorylimiter
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -60,10 +61,10 @@ func TestCreateProcessor(t *testing.T) {
 	tp, err = factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporterOld(), cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, tp)
-	assert.NoError(t, tp.Shutdown())
+	assert.NoError(t, tp.Shutdown(context.Background()))
 
 	mp, err = factory.CreateMetricsProcessor(zap.NewNop(), exportertest.NewNopMetricsExporterOld(), cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, mp)
-	assert.NoError(t, mp.Shutdown())
+	assert.NoError(t, mp.Shutdown(context.Background()))
 }

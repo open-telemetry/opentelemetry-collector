@@ -116,9 +116,9 @@ func TestCreateTraceReceiver(t *testing.T) {
 			}
 			if tr != nil {
 				mh := component.NewMockHost()
-				err := tr.Start(mh)
+				err := tr.Start(context.Background(), mh)
 				require.NoError(t, err, "Start() error = %v", err)
-				tr.Shutdown()
+				tr.Shutdown(context.Background())
 			}
 		})
 	}
@@ -191,9 +191,9 @@ func TestCreateMetricReceiver(t *testing.T) {
 			}
 			if tc != nil {
 				mh := component.NewMockHost()
-				err := tc.Start(mh)
+				err := tc.Start(context.Background(), mh)
 				require.NoError(t, err, "Start() error = %v", err)
-				tc.Shutdown()
+				tc.Shutdown(context.Background())
 			}
 		})
 	}

@@ -15,6 +15,7 @@
 package vmmetricsreceiver
 
 import (
+	"context"
 	"sync"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
@@ -32,7 +33,7 @@ type Receiver struct {
 }
 
 // Start scrapes VM metrics based on the OS platform.
-func (vmr *Receiver) Start(host component.Host) error {
+func (vmr *Receiver) Start(ctx context.Context, host component.Host) error {
 	vmr.mu.Lock()
 	defer vmr.mu.Unlock()
 
@@ -45,7 +46,7 @@ func (vmr *Receiver) Start(host component.Host) error {
 }
 
 // Shutdown stops and cancels the underlying VM metrics scrapers.
-func (vmr *Receiver) Shutdown() error {
+func (vmr *Receiver) Shutdown(context.Context) error {
 	vmr.mu.Lock()
 	defer vmr.mu.Unlock()
 

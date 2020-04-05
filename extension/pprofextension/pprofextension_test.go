@@ -15,6 +15,7 @@
 package pprofextension
 
 import (
+	"context"
 	"net"
 	"net/http"
 	"runtime"
@@ -39,8 +40,8 @@ func TestPerformanceProfilerExtensionUsage(t *testing.T) {
 	require.NotNil(t, pprofExt)
 
 	mh := extensiontest.NewMockHost()
-	require.NoError(t, pprofExt.Start(mh))
-	defer pprofExt.Shutdown()
+	require.NoError(t, pprofExt.Start(context.Background(), mh))
+	defer pprofExt.Shutdown(context.Background())
 
 	// Give a chance for the server goroutine to run.
 	runtime.Gosched()
@@ -70,7 +71,7 @@ func TestPerformanceProfilerExtensionPortAlreadyInUse(t *testing.T) {
 	require.NotNil(t, pprofExt)
 
 	mh := extensiontest.NewMockHost()
-	require.Error(t, pprofExt.Start(mh))
+	require.Error(t, pprofExt.Start(context.Background(), mh))
 }
 
 func TestPerformanceProfilerMultipleStarts(t *testing.T) {
@@ -83,11 +84,11 @@ func TestPerformanceProfilerMultipleStarts(t *testing.T) {
 	require.NotNil(t, pprofExt)
 
 	mh := extensiontest.NewMockHost()
-	require.NoError(t, pprofExt.Start(mh))
-	defer pprofExt.Shutdown()
+	require.NoError(t, pprofExt.Start(context.Background(), mh))
+	defer pprofExt.Shutdown(context.Background())
 
 	// Try to start it again, it will fail since it is on the same endpoint.
-	require.Error(t, pprofExt.Start(mh))
+	require.Error(t, pprofExt.Start(context.Background(), mh))
 }
 
 func TestPerformanceProfilerMultipleShutdowns(t *testing.T) {
@@ -100,10 +101,10 @@ func TestPerformanceProfilerMultipleShutdowns(t *testing.T) {
 	require.NotNil(t, pprofExt)
 
 	mh := extensiontest.NewMockHost()
-	require.NoError(t, pprofExt.Start(mh))
+	require.NoError(t, pprofExt.Start(context.Background(), mh))
 
-	require.NoError(t, pprofExt.Shutdown())
-	require.NoError(t, pprofExt.Shutdown())
+	require.NoError(t, pprofExt.Shutdown(context.Background()))
+	require.NoError(t, pprofExt.Shutdown(context.Background()))
 }
 
 func TestPerformanceProfilerShutdownWithoutStart(t *testing.T) {
@@ -115,5 +116,5 @@ func TestPerformanceProfilerShutdownWithoutStart(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, pprofExt)
 
-	require.NoError(t, pprofExt.Shutdown())
+	require.NoError(t, pprofExt.Shutdown(context.Background()))
 }
