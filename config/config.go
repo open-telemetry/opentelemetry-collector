@@ -193,6 +193,14 @@ func Load(
 // will be non-empty if err is nil.
 func DecodeTypeAndName(key string) (typeStr, fullName string, err error) {
 	items := strings.SplitN(key, typeAndNameSeparator, 2)
+	defer func() {
+		if err != nil {
+			err = &configError{
+				code: errInvalidTypeAndNameKey,
+				msg:  fmt.Sprintf("invalid key %q: %s", key, err.Error()),
+			}
+		}
+	}()
 
 	if len(items) >= 1 {
 		typeStr = strings.TrimSpace(items[0])
@@ -241,10 +249,7 @@ func loadExtensions(v *viper.Viper, factories map[string]component.ExtensionFact
 		// Decode the key into type and fullName components.
 		typeStr, fullName, err := DecodeTypeAndName(key)
 		if err != nil {
-			return nil, &configError{
-				code: errInvalidTypeAndNameKey,
-				msg:  fmt.Sprintf("invalid key %q: %s", key, err.Error()),
-			}
+			return nil, err
 		}
 
 		// Find extension factory based on "type" that we read from config source.
@@ -313,23 +318,11 @@ func loadService(v *viper.Viper) (configmodels.Service, error) {
 }
 
 // LoadReceiver loads a receiver config from v under the subkey receiverKey using the provided factories.
-func LoadReceiver(receiverKey string, v *viper.Viper, factories map[string]component.ReceiverFactoryBase) (configmodels.Receiver, error) {
+func LoadReceiver(receiverKey string, v *viper.Viper, factory component.ReceiverFactoryBase) (configmodels.Receiver, error) {
 	// Decode the key into type and fullName components.
 	typeStr, fullName, err := DecodeTypeAndName(receiverKey)
 	if err != nil {
-		return nil, &configError{
-			code: errInvalidTypeAndNameKey,
-			msg:  fmt.Sprintf("invalid key %q: %s", receiverKey, err.Error()),
-		}
-	}
-
-	// Find receiver factory based on "type" that we read from config source
-	factory := factories[typeStr]
-	if factory == nil {
-		return nil, &configError{
-			code: errUnknownReceiverType,
-			msg:  fmt.Sprintf("unknown receiver type %q", typeStr),
-		}
+		return nil, err
 	}
 
 	// Create the default config for this receiver.
@@ -381,7 +374,21 @@ func loadReceivers(v *viper.Viper, factories map[string]component.ReceiverFactor
 
 	// Iterate over input map and create a config for each.
 	for key := range keyMap {
-		receiverCfg, err := LoadReceiver(key, subViper, factories)
+		typeStr, _, err := DecodeTypeAndName(key)
+		if err != nil {
+			return nil, err
+		}
+
+		// Find receiver factory based on "type" that we read from config source
+		factory := factories[typeStr]
+		if factory == nil {
+			return nil, &configError{
+				code: errUnknownReceiverType,
+				msg:  fmt.Sprintf("unknown receiver type %q", typeStr),
+			}
+		}
+
+		receiverCfg, err := LoadReceiver(key, subViper, factory)
 
 		if err != nil {
 			// LoadReceiver already wraps the error.
@@ -423,10 +430,7 @@ func loadExporters(v *viper.Viper, factories map[string]component.ExporterFactor
 		// Decode the key into type and fullName components.
 		typeStr, fullName, err := DecodeTypeAndName(key)
 		if err != nil {
-			return nil, &configError{
-				code: errInvalidTypeAndNameKey,
-				msg:  fmt.Sprintf("invalid key %q: %s", key, err.Error()),
-			}
+			return nil, err
 		}
 
 		// Find exporter factory based on "type" that we read from config source
@@ -483,10 +487,7 @@ func loadProcessors(v *viper.Viper, factories map[string]component.ProcessorFact
 		// Decode the key into type and fullName components.
 		typeStr, fullName, err := DecodeTypeAndName(key)
 		if err != nil {
-			return nil, &configError{
-				code: errInvalidTypeAndNameKey,
-				msg:  fmt.Sprintf("invalid key %q: %s", key, err.Error()),
-			}
+			return nil, err
 		}
 
 		// Find processor factory based on "type" that we read from config source.
@@ -543,10 +544,7 @@ func loadPipelines(v *viper.Viper) (configmodels.Pipelines, error) {
 		// Decode the key into type and name components.
 		typeStr, name, err := DecodeTypeAndName(key)
 		if err != nil {
-			return nil, &configError{
-				code: errInvalidTypeAndNameKey,
-				msg:  fmt.Sprintf("invalid key %q: %s", key, err.Error()),
-			}
+			return nil, err
 		}
 
 		// Create the config for this pipeline.
