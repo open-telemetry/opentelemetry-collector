@@ -53,8 +53,8 @@ func TestTrace10kSPS(t *testing.T) {
 			testbed.NewJaegerGRPCDataSender(testbed.GetAvailablePort(t)),
 			testbed.NewJaegerDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
-				ExpectedMaxCPU: 69,
-				ExpectedMaxRAM: 89,
+				ExpectedMaxCPU: 85,
+				ExpectedMaxRAM: 50,
 			},
 		},
 		{
@@ -62,8 +62,8 @@ func TestTrace10kSPS(t *testing.T) {
 			testbed.NewOCTraceDataSender(testbed.GetAvailablePort(t)),
 			testbed.NewOCDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
-				ExpectedMaxCPU: 42,
-				ExpectedMaxRAM: 84,
+				ExpectedMaxCPU: 52,
+				ExpectedMaxRAM: 46,
 			},
 		},
 		{
@@ -71,8 +71,8 @@ func TestTrace10kSPS(t *testing.T) {
 			testbed.NewOTLPTraceDataSender(testbed.GetAvailablePort(t)),
 			testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
-				ExpectedMaxCPU: 60,
-				ExpectedMaxRAM: 84,
+				ExpectedMaxCPU: 85,
+				ExpectedMaxRAM: 50,
 			},
 		},
 	}
@@ -327,6 +327,9 @@ func TestTraceAttributesProcessor(t *testing.T) {
 
 			// Use processor to add attributes to certain spans.
 			processors := map[string]string{
+				"batch": `
+  batch:
+`,
 				"attributes": `
   attributes:
     include:
@@ -337,6 +340,9 @@ func TestTraceAttributesProcessor(t *testing.T) {
       - action: insert
         key: "new_attr"
         value: "string value"
+`,
+				"queued_retry": `
+  queued_retry:
 `,
 			}
 
