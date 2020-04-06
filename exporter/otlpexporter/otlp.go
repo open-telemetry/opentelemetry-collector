@@ -59,8 +59,8 @@ const (
 )
 
 // NewTraceExporter creates an OTLP trace exporter.
-func NewTraceExporter(logger *zap.Logger, config configmodels.Exporter) (component.TraceExporterOld, error) {
-	oce, err := createOTLPExporter(logger, config)
+func NewTraceExporter(_ *zap.Logger, config configmodels.Exporter) (component.TraceExporterOld, error) {
+	oce, err := createOTLPExporter(config)
 	if err != nil {
 		return nil, err
 	}
@@ -76,8 +76,8 @@ func NewTraceExporter(logger *zap.Logger, config configmodels.Exporter) (compone
 }
 
 // NewMetricsExporter creates an OTLP metrics exporter.
-func NewMetricsExporter(logger *zap.Logger, config configmodels.Exporter) (component.MetricsExporterOld, error) {
-	oce, err := createOTLPExporter(logger, config)
+func NewMetricsExporter(_ *zap.Logger, config configmodels.Exporter) (component.MetricsExporterOld, error) {
+	oce, err := createOTLPExporter(config)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +94,7 @@ func NewMetricsExporter(logger *zap.Logger, config configmodels.Exporter) (compo
 }
 
 // createOTLPExporter creates an OTLP exporter.
-func createOTLPExporter(logger *zap.Logger, config configmodels.Exporter) (*otlpExporter, error) {
+func createOTLPExporter(config configmodels.Exporter) (*otlpExporter, error) {
 	oCfg := config.(*Config)
 
 	if oCfg.Endpoint == "" {
@@ -125,7 +125,7 @@ func createOTLPExporter(logger *zap.Logger, config configmodels.Exporter) (*otlp
 	return oce, nil
 }
 
-func (oce *otlpExporter) Shutdown() error {
+func (oce *otlpExporter) Shutdown(context.Context) error {
 	// Stop all exporters. Will wait until all are stopped.
 	wg := &sync.WaitGroup{}
 	var errors []error

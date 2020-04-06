@@ -44,8 +44,8 @@ func (me *metricsExporter) ConsumeMetricsData(ctx context.Context, md consumerda
 }
 
 // Shutdown stops the exporter and is invoked during shutdown.
-func (me *metricsExporter) Shutdown(context.Context) error {
-	return me.shutdown()
+func (me *metricsExporter) Shutdown(ctx context.Context) error {
+	return me.shutdown(ctx)
 }
 
 // NewMetricsExporter creates an MetricsExporter that can record metrics and can wrap every request with a Span.
@@ -66,7 +66,7 @@ func NewMetricsExporter(config configmodels.Exporter, pushMetricsData PushMetric
 
 	// The default shutdown method always returns nil.
 	if opts.shutdown == nil {
-		opts.shutdown = func() error { return nil }
+		opts.shutdown = func(context.Context) error { return nil }
 	}
 
 	return &metricsExporter{

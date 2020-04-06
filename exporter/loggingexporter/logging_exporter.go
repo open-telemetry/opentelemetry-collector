@@ -180,8 +180,8 @@ func NewMetricsExporter(config configmodels.Exporter, logger *zap.Logger) (compo
 	)
 }
 
-func loggerSync(logger *zap.Logger) func() error {
-	return func() error {
+func loggerSync(logger *zap.Logger) func(context.Context) error {
+	return func(context.Context) error {
 		// Currently Sync() on stdout and stderr return errors on Linux and macOS,
 		// respectively:
 		//

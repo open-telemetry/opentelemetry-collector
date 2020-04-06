@@ -119,7 +119,7 @@ func NewMetricsExporter(logger *zap.Logger, config configmodels.Exporter, opts .
 	return oexp, nil
 }
 
-func (oce *ocAgentExporter) Shutdown() error {
+func (oce *ocAgentExporter) Shutdown(context.Context) error {
 	wg := &sync.WaitGroup{}
 	var errors []error
 	var errorsMu sync.Mutex

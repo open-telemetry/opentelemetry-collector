@@ -126,7 +126,7 @@ func TestMetricsExporter_WithSpan_ReturnError(t *testing.T) {
 
 func TestMetricsExporter_WithShutdown(t *testing.T) {
 	shutdownCalled := false
-	shutdown := func() error { shutdownCalled = true; return nil }
+	shutdown := func(context.Context) error { shutdownCalled = true; return nil }
 
 	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(0, nil), WithShutdown(shutdown))
 	assert.NotNil(t, me)
@@ -138,7 +138,7 @@ func TestMetricsExporter_WithShutdown(t *testing.T) {
 
 func TestMetricsExporter_WithShutdown_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
-	shutdownErr := func() error { return want }
+	shutdownErr := func(context.Context) error { return want }
 
 	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(0, nil), WithShutdown(shutdownErr))
 	assert.NotNil(t, me)
