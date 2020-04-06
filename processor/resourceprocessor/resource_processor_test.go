@@ -20,6 +20,7 @@ import (
 
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
@@ -46,6 +47,19 @@ var (
 		},
 		ResourceType: "",
 		Labels:       map[string]string{},
+	}
+
+	cfgWithEmptyResourceType = &Config{
+		ProcessorSettings: configmodels.ProcessorSettings{
+			TypeVal: "resource",
+			NameVal: "resource",
+		},
+		ResourceType: "",
+		Labels: map[string]string{
+			"cloud.zone":       "zone-1",
+			"k8s.cluster.name": "k8s-cluster",
+			"host.name":        "k8s-node",
+		},
 	}
 
 	resource = &resourcepb.Resource{
@@ -78,6 +92,71 @@ var (
 		},
 	}
 )
+
+func TestResourceProcessor(t *testing.T) {
+	tests := []struct {
+		name                string
+		config              *Config
+		mutatesConsumedData bool
+		sourceResource      *resourcepb.Resource
+		wantResource        *resourcepb.Resource
+	}{
+		{
+			name:                "Config with empty resource type doesn't mutate resource type",
+			config:              cfgWithEmptyResourceType,
+			mutatesConsumedData: true,
+			sourceResource: &resourcepb.Resource{
+				Type: "original-type",
+				Labels: map[string]string{
+					"original-label": "original-value",
+					"cloud.zone":     "will-be-overridden",
+				},
+			},
+			wantResource: &resourcepb.Resource{
+				Type: "original-type",
+				Labels: map[string]string{
+					"original-label":   "original-value",
+					"cloud.zone":       "zone-1",
+					"k8s.cluster.name": "k8s-cluster",
+					"host.name":        "k8s-node",
+				},
+			},
+		},
+		{
+			name:                "Config with empty resource type keeps nil resource",
+			config:              cfgWithEmptyResourceType,
+			mutatesConsumedData: true,
+			sourceResource:      nil,
+			wantResource:        nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Test trace consuner
+			ttn := &testTraceConsumer{}
+			rtp := newResourceTraceProcessor(ttn, tt.config)
+			assert.Equal(t, tt.mutatesConsumedData, rtp.GetCapabilities().MutatesConsumedData)
+
+			err := rtp.ConsumeTraceData(context.Background(), consumerdata.TraceData{
+				Resource: tt.sourceResource,
+			})
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantResource, ttn.td.Resource)
+
+			// Test metrics consumer
+			tmn := &testMetricsConsumer{}
+			rmp := newResourceMetricProcessor(tmn, tt.config)
+			assert.Equal(t, tt.mutatesConsumedData, rmp.GetCapabilities().MutatesConsumedData)
+
+			err = rmp.ConsumeMetricsData(context.Background(), consumerdata.MetricsData{
+				Resource: tt.sourceResource,
+			})
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantResource, tmn.md.Resource)
+		})
+	}
+}
 
 func TestTraceResourceProcessor(t *testing.T) {
 	want := consumerdata.TraceData{

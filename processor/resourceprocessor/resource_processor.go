@@ -119,9 +119,16 @@ func mergeResource(to, from *resourcepb.Resource) *resourcepb.Resource {
 		return to
 	}
 	if to == nil {
+		if from.Type == "" {
+			// Since resource without type would be invalid, we keep resource as nil
+			return nil
+		}
 		to = &resourcepb.Resource{Labels: map[string]string{}}
 	}
-	to.Type = from.Type
+	if from.Type != "" {
+		// Only change resource type if it was configured
+		to.Type = from.Type
+	}
 	if from.Labels != nil {
 		for k, v := range from.Labels {
 			to.Labels[k] = v

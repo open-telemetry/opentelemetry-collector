@@ -408,7 +408,8 @@ The resource processor can be used to override a resource.
 Please refer to [config.go](resourceprocessor/config.go) for the config spec.
 
 The following configuration options are required:
-- `type`: Resource type to be applied. This value overrides the original resource type.
+- `type`: Resource type to be applied. If specified, this value overrides the 
+original resource type. Otherwise, the original resource type is kept.
 - `labels`: Map of key/value pairs that should be added to the resource.
 
 Examples:
