@@ -317,12 +317,17 @@ func loadService(v *viper.Viper) (configmodels.Service, error) {
 	return service, nil
 }
 
-// LoadReceiver loads a receiver config from v under the subkey receiverKey using the provided factories.
+// LoadReceiver loads a receiver config from v under the subkey receiverKey using the factory corresponding
+// to the receiver type from receiverKey.
 func LoadReceiver(receiverKey string, v *viper.Viper, factory component.ReceiverFactoryBase) (configmodels.Receiver, error) {
 	// Decode the key into type and fullName components.
 	typeStr, fullName, err := DecodeTypeAndName(receiverKey)
 	if err != nil {
 		return nil, err
+	}
+
+	if typeStr != factory.Type() {
+		return nil, fmt.Errorf("receiverKey had type %q but factory had type %q", typeStr, factory.Type())
 	}
 
 	// Create the default config for this receiver.
