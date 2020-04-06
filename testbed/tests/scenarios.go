@@ -37,10 +37,10 @@ func createConfigFile(
 	receiver testbed.DataReceiver, // Receiver to receive test data.
 	resultDir string, // Directory to write config file to.
 
-	// Map of extra processor names to their configs. Config is in YAML and must be
+	// Map of processor names to their configs. Config is in YAML and must be
 	// indented by 2 spaces. Processors will be placed between batch and queue for traces
 	// pipeline. For metrics pipeline these will be sole processors.
-	extraProcessors map[string]string,
+	processors map[string]string,
 ) string {
 
 	// Create a config. Note that our DataSender is used to generate a config for Collector's
@@ -50,16 +50,16 @@ func createConfigFile(
 
 	// Prepare extra processor config section and comma-separated list of extra processor
 	// names to use in corresponding "processors" settings.
-	extraProcessorsSections := ""
-	extraProcessorsList := ""
-	if len(extraProcessors) > 0 {
+	processorsSections := ""
+	processorsList := ""
+	if len(processors) > 0 {
 		first := true
-		for name, cfg := range extraProcessors {
-			extraProcessorsSections += cfg + "\n"
+		for name, cfg := range processors {
+			processorsSections += cfg + "\n"
 			if !first {
-				extraProcessorsList += ","
+				processorsList += ","
 			}
-			extraProcessorsList += name
+			processorsList += name
 			first = false
 		}
 	}
@@ -71,8 +71,6 @@ func createConfigFile(
 receivers:%v
 exporters:%v
 processors:
-  batch:
-  queued_retry:
   %s
 
 extensions:
@@ -84,14 +82,9 @@ service:
   pipelines:
     traces:
       receivers: [%v]
-      processors: [batch%s,queued_retry]
+      processors: [%s]
       exporters: [%v]
 `
-
-		if extraProcessorsList != "" {
-			// Trace test has some processors by default. Add the rest after a comma.
-			extraProcessorsList = "," + extraProcessorsList
-		}
 	} else {
 		// This is a metric test. Create appropriate config template.
 		format = `
@@ -119,10 +112,10 @@ service:
 		format,
 		sender.GenConfigYAMLStr(),
 		receiver.GenConfigYAMLStr(),
-		extraProcessorsSections,
+		processorsSections,
 		resultDir,
 		sender.ProtocolName(),
-		extraProcessorsList,
+		processorsList,
 		receiver.ProtocolName(),
 	)
 
