@@ -15,6 +15,7 @@
 package healthcheckextension
 
 import (
+	"context"
 	"sync/atomic"
 	"testing"
 
@@ -22,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/testutils"
@@ -45,7 +47,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 		cfg)
 
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
-	ext, err := factory.CreateExtension(zap.NewNop(), cfg)
+	ext, err := factory.CreateExtension(context.Background(), component.ExtensionCreateParams{Logger: zap.NewNop()}, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 
@@ -58,7 +60,7 @@ func TestFactory_CreateExtension(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Port = testutils.GetAvailablePort(t)
 
-	ext, err := factory.CreateExtension(zap.NewNop(), cfg)
+	ext, err := factory.CreateExtension(context.Background(), component.ExtensionCreateParams{Logger: zap.NewNop()}, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 
@@ -71,12 +73,11 @@ func TestFactory_CreateExtensionOnlyOnce(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Port = testutils.GetAvailablePort(t)
 
-	logger := zap.NewNop()
-	ext, err := factory.CreateExtension(logger, cfg)
+	ext, err := factory.CreateExtension(context.Background(), component.ExtensionCreateParams{Logger: zap.NewNop()}, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 
-	ext1, err := factory.CreateExtension(logger, cfg)
+	ext1, err := factory.CreateExtension(context.Background(), component.ExtensionCreateParams{Logger: zap.NewNop()}, cfg)
 	require.Error(t, err)
 	require.Nil(t, ext1)
 

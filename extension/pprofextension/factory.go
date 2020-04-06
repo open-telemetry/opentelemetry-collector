@@ -15,10 +15,9 @@
 package pprofextension
 
 import (
+	"context"
 	"errors"
 	"sync/atomic"
-
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
@@ -50,10 +49,7 @@ func (f *Factory) CreateDefaultConfig() configmodels.Extension {
 }
 
 // CreateExtension creates the extension based on this config.
-func (f *Factory) CreateExtension(
-	logger *zap.Logger,
-	cfg configmodels.Extension,
-) (component.ServiceExtension, error) {
+func (f *Factory) CreateExtension(_ context.Context, params component.ExtensionCreateParams, cfg configmodels.Extension) (component.ServiceExtension, error) {
 	config := cfg.(*Config)
 	if config.Endpoint == "" {
 		return nil, errors.New("\"endpoint\" is required when using the \"pprof\" extension")
@@ -70,7 +66,7 @@ func (f *Factory) CreateExtension(
 		return nil, errors.New("only a single instance can be created per process")
 	}
 
-	return newServer(*config, logger)
+	return newServer(*config, params.Logger)
 }
 
 // See comment in CreateExtension how these are used.

@@ -17,6 +17,7 @@ package service
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -230,10 +231,7 @@ func (b badExtensionFactory) CreateDefaultConfig() configmodels.Extension {
 	return &configmodels.ExtensionSettings{}
 }
 
-func (b badExtensionFactory) CreateExtension(
-	logger *zap.Logger,
-	cfg configmodels.Extension,
-) (component.ServiceExtension, error) {
+func (b badExtensionFactory) CreateExtension(_ context.Context, _ component.ExtensionCreateParams, _ configmodels.Extension) (component.ServiceExtension, error) {
 	return nil, nil
 }
 

@@ -15,6 +15,8 @@
 package component
 
 import (
+	"context"
+
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
@@ -44,6 +46,13 @@ type PipelineWatcher interface {
 	NotReady() error
 }
 
+// ExtensionCreateParams is passed to ExtensionFactory.Create* functions.
+type ExtensionCreateParams struct {
+	// Logger that the factory can use during creation and can pass to the created
+	// component to be used later as well.
+	Logger *zap.Logger
+}
+
 // ExtensionFactory is a factory interface for extensions to the service.
 type ExtensionFactory interface {
 	Factory
@@ -58,5 +67,5 @@ type ExtensionFactory interface {
 	CreateDefaultConfig() configmodels.Extension
 
 	// CreateExtension creates a service extension based on the given config.
-	CreateExtension(logger *zap.Logger, cfg configmodels.Extension) (ServiceExtension, error)
+	CreateExtension(ctx context.Context, params ExtensionCreateParams, cfg configmodels.Extension) (ServiceExtension, error)
 }

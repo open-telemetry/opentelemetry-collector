@@ -17,6 +17,7 @@
 package service
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
@@ -267,7 +268,7 @@ func (app *Application) setupExtensions() error {
 			return errors.Errorf("extension factory for type %q is not configured", extCfg.Type())
 		}
 
-		ext, err := factory.CreateExtension(app.logger, extCfg)
+		ext, err := factory.CreateExtension(context.Background(), component.ExtensionCreateParams{Logger: app.logger}, extCfg)
 		if err != nil {
 			return errors.Wrapf(err, "failed to create extension %q", extName)
 		}

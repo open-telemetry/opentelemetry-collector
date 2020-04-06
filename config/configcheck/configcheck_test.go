@@ -15,13 +15,13 @@
 package configcheck
 
 import (
+	"context"
 	"io"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
@@ -198,9 +198,6 @@ func (b badConfigExtensionFactory) CreateDefaultConfig() configmodels.Extension 
 	}{}
 }
 
-func (b badConfigExtensionFactory) CreateExtension(
-	logger *zap.Logger,
-	cfg configmodels.Extension,
-) (component.ServiceExtension, error) {
+func (b badConfigExtensionFactory) CreateExtension(_ context.Context, _ component.ExtensionCreateParams, _ configmodels.Extension) (component.ServiceExtension, error) {
 	return nil, nil
 }
