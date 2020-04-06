@@ -1206,6 +1206,7 @@ func BenchmarkAttributes_FilterSpansByName(b *testing.B) {
 		{Key: "attribute1", Action: INSERT, Value: 123},
 	}
 	oCfg.Include = &span.MatchProperties{
+		MatchType: "regexp",
 		SpanNames: []string{"^apply.*"},
 	}
 	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporterOld(), cfg)
