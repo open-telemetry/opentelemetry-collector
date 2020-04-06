@@ -39,7 +39,7 @@ type traceExporterOld struct {
 	shutdown         Shutdown
 }
 
-func (te *traceExporterOld) Start(ctx context.Context, host component.Host) error {
+func (te *traceExporterOld) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
@@ -50,8 +50,8 @@ func (te *traceExporterOld) ConsumeTraceData(ctx context.Context, td consumerdat
 }
 
 // Shutdown stops the exporter and is invoked during shutdown.
-func (te *traceExporterOld) Shutdown(context.Context) error {
-	return te.shutdown()
+func (te *traceExporterOld) Shutdown(ctx context.Context) error {
+	return te.shutdown(ctx)
 }
 
 // NewTraceExporterOld creates an TraceExporterOld that can record metrics and can wrap every
@@ -77,9 +77,7 @@ func NewTraceExporterOld(
 
 	// The default shutdown function does nothing.
 	if opts.shutdown == nil {
-		opts.shutdown = func() error {
-			return nil
-		}
+		opts.shutdown = func(context.Context) error { return nil }
 	}
 
 	return &traceExporterOld{
@@ -112,7 +110,7 @@ type traceExporter struct {
 	shutdown         Shutdown
 }
 
-func (te *traceExporter) Start(ctx context.Context, host component.Host) error {
+func (te *traceExporter) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
@@ -126,8 +124,8 @@ func (te *traceExporter) ConsumeTrace(
 }
 
 // Shutdown stops the exporter and is invoked during shutdown.
-func (te *traceExporter) Shutdown(context.Context) error {
-	return te.shutdown()
+func (te *traceExporter) Shutdown(ctx context.Context) error {
+	return te.shutdown(ctx)
 }
 
 // NewTraceExporter creates a TraceExporter that can record metrics and can wrap
@@ -152,9 +150,7 @@ func NewTraceExporter(
 
 	// The default shutdown function does nothing.
 	if opts.shutdown == nil {
-		opts.shutdown = func() error {
-			return nil
-		}
+		opts.shutdown = func(context.Context) error { return nil }
 	}
 
 	return &traceExporter{

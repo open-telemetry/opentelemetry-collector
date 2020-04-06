@@ -15,6 +15,8 @@
 package exporterhelper
 
 import (
+	"context"
+
 	"go.opencensus.io/trace"
 )
 
@@ -23,7 +25,7 @@ var (
 )
 
 // Shutdown specifies the function invoked when the exporter is being shutdown.
-type Shutdown func() error
+type Shutdown func(context.Context) error
 
 // ExporterOptions contains options concerning how an Exporter is configured.
 type ExporterOptions struct {
@@ -48,11 +50,4 @@ func newExporterOptions(options ...ExporterOption) ExporterOptions {
 		op(&opts)
 	}
 	return opts
-}
-
-func errToStatus(err error) trace.Status {
-	if err != nil {
-		return trace.Status{Code: trace.StatusCodeUnknown, Message: err.Error()}
-	}
-	return okStatus
 }

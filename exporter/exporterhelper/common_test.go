@@ -25,3 +25,10 @@ func TestErrorToStatus(t *testing.T) {
 	require.Equal(t, okStatus, errToStatus(nil))
 	require.Equal(t, trace.Status{Code: trace.StatusCodeUnknown, Message: "my_error"}, errToStatus(errors.New("my_error")))
 }
+
+func errToStatus(err error) trace.Status {
+	if err != nil {
+		return trace.Status{Code: trace.StatusCodeUnknown, Message: err.Error()}
+	}
+	return okStatus
+}

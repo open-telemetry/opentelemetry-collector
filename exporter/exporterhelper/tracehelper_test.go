@@ -135,7 +135,7 @@ func TestTraceExporterOld_WithSpan_ReturnError(t *testing.T) {
 
 func TestTraceExporterOld_WithShutdown(t *testing.T) {
 	shutdownCalled := false
-	shutdown := func() error { shutdownCalled = true; return nil }
+	shutdown := func(context.Context) error { shutdownCalled = true; return nil }
 
 	te, err := NewTraceExporterOld(fakeTraceExporterConfig, newTraceDataPusherOld(0, nil), WithShutdown(shutdown))
 	assert.NotNil(t, te)
@@ -147,7 +147,7 @@ func TestTraceExporterOld_WithShutdown(t *testing.T) {
 
 func TestTraceExporterOld_WithShutdown_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
-	shutdownErr := func() error { return want }
+	shutdownErr := func(context.Context) error { return want }
 
 	te, err := NewTraceExporterOld(fakeTraceExporterConfig, newTraceDataPusherOld(0, nil), WithShutdown(shutdownErr))
 	assert.NotNil(t, te)
@@ -322,7 +322,7 @@ func TestTraceExporter_WithSpan_ReturnError(t *testing.T) {
 
 func TestTraceExporter_WithShutdown(t *testing.T) {
 	shutdownCalled := false
-	shutdown := func() error { shutdownCalled = true; return nil }
+	shutdown := func(context.Context) error { shutdownCalled = true; return nil }
 
 	te, err := NewTraceExporter(fakeTraceExporterConfig, newTraceDataPusher(0, nil), WithShutdown(shutdown))
 	assert.NotNil(t, te)
@@ -334,7 +334,7 @@ func TestTraceExporter_WithShutdown(t *testing.T) {
 
 func TestTraceExporter_WithShutdown_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
-	shutdownErr := func() error { return want }
+	shutdownErr := func(context.Context) error { return want }
 
 	te, err := NewTraceExporter(fakeTraceExporterConfig, newTraceDataPusher(0, nil), WithShutdown(shutdownErr))
 	assert.NotNil(t, te)

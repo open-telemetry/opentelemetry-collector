@@ -25,20 +25,19 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
 )
 
 var errBlankPrometheusAddress = errors.New("expecting a non-blank address to run the Prometheus metrics handler")
 
 type prometheusExporter struct {
-	name     string
-	exporter *prometheus.Exporter
-	shutdown exporterhelper.Shutdown
+	name         string
+	exporter     *prometheus.Exporter
+	shutdownFunc func() error
 }
 
 var _ consumer.MetricsConsumerOld = (*prometheusExporter)(nil)
 
-func (pe *prometheusExporter) Start(ctx context.Context, host component.Host) error {
+func (pe *prometheusExporter) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
@@ -51,5 +50,5 @@ func (pe *prometheusExporter) ConsumeMetricsData(ctx context.Context, md consume
 
 // Shutdown stops the exporter and is invoked during shutdown.
 func (pe *prometheusExporter) Shutdown(context.Context) error {
-	return pe.shutdown()
+	return pe.shutdownFunc()
 }
