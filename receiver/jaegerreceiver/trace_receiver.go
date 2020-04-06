@@ -192,7 +192,7 @@ func (jr *jReceiver) collectorHTTPEnabled() bool {
 	return jr.config != nil && jr.config.CollectorHTTPPort > 0
 }
 
-func (jr *jReceiver) Start(host component.Host) error {
+func (jr *jReceiver) Start(ctx context.Context, host component.Host) error {
 	jr.mu.Lock()
 	defer jr.mu.Unlock()
 
@@ -213,7 +213,7 @@ func (jr *jReceiver) Start(host component.Host) error {
 	return err
 }
 
-func (jr *jReceiver) Shutdown() error {
+func (jr *jReceiver) Shutdown(context.Context) error {
 	jr.mu.Lock()
 	defer jr.mu.Unlock()
 

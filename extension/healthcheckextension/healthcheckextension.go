@@ -15,6 +15,7 @@
 package healthcheckextension
 
 import (
+	"context"
 	"net"
 	"net/http"
 	"strconv"
@@ -34,7 +35,7 @@ type healthCheckExtension struct {
 
 var _ (component.PipelineWatcher) = (*healthCheckExtension)(nil)
 
-func (hc *healthCheckExtension) Start(host component.Host) error {
+func (hc *healthCheckExtension) Start(ctx context.Context, host component.Host) error {
 
 	hc.logger.Info("Starting health_check extension", zap.Any("config", hc.config))
 
@@ -59,7 +60,7 @@ func (hc *healthCheckExtension) Start(host component.Host) error {
 	return nil
 }
 
-func (hc *healthCheckExtension) Shutdown() error {
+func (hc *healthCheckExtension) Shutdown(context.Context) error {
 	return hc.server.Close()
 }
 

@@ -64,7 +64,7 @@ func TestPrometheusExporter(t *testing.T) {
 			assert.NotNil(t, consumer)
 
 			require.Nil(t, err)
-			require.NoError(t, consumer.Shutdown())
+			require.NoError(t, consumer.Shutdown(context.Background()))
 		}
 	}
 }
@@ -83,7 +83,7 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 	consumer, err := factory.CreateMetricsExporter(zap.NewNop(), config)
 	assert.Nil(t, err)
 
-	defer consumer.Shutdown()
+	defer consumer.Shutdown(context.Background())
 
 	assert.NotNil(t, consumer)
 

@@ -104,12 +104,12 @@ func (b *batchProcessor) GetCapabilities() component.ProcessorCapabilities {
 }
 
 // Start is invoked during service startup.
-func (b *batchProcessor) Start(host component.Host) error {
+func (b *batchProcessor) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
 // Shutdown is invoked during service shutdown.
-func (b *batchProcessor) Shutdown() error {
+func (b *batchProcessor) Shutdown(context.Context) error {
 	// TODO: flush accumulated data.
 	return nil
 }

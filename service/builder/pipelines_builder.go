@@ -53,7 +53,7 @@ func (bps BuiltPipelines) StartProcessors(logger *zap.Logger, host component.Hos
 		// reference processors that are later in the pipeline do not start sending
 		// data to later pipelines which are not yet started.
 		for i := len(bp.processors) - 1; i >= 0; i-- {
-			if err := bp.processors[i].Start(host); err != nil {
+			if err := bp.processors[i].Start(context.Background(), host); err != nil {
 				return err
 			}
 		}
@@ -67,7 +67,7 @@ func (bps BuiltPipelines) ShutdownProcessors(logger *zap.Logger) error {
 	for cfg, bp := range bps {
 		logger.Info("Pipeline is shutting down...", zap.String("pipeline", cfg.Name))
 		for _, p := range bp.processors {
-			if err := p.Shutdown(); err != nil {
+			if err := p.Shutdown(context.Background()); err != nil {
 				errs = append(errs, err)
 			}
 		}

@@ -278,7 +278,7 @@ func (app *Application) setupExtensions() error {
 			return errors.Errorf("factory for %q produced a nil extension", extName)
 		}
 
-		if err := ext.Start(app); err != nil {
+		if err := ext.Start(context.Background(), app); err != nil {
 			return errors.Wrapf(err, "error starting extension %q", extName)
 		}
 
@@ -406,7 +406,7 @@ func (app *Application) shutdownExtensions() error {
 	var errs []error
 	for i := len(app.extensions) - 1; i >= 0; i-- {
 		ext := app.extensions[i]
-		if err := ext.Shutdown(); err != nil {
+		if err := ext.Shutdown(context.Background()); err != nil {
 			errs = append(errs, errors.Wrapf(err,
 				"error shutting down extension %q",
 				app.config.Service.Extensions[i]))

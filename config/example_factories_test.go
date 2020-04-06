@@ -28,7 +28,7 @@ func TestExampleExporterConsumer(t *testing.T) {
 	exp := &ExampleExporterConsumer{}
 	host := component.NewMockHost()
 	assert.Equal(t, false, exp.ExporterStarted)
-	err := exp.Start(host)
+	err := exp.Start(context.Background(), host)
 	assert.NoError(t, err)
 	assert.Equal(t, true, exp.ExporterStarted)
 
@@ -43,7 +43,7 @@ func TestExampleExporterConsumer(t *testing.T) {
 	assert.Equal(t, 1, len(exp.Metrics))
 
 	assert.Equal(t, false, exp.ExporterShutdown)
-	err = exp.Shutdown()
+	err = exp.Shutdown(context.Background())
 	assert.NoError(t, err)
 	assert.Equal(t, true, exp.ExporterShutdown)
 }
@@ -52,11 +52,11 @@ func TestExampleReceiverProducer(t *testing.T) {
 	rcv := &ExampleReceiverProducer{}
 	host := component.NewMockHost()
 	assert.Equal(t, false, rcv.Started)
-	err := rcv.Start(host)
+	err := rcv.Start(context.Background(), host)
 	assert.NoError(t, err)
 	assert.Equal(t, true, rcv.Started)
 
-	err = rcv.Shutdown()
+	err = rcv.Shutdown(context.Background())
 	assert.NoError(t, err)
 	assert.Equal(t, true, rcv.Started)
 }

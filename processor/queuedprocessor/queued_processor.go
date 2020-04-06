@@ -69,7 +69,7 @@ func newQueuedSpanProcessor(logger *zap.Logger, sender consumer.TraceConsumerOld
 }
 
 // Start is invoked during service startup.
-func (sp *queuedSpanProcessor) Start(host component.Host) error {
+func (sp *queuedSpanProcessor) Start(_ context.Context, _ component.Host) error {
 	// emit 0's so that the metric is present and reported, rather than absent
 	ctx := obsreport.ProcessorContext(context.Background(), sp.name)
 	stats.Record(
@@ -139,7 +139,7 @@ func (sp *queuedSpanProcessor) GetCapabilities() component.ProcessorCapabilities
 }
 
 // Shutdown is invoked during service shutdown.
-func (sp *queuedSpanProcessor) Shutdown() error {
+func (sp *queuedSpanProcessor) Shutdown(context.Context) error {
 	// TODO: flush the queue.
 	return nil
 }

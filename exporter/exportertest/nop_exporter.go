@@ -27,7 +27,7 @@ type nopExporterOld struct {
 	retError error
 }
 
-func (ne *nopExporterOld) Start(_ component.Host) error {
+func (ne *nopExporterOld) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
@@ -40,7 +40,7 @@ func (ne *nopExporterOld) ConsumeMetricsData(_ context.Context, _ consumerdata.M
 }
 
 // Shutdown stops the exporter and is invoked during shutdown.
-func (ne *nopExporterOld) Shutdown() error {
+func (ne *nopExporterOld) Shutdown(context.Context) error {
 	return nil
 }
 
@@ -70,7 +70,7 @@ type nopExporter struct {
 	retError error
 }
 
-func (ne *nopExporter) Start(_ component.Host) error {
+func (ne *nopExporter) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
@@ -83,7 +83,7 @@ func (ne *nopExporter) ConsumeMetrics(_ context.Context, _ data.MetricData) erro
 }
 
 // Shutdown stops the exporter and is invoked during shutdown.
-func (ne *nopExporter) Shutdown() error {
+func (ne *nopExporter) Shutdown(context.Context) error {
 	return nil
 }
 

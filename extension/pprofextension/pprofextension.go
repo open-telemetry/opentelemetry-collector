@@ -15,6 +15,7 @@
 package pprofextension
 
 import (
+	"context"
 	"net"
 	"net/http"
 	_ "net/http/pprof" // #nosec Needed to enable the performance profiler
@@ -33,7 +34,7 @@ type pprofExtension struct {
 	server http.Server
 }
 
-func (p *pprofExtension) Start(host component.Host) error {
+func (p *pprofExtension) Start(ctx context.Context, host component.Host) error {
 	// Start the listener here so we can have earlier failure if port is
 	// already in use.
 	ln, err := net.Listen("tcp", p.config.Endpoint)
@@ -63,7 +64,7 @@ func (p *pprofExtension) Start(host component.Host) error {
 	return nil
 }
 
-func (p *pprofExtension) Shutdown() error {
+func (p *pprofExtension) Shutdown(context.Context) error {
 	if p.config.SaveToFile != "" {
 		pprof.StopCPUProfile()
 	}

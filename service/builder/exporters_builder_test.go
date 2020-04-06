@@ -15,6 +15,7 @@
 package builder
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -76,7 +77,7 @@ func TestExportersBuilder_Build(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Ensure it can be stopped.
-	if err = e1.Shutdown(); err != nil {
+	if err = e1.Shutdown(context.Background()); err != nil {
 		// TODO Find a better way to handle this case
 		// Since the endpoint of opencensus exporter doesn't actually exist, e1 may
 		// already stop because it cannot connect.

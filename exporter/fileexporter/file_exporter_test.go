@@ -64,7 +64,7 @@ func TestFileTraceExporterNoErrors(t *testing.T) {
 		},
 	}
 	assert.NoError(t, lte.ConsumeTraceData(context.Background(), td))
-	assert.NoError(t, lte.Shutdown())
+	assert.NoError(t, lte.Shutdown(context.Background()))
 
 	var j map[string]interface{}
 	assert.NoError(t, json.Unmarshal(mf.buf.Bytes(), &j))
@@ -118,7 +118,7 @@ func TestFileMetricsExporterNoErrors(t *testing.T) {
 		},
 	}
 	assert.NoError(t, lme.ConsumeMetricsData(context.Background(), md))
-	assert.NoError(t, lme.Shutdown())
+	assert.NoError(t, lme.Shutdown(context.Background()))
 
 	var j map[string]interface{}
 	assert.NoError(t, json.Unmarshal(mf.buf.Bytes(), &j))

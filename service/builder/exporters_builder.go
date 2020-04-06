@@ -34,17 +34,17 @@ type builtExporter struct {
 }
 
 // Start the exporter.
-func (exp *builtExporter) Start(host component.Host) error {
+func (exp *builtExporter) Start(ctx context.Context, host component.Host) error {
 	var errors []error
 	if exp.te != nil {
-		err := exp.te.Start(host)
+		err := exp.te.Start(context.Background(), host)
 		if err != nil {
 			errors = append(errors, err)
 		}
 	}
 
 	if exp.me != nil {
-		err := exp.me.Start(host)
+		err := exp.me.Start(context.Background(), host)
 		if err != nil {
 			errors = append(errors, err)
 		}
@@ -54,16 +54,16 @@ func (exp *builtExporter) Start(host component.Host) error {
 }
 
 // Shutdown the trace component and the metrics component of an exporter.
-func (exp *builtExporter) Shutdown() error {
+func (exp *builtExporter) Shutdown(context.Context) error {
 	var errors []error
 	if exp.te != nil {
-		if err := exp.te.Shutdown(); err != nil {
+		if err := exp.te.Shutdown(context.Background()); err != nil {
 			errors = append(errors, err)
 		}
 	}
 
 	if exp.me != nil {
-		if err := exp.me.Shutdown(); err != nil {
+		if err := exp.me.Shutdown(context.Background()); err != nil {
 			errors = append(errors, err)
 		}
 	}
@@ -79,7 +79,7 @@ func (exps Exporters) StartAll(logger *zap.Logger, host component.Host) error {
 	for cfg, exp := range exps {
 		logger.Info("Exporter is starting...", zap.String("exporter", cfg.Name()))
 
-		if err := exp.Start(host); err != nil {
+		if err := exp.Start(context.Background(), host); err != nil {
 			return err
 		}
 		logger.Info("Exporter started.", zap.String("exporter", cfg.Name()))
@@ -91,7 +91,7 @@ func (exps Exporters) StartAll(logger *zap.Logger, host component.Host) error {
 func (exps Exporters) ShutdownAll() error {
 	var errs []error
 	for _, exp := range exps {
-		err := exp.Shutdown()
+		err := exp.Shutdown(context.Background())
 		if err != nil {
 			errs = append(errs, err)
 		}

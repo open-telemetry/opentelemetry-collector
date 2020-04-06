@@ -60,13 +60,13 @@ func TestReception(t *testing.T) {
 	sink := new(exportertest.SinkTraceExporterOld)
 
 	jr, err := New(jaegerReceiver, config, sink, zap.NewNop())
-	defer jr.Shutdown()
+	defer jr.Shutdown(context.Background())
 	assert.NoError(t, err, "should not have failed to create the Jaeger received")
 
 	t.Log("Starting")
 
 	mh := component.NewMockHost()
-	err = jr.Start(mh)
+	err = jr.Start(context.Background(), mh)
 	assert.NoError(t, err, "should not have failed to start trace reception")
 
 	t.Log("Start")
@@ -109,10 +109,10 @@ func TestPortsNotOpen(t *testing.T) {
 
 	jr, err := New(jaegerReceiver, config, sink, zap.NewNop())
 	assert.NoError(t, err, "should not have failed to create a new receiver")
-	defer jr.Shutdown()
+	defer jr.Shutdown(context.Background())
 
 	mh := component.NewMockHost()
-	err = jr.Start(mh)
+	err = jr.Start(context.Background(), mh)
 	assert.NoError(t, err, "should not have failed to start trace reception")
 
 	// there is a race condition here that we're ignoring.
@@ -140,10 +140,10 @@ func TestGRPCReception(t *testing.T) {
 
 	jr, err := New(jaegerReceiver, config, sink, zap.NewNop())
 	assert.NoError(t, err, "should not have failed to create a new receiver")
-	defer jr.Shutdown()
+	defer jr.Shutdown(context.Background())
 
 	mh := component.NewMockHost()
-	err = jr.Start(mh)
+	err = jr.Start(context.Background(), mh)
 	assert.NoError(t, err, "should not have failed to start trace reception")
 	t.Log("Start")
 
@@ -196,10 +196,10 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 
 	jr, err := New(jaegerReceiver, config, sink, zap.NewNop())
 	assert.NoError(t, err, "should not have failed to create a new receiver")
-	defer jr.Shutdown()
+	defer jr.Shutdown(context.Background())
 
 	mh := component.NewMockHost()
-	err = jr.Start(mh)
+	err = jr.Start(context.Background(), mh)
 	assert.NoError(t, err, "should not have failed to start trace reception")
 	t.Log("Start")
 
@@ -408,10 +408,10 @@ func TestSampling(t *testing.T) {
 
 	jr, err := New(jaegerReceiver, config, sink, zap.NewNop())
 	assert.NoError(t, err, "should not have failed to create a new receiver")
-	defer jr.Shutdown()
+	defer jr.Shutdown(context.Background())
 
 	mh := component.NewMockHost()
-	err = jr.Start(mh)
+	err = jr.Start(context.Background(), mh)
 	assert.NoError(t, err, "should not have failed to start trace reception")
 	t.Log("Start")
 
@@ -462,10 +462,10 @@ func TestSamplingFailsOnNotConfigured(t *testing.T) {
 
 	jr, err := New(jaegerReceiver, config, sink, zap.NewNop())
 	assert.NoError(t, err, "should not have failed to create a new receiver")
-	defer jr.Shutdown()
+	defer jr.Shutdown(context.Background())
 
 	mh := component.NewMockHost()
-	err = jr.Start(mh)
+	err = jr.Start(context.Background(), mh)
 	assert.NoError(t, err, "should not have failed to start trace reception")
 	t.Log("Start")
 
@@ -492,9 +492,9 @@ func TestSamplingFailsOnBadFile(t *testing.T) {
 
 	jr, err := New(jaegerReceiver, config, sink, zap.NewNop())
 	assert.NoError(t, err, "should not have failed to create a new receiver")
-	defer jr.Shutdown()
+	defer jr.Shutdown(context.Background())
 
 	mh := component.NewMockHost()
-	err = jr.Start(mh)
+	err = jr.Start(context.Background(), mh)
 	assert.Error(t, err)
 }

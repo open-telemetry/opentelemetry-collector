@@ -65,7 +65,7 @@ func TestMetricsExporter_Default(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Nil(t, me.ConsumeMetricsData(context.Background(), md))
-	assert.Nil(t, me.Shutdown())
+	assert.Nil(t, me.Shutdown(context.Background()))
 }
 
 func TestMetricsExporter_Default_ReturnError(t *testing.T) {
@@ -132,7 +132,7 @@ func TestMetricsExporter_WithShutdown(t *testing.T) {
 	assert.NotNil(t, me)
 	assert.Nil(t, err)
 
-	assert.Nil(t, me.Shutdown())
+	assert.Nil(t, me.Shutdown(context.Background()))
 	assert.True(t, shutdownCalled)
 }
 
@@ -144,7 +144,7 @@ func TestMetricsExporter_WithShutdown_ReturnError(t *testing.T) {
 	assert.NotNil(t, me)
 	assert.Nil(t, err)
 
-	assert.Equal(t, me.Shutdown(), want)
+	assert.Equal(t, me.Shutdown(context.Background()), want)
 }
 
 func newPushMetricsData(droppedTimeSeries int, retError error) PushMetricsData {

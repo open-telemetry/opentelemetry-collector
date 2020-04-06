@@ -91,7 +91,7 @@ func TestNew(t *testing.T) {
 				return
 			}
 			if got != nil {
-				assert.NoError(t, got.Shutdown())
+				assert.NoError(t, got.Shutdown(context.Background()))
 			}
 		})
 	}

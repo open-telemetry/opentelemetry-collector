@@ -55,7 +55,7 @@ func TestQueuedProcessor_noEnqueueOnPermanentError(t *testing.T) {
 	qp := newQueuedSpanProcessor(zap.NewNop(), c, cfg)
 
 	mh := component.MockHost{}
-	require.NoError(t, qp.Start(&mh))
+	require.NoError(t, qp.Start(context.Background(), &mh))
 	c.Add(1)
 	require.Nil(t, qp.ConsumeTraceData(ctx, td))
 	c.Wait()
@@ -106,7 +106,7 @@ func TestQueueProcessorHappyPath(t *testing.T) {
 	mockProc := newMockConcurrentSpanProcessor()
 	qp := newQueuedSpanProcessor(zap.NewNop(), mockProc, generateDefaultConfig())
 	mockHost := component.MockHost{}
-	require.NoError(t, qp.Start(&mockHost))
+	require.NoError(t, qp.Start(context.Background(), &mockHost))
 	goFn := func(td consumerdata.TraceData) {
 		qp.ConsumeTraceData(context.Background(), td)
 	}

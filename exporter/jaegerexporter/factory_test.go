@@ -15,6 +15,7 @@
 package jaegerexporter
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -62,5 +63,5 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
 
-	assert.NoError(t, exp.Shutdown())
+	assert.NoError(t, exp.Shutdown(context.Background()))
 }

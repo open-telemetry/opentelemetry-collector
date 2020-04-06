@@ -129,13 +129,13 @@ type ExampleReceiverProducer struct {
 }
 
 // Start tells the receiver to start its processing.
-func (erp *ExampleReceiverProducer) Start(host component.Host) error {
+func (erp *ExampleReceiverProducer) Start(ctx context.Context, host component.Host) error {
 	erp.Started = true
 	return nil
 }
 
 // Shutdown tells the receiver that should stop reception,
-func (erp *ExampleReceiverProducer) Shutdown() error {
+func (erp *ExampleReceiverProducer) Shutdown(context.Context) error {
 	erp.Stopped = true
 	return nil
 }
@@ -297,7 +297,7 @@ type ExampleExporterConsumer struct {
 // Start tells the exporter to start. The exporter may prepare for exporting
 // by connecting to the endpoint. Host parameter can be used for communicating
 // with the host after Start() has already returned.
-func (exp *ExampleExporterConsumer) Start(host component.Host) error {
+func (exp *ExampleExporterConsumer) Start(ctx context.Context, host component.Host) error {
 	exp.ExporterStarted = true
 	return nil
 }
@@ -320,7 +320,7 @@ func (exp *ExampleExporterConsumer) Name() string {
 }
 
 // Shutdown is invoked during shutdown.
-func (exp *ExampleExporterConsumer) Shutdown() error {
+func (exp *ExampleExporterConsumer) Shutdown(context.Context) error {
 	exp.ExporterShutdown = true
 	return nil
 }

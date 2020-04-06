@@ -39,12 +39,12 @@ type builtReceiver struct {
 
 // Stop the receiver.
 func (rcv *builtReceiver) Stop() error {
-	return rcv.receiver.Shutdown()
+	return rcv.receiver.Shutdown(context.Background())
 }
 
 // Start the receiver.
 func (rcv *builtReceiver) Start(host component.Host) error {
-	return rcv.receiver.Start(host)
+	return rcv.receiver.Start(context.Background(), host)
 }
 
 // Receivers is a map of receivers created from receiver configs.

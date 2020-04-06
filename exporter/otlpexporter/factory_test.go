@@ -15,6 +15,7 @@
 package otlpexporter
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -165,7 +166,7 @@ func TestCreateTraceExporter(t *testing.T) {
 				assert.Nil(t, err)
 				assert.NotNil(t, consumer)
 
-				err = consumer.Shutdown()
+				err = consumer.Shutdown(context.Background())
 				if err != nil {
 					// Since the endpoint of OTLP exporter doesn't actually exist,
 					// exporter may already stop because it cannot connect.

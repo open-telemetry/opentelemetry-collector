@@ -43,12 +43,12 @@ func (np *nopProcessor) GetCapabilities() component.ProcessorCapabilities {
 }
 
 // Start is invoked during service startup.
-func (np *nopProcessor) Start(host component.Host) error {
+func (np *nopProcessor) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
 // Shutdown is invoked during service shutdown.
-func (np *nopProcessor) Shutdown() error {
+func (np *nopProcessor) Shutdown(context.Context) error {
 	return nil
 }
 

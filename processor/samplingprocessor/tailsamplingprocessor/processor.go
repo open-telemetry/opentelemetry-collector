@@ -314,12 +314,12 @@ func (tsp *tailSamplingSpanProcessor) GetCapabilities() component.ProcessorCapab
 }
 
 // Start is invoked during service startup.
-func (tsp *tailSamplingSpanProcessor) Start(host component.Host) error {
+func (tsp *tailSamplingSpanProcessor) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
 // Shutdown is invoked during service shutdown.
-func (tsp *tailSamplingSpanProcessor) Shutdown() error {
+func (tsp *tailSamplingSpanProcessor) Shutdown(context.Context) error {
 	return nil
 }
 

@@ -178,11 +178,11 @@ func (ml *memoryLimiter) GetCapabilities() component.ProcessorCapabilities {
 	return component.ProcessorCapabilities{MutatesConsumedData: false}
 }
 
-func (ml *memoryLimiter) Start(host component.Host) error {
+func (ml *memoryLimiter) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-func (ml *memoryLimiter) Shutdown() error {
+func (ml *memoryLimiter) Shutdown(context.Context) error {
 	ml.ticker.Stop()
 	return nil
 }

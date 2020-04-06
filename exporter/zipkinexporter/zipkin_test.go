@@ -16,6 +16,7 @@ package zipkinexporter
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -77,8 +78,8 @@ func TestZipkinExporter_roundtripJSON(t *testing.T) {
 	require.NotNil(t, zi)
 
 	mh := component.NewMockHost()
-	require.NoError(t, zi.Start(mh))
-	defer zi.Shutdown()
+	require.NoError(t, zi.Start(context.Background(), mh))
+	defer zi.Shutdown(context.Background())
 
 	// Let the receiver receive "uploaded Zipkin spans from a Java client application"
 	req, _ := http.NewRequest("POST", "https://tld.org/", strings.NewReader(zipkinSpansJSONJavaLibrary))
@@ -307,9 +308,9 @@ func TestZipkinExporter_roundtripProto(t *testing.T) {
 	require.NoError(t, err)
 
 	mh := component.NewMockHost()
-	err = zi.Start(mh)
+	err = zi.Start(context.Background(), mh)
 	require.NoError(t, err)
-	defer zi.Shutdown()
+	defer zi.Shutdown(context.Background())
 
 	// Let the receiver receive "uploaded Zipkin spans from a Java client application"
 	req, _ := http.NewRequest("POST", "https://tld.org/", strings.NewReader(zipkinSpansJSONJavaLibrary))

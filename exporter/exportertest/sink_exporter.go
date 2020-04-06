@@ -32,7 +32,7 @@ type SinkTraceExporterOld struct {
 // Start tells the exporter to start. The exporter may prepare for exporting
 // by connecting to the endpoint. Host parameter can be used for communicating
 // with the host after Start() has already returned.
-func (ste *SinkTraceExporterOld) Start(host component.Host) error {
+func (ste *SinkTraceExporterOld) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
@@ -55,7 +55,7 @@ func (ste *SinkTraceExporterOld) AllTraces() []consumerdata.TraceData {
 }
 
 // Shutdown stops the exporter and is invoked during shutdown.
-func (ste *SinkTraceExporterOld) Shutdown() error {
+func (ste *SinkTraceExporterOld) Shutdown(context.Context) error {
 	return nil
 }
 
@@ -69,7 +69,7 @@ type SinkTraceExporter struct {
 // Start tells the exporter to start. The exporter may prepare for exporting
 // by connecting to the endpoint. Host parameter can be used for communicating
 // with the host after Start() has already returned.
-func (ste *SinkTraceExporter) Start(host component.Host) error {
+func (ste *SinkTraceExporter) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
@@ -101,7 +101,7 @@ func (ste *SinkTraceExporter) SetConsumeTraceError(err error) {
 }
 
 // Shutdown stops the exporter and is invoked during shutdown.
-func (ste *SinkTraceExporter) Shutdown() error {
+func (ste *SinkTraceExporter) Shutdown(context.Context) error {
 	return nil
 }
 
@@ -114,7 +114,7 @@ type SinkMetricsExporterOld struct {
 // Start tells the exporter to start. The exporter may prepare for exporting
 // by connecting to the endpoint. Host parameter can be used for communicating
 // with the host after Start() has already returned.
-func (sme *SinkMetricsExporterOld) Start(host component.Host) error {
+func (sme *SinkMetricsExporterOld) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
@@ -137,7 +137,7 @@ func (sme *SinkMetricsExporterOld) AllMetrics() []consumerdata.MetricsData {
 }
 
 // Shutdown stops the exporter and is invoked during shutdown.
-func (sme *SinkMetricsExporterOld) Shutdown() error {
+func (sme *SinkMetricsExporterOld) Shutdown(context.Context) error {
 	return nil
 }
 
@@ -156,7 +156,7 @@ func (sme *SinkMetricsExporter) SetConsumeMetricsError(err error) {
 // Start tells the exporter to start. The exporter may prepare for exporting
 // by connecting to the endpoint. Host parameter can be used for communicating
 // with the host after Start() has already returned.
-func (sme *SinkMetricsExporter) Start(host component.Host) error {
+func (sme *SinkMetricsExporter) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
@@ -183,6 +183,6 @@ func (sme *SinkMetricsExporter) AllMetrics() []data.MetricData {
 }
 
 // Shutdown stops the exporter and is invoked during shutdown.
-func (sme *SinkMetricsExporter) Shutdown() error {
+func (sme *SinkMetricsExporter) Shutdown(context.Context) error {
 	return nil
 }
