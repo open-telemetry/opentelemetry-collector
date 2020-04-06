@@ -21,7 +21,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/component/componenterr"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 )
@@ -50,7 +50,7 @@ func (exp *builtExporter) Start(ctx context.Context, host component.Host) error 
 		}
 	}
 
-	return componenterr.CombineErrors(errors)
+	return componenterror.CombineErrors(errors)
 }
 
 // Shutdown the trace component and the metrics component of an exporter.
@@ -68,7 +68,7 @@ func (exp *builtExporter) Shutdown(context.Context) error {
 		}
 	}
 
-	return componenterr.CombineErrors(errors)
+	return componenterror.CombineErrors(errors)
 }
 
 // Exporters is a map of exporters created from exporter configs.
@@ -98,7 +98,7 @@ func (exps Exporters) ShutdownAll() error {
 	}
 
 	if len(errs) != 0 {
-		return componenterr.CombineErrors(errs)
+		return componenterror.CombineErrors(errs)
 	}
 	return nil
 }

@@ -26,7 +26,7 @@ import (
 	"github.com/prometheus/prometheus/storage"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector/component/componenterr"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 )
 
@@ -101,15 +101,15 @@ func (o *ocaStore) Close() error {
 type noopAppender struct{}
 
 func (*noopAppender) Add(l labels.Labels, t int64, v float64) (uint64, error) {
-	return 0, componenterr.ErrAlreadyStopped
+	return 0, componenterror.ErrAlreadyStopped
 }
 
 func (*noopAppender) AddFast(l labels.Labels, ref uint64, t int64, v float64) error {
-	return componenterr.ErrAlreadyStopped
+	return componenterror.ErrAlreadyStopped
 }
 
 func (*noopAppender) Commit() error {
-	return componenterr.ErrAlreadyStopped
+	return componenterror.ErrAlreadyStopped
 }
 
 func (*noopAppender) Rollback() error {

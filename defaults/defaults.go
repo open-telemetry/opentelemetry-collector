@@ -17,7 +17,7 @@ package defaults
 
 import (
 	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/component/componenterr"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/fileexporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/jaegerexporter"
@@ -106,5 +106,5 @@ func Components() (
 		Exporters:  exporters,
 	}
 
-	return factories, componenterr.CombineErrors(errs)
+	return factories, componenterror.CombineErrors(errs)
 }

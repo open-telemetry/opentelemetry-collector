@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package componenterr_test
+package componenterror_test
 
 import (
 	"fmt"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector/component/componenterr"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
 )
 
 func TestCombineErrors(t *testing.T) {
@@ -43,7 +43,7 @@ func TestCombineErrors(t *testing.T) {
 	}}
 
 	for _, tc := range testCases {
-		got := componenterr.CombineErrors(tc.errors)
+		got := componenterror.CombineErrors(tc.errors)
 		if (got == nil) != tc.expectNil {
 			t.Errorf("CombineErrors(%v) == nil? Got: %t. Want: %t", tc.errors, got == nil, tc.expectNil)
 		}

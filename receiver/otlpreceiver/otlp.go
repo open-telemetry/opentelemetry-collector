@@ -30,7 +30,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/component/componenterr"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/observability"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/otlpreceiver/metrics"
@@ -101,7 +101,7 @@ func (r *Receiver) Start(ctx context.Context, host component.Host) error {
 }
 
 func (r *Receiver) registerTraceConsumer() error {
-	var err = componenterr.ErrAlreadyStarted
+	var err = componenterror.ErrAlreadyStarted
 
 	r.startTraceReceiverOnce.Do(func() {
 		r.traceReceiver, err = trace.New(r.instanceName, r.traceConsumer)
@@ -116,7 +116,7 @@ func (r *Receiver) registerTraceConsumer() error {
 }
 
 func (r *Receiver) registerMetricsConsumer() error {
-	var err = componenterr.ErrAlreadyStarted
+	var err = componenterror.ErrAlreadyStarted
 
 	r.startMetricsReceiverOnce.Do(func() {
 		r.metricsReceiver, err = metrics.New(r.instanceName, r.metricsConsumer)
@@ -143,7 +143,7 @@ func (r *Receiver) grpcServer() *grpc.Server {
 
 // Shutdown is a method to turn off receiving.
 func (r *Receiver) Shutdown(context.Context) error {
-	if err := r.stop(); err != componenterr.ErrAlreadyStopped {
+	if err := r.stop(); err != componenterror.ErrAlreadyStopped {
 		return err
 	}
 	return nil
@@ -154,14 +154,14 @@ func (r *Receiver) start(host component.Host) error {
 	hasConsumer := false
 	if r.traceConsumer != nil {
 		hasConsumer = true
-		if err := r.registerTraceConsumer(); err != nil && err != componenterr.ErrAlreadyStarted {
+		if err := r.registerTraceConsumer(); err != nil && err != componenterror.ErrAlreadyStarted {
 			return err
 		}
 	}
 
 	if r.metricsConsumer != nil {
 		hasConsumer = true
-		if err := r.registerMetricsConsumer(); err != nil && err != componenterr.ErrAlreadyStarted {
+		if err := r.registerMetricsConsumer(); err != nil && err != componenterror.ErrAlreadyStarted {
 			return err
 		}
 	}
@@ -170,7 +170,7 @@ func (r *Receiver) start(host component.Host) error {
 		return errors.New("cannot start receiver: no consumers were specified")
 	}
 
-	if err := r.startServer(host); err != nil && err != componenterr.ErrAlreadyStarted {
+	if err := r.startServer(host); err != nil && err != componenterror.ErrAlreadyStarted {
 		return err
 	}
 
@@ -184,7 +184,7 @@ func (r *Receiver) stop() error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	var err = componenterr.ErrAlreadyStopped
+	var err = componenterror.ErrAlreadyStopped
 	r.stopOnce.Do(func() {
 		err = nil
 
@@ -219,7 +219,7 @@ func (r *Receiver) httpServer() *http.Server {
 }
 
 func (r *Receiver) startServer(host component.Host) error {
-	err := componenterr.ErrAlreadyStarted
+	err := componenterror.ErrAlreadyStarted
 	r.startServerOnce.Do(func() {
 		err = nil
 		// Register the grpc-gateway on the HTTP server mux

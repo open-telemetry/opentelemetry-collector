@@ -17,7 +17,7 @@ package processor
 import (
 	"context"
 
-	"github.com/open-telemetry/opentelemetry-collector/component/componenterr"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
@@ -67,7 +67,7 @@ func (mfc metricsFanOutConnectorOld) ConsumeMetricsData(ctx context.Context, md 
 			errs = append(errs, err)
 		}
 	}
-	return componenterr.CombineErrors(errs)
+	return componenterror.CombineErrors(errs)
 }
 
 // NewMetricsFanOutConnector wraps multiple new type metrics consumers in a single one.
@@ -87,7 +87,7 @@ func (mfc metricsFanOutConnector) ConsumeMetrics(ctx context.Context, md data.Me
 			errs = append(errs, err)
 		}
 	}
-	return componenterr.CombineErrors(errs)
+	return componenterror.CombineErrors(errs)
 }
 
 // CreateTraceFanOutConnector wraps multiple trace consumers in a single one.
@@ -131,7 +131,7 @@ func (tfc traceFanOutConnectorOld) ConsumeTraceData(ctx context.Context, td cons
 			errs = append(errs, err)
 		}
 	}
-	return componenterr.CombineErrors(errs)
+	return componenterror.CombineErrors(errs)
 }
 
 // NewTraceFanOutConnector wraps multiple new type trace consumers in a single one.
@@ -151,5 +151,5 @@ func (tfc traceFanOutConnector) ConsumeTrace(ctx context.Context, td data.TraceD
 			errs = append(errs, err)
 		}
 	}
-	return componenterr.CombineErrors(errs)
+	return componenterror.CombineErrors(errs)
 }
