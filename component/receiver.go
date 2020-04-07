@@ -70,17 +70,11 @@ type ReceiverFactoryBase interface {
 
 // CustomUnmarshaler is a function that un-marshals a viper data into a config struct
 // in a custom way.
-// v *viper.Viper
-//   A viper instance at the "receivers" node in the config yaml.  v.Sub(viperKey) is
-//   the raw config this function should load.
-// viperKey string
-//   The name of this config.  i.e. "jaeger/custom".  v.Sub(viperKey) is the raw config
-//   this function should load.
-// sourceViperSection *viper.Viper
-//   The value of v.Sub(viperKey) with all environment substitution complete.
+// componentViperSection *viper.Viper
+//   The config for this specific component. May be nil or empty if no config available.
 // intoCfg interface{}
 //   An empty interface wrapping a pointer to the config struct to unmarshal into.
-type CustomUnmarshaler func(v *viper.Viper, viperKey string, sourceViperSection *viper.Viper, intoCfg interface{}) error
+type CustomUnmarshaler func(componentViperSection *viper.Viper, intoCfg interface{}) error
 
 // ReceiverFactoryOld can create TraceReceiver and MetricsReceiver.
 type ReceiverFactoryOld interface {
