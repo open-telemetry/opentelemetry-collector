@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package span
+package filterspan
 
 import (
 	"regexp"
 	"testing"
 
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 )
 
 func TestSpan_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
@@ -155,12 +155,8 @@ func TestSpan_Matching_False(t *testing.T) {
 				Services: []*regexp.Regexp{},
 				Attributes: []attributeMatcher{
 					{
-						Key: "keyInt",
-						AttributeValue: &tracepb.AttributeValue{
-							Value: &tracepb.AttributeValue_IntValue{
-								IntValue: 1234,
-							},
-						},
+						Key:            "keyInt",
+						AttributeValue: data.NewAttributeValueInt(1234),
 					},
 				},
 			},
@@ -171,12 +167,8 @@ func TestSpan_Matching_False(t *testing.T) {
 				Services: []*regexp.Regexp{},
 				Attributes: []attributeMatcher{
 					{
-						Key: "keyInt",
-						AttributeValue: &tracepb.AttributeValue{
-							Value: &tracepb.AttributeValue_StringValue{
-								StringValue: &tracepb.TruncatableString{Value: "123"},
-							},
-						},
+						Key:            "keyInt",
+						AttributeValue: data.NewAttributeValueString("123"),
 					},
 				},
 			},
@@ -188,23 +180,17 @@ func TestSpan_Matching_False(t *testing.T) {
 				Attributes: []attributeMatcher{
 					{
 						Key:            "doesnotexist",
-						AttributeValue: nil,
+						AttributeValue: data.NewAttributeValue(),
 					},
 				},
 			},
 		},
 	}
 
-	span := &tracepb.Span{
-		Name: &tracepb.TruncatableString{Value: "spanName"},
-		Attributes: &tracepb.Span_Attributes{
-			AttributeMap: map[string]*tracepb.AttributeValue{
-				"keyInt": {
-					Value: &tracepb.AttributeValue_IntValue{IntValue: 123},
-				},
-			},
-		},
-	}
+	span := data.NewSpan()
+	span.InitEmpty()
+	span.SetName("spanName")
+	span.Attributes().InitFromMap(map[string]data.AttributeValue{"keyInt": data.NewAttributeValueInt(123)})
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
 			assert.False(t, tc.properties.MatchSpan(span, "wrongSvc"))
@@ -218,78 +204,23 @@ func TestSpan_MatchingCornerCases(t *testing.T) {
 		Attributes: []attributeMatcher{
 			{
 				Key:            "keyOne",
-				AttributeValue: nil,
+				AttributeValue: data.NewAttributeValue(),
 			},
 		},
 	}
-	testcases := []struct {
-		name string
-		span *tracepb.Span
-	}{
-		{
-			name: "nil_attributes",
-			span: &tracepb.Span{
-				Attributes: nil,
-			},
-		},
-		{
-			name: "default_attributes",
-			span: &tracepb.Span{
-				Attributes: &tracepb.Span_Attributes{},
-			},
-		},
-		{
-			name: "empty_map",
-			span: &tracepb.Span{
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: map[string]*tracepb.AttributeValue{},
-				},
-			},
-		},
-	}
-
-	for _, tc := range testcases {
-		t.Run(tc.name, func(t *testing.T) {
-			assert.False(t, mp.MatchSpan(tc.span, "svcA"))
-		})
-	}
+	emptySpan := data.NewSpan()
+	emptySpan.InitEmpty()
+	assert.False(t, mp.MatchSpan(emptySpan, "svcA"))
 }
 
 func TestSpan_MissingServiceName(t *testing.T) {
 	mp := &regexpPropertiesMatcher{
 		Services: []*regexp.Regexp{regexp.MustCompile("svcA")},
 	}
-	testcases := []struct {
-		name string
-		span *tracepb.Span
-	}{
-		{
-			name: "nil_attributes",
-			span: &tracepb.Span{
-				Attributes: nil,
-			},
-		},
-		{
-			name: "default_attributes",
-			span: &tracepb.Span{
-				Attributes: &tracepb.Span_Attributes{},
-			},
-		},
-		{
-			name: "empty_map",
-			span: &tracepb.Span{
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: map[string]*tracepb.AttributeValue{},
-				},
-			},
-		},
-	}
 
-	for _, tc := range testcases {
-		t.Run(tc.name, func(t *testing.T) {
-			assert.False(t, mp.MatchSpan(tc.span, ""))
-		})
-	}
+	emptySpan := data.NewSpan()
+	emptySpan.InitEmpty()
+	assert.False(t, mp.MatchSpan(emptySpan, ""))
 }
 
 func TestSpan_Matching_True(t *testing.T) {
@@ -343,34 +274,20 @@ func TestSpan_Matching_True(t *testing.T) {
 				Services: []*regexp.Regexp{},
 				Attributes: []attributeMatcher{
 					{
-						Key: "keyString",
-						AttributeValue: &tracepb.AttributeValue{
-							Value: &tracepb.AttributeValue_StringValue{
-								StringValue: &tracepb.TruncatableString{Value: "arithmetic"},
-							},
-						},
+						Key:            "keyString",
+						AttributeValue: data.NewAttributeValueString("arithmetic"),
 					},
 					{
-						Key: "keyInt",
-						AttributeValue: &tracepb.AttributeValue{
-							Value: &tracepb.AttributeValue_IntValue{
-								IntValue: 123,
-							},
-						},
+						Key:            "keyInt",
+						AttributeValue: data.NewAttributeValueInt(123),
 					},
 					{
-						Key: "keyDouble",
-						AttributeValue: &tracepb.AttributeValue{
-							Value: &tracepb.AttributeValue_DoubleValue{
-								DoubleValue: cast.ToFloat64(3245.6),
-							},
-						},
+						Key:            "keyDouble",
+						AttributeValue: data.NewAttributeValueDouble(3245.6),
 					},
 					{
-						Key: "keyBool",
-						AttributeValue: &tracepb.AttributeValue{
-							Value: &tracepb.AttributeValue_BoolValue{BoolValue: true},
-						},
+						Key:            "keyBool",
+						AttributeValue: data.NewAttributeValueBool(true),
 					},
 				},
 			},
@@ -382,7 +299,7 @@ func TestSpan_Matching_True(t *testing.T) {
 				Attributes: []attributeMatcher{
 					{
 						Key:            "keyExists",
-						AttributeValue: nil,
+						AttributeValue: data.NewAttributeValue(),
 					},
 				},
 			},
@@ -394,45 +311,27 @@ func TestSpan_Matching_True(t *testing.T) {
 				Attributes: []attributeMatcher{
 					{
 						Key:            "keyExists",
-						AttributeValue: nil,
+						AttributeValue: data.NewAttributeValue(),
 					},
 					{
-						Key: "keyString",
-						AttributeValue: &tracepb.AttributeValue{
-							Value: &tracepb.AttributeValue_StringValue{
-								StringValue: &tracepb.TruncatableString{Value: "arithmetic"},
-							},
-						},
+						Key:            "keyString",
+						AttributeValue: data.NewAttributeValueString("arithmetic"),
 					},
 				},
 			},
 		},
 	}
 
-	span := &tracepb.Span{
-		Name: &tracepb.TruncatableString{Value: "spanName"},
-		Attributes: &tracepb.Span_Attributes{
-			AttributeMap: map[string]*tracepb.AttributeValue{
-				"keyString": {
-					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "arithmetic"}},
-				},
-				"keyInt": {
-					Value: &tracepb.AttributeValue_IntValue{IntValue: 123},
-				},
-				"keyDouble": {
-					Value: &tracepb.AttributeValue_DoubleValue{
-						DoubleValue: cast.ToFloat64(3245.6),
-					},
-				},
-				"keyBool": {
-					Value: &tracepb.AttributeValue_BoolValue{BoolValue: true},
-				},
-				"keyExists": {
-					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "present"}},
-				},
-			},
-		},
-	}
+	span := data.NewSpan()
+	span.InitEmpty()
+	span.SetName("spanName")
+	span.Attributes().InitFromMap(map[string]data.AttributeValue{
+		"keyString": data.NewAttributeValueString("arithmetic"),
+		"keyInt":    data.NewAttributeValueInt(123),
+		"keyDouble": data.NewAttributeValueDouble(3245.6),
+		"keyBool":   data.NewAttributeValueBool(true),
+		"keyExists": data.NewAttributeValueString("present"),
+	})
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -481,10 +380,8 @@ func TestSpan_validateMatchesConfiguration(t *testing.T) {
 						Key: "key1",
 					},
 					{
-						Key: "key2",
-						AttributeValue: &tracepb.AttributeValue{
-							Value: &tracepb.AttributeValue_IntValue{IntValue: cast.ToInt64(1234)},
-						},
+						Key:            "key2",
+						AttributeValue: data.NewAttributeValueInt(1234),
 					},
 				},
 			},
@@ -516,10 +413,8 @@ func TestSpan_validateMatchesConfiguration(t *testing.T) {
 						Key: "key1",
 					},
 					{
-						Key: "key2",
-						AttributeValue: &tracepb.AttributeValue{
-							Value: &tracepb.AttributeValue_IntValue{IntValue: cast.ToInt64(1234)},
-						},
+						Key:            "key2",
+						AttributeValue: data.NewAttributeValueInt(1234),
 					},
 				},
 			},

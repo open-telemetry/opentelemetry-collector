@@ -12,16 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package span
+package filterspan
 
 import (
 	"errors"
 	"fmt"
 	"regexp"
 
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-
-	"github.com/open-telemetry/opentelemetry-collector/internal/processor"
+	"github.com/open-telemetry/opentelemetry-collector/internal/data"
+	"github.com/open-telemetry/opentelemetry-collector/internal/processor/filterhelper"
 )
 
 var (
@@ -39,7 +38,7 @@ var (
 // Matcher is an interface that allows matching a span against a configuration
 // of a match.
 type Matcher interface {
-	MatchSpan(span *tracepb.Span, serviceName string) bool
+	MatchSpan(span data.Span, serviceName string) bool
 }
 
 type attributesMatcher []attributeMatcher
@@ -73,7 +72,7 @@ type regexpPropertiesMatcher struct {
 // attributeMatcher is a attribute key/value pair to match to.
 type attributeMatcher struct {
 	Key            string
-	AttributeValue *tracepb.AttributeValue
+	AttributeValue data.AttributeValue
 }
 
 func NewMatcher(config *MatchProperties) (Matcher, error) {
@@ -167,7 +166,7 @@ func newAttributesMatcher(config *MatchProperties) (attributesMatcher, error) {
 			Key: attribute.Key,
 		}
 		if attribute.Value != nil {
-			val, err := processor.AttributeValue(attribute.Value)
+			val, err := filterhelper.NewAttributeValue(attribute.Value)
 			if err != nil {
 				return nil, err
 			}
@@ -186,8 +185,7 @@ func newAttributesMatcher(config *MatchProperties) (attributesMatcher, error) {
 // At least one of services, span names or attributes must be specified. It is supported
 // to have more than one of these specified, and all specified must evaluate
 // to true for a match to occur.
-func (mp *strictPropertiesMatcher) MatchSpan(span *tracepb.Span, serviceName string) bool {
-
+func (mp *strictPropertiesMatcher) MatchSpan(span data.Span, serviceName string) bool {
 	if len(mp.Services) > 0 {
 		// Verify service name matches at least one of the items.
 		matched := false
@@ -204,10 +202,8 @@ func (mp *strictPropertiesMatcher) MatchSpan(span *tracepb.Span, serviceName str
 
 	if len(mp.SpanNames) > 0 {
 		// SpanNames condition is specified. Check if span name matches the condition.
-		var spanName string
-		if span.Name != nil {
-			spanName = span.Name.Value
-		}
+		spanName := span.Name()
+
 		// Verify span name matches at least one of the items.
 		matched := false
 		for _, item := range mp.SpanNames {
@@ -232,7 +228,7 @@ func (mp *strictPropertiesMatcher) MatchSpan(span *tracepb.Span, serviceName str
 // At least one of services, span names or attributes must be specified. It is supported
 // to have more than one of these specified, and all specified must evaluate
 // to true for a match to occur.
-func (mp *regexpPropertiesMatcher) MatchSpan(span *tracepb.Span, serviceName string) bool {
+func (mp *regexpPropertiesMatcher) MatchSpan(span data.Span, serviceName string) bool {
 
 	if len(mp.Services) > 0 {
 		// Verify service name matches at least one of the regexp patterns.
@@ -250,10 +246,8 @@ func (mp *regexpPropertiesMatcher) MatchSpan(span *tracepb.Span, serviceName str
 
 	if len(mp.SpanNames) > 0 {
 		// SpanNames condition is specified. Check if span name matches the condition.
-		var spanName string
-		if span.Name != nil {
-			spanName = span.Name.Value
-		}
+		spanName := span.Name()
+
 		// Verify span name matches at least one of the regexp patterns.
 		matched := false
 		for _, re := range mp.SpanNames {
@@ -272,50 +266,32 @@ func (mp *regexpPropertiesMatcher) MatchSpan(span *tracepb.Span, serviceName str
 }
 
 // match attributes specification against a span.
-func (ma attributesMatcher) match(span *tracepb.Span) bool {
+func (ma attributesMatcher) match(span data.Span) bool {
 	// If there are no attributes to match against, the span matches.
 	if len(ma) == 0 {
 		return true
 	}
 
+	attrs := span.Attributes()
 	// At this point, it is expected of the span to have attributes because of
 	// len(ma) != 0. This means for spans with no attributes, it does not match.
-	if span.Attributes == nil || len(span.Attributes.AttributeMap) == 0 {
+	if attrs.Len() == 0 {
 		return false
 	}
 
 	// Check that all expected properties are set.
 	for _, property := range ma {
-		val, exist := span.Attributes.AttributeMap[property.Key]
+		attr, exist := attrs.Get(property.Key)
 		if !exist {
 			return false
 		}
 
 		// This is for the case of checking that the key existed.
-		if property.AttributeValue == nil {
+		if property.AttributeValue.IsNil() {
 			continue
 		}
 
-		var isMatch bool
-		switch attribValue := val.Value.(type) {
-		case *tracepb.AttributeValue_StringValue:
-			if sv, ok := property.AttributeValue.GetValue().(*tracepb.AttributeValue_StringValue); ok {
-				isMatch = attribValue.StringValue.GetValue() == sv.StringValue.GetValue()
-			}
-		case *tracepb.AttributeValue_IntValue:
-			if iv, ok := property.AttributeValue.GetValue().(*tracepb.AttributeValue_IntValue); ok {
-				isMatch = attribValue.IntValue == iv.IntValue
-			}
-		case *tracepb.AttributeValue_BoolValue:
-			if bv, ok := property.AttributeValue.GetValue().(*tracepb.AttributeValue_BoolValue); ok {
-				isMatch = attribValue.BoolValue == bv.BoolValue
-			}
-		case *tracepb.AttributeValue_DoubleValue:
-			if dv, ok := property.AttributeValue.GetValue().(*tracepb.AttributeValue_DoubleValue); ok {
-				isMatch = attribValue.DoubleValue == dv.DoubleValue
-			}
-		}
-		if !isMatch {
+		if !attr.Equal(property.AttributeValue) {
 			return false
 		}
 	}

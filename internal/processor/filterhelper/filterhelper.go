@@ -12,31 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package processor
+package filterhelper
 
 import (
 	"fmt"
 
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/spf13/cast"
+
+	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 )
 
-// AttributeValue is used to convert the raw `value` from ActionKeyValue to the supported trace attribute values.
-func AttributeValue(value interface{}) (*tracepb.AttributeValue, error) {
-	attrib := &tracepb.AttributeValue{}
+// NewAttributeValue is used to convert the raw `value` from ActionKeyValue to the supported trace attribute values.
+func NewAttributeValue(value interface{}) (data.AttributeValue, error) {
+	attr := data.NewAttributeValue()
 	switch val := value.(type) {
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
-		attrib.Value = &tracepb.AttributeValue_IntValue{IntValue: cast.ToInt64(val)}
+		attr = data.NewAttributeValueInt(cast.ToInt64(val))
 	case float32, float64:
-		attrib.Value = &tracepb.AttributeValue_DoubleValue{DoubleValue: cast.ToFloat64(val)}
+		attr = data.NewAttributeValueDouble(cast.ToFloat64(val))
 	case string:
-		attrib.Value = &tracepb.AttributeValue_StringValue{
-			StringValue: &tracepb.TruncatableString{Value: val},
-		}
+		attr = data.NewAttributeValueString(val)
 	case bool:
-		attrib.Value = &tracepb.AttributeValue_BoolValue{BoolValue: val}
+		attr = data.NewAttributeValueBool(val)
 	default:
-		return nil, fmt.Errorf("error unsupported value type \"%T\"", value)
+		return attr, fmt.Errorf("error unsupported value type \"%T\"", value)
 	}
-	return attrib, nil
+	return attr, nil
 }
