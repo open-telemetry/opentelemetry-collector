@@ -41,7 +41,7 @@ const (
 var emptyAttributeKeyValue = &otlpcommon.AttributeKeyValue{}
 
 // AttributeValue represents a value of an attribute. Typically used in an Attributes map.
-// Must use one of NewAttributeValue* functions below to create new instances.
+// Must use one of NilAttributeValue* functions below to create new instances.
 // Important: zero-initialized instance is not valid for use.
 //
 // Intended to be passed by value since internally it is just a pointer to actual
@@ -56,6 +56,10 @@ var emptyAttributeKeyValue = &otlpcommon.AttributeKeyValue{}
 //   }
 type AttributeValue struct {
 	orig *otlpcommon.AttributeKeyValue
+}
+
+func NilAttributeValue() AttributeValue {
+	return AttributeValue{orig: nil}
 }
 
 func NewAttributeValueString(v string) AttributeValue {
@@ -86,9 +90,13 @@ func NewAttributeValueSlice(len int) []AttributeValue {
 	return wrappers
 }
 
+func (a AttributeValue) IsNil() bool {
+	return a.orig == nil
+}
+
 // All AttributeValue functions bellow must be called only on instances that are created
-// via NewAttributeValue* functions. Calling these functions on zero-initialized
-// AttributeValue struct will cause a panic.
+// via NewAttributeValue+ functions. Calling these functions on zero-initialized
+// AttributeValue or instance created with NilAttributeValue struct will cause a panic.
 
 func (a AttributeValue) Type() AttributeValueType {
 	return AttributeValueType(a.orig.Type)
@@ -144,6 +152,14 @@ func (a AttributeValue) copyValues(akv *otlpcommon.AttributeKeyValue) {
 	a.orig.IntValue = akv.IntValue
 	a.orig.DoubleValue = akv.DoubleValue
 	a.orig.BoolValue = akv.BoolValue
+}
+
+func (a AttributeValue) Equal(av AttributeValue) bool {
+	return a.orig.Type == av.orig.Type &&
+		a.orig.StringValue == av.orig.StringValue &&
+		a.orig.IntValue == av.orig.IntValue &&
+		a.orig.DoubleValue == av.orig.DoubleValue &&
+		a.orig.BoolValue == av.orig.BoolValue
 }
 
 func newAttributeKeyValueString(k string, v string) *otlpcommon.AttributeKeyValue {
