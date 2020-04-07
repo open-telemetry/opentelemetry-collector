@@ -317,17 +317,20 @@ func loadService(v *viper.Viper) (configmodels.Service, error) {
 	return service, nil
 }
 
-// LoadReceiver loads a receiver config from v under the subkey receiverKey using the factory corresponding
+// CreateAndLoadReceiver loads a receiver config from v under the subkey receiverKey using the factory corresponding
 // to the receiver type from receiverKey.
-func LoadReceiver(receiverKey string, v *viper.Viper, factory component.ReceiverFactoryBase) (configmodels.Receiver, error) {
+func CreateAndLoadReceiver(
+	receiverFullName string,
+	receiversConfig *viper.Viper,
+	factory component.ReceiverFactoryBase) (configmodels.Receiver, error) {
 	// Decode the key into type and fullName components.
-	typeStr, fullName, err := DecodeTypeAndName(receiverKey)
+	typeStr, fullName, err := DecodeTypeAndName(receiverFullName)
 	if err != nil {
 		return nil, err
 	}
 
 	if typeStr != factory.Type() {
-		return nil, fmt.Errorf("receiverKey had type %q but factory had type %q", typeStr, factory.Type())
+		return nil, fmt.Errorf("receiverFullName had type %q but factory had type %q", typeStr, factory.Type())
 	}
 
 	// Create the default config for this receiver.
@@ -336,14 +339,14 @@ func LoadReceiver(receiverKey string, v *viper.Viper, factory component.Receiver
 	receiverCfg.SetName(fullName)
 
 	// Unmarshal only the subconfig for this exporter.
-	sv := getConfigSection(v, receiverKey)
+	sv := getConfigSection(receiversConfig, receiverFullName)
 
 	// Now that the default config struct is created we can Unmarshal into it
 	// and it will apply user-defined config on top of the default.
 	customUnmarshaler := factory.CustomUnmarshaler()
 	if customUnmarshaler != nil {
 		// This configuration requires a custom unmarshaler, use it.
-		err = customUnmarshaler(v, receiverKey, sv, receiverCfg)
+		err = customUnmarshaler(receiversConfig, receiverFullName, sv, receiverCfg)
 	} else {
 		err = sv.UnmarshalExact(receiverCfg)
 	}
@@ -393,10 +396,10 @@ func loadReceivers(v *viper.Viper, factories map[string]component.ReceiverFactor
 			}
 		}
 
-		receiverCfg, err := LoadReceiver(key, subViper, factory)
+		receiverCfg, err := CreateAndLoadReceiver(key, subViper, factory)
 
 		if err != nil {
-			// LoadReceiver already wraps the error.
+			// CreateAndLoadReceiver already wraps the error.
 			return nil, err
 		}
 
