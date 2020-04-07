@@ -22,9 +22,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 )
 
-// NewAttributeValue is used to convert the raw `value` from ActionKeyValue to the supported trace attribute values.
+// NilAttributeValue is used to convert the raw `value` from ActionKeyValue to the supported trace attribute values.
 func NewAttributeValue(value interface{}) (data.AttributeValue, error) {
-	attr := data.NewAttributeValue()
+	attr := data.NilAttributeValue()
 	switch val := value.(type) {
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
 		attr = data.NewAttributeValueInt(cast.ToInt64(val))

@@ -180,7 +180,7 @@ func TestSpan_Matching_False(t *testing.T) {
 				Attributes: []attributeMatcher{
 					{
 						Key:            "doesnotexist",
-						AttributeValue: data.NewAttributeValue(),
+						AttributeValue: data.NilAttributeValue(),
 					},
 				},
 			},
@@ -204,7 +204,7 @@ func TestSpan_MatchingCornerCases(t *testing.T) {
 		Attributes: []attributeMatcher{
 			{
 				Key:            "keyOne",
-				AttributeValue: data.NewAttributeValue(),
+				AttributeValue: data.NilAttributeValue(),
 			},
 		},
 	}
@@ -299,7 +299,7 @@ func TestSpan_Matching_True(t *testing.T) {
 				Attributes: []attributeMatcher{
 					{
 						Key:            "keyExists",
-						AttributeValue: data.NewAttributeValue(),
+						AttributeValue: data.NilAttributeValue(),
 					},
 				},
 			},
@@ -311,7 +311,7 @@ func TestSpan_Matching_True(t *testing.T) {
 				Attributes: []attributeMatcher{
 					{
 						Key:            "keyExists",
-						AttributeValue: data.NewAttributeValue(),
+						AttributeValue: data.NilAttributeValue(),
 					},
 					{
 						Key:            "keyString",
