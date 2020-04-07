@@ -322,13 +322,22 @@ func TestOcToInternal(t *testing.T) {
 		},
 
 		{
-
 			name: "one-span",
 			td:   testdata.GenerateTraceDataOneSpan(),
 			oc: consumerdata.TraceData{
 				Node:     ocNode,
 				Resource: ocResource1,
 				Spans:    []*octrace.Span{ocSpan1},
+			},
+		},
+
+		{
+			name: "one-span-one-nil",
+			td:   testdata.GenerateTraceDataOneSpan(),
+			oc: consumerdata.TraceData{
+				Node:     ocNode,
+				Resource: ocResource1,
+				Spans:    []*octrace.Span{ocSpan1, nil},
 			},
 		},
 
@@ -363,9 +372,13 @@ func TestOcToInternal(t *testing.T) {
 		},
 	}
 
-	// Equal number of tests even though there is an extra test "two-spans-and-separate-in-the-middle"
-	// but the test case GenerateTraceDataNoSpans it is impossible to get from OC data.
-	assert.EqualValues(t, testdata.NumTraceTests, len(tests))
+	// Extra test:
+	//	* "two-spans-and-separate-in-the-middle"
+	// Missing tests (impossible to generate):
+	//  * GenerateTraceDataOneEmptyOneNilResourceSpans
+	//	* GenerateTraceDataOneEmptyInstrumentationLibrary
+	//	* GenerateTraceDataOneEmptyOneNilInstrumentationLibrary
+	assert.EqualValues(t, testdata.NumTraceTests-2, len(tests))
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

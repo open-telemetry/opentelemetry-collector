@@ -195,7 +195,7 @@ func TestMetricsProcessorCloningMultiplexing(t *testing.T) {
 	}
 
 	mfc := NewMetricsCloningFanOutConnector(processors)
-	md := testdata.GenerateMetricDataTwoMetrics()
+	md := testdata.GenerateMetricDataWithCountersHistogramAndSummary()
 
 	var wantMetricsCount = 0
 	for i := 0; i < 2; i++ {
@@ -311,7 +311,7 @@ func TestCreateMetricsCloningFanOutConnectorWithConvertion(t *testing.T) {
 
 	resourceTypeName := "good-resource"
 
-	md := testdata.GenerateMetricDataTwoMetrics()
+	md := testdata.GenerateMetricDataWithCountersHistogramAndSummary()
 	resource := md.ResourceMetrics().At(0).Resource()
 	resource.Attributes().Upsert(conventions.OCAttributeResourceType, data.NewAttributeValueString(resourceTypeName))
 
