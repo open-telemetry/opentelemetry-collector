@@ -19,9 +19,9 @@ package main
 import (
 	"log"
 
-	"github.com/open-telemetry/opentelemetry-collector/defaults"
 	"github.com/open-telemetry/opentelemetry-collector/internal/version"
 	"github.com/open-telemetry/opentelemetry-collector/service"
+	"github.com/open-telemetry/opentelemetry-collector/service/defaultcomponents"
 )
 
 func main() {
@@ -31,7 +31,7 @@ func main() {
 		}
 	}
 
-	factories, err := defaults.Components()
+	factories, err := defaultcomponents.Components()
 	handleErr("Failed to build default components", err)
 
 	info := service.ApplicationStartInfo{

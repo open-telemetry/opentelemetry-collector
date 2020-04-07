@@ -18,5 +18,5 @@
 // interface and component.Exporter interface.
 //
 // To make the custom exporter part of the Collector build the factory must be added
-// to defaults.Components() function.
+// to defaultcomponents.Components() function.
 package exporter

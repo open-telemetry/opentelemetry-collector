@@ -32,12 +32,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-collector/defaults"
+	"github.com/open-telemetry/opentelemetry-collector/service/defaultcomponents"
 	"github.com/open-telemetry/opentelemetry-collector/testutils"
 )
 
 func TestApplication_Start(t *testing.T) {
-	factories, err := defaults.Components()
+	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
 
 	app, err := New(Parameters{Factories: factories, ApplicationStartInfo: ApplicationStartInfo{}})
