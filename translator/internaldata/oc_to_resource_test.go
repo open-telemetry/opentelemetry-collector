@@ -42,7 +42,7 @@ func TestOcNodeResourceToInternal(t *testing.T) {
 	ocResource = generateOcResource()
 	expectedAttrs := generateResourceWithOcNodeAndResource().Attributes()
 	// We don't have type information in ocResource, so need to make int attr string
-	expectedAttrs.Upsert(data.NewAttributeKeyValueString("resource-int-attr", "123"))
+	expectedAttrs.Upsert("resource-int-attr", data.NewAttributeValueString("123"))
 	ocNodeResourceToInternal(ocNode, ocResource, resource)
 	assert.EqualValues(t, expectedAttrs.Sort(), resource.Attributes().Sort())
 
@@ -51,8 +51,9 @@ func TestOcNodeResourceToInternal(t *testing.T) {
 	for i := 0; i < expectedAttrs.Len(); i++ {
 		// Set all except "attr1" which is not a hard-coded field to some bogus values.
 
-		if !strings.Contains(expectedAttrs.GetAttribute(i).Key(), "-attr") {
-			ocNode.Attributes[expectedAttrs.GetAttribute(i).Key()] = "this will be overridden 1"
+		k, _ := expectedAttrs.GetAttribute(i)
+		if !strings.Contains(k, "-attr") {
+			ocNode.Attributes[k] = "this will be overridden 1"
 		}
 	}
 	ocResource.Labels[conventions.OCAttributeResourceType] = "this will be overridden 2"

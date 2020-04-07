@@ -50,35 +50,35 @@ func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Reso
 	if ocNode != nil {
 		// Copy all Attributes.
 		for k, v := range ocNode.Attributes {
-			attrs.Insert(data.NewAttributeKeyValueString(k, v))
+			attrs.InsertString(k, v)
 		}
 
 		// Add all special fields.
 		if ocNode.ServiceInfo != nil {
 			if ocNode.ServiceInfo.Name != "" {
-				attrs.Upsert(data.NewAttributeKeyValueString(conventions.AttributeServiceName, ocNode.ServiceInfo.Name))
+				attrs.UpsertString(conventions.AttributeServiceName, ocNode.ServiceInfo.Name)
 			}
 		}
 		if ocNode.Identifier != nil {
 			if ocNode.Identifier.StartTimestamp != nil {
-				attrs.Upsert(data.NewAttributeKeyValueString(conventions.OCAttributeProcessStartTime, ptypes.TimestampString(ocNode.Identifier.StartTimestamp)))
+				attrs.UpsertString(conventions.OCAttributeProcessStartTime, ptypes.TimestampString(ocNode.Identifier.StartTimestamp))
 			}
 			if ocNode.Identifier.HostName != "" {
-				attrs.Upsert(data.NewAttributeKeyValueString(conventions.AttributeHostHostname, ocNode.Identifier.HostName))
+				attrs.UpsertString(conventions.AttributeHostHostname, ocNode.Identifier.HostName)
 			}
 			if ocNode.Identifier.Pid != 0 {
-				attrs.Upsert(data.NewAttributeKeyValueInt(conventions.OCAttributeProcessID, int64(ocNode.Identifier.Pid)))
+				attrs.UpsertInt(conventions.OCAttributeProcessID, int64(ocNode.Identifier.Pid))
 			}
 		}
 		if ocNode.LibraryInfo != nil {
 			if ocNode.LibraryInfo.CoreLibraryVersion != "" {
-				attrs.Upsert(data.NewAttributeKeyValueString(conventions.AttributeLibraryVersion, ocNode.LibraryInfo.CoreLibraryVersion))
+				attrs.UpsertString(conventions.AttributeLibraryVersion, ocNode.LibraryInfo.CoreLibraryVersion)
 			}
 			if ocNode.LibraryInfo.ExporterVersion != "" {
-				attrs.Upsert(data.NewAttributeKeyValueString(conventions.OCAttributeExporterVersion, ocNode.LibraryInfo.ExporterVersion))
+				attrs.UpsertString(conventions.OCAttributeExporterVersion, ocNode.LibraryInfo.ExporterVersion)
 			}
 			if ocNode.LibraryInfo.Language != occommon.LibraryInfo_LANGUAGE_UNSPECIFIED {
-				attrs.Upsert(data.NewAttributeKeyValueString(conventions.AttributeLibraryLanguage, ocNode.LibraryInfo.Language.String()))
+				attrs.UpsertString(conventions.AttributeLibraryLanguage, ocNode.LibraryInfo.Language.String())
 			}
 		}
 	}
@@ -86,11 +86,11 @@ func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Reso
 	if ocResource != nil {
 		// Copy resource Labels.
 		for k, v := range ocResource.Labels {
-			attrs.Insert(data.NewAttributeKeyValueString(k, v))
+			attrs.InsertString(k, v)
 		}
 		// Add special fields.
 		if ocResource.Type != "" {
-			attrs.Upsert(data.NewAttributeKeyValueString(conventions.OCAttributeResourceType, ocResource.Type))
+			attrs.UpsertString(conventions.OCAttributeResourceType, ocResource.Type)
 		}
 	}
 }

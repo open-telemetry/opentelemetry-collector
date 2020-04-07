@@ -197,20 +197,20 @@ func ocAttrsToInternal(ocAttrs *octrace.Span_Attributes, dest data.AttributeMap)
 		for key, ocAttr := range ocAttrs.AttributeMap {
 			switch attribValue := ocAttr.Value.(type) {
 			case *octrace.AttributeValue_StringValue:
-				values[i].SetString(attribValue.StringValue.GetValue())
+				values[i].SetStringVal(attribValue.StringValue.GetValue())
 
 			case *octrace.AttributeValue_IntValue:
-				values[i].SetInt(attribValue.IntValue)
+				values[i].SetIntVal(attribValue.IntValue)
 
 			case *octrace.AttributeValue_BoolValue:
-				values[i].SetBool(attribValue.BoolValue)
+				values[i].SetBoolVal(attribValue.BoolValue)
 
 			case *octrace.AttributeValue_DoubleValue:
-				values[i].SetDouble(attribValue.DoubleValue)
+				values[i].SetDoubleVal(attribValue.DoubleValue)
 
 			default:
 				str := "<Unknown OpenCensus attribute value type>"
-				values[i].SetString(str)
+				values[i].SetStringVal(str)
 			}
 			attrMap[key] = values[i]
 			i++
@@ -345,10 +345,10 @@ func ocMessageEventToInternalAttrs(msgEvent *octrace.Span_TimeEvent_MessageEvent
 	}
 
 	attrs := data.NewAttributeValueSlice(4)
-	attrs[0].SetString(msgEvent.Type.String())
-	attrs[1].SetInt(int64(msgEvent.Id))
-	attrs[2].SetInt(int64(msgEvent.UncompressedSize))
-	attrs[3].SetInt(int64(msgEvent.CompressedSize))
+	attrs[0].SetStringVal(msgEvent.Type.String())
+	attrs[1].SetIntVal(int64(msgEvent.Id))
+	attrs[2].SetIntVal(int64(msgEvent.UncompressedSize))
+	attrs[3].SetIntVal(int64(msgEvent.CompressedSize))
 
 	dest.InitFromMap(map[string]data.AttributeValue{
 		conventions.OCTimeEventMessageEventType:  attrs[0],

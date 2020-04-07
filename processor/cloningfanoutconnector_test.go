@@ -283,7 +283,7 @@ func TestCreateTraceCloningFanOutConnectorWithConvertion(t *testing.T) {
 
 	td := testdata.GenerateTraceDataTwoSpansSameResource()
 	resource := td.ResourceSpans().At(0).Resource()
-	resource.Attributes().Upsert(data.NewAttributeKeyValueString(conventions.OCAttributeResourceType, resourceTypeName))
+	resource.Attributes().Upsert(conventions.OCAttributeResourceType, data.NewAttributeValueString(resourceTypeName))
 
 	tfc := CreateTraceCloningFanOutConnector(processors).(consumer.TraceConsumer)
 
@@ -313,7 +313,7 @@ func TestCreateMetricsCloningFanOutConnectorWithConvertion(t *testing.T) {
 
 	md := testdata.GenerateMetricDataTwoMetrics()
 	resource := md.ResourceMetrics().At(0).Resource()
-	resource.Attributes().Upsert(data.NewAttributeKeyValueString(conventions.OCAttributeResourceType, resourceTypeName))
+	resource.Attributes().Upsert(conventions.OCAttributeResourceType, data.NewAttributeValueString(resourceTypeName))
 
 	mfc := CreateMetricsCloningFanOutConnector(processors).(consumer.MetricsConsumer)
 
