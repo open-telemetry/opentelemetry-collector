@@ -20,6 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/converter"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 )
 
@@ -40,7 +41,7 @@ func CreateMetricsFanOutConnector(mcs []consumer.MetricsConsumerBase) consumer.M
 		} else {
 			metricsConsumerOld := mc.(consumer.MetricsConsumerOld)
 			metricsConsumersOld = append(metricsConsumersOld, metricsConsumerOld)
-			metricsConsumers = append(metricsConsumers, consumer.NewInternalToOCMetricsConverter(metricsConsumerOld))
+			metricsConsumers = append(metricsConsumers, converter.NewInternalToOCMetricsConverter(metricsConsumerOld))
 		}
 	}
 
@@ -104,7 +105,7 @@ func CreateTraceFanOutConnector(tcs []consumer.TraceConsumerBase) consumer.Trace
 		} else {
 			traceConsumerOld := tc.(consumer.TraceConsumerOld)
 			traceConsumersOld = append(traceConsumersOld, traceConsumerOld)
-			traceConsumers = append(traceConsumers, consumer.NewInternalToOCTraceConverter(traceConsumerOld))
+			traceConsumers = append(traceConsumers, converter.NewInternalToOCTraceConverter(traceConsumerOld))
 		}
 	}
 

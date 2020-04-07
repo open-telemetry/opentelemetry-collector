@@ -195,7 +195,8 @@ func GenerateTraceDataTwoSpansSameResource() data.TraceData {
 	return td
 }
 
-func generateTraceOtlpSameResourceTwoSpans() []*otlptrace.ResourceSpans {
+// GenerateTraceOtlpSameResourceTwoSpans returns the OTLP representation of the GenerateTraceOtlpSameResourceTwoSpans.
+func GenerateTraceOtlpSameResourceTwoSpans() []*otlptrace.ResourceSpans {
 	return []*otlptrace.ResourceSpans{
 		{
 			Resource: generateOtlpResource1(),

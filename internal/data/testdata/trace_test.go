@@ -79,7 +79,7 @@ func generateAllTraceTestCases() []traceTestCase {
 		{
 			name: "two-spans-same-resource",
 			td:   GenerateTraceDataTwoSpansSameResource(),
-			otlp: generateTraceOtlpSameResourceTwoSpans(),
+			otlp: GenerateTraceOtlpSameResourceTwoSpans(),
 		},
 		{
 			name: "two-spans-same-resource-one-different",

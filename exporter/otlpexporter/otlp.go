@@ -21,15 +21,12 @@ import (
 
 	otlpmetrics "github.com/open-telemetry/opentelemetry-proto/gen/go/collector/metrics/v1"
 	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/collector/trace/v1"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
-	"github.com/open-telemetry/opentelemetry-collector/translator/internaldata"
 )
 
 type otlpExporter struct {
@@ -59,12 +56,16 @@ const (
 )
 
 // NewTraceExporter creates an OTLP trace exporter.
-func NewTraceExporter(_ *zap.Logger, config configmodels.Exporter) (component.TraceExporterOld, error) {
+func NewTraceExporter(
+	ctx context.Context,
+	params component.ExporterCreateParams,
+	config configmodels.Exporter,
+) (component.TraceExporter, error) {
 	oce, err := createOTLPExporter(config)
 	if err != nil {
 		return nil, err
 	}
-	oexp, err := exporterhelper.NewTraceExporterOld(
+	oexp, err := exporterhelper.NewTraceExporter(
 		config,
 		oce.pushTraceData,
 		exporterhelper.WithShutdown(oce.Shutdown))
@@ -76,7 +77,11 @@ func NewTraceExporter(_ *zap.Logger, config configmodels.Exporter) (component.Tr
 }
 
 // NewMetricsExporter creates an OTLP metrics exporter.
-func NewMetricsExporter(_ *zap.Logger, config configmodels.Exporter) (component.MetricsExporterOld, error) {
+func NewMetricsExporter(
+	ctx context.Context,
+	params component.ExporterCreateParams,
+	config configmodels.Exporter,
+) (component.MetricsExporter, error) {
 	oce, err := createOTLPExporter(config)
 	if err != nil {
 		return nil, err
@@ -156,7 +161,7 @@ func (oce *otlpExporter) Shutdown(context.Context) error {
 	return componenterror.CombineErrors(errors)
 }
 
-func (oce *otlpExporter) pushTraceData(ctx context.Context, td consumerdata.TraceData) (int, error) {
+func (oce *otlpExporter) pushTraceData(ctx context.Context, td data.TraceData) (int, error) {
 	// Get first available exporter.
 	exporter, ok := <-oce.exporters
 	if !ok {
@@ -164,24 +169,24 @@ func (oce *otlpExporter) pushTraceData(ctx context.Context, td consumerdata.Trac
 			code: errAlreadyStopped,
 			msg:  "OpenTelemetry exporter was already stopped.",
 		}
-		return len(td.Spans), err
+		return td.SpanCount(), err
 	}
 
 	// Perform the request.
 	request := &otlptrace.ExportTraceServiceRequest{
-		ResourceSpans: data.TraceDataToOtlp(internaldata.OCToTraceData(td)),
+		ResourceSpans: data.TraceDataToOtlp(td),
 	}
 	err := exporter.exportTrace(ctx, request)
 
 	// Return the exporter to the pool.
 	oce.exporters <- exporter
 	if err != nil {
-		return len(td.Spans), err
+		return td.SpanCount(), err
 	}
 	return 0, nil
 }
 
-func (oce *otlpExporter) pushMetricsData(ctx context.Context, md consumerdata.MetricsData) (int, error) {
+func (oce *otlpExporter) pushMetricsData(ctx context.Context, md data.MetricData) (int, error) {
 	// Get first available exporter.
 	exporter, ok := <-oce.exporters
 	if !ok {
@@ -189,19 +194,19 @@ func (oce *otlpExporter) pushMetricsData(ctx context.Context, md consumerdata.Me
 			code: errAlreadyStopped,
 			msg:  "OpenTelemetry exporter was already stopped.",
 		}
-		return exporterhelper.NumTimeSeries(md), err
+		return md.MetricCount(), err
 	}
 
 	// Perform the request.
 	request := &otlpmetrics.ExportMetricsServiceRequest{
-		ResourceMetrics: data.MetricDataToOtlp(internaldata.OCToMetricData(md)),
+		ResourceMetrics: data.MetricDataToOtlp(md),
 	}
 	err := exporter.exportMetrics(ctx, request)
 
 	// Return the exporter to the pool.
 	oce.exporters <- exporter
 	if err != nil {
-		return exporterhelper.NumTimeSeries(md), err
+		return md.MetricCount(), err
 	}
 	return 0, nil
 }

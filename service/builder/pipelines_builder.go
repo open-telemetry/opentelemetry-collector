@@ -16,7 +16,6 @@ package builder
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"go.uber.org/zap"
@@ -25,6 +24,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/converter"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
 )
 
@@ -259,19 +259,22 @@ func createTraceProcessor(
 
 		// If processor is of the new type, but downstream consumer is of the old type,
 		// use internalToOCTraceConverter compatibility shim.
-		traceConverter := consumer.NewInternalToOCTraceConverter(nextConsumer.(consumer.TraceConsumerOld))
+		traceConverter := converter.NewInternalToOCTraceConverter(nextConsumer.(consumer.TraceConsumerOld))
 		return factory.CreateTraceProcessor(ctx, creationParams, traceConverter, cfg)
 	}
+
+	factoryOld := factoryBase.(component.ProcessorFactoryOld)
 
 	// If both processor and consumer are of the old type (can manipulate on OC traces only),
 	// use ProcessorFactoryOld.CreateTraceProcessor.
 	if nextConsumerOld, ok := nextConsumer.(consumer.TraceConsumerOld); ok {
-		return factoryBase.(component.ProcessorFactoryOld).CreateTraceProcessor(logger, nextConsumerOld, cfg)
+		return factoryOld.CreateTraceProcessor(logger, nextConsumerOld, cfg)
 	}
 
-	// Old type processor and a new type consumer usecase is not supported.
-	// TODO: This case can be supported since we have OC->internal traces translation function
-	return nil, errors.New("OC Traces -> internal data format translation is not supported")
+	// If processor is of the old type, but downstream consumer is of the new type,
+	// use NewInternalToOCTraceConverter compatibility shim to convert traces from internal format to OC.
+	traceConverter := converter.NewOCToInternalTraceConverter(nextConsumer.(consumer.TraceConsumer))
+	return factoryOld.CreateTraceProcessor(logger, traceConverter, cfg)
 }
 
 // createMetricsProcessor creates metric processor based on type of the current processor
@@ -294,17 +297,20 @@ func createMetricsProcessor(
 
 		// If processor is of the new type, but downstream consumer is of the old type,
 		// use internalToOCMetricsConverter compatibility shim.
-		metricsConverter := consumer.NewInternalToOCMetricsConverter(nextConsumer.(consumer.MetricsConsumerOld))
+		metricsConverter := converter.NewInternalToOCMetricsConverter(nextConsumer.(consumer.MetricsConsumerOld))
 		return factory.CreateMetricsProcessor(ctx, creationParams, metricsConverter, cfg)
 	}
+
+	factoryOld := factoryBase.(component.ProcessorFactoryOld)
 
 	// If both processor and consumer are of the old type (can manipulate on OC metrics only),
 	// use ProcessorFactoryOld.CreateMetricsProcessor.
 	if nextConsumerOld, ok := nextConsumer.(consumer.MetricsConsumerOld); ok {
-		return factoryBase.(component.ProcessorFactoryOld).CreateMetricsProcessor(logger, nextConsumerOld, cfg)
+		return factoryOld.CreateMetricsProcessor(logger, nextConsumerOld, cfg)
 	}
 
-	// Old type processor and a new type consumer usecase is not supported.
-	// TODO: This case can be supported once we have OC->internal metrics translation function
-	return nil, errors.New("OC Metrics -> internal data format translation is not supported")
+	// If processor is of the old type, but downstream consumer is of the new type,
+	// use NewInternalToOCMetricsConverter compatibility shim to convert metrics from internal format to OC.
+	metricsConverter := converter.NewOCToInternalMetricsConverter(nextConsumer.(consumer.MetricsConsumer))
+	return factoryOld.CreateMetricsProcessor(logger, metricsConverter, cfg)
 }

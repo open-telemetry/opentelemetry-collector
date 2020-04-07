@@ -26,6 +26,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/exporter/jaegerexporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/opencensusexporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/otlpexporter"
+	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 )
 
 // DataSender defines the interface that allows sending data. This is an interface
@@ -53,21 +54,59 @@ type DataSender interface {
 
 // TraceDataSender defines the interface that allows sending trace data. It adds ability
 // to send a batch of Spans to the DataSender interface.
-type TraceDataSender interface {
+type TraceDataSenderOld interface {
 	DataSender
 	SendSpans(traces consumerdata.TraceData) error
 }
 
 // MetricDataSender defines the interface that allows sending metric data. It adds ability
 // to send a batch of Metrics to the DataSender interface.
-type MetricDataSender interface {
+type MetricDataSenderOld interface {
 	DataSender
 	SendMetrics(metrics consumerdata.MetricsData) error
 }
 
 // DataSenderOverTraceExporter partially implements TraceDataSender via a TraceExporter.
-type DataSenderOverTraceExporter struct {
+type DataSenderOverTraceExporterOld struct {
 	exporter component.TraceExporterOld
+	Port     int
+}
+
+// NewDataSenderOverExporter creates a new sender that will send
+// to the specified port after Start is called.
+func NewDataSenderOverExporterOld(port int) *DataSenderOverTraceExporterOld {
+	return &DataSenderOverTraceExporterOld{Port: port}
+}
+
+func (ds *DataSenderOverTraceExporterOld) SendSpans(traces consumerdata.TraceData) error {
+	return ds.exporter.ConsumeTraceData(context.Background(), traces)
+}
+
+func (ds *DataSenderOverTraceExporterOld) Flush() {
+	// TraceExporter interface does not support Flush, so nothing to do.
+}
+
+func (ds *DataSenderOverTraceExporterOld) GetCollectorPort() int {
+	return ds.Port
+}
+
+// TraceDataSender defines the interface that allows sending trace data. It adds ability
+// to send a batch of Spans to the DataSender interface.
+type TraceDataSender interface {
+	DataSender
+	SendSpans(traces data.TraceData) error
+}
+
+// MetricDataSender defines the interface that allows sending metric data. It adds ability
+// to send a batch of Metrics to the DataSender interface.
+type MetricDataSender interface {
+	DataSender
+	SendMetrics(metrics data.MetricData) error
+}
+
+// DataSenderOverTraceExporter partially implements TraceDataSender via a TraceExporter.
+type DataSenderOverTraceExporter struct {
+	exporter component.TraceExporter
 	Port     int
 }
 
@@ -77,8 +116,8 @@ func NewDataSenderOverExporter(port int) *DataSenderOverTraceExporter {
 	return &DataSenderOverTraceExporter{Port: port}
 }
 
-func (ds *DataSenderOverTraceExporter) SendSpans(traces consumerdata.TraceData) error {
-	return ds.exporter.ConsumeTraceData(context.Background(), traces)
+func (ds *DataSenderOverTraceExporter) SendSpans(traces data.TraceData) error {
+	return ds.exporter.ConsumeTrace(context.Background(), traces)
 }
 
 func (ds *DataSenderOverTraceExporter) Flush() {
@@ -91,16 +130,16 @@ func (ds *DataSenderOverTraceExporter) GetCollectorPort() int {
 
 // JaegerGRPCDataSender implements TraceDataSender for Jaeger thrift_http protocol.
 type JaegerGRPCDataSender struct {
-	DataSenderOverTraceExporter
+	DataSenderOverTraceExporterOld
 }
 
 // Ensure JaegerGRPCDataSender implements TraceDataSender.
-var _ TraceDataSender = (*JaegerGRPCDataSender)(nil)
+var _ TraceDataSenderOld = (*JaegerGRPCDataSender)(nil)
 
 // NewJaegerGRPCDataSender creates a new Jaeger protocol sender that will send
 // to the specified port after Start is called.
 func NewJaegerGRPCDataSender(port int) *JaegerGRPCDataSender {
-	return &JaegerGRPCDataSender{DataSenderOverTraceExporter{Port: port}}
+	return &JaegerGRPCDataSender{DataSenderOverTraceExporterOld{Port: port}}
 }
 
 func (je *JaegerGRPCDataSender) Start() error {
@@ -154,16 +193,16 @@ func (je *JaegerGRPCDataSender) ProtocolName() string {
 
 // OCTraceDataSender implements TraceDataSender for OpenCensus trace protocol.
 type OCTraceDataSender struct {
-	DataSenderOverTraceExporter
+	DataSenderOverTraceExporterOld
 }
 
 // Ensure OCTraceDataSender implements TraceDataSender.
-var _ TraceDataSender = (*OCTraceDataSender)(nil)
+var _ TraceDataSenderOld = (*OCTraceDataSender)(nil)
 
 // NewOCTraceDataSender creates a new OCTraceDataSender that will send
 // to the specified port after Start is called.
 func NewOCTraceDataSender(port int) *OCTraceDataSender {
-	return &OCTraceDataSender{DataSenderOverTraceExporter{Port: port}}
+	return &OCTraceDataSender{DataSenderOverTraceExporterOld{Port: port}}
 }
 
 func (ote *OCTraceDataSender) Start() error {
@@ -202,7 +241,7 @@ type OCMetricsDataSender struct {
 }
 
 // Ensure OCMetricsDataSender implements MetricDataSender.
-var _ MetricDataSender = (*OCMetricsDataSender)(nil)
+var _ MetricDataSenderOld = (*OCMetricsDataSender)(nil)
 
 // NewOCMetricDataSender creates a new OpenCensus metric protocol sender that will send
 // to the specified port after Start is called.
@@ -272,7 +311,8 @@ func (ote *OTLPTraceDataSender) Start() error {
 	}
 
 	factory := otlpexporter.Factory{}
-	exporter, err := factory.CreateTraceExporter(zap.L(), cfg)
+	creationParams := component.ExporterCreateParams{Logger: zap.L()}
+	exporter, err := factory.CreateTraceExporter(context.Background(), creationParams, cfg)
 
 	if err != nil {
 		return err
@@ -295,7 +335,7 @@ func (ote *OTLPTraceDataSender) ProtocolName() string {
 
 // OTLPMetricsDataSender implements MetricDataSender for OpenCensus metrics protocol.
 type OTLPMetricsDataSender struct {
-	exporter component.MetricsExporterOld
+	exporter component.MetricsExporter
 	port     int
 }
 
@@ -316,7 +356,8 @@ func (ome *OTLPMetricsDataSender) Start() error {
 	}
 
 	factory := otlpexporter.Factory{}
-	exporter, err := factory.CreateMetricsExporter(zap.L(), cfg)
+	creationParams := component.ExporterCreateParams{Logger: zap.L()}
+	exporter, err := factory.CreateMetricsExporter(context.Background(), creationParams, cfg)
 
 	if err != nil {
 		return err
@@ -326,8 +367,8 @@ func (ome *OTLPMetricsDataSender) Start() error {
 	return nil
 }
 
-func (ome *OTLPMetricsDataSender) SendMetrics(metrics consumerdata.MetricsData) error {
-	return ome.exporter.ConsumeMetricsData(context.Background(), metrics)
+func (ome *OTLPMetricsDataSender) SendMetrics(metrics data.MetricData) error {
+	return ome.exporter.ConsumeMetrics(context.Background(), metrics)
 }
 
 func (ome *OTLPMetricsDataSender) Flush() {

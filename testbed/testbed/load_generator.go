@@ -29,6 +29,7 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 )
 
 // LoadGenerator is a simple load generator.
@@ -150,11 +151,17 @@ func (lg *LoadGenerator) generate() {
 	for !done {
 		select {
 		case <-t.C:
-			_, isTraceSender := lg.sender.(TraceDataSender)
-			if isTraceSender {
+			switch lg.sender.(type) {
+			case TraceDataSender:
 				lg.generateTrace()
-			} else {
+			case TraceDataSenderOld:
+				lg.generateTraceOld()
+			case MetricDataSender:
 				lg.generateMetrics()
+			case MetricDataSenderOld:
+				lg.generateMetricsOld()
+			default:
+				log.Printf("Invalid type of LoadGenerator sender")
 			}
 
 		case <-lg.stopSignal:
@@ -165,9 +172,9 @@ func (lg *LoadGenerator) generate() {
 	lg.sender.Flush()
 }
 
-func (lg *LoadGenerator) generateTrace() {
+func (lg *LoadGenerator) generateTraceOld() {
 
-	traceSender := lg.sender.(TraceDataSender)
+	traceSender := lg.sender.(TraceDataSenderOld)
 
 	var spans []*tracepb.Span
 	traceID := atomic.AddUint64(&lg.batchesSent, 1)
@@ -220,6 +227,56 @@ func (lg *LoadGenerator) generateTrace() {
 	}
 }
 
+func (lg *LoadGenerator) generateTrace() {
+	traceSender := lg.sender.(TraceDataSender)
+
+	itemsPerBatch := int(lg.options.ItemsPerBatch)
+
+	traceData := data.NewTraceData()
+	traceData.ResourceSpans().Resize(1)
+	ilss := traceData.ResourceSpans().At(0).InstrumentationLibrarySpans()
+	ilss.Resize(1)
+	spans := ilss.At(0).Spans()
+	spans.Resize(itemsPerBatch)
+
+	traceID := atomic.AddUint64(&lg.batchesSent, 1)
+	for i := 0; i < itemsPerBatch; i++ {
+
+		startTime := time.Now()
+		endTime := startTime.Add(time.Duration(time.Millisecond))
+
+		spanID := atomic.AddUint64(&lg.dataItemsSent, 1)
+
+		span := spans.At(i)
+
+		attrs := map[string]data.AttributeValue{
+			"load_generator.span_seq_num":  data.NewAttributeValueInt(int64(spanID)),
+			"load_generator.trace_seq_num": data.NewAttributeValueInt(int64(traceID)),
+		}
+
+		// Additional attributes.
+		for k, v := range lg.options.Attributes {
+			attrs[k] = data.NewAttributeValueString(v)
+		}
+
+		// Create a span.
+		span.SetTraceID(GenerateTraceID(traceID))
+		span.SetSpanID(GenerateSpanID(spanID))
+		span.SetName("load-generator-span")
+		span.SetKind(data.SpanKindCLIENT)
+		span.Attributes().InitFromMap(attrs)
+		span.SetStartTime(data.TimestampUnixNano(uint64(startTime.UnixNano())))
+		span.SetEndTime(data.TimestampUnixNano(uint64(endTime.UnixNano())))
+	}
+
+	err := traceSender.SendSpans(traceData)
+	if err == nil {
+		lg.prevErr = nil
+	} else if lg.prevErr == nil || lg.prevErr.Error() != err.Error() {
+		lg.prevErr = err
+		log.Printf("Cannot send traces: %v", err)
+	}
+}
 func GenerateTraceID(id uint64) []byte {
 	var traceID [16]byte
 	binary.PutUvarint(traceID[:], id)
@@ -232,9 +289,9 @@ func GenerateSpanID(id uint64) []byte {
 	return spanID[:]
 }
 
-func (lg *LoadGenerator) generateMetrics() {
+func (lg *LoadGenerator) generateMetricsOld() {
 
-	metricSender := lg.sender.(MetricDataSender)
+	metricSender := lg.sender.(MetricDataSenderOld)
 
 	resource := &resourcepb.Resource{
 		Labels: lg.options.Attributes,
@@ -311,6 +368,77 @@ func (lg *LoadGenerator) generateMetrics() {
 	}
 
 	err := metricSender.SendMetrics(metricData)
+	if err == nil {
+		lg.prevErr = nil
+	} else if lg.prevErr == nil || lg.prevErr.Error() != err.Error() {
+		lg.prevErr = err
+		log.Printf("Cannot send metrics: %v", err)
+	}
+}
+
+func (lg *LoadGenerator) generateMetrics() {
+
+	metricSender := lg.sender.(MetricDataSender)
+
+	// Generate up to 10 data points per metric.
+	const dataPointsPerMetric = 10
+
+	// Calculate number of metrics needed to produce require number of data points per batch.
+	metricCount := int(lg.options.ItemsPerBatch / dataPointsPerMetric)
+	if metricCount == 0 {
+		log.Fatalf("Load generator is configured incorrectly, ItemsPerBatch is %v but must be at least %v",
+			lg.options.ItemsPerBatch, dataPointsPerMetric)
+	}
+
+	// Keep count of generated data points.
+	generatedDataPoints := 0
+
+	metricData := data.NewMetricData()
+	metricData.ResourceMetrics().Resize(1)
+	metricData.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Resize(1)
+	if lg.options.Attributes != nil {
+		attrs := map[string]data.AttributeValue{}
+		for k, v := range lg.options.Attributes {
+			attrs[k] = data.NewAttributeValueString(v)
+		}
+		metricData.ResourceMetrics().At(0).Resource().Attributes().InitFromMap(attrs)
+	}
+	metrics := metricData.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+	metrics.Resize(metricCount)
+
+	for i := 0; i < metricCount; i++ {
+		metric := metrics.At(i)
+		metricDescriptor := metric.MetricDescriptor()
+		metricDescriptor.InitEmpty()
+		metricDescriptor.SetName("load_generator_" + strconv.Itoa(i))
+		metricDescriptor.SetDescription("Load Generator Counter #" + strconv.Itoa(i))
+		metricDescriptor.SetType(data.MetricTypeGaugeInt64)
+
+		batchIndex := atomic.AddUint64(&lg.batchesSent, 1)
+		dataPointsToGenerate := dataPointsPerMetric
+		if i == metricCount-1 {
+			// This ist the last metric. Calculate how many data points are remaining
+			// so that the total is equal to ItemsPerBatch.
+			dataPointsToGenerate = int(lg.options.ItemsPerBatch) - generatedDataPoints
+		}
+
+		// Generate data points for the metric.
+		metric.Int64DataPoints().Resize(dataPointsToGenerate)
+		for j := 0; j < dataPointsToGenerate; j++ {
+			dataPoint := metric.Int64DataPoints().At(j)
+			dataPoint.SetStartTime(data.TimestampUnixNano(uint64(time.Now().UnixNano())))
+			value := atomic.AddUint64(&lg.dataItemsSent, 1)
+			dataPoint.SetValue(int64(value))
+			dataPoint.LabelsMap().InitFromMap(map[string]string{
+				"item_index":  "item_" + strconv.Itoa(j),
+				"batch_index": "batch_" + strconv.Itoa(int(batchIndex)),
+			})
+		}
+		generatedDataPoints += dataPointsToGenerate
+	}
+
+	err := metricSender.SendMetrics(metricData)
+
 	if err == nil {
 		lg.prevErr = nil
 	} else if lg.prevErr == nil || lg.prevErr.Error() != err.Error() {

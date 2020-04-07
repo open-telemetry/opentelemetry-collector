@@ -157,6 +157,23 @@ func GenerateMetricDataOneMetric() data.MetricData {
 	return md
 }
 
+func GenerateMetricDataOneMetricOneDataPoint() data.MetricData {
+	md := GenerateMetricDataOneEmptyInstrumentationLibrary()
+	rm0ils0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
+	rm0ils0.Metrics().Resize(1)
+	initGaugeIntMetricOneDataPoint(rm0ils0.Metrics().At(0))
+	return md
+}
+
+func GenerateMetricDataTwoMetrics() data.MetricData {
+	md := GenerateMetricDataOneEmptyInstrumentationLibrary()
+	rm0ils0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
+	rm0ils0.Metrics().Resize(2)
+	initCounterIntMetric(rm0ils0.Metrics().At(0))
+	initCounterIntMetric(rm0ils0.Metrics().At(1))
+	return md
+}
+
 func generateMetricOtlpOneMetric() []*otlpmetrics.ResourceMetrics {
 	return []*otlpmetrics.ResourceMetrics{
 		{
@@ -342,6 +359,17 @@ func initCounterIntMetric(im data.Metric) {
 	idp1.SetStartTime(TestMetricStartTimestamp)
 	idp1.SetTimestamp(TestMetricTimestamp)
 	idp1.SetValue(456)
+}
+
+func initGaugeIntMetricOneDataPoint(im data.Metric) {
+	initMetricDescriptor(im.MetricDescriptor(), TestCounterIntMetricName, data.MetricTypeGaugeInt64)
+	idps := im.Int64DataPoints()
+	idps.Resize(1)
+	idp0 := idps.At(0)
+	initMetricLabels1(idp0.LabelsMap())
+	idp0.SetStartTime(TestMetricStartTimestamp)
+	idp0.SetTimestamp(TestMetricTimestamp)
+	idp0.SetValue(123)
 }
 
 func generateOtlpCounterIntMetric() *otlpmetrics.Metric {

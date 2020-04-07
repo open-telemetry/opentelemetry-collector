@@ -64,48 +64,35 @@ func createConfigFile(
 		}
 	}
 
-	var format string
-	if _, ok := sender.(testbed.TraceDataSender); ok {
-		// This is a trace test. Create appropriate config template.
-		format = `
-receivers:%v
-exporters:%v
-processors:
-  %s
-
-extensions:
-  pprof:
-    save_to_file: %v/cpu.prof
-
-service:
-  extensions: [pprof]
-  pipelines:
-    traces:
-      receivers: [%v]
-      processors: [%s]
-      exporters: [%v]
-`
-	} else {
-		// This is a metric test. Create appropriate config template.
-		format = `
-receivers:%v
-exporters:%v
-processors:
-  %s
-
-extensions:
-  pprof:
-    save_to_file: %v/cpu.prof
-
-service:
-  extensions: [pprof]
-  pipelines:
-    metrics:
-      receivers: [%v]
-      processors: [%s]
-      exporters: [%v]
-`
+	// Set pipeline based on DataSender type
+	var pipeline string
+	switch sender.(type) {
+	case testbed.TraceDataSender, testbed.TraceDataSenderOld:
+		pipeline = "traces"
+	case testbed.MetricDataSender, testbed.MetricDataSenderOld:
+		pipeline = "metrics"
+	default:
+		t.Error("Invalid DataSender type")
 	}
+
+	format := `
+receivers:%v
+exporters:%v
+processors:
+  %s
+
+extensions:
+  pprof:
+    save_to_file: %v/cpu.prof
+
+service:
+  extensions: [pprof]
+  pipelines:
+    %s:
+      receivers: [%v]
+      processors: [%s]
+      exporters: [%v]
+`
 
 	// Put corresponding elements into the config template to generate the final config.
 	config := fmt.Sprintf(
@@ -114,6 +101,7 @@ service:
 		receiver.GenConfigYAMLStr(),
 		processorsSections,
 		resultDir,
+		pipeline,
 		sender.ProtocolName(),
 		processorsList,
 		receiver.ProtocolName(),

@@ -169,7 +169,7 @@ func NewTraceExporter(config configmodels.Exporter, level string, logger *zap.Lo
 func NewMetricsExporter(config configmodels.Exporter, logger *zap.Logger) (component.MetricsExporterOld, error) {
 	typeLog := zap.String("type", config.Type())
 	nameLog := zap.String("name", config.Name())
-	return exporterhelper.NewMetricsExporter(
+	return exporterhelper.NewMetricsExporterOld(
 		config,
 		func(ctx context.Context, md consumerdata.MetricsData) (int, error) {
 			logger.Info("MetricsExporter", typeLog, nameLog, zap.Int("#metrics", len(md.Metrics)))
