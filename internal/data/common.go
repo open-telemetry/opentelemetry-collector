@@ -38,8 +38,6 @@ const (
 	AttributeValueBOOL   = AttributeValueType(otlpcommon.AttributeKeyValue_BOOL)
 )
 
-var emptyAttributeKeyValue = &otlpcommon.AttributeKeyValue{}
-
 // AttributeValue represents a value of an attribute. Typically used in an Attributes map.
 // Must use one of NilAttributeValue* functions below to create new instances.
 // Important: zero-initialized instance is not valid for use.
@@ -119,39 +117,40 @@ func (a AttributeValue) BoolVal() bool {
 }
 
 func (a AttributeValue) SetStringVal(v string) {
-	a.copyValues(emptyAttributeKeyValue)
-	a.orig.Type = otlpcommon.AttributeKeyValue_STRING
+	a.setTypeAndClear(otlpcommon.AttributeKeyValue_STRING)
 	a.orig.StringValue = v
 }
 
 func (a AttributeValue) SetIntVal(v int64) {
-	a.copyValues(emptyAttributeKeyValue)
-	a.orig.Type = otlpcommon.AttributeKeyValue_INT
+	a.setTypeAndClear(otlpcommon.AttributeKeyValue_INT)
 	a.orig.IntValue = v
 }
 
 func (a AttributeValue) SetDoubleVal(v float64) {
-	a.copyValues(emptyAttributeKeyValue)
-	a.orig.Type = otlpcommon.AttributeKeyValue_DOUBLE
+	a.setTypeAndClear(otlpcommon.AttributeKeyValue_DOUBLE)
 	a.orig.DoubleValue = v
 }
 
 func (a AttributeValue) SetBoolVal(v bool) {
-	a.copyValues(emptyAttributeKeyValue)
-	a.orig.Type = otlpcommon.AttributeKeyValue_BOOL
+	a.setTypeAndClear(otlpcommon.AttributeKeyValue_BOOL)
 	a.orig.BoolValue = v
 }
 
 func (a AttributeValue) SetValue(av AttributeValue) {
-	a.copyValues(av.orig)
-}
-
-func (a AttributeValue) copyValues(akv *otlpcommon.AttributeKeyValue) {
+	akv := av.orig
 	a.orig.Type = akv.Type
 	a.orig.StringValue = akv.StringValue
 	a.orig.IntValue = akv.IntValue
 	a.orig.DoubleValue = akv.DoubleValue
 	a.orig.BoolValue = akv.BoolValue
+}
+
+func (a AttributeValue) setTypeAndClear(ty otlpcommon.AttributeKeyValue_ValueType) {
+	a.orig.Type = ty
+	a.orig.StringValue = ""
+	a.orig.IntValue = 0
+	a.orig.DoubleValue = 0.0
+	a.orig.BoolValue = false
 }
 
 func (a AttributeValue) Equal(av AttributeValue) bool {
