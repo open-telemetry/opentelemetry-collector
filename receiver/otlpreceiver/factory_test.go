@@ -24,6 +24,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
 	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
@@ -115,9 +116,7 @@ func TestCreateTraceReceiver(t *testing.T) {
 				return
 			}
 			if tr != nil {
-				mh := component.NewMockHost()
-				err := tr.Start(context.Background(), mh)
-				require.NoError(t, err, "Start() error = %v", err)
+				require.NoError(t, tr.Start(context.Background(), componenttest.NewNopHost()), "Start() error = %v", err)
 				tr.Shutdown(context.Background())
 			}
 		})
@@ -190,9 +189,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 				return
 			}
 			if tc != nil {
-				mh := component.NewMockHost()
-				err := tc.Start(context.Background(), mh)
-				require.NoError(t, err, "Start() error = %v", err)
+				require.NoError(t, tc.Start(context.Background(), componenttest.NewNopHost()), "Start() error = %v", err)
 				tc.Shutdown(context.Background())
 			}
 		})

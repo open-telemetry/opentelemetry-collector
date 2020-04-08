@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector/extension/extensiontest"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
 	"github.com/open-telemetry/opentelemetry-collector/testutils"
 )
 
@@ -37,8 +37,7 @@ func TestZPagesExtensionUsage(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, zpagesExt)
 
-	mh := extensiontest.NewMockHost()
-	require.NoError(t, zpagesExt.Start(context.Background(), mh))
+	require.NoError(t, zpagesExt.Start(context.Background(), componenttest.NewNopHost()))
 	defer zpagesExt.Shutdown(context.Background())
 
 	// Give a chance for the server goroutine to run.
@@ -68,8 +67,7 @@ func TestZPagesExtensionPortAlreadyInUse(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, zpagesExt)
 
-	mh := extensiontest.NewMockHost()
-	require.Error(t, zpagesExt.Start(context.Background(), mh))
+	require.Error(t, zpagesExt.Start(context.Background(), componenttest.NewNopHost()))
 }
 
 func TestZPagesMultipleStarts(t *testing.T) {
@@ -81,12 +79,11 @@ func TestZPagesMultipleStarts(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, zpagesExt)
 
-	mh := extensiontest.NewMockHost()
-	require.NoError(t, zpagesExt.Start(context.Background(), mh))
+	require.NoError(t, zpagesExt.Start(context.Background(), componenttest.NewNopHost()))
 	defer zpagesExt.Shutdown(context.Background())
 
 	// Try to start it again, it will fail since it is on the same endpoint.
-	require.Error(t, zpagesExt.Start(context.Background(), mh))
+	require.Error(t, zpagesExt.Start(context.Background(), componenttest.NewNopHost()))
 }
 
 func TestZPagesMultipleShutdowns(t *testing.T) {
@@ -98,9 +95,7 @@ func TestZPagesMultipleShutdowns(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, zpagesExt)
 
-	mh := extensiontest.NewMockHost()
-	require.NoError(t, zpagesExt.Start(context.Background(), mh))
-
+	require.NoError(t, zpagesExt.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, zpagesExt.Shutdown(context.Background()))
 	require.NoError(t, zpagesExt.Shutdown(context.Background()))
 }

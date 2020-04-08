@@ -41,7 +41,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
@@ -61,8 +61,7 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 	ocr, err := New(ocReceiver, "tcp", addr, sink, nil)
 	require.NoError(t, err, "Failed to create trace receiver: %v", err)
 
-	mh := component.NewMockHost()
-	err = ocr.Start(context.Background(), mh)
+	err = ocr.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err, "Failed to start trace receiver: %v", err)
 	defer ocr.Shutdown(context.Background())
 
@@ -161,8 +160,7 @@ func TestTraceGrpcGatewayCors_endToEnd(t *testing.T) {
 	require.NoError(t, err, "Failed to create trace receiver: %v", err)
 	defer ocr.Shutdown(context.Background())
 
-	mh := component.NewMockHost()
-	err = ocr.Start(context.Background(), mh)
+	err = ocr.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err, "Failed to start trace receiver: %v", err)
 
 	// TODO(songy23): make starting server deterministic
@@ -187,8 +185,7 @@ func TestMetricsGrpcGatewayCors_endToEnd(t *testing.T) {
 	require.NoError(t, err, "Failed to create metrics receiver: %v", err)
 	defer ocr.Shutdown(context.Background())
 
-	mh := component.NewMockHost()
-	err = ocr.Start(context.Background(), mh)
+	err = ocr.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err, "Failed to start metrics receiver: %v", err)
 
 	// TODO(songy23): make starting server deterministic
@@ -215,8 +212,7 @@ func TestAcceptAllGRPCProtoAffiliatedContentTypes(t *testing.T) {
 	ocr, err := New(ocReceiver, "tcp", addr, cbts, nil)
 	require.NoError(t, err, "Failed to create trace receiver: %v", err)
 
-	mh := component.NewMockHost()
-	err = ocr.Start(context.Background(), mh)
+	err = ocr.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err, "Failed to start the trace receiver: %v", err)
 	defer ocr.Shutdown(context.Background())
 
@@ -359,8 +355,7 @@ func TestMultipleStopReceptionShouldNotError(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, r)
 
-	mh := component.NewMockHost()
-	require.NoError(t, r.Start(context.Background(), mh))
+	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, r.Shutdown(context.Background()))
 }
 
@@ -370,8 +365,7 @@ func TestStartWithoutConsumersShouldFail(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, r)
 
-	mh := component.NewMockHost()
-	require.Error(t, r.Start(context.Background(), mh))
+	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
 }
 
 func tempSocketName(t *testing.T) string {
@@ -390,9 +384,7 @@ func TestReceiveOnUnixDomainSocket_endToEnd(t *testing.T) {
 	r, err := New(ocReceiver, "unix", socketName, cbts, nil)
 	require.NoError(t, err)
 	require.NotNil(t, r)
-	mh := component.NewMockHost()
-	err = r.Start(context.Background(), mh)
-	require.NoError(t, err)
+	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
 	defer r.Shutdown(context.Background())
 
 	// Wait for the servers to start
@@ -537,8 +529,7 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 				require.NotNil(t, ocr)
 
 				ocr.traceConsumer = sink
-				err = ocr.Start(context.Background(), component.NewMockHost())
-				require.Nil(t, err)
+				require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()))
 				defer ocr.Shutdown(context.Background())
 
 				cc, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithBlock())
@@ -691,8 +682,7 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 				require.NotNil(t, ocr)
 
 				ocr.metricsConsumer = sink
-				err = ocr.Start(context.Background(), component.NewMockHost())
-				require.Nil(t, err)
+				require.Nil(t, ocr.Start(context.Background(), componenttest.NewNopHost()))
 				defer ocr.Shutdown(context.Background())
 
 				cc, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithBlock())

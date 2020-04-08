@@ -35,7 +35,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-collector/internal"
@@ -65,9 +65,7 @@ func TestReception(t *testing.T) {
 
 	t.Log("Starting")
 
-	mh := component.NewMockHost()
-	err = jr.Start(context.Background(), mh)
-	assert.NoError(t, err, "should not have failed to start trace reception")
+	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
 
 	t.Log("Start")
 
@@ -111,9 +109,7 @@ func TestPortsNotOpen(t *testing.T) {
 	assert.NoError(t, err, "should not have failed to create a new receiver")
 	defer jr.Shutdown(context.Background())
 
-	mh := component.NewMockHost()
-	err = jr.Start(context.Background(), mh)
-	assert.NoError(t, err, "should not have failed to start trace reception")
+	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
 
 	// there is a race condition here that we're ignoring.
 	//  this test may occasionally pass incorrectly, but it will not fail incorrectly
@@ -142,9 +138,7 @@ func TestGRPCReception(t *testing.T) {
 	assert.NoError(t, err, "should not have failed to create a new receiver")
 	defer jr.Shutdown(context.Background())
 
-	mh := component.NewMockHost()
-	err = jr.Start(context.Background(), mh)
-	assert.NoError(t, err, "should not have failed to start trace reception")
+	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
 	t.Log("Start")
 
 	conn, err := grpc.Dial(fmt.Sprintf("0.0.0.0:%d", config.CollectorGRPCPort), grpc.WithInsecure())
@@ -198,9 +192,7 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 	assert.NoError(t, err, "should not have failed to create a new receiver")
 	defer jr.Shutdown(context.Background())
 
-	mh := component.NewMockHost()
-	err = jr.Start(context.Background(), mh)
-	assert.NoError(t, err, "should not have failed to start trace reception")
+	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
 	t.Log("Start")
 
 	creds, err := credentials.NewClientTLSFromFile(path.Join(".", "testdata", "certificate.pem"), "opentelemetry.io")
@@ -410,9 +402,7 @@ func TestSampling(t *testing.T) {
 	assert.NoError(t, err, "should not have failed to create a new receiver")
 	defer jr.Shutdown(context.Background())
 
-	mh := component.NewMockHost()
-	err = jr.Start(context.Background(), mh)
-	assert.NoError(t, err, "should not have failed to start trace reception")
+	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
 	t.Log("Start")
 
 	conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", config.CollectorGRPCPort), grpc.WithInsecure())
@@ -464,9 +454,7 @@ func TestSamplingFailsOnNotConfigured(t *testing.T) {
 	assert.NoError(t, err, "should not have failed to create a new receiver")
 	defer jr.Shutdown(context.Background())
 
-	mh := component.NewMockHost()
-	err = jr.Start(context.Background(), mh)
-	assert.NoError(t, err, "should not have failed to start trace reception")
+	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
 	t.Log("Start")
 
 	conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", config.CollectorGRPCPort), grpc.WithInsecure())
@@ -493,8 +481,5 @@ func TestSamplingFailsOnBadFile(t *testing.T) {
 	jr, err := New(jaegerReceiver, config, sink, zap.NewNop())
 	assert.NoError(t, err, "should not have failed to create a new receiver")
 	defer jr.Shutdown(context.Background())
-
-	mh := component.NewMockHost()
-	err = jr.Start(context.Background(), mh)
-	assert.Error(t, err)
+	assert.Error(t, jr.Start(context.Background(), componenttest.NewNopHost()))
 }

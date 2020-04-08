@@ -35,6 +35,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
@@ -148,8 +149,7 @@ func TestZipkinReceiverPortAlreadyInUse(t *testing.T) {
 	require.NoError(t, err, "failed to split listener address: %v", err)
 	traceReceiver, err := New(zipkinReceiver, "localhost:"+portStr, exportertest.NewNopTraceExporterOld())
 	require.NoError(t, err, "Failed to create receiver: %v", err)
-	mh := component.NewMockHost()
-	err = traceReceiver.Start(context.Background(), mh)
+	err = traceReceiver.Start(context.Background(), componenttest.NewNopHost())
 	if err == nil {
 		traceReceiver.Shutdown(context.Background())
 		t.Fatal("conflict on port was expected")
@@ -379,8 +379,7 @@ func TestConversionRoundtrip(t *testing.T) {
 	ze, err := factory.CreateTraceExporter(zap.NewNop(), config)
 	require.NoError(t, err)
 	require.NotNil(t, ze)
-	mh := component.NewMockHost()
-	require.NoError(t, ze.Start(context.Background(), mh))
+	require.NoError(t, ze.Start(context.Background(), componenttest.NewNopHost()))
 
 	for _, treq := range ereqs {
 		require.NoError(t, ze.ConsumeTraceData(context.Background(), treq))
@@ -411,7 +410,7 @@ func TestStartTraceReception(t *testing.T) {
 		},
 		{
 			name: "valid_host",
-			host: component.NewMockHost(),
+			host: componenttest.NewNopHost(),
 		},
 	}
 

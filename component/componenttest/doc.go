@@ -12,23 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package receivertest define types and functions used to help test packages
-// implementing the receiver package interfaces.
-package component
-
-import (
-	"errors"
-	"testing"
-)
-
-func TestNewMockHost(t *testing.T) {
-	got := NewMockHost()
-	if got == nil {
-		t.Fatal("NewMockHost() = nil, want non-nil", got)
-	}
-	_, ok := got.(*MockHost)
-	if !ok {
-		t.Fatal("got.(*MockHost) failed")
-	}
-	got.ReportFatalError(errors.New("TestError"))
-}
+// Package componenttest define types and functions used to help test packages
+// implementing the component package interfaces.
+package componenttest

@@ -30,6 +30,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumererror"
@@ -54,8 +55,7 @@ func TestQueuedProcessor_noEnqueueOnPermanentError(t *testing.T) {
 	cfg.BackoffDelay = time.Hour
 	qp := newQueuedSpanProcessor(zap.NewNop(), c, cfg)
 
-	mh := component.MockHost{}
-	require.NoError(t, qp.Start(context.Background(), &mh))
+	require.NoError(t, qp.Start(context.Background(), componenttest.NewNopHost()))
 	c.Add(1)
 	require.Nil(t, qp.ConsumeTraceData(ctx, td))
 	c.Wait()
@@ -105,8 +105,7 @@ func TestQueueProcessorHappyPath(t *testing.T) {
 
 	mockProc := newMockConcurrentSpanProcessor()
 	qp := newQueuedSpanProcessor(zap.NewNop(), mockProc, generateDefaultConfig())
-	mockHost := component.MockHost{}
-	require.NoError(t, qp.Start(context.Background(), &mockHost))
+	require.NoError(t, qp.Start(context.Background(), componenttest.NewNopHost()))
 	goFn := func(td consumerdata.TraceData) {
 		qp.ConsumeTraceData(context.Background(), td)
 	}

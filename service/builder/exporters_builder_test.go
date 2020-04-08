@@ -23,6 +23,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configgrpc"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
@@ -72,8 +73,7 @@ func TestExportersBuilder_Build(t *testing.T) {
 	assert.Nil(t, e1.me)
 
 	// Ensure it can be started.
-	mh := component.NewMockHost()
-	err = exporters.StartAll(zap.NewNop(), mh)
+	err = exporters.StartAll(zap.NewNop(), componenttest.NewNopHost())
 	assert.NoError(t, err)
 
 	// Ensure it can be stopped.
@@ -116,8 +116,7 @@ func TestExportersBuilder_StartAll(t *testing.T) {
 	assert.False(t, traceExporter.ExporterStarted)
 	assert.False(t, metricExporter.ExporterStarted)
 
-	mh := component.NewMockHost()
-	err := exporters.StartAll(zap.NewNop(), mh)
+	err := exporters.StartAll(zap.NewNop(), componenttest.NewNopHost())
 	assert.NoError(t, err)
 
 	assert.True(t, traceExporter.ExporterStarted)

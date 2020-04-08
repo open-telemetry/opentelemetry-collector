@@ -25,6 +25,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
@@ -232,8 +233,7 @@ func TestReceiversBuilder_StartAll(t *testing.T) {
 
 	assert.Equal(t, false, receiver.Started)
 
-	mh := component.NewMockHost()
-	err := receivers.StartAll(zap.NewNop(), mh)
+	err := receivers.StartAll(zap.NewNop(), componenttest.NewNopHost())
 	assert.Nil(t, err)
 
 	assert.Equal(t, true, receiver.Started)
@@ -315,8 +315,7 @@ func TestReceiversBuilder_Unused(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, receivers)
 
-	mh := component.NewMockHost()
-	receivers.StartAll(zap.NewNop(), mh)
+	receivers.StartAll(zap.NewNop(), componenttest.NewNopHost())
 	receivers.StopAll()
 }
 
