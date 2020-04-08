@@ -456,7 +456,7 @@ func (am AttributeMap) GetAttribute(ix int) (string, AttributeValue) {
 	return (*am.orig)[ix].Key, AttributeValue{(*am.orig)[ix]}
 }
 
-// StringKeyValue stores a key and value pair.
+// StringValue stores a string value.
 //
 // Intended to be passed by value since internally it is just a pointer to actual
 // value representation. For the same reason passing by value and calling setters
@@ -468,31 +468,24 @@ func (am AttributeMap) GetAttribute(ix int) (string, AttributeValue) {
 //      f1(v)
 //      _ := v.Value() // this will return "1234"
 //   }
-type StringKeyValue struct {
+type StringValue struct {
 	orig *otlpcommon.StringKeyValue
 }
 
-// NewStringKeyValue creates a new StringKeyValue with the given key and value.
-func NewStringKeyValue(k string, v string) StringKeyValue {
-	return StringKeyValue{&otlpcommon.StringKeyValue{Key: k, Value: v}}
-}
-
-// Key returns the key associated with this StringKeyValue.
-// Calling this function on zero-initialized StringKeyValue will cause a panic.
-func (akv StringKeyValue) Key() string {
-	return akv.orig.Key
-}
-
-// Value returns the value associated with this StringKeyValue.
-// Calling this function on zero-initialized StringKeyValue will cause a panic.
-func (akv StringKeyValue) Value() string {
+// Value returns the value associated with this StringValue.
+// Calling this function on zero-initialized StringValue will cause a panic.
+func (akv StringValue) Value() string {
 	return akv.orig.Value
 }
 
-// SetValue replaces the value associated with this StringKeyValue.
-// Calling this function on zero-initialized StringKeyValue will cause a panic.
-func (akv StringKeyValue) SetValue(v string) {
+// SetValue replaces the value associated with this StringValue.
+// Calling this function on zero-initialized StringValue will cause a panic.
+func (akv StringValue) SetValue(v string) {
 	akv.orig.Value = v
+}
+
+func newStringKeyValue(k, v string) *otlpcommon.StringKeyValue {
+	return &otlpcommon.StringKeyValue{Key: k, Value: v}
 }
 
 // StringMap stores a map of attribute keys to values.
@@ -534,16 +527,16 @@ func (sm StringMap) InitFromMap(attrMap map[string]string) StringMap {
 	return sm
 }
 
-// Get returns the StringKeyValue associated with the key and true,
+// Get returns the StringValue associated with the key and true,
 // otherwise an invalid instance of the StringKeyValue and false.
 // Calling any functions on the returned invalid instance will cause a panic.
-func (sm StringMap) Get(k string) (StringKeyValue, bool) {
+func (sm StringMap) Get(k string) (StringValue, bool) {
 	for _, a := range *sm.orig {
 		if a != nil && a.Key == k {
-			return StringKeyValue{a}, true
+			return StringValue{a}, true
 		}
 	}
-	return StringKeyValue{nil}, false
+	return StringValue{nil}, false
 }
 
 // Delete deletes the entry associated with the key and returns true if the key
@@ -559,15 +552,15 @@ func (sm StringMap) Delete(k string) bool {
 	return false
 }
 
-// Insert adds the StringKeyValue to the map when the key does not exist.
+// Insert adds the string value to the map when the key does not exist.
 // No action is applied to the map where the key already exists.
 func (sm StringMap) Insert(k, v string) {
 	if _, existing := sm.Get(k); !existing {
-		*sm.orig = append(*sm.orig, NewStringKeyValue(k, v).orig)
+		*sm.orig = append(*sm.orig, newStringKeyValue(k, v))
 	}
 }
 
-// Update updates an existing StringKeyValue with a value.
+// Update updates an existing string value with a value.
 // No action is applied to the map where the key does not exist.
 func (sm StringMap) Update(k, v string) {
 	if av, existing := sm.Get(k); existing {
@@ -575,31 +568,31 @@ func (sm StringMap) Update(k, v string) {
 	}
 }
 
-// Upsert performs the Insert or Update action. The StringKeyValue is
+// Upsert performs the Insert or Update action. The string value is
 // insert to the map that did not originally have the key. The key/value is
 // updated to the map where the key already existed.
 func (sm StringMap) Upsert(k, v string) {
 	if av, existing := sm.Get(k); existing {
 		av.SetValue(v)
 	} else {
-		*sm.orig = append(*sm.orig, NewStringKeyValue(k, v).orig)
+		*sm.orig = append(*sm.orig, newStringKeyValue(k, v))
 	}
 }
 
-// Len returns the number of StringKeyValue in the map.
+// Len returns the number of StringValue in the map.
 func (sm StringMap) Len() int {
 	return len(*sm.orig)
 }
 
-// GetStringKeyValue returns the StringKeyValue associated with the given index.
+// GetStringKeyValue returns the StringValue associated with the given index.
 //
 // This function is used mostly for iterating over all the values in the map:
 // for i := 0; i < am.Len(); i++ {
-//     akv := am.GetStringKeyValue(i)
+//     k, v := am.GetStringKeyValue(i)
 //     ... // Do something with the attribute
 // }
-func (sm StringMap) GetStringKeyValue(ix int) StringKeyValue {
-	return StringKeyValue{(*sm.orig)[ix]}
+func (sm StringMap) GetStringKeyValue(ix int) (string, StringValue) {
+	return (*sm.orig)[ix].Key, StringValue{(*sm.orig)[ix]}
 }
 
 // Sort sorts the entries in the StringMap so two instances can be compared.
