@@ -238,15 +238,25 @@ func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, opts 
 	}
 }
 
+// Structure used for TestTraceNoBackend10kSPS.
+// Defines RAM usage range for defined processor type.
+type ProcessorConfig struct {
+	Name string
+	// map of processor types to their config YAML to use.
+	ProcessorConfig     map[string]string
+	ExpectedMaxRAM      uint32
+	ExpectedMinFinalRAM uint32
+}
+
 func ScenarioTestTraceNoBackend10kSPS(t *testing.T, sender testbed.DataSender, receiver testbed.DataReceiver,
-	resourceSpec testbed.ResourceSpec, configuration testbed.ProcConfiguration) {
+	resourceSpec testbed.ResourceSpec, configuration ProcessorConfig) {
 
 	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	configFile := createConfigFile(t, sender, receiver, resultDir, configuration.Processor)
+	configFile := createConfigFile(t, sender, receiver, resultDir, configuration.ProcessorConfig)
 	defer os.Remove(configFile)
 
 	if configFile == "" {
@@ -265,7 +275,7 @@ func ScenarioTestTraceNoBackend10kSPS(t *testing.T, sender testbed.DataSender, r
 	tc.SetResourceLimits(resourceSpec)
 
 	tc.StartAgent()
-	tc.StartLoad(testbed.LoadOptions{DataItemsPerSecond: 10000})
+	tc.StartLoad(testbed.LoadOptions{DataItemsPerSecond: 10000, ItemsPerBatch: 10})
 
 	tc.Sleep(tc.Duration)
 
