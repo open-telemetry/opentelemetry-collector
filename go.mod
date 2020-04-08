@@ -55,10 +55,11 @@ require (
 	github.com/uber/tchannel-go v1.10.0 // indirect
 	go.opencensus.io v0.22.3
 	go.uber.org/zap v1.10.0
-	golang.org/x/sys v0.0.0-20200327173247-9dae0f8f5775
+	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e // indirect
+	golang.org/x/sys v0.0.0-20200408040146-ea54a3c99b9b
 	google.golang.org/api v0.10.0 // indirect
-	google.golang.org/genproto v0.0.0-20190819201941-24fa4b261c55
-	google.golang.org/grpc v1.23.0
+	google.golang.org/genproto v0.0.0-20200408120641-fbb3ad325eb7
+	google.golang.org/grpc v1.28.1
 	gopkg.in/yaml.v2 v2.2.8
 	honnef.co/go/tools v0.0.1-2020.1.3
 )
