@@ -16,6 +16,7 @@ package componenttest
 
 import (
 	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 )
 
 // NopHost mocks a receiver.ReceiverHost for test purposes.
@@ -39,5 +40,9 @@ func (nh *NopHost) ReportFatalError(_ error) {
 
 // GetFactory of the specified kind. Returns the factory for a component type.
 func (nh *NopHost) GetFactory(_ component.Kind, _ string) component.Factory {
+	return nil
+}
+
+func (nh *NopHost) GetExtensions() map[configmodels.Extension]component.ServiceExtension {
 	return nil
 }

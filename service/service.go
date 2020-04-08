@@ -51,7 +51,8 @@ type Application struct {
 	factories config.Factories
 	config    *configmodels.Config
 
-	extensions []component.ServiceExtension
+	extensionsList []component.ServiceExtension
+	extensionsMap  map[configmodels.Extension]component.ServiceExtension
 
 	// stopTestChan is used to terminate the application in end to end tests.
 	stopTestChan chan struct{}
@@ -182,6 +183,10 @@ func (app *Application) GetFactory(kind component.Kind, componentType string) co
 	return nil
 }
 
+func (app *Application) GetExtensions() map[configmodels.Extension]component.ServiceExtension {
+	return app.extensionsMap
+}
+
 func (app *Application) init() error {
 	l, err := newLogger()
 	if err != nil {
@@ -257,6 +262,7 @@ func (app *Application) setupConfigurationComponents(factory ConfigFactory) erro
 }
 
 func (app *Application) setupExtensions() error {
+	app.extensionsMap = make(map[configmodels.Extension]component.ServiceExtension)
 	for _, extName := range app.config.Service.Extensions {
 		extCfg, exists := app.config.Extensions[extName]
 		if !exists {
@@ -282,7 +288,8 @@ func (app *Application) setupExtensions() error {
 			return errors.Wrapf(err, "error starting extension %q", extName)
 		}
 
-		app.extensions = append(app.extensions, ext)
+		app.extensionsList = append(app.extensionsList, ext)
+		app.extensionsMap[extCfg] = ext
 	}
 
 	return nil
@@ -333,7 +340,7 @@ func (app *Application) setupPipelines() error {
 }
 
 func (app *Application) notifyPipelineReady() error {
-	for i, ext := range app.extensions {
+	for i, ext := range app.extensionsList {
 		if pw, ok := ext.(component.PipelineWatcher); ok {
 			if err := pw.Ready(); err != nil {
 				return errors.Wrapf(
@@ -349,10 +356,10 @@ func (app *Application) notifyPipelineReady() error {
 }
 
 func (app *Application) notifyPipelineNotReady() error {
-	// Notify on reverse order.
+	// Notify extensions in reverse order.
 	var errs []error
-	for i := len(app.extensions) - 1; i >= 0; i-- {
-		ext := app.extensions[i]
+	for i := len(app.extensionsList) - 1; i >= 0; i-- {
+		ext := app.extensionsList[i]
 		if pw, ok := ext.(component.PipelineWatcher); ok {
 			if err := pw.NotReady(); err != nil {
 				errs = append(errs, errors.Wrapf(err,
@@ -402,10 +409,10 @@ func (app *Application) shutdownPipelines() error {
 }
 
 func (app *Application) shutdownExtensions() error {
-	// Shutdown on reverse order.
+	// Shutdown extensions in reverse order.
 	var errs []error
-	for i := len(app.extensions) - 1; i >= 0; i-- {
-		ext := app.extensions[i]
+	for i := len(app.extensionsList) - 1; i >= 0; i-- {
+		ext := app.extensionsList[i]
 		if err := ext.Shutdown(context.Background()); err != nil {
 			errs = append(errs, errors.Wrapf(err,
 				"error shutting down extension %q",
