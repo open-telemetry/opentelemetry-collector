@@ -21,23 +21,23 @@ import (
 	"strconv"
 	"strings"
 
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/internal/processor/span"
+	"github.com/open-telemetry/opentelemetry-collector/internal/data"
+	"github.com/open-telemetry/opentelemetry-collector/internal/processor/filterspan"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
 )
 
 type spanProcessor struct {
-	nextConsumer     consumer.TraceConsumerOld
+	nextConsumer     consumer.TraceConsumer
 	config           Config
 	toAttributeRules []toAttributeRule
-	include          span.Matcher
-	exclude          span.Matcher
+	include          filterspan.Matcher
+	exclude          filterspan.Matcher
 }
+
+var _ component.TraceProcessor = (*spanProcessor)(nil)
 
 // toAttributeRule is the compiled equivalent of config.ToAttributes field.
 type toAttributeRule struct {
@@ -49,16 +49,16 @@ type toAttributeRule struct {
 }
 
 // newSpanProcessor returns the span processor.
-func newSpanProcessor(nextConsumer consumer.TraceConsumerOld, config Config) (*spanProcessor, error) {
+func newSpanProcessor(nextConsumer consumer.TraceConsumer, config Config) (*spanProcessor, error) {
 	if nextConsumer == nil {
 		return nil, componenterror.ErrNilNextConsumer
 	}
 
-	include, err := span.NewMatcher(config.Include)
+	include, err := filterspan.NewMatcher(config.Include)
 	if err != nil {
 		return nil, err
 	}
-	exclude, err := span.NewMatcher(config.Exclude)
+	exclude, err := filterspan.NewMatcher(config.Exclude)
 	if err != nil {
 		return nil, err
 	}
@@ -91,20 +91,36 @@ func newSpanProcessor(nextConsumer consumer.TraceConsumerOld, config Config) (*s
 	return sp, nil
 }
 
-func (sp *spanProcessor) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
-	serviceName := processor.ServiceNameForNode(td.Node)
-	for _, span := range td.Spans {
-		if span == nil {
+func (sp *spanProcessor) ConsumeTrace(ctx context.Context, td data.TraceData) error {
+	rss := td.ResourceSpans()
+	for i := 0; i < rss.Len(); i++ {
+		rs := rss.At(i)
+		if rs.IsNil() {
 			continue
 		}
+		serviceName := processor.ServiceNameForResource(rs.Resource())
+		ilss := rss.At(i).InstrumentationLibrarySpans()
+		for j := 0; j < ilss.Len(); j++ {
+			ils := ilss.At(j)
+			if ils.IsNil() {
+				continue
+			}
+			spans := ils.Spans()
+			for k := 0; k < spans.Len(); k++ {
+				s := spans.At(k)
+				if s.IsNil() {
+					continue
+				}
 
-		if sp.skipSpan(span, serviceName) {
-			continue
+				if sp.skipSpan(s, serviceName) {
+					continue
+				}
+				sp.processFromAttributes(s)
+				sp.processToAttributes(s)
+			}
 		}
-		sp.processFromAttributes(span)
-		sp.processToAttributes(span)
 	}
-	return sp.nextConsumer.ConsumeTraceData(ctx, td)
+	return sp.nextConsumer.ConsumeTrace(ctx, td)
 }
 
 func (sp *spanProcessor) GetCapabilities() component.ProcessorCapabilities {
@@ -112,7 +128,7 @@ func (sp *spanProcessor) GetCapabilities() component.ProcessorCapabilities {
 }
 
 // Start is invoked during service startup.
-func (sp *spanProcessor) Start(ctx context.Context, host component.Host) error {
+func (sp *spanProcessor) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
@@ -121,13 +137,14 @@ func (sp *spanProcessor) Shutdown(context.Context) error {
 	return nil
 }
 
-func (sp *spanProcessor) processFromAttributes(span *tracepb.Span) {
+func (sp *spanProcessor) processFromAttributes(span data.Span) {
 	if len(sp.config.Rename.FromAttributes) == 0 {
 		// There is FromAttributes rule.
 		return
 	}
 
-	if span.Attributes == nil || len(span.Attributes.AttributeMap) == 0 {
+	attrs := span.Attributes()
+	if attrs.Len() == 0 {
 		// There are no attributes to create span name from.
 		return
 	}
@@ -138,7 +155,7 @@ func (sp *spanProcessor) processFromAttributes(span *tracepb.Span) {
 	// https://github.com/open-telemetry/opentelemetry-collector/pull/301#discussion_r318357678
 	var sb strings.Builder
 	for i, key := range sp.config.Rename.FromAttributes {
-		attribute, found := span.Attributes.AttributeMap[key]
+		attr, found := attrs.Get(key)
 
 		// If one of the keys isn't found, the span name is not updated.
 		if !found {
@@ -157,32 +174,24 @@ func (sp *spanProcessor) processFromAttributes(span *tracepb.Span) {
 			sb.WriteString(sp.config.Rename.Separator)
 		}
 
-		// Ideally with proto converting to the internal format for attributes
-		// there shouldn't be any map entries with a nil value. However,
-		// if there is a bad translation, this might be possible.
-		if attribute == nil {
-			sb.WriteString("<nil-attribute-value>")
-			continue
-		}
-
-		switch value := attribute.Value.(type) {
-		case *tracepb.AttributeValue_StringValue:
-			sb.WriteString(value.StringValue.GetValue())
-		case *tracepb.AttributeValue_BoolValue:
-			sb.WriteString(strconv.FormatBool(value.BoolValue))
-		case *tracepb.AttributeValue_DoubleValue:
-			sb.WriteString(strconv.FormatFloat(value.DoubleValue, 'f', -1, 64))
-		case *tracepb.AttributeValue_IntValue:
-			sb.WriteString(strconv.FormatInt(value.IntValue, 10))
+		switch attr.Type() {
+		case data.AttributeValueSTRING:
+			sb.WriteString(attr.StringVal())
+		case data.AttributeValueBOOL:
+			sb.WriteString(strconv.FormatBool(attr.BoolVal()))
+		case data.AttributeValueDOUBLE:
+			sb.WriteString(strconv.FormatFloat(attr.DoubleVal(), 'f', -1, 64))
+		case data.AttributeValueINT:
+			sb.WriteString(strconv.FormatInt(attr.IntVal(), 10))
 		default:
 			sb.WriteString("<unknown-attribute-type>")
 		}
 	}
-	span.Name = &tracepb.TruncatableString{Value: sb.String()}
+	span.SetName(sb.String())
 }
 
-func (sp *spanProcessor) processToAttributes(span *tracepb.Span) {
-	if span.Name == nil || span.Name.Value == "" {
+func (sp *spanProcessor) processToAttributes(span data.Span) {
+	if span.Name() == "" {
 		// There is no span name to work on.
 		return
 	}
@@ -197,7 +206,7 @@ func (sp *spanProcessor) processToAttributes(span *tracepb.Span) {
 	// after processing the previous rule.
 	for _, rule := range sp.toAttributeRules {
 		re := rule.re
-		oldName := span.Name.Value
+		oldName := span.Name()
 
 		// Match the regular expression and extract matched subexpressions.
 		submatches := re.FindStringSubmatch(oldName)
@@ -213,27 +222,15 @@ func (sp *spanProcessor) processToAttributes(span *tracepb.Span) {
 		// Index in the oldName until which we traversed.
 		var oldNameIndex = 0
 
-		// Ensure we have a place to create attributes.
-		if span.Attributes == nil {
-			span.Attributes = &tracepb.Span_Attributes{}
-		}
-		attrs := span.Attributes
+		attrs := span.Attributes()
 
-		// Create a new map if one does not exist and size it to the number of
-		// attributes that we plan to extract.
-		if attrs.AttributeMap == nil {
-			attrs.AttributeMap = make(map[string]*tracepb.AttributeValue, len(rule.attrNames))
-		}
+		// TODO: Pre-allocate len(submatches) space in the attributes.
 
 		// Start from index 1, which is the first submatch (index 0 is the entire match).
 		// We will go over submatches and will simultaneously build a new span name,
 		// replacing matched subexpressions by attribute names.
 		for i := 1; i < len(submatches); i++ {
-			// Create a string attribute from extracted submatch.
-			attrValue := &tracepb.AttributeValue{Value: &tracepb.AttributeValue_StringValue{
-				StringValue: &tracepb.TruncatableString{Value: submatches[i]},
-			}}
-			attrs.AttributeMap[rule.attrNames[i]] = attrValue
+			attrs.UpsertString(rule.attrNames[i], submatches[i])
 
 			// Add part of span name from end of previous match to start of this match
 			// and then add attribute name wrapped in curly brackets.
@@ -249,7 +246,7 @@ func (sp *spanProcessor) processToAttributes(span *tracepb.Span) {
 		}
 
 		// Set new span name.
-		span.Name = &tracepb.TruncatableString{Value: sb.String()}
+		span.SetName(sb.String())
 
 		if sp.config.Rename.ToAttributes.BreakAfterMatch {
 			// Stop processing, break after first match is requested.
@@ -264,7 +261,7 @@ func (sp *spanProcessor) processToAttributes(span *tracepb.Span) {
 // The logic determining if a span should be processed is set
 // in the attribute configuration with the include and exclude settings.
 // Include properties are checked before exclude settings are checked.
-func (sp *spanProcessor) skipSpan(span *tracepb.Span, serviceName string) bool {
+func (sp *spanProcessor) skipSpan(span data.Span, serviceName string) bool {
 	if sp.include != nil {
 		// A false returned in this case means the span should not be processed.
 		if include := sp.include.MatchSpan(span, serviceName); !include {

@@ -18,18 +18,17 @@ import (
 	"context"
 	"testing"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
-	"github.com/open-telemetry/opentelemetry-collector/internal/processor/span"
+	"github.com/open-telemetry/opentelemetry-collector/internal/data"
+	"github.com/open-telemetry/opentelemetry-collector/internal/data/testdata"
+	"github.com/open-telemetry/opentelemetry-collector/internal/processor/filterspan"
+	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 )
 
 func TestNewTraceProcessor(t *testing.T) {
@@ -40,201 +39,219 @@ func TestNewTraceProcessor(t *testing.T) {
 	require.Error(t, componenterror.ErrNilNextConsumer, err)
 	require.Nil(t, tp)
 
-	tp, err = newSpanProcessor(exportertest.NewNopTraceExporterOld(), *oCfg)
+	tp, err = newSpanProcessor(exportertest.NewNopTraceExporter(), *oCfg)
 	require.Nil(t, err)
 	require.NotNil(t, tp)
-}
-
-// TestSpanProcessor_NilEmpty tests spans and attributes with nil/empty values
-// do not cause any errors and no renaming occurs.
-func TestSpanProcessor_NilEmpty(t *testing.T) {
-	factory := Factory{}
-	cfg := factory.CreateDefaultConfig()
-	oCfg := cfg.(*Config)
-	oCfg.Rename.FromAttributes = []string{"test-key"}
-
-	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporterOld(), oCfg)
-	require.Nil(t, err)
-	require.NotNil(t, tp)
-	traceData := consumerdata.TraceData{
-		Spans: []*tracepb.Span{
-			nil,
-			{
-				Name:       &tracepb.TruncatableString{Value: "Nil Attributes"},
-				Attributes: nil,
-			},
-			{
-				Name:       &tracepb.TruncatableString{Value: "Empty Attributes"},
-				Attributes: &tracepb.Span_Attributes{},
-			},
-			{
-				Name: &tracepb.TruncatableString{Value: "Nil Attribute Map"},
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: nil,
-				},
-			},
-			{
-				Name: &tracepb.TruncatableString{Value: "Empty Attribute Map"},
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: map[string]*tracepb.AttributeValue{},
-				},
-			},
-		},
-	}
-	assert.NoError(t, tp.ConsumeTraceData(context.Background(), traceData))
-	assert.Equal(t, consumerdata.TraceData{
-		Spans: []*tracepb.Span{
-			nil,
-			{
-				Name:       &tracepb.TruncatableString{Value: "Nil Attributes"},
-				Attributes: nil,
-			},
-			{
-				Name:       &tracepb.TruncatableString{Value: "Empty Attributes"},
-				Attributes: &tracepb.Span_Attributes{},
-			},
-			{
-				Name: &tracepb.TruncatableString{Value: "Nil Attribute Map"},
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: nil,
-				},
-			},
-			{
-				Name: &tracepb.TruncatableString{Value: "Empty Attribute Map"},
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: map[string]*tracepb.AttributeValue{},
-				},
-			},
-		},
-	}, traceData)
 }
 
 // Common structure for the test cases.
 type testCase struct {
 	serviceName      string
 	inputName        string
-	inputAttributes  map[string]*tracepb.AttributeValue
+	inputAttributes  map[string]data.AttributeValue
 	outputName       string
-	outputAttributes map[string]*tracepb.AttributeValue
+	outputAttributes map[string]data.AttributeValue
 }
 
 // runIndividualTestCase is the common logic of passing trace data through a configured attributes processor.
-func runIndividualTestCase(t *testing.T, tt testCase, tp component.TraceProcessorOld) {
+func runIndividualTestCase(t *testing.T, tt testCase, tp component.TraceProcessor) {
 	t.Run(tt.inputName, func(t *testing.T) {
-		traceData := consumerdata.TraceData{
-			Node: &commonpb.Node{
-				ServiceInfo: &commonpb.ServiceInfo{
-					Name: tt.serviceName,
-				},
-			},
-			Spans: []*tracepb.Span{
-				{
-					Name: &tracepb.TruncatableString{Value: tt.inputName},
-					Attributes: &tracepb.Span_Attributes{
-						AttributeMap: tt.inputAttributes,
-					},
-				},
-			},
-		}
+		td := generateTraceData(tt.serviceName, tt.inputName, tt.inputAttributes)
 
-		assert.NoError(t, tp.ConsumeTraceData(context.Background(), traceData))
-		require.Equal(t, consumerdata.TraceData{
-			Node: &commonpb.Node{
-				ServiceInfo: &commonpb.ServiceInfo{
-					Name: tt.serviceName,
-				},
-			},
-			Spans: []*tracepb.Span{
-				{
-					Name: &tracepb.TruncatableString{Value: tt.outputName},
-					Attributes: &tracepb.Span_Attributes{
-						AttributeMap: tt.outputAttributes,
-					},
-				},
-			},
-		}, traceData)
+		assert.NoError(t, tp.ConsumeTrace(context.Background(), td))
+		// Ensure that the modified `td` has the attributes sorted:
+		rss := td.ResourceSpans()
+		for i := 0; i < rss.Len(); i++ {
+			rs := rss.At(i)
+			if rs.IsNil() {
+				continue
+			}
+			if !rs.Resource().IsNil() {
+				rs.Resource().Attributes().Sort()
+			}
+			ilss := rss.At(i).InstrumentationLibrarySpans()
+			for j := 0; j < ilss.Len(); j++ {
+				ils := ilss.At(j)
+				if ils.IsNil() {
+					continue
+				}
+				spans := ils.Spans()
+				for k := 0; k < spans.Len(); k++ {
+					s := spans.At(k)
+					if !s.IsNil() {
+						s.Attributes().Sort()
+					}
+				}
+			}
+		}
+		assert.EqualValues(t, generateTraceData(tt.serviceName, tt.outputName, tt.outputAttributes), td)
 	})
+}
+
+func generateTraceData(serviceName, inputName string, attrs map[string]data.AttributeValue) data.TraceData {
+	td := data.NewTraceData()
+	td.ResourceSpans().Resize(1)
+	rs := td.ResourceSpans().At(0)
+	if serviceName != "" {
+		rs.Resource().InitEmpty()
+		rs.Resource().Attributes().UpsertString(conventions.AttributeServiceName, serviceName)
+	}
+	rs.InstrumentationLibrarySpans().Resize(1)
+	ils := rs.InstrumentationLibrarySpans().At(0)
+	spans := ils.Spans()
+	spans.Resize(1)
+	spans.At(0).SetName(inputName)
+	spans.At(0).Attributes().InitFromMap(attrs).Sort()
+	return td
+}
+
+// TestSpanProcessor_Values tests all possible value types.
+func TestSpanProcessor_NilEmptyData(t *testing.T) {
+	type nilEmptyTestCase struct {
+		name   string
+		input  data.TraceData
+		output data.TraceData
+	}
+	// TODO: Add test for "nil" Span. This needs support from data slices to allow to construct that.
+	testCases := []nilEmptyTestCase{
+		{
+			name:   "empty",
+			input:  testdata.GenerateTraceDataEmpty(),
+			output: testdata.GenerateTraceDataEmpty(),
+		},
+		{
+			name:   "one-empty-resource-spans",
+			input:  testdata.GenerateTraceDataOneEmptyResourceSpans(),
+			output: testdata.GenerateTraceDataOneEmptyResourceSpans(),
+		},
+		{
+			name:   "one-empty-one-nil-resource-spans",
+			input:  testdata.GenerateTraceDataOneEmptyOneNilResourceSpans(),
+			output: testdata.GenerateTraceDataOneEmptyOneNilResourceSpans(),
+		},
+		{
+			name:   "no-libraries",
+			input:  testdata.GenerateTraceDataNoLibraries(),
+			output: testdata.GenerateTraceDataNoLibraries(),
+		},
+		{
+			name:   "one-empty-instrumentation-library",
+			input:  testdata.GenerateTraceDataOneEmptyInstrumentationLibrary(),
+			output: testdata.GenerateTraceDataOneEmptyInstrumentationLibrary(),
+		},
+		{
+			name:   "one-empty-one-nil-instrumentation-library",
+			input:  testdata.GenerateTraceDataOneEmptyOneNilInstrumentationLibrary(),
+			output: testdata.GenerateTraceDataOneEmptyOneNilInstrumentationLibrary(),
+		},
+	}
+	factory := Factory{}
+	cfg := factory.CreateDefaultConfig()
+	oCfg := cfg.(*Config)
+	oCfg.Include = &filterspan.MatchProperties{
+		MatchType: "strict",
+		Services:  []string{"service"},
+	}
+	oCfg.Rename.FromAttributes = []string{"key"}
+
+	tp, err := factory.CreateTraceProcessor(
+		context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, exportertest.NewNopTraceExporter(), oCfg)
+	require.Nil(t, err)
+	require.NotNil(t, tp)
+	for i := range testCases {
+		tt := testCases[i]
+		t.Run(tt.name, func(t *testing.T) {
+			assert.NoError(t, tp.ConsumeTrace(context.Background(), tt.input))
+			assert.EqualValues(t, tt.output, tt.input)
+		})
+	}
 }
 
 // TestSpanProcessor_Values tests all possible value types.
 func TestSpanProcessor_Values(t *testing.T) {
+	// TODO: Add test for "nil" Span. This needs support from data slices to allow to construct that.
 	testCases := []testCase{
 		{
-			inputName: "string type",
-			inputAttributes: map[string]*tracepb.AttributeValue{
-				"key1": {
-					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "bob"}},
-				},
+			inputName:        "",
+			inputAttributes:  nil,
+			outputName:       "",
+			outputAttributes: nil,
+		},
+		{
+			inputName:        "nil-attributes",
+			inputAttributes:  nil,
+			outputName:       "nil-attributes",
+			outputAttributes: nil,
+		},
+		{
+			inputName:        "empty-attributes",
+			inputAttributes:  map[string]data.AttributeValue{},
+			outputName:       "empty-attributes",
+			outputAttributes: map[string]data.AttributeValue{},
+		},
+		{
+			inputName: "string-type",
+			inputAttributes: map[string]data.AttributeValue{
+				"key1": data.NewAttributeValueString("bob"),
 			},
 			outputName: "bob",
-			outputAttributes: map[string]*tracepb.AttributeValue{
-				"key1": {
-					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "bob"}},
-				},
+			outputAttributes: map[string]data.AttributeValue{
+				"key1": data.NewAttributeValueString("bob"),
 			},
 		},
 		{
-			inputName: "int type",
-			inputAttributes: map[string]*tracepb.AttributeValue{
-				"key1": {
-					Value: &tracepb.AttributeValue_IntValue{IntValue: 123},
-				},
+			inputName: "int-type",
+			inputAttributes: map[string]data.AttributeValue{
+				"key1": data.NewAttributeValueInt(123),
 			},
 			outputName: "123",
-			outputAttributes: map[string]*tracepb.AttributeValue{
-				"key1": {
-					Value: &tracepb.AttributeValue_IntValue{IntValue: 123},
-				},
+			outputAttributes: map[string]data.AttributeValue{
+				"key1": data.NewAttributeValueInt(123),
 			},
 		},
 		{
-			inputName: "double type",
-			inputAttributes: map[string]*tracepb.AttributeValue{
-				"key1": {
-					Value: &tracepb.AttributeValue_DoubleValue{DoubleValue: cast.ToFloat64(234.129312)},
-				},
+			inputName: "double-type",
+			inputAttributes: map[string]data.AttributeValue{
+				"key1": data.NewAttributeValueDouble(234.129312),
 			},
 			outputName: "234.129312",
-			outputAttributes: map[string]*tracepb.AttributeValue{
-				"key1": {
-					Value: &tracepb.AttributeValue_DoubleValue{DoubleValue: cast.ToFloat64(234.129312)},
-				},
+			outputAttributes: map[string]data.AttributeValue{
+				"key1": data.NewAttributeValueDouble(234.129312),
 			},
 		},
 		{
-			inputName: "bool type",
-			inputAttributes: map[string]*tracepb.AttributeValue{
-				"key1": {
-					Value: &tracepb.AttributeValue_BoolValue{BoolValue: true},
-				},
+			inputName: "bool-type",
+			inputAttributes: map[string]data.AttributeValue{
+				"key1": data.NewAttributeValueBool(true),
 			},
 			outputName: "true",
-			outputAttributes: map[string]*tracepb.AttributeValue{
-				"key1": {
-					Value: &tracepb.AttributeValue_BoolValue{BoolValue: true},
-				},
+			outputAttributes: map[string]data.AttributeValue{
+				"key1": data.NewAttributeValueBool(true),
 			},
 		},
-		{
-			inputName: "nil type",
-			inputAttributes: map[string]*tracepb.AttributeValue{
-				"key1": nil,
+		// TODO: What do we do when AttributeMap contains a nil entry? Is that possible?
+		// TODO: In the new protocol do we want to support unknown type as 0 instead of string?
+		// TODO: Do we want to allow constructing entries with unknown type?
+		/*{
+			inputName: "nil-type",
+			inputAttributes: map[string]data.AttributeValue{
+				"key1": data.NewAttributeValue(),
 			},
 			outputName: "<nil-attribute-value>",
-			outputAttributes: map[string]*tracepb.AttributeValue{
-				"key1": nil,
+			outputAttributes: map[string]data.AttributeValue{
+				"key1": data.NewAttributeValue(),
 			},
 		},
 		{
-			inputName: "unknown type",
-			inputAttributes: map[string]*tracepb.AttributeValue{
+			inputName: "unknown-type",
+			inputAttributes: map[string]data.AttributeValue{
 				"key1": {},
 			},
 			outputName: "<unknown-attribute-type>",
-			outputAttributes: map[string]*tracepb.AttributeValue{
+			outputAttributes: map[string]data.AttributeValue{
 				"key1": {},
 			},
-		},
+		},*/
 	}
 
 	factory := Factory{}
@@ -242,7 +259,8 @@ func TestSpanProcessor_Values(t *testing.T) {
 	oCfg := cfg.(*Config)
 	oCfg.Rename.FromAttributes = []string{"key1"}
 
-	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporterOld(), oCfg)
+	tp, err := factory.CreateTraceProcessor(
+		context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, exportertest.NewNopTraceExporter(), oCfg)
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 	for _, tc := range testCases {
@@ -254,113 +272,61 @@ func TestSpanProcessor_Values(t *testing.T) {
 func TestSpanProcessor_MissingKeys(t *testing.T) {
 	testCases := []testCase{
 		{
-			inputName: "first keys missing",
-			inputAttributes: map[string]*tracepb.AttributeValue{
-				"key2": {
-					Value: &tracepb.AttributeValue_IntValue{IntValue: 123},
-				},
-				"key3": {
-					Value: &tracepb.AttributeValue_DoubleValue{DoubleValue: cast.ToFloat64(234.129312)},
-				},
-				"key4": {
-					Value: &tracepb.AttributeValue_BoolValue{BoolValue: true},
-				},
+			inputName: "first-keys-missing",
+			inputAttributes: map[string]data.AttributeValue{
+				"key2": data.NewAttributeValueInt(123),
+				"key3": data.NewAttributeValueDouble(234.129312),
+				"key4": data.NewAttributeValueBool(true),
 			},
-			outputName: "first keys missing",
-			outputAttributes: map[string]*tracepb.AttributeValue{
-				"key2": {
-					Value: &tracepb.AttributeValue_IntValue{IntValue: 123},
-				},
-				"key3": {
-					Value: &tracepb.AttributeValue_DoubleValue{DoubleValue: cast.ToFloat64(234.129312)},
-				},
-				"key4": {
-					Value: &tracepb.AttributeValue_BoolValue{BoolValue: true},
-				},
+			outputName: "first-keys-missing",
+			outputAttributes: map[string]data.AttributeValue{
+				"key2": data.NewAttributeValueInt(123),
+				"key3": data.NewAttributeValueDouble(234.129312),
+				"key4": data.NewAttributeValueBool(true),
 			},
 		},
 		{
-			inputName: "middle key missing",
-			inputAttributes: map[string]*tracepb.AttributeValue{
-				"key1": {
-					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "bob"}},
-				},
-				"key2": {
-					Value: &tracepb.AttributeValue_IntValue{IntValue: 123},
-				},
-				"key4": {
-					Value: &tracepb.AttributeValue_BoolValue{BoolValue: true},
-				},
+			inputName: "middle-key-missing",
+			inputAttributes: map[string]data.AttributeValue{
+				"key1": data.NewAttributeValueString("bob"),
+				"key2": data.NewAttributeValueInt(123),
+				"key4": data.NewAttributeValueBool(true),
 			},
-			outputName: "middle key missing",
-			outputAttributes: map[string]*tracepb.AttributeValue{
-				"key1": {
-					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "bob"}},
-				},
-				"key2": {
-					Value: &tracepb.AttributeValue_IntValue{IntValue: 123},
-				},
-				"key4": {
-					Value: &tracepb.AttributeValue_BoolValue{BoolValue: true},
-				},
+			outputName: "middle-key-missing",
+			outputAttributes: map[string]data.AttributeValue{
+				"key1": data.NewAttributeValueString("bob"),
+				"key2": data.NewAttributeValueInt(123),
+				"key4": data.NewAttributeValueBool(true),
 			},
 		},
 		{
-			inputName: "last key missing",
-			inputAttributes: map[string]*tracepb.AttributeValue{
-				"key1": {
-					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "bob"}},
-				},
-				"key2": {
-					Value: &tracepb.AttributeValue_IntValue{IntValue: 123},
-				},
-				"key3": {
-					Value: &tracepb.AttributeValue_DoubleValue{DoubleValue: cast.ToFloat64(234.129312)},
-				},
+			inputName: "last-key-missing",
+			inputAttributes: map[string]data.AttributeValue{
+				"key1": data.NewAttributeValueString("bob"),
+				"key2": data.NewAttributeValueInt(123),
+				"key3": data.NewAttributeValueDouble(234.129312),
 			},
-			outputName: "last key missing",
-			outputAttributes: map[string]*tracepb.AttributeValue{
-				"key1": {
-					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "bob"}},
-				},
-				"key2": {
-					Value: &tracepb.AttributeValue_IntValue{IntValue: 123},
-				},
-				"key3": {
-					Value: &tracepb.AttributeValue_DoubleValue{DoubleValue: cast.ToFloat64(234.129312)},
-				},
+			outputName: "last-key-missing",
+			outputAttributes: map[string]data.AttributeValue{
+				"key1": data.NewAttributeValueString("bob"),
+				"key2": data.NewAttributeValueInt(123),
+				"key3": data.NewAttributeValueDouble(234.129312),
 			},
 		},
 		{
-			inputName: "all keys exists",
-			inputAttributes: map[string]*tracepb.AttributeValue{
-				"key1": {
-					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "bob"}},
-				},
-				"key2": {
-					Value: &tracepb.AttributeValue_IntValue{IntValue: 123},
-				},
-				"key3": {
-					Value: &tracepb.AttributeValue_DoubleValue{DoubleValue: cast.ToFloat64(234.129312)},
-				},
-				"key4": {
-					Value: &tracepb.AttributeValue_BoolValue{BoolValue: true},
-				},
+			inputName: "all-keys-exists",
+			inputAttributes: map[string]data.AttributeValue{
+				"key1": data.NewAttributeValueString("bob"),
+				"key2": data.NewAttributeValueInt(123),
+				"key3": data.NewAttributeValueDouble(234.129312),
+				"key4": data.NewAttributeValueBool(true),
 			},
 			outputName: "bob::123::234.129312::true",
-			outputAttributes: map[string]*tracepb.AttributeValue{
-				"key1": {
-					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "bob"}},
-				},
-				"key2": {
-					Value: &tracepb.AttributeValue_IntValue{IntValue: 123},
-				},
-				"key3": {
-					Value: &tracepb.AttributeValue_DoubleValue{DoubleValue: cast.ToFloat64(234.129312)},
-				},
-				"key4": {
-					Value: &tracepb.AttributeValue_BoolValue{BoolValue: true},
-				},
+			outputAttributes: map[string]data.AttributeValue{
+				"key1": data.NewAttributeValueString("bob"),
+				"key2": data.NewAttributeValueInt(123),
+				"key3": data.NewAttributeValueDouble(234.129312),
+				"key4": data.NewAttributeValueBool(true),
 			},
 		},
 	}
@@ -370,7 +336,8 @@ func TestSpanProcessor_MissingKeys(t *testing.T) {
 	oCfg.Rename.FromAttributes = []string{"key1", "key2", "key3", "key4"}
 	oCfg.Rename.Separator = "::"
 
-	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporterOld(), oCfg)
+	tp, err := factory.CreateTraceProcessor(
+		context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, exportertest.NewNopTraceExporter(), oCfg)
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 	for _, tc := range testCases {
@@ -388,40 +355,25 @@ func TestSpanProcessor_Separator(t *testing.T) {
 	oCfg.Rename.FromAttributes = []string{"key1"}
 	oCfg.Rename.Separator = "::"
 
-	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporterOld(), oCfg)
+	tp, err := factory.CreateTraceProcessor(
+		context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, exportertest.NewNopTraceExporter(), oCfg)
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
-	traceData := consumerdata.TraceData{
-		Spans: []*tracepb.Span{
-			{
-				Name: &tracepb.TruncatableString{Value: "ensure no separator in the rename with one key"},
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: map[string]*tracepb.AttributeValue{
-						"key1": {
-							Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "bob"}},
-						},
-					},
-				},
-			},
-		},
-	}
-	assert.NoError(t, tp.ConsumeTraceData(context.Background(), traceData))
+	traceData := generateTraceData(
+		"",
+		"ensure no separator in the rename with one key",
+		map[string]data.AttributeValue{
+			"key1": data.NewAttributeValueString("bob"),
+		})
+	assert.NoError(t, tp.ConsumeTrace(context.Background(), traceData))
 
-	assert.Equal(t, consumerdata.TraceData{
-		Spans: []*tracepb.Span{
-			{
-				Name: &tracepb.TruncatableString{Value: "bob"},
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: map[string]*tracepb.AttributeValue{
-						"key1": {
-							Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "bob"}},
-						},
-					},
-				},
-			},
-		},
-	}, traceData)
+	assert.Equal(t, generateTraceData(
+		"",
+		"bob",
+		map[string]data.AttributeValue{
+			"key1": data.NewAttributeValueString("bob"),
+		}), traceData)
 }
 
 // TestSpanProcessor_NoSeparatorMultipleKeys tests naming a span using multiple keys and no separator.
@@ -433,46 +385,26 @@ func TestSpanProcessor_NoSeparatorMultipleKeys(t *testing.T) {
 	oCfg.Rename.FromAttributes = []string{"key1", "key2"}
 	oCfg.Rename.Separator = ""
 
-	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporterOld(), oCfg)
+	tp, err := factory.CreateTraceProcessor(
+		context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, exportertest.NewNopTraceExporter(), oCfg)
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
-	traceData := consumerdata.TraceData{
-		Spans: []*tracepb.Span{
-			{
-				Name: &tracepb.TruncatableString{Value: "ensure no separator in the rename with two keys"},
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: map[string]*tracepb.AttributeValue{
-						"key1": {
-							Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "bob"}},
-						},
-						"key2": {
-							Value: &tracepb.AttributeValue_IntValue{IntValue: 123},
-						},
-					},
-				},
-			},
-		},
-	}
-	assert.NoError(t, tp.ConsumeTraceData(context.Background(), traceData))
+	traceData := generateTraceData(
+		"",
+		"ensure no separator in the rename with two keys", map[string]data.AttributeValue{
+			"key1": data.NewAttributeValueString("bob"),
+			"key2": data.NewAttributeValueInt(123),
+		})
+	assert.NoError(t, tp.ConsumeTrace(context.Background(), traceData))
 
-	assert.Equal(t, consumerdata.TraceData{
-		Spans: []*tracepb.Span{
-			{
-				Name: &tracepb.TruncatableString{Value: "bob123"},
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: map[string]*tracepb.AttributeValue{
-						"key1": {
-							Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "bob"}},
-						},
-						"key2": {
-							Value: &tracepb.AttributeValue_IntValue{IntValue: 123},
-						},
-					},
-				},
-			},
-		},
-	}, traceData)
+	assert.Equal(t, generateTraceData(
+		"",
+		"bob123",
+		map[string]data.AttributeValue{
+			"key1": data.NewAttributeValueString("bob"),
+			"key2": data.NewAttributeValueInt(123),
+		}), traceData)
 }
 
 // TestSpanProcessor_SeparatorMultipleKeys tests naming a span with multiple keys and a separator.
@@ -484,58 +416,31 @@ func TestSpanProcessor_SeparatorMultipleKeys(t *testing.T) {
 	oCfg.Rename.FromAttributes = []string{"key1", "key2", "key3", "key4"}
 	oCfg.Rename.Separator = "::"
 
-	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporterOld(), oCfg)
+	tp, err := factory.CreateTraceProcessor(
+		context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, exportertest.NewNopTraceExporter(), oCfg)
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
-	traceData := consumerdata.TraceData{
-		Spans: []*tracepb.Span{
-			{
-				Name: &tracepb.TruncatableString{Value: "rename with separators and multiple keys"},
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: map[string]*tracepb.AttributeValue{
-						"key1": {
-							Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "bob"}},
-						},
-						"key2": {
-							Value: &tracepb.AttributeValue_IntValue{IntValue: 123},
-						},
-						"key3": {
-							Value: &tracepb.AttributeValue_DoubleValue{DoubleValue: cast.ToFloat64(234.129312)},
-						},
-						"key4": {
-							Value: &tracepb.AttributeValue_BoolValue{BoolValue: true},
-						},
-					},
-				},
-			},
-		},
-	}
-	assert.NoError(t, tp.ConsumeTraceData(context.Background(), traceData))
+	traceData := generateTraceData(
+		"",
+		"rename with separators and multiple keys",
+		map[string]data.AttributeValue{
+			"key1": data.NewAttributeValueString("bob"),
+			"key2": data.NewAttributeValueInt(123),
+			"key3": data.NewAttributeValueDouble(234.129312),
+			"key4": data.NewAttributeValueBool(true),
+		})
+	assert.NoError(t, tp.ConsumeTrace(context.Background(), traceData))
 
-	assert.Equal(t, consumerdata.TraceData{
-		Spans: []*tracepb.Span{
-			{
-				Name: &tracepb.TruncatableString{Value: "bob::123::234.129312::true"},
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: map[string]*tracepb.AttributeValue{
-						"key1": {
-							Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "bob"}},
-						},
-						"key2": {
-							Value: &tracepb.AttributeValue_IntValue{IntValue: 123},
-						},
-						"key3": {
-							Value: &tracepb.AttributeValue_DoubleValue{DoubleValue: cast.ToFloat64(234.129312)},
-						},
-						"key4": {
-							Value: &tracepb.AttributeValue_BoolValue{BoolValue: true},
-						},
-					},
-				},
-			},
-		},
-	}, traceData)
+	assert.Equal(t, generateTraceData(
+		"",
+		"bob::123::234.129312::true",
+		map[string]data.AttributeValue{
+			"key1": data.NewAttributeValueString("bob"),
+			"key2": data.NewAttributeValueInt(123),
+			"key3": data.NewAttributeValueDouble(234.129312),
+			"key4": data.NewAttributeValueBool(true),
+		}), traceData)
 }
 
 // TestSpanProcessor_NilName tests naming a span when the input span had no name.
@@ -547,40 +452,25 @@ func TestSpanProcessor_NilName(t *testing.T) {
 	oCfg.Rename.FromAttributes = []string{"key1"}
 	oCfg.Rename.Separator = "::"
 
-	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporterOld(), oCfg)
+	tp, err := factory.CreateTraceProcessor(
+		context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, exportertest.NewNopTraceExporter(), oCfg)
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
-	traceData := consumerdata.TraceData{
-		Spans: []*tracepb.Span{
-			{
-				Name: nil,
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: map[string]*tracepb.AttributeValue{
-						"key1": {
-							Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "bob"}},
-						},
-					},
-				},
-			},
-		},
-	}
-	assert.NoError(t, tp.ConsumeTraceData(context.Background(), traceData))
+	traceData := generateTraceData(
+		"",
+		"",
+		map[string]data.AttributeValue{
+			"key1": data.NewAttributeValueString("bob"),
+		})
+	assert.NoError(t, tp.ConsumeTrace(context.Background(), traceData))
 
-	assert.Equal(t, consumerdata.TraceData{
-		Spans: []*tracepb.Span{
-			{
-				Name: &tracepb.TruncatableString{Value: "bob"},
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: map[string]*tracepb.AttributeValue{
-						"key1": {
-							Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "bob"}},
-						},
-					},
-				},
-			},
-		},
-	}, traceData)
+	assert.Equal(t, generateTraceData(
+		"",
+		"bob",
+		map[string]data.AttributeValue{
+			"key1": data.NewAttributeValueString("bob"),
+		}), traceData)
 }
 
 // TestSpanProcessor_ToAttributes
@@ -592,63 +482,51 @@ func TestSpanProcessor_ToAttributes(t *testing.T) {
 		testCase
 	}{
 		{
-			rules: []string{`^\/api\/v1\/document\/(?P<documentId>.*)\/update$`},
+			rules: []string{`^\/api\/v1\/document\/(?P<documentId>.*)\/update\/1$`},
 			testCase: testCase{
-				inputName:       "/api/v1/document/321083210/update",
-				inputAttributes: map[string]*tracepb.AttributeValue{},
-				outputName:      "/api/v1/document/{documentId}/update",
-				outputAttributes: map[string]*tracepb.AttributeValue{
-					"documentId": {
-						Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "321083210"}},
-					},
+				inputName:       "/api/v1/document/321083210/update/1",
+				inputAttributes: map[string]data.AttributeValue{},
+				outputName:      "/api/v1/document/{documentId}/update/1",
+				outputAttributes: map[string]data.AttributeValue{
+					"documentId": data.NewAttributeValueString("321083210"),
 				},
 			},
 		},
 
 		{
-			rules: []string{`^\/api\/(?P<version>.*)\/document\/(?P<documentId>.*)\/update$`},
+			rules: []string{`^\/api\/(?P<version>.*)\/document\/(?P<documentId>.*)\/update\/2$`},
 			testCase: testCase{
-				inputName:  "/api/v1/document/321083210/update",
-				outputName: "/api/{version}/document/{documentId}/update",
-				outputAttributes: map[string]*tracepb.AttributeValue{
-					"documentId": {
-						Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "321083210"}},
-					},
-					"version": {
-						Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "v1"}},
-					},
+				inputName:  "/api/v1/document/321083210/update/2",
+				outputName: "/api/{version}/document/{documentId}/update/2",
+				outputAttributes: map[string]data.AttributeValue{
+					"documentId": data.NewAttributeValueString("321083210"),
+					"version":    data.NewAttributeValueString("v1"),
 				},
 			},
 		},
 
 		{
-			rules: []string{`^\/api\/.*\/document\/(?P<documentId>.*)\/update$`,
-				`^\/api\/(?P<version>.*)\/document\/.*\/update$`},
+			rules: []string{`^\/api\/.*\/document\/(?P<documentId>.*)\/update\/3$`,
+				`^\/api\/(?P<version>.*)\/document\/.*\/update\/3$`},
 			testCase: testCase{
-				inputName:  "/api/v1/document/321083210/update",
-				outputName: "/api/{version}/document/{documentId}/update",
-				outputAttributes: map[string]*tracepb.AttributeValue{
-					"documentId": {
-						Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "321083210"}},
-					},
-					"version": {
-						Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "v1"}},
-					},
+				inputName:  "/api/v1/document/321083210/update/3",
+				outputName: "/api/{version}/document/{documentId}/update/3",
+				outputAttributes: map[string]data.AttributeValue{
+					"documentId": data.NewAttributeValueString("321083210"),
+					"version":    data.NewAttributeValueString("v1"),
 				},
 			},
 			breakAfterMatch: false,
 		},
 
 		{
-			rules: []string{`^\/api\/v1\/document\/(?P<documentId>.*)\/update$`,
-				`^\/api\/(?P<version>.*)\/document\/(?P<documentId>.*)\/update$`},
+			rules: []string{`^\/api\/v1\/document\/(?P<documentId>.*)\/update\/4$`,
+				`^\/api\/(?P<version>.*)\/document\/(?P<documentId>.*)\/update\/4$`},
 			testCase: testCase{
-				inputName:  "/api/v1/document/321083210/update",
-				outputName: "/api/v1/document/{documentId}/update",
-				outputAttributes: map[string]*tracepb.AttributeValue{
-					"documentId": {
-						Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "321083210"}},
-					},
+				inputName:  "/api/v1/document/321083210/update/4",
+				outputName: "/api/v1/document/{documentId}/update/4",
+				outputAttributes: map[string]data.AttributeValue{
+					"documentId": data.NewAttributeValueString("321083210"),
 				},
 			},
 			breakAfterMatch: true,
@@ -672,7 +550,8 @@ func TestSpanProcessor_ToAttributes(t *testing.T) {
 	for _, tc := range testCases {
 		oCfg.Rename.ToAttributes.Rules = tc.rules
 		oCfg.Rename.ToAttributes.BreakAfterMatch = tc.breakAfterMatch
-		tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporterOld(), oCfg)
+		tp, err := factory.CreateTraceProcessor(
+			context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, exportertest.NewNopTraceExporter(), oCfg)
 		require.Nil(t, err)
 		require.NotNil(t, tp)
 
@@ -696,40 +575,30 @@ func TestSpanProcessor_skipSpan(t *testing.T) {
 			serviceName: "banks",
 			inputName:   "www.test.com/code",
 			outputName:  "{operation_website}",
-			outputAttributes: map[string]*tracepb.AttributeValue{
-				"operation_website": {
-					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "www.test.com/code"}},
-				},
+			outputAttributes: map[string]data.AttributeValue{
+				"operation_website": data.NewAttributeValueString("www.test.com/code"),
 			},
 		},
 		{
 			serviceName: "banks",
 			inputName:   "donot/",
-			inputAttributes: map[string]*tracepb.AttributeValue{
-				"operation_website": {
-					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "www.test.com/code"}},
-				},
+			inputAttributes: map[string]data.AttributeValue{
+				"operation_website": data.NewAttributeValueString("www.test.com/code"),
 			},
 			outputName: "{operation_website}",
-			outputAttributes: map[string]*tracepb.AttributeValue{
-				"operation_website": {
-					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "donot/"}},
-				},
+			outputAttributes: map[string]data.AttributeValue{
+				"operation_website": data.NewAttributeValueString("donot/"),
 			},
 		},
 		{
 			serviceName: "banks",
 			inputName:   "donot/change",
-			inputAttributes: map[string]*tracepb.AttributeValue{
-				"operation_website": {
-					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "www.test.com/code"}},
-				},
+			inputAttributes: map[string]data.AttributeValue{
+				"operation_website": data.NewAttributeValueString("www.test.com/code"),
 			},
 			outputName: "donot/change",
-			outputAttributes: map[string]*tracepb.AttributeValue{
-				"operation_website": {
-					Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "www.test.com/code"}},
-				},
+			outputAttributes: map[string]data.AttributeValue{
+				"operation_website": data.NewAttributeValueString("www.test.com/code"),
 			},
 		},
 	}
@@ -737,19 +606,20 @@ func TestSpanProcessor_skipSpan(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Include = &span.MatchProperties{
-		MatchType: span.MatchTypeRegexp,
+	oCfg.Include = &filterspan.MatchProperties{
+		MatchType: filterspan.MatchTypeRegexp,
 		Services:  []string{`^banks$`},
 		SpanNames: []string{"/"},
 	}
-	oCfg.Exclude = &span.MatchProperties{
-		MatchType: span.MatchTypeStrict,
+	oCfg.Exclude = &filterspan.MatchProperties{
+		MatchType: filterspan.MatchTypeStrict,
 		SpanNames: []string{`donot/change`},
 	}
 	oCfg.Rename.ToAttributes = &ToAttributes{
 		Rules: []string{`(?P<operation_website>.*?)$`},
 	}
-	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporterOld(), oCfg)
+	tp, err := factory.CreateTraceProcessor(
+		context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, exportertest.NewNopTraceExporter(), oCfg)
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 

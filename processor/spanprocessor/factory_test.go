@@ -15,6 +15,7 @@
 package spanprocessor
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -22,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
@@ -50,7 +52,8 @@ func TestFactory_CreateTraceProcessor(t *testing.T) {
 
 	// Name.FromAttributes field needs to be set for the configuration to be valid.
 	oCfg.Rename.FromAttributes = []string{"test-key"}
-	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporterOld(), oCfg)
+	tp, err := factory.CreateTraceProcessor(
+		context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, exportertest.NewNopTraceExporter(), oCfg)
 
 	require.Nil(t, err)
 	assert.NotNil(t, tp)
@@ -87,7 +90,8 @@ func TestFactory_CreateTraceProcessor_InvalidConfig(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.Rename = test.cfg
 
-			tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporterOld(), cfg)
+			tp, err := factory.CreateTraceProcessor(
+				context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, exportertest.NewNopTraceExporter(), cfg)
 			require.Nil(t, tp)
 			assert.EqualValues(t, err, test.err)
 		})
@@ -98,7 +102,8 @@ func TestFactory_CreateMetricProcessor(t *testing.T) {
 	factory := &Factory{}
 	cfg := factory.CreateDefaultConfig()
 
-	mp, err := factory.CreateMetricsProcessor(zap.NewNop(), nil, cfg)
+	mp, err := factory.CreateMetricsProcessor(
+		context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, nil, cfg)
 	require.Nil(t, mp)
 	assert.Equal(t, err, configerror.ErrDataTypeIsNotSupported)
 }
