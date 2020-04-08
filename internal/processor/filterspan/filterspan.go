@@ -71,8 +71,9 @@ type regexpPropertiesMatcher struct {
 
 // attributeMatcher is a attribute key/value pair to match to.
 type attributeMatcher struct {
-	Key            string
-	AttributeValue data.AttributeValue
+	Key string
+	// If nil only check for key existence.
+	AttributeValue *data.AttributeValue
 }
 
 func NewMatcher(config *MatchProperties) (Matcher, error) {
@@ -166,11 +167,11 @@ func newAttributesMatcher(config *MatchProperties) (attributesMatcher, error) {
 			Key: attribute.Key,
 		}
 		if attribute.Value != nil {
-			val, err := filterhelper.NewAttributeValue(attribute.Value)
+			val, err := filterhelper.NewAttributeValueRaw(attribute.Value)
 			if err != nil {
 				return nil, err
 			}
-			entry.AttributeValue = val
+			entry.AttributeValue = &val
 		}
 
 		rawAttributes = append(rawAttributes, entry)
@@ -287,11 +288,11 @@ func (ma attributesMatcher) match(span data.Span) bool {
 		}
 
 		// This is for the case of checking that the key existed.
-		if property.AttributeValue.IsNil() {
+		if property.AttributeValue == nil {
 			continue
 		}
 
-		if !attr.Equal(property.AttributeValue) {
+		if !attr.Equal(*property.AttributeValue) {
 			return false
 		}
 	}

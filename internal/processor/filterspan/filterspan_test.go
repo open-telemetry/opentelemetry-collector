@@ -156,7 +156,7 @@ func TestSpan_Matching_False(t *testing.T) {
 				Attributes: []attributeMatcher{
 					{
 						Key:            "keyInt",
-						AttributeValue: data.NewAttributeValueInt(1234),
+						AttributeValue: newAttributeValueInt(1234),
 					},
 				},
 			},
@@ -168,7 +168,7 @@ func TestSpan_Matching_False(t *testing.T) {
 				Attributes: []attributeMatcher{
 					{
 						Key:            "keyInt",
-						AttributeValue: data.NewAttributeValueString("123"),
+						AttributeValue: newAttributeValueString("123"),
 					},
 				},
 			},
@@ -180,7 +180,7 @@ func TestSpan_Matching_False(t *testing.T) {
 				Attributes: []attributeMatcher{
 					{
 						Key:            "doesnotexist",
-						AttributeValue: data.NilAttributeValue(),
+						AttributeValue: nil,
 					},
 				},
 			},
@@ -204,7 +204,7 @@ func TestSpan_MatchingCornerCases(t *testing.T) {
 		Attributes: []attributeMatcher{
 			{
 				Key:            "keyOne",
-				AttributeValue: data.NilAttributeValue(),
+				AttributeValue: nil,
 			},
 		},
 	}
@@ -275,19 +275,19 @@ func TestSpan_Matching_True(t *testing.T) {
 				Attributes: []attributeMatcher{
 					{
 						Key:            "keyString",
-						AttributeValue: data.NewAttributeValueString("arithmetic"),
+						AttributeValue: newAttributeValueString("arithmetic"),
 					},
 					{
 						Key:            "keyInt",
-						AttributeValue: data.NewAttributeValueInt(123),
+						AttributeValue: newAttributeValueInt(123),
 					},
 					{
 						Key:            "keyDouble",
-						AttributeValue: data.NewAttributeValueDouble(3245.6),
+						AttributeValue: newAttributeValueDouble(3245.6),
 					},
 					{
 						Key:            "keyBool",
-						AttributeValue: data.NewAttributeValueBool(true),
+						AttributeValue: newAttributeValueBool(true),
 					},
 				},
 			},
@@ -299,7 +299,7 @@ func TestSpan_Matching_True(t *testing.T) {
 				Attributes: []attributeMatcher{
 					{
 						Key:            "keyExists",
-						AttributeValue: data.NilAttributeValue(),
+						AttributeValue: nil,
 					},
 				},
 			},
@@ -311,11 +311,11 @@ func TestSpan_Matching_True(t *testing.T) {
 				Attributes: []attributeMatcher{
 					{
 						Key:            "keyExists",
-						AttributeValue: data.NilAttributeValue(),
+						AttributeValue: nil,
 					},
 					{
 						Key:            "keyString",
-						AttributeValue: data.NewAttributeValueString("arithmetic"),
+						AttributeValue: newAttributeValueString("arithmetic"),
 					},
 				},
 			},
@@ -381,7 +381,7 @@ func TestSpan_validateMatchesConfiguration(t *testing.T) {
 					},
 					{
 						Key:            "key2",
-						AttributeValue: data.NewAttributeValueInt(1234),
+						AttributeValue: newAttributeValueInt(1234),
 					},
 				},
 			},
@@ -414,7 +414,7 @@ func TestSpan_validateMatchesConfiguration(t *testing.T) {
 					},
 					{
 						Key:            "key2",
-						AttributeValue: data.NewAttributeValueInt(1234),
+						AttributeValue: newAttributeValueInt(1234),
 					},
 				},
 			},
@@ -438,4 +438,24 @@ func TestSpan_validateMatchesConfiguration(t *testing.T) {
 			assert.Equal(t, tc.output, output)
 		})
 	}
+}
+
+func newAttributeValueString(v string) *data.AttributeValue {
+	attr := data.NewAttributeValueString(v)
+	return &attr
+}
+
+func newAttributeValueInt(v int64) *data.AttributeValue {
+	attr := data.NewAttributeValueInt(v)
+	return &attr
+}
+
+func newAttributeValueDouble(v float64) *data.AttributeValue {
+	attr := data.NewAttributeValueDouble(v)
+	return &attr
+}
+
+func newAttributeValueBool(v bool) *data.AttributeValue {
+	attr := data.NewAttributeValueBool(v)
+	return &attr
 }

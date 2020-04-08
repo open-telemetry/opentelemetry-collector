@@ -22,20 +22,19 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 )
 
-// NilAttributeValue is used to convert the raw `value` from ActionKeyValue to the supported trace attribute values.
-func NewAttributeValue(value interface{}) (data.AttributeValue, error) {
-	attr := data.NilAttributeValue()
+// NewAttributeValueRaw is used to convert the raw `value` from ActionKeyValue to the supported trace attribute values.
+// If error different than nil the return value is invalid. Calling any functions on the invalid value will cause a panic.
+func NewAttributeValueRaw(value interface{}) (data.AttributeValue, error) {
 	switch val := value.(type) {
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
-		attr = data.NewAttributeValueInt(cast.ToInt64(val))
+		return data.NewAttributeValueInt(cast.ToInt64(val)), nil
 	case float32, float64:
-		attr = data.NewAttributeValueDouble(cast.ToFloat64(val))
+		return data.NewAttributeValueDouble(cast.ToFloat64(val)), nil
 	case string:
-		attr = data.NewAttributeValueString(val)
+		return data.NewAttributeValueString(val), nil
 	case bool:
-		attr = data.NewAttributeValueBool(val)
+		return data.NewAttributeValueBool(val), nil
 	default:
-		return attr, fmt.Errorf("error unsupported value type \"%T\"", value)
+		return data.AttributeValue{}, fmt.Errorf("error unsupported value type \"%T\"", value)
 	}
-	return attr, nil
 }
