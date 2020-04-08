@@ -25,8 +25,9 @@ import (
 
 // SinkTraceExporterOld acts as a trace receiver for use in tests.
 type SinkTraceExporterOld struct {
-	mu     sync.Mutex
-	traces []consumerdata.TraceData
+	consumeTraceError error // to be returned by ConsumeTraceData, if set
+	mu                sync.Mutex
+	traces            []consumerdata.TraceData
 }
 
 // Start tells the exporter to start. The exporter may prepare for exporting
@@ -38,6 +39,10 @@ func (ste *SinkTraceExporterOld) Start(ctx context.Context, host component.Host)
 
 // ConsumeTraceData stores traces for tests.
 func (ste *SinkTraceExporterOld) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
+	if ste.consumeTraceError != nil {
+		return ste.consumeTraceError
+	}
+
 	ste.mu.Lock()
 	defer ste.mu.Unlock()
 
@@ -54,6 +59,11 @@ func (ste *SinkTraceExporterOld) AllTraces() []consumerdata.TraceData {
 	return ste.traces
 }
 
+// SetConsumeTraceError sets an error that will be returned by ConsumeTraceData
+func (ste *SinkTraceExporterOld) SetConsumeTraceError(err error) {
+	ste.consumeTraceError = err
+}
+
 // Shutdown stops the exporter and is invoked during shutdown.
 func (ste *SinkTraceExporterOld) Shutdown(context.Context) error {
 	return nil
@@ -61,7 +71,7 @@ func (ste *SinkTraceExporterOld) Shutdown(context.Context) error {
 
 // SinkTraceExporter acts as a trace receiver for use in tests.
 type SinkTraceExporter struct {
-	consumeTraceError error // to be returned by ConsumeTraceData, if set
+	consumeTraceError error // to be returned by ConsumeTrace, if set
 	mu                sync.Mutex
 	traces            []data.TraceData
 }
@@ -107,8 +117,9 @@ func (ste *SinkTraceExporter) Shutdown(context.Context) error {
 
 // SinkMetricsExporterOld acts as a metrics receiver for use in tests.
 type SinkMetricsExporterOld struct {
-	mu      sync.Mutex
-	metrics []consumerdata.MetricsData
+	consumeMetricsError error // to be returned by ConsumeMetricsData, if set
+	mu                  sync.Mutex
+	metrics             []consumerdata.MetricsData
 }
 
 // Start tells the exporter to start. The exporter may prepare for exporting
@@ -120,6 +131,10 @@ func (sme *SinkMetricsExporterOld) Start(ctx context.Context, host component.Hos
 
 // ConsumeMetricsData stores traces for tests.
 func (sme *SinkMetricsExporterOld) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
+	if sme.consumeMetricsError != nil {
+		return sme.consumeMetricsError
+	}
+
 	sme.mu.Lock()
 	defer sme.mu.Unlock()
 
@@ -136,6 +151,11 @@ func (sme *SinkMetricsExporterOld) AllMetrics() []consumerdata.MetricsData {
 	return sme.metrics
 }
 
+// SetConsumeMetricsError sets an error that will be returned by ConsumeMetricsData
+func (sme *SinkMetricsExporterOld) SetConsumeMetricsError(err error) {
+	sme.consumeMetricsError = err
+}
+
 // Shutdown stops the exporter and is invoked during shutdown.
 func (sme *SinkMetricsExporterOld) Shutdown(context.Context) error {
 	return nil
@@ -143,7 +163,7 @@ func (sme *SinkMetricsExporterOld) Shutdown(context.Context) error {
 
 // SinkMetricsExporter acts as a metrics receiver for use in tests.
 type SinkMetricsExporter struct {
-	consumeMetricsError error // to be returned by ConsumeTraceData, if set
+	consumeMetricsError error // to be returned by ConsumeMetrics, if set
 	mu                  sync.Mutex
 	metrics             []data.MetricData
 }

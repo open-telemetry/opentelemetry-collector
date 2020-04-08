@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/compression"
 	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
 	"github.com/open-telemetry/opentelemetry-collector/config/configgrpc"
@@ -41,7 +42,8 @@ func TestCreateMetricsExporter(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPCSettings.Endpoint = testutils.GetAvailableLocalAddress(t)
 
-	oexp, err := factory.CreateMetricsExporter(zap.NewNop(), cfg)
+	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
+	oexp, err := factory.CreateMetricsExporter(context.Background(), creationParams, cfg)
 	require.Nil(t, err)
 	require.NotNil(t, oexp)
 }
@@ -158,7 +160,8 @@ func TestCreateTraceExporter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := &Factory{}
-			consumer, err := factory.CreateTraceExporter(zap.NewNop(), &tt.config)
+			creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
+			consumer, err := factory.CreateTraceExporter(context.Background(), creationParams, &tt.config)
 
 			if tt.mustFail {
 				assert.NotNil(t, err)

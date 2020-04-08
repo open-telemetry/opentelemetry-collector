@@ -15,7 +15,7 @@
 package otlpexporter
 
 import (
-	"go.uber.org/zap"
+	"context"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configgrpc"
@@ -50,11 +50,19 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 }
 
 // CreateTraceExporter creates a trace exporter based on this config.
-func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Exporter) (component.TraceExporterOld, error) {
-	return NewTraceExporter(logger, config)
+func (f *Factory) CreateTraceExporter(
+	ctx context.Context,
+	params component.ExporterCreateParams,
+	cfg configmodels.Exporter,
+) (component.TraceExporter, error) {
+	return NewTraceExporter(ctx, params, cfg)
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *Factory) CreateMetricsExporter(logger *zap.Logger, config configmodels.Exporter) (component.MetricsExporterOld, error) {
-	return NewMetricsExporter(logger, config)
+func (f *Factory) CreateMetricsExporter(
+	ctx context.Context,
+	params component.ExporterCreateParams,
+	cfg configmodels.Exporter,
+) (component.MetricsExporter, error) {
+	return NewMetricsExporter(ctx, params, cfg)
 }

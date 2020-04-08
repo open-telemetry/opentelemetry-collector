@@ -108,7 +108,7 @@ func NewMetricsExporter(logger *zap.Logger, config configmodels.Exporter, opts .
 	if err != nil {
 		return nil, err
 	}
-	oexp, err := exporterhelper.NewMetricsExporter(
+	oexp, err := exporterhelper.NewMetricsExporterOld(
 		config,
 		oce.PushMetricsData,
 		exporterhelper.WithShutdown(oce.Shutdown))

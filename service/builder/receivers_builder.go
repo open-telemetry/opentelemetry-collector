@@ -26,6 +26,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/converter"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
 )
 
@@ -313,68 +314,74 @@ func buildFanoutMetricConsumer(pipelines []*builtPipeline) consumer.MetricsConsu
 // and type of the next consumer.
 func createTraceReceiver(
 	ctx context.Context,
-	factory component.ReceiverFactoryBase,
+	factoryBase component.ReceiverFactoryBase,
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
 	nextConsumer consumer.TraceConsumerBase,
 ) (component.TraceReceiver, error) {
-	if factoryV2, ok := factory.(component.ReceiverFactory); ok {
+	if factory, ok := factoryBase.(component.ReceiverFactory); ok {
 		creationParams := component.ReceiverCreateParams{Logger: logger}
 
 		// If both receiver and consumer are of the new type (can manipulate on internal data structure),
 		// use ProcessorFactory.CreateTraceReceiver.
-		if nextConsumerV2, ok := nextConsumer.(consumer.TraceConsumer); ok {
-			return factoryV2.CreateTraceReceiver(ctx, creationParams, cfg, nextConsumerV2)
+		if nextConsumer, ok := nextConsumer.(consumer.TraceConsumer); ok {
+			return factory.CreateTraceReceiver(ctx, creationParams, cfg, nextConsumer)
 		}
 
 		// If receiver is of the new type, but downstream consumer is of the old type,
 		// use internalToOCTraceConverter compatibility shim.
-		traceConverter := consumer.NewInternalToOCTraceConverter(nextConsumer.(consumer.TraceConsumerOld))
-		return factoryV2.CreateTraceReceiver(ctx, creationParams, cfg, traceConverter)
+		traceConverter := converter.NewInternalToOCTraceConverter(nextConsumer.(consumer.TraceConsumerOld))
+		return factory.CreateTraceReceiver(ctx, creationParams, cfg, traceConverter)
 	}
+
+	factoryOld := factoryBase.(component.ReceiverFactoryOld)
 
 	// If both receiver and consumer are of the old type (can manipulate on OC traces only),
 	// use Factory.CreateTraceReceiver.
 	if nextConsumer, ok := nextConsumer.(consumer.TraceConsumerOld); ok {
-		return factory.(component.ReceiverFactoryOld).CreateTraceReceiver(ctx, logger, cfg, nextConsumer)
+		return factoryOld.CreateTraceReceiver(ctx, logger, cfg, nextConsumer)
 	}
 
-	// Old type receiver and a new type consumer usecase is not supported.
-	// TODO: This case can be supported since we have OC->internal traces translation function
-	return nil, errors.New("OC Traces -> internal data format translation is not supported")
+	// If receiver is of the old type, but downstream consumer is of the new type,
+	// use NewInternalToOCTraceConverter compatibility shim to convert traces from internal format to OC.
+	traceConverter := converter.NewOCToInternalTraceConverter(nextConsumer.(consumer.TraceConsumer))
+	return factoryOld.CreateTraceReceiver(ctx, logger, cfg, traceConverter)
 }
 
 // createMetricsReceiver is a helper function that creates metric receiver based
 // on the current receiver type and type of the next consumer.
 func createMetricsReceiver(
 	ctx context.Context,
-	factory component.ReceiverFactoryBase,
+	factoryBase component.ReceiverFactoryBase,
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
 	nextConsumer consumer.MetricsConsumerBase,
 ) (component.MetricsReceiver, error) {
-	if factoryV2, ok := factory.(component.ReceiverFactory); ok {
+	if factory, ok := factoryBase.(component.ReceiverFactory); ok {
 		creationParams := component.ReceiverCreateParams{Logger: logger}
 
 		// If both receiver and consumer are of the new type (can manipulate on internal data structure),
 		// use ProcessorFactory.CreateMetricsReceiver.
-		if nextConsumerV2, ok := nextConsumer.(consumer.MetricsConsumer); ok {
-			return factoryV2.CreateMetricsReceiver(ctx, creationParams, cfg, nextConsumerV2)
+		if nextConsumer, ok := nextConsumer.(consumer.MetricsConsumer); ok {
+			return factory.CreateMetricsReceiver(ctx, creationParams, cfg, nextConsumer)
 		}
 
 		// If receiver is of the new type, but downstream consumer is of the old type,
 		// use internalToOCMetricsConverter compatibility shim.
-		metricsConverter := consumer.NewInternalToOCMetricsConverter(nextConsumer.(consumer.MetricsConsumerOld))
-		return factoryV2.CreateMetricsReceiver(ctx, creationParams, cfg, metricsConverter)
+		metricsConverter := converter.NewInternalToOCMetricsConverter(nextConsumer.(consumer.MetricsConsumerOld))
+		return factory.CreateMetricsReceiver(ctx, creationParams, cfg, metricsConverter)
 	}
+
+	factoryOld := factoryBase.(component.ReceiverFactoryOld)
 
 	// If both receiver and consumer are of the old type (can manipulate on OC metrics only),
 	// use Factory.CreateMetricsReceiver.
 	if nextConsumer, ok := nextConsumer.(consumer.MetricsConsumerOld); ok {
-		return factory.(component.ReceiverFactoryOld).CreateMetricsReceiver(logger, cfg, nextConsumer)
+		return factoryOld.CreateMetricsReceiver(logger, cfg, nextConsumer)
 	}
 
-	// Old type receiver and a new type consumer usecase is not supported.
-	// TODO: This case can be supported once we have OC->internal metrics translation function
-	return nil, errors.New("OC Metrics -> internal data format translation is not supported")
+	// If receiver is of the old type, but downstream consumer is of the new type,
+	// use NewInternalToOCMetricsConverter compatibility shim to convert metrics from internal format to OC.
+	metricsConverter := converter.NewOCToInternalMetricsConverter(nextConsumer.(consumer.MetricsConsumer))
+	return factoryOld.CreateMetricsReceiver(logger, cfg, metricsConverter)
 }

@@ -26,14 +26,14 @@ import (
 	"path/filepath"
 	"testing"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector/testbed/testbed"
+	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
+	"github.com/open-telemetry/opentelemetry-collector/translator/internaldata"
 )
 
 // TestMain is used to initiate setup, execution and tear down of testbed.
@@ -63,7 +63,7 @@ func TestTrace10kSPS(t *testing.T) {
 			testbed.NewOCDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 52,
-				ExpectedMaxRAM: 46,
+				ExpectedMaxRAM: 48,
 			},
 		},
 		{
@@ -248,8 +248,8 @@ func TestTraceBallast1kSPSAddAttrs(t *testing.T) {
 func verifySingleSpan(
 	t *testing.T,
 	tc *testbed.TestCase,
-	node *commonpb.Node,
-	span *tracepb.Span,
+	serviceName string,
+	spanName string,
 	verifyReceived func(span data.Span),
 	verifyReceivedOld func(span *tracepb.Span),
 ) {
@@ -258,15 +258,26 @@ func verifySingleSpan(
 	tc.MockBackend.ClearReceivedItems()
 	startCounter := tc.MockBackend.DataItemsReceived()
 
-	// Add dummy IDs
-	span.TraceId = testbed.GenerateTraceID(1)
-	span.SpanId = testbed.GenerateSpanID(1)
-	td := consumerdata.TraceData{Node: node, Spans: []*tracepb.Span{span}}
+	// Send one span.
+	td := data.NewTraceData()
+	td.ResourceSpans().Resize(1)
+	td.ResourceSpans().At(0).Resource().InitEmpty()
+	td.ResourceSpans().At(0).Resource().Attributes().InitFromMap(map[string]data.AttributeValue{
+		conventions.AttributeServiceName: data.NewAttributeValueString(serviceName),
+	})
+	td.ResourceSpans().At(0).InstrumentationLibrarySpans().Resize(1)
+	spans := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans()
+	spans.Resize(1)
+	spans.At(0).SetTraceID(testbed.GenerateTraceID(1))
+	spans.At(0).SetSpanID(testbed.GenerateSpanID(1))
+	spans.At(0).SetName(spanName)
 
-	sender := tc.Sender.(testbed.TraceDataSender)
-
-	// Send the span.
-	sender.SendSpans(td)
+	if sender, ok := tc.Sender.(testbed.TraceDataSender); ok {
+		sender.SendSpans(td)
+	} else {
+		senderOld := tc.Sender.(testbed.TraceDataSenderOld)
+		senderOld.SendSpans(internaldata.TraceDataToOC(td)[0])
+	}
 
 	// We bypass the load generator in this test, but make sure to increment the
 	// counter since it is used in final reports.
@@ -362,15 +373,12 @@ func TestTraceAttributesProcessor(t *testing.T) {
 
 			tc.EnableRecording()
 
-			sender := test.sender.(testbed.TraceDataSender)
-			sender.Start()
+			test.sender.Start()
 
 			// Create a span that matches "include" filter.
-			spanToInclude := &tracepb.Span{
-				Name: &tracepb.TruncatableString{Value: "span-to-add-attr"},
-			}
+			spanToInclude := "span-to-add-attr"
 			// Create a service name that matches "include" filter.
-			nodeToInclude := &commonpb.Node{ServiceInfo: &commonpb.ServiceInfo{Name: "service-to-add-attr"}}
+			nodeToInclude := "service-to-add-attr"
 
 			// verifySpan verifies that attributes was added to the internal data span.
 			verifySpan := func(span data.Span) {
@@ -395,7 +403,7 @@ func TestTraceAttributesProcessor(t *testing.T) {
 			verifySingleSpan(t, tc, nodeToInclude, spanToInclude, verifySpan, verifySpanOld)
 
 			// Create a service name that does not match "include" filter.
-			nodeToExclude := &commonpb.Node{ServiceInfo: &commonpb.ServiceInfo{Name: "service-not-to-add-attr"}}
+			nodeToExclude := "service-not-to-add-attr"
 
 			verifySingleSpan(t, tc, nodeToExclude, spanToInclude, func(span data.Span) {
 				// Verify attributes was not added to the new internal data span.
@@ -406,9 +414,7 @@ func TestTraceAttributesProcessor(t *testing.T) {
 			})
 
 			// Create another span that does not match "include" filter.
-			spanToExclude := &tracepb.Span{
-				Name: &tracepb.TruncatableString{Value: "span-not-to-add-attr"},
-			}
+			spanToExclude := "span-not-to-add-attr"
 			verifySingleSpan(t, tc, nodeToInclude, spanToExclude, func(span data.Span) {
 				// Verify attributes was not added to the new internal data span.
 				assert.Equal(t, span.Attributes().Len(), 0)
