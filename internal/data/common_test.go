@@ -435,7 +435,7 @@ func BenchmarkSetValue(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		av.SetValue(c)
+		av.CopyFrom(c)
 	}
 	if av.IntVal() != 123 {
 		b.Fail()

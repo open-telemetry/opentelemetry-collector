@@ -38,9 +38,8 @@ const (
 	AttributeValueBOOL   = AttributeValueType(otlpcommon.AttributeKeyValue_BOOL)
 )
 
-// AttributeValue represents a value of an attribute. Typically used in an Attributes map.
-// Must use one of NilAttributeValue* functions below to create new instances.
-// Important: zero-initialized instance is not valid for use.
+// AttributeValue represents a value of an attribute. Typically used in AttributeMap.
+// Must use one of NewAttributeValue* functions below to create new instances.
 //
 // Intended to be passed by value since internally it is just a pointer to actual
 // value representation. For the same reason passing by value and calling setters
@@ -52,6 +51,9 @@ const (
 //      f1(v)
 //      _ := v.Type() // this will return AttributeValueINT
 //   }
+//
+// Important: zero-initialized instance is not valid for use. All AttributeValue functions bellow must
+// be called only on instances that are created via NewAttributeValue+ functions.
 type AttributeValue struct {
 	orig *otlpcommon.AttributeKeyValue
 }
@@ -60,18 +62,22 @@ func NilAttributeValue() AttributeValue {
 	return AttributeValue{orig: nil}
 }
 
+// NewAttributeValueString creates a new AttributeValue with the given string value.
 func NewAttributeValueString(v string) AttributeValue {
 	return AttributeValue{orig: &otlpcommon.AttributeKeyValue{Type: otlpcommon.AttributeKeyValue_STRING, StringValue: v}}
 }
 
+// NewAttributeValueInt creates a new AttributeValue with the given int64 value.
 func NewAttributeValueInt(v int64) AttributeValue {
 	return AttributeValue{orig: &otlpcommon.AttributeKeyValue{Type: otlpcommon.AttributeKeyValue_INT, IntValue: v}}
 }
 
+// NewAttributeValueDouble creates a new AttributeValue with the given float64 value.
 func NewAttributeValueDouble(v float64) AttributeValue {
 	return AttributeValue{orig: &otlpcommon.AttributeKeyValue{Type: otlpcommon.AttributeKeyValue_DOUBLE, DoubleValue: v}}
 }
 
+// NewAttributeValueBool creates a new AttributeValue with the given bool value.
 func NewAttributeValueBool(v bool) AttributeValue {
 	return AttributeValue{orig: &otlpcommon.AttributeKeyValue{Type: otlpcommon.AttributeKeyValue_BOOL, BoolValue: v}}
 }
@@ -92,51 +98,75 @@ func (a AttributeValue) IsNil() bool {
 	return a.orig == nil
 }
 
-// All AttributeValue functions bellow must be called only on instances that are created
-// via NewAttributeValue+ functions. Calling these functions on zero-initialized
-// AttributeValue or instance created with NilAttributeValue struct will cause a panic.
-
+// Type returns the type of the value for this AttributeValue.
+// Calling this function on zero-initialized AttributeValue will cause a panic.
 func (a AttributeValue) Type() AttributeValueType {
 	return AttributeValueType(a.orig.Type)
 }
 
+// Value returns the string value associated with this AttributeValue.
+// If the Type() is not AttributeValueSTRING then return empty string.
+// Calling this function on zero-initialized AttributeValue will cause a panic.
 func (a AttributeValue) StringVal() string {
 	return a.orig.StringValue
 }
 
+// Value returns the int64 value associated with this AttributeValue.
+// If the Type() is not AttributeValueINT then return int64(0).
+// Calling this function on zero-initialized AttributeValue will cause a panic.
 func (a AttributeValue) IntVal() int64 {
 	return a.orig.IntValue
 }
 
+// Value returns the float64 value associated with this AttributeValue.
+// If the Type() is not AttributeValueDOUBLE then return float64(0).
+// Calling this function on zero-initialized AttributeValue will cause a panic.
 func (a AttributeValue) DoubleVal() float64 {
 	return a.orig.DoubleValue
 }
 
+// Value returns the bool value associated with this AttributeValue.
+// If the Type() is not AttributeValueBOOL then return false.
+// Calling this function on zero-initialized AttributeValue will cause a panic.
 func (a AttributeValue) BoolVal() bool {
 	return a.orig.BoolValue
 }
 
+// SetStringVal replaces the string value associated with this AttributeValue,
+// it also changes the type to be AttributeValueSTRING.
+// Calling this function on zero-initialized AttributeValue will cause a panic.
 func (a AttributeValue) SetStringVal(v string) {
 	a.setTypeAndClear(otlpcommon.AttributeKeyValue_STRING)
 	a.orig.StringValue = v
 }
 
+// SetIntVal replaces the int64 value associated with this AttributeValue,
+// it also changes the type to be AttributeValueINT.
+// Calling this function on zero-initialized AttributeValue will cause a panic.
 func (a AttributeValue) SetIntVal(v int64) {
 	a.setTypeAndClear(otlpcommon.AttributeKeyValue_INT)
 	a.orig.IntValue = v
 }
 
+// SetDoubleVal replaces the float64 value associated with this AttributeValue,
+// it also changes the type to be AttributeValueDOUBLE.
+// Calling this function on zero-initialized AttributeValue will cause a panic.
 func (a AttributeValue) SetDoubleVal(v float64) {
 	a.setTypeAndClear(otlpcommon.AttributeKeyValue_DOUBLE)
 	a.orig.DoubleValue = v
 }
 
+// SetBoolVal replaces the bool value associated with this AttributeValue,
+// it also changes the type to be AttributeValueBOOL.
+// Calling this function on zero-initialized AttributeValue will cause a panic.
 func (a AttributeValue) SetBoolVal(v bool) {
 	a.setTypeAndClear(otlpcommon.AttributeKeyValue_BOOL)
 	a.orig.BoolValue = v
 }
 
-func (a AttributeValue) SetValue(av AttributeValue) {
+// CopyFrom copies all the fields from the given AttributeValue.
+// Calling this function on zero-initialized AttributeValue will cause a panic.
+func (a AttributeValue) CopyFrom(av AttributeValue) {
 	akv := av.orig
 	a.orig.Type = akv.Type
 	a.orig.StringValue = akv.StringValue
@@ -187,7 +217,7 @@ func newAttributeKeyValueBool(k string, v bool) *otlpcommon.AttributeKeyValue {
 
 func newAttributeKeyValue(k string, av AttributeValue) *otlpcommon.AttributeKeyValue {
 	akv := AttributeValue{&otlpcommon.AttributeKeyValue{Key: k}}
-	akv.SetValue(av)
+	akv.CopyFrom(av)
 	return akv.orig
 }
 
@@ -223,7 +253,7 @@ func (am AttributeMap) InitFromMap(attrMap map[string]AttributeValue) AttributeM
 	for k, v := range attrMap {
 		wrappers[ix] = &origs[ix]
 		wrappers[ix].Key = k
-		AttributeValue{wrappers[ix]}.SetValue(v)
+		AttributeValue{wrappers[ix]}.CopyFrom(v)
 		ix++
 	}
 
@@ -306,7 +336,7 @@ func (am AttributeMap) InsertBool(k string, v bool) {
 // the raw value to avoid an extra allocation.
 func (am AttributeMap) Update(k string, v AttributeValue) {
 	if av, existing := am.Get(k); existing {
-		av.SetValue(v)
+		av.CopyFrom(v)
 	}
 }
 
@@ -350,7 +380,7 @@ func (am AttributeMap) UpdateBool(k string, v bool) {
 // the raw value to avoid an extra allocation.
 func (am AttributeMap) Upsert(k string, v AttributeValue) {
 	if av, existing := am.Get(k); existing {
-		av.SetValue(v)
+		av.CopyFrom(v)
 	} else {
 		*am.orig = append(*am.orig, newAttributeKeyValue(k, v))
 	}
@@ -428,6 +458,17 @@ func (am AttributeMap) GetAttribute(ix int) (string, AttributeValue) {
 }
 
 // StringKeyValue stores a key and value pair.
+//
+// Intended to be passed by value since internally it is just a pointer to actual
+// value representation. For the same reason passing by value and calling setters
+// will modify the original, e.g.:
+//
+//   function f1(val StringValue) { val.SetValue("1234") }
+//   function f2() {
+//   	v := NewStringKeyValue("key", "a string")
+//      f1(v)
+//      _ := v.Value() // this will return "1234"
+//   }
 type StringKeyValue struct {
 	orig *otlpcommon.StringKeyValue
 }
@@ -438,16 +479,19 @@ func NewStringKeyValue(k string, v string) StringKeyValue {
 }
 
 // Key returns the key associated with this StringKeyValue.
+// Calling this function on zero-initialized StringKeyValue will cause a panic.
 func (akv StringKeyValue) Key() string {
 	return akv.orig.Key
 }
 
 // Value returns the value associated with this StringKeyValue.
+// Calling this function on zero-initialized StringKeyValue will cause a panic.
 func (akv StringKeyValue) Value() string {
 	return akv.orig.Value
 }
 
 // SetValue replaces the value associated with this StringKeyValue.
+// Calling this function on zero-initialized StringKeyValue will cause a panic.
 func (akv StringKeyValue) SetValue(v string) {
 	akv.orig.Value = v
 }
