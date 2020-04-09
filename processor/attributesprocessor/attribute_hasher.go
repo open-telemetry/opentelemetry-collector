@@ -21,7 +21,7 @@ import (
 	"encoding/hex"
 	"math"
 
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 )
 
 const (
@@ -34,27 +34,27 @@ var (
 	byteFalse = [1]byte{0}
 )
 
-// SHA1AttributeHahser hashes an AttributeValue using SHA1 and returns a
+// SHA1AttributeHasher hashes an AttributeValue using SHA1 and returns a
 // hashed version of the attribute. In practice, this would mostly be used
 // for string attributes but we support all types for completeness/correctness
 // and eliminate any surprises.
-func SHA1AttributeHahser(attr *tracepb.AttributeValue) *tracepb.AttributeValue {
+func SHA1AttributeHasher(attr data.AttributeValue) {
 	var val []byte
-	switch attr.Value.(type) {
-	case *tracepb.AttributeValue_StringValue:
-		val = []byte(attr.GetStringValue().Value)
-	case *tracepb.AttributeValue_BoolValue:
-		if attr.GetBoolValue() {
+	switch attr.Type() {
+	case data.AttributeValueSTRING:
+		val = []byte(attr.StringVal())
+	case data.AttributeValueBOOL:
+		if attr.BoolVal() {
 			val = byteTrue[:]
 		} else {
 			val = byteFalse[:]
 		}
-	case *tracepb.AttributeValue_IntValue:
+	case data.AttributeValueINT:
 		val = make([]byte, int64ByteSize)
-		binary.LittleEndian.PutUint64(val, uint64(attr.GetIntValue()))
-	case *tracepb.AttributeValue_DoubleValue:
+		binary.LittleEndian.PutUint64(val, uint64(attr.IntVal()))
+	case data.AttributeValueDOUBLE:
 		val = make([]byte, float64ByteSize)
-		binary.LittleEndian.PutUint64(val, math.Float64bits(attr.GetDoubleValue()))
+		binary.LittleEndian.PutUint64(val, math.Float64bits(attr.DoubleVal()))
 	}
 
 	var hashed string
@@ -68,9 +68,5 @@ func SHA1AttributeHahser(attr *tracepb.AttributeValue) *tracepb.AttributeValue {
 		hashed = string(hashedBytes)
 	}
 
-	return &tracepb.AttributeValue{
-		Value: &tracepb.AttributeValue_StringValue{
-			StringValue: &tracepb.TruncatableString{Value: string(hashed)},
-		},
-	}
+	attr.SetStringVal(hashed)
 }

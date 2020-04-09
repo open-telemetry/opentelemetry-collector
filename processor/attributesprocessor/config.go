@@ -16,7 +16,7 @@ package attributesprocessor
 
 import (
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-collector/internal/processor/span"
+	"github.com/open-telemetry/opentelemetry-collector/internal/processor/filterspan"
 )
 
 // Config specifies the set of attributes to be inserted, updated, upserted and
@@ -29,7 +29,7 @@ import (
 type Config struct {
 	configmodels.ProcessorSettings `mapstructure:",squash"`
 
-	span.MatchConfig `mapstructure:",squash"`
+	filterspan.MatchConfig `mapstructure:",squash"`
 
 	// Actions specifies the list of attributes to act on.
 	// The set of actions are {INSERT, UPDATE, UPSERT, DELETE}.

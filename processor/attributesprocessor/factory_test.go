@@ -15,18 +15,18 @@
 package attributesprocessor
 
 import (
+	"context"
 	"testing"
 
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
+	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 )
 
 func TestFactory_Type(t *testing.T) {
@@ -54,18 +54,21 @@ func TestFactory_CreateTraceProcessor(t *testing.T) {
 		{Key: "a key", Action: DELETE},
 	}
 
-	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporterOld(), cfg)
+	tp, err := factory.CreateTraceProcessor(
+		context.Background(), component.ProcessorCreateParams{}, exportertest.NewNopTraceExporter(), cfg)
 	assert.NotNil(t, tp)
 	assert.Nil(t, err)
 
-	tp, err = factory.CreateTraceProcessor(zap.NewNop(), nil, cfg)
+	tp, err = factory.CreateTraceProcessor(
+		context.Background(), component.ProcessorCreateParams{}, nil, cfg)
 	assert.Nil(t, tp)
 	assert.NotNil(t, err)
 
 	oCfg.Actions = []ActionKeyValue{
 		{Action: DELETE},
 	}
-	tp, err = factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporterOld(), cfg)
+	tp, err = factory.CreateTraceProcessor(
+		context.Background(), component.ProcessorCreateParams{}, exportertest.NewNopTraceExporter(), cfg)
 	assert.Nil(t, tp)
 	assert.NotNil(t, err)
 }
@@ -74,7 +77,8 @@ func TestFactory_CreateMetricsProcessor(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
 
-	mp, err := factory.CreateMetricsProcessor(zap.NewNop(), nil, cfg)
+	mp, err := factory.CreateMetricsProcessor(
+		context.Background(), component.ProcessorCreateParams{}, nil, cfg)
 	require.Nil(t, mp)
 	assert.Equal(t, err, configerror.ErrDataTypeIsNotSupported)
 }
@@ -92,11 +96,12 @@ func TestFactory_validateActionsConfiguration(t *testing.T) {
 	}
 	output, err := buildAttributesConfiguration(*oCfg)
 	require.NoError(t, err)
+	av := data.NewAttributeValueInt(123)
 	assert.Equal(t, []attributeAction{
 		{Key: "one", Action: DELETE},
-		{Key: "two", Action: INSERT, AttributeValue: &tracepb.AttributeValue{
-			Value: &tracepb.AttributeValue_IntValue{IntValue: cast.ToInt64(123)},
-		}},
+		{Key: "two", Action: INSERT,
+			AttributeValue: &av,
+		},
 		{Key: "three", FromAttribute: "two", Action: UPDATE},
 		{Key: "five", FromAttribute: "two", Action: UPSERT},
 	}, output)
@@ -160,7 +165,7 @@ func TestFactory_validateActionsConfiguration_InvalidConfig(t *testing.T) {
 			oCfg.Actions = tc.actionLists
 			output, err := buildAttributesConfiguration(*oCfg)
 			assert.Nil(t, output)
-			assert.Equal(t, tc.errorString, err.Error())
+			assert.Error(t, err)
 		})
 	}
 }
