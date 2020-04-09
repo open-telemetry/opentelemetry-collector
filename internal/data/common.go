@@ -236,7 +236,7 @@ func (am AttributeMap) InitFromMap(attrMap map[string]AttributeValue) AttributeM
 // otherwise an invalid instance of the AttributeKeyValue and false.
 func (am AttributeMap) Get(key string) (AttributeValue, bool) {
 	for _, a := range *am.orig {
-		if a.Key == key {
+		if a != nil && a.Key == key {
 			return AttributeValue{a}, true
 		}
 	}
@@ -247,7 +247,7 @@ func (am AttributeMap) Get(key string) (AttributeValue, bool) {
 // was present in the map, otherwise returns false.
 func (am AttributeMap) Delete(key string) bool {
 	for i, a := range *am.orig {
-		if a.Key == key {
+		if a != nil && a.Key == key {
 			(*am.orig)[i] = (*am.orig)[len(*am.orig)-1]
 			*am.orig = (*am.orig)[:len(*am.orig)-1]
 			return true
@@ -409,7 +409,10 @@ func (am AttributeMap) Len() int {
 // Returns the same instance to allow nicer code like:
 // assert.EqualValues(t, expected.Sort(), actual.Sort())
 func (am AttributeMap) Sort() AttributeMap {
-	sort.SliceStable(*am.orig, func(i, j int) bool { return (*am.orig)[i].Key < (*am.orig)[j].Key })
+	// Intention is to move the nil values at the end.
+	sort.SliceStable(*am.orig, func(i, j int) bool {
+		return ((*am.orig)[j] == nil) || ((*am.orig)[i] != nil && (*am.orig)[i].Key < (*am.orig)[j].Key)
+	})
 	return am
 }
 
@@ -492,7 +495,7 @@ func (sm StringMap) InitFromMap(attrMap map[string]string) StringMap {
 // otherwise an invalid instance of the StringKeyValue and false.
 func (sm StringMap) Get(k string) (StringKeyValue, bool) {
 	for _, a := range *sm.orig {
-		if a.Key == k {
+		if a != nil && a.Key == k {
 			return StringKeyValue{a}, true
 		}
 	}
@@ -503,7 +506,7 @@ func (sm StringMap) Get(k string) (StringKeyValue, bool) {
 // was present in the map, otherwise returns false.
 func (sm StringMap) Delete(k string) bool {
 	for i, a := range *sm.orig {
-		if a.Key == k {
+		if a != nil && a.Key == k {
 			(*sm.orig)[i] = (*sm.orig)[len(*sm.orig)-1]
 			*sm.orig = (*sm.orig)[:len(*sm.orig)-1]
 			return true
@@ -559,6 +562,9 @@ func (sm StringMap) GetStringKeyValue(ix int) StringKeyValue {
 // Returns the same instance to allow nicer code like:
 // assert.EqualValues(t, expected.Sort(), actual.Sort())
 func (sm StringMap) Sort() StringMap {
-	sort.SliceStable(*sm.orig, func(i, j int) bool { return (*sm.orig)[i].Key < (*sm.orig)[j].Key })
+	sort.SliceStable(*sm.orig, func(i, j int) bool {
+		// Intention is to move the nil values at the end.
+		return ((*sm.orig)[j] == nil) || ((*sm.orig)[i] != nil && (*sm.orig)[i].Key < (*sm.orig)[j].Key)
+	})
 	return sm
 }

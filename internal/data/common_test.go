@@ -19,6 +19,7 @@ import (
 	"strconv"
 	"testing"
 
+	otlpcommon "github.com/open-telemetry/opentelemetry-proto/gen/go/common/v1"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -142,6 +143,145 @@ func TestNilAttributeMap(t *testing.T) {
 	assert.EqualValues(t, NewAttributeMap(), NewAttributeMap().Sort())
 }
 
+func TestAttributeMapWithNilValues(t *testing.T) {
+	origWithNil := []*otlpcommon.AttributeKeyValue{
+		nil,
+		{
+			Key:         "test_key",
+			Type:        otlpcommon.AttributeKeyValue_STRING,
+			StringValue: "test_value",
+		},
+		nil,
+	}
+	sm := AttributeMap{
+		orig: &origWithNil,
+	}
+	val, exist := sm.Get("test_key")
+	assert.True(t, exist)
+	assert.EqualValues(t, "test_value", val.StringVal())
+
+	sm.Insert("other_key", NewAttributeValueString("other_value"))
+	val, exist = sm.Get("other_key")
+	assert.True(t, exist)
+	assert.EqualValues(t, "other_value", val.StringVal())
+
+	sm.InsertString("other_key_string", "other_value")
+	val, exist = sm.Get("other_key")
+	assert.True(t, exist)
+	assert.EqualValues(t, "other_value", val.StringVal())
+
+	sm.InsertInt("other_key_int", 123)
+	val, exist = sm.Get("other_key_int")
+	assert.True(t, exist)
+	assert.EqualValues(t, 123, val.IntVal())
+
+	sm.InsertDouble("other_key_double", 1.23)
+	val, exist = sm.Get("other_key_double")
+	assert.True(t, exist)
+	assert.EqualValues(t, 1.23, val.DoubleVal())
+
+	sm.InsertBool("other_key_bool", true)
+	val, exist = sm.Get("other_key_bool")
+	assert.True(t, exist)
+	assert.EqualValues(t, true, val.BoolVal())
+
+	sm.Update("other_key", NewAttributeValueString("yet_another_value"))
+	val, exist = sm.Get("other_key")
+	assert.True(t, exist)
+	assert.EqualValues(t, "yet_another_value", val.StringVal())
+
+	sm.UpdateString("other_key_string", "yet_another_value")
+	val, exist = sm.Get("other_key_string")
+	assert.True(t, exist)
+	assert.EqualValues(t, "yet_another_value", val.StringVal())
+
+	sm.UpdateInt("other_key_int", 456)
+	val, exist = sm.Get("other_key_int")
+	assert.True(t, exist)
+	assert.EqualValues(t, 456, val.IntVal())
+
+	sm.UpdateDouble("other_key_double", 4.56)
+	val, exist = sm.Get("other_key_double")
+	assert.True(t, exist)
+	assert.EqualValues(t, 4.56, val.DoubleVal())
+
+	sm.UpdateBool("other_key_bool", false)
+	val, exist = sm.Get("other_key_bool")
+	assert.True(t, exist)
+	assert.EqualValues(t, false, val.BoolVal())
+
+	sm.Upsert("other_key", NewAttributeValueString("other_value"))
+	val, exist = sm.Get("other_key")
+	assert.True(t, exist)
+	assert.EqualValues(t, "other_value", val.StringVal())
+
+	sm.UpsertString("other_key_string", "other_value")
+	val, exist = sm.Get("other_key")
+	assert.True(t, exist)
+	assert.EqualValues(t, "other_value", val.StringVal())
+
+	sm.UpsertInt("other_key_int", 123)
+	val, exist = sm.Get("other_key_int")
+	assert.True(t, exist)
+	assert.EqualValues(t, 123, val.IntVal())
+
+	sm.UpsertDouble("other_key_double", 1.23)
+	val, exist = sm.Get("other_key_double")
+	assert.True(t, exist)
+	assert.EqualValues(t, 1.23, val.DoubleVal())
+
+	sm.UpsertBool("other_key_bool", true)
+	val, exist = sm.Get("other_key_bool")
+	assert.True(t, exist)
+	assert.EqualValues(t, true, val.BoolVal())
+
+	sm.Upsert("yet_another_key", NewAttributeValueString("yet_another_value"))
+	val, exist = sm.Get("yet_another_key")
+	assert.True(t, exist)
+	assert.EqualValues(t, "yet_another_value", val.StringVal())
+
+	sm.UpsertString("yet_another_key_string", "yet_another_value")
+	val, exist = sm.Get("yet_another_key_string")
+	assert.True(t, exist)
+	assert.EqualValues(t, "yet_another_value", val.StringVal())
+
+	sm.UpsertInt("yet_another_key_int", 456)
+	val, exist = sm.Get("yet_another_key_int")
+	assert.True(t, exist)
+	assert.EqualValues(t, 456, val.IntVal())
+
+	sm.UpsertDouble("yet_another_key_double", 4.56)
+	val, exist = sm.Get("yet_another_key_double")
+	assert.True(t, exist)
+	assert.EqualValues(t, 4.56, val.DoubleVal())
+
+	sm.UpsertBool("yet_another_key_bool", false)
+	val, exist = sm.Get("yet_another_key_bool")
+	assert.True(t, exist)
+	assert.EqualValues(t, false, val.BoolVal())
+
+	assert.True(t, sm.Delete("other_key"))
+	assert.True(t, sm.Delete("other_key_string"))
+	assert.True(t, sm.Delete("other_key_int"))
+	assert.True(t, sm.Delete("other_key_double"))
+	assert.True(t, sm.Delete("other_key_bool"))
+	assert.True(t, sm.Delete("yet_another_key"))
+	assert.True(t, sm.Delete("yet_another_key_string"))
+	assert.True(t, sm.Delete("yet_another_key_int"))
+	assert.True(t, sm.Delete("yet_another_key_double"))
+	assert.True(t, sm.Delete("yet_another_key_bool"))
+	assert.False(t, sm.Delete("other_key"))
+	assert.False(t, sm.Delete("yet_another_key"))
+
+	// Test that the initial key is still there.
+	val, exist = sm.Get("test_key")
+	assert.True(t, exist)
+	assert.EqualValues(t, "test_value", val.StringVal())
+
+	// Test Sort
+	assert.EqualValues(t, AttributeMap{orig: &origWithNil}, sm.Sort())
+}
+
 func TestNilStringMap(t *testing.T) {
 	val, exist := NewStringMap().Get("test_key")
 	assert.EqualValues(t, false, exist)
@@ -168,6 +308,56 @@ func TestNilStringMap(t *testing.T) {
 	assert.EqualValues(t, NewStringMap(), NewStringMap().Sort())
 }
 
+func TestStringMapWithNilValues(t *testing.T) {
+	origWithNil := []*otlpcommon.StringKeyValue{
+		nil,
+		{
+			Key:   "test_key",
+			Value: "test_value",
+		},
+		nil,
+	}
+	sm := StringMap{
+		orig: &origWithNil,
+	}
+	val, exist := sm.Get("test_key")
+	assert.True(t, exist)
+	assert.EqualValues(t, "test_value", val.Value())
+
+	sm.Insert("other_key", "other_value")
+	val, exist = sm.Get("other_key")
+	assert.True(t, exist)
+	assert.EqualValues(t, "other_value", val.Value())
+
+	sm.Update("other_key", "yet_another_value")
+	val, exist = sm.Get("other_key")
+	assert.True(t, exist)
+	assert.EqualValues(t, "yet_another_value", val.Value())
+
+	sm.Upsert("other_key", "other_value")
+	val, exist = sm.Get("other_key")
+	assert.True(t, exist)
+	assert.EqualValues(t, "other_value", val.Value())
+
+	sm.Upsert("yet_another_key", "yet_another_value")
+	val, exist = sm.Get("yet_another_key")
+	assert.True(t, exist)
+	assert.EqualValues(t, "yet_another_value", val.Value())
+
+	assert.EqualValues(t, true, sm.Delete("other_key"))
+	assert.EqualValues(t, true, sm.Delete("yet_another_key"))
+	assert.EqualValues(t, false, sm.Delete("other_key"))
+	assert.EqualValues(t, false, sm.Delete("yet_another_key"))
+
+	// Test that the initial key is still there.
+	val, exist = sm.Get("test_key")
+	assert.True(t, exist)
+	assert.EqualValues(t, "test_value", val.Value())
+
+	// Test Sort
+	assert.EqualValues(t, StringMap{orig: &origWithNil}, sm.Sort())
+}
+
 func TestStringMap(t *testing.T) {
 	origRawMap := map[string]string{"k0": "v0", "k1": "v1", "k2": "v2"}
 	origMap := NewStringMap().InitFromMap(origRawMap)
@@ -175,7 +365,7 @@ func TestStringMap(t *testing.T) {
 	assert.EqualValues(t, 3, sm.Len())
 
 	val, exist := sm.Get("k2")
-	assert.EqualValues(t, true, exist)
+	assert.True(t, exist)
 	assert.EqualValues(t, NewStringKeyValue("k2", "v2"), val)
 
 	val, exist = sm.Get("k3")
