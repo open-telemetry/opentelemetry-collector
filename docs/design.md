@@ -139,6 +139,66 @@ When the Collector loads this config the result will look like this:
 
 Note that each “queued_retry” processor is an independent instance, although both are configured the same way, i.e. each have a size of 50.
 
+## Custom Data Types
+
+Collector currently has 2 built-in data types that can flow through it: traces and metrics.
+It is possible to define a custom data type, implement components that support this data
+type and have pipelines of such components.
+
+In order to implement a custom data type you will need to do the following.
+
+1. Choose a name for custom data type that will be used in configuration file. Choose
+simple and descriptive names. For example if we wanted to add support for logs in the
+Collector we would name the data type "logs".
+
+2. Design in-memory representation for the custom data type. The in-memory representation
+must implement `data.Custom` interface. For example in case of logs we could name it
+`data.Logs`.
+
+3. Implement components that can receive, process or export this data type. You will need
+to implement the corresponding interfaces: `DataReceiver`, `DataProcessor`, `DataExporter`
+and their factories: `DataReceiverFactory`, `DataProcessorFactory`, `DataExporterFactory`.
+
+`Data*Factory.Create*()` function accept a `dataType` parameter which tells the factory
+what is the data type that the component is supposed to handle. This allows one component
+to handle multiple data types if needed (just like today it is possible to have a component
+that handles both traces and metrics).
+
+The `DataReceiver` implementation must emit data of the type that you defined earlier in
+step 2 (`data.Logs` in the example).
+
+`DataProcessor` and `DataExporter` implementation must define `ConsumeData` function
+that accepts `data.Custom` parameter and type-casts it to the concrete implementation
+of the data type (`data.Logs` in the example).
+
+For sample code please see `ExampleReceiver`, `ExampleProcessor`, `ExampleExporter` in
+`example_factories.go`.
+
+4. Once all the above is done the end-user can use these components. The usage is exactly
+the same as for builtin type. In the configuration file the user must define a pipeline
+with the custom data type. For example (assuming "logs" data type example):
+
+```yaml
+receivers:
+  syslog:
+
+processors:
+  log_filter:
+    # this is a hypothetical processor that can filter log custom data type
+    # based on user-specified filer condition.
+    include: severity == "error"
+
+exporters:
+  syslog:
+
+pipelines:
+  logs:
+    receivers: [syslog]
+    processors: [log_filter]
+    exporters: [syslog]
+```
+
+
 ## <a name="opentelemetry-agent"></a>Running as an Agent
 
 On a typical VM/container, there are user applications running in some

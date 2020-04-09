@@ -100,7 +100,7 @@ func TestDecodeConfig(t *testing.T) {
 	assert.Equal(t, 1, len(config.Processors), "Incorrect processors count")
 
 	assert.Equal(t,
-		&ExampleProcessor{
+		&ExampleProcessorCfg{
 			ProcessorSettings: configmodels.ProcessorSettings{
 				TypeVal: "exampleprocessor",
 				NameVal: "exampleprocessor",
@@ -258,7 +258,7 @@ func TestSimpleConfig(t *testing.T) {
 		assert.Equalf(t, 1, len(config.Processors), "TEST[%s]", test.name)
 
 		assert.Equalf(t,
-			&ExampleProcessor{
+			&ExampleProcessorCfg{
 				ProcessorSettings: configmodels.ProcessorSettings{
 					TypeVal: "exampleprocessor",
 					NameVal: "exampleprocessor",
@@ -367,7 +367,6 @@ func TestDecodeConfig_Invalid(t *testing.T) {
 		{name: "unknown-processor-type", expected: errUnknownProcessorType},
 		{name: "invalid-service-extensions-value", expected: errUnmarshalErrorOnService},
 		{name: "invalid-sequence-value", expected: errUnmarshalErrorOnPipeline},
-		{name: "invalid-pipeline-type", expected: errInvalidPipelineType},
 		{name: "invalid-pipeline-type-and-name", expected: errInvalidTypeAndNameKey},
 		{name: "duplicate-extension", expected: errDuplicateExtensionName},
 		{name: "duplicate-receiver", expected: errDuplicateReceiverName},

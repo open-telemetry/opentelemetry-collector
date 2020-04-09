@@ -152,6 +152,10 @@ func (rb *ReceiversBuilder) findPipelinesToAttach(config configmodels.Receiver) 
 
 		// Is this receiver attached to the pipeline?
 		if hasReceiver(pipelineCfg, config.Name()) {
+			if _, exists := pipelinesToAttach[pipelineCfg.InputType]; !exists {
+				pipelinesToAttach[pipelineCfg.InputType] = make([]*builtPipeline, 0)
+			}
+
 			// Yes, add it to the list of pipelines of corresponding data type.
 			pipelinesToAttach[pipelineCfg.InputType] =
 				append(pipelinesToAttach[pipelineCfg.InputType], pipelineProcessor)
@@ -186,6 +190,10 @@ func (rb *ReceiversBuilder) attachReceiverToPipelines(
 	case configmodels.MetricsDataType:
 		junction := buildFanoutMetricConsumer(builtPipelines)
 		createdReceiver, err = createMetricsReceiver(context.Background(), factory, logger, config, junction)
+
+	default:
+		junction := buildFanoutConsumer(builtPipelines)
+		createdReceiver, err = createReceiver(context.Background(), factory, logger, dataType, config, junction)
 	}
 
 	if err != nil {
@@ -194,8 +202,8 @@ func (rb *ReceiversBuilder) attachReceiverToPipelines(
 				"receiver %s does not support %s but it was used in a "+
 					"%s pipeline",
 				config.Name(),
-				dataType.GetString(),
-				dataType.GetString())
+				dataType,
+				dataType)
 		}
 		return fmt.Errorf("cannot create receiver %s: %s", config.Name(), err.Error())
 	}
@@ -220,7 +228,7 @@ func (rb *ReceiversBuilder) attachReceiverToPipelines(
 	}
 	rcv.receiver = createdReceiver
 
-	logger.Info("Receiver is enabled.", zap.String("datatype", dataType.GetString()))
+	logger.Info("Receiver is enabled.", zap.String("datatype", string(dataType)))
 
 	return nil
 }
@@ -314,6 +322,31 @@ func buildFanoutMetricConsumer(pipelines []*builtPipeline) consumer.MetricsConsu
 	return processor.CreateMetricsFanOutConnector(pipelineConsumers)
 }
 
+func buildFanoutConsumer(pipelines []*builtPipeline) consumer.DataConsumer {
+	// Optimize for the case when there is only one processor, no need to create junction point.
+	if len(pipelines) == 1 {
+		return pipelines[0].firstDC
+	}
+
+	var pipelineConsumers []consumer.DataConsumer
+	anyPipelineMutatesData := false
+	for _, pipeline := range pipelines {
+		pipelineConsumers = append(pipelineConsumers, pipeline.firstDC)
+		anyPipelineMutatesData = anyPipelineMutatesData || pipeline.MutatesConsumedData
+	}
+
+	// Create a junction point that fans out to all pipelines.
+	if anyPipelineMutatesData {
+		// If any pipeline mutates data use a cloning fan out connector
+		// so that it is safe to modify fanned out data.
+		// TODO: if there are more than 2 pipelines only clone data for pipelines that
+		// declare the intent to mutate the data. Pipelines that do not mutate the data
+		// can consume shared data.
+		return processor.NewCloningFanOutConnector(pipelineConsumers)
+	}
+	return processor.NewFanOutConnector(pipelineConsumers)
+}
+
 // createTraceReceiver is a helper function that creates trace receiver based on the current receiver type
 // and type of the next consumer.
 func createTraceReceiver(
@@ -388,4 +421,29 @@ func createMetricsReceiver(
 	// use NewInternalToOCMetricsConverter compatibility shim to convert metrics from internal format to OC.
 	metricsConverter := converter.NewOCToInternalMetricsConverter(nextConsumer.(consumer.MetricsConsumer))
 	return factoryOld.CreateMetricsReceiver(logger, cfg, metricsConverter)
+}
+
+// createMetricsReceiver is a helper function that creates metric receiver based
+// on the current receiver type and type of the next consumer.
+func createReceiver(
+	ctx context.Context,
+	factoryBase component.ReceiverFactoryBase,
+	logger *zap.Logger,
+	dataType configmodels.DataType,
+	cfg configmodels.Receiver,
+	nextConsumer consumer.DataConsumer,
+) (component.DataReceiver, error) {
+	if factory, ok := factoryBase.(component.DataReceiverFactory); ok {
+		creationParams := component.ReceiverCreateParams{Logger: logger}
+
+		if nc, ok := nextConsumer.(consumer.DataConsumer); ok {
+			return factory.CreateReceiver(ctx, creationParams, dataType, cfg, nc)
+		}
+
+		return nil, fmt.Errorf("receiver %q is attached to a pipeline with a component that does accept data type %q",
+			cfg.Name(), dataType)
+	}
+
+	return nil, fmt.Errorf("receiver %q does support data type %q",
+		cfg.Name(), dataType)
 }

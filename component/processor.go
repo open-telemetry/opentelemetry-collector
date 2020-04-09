@@ -66,6 +66,12 @@ type MetricsProcessor interface {
 	MetricsProcessorBase
 }
 
+// DataProcessor composes DataConsumer with some additional processor-specific functions.
+type DataProcessor interface {
+	Processor
+	consumer.DataConsumer
+}
+
 // ProcessorCapabilities describes the capabilities of a Processor.
 type ProcessorCapabilities struct {
 	// MutatesConsumedData is set to true if Consume* function of the
@@ -130,4 +136,21 @@ type ProcessorFactory interface {
 	// error will be returned instead.
 	CreateMetricsProcessor(ctx context.Context, params ProcessorCreateParams,
 		nextConsumer consumer.MetricsConsumer, cfg configmodels.Processor) (MetricsProcessor, error)
+}
+
+// DataProcessorFactory is factory interface for processors. This is the
+// new factory type that can create new style processors.
+type DataProcessorFactory interface {
+	ProcessorFactoryBase
+
+	// CreateProcessor creates a processor based on this config.
+	// If the processor type does not support the dataType or if the config is not valid
+	// error will be returned instead.
+	CreateProcessor(
+		ctx context.Context,
+		params ProcessorCreateParams,
+		dataType configmodels.DataType,
+		cfg configmodels.Processor,
+		nextConsumer consumer.DataConsumer,
+	) (DataProcessor, error)
 }

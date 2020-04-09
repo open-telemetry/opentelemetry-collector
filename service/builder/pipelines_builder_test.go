@@ -62,6 +62,146 @@ func TestPipelinesBuilder_Build(t *testing.T) {
 	}
 }
 
+func createExampleFactories() config.Factories {
+	exampleReceiverFactory := &config.ExampleReceiverFactory{}
+	exampleProcessorFactory := &config.ExampleProcessorFactory{}
+	exampleExporterFactory := &config.ExampleExporterFactory{}
+
+	factories := config.Factories{
+		Receivers: map[configmodels.Type]component.ReceiverFactoryBase{
+			exampleReceiverFactory.Type(): exampleReceiverFactory,
+		},
+		Processors: map[configmodels.Type]component.ProcessorFactoryBase{
+			exampleProcessorFactory.Type(): exampleProcessorFactory,
+		},
+		Exporters: map[configmodels.Type]component.ExporterFactoryBase{
+			exampleExporterFactory.Type(): exampleExporterFactory,
+		},
+	}
+
+	return factories
+}
+
+func createExampleConfig(dataType string) *configmodels.Config {
+
+	exampleReceiverFactory := &config.ExampleReceiverFactory{}
+	exampleProcessorFactory := &config.ExampleProcessorFactory{}
+	exampleExporterFactory := &config.ExampleExporterFactory{}
+
+	cfg := &configmodels.Config{
+		Receivers: map[string]configmodels.Receiver{
+			string(exampleReceiverFactory.Type()): exampleReceiverFactory.CreateDefaultConfig(),
+		},
+		Processors: map[string]configmodels.Processor{
+			string(exampleProcessorFactory.Type()): exampleProcessorFactory.CreateDefaultConfig(),
+		},
+		Exporters: map[string]configmodels.Exporter{
+			string(exampleExporterFactory.Type()): exampleExporterFactory.CreateDefaultConfig(),
+		},
+		Service: configmodels.Service{
+			Pipelines: map[string]*configmodels.Pipeline{
+				dataType: {
+					Name:       dataType,
+					InputType:  configmodels.DataType(dataType),
+					Receivers:  []string{string(exampleReceiverFactory.Type())},
+					Processors: []string{string(exampleProcessorFactory.Type())},
+					Exporters:  []string{string(exampleExporterFactory.Type())},
+				},
+			},
+		},
+	}
+	return cfg
+}
+
+func TestPipelinesBuilder_BuildCustom(t *testing.T) {
+
+	factories := createExampleFactories()
+
+	tests := []struct {
+		dataType   string
+		shouldFail bool
+	}{
+		{
+			dataType:   "exampledata",
+			shouldFail: false,
+		},
+		{
+			dataType:   "nosuchdatatype",
+			shouldFail: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.dataType, func(t *testing.T) {
+			dataType := test.dataType
+
+			cfg := createExampleConfig(dataType)
+
+			// BuildProcessors the pipeline
+			allExporters, err := NewExportersBuilder(zap.NewNop(), cfg, factories.Exporters).Build()
+			if test.shouldFail {
+				assert.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+			require.EqualValues(t, 1, len(allExporters))
+			pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), cfg, allExporters, factories.Processors).Build()
+
+			assert.NoError(t, err)
+			require.NotNil(t, pipelineProcessors)
+
+			err = pipelineProcessors.StartProcessors(context.Background(), componenttest.NewNopHost())
+			assert.NoError(t, err)
+
+			pipelineName := dataType
+			processor := pipelineProcessors[cfg.Service.Pipelines[pipelineName]]
+
+			// Ensure pipeline has its fields correctly populated.
+			require.NotNil(t, processor)
+			assert.Nil(t, processor.firstTC)
+			assert.Nil(t, processor.firstMC)
+			assert.NotNil(t, processor.firstDC)
+
+			// Compose the list of created exporters.
+			exporterNames := []string{"exampleexporter"}
+			var exporters []*builtExporter
+			for _, name := range exporterNames {
+				// Ensure exporter is created.
+				exp := allExporters[cfg.Exporters[name]]
+				require.NotNil(t, exp)
+				exporters = append(exporters, exp)
+			}
+
+			// Send TraceData via processor and verify that all exporters of the pipeline receive it.
+
+			// First check that there are no traces in the exporters yet.
+			var exporterConsumers []*config.ExampleExporterConsumer
+			for _, exporter := range exporters {
+				consumer := exporter.de[configmodels.DataType(dataType)].(*config.ExampleExporterConsumer)
+				exporterConsumers = append(exporterConsumers, consumer)
+				require.Equal(t, len(consumer.Data), 0)
+			}
+
+			// Send one custom data.
+			data := &config.ExampleCustomData{Data: "testdata"}
+			processor.firstDC.(consumer.DataConsumer).ConsumeData(context.Background(), data)
+
+			// Now verify received data.
+			for _, consumer := range exporterConsumers {
+				// Check that the trace is received by exporter.
+				require.Equal(t, 1, len(consumer.Data))
+
+				// Verify that span is successfully delivered.
+				assert.EqualValues(t, data, consumer.Data[0])
+			}
+
+			err = pipelineProcessors.ShutdownProcessors(context.Background())
+			assert.NoError(t, err)
+		})
+	}
+}
+
 func assertEqualTraceData(t *testing.T, expected consumerdata.TraceData, actual consumerdata.TraceData) {
 	assert.True(t, proto.Equal(expected.Resource, actual.Resource))
 	assert.True(t, proto.Equal(expected.Node, actual.Node))

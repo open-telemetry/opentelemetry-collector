@@ -539,17 +539,7 @@ func loadPipelines(v *viper.Viper) (configmodels.Pipelines, error) {
 		var pipelineCfg configmodels.Pipeline
 
 		// Set the type.
-		switch typeStr {
-		case configmodels.TracesDataTypeStr:
-			pipelineCfg.InputType = configmodels.TracesDataType
-		case configmodels.MetricsDataTypeStr:
-			pipelineCfg.InputType = configmodels.MetricsDataType
-		default:
-			return nil, &configError{
-				code: errInvalidPipelineType,
-				msg:  fmt.Sprintf("invalid pipeline type %q (must be metrics or traces)", typeStr),
-			}
-		}
+		pipelineCfg.InputType = configmodels.DataType(typeStr)
 
 		pipelineConfig := ViperSub(pipelinesConfig, key)
 

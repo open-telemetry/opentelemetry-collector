@@ -28,6 +28,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer/converter"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/pdatautil"
+	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 )
 
 // This file contains implementations of cloning Trace/Metrics connectors
@@ -208,6 +209,39 @@ func (tfc traceCloningFanOutConnector) ConsumeTraces(ctx context.Context, td pda
 		// Give the original data to the last consumer.
 		lastTc := tfc[len(tfc)-1]
 		if err := lastTc.ConsumeTraces(ctx, td); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	return componenterror.CombineErrors(errs)
+}
+
+// NewTraceCloningFanOutConnector wraps multiple trace consumers in a single one.
+func NewCloningFanOutConnector(tcs []consumer.DataConsumer) consumer.DataConsumer {
+	return CloningFanOutConnector(tcs)
+}
+
+type CloningFanOutConnector []consumer.DataConsumer
+
+var _ consumer.DataConsumer = (*CloningFanOutConnector)(nil)
+
+// ConsumeData exports the span data to all  consumers wrapped by the current one.
+func (tfc CloningFanOutConnector) ConsumeData(ctx context.Context, td data.Custom) error {
+	var errs []error
+
+	// Fan out to first len-1 consumers.
+	for i := 0; i < len(tfc)-1; i++ {
+		// Create a clone of data. We need to clone because consumers may modify the data.
+		clone := td.Clone()
+		if err := tfc[i].ConsumeData(ctx, clone); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	if len(tfc) > 0 {
+		// Give the original data to the last consumer.
+		lastTc := tfc[len(tfc)-1]
+		if err := lastTc.ConsumeData(ctx, td); err != nil {
 			errs = append(errs, err)
 		}
 	}

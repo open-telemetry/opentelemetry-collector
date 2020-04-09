@@ -62,6 +62,12 @@ type MetricsExporter interface {
 	MetricsExporterBase
 }
 
+// DataExporter is an DataConsumer that is also an Exporter.
+type DataExporter interface {
+	Exporter
+	consumer.DataConsumer
+}
+
 // ExporterFactoryBase defines the common functions for all exporter factories.
 type ExporterFactoryBase interface {
 	Factory
@@ -110,4 +116,19 @@ type ExporterFactory interface {
 	// error will be returned instead.
 	CreateMetricsExporter(ctx context.Context, params ExporterCreateParams,
 		cfg configmodels.Exporter) (MetricsExporter, error)
+}
+
+// DataExporterFactory can create Exporter.
+type DataExporterFactory interface {
+	ExporterFactoryBase
+
+	// CreateExporter creates an exporter based on this config.
+	// If the exporter type does not support the data type or if the config is not valid
+	// error will be returned instead.
+	CreateExporter(
+		ctx context.Context,
+		params ExporterCreateParams,
+		dataType configmodels.DataType,
+		cfg configmodels.Exporter,
+	) (DataExporter, error)
 }

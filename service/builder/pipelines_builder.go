@@ -35,6 +35,7 @@ type builtPipeline struct {
 	logger  *zap.Logger
 	firstTC consumer.TraceConsumerBase
 	firstMC consumer.MetricsConsumerBase
+	firstDC consumer.DataConsumer
 
 	// MutatesConsumedData is set to true if any processors in the pipeline
 	// can mutate the TraceData or MetricsData input argument.
@@ -126,12 +127,15 @@ func (pb *PipelinesBuilder) buildPipeline(pipelineCfg *configmodels.Pipeline,
 	// First create a consumer junction point that fans out the data to all exporters.
 	var tc consumer.TraceConsumerBase
 	var mc consumer.MetricsConsumerBase
+	var dc consumer.DataConsumer
 
 	switch pipelineCfg.InputType {
 	case configmodels.TracesDataType:
 		tc = pb.buildFanoutExportersTraceConsumer(pipelineCfg.Exporters)
 	case configmodels.MetricsDataType:
 		mc = pb.buildFanoutExportersMetricsConsumer(pipelineCfg.Exporters)
+	default:
+		dc = pb.buildFanoutExportersConsumer(pipelineCfg.InputType, pipelineCfg.Exporters)
 	}
 
 	mutatesConsumedData := false
@@ -170,6 +174,15 @@ func (pb *PipelinesBuilder) buildPipeline(pipelineCfg *configmodels.Pipeline,
 			}
 			processors[i] = proc
 			mc = proc
+
+		default:
+			var proc component.DataProcessor
+			proc, err = createProcessor(factory, componentLogger, pipelineCfg.InputType, procCfg, dc)
+			if proc != nil {
+				mutatesConsumedData = mutatesConsumedData || proc.GetCapabilities().MutatesConsumedData
+			}
+			processors[i] = proc
+			dc = proc
 		}
 
 		if err != nil {
@@ -178,19 +191,20 @@ func (pb *PipelinesBuilder) buildPipeline(pipelineCfg *configmodels.Pipeline,
 		}
 
 		// Check if the factory really created the processor.
-		if tc == nil && mc == nil {
+		if tc == nil && mc == nil && dc == nil {
 			return nil, fmt.Errorf("factory for %q produced a nil processor", procCfg.Name())
 		}
 	}
 
 	pipelineLogger := pb.logger.With(zap.String("pipeline_name", pipelineCfg.Name),
-		zap.String("pipeline_datatype", pipelineCfg.InputType.GetString()))
+		zap.String("pipeline_datatype", string(pipelineCfg.InputType)))
 	pipelineLogger.Info("Pipeline is enabled.")
 
 	bp := &builtPipeline{
 		pipelineLogger,
 		tc,
 		mc,
+		dc,
 		mutatesConsumedData,
 		processors,
 	}
@@ -241,6 +255,26 @@ func (pb *PipelinesBuilder) buildFanoutExportersMetricsConsumer(exporterNames []
 
 	// Create a junction point that fans out to all exporters.
 	return processor.CreateMetricsFanOutConnector(exporters)
+}
+
+func (pb *PipelinesBuilder) buildFanoutExportersConsumer(
+	dataType configmodels.DataType,
+	exporterNames []string,
+) consumer.DataConsumer {
+	builtExporters := pb.getBuiltExportersByNames(exporterNames)
+
+	// Optimize for the case when there is only one exporter, no need to create junction point.
+	if len(builtExporters) == 1 {
+		return builtExporters[0].de[dataType]
+	}
+
+	var exporters []consumer.DataConsumer
+	for _, builtExp := range builtExporters {
+		exporters = append(exporters, builtExp.de[dataType])
+	}
+
+	// Create a junction point that fans out to all exporters.
+	return processor.NewFanOutConnector(exporters)
 }
 
 // createTraceProcessor creates trace processor based on type of the current processor
@@ -317,4 +351,31 @@ func createMetricsProcessor(
 	// use NewInternalToOCMetricsConverter compatibility shim to convert metrics from internal format to OC.
 	metricsConverter := converter.NewOCToInternalMetricsConverter(nextConsumer.(consumer.MetricsConsumer))
 	return factoryOld.CreateMetricsProcessor(logger, metricsConverter, cfg)
+}
+
+// createProcessor creates processor based on type of the current processor
+// and type of the downstream consumer.
+func createProcessor(
+	factoryBase component.ProcessorFactoryBase,
+	logger *zap.Logger,
+	dataType configmodels.DataType,
+	cfg configmodels.Processor,
+	nextConsumer consumer.DataConsumer,
+) (component.DataProcessor, error) {
+	if factory, ok := factoryBase.(component.DataProcessorFactory); ok {
+		creationParams := component.ProcessorCreateParams{Logger: logger}
+		ctx := context.Background()
+
+		// If both processor and consumer are of the new type (can manipulate on internal data structure),
+		// use ProcessorFactory.CreateMetricsProcessor.
+		if dataConsumer, ok := nextConsumer.(consumer.DataConsumer); ok {
+			return factory.CreateProcessor(ctx, creationParams, dataType, cfg, dataConsumer)
+		}
+
+		return nil, fmt.Errorf("processor %q is attached to a pipeline with a component that does accept data type %q",
+			cfg.Name(), dataType)
+	}
+
+	return nil, fmt.Errorf("processor %q does support data type %q",
+		cfg.Name(), dataType)
 }

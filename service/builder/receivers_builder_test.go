@@ -181,6 +181,92 @@ func testReceivers(
 	}
 }
 
+func TestReceiversBuilder_BuildCustom(t *testing.T) {
+	factories := createExampleFactories()
+
+	tests := []struct {
+		dataType   string
+		shouldFail bool
+	}{
+		{
+			dataType:   "exampledata",
+			shouldFail: false,
+		},
+		{
+			dataType:   "nosuchdatatype",
+			shouldFail: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.dataType, func(t *testing.T) {
+			dataType := test.dataType
+
+			cfg := createExampleConfig(dataType)
+
+			// Build the pipeline
+			allExporters, err := NewExportersBuilder(zap.NewNop(), cfg, factories.Exporters).Build()
+			if test.shouldFail {
+				assert.Error(t, err)
+				return
+			}
+
+			assert.NoError(t, err)
+			pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), cfg, allExporters, factories.Processors).Build()
+			assert.NoError(t, err)
+			receivers, err := NewReceiversBuilder(zap.NewNop(), cfg, pipelineProcessors, factories.Receivers).Build()
+
+			assert.NoError(t, err)
+			require.NotNil(t, receivers)
+
+			receiver := receivers[cfg.Receivers["examplereceiver"]]
+
+			// Ensure receiver has its fields correctly populated.
+			require.NotNil(t, receiver)
+
+			assert.NotNil(t, receiver.receiver)
+
+			// Compose the list of created exporters.
+			exporterNames := []string{"exampleexporter"}
+			var exporters []*builtExporter
+			for _, name := range exporterNames {
+				// Ensure exporter is created.
+				exp := allExporters[cfg.Exporters[name]]
+				require.NotNil(t, exp)
+				exporters = append(exporters, exp)
+			}
+
+			// Send Data via receiver and verify that all exporters of the pipeline receive it.
+
+			// First check that there are no traces in the exporters yet.
+			for _, exporter := range exporters {
+				for _, exp := range exporter.de {
+					consumer := exp.(*config.ExampleExporterConsumer)
+					require.Equal(t, len(consumer.Data), 0)
+				}
+			}
+
+			// Send one data.
+			data := &config.ExampleCustomData{Data: "testdata"}
+			producer := receiver.receiver.(*config.ExampleReceiverProducer)
+			producer.DataConsumer.ConsumeData(context.Background(), data)
+
+			// Now verify received data.
+			for _, name := range exporterNames {
+				// Check that the data is received by exporter.
+				exporter := allExporters[cfg.Exporters[name]]
+
+				// Validate exported data.
+				for _, exp := range exporter.de {
+					consumer := exp.(*config.ExampleExporterConsumer)
+					require.Equal(t, 1, len(consumer.Data))
+					assert.EqualValues(t, data, consumer.Data[0])
+				}
+			}
+		})
+	}
+}
+
 func TestReceiversBuilder_DataTypeError(t *testing.T) {
 	factories, err := config.ExampleComponents()
 	assert.NoError(t, err)

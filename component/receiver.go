@@ -49,6 +49,16 @@ type MetricsReceiver interface {
 	Receiver
 }
 
+// A DataReceiver is an "arbitrary data"-to-"internal format" converter.
+// Its purpose is to translate data from the wild into internal data format.
+// DataReceiver feeds a consumer.DataConsumer with data.
+//
+// For example it could be Zipkin data source which translates
+// Zipkin spans into consumerdata.DataData.
+type DataReceiver interface {
+	Receiver
+}
+
 // ReceiverFactoryBase defines the common functions for all receiver factories.
 type ReceiverFactoryBase interface {
 	Factory
@@ -116,4 +126,20 @@ type ReceiverFactory interface {
 	// error will be returned instead.
 	CreateMetricsReceiver(ctx context.Context, params ReceiverCreateParams,
 		cfg configmodels.Receiver, nextConsumer consumer.MetricsConsumer) (MetricsReceiver, error)
+}
+
+// DataReceiverFactory can create Receiver and MetricsReceiver.
+type DataReceiverFactory interface {
+	ReceiverFactoryBase
+
+	// CreateReceiver creates a  receiver based on this config.
+	// If the receiver type does not support the dataType or if the config is not valid
+	// error will be returned instead.
+	CreateReceiver(
+		ctx context.Context,
+		params ReceiverCreateParams,
+		dataType configmodels.DataType,
+		cfg configmodels.Receiver,
+		nextConsumer consumer.DataConsumer,
+	) (DataReceiver, error)
 }
