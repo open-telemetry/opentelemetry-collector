@@ -55,12 +55,12 @@ type LoadGenerator struct {
 // LoadOptions defines the options to use for generating the load.
 type LoadOptions struct {
 	// DataItemsPerSecond specifies how many spans or metric data points to generate each second.
-	DataItemsPerSecond uint
+	DataItemsPerSecond int
 
 	// ItemsPerBatch specifies how many spans or metric data points per batch to generate.
 	// Should be greater than zero. The number of batches generated per second will be
 	// DataItemsPerSecond/ItemsPerBatch.
-	ItemsPerBatch uint
+	ItemsPerBatch int
 
 	// Attributes to add to each generated data item. Can be empty.
 	Attributes map[string]string
@@ -178,7 +178,7 @@ func (lg *LoadGenerator) generateTraceOld() {
 
 	var spans []*tracepb.Span
 	traceID := atomic.AddUint64(&lg.batchesSent, 1)
-	for i := uint(0); i < lg.options.ItemsPerBatch; i++ {
+	for i := 0; i < lg.options.ItemsPerBatch; i++ {
 
 		startTime := time.Now()
 
@@ -230,17 +230,15 @@ func (lg *LoadGenerator) generateTraceOld() {
 func (lg *LoadGenerator) generateTrace() {
 	traceSender := lg.sender.(TraceDataSender)
 
-	itemsPerBatch := int(lg.options.ItemsPerBatch)
-
 	traceData := data.NewTraceData()
 	traceData.ResourceSpans().Resize(1)
 	ilss := traceData.ResourceSpans().At(0).InstrumentationLibrarySpans()
 	ilss.Resize(1)
 	spans := ilss.At(0).Spans()
-	spans.Resize(itemsPerBatch)
+	spans.Resize(lg.options.ItemsPerBatch)
 
 	traceID := atomic.AddUint64(&lg.batchesSent, 1)
-	for i := 0; i < itemsPerBatch; i++ {
+	for i := 0; i < lg.options.ItemsPerBatch; i++ {
 
 		startTime := time.Now()
 		endTime := startTime.Add(time.Duration(time.Millisecond))
@@ -297,21 +295,11 @@ func (lg *LoadGenerator) generateMetricsOld() {
 		Labels: lg.options.Attributes,
 	}
 
-	// Generate up to 10 data points per metric.
-	const dataPointsPerMetric = 10
-
-	// Calculate number of metrics needed to produce require number of data points per batch.
-	metricCount := int(lg.options.ItemsPerBatch / dataPointsPerMetric)
-	if metricCount == 0 {
-		log.Fatalf("Load generator is configured incorrectly, ItemsPerBatch is %v but must be at least %v",
-			lg.options.ItemsPerBatch, dataPointsPerMetric)
-	}
-
-	// Keep count of generated data points.
-	generatedDataPoints := 0
+	// Generate 7 data points per metric.
+	const dataPointsPerMetric = 7
 
 	var metrics []*metricspb.Metric
-	for i := 0; i < metricCount; i++ {
+	for i := 0; i < lg.options.ItemsPerBatch; i++ {
 
 		metric := &metricspb.Metric{
 			MetricDescriptor: &metricspb.MetricDescriptor{
@@ -328,17 +316,11 @@ func (lg *LoadGenerator) generateMetricsOld() {
 		}
 
 		batchIndex := atomic.AddUint64(&lg.batchesSent, 1)
-		dataPointsToGenerate := dataPointsPerMetric
-		if i == metricCount-1 {
-			// This ist the last metric. Calculate how many data points are remaining
-			// so that the total is equal to ItemsPerBatch.
-			dataPointsToGenerate = int(lg.options.ItemsPerBatch) - generatedDataPoints
-		}
 
 		// Generate data points for the metric. We generate timeseries each containing
 		// a single data points. This is the most typical payload composition since
 		// monitoring libraries typically generated one data point at a time.
-		for j := 0; j < dataPointsToGenerate; j++ {
+		for j := 0; j < dataPointsPerMetric; j++ {
 			timeseries := &metricspb.TimeSeries{}
 
 			startTime := time.Now()
@@ -357,7 +339,6 @@ func (lg *LoadGenerator) generateMetricsOld() {
 
 			metric.Timeseries = append(metric.Timeseries, timeseries)
 		}
-		generatedDataPoints += dataPointsToGenerate
 
 		metrics = append(metrics, metric)
 	}
@@ -380,18 +361,8 @@ func (lg *LoadGenerator) generateMetrics() {
 
 	metricSender := lg.sender.(MetricDataSender)
 
-	// Generate up to 10 data points per metric.
-	const dataPointsPerMetric = 10
-
-	// Calculate number of metrics needed to produce require number of data points per batch.
-	metricCount := int(lg.options.ItemsPerBatch / dataPointsPerMetric)
-	if metricCount == 0 {
-		log.Fatalf("Load generator is configured incorrectly, ItemsPerBatch is %v but must be at least %v",
-			lg.options.ItemsPerBatch, dataPointsPerMetric)
-	}
-
-	// Keep count of generated data points.
-	generatedDataPoints := 0
+	// Generate 7 data points per metric.
+	const dataPointsPerMetric = 7
 
 	metricData := data.NewMetricData()
 	metricData.ResourceMetrics().Resize(1)
@@ -404,9 +375,9 @@ func (lg *LoadGenerator) generateMetrics() {
 		metricData.ResourceMetrics().At(0).Resource().Attributes().InitFromMap(attrs)
 	}
 	metrics := metricData.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
-	metrics.Resize(metricCount)
+	metrics.Resize(lg.options.ItemsPerBatch)
 
-	for i := 0; i < metricCount; i++ {
+	for i := 0; i < lg.options.ItemsPerBatch; i++ {
 		metric := metrics.At(i)
 		metricDescriptor := metric.MetricDescriptor()
 		metricDescriptor.InitEmpty()
@@ -415,16 +386,10 @@ func (lg *LoadGenerator) generateMetrics() {
 		metricDescriptor.SetType(data.MetricTypeGaugeInt64)
 
 		batchIndex := atomic.AddUint64(&lg.batchesSent, 1)
-		dataPointsToGenerate := dataPointsPerMetric
-		if i == metricCount-1 {
-			// This ist the last metric. Calculate how many data points are remaining
-			// so that the total is equal to ItemsPerBatch.
-			dataPointsToGenerate = int(lg.options.ItemsPerBatch) - generatedDataPoints
-		}
 
 		// Generate data points for the metric.
-		metric.Int64DataPoints().Resize(dataPointsToGenerate)
-		for j := 0; j < dataPointsToGenerate; j++ {
+		metric.Int64DataPoints().Resize(dataPointsPerMetric)
+		for j := 0; j < dataPointsPerMetric; j++ {
 			dataPoint := metric.Int64DataPoints().At(j)
 			dataPoint.SetStartTime(data.TimestampUnixNano(uint64(time.Now().UnixNano())))
 			value := atomic.AddUint64(&lg.dataItemsSent, 1)
@@ -434,7 +399,6 @@ func (lg *LoadGenerator) generateMetrics() {
 				"batch_index": "batch_" + strconv.Itoa(int(batchIndex)),
 			})
 		}
-		generatedDataPoints += dataPointsToGenerate
 	}
 
 	err := metricSender.SendMetrics(metricData)

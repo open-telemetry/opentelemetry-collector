@@ -135,7 +135,6 @@ func Scenario10kItemsPerSecond(
 	t *testing.T,
 	sender testbed.DataSender,
 	receiver testbed.DataReceiver,
-	loadOptions testbed.LoadOptions,
 	resourceSpec testbed.ResourceSpec,
 ) {
 	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
@@ -157,11 +156,10 @@ func Scenario10kItemsPerSecond(
 	tc.StartBackend()
 	tc.StartAgent()
 
-	if loadOptions.DataItemsPerSecond == 0 {
-		// Use 10k spans or metric data points per second by default.
-		loadOptions.DataItemsPerSecond = 10000
-	}
-	tc.StartLoad(loadOptions)
+	tc.StartLoad(testbed.LoadOptions{
+		DataItemsPerSecond: 10000,
+		ItemsPerBatch:      100,
+	})
 
 	tc.Sleep(tc.Duration)
 

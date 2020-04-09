@@ -53,8 +53,8 @@ func TestTrace10kSPS(t *testing.T) {
 			testbed.NewJaegerGRPCDataSender(testbed.GetAvailablePort(t)),
 			testbed.NewJaegerDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
-				ExpectedMaxCPU: 85,
-				ExpectedMaxRAM: 50,
+				ExpectedMaxCPU: 40,
+				ExpectedMaxRAM: 60,
 			},
 		},
 		{
@@ -62,8 +62,8 @@ func TestTrace10kSPS(t *testing.T) {
 			testbed.NewOCTraceDataSender(testbed.GetAvailablePort(t)),
 			testbed.NewOCDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
-				ExpectedMaxCPU: 52,
-				ExpectedMaxRAM: 50,
+				ExpectedMaxCPU: 40,
+				ExpectedMaxRAM: 60,
 			},
 		},
 		{
@@ -71,8 +71,8 @@ func TestTrace10kSPS(t *testing.T) {
 			testbed.NewOTLPTraceDataSender(testbed.GetAvailablePort(t)),
 			testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
-				ExpectedMaxCPU: 85,
-				ExpectedMaxRAM: 50,
+				ExpectedMaxCPU: 40,
+				ExpectedMaxRAM: 60,
 			},
 		},
 	}
@@ -83,7 +83,6 @@ func TestTrace10kSPS(t *testing.T) {
 				t,
 				test.sender,
 				test.receiver,
-				testbed.LoadOptions{},
 				test.resourceSpec,
 			)
 		})
@@ -126,7 +125,10 @@ func TestTraceNoBackend10kSPSJaeger(t *testing.T) {
 			})
 
 			tc.StartAgent()
-			tc.StartLoad(testbed.LoadOptions{DataItemsPerSecond: 10000})
+			tc.StartLoad(testbed.LoadOptions{
+				DataItemsPerSecond: 10000,
+				ItemsPerBatch:      10,
+			})
 
 			tc.Sleep(tc.Duration)
 
