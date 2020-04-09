@@ -58,10 +58,6 @@ type AttributeValue struct {
 	orig *otlpcommon.AttributeKeyValue
 }
 
-func NilAttributeValue() AttributeValue {
-	return AttributeValue{orig: nil}
-}
-
 // NewAttributeValueString creates a new AttributeValue with the given string value.
 func NewAttributeValueString(v string) AttributeValue {
 	return AttributeValue{orig: &otlpcommon.AttributeKeyValue{Type: otlpcommon.AttributeKeyValue_STRING, StringValue: v}}
@@ -92,10 +88,6 @@ func NewAttributeValueSlice(len int) []AttributeValue {
 		wrappers[i].orig = &origs[i]
 	}
 	return wrappers
-}
-
-func (a AttributeValue) IsNil() bool {
-	return a.orig == nil
 }
 
 // Type returns the type of the value for this AttributeValue.
@@ -264,6 +256,7 @@ func (am AttributeMap) InitFromMap(attrMap map[string]AttributeValue) AttributeM
 
 // Get returns the AttributeKeyValue associated with the key and true,
 // otherwise an invalid instance of the AttributeKeyValue and false.
+// Calling any functions on the returned invalid instance will cause a panic.
 func (am AttributeMap) Get(key string) (AttributeValue, bool) {
 	for _, a := range *am.orig {
 		if a != nil && a.Key == key {
@@ -288,6 +281,8 @@ func (am AttributeMap) Delete(key string) bool {
 
 // Insert adds the AttributeValue to the map when the key does not exist.
 // No action is applied to the map where the key already exists.
+//
+// Calling this function with a zero-initialized AttributeValue struct will cause a panic.
 //
 // Important: this function should not be used if the caller has access to
 // the raw value to avoid an extra allocation.
@@ -332,6 +327,8 @@ func (am AttributeMap) InsertBool(k string, v bool) {
 // Update updates an existing AttributeValue with a value.
 // No action is applied to the map where the key does not exist.
 //
+// Calling this function with a zero-initialized AttributeValue struct will cause a panic.
+//
 // Important: this function should not be used if the caller has access to
 // the raw value to avoid an extra allocation.
 func (am AttributeMap) Update(k string, v AttributeValue) {
@@ -375,6 +372,8 @@ func (am AttributeMap) UpdateBool(k string, v bool) {
 // Upsert performs the Insert or Update action. The AttributeValue is
 // insert to the map that did not originally have the key. The key/value is
 // updated to the map where the key already existed.
+//
+// Calling this function with a zero-initialized AttributeValue struct will cause a panic.
 //
 // Important: this function should not be used if the caller has access to
 // the raw value to avoid an extra allocation.
@@ -537,6 +536,7 @@ func (sm StringMap) InitFromMap(attrMap map[string]string) StringMap {
 
 // Get returns the StringKeyValue associated with the key and true,
 // otherwise an invalid instance of the StringKeyValue and false.
+// Calling any functions on the returned invalid instance will cause a panic.
 func (sm StringMap) Get(k string) (StringKeyValue, bool) {
 	for _, a := range *sm.orig {
 		if a != nil && a.Key == k {

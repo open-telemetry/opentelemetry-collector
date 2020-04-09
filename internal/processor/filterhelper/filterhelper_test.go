@@ -23,43 +23,41 @@ import (
 )
 
 func TestHelper_AttributeValue(t *testing.T) {
-	val, err := NewAttributeValue(uint8(123))
+	val, err := NewAttributeValueRaw(uint8(123))
 	assert.Equal(t, data.NewAttributeValueInt(123), val)
 	assert.NoError(t, err)
 
-	val, err = NewAttributeValue(uint16(123))
+	val, err = NewAttributeValueRaw(uint16(123))
 	assert.Equal(t, data.NewAttributeValueInt(123), val)
 	assert.NoError(t, err)
 
-	val, err = NewAttributeValue(int8(123))
+	val, err = NewAttributeValueRaw(int8(123))
 	assert.Equal(t, data.NewAttributeValueInt(123), val)
 	assert.NoError(t, err)
 
-	val, err = NewAttributeValue(int16(123))
+	val, err = NewAttributeValueRaw(int16(123))
 	assert.Equal(t, data.NewAttributeValueInt(123), val)
 	assert.NoError(t, err)
 
-	val, err = NewAttributeValue(float32(234.129312))
+	val, err = NewAttributeValueRaw(float32(234.129312))
 	assert.Equal(t, data.NewAttributeValueDouble(float64(float32(234.129312))), val)
 	assert.NoError(t, err)
 
-	val, err = NewAttributeValue(234.129312)
+	val, err = NewAttributeValueRaw(234.129312)
 	assert.Equal(t, data.NewAttributeValueDouble(234.129312), val)
 	assert.NoError(t, err)
 
-	val, err = NewAttributeValue(true)
+	val, err = NewAttributeValueRaw(true)
 	assert.Equal(t, data.NewAttributeValueBool(true), val)
 	assert.NoError(t, err)
 
-	val, err = NewAttributeValue("bob the builder")
+	val, err = NewAttributeValueRaw("bob the builder")
 	assert.Equal(t, data.NewAttributeValueString("bob the builder"), val)
 	assert.NoError(t, err)
 
-	val, err = NewAttributeValue(nil)
-	assert.True(t, val.IsNil())
+	val, err = NewAttributeValueRaw(nil)
 	assert.Error(t, err)
 
-	val, err = NewAttributeValue(t)
-	assert.True(t, val.IsNil())
+	val, err = NewAttributeValueRaw(t)
 	assert.Error(t, err)
 }
