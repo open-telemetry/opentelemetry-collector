@@ -22,7 +22,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-collector/internal/processor/span"
+	"github.com/open-telemetry/opentelemetry-collector/internal/processor/filterspan"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -80,14 +80,14 @@ func TestLoadConfig(t *testing.T) {
 			TypeVal: typeStr,
 			NameVal: "span/includeexclude",
 		},
-		MatchConfig: span.MatchConfig{
-			Include: &span.MatchProperties{
-				MatchType: span.MatchTypeRegexp,
+		MatchConfig: filterspan.MatchConfig{
+			Include: &filterspan.MatchProperties{
+				MatchType: filterspan.MatchTypeRegexp,
 				Services:  []string{`banks`},
 				SpanNames: []string{"^(.*?)/(.*?)$"},
 			},
-			Exclude: &span.MatchProperties{
-				MatchType: span.MatchTypeStrict,
+			Exclude: &filterspan.MatchProperties{
+				MatchType: filterspan.MatchTypeStrict,
 				SpanNames: []string{`donot/change`},
 			},
 		},

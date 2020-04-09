@@ -21,14 +21,16 @@ import (
 	"go.opencensus.io/tag"
 
 	"github.com/open-telemetry/opentelemetry-collector/internal/collector/telemetry"
+	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector/obsreport"
+	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 )
 
 // Keys and stats for telemetry.
 var (
 	TagSourceFormatKey, _  = tag.NewKey("source_format")
 	TagServiceNameKey, _   = tag.NewKey("service")
-	TagProcessorNameKey, _ = tag.NewKey("processor")
+	TagProcessorNameKey, _ = tag.NewKey(obsreport.ProcessorKey)
 
 	StatReceivedSpanCount = stats.Int64(
 		"spans_received",
@@ -140,7 +142,7 @@ func MetricViews(level telemetry.Level) []*view.View {
 	return obsreport.ProcessorMetricViews("", legacyViews)
 }
 
-// ServiceNameForNode gets the service name for a specified node. Used for metrics.
+// ServiceNameForNode gets the service name for a specified node.
 func ServiceNameForNode(node *commonpb.Node) string {
 	var serviceName string
 	if node == nil {
@@ -153,6 +155,21 @@ func ServiceNameForNode(node *commonpb.Node) string {
 		serviceName = node.ServiceInfo.Name
 	}
 	return serviceName
+}
+
+// ServiceNameForResource gets the service name for a specified Resource.
+// TODO: Find a better package for this function.
+func ServiceNameForResource(resource data.Resource) string {
+	if resource.IsNil() {
+		return "<nil-resource>"
+	}
+
+	service, found := resource.Attributes().Get(conventions.AttributeServiceName)
+	if !found {
+		return "<nil-service-name>"
+	}
+
+	return service.StringVal()
 }
 
 // StatsTagsForBatch gets the stat tags based on the specified processorName, serviceName, and spanFormat.
