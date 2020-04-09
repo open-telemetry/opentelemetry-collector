@@ -37,7 +37,7 @@ func TestDecodeConfig(t *testing.T) {
 	// Verify extensions.
 	assert.Equal(t, 3, len(config.Extensions))
 	assert.False(t, config.Extensions["exampleextension/disabled"].IsEnabled())
-	assert.Equal(t, "some string", config.Extensions["exampleextension/1"].(*ExampleExtension).ExtraSetting)
+	assert.Equal(t, "some string", config.Extensions["exampleextension/1"].(*ExampleExtensionCfg).ExtraSetting)
 
 	// Verify service.
 	assert.Equal(t, 2, len(config.Service.Extensions))
@@ -205,7 +205,7 @@ func TestSimpleConfig(t *testing.T) {
 		assert.Equalf(t, 1, len(config.Extensions), "TEST[%s]", test.name)
 		assert.Truef(t, config.Extensions["exampleextension"].IsEnabled(), "TEST[%s]", test.name)
 		assert.Equalf(t,
-			&ExampleExtension{
+			&ExampleExtensionCfg{
 				ExtensionSettings: configmodels.ExtensionSettings{
 					TypeVal: "exampleextension",
 					NameVal: "exampleextension",

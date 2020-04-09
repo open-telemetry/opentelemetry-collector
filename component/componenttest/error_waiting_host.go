@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 )
 
 // ErrorWaitingHost mocks an component.Host for test purposes.
@@ -57,5 +58,9 @@ func (ews *ErrorWaitingHost) WaitForFatalError(timeout time.Duration) (receivedE
 
 // GetFactory of the specified kind. Returns the factory for a component type.
 func (ews *ErrorWaitingHost) GetFactory(_ component.Kind, _ string) component.Factory {
+	return nil
+}
+
+func (ews *ErrorWaitingHost) GetExtensions() map[configmodels.Extension]component.ServiceExtension {
 	return nil
 }

@@ -22,6 +22,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/jaegerreceiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/opencensusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/otlpreceiver"
@@ -56,6 +57,11 @@ func (mb *DataReceiverBase) ReportFatalError(err error) {
 
 // GetFactory of the specified kind. Returns the factory for a component type.
 func (mb *DataReceiverBase) GetFactory(kind component.Kind, componentType string) component.Factory {
+	return nil
+}
+
+// Return map of extensions. Only enabled and created extensions will be returned.
+func (mb *DataReceiverBase) GetExtensions() map[configmodels.Extension]component.ServiceExtension {
 	return nil
 }
 

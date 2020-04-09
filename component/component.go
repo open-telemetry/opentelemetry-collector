@@ -16,6 +16,8 @@ package component
 
 import (
 	"context"
+
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 )
 
 // Component is either a receiver, exporter, processor or extension.
@@ -61,6 +63,12 @@ type Host interface {
 	// until Shutdown() is called. Note that the component is responsible for destroying
 	// other components that it creates.
 	GetFactory(kind Kind, componentType string) Factory
+
+	// Return map of extensions. Only enabled and created extensions will be returned.
+	// Typically is used to find an extension by type or by full config name. Both cases
+	// can be done by iterating the returned map. There are typically very few extensions
+	// so there there is no performance implications due to iteration.
+	GetExtensions() map[configmodels.Extension]ServiceExtension
 }
 
 // Factory interface must be implemented by all component factories.

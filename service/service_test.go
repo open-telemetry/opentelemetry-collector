@@ -21,10 +21,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"testing"
 
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -111,8 +113,8 @@ func assertMetricsPrefix(t *testing.T, prefix string, metricsPort uint16) {
 }
 
 func TestApplication_setupExtensions(t *testing.T) {
-	exampleExtensionFactory := &config.ExampleExtensionFactory{}
-	exampleExtensionConfig := &config.ExampleExtension{
+	exampleExtensionFactory := &config.ExampleExtensionFactory{FailCreation: true}
+	exampleExtensionConfig := &config.ExampleExtensionCfg{
 		ExtensionSettings: configmodels.ExtensionSettings{
 			TypeVal: exampleExtensionFactory.Type(),
 			NameVal: exampleExtensionFactory.Type(),
@@ -209,12 +211,16 @@ func TestApplication_setupExtensions(t *testing.T) {
 
 			if tt.wantErrMsg == "" {
 				assert.NoError(t, err)
-				assert.Equal(t, 1, len(app.extensions))
-				assert.NotNil(t, app.extensions[0])
+				assert.Equal(t, 1, len(app.extensionsList))
+				assert.Equal(t, 1, len(app.extensionsMap))
+				for _, ext := range app.extensionsList {
+					assert.NotNil(t, ext)
+				}
 			} else {
 				assert.Error(t, err)
 				assert.Equal(t, tt.wantErrMsg, err.Error())
-				assert.Equal(t, 0, len(app.extensions))
+				assert.Equal(t, 0, len(app.extensionsList))
+				assert.Equal(t, 0, len(app.extensionsMap))
 			}
 		})
 	}
@@ -282,4 +288,86 @@ func TestApplication_GetFactory(t *testing.T) {
 	assert.EqualValues(t, exampleExtensionFactory, factory)
 	factory = app.GetFactory(component.KindExtension, "wrongtype")
 	assert.EqualValues(t, nil, factory)
+}
+
+func createExampleApplication(t *testing.T) *Application {
+	// Create some factories.
+	exampleReceiverFactory := &config.ExampleReceiverFactory{}
+	exampleProcessorFactory := &config.ExampleProcessorFactory{}
+	exampleExporterFactory := &config.ExampleExporterFactory{}
+	exampleExtensionFactory := &config.ExampleExtensionFactory{}
+	factories := config.Factories{
+		Receivers: map[string]component.ReceiverFactoryBase{
+			exampleReceiverFactory.Type(): exampleReceiverFactory,
+		},
+		Processors: map[string]component.ProcessorFactoryBase{
+			exampleProcessorFactory.Type(): exampleProcessorFactory,
+		},
+		Exporters: map[string]component.ExporterFactoryBase{
+			exampleExporterFactory.Type(): exampleExporterFactory,
+		},
+		Extensions: map[string]component.ExtensionFactory{
+			exampleExtensionFactory.Type(): exampleExtensionFactory,
+		},
+	}
+
+	app, err := New(Parameters{
+		Factories: factories,
+		ConfigFactory: func(v *viper.Viper, factories config.Factories) (c *configmodels.Config, err error) {
+			config := &configmodels.Config{
+				Receivers: map[string]configmodels.Receiver{
+					exampleReceiverFactory.Type(): exampleReceiverFactory.CreateDefaultConfig(),
+				},
+				Exporters: map[string]configmodels.Exporter{
+					exampleExporterFactory.Type(): exampleExporterFactory.CreateDefaultConfig(),
+				},
+				Extensions: map[string]configmodels.Extension{
+					exampleExtensionFactory.Type(): exampleExtensionFactory.CreateDefaultConfig(),
+				},
+				Service: configmodels.Service{
+					Extensions: []string{exampleExtensionFactory.Type()},
+					Pipelines: map[string]*configmodels.Pipeline{
+						"trace": {
+							Name:       "traces",
+							InputType:  configmodels.TracesDataType,
+							Receivers:  []string{exampleReceiverFactory.Type()},
+							Processors: []string{},
+							Exporters:  []string{exampleExporterFactory.Type()},
+						},
+					},
+				},
+			}
+			return config, nil
+		},
+	})
+	require.NoError(t, err)
+	return app
+}
+
+func TestApplication_GetExtensions(t *testing.T) {
+	app := createExampleApplication(t)
+
+	appDone := make(chan struct{})
+	go func() {
+		defer close(appDone)
+		assert.NoError(t, app.Start())
+	}()
+
+	<-app.readyChan
+
+	// Verify GetExensions(). The results must match what we have in testdata/otelcol-config.yaml.
+
+	extMap := app.GetExtensions()
+	var extTypes []string
+	for cfg, ext := range extMap {
+		assert.NotNil(t, ext)
+		extTypes = append(extTypes, cfg.Type())
+	}
+	sort.Strings(extTypes)
+
+	assert.Equal(t, []string{"exampleextension"}, extTypes)
+
+	// Stop the Application.
+	close(app.stopTestChan)
+	<-appDone
 }
