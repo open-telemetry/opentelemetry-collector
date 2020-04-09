@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -80,7 +79,6 @@ func CustomUnmarshalerFunc(componentViperSection *viper.Viper, intoCfg interface
 	if err != nil {
 		return fmt.Errorf("prometheus receiver failed to marshal config to yaml: %s", err)
 	}
-	out = []byte(os.ExpandEnv(string(out)))
 	config := intoCfg.(*Config)
 
 	err = yaml.UnmarshalStrict(out, &config.PrometheusConfig)

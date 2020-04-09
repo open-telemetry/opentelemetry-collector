@@ -24,7 +24,6 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cast"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -228,7 +227,8 @@ func DecodeTypeAndName(key string) (typeStr, fullName string, err error) {
 
 func loadExtensions(v *viper.Viper, factories map[string]component.ExtensionFactory) (configmodels.Extensions, error) {
 	// Get the list of all "extensions" sub vipers from config source.
-	subViper := viperSub(v, extensionsKeyName)
+	extensionsConfig := viperSub(v, extensionsKeyName)
+	expandEnvConfig(extensionsConfig)
 
 	// Get the map of "extensions" sub-keys.
 	keyMap := v.GetStringMap(extensionsKeyName)
@@ -262,11 +262,11 @@ func loadExtensions(v *viper.Viper, factories map[string]component.ExtensionFact
 		extensionCfg.SetName(fullName)
 
 		// Unmarshal only the subconfig for this exporter.
-		sv := getConfigSection(subViper, key)
+		componentConfig := viperSub(extensionsConfig, key)
 
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
-		if err := sv.UnmarshalExact(extensionCfg); err != nil {
+		if err := componentConfig.UnmarshalExact(extensionCfg); err != nil {
 			return nil, &configError{
 				code: errUnmarshalErrorOnExtension,
 				msg:  fmt.Sprintf("error reading settings for extension type %q: %v", typeStr, err),
@@ -288,7 +288,8 @@ func loadExtensions(v *viper.Viper, factories map[string]component.ExtensionFact
 
 func loadService(v *viper.Viper) (configmodels.Service, error) {
 	var service configmodels.Service
-	serviceSub := getConfigSection(v, serviceKeyName)
+	serviceSub := viperSub(v, serviceKeyName)
+	expandEnvConfig(serviceSub)
 
 	// Process the pipelines first so in case of error on them it can be properly
 	// reported.
@@ -312,42 +313,22 @@ func loadService(v *viper.Viper) (configmodels.Service, error) {
 	return service, nil
 }
 
-// LoadReceiver loads a receiver config from v under the subkey receiverKey using the provided factories.
-func LoadReceiver(receiverKey string, v *viper.Viper, factories map[string]component.ReceiverFactoryBase) (configmodels.Receiver, error) {
-	// Decode the key into type and fullName components.
-	typeStr, fullName, err := DecodeTypeAndName(receiverKey)
-	if err != nil {
-		return nil, &configError{
-			code: errInvalidTypeAndNameKey,
-			msg:  fmt.Sprintf("invalid key %q: %s", receiverKey, err.Error()),
-		}
-	}
-
-	// Find receiver factory based on "type" that we read from config source
-	factory := factories[typeStr]
-	if factory == nil {
-		return nil, &configError{
-			code: errUnknownReceiverType,
-			msg:  fmt.Sprintf("unknown receiver type %q", typeStr),
-		}
-	}
-
+// LoadReceiver loads a receiver config from componentConfig using the provided factories.
+func LoadReceiver(componentConfig *viper.Viper, typeStr string, fullName string, factory component.ReceiverFactoryBase) (configmodels.Receiver, error) {
 	// Create the default config for this receiver.
 	receiverCfg := factory.CreateDefaultConfig()
 	receiverCfg.SetType(typeStr)
 	receiverCfg.SetName(fullName)
 
-	// Unmarshal only the subconfig for this exporter.
-	sv := getConfigSection(v, receiverKey)
-
 	// Now that the default config struct is created we can Unmarshal into it
 	// and it will apply user-defined config on top of the default.
 	customUnmarshaler := factory.CustomUnmarshaler()
+	var err error
 	if customUnmarshaler != nil {
 		// This configuration requires a custom unmarshaler, use it.
-		err = customUnmarshaler(sv, receiverCfg)
+		err = customUnmarshaler(componentConfig, receiverCfg)
 	} else {
-		err = sv.UnmarshalExact(receiverCfg)
+		err = componentConfig.UnmarshalExact(receiverCfg)
 	}
 
 	if err != nil {
@@ -362,7 +343,8 @@ func LoadReceiver(receiverKey string, v *viper.Viper, factories map[string]compo
 
 func loadReceivers(v *viper.Viper, factories map[string]component.ReceiverFactoryBase) (configmodels.Receivers, error) {
 	// Get the list of all "receivers" sub vipers from config source.
-	subViper := viperSub(v, receiversKeyName)
+	receiversConfig := viperSub(v, receiversKeyName)
+	expandEnvConfig(receiversConfig)
 
 	// Get the map of "receivers" sub-keys.
 	keyMap := v.GetStringMap(receiversKeyName)
@@ -381,7 +363,25 @@ func loadReceivers(v *viper.Viper, factories map[string]component.ReceiverFactor
 
 	// Iterate over input map and create a config for each.
 	for key := range keyMap {
-		receiverCfg, err := LoadReceiver(key, subViper, factories)
+		// Decode the key into type and fullName components.
+		typeStr, fullName, err := DecodeTypeAndName(key)
+		if err != nil {
+			return nil, &configError{
+				code: errInvalidTypeAndNameKey,
+				msg:  fmt.Sprintf("invalid key %q: %s", key, err.Error()),
+			}
+		}
+
+		// Find receiver factory based on "type" that we read from config source
+		factory := factories[typeStr]
+		if factory == nil {
+			return nil, &configError{
+				code: errUnknownReceiverType,
+				msg:  fmt.Sprintf("unknown receiver type %q", typeStr),
+			}
+		}
+
+		receiverCfg, err := LoadReceiver(viperSub(receiversConfig, key), typeStr, fullName, factory)
 
 		if err != nil {
 			// LoadReceiver already wraps the error.
@@ -402,7 +402,8 @@ func loadReceivers(v *viper.Viper, factories map[string]component.ReceiverFactor
 
 func loadExporters(v *viper.Viper, factories map[string]component.ExporterFactoryBase) (configmodels.Exporters, error) {
 	// Get the list of all "exporters" sub vipers from config source.
-	subViper := viperSub(v, exportersKeyName)
+	exportersConfig := viperSub(v, exportersKeyName)
+	expandEnvConfig(exportersConfig)
 
 	// Get the map of "exporters" sub-keys.
 	keyMap := v.GetStringMap(exportersKeyName)
@@ -444,11 +445,11 @@ func loadExporters(v *viper.Viper, factories map[string]component.ExporterFactor
 		exporterCfg.SetName(fullName)
 
 		// Unmarshal only the subconfig for this exporter.
-		sv := getConfigSection(subViper, key)
+		componentConfig := viperSub(exportersConfig, key)
 
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
-		if err := sv.UnmarshalExact(exporterCfg); err != nil {
+		if err := componentConfig.UnmarshalExact(exporterCfg); err != nil {
 			return nil, &configError{
 				code: errUnmarshalErrorOnExporter,
 				msg:  fmt.Sprintf("error reading settings for exporter type %q: %v", typeStr, err),
@@ -470,7 +471,8 @@ func loadExporters(v *viper.Viper, factories map[string]component.ExporterFactor
 
 func loadProcessors(v *viper.Viper, factories map[string]component.ProcessorFactoryBase) (configmodels.Processors, error) {
 	// Get the list of all "processors" sub vipers from config source.
-	subViper := viperSub(v, processorsKeyName)
+	processorsConfig := viperSub(v, processorsKeyName)
+	expandEnvConfig(processorsConfig)
 
 	// Get the map of "processors" sub-keys.
 	keyMap := v.GetStringMap(processorsKeyName)
@@ -503,12 +505,12 @@ func loadProcessors(v *viper.Viper, factories map[string]component.ProcessorFact
 		processorCfg.SetType(typeStr)
 		processorCfg.SetName(fullName)
 
-		// Unmarshal only the subconfig for this exporter.
-		sv := getConfigSection(subViper, key)
+		// Unmarshal only the subconfig for this processor.
+		componentConfig := viperSub(processorsConfig, key)
 
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
-		if err := sv.UnmarshalExact(processorCfg); err != nil {
+		if err := componentConfig.UnmarshalExact(processorCfg); err != nil {
 			return nil, &configError{
 				code: errUnmarshalErrorOnProcessor,
 				msg:  fmt.Sprintf("error reading settings for processor type %q: %v", typeStr, err),
@@ -530,7 +532,7 @@ func loadProcessors(v *viper.Viper, factories map[string]component.ProcessorFact
 
 func loadPipelines(v *viper.Viper) (configmodels.Pipelines, error) {
 	// Get the list of all "pipelines" sub vipers from config source.
-	subViper := viperSub(v, pipelinesKeyName)
+	pipelinesConfig := viperSub(v, pipelinesKeyName)
 
 	// Get the map of "pipelines" sub-keys.
 	keyMap := v.GetStringMap(pipelinesKeyName)
@@ -565,9 +567,11 @@ func loadPipelines(v *viper.Viper) (configmodels.Pipelines, error) {
 			}
 		}
 
+		pipelineConfig := viperSub(pipelinesConfig, key)
+
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
-		if err := subViper.UnmarshalKey(key, &pipelineCfg, errorOnUnused); err != nil {
+		if err := pipelineConfig.UnmarshalExact(&pipelineCfg); err != nil {
 			return nil, &configError{
 				code: errUnmarshalErrorOnPipeline,
 				msg:  fmt.Sprintf("error reading settings for pipeline type %q: %v", typeStr, err),
@@ -859,16 +863,6 @@ func validateProcessors(cfg *configmodels.Config) {
 	}
 }
 
-// getConfigSection returns a sub-config from the viper config that has the corresponding given key.
-// It also expands all the string values.
-func getConfigSection(v *viper.Viper, key string) *viper.Viper {
-	// Unmarshal only the subconfig for this processor.
-	sv := viperSub(v, key)
-	expandEnvConfig(sv)
-	// Before unmarshaling first expand all environment variables.
-	return sv
-}
-
 // expandEnvConfig creates a new viper config with expanded values for all the values (simple, list or map value).
 // It does not expand the keys.
 func expandEnvConfig(v *viper.Viper) {
@@ -884,12 +878,17 @@ func expandStringValues(value interface{}) interface{} {
 	case string:
 		return os.ExpandEnv(v)
 	case []interface{}:
-		// Viper treats all the slices as []interface{} (at least in what the otelcol tests).
 		nslice := make([]interface{}, 0, len(v))
 		for _, vint := range v {
 			nslice = append(nslice, expandStringValues(vint))
 		}
 		return nslice
+	case map[interface{}]interface{}:
+		nmap := make(map[interface{}]interface{}, len(v))
+		for k, vint := range v {
+			nmap[k] = expandStringValues(vint)
+		}
+		return nmap
 	}
 }
 
@@ -907,13 +906,4 @@ func viperSub(v *viper.Viper, key string) *viper.Viper {
 		return subv
 	}
 	return subv
-}
-
-// errorOnUnused sets the decoder configuration to error in case of unused sections
-// are present in the configuration.
-func errorOnUnused(decoderCfg *mapstructure.DecoderConfig) {
-	// If ErrorUnused is true, then it is an error for there to exist
-	// keys in the original map that were unused in the decoding process
-	// (extra keys).
-	decoderCfg.ErrorUnused = true
 }
