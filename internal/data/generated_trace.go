@@ -63,6 +63,23 @@ func (es ResourceSpansSlice) At(ix int) ResourceSpans {
 	return newResourceSpans(&(*es.orig)[ix])
 }
 
+// MoveTo moves all elements from the current slice to the dest. The current slice will be cleared.
+func (es ResourceSpansSlice) MoveTo(dest ResourceSpansSlice) {
+	if es.Len() == 0 {
+		// Just to ensure that we always return a Slice with nil elements.
+		*es.orig = nil
+		return
+	}
+	if dest.Len() == 0 {
+		*dest.orig = *es.orig
+		*es.orig = nil
+		return
+	}
+	*dest.orig = append(*dest.orig, *es.orig...)
+	*es.orig = nil
+	return
+}
+
 // Resize is an operation that resizes the slice:
 // 1. If newLen is 0 then the slice is replaced with a nil slice.
 // 2. If the newLen < len then equivalent with slice[0:newLen].
@@ -191,6 +208,23 @@ func (es InstrumentationLibrarySpansSlice) At(ix int) InstrumentationLibrarySpan
 	return newInstrumentationLibrarySpans(&(*es.orig)[ix])
 }
 
+// MoveTo moves all elements from the current slice to the dest. The current slice will be cleared.
+func (es InstrumentationLibrarySpansSlice) MoveTo(dest InstrumentationLibrarySpansSlice) {
+	if es.Len() == 0 {
+		// Just to ensure that we always return a Slice with nil elements.
+		*es.orig = nil
+		return
+	}
+	if dest.Len() == 0 {
+		*dest.orig = *es.orig
+		*es.orig = nil
+		return
+	}
+	*dest.orig = append(*dest.orig, *es.orig...)
+	*es.orig = nil
+	return
+}
+
 // Resize is an operation that resizes the slice:
 // 1. If newLen is 0 then the slice is replaced with a nil slice.
 // 2. If the newLen < len then equivalent with slice[0:newLen].
@@ -317,6 +351,23 @@ func (es SpanSlice) Len() int {
 // }
 func (es SpanSlice) At(ix int) Span {
 	return newSpan(&(*es.orig)[ix])
+}
+
+// MoveTo moves all elements from the current slice to the dest. The current slice will be cleared.
+func (es SpanSlice) MoveTo(dest SpanSlice) {
+	if es.Len() == 0 {
+		// Just to ensure that we always return a Slice with nil elements.
+		*es.orig = nil
+		return
+	}
+	if dest.Len() == 0 {
+		*dest.orig = *es.orig
+		*es.orig = nil
+		return
+	}
+	*dest.orig = append(*dest.orig, *es.orig...)
+	*es.orig = nil
+	return
 }
 
 // Resize is an operation that resizes the slice:
@@ -616,6 +667,23 @@ func (es SpanEventSlice) At(ix int) SpanEvent {
 	return newSpanEvent(&(*es.orig)[ix])
 }
 
+// MoveTo moves all elements from the current slice to the dest. The current slice will be cleared.
+func (es SpanEventSlice) MoveTo(dest SpanEventSlice) {
+	if es.Len() == 0 {
+		// Just to ensure that we always return a Slice with nil elements.
+		*es.orig = nil
+		return
+	}
+	if dest.Len() == 0 {
+		*dest.orig = *es.orig
+		*es.orig = nil
+		return
+	}
+	*dest.orig = append(*dest.orig, *es.orig...)
+	*es.orig = nil
+	return
+}
+
 // Resize is an operation that resizes the slice:
 // 1. If newLen is 0 then the slice is replaced with a nil slice.
 // 2. If the newLen < len then equivalent with slice[0:newLen].
@@ -775,6 +843,23 @@ func (es SpanLinkSlice) Len() int {
 // }
 func (es SpanLinkSlice) At(ix int) SpanLink {
 	return newSpanLink(&(*es.orig)[ix])
+}
+
+// MoveTo moves all elements from the current slice to the dest. The current slice will be cleared.
+func (es SpanLinkSlice) MoveTo(dest SpanLinkSlice) {
+	if es.Len() == 0 {
+		// Just to ensure that we always return a Slice with nil elements.
+		*es.orig = nil
+		return
+	}
+	if dest.Len() == 0 {
+		*dest.orig = *es.orig
+		*es.orig = nil
+		return
+	}
+	*dest.orig = append(*dest.orig, *es.orig...)
+	*es.orig = nil
+	return
 }
 
 // Resize is an operation that resizes the slice:
