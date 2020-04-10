@@ -185,9 +185,9 @@ func collectLabelKeys(metric data.Metric) *labelKeys {
 }
 
 func addLabelKeys(keySet map[string]struct{}, labels data.StringMap) {
-	for i := 0; i < labels.Len(); i++ {
-		k, _ := labels.GetStringKeyValue(i)
-		keySet[k] = struct{}{}
+	it := labels.Range()
+	for it.Next() {
+		keySet[it.Key()] = struct{}{}
 	}
 }
 
@@ -361,7 +361,7 @@ func exemplarToOC(exemplar data.HistogramBucketExemplar) *ocmetrics.Distribution
 		return nil
 	}
 	attachments := exemplar.Attachments()
-	if attachments.Len() == 0 {
+	if attachments.Cap() == 0 {
 		return &ocmetrics.DistributionValue_Exemplar{
 			Value:       exemplar.Value(),
 			Timestamp:   internal.UnixNanoToTimestamp(exemplar.Timestamp()),
@@ -369,10 +369,10 @@ func exemplarToOC(exemplar data.HistogramBucketExemplar) *ocmetrics.Distribution
 		}
 	}
 
-	labels := make(map[string]string, attachments.Len())
-	for i := 0; i < attachments.Len(); i++ {
-		k, v := attachments.GetStringKeyValue(i)
-		labels[k] = v.Value()
+	labels := make(map[string]string, attachments.Cap())
+	it := attachments.Range()
+	for it.Next() {
+		labels[it.Key()] = it.Value().Value()
 	}
 	return &ocmetrics.DistributionValue_Exemplar{
 		Value:       exemplar.Value(),
@@ -437,28 +437,27 @@ func labelValuesToOC(md data.MetricDescriptor, labels data.StringMap, labelKeys 
 	if !md.IsNil() {
 		// TODO: Pre-construct the labelValuesOrig and labelValues with the metrics from the descriptor and copy them
 		//  instead of starting from new slices.
-		cls := md.LabelsMap()
-		for i := 0; i < cls.Len(); i++ {
-			k, v := cls.GetStringKeyValue(i)
+		it := md.LabelsMap().Range()
+		for it.Next() {
 			// Find the appropriate label value that we need to update
-			keyIndex := labelKeys.keyIndices[k]
+			keyIndex := labelKeys.keyIndices[it.Key()]
 			labelValue := labelValues[keyIndex]
 
 			// Update label value
-			labelValue.Value = v.Value()
+			labelValue.Value = it.Value().Value()
 			labelValue.HasValue = true
 		}
 	}
 
 	// Visit all defined labels in the point and override defaults with actual values
-	for i := 0; i < labels.Len(); i++ {
-		k, v := labels.GetStringKeyValue(i)
+	it := labels.Range()
+	for it.Next() {
 		// Find the appropriate label value that we need to update
-		keyIndex := labelKeys.keyIndices[k]
+		keyIndex := labelKeys.keyIndices[it.Key()]
 		labelValue := labelValues[keyIndex]
 
 		// Update label value
-		labelValue.Value = v.Value()
+		labelValue.Value = it.Value().Value()
 		labelValue.HasValue = true
 	}
 

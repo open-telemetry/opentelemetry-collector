@@ -144,7 +144,7 @@ func (sp *spanProcessor) processFromAttributes(span data.Span) {
 	}
 
 	attrs := span.Attributes()
-	if attrs.Len() == 0 {
+	if attrs.Cap() == 0 {
 		// There are no attributes to create span name from.
 		return
 	}

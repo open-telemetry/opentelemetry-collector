@@ -175,6 +175,7 @@ func (a AttributeValue) setTypeAndClear(ty otlpcommon.AttributeKeyValue_ValueTyp
 	a.orig.BoolValue = false
 }
 
+// Equal checks for equality, it returns true if the objects are equal otherwise false.
 func (a AttributeValue) Equal(av AttributeValue) bool {
 	return a.orig.Type == av.orig.Type &&
 		a.orig.StringValue == av.orig.StringValue &&
@@ -429,11 +430,6 @@ func (am AttributeMap) UpsertBool(k string, v bool) {
 	}
 }
 
-// Len returns the number of AttributeKeyValue in the map.
-func (am AttributeMap) Len() int {
-	return len(*am.orig)
-}
-
 // Sort sorts the entries in the AttributeMap so two instances can be compared.
 // Returns the same instance to allow nicer code like:
 // assert.EqualValues(t, expected.Sort(), actual.Sort())
@@ -445,15 +441,78 @@ func (am AttributeMap) Sort() AttributeMap {
 	return am
 }
 
-// GetAttribute returns the AttributeKeyValue associated with the given index.
+// Cap returns the capacity of this map.
+func (am AttributeMap) Cap() int {
+	return len(*am.orig)
+}
+
+// Iter returns an iterator for ranging over a map.
+// Similar with Reflect.MapRange.
 //
-// This function is used mostly for iterating over all the values in the map:
-// for i := 1; i < am.Len(); i++ {
-//     akv := am.GetAttribute(i)
-//     ... // Do something with the attribute
+// Call Next to advance the iterator, and Key/Value to access each entry. Next returns false when the iterator is
+// exhausted. StringMapIter follows the same iteration semantics as a range statement.
+//
+// Example:
+//
+// it := sm.Range()
+// for iter.Next() {
+//	 k := iter.Key()
+//	 v := iter.Value()
+//	 ...
 // }
-func (am AttributeMap) GetAttribute(ix int) (string, AttributeValue) {
-	return (*am.orig)[ix].Key, AttributeValue{(*am.orig)[ix]}
+func (am AttributeMap) Range() *AttributeMapIter {
+	return newAttributeMapIter(am)
+}
+
+// AttributeMapIter is an iterator for ranging over a map.
+// Similar with Reflect.MapIter.
+type AttributeMapIter struct {
+	orig []*otlpcommon.AttributeKeyValue
+	pos  int
+}
+
+func newAttributeMapIter(sm AttributeMap) *AttributeMapIter {
+	return &AttributeMapIter{orig: *sm.orig, pos: -1}
+}
+
+// Key returns the key of the iterator's current map entry.
+func (it *AttributeMapIter) Key() string {
+	if it.pos == -1 {
+		panic("MapIter.Key called before Next")
+	}
+	if it.pos >= len(it.orig) {
+		panic("MapIter.Key called on exhausted iterator")
+	}
+
+	return it.orig[it.pos].Key
+}
+
+// Value returns the value of the iterator's current map entry.
+func (it *AttributeMapIter) Value() AttributeValue {
+	if it.pos == -1 {
+		panic("MapIter.Value called before Next")
+	}
+	if it.pos >= len(it.orig) {
+		panic("MapIter.Value called on exhausted iterator")
+	}
+
+	return AttributeValue{it.orig[it.pos]}
+}
+
+// Next advances the map iterator and reports whether there is another
+// entry. It returns false when the iterator is exhausted; subsequent
+// calls to Key, Value, or Next will panic.
+func (it *AttributeMapIter) Next() bool {
+	if it.pos >= len(it.orig) {
+		panic("MapIter.Next called on exhausted iterator")
+	}
+	it.pos++
+	// Iterate until the end of the slice or first non nil element.
+	for it.pos < len(it.orig) && it.orig[it.pos] == nil {
+		it.pos++
+	}
+
+	return it.pos < len(it.orig)
 }
 
 // StringValue stores a string value.
@@ -579,20 +638,78 @@ func (sm StringMap) Upsert(k, v string) {
 	}
 }
 
-// Len returns the number of StringValue in the map.
-func (sm StringMap) Len() int {
+// Cap returns the capacity of this map.
+func (sm StringMap) Cap() int {
 	return len(*sm.orig)
 }
 
-// GetStringKeyValue returns the StringValue associated with the given index.
+// Iter returns an iterator for ranging over a map.
+// Similar with Reflect.MapRange.
 //
-// This function is used mostly for iterating over all the values in the map:
-// for i := 0; i < am.Len(); i++ {
-//     k, v := am.GetStringKeyValue(i)
-//     ... // Do something with the attribute
+// Call Next to advance the iterator, and Key/Value to access each entry. Next returns false when the iterator is
+// exhausted. StringMapIter follows the same iteration semantics as a range statement.
+//
+// Example:
+//
+// it := sm.Range()
+// for iter.Next() {
+//	 k := iter.Key()
+//	 v := iter.Value()
+//	 ...
 // }
-func (sm StringMap) GetStringKeyValue(ix int) (string, StringValue) {
-	return (*sm.orig)[ix].Key, StringValue{(*sm.orig)[ix]}
+func (sm StringMap) Range() *StringMapIter {
+	return newStringMapIter(sm)
+}
+
+// StringMapIter is an iterator for ranging over a map.
+// Similar with Reflect.MapIter.
+type StringMapIter struct {
+	orig []*otlpcommon.StringKeyValue
+	pos  int
+}
+
+func newStringMapIter(sm StringMap) *StringMapIter {
+	return &StringMapIter{orig: *sm.orig, pos: -1}
+}
+
+// Key returns the key of the iterator's current map entry.
+func (it *StringMapIter) Key() string {
+	if it.pos == -1 {
+		panic("MapIter.Key called before Next")
+	}
+	if it.pos >= len(it.orig) {
+		panic("MapIter.Key called on exhausted iterator")
+	}
+
+	return it.orig[it.pos].Key
+}
+
+// Value returns the value of the iterator's current map entry.
+func (it *StringMapIter) Value() StringValue {
+	if it.pos == -1 {
+		panic("MapIter.Key called before Next")
+	}
+	if it.pos >= len(it.orig) {
+		panic("MapIter.Key called on exhausted iterator")
+	}
+
+	return StringValue{it.orig[it.pos]}
+}
+
+// Next advances the map iterator and reports whether there is another
+// entry. It returns false when the iterator is exhausted; subsequent
+// calls to Key, Value, or Next will panic.
+func (it *StringMapIter) Next() bool {
+	if it.pos >= len(it.orig) {
+		panic("MapIter.Next called on exhausted iterator")
+	}
+	it.pos++
+	// Iterate until the end of the slice or first non nil element.
+	for it.pos < len(it.orig) && it.orig[it.pos] == nil {
+		it.pos++
+	}
+
+	return it.pos < len(it.orig)
 }
 
 // Sort sorts the entries in the StringMap so two instances can be compared.

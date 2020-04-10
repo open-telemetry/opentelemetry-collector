@@ -36,16 +36,16 @@ func internalResourceToOC(resource data.Resource) (*occommon.Node, *ocresource.R
 	ocNode := occommon.Node{}
 	ocResource := ocresource.Resource{}
 
-	if attrs.Len() == 0 {
+	if attrs.Cap() == 0 {
 		return &ocNode, &ocResource
 	}
 
-	labels := make(map[string]string, attrs.Len())
-	for i := 0; i < attrs.Len(); i++ {
-		k, av := attrs.GetAttribute(i)
-		val := attributeValueToString(av)
+	labels := make(map[string]string, attrs.Cap())
+	it := attrs.Range()
+	for it.Next() {
+		val := attributeValueToString(it.Value())
 
-		switch k {
+		switch it.Key() {
 		case conventions.OCAttributeResourceType:
 			ocResource.Type = val
 		case conventions.AttributeServiceName:
@@ -99,7 +99,7 @@ func internalResourceToOC(resource data.Resource) (*occommon.Node, *ocresource.R
 			}
 		default:
 			// Not a special attribute, put it into resource labels
-			labels[k] = val
+			labels[it.Key()] = val
 		}
 	}
 	ocResource.Labels = labels
