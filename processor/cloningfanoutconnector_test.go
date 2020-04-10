@@ -39,7 +39,7 @@ func TestTraceProcessorCloningMultiplexingOld(t *testing.T) {
 		processors[i] = &mockTraceConsumerOld{}
 	}
 
-	tfc := NewTraceCloningFanOutConnectorOld(processors)
+	tfc := newTraceCloningFanOutConnectorOld(processors)
 	td := consumerdata.TraceData{
 		Spans: make([]*tracepb.Span, 7),
 		Resource: &resourcepb.Resource{
@@ -75,7 +75,7 @@ func TestMetricsProcessorCloningMultiplexingOld(t *testing.T) {
 		processors[i] = &mockMetricsConsumerOld{}
 	}
 
-	mfc := NewMetricsCloningFanOutConnectorOld(processors)
+	mfc := newMetricsCloningFanOutConnectorOld(processors)
 	md := consumerdata.MetricsData{
 		Metrics: make([]*metricspb.Metric, 7),
 		Resource: &resourcepb.Resource{
@@ -152,13 +152,23 @@ func Benchmark100SpanCloneOld(b *testing.B) {
 	}
 }
 
+func TestTraceProcessorCloningNotMultiplexing(t *testing.T) {
+	processors := []consumer.TraceConsumerBase{
+		&mockTraceConsumer{},
+	}
+
+	tfc := CreateTraceCloningFanOutConnector(processors)
+
+	assert.Same(t, processors[0], tfc)
+}
+
 func TestTraceProcessorCloningMultiplexing(t *testing.T) {
 	processors := make([]consumer.TraceConsumer, 3)
 	for i := range processors {
 		processors[i] = &mockTraceConsumer{}
 	}
 
-	tfc := NewTraceCloningFanOutConnector(processors)
+	tfc := newTraceCloningFanOutConnector(processors)
 	td := testdata.GenerateTraceDataTwoSpansSameResource()
 
 	var wantSpansCount = 0
@@ -188,13 +198,23 @@ func TestTraceProcessorCloningMultiplexing(t *testing.T) {
 	}
 }
 
+func TestMetricsProcessorCloningNotMultiplexing(t *testing.T) {
+	processors := []consumer.MetricsConsumerBase{
+		&mockMetricsConsumer{},
+	}
+
+	tfc := CreateMetricsCloningFanOutConnector(processors)
+
+	assert.Same(t, processors[0], tfc)
+}
+
 func TestMetricsProcessorCloningMultiplexing(t *testing.T) {
 	processors := make([]consumer.MetricsConsumer, 3)
 	for i := range processors {
 		processors[i] = &mockMetricsConsumer{}
 	}
 
-	mfc := NewMetricsCloningFanOutConnector(processors)
+	mfc := newMetricsCloningFanOutConnector(processors)
 	md := testdata.GenerateMetricDataWithCountersHistogramAndSummary()
 
 	var wantMetricsCount = 0
