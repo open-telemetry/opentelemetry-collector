@@ -38,6 +38,10 @@ import (
 // CreateMetricsCloningFanOutConnector is a placeholder function for now.
 // It supposed to create an old type connector or a new type connector based on type of provided metrics consumer.
 func CreateMetricsCloningFanOutConnector(mcs []consumer.MetricsConsumerBase) consumer.MetricsConsumerBase {
+	if len(mcs) == 1 {
+		// Don't wrap if no need to do it.
+		return mcs[0]
+	}
 	metricsConsumersOld := make([]consumer.MetricsConsumerOld, 0, len(mcs))
 	metricsConsumers := make([]consumer.MetricsConsumer, 0, len(mcs))
 	allMetricsConsumersOld := true
@@ -53,13 +57,12 @@ func CreateMetricsCloningFanOutConnector(mcs []consumer.MetricsConsumerBase) con
 	}
 
 	if allMetricsConsumersOld {
-		return NewMetricsCloningFanOutConnectorOld(metricsConsumersOld)
+		return newMetricsCloningFanOutConnectorOld(metricsConsumersOld)
 	}
-	return NewMetricsCloningFanOutConnector(metricsConsumers)
+	return newMetricsCloningFanOutConnector(metricsConsumers)
 }
 
-// NewMetricsCloningFanOutConnectorOld wraps multiple metrics consumers in a single one.
-func NewMetricsCloningFanOutConnectorOld(mcs []consumer.MetricsConsumerOld) consumer.MetricsConsumerOld {
+func newMetricsCloningFanOutConnectorOld(mcs []consumer.MetricsConsumerOld) consumer.MetricsConsumerOld {
 	return metricsCloningFanOutConnectorOld(mcs)
 }
 
@@ -91,8 +94,7 @@ func (mfc metricsCloningFanOutConnectorOld) ConsumeMetricsData(ctx context.Conte
 	return componenterror.CombineErrors(errs)
 }
 
-// NewMetricsCloningFanOutConnector wraps multiple metrics consumers in a single one.
-func NewMetricsCloningFanOutConnector(mcs []consumer.MetricsConsumer) consumer.MetricsConsumer {
+func newMetricsCloningFanOutConnector(mcs []consumer.MetricsConsumer) consumer.MetricsConsumer {
 	return metricsCloningFanOutConnector(mcs)
 }
 
@@ -127,6 +129,10 @@ func (mfc metricsCloningFanOutConnector) ConsumeMetrics(ctx context.Context, md 
 // CreateTraceCloningFanOutConnector is a placeholder function for now.
 // It supposed to create an old type connector or a new type connector based on type of provided trace consumer.
 func CreateTraceCloningFanOutConnector(tcs []consumer.TraceConsumerBase) consumer.TraceConsumerBase {
+	if len(tcs) == 1 {
+		// Don't wrap if no need to do it.
+		return tcs[0]
+	}
 	traceConsumersOld := make([]consumer.TraceConsumerOld, 0, len(tcs))
 	traceConsumers := make([]consumer.TraceConsumer, 0, len(tcs))
 	allTraceConsumersOld := true
@@ -142,13 +148,12 @@ func CreateTraceCloningFanOutConnector(tcs []consumer.TraceConsumerBase) consume
 	}
 
 	if allTraceConsumersOld {
-		return NewTraceCloningFanOutConnectorOld(traceConsumersOld)
+		return newTraceCloningFanOutConnectorOld(traceConsumersOld)
 	}
-	return NewTraceCloningFanOutConnector(traceConsumers)
+	return newTraceCloningFanOutConnector(traceConsumers)
 }
 
-// NewTraceCloningFanOutConnectorOld wraps multiple trace consumers in a single one.
-func NewTraceCloningFanOutConnectorOld(tcs []consumer.TraceConsumerOld) consumer.TraceConsumerOld {
+func newTraceCloningFanOutConnectorOld(tcs []consumer.TraceConsumerOld) consumer.TraceConsumerOld {
 	return traceCloningFanOutConnectorOld(tcs)
 }
 
@@ -180,8 +185,7 @@ func (tfc traceCloningFanOutConnectorOld) ConsumeTraceData(ctx context.Context, 
 	return componenterror.CombineErrors(errs)
 }
 
-// NewTraceCloningFanOutConnector wraps multiple trace consumers in a single one.
-func NewTraceCloningFanOutConnector(tcs []consumer.TraceConsumer) consumer.TraceConsumer {
+func newTraceCloningFanOutConnector(tcs []consumer.TraceConsumer) consumer.TraceConsumer {
 	return traceCloningFanOutConnector(tcs)
 }
 
