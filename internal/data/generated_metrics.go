@@ -63,6 +63,23 @@ func (es ResourceMetricsSlice) At(ix int) ResourceMetrics {
 	return newResourceMetrics(&(*es.orig)[ix])
 }
 
+// MoveTo moves all elements from the current slice to the dest. The current slice will be cleared.
+func (es ResourceMetricsSlice) MoveTo(dest ResourceMetricsSlice) {
+	if es.Len() == 0 {
+		// Just to ensure that we always return a Slice with nil elements.
+		*es.orig = nil
+		return
+	}
+	if dest.Len() == 0 {
+		*dest.orig = *es.orig
+		*es.orig = nil
+		return
+	}
+	*dest.orig = append(*dest.orig, *es.orig...)
+	*es.orig = nil
+	return
+}
+
 // Resize is an operation that resizes the slice:
 // 1. If newLen is 0 then the slice is replaced with a nil slice.
 // 2. If the newLen < len then equivalent with slice[0:newLen].
@@ -189,6 +206,23 @@ func (es InstrumentationLibraryMetricsSlice) Len() int {
 // }
 func (es InstrumentationLibraryMetricsSlice) At(ix int) InstrumentationLibraryMetrics {
 	return newInstrumentationLibraryMetrics(&(*es.orig)[ix])
+}
+
+// MoveTo moves all elements from the current slice to the dest. The current slice will be cleared.
+func (es InstrumentationLibraryMetricsSlice) MoveTo(dest InstrumentationLibraryMetricsSlice) {
+	if es.Len() == 0 {
+		// Just to ensure that we always return a Slice with nil elements.
+		*es.orig = nil
+		return
+	}
+	if dest.Len() == 0 {
+		*dest.orig = *es.orig
+		*es.orig = nil
+		return
+	}
+	*dest.orig = append(*dest.orig, *es.orig...)
+	*es.orig = nil
+	return
 }
 
 // Resize is an operation that resizes the slice:
@@ -319,6 +353,23 @@ func (es MetricSlice) At(ix int) Metric {
 	return newMetric(&(*es.orig)[ix])
 }
 
+// MoveTo moves all elements from the current slice to the dest. The current slice will be cleared.
+func (es MetricSlice) MoveTo(dest MetricSlice) {
+	if es.Len() == 0 {
+		// Just to ensure that we always return a Slice with nil elements.
+		*es.orig = nil
+		return
+	}
+	if dest.Len() == 0 {
+		*dest.orig = *es.orig
+		*es.orig = nil
+		return
+	}
+	*dest.orig = append(*dest.orig, *es.orig...)
+	*es.orig = nil
+	return
+}
+
 // Resize is an operation that resizes the slice:
 // 1. If newLen is 0 then the slice is replaced with a nil slice.
 // 2. If the newLen < len then equivalent with slice[0:newLen].
@@ -351,7 +402,7 @@ func (es MetricSlice) Resize(newLen int) {
 }
 
 // Metric represents one metric as a collection of datapoints.
-// See Metric definition in OTLP: https://github.com/open-telemetry/opentelemetry-proto/blob/master/opentelemetry/proto/metrics/v1/metrics.proto
+// See Metric definition in OTLP: https://github.com/open-telemetry/opentelemetry-proto/blob/master/opentelemetry/proto/metrics/v1/metrics.proto#L96
 //
 // This is a reference type, if passsed by value and callee modifies it the
 // caller will see the modification.
@@ -570,6 +621,23 @@ func (es Int64DataPointSlice) At(ix int) Int64DataPoint {
 	return newInt64DataPoint(&(*es.orig)[ix])
 }
 
+// MoveTo moves all elements from the current slice to the dest. The current slice will be cleared.
+func (es Int64DataPointSlice) MoveTo(dest Int64DataPointSlice) {
+	if es.Len() == 0 {
+		// Just to ensure that we always return a Slice with nil elements.
+		*es.orig = nil
+		return
+	}
+	if dest.Len() == 0 {
+		*dest.orig = *es.orig
+		*es.orig = nil
+		return
+	}
+	*dest.orig = append(*dest.orig, *es.orig...)
+	*es.orig = nil
+	return
+}
+
 // Resize is an operation that resizes the slice:
 // 1. If newLen is 0 then the slice is replaced with a nil slice.
 // 2. If the newLen < len then equivalent with slice[0:newLen].
@@ -730,6 +798,23 @@ func (es DoubleDataPointSlice) At(ix int) DoubleDataPoint {
 	return newDoubleDataPoint(&(*es.orig)[ix])
 }
 
+// MoveTo moves all elements from the current slice to the dest. The current slice will be cleared.
+func (es DoubleDataPointSlice) MoveTo(dest DoubleDataPointSlice) {
+	if es.Len() == 0 {
+		// Just to ensure that we always return a Slice with nil elements.
+		*es.orig = nil
+		return
+	}
+	if dest.Len() == 0 {
+		*dest.orig = *es.orig
+		*es.orig = nil
+		return
+	}
+	*dest.orig = append(*dest.orig, *es.orig...)
+	*es.orig = nil
+	return
+}
+
 // Resize is an operation that resizes the slice:
 // 1. If newLen is 0 then the slice is replaced with a nil slice.
 // 2. If the newLen < len then equivalent with slice[0:newLen].
@@ -888,6 +973,23 @@ func (es HistogramDataPointSlice) Len() int {
 // }
 func (es HistogramDataPointSlice) At(ix int) HistogramDataPoint {
 	return newHistogramDataPoint(&(*es.orig)[ix])
+}
+
+// MoveTo moves all elements from the current slice to the dest. The current slice will be cleared.
+func (es HistogramDataPointSlice) MoveTo(dest HistogramDataPointSlice) {
+	if es.Len() == 0 {
+		// Just to ensure that we always return a Slice with nil elements.
+		*es.orig = nil
+		return
+	}
+	if dest.Len() == 0 {
+		*dest.orig = *es.orig
+		*es.orig = nil
+		return
+	}
+	*dest.orig = append(*dest.orig, *es.orig...)
+	*es.orig = nil
+	return
 }
 
 // Resize is an operation that resizes the slice:
@@ -1083,6 +1185,23 @@ func (es HistogramBucketSlice) Len() int {
 // }
 func (es HistogramBucketSlice) At(ix int) HistogramBucket {
 	return newHistogramBucket(&(*es.orig)[ix])
+}
+
+// MoveTo moves all elements from the current slice to the dest. The current slice will be cleared.
+func (es HistogramBucketSlice) MoveTo(dest HistogramBucketSlice) {
+	if es.Len() == 0 {
+		// Just to ensure that we always return a Slice with nil elements.
+		*es.orig = nil
+		return
+	}
+	if dest.Len() == 0 {
+		*dest.orig = *es.orig
+		*es.orig = nil
+		return
+	}
+	*dest.orig = append(*dest.orig, *es.orig...)
+	*es.orig = nil
+	return
 }
 
 // Resize is an operation that resizes the slice:
@@ -1294,6 +1413,23 @@ func (es SummaryDataPointSlice) At(ix int) SummaryDataPoint {
 	return newSummaryDataPoint(&(*es.orig)[ix])
 }
 
+// MoveTo moves all elements from the current slice to the dest. The current slice will be cleared.
+func (es SummaryDataPointSlice) MoveTo(dest SummaryDataPointSlice) {
+	if es.Len() == 0 {
+		// Just to ensure that we always return a Slice with nil elements.
+		*es.orig = nil
+		return
+	}
+	if dest.Len() == 0 {
+		*dest.orig = *es.orig
+		*es.orig = nil
+		return
+	}
+	*dest.orig = append(*dest.orig, *es.orig...)
+	*es.orig = nil
+	return
+}
+
 // Resize is an operation that resizes the slice:
 // 1. If newLen is 0 then the slice is replaced with a nil slice.
 // 2. If the newLen < len then equivalent with slice[0:newLen].
@@ -1473,6 +1609,23 @@ func (es SummaryValueAtPercentileSlice) Len() int {
 // }
 func (es SummaryValueAtPercentileSlice) At(ix int) SummaryValueAtPercentile {
 	return newSummaryValueAtPercentile(&(*es.orig)[ix])
+}
+
+// MoveTo moves all elements from the current slice to the dest. The current slice will be cleared.
+func (es SummaryValueAtPercentileSlice) MoveTo(dest SummaryValueAtPercentileSlice) {
+	if es.Len() == 0 {
+		// Just to ensure that we always return a Slice with nil elements.
+		*es.orig = nil
+		return
+	}
+	if dest.Len() == 0 {
+		*dest.orig = *es.orig
+		*es.orig = nil
+		return
+	}
+	*dest.orig = append(*dest.orig, *es.orig...)
+	*es.orig = nil
+	return
 }
 
 // Resize is an operation that resizes the slice:
