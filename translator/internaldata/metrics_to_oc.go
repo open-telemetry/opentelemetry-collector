@@ -186,7 +186,8 @@ func collectLabelKeys(metric data.Metric) *labelKeys {
 
 func addLabelKeys(keySet map[string]struct{}, labels data.StringMap) {
 	for i := 0; i < labels.Len(); i++ {
-		keySet[labels.GetStringKeyValue(i).Key()] = struct{}{}
+		k, _ := labels.GetStringKeyValue(i)
+		keySet[k] = struct{}{}
 	}
 }
 
@@ -370,8 +371,8 @@ func exemplarToOC(exemplar data.HistogramBucketExemplar) *ocmetrics.Distribution
 
 	labels := make(map[string]string, attachments.Len())
 	for i := 0; i < attachments.Len(); i++ {
-		skv := attachments.GetStringKeyValue(i)
-		labels[skv.Key()] = skv.Value()
+		k, v := attachments.GetStringKeyValue(i)
+		labels[k] = v.Value()
 	}
 	return &ocmetrics.DistributionValue_Exemplar{
 		Value:       exemplar.Value(),
@@ -438,26 +439,26 @@ func labelValuesToOC(md data.MetricDescriptor, labels data.StringMap, labelKeys 
 		//  instead of starting from new slices.
 		cls := md.LabelsMap()
 		for i := 0; i < cls.Len(); i++ {
-			skv := cls.GetStringKeyValue(i)
+			k, v := cls.GetStringKeyValue(i)
 			// Find the appropriate label value that we need to update
-			keyIndex := labelKeys.keyIndices[skv.Key()]
+			keyIndex := labelKeys.keyIndices[k]
 			labelValue := labelValues[keyIndex]
 
 			// Update label value
-			labelValue.Value = skv.Value()
+			labelValue.Value = v.Value()
 			labelValue.HasValue = true
 		}
 	}
 
 	// Visit all defined labels in the point and override defaults with actual values
 	for i := 0; i < labels.Len(); i++ {
-		skv := labels.GetStringKeyValue(i)
+		k, v := labels.GetStringKeyValue(i)
 		// Find the appropriate label value that we need to update
-		keyIndex := labelKeys.keyIndices[skv.Key()]
+		keyIndex := labelKeys.keyIndices[k]
 		labelValue := labelValues[keyIndex]
 
 		// Update label value
-		labelValue.Value = skv.Value()
+		labelValue.Value = v.Value()
 		labelValue.HasValue = true
 	}
 

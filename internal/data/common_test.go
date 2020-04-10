@@ -71,7 +71,7 @@ func TestNewAttributeValueSlice(t *testing.T) {
 
 func TestNilAttributeMap(t *testing.T) {
 	val, exist := NewAttributeMap().Get("test_key")
-	assert.EqualValues(t, false, exist)
+	assert.False(t, exist)
 	assert.EqualValues(t, AttributeValue{nil}, val)
 
 	insertMap := NewAttributeMap()
@@ -135,7 +135,7 @@ func TestNilAttributeMap(t *testing.T) {
 	assert.EqualValues(t, generateTestBoolAttributeMap(), upsertMapBool)
 
 	deleteMap := NewAttributeMap()
-	assert.EqualValues(t, false, deleteMap.Delete("k"))
+	assert.False(t, deleteMap.Delete("k"))
 	assert.EqualValues(t, NewAttributeMap(), deleteMap)
 	assert.EqualValues(t, 0, NewAttributeMap().Len())
 
@@ -284,8 +284,8 @@ func TestAttributeMapWithNilValues(t *testing.T) {
 
 func TestNilStringMap(t *testing.T) {
 	val, exist := NewStringMap().Get("test_key")
-	assert.EqualValues(t, false, exist)
-	assert.EqualValues(t, StringKeyValue{nil}, val)
+	assert.False(t, exist)
+	assert.EqualValues(t, StringValue{nil}, val)
 
 	insertMap := NewStringMap()
 	insertMap.Insert("k", "v")
@@ -300,7 +300,7 @@ func TestNilStringMap(t *testing.T) {
 	assert.EqualValues(t, generateTestStringMap(), upsertMap)
 
 	deleteMap := NewStringMap()
-	assert.EqualValues(t, false, deleteMap.Delete("k"))
+	assert.False(t, deleteMap.Delete("k"))
 	assert.EqualValues(t, NewStringMap(), deleteMap)
 	assert.EqualValues(t, 0, NewStringMap().Len())
 
@@ -344,10 +344,10 @@ func TestStringMapWithNilValues(t *testing.T) {
 	assert.True(t, exist)
 	assert.EqualValues(t, "yet_another_value", val.Value())
 
-	assert.EqualValues(t, true, sm.Delete("other_key"))
-	assert.EqualValues(t, true, sm.Delete("yet_another_key"))
-	assert.EqualValues(t, false, sm.Delete("other_key"))
-	assert.EqualValues(t, false, sm.Delete("yet_another_key"))
+	assert.True(t, sm.Delete("other_key"))
+	assert.True(t, sm.Delete("yet_another_key"))
+	assert.False(t, sm.Delete("other_key"))
+	assert.False(t, sm.Delete("yet_another_key"))
 
 	// Test that the initial key is still there.
 	val, exist = sm.Get("test_key")
@@ -366,18 +366,18 @@ func TestStringMap(t *testing.T) {
 
 	val, exist := sm.Get("k2")
 	assert.True(t, exist)
-	assert.EqualValues(t, NewStringKeyValue("k2", "v2"), val)
+	assert.EqualValues(t, "v2", val.Value())
 
 	val, exist = sm.Get("k3")
-	assert.EqualValues(t, false, exist)
-	assert.EqualValues(t, StringKeyValue{nil}, val)
+	assert.False(t, exist)
+	assert.EqualValues(t, StringValue{nil}, val)
 
 	sm.Insert("k1", "v1")
 	assert.EqualValues(t, origMap.Sort(), sm.Sort())
 	sm.Insert("k3", "v3")
 	assert.EqualValues(t, 4, sm.Len())
 	assert.EqualValues(t, NewStringMap().InitFromMap(map[string]string{"k0": "v0", "k1": "v1", "k2": "v2", "k3": "v3"}).Sort(), sm.Sort())
-	assert.EqualValues(t, true, sm.Delete("k3"))
+	assert.True(t, sm.Delete("k3"))
 	assert.EqualValues(t, 3, sm.Len())
 	assert.EqualValues(t, origMap.Sort(), sm.Sort())
 
@@ -400,21 +400,21 @@ func TestStringMap(t *testing.T) {
 	sm.Upsert("k1", "v1")
 	assert.EqualValues(t, 4, sm.Len())
 	assert.EqualValues(t, NewStringMap().InitFromMap(map[string]string{"k0": "v0", "k1": "v1", "k2": "v2", "k3": "v3"}).Sort(), sm.Sort())
-	assert.EqualValues(t, true, sm.Delete("k3"))
+	assert.True(t, sm.Delete("k3"))
 	assert.EqualValues(t, 3, sm.Len())
 	assert.EqualValues(t, origMap.Sort(), sm.Sort())
 
-	assert.EqualValues(t, false, sm.Delete("k3"))
+	assert.False(t, sm.Delete("k3"))
 	assert.EqualValues(t, 3, sm.Len())
 	assert.EqualValues(t, origMap.Sort(), sm.Sort())
 
-	assert.EqualValues(t, true, sm.Delete("k0"))
+	assert.True(t, sm.Delete("k0"))
 	assert.EqualValues(t, 2, sm.Len())
 	assert.EqualValues(t, NewStringMap().InitFromMap(map[string]string{"k1": "v1", "k2": "v2"}).Sort(), sm.Sort())
-	assert.EqualValues(t, true, sm.Delete("k2"))
+	assert.True(t, sm.Delete("k2"))
 	assert.EqualValues(t, 1, sm.Len())
 	assert.EqualValues(t, NewStringMap().InitFromMap(map[string]string{"k1": "v1"}).Sort(), sm.Sort())
-	assert.EqualValues(t, true, sm.Delete("k1"))
+	assert.True(t, sm.Delete("k1"))
 	assert.EqualValues(t, 0, sm.Len())
 }
 
@@ -423,9 +423,9 @@ func TestStringMapIteration(t *testing.T) {
 	assert.EqualValues(t, 3, sm.Len())
 	sm.Sort()
 	for i := 0; i < sm.Len(); i++ {
-		skv := sm.GetStringKeyValue(i)
-		assert.EqualValues(t, "k"+strconv.Itoa(i), skv.Key())
-		assert.EqualValues(t, "v"+strconv.Itoa(i), skv.Value())
+		k, v := sm.GetStringKeyValue(i)
+		assert.EqualValues(t, "k"+strconv.Itoa(i), k)
+		assert.EqualValues(t, "v"+strconv.Itoa(i), v.Value())
 	}
 }
 
