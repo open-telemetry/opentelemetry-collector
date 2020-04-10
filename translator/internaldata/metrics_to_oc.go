@@ -185,10 +185,9 @@ func collectLabelKeys(metric data.Metric) *labelKeys {
 }
 
 func addLabelKeys(keySet map[string]struct{}, labels data.StringMap) {
-	for i := 0; i < labels.Len(); i++ {
-		k, _ := labels.GetStringKeyValue(i)
+	labels.ForEach(func(k string, v data.StringValue) {
 		keySet[k] = struct{}{}
-	}
+	})
 }
 
 func descriptorToOC(descriptor data.MetricDescriptor, labelKeys *labelKeys) *ocmetrics.MetricDescriptor {
@@ -361,7 +360,7 @@ func exemplarToOC(exemplar data.HistogramBucketExemplar) *ocmetrics.Distribution
 		return nil
 	}
 	attachments := exemplar.Attachments()
-	if attachments.Len() == 0 {
+	if attachments.Cap() == 0 {
 		return &ocmetrics.DistributionValue_Exemplar{
 			Value:       exemplar.Value(),
 			Timestamp:   internal.UnixNanoToTimestamp(exemplar.Timestamp()),
@@ -369,11 +368,10 @@ func exemplarToOC(exemplar data.HistogramBucketExemplar) *ocmetrics.Distribution
 		}
 	}
 
-	labels := make(map[string]string, attachments.Len())
-	for i := 0; i < attachments.Len(); i++ {
-		k, v := attachments.GetStringKeyValue(i)
+	labels := make(map[string]string, attachments.Cap())
+	attachments.ForEach(func(k string, v data.StringValue) {
 		labels[k] = v.Value()
-	}
+	})
 	return &ocmetrics.DistributionValue_Exemplar{
 		Value:       exemplar.Value(),
 		Timestamp:   internal.UnixNanoToTimestamp(exemplar.Timestamp()),
@@ -437,9 +435,7 @@ func labelValuesToOC(md data.MetricDescriptor, labels data.StringMap, labelKeys 
 	if !md.IsNil() {
 		// TODO: Pre-construct the labelValuesOrig and labelValues with the metrics from the descriptor and copy them
 		//  instead of starting from new slices.
-		cls := md.LabelsMap()
-		for i := 0; i < cls.Len(); i++ {
-			k, v := cls.GetStringKeyValue(i)
+		md.LabelsMap().ForEach(func(k string, v data.StringValue) {
 			// Find the appropriate label value that we need to update
 			keyIndex := labelKeys.keyIndices[k]
 			labelValue := labelValues[keyIndex]
@@ -447,12 +443,11 @@ func labelValuesToOC(md data.MetricDescriptor, labels data.StringMap, labelKeys 
 			// Update label value
 			labelValue.Value = v.Value()
 			labelValue.HasValue = true
-		}
+		})
 	}
 
 	// Visit all defined labels in the point and override defaults with actual values
-	for i := 0; i < labels.Len(); i++ {
-		k, v := labels.GetStringKeyValue(i)
+	labels.ForEach(func(k string, v data.StringValue) {
 		// Find the appropriate label value that we need to update
 		keyIndex := labelKeys.keyIndices[k]
 		labelValue := labelValues[keyIndex]
@@ -460,7 +455,7 @@ func labelValuesToOC(md data.MetricDescriptor, labels data.StringMap, labelKeys 
 		// Update label value
 		labelValue.Value = v.Value()
 		labelValue.HasValue = true
-	}
+	})
 
 	return labelValues
 }

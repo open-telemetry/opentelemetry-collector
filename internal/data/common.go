@@ -175,6 +175,7 @@ func (a AttributeValue) setTypeAndClear(ty otlpcommon.AttributeKeyValue_ValueTyp
 	a.orig.BoolValue = false
 }
 
+// Equal checks for equality, it returns true if the objects are equal otherwise false.
 func (a AttributeValue) Equal(av AttributeValue) bool {
 	return a.orig.Type == av.orig.Type &&
 		a.orig.StringValue == av.orig.StringValue &&
@@ -429,11 +430,6 @@ func (am AttributeMap) UpsertBool(k string, v bool) {
 	}
 }
 
-// Len returns the number of AttributeKeyValue in the map.
-func (am AttributeMap) Len() int {
-	return len(*am.orig)
-}
-
 // Sort sorts the entries in the AttributeMap so two instances can be compared.
 // Returns the same instance to allow nicer code like:
 // assert.EqualValues(t, expected.Sort(), actual.Sort())
@@ -445,15 +441,25 @@ func (am AttributeMap) Sort() AttributeMap {
 	return am
 }
 
-// GetAttribute returns the AttributeKeyValue associated with the given index.
+// Cap returns the capacity of this map.
+func (am AttributeMap) Cap() int {
+	return len(*am.orig)
+}
+
+// ForEach iterates over the every elements in the map by calling the provided func.
 //
-// This function is used mostly for iterating over all the values in the map:
-// for i := 1; i < am.Len(); i++ {
-//     akv := am.GetAttribute(i)
-//     ... // Do something with the attribute
-// }
-func (am AttributeMap) GetAttribute(ix int) (string, AttributeValue) {
-	return (*am.orig)[ix].Key, AttributeValue{(*am.orig)[ix]}
+// Example:
+//
+// it := sm.ForEach(func(k string, v StringValue) {
+//   ...
+// })
+func (am AttributeMap) ForEach(f func(k string, v AttributeValue)) {
+	for _, kv := range *am.orig {
+		if kv == nil {
+			continue
+		}
+		f(kv.Key, AttributeValue{kv})
+	}
 }
 
 // StringValue stores a string value.
@@ -579,20 +585,25 @@ func (sm StringMap) Upsert(k, v string) {
 	}
 }
 
-// Len returns the number of StringValue in the map.
-func (sm StringMap) Len() int {
+// Cap returns the capacity of this map.
+func (sm StringMap) Cap() int {
 	return len(*sm.orig)
 }
 
-// GetStringKeyValue returns the StringValue associated with the given index.
+// ForEach iterates over the every elements in the map by calling the provided func.
 //
-// This function is used mostly for iterating over all the values in the map:
-// for i := 0; i < am.Len(); i++ {
-//     k, v := am.GetStringKeyValue(i)
-//     ... // Do something with the attribute
-// }
-func (sm StringMap) GetStringKeyValue(ix int) (string, StringValue) {
-	return (*sm.orig)[ix].Key, StringValue{(*sm.orig)[ix]}
+// Example:
+//
+// it := sm.ForEach(func(k string, v StringValue) {
+//   ...
+// })
+func (sm StringMap) ForEach(f func(k string, v StringValue)) {
+	for _, kv := range *sm.orig {
+		if kv == nil {
+			continue
+		}
+		f(kv.Key, StringValue{kv})
+	}
 }
 
 // Sort sorts the entries in the StringMap so two instances can be compared.
