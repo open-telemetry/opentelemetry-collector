@@ -80,10 +80,6 @@ func (td TraceData) ResourceSpans() ResourceSpansSlice {
 	return newResourceSpansSlice(td.orig)
 }
 
-func (td TraceData) SetResourceSpans(v ResourceSpansSlice) {
-	*td.orig = *v.orig
-}
-
 type TraceID []byte
 
 func (t TraceID) Bytes() []byte {

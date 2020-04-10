@@ -65,10 +65,6 @@ func (md MetricData) ResourceMetrics() ResourceMetricsSlice {
 	return newResourceMetricsSlice(md.orig)
 }
 
-func (md MetricData) SetResourceMetrics(v ResourceMetricsSlice) {
-	*md.orig = *v.orig
-}
-
 // MetricCount calculates the total number of metrics.
 func (md MetricData) MetricCount() int {
 	metricCount := 0
