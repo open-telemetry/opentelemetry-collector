@@ -41,11 +41,10 @@ func internalResourceToOC(resource data.Resource) (*occommon.Node, *ocresource.R
 	}
 
 	labels := make(map[string]string, attrs.Cap())
-	it := attrs.Range()
-	for it.Next() {
-		val := attributeValueToString(it.Value())
+	attrs.ForEach(func(k string, v data.AttributeValue) {
+		val := attributeValueToString(v)
 
-		switch it.Key() {
+		switch k {
 		case conventions.OCAttributeResourceType:
 			ocResource.Type = val
 		case conventions.AttributeServiceName:
@@ -56,11 +55,11 @@ func internalResourceToOC(resource data.Resource) (*occommon.Node, *ocresource.R
 		case conventions.OCAttributeProcessStartTime:
 			t, err := time.Parse(time.RFC3339Nano, val)
 			if err != nil {
-				continue
+				return
 			}
 			ts, err := ptypes.TimestampProto(t)
 			if err != nil {
-				continue
+				return
 			}
 			if ocNode.Identifier == nil {
 				ocNode.Identifier = &occommon.ProcessIdentifier{}
@@ -99,9 +98,9 @@ func internalResourceToOC(resource data.Resource) (*occommon.Node, *ocresource.R
 			}
 		default:
 			// Not a special attribute, put it into resource labels
-			labels[it.Key()] = val
+			labels[k] = val
 		}
-	}
+	})
 	ocResource.Labels = labels
 
 	return &ocNode, &ocResource

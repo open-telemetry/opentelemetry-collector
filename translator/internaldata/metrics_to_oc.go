@@ -185,10 +185,9 @@ func collectLabelKeys(metric data.Metric) *labelKeys {
 }
 
 func addLabelKeys(keySet map[string]struct{}, labels data.StringMap) {
-	it := labels.Range()
-	for it.Next() {
-		keySet[it.Key()] = struct{}{}
-	}
+	labels.ForEach(func(k string, v data.StringValue) {
+		keySet[k] = struct{}{}
+	})
 }
 
 func descriptorToOC(descriptor data.MetricDescriptor, labelKeys *labelKeys) *ocmetrics.MetricDescriptor {
@@ -370,10 +369,9 @@ func exemplarToOC(exemplar data.HistogramBucketExemplar) *ocmetrics.Distribution
 	}
 
 	labels := make(map[string]string, attachments.Cap())
-	it := attachments.Range()
-	for it.Next() {
-		labels[it.Key()] = it.Value().Value()
-	}
+	attachments.ForEach(func(k string, v data.StringValue) {
+		labels[k] = v.Value()
+	})
 	return &ocmetrics.DistributionValue_Exemplar{
 		Value:       exemplar.Value(),
 		Timestamp:   internal.UnixNanoToTimestamp(exemplar.Timestamp()),
@@ -437,29 +435,27 @@ func labelValuesToOC(md data.MetricDescriptor, labels data.StringMap, labelKeys 
 	if !md.IsNil() {
 		// TODO: Pre-construct the labelValuesOrig and labelValues with the metrics from the descriptor and copy them
 		//  instead of starting from new slices.
-		it := md.LabelsMap().Range()
-		for it.Next() {
+		md.LabelsMap().ForEach(func(k string, v data.StringValue) {
 			// Find the appropriate label value that we need to update
-			keyIndex := labelKeys.keyIndices[it.Key()]
+			keyIndex := labelKeys.keyIndices[k]
 			labelValue := labelValues[keyIndex]
 
 			// Update label value
-			labelValue.Value = it.Value().Value()
+			labelValue.Value = v.Value()
 			labelValue.HasValue = true
-		}
+		})
 	}
 
 	// Visit all defined labels in the point and override defaults with actual values
-	it := labels.Range()
-	for it.Next() {
+	labels.ForEach(func(k string, v data.StringValue) {
 		// Find the appropriate label value that we need to update
-		keyIndex := labelKeys.keyIndices[it.Key()]
+		keyIndex := labelKeys.keyIndices[k]
 		labelValue := labelValues[keyIndex]
 
 		// Update label value
-		labelValue.Value = it.Value().Value()
+		labelValue.Value = v.Value()
 		labelValue.HasValue = true
-	}
+	})
 
 	return labelValues
 }

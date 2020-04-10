@@ -446,73 +446,20 @@ func (am AttributeMap) Cap() int {
 	return len(*am.orig)
 }
 
-// Iter returns an iterator for ranging over a map.
-// Similar with Reflect.MapRange.
-//
-// Call Next to advance the iterator, and Key/Value to access each entry. Next returns false when the iterator is
-// exhausted. StringMapIter follows the same iteration semantics as a range statement.
+// ForEach iterates over the every elements in the map by calling the provided func.
 //
 // Example:
 //
-// it := sm.Range()
-// for iter.Next() {
-//	 k := iter.Key()
-//	 v := iter.Value()
-//	 ...
-// }
-func (am AttributeMap) Range() *AttributeMapIter {
-	return newAttributeMapIter(am)
-}
-
-// AttributeMapIter is an iterator for ranging over a map.
-// Similar with Reflect.MapIter.
-type AttributeMapIter struct {
-	orig []*otlpcommon.AttributeKeyValue
-	pos  int
-}
-
-func newAttributeMapIter(sm AttributeMap) *AttributeMapIter {
-	return &AttributeMapIter{orig: *sm.orig, pos: -1}
-}
-
-// Key returns the key of the iterator's current map entry.
-func (it *AttributeMapIter) Key() string {
-	if it.pos == -1 {
-		panic("MapIter.Key called before Next")
+// it := sm.ForEach(func(k string, v StringValue) {
+//   ...
+// })
+func (am AttributeMap) ForEach(f func(k string, v AttributeValue)) {
+	for _, kv := range *am.orig {
+		if kv == nil {
+			continue
+		}
+		f(kv.Key, AttributeValue{kv})
 	}
-	if it.pos >= len(it.orig) {
-		panic("MapIter.Key called on exhausted iterator")
-	}
-
-	return it.orig[it.pos].Key
-}
-
-// Value returns the value of the iterator's current map entry.
-func (it *AttributeMapIter) Value() AttributeValue {
-	if it.pos == -1 {
-		panic("MapIter.Value called before Next")
-	}
-	if it.pos >= len(it.orig) {
-		panic("MapIter.Value called on exhausted iterator")
-	}
-
-	return AttributeValue{it.orig[it.pos]}
-}
-
-// Next advances the map iterator and reports whether there is another
-// entry. It returns false when the iterator is exhausted; subsequent
-// calls to Key, Value, or Next will panic.
-func (it *AttributeMapIter) Next() bool {
-	if it.pos >= len(it.orig) {
-		panic("MapIter.Next called on exhausted iterator")
-	}
-	it.pos++
-	// Iterate until the end of the slice or first non nil element.
-	for it.pos < len(it.orig) && it.orig[it.pos] == nil {
-		it.pos++
-	}
-
-	return it.pos < len(it.orig)
 }
 
 // StringValue stores a string value.
@@ -643,73 +590,20 @@ func (sm StringMap) Cap() int {
 	return len(*sm.orig)
 }
 
-// Iter returns an iterator for ranging over a map.
-// Similar with Reflect.MapRange.
-//
-// Call Next to advance the iterator, and Key/Value to access each entry. Next returns false when the iterator is
-// exhausted. StringMapIter follows the same iteration semantics as a range statement.
+// ForEach iterates over the every elements in the map by calling the provided func.
 //
 // Example:
 //
-// it := sm.Range()
-// for iter.Next() {
-//	 k := iter.Key()
-//	 v := iter.Value()
-//	 ...
-// }
-func (sm StringMap) Range() *StringMapIter {
-	return newStringMapIter(sm)
-}
-
-// StringMapIter is an iterator for ranging over a map.
-// Similar with Reflect.MapIter.
-type StringMapIter struct {
-	orig []*otlpcommon.StringKeyValue
-	pos  int
-}
-
-func newStringMapIter(sm StringMap) *StringMapIter {
-	return &StringMapIter{orig: *sm.orig, pos: -1}
-}
-
-// Key returns the key of the iterator's current map entry.
-func (it *StringMapIter) Key() string {
-	if it.pos == -1 {
-		panic("MapIter.Key called before Next")
+// it := sm.ForEach(func(k string, v StringValue) {
+//   ...
+// })
+func (sm StringMap) ForEach(f func(k string, v StringValue)) {
+	for _, kv := range *sm.orig {
+		if kv == nil {
+			continue
+		}
+		f(kv.Key, StringValue{kv})
 	}
-	if it.pos >= len(it.orig) {
-		panic("MapIter.Key called on exhausted iterator")
-	}
-
-	return it.orig[it.pos].Key
-}
-
-// Value returns the value of the iterator's current map entry.
-func (it *StringMapIter) Value() StringValue {
-	if it.pos == -1 {
-		panic("MapIter.Key called before Next")
-	}
-	if it.pos >= len(it.orig) {
-		panic("MapIter.Key called on exhausted iterator")
-	}
-
-	return StringValue{it.orig[it.pos]}
-}
-
-// Next advances the map iterator and reports whether there is another
-// entry. It returns false when the iterator is exhausted; subsequent
-// calls to Key, Value, or Next will panic.
-func (it *StringMapIter) Next() bool {
-	if it.pos >= len(it.orig) {
-		panic("MapIter.Next called on exhausted iterator")
-	}
-	it.pos++
-	// Iterate until the end of the slice or first non nil element.
-	for it.pos < len(it.orig) && it.orig[it.pos] == nil {
-		it.pos++
-	}
-
-	return it.pos < len(it.orig)
 }
 
 // Sort sorts the entries in the StringMap so two instances can be compared.

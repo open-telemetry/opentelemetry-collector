@@ -284,7 +284,10 @@ func TestAttributeMapWithNilValues(t *testing.T) {
 }
 
 func TestAttributeMapIterationNil(t *testing.T) {
-	assert.False(t, NewAttributeMap().Range().Next())
+	NewAttributeMap().ForEach(func(k string, v AttributeValue) {
+		// Fail if any element is returned
+		t.Fail()
+	})
 }
 
 func TestAttributeMapIteration(t *testing.T) {
@@ -294,14 +297,13 @@ func TestAttributeMapIteration(t *testing.T) {
 		"k_double": NewAttributeValueDouble(1.23),
 		"k_bool":   NewAttributeValueBool(true),
 	}
-	sm := NewAttributeMap().InitFromMap(rawMap)
-	assert.EqualValues(t, 4, sm.Cap())
+	am := NewAttributeMap().InitFromMap(rawMap)
+	assert.EqualValues(t, 4, am.Cap())
 
-	it := sm.Range()
-	for it.Next() {
-		assert.True(t, it.Value().Equal(rawMap[it.Key()]))
-		delete(rawMap, it.Key())
-	}
+	am.ForEach(func(k string, v AttributeValue) {
+		assert.True(t, v.Equal(rawMap[k]))
+		delete(rawMap, k)
+	})
 	assert.EqualValues(t, 0, len(rawMap))
 }
 
@@ -323,21 +325,15 @@ func TestAttributeMapIterationWithNils(t *testing.T) {
 		newAttributeKeyValueBool("k_bool", true),
 		nil,
 	}
-	sm := AttributeMap{
+	am := AttributeMap{
 		orig: &rawOrigWithNil,
 	}
-	assert.EqualValues(t, 9, sm.Cap())
+	assert.EqualValues(t, 9, am.Cap())
 
-	it := sm.Range()
-	assert.Panics(t, func() { it.Key() })
-	assert.Panics(t, func() { it.Value() })
-	for it.Next() {
-		assert.True(t, it.Value().Equal(rawMap[it.Key()]))
-		delete(rawMap, it.Key())
-	}
-	assert.Panics(t, func() { it.Key() })
-	assert.Panics(t, func() { it.Value() })
-	assert.Panics(t, func() { it.Next() })
+	am.ForEach(func(k string, v AttributeValue) {
+		assert.True(t, v.Equal(rawMap[k]))
+		delete(rawMap, k)
+	})
 	assert.EqualValues(t, 0, len(rawMap))
 }
 
@@ -479,7 +475,10 @@ func TestStringMap(t *testing.T) {
 }
 
 func TestStringMapIterationNil(t *testing.T) {
-	assert.False(t, NewStringMap().Range().Next())
+	NewStringMap().ForEach(func(k string, v StringValue) {
+		// Fail if any element is returned
+		t.Fail()
+	})
 }
 
 func TestStringMapIteration(t *testing.T) {
@@ -487,11 +486,10 @@ func TestStringMapIteration(t *testing.T) {
 	sm := NewStringMap().InitFromMap(rawMap)
 	assert.EqualValues(t, 3, sm.Cap())
 
-	it := sm.Range()
-	for it.Next() {
-		assert.EqualValues(t, rawMap[it.Key()], it.Value().Value())
-		delete(rawMap, it.Key())
-	}
+	sm.ForEach(func(k string, v StringValue) {
+		assert.EqualValues(t, rawMap[k], v.Value())
+		delete(rawMap, k)
+	})
 	assert.EqualValues(t, 0, len(rawMap))
 }
 
@@ -520,16 +518,10 @@ func TestStringMapIterationWithNils(t *testing.T) {
 	}
 	assert.EqualValues(t, 7, sm.Cap())
 
-	it := sm.Range()
-	assert.Panics(t, func() { it.Key() })
-	assert.Panics(t, func() { it.Value() })
-	for it.Next() {
-		assert.EqualValues(t, rawMap[it.Key()], it.Value().Value())
-		delete(rawMap, it.Key())
-	}
-	assert.Panics(t, func() { it.Key() })
-	assert.Panics(t, func() { it.Value() })
-	assert.Panics(t, func() { it.Next() })
+	sm.ForEach(func(k string, v StringValue) {
+		assert.EqualValues(t, rawMap[k], v.Value())
+		delete(rawMap, k)
+	})
 	assert.EqualValues(t, 0, len(rawMap))
 }
 
@@ -558,8 +550,8 @@ func BenchmarkAttributeValue_SetIntVal(b *testing.B) {
 	}
 }
 
-func BenchmarkAttributeMap_Range(b *testing.B) {
-	const numElements = 50
+func BenchmarkAttributeMap_ForEach(b *testing.B) {
+	const numElements = 20
 	rawOrigWithNil := make([]*otlpcommon.AttributeKeyValue, 2*numElements)
 	for i := 0; i < numElements; i++ {
 		rawOrigWithNil[i*2] = &otlpcommon.AttributeKeyValue{
@@ -567,24 +559,23 @@ func BenchmarkAttributeMap_Range(b *testing.B) {
 			StringValue: "v" + strconv.Itoa(i),
 		}
 	}
-	sm := AttributeMap{
+	am := AttributeMap{
 		orig: &rawOrigWithNil,
 	}
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		numEls := 0
-		it := sm.Range()
-		for it.Next() {
+		am.ForEach(func(k string, v AttributeValue) {
 			numEls++
-		}
+		})
 		if numEls != numElements {
 			b.Fail()
 		}
 	}
 }
 
-func BenchmarkAttributeMap_Range_WithMap(b *testing.B) {
-	const numElements = 50
+func BenchmarkAttributeMap_RangeOverMap(b *testing.B) {
+	const numElements = 20
 	rawOrig := make(map[string]AttributeValue, numElements)
 	for i := 0; i < numElements; i++ {
 		key := "k" + strconv.Itoa(i)
@@ -605,8 +596,8 @@ func BenchmarkAttributeMap_Range_WithMap(b *testing.B) {
 	}
 }
 
-func BenchmarkStringMap_Range(b *testing.B) {
-	const numElements = 50
+func BenchmarkStringMap_ForEach(b *testing.B) {
+	const numElements = 20
 	rawOrigWithNil := make([]*otlpcommon.StringKeyValue, 2*numElements)
 	for i := 0; i < numElements; i++ {
 		rawOrigWithNil[i*2] = &otlpcommon.StringKeyValue{
@@ -620,18 +611,17 @@ func BenchmarkStringMap_Range(b *testing.B) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		numEls := 0
-		it := sm.Range()
-		for it.Next() {
+		sm.ForEach(func(s string, value StringValue) {
 			numEls++
-		}
+		})
 		if numEls != numElements {
 			b.Fail()
 		}
 	}
 }
 
-func BenchmarkStringMap_Range_WithMap(b *testing.B) {
-	const numElements = 50
+func BenchmarkStringMap_RangeOverMap(b *testing.B) {
+	const numElements = 20
 	rawOrig := make(map[string]StringValue, numElements)
 	for i := 0; i < numElements; i++ {
 		key := "k" + strconv.Itoa(i)
