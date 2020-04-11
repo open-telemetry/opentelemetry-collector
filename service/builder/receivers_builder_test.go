@@ -19,7 +19,6 @@ import (
 	"testing"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -136,17 +135,9 @@ func testReceivers(
 		require.Equal(t, len(consumer.Metrics), 0)
 	}
 
-	// Send one trace.
-	name := tracepb.TruncatableString{Value: "testspanname"}
-	traceData := consumerdata.TraceData{
-		SourceFormat: "test-source-format",
-		Spans: []*tracepb.Span{
-			{Name: &name},
-		},
-	}
 	if test.hasTraces {
 		traceProducer := receiver.receiver.(*config.ExampleReceiverProducer)
-		traceProducer.TraceConsumer.ConsumeTraceData(context.Background(), traceData)
+		traceProducer.TraceConsumer.ConsumeTraceData(context.Background(), generateTestTraceData())
 	}
 
 	metricsData := consumerdata.MetricsData{
@@ -177,12 +168,7 @@ func testReceivers(
 			require.Equal(t, spanDuplicationCount, len(traceConsumer.Traces))
 
 			for i := 0; i < spanDuplicationCount; i++ {
-				assertEqualTraceData(t, traceData, traceConsumer.Traces[i])
-
-				// Check that the span was processed by "attributes" processor and an
-				// attribute was added.
-				assert.Equal(t, int64(12345),
-					traceConsumer.Traces[i].Spans[0].Attributes.AttributeMap["attr1"].GetIntValue())
+				assertEqualTraceData(t, generateTestTraceDataWithAttributes(), traceConsumer.Traces[i])
 			}
 		}
 

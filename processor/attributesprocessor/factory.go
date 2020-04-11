@@ -15,17 +15,16 @@
 package attributesprocessor
 
 import (
+	"context"
 	"fmt"
 	"strings"
-
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	internal "github.com/open-telemetry/opentelemetry-collector/internal/processor"
-	"github.com/open-telemetry/opentelemetry-collector/internal/processor/span"
+	"github.com/open-telemetry/opentelemetry-collector/internal/processor/filterhelper"
+	"github.com/open-telemetry/opentelemetry-collector/internal/processor/filterspan"
 )
 
 const (
@@ -55,21 +54,22 @@ func (f *Factory) CreateDefaultConfig() configmodels.Processor {
 
 // CreateTraceProcessor creates a trace processor based on this config.
 func (f *Factory) CreateTraceProcessor(
-	logger *zap.Logger,
-	nextConsumer consumer.TraceConsumerOld,
+	_ context.Context,
+	_ component.ProcessorCreateParams,
+	nextConsumer consumer.TraceConsumer,
 	cfg configmodels.Processor,
-) (component.TraceProcessorOld, error) {
+) (component.TraceProcessor, error) {
 
 	oCfg := cfg.(*Config)
 	actions, err := buildAttributesConfiguration(*oCfg)
 	if err != nil {
 		return nil, err
 	}
-	include, err := span.NewMatcher(oCfg.Include)
+	include, err := filterspan.NewMatcher(oCfg.Include)
 	if err != nil {
 		return nil, err
 	}
-	exclude, err := span.NewMatcher(oCfg.Exclude)
+	exclude, err := filterspan.NewMatcher(oCfg.Exclude)
 	if err != nil {
 		return nil, err
 	}
@@ -83,10 +83,11 @@ func (f *Factory) CreateTraceProcessor(
 
 // CreateMetricsProcessor creates a metrics processor based on this config.
 func (f *Factory) CreateMetricsProcessor(
-	logger *zap.Logger,
-	nextConsumer consumer.MetricsConsumerOld,
-	cfg configmodels.Processor,
-) (component.MetricsProcessorOld, error) {
+	_ context.Context,
+	_ component.ProcessorCreateParams,
+	_ consumer.MetricsConsumer,
+	_ configmodels.Processor,
+) (component.MetricsProcessor, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
@@ -122,11 +123,11 @@ func buildAttributesConfiguration(config Config) ([]attributeAction, error) {
 			}
 			// Convert the raw value from the configuration to the internal trace representation of the value.
 			if a.Value != nil {
-				val, err := internal.AttributeValue(a.Value)
+				val, err := filterhelper.NewAttributeValueRaw(a.Value)
 				if err != nil {
 					return nil, err
 				}
-				action.AttributeValue = val
+				action.AttributeValue = &val
 			} else {
 				action.FromAttribute = a.FromAttribute
 			}
