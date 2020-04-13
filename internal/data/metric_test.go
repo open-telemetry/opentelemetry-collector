@@ -115,6 +115,58 @@ func TestMetricAndDataPointCount(t *testing.T) {
 	assert.EqualValues(t, 4, dps)
 }
 
+func TestMetricAndDataPointCountWithNil(t *testing.T) {
+	ms, dps := MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{nil, {}}).MetricAndDataPointCount()
+	assert.EqualValues(t, 0, ms)
+	assert.EqualValues(t, 0, dps)
+
+	ms, dps = MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{
+		{
+			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{nil, {}},
+		},
+	}).MetricAndDataPointCount()
+	assert.EqualValues(t, 0, ms)
+	assert.EqualValues(t, 0, dps)
+
+	ms, dps = MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{
+		{
+			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+				{
+					Metrics: []*otlpmetrics.Metric{nil, {}},
+				},
+			},
+		},
+	}).MetricAndDataPointCount()
+	assert.EqualValues(t, 2, ms)
+	assert.EqualValues(t, 0, dps)
+
+	ms, dps = MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{
+		{
+			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+				{
+					Metrics: []*otlpmetrics.Metric{{
+						Int64DataPoints: []*otlpmetrics.Int64DataPoint{
+							nil, {},
+						},
+						DoubleDataPoints: []*otlpmetrics.DoubleDataPoint{
+							nil, {},
+						},
+						HistogramDataPoints: []*otlpmetrics.HistogramDataPoint{
+							nil, {},
+						},
+						SummaryDataPoints: []*otlpmetrics.SummaryDataPoint{
+							nil, {},
+						},
+					}},
+				},
+			},
+		},
+	}).MetricAndDataPointCount()
+	assert.EqualValues(t, 1, ms)
+	assert.EqualValues(t, 8, dps)
+
+}
+
 func TestOtlpToInternalReadOnly(t *testing.T) {
 	metricData := MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{
 		{
