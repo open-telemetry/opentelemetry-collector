@@ -214,12 +214,13 @@ func TestReceiversBuilder_StartAll(t *testing.T) {
 	receiver := &config.ExampleReceiverProducer{}
 
 	receivers[rcvCfg] = &builtReceiver{
+		logger:   zap.NewNop(),
 		receiver: receiver,
 	}
 
 	assert.Equal(t, false, receiver.Started)
 
-	err := receivers.StartAll(zap.NewNop(), componenttest.NewNopHost())
+	err := receivers.StartAll(context.Background(), componenttest.NewNopHost())
 	assert.Nil(t, err)
 
 	assert.Equal(t, true, receiver.Started)
@@ -232,12 +233,13 @@ func TestReceiversBuilder_StopAll(t *testing.T) {
 	receiver := &config.ExampleReceiverProducer{}
 
 	receivers[rcvCfg] = &builtReceiver{
+		logger:   zap.NewNop(),
 		receiver: receiver,
 	}
 
 	assert.Equal(t, false, receiver.Stopped)
 
-	receivers.StopAll()
+	assert.NoError(t, receivers.ShutdownAll(context.Background()))
 
 	assert.Equal(t, true, receiver.Stopped)
 }
@@ -301,8 +303,8 @@ func TestReceiversBuilder_Unused(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, receivers)
 
-	receivers.StartAll(zap.NewNop(), componenttest.NewNopHost())
-	receivers.StopAll()
+	assert.NoError(t, receivers.StartAll(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, receivers.ShutdownAll(context.Background()))
 }
 
 func TestReceiversBuilder_InternalToOcTraceConverter(t *testing.T) {
@@ -347,18 +349,18 @@ func (b *badReceiverFactory) CustomUnmarshaler() component.CustomUnmarshaler {
 }
 
 func (b *badReceiverFactory) CreateTraceReceiver(
-	ctx context.Context,
-	logger *zap.Logger,
-	cfg configmodels.Receiver,
-	nextConsumer consumer.TraceConsumerOld,
+	_ context.Context,
+	_ *zap.Logger,
+	_ configmodels.Receiver,
+	_ consumer.TraceConsumerOld,
 ) (component.TraceReceiver, error) {
 	return nil, nil
 }
 
 func (b *badReceiverFactory) CreateMetricsReceiver(
-	logger *zap.Logger,
-	cfg configmodels.Receiver,
-	consumer consumer.MetricsConsumerOld,
+	_ *zap.Logger,
+	_ configmodels.Receiver,
+	_ consumer.MetricsConsumerOld,
 ) (component.MetricsReceiver, error) {
 	return nil, nil
 }
@@ -379,19 +381,19 @@ func (b *newStyleReceiverFactory) CustomUnmarshaler() component.CustomUnmarshale
 }
 
 func (b *newStyleReceiverFactory) CreateTraceReceiver(
-	ctx context.Context,
-	params component.ReceiverCreateParams,
-	cfg configmodels.Receiver,
-	nextConsumer consumer.TraceConsumer,
+	_ context.Context,
+	_ component.ReceiverCreateParams,
+	_ configmodels.Receiver,
+	_ consumer.TraceConsumer,
 ) (component.TraceReceiver, error) {
 	return &config.ExampleReceiverProducer{}, nil
 }
 
 func (b *newStyleReceiverFactory) CreateMetricsReceiver(
-	ctx context.Context,
-	params component.ReceiverCreateParams,
-	cfg configmodels.Receiver,
-	consumer consumer.MetricsConsumer,
+	_ context.Context,
+	_ component.ReceiverCreateParams,
+	_ configmodels.Receiver,
+	_ consumer.MetricsConsumer,
 ) (component.MetricsReceiver, error) {
 	return &config.ExampleReceiverProducer{}, nil
 }

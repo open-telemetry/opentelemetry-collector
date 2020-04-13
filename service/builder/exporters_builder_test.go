@@ -73,8 +73,7 @@ func TestExportersBuilder_Build(t *testing.T) {
 	assert.Nil(t, e1.me)
 
 	// Ensure it can be started.
-	err = exporters.StartAll(zap.NewNop(), componenttest.NewNopHost())
-	assert.NoError(t, err)
+	assert.NoError(t, exporters.StartAll(context.Background(), componenttest.NewNopHost()))
 
 	// Ensure it can be stopped.
 	if err = e1.Shutdown(context.Background()); err != nil {
@@ -110,14 +109,14 @@ func TestExportersBuilder_StartAll(t *testing.T) {
 	traceExporter := &config.ExampleExporterConsumer{}
 	metricExporter := &config.ExampleExporterConsumer{}
 	exporters[expCfg] = &builtExporter{
-		te: traceExporter,
-		me: metricExporter,
+		logger: zap.NewNop(),
+		te:     traceExporter,
+		me:     metricExporter,
 	}
 	assert.False(t, traceExporter.ExporterStarted)
 	assert.False(t, metricExporter.ExporterStarted)
 
-	err := exporters.StartAll(zap.NewNop(), componenttest.NewNopHost())
-	assert.NoError(t, err)
+	assert.NoError(t, exporters.StartAll(context.Background(), componenttest.NewNopHost()))
 
 	assert.True(t, traceExporter.ExporterStarted)
 	assert.True(t, metricExporter.ExporterStarted)
@@ -129,12 +128,13 @@ func TestExportersBuilder_StopAll(t *testing.T) {
 	traceExporter := &config.ExampleExporterConsumer{}
 	metricExporter := &config.ExampleExporterConsumer{}
 	exporters[expCfg] = &builtExporter{
-		te: traceExporter,
-		me: metricExporter,
+		logger: zap.NewNop(),
+		te:     traceExporter,
+		me:     metricExporter,
 	}
 	assert.False(t, traceExporter.ExporterShutdown)
 	assert.False(t, metricExporter.ExporterShutdown)
-	exporters.ShutdownAll()
+	assert.NoError(t, exporters.ShutdownAll(context.Background()))
 
 	assert.True(t, traceExporter.ExporterShutdown)
 	assert.True(t, metricExporter.ExporterShutdown)
@@ -194,10 +194,10 @@ func (b *badExporterFactory) CreateDefaultConfig() configmodels.Exporter {
 	return &configmodels.ExporterSettings{}
 }
 
-func (b *badExporterFactory) CreateTraceExporter(logger *zap.Logger, cfg configmodels.Exporter) (component.TraceExporterOld, error) {
+func (b *badExporterFactory) CreateTraceExporter(_ *zap.Logger, _ configmodels.Exporter) (component.TraceExporterOld, error) {
 	return nil, nil
 }
 
-func (b *badExporterFactory) CreateMetricsExporter(logger *zap.Logger, cfg configmodels.Exporter) (component.MetricsExporterOld, error) {
+func (b *badExporterFactory) CreateMetricsExporter(_ *zap.Logger, _ configmodels.Exporter) (component.MetricsExporterOld, error) {
 	return nil, nil
 }

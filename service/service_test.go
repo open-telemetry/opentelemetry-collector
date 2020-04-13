@@ -207,7 +207,7 @@ func TestApplication_setupExtensions(t *testing.T) {
 				config:    tt.config,
 			}
 
-			err := app.setupExtensions()
+			err := app.setupExtensions(context.Background())
 
 			if tt.wantErrMsg == "" {
 				assert.NoError(t, err)
