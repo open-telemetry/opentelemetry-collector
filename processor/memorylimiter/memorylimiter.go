@@ -26,7 +26,8 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
+	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
 )
@@ -51,8 +52,8 @@ var (
 )
 
 type memoryLimiter struct {
-	traceConsumer   consumer.TraceConsumerOld
-	metricsConsumer consumer.MetricsConsumerOld
+	traceConsumer   consumer.TraceConsumer
+	metricsConsumer consumer.MetricsConsumer
 
 	memAllocLimit uint64
 	memSpikeLimit uint64
@@ -77,8 +78,8 @@ type memoryLimiter struct {
 // newMemoryLimiter returns a new memorylimiter processor.
 func newMemoryLimiter(
 	logger *zap.Logger,
-	traceConsumer consumer.TraceConsumerOld,
-	metricsConsumer consumer.MetricsConsumerOld,
+	traceConsumer consumer.TraceConsumer,
+	metricsConsumer consumer.MetricsConsumer,
 	cfg *Config) (DualTypeProcessor, error) {
 	const mibBytes = 1024 * 1024
 	memAllocLimit := uint64(cfg.MemoryLimitMiB) * mibBytes
@@ -116,13 +117,13 @@ func newMemoryLimiter(
 	return ml, nil
 }
 
-func (ml *memoryLimiter) ConsumeTraceData(
+func (ml *memoryLimiter) ConsumeTrace(
 	ctx context.Context,
-	td consumerdata.TraceData,
+	td pdata.TraceData,
 ) error {
 
 	ctx = obsreport.ProcessorContext(ctx, ml.procName)
-	numSpans := len(td.Spans)
+	numSpans := td.SpanCount()
 	if ml.forcingDrop() {
 		stats.Record(
 			ctx,
@@ -142,21 +143,20 @@ func (ml *memoryLimiter) ConsumeTraceData(
 	// Even if the next consumer returns error record the data as accepted by
 	// this processor.
 	obsreport.ProcessorTraceDataAccepted(ctx, numSpans)
-	return ml.traceConsumer.ConsumeTraceData(ctx, td)
+	return ml.traceConsumer.ConsumeTrace(ctx, td)
 }
 
-func (ml *memoryLimiter) ConsumeMetricsData(
+func (ml *memoryLimiter) ConsumeMetrics(
 	ctx context.Context,
-	md consumerdata.MetricsData,
+	md data.MetricData,
 ) error {
 
 	ctx = obsreport.ProcessorContext(ctx, ml.procName)
-	_, numPoints := obsreport.CountMetricPoints(md)
+	_, numDataPoints := md.MetricAndDataPointCount()
 	if ml.forcingDrop() {
-		numMetrics := len(md.Metrics)
 		stats.Record(
 			ctx,
-			processor.StatDroppedMetricCount.M(int64(numMetrics)),
+			processor.StatDroppedMetricCount.M(int64(numDataPoints)),
 			processor.StatMetricBatchesDroppedCount.M(1))
 
 		// TODO: actually to be 100% sure that this is "refused" and not "dropped"
@@ -164,22 +164,22 @@ func (ml *memoryLimiter) ConsumeMetricsData(
 		// 	to a receiver (ie.: a receiver is on the call stack). For now it
 		// 	assumes that the pipeline is properly configured and a receiver is on the
 		// 	callstack.
-		obsreport.ProcessorMetricsDataRefused(ctx, numPoints)
+		obsreport.ProcessorMetricsDataRefused(ctx, numDataPoints)
 
 		return errForcedDrop
 	}
 
 	// Even if the next consumer returns error record the data as accepted by
 	// this processor.
-	obsreport.ProcessorMetricsDataAccepted(ctx, numPoints)
-	return ml.metricsConsumer.ConsumeMetricsData(ctx, md)
+	obsreport.ProcessorMetricsDataAccepted(ctx, numDataPoints)
+	return ml.metricsConsumer.ConsumeMetrics(ctx, md)
 }
 
 func (ml *memoryLimiter) GetCapabilities() component.ProcessorCapabilities {
 	return component.ProcessorCapabilities{MutatesConsumedData: false}
 }
 
-func (ml *memoryLimiter) Start(ctx context.Context, host component.Host) error {
+func (ml *memoryLimiter) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
