@@ -17,16 +17,12 @@ import (
 	"context"
 	"testing"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/internal/data/testdata"
 )
 
 func TestLoggingTraceExporterNoErrors(t *testing.T) {
@@ -34,51 +30,25 @@ func TestLoggingTraceExporterNoErrors(t *testing.T) {
 	require.NotNil(t, lte)
 	assert.NoError(t, err)
 
-	td := consumerdata.TraceData{
-		Node: &commonpb.Node{
-			ServiceInfo: &commonpb.ServiceInfo{
-				Name: "some-service",
-			},
-		},
-		Resource: &resourcepb.Resource{
-			Type:   "ServiceA",
-			Labels: map[string]string{"attr1": "value1"},
-		},
-		Spans: []*tracepb.Span{
-			{
-				TraceId: []byte("123"),
-				SpanId:  []byte("456"),
-				Name:    &tracepb.TruncatableString{Value: "Checkout"},
-				Kind:    tracepb.Span_CLIENT,
-			},
-			{
-				TraceId: []byte("123"),
-				SpanId:  []byte("457"),
-				Name:    &tracepb.TruncatableString{Value: "Frontend"},
-				Kind:    tracepb.Span_SERVER,
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: map[string]*tracepb.AttributeValue{
-						"foo": {
-							Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "bar"}},
-						},
-					},
-				},
-			},
-		},
-	}
+	assert.NoError(t, lte.ConsumeTrace(context.Background(), testdata.GenerateTraceDataEmpty()))
+	assert.NoError(t, lte.ConsumeTrace(context.Background(), testdata.GenerateTraceDataOneEmptyOneNilResourceSpans()))
+	assert.NoError(t, lte.ConsumeTrace(context.Background(), testdata.GenerateTraceDataOneEmptyOneNilInstrumentationLibrary()))
+	assert.NoError(t, lte.ConsumeTrace(context.Background(), testdata.GenerateTraceDataOneSpanOneNil()))
+	assert.NoError(t, lte.ConsumeTrace(context.Background(), testdata.GenerateTraceDataTwoSpansSameResourceOneDifferent()))
 
-	assert.NoError(t, lte.ConsumeTraceData(context.Background(), td))
 	assert.NoError(t, lte.Shutdown(context.Background()))
 }
 
 func TestLoggingMetricsExporterNoErrors(t *testing.T) {
-	lme, err := NewMetricsExporter(&configmodels.ExporterSettings{}, zap.NewNop())
+	lme, err := NewMetricsExporter(&configmodels.ExporterSettings{}, "debug", zap.NewNop())
 	require.NotNil(t, lme)
 	assert.NoError(t, err)
 
-	md := consumerdata.MetricsData{
-		Metrics: make([]*metricspb.Metric, 7),
-	}
-	assert.NoError(t, lme.ConsumeMetricsData(context.Background(), md))
+	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricDataEmpty()))
+	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricDataOneEmptyOneNilResourceMetrics()))
+	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricDataOneEmptyOneNilInstrumentationLibrary()))
+	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricDataOneMetricOneNil()))
+	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricDataWithCountersHistogramAndSummary()))
+
 	assert.NoError(t, lme.Shutdown(context.Background()))
 }

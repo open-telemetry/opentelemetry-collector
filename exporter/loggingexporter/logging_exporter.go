@@ -16,7 +16,6 @@ package loggingexporter
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
 	"os"
 	"strconv"
@@ -27,137 +26,185 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
+	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 )
 
-type traceDataBuffer struct {
+type logDataBuffer struct {
 	str strings.Builder
 }
 
-func (b *traceDataBuffer) logEntry(format string, a ...interface{}) {
+func (b *logDataBuffer) logEntry(format string, a ...interface{}) {
 	b.str.WriteString(fmt.Sprintf(format, a...))
 	b.str.WriteString("\n")
 }
 
-func (b *traceDataBuffer) logAttr(label string, value string) {
+func (b *logDataBuffer) logAttr(label string, value string) {
 	b.logEntry("    %-15s: %s", label, value)
 }
 
-func (b *traceDataBuffer) logMap(label string, data map[string]string) {
-	if len(data) == 0 {
+func (b *logDataBuffer) logAttributeMap(label string, am data.AttributeMap) {
+	if am.Cap() == 0 {
 		return
 	}
 
 	b.logEntry("%s:", label)
-	for label, value := range data {
-		b.logEntry("     -> %s: %s", label, value)
+	am.ForEach(func(k string, v data.AttributeValue) {
+		b.logEntry("     -> %s: %s(%s)", k, v.Type().String(), attributeValueToString(v))
+	})
+}
+
+func (b *logDataBuffer) logInstrumentationLibrary(il data.InstrumentationLibrary) {
+	b.logEntry(
+		"InstrumentationLibrary %s %s",
+		il.Name(),
+		il.Version())
+}
+
+func attributeValueToString(av data.AttributeValue) string {
+	switch av.Type() {
+	case data.AttributeValueSTRING:
+		return av.StringVal()
+	case data.AttributeValueBOOL:
+		return strconv.FormatBool(av.BoolVal())
+	case data.AttributeValueDOUBLE:
+		return strconv.FormatFloat(av.DoubleVal(), 'f', -1, 64)
+	case data.AttributeValueINT:
+		return strconv.FormatInt(av.IntVal(), 10)
+	default:
+		return fmt.Sprintf("<Unknown OpenTelemetry attribute value type %q>", av.Type())
 	}
 }
 
 type loggingExporter struct {
 	logger *zap.Logger
-	name   zap.Field
 	debug  bool
 }
 
 func (s *loggingExporter) pushTraceData(
-	ctx context.Context,
-	td consumerdata.TraceData,
+	_ context.Context,
+	td data.TraceData,
 ) (int, error) {
-	buf := traceDataBuffer{}
 
-	resourceInfo := ""
-	nodesInfo := ""
+	s.logger.Info("TraceExporter", zap.Int("#spans", td.SpanCount()))
 
-	if td.Resource != nil {
-		resourceInfo = fmt.Sprintf(", resource \"%s\" (%d labels)", td.Resource.Type, len(td.Resource.Labels))
+	if !s.debug {
+		return 0, nil
 	}
 
-	if td.Node != nil && td.Node.ServiceInfo != nil {
-		nodesInfo = fmt.Sprintf(", node service: %s", td.Node.ServiceInfo.Name)
-	}
-
-	buf.logEntry("TraceData with %d spans%s%s", len(td.Spans), nodesInfo, resourceInfo)
-
-	if s.debug {
-		if td.Resource != nil {
-			buf.logMap("Resource labels", td.Resource.Labels)
+	buf := logDataBuffer{}
+	rss := td.ResourceSpans()
+	for i := 0; i < rss.Len(); i++ {
+		buf.logEntry("ResourceSpans #%d", i)
+		rs := rss.At(i)
+		if rs.IsNil() {
+			buf.logEntry("* Nil ResourceSpans")
+			continue
 		}
-
-		if td.Node != nil {
-			id := td.Node.Identifier
-			if id != nil {
-				buf.logEntry("%20s: %s", "HostName", id.HostName)
-				buf.logEntry("%20s: %d", "PID", id.Pid)
-			}
-			li := td.Node.LibraryInfo
-			if li != nil {
-				buf.logEntry("%20s: %s", "Library language", li.Language.String())
-				buf.logEntry("%20s: %s", "Core library version", li.CoreLibraryVersion)
-				buf.logEntry("%20s: %s", "Exporter version", li.ExporterVersion)
-			}
-			buf.logMap("Node attributes", td.Node.Attributes)
+		if !rs.Resource().IsNil() {
+			buf.logAttributeMap("Resource labels", rs.Resource().Attributes())
 		}
-	}
-
-	s.logger.Info(buf.str.String(), s.name)
-
-	if s.debug {
-		for i, span := range td.Spans {
-			buf = traceDataBuffer{}
-			buf.logEntry("Span #%d", i)
-			if span == nil {
-				buf.logEntry("* Empty span")
+		ilss := rs.InstrumentationLibrarySpans()
+		for j := 0; j < ilss.Len(); j++ {
+			buf.logEntry("InstrumentationLibrarySpans #%d", j)
+			ils := ilss.At(j)
+			if ils.IsNil() {
+				buf.logEntry("* Nil InstrumentationLibrarySpans")
 				continue
 			}
-
-			buf.logAttr("Trace ID", hex.EncodeToString(span.TraceId))
-			buf.logAttr("Parent ID", hex.EncodeToString(span.ParentSpanId))
-			buf.logAttr("ID", hex.EncodeToString(span.SpanId))
-			buf.logAttr("Name", span.Name.Value)
-			buf.logAttr("Kind", span.Kind.String())
-			buf.logAttr("Start time", span.StartTime.String())
-			buf.logAttr("End time", span.EndTime.String())
-			if span.Status != nil {
-				buf.logAttr("Status code", strconv.Itoa(int(span.Status.Code)))
-				buf.logAttr("Status message", span.Status.Message)
+			if !ils.InstrumentationLibrary().IsNil() {
+				buf.logInstrumentationLibrary(ils.InstrumentationLibrary())
 			}
 
-			if span.Attributes != nil {
-				buf.logAttr("Span attributes", "")
-				for attr, value := range span.Attributes.AttributeMap {
-					v := ""
-					ts := value.GetStringValue()
-
-					if ts != nil {
-						v = ts.Value
-					} else {
-						// For other types, just use the proto compact form rather than digging into series of checks
-						v = value.String()
-					}
-
-					buf.logEntry("         -> %s: %s", attr, v)
+			spans := ils.Spans()
+			for k := 0; k < spans.Len(); k++ {
+				buf.logEntry("Span #%d", k)
+				span := spans.At(k)
+				if span.IsNil() {
+					buf.logEntry("* Nil Span")
+					continue
 				}
-			}
 
-			s.logger.Debug(buf.str.String(), s.name)
+				buf.logAttr("Trace ID", span.TraceID().String())
+				buf.logAttr("Parent ID", span.ParentSpanID().String())
+				buf.logAttr("ID", span.SpanID().String())
+				buf.logAttr("Name", span.Name())
+				buf.logAttr("Kind", span.Kind().String())
+				buf.logAttr("Start time", span.StartTime().String())
+				buf.logAttr("End time", span.EndTime().String())
+				if !span.Status().IsNil() {
+					buf.logAttr("Status code", span.Status().Code().String())
+					buf.logAttr("Status message", span.Status().Message())
+				}
+
+				buf.logAttributeMap("Attributes", span.Attributes())
+
+				// TODO: Add logging for the rest of the span properties: events, links.
+			}
 		}
 	}
+	s.logger.Debug(buf.str.String())
 
+	return 0, nil
+}
+
+func (s *loggingExporter) pushMetricsData(
+	_ context.Context,
+	md data.MetricData,
+) (int, error) {
+	s.logger.Info("MetricsExporter", zap.Int("#metrics", md.MetricCount()))
+
+	if !s.debug {
+		return 0, nil
+	}
+
+	buf := logDataBuffer{}
+	rms := md.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		buf.logEntry("ResourceMetrics #%d", i)
+		rm := rms.At(i)
+		if rm.IsNil() {
+			buf.logEntry("* Nil ResourceMetrics")
+			continue
+		}
+		if !rm.Resource().IsNil() {
+			buf.logAttributeMap("Resource labels", rm.Resource().Attributes())
+		}
+		ilms := rm.InstrumentationLibraryMetrics()
+		for j := 0; j < ilms.Len(); j++ {
+			buf.logEntry("InstrumentationLibraryMetrics #%d", j)
+			ilm := ilms.At(j)
+			if ilm.IsNil() {
+				buf.logEntry("* Nil InstrumentationLibraryMetrics")
+				continue
+			}
+			if !ilm.InstrumentationLibrary().IsNil() {
+				buf.logInstrumentationLibrary(ilm.InstrumentationLibrary())
+			}
+			metrics := ilm.Metrics()
+			for k := 0; k < metrics.Len(); k++ {
+				buf.logEntry("Metric #%d", k)
+				metric := metrics.At(k)
+				if metric.IsNil() {
+					buf.logEntry("* Nil Metric")
+					continue
+				}
+				// TODO: Add logging for the rest of the metric properties: descriptor, points.
+			}
+		}
+	}
 	return 0, nil
 }
 
 // NewTraceExporter creates an exporter.TraceExporter that just drops the
 // received data and logs debugging messages.
-func NewTraceExporter(config configmodels.Exporter, level string, logger *zap.Logger) (component.TraceExporterOld, error) {
+func NewTraceExporter(config configmodels.Exporter, level string, logger *zap.Logger) (component.TraceExporter, error) {
 	s := &loggingExporter{
 		debug:  level == "debug",
-		name:   zap.String("exporter", config.Name()),
 		logger: logger,
 	}
 
-	return exporterhelper.NewTraceExporterOld(
+	return exporterhelper.NewTraceExporter(
 		config,
 		s.pushTraceData,
 		exporterhelper.WithShutdown(loggerSync(logger)),
@@ -166,16 +213,15 @@ func NewTraceExporter(config configmodels.Exporter, level string, logger *zap.Lo
 
 // NewMetricsExporter creates an exporter.MetricsExporter that just drops the
 // received data and logs debugging messages.
-func NewMetricsExporter(config configmodels.Exporter, logger *zap.Logger) (component.MetricsExporterOld, error) {
-	typeLog := zap.String("type", config.Type())
-	nameLog := zap.String("name", config.Name())
-	return exporterhelper.NewMetricsExporterOld(
+func NewMetricsExporter(config configmodels.Exporter, level string, logger *zap.Logger) (component.MetricsExporter, error) {
+	s := &loggingExporter{
+		debug:  level == "debug",
+		logger: logger,
+	}
+
+	return exporterhelper.NewMetricsExporter(
 		config,
-		func(ctx context.Context, md consumerdata.MetricsData) (int, error) {
-			logger.Info("MetricsExporter", typeLog, nameLog, zap.Int("#metrics", len(md.Metrics)))
-			// TODO: Add ability to record the received data
-			return 0, nil
-		},
+		s.pushMetricsData,
 		exporterhelper.WithShutdown(loggerSync(logger)),
 	)
 }

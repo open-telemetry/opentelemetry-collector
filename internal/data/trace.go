@@ -15,6 +15,8 @@
 package data
 
 import (
+	"encoding/hex"
+
 	"github.com/golang/protobuf/proto"
 	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
 )
@@ -82,19 +84,25 @@ func (td TraceData) ResourceSpans() ResourceSpansSlice {
 
 type TraceID []byte
 
+// NewTraceID returns a new TraceID.
+func NewTraceID(bytes []byte) TraceID { return bytes }
+
 func (t TraceID) Bytes() []byte {
 	return t
 }
 
-func NewTraceID(bytes []byte) TraceID { return TraceID(bytes) }
+func (t TraceID) String() string { return hex.EncodeToString(t) }
 
 type SpanID []byte
+
+// NewSpanID returns a new SpanID.
+func NewSpanID(bytes []byte) SpanID { return bytes }
 
 func (s SpanID) Bytes() []byte {
 	return s
 }
 
-func NewSpanID(bytes []byte) SpanID { return SpanID(bytes) }
+func (s SpanID) String() string { return hex.EncodeToString(s) }
 
 // TraceState in w3c-trace-context format: https://www.w3.org/TR/trace-context/#tracestate-header
 type TraceState string
@@ -104,15 +112,17 @@ type SpanKind otlptrace.Span_SpanKind
 func (sk SpanKind) String() string { return otlptrace.Span_SpanKind(sk).String() }
 
 const (
-	SpanKindUNSPECIFIED SpanKind = 0
-	SpanKindINTERNAL    SpanKind = SpanKind(otlptrace.Span_INTERNAL)
-	SpanKindSERVER      SpanKind = SpanKind(otlptrace.Span_SERVER)
-	SpanKindCLIENT      SpanKind = SpanKind(otlptrace.Span_CLIENT)
-	SpanKindPRODUCER    SpanKind = SpanKind(otlptrace.Span_PRODUCER)
-	SpanKindCONSUMER    SpanKind = SpanKind(otlptrace.Span_CONSUMER)
+	SpanKindUNSPECIFIED = SpanKind(0)
+	SpanKindINTERNAL    = SpanKind(otlptrace.Span_INTERNAL)
+	SpanKindSERVER      = SpanKind(otlptrace.Span_SERVER)
+	SpanKindCLIENT      = SpanKind(otlptrace.Span_CLIENT)
+	SpanKindPRODUCER    = SpanKind(otlptrace.Span_PRODUCER)
+	SpanKindCONSUMER    = SpanKind(otlptrace.Span_CONSUMER)
 )
 
 // StatusCode mirrors the codes defined at
 // https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/api-tracing.md#statuscanonicalcode
 // and is numerically equal to Standard GRPC codes https://github.com/grpc/grpc/blob/master/doc/statuscodes.md
 type StatusCode otlptrace.Status_StatusCode
+
+func (sc StatusCode) String() string { return otlptrace.Status_StatusCode(sc).String() }
