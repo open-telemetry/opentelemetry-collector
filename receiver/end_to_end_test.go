@@ -25,6 +25,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/converter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/loggingexporter"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/opencensusreceiver"
 )
@@ -38,7 +39,7 @@ func Example_endToEnd() {
 		log.Fatalf("Failed to create logging exporter: %v", err)
 	}
 
-	tr, err := opencensusreceiver.New("opencensus", "tcp", "localhost:55678", lte, nil)
+	tr, err := opencensusreceiver.New("opencensus", "tcp", "localhost:55678", converter.NewOCToInternalTraceConverter(lte), nil)
 	if err != nil {
 		log.Fatalf("Failed to create trace receiver: %v", err)
 	}

@@ -19,6 +19,7 @@ package data
 
 import (
 	"sort"
+	"time"
 
 	otlpcommon "github.com/open-telemetry/opentelemetry-proto/gen/go/common/v1"
 )
@@ -27,9 +28,13 @@ import (
 // 00:00:00 UTC on 1 January 1970.
 type TimestampUnixNano uint64
 
+func (ts TimestampUnixNano) String() string {
+	return time.Unix(0, int64(ts)).String()
+}
+
 // AttributeValueType specifies the type of value. Numerically is equal to
 // otlp.AttributeKeyValue_ValueType.
-type AttributeValueType int32
+type AttributeValueType otlpcommon.AttributeKeyValue_ValueType
 
 const (
 	AttributeValueSTRING = AttributeValueType(otlpcommon.AttributeKeyValue_STRING)
@@ -37,6 +42,10 @@ const (
 	AttributeValueDOUBLE = AttributeValueType(otlpcommon.AttributeKeyValue_DOUBLE)
 	AttributeValueBOOL   = AttributeValueType(otlpcommon.AttributeKeyValue_BOOL)
 )
+
+func (avt AttributeValueType) String() string {
+	return otlpcommon.AttributeKeyValue_ValueType(avt).String()
+}
 
 // AttributeValue represents a value of an attribute. Typically used in AttributeMap.
 // Must use one of NewAttributeValue* functions below to create new instances.

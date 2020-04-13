@@ -15,6 +15,8 @@
 package loggingexporter
 
 import (
+	"context"
+
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -52,7 +54,7 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 }
 
 // CreateTraceExporter creates a trace exporter based on this config.
-func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Exporter) (component.TraceExporterOld, error) {
+func (f *Factory) CreateTraceExporter(_ context.Context, _ component.ExporterCreateParams, config configmodels.Exporter) (component.TraceExporter, error) {
 	cfg := config.(*Config)
 
 	exporterLogger, err := f.createLogger(cfg)
@@ -91,7 +93,7 @@ func (f *Factory) createLogger(cfg *Config) (*zap.Logger, error) {
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *Factory) CreateMetricsExporter(logger *zap.Logger, config configmodels.Exporter) (component.MetricsExporterOld, error) {
+func (f *Factory) CreateMetricsExporter(_ context.Context, _ component.ExporterCreateParams, config configmodels.Exporter) (component.MetricsExporter, error) {
 	cfg := config.(*Config)
 
 	exporterLogger, err := f.createLogger(cfg)
@@ -99,7 +101,7 @@ func (f *Factory) CreateMetricsExporter(logger *zap.Logger, config configmodels.
 		return nil, err
 	}
 
-	lexp, err := NewMetricsExporter(config, exporterLogger)
+	lexp, err := NewMetricsExporter(config, cfg.LogLevel, exporterLogger)
 	if err != nil {
 		return nil, err
 	}
