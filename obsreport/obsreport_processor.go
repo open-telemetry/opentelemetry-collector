@@ -20,8 +20,6 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
-
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 )
 
 const (
@@ -121,12 +119,12 @@ func ProcessorContext(
 // ProcessorTraceDataAccepted reports that the trace data was accepted.
 func ProcessorTraceDataAccepted(
 	processorCtx context.Context,
-	td consumerdata.TraceData,
+	numSpans int,
 ) {
 	if useNew {
 		stats.Record(
 			processorCtx,
-			mProcessorAcceptedSpans.M(int64(len(td.Spans))),
+			mProcessorAcceptedSpans.M(int64(numSpans)),
 			mProcessorRefusedSpans.M(0),
 			mProcessorDroppedSpans.M(0),
 		)
@@ -136,13 +134,13 @@ func ProcessorTraceDataAccepted(
 // ProcessorTraceDataRefused reports that the trace data was refused.
 func ProcessorTraceDataRefused(
 	processorCtx context.Context,
-	td consumerdata.TraceData,
+	numSpans int,
 ) {
 	if useNew {
 		stats.Record(
 			processorCtx,
 			mProcessorAcceptedSpans.M(0),
-			mProcessorRefusedSpans.M(int64(len(td.Spans))),
+			mProcessorRefusedSpans.M(int64(numSpans)),
 			mProcessorDroppedSpans.M(0),
 		)
 	}
@@ -151,14 +149,14 @@ func ProcessorTraceDataRefused(
 // ProcessorTraceDataDropped reports that the trace data was dropped.
 func ProcessorTraceDataDropped(
 	processorCtx context.Context,
-	td consumerdata.TraceData,
+	numSpans int,
 ) {
 	if useNew {
 		stats.Record(
 			processorCtx,
 			mProcessorAcceptedSpans.M(0),
 			mProcessorRefusedSpans.M(0),
-			mProcessorDroppedSpans.M(int64(len(td.Spans))),
+			mProcessorDroppedSpans.M(int64(numSpans)),
 		)
 	}
 }
@@ -166,13 +164,12 @@ func ProcessorTraceDataDropped(
 // ProcessorMetricsDataAccepted reports that the metrics were accepted.
 func ProcessorMetricsDataAccepted(
 	processorCtx context.Context,
-	md consumerdata.MetricsData,
+	numPoints int,
 ) {
 	if useNew {
-		numPoints := calcNumPoints(md)
 		stats.Record(
 			processorCtx,
-			mProcessorAcceptedMetricPoints.M(numPoints),
+			mProcessorAcceptedMetricPoints.M(int64(numPoints)),
 			mProcessorRefusedMetricPoints.M(0),
 			mProcessorDroppedMetricPoints.M(0),
 		)
@@ -182,14 +179,13 @@ func ProcessorMetricsDataAccepted(
 // ProcessorMetricsDataRefused reports that the metrics were refused.
 func ProcessorMetricsDataRefused(
 	processorCtx context.Context,
-	md consumerdata.MetricsData,
+	numPoints int,
 ) {
 	if useNew {
-		numPoints := calcNumPoints(md)
 		stats.Record(
 			processorCtx,
 			mProcessorAcceptedMetricPoints.M(0),
-			mProcessorRefusedMetricPoints.M(numPoints),
+			mProcessorRefusedMetricPoints.M(int64(numPoints)),
 			mProcessorDroppedMetricPoints.M(0),
 		)
 	}
@@ -198,25 +194,14 @@ func ProcessorMetricsDataRefused(
 // ProcessorMetricsDataDropped reports that the metrics were dropped.
 func ProcessorMetricsDataDropped(
 	processorCtx context.Context,
-	md consumerdata.MetricsData,
+	numPoints int,
 ) {
 	if useNew {
-		numPoints := calcNumPoints(md)
 		stats.Record(
 			processorCtx,
 			mProcessorAcceptedMetricPoints.M(0),
 			mProcessorRefusedMetricPoints.M(0),
-			mProcessorDroppedMetricPoints.M(numPoints),
+			mProcessorDroppedMetricPoints.M(int64(numPoints)),
 		)
 	}
-}
-
-func calcNumPoints(md consumerdata.MetricsData) int64 {
-	numMetricPoints := 0
-	for _, metric := range md.Metrics {
-		for _, ts := range metric.GetTimeseries() {
-			numMetricPoints += len(ts.GetPoints())
-		}
-	}
-	return int64(numMetricPoints)
 }

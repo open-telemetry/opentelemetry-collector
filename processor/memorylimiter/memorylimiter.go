@@ -122,8 +122,8 @@ func (ml *memoryLimiter) ConsumeTraceData(
 ) error {
 
 	ctx = obsreport.ProcessorContext(ctx, ml.procName)
+	numSpans := len(td.Spans)
 	if ml.forcingDrop() {
-		numSpans := len(td.Spans)
 		stats.Record(
 			ctx,
 			processor.StatDroppedSpanCount.M(int64(numSpans)),
@@ -134,14 +134,14 @@ func (ml *memoryLimiter) ConsumeTraceData(
 		// 	to a receiver (ie.: a receiver is on the call stack). For now it
 		// 	assumes that the pipeline is properly configured and a receiver is on the
 		// 	callstack.
-		obsreport.ProcessorTraceDataRefused(ctx, td)
+		obsreport.ProcessorTraceDataRefused(ctx, numSpans)
 
 		return errForcedDrop
 	}
 
 	// Even if the next consumer returns error record the data as accepted by
 	// this processor.
-	obsreport.ProcessorTraceDataAccepted(ctx, td)
+	obsreport.ProcessorTraceDataAccepted(ctx, numSpans)
 	return ml.traceConsumer.ConsumeTraceData(ctx, td)
 }
 
@@ -151,6 +151,7 @@ func (ml *memoryLimiter) ConsumeMetricsData(
 ) error {
 
 	ctx = obsreport.ProcessorContext(ctx, ml.procName)
+	_, numPoints := obsreport.CountMetricPoints(md)
 	if ml.forcingDrop() {
 		numMetrics := len(md.Metrics)
 		stats.Record(
@@ -163,14 +164,14 @@ func (ml *memoryLimiter) ConsumeMetricsData(
 		// 	to a receiver (ie.: a receiver is on the call stack). For now it
 		// 	assumes that the pipeline is properly configured and a receiver is on the
 		// 	callstack.
-		obsreport.ProcessorMetricsDataRefused(ctx, md)
+		obsreport.ProcessorMetricsDataRefused(ctx, numPoints)
 
 		return errForcedDrop
 	}
 
 	// Even if the next consumer returns error record the data as accepted by
 	// this processor.
-	obsreport.ProcessorMetricsDataAccepted(ctx, md)
+	obsreport.ProcessorMetricsDataAccepted(ctx, numPoints)
 	return ml.metricsConsumer.ConsumeMetricsData(ctx, md)
 }
 
