@@ -22,8 +22,6 @@ import (
 	"sync"
 	"testing"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/stats"
@@ -31,7 +29,6 @@ import (
 	"go.opencensus.io/tag"
 	"go.opencensus.io/trace"
 
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/observability"
 	"github.com/open-telemetry/opentelemetry-collector/observability/observabilitytest"
 )
@@ -432,16 +429,10 @@ func Test_obsreport_ProcessorTraceData(t *testing.T) {
 	const droppedSpans = 13
 
 	processorCtx := ProcessorContext(context.Background(), processor)
-	td := consumerdata.TraceData{}
 
-	td.Spans = make([]*tracepb.Span, acceptedSpans)
-	ProcessorTraceDataAccepted(processorCtx, td)
-
-	td.Spans = make([]*tracepb.Span, refusedSpans)
-	ProcessorTraceDataRefused(processorCtx, td)
-
-	td.Spans = make([]*tracepb.Span, droppedSpans)
-	ProcessorTraceDataDropped(processorCtx, td)
+	ProcessorTraceDataAccepted(processorCtx, acceptedSpans)
+	ProcessorTraceDataRefused(processorCtx, refusedSpans)
+	ProcessorTraceDataDropped(processorCtx, droppedSpans)
 
 	processorTags := processorViewTags(processor)
 	checkValueForSumView(t, "processor/accepted_spans", processorTags, acceptedSpans)
@@ -459,24 +450,9 @@ func Test_obsreport_ProcessorMetricsData(t *testing.T) {
 	const droppedPoints = 17
 
 	processorCtx := ProcessorContext(context.Background(), processor)
-	md := consumerdata.MetricsData{}
-
-	md.Metrics = []*metricspb.Metric{
-		{
-			Timeseries: []*metricspb.TimeSeries{
-				{
-					Points: make([]*metricspb.Point, acceptedPoints),
-				},
-			},
-		},
-	}
-	ProcessorMetricsDataAccepted(processorCtx, md)
-
-	md.Metrics[0].Timeseries[0].Points = make([]*metricspb.Point, refusedPoints)
-	ProcessorMetricsDataRefused(processorCtx, md)
-
-	md.Metrics[0].Timeseries[0].Points = make([]*metricspb.Point, droppedPoints)
-	ProcessorMetricsDataDropped(processorCtx, md)
+	ProcessorMetricsDataAccepted(processorCtx, acceptedPoints)
+	ProcessorMetricsDataRefused(processorCtx, refusedPoints)
+	ProcessorMetricsDataDropped(processorCtx, droppedPoints)
 
 	processorTags := processorViewTags(processor)
 	checkValueForSumView(t, "processor/accepted_metric_points", processorTags, acceptedPoints)

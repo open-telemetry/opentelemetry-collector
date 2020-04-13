@@ -129,7 +129,7 @@ func (sp *queuedSpanProcessor) ConsumeTraceData(ctx context.Context, td consumer
 		// record this as "refused" instead of "dropped".
 		sp.onItemDropped(item, statsTags)
 	} else {
-		obsreport.ProcessorTraceDataAccepted(ctx, td)
+		obsreport.ProcessorTraceDataAccepted(ctx, len(td.Spans))
 	}
 	return nil
 }
@@ -220,7 +220,7 @@ func (sp *queuedSpanProcessor) onItemDropped(item *queueItem, statsTags []tag.Mu
 	numSpans := len(item.td.Spans)
 	stats.RecordWithTags(item.ctx, statsTags, processor.StatDroppedSpanCount.M(int64(numSpans)), processor.StatTraceBatchesDroppedCount.M(int64(1)))
 
-	obsreport.ProcessorTraceDataDropped(item.ctx, item.td)
+	obsreport.ProcessorTraceDataDropped(item.ctx, len(item.td.Spans))
 
 	sp.logger.Warn("Span batch dropped",
 		zap.String("processor", sp.name),
