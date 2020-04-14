@@ -158,11 +158,6 @@ func TestOCStatusToJaegerProtoTags(t *testing.T) {
 					VStr:  "Forbidden",
 					VType: jaeger.ValueType_STRING,
 				},
-				{
-					Key:   tracetranslator.TagError,
-					VBool: false,
-					VType: jaeger.ValueType_BOOL,
-				},
 			},
 		},
 		// both status.code and status.message
