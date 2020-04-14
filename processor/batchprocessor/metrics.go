@@ -19,53 +19,24 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 
-	"github.com/open-telemetry/opentelemetry-collector/internal/collector/telemetry"
 	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
 )
 
 var (
-	statNodesAddedToBatches     = stats.Int64("nodes_added_to_batches", "Count of nodes that are being batched.", stats.UnitDimensionless)
-	statNodesRemovedFromBatches = stats.Int64("nodes_removed_from_batches", "Number of nodes that have been removed from batching.", stats.UnitDimensionless)
-
 	statBatchSizeTriggerSend = stats.Int64("batch_size_trigger_send", "Number of times the batch was sent due to a size trigger", stats.UnitDimensionless)
 	statTimeoutTriggerSend   = stats.Int64("timeout_trigger_send", "Number of times the batch was sent due to a timeout trigger", stats.UnitDimensionless)
 )
 
 // MetricViews returns the metrics views related to batching
-func MetricViews(level telemetry.Level) []*view.View {
-	if level == telemetry.None {
-		return nil
-	}
-
-	tagKeys := processor.MetricTagKeys(level)
-	if tagKeys == nil {
-		return nil
-	}
-
+func MetricViews() []*view.View {
 	processorTagKeys := []tag.Key{processor.TagProcessorNameKey}
-
-	nodesAddedToBatchesView := &view.View{
-		Name:        statNodesAddedToBatches.Name(),
-		Measure:     statNodesAddedToBatches,
-		Description: statNodesAddedToBatches.Description(),
-		TagKeys:     processorTagKeys,
-		Aggregation: view.Sum(),
-	}
-
-	nodesRemovedFromBatchesView := &view.View{
-		Name:        statNodesRemovedFromBatches.Name(),
-		Measure:     statNodesRemovedFromBatches,
-		Description: statNodesRemovedFromBatches.Description(),
-		TagKeys:     processorTagKeys,
-		Aggregation: view.Sum(),
-	}
 
 	countBatchSizeTriggerSendView := &view.View{
 		Name:        statBatchSizeTriggerSend.Name(),
 		Measure:     statBatchSizeTriggerSend,
 		Description: statBatchSizeTriggerSend.Description(),
-		TagKeys:     tagKeys,
+		TagKeys:     processorTagKeys,
 		Aggregation: view.Sum(),
 	}
 
@@ -73,13 +44,11 @@ func MetricViews(level telemetry.Level) []*view.View {
 		Name:        statTimeoutTriggerSend.Name(),
 		Measure:     statTimeoutTriggerSend,
 		Description: statTimeoutTriggerSend.Description(),
-		TagKeys:     tagKeys,
+		TagKeys:     processorTagKeys,
 		Aggregation: view.Sum(),
 	}
 
 	legacyViews := []*view.View{
-		nodesAddedToBatchesView,
-		nodesRemovedFromBatchesView,
 		countBatchSizeTriggerSendView,
 		countTimeoutTriggerSendView,
 	}

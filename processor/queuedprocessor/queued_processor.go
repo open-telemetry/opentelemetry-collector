@@ -117,7 +117,7 @@ func (sp *queuedSpanProcessor) ConsumeTraceData(ctx context.Context, td consumer
 		ctx:        ctx,
 	}
 
-	statsTags := processor.StatsTagsForBatch(sp.name, processor.ServiceNameForNode(td.Node), td.SourceFormat)
+	statsTags := []tag.Mutator{tag.Insert(processor.TagProcessorNameKey, sp.name)}
 	numSpans := len(td.Spans)
 	stats.RecordWithTags(ctx, statsTags, processor.StatReceivedSpanCount.M(int64(numSpans)))
 
@@ -147,7 +147,7 @@ func (sp *queuedSpanProcessor) Shutdown(context.Context) error {
 func (sp *queuedSpanProcessor) processItemFromQueue(item *queueItem) {
 	startTime := time.Now()
 	err := sp.sender.ConsumeTraceData(item.ctx, item.td)
-	statsTags := processor.StatsTagsForBatch(sp.name, processor.ServiceNameForNode(item.td.Node), item.td.SourceFormat)
+	statsTags := []tag.Mutator{tag.Insert(processor.TagProcessorNameKey, sp.name)}
 	if err == nil {
 		// Record latency metrics and return
 		sendLatencyMs := int64(time.Since(startTime) / time.Millisecond)

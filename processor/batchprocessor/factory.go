@@ -15,9 +15,8 @@
 package batchprocessor
 
 import (
+	"context"
 	"time"
-
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
@@ -29,11 +28,8 @@ const (
 	// The value of "type" key in configuration.
 	typeStr = "batch"
 
-	defaultRemoveAfterCycles = uint32(10)
-	defaultSendBatchSize     = uint32(8192)
-	defaultNumTickers        = 4
-	defaultTickTime          = 1 * time.Second
-	defaultTimeout           = 1 * time.Second
+	defaultSendBatchSize = uint32(8192)
+	defaultTimeout       = 200 * time.Millisecond
 )
 
 // Factory is the factory for batch processor.
@@ -52,21 +48,22 @@ func (f *Factory) CreateDefaultConfig() configmodels.Processor {
 
 // CreateTraceProcessor creates a trace processor based on this config.
 func (f *Factory) CreateTraceProcessor(
-	logger *zap.Logger,
-	nextConsumer consumer.TraceConsumerOld,
+	ctx context.Context,
+	params component.ProcessorCreateParams,
+	nextConsumer consumer.TraceConsumer,
 	c configmodels.Processor,
-) (component.TraceProcessorOld, error) {
+) (component.TraceProcessor, error) {
 	cfg := c.(*Config)
-
-	return newBatchProcessor(logger, nextConsumer, cfg), nil
+	return newBatchProcessor(params, nextConsumer, cfg), nil
 }
 
 // CreateMetricsProcessor creates a metrics processor based on this config.
 func (f *Factory) CreateMetricsProcessor(
-	logger *zap.Logger,
-	nextConsumer consumer.MetricsConsumerOld,
+	ctx context.Context,
+	params component.ProcessorCreateParams,
+	nextConsumer consumer.MetricsConsumer,
 	cfg configmodels.Processor,
-) (component.MetricsProcessorOld, error) {
+) (component.MetricsProcessor, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
@@ -76,10 +73,7 @@ func generateDefaultConfig() *Config {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		RemoveAfterTicks: defaultRemoveAfterCycles,
-		SendBatchSize:    defaultSendBatchSize,
-		NumTickers:       defaultNumTickers,
-		TickTime:         defaultTickTime,
-		Timeout:          defaultTimeout,
+		SendBatchSize: defaultSendBatchSize,
+		Timeout:       defaultTimeout,
 	}
 }
