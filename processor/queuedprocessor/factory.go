@@ -15,9 +15,8 @@
 package queuedprocessor
 
 import (
+	"context"
 	"time"
-
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
@@ -46,20 +45,22 @@ func (f *Factory) CreateDefaultConfig() configmodels.Processor {
 
 // CreateTraceProcessor creates a trace processor based on this config.
 func (f *Factory) CreateTraceProcessor(
-	logger *zap.Logger,
-	nextConsumer consumer.TraceConsumerOld,
+	ctx context.Context,
+	params component.ProcessorCreateParams,
+	nextConsumer consumer.TraceConsumer,
 	cfg configmodels.Processor,
-) (component.TraceProcessorOld, error) {
+) (component.TraceProcessor, error) {
 	oCfg := cfg.(*Config)
-	return newQueuedSpanProcessor(logger, nextConsumer, oCfg), nil
+	return newQueuedSpanProcessor(params, nextConsumer, oCfg), nil
 }
 
 // CreateMetricsProcessor creates a metrics processor based on this config.
 func (f *Factory) CreateMetricsProcessor(
-	logger *zap.Logger,
-	nextConsumer consumer.MetricsConsumerOld,
+	ctx context.Context,
+	params component.ProcessorCreateParams,
+	nextConsumer consumer.MetricsConsumer,
 	cfg configmodels.Processor,
-) (component.MetricsProcessorOld, error) {
+) (component.MetricsProcessor, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 

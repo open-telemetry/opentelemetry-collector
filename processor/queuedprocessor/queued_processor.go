@@ -27,8 +27,8 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumererror"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal/collector/telemetry"
 	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
@@ -38,7 +38,7 @@ type queuedSpanProcessor struct {
 	name                     string
 	queue                    *queue.BoundedQueue
 	logger                   *zap.Logger
-	sender                   consumer.TraceConsumerOld
+	sender                   consumer.TraceConsumer
 	numWorkers               int
 	retryOnProcessingFailure bool
 	backoffDelay             time.Duration
@@ -46,20 +46,24 @@ type queuedSpanProcessor struct {
 	stopOnce                 sync.Once
 }
 
-var _ consumer.TraceConsumerOld = (*queuedSpanProcessor)(nil)
+var _ consumer.TraceConsumer = (*queuedSpanProcessor)(nil)
 
 type queueItem struct {
 	queuedTime time.Time
-	td         consumerdata.TraceData
+	td         pdata.Traces
 	ctx        context.Context
 }
 
-func newQueuedSpanProcessor(logger *zap.Logger, sender consumer.TraceConsumerOld, cfg *Config) *queuedSpanProcessor {
+func newQueuedSpanProcessor(
+	params component.ProcessorCreateParams,
+	sender consumer.TraceConsumer,
+	cfg *Config,
+) *queuedSpanProcessor {
 	boundedQueue := queue.NewBoundedQueue(cfg.QueueSize, func(item interface{}) {})
 	return &queuedSpanProcessor{
 		name:                     cfg.Name(),
 		queue:                    boundedQueue,
-		logger:                   logger,
+		logger:                   params.Logger,
 		numWorkers:               cfg.NumWorkers,
 		sender:                   sender,
 		retryOnProcessingFailure: cfg.RetryOnFailure,
@@ -108,8 +112,8 @@ func (sp *queuedSpanProcessor) Stop() {
 	})
 }
 
-// ConsumeTraceData implements the SpanProcessor interface
-func (sp *queuedSpanProcessor) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
+// ConsumeTraces implements the SpanProcessor interface
+func (sp *queuedSpanProcessor) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
 	ctx = obsreport.ProcessorContext(ctx, sp.name)
 	item := &queueItem{
 		queuedTime: time.Now(),
@@ -117,9 +121,8 @@ func (sp *queuedSpanProcessor) ConsumeTraceData(ctx context.Context, td consumer
 		ctx:        ctx,
 	}
 
-	statsTags := []tag.Mutator{tag.Insert(processor.TagProcessorNameKey, sp.name)}
-	numSpans := len(td.Spans)
-	stats.RecordWithTags(ctx, statsTags, processor.StatReceivedSpanCount.M(int64(numSpans)))
+	spanCountStats := processor.NewSpanCountStats(td, sp.name)
+	processor.RecordsSpanCountMetrics(ctx, spanCountStats, processor.StatReceivedSpanCount)
 
 	addedToQueue := sp.queue.Produce(item)
 	if !addedToQueue {
@@ -127,9 +130,9 @@ func (sp *queuedSpanProcessor) ConsumeTraceData(ctx context.Context, td consumer
 		// in the same call stack as the receiver, ie.: the call from the receiver
 		// to here is synchronous. This means that actually it could be proper to
 		// record this as "refused" instead of "dropped".
-		sp.onItemDropped(item, statsTags)
+		sp.onItemDropped(item, spanCountStats)
 	} else {
-		obsreport.ProcessorTraceDataAccepted(ctx, len(td.Spans))
+		obsreport.ProcessorTraceDataAccepted(ctx, spanCountStats.GetAllSpansCount())
 	}
 	return nil
 }
@@ -146,14 +149,14 @@ func (sp *queuedSpanProcessor) Shutdown(context.Context) error {
 
 func (sp *queuedSpanProcessor) processItemFromQueue(item *queueItem) {
 	startTime := time.Now()
-	err := sp.sender.ConsumeTraceData(item.ctx, item.td)
-	statsTags := []tag.Mutator{tag.Insert(processor.TagProcessorNameKey, sp.name)}
+	err := sp.sender.ConsumeTraces(item.ctx, item.td)
+	processorStatsTags := []tag.Mutator{tag.Insert(processor.TagProcessorNameKey, sp.name)}
 	if err == nil {
 		// Record latency metrics and return
 		sendLatencyMs := int64(time.Since(startTime) / time.Millisecond)
 		inQueueLatencyMs := int64(time.Since(item.queuedTime) / time.Millisecond)
 		stats.RecordWithTags(context.Background(),
-			statsTags,
+			processorStatsTags,
 			statSuccessSendOps.M(1),
 			statSendLatencyMs.M(sendLatencyMs),
 			statInQueueLatencyMs.M(inQueueLatencyMs))
@@ -161,42 +164,46 @@ func (sp *queuedSpanProcessor) processItemFromQueue(item *queueItem) {
 		return
 	}
 
+	spanCountStats := processor.NewSpanCountStats(item.td, sp.name)
+	allSpansCount := spanCountStats.GetAllSpansCount()
+
 	// There was an error
 
 	// Immediately drop data on permanent errors. In this context permanent
-	// errors indicate some kind of bad data.
+	// errors indicate some kind of bad pdata.
 	if consumererror.IsPermanent(err) {
-		numSpans := len(item.td.Spans)
 		sp.logger.Warn(
 			"Unrecoverable bad data error",
 			zap.String("processor", sp.name),
-			zap.Int("#spans", numSpans),
-			zap.String("spanFormat", item.td.SourceFormat),
+			zap.Int("#spans", spanCountStats.GetAllSpansCount()),
 			zap.Error(err))
 
-		stats.RecordWithTags(
+		processor.RecordsSpanCountMetrics(
 			context.Background(),
-			statsTags,
-			processor.StatBadBatchDroppedSpanCount.M(int64(numSpans)))
+			spanCountStats,
+			processor.StatBadBatchDroppedSpanCount)
 
 		return
 	}
 
-	stats.RecordWithTags(context.Background(), statsTags, statFailedSendOps.M(1))
-	batchSize := len(item.td.Spans)
-	sp.logger.Warn("Sender failed", zap.String("processor", sp.name), zap.Error(err), zap.String("spanFormat", item.td.SourceFormat))
+	stats.RecordWithTags(context.Background(), processorStatsTags, statFailedSendOps.M(1))
+
+	sp.logger.Warn("Sender failed", zap.String("processor", sp.name), zap.Error(err))
 	if !sp.retryOnProcessingFailure {
 		// throw away the batch
-		sp.logger.Error("Failed to process batch, discarding", zap.String("processor", sp.name), zap.Int("batch-size", batchSize))
-		sp.onItemDropped(item, statsTags)
+		sp.logger.Error("Failed to process batch, discarding",
+			zap.String("processor", sp.name), zap.Int("batch-size", allSpansCount))
+		sp.onItemDropped(item, spanCountStats)
 	} else {
 		// TODO: (@pjanotti) do not put it back on the end of the queue, retry with it directly.
 		// This will have the benefit of keeping the batch closer to related ones in time.
 		if !sp.queue.Produce(item) {
-			sp.logger.Error("Failed to process batch and failed to re-enqueue", zap.String("processor", sp.name), zap.Int("batch-size", batchSize))
-			sp.onItemDropped(item, statsTags)
+			sp.logger.Error("Failed to process batch and failed to re-enqueue",
+				zap.String("processor", sp.name), zap.Int("batch-size", allSpansCount))
+			sp.onItemDropped(item, spanCountStats)
 		} else {
-			sp.logger.Warn("Failed to process batch, re-enqueued", zap.String("processor", sp.name), zap.Int("batch-size", batchSize))
+			sp.logger.Warn("Failed to process batch, re-enqueued",
+				zap.String("processor", sp.name), zap.Int("batch-size", allSpansCount))
 		}
 	}
 
@@ -216,16 +223,17 @@ func (sp *queuedSpanProcessor) processItemFromQueue(item *queueItem) {
 	}
 }
 
-func (sp *queuedSpanProcessor) onItemDropped(item *queueItem, statsTags []tag.Mutator) {
-	numSpans := len(item.td.Spans)
-	stats.RecordWithTags(item.ctx, statsTags, processor.StatDroppedSpanCount.M(int64(numSpans)), processor.StatTraceBatchesDroppedCount.M(int64(1)))
+func (sp *queuedSpanProcessor) onItemDropped(item *queueItem, spanCountStats *processor.SpanCountStats) {
+	stats.RecordWithTags(item.ctx,
+		[]tag.Mutator{tag.Insert(processor.TagProcessorNameKey, sp.name)},
+		processor.StatTraceBatchesDroppedCount.M(int64(1)))
+	processor.RecordsSpanCountMetrics(item.ctx, spanCountStats, processor.StatDroppedSpanCount)
 
-	obsreport.ProcessorTraceDataDropped(item.ctx, len(item.td.Spans))
+	obsreport.ProcessorTraceDataDropped(item.ctx, spanCountStats.GetAllSpansCount())
 
 	sp.logger.Warn("Span batch dropped",
 		zap.String("processor", sp.name),
-		zap.Int("#spans", len(item.td.Spans)),
-		zap.String("spanSource", item.td.SourceFormat))
+		zap.Int("#spans", spanCountStats.GetAllSpansCount()))
 }
 
 // Variables related to metrics specific to queued processor.

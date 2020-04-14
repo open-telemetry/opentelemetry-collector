@@ -15,11 +15,13 @@
 package queuedprocessor
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
 )
 
@@ -33,12 +35,13 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateProcessor(t *testing.T) {
 	factory := &Factory{}
 	cfg := factory.CreateDefaultConfig()
+	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
 
-	tp, err := factory.CreateTraceProcessor(zap.NewNop(), nil, cfg)
+	tp, err := factory.CreateTraceProcessor(context.Background(), creationParams, nil, cfg)
 	assert.NotNil(t, tp)
 	assert.NoError(t, err, "cannot create trace processor")
 
-	mp, err := factory.CreateMetricsProcessor(zap.NewNop(), nil, cfg)
+	mp, err := factory.CreateMetricsProcessor(context.Background(), creationParams, nil, cfg)
 	assert.Nil(t, mp)
 	assert.Error(t, err, "should not be able to create metric processor")
 }

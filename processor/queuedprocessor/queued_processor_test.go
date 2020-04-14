@@ -23,7 +23,6 @@ import (
 	"testing"
 	"time"
 
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/stats/view"
@@ -32,17 +31,16 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumererror"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal/collector/telemetry"
+	"github.com/open-telemetry/opentelemetry-collector/internal/data/testdata"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
 )
 
 func TestQueuedProcessor_noEnqueueOnPermanentError(t *testing.T) {
 	ctx := context.Background()
-	td := consumerdata.TraceData{
-		Spans: make([]*tracepb.Span, 7),
-	}
+	td := testdata.GenerateTraceDataOneSpan()
 
 	c := &waitGroupTraceConsumer{
 		consumeTraceDataError: consumererror.Permanent(errors.New("bad data")),
@@ -53,11 +51,12 @@ func TestQueuedProcessor_noEnqueueOnPermanentError(t *testing.T) {
 	cfg.QueueSize = 2
 	cfg.RetryOnFailure = true
 	cfg.BackoffDelay = time.Hour
-	qp := newQueuedSpanProcessor(zap.NewNop(), c, cfg)
+	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
+	qp := newQueuedSpanProcessor(creationParams, c, cfg)
 
 	require.NoError(t, qp.Start(context.Background(), componenttest.NewNopHost()))
 	c.Add(1)
-	require.Nil(t, qp.ConsumeTraceData(ctx, td))
+	require.Nil(t, qp.ConsumeTraces(ctx, td))
 	c.Wait()
 	<-time.After(50 * time.Millisecond)
 
@@ -66,7 +65,7 @@ func TestQueuedProcessor_noEnqueueOnPermanentError(t *testing.T) {
 	c.consumeTraceDataError = errors.New("transient error")
 	c.Add(1)
 	// This is asynchronous so it should just enqueue, no errors expected.
-	require.Nil(t, qp.ConsumeTraceData(ctx, td))
+	require.Nil(t, qp.ConsumeTraces(ctx, td))
 	c.Wait()
 	<-time.After(50 * time.Millisecond)
 
@@ -78,9 +77,9 @@ type waitGroupTraceConsumer struct {
 	consumeTraceDataError error
 }
 
-var _ consumer.TraceConsumerOld = (*waitGroupTraceConsumer)(nil)
+var _ consumer.TraceConsumer = (*waitGroupTraceConsumer)(nil)
 
-func (c *waitGroupTraceConsumer) ConsumeTraceData(_ context.Context, _ consumerdata.TraceData) error {
+func (c *waitGroupTraceConsumer) ConsumeTraces(_ context.Context, _ pdata.Traces) error {
 	defer c.Done()
 	return c.consumeTraceDataError
 }
@@ -104,22 +103,17 @@ func TestQueueProcessorHappyPath(t *testing.T) {
 	defer view.Unregister(views...)
 
 	mockProc := newMockConcurrentSpanProcessor()
-	qp := newQueuedSpanProcessor(zap.NewNop(), mockProc, generateDefaultConfig())
+	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
+	qp := newQueuedSpanProcessor(creationParams, mockProc, generateDefaultConfig())
 	require.NoError(t, qp.Start(context.Background(), componenttest.NewNopHost()))
-	goFn := func(td consumerdata.TraceData) {
-		qp.ConsumeTraceData(context.Background(), td)
+	goFn := func(td pdata.Traces) {
+		qp.ConsumeTraces(context.Background(), td)
 	}
 
-	spans := []*tracepb.Span{{}}
 	wantBatches := 10
-	wantSpans := 0
+	wantSpans := 20
 	for i := 0; i < wantBatches; i++ {
-		td := consumerdata.TraceData{
-			Spans:        spans,
-			SourceFormat: "oc_trace",
-		}
-		wantSpans += len(spans)
-		spans = append(spans, &tracepb.Span{})
+		td := testdata.GenerateTraceDataTwoSpansSameResource()
 		fn := func() { goFn(td) }
 		mockProc.runConcurrently(fn)
 	}
@@ -149,11 +143,11 @@ type mockConcurrentSpanProcessor struct {
 	spanCount  int32
 }
 
-var _ consumer.TraceConsumerOld = (*mockConcurrentSpanProcessor)(nil)
+var _ consumer.TraceConsumer = (*mockConcurrentSpanProcessor)(nil)
 
-func (p *mockConcurrentSpanProcessor) ConsumeTraceData(_ context.Context, td consumerdata.TraceData) error {
+func (p *mockConcurrentSpanProcessor) ConsumeTraces(_ context.Context, td pdata.Traces) error {
 	atomic.AddInt32(&p.batchCount, 1)
-	atomic.AddInt32(&p.spanCount, int32(len(td.Spans)))
+	atomic.AddInt32(&p.spanCount, int32(td.SpanCount()))
 	p.waitGroup.Done()
 	return nil
 }
