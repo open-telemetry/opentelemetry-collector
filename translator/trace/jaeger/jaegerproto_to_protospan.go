@@ -24,6 +24,7 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/jaegertracing/jaeger/model"
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
+	"go.opencensus.io/trace"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal"
@@ -201,6 +202,14 @@ func jProtoTagsToAttributes(tags []model.KeyValue) (string, tracepb.Span_SpanKin
 				sKind = tracepb.Span_CLIENT
 			case "server":
 				sKind = tracepb.Span_SERVER
+			}
+
+		case tracetranslator.TagError:
+			if statusCodePtr == nil {
+				// Only set this if tracetranslator.TagStatusCode does not exists.
+				// The tracetranslator.TagStatusCode branch will overwrite the value if exists.
+				code := int32(trace.StatusCodeUnknown)
+				statusCodePtr = &code
 			}
 
 		case tracetranslator.TagStatusCode:

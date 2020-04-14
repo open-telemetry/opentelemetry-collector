@@ -27,6 +27,7 @@ const (
 
 	TagStatusCode       = "status.code"
 	TagStatusMsg        = "status.message"
+	TagError            = "error"
 	TagHTTPStatusCode   = "http.status_code"
 	TagHTTPStatusMsg    = "http.status_message"
 	TagZipkinCensusCode = "census.status_code"

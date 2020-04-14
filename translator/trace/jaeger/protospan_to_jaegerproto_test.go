@@ -134,6 +134,11 @@ func TestOCStatusToJaegerProtoTags(t *testing.T) {
 					VInt64: int64(10),
 					VType:  jaeger.ValueType_INT64,
 				},
+				{
+					Key:   tracetranslator.TagError,
+					VBool: true,
+					VType: jaeger.ValueType_BOOL,
+				},
 			},
 		},
 		// only status.message
@@ -173,6 +178,11 @@ func TestOCStatusToJaegerProtoTags(t *testing.T) {
 					VStr:  "Forbidden",
 					VType: jaeger.ValueType_STRING,
 				},
+				{
+					Key:   tracetranslator.TagError,
+					VBool: true,
+					VType: jaeger.ValueType_BOOL,
+				},
 			},
 		},
 
@@ -194,6 +204,11 @@ func TestOCStatusToJaegerProtoTags(t *testing.T) {
 							StringValue: &tracepb.TruncatableString{Value: "Error"},
 						},
 					},
+					"error": {
+						Value: &tracepb.AttributeValue_BoolValue{
+							BoolValue: true,
+						},
+					},
 				},
 			},
 			wantTags: []jaeger.KeyValue{
@@ -206,6 +221,11 @@ func TestOCStatusToJaegerProtoTags(t *testing.T) {
 					Key:   tracetranslator.TagStatusMsg,
 					VStr:  "Error",
 					VType: jaeger.ValueType_STRING,
+				},
+				{
+					Key:   tracetranslator.TagError,
+					VBool: true,
+					VType: jaeger.ValueType_BOOL,
 				},
 			},
 		},
@@ -298,6 +318,11 @@ func TestOCStatusToJaegerProtoTags(t *testing.T) {
 					VStr:  "Forbidden",
 					VType: jaeger.ValueType_STRING,
 				},
+				{
+					Key:   tracetranslator.TagError,
+					VBool: true,
+					VType: jaeger.ValueType_BOOL,
+				},
 			},
 		},
 	}
@@ -321,6 +346,9 @@ func TestOCStatusToJaegerProtoTags(t *testing.T) {
 		gs := gb.Spans[0]
 		sort.Slice(gs.Tags, func(i, j int) bool {
 			return gs.Tags[i].Key < gs.Tags[j].Key
+		})
+		sort.Slice(c.wantTags, func(i, j int) bool {
+			return c.wantTags[i].Key < c.wantTags[j].Key
 		})
 		if !reflect.DeepEqual(c.wantTags, gs.Tags) {
 			t.Fatalf("%d: Unsuccessful conversion\nGot:\n\t%v\nWant:\n\t%v", i, gs.Tags, c.wantTags)

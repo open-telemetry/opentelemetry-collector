@@ -412,6 +412,14 @@ func appendJaegerTagFromOCStatusProto(jTags []jaeger.KeyValue, ocStatus *tracepb
 		VType:  jaeger.ValueType_INT64,
 	})
 
+	if ocStatus.Code != 0 {
+		jTags = append(jTags, jaeger.KeyValue{
+			Key:   tracetranslator.TagError,
+			VBool: ocStatus.Code != 0,
+			VType: jaeger.ValueType_BOOL,
+		})
+	}
+
 	if ocStatus.Message != "" {
 		jTags = append(jTags, jaeger.KeyValue{
 			Key:   tracetranslator.TagStatusMsg,
