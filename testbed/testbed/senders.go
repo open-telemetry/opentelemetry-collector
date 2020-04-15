@@ -95,7 +95,7 @@ func (ds *DataSenderOverTraceExporterOld) GetCollectorPort() int {
 // to send a batch of Spans to the DataSender interface.
 type TraceDataSender interface {
 	DataSender
-	SendSpans(traces pdata.TraceData) error
+	SendSpans(traces pdata.Traces) error
 }
 
 // MetricDataSender defines the interface that allows sending metric data. It adds ability
@@ -117,8 +117,8 @@ func NewDataSenderOverExporter(port int) *DataSenderOverTraceExporter {
 	return &DataSenderOverTraceExporter{Port: port}
 }
 
-func (ds *DataSenderOverTraceExporter) SendSpans(traces pdata.TraceData) error {
-	return ds.exporter.ConsumeTrace(context.Background(), traces)
+func (ds *DataSenderOverTraceExporter) SendSpans(traces pdata.Traces) error {
+	return ds.exporter.ConsumeTraces(context.Background(), traces)
 }
 
 func (ds *DataSenderOverTraceExporter) Flush() {

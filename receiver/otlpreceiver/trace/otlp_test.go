@@ -117,7 +117,7 @@ func TestExport(t *testing.T) {
 
 	// Keep trace data to compare the test result against it
 	// Clone needed because OTLP proto XXX_ fields are altered in the GRPC downstream
-	traceData := pdata.TraceDataFromOtlp(resourceSpans).Clone()
+	traceData := pdata.TracesFromOtlp(resourceSpans).Clone()
 
 	req := &collectortrace.ExportTraceServiceRequest{
 		ResourceSpans: resourceSpans,

@@ -231,7 +231,7 @@ func (lg *LoadGenerator) generateTraceOld() {
 func (lg *LoadGenerator) generateTrace() {
 	traceSender := lg.sender.(TraceDataSender)
 
-	traceData := pdata.NewTraceData()
+	traceData := pdata.NewTraces()
 	traceData.ResourceSpans().Resize(1)
 	ilss := traceData.ResourceSpans().At(0).InstrumentationLibrarySpans()
 	ilss.Resize(1)

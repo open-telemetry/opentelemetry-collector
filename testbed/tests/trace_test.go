@@ -261,7 +261,7 @@ func verifySingleSpan(
 	startCounter := tc.MockBackend.DataItemsReceived()
 
 	// Send one span.
-	td := pdata.NewTraceData()
+	td := pdata.NewTraces()
 	td.ResourceSpans().Resize(1)
 	td.ResourceSpans().At(0).Resource().InitEmpty()
 	td.ResourceSpans().At(0).Resource().Attributes().InitFromMap(map[string]pdata.AttributeValue{

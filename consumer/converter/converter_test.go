@@ -30,7 +30,7 @@ func TestNewInternalToOCTraceConverter(t *testing.T) {
 	traceExporterOld := new(exportertest.SinkTraceExporterOld)
 	converter := NewInternalToOCTraceConverter(traceExporterOld)
 
-	err := converter.ConsumeTrace(context.Background(), td)
+	err := converter.ConsumeTraces(context.Background(), td)
 	assert.Nil(t, err)
 
 	ocTraces := traceExporterOld.AllTraces()
@@ -38,7 +38,7 @@ func TestNewInternalToOCTraceConverter(t *testing.T) {
 	assert.EqualValues(t, ocTraces, internaldata.TraceDataToOC(td))
 
 	traceExporterOld.SetConsumeTraceError(fmt.Errorf("consumer error"))
-	err = converter.ConsumeTrace(context.Background(), td)
+	err = converter.ConsumeTraces(context.Background(), td)
 	assert.NotNil(t, err)
 }
 

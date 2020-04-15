@@ -22,7 +22,7 @@ import (
 )
 
 func TestSpanCount(t *testing.T) {
-	md := NewTraceData()
+	md := NewTraces()
 	assert.EqualValues(t, 0, md.SpanCount())
 
 	md.ResourceSpans().Resize(1)
@@ -45,13 +45,13 @@ func TestSpanCount(t *testing.T) {
 }
 
 func TestSpanCountWithNils(t *testing.T) {
-	assert.EqualValues(t, 0, TraceDataFromOtlp([]*otlptrace.ResourceSpans{nil, {}}).SpanCount())
-	assert.EqualValues(t, 0, TraceDataFromOtlp([]*otlptrace.ResourceSpans{
+	assert.EqualValues(t, 0, TracesFromOtlp([]*otlptrace.ResourceSpans{nil, {}}).SpanCount())
+	assert.EqualValues(t, 0, TracesFromOtlp([]*otlptrace.ResourceSpans{
 		{
 			InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{nil, {}},
 		},
 	}).SpanCount())
-	assert.EqualValues(t, 2, TraceDataFromOtlp([]*otlptrace.ResourceSpans{
+	assert.EqualValues(t, 2, TracesFromOtlp([]*otlptrace.ResourceSpans{
 		{
 			InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
 				{
@@ -72,9 +72,9 @@ func TestTraceID(t *testing.T) {
 
 func TestToFromOtlp(t *testing.T) {
 	otlp := []*otlptrace.ResourceSpans(nil)
-	td := TraceDataFromOtlp(otlp)
-	assert.EqualValues(t, NewTraceData(), td)
-	assert.EqualValues(t, otlp, TraceDataToOtlp(td))
+	td := TracesFromOtlp(otlp)
+	assert.EqualValues(t, NewTraces(), td)
+	assert.EqualValues(t, otlp, TracesToOtlp(td))
 	// More tests in ./tracedata/trace_test.go. Cannot have them here because of
 	// circular dependency.
 }

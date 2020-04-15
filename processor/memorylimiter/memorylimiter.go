@@ -117,9 +117,9 @@ func newMemoryLimiter(
 	return ml, nil
 }
 
-func (ml *memoryLimiter) ConsumeTrace(
+func (ml *memoryLimiter) ConsumeTraces(
 	ctx context.Context,
-	td pdata.TraceData,
+	td pdata.Traces,
 ) error {
 
 	ctx = obsreport.ProcessorContext(ctx, ml.procName)
@@ -143,7 +143,7 @@ func (ml *memoryLimiter) ConsumeTrace(
 	// Even if the next consumer returns error record the data as accepted by
 	// this processor.
 	obsreport.ProcessorTraceDataAccepted(ctx, numSpans)
-	return ml.traceConsumer.ConsumeTrace(ctx, td)
+	return ml.traceConsumer.ConsumeTraces(ctx, td)
 }
 
 func (ml *memoryLimiter) ConsumeMetrics(

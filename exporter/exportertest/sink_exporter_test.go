@@ -46,9 +46,9 @@ func TestSinkTraceExporterOld(t *testing.T) {
 func TestSinkTraceExporter(t *testing.T) {
 	sink := new(SinkTraceExporter)
 	td := testdata.GenerateTraceDataOneSpan()
-	want := make([]pdata.TraceData, 0, 7)
+	want := make([]pdata.Traces, 0, 7)
 	for i := 0; i < 7; i++ {
-		err := sink.ConsumeTrace(context.Background(), td)
+		err := sink.ConsumeTraces(context.Background(), td)
 		require.Nil(t, err)
 		want = append(want, td)
 	}

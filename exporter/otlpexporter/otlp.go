@@ -162,7 +162,7 @@ func (oce *otlpExporter) Shutdown(context.Context) error {
 	return componenterror.CombineErrors(errors)
 }
 
-func (oce *otlpExporter) pushTraceData(ctx context.Context, td pdata.TraceData) (int, error) {
+func (oce *otlpExporter) pushTraceData(ctx context.Context, td pdata.Traces) (int, error) {
 	// Get first available exporter.
 	exporter, ok := <-oce.exporters
 	if !ok {
@@ -175,7 +175,7 @@ func (oce *otlpExporter) pushTraceData(ctx context.Context, td pdata.TraceData) 
 
 	// Perform the request.
 	request := &otlptrace.ExportTraceServiceRequest{
-		ResourceSpans: pdata.TraceDataToOtlp(td),
+		ResourceSpans: pdata.TracesToOtlp(td),
 	}
 	err := exporter.exportTrace(ctx, request)
 

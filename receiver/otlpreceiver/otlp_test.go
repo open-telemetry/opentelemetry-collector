@@ -134,7 +134,7 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 
 	got := sink.AllTraces()[0]
 
-	want := pdata.TraceDataFromOtlp([]*otlptrace.ResourceSpans{
+	want := pdata.TracesFromOtlp([]*otlptrace.ResourceSpans{
 		{
 			Resource: &otlpresource.Resource{
 				Attributes: []*otlpcommon.AttributeKeyValue{

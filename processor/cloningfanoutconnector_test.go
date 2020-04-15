@@ -174,7 +174,7 @@ func TestTraceProcessorCloningMultiplexing(t *testing.T) {
 	var wantSpansCount = 0
 	for i := 0; i < 2; i++ {
 		wantSpansCount += td.SpanCount()
-		err := tfc.ConsumeTrace(context.Background(), td)
+		err := tfc.ConsumeTraces(context.Background(), td)
 		if err != nil {
 			t.Errorf("Wanted nil got error")
 			return
@@ -310,7 +310,7 @@ func TestCreateTraceCloningFanOutConnectorWithConvertion(t *testing.T) {
 	var wantSpansCount = 0
 	for i := 0; i < 2; i++ {
 		wantSpansCount += td.SpanCount()
-		err := tfc.ConsumeTrace(context.Background(), td)
+		err := tfc.ConsumeTraces(context.Background(), td)
 		assert.NoError(t, err)
 	}
 

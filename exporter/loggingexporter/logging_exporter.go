@@ -84,7 +84,7 @@ type loggingExporter struct {
 
 func (s *loggingExporter) pushTraceData(
 	_ context.Context,
-	td pdata.TraceData,
+	td pdata.Traces,
 ) (int, error) {
 
 	s.logger.Info("TraceExporter", zap.Int("#spans", td.SpanCount()))

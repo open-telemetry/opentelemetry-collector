@@ -23,42 +23,42 @@ import (
 
 // This file defines in-memory data structures to represent traces (spans).
 
-// TraceData is the top-level struct that is propagated through the traces pipeline.
-// This is the newer version of consumerdata.TraceData, but uses more efficient
+// Traces is the top-level struct that is propagated through the traces pipeline.
+// This is the newer version of consumerdata.Traces, but uses more efficient
 // in-memory representation.
-type TraceData struct {
+type Traces struct {
 	orig *[]*otlptrace.ResourceSpans
 }
 
-// TraceDataFromOtlp creates the internal TraceData representation from the OTLP.
-func TraceDataFromOtlp(orig []*otlptrace.ResourceSpans) TraceData {
-	return TraceData{&orig}
+// TracesFromOtlp creates the internal Traces representation from the OTLP.
+func TracesFromOtlp(orig []*otlptrace.ResourceSpans) Traces {
+	return Traces{&orig}
 }
 
-// TraceDataToOtlp converts the internal TraceData to the OTLP.
-func TraceDataToOtlp(td TraceData) []*otlptrace.ResourceSpans {
+// TracesToOtlp converts the internal Traces to the OTLP.
+func TracesToOtlp(td Traces) []*otlptrace.ResourceSpans {
 	return *td.orig
 }
 
-// NewTraceData creates a new TraceData.
-func NewTraceData() TraceData {
+// NewTraces creates a new Traces.
+func NewTraces() Traces {
 	orig := []*otlptrace.ResourceSpans(nil)
-	return TraceData{&orig}
+	return Traces{&orig}
 }
 
-// Clone returns a copy of TraceData.
-func (td TraceData) Clone() TraceData {
-	otlp := TraceDataToOtlp(td)
+// Clone returns a copy of Traces.
+func (td Traces) Clone() Traces {
+	otlp := TracesToOtlp(td)
 	resourceSpansClones := make([]*otlptrace.ResourceSpans, 0, len(otlp))
 	for _, resourceSpans := range otlp {
 		resourceSpansClones = append(resourceSpansClones,
 			proto.Clone(resourceSpans).(*otlptrace.ResourceSpans))
 	}
-	return TraceDataFromOtlp(resourceSpansClones)
+	return TracesFromOtlp(resourceSpansClones)
 }
 
 // SpanCount calculates the total number of spans.
-func (td TraceData) SpanCount() int {
+func (td Traces) SpanCount() int {
 	spanCount := 0
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
@@ -78,7 +78,7 @@ func (td TraceData) SpanCount() int {
 	return spanCount
 }
 
-func (td TraceData) ResourceSpans() ResourceSpansSlice {
+func (td Traces) ResourceSpans() ResourceSpansSlice {
 	return newResourceSpansSlice(td.orig)
 }
 

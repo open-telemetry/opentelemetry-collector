@@ -91,7 +91,7 @@ func newSpanProcessor(nextConsumer consumer.TraceConsumer, config Config) (*span
 	return sp, nil
 }
 
-func (sp *spanProcessor) ConsumeTrace(ctx context.Context, td pdata.TraceData) error {
+func (sp *spanProcessor) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
@@ -120,7 +120,7 @@ func (sp *spanProcessor) ConsumeTrace(ctx context.Context, td pdata.TraceData) e
 			}
 		}
 	}
-	return sp.nextConsumer.ConsumeTrace(ctx, td)
+	return sp.nextConsumer.ConsumeTraces(ctx, td)
 }
 
 func (sp *spanProcessor) GetCapabilities() component.ProcessorCapabilities {
