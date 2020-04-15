@@ -22,7 +22,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/client"
 	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 )
 
@@ -59,7 +59,7 @@ func (r *Receiver) Export(ctx context.Context, req *collectortrace.ExportTraceSe
 	// We need to ensure that it propagates the receiver name as a tag
 	ctxWithReceiverName := obsreport.ReceiverContext(ctx, r.instanceName, receiverTransport, receiverTagValue)
 
-	td := data.TraceDataFromOtlp(req.ResourceSpans)
+	td := pdata.TraceDataFromOtlp(req.ResourceSpans)
 	err := r.sendToNextConsumer(ctxWithReceiverName, td)
 	if err != nil {
 		return nil, err
@@ -68,7 +68,7 @@ func (r *Receiver) Export(ctx context.Context, req *collectortrace.ExportTraceSe
 	return &collectortrace.ExportTraceServiceResponse{}, nil
 }
 
-func (r *Receiver) sendToNextConsumer(ctx context.Context, td data.TraceData) error {
+func (r *Receiver) sendToNextConsumer(ctx context.Context, td pdata.TraceData) error {
 	if c, ok := client.FromGRPC(ctx); ok {
 		ctx = client.NewContext(ctx, c)
 	}

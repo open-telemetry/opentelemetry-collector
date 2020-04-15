@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data/testdata"
 )
@@ -45,7 +46,7 @@ func TestSinkTraceExporterOld(t *testing.T) {
 func TestSinkTraceExporter(t *testing.T) {
 	sink := new(SinkTraceExporter)
 	td := testdata.GenerateTraceDataOneSpan()
-	want := make([]data.TraceData, 0, 7)
+	want := make([]pdata.TraceData, 0, 7)
 	for i := 0; i < 7; i++ {
 		err := sink.ConsumeTrace(context.Background(), td)
 		require.Nil(t, err)

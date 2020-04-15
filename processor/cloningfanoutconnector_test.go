@@ -28,7 +28,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data/testdata"
 	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 )
@@ -303,7 +303,7 @@ func TestCreateTraceCloningFanOutConnectorWithConvertion(t *testing.T) {
 
 	td := testdata.GenerateTraceDataTwoSpansSameResource()
 	resource := td.ResourceSpans().At(0).Resource()
-	resource.Attributes().Upsert(conventions.OCAttributeResourceType, data.NewAttributeValueString(resourceTypeName))
+	resource.Attributes().Upsert(conventions.OCAttributeResourceType, pdata.NewAttributeValueString(resourceTypeName))
 
 	tfc := CreateTraceCloningFanOutConnector(processors).(consumer.TraceConsumer)
 
@@ -333,7 +333,7 @@ func TestCreateMetricsCloningFanOutConnectorWithConvertion(t *testing.T) {
 
 	md := testdata.GenerateMetricDataWithCountersHistogramAndSummary()
 	resource := md.ResourceMetrics().At(0).Resource()
-	resource.Attributes().Upsert(conventions.OCAttributeResourceType, data.NewAttributeValueString(resourceTypeName))
+	resource.Attributes().Upsert(conventions.OCAttributeResourceType, pdata.NewAttributeValueString(resourceTypeName))
 
 	mfc := CreateMetricsCloningFanOutConnector(processors).(consumer.MetricsConsumer)
 

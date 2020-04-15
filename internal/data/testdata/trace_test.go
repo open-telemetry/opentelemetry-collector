@@ -20,12 +20,12 @@ import (
 	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 )
 
 type traceTestCase struct {
 	name string
-	td   data.TraceData
+	td   pdata.TraceData
 	otlp []*otlptrace.ResourceSpans
 }
 
@@ -96,9 +96,9 @@ func TestToFromOtlpTrace(t *testing.T) {
 	for i := range allTestCases {
 		test := allTestCases[i]
 		t.Run(test.name, func(t *testing.T) {
-			td := data.TraceDataFromOtlp(test.otlp)
+			td := pdata.TraceDataFromOtlp(test.otlp)
 			assert.EqualValues(t, test.td, td)
-			otlp := data.TraceDataToOtlp(td)
+			otlp := pdata.TraceDataToOtlp(td)
 			assert.EqualValues(t, test.otlp, otlp)
 		})
 	}

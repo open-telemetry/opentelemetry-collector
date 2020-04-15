@@ -19,22 +19,22 @@ import (
 
 	"github.com/spf13/cast"
 
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 )
 
 // NewAttributeValueRaw is used to convert the raw `value` from ActionKeyValue to the supported trace attribute values.
 // If error different than nil the return value is invalid. Calling any functions on the invalid value will cause a panic.
-func NewAttributeValueRaw(value interface{}) (data.AttributeValue, error) {
+func NewAttributeValueRaw(value interface{}) (pdata.AttributeValue, error) {
 	switch val := value.(type) {
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
-		return data.NewAttributeValueInt(cast.ToInt64(val)), nil
+		return pdata.NewAttributeValueInt(cast.ToInt64(val)), nil
 	case float32, float64:
-		return data.NewAttributeValueDouble(cast.ToFloat64(val)), nil
+		return pdata.NewAttributeValueDouble(cast.ToFloat64(val)), nil
 	case string:
-		return data.NewAttributeValueString(val), nil
+		return pdata.NewAttributeValueString(val), nil
 	case bool:
-		return data.NewAttributeValueBool(val), nil
+		return pdata.NewAttributeValueBool(val), nil
 	default:
-		return data.AttributeValue{}, fmt.Errorf("error unsupported value type \"%T\"", value)
+		return pdata.AttributeValue{}, fmt.Errorf("error unsupported value type \"%T\"", value)
 	}
 }

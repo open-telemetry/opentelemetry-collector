@@ -25,7 +25,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data/testdata"
 )
 
@@ -51,32 +51,32 @@ func TestOcTraceStateToInternal(t *testing.T) {
 }
 
 func TestOcAttrsToInternal(t *testing.T) {
-	attrs := data.NewAttributeMap()
+	attrs := pdata.NewAttributeMap()
 	ocAttrsToInternal(nil, attrs)
-	assert.EqualValues(t, data.NewAttributeMap(), attrs)
+	assert.EqualValues(t, pdata.NewAttributeMap(), attrs)
 	assert.EqualValues(t, 0, ocAttrsToDroppedAttributes(nil))
 
 	ocAttrs := &octrace.Span_Attributes{}
-	attrs = data.NewAttributeMap()
+	attrs = pdata.NewAttributeMap()
 	ocAttrsToInternal(ocAttrs, attrs)
-	assert.EqualValues(t, data.NewAttributeMap(), attrs)
+	assert.EqualValues(t, pdata.NewAttributeMap(), attrs)
 	assert.EqualValues(t, 0, ocAttrsToDroppedAttributes(ocAttrs))
 
 	ocAttrs = &octrace.Span_Attributes{
 		DroppedAttributesCount: 123,
 	}
-	attrs = data.NewAttributeMap()
+	attrs = pdata.NewAttributeMap()
 	ocAttrsToInternal(ocAttrs, attrs)
-	assert.EqualValues(t, data.NewAttributeMap(), attrs)
+	assert.EqualValues(t, pdata.NewAttributeMap(), attrs)
 	assert.EqualValues(t, 123, ocAttrsToDroppedAttributes(ocAttrs))
 
 	ocAttrs = &octrace.Span_Attributes{
 		AttributeMap:           map[string]*octrace.AttributeValue{},
 		DroppedAttributesCount: 234,
 	}
-	attrs = data.NewAttributeMap()
+	attrs = pdata.NewAttributeMap()
 	ocAttrsToInternal(ocAttrs, attrs)
-	assert.EqualValues(t, data.NewAttributeMap(), attrs)
+	assert.EqualValues(t, pdata.NewAttributeMap(), attrs)
 	assert.EqualValues(t, 234, ocAttrsToDroppedAttributes(ocAttrs))
 
 	ocAttrs = &octrace.Span_Attributes{
@@ -87,12 +87,12 @@ func TestOcAttrsToInternal(t *testing.T) {
 		},
 		DroppedAttributesCount: 234,
 	}
-	attrs = data.NewAttributeMap()
+	attrs = pdata.NewAttributeMap()
 	ocAttrsToInternal(ocAttrs, attrs)
 	assert.EqualValues(t,
-		data.NewAttributeMap().InitFromMap(
-			map[string]data.AttributeValue{
-				"abc": data.NewAttributeValueString("def"),
+		pdata.NewAttributeMap().InitFromMap(
+			map[string]pdata.AttributeValue{
+				"abc": pdata.NewAttributeValueString("def"),
 			}),
 		attrs)
 	assert.EqualValues(t, 234, ocAttrsToDroppedAttributes(ocAttrs))
@@ -106,14 +106,14 @@ func TestOcAttrsToInternal(t *testing.T) {
 	ocAttrs.AttributeMap["doubleval"] = &octrace.AttributeValue{
 		Value: &octrace.AttributeValue_DoubleValue{DoubleValue: 4.5},
 	}
-	attrs = data.NewAttributeMap()
+	attrs = pdata.NewAttributeMap()
 	ocAttrsToInternal(ocAttrs, attrs)
 
-	expectedAttr := data.NewAttributeMap().InitFromMap(map[string]data.AttributeValue{
-		"abc":       data.NewAttributeValueString("def"),
-		"intval":    data.NewAttributeValueInt(345),
-		"boolval":   data.NewAttributeValueBool(true),
-		"doubleval": data.NewAttributeValueDouble(4.5),
+	expectedAttr := pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+		"abc":       pdata.NewAttributeValueString("def"),
+		"intval":    pdata.NewAttributeValueInt(345),
+		"boolval":   pdata.NewAttributeValueBool(true),
+		"doubleval": pdata.NewAttributeValueDouble(4.5),
 	})
 	assert.EqualValues(t, expectedAttr.Sort(), attrs.Sort())
 	assert.EqualValues(t, 234, ocAttrsToDroppedAttributes(ocAttrs))
@@ -290,7 +290,7 @@ func TestOcToInternal(t *testing.T) {
 
 	tests := []struct {
 		name string
-		td   data.TraceData
+		td   pdata.TraceData
 		oc   consumerdata.TraceData
 	}{
 		{
@@ -388,7 +388,7 @@ func TestOcToInternal(t *testing.T) {
 }
 
 // TODO: Try to avoid unnecessary Resource object allocation.
-func wrapTraceWithEmptyResource(td data.TraceData) data.TraceData {
+func wrapTraceWithEmptyResource(td pdata.TraceData) pdata.TraceData {
 	td.ResourceSpans().At(0).Resource().InitEmpty()
 	return td
 }

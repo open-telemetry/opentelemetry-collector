@@ -19,18 +19,19 @@ import (
 
 	otlpmetrics "github.com/open-telemetry/opentelemetry-proto/gen/go/metrics/v1"
 
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 )
 
 var (
 	TestMetricStartTime      = time.Date(2020, 2, 11, 20, 26, 12, 321, time.UTC)
-	TestMetricStartTimestamp = data.TimestampUnixNano(TestMetricStartTime.UnixNano())
+	TestMetricStartTimestamp = pdata.TimestampUnixNano(TestMetricStartTime.UnixNano())
 
 	TestMetricExemplarTime      = time.Date(2020, 2, 11, 20, 26, 13, 123, time.UTC)
-	TestMetricExemplarTimestamp = data.TimestampUnixNano(TestMetricExemplarTime.UnixNano())
+	TestMetricExemplarTimestamp = pdata.TimestampUnixNano(TestMetricExemplarTime.UnixNano())
 
 	TestMetricTime      = time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC)
-	TestMetricTimestamp = data.TimestampUnixNano(TestMetricTime.UnixNano())
+	TestMetricTimestamp = pdata.TimestampUnixNano(TestMetricTime.UnixNano())
 )
 
 const (
@@ -255,19 +256,19 @@ func GenerateMetricDataAllTypesNoDataPoints() data.MetricData {
 	ms := ilm0.Metrics()
 	ms.Resize(7)
 	initMetricDescriptor(
-		ms.At(0).MetricDescriptor(), TestGaugeDoubleMetricName, data.MetricTypeGaugeDouble)
+		ms.At(0).MetricDescriptor(), TestGaugeDoubleMetricName, pdata.MetricTypeGaugeDouble)
 	initMetricDescriptor(
-		ms.At(1).MetricDescriptor(), TestGaugeIntMetricName, data.MetricTypeGaugeInt64)
+		ms.At(1).MetricDescriptor(), TestGaugeIntMetricName, pdata.MetricTypeGaugeInt64)
 	initMetricDescriptor(
-		ms.At(2).MetricDescriptor(), TestCounterDoubleMetricName, data.MetricTypeCounterDouble)
+		ms.At(2).MetricDescriptor(), TestCounterDoubleMetricName, pdata.MetricTypeCounterDouble)
 	initMetricDescriptor(
-		ms.At(3).MetricDescriptor(), TestCounterIntMetricName, data.MetricTypeCounterInt64)
+		ms.At(3).MetricDescriptor(), TestCounterIntMetricName, pdata.MetricTypeCounterInt64)
 	initMetricDescriptor(
-		ms.At(4).MetricDescriptor(), TestGaugeHistogramMetricName, data.MetricTypeGaugeHistogram)
+		ms.At(4).MetricDescriptor(), TestGaugeHistogramMetricName, pdata.MetricTypeGaugeHistogram)
 	initMetricDescriptor(
-		ms.At(5).MetricDescriptor(), TestCumulativeHistogramMetricName, data.MetricTypeCumulativeHistogram)
+		ms.At(5).MetricDescriptor(), TestCumulativeHistogramMetricName, pdata.MetricTypeCumulativeHistogram)
 	initMetricDescriptor(
-		ms.At(6).MetricDescriptor(), TestSummaryMetricName, data.MetricTypeSummary)
+		ms.At(6).MetricDescriptor(), TestSummaryMetricName, pdata.MetricTypeSummary)
 	return md
 }
 
@@ -279,25 +280,25 @@ func generateMetricOtlpAllTypesNoDataPoints() []*otlpmetrics.ResourceMetrics {
 				{
 					Metrics: []*otlpmetrics.Metric{
 						{
-							MetricDescriptor: generateOtlpMetricDescriptor(TestGaugeDoubleMetricName, data.MetricTypeGaugeDouble),
+							MetricDescriptor: generateOtlpMetricDescriptor(TestGaugeDoubleMetricName, pdata.MetricTypeGaugeDouble),
 						},
 						{
-							MetricDescriptor: generateOtlpMetricDescriptor(TestGaugeIntMetricName, data.MetricTypeGaugeInt64),
+							MetricDescriptor: generateOtlpMetricDescriptor(TestGaugeIntMetricName, pdata.MetricTypeGaugeInt64),
 						},
 						{
-							MetricDescriptor: generateOtlpMetricDescriptor(TestCounterDoubleMetricName, data.MetricTypeCounterDouble),
+							MetricDescriptor: generateOtlpMetricDescriptor(TestCounterDoubleMetricName, pdata.MetricTypeCounterDouble),
 						},
 						{
-							MetricDescriptor: generateOtlpMetricDescriptor(TestCounterIntMetricName, data.MetricTypeCounterInt64),
+							MetricDescriptor: generateOtlpMetricDescriptor(TestCounterIntMetricName, pdata.MetricTypeCounterInt64),
 						},
 						{
-							MetricDescriptor: generateOtlpMetricDescriptor(TestGaugeHistogramMetricName, data.MetricTypeGaugeHistogram),
+							MetricDescriptor: generateOtlpMetricDescriptor(TestGaugeHistogramMetricName, pdata.MetricTypeGaugeHistogram),
 						},
 						{
-							MetricDescriptor: generateOtlpMetricDescriptor(TestCumulativeHistogramMetricName, data.MetricTypeCumulativeHistogram),
+							MetricDescriptor: generateOtlpMetricDescriptor(TestCumulativeHistogramMetricName, pdata.MetricTypeCumulativeHistogram),
 						},
 						{
-							MetricDescriptor: generateOtlpMetricDescriptor(TestSummaryMetricName, data.MetricTypeSummary),
+							MetricDescriptor: generateOtlpMetricDescriptor(TestSummaryMetricName, pdata.MetricTypeSummary),
 						},
 					},
 				},
@@ -344,8 +345,8 @@ func generateMetricOtlpWithCountersHistogramAndSummary() []*otlpmetrics.Resource
 	}
 }
 
-func initCounterIntMetric(im data.Metric) {
-	initMetricDescriptor(im.MetricDescriptor(), TestCounterIntMetricName, data.MetricTypeCounterInt64)
+func initCounterIntMetric(im pdata.Metric) {
+	initMetricDescriptor(im.MetricDescriptor(), TestCounterIntMetricName, pdata.MetricTypeCounterInt64)
 
 	idps := im.Int64DataPoints()
 	idps.Resize(2)
@@ -361,8 +362,8 @@ func initCounterIntMetric(im data.Metric) {
 	idp1.SetValue(456)
 }
 
-func initGaugeIntMetricOneDataPoint(im data.Metric) {
-	initMetricDescriptor(im.MetricDescriptor(), TestCounterIntMetricName, data.MetricTypeGaugeInt64)
+func initGaugeIntMetricOneDataPoint(im pdata.Metric) {
+	initMetricDescriptor(im.MetricDescriptor(), TestCounterIntMetricName, pdata.MetricTypeGaugeInt64)
 	idps := im.Int64DataPoints()
 	idps.Resize(1)
 	idp0 := idps.At(0)
@@ -374,7 +375,7 @@ func initGaugeIntMetricOneDataPoint(im data.Metric) {
 
 func generateOtlpCounterIntMetric() *otlpmetrics.Metric {
 	return &otlpmetrics.Metric{
-		MetricDescriptor: generateOtlpMetricDescriptor(TestCounterIntMetricName, data.MetricTypeCounterInt64),
+		MetricDescriptor: generateOtlpMetricDescriptor(TestCounterIntMetricName, pdata.MetricTypeCounterInt64),
 		Int64DataPoints: []*otlpmetrics.Int64DataPoint{
 			{
 				Labels:            generateOtlpMetricLabels1(),
@@ -392,8 +393,8 @@ func generateOtlpCounterIntMetric() *otlpmetrics.Metric {
 	}
 }
 
-func initCounterDoubleMetric(dm data.Metric) {
-	initMetricDescriptor(dm.MetricDescriptor(), TestCounterDoubleMetricName, data.MetricTypeCounterDouble)
+func initCounterDoubleMetric(dm pdata.Metric) {
+	initMetricDescriptor(dm.MetricDescriptor(), TestCounterDoubleMetricName, pdata.MetricTypeCounterDouble)
 
 	ddps := dm.DoubleDataPoints()
 	ddps.Resize(2)
@@ -413,7 +414,7 @@ func initCounterDoubleMetric(dm data.Metric) {
 
 func generateOtlpCounterDoubleMetric() *otlpmetrics.Metric {
 	return &otlpmetrics.Metric{
-		MetricDescriptor: generateOtlpMetricDescriptor(TestCounterDoubleMetricName, data.MetricTypeCounterDouble),
+		MetricDescriptor: generateOtlpMetricDescriptor(TestCounterDoubleMetricName, pdata.MetricTypeCounterDouble),
 		DoubleDataPoints: []*otlpmetrics.DoubleDataPoint{
 			{
 				Labels:            generateOtlpMetricLabels12(),
@@ -431,8 +432,8 @@ func generateOtlpCounterDoubleMetric() *otlpmetrics.Metric {
 	}
 }
 
-func initCumulativeHistogramMetric(hm data.Metric) {
-	initMetricDescriptor(hm.MetricDescriptor(), TestCumulativeHistogramMetricName, data.MetricTypeCumulativeHistogram)
+func initCumulativeHistogramMetric(hm pdata.Metric) {
+	initMetricDescriptor(hm.MetricDescriptor(), TestCumulativeHistogramMetricName, pdata.MetricTypeCumulativeHistogram)
 
 	hdps := hm.HistogramDataPoints()
 	hdps.Resize(2)
@@ -461,7 +462,7 @@ func initCumulativeHistogramMetric(hm data.Metric) {
 
 func generateOtlpCumulativeHistogramMetric() *otlpmetrics.Metric {
 	return &otlpmetrics.Metric{
-		MetricDescriptor: generateOtlpMetricDescriptor(TestCumulativeHistogramMetricName, data.MetricTypeCumulativeHistogram),
+		MetricDescriptor: generateOtlpMetricDescriptor(TestCumulativeHistogramMetricName, pdata.MetricTypeCumulativeHistogram),
 		HistogramDataPoints: []*otlpmetrics.HistogramDataPoint{
 			{
 				Labels:            generateOtlpMetricLabels13(),
@@ -495,8 +496,8 @@ func generateOtlpCumulativeHistogramMetric() *otlpmetrics.Metric {
 	}
 }
 
-func initSummaryMetric(sm data.Metric) {
-	initMetricDescriptor(sm.MetricDescriptor(), TestSummaryMetricName, data.MetricTypeSummary)
+func initSummaryMetric(sm pdata.Metric) {
+	initMetricDescriptor(sm.MetricDescriptor(), TestSummaryMetricName, pdata.MetricTypeSummary)
 
 	sdps := sm.SummaryDataPoints()
 	sdps.Resize(2)
@@ -519,7 +520,7 @@ func initSummaryMetric(sm data.Metric) {
 
 func generateOtlpSummaryMetric() *otlpmetrics.Metric {
 	return &otlpmetrics.Metric{
-		MetricDescriptor: generateOtlpMetricDescriptor(TestSummaryMetricName, data.MetricTypeSummary),
+		MetricDescriptor: generateOtlpMetricDescriptor(TestSummaryMetricName, pdata.MetricTypeSummary),
 		SummaryDataPoints: []*otlpmetrics.SummaryDataPoint{
 			{
 				Labels:            generateOtlpMetricLabelValue1(),
@@ -545,7 +546,7 @@ func generateOtlpSummaryMetric() *otlpmetrics.Metric {
 	}
 }
 
-func initMetricDescriptor(md data.MetricDescriptor, name string, ty data.MetricType) {
+func initMetricDescriptor(md pdata.MetricDescriptor, name string, ty pdata.MetricType) {
 	md.InitEmpty()
 	md.SetName(name)
 	md.SetDescription("")
@@ -553,7 +554,7 @@ func initMetricDescriptor(md data.MetricDescriptor, name string, ty data.MetricT
 	md.SetType(ty)
 }
 
-func generateOtlpMetricDescriptor(name string, ty data.MetricType) *otlpmetrics.MetricDescriptor {
+func generateOtlpMetricDescriptor(name string, ty pdata.MetricType) *otlpmetrics.MetricDescriptor {
 	return &otlpmetrics.MetricDescriptor{
 		Name:        name,
 		Description: "",

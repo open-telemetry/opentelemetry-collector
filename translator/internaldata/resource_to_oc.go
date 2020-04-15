@@ -23,11 +23,11 @@ import (
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/golang/protobuf/ptypes"
 
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 )
 
-func internalResourceToOC(resource data.Resource) (*occommon.Node, *ocresource.Resource) {
+func internalResourceToOC(resource pdata.Resource) (*occommon.Node, *ocresource.Resource) {
 	if resource.IsNil() {
 		return nil, nil
 	}
@@ -41,7 +41,7 @@ func internalResourceToOC(resource data.Resource) (*occommon.Node, *ocresource.R
 	}
 
 	labels := make(map[string]string, attrs.Cap())
-	attrs.ForEach(func(k string, v data.AttributeValue) {
+	attrs.ForEach(func(k string, v pdata.AttributeValue) {
 		val := attributeValueToString(v)
 
 		switch k {
@@ -106,15 +106,15 @@ func internalResourceToOC(resource data.Resource) (*occommon.Node, *ocresource.R
 	return &ocNode, &ocResource
 }
 
-func attributeValueToString(attr data.AttributeValue) string {
+func attributeValueToString(attr pdata.AttributeValue) string {
 	switch attr.Type() {
-	case data.AttributeValueSTRING:
+	case pdata.AttributeValueSTRING:
 		return attr.StringVal()
-	case data.AttributeValueBOOL:
+	case pdata.AttributeValueBOOL:
 		return strconv.FormatBool(attr.BoolVal())
-	case data.AttributeValueDOUBLE:
+	case pdata.AttributeValueDOUBLE:
 		return strconv.FormatFloat(attr.DoubleVal(), 'f', -1, 64)
-	case data.AttributeValueINT:
+	case pdata.AttributeValueINT:
 		return strconv.FormatInt(attr.IntVal(), 10)
 	default:
 		return fmt.Sprintf("<Unknown OpenTelemetry attribute value type %q>", attr.Type())

@@ -19,12 +19,13 @@ import (
 	ocmetrics "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 )
 
 const (
-	invalidMetricType = data.MetricType(-1)
+	invalidMetricType = pdata.MetricType(-1)
 )
 
 // OCToMetricData converts OC data format to MetricData.
@@ -119,7 +120,7 @@ func OCToMetricData(md consumerdata.MetricsData) data.MetricData {
 	return metricData
 }
 
-func ocMetricToResourceMetrics(ocMetric *ocmetrics.Metric, node *occommon.Node, out data.ResourceMetrics) {
+func ocMetricToResourceMetrics(ocMetric *ocmetrics.Metric, node *occommon.Node, out pdata.ResourceMetrics) {
 	ocNodeResourceToInternal(node, ocMetric.Resource, out.Resource())
 	ilms := out.InstrumentationLibraryMetrics()
 	ilms.Resize(1)
@@ -129,12 +130,12 @@ func ocMetricToResourceMetrics(ocMetric *ocmetrics.Metric, node *occommon.Node, 
 }
 
 // ocMetricToInternal conversts ocMetric to internal representation and fill metric
-func ocMetricToInternal(ocMetric *ocmetrics.Metric, metric data.Metric) {
+func ocMetricToInternal(ocMetric *ocmetrics.Metric, metric pdata.Metric) {
 	descriptorToInternal(ocMetric.GetMetricDescriptor(), metric.MetricDescriptor())
 	setDataPoints(ocMetric, metric)
 }
 
-func descriptorToInternal(ocDescriptor *ocmetrics.MetricDescriptor, descriptor data.MetricDescriptor) {
+func descriptorToInternal(ocDescriptor *ocmetrics.MetricDescriptor, descriptor pdata.MetricDescriptor) {
 	if ocDescriptor == nil {
 		return
 	}
@@ -151,31 +152,31 @@ func descriptorToInternal(ocDescriptor *ocmetrics.MetricDescriptor, descriptor d
 	descriptor.SetUnit(ocDescriptor.GetUnit())
 }
 
-func descriptorTypeToInternal(t ocmetrics.MetricDescriptor_Type) data.MetricType {
+func descriptorTypeToInternal(t ocmetrics.MetricDescriptor_Type) pdata.MetricType {
 	switch t {
 	case ocmetrics.MetricDescriptor_UNSPECIFIED:
-		return data.MetricTypeUnspecified
+		return pdata.MetricTypeUnspecified
 	case ocmetrics.MetricDescriptor_GAUGE_INT64:
-		return data.MetricTypeGaugeInt64
+		return pdata.MetricTypeGaugeInt64
 	case ocmetrics.MetricDescriptor_GAUGE_DOUBLE:
-		return data.MetricTypeGaugeDouble
+		return pdata.MetricTypeGaugeDouble
 	case ocmetrics.MetricDescriptor_GAUGE_DISTRIBUTION:
-		return data.MetricTypeGaugeHistogram
+		return pdata.MetricTypeGaugeHistogram
 	case ocmetrics.MetricDescriptor_CUMULATIVE_INT64:
-		return data.MetricTypeCounterInt64
+		return pdata.MetricTypeCounterInt64
 	case ocmetrics.MetricDescriptor_CUMULATIVE_DOUBLE:
-		return data.MetricTypeCounterDouble
+		return pdata.MetricTypeCounterDouble
 	case ocmetrics.MetricDescriptor_CUMULATIVE_DISTRIBUTION:
-		return data.MetricTypeCumulativeHistogram
+		return pdata.MetricTypeCumulativeHistogram
 	case ocmetrics.MetricDescriptor_SUMMARY:
-		return data.MetricTypeSummary
+		return pdata.MetricTypeSummary
 	default:
 		return invalidMetricType
 	}
 }
 
 // setDataPoints converts OC timeseries to internal datapoints based on metric type
-func setDataPoints(ocMetric *ocmetrics.Metric, metric data.Metric) {
+func setDataPoints(ocMetric *ocmetrics.Metric, metric pdata.Metric) {
 	var int64DataPointsNum, doubleDataPointsNum, histogramDataPointsNum, summaryDataPointsNum int
 	ocLabelsKeys := ocMetric.GetMetricDescriptor().GetLabelKeys()
 	ocPointsCount := getPointsCount(ocMetric)
@@ -260,7 +261,7 @@ func setDataPoints(ocMetric *ocmetrics.Metric, metric data.Metric) {
 	}
 }
 
-func setLabelsMap(ocLabelsKeys []*ocmetrics.LabelKey, ocLabelValues []*ocmetrics.LabelValue, labelsMap data.StringMap) {
+func setLabelsMap(ocLabelsKeys []*ocmetrics.LabelKey, ocLabelValues []*ocmetrics.LabelValue, labelsMap pdata.StringMap) {
 	if len(ocLabelsKeys) == 0 || len(ocLabelValues) == 0 {
 		return
 	}
@@ -280,15 +281,15 @@ func setLabelsMap(ocLabelsKeys []*ocmetrics.LabelKey, ocLabelValues []*ocmetrics
 	}
 }
 
-func setInt64DataPointValue(dataPoint data.Int64DataPoint, point *ocmetrics.Point) {
+func setInt64DataPointValue(dataPoint pdata.Int64DataPoint, point *ocmetrics.Point) {
 	dataPoint.SetValue(point.GetInt64Value())
 }
 
-func setDoubleDataPointValue(dataPoint data.DoubleDataPoint, point *ocmetrics.Point) {
+func setDoubleDataPointValue(dataPoint pdata.DoubleDataPoint, point *ocmetrics.Point) {
 	dataPoint.SetValue(point.GetDoubleValue())
 }
 
-func setHistogramDataPointValue(dataPoint data.HistogramDataPoint, point *ocmetrics.Point) {
+func setHistogramDataPointValue(dataPoint pdata.HistogramDataPoint, point *ocmetrics.Point) {
 	distributionValue := point.GetDistributionValue()
 	dataPoint.SetSum(distributionValue.GetSum())
 	dataPoint.SetCount(uint64(distributionValue.GetCount()))
@@ -296,7 +297,7 @@ func setHistogramDataPointValue(dataPoint data.HistogramDataPoint, point *ocmetr
 	dataPoint.SetExplicitBounds(distributionValue.GetBucketOptions().GetExplicit().GetBounds())
 }
 
-func histogramBucketsToInternal(ocBuckets []*ocmetrics.DistributionValue_Bucket, buckets data.HistogramBucketSlice) {
+func histogramBucketsToInternal(ocBuckets []*ocmetrics.DistributionValue_Bucket, buckets pdata.HistogramBucketSlice) {
 	buckets.Resize(len(ocBuckets))
 	for i := 0; i < buckets.Len(); i++ {
 		bucket := buckets.At(i)
@@ -308,7 +309,7 @@ func histogramBucketsToInternal(ocBuckets []*ocmetrics.DistributionValue_Bucket,
 	}
 }
 
-func exemplarToInternal(ocExemplar *ocmetrics.DistributionValue_Exemplar, exemplar data.HistogramBucketExemplar) {
+func exemplarToInternal(ocExemplar *ocmetrics.DistributionValue_Exemplar, exemplar pdata.HistogramBucketExemplar) {
 	if ocExemplar.GetTimestamp() != nil {
 		exemplar.SetTimestamp(internal.TimestampToUnixNano(ocExemplar.GetTimestamp()))
 	}
@@ -319,7 +320,7 @@ func exemplarToInternal(ocExemplar *ocmetrics.DistributionValue_Exemplar, exempl
 	}
 }
 
-func setSummaryDataPointValue(dataPoint data.SummaryDataPoint, point *ocmetrics.Point) {
+func setSummaryDataPointValue(dataPoint pdata.SummaryDataPoint, point *ocmetrics.Point) {
 	summaryValue := point.GetSummaryValue()
 	dataPoint.SetSum(summaryValue.GetSum().GetValue())
 	dataPoint.SetCount(uint64(summaryValue.GetCount().GetValue()))
@@ -328,7 +329,7 @@ func setSummaryDataPointValue(dataPoint data.SummaryDataPoint, point *ocmetrics.
 
 func percentileToInternal(
 	ocPercentiles []*ocmetrics.SummaryValue_Snapshot_ValueAtPercentile,
-	percentiles data.SummaryValueAtPercentileSlice,
+	percentiles pdata.SummaryValueAtPercentileSlice,
 ) {
 	percentiles.Resize(len(ocPercentiles))
 	for i := 0; i < percentiles.Len(); i++ {

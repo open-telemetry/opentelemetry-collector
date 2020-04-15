@@ -21,7 +21,7 @@ import (
 	"encoding/hex"
 	"math"
 
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 )
 
 const (
@@ -38,21 +38,21 @@ var (
 // hashed version of the attribute. In practice, this would mostly be used
 // for string attributes but we support all types for completeness/correctness
 // and eliminate any surprises.
-func SHA1AttributeHasher(attr data.AttributeValue) {
+func SHA1AttributeHasher(attr pdata.AttributeValue) {
 	var val []byte
 	switch attr.Type() {
-	case data.AttributeValueSTRING:
+	case pdata.AttributeValueSTRING:
 		val = []byte(attr.StringVal())
-	case data.AttributeValueBOOL:
+	case pdata.AttributeValueBOOL:
 		if attr.BoolVal() {
 			val = byteTrue[:]
 		} else {
 			val = byteFalse[:]
 		}
-	case data.AttributeValueINT:
+	case pdata.AttributeValueINT:
 		val = make([]byte, int64ByteSize)
 		binary.LittleEndian.PutUint64(val, uint64(attr.IntVal()))
-	case data.AttributeValueDOUBLE:
+	case pdata.AttributeValueDOUBLE:
 		val = make([]byte, float64ByteSize)
 		binary.LittleEndian.PutUint64(val, math.Float64bits(attr.DoubleVal()))
 	}

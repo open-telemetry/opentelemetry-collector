@@ -17,10 +17,10 @@ package testdata
 import (
 	otlpresource "github.com/open-telemetry/opentelemetry-proto/gen/go/resource/v1"
 
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 )
 
-func initResource1(r data.Resource) {
+func initResource1(r pdata.Resource) {
 	r.InitEmpty()
 	initResourceAttributes1(r.Attributes())
 }
@@ -31,7 +31,7 @@ func generateOtlpResource1() *otlpresource.Resource {
 	}
 }
 
-func initResource2(r data.Resource) {
+func initResource2(r pdata.Resource) {
 	r.InitEmpty()
 	initResourceAttributes2(r.Attributes())
 }

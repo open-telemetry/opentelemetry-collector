@@ -23,11 +23,11 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 )
 
 func TestResourceToOC(t *testing.T) {
-	emptyResource := data.NewResource()
+	emptyResource := pdata.NewResource()
 	emptyResource.InitEmpty()
 
 	ocNode := generateOcNode()
@@ -39,13 +39,13 @@ func TestResourceToOC(t *testing.T) {
 
 	tests := []struct {
 		name       string
-		resource   data.Resource
+		resource   pdata.Resource
 		ocNode     *occommon.Node
 		ocResource *ocresource.Resource
 	}{
 		{
 			name:       "nil",
-			resource:   data.NewResource(),
+			resource:   pdata.NewResource(),
 			ocNode:     nil,
 			ocResource: nil,
 		},

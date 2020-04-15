@@ -19,6 +19,7 @@ import (
 	"context"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 )
 
@@ -58,5 +59,5 @@ type TraceConsumerOld interface {
 type TraceConsumer interface {
 	TraceConsumerBase
 	// ConsumeTrace receives data.TraceData for processing.
-	ConsumeTrace(ctx context.Context, td data.TraceData) error
+	ConsumeTrace(ctx context.Context, td pdata.TraceData) error
 }

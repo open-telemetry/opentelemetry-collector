@@ -20,6 +20,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 )
 
@@ -73,7 +74,7 @@ func (ste *SinkTraceExporterOld) Shutdown(context.Context) error {
 type SinkTraceExporter struct {
 	consumeTraceError error // to be returned by ConsumeTrace, if set
 	mu                sync.Mutex
-	traces            []data.TraceData
+	traces            []pdata.TraceData
 }
 
 // Start tells the exporter to start. The exporter may prepare for exporting
@@ -84,7 +85,7 @@ func (ste *SinkTraceExporter) Start(ctx context.Context, host component.Host) er
 }
 
 // ConsumeTraceData stores traces for tests.
-func (ste *SinkTraceExporter) ConsumeTrace(ctx context.Context, td data.TraceData) error {
+func (ste *SinkTraceExporter) ConsumeTrace(ctx context.Context, td pdata.TraceData) error {
 	if ste.consumeTraceError != nil {
 		return ste.consumeTraceError
 	}
@@ -98,7 +99,7 @@ func (ste *SinkTraceExporter) ConsumeTrace(ctx context.Context, td data.TraceDat
 }
 
 // AllTraces returns the traces sent to the test sink.
-func (ste *SinkTraceExporter) AllTraces() []data.TraceData {
+func (ste *SinkTraceExporter) AllTraces() []pdata.TraceData {
 	ste.mu.Lock()
 	defer ste.mu.Unlock()
 
