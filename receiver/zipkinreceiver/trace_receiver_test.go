@@ -49,43 +49,6 @@ import (
 
 const zipkinReceiver = "zipkin_receiver_test"
 
-func TestTraceIDConversion(t *testing.T) {
-	longID, _ := zipkinmodel.TraceIDFromHex("01020304050607080102030405060708")
-	shortID, _ := zipkinmodel.TraceIDFromHex("0102030405060708")
-	zeroID, _ := zipkinmodel.TraceIDFromHex("0000000000000000")
-	tests := []struct {
-		name    string
-		id      zipkinmodel.TraceID
-		want    []byte
-		wantErr error
-	}{
-		{
-			name:    "128bit traceID",
-			id:      longID,
-			want:    []byte{1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8},
-			wantErr: nil,
-		},
-		{
-			name:    "64bit traceID",
-			id:      shortID,
-			want:    []byte{0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8},
-			wantErr: nil,
-		},
-		{
-			name:    "zero traceID",
-			id:      zeroID,
-			want:    nil,
-			wantErr: errZeroTraceID,
-		},
-	}
-
-	for _, tc := range tests {
-		got, gotErr := zTraceIDToOCProtoTraceID(tc.id)
-		assert.Equal(t, tc.wantErr, gotErr)
-		assert.Equal(t, tc.want, got)
-	}
-}
-
 func TestShortIDSpanConversion(t *testing.T) {
 	shortID, _ := zipkinmodel.TraceIDFromHex("0102030405060708")
 	assert.Equal(t, uint64(0), shortID.High, "wanted 64bit traceID, so TraceID.High must be zero")
@@ -98,8 +61,7 @@ func TestShortIDSpanConversion(t *testing.T) {
 		SpanContext: zc,
 	}
 
-	ocSpan, _, err := zipkinSpanToTraceSpan(&zs)
-	require.NoError(t, err, "unexpected error %v", err)
+	ocSpan, _ := zipkinSpanToTraceSpan(&zs)
 	require.Len(t, ocSpan.TraceId, 16, "incorrect OC proto trace id length")
 
 	want := []byte{0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8}
@@ -467,8 +429,7 @@ func TestSpanKindTranslation(t *testing.T) {
 				},
 				Kind: tt.zipkinKind,
 			}
-			ocSpan, _, err := zipkinSpanToTraceSpan(zs)
-			require.NoError(t, err)
+			ocSpan, _ := zipkinSpanToTraceSpan(zs)
 			assert.EqualValues(t, tt.ocKind, ocSpan.Kind)
 			if tt.otKind != "" {
 				otSpanKind := ocSpan.Attributes.AttributeMap[tracetranslator.TagSpanKind]
