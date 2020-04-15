@@ -28,6 +28,7 @@ const (
 	kindLogReceiver  = "receiver"
 	kindLogProcessor = "processor"
 	kindLogExporter  = "exporter"
+	kindLogExtension = "extension"
 	typeLogKey       = "component_type"
 	nameLogKey       = "component_name"
 )
