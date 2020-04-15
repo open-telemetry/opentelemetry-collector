@@ -189,7 +189,7 @@ func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 		require.Equal(t, len(consumer.Traces), 0)
 	}
 
-	processor.firstTC.(consumer.TraceConsumer).ConsumeTrace(context.Background(), internaldata.OCToTraceData(generateTestTraceData()))
+	processor.firstTC.(consumer.TraceConsumer).ConsumeTraces(context.Background(), internaldata.OCToTraceData(generateTestTraceData()))
 
 	// Now verify received data.
 	for _, consumer := range exporterConsumers {

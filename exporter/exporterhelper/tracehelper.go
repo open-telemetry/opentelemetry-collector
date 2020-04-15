@@ -30,7 +30,7 @@ type traceDataPusherOld func(ctx context.Context, td consumerdata.TraceData) (dr
 
 // traceDataPusher is a helper function that is similar to ConsumeTraceData but also
 // returns the number of dropped spans.
-type traceDataPusher func(ctx context.Context, td pdata.TraceData) (droppedSpans int, err error)
+type traceDataPusher func(ctx context.Context, td pdata.Traces) (droppedSpans int, err error)
 
 // traceExporterOld implements the exporter with additional helper options.
 type traceExporterOld struct {
@@ -114,9 +114,9 @@ func (te *traceExporter) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
-func (te *traceExporter) ConsumeTrace(
+func (te *traceExporter) ConsumeTraces(
 	ctx context.Context,
-	td pdata.TraceData,
+	td pdata.Traces,
 ) error {
 	exporterCtx := obsreport.ExporterContext(ctx, te.exporterFullName)
 	_, err := te.dataPusher(exporterCtx, td)
@@ -163,7 +163,7 @@ func NewTraceExporter(
 // withObservability wraps the current pusher into a function that records
 // the observability signals during the pusher execution.
 func (p traceDataPusher) withObservability(exporterName string) traceDataPusher {
-	return func(ctx context.Context, td pdata.TraceData) (int, error) {
+	return func(ctx context.Context, td pdata.Traces) (int, error) {
 		ctx = obsreport.StartTraceDataExportOp(ctx, exporterName)
 		// Forward the data to the next consumer (this pusher is the next).
 		droppedSpans, err := p(ctx, td)

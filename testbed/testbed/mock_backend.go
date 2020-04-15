@@ -46,7 +46,7 @@ type MockBackend struct {
 	// Recording fields.
 	isRecording        bool
 	recordMutex        sync.Mutex
-	ReceivedTraces     []pdata.TraceData
+	ReceivedTraces     []pdata.Traces
 	ReceivedMetrics    []data.MetricData
 	ReceivedTracesOld  []consumerdata.TraceData
 	ReceivedMetricsOld []consumerdata.MetricsData
@@ -134,7 +134,7 @@ func (mb *MockBackend) ClearReceivedItems() {
 	mb.ReceivedMetricsOld = nil
 }
 
-func (mb *MockBackend) ConsumeTrace(td pdata.TraceData) {
+func (mb *MockBackend) ConsumeTrace(td pdata.Traces) {
 	mb.recordMutex.Lock()
 	defer mb.recordMutex.Unlock()
 	if mb.isRecording {
@@ -173,7 +173,7 @@ type MockTraceConsumer struct {
 	backend       *MockBackend
 }
 
-func (tc *MockTraceConsumer) ConsumeTrace(ctx context.Context, td pdata.TraceData) error {
+func (tc *MockTraceConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
 	atomic.AddUint64(&tc.spansReceived, uint64(td.SpanCount()))
 
 	rs := td.ResourceSpans()

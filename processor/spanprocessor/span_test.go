@@ -58,7 +58,7 @@ func runIndividualTestCase(t *testing.T, tt testCase, tp component.TraceProcesso
 	t.Run(tt.inputName, func(t *testing.T) {
 		td := generateTraceData(tt.serviceName, tt.inputName, tt.inputAttributes)
 
-		assert.NoError(t, tp.ConsumeTrace(context.Background(), td))
+		assert.NoError(t, tp.ConsumeTraces(context.Background(), td))
 		// Ensure that the modified `td` has the attributes sorted:
 		rss := td.ResourceSpans()
 		for i := 0; i < rss.Len(); i++ {
@@ -88,8 +88,8 @@ func runIndividualTestCase(t *testing.T, tt testCase, tp component.TraceProcesso
 	})
 }
 
-func generateTraceData(serviceName, inputName string, attrs map[string]pdata.AttributeValue) pdata.TraceData {
-	td := pdata.NewTraceData()
+func generateTraceData(serviceName, inputName string, attrs map[string]pdata.AttributeValue) pdata.Traces {
+	td := pdata.NewTraces()
 	td.ResourceSpans().Resize(1)
 	rs := td.ResourceSpans().At(0)
 	if serviceName != "" {
@@ -109,8 +109,8 @@ func generateTraceData(serviceName, inputName string, attrs map[string]pdata.Att
 func TestSpanProcessor_NilEmptyData(t *testing.T) {
 	type nilEmptyTestCase struct {
 		name   string
-		input  pdata.TraceData
-		output pdata.TraceData
+		input  pdata.Traces
+		output pdata.Traces
 	}
 	// TODO: Add test for "nil" Span. This needs support from data slices to allow to construct that.
 	testCases := []nilEmptyTestCase{
@@ -161,7 +161,7 @@ func TestSpanProcessor_NilEmptyData(t *testing.T) {
 	for i := range testCases {
 		tt := testCases[i]
 		t.Run(tt.name, func(t *testing.T) {
-			assert.NoError(t, tp.ConsumeTrace(context.Background(), tt.input))
+			assert.NoError(t, tp.ConsumeTraces(context.Background(), tt.input))
 			assert.EqualValues(t, tt.output, tt.input)
 		})
 	}
@@ -366,7 +366,7 @@ func TestSpanProcessor_Separator(t *testing.T) {
 		map[string]pdata.AttributeValue{
 			"key1": pdata.NewAttributeValueString("bob"),
 		})
-	assert.NoError(t, tp.ConsumeTrace(context.Background(), traceData))
+	assert.NoError(t, tp.ConsumeTraces(context.Background(), traceData))
 
 	assert.Equal(t, generateTraceData(
 		"",
@@ -396,7 +396,7 @@ func TestSpanProcessor_NoSeparatorMultipleKeys(t *testing.T) {
 			"key1": pdata.NewAttributeValueString("bob"),
 			"key2": pdata.NewAttributeValueInt(123),
 		})
-	assert.NoError(t, tp.ConsumeTrace(context.Background(), traceData))
+	assert.NoError(t, tp.ConsumeTraces(context.Background(), traceData))
 
 	assert.Equal(t, generateTraceData(
 		"",
@@ -430,7 +430,7 @@ func TestSpanProcessor_SeparatorMultipleKeys(t *testing.T) {
 			"key3": pdata.NewAttributeValueDouble(234.129312),
 			"key4": pdata.NewAttributeValueBool(true),
 		})
-	assert.NoError(t, tp.ConsumeTrace(context.Background(), traceData))
+	assert.NoError(t, tp.ConsumeTraces(context.Background(), traceData))
 
 	assert.Equal(t, generateTraceData(
 		"",
@@ -463,7 +463,7 @@ func TestSpanProcessor_NilName(t *testing.T) {
 		map[string]pdata.AttributeValue{
 			"key1": pdata.NewAttributeValueString("bob"),
 		})
-	assert.NoError(t, tp.ConsumeTrace(context.Background(), traceData))
+	assert.NoError(t, tp.ConsumeTraces(context.Background(), traceData))
 
 	assert.Equal(t, generateTraceData(
 		"",

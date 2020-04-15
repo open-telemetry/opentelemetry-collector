@@ -25,7 +25,7 @@ import (
 
 type traceTestCase struct {
 	name string
-	td   pdata.TraceData
+	td   pdata.Traces
 	otlp []*otlptrace.ResourceSpans
 }
 
@@ -96,9 +96,9 @@ func TestToFromOtlpTrace(t *testing.T) {
 	for i := range allTestCases {
 		test := allTestCases[i]
 		t.Run(test.name, func(t *testing.T) {
-			td := pdata.TraceDataFromOtlp(test.otlp)
+			td := pdata.TracesFromOtlp(test.otlp)
 			assert.EqualValues(t, test.td, td)
-			otlp := pdata.TraceDataToOtlp(td)
+			otlp := pdata.TracesToOtlp(td)
 			assert.EqualValues(t, test.otlp, otlp)
 		})
 	}

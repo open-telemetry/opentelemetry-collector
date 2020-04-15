@@ -75,7 +75,7 @@ func (ne *nopExporter) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-func (ne *nopExporter) ConsumeTrace(_ context.Context, _ pdata.TraceData) error {
+func (ne *nopExporter) ConsumeTraces(_ context.Context, _ pdata.Traces) error {
 	return ne.retError
 }
 

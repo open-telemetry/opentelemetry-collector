@@ -169,17 +169,17 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	td := pdata.NewTraceData()
+	td := pdata.NewTraces()
 
 	// Below memAllocLimit.
 	currentMemAlloc = 800
 	ml.memCheck()
-	assert.NoError(t, ml.ConsumeTrace(ctx, td))
+	assert.NoError(t, ml.ConsumeTraces(ctx, td))
 
 	// Above memAllocLimit.
 	currentMemAlloc = 1800
 	ml.memCheck()
-	assert.Equal(t, errForcedDrop, ml.ConsumeTrace(ctx, td))
+	assert.Equal(t, errForcedDrop, ml.ConsumeTraces(ctx, td))
 
 	// Check ballast effect
 	ml.ballastSize = 1000
@@ -187,12 +187,12 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 	// Below memAllocLimit accounting for ballast.
 	currentMemAlloc = 800 + ml.ballastSize
 	ml.memCheck()
-	assert.NoError(t, ml.ConsumeTrace(ctx, td))
+	assert.NoError(t, ml.ConsumeTraces(ctx, td))
 
 	// Above memAllocLimit even accountiing for ballast.
 	currentMemAlloc = 1800 + ml.ballastSize
 	ml.memCheck()
-	assert.Equal(t, errForcedDrop, ml.ConsumeTrace(ctx, td))
+	assert.Equal(t, errForcedDrop, ml.ConsumeTraces(ctx, td))
 
 	// Restore ballast to default.
 	ml.ballastSize = 0
@@ -203,11 +203,11 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 	// Below memSpikeLimit.
 	currentMemAlloc = 500
 	ml.memCheck()
-	assert.NoError(t, ml.ConsumeTrace(ctx, td))
+	assert.NoError(t, ml.ConsumeTraces(ctx, td))
 
 	// Above memSpikeLimit.
 	currentMemAlloc = 550
 	ml.memCheck()
-	assert.Equal(t, errForcedDrop, ml.ConsumeTrace(ctx, td))
+	assert.Equal(t, errForcedDrop, ml.ConsumeTraces(ctx, td))
 
 }

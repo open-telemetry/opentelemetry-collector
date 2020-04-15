@@ -145,11 +145,11 @@ type traceFanOutConnector []consumer.TraceConsumer
 
 var _ consumer.TraceConsumer = (*traceFanOutConnector)(nil)
 
-// ConsumeTrace exports the span data to all trace consumers wrapped by the current one.
-func (tfc traceFanOutConnector) ConsumeTrace(ctx context.Context, td pdata.TraceData) error {
+// ConsumeTraces exports the span data to all trace consumers wrapped by the current one.
+func (tfc traceFanOutConnector) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
 	var errs []error
 	for _, tc := range tfc {
-		if err := tc.ConsumeTrace(ctx, td); err != nil {
+		if err := tc.ConsumeTraces(ctx, td); err != nil {
 			errs = append(errs, err)
 		}
 	}

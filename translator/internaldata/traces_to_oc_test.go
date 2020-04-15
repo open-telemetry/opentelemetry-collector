@@ -278,7 +278,7 @@ func TestInternalToOC(t *testing.T) {
 
 	tests := []struct {
 		name string
-		td   pdata.TraceData
+		td   pdata.Traces
 		oc   []consumerdata.TraceData
 	}{
 		{

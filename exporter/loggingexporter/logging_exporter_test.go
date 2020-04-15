@@ -30,11 +30,11 @@ func TestLoggingTraceExporterNoErrors(t *testing.T) {
 	require.NotNil(t, lte)
 	assert.NoError(t, err)
 
-	assert.NoError(t, lte.ConsumeTrace(context.Background(), testdata.GenerateTraceDataEmpty()))
-	assert.NoError(t, lte.ConsumeTrace(context.Background(), testdata.GenerateTraceDataOneEmptyOneNilResourceSpans()))
-	assert.NoError(t, lte.ConsumeTrace(context.Background(), testdata.GenerateTraceDataOneEmptyOneNilInstrumentationLibrary()))
-	assert.NoError(t, lte.ConsumeTrace(context.Background(), testdata.GenerateTraceDataOneSpanOneNil()))
-	assert.NoError(t, lte.ConsumeTrace(context.Background(), testdata.GenerateTraceDataTwoSpansSameResourceOneDifferent()))
+	assert.NoError(t, lte.ConsumeTraces(context.Background(), testdata.GenerateTraceDataEmpty()))
+	assert.NoError(t, lte.ConsumeTraces(context.Background(), testdata.GenerateTraceDataOneEmptyOneNilResourceSpans()))
+	assert.NoError(t, lte.ConsumeTraces(context.Background(), testdata.GenerateTraceDataOneEmptyOneNilInstrumentationLibrary()))
+	assert.NoError(t, lte.ConsumeTraces(context.Background(), testdata.GenerateTraceDataOneSpanOneNil()))
+	assert.NoError(t, lte.ConsumeTraces(context.Background(), testdata.GenerateTraceDataTwoSpansSameResourceOneDifferent()))
 
 	assert.NoError(t, lte.Shutdown(context.Background()))
 }

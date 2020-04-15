@@ -42,15 +42,15 @@ type testCase struct {
 func runIndividualTestCase(t *testing.T, tt testCase, tp component.TraceProcessor) {
 	t.Run(tt.name, func(t *testing.T) {
 		td := generateTraceData(tt.serviceName, tt.name, tt.inputAttributes)
-		assert.NoError(t, tp.ConsumeTrace(context.Background(), td))
+		assert.NoError(t, tp.ConsumeTraces(context.Background(), td))
 		// Ensure that the modified `td` has the attributes sorted:
 		sortAttributes(td)
 		require.Equal(t, generateTraceData(tt.serviceName, tt.name, tt.expectedAttributes), td)
 	})
 }
 
-func generateTraceData(serviceName, spanName string, attrs map[string]pdata.AttributeValue) pdata.TraceData {
-	td := pdata.NewTraceData()
+func generateTraceData(serviceName, spanName string, attrs map[string]pdata.AttributeValue) pdata.Traces {
+	td := pdata.NewTraces()
 	td.ResourceSpans().Resize(1)
 	rs := td.ResourceSpans().At(0)
 	if serviceName != "" {
@@ -66,7 +66,7 @@ func generateTraceData(serviceName, spanName string, attrs map[string]pdata.Attr
 	return td
 }
 
-func sortAttributes(td pdata.TraceData) {
+func sortAttributes(td pdata.Traces) {
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
@@ -97,8 +97,8 @@ func sortAttributes(td pdata.TraceData) {
 func TestSpanProcessor_NilEmptyData(t *testing.T) {
 	type nilEmptyTestCase struct {
 		name   string
-		input  pdata.TraceData
-		output pdata.TraceData
+		input  pdata.Traces
+		output pdata.Traces
 	}
 	// TODO: Add test for "nil" Span/Attributes. This needs support from data slices to allow to construct that.
 	testCases := []nilEmptyTestCase{
@@ -148,7 +148,7 @@ func TestSpanProcessor_NilEmptyData(t *testing.T) {
 	for i := range testCases {
 		tt := testCases[i]
 		t.Run(tt.name, func(t *testing.T) {
-			assert.NoError(t, tp.ConsumeTrace(context.Background(), tt.input))
+			assert.NoError(t, tp.ConsumeTraces(context.Background(), tt.input))
 			assert.EqualValues(t, tt.output, tt.input)
 		})
 	}
@@ -548,7 +548,7 @@ func TestAttributes_FromAttributeNoChange(t *testing.T) {
 			"boo": pdata.NewAttributeValueString("ghosts are scary"),
 		})
 
-	assert.NoError(t, tp.ConsumeTrace(context.Background(), traceData))
+	assert.NoError(t, tp.ConsumeTraces(context.Background(), traceData))
 	require.Equal(t, generateTraceData(
 		"",
 		"FromAttributeNoChange",
@@ -944,7 +944,7 @@ func BenchmarkAttributes_FilterSpansByName(b *testing.B) {
 
 		b.Run(tt.name, func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				assert.NoError(b, tp.ConsumeTrace(context.Background(), td))
+				assert.NoError(b, tp.ConsumeTraces(context.Background(), td))
 			}
 		})
 

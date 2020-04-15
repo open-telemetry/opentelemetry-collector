@@ -59,7 +59,7 @@ func (r *Receiver) Export(ctx context.Context, req *collectortrace.ExportTraceSe
 	// We need to ensure that it propagates the receiver name as a tag
 	ctxWithReceiverName := obsreport.ReceiverContext(ctx, r.instanceName, receiverTransport, receiverTagValue)
 
-	td := pdata.TraceDataFromOtlp(req.ResourceSpans)
+	td := pdata.TracesFromOtlp(req.ResourceSpans)
 	err := r.sendToNextConsumer(ctxWithReceiverName, td)
 	if err != nil {
 		return nil, err
@@ -68,7 +68,7 @@ func (r *Receiver) Export(ctx context.Context, req *collectortrace.ExportTraceSe
 	return &collectortrace.ExportTraceServiceResponse{}, nil
 }
 
-func (r *Receiver) sendToNextConsumer(ctx context.Context, td pdata.TraceData) error {
+func (r *Receiver) sendToNextConsumer(ctx context.Context, td pdata.Traces) error {
 	if c, ok := client.FromGRPC(ctx); ok {
 		ctx = client.NewContext(ctx, c)
 	}
@@ -81,7 +81,7 @@ func (r *Receiver) sendToNextConsumer(ctx context.Context, td pdata.TraceData) e
 	var consumerErr error
 	numSpans := td.SpanCount()
 	if numSpans != 0 {
-		consumerErr = r.nextConsumer.ConsumeTrace(ctx, td)
+		consumerErr = r.nextConsumer.ConsumeTraces(ctx, td)
 	}
 
 	obsreport.EndTraceDataReceiveOp(ctx, dataFormatProtobuf, numSpans, consumerErr)

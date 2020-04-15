@@ -33,7 +33,7 @@ var (
 	defaultProcessID = 0
 )
 
-func TraceDataToOC(td pdata.TraceData) []consumerdata.TraceData {
+func TraceDataToOC(td pdata.Traces) []consumerdata.TraceData {
 	resourceSpans := td.ResourceSpans()
 
 	if resourceSpans.Len() == 0 {

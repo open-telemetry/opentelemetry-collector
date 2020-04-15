@@ -166,7 +166,7 @@ func TestCreateTraceFanOutConnectorWithConvertion(t *testing.T) {
 
 	resourceTypeName := "good-resource"
 
-	td := pdata.NewTraceData()
+	td := pdata.NewTraces()
 	rss := td.ResourceSpans()
 	rss.Resize(1)
 	rs0 := rss.At(0)
@@ -183,7 +183,7 @@ func TestCreateTraceFanOutConnectorWithConvertion(t *testing.T) {
 	var wantSpansCount = 0
 	for i := 0; i < 2; i++ {
 		wantSpansCount += td.SpanCount()
-		err := tfc.ConsumeTrace(context.Background(), td)
+		err := tfc.ConsumeTraces(context.Background(), td)
 		assert.NoError(t, err)
 	}
 
@@ -255,14 +255,14 @@ func (p *mockTraceConsumerOld) ConsumeTraceData(_ context.Context, td consumerda
 }
 
 type mockTraceConsumer struct {
-	Traces     []*pdata.TraceData
+	Traces     []*pdata.Traces
 	TotalSpans int
 	MustFail   bool
 }
 
 var _ consumer.TraceConsumer = &mockTraceConsumer{}
 
-func (p *mockTraceConsumer) ConsumeTrace(_ context.Context, td pdata.TraceData) error {
+func (p *mockTraceConsumer) ConsumeTraces(_ context.Context, td pdata.Traces) error {
 	p.Traces = append(p.Traces, &td)
 	p.TotalSpans += td.SpanCount()
 	if p.MustFail {

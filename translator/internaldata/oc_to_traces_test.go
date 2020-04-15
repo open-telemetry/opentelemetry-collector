@@ -290,7 +290,7 @@ func TestOcToInternal(t *testing.T) {
 
 	tests := []struct {
 		name string
-		td   pdata.TraceData
+		td   pdata.Traces
 		oc   consumerdata.TraceData
 	}{
 		{
@@ -388,7 +388,7 @@ func TestOcToInternal(t *testing.T) {
 }
 
 // TODO: Try to avoid unnecessary Resource object allocation.
-func wrapTraceWithEmptyResource(td pdata.TraceData) pdata.TraceData {
+func wrapTraceWithEmptyResource(td pdata.Traces) pdata.Traces {
 	td.ResourceSpans().At(0).Resource().InitEmpty()
 	return td
 }

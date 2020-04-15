@@ -195,14 +195,14 @@ type traceCloningFanOutConnector []consumer.TraceConsumer
 var _ consumer.TraceConsumer = (*traceCloningFanOutConnector)(nil)
 
 // ConsumeTraceData exports the span data to all trace consumers wrapped by the current one.
-func (tfc traceCloningFanOutConnector) ConsumeTrace(ctx context.Context, td pdata.TraceData) error {
+func (tfc traceCloningFanOutConnector) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
 	var errs []error
 
 	// Fan out to first len-1 consumers.
 	for i := 0; i < len(tfc)-1; i++ {
 		// Create a clone of data. We need to clone because consumers may modify the data.
 		clone := td.Clone()
-		if err := tfc[i].ConsumeTrace(ctx, clone); err != nil {
+		if err := tfc[i].ConsumeTraces(ctx, clone); err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -210,7 +210,7 @@ func (tfc traceCloningFanOutConnector) ConsumeTrace(ctx context.Context, td pdat
 	if len(tfc) > 0 {
 		// Give the original data to the last consumer.
 		lastTc := tfc[len(tfc)-1]
-		if err := lastTc.ConsumeTrace(ctx, td); err != nil {
+		if err := lastTc.ConsumeTraces(ctx, td); err != nil {
 			errs = append(errs, err)
 		}
 	}

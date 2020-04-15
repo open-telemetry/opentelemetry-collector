@@ -24,20 +24,20 @@ import (
 )
 
 // NewInternalToOCTraceConverter creates new internalToOCTraceConverter that takes TraceConsumer and
-// implements ConsumeTrace interface.
+// implements ConsumeTraces interface.
 func NewInternalToOCTraceConverter(tc consumer.TraceConsumerOld) consumer.TraceConsumer {
 	return &internalToOCTraceConverter{tc}
 }
 
 // internalToOCTraceConverter is a internal to oc translation shim that takes TraceConsumer and
-// implements ConsumeTrace interface.
+// implements ConsumeTraces interface.
 type internalToOCTraceConverter struct {
 	traceConsumer consumer.TraceConsumerOld
 }
 
-// ConsumeTrace takes new-style data.TraceData method, converts it to OC and uses old-style ConsumeTraceData method
+// ConsumeTraces takes new-style data.Traces method, converts it to OC and uses old-style ConsumeTraceData method
 // to process the trace data.
-func (tc *internalToOCTraceConverter) ConsumeTrace(ctx context.Context, td pdata.TraceData) error {
+func (tc *internalToOCTraceConverter) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
 	ocTraces := internaldata.TraceDataToOC(td)
 	for i := range ocTraces {
 		err := tc.traceConsumer.ConsumeTraceData(ctx, ocTraces[i])
@@ -51,7 +51,7 @@ func (tc *internalToOCTraceConverter) ConsumeTrace(ctx context.Context, td pdata
 var _ consumer.TraceConsumer = (*internalToOCTraceConverter)(nil)
 
 // NewInternalToOCMetricsConverter creates new internalToOCMetricsConverter that takes MetricsConsumer and
-// implements ConsumeTrace interface.
+// implements ConsumeTraces interface.
 func NewInternalToOCMetricsConverter(tc consumer.MetricsConsumerOld) consumer.MetricsConsumer {
 	return &internalToOCMetricsConverter{tc}
 }
@@ -78,22 +78,22 @@ func (tc *internalToOCMetricsConverter) ConsumeMetrics(ctx context.Context, td d
 var _ consumer.MetricsConsumer = (*internalToOCMetricsConverter)(nil)
 
 // NewOCToInternalTraceConverter creates new ocToInternalTraceConverter that takes TraceConsumer and
-// implements ConsumeTrace interface.
+// implements ConsumeTraces interface.
 func NewOCToInternalTraceConverter(tc consumer.TraceConsumer) consumer.TraceConsumerOld {
 	return &ocToInternalTraceConverter{tc}
 }
 
 // ocToInternalTraceConverter is a internal to oc translation shim that takes TraceConsumer and
-// implements ConsumeTrace interface.
+// implements ConsumeTraces interface.
 type ocToInternalTraceConverter struct {
 	traceConsumer consumer.TraceConsumer
 }
 
-// ConsumeTrace takes new-style data.TraceData method, converts it to OC and uses old-style ConsumeTraceData method
+// ConsumeTraces takes new-style data.Traces method, converts it to OC and uses old-style ConsumeTraceData method
 // to process the trace data.
 func (tc *ocToInternalTraceConverter) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	traceData := internaldata.OCToTraceData(td)
-	err := tc.traceConsumer.ConsumeTrace(ctx, traceData)
+	err := tc.traceConsumer.ConsumeTraces(ctx, traceData)
 	if err != nil {
 		return err
 	}
@@ -104,7 +104,7 @@ func (tc *ocToInternalTraceConverter) ConsumeTraceData(ctx context.Context, td c
 var _ consumer.TraceConsumerOld = (*ocToInternalTraceConverter)(nil)
 
 // NewOCToInternalMetricsConverter creates new ocToInternalMetricsConverter that takes MetricsConsumer and
-// implements ConsumeTrace interface.
+// implements ConsumeTraces interface.
 func NewOCToInternalMetricsConverter(tc consumer.MetricsConsumer) consumer.MetricsConsumerOld {
 	return &ocToInternalMetricsConverter{tc}
 }

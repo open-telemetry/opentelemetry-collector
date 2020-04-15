@@ -250,23 +250,23 @@ func TestTraceExporter_NilPushTraceData(t *testing.T) {
 }
 
 func TestTraceExporter_Default(t *testing.T) {
-	td := pdata.NewTraceData()
+	td := pdata.NewTraces()
 	te, err := NewTraceExporter(fakeTraceExporterConfig, newTraceDataPusher(0, nil))
 	assert.NotNil(t, te)
 	assert.Nil(t, err)
 
-	assert.Nil(t, te.ConsumeTrace(context.Background(), td))
+	assert.Nil(t, te.ConsumeTraces(context.Background(), td))
 	assert.Nil(t, te.Shutdown(context.Background()))
 }
 
 func TestTraceExporter_Default_ReturnError(t *testing.T) {
-	td := pdata.NewTraceData()
+	td := pdata.NewTraces()
 	want := errors.New("my_error")
 	te, err := NewTraceExporter(fakeTraceExporterConfig, newTraceDataPusher(0, want))
 	require.Nil(t, err)
 	require.NotNil(t, te)
 
-	err = te.ConsumeTrace(context.Background(), td)
+	err = te.ConsumeTraces(context.Background(), td)
 	require.Equalf(t, want, err, "ConsumeTraceData returns: Want %v Got %v", want, err)
 }
 
@@ -344,7 +344,7 @@ func TestTraceExporter_WithShutdown_ReturnError(t *testing.T) {
 }
 
 func newTraceDataPusher(droppedSpans int, retError error) traceDataPusher {
-	return func(ctx context.Context, td pdata.TraceData) (int, error) {
+	return func(ctx context.Context, td pdata.Traces) (int, error) {
 		return droppedSpans, retError
 	}
 }
@@ -354,7 +354,7 @@ func checkRecordedMetricsForTraceExporter(t *testing.T, te component.TraceExport
 	defer doneFn()
 
 	const spansLen = 2
-	td := pdata.NewTraceData()
+	td := pdata.NewTraces()
 	rs := td.ResourceSpans()
 	rs.Resize(1)
 	rs.At(0).InstrumentationLibrarySpans().Resize(1)
@@ -362,7 +362,7 @@ func checkRecordedMetricsForTraceExporter(t *testing.T, te component.TraceExport
 	ctx := observability.ContextWithReceiverName(context.Background(), fakeTraceReceiverName)
 	const numBatches = 7
 	for i := 0; i < numBatches; i++ {
-		require.Equal(t, wantError, te.ConsumeTrace(ctx, td))
+		require.Equal(t, wantError, te.ConsumeTraces(ctx, td))
 	}
 
 	err := observabilitytest.CheckValueViewExporterReceivedSpans(fakeTraceReceiverName, fakeTraceExporterName, numBatches*spansLen)
@@ -373,7 +373,7 @@ func checkRecordedMetricsForTraceExporter(t *testing.T, te component.TraceExport
 }
 
 func generateTraceTraffic(t *testing.T, te component.TraceExporter, numRequests int, wantError error) {
-	td := pdata.NewTraceData()
+	td := pdata.NewTraces()
 	rs := td.ResourceSpans()
 	rs.Resize(1)
 	rs.At(0).InstrumentationLibrarySpans().Resize(1)
@@ -381,7 +381,7 @@ func generateTraceTraffic(t *testing.T, te component.TraceExporter, numRequests 
 	ctx, span := trace.StartSpan(context.Background(), fakeTraceParentSpanName, trace.WithSampler(trace.AlwaysSample()))
 	defer span.End()
 	for i := 0; i < numRequests; i++ {
-		require.Equal(t, wantError, te.ConsumeTrace(ctx, td))
+		require.Equal(t, wantError, te.ConsumeTraces(ctx, td))
 	}
 }
 

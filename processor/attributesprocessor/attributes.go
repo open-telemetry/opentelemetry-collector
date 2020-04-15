@@ -64,7 +64,7 @@ func newTraceProcessor(nextConsumer consumer.TraceConsumer, config attributesCon
 	return ap, nil
 }
 
-func (a *attributesProcessor) ConsumeTrace(ctx context.Context, td pdata.TraceData) error {
+func (a *attributesProcessor) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
@@ -84,7 +84,7 @@ func (a *attributesProcessor) ConsumeTrace(ctx context.Context, td pdata.TraceDa
 			}
 		}
 	}
-	return a.nextConsumer.ConsumeTrace(ctx, td)
+	return a.nextConsumer.ConsumeTraces(ctx, td)
 }
 
 func (a *attributesProcessor) GetCapabilities() component.ProcessorCapabilities {

@@ -27,9 +27,9 @@ import (
 	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 )
 
-// OCToTraceData converts OC data format to TraceData.
-func OCToTraceData(td consumerdata.TraceData) pdata.TraceData {
-	traceData := pdata.NewTraceData()
+// OCToTraceData converts OC data format to Traces.
+func OCToTraceData(td consumerdata.TraceData) pdata.Traces {
+	traceData := pdata.NewTraces()
 	if td.Node == nil && td.Resource == nil && len(td.Spans) == 0 {
 		return traceData
 	}

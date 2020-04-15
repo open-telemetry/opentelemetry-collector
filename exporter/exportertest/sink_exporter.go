@@ -72,9 +72,9 @@ func (ste *SinkTraceExporterOld) Shutdown(context.Context) error {
 
 // SinkTraceExporter acts as a trace receiver for use in tests.
 type SinkTraceExporter struct {
-	consumeTraceError error // to be returned by ConsumeTrace, if set
+	consumeTraceError error // to be returned by ConsumeTraces, if set
 	mu                sync.Mutex
-	traces            []pdata.TraceData
+	traces            []pdata.Traces
 }
 
 // Start tells the exporter to start. The exporter may prepare for exporting
@@ -85,7 +85,7 @@ func (ste *SinkTraceExporter) Start(ctx context.Context, host component.Host) er
 }
 
 // ConsumeTraceData stores traces for tests.
-func (ste *SinkTraceExporter) ConsumeTrace(ctx context.Context, td pdata.TraceData) error {
+func (ste *SinkTraceExporter) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
 	if ste.consumeTraceError != nil {
 		return ste.consumeTraceError
 	}
@@ -99,14 +99,14 @@ func (ste *SinkTraceExporter) ConsumeTrace(ctx context.Context, td pdata.TraceDa
 }
 
 // AllTraces returns the traces sent to the test sink.
-func (ste *SinkTraceExporter) AllTraces() []pdata.TraceData {
+func (ste *SinkTraceExporter) AllTraces() []pdata.Traces {
 	ste.mu.Lock()
 	defer ste.mu.Unlock()
 
 	return ste.traces
 }
 
-// SetConsumeTraceError sets an error that will be returned by ConsumeTrace
+// SetConsumeTraceError sets an error that will be returned by ConsumeTraces
 func (ste *SinkTraceExporter) SetConsumeTraceError(err error) {
 	ste.consumeTraceError = err
 }
