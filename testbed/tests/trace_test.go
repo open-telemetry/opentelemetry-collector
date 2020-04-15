@@ -62,7 +62,7 @@ func TestTrace10kSPS(t *testing.T) {
 			testbed.NewOCTraceDataSender(testbed.GetAvailablePort(t)),
 			testbed.NewOCDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
-				ExpectedMaxCPU: 40,
+				ExpectedMaxCPU: 30,
 				ExpectedMaxRAM: 60,
 			},
 		},
@@ -71,10 +71,16 @@ func TestTrace10kSPS(t *testing.T) {
 			testbed.NewOTLPTraceDataSender(testbed.GetAvailablePort(t)),
 			testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
-				ExpectedMaxCPU: 40,
+				ExpectedMaxCPU: 20,
 				ExpectedMaxRAM: 60,
 			},
 		},
+	}
+
+	processors := map[string]string{
+		"batch": `
+  batch:
+`,
 	}
 
 	for _, test := range tests {
@@ -84,6 +90,7 @@ func TestTrace10kSPS(t *testing.T) {
 				test.sender,
 				test.receiver,
 				test.resourceSpec,
+				processors,
 			)
 		})
 	}

@@ -231,6 +231,16 @@ func GenerateTraceDataTwoSpansSameResourceOneDifferent() pdata.Traces {
 	return td
 }
 
+func GenerateTraceDataManySpansSameResource(spansCount int) pdata.Traces {
+	td := GenerateTraceDataOneEmptyInstrumentationLibrary()
+	rs0ils0 := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0)
+	rs0ils0.Spans().Resize(spansCount)
+	for i := 0; i < spansCount; i++ {
+		fillSpanOne(rs0ils0.Spans().At(i))
+	}
+	return td
+}
+
 func generateTraceOtlpTwoSpansSameResourceOneDifferent() []*otlptrace.ResourceSpans {
 	return []*otlptrace.ResourceSpans{
 		{

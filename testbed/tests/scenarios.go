@@ -136,13 +136,14 @@ func Scenario10kItemsPerSecond(
 	sender testbed.DataSender,
 	receiver testbed.DataReceiver,
 	resourceSpec testbed.ResourceSpec,
+	processors map[string]string,
 ) {
 	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	configFile := createConfigFile(t, sender, receiver, resultDir, nil)
+	configFile := createConfigFile(t, sender, receiver, resultDir, processors)
 	defer os.Remove(configFile)
 
 	if configFile == "" {

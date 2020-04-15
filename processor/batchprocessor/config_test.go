@@ -43,9 +43,7 @@ func TestLoadConfig(t *testing.T) {
 	p1 := cfg.Processors["batch/2"]
 
 	timeout := time.Second * 10
-	tickTime := time.Second * 5
-	removeAfterTicks := uint32(20)
-	sendBatchSize := uint32(1000)
+	sendBatchSize := uint32(10000)
 
 	assert.Equal(t, p1,
 		&Config{
@@ -53,10 +51,7 @@ func TestLoadConfig(t *testing.T) {
 				TypeVal: "batch",
 				NameVal: "batch/2",
 			},
-			Timeout:          timeout,
-			NumTickers:       10,
-			RemoveAfterTicks: removeAfterTicks,
-			SendBatchSize:    sendBatchSize,
-			TickTime:         tickTime,
+			SendBatchSize: sendBatchSize,
+			Timeout:       timeout,
 		})
 }

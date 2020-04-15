@@ -250,10 +250,9 @@ examples on using the processor.
 
 ## <a name="batch"></a>Batch Processor
 
-The batch processor accepts spans and places them into batches grouped by node
-and resource. Batching helps better compress the data and reduce the number of
-outgoing connections required to transmit the data. This processor supports
-both size and time based batching.
+The batch processor accepts spans and places them into batches. Batching helps 
+better compress the data and reduce the number of outgoing connections required 
+to transmit the data. This processor supports both size and time based batching.
 
 It is highly recommended to configure the batch processor on every collector.
 The batch processor should be defined in the pipeline after the memory_limiter
@@ -263,13 +262,8 @@ any data drops such as sampling.
 Please refer to [config.go](batchprocessor/config.go) for the config spec.
 
 The following configuration options can be modified:
-- `num_tickers` (default = 4): Number of tickers that loop over batch buckets
-- `remove_after_ticks` (default = 10): Number of ticks passed without a span
-arriving for a node at which time batcher is deleted
 - `send_batch_size` (default = 8192): Number of spans after which a batch will
-be sent regardless of time
-- `tick_time` (default = 1s): Interval in which the tickers tick
-- `timeout` (default = 1s): Time duration after which a batch will be sent
+- `timeout` (default = 200ms): Time duration after which a batch will be sent
 regardless of size
 
 Examples:
@@ -278,10 +272,7 @@ Examples:
 processors:
   batch:
   batch/2:
-    num_tickers: 10
-    remove_after_ticks: 20
-    send_batch_size: 1000
-    tick_time: 5s
+    send_batch_size: 10000
     timeout: 10s
 ```
 
