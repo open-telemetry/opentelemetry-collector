@@ -142,7 +142,7 @@ func TestApplication_setupExtensions(t *testing.T) {
 					},
 				},
 			},
-			wantErrMsg: "extension \"myextension\" is not configured",
+			wantErrMsg: "cannot build builtExtensions: extension \"myextension\" is not configured",
 		},
 		{
 			name: "missing_extension_factory",
@@ -156,7 +156,7 @@ func TestApplication_setupExtensions(t *testing.T) {
 					},
 				},
 			},
-			wantErrMsg: "extension factory for type \"exampleextension\" is not configured",
+			wantErrMsg: "cannot build builtExtensions: extension factory for type \"exampleextension\" is not configured",
 		},
 		{
 			name: "error_on_create_extension",
@@ -175,7 +175,7 @@ func TestApplication_setupExtensions(t *testing.T) {
 					},
 				},
 			},
-			wantErrMsg: "failed to create extension \"exampleextension\": cannot create \"exampleextension\" extension type",
+			wantErrMsg: "cannot build builtExtensions: failed to create extension \"exampleextension\": cannot create \"exampleextension\" extension type",
 		},
 		{
 			name: "bad_factory",
@@ -194,7 +194,7 @@ func TestApplication_setupExtensions(t *testing.T) {
 					},
 				},
 			},
-			wantErrMsg: "factory for \"bf\" produced a nil extension",
+			wantErrMsg: "cannot build builtExtensions: factory for \"bf\" produced a nil extension",
 		},
 	}
 
@@ -211,16 +211,14 @@ func TestApplication_setupExtensions(t *testing.T) {
 
 			if tt.wantErrMsg == "" {
 				assert.NoError(t, err)
-				assert.Equal(t, 1, len(app.extensionsList))
-				assert.Equal(t, 1, len(app.extensionsMap))
-				for _, ext := range app.extensionsList {
+				assert.Equal(t, 1, len(app.builtExtensions))
+				for _, ext := range app.builtExtensions {
 					assert.NotNil(t, ext)
 				}
 			} else {
 				assert.Error(t, err)
 				assert.Equal(t, tt.wantErrMsg, err.Error())
-				assert.Equal(t, 0, len(app.extensionsList))
-				assert.Equal(t, 0, len(app.extensionsMap))
+				assert.Equal(t, 0, len(app.builtExtensions))
 			}
 		})
 	}
