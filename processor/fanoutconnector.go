@@ -21,6 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/converter"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 )
 
@@ -145,7 +146,7 @@ type traceFanOutConnector []consumer.TraceConsumer
 var _ consumer.TraceConsumer = (*traceFanOutConnector)(nil)
 
 // ConsumeTrace exports the span data to all trace consumers wrapped by the current one.
-func (tfc traceFanOutConnector) ConsumeTrace(ctx context.Context, td data.TraceData) error {
+func (tfc traceFanOutConnector) ConsumeTrace(ctx context.Context, td pdata.TraceData) error {
 	var errs []error
 	for _, tc := range tfc {
 		if err := tc.ConsumeTrace(ctx, td); err != nil {

@@ -23,6 +23,7 @@ import (
 	"sync/atomic"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 )
 
@@ -45,7 +46,7 @@ type MockBackend struct {
 	// Recording fields.
 	isRecording        bool
 	recordMutex        sync.Mutex
-	ReceivedTraces     []data.TraceData
+	ReceivedTraces     []pdata.TraceData
 	ReceivedMetrics    []data.MetricData
 	ReceivedTracesOld  []consumerdata.TraceData
 	ReceivedMetricsOld []consumerdata.MetricsData
@@ -133,7 +134,7 @@ func (mb *MockBackend) ClearReceivedItems() {
 	mb.ReceivedMetricsOld = nil
 }
 
-func (mb *MockBackend) ConsumeTrace(td data.TraceData) {
+func (mb *MockBackend) ConsumeTrace(td pdata.TraceData) {
 	mb.recordMutex.Lock()
 	defer mb.recordMutex.Unlock()
 	if mb.isRecording {
@@ -172,7 +173,7 @@ type MockTraceConsumer struct {
 	backend       *MockBackend
 }
 
-func (tc *MockTraceConsumer) ConsumeTrace(ctx context.Context, td data.TraceData) error {
+func (tc *MockTraceConsumer) ConsumeTrace(ctx context.Context, td pdata.TraceData) error {
 	atomic.AddUint64(&tc.spansReceived, uint64(td.SpanCount()))
 
 	rs := td.ResourceSpans()

@@ -29,6 +29,7 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 )
 
@@ -230,7 +231,7 @@ func (lg *LoadGenerator) generateTraceOld() {
 func (lg *LoadGenerator) generateTrace() {
 	traceSender := lg.sender.(TraceDataSender)
 
-	traceData := data.NewTraceData()
+	traceData := pdata.NewTraceData()
 	traceData.ResourceSpans().Resize(1)
 	ilss := traceData.ResourceSpans().At(0).InstrumentationLibrarySpans()
 	ilss.Resize(1)
@@ -247,24 +248,24 @@ func (lg *LoadGenerator) generateTrace() {
 
 		span := spans.At(i)
 
-		attrs := map[string]data.AttributeValue{
-			"load_generator.span_seq_num":  data.NewAttributeValueInt(int64(spanID)),
-			"load_generator.trace_seq_num": data.NewAttributeValueInt(int64(traceID)),
+		attrs := map[string]pdata.AttributeValue{
+			"load_generator.span_seq_num":  pdata.NewAttributeValueInt(int64(spanID)),
+			"load_generator.trace_seq_num": pdata.NewAttributeValueInt(int64(traceID)),
 		}
 
 		// Additional attributes.
 		for k, v := range lg.options.Attributes {
-			attrs[k] = data.NewAttributeValueString(v)
+			attrs[k] = pdata.NewAttributeValueString(v)
 		}
 
 		// Create a span.
 		span.SetTraceID(GenerateTraceID(traceID))
 		span.SetSpanID(GenerateSpanID(spanID))
 		span.SetName("load-generator-span")
-		span.SetKind(data.SpanKindCLIENT)
+		span.SetKind(pdata.SpanKindCLIENT)
 		span.Attributes().InitFromMap(attrs)
-		span.SetStartTime(data.TimestampUnixNano(uint64(startTime.UnixNano())))
-		span.SetEndTime(data.TimestampUnixNano(uint64(endTime.UnixNano())))
+		span.SetStartTime(pdata.TimestampUnixNano(uint64(startTime.UnixNano())))
+		span.SetEndTime(pdata.TimestampUnixNano(uint64(endTime.UnixNano())))
 	}
 
 	err := traceSender.SendSpans(traceData)
@@ -368,9 +369,9 @@ func (lg *LoadGenerator) generateMetrics() {
 	metricData.ResourceMetrics().Resize(1)
 	metricData.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Resize(1)
 	if lg.options.Attributes != nil {
-		attrs := map[string]data.AttributeValue{}
+		attrs := map[string]pdata.AttributeValue{}
 		for k, v := range lg.options.Attributes {
-			attrs[k] = data.NewAttributeValueString(v)
+			attrs[k] = pdata.NewAttributeValueString(v)
 		}
 		metricData.ResourceMetrics().At(0).Resource().Attributes().InitFromMap(attrs)
 	}
@@ -383,7 +384,7 @@ func (lg *LoadGenerator) generateMetrics() {
 		metricDescriptor.InitEmpty()
 		metricDescriptor.SetName("load_generator_" + strconv.Itoa(i))
 		metricDescriptor.SetDescription("Load Generator Counter #" + strconv.Itoa(i))
-		metricDescriptor.SetType(data.MetricTypeGaugeInt64)
+		metricDescriptor.SetType(pdata.MetricTypeGaugeInt64)
 
 		batchIndex := atomic.AddUint64(&lg.batchesSent, 1)
 
@@ -391,7 +392,7 @@ func (lg *LoadGenerator) generateMetrics() {
 		metric.Int64DataPoints().Resize(dataPointsPerMetric)
 		for j := 0; j < dataPointsPerMetric; j++ {
 			dataPoint := metric.Int64DataPoints().At(j)
-			dataPoint.SetStartTime(data.TimestampUnixNano(uint64(time.Now().UnixNano())))
+			dataPoint.SetStartTime(pdata.TimestampUnixNano(uint64(time.Now().UnixNano())))
 			value := atomic.AddUint64(&lg.dataItemsSent, 1)
 			dataPoint.SetValue(int64(value))
 			dataPoint.LabelsMap().InitFromMap(map[string]string{

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package data
+package pdata
 
 // This file contains data structures that are common for all telemetry types,
 // such as timestamps, attributes, etc.

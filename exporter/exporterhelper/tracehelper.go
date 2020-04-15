@@ -20,7 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 )
 
@@ -30,7 +30,7 @@ type traceDataPusherOld func(ctx context.Context, td consumerdata.TraceData) (dr
 
 // traceDataPusher is a helper function that is similar to ConsumeTraceData but also
 // returns the number of dropped spans.
-type traceDataPusher func(ctx context.Context, td data.TraceData) (droppedSpans int, err error)
+type traceDataPusher func(ctx context.Context, td pdata.TraceData) (droppedSpans int, err error)
 
 // traceExporterOld implements the exporter with additional helper options.
 type traceExporterOld struct {
@@ -116,7 +116,7 @@ func (te *traceExporter) Start(_ context.Context, _ component.Host) error {
 
 func (te *traceExporter) ConsumeTrace(
 	ctx context.Context,
-	td data.TraceData,
+	td pdata.TraceData,
 ) error {
 	exporterCtx := obsreport.ExporterContext(ctx, te.exporterFullName)
 	_, err := te.dataPusher(exporterCtx, td)
@@ -163,7 +163,7 @@ func NewTraceExporter(
 // withObservability wraps the current pusher into a function that records
 // the observability signals during the pusher execution.
 func (p traceDataPusher) withObservability(exporterName string) traceDataPusher {
-	return func(ctx context.Context, td data.TraceData) (int, error) {
+	return func(ctx context.Context, td pdata.TraceData) (int, error) {
 		ctx = obsreport.StartTraceDataExportOp(ctx, exporterName)
 		// Forward the data to the next consumer (this pusher is the next).
 		droppedSpans, err := p(ctx, td)

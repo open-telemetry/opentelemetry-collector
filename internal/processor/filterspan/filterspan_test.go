@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 )
 
 func TestSpan_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
@@ -187,10 +187,10 @@ func TestSpan_Matching_False(t *testing.T) {
 		},
 	}
 
-	span := data.NewSpan()
+	span := pdata.NewSpan()
 	span.InitEmpty()
 	span.SetName("spanName")
-	span.Attributes().InitFromMap(map[string]data.AttributeValue{"keyInt": data.NewAttributeValueInt(123)})
+	span.Attributes().InitFromMap(map[string]pdata.AttributeValue{"keyInt": pdata.NewAttributeValueInt(123)})
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
 			assert.False(t, tc.properties.MatchSpan(span, "wrongSvc"))
@@ -208,7 +208,7 @@ func TestSpan_MatchingCornerCases(t *testing.T) {
 			},
 		},
 	}
-	emptySpan := data.NewSpan()
+	emptySpan := pdata.NewSpan()
 	emptySpan.InitEmpty()
 	assert.False(t, mp.MatchSpan(emptySpan, "svcA"))
 }
@@ -218,7 +218,7 @@ func TestSpan_MissingServiceName(t *testing.T) {
 		Services: []*regexp.Regexp{regexp.MustCompile("svcA")},
 	}
 
-	emptySpan := data.NewSpan()
+	emptySpan := pdata.NewSpan()
 	emptySpan.InitEmpty()
 	assert.False(t, mp.MatchSpan(emptySpan, ""))
 }
@@ -322,15 +322,15 @@ func TestSpan_Matching_True(t *testing.T) {
 		},
 	}
 
-	span := data.NewSpan()
+	span := pdata.NewSpan()
 	span.InitEmpty()
 	span.SetName("spanName")
-	span.Attributes().InitFromMap(map[string]data.AttributeValue{
-		"keyString": data.NewAttributeValueString("arithmetic"),
-		"keyInt":    data.NewAttributeValueInt(123),
-		"keyDouble": data.NewAttributeValueDouble(3245.6),
-		"keyBool":   data.NewAttributeValueBool(true),
-		"keyExists": data.NewAttributeValueString("present"),
+	span.Attributes().InitFromMap(map[string]pdata.AttributeValue{
+		"keyString": pdata.NewAttributeValueString("arithmetic"),
+		"keyInt":    pdata.NewAttributeValueInt(123),
+		"keyDouble": pdata.NewAttributeValueDouble(3245.6),
+		"keyBool":   pdata.NewAttributeValueBool(true),
+		"keyExists": pdata.NewAttributeValueString("present"),
 	})
 
 	for _, tc := range testcases {
@@ -440,22 +440,22 @@ func TestSpan_validateMatchesConfiguration(t *testing.T) {
 	}
 }
 
-func newAttributeValueString(v string) *data.AttributeValue {
-	attr := data.NewAttributeValueString(v)
+func newAttributeValueString(v string) *pdata.AttributeValue {
+	attr := pdata.NewAttributeValueString(v)
 	return &attr
 }
 
-func newAttributeValueInt(v int64) *data.AttributeValue {
-	attr := data.NewAttributeValueInt(v)
+func newAttributeValueInt(v int64) *pdata.AttributeValue {
+	attr := pdata.NewAttributeValueInt(v)
 	return &attr
 }
 
-func newAttributeValueDouble(v float64) *data.AttributeValue {
-	attr := data.NewAttributeValueDouble(v)
+func newAttributeValueDouble(v float64) *pdata.AttributeValue {
+	attr := pdata.NewAttributeValueDouble(v)
 	return &attr
 }
 
-func newAttributeValueBool(v bool) *data.AttributeValue {
-	attr := data.NewAttributeValueBool(v)
+func newAttributeValueBool(v bool) *pdata.AttributeValue {
+	attr := pdata.NewAttributeValueBool(v)
 	return &attr
 }

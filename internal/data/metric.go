@@ -17,6 +17,8 @@ package data
 import (
 	"github.com/golang/protobuf/proto"
 	otlpmetrics "github.com/open-telemetry/opentelemetry-proto/gen/go/metrics/v1"
+
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 )
 
 // This file defines in-memory data structures to represent metrics.
@@ -61,8 +63,8 @@ func (md MetricData) Clone() MetricData {
 	return MetricDataFromOtlp(resourceMetricsClones)
 }
 
-func (md MetricData) ResourceMetrics() ResourceMetricsSlice {
-	return newResourceMetricsSlice(md.orig)
+func (md MetricData) ResourceMetrics() pdata.ResourceMetricsSlice {
+	return pdata.InternalNewMetricsResourceSlice(md.orig)
 }
 
 // MetricCount calculates the total number of metrics.
@@ -115,16 +117,3 @@ func (md MetricData) MetricAndDataPointCount() (metricCount int, dataPointCount 
 	}
 	return
 }
-
-type MetricType otlpmetrics.MetricDescriptor_Type
-
-const (
-	MetricTypeUnspecified         = MetricType(otlpmetrics.MetricDescriptor_UNSPECIFIED)
-	MetricTypeGaugeInt64          = MetricType(otlpmetrics.MetricDescriptor_GAUGE_INT64)
-	MetricTypeGaugeDouble         = MetricType(otlpmetrics.MetricDescriptor_GAUGE_DOUBLE)
-	MetricTypeGaugeHistogram      = MetricType(otlpmetrics.MetricDescriptor_GAUGE_HISTOGRAM)
-	MetricTypeCounterInt64        = MetricType(otlpmetrics.MetricDescriptor_COUNTER_INT64)
-	MetricTypeCounterDouble       = MetricType(otlpmetrics.MetricDescriptor_COUNTER_DOUBLE)
-	MetricTypeCumulativeHistogram = MetricType(otlpmetrics.MetricDescriptor_CUMULATIVE_HISTOGRAM)
-	MetricTypeSummary             = MetricType(otlpmetrics.MetricDescriptor_SUMMARY)
-)

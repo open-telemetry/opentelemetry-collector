@@ -24,8 +24,8 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal"
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data/testdata"
 	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 )
@@ -488,20 +488,20 @@ func generateOCTestMetricSummary() *ocmetrics.Metric {
 	}
 }
 
-func generateResourceWithOcNodeAndResource() data.Resource {
-	resource := data.NewResource()
+func generateResourceWithOcNodeAndResource() pdata.Resource {
+	resource := pdata.NewResource()
 	resource.InitEmpty()
-	resource.Attributes().InitFromMap(map[string]data.AttributeValue{
-		conventions.OCAttributeProcessStartTime: data.NewAttributeValueString("2020-02-11T20:26:00Z"),
-		conventions.AttributeHostHostname:       data.NewAttributeValueString("host1"),
-		conventions.OCAttributeProcessID:        data.NewAttributeValueInt(123),
-		conventions.AttributeLibraryVersion:     data.NewAttributeValueString("v2.0.1"),
-		conventions.OCAttributeExporterVersion:  data.NewAttributeValueString("v1.2.0"),
-		conventions.AttributeLibraryLanguage:    data.NewAttributeValueString("CPP"),
-		conventions.OCAttributeResourceType:     data.NewAttributeValueString("good-resource"),
-		"node-str-attr":                         data.NewAttributeValueString("node-str-attr-val"),
-		"resource-str-attr":                     data.NewAttributeValueString("resource-str-attr-val"),
-		"resource-int-attr":                     data.NewAttributeValueInt(123),
+	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
+		conventions.OCAttributeProcessStartTime: pdata.NewAttributeValueString("2020-02-11T20:26:00Z"),
+		conventions.AttributeHostHostname:       pdata.NewAttributeValueString("host1"),
+		conventions.OCAttributeProcessID:        pdata.NewAttributeValueInt(123),
+		conventions.AttributeLibraryVersion:     pdata.NewAttributeValueString("v2.0.1"),
+		conventions.OCAttributeExporterVersion:  pdata.NewAttributeValueString("v1.2.0"),
+		conventions.AttributeLibraryLanguage:    pdata.NewAttributeValueString("CPP"),
+		conventions.OCAttributeResourceType:     pdata.NewAttributeValueString("good-resource"),
+		"node-str-attr":                         pdata.NewAttributeValueString("node-str-attr-val"),
+		"resource-str-attr":                     pdata.NewAttributeValueString("resource-str-attr-val"),
+		"resource-int-attr":                     pdata.NewAttributeValueInt(123),
 	})
 	return resource
 }

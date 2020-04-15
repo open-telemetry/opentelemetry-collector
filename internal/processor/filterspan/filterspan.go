@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal/processor/filterhelper"
 )
 
@@ -38,7 +38,7 @@ var (
 // Matcher is an interface that allows matching a span against a configuration
 // of a match.
 type Matcher interface {
-	MatchSpan(span data.Span, serviceName string) bool
+	MatchSpan(span pdata.Span, serviceName string) bool
 }
 
 type attributesMatcher []attributeMatcher
@@ -73,7 +73,7 @@ type regexpPropertiesMatcher struct {
 type attributeMatcher struct {
 	Key string
 	// If nil only check for key existence.
-	AttributeValue *data.AttributeValue
+	AttributeValue *pdata.AttributeValue
 }
 
 func NewMatcher(config *MatchProperties) (Matcher, error) {
@@ -186,7 +186,7 @@ func newAttributesMatcher(config *MatchProperties) (attributesMatcher, error) {
 // At least one of services, span names or attributes must be specified. It is supported
 // to have more than one of these specified, and all specified must evaluate
 // to true for a match to occur.
-func (mp *strictPropertiesMatcher) MatchSpan(span data.Span, serviceName string) bool {
+func (mp *strictPropertiesMatcher) MatchSpan(span pdata.Span, serviceName string) bool {
 	if len(mp.Services) > 0 {
 		// Verify service name matches at least one of the items.
 		matched := false
@@ -229,7 +229,7 @@ func (mp *strictPropertiesMatcher) MatchSpan(span data.Span, serviceName string)
 // At least one of services, span names or attributes must be specified. It is supported
 // to have more than one of these specified, and all specified must evaluate
 // to true for a match to occur.
-func (mp *regexpPropertiesMatcher) MatchSpan(span data.Span, serviceName string) bool {
+func (mp *regexpPropertiesMatcher) MatchSpan(span pdata.Span, serviceName string) bool {
 
 	if len(mp.Services) > 0 {
 		// Verify service name matches at least one of the regexp patterns.
@@ -267,7 +267,7 @@ func (mp *regexpPropertiesMatcher) MatchSpan(span data.Span, serviceName string)
 }
 
 // match attributes specification against a span.
-func (ma attributesMatcher) match(span data.Span) bool {
+func (ma attributesMatcher) match(span pdata.Span) bool {
 	// If there are no attributes to match against, the span matches.
 	if len(ma) == 0 {
 		return true

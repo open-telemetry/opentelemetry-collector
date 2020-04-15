@@ -20,7 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal/processor/filterspan"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
 )
@@ -47,7 +47,7 @@ type attributeAction struct {
 	// The reason is attributes processor will most likely be commonly used
 	// and could impact performance.
 	Action         Action
-	AttributeValue *data.AttributeValue
+	AttributeValue *pdata.AttributeValue
 }
 
 // newTraceProcessor returns a processor that modifies attributes of a span.
@@ -64,7 +64,7 @@ func newTraceProcessor(nextConsumer consumer.TraceConsumer, config attributesCon
 	return ap, nil
 }
 
-func (a *attributesProcessor) ConsumeTrace(ctx context.Context, td data.TraceData) error {
+func (a *attributesProcessor) ConsumeTrace(ctx context.Context, td pdata.TraceData) error {
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
@@ -101,7 +101,7 @@ func (a *attributesProcessor) Shutdown(context.Context) error {
 	return nil
 }
 
-func (a *attributesProcessor) processSpan(span data.Span, serviceName string) {
+func (a *attributesProcessor) processSpan(span pdata.Span, serviceName string) {
 	if span.IsNil() {
 		// Do not create empty spans just to add attributes
 		return
@@ -144,7 +144,7 @@ func (a *attributesProcessor) processSpan(span data.Span, serviceName string) {
 	}
 }
 
-func getSourceAttributeValue(action attributeAction, attrs data.AttributeMap) (data.AttributeValue, bool) {
+func getSourceAttributeValue(action attributeAction, attrs pdata.AttributeMap) (pdata.AttributeValue, bool) {
 	// Set the key with a value from the configuration.
 	if action.AttributeValue != nil {
 		return *action.AttributeValue, true
@@ -153,7 +153,7 @@ func getSourceAttributeValue(action attributeAction, attrs data.AttributeMap) (d
 	return attrs.Get(action.FromAttribute)
 }
 
-func hashAttribute(action attributeAction, attrs data.AttributeMap) {
+func hashAttribute(action attributeAction, attrs pdata.AttributeMap) {
 	if value, exists := attrs.Get(action.Key); exists {
 		SHA1AttributeHasher(value)
 	}
@@ -165,7 +165,7 @@ func hashAttribute(action attributeAction, attrs data.AttributeMap) {
 // The logic determining if a span should be processed is set
 // in the attribute configuration with the include and exclude settings.
 // Include properties are checked before exclude settings are checked.
-func (a *attributesProcessor) skipSpan(span data.Span, serviceName string) bool {
+func (a *attributesProcessor) skipSpan(span pdata.Span, serviceName string) bool {
 	if a.config.include != nil {
 		// A false returned in this case means the span should not be processed.
 		if include := a.config.include.MatchSpan(span, serviceName); !include {

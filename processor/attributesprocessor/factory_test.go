@@ -25,8 +25,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 )
 
 func TestFactory_Type(t *testing.T) {
@@ -96,7 +96,7 @@ func TestFactory_validateActionsConfiguration(t *testing.T) {
 	}
 	output, err := buildAttributesConfiguration(*oCfg)
 	require.NoError(t, err)
-	av := data.NewAttributeValueInt(123)
+	av := pdata.NewAttributeValueInt(123)
 	assert.Equal(t, []attributeAction{
 		{Key: "one", Action: DELETE},
 		{Key: "two", Action: INSERT,

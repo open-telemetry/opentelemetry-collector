@@ -24,7 +24,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal/processor/filterspan"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
 )
@@ -91,7 +91,7 @@ func newSpanProcessor(nextConsumer consumer.TraceConsumer, config Config) (*span
 	return sp, nil
 }
 
-func (sp *spanProcessor) ConsumeTrace(ctx context.Context, td data.TraceData) error {
+func (sp *spanProcessor) ConsumeTrace(ctx context.Context, td pdata.TraceData) error {
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
@@ -137,7 +137,7 @@ func (sp *spanProcessor) Shutdown(context.Context) error {
 	return nil
 }
 
-func (sp *spanProcessor) processFromAttributes(span data.Span) {
+func (sp *spanProcessor) processFromAttributes(span pdata.Span) {
 	if len(sp.config.Rename.FromAttributes) == 0 {
 		// There is FromAttributes rule.
 		return
@@ -175,13 +175,13 @@ func (sp *spanProcessor) processFromAttributes(span data.Span) {
 		}
 
 		switch attr.Type() {
-		case data.AttributeValueSTRING:
+		case pdata.AttributeValueSTRING:
 			sb.WriteString(attr.StringVal())
-		case data.AttributeValueBOOL:
+		case pdata.AttributeValueBOOL:
 			sb.WriteString(strconv.FormatBool(attr.BoolVal()))
-		case data.AttributeValueDOUBLE:
+		case pdata.AttributeValueDOUBLE:
 			sb.WriteString(strconv.FormatFloat(attr.DoubleVal(), 'f', -1, 64))
-		case data.AttributeValueINT:
+		case pdata.AttributeValueINT:
 			sb.WriteString(strconv.FormatInt(attr.IntVal(), 10))
 		default:
 			sb.WriteString("<unknown-attribute-type>")
@@ -190,7 +190,7 @@ func (sp *spanProcessor) processFromAttributes(span data.Span) {
 	span.SetName(sb.String())
 }
 
-func (sp *spanProcessor) processToAttributes(span data.Span) {
+func (sp *spanProcessor) processToAttributes(span pdata.Span) {
 	if span.Name() == "" {
 		// There is no span name to work on.
 		return
@@ -261,7 +261,7 @@ func (sp *spanProcessor) processToAttributes(span data.Span) {
 // The logic determining if a span should be processed is set
 // in the attribute configuration with the include and exclude settings.
 // Include properties are checked before exclude settings are checked.
-func (sp *spanProcessor) skipSpan(span data.Span, serviceName string) bool {
+func (sp *spanProcessor) skipSpan(span pdata.Span, serviceName string) bool {
 	if sp.include != nil {
 		// A false returned in this case means the span should not be processed.
 		if include := sp.include.MatchSpan(span, serviceName); !include {

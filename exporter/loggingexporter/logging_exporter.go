@@ -26,6 +26,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 )
@@ -43,33 +44,33 @@ func (b *logDataBuffer) logAttr(label string, value string) {
 	b.logEntry("    %-15s: %s", label, value)
 }
 
-func (b *logDataBuffer) logAttributeMap(label string, am data.AttributeMap) {
+func (b *logDataBuffer) logAttributeMap(label string, am pdata.AttributeMap) {
 	if am.Cap() == 0 {
 		return
 	}
 
 	b.logEntry("%s:", label)
-	am.ForEach(func(k string, v data.AttributeValue) {
+	am.ForEach(func(k string, v pdata.AttributeValue) {
 		b.logEntry("     -> %s: %s(%s)", k, v.Type().String(), attributeValueToString(v))
 	})
 }
 
-func (b *logDataBuffer) logInstrumentationLibrary(il data.InstrumentationLibrary) {
+func (b *logDataBuffer) logInstrumentationLibrary(il pdata.InstrumentationLibrary) {
 	b.logEntry(
 		"InstrumentationLibrary %s %s",
 		il.Name(),
 		il.Version())
 }
 
-func attributeValueToString(av data.AttributeValue) string {
+func attributeValueToString(av pdata.AttributeValue) string {
 	switch av.Type() {
-	case data.AttributeValueSTRING:
+	case pdata.AttributeValueSTRING:
 		return av.StringVal()
-	case data.AttributeValueBOOL:
+	case pdata.AttributeValueBOOL:
 		return strconv.FormatBool(av.BoolVal())
-	case data.AttributeValueDOUBLE:
+	case pdata.AttributeValueDOUBLE:
 		return strconv.FormatFloat(av.DoubleVal(), 'f', -1, 64)
-	case data.AttributeValueINT:
+	case pdata.AttributeValueINT:
 		return strconv.FormatInt(av.IntVal(), 10)
 	default:
 		return fmt.Sprintf("<Unknown OpenTelemetry attribute value type %q>", av.Type())
@@ -83,7 +84,7 @@ type loggingExporter struct {
 
 func (s *loggingExporter) pushTraceData(
 	_ context.Context,
-	td data.TraceData,
+	td pdata.TraceData,
 ) (int, error) {
 
 	s.logger.Info("TraceExporter", zap.Int("#spans", td.SpanCount()))

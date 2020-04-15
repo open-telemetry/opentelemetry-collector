@@ -19,6 +19,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 )
 
@@ -74,7 +75,7 @@ func (ne *nopExporter) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-func (ne *nopExporter) ConsumeTrace(_ context.Context, _ data.TraceData) error {
+func (ne *nopExporter) ConsumeTrace(_ context.Context, _ pdata.TraceData) error {
 	return ne.retError
 }
 

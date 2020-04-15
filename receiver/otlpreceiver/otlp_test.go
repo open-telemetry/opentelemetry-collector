@@ -40,8 +40,8 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector/observability/observabilitytest"
 	"github.com/open-telemetry/opentelemetry-collector/testutils"
 	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
@@ -134,7 +134,7 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 
 	got := sink.AllTraces()[0]
 
-	want := data.TraceDataFromOtlp([]*otlptrace.ResourceSpans{
+	want := pdata.TraceDataFromOtlp([]*otlptrace.ResourceSpans{
 		{
 			Resource: &otlpresource.Resource{
 				Attributes: []*otlpcommon.AttributeKeyValue{

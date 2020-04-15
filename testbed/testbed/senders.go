@@ -23,6 +23,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configgrpc"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/jaegerexporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/opencensusexporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/otlpexporter"
@@ -94,7 +95,7 @@ func (ds *DataSenderOverTraceExporterOld) GetCollectorPort() int {
 // to send a batch of Spans to the DataSender interface.
 type TraceDataSender interface {
 	DataSender
-	SendSpans(traces data.TraceData) error
+	SendSpans(traces pdata.TraceData) error
 }
 
 // MetricDataSender defines the interface that allows sending metric data. It adds ability
@@ -116,7 +117,7 @@ func NewDataSenderOverExporter(port int) *DataSenderOverTraceExporter {
 	return &DataSenderOverTraceExporter{Port: port}
 }
 
-func (ds *DataSenderOverTraceExporter) SendSpans(traces data.TraceData) error {
+func (ds *DataSenderOverTraceExporter) SendSpans(traces pdata.TraceData) error {
 	return ds.exporter.ConsumeTrace(context.Background(), traces)
 }
 

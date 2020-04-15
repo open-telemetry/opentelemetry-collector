@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 )
 
@@ -48,7 +49,7 @@ func TestNopMetricsExporterOld(t *testing.T) {
 func TestNopTraceExporter(t *testing.T) {
 	nte := NewNopTraceExporter()
 	require.NoError(t, nte.Start(context.Background(), nil))
-	require.NoError(t, nte.ConsumeTrace(context.Background(), data.NewTraceData()))
+	require.NoError(t, nte.ConsumeTrace(context.Background(), pdata.NewTraceData()))
 	require.NoError(t, nte.Shutdown(context.Background()))
 }
 

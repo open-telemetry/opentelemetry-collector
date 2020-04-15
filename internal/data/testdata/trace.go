@@ -19,26 +19,26 @@ import (
 
 	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
 
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 )
 
 var (
 	TestSpanStartTime      = time.Date(2020, 2, 11, 20, 26, 12, 321, time.UTC)
-	TestSpanStartTimestamp = data.TimestampUnixNano(TestSpanStartTime.UnixNano())
+	TestSpanStartTimestamp = pdata.TimestampUnixNano(TestSpanStartTime.UnixNano())
 
 	TestSpanEventTime      = time.Date(2020, 2, 11, 20, 26, 13, 123, time.UTC)
-	TestSpanEventTimestamp = data.TimestampUnixNano(TestSpanEventTime.UnixNano())
+	TestSpanEventTimestamp = pdata.TimestampUnixNano(TestSpanEventTime.UnixNano())
 
 	TestSpanEndTime      = time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC)
-	TestSpanEndTimestamp = data.TimestampUnixNano(TestSpanEndTime.UnixNano())
+	TestSpanEndTimestamp = pdata.TimestampUnixNano(TestSpanEndTime.UnixNano())
 )
 
 const (
 	NumTraceTests = 11
 )
 
-func GenerateTraceDataEmpty() data.TraceData {
-	td := data.NewTraceData()
+func GenerateTraceDataEmpty() pdata.TraceData {
+	td := pdata.NewTraceData()
 	return td
 }
 
@@ -46,7 +46,7 @@ func generateTraceOtlpEmpty() []*otlptrace.ResourceSpans {
 	return []*otlptrace.ResourceSpans(nil)
 }
 
-func GenerateTraceDataOneEmptyResourceSpans() data.TraceData {
+func GenerateTraceDataOneEmptyResourceSpans() pdata.TraceData {
 	td := GenerateTraceDataEmpty()
 	td.ResourceSpans().Resize(1)
 	return td
@@ -58,8 +58,8 @@ func generateTraceOtlpOneEmptyResourceSpans() []*otlptrace.ResourceSpans {
 	}
 }
 
-func GenerateTraceDataOneEmptyOneNilResourceSpans() data.TraceData {
-	return data.TraceDataFromOtlp(generateTraceOtlpOneEmptyOneNilResourceSpans())
+func GenerateTraceDataOneEmptyOneNilResourceSpans() pdata.TraceData {
+	return pdata.TraceDataFromOtlp(generateTraceOtlpOneEmptyOneNilResourceSpans())
 
 }
 
@@ -70,7 +70,7 @@ func generateTraceOtlpOneEmptyOneNilResourceSpans() []*otlptrace.ResourceSpans {
 	}
 }
 
-func GenerateTraceDataNoLibraries() data.TraceData {
+func GenerateTraceDataNoLibraries() pdata.TraceData {
 	td := GenerateTraceDataOneEmptyResourceSpans()
 	rs0 := td.ResourceSpans().At(0)
 	initResource1(rs0.Resource())
@@ -85,7 +85,7 @@ func generateTraceOtlpNoLibraries() []*otlptrace.ResourceSpans {
 	}
 }
 
-func GenerateTraceDataOneEmptyInstrumentationLibrary() data.TraceData {
+func GenerateTraceDataOneEmptyInstrumentationLibrary() pdata.TraceData {
 	td := GenerateTraceDataNoLibraries()
 	rs0 := td.ResourceSpans().At(0)
 	rs0.InstrumentationLibrarySpans().Resize(1)
@@ -103,8 +103,8 @@ func generateTraceOtlpOneEmptyInstrumentationLibrary() []*otlptrace.ResourceSpan
 	}
 }
 
-func GenerateTraceDataOneEmptyOneNilInstrumentationLibrary() data.TraceData {
-	return data.TraceDataFromOtlp(generateTraceOtlpOneEmptyOneNilInstrumentationLibrary())
+func GenerateTraceDataOneEmptyOneNilInstrumentationLibrary() pdata.TraceData {
+	return pdata.TraceDataFromOtlp(generateTraceOtlpOneEmptyOneNilInstrumentationLibrary())
 }
 
 func generateTraceOtlpOneEmptyOneNilInstrumentationLibrary() []*otlptrace.ResourceSpans {
@@ -119,7 +119,7 @@ func generateTraceOtlpOneEmptyOneNilInstrumentationLibrary() []*otlptrace.Resour
 	}
 }
 
-func GenerateTraceDataOneSpanNoResource() data.TraceData {
+func GenerateTraceDataOneSpanNoResource() pdata.TraceData {
 	td := GenerateTraceDataOneEmptyResourceSpans()
 	rs0 := td.ResourceSpans().At(0)
 	rs0.InstrumentationLibrarySpans().Resize(1)
@@ -143,7 +143,7 @@ func generateTraceOtlpOneSpanNoResource() []*otlptrace.ResourceSpans {
 	}
 }
 
-func GenerateTraceDataOneSpan() data.TraceData {
+func GenerateTraceDataOneSpan() pdata.TraceData {
 	td := GenerateTraceDataOneEmptyInstrumentationLibrary()
 	rs0ils0 := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0)
 	rs0ils0.Spans().Resize(1)
@@ -166,8 +166,8 @@ func generateTraceOtlpOneSpan() []*otlptrace.ResourceSpans {
 	}
 }
 
-func GenerateTraceDataOneSpanOneNil() data.TraceData {
-	return data.TraceDataFromOtlp(generateTraceOtlpOneSpanOneNil())
+func GenerateTraceDataOneSpanOneNil() pdata.TraceData {
+	return pdata.TraceDataFromOtlp(generateTraceOtlpOneSpanOneNil())
 }
 
 func generateTraceOtlpOneSpanOneNil() []*otlptrace.ResourceSpans {
@@ -186,7 +186,7 @@ func generateTraceOtlpOneSpanOneNil() []*otlptrace.ResourceSpans {
 	}
 }
 
-func GenerateTraceDataTwoSpansSameResource() data.TraceData {
+func GenerateTraceDataTwoSpansSameResource() pdata.TraceData {
 	td := GenerateTraceDataOneEmptyInstrumentationLibrary()
 	rs0ils0 := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0)
 	rs0ils0.Spans().Resize(2)
@@ -212,8 +212,8 @@ func GenerateTraceOtlpSameResourceTwoSpans() []*otlptrace.ResourceSpans {
 	}
 }
 
-func GenerateTraceDataTwoSpansSameResourceOneDifferent() data.TraceData {
-	td := data.NewTraceData()
+func GenerateTraceDataTwoSpansSameResourceOneDifferent() pdata.TraceData {
+	td := pdata.NewTraceData()
 	td.ResourceSpans().Resize(2)
 	rs0 := td.ResourceSpans().At(0)
 	initResource1(rs0.Resource())
@@ -257,7 +257,7 @@ func generateTraceOtlpTwoSpansSameResourceOneDifferent() []*otlptrace.ResourceSp
 	}
 }
 
-func fillSpanOne(span data.Span) {
+func fillSpanOne(span pdata.Span) {
 	span.SetName("operationA")
 	span.SetStartTime(TestSpanStartTimestamp)
 	span.SetEndTime(TestSpanEndTimestamp)
@@ -276,7 +276,7 @@ func fillSpanOne(span data.Span) {
 	span.SetDroppedEventsCount(1)
 	status := span.Status()
 	status.InitEmpty()
-	status.SetCode(data.StatusCode(1))
+	status.SetCode(pdata.StatusCode(1))
 	status.SetMessage("status-cancelled")
 }
 
@@ -307,7 +307,7 @@ func generateOtlpSpanOne() *otlptrace.Span {
 	}
 }
 
-func fillSpanTwo(span data.Span) {
+func fillSpanTwo(span pdata.Span) {
 	span.SetName("operationB")
 	span.SetStartTime(TestSpanStartTimestamp)
 	span.SetEndTime(TestSpanEndTimestamp)
@@ -336,7 +336,7 @@ func generateOtlpSpanTwo() *otlptrace.Span {
 	}
 }
 
-func fillSpanThree(span data.Span) {
+func fillSpanThree(span pdata.Span) {
 	span.SetName("operationC")
 	span.SetStartTime(TestSpanStartTimestamp)
 	span.SetEndTime(TestSpanEndTimestamp)

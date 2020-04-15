@@ -23,8 +23,8 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data/testdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal/processor/filterspan"
 	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
@@ -34,8 +34,8 @@ import (
 type testCase struct {
 	name               string
 	serviceName        string
-	inputAttributes    map[string]data.AttributeValue
-	expectedAttributes map[string]data.AttributeValue
+	inputAttributes    map[string]pdata.AttributeValue
+	expectedAttributes map[string]pdata.AttributeValue
 }
 
 // runIndividualTestCase is the common logic of passing trace data through a configured attributes processor.
@@ -49,8 +49,8 @@ func runIndividualTestCase(t *testing.T, tt testCase, tp component.TraceProcesso
 	})
 }
 
-func generateTraceData(serviceName, spanName string, attrs map[string]data.AttributeValue) data.TraceData {
-	td := data.NewTraceData()
+func generateTraceData(serviceName, spanName string, attrs map[string]pdata.AttributeValue) pdata.TraceData {
+	td := pdata.NewTraceData()
 	td.ResourceSpans().Resize(1)
 	rs := td.ResourceSpans().At(0)
 	if serviceName != "" {
@@ -66,7 +66,7 @@ func generateTraceData(serviceName, spanName string, attrs map[string]data.Attri
 	return td
 }
 
-func sortAttributes(td data.TraceData) {
+func sortAttributes(td pdata.TraceData) {
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
@@ -97,8 +97,8 @@ func sortAttributes(td data.TraceData) {
 func TestSpanProcessor_NilEmptyData(t *testing.T) {
 	type nilEmptyTestCase struct {
 		name   string
-		input  data.TraceData
-		output data.TraceData
+		input  pdata.TraceData
+		output pdata.TraceData
 	}
 	// TODO: Add test for "nil" Span/Attributes. This needs support from data slices to allow to construct that.
 	testCases := []nilEmptyTestCase{
@@ -159,30 +159,30 @@ func TestAttributes_InsertValue(t *testing.T) {
 		// Ensure `attribute1` is set for spans with no attributes.
 		{
 			name:            "InsertEmptyAttributes",
-			inputAttributes: map[string]data.AttributeValue{},
-			expectedAttributes: map[string]data.AttributeValue{
-				"attribute1": data.NewAttributeValueInt(123),
+			inputAttributes: map[string]pdata.AttributeValue{},
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"attribute1": pdata.NewAttributeValueInt(123),
 			},
 		},
 		// Ensure `attribute1` is set.
 		{
 			name: "InsertKeyNoExists",
-			inputAttributes: map[string]data.AttributeValue{
-				"anotherkey": data.NewAttributeValueString("bob"),
+			inputAttributes: map[string]pdata.AttributeValue{
+				"anotherkey": pdata.NewAttributeValueString("bob"),
 			},
-			expectedAttributes: map[string]data.AttributeValue{
-				"anotherkey": data.NewAttributeValueString("bob"),
-				"attribute1": data.NewAttributeValueInt(123),
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"anotherkey": pdata.NewAttributeValueString("bob"),
+				"attribute1": pdata.NewAttributeValueInt(123),
 			},
 		},
 		// Ensures no insert is performed because the keys `attribute1` already exists.
 		{
 			name: "InsertKeyExists",
-			inputAttributes: map[string]data.AttributeValue{
-				"attribute1": data.NewAttributeValueString("bob"),
+			inputAttributes: map[string]pdata.AttributeValue{
+				"attribute1": pdata.NewAttributeValueString("bob"),
 			},
-			expectedAttributes: map[string]data.AttributeValue{
-				"attribute1": data.NewAttributeValueString("bob"),
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"attribute1": pdata.NewAttributeValueString("bob"),
 			},
 		},
 	}
@@ -209,40 +209,40 @@ func TestAttributes_InsertFromAttribute(t *testing.T) {
 		// Ensure no attribute is inserted because because attributes do not exist.
 		{
 			name:               "InsertEmptyAttributes",
-			inputAttributes:    map[string]data.AttributeValue{},
-			expectedAttributes: map[string]data.AttributeValue{},
+			inputAttributes:    map[string]pdata.AttributeValue{},
+			expectedAttributes: map[string]pdata.AttributeValue{},
 		},
 		// Ensure no attribute is inserted because because from_attribute `string_key` does not exist.
 		{
 			name: "InsertMissingFromAttribute",
-			inputAttributes: map[string]data.AttributeValue{
-				"bob": data.NewAttributeValueInt(1),
+			inputAttributes: map[string]pdata.AttributeValue{
+				"bob": pdata.NewAttributeValueInt(1),
 			},
-			expectedAttributes: map[string]data.AttributeValue{
-				"bob": data.NewAttributeValueInt(1),
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"bob": pdata.NewAttributeValueInt(1),
 			},
 		},
 		// Ensure `string key` is set.
 		{
 			name: "InsertAttributeExists",
-			inputAttributes: map[string]data.AttributeValue{
-				"anotherkey": data.NewAttributeValueInt(8892342),
+			inputAttributes: map[string]pdata.AttributeValue{
+				"anotherkey": pdata.NewAttributeValueInt(8892342),
 			},
-			expectedAttributes: map[string]data.AttributeValue{
-				"anotherkey": data.NewAttributeValueInt(8892342),
-				"string key": data.NewAttributeValueInt(8892342),
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"anotherkey": pdata.NewAttributeValueInt(8892342),
+				"string key": pdata.NewAttributeValueInt(8892342),
 			},
 		},
 		// Ensures no insert is performed because the keys `string key` already exist.
 		{
 			name: "InsertKeysExists",
-			inputAttributes: map[string]data.AttributeValue{
-				"anotherkey": data.NewAttributeValueInt(8892342),
-				"string key": data.NewAttributeValueString("here"),
+			inputAttributes: map[string]pdata.AttributeValue{
+				"anotherkey": pdata.NewAttributeValueInt(8892342),
+				"string key": pdata.NewAttributeValueString("here"),
 			},
-			expectedAttributes: map[string]data.AttributeValue{
-				"anotherkey": data.NewAttributeValueInt(8892342),
-				"string key": data.NewAttributeValueString("here"),
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"anotherkey": pdata.NewAttributeValueInt(8892342),
+				"string key": pdata.NewAttributeValueString("here"),
 			},
 		},
 	}
@@ -268,27 +268,27 @@ func TestAttributes_UpdateValue(t *testing.T) {
 		// Ensure no changes to the span as there is no attributes map.
 		{
 			name:               "UpdateNoAttributes",
-			inputAttributes:    map[string]data.AttributeValue{},
-			expectedAttributes: map[string]data.AttributeValue{},
+			inputAttributes:    map[string]pdata.AttributeValue{},
+			expectedAttributes: map[string]pdata.AttributeValue{},
 		},
 		// Ensure no changes to the span as the key does not exist.
 		{
 			name: "UpdateKeyNoExist",
-			inputAttributes: map[string]data.AttributeValue{
-				"boo": data.NewAttributeValueString("foo"),
+			inputAttributes: map[string]pdata.AttributeValue{
+				"boo": pdata.NewAttributeValueString("foo"),
 			},
-			expectedAttributes: map[string]data.AttributeValue{
-				"boo": data.NewAttributeValueString("foo"),
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"boo": pdata.NewAttributeValueString("foo"),
 			},
 		},
 		// Ensure the attribute `db.secret` is updated.
 		{
 			name: "UpdateAttributes",
-			inputAttributes: map[string]data.AttributeValue{
-				"db.secret": data.NewAttributeValueString("password1234"),
+			inputAttributes: map[string]pdata.AttributeValue{
+				"db.secret": pdata.NewAttributeValueString("password1234"),
 			},
-			expectedAttributes: map[string]data.AttributeValue{
-				"db.secret": data.NewAttributeValueString("redacted"),
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"db.secret": pdata.NewAttributeValueString("redacted"),
 			},
 		},
 	}
@@ -314,39 +314,39 @@ func TestAttributes_UpdateFromAttribute(t *testing.T) {
 		// Ensure no changes to the span as there is no attributes map.
 		{
 			name:               "UpdateNoAttributes",
-			inputAttributes:    map[string]data.AttributeValue{},
-			expectedAttributes: map[string]data.AttributeValue{},
+			inputAttributes:    map[string]pdata.AttributeValue{},
+			expectedAttributes: map[string]pdata.AttributeValue{},
 		},
 		// Ensure the attribute `boo` isn't updated because attribute `foo` isn't present in the span.
 		{
 			name: "UpdateKeyNoExistFromAttribute",
-			inputAttributes: map[string]data.AttributeValue{
-				"boo": data.NewAttributeValueString("bob"),
+			inputAttributes: map[string]pdata.AttributeValue{
+				"boo": pdata.NewAttributeValueString("bob"),
 			},
-			expectedAttributes: map[string]data.AttributeValue{
-				"boo": data.NewAttributeValueString("bob"),
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"boo": pdata.NewAttributeValueString("bob"),
 			},
 		},
 		// Ensure no updates as the target key `boo` doesn't exists.
 		{
 			name: "UpdateKeyNoExistMainAttributed",
-			inputAttributes: map[string]data.AttributeValue{
-				"foo": data.NewAttributeValueString("over there"),
+			inputAttributes: map[string]pdata.AttributeValue{
+				"foo": pdata.NewAttributeValueString("over there"),
 			},
-			expectedAttributes: map[string]data.AttributeValue{
-				"foo": data.NewAttributeValueString("over there"),
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"foo": pdata.NewAttributeValueString("over there"),
 			},
 		},
 		// Ensure no updates as the target key `boo` doesn't exists.
 		{
 			name: "UpdateKeyFromExistingAttribute",
-			inputAttributes: map[string]data.AttributeValue{
-				"foo": data.NewAttributeValueString("there is a party over here"),
-				"boo": data.NewAttributeValueString("not here"),
+			inputAttributes: map[string]pdata.AttributeValue{
+				"foo": pdata.NewAttributeValueString("there is a party over here"),
+				"boo": pdata.NewAttributeValueString("not here"),
 			},
-			expectedAttributes: map[string]data.AttributeValue{
-				"foo": data.NewAttributeValueString("there is a party over here"),
-				"boo": data.NewAttributeValueString("there is a party over here"),
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"foo": pdata.NewAttributeValueString("there is a party over here"),
+				"boo": pdata.NewAttributeValueString("there is a party over here"),
 			},
 		},
 	}
@@ -372,32 +372,32 @@ func TestAttributes_UpsertValue(t *testing.T) {
 		// Ensure `region` is set for spans with no attributes.
 		{
 			name:            "UpsertNoAttributes",
-			inputAttributes: map[string]data.AttributeValue{},
-			expectedAttributes: map[string]data.AttributeValue{
-				"region": data.NewAttributeValueString("planet-earth"),
+			inputAttributes: map[string]pdata.AttributeValue{},
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"region": pdata.NewAttributeValueString("planet-earth"),
 			},
 		},
 		// Ensure `region` is inserted for spans with some attributes(the key doesn't exist).
 		{
 			name: "UpsertAttributeNoExist",
-			inputAttributes: map[string]data.AttributeValue{
-				"mission": data.NewAttributeValueString("to mars"),
+			inputAttributes: map[string]pdata.AttributeValue{
+				"mission": pdata.NewAttributeValueString("to mars"),
 			},
-			expectedAttributes: map[string]data.AttributeValue{
-				"mission": data.NewAttributeValueString("to mars"),
-				"region":  data.NewAttributeValueString("planet-earth"),
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"mission": pdata.NewAttributeValueString("to mars"),
+				"region":  pdata.NewAttributeValueString("planet-earth"),
 			},
 		},
 		/// Ensure `region` is updated for spans with the attribute key `region`.
 		{
 			name: "UpsertAttributeExists",
-			inputAttributes: map[string]data.AttributeValue{
-				"mission": data.NewAttributeValueString("to mars"),
-				"region":  data.NewAttributeValueString("solar system"),
+			inputAttributes: map[string]pdata.AttributeValue{
+				"mission": pdata.NewAttributeValueString("to mars"),
+				"region":  pdata.NewAttributeValueString("solar system"),
 			},
-			expectedAttributes: map[string]data.AttributeValue{
-				"mission": data.NewAttributeValueString("to mars"),
-				"region":  data.NewAttributeValueString("planet-earth"),
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"mission": pdata.NewAttributeValueString("to mars"),
+				"region":  pdata.NewAttributeValueString("planet-earth"),
 			},
 		},
 	}
@@ -423,44 +423,44 @@ func TestAttributes_UpsertFromAttribute(t *testing.T) {
 		// Ensure `new_user_key` is not set for spans with no attributes.
 		{
 			name:               "UpsertEmptyAttributes",
-			inputAttributes:    map[string]data.AttributeValue{},
-			expectedAttributes: map[string]data.AttributeValue{},
+			inputAttributes:    map[string]pdata.AttributeValue{},
+			expectedAttributes: map[string]pdata.AttributeValue{},
 		},
 		// Ensure `new_user_key` is not inserted for spans with missing attribute `user_key`.
 		{
 			name: "UpsertFromAttributeNoExist",
-			inputAttributes: map[string]data.AttributeValue{
-				"boo": data.NewAttributeValueString("ghosts are scary"),
+			inputAttributes: map[string]pdata.AttributeValue{
+				"boo": pdata.NewAttributeValueString("ghosts are scary"),
 			},
-			expectedAttributes: map[string]data.AttributeValue{
-				"boo": data.NewAttributeValueString("ghosts are scary"),
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"boo": pdata.NewAttributeValueString("ghosts are scary"),
 			},
 		},
 		// Ensure `new_user_key` is inserted for spans with attribute `user_key`.
 		{
 			name: "UpsertFromAttributeExistsInsert",
-			inputAttributes: map[string]data.AttributeValue{
-				"user_key": data.NewAttributeValueInt(2245),
-				"foo":      data.NewAttributeValueString("casper the friendly ghost"),
+			inputAttributes: map[string]pdata.AttributeValue{
+				"user_key": pdata.NewAttributeValueInt(2245),
+				"foo":      pdata.NewAttributeValueString("casper the friendly ghost"),
 			},
-			expectedAttributes: map[string]data.AttributeValue{
-				"user_key":     data.NewAttributeValueInt(2245),
-				"new_user_key": data.NewAttributeValueInt(2245),
-				"foo":          data.NewAttributeValueString("casper the friendly ghost"),
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"user_key":     pdata.NewAttributeValueInt(2245),
+				"new_user_key": pdata.NewAttributeValueInt(2245),
+				"foo":          pdata.NewAttributeValueString("casper the friendly ghost"),
 			},
 		},
 		// Ensure `new_user_key` is updated for spans with attribute `user_key`.
 		{
 			name: "UpsertFromAttributeExistsUpdate",
-			inputAttributes: map[string]data.AttributeValue{
-				"user_key":     data.NewAttributeValueInt(2245),
-				"new_user_key": data.NewAttributeValueInt(5422),
-				"foo":          data.NewAttributeValueString("casper the friendly ghost"),
+			inputAttributes: map[string]pdata.AttributeValue{
+				"user_key":     pdata.NewAttributeValueInt(2245),
+				"new_user_key": pdata.NewAttributeValueInt(5422),
+				"foo":          pdata.NewAttributeValueString("casper the friendly ghost"),
 			},
-			expectedAttributes: map[string]data.AttributeValue{
-				"user_key":     data.NewAttributeValueInt(2245),
-				"new_user_key": data.NewAttributeValueInt(2245),
-				"foo":          data.NewAttributeValueString("casper the friendly ghost"),
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"user_key":     pdata.NewAttributeValueInt(2245),
+				"new_user_key": pdata.NewAttributeValueInt(2245),
+				"foo":          pdata.NewAttributeValueString("casper the friendly ghost"),
 			},
 		},
 	}
@@ -486,28 +486,28 @@ func TestAttributes_Delete(t *testing.T) {
 		// Ensure the span contains no changes.
 		{
 			name:               "DeleteEmptyAttributes",
-			inputAttributes:    map[string]data.AttributeValue{},
-			expectedAttributes: map[string]data.AttributeValue{},
+			inputAttributes:    map[string]pdata.AttributeValue{},
+			expectedAttributes: map[string]pdata.AttributeValue{},
 		},
 		// Ensure the span contains no changes because the key doesn't exist.
 		{
 			name: "DeleteAttributeNoExist",
-			inputAttributes: map[string]data.AttributeValue{
-				"boo": data.NewAttributeValueString("ghosts are scary"),
+			inputAttributes: map[string]pdata.AttributeValue{
+				"boo": pdata.NewAttributeValueString("ghosts are scary"),
 			},
-			expectedAttributes: map[string]data.AttributeValue{
-				"boo": data.NewAttributeValueString("ghosts are scary"),
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"boo": pdata.NewAttributeValueString("ghosts are scary"),
 			},
 		},
 		// Ensure `duplicate_key` is deleted for spans with the attribute set.
 		{
 			name: "DeleteAttributeExists",
-			inputAttributes: map[string]data.AttributeValue{
-				"duplicate_key": data.NewAttributeValueDouble(3245.6),
-				"original_key":  data.NewAttributeValueDouble(3245.6),
+			inputAttributes: map[string]pdata.AttributeValue{
+				"duplicate_key": pdata.NewAttributeValueDouble(3245.6),
+				"original_key":  pdata.NewAttributeValueDouble(3245.6),
 			},
-			expectedAttributes: map[string]data.AttributeValue{
-				"original_key": data.NewAttributeValueDouble(3245.6),
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"original_key": pdata.NewAttributeValueDouble(3245.6),
 			},
 		},
 	}
@@ -544,16 +544,16 @@ func TestAttributes_FromAttributeNoChange(t *testing.T) {
 	traceData := generateTraceData(
 		"",
 		"FromAttributeNoChange",
-		map[string]data.AttributeValue{
-			"boo": data.NewAttributeValueString("ghosts are scary"),
+		map[string]pdata.AttributeValue{
+			"boo": pdata.NewAttributeValueString("ghosts are scary"),
 		})
 
 	assert.NoError(t, tp.ConsumeTrace(context.Background(), traceData))
 	require.Equal(t, generateTraceData(
 		"",
 		"FromAttributeNoChange",
-		map[string]data.AttributeValue{
-			"boo": data.NewAttributeValueString("ghosts are scary"),
+		map[string]pdata.AttributeValue{
+			"boo": pdata.NewAttributeValueString("ghosts are scary"),
 		}), traceData)
 }
 
@@ -565,12 +565,12 @@ func TestAttributes_Ordering(t *testing.T) {
 		// 3. delete `operation`.
 		{
 			name: "OrderingApplyAllSteps",
-			inputAttributes: map[string]data.AttributeValue{
-				"foo": data.NewAttributeValueString("casper the friendly ghost"),
+			inputAttributes: map[string]pdata.AttributeValue{
+				"foo": pdata.NewAttributeValueString("casper the friendly ghost"),
 			},
-			expectedAttributes: map[string]data.AttributeValue{
-				"foo":           data.NewAttributeValueString("casper the friendly ghost"),
-				"svc.operation": data.NewAttributeValueString("default"),
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"foo":           pdata.NewAttributeValueString("casper the friendly ghost"),
+				"svc.operation": pdata.NewAttributeValueString("default"),
 			},
 		},
 		// For this example, the operations performed are
@@ -579,13 +579,13 @@ func TestAttributes_Ordering(t *testing.T) {
 		// 3. delete `operation`.
 		{
 			name: "OrderingOperationExists",
-			inputAttributes: map[string]data.AttributeValue{
-				"foo":       data.NewAttributeValueString("casper the friendly ghost"),
-				"operation": data.NewAttributeValueString("arithmetic"),
+			inputAttributes: map[string]pdata.AttributeValue{
+				"foo":       pdata.NewAttributeValueString("casper the friendly ghost"),
+				"operation": pdata.NewAttributeValueString("arithmetic"),
 			},
-			expectedAttributes: map[string]data.AttributeValue{
-				"foo":           data.NewAttributeValueString("casper the friendly ghost"),
-				"svc.operation": data.NewAttributeValueString("arithmetic"),
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"foo":           pdata.NewAttributeValueString("casper the friendly ghost"),
+				"svc.operation": pdata.NewAttributeValueString("arithmetic"),
 			},
 		},
 
@@ -595,13 +595,13 @@ func TestAttributes_Ordering(t *testing.T) {
 		// 3. delete `operation`.
 		{
 			name: "OrderingSvcOperationExists",
-			inputAttributes: map[string]data.AttributeValue{
-				"foo":           data.NewAttributeValueString("casper the friendly ghost"),
-				"svc.operation": data.NewAttributeValueString("some value"),
+			inputAttributes: map[string]pdata.AttributeValue{
+				"foo":           pdata.NewAttributeValueString("casper the friendly ghost"),
+				"svc.operation": pdata.NewAttributeValueString("some value"),
 			},
-			expectedAttributes: map[string]data.AttributeValue{
-				"foo":           data.NewAttributeValueString("casper the friendly ghost"),
-				"svc.operation": data.NewAttributeValueString("default"),
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"foo":           pdata.NewAttributeValueString("casper the friendly ghost"),
+				"svc.operation": pdata.NewAttributeValueString("default"),
 			},
 		},
 
@@ -611,14 +611,14 @@ func TestAttributes_Ordering(t *testing.T) {
 		// 3. delete `operation`.
 		{
 			name: "OrderingBothAttributesExist",
-			inputAttributes: map[string]data.AttributeValue{
-				"foo":           data.NewAttributeValueString("casper the friendly ghost"),
-				"operation":     data.NewAttributeValueString("arithmetic"),
-				"svc.operation": data.NewAttributeValueString("add"),
+			inputAttributes: map[string]pdata.AttributeValue{
+				"foo":           pdata.NewAttributeValueString("casper the friendly ghost"),
+				"operation":     pdata.NewAttributeValueString("arithmetic"),
+				"svc.operation": pdata.NewAttributeValueString("add"),
 			},
-			expectedAttributes: map[string]data.AttributeValue{
-				"foo":           data.NewAttributeValueString("casper the friendly ghost"),
-				"svc.operation": data.NewAttributeValueString("arithmetic"),
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"foo":           pdata.NewAttributeValueString("casper the friendly ghost"),
+				"svc.operation": pdata.NewAttributeValueString("arithmetic"),
 			},
 		},
 	}
@@ -646,36 +646,36 @@ func TestAttributes_FilterSpans(t *testing.T) {
 		{
 			name:            "apply processor",
 			serviceName:     "svcB",
-			inputAttributes: map[string]data.AttributeValue{},
-			expectedAttributes: map[string]data.AttributeValue{
-				"attribute1": data.NewAttributeValueInt(123),
+			inputAttributes: map[string]pdata.AttributeValue{},
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"attribute1": pdata.NewAttributeValueInt(123),
 			},
 		},
 		{
 			name:        "apply processor with different value for exclude property",
 			serviceName: "svcB",
-			inputAttributes: map[string]data.AttributeValue{
-				"NoModification": data.NewAttributeValueBool(false),
+			inputAttributes: map[string]pdata.AttributeValue{
+				"NoModification": pdata.NewAttributeValueBool(false),
 			},
-			expectedAttributes: map[string]data.AttributeValue{
-				"attribute1":     data.NewAttributeValueInt(123),
-				"NoModification": data.NewAttributeValueBool(false),
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"attribute1":     pdata.NewAttributeValueInt(123),
+				"NoModification": pdata.NewAttributeValueBool(false),
 			},
 		},
 		{
 			name:               "incorrect name for include property",
 			serviceName:        "noname",
-			inputAttributes:    map[string]data.AttributeValue{},
-			expectedAttributes: map[string]data.AttributeValue{},
+			inputAttributes:    map[string]pdata.AttributeValue{},
+			expectedAttributes: map[string]pdata.AttributeValue{},
 		},
 		{
 			name:        "attribute match for exclude property",
 			serviceName: "svcB",
-			inputAttributes: map[string]data.AttributeValue{
-				"NoModification": data.NewAttributeValueBool(true),
+			inputAttributes: map[string]pdata.AttributeValue{
+				"NoModification": pdata.NewAttributeValueBool(true),
 			},
-			expectedAttributes: map[string]data.AttributeValue{
-				"NoModification": data.NewAttributeValueBool(true),
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"NoModification": pdata.NewAttributeValueBool(true),
 			},
 		},
 	}
@@ -710,42 +710,42 @@ func TestAttributes_FilterSpansByNameStrict(t *testing.T) {
 		{
 			name:            "apply",
 			serviceName:     "svcB",
-			inputAttributes: map[string]data.AttributeValue{},
-			expectedAttributes: map[string]data.AttributeValue{
-				"attribute1": data.NewAttributeValueInt(123),
+			inputAttributes: map[string]pdata.AttributeValue{},
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"attribute1": pdata.NewAttributeValueInt(123),
 			},
 		},
 		{
 			name:        "apply",
 			serviceName: "svcB",
-			inputAttributes: map[string]data.AttributeValue{
-				"NoModification": data.NewAttributeValueBool(false),
+			inputAttributes: map[string]pdata.AttributeValue{
+				"NoModification": pdata.NewAttributeValueBool(false),
 			},
-			expectedAttributes: map[string]data.AttributeValue{
-				"attribute1":     data.NewAttributeValueInt(123),
-				"NoModification": data.NewAttributeValueBool(false),
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"attribute1":     pdata.NewAttributeValueInt(123),
+				"NoModification": pdata.NewAttributeValueBool(false),
 			},
 		},
 		{
 			name:               "incorrect_span_name",
 			serviceName:        "svcB",
-			inputAttributes:    map[string]data.AttributeValue{},
-			expectedAttributes: map[string]data.AttributeValue{},
+			inputAttributes:    map[string]pdata.AttributeValue{},
+			expectedAttributes: map[string]pdata.AttributeValue{},
 		},
 		{
 			name:               "dont_apply",
 			serviceName:        "svcB",
-			inputAttributes:    map[string]data.AttributeValue{},
-			expectedAttributes: map[string]data.AttributeValue{},
+			inputAttributes:    map[string]pdata.AttributeValue{},
+			expectedAttributes: map[string]pdata.AttributeValue{},
 		},
 		{
 			name:        "incorrect_span_name_with_attr",
 			serviceName: "svcB",
-			inputAttributes: map[string]data.AttributeValue{
-				"NoModification": data.NewAttributeValueBool(true),
+			inputAttributes: map[string]pdata.AttributeValue{
+				"NoModification": pdata.NewAttributeValueBool(true),
 			},
-			expectedAttributes: map[string]data.AttributeValue{
-				"NoModification": data.NewAttributeValueBool(true),
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"NoModification": pdata.NewAttributeValueBool(true),
 			},
 		},
 	}
@@ -778,42 +778,42 @@ func TestAttributes_FilterSpansByNameRegexp(t *testing.T) {
 		{
 			name:            "apply_to_span_with_no_attrs",
 			serviceName:     "svcB",
-			inputAttributes: map[string]data.AttributeValue{},
-			expectedAttributes: map[string]data.AttributeValue{
-				"attribute1": data.NewAttributeValueInt(123),
+			inputAttributes: map[string]pdata.AttributeValue{},
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"attribute1": pdata.NewAttributeValueInt(123),
 			},
 		},
 		{
 			name:        "apply_to_span_with_attr",
 			serviceName: "svcB",
-			inputAttributes: map[string]data.AttributeValue{
-				"NoModification": data.NewAttributeValueBool(false),
+			inputAttributes: map[string]pdata.AttributeValue{
+				"NoModification": pdata.NewAttributeValueBool(false),
 			},
-			expectedAttributes: map[string]data.AttributeValue{
-				"attribute1":     data.NewAttributeValueInt(123),
-				"NoModification": data.NewAttributeValueBool(false),
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"attribute1":     pdata.NewAttributeValueInt(123),
+				"NoModification": pdata.NewAttributeValueBool(false),
 			},
 		},
 		{
 			name:               "incorrect_span_name",
 			serviceName:        "svcB",
-			inputAttributes:    map[string]data.AttributeValue{},
-			expectedAttributes: map[string]data.AttributeValue{},
+			inputAttributes:    map[string]pdata.AttributeValue{},
+			expectedAttributes: map[string]pdata.AttributeValue{},
 		},
 		{
 			name:               "apply_dont_apply",
 			serviceName:        "svcB",
-			inputAttributes:    map[string]data.AttributeValue{},
-			expectedAttributes: map[string]data.AttributeValue{},
+			inputAttributes:    map[string]pdata.AttributeValue{},
+			expectedAttributes: map[string]pdata.AttributeValue{},
 		},
 		{
 			name:        "incorrect_span_name_with_attr",
 			serviceName: "svcB",
-			inputAttributes: map[string]data.AttributeValue{
-				"NoModification": data.NewAttributeValueBool(true),
+			inputAttributes: map[string]pdata.AttributeValue{
+				"NoModification": pdata.NewAttributeValueBool(true),
 			},
-			expectedAttributes: map[string]data.AttributeValue{
-				"NoModification": data.NewAttributeValueBool(true),
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"NoModification": pdata.NewAttributeValueBool(true),
 			},
 		},
 	}
@@ -845,38 +845,38 @@ func TestAttributes_Hash(t *testing.T) {
 	testCases := []testCase{
 		{
 			name: "String",
-			inputAttributes: map[string]data.AttributeValue{
-				"user.email": data.NewAttributeValueString("john.doe@example.com"),
+			inputAttributes: map[string]pdata.AttributeValue{
+				"user.email": pdata.NewAttributeValueString("john.doe@example.com"),
 			},
-			expectedAttributes: map[string]data.AttributeValue{
-				"user.email": data.NewAttributeValueString("73ec53c4ba1747d485ae2a0d7bfafa6cda80a5a9"),
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"user.email": pdata.NewAttributeValueString("73ec53c4ba1747d485ae2a0d7bfafa6cda80a5a9"),
 			},
 		},
 		{
 			name: "Int",
-			inputAttributes: map[string]data.AttributeValue{
-				"user.id": data.NewAttributeValueInt(10),
+			inputAttributes: map[string]pdata.AttributeValue{
+				"user.id": pdata.NewAttributeValueInt(10),
 			},
-			expectedAttributes: map[string]data.AttributeValue{
-				"user.id": data.NewAttributeValueString("71aa908aff1548c8c6cdecf63545261584738a25"),
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"user.id": pdata.NewAttributeValueString("71aa908aff1548c8c6cdecf63545261584738a25"),
 			},
 		},
 		{
 			name: "Double",
-			inputAttributes: map[string]data.AttributeValue{
-				"user.balance": data.NewAttributeValueDouble(99.1),
+			inputAttributes: map[string]pdata.AttributeValue{
+				"user.balance": pdata.NewAttributeValueDouble(99.1),
 			},
-			expectedAttributes: map[string]data.AttributeValue{
-				"user.balance": data.NewAttributeValueString("76429edab4855b03073f9429fd5d10313c28655e"),
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"user.balance": pdata.NewAttributeValueString("76429edab4855b03073f9429fd5d10313c28655e"),
 			},
 		},
 		{
 			name: "Bool",
-			inputAttributes: map[string]data.AttributeValue{
-				"user.authenticated": data.NewAttributeValueBool(true),
+			inputAttributes: map[string]pdata.AttributeValue{
+				"user.authenticated": pdata.NewAttributeValueBool(true),
 			},
-			expectedAttributes: map[string]data.AttributeValue{
-				"user.authenticated": data.NewAttributeValueString("bf8b4530d8d246dd74ac53a13471bba17941dff7"),
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"user.authenticated": pdata.NewAttributeValueString("bf8b4530d8d246dd74ac53a13471bba17941dff7"),
 			},
 		},
 	}
@@ -904,25 +904,25 @@ func BenchmarkAttributes_FilterSpansByName(b *testing.B) {
 	testCases := []testCase{
 		{
 			name:            "apply_to_span_with_no_attrs",
-			inputAttributes: map[string]data.AttributeValue{},
-			expectedAttributes: map[string]data.AttributeValue{
-				"attribute1": data.NewAttributeValueInt(123),
+			inputAttributes: map[string]pdata.AttributeValue{},
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"attribute1": pdata.NewAttributeValueInt(123),
 			},
 		},
 		{
 			name: "apply_to_span_with_attr",
-			inputAttributes: map[string]data.AttributeValue{
-				"NoModification": data.NewAttributeValueBool(false),
+			inputAttributes: map[string]pdata.AttributeValue{
+				"NoModification": pdata.NewAttributeValueBool(false),
 			},
-			expectedAttributes: map[string]data.AttributeValue{
-				"attribute1":     data.NewAttributeValueInt(123),
-				"NoModification": data.NewAttributeValueBool(false),
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"attribute1":     pdata.NewAttributeValueInt(123),
+				"NoModification": pdata.NewAttributeValueBool(false),
 			},
 		},
 		{
 			name:               "dont_apply",
-			inputAttributes:    map[string]data.AttributeValue{},
-			expectedAttributes: map[string]data.AttributeValue{},
+			inputAttributes:    map[string]pdata.AttributeValue{},
+			expectedAttributes: map[string]pdata.AttributeValue{},
 		},
 	}
 

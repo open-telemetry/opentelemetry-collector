@@ -20,8 +20,8 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal/collector/telemetry"
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 )
@@ -159,7 +159,7 @@ func ServiceNameForNode(node *commonpb.Node) string {
 
 // ServiceNameForResource gets the service name for a specified Resource.
 // TODO: Find a better package for this function.
-func ServiceNameForResource(resource data.Resource) string {
+func ServiceNameForResource(resource pdata.Resource) string {
 	if resource.IsNil() {
 		return "<nil-resource>"
 	}

@@ -18,6 +18,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector/translator/internaldata"
 )
@@ -36,7 +37,7 @@ type internalToOCTraceConverter struct {
 
 // ConsumeTrace takes new-style data.TraceData method, converts it to OC and uses old-style ConsumeTraceData method
 // to process the trace data.
-func (tc *internalToOCTraceConverter) ConsumeTrace(ctx context.Context, td data.TraceData) error {
+func (tc *internalToOCTraceConverter) ConsumeTrace(ctx context.Context, td pdata.TraceData) error {
 	ocTraces := internaldata.TraceDataToOC(td)
 	for i := range ocTraces {
 		err := tc.traceConsumer.ConsumeTraceData(ctx, ocTraces[i])

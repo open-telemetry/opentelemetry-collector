@@ -25,6 +25,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 )
@@ -161,7 +162,7 @@ func (oce *otlpExporter) Shutdown(context.Context) error {
 	return componenterror.CombineErrors(errors)
 }
 
-func (oce *otlpExporter) pushTraceData(ctx context.Context, td data.TraceData) (int, error) {
+func (oce *otlpExporter) pushTraceData(ctx context.Context, td pdata.TraceData) (int, error) {
 	// Get first available exporter.
 	exporter, ok := <-oce.exporters
 	if !ok {
@@ -174,7 +175,7 @@ func (oce *otlpExporter) pushTraceData(ctx context.Context, td data.TraceData) (
 
 	// Perform the request.
 	request := &otlptrace.ExportTraceServiceRequest{
-		ResourceSpans: data.TraceDataToOtlp(td),
+		ResourceSpans: pdata.TraceDataToOtlp(td),
 	}
 	err := exporter.exportTrace(ctx, request)
 

@@ -30,7 +30,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/testbed/testbed"
 	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 	"github.com/open-telemetry/opentelemetry-collector/translator/internaldata"
@@ -252,7 +252,7 @@ func verifySingleSpan(
 	tc *testbed.TestCase,
 	serviceName string,
 	spanName string,
-	verifyReceived func(span data.Span),
+	verifyReceived func(span pdata.Span),
 	verifyReceivedOld func(span *tracepb.Span),
 ) {
 
@@ -261,11 +261,11 @@ func verifySingleSpan(
 	startCounter := tc.MockBackend.DataItemsReceived()
 
 	// Send one span.
-	td := data.NewTraceData()
+	td := pdata.NewTraceData()
 	td.ResourceSpans().Resize(1)
 	td.ResourceSpans().At(0).Resource().InitEmpty()
-	td.ResourceSpans().At(0).Resource().Attributes().InitFromMap(map[string]data.AttributeValue{
-		conventions.AttributeServiceName: data.NewAttributeValueString(serviceName),
+	td.ResourceSpans().At(0).Resource().Attributes().InitFromMap(map[string]pdata.AttributeValue{
+		conventions.AttributeServiceName: pdata.NewAttributeValueString(serviceName),
 	})
 	td.ResourceSpans().At(0).InstrumentationLibrarySpans().Resize(1)
 	spans := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans()
@@ -383,7 +383,7 @@ func TestTraceAttributesProcessor(t *testing.T) {
 			nodeToInclude := "service-to-add-attr"
 
 			// verifySpan verifies that attributes was added to the internal data span.
-			verifySpan := func(span data.Span) {
+			verifySpan := func(span pdata.Span) {
 				require.NotNil(t, span)
 				require.Equal(t, span.Attributes().Cap(), 1)
 				attrVal, ok := span.Attributes().Get("new_attr")
@@ -407,7 +407,7 @@ func TestTraceAttributesProcessor(t *testing.T) {
 			// Create a service name that does not match "include" filter.
 			nodeToExclude := "service-not-to-add-attr"
 
-			verifySingleSpan(t, tc, nodeToExclude, spanToInclude, func(span data.Span) {
+			verifySingleSpan(t, tc, nodeToExclude, spanToInclude, func(span pdata.Span) {
 				// Verify attributes was not added to the new internal data span.
 				assert.Equal(t, span.Attributes().Cap(), 0)
 			}, func(span *tracepb.Span) {
@@ -417,7 +417,7 @@ func TestTraceAttributesProcessor(t *testing.T) {
 
 			// Create another span that does not match "include" filter.
 			spanToExclude := "span-not-to-add-attr"
-			verifySingleSpan(t, tc, nodeToInclude, spanToExclude, func(span data.Span) {
+			verifySingleSpan(t, tc, nodeToInclude, spanToExclude, func(span pdata.Span) {
 				// Verify attributes was not added to the new internal data span.
 				assert.Equal(t, span.Attributes().Cap(), 0)
 			}, func(span *tracepb.Span) {

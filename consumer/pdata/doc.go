@@ -12,12 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package data implements data structures that represent telemetry data in-memory.
+// Package pdata (pipeline data) implements data structures that represent telemetry data in-memory.
 // All data received is converted into this format and travels through the pipeline
 // in this format and that is converted from this format by exporters when sending.
-// The package is placed in "internal" for now since it is incubating and may undergoe
-// changes as we iterate and improve it. Once it is stable we will move it to an
-// exported location so that other components outside this module can use it.
 //
 // Current implementation primarily uses OTLP ProtoBuf structs as the underlying data
 // structures for many of of the declared structs. We keep a pointer to OTLP protobuf
@@ -32,4 +29,4 @@
 // is non-nil. Several structures also provide New*Slice functions that allows to create
 // more than one instance of the struct more efficiently instead of calling New*
 // repeatedly. Use it where appropriate.
-package data
+package pdata

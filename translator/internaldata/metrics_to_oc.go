@@ -21,6 +21,7 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 )
@@ -56,7 +57,7 @@ func MetricDataToOC(md data.MetricData) []consumerdata.MetricsData {
 	return ocResourceMetricsList
 }
 
-func ResourceMetricsToOC(rm data.ResourceMetrics) consumerdata.MetricsData {
+func ResourceMetricsToOC(rm pdata.ResourceMetrics) consumerdata.MetricsData {
 	ocMetricsData := consumerdata.MetricsData{}
 	ocMetricsData.Node, ocMetricsData.Resource = internalResourceToOC(rm.Resource())
 	ilms := rm.InstrumentationLibraryMetrics()
@@ -87,7 +88,7 @@ func ResourceMetricsToOC(rm data.ResourceMetrics) consumerdata.MetricsData {
 	return ocMetricsData
 }
 
-func metricToOC(metric data.Metric) *ocmetrics.Metric {
+func metricToOC(metric pdata.Metric) *ocmetrics.Metric {
 	labelKeys := collectLabelKeys(metric)
 	return &ocmetrics.Metric{
 		MetricDescriptor: descriptorToOC(metric.MetricDescriptor(), labelKeys),
@@ -96,7 +97,7 @@ func metricToOC(metric data.Metric) *ocmetrics.Metric {
 	}
 }
 
-func collectLabelKeys(metric data.Metric) *labelKeys {
+func collectLabelKeys(metric pdata.Metric) *labelKeys {
 	// NOTE: Intrenal data structure and OpenCensus have different representations of labels:
 	// - OC has a single "global" ordered list of label keys per metric in the MetricDescriptor;
 	// then, every data point has an ordered list of label values matching the key index.
@@ -184,13 +185,13 @@ func collectLabelKeys(metric data.Metric) *labelKeys {
 	}
 }
 
-func addLabelKeys(keySet map[string]struct{}, labels data.StringMap) {
-	labels.ForEach(func(k string, v data.StringValue) {
+func addLabelKeys(keySet map[string]struct{}, labels pdata.StringMap) {
+	labels.ForEach(func(k string, v pdata.StringValue) {
 		keySet[k] = struct{}{}
 	})
 }
 
-func descriptorToOC(descriptor data.MetricDescriptor, labelKeys *labelKeys) *ocmetrics.MetricDescriptor {
+func descriptorToOC(descriptor pdata.MetricDescriptor, labelKeys *labelKeys) *ocmetrics.MetricDescriptor {
 	if descriptor.IsNil() {
 		return nil
 	}
@@ -203,30 +204,30 @@ func descriptorToOC(descriptor data.MetricDescriptor, labelKeys *labelKeys) *ocm
 	}
 }
 
-func descriptorTypeToOC(t data.MetricType) ocmetrics.MetricDescriptor_Type {
+func descriptorTypeToOC(t pdata.MetricType) ocmetrics.MetricDescriptor_Type {
 	switch t {
-	case data.MetricTypeUnspecified:
+	case pdata.MetricTypeUnspecified:
 		return ocmetrics.MetricDescriptor_UNSPECIFIED
-	case data.MetricTypeGaugeInt64:
+	case pdata.MetricTypeGaugeInt64:
 		return ocmetrics.MetricDescriptor_GAUGE_INT64
-	case data.MetricTypeGaugeDouble:
+	case pdata.MetricTypeGaugeDouble:
 		return ocmetrics.MetricDescriptor_GAUGE_DOUBLE
-	case data.MetricTypeGaugeHistogram:
+	case pdata.MetricTypeGaugeHistogram:
 		return ocmetrics.MetricDescriptor_GAUGE_DISTRIBUTION
-	case data.MetricTypeCounterInt64:
+	case pdata.MetricTypeCounterInt64:
 		return ocmetrics.MetricDescriptor_CUMULATIVE_INT64
-	case data.MetricTypeCounterDouble:
+	case pdata.MetricTypeCounterDouble:
 		return ocmetrics.MetricDescriptor_CUMULATIVE_DOUBLE
-	case data.MetricTypeCumulativeHistogram:
+	case pdata.MetricTypeCumulativeHistogram:
 		return ocmetrics.MetricDescriptor_CUMULATIVE_DISTRIBUTION
-	case data.MetricTypeSummary:
+	case pdata.MetricTypeSummary:
 		return ocmetrics.MetricDescriptor_SUMMARY
 	default:
 		return invalidMetricDescriptorType
 	}
 }
 
-func dataPointsToTimeseries(metric data.Metric, labelKeys *labelKeys) []*ocmetrics.TimeSeries {
+func dataPointsToTimeseries(metric pdata.Metric, labelKeys *labelKeys) []*ocmetrics.TimeSeries {
 	length := metric.Int64DataPoints().Len() + metric.DoubleDataPoints().Len() +
 		metric.HistogramDataPoints().Len() + metric.SummaryDataPoints().Len()
 	if length == 0 {
@@ -274,7 +275,7 @@ func dataPointsToTimeseries(metric data.Metric, labelKeys *labelKeys) []*ocmetri
 	return timeseries
 }
 
-func int64PointToOC(md data.MetricDescriptor, point data.Int64DataPoint, labelKeys *labelKeys) *ocmetrics.TimeSeries {
+func int64PointToOC(md pdata.MetricDescriptor, point pdata.Int64DataPoint, labelKeys *labelKeys) *ocmetrics.TimeSeries {
 	return &ocmetrics.TimeSeries{
 		StartTimestamp: internal.UnixNanoToTimestamp(point.StartTime()),
 		LabelValues:    labelValuesToOC(md, point.LabelsMap(), labelKeys),
@@ -289,7 +290,7 @@ func int64PointToOC(md data.MetricDescriptor, point data.Int64DataPoint, labelKe
 	}
 }
 
-func doublePointToOC(md data.MetricDescriptor, point data.DoubleDataPoint, labelKeys *labelKeys) *ocmetrics.TimeSeries {
+func doublePointToOC(md pdata.MetricDescriptor, point pdata.DoubleDataPoint, labelKeys *labelKeys) *ocmetrics.TimeSeries {
 	return &ocmetrics.TimeSeries{
 		StartTimestamp: internal.UnixNanoToTimestamp(point.StartTime()),
 		LabelValues:    labelValuesToOC(md, point.LabelsMap(), labelKeys),
@@ -304,7 +305,7 @@ func doublePointToOC(md data.MetricDescriptor, point data.DoubleDataPoint, label
 	}
 }
 
-func histogramPointToOC(md data.MetricDescriptor, point data.HistogramDataPoint, labelKeys *labelKeys) *ocmetrics.TimeSeries {
+func histogramPointToOC(md pdata.MetricDescriptor, point pdata.HistogramDataPoint, labelKeys *labelKeys) *ocmetrics.TimeSeries {
 	return &ocmetrics.TimeSeries{
 		StartTimestamp: internal.UnixNanoToTimestamp(point.StartTime()),
 		LabelValues:    labelValuesToOC(md, point.LabelsMap(), labelKeys),
@@ -339,7 +340,7 @@ func histogramExplicitBoundsToOC(bounds []float64) *ocmetrics.DistributionValue_
 	}
 }
 
-func histogramBucketsToOC(buckets data.HistogramBucketSlice) []*ocmetrics.DistributionValue_Bucket {
+func histogramBucketsToOC(buckets pdata.HistogramBucketSlice) []*ocmetrics.DistributionValue_Bucket {
 	if buckets.Len() == 0 {
 		return nil
 	}
@@ -355,7 +356,7 @@ func histogramBucketsToOC(buckets data.HistogramBucketSlice) []*ocmetrics.Distri
 	return ocBuckets
 }
 
-func exemplarToOC(exemplar data.HistogramBucketExemplar) *ocmetrics.DistributionValue_Exemplar {
+func exemplarToOC(exemplar pdata.HistogramBucketExemplar) *ocmetrics.DistributionValue_Exemplar {
 	if exemplar.IsNil() {
 		return nil
 	}
@@ -369,7 +370,7 @@ func exemplarToOC(exemplar data.HistogramBucketExemplar) *ocmetrics.Distribution
 	}
 
 	labels := make(map[string]string, attachments.Cap())
-	attachments.ForEach(func(k string, v data.StringValue) {
+	attachments.ForEach(func(k string, v pdata.StringValue) {
 		labels[k] = v.Value()
 	})
 	return &ocmetrics.DistributionValue_Exemplar{
@@ -379,7 +380,7 @@ func exemplarToOC(exemplar data.HistogramBucketExemplar) *ocmetrics.Distribution
 	}
 }
 
-func summaryPointToOC(md data.MetricDescriptor, point data.SummaryDataPoint, labelKeys *labelKeys) *ocmetrics.TimeSeries {
+func summaryPointToOC(md pdata.MetricDescriptor, point pdata.SummaryDataPoint, labelKeys *labelKeys) *ocmetrics.TimeSeries {
 	return &ocmetrics.TimeSeries{
 		StartTimestamp: internal.UnixNanoToTimestamp(point.StartTime()),
 		LabelValues:    labelValuesToOC(md, point.LabelsMap(), labelKeys),
@@ -398,7 +399,7 @@ func summaryPointToOC(md data.MetricDescriptor, point data.SummaryDataPoint, lab
 	}
 }
 
-func percentileToOC(percentiles data.SummaryValueAtPercentileSlice) *ocmetrics.SummaryValue_Snapshot {
+func percentileToOC(percentiles pdata.SummaryValueAtPercentileSlice) *ocmetrics.SummaryValue_Snapshot {
 	if percentiles.Len() == 0 {
 		return nil
 	}
@@ -418,7 +419,7 @@ func percentileToOC(percentiles data.SummaryValueAtPercentileSlice) *ocmetrics.S
 	}
 }
 
-func labelValuesToOC(md data.MetricDescriptor, labels data.StringMap, labelKeys *labelKeys) []*ocmetrics.LabelValue {
+func labelValuesToOC(md pdata.MetricDescriptor, labels pdata.StringMap, labelKeys *labelKeys) []*ocmetrics.LabelValue {
 	if len(labelKeys.keys) == 0 {
 		return nil
 	}
@@ -435,7 +436,7 @@ func labelValuesToOC(md data.MetricDescriptor, labels data.StringMap, labelKeys 
 	if !md.IsNil() {
 		// TODO: Pre-construct the labelValuesOrig and labelValues with the metrics from the descriptor and copy them
 		//  instead of starting from new slices.
-		md.LabelsMap().ForEach(func(k string, v data.StringValue) {
+		md.LabelsMap().ForEach(func(k string, v pdata.StringValue) {
 			// Find the appropriate label value that we need to update
 			keyIndex := labelKeys.keyIndices[k]
 			labelValue := labelValues[keyIndex]
@@ -447,7 +448,7 @@ func labelValuesToOC(md data.MetricDescriptor, labels data.StringMap, labelKeys 
 	}
 
 	// Visit all defined labels in the point and override defaults with actual values
-	labels.ForEach(func(k string, v data.StringValue) {
+	labels.ForEach(func(k string, v pdata.StringValue) {
 		// Find the appropriate label value that we need to update
 		keyIndex := labelKeys.keyIndices[k]
 		labelValue := labelValues[keyIndex]

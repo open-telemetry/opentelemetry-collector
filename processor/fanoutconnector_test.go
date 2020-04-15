@@ -26,6 +26,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 )
@@ -165,14 +166,14 @@ func TestCreateTraceFanOutConnectorWithConvertion(t *testing.T) {
 
 	resourceTypeName := "good-resource"
 
-	td := data.NewTraceData()
+	td := pdata.NewTraceData()
 	rss := td.ResourceSpans()
 	rss.Resize(1)
 	rs0 := rss.At(0)
 	res := rs0.Resource()
 	res.InitEmpty()
-	res.Attributes().InitFromMap(map[string]data.AttributeValue{
-		conventions.OCAttributeResourceType: data.NewAttributeValueString(resourceTypeName),
+	res.Attributes().InitFromMap(map[string]pdata.AttributeValue{
+		conventions.OCAttributeResourceType: pdata.NewAttributeValueString(resourceTypeName),
 	})
 	rs0.InstrumentationLibrarySpans().Resize(1)
 	rs0.InstrumentationLibrarySpans().At(0).Spans().Resize(3)
@@ -190,8 +191,8 @@ func TestCreateTraceFanOutConnectorWithConvertion(t *testing.T) {
 	assert.Equal(t, resourceTypeName, traceConsumerOld.Traces[0].Resource.Type)
 
 	assert.Equal(t, wantSpansCount, traceConsumer.TotalSpans)
-	assert.Equal(t, data.NewAttributeMap().InitFromMap(map[string]data.AttributeValue{
-		conventions.OCAttributeResourceType: data.NewAttributeValueString(resourceTypeName),
+	assert.Equal(t, pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+		conventions.OCAttributeResourceType: pdata.NewAttributeValueString(resourceTypeName),
 	}), traceConsumer.Traces[0].ResourceSpans().At(0).Resource().Attributes())
 }
 
@@ -211,8 +212,8 @@ func TestCreateMetricsFanOutConnectorWithConvertion(t *testing.T) {
 	rm0 := rms.At(0)
 	res := rm0.Resource()
 	res.InitEmpty()
-	res.Attributes().InitFromMap(map[string]data.AttributeValue{
-		conventions.OCAttributeResourceType: data.NewAttributeValueString(resourceTypeName),
+	res.Attributes().InitFromMap(map[string]pdata.AttributeValue{
+		conventions.OCAttributeResourceType: pdata.NewAttributeValueString(resourceTypeName),
 	})
 	rm0.InstrumentationLibraryMetrics().Resize(1)
 	rm0.InstrumentationLibraryMetrics().At(0).Metrics().Resize(4)
@@ -230,8 +231,8 @@ func TestCreateMetricsFanOutConnectorWithConvertion(t *testing.T) {
 	assert.Equal(t, resourceTypeName, metricsConsumerOld.Metrics[0].Resource.Type)
 
 	assert.Equal(t, wantSpansCount, metricsConsumer.TotalMetrics)
-	assert.Equal(t, data.NewAttributeMap().InitFromMap(map[string]data.AttributeValue{
-		conventions.OCAttributeResourceType: data.NewAttributeValueString(resourceTypeName),
+	assert.Equal(t, pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+		conventions.OCAttributeResourceType: pdata.NewAttributeValueString(resourceTypeName),
 	}), metricsConsumer.Metrics[0].ResourceMetrics().At(0).Resource().Attributes())
 }
 
@@ -254,14 +255,14 @@ func (p *mockTraceConsumerOld) ConsumeTraceData(_ context.Context, td consumerda
 }
 
 type mockTraceConsumer struct {
-	Traces     []*data.TraceData
+	Traces     []*pdata.TraceData
 	TotalSpans int
 	MustFail   bool
 }
 
 var _ consumer.TraceConsumer = &mockTraceConsumer{}
 
-func (p *mockTraceConsumer) ConsumeTrace(_ context.Context, td data.TraceData) error {
+func (p *mockTraceConsumer) ConsumeTrace(_ context.Context, td pdata.TraceData) error {
 	p.Traces = append(p.Traces, &td)
 	p.TotalSpans += td.SpanCount()
 	if p.MustFail {

@@ -27,7 +27,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/observability"
 	"github.com/open-telemetry/opentelemetry-collector/observability/observabilitytest"
 	"github.com/open-telemetry/opentelemetry-collector/obsreport"
@@ -250,7 +250,7 @@ func TestTraceExporter_NilPushTraceData(t *testing.T) {
 }
 
 func TestTraceExporter_Default(t *testing.T) {
-	td := data.NewTraceData()
+	td := pdata.NewTraceData()
 	te, err := NewTraceExporter(fakeTraceExporterConfig, newTraceDataPusher(0, nil))
 	assert.NotNil(t, te)
 	assert.Nil(t, err)
@@ -260,7 +260,7 @@ func TestTraceExporter_Default(t *testing.T) {
 }
 
 func TestTraceExporter_Default_ReturnError(t *testing.T) {
-	td := data.NewTraceData()
+	td := pdata.NewTraceData()
 	want := errors.New("my_error")
 	te, err := NewTraceExporter(fakeTraceExporterConfig, newTraceDataPusher(0, want))
 	require.Nil(t, err)
@@ -344,7 +344,7 @@ func TestTraceExporter_WithShutdown_ReturnError(t *testing.T) {
 }
 
 func newTraceDataPusher(droppedSpans int, retError error) traceDataPusher {
-	return func(ctx context.Context, td data.TraceData) (int, error) {
+	return func(ctx context.Context, td pdata.TraceData) (int, error) {
 		return droppedSpans, retError
 	}
 }
@@ -354,7 +354,7 @@ func checkRecordedMetricsForTraceExporter(t *testing.T, te component.TraceExport
 	defer doneFn()
 
 	const spansLen = 2
-	td := data.NewTraceData()
+	td := pdata.NewTraceData()
 	rs := td.ResourceSpans()
 	rs.Resize(1)
 	rs.At(0).InstrumentationLibrarySpans().Resize(1)
@@ -373,7 +373,7 @@ func checkRecordedMetricsForTraceExporter(t *testing.T, te component.TraceExport
 }
 
 func generateTraceTraffic(t *testing.T, te component.TraceExporter, numRequests int, wantError error) {
-	td := data.NewTraceData()
+	td := pdata.NewTraceData()
 	rs := td.ResourceSpans()
 	rs.Resize(1)
 	rs.At(0).InstrumentationLibrarySpans().Resize(1)
