@@ -15,6 +15,8 @@
 package memorylimiter
 
 import (
+	"context"
+
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
@@ -44,32 +46,34 @@ func (f *Factory) CreateDefaultConfig() configmodels.Processor {
 
 // CreateTraceProcessor creates a trace processor based on this config.
 func (f *Factory) CreateTraceProcessor(
-	logger *zap.Logger,
-	nextConsumer consumer.TraceConsumerOld,
+	_ context.Context,
+	params component.ProcessorCreateParams,
+	nextConsumer consumer.TraceConsumer,
 	cfg configmodels.Processor,
-) (component.TraceProcessorOld, error) {
-	return f.createProcessor(logger, nextConsumer, nil, cfg)
+) (component.TraceProcessor, error) {
+	return f.createProcessor(params.Logger, nextConsumer, nil, cfg)
 }
 
 // CreateMetricsProcessor creates a metrics processor based on this config.
 func (f *Factory) CreateMetricsProcessor(
-	logger *zap.Logger,
-	nextConsumer consumer.MetricsConsumerOld,
+	_ context.Context,
+	params component.ProcessorCreateParams,
+	nextConsumer consumer.MetricsConsumer,
 	cfg configmodels.Processor,
-) (component.MetricsProcessorOld, error) {
-	return f.createProcessor(logger, nil, nextConsumer, cfg)
+) (component.MetricsProcessor, error) {
+	return f.createProcessor(params.Logger, nil, nextConsumer, cfg)
 }
 
 type DualTypeProcessor interface {
-	consumer.TraceConsumerOld
-	consumer.MetricsConsumerOld
+	consumer.TraceConsumer
+	consumer.MetricsConsumer
 	component.Processor
 }
 
 func (f *Factory) createProcessor(
 	logger *zap.Logger,
-	traceConsumer consumer.TraceConsumerOld,
-	metricConsumer consumer.MetricsConsumerOld,
+	traceConsumer consumer.TraceConsumer,
+	metricConsumer consumer.MetricsConsumer,
 	cfg configmodels.Processor,
 ) (DualTypeProcessor, error) {
 	pCfg := cfg.(*Config)
