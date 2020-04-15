@@ -32,6 +32,7 @@ import (
 // It can have a trace and/or a metrics consumer (the consumer is either the first
 // processor in the pipeline or the exporter if pipeline has no processors).
 type builtPipeline struct {
+	logger  *zap.Logger
 	firstTC consumer.TraceConsumerBase
 	firstMC consumer.MetricsConsumerBase
 
@@ -45,33 +46,33 @@ type builtPipeline struct {
 // BuiltPipelines is a map of build pipelines created from pipeline configs.
 type BuiltPipelines map[*configmodels.Pipeline]*builtPipeline
 
-func (bps BuiltPipelines) StartProcessors(logger *zap.Logger, host component.Host) error {
-	for cfg, bp := range bps {
-		logger.Info("Pipeline is starting...", zap.String("pipeline", cfg.Name))
+func (bps BuiltPipelines) StartProcessors(ctx context.Context, host component.Host) error {
+	for _, bp := range bps {
+		bp.logger.Info("Pipeline is starting...")
 		// Start in reverse order, starting from the back of processors pipeline.
 		// This is important so that processors that are earlier in the pipeline and
 		// reference processors that are later in the pipeline do not start sending
 		// data to later pipelines which are not yet started.
 		for i := len(bp.processors) - 1; i >= 0; i-- {
-			if err := bp.processors[i].Start(context.Background(), host); err != nil {
+			if err := bp.processors[i].Start(ctx, host); err != nil {
 				return err
 			}
 		}
-		logger.Info("Pipeline is started.", zap.String("pipeline", cfg.Name))
+		bp.logger.Info("Pipeline is started.")
 	}
 	return nil
 }
 
-func (bps BuiltPipelines) ShutdownProcessors(logger *zap.Logger) error {
+func (bps BuiltPipelines) ShutdownProcessors(ctx context.Context) error {
 	var errs []error
-	for cfg, bp := range bps {
-		logger.Info("Pipeline is shutting down...", zap.String("pipeline", cfg.Name))
+	for _, bp := range bps {
+		bp.logger.Info("Pipeline is shutting down...")
 		for _, p := range bp.processors {
-			if err := p.Shutdown(context.Background()); err != nil {
+			if err := p.Shutdown(ctx); err != nil {
 				errs = append(errs, err)
 			}
 		}
-		logger.Info("Pipeline is shutdown.", zap.String("pipeline", cfg.Name))
+		bp.logger.Info("Pipeline is shutdown.")
 	}
 
 	if len(errs) != 0 {
@@ -117,8 +118,7 @@ func (pb *PipelinesBuilder) Build() (BuiltPipelines, error) {
 // Builds a pipeline of processors. Returns the first processor in the pipeline.
 // The last processor in the pipeline will be plugged to fan out the data into exporters
 // that are configured for this pipeline.
-func (pb *PipelinesBuilder) buildPipeline(
-	pipelineCfg *configmodels.Pipeline,
+func (pb *PipelinesBuilder) buildPipeline(pipelineCfg *configmodels.Pipeline,
 ) (*builtPipeline, error) {
 
 	// BuildProcessors the pipeline backwards.
@@ -152,10 +152,11 @@ func (pb *PipelinesBuilder) buildPipeline(
 		// it becomes the next for the previous one (previous in the pipeline,
 		// which we will build in the next loop iteration).
 		var err error
+		componentLogger := pb.logger.With(zap.String(kindLogKey, kindLogProcessor), zap.String(typeLogKey, procCfg.Type()), zap.String(nameLogKey, procCfg.Name()))
 		switch pipelineCfg.InputType {
 		case configmodels.TracesDataType:
 			var proc component.TraceProcessorBase
-			proc, err = createTraceProcessor(factory, pb.logger, procCfg, tc)
+			proc, err = createTraceProcessor(factory, componentLogger, procCfg, tc)
 			if proc != nil {
 				mutatesConsumedData = mutatesConsumedData || proc.GetCapabilities().MutatesConsumedData
 			}
@@ -163,7 +164,7 @@ func (pb *PipelinesBuilder) buildPipeline(
 			tc = proc
 		case configmodels.MetricsDataType:
 			var proc component.MetricsProcessorBase
-			proc, err = createMetricsProcessor(factory, pb.logger, procCfg, mc)
+			proc, err = createMetricsProcessor(factory, componentLogger, procCfg, mc)
 			if proc != nil {
 				mutatesConsumedData = mutatesConsumedData || proc.GetCapabilities().MutatesConsumedData
 			}
@@ -182,9 +183,12 @@ func (pb *PipelinesBuilder) buildPipeline(
 		}
 	}
 
-	pb.logger.Info("Pipeline is enabled.", zap.String("pipelines", pipelineCfg.Name))
+	pipelineLogger := pb.logger.With(zap.String("pipeline_name", pipelineCfg.Name),
+		zap.String("pipeline_datatype", pipelineCfg.InputType.GetString()))
+	pipelineLogger.Info("Pipeline is enabled.")
 
 	bp := &builtPipeline{
+		pipelineLogger,
 		tc,
 		mc,
 		mutatesConsumedData,

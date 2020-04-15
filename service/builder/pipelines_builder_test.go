@@ -161,8 +161,7 @@ func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 	assert.NoError(t, err)
 	require.NotNil(t, pipelineProcessors)
 
-	err = pipelineProcessors.StartProcessors(zap.NewNop(), componenttest.NewNopHost())
-	assert.NoError(t, err)
+	assert.NoError(t, pipelineProcessors.StartProcessors(context.Background(), componenttest.NewNopHost()))
 
 	processor := pipelineProcessors[cfg.Service.Pipelines[pipelineName]]
 
@@ -201,7 +200,7 @@ func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 		assertEqualTraceData(t, generateTestTraceDataWithAttributes(), consumer.Traces[0])
 	}
 
-	err = pipelineProcessors.ShutdownProcessors(zap.NewNop())
+	err = pipelineProcessors.ShutdownProcessors(context.Background())
 	assert.NoError(t, err)
 }
 
@@ -273,17 +272,17 @@ func (b *badProcessorFactory) CreateDefaultConfig() configmodels.Processor {
 }
 
 func (b *badProcessorFactory) CreateTraceProcessor(
-	logger *zap.Logger,
-	nextConsumer consumer.TraceConsumerOld,
-	cfg configmodels.Processor,
+	_ *zap.Logger,
+	_ consumer.TraceConsumerOld,
+	_ configmodels.Processor,
 ) (component.TraceProcessorOld, error) {
 	return nil, nil
 }
 
 func (b *badProcessorFactory) CreateMetricsProcessor(
-	logger *zap.Logger,
-	consumer consumer.MetricsConsumerOld,
-	cfg configmodels.Processor,
+	_ *zap.Logger,
+	_ consumer.MetricsConsumerOld,
+	_ configmodels.Processor,
 ) (component.MetricsProcessorOld, error) {
 	return nil, nil
 }

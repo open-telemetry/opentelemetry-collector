@@ -29,22 +29,23 @@ import (
 // builtExporter is an exporter that is built based on a config. It can have
 // a trace and/or a metrics consumer and have a shutdown function.
 type builtExporter struct {
-	te component.TraceExporterBase
-	me component.MetricsExporterBase
+	logger *zap.Logger
+	te     component.TraceExporterBase
+	me     component.MetricsExporterBase
 }
 
 // Start the exporter.
 func (exp *builtExporter) Start(ctx context.Context, host component.Host) error {
 	var errors []error
 	if exp.te != nil {
-		err := exp.te.Start(context.Background(), host)
+		err := exp.te.Start(ctx, host)
 		if err != nil {
 			errors = append(errors, err)
 		}
 	}
 
 	if exp.me != nil {
-		err := exp.me.Start(context.Background(), host)
+		err := exp.me.Start(ctx, host)
 		if err != nil {
 			errors = append(errors, err)
 		}
@@ -54,16 +55,16 @@ func (exp *builtExporter) Start(ctx context.Context, host component.Host) error 
 }
 
 // Shutdown the trace component and the metrics component of an exporter.
-func (exp *builtExporter) Shutdown(context.Context) error {
+func (exp *builtExporter) Shutdown(ctx context.Context) error {
 	var errors []error
 	if exp.te != nil {
-		if err := exp.te.Shutdown(context.Background()); err != nil {
+		if err := exp.te.Shutdown(ctx); err != nil {
 			errors = append(errors, err)
 		}
 	}
 
 	if exp.me != nil {
-		if err := exp.me.Shutdown(context.Background()); err != nil {
+		if err := exp.me.Shutdown(ctx); err != nil {
 			errors = append(errors, err)
 		}
 	}
@@ -75,23 +76,23 @@ func (exp *builtExporter) Shutdown(context.Context) error {
 type Exporters map[configmodels.Exporter]*builtExporter
 
 // StartAll starts all exporters.
-func (exps Exporters) StartAll(logger *zap.Logger, host component.Host) error {
-	for cfg, exp := range exps {
-		logger.Info("Exporter is starting...", zap.String("exporter", cfg.Name()))
+func (exps Exporters) StartAll(ctx context.Context, host component.Host) error {
+	for _, exp := range exps {
+		exp.logger.Info("Exporter is starting...")
 
-		if err := exp.Start(context.Background(), host); err != nil {
+		if err := exp.Start(ctx, host); err != nil {
 			return err
 		}
-		logger.Info("Exporter started.", zap.String("exporter", cfg.Name()))
+		exp.logger.Info("Exporter started.")
 	}
 	return nil
 }
 
 // ShutdownAll stops all exporters.
-func (exps Exporters) ShutdownAll() error {
+func (exps Exporters) ShutdownAll(ctx context.Context) error {
 	var errs []error
 	for _, exp := range exps {
-		err := exp.Shutdown(context.Background())
+		err := exp.Shutdown(ctx)
 		if err != nil {
 			errs = append(errs, err)
 		}
@@ -127,7 +128,7 @@ func NewExportersBuilder(
 	config *configmodels.Config,
 	factories map[string]component.ExporterFactoryBase,
 ) *ExportersBuilder {
-	return &ExportersBuilder{logger, config, factories}
+	return &ExportersBuilder{logger.With(zap.String(kindLogKey, kindLogExporter)), config, factories}
 }
 
 // BuildExporters exporters from config.
@@ -140,7 +141,8 @@ func (eb *ExportersBuilder) Build() (Exporters, error) {
 
 	// BuildExporters exporters based on configuration and required input data types.
 	for _, cfg := range eb.config.Exporters {
-		exp, err := eb.buildExporter(cfg, exporterInputDataTypes)
+		componentLogger := eb.logger.With(zap.String(typeLogKey, cfg.Type()), zap.String(nameLogKey, cfg.Name()))
+		exp, err := eb.buildExporter(componentLogger, cfg, exporterInputDataTypes)
 		if err != nil {
 			return nil, err
 		}
@@ -185,6 +187,7 @@ func (eb *ExportersBuilder) calcExportersRequiredDataTypes() exportersRequiredDa
 }
 
 func (eb *ExportersBuilder) buildExporter(
+	logger *zap.Logger,
 	config configmodels.Exporter,
 	exportersInputDataTypes exportersRequiredDataTypes,
 ) (*builtExporter, error) {
@@ -193,7 +196,9 @@ func (eb *ExportersBuilder) buildExporter(
 		return nil, fmt.Errorf("exporter factory not found for type: %s", config.Type())
 	}
 
-	exporter := &builtExporter{}
+	exporter := &builtExporter{
+		logger: logger,
+	}
 
 	inputDataTypes := exportersInputDataTypes[config]
 	if inputDataTypes == nil {
@@ -201,14 +206,13 @@ func (eb *ExportersBuilder) buildExporter(
 		// Move this validation to config/config.go:validateConfig
 		// No data types where requested for this exporter. This can only happen
 		// if there are no pipelines associated with the exporter.
-		eb.logger.Warn("Exporter " + config.Name() +
-			" is not associated with any pipeline and will not export data.")
+		logger.Warn("Exportee is not associated with any pipeline and will not export data.")
 		return exporter, nil
 	}
 
 	if requirement, ok := inputDataTypes[configmodels.TracesDataType]; ok {
 		// Traces data type is required. Create a trace exporter based on config.
-		te, err := createTraceExporter(factory, eb.logger, config)
+		te, err := createTraceExporter(factory, logger, config)
 		if err != nil {
 			if err == configerror.ErrDataTypeIsNotSupported {
 				// Could not create because this exporter does not support this data type.
@@ -227,7 +231,7 @@ func (eb *ExportersBuilder) buildExporter(
 
 	if requirement, ok := inputDataTypes[configmodels.MetricsDataType]; ok {
 		// Metrics data type is required. Create a trace exporter based on config.
-		me, err := createMetricsExporter(factory, eb.logger, config)
+		me, err := createMetricsExporter(factory, logger, config)
 		if err != nil {
 			if err == configerror.ErrDataTypeIsNotSupported {
 				// Could not create because this exporter does not support this data type.
