@@ -18,7 +18,6 @@ import (
 	"context"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/proto"
@@ -28,7 +27,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/converter"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdatautil"
 )
 
 // This file contains implementations of cloning Trace/Metrics connectors
@@ -78,8 +77,7 @@ func (mfc metricsCloningFanOutConnectorOld) ConsumeMetricsData(ctx context.Conte
 	// Fan out to first len-1 consumers.
 	for i := 0; i < len(mfc)-1; i++ {
 		// Create a clone of data. We need to clone because consumers may modify the data.
-		clone := cloneMetricsDataOld(&md)
-		if err := mfc[i].ConsumeMetricsData(ctx, *clone); err != nil {
+		if err := mfc[i].ConsumeMetricsData(ctx, pdatautil.CloneMetricsDataOld(md)); err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -104,13 +102,13 @@ type metricsCloningFanOutConnector []consumer.MetricsConsumer
 var _ consumer.MetricsConsumer = (*metricsCloningFanOutConnector)(nil)
 
 // ConsumeMetrics exports the MetricsData to all consumers wrapped by the current one.
-func (mfc metricsCloningFanOutConnector) ConsumeMetrics(ctx context.Context, md data.MetricData) error {
+func (mfc metricsCloningFanOutConnector) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
 	var errs []error
 
 	// Fan out to first len-1 consumers.
 	for i := 0; i < len(mfc)-1; i++ {
 		// Create a clone of data. We need to clone because consumers may modify the data.
-		clone := md.Clone()
+		clone := pdatautil.CloneMetrics(md)
 		if err := mfc[i].ConsumeMetrics(ctx, clone); err != nil {
 			errs = append(errs, err)
 		}
@@ -169,8 +167,7 @@ func (tfc traceCloningFanOutConnectorOld) ConsumeTraceData(ctx context.Context, 
 	// Fan out to first len-1 consumers.
 	for i := 0; i < len(tfc)-1; i++ {
 		// Create a clone of data. We need to clone because consumers may modify the data.
-		clone := cloneTraceDataOld(&td)
-		if err := tfc[i].ConsumeTraceData(ctx, *clone); err != nil {
+		if err := tfc[i].ConsumeTraceData(ctx, cloneTraceDataOld(td)); err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -218,8 +215,8 @@ func (tfc traceCloningFanOutConnector) ConsumeTraces(ctx context.Context, td pda
 	return componenterror.CombineErrors(errs)
 }
 
-func cloneTraceDataOld(td *consumerdata.TraceData) *consumerdata.TraceData {
-	clone := &consumerdata.TraceData{
+func cloneTraceDataOld(td consumerdata.TraceData) consumerdata.TraceData {
+	clone := consumerdata.TraceData{
 		SourceFormat: td.SourceFormat,
 		Node:         proto.Clone(td.Node).(*commonpb.Node),
 		Resource:     proto.Clone(td.Resource).(*resourcepb.Resource),
@@ -231,24 +228,6 @@ func cloneTraceDataOld(td *consumerdata.TraceData) *consumerdata.TraceData {
 		for _, span := range td.Spans {
 			spanClone := proto.Clone(span).(*tracepb.Span)
 			clone.Spans = append(clone.Spans, spanClone)
-		}
-	}
-
-	return clone
-}
-
-func cloneMetricsDataOld(md *consumerdata.MetricsData) *consumerdata.MetricsData {
-	clone := &consumerdata.MetricsData{
-		Node:     proto.Clone(md.Node).(*commonpb.Node),
-		Resource: proto.Clone(md.Resource).(*resourcepb.Resource),
-	}
-
-	if md.Metrics != nil {
-		clone.Metrics = make([]*metricspb.Metric, 0, len(md.Metrics))
-
-		for _, metric := range md.Metrics {
-			metricClone := proto.Clone(metric).(*metricspb.Metric)
-			clone.Metrics = append(clone.Metrics, metricClone)
 		}
 	}
 

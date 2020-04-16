@@ -27,7 +27,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdatautil"
 	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
 )
@@ -146,13 +146,10 @@ func (ml *memoryLimiter) ConsumeTraces(
 	return ml.traceConsumer.ConsumeTraces(ctx, td)
 }
 
-func (ml *memoryLimiter) ConsumeMetrics(
-	ctx context.Context,
-	md data.MetricData,
-) error {
+func (ml *memoryLimiter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
 
 	ctx = obsreport.ProcessorContext(ctx, ml.procName)
-	_, numDataPoints := md.MetricAndDataPointCount()
+	_, numDataPoints := pdatautil.MetricAndDataPointCount(md)
 	if ml.forcingDrop() {
 		stats.Record(
 			ctx,

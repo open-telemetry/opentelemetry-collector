@@ -24,7 +24,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdatautil"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data/testdata"
 )
 
@@ -74,11 +74,11 @@ func TestSinkMetricsExporterOld(t *testing.T) {
 func TestSinkMetricsExporter(t *testing.T) {
 	sink := new(SinkMetricsExporter)
 	md := testdata.GenerateMetricDataOneMetric()
-	want := make([]data.MetricData, 0, 7)
+	want := make([]pdata.Metrics, 0, 7)
 	for i := 0; i < 7; i++ {
-		err := sink.ConsumeMetrics(context.Background(), md)
+		err := sink.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md))
 		require.Nil(t, err)
-		want = append(want, md)
+		want = append(want, pdatautil.MetricsFromInternalMetrics(md))
 	}
 	got := sink.AllMetrics()
 	assert.Equal(t, want, got)

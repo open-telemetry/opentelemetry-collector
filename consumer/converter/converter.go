@@ -19,7 +19,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdatautil"
 	"github.com/open-telemetry/opentelemetry-collector/translator/internaldata"
 )
 
@@ -52,8 +52,8 @@ var _ consumer.TraceConsumer = (*internalToOCTraceConverter)(nil)
 
 // NewInternalToOCMetricsConverter creates new internalToOCMetricsConverter that takes MetricsConsumer and
 // implements ConsumeTraces interface.
-func NewInternalToOCMetricsConverter(tc consumer.MetricsConsumerOld) consumer.MetricsConsumer {
-	return &internalToOCMetricsConverter{tc}
+func NewInternalToOCMetricsConverter(mc consumer.MetricsConsumerOld) consumer.MetricsConsumer {
+	return &internalToOCMetricsConverter{mc}
 }
 
 // internalToOCMetricsConverter is a internal to oc translation shim that takes MetricsConsumer and
@@ -64,8 +64,8 @@ type internalToOCMetricsConverter struct {
 
 // ConsumeMetrics takes new-style data.MetricData method, converts it to OC and uses old-style ConsumeMetricsData method
 // to process the metrics data.
-func (tc *internalToOCMetricsConverter) ConsumeMetrics(ctx context.Context, td data.MetricData) error {
-	ocMetrics := internaldata.MetricDataToOC(td)
+func (tc *internalToOCMetricsConverter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
+	ocMetrics := pdatautil.MetricsToMetricsData(md)
 	for i := range ocMetrics {
 		err := tc.metricsConsumer.ConsumeMetricsData(ctx, ocMetrics[i])
 		if err != nil {
@@ -117,8 +117,8 @@ type ocToInternalMetricsConverter struct {
 
 // ConsumeMetrics takes new-style data.MetricData method, converts it to OC and uses old-style ConsumeMetricsData method
 // to process the metrics data.
-func (tc *ocToInternalMetricsConverter) ConsumeMetricsData(ctx context.Context, td consumerdata.MetricsData) error {
-	metricsData := internaldata.OCToMetricData(td)
+func (tc *ocToInternalMetricsConverter) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
+	metricsData := pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{md})
 	err := tc.metricsConsumer.ConsumeMetrics(ctx, metricsData)
 	if err != nil {
 		return err

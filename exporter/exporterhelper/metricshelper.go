@@ -20,7 +20,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdatautil"
 	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 )
 
@@ -85,7 +86,7 @@ func pushMetricsWithObservabilityOld(next PushMetricsDataOld, exporterName strin
 		// TODO: this is not ideal: it should come from the next function itself.
 		// 	temporarily loading it from internal format. Once full switch is done
 		// 	to new metrics will remove this.
-		numReceivedTimeSeries, numPoints := measureMetricsExport(md)
+		numReceivedTimeSeries, numPoints := pdatautil.TimeseriesAndPointCount(md)
 
 		obsreport.EndMetricsExportOp(ctx, numPoints, numReceivedTimeSeries, numDroppedTimeSeries, err)
 		return numDroppedTimeSeries, err
@@ -101,22 +102,9 @@ func NumTimeSeries(md consumerdata.MetricsData) int {
 	return receivedTimeSeries
 }
 
-func measureMetricsExport(md consumerdata.MetricsData) (int, int) {
-	numTimeSeries := 0
-	numPoints := 0
-	for _, metric := range md.Metrics {
-		tss := metric.GetTimeseries()
-		numTimeSeries += len(metric.GetTimeseries())
-		for _, ts := range tss {
-			numPoints += len(ts.GetPoints())
-		}
-	}
-	return numTimeSeries, numPoints
-}
-
 // PushMetricsData is a helper function that is similar to ConsumeMetricsData but also returns
 // the number of dropped metrics.
-type PushMetricsData func(ctx context.Context, td data.MetricData) (droppedTimeSeries int, err error)
+type PushMetricsData func(ctx context.Context, md pdata.Metrics) (droppedTimeSeries int, err error)
 
 type metricsExporter struct {
 	exporterFullName string
@@ -128,7 +116,7 @@ func (me *metricsExporter) Start(ctx context.Context, host component.Host) error
 	return nil
 }
 
-func (me *metricsExporter) ConsumeMetrics(ctx context.Context, md data.MetricData) error {
+func (me *metricsExporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
 	exporterCtx := obsreport.ExporterContext(ctx, me.exporterFullName)
 	_, err := me.pushMetricsData(exporterCtx, md)
 	return err
@@ -168,16 +156,16 @@ func NewMetricsExporter(config configmodels.Exporter, pushMetricsData PushMetric
 }
 
 func pushMetricsWithObservability(next PushMetricsData, exporterName string) PushMetricsData {
-	return func(ctx context.Context, md data.MetricData) (int, error) {
+	return func(ctx context.Context, md pdata.Metrics) (int, error) {
 		ctx = obsreport.StartMetricsExportOp(ctx, exporterName)
-		numDroppedTimeSeries, err := next(ctx, md)
+		numDroppedMetrics, err := next(ctx, md)
 
 		// TODO: this is not ideal: it should come from the next function itself.
 		// 	temporarily loading it from internal format. Once full switch is done
 		// 	to new metrics will remove this.
-		numReceivedTimeSeries, numPoints := md.MetricAndDataPointCount()
+		numReceivedMetrics, numPoints := pdatautil.MetricAndDataPointCount(md)
 
-		obsreport.EndMetricsExportOp(ctx, numPoints, numReceivedTimeSeries, numDroppedTimeSeries, err)
-		return numDroppedTimeSeries, err
+		obsreport.EndMetricsExportOp(ctx, numPoints, numReceivedMetrics, numDroppedMetrics, err)
+		return numReceivedMetrics, err
 	}
 }

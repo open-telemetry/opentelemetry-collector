@@ -22,6 +22,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdatautil"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data/testdata"
 )
 
@@ -44,11 +45,11 @@ func TestLoggingMetricsExporterNoErrors(t *testing.T) {
 	require.NotNil(t, lme)
 	assert.NoError(t, err)
 
-	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricDataEmpty()))
-	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricDataOneEmptyOneNilResourceMetrics()))
-	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricDataOneEmptyOneNilInstrumentationLibrary()))
-	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricDataOneMetricOneNil()))
-	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricDataWithCountersHistogramAndSummary()))
+	assert.NoError(t, lme.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataEmpty())))
+	assert.NoError(t, lme.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataOneEmptyOneNilResourceMetrics())))
+	assert.NoError(t, lme.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataOneEmptyOneNilInstrumentationLibrary())))
+	assert.NoError(t, lme.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataOneMetricOneNil())))
+	assert.NoError(t, lme.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataWithCountersHistogramAndSummary())))
 
 	assert.NoError(t, lme.Shutdown(context.Background()))
 }

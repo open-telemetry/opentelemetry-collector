@@ -26,7 +26,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdatautil"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data/testdata"
 	"github.com/open-telemetry/opentelemetry-collector/observability"
 	"github.com/open-telemetry/opentelemetry-collector/observability/observabilitytest"
@@ -66,7 +67,7 @@ func TestMetricsExporter_Default(t *testing.T) {
 	assert.NotNil(t, me)
 	assert.Nil(t, err)
 
-	assert.Nil(t, me.ConsumeMetrics(context.Background(), md))
+	assert.Nil(t, me.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md)))
 	assert.Nil(t, me.Shutdown(context.Background()))
 }
 
@@ -76,7 +77,7 @@ func TestMetricsExporter_Default_ReturnError(t *testing.T) {
 	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(0, want))
 	require.Nil(t, err)
 	require.NotNil(t, me)
-	require.Equal(t, want, me.ConsumeMetrics(context.Background(), md))
+	require.Equal(t, want, me.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md)))
 }
 
 func TestMetricsExporter_WithRecordMetrics(t *testing.T) {
@@ -251,7 +252,7 @@ func TestMetricsExporterOld_WithShutdown_ReturnError(t *testing.T) {
 }
 
 func newPushMetricsData(droppedTimeSeries int, retError error) PushMetricsData {
-	return func(ctx context.Context, td data.MetricData) (int, error) {
+	return func(ctx context.Context, td pdata.Metrics) (int, error) {
 		return droppedTimeSeries, retError
 	}
 }
@@ -264,7 +265,7 @@ func checkRecordedMetricsForMetricsExporter(t *testing.T, me component.MetricsEx
 	ctx := observability.ContextWithReceiverName(context.Background(), fakeMetricsReceiverName)
 	const numBatches = 7
 	for i := 0; i < numBatches; i++ {
-		require.Equal(t, wantError, me.ConsumeMetrics(ctx, md))
+		require.Equal(t, wantError, me.ConsumeMetrics(ctx, pdatautil.MetricsFromInternalMetrics(md)))
 	}
 
 	err := observabilitytest.CheckValueViewExporterReceivedTimeSeries(fakeMetricsReceiverName, fakeMetricsExporterName, numBatches*md.MetricCount())
@@ -279,7 +280,7 @@ func generateMetricsTraffic(t *testing.T, me component.MetricsExporter, numReque
 	ctx, span := trace.StartSpan(context.Background(), fakeMetricsParentSpanName, trace.WithSampler(trace.AlwaysSample()))
 	defer span.End()
 	for i := 0; i < numRequests; i++ {
-		require.Equal(t, wantError, me.ConsumeMetrics(ctx, md))
+		require.Equal(t, wantError, me.ConsumeMetrics(ctx, pdatautil.MetricsFromInternalMetrics(md)))
 	}
 }
 

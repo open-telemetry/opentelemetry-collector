@@ -26,6 +26,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdatautil"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 )
@@ -79,8 +80,8 @@ func NewTraceExporter(
 
 // NewMetricsExporter creates an OTLP metrics exporter.
 func NewMetricsExporter(
-	ctx context.Context,
-	params component.ExporterCreateParams,
+	_ context.Context,
+	_ component.ExporterCreateParams,
 	config configmodels.Exporter,
 ) (component.MetricsExporter, error) {
 	oce, err := createOTLPExporter(config)
@@ -187,7 +188,8 @@ func (oce *otlpExporter) pushTraceData(ctx context.Context, td pdata.Traces) (in
 	return 0, nil
 }
 
-func (oce *otlpExporter) pushMetricsData(ctx context.Context, md data.MetricData) (int, error) {
+func (oce *otlpExporter) pushMetricsData(ctx context.Context, md pdata.Metrics) (int, error) {
+	imd := pdatautil.MetricsToInternalMetrics(md)
 	// Get first available exporter.
 	exporter, ok := <-oce.exporters
 	if !ok {
@@ -195,19 +197,19 @@ func (oce *otlpExporter) pushMetricsData(ctx context.Context, md data.MetricData
 			code: errAlreadyStopped,
 			msg:  "OpenTelemetry exporter was already stopped.",
 		}
-		return md.MetricCount(), err
+		return imd.MetricCount(), err
 	}
 
 	// Perform the request.
 	request := &otlpmetrics.ExportMetricsServiceRequest{
-		ResourceMetrics: data.MetricDataToOtlp(md),
+		ResourceMetrics: data.MetricDataToOtlp(imd),
 	}
 	err := exporter.exportMetrics(ctx, request)
 
 	// Return the exporter to the pool.
 	oce.exporters <- exporter
 	if err != nil {
-		return md.MetricCount(), err
+		return imd.MetricCount(), err
 	}
 	return 0, nil
 }

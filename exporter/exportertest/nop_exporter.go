@@ -20,7 +20,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 )
 
 type nopExporterOld struct {
@@ -79,7 +78,7 @@ func (ne *nopExporter) ConsumeTraces(_ context.Context, _ pdata.Traces) error {
 	return ne.retError
 }
 
-func (ne *nopExporter) ConsumeMetrics(_ context.Context, _ data.MetricData) error {
+func (ne *nopExporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
 	return ne.retError
 }
 

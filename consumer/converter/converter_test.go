@@ -20,6 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdatautil"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data/testdata"
 	"github.com/open-telemetry/opentelemetry-collector/translator/internaldata"
@@ -47,7 +48,7 @@ func TestNewInternalToOCMetricsConverter(t *testing.T) {
 	metricsExporterOld := new(exportertest.SinkMetricsExporterOld)
 	converter := NewInternalToOCMetricsConverter(metricsExporterOld)
 
-	err := converter.ConsumeMetrics(context.Background(), md)
+	err := converter.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md))
 	assert.Nil(t, err)
 
 	ocMetrics := metricsExporterOld.AllMetrics()
@@ -55,7 +56,7 @@ func TestNewInternalToOCMetricsConverter(t *testing.T) {
 	assert.EqualValues(t, ocMetrics, internaldata.MetricDataToOC(md))
 
 	metricsExporterOld.SetConsumeMetricsError(fmt.Errorf("consumer error"))
-	err = converter.ConsumeMetrics(context.Background(), md)
+	err = converter.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md))
 	assert.NotNil(t, err)
 }
 
@@ -92,7 +93,8 @@ func TestNewOCToInternalMetricsConverter(t *testing.T) {
 
 	ocMetrics := metricsExporter.AllMetrics()
 	assert.Equal(t, len(ocMetrics), 2)
-	assert.EqualValues(t, ocMetrics[0], md)
+	assert.EqualValues(t, pdatautil.MetricsToInternalMetrics(ocMetrics[0]), md)
+	assert.EqualValues(t, pdatautil.MetricsToInternalMetrics(ocMetrics[1]), md)
 
 	metricsExporter.SetConsumeMetricsError(fmt.Errorf("consumer error"))
 	err = converter.ConsumeMetricsData(context.Background(), ocMetricData)

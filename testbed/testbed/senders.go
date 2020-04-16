@@ -24,6 +24,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/config/configgrpc"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdatautil"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/jaegerexporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/opencensusexporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/otlpexporter"
@@ -369,7 +370,7 @@ func (ome *OTLPMetricsDataSender) Start() error {
 }
 
 func (ome *OTLPMetricsDataSender) SendMetrics(metrics data.MetricData) error {
-	return ome.exporter.ConsumeMetrics(context.Background(), metrics)
+	return ome.exporter.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(metrics))
 }
 
 func (ome *OTLPMetricsDataSender) Flush() {

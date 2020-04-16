@@ -109,6 +109,19 @@ func TestOCToMetricData(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			got := OCToMetricData(test.oc)
 			assert.EqualValues(t, test.internal, got)
+
+			ocslice := []consumerdata.MetricsData{
+				test.oc,
+				test.oc,
+			}
+			wantSlice := data.NewMetricData()
+			// Double the ResourceMetrics only if not empty.
+			if test.internal.ResourceMetrics().Len() != 0 {
+				test.internal.Clone().ResourceMetrics().MoveTo(wantSlice.ResourceMetrics())
+				test.internal.Clone().ResourceMetrics().MoveTo(wantSlice.ResourceMetrics())
+			}
+			gotSlice := OCSliceToMetricData(ocslice)
+			assert.EqualValues(t, wantSlice, gotSlice)
 		})
 	}
 }

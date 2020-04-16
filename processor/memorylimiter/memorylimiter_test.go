@@ -25,6 +25,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdatautil"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 )
@@ -112,17 +113,17 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	td := data.NewMetricData()
+	md := data.NewMetricData()
 
 	// Below memAllocLimit.
 	currentMemAlloc = 800
 	ml.memCheck()
-	assert.NoError(t, ml.ConsumeMetrics(ctx, td))
+	assert.NoError(t, ml.ConsumeMetrics(ctx, pdatautil.MetricsFromInternalMetrics(md)))
 
 	// Above memAllocLimit.
 	currentMemAlloc = 1800
 	ml.memCheck()
-	assert.Equal(t, errForcedDrop, ml.ConsumeMetrics(ctx, td))
+	assert.Equal(t, errForcedDrop, ml.ConsumeMetrics(ctx, pdatautil.MetricsFromInternalMetrics(md)))
 
 	// Check ballast effect
 	ml.ballastSize = 1000
@@ -130,12 +131,12 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 	// Below memAllocLimit accounting for ballast.
 	currentMemAlloc = 800 + ml.ballastSize
 	ml.memCheck()
-	assert.NoError(t, ml.ConsumeMetrics(ctx, td))
+	assert.NoError(t, ml.ConsumeMetrics(ctx, pdatautil.MetricsFromInternalMetrics(md)))
 
 	// Above memAllocLimit even accountiing for ballast.
 	currentMemAlloc = 1800 + ml.ballastSize
 	ml.memCheck()
-	assert.Equal(t, errForcedDrop, ml.ConsumeMetrics(ctx, td))
+	assert.Equal(t, errForcedDrop, ml.ConsumeMetrics(ctx, pdatautil.MetricsFromInternalMetrics(md)))
 
 	// Restore ballast to default.
 	ml.ballastSize = 0
@@ -146,12 +147,12 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 	// Below memSpikeLimit.
 	currentMemAlloc = 500
 	ml.memCheck()
-	assert.NoError(t, ml.ConsumeMetrics(ctx, td))
+	assert.NoError(t, ml.ConsumeMetrics(ctx, pdatautil.MetricsFromInternalMetrics(md)))
 
 	// Above memSpikeLimit.
 	currentMemAlloc = 550
 	ml.memCheck()
-	assert.Equal(t, errForcedDrop, ml.ConsumeMetrics(ctx, td))
+	assert.Equal(t, errForcedDrop, ml.ConsumeMetrics(ctx, pdatautil.MetricsFromInternalMetrics(md)))
 
 }
 
