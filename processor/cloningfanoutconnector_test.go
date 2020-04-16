@@ -29,6 +29,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdatautil"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data/testdata"
 	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 )
@@ -110,7 +111,7 @@ func Benchmark100SpanCloneOld(b *testing.B) {
 	b.StopTimer()
 
 	name := tracepb.TruncatableString{Value: "testspanname"}
-	traceData := &consumerdata.TraceData{
+	traceData := consumerdata.TraceData{
 		SourceFormat: "test-source-format",
 		Node: &commonpb.Node{
 			ServiceInfo: &commonpb.ServiceInfo{
@@ -220,7 +221,7 @@ func TestMetricsProcessorCloningMultiplexing(t *testing.T) {
 	var wantMetricsCount = 0
 	for i := 0; i < 2; i++ {
 		wantMetricsCount += md.MetricCount()
-		err := mfc.ConsumeMetrics(context.Background(), md)
+		err := mfc.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md))
 		if err != nil {
 			t.Errorf("Wanted nil got error")
 			return
@@ -231,15 +232,15 @@ func TestMetricsProcessorCloningMultiplexing(t *testing.T) {
 		m := p.(*mockMetricsConsumer)
 		assert.Equal(t, wantMetricsCount, m.TotalMetrics)
 		metricOrig := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
-		metricClone := m.Metrics[0].ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
+		metricClone := pdatautil.MetricsToInternalMetrics(*m.Metrics[0]).ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
 		if i < len(processors)-1 {
-			assert.True(t, md.ResourceMetrics().At(0).Resource() != m.Metrics[0].ResourceMetrics().At(0).Resource())
+			assert.True(t, md.ResourceMetrics().At(0).Resource() != pdatautil.MetricsToInternalMetrics(*m.Metrics[0]).ResourceMetrics().At(0).Resource())
 			assert.True(t, metricOrig != metricClone)
 		} else {
-			assert.True(t, md.ResourceMetrics().At(0).Resource() == m.Metrics[0].ResourceMetrics().At(0).Resource())
+			assert.True(t, md.ResourceMetrics().At(0).Resource() == pdatautil.MetricsToInternalMetrics(*m.Metrics[0]).ResourceMetrics().At(0).Resource())
 			assert.True(t, metricOrig == metricClone)
 		}
-		assert.EqualValues(t, md.ResourceMetrics().At(0).Resource(), m.Metrics[0].ResourceMetrics().At(0).Resource())
+		assert.EqualValues(t, md.ResourceMetrics().At(0).Resource(), pdatautil.MetricsToInternalMetrics(*m.Metrics[0]).ResourceMetrics().At(0).Resource())
 		assert.EqualValues(t, metricOrig, metricClone)
 	}
 }
@@ -249,7 +250,7 @@ func Benchmark100SpanClone(b *testing.B) {
 	b.StopTimer()
 
 	name := tracepb.TruncatableString{Value: "testspanname"}
-	traceData := &consumerdata.TraceData{
+	traceData := consumerdata.TraceData{
 		SourceFormat: "test-source-format",
 		Node: &commonpb.Node{
 			ServiceInfo: &commonpb.ServiceInfo{
@@ -340,7 +341,7 @@ func TestCreateMetricsCloningFanOutConnectorWithConvertion(t *testing.T) {
 	var wantSpansCount = 0
 	for i := 0; i < 2; i++ {
 		wantSpansCount += md.MetricCount()
-		err := mfc.ConsumeMetrics(context.Background(), md)
+		err := mfc.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md))
 		assert.NoError(t, err)
 	}
 
@@ -348,7 +349,7 @@ func TestCreateMetricsCloningFanOutConnectorWithConvertion(t *testing.T) {
 	assert.Equal(t, resourceTypeName, metricsConsumerOld.Metrics[0].Resource.Type)
 
 	assert.Equal(t, wantSpansCount, metricsConsumer.TotalMetrics)
-	assert.Equal(t, resource, metricsConsumer.Metrics[0].ResourceMetrics().At(0).Resource())
+	assert.Equal(t, resource, pdatautil.MetricsToInternalMetrics(*metricsConsumer.Metrics[0]).ResourceMetrics().At(0).Resource())
 }
 
 func genRandBytes(len int) []byte {

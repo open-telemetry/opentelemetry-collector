@@ -22,7 +22,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/converter"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 )
 
 // This file contains implementations of Trace/Metrics connectors
@@ -82,7 +81,7 @@ type metricsFanOutConnector []consumer.MetricsConsumer
 var _ consumer.MetricsConsumer = (*metricsFanOutConnector)(nil)
 
 // ConsumeMetricsData exports the MetricsData to all consumers wrapped by the current one.
-func (mfc metricsFanOutConnector) ConsumeMetrics(ctx context.Context, md data.MetricData) error {
+func (mfc metricsFanOutConnector) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
 	var errs []error
 	for _, mc := range mfc {
 		if err := mc.ConsumeMetrics(ctx, md); err != nil {

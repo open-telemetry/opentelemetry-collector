@@ -31,6 +31,18 @@ const (
 	MetricTypeSummary             = MetricType(otlpmetrics.MetricDescriptor_SUMMARY)
 )
 
+// InternalNewMetricsResourceSlice is a helper
 func InternalNewMetricsResourceSlice(orig *[]*otlpmetrics.ResourceMetrics) ResourceMetricsSlice {
 	return newResourceMetricsSlice(orig)
+}
+
+// Metrics is an opaque interface that allows transition to the new internal Metrics data, but also facilitate the
+// transition to the new components especially for traces.
+//
+// Outside of the core repository the metrics pipeline cannot be converted to the new model since data.MetricData is
+// part of the internal package.
+//
+// IMPORTANT: Do not try to convert to/from this manually, use the helper functions in the pdatautil instead.
+type Metrics struct {
+	InternalOpaque interface{}
 }

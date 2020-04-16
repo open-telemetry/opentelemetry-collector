@@ -27,8 +27,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdatautil"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 )
 
 type logDataBuffer struct {
@@ -151,16 +151,17 @@ func (s *loggingExporter) pushTraceData(
 
 func (s *loggingExporter) pushMetricsData(
 	_ context.Context,
-	md data.MetricData,
+	md pdata.Metrics,
 ) (int, error) {
-	s.logger.Info("MetricsExporter", zap.Int("#metrics", md.MetricCount()))
+	imd := pdatautil.MetricsToInternalMetrics(md)
+	s.logger.Info("MetricsExporter", zap.Int("#metrics", imd.MetricCount()))
 
 	if !s.debug {
 		return 0, nil
 	}
 
 	buf := logDataBuffer{}
-	rms := md.ResourceMetrics()
+	rms := imd.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		buf.logEntry("ResourceMetrics #%d", i)
 		rm := rms.At(i)

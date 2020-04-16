@@ -24,7 +24,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdatautil"
 )
 
 // MockBackend is a backend that allows receiving the data locally.
@@ -47,7 +47,7 @@ type MockBackend struct {
 	isRecording        bool
 	recordMutex        sync.Mutex
 	ReceivedTraces     []pdata.Traces
-	ReceivedMetrics    []data.MetricData
+	ReceivedMetrics    []pdata.Metrics
 	ReceivedTracesOld  []consumerdata.TraceData
 	ReceivedMetricsOld []consumerdata.MetricsData
 }
@@ -151,7 +151,7 @@ func (mb *MockBackend) ConsumeTraceOld(td consumerdata.TraceData) {
 	}
 }
 
-func (mb *MockBackend) ConsumeMetric(md data.MetricData) {
+func (mb *MockBackend) ConsumeMetric(md pdata.Metrics) {
 	mb.recordMutex.Lock()
 	defer mb.recordMutex.Unlock()
 	if mb.isRecording {
@@ -244,8 +244,8 @@ type MockMetricConsumer struct {
 	backend         *MockBackend
 }
 
-func (mc *MockMetricConsumer) ConsumeMetrics(ctx context.Context, md data.MetricData) error {
-	_, dataPoints := md.MetricAndDataPointCount()
+func (mc *MockMetricConsumer) ConsumeMetrics(_ context.Context, md pdata.Metrics) error {
+	_, dataPoints := pdatautil.MetricAndDataPointCount(md)
 	atomic.AddUint64(&mc.metricsReceived, uint64(dataPoints))
 	mc.backend.ConsumeMetric(md)
 	return nil

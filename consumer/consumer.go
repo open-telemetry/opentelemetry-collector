@@ -20,7 +20,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 )
 
 // MetricsConsumerBase defines a common interface for MetricsConsumerOld and MetricsConsumer.
@@ -39,7 +38,7 @@ type MetricsConsumerOld interface {
 // as needed, and sends it to the next processing node if any or to the destination.
 type MetricsConsumer interface {
 	MetricsConsumerBase
-	ConsumeMetrics(ctx context.Context, md data.MetricData) error
+	ConsumeMetrics(ctx context.Context, md pdata.Metrics) error
 }
 
 // TraceConsumerBase defines a common interface for TraceConsumerOld and TraceConsumer.

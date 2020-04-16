@@ -27,6 +27,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdatautil"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 )
@@ -223,7 +224,7 @@ func TestCreateMetricsFanOutConnectorWithConvertion(t *testing.T) {
 	var wantSpansCount = 0
 	for i := 0; i < 2; i++ {
 		wantSpansCount += md.MetricCount()
-		err := mfc.ConsumeMetrics(context.Background(), md)
+		err := mfc.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md))
 		assert.NoError(t, err)
 	}
 
@@ -233,7 +234,7 @@ func TestCreateMetricsFanOutConnectorWithConvertion(t *testing.T) {
 	assert.Equal(t, wantSpansCount, metricsConsumer.TotalMetrics)
 	assert.Equal(t, pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
 		conventions.OCAttributeResourceType: pdata.NewAttributeValueString(resourceTypeName),
-	}), metricsConsumer.Metrics[0].ResourceMetrics().At(0).Resource().Attributes())
+	}), pdatautil.MetricsToInternalMetrics(*metricsConsumer.Metrics[0]).ResourceMetrics().At(0).Resource().Attributes())
 }
 
 type mockTraceConsumerOld struct {
@@ -291,16 +292,16 @@ func (p *mockMetricsConsumerOld) ConsumeMetricsData(_ context.Context, md consum
 }
 
 type mockMetricsConsumer struct {
-	Metrics      []*data.MetricData
+	Metrics      []*pdata.Metrics
 	TotalMetrics int
 	MustFail     bool
 }
 
 var _ consumer.MetricsConsumer = &mockMetricsConsumer{}
 
-func (p *mockMetricsConsumer) ConsumeMetrics(_ context.Context, md data.MetricData) error {
+func (p *mockMetricsConsumer) ConsumeMetrics(_ context.Context, md pdata.Metrics) error {
 	p.Metrics = append(p.Metrics, &md)
-	p.TotalMetrics += md.MetricCount()
+	p.TotalMetrics += pdatautil.MetricCount(md)
 	if p.MustFail {
 		return fmt.Errorf("this processor must fail")
 	}

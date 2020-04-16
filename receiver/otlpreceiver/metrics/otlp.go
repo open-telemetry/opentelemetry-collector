@@ -21,6 +21,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdatautil"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 )
@@ -72,7 +73,7 @@ func (r *Receiver) sendToNextConsumer(ctx context.Context, md data.MetricData) e
 	}
 
 	ctx = obsreport.StartMetricsReceiveOp(ctx, r.instanceName, receiverTransport)
-	err := r.nextConsumer.ConsumeMetrics(ctx, md)
+	err := r.nextConsumer.ConsumeMetrics(ctx, pdatautil.MetricsFromInternalMetrics(md))
 	obsreport.EndMetricsReceiveOp(ctx, dataFormatProtobuf, dataPointCount, metricCount, err)
 
 	return err

@@ -21,7 +21,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 )
 
 // SinkTraceExporterOld acts as a trace receiver for use in tests.
@@ -166,7 +165,7 @@ func (sme *SinkMetricsExporterOld) Shutdown(context.Context) error {
 type SinkMetricsExporter struct {
 	consumeMetricsError error // to be returned by ConsumeMetrics, if set
 	mu                  sync.Mutex
-	metrics             []data.MetricData
+	metrics             []pdata.Metrics
 }
 
 // SetConsumeMetricsError sets an error that will be returned by ConsumeMetrics
@@ -182,7 +181,7 @@ func (sme *SinkMetricsExporter) Start(ctx context.Context, host component.Host) 
 }
 
 // ConsumeMetricsData stores traces for tests.
-func (sme *SinkMetricsExporter) ConsumeMetrics(ctx context.Context, md data.MetricData) error {
+func (sme *SinkMetricsExporter) ConsumeMetrics(_ context.Context, md pdata.Metrics) error {
 	if sme.consumeMetricsError != nil {
 		return sme.consumeMetricsError
 	}
@@ -196,7 +195,7 @@ func (sme *SinkMetricsExporter) ConsumeMetrics(ctx context.Context, md data.Metr
 }
 
 // AllMetrics returns the metrics sent to the test sink.
-func (sme *SinkMetricsExporter) AllMetrics() []data.MetricData {
+func (sme *SinkMetricsExporter) AllMetrics() []pdata.Metrics {
 	sme.mu.Lock()
 	defer sme.mu.Unlock()
 

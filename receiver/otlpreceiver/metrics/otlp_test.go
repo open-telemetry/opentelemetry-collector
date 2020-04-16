@@ -29,6 +29,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdatautil"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector/observability"
@@ -126,7 +127,7 @@ func TestExport(t *testing.T) {
 	require.Equal(t, 1, len(metricSink.AllMetrics()),
 		"unexpected length: %v", len(metricSink.AllMetrics()))
 
-	assert.EqualValues(t, metricData, metricSink.AllMetrics()[0])
+	assert.EqualValues(t, metricData, pdatautil.MetricsToInternalMetrics(metricSink.AllMetrics()[0]))
 }
 
 func makeMetricsServiceClient(port int) (collectormetrics.MetricsServiceClient, func(), error) {

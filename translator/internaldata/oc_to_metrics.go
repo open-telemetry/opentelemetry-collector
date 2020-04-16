@@ -28,19 +28,38 @@ const (
 	invalidMetricType = pdata.MetricType(-1)
 )
 
+// OCSliceToMetricData converts a slice of OC data format to MetricData.
+func OCSliceToMetricData(ocmds []consumerdata.MetricsData) data.MetricData {
+	metricData := data.NewMetricData()
+	if len(ocmds) == 0 {
+		return metricData
+	}
+	for _, ocmd := range ocmds {
+		appendOcToMetriData(ocmd, metricData)
+	}
+	return metricData
+}
+
 // OCToMetricData converts OC data format to MetricData.
 func OCToMetricData(md consumerdata.MetricsData) data.MetricData {
 	metricData := data.NewMetricData()
+	appendOcToMetriData(md, metricData)
+	return metricData
+}
+
+func appendOcToMetriData(md consumerdata.MetricsData, dest data.MetricData) {
 	if md.Node == nil && md.Resource == nil && len(md.Metrics) == 0 {
-		return metricData
+		return
 	}
+
+	rms := dest.ResourceMetrics()
+	initialRmsLen := rms.Len()
 
 	if len(md.Metrics) == 0 {
 		// At least one of the md.Node or md.Resource is not nil. Set the resource and return.
-		rms := metricData.ResourceMetrics()
-		rms.Resize(1)
-		ocNodeResourceToInternal(md.Node, md.Resource, rms.At(0).Resource())
-		return metricData
+		rms.Resize(initialRmsLen + 1)
+		ocNodeResourceToInternal(md.Node, md.Resource, rms.At(initialRmsLen).Resource())
+		return
 	}
 
 	// We may need to split OC metrics into several ResourceMetrics. OC metrics can have a
@@ -78,9 +97,8 @@ func OCToMetricData(md consumerdata.MetricsData) data.MetricData {
 	}
 	// Total number of resources is equal to:
 	// 1 (for all metrics with nil resource) + numMetricsWithResource (distinctResourceCount).
-	rms := metricData.ResourceMetrics()
-	rms.Resize(distinctResourceCount + 1)
-	rm0 := rms.At(0)
+	rms.Resize(initialRmsLen + distinctResourceCount + 1)
+	rm0 := rms.At(initialRmsLen)
 	ocNodeResourceToInternal(md.Node, md.Resource, rm0.Resource())
 
 	// Allocate a slice for metrics that need to be combined into first ResourceMetrics.
@@ -112,12 +130,10 @@ func OCToMetricData(md consumerdata.MetricsData) data.MetricData {
 			// This metric has a different Resource and must be placed in a different
 			// ResourceMetrics instance. Create a separate ResourceMetrics item just for this metric
 			// and store at resourceMetricIdx.
-			ocMetricToResourceMetrics(ocMetric, md.Node, rms.At(resourceMetricIdx))
+			ocMetricToResourceMetrics(ocMetric, md.Node, rms.At(initialRmsLen+resourceMetricIdx))
 			resourceMetricIdx++
 		}
 	}
-
-	return metricData
 }
 
 func ocMetricToResourceMetrics(ocMetric *ocmetrics.Metric, node *occommon.Node, out pdata.ResourceMetrics) {
