@@ -162,7 +162,7 @@ func TestTraceNoBackend10kSPS(t *testing.T) {
 			testbed.NewZipkinDataSender(testbed.DefaultZipkinAddressPort),
 			testbed.NewOCDataReceiver(testbed.DefaultOCPort),
 			testbed.ResourceSpec{
-				ExpectedMaxCPU: 70,
+				ExpectedMaxCPU: 80,
 				ExpectedMaxRAM: 198,
 			},
 			processorsConfig,
