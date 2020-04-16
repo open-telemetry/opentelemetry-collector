@@ -152,7 +152,7 @@ func TestTraceNoBackend10kSPS(t *testing.T) {
 			testbed.NewJaegerGRPCDataSender(testbed.DefaultJaegerPort),
 			testbed.NewOCDataReceiver(testbed.DefaultOCPort),
 			testbed.ResourceSpec{
-				ExpectedMaxCPU: 55,
+				ExpectedMaxCPU: 60,
 				ExpectedMaxRAM: 198,
 			},
 			processorsConfig,
@@ -162,7 +162,7 @@ func TestTraceNoBackend10kSPS(t *testing.T) {
 			testbed.NewZipkinDataSender(testbed.DefaultZipkinAddressPort),
 			testbed.NewOCDataReceiver(testbed.DefaultOCPort),
 			testbed.ResourceSpec{
-				ExpectedMaxCPU: 65,
+				ExpectedMaxCPU: 70,
 				ExpectedMaxRAM: 198,
 			},
 			processorsConfig,
