@@ -125,16 +125,16 @@ func TestTraceNoBackend10kSPS(t *testing.T) {
 `,
 	}
 
-	var processorsConfig = []ProcessorConfig{
+	var processorsConfig = []processorConfig{
 		{
 			Name:                "NoMemoryLimit",
-			ProcessorConfig:     noLimitProcessors,
+			Processor:           noLimitProcessors,
 			ExpectedMaxRAM:      200,
 			ExpectedMinFinalRAM: 100,
 		},
 		{
 			Name:                "MemoryLimit",
-			ProcessorConfig:     limitProcessors,
+			Processor:           limitProcessors,
 			ExpectedMaxRAM:      60,
 			ExpectedMinFinalRAM: 10,
 		},
@@ -145,7 +145,7 @@ func TestTraceNoBackend10kSPS(t *testing.T) {
 		sender        testbed.DataSender
 		receiver      testbed.DataReceiver
 		resourceSpec  testbed.ResourceSpec
-		configuration []ProcessorConfig
+		configuration []processorConfig
 	}{
 		{
 			"JaegerGRPC",
