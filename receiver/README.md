@@ -12,6 +12,7 @@ Supported trace receivers (sorted alphabetically):
 - [Zipkin Receiver](#zipkin)
 
 Supported metric receivers (sorted alphabetically):
+- [Host Metrics Receiver](#hostmetrics)
 - [OpenCensus Receiver](#opencensus)
 - [Prometheus Receiver](#prometheus)
 - [VM Metrics Receiver](#vmmetrics)
