@@ -21,15 +21,40 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/scrape"
 )
 
 func Test_transaction(t *testing.T) {
-	ms := &mockMetadataSvc{
-		caches: map[string]*mockMetadataCache{
-			"test_localhost:8080": {data: map[string]scrape.MetricMetadata{}},
+	// discoveredLabels contain labels prior to any processing
+	discoveredLabels := labels.New(
+		labels.Label{
+			Name:  model.AddressLabel,
+			Value: "address:8080",
 		},
+		labels.Label{
+			Name:  model.MetricNameLabel,
+			Value: "foo",
+		},
+		labels.Label{
+			Name:  model.SchemeLabel,
+			Value: "http",
+		},
+	)
+	// processedLabels contain label values after processing (e.g. relabeling)
+	processedLabels := labels.New(
+		labels.Label{
+			Name:  model.InstanceLabel,
+			Value: "localhost:8080",
+		},
+	)
+	ms := &mService{
+		sm: &mockScrapeManager{targets: map[string][]*scrape.Target{
+			"test": {
+				scrape.NewTarget(processedLabels, discoveredLabels, nil),
+			},
+		}},
 	}
 
 	rn := "prometheus"

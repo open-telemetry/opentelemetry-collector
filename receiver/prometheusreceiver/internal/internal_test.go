@@ -16,7 +16,6 @@ package internal
 
 import (
 	"context"
-	"errors"
 
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/scrape"
@@ -64,14 +63,10 @@ func (m *mockConsumer) ConsumeMetricsData(ctx context.Context, md consumerdata.M
 	return nil
 }
 
-type mockMetadataSvc struct {
-	caches map[string]*mockMetadataCache
+type mockScrapeManager struct {
+	targets map[string][]*scrape.Target
 }
 
-func (mm *mockMetadataSvc) Get(job, instance string) (MetadataCache, error) {
-	if mc, ok := mm.caches[job+"_"+instance]; ok {
-		return mc, nil
-	}
-
-	return nil, errors.New("cache not found")
+func (sm *mockScrapeManager) TargetsAll() map[string][]*scrape.Target {
+	return sm.targets
 }
