@@ -463,15 +463,13 @@ func (jr *jReceiver) startCollector(host component.Host) error {
 		api_v2.RegisterCollectorServiceServer(jr.grpc, jr)
 
 		// init and register sampling strategy store
-		if len(jr.config.RemoteSamplingStrategyFile) != 0 {
-			ss, gerr := staticStrategyStore.NewStrategyStore(staticStrategyStore.Options{
-				StrategiesFile: jr.config.RemoteSamplingStrategyFile,
-			}, jr.logger)
-			if gerr != nil {
-				return fmt.Errorf("failed to create collector strategy store: %v", gerr)
-			}
-			api_v2.RegisterSamplingManagerServer(jr.grpc, collectorSampling.NewGRPCHandler(ss))
+		ss, gerr := staticStrategyStore.NewStrategyStore(staticStrategyStore.Options{
+			StrategiesFile: jr.config.RemoteSamplingStrategyFile,
+		}, jr.logger)
+		if gerr != nil {
+			return fmt.Errorf("failed to create collector strategy store: %v", gerr)
 		}
+		api_v2.RegisterSamplingManagerServer(jr.grpc, collectorSampling.NewGRPCHandler(ss))
 
 		go func() {
 			if err := jr.grpc.Serve(gln); err != nil {
