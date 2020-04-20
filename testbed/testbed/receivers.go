@@ -26,6 +26,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/receiver/jaegerreceiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/opencensusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/otlpreceiver"
+	"github.com/open-telemetry/opentelemetry-collector/receiver/zipkinreceiver"
 )
 
 // DataReceiver allows to receive traces or metrics. This is an interface that must
@@ -193,4 +194,48 @@ func (or *OTLPDataReceiver) GenConfigYAMLStr() string {
 
 func (or *OTLPDataReceiver) ProtocolName() string {
 	return "otlp"
+}
+
+// ZipkinDataReceiver implements Zipkin format receiver.
+type ZipkinDataReceiver struct {
+	DataReceiverBase
+	receiver *zipkinreceiver.ZipkinReceiver
+}
+
+const DefaultZipkinAddressPort = 9411
+
+func NewZipkinDataReceiver(port int) *ZipkinDataReceiver {
+	return &ZipkinDataReceiver{DataReceiverBase: DataReceiverBase{Port: port}}
+}
+
+func (zr *ZipkinDataReceiver) Start(tc *MockTraceConsumer, mc *MockMetricConsumer) error {
+	var err error
+	address := fmt.Sprintf("localhost:%d", zr.Port)
+	zr.receiver, err = zipkinreceiver.New("zipkin", address, tc)
+
+	if err != nil {
+		return err
+	}
+
+	return zr.receiver.Start(context.Background(), zr)
+}
+
+func (zr *ZipkinDataReceiver) Stop() {
+	if zr.receiver != nil {
+		if err := zr.receiver.Shutdown(context.Background()); err != nil {
+			log.Printf("Cannot stop Zipkin receiver: %s", err.Error())
+		}
+	}
+}
+
+func (zr *ZipkinDataReceiver) GenConfigYAMLStr() string {
+	// Note that this generates an exporter config for agent.
+	return fmt.Sprintf(`
+  zipkin:
+    url: http://localhost:%d/api/v2/spans
+    format: json`, zr.Port)
+}
+
+func (zr *ZipkinDataReceiver) ProtocolName() string {
+	return "zipkin"
 }

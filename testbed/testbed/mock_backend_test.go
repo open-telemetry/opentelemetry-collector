@@ -23,30 +23,52 @@ import (
 
 func TestGeneratorAndBackend(t *testing.T) {
 	port := GetAvailablePort(t)
-	mb := NewMockBackend("mockbackend.log", NewJaegerDataReceiver(port))
 
-	assert.EqualValues(t, 0, mb.DataItemsReceived())
+	tests := []struct {
+		name     string
+		receiver DataReceiver
+		sender   DataSender
+	}{
+		{
+			"Jaeger-JaegerGRPC",
+			NewJaegerDataReceiver(port),
+			NewJaegerGRPCDataSender(port),
+		},
+		{
+			"Zipkin-Zipkin",
+			NewZipkinDataReceiver(port),
+			NewZipkinDataSender(port),
+		},
+	}
 
-	err := mb.Start()
-	require.NoError(t, err, "Cannot start backend")
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			mb := NewMockBackend("mockbackend.log", test.receiver)
 
-	defer mb.Stop()
+			assert.EqualValues(t, 0, mb.DataItemsReceived())
 
-	lg, err := NewLoadGenerator(NewJaegerGRPCDataSender(port))
-	require.NoError(t, err, "Cannot start load generator")
+			err := mb.Start()
+			require.NoError(t, err, "Cannot start backend")
 
-	assert.EqualValues(t, 0, lg.dataItemsSent)
+			defer mb.Stop()
 
-	// Generate at 1000 SPS
-	lg.Start(LoadOptions{DataItemsPerSecond: 1000})
+			lg, err := NewLoadGenerator(test.sender)
+			require.NoError(t, err, "Cannot start load generator")
 
-	// Wait until at least 50 spans are sent
-	WaitFor(t, func() bool { return lg.DataItemsSent() > 50 }, "DataItemsSent > 50")
+			assert.EqualValues(t, 0, lg.dataItemsSent)
 
-	lg.Stop()
+			// Generate at 1000 SPS
+			lg.Start(LoadOptions{DataItemsPerSecond: 1000})
 
-	// The backend should receive everything generated.
-	assert.Equal(t, lg.DataItemsSent(), mb.DataItemsReceived())
+			// Wait until at least 50 spans are sent
+			WaitFor(t, func() bool { return lg.DataItemsSent() > 50 }, "DataItemsSent > 50")
+
+			lg.Stop()
+
+			// The backend should receive everything generated.
+			assert.Equal(t, lg.DataItemsSent(), mb.DataItemsReceived())
+		})
+	}
 }
 
 // WaitFor the specific condition for up to 10 seconds. Records a test error

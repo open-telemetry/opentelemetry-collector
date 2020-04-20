@@ -21,6 +21,7 @@ package tests
 // coded in this file or use scenarios from perf_scenarios.go.
 
 import (
+	"fmt"
 	"os"
 	"path"
 	"path/filepath"
@@ -75,6 +76,15 @@ func TestTrace10kSPS(t *testing.T) {
 				ExpectedMaxRAM: 60,
 			},
 		},
+		{
+			"Zipkin",
+			testbed.NewZipkinDataSender(testbed.GetAvailablePort(t)),
+			testbed.NewZipkinDataReceiver(testbed.GetAvailablePort(t)),
+			testbed.ResourceSpec{
+				ExpectedMaxCPU: 60,
+				ExpectedMaxRAM: 60,
+			},
+		},
 	}
 
 	processors := map[string]string{
@@ -96,52 +106,82 @@ func TestTrace10kSPS(t *testing.T) {
 	}
 }
 
-func TestTraceNoBackend10kSPSJaeger(t *testing.T) {
-	tests := []struct {
-		name                string
-		configFileName      string
-		expectedMaxRAM      uint32
-		expectedMinFinalRAM uint32
-	}{
-		{name: "NoMemoryLimit", configFileName: "agent-config.yaml", expectedMaxRAM: 200, expectedMinFinalRAM: 100},
+func TestTraceNoBackend10kSPS(t *testing.T) {
 
-		// Memory limiter in memory-limiter.yaml is configured to allow max 10MiB of heap size.
-		// However, heap is not the only memory user, so the total limit we set for this
-		// test is 60MiB. Note: to ensure this test verifies memorylimiter correctly
-		// expectedMaxRAM of this test case must be lower than expectedMinFinalRAM of the
-		// previous test case (which runs without memorylimiter).
-		{name: "MemoryLimiter", configFileName: "memory-limiter.yaml", expectedMaxRAM: 60, expectedMinFinalRAM: 10},
+	limitProcessors := map[string]string{
+		"memory_limiter": `
+  memory_limiter:
+   check_interval: 1s
+   limit_mib: 10
+`,
+		"queued_retry": `
+  queued_retry:
+`,
 	}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+	noLimitProcessors := map[string]string{
+		"queued_retry": `
+  queued_retry:
+`,
+	}
 
-			configFilePath := path.Join("testdata", test.configFileName)
+	var processorsConfig = []processorConfig{
+		{
+			Name:                "NoMemoryLimit",
+			Processor:           noLimitProcessors,
+			ExpectedMaxRAM:      200,
+			ExpectedMinFinalRAM: 100,
+		},
+		{
+			Name:                "MemoryLimit",
+			Processor:           limitProcessors,
+			ExpectedMaxRAM:      60,
+			ExpectedMinFinalRAM: 10,
+		},
+	}
 
-			tc := testbed.NewTestCase(
-				t,
-				testbed.NewJaegerGRPCDataSender(testbed.DefaultJaegerPort),
-				testbed.NewOCDataReceiver(testbed.DefaultOCPort),
-				testbed.WithConfigFile(configFilePath),
-			)
-			defer tc.Stop()
-
-			tc.SetResourceLimits(testbed.ResourceSpec{
+	var testSenders = []struct {
+		name          string
+		sender        testbed.DataSender
+		receiver      testbed.DataReceiver
+		resourceSpec  testbed.ResourceSpec
+		configuration []processorConfig
+	}{
+		{
+			"JaegerGRPC",
+			testbed.NewJaegerGRPCDataSender(testbed.DefaultJaegerPort),
+			testbed.NewOCDataReceiver(testbed.DefaultOCPort),
+			testbed.ResourceSpec{
 				ExpectedMaxCPU: 60,
 				ExpectedMaxRAM: 198,
+			},
+			processorsConfig,
+		},
+		{
+			"Zipkin",
+			testbed.NewZipkinDataSender(testbed.DefaultZipkinAddressPort),
+			testbed.NewOCDataReceiver(testbed.DefaultOCPort),
+			testbed.ResourceSpec{
+				ExpectedMaxCPU: 80,
+				ExpectedMaxRAM: 198,
+			},
+			processorsConfig,
+		},
+	}
+
+	for _, test := range testSenders {
+		for _, testConf := range test.configuration {
+			testName := fmt.Sprintf("%s/%s", test.name, testConf.Name)
+			t.Run(testName, func(t *testing.T) {
+				ScenarioTestTraceNoBackend10kSPS(
+					t,
+					test.sender,
+					test.receiver,
+					test.resourceSpec,
+					testConf,
+				)
 			})
-
-			tc.StartAgent()
-			tc.StartLoad(testbed.LoadOptions{
-				DataItemsPerSecond: 10000,
-				ItemsPerBatch:      10,
-			})
-
-			tc.Sleep(tc.Duration)
-
-			rss, _, _ := tc.AgentMemoryInfo()
-			assert.True(t, rss > test.expectedMinFinalRAM)
-		})
+		}
 	}
 }
 

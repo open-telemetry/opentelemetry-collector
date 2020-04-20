@@ -26,6 +26,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/open-telemetry/opentelemetry-collector/testbed/testbed"
 )
 
@@ -234,4 +236,49 @@ func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, opts 
 			tc.ValidateData()
 		})
 	}
+}
+
+// Structure used for TestTraceNoBackend10kSPS.
+// Defines RAM usage range for defined processor type.
+type processorConfig struct {
+	Name string
+	// map of processor types to their config YAML to use.
+	Processor           map[string]string
+	ExpectedMaxRAM      uint32
+	ExpectedMinFinalRAM uint32
+}
+
+func ScenarioTestTraceNoBackend10kSPS(t *testing.T, sender testbed.DataSender, receiver testbed.DataReceiver,
+	resourceSpec testbed.ResourceSpec, configuration processorConfig) {
+
+	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	configFile := createConfigFile(t, sender, receiver, resultDir, configuration.Processor)
+	defer os.Remove(configFile)
+
+	if configFile == "" {
+		t.Fatal("Cannot create config file")
+	}
+
+	tc := testbed.NewTestCase(
+		t,
+		sender,
+		receiver,
+		testbed.WithConfigFile(configFile),
+	)
+
+	defer tc.Stop()
+
+	tc.SetResourceLimits(resourceSpec)
+
+	tc.StartAgent()
+	tc.StartLoad(testbed.LoadOptions{DataItemsPerSecond: 10000, ItemsPerBatch: 10})
+
+	tc.Sleep(tc.Duration)
+
+	rss, _, _ := tc.AgentMemoryInfo()
+	assert.True(t, rss > configuration.ExpectedMinFinalRAM)
 }

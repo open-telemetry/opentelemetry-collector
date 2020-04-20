@@ -28,6 +28,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/exporter/jaegerexporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/opencensusexporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/otlpexporter"
+	"github.com/open-telemetry/opentelemetry-collector/exporter/zipkinexporter"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 )
 
@@ -389,4 +390,47 @@ func (ome *OTLPMetricsDataSender) GetCollectorPort() int {
 
 func (ome *OTLPMetricsDataSender) ProtocolName() string {
 	return "otlp"
+}
+
+// ZipkinDataSender implements TraceDataSender for Zipkin http protocol.
+type ZipkinDataSender struct {
+	DataSenderOverTraceExporterOld
+}
+
+// Ensure ZipkinDataSender implements TraceDataSender.
+var _ TraceDataSenderOld = (*ZipkinDataSender)(nil)
+
+// NewZipkinDataSender creates a new Zipkin protocol sender that will send
+// to the specified port after Start is called.
+func NewZipkinDataSender(port int) *ZipkinDataSender {
+	return &ZipkinDataSender{DataSenderOverTraceExporterOld{Port: port}}
+}
+
+func (zs *ZipkinDataSender) Start() error {
+	spansURL := fmt.Sprintf("http://localhost:%d/api/v2/spans", zs.Port)
+
+	cfg := &zipkinexporter.Config{
+		URL:    spansURL,
+		Format: "json",
+	}
+
+	factory := zipkinexporter.Factory{}
+	exporter, err := factory.CreateTraceExporter(zap.L(), cfg)
+
+	if err != nil {
+		return err
+	}
+
+	zs.exporter = exporter
+	return err
+}
+
+func (zs *ZipkinDataSender) GenConfigYAMLStr() string {
+	return fmt.Sprintf(`
+  zipkin:
+    endpoint: localhost:%d`, zs.Port)
+}
+
+func (zs *ZipkinDataSender) ProtocolName() string {
+	return "zipkin"
 }
