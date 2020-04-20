@@ -463,10 +463,11 @@ func TestSamplingFailsOnNotConfigured(t *testing.T) {
 
 	cl := api_v2.NewSamplingManagerClient(conn)
 
-	_, err = cl.GetSamplingStrategy(context.Background(), &api_v2.SamplingStrategyParameters{
+	response, err := cl.GetSamplingStrategy(context.Background(), &api_v2.SamplingStrategyParameters{
 		ServiceName: "nothing",
 	})
-	assert.Error(t, err)
+	require.NoError(t, err)
+	assert.Equal(t, 0.001, response.GetProbabilisticSampling().GetSamplingRate())
 }
 
 func TestSamplingFailsOnBadFile(t *testing.T) {

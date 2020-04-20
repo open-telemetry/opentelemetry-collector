@@ -124,7 +124,21 @@ func TestCreateInvalidThriftCompactEndpoint(t *testing.T) {
 	assert.Equal(t, 6831, r.(*jReceiver).config.AgentCompactThriftPort, "thrift port should be default")
 }
 
-func TestDefaultAgentRemoteSamplingHTTPPort(t *testing.T) {
+func TestDefaultAgentRemoteSamplingEndpointAndPort(t *testing.T) {
+	factory := Factory{}
+	cfg := factory.CreateDefaultConfig()
+	rCfg := cfg.(*Config)
+
+	rCfg.Protocols[protoThriftCompact], _ = defaultsForProtocol(protoThriftCompact)
+	rCfg.RemoteSampling = &RemoteSamplingConfig{}
+	r, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
+
+	assert.NoError(t, err, "create trace receiver should not error")
+	assert.Equal(t, defaultGRPCBindEndpoint, r.(*jReceiver).config.RemoteSamplingEndpoint)
+	assert.Equal(t, defaultAgentRemoteSamplingHTTPPort, r.(*jReceiver).config.AgentHTTPPort, "agent http port should be default")
+}
+
+func TestAgentRemoteSamplingEndpoint(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
