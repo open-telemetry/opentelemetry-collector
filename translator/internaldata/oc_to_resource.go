@@ -28,22 +28,6 @@ func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Reso
 		return
 	}
 
-	// Number of special fields in the Node. See the code below that deals with special fields.
-	const specialNodeAttrCount = 7
-
-	// Number of special fields in the Resource.
-	const specialResourceAttrCount = 1
-
-	// Calculate maximum total number of attributes. It is OK if we are a bit higher than
-	// the exact number since this is only needed for capacity reservation.
-	maxTotalAttrCount := 0
-	if ocNode != nil {
-		maxTotalAttrCount += len(ocNode.Attributes) + specialNodeAttrCount
-	}
-	if ocResource != nil {
-		maxTotalAttrCount += len(ocResource.Labels) + specialResourceAttrCount
-	}
-
 	dest.InitEmpty()
 	attrs := dest.Attributes()
 
