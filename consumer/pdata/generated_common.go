@@ -23,7 +23,7 @@ import (
 
 // InstrumentationLibrary is a message representing the instrumentation library information.
 //
-// This is a reference type, if passsed by value and callee modifies it the
+// This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
 // Must use NewInstrumentationLibrary function to create new instances.
