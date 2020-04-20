@@ -24,10 +24,9 @@ import (
 	"time"
 
 	"contrib.go.opencensus.io/exporter/jaeger"
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/jaegertracing/jaeger/model"
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
+	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/trace"
@@ -35,19 +34,21 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
-	"github.com/open-telemetry/opentelemetry-collector/internal"
 	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	"github.com/open-telemetry/opentelemetry-collector/testutils"
+	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 )
 
 const jaegerReceiver = "jaeger_receiver_test"
 
 func TestTraceSource(t *testing.T) {
-	jr, err := New(jaegerReceiver, &Configuration{}, nil, zap.NewNop())
+	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	jr, err := New(jaegerReceiver, &Configuration{}, nil, params)
 	assert.NoError(t, err, "should not have failed to create the Jaeger receiver")
 	require.NotNil(t, jr)
 }
@@ -57,9 +58,10 @@ func TestReception(t *testing.T) {
 	config := &Configuration{
 		CollectorHTTPPort: 14268, // that's the only one used by this test
 	}
-	sink := new(exportertest.SinkTraceExporterOld)
+	sink := new(exportertest.SinkTraceExporter)
 
-	jr, err := New(jaegerReceiver, config, sink, zap.NewNop())
+	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	jr, err := New(jaegerReceiver, config, sink, params)
 	defer jr.Shutdown(context.Background())
 	assert.NoError(t, err, "should not have failed to create the Jaeger received")
 
@@ -93,19 +95,21 @@ func TestReception(t *testing.T) {
 	}
 	jexp.Flush()
 
-	got := sink.AllTraces()
+	gotTraces := sink.AllTraces()
+	assert.Equal(t, 1, len(gotTraces))
 	want := expectedTraceData(now, nowPlus10min, nowPlus10min2sec)
 
-	assert.EqualValues(t, want, got)
+	assert.EqualValues(t, want, gotTraces[0])
 }
 
 func TestPortsNotOpen(t *testing.T) {
 	// an empty config should result in no open ports
 	config := &Configuration{}
 
-	sink := new(exportertest.SinkTraceExporterOld)
+	sink := new(exportertest.SinkTraceExporter)
 
-	jr, err := New(jaegerReceiver, config, sink, zap.NewNop())
+	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	jr, err := New(jaegerReceiver, config, sink, params)
 	assert.NoError(t, err, "should not have failed to create a new receiver")
 	defer jr.Shutdown(context.Background())
 
@@ -132,9 +136,10 @@ func TestGRPCReception(t *testing.T) {
 	config := &Configuration{
 		CollectorGRPCPort: 14250, // that's the only one used by this test
 	}
-	sink := new(exportertest.SinkTraceExporterOld)
+	sink := new(exportertest.SinkTraceExporter)
 
-	jr, err := New(jaegerReceiver, config, sink, zap.NewNop())
+	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	jr, err := New(jaegerReceiver, config, sink, params)
 	assert.NoError(t, err, "should not have failed to create a new receiver")
 	defer jr.Shutdown(context.Background())
 
@@ -161,12 +166,13 @@ func TestGRPCReception(t *testing.T) {
 	assert.NoError(t, err, "should not have failed to post spans")
 	assert.NotNil(t, resp, "response should not have been nil")
 
-	got := sink.AllTraces()
+	gotTraces := sink.AllTraces()
+	assert.Equal(t, 1, len(gotTraces))
 	want := expectedTraceData(now, nowPlus10min, nowPlus10min2sec)
 
-	assert.Len(t, req.Batch.Spans, len(want[0].Spans), "got a conflicting amount of spans")
+	assert.Len(t, req.Batch.Spans, want.SpanCount(), "got a conflicting amount of spans")
 
-	assert.EqualValues(t, want, got)
+	assert.EqualValues(t, want, gotTraces[0])
 }
 
 func TestGRPCReceptionWithTLS(t *testing.T) {
@@ -186,9 +192,10 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 		CollectorGRPCPort:    int(port),
 		CollectorGRPCOptions: grpcServerOptions,
 	}
-	sink := new(exportertest.SinkTraceExporterOld)
+	sink := new(exportertest.SinkTraceExporter)
 
-	jr, err := New(jaegerReceiver, config, sink, zap.NewNop())
+	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	jr, err := New(jaegerReceiver, config, sink, params)
 	assert.NoError(t, err, "should not have failed to create a new receiver")
 	defer jr.Shutdown(context.Background())
 
@@ -217,81 +224,55 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 	assert.NoError(t, err, "should not have failed to post spans")
 	assert.NotNil(t, resp, "response should not have been nil")
 
-	got := sink.AllTraces()
+	gotTraces := sink.AllTraces()
+	assert.Equal(t, 1, len(gotTraces))
 	want := expectedTraceData(now, nowPlus10min, nowPlus10min2sec)
 
-	assert.Len(t, req.Batch.Spans, len(want[0].Spans), "got a conflicting amount of spans")
-	assert.EqualValues(t, want, got)
+	assert.Len(t, req.Batch.Spans, want.SpanCount(), "got a conflicting amount of spans")
+	assert.EqualValues(t, want, gotTraces[0])
 }
 
-func expectedTraceData(t1, t2, t3 time.Time) []consumerdata.TraceData {
-	traceID := []byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80}
-	parentSpanID := []byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18}
-	childSpanID := []byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8}
+func expectedTraceData(t1, t2, t3 time.Time) pdata.Traces {
+	traceID := pdata.TraceID(
+		[]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80})
+	parentSpanID := pdata.SpanID([]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18})
+	childSpanID := pdata.SpanID([]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8})
 
-	return []consumerdata.TraceData{
-		{
-			Node: &commonpb.Node{
-				ServiceInfo: &commonpb.ServiceInfo{Name: "issaTest"},
-				LibraryInfo: &commonpb.LibraryInfo{},
-				Identifier:  &commonpb.ProcessIdentifier{},
-				Attributes: map[string]string{
-					"bool":   "true",
-					"string": "yes",
-					"int64":  "10000000",
-				},
-			},
-			Spans: []*tracepb.Span{
-				{
-					TraceId:      traceID,
-					SpanId:       childSpanID,
-					ParentSpanId: parentSpanID,
-					Name:         &tracepb.TruncatableString{Value: "DBSearch"},
-					StartTime:    internal.TimeToTimestamp(t1),
-					EndTime:      internal.TimeToTimestamp(t2),
-					Status: &tracepb.Status{
-						Code:    trace.StatusCodeNotFound,
-						Message: "Stale indices",
-					},
-					Attributes: &tracepb.Span_Attributes{
-						AttributeMap: map[string]*tracepb.AttributeValue{
-							"error": {
-								Value: &tracepb.AttributeValue_BoolValue{BoolValue: true},
-							},
-						},
-					},
-					Links: &tracepb.Span_Links{
-						Link: []*tracepb.Span_Link{
-							{
-								TraceId: traceID,
-								SpanId:  parentSpanID,
-								Type:    tracepb.Span_Link_PARENT_LINKED_SPAN,
-							},
-						},
-					},
-				},
-				{
-					TraceId:   traceID,
-					SpanId:    parentSpanID,
-					Name:      &tracepb.TruncatableString{Value: "ProxyFetch"},
-					StartTime: internal.TimeToTimestamp(t2),
-					EndTime:   internal.TimeToTimestamp(t3),
-					Status: &tracepb.Status{
-						Code:    trace.StatusCodeInternal,
-						Message: "Frontend crash",
-					},
-					Attributes: &tracepb.Span_Attributes{
-						AttributeMap: map[string]*tracepb.AttributeValue{
-							"error": {
-								Value: &tracepb.AttributeValue_BoolValue{BoolValue: true},
-							},
-						},
-					},
-				},
-			},
-			SourceFormat: "jaeger",
-		},
-	}
+	traces := pdata.NewTraces()
+	traces.ResourceSpans().Resize(1)
+	rs := traces.ResourceSpans().At(0)
+	rs.Resource().InitEmpty()
+	rs.Resource().Attributes().InsertString(conventions.AttributeServiceName, "issaTest")
+	rs.Resource().Attributes().InsertBool("bool", true)
+	rs.Resource().Attributes().InsertString("string", "yes")
+	rs.Resource().Attributes().InsertInt("int64", 10000000)
+	rs.InstrumentationLibrarySpans().Resize(1)
+	rs.InstrumentationLibrarySpans().At(0).Spans().Resize(2)
+
+	span0 := rs.InstrumentationLibrarySpans().At(0).Spans().At(0)
+	span0.SetSpanID(childSpanID)
+	span0.SetParentSpanID(parentSpanID)
+	span0.SetTraceID(traceID)
+	span0.SetName("DBSearch")
+	span0.SetStartTime(pdata.TimestampUnixNano(uint64(t1.UnixNano())))
+	span0.SetEndTime(pdata.TimestampUnixNano(uint64(t2.UnixNano())))
+	span0.Status().InitEmpty()
+	span0.Status().SetCode(pdata.StatusCode(otlptrace.Status_NotFound))
+	span0.Status().SetMessage("Stale indices")
+	span0.Attributes().InsertBool("error", true)
+
+	span1 := rs.InstrumentationLibrarySpans().At(0).Spans().At(1)
+	span1.SetSpanID(parentSpanID)
+	span1.SetTraceID(traceID)
+	span1.SetName("ProxyFetch")
+	span1.SetStartTime(pdata.TimestampUnixNano(uint64(t2.UnixNano())))
+	span1.SetEndTime(pdata.TimestampUnixNano(uint64(t3.UnixNano())))
+	span1.Status().InitEmpty()
+	span1.Status().SetCode(pdata.StatusCode(otlptrace.Status_InternalError))
+	span1.Status().SetMessage("Frontend crash")
+	span1.Attributes().InsertBool("error", true)
+
+	return traces
 }
 
 func traceFixture(t1, t2, t3 time.Time) []*trace.SpanData {
@@ -396,9 +377,10 @@ func TestSampling(t *testing.T) {
 		CollectorGRPCPort:          int(port),
 		RemoteSamplingStrategyFile: "testdata/strategies.json",
 	}
-	sink := new(exportertest.SinkTraceExporterOld)
+	sink := new(exportertest.SinkTraceExporter)
 
-	jr, err := New(jaegerReceiver, config, sink, zap.NewNop())
+	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	jr, err := New(jaegerReceiver, config, sink, params)
 	assert.NoError(t, err, "should not have failed to create a new receiver")
 	defer jr.Shutdown(context.Background())
 
@@ -448,9 +430,10 @@ func TestSamplingFailsOnNotConfigured(t *testing.T) {
 	config := &Configuration{
 		CollectorGRPCPort: int(port),
 	}
-	sink := new(exportertest.SinkTraceExporterOld)
+	sink := new(exportertest.SinkTraceExporter)
 
-	jr, err := New(jaegerReceiver, config, sink, zap.NewNop())
+	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	jr, err := New(jaegerReceiver, config, sink, params)
 	assert.NoError(t, err, "should not have failed to create a new receiver")
 	defer jr.Shutdown(context.Background())
 
@@ -477,9 +460,10 @@ func TestSamplingFailsOnBadFile(t *testing.T) {
 		CollectorGRPCPort:          int(port),
 		RemoteSamplingStrategyFile: "does-not-exist",
 	}
-	sink := new(exportertest.SinkTraceExporterOld)
+	sink := new(exportertest.SinkTraceExporter)
 
-	jr, err := New(jaegerReceiver, config, sink, zap.NewNop())
+	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	jr, err := New(jaegerReceiver, config, sink, params)
 	assert.NoError(t, err, "should not have failed to create a new receiver")
 	defer jr.Shutdown(context.Background())
 	assert.Error(t, jr.Start(context.Background(), componenttest.NewNopHost()))

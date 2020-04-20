@@ -23,19 +23,15 @@ import (
 	"time"
 
 	"contrib.go.opencensus.io/exporter/jaeger"
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opencensus.io/trace"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
-	"github.com/open-telemetry/opentelemetry-collector/internal"
 	"github.com/open-telemetry/opentelemetry-collector/testutils"
 )
 
@@ -55,7 +51,8 @@ func TestJaegerAgentUDP_ThriftCompact_InvalidPort(t *testing.T) {
 	config := &Configuration{
 		AgentCompactThriftPort: int(port),
 	}
-	jr, err := New(jaegerAgent, config, nil, zap.NewNop())
+	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	jr, err := New(jaegerAgent, config, nil, params)
 	assert.NoError(t, err, "Failed to create new Jaeger Receiver")
 
 	err = jr.Start(context.Background(), componenttest.NewNopHost())
@@ -81,7 +78,8 @@ func TestJaegerAgentUDP_ThriftBinary_PortInUse(t *testing.T) {
 	config := &Configuration{
 		AgentBinaryThriftPort: int(port),
 	}
-	jr, err := New(jaegerAgent, config, nil, zap.NewNop())
+	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	jr, err := New(jaegerAgent, config, nil, params)
 	assert.NoError(t, err, "Failed to create new Jaeger Receiver")
 
 	err = jr.(*jReceiver).startAgent(componenttest.NewNopHost())
@@ -102,7 +100,8 @@ func TestJaegerAgentUDP_ThriftBinary_InvalidPort(t *testing.T) {
 	config := &Configuration{
 		AgentBinaryThriftPort: int(port),
 	}
-	jr, err := New(jaegerAgent, config, nil, zap.NewNop())
+	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	jr, err := New(jaegerAgent, config, nil, params)
 	assert.NoError(t, err, "Failed to create new Jaeger Receiver")
 
 	err = jr.Start(context.Background(), componenttest.NewNopHost())
@@ -141,7 +140,8 @@ func TestJaegerHTTP(t *testing.T) {
 		AgentHTTPPort:          int(port),
 		RemoteSamplingEndpoint: addr.String(),
 	}
-	jr, err := New(jaegerAgent, config, nil, zap.NewNop())
+	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	jr, err := New(jaegerAgent, config, nil, params)
 	assert.NoError(t, err, "Failed to create new Jaeger Receiver")
 	defer jr.Shutdown(context.Background())
 
@@ -176,8 +176,9 @@ func TestJaegerHTTP(t *testing.T) {
 
 func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *Configuration) {
 	// 1. Create the Jaeger receiver aka "server"
-	sink := new(exportertest.SinkTraceExporterOld)
-	jr, err := New(jaegerAgent, receiverConfig, sink, zap.NewNop())
+	sink := new(exportertest.SinkTraceExporter)
+	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	jr, err := New(jaegerAgent, receiverConfig, sink, params)
 	assert.NoError(t, err, "Failed to create new Jaeger Receiver")
 	defer jr.Shutdown(context.Background())
 
@@ -204,49 +205,7 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *Configu
 	assert.NoError(t, err, "Failed to create the Jaeger OpenCensus exporter for the live application")
 
 	// 3. Now finally send some spans
-	spandata := []*trace.SpanData{
-		{
-			SpanContext: trace.SpanContext{
-				TraceID: trace.TraceID{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x80},
-				SpanID:  trace.SpanID{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8},
-			},
-			ParentSpanID: trace.SpanID{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18},
-			Name:         "DBSearch",
-			StartTime:    now,
-			EndTime:      nowPlus10min,
-			Status: trace.Status{
-				Code:    trace.StatusCodeNotFound,
-				Message: "Stale indices",
-			},
-			Links: []trace.Link{
-				{
-					TraceID: trace.TraceID{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80},
-					SpanID:  trace.SpanID{0xCF, 0xCE, 0xCD, 0xCC, 0xCB, 0xCA, 0xC9, 0xC8},
-					Type:    trace.LinkTypeParent,
-				},
-			},
-		},
-		{
-			SpanContext: trace.SpanContext{
-				TraceID: trace.TraceID{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80},
-				SpanID:  trace.SpanID{0xCF, 0xCE, 0xCD, 0xCC, 0xCB, 0xCA, 0xC9, 0xC8},
-			},
-			Name:      "ProxyFetch",
-			StartTime: nowPlus10min,
-			EndTime:   nowPlus10min2sec,
-			Status: trace.Status{
-				Code:    trace.StatusCodeInternal,
-				Message: "Frontend crash",
-			},
-			Links: []trace.Link{
-				{
-					TraceID: trace.TraceID{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80},
-					SpanID:  trace.SpanID{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8},
-					Type:    trace.LinkTypeChild,
-				},
-			},
-		},
-	}
+	spandata := traceFixture(now, nowPlus10min, nowPlus10min2sec)
 
 	for _, sd := range spandata {
 		jexp.ExportSpan(sd)
@@ -261,86 +220,10 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *Configu
 		<-time.After(60 * time.Millisecond)
 	}
 
-	got := sink.AllTraces()
+	gotTraces := sink.AllTraces()
+	assert.Equal(t, 1, len(gotTraces))
 
-	want := []consumerdata.TraceData{
-		{
-			Node: &commonpb.Node{
-				ServiceInfo: &commonpb.ServiceInfo{Name: "issaTest"},
-				LibraryInfo: &commonpb.LibraryInfo{},
-				Identifier:  &commonpb.ProcessIdentifier{},
-				Attributes: map[string]string{
-					"bool":   "true",
-					"string": "yes",
-					"int64":  "10000000",
-				},
-			},
+	want := expectedTraceData(now, nowPlus10min, nowPlus10min2sec)
 
-			Spans: []*tracepb.Span{
-				{
-					TraceId:      []byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x80},
-					SpanId:       []byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8},
-					ParentSpanId: []byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18},
-					Name:         &tracepb.TruncatableString{Value: "DBSearch"},
-					StartTime:    internal.TimeToTimestamp(now),
-					EndTime:      internal.TimeToTimestamp(nowPlus10min),
-					Status: &tracepb.Status{
-						Code:    trace.StatusCodeNotFound,
-						Message: "Stale indices",
-					},
-					Attributes: &tracepb.Span_Attributes{
-						AttributeMap: map[string]*tracepb.AttributeValue{
-							"error": {
-								Value: &tracepb.AttributeValue_BoolValue{BoolValue: true},
-							},
-						},
-					},
-					Links: &tracepb.Span_Links{
-						Link: []*tracepb.Span_Link{
-							{
-								TraceId: []byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80},
-								SpanId:  []byte{0xCF, 0xCE, 0xCD, 0xCC, 0xCB, 0xCA, 0xC9, 0xC8},
-								Type:    tracepb.Span_Link_PARENT_LINKED_SPAN,
-							},
-						},
-					},
-				},
-				{
-					TraceId:   []byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80},
-					SpanId:    []byte{0xCF, 0xCE, 0xCD, 0xCC, 0xCB, 0xCA, 0xC9, 0xC8},
-					Name:      &tracepb.TruncatableString{Value: "ProxyFetch"},
-					StartTime: internal.TimeToTimestamp(nowPlus10min),
-					EndTime:   internal.TimeToTimestamp(nowPlus10min2sec),
-					Status: &tracepb.Status{
-						Code:    trace.StatusCodeInternal,
-						Message: "Frontend crash",
-					},
-					Attributes: &tracepb.Span_Attributes{
-						AttributeMap: map[string]*tracepb.AttributeValue{
-							"error": {
-								Value: &tracepb.AttributeValue_BoolValue{BoolValue: true},
-							},
-						},
-					},
-					Links: &tracepb.Span_Links{
-						Link: []*tracepb.Span_Link{
-							{
-								TraceId: []byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80},
-								SpanId:  []byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8},
-								// TODO: (@pjanotti, @odeke-em) contact the Jaeger maintains to inquire about
-								// Parent_Linked_Spans as currently they've only got:
-								// * Child_of
-								// * Follows_from
-								// yet OpenCensus has Parent too but Jaeger uses a zero-value for LinkCHILD.
-								Type: tracepb.Span_Link_PARENT_LINKED_SPAN,
-							},
-						},
-					},
-				},
-			},
-			SourceFormat: "jaeger",
-		},
-	}
-
-	assert.EqualValues(t, want, got)
+	assert.EqualValues(t, want, gotTraces[0])
 }
