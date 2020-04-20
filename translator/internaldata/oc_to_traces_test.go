@@ -15,17 +15,20 @@
 package internaldata
 
 import (
+	"strconv"
 	"testing"
 
 	occommon "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	octrace "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
+	"github.com/open-telemetry/opentelemetry-collector/internal"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data/testdata"
 )
 
@@ -387,8 +390,68 @@ func TestOcToInternal(t *testing.T) {
 	}
 }
 
+func BenchmarkSpansWithAttributesOCToInternal(b *testing.B) {
+	ocSpan := generateSpanWithAttributes(15)
+
+	ocTraceData := consumerdata.TraceData{
+		Resource: generateOCTestResource(),
+		Spans: []*octrace.Span{
+			ocSpan,
+		},
+	}
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		OCToTraceData(ocTraceData)
+	}
+}
+
+func BenchmarkSpansWithAttributesUnmarshal(b *testing.B) {
+	ocSpan := generateSpanWithAttributes(15)
+
+	buf := &proto.Buffer{}
+	if err := buf.Marshal(ocSpan); err != nil {
+		b.Fail()
+	}
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		unmarshalOc := &octrace.Span{}
+		if err := proto.Unmarshal(buf.Bytes(), unmarshalOc); err != nil {
+			b.Fail()
+		}
+		if len(unmarshalOc.Attributes.AttributeMap) != 15 {
+			b.Fail()
+		}
+	}
+}
+
 // TODO: Try to avoid unnecessary Resource object allocation.
 func wrapTraceWithEmptyResource(td pdata.Traces) pdata.Traces {
 	td.ResourceSpans().At(0).Resource().InitEmpty()
 	return td
+}
+
+func generateSpanWithAttributes(len int) *octrace.Span {
+	startTime := internal.TimeToTimestamp(testdata.TestSpanStartTime)
+	endTime := internal.TimeToTimestamp(testdata.TestSpanEndTime)
+	ocSpan2 := &octrace.Span{
+		Name:      &octrace.TruncatableString{Value: "operationB"},
+		StartTime: startTime,
+		EndTime:   endTime,
+		Attributes: &octrace.Span_Attributes{
+			DroppedAttributesCount: 3,
+		},
+	}
+
+	ocSpan2.Attributes.AttributeMap = make(map[string]*octrace.AttributeValue, len)
+	ocAttr := ocSpan2.Attributes.AttributeMap
+	for i := 0; i < len; i++ {
+		ocAttr["span-link-attr_"+strconv.Itoa(i)] = &octrace.AttributeValue{
+			Value: &octrace.AttributeValue_StringValue{
+				StringValue: &octrace.TruncatableString{Value: "span-link-attr-val"},
+			},
+		}
+	}
+	return ocSpan2
 }

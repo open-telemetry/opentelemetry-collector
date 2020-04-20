@@ -189,34 +189,26 @@ func ocAttrsToInternal(ocAttrs *octrace.Span_Attributes, dest pdata.AttributeMap
 		return
 	}
 
-	attrCount := len(ocAttrs.AttributeMap)
-	attrMap := make(map[string]pdata.AttributeValue, attrCount)
-	if attrCount > 0 {
-		values := pdata.NewAttributeValueSlice(attrCount)
-		i := 0
+	if len(ocAttrs.AttributeMap) > 0 {
 		for key, ocAttr := range ocAttrs.AttributeMap {
 			switch attribValue := ocAttr.Value.(type) {
 			case *octrace.AttributeValue_StringValue:
-				values[i].SetStringVal(attribValue.StringValue.GetValue())
+				dest.UpsertString(key, attribValue.StringValue.GetValue())
 
 			case *octrace.AttributeValue_IntValue:
-				values[i].SetIntVal(attribValue.IntValue)
+				dest.UpsertInt(key, attribValue.IntValue)
 
 			case *octrace.AttributeValue_BoolValue:
-				values[i].SetBoolVal(attribValue.BoolValue)
+				dest.UpsertBool(key, attribValue.BoolValue)
 
 			case *octrace.AttributeValue_DoubleValue:
-				values[i].SetDoubleVal(attribValue.DoubleValue)
+				dest.UpsertDouble(key, attribValue.DoubleValue)
 
 			default:
-				str := "<Unknown OpenCensus attribute value type>"
-				values[i].SetStringVal(str)
+				dest.UpsertString(key, "<Unknown OpenCensus attribute value type>")
 			}
-			attrMap[key] = values[i]
-			i++
 		}
 	}
-	dest.InitFromMap(attrMap)
 }
 
 func ocSpanKindToInternal(ocKind octrace.Span_SpanKind, ocAttrs *octrace.Span_Attributes) pdata.SpanKind {
@@ -344,16 +336,8 @@ func ocMessageEventToInternalAttrs(msgEvent *octrace.Span_TimeEvent_MessageEvent
 		return
 	}
 
-	attrs := pdata.NewAttributeValueSlice(4)
-	attrs[0].SetStringVal(msgEvent.Type.String())
-	attrs[1].SetIntVal(int64(msgEvent.Id))
-	attrs[2].SetIntVal(int64(msgEvent.UncompressedSize))
-	attrs[3].SetIntVal(int64(msgEvent.CompressedSize))
-
-	dest.InitFromMap(map[string]pdata.AttributeValue{
-		conventions.OCTimeEventMessageEventType:  attrs[0],
-		conventions.OCTimeEventMessageEventID:    attrs[1],
-		conventions.OCTimeEventMessageEventUSize: attrs[2],
-		conventions.OCTimeEventMessageEventCSize: attrs[3],
-	})
+	dest.UpsertString(conventions.OCTimeEventMessageEventType, msgEvent.Type.String())
+	dest.UpsertInt(conventions.OCTimeEventMessageEventID, int64(msgEvent.Id))
+	dest.UpsertInt(conventions.OCTimeEventMessageEventUSize, int64(msgEvent.UncompressedSize))
+	dest.UpsertInt(conventions.OCTimeEventMessageEventCSize, int64(msgEvent.CompressedSize))
 }
