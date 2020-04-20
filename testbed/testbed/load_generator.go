@@ -248,22 +248,18 @@ func (lg *LoadGenerator) generateTrace() {
 
 		span := spans.At(i)
 
-		attrs := map[string]pdata.AttributeValue{
-			"load_generator.span_seq_num":  pdata.NewAttributeValueInt(int64(spanID)),
-			"load_generator.trace_seq_num": pdata.NewAttributeValueInt(int64(traceID)),
-		}
-
-		// Additional attributes.
-		for k, v := range lg.options.Attributes {
-			attrs[k] = pdata.NewAttributeValueString(v)
-		}
-
 		// Create a span.
 		span.SetTraceID(GenerateTraceID(traceID))
 		span.SetSpanID(GenerateSpanID(spanID))
 		span.SetName("load-generator-span")
 		span.SetKind(pdata.SpanKindCLIENT)
-		span.Attributes().InitFromMap(attrs)
+		attrs := span.Attributes()
+		attrs.UpsertInt("load_generator.span_seq_num", int64(spanID))
+		attrs.UpsertInt("load_generator.trace_seq_num", int64(traceID))
+		// Additional attributes.
+		for k, v := range lg.options.Attributes {
+			attrs.UpsertString(k, v)
+		}
 		span.SetStartTime(pdata.TimestampUnixNano(uint64(startTime.UnixNano())))
 		span.SetEndTime(pdata.TimestampUnixNano(uint64(endTime.UnixNano())))
 	}
@@ -369,11 +365,10 @@ func (lg *LoadGenerator) generateMetrics() {
 	metricData.ResourceMetrics().Resize(1)
 	metricData.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Resize(1)
 	if lg.options.Attributes != nil {
-		attrs := map[string]pdata.AttributeValue{}
+		attrs := metricData.ResourceMetrics().At(0).Resource().Attributes()
 		for k, v := range lg.options.Attributes {
-			attrs[k] = pdata.NewAttributeValueString(v)
+			attrs.UpsertString(k, v)
 		}
-		metricData.ResourceMetrics().At(0).Resource().Attributes().InitFromMap(attrs)
 	}
 	metrics := metricData.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 	metrics.Resize(lg.options.ItemsPerBatch)
