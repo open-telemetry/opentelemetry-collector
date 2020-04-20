@@ -23,7 +23,7 @@ import (
 
 // ResourceSpansSlice logically represents a slice of ResourceSpans.
 //
-// This is a reference type, if passsed by value and callee modifies it the
+// This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
 // Must use NewResourceSpansSlice function to create new instances.
@@ -113,7 +113,7 @@ func (es ResourceSpansSlice) Resize(newLen int) {
 
 // InstrumentationLibrarySpans is a collection of spans from a LibraryInstrumentation.
 //
-// This is a reference type, if passsed by value and callee modifies it the
+// This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
 // Must use NewResourceSpans function to create new instances.
@@ -168,7 +168,7 @@ func (ms ResourceSpans) InstrumentationLibrarySpans() InstrumentationLibrarySpan
 
 // InstrumentationLibrarySpansSlice logically represents a slice of InstrumentationLibrarySpans.
 //
-// This is a reference type, if passsed by value and callee modifies it the
+// This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
 // Must use NewInstrumentationLibrarySpansSlice function to create new instances.
@@ -258,7 +258,7 @@ func (es InstrumentationLibrarySpansSlice) Resize(newLen int) {
 
 // InstrumentationLibrarySpans is a collection of spans from a LibraryInstrumentation.
 //
-// This is a reference type, if passsed by value and callee modifies it the
+// This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
 // Must use NewInstrumentationLibrarySpans function to create new instances.
@@ -313,7 +313,7 @@ func (ms InstrumentationLibrarySpans) Spans() SpanSlice {
 
 // SpanSlice logically represents a slice of Span.
 //
-// This is a reference type, if passsed by value and callee modifies it the
+// This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
 // Must use NewSpanSlice function to create new instances.
@@ -404,7 +404,7 @@ func (es SpanSlice) Resize(newLen int) {
 // Span represents a single operation within a trace.
 // See Span definition in OTLP: https://github.com/open-telemetry/opentelemetry-proto/blob/master/opentelemetry/proto/trace/v1/trace.proto#L37
 //
-// This is a reference type, if passsed by value and callee modifies it the
+// This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
 // Must use NewSpan function to create new instances.
@@ -627,7 +627,7 @@ func (ms Span) Status() SpanStatus {
 
 // SpanEventSlice logically represents a slice of SpanEvent.
 //
-// This is a reference type, if passsed by value and callee modifies it the
+// This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
 // Must use NewSpanEventSlice function to create new instances.
@@ -718,7 +718,7 @@ func (es SpanEventSlice) Resize(newLen int) {
 // SpanEvent is a time-stamped annotation of the span, consisting of user-supplied
 // text description and key-value pairs. See OTLP for event definition.
 //
-// This is a reference type, if passsed by value and callee modifies it the
+// This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
 // Must use NewSpanEvent function to create new instances.
@@ -805,7 +805,7 @@ func (ms SpanEvent) SetDroppedAttributesCount(v uint32) {
 
 // SpanLinkSlice logically represents a slice of SpanLink.
 //
-// This is a reference type, if passsed by value and callee modifies it the
+// This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
 // Must use NewSpanLinkSlice function to create new instances.
@@ -896,7 +896,7 @@ func (es SpanLinkSlice) Resize(newLen int) {
 // SpanLink is a pointer from the current span to another span in the same trace or in a
 // different trace. See OTLP for link definition.
 //
-// This is a reference type, if passsed by value and callee modifies it the
+// This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
 // Must use NewSpanLink function to create new instances.
@@ -998,7 +998,7 @@ func (ms SpanLink) SetDroppedAttributesCount(v uint32) {
 // SpanStatus is an optional final status for this span. Semantically when Status wasn't set
 // it is means span ended without errors and assume Status.Ok (code = 0).
 //
-// This is a reference type, if passsed by value and callee modifies it the
+// This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
 // Must use NewSpanStatus function to create new instances.

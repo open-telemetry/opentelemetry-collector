@@ -23,7 +23,7 @@ import (
 
 // ResourceMetricsSlice logically represents a slice of ResourceMetrics.
 //
-// This is a reference type, if passsed by value and callee modifies it the
+// This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
 // Must use NewResourceMetricsSlice function to create new instances.
@@ -113,7 +113,7 @@ func (es ResourceMetricsSlice) Resize(newLen int) {
 
 // InstrumentationLibraryMetrics is a collection of metrics from a LibraryInstrumentation.
 //
-// This is a reference type, if passsed by value and callee modifies it the
+// This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
 // Must use NewResourceMetrics function to create new instances.
@@ -168,7 +168,7 @@ func (ms ResourceMetrics) InstrumentationLibraryMetrics() InstrumentationLibrary
 
 // InstrumentationLibraryMetricsSlice logically represents a slice of InstrumentationLibraryMetrics.
 //
-// This is a reference type, if passsed by value and callee modifies it the
+// This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
 // Must use NewInstrumentationLibraryMetricsSlice function to create new instances.
@@ -258,7 +258,7 @@ func (es InstrumentationLibraryMetricsSlice) Resize(newLen int) {
 
 // InstrumentationLibraryMetrics is a collection of metrics from a LibraryInstrumentation.
 //
-// This is a reference type, if passsed by value and callee modifies it the
+// This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
 // Must use NewInstrumentationLibraryMetrics function to create new instances.
@@ -313,7 +313,7 @@ func (ms InstrumentationLibraryMetrics) Metrics() MetricSlice {
 
 // MetricSlice logically represents a slice of Metric.
 //
-// This is a reference type, if passsed by value and callee modifies it the
+// This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
 // Must use NewMetricSlice function to create new instances.
@@ -404,7 +404,7 @@ func (es MetricSlice) Resize(newLen int) {
 // Metric represents one metric as a collection of datapoints.
 // See Metric definition in OTLP: https://github.com/open-telemetry/opentelemetry-proto/blob/master/opentelemetry/proto/metrics/v1/metrics.proto#L96
 //
-// This is a reference type, if passsed by value and callee modifies it the
+// This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
 // Must use NewMetric function to create new instances.
@@ -480,7 +480,7 @@ func (ms Metric) SummaryDataPoints() SummaryDataPointSlice {
 
 // MetricDescriptor is the descriptor of a metric.
 //
-// This is a reference type, if passsed by value and callee modifies it the
+// This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
 // Must use NewMetricDescriptor function to create new instances.
@@ -581,7 +581,7 @@ func (ms MetricDescriptor) LabelsMap() StringMap {
 
 // Int64DataPointSlice logically represents a slice of Int64DataPoint.
 //
-// This is a reference type, if passsed by value and callee modifies it the
+// This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
 // Must use NewInt64DataPointSlice function to create new instances.
@@ -671,7 +671,7 @@ func (es Int64DataPointSlice) Resize(newLen int) {
 
 // Int64DataPoint is a single data point in a timeseries that describes the time-varying values of a int64 metric.
 //
-// This is a reference type, if passsed by value and callee modifies it the
+// This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
 // Must use NewInt64DataPoint function to create new instances.
@@ -758,7 +758,7 @@ func (ms Int64DataPoint) SetValue(v int64) {
 
 // DoubleDataPointSlice logically represents a slice of DoubleDataPoint.
 //
-// This is a reference type, if passsed by value and callee modifies it the
+// This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
 // Must use NewDoubleDataPointSlice function to create new instances.
@@ -848,7 +848,7 @@ func (es DoubleDataPointSlice) Resize(newLen int) {
 
 // DoubleDataPoint is a single data point in a timeseries that describes the time-varying value of a double metric.
 //
-// This is a reference type, if passsed by value and callee modifies it the
+// This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
 // Must use NewDoubleDataPoint function to create new instances.
@@ -935,7 +935,7 @@ func (ms DoubleDataPoint) SetValue(v float64) {
 
 // HistogramDataPointSlice logically represents a slice of HistogramDataPoint.
 //
-// This is a reference type, if passsed by value and callee modifies it the
+// This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
 // Must use NewHistogramDataPointSlice function to create new instances.
@@ -1025,7 +1025,7 @@ func (es HistogramDataPointSlice) Resize(newLen int) {
 
 // HistogramDataPoint is a single data point in a timeseries that describes the time-varying values of a Histogram.
 //
-// This is a reference type, if passsed by value and callee modifies it the
+// This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
 // Must use NewHistogramDataPoint function to create new instances.
@@ -1147,7 +1147,7 @@ func (ms HistogramDataPoint) SetExplicitBounds(v []float64) {
 
 // HistogramBucketSlice logically represents a slice of HistogramBucket.
 //
-// This is a reference type, if passsed by value and callee modifies it the
+// This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
 // Must use NewHistogramBucketSlice function to create new instances.
@@ -1237,7 +1237,7 @@ func (es HistogramBucketSlice) Resize(newLen int) {
 
 // HistogramBucket contains values for a histogram bucket.
 //
-// This is a reference type, if passsed by value and callee modifies it the
+// This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
 // Must use NewHistogramBucket function to create new instances.
@@ -1300,7 +1300,7 @@ func (ms HistogramBucket) Exemplar() HistogramBucketExemplar {
 // HistogramBucketExemplar are example points that may be used to annotate aggregated Histogram values.
 // They are metadata that gives information about a particular value added to a Histogram bucket.
 //
-// This is a reference type, if passsed by value and callee modifies it the
+// This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
 // Must use NewHistogramBucketExemplar function to create new instances.
@@ -1373,7 +1373,7 @@ func (ms HistogramBucketExemplar) Attachments() StringMap {
 
 // SummaryDataPointSlice logically represents a slice of SummaryDataPoint.
 //
-// This is a reference type, if passsed by value and callee modifies it the
+// This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
 // Must use NewSummaryDataPointSlice function to create new instances.
@@ -1463,7 +1463,7 @@ func (es SummaryDataPointSlice) Resize(newLen int) {
 
 // SummaryDataPoint is a single data point in a timeseries that describes the time-varying values of a Summary metric.
 //
-// This is a reference type, if passsed by value and callee modifies it the
+// This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
 // Must use NewSummaryDataPoint function to create new instances.
@@ -1571,7 +1571,7 @@ func (ms SummaryDataPoint) ValueAtPercentiles() SummaryValueAtPercentileSlice {
 
 // SummaryValueAtPercentileSlice logically represents a slice of SummaryValueAtPercentile.
 //
-// This is a reference type, if passsed by value and callee modifies it the
+// This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
 // Must use NewSummaryValueAtPercentileSlice function to create new instances.
@@ -1661,7 +1661,7 @@ func (es SummaryValueAtPercentileSlice) Resize(newLen int) {
 
 // SummaryValueAtPercentile represents the value at a given percentile of a distribution.
 //
-// This is a reference type, if passsed by value and callee modifies it the
+// This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
 // Must use NewSummaryValueAtPercentile function to create new instances.
