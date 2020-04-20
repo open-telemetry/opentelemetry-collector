@@ -82,11 +82,11 @@ data:
   otel-collector-config: |
     receivers:
       opencensus:
-# keepalive settings can help load balancing, see receiver/README.md for more info.
+        # keepalive settings can help load balancing, see receiver/README.md for more info.
         keepalive:
           server_parameters:
             max_connection_age: 120s
-            max_connection_age-grace: 30s
+            max_connection_age_grace: 30s
       jaeger:
         protocols:
           grpc:
