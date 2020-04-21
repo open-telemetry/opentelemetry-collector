@@ -16,6 +16,10 @@ regexp/cacheenablednosize:
     match_type: regexp
     regexp:
         cacheenabled: true
+regexp/fullmatchrequired:
+    match_type: regexp
+    regexp:
+        fullmatchrequired: true
 strict/default:
     match_type: strict
 strict/emptyoptions:

@@ -98,6 +98,14 @@ func TestFactory_CreateFilterSetRegexp(t *testing.T) {
 					CacheMaxNumEntries: 5,
 				},
 			},
+		}, {
+			name: "withFulLMatchRequired",
+			cfg: &MatchConfig{
+				MatchType: REGEXP,
+				Regexp: &RegexpConfig{
+					FullMatchRequired: true,
+				},
+			},
 		},
 	}
 
@@ -112,7 +120,7 @@ func TestFactory_CreateFilterSetRegexp(t *testing.T) {
 			assert.Nil(t, err)
 
 			assert.True(t, fs.Matches("match_string"))
-			assert.False(t, fs.Matches("mismatch_string")) // full string matches are enforced
+			assert.False(t, fs.Matches("mis_string"))
 		})
 	}
 }

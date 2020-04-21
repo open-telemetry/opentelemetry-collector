@@ -29,3 +29,17 @@ func WithCache(maxNumEntries int) Option {
 		rfs.cache = lru.New(maxNumEntries)
 	}
 }
+
+// WithFullMatchRequired requires the full string to match one of the regexp filters to be a match for the FilterSet.
+// If the regexp pattern matches only a portion of the string, it will be considered a mismatch.
+// This is the equivalent of adding the start anchor '^' and end achor '$' to each filter pattern.
+//
+// Example:
+// Filter: "apple" (will be taken as "^apple$")
+// Matches: "apple"
+// Mismatches: "apples", "sapple"
+func WithFullMatchRequired() Option {
+	return func(rfs *regexpFilterSet) {
+		rfs.fullMatchRequired = true
+	}
+}

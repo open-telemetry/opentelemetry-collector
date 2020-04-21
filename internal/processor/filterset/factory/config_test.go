@@ -55,6 +55,12 @@ func TestConfig(t *testing.T) {
 				CacheEnabled: true,
 			},
 		},
+		"regexp/fullmatchrequired": {
+			MatchType: REGEXP,
+			Regexp: &RegexpConfig{
+				FullMatchRequired: true,
+			},
+		},
 		"strict/default": {
 			MatchType: STRICT,
 		},

@@ -38,11 +38,18 @@ func (f *Factory) CreateFilterSet(filters []string, cfg *MatchConfig) (filterset
 }
 
 func (f *Factory) createRegexFilterSet(filters []string, cfg *MatchConfig) (filterset.FilterSet, error) {
-	if cfg.Regexp != nil && cfg.Regexp.CacheEnabled {
-		return regexp.NewRegexpFilterSet(filters, regexp.WithCache(cfg.Regexp.CacheMaxNumEntries))
+	opts := []regexp.Option{}
+	if cfg.Regexp != nil {
+		if cfg.Regexp.CacheEnabled {
+			opts = append(opts, regexp.WithCache(cfg.Regexp.CacheMaxNumEntries))
+		}
+
+		if cfg.Regexp.FullMatchRequired {
+			opts = append(opts, regexp.WithFullMatchRequired())
+		}
 	}
 
-	return regexp.NewRegexpFilterSet(filters)
+	return regexp.NewRegexpFilterSet(filters, opts...)
 }
 
 func (f *Factory) createStrictFilterSet(filters []string, cfg *MatchConfig) (filterset.FilterSet, error) {

@@ -26,9 +26,10 @@ import (
 // regexpFilterSet encapsulates a set of filters and caches match results.
 // Filters are re2 regex strings.
 type regexpFilterSet struct {
-	regexes      map[string]*regexp.Regexp
-	cacheEnabled bool
-	cache        *lru.Cache
+	regexes           map[string]*regexp.Regexp
+	cacheEnabled      bool
+	cache             *lru.Cache
+	fullMatchRequired bool
 }
 
 // NewRegexpFilterSet constructs a FilterSet of re2 regex strings.
@@ -77,13 +78,16 @@ func (rfs *regexpFilterSet) Matches(toMatch string) bool {
 // All regexes are automatically anchored to enforce full string matches.
 func (rfs *regexpFilterSet) addFilters(filters []string) error {
 	for _, f := range filters {
-		// anchor all regexes to enforce full matches
-		anchored := fmt.Sprintf("^%s$", f)
-		if _, ok := rfs.regexes[anchored]; ok {
+		pattern := f
+		if rfs.fullMatchRequired {
+			// anchor all regexes to enforce full matches
+			pattern = fmt.Sprintf("^%s$", f)
+		}
+		if _, ok := rfs.regexes[pattern]; ok {
 			continue
 		}
 
-		re, err := regexp.Compile(anchored)
+		re, err := regexp.Compile(pattern)
 		if err != nil {
 			return err
 		}
