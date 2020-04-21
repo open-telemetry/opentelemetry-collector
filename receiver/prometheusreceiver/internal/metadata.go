@@ -22,7 +22,7 @@ import (
 	"github.com/prometheus/prometheus/scrape"
 )
 
-// MetadataService is an adapter to scrapeManager and provide only the functionality which is needed
+// MetadataService is an adapter to ScrapeManager and provide only the functionality which is needed
 type MetadataService interface {
 	Get(job, instance string) (MetadataCache, error)
 }
@@ -33,8 +33,12 @@ type MetadataCache interface {
 	SharedLabels() labels.Labels
 }
 
+type ScrapeManager interface {
+	TargetsAll() map[string][]*scrape.Target
+}
+
 type mService struct {
-	sm *scrape.Manager
+	sm ScrapeManager
 }
 
 func (t *mService) Get(job, instance string) (MetadataCache, error) {
@@ -45,7 +49,7 @@ func (t *mService) Get(job, instance string) (MetadataCache, error) {
 
 	// from the same targetGroup, instance is not going to be duplicated
 	for _, target := range targetGroup {
-		if target.DiscoveredLabels().Get(model.AddressLabel) == instance {
+		if target.Labels().Get(model.InstanceLabel) == instance {
 			return &mCache{target}, nil
 		}
 	}
