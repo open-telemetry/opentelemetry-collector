@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package metric
+package filtermetric
 
 import (
 	"github.com/open-telemetry/opentelemetry-collector/internal/processor/filterset/factory"
