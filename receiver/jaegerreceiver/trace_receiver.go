@@ -29,7 +29,6 @@ import (
 	jSamplingConfig "github.com/jaegertracing/jaeger/cmd/agent/app/configmanager/grpc"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/httpserver"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/processors"
-	"github.com/jaegertracing/jaeger/cmd/agent/app/reporter"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/servers"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/servers/thriftudp"
 	"github.com/jaegertracing/jaeger/cmd/collector/app/handler"
@@ -39,7 +38,6 @@ import (
 	"github.com/jaegertracing/jaeger/thrift-gen/baggage"
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 	"github.com/jaegertracing/jaeger/thrift-gen/sampling"
-	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"github.com/uber/jaeger-lib/metrics"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -106,7 +104,8 @@ const (
 	collectorReceiverTagValue = "jaeger-collector"
 	agentReceiverTagValue     = "jaeger-agent"
 
-	agentTransport         = "agent" // This is not 100% precise since it can be either compact or binary.
+	agentTransportBinary   = "udp_thrift_binary"
+	agentTransportCompact  = "udp_thrift_compact"
 	collectorHTTPTransport = "collector_http"
 	grpcTransport          = "grpc"
 
@@ -125,7 +124,7 @@ func New(
 	return &jReceiver{
 		config: config,
 		defaultAgentCtx: obsreport.ReceiverContext(
-			context.Background(), instanceName, agentTransport, agentReceiverTagValue),
+			context.Background(), instanceName, agentTransportBinary, agentReceiverTagValue),
 		nextConsumer: nextConsumer,
 		instanceName: instanceName,
 		logger:       params.Logger,
@@ -300,25 +299,26 @@ func (jr *jReceiver) SubmitBatches(batches []*jaeger.Batch, options handler.Subm
 	return jbsr, err
 }
 
-var _ reporter.Reporter = (*jReceiver)(nil)
+var _ jaeger.Agent = (*agentHandler)(nil)
 var _ api_v2.CollectorServiceServer = (*jReceiver)(nil)
 var _ configmanager.ClientConfigManager = (*jReceiver)(nil)
 
-// EmitZipkinBatch implements cmd/agent/reporter.Reporter and it forwards
-// Zipkin spans received by the Jaeger agent processor.
-func (jr *jReceiver) EmitZipkinBatch(spans []*zipkincore.Span) error {
-	return nil
+type agentHandler struct {
+	name         string
+	transport    string
+	ctx          context.Context
+	nextConsumer consumer.TraceConsumer
 }
 
 // EmitBatch implements cmd/agent/reporter.Reporter and it forwards
 // Jaeger spans received by the Jaeger agent processor.
-func (jr *jReceiver) EmitBatch(batch *jaeger.Batch) error {
+func (h *agentHandler) EmitBatch(batch *jaeger.Batch) error {
 	ctx := obsreport.StartTraceDataReceiveOp(
-		jr.defaultAgentCtx, jr.instanceName, agentTransport)
+		h.ctx, h.name, h.transport)
 
 	td := jaegertranslator.ThriftBatchToInternalTraces(batch)
 
-	err := jr.nextConsumer.ConsumeTraces(ctx, td)
+	err := h.nextConsumer.ConsumeTraces(ctx, td)
 	obsreport.EndTraceDataReceiveOp(ctx, thriftFormat, len(batch.Spans), err)
 
 	return err
@@ -365,7 +365,13 @@ func (jr *jReceiver) startAgent(_ component.Host) error {
 	}
 
 	if jr.agentBinaryThriftEnabled() {
-		processor, err := jr.buildProcessor(jr.agentBinaryThriftAddr(), apacheThrift.NewTBinaryProtocolFactoryDefault())
+		h := &agentHandler{
+			name:         jr.instanceName,
+			transport:    agentTransportBinary,
+			nextConsumer: jr.nextConsumer,
+			ctx:          jr.defaultAgentCtx,
+		}
+		processor, err := jr.buildProcessor(jr.agentBinaryThriftAddr(), apacheThrift.NewTBinaryProtocolFactoryDefault(), h)
 		if err != nil {
 			return err
 		}
@@ -373,7 +379,13 @@ func (jr *jReceiver) startAgent(_ component.Host) error {
 	}
 
 	if jr.agentCompactThriftEnabled() {
-		processor, err := jr.buildProcessor(jr.agentCompactThriftAddr(), apacheThrift.NewTCompactProtocolFactory())
+		h := &agentHandler{
+			name:         jr.instanceName,
+			transport:    agentTransportCompact,
+			nextConsumer: jr.nextConsumer,
+			ctx:          jr.defaultAgentCtx,
+		}
+		processor, err := jr.buildProcessor(jr.agentCompactThriftAddr(), apacheThrift.NewTCompactProtocolFactory(), h)
 		if err != nil {
 			return err
 		}
@@ -408,8 +420,8 @@ func (jr *jReceiver) startAgent(_ component.Host) error {
 	return nil
 }
 
-func (jr *jReceiver) buildProcessor(address string, factory apacheThrift.TProtocolFactory) (processors.Processor, error) {
-	handler := jaeger.NewAgentProcessor(jr)
+func (jr *jReceiver) buildProcessor(address string, factory apacheThrift.TProtocolFactory, agent jaeger.Agent) (processors.Processor, error) {
+	handler := jaeger.NewAgentProcessor(agent)
 	transport, err := thriftudp.NewTUDPServerTransport(address)
 	if err != nil {
 		return nil, err
