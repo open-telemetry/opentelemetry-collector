@@ -1,0 +1,21 @@
+extensions:
+  zpages:
+    endpoint: 0.0.0.0:55679
+
+receivers:
+  hostmetrics:
+    default_collection_interval: 10s
+    scrapers:
+
+exporters:
+  logging:
+  prometheus:
+    endpoint: 0.0.0.0:8889
+
+service:
+  pipelines:
+    metrics:
+      receivers: [hostmetrics]
+      exporters: [prometheus, logging]
+
+  extensions: [zpages]

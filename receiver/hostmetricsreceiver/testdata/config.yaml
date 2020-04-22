@@ -1,0 +1,17 @@
+receivers:
+  hostmetrics:
+    scrape_interval: 10s
+    scrapers:
+
+processors:
+  exampleprocessor:
+
+exporters:
+  exampleexporter:
+
+service:
+  pipelines:
+    traces:
+      receivers: [hostmetrics]
+      processors: [exampleprocessor]
+      exporters: [exampleexporter]

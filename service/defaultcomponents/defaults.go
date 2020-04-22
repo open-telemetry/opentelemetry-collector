@@ -36,6 +36,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/processor/samplingprocessor/probabilisticsamplerprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/samplingprocessor/tailsamplingprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/spanprocessor"
+	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/jaegerreceiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/opencensusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/otlpreceiver"
@@ -68,6 +69,7 @@ func Components() (
 		&opencensusreceiver.Factory{},
 		&otlpreceiver.Factory{},
 		&vmmetricsreceiver.Factory{},
+		hostmetricsreceiver.NewFactory(),
 	)
 	if err != nil {
 		errs = append(errs, err)
