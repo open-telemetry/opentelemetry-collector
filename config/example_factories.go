@@ -47,7 +47,7 @@ type ExampleReceiverFactory struct {
 }
 
 // Type gets the type of the Receiver config created by this factory.
-func (f *ExampleReceiverFactory) Type() string {
+func (f *ExampleReceiverFactory) Type() configmodels.Type {
 	return "examplereceiver"
 }
 
@@ -149,7 +149,7 @@ var exampleReceivers = map[configmodels.Receiver]*ExampleReceiverProducer{}
 // MultiProtoReceiver is for testing purposes. We are defining an example multi protocol
 // config and factory for "multireceiver" receiver type.
 type MultiProtoReceiver struct {
-	TypeVal   string                              `mapstructure:"-"`
+	TypeVal   configmodels.Type                   `mapstructure:"-"`
 	NameVal   string                              `mapstructure:"-"`
 	Protocols map[string]MultiProtoReceiverOneCfg `mapstructure:"protocols"`
 }
@@ -167,12 +167,12 @@ func (rs *MultiProtoReceiver) SetName(name string) {
 }
 
 // Type sets the receiver type.
-func (rs *MultiProtoReceiver) Type() string {
+func (rs *MultiProtoReceiver) Type() configmodels.Type {
 	return rs.TypeVal
 }
 
 // SetType sets the receiver type.
-func (rs *MultiProtoReceiver) SetType(typeStr string) {
+func (rs *MultiProtoReceiver) SetType(typeStr configmodels.Type) {
 	rs.TypeVal = typeStr
 }
 
@@ -200,7 +200,7 @@ type MultiProtoReceiverFactory struct {
 }
 
 // Type gets the type of the Receiver config created by this factory.
-func (f *MultiProtoReceiverFactory) Type() string {
+func (f *MultiProtoReceiverFactory) Type() configmodels.Type {
 	return "multireceiver"
 }
 
@@ -262,7 +262,7 @@ type ExampleExporterFactory struct {
 }
 
 // Type gets the type of the Exporter config created by this factory.
-func (f *ExampleExporterFactory) Type() string {
+func (f *ExampleExporterFactory) Type() configmodels.Type {
 	return "exampleexporter"
 }
 
@@ -339,7 +339,7 @@ type ExampleProcessorFactory struct {
 }
 
 // Type gets the type of the Processor config created by this factory.
-func (f *ExampleProcessorFactory) Type() string {
+func (f *ExampleProcessorFactory) Type() configmodels.Type {
 	return "exampleprocessor"
 }
 
@@ -393,7 +393,7 @@ type ExampleExtensionFactory struct {
 }
 
 // Type gets the type of the Extension config created by this factory.
-func (f *ExampleExtensionFactory) Type() string {
+func (f *ExampleExtensionFactory) Type() configmodels.Type {
 	return "exampleextension"
 }
 

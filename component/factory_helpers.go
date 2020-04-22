@@ -14,13 +14,17 @@
 
 package component
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+)
 
 // MakeReceiverFactoryMap takes a list of receiver factories and returns a map
 // with factory type as keys. It returns a non-nil error when more than one factories
 // have the same type.
-func MakeReceiverFactoryMap(factories ...ReceiverFactoryBase) (map[string]ReceiverFactoryBase, error) {
-	fMap := map[string]ReceiverFactoryBase{}
+func MakeReceiverFactoryMap(factories ...ReceiverFactoryBase) (map[configmodels.Type]ReceiverFactoryBase, error) {
+	fMap := map[configmodels.Type]ReceiverFactoryBase{}
 	for _, f := range factories {
 		if _, ok := fMap[f.Type()]; ok {
 			return fMap, fmt.Errorf("duplicate receiver factory %q", f.Type())
@@ -33,8 +37,8 @@ func MakeReceiverFactoryMap(factories ...ReceiverFactoryBase) (map[string]Receiv
 // MakeProcessorFactoryMap takes a list of processor factories and returns a map
 // with factory type as keys. It returns a non-nil error when more than one factories
 // have the same type.
-func MakeProcessorFactoryMap(factories ...ProcessorFactoryBase) (map[string]ProcessorFactoryBase, error) {
-	fMap := map[string]ProcessorFactoryBase{}
+func MakeProcessorFactoryMap(factories ...ProcessorFactoryBase) (map[configmodels.Type]ProcessorFactoryBase, error) {
+	fMap := map[configmodels.Type]ProcessorFactoryBase{}
 	for _, f := range factories {
 		if _, ok := fMap[f.Type()]; ok {
 			return fMap, fmt.Errorf("duplicate processor factory %q", f.Type())
@@ -47,8 +51,8 @@ func MakeProcessorFactoryMap(factories ...ProcessorFactoryBase) (map[string]Proc
 // MakeExporterFactoryMap takes a list of exporter factories and returns a map
 // with factory type as keys. It returns a non-nil error when more than one factories
 // have the same type.
-func MakeExporterFactoryMap(factories ...ExporterFactoryBase) (map[string]ExporterFactoryBase, error) {
-	fMap := map[string]ExporterFactoryBase{}
+func MakeExporterFactoryMap(factories ...ExporterFactoryBase) (map[configmodels.Type]ExporterFactoryBase, error) {
+	fMap := map[configmodels.Type]ExporterFactoryBase{}
 	for _, f := range factories {
 		if _, ok := fMap[f.Type()]; ok {
 			return fMap, fmt.Errorf("duplicate exporter factory %q", f.Type())
@@ -61,8 +65,8 @@ func MakeExporterFactoryMap(factories ...ExporterFactoryBase) (map[string]Export
 // MakeExtensionFactoryMap takes a list of extension factories and returns a map
 // with factory type as keys. It returns a non-nil error when more than one factories
 // have the same type.
-func MakeExtensionFactoryMap(factories ...ExtensionFactory) (map[string]ExtensionFactory, error) {
-	fMap := map[string]ExtensionFactory{}
+func MakeExtensionFactoryMap(factories ...ExtensionFactory) (map[configmodels.Type]ExtensionFactory, error) {
+	fMap := map[configmodels.Type]ExtensionFactory{}
 	for _, f := range factories {
 		if _, ok := fMap[f.Type()]; ok {
 			return fMap, fmt.Errorf("duplicate extension factory %q", f.Type())

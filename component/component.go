@@ -62,7 +62,7 @@ type Host interface {
 	// GetFactory can be called by the component anytime after Start() begins and
 	// until Shutdown() is called. Note that the component is responsible for destroying
 	// other components that it creates.
-	GetFactory(kind Kind, componentType string) Factory
+	GetFactory(kind Kind, componentType configmodels.Type) Factory
 
 	// Return map of extensions. Only enabled and created extensions will be returned.
 	// Typically is used to find an extension by type or by full config name. Both cases
@@ -74,5 +74,5 @@ type Host interface {
 // Factory interface must be implemented by all component factories.
 type Factory interface {
 	// Type gets the type of the component created by this factory.
-	Type() string
+	Type() configmodels.Type
 }

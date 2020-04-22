@@ -119,14 +119,14 @@ type exportersRequiredDataTypes map[configmodels.Exporter]dataTypeRequirements
 type ExportersBuilder struct {
 	logger    *zap.Logger
 	config    *configmodels.Config
-	factories map[string]component.ExporterFactoryBase
+	factories map[configmodels.Type]component.ExporterFactoryBase
 }
 
 // NewExportersBuilder creates a new ExportersBuilder. Call BuildExporters() on the returned value.
 func NewExportersBuilder(
 	logger *zap.Logger,
 	config *configmodels.Config,
-	factories map[string]component.ExporterFactoryBase,
+	factories map[configmodels.Type]component.ExporterFactoryBase,
 ) *ExportersBuilder {
 	return &ExportersBuilder{logger.With(zap.String(kindLogKey, kindLogExporter)), config, factories}
 }
@@ -141,7 +141,7 @@ func (eb *ExportersBuilder) Build() (Exporters, error) {
 
 	// BuildExporters exporters based on configuration and required input data types.
 	for _, cfg := range eb.config.Exporters {
-		componentLogger := eb.logger.With(zap.String(typeLogKey, cfg.Type()), zap.String(nameLogKey, cfg.Name()))
+		componentLogger := eb.logger.With(zap.String(typeLogKey, string(cfg.Type())), zap.String(nameLogKey, cfg.Name()))
 		exp, err := eb.buildExporter(componentLogger, cfg, exporterInputDataTypes)
 		if err != nil {
 			return nil, err

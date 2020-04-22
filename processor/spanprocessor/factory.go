@@ -42,7 +42,7 @@ type Factory struct {
 var _ component.ProcessorFactory = (*Factory)(nil)
 
 // Type gets the type of the config created by this factory.
-func (f *Factory) Type() string {
+func (f *Factory) Type() configmodels.Type {
 	return typeStr
 }
 

@@ -104,16 +104,16 @@ const typeAndNameSeparator = "/"
 // can be handled by the Config.
 type Factories struct {
 	// Receivers maps receiver type names in the config to the respective factory.
-	Receivers map[string]component.ReceiverFactoryBase
+	Receivers map[configmodels.Type]component.ReceiverFactoryBase
 
 	// Processors maps processor type names in the config to the respective factory.
-	Processors map[string]component.ProcessorFactoryBase
+	Processors map[configmodels.Type]component.ProcessorFactoryBase
 
 	// Exporters maps exporter type names in the config to the respective factory.
-	Exporters map[string]component.ExporterFactoryBase
+	Exporters map[configmodels.Type]component.ExporterFactoryBase
 
 	// Extensions maps extension type names in the config to the respective factory.
-	Extensions map[string]component.ExtensionFactory
+	Extensions map[configmodels.Type]component.ExtensionFactory
 }
 
 // Creates a new Viper instance with a different key-delimitor "::" instead of the
@@ -190,11 +190,11 @@ func Load(
 // fullName is the key normalized such that type and name components have spaces trimmed.
 // The "type" part must be present, the forward slash and "name" are optional. typeStr
 // will be non-empty if err is nil.
-func DecodeTypeAndName(key string) (typeStr, fullName string, err error) {
+func DecodeTypeAndName(key string) (typeStr configmodels.Type, fullName string, err error) {
 	items := strings.SplitN(key, typeAndNameSeparator, 2)
 
 	if len(items) >= 1 {
-		typeStr = strings.TrimSpace(items[0])
+		typeStr = configmodels.Type(strings.TrimSpace(items[0]))
 	}
 
 	if len(items) < 1 || typeStr == "" {
@@ -216,16 +216,16 @@ func DecodeTypeAndName(key string) (typeStr, fullName string, err error) {
 
 	// Create normalized fullName.
 	if nameSuffix == "" {
-		fullName = typeStr
+		fullName = string(typeStr)
 	} else {
-		fullName = typeStr + typeAndNameSeparator + nameSuffix
+		fullName = string(typeStr) + typeAndNameSeparator + nameSuffix
 	}
 
 	err = nil
 	return
 }
 
-func loadExtensions(v *viper.Viper, factories map[string]component.ExtensionFactory) (configmodels.Extensions, error) {
+func loadExtensions(v *viper.Viper, factories map[configmodels.Type]component.ExtensionFactory) (configmodels.Extensions, error) {
 	// Get the list of all "extensions" sub vipers from config source.
 	extensionsConfig := viperSub(v, extensionsKeyName)
 	expandEnvConfig(extensionsConfig)
@@ -314,7 +314,7 @@ func loadService(v *viper.Viper) (configmodels.Service, error) {
 }
 
 // LoadReceiver loads a receiver config from componentConfig using the provided factories.
-func LoadReceiver(componentConfig *viper.Viper, typeStr string, fullName string, factory component.ReceiverFactoryBase) (configmodels.Receiver, error) {
+func LoadReceiver(componentConfig *viper.Viper, typeStr configmodels.Type, fullName string, factory component.ReceiverFactoryBase) (configmodels.Receiver, error) {
 	// Create the default config for this receiver.
 	receiverCfg := factory.CreateDefaultConfig()
 	receiverCfg.SetType(typeStr)
@@ -341,7 +341,7 @@ func LoadReceiver(componentConfig *viper.Viper, typeStr string, fullName string,
 	return receiverCfg, nil
 }
 
-func loadReceivers(v *viper.Viper, factories map[string]component.ReceiverFactoryBase) (configmodels.Receivers, error) {
+func loadReceivers(v *viper.Viper, factories map[configmodels.Type]component.ReceiverFactoryBase) (configmodels.Receivers, error) {
 	// Get the list of all "receivers" sub vipers from config source.
 	receiversConfig := viperSub(v, receiversKeyName)
 	expandEnvConfig(receiversConfig)
@@ -400,7 +400,7 @@ func loadReceivers(v *viper.Viper, factories map[string]component.ReceiverFactor
 	return receivers, nil
 }
 
-func loadExporters(v *viper.Viper, factories map[string]component.ExporterFactoryBase) (configmodels.Exporters, error) {
+func loadExporters(v *viper.Viper, factories map[configmodels.Type]component.ExporterFactoryBase) (configmodels.Exporters, error) {
 	// Get the list of all "exporters" sub vipers from config source.
 	exportersConfig := viperSub(v, exportersKeyName)
 	expandEnvConfig(exportersConfig)
@@ -469,7 +469,7 @@ func loadExporters(v *viper.Viper, factories map[string]component.ExporterFactor
 	return exporters, nil
 }
 
-func loadProcessors(v *viper.Viper, factories map[string]component.ProcessorFactoryBase) (configmodels.Processors, error) {
+func loadProcessors(v *viper.Viper, factories map[configmodels.Type]component.ProcessorFactoryBase) (configmodels.Processors, error) {
 	// Get the list of all "processors" sub vipers from config source.
 	processorsConfig := viperSub(v, processorsKeyName)
 	expandEnvConfig(processorsConfig)

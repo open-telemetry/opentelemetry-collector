@@ -30,8 +30,8 @@ type TestProcessorFactory struct {
 }
 
 // Type gets the type of the Processor config created by this factory.
-func (f *TestProcessorFactory) Type() string {
-	return f.name
+func (f *TestProcessorFactory) Type() configmodels.Type {
+	return configmodels.Type(f.name)
 }
 
 // CreateDefaultConfig creates the default configuration for the Processor.
@@ -60,7 +60,7 @@ func (f *TestProcessorFactory) CreateMetricsProcessor(
 func TestFactoriesBuilder(t *testing.T) {
 	type testCase struct {
 		in  []ProcessorFactoryBase
-		out map[string]ProcessorFactoryBase
+		out map[configmodels.Type]ProcessorFactoryBase
 		err bool
 	}
 
@@ -70,7 +70,7 @@ func TestFactoriesBuilder(t *testing.T) {
 				&TestProcessorFactory{"p1"},
 				&TestProcessorFactory{"p2"},
 			},
-			out: map[string]ProcessorFactoryBase{
+			out: map[configmodels.Type]ProcessorFactoryBase{
 				"p1": &TestProcessorFactory{"p1"},
 				"p2": &TestProcessorFactory{"p2"},
 			},

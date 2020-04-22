@@ -46,13 +46,16 @@ type NamedEntity interface {
 	SetName(name string)
 }
 
+// Component type as it is used in the config.
+type Type string
+
 // Receiver is the configuration of a receiver. Specific receivers must implement this
 // interface and will typically embed ReceiverSettings struct or a struct that extends it.
 type Receiver interface {
 	NamedEntity
 	IsEnabled() bool
-	Type() string
-	SetType(typeStr string)
+	Type() Type
+	SetType(typeStr Type)
 }
 
 // Receivers is a map of names to Receivers.
@@ -62,8 +65,8 @@ type Receivers map[string]Receiver
 type Exporter interface {
 	NamedEntity
 	IsEnabled() bool
-	Type() string
-	SetType(typeStr string)
+	Type() Type
+	SetType(typeStr Type)
 }
 
 // Exporters is a map of names to Exporters.
@@ -74,8 +77,8 @@ type Exporters map[string]Exporter
 type Processor interface {
 	NamedEntity
 	IsEnabled() bool
-	Type() string
-	SetType(typeStr string)
+	Type() Type
+	SetType(typeStr Type)
 }
 
 // Processors is a map of names to Processors.
@@ -132,8 +135,8 @@ type Pipelines map[string]*Pipeline
 type Extension interface {
 	NamedEntity
 	IsEnabled() bool
-	Type() string
-	SetType(typeStr string)
+	Type() Type
+	SetType(typeStr Type)
 }
 
 // Extensions is a map of names to extensions.
@@ -155,7 +158,7 @@ type Service struct {
 // ReceiverSettings defines common settings for a single-protocol receiver configuration.
 // Specific receivers can embed this struct and extend it with more fields if needed.
 type ReceiverSettings struct {
-	TypeVal string `mapstructure:"-"`
+	TypeVal Type   `mapstructure:"-"`
 	NameVal string `mapstructure:"-"`
 	// Configures if the receiver is disabled and doesn't receive any data.
 	// The default value is false(meaning the receiver is enabled by default), and it is expected that receivers
@@ -177,12 +180,12 @@ func (rs *ReceiverSettings) SetName(name string) {
 }
 
 // Type sets the receiver type.
-func (rs *ReceiverSettings) Type() string {
+func (rs *ReceiverSettings) Type() Type {
 	return rs.TypeVal
 }
 
 // SetType sets the receiver type.
-func (rs *ReceiverSettings) SetType(typeStr string) {
+func (rs *ReceiverSettings) SetType(typeStr Type) {
 	rs.TypeVal = typeStr
 }
 
@@ -196,7 +199,7 @@ func (rs *ReceiverSettings) IsEnabled() bool {
 // ExporterSettings defines common settings for an exporter configuration.
 // Specific exporters can embed this struct and extend it with more fields if needed.
 type ExporterSettings struct {
-	TypeVal  string `mapstructure:"-"`
+	TypeVal  Type   `mapstructure:"-"`
 	NameVal  string `mapstructure:"-"`
 	Disabled bool   `mapstructure:"disabled"`
 }
@@ -214,12 +217,12 @@ func (es *ExporterSettings) SetName(name string) {
 }
 
 // Type sets the exporter type.
-func (es *ExporterSettings) Type() string {
+func (es *ExporterSettings) Type() Type {
 	return es.TypeVal
 }
 
 // SetType sets the exporter type.
-func (es *ExporterSettings) SetType(typeStr string) {
+func (es *ExporterSettings) SetType(typeStr Type) {
 	es.TypeVal = typeStr
 }
 
@@ -231,7 +234,7 @@ func (es *ExporterSettings) IsEnabled() bool {
 // ProcessorSettings defines common settings for a processor configuration.
 // Specific processors can embed this struct and extend it with more fields if needed.
 type ProcessorSettings struct {
-	TypeVal  string `mapstructure:"-"`
+	TypeVal  Type   `mapstructure:"-"`
 	NameVal  string `mapstructure:"-"`
 	Disabled bool   `mapstructure:"disabled"`
 }
@@ -247,12 +250,12 @@ func (proc *ProcessorSettings) SetName(name string) {
 }
 
 // Type sets the processor type.
-func (proc *ProcessorSettings) Type() string {
+func (proc *ProcessorSettings) Type() Type {
 	return proc.TypeVal
 }
 
 // SetType sets the processor type.
-func (proc *ProcessorSettings) SetType(typeStr string) {
+func (proc *ProcessorSettings) SetType(typeStr Type) {
 	proc.TypeVal = typeStr
 }
 
@@ -266,7 +269,7 @@ var _ Processor = (*ProcessorSettings)(nil)
 // ExtensionSettings defines common settings for a service extension configuration.
 // Specific extensions can embed this struct and extend it with more fields if needed.
 type ExtensionSettings struct {
-	TypeVal  string `mapstructure:"-"`
+	TypeVal  Type   `mapstructure:"-"`
 	NameVal  string `mapstructure:"-"`
 	Disabled bool   `mapstructure:"disabled"`
 }
@@ -282,12 +285,12 @@ func (ext *ExtensionSettings) SetName(name string) {
 }
 
 // Type sets the extension type.
-func (ext *ExtensionSettings) Type() string {
+func (ext *ExtensionSettings) Type() Type {
 	return ext.TypeVal
 }
 
 // SetType sets the extension type.
-func (ext *ExtensionSettings) SetType(typeStr string) {
+func (ext *ExtensionSettings) SetType(typeStr Type) {
 	ext.TypeVal = typeStr
 }
 

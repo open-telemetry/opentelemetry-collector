@@ -28,8 +28,8 @@ type TestExporterFactory struct {
 }
 
 // Type gets the type of the Exporter config created by this factory.
-func (f *TestExporterFactory) Type() string {
-	return f.name
+func (f *TestExporterFactory) Type() configmodels.Type {
+	return configmodels.Type(f.name)
 }
 
 // CreateDefaultConfig creates the default configuration for the Exporter.
@@ -50,7 +50,7 @@ func (f *TestExporterFactory) CreateMetricsExporter(logger *zap.Logger, cfg conf
 func TestBuildExporters(t *testing.T) {
 	type testCase struct {
 		in  []ExporterFactoryBase
-		out map[string]ExporterFactoryBase
+		out map[configmodels.Type]ExporterFactoryBase
 		err bool
 	}
 
@@ -60,7 +60,7 @@ func TestBuildExporters(t *testing.T) {
 				&TestExporterFactory{"exp1"},
 				&TestExporterFactory{"exp2"},
 			},
-			out: map[string]ExporterFactoryBase{
+			out: map[configmodels.Type]ExporterFactoryBase{
 				"exp1": &TestExporterFactory{"exp1"},
 				"exp2": &TestExporterFactory{"exp2"},
 			},

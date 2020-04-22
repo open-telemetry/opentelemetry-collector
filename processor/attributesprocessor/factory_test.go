@@ -31,7 +31,7 @@ import (
 
 func TestFactory_Type(t *testing.T) {
 	factory := Factory{}
-	assert.Equal(t, factory.Type(), typeStr)
+	assert.Equal(t, factory.Type(), configmodels.Type(typeStr))
 }
 
 func TestFactory_CreateDefaultConfig(t *testing.T) {

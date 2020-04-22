@@ -168,7 +168,7 @@ func (app *Application) ReportFatalError(err error) {
 	app.asyncErrorChannel <- err
 }
 
-func (app *Application) GetFactory(kind component.Kind, componentType string) component.Factory {
+func (app *Application) GetFactory(kind component.Kind, componentType configmodels.Type) component.Factory {
 	switch kind {
 	case component.KindReceiver:
 		return app.factories.Receivers[componentType]

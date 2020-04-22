@@ -57,7 +57,7 @@ func (ews *ErrorWaitingHost) WaitForFatalError(timeout time.Duration) (receivedE
 }
 
 // GetFactory of the specified kind. Returns the factory for a component type.
-func (ews *ErrorWaitingHost) GetFactory(_ component.Kind, _ string) component.Factory {
+func (ews *ErrorWaitingHost) GetFactory(_ component.Kind, _ configmodels.Type) component.Factory {
 	return nil
 }
 

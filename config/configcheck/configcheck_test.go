@@ -187,7 +187,7 @@ func TestValidateConfig(t *testing.T) {
 // a config not satisfying the validation.
 type badConfigExtensionFactory struct{}
 
-func (b badConfigExtensionFactory) Type() string {
+func (b badConfigExtensionFactory) Type() configmodels.Type {
 	return "bad_config"
 }
 

@@ -33,7 +33,7 @@ import (
 func TestTypeStr(t *testing.T) {
 	factory := Factory{}
 
-	assert.Equal(t, "jaeger", factory.Type())
+	assert.Equal(t, "jaeger", string(factory.Type()))
 }
 
 func TestCreateDefaultConfig(t *testing.T) {

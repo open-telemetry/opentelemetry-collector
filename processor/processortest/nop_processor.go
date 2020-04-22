@@ -67,7 +67,7 @@ func NewNopMetricsProcessor(nextMetricsProcessor consumer.MetricsConsumerOld) co
 type NopProcessorFactory struct{}
 
 // Type gets the type of the Processor created by this factory.
-func (npf *NopProcessorFactory) Type() string {
+func (npf *NopProcessorFactory) Type() configmodels.Type {
 	return "nop"
 }
 
@@ -75,7 +75,7 @@ func (npf *NopProcessorFactory) Type() string {
 func (npf *NopProcessorFactory) CreateDefaultConfig() configmodels.Processor {
 	return &configmodels.ProcessorSettings{
 		TypeVal: npf.Type(),
-		NameVal: npf.Type(),
+		NameVal: string(npf.Type()),
 	}
 }
 
