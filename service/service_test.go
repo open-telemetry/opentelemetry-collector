@@ -50,7 +50,7 @@ func TestApplication_Start(t *testing.T) {
 	metricsPort := testutils.GetAvailablePort(t)
 	app.rootCmd.SetArgs([]string{
 		"--config=testdata/otelcol-config.yaml",
-		"--metrics-port=" + strconv.FormatUint(uint64(metricsPort), 10),
+		"--metrics-addr=localhost:" + strconv.FormatUint(uint64(metricsPort), 10),
 		"--metrics-prefix=" + testPrefix,
 		"--add-instance-id=true",
 	})
