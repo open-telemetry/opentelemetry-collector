@@ -126,7 +126,8 @@ func (jr *JaegerDataReceiver) Start(tc *MockTraceConsumer, mc *MockMetricConsume
 		CollectorGRPCPort: jr.Port,
 	}
 	var err error
-	jr.receiver, err = jaegerreceiver.New("jaeger", &jaegerCfg, tc, zap.NewNop())
+	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	jr.receiver, err = jaegerreceiver.New("jaeger", &jaegerCfg, tc, params)
 	if err != nil {
 		return err
 	}

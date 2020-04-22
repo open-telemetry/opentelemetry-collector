@@ -78,7 +78,7 @@ type jReceiver struct {
 	// mu protects the fields of this type
 	mu sync.Mutex
 
-	nextConsumer consumer.TraceConsumerOld
+	nextConsumer consumer.TraceConsumer
 	instanceName string
 
 	startOnce sync.Once
@@ -119,8 +119,8 @@ const (
 func New(
 	instanceName string,
 	config *Configuration,
-	nextConsumer consumer.TraceConsumerOld,
-	logger *zap.Logger,
+	nextConsumer consumer.TraceConsumer,
+	params component.ReceiverCreateParams,
 ) (component.TraceReceiver, error) {
 	return &jReceiver{
 		config: config,
@@ -128,7 +128,7 @@ func New(
 			context.Background(), instanceName, agentTransport, agentReceiverTagValue),
 		nextConsumer: nextConsumer,
 		instanceName: instanceName,
-		logger:       logger,
+		logger:       params.Logger,
 	}, nil
 }
 
@@ -260,10 +260,10 @@ func (jr *jReceiver) stopTraceReceptionLocked() error {
 	return err
 }
 
-func consumeTraceData(
+func consumeTraces(
 	ctx context.Context,
 	batches []*jaeger.Batch,
-	consumer consumer.TraceConsumerOld,
+	consumer consumer.TraceConsumer,
 ) ([]*jaeger.BatchSubmitResponse, int, error) {
 
 	jbsr := make([]*jaeger.BatchSubmitResponse, 0, len(batches))
@@ -276,10 +276,8 @@ func consumeTraceData(
 			continue
 		}
 
-		// TODO: function below never returns error, change the signature.
-		td, _ := jaegertranslator.ThriftBatchToOCProto(batch)
-		td.SourceFormat = "jaeger"
-		consumerError = consumer.ConsumeTraceData(ctx, td)
+		td := jaegertranslator.ThriftBatchToInternalTraces(batch)
+		consumerError = consumer.ConsumeTraces(ctx, td)
 		jsr := batchSubmitOkResponse
 		if consumerError != nil {
 			jsr = batchSubmitNotOkResponse
@@ -296,7 +294,7 @@ func (jr *jReceiver) SubmitBatches(batches []*jaeger.Batch, options handler.Subm
 	ctx = obsreport.StartTraceDataReceiveOp(
 		ctx, jr.instanceName, collectorHTTPTransport)
 
-	jbsr, numSpans, err := consumeTraceData(ctx, batches, jr.nextConsumer)
+	jbsr, numSpans, err := consumeTraces(ctx, batches, jr.nextConsumer)
 	obsreport.EndTraceDataReceiveOp(ctx, thriftFormat, numSpans, err)
 
 	return jbsr, err
@@ -317,11 +315,10 @@ func (jr *jReceiver) EmitZipkinBatch(spans []*zipkincore.Span) error {
 func (jr *jReceiver) EmitBatch(batch *jaeger.Batch) error {
 	ctx := obsreport.StartTraceDataReceiveOp(
 		jr.defaultAgentCtx, jr.instanceName, agentTransport)
-	// TODO: call below never returns error it remove from the signature
-	td, _ := jaegertranslator.ThriftBatchToOCProto(batch)
-	td.SourceFormat = "jaeger"
 
-	err := jr.nextConsumer.ConsumeTraceData(ctx, td)
+	td := jaegertranslator.ThriftBatchToInternalTraces(batch)
+
+	err := jr.nextConsumer.ConsumeTraces(ctx, td)
 	obsreport.EndTraceDataReceiveOp(ctx, thriftFormat, len(batch.Spans), err)
 
 	return err
@@ -351,11 +348,9 @@ func (jr *jReceiver) PostSpans(ctx context.Context, r *api_v2.PostSpansRequest) 
 		ctx, jr.instanceName, grpcTransport, collectorReceiverTagValue)
 	ctx = obsreport.StartTraceDataReceiveOp(ctx, jr.instanceName, grpcTransport)
 
-	// TODO: the function below never returns error, change its interface.
-	td, _ := jaegertranslator.ProtoBatchToOCProto(r.GetBatch())
-	td.SourceFormat = "jaeger"
+	td := jaegertranslator.ProtoBatchToInternalTraces(r.GetBatch())
 
-	err := jr.nextConsumer.ConsumeTraceData(ctx, td)
+	err := jr.nextConsumer.ConsumeTraces(ctx, td)
 	obsreport.EndTraceDataReceiveOp(ctx, protobufFormat, len(r.GetBatch().Spans), err)
 	if err != nil {
 		return nil, err
