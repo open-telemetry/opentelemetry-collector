@@ -111,9 +111,11 @@ func (bp *batchProcessor) startProcessingCycle() {
 			}
 			bp.resetTimer()
 		case <-bp.done:
-			// TODO: Set a timeout on sendTraces or
-			// make it cancellable using the context that Shutdown gets as a parameter
-			bp.sendItems(statTimeoutTriggerSend)
+			if bp.batch.hasData() {
+				// TODO: Set a timeout on sendTraces or
+				// make it cancellable using the context that Shutdown gets as a parameter
+				bp.sendItems(statTimeoutTriggerSend)
+			}
 			return
 		}
 	}

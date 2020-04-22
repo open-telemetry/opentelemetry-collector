@@ -15,6 +15,8 @@
 package processor
 
 import (
+	"context"
+
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
@@ -28,7 +30,6 @@ import (
 
 // Keys and stats for telemetry.
 var (
-	TagSourceFormatKey, _  = tag.NewKey("source_format")
 	TagServiceNameKey, _   = tag.NewKey("service")
 	TagProcessorNameKey, _ = tag.NewKey(obsreport.ProcessorKey)
 
@@ -61,6 +62,31 @@ var (
 		stats.UnitDimensionless)
 )
 
+// SpanCountStats represents span count stats grouped by service if DETAILED telemetry level is set,
+// otherwise only overall span count is stored in serviceSpansCounts.
+type SpanCountStats struct {
+	processorName      string
+	serviceSpansCounts map[string]int
+	allSpansCount      int
+	isDetailed         bool
+}
+
+func NewSpanCountStats(td pdata.Traces, processorName string) *SpanCountStats {
+	scm := &SpanCountStats{
+		processorName: processorName,
+		allSpansCount: td.SpanCount(),
+	}
+	if serviceTagsEnabled() {
+		scm.serviceSpansCounts = spanCountByResourceStringAttribute(td, conventions.AttributeServiceName)
+		scm.isDetailed = true
+	}
+	return scm
+}
+
+func (scm *SpanCountStats) GetAllSpansCount() int {
+	return scm.allSpansCount
+}
+
 // MetricTagKeys returns the metric tag keys according to the given telemetry level.
 func MetricTagKeys(level telemetry.Level) []tag.Key {
 	var tagKeys []tag.Key
@@ -68,10 +94,7 @@ func MetricTagKeys(level telemetry.Level) []tag.Key {
 	case telemetry.Detailed:
 		tagKeys = append(tagKeys, TagServiceNameKey)
 		fallthrough
-	case telemetry.Normal:
-		tagKeys = append(tagKeys, TagSourceFormatKey)
-		fallthrough
-	case telemetry.Basic:
+	case telemetry.Normal, telemetry.Basic:
 		tagKeys = append(tagKeys, TagProcessorNameKey)
 	default:
 		return nil
@@ -172,13 +195,52 @@ func ServiceNameForResource(resource pdata.Resource) string {
 	return service.StringVal()
 }
 
-// StatsTagsForBatch gets the stat tags based on the specified processorName, serviceName, and spanFormat.
-func StatsTagsForBatch(processorName, serviceName, spanFormat string) []tag.Mutator {
-	statsTags := []tag.Mutator{
-		tag.Upsert(TagSourceFormatKey, spanFormat),
-		tag.Upsert(TagServiceNameKey, serviceName),
-		tag.Upsert(TagProcessorNameKey, processorName),
+// RecordsSpanCountMetrics reports span count metrics for specified measure.
+func RecordsSpanCountMetrics(ctx context.Context, scm *SpanCountStats, measure *stats.Int64Measure) {
+	if scm.isDetailed {
+		for serviceName, spanCount := range scm.serviceSpansCounts {
+			statsTags := []tag.Mutator{
+				tag.Insert(TagProcessorNameKey, scm.processorName),
+				tag.Insert(TagServiceNameKey, serviceName),
+			}
+			_ = stats.RecordWithTags(ctx, statsTags, measure.M(int64(spanCount)))
+		}
+		return
 	}
 
-	return statsTags
+	statsTags := []tag.Mutator{tag.Insert(TagProcessorNameKey, scm.processorName)}
+	_ = stats.RecordWithTags(ctx, statsTags, measure.M(int64(scm.allSpansCount)))
+}
+
+func serviceTagsEnabled() bool {
+	level, err := telemetry.GetLevel()
+	return err == nil && level == telemetry.Detailed
+}
+
+// spanCountByResourceStringAttribute calculates the number of spans by resource specified by
+// provided string attribute attrKey.
+func spanCountByResourceStringAttribute(td pdata.Traces, attrKey string) map[string]int {
+	spanCounts := make(map[string]int)
+
+	rss := td.ResourceSpans()
+	for i := 0; i < rss.Len(); i++ {
+		rs := rss.At(i)
+		if rs.IsNil() {
+			continue
+		}
+
+		var attrStringVal string
+		if attrVal, ok := rs.Resource().Attributes().Get(attrKey); ok {
+			attrStringVal = attrVal.StringVal()
+		}
+		ilss := rs.InstrumentationLibrarySpans()
+		for j := 0; j < ilss.Len(); j++ {
+			ils := ilss.At(j)
+			if ils.IsNil() {
+				continue
+			}
+			spanCounts[attrStringVal] += ilss.At(j).Spans().Len()
+		}
+	}
+	return spanCounts
 }
