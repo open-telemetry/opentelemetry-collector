@@ -118,12 +118,14 @@ func TestBatchProcessorSentByTimeout(t *testing.T) {
 	cfg.SendBatchSize = uint32(sendBatchSize)
 	cfg.Timeout = 100 * time.Millisecond
 	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
-	batcher := newBatchProcessor(creationParams, sender, cfg)
+
 	requestCount := 5
 	spansPerRequest := 10
 	waitForCn := sender.waitFor(requestCount*spansPerRequest, time.Second)
 
 	start := time.Now()
+
+	batcher := newBatchProcessor(creationParams, sender, cfg)
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		td := testdata.GenerateTraceDataManySpansSameResource(spansPerRequest)
 		go batcher.ConsumeTraces(context.Background(), td)
