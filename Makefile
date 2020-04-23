@@ -122,6 +122,11 @@ lint: lint-static-check
 impi:
 	@$(IMPI) --local github.com/open-telemetry/opentelemetry-collector --scheme stdThirdPartyLocal ./...
 
+.PHONY: fmt
+fmt:
+	gofmt  -w -s ./
+	goimports -w  -local github.com/open-telemetry/opentelemetry-collector ./
+
 .PHONY: install-tools
 install-tools:
 	go install github.com/client9/misspell/cmd/misspell
