@@ -48,7 +48,10 @@ import (
 )
 
 const (
-	receiverTransport = "http"
+	receiverTransportV1Thrift = "http_v1_thrift"
+	receiverTransportV1JSON   = "http_v1_json"
+	receiverTransportV2JSON   = "http_v2_json"
+	receiverTransportV2PROTO  = "http_v2_proto"
 )
 
 var errNextConsumerRespBody = []byte(`"Internal Server Error"`)
@@ -310,9 +313,10 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		receiverTagValue = zipkinV2TagValue
 	}
 
+	transportTag := transportType(r)
 	ctx = obsreport.ReceiverContext(
-		ctx, zr.instanceName, receiverTransport, receiverTagValue)
-	ctx = obsreport.StartTraceDataReceiveOp(ctx, zr.instanceName, receiverTransport)
+		ctx, zr.instanceName, transportTag, receiverTagValue)
+	ctx = obsreport.StartTraceDataReceiveOp(ctx, zr.instanceName, transportTag)
 
 	pr := processBodyIfNecessary(r)
 	slurp, _ := ioutil.ReadAll(pr)
@@ -618,4 +622,18 @@ func zipkinTagsToTraceAttributes(tags map[string]string, skind zipkinmodel.Kind)
 	}
 
 	return &tracepb.Span_Attributes{AttributeMap: amap}
+}
+
+func transportType(r *http.Request) string {
+	v1 := r.URL != nil && strings.Contains(r.URL.Path, "api/v1/spans")
+	if v1 {
+		if r.Header.Get("Content-Type") == "application/x-thrift" {
+			return receiverTransportV1Thrift
+		}
+		return receiverTransportV1JSON
+	}
+	if r.Header.Get("Content-Type") == "application/x-protobuf" {
+		return receiverTransportV2PROTO
+	}
+	return receiverTransportV2JSON
 }
