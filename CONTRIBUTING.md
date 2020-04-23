@@ -110,6 +110,7 @@ to open a new PR:
 $ git checkout -b feature
 # edit
 $ make
+$ make fmt
 $ git commit
 $ git push fork feature
 ```
