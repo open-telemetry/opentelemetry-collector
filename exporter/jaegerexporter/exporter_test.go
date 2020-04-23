@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/open-telemetry/opentelemetry-collector/config/configgrpc"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/internal/data/testdata"
 )
 
 func TestNew(t *testing.T) {
@@ -147,7 +147,7 @@ func TestNew(t *testing.T) {
 			}
 
 			// This is expected to fail.
-			err = got.ConsumeTraceData(context.Background(), consumerdata.TraceData{})
+			err = got.ConsumeTraces(context.Background(), testdata.GenerateTraceDataNoLibraries())
 			assert.Error(t, err)
 		})
 	}

@@ -28,6 +28,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data/testdata"
+	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 )
 
@@ -200,7 +201,7 @@ func TestProtoBatchToInternalTraces(t *testing.T) {
 			jb: model.Batch{
 				Process: generateProtoProcess(),
 			},
-			td: testdata.GenerateTraceDataNoLibraries(),
+			td: generateTraceDataResourceOnly(),
 		},
 
 		{
@@ -243,13 +244,23 @@ func TestProtoBatchToInternalTraces(t *testing.T) {
 	}
 }
 
+func generateTraceDataResourceOnly() pdata.Traces {
+	td := testdata.GenerateTraceDataOneEmptyResourceSpans()
+	rs := td.ResourceSpans().At(0).Resource()
+	rs.InitEmpty()
+	rs.Attributes().InsertString(conventions.AttributeServiceName, "service-1")
+	rs.Attributes().InsertInt("int-attr-1", 123)
+	return td
+}
+
 func generateProtoProcess() *model.Process {
 	return &model.Process{
+		ServiceName: "service-1",
 		Tags: []model.KeyValue{
 			{
-				Key:   "resource-attr",
-				VType: model.ValueType_STRING,
-				VStr:  "resource-attr-val-1",
+				Key:    "int-attr-1",
+				VType:  model.ValueType_INT64,
+				VInt64: 123,
 			},
 		},
 	}
@@ -314,6 +325,11 @@ func generateProtoSpan() *model.Span {
 				Key:    tracetranslator.TagStatusCode,
 				VType:  model.ValueType_INT64,
 				VInt64: tracetranslator.OCCancelled,
+			},
+			{
+				Key:   tracetranslator.TagError,
+				VBool: true,
+				VType: model.ValueType_BOOL,
 			},
 			{
 				Key:   tracetranslator.TagStatusMsg,

@@ -259,7 +259,6 @@ func expectedTraceData(t1, t2, t3 time.Time) pdata.Traces {
 	span0.Status().InitEmpty()
 	span0.Status().SetCode(pdata.StatusCode(otlptrace.Status_NotFound))
 	span0.Status().SetMessage("Stale indices")
-	span0.Attributes().InsertBool("error", true)
 
 	span1 := rs.InstrumentationLibrarySpans().At(0).Spans().At(1)
 	span1.SetSpanID(parentSpanID)
@@ -270,7 +269,6 @@ func expectedTraceData(t1, t2, t3 time.Time) pdata.Traces {
 	span1.Status().InitEmpty()
 	span1.Status().SetCode(pdata.StatusCode(otlptrace.Status_InternalError))
 	span1.Status().SetMessage("Frontend crash")
-	span1.Attributes().InsertBool("error", true)
 
 	return traces
 }

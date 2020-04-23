@@ -15,6 +15,7 @@
 package jaegerexporter
 
 import (
+	"context"
 	"path"
 	"testing"
 
@@ -22,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config"
 )
 
@@ -47,7 +49,8 @@ func TestLoadConfig(t *testing.T) {
 	e1 := cfg.Exporters["jaeger/2"]
 	assert.Equal(t, "jaeger/2", e1.(*Config).Name())
 	assert.Equal(t, "a.new.target:1234", e1.(*Config).Endpoint)
-	te, err := factory.CreateTraceExporter(zap.NewNop(), e1)
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	te, err := factory.CreateTraceExporter(context.Background(), params, e1)
 	require.NoError(t, err)
 	require.NotNil(t, te)
 }

@@ -204,6 +204,7 @@ func setInternalSpanStatus(attrs map[string]pdata.AttributeValue, dest pdata.Spa
 			dest.SetMessage(msgAttr.StringVal())
 			delete(attrs, tracetranslator.TagStatusMsg)
 		}
+		delete(attrs, tracetranslator.TagError)
 	} else {
 		httpCodeAttr, ok := attrs[tracetranslator.TagHTTPStatusCode]
 		if ok {

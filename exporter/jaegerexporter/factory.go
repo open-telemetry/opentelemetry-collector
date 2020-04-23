@@ -15,9 +15,8 @@
 package jaegerexporter
 
 import (
+	"context"
 	"fmt"
-
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
@@ -50,9 +49,10 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 
 // CreateTraceExporter creates a trace exporter based on this config.
 func (f *Factory) CreateTraceExporter(
-	logger *zap.Logger,
+	_ context.Context,
+	_ component.ExporterCreateParams,
 	config configmodels.Exporter,
-) (component.TraceExporterOld, error) {
+) (component.TraceExporter, error) {
 
 	expCfg := config.(*Config)
 	if expCfg.Endpoint == "" {
@@ -73,8 +73,9 @@ func (f *Factory) CreateTraceExporter(
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
 func (f *Factory) CreateMetricsExporter(
-	logger *zap.Logger,
-	cfg configmodels.Exporter,
-) (component.MetricsExporterOld, error) {
+	_ context.Context,
+	_ component.ExporterCreateParams,
+	_ configmodels.Exporter,
+) (component.MetricsExporter, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
