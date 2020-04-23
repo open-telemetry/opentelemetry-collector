@@ -124,7 +124,7 @@ impi:
 
 .PHONY: fmt
 fmt:
-	gofmt  -w ./
+	gofmt  -w -s ./
 	goimports -w  -local github.com/open-telemetry/opentelemetry-collector ./
 
 .PHONY: install-tools
