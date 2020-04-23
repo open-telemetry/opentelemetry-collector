@@ -26,15 +26,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal"
 )
 
-// Receiver is the type used to handle metrics from VM metrics.
+// Receiver is the type that scrapes various host metrics.
 type Receiver struct {
-	consumer consumer.MetricsConsumer
 	config   *Config
 	scrapers []internal.Scraper
-	cancel   context.CancelFunc
 }
 
-// NewHostMetricsReceiver creates a new set of VM and Process Metrics
+// NewHostMetricsReceiver creates a host metrics scraper.
 func NewHostMetricsReceiver(
 	ctx context.Context,
 	logger *zap.Logger,
@@ -45,7 +43,7 @@ func NewHostMetricsReceiver(
 
 	scrapers := make([]internal.Scraper, 0)
 	for key, cfg := range config.Scrapers {
-		scraper, err := factories[key].CreateMetricsScraper(ctx, logger, cfg)
+		scraper, err := factories[key].CreateMetricsScraper(ctx, logger, cfg, consumer)
 		if err != nil {
 			return nil, fmt.Errorf("cannot create scraper: %s", err.Error())
 		}
@@ -53,7 +51,6 @@ func NewHostMetricsReceiver(
 	}
 
 	hmr := &Receiver{
-		consumer: consumer,
 		config:   config,
 		scrapers: scrapers,
 	}
@@ -63,8 +60,6 @@ func NewHostMetricsReceiver(
 
 // Start begins scraping host metrics based on the OS platform.
 func (hmr *Receiver) Start(ctx context.Context, host component.Host) error {
-	ctx, hmr.cancel = context.WithCancel(ctx)
-
 	go func() {
 		for _, scraper := range hmr.scrapers {
 			err := scraper.Start(ctx)
@@ -80,8 +75,6 @@ func (hmr *Receiver) Start(ctx context.Context, host component.Host) error {
 
 // Shutdown stops the underlying host metrics scrapers.
 func (hmr *Receiver) Shutdown(ctx context.Context) error {
-	hmr.cancel()
-
 	var errs []error
 
 	for _, scraper := range hmr.scrapers {

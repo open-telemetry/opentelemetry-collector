@@ -11,7 +11,7 @@ hostmetrics:
   default_collection_interval: 10s
   scrapers:
     cpu:
-      report_per_process: true
+      report_per_cpu: true
     memory:
     disk:
 ```
