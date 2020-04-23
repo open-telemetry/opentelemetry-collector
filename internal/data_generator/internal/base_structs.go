@@ -127,7 +127,7 @@ const sliceTestTemplate = `func Test${structName}(t *testing.T) {
 	}
 }
 
-func Test${structName}MoveTo(t *testing.T) {
+func Test${structName}_MoveTo(t *testing.T) {
 	// Test MoveTo to empty
 	expectedSlice := generateTest${structName}()
 	dest := New${structName}()
@@ -152,7 +152,7 @@ func Test${structName}MoveTo(t *testing.T) {
 	}
 }
 
-func Test${structName}Resize(t *testing.T) {
+func Test${structName}_Resize(t *testing.T) {
 	es := generateTest${structName}()
 	emptyVal := New${elementName}()
 	emptyVal.InitEmpty()
@@ -246,13 +246,11 @@ func (ms ${structName}) IsNil() bool {
 	return *ms.orig == nil
 }`
 
-const messageTestHeaderTemplate = `func Test${structName}(t *testing.T) {
+const messageTestTemplate = `func Test${structName}_InitEmpty(t *testing.T) {
 	ms := New${structName}()
 	assert.EqualValues(t, true, ms.IsNil())
 	ms.InitEmpty()
-	assert.EqualValues(t, false, ms.IsNil())`
-
-const messageTestFooterTemplate = `	assert.EqualValues(t, generateTest${structName}(), ms)
+	assert.EqualValues(t, false, ms.IsNil())
 }`
 
 const messageGenerateTestTemplate = `func generateTest${structName}() ${structName} {
@@ -354,30 +352,19 @@ func (ms *messageStruct) generateStruct(sb *strings.Builder) {
 }
 
 func (ms *messageStruct) generateTests(sb *strings.Builder) {
-	sb.WriteString(os.Expand(messageTestHeaderTemplate, func(name string) string {
+	sb.WriteString(os.Expand(messageTestTemplate, func(name string) string {
 		switch name {
 		case "structName":
 			return ms.structName
-		case "originName":
-			return ms.originFullName
 		default:
 			panic(name)
 		}
 	}))
-	// Write accessors tests for the struct
+	// Write accessors tests for the fields
 	for _, f := range ms.fields {
 		sb.WriteString(newLine + newLine)
 		f.generateAccessorsTests(ms, sb)
 	}
-	sb.WriteString(newLine + newLine)
-	sb.WriteString(os.Expand(messageTestFooterTemplate, func(name string) string {
-		switch name {
-		case "structName":
-			return ms.structName
-		default:
-			panic(name)
-		}
-	}))
 }
 
 func (ms *messageStruct) generateTestValueHelpers(sb *strings.Builder) {

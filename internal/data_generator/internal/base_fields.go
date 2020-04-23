@@ -26,10 +26,14 @@ func (ms ${structName}) ${fieldName}() ${returnType} {
 	return new${returnType}(&(*ms.orig).${originFieldName})
 }`
 
-const accessorsSliceTestTemplate = `	assert.EqualValues(t, New${returnType}(), ms.${fieldName}())
+const accessorsSliceTestTemplate = `func Test${structName}_${fieldName}(t *testing.T) {
+	ms := New${structName}()
+	ms.InitEmpty()
+	assert.EqualValues(t, New${returnType}(), ms.${fieldName}())
 	fillTest${returnType}(ms.${fieldName}())
 	testVal${fieldName} := generateTest${returnType}()
-	assert.EqualValues(t, testVal${fieldName}, ms.${fieldName}())`
+	assert.EqualValues(t, testVal${fieldName}, ms.${fieldName}())
+}`
 
 const accessorsMessageTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
 // If no ${lowerFieldName} available, it creates an empty message and associates it with this ${structName}.
@@ -41,11 +45,15 @@ func (ms ${structName}) ${fieldName}() ${returnType} {
 	return new${returnType}(&(*ms.orig).${originFieldName})
 }`
 
-const accessorsMessageTestTemplate = `	assert.EqualValues(t, true, ms.${fieldName}().IsNil())
+const accessorsMessageTestTemplate = `func Test${structName}_${fieldName}(t *testing.T) {
+	ms := New${structName}()
+	ms.InitEmpty()
+	assert.EqualValues(t, true, ms.${fieldName}().IsNil())
 	ms.${fieldName}().InitEmpty()
 	assert.EqualValues(t, false, ms.${fieldName}().IsNil())
 	fillTest${returnType}(ms.${fieldName}())
-	assert.EqualValues(t, generateTest${returnType}(), ms.${fieldName}())`
+	assert.EqualValues(t, generateTest${returnType}(), ms.${fieldName}())
+}`
 
 const accessorsPrimitiveTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
 //
@@ -61,10 +69,14 @@ func (ms ${structName}) Set${fieldName}(v ${returnType}) {
 	(*ms.orig).${originFieldName} = v
 }`
 
-const accessorsPrimitiveTestTemplate = `	assert.EqualValues(t, ${defaultVal}, ms.${fieldName}())
+const accessorsPrimitiveTestTemplate = `func Test${structName}_${fieldName}(t *testing.T) {
+	ms := New${structName}()
+	ms.InitEmpty()
+	assert.EqualValues(t, ${defaultVal}, ms.${fieldName}())
 	testVal${fieldName} := ${testValue}
 	ms.Set${fieldName}(testVal${fieldName})
-	assert.EqualValues(t, testVal${fieldName}, ms.${fieldName}())`
+	assert.EqualValues(t, testVal${fieldName}, ms.${fieldName}())
+}`
 
 const accessorsPrimitiveTypedTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
 //
@@ -114,6 +126,8 @@ func (sf *sliceField) generateAccessors(ms *messageStruct, sb *strings.Builder) 
 func (sf *sliceField) generateAccessorsTests(ms *messageStruct, sb *strings.Builder) {
 	sb.WriteString(os.Expand(accessorsSliceTestTemplate, func(name string) string {
 		switch name {
+		case "structName":
+			return ms.structName
 		case "fieldName":
 			return sf.fieldMame
 		case "returnType":
@@ -160,6 +174,8 @@ func (mf *messageField) generateAccessors(ms *messageStruct, sb *strings.Builder
 func (mf *messageField) generateAccessorsTests(ms *messageStruct, sb *strings.Builder) {
 	sb.WriteString(os.Expand(accessorsMessageTestTemplate, func(name string) string {
 		switch name {
+		case "structName":
+			return ms.structName
 		case "fieldName":
 			return mf.fieldMame
 		case "returnType":
@@ -207,6 +223,8 @@ func (pf *primitiveField) generateAccessors(ms *messageStruct, sb *strings.Build
 func (pf *primitiveField) generateAccessorsTests(ms *messageStruct, sb *strings.Builder) {
 	sb.WriteString(os.Expand(accessorsPrimitiveTestTemplate, func(name string) string {
 		switch name {
+		case "structName":
+			return ms.structName
 		case "defaultVal":
 			return pf.defaultVal
 		case "fieldName":
@@ -259,6 +277,8 @@ func (ptf *primitiveTypedField) generateAccessors(ms *messageStruct, sb *strings
 func (ptf *primitiveTypedField) generateAccessorsTests(ms *messageStruct, sb *strings.Builder) {
 	sb.WriteString(os.Expand(accessorsPrimitiveTestTemplate, func(name string) string {
 		switch name {
+		case "structName":
+			return ms.structName
 		case "defaultVal":
 			return ptf.defaultVal
 		case "fieldName":

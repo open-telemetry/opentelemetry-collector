@@ -23,23 +23,29 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestInstrumentationLibrary(t *testing.T) {
+func TestInstrumentationLibrary_InitEmpty(t *testing.T) {
 	ms := NewInstrumentationLibrary()
 	assert.EqualValues(t, true, ms.IsNil())
 	ms.InitEmpty()
 	assert.EqualValues(t, false, ms.IsNil())
+}
 
+func TestInstrumentationLibrary_Name(t *testing.T) {
+	ms := NewInstrumentationLibrary()
+	ms.InitEmpty()
 	assert.EqualValues(t, "", ms.Name())
 	testValName := "test_name"
 	ms.SetName(testValName)
 	assert.EqualValues(t, testValName, ms.Name())
+}
 
+func TestInstrumentationLibrary_Version(t *testing.T) {
+	ms := NewInstrumentationLibrary()
+	ms.InitEmpty()
 	assert.EqualValues(t, "", ms.Version())
 	testValVersion := "test_version"
 	ms.SetVersion(testValVersion)
 	assert.EqualValues(t, testValVersion, ms.Version())
-
-	assert.EqualValues(t, generateTestInstrumentationLibrary(), ms)
 }
 
 func generateTestInstrumentationLibrary() InstrumentationLibrary {

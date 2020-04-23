@@ -42,7 +42,7 @@ func TestResourceSpansSlice(t *testing.T) {
 	}
 }
 
-func TestResourceSpansSliceMoveTo(t *testing.T) {
+func TestResourceSpansSlice_MoveTo(t *testing.T) {
 	// Test MoveTo to empty
 	expectedSlice := generateTestResourceSpansSlice()
 	dest := NewResourceSpansSlice()
@@ -67,7 +67,7 @@ func TestResourceSpansSliceMoveTo(t *testing.T) {
 	}
 }
 
-func TestResourceSpansSliceResize(t *testing.T) {
+func TestResourceSpansSlice_Resize(t *testing.T) {
 	es := generateTestResourceSpansSlice()
 	emptyVal := NewResourceSpans()
 	emptyVal.InitEmpty()
@@ -110,24 +110,30 @@ func TestResourceSpansSliceResize(t *testing.T) {
 	assert.EqualValues(t, NewResourceSpansSlice(), es)
 }
 
-func TestResourceSpans(t *testing.T) {
+func TestResourceSpans_InitEmpty(t *testing.T) {
 	ms := NewResourceSpans()
 	assert.EqualValues(t, true, ms.IsNil())
 	ms.InitEmpty()
 	assert.EqualValues(t, false, ms.IsNil())
+}
 
+func TestResourceSpans_Resource(t *testing.T) {
+	ms := NewResourceSpans()
+	ms.InitEmpty()
 	assert.EqualValues(t, true, ms.Resource().IsNil())
 	ms.Resource().InitEmpty()
 	assert.EqualValues(t, false, ms.Resource().IsNil())
 	fillTestResource(ms.Resource())
 	assert.EqualValues(t, generateTestResource(), ms.Resource())
+}
 
+func TestResourceSpans_InstrumentationLibrarySpans(t *testing.T) {
+	ms := NewResourceSpans()
+	ms.InitEmpty()
 	assert.EqualValues(t, NewInstrumentationLibrarySpansSlice(), ms.InstrumentationLibrarySpans())
 	fillTestInstrumentationLibrarySpansSlice(ms.InstrumentationLibrarySpans())
 	testValInstrumentationLibrarySpans := generateTestInstrumentationLibrarySpansSlice()
 	assert.EqualValues(t, testValInstrumentationLibrarySpans, ms.InstrumentationLibrarySpans())
-
-	assert.EqualValues(t, generateTestResourceSpans(), ms)
 }
 
 func TestInstrumentationLibrarySpansSlice(t *testing.T) {
@@ -148,7 +154,7 @@ func TestInstrumentationLibrarySpansSlice(t *testing.T) {
 	}
 }
 
-func TestInstrumentationLibrarySpansSliceMoveTo(t *testing.T) {
+func TestInstrumentationLibrarySpansSlice_MoveTo(t *testing.T) {
 	// Test MoveTo to empty
 	expectedSlice := generateTestInstrumentationLibrarySpansSlice()
 	dest := NewInstrumentationLibrarySpansSlice()
@@ -173,7 +179,7 @@ func TestInstrumentationLibrarySpansSliceMoveTo(t *testing.T) {
 	}
 }
 
-func TestInstrumentationLibrarySpansSliceResize(t *testing.T) {
+func TestInstrumentationLibrarySpansSlice_Resize(t *testing.T) {
 	es := generateTestInstrumentationLibrarySpansSlice()
 	emptyVal := NewInstrumentationLibrarySpans()
 	emptyVal.InitEmpty()
@@ -216,24 +222,30 @@ func TestInstrumentationLibrarySpansSliceResize(t *testing.T) {
 	assert.EqualValues(t, NewInstrumentationLibrarySpansSlice(), es)
 }
 
-func TestInstrumentationLibrarySpans(t *testing.T) {
+func TestInstrumentationLibrarySpans_InitEmpty(t *testing.T) {
 	ms := NewInstrumentationLibrarySpans()
 	assert.EqualValues(t, true, ms.IsNil())
 	ms.InitEmpty()
 	assert.EqualValues(t, false, ms.IsNil())
+}
 
+func TestInstrumentationLibrarySpans_InstrumentationLibrary(t *testing.T) {
+	ms := NewInstrumentationLibrarySpans()
+	ms.InitEmpty()
 	assert.EqualValues(t, true, ms.InstrumentationLibrary().IsNil())
 	ms.InstrumentationLibrary().InitEmpty()
 	assert.EqualValues(t, false, ms.InstrumentationLibrary().IsNil())
 	fillTestInstrumentationLibrary(ms.InstrumentationLibrary())
 	assert.EqualValues(t, generateTestInstrumentationLibrary(), ms.InstrumentationLibrary())
+}
 
+func TestInstrumentationLibrarySpans_Spans(t *testing.T) {
+	ms := NewInstrumentationLibrarySpans()
+	ms.InitEmpty()
 	assert.EqualValues(t, NewSpanSlice(), ms.Spans())
 	fillTestSpanSlice(ms.Spans())
 	testValSpans := generateTestSpanSlice()
 	assert.EqualValues(t, testValSpans, ms.Spans())
-
-	assert.EqualValues(t, generateTestInstrumentationLibrarySpans(), ms)
 }
 
 func TestSpanSlice(t *testing.T) {
@@ -254,7 +266,7 @@ func TestSpanSlice(t *testing.T) {
 	}
 }
 
-func TestSpanSliceMoveTo(t *testing.T) {
+func TestSpanSlice_MoveTo(t *testing.T) {
 	// Test MoveTo to empty
 	expectedSlice := generateTestSpanSlice()
 	dest := NewSpanSlice()
@@ -279,7 +291,7 @@ func TestSpanSliceMoveTo(t *testing.T) {
 	}
 }
 
-func TestSpanSliceResize(t *testing.T) {
+func TestSpanSlice_Resize(t *testing.T) {
 	es := generateTestSpanSlice()
 	emptyVal := NewSpan()
 	emptyVal.InitEmpty()
@@ -322,89 +334,147 @@ func TestSpanSliceResize(t *testing.T) {
 	assert.EqualValues(t, NewSpanSlice(), es)
 }
 
-func TestSpan(t *testing.T) {
+func TestSpan_InitEmpty(t *testing.T) {
 	ms := NewSpan()
 	assert.EqualValues(t, true, ms.IsNil())
 	ms.InitEmpty()
 	assert.EqualValues(t, false, ms.IsNil())
+}
 
+func TestSpan_TraceID(t *testing.T) {
+	ms := NewSpan()
+	ms.InitEmpty()
 	assert.EqualValues(t, NewTraceID(nil), ms.TraceID())
 	testValTraceID := NewTraceID([]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 	ms.SetTraceID(testValTraceID)
 	assert.EqualValues(t, testValTraceID, ms.TraceID())
+}
 
+func TestSpan_SpanID(t *testing.T) {
+	ms := NewSpan()
+	ms.InitEmpty()
 	assert.EqualValues(t, NewSpanID(nil), ms.SpanID())
 	testValSpanID := NewSpanID([]byte{1, 2, 3, 4, 5, 6, 7, 8})
 	ms.SetSpanID(testValSpanID)
 	assert.EqualValues(t, testValSpanID, ms.SpanID())
+}
 
+func TestSpan_TraceState(t *testing.T) {
+	ms := NewSpan()
+	ms.InitEmpty()
 	assert.EqualValues(t, TraceState(""), ms.TraceState())
 	testValTraceState := TraceState("congo=congos")
 	ms.SetTraceState(testValTraceState)
 	assert.EqualValues(t, testValTraceState, ms.TraceState())
+}
 
+func TestSpan_ParentSpanID(t *testing.T) {
+	ms := NewSpan()
+	ms.InitEmpty()
 	assert.EqualValues(t, NewSpanID(nil), ms.ParentSpanID())
 	testValParentSpanID := NewSpanID([]byte{8, 7, 6, 5, 4, 3, 2, 1})
 	ms.SetParentSpanID(testValParentSpanID)
 	assert.EqualValues(t, testValParentSpanID, ms.ParentSpanID())
+}
 
+func TestSpan_Name(t *testing.T) {
+	ms := NewSpan()
+	ms.InitEmpty()
 	assert.EqualValues(t, "", ms.Name())
 	testValName := "test_name"
 	ms.SetName(testValName)
 	assert.EqualValues(t, testValName, ms.Name())
+}
 
+func TestSpan_Kind(t *testing.T) {
+	ms := NewSpan()
+	ms.InitEmpty()
 	assert.EqualValues(t, SpanKindUNSPECIFIED, ms.Kind())
 	testValKind := SpanKindSERVER
 	ms.SetKind(testValKind)
 	assert.EqualValues(t, testValKind, ms.Kind())
+}
 
+func TestSpan_StartTime(t *testing.T) {
+	ms := NewSpan()
+	ms.InitEmpty()
 	assert.EqualValues(t, TimestampUnixNano(0), ms.StartTime())
 	testValStartTime := TimestampUnixNano(1234567890)
 	ms.SetStartTime(testValStartTime)
 	assert.EqualValues(t, testValStartTime, ms.StartTime())
+}
 
+func TestSpan_EndTime(t *testing.T) {
+	ms := NewSpan()
+	ms.InitEmpty()
 	assert.EqualValues(t, TimestampUnixNano(0), ms.EndTime())
 	testValEndTime := TimestampUnixNano(1234567890)
 	ms.SetEndTime(testValEndTime)
 	assert.EqualValues(t, testValEndTime, ms.EndTime())
+}
 
+func TestSpan_Attributes(t *testing.T) {
+	ms := NewSpan()
+	ms.InitEmpty()
 	assert.EqualValues(t, NewAttributeMap(), ms.Attributes())
 	fillTestAttributeMap(ms.Attributes())
 	testValAttributes := generateTestAttributeMap()
 	assert.EqualValues(t, testValAttributes, ms.Attributes())
+}
 
+func TestSpan_DroppedAttributesCount(t *testing.T) {
+	ms := NewSpan()
+	ms.InitEmpty()
 	assert.EqualValues(t, uint32(0), ms.DroppedAttributesCount())
 	testValDroppedAttributesCount := uint32(17)
 	ms.SetDroppedAttributesCount(testValDroppedAttributesCount)
 	assert.EqualValues(t, testValDroppedAttributesCount, ms.DroppedAttributesCount())
+}
 
+func TestSpan_Events(t *testing.T) {
+	ms := NewSpan()
+	ms.InitEmpty()
 	assert.EqualValues(t, NewSpanEventSlice(), ms.Events())
 	fillTestSpanEventSlice(ms.Events())
 	testValEvents := generateTestSpanEventSlice()
 	assert.EqualValues(t, testValEvents, ms.Events())
+}
 
+func TestSpan_DroppedEventsCount(t *testing.T) {
+	ms := NewSpan()
+	ms.InitEmpty()
 	assert.EqualValues(t, uint32(0), ms.DroppedEventsCount())
 	testValDroppedEventsCount := uint32(17)
 	ms.SetDroppedEventsCount(testValDroppedEventsCount)
 	assert.EqualValues(t, testValDroppedEventsCount, ms.DroppedEventsCount())
+}
 
+func TestSpan_Links(t *testing.T) {
+	ms := NewSpan()
+	ms.InitEmpty()
 	assert.EqualValues(t, NewSpanLinkSlice(), ms.Links())
 	fillTestSpanLinkSlice(ms.Links())
 	testValLinks := generateTestSpanLinkSlice()
 	assert.EqualValues(t, testValLinks, ms.Links())
+}
 
+func TestSpan_DroppedLinksCount(t *testing.T) {
+	ms := NewSpan()
+	ms.InitEmpty()
 	assert.EqualValues(t, uint32(0), ms.DroppedLinksCount())
 	testValDroppedLinksCount := uint32(17)
 	ms.SetDroppedLinksCount(testValDroppedLinksCount)
 	assert.EqualValues(t, testValDroppedLinksCount, ms.DroppedLinksCount())
+}
 
+func TestSpan_Status(t *testing.T) {
+	ms := NewSpan()
+	ms.InitEmpty()
 	assert.EqualValues(t, true, ms.Status().IsNil())
 	ms.Status().InitEmpty()
 	assert.EqualValues(t, false, ms.Status().IsNil())
 	fillTestSpanStatus(ms.Status())
 	assert.EqualValues(t, generateTestSpanStatus(), ms.Status())
-
-	assert.EqualValues(t, generateTestSpan(), ms)
 }
 
 func TestSpanEventSlice(t *testing.T) {
@@ -425,7 +495,7 @@ func TestSpanEventSlice(t *testing.T) {
 	}
 }
 
-func TestSpanEventSliceMoveTo(t *testing.T) {
+func TestSpanEventSlice_MoveTo(t *testing.T) {
 	// Test MoveTo to empty
 	expectedSlice := generateTestSpanEventSlice()
 	dest := NewSpanEventSlice()
@@ -450,7 +520,7 @@ func TestSpanEventSliceMoveTo(t *testing.T) {
 	}
 }
 
-func TestSpanEventSliceResize(t *testing.T) {
+func TestSpanEventSlice_Resize(t *testing.T) {
 	es := generateTestSpanEventSlice()
 	emptyVal := NewSpanEvent()
 	emptyVal.InitEmpty()
@@ -493,33 +563,47 @@ func TestSpanEventSliceResize(t *testing.T) {
 	assert.EqualValues(t, NewSpanEventSlice(), es)
 }
 
-func TestSpanEvent(t *testing.T) {
+func TestSpanEvent_InitEmpty(t *testing.T) {
 	ms := NewSpanEvent()
 	assert.EqualValues(t, true, ms.IsNil())
 	ms.InitEmpty()
 	assert.EqualValues(t, false, ms.IsNil())
+}
 
+func TestSpanEvent_Timestamp(t *testing.T) {
+	ms := NewSpanEvent()
+	ms.InitEmpty()
 	assert.EqualValues(t, TimestampUnixNano(0), ms.Timestamp())
 	testValTimestamp := TimestampUnixNano(1234567890)
 	ms.SetTimestamp(testValTimestamp)
 	assert.EqualValues(t, testValTimestamp, ms.Timestamp())
+}
 
+func TestSpanEvent_Name(t *testing.T) {
+	ms := NewSpanEvent()
+	ms.InitEmpty()
 	assert.EqualValues(t, "", ms.Name())
 	testValName := "test_name"
 	ms.SetName(testValName)
 	assert.EqualValues(t, testValName, ms.Name())
+}
 
+func TestSpanEvent_Attributes(t *testing.T) {
+	ms := NewSpanEvent()
+	ms.InitEmpty()
 	assert.EqualValues(t, NewAttributeMap(), ms.Attributes())
 	fillTestAttributeMap(ms.Attributes())
 	testValAttributes := generateTestAttributeMap()
 	assert.EqualValues(t, testValAttributes, ms.Attributes())
+}
 
+func TestSpanEvent_DroppedAttributesCount(t *testing.T) {
+	ms := NewSpanEvent()
+	ms.InitEmpty()
 	assert.EqualValues(t, uint32(0), ms.DroppedAttributesCount())
 	testValDroppedAttributesCount := uint32(17)
 	ms.SetDroppedAttributesCount(testValDroppedAttributesCount)
 	assert.EqualValues(t, testValDroppedAttributesCount, ms.DroppedAttributesCount())
-
-	assert.EqualValues(t, generateTestSpanEvent(), ms)
 }
 
 func TestSpanLinkSlice(t *testing.T) {
@@ -540,7 +624,7 @@ func TestSpanLinkSlice(t *testing.T) {
 	}
 }
 
-func TestSpanLinkSliceMoveTo(t *testing.T) {
+func TestSpanLinkSlice_MoveTo(t *testing.T) {
 	// Test MoveTo to empty
 	expectedSlice := generateTestSpanLinkSlice()
 	dest := NewSpanLinkSlice()
@@ -565,7 +649,7 @@ func TestSpanLinkSliceMoveTo(t *testing.T) {
 	}
 }
 
-func TestSpanLinkSliceResize(t *testing.T) {
+func TestSpanLinkSlice_Resize(t *testing.T) {
 	es := generateTestSpanLinkSlice()
 	emptyVal := NewSpanLink()
 	emptyVal.InitEmpty()
@@ -608,57 +692,81 @@ func TestSpanLinkSliceResize(t *testing.T) {
 	assert.EqualValues(t, NewSpanLinkSlice(), es)
 }
 
-func TestSpanLink(t *testing.T) {
+func TestSpanLink_InitEmpty(t *testing.T) {
 	ms := NewSpanLink()
 	assert.EqualValues(t, true, ms.IsNil())
 	ms.InitEmpty()
 	assert.EqualValues(t, false, ms.IsNil())
+}
 
+func TestSpanLink_TraceID(t *testing.T) {
+	ms := NewSpanLink()
+	ms.InitEmpty()
 	assert.EqualValues(t, NewTraceID(nil), ms.TraceID())
 	testValTraceID := NewTraceID([]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 	ms.SetTraceID(testValTraceID)
 	assert.EqualValues(t, testValTraceID, ms.TraceID())
+}
 
+func TestSpanLink_SpanID(t *testing.T) {
+	ms := NewSpanLink()
+	ms.InitEmpty()
 	assert.EqualValues(t, NewSpanID(nil), ms.SpanID())
 	testValSpanID := NewSpanID([]byte{1, 2, 3, 4, 5, 6, 7, 8})
 	ms.SetSpanID(testValSpanID)
 	assert.EqualValues(t, testValSpanID, ms.SpanID())
+}
 
+func TestSpanLink_TraceState(t *testing.T) {
+	ms := NewSpanLink()
+	ms.InitEmpty()
 	assert.EqualValues(t, TraceState(""), ms.TraceState())
 	testValTraceState := TraceState("congo=congos")
 	ms.SetTraceState(testValTraceState)
 	assert.EqualValues(t, testValTraceState, ms.TraceState())
+}
 
+func TestSpanLink_Attributes(t *testing.T) {
+	ms := NewSpanLink()
+	ms.InitEmpty()
 	assert.EqualValues(t, NewAttributeMap(), ms.Attributes())
 	fillTestAttributeMap(ms.Attributes())
 	testValAttributes := generateTestAttributeMap()
 	assert.EqualValues(t, testValAttributes, ms.Attributes())
+}
 
+func TestSpanLink_DroppedAttributesCount(t *testing.T) {
+	ms := NewSpanLink()
+	ms.InitEmpty()
 	assert.EqualValues(t, uint32(0), ms.DroppedAttributesCount())
 	testValDroppedAttributesCount := uint32(17)
 	ms.SetDroppedAttributesCount(testValDroppedAttributesCount)
 	assert.EqualValues(t, testValDroppedAttributesCount, ms.DroppedAttributesCount())
-
-	assert.EqualValues(t, generateTestSpanLink(), ms)
 }
 
-func TestSpanStatus(t *testing.T) {
+func TestSpanStatus_InitEmpty(t *testing.T) {
 	ms := NewSpanStatus()
 	assert.EqualValues(t, true, ms.IsNil())
 	ms.InitEmpty()
 	assert.EqualValues(t, false, ms.IsNil())
+}
 
+func TestSpanStatus_Code(t *testing.T) {
+	ms := NewSpanStatus()
+	ms.InitEmpty()
 	assert.EqualValues(t, StatusCode(0), ms.Code())
 	testValCode := StatusCode(1)
 	ms.SetCode(testValCode)
 	assert.EqualValues(t, testValCode, ms.Code())
+}
 
+func TestSpanStatus_Message(t *testing.T) {
+	ms := NewSpanStatus()
+	ms.InitEmpty()
 	assert.EqualValues(t, "", ms.Message())
 	testValMessage := "cancelled"
 	ms.SetMessage(testValMessage)
 	assert.EqualValues(t, testValMessage, ms.Message())
-
-	assert.EqualValues(t, generateTestSpanStatus(), ms)
 }
 
 func generateTestResourceSpansSlice() ResourceSpansSlice {

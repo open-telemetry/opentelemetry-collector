@@ -23,18 +23,20 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestResource(t *testing.T) {
+func TestResource_InitEmpty(t *testing.T) {
 	ms := NewResource()
 	assert.EqualValues(t, true, ms.IsNil())
 	ms.InitEmpty()
 	assert.EqualValues(t, false, ms.IsNil())
+}
 
+func TestResource_Attributes(t *testing.T) {
+	ms := NewResource()
+	ms.InitEmpty()
 	assert.EqualValues(t, NewAttributeMap(), ms.Attributes())
 	fillTestAttributeMap(ms.Attributes())
 	testValAttributes := generateTestAttributeMap()
 	assert.EqualValues(t, testValAttributes, ms.Attributes())
-
-	assert.EqualValues(t, generateTestResource(), ms)
 }
 
 func generateTestResource() Resource {
