@@ -86,3 +86,16 @@ func (ms InstrumentationLibrary) Version() string {
 func (ms InstrumentationLibrary) SetVersion(v string) {
 	(*ms.orig).Version = v
 }
+
+// CopyTo copies all properties from the current struct to the dest.
+func (ms InstrumentationLibrary) CopyTo(dest InstrumentationLibrary) {
+	if ms.IsNil() {
+		*dest.orig = nil
+		return
+	}
+	if dest.IsNil() {
+		dest.InitEmpty()
+	}
+	dest.SetName(ms.Name())
+	dest.SetVersion(ms.Version())
+}

@@ -25,9 +25,17 @@ import (
 
 func TestInstrumentationLibrary_InitEmpty(t *testing.T) {
 	ms := NewInstrumentationLibrary()
-	assert.EqualValues(t, true, ms.IsNil())
+	assert.True(t, ms.IsNil())
 	ms.InitEmpty()
-	assert.EqualValues(t, false, ms.IsNil())
+	assert.False(t, ms.IsNil())
+}
+
+func TestInstrumentationLibrary_CopyTo(t *testing.T) {
+	ms := NewInstrumentationLibrary()
+	NewInstrumentationLibrary().CopyTo(ms)
+	assert.True(t, ms.IsNil())
+	generateTestInstrumentationLibrary().CopyTo(ms)
+	assert.EqualValues(t, generateTestInstrumentationLibrary(), ms)
 }
 
 func TestInstrumentationLibrary_Name(t *testing.T) {

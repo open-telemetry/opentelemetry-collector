@@ -67,6 +67,21 @@ func TestResourceMetricsSlice_MoveTo(t *testing.T) {
 	}
 }
 
+func TestResourceMetricsSlice_CopyTo(t *testing.T) {
+	dest := NewResourceMetricsSlice()
+	// Test CopyTo to empty
+	NewResourceMetricsSlice().CopyTo(dest)
+	assert.EqualValues(t, NewResourceMetricsSlice(), dest)
+
+	// Test CopyTo larger slice
+	generateTestResourceMetricsSlice().CopyTo(dest)
+	assert.EqualValues(t, generateTestResourceMetricsSlice(), dest)
+
+	// Test CopyTo same size slice
+	generateTestResourceMetricsSlice().CopyTo(dest)
+	assert.EqualValues(t, generateTestResourceMetricsSlice(), dest)
+}
+
 func TestResourceMetricsSlice_Resize(t *testing.T) {
 	es := generateTestResourceMetricsSlice()
 	emptyVal := NewResourceMetrics()
@@ -112,9 +127,17 @@ func TestResourceMetricsSlice_Resize(t *testing.T) {
 
 func TestResourceMetrics_InitEmpty(t *testing.T) {
 	ms := NewResourceMetrics()
-	assert.EqualValues(t, true, ms.IsNil())
+	assert.True(t, ms.IsNil())
 	ms.InitEmpty()
-	assert.EqualValues(t, false, ms.IsNil())
+	assert.False(t, ms.IsNil())
+}
+
+func TestResourceMetrics_CopyTo(t *testing.T) {
+	ms := NewResourceMetrics()
+	NewResourceMetrics().CopyTo(ms)
+	assert.True(t, ms.IsNil())
+	generateTestResourceMetrics().CopyTo(ms)
+	assert.EqualValues(t, generateTestResourceMetrics(), ms)
 }
 
 func TestResourceMetrics_Resource(t *testing.T) {
@@ -179,6 +202,21 @@ func TestInstrumentationLibraryMetricsSlice_MoveTo(t *testing.T) {
 	}
 }
 
+func TestInstrumentationLibraryMetricsSlice_CopyTo(t *testing.T) {
+	dest := NewInstrumentationLibraryMetricsSlice()
+	// Test CopyTo to empty
+	NewInstrumentationLibraryMetricsSlice().CopyTo(dest)
+	assert.EqualValues(t, NewInstrumentationLibraryMetricsSlice(), dest)
+
+	// Test CopyTo larger slice
+	generateTestInstrumentationLibraryMetricsSlice().CopyTo(dest)
+	assert.EqualValues(t, generateTestInstrumentationLibraryMetricsSlice(), dest)
+
+	// Test CopyTo same size slice
+	generateTestInstrumentationLibraryMetricsSlice().CopyTo(dest)
+	assert.EqualValues(t, generateTestInstrumentationLibraryMetricsSlice(), dest)
+}
+
 func TestInstrumentationLibraryMetricsSlice_Resize(t *testing.T) {
 	es := generateTestInstrumentationLibraryMetricsSlice()
 	emptyVal := NewInstrumentationLibraryMetrics()
@@ -224,9 +262,17 @@ func TestInstrumentationLibraryMetricsSlice_Resize(t *testing.T) {
 
 func TestInstrumentationLibraryMetrics_InitEmpty(t *testing.T) {
 	ms := NewInstrumentationLibraryMetrics()
-	assert.EqualValues(t, true, ms.IsNil())
+	assert.True(t, ms.IsNil())
 	ms.InitEmpty()
-	assert.EqualValues(t, false, ms.IsNil())
+	assert.False(t, ms.IsNil())
+}
+
+func TestInstrumentationLibraryMetrics_CopyTo(t *testing.T) {
+	ms := NewInstrumentationLibraryMetrics()
+	NewInstrumentationLibraryMetrics().CopyTo(ms)
+	assert.True(t, ms.IsNil())
+	generateTestInstrumentationLibraryMetrics().CopyTo(ms)
+	assert.EqualValues(t, generateTestInstrumentationLibraryMetrics(), ms)
 }
 
 func TestInstrumentationLibraryMetrics_InstrumentationLibrary(t *testing.T) {
@@ -291,6 +337,21 @@ func TestMetricSlice_MoveTo(t *testing.T) {
 	}
 }
 
+func TestMetricSlice_CopyTo(t *testing.T) {
+	dest := NewMetricSlice()
+	// Test CopyTo to empty
+	NewMetricSlice().CopyTo(dest)
+	assert.EqualValues(t, NewMetricSlice(), dest)
+
+	// Test CopyTo larger slice
+	generateTestMetricSlice().CopyTo(dest)
+	assert.EqualValues(t, generateTestMetricSlice(), dest)
+
+	// Test CopyTo same size slice
+	generateTestMetricSlice().CopyTo(dest)
+	assert.EqualValues(t, generateTestMetricSlice(), dest)
+}
+
 func TestMetricSlice_Resize(t *testing.T) {
 	es := generateTestMetricSlice()
 	emptyVal := NewMetric()
@@ -336,9 +397,17 @@ func TestMetricSlice_Resize(t *testing.T) {
 
 func TestMetric_InitEmpty(t *testing.T) {
 	ms := NewMetric()
-	assert.EqualValues(t, true, ms.IsNil())
+	assert.True(t, ms.IsNil())
 	ms.InitEmpty()
-	assert.EqualValues(t, false, ms.IsNil())
+	assert.False(t, ms.IsNil())
+}
+
+func TestMetric_CopyTo(t *testing.T) {
+	ms := NewMetric()
+	NewMetric().CopyTo(ms)
+	assert.True(t, ms.IsNil())
+	generateTestMetric().CopyTo(ms)
+	assert.EqualValues(t, generateTestMetric(), ms)
 }
 
 func TestMetric_MetricDescriptor(t *testing.T) {
@@ -389,9 +458,17 @@ func TestMetric_SummaryDataPoints(t *testing.T) {
 
 func TestMetricDescriptor_InitEmpty(t *testing.T) {
 	ms := NewMetricDescriptor()
-	assert.EqualValues(t, true, ms.IsNil())
+	assert.True(t, ms.IsNil())
 	ms.InitEmpty()
-	assert.EqualValues(t, false, ms.IsNil())
+	assert.False(t, ms.IsNil())
+}
+
+func TestMetricDescriptor_CopyTo(t *testing.T) {
+	ms := NewMetricDescriptor()
+	NewMetricDescriptor().CopyTo(ms)
+	assert.True(t, ms.IsNil())
+	generateTestMetricDescriptor().CopyTo(ms)
+	assert.EqualValues(t, generateTestMetricDescriptor(), ms)
 }
 
 func TestMetricDescriptor_Name(t *testing.T) {
@@ -482,6 +559,21 @@ func TestInt64DataPointSlice_MoveTo(t *testing.T) {
 	}
 }
 
+func TestInt64DataPointSlice_CopyTo(t *testing.T) {
+	dest := NewInt64DataPointSlice()
+	// Test CopyTo to empty
+	NewInt64DataPointSlice().CopyTo(dest)
+	assert.EqualValues(t, NewInt64DataPointSlice(), dest)
+
+	// Test CopyTo larger slice
+	generateTestInt64DataPointSlice().CopyTo(dest)
+	assert.EqualValues(t, generateTestInt64DataPointSlice(), dest)
+
+	// Test CopyTo same size slice
+	generateTestInt64DataPointSlice().CopyTo(dest)
+	assert.EqualValues(t, generateTestInt64DataPointSlice(), dest)
+}
+
 func TestInt64DataPointSlice_Resize(t *testing.T) {
 	es := generateTestInt64DataPointSlice()
 	emptyVal := NewInt64DataPoint()
@@ -527,9 +619,17 @@ func TestInt64DataPointSlice_Resize(t *testing.T) {
 
 func TestInt64DataPoint_InitEmpty(t *testing.T) {
 	ms := NewInt64DataPoint()
-	assert.EqualValues(t, true, ms.IsNil())
+	assert.True(t, ms.IsNil())
 	ms.InitEmpty()
-	assert.EqualValues(t, false, ms.IsNil())
+	assert.False(t, ms.IsNil())
+}
+
+func TestInt64DataPoint_CopyTo(t *testing.T) {
+	ms := NewInt64DataPoint()
+	NewInt64DataPoint().CopyTo(ms)
+	assert.True(t, ms.IsNil())
+	generateTestInt64DataPoint().CopyTo(ms)
+	assert.EqualValues(t, generateTestInt64DataPoint(), ms)
 }
 
 func TestInt64DataPoint_LabelsMap(t *testing.T) {
@@ -611,6 +711,21 @@ func TestDoubleDataPointSlice_MoveTo(t *testing.T) {
 	}
 }
 
+func TestDoubleDataPointSlice_CopyTo(t *testing.T) {
+	dest := NewDoubleDataPointSlice()
+	// Test CopyTo to empty
+	NewDoubleDataPointSlice().CopyTo(dest)
+	assert.EqualValues(t, NewDoubleDataPointSlice(), dest)
+
+	// Test CopyTo larger slice
+	generateTestDoubleDataPointSlice().CopyTo(dest)
+	assert.EqualValues(t, generateTestDoubleDataPointSlice(), dest)
+
+	// Test CopyTo same size slice
+	generateTestDoubleDataPointSlice().CopyTo(dest)
+	assert.EqualValues(t, generateTestDoubleDataPointSlice(), dest)
+}
+
 func TestDoubleDataPointSlice_Resize(t *testing.T) {
 	es := generateTestDoubleDataPointSlice()
 	emptyVal := NewDoubleDataPoint()
@@ -656,9 +771,17 @@ func TestDoubleDataPointSlice_Resize(t *testing.T) {
 
 func TestDoubleDataPoint_InitEmpty(t *testing.T) {
 	ms := NewDoubleDataPoint()
-	assert.EqualValues(t, true, ms.IsNil())
+	assert.True(t, ms.IsNil())
 	ms.InitEmpty()
-	assert.EqualValues(t, false, ms.IsNil())
+	assert.False(t, ms.IsNil())
+}
+
+func TestDoubleDataPoint_CopyTo(t *testing.T) {
+	ms := NewDoubleDataPoint()
+	NewDoubleDataPoint().CopyTo(ms)
+	assert.True(t, ms.IsNil())
+	generateTestDoubleDataPoint().CopyTo(ms)
+	assert.EqualValues(t, generateTestDoubleDataPoint(), ms)
 }
 
 func TestDoubleDataPoint_LabelsMap(t *testing.T) {
@@ -740,6 +863,21 @@ func TestHistogramDataPointSlice_MoveTo(t *testing.T) {
 	}
 }
 
+func TestHistogramDataPointSlice_CopyTo(t *testing.T) {
+	dest := NewHistogramDataPointSlice()
+	// Test CopyTo to empty
+	NewHistogramDataPointSlice().CopyTo(dest)
+	assert.EqualValues(t, NewHistogramDataPointSlice(), dest)
+
+	// Test CopyTo larger slice
+	generateTestHistogramDataPointSlice().CopyTo(dest)
+	assert.EqualValues(t, generateTestHistogramDataPointSlice(), dest)
+
+	// Test CopyTo same size slice
+	generateTestHistogramDataPointSlice().CopyTo(dest)
+	assert.EqualValues(t, generateTestHistogramDataPointSlice(), dest)
+}
+
 func TestHistogramDataPointSlice_Resize(t *testing.T) {
 	es := generateTestHistogramDataPointSlice()
 	emptyVal := NewHistogramDataPoint()
@@ -785,9 +923,17 @@ func TestHistogramDataPointSlice_Resize(t *testing.T) {
 
 func TestHistogramDataPoint_InitEmpty(t *testing.T) {
 	ms := NewHistogramDataPoint()
-	assert.EqualValues(t, true, ms.IsNil())
+	assert.True(t, ms.IsNil())
 	ms.InitEmpty()
-	assert.EqualValues(t, false, ms.IsNil())
+	assert.False(t, ms.IsNil())
+}
+
+func TestHistogramDataPoint_CopyTo(t *testing.T) {
+	ms := NewHistogramDataPoint()
+	NewHistogramDataPoint().CopyTo(ms)
+	assert.True(t, ms.IsNil())
+	generateTestHistogramDataPoint().CopyTo(ms)
+	assert.EqualValues(t, generateTestHistogramDataPoint(), ms)
 }
 
 func TestHistogramDataPoint_LabelsMap(t *testing.T) {
@@ -896,6 +1042,21 @@ func TestHistogramBucketSlice_MoveTo(t *testing.T) {
 	}
 }
 
+func TestHistogramBucketSlice_CopyTo(t *testing.T) {
+	dest := NewHistogramBucketSlice()
+	// Test CopyTo to empty
+	NewHistogramBucketSlice().CopyTo(dest)
+	assert.EqualValues(t, NewHistogramBucketSlice(), dest)
+
+	// Test CopyTo larger slice
+	generateTestHistogramBucketSlice().CopyTo(dest)
+	assert.EqualValues(t, generateTestHistogramBucketSlice(), dest)
+
+	// Test CopyTo same size slice
+	generateTestHistogramBucketSlice().CopyTo(dest)
+	assert.EqualValues(t, generateTestHistogramBucketSlice(), dest)
+}
+
 func TestHistogramBucketSlice_Resize(t *testing.T) {
 	es := generateTestHistogramBucketSlice()
 	emptyVal := NewHistogramBucket()
@@ -941,9 +1102,17 @@ func TestHistogramBucketSlice_Resize(t *testing.T) {
 
 func TestHistogramBucket_InitEmpty(t *testing.T) {
 	ms := NewHistogramBucket()
-	assert.EqualValues(t, true, ms.IsNil())
+	assert.True(t, ms.IsNil())
 	ms.InitEmpty()
-	assert.EqualValues(t, false, ms.IsNil())
+	assert.False(t, ms.IsNil())
+}
+
+func TestHistogramBucket_CopyTo(t *testing.T) {
+	ms := NewHistogramBucket()
+	NewHistogramBucket().CopyTo(ms)
+	assert.True(t, ms.IsNil())
+	generateTestHistogramBucket().CopyTo(ms)
+	assert.EqualValues(t, generateTestHistogramBucket(), ms)
 }
 
 func TestHistogramBucket_Count(t *testing.T) {
@@ -967,9 +1136,17 @@ func TestHistogramBucket_Exemplar(t *testing.T) {
 
 func TestHistogramBucketExemplar_InitEmpty(t *testing.T) {
 	ms := NewHistogramBucketExemplar()
-	assert.EqualValues(t, true, ms.IsNil())
+	assert.True(t, ms.IsNil())
 	ms.InitEmpty()
-	assert.EqualValues(t, false, ms.IsNil())
+	assert.False(t, ms.IsNil())
+}
+
+func TestHistogramBucketExemplar_CopyTo(t *testing.T) {
+	ms := NewHistogramBucketExemplar()
+	NewHistogramBucketExemplar().CopyTo(ms)
+	assert.True(t, ms.IsNil())
+	generateTestHistogramBucketExemplar().CopyTo(ms)
+	assert.EqualValues(t, generateTestHistogramBucketExemplar(), ms)
 }
 
 func TestHistogramBucketExemplar_Timestamp(t *testing.T) {
@@ -1042,6 +1219,21 @@ func TestSummaryDataPointSlice_MoveTo(t *testing.T) {
 	}
 }
 
+func TestSummaryDataPointSlice_CopyTo(t *testing.T) {
+	dest := NewSummaryDataPointSlice()
+	// Test CopyTo to empty
+	NewSummaryDataPointSlice().CopyTo(dest)
+	assert.EqualValues(t, NewSummaryDataPointSlice(), dest)
+
+	// Test CopyTo larger slice
+	generateTestSummaryDataPointSlice().CopyTo(dest)
+	assert.EqualValues(t, generateTestSummaryDataPointSlice(), dest)
+
+	// Test CopyTo same size slice
+	generateTestSummaryDataPointSlice().CopyTo(dest)
+	assert.EqualValues(t, generateTestSummaryDataPointSlice(), dest)
+}
+
 func TestSummaryDataPointSlice_Resize(t *testing.T) {
 	es := generateTestSummaryDataPointSlice()
 	emptyVal := NewSummaryDataPoint()
@@ -1087,9 +1279,17 @@ func TestSummaryDataPointSlice_Resize(t *testing.T) {
 
 func TestSummaryDataPoint_InitEmpty(t *testing.T) {
 	ms := NewSummaryDataPoint()
-	assert.EqualValues(t, true, ms.IsNil())
+	assert.True(t, ms.IsNil())
 	ms.InitEmpty()
-	assert.EqualValues(t, false, ms.IsNil())
+	assert.False(t, ms.IsNil())
+}
+
+func TestSummaryDataPoint_CopyTo(t *testing.T) {
+	ms := NewSummaryDataPoint()
+	NewSummaryDataPoint().CopyTo(ms)
+	assert.True(t, ms.IsNil())
+	generateTestSummaryDataPoint().CopyTo(ms)
+	assert.EqualValues(t, generateTestSummaryDataPoint(), ms)
 }
 
 func TestSummaryDataPoint_LabelsMap(t *testing.T) {
@@ -1189,6 +1389,21 @@ func TestSummaryValueAtPercentileSlice_MoveTo(t *testing.T) {
 	}
 }
 
+func TestSummaryValueAtPercentileSlice_CopyTo(t *testing.T) {
+	dest := NewSummaryValueAtPercentileSlice()
+	// Test CopyTo to empty
+	NewSummaryValueAtPercentileSlice().CopyTo(dest)
+	assert.EqualValues(t, NewSummaryValueAtPercentileSlice(), dest)
+
+	// Test CopyTo larger slice
+	generateTestSummaryValueAtPercentileSlice().CopyTo(dest)
+	assert.EqualValues(t, generateTestSummaryValueAtPercentileSlice(), dest)
+
+	// Test CopyTo same size slice
+	generateTestSummaryValueAtPercentileSlice().CopyTo(dest)
+	assert.EqualValues(t, generateTestSummaryValueAtPercentileSlice(), dest)
+}
+
 func TestSummaryValueAtPercentileSlice_Resize(t *testing.T) {
 	es := generateTestSummaryValueAtPercentileSlice()
 	emptyVal := NewSummaryValueAtPercentile()
@@ -1234,9 +1449,17 @@ func TestSummaryValueAtPercentileSlice_Resize(t *testing.T) {
 
 func TestSummaryValueAtPercentile_InitEmpty(t *testing.T) {
 	ms := NewSummaryValueAtPercentile()
-	assert.EqualValues(t, true, ms.IsNil())
+	assert.True(t, ms.IsNil())
 	ms.InitEmpty()
-	assert.EqualValues(t, false, ms.IsNil())
+	assert.False(t, ms.IsNil())
+}
+
+func TestSummaryValueAtPercentile_CopyTo(t *testing.T) {
+	ms := NewSummaryValueAtPercentile()
+	NewSummaryValueAtPercentile().CopyTo(ms)
+	assert.True(t, ms.IsNil())
+	generateTestSummaryValueAtPercentile().CopyTo(ms)
+	assert.EqualValues(t, generateTestSummaryValueAtPercentile(), ms)
 }
 
 func TestSummaryValueAtPercentile_Percentile(t *testing.T) {

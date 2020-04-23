@@ -65,3 +65,15 @@ func (ms Resource) IsNil() bool {
 func (ms Resource) Attributes() AttributeMap {
 	return newAttributeMap(&(*ms.orig).Attributes)
 }
+
+// CopyTo copies all properties from the current struct to the dest.
+func (ms Resource) CopyTo(dest Resource) {
+	if ms.IsNil() {
+		*dest.orig = nil
+		return
+	}
+	if dest.IsNil() {
+		dest.InitEmpty()
+	}
+	ms.Attributes().CopyTo(dest.Attributes())
+}
