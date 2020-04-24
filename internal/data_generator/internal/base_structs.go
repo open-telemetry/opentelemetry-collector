@@ -78,9 +78,33 @@ func (es ${structName}) MoveTo(dest ${structName}) {
 	return
 }
 
+// CopyTo copies all elements from the current slice to the dest.
+func (es ${structName}) CopyTo(dest ${structName}) {
+	newLen := es.Len()
+	if newLen == 0 {
+		*dest.orig = []*${originName}(nil)
+		return
+	}
+	oldLen := dest.Len()
+	if newLen <= oldLen {
+		(*dest.orig) = (*dest.orig)[:newLen]
+		for i, el := range *es.orig {
+			new${elementName}(&el).CopyTo(new${elementName}(&(*dest.orig)[i]))
+		}
+		return
+	}
+	origs := make([]${originName}, newLen)
+	wrappers := make([]*${originName}, newLen)
+	for i, el := range *es.orig {
+		wrappers[i] = &origs[i]
+		new${elementName}(&el).CopyTo(new${elementName}(&wrappers[i]))
+	}
+    *dest.orig = wrappers
+}
+
 // Resize is an operation that resizes the slice:
 // 1. If newLen is 0 then the slice is replaced with a nil slice.
-// 2. If the newLen < len then equivalent with slice[0:newLen].
+// 2. If the newLen <= len then equivalent with slice[0:newLen].
 // 3. If the newLen > len then (newLen - len) empty elements will be appended to the slice.
 //
 // Here is how a new ${structName} can be initialized:
@@ -96,8 +120,8 @@ func (es ${structName}) Resize(newLen int) {
 		return
 	}
 	oldLen := len(*es.orig)
-	if newLen < oldLen {
-		(*es.orig) = (*es.orig)[0:newLen]
+	if newLen <= oldLen {
+		(*es.orig) = (*es.orig)[:newLen]
 		return
 	}
 	// TODO: Benchmark and optimize this logic.
@@ -150,6 +174,21 @@ func Test${structName}_MoveTo(t *testing.T) {
 		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
 		assert.EqualValues(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
 	}
+}
+
+func Test${structName}_CopyTo(t *testing.T) {
+	dest := New${structName}()
+	// Test CopyTo to empty
+	New${structName}().CopyTo(dest)
+	assert.EqualValues(t, New${structName}(), dest)
+
+	// Test CopyTo larger slice
+	generateTest${structName}().CopyTo(dest)
+	assert.EqualValues(t, generateTest${structName}(), dest)
+
+	// Test CopyTo same size slice
+	generateTest${structName}().CopyTo(dest)
+	assert.EqualValues(t, generateTest${structName}(), dest)
 }
 
 func Test${structName}_Resize(t *testing.T) {
@@ -246,11 +285,31 @@ func (ms ${structName}) IsNil() bool {
 	return *ms.orig == nil
 }`
 
+const messageCopyToHeaderTemplate = `// CopyTo copies all properties from the current struct to the dest.
+func (ms ${structName}) CopyTo(dest ${structName}) {
+	if ms.IsNil() {
+		*dest.orig = nil
+		return
+	}
+	if dest.IsNil() {
+		dest.InitEmpty()
+	}`
+
+const messageCopyToFooterTemplate = `}`
+
 const messageTestTemplate = `func Test${structName}_InitEmpty(t *testing.T) {
 	ms := New${structName}()
-	assert.EqualValues(t, true, ms.IsNil())
+	assert.True(t, ms.IsNil())
 	ms.InitEmpty()
-	assert.EqualValues(t, false, ms.IsNil())
+	assert.False(t, ms.IsNil())
+}
+
+func Test${structName}_CopyTo(t *testing.T) {
+	ms := New${structName}()
+	New${structName}().CopyTo(ms)
+	assert.True(t, ms.IsNil())
+	generateTest${structName}().CopyTo(ms)
+	assert.EqualValues(t, generateTest${structName}(), ms)
 }`
 
 const messageGenerateTestTemplate = `func generateTest${structName}() ${structName} {
@@ -349,6 +408,27 @@ func (ms *messageStruct) generateStruct(sb *strings.Builder) {
 		sb.WriteString(newLine + newLine)
 		f.generateAccessors(ms, sb)
 	}
+	sb.WriteString(newLine + newLine)
+	sb.WriteString(os.Expand(messageCopyToHeaderTemplate, func(name string) string {
+		switch name {
+		case "structName":
+			return ms.structName
+		default:
+			panic(name)
+		}
+	}))
+	// Write accessors CopyTo for the struct
+	for _, f := range ms.fields {
+		sb.WriteString(newLine)
+		f.generateCopyToValue(sb)
+	}
+	sb.WriteString(newLine)
+	sb.WriteString(os.Expand(messageCopyToFooterTemplate, func(name string) string {
+		switch name {
+		default:
+			panic(name)
+		}
+	}))
 }
 
 func (ms *messageStruct) generateTests(sb *strings.Builder) {
@@ -360,10 +440,10 @@ func (ms *messageStruct) generateTests(sb *strings.Builder) {
 			panic(name)
 		}
 	}))
-	// Write accessors tests for the fields
+	// Write accessors tests for the struct
 	for _, f := range ms.fields {
 		sb.WriteString(newLine + newLine)
-		f.generateAccessorsTests(ms, sb)
+		f.generateAccessorsTest(ms, sb)
 	}
 }
 
@@ -378,7 +458,6 @@ func (ms *messageStruct) generateTestValueHelpers(sb *strings.Builder) {
 			panic(name)
 		}
 	}))
-
 	sb.WriteString(newLine + newLine)
 	sb.WriteString(os.Expand(messageFillTestHeaderTemplate, func(name string) string {
 		switch name {

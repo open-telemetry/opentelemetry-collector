@@ -25,9 +25,17 @@ import (
 
 func TestResource_InitEmpty(t *testing.T) {
 	ms := NewResource()
-	assert.EqualValues(t, true, ms.IsNil())
+	assert.True(t, ms.IsNil())
 	ms.InitEmpty()
-	assert.EqualValues(t, false, ms.IsNil())
+	assert.False(t, ms.IsNil())
+}
+
+func TestResource_CopyTo(t *testing.T) {
+	ms := NewResource()
+	NewResource().CopyTo(ms)
+	assert.True(t, ms.IsNil())
+	generateTestResource().CopyTo(ms)
+	assert.EqualValues(t, generateTestResource(), ms)
 }
 
 func TestResource_Attributes(t *testing.T) {

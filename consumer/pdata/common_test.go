@@ -290,7 +290,7 @@ func TestAttributeMapIterationNil(t *testing.T) {
 	})
 }
 
-func TestAttributeMapIteration(t *testing.T) {
+func TestAttributeMap_ForEach(t *testing.T) {
 	rawMap := map[string]AttributeValue{
 		"k_string": NewAttributeValueString("123"),
 		"k_int":    NewAttributeValueInt(123),
@@ -307,7 +307,7 @@ func TestAttributeMapIteration(t *testing.T) {
 	assert.EqualValues(t, 0, len(rawMap))
 }
 
-func TestAttributeMapIterationWithNils(t *testing.T) {
+func TestAttributeMap_ForEach_WithNils(t *testing.T) {
 	rawMap := map[string]AttributeValue{
 		"k_string": NewAttributeValueString("123"),
 		"k_int":    NewAttributeValueInt(123),
@@ -335,6 +335,41 @@ func TestAttributeMapIterationWithNils(t *testing.T) {
 		delete(rawMap, k)
 	})
 	assert.EqualValues(t, 0, len(rawMap))
+}
+
+func TestAttributeMap_InitFromMap(t *testing.T) {
+	am := NewAttributeMap().InitFromMap(map[string]AttributeValue(nil))
+	assert.EqualValues(t, NewAttributeMap(), am)
+
+	rawMap := map[string]AttributeValue{
+		"k_string": NewAttributeValueString("123"),
+		"k_int":    NewAttributeValueInt(123),
+		"k_double": NewAttributeValueDouble(1.23),
+		"k_bool":   NewAttributeValueBool(true),
+	}
+	rawOrig := []*otlpcommon.AttributeKeyValue{
+		newAttributeKeyValueString("k_string", "123"),
+		newAttributeKeyValueInt("k_int", 123),
+		newAttributeKeyValueDouble("k_double", 1.23),
+		newAttributeKeyValueBool("k_bool", true),
+	}
+	am = NewAttributeMap().InitFromMap(rawMap)
+	assert.EqualValues(t, AttributeMap{orig: &rawOrig}.Sort(), am.Sort())
+}
+
+func TestAttributeMap_CopyTo(t *testing.T) {
+	dest := NewAttributeMap()
+	// Test CopyTo to empty
+	NewAttributeMap().CopyTo(dest)
+	assert.EqualValues(t, 0, dest.Cap())
+
+	// Test CopyTo larger slice
+	generateTestAttributeMap().CopyTo(dest)
+	assert.EqualValues(t, generateTestAttributeMap(), dest)
+
+	// Test CopyTo same size slice
+	generateTestAttributeMap().CopyTo(dest)
+	assert.EqualValues(t, generateTestAttributeMap(), dest)
 }
 
 func TestNilStringMap(t *testing.T) {
@@ -481,7 +516,7 @@ func TestStringMapIterationNil(t *testing.T) {
 	})
 }
 
-func TestStringMapIteration(t *testing.T) {
+func TestStringMap_ForEach(t *testing.T) {
 	rawMap := map[string]string{"k0": "v0", "k1": "v1", "k2": "v2"}
 	sm := NewStringMap().InitFromMap(rawMap)
 	assert.EqualValues(t, 3, sm.Cap())
@@ -493,7 +528,7 @@ func TestStringMapIteration(t *testing.T) {
 	assert.EqualValues(t, 0, len(rawMap))
 }
 
-func TestStringMapIterationWithNils(t *testing.T) {
+func TestStringMap_ForEach_WithNils(t *testing.T) {
 	rawMap := map[string]string{"k0": "v0", "k1": "v1", "k2": "v2"}
 	rawOrigWithNil := []*otlpcommon.StringKeyValue{
 		nil,
@@ -523,6 +558,44 @@ func TestStringMapIterationWithNils(t *testing.T) {
 		delete(rawMap, k)
 	})
 	assert.EqualValues(t, 0, len(rawMap))
+}
+
+func TestStringMap_CopyTo(t *testing.T) {
+	dest := NewStringMap()
+	// Test CopyTo to empty
+	NewStringMap().CopyTo(dest)
+	assert.EqualValues(t, 0, dest.Cap())
+
+	// Test CopyTo larger slice
+	generateTestStringMap().CopyTo(dest)
+	assert.EqualValues(t, generateTestStringMap(), dest)
+
+	// Test CopyTo same size slice
+	generateTestStringMap().CopyTo(dest)
+	assert.EqualValues(t, generateTestStringMap(), dest)
+}
+
+func TestStringMap_InitFromMap(t *testing.T) {
+	sm := NewStringMap().InitFromMap(map[string]string(nil))
+	assert.EqualValues(t, NewStringMap(), sm)
+
+	rawMap := map[string]string{"k0": "v0", "k1": "v1", "k2": "v2"}
+	rawOrig := []*otlpcommon.StringKeyValue{
+		{
+			Key:   "k0",
+			Value: "v0",
+		},
+		{
+			Key:   "k1",
+			Value: "v1",
+		},
+		{
+			Key:   "k2",
+			Value: "v2",
+		},
+	}
+	sm = NewStringMap().InitFromMap(rawMap)
+	assert.EqualValues(t, StringMap{orig: &rawOrig}.Sort(), sm.Sort())
 }
 
 func BenchmarkAttributeValue_CopyFrom(b *testing.B) {

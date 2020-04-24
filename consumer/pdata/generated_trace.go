@@ -80,9 +80,33 @@ func (es ResourceSpansSlice) MoveTo(dest ResourceSpansSlice) {
 	return
 }
 
+// CopyTo copies all elements from the current slice to the dest.
+func (es ResourceSpansSlice) CopyTo(dest ResourceSpansSlice) {
+	newLen := es.Len()
+	if newLen == 0 {
+		*dest.orig = []*otlptrace.ResourceSpans(nil)
+		return
+	}
+	oldLen := dest.Len()
+	if newLen <= oldLen {
+		(*dest.orig) = (*dest.orig)[:newLen]
+		for i, el := range *es.orig {
+			newResourceSpans(&el).CopyTo(newResourceSpans(&(*dest.orig)[i]))
+		}
+		return
+	}
+	origs := make([]otlptrace.ResourceSpans, newLen)
+	wrappers := make([]*otlptrace.ResourceSpans, newLen)
+	for i, el := range *es.orig {
+		wrappers[i] = &origs[i]
+		newResourceSpans(&el).CopyTo(newResourceSpans(&wrappers[i]))
+	}
+    *dest.orig = wrappers
+}
+
 // Resize is an operation that resizes the slice:
 // 1. If newLen is 0 then the slice is replaced with a nil slice.
-// 2. If the newLen < len then equivalent with slice[0:newLen].
+// 2. If the newLen <= len then equivalent with slice[0:newLen].
 // 3. If the newLen > len then (newLen - len) empty elements will be appended to the slice.
 //
 // Here is how a new ResourceSpansSlice can be initialized:
@@ -98,8 +122,8 @@ func (es ResourceSpansSlice) Resize(newLen int) {
 		return
 	}
 	oldLen := len(*es.orig)
-	if newLen < oldLen {
-		(*es.orig) = (*es.orig)[0:newLen]
+	if newLen <= oldLen {
+		(*es.orig) = (*es.orig)[:newLen]
 		return
 	}
 	// TODO: Benchmark and optimize this logic.
@@ -166,6 +190,19 @@ func (ms ResourceSpans) InstrumentationLibrarySpans() InstrumentationLibrarySpan
 	return newInstrumentationLibrarySpansSlice(&(*ms.orig).InstrumentationLibrarySpans)
 }
 
+// CopyTo copies all properties from the current struct to the dest.
+func (ms ResourceSpans) CopyTo(dest ResourceSpans) {
+	if ms.IsNil() {
+		*dest.orig = nil
+		return
+	}
+	if dest.IsNil() {
+		dest.InitEmpty()
+	}
+	ms.Resource().CopyTo(dest.Resource())
+	ms.InstrumentationLibrarySpans().CopyTo(dest.InstrumentationLibrarySpans())
+}
+
 // InstrumentationLibrarySpansSlice logically represents a slice of InstrumentationLibrarySpans.
 //
 // This is a reference type, if passed by value and callee modifies it the
@@ -225,9 +262,33 @@ func (es InstrumentationLibrarySpansSlice) MoveTo(dest InstrumentationLibrarySpa
 	return
 }
 
+// CopyTo copies all elements from the current slice to the dest.
+func (es InstrumentationLibrarySpansSlice) CopyTo(dest InstrumentationLibrarySpansSlice) {
+	newLen := es.Len()
+	if newLen == 0 {
+		*dest.orig = []*otlptrace.InstrumentationLibrarySpans(nil)
+		return
+	}
+	oldLen := dest.Len()
+	if newLen <= oldLen {
+		(*dest.orig) = (*dest.orig)[:newLen]
+		for i, el := range *es.orig {
+			newInstrumentationLibrarySpans(&el).CopyTo(newInstrumentationLibrarySpans(&(*dest.orig)[i]))
+		}
+		return
+	}
+	origs := make([]otlptrace.InstrumentationLibrarySpans, newLen)
+	wrappers := make([]*otlptrace.InstrumentationLibrarySpans, newLen)
+	for i, el := range *es.orig {
+		wrappers[i] = &origs[i]
+		newInstrumentationLibrarySpans(&el).CopyTo(newInstrumentationLibrarySpans(&wrappers[i]))
+	}
+    *dest.orig = wrappers
+}
+
 // Resize is an operation that resizes the slice:
 // 1. If newLen is 0 then the slice is replaced with a nil slice.
-// 2. If the newLen < len then equivalent with slice[0:newLen].
+// 2. If the newLen <= len then equivalent with slice[0:newLen].
 // 3. If the newLen > len then (newLen - len) empty elements will be appended to the slice.
 //
 // Here is how a new InstrumentationLibrarySpansSlice can be initialized:
@@ -243,8 +304,8 @@ func (es InstrumentationLibrarySpansSlice) Resize(newLen int) {
 		return
 	}
 	oldLen := len(*es.orig)
-	if newLen < oldLen {
-		(*es.orig) = (*es.orig)[0:newLen]
+	if newLen <= oldLen {
+		(*es.orig) = (*es.orig)[:newLen]
 		return
 	}
 	// TODO: Benchmark and optimize this logic.
@@ -311,6 +372,19 @@ func (ms InstrumentationLibrarySpans) Spans() SpanSlice {
 	return newSpanSlice(&(*ms.orig).Spans)
 }
 
+// CopyTo copies all properties from the current struct to the dest.
+func (ms InstrumentationLibrarySpans) CopyTo(dest InstrumentationLibrarySpans) {
+	if ms.IsNil() {
+		*dest.orig = nil
+		return
+	}
+	if dest.IsNil() {
+		dest.InitEmpty()
+	}
+	ms.InstrumentationLibrary().CopyTo(dest.InstrumentationLibrary())
+	ms.Spans().CopyTo(dest.Spans())
+}
+
 // SpanSlice logically represents a slice of Span.
 //
 // This is a reference type, if passed by value and callee modifies it the
@@ -370,9 +444,33 @@ func (es SpanSlice) MoveTo(dest SpanSlice) {
 	return
 }
 
+// CopyTo copies all elements from the current slice to the dest.
+func (es SpanSlice) CopyTo(dest SpanSlice) {
+	newLen := es.Len()
+	if newLen == 0 {
+		*dest.orig = []*otlptrace.Span(nil)
+		return
+	}
+	oldLen := dest.Len()
+	if newLen <= oldLen {
+		(*dest.orig) = (*dest.orig)[:newLen]
+		for i, el := range *es.orig {
+			newSpan(&el).CopyTo(newSpan(&(*dest.orig)[i]))
+		}
+		return
+	}
+	origs := make([]otlptrace.Span, newLen)
+	wrappers := make([]*otlptrace.Span, newLen)
+	for i, el := range *es.orig {
+		wrappers[i] = &origs[i]
+		newSpan(&el).CopyTo(newSpan(&wrappers[i]))
+	}
+    *dest.orig = wrappers
+}
+
 // Resize is an operation that resizes the slice:
 // 1. If newLen is 0 then the slice is replaced with a nil slice.
-// 2. If the newLen < len then equivalent with slice[0:newLen].
+// 2. If the newLen <= len then equivalent with slice[0:newLen].
 // 3. If the newLen > len then (newLen - len) empty elements will be appended to the slice.
 //
 // Here is how a new SpanSlice can be initialized:
@@ -388,8 +486,8 @@ func (es SpanSlice) Resize(newLen int) {
 		return
 	}
 	oldLen := len(*es.orig)
-	if newLen < oldLen {
-		(*es.orig) = (*es.orig)[0:newLen]
+	if newLen <= oldLen {
+		(*es.orig) = (*es.orig)[:newLen]
 		return
 	}
 	// TODO: Benchmark and optimize this logic.
@@ -625,6 +723,32 @@ func (ms Span) Status() SpanStatus {
 	return newSpanStatus(&(*ms.orig).Status)
 }
 
+// CopyTo copies all properties from the current struct to the dest.
+func (ms Span) CopyTo(dest Span) {
+	if ms.IsNil() {
+		*dest.orig = nil
+		return
+	}
+	if dest.IsNil() {
+		dest.InitEmpty()
+	}
+	dest.SetTraceID(ms.TraceID())
+	dest.SetSpanID(ms.SpanID())
+	dest.SetTraceState(ms.TraceState())
+	dest.SetParentSpanID(ms.ParentSpanID())
+	dest.SetName(ms.Name())
+	dest.SetKind(ms.Kind())
+	dest.SetStartTime(ms.StartTime())
+	dest.SetEndTime(ms.EndTime())
+	ms.Attributes().CopyTo(dest.Attributes())
+	dest.SetDroppedAttributesCount(ms.DroppedAttributesCount())
+	ms.Events().CopyTo(dest.Events())
+	dest.SetDroppedEventsCount(ms.DroppedEventsCount())
+	ms.Links().CopyTo(dest.Links())
+	dest.SetDroppedLinksCount(ms.DroppedLinksCount())
+	ms.Status().CopyTo(dest.Status())
+}
+
 // SpanEventSlice logically represents a slice of SpanEvent.
 //
 // This is a reference type, if passed by value and callee modifies it the
@@ -684,9 +808,33 @@ func (es SpanEventSlice) MoveTo(dest SpanEventSlice) {
 	return
 }
 
+// CopyTo copies all elements from the current slice to the dest.
+func (es SpanEventSlice) CopyTo(dest SpanEventSlice) {
+	newLen := es.Len()
+	if newLen == 0 {
+		*dest.orig = []*otlptrace.Span_Event(nil)
+		return
+	}
+	oldLen := dest.Len()
+	if newLen <= oldLen {
+		(*dest.orig) = (*dest.orig)[:newLen]
+		for i, el := range *es.orig {
+			newSpanEvent(&el).CopyTo(newSpanEvent(&(*dest.orig)[i]))
+		}
+		return
+	}
+	origs := make([]otlptrace.Span_Event, newLen)
+	wrappers := make([]*otlptrace.Span_Event, newLen)
+	for i, el := range *es.orig {
+		wrappers[i] = &origs[i]
+		newSpanEvent(&el).CopyTo(newSpanEvent(&wrappers[i]))
+	}
+    *dest.orig = wrappers
+}
+
 // Resize is an operation that resizes the slice:
 // 1. If newLen is 0 then the slice is replaced with a nil slice.
-// 2. If the newLen < len then equivalent with slice[0:newLen].
+// 2. If the newLen <= len then equivalent with slice[0:newLen].
 // 3. If the newLen > len then (newLen - len) empty elements will be appended to the slice.
 //
 // Here is how a new SpanEventSlice can be initialized:
@@ -702,8 +850,8 @@ func (es SpanEventSlice) Resize(newLen int) {
 		return
 	}
 	oldLen := len(*es.orig)
-	if newLen < oldLen {
-		(*es.orig) = (*es.orig)[0:newLen]
+	if newLen <= oldLen {
+		(*es.orig) = (*es.orig)[:newLen]
 		return
 	}
 	// TODO: Benchmark and optimize this logic.
@@ -803,6 +951,21 @@ func (ms SpanEvent) SetDroppedAttributesCount(v uint32) {
 	(*ms.orig).DroppedAttributesCount = v
 }
 
+// CopyTo copies all properties from the current struct to the dest.
+func (ms SpanEvent) CopyTo(dest SpanEvent) {
+	if ms.IsNil() {
+		*dest.orig = nil
+		return
+	}
+	if dest.IsNil() {
+		dest.InitEmpty()
+	}
+	dest.SetTimestamp(ms.Timestamp())
+	dest.SetName(ms.Name())
+	ms.Attributes().CopyTo(dest.Attributes())
+	dest.SetDroppedAttributesCount(ms.DroppedAttributesCount())
+}
+
 // SpanLinkSlice logically represents a slice of SpanLink.
 //
 // This is a reference type, if passed by value and callee modifies it the
@@ -862,9 +1025,33 @@ func (es SpanLinkSlice) MoveTo(dest SpanLinkSlice) {
 	return
 }
 
+// CopyTo copies all elements from the current slice to the dest.
+func (es SpanLinkSlice) CopyTo(dest SpanLinkSlice) {
+	newLen := es.Len()
+	if newLen == 0 {
+		*dest.orig = []*otlptrace.Span_Link(nil)
+		return
+	}
+	oldLen := dest.Len()
+	if newLen <= oldLen {
+		(*dest.orig) = (*dest.orig)[:newLen]
+		for i, el := range *es.orig {
+			newSpanLink(&el).CopyTo(newSpanLink(&(*dest.orig)[i]))
+		}
+		return
+	}
+	origs := make([]otlptrace.Span_Link, newLen)
+	wrappers := make([]*otlptrace.Span_Link, newLen)
+	for i, el := range *es.orig {
+		wrappers[i] = &origs[i]
+		newSpanLink(&el).CopyTo(newSpanLink(&wrappers[i]))
+	}
+    *dest.orig = wrappers
+}
+
 // Resize is an operation that resizes the slice:
 // 1. If newLen is 0 then the slice is replaced with a nil slice.
-// 2. If the newLen < len then equivalent with slice[0:newLen].
+// 2. If the newLen <= len then equivalent with slice[0:newLen].
 // 3. If the newLen > len then (newLen - len) empty elements will be appended to the slice.
 //
 // Here is how a new SpanLinkSlice can be initialized:
@@ -880,8 +1067,8 @@ func (es SpanLinkSlice) Resize(newLen int) {
 		return
 	}
 	oldLen := len(*es.orig)
-	if newLen < oldLen {
-		(*es.orig) = (*es.orig)[0:newLen]
+	if newLen <= oldLen {
+		(*es.orig) = (*es.orig)[:newLen]
 		return
 	}
 	// TODO: Benchmark and optimize this logic.
@@ -995,6 +1182,22 @@ func (ms SpanLink) SetDroppedAttributesCount(v uint32) {
 	(*ms.orig).DroppedAttributesCount = v
 }
 
+// CopyTo copies all properties from the current struct to the dest.
+func (ms SpanLink) CopyTo(dest SpanLink) {
+	if ms.IsNil() {
+		*dest.orig = nil
+		return
+	}
+	if dest.IsNil() {
+		dest.InitEmpty()
+	}
+	dest.SetTraceID(ms.TraceID())
+	dest.SetSpanID(ms.SpanID())
+	dest.SetTraceState(ms.TraceState())
+	ms.Attributes().CopyTo(dest.Attributes())
+	dest.SetDroppedAttributesCount(ms.DroppedAttributesCount())
+}
+
 // SpanStatus is an optional final status for this span. Semantically when Status wasn't set
 // it is means span ended without errors and assume Status.Ok (code = 0).
 //
@@ -1060,4 +1263,17 @@ func (ms SpanStatus) Message() string {
 // Important: This causes a runtime error if IsNil() returns "true".
 func (ms SpanStatus) SetMessage(v string) {
 	(*ms.orig).Message = v
+}
+
+// CopyTo copies all properties from the current struct to the dest.
+func (ms SpanStatus) CopyTo(dest SpanStatus) {
+	if ms.IsNil() {
+		*dest.orig = nil
+		return
+	}
+	if dest.IsNil() {
+		dest.InitEmpty()
+	}
+	dest.SetCode(ms.Code())
+	dest.SetMessage(ms.Message())
 }

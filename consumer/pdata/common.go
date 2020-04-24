@@ -250,7 +250,6 @@ func (am AttributeMap) InitFromMap(attrMap map[string]AttributeValue) AttributeM
 	}
 	origs := make([]otlpcommon.AttributeKeyValue, len(attrMap))
 	wrappers := make([]*otlpcommon.AttributeKeyValue, len(attrMap))
-
 	ix := 0
 	for k, v := range attrMap {
 		wrappers[ix] = &origs[ix]
@@ -258,9 +257,7 @@ func (am AttributeMap) InitFromMap(attrMap map[string]AttributeValue) AttributeM
 		AttributeValue{wrappers[ix]}.CopyFrom(v)
 		ix++
 	}
-
 	*am.orig = wrappers
-
 	return am
 }
 
@@ -471,6 +468,32 @@ func (am AttributeMap) ForEach(f func(k string, v AttributeValue)) {
 	}
 }
 
+// CopyTo copies all elements from the current map to the dest.
+func (am AttributeMap) CopyTo(dest AttributeMap) {
+	newLen := len(*am.orig)
+	if newLen == 0 {
+		*dest.orig = []*otlpcommon.AttributeKeyValue(nil)
+		return
+	}
+	oldLen := len(*dest.orig)
+	if newLen <= oldLen {
+		*dest.orig = (*dest.orig)[:newLen]
+		for i, kv := range *am.orig {
+			(*dest.orig)[i].Key = kv.Key
+			AttributeValue{(*dest.orig)[i]}.CopyFrom(AttributeValue{kv})
+		}
+		return
+	}
+	origs := make([]otlpcommon.AttributeKeyValue, len(*am.orig))
+	wrappers := make([]*otlpcommon.AttributeKeyValue, len(*am.orig))
+	for i, kv := range *am.orig {
+		wrappers[i] = &origs[i]
+		wrappers[i].Key = kv.Key
+		AttributeValue{wrappers[i]}.CopyFrom(AttributeValue{kv})
+	}
+	*dest.orig = wrappers
+}
+
 // StringValue stores a string value.
 //
 // Intended to be passed by value since internally it is just a pointer to actual
@@ -530,7 +553,6 @@ func (sm StringMap) InitFromMap(attrMap map[string]string) StringMap {
 	}
 	origs := make([]otlpcommon.StringKeyValue, len(attrMap))
 	wrappers := make([]*otlpcommon.StringKeyValue, len(attrMap))
-
 	ix := 0
 	for k, v := range attrMap {
 		wrappers[ix] = &origs[ix]
@@ -613,6 +635,32 @@ func (sm StringMap) ForEach(f func(k string, v StringValue)) {
 		}
 		f(kv.Key, StringValue{kv})
 	}
+}
+
+// CopyTo copies all elements from the current map to the dest.
+func (sm StringMap) CopyTo(dest StringMap) {
+	newLen := len(*sm.orig)
+	if newLen == 0 {
+		*dest.orig = []*otlpcommon.StringKeyValue(nil)
+		return
+	}
+	oldLen := len(*dest.orig)
+	if newLen <= oldLen {
+		*dest.orig = (*dest.orig)[:newLen]
+		for i, kv := range *sm.orig {
+			(*dest.orig)[i].Key = kv.Key
+			(*dest.orig)[i].Value = kv.Value
+		}
+		return
+	}
+	origs := make([]otlpcommon.StringKeyValue, len(*sm.orig))
+	wrappers := make([]*otlpcommon.StringKeyValue, len(*sm.orig))
+	for i, kv := range *sm.orig {
+		wrappers[i] = &origs[i]
+		wrappers[i].Key = kv.Key
+		wrappers[i].Value = kv.Value
+	}
+	*dest.orig = wrappers
 }
 
 // Sort sorts the entries in the StringMap so two instances can be compared.

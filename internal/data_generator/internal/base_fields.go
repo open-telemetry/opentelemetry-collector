@@ -95,9 +95,11 @@ func (ms ${structName}) Set${fieldName}(v ${returnType}) {
 type baseField interface {
 	generateAccessors(ms *messageStruct, sb *strings.Builder)
 
-	generateAccessorsTests(ms *messageStruct, sb *strings.Builder)
+	generateAccessorsTest(ms *messageStruct, sb *strings.Builder)
 
 	generateSetWithTestValue(sb *strings.Builder)
+
+	generateCopyToValue(sb *strings.Builder)
 }
 
 type sliceField struct {
@@ -123,7 +125,7 @@ func (sf *sliceField) generateAccessors(ms *messageStruct, sb *strings.Builder) 
 	}))
 }
 
-func (sf *sliceField) generateAccessorsTests(ms *messageStruct, sb *strings.Builder) {
+func (sf *sliceField) generateAccessorsTest(ms *messageStruct, sb *strings.Builder) {
 	sb.WriteString(os.Expand(accessorsSliceTestTemplate, func(name string) string {
 		switch name {
 		case "structName":
@@ -140,6 +142,10 @@ func (sf *sliceField) generateAccessorsTests(ms *messageStruct, sb *strings.Buil
 
 func (sf *sliceField) generateSetWithTestValue(sb *strings.Builder) {
 	sb.WriteString("\tfillTest" + sf.returnSlice.structName + "(tv." + sf.fieldMame + "())")
+}
+
+func (sf *sliceField) generateCopyToValue(sb *strings.Builder) {
+	sb.WriteString("\tms." + sf.fieldMame + "().CopyTo(dest." + sf.fieldMame + "())")
 }
 
 var _ baseField = (*sliceField)(nil)
@@ -171,7 +177,7 @@ func (mf *messageField) generateAccessors(ms *messageStruct, sb *strings.Builder
 	}))
 }
 
-func (mf *messageField) generateAccessorsTests(ms *messageStruct, sb *strings.Builder) {
+func (mf *messageField) generateAccessorsTest(ms *messageStruct, sb *strings.Builder) {
 	sb.WriteString(os.Expand(accessorsMessageTestTemplate, func(name string) string {
 		switch name {
 		case "structName":
@@ -189,6 +195,10 @@ func (mf *messageField) generateAccessorsTests(ms *messageStruct, sb *strings.Bu
 func (mf *messageField) generateSetWithTestValue(sb *strings.Builder) {
 	sb.WriteString("\ttv." + mf.fieldMame + "().InitEmpty()\n")
 	sb.WriteString("\tfillTest" + mf.returnMessage.structName + "(tv." + mf.fieldMame + "())")
+}
+
+func (mf *messageField) generateCopyToValue(sb *strings.Builder) {
+	sb.WriteString("\tms." + mf.fieldMame + "().CopyTo(dest." + mf.fieldMame + "())")
 }
 
 var _ baseField = (*messageField)(nil)
@@ -220,7 +230,7 @@ func (pf *primitiveField) generateAccessors(ms *messageStruct, sb *strings.Build
 	}))
 }
 
-func (pf *primitiveField) generateAccessorsTests(ms *messageStruct, sb *strings.Builder) {
+func (pf *primitiveField) generateAccessorsTest(ms *messageStruct, sb *strings.Builder) {
 	sb.WriteString(os.Expand(accessorsPrimitiveTestTemplate, func(name string) string {
 		switch name {
 		case "structName":
@@ -239,6 +249,10 @@ func (pf *primitiveField) generateAccessorsTests(ms *messageStruct, sb *strings.
 
 func (pf *primitiveField) generateSetWithTestValue(sb *strings.Builder) {
 	sb.WriteString("\ttv.Set" + pf.fieldMame + "(" + pf.testVal + ")")
+}
+
+func (pf *primitiveField) generateCopyToValue(sb *strings.Builder) {
+	sb.WriteString("\tdest.Set" + pf.fieldMame + "(ms." + pf.fieldMame + "())")
 }
 
 var _ baseField = (*primitiveField)(nil)
@@ -274,7 +288,7 @@ func (ptf *primitiveTypedField) generateAccessors(ms *messageStruct, sb *strings
 	}))
 }
 
-func (ptf *primitiveTypedField) generateAccessorsTests(ms *messageStruct, sb *strings.Builder) {
+func (ptf *primitiveTypedField) generateAccessorsTest(ms *messageStruct, sb *strings.Builder) {
 	sb.WriteString(os.Expand(accessorsPrimitiveTestTemplate, func(name string) string {
 		switch name {
 		case "structName":
@@ -293,6 +307,10 @@ func (ptf *primitiveTypedField) generateAccessorsTests(ms *messageStruct, sb *st
 
 func (ptf *primitiveTypedField) generateSetWithTestValue(sb *strings.Builder) {
 	sb.WriteString("\ttv.Set" + ptf.fieldMame + "(" + ptf.testVal + ")")
+}
+
+func (ptf *primitiveTypedField) generateCopyToValue(sb *strings.Builder) {
+	sb.WriteString("\tdest.Set" + ptf.fieldMame + "(ms." + ptf.fieldMame + "())")
 }
 
 var _ baseField = (*primitiveTypedField)(nil)

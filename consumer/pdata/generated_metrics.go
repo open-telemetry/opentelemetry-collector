@@ -80,9 +80,33 @@ func (es ResourceMetricsSlice) MoveTo(dest ResourceMetricsSlice) {
 	return
 }
 
+// CopyTo copies all elements from the current slice to the dest.
+func (es ResourceMetricsSlice) CopyTo(dest ResourceMetricsSlice) {
+	newLen := es.Len()
+	if newLen == 0 {
+		*dest.orig = []*otlpmetrics.ResourceMetrics(nil)
+		return
+	}
+	oldLen := dest.Len()
+	if newLen <= oldLen {
+		(*dest.orig) = (*dest.orig)[:newLen]
+		for i, el := range *es.orig {
+			newResourceMetrics(&el).CopyTo(newResourceMetrics(&(*dest.orig)[i]))
+		}
+		return
+	}
+	origs := make([]otlpmetrics.ResourceMetrics, newLen)
+	wrappers := make([]*otlpmetrics.ResourceMetrics, newLen)
+	for i, el := range *es.orig {
+		wrappers[i] = &origs[i]
+		newResourceMetrics(&el).CopyTo(newResourceMetrics(&wrappers[i]))
+	}
+    *dest.orig = wrappers
+}
+
 // Resize is an operation that resizes the slice:
 // 1. If newLen is 0 then the slice is replaced with a nil slice.
-// 2. If the newLen < len then equivalent with slice[0:newLen].
+// 2. If the newLen <= len then equivalent with slice[0:newLen].
 // 3. If the newLen > len then (newLen - len) empty elements will be appended to the slice.
 //
 // Here is how a new ResourceMetricsSlice can be initialized:
@@ -98,8 +122,8 @@ func (es ResourceMetricsSlice) Resize(newLen int) {
 		return
 	}
 	oldLen := len(*es.orig)
-	if newLen < oldLen {
-		(*es.orig) = (*es.orig)[0:newLen]
+	if newLen <= oldLen {
+		(*es.orig) = (*es.orig)[:newLen]
 		return
 	}
 	// TODO: Benchmark and optimize this logic.
@@ -166,6 +190,19 @@ func (ms ResourceMetrics) InstrumentationLibraryMetrics() InstrumentationLibrary
 	return newInstrumentationLibraryMetricsSlice(&(*ms.orig).InstrumentationLibraryMetrics)
 }
 
+// CopyTo copies all properties from the current struct to the dest.
+func (ms ResourceMetrics) CopyTo(dest ResourceMetrics) {
+	if ms.IsNil() {
+		*dest.orig = nil
+		return
+	}
+	if dest.IsNil() {
+		dest.InitEmpty()
+	}
+	ms.Resource().CopyTo(dest.Resource())
+	ms.InstrumentationLibraryMetrics().CopyTo(dest.InstrumentationLibraryMetrics())
+}
+
 // InstrumentationLibraryMetricsSlice logically represents a slice of InstrumentationLibraryMetrics.
 //
 // This is a reference type, if passed by value and callee modifies it the
@@ -225,9 +262,33 @@ func (es InstrumentationLibraryMetricsSlice) MoveTo(dest InstrumentationLibraryM
 	return
 }
 
+// CopyTo copies all elements from the current slice to the dest.
+func (es InstrumentationLibraryMetricsSlice) CopyTo(dest InstrumentationLibraryMetricsSlice) {
+	newLen := es.Len()
+	if newLen == 0 {
+		*dest.orig = []*otlpmetrics.InstrumentationLibraryMetrics(nil)
+		return
+	}
+	oldLen := dest.Len()
+	if newLen <= oldLen {
+		(*dest.orig) = (*dest.orig)[:newLen]
+		for i, el := range *es.orig {
+			newInstrumentationLibraryMetrics(&el).CopyTo(newInstrumentationLibraryMetrics(&(*dest.orig)[i]))
+		}
+		return
+	}
+	origs := make([]otlpmetrics.InstrumentationLibraryMetrics, newLen)
+	wrappers := make([]*otlpmetrics.InstrumentationLibraryMetrics, newLen)
+	for i, el := range *es.orig {
+		wrappers[i] = &origs[i]
+		newInstrumentationLibraryMetrics(&el).CopyTo(newInstrumentationLibraryMetrics(&wrappers[i]))
+	}
+    *dest.orig = wrappers
+}
+
 // Resize is an operation that resizes the slice:
 // 1. If newLen is 0 then the slice is replaced with a nil slice.
-// 2. If the newLen < len then equivalent with slice[0:newLen].
+// 2. If the newLen <= len then equivalent with slice[0:newLen].
 // 3. If the newLen > len then (newLen - len) empty elements will be appended to the slice.
 //
 // Here is how a new InstrumentationLibraryMetricsSlice can be initialized:
@@ -243,8 +304,8 @@ func (es InstrumentationLibraryMetricsSlice) Resize(newLen int) {
 		return
 	}
 	oldLen := len(*es.orig)
-	if newLen < oldLen {
-		(*es.orig) = (*es.orig)[0:newLen]
+	if newLen <= oldLen {
+		(*es.orig) = (*es.orig)[:newLen]
 		return
 	}
 	// TODO: Benchmark and optimize this logic.
@@ -311,6 +372,19 @@ func (ms InstrumentationLibraryMetrics) Metrics() MetricSlice {
 	return newMetricSlice(&(*ms.orig).Metrics)
 }
 
+// CopyTo copies all properties from the current struct to the dest.
+func (ms InstrumentationLibraryMetrics) CopyTo(dest InstrumentationLibraryMetrics) {
+	if ms.IsNil() {
+		*dest.orig = nil
+		return
+	}
+	if dest.IsNil() {
+		dest.InitEmpty()
+	}
+	ms.InstrumentationLibrary().CopyTo(dest.InstrumentationLibrary())
+	ms.Metrics().CopyTo(dest.Metrics())
+}
+
 // MetricSlice logically represents a slice of Metric.
 //
 // This is a reference type, if passed by value and callee modifies it the
@@ -370,9 +444,33 @@ func (es MetricSlice) MoveTo(dest MetricSlice) {
 	return
 }
 
+// CopyTo copies all elements from the current slice to the dest.
+func (es MetricSlice) CopyTo(dest MetricSlice) {
+	newLen := es.Len()
+	if newLen == 0 {
+		*dest.orig = []*otlpmetrics.Metric(nil)
+		return
+	}
+	oldLen := dest.Len()
+	if newLen <= oldLen {
+		(*dest.orig) = (*dest.orig)[:newLen]
+		for i, el := range *es.orig {
+			newMetric(&el).CopyTo(newMetric(&(*dest.orig)[i]))
+		}
+		return
+	}
+	origs := make([]otlpmetrics.Metric, newLen)
+	wrappers := make([]*otlpmetrics.Metric, newLen)
+	for i, el := range *es.orig {
+		wrappers[i] = &origs[i]
+		newMetric(&el).CopyTo(newMetric(&wrappers[i]))
+	}
+    *dest.orig = wrappers
+}
+
 // Resize is an operation that resizes the slice:
 // 1. If newLen is 0 then the slice is replaced with a nil slice.
-// 2. If the newLen < len then equivalent with slice[0:newLen].
+// 2. If the newLen <= len then equivalent with slice[0:newLen].
 // 3. If the newLen > len then (newLen - len) empty elements will be appended to the slice.
 //
 // Here is how a new MetricSlice can be initialized:
@@ -388,8 +486,8 @@ func (es MetricSlice) Resize(newLen int) {
 		return
 	}
 	oldLen := len(*es.orig)
-	if newLen < oldLen {
-		(*es.orig) = (*es.orig)[0:newLen]
+	if newLen <= oldLen {
+		(*es.orig) = (*es.orig)[:newLen]
 		return
 	}
 	// TODO: Benchmark and optimize this logic.
@@ -476,6 +574,22 @@ func (ms Metric) HistogramDataPoints() HistogramDataPointSlice {
 // Important: This causes a runtime error if IsNil() returns "true".
 func (ms Metric) SummaryDataPoints() SummaryDataPointSlice {
 	return newSummaryDataPointSlice(&(*ms.orig).SummaryDataPoints)
+}
+
+// CopyTo copies all properties from the current struct to the dest.
+func (ms Metric) CopyTo(dest Metric) {
+	if ms.IsNil() {
+		*dest.orig = nil
+		return
+	}
+	if dest.IsNil() {
+		dest.InitEmpty()
+	}
+	ms.MetricDescriptor().CopyTo(dest.MetricDescriptor())
+	ms.Int64DataPoints().CopyTo(dest.Int64DataPoints())
+	ms.DoubleDataPoints().CopyTo(dest.DoubleDataPoints())
+	ms.HistogramDataPoints().CopyTo(dest.HistogramDataPoints())
+	ms.SummaryDataPoints().CopyTo(dest.SummaryDataPoints())
 }
 
 // MetricDescriptor is the descriptor of a metric.
@@ -579,6 +693,22 @@ func (ms MetricDescriptor) LabelsMap() StringMap {
 	return newStringMap(&(*ms.orig).Labels)
 }
 
+// CopyTo copies all properties from the current struct to the dest.
+func (ms MetricDescriptor) CopyTo(dest MetricDescriptor) {
+	if ms.IsNil() {
+		*dest.orig = nil
+		return
+	}
+	if dest.IsNil() {
+		dest.InitEmpty()
+	}
+	dest.SetName(ms.Name())
+	dest.SetDescription(ms.Description())
+	dest.SetUnit(ms.Unit())
+	dest.SetType(ms.Type())
+	ms.LabelsMap().CopyTo(dest.LabelsMap())
+}
+
 // Int64DataPointSlice logically represents a slice of Int64DataPoint.
 //
 // This is a reference type, if passed by value and callee modifies it the
@@ -638,9 +768,33 @@ func (es Int64DataPointSlice) MoveTo(dest Int64DataPointSlice) {
 	return
 }
 
+// CopyTo copies all elements from the current slice to the dest.
+func (es Int64DataPointSlice) CopyTo(dest Int64DataPointSlice) {
+	newLen := es.Len()
+	if newLen == 0 {
+		*dest.orig = []*otlpmetrics.Int64DataPoint(nil)
+		return
+	}
+	oldLen := dest.Len()
+	if newLen <= oldLen {
+		(*dest.orig) = (*dest.orig)[:newLen]
+		for i, el := range *es.orig {
+			newInt64DataPoint(&el).CopyTo(newInt64DataPoint(&(*dest.orig)[i]))
+		}
+		return
+	}
+	origs := make([]otlpmetrics.Int64DataPoint, newLen)
+	wrappers := make([]*otlpmetrics.Int64DataPoint, newLen)
+	for i, el := range *es.orig {
+		wrappers[i] = &origs[i]
+		newInt64DataPoint(&el).CopyTo(newInt64DataPoint(&wrappers[i]))
+	}
+    *dest.orig = wrappers
+}
+
 // Resize is an operation that resizes the slice:
 // 1. If newLen is 0 then the slice is replaced with a nil slice.
-// 2. If the newLen < len then equivalent with slice[0:newLen].
+// 2. If the newLen <= len then equivalent with slice[0:newLen].
 // 3. If the newLen > len then (newLen - len) empty elements will be appended to the slice.
 //
 // Here is how a new Int64DataPointSlice can be initialized:
@@ -656,8 +810,8 @@ func (es Int64DataPointSlice) Resize(newLen int) {
 		return
 	}
 	oldLen := len(*es.orig)
-	if newLen < oldLen {
-		(*es.orig) = (*es.orig)[0:newLen]
+	if newLen <= oldLen {
+		(*es.orig) = (*es.orig)[:newLen]
 		return
 	}
 	// TODO: Benchmark and optimize this logic.
@@ -756,6 +910,21 @@ func (ms Int64DataPoint) SetValue(v int64) {
 	(*ms.orig).Value = v
 }
 
+// CopyTo copies all properties from the current struct to the dest.
+func (ms Int64DataPoint) CopyTo(dest Int64DataPoint) {
+	if ms.IsNil() {
+		*dest.orig = nil
+		return
+	}
+	if dest.IsNil() {
+		dest.InitEmpty()
+	}
+	ms.LabelsMap().CopyTo(dest.LabelsMap())
+	dest.SetStartTime(ms.StartTime())
+	dest.SetTimestamp(ms.Timestamp())
+	dest.SetValue(ms.Value())
+}
+
 // DoubleDataPointSlice logically represents a slice of DoubleDataPoint.
 //
 // This is a reference type, if passed by value and callee modifies it the
@@ -815,9 +984,33 @@ func (es DoubleDataPointSlice) MoveTo(dest DoubleDataPointSlice) {
 	return
 }
 
+// CopyTo copies all elements from the current slice to the dest.
+func (es DoubleDataPointSlice) CopyTo(dest DoubleDataPointSlice) {
+	newLen := es.Len()
+	if newLen == 0 {
+		*dest.orig = []*otlpmetrics.DoubleDataPoint(nil)
+		return
+	}
+	oldLen := dest.Len()
+	if newLen <= oldLen {
+		(*dest.orig) = (*dest.orig)[:newLen]
+		for i, el := range *es.orig {
+			newDoubleDataPoint(&el).CopyTo(newDoubleDataPoint(&(*dest.orig)[i]))
+		}
+		return
+	}
+	origs := make([]otlpmetrics.DoubleDataPoint, newLen)
+	wrappers := make([]*otlpmetrics.DoubleDataPoint, newLen)
+	for i, el := range *es.orig {
+		wrappers[i] = &origs[i]
+		newDoubleDataPoint(&el).CopyTo(newDoubleDataPoint(&wrappers[i]))
+	}
+    *dest.orig = wrappers
+}
+
 // Resize is an operation that resizes the slice:
 // 1. If newLen is 0 then the slice is replaced with a nil slice.
-// 2. If the newLen < len then equivalent with slice[0:newLen].
+// 2. If the newLen <= len then equivalent with slice[0:newLen].
 // 3. If the newLen > len then (newLen - len) empty elements will be appended to the slice.
 //
 // Here is how a new DoubleDataPointSlice can be initialized:
@@ -833,8 +1026,8 @@ func (es DoubleDataPointSlice) Resize(newLen int) {
 		return
 	}
 	oldLen := len(*es.orig)
-	if newLen < oldLen {
-		(*es.orig) = (*es.orig)[0:newLen]
+	if newLen <= oldLen {
+		(*es.orig) = (*es.orig)[:newLen]
 		return
 	}
 	// TODO: Benchmark and optimize this logic.
@@ -933,6 +1126,21 @@ func (ms DoubleDataPoint) SetValue(v float64) {
 	(*ms.orig).Value = v
 }
 
+// CopyTo copies all properties from the current struct to the dest.
+func (ms DoubleDataPoint) CopyTo(dest DoubleDataPoint) {
+	if ms.IsNil() {
+		*dest.orig = nil
+		return
+	}
+	if dest.IsNil() {
+		dest.InitEmpty()
+	}
+	ms.LabelsMap().CopyTo(dest.LabelsMap())
+	dest.SetStartTime(ms.StartTime())
+	dest.SetTimestamp(ms.Timestamp())
+	dest.SetValue(ms.Value())
+}
+
 // HistogramDataPointSlice logically represents a slice of HistogramDataPoint.
 //
 // This is a reference type, if passed by value and callee modifies it the
@@ -992,9 +1200,33 @@ func (es HistogramDataPointSlice) MoveTo(dest HistogramDataPointSlice) {
 	return
 }
 
+// CopyTo copies all elements from the current slice to the dest.
+func (es HistogramDataPointSlice) CopyTo(dest HistogramDataPointSlice) {
+	newLen := es.Len()
+	if newLen == 0 {
+		*dest.orig = []*otlpmetrics.HistogramDataPoint(nil)
+		return
+	}
+	oldLen := dest.Len()
+	if newLen <= oldLen {
+		(*dest.orig) = (*dest.orig)[:newLen]
+		for i, el := range *es.orig {
+			newHistogramDataPoint(&el).CopyTo(newHistogramDataPoint(&(*dest.orig)[i]))
+		}
+		return
+	}
+	origs := make([]otlpmetrics.HistogramDataPoint, newLen)
+	wrappers := make([]*otlpmetrics.HistogramDataPoint, newLen)
+	for i, el := range *es.orig {
+		wrappers[i] = &origs[i]
+		newHistogramDataPoint(&el).CopyTo(newHistogramDataPoint(&wrappers[i]))
+	}
+    *dest.orig = wrappers
+}
+
 // Resize is an operation that resizes the slice:
 // 1. If newLen is 0 then the slice is replaced with a nil slice.
-// 2. If the newLen < len then equivalent with slice[0:newLen].
+// 2. If the newLen <= len then equivalent with slice[0:newLen].
 // 3. If the newLen > len then (newLen - len) empty elements will be appended to the slice.
 //
 // Here is how a new HistogramDataPointSlice can be initialized:
@@ -1010,8 +1242,8 @@ func (es HistogramDataPointSlice) Resize(newLen int) {
 		return
 	}
 	oldLen := len(*es.orig)
-	if newLen < oldLen {
-		(*es.orig) = (*es.orig)[0:newLen]
+	if newLen <= oldLen {
+		(*es.orig) = (*es.orig)[:newLen]
 		return
 	}
 	// TODO: Benchmark and optimize this logic.
@@ -1145,6 +1377,24 @@ func (ms HistogramDataPoint) SetExplicitBounds(v []float64) {
 	(*ms.orig).ExplicitBounds = v
 }
 
+// CopyTo copies all properties from the current struct to the dest.
+func (ms HistogramDataPoint) CopyTo(dest HistogramDataPoint) {
+	if ms.IsNil() {
+		*dest.orig = nil
+		return
+	}
+	if dest.IsNil() {
+		dest.InitEmpty()
+	}
+	ms.LabelsMap().CopyTo(dest.LabelsMap())
+	dest.SetStartTime(ms.StartTime())
+	dest.SetTimestamp(ms.Timestamp())
+	dest.SetCount(ms.Count())
+	dest.SetSum(ms.Sum())
+	ms.Buckets().CopyTo(dest.Buckets())
+	dest.SetExplicitBounds(ms.ExplicitBounds())
+}
+
 // HistogramBucketSlice logically represents a slice of HistogramBucket.
 //
 // This is a reference type, if passed by value and callee modifies it the
@@ -1204,9 +1454,33 @@ func (es HistogramBucketSlice) MoveTo(dest HistogramBucketSlice) {
 	return
 }
 
+// CopyTo copies all elements from the current slice to the dest.
+func (es HistogramBucketSlice) CopyTo(dest HistogramBucketSlice) {
+	newLen := es.Len()
+	if newLen == 0 {
+		*dest.orig = []*otlpmetrics.HistogramDataPoint_Bucket(nil)
+		return
+	}
+	oldLen := dest.Len()
+	if newLen <= oldLen {
+		(*dest.orig) = (*dest.orig)[:newLen]
+		for i, el := range *es.orig {
+			newHistogramBucket(&el).CopyTo(newHistogramBucket(&(*dest.orig)[i]))
+		}
+		return
+	}
+	origs := make([]otlpmetrics.HistogramDataPoint_Bucket, newLen)
+	wrappers := make([]*otlpmetrics.HistogramDataPoint_Bucket, newLen)
+	for i, el := range *es.orig {
+		wrappers[i] = &origs[i]
+		newHistogramBucket(&el).CopyTo(newHistogramBucket(&wrappers[i]))
+	}
+    *dest.orig = wrappers
+}
+
 // Resize is an operation that resizes the slice:
 // 1. If newLen is 0 then the slice is replaced with a nil slice.
-// 2. If the newLen < len then equivalent with slice[0:newLen].
+// 2. If the newLen <= len then equivalent with slice[0:newLen].
 // 3. If the newLen > len then (newLen - len) empty elements will be appended to the slice.
 //
 // Here is how a new HistogramBucketSlice can be initialized:
@@ -1222,8 +1496,8 @@ func (es HistogramBucketSlice) Resize(newLen int) {
 		return
 	}
 	oldLen := len(*es.orig)
-	if newLen < oldLen {
-		(*es.orig) = (*es.orig)[0:newLen]
+	if newLen <= oldLen {
+		(*es.orig) = (*es.orig)[:newLen]
 		return
 	}
 	// TODO: Benchmark and optimize this logic.
@@ -1295,6 +1569,19 @@ func (ms HistogramBucket) SetCount(v uint64) {
 // Important: This causes a runtime error if IsNil() returns "true".
 func (ms HistogramBucket) Exemplar() HistogramBucketExemplar {
 	return newHistogramBucketExemplar(&(*ms.orig).Exemplar)
+}
+
+// CopyTo copies all properties from the current struct to the dest.
+func (ms HistogramBucket) CopyTo(dest HistogramBucket) {
+	if ms.IsNil() {
+		*dest.orig = nil
+		return
+	}
+	if dest.IsNil() {
+		dest.InitEmpty()
+	}
+	dest.SetCount(ms.Count())
+	ms.Exemplar().CopyTo(dest.Exemplar())
 }
 
 // HistogramBucketExemplar are example points that may be used to annotate aggregated Histogram values.
@@ -1371,6 +1658,20 @@ func (ms HistogramBucketExemplar) Attachments() StringMap {
 	return newStringMap(&(*ms.orig).Attachments)
 }
 
+// CopyTo copies all properties from the current struct to the dest.
+func (ms HistogramBucketExemplar) CopyTo(dest HistogramBucketExemplar) {
+	if ms.IsNil() {
+		*dest.orig = nil
+		return
+	}
+	if dest.IsNil() {
+		dest.InitEmpty()
+	}
+	dest.SetTimestamp(ms.Timestamp())
+	dest.SetValue(ms.Value())
+	ms.Attachments().CopyTo(dest.Attachments())
+}
+
 // SummaryDataPointSlice logically represents a slice of SummaryDataPoint.
 //
 // This is a reference type, if passed by value and callee modifies it the
@@ -1430,9 +1731,33 @@ func (es SummaryDataPointSlice) MoveTo(dest SummaryDataPointSlice) {
 	return
 }
 
+// CopyTo copies all elements from the current slice to the dest.
+func (es SummaryDataPointSlice) CopyTo(dest SummaryDataPointSlice) {
+	newLen := es.Len()
+	if newLen == 0 {
+		*dest.orig = []*otlpmetrics.SummaryDataPoint(nil)
+		return
+	}
+	oldLen := dest.Len()
+	if newLen <= oldLen {
+		(*dest.orig) = (*dest.orig)[:newLen]
+		for i, el := range *es.orig {
+			newSummaryDataPoint(&el).CopyTo(newSummaryDataPoint(&(*dest.orig)[i]))
+		}
+		return
+	}
+	origs := make([]otlpmetrics.SummaryDataPoint, newLen)
+	wrappers := make([]*otlpmetrics.SummaryDataPoint, newLen)
+	for i, el := range *es.orig {
+		wrappers[i] = &origs[i]
+		newSummaryDataPoint(&el).CopyTo(newSummaryDataPoint(&wrappers[i]))
+	}
+    *dest.orig = wrappers
+}
+
 // Resize is an operation that resizes the slice:
 // 1. If newLen is 0 then the slice is replaced with a nil slice.
-// 2. If the newLen < len then equivalent with slice[0:newLen].
+// 2. If the newLen <= len then equivalent with slice[0:newLen].
 // 3. If the newLen > len then (newLen - len) empty elements will be appended to the slice.
 //
 // Here is how a new SummaryDataPointSlice can be initialized:
@@ -1448,8 +1773,8 @@ func (es SummaryDataPointSlice) Resize(newLen int) {
 		return
 	}
 	oldLen := len(*es.orig)
-	if newLen < oldLen {
-		(*es.orig) = (*es.orig)[0:newLen]
+	if newLen <= oldLen {
+		(*es.orig) = (*es.orig)[:newLen]
 		return
 	}
 	// TODO: Benchmark and optimize this logic.
@@ -1569,6 +1894,23 @@ func (ms SummaryDataPoint) ValueAtPercentiles() SummaryValueAtPercentileSlice {
 	return newSummaryValueAtPercentileSlice(&(*ms.orig).PercentileValues)
 }
 
+// CopyTo copies all properties from the current struct to the dest.
+func (ms SummaryDataPoint) CopyTo(dest SummaryDataPoint) {
+	if ms.IsNil() {
+		*dest.orig = nil
+		return
+	}
+	if dest.IsNil() {
+		dest.InitEmpty()
+	}
+	ms.LabelsMap().CopyTo(dest.LabelsMap())
+	dest.SetStartTime(ms.StartTime())
+	dest.SetTimestamp(ms.Timestamp())
+	dest.SetCount(ms.Count())
+	dest.SetSum(ms.Sum())
+	ms.ValueAtPercentiles().CopyTo(dest.ValueAtPercentiles())
+}
+
 // SummaryValueAtPercentileSlice logically represents a slice of SummaryValueAtPercentile.
 //
 // This is a reference type, if passed by value and callee modifies it the
@@ -1628,9 +1970,33 @@ func (es SummaryValueAtPercentileSlice) MoveTo(dest SummaryValueAtPercentileSlic
 	return
 }
 
+// CopyTo copies all elements from the current slice to the dest.
+func (es SummaryValueAtPercentileSlice) CopyTo(dest SummaryValueAtPercentileSlice) {
+	newLen := es.Len()
+	if newLen == 0 {
+		*dest.orig = []*otlpmetrics.SummaryDataPoint_ValueAtPercentile(nil)
+		return
+	}
+	oldLen := dest.Len()
+	if newLen <= oldLen {
+		(*dest.orig) = (*dest.orig)[:newLen]
+		for i, el := range *es.orig {
+			newSummaryValueAtPercentile(&el).CopyTo(newSummaryValueAtPercentile(&(*dest.orig)[i]))
+		}
+		return
+	}
+	origs := make([]otlpmetrics.SummaryDataPoint_ValueAtPercentile, newLen)
+	wrappers := make([]*otlpmetrics.SummaryDataPoint_ValueAtPercentile, newLen)
+	for i, el := range *es.orig {
+		wrappers[i] = &origs[i]
+		newSummaryValueAtPercentile(&el).CopyTo(newSummaryValueAtPercentile(&wrappers[i]))
+	}
+    *dest.orig = wrappers
+}
+
 // Resize is an operation that resizes the slice:
 // 1. If newLen is 0 then the slice is replaced with a nil slice.
-// 2. If the newLen < len then equivalent with slice[0:newLen].
+// 2. If the newLen <= len then equivalent with slice[0:newLen].
 // 3. If the newLen > len then (newLen - len) empty elements will be appended to the slice.
 //
 // Here is how a new SummaryValueAtPercentileSlice can be initialized:
@@ -1646,8 +2012,8 @@ func (es SummaryValueAtPercentileSlice) Resize(newLen int) {
 		return
 	}
 	oldLen := len(*es.orig)
-	if newLen < oldLen {
-		(*es.orig) = (*es.orig)[0:newLen]
+	if newLen <= oldLen {
+		(*es.orig) = (*es.orig)[:newLen]
 		return
 	}
 	// TODO: Benchmark and optimize this logic.
@@ -1723,4 +2089,17 @@ func (ms SummaryValueAtPercentile) Value() float64 {
 // Important: This causes a runtime error if IsNil() returns "true".
 func (ms SummaryValueAtPercentile) SetValue(v float64) {
 	(*ms.orig).Value = v
+}
+
+// CopyTo copies all properties from the current struct to the dest.
+func (ms SummaryValueAtPercentile) CopyTo(dest SummaryValueAtPercentile) {
+	if ms.IsNil() {
+		*dest.orig = nil
+		return
+	}
+	if dest.IsNil() {
+		dest.InitEmpty()
+	}
+	dest.SetPercentile(ms.Percentile())
+	dest.SetValue(ms.Value())
 }
