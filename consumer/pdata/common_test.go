@@ -598,13 +598,13 @@ func TestStringMap_InitFromMap(t *testing.T) {
 	assert.EqualValues(t, StringMap{orig: &rawOrig}.Sort(), sm.Sort())
 }
 
-func BenchmarkAttributeValue_CopyFrom(b *testing.B) {
+func BenchmarkAttributeValue_CopyTo(b *testing.B) {
 	av := NewAttributeValueString("k")
 	c := NewAttributeValueInt(123)
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		av.CopyFrom(c)
+		c.CopyTo(av)
 	}
 	if av.IntVal() != 123 {
 		b.Fail()
