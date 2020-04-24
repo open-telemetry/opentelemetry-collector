@@ -133,16 +133,16 @@ func (ds *DataSenderOverTraceExporter) GetCollectorPort() int {
 
 // JaegerGRPCDataSender implements TraceDataSender for Jaeger thrift_http protocol.
 type JaegerGRPCDataSender struct {
-	DataSenderOverTraceExporterOld
+	DataSenderOverTraceExporter
 }
 
 // Ensure JaegerGRPCDataSender implements TraceDataSender.
-var _ TraceDataSenderOld = (*JaegerGRPCDataSender)(nil)
+var _ TraceDataSender = (*JaegerGRPCDataSender)(nil)
 
 // NewJaegerGRPCDataSender creates a new Jaeger protocol sender that will send
 // to the specified port after Start is called.
 func NewJaegerGRPCDataSender(port int) *JaegerGRPCDataSender {
-	return &JaegerGRPCDataSender{DataSenderOverTraceExporterOld{Port: port}}
+	return &JaegerGRPCDataSender{DataSenderOverTraceExporter{Port: port}}
 }
 
 func (je *JaegerGRPCDataSender) Start() error {
@@ -155,7 +155,8 @@ func (je *JaegerGRPCDataSender) Start() error {
 
 	var err error
 	factory := jaegerexporter.Factory{}
-	exporter, err := factory.CreateTraceExporter(zap.L(), cfg)
+	params := component.ExporterCreateParams{Logger: zap.L()}
+	exporter, err := factory.CreateTraceExporter(context.Background(), params, cfg)
 
 	if err != nil {
 		return err

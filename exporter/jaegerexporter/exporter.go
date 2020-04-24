@@ -23,8 +23,8 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configgrpc"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumererror"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
 	jaegertranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace/jaeger"
 )
@@ -32,7 +32,7 @@ import (
 // New returns a new Jaeger gRPC exporter.
 // The exporter name is the name to be used in the observability of the exporter.
 // The collectorEndpoint should be of the form "hostname:14250" (a gRPC target).
-func New(config *Config) (component.TraceExporterOld, error) {
+func New(config *Config) (component.TraceExporter, error) {
 
 	opts, err := configgrpc.GrpcSettingsToDialOptions(config.GRPCSettings)
 	if err != nil {
@@ -50,9 +50,7 @@ func New(config *Config) (component.TraceExporterOld, error) {
 		metadata: metadata.New(config.GRPCSettings.Headers),
 	}
 
-	exp, err := exporterhelper.NewTraceExporterOld(
-		config,
-		s.pushTraceData)
+	exp, err := exporterhelper.NewTraceExporter(config, s.pushTraceData)
 
 	return exp, err
 }
@@ -66,25 +64,28 @@ type protoGRPCSender struct {
 
 func (s *protoGRPCSender) pushTraceData(
 	ctx context.Context,
-	td consumerdata.TraceData,
+	td pdata.Traces,
 ) (droppedSpans int, err error) {
 
-	protoBatch, err := jaegertranslator.OCProtoToJaegerProto(td)
+	batches, err := jaegertranslator.InternalTracesToJaegerProto(td)
 	if err != nil {
-		return len(td.Spans), consumererror.Permanent(err)
+		return td.SpanCount(), consumererror.Permanent(err)
 	}
 
 	if s.metadata.Len() > 0 {
 		ctx = metadata.NewOutgoingContext(ctx, s.metadata)
 	}
 
-	_, err = s.client.PostSpans(
-		ctx,
-		&jaegerproto.PostSpansRequest{Batch: *protoBatch})
-
-	if err != nil {
-		droppedSpans = len(protoBatch.Spans)
+	var sentSpans int
+	for _, batch := range batches {
+		_, err = s.client.PostSpans(
+			ctx,
+			&jaegerproto.PostSpansRequest{Batch: *batch})
+		if err != nil {
+			return td.SpanCount() - sentSpans, err
+		}
+		sentSpans += len(batch.Spans)
 	}
 
-	return droppedSpans, err
+	return 0, nil
 }

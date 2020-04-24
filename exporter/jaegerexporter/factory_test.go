@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
 )
@@ -36,7 +37,8 @@ func TestCreateMetricsExporter(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
 
-	_, err := factory.CreateMetricsExporter(zap.NewNop(), cfg)
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	_, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
 	assert.Error(t, err, configerror.ErrDataTypeIsNotSupported)
 }
 
@@ -47,9 +49,8 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 
 	// Default config doesn't have default endpoint so creating from it should
 	// fail.
-	exp, err := factory.CreateTraceExporter(
-		zap.NewNop(),
-		cfg)
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	exp, err := factory.CreateTraceExporter(context.Background(), params, cfg)
 	assert.NotNil(t, err)
 	assert.Equal(t, "\"jaeger\" config requires a non-empty \"endpoint\"", err.Error())
 	assert.Nil(t, exp)
@@ -57,9 +58,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	// Endpoint doesn't have a default value so set it directly.
 	expCfg := cfg.(*Config)
 	expCfg.Endpoint = "some.target.org:12345"
-	exp, err = factory.CreateTraceExporter(
-		zap.NewNop(),
-		cfg)
+	exp, err = factory.CreateTraceExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
 
