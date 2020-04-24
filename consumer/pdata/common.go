@@ -165,15 +165,14 @@ func (a AttributeValue) SetBoolVal(v bool) {
 	a.orig.BoolValue = v
 }
 
-// CopyFrom copies all the fields from the given AttributeValue.
+// CopyTo copies all the fields from the given AttributeValue.
 // Calling this function on zero-initialized AttributeValue will cause a panic.
-func (a AttributeValue) CopyFrom(av AttributeValue) {
-	akv := av.orig
-	a.orig.Type = akv.Type
-	a.orig.StringValue = akv.StringValue
-	a.orig.IntValue = akv.IntValue
-	a.orig.DoubleValue = akv.DoubleValue
-	a.orig.BoolValue = akv.BoolValue
+func (a AttributeValue) CopyTo(dest AttributeValue) {
+	dest.orig.Type = a.orig.Type
+	dest.orig.StringValue = a.orig.StringValue
+	dest.orig.IntValue = a.orig.IntValue
+	dest.orig.DoubleValue = a.orig.DoubleValue
+	dest.orig.BoolValue = a.orig.BoolValue
 }
 
 func (a AttributeValue) setTypeAndClear(ty otlpcommon.AttributeKeyValue_ValueType) {
@@ -219,7 +218,7 @@ func newAttributeKeyValueBool(k string, v bool) *otlpcommon.AttributeKeyValue {
 
 func newAttributeKeyValue(k string, av AttributeValue) *otlpcommon.AttributeKeyValue {
 	akv := AttributeValue{&otlpcommon.AttributeKeyValue{Key: k}}
-	akv.CopyFrom(av)
+	av.CopyTo(akv)
 	return akv.orig
 }
 
@@ -254,7 +253,7 @@ func (am AttributeMap) InitFromMap(attrMap map[string]AttributeValue) AttributeM
 	for k, v := range attrMap {
 		wrappers[ix] = &origs[ix]
 		wrappers[ix].Key = k
-		AttributeValue{wrappers[ix]}.CopyFrom(v)
+		v.CopyTo(AttributeValue{wrappers[ix]})
 		ix++
 	}
 	*am.orig = wrappers
@@ -340,7 +339,7 @@ func (am AttributeMap) InsertBool(k string, v bool) {
 // the raw value to avoid an extra allocation.
 func (am AttributeMap) Update(k string, v AttributeValue) {
 	if av, existing := am.Get(k); existing {
-		av.CopyFrom(v)
+		v.CopyTo(av)
 	}
 }
 
@@ -386,7 +385,7 @@ func (am AttributeMap) UpdateBool(k string, v bool) {
 // the raw value to avoid an extra allocation.
 func (am AttributeMap) Upsert(k string, v AttributeValue) {
 	if av, existing := am.Get(k); existing {
-		av.CopyFrom(v)
+		v.CopyTo(av)
 	} else {
 		*am.orig = append(*am.orig, newAttributeKeyValue(k, v))
 	}
@@ -480,7 +479,7 @@ func (am AttributeMap) CopyTo(dest AttributeMap) {
 		*dest.orig = (*dest.orig)[:newLen]
 		for i, kv := range *am.orig {
 			(*dest.orig)[i].Key = kv.Key
-			AttributeValue{(*dest.orig)[i]}.CopyFrom(AttributeValue{kv})
+			AttributeValue{kv}.CopyTo(AttributeValue{(*dest.orig)[i]})
 		}
 		return
 	}
@@ -489,7 +488,7 @@ func (am AttributeMap) CopyTo(dest AttributeMap) {
 	for i, kv := range *am.orig {
 		wrappers[i] = &origs[i]
 		wrappers[i].Key = kv.Key
-		AttributeValue{wrappers[i]}.CopyFrom(AttributeValue{kv})
+		AttributeValue{kv}.CopyTo(AttributeValue{wrappers[i]})
 	}
 	*dest.orig = wrappers
 }
