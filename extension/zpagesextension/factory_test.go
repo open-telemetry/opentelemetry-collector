@@ -31,7 +31,7 @@ import (
 
 func TestFactory_Type(t *testing.T) {
 	factory := Factory{}
-	require.Equal(t, typeStr, factory.Type())
+	require.Equal(t, configmodels.Type(typeStr), factory.Type())
 }
 
 func TestFactory_CreateDefaultConfig(t *testing.T) {

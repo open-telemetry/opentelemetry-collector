@@ -263,7 +263,7 @@ func TestProcessorsBuilder_ErrorOnNilProcessor(t *testing.T) {
 // badProcessorFactory is a factory that returns no error but returns a nil object.
 type badProcessorFactory struct{}
 
-func (b *badProcessorFactory) Type() string {
+func (b *badProcessorFactory) Type() configmodels.Type {
 	return "bf"
 }
 

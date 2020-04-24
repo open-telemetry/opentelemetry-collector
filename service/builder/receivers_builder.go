@@ -86,7 +86,7 @@ type ReceiversBuilder struct {
 	logger         *zap.Logger
 	config         *configmodels.Config
 	builtPipelines BuiltPipelines
-	factories      map[string]component.ReceiverFactoryBase
+	factories      map[configmodels.Type]component.ReceiverFactoryBase
 }
 
 // NewReceiversBuilder creates a new ReceiversBuilder. Call BuildProcessors() on the returned value.
@@ -94,7 +94,7 @@ func NewReceiversBuilder(
 	logger *zap.Logger,
 	config *configmodels.Config,
 	builtPipelines BuiltPipelines,
-	factories map[string]component.ReceiverFactoryBase,
+	factories map[configmodels.Type]component.ReceiverFactoryBase,
 ) *ReceiversBuilder {
 	return &ReceiversBuilder{logger.With(zap.String(kindLogKey, kindLogReceiver)), config, builtPipelines, factories}
 }
@@ -105,7 +105,7 @@ func (rb *ReceiversBuilder) Build() (Receivers, error) {
 
 	// BuildProcessors receivers based on configuration.
 	for _, cfg := range rb.config.Receivers {
-		logger := rb.logger.With(zap.String(typeLogKey, cfg.Type()), zap.String(nameLogKey, cfg.Name()))
+		logger := rb.logger.With(zap.String(typeLogKey, string(cfg.Type())), zap.String(nameLogKey, cfg.Name()))
 		rcv, err := rb.buildReceiver(logger, cfg)
 		if err != nil {
 			if err == errUnusedReceiver {

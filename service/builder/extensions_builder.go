@@ -121,14 +121,14 @@ func (exts Extensions) GetServiceExtensions() map[configmodels.Extension]compone
 type ExtensionsBuilder struct {
 	logger    *zap.Logger
 	config    *configmodels.Config
-	factories map[string]component.ExtensionFactory
+	factories map[configmodels.Type]component.ExtensionFactory
 }
 
 // NewExportersBuilder creates a new ExportersBuilder. Call BuildExporters() on the returned value.
 func NewExtensionsBuilder(
 	logger *zap.Logger,
 	config *configmodels.Config,
-	factories map[string]component.ExtensionFactory,
+	factories map[configmodels.Type]component.ExtensionFactory,
 ) *ExtensionsBuilder {
 	return &ExtensionsBuilder{logger.With(zap.String(kindLogKey, kindLogExtension)), config, factories}
 }
@@ -143,7 +143,7 @@ func (eb *ExtensionsBuilder) Build() (Extensions, error) {
 			return nil, errors.Errorf("extension %q is not configured", extName)
 		}
 
-		componentLogger := eb.logger.With(zap.String(typeLogKey, extCfg.Type()), zap.String(nameLogKey, extCfg.Name()))
+		componentLogger := eb.logger.With(zap.String(typeLogKey, string(extCfg.Type())), zap.String(nameLogKey, extCfg.Name()))
 		ext, err := eb.buildExtension(componentLogger, extCfg)
 		if err != nil {
 			return nil, err

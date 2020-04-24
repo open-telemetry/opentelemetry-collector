@@ -26,11 +26,11 @@ import (
 )
 
 type TestReceiverFactory struct {
-	name string
+	name configmodels.Type
 }
 
 // Type gets the type of the Receiver config created by this factory.
-func (f *TestReceiverFactory) Type() string {
+func (f *TestReceiverFactory) Type() configmodels.Type {
 	return f.name
 }
 
@@ -68,7 +68,7 @@ func (f *TestReceiverFactory) CreateMetricsReceiver(
 func TestBuildReceivers(t *testing.T) {
 	type testCase struct {
 		in  []ReceiverFactoryBase
-		out map[string]ReceiverFactoryBase
+		out map[configmodels.Type]ReceiverFactoryBase
 		err bool
 	}
 
@@ -78,7 +78,7 @@ func TestBuildReceivers(t *testing.T) {
 				&TestReceiverFactory{"e1"},
 				&TestReceiverFactory{"e2"},
 			},
-			out: map[string]ReceiverFactoryBase{
+			out: map[configmodels.Type]ReceiverFactoryBase{
 				"e1": &TestReceiverFactory{"e1"},
 				"e2": &TestReceiverFactory{"e2"},
 			},

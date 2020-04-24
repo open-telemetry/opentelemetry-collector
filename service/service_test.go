@@ -117,7 +117,7 @@ func TestApplication_setupExtensions(t *testing.T) {
 	exampleExtensionConfig := &config.ExampleExtensionCfg{
 		ExtensionSettings: configmodels.ExtensionSettings{
 			TypeVal: exampleExtensionFactory.Type(),
-			NameVal: exampleExtensionFactory.Type(),
+			NameVal: string(exampleExtensionFactory.Type()),
 		},
 	}
 
@@ -148,11 +148,11 @@ func TestApplication_setupExtensions(t *testing.T) {
 			name: "missing_extension_factory",
 			config: &configmodels.Config{
 				Extensions: map[string]configmodels.Extension{
-					exampleExtensionFactory.Type(): exampleExtensionConfig,
+					string(exampleExtensionFactory.Type()): exampleExtensionConfig,
 				},
 				Service: configmodels.Service{
 					Extensions: []string{
-						exampleExtensionFactory.Type(),
+						string(exampleExtensionFactory.Type()),
 					},
 				},
 			},
@@ -161,17 +161,17 @@ func TestApplication_setupExtensions(t *testing.T) {
 		{
 			name: "error_on_create_extension",
 			factories: config.Factories{
-				Extensions: map[string]component.ExtensionFactory{
+				Extensions: map[configmodels.Type]component.ExtensionFactory{
 					exampleExtensionFactory.Type(): exampleExtensionFactory,
 				},
 			},
 			config: &configmodels.Config{
 				Extensions: map[string]configmodels.Extension{
-					exampleExtensionFactory.Type(): exampleExtensionConfig,
+					string(exampleExtensionFactory.Type()): exampleExtensionConfig,
 				},
 				Service: configmodels.Service{
 					Extensions: []string{
-						exampleExtensionFactory.Type(),
+						string(exampleExtensionFactory.Type()),
 					},
 				},
 			},
@@ -180,17 +180,17 @@ func TestApplication_setupExtensions(t *testing.T) {
 		{
 			name: "bad_factory",
 			factories: config.Factories{
-				Extensions: map[string]component.ExtensionFactory{
+				Extensions: map[configmodels.Type]component.ExtensionFactory{
 					badExtensionFactory.Type(): badExtensionFactory,
 				},
 			},
 			config: &configmodels.Config{
 				Extensions: map[string]configmodels.Extension{
-					badExtensionFactory.Type(): badExtensionFactoryConfig,
+					string(badExtensionFactory.Type()): badExtensionFactoryConfig,
 				},
 				Service: configmodels.Service{
 					Extensions: []string{
-						badExtensionFactory.Type(),
+						string(badExtensionFactory.Type()),
 					},
 				},
 			},
@@ -227,7 +227,7 @@ func TestApplication_setupExtensions(t *testing.T) {
 // badExtensionFactory is a factory that returns no error but returns a nil object.
 type badExtensionFactory struct{}
 
-func (b badExtensionFactory) Type() string {
+func (b badExtensionFactory) Type() configmodels.Type {
 	return "bf"
 }
 
@@ -247,16 +247,16 @@ func TestApplication_GetFactory(t *testing.T) {
 	exampleExtensionFactory := &config.ExampleExtensionFactory{}
 
 	factories := config.Factories{
-		Receivers: map[string]component.ReceiverFactoryBase{
+		Receivers: map[configmodels.Type]component.ReceiverFactoryBase{
 			exampleReceiverFactory.Type(): exampleReceiverFactory,
 		},
-		Processors: map[string]component.ProcessorFactoryBase{
+		Processors: map[configmodels.Type]component.ProcessorFactoryBase{
 			exampleProcessorFactory.Type(): exampleProcessorFactory,
 		},
-		Exporters: map[string]component.ExporterFactoryBase{
+		Exporters: map[configmodels.Type]component.ExporterFactoryBase{
 			exampleExporterFactory.Type(): exampleExporterFactory,
 		},
-		Extensions: map[string]component.ExtensionFactory{
+		Extensions: map[configmodels.Type]component.ExtensionFactory{
 			exampleExtensionFactory.Type(): exampleExtensionFactory,
 		},
 	}
@@ -295,16 +295,16 @@ func createExampleApplication(t *testing.T) *Application {
 	exampleExporterFactory := &config.ExampleExporterFactory{}
 	exampleExtensionFactory := &config.ExampleExtensionFactory{}
 	factories := config.Factories{
-		Receivers: map[string]component.ReceiverFactoryBase{
+		Receivers: map[configmodels.Type]component.ReceiverFactoryBase{
 			exampleReceiverFactory.Type(): exampleReceiverFactory,
 		},
-		Processors: map[string]component.ProcessorFactoryBase{
+		Processors: map[configmodels.Type]component.ProcessorFactoryBase{
 			exampleProcessorFactory.Type(): exampleProcessorFactory,
 		},
-		Exporters: map[string]component.ExporterFactoryBase{
+		Exporters: map[configmodels.Type]component.ExporterFactoryBase{
 			exampleExporterFactory.Type(): exampleExporterFactory,
 		},
-		Extensions: map[string]component.ExtensionFactory{
+		Extensions: map[configmodels.Type]component.ExtensionFactory{
 			exampleExtensionFactory.Type(): exampleExtensionFactory,
 		},
 	}
@@ -314,23 +314,23 @@ func createExampleApplication(t *testing.T) *Application {
 		ConfigFactory: func(v *viper.Viper, factories config.Factories) (c *configmodels.Config, err error) {
 			config := &configmodels.Config{
 				Receivers: map[string]configmodels.Receiver{
-					exampleReceiverFactory.Type(): exampleReceiverFactory.CreateDefaultConfig(),
+					string(exampleReceiverFactory.Type()): exampleReceiverFactory.CreateDefaultConfig(),
 				},
 				Exporters: map[string]configmodels.Exporter{
-					exampleExporterFactory.Type(): exampleExporterFactory.CreateDefaultConfig(),
+					string(exampleExporterFactory.Type()): exampleExporterFactory.CreateDefaultConfig(),
 				},
 				Extensions: map[string]configmodels.Extension{
-					exampleExtensionFactory.Type(): exampleExtensionFactory.CreateDefaultConfig(),
+					string(exampleExtensionFactory.Type()): exampleExtensionFactory.CreateDefaultConfig(),
 				},
 				Service: configmodels.Service{
-					Extensions: []string{exampleExtensionFactory.Type()},
+					Extensions: []string{string(exampleExtensionFactory.Type())},
 					Pipelines: map[string]*configmodels.Pipeline{
 						"trace": {
 							Name:       "traces",
 							InputType:  configmodels.TracesDataType,
-							Receivers:  []string{exampleReceiverFactory.Type()},
+							Receivers:  []string{string(exampleReceiverFactory.Type())},
 							Processors: []string{},
-							Exporters:  []string{exampleExporterFactory.Type()},
+							Exporters:  []string{string(exampleExporterFactory.Type())},
 						},
 					},
 				},
@@ -359,7 +359,7 @@ func TestApplication_GetExtensions(t *testing.T) {
 	var extTypes []string
 	for cfg, ext := range extMap {
 		assert.NotNil(t, ext)
-		extTypes = append(extTypes, cfg.Type())
+		extTypes = append(extTypes, string(cfg.Type()))
 	}
 	sort.Strings(extTypes)
 

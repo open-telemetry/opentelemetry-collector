@@ -26,12 +26,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
 )
 
 func TestFactory_Type(t *testing.T) {
 	factory := &Factory{}
-	assert.Equal(t, factory.Type(), typeStr)
+	assert.Equal(t, factory.Type(), configmodels.Type(typeStr))
 }
 
 func TestFactory_CreateDefaultConfig(t *testing.T) {
@@ -41,7 +42,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 
 	// Check the values of the default configuration.
 	assert.NotNil(t, cfg)
-	assert.Equal(t, typeStr, cfg.Type())
+	assert.Equal(t, configmodels.Type(typeStr), cfg.Type())
 	assert.Equal(t, typeStr, cfg.Name())
 }
 

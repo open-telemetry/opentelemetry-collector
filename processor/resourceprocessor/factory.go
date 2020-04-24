@@ -32,7 +32,7 @@ type Factory struct {
 }
 
 // Type gets the type of the Option config created by this factory.
-func (Factory) Type() string {
+func (Factory) Type() configmodels.Type {
 	return typeStr
 }
 

@@ -86,7 +86,7 @@ type PipelinesBuilder struct {
 	logger    *zap.Logger
 	config    *configmodels.Config
 	exporters Exporters
-	factories map[string]component.ProcessorFactoryBase
+	factories map[configmodels.Type]component.ProcessorFactoryBase
 }
 
 // NewPipelinesBuilder creates a new PipelinesBuilder. Requires exporters to be already
@@ -95,7 +95,7 @@ func NewPipelinesBuilder(
 	logger *zap.Logger,
 	config *configmodels.Config,
 	exporters Exporters,
-	factories map[string]component.ProcessorFactoryBase,
+	factories map[configmodels.Type]component.ProcessorFactoryBase,
 ) *PipelinesBuilder {
 	return &PipelinesBuilder{logger, config, exporters, factories}
 }
@@ -152,7 +152,7 @@ func (pb *PipelinesBuilder) buildPipeline(pipelineCfg *configmodels.Pipeline,
 		// it becomes the next for the previous one (previous in the pipeline,
 		// which we will build in the next loop iteration).
 		var err error
-		componentLogger := pb.logger.With(zap.String(kindLogKey, kindLogProcessor), zap.String(typeLogKey, procCfg.Type()), zap.String(nameLogKey, procCfg.Name()))
+		componentLogger := pb.logger.With(zap.String(kindLogKey, kindLogProcessor), zap.String(typeLogKey, string(procCfg.Type())), zap.String(nameLogKey, procCfg.Name()))
 		switch pipelineCfg.InputType {
 		case configmodels.TracesDataType:
 			var proc component.TraceProcessorBase

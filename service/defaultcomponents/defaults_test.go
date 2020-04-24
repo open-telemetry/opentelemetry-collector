@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/fileexporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/jaegerexporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/loggingexporter"
@@ -50,12 +51,12 @@ import (
 )
 
 func TestDefaultComponents(t *testing.T) {
-	expectedExtensions := map[string]component.ExtensionFactory{
+	expectedExtensions := map[configmodels.Type]component.ExtensionFactory{
 		"health_check": &healthcheckextension.Factory{},
 		"pprof":        &pprofextension.Factory{},
 		"zpages":       &zpagesextension.Factory{},
 	}
-	expectedReceivers := map[string]component.ReceiverFactoryBase{
+	expectedReceivers := map[configmodels.Type]component.ReceiverFactoryBase{
 		"jaeger":      &jaegerreceiver.Factory{},
 		"zipkin":      &zipkinreceiver.Factory{},
 		"prometheus":  &prometheusreceiver.Factory{},
@@ -64,7 +65,7 @@ func TestDefaultComponents(t *testing.T) {
 		"vmmetrics":   &vmmetricsreceiver.Factory{},
 		"hostmetrics": hostmetricsreceiver.NewFactory(),
 	}
-	expectedProcessors := map[string]component.ProcessorFactoryBase{
+	expectedProcessors := map[configmodels.Type]component.ProcessorFactoryBase{
 		"attributes":            &attributesprocessor.Factory{},
 		"queued_retry":          &queuedprocessor.Factory{},
 		"batch":                 &batchprocessor.Factory{},
@@ -73,7 +74,7 @@ func TestDefaultComponents(t *testing.T) {
 		"probabilistic_sampler": &probabilisticsamplerprocessor.Factory{},
 		"span":                  &spanprocessor.Factory{},
 	}
-	expectedExporters := map[string]component.ExporterFactoryBase{
+	expectedExporters := map[configmodels.Type]component.ExporterFactoryBase{
 		"opencensus": &opencensusexporter.Factory{},
 		"prometheus": &prometheusexporter.Factory{},
 		"logging":    &loggingexporter.Factory{},

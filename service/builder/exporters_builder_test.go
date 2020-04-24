@@ -142,7 +142,7 @@ func TestExportersBuilder_StopAll(t *testing.T) {
 
 func TestExportersBuilder_ErrorOnNilExporter(t *testing.T) {
 	bf := &badExporterFactory{}
-	fm := map[string]component.ExporterFactoryBase{
+	fm := map[configmodels.Type]component.ExporterFactoryBase{
 		bf.Type(): bf,
 	}
 
@@ -150,12 +150,12 @@ func TestExportersBuilder_ErrorOnNilExporter(t *testing.T) {
 		{
 			Name:      "trace",
 			InputType: configmodels.TracesDataType,
-			Exporters: []string{bf.Type()},
+			Exporters: []string{string(bf.Type())},
 		},
 		{
 			Name:      "metrics",
 			InputType: configmodels.MetricsDataType,
-			Exporters: []string{bf.Type()},
+			Exporters: []string{string(bf.Type())},
 		},
 	}
 
@@ -164,7 +164,7 @@ func TestExportersBuilder_ErrorOnNilExporter(t *testing.T) {
 
 			cfg := &configmodels.Config{
 				Exporters: map[string]configmodels.Exporter{
-					bf.Type(): &configmodels.ExporterSettings{
+					string(bf.Type()): &configmodels.ExporterSettings{
 						TypeVal: bf.Type(),
 					},
 				},
@@ -186,7 +186,7 @@ func TestExportersBuilder_ErrorOnNilExporter(t *testing.T) {
 // badExporterFactory is a factory that returns no error but returns a nil object.
 type badExporterFactory struct{}
 
-func (b *badExporterFactory) Type() string {
+func (b *badExporterFactory) Type() configmodels.Type {
 	return "bf"
 }
 

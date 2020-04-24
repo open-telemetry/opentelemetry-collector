@@ -39,7 +39,7 @@ func (nh *NopHost) ReportFatalError(_ error) {
 }
 
 // GetFactory of the specified kind. Returns the factory for a component type.
-func (nh *NopHost) GetFactory(_ component.Kind, _ string) component.Factory {
+func (nh *NopHost) GetFactory(_ component.Kind, _ configmodels.Type) component.Factory {
 	return nil
 }
 

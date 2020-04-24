@@ -336,7 +336,7 @@ func TestReceiversBuilder_InternalToOcTraceConverter(t *testing.T) {
 // badReceiverFactory is a factory that returns no error but returns a nil object.
 type badReceiverFactory struct{}
 
-func (b *badReceiverFactory) Type() string {
+func (b *badReceiverFactory) Type() configmodels.Type {
 	return "bf"
 }
 
@@ -368,7 +368,7 @@ func (b *badReceiverFactory) CreateMetricsReceiver(
 // newStyleReceiverFactory defines FactoryV2 interface
 type newStyleReceiverFactory struct{}
 
-func (b *newStyleReceiverFactory) Type() string {
+func (b *newStyleReceiverFactory) Type() configmodels.Type {
 	return "newstylereceiver"
 }
 

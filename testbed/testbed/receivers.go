@@ -57,7 +57,7 @@ func (mb *DataReceiverBase) ReportFatalError(err error) {
 }
 
 // GetFactory of the specified kind. Returns the factory for a component type.
-func (mb *DataReceiverBase) GetFactory(kind component.Kind, componentType string) component.Factory {
+func (mb *DataReceiverBase) GetFactory(kind component.Kind, componentType configmodels.Type) component.Factory {
 	return nil
 }
 
