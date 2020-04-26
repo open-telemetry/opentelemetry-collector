@@ -63,8 +63,9 @@ func (es ResourceSpansSlice) At(ix int) ResourceSpans {
 	return newResourceSpans(&(*es.orig)[ix])
 }
 
-// MoveTo moves all elements from the current slice to the dest. The current slice will be cleared.
-func (es ResourceSpansSlice) MoveTo(dest ResourceSpansSlice) {
+// MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
+// The current slice will be cleared.
+func (es ResourceSpansSlice) MoveAndAppendTo(dest ResourceSpansSlice) {
 	if es.Len() == 0 {
 		// Just to ensure that we always return a Slice with nil elements.
 		*es.orig = nil
@@ -101,7 +102,7 @@ func (es ResourceSpansSlice) CopyTo(dest ResourceSpansSlice) {
 		wrappers[i] = &origs[i]
 		newResourceSpans(&el).CopyTo(newResourceSpans(&wrappers[i]))
 	}
-    *dest.orig = wrappers
+	*dest.orig = wrappers
 }
 
 // Resize is an operation that resizes the slice:
@@ -245,8 +246,9 @@ func (es InstrumentationLibrarySpansSlice) At(ix int) InstrumentationLibrarySpan
 	return newInstrumentationLibrarySpans(&(*es.orig)[ix])
 }
 
-// MoveTo moves all elements from the current slice to the dest. The current slice will be cleared.
-func (es InstrumentationLibrarySpansSlice) MoveTo(dest InstrumentationLibrarySpansSlice) {
+// MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
+// The current slice will be cleared.
+func (es InstrumentationLibrarySpansSlice) MoveAndAppendTo(dest InstrumentationLibrarySpansSlice) {
 	if es.Len() == 0 {
 		// Just to ensure that we always return a Slice with nil elements.
 		*es.orig = nil
@@ -283,7 +285,7 @@ func (es InstrumentationLibrarySpansSlice) CopyTo(dest InstrumentationLibrarySpa
 		wrappers[i] = &origs[i]
 		newInstrumentationLibrarySpans(&el).CopyTo(newInstrumentationLibrarySpans(&wrappers[i]))
 	}
-    *dest.orig = wrappers
+	*dest.orig = wrappers
 }
 
 // Resize is an operation that resizes the slice:
@@ -427,8 +429,9 @@ func (es SpanSlice) At(ix int) Span {
 	return newSpan(&(*es.orig)[ix])
 }
 
-// MoveTo moves all elements from the current slice to the dest. The current slice will be cleared.
-func (es SpanSlice) MoveTo(dest SpanSlice) {
+// MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
+// The current slice will be cleared.
+func (es SpanSlice) MoveAndAppendTo(dest SpanSlice) {
 	if es.Len() == 0 {
 		// Just to ensure that we always return a Slice with nil elements.
 		*es.orig = nil
@@ -465,7 +468,7 @@ func (es SpanSlice) CopyTo(dest SpanSlice) {
 		wrappers[i] = &origs[i]
 		newSpan(&el).CopyTo(newSpan(&wrappers[i]))
 	}
-    *dest.orig = wrappers
+	*dest.orig = wrappers
 }
 
 // Resize is an operation that resizes the slice:
@@ -791,8 +794,9 @@ func (es SpanEventSlice) At(ix int) SpanEvent {
 	return newSpanEvent(&(*es.orig)[ix])
 }
 
-// MoveTo moves all elements from the current slice to the dest. The current slice will be cleared.
-func (es SpanEventSlice) MoveTo(dest SpanEventSlice) {
+// MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
+// The current slice will be cleared.
+func (es SpanEventSlice) MoveAndAppendTo(dest SpanEventSlice) {
 	if es.Len() == 0 {
 		// Just to ensure that we always return a Slice with nil elements.
 		*es.orig = nil
@@ -829,7 +833,7 @@ func (es SpanEventSlice) CopyTo(dest SpanEventSlice) {
 		wrappers[i] = &origs[i]
 		newSpanEvent(&el).CopyTo(newSpanEvent(&wrappers[i]))
 	}
-    *dest.orig = wrappers
+	*dest.orig = wrappers
 }
 
 // Resize is an operation that resizes the slice:
@@ -1008,8 +1012,9 @@ func (es SpanLinkSlice) At(ix int) SpanLink {
 	return newSpanLink(&(*es.orig)[ix])
 }
 
-// MoveTo moves all elements from the current slice to the dest. The current slice will be cleared.
-func (es SpanLinkSlice) MoveTo(dest SpanLinkSlice) {
+// MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
+// The current slice will be cleared.
+func (es SpanLinkSlice) MoveAndAppendTo(dest SpanLinkSlice) {
 	if es.Len() == 0 {
 		// Just to ensure that we always return a Slice with nil elements.
 		*es.orig = nil
@@ -1046,7 +1051,7 @@ func (es SpanLinkSlice) CopyTo(dest SpanLinkSlice) {
 		wrappers[i] = &origs[i]
 		newSpanLink(&el).CopyTo(newSpanLink(&wrappers[i]))
 	}
-    *dest.orig = wrappers
+	*dest.orig = wrappers
 }
 
 // Resize is an operation that resizes the slice:

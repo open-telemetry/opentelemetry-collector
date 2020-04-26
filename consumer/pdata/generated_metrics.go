@@ -63,8 +63,9 @@ func (es ResourceMetricsSlice) At(ix int) ResourceMetrics {
 	return newResourceMetrics(&(*es.orig)[ix])
 }
 
-// MoveTo moves all elements from the current slice to the dest. The current slice will be cleared.
-func (es ResourceMetricsSlice) MoveTo(dest ResourceMetricsSlice) {
+// MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
+// The current slice will be cleared.
+func (es ResourceMetricsSlice) MoveAndAppendTo(dest ResourceMetricsSlice) {
 	if es.Len() == 0 {
 		// Just to ensure that we always return a Slice with nil elements.
 		*es.orig = nil
@@ -101,7 +102,7 @@ func (es ResourceMetricsSlice) CopyTo(dest ResourceMetricsSlice) {
 		wrappers[i] = &origs[i]
 		newResourceMetrics(&el).CopyTo(newResourceMetrics(&wrappers[i]))
 	}
-    *dest.orig = wrappers
+	*dest.orig = wrappers
 }
 
 // Resize is an operation that resizes the slice:
@@ -245,8 +246,9 @@ func (es InstrumentationLibraryMetricsSlice) At(ix int) InstrumentationLibraryMe
 	return newInstrumentationLibraryMetrics(&(*es.orig)[ix])
 }
 
-// MoveTo moves all elements from the current slice to the dest. The current slice will be cleared.
-func (es InstrumentationLibraryMetricsSlice) MoveTo(dest InstrumentationLibraryMetricsSlice) {
+// MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
+// The current slice will be cleared.
+func (es InstrumentationLibraryMetricsSlice) MoveAndAppendTo(dest InstrumentationLibraryMetricsSlice) {
 	if es.Len() == 0 {
 		// Just to ensure that we always return a Slice with nil elements.
 		*es.orig = nil
@@ -283,7 +285,7 @@ func (es InstrumentationLibraryMetricsSlice) CopyTo(dest InstrumentationLibraryM
 		wrappers[i] = &origs[i]
 		newInstrumentationLibraryMetrics(&el).CopyTo(newInstrumentationLibraryMetrics(&wrappers[i]))
 	}
-    *dest.orig = wrappers
+	*dest.orig = wrappers
 }
 
 // Resize is an operation that resizes the slice:
@@ -427,8 +429,9 @@ func (es MetricSlice) At(ix int) Metric {
 	return newMetric(&(*es.orig)[ix])
 }
 
-// MoveTo moves all elements from the current slice to the dest. The current slice will be cleared.
-func (es MetricSlice) MoveTo(dest MetricSlice) {
+// MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
+// The current slice will be cleared.
+func (es MetricSlice) MoveAndAppendTo(dest MetricSlice) {
 	if es.Len() == 0 {
 		// Just to ensure that we always return a Slice with nil elements.
 		*es.orig = nil
@@ -465,7 +468,7 @@ func (es MetricSlice) CopyTo(dest MetricSlice) {
 		wrappers[i] = &origs[i]
 		newMetric(&el).CopyTo(newMetric(&wrappers[i]))
 	}
-    *dest.orig = wrappers
+	*dest.orig = wrappers
 }
 
 // Resize is an operation that resizes the slice:
@@ -751,8 +754,9 @@ func (es Int64DataPointSlice) At(ix int) Int64DataPoint {
 	return newInt64DataPoint(&(*es.orig)[ix])
 }
 
-// MoveTo moves all elements from the current slice to the dest. The current slice will be cleared.
-func (es Int64DataPointSlice) MoveTo(dest Int64DataPointSlice) {
+// MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
+// The current slice will be cleared.
+func (es Int64DataPointSlice) MoveAndAppendTo(dest Int64DataPointSlice) {
 	if es.Len() == 0 {
 		// Just to ensure that we always return a Slice with nil elements.
 		*es.orig = nil
@@ -789,7 +793,7 @@ func (es Int64DataPointSlice) CopyTo(dest Int64DataPointSlice) {
 		wrappers[i] = &origs[i]
 		newInt64DataPoint(&el).CopyTo(newInt64DataPoint(&wrappers[i]))
 	}
-    *dest.orig = wrappers
+	*dest.orig = wrappers
 }
 
 // Resize is an operation that resizes the slice:
@@ -967,8 +971,9 @@ func (es DoubleDataPointSlice) At(ix int) DoubleDataPoint {
 	return newDoubleDataPoint(&(*es.orig)[ix])
 }
 
-// MoveTo moves all elements from the current slice to the dest. The current slice will be cleared.
-func (es DoubleDataPointSlice) MoveTo(dest DoubleDataPointSlice) {
+// MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
+// The current slice will be cleared.
+func (es DoubleDataPointSlice) MoveAndAppendTo(dest DoubleDataPointSlice) {
 	if es.Len() == 0 {
 		// Just to ensure that we always return a Slice with nil elements.
 		*es.orig = nil
@@ -1005,7 +1010,7 @@ func (es DoubleDataPointSlice) CopyTo(dest DoubleDataPointSlice) {
 		wrappers[i] = &origs[i]
 		newDoubleDataPoint(&el).CopyTo(newDoubleDataPoint(&wrappers[i]))
 	}
-    *dest.orig = wrappers
+	*dest.orig = wrappers
 }
 
 // Resize is an operation that resizes the slice:
@@ -1183,8 +1188,9 @@ func (es HistogramDataPointSlice) At(ix int) HistogramDataPoint {
 	return newHistogramDataPoint(&(*es.orig)[ix])
 }
 
-// MoveTo moves all elements from the current slice to the dest. The current slice will be cleared.
-func (es HistogramDataPointSlice) MoveTo(dest HistogramDataPointSlice) {
+// MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
+// The current slice will be cleared.
+func (es HistogramDataPointSlice) MoveAndAppendTo(dest HistogramDataPointSlice) {
 	if es.Len() == 0 {
 		// Just to ensure that we always return a Slice with nil elements.
 		*es.orig = nil
@@ -1221,7 +1227,7 @@ func (es HistogramDataPointSlice) CopyTo(dest HistogramDataPointSlice) {
 		wrappers[i] = &origs[i]
 		newHistogramDataPoint(&el).CopyTo(newHistogramDataPoint(&wrappers[i]))
 	}
-    *dest.orig = wrappers
+	*dest.orig = wrappers
 }
 
 // Resize is an operation that resizes the slice:
@@ -1437,8 +1443,9 @@ func (es HistogramBucketSlice) At(ix int) HistogramBucket {
 	return newHistogramBucket(&(*es.orig)[ix])
 }
 
-// MoveTo moves all elements from the current slice to the dest. The current slice will be cleared.
-func (es HistogramBucketSlice) MoveTo(dest HistogramBucketSlice) {
+// MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
+// The current slice will be cleared.
+func (es HistogramBucketSlice) MoveAndAppendTo(dest HistogramBucketSlice) {
 	if es.Len() == 0 {
 		// Just to ensure that we always return a Slice with nil elements.
 		*es.orig = nil
@@ -1475,7 +1482,7 @@ func (es HistogramBucketSlice) CopyTo(dest HistogramBucketSlice) {
 		wrappers[i] = &origs[i]
 		newHistogramBucket(&el).CopyTo(newHistogramBucket(&wrappers[i]))
 	}
-    *dest.orig = wrappers
+	*dest.orig = wrappers
 }
 
 // Resize is an operation that resizes the slice:
@@ -1714,8 +1721,9 @@ func (es SummaryDataPointSlice) At(ix int) SummaryDataPoint {
 	return newSummaryDataPoint(&(*es.orig)[ix])
 }
 
-// MoveTo moves all elements from the current slice to the dest. The current slice will be cleared.
-func (es SummaryDataPointSlice) MoveTo(dest SummaryDataPointSlice) {
+// MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
+// The current slice will be cleared.
+func (es SummaryDataPointSlice) MoveAndAppendTo(dest SummaryDataPointSlice) {
 	if es.Len() == 0 {
 		// Just to ensure that we always return a Slice with nil elements.
 		*es.orig = nil
@@ -1752,7 +1760,7 @@ func (es SummaryDataPointSlice) CopyTo(dest SummaryDataPointSlice) {
 		wrappers[i] = &origs[i]
 		newSummaryDataPoint(&el).CopyTo(newSummaryDataPoint(&wrappers[i]))
 	}
-    *dest.orig = wrappers
+	*dest.orig = wrappers
 }
 
 // Resize is an operation that resizes the slice:
@@ -1953,8 +1961,9 @@ func (es SummaryValueAtPercentileSlice) At(ix int) SummaryValueAtPercentile {
 	return newSummaryValueAtPercentile(&(*es.orig)[ix])
 }
 
-// MoveTo moves all elements from the current slice to the dest. The current slice will be cleared.
-func (es SummaryValueAtPercentileSlice) MoveTo(dest SummaryValueAtPercentileSlice) {
+// MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
+// The current slice will be cleared.
+func (es SummaryValueAtPercentileSlice) MoveAndAppendTo(dest SummaryValueAtPercentileSlice) {
 	if es.Len() == 0 {
 		// Just to ensure that we always return a Slice with nil elements.
 		*es.orig = nil
@@ -1991,7 +2000,7 @@ func (es SummaryValueAtPercentileSlice) CopyTo(dest SummaryValueAtPercentileSlic
 		wrappers[i] = &origs[i]
 		newSummaryValueAtPercentile(&el).CopyTo(newSummaryValueAtPercentile(&wrappers[i]))
 	}
-    *dest.orig = wrappers
+	*dest.orig = wrappers
 }
 
 // Resize is an operation that resizes the slice:

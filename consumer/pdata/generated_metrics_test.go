@@ -42,24 +42,24 @@ func TestResourceMetricsSlice(t *testing.T) {
 	}
 }
 
-func TestResourceMetricsSlice_MoveTo(t *testing.T) {
-	// Test MoveTo to empty
+func TestResourceMetricsSlice_MoveAndAppendTo(t *testing.T) {
+	// Test MoveAndAppendTo to empty
 	expectedSlice := generateTestResourceMetricsSlice()
 	dest := NewResourceMetricsSlice()
 	src := generateTestResourceMetricsSlice()
-	src.MoveTo(dest)
+	src.MoveAndAppendTo(dest)
 	assert.EqualValues(t, generateTestResourceMetricsSlice(), dest)
 	assert.EqualValues(t, 0, src.Len())
 	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
 
-	// Test MoveTo empty slice
-	src.MoveTo(dest)
+	// Test MoveAndAppendTo empty slice
+	src.MoveAndAppendTo(dest)
 	assert.EqualValues(t, generateTestResourceMetricsSlice(), dest)
 	assert.EqualValues(t, 0, src.Len())
 	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
 
-	// Test MoveTo not empty slice
-	generateTestResourceMetricsSlice().MoveTo(dest)
+	// Test MoveAndAppendTo not empty slice
+	generateTestResourceMetricsSlice().MoveAndAppendTo(dest)
 	assert.EqualValues(t, 2*expectedSlice.Len(), dest.Len())
 	for i := 0; i < expectedSlice.Len(); i++ {
 		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
@@ -177,24 +177,24 @@ func TestInstrumentationLibraryMetricsSlice(t *testing.T) {
 	}
 }
 
-func TestInstrumentationLibraryMetricsSlice_MoveTo(t *testing.T) {
-	// Test MoveTo to empty
+func TestInstrumentationLibraryMetricsSlice_MoveAndAppendTo(t *testing.T) {
+	// Test MoveAndAppendTo to empty
 	expectedSlice := generateTestInstrumentationLibraryMetricsSlice()
 	dest := NewInstrumentationLibraryMetricsSlice()
 	src := generateTestInstrumentationLibraryMetricsSlice()
-	src.MoveTo(dest)
+	src.MoveAndAppendTo(dest)
 	assert.EqualValues(t, generateTestInstrumentationLibraryMetricsSlice(), dest)
 	assert.EqualValues(t, 0, src.Len())
 	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
 
-	// Test MoveTo empty slice
-	src.MoveTo(dest)
+	// Test MoveAndAppendTo empty slice
+	src.MoveAndAppendTo(dest)
 	assert.EqualValues(t, generateTestInstrumentationLibraryMetricsSlice(), dest)
 	assert.EqualValues(t, 0, src.Len())
 	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
 
-	// Test MoveTo not empty slice
-	generateTestInstrumentationLibraryMetricsSlice().MoveTo(dest)
+	// Test MoveAndAppendTo not empty slice
+	generateTestInstrumentationLibraryMetricsSlice().MoveAndAppendTo(dest)
 	assert.EqualValues(t, 2*expectedSlice.Len(), dest.Len())
 	for i := 0; i < expectedSlice.Len(); i++ {
 		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
@@ -312,24 +312,24 @@ func TestMetricSlice(t *testing.T) {
 	}
 }
 
-func TestMetricSlice_MoveTo(t *testing.T) {
-	// Test MoveTo to empty
+func TestMetricSlice_MoveAndAppendTo(t *testing.T) {
+	// Test MoveAndAppendTo to empty
 	expectedSlice := generateTestMetricSlice()
 	dest := NewMetricSlice()
 	src := generateTestMetricSlice()
-	src.MoveTo(dest)
+	src.MoveAndAppendTo(dest)
 	assert.EqualValues(t, generateTestMetricSlice(), dest)
 	assert.EqualValues(t, 0, src.Len())
 	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
 
-	// Test MoveTo empty slice
-	src.MoveTo(dest)
+	// Test MoveAndAppendTo empty slice
+	src.MoveAndAppendTo(dest)
 	assert.EqualValues(t, generateTestMetricSlice(), dest)
 	assert.EqualValues(t, 0, src.Len())
 	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
 
-	// Test MoveTo not empty slice
-	generateTestMetricSlice().MoveTo(dest)
+	// Test MoveAndAppendTo not empty slice
+	generateTestMetricSlice().MoveAndAppendTo(dest)
 	assert.EqualValues(t, 2*expectedSlice.Len(), dest.Len())
 	for i := 0; i < expectedSlice.Len(); i++ {
 		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
@@ -534,24 +534,24 @@ func TestInt64DataPointSlice(t *testing.T) {
 	}
 }
 
-func TestInt64DataPointSlice_MoveTo(t *testing.T) {
-	// Test MoveTo to empty
+func TestInt64DataPointSlice_MoveAndAppendTo(t *testing.T) {
+	// Test MoveAndAppendTo to empty
 	expectedSlice := generateTestInt64DataPointSlice()
 	dest := NewInt64DataPointSlice()
 	src := generateTestInt64DataPointSlice()
-	src.MoveTo(dest)
+	src.MoveAndAppendTo(dest)
 	assert.EqualValues(t, generateTestInt64DataPointSlice(), dest)
 	assert.EqualValues(t, 0, src.Len())
 	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
 
-	// Test MoveTo empty slice
-	src.MoveTo(dest)
+	// Test MoveAndAppendTo empty slice
+	src.MoveAndAppendTo(dest)
 	assert.EqualValues(t, generateTestInt64DataPointSlice(), dest)
 	assert.EqualValues(t, 0, src.Len())
 	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
 
-	// Test MoveTo not empty slice
-	generateTestInt64DataPointSlice().MoveTo(dest)
+	// Test MoveAndAppendTo not empty slice
+	generateTestInt64DataPointSlice().MoveAndAppendTo(dest)
 	assert.EqualValues(t, 2*expectedSlice.Len(), dest.Len())
 	for i := 0; i < expectedSlice.Len(); i++ {
 		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
@@ -686,24 +686,24 @@ func TestDoubleDataPointSlice(t *testing.T) {
 	}
 }
 
-func TestDoubleDataPointSlice_MoveTo(t *testing.T) {
-	// Test MoveTo to empty
+func TestDoubleDataPointSlice_MoveAndAppendTo(t *testing.T) {
+	// Test MoveAndAppendTo to empty
 	expectedSlice := generateTestDoubleDataPointSlice()
 	dest := NewDoubleDataPointSlice()
 	src := generateTestDoubleDataPointSlice()
-	src.MoveTo(dest)
+	src.MoveAndAppendTo(dest)
 	assert.EqualValues(t, generateTestDoubleDataPointSlice(), dest)
 	assert.EqualValues(t, 0, src.Len())
 	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
 
-	// Test MoveTo empty slice
-	src.MoveTo(dest)
+	// Test MoveAndAppendTo empty slice
+	src.MoveAndAppendTo(dest)
 	assert.EqualValues(t, generateTestDoubleDataPointSlice(), dest)
 	assert.EqualValues(t, 0, src.Len())
 	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
 
-	// Test MoveTo not empty slice
-	generateTestDoubleDataPointSlice().MoveTo(dest)
+	// Test MoveAndAppendTo not empty slice
+	generateTestDoubleDataPointSlice().MoveAndAppendTo(dest)
 	assert.EqualValues(t, 2*expectedSlice.Len(), dest.Len())
 	for i := 0; i < expectedSlice.Len(); i++ {
 		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
@@ -838,24 +838,24 @@ func TestHistogramDataPointSlice(t *testing.T) {
 	}
 }
 
-func TestHistogramDataPointSlice_MoveTo(t *testing.T) {
-	// Test MoveTo to empty
+func TestHistogramDataPointSlice_MoveAndAppendTo(t *testing.T) {
+	// Test MoveAndAppendTo to empty
 	expectedSlice := generateTestHistogramDataPointSlice()
 	dest := NewHistogramDataPointSlice()
 	src := generateTestHistogramDataPointSlice()
-	src.MoveTo(dest)
+	src.MoveAndAppendTo(dest)
 	assert.EqualValues(t, generateTestHistogramDataPointSlice(), dest)
 	assert.EqualValues(t, 0, src.Len())
 	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
 
-	// Test MoveTo empty slice
-	src.MoveTo(dest)
+	// Test MoveAndAppendTo empty slice
+	src.MoveAndAppendTo(dest)
 	assert.EqualValues(t, generateTestHistogramDataPointSlice(), dest)
 	assert.EqualValues(t, 0, src.Len())
 	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
 
-	// Test MoveTo not empty slice
-	generateTestHistogramDataPointSlice().MoveTo(dest)
+	// Test MoveAndAppendTo not empty slice
+	generateTestHistogramDataPointSlice().MoveAndAppendTo(dest)
 	assert.EqualValues(t, 2*expectedSlice.Len(), dest.Len())
 	for i := 0; i < expectedSlice.Len(); i++ {
 		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
@@ -1017,24 +1017,24 @@ func TestHistogramBucketSlice(t *testing.T) {
 	}
 }
 
-func TestHistogramBucketSlice_MoveTo(t *testing.T) {
-	// Test MoveTo to empty
+func TestHistogramBucketSlice_MoveAndAppendTo(t *testing.T) {
+	// Test MoveAndAppendTo to empty
 	expectedSlice := generateTestHistogramBucketSlice()
 	dest := NewHistogramBucketSlice()
 	src := generateTestHistogramBucketSlice()
-	src.MoveTo(dest)
+	src.MoveAndAppendTo(dest)
 	assert.EqualValues(t, generateTestHistogramBucketSlice(), dest)
 	assert.EqualValues(t, 0, src.Len())
 	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
 
-	// Test MoveTo empty slice
-	src.MoveTo(dest)
+	// Test MoveAndAppendTo empty slice
+	src.MoveAndAppendTo(dest)
 	assert.EqualValues(t, generateTestHistogramBucketSlice(), dest)
 	assert.EqualValues(t, 0, src.Len())
 	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
 
-	// Test MoveTo not empty slice
-	generateTestHistogramBucketSlice().MoveTo(dest)
+	// Test MoveAndAppendTo not empty slice
+	generateTestHistogramBucketSlice().MoveAndAppendTo(dest)
 	assert.EqualValues(t, 2*expectedSlice.Len(), dest.Len())
 	for i := 0; i < expectedSlice.Len(); i++ {
 		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
@@ -1194,24 +1194,24 @@ func TestSummaryDataPointSlice(t *testing.T) {
 	}
 }
 
-func TestSummaryDataPointSlice_MoveTo(t *testing.T) {
-	// Test MoveTo to empty
+func TestSummaryDataPointSlice_MoveAndAppendTo(t *testing.T) {
+	// Test MoveAndAppendTo to empty
 	expectedSlice := generateTestSummaryDataPointSlice()
 	dest := NewSummaryDataPointSlice()
 	src := generateTestSummaryDataPointSlice()
-	src.MoveTo(dest)
+	src.MoveAndAppendTo(dest)
 	assert.EqualValues(t, generateTestSummaryDataPointSlice(), dest)
 	assert.EqualValues(t, 0, src.Len())
 	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
 
-	// Test MoveTo empty slice
-	src.MoveTo(dest)
+	// Test MoveAndAppendTo empty slice
+	src.MoveAndAppendTo(dest)
 	assert.EqualValues(t, generateTestSummaryDataPointSlice(), dest)
 	assert.EqualValues(t, 0, src.Len())
 	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
 
-	// Test MoveTo not empty slice
-	generateTestSummaryDataPointSlice().MoveTo(dest)
+	// Test MoveAndAppendTo not empty slice
+	generateTestSummaryDataPointSlice().MoveAndAppendTo(dest)
 	assert.EqualValues(t, 2*expectedSlice.Len(), dest.Len())
 	for i := 0; i < expectedSlice.Len(); i++ {
 		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
@@ -1364,24 +1364,24 @@ func TestSummaryValueAtPercentileSlice(t *testing.T) {
 	}
 }
 
-func TestSummaryValueAtPercentileSlice_MoveTo(t *testing.T) {
-	// Test MoveTo to empty
+func TestSummaryValueAtPercentileSlice_MoveAndAppendTo(t *testing.T) {
+	// Test MoveAndAppendTo to empty
 	expectedSlice := generateTestSummaryValueAtPercentileSlice()
 	dest := NewSummaryValueAtPercentileSlice()
 	src := generateTestSummaryValueAtPercentileSlice()
-	src.MoveTo(dest)
+	src.MoveAndAppendTo(dest)
 	assert.EqualValues(t, generateTestSummaryValueAtPercentileSlice(), dest)
 	assert.EqualValues(t, 0, src.Len())
 	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
 
-	// Test MoveTo empty slice
-	src.MoveTo(dest)
+	// Test MoveAndAppendTo empty slice
+	src.MoveAndAppendTo(dest)
 	assert.EqualValues(t, generateTestSummaryValueAtPercentileSlice(), dest)
 	assert.EqualValues(t, 0, src.Len())
 	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
 
-	// Test MoveTo not empty slice
-	generateTestSummaryValueAtPercentileSlice().MoveTo(dest)
+	// Test MoveAndAppendTo not empty slice
+	generateTestSummaryValueAtPercentileSlice().MoveAndAppendTo(dest)
 	assert.EqualValues(t, 2*expectedSlice.Len(), dest.Len())
 	for i := 0; i < expectedSlice.Len(); i++ {
 		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))

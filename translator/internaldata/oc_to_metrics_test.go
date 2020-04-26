@@ -117,8 +117,8 @@ func TestOCToMetricData(t *testing.T) {
 			wantSlice := data.NewMetricData()
 			// Double the ResourceMetrics only if not empty.
 			if test.internal.ResourceMetrics().Len() != 0 {
-				test.internal.Clone().ResourceMetrics().MoveTo(wantSlice.ResourceMetrics())
-				test.internal.Clone().ResourceMetrics().MoveTo(wantSlice.ResourceMetrics())
+				test.internal.Clone().ResourceMetrics().MoveAndAppendTo(wantSlice.ResourceMetrics())
+				test.internal.Clone().ResourceMetrics().MoveAndAppendTo(wantSlice.ResourceMetrics())
 			}
 			gotSlice := OCSliceToMetricData(ocslice)
 			assert.EqualValues(t, wantSlice, gotSlice)

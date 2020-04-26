@@ -61,8 +61,9 @@ func (es ${structName}) At(ix int) ${elementName} {
 	return new${elementName}(&(*es.orig)[ix])
 }
 
-// MoveTo moves all elements from the current slice to the dest. The current slice will be cleared.
-func (es ${structName}) MoveTo(dest ${structName}) {
+// MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
+// The current slice will be cleared.
+func (es ${structName}) MoveAndAppendTo(dest ${structName}) {
 	if es.Len() == 0 {
 		// Just to ensure that we always return a Slice with nil elements.
 		*es.orig = nil
@@ -99,7 +100,7 @@ func (es ${structName}) CopyTo(dest ${structName}) {
 		wrappers[i] = &origs[i]
 		new${elementName}(&el).CopyTo(new${elementName}(&wrappers[i]))
 	}
-    *dest.orig = wrappers
+	*dest.orig = wrappers
 }
 
 // Resize is an operation that resizes the slice:
@@ -151,24 +152,24 @@ const sliceTestTemplate = `func Test${structName}(t *testing.T) {
 	}
 }
 
-func Test${structName}_MoveTo(t *testing.T) {
-	// Test MoveTo to empty
+func Test${structName}_MoveAndAppendTo(t *testing.T) {
+	// Test MoveAndAppendTo to empty
 	expectedSlice := generateTest${structName}()
 	dest := New${structName}()
 	src := generateTest${structName}()
-	src.MoveTo(dest)
+	src.MoveAndAppendTo(dest)
 	assert.EqualValues(t, generateTest${structName}(), dest)
 	assert.EqualValues(t, 0, src.Len())
 	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
 
-	// Test MoveTo empty slice
-	src.MoveTo(dest)
+	// Test MoveAndAppendTo empty slice
+	src.MoveAndAppendTo(dest)
 	assert.EqualValues(t, generateTest${structName}(), dest)
 	assert.EqualValues(t, 0, src.Len())
 	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
 
-	// Test MoveTo not empty slice
-	generateTest${structName}().MoveTo(dest)
+	// Test MoveAndAppendTo not empty slice
+	generateTest${structName}().MoveAndAppendTo(dest)
 	assert.EqualValues(t, 2*expectedSlice.Len(), dest.Len())
 	for i := 0; i < expectedSlice.Len(); i++ {
 		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))

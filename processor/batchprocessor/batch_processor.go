@@ -154,7 +154,7 @@ func (b *batch) add(td pdata.Traces) {
 
 	b.resourceSpansCount = b.resourceSpansCount + uint32(newResourceSpansCount)
 	b.spanCount = b.spanCount + uint32(td.SpanCount())
-	td.ResourceSpans().MoveTo(b.traceData.ResourceSpans())
+	td.ResourceSpans().MoveAndAppendTo(b.traceData.ResourceSpans())
 }
 
 func (b *batch) getTraceData() pdata.Traces {
