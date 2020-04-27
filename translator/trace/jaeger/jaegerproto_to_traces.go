@@ -29,29 +29,61 @@ import (
 	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 )
 
+// ProtoBatchesToInternalTraces converts multiple Jaeger proto batches to internal traces
+func ProtoBatchesToInternalTraces(batches []*model.Batch) pdata.Traces {
+	traceData := pdata.NewTraces()
+	if len(batches) == 0 {
+		return traceData
+	}
+
+	rss := traceData.ResourceSpans()
+	rss.Resize(len(batches))
+
+	i := 0
+	for _, batch := range batches {
+		if batch.GetProcess() == nil && len(batch.GetSpans()) == 0 {
+			continue
+		}
+
+		protoBatchToResourceSpans(*batch, rss.At(i))
+		i++
+	}
+
+	// reduce traceData.ResourceSpans slice if some batched were skipped
+	if i < len(batches) {
+		rss.Resize(i)
+	}
+
+	return traceData
+}
+
+// ProtoBatchToInternalTraces converts Jeager proto batch to internal traces
 func ProtoBatchToInternalTraces(batch model.Batch) pdata.Traces {
 	traceData := pdata.NewTraces()
-	jProcess := batch.GetProcess()
-	jSpans := batch.GetSpans()
 
-	if jProcess == nil && len(jSpans) == 0 {
+	if batch.GetProcess() == nil && len(batch.GetSpans()) == 0 {
 		return traceData
 	}
 
 	rss := traceData.ResourceSpans()
 	rss.Resize(1)
-	rs := rss.At(0)
-	jProcessToInternalResource(jProcess, rs.Resource())
-
-	if len(jSpans) == 0 {
-		return traceData
-	}
-
-	ilss := rs.InstrumentationLibrarySpans()
-	ilss.Resize(1)
-	jSpansToInternal(jSpans, ilss.At(0).Spans())
+	protoBatchToResourceSpans(batch, rss.At(0))
 
 	return traceData
+}
+
+func protoBatchToResourceSpans(batch model.Batch, dest pdata.ResourceSpans) {
+	jSpans := batch.GetSpans()
+
+	jProcessToInternalResource(batch.GetProcess(), dest.Resource())
+
+	if len(jSpans) == 0 {
+		return
+	}
+
+	ilss := dest.InstrumentationLibrarySpans()
+	ilss.Resize(1)
+	jSpansToInternal(jSpans, ilss.At(0).Spans())
 }
 
 func jProcessToInternalResource(process *model.Process, dest pdata.Resource) {
