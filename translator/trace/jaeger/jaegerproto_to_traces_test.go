@@ -244,6 +244,37 @@ func TestProtoBatchToInternalTraces(t *testing.T) {
 	}
 }
 
+func TestProtoBatchesToInternalTraces(t *testing.T) {
+	batches := []*model.Batch{
+		{
+			Process: generateProtoProcess(),
+			Spans: []*model.Span{
+				generateProtoSpan(),
+			},
+		},
+		{
+			Spans: []*model.Span{
+				generateProtoSpan(),
+				generateProtoChildSpan(),
+			},
+		},
+		{
+			// should be skipped
+			Spans: []*model.Span{},
+		},
+	}
+
+	expected := generateTraceDataOneSpanNoResource()
+	resource := generateTraceDataResourceOnly().ResourceSpans().At(0).Resource()
+	resource.CopyTo(expected.ResourceSpans().At(0).Resource())
+	expected.ResourceSpans().Resize(2)
+	twoSpans := generateTraceDataTwoSpansChildParent().ResourceSpans().At(0)
+	twoSpans.CopyTo(expected.ResourceSpans().At(1))
+
+	got := ProtoBatchesToInternalTraces(batches)
+	assert.EqualValues(t, expected, got)
+}
+
 func generateTraceDataResourceOnly() pdata.Traces {
 	td := testdata.GenerateTraceDataOneEmptyResourceSpans()
 	rs := td.ResourceSpans().At(0).Resource()
