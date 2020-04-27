@@ -18,8 +18,9 @@ import (
 	"path"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector/testutils/configtestutils"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/open-telemetry/opentelemetry-collector/testutils/configtestutils"
 )
 
 func TestConfig(t *testing.T) {
