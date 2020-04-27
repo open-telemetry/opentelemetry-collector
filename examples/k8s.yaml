@@ -28,7 +28,7 @@ data:
           processors: [queued_retry]
           exporters: [opencensus]
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: otel-agent
@@ -36,6 +36,10 @@ metadata:
     app: opentelemetry
     component: otel-agent
 spec:
+  selector:
+    matchLabels:
+      app: opentelemetry
+      component: otel-agent
   template:
     metadata:
       labels:
@@ -149,7 +153,7 @@ spec:
   selector:
     component: otel-collector
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: otel-collector
@@ -157,6 +161,10 @@ metadata:
     app: opentelemetry
     component: otel-collector
 spec:
+  selector:
+    matchLabels:
+      app: opentelemetry
+      component: otel-collector
   minReadySeconds: 5
   progressDeadlineSeconds: 120
   replicas: 1 #TODO - adjust this to your own requirements
