@@ -19,13 +19,6 @@ config/strict:
     match_type: strict
     metric_names:
         - exact_string_match
-config/strictoptions:
-    match_type: strict
-    # There is no additional configuration for strict match type, but it can still be
-    # specified for consistency.
-    strict:
-    metric_names:
-        - exact_string_match
 config/emptyproperties:
     match_type: regexp
     metric_names:

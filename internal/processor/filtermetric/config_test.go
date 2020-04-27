@@ -20,7 +20,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/open-telemetry/opentelemetry-collector/internal/processor/filterset/factory"
+	"github.com/open-telemetry/opentelemetry-collector/internal/processor/filterset"
+	"github.com/open-telemetry/opentelemetry-collector/internal/processor/filterset/regexp"
 	"github.com/open-telemetry/opentelemetry-collector/testutils/configtestutils"
 )
 
@@ -37,6 +38,12 @@ var (
 		"exact_string_match",
 	}
 )
+
+func createConfigWithRegexpOptions(filters []string, rCfg *regexp.Config) *MatchProperties {
+	cfg := createConfig(filters, filterset.Regexp)
+	cfg.Config.RegexpConfig = rCfg
+	return cfg
+}
 
 func TestConfig(t *testing.T) {
 	testFile := path.Join(".", "testdata", "config.yaml")
@@ -56,26 +63,22 @@ func TestConfig(t *testing.T) {
 	}{
 		{
 			name:   "config/regexp",
-			expCfg: createConfig(regexpNameMatches, factory.REGEXP),
+			expCfg: createConfig(regexpNameMatches, filterset.Regexp),
 		}, {
 			name: "config/regexpoptions",
 			expCfg: createConfigWithRegexpOptions(
 				regexpNameMatches,
-				&factory.RegexpConfig{
+				&regexp.Config{
 					CacheEnabled:       true,
 					CacheMaxNumEntries: 5,
 				},
 			),
 		}, {
 			name:   "config/strict",
-			expCfg: createConfig(strictNameMatches, factory.STRICT),
-		}, {
-			name: "config/strictoptions",
-			// empty strict config yaml is valid, but nil
-			expCfg: createConfigWithStrictOptions(strictNameMatches, nil),
+			expCfg: createConfig(strictNameMatches, filterset.Strict),
 		}, {
 			name:   "config/emptyproperties",
-			expCfg: createConfig(nil, factory.REGEXP),
+			expCfg: createConfig(nil, filterset.Regexp),
 		},
 	}
 

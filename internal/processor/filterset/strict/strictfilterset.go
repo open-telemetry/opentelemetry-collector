@@ -14,17 +14,16 @@
 
 package strict
 
-import (
-	"github.com/open-telemetry/opentelemetry-collector/internal/processor/filterset"
-)
-
 // strictFilterSet encapsulates a set of exact string match filters.
+//
+// regexpFilterSet satisfies the FilterSet interface from
+// "github.com/open-telemetry/opentelemetry-collector/internal/processor/filterset"
 type strictFilterSet struct {
 	filters map[string]struct{}
 }
 
 // NewStrictFilterSet constructs a FilterSet of exact string matches.
-func NewStrictFilterSet(filters []string, opts ...Option) (filterset.FilterSet, error) {
+func NewStrictFilterSet(filters []string, opts ...Option) (*strictFilterSet, error) {
 	fs := &strictFilterSet{
 		filters: map[string]struct{}{},
 	}

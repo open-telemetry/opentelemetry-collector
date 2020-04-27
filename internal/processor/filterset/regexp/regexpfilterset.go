@@ -19,12 +19,13 @@ import (
 	"regexp"
 
 	"github.com/golang/groupcache/lru"
-
-	"github.com/open-telemetry/opentelemetry-collector/internal/processor/filterset"
 )
 
 // regexpFilterSet encapsulates a set of filters and caches match results.
 // Filters are re2 regex strings.
+//
+// regexpFilterSet satisfies the FilterSet interface from
+// "github.com/open-telemetry/opentelemetry-collector/internal/processor/filterset"
 type regexpFilterSet struct {
 	regexes           map[string]*regexp.Regexp
 	cacheEnabled      bool
@@ -34,7 +35,7 @@ type regexpFilterSet struct {
 
 // NewRegexpFilterSet constructs a FilterSet of re2 regex strings.
 // If any of the given filters fail to compile into re2, an error is returned.
-func NewRegexpFilterSet(filters []string, opts ...Option) (filterset.FilterSet, error) {
+func NewRegexpFilterSet(filters []string, opts ...Option) (*regexpFilterSet, error) {
 	fs := &regexpFilterSet{
 		regexes: map[string]*regexp.Regexp{},
 	}

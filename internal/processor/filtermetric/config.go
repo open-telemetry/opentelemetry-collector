@@ -15,14 +15,14 @@
 package filtermetric
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector/internal/processor/filterset/factory"
+	"github.com/open-telemetry/opentelemetry-collector/internal/processor/filterset"
 )
 
 // MatchProperties specifies the set of properties in a metric to match against and the
 // type of string pattern matching to use.
 type MatchProperties struct {
 	// MatchConfig configures the matching patterns used when matching metric properties.
-	MatchConfig factory.MatchConfig `mapstructure:",squash"`
+	filterset.Config `mapstructure:",squash"`
 
 	// MetricNames specifies the list of string patterns to match metric names against.
 	// A match occurs if the metric name matches at least one string pattern in this list.

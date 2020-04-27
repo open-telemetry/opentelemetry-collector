@@ -7,21 +7,10 @@ regexp/default:
 regexp/emptyoptions:
     match_type: regexp
     regexp:
-regexp/cachedisabledwithsize:
+regexp/withoptions:
     match_type: regexp
     regexp:
         cacheenabled: false
         cachemaxnumentries: 10
-regexp/cacheenablednosize:
-    match_type: regexp
-    regexp:
-        cacheenabled: true
-regexp/fullmatchrequired:
-    match_type: regexp
-    regexp:
-        fullmatchrequired: true
 strict/default:
     match_type: strict
-strict/emptyoptions:
-    match_type: strict
-    strict:

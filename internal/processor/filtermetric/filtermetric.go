@@ -18,7 +18,6 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector/internal/processor/filterset"
-	"github.com/open-telemetry/opentelemetry-collector/internal/processor/filterset/factory"
 )
 
 // Matcher matches metrics by metric properties against prespecified values for each property.
@@ -41,9 +40,7 @@ func (m *Matcher) MatchMetric(metric *metricspb.Metric) bool {
 // The metric Matcher supports matching by the following metric properties:
 // - Metric name
 func NewMatcher(config *MatchProperties) (Matcher, error) {
-	f := factory.Factory{}
-
-	nameFS, err := f.CreateFilterSet(config.MetricNames, &config.MatchConfig)
+	nameFS, err := filterset.CreateFilterSet(config.MetricNames, &config.Config)
 	if err != nil {
 		return Matcher{}, err
 	}

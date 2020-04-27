@@ -20,7 +20,7 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/open-telemetry/opentelemetry-collector/internal/processor/filterset/factory"
+	"github.com/open-telemetry/opentelemetry-collector/internal/processor/filterset"
 )
 
 var (
@@ -42,6 +42,14 @@ var (
 	}
 )
 
+func createMetric(name string) *metricspb.Metric {
+	return &metricspb.Metric{
+		MetricDescriptor: &metricspb.MetricDescriptor{
+			Name: name,
+		},
+	}
+}
+
 func TestMatcherMatches(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -51,27 +59,27 @@ func TestMatcherMatches(t *testing.T) {
 	}{
 		{
 			name:        "regexpNameMatch",
-			cfg:         createConfig(regexpFilters, factory.REGEXP),
+			cfg:         createConfig(regexpFilters, filterset.Regexp),
 			metric:      createMetric("test/match/suffix"),
 			shouldMatch: true,
 		}, {
 			name:        "regexpNameMisatch",
-			cfg:         createConfig(regexpFilters, factory.REGEXP),
+			cfg:         createConfig(regexpFilters, filterset.Regexp),
 			metric:      createMetric("test/match/wrongsuffix"),
 			shouldMatch: false,
 		}, {
 			name:        "strictNameMatch",
-			cfg:         createConfig(strictFilters, factory.STRICT),
+			cfg:         createConfig(strictFilters, filterset.Strict),
 			metric:      createMetric("exact_string_match"),
 			shouldMatch: true,
 		}, {
 			name:        "strictNameMismatch",
-			cfg:         createConfig(regexpFilters, factory.REGEXP),
+			cfg:         createConfig(regexpFilters, filterset.Regexp),
 			metric:      createMetric("wrong_string_match"),
 			shouldMatch: false,
 		}, {
 			name:        "matcherWithNoPropertyFilters",
-			cfg:         createConfig([]string{}, factory.STRICT),
+			cfg:         createConfig([]string{}, filterset.Strict),
 			metric:      createMetric("metric"),
 			shouldMatch: false,
 		},

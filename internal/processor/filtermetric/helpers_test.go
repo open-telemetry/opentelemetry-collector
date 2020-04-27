@@ -15,36 +15,14 @@
 package filtermetric
 
 import (
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-
-	"github.com/open-telemetry/opentelemetry-collector/internal/processor/filterset/factory"
+	"github.com/open-telemetry/opentelemetry-collector/internal/processor/filterset"
 )
 
-func createMetric(name string) *metricspb.Metric {
-	return &metricspb.Metric{
-		MetricDescriptor: &metricspb.MetricDescriptor{
-			Name: name,
-		},
-	}
-}
-
-func createConfig(filters []string, matchType factory.MatchType) *MatchProperties {
+func createConfig(filters []string, matchType filterset.MatchType) *MatchProperties {
 	return &MatchProperties{
-		MatchConfig: factory.MatchConfig{
+		Config: filterset.Config{
 			MatchType: matchType,
 		},
 		MetricNames: filters,
 	}
-}
-
-func createConfigWithRegexpOptions(filters []string, rCfg *factory.RegexpConfig) *MatchProperties {
-	cfg := createConfig(filters, factory.REGEXP)
-	cfg.MatchConfig.Regexp = rCfg
-	return cfg
-}
-
-func createConfigWithStrictOptions(filters []string, sCfg *factory.StrictConfig) *MatchProperties {
-	cfg := createConfig(filters, factory.STRICT)
-	cfg.MatchConfig.Strict = sCfg
-	return cfg
 }
