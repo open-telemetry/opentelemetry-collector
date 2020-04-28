@@ -94,6 +94,7 @@ func MetricCount(md pdata.Metrics) int {
 		for _, ocmd := range ocmds {
 			metricCount += len(ocmd.Metrics)
 		}
+		return metricCount
 	}
 	panic("Unsupported metrics type.")
 }
@@ -110,6 +111,7 @@ func MetricAndDataPointCount(md pdata.Metrics) (int, int) {
 			metricCount += mc
 			dataPointCount += dpc
 		}
+		return metricCount, dataPointCount
 	}
 	panic("Unsupported metrics type.")
 }
