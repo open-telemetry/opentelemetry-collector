@@ -117,7 +117,6 @@ func resourceToJaegerProtoProcess(resource pdata.Resource) *model.Process {
 	process := model.Process{}
 	if serviceName, ok := attrs.Get(conventions.AttributeServiceName); ok {
 		process.ServiceName = serviceName.StringVal()
-		attrs.Delete(conventions.AttributeServiceName)
 	}
 	process.Tags = attributesToJaegerProtoTags(attrs)
 	return &process
@@ -131,6 +130,10 @@ func attributesToJaegerProtoTags(attrs pdata.AttributeMap) []model.KeyValue {
 
 	tags := make([]model.KeyValue, 0, attrs.Cap())
 	attrs.ForEach(func(key string, attr pdata.AttributeValue) {
+		if key == conventions.AttributeServiceName {
+			return
+		}
+
 		tag := model.KeyValue{Key: key}
 		switch attr.Type() {
 		case pdata.AttributeValueSTRING:
