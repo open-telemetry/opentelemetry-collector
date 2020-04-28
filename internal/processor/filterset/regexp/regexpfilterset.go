@@ -15,17 +15,19 @@
 package regexp
 
 import (
-	"fmt"
+	"flag"
 	"regexp"
 
 	"github.com/golang/groupcache/lru"
-
-	"github.com/open-telemetry/opentelemetry-collector/internal/processor/filterset"
 )
 
-// regexpFilterSet encapsulates a set of filters and caches match results.
+// FilterSet encapsulates a set of filters and caches match results.
 // Filters are re2 regex strings.
-type regexpFilterSet struct {
+// FilterSet is exported for convenience, but has unexported fields and should be constructed through NewRegexpFilterSet.
+//
+// FilterSet satisfies the FilterSet interface from
+// "github.com/open-telemetry/opentelemetry-collector/internal/processor/filterset"
+type FilterSet struct {
 	regexes      map[string]*regexp.Regexp
 	cacheEnabled bool
 	cache        *lru.Cache
@@ -33,8 +35,8 @@ type regexpFilterSet struct {
 
 // NewRegexpFilterSet constructs a FilterSet of re2 regex strings.
 // If any of the given filters fail to compile into re2, an error is returned.
-func NewRegexpFilterSet(filters []string, opts ...Option) (filterset.FilterSet, error) {
-	fs := &regexpFilterSet{
+func NewRegexpFilterSet(filters []string, opts ...Option) (*FilterSet, error) {
+	fs := &FilterSet{
 		regexes: map[string]*regexp.Regexp{},
 	}
 
@@ -51,7 +53,7 @@ func NewRegexpFilterSet(filters []string, opts ...Option) (filterset.FilterSet, 
 
 // Matches returns true if the given string matches any of the FilterSet's filters.
 // The given string must be fully matched by at least one filter's re2 regex.
-func (rfs *regexpFilterSet) Matches(toMatch string) bool {
+func (rfs *FilterSet) Matches(toMatch string) bool {
 	if rfs.cacheEnabled {
 		if v, ok := rfs.cache.Get(toMatch); ok {
 			return v.(bool)
@@ -75,15 +77,13 @@ func (rfs *regexpFilterSet) Matches(toMatch string) bool {
 
 // addFilters compiles all the given filters and stores them as regexes.
 // All regexes are automatically anchored to enforce full string matches.
-func (rfs *regexpFilterSet) addFilters(filters []string) error {
+func (rfs *FilterSet) addFilters(filters []string) error {
 	for _, f := range filters {
-		// anchor all regexes to enforce full matches
-		anchored := fmt.Sprintf("^%s$", f)
-		if _, ok := rfs.regexes[anchored]; ok {
+		if _, ok := rfs.regexes[flag.CommandLine.Name()]; ok {
 			continue
 		}
 
-		re, err := regexp.Compile(anchored)
+		re, err := regexp.Compile(f)
 		if err != nil {
 			return err
 		}

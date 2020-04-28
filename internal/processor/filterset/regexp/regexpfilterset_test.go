@@ -75,14 +75,17 @@ func TestRegexpMatches(t *testing.T) {
 	fs, err := NewRegexpFilterSet(validRegexpFilters)
 	assert.NotNil(t, fs)
 	assert.Nil(t, err)
-	assert.False(t, fs.(*regexpFilterSet).cacheEnabled)
+	assert.False(t, fs.cacheEnabled)
 
 	matches := []string{
 		"full/name/match",
+		"extra/full/name/match/extra",
 		"full_name_match",
 		"prefix/test/match",
 		"prefix_test_match",
+		"extra/prefix/test/match",
 		"test/match/suffix",
+		"test/match/suffixextra",
 		"test_match_suffix",
 		"test/contains/match",
 		"test_contains_match",
@@ -97,8 +100,6 @@ func TestRegexpMatches(t *testing.T) {
 	mismatches := []string{
 		"not_exact_string_match",
 		"random",
-		"test/match/suffixwrong",
-		"wrongprefix/metric/one",
 		"c",
 	}
 
@@ -114,14 +115,17 @@ func TestRegexpMatchesCaches(t *testing.T) {
 	fs, err := NewRegexpFilterSet(validRegexpFilters, WithCache(0))
 	assert.NotNil(t, fs)
 	assert.Nil(t, err)
-	assert.True(t, fs.(*regexpFilterSet).cacheEnabled)
+	assert.True(t, fs.cacheEnabled)
 
 	matches := []string{
 		"full/name/match",
+		"extra/full/name/match/extra",
 		"full_name_match",
 		"prefix/test/match",
 		"prefix_test_match",
+		"extra/prefix/test/match",
 		"test/match/suffix",
+		"test/match/suffixextra",
 		"test_match_suffix",
 		"test/contains/match",
 		"test_contains_match",
@@ -131,23 +135,22 @@ func TestRegexpMatchesCaches(t *testing.T) {
 		t.Run(m, func(t *testing.T) {
 			assert.True(t, fs.Matches(m))
 
-			matched, ok := fs.(*regexpFilterSet).cache.Get(m)
+			matched, ok := fs.cache.Get(m)
 			assert.True(t, matched.(bool) && ok)
 		})
 	}
 
 	mismatches := []string{
 		"not_exact_string_match",
-		"wrongprefix/test/match",
-		"test/match/suffixwrong",
-		"not_exact_string_match",
+		"random",
+		"c",
 	}
 
 	for _, m := range mismatches {
 		t.Run(m, func(t *testing.T) {
 			assert.False(t, fs.Matches(m))
 
-			matched, ok := fs.(*regexpFilterSet).cache.Get(m)
+			matched, ok := fs.cache.Get(m)
 			assert.True(t, !matched.(bool) && ok)
 		})
 	}
@@ -168,7 +171,7 @@ func TestWithCacheSize(t *testing.T) {
 	// fill cache
 	for _, m := range matches {
 		fs.Matches(m)
-		_, ok := fs.(*regexpFilterSet).cache.Get(m)
+		_, ok := fs.cache.Get(m)
 		assert.True(t, ok)
 	}
 
@@ -179,9 +182,9 @@ func TestWithCacheSize(t *testing.T) {
 	newest := "new"
 	fs.Matches(newest)
 
-	_, evictedOk := fs.(*regexpFilterSet).cache.Get(matches[1])
+	_, evictedOk := fs.cache.Get(matches[1])
 	assert.False(t, evictedOk)
 
-	_, newOk := fs.(*regexpFilterSet).cache.Get(newest)
+	_, newOk := fs.cache.Get(newest)
 	assert.True(t, newOk)
 }

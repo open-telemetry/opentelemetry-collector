@@ -12,20 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package regexp
+package filtermetric
 
 import (
-	"github.com/golang/groupcache/lru"
+	"github.com/open-telemetry/opentelemetry-collector/internal/processor/filterset"
 )
 
-// Option is the type for regexp filtering options that can be passed to NewRegexpFilterSet.
-type Option func(*FilterSet)
-
-// WithCache enables an LRU cache that stores the previous results of calls to Matches.
-// The cache's max number of entries is set to maxNumEntries. Passing a value of 0 results in an unlimited cache size.
-func WithCache(maxNumEntries int) Option {
-	return func(rfs *FilterSet) {
-		rfs.cacheEnabled = true
-		rfs.cache = lru.New(maxNumEntries)
+func createConfig(filters []string, matchType filterset.MatchType) *MatchProperties {
+	return &MatchProperties{
+		Config: filterset.Config{
+			MatchType: matchType,
+		},
+		MetricNames: filters,
 	}
 }
