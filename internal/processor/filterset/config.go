@@ -37,7 +37,7 @@ type Config struct {
 	RegexpConfig *regexp.Config `mapstructure:"regexp"`
 }
 
-// CreateFilterSet creates a FilterSet using from yaml config.
+// CreateFilterSet creates a FilterSet from yaml config.
 func CreateFilterSet(filters []string, cfg *Config) (FilterSet, error) {
 	switch cfg.MatchType {
 	case Regexp:

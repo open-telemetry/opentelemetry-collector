@@ -15,28 +15,28 @@
 package regexp
 
 import (
-	"fmt"
+	"flag"
 	"regexp"
 
 	"github.com/golang/groupcache/lru"
 )
 
-// regexpFilterSet encapsulates a set of filters and caches match results.
+// FilterSet encapsulates a set of filters and caches match results.
 // Filters are re2 regex strings.
+// FilterSet is exported for convenience, but has unexported fields and should be constructed through NewRegexpFilterSet.
 //
-// regexpFilterSet satisfies the FilterSet interface from
+// FilterSet satisfies the FilterSet interface from
 // "github.com/open-telemetry/opentelemetry-collector/internal/processor/filterset"
-type regexpFilterSet struct {
-	regexes           map[string]*regexp.Regexp
-	cacheEnabled      bool
-	cache             *lru.Cache
-	fullMatchRequired bool
+type FilterSet struct {
+	regexes      map[string]*regexp.Regexp
+	cacheEnabled bool
+	cache        *lru.Cache
 }
 
 // NewRegexpFilterSet constructs a FilterSet of re2 regex strings.
 // If any of the given filters fail to compile into re2, an error is returned.
-func NewRegexpFilterSet(filters []string, opts ...Option) (*regexpFilterSet, error) {
-	fs := &regexpFilterSet{
+func NewRegexpFilterSet(filters []string, opts ...Option) (*FilterSet, error) {
+	fs := &FilterSet{
 		regexes: map[string]*regexp.Regexp{},
 	}
 
@@ -53,7 +53,7 @@ func NewRegexpFilterSet(filters []string, opts ...Option) (*regexpFilterSet, err
 
 // Matches returns true if the given string matches any of the FilterSet's filters.
 // The given string must be fully matched by at least one filter's re2 regex.
-func (rfs *regexpFilterSet) Matches(toMatch string) bool {
+func (rfs *FilterSet) Matches(toMatch string) bool {
 	if rfs.cacheEnabled {
 		if v, ok := rfs.cache.Get(toMatch); ok {
 			return v.(bool)
@@ -77,18 +77,13 @@ func (rfs *regexpFilterSet) Matches(toMatch string) bool {
 
 // addFilters compiles all the given filters and stores them as regexes.
 // All regexes are automatically anchored to enforce full string matches.
-func (rfs *regexpFilterSet) addFilters(filters []string) error {
+func (rfs *FilterSet) addFilters(filters []string) error {
 	for _, f := range filters {
-		pattern := f
-		if rfs.fullMatchRequired {
-			// anchor all regexes to enforce full matches
-			pattern = fmt.Sprintf("^%s$", f)
-		}
-		if _, ok := rfs.regexes[pattern]; ok {
+		if _, ok := rfs.regexes[flag.CommandLine.Name()]; ok {
 			continue
 		}
 
-		re, err := regexp.Compile(pattern)
+		re, err := regexp.Compile(f)
 		if err != nil {
 			return err
 		}

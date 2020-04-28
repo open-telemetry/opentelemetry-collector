@@ -110,57 +110,22 @@ func TestRegexpMatches(t *testing.T) {
 	}
 }
 
-func TestRegexpMatchesFullMatchRequired(t *testing.T) {
-	fs, err := NewRegexpFilterSet(validRegexpFilters, WithFullMatchRequired())
-	assert.NotNil(t, fs)
-	assert.Nil(t, err)
-	assert.False(t, fs.cacheEnabled)
-
-	matches := []string{
-		"full/name/match",
-		"full_name_match",
-		"prefix/test/match",
-		"prefix_test_match",
-		"test/match/suffix",
-		"test_match_suffix",
-		"test/contains/match",
-		"test_contains_match",
-	}
-
-	for _, m := range matches {
-		t.Run(m, func(t *testing.T) {
-			assert.True(t, fs.Matches(m))
-		})
-	}
-
-	mismatches := []string{
-		"not_exact_string_match",
-		"random",
-		"test/match/suffixwrong",
-		"wrongprefix/metric/one",
-		"c",
-	}
-
-	for _, m := range mismatches {
-		t.Run(m, func(t *testing.T) {
-			assert.False(t, fs.Matches(m))
-		})
-	}
-}
-
 func TestRegexpMatchesCaches(t *testing.T) {
 	// 0 means unlimited cache
-	fs, err := NewRegexpFilterSet(validRegexpFilters, WithCache(0), WithFullMatchRequired())
+	fs, err := NewRegexpFilterSet(validRegexpFilters, WithCache(0))
 	assert.NotNil(t, fs)
 	assert.Nil(t, err)
 	assert.True(t, fs.cacheEnabled)
 
 	matches := []string{
 		"full/name/match",
+		"extra/full/name/match/extra",
 		"full_name_match",
 		"prefix/test/match",
 		"prefix_test_match",
+		"extra/prefix/test/match",
 		"test/match/suffix",
+		"test/match/suffixextra",
 		"test_match_suffix",
 		"test/contains/match",
 		"test_contains_match",
@@ -177,9 +142,8 @@ func TestRegexpMatchesCaches(t *testing.T) {
 
 	mismatches := []string{
 		"not_exact_string_match",
-		"wrongprefix/test/match",
-		"test/match/suffixwrong",
-		"not_exact_string_match",
+		"random",
+		"c",
 	}
 
 	for _, m := range mismatches {

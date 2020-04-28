@@ -14,17 +14,18 @@
 
 package strict
 
-// strictFilterSet encapsulates a set of exact string match filters.
+// FilterSet encapsulates a set of exact string match filters.
+// FilterSet is exported for convenience, but has unexported fields and should be constructed through NewStrictFilterSet.
 //
 // regexpFilterSet satisfies the FilterSet interface from
 // "github.com/open-telemetry/opentelemetry-collector/internal/processor/filterset"
-type strictFilterSet struct {
+type FilterSet struct {
 	filters map[string]struct{}
 }
 
 // NewStrictFilterSet constructs a FilterSet of exact string matches.
-func NewStrictFilterSet(filters []string, opts ...Option) (*strictFilterSet, error) {
-	fs := &strictFilterSet{
+func NewStrictFilterSet(filters []string, opts ...Option) (*FilterSet, error) {
+	fs := &FilterSet{
 		filters: map[string]struct{}{},
 	}
 
@@ -40,13 +41,13 @@ func NewStrictFilterSet(filters []string, opts ...Option) (*strictFilterSet, err
 }
 
 // Matches returns true if the given string matches any of the FitlerSet's filters.
-func (sfs *strictFilterSet) Matches(toMatch string) bool {
+func (sfs *FilterSet) Matches(toMatch string) bool {
 	_, ok := sfs.filters[toMatch]
 	return ok
 }
 
 // addFilters all the given filters.
-func (sfs *strictFilterSet) addFilters(filters []string) error {
+func (sfs *FilterSet) addFilters(filters []string) error {
 	for _, f := range filters {
 		sfs.filters[f] = struct{}{}
 	}

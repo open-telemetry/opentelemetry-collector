@@ -15,4 +15,4 @@
 package strict
 
 // Option is the type for strict filtering options that can be passed to NewStrictFilterSet.
-type Option func(*strictFilterSet)
+type Option func(*FilterSet)

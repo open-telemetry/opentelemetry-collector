@@ -8,5 +8,3 @@ regexp/cachedisabledwithsize:
   cachemaxnumentries: 10
 regexp/cacheenablednosize:
   cacheenabled: true
-regexp/fullmatchrequired:
-  fullmatchrequired: true

@@ -44,9 +44,6 @@ func TestConfig(t *testing.T) {
 		"regexp/cacheenablednosize": {
 			CacheEnabled: true,
 		},
-		"regexp/fullmatchrequired": {
-			FullMatchRequired: true,
-		},
 	}
 
 	for testName, actualCfg := range actualConfigs {
