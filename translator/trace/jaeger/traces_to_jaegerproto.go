@@ -26,6 +26,14 @@ import (
 	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 )
 
+var (
+	resourceSkipKeys = map[string]struct{}{
+		conventions.AttributeServiceName: {},
+	}
+
+	noSkipKeys = map[string]struct{}{}
+)
+
 // InternalTracesToJaegerProto translates internal trace data into the Jaeger Proto for GRPC.
 // Returns slice of translated Jaeger batches and error if translation failed.
 func InternalTracesToJaegerProto(td pdata.Traces) ([]*model.Batch, error) {
@@ -118,19 +126,19 @@ func resourceToJaegerProtoProcess(resource pdata.Resource) *model.Process {
 	if serviceName, ok := attrs.Get(conventions.AttributeServiceName); ok {
 		process.ServiceName = serviceName.StringVal()
 	}
-	process.Tags = attributesToJaegerProtoTags(attrs)
+	process.Tags = attributesToJaegerProtoTags(attrs, resourceSkipKeys)
 	return &process
 
 }
 
-func attributesToJaegerProtoTags(attrs pdata.AttributeMap) []model.KeyValue {
+func attributesToJaegerProtoTags(attrs pdata.AttributeMap, skipKeys map[string]struct{}) []model.KeyValue {
 	if attrs.Cap() == 0 {
 		return nil
 	}
 
 	tags := make([]model.KeyValue, 0, attrs.Cap())
 	attrs.ForEach(func(key string, attr pdata.AttributeValue) {
-		if key == conventions.AttributeServiceName {
+		if _, skip := skipKeys[key]; skip {
 			return
 		}
 
@@ -176,7 +184,7 @@ func spanToJaegerProto(span pdata.Span) (*model.Span, error) {
 		return nil, fmt.Errorf("error converting span links to Jaeger references: %w", err)
 	}
 
-	tags := attributesToJaegerProtoTags(span.Attributes())
+	tags := attributesToJaegerProtoTags(span.Attributes(), noSkipKeys)
 	tags = appendTagFromSpanKind(tags, span.Kind())
 	tags = appendTagFromSpanStatus(tags, span.Status())
 	startTime := internal.UnixNanoToTime(span.StartTime())
@@ -295,7 +303,7 @@ func spanEventsToJaegerProtoLogs(events pdata.SpanEventSlice) []model.Log {
 
 		logs = append(logs, model.Log{
 			Timestamp: internal.UnixNanoToTime(event.Timestamp()),
-			Fields:    attributesToJaegerProtoTags(event.Attributes()),
+			Fields:    attributesToJaegerProtoTags(event.Attributes(), noSkipKeys),
 		})
 	}
 

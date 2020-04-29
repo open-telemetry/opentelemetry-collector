@@ -188,6 +188,7 @@ func TestAttributesToJaegerProtoTags(t *testing.T) {
 	attributes.InsertInt("int-val", 123)
 	attributes.InsertString("string-val", "abc")
 	attributes.InsertDouble("double-val", 1.23)
+	attributes.InsertString("skip", "must be skipped")
 
 	expected := []model.KeyValue{
 		{
@@ -212,7 +213,10 @@ func TestAttributesToJaegerProtoTags(t *testing.T) {
 		},
 	}
 
-	require.EqualValues(t, expected, attributesToJaegerProtoTags(attributes))
+	skipKeys := map[string]struct{}{
+		"skip": {},
+	}
+	require.EqualValues(t, expected, attributesToJaegerProtoTags(attributes, skipKeys))
 }
 
 func TestInternalTracesToJaegerProto(t *testing.T) {
