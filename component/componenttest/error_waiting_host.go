@@ -64,3 +64,7 @@ func (ews *ErrorWaitingHost) GetFactory(_ component.Kind, _ configmodels.Type) c
 func (ews *ErrorWaitingHost) GetExtensions() map[configmodels.Extension]component.ServiceExtension {
 	return nil
 }
+
+func (ews *ErrorWaitingHost) GetExporters() map[configmodels.DataType]map[configmodels.Exporter]component.Exporter {
+	return nil
+}

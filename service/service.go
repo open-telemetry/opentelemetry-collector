@@ -183,7 +183,11 @@ func (app *Application) GetFactory(kind component.Kind, componentType configmode
 }
 
 func (app *Application) GetExtensions() map[configmodels.Extension]component.ServiceExtension {
-	return app.builtExtensions.GetServiceExtensions()
+	return app.builtExtensions.ToMap()
+}
+
+func (app *Application) GetExporters() map[configmodels.DataType]map[configmodels.Exporter]component.Exporter {
+	return app.builtExporters.ToMapByDataType()
 }
 
 func (app *Application) init() error {
@@ -280,8 +284,8 @@ func (app *Application) setupPipelines(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrap(err, "cannot build builtExporters")
 	}
-	app.logger.Info("Starting exporters...")
 
+	app.logger.Info("Starting exporters...")
 	err = app.builtExporters.StartAll(ctx, app)
 	if err != nil {
 		return errors.Wrap(err, "cannot start builtExporters")
