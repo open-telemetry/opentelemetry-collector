@@ -25,15 +25,18 @@ import (
 
 const (
 	logLevelCfg = "log-level"
+	logProfileCfg = "log-profile"
 )
 
 var (
 	// Command line pointer to logger level flag configuration.
 	loggerLevelPtr *string
+	loggerProfilePtr *string
 )
 
 func loggerFlags(flags *flag.FlagSet) {
 	loggerLevelPtr = flags.String(logLevelCfg, "INFO", "Output level of logs (DEBUG, INFO, WARN, ERROR, DPANIC, PANIC, FATAL)")
+	loggerProfilePtr = flags.String(logProfileCfg, "", "Logging profile to use (dev, prod)")
 }
 
 func newLogger() (*zap.Logger, error) {
@@ -42,10 +45,22 @@ func newLogger() (*zap.Logger, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	conf := zap.NewProductionConfig()
-	if version.IsDevBuild() {
+
+	// Use logger profile if set on command line before falling back
+	// to default based on build type.
+	switch *loggerProfilePtr {
+	case "dev":
 		conf = zap.NewDevelopmentConfig()
+	case "prod":
+		conf = zap.NewProductionConfig()
+	default:
+		if version.IsDevBuild() {
+			conf = zap.NewDevelopmentConfig()
+		}
 	}
+
 	conf.Level.SetLevel(level)
 	return conf.Build()
 }
