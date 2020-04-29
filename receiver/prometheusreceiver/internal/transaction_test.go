@@ -17,10 +17,10 @@ package internal
 import (
 	"context"
 	"math"
-	"reflect"
 	"testing"
 	"time"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/scrape"
@@ -111,7 +111,7 @@ func Test_transaction(t *testing.T) {
 		}
 		expected := createNode("test", "localhost:8080", "http")
 		md := mcon.md
-		if !reflect.DeepEqual(md.Node, expected) {
+		if !proto.Equal(md.Node, expected) {
 			t.Errorf("generated node %v and expected node %v is different\n", md.Node, expected)
 		}
 
