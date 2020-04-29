@@ -44,28 +44,34 @@ func IsReleaseBuild() bool {
 	return BuildType == buildRelease
 }
 
-// Info returns a formatted string, with linebreaks, intended to be displayed
+// InfoVar is a singleton instance of the Info struct.
+var InfoVar = Info([][2]string{
+	{"Version", Version},
+	{"GitHash", GitHash},
+	{"BuildType", BuildType},
+	{"Goversion", runtime.Version()},
+	{"OS", runtime.GOOS},
+	{"Architecture", runtime.GOARCH},
+	// Add other valuable build-time information here.
+})
+
+// Info has properties about the build and runtime.
+type Info [][2]string
+
+// String returns a formatted string, with linebreaks, intended to be displayed
 // on stdout.
-func Info() string {
+func (i Info) String() string {
 	buf := new(bytes.Buffer)
-	rows := [][2]string{
-		{"Version", Version},
-		{"GitHash", GitHash},
-		{"Goversion", runtime.Version()},
-		{"OS", runtime.GOOS},
-		{"Architecture", runtime.GOARCH},
-		// Add other valuable build-time information here.
-	}
 	maxRow1Alignment := 0
-	for _, row := range rows {
-		if cl0 := len(row[0]); cl0 > maxRow1Alignment {
+	for _, prop := range i {
+		if cl0 := len(prop[0]); cl0 > maxRow1Alignment {
 			maxRow1Alignment = cl0
 		}
 	}
 
-	for _, row := range rows {
+	for _, prop := range i {
 		// Then finally print them with left alignment
-		fmt.Fprintf(buf, "%*s %s\n", -maxRow1Alignment, row[0], row[1])
+		fmt.Fprintf(buf, "%*s %s\n", -maxRow1Alignment, prop[0], prop[1])
 	}
 	return buf.String()
 }
