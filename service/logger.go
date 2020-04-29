@@ -19,6 +19,8 @@ import (
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+
+	"github.com/open-telemetry/opentelemetry-collector/internal/version"
 )
 
 const (
@@ -41,6 +43,9 @@ func newLogger() (*zap.Logger, error) {
 		return nil, err
 	}
 	conf := zap.NewProductionConfig()
+	if version.IsDevBuild() {
+		conf = zap.NewDevelopmentConfig()
+	}
 	conf.Level.SetLevel(level)
 	return conf.Build()
 }

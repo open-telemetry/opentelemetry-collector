@@ -20,11 +20,20 @@ import (
 	"runtime"
 )
 
+const (
+	defaultVersion = "latest"
+)
+
 // Version variable will be replaced at link time after `make` has been run.
-var Version = "latest"
+var Version = defaultVersion
 
 // GitHash variable will be replaced at link time after `make` has been run.
 var GitHash = "<NOT PROPERLY GENERATED>"
+
+// IsDevBuild returns true if this is a development (local) build.
+func IsDevBuild() bool {
+	return Version == defaultVersion
+}
 
 // Info returns a formatted string, with linebreaks, intended to be displayed
 // on stdout.
