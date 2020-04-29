@@ -24,13 +24,13 @@ import (
 )
 
 const (
-	logLevelCfg = "log-level"
+	logLevelCfg   = "log-level"
 	logProfileCfg = "log-profile"
 )
 
 var (
 	// Command line pointer to logger level flag configuration.
-	loggerLevelPtr *string
+	loggerLevelPtr   *string
 	loggerProfilePtr *string
 )
 

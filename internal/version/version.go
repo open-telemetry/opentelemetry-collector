@@ -21,18 +21,27 @@ import (
 )
 
 const (
-	defaultVersion = "latest"
+	buildDev     = "dev"
+	buildRelease = "release"
 )
 
 // Version variable will be replaced at link time after `make` has been run.
-var Version = defaultVersion
+var Version = "latest"
 
 // GitHash variable will be replaced at link time after `make` has been run.
 var GitHash = "<NOT PROPERLY GENERATED>"
 
+// BuildType should be one of (dev, release).
+var BuildType = buildDev
+
 // IsDevBuild returns true if this is a development (local) build.
 func IsDevBuild() bool {
-	return Version == defaultVersion
+	return BuildType == buildDev
+}
+
+// IsReleaseBuild returns true if this is a release build.
+func IsReleaseBuild() bool {
+	return BuildType == buildRelease
 }
 
 // Info returns a formatted string, with linebreaks, intended to be displayed

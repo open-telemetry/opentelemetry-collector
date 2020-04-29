@@ -29,6 +29,8 @@ LINT=golangci-lint
 IMPI=impi
 GOSEC=gosec
 STATIC_CHECK=staticcheck
+# BUILD_TYPE should be one of (dev, release).
+BUILD_TYPE?=release
 
 GIT_SHA=$(shell git rev-parse --short HEAD)
 BUILD_INFO_IMPORT_PATH=github.com/open-telemetry/opentelemetry-collector/internal/version
@@ -36,7 +38,8 @@ BUILD_X1=-X $(BUILD_INFO_IMPORT_PATH).GitHash=$(GIT_SHA)
 ifdef VERSION
 BUILD_X2=-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)
 endif
-BUILD_INFO=-ldflags "${BUILD_X1} ${BUILD_X2}"
+BUILD_X3=-X $(BUILD_INFO_IMPORT_PATH).BuildType=$(BUILD_TYPE)
+BUILD_INFO=-ldflags "${BUILD_X1} ${BUILD_X2} ${BUILD_X3}"
 
 all-srcs:
 	@echo $(ALL_SRC) | tr ' ' '\n' | sort
