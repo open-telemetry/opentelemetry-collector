@@ -91,8 +91,7 @@ type jReceiver struct {
 	agentProcessors      []processors.Processor
 	agentServer          *http.Server
 
-	defaultAgentCtx context.Context
-	logger          *zap.Logger
+	logger *zap.Logger
 }
 
 const (
@@ -122,9 +121,7 @@ func New(
 	params component.ReceiverCreateParams,
 ) (component.TraceReceiver, error) {
 	return &jReceiver{
-		config: config,
-		defaultAgentCtx: obsreport.ReceiverContext(
-			context.Background(), instanceName, agentTransportBinary, agentReceiverTagValue),
+		config:       config,
 		nextConsumer: nextConsumer,
 		instanceName: instanceName,
 		logger:       params.Logger,
@@ -369,7 +366,8 @@ func (jr *jReceiver) startAgent(_ component.Host) error {
 			name:         jr.instanceName,
 			transport:    agentTransportBinary,
 			nextConsumer: jr.nextConsumer,
-			ctx:          jr.defaultAgentCtx,
+			ctx: obsreport.ReceiverContext(
+				context.Background(), jr.instanceName, agentTransportBinary, agentReceiverTagValue),
 		}
 		processor, err := jr.buildProcessor(jr.agentBinaryThriftAddr(), apacheThrift.NewTBinaryProtocolFactoryDefault(), h)
 		if err != nil {
@@ -383,7 +381,8 @@ func (jr *jReceiver) startAgent(_ component.Host) error {
 			name:         jr.instanceName,
 			transport:    agentTransportCompact,
 			nextConsumer: jr.nextConsumer,
-			ctx:          jr.defaultAgentCtx,
+			ctx: obsreport.ReceiverContext(
+				context.Background(), jr.instanceName, agentTransportCompact, agentReceiverTagValue),
 		}
 		processor, err := jr.buildProcessor(jr.agentCompactThriftAddr(), apacheThrift.NewTCompactProtocolFactory(), h)
 		if err != nil {

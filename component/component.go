@@ -69,6 +69,16 @@ type Host interface {
 	// can be done by iterating the returned map. There are typically very few extensions
 	// so there there is no performance implications due to iteration.
 	GetExtensions() map[configmodels.Extension]ServiceExtension
+
+	// Return map of exporters. Only enabled and created exporters will be returned.
+	// Typically is used to find exporters by type or by full config name. Both cases
+	// can be done by iterating the returned map. There are typically very few exporters
+	// so there there is no performance implications due to iteration.
+	// This returns a map by DataType of maps by exporter configs to the exporter instance.
+	// Note that an exporter with the same name may be attached to multiple pipelines and
+	// thus we may have an instance of the exporter for multiple data types.
+	// This is an experimental function that may change or even be removed completely.
+	GetExporters() map[configmodels.DataType]map[configmodels.Exporter]Exporter
 }
 
 // Factory interface must be implemented by all component factories.

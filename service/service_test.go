@@ -369,3 +369,41 @@ func TestApplication_GetExtensions(t *testing.T) {
 	close(app.stopTestChan)
 	<-appDone
 }
+
+func TestApplication_GetExporters(t *testing.T) {
+	app := createExampleApplication(t)
+
+	appDone := make(chan struct{})
+	go func() {
+		defer close(appDone)
+		assert.NoError(t, app.Start())
+	}()
+
+	<-app.readyChan
+
+	// Verify GetExporters().
+
+	expMap := app.GetExporters()
+	var expTypes []string
+	var expCfg configmodels.Exporter
+	for _, m := range expMap {
+		for cfg, exp := range m {
+			if exp != nil {
+				expTypes = append(expTypes, string(cfg.Type()))
+				assert.Nil(t, expCfg)
+				expCfg = cfg
+			}
+		}
+	}
+	sort.Strings(expTypes)
+
+	assert.Equal(t, []string{"exampleexporter"}, expTypes)
+
+	assert.EqualValues(t, 0, len(expMap[configmodels.MetricsDataType]))
+	assert.NotNil(t, expMap[configmodels.TracesDataType][expCfg])
+	assert.EqualValues(t, "exampleexporter", expCfg.Type())
+
+	// Stop the Application.
+	close(app.stopTestChan)
+	<-appDone
+}

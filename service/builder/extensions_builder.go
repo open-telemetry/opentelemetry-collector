@@ -109,7 +109,7 @@ func (exts Extensions) NotifyPipelineNotReady() error {
 	return nil
 }
 
-func (exts Extensions) GetServiceExtensions() map[configmodels.Extension]component.ServiceExtension {
+func (exts Extensions) ToMap() map[configmodels.Extension]component.ServiceExtension {
 	result := make(map[configmodels.Extension]component.ServiceExtension, len(exts))
 	for k, v := range exts {
 		result[k] = v.extension
