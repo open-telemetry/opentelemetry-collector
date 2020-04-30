@@ -19,10 +19,12 @@ import (
 	"flag"
 	"fmt"
 	"strings"
+
+	"github.com/open-telemetry/opentelemetry-collector/internal/version"
 )
 
 const (
-	metricsPortCfg   = "metrics-port"
+	metricsAddrCfg   = "metrics-addr"
 	metricsLevelCfg  = "metrics-level"
 	metricsPrefixCfg = "metrics-prefix"
 
@@ -41,7 +43,7 @@ const (
 var (
 	// Command-line flags that control publication of telemetry data.
 	metricsLevelPtr  *string
-	metricsPortPtr   *uint
+	metricsAddrPtr   *string
 	metricsPrefixPtr *string
 
 	useLegacyMetricsPtr *bool
@@ -57,10 +59,10 @@ func Flags(flags *flag.FlagSet) {
 
 	// At least until we can use a generic, i.e.: OpenCensus, metrics exporter
 	// we default to Prometheus at port 8888, if not otherwise specified.
-	metricsPortPtr = flags.Uint(
-		metricsPortCfg,
-		8888,
-		"Port exposing collector telemetry.")
+	metricsAddrPtr = flags.String(
+		metricsAddrCfg,
+		GetMetricsAddrDefault(),
+		"[address]:port for exposing collector telemetry.")
 
 	metricsPrefixPtr = flags.String(
 		metricsPrefixCfg,
@@ -83,6 +85,16 @@ func Flags(flags *flag.FlagSet) {
 		"add-instance-id",
 		false,
 		"Flag to control the addition of 'service.instance.id' to the collector metrics.")
+}
+
+// GetMetricsAddrDefault returns the default metrics bind address and port depending on
+// the current build type.
+func GetMetricsAddrDefault() string {
+	if version.IsDevBuild() {
+		// Listen on localhost by default for dev builds to avoid security prompts.
+		return "localhost:8888"
+	}
+	return ":8888"
 }
 
 // Level of telemetry data to be generated.
@@ -118,8 +130,8 @@ func GetLevel() (Level, error) {
 	return level, nil
 }
 
-func GetMetricsPort() int {
-	return int(*metricsPortPtr)
+func GetMetricsAddr() string {
+	return *metricsAddrPtr
 }
 
 func GetMetricsPrefix() string {
