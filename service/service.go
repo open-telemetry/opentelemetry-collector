@@ -20,9 +20,12 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
+	"path"
 	"runtime"
+	"sort"
 	"syscall"
 
 	"github.com/pkg/errors"
@@ -36,7 +39,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/internal/collector/telemetry"
+	"github.com/open-telemetry/opentelemetry-collector/internal/version"
 	"github.com/open-telemetry/opentelemetry-collector/service/builder"
+	"github.com/open-telemetry/opentelemetry-collector/service/internal"
+)
+
+const (
+	servicezPath   = "servicez"
+	pipelinezPath  = "pipelinez"
+	extensionzPath = "extensionz"
 )
 
 // Application represents a collector application
@@ -189,6 +200,12 @@ func (app *Application) GetExtensions() map[configmodels.Extension]component.Ser
 
 func (app *Application) GetExporters() map[configmodels.DataType]map[configmodels.Exporter]component.Exporter {
 	return app.builtExporters.ToMapByDataType()
+}
+
+func (app *Application) RegisterZPages(mux *http.ServeMux, pathPrefix string) {
+	mux.HandleFunc(path.Join(pathPrefix, servicezPath), app.handleServicezRequest)
+	mux.HandleFunc(path.Join(pathPrefix, pipelinezPath), app.handlePipelinezRequest)
+	mux.HandleFunc(path.Join(pathPrefix, extensionzPath), app.handleExtensionzRequest)
 }
 
 func (app *Application) init() error {
@@ -431,6 +448,108 @@ func (app *Application) Start() error {
 	app.rootCmd.SilenceUsage = true
 
 	return app.rootCmd.Execute()
+}
+
+const (
+	zPipelineName  = "zpipelinename"
+	zComponentName = "zcomponentname"
+	zComponentKind = "zcomponentkind"
+	zExtensionName = "zextensionname"
+)
+
+func (app *Application) handleServicezRequest(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	internal.WriteHTMLHeader(w, internal.HeaderData{Title: "Service"})
+	internal.WriteHTMLComponentHeader(w, internal.ComponentHeaderData{
+		Name:              "Pipelines",
+		ComponentEndpoint: pipelinezPath,
+		Link:              true,
+	})
+	internal.WriteHTMLComponentHeader(w, internal.ComponentHeaderData{
+		Name:              "Extensions",
+		ComponentEndpoint: extensionzPath,
+		Link:              true,
+	})
+	internal.WriteHTMLPropertiesTable(w, internal.PropertiesTableData{Name: "Build And Runtime", Properties: version.InfoVar})
+	internal.WriteHTMLFooter(w)
+}
+
+func (app *Application) handlePipelinezRequest(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	pipelineName := r.Form.Get(zPipelineName)
+	componentName := r.Form.Get(zComponentName)
+	componentKind := r.Form.Get(zComponentKind)
+	internal.WriteHTMLHeader(w, internal.HeaderData{Title: "Pipelines"})
+	internal.WriteHTMLPipelinesSummaryTable(w, app.getPipelinesSummaryTableData())
+	if pipelineName != "" && componentName != "" && componentKind != "" {
+		fullName := componentName
+		if componentKind == "processor" {
+			fullName = pipelineName + "/" + componentName
+		}
+		internal.WriteHTMLComponentHeader(w, internal.ComponentHeaderData{
+			Name: componentKind + ": " + fullName,
+		})
+		// TODO: Add config + status info.
+	}
+	internal.WriteHTMLFooter(w)
+}
+
+func (app *Application) handleExtensionzRequest(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	extensionName := r.Form.Get(zExtensionName)
+	internal.WriteHTMLHeader(w, internal.HeaderData{Title: "Extensions"})
+	internal.WriteHTMLExtensionsSummaryTable(w, app.getExtensionsSummaryTableData())
+	if extensionName != "" {
+		internal.WriteHTMLComponentHeader(w, internal.ComponentHeaderData{
+			Name: extensionName,
+		})
+		// TODO: Add config + status info.
+	}
+	internal.WriteHTMLFooter(w)
+}
+
+func (app *Application) getPipelinesSummaryTableData() internal.SummaryPipelinesTableData {
+	data := internal.SummaryPipelinesTableData{
+		ComponentEndpoint: pipelinezPath,
+	}
+
+	data.Rows = make([]internal.SummaryPipelinesTableRowData, 0, len(app.builtExtensions))
+	for c, p := range app.builtPipelines {
+		row := internal.SummaryPipelinesTableRowData{
+			FullName:            c.Name,
+			InputType:           c.InputType.GetString(),
+			MutatesConsumedData: p.MutatesConsumedData,
+			Receivers:           c.Receivers,
+			Processors:          c.Processors,
+			Exporters:           c.Exporters,
+		}
+		data.Rows = append(data.Rows, row)
+	}
+
+	sort.Slice(data.Rows, func(i, j int) bool {
+		return data.Rows[i].FullName < data.Rows[j].FullName
+	})
+	return data
+}
+
+func (app *Application) getExtensionsSummaryTableData() internal.SummaryExtensionsTableData {
+	data := internal.SummaryExtensionsTableData{
+		ComponentEndpoint: extensionzPath,
+	}
+
+	data.Rows = make([]internal.SummaryExtensionsTableRowData, 0, len(app.builtExtensions))
+	for c := range app.builtExtensions {
+		row := internal.SummaryExtensionsTableRowData{FullName: c.Name()}
+		data.Rows = append(data.Rows, row)
+	}
+
+	sort.Slice(data.Rows, func(i, j int) bool {
+		return data.Rows[i].FullName < data.Rows[j].FullName
+	})
+	return data
 }
 
 func (app *Application) createMemoryBallast() ([]byte, uint64) {

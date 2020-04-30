@@ -1,4 +1,4 @@
-// Copyright 2019, OpenTelemetry Authors
+// Copyright 2020, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,19 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package version
+package internal
 
-import (
-	"strings"
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-)
-
-func TestInfoString(t *testing.T) {
-	infoString := InfoVar.String()
-	for _, el := range InfoVar {
-		assert.True(t, strings.Contains(infoString, el[0]))
-		assert.True(t, strings.Contains(infoString, el[1]))
-	}
-}
+//go:generate esc -pkg internal -o resources.go templates/
