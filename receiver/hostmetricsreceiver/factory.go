@@ -24,6 +24,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
@@ -82,7 +83,7 @@ func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 
 		cfg.Scrapers = map[string]internal.Config{}
 
-		scrapersViperSection := componentViperSection.Sub(scrapersKey)
+		scrapersViperSection := config.ViperSub(componentViperSection, scrapersKey)
 		if scrapersViperSection == nil || len(scrapersViperSection.AllKeys()) == 0 {
 			return fmt.Errorf("must specify at least one scraper when using hostmetrics receiver")
 		}
@@ -94,7 +95,7 @@ func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 			}
 
 			collectorCfg := factory.CreateDefaultConfig()
-			collectorViperSection := scrapersViperSection.Sub(key)
+			collectorViperSection := config.ViperSub(scrapersViperSection, key)
 			if collectorViperSection != nil {
 				err := collectorViperSection.UnmarshalExact(collectorCfg)
 				if err != nil {
