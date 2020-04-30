@@ -66,6 +66,10 @@ func (mb *DataReceiverBase) GetExtensions() map[configmodels.Extension]component
 	return nil
 }
 
+func (mb *DataReceiverBase) GetExporters() map[configmodels.DataType]map[configmodels.Exporter]component.Exporter {
+	return nil
+}
+
 // OCDataReceiver implements OpenCensus format receiver.
 type OCDataReceiver struct {
 	DataReceiverBase

@@ -72,6 +72,14 @@ func (exp *builtExporter) Shutdown(ctx context.Context) error {
 	return componenterror.CombineErrors(errors)
 }
 
+func (exp *builtExporter) GetTraceExporter() component.TraceExporterBase {
+	return exp.te
+}
+
+func (exp *builtExporter) GetMetricExporter() component.MetricsExporterBase {
+	return exp.me
+}
+
 // Exporters is a map of exporters created from exporter configs.
 type Exporters map[configmodels.Exporter]*builtExporter
 
@@ -102,6 +110,27 @@ func (exps Exporters) ShutdownAll(ctx context.Context) error {
 		return componenterror.CombineErrors(errs)
 	}
 	return nil
+}
+
+func (exps Exporters) ToMapByDataType() map[configmodels.DataType]map[configmodels.Exporter]component.Exporter {
+
+	exportersMap := make(map[configmodels.DataType]map[configmodels.Exporter]component.Exporter)
+
+	exportersMap[configmodels.TracesDataType] = make(map[configmodels.Exporter]component.Exporter, len(exps))
+	exportersMap[configmodels.MetricsDataType] = make(map[configmodels.Exporter]component.Exporter, len(exps))
+
+	for cfg, exp := range exps {
+		te := exp.GetTraceExporter()
+		if te != nil {
+			exportersMap[configmodels.TracesDataType][cfg] = te
+		}
+		me := exp.GetMetricExporter()
+		if me != nil {
+			exportersMap[configmodels.MetricsDataType][cfg] = me
+		}
+	}
+
+	return exportersMap
 }
 
 type dataTypeRequirement struct {
