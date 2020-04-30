@@ -65,27 +65,10 @@ func jThriftProcessToInternalResource(process *jaeger.Process, dest pdata.Resour
 	}
 
 	attrs := dest.Attributes()
-
 	if serviceName != "" {
 		attrs.UpsertString(conventions.AttributeServiceName, serviceName)
 	}
-
-	for _, tag := range tags {
-		switch tag.GetVType() {
-		case jaeger.TagType_STRING:
-			attrs.UpsertString(tag.Key, tag.GetVStr())
-		case jaeger.TagType_BOOL:
-			attrs.UpsertBool(tag.Key, tag.GetVBool())
-		case jaeger.TagType_LONG:
-			attrs.UpsertInt(tag.Key, tag.GetVLong())
-		case jaeger.TagType_DOUBLE:
-			attrs.UpsertDouble(tag.Key, tag.GetVDouble())
-		case jaeger.TagType_BINARY:
-			attrs.UpsertString(tag.Key, base64.StdEncoding.EncodeToString(tag.GetVBinary()))
-		default:
-			attrs.UpsertString(tag.Key, fmt.Sprintf("<Unknown Jaeger TagType %q>", tag.GetVType()))
-		}
-	}
+	jThriftTagsToInternalAttributes(tags, attrs)
 
 	// Handle special keys translations.
 	translateHostnameAttr(attrs)
@@ -124,39 +107,40 @@ func jThriftSpanToInternal(span *jaeger.Span, dest pdata.Span) {
 		dest.SetParentSpanID(pdata.SpanID(tracetranslator.Int64ToByteSpanID(parentSpanID)))
 	}
 
-	attrs := jThriftTagsToInternalAttributes(span.Tags)
+	attrs := dest.Attributes()
+	jThriftTagsToInternalAttributes(span.Tags, attrs)
 	setInternalSpanStatus(attrs, dest.Status())
-	if spanKindAttr, ok := attrs[tracetranslator.TagSpanKind]; ok {
+	if spanKindAttr, ok := attrs.Get(tracetranslator.TagSpanKind); ok {
 		dest.SetKind(jSpanKindToInternal(spanKindAttr.StringVal()))
 	}
-	dest.Attributes().InitFromMap(attrs)
+
+	// drop the attributes slice if all of them were replaced during translation
+	if attrs.Cap() == 0 {
+		attrs.InitFromMap(nil)
+	}
 
 	jThriftLogsToSpanEvents(span.Logs, dest.Events())
 	jThriftReferencesToSpanLinks(span.References, parentSpanID, dest.Links())
 }
 
 // jThriftTagsToInternalAttributes sets internal span links based on jaeger span references skipping excludeParentID
-func jThriftTagsToInternalAttributes(tags []*jaeger.Tag) map[string]pdata.AttributeValue {
-	attrs := make(map[string]pdata.AttributeValue)
-
+func jThriftTagsToInternalAttributes(tags []*jaeger.Tag, dest pdata.AttributeMap) {
 	for _, tag := range tags {
 		switch tag.GetVType() {
 		case jaeger.TagType_STRING:
-			attrs[tag.Key] = pdata.NewAttributeValueString(tag.GetVStr())
+			dest.UpsertString(tag.Key, tag.GetVStr())
 		case jaeger.TagType_BOOL:
-			attrs[tag.Key] = pdata.NewAttributeValueBool(tag.GetVBool())
+			dest.UpsertBool(tag.Key, tag.GetVBool())
 		case jaeger.TagType_LONG:
-			attrs[tag.Key] = pdata.NewAttributeValueInt(tag.GetVLong())
+			dest.UpsertInt(tag.Key, tag.GetVLong())
 		case jaeger.TagType_DOUBLE:
-			attrs[tag.Key] = pdata.NewAttributeValueDouble(tag.GetVDouble())
+			dest.UpsertDouble(tag.Key, tag.GetVDouble())
 		case jaeger.TagType_BINARY:
-			attrs[tag.Key] = pdata.NewAttributeValueString(base64.StdEncoding.EncodeToString(tag.GetVBinary()))
+			dest.UpsertString(tag.Key, base64.StdEncoding.EncodeToString(tag.GetVBinary()))
 		default:
-			attrs[tag.Key] = pdata.NewAttributeValueString(fmt.Sprintf("<Unknown Jaeger TagType %q>", tag.GetVType()))
+			dest.UpsertString(tag.Key, fmt.Sprintf("<Unknown Jaeger TagType %q>", tag.GetVType()))
 		}
 	}
-
-	return attrs
 }
 
 func jThriftLogsToSpanEvents(logs []*jaeger.Log, dest pdata.SpanEventSlice) {
@@ -170,12 +154,14 @@ func jThriftLogsToSpanEvents(logs []*jaeger.Log, dest pdata.SpanEventSlice) {
 		event := dest.At(i)
 
 		event.SetTimestamp(microsecondsToUnixNano(log.Timestamp))
-		attrs := jThriftTagsToInternalAttributes(log.Fields)
-		if name, ok := attrs["message"]; ok {
-			event.SetName(name.StringVal())
+		if len(log.Fields) == 0 {
+			continue
 		}
-		if len(attrs) > 0 {
-			event.Attributes().InitFromMap(attrs)
+
+		attrs := event.Attributes()
+		jThriftTagsToInternalAttributes(log.Fields, attrs)
+		if name, ok := attrs.Get("message"); ok {
+			event.SetName(name.StringVal())
 		}
 	}
 }

@@ -60,15 +60,15 @@ func TestJThriftTagsToInternalAttributes(t *testing.T) {
 		},
 	}
 
-	expected := map[string]pdata.AttributeValue{
-		"bool-val":   pdata.NewAttributeValueBool(true),
-		"int-val":    pdata.NewAttributeValueInt(123),
-		"string-val": pdata.NewAttributeValueString("abc"),
-		"double-val": pdata.NewAttributeValueDouble(1.23),
-		"binary-val": pdata.NewAttributeValueString("AAAAAABkfZg="),
-	}
+	expected := pdata.NewAttributeMap()
+	expected.InsertBool("bool-val", true)
+	expected.InsertInt("int-val", 123)
+	expected.InsertString("string-val", "abc")
+	expected.InsertDouble("double-val", 1.23)
+	expected.InsertString("binary-val", "AAAAAABkfZg=")
 
-	got := jThriftTagsToInternalAttributes(tags)
+	got := pdata.NewAttributeMap()
+	jThriftTagsToInternalAttributes(tags, got)
 
 	require.EqualValues(t, expected, got)
 }
@@ -258,4 +258,19 @@ func generateThriftFollowerSpan() *jaeger.Span {
 
 func unixNanoToMicroseconds(ns pdata.TimestampUnixNano) int64 {
 	return int64(ns / 1000)
+}
+
+func BenchmarkThriftBatchToInternalTraces(b *testing.B) {
+	jb := &jaeger.Batch{
+		Process: generateThriftProcess(),
+		Spans: []*jaeger.Span{
+			generateThriftSpan(),
+			generateThriftChildSpan(),
+		},
+	}
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		ThriftBatchToInternalTraces(jb)
+	}
 }
