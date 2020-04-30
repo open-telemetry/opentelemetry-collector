@@ -211,14 +211,14 @@ func (e *exporterImp) exportRequest(ctx context.Context, perform func(ctx contex
 
 func (e *exporterImp) exportTrace(ctx context.Context, request *otlptracecol.ExportTraceServiceRequest) error {
 	return e.exportRequest(ctx, func(ctx context.Context) error {
-		_, err := e.traceExporter.Export(ctx, request)
+		_, err := e.traceExporter.Export(ctx, request, grpc.WaitForReady(e.config.WaitForReady))
 		return err
 	})
 }
 
 func (e *exporterImp) exportMetrics(ctx context.Context, request *otlpmetriccol.ExportMetricsServiceRequest) error {
 	return e.exportRequest(ctx, func(ctx context.Context) error {
-		_, err := e.metricExporter.Export(ctx, request)
+		_, err := e.metricExporter.Export(ctx, request, grpc.WaitForReady(e.config.WaitForReady))
 		return err
 	})
 }

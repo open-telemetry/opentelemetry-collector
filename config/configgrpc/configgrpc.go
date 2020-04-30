@@ -56,6 +56,10 @@ type GRPCSettings struct {
 	// The keepalive parameters for client gRPC. See grpc.WithKeepaliveParams
 	// (https://godoc.org/google.golang.org/grpc#WithKeepaliveParams).
 	KeepaliveParameters *KeepaliveConfig `mapstructure:"keepalive"`
+
+	// WaitForReady parameter configures client to wait for ready state before sending data.
+	// (https://github.com/grpc/grpc/blob/master/doc/wait-for-ready.md)
+	WaitForReady bool `mapstructure:"wait_for_ready"`
 }
 
 // KeepaliveConfig exposes the keepalive.ClientParameters to be used by the exporter.
