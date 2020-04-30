@@ -43,3 +43,15 @@ func metricCPUSecondsDescriptor() pdata.MetricDescriptor {
 	descriptor.SetType(pdata.MetricTypeCounterInt64)
 	return descriptor
 }
+
+var MetricCPUUtilizationDescriptor = metricCPUUtilizationDescriptor()
+
+func metricCPUUtilizationDescriptor() pdata.MetricDescriptor {
+	descriptor := pdata.NewMetricDescriptor()
+	descriptor.InitEmpty()
+	descriptor.SetName("host/cpu/utilization")
+	descriptor.SetDescription("Percentage of CPU utilized")
+	descriptor.SetUnit("1")
+	descriptor.SetType(pdata.MetricTypeGaugeDouble)
+	return descriptor
+}

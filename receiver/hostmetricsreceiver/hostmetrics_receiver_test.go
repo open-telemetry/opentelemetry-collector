@@ -74,8 +74,8 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 func assertMetricData(t *testing.T, got []pdata.Metrics) {
 	metrics := internal.AssertSingleMetricDataAndGetMetricsSlice(t, got)
 
-	// expect 1 metric
-	assert.Equal(t, 1, metrics.Len())
+	// expect 2 metrics
+	assert.Equal(t, 2, metrics.Len())
 
 	// for cpu seconds metric, expect 5 timeseries with appropriate labels
 	hostCPUTimeMetric := metrics.At(0)
@@ -86,4 +86,13 @@ func assertMetricData(t *testing.T, got []pdata.Metrics) {
 	internal.AssertInt64MetricLabelHasValue(t, hostCPUTimeMetric, 1, cpuscraper.StateLabel, cpuscraper.SystemStateLabelValue)
 	internal.AssertInt64MetricLabelHasValue(t, hostCPUTimeMetric, 2, cpuscraper.StateLabel, cpuscraper.IdleStateLabelValue)
 	internal.AssertInt64MetricLabelHasValue(t, hostCPUTimeMetric, 3, cpuscraper.StateLabel, cpuscraper.InterruptStateLabelValue)
+
+	// for cpu utilization metric, expect #cores timeseries each with a value < 100
+	hostCPUUtilizationMetric := metrics.At(1)
+	internal.AssertDescriptorEqual(t, cpuscraper.MetricCPUUtilizationDescriptor, hostCPUUtilizationMetric.MetricDescriptor())
+	ddp := hostCPUUtilizationMetric.DoubleDataPoints()
+	assert.Equal(t, runtime.NumCPU(), ddp.Len())
+	for i := 0; i < ddp.Len(); i++ {
+		assert.LessOrEqual(t, ddp.At(i).Value(), float64(100))
+	}
 }

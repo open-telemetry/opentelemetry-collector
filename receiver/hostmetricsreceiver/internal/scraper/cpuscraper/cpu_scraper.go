@@ -17,6 +17,7 @@ package cpuscraper
 import (
 	"context"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/shirou/gopsutil/cpu"
@@ -32,10 +33,16 @@ import (
 
 // Scraper for CPU Metrics
 type Scraper struct {
-	config    *Config
-	consumer  consumer.MetricsConsumer
-	startTime pdata.TimestampUnixNano
-	cancel    context.CancelFunc
+	config         *Config
+	consumer       consumer.MetricsConsumer
+	startTime      pdata.TimestampUnixNano
+	previousValues map[string]*cpuTotalUsedStat
+	cancel         context.CancelFunc
+}
+
+type cpuTotalUsedStat struct {
+	total float64
+	used  float64
 }
 
 // NewCPUScraper creates a set of CPU related metrics
@@ -47,12 +54,8 @@ func NewCPUScraper(ctx context.Context, cfg *Config, consumer consumer.MetricsCo
 func (c *Scraper) Start(ctx context.Context) error {
 	ctx, c.cancel = context.WithCancel(ctx)
 
-	bootTime, err := host.BootTime()
-	if err != nil {
-		return err
-	}
-
-	c.startTime = pdata.TimestampUnixNano(bootTime)
+	c.initializeStartTime()
+	c.initializeCPUValues()
 
 	go func() {
 		ticker := time.NewTicker(c.config.CollectionInterval())
@@ -75,6 +78,39 @@ func (c *Scraper) Start(ctx context.Context) error {
 func (c *Scraper) Close(ctx context.Context) error {
 	c.cancel()
 	return nil
+}
+
+func (c *Scraper) initializeStartTime() error {
+	bootTime, err := host.BootTime()
+	if err != nil {
+		return err
+	}
+
+	c.startTime = pdata.TimestampUnixNano(bootTime)
+	return nil
+}
+
+func (c *Scraper) initializeCPUValues() error {
+	cpuTimes, err := cpu.Times(c.config.ReportPerCPU)
+	if err != nil {
+		return err
+	}
+
+	c.setPreviousCPUValues(cpuTimes)
+	return nil
+}
+
+func (c *Scraper) setPreviousCPUValues(cpuTimes []cpu.TimesStat) {
+	c.previousValues = make(map[string]*cpuTotalUsedStat, len(cpuTimes))
+	for _, cpuTime := range cpuTimes {
+		c.previousValues[cpuTime.CPU] = convertToTotalUsedStat(cpuTime)
+	}
+}
+
+func convertToTotalUsedStat(cpuTime cpu.TimesStat) *cpuTotalUsedStat {
+	total := cpuTime.Total()
+	used := total - cpuTime.Idle
+	return &cpuTotalUsedStat{total, used}
 }
 
 func (c *Scraper) scrapeMetrics(ctx context.Context) {
@@ -106,26 +142,29 @@ func (c *Scraper) scrapeAndAppendMetrics(metrics pdata.MetricSlice) error {
 	}
 
 	metric := internal.AddNewMetric(metrics)
-	initializeCPUSecondsMetric(metric, c.startTime, cpuTimes)
+	c.initializeCPUSecondsMetric(metric, cpuTimes)
+
+	metric = internal.AddNewMetric(metrics)
+	c.initializeCPUUtilizationMetric(metric, cpuTimes)
 	return nil
 }
 
-func initializeCPUSecondsMetric(metric pdata.Metric, startTime pdata.TimestampUnixNano, cpuTimes []cpu.TimesStat) {
+func (c *Scraper) initializeCPUSecondsMetric(metric pdata.Metric, cpuTimes []cpu.TimesStat) {
 	MetricCPUSecondsDescriptor.CopyTo(metric.MetricDescriptor())
 
 	idps := metric.Int64DataPoints()
 	idps.Resize(4 * len(cpuTimes))
 	for i, cpuTime := range cpuTimes {
-		initializeCPUSecondsDataPoint(idps.At(4*i+0), startTime, cpuTime.CPU, UserStateLabelValue, int64(cpuTime.User))
-		initializeCPUSecondsDataPoint(idps.At(4*i+1), startTime, cpuTime.CPU, SystemStateLabelValue, int64(cpuTime.System))
-		initializeCPUSecondsDataPoint(idps.At(4*i+2), startTime, cpuTime.CPU, IdleStateLabelValue, int64(cpuTime.Idle))
-		initializeCPUSecondsDataPoint(idps.At(4*i+3), startTime, cpuTime.CPU, InterruptStateLabelValue, int64(cpuTime.Irq))
+		c.initializeCPUSecondsDataPoint(idps.At(4*i+0), cpuTime.CPU, UserStateLabelValue, int64(cpuTime.User))
+		c.initializeCPUSecondsDataPoint(idps.At(4*i+1), cpuTime.CPU, SystemStateLabelValue, int64(cpuTime.System))
+		c.initializeCPUSecondsDataPoint(idps.At(4*i+2), cpuTime.CPU, IdleStateLabelValue, int64(cpuTime.Idle))
+		c.initializeCPUSecondsDataPoint(idps.At(4*i+3), cpuTime.CPU, InterruptStateLabelValue, int64(cpuTime.Irq))
 	}
 }
 
 const gopsCPUTotal string = "cpu-total"
 
-func initializeCPUSecondsDataPoint(dataPoint pdata.Int64DataPoint, startTime pdata.TimestampUnixNano, cpuLabel string, stateLabel string, value int64) {
+func (c *Scraper) initializeCPUSecondsDataPoint(dataPoint pdata.Int64DataPoint, cpuLabel string, stateLabel string, value int64) {
 	labelsMap := dataPoint.LabelsMap()
 	// ignore cpu label if reporting "total" cpu usage
 	if cpuLabel != gopsCPUTotal {
@@ -133,7 +172,46 @@ func initializeCPUSecondsDataPoint(dataPoint pdata.Int64DataPoint, startTime pda
 	}
 	labelsMap.Insert(StateLabel, stateLabel)
 
-	dataPoint.SetStartTime(startTime)
+	dataPoint.SetStartTime(c.startTime)
 	dataPoint.SetTimestamp(pdata.TimestampUnixNano(uint64(time.Now().UnixNano())))
 	dataPoint.SetValue(value)
+}
+
+func (c *Scraper) initializeCPUUtilizationMetric(metric pdata.Metric, cpuTimes []cpu.TimesStat) {
+	MetricCPUUtilizationDescriptor.CopyTo(metric.MetricDescriptor())
+
+	idps := metric.DoubleDataPoints()
+	idps.Resize(len(cpuTimes))
+	for i, cpuTime := range cpuTimes {
+		totalUsed := convertToTotalUsedStat(cpuTime)
+		utilization := getUtilization(c.previousValues[cpuTime.CPU], totalUsed)
+		c.initializeCPUUtilizationDataPoint(idps.At(i), cpuTime.CPU, utilization)
+	}
+
+	c.setPreviousCPUValues(cpuTimes)
+}
+
+func (c *Scraper) initializeCPUUtilizationDataPoint(dataPoint pdata.DoubleDataPoint, cpuLabel string, value float64) {
+	// ignore cpu label if reporting "total" cpu usage
+	if cpuLabel != gopsCPUTotal {
+		dataPoint.LabelsMap().Insert(CPULabel, cpuLabel)
+	}
+
+	dataPoint.SetTimestamp(pdata.TimestampUnixNano(uint64(time.Now().UnixNano())))
+	dataPoint.SetValue(value)
+}
+
+func getUtilization(prev *cpuTotalUsedStat, current *cpuTotalUsedStat) float64 {
+	if prev == nil {
+		return 0
+	}
+
+	usedDiff := current.used - prev.used
+	totalDiff := current.total - prev.total
+
+	if totalDiff == 0 {
+		return 0
+	}
+
+	return math.Min(100, math.Max(0, usedDiff/totalDiff*100))
 }

@@ -34,8 +34,8 @@ func TestScrapeMetrics_MinimalData(t *testing.T) {
 	createScraperAndValidateScrapedMetrics(t, &Config{}, func(t *testing.T, got []pdata.Metrics) {
 		metrics := internal.AssertSingleMetricDataAndGetMetricsSlice(t, got)
 
-		// expect 1 metric
-		assert.Equal(t, 1, metrics.Len())
+		// expect 2 metrics
+		assert.Equal(t, 2, metrics.Len())
 
 		// for cpu seconds metric, expect 4 timeseries with appropriate labels
 		hostCPUTimeMetric := metrics.At(0)
@@ -46,6 +46,12 @@ func TestScrapeMetrics_MinimalData(t *testing.T) {
 		internal.AssertInt64MetricLabelHasValue(t, hostCPUTimeMetric, 1, StateLabel, SystemStateLabelValue)
 		internal.AssertInt64MetricLabelHasValue(t, hostCPUTimeMetric, 2, StateLabel, IdleStateLabelValue)
 		internal.AssertInt64MetricLabelHasValue(t, hostCPUTimeMetric, 3, StateLabel, InterruptStateLabelValue)
+
+		// for cpu utilization metric, expect 1 timeseries with a value < 100
+		hostCPUUtilizationMetric := metrics.At(1)
+		internal.AssertDescriptorEqual(t, MetricCPUUtilizationDescriptor, hostCPUUtilizationMetric.MetricDescriptor())
+		assert.Equal(t, 1, hostCPUUtilizationMetric.DoubleDataPoints().Len())
+		assert.LessOrEqual(t, hostCPUUtilizationMetric.DoubleDataPoints().At(0).Value(), float64(100))
 	})
 }
 
@@ -57,8 +63,8 @@ func TestScrapeMetrics_AllData(t *testing.T) {
 	createScraperAndValidateScrapedMetrics(t, config, func(t *testing.T, got []pdata.Metrics) {
 		metrics := internal.AssertSingleMetricDataAndGetMetricsSlice(t, got)
 
-		// expect 1 metric
-		assert.Equal(t, 1, metrics.Len())
+		// expect 2 metris
+		assert.Equal(t, 2, metrics.Len())
 
 		// for cpu seconds metric, expect 4*cores timeseries with appropriate labels
 		hostCPUTimeMetric := metrics.At(0)
@@ -69,6 +75,15 @@ func TestScrapeMetrics_AllData(t *testing.T) {
 		internal.AssertInt64MetricLabelHasValue(t, hostCPUTimeMetric, 1, StateLabel, SystemStateLabelValue)
 		internal.AssertInt64MetricLabelHasValue(t, hostCPUTimeMetric, 2, StateLabel, IdleStateLabelValue)
 		internal.AssertInt64MetricLabelHasValue(t, hostCPUTimeMetric, 3, StateLabel, InterruptStateLabelValue)
+
+		// for cpu utilization metric, expect #cores timeseries each with a value <= 100
+		hostCPUUtilizationMetric := metrics.At(1)
+		internal.AssertDescriptorEqual(t, MetricCPUUtilizationDescriptor, hostCPUUtilizationMetric.MetricDescriptor())
+		ddp := hostCPUUtilizationMetric.DoubleDataPoints()
+		assert.Equal(t, runtime.NumCPU(), ddp.Len())
+		for i := 0; i < ddp.Len(); i++ {
+			assert.LessOrEqual(t, ddp.At(i).Value(), float64(100))
+		}
 	})
 }
 
