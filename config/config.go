@@ -227,7 +227,7 @@ func DecodeTypeAndName(key string) (typeStr configmodels.Type, fullName string, 
 
 func loadExtensions(v *viper.Viper, factories map[configmodels.Type]component.ExtensionFactory) (configmodels.Extensions, error) {
 	// Get the list of all "extensions" sub vipers from config source.
-	extensionsConfig := viperSub(v, extensionsKeyName)
+	extensionsConfig := ViperSub(v, extensionsKeyName)
 	expandEnvConfig(extensionsConfig)
 
 	// Get the map of "extensions" sub-keys.
@@ -262,7 +262,7 @@ func loadExtensions(v *viper.Viper, factories map[configmodels.Type]component.Ex
 		extensionCfg.SetName(fullName)
 
 		// Unmarshal only the subconfig for this exporter.
-		componentConfig := viperSub(extensionsConfig, key)
+		componentConfig := ViperSub(extensionsConfig, key)
 
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
@@ -288,7 +288,7 @@ func loadExtensions(v *viper.Viper, factories map[configmodels.Type]component.Ex
 
 func loadService(v *viper.Viper) (configmodels.Service, error) {
 	var service configmodels.Service
-	serviceSub := viperSub(v, serviceKeyName)
+	serviceSub := ViperSub(v, serviceKeyName)
 	expandEnvConfig(serviceSub)
 
 	// Process the pipelines first so in case of error on them it can be properly
@@ -343,7 +343,7 @@ func LoadReceiver(componentConfig *viper.Viper, typeStr configmodels.Type, fullN
 
 func loadReceivers(v *viper.Viper, factories map[configmodels.Type]component.ReceiverFactoryBase) (configmodels.Receivers, error) {
 	// Get the list of all "receivers" sub vipers from config source.
-	receiversConfig := viperSub(v, receiversKeyName)
+	receiversConfig := ViperSub(v, receiversKeyName)
 	expandEnvConfig(receiversConfig)
 
 	// Get the map of "receivers" sub-keys.
@@ -381,7 +381,7 @@ func loadReceivers(v *viper.Viper, factories map[configmodels.Type]component.Rec
 			}
 		}
 
-		receiverCfg, err := LoadReceiver(viperSub(receiversConfig, key), typeStr, fullName, factory)
+		receiverCfg, err := LoadReceiver(ViperSub(receiversConfig, key), typeStr, fullName, factory)
 
 		if err != nil {
 			// LoadReceiver already wraps the error.
@@ -402,7 +402,7 @@ func loadReceivers(v *viper.Viper, factories map[configmodels.Type]component.Rec
 
 func loadExporters(v *viper.Viper, factories map[configmodels.Type]component.ExporterFactoryBase) (configmodels.Exporters, error) {
 	// Get the list of all "exporters" sub vipers from config source.
-	exportersConfig := viperSub(v, exportersKeyName)
+	exportersConfig := ViperSub(v, exportersKeyName)
 	expandEnvConfig(exportersConfig)
 
 	// Get the map of "exporters" sub-keys.
@@ -445,7 +445,7 @@ func loadExporters(v *viper.Viper, factories map[configmodels.Type]component.Exp
 		exporterCfg.SetName(fullName)
 
 		// Unmarshal only the subconfig for this exporter.
-		componentConfig := viperSub(exportersConfig, key)
+		componentConfig := ViperSub(exportersConfig, key)
 
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
@@ -471,7 +471,7 @@ func loadExporters(v *viper.Viper, factories map[configmodels.Type]component.Exp
 
 func loadProcessors(v *viper.Viper, factories map[configmodels.Type]component.ProcessorFactoryBase) (configmodels.Processors, error) {
 	// Get the list of all "processors" sub vipers from config source.
-	processorsConfig := viperSub(v, processorsKeyName)
+	processorsConfig := ViperSub(v, processorsKeyName)
 	expandEnvConfig(processorsConfig)
 
 	// Get the map of "processors" sub-keys.
@@ -506,7 +506,7 @@ func loadProcessors(v *viper.Viper, factories map[configmodels.Type]component.Pr
 		processorCfg.SetName(fullName)
 
 		// Unmarshal only the subconfig for this processor.
-		componentConfig := viperSub(processorsConfig, key)
+		componentConfig := ViperSub(processorsConfig, key)
 
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
@@ -532,7 +532,7 @@ func loadProcessors(v *viper.Viper, factories map[configmodels.Type]component.Pr
 
 func loadPipelines(v *viper.Viper) (configmodels.Pipelines, error) {
 	// Get the list of all "pipelines" sub vipers from config source.
-	pipelinesConfig := viperSub(v, pipelinesKeyName)
+	pipelinesConfig := ViperSub(v, pipelinesKeyName)
 
 	// Get the map of "pipelines" sub-keys.
 	keyMap := v.GetStringMap(pipelinesKeyName)
@@ -567,7 +567,7 @@ func loadPipelines(v *viper.Viper) (configmodels.Pipelines, error) {
 			}
 		}
 
-		pipelineConfig := viperSub(pipelinesConfig, key)
+		pipelineConfig := ViperSub(pipelinesConfig, key)
 
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
@@ -894,7 +894,7 @@ func expandStringValues(value interface{}) interface{} {
 
 // Copied from the Viper but changed to use the same delimiter.
 // See https://github.com/spf13/viper/issues/871
-func viperSub(v *viper.Viper, key string) *viper.Viper {
+func ViperSub(v *viper.Viper, key string) *viper.Viper {
 	subv := NewViper()
 	data := v.Get(key)
 	if data == nil {
