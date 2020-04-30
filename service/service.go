@@ -90,7 +90,7 @@ type Parameters struct {
 	// ApplicationStartInfo provides application start information.
 	ApplicationStartInfo ApplicationStartInfo
 	// ConfigFactory that creates the configuration.
-	// If it is not provided the default factory will be used.
+	// If it is not provided the default factory (FileLoaderConfigFactory) is used.
 	// The default factory loads the configuration specified as a command line flag.
 	ConfigFactory ConfigFactory
 }
@@ -98,7 +98,8 @@ type Parameters struct {
 // ConfigFactory creates config.
 type ConfigFactory func(v *viper.Viper, factories config.Factories) (*configmodels.Config, error)
 
-func fileLoaderConfigFactory(v *viper.Viper, factories config.Factories) (*configmodels.Config, error) {
+// FileLoaderConfigFactory implements ConfigFactory and it creates configuration from file.
+func FileLoaderConfigFactory(v *viper.Viper, factories config.Factories) (*configmodels.Config, error) {
 	file := builder.GetConfigFile()
 	if file == "" {
 		return nil, errors.New("config file not specified")
@@ -123,7 +124,7 @@ func New(params Parameters) (*Application, error) {
 	factory := params.ConfigFactory
 	if factory == nil {
 		// use default factory that loads the configuration file
-		factory = fileLoaderConfigFactory
+		factory = FileLoaderConfigFactory
 	}
 
 	rootCmd := &cobra.Command{
