@@ -100,27 +100,10 @@ func jProcessToInternalResource(process *model.Process, dest pdata.Resource) {
 	}
 
 	attrs := dest.Attributes()
-
 	if serviceName != "" {
 		attrs.UpsertString(conventions.AttributeServiceName, serviceName)
 	}
-
-	for _, tag := range tags {
-		switch tag.GetVType() {
-		case model.ValueType_STRING:
-			attrs.UpsertString(tag.Key, tag.GetVStr())
-		case model.ValueType_BOOL:
-			attrs.UpsertBool(tag.Key, tag.GetVBool())
-		case model.ValueType_INT64:
-			attrs.UpsertInt(tag.Key, tag.GetVInt64())
-		case model.ValueType_FLOAT64:
-			attrs.UpsertDouble(tag.Key, tag.GetVFloat64())
-		case model.ValueType_BINARY:
-			attrs.UpsertString(tag.Key, base64.StdEncoding.EncodeToString(tag.GetVBinary()))
-		default:
-			attrs.UpsertString(tag.Key, fmt.Sprintf("<Unknown Jaeger TagType %q>", tag.GetVType()))
-		}
-	}
+	jTagsToInternalAttributes(tags, attrs)
 
 	// Handle special keys translations.
 	translateHostnameAttr(attrs)
@@ -179,52 +162,53 @@ func jSpanToInternal(span *model.Span, dest pdata.Span) {
 		dest.SetParentSpanID(pdata.SpanID(tracetranslator.UInt64ToByteSpanID(uint64(parentSpanID))))
 	}
 
-	attrs := jTagsToInternalAttributes(span.Tags)
+	attrs := dest.Attributes()
+	jTagsToInternalAttributes(span.Tags, attrs)
 	setInternalSpanStatus(attrs, dest.Status())
-	if spanKindAttr, ok := attrs[tracetranslator.TagSpanKind]; ok {
+	if spanKindAttr, ok := attrs.Get(tracetranslator.TagSpanKind); ok {
 		dest.SetKind(jSpanKindToInternal(spanKindAttr.StringVal()))
 	}
-	dest.Attributes().InitFromMap(attrs)
+
+	// drop the attributes slice if all of them were replaced during translation
+	if attrs.Cap() == 0 {
+		attrs.InitFromMap(nil)
+	}
 
 	jLogsToSpanEvents(span.Logs, dest.Events())
 	jReferencesToSpanLinks(span.References, parentSpanID, dest.Links())
 }
 
-func jTagsToInternalAttributes(tags []model.KeyValue) map[string]pdata.AttributeValue {
-	attrs := make(map[string]pdata.AttributeValue)
-
+func jTagsToInternalAttributes(tags []model.KeyValue, dest pdata.AttributeMap) {
 	for _, tag := range tags {
 		switch tag.GetVType() {
 		case model.ValueType_STRING:
-			attrs[tag.Key] = pdata.NewAttributeValueString(tag.GetVStr())
+			dest.UpsertString(tag.Key, tag.GetVStr())
 		case model.ValueType_BOOL:
-			attrs[tag.Key] = pdata.NewAttributeValueBool(tag.GetVBool())
+			dest.UpsertBool(tag.Key, tag.GetVBool())
 		case model.ValueType_INT64:
-			attrs[tag.Key] = pdata.NewAttributeValueInt(tag.GetVInt64())
+			dest.UpsertInt(tag.Key, tag.GetVInt64())
 		case model.ValueType_FLOAT64:
-			attrs[tag.Key] = pdata.NewAttributeValueDouble(tag.GetVFloat64())
+			dest.UpsertDouble(tag.Key, tag.GetVFloat64())
 		case model.ValueType_BINARY:
-			attrs[tag.Key] = pdata.NewAttributeValueString(base64.StdEncoding.EncodeToString(tag.GetVBinary()))
+			dest.UpsertString(tag.Key, base64.StdEncoding.EncodeToString(tag.GetVBinary()))
 		default:
-			attrs[tag.Key] = pdata.NewAttributeValueString(fmt.Sprintf("<Unknown Jaeger TagType %q>", tag.GetVType()))
+			dest.UpsertString(tag.Key, fmt.Sprintf("<Unknown Jaeger TagType %q>", tag.GetVType()))
 		}
 	}
-
-	return attrs
 }
 
-func setInternalSpanStatus(attrs map[string]pdata.AttributeValue, dest pdata.SpanStatus) {
+func setInternalSpanStatus(attrs pdata.AttributeMap, dest pdata.SpanStatus) {
 	dest.InitEmpty()
 
 	var codeSet bool
-	if codeAttr, ok := attrs[tracetranslator.TagStatusCode]; ok {
+	if codeAttr, ok := attrs.Get(tracetranslator.TagStatusCode); ok {
 		code, err := getStatusCodeFromAttr(codeAttr)
 		if err == nil {
 			codeSet = true
 			dest.SetCode(code)
-			delete(attrs, tracetranslator.TagStatusCode)
+			attrs.Delete(tracetranslator.TagStatusCode)
 		}
-	} else if errorVal, ok := attrs[tracetranslator.TagError]; ok {
+	} else if errorVal, ok := attrs.Get(tracetranslator.TagError); ok {
 		if errorVal.BoolVal() {
 			dest.SetCode(pdata.StatusCode(otlptrace.Status_UnknownError))
 			codeSet = true
@@ -232,13 +216,13 @@ func setInternalSpanStatus(attrs map[string]pdata.AttributeValue, dest pdata.Spa
 	}
 
 	if codeSet {
-		if msgAttr, ok := attrs[tracetranslator.TagStatusMsg]; ok {
+		if msgAttr, ok := attrs.Get(tracetranslator.TagStatusMsg); ok {
 			dest.SetMessage(msgAttr.StringVal())
-			delete(attrs, tracetranslator.TagStatusMsg)
+			attrs.Delete(tracetranslator.TagStatusMsg)
 		}
-		delete(attrs, tracetranslator.TagError)
+		attrs.Delete(tracetranslator.TagError)
 	} else {
-		httpCodeAttr, ok := attrs[tracetranslator.TagHTTPStatusCode]
+		httpCodeAttr, ok := attrs.Get(tracetranslator.TagHTTPStatusCode)
 		if ok {
 			code, err := getStatusCodeFromHTTPStatusAttr(httpCodeAttr)
 			if err == nil {
@@ -247,7 +231,7 @@ func setInternalSpanStatus(attrs map[string]pdata.AttributeValue, dest pdata.Spa
 		} else {
 			dest.SetCode(pdata.StatusCode(otlptrace.Status_Ok))
 		}
-		if msgAttr, ok := attrs[tracetranslator.TagHTTPStatusMsg]; ok {
+		if msgAttr, ok := attrs.Get(tracetranslator.TagHTTPStatusMsg); ok {
 			dest.SetMessage(msgAttr.StringVal())
 		}
 	}
@@ -309,13 +293,14 @@ func jLogsToSpanEvents(logs []model.Log, dest pdata.SpanEventSlice) {
 		event := dest.At(i)
 
 		event.SetTimestamp(pdata.TimestampUnixNano(uint64(log.Timestamp.UnixNano())))
-
-		attrs := jTagsToInternalAttributes(log.Fields)
-		if name, ok := attrs["message"]; ok {
-			event.SetName(name.StringVal())
+		if len(log.Fields) == 0 {
+			continue
 		}
-		if len(attrs) > 0 {
-			event.Attributes().InitFromMap(attrs)
+
+		attrs := event.Attributes()
+		jTagsToInternalAttributes(log.Fields, attrs)
+		if name, ok := attrs.Get("message"); ok {
+			event.SetName(name.StringVal())
 		}
 	}
 }
