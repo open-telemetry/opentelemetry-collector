@@ -1,7 +1,13 @@
 receivers:
   hostmetrics:
-    scrape_interval: 10s
     scrapers:
+      cpu:
+  hostmetrics/customname:
+    default_collection_interval: 10s
+    scrapers:
+      cpu:
+        collection_interval: 5s
+        report_per_cpu: true
 
 processors:
   exampleprocessor:
@@ -11,7 +17,7 @@ exporters:
 
 service:
   pipelines:
-    traces:
+    metrics:
       receivers: [hostmetrics]
       processors: [exampleprocessor]
       exporters: [exampleexporter]

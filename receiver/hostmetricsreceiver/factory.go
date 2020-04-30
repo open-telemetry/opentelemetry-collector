@@ -28,6 +28,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal"
+	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
 )
 
 // This file implements Factory for HostMetrics receiver.
@@ -40,17 +41,19 @@ const (
 
 // Factory is the Factory for receiver.
 type Factory struct {
-	ScraperFactories map[string]internal.Factory
+	scraperFactories map[string]internal.Factory
 }
 
-// NewFactory creates a new factory
+// NewFactory creates a new factory for host metrics receiver.
 func NewFactory() *Factory {
 	return &Factory{
-		ScraperFactories: map[string]internal.Factory{},
+		scraperFactories: map[string]internal.Factory{
+			cpuscraper.TypeStr: &cpuscraper.Factory{},
+		},
 	}
 }
 
-// Type gets the type of the Receiver config created by this Factory.
+// Type returns the type of the Receiver config created by this Factory.
 func (f *Factory) Type() configmodels.Type {
 	return typeStr
 }
@@ -71,6 +74,10 @@ func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 			return fmt.Errorf("config type not hostmetrics.Config")
 		}
 
+		if cfg.DefaultCollectionInterval <= 0 {
+			return fmt.Errorf("default_collection_interval must be a positive number")
+		}
+
 		// dynamically load the individual collector configs based on the key name
 
 		cfg.Scrapers = map[string]internal.Config{}
@@ -81,9 +88,9 @@ func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 		}
 
 		for key := range componentViperSection.GetStringMap(scrapersKey) {
-			factory, ok := f.ScraperFactories[key]
+			factory, ok := f.scraperFactories[key]
 			if !ok {
-				return fmt.Errorf("invalid hostmetrics scraper key: %s", key)
+				return fmt.Errorf("invalid scraper key: %s", key)
 			}
 
 			collectorCfg := factory.CreateDefaultConfig()
@@ -91,8 +98,12 @@ func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 			if collectorViperSection != nil {
 				err := collectorViperSection.UnmarshalExact(collectorCfg)
 				if err != nil {
-					return fmt.Errorf("error reading settings for hostmetric scraper type %q: %v", key, err)
+					return fmt.Errorf("error reading settings for scraper type %q: %v", key, err)
 				}
+			}
+
+			if collectorCfg.CollectionInterval() <= 0 {
+				collectorCfg.SetCollectionInterval(cfg.DefaultCollectionInterval)
 			}
 
 			cfg.Scrapers[key] = collectorCfg
@@ -113,7 +124,7 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 	}
 }
 
-// CreateTraceReceiver creates a trace receiver based on provided config.
+// CreateTraceReceiver returns error as trace receiver is not applicable to host metrics receiver.
 func (f *Factory) CreateTraceReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
@@ -138,7 +149,7 @@ func (f *Factory) CreateMetricsReceiver(
 
 	config := cfg.(*Config)
 
-	hmr, err := NewHostMetricsReceiver(ctx, params.Logger, config, f.ScraperFactories, consumer)
+	hmr, err := NewHostMetricsReceiver(ctx, params.Logger, config, f.scraperFactories, consumer)
 	if err != nil {
 		return nil, err
 	}
