@@ -90,7 +90,7 @@ type Parameters struct {
 	// ApplicationStartInfo provides application start information.
 	ApplicationStartInfo ApplicationStartInfo
 	// ConfigFactory that creates the configuration.
-	// If it is not provided the default factory (FileLoaderConfigFactory) is be used.
+	// If it is not provided the default factory (FileLoaderConfigFactory) is used.
 	// The default factory loads the configuration specified as a command line flag.
 	ConfigFactory ConfigFactory
 }
