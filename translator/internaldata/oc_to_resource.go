@@ -29,7 +29,41 @@ func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Reso
 	}
 
 	dest.InitEmpty()
+
+	// Number of special fields in OC that will be translated to Attributes
+	const serviceInfoAttrCount = 1     // Number of Node.ServiceInfo fields.
+	const nodeIdentifierAttrCount = 3  // Number of Node.Identifier fields.
+	const libraryInfoAttrCount = 3     // Number of Node.LibraryInfo fields.
+	const specialResourceAttrCount = 1 // Number of Resource fields.
+
+	// Calculate maximum total number of attributes for capacity reservation.
+	maxTotalAttrCount := 0
+	if ocNode != nil {
+		maxTotalAttrCount += len(ocNode.Attributes)
+		if ocNode.ServiceInfo != nil {
+			maxTotalAttrCount += serviceInfoAttrCount
+		}
+		if ocNode.Identifier != nil {
+			maxTotalAttrCount += nodeIdentifierAttrCount
+		}
+		if ocNode.LibraryInfo != nil {
+			maxTotalAttrCount += libraryInfoAttrCount
+		}
+	}
+	if ocResource != nil {
+		maxTotalAttrCount += len(ocResource.Labels)
+		if ocResource.Type != "" {
+			maxTotalAttrCount += specialResourceAttrCount
+		}
+	}
+
+	// There are no attributes to be set.
+	if maxTotalAttrCount == 0 {
+		return
+	}
+
 	attrs := dest.Attributes()
+	attrs.InitEmptyWithCapacity(maxTotalAttrCount)
 
 	if ocNode != nil {
 		// Copy all Attributes.

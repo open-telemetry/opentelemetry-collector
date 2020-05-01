@@ -289,6 +289,7 @@ func setLabelsMap(ocLabelsKeys []*ocmetrics.LabelKey, ocLabelValues []*ocmetrics
 		lablesCount = len(ocLabelValues)
 	}
 
+	labelsMap.InitEmptyWithCapacity(lablesCount)
 	for i := 0; i < lablesCount; i++ {
 		if !ocLabelValues[i].GetHasValue() {
 			continue
@@ -331,7 +332,9 @@ func exemplarToInternal(ocExemplar *ocmetrics.DistributionValue_Exemplar, exempl
 	}
 	exemplar.SetValue(ocExemplar.GetValue())
 	attachments := exemplar.Attachments()
-	for k, v := range ocExemplar.GetAttachments() {
+	ocAttachments := ocExemplar.GetAttachments()
+	attachments.InitEmptyWithCapacity(len(ocAttachments))
+	for k, v := range ocAttachments {
 		attachments.Upsert(k, v)
 	}
 }

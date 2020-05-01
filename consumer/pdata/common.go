@@ -260,6 +260,14 @@ func (am AttributeMap) InitFromMap(attrMap map[string]AttributeValue) AttributeM
 	return am
 }
 
+// InitEmptyWithCapacity constructs an empty AttributeMap with predefined slice capacity.
+func (am AttributeMap) InitEmptyWithCapacity(cap int) {
+	if cap == 0 {
+		*am.orig = []*otlpcommon.AttributeKeyValue(nil)
+	}
+	*am.orig = make([]*otlpcommon.AttributeKeyValue, 0, cap)
+}
+
 // Get returns the AttributeKeyValue associated with the key and true,
 // otherwise an invalid instance of the AttributeKeyValue and false.
 // Calling any functions on the returned invalid instance will cause a panic.
@@ -561,6 +569,14 @@ func (sm StringMap) InitFromMap(attrMap map[string]string) StringMap {
 	}
 	*sm.orig = wrappers
 	return sm
+}
+
+// InitEmptyWithCapacity constructs an empty StringMap with predefined slice capacity.
+func (sm StringMap) InitEmptyWithCapacity(cap int) {
+	if cap == 0 {
+		*sm.orig = []*otlpcommon.StringKeyValue(nil)
+	}
+	*sm.orig = make([]*otlpcommon.StringKeyValue, 0, cap)
 }
 
 // Get returns the StringValue associated with the key and true,

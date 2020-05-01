@@ -131,7 +131,7 @@ func ocSpanToResourceSpans(ocSpan *octrace.Span, node *occommon.Node, dest pdata
 }
 
 func ocSpanToInternal(src *octrace.Span, dest pdata.Span) {
-	// Note that ocSpanKindToInternal must be called before ocAttrsToInternal
+	// Note that ocSpanKindToInternal must be called before initAttributeMapFromOC
 	// since it may modify src.Attributes (remove the attribute which represents the
 	// span kind).
 	dest.SetKind(ocSpanKindToInternal(src.Kind, src.Attributes))
@@ -143,7 +143,8 @@ func ocSpanToInternal(src *octrace.Span, dest pdata.Span) {
 	dest.SetName(src.Name.GetValue())
 	dest.SetStartTime(internal.TimestampToUnixNano(src.StartTime))
 	dest.SetEndTime(internal.TimestampToUnixNano(src.EndTime))
-	ocAttrsToInternal(src.Attributes, dest.Attributes())
+
+	initAttributeMapFromOC(src.Attributes, dest.Attributes())
 	dest.SetDroppedAttributesCount(ocAttrsToDroppedAttributes(src.Attributes))
 	ocEventsToInternal(src.TimeEvents, dest)
 	ocLinksToInternal(src.Links, dest)
@@ -184,12 +185,14 @@ func ocAttrsToDroppedAttributes(ocAttrs *octrace.Span_Attributes) uint32 {
 	return uint32(ocAttrs.DroppedAttributesCount)
 }
 
-func ocAttrsToInternal(ocAttrs *octrace.Span_Attributes, dest pdata.AttributeMap) {
+// initAttributeMapFromOC initialize AttributeMap from OC attributes
+func initAttributeMapFromOC(ocAttrs *octrace.Span_Attributes, dest pdata.AttributeMap) {
 	if ocAttrs == nil {
 		return
 	}
 
 	if len(ocAttrs.AttributeMap) > 0 {
+		dest.InitEmptyWithCapacity(len(ocAttrs.AttributeMap))
 		for key, ocAttr := range ocAttrs.AttributeMap {
 			switch attribValue := ocAttr.Value.(type) {
 			case *octrace.AttributeValue_StringValue:
@@ -279,7 +282,7 @@ func ocEventsToInternal(ocEvents *octrace.Span_TimeEvents, dest pdata.Span) {
 		case *octrace.Span_TimeEvent_Annotation_:
 			if teValue.Annotation != nil {
 				event.SetName(teValue.Annotation.Description.GetValue())
-				ocAttrsToInternal(teValue.Annotation.Attributes, event.Attributes())
+				initAttributeMapFromOC(teValue.Annotation.Attributes, event.Attributes())
 				event.SetDroppedAttributesCount(ocAttrsToDroppedAttributes(teValue.Annotation.Attributes))
 			}
 
@@ -323,7 +326,7 @@ func ocLinksToInternal(ocLinks *octrace.Span_Links, dest pdata.Span) {
 		link.SetTraceID(pdata.NewTraceID(ocLink.TraceId))
 		link.SetSpanID(pdata.NewSpanID(ocLink.SpanId))
 		link.SetTraceState(ocTraceStateToInternal(ocLink.Tracestate))
-		ocAttrsToInternal(ocLink.Attributes, link.Attributes())
+		initAttributeMapFromOC(ocLink.Attributes, link.Attributes())
 		link.SetDroppedAttributesCount(ocAttrsToDroppedAttributes(ocLink.Attributes))
 	}
 
