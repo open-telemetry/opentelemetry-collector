@@ -24,6 +24,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data/testdata"
+	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 )
 
@@ -188,6 +189,7 @@ func TestAttributesToJaegerProtoTags(t *testing.T) {
 	attributes.InsertInt("int-val", 123)
 	attributes.InsertString("string-val", "abc")
 	attributes.InsertDouble("double-val", 1.23)
+	attributes.InsertString(conventions.AttributeServiceName, "service-name")
 
 	expected := []model.KeyValue{
 		{
@@ -210,9 +212,21 @@ func TestAttributesToJaegerProtoTags(t *testing.T) {
 			VType:    model.ValueType_FLOAT64,
 			VFloat64: 1.23,
 		},
+		{
+			Key:   conventions.AttributeServiceName,
+			VType: model.ValueType_STRING,
+			VStr:  "service-name",
+		},
 	}
 
 	require.EqualValues(t, expected, attributesToJaegerProtoTags(attributes))
+
+	got := attributesToJaegerProtoTags(attributes)
+	require.EqualValues(t, expected, got)
+
+	// The last item in expected ("service-name") must be skipped in resource tags translation
+	got = resourceAttributesToJaegerProtoTags(attributes)
+	require.EqualValues(t, expected[:4], got)
 }
 
 func TestInternalTracesToJaegerProto(t *testing.T) {
