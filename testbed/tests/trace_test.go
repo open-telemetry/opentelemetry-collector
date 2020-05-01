@@ -432,7 +432,7 @@ func TestTraceAttributesProcessor(t *testing.T) {
 			// verifySpan verifies that attributes was added to the internal data span.
 			verifySpan := func(span pdata.Span) {
 				require.NotNil(t, span)
-				require.Equal(t, span.Attributes().Cap(), 1)
+				require.Equal(t, span.Attributes().Len(), 1)
 				attrVal, ok := span.Attributes().Get("new_attr")
 				assert.True(t, ok)
 				assert.EqualValues(t, "string value", attrVal.StringVal())
@@ -456,7 +456,7 @@ func TestTraceAttributesProcessor(t *testing.T) {
 
 			verifySingleSpan(t, tc, nodeToExclude, spanToInclude, func(span pdata.Span) {
 				// Verify attributes was not added to the new internal data span.
-				assert.Equal(t, span.Attributes().Cap(), 0)
+				assert.Equal(t, span.Attributes().Len(), 0)
 			}, func(span *tracepb.Span) {
 				// Verify attributes was not added to the OC span.
 				assert.Nil(t, span.Attributes)
@@ -466,7 +466,7 @@ func TestTraceAttributesProcessor(t *testing.T) {
 			spanToExclude := "span-not-to-add-attr"
 			verifySingleSpan(t, tc, nodeToInclude, spanToExclude, func(span pdata.Span) {
 				// Verify attributes was not added to the new internal data span.
-				assert.Equal(t, span.Attributes().Cap(), 0)
+				assert.Equal(t, span.Attributes().Len(), 0)
 			}, func(span *tracepb.Span) {
 				// Verify attributes was not added to the OC span.
 				assert.Nil(t, span.Attributes)

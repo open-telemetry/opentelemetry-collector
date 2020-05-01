@@ -361,7 +361,7 @@ func exemplarToOC(exemplar pdata.HistogramBucketExemplar) *ocmetrics.Distributio
 		return nil
 	}
 	attachments := exemplar.Attachments()
-	if attachments.Cap() == 0 {
+	if attachments.Len() == 0 {
 		return &ocmetrics.DistributionValue_Exemplar{
 			Value:       exemplar.Value(),
 			Timestamp:   internal.UnixNanoToTimestamp(exemplar.Timestamp()),
@@ -369,7 +369,7 @@ func exemplarToOC(exemplar pdata.HistogramBucketExemplar) *ocmetrics.Distributio
 		}
 	}
 
-	labels := make(map[string]string, attachments.Cap())
+	labels := make(map[string]string, attachments.Len())
 	attachments.ForEach(func(k string, v pdata.StringValue) {
 		labels[k] = v.Value()
 	})

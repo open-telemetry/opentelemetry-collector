@@ -70,7 +70,7 @@ func TestNewAttributeValueSlice(t *testing.T) {
 }
 
 func TestNilAttributeMap(t *testing.T) {
-	assert.EqualValues(t, 0, NewAttributeMap().Cap())
+	assert.EqualValues(t, 0, NewAttributeMap().Len())
 
 	val, exist := NewAttributeMap().Get("test_key")
 	assert.False(t, exist)
@@ -298,7 +298,7 @@ func TestAttributeMap_ForEach(t *testing.T) {
 		"k_bool":   NewAttributeValueBool(true),
 	}
 	am := NewAttributeMap().InitFromMap(rawMap)
-	assert.EqualValues(t, 4, am.Cap())
+	assert.EqualValues(t, 4, am.Len())
 
 	am.ForEach(func(k string, v AttributeValue) {
 		assert.True(t, v.Equal(rawMap[k]))
@@ -328,7 +328,7 @@ func TestAttributeMap_ForEach_WithNils(t *testing.T) {
 	am := AttributeMap{
 		orig: &rawOrigWithNil,
 	}
-	assert.EqualValues(t, 9, am.Cap())
+	assert.EqualValues(t, 9, am.Len())
 
 	am.ForEach(func(k string, v AttributeValue) {
 		assert.True(t, v.Equal(rawMap[k]))
@@ -361,7 +361,7 @@ func TestAttributeMap_CopyTo(t *testing.T) {
 	dest := NewAttributeMap()
 	// Test CopyTo to empty
 	NewAttributeMap().CopyTo(dest)
-	assert.EqualValues(t, 0, dest.Cap())
+	assert.EqualValues(t, 0, dest.Len())
 
 	// Test CopyTo larger slice
 	generateTestAttributeMap().CopyTo(dest)
@@ -373,7 +373,7 @@ func TestAttributeMap_CopyTo(t *testing.T) {
 }
 
 func TestNilStringMap(t *testing.T) {
-	assert.EqualValues(t, 0, NewStringMap().Cap())
+	assert.EqualValues(t, 0, NewStringMap().Len())
 
 	val, exist := NewStringMap().Get("test_key")
 	assert.False(t, exist)
@@ -453,7 +453,7 @@ func TestStringMap(t *testing.T) {
 	origRawMap := map[string]string{"k0": "v0", "k1": "v1", "k2": "v2"}
 	origMap := NewStringMap().InitFromMap(origRawMap)
 	sm := NewStringMap().InitFromMap(origRawMap)
-	assert.EqualValues(t, 3, sm.Cap())
+	assert.EqualValues(t, 3, sm.Len())
 
 	val, exist := sm.Get("k2")
 	assert.True(t, exist)
@@ -466,47 +466,47 @@ func TestStringMap(t *testing.T) {
 	sm.Insert("k1", "v1")
 	assert.EqualValues(t, origMap.Sort(), sm.Sort())
 	sm.Insert("k3", "v3")
-	assert.EqualValues(t, 4, sm.Cap())
+	assert.EqualValues(t, 4, sm.Len())
 	assert.EqualValues(t, NewStringMap().InitFromMap(map[string]string{"k0": "v0", "k1": "v1", "k2": "v2", "k3": "v3"}).Sort(), sm.Sort())
 	assert.True(t, sm.Delete("k3"))
-	assert.EqualValues(t, 3, sm.Cap())
+	assert.EqualValues(t, 3, sm.Len())
 	assert.EqualValues(t, origMap.Sort(), sm.Sort())
 
 	sm.Update("k3", "v3")
-	assert.EqualValues(t, 3, sm.Cap())
+	assert.EqualValues(t, 3, sm.Len())
 	assert.EqualValues(t, origMap.Sort(), sm.Sort())
 	sm.Update("k2", "v3")
-	assert.EqualValues(t, 3, sm.Cap())
+	assert.EqualValues(t, 3, sm.Len())
 	assert.EqualValues(t, NewStringMap().InitFromMap(map[string]string{"k0": "v0", "k1": "v1", "k2": "v3"}).Sort(), sm.Sort())
 	sm.Update("k2", "v2")
-	assert.EqualValues(t, 3, sm.Cap())
+	assert.EqualValues(t, 3, sm.Len())
 	assert.EqualValues(t, origMap.Sort(), sm.Sort())
 
 	sm.Upsert("k3", "v3")
-	assert.EqualValues(t, 4, sm.Cap())
+	assert.EqualValues(t, 4, sm.Len())
 	assert.EqualValues(t, NewStringMap().InitFromMap(map[string]string{"k0": "v0", "k1": "v1", "k2": "v2", "k3": "v3"}).Sort(), sm.Sort())
 	sm.Upsert("k1", "v5")
-	assert.EqualValues(t, 4, sm.Cap())
+	assert.EqualValues(t, 4, sm.Len())
 	assert.EqualValues(t, NewStringMap().InitFromMap(map[string]string{"k0": "v0", "k1": "v5", "k2": "v2", "k3": "v3"}).Sort(), sm.Sort())
 	sm.Upsert("k1", "v1")
-	assert.EqualValues(t, 4, sm.Cap())
+	assert.EqualValues(t, 4, sm.Len())
 	assert.EqualValues(t, NewStringMap().InitFromMap(map[string]string{"k0": "v0", "k1": "v1", "k2": "v2", "k3": "v3"}).Sort(), sm.Sort())
 	assert.True(t, sm.Delete("k3"))
-	assert.EqualValues(t, 3, sm.Cap())
+	assert.EqualValues(t, 3, sm.Len())
 	assert.EqualValues(t, origMap.Sort(), sm.Sort())
 
 	assert.EqualValues(t, false, sm.Delete("k3"))
-	assert.EqualValues(t, 3, sm.Cap())
+	assert.EqualValues(t, 3, sm.Len())
 	assert.EqualValues(t, origMap.Sort(), sm.Sort())
 
 	assert.True(t, sm.Delete("k0"))
-	assert.EqualValues(t, 2, sm.Cap())
+	assert.EqualValues(t, 2, sm.Len())
 	assert.EqualValues(t, NewStringMap().InitFromMap(map[string]string{"k1": "v1", "k2": "v2"}).Sort(), sm.Sort())
 	assert.True(t, sm.Delete("k2"))
-	assert.EqualValues(t, 1, sm.Cap())
+	assert.EqualValues(t, 1, sm.Len())
 	assert.EqualValues(t, NewStringMap().InitFromMap(map[string]string{"k1": "v1"}).Sort(), sm.Sort())
 	assert.True(t, sm.Delete("k1"))
-	assert.EqualValues(t, 0, sm.Cap())
+	assert.EqualValues(t, 0, sm.Len())
 }
 
 func TestStringMapIterationNil(t *testing.T) {
@@ -519,7 +519,7 @@ func TestStringMapIterationNil(t *testing.T) {
 func TestStringMap_ForEach(t *testing.T) {
 	rawMap := map[string]string{"k0": "v0", "k1": "v1", "k2": "v2"}
 	sm := NewStringMap().InitFromMap(rawMap)
-	assert.EqualValues(t, 3, sm.Cap())
+	assert.EqualValues(t, 3, sm.Len())
 
 	sm.ForEach(func(k string, v StringValue) {
 		assert.EqualValues(t, rawMap[k], v.Value())
@@ -551,7 +551,7 @@ func TestStringMap_ForEach_WithNils(t *testing.T) {
 	sm := StringMap{
 		orig: &rawOrigWithNil,
 	}
-	assert.EqualValues(t, 7, sm.Cap())
+	assert.EqualValues(t, 7, sm.Len())
 
 	sm.ForEach(func(k string, v StringValue) {
 		assert.EqualValues(t, rawMap[k], v.Value())
@@ -564,7 +564,7 @@ func TestStringMap_CopyTo(t *testing.T) {
 	dest := NewStringMap()
 	// Test CopyTo to empty
 	NewStringMap().CopyTo(dest)
-	assert.EqualValues(t, 0, dest.Cap())
+	assert.EqualValues(t, 0, dest.Len())
 
 	// Test CopyTo larger slice
 	generateTestStringMap().CopyTo(dest)

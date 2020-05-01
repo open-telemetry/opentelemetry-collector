@@ -36,11 +36,11 @@ func internalResourceToOC(resource pdata.Resource) (*occommon.Node, *ocresource.
 	ocNode := occommon.Node{}
 	ocResource := ocresource.Resource{}
 
-	if attrs.Cap() == 0 {
+	if attrs.Len() == 0 {
 		return &ocNode, &ocResource
 	}
 
-	labels := make(map[string]string, attrs.Cap())
+	labels := make(map[string]string, attrs.Len())
 	attrs.ForEach(func(k string, v pdata.AttributeValue) {
 		val := attributeValueToString(v)
 

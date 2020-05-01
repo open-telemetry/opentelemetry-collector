@@ -276,7 +276,7 @@ func (ma attributesMatcher) match(span pdata.Span) bool {
 	attrs := span.Attributes()
 	// At this point, it is expected of the span to have attributes because of
 	// len(ma) != 0. This means for spans with no attributes, it does not match.
-	if attrs.Cap() == 0 {
+	if attrs.Len() == 0 {
 		return false
 	}
 

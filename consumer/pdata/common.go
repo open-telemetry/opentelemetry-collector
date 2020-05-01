@@ -454,8 +454,11 @@ func (am AttributeMap) Sort() AttributeMap {
 	return am
 }
 
-// Cap returns the capacity of this map.
-func (am AttributeMap) Cap() int {
+// Len returns the length of this map.
+//
+// Because the AttributeMap is represented internally by a slice of pointers, and the data are comping from the wire,
+// it is possible that when iterating using "ForEach" to get access to fewer elements because nil elements are skipped.
+func (am AttributeMap) Len() int {
 	return len(*am.orig)
 }
 
@@ -631,8 +634,11 @@ func (sm StringMap) Upsert(k, v string) {
 	}
 }
 
-// Cap returns the capacity of this map.
-func (sm StringMap) Cap() int {
+// Len returns the length of this map.
+//
+// Because the AttributeMap is represented internally by a slice of pointers, and the data are comping from the wire,
+// it is possible that when iterating using "ForEach" to get access to fewer elements because nil elements are skipped.
+func (sm StringMap) Len() int {
 	return len(*sm.orig)
 }
 

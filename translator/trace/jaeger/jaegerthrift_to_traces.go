@@ -119,7 +119,7 @@ func jThriftSpanToInternal(span *jaeger.Span, dest pdata.Span) {
 	}
 
 	// drop the attributes slice if all of them were replaced during translation
-	if attrs.Cap() == 0 {
+	if attrs.Len() == 0 {
 		attrs.InitFromMap(nil)
 	}
 
