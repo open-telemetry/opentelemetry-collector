@@ -45,7 +45,7 @@ func (b *logDataBuffer) logAttr(label string, value string) {
 }
 
 func (b *logDataBuffer) logAttributeMap(label string, am pdata.AttributeMap) {
-	if am.Cap() == 0 {
+	if am.Len() == 0 {
 		return
 	}
 

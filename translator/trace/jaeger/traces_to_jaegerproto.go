@@ -110,7 +110,7 @@ func resourceToJaegerProtoProcess(resource pdata.Resource) *model.Process {
 	}
 
 	attrs := resource.Attributes()
-	if attrs.Cap() == 0 {
+	if attrs.Len() == 0 {
 		return nil
 	}
 
@@ -124,11 +124,11 @@ func resourceToJaegerProtoProcess(resource pdata.Resource) *model.Process {
 }
 
 func resourceAttributesToJaegerProtoTags(attrs pdata.AttributeMap) []model.KeyValue {
-	if attrs.Cap() == 0 {
+	if attrs.Len() == 0 {
 		return nil
 	}
 
-	tags := make([]model.KeyValue, 0, attrs.Cap())
+	tags := make([]model.KeyValue, 0, attrs.Len())
 	attrs.ForEach(func(key string, attr pdata.AttributeValue) {
 		if key == conventions.AttributeServiceName {
 			return
@@ -139,11 +139,11 @@ func resourceAttributesToJaegerProtoTags(attrs pdata.AttributeMap) []model.KeyVa
 }
 
 func attributesToJaegerProtoTags(attrs pdata.AttributeMap) []model.KeyValue {
-	if attrs.Cap() == 0 {
+	if attrs.Len() == 0 {
 		return nil
 	}
 
-	tags := make([]model.KeyValue, 0, attrs.Cap())
+	tags := make([]model.KeyValue, 0, attrs.Len())
 	attrs.ForEach(func(key string, attr pdata.AttributeValue) {
 		tags = append(tags, attributeToJaegerProtoTag(key, attr))
 	})

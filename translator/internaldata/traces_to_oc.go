@@ -116,7 +116,7 @@ func spanToOC(span pdata.Span) *octrace.Span {
 }
 
 func attributesMapToOCSpanAttributes(attributes pdata.AttributeMap, droppedCount uint32) *octrace.Span_Attributes {
-	if attributes.Cap() == 0 && droppedCount == 0 {
+	if attributes.Len() == 0 && droppedCount == 0 {
 		return nil
 	}
 
@@ -127,11 +127,11 @@ func attributesMapToOCSpanAttributes(attributes pdata.AttributeMap, droppedCount
 }
 
 func attributesMapToOCAttributeMap(attributes pdata.AttributeMap) map[string]*octrace.AttributeValue {
-	if attributes.Cap() == 0 {
+	if attributes.Len() == 0 {
 		return nil
 	}
 
-	ocAttributes := make(map[string]*octrace.AttributeValue, attributes.Cap())
+	ocAttributes := make(map[string]*octrace.AttributeValue, attributes.Len())
 	attributes.ForEach(func(k string, v pdata.AttributeValue) {
 		ocAttributes[k] = attributeValueToOC(v)
 	})
@@ -287,7 +287,7 @@ func eventToOC(event pdata.SpanEvent) *octrace.Span_TimeEvent {
 		conventions.OCTimeEventMessageEventCSize,
 	}
 	// TODO: Find a better way to check for message_event. Maybe use the event.Name.
-	if attrs.Cap() == len(ocMessageEventAttrs) {
+	if attrs.Len() == len(ocMessageEventAttrs) {
 		ocMessageEventAttrValues := map[string]pdata.AttributeValue{}
 		var ocMessageEventAttrFound bool
 		for _, attr := range ocMessageEventAttrs {
