@@ -115,39 +115,43 @@ func resourceToJaegerProtoProcess(resource pdata.Resource) *model.Process {
 	}
 
 	process := model.Process{}
+	attrsCount := attrs.Len()
 	if serviceName, ok := attrs.Get(conventions.AttributeServiceName); ok {
 		process.ServiceName = serviceName.StringVal()
+		attrsCount--
 	}
-	process.Tags = resourceAttributesToJaegerProtoTags(attrs)
+	if attrsCount == 0 {
+		return &process
+	}
+
+	tags := make([]model.KeyValue, 0, attrsCount)
+	process.Tags = appendTagsFromResourceAttributes(tags, attrs)
 	return &process
 
 }
 
-func resourceAttributesToJaegerProtoTags(attrs pdata.AttributeMap) []model.KeyValue {
+func appendTagsFromResourceAttributes(dest []model.KeyValue, attrs pdata.AttributeMap) []model.KeyValue {
 	if attrs.Len() == 0 {
-		return nil
+		return dest
 	}
 
-	tags := make([]model.KeyValue, 0, attrs.Len())
 	attrs.ForEach(func(key string, attr pdata.AttributeValue) {
 		if key == conventions.AttributeServiceName {
 			return
 		}
-		tags = append(tags, attributeToJaegerProtoTag(key, attr))
+		dest = append(dest, attributeToJaegerProtoTag(key, attr))
 	})
-	return tags
+	return dest
 }
 
-func attributesToJaegerProtoTags(attrs pdata.AttributeMap) []model.KeyValue {
+func appendTagsFromAttributes(dest []model.KeyValue, attrs pdata.AttributeMap) []model.KeyValue {
 	if attrs.Len() == 0 {
-		return nil
+		return dest
 	}
-
-	tags := make([]model.KeyValue, 0, attrs.Len())
 	attrs.ForEach(func(key string, attr pdata.AttributeValue) {
-		tags = append(tags, attributeToJaegerProtoTag(key, attr))
+		dest = append(dest, attributeToJaegerProtoTag(key, attr))
 	})
-	return tags
+	return dest
 }
 
 func attributeToJaegerProtoTag(key string, attr pdata.AttributeValue) model.KeyValue {
@@ -191,9 +195,6 @@ func spanToJaegerProto(span pdata.Span) (*model.Span, error) {
 		return nil, fmt.Errorf("error converting span links to Jaeger references: %w", err)
 	}
 
-	tags := attributesToJaegerProtoTags(span.Attributes())
-	tags = appendTagFromSpanKind(tags, span.Kind())
-	tags = appendTagFromSpanStatus(tags, span.Status())
 	startTime := internal.UnixNanoToTime(span.StartTime())
 
 	return &model.Span{
@@ -203,9 +204,58 @@ func spanToJaegerProto(span pdata.Span) (*model.Span, error) {
 		References:    jReferences,
 		StartTime:     startTime,
 		Duration:      internal.UnixNanoToTime(span.EndTime()).Sub(startTime),
-		Tags:          tags,
+		Tags:          getJaegerProtoSpanTags(span),
 		Logs:          spanEventsToJaegerProtoLogs(span.Events()),
 	}, nil
+}
+
+func getJaegerProtoSpanTags(span pdata.Span) []model.KeyValue {
+	var spanKindTag, statusCodeTag, errorTag, statusMsgTag model.KeyValue
+	var spanKindTagFound, statusCodeTagFound, errorTagFound, statusMsgTagFound bool
+
+	tagsCount := span.Attributes().Len()
+
+	spanKindTag, spanKindTagFound = getTagFromSpanKind(span.Kind())
+	if spanKindTagFound {
+		tagsCount++
+	}
+	status := span.Status()
+	if !status.IsNil() {
+		statusCodeTag, statusCodeTagFound = getTagFromStatusCode(status.Code())
+		if statusCodeTagFound {
+			tagsCount++
+		}
+
+		errorTag, errorTagFound = getErrorTagFromStatusCode(status.Code())
+		if errorTagFound {
+			tagsCount++
+		}
+
+		statusMsgTag, statusMsgTagFound = getTagFromStatusMsg(status.Message())
+		if statusMsgTagFound {
+			tagsCount++
+		}
+	}
+
+	if tagsCount == 0 {
+		return nil
+	}
+
+	tags := make([]model.KeyValue, 0, tagsCount)
+	tags = appendTagsFromAttributes(tags, span.Attributes())
+	if spanKindTagFound {
+		tags = append(tags, spanKindTag)
+	}
+	if statusCodeTagFound {
+		tags = append(tags, statusCodeTag)
+	}
+	if errorTagFound {
+		tags = append(tags, errorTag)
+	}
+	if statusMsgTagFound {
+		tags = append(tags, statusMsgTag)
+	}
+	return tags
 }
 
 func traceIDToJaegerProto(traceID pdata.TraceID) (model.TraceID, error) {
@@ -308,67 +358,65 @@ func spanEventsToJaegerProtoLogs(events pdata.SpanEventSlice) []model.Log {
 			continue
 		}
 
+		fields := make([]model.KeyValue, 0, event.Attributes().Len())
+		fields = appendTagsFromAttributes(fields, event.Attributes())
 		logs = append(logs, model.Log{
 			Timestamp: internal.UnixNanoToTime(event.Timestamp()),
-			Fields:    attributesToJaegerProtoTags(event.Attributes()),
+			Fields:    fields,
 		})
 	}
 
 	return logs
 }
 
-func appendTagFromSpanKind(tags []model.KeyValue, spanKind pdata.SpanKind) []model.KeyValue {
-	tag := model.KeyValue{
-		Key:   tracetranslator.TagSpanKind,
-		VType: model.ValueType_STRING,
-	}
-
+func getTagFromSpanKind(spanKind pdata.SpanKind) (model.KeyValue, bool) {
+	var tagStr string
 	switch spanKind {
 	case pdata.SpanKindCLIENT:
-		tag.VStr = string(tracetranslator.OpenTracingSpanKindClient)
+		tagStr = string(tracetranslator.OpenTracingSpanKindClient)
 	case pdata.SpanKindSERVER:
-		tag.VStr = string(tracetranslator.OpenTracingSpanKindServer)
+		tagStr = string(tracetranslator.OpenTracingSpanKindServer)
 	case pdata.SpanKindPRODUCER:
-		tag.VStr = string(tracetranslator.OpenTracingSpanKindProducer)
+		tagStr = string(tracetranslator.OpenTracingSpanKindProducer)
 	case pdata.SpanKindCONSUMER:
-		tag.VStr = string(tracetranslator.OpenTracingSpanKindConsumer)
+		tagStr = string(tracetranslator.OpenTracingSpanKindConsumer)
 	default:
-		return tags
+		return model.KeyValue{}, false
 	}
 
-	if tags == nil {
-		return []model.KeyValue{tag}
-	}
-
-	return append(tags, tag)
+	return model.KeyValue{
+		Key:   tracetranslator.TagSpanKind,
+		VType: model.ValueType_STRING,
+		VStr:  tagStr,
+	}, true
 }
 
-func appendTagFromSpanStatus(tags []model.KeyValue, status pdata.SpanStatus) []model.KeyValue {
-	if status.IsNil() {
-		return tags
-	}
-
-	tags = append(tags, model.KeyValue{
+func getTagFromStatusCode(statusCode pdata.StatusCode) (model.KeyValue, bool) {
+	return model.KeyValue{
 		Key:    tracetranslator.TagStatusCode,
-		VInt64: int64(status.Code()),
+		VInt64: int64(statusCode),
 		VType:  model.ValueType_INT64,
-	})
+	}, true
+}
 
-	if status.Code() != pdata.StatusCode(otlptrace.Status_Ok) {
-		tags = append(tags, model.KeyValue{
-			Key:   tracetranslator.TagError,
-			VBool: true,
-			VType: model.ValueType_BOOL,
-		})
+func getErrorTagFromStatusCode(statusCode pdata.StatusCode) (model.KeyValue, bool) {
+	if statusCode == pdata.StatusCode(otlptrace.Status_Ok) {
+		return model.KeyValue{}, false
 	}
+	return model.KeyValue{
+		Key:   tracetranslator.TagError,
+		VBool: true,
+		VType: model.ValueType_BOOL,
+	}, true
+}
 
-	if status.Message() != "" {
-		tags = append(tags, model.KeyValue{
-			Key:   tracetranslator.TagStatusMsg,
-			VStr:  status.Message(),
-			VType: model.ValueType_STRING,
-		})
+func getTagFromStatusMsg(statusMsg string) (model.KeyValue, bool) {
+	if statusMsg == "" {
+		return model.KeyValue{}, false
 	}
-
-	return tags
+	return model.KeyValue{
+		Key:   tracetranslator.TagStatusMsg,
+		VStr:  statusMsg,
+		VType: model.ValueType_STRING,
+	}, true
 }
