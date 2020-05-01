@@ -75,15 +75,6 @@ func TestCreateTraceExporter(t *testing.T) {
 			},
 		},
 		{
-			name: "ReconnectionDelay",
-			config: Config{
-				GRPCSettings: configgrpc.GRPCSettings{
-					Endpoint: endpoint,
-				},
-				ReconnectionDelay: 5 * time.Second,
-			},
-		},
-		{
 			name: "KeepaliveParameters",
 			config: Config{
 				GRPCSettings: configgrpc.GRPCSettings{

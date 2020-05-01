@@ -15,8 +15,6 @@
 package otlpexporter
 
 import (
-	"time"
-
 	"github.com/open-telemetry/opentelemetry-collector/config/configgrpc"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 )
@@ -29,7 +27,4 @@ type Config struct {
 
 	// The number of workers that send the gRPC requests.
 	NumWorkers int `mapstructure:"num_workers"`
-
-	// The time period between each reconnection performed by the exporter.
-	ReconnectionDelay time.Duration `mapstructure:"reconnection_delay,omitempty"`
 }
