@@ -53,15 +53,15 @@ func TestOcTraceStateToInternal(t *testing.T) {
 	assert.EqualValues(t, "abc=def,123=4567", ocTraceStateToInternal(tracestate))
 }
 
-func TestOcAttrsToInternal(t *testing.T) {
+func TestInitAttributeMapFromOC(t *testing.T) {
 	attrs := pdata.NewAttributeMap()
-	ocAttrsToInternal(nil, attrs)
+	initAttributeMapFromOC(nil, attrs)
 	assert.EqualValues(t, pdata.NewAttributeMap(), attrs)
 	assert.EqualValues(t, 0, ocAttrsToDroppedAttributes(nil))
 
 	ocAttrs := &octrace.Span_Attributes{}
 	attrs = pdata.NewAttributeMap()
-	ocAttrsToInternal(ocAttrs, attrs)
+	initAttributeMapFromOC(ocAttrs, attrs)
 	assert.EqualValues(t, pdata.NewAttributeMap(), attrs)
 	assert.EqualValues(t, 0, ocAttrsToDroppedAttributes(ocAttrs))
 
@@ -69,7 +69,7 @@ func TestOcAttrsToInternal(t *testing.T) {
 		DroppedAttributesCount: 123,
 	}
 	attrs = pdata.NewAttributeMap()
-	ocAttrsToInternal(ocAttrs, attrs)
+	initAttributeMapFromOC(ocAttrs, attrs)
 	assert.EqualValues(t, pdata.NewAttributeMap(), attrs)
 	assert.EqualValues(t, 123, ocAttrsToDroppedAttributes(ocAttrs))
 
@@ -78,7 +78,7 @@ func TestOcAttrsToInternal(t *testing.T) {
 		DroppedAttributesCount: 234,
 	}
 	attrs = pdata.NewAttributeMap()
-	ocAttrsToInternal(ocAttrs, attrs)
+	initAttributeMapFromOC(ocAttrs, attrs)
 	assert.EqualValues(t, pdata.NewAttributeMap(), attrs)
 	assert.EqualValues(t, 234, ocAttrsToDroppedAttributes(ocAttrs))
 
@@ -91,7 +91,7 @@ func TestOcAttrsToInternal(t *testing.T) {
 		DroppedAttributesCount: 234,
 	}
 	attrs = pdata.NewAttributeMap()
-	ocAttrsToInternal(ocAttrs, attrs)
+	initAttributeMapFromOC(ocAttrs, attrs)
 	assert.EqualValues(t,
 		pdata.NewAttributeMap().InitFromMap(
 			map[string]pdata.AttributeValue{
@@ -110,7 +110,7 @@ func TestOcAttrsToInternal(t *testing.T) {
 		Value: &octrace.AttributeValue_DoubleValue{DoubleValue: 4.5},
 	}
 	attrs = pdata.NewAttributeMap()
-	ocAttrsToInternal(ocAttrs, attrs)
+	initAttributeMapFromOC(ocAttrs, attrs)
 
 	expectedAttr := pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
 		"abc":       pdata.NewAttributeValueString("def"),

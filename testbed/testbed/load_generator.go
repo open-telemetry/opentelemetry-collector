@@ -366,6 +366,7 @@ func (lg *LoadGenerator) generateMetrics() {
 	metricData.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Resize(1)
 	if lg.options.Attributes != nil {
 		attrs := metricData.ResourceMetrics().At(0).Resource().Attributes()
+		attrs.InitEmptyWithCapacity(len(lg.options.Attributes))
 		for k, v := range lg.options.Attributes {
 			attrs.UpsertString(k, v)
 		}
