@@ -28,6 +28,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
+	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal/scraper/memoryscraper"
 )
 
 // This file implements Factory for HostMetrics receiver.
@@ -47,7 +48,8 @@ type Factory struct {
 func NewFactory() *Factory {
 	return &Factory{
 		scraperFactories: map[string]internal.Factory{
-			cpuscraper.TypeStr: &cpuscraper.Factory{},
+			cpuscraper.TypeStr:    &cpuscraper.Factory{},
+			memoryscraper.TypeStr: &memoryscraper.Factory{},
 		},
 	}
 }

@@ -8,6 +8,7 @@ receivers:
     scrapers:
       cpu:
         report_per_cpu: true
+      memory:
 
 exporters:
   logging:
