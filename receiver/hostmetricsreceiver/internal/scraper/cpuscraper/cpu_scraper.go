@@ -114,12 +114,9 @@ func initializeCPUSecondsMetric(metric pdata.Metric, startTime pdata.TimestampUn
 	MetricCPUSecondsDescriptor.CopyTo(metric.MetricDescriptor())
 
 	idps := metric.Int64DataPoints()
-	idps.Resize(4 * len(cpuTimes))
+	idps.Resize(len(cpuTimes) * cpuStatesLen)
 	for i, cpuTime := range cpuTimes {
-		initializeCPUSecondsDataPoint(idps.At(4*i+0), startTime, cpuTime.CPU, UserStateLabelValue, int64(cpuTime.User))
-		initializeCPUSecondsDataPoint(idps.At(4*i+1), startTime, cpuTime.CPU, SystemStateLabelValue, int64(cpuTime.System))
-		initializeCPUSecondsDataPoint(idps.At(4*i+2), startTime, cpuTime.CPU, IdleStateLabelValue, int64(cpuTime.Idle))
-		initializeCPUSecondsDataPoint(idps.At(4*i+3), startTime, cpuTime.CPU, InterruptStateLabelValue, int64(cpuTime.Irq))
+		appendCPUStateTimes(idps, i*cpuStatesLen, startTime, cpuTime)
 	}
 }
 

@@ -16,7 +16,6 @@ package hostmetricsreceiver
 
 import (
 	"context"
-	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -47,11 +46,6 @@ func TestCreateReceiver(t *testing.T) {
 
 	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), creationParams, cfg, nil)
 
-	if runtime.GOOS != "windows" {
-		assert.NotNil(t, err)
-		assert.Nil(t, tReceiver)
-	} else {
-		assert.Nil(t, err)
-		assert.NotNil(t, mReceiver)
-	}
+	assert.Nil(t, err)
+	assert.NotNil(t, mReceiver)
 }

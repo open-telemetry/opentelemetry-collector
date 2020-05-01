@@ -49,11 +49,6 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 
 	receiver, err := NewHostMetricsReceiver(context.Background(), zap.NewNop(), config, factories, sink)
 
-	if runtime.GOOS != "windows" {
-		require.Error(t, err, "Expected error when creating a host metrics receiver with cpuscraper collector on a non-windows environment")
-		return
-	}
-
 	require.NoError(t, err, "Failed to create metrics receiver: %v", err)
 
 	err = receiver.Start(context.Background(), componenttest.NewNopHost())
@@ -77,10 +72,10 @@ func assertMetricData(t *testing.T, got []pdata.Metrics) {
 	// expect 1 metric
 	assert.Equal(t, 1, metrics.Len())
 
-	// for cpu seconds metric, expect 5 timeseries with appropriate labels
+	// for cpu seconds metric, expect a datapoint for each state label & core combination with at least 4 standard states
 	hostCPUTimeMetric := metrics.At(0)
 	internal.AssertDescriptorEqual(t, cpuscraper.MetricCPUSecondsDescriptor, hostCPUTimeMetric.MetricDescriptor())
-	assert.Equal(t, 4*runtime.NumCPU(), hostCPUTimeMetric.Int64DataPoints().Len())
+	assert.GreaterOrEqual(t, hostCPUTimeMetric.Int64DataPoints().Len(), runtime.NumCPU()*4)
 	internal.AssertInt64MetricLabelExists(t, hostCPUTimeMetric, 0, cpuscraper.CPULabel)
 	internal.AssertInt64MetricLabelHasValue(t, hostCPUTimeMetric, 0, cpuscraper.StateLabel, cpuscraper.UserStateLabelValue)
 	internal.AssertInt64MetricLabelHasValue(t, hostCPUTimeMetric, 1, cpuscraper.StateLabel, cpuscraper.SystemStateLabelValue)

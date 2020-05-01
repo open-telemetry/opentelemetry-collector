@@ -16,9 +16,7 @@ package hostmetricsreceiver
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"runtime"
 	"time"
 
 	"github.com/spf13/viper"
@@ -143,11 +141,6 @@ func (f *Factory) CreateMetricsReceiver(
 	cfg configmodels.Receiver,
 	consumer consumer.MetricsConsumer,
 ) (component.MetricsReceiver, error) {
-
-	if runtime.GOOS != "windows" {
-		return nil, errors.New("hostmetrics receiver is currently only supported on windows")
-	}
-
 	config := cfg.(*Config)
 
 	hmr, err := NewHostMetricsReceiver(ctx, params.Logger, config, f.scraperFactories, consumer)
