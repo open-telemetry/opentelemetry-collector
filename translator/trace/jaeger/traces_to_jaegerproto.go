@@ -117,11 +117,25 @@ func resourceToJaegerProtoProcess(resource pdata.Resource) *model.Process {
 	process := model.Process{}
 	if serviceName, ok := attrs.Get(conventions.AttributeServiceName); ok {
 		process.ServiceName = serviceName.StringVal()
-		attrs.Delete(conventions.AttributeServiceName)
 	}
-	process.Tags = attributesToJaegerProtoTags(attrs)
+	process.Tags = resourceAttributesToJaegerProtoTags(attrs)
 	return &process
 
+}
+
+func resourceAttributesToJaegerProtoTags(attrs pdata.AttributeMap) []model.KeyValue {
+	if attrs.Cap() == 0 {
+		return nil
+	}
+
+	tags := make([]model.KeyValue, 0, attrs.Cap())
+	attrs.ForEach(func(key string, attr pdata.AttributeValue) {
+		if key == conventions.AttributeServiceName {
+			return
+		}
+		tags = append(tags, attributeToJaegerProtoTag(key, attr))
+	})
+	return tags
 }
 
 func attributesToJaegerProtoTags(attrs pdata.AttributeMap) []model.KeyValue {
@@ -131,26 +145,30 @@ func attributesToJaegerProtoTags(attrs pdata.AttributeMap) []model.KeyValue {
 
 	tags := make([]model.KeyValue, 0, attrs.Cap())
 	attrs.ForEach(func(key string, attr pdata.AttributeValue) {
-		tag := model.KeyValue{Key: key}
-		switch attr.Type() {
-		case pdata.AttributeValueSTRING:
-			// Jaeger-to-Internal maps binary tags to string attributes and encodes them as
-			// base64 strings. Blindingly attempting to decode base64 seems too much.
-			tag.VType = model.ValueType_STRING
-			tag.VStr = attr.StringVal()
-		case pdata.AttributeValueINT:
-			tag.VType = model.ValueType_INT64
-			tag.VInt64 = attr.IntVal()
-		case pdata.AttributeValueBOOL:
-			tag.VType = model.ValueType_BOOL
-			tag.VBool = attr.BoolVal()
-		case pdata.AttributeValueDOUBLE:
-			tag.VType = model.ValueType_FLOAT64
-			tag.VFloat64 = attr.DoubleVal()
-		}
-		tags = append(tags, tag)
+		tags = append(tags, attributeToJaegerProtoTag(key, attr))
 	})
 	return tags
+}
+
+func attributeToJaegerProtoTag(key string, attr pdata.AttributeValue) model.KeyValue {
+	tag := model.KeyValue{Key: key}
+	switch attr.Type() {
+	case pdata.AttributeValueSTRING:
+		// Jaeger-to-Internal maps binary tags to string attributes and encodes them as
+		// base64 strings. Blindingly attempting to decode base64 seems too much.
+		tag.VType = model.ValueType_STRING
+		tag.VStr = attr.StringVal()
+	case pdata.AttributeValueINT:
+		tag.VType = model.ValueType_INT64
+		tag.VInt64 = attr.IntVal()
+	case pdata.AttributeValueBOOL:
+		tag.VType = model.ValueType_BOOL
+		tag.VBool = attr.BoolVal()
+	case pdata.AttributeValueDOUBLE:
+		tag.VType = model.ValueType_FLOAT64
+		tag.VFloat64 = attr.DoubleVal()
+	}
+	return tag
 }
 
 func spanToJaegerProto(span pdata.Span) (*model.Span, error) {
