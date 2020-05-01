@@ -63,7 +63,6 @@ Approvers ([@open-telemetry/collector-approvers](https://github.com/orgs/open-te
 - [Owais Lone](https://github.com/owais), Splunk
 - [Rahul Patel](https://github.com/rghetia), Google
 - [Steve Flanders](https://github.com/flands), Splunk
-- [Steven Karis](https://github.com/sjkaris), Splunk
 - [Yang Song](https://github.com/songy23), Google
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
 
