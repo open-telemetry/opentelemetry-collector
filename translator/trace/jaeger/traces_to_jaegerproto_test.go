@@ -28,156 +28,148 @@ import (
 	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 )
 
-func TestAppendTagFromSpanStatus(t *testing.T) {
-	okStatus := pdata.NewSpanStatus()
-	okStatus.InitEmpty()
-	okStatus.SetCode(pdata.StatusCode(otlptrace.Status_Ok))
-
-	unknownStatus := pdata.NewSpanStatus()
-	unknownStatus.InitEmpty()
-	unknownStatus.SetCode(pdata.StatusCode(otlptrace.Status_UnknownError))
-
-	notFoundStatus := pdata.NewSpanStatus()
-	notFoundStatus.InitEmpty()
-	notFoundStatus.SetCode(pdata.StatusCode(otlptrace.Status_NotFound))
-	notFoundStatus.SetMessage("404 Not Found")
-
+func TestGetTagFromStatusCode(t *testing.T) {
 	tests := []struct {
-		name   string
-		status pdata.SpanStatus
-		tags   []model.KeyValue
+		name string
+		code pdata.StatusCode
+		tag  model.KeyValue
 	}{
 		{
-			name:   "none",
-			status: pdata.NewSpanStatus(),
-			tags:   []model.KeyValue(nil),
-		},
-
-		{
-			name:   "ok",
-			status: okStatus,
-			tags: []model.KeyValue{
-				{
-					Key:    tracetranslator.TagStatusCode,
-					VInt64: int64(otlptrace.Status_Ok),
-					VType:  model.ValueType_INT64,
-				},
+			name: "ok",
+			code: pdata.StatusCode(otlptrace.Status_Ok),
+			tag: model.KeyValue{
+				Key:    tracetranslator.TagStatusCode,
+				VInt64: int64(otlptrace.Status_Ok),
+				VType:  model.ValueType_INT64,
 			},
 		},
 
 		{
-			name:   "unknown",
-			status: unknownStatus,
-			tags: []model.KeyValue{
-				{
-					Key:    tracetranslator.TagStatusCode,
-					VInt64: int64(otlptrace.Status_UnknownError),
-					VType:  model.ValueType_INT64,
-				},
-				{
-					Key:   tracetranslator.TagError,
-					VBool: true,
-					VType: model.ValueType_BOOL,
-				},
+			name: "unknown",
+			code: pdata.StatusCode(otlptrace.Status_UnknownError),
+			tag: model.KeyValue{
+				Key:    tracetranslator.TagStatusCode,
+				VInt64: int64(otlptrace.Status_UnknownError),
+				VType:  model.ValueType_INT64,
 			},
 		},
 
 		{
-			name:   "not-found-with-msg",
-			status: notFoundStatus,
-			tags: []model.KeyValue{
-				{
-					Key:    tracetranslator.TagStatusCode,
-					VInt64: int64(otlptrace.Status_NotFound),
-					VType:  model.ValueType_INT64,
-				},
-				{
-					Key:   tracetranslator.TagError,
-					VBool: true,
-					VType: model.ValueType_BOOL,
-				},
-				{
-					Key:   tracetranslator.TagStatusMsg,
-					VStr:  "404 Not Found",
-					VType: model.ValueType_STRING,
-				},
+			name: "not-found",
+			code: pdata.StatusCode(otlptrace.Status_NotFound),
+			tag: model.KeyValue{
+				Key:    tracetranslator.TagStatusCode,
+				VInt64: int64(otlptrace.Status_NotFound),
+				VType:  model.ValueType_INT64,
 			},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			tags := appendTagFromSpanStatus(nil, test.status)
-			assert.EqualValues(t, test.tags, tags)
+			got, ok := getTagFromStatusCode(test.code)
+			assert.True(t, ok)
+			assert.EqualValues(t, test.tag, got)
 		})
 	}
 }
 
-func TestAppendTagFromSpanKind(t *testing.T) {
+func TestGetErrorTagFromStatusCode(t *testing.T) {
+	errTag := model.KeyValue{
+		Key:   tracetranslator.TagError,
+		VBool: true,
+		VType: model.ValueType_BOOL,
+	}
+
+	got, ok := getErrorTagFromStatusCode(pdata.StatusCode(otlptrace.Status_Ok))
+	assert.False(t, ok)
+
+	got, ok = getErrorTagFromStatusCode(pdata.StatusCode(otlptrace.Status_UnknownError))
+	assert.True(t, ok)
+	assert.EqualValues(t, errTag, got)
+
+	got, ok = getErrorTagFromStatusCode(pdata.StatusCode(otlptrace.Status_NotFound))
+	assert.True(t, ok)
+	assert.EqualValues(t, errTag, got)
+}
+
+func TestGetTagFromStatusMsg(t *testing.T) {
+	got, ok := getTagFromStatusMsg("")
+	assert.False(t, ok)
+
+	got, ok = getTagFromStatusMsg("test-error")
+	assert.True(t, ok)
+	assert.EqualValues(t, model.KeyValue{
+		Key:   tracetranslator.TagStatusMsg,
+		VStr:  "test-error",
+		VType: model.ValueType_STRING,
+	}, got)
+}
+
+func TestGetTagFromSpanKind(t *testing.T) {
 	tests := []struct {
 		name string
 		kind pdata.SpanKind
-		tags []model.KeyValue
+		tag  model.KeyValue
+		ok   bool
 	}{
 		{
 			name: "unspecified",
 			kind: pdata.SpanKindUNSPECIFIED,
-			tags: []model.KeyValue(nil),
+			tag:  model.KeyValue{},
+			ok:   false,
 		},
 
 		{
 			name: "client",
 			kind: pdata.SpanKindCLIENT,
-			tags: []model.KeyValue{
-				{
-					Key:   tracetranslator.TagSpanKind,
-					VType: model.ValueType_STRING,
-					VStr:  string(tracetranslator.OpenTracingSpanKindClient),
-				},
+			tag: model.KeyValue{
+				Key:   tracetranslator.TagSpanKind,
+				VType: model.ValueType_STRING,
+				VStr:  string(tracetranslator.OpenTracingSpanKindClient),
 			},
+			ok: true,
 		},
 
 		{
 			name: "server",
 			kind: pdata.SpanKindSERVER,
-			tags: []model.KeyValue{
-				{
-					Key:   tracetranslator.TagSpanKind,
-					VType: model.ValueType_STRING,
-					VStr:  string(tracetranslator.OpenTracingSpanKindServer),
-				},
+			tag: model.KeyValue{
+				Key:   tracetranslator.TagSpanKind,
+				VType: model.ValueType_STRING,
+				VStr:  string(tracetranslator.OpenTracingSpanKindServer),
 			},
+			ok: true,
 		},
 
 		{
 			name: "producer",
 			kind: pdata.SpanKindPRODUCER,
-			tags: []model.KeyValue{
-				{
-					Key:   tracetranslator.TagSpanKind,
-					VType: model.ValueType_STRING,
-					VStr:  string(tracetranslator.OpenTracingSpanKindProducer),
-				},
+			tag: model.KeyValue{
+				Key:   tracetranslator.TagSpanKind,
+				VType: model.ValueType_STRING,
+				VStr:  string(tracetranslator.OpenTracingSpanKindProducer),
 			},
+			ok: true,
 		},
 
 		{
 			name: "consumer",
 			kind: pdata.SpanKindCONSUMER,
-			tags: []model.KeyValue{
-				{
-					Key:   tracetranslator.TagSpanKind,
-					VType: model.ValueType_STRING,
-					VStr:  string(tracetranslator.OpenTracingSpanKindConsumer),
-				},
+			tag: model.KeyValue{
+				Key:   tracetranslator.TagSpanKind,
+				VType: model.ValueType_STRING,
+				VStr:  string(tracetranslator.OpenTracingSpanKindConsumer),
 			},
+			ok: true,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			tags := appendTagFromSpanKind(nil, test.kind)
-			assert.EqualValues(t, test.tags, tags)
+			got, ok := getTagFromSpanKind(test.kind)
+			assert.Equal(t, test.ok, ok)
+			assert.EqualValues(t, test.tag, got)
 		})
 	}
 }
@@ -219,13 +211,11 @@ func TestAttributesToJaegerProtoTags(t *testing.T) {
 		},
 	}
 
-	require.EqualValues(t, expected, attributesToJaegerProtoTags(attributes))
-
-	got := attributesToJaegerProtoTags(attributes)
+	got := appendTagsFromAttributes(make([]model.KeyValue, 0, len(expected)), attributes)
 	require.EqualValues(t, expected, got)
 
 	// The last item in expected ("service-name") must be skipped in resource tags translation
-	got = resourceAttributesToJaegerProtoTags(attributes)
+	got = appendTagsFromResourceAttributes(make([]model.KeyValue, 0, len(expected)-1), attributes)
 	require.EqualValues(t, expected[:4], got)
 }
 
@@ -318,4 +308,15 @@ func generateProtoChildSpanWithErrorTags() *model.Span {
 		VType: model.ValueType_BOOL,
 	})
 	return span
+}
+
+func BenchmarkInternalTracesToJaegerProto(b *testing.B) {
+	td := generateTraceDataTwoSpansChildParent()
+	resource := generateTraceDataResourceOnly().ResourceSpans().At(0).Resource()
+	resource.CopyTo(td.ResourceSpans().At(0).Resource())
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		InternalTracesToJaegerProto(td)
+	}
 }
