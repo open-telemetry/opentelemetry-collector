@@ -10,8 +10,6 @@ receivers:
         extra: "some string 2"
 
 processors:
-  exampleprocessor:
-    disabled: true
 
 exporters:
   exampleexporter:
@@ -21,7 +19,7 @@ service:
   pipelines:
     traces:
         receivers: [multireceiver/myreceiver]
-        processors: [exampleprocessor]
+        processors: []
         exporters: [exampleexporter]
     metrics:
         receivers: [multireceiver/myreceiver]

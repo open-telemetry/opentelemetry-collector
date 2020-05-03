@@ -37,8 +37,6 @@ receivers:
   # Receiver 2.
   # <receiver type>/<name>:
   examplereceiver/settings:
-    # <setting one>: <value one>
-    disabled: false
     # <setting two>: <value two>
     endpoint: localhost:9211
 ```

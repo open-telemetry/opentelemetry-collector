@@ -133,7 +133,7 @@ func (f *Factory) CreateTraceReceiver(
 	logger := params.Logger
 
 	// Set ports
-	if protoGRPC != nil && protoGRPC.IsEnabled() {
+	if protoGRPC != nil {
 		var err error
 		config.CollectorGRPCPort, err = extractPortFromEndpoint(protoGRPC.Endpoint)
 		if err != nil {
@@ -150,7 +150,7 @@ func (f *Factory) CreateTraceReceiver(
 		config.CollectorGRPCOptions = grpcServerOptions
 	}
 
-	if protoHTTP != nil && protoHTTP.IsEnabled() {
+	if protoHTTP != nil {
 		var err error
 		config.CollectorHTTPPort, err = extractPortFromEndpoint(protoHTTP.Endpoint)
 		if err != nil {
@@ -158,11 +158,11 @@ func (f *Factory) CreateTraceReceiver(
 		}
 	}
 
-	if protoTChannel != nil && protoTChannel.IsEnabled() {
+	if protoTChannel != nil {
 		logger.Warn("Protocol unknown or not supported", zap.String("protocol", protoThriftTChannel))
 	}
 
-	if protoThriftBinary != nil && protoThriftBinary.IsEnabled() {
+	if protoThriftBinary != nil {
 		var err error
 		config.AgentBinaryThriftPort, err = extractPortFromEndpoint(protoThriftBinary.Endpoint)
 		if err != nil {
@@ -170,7 +170,7 @@ func (f *Factory) CreateTraceReceiver(
 		}
 	}
 
-	if protoThriftCompact != nil && protoThriftCompact.IsEnabled() {
+	if protoThriftCompact != nil {
 		var err error
 		config.AgentCompactThriftPort, err = extractPortFromEndpoint(protoThriftCompact.Endpoint)
 		if err != nil {

@@ -36,7 +36,6 @@ func TestDecodeConfig(t *testing.T) {
 
 	// Verify extensions.
 	assert.Equal(t, 3, len(config.Extensions))
-	assert.False(t, config.Extensions["exampleextension/disabled"].IsEnabled())
 	assert.Equal(t, "some string", config.Extensions["exampleextension/1"].(*ExampleExtensionCfg).ExtraSetting)
 
 	// Verify service.
@@ -137,57 +136,57 @@ func TestSimpleConfig(t *testing.T) {
 	const extensionExtra = "some extension string"
 	const extensionExtraMapValue = "some extension map value"
 	const extensionExtraListElement = "some extension list value"
-	os.Setenv("EXTENSIONS_EXAMPLEEXTENSION_EXTRA", extensionExtra)
-	os.Setenv("EXTENSIONS_EXAMPLEEXTENSION_EXTRA_MAP_EXT_VALUE_1", extensionExtraMapValue+"_1")
-	os.Setenv("EXTENSIONS_EXAMPLEEXTENSION_EXTRA_MAP_EXT_VALUE_2", extensionExtraMapValue+"_2")
-	os.Setenv("EXTENSIONS_EXAMPLEEXTENSION_EXTRA_LIST_VALUE_1", extensionExtraListElement+"_1")
-	os.Setenv("EXTENSIONS_EXAMPLEEXTENSION_EXTRA_LIST_VALUE_2", extensionExtraListElement+"_2")
+	assert.NoError(t, os.Setenv("EXTENSIONS_EXAMPLEEXTENSION_EXTRA", extensionExtra))
+	assert.NoError(t, os.Setenv("EXTENSIONS_EXAMPLEEXTENSION_EXTRA_MAP_EXT_VALUE_1", extensionExtraMapValue+"_1"))
+	assert.NoError(t, os.Setenv("EXTENSIONS_EXAMPLEEXTENSION_EXTRA_MAP_EXT_VALUE_2", extensionExtraMapValue+"_2"))
+	assert.NoError(t, os.Setenv("EXTENSIONS_EXAMPLEEXTENSION_EXTRA_LIST_VALUE_1", extensionExtraListElement+"_1"))
+	assert.NoError(t, os.Setenv("EXTENSIONS_EXAMPLEEXTENSION_EXTRA_LIST_VALUE_2", extensionExtraListElement+"_2"))
 
 	const receiverExtra = "some receiver string"
 	const receiverExtraMapValue = "some receiver map value"
 	const receiverExtraListElement = "some receiver list value"
-	os.Setenv("RECEIVERS_EXAMPLERECEIVER_EXTRA", receiverExtra)
-	os.Setenv("RECEIVERS_EXAMPLERECEIVER_EXTRA_MAP_RECV_VALUE_1", receiverExtraMapValue+"_1")
-	os.Setenv("RECEIVERS_EXAMPLERECEIVER_EXTRA_MAP_RECV_VALUE_2", receiverExtraMapValue+"_2")
-	os.Setenv("RECEIVERS_EXAMPLERECEIVER_EXTRA_LIST_VALUE_1", receiverExtraListElement+"_1")
-	os.Setenv("RECEIVERS_EXAMPLERECEIVER_EXTRA_LIST_VALUE_2", receiverExtraListElement+"_2")
+	assert.NoError(t, os.Setenv("RECEIVERS_EXAMPLERECEIVER_EXTRA", receiverExtra))
+	assert.NoError(t, os.Setenv("RECEIVERS_EXAMPLERECEIVER_EXTRA_MAP_RECV_VALUE_1", receiverExtraMapValue+"_1"))
+	assert.NoError(t, os.Setenv("RECEIVERS_EXAMPLERECEIVER_EXTRA_MAP_RECV_VALUE_2", receiverExtraMapValue+"_2"))
+	assert.NoError(t, os.Setenv("RECEIVERS_EXAMPLERECEIVER_EXTRA_LIST_VALUE_1", receiverExtraListElement+"_1"))
+	assert.NoError(t, os.Setenv("RECEIVERS_EXAMPLERECEIVER_EXTRA_LIST_VALUE_2", receiverExtraListElement+"_2"))
 
 	const processorExtra = "some processor string"
 	const processorExtraMapValue = "some processor map value"
 	const processorExtraListElement = "some processor list value"
-	os.Setenv("PROCESSORS_EXAMPLEPROCESSOR_EXTRA", processorExtra)
-	os.Setenv("PROCESSORS_EXAMPLEPROCESSOR_EXTRA_MAP_PROC_VALUE_1", processorExtraMapValue+"_1")
-	os.Setenv("PROCESSORS_EXAMPLEPROCESSOR_EXTRA_MAP_PROC_VALUE_2", processorExtraMapValue+"_2")
-	os.Setenv("PROCESSORS_EXAMPLEPROCESSOR_EXTRA_LIST_VALUE_1", processorExtraListElement+"_1")
-	os.Setenv("PROCESSORS_EXAMPLEPROCESSOR_EXTRA_LIST_VALUE_2", processorExtraListElement+"_2")
+	assert.NoError(t, os.Setenv("PROCESSORS_EXAMPLEPROCESSOR_EXTRA", processorExtra))
+	assert.NoError(t, os.Setenv("PROCESSORS_EXAMPLEPROCESSOR_EXTRA_MAP_PROC_VALUE_1", processorExtraMapValue+"_1"))
+	assert.NoError(t, os.Setenv("PROCESSORS_EXAMPLEPROCESSOR_EXTRA_MAP_PROC_VALUE_2", processorExtraMapValue+"_2"))
+	assert.NoError(t, os.Setenv("PROCESSORS_EXAMPLEPROCESSOR_EXTRA_LIST_VALUE_1", processorExtraListElement+"_1"))
+	assert.NoError(t, os.Setenv("PROCESSORS_EXAMPLEPROCESSOR_EXTRA_LIST_VALUE_2", processorExtraListElement+"_2"))
 
 	const exporterExtra = "some exporter string"
 	const exporterExtraMapValue = "some exporter map value"
 	const exporterExtraListElement = "some exporter list value"
-	os.Setenv("EXPORTERS_EXAMPLEEXPORTER_EXTRA_INT", "65")
-	os.Setenv("EXPORTERS_EXAMPLEEXPORTER_EXTRA", exporterExtra)
-	os.Setenv("EXPORTERS_EXAMPLEEXPORTER_EXTRA_MAP_EXP_VALUE_1", exporterExtraMapValue+"_1")
-	os.Setenv("EXPORTERS_EXAMPLEEXPORTER_EXTRA_MAP_EXP_VALUE_2", exporterExtraMapValue+"_2")
-	os.Setenv("EXPORTERS_EXAMPLEEXPORTER_EXTRA_LIST_VALUE_1", exporterExtraListElement+"_1")
-	os.Setenv("EXPORTERS_EXAMPLEEXPORTER_EXTRA_LIST_VALUE_2", exporterExtraListElement+"_2")
+	assert.NoError(t, os.Setenv("EXPORTERS_EXAMPLEEXPORTER_EXTRA_INT", "65"))
+	assert.NoError(t, os.Setenv("EXPORTERS_EXAMPLEEXPORTER_EXTRA", exporterExtra))
+	assert.NoError(t, os.Setenv("EXPORTERS_EXAMPLEEXPORTER_EXTRA_MAP_EXP_VALUE_1", exporterExtraMapValue+"_1"))
+	assert.NoError(t, os.Setenv("EXPORTERS_EXAMPLEEXPORTER_EXTRA_MAP_EXP_VALUE_2", exporterExtraMapValue+"_2"))
+	assert.NoError(t, os.Setenv("EXPORTERS_EXAMPLEEXPORTER_EXTRA_LIST_VALUE_1", exporterExtraListElement+"_1"))
+	assert.NoError(t, os.Setenv("EXPORTERS_EXAMPLEEXPORTER_EXTRA_LIST_VALUE_2", exporterExtraListElement+"_2"))
 
 	defer func() {
-		os.Unsetenv("EXTENSIONS_EXAMPLEEXTENSION_EXTRA")
-		os.Unsetenv("EXTENSIONS_EXAMPLEEXTENSION_EXTRA_MAP_EXT_VALUE")
-		os.Unsetenv("EXTENSIONS_EXAMPLEEXTENSION_EXTRA_LIST_VALUE_1")
+		assert.NoError(t, os.Unsetenv("EXTENSIONS_EXAMPLEEXTENSION_EXTRA"))
+		assert.NoError(t, os.Unsetenv("EXTENSIONS_EXAMPLEEXTENSION_EXTRA_MAP_EXT_VALUE"))
+		assert.NoError(t, os.Unsetenv("EXTENSIONS_EXAMPLEEXTENSION_EXTRA_LIST_VALUE_1"))
 
-		os.Unsetenv("RECEIVERS_EXAMPLERECEIVER_EXTRA")
-		os.Unsetenv("RECEIVERS_EXAMPLERECEIVER_EXTRA_MAP_RECV_VALUE")
-		os.Unsetenv("RECEIVERS_EXAMPLERECEIVER_EXTRA_LIST_VALUE_1")
+		assert.NoError(t, os.Unsetenv("RECEIVERS_EXAMPLERECEIVER_EXTRA"))
+		assert.NoError(t, os.Unsetenv("RECEIVERS_EXAMPLERECEIVER_EXTRA_MAP_RECV_VALUE"))
+		assert.NoError(t, os.Unsetenv("RECEIVERS_EXAMPLERECEIVER_EXTRA_LIST_VALUE_1"))
 
-		os.Unsetenv("PROCESSORS_EXAMPLEPROCESSOR_EXTRA")
-		os.Unsetenv("PROCESSORS_EXAMPLEPROCESSOR_EXTRA_MAP_PROC_VALUE")
-		os.Unsetenv("PROCESSORS_EXAMPLEPROCESSOR_EXTRA_LIST_VALUE_1")
+		assert.NoError(t, os.Unsetenv("PROCESSORS_EXAMPLEPROCESSOR_EXTRA"))
+		assert.NoError(t, os.Unsetenv("PROCESSORS_EXAMPLEPROCESSOR_EXTRA_MAP_PROC_VALUE"))
+		assert.NoError(t, os.Unsetenv("PROCESSORS_EXAMPLEPROCESSOR_EXTRA_LIST_VALUE_1"))
 
-		os.Unsetenv("EXPORTERS_EXAMPLEEXPORTER_EXTRA_INT")
-		os.Unsetenv("EXPORTERS_EXAMPLEEXPORTER_EXTRA")
-		os.Unsetenv("EXPORTERS_EXAMPLEEXPORTER_EXTRA_MAP_EXP_VALUE")
-		os.Unsetenv("EXPORTERS_EXAMPLEEXPORTER_EXTRA_LIST_VALUE_1")
+		assert.NoError(t, os.Unsetenv("EXPORTERS_EXAMPLEEXPORTER_EXTRA_INT"))
+		assert.NoError(t, os.Unsetenv("EXPORTERS_EXAMPLEEXPORTER_EXTRA"))
+		assert.NoError(t, os.Unsetenv("EXPORTERS_EXAMPLEEXPORTER_EXTRA_MAP_EXP_VALUE"))
+		assert.NoError(t, os.Unsetenv("EXPORTERS_EXAMPLEEXPORTER_EXTRA_LIST_VALUE_1"))
 	}()
 
 	for _, test := range testCases {
@@ -203,7 +202,6 @@ func TestSimpleConfig(t *testing.T) {
 
 		// Verify extensions.
 		assert.Equalf(t, 1, len(config.Extensions), "TEST[%s]", test.name)
-		assert.Truef(t, config.Extensions["exampleextension"].IsEnabled(), "TEST[%s]", test.name)
 		assert.Equalf(t,
 			&ExampleExtensionCfg{
 				ExtensionSettings: configmodels.ExtensionSettings{
@@ -223,7 +221,6 @@ func TestSimpleConfig(t *testing.T) {
 
 		// Verify receivers
 		assert.Equalf(t, 1, len(config.Receivers), "TEST[%s]", test.name)
-		assert.Truef(t, config.Receivers["examplereceiver"].IsEnabled(), "TEST[%s]", test.name)
 
 		assert.Equalf(t,
 			&ExampleReceiver{
@@ -241,7 +238,6 @@ func TestSimpleConfig(t *testing.T) {
 
 		// Verify exporters
 		assert.Equalf(t, 1, len(config.Exporters), "TEST[%s]", test.name)
-		assert.Truef(t, config.Exporters["exampleexporter"].IsEnabled(), "TEST[%s]", test.name)
 
 		assert.Equalf(t,
 			&ExampleExporter{
@@ -259,7 +255,6 @@ func TestSimpleConfig(t *testing.T) {
 
 		// Verify Processors
 		assert.Equalf(t, 1, len(config.Processors), "TEST[%s]", test.name)
-		assert.Truef(t, config.Processors["exampleprocessor"].IsEnabled(), "TEST[%s]", test.name)
 
 		assert.Equalf(t,
 			&ExampleProcessor{
@@ -348,8 +343,6 @@ func TestDecodeConfig_Invalid(t *testing.T) {
 	}{
 		{name: "empty-config"},
 		{name: "missing-all-sections"},
-		{name: "missing-enabled-exporters", expected: errMissingExporters},
-		{name: "missing-enabled-receivers", expected: errMissingReceivers},
 		{name: "missing-exporters", expected: errMissingExporters},
 		{name: "missing-receivers", expected: errMissingReceivers},
 		{name: "missing-processors"},
@@ -364,18 +357,15 @@ func TestDecodeConfig_Invalid(t *testing.T) {
 		{name: "pipeline-must-have-exporter", expected: errPipelineMustHaveExporter},
 		{name: "pipeline-must-have-exporter2", expected: errPipelineMustHaveExporter},
 		{name: "pipeline-must-have-receiver", expected: errPipelineMustHaveReceiver},
+		{name: "pipeline-must-have-receiver2", expected: errPipelineMustHaveReceiver},
 		{name: "pipeline-exporter-not-exists", expected: errPipelineExporterNotExists},
 		{name: "pipeline-processor-not-exists", expected: errPipelineProcessorNotExists},
 		{name: "unknown-extension-type", expected: errUnknownExtensionType},
 		{name: "unknown-receiver-type", expected: errUnknownReceiverType},
 		{name: "unknown-exporter-type", expected: errUnknownExporterType},
 		{name: "unknown-processor-type", expected: errUnknownProcessorType},
-		{name: "invalid-extension-disabled-value", expected: errUnmarshalErrorOnExtension},
 		{name: "invalid-service-extensions-value", expected: errUnmarshalErrorOnService},
-		{name: "invalid-bool-value", expected: errUnmarshalErrorOnProcessor},
 		{name: "invalid-sequence-value", expected: errUnmarshalErrorOnPipeline},
-		{name: "invalid-disabled-bool-value", expected: errUnmarshalErrorOnExporter},
-		{name: "invalid-disabled-bool-value2", expected: errUnmarshalErrorOnReceiver},
 		{name: "invalid-pipeline-type", expected: errInvalidPipelineType},
 		{name: "invalid-pipeline-type-and-name", expected: errInvalidTypeAndNameKey},
 		{name: "duplicate-extension", expected: errDuplicateExtensionName},

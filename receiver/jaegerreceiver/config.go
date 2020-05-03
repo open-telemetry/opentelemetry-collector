@@ -56,15 +56,3 @@ func (rs *Config) Type() configmodels.Type {
 func (rs *Config) SetType(typeStr configmodels.Type) {
 	rs.TypeVal = typeStr
 }
-
-// IsEnabled returns true if the entity is enabled.
-func (rs *Config) IsEnabled() bool {
-	for _, p := range rs.Protocols {
-		if p.IsEnabled() {
-			// If any protocol is enabled then the receiver as a whole should be enabled.
-			return true
-		}
-	}
-	// All protocols are disabled so the entire receiver can be disabled.
-	return false
-}

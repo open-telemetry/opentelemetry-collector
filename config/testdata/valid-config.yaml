@@ -3,33 +3,27 @@ receivers:
   examplereceiver/myreceiver:
     endpoint: "localhost:12345"
     extra: "some string"
-  examplereceiver/disabled:
-    disabled: true
 
 processors:
   exampleprocessor:
-  exampleprocessor/disabled:
-    disabled: true
 
 exporters:
   exampleexporter/myexporter:
     extra: "some export string 2"
-  exampleexporter/disabled:
-    disabled: true
   exampleexporter:
 
 extensions:
   exampleextension/0:
   exampleextension/disabled:
-    disabled: true
+    extra: "not present in the service"
   exampleextension/1:
     extra: "some string"
 
 service:
-  extensions: [exampleextension/0, exampleextension/disabled, exampleextension/1]
+  extensions: [exampleextension/0, exampleextension/1]
   pipelines:
     traces:
-      receivers: [examplereceiver, examplereceiver/disabled]
-      processors: [exampleprocessor, exampleprocessor/disabled]
-      exporters: [exampleexporter/disabled, exampleexporter]
+      receivers: [examplereceiver]
+      processors: [exampleprocessor]
+      exporters: [exampleexporter]
 

@@ -50,8 +50,6 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 				TypeVal:  typeStr,
 				NameVal:  typeStr,
 				Endpoint: "localhost:55680",
-				// This receiver is enabled by default.
-				Disabled: false,
 			},
 		},
 		Transport: "tcp",
@@ -60,8 +58,8 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 
 // CreateTraceReceiver creates a  trace receiver based on provided config.
 func (f *Factory) CreateTraceReceiver(
-	ctx context.Context,
-	params component.ReceiverCreateParams,
+	_ context.Context,
+	_ component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
 	nextConsumer consumer.TraceConsumer,
 ) (component.TraceReceiver, error) {
@@ -77,8 +75,8 @@ func (f *Factory) CreateTraceReceiver(
 
 // CreateMetricsReceiver creates a metrics receiver based on provided config.
 func (f *Factory) CreateMetricsReceiver(
-	ctx context.Context,
-	params component.ReceiverCreateParams,
+	_ context.Context,
+	_ component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
 	consumer consumer.MetricsConsumer,
 ) (component.MetricsReceiver, error) {

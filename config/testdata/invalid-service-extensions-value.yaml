@@ -6,10 +6,11 @@ processors:
   exampleprocessor:
 exporters:
   exampleexporter:
+
 service:
   extensions:
     exampleextension:
-      disabled: true
+      error: true
   pipelines:
     traces:
       receivers: [examplereceiver]
