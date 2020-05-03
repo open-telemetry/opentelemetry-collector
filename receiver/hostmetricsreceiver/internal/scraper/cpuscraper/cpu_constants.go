@@ -30,6 +30,10 @@ var (
 	SystemStateLabelValue    = "system"
 	IdleStateLabelValue      = "idle"
 	InterruptStateLabelValue = "interrupt"
+	NiceStateLabelValue      = "nice"
+	SoftIRQStateLabelValue   = "softirq"
+	StealStateLabelValue     = "steal"
+	WaitStateLabelValue      = "wait"
 )
 
 var MetricCPUSecondsDescriptor = metricCPUSecondsDescriptor()

@@ -16,7 +16,6 @@ package cpuscraper
 
 import (
 	"context"
-	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -29,12 +28,6 @@ func TestCreateMetricsScraper(t *testing.T) {
 
 	scraper, err := factory.CreateMetricsScraper(context.Background(), zap.NewNop(), cfg, nil)
 
-	switch os := runtime.GOOS; os {
-	case "windows":
-		assert.Nil(t, err)
-		assert.NotNil(t, scraper)
-	default:
-		assert.NotNil(t, err)
-		assert.Nil(t, scraper)
-	}
+	assert.Nil(t, err)
+	assert.NotNil(t, scraper)
 }

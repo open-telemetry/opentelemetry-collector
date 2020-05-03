@@ -16,8 +16,6 @@ package cpuscraper
 
 import (
 	"context"
-	"errors"
-	"runtime"
 
 	"go.uber.org/zap"
 
@@ -55,11 +53,6 @@ func (f *Factory) CreateMetricsScraper(
 	config internal.Config,
 	consumer consumer.MetricsConsumer,
 ) (internal.Scraper, error) {
-	if runtime.GOOS != "windows" {
-		return nil, errors.New("cpu scraper is currently only supported on windows")
-	}
-
 	cfg := config.(*Config)
-
 	return NewCPUScraper(ctx, cfg, consumer)
 }
