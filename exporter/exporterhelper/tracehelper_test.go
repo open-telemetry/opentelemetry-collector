@@ -42,9 +42,8 @@ const (
 
 var (
 	fakeTraceExporterConfig = &configmodels.ExporterSettings{
-		TypeVal:  fakeTraceExporterType,
-		NameVal:  fakeTraceExporterName,
-		Disabled: false,
+		TypeVal: fakeTraceExporterType,
+		NameVal: fakeTraceExporterName,
 	}
 )
 

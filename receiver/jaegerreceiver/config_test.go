@@ -37,8 +37,6 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	// The receiver `jaeger/disabled` and `jaeger` don't count because disabled receivers
-	// are excluded from the final list.
 	assert.Equal(t, len(cfg.Receivers), 4)
 
 	r1 := cfg.Receivers["jaeger/customname"].(*Config)

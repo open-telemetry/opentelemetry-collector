@@ -2,6 +2,7 @@ receivers:
   multireceiver:
 exporters:
   exampleexporter:
+    extra: "not present in the service pipeline"
 processors:
   exampleprocessor:
 service:

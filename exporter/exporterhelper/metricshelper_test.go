@@ -43,9 +43,8 @@ const (
 
 var (
 	fakeMetricsExporterConfig = &configmodels.ExporterSettings{
-		TypeVal:  fakeMetricsExporterType,
-		NameVal:  fakeMetricsExporterName,
-		Disabled: false,
+		TypeVal: fakeMetricsExporterType,
+		NameVal: fakeMetricsExporterName,
 	}
 )
 

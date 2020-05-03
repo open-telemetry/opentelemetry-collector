@@ -38,8 +38,6 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	// Currently disabled receivers are removed from the total list of receivers so 'otlp/disabled' doesn't
-	// contribute to the count.
 	assert.Equal(t, len(cfg.Receivers), 7)
 
 	r0 := cfg.Receivers["otlp"]

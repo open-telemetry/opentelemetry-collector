@@ -176,21 +176,8 @@ func (rs *MultiProtoReceiver) SetType(typeStr configmodels.Type) {
 	rs.TypeVal = typeStr
 }
 
-// IsEnabled returns true if the entity is enabled.
-func (rs *MultiProtoReceiver) IsEnabled() bool {
-	for _, p := range rs.Protocols {
-		if !p.Disabled {
-			// If any protocol is enabled then the receiver as a whole should be enabled.
-			return true
-		}
-	}
-	// All protocols are disabled so the entire receiver can be disabled.
-	return false
-}
-
 // MultiProtoReceiverOneCfg is multi proto receiver config.
 type MultiProtoReceiverOneCfg struct {
-	Disabled     bool   `mapstructure:"disabled"`
 	Endpoint     string `mapstructure:"endpoint"`
 	ExtraSetting string `mapstructure:"extra"`
 }

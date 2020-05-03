@@ -40,13 +40,6 @@ receivers:
   otlp/uds:
     transport: unix
     endpoint: /tmp/otlp.sock
-  # The following entry demonstrates how to disable a receiver using the disabled flag from the common receiver settings.
-  # Note: The current implementation removes disabled receivers from the global list of receivers so the total count
-  # of receivers in the test will not include this one.
-  otlp/disabled:
-    # This receiver is disabled and won't receive any data.
-    disabled: true
-
 
   # The following entry demonstrates how to configure the OTLP receiver to allow Cross-Origin Resource Sharing (CORS).
   # Both fully qualified domain names and the use of wildcards are supported.

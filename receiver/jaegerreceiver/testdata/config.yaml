@@ -30,18 +30,6 @@ receivers:
       grpc:
         endpoint: "localhost:9876"
       thrift_compact:
-  # The following demonstrates how to disable a protocol.  This particular config
-  # will not start any jaeger protocols.
-  jaeger/disabled:
-    protocols:
-      grpc:
-        disabled: true
-      thrift_http:
-        disabled: true
-      thrift_compact:
-        disabled: true
-      thrift_binary:
-        disabled: true
   # The following demonstrates specifying different endpoints.
   # The Jaeger receiver connects to ports on all available network interfaces.
   # Ex: `endpoint: "9876"` is incorrect.
