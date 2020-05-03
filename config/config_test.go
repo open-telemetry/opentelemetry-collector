@@ -26,7 +26,7 @@ import (
 
 func TestDecodeConfig(t *testing.T) {
 	factories, err := ExampleComponents()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	// Load the config
 	config, err := LoadConfigFile(t, path.Join(".", "testdata", "valid-config.yaml"), factories)
@@ -192,7 +192,7 @@ func TestSimpleConfig(t *testing.T) {
 	for _, test := range testCases {
 		t.Logf("TEST[%s]", test.name)
 		factories, err := ExampleComponents()
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		// Load the config
 		config, err := LoadConfigFile(t, path.Join(".", "testdata", test.name+".yaml"), factories)
@@ -287,7 +287,7 @@ func TestSimpleConfig(t *testing.T) {
 
 func TestDecodeConfig_MultiProto(t *testing.T) {
 	factories, err := ExampleComponents()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	// Load the config
 	config, err := LoadConfigFile(t, path.Join(".", "testdata", "multiproto-config.yaml"), factories)
@@ -383,7 +383,7 @@ func TestDecodeConfig_Invalid(t *testing.T) {
 	}
 
 	factories, err := ExampleComponents()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	for _, test := range testCases {
 		_, err := LoadConfigFile(t, path.Join(".", "testdata", test.name+".yaml"), factories)
