@@ -19,7 +19,6 @@ import (
 	"errors"
 	"sync"
 	"time"
-	"unsafe"
 
 	"github.com/cenkalti/backoff"
 	otlpmetriccol "github.com/open-telemetry/opentelemetry-proto/gen/go/collector/metrics/v1"
@@ -39,32 +38,17 @@ type exporterImp struct {
 	// Prepared dial options.
 	dialOpts []grpc.DialOption
 
-	startOnce sync.Once
-	stopOnce  sync.Once
-
-	started bool
-	stopped bool
-
-	// mutex to protects bool flags.
-	mutex sync.RWMutex
-
-	stopCh                     chan bool
-	disconnectedCh             chan bool
-	backgroundConnectionDoneCh chan bool
+	stopOnce sync.Once
 
 	// gRPC clients and connection.
-	traceExporter     otlptracecol.TraceServiceClient
-	metricExporter    otlpmetriccol.MetricsServiceClient
-	grpcClientConn    *grpc.ClientConn
-	lastConnectErrPtr unsafe.Pointer
+	traceExporter  otlptracecol.TraceServiceClient
+	metricExporter otlpmetriccol.MetricsServiceClient
+	grpcClientConn *grpc.ClientConn
 }
 
 var (
-	errAlreadyStarted = errors.New("already started")
-	errNotStarted     = errors.New("not started")
-	errTimeout        = errors.New("timeout")
-	errStopped        = errors.New("stopped")
-	errFatalError     = errors.New("fatal error sending to server")
+	errTimeout    = errors.New("timeout")
+	errFatalError = errors.New("fatal error sending to server")
 )
 
 // Crete new exporter and start it. The exporter will begin connecting but
@@ -72,9 +56,6 @@ var (
 func newExporter(config *Config) (*exporterImp, error) {
 	e := &exporterImp{}
 	e.config = config
-	e.disconnectedCh = make(chan bool, 1)
-	e.stopCh = make(chan bool)
-	e.backgroundConnectionDoneCh = make(chan bool)
 
 	var err error
 	e.dialOpts, err = configgrpc.GrpcSettingsToDialOptions(e.config.GRPCSettings)
@@ -82,65 +63,22 @@ func newExporter(config *Config) (*exporterImp, error) {
 		return nil, err
 	}
 
-	if err := e.start(); err != nil {
+	if e.grpcClientConn, err = grpc.Dial(e.config.GRPCSettings.Endpoint, e.dialOpts...); err != nil {
 		return nil, err
 	}
+	e.traceExporter = otlptracecol.NewTraceServiceClient(e.grpcClientConn)
+	e.metricExporter = otlpmetriccol.NewMetricsServiceClient(e.grpcClientConn)
+
 	return e, nil
 }
 
-// Start dials to the collector, establishing a connection to it. It also
-// initiates the Config and Trace services by sending over the initial
-// messages that consist of the node identifier. Start invokes a background
-// connector that will reattempt connections to the collector periodically
-// if the connection dies.
-func (e *exporterImp) start() error {
-	var err = errAlreadyStarted
-	e.startOnce.Do(func() {
-		e.mutex.Lock()
-		stopped := e.stopped
-		e.started = true
-		e.mutex.Unlock()
-
-		if stopped {
-			err = errStopped
-			return
-		}
-
-		// An optimistic first connection attempt to ensure that
-		// applications under heavy load can immediately process
-		// data. See https://github.com/census-ecosystem/opencensus-go-exporter-ocagent/pull/63
-		if err = e.connect(); err == nil {
-			e.setStateConnected()
-		} else {
-			e.setStateDisconnected(err)
-		}
-		go e.indefiniteBackgroundConnection()
-
-		err = nil
-	})
-
-	return err
-}
-
 func (e *exporterImp) stop() error {
+	var err error
 	e.stopOnce.Do(func() {
-		e.mutex.Lock()
-		e.stopped = true
-		started := e.started
-		e.mutex.Unlock()
-
-		if !started {
-			// Not yet started, nothing to do.
-			return
-		}
-
-		// Started. Signal to stop.
-		close(e.stopCh)
-
-		// Wait until stopped.
-		<-e.backgroundConnectionDoneCh
+		// Close the connection.
+		err = e.grpcClientConn.Close()
 	})
-	return nil
+	return err
 }
 
 // Send a trace or metrics request to the server. "perform" function is expected to make
@@ -195,10 +133,6 @@ func (e *exporterImp) exportRequest(ctx context.Context, perform func(ctx contex
 
 		// Wait until one of the conditions below triggers.
 		select {
-		case <-e.stopCh:
-			// Exporter is stopped by via stop() call.
-			return errStopped
-
 		case <-ctx.Done():
 			// This request is cancelled or timed out.
 			return errTimeout

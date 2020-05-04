@@ -16,34 +16,34 @@ package otlpexporter
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"net"
-	"strconv"
-	"strings"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	otlptracecol "github.com/open-telemetry/opentelemetry-proto/gen/go/collector/trace/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
 	"github.com/open-telemetry/opentelemetry-collector/config/configgrpc"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data/testdata"
 	"github.com/open-telemetry/opentelemetry-collector/observability"
 	"github.com/open-telemetry/opentelemetry-collector/testutils"
 )
 
-type MockReceiver struct {
+type mockReceiver struct {
+	srv            *grpc.Server
 	requestCount   int32
 	totalSpanCount int32
 	lastRequest    *otlptracecol.ExportTraceServiceRequest
 }
 
-func (r *MockReceiver) Export(
+func (r *mockReceiver) Export(
 	ctx context.Context,
 	req *otlptracecol.ExportTraceServiceRequest,
 ) (*otlptracecol.ExportTraceServiceResponse, error) {
@@ -59,80 +59,53 @@ func (r *MockReceiver) Export(
 	return &otlptracecol.ExportTraceServiceResponse{}, nil
 }
 
-func otlpReceiverOnGRPCServer(t *testing.T) (r *MockReceiver, port int, done func()) {
-	ln, err := net.Listen("tcp", "localhost:")
-	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
-
-	doneFnList := []func(){func() { ln.Close() }}
-	done = func() {
-		for _, doneFn := range doneFnList {
-			doneFn()
-		}
-	}
-
-	_, port, err = hostPortFromAddr(ln.Addr())
-	if err != nil {
-		done()
-		t.Fatalf("Failed to parse host:port from listener address: %s error: %v", ln.Addr(), err)
-	}
-
-	r = &MockReceiver{}
-	require.NoError(t, err, "Failed to create the Receiver: %v", err)
+func otlpReceiverOnGRPCServer(ln net.Listener) *mockReceiver {
+	rcv := &mockReceiver{}
 
 	// Now run it as a gRPC server
-	srv := observability.GRPCServerWithObservabilityEnabled()
-	otlptracecol.RegisterTraceServiceServer(srv, r)
+	rcv.srv = observability.GRPCServerWithObservabilityEnabled()
+	otlptracecol.RegisterTraceServiceServer(rcv.srv, rcv)
 	go func() {
-		_ = srv.Serve(ln)
+		_ = rcv.srv.Serve(ln)
 	}()
 
-	return r, port, done
-}
-
-func hostPortFromAddr(addr net.Addr) (host string, port int, err error) {
-	addrStr := addr.String()
-	sepIndex := strings.LastIndex(addrStr, ":")
-	if sepIndex < 0 {
-		return "", -1, errors.New("failed to parse host:port")
-	}
-	host, portStr := addrStr[:sepIndex], addrStr[sepIndex+1:]
-	port, err = strconv.Atoi(portStr)
-	return host, port, err
+	return rcv
 }
 
 func TestSendTraceData(t *testing.T) {
 	// Start an OTLP-compatible receiver.
-	rcv, port, done := otlpReceiverOnGRPCServer(t)
-	defer done()
+	ln, err := net.Listen("tcp", "localhost:")
+	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
+	rcv := otlpReceiverOnGRPCServer(ln)
+	// Also closes the connection.
+	defer rcv.srv.GracefulStop()
 
 	// Start an OTLP exporter and point to the receiver.
-
-	endpoint := fmt.Sprintf("localhost:%d", port)
-
 	config := Config{
 		GRPCSettings: configgrpc.GRPCSettings{
-			Endpoint: endpoint,
+			Endpoint: ln.Addr().String(),
 		},
 	}
 
 	factory := &Factory{}
 	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
 	exp, err := factory.CreateTraceExporter(context.Background(), creationParams, &config)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, exp)
-	defer exp.Shutdown(context.Background())
+	defer func() {
+		assert.NoError(t, exp.Shutdown(context.Background()))
+	}()
 
 	host := componenttest.NewNopHost()
 
-	err = exp.Start(context.Background(), host)
-	assert.NoError(t, err)
+	assert.NoError(t, exp.Start(context.Background(), host))
 
 	// Ensure that initially there is no data in the receiver.
 	assert.EqualValues(t, 0, rcv.requestCount)
 
 	// Send empty trace.
 	td := testdata.GenerateTraceDataEmpty()
-	exp.ConsumeTraces(context.Background(), td)
+	assert.NoError(t, exp.ConsumeTraces(context.Background(), td))
 
 	// Wait until it is received.
 	testutils.WaitFor(t, func() bool {
@@ -156,6 +129,135 @@ func TestSendTraceData(t *testing.T) {
 	testutils.WaitFor(t, func() bool {
 		return atomic.LoadInt32(&rcv.requestCount) > 1
 	}, "receive a request")
+
+	// Verify received span.
+	assert.EqualValues(t, 2, rcv.totalSpanCount)
+	assert.EqualValues(t, expectedOTLPReq, rcv.lastRequest)
+}
+
+func TestSendTraceDataServerDownAndUp(t *testing.T) {
+	// Find the addr, but don't start the server.
+	ln, err := net.Listen("tcp", "localhost:")
+	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
+
+	// Start an OTLP exporter and point to the receiver.
+	config := Config{
+		GRPCSettings: configgrpc.GRPCSettings{
+			Endpoint: ln.Addr().String(),
+		},
+	}
+
+	factory := &Factory{}
+	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
+	exp, err := factory.CreateTraceExporter(context.Background(), creationParams, &config)
+	require.NoError(t, err)
+	require.NotNil(t, exp)
+	defer func() {
+		assert.NoError(t, exp.Shutdown(context.Background()))
+	}()
+
+	host := componenttest.NewNopHost()
+
+	assert.NoError(t, exp.Start(context.Background(), host))
+
+	// A trace with 2 spans.
+	td := testdata.GenerateTraceDataTwoSpansSameResource()
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	assert.Error(t, exp.ConsumeTraces(ctx, td))
+	assert.EqualValues(t, context.DeadlineExceeded, ctx.Err())
+	cancel()
+
+	ctx, cancel = context.WithTimeout(context.Background(), 1*time.Second)
+	assert.Error(t, exp.ConsumeTraces(ctx, td))
+	assert.EqualValues(t, context.DeadlineExceeded, ctx.Err())
+	cancel()
+
+	startServerAndMakeRequest(t, exp, td, ln)
+
+	ctx, cancel = context.WithTimeout(context.Background(), 1*time.Second)
+	assert.Error(t, exp.ConsumeTraces(ctx, td))
+	assert.EqualValues(t, context.DeadlineExceeded, ctx.Err())
+	cancel()
+
+	// First call to startServerAndMakeRequest closed the connection. There is a race condition here that the
+	// port may be reused, if this gets flaky rethink what to do.
+	ln, err = net.Listen("tcp", ln.Addr().String())
+	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
+	startServerAndMakeRequest(t, exp, td, ln)
+
+	ctx, cancel = context.WithTimeout(context.Background(), 1*time.Second)
+	assert.Error(t, exp.ConsumeTraces(ctx, td))
+	assert.EqualValues(t, context.DeadlineExceeded, ctx.Err())
+	cancel()
+}
+
+func TestSendTraceDataServerStartWhileRequest(t *testing.T) {
+	// Find the addr, but don't start the server.
+	ln, err := net.Listen("tcp", "localhost:")
+	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
+
+	// Start an OTLP exporter and point to the receiver.
+	config := Config{
+		GRPCSettings: configgrpc.GRPCSettings{
+			Endpoint: ln.Addr().String(),
+		},
+	}
+
+	factory := &Factory{}
+	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
+	exp, err := factory.CreateTraceExporter(context.Background(), creationParams, &config)
+	require.NoError(t, err)
+	require.NotNil(t, exp)
+	defer func() {
+		assert.NoError(t, exp.Shutdown(context.Background()))
+	}()
+
+	host := componenttest.NewNopHost()
+
+	assert.NoError(t, exp.Start(context.Background(), host))
+
+	// A trace with 2 spans.
+	td := testdata.GenerateTraceDataTwoSpansSameResource()
+	done := make(chan bool, 1)
+	defer close(done)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	go func() {
+		assert.NoError(t, exp.ConsumeTraces(ctx, td))
+		done <- true
+	}()
+
+	time.Sleep(2 * time.Second)
+	rcv := otlpReceiverOnGRPCServer(ln)
+	defer rcv.srv.GracefulStop()
+	// Wait until one of the conditions below triggers.
+	select {
+	case <-ctx.Done():
+		t.Fail()
+	case <-done:
+		assert.NoError(t, ctx.Err())
+	}
+	cancel()
+}
+
+func startServerAndMakeRequest(t *testing.T, exp component.TraceExporter, td pdata.Traces, ln net.Listener) {
+	rcv := otlpReceiverOnGRPCServer(ln)
+	defer rcv.srv.GracefulStop()
+	// Ensure that initially there is no data in the receiver.
+	assert.EqualValues(t, 0, rcv.requestCount)
+
+	// Resend the request, this should succeed.
+	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
+	assert.NoError(t, exp.ConsumeTraces(ctx, td))
+	cancel()
+
+	// Wait until it is received.
+	testutils.WaitFor(t, func() bool {
+		return atomic.LoadInt32(&rcv.requestCount) > 0
+	}, "receive a request")
+
+	expectedOTLPReq := &otlptracecol.ExportTraceServiceRequest{
+		ResourceSpans: testdata.GenerateTraceOtlpSameResourceTwoSpans(),
+	}
 
 	// Verify received span.
 	assert.EqualValues(t, 2, rcv.totalSpanCount)

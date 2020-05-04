@@ -17,6 +17,7 @@ package otlpexporter
 import (
 	"path"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -58,12 +59,11 @@ func TestLoadConfig(t *testing.T) {
 				CertPemFile: "/var/lib/mycert.pem",
 				UseSecure:   true,
 				KeepaliveParameters: &configgrpc.KeepaliveConfig{
-					Time:                20,
+					Time:                20 * time.Second,
 					PermitWithoutStream: true,
-					Timeout:             30,
+					Timeout:             30 * time.Second,
 				},
 			},
-			NumWorkers:        123,
-			ReconnectionDelay: 15,
+			NumWorkers: 8,
 		})
 }
