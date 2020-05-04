@@ -19,7 +19,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/sys/unix"
 )
 
 func TestBasicGrpcSettings(t *testing.T) {
@@ -49,7 +48,11 @@ func TestInvalidPemFile(t *testing.T) {
 		KeepaliveParameters: nil,
 	})
 
-	assert.Equal(t, err, &os.PathError{Op: "open", Path: "/doesnt/exist", Err: unix.ENOENT})
+	// don't validate the specific error code as this differs on windows/unix
+	pathErr := err.(*os.PathError)
+	assert.Equal(t, pathErr.Op, "open")
+	assert.Equal(t, pathErr.Path, "/doesnt/exist")
+	assert.NotNil(t, pathErr.Err)
 }
 
 func TestUseSecure(t *testing.T) {
