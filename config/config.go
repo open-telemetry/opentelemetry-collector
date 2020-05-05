@@ -123,6 +123,7 @@ func NewViper() *viper.Viper {
 }
 
 // Load loads a Config from Viper.
+// After loading the config, need to check if it is valid by calling `ValidateConfig`.
 func Load(
 	v *viper.Viper,
 	factories Factories,
@@ -349,15 +350,6 @@ func loadReceivers(v *viper.Viper, factories map[configmodels.Type]component.Rec
 	// Get the map of "receivers" sub-keys.
 	keyMap := v.GetStringMap(receiversKeyName)
 
-	// Currently there is no default receiver enabled. The configuration must specify at least one receiver to enable
-	// functionality.
-	if len(keyMap) == 0 {
-		return nil, &configError{
-			code: errMissingReceivers,
-			msg:  "no receivers specified in config",
-		}
-	}
-
 	// Prepare resulting map
 	receivers := make(configmodels.Receivers)
 
@@ -407,14 +399,6 @@ func loadExporters(v *viper.Viper, factories map[configmodels.Type]component.Exp
 
 	// Get the map of "exporters" sub-keys.
 	keyMap := v.GetStringMap(exportersKeyName)
-
-	// There is no default exporter. The configuration must specify at least one exporter to enable functionality.
-	if len(keyMap) == 0 {
-		return nil, &configError{
-			code: errMissingExporters,
-			msg:  "no exporters specified in config",
-		}
-	}
 
 	// Prepare resulting map
 	exporters := make(configmodels.Exporters)
@@ -602,6 +586,7 @@ func ValidateConfig(cfg *configmodels.Config, logger *zap.Logger) error {
 	if err := validateReceivers(cfg); err != nil {
 		return err
 	}
+
 	if err := validateExporters(cfg); err != nil {
 		return err
 	}
@@ -610,25 +595,24 @@ func ValidateConfig(cfg *configmodels.Config, logger *zap.Logger) error {
 		return err
 	}
 
-	if err := validatePipelines(cfg); err != nil {
-		return err
-	}
-
 	return nil
 }
 
 func validateService(cfg *configmodels.Config) error {
-	// Currently only to validate extensions.
-	return validateServiceExtensions(cfg, &cfg.Service)
+	if err := validatePipelines(cfg); err != nil {
+		return err
+	}
+
+	return validateServiceExtensions(cfg)
 }
 
-func validateServiceExtensions(cfg *configmodels.Config, service *configmodels.Service) error {
+func validateServiceExtensions(cfg *configmodels.Config) error {
 	if len(cfg.Service.Extensions) == 0 {
 		return nil
 	}
 
 	// Validate extensions.
-	for _, ref := range service.Extensions {
+	for _, ref := range cfg.Service.Extensions {
 		// Check that the name referenced in the service extensions exists in the top-level extensions
 		if cfg.Extensions[ref] == nil {
 			return &configError{

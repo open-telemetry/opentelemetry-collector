@@ -20,13 +20,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 )
 
 func TestDecodeConfig(t *testing.T) {
 	factories, err := ExampleComponents()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	// Load the config
 	config, err := LoadConfigFile(t, path.Join(".", "testdata", "valid-config.yaml"), factories)
@@ -192,7 +193,7 @@ func TestSimpleConfig(t *testing.T) {
 	for _, test := range testCases {
 		t.Logf("TEST[%s]", test.name)
 		factories, err := ExampleComponents()
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		// Load the config
 		config, err := LoadConfigFile(t, path.Join(".", "testdata", test.name+".yaml"), factories)
@@ -287,7 +288,7 @@ func TestSimpleConfig(t *testing.T) {
 
 func TestDecodeConfig_MultiProto(t *testing.T) {
 	factories, err := ExampleComponents()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	// Load the config
 	config, err := LoadConfigFile(t, path.Join(".", "testdata", "multiproto-config.yaml"), factories)
@@ -383,7 +384,7 @@ func TestDecodeConfig_Invalid(t *testing.T) {
 	}
 
 	factories, err := ExampleComponents()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	for _, test := range testCases {
 		_, err := LoadConfigFile(t, path.Join(".", "testdata", test.name+".yaml"), factories)
@@ -406,4 +407,26 @@ func TestDecodeConfig_Invalid(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestLoadEmptyConfig(t *testing.T) {
+	factories, err := ExampleComponents()
+	assert.NoError(t, err)
+
+	// Open the file for reading.
+	file, err := os.Open(path.Join(".", "testdata", "empty-config.yaml"))
+	require.NoError(t, err)
+
+	defer func() {
+		require.NoError(t, file.Close())
+	}()
+
+	// Read yaml config from file
+	v := NewViper()
+	v.SetConfigType("yaml")
+	require.NoError(t, v.ReadConfig(file))
+
+	// Load the config from viper using the given factories.
+	_, err = Load(v, factories)
+	assert.NoError(t, err)
 }
