@@ -26,7 +26,11 @@ import (
 func AssertSingleMetricDataAndGetMetricsSlice(t *testing.T, metrics []pdata.Metrics) pdata.MetricSlice {
 	// expect 1 MetricData object
 	assert.Equal(t, 1, len(metrics))
-	md := pdatautil.MetricsToInternalMetrics(metrics[0])
+	return AssertMetricDataAndGetMetricsSlice(t, metrics[0])
+}
+
+func AssertMetricDataAndGetMetricsSlice(t *testing.T, metrics pdata.Metrics) pdata.MetricSlice {
+	md := pdatautil.MetricsToInternalMetrics(metrics)
 
 	// expect 1 ResourceMetrics object
 	rms := md.ResourceMetrics()

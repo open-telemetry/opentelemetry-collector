@@ -16,7 +16,6 @@ package hostmetricsreceiver
 
 import (
 	"context"
-	"runtime"
 	"testing"
 	"time"
 
@@ -25,10 +24,10 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
+	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal/scraper/memoryscraper"
 )
 
 func TestGatherMetrics_EndToEnd(t *testing.T) {
@@ -40,11 +39,15 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 				ConfigSettings: internal.ConfigSettings{CollectionIntervalValue: 100 * time.Millisecond},
 				ReportPerCPU:   true,
 			},
+			memoryscraper.TypeStr: &memoryscraper.Config{
+				ConfigSettings: internal.ConfigSettings{CollectionIntervalValue: 100 * time.Millisecond},
+			},
 		},
 	}
 
 	factories := map[string]internal.Factory{
-		cpuscraper.TypeStr: &cpuscraper.Factory{},
+		cpuscraper.TypeStr:    &cpuscraper.Factory{},
+		memoryscraper.TypeStr: &memoryscraper.Factory{},
 	}
 
 	receiver, err := NewHostMetricsReceiver(context.Background(), zap.NewNop(), config, factories, sink)
@@ -55,30 +58,26 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 	require.NoError(t, err, "Failed to start metrics receiver: %v", err)
 	defer func() { assert.NoError(t, receiver.Shutdown(context.Background())) }()
 
-	require.Eventually(t, func() bool {
-		got := sink.AllMetrics()
-		if len(got) == 0 {
-			return false
+	time.Sleep(180 * time.Millisecond)
+
+	got := sink.AllMetrics()
+
+	// expect 2 MetricData objects
+	assert.Equal(t, 2, len(got))
+
+	// extract the names of all returned metrics
+	metricNames := make(map[string]bool)
+	for _, metricData := range got {
+		metrics := internal.AssertMetricDataAndGetMetricsSlice(t, metricData)
+		for i := 0; i < metrics.Len(); i++ {
+			metricNames[metrics.At(i).MetricDescriptor().Name()] = true
 		}
+	}
 
-		assertMetricData(t, got)
-		return true
-	}, time.Second, 10*time.Millisecond, "No metrics were collected")
-}
+	// expect 2 metrics
+	assert.Equal(t, 2, len(metricNames))
 
-func assertMetricData(t *testing.T, got []pdata.Metrics) {
-	metrics := internal.AssertSingleMetricDataAndGetMetricsSlice(t, got)
-
-	// expect 1 metric
-	assert.Equal(t, 1, metrics.Len())
-
-	// for cpu seconds metric, expect a datapoint for each state label & core combination with at least 4 standard states
-	hostCPUTimeMetric := metrics.At(0)
-	internal.AssertDescriptorEqual(t, cpuscraper.MetricCPUSecondsDescriptor, hostCPUTimeMetric.MetricDescriptor())
-	assert.GreaterOrEqual(t, hostCPUTimeMetric.Int64DataPoints().Len(), runtime.NumCPU()*4)
-	internal.AssertInt64MetricLabelExists(t, hostCPUTimeMetric, 0, cpuscraper.CPULabel)
-	internal.AssertInt64MetricLabelHasValue(t, hostCPUTimeMetric, 0, cpuscraper.StateLabel, cpuscraper.UserStateLabelValue)
-	internal.AssertInt64MetricLabelHasValue(t, hostCPUTimeMetric, 1, cpuscraper.StateLabel, cpuscraper.SystemStateLabelValue)
-	internal.AssertInt64MetricLabelHasValue(t, hostCPUTimeMetric, 2, cpuscraper.StateLabel, cpuscraper.IdleStateLabelValue)
-	internal.AssertInt64MetricLabelHasValue(t, hostCPUTimeMetric, 3, cpuscraper.StateLabel, cpuscraper.InterruptStateLabelValue)
+	// expected metric names
+	assert.Contains(t, metricNames, "host/cpu/time")
+	assert.Contains(t, metricNames, "host/memory/used")
 }

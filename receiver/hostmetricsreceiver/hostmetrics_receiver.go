@@ -43,7 +43,12 @@ func NewHostMetricsReceiver(
 
 	scrapers := make([]internal.Scraper, 0)
 	for key, cfg := range config.Scrapers {
-		scraper, err := factories[key].CreateMetricsScraper(ctx, logger, cfg, consumer)
+		factory := factories[key]
+		if factory == nil {
+			return nil, fmt.Errorf("host metrics scraper factory not found for key: %s", key)
+		}
+
+		scraper, err := factory.CreateMetricsScraper(ctx, logger, cfg, consumer)
 		if err != nil {
 			return nil, fmt.Errorf("cannot create scraper: %s", err.Error())
 		}
