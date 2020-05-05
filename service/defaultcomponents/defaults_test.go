@@ -17,8 +17,9 @@
 package defaultcomponents
 
 import (
-	"fmt"
 	"testing"
+
+	"github.com/open-telemetry/opentelemetry-collector/processor/resourceprocessor"
 
 	"github.com/stretchr/testify/assert"
 
@@ -67,6 +68,7 @@ func TestDefaultComponents(t *testing.T) {
 	}
 	expectedProcessors := map[configmodels.Type]component.ProcessorFactoryBase{
 		"attributes":            &attributesprocessor.Factory{},
+		"resource":              &resourceprocessor.Factory{},
 		"queued_retry":          &queuedprocessor.Factory{},
 		"batch":                 &batchprocessor.Factory{},
 		"memory_limiter":        &memorylimiter.Factory{},
@@ -85,7 +87,6 @@ func TestDefaultComponents(t *testing.T) {
 	}
 
 	factories, err := Components()
-	fmt.Println(err)
 	assert.Nil(t, err)
 	assert.Equal(t, expectedExtensions, factories.Extensions)
 	assert.Equal(t, expectedReceivers, factories.Receivers)
