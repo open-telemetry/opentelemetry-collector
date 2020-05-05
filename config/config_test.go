@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 )
@@ -406,4 +407,26 @@ func TestDecodeConfig_Invalid(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestLoadEmptyConfig(t *testing.T) {
+	factories, err := ExampleComponents()
+	assert.NoError(t, err)
+
+	// Open the file for reading.
+	file, err := os.Open(path.Join(".", "testdata", "empty-config.yaml"))
+	require.NoError(t, err)
+
+	defer func() {
+		require.NoError(t, file.Close())
+	}()
+
+	// Read yaml config from file
+	v := NewViper()
+	v.SetConfigType("yaml")
+	require.NoError(t, v.ReadConfig(file))
+
+	// Load the config from viper using the given factories.
+	_, err = Load(v, factories)
+	assert.NoError(t, err)
 }
