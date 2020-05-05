@@ -33,6 +33,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/processor/batchprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/memorylimiter"
 	"github.com/open-telemetry/opentelemetry-collector/processor/queuedprocessor"
+	"github.com/open-telemetry/opentelemetry-collector/processor/resourceprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/samplingprocessor/probabilisticsamplerprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/samplingprocessor/tailsamplingprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/spanprocessor"
@@ -90,6 +91,7 @@ func Components() (
 
 	processors, err := component.MakeProcessorFactoryMap(
 		&attributesprocessor.Factory{},
+		&resourceprocessor.Factory{},
 		&queuedprocessor.Factory{},
 		&batchprocessor.Factory{},
 		&memorylimiter.Factory{},
