@@ -19,8 +19,6 @@ package defaultcomponents
 import (
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector/processor/resourceprocessor"
-
 	"github.com/stretchr/testify/assert"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
@@ -39,6 +37,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/processor/batchprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/memorylimiter"
 	"github.com/open-telemetry/opentelemetry-collector/processor/queuedprocessor"
+	"github.com/open-telemetry/opentelemetry-collector/processor/resourceprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/samplingprocessor/probabilisticsamplerprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/samplingprocessor/tailsamplingprocessor"
 	"github.com/open-telemetry/opentelemetry-collector/processor/spanprocessor"
