@@ -17,10 +17,10 @@ package receiver
 import (
 	"os"
 	"path"
+	"syscall"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/sys/unix"
 )
 
 func TestToGrpcServerOption(t *testing.T) {
@@ -38,7 +38,7 @@ func TestToGrpcServerOption(t *testing.T) {
 			err: &os.PathError{
 				Op:   "open",
 				Path: "/badpath",
-				Err:  unix.ENOENT,
+				Err:  syscall.ENOENT,
 			},
 		},
 		{
@@ -49,7 +49,7 @@ func TestToGrpcServerOption(t *testing.T) {
 			err: &os.PathError{
 				Op:   "open",
 				Path: "/badpath",
-				Err:  unix.ENOENT,
+				Err:  syscall.ENOENT,
 			},
 		},
 		{
