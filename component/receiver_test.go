@@ -69,7 +69,6 @@ func TestBuildReceivers(t *testing.T) {
 	type testCase struct {
 		in  []ReceiverFactoryBase
 		out map[configmodels.Type]ReceiverFactoryBase
-		err bool
 	}
 
 	testCases := []testCase{
@@ -82,24 +81,22 @@ func TestBuildReceivers(t *testing.T) {
 				"e1": &TestReceiverFactory{"e1"},
 				"e2": &TestReceiverFactory{"e2"},
 			},
-			err: false,
 		},
 		{
 			in: []ReceiverFactoryBase{
 				&TestReceiverFactory{"e1"},
 				&TestReceiverFactory{"e1"},
 			},
-			err: true,
 		},
 	}
 
 	for _, c := range testCases {
 		out, err := MakeReceiverFactoryMap(c.in...)
-		if c.err {
-			assert.NotNil(t, err)
+		if c.out == nil {
+			assert.Error(t, err)
 			continue
 		}
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assert.Equal(t, c.out, out)
 	}
 }
