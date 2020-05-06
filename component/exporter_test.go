@@ -51,7 +51,6 @@ func TestBuildExporters(t *testing.T) {
 	type testCase struct {
 		in  []ExporterFactoryBase
 		out map[configmodels.Type]ExporterFactoryBase
-		err bool
 	}
 
 	testCases := []testCase{
@@ -64,24 +63,22 @@ func TestBuildExporters(t *testing.T) {
 				"exp1": &TestExporterFactory{"exp1"},
 				"exp2": &TestExporterFactory{"exp2"},
 			},
-			err: false,
 		},
 		{
 			in: []ExporterFactoryBase{
 				&TestExporterFactory{"exp1"},
 				&TestExporterFactory{"exp1"},
 			},
-			err: true,
 		},
 	}
 
 	for _, c := range testCases {
 		out, err := MakeExporterFactoryMap(c.in...)
-		if c.err {
-			assert.NotNil(t, err)
+		if c.out == nil {
+			assert.Error(t, err)
 			continue
 		}
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assert.Equal(t, c.out, out)
 	}
 }
