@@ -34,11 +34,6 @@ const (
 type Factory struct {
 }
 
-// Type gets the type of the scraper config created by this Factory.
-func (f *Factory) Type() string {
-	return TypeStr
-}
-
 // CreateDefaultConfig creates the default configuration for the Scraper.
 func (f *Factory) CreateDefaultConfig() internal.Config {
 	return &Config{
