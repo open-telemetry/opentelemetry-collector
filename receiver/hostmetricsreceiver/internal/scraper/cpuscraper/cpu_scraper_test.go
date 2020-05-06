@@ -39,13 +39,13 @@ func TestScrapeMetrics_MinimalData(t *testing.T) {
 
 		// for cpu seconds metric, expect a datapoint for each state label, including at least 4 standard states
 		hostCPUTimeMetric := metrics.At(0)
-		internal.AssertDescriptorEqual(t, MetricCPUSecondsDescriptor, hostCPUTimeMetric.MetricDescriptor())
+		internal.AssertDescriptorEqual(t, metricCPUSecondsDescriptor, hostCPUTimeMetric.MetricDescriptor())
 		assert.GreaterOrEqual(t, hostCPUTimeMetric.Int64DataPoints().Len(), 4)
-		internal.AssertInt64MetricLabelDoesNotExist(t, hostCPUTimeMetric, 0, CPULabel)
-		internal.AssertInt64MetricLabelHasValue(t, hostCPUTimeMetric, 0, StateLabel, UserStateLabelValue)
-		internal.AssertInt64MetricLabelHasValue(t, hostCPUTimeMetric, 1, StateLabel, SystemStateLabelValue)
-		internal.AssertInt64MetricLabelHasValue(t, hostCPUTimeMetric, 2, StateLabel, IdleStateLabelValue)
-		internal.AssertInt64MetricLabelHasValue(t, hostCPUTimeMetric, 3, StateLabel, InterruptStateLabelValue)
+		internal.AssertInt64MetricLabelDoesNotExist(t, hostCPUTimeMetric, 0, cpuLabelName)
+		internal.AssertInt64MetricLabelHasValue(t, hostCPUTimeMetric, 0, stateLabelName, userStateLabelValue)
+		internal.AssertInt64MetricLabelHasValue(t, hostCPUTimeMetric, 1, stateLabelName, systemStateLabelValue)
+		internal.AssertInt64MetricLabelHasValue(t, hostCPUTimeMetric, 2, stateLabelName, idleStateLabelValue)
+		internal.AssertInt64MetricLabelHasValue(t, hostCPUTimeMetric, 3, stateLabelName, interruptStateLabelValue)
 	})
 }
 
@@ -62,13 +62,13 @@ func TestScrapeMetrics_AllData(t *testing.T) {
 
 		// for cpu seconds metric, expect a datapoint for each state label & core combination with at least 4 standard states
 		hostCPUTimeMetric := metrics.At(0)
-		internal.AssertDescriptorEqual(t, MetricCPUSecondsDescriptor, hostCPUTimeMetric.MetricDescriptor())
+		internal.AssertDescriptorEqual(t, metricCPUSecondsDescriptor, hostCPUTimeMetric.MetricDescriptor())
 		assert.GreaterOrEqual(t, hostCPUTimeMetric.Int64DataPoints().Len(), runtime.NumCPU()*4)
-		internal.AssertInt64MetricLabelExists(t, hostCPUTimeMetric, 0, CPULabel)
-		internal.AssertInt64MetricLabelHasValue(t, hostCPUTimeMetric, 0, StateLabel, UserStateLabelValue)
-		internal.AssertInt64MetricLabelHasValue(t, hostCPUTimeMetric, 1, StateLabel, SystemStateLabelValue)
-		internal.AssertInt64MetricLabelHasValue(t, hostCPUTimeMetric, 2, StateLabel, IdleStateLabelValue)
-		internal.AssertInt64MetricLabelHasValue(t, hostCPUTimeMetric, 3, StateLabel, InterruptStateLabelValue)
+		internal.AssertInt64MetricLabelExists(t, hostCPUTimeMetric, 0, cpuLabelName)
+		internal.AssertInt64MetricLabelHasValue(t, hostCPUTimeMetric, 0, stateLabelName, userStateLabelValue)
+		internal.AssertInt64MetricLabelHasValue(t, hostCPUTimeMetric, 1, stateLabelName, systemStateLabelValue)
+		internal.AssertInt64MetricLabelHasValue(t, hostCPUTimeMetric, 2, stateLabelName, idleStateLabelValue)
+		internal.AssertInt64MetricLabelHasValue(t, hostCPUTimeMetric, 3, stateLabelName, interruptStateLabelValue)
 	})
 }
 
@@ -82,17 +82,17 @@ func TestScrapeMetrics_Linux(t *testing.T) {
 
 		// for cpu seconds metric, expect a datapoint for all 8 state labels
 		hostCPUTimeMetric := metrics.At(0)
-		internal.AssertDescriptorEqual(t, MetricCPUSecondsDescriptor, hostCPUTimeMetric.MetricDescriptor())
+		internal.AssertDescriptorEqual(t, metricCPUSecondsDescriptor, hostCPUTimeMetric.MetricDescriptor())
 		assert.Equal(t, 8, hostCPUTimeMetric.Int64DataPoints().Len())
-		internal.AssertInt64MetricLabelDoesNotExist(t, hostCPUTimeMetric, 0, CPULabel)
-		internal.AssertInt64MetricLabelHasValue(t, hostCPUTimeMetric, 0, StateLabel, UserStateLabelValue)
-		internal.AssertInt64MetricLabelHasValue(t, hostCPUTimeMetric, 1, StateLabel, SystemStateLabelValue)
-		internal.AssertInt64MetricLabelHasValue(t, hostCPUTimeMetric, 2, StateLabel, IdleStateLabelValue)
-		internal.AssertInt64MetricLabelHasValue(t, hostCPUTimeMetric, 3, StateLabel, InterruptStateLabelValue)
-		internal.AssertInt64MetricLabelHasValue(t, hostCPUTimeMetric, 4, StateLabel, NiceStateLabelValue)
-		internal.AssertInt64MetricLabelHasValue(t, hostCPUTimeMetric, 5, StateLabel, SoftIRQStateLabelValue)
-		internal.AssertInt64MetricLabelHasValue(t, hostCPUTimeMetric, 6, StateLabel, StealStateLabelValue)
-		internal.AssertInt64MetricLabelHasValue(t, hostCPUTimeMetric, 7, StateLabel, WaitStateLabelValue)
+		internal.AssertInt64MetricLabelDoesNotExist(t, hostCPUTimeMetric, 0, cpuLabelName)
+		internal.AssertInt64MetricLabelHasValue(t, hostCPUTimeMetric, 0, stateLabelName, userStateLabelValue)
+		internal.AssertInt64MetricLabelHasValue(t, hostCPUTimeMetric, 1, stateLabelName, systemStateLabelValue)
+		internal.AssertInt64MetricLabelHasValue(t, hostCPUTimeMetric, 2, stateLabelName, idleStateLabelValue)
+		internal.AssertInt64MetricLabelHasValue(t, hostCPUTimeMetric, 3, stateLabelName, interruptStateLabelValue)
+		internal.AssertInt64MetricLabelHasValue(t, hostCPUTimeMetric, 4, stateLabelName, niceStateLabelValue)
+		internal.AssertInt64MetricLabelHasValue(t, hostCPUTimeMetric, 5, stateLabelName, softIRQStateLabelValue)
+		internal.AssertInt64MetricLabelHasValue(t, hostCPUTimeMetric, 6, stateLabelName, stealStateLabelValue)
+		internal.AssertInt64MetricLabelHasValue(t, hostCPUTimeMetric, 7, stateLabelName, waitStateLabelValue)
 	})
 }
 

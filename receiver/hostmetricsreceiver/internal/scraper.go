@@ -38,9 +38,6 @@ type Scraper interface {
 
 // Factory can create a Scraper.
 type Factory interface {
-	// Type gets the type of the scraper created by this factory.
-	Type() string
-
 	// CreateDefaultConfig creates the default configuration for the Scraper.
 	CreateDefaultConfig() Config
 

@@ -20,25 +20,25 @@ import (
 
 // cpu metric constants
 
-var (
-	StateLabel = "state"
-	CPULabel   = "cpu"
+const (
+	stateLabelName = "state"
+	cpuLabelName   = "cpu"
 )
 
-var (
-	UserStateLabelValue      = "user"
-	SystemStateLabelValue    = "system"
-	IdleStateLabelValue      = "idle"
-	InterruptStateLabelValue = "interrupt"
-	NiceStateLabelValue      = "nice"
-	SoftIRQStateLabelValue   = "softirq"
-	StealStateLabelValue     = "steal"
-	WaitStateLabelValue      = "wait"
+const (
+	userStateLabelValue      = "user"
+	systemStateLabelValue    = "system"
+	idleStateLabelValue      = "idle"
+	interruptStateLabelValue = "interrupt"
+	niceStateLabelValue      = "nice"
+	softIRQStateLabelValue   = "softirq"
+	stealStateLabelValue     = "steal"
+	waitStateLabelValue      = "wait"
 )
 
-var MetricCPUSecondsDescriptor = metricCPUSecondsDescriptor()
+var metricCPUSecondsDescriptor = createMetricCPUSecondsDescriptor()
 
-func metricCPUSecondsDescriptor() pdata.MetricDescriptor {
+func createMetricCPUSecondsDescriptor() pdata.MetricDescriptor {
 	descriptor := pdata.NewMetricDescriptor()
 	descriptor.InitEmpty()
 	descriptor.SetName("host/cpu/time")

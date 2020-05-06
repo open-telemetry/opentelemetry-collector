@@ -111,7 +111,7 @@ func (c *Scraper) scrapeAndAppendMetrics(metrics pdata.MetricSlice) error {
 }
 
 func initializeCPUSecondsMetric(metric pdata.Metric, startTime pdata.TimestampUnixNano, cpuTimes []cpu.TimesStat) {
-	MetricCPUSecondsDescriptor.CopyTo(metric.MetricDescriptor())
+	metricCPUSecondsDescriptor.CopyTo(metric.MetricDescriptor())
 
 	idps := metric.Int64DataPoints()
 	idps.Resize(len(cpuTimes) * cpuStatesLen)
@@ -126,9 +126,9 @@ func initializeCPUSecondsDataPoint(dataPoint pdata.Int64DataPoint, startTime pda
 	labelsMap := dataPoint.LabelsMap()
 	// ignore cpu label if reporting "total" cpu usage
 	if cpuLabel != gopsCPUTotal {
-		labelsMap.Insert(CPULabel, cpuLabel)
+		labelsMap.Insert(cpuLabelName, cpuLabel)
 	}
-	labelsMap.Insert(StateLabel, stateLabel)
+	labelsMap.Insert(stateLabelName, stateLabel)
 
 	dataPoint.SetStartTime(startTime)
 	dataPoint.SetTimestamp(pdata.TimestampUnixNano(uint64(time.Now().UnixNano())))
