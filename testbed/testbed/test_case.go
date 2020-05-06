@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestCase defines a running test case.
@@ -108,13 +109,10 @@ func NewTestCase(
 
 	// Prepare directory for results.
 	tc.resultDir, err = filepath.Abs(path.Join("results", t.Name()))
-	if err != nil {
-		t.Fatalf("Cannot resolve %s: %v", t.Name(), err)
-	}
+	require.NoErrorf(t, err, "Cannot resolve %s", t.Name())
+
 	err = os.MkdirAll(tc.resultDir, os.ModePerm)
-	if err != nil {
-		t.Fatalf("Cannot create directory %s: %v", tc.resultDir, err)
-	}
+	require.NoErrorf(t, err, "Cannot create directory %s", tc.resultDir)
 
 	// Set default resource check period.
 	tc.resourceSpec.ResourceCheckPeriod = 3 * time.Second
@@ -131,14 +129,10 @@ func NewTestCase(
 
 	// Ensure that the config file is an absolute path.
 	tc.agentConfigFile, err = filepath.Abs(configFile)
-	if err != nil {
-		tc.t.Fatalf("Cannot resolve filename: %s", err.Error())
-	}
+	require.NoError(t, err, "Cannot resolve filename")
 
 	tc.LoadGenerator, err = NewLoadGenerator(sender)
-	if err != nil {
-		t.Fatalf("Cannot create generator: %s", err.Error())
-	}
+	require.NoError(t, err, "Cannot create generator")
 
 	tc.MockBackend = NewMockBackend(tc.composeTestResultFileName("backend.log"), receiver)
 
@@ -149,9 +143,8 @@ func NewTestCase(
 
 func (tc *TestCase) composeTestResultFileName(fileName string) string {
 	fileName, err := filepath.Abs(path.Join(tc.resultDir, fileName))
-	if err != nil {
-		tc.t.Fatalf("Cannot resolve %s: %s", fileName, err.Error())
-	}
+	require.NoError(tc.t, err, "Cannot resolve %s", fileName)
+
 	return fileName
 }
 
@@ -226,9 +219,8 @@ func (tc *TestCase) StopLoad() {
 
 // StartBackend starts the specified backend type.
 func (tc *TestCase) StartBackend() {
-	if err := tc.MockBackend.Start(); err != nil {
-		tc.t.Fatalf("Cannot start backend: %s", err.Error())
-	}
+	err := tc.MockBackend.Start()
+	require.NoError(tc.t, err, "Cannot start backend")
 }
 
 // StopBackend stops the backend.
