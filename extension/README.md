@@ -41,8 +41,8 @@ extensions:
   health_check:
 ```
 
-The full list of settings exposed for this exporter is documented [here](healthextension/config.go)
-with detailed sample configurations [here](healthextension/testdata/config.yaml).
+The full list of settings exposed for this exporter is documented [here](healthcheckextension/config.go)
+with detailed sample configurations [here](healthcheckextension/testdata/config.yaml).
 
 ## <a name="pprof"></a>Performance Profiler
 Performance Profiler extension enables the golang `net/http/pprof` endpoint.
