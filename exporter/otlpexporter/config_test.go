@@ -57,8 +57,8 @@ func TestLoadConfig(t *testing.T) {
 				Endpoint:    "1.2.3.4:1234",
 				Compression: "on",
 				TLSConfig: configgrpc.TLSConfig{
-					CertPemFile: "/var/lib/mycert.pem",
-					UseSecure:   true,
+					CaCert:    "/var/lib/mycert.pem",
+					UseSecure: true,
 				},
 				KeepaliveParameters: &configgrpc.KeepaliveConfig{
 					Time:                20 * time.Second,

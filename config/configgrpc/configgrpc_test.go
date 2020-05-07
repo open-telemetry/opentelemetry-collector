@@ -28,7 +28,7 @@ func TestBasicGrpcSettings(t *testing.T) {
 		Endpoint:    "",
 		Compression: "",
 		TLSConfig: TLSConfig{
-			CertPemFile:        "",
+			CaCert:             "",
 			UseSecure:          false,
 			ServerNameOverride: "",
 		},
@@ -45,7 +45,7 @@ func TestInvalidPemFile(t *testing.T) {
 		Endpoint:    "",
 		Compression: "",
 		TLSConfig: TLSConfig{
-			CertPemFile:        "/doesnt/exist",
+			CaCert:             "/doesnt/exist",
 			UseSecure:          false,
 			ServerNameOverride: "",
 		},
@@ -65,7 +65,7 @@ func TestUseSecure(t *testing.T) {
 		Endpoint:    "",
 		Compression: "",
 		TLSConfig: TLSConfig{
-			CertPemFile:        "",
+			CaCert:             "",
 			UseSecure:          true,
 			ServerNameOverride: "",
 		},

@@ -42,7 +42,7 @@ func TestNew(t *testing.T) {
 						Endpoint:    "foo.bar",
 						Compression: "",
 						TLSConfig: configgrpc.TLSConfig{
-							CertPemFile:        "",
+							CaCert:             "",
 							UseSecure:          false,
 							ServerNameOverride: "",
 						},
@@ -60,7 +60,7 @@ func TestNew(t *testing.T) {
 						Endpoint:    "foo.bar",
 						Compression: "",
 						TLSConfig: configgrpc.TLSConfig{
-							CertPemFile:        "",
+							CaCert:             "",
 							UseSecure:          true,
 							ServerNameOverride: "",
 						},
@@ -78,7 +78,7 @@ func TestNew(t *testing.T) {
 						Endpoint:    "foo.bar",
 						Compression: "",
 						TLSConfig: configgrpc.TLSConfig{
-							CertPemFile:        "",
+							CaCert:             "",
 							UseSecure:          true,
 							ServerNameOverride: "",
 						},
@@ -96,7 +96,7 @@ func TestNew(t *testing.T) {
 						Endpoint:    "foo.bar",
 						Compression: "",
 						TLSConfig: configgrpc.TLSConfig{
-							CertPemFile:        "testdata/test_cert.pem",
+							CaCert:             "testdata/test_cert.pem",
 							UseSecure:          true,
 							ServerNameOverride: "",
 						},
@@ -114,7 +114,7 @@ func TestNew(t *testing.T) {
 						Endpoint:    "foo.bar",
 						Compression: "",
 						TLSConfig: configgrpc.TLSConfig{
-							CertPemFile:        "testdata/test_cert.pem",
+							CaCert:             "testdata/test_cert.pem",
 							UseSecure:          true,
 							ServerNameOverride: "",
 						},
@@ -136,7 +136,7 @@ func TestNew(t *testing.T) {
 						Endpoint:    "foo.bar",
 						Compression: "",
 						TLSConfig: configgrpc.TLSConfig{
-							CertPemFile:        "testdata/test_cert_missing.pem",
+							CaCert:             "testdata/test_cert_missing.pem",
 							UseSecure:          true,
 							ServerNameOverride: "",
 						},

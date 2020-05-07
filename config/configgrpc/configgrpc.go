@@ -61,7 +61,7 @@ type GRPCSettings struct {
 type TLSConfig struct {
 	// Root CA certificate file for TLS credentials of gRPC client. Should
 	// only be used if `secure` is set to true.
-	CertPemFile string `mapstructure:"cert_pem_file"`
+	CaCert string `mapstructure:"cert_pem_file"`
 
 	// Client certificate file for TLS credentials of gRPC client.
 	ClientCert string `mapstructure:"client_cert_pem_file"`
@@ -97,8 +97,8 @@ func GrpcSettingsToDialOptions(settings GRPCSettings) ([]grpc.DialOption, error)
 		}
 	}
 
-	if settings.TLSConfig.CertPemFile != "" {
-		creds, err := credentials.NewClientTLSFromFile(settings.TLSConfig.CertPemFile, settings.TLSConfig.ServerNameOverride)
+	if settings.TLSConfig.CaCert != "" {
+		creds, err := credentials.NewClientTLSFromFile(settings.TLSConfig.CaCert, settings.TLSConfig.ServerNameOverride)
 		if err != nil {
 			return nil, err
 		}
@@ -153,7 +153,7 @@ func (c TLSConfig) Config() (*tls.Config, error) {
 }
 
 func (c TLSConfig) loadCertPool() (*x509.CertPool, error) {
-	if len(c.CertPemFile) == 0 { // no truststore given, use SystemCertPool
+	if len(c.CaCert) == 0 { // no truststore given, use SystemCertPool
 		certPool, err := x509.SystemCertPool()
 		if err != nil {
 			return nil, fmt.Errorf("failed to load SystemCertPool: %w", err)
@@ -161,7 +161,7 @@ func (c TLSConfig) loadCertPool() (*x509.CertPool, error) {
 		return certPool, nil
 	}
 	// setup user specified truststore
-	return c.loadCert(c.CertPemFile)
+	return c.loadCert(c.CaCert)
 }
 
 func (c TLSConfig) loadCert(caPath string) (*x509.CertPool, error) {

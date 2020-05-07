@@ -130,12 +130,12 @@ func TestCreateTraceExporter(t *testing.T) {
 			mustFail: true,
 		},
 		{
-			name: "CertPemFile",
+			name: "CaCert",
 			config: Config{
 				GRPCSettings: configgrpc.GRPCSettings{
 					Endpoint: endpoint,
 					TLSConfig: configgrpc.TLSConfig{
-						CertPemFile: "testdata/test_cert.pem",
+						CaCert: "testdata/test_cert.pem",
 					},
 				},
 			},
@@ -146,7 +146,7 @@ func TestCreateTraceExporter(t *testing.T) {
 				GRPCSettings: configgrpc.GRPCSettings{
 					Endpoint: endpoint,
 					TLSConfig: configgrpc.TLSConfig{
-						CertPemFile: "nosuchfile",
+						CaCert: "nosuchfile",
 					},
 				},
 			},
