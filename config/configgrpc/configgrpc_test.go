@@ -219,7 +219,7 @@ func TestOptionsToConfig(t *testing.T) {
 					systemCertPool = saveSystemCertPool
 				}()
 			}
-			cfg, err := test.options.Config()
+			cfg, err := test.options.LoadTLSConfig()
 			if test.expectError != "" {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), test.expectError)

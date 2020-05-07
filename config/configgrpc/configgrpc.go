@@ -104,7 +104,7 @@ func GrpcSettingsToDialOptions(settings GRPCSettings) ([]grpc.DialOption, error)
 		}
 		opts = append(opts, grpc.WithTransportCredentials(creds))
 	} else if settings.TLSConfig.UseSecure {
-		tlsConf, err := settings.TLSConfig.Config()
+		tlsConf, err := settings.TLSConfig.LoadTLSConfig()
 		if err != nil {
 			return nil, fmt.Errorf("failed to load TLS config: %w", err)
 		}
@@ -126,8 +126,8 @@ func GrpcSettingsToDialOptions(settings GRPCSettings) ([]grpc.DialOption, error)
 	return opts, nil
 }
 
-// Config loads TLS certificates and returns a TLS Config.
-func (c TLSConfig) Config() (*tls.Config, error) {
+// LoadTLSConfig loads TLS certificates and returns a tls.Config.
+func (c TLSConfig) LoadTLSConfig() (*tls.Config, error) {
 	certPool, err := c.loadCertPool()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load CA CertPool: %w", err)
