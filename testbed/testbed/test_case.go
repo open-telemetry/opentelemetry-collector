@@ -110,9 +110,7 @@ func NewTestCase(
 	// Prepare directory for results.
 	tc.resultDir, err = filepath.Abs(path.Join("results", t.Name()))
 	require.NoErrorf(t, err, "Cannot resolve %s", t.Name())
-
-	err = os.MkdirAll(tc.resultDir, os.ModePerm)
-	require.NoErrorf(t, err, "Cannot create directory %s", tc.resultDir)
+	require.NoErrorf(t, os.MkdirAll(tc.resultDir, os.ModePerm), "Cannot create directory %s", tc.resultDir)
 
 	// Set default resource check period.
 	tc.resourceSpec.ResourceCheckPeriod = 3 * time.Second
@@ -219,8 +217,7 @@ func (tc *TestCase) StopLoad() {
 
 // StartBackend starts the specified backend type.
 func (tc *TestCase) StartBackend() {
-	err := tc.MockBackend.Start()
-	require.NoError(tc.t, err, "Cannot start backend")
+	require.NoError(tc.t, tc.MockBackend.Start(), "Cannot start backend")
 }
 
 // StopBackend stops the backend.
