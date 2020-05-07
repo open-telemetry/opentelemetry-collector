@@ -11,6 +11,7 @@ receivers:
       memory:
       disk:
       filesystem:
+      network:
 
 exporters:
   logging:
