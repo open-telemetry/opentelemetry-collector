@@ -106,7 +106,7 @@ func createScraperAndValidateScrapedMetrics(t *testing.T, config *Config, assert
 
 	err = scraper.Start(context.Background())
 	require.NoError(t, err, "Failed to start cpu scraper: %v", err)
-	defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
+	defer func() { assert.NoError(t, scraper.Shutdown(context.Background())) }()
 
 	require.Eventually(t, func() bool {
 		got := sink.AllMetrics()

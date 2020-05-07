@@ -83,7 +83,7 @@ func (hmr *Receiver) Shutdown(ctx context.Context) error {
 	var errs []error
 
 	for _, scraper := range hmr.scrapers {
-		err := scraper.Close(ctx)
+		err := scraper.Shutdown(ctx)
 		if err != nil {
 			errs = append(errs, err)
 		}
