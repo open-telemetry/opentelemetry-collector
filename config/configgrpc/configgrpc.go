@@ -97,7 +97,7 @@ func GrpcSettingsToDialOptions(settings GRPCSettings) ([]grpc.DialOption, error)
 		}
 	}
 
-	if settings.TLSConfig.CaCert != "" {
+	if settings.TLSConfig.CaCert != "" && !settings.TLSConfig.UseSecure {
 		creds, err := credentials.NewClientTLSFromFile(settings.TLSConfig.CaCert, settings.TLSConfig.ServerNameOverride)
 		if err != nil {
 			return nil, err
@@ -152,9 +152,11 @@ func (c TLSConfig) Config() (*tls.Config, error) {
 	return tlsCfg, nil
 }
 
+var systemCertPool = x509.SystemCertPool // to allow overriding in unit test
+
 func (c TLSConfig) loadCertPool() (*x509.CertPool, error) {
 	if len(c.CaCert) == 0 { // no truststore given, use SystemCertPool
-		certPool, err := x509.SystemCertPool()
+		certPool, err := systemCertPool()
 		if err != nil {
 			return nil, fmt.Errorf("failed to load SystemCertPool: %w", err)
 		}
