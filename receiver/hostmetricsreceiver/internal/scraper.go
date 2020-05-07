@@ -31,9 +31,9 @@ type Scraper interface {
 	// and then begins scraping metrics at the configured
 	// collection interval.
 	Start(ctx context.Context) error
-	// Close should clean up any unmanaged resources such as
+	// Shutdown should clean up any unmanaged resources such as
 	// performance counter handles.
-	Close(ctx context.Context) error
+	Shutdown(ctx context.Context) error
 }
 
 // Factory can create a Scraper.

@@ -71,8 +71,8 @@ func (s *Scraper) Start(ctx context.Context) error {
 	return nil
 }
 
-// Close
-func (s *Scraper) Close(ctx context.Context) error {
+// Shutdown
+func (s *Scraper) Shutdown(ctx context.Context) error {
 	s.cancel()
 	return nil
 }
