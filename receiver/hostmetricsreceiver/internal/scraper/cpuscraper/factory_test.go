@@ -28,6 +28,6 @@ func TestCreateMetricsScraper(t *testing.T) {
 
 	scraper, err := factory.CreateMetricsScraper(context.Background(), zap.NewNop(), cfg, nil)
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, scraper)
 }

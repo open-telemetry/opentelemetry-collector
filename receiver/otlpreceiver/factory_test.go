@@ -49,11 +49,11 @@ func TestCreateReceiver(t *testing.T) {
 	creationParams := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	tReceiver, err := factory.CreateTraceReceiver(context.Background(), creationParams, cfg, nil)
 	assert.NotNil(t, tReceiver)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), creationParams, cfg, nil)
 	assert.NotNil(t, mReceiver)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func TestCreateTraceReceiver(t *testing.T) {

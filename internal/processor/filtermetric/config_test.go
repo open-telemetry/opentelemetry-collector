@@ -89,7 +89,7 @@ func TestConfig(t *testing.T) {
 
 			matcher, err := NewMatcher(&cfg)
 			assert.NotNil(t, matcher)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 		})
 	}
 }

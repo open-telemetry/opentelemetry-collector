@@ -32,7 +32,7 @@ import (
 
 func TestExportersBuilder_Build(t *testing.T) {
 	factories, err := config.ExampleComponents()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	oceFactory := &opencensusexporter.Factory{}
 	factories.Exporters[oceFactory.Type()] = oceFactory
@@ -90,7 +90,7 @@ func TestExportersBuilder_Build(t *testing.T) {
 	delete(cfg.Service.Pipelines, "trace")
 	exporters, err = NewExportersBuilder(zap.NewNop(), cfg, factories.Exporters).Build()
 	assert.NotNil(t, exporters)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	e1 = exporters[cfg.Exporters["opencensus"]]
 

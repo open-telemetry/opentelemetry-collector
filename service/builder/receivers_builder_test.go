@@ -93,7 +93,7 @@ func testReceivers(
 	test testCase,
 ) {
 	factories, err := config.ExampleComponents()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	attrFactory := &attributesprocessor.Factory{}
 	factories.Processors[attrFactory.Type()] = attrFactory
@@ -183,12 +183,12 @@ func testReceivers(
 
 func TestReceiversBuilder_DataTypeError(t *testing.T) {
 	factories, err := config.ExampleComponents()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	attrFactory := &attributesprocessor.Factory{}
 	factories.Processors[attrFactory.Type()] = attrFactory
 	cfg, err := config.LoadConfigFile(t, "testdata/pipelines_builder.yaml", factories)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	// Make examplereceiver to "unsupport" trace data type.
 	receiver := cfg.Receivers["examplereceiver"]
@@ -221,7 +221,7 @@ func TestReceiversBuilder_StartAll(t *testing.T) {
 	assert.Equal(t, false, receiver.Started)
 
 	err := receivers.StartAll(context.Background(), componenttest.NewNopHost())
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	assert.Equal(t, true, receiver.Started)
 }
@@ -246,7 +246,7 @@ func TestReceiversBuilder_StopAll(t *testing.T) {
 
 func TestReceiversBuilder_ErrorOnNilReceiver(t *testing.T) {
 	factories, err := config.ExampleComponents()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	npf := &processortest.NopProcessorFactory{}
 	factories.Processors[npf.Type()] = npf
@@ -284,7 +284,7 @@ func TestReceiversBuilder_ErrorOnNilReceiver(t *testing.T) {
 
 func TestReceiversBuilder_Unused(t *testing.T) {
 	factories, err := config.ExampleComponents()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	attrFactory := &attributesprocessor.Factory{}
 	factories.Processors[attrFactory.Type()] = attrFactory
@@ -292,7 +292,7 @@ func TestReceiversBuilder_Unused(t *testing.T) {
 	zpkFactory := &zipkinreceiver.Factory{}
 	factories.Receivers[zpkFactory.Type()] = zpkFactory
 	cfg, err := config.LoadConfigFile(t, "testdata/unused_receiver.yaml", factories)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	// Build the pipeline
 	allExporters, err := NewExportersBuilder(zap.NewNop(), cfg, factories.Exporters).Build()
@@ -309,7 +309,7 @@ func TestReceiversBuilder_Unused(t *testing.T) {
 
 func TestReceiversBuilder_InternalToOcTraceConverter(t *testing.T) {
 	factories, err := config.ExampleComponents()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	npf := &processortest.NopProcessorFactory{}
 	factories.Processors[npf.Type()] = npf

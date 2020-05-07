@@ -135,7 +135,7 @@ func TestGetStatusCodeFromHTTPStatusAttr(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			code, err := getStatusCodeFromHTTPStatusAttr(test.attr)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			assert.Equal(t, test.code, code)
 		})
 	}

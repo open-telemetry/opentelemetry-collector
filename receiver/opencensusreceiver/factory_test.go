@@ -47,11 +47,11 @@ func TestCreateReceiver(t *testing.T) {
 
 	tReceiver, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
 	assert.NotNil(t, tReceiver)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	mReceiver, err := factory.CreateMetricsReceiver(zap.NewNop(), cfg, nil)
 	assert.NotNil(t, mReceiver)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func TestCreateTraceReceiver(t *testing.T) {

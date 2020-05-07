@@ -28,7 +28,7 @@ import (
 
 func TestLoadConfig(t *testing.T) {
 	factories, err := config.ExampleComponents()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	factory := &Factory{}
 	factories.Receivers[typeStr] = factory
@@ -148,7 +148,7 @@ func TestLoadConfig(t *testing.T) {
 
 func TestFailedLoadConfig(t *testing.T) {
 	factories, err := config.ExampleComponents()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	factory := &Factory{}
 	factories.Receivers[typeStr] = factory

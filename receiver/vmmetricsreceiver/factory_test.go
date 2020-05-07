@@ -52,6 +52,6 @@ func TestCreateReceiver(t *testing.T) {
 		return
 	}
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, mReceiver)
 }

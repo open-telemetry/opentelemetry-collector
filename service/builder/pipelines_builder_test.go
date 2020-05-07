@@ -146,7 +146,7 @@ func assertEqualMetricsData(t *testing.T, expected consumerdata.MetricsData, act
 
 func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 	factories, err := config.ExampleComponents()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	attrFactory := &attributesprocessor.Factory{}
 	factories.Processors[attrFactory.Type()] = attrFactory
 	cfg, err := config.LoadConfigFile(t, "testdata/pipelines_builder.yaml", factories)
@@ -206,7 +206,7 @@ func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 
 func TestPipelinesBuilder_Error(t *testing.T) {
 	factories, err := config.ExampleComponents()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	attrFactory := &attributesprocessor.Factory{}
 	factories.Processors[attrFactory.Type()] = attrFactory
 	cfg, err := config.LoadConfigFile(t, "testdata/pipelines_builder.yaml", factories)
@@ -230,7 +230,7 @@ func TestPipelinesBuilder_Error(t *testing.T) {
 
 func TestProcessorsBuilder_ErrorOnNilProcessor(t *testing.T) {
 	factories, err := config.ExampleComponents()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	bf := &badProcessorFactory{}
 	factories.Processors[bf.Type()] = bf

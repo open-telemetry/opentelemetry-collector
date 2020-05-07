@@ -86,7 +86,7 @@ func TestDefaultComponents(t *testing.T) {
 	}
 
 	factories, err := Components()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, expectedExtensions, factories.Extensions)
 	assert.Equal(t, expectedReceivers, factories.Receivers)
 	assert.Equal(t, expectedProcessors, factories.Processors)

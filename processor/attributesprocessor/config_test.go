@@ -28,13 +28,13 @@ import (
 
 func TestLoadingConifg(t *testing.T) {
 	factories, err := config.ExampleComponents()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	factory := &Factory{}
 	factories.Processors[typeStr] = factory
 	config, err := config.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	require.NotNil(t, config)
 
 	p0 := config.Processors["attributes/insert"]

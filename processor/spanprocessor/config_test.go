@@ -34,7 +34,7 @@ func TestLoadConfig(t *testing.T) {
 
 	config, err := config.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, config)
 
 	p0 := config.Processors["span/custom"]

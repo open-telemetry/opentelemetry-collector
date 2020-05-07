@@ -53,7 +53,7 @@ func TestNewStrictFilterSet(t *testing.T) {
 func TestStrictMatches(t *testing.T) {
 	fs, err := NewStrictFilterSet(validStrictFilters)
 	assert.NotNil(t, fs)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	matches := []string{
 		"exact_string_match",
