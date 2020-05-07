@@ -24,12 +24,14 @@ import (
 func TestBasicGrpcSettings(t *testing.T) {
 
 	_, err := GrpcSettingsToDialOptions(GRPCSettings{
-		Headers:             nil,
-		Endpoint:            "",
-		Compression:         "",
-		CertPemFile:         "",
-		UseSecure:           false,
-		ServerNameOverride:  "",
+		Headers:     nil,
+		Endpoint:    "",
+		Compression: "",
+		TLSConfig: TLSConfig{
+			CertPemFile:        "",
+			UseSecure:          false,
+			ServerNameOverride: "",
+		},
 		KeepaliveParameters: nil,
 	})
 
@@ -39,12 +41,14 @@ func TestBasicGrpcSettings(t *testing.T) {
 func TestInvalidPemFile(t *testing.T) {
 
 	_, err := GrpcSettingsToDialOptions(GRPCSettings{
-		Headers:             nil,
-		Endpoint:            "",
-		Compression:         "",
-		CertPemFile:         "/doesnt/exist",
-		UseSecure:           false,
-		ServerNameOverride:  "",
+		Headers:     nil,
+		Endpoint:    "",
+		Compression: "",
+		TLSConfig: TLSConfig{
+			CertPemFile:        "/doesnt/exist",
+			UseSecure:          false,
+			ServerNameOverride: "",
+		},
 		KeepaliveParameters: nil,
 	})
 
@@ -57,12 +61,14 @@ func TestInvalidPemFile(t *testing.T) {
 
 func TestUseSecure(t *testing.T) {
 	dialOpts, err := GrpcSettingsToDialOptions(GRPCSettings{
-		Headers:             nil,
-		Endpoint:            "",
-		Compression:         "",
-		CertPemFile:         "",
-		UseSecure:           true,
-		ServerNameOverride:  "",
+		Headers:     nil,
+		Endpoint:    "",
+		Compression: "",
+		TLSConfig: TLSConfig{
+			CertPemFile:        "",
+			UseSecure:          true,
+			ServerNameOverride: "",
+		},
 		KeepaliveParameters: nil,
 	})
 

@@ -87,8 +87,10 @@ func TestCreateTraceExporter(t *testing.T) {
 			name: "UseSecure",
 			config: Config{
 				GRPCSettings: configgrpc.GRPCSettings{
-					Endpoint:  rcvCfg.Endpoint,
-					UseSecure: true,
+					Endpoint: rcvCfg.Endpoint,
+					TLSConfig: configgrpc.TLSConfig{
+						UseSecure: true,
+					},
 				},
 			},
 		},
@@ -158,8 +160,10 @@ func TestCreateTraceExporter(t *testing.T) {
 			name: "CertPemFile",
 			config: Config{
 				GRPCSettings: configgrpc.GRPCSettings{
-					Endpoint:    rcvCfg.Endpoint,
-					CertPemFile: "testdata/test_cert.pem",
+					Endpoint: rcvCfg.Endpoint,
+					TLSConfig: configgrpc.TLSConfig{
+						CertPemFile: "testdata/test_cert.pem",
+					},
 				},
 			},
 		},
@@ -167,8 +171,10 @@ func TestCreateTraceExporter(t *testing.T) {
 			name: "CertPemFileError",
 			config: Config{
 				GRPCSettings: configgrpc.GRPCSettings{
-					Endpoint:    rcvCfg.Endpoint,
-					CertPemFile: "nosuchfile",
+					Endpoint: rcvCfg.Endpoint,
+					TLSConfig: configgrpc.TLSConfig{
+						CertPemFile: "nosuchfile",
+					},
 				},
 			},
 			mustFail: true,
