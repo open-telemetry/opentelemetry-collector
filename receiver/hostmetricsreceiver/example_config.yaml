@@ -9,6 +9,7 @@ receivers:
       cpu:
         report_per_cpu: true
       memory:
+      disk:
 
 exporters:
   logging:
