@@ -81,7 +81,7 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 
 	factory := Factory{}
 	consumer, err := factory.CreateMetricsExporter(zap.NewNop(), config)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	defer consumer.Shutdown(context.Background())
 

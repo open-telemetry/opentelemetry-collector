@@ -183,7 +183,7 @@ func TestCreateTraceExporter(t *testing.T) {
 			if tt.mustFail {
 				assert.NotNil(t, err)
 			} else {
-				assert.Nil(t, err)
+				assert.NoError(t, err)
 				assert.NotNil(t, consumer)
 
 				err = consumer.Shutdown(context.Background())

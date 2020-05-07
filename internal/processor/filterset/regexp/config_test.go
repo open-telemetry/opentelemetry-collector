@@ -53,7 +53,7 @@ func TestConfig(t *testing.T) {
 			assert.Equal(t, expCfg, actualCfg)
 
 			fs, err := CreateRegexpFilterSet([]string{}, &actualCfg)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			assert.NotNil(t, fs)
 		})
 	}

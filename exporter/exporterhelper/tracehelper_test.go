@@ -65,7 +65,7 @@ func TestTraceExporterOld_Default(t *testing.T) {
 	td := consumerdata.TraceData{}
 	te, err := NewTraceExporterOld(fakeTraceExporterConfig, newTraceDataPusherOld(0, nil))
 	assert.NotNil(t, te)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	assert.Nil(t, te.ConsumeTraceData(context.Background(), td))
 	assert.Nil(t, te.Shutdown(context.Background()))
@@ -138,7 +138,7 @@ func TestTraceExporterOld_WithShutdown(t *testing.T) {
 
 	te, err := NewTraceExporterOld(fakeTraceExporterConfig, newTraceDataPusherOld(0, nil), WithShutdown(shutdown))
 	assert.NotNil(t, te)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	assert.Nil(t, te.Shutdown(context.Background()))
 	assert.True(t, shutdownCalled)
@@ -150,7 +150,7 @@ func TestTraceExporterOld_WithShutdown_ReturnError(t *testing.T) {
 
 	te, err := NewTraceExporterOld(fakeTraceExporterConfig, newTraceDataPusherOld(0, nil), WithShutdown(shutdownErr))
 	assert.NotNil(t, te)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	assert.Equal(t, te.Shutdown(context.Background()), want)
 }
@@ -252,7 +252,7 @@ func TestTraceExporter_Default(t *testing.T) {
 	td := pdata.NewTraces()
 	te, err := NewTraceExporter(fakeTraceExporterConfig, newTraceDataPusher(0, nil))
 	assert.NotNil(t, te)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	assert.Nil(t, te.ConsumeTraces(context.Background(), td))
 	assert.Nil(t, te.Shutdown(context.Background()))
@@ -325,7 +325,7 @@ func TestTraceExporter_WithShutdown(t *testing.T) {
 
 	te, err := NewTraceExporter(fakeTraceExporterConfig, newTraceDataPusher(0, nil), WithShutdown(shutdown))
 	assert.NotNil(t, te)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	assert.Nil(t, te.Shutdown(context.Background()))
 	assert.True(t, shutdownCalled)
@@ -337,7 +337,7 @@ func TestTraceExporter_WithShutdown_ReturnError(t *testing.T) {
 
 	te, err := NewTraceExporter(fakeTraceExporterConfig, newTraceDataPusher(0, nil), WithShutdown(shutdownErr))
 	assert.NotNil(t, te)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	assert.Equal(t, te.Shutdown(context.Background()), want)
 }

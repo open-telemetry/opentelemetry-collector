@@ -33,7 +33,7 @@ func TestBasicGrpcSettings(t *testing.T) {
 		KeepaliveParameters: nil,
 	})
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func TestInvalidPemFile(t *testing.T) {
@@ -66,6 +66,6 @@ func TestUseSecure(t *testing.T) {
 		KeepaliveParameters: nil,
 	})
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, len(dialOpts), 1)
 }

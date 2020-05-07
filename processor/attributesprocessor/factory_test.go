@@ -57,7 +57,7 @@ func TestFactory_CreateTraceProcessor(t *testing.T) {
 	tp, err := factory.CreateTraceProcessor(
 		context.Background(), component.ProcessorCreateParams{}, exportertest.NewNopTraceExporter(), cfg)
 	assert.NotNil(t, tp)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	tp, err = factory.CreateTraceProcessor(
 		context.Background(), component.ProcessorCreateParams{}, nil, cfg)

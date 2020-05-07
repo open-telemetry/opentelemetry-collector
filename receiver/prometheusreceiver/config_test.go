@@ -29,7 +29,7 @@ import (
 
 func TestLoadConfig(t *testing.T) {
 	factories, err := config.ExampleComponents()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	factory := &Factory{}
 	factories.Receivers[typeStr] = factory
@@ -61,7 +61,7 @@ func TestLoadConfigWithEnvVar(t *testing.T) {
 	os.Setenv(jobnamevar, jobname)
 
 	factories, err := config.ExampleComponents()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	factory := &Factory{}
 	factories.Receivers[typeStr] = factory
@@ -82,7 +82,7 @@ func TestLoadConfigWithEnvVar(t *testing.T) {
 
 func TestLoadConfigFailsOnUnknownSection(t *testing.T) {
 	factories, err := config.ExampleComponents()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	factory := &Factory{}
 	factories.Receivers[typeStr] = factory
@@ -99,7 +99,7 @@ func TestLoadConfigFailsOnUnknownSection(t *testing.T) {
 // within the subkey will also raise an error.
 func TestLoadConfigFailsOnUnknownPrometheusSection(t *testing.T) {
 	factories, err := config.ExampleComponents()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	factory := &Factory{}
 	factories.Receivers[typeStr] = factory

@@ -46,6 +46,6 @@ func TestCreateReceiver(t *testing.T) {
 
 	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), creationParams, cfg, nil)
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, mReceiver)
 }

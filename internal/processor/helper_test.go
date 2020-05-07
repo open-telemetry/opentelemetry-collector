@@ -26,24 +26,24 @@ func TestHelper_AttributeValue(t *testing.T) {
 	val, err := AttributeValue(123)
 	assert.Equal(t, &tracepb.AttributeValue{
 		Value: &tracepb.AttributeValue_IntValue{IntValue: cast.ToInt64(123)}}, val)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	val, err = AttributeValue(234.129312)
 	assert.Equal(t, &tracepb.AttributeValue{
 		Value: &tracepb.AttributeValue_DoubleValue{DoubleValue: cast.ToFloat64(234.129312)}}, val)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	val, err = AttributeValue(true)
 	assert.Equal(t, &tracepb.AttributeValue{
 		Value: &tracepb.AttributeValue_BoolValue{BoolValue: true},
 	}, val)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	val, err = AttributeValue("bob the builder")
 	assert.Equal(t, &tracepb.AttributeValue{
 		Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "bob the builder"}},
 	}, val)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	val, err = AttributeValue(nil)
 	assert.Nil(t, val)

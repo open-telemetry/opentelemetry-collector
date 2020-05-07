@@ -89,7 +89,7 @@ func TestMatcherMatches(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			matcher, err := NewMatcher(test.cfg)
 			assert.NotNil(t, matcher)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
 			assert.Equal(t, test.shouldMatch, matcher.MatchMetric(test.metric))
 		})

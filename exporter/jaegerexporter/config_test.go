@@ -29,7 +29,7 @@ import (
 
 func TestLoadConfig(t *testing.T) {
 	factories, err := config.ExampleComponents()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	factory := &Factory{}
 	factories.Exporters[typeStr] = factory

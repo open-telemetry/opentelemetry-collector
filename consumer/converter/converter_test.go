@@ -32,7 +32,7 @@ func TestNewInternalToOCTraceConverter(t *testing.T) {
 	converter := NewInternalToOCTraceConverter(traceExporterOld)
 
 	err := converter.ConsumeTraces(context.Background(), td)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	ocTraces := traceExporterOld.AllTraces()
 	assert.Equal(t, len(ocTraces), 2)
@@ -49,7 +49,7 @@ func TestNewInternalToOCMetricsConverter(t *testing.T) {
 	converter := NewInternalToOCMetricsConverter(metricsExporterOld)
 
 	err := converter.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md))
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	ocMetrics := metricsExporterOld.AllMetrics()
 	assert.Equal(t, len(ocMetrics), 1)
@@ -67,9 +67,9 @@ func TestNewOCTraceToInternalTraceConverter(t *testing.T) {
 	converter := NewOCToInternalTraceConverter(traceExporter)
 
 	err := converter.ConsumeTraceData(context.Background(), ocTraceData)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	err = converter.ConsumeTraceData(context.Background(), ocTraceData)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	ocTraces := traceExporter.AllTraces()
 	assert.Equal(t, len(ocTraces), 2)
@@ -87,9 +87,9 @@ func TestNewOCToInternalMetricsConverter(t *testing.T) {
 	converter := NewOCToInternalMetricsConverter(metricsExporter)
 
 	err := converter.ConsumeMetricsData(context.Background(), ocMetricData)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	err = converter.ConsumeMetricsData(context.Background(), ocMetricData)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	ocMetrics := metricsExporter.AllMetrics()
 	assert.Equal(t, len(ocMetrics), 2)

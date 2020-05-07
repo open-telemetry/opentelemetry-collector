@@ -64,7 +64,7 @@ func TestMetricsExporter_Default(t *testing.T) {
 	md := testdata.GenerateMetricDataEmpty()
 	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(0, nil))
 	assert.NotNil(t, me)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	assert.Nil(t, me.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md)))
 	assert.Nil(t, me.Shutdown(context.Background()))
@@ -132,7 +132,7 @@ func TestMetricsExporter_WithShutdown(t *testing.T) {
 
 	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(0, nil), WithShutdown(shutdown))
 	assert.NotNil(t, me)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	assert.Nil(t, me.Shutdown(context.Background()))
 	assert.True(t, shutdownCalled)
@@ -144,7 +144,7 @@ func TestMetricsExporter_WithShutdown_ReturnError(t *testing.T) {
 
 	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(0, nil), WithShutdown(shutdownErr))
 	assert.NotNil(t, me)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	assert.Equal(t, me.Shutdown(context.Background()), want)
 }
@@ -165,7 +165,7 @@ func TestMetricsExporterOld_Default(t *testing.T) {
 	md := consumerdata.MetricsData{}
 	me, err := NewMetricsExporterOld(fakeMetricsExporterConfig, newPushMetricsDataOld(0, nil))
 	assert.NotNil(t, me)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	assert.Nil(t, me.ConsumeMetricsData(context.Background(), md))
 	assert.Nil(t, me.Shutdown(context.Background()))
@@ -233,7 +233,7 @@ func TestMetricsExporterOld_WithShutdown(t *testing.T) {
 
 	me, err := NewMetricsExporterOld(fakeMetricsExporterConfig, newPushMetricsDataOld(0, nil), WithShutdown(shutdown))
 	assert.NotNil(t, me)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	assert.Nil(t, me.Shutdown(context.Background()))
 	assert.True(t, shutdownCalled)
@@ -245,7 +245,7 @@ func TestMetricsExporterOld_WithShutdown_ReturnError(t *testing.T) {
 
 	me, err := NewMetricsExporterOld(fakeMetricsExporterConfig, newPushMetricsDataOld(0, nil), WithShutdown(shutdownErr))
 	assert.NotNil(t, me)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	assert.Equal(t, me.Shutdown(context.Background()), want)
 }
