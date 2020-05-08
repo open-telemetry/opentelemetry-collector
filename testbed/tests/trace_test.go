@@ -381,9 +381,7 @@ func TestTraceAttributesProcessor(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			resultDir, err := filepath.Abs(path.Join("results", t.Name()))
-			if err != nil {
-				t.Fatal(err)
-			}
+			require.NoError(t, err)
 
 			// Use processor to add attributes to certain spans.
 			processors := map[string]string{
@@ -409,9 +407,7 @@ func TestTraceAttributesProcessor(t *testing.T) {
 			configFile := createConfigFile(t, test.sender, test.receiver, resultDir, processors)
 			defer os.Remove(configFile)
 
-			if configFile == "" {
-				t.Fatal("Cannot create config file")
-			}
+			require.NotEmpty(t, configFile, "Cannot create config file")
 
 			tc := testbed.NewTestCase(t, test.sender, test.receiver, testbed.WithConfigFile(configFile))
 			defer tc.Stop()
