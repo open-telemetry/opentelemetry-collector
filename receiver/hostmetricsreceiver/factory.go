@@ -29,6 +29,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal/scraper/diskscraper"
+	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal/scraper/memoryscraper"
 )
 
@@ -49,9 +50,10 @@ type Factory struct {
 func NewFactory() *Factory {
 	return &Factory{
 		scraperFactories: map[string]internal.Factory{
-			cpuscraper.TypeStr:    &cpuscraper.Factory{},
-			diskscraper.TypeStr:   &diskscraper.Factory{},
-			memoryscraper.TypeStr: &memoryscraper.Factory{},
+			cpuscraper.TypeStr:        &cpuscraper.Factory{},
+			diskscraper.TypeStr:       &diskscraper.Factory{},
+			filesystemscraper.TypeStr: &filesystemscraper.Factory{},
+			memoryscraper.TypeStr:     &memoryscraper.Factory{},
 		},
 	}
 }

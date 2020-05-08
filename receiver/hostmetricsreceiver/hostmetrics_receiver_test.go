@@ -16,6 +16,7 @@ package hostmetricsreceiver
 
 import (
 	"context"
+	"runtime"
 	"testing"
 	"time"
 
@@ -28,8 +29,26 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal/scraper/diskscraper"
+	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal/scraper/memoryscraper"
 )
+
+var standardMetrics = []string{
+	"host/cpu/time",
+	"host/memory/used",
+	"host/disk/bytes",
+	"host/disk/ops",
+	"host/disk/time",
+	"host/filesystem/used",
+}
+
+var systemSpecificMetrics = map[string][]string{
+	"linux":   {"host/filesystem/inodes/used"},
+	"darwin":  {"host/filesystem/inodes/used"},
+	"freebsd": {"host/filesystem/inodes/used"},
+	"openbsd": {"host/filesystem/inodes/used"},
+	"solaris": {"host/filesystem/inodes/used"},
+}
 
 func TestGatherMetrics_EndToEnd(t *testing.T) {
 	sink := &exportertest.SinkMetricsExporter{}
@@ -40,19 +59,23 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 				ConfigSettings: internal.ConfigSettings{CollectionIntervalValue: 100 * time.Millisecond},
 				ReportPerCPU:   true,
 			},
-			memoryscraper.TypeStr: &memoryscraper.Config{
+			diskscraper.TypeStr: &diskscraper.Config{
 				ConfigSettings: internal.ConfigSettings{CollectionIntervalValue: 100 * time.Millisecond},
 			},
-			diskscraper.TypeStr: &diskscraper.Config{
+			filesystemscraper.TypeStr: &filesystemscraper.Config{
+				ConfigSettings: internal.ConfigSettings{CollectionIntervalValue: 100 * time.Millisecond},
+			},
+			memoryscraper.TypeStr: &memoryscraper.Config{
 				ConfigSettings: internal.ConfigSettings{CollectionIntervalValue: 100 * time.Millisecond},
 			},
 		},
 	}
 
 	factories := map[string]internal.Factory{
-		cpuscraper.TypeStr:    &cpuscraper.Factory{},
-		memoryscraper.TypeStr: &memoryscraper.Factory{},
-		diskscraper.TypeStr:   &diskscraper.Factory{},
+		cpuscraper.TypeStr:        &cpuscraper.Factory{},
+		diskscraper.TypeStr:       &diskscraper.Factory{},
+		filesystemscraper.TypeStr: &filesystemscraper.Factory{},
+		memoryscraper.TypeStr:     &memoryscraper.Factory{},
 	}
 
 	receiver, err := NewHostMetricsReceiver(context.Background(), zap.NewNop(), config, factories, sink)
@@ -67,8 +90,8 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 
 	got := sink.AllMetrics()
 
-	// expect 3 MetricData objects
-	assert.Equal(t, 3, len(got))
+	// expect a MetricData object for each configured scraper
+	assert.Equal(t, len(config.Scrapers), len(got))
 
 	// extract the names of all returned metrics
 	metricNames := make(map[string]bool)
@@ -79,13 +102,10 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 		}
 	}
 
-	// expect 5 metrics
-	assert.Equal(t, 5, len(metricNames))
-
-	// expected metric names
-	assert.Contains(t, metricNames, "host/cpu/time")
-	assert.Contains(t, metricNames, "host/memory/used")
-	assert.Contains(t, metricNames, "host/disk/bytes")
-	assert.Contains(t, metricNames, "host/disk/ops")
-	assert.Contains(t, metricNames, "host/disk/time")
+	// the expected list of metrics returned is os dependent
+	expectedMetrics := append(standardMetrics, systemSpecificMetrics[runtime.GOOS]...)
+	assert.Equal(t, len(expectedMetrics), len(metricNames))
+	for _, expected := range expectedMetrics {
+		assert.Contains(t, metricNames, expected)
+	}
 }
