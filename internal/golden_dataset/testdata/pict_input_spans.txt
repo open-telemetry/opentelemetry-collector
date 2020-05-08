@@ -1,0 +1,7 @@
+Parent: Root, Child
+Tracestate: Empty, One, Four
+Kind: Unspecified, Internal, Server, Client, Producer, Consumer
+Attributes: Nil, Empty, Database, FaaS, HTTP, Messaging, gRPC
+Events: Nil, Empty, One, Two, Eight
+Links: Nil, Empty, One, Two, Eight
+Status: Nil, Ok, Cancelled, UnknownError, InvalidArgument, DeadlineExceeded, NotFound, AlreadyExists, PermissionDenied, ResourceExhausted, FailedPrecondition, Aborted, OutOfRange, Unimplemented, InternalError, Unavailable, DataLoss, Unauthenticated
