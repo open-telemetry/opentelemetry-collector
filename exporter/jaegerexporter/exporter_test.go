@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/open-telemetry/opentelemetry-collector/config/configgrpc"
+	"github.com/open-telemetry/opentelemetry-collector/config/configtls"
 	"github.com/open-telemetry/opentelemetry-collector/internal/data/testdata"
 )
 
@@ -41,7 +42,7 @@ func TestNew(t *testing.T) {
 						Headers:     nil,
 						Endpoint:    "foo.bar",
 						Compression: "",
-						TLSConfig: configgrpc.TLSConfig{
+						TLSConfig: configtls.TLSConfig{
 							CaCert:             "",
 							UseSecure:          false,
 							ServerNameOverride: "",
@@ -59,7 +60,7 @@ func TestNew(t *testing.T) {
 						Headers:     map[string]string{"extra-header": "header-value"},
 						Endpoint:    "foo.bar",
 						Compression: "",
-						TLSConfig: configgrpc.TLSConfig{
+						TLSConfig: configtls.TLSConfig{
 							CaCert:             "",
 							UseSecure:          true,
 							ServerNameOverride: "",
@@ -77,7 +78,7 @@ func TestNew(t *testing.T) {
 						Headers:     nil,
 						Endpoint:    "foo.bar",
 						Compression: "",
-						TLSConfig: configgrpc.TLSConfig{
+						TLSConfig: configtls.TLSConfig{
 							CaCert:             "",
 							UseSecure:          true,
 							ServerNameOverride: "",
@@ -95,7 +96,7 @@ func TestNew(t *testing.T) {
 						Headers:     nil,
 						Endpoint:    "foo.bar",
 						Compression: "",
-						TLSConfig: configgrpc.TLSConfig{
+						TLSConfig: configtls.TLSConfig{
 							CaCert:             "testdata/test_cert.pem",
 							UseSecure:          true,
 							ServerNameOverride: "",
@@ -113,7 +114,7 @@ func TestNew(t *testing.T) {
 						Headers:     nil,
 						Endpoint:    "foo.bar",
 						Compression: "",
-						TLSConfig: configgrpc.TLSConfig{
+						TLSConfig: configtls.TLSConfig{
 							CaCert:             "testdata/test_cert.pem",
 							UseSecure:          true,
 							ServerNameOverride: "",
@@ -135,7 +136,7 @@ func TestNew(t *testing.T) {
 						Headers:     nil,
 						Endpoint:    "foo.bar",
 						Compression: "",
-						TLSConfig: configgrpc.TLSConfig{
+						TLSConfig: configtls.TLSConfig{
 							CaCert:             "testdata/test_cert_missing.pem",
 							UseSecure:          true,
 							ServerNameOverride: "",

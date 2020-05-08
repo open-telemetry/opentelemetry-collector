@@ -24,6 +24,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configgrpc"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-collector/config/configtls"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -55,7 +56,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Endpoint:    "1.2.3.4:1234",
 				Compression: "on",
-				TLSConfig: configgrpc.TLSConfig{
+				TLSConfig: configtls.TLSConfig{
 					CaCert:    "/var/lib/mycert.pem",
 					UseSecure: true,
 				},

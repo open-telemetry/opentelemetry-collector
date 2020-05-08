@@ -27,6 +27,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/compression"
 	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
 	"github.com/open-telemetry/opentelemetry-collector/config/configgrpc"
+	"github.com/open-telemetry/opentelemetry-collector/config/configtls"
 	"github.com/open-telemetry/opentelemetry-collector/testutils"
 )
 
@@ -70,7 +71,7 @@ func TestCreateTraceExporter(t *testing.T) {
 			config: Config{
 				GRPCSettings: configgrpc.GRPCSettings{
 					Endpoint: endpoint,
-					TLSConfig: configgrpc.TLSConfig{
+					TLSConfig: configtls.TLSConfig{
 						UseSecure: true,
 					},
 				},
@@ -134,7 +135,7 @@ func TestCreateTraceExporter(t *testing.T) {
 			config: Config{
 				GRPCSettings: configgrpc.GRPCSettings{
 					Endpoint: endpoint,
-					TLSConfig: configgrpc.TLSConfig{
+					TLSConfig: configtls.TLSConfig{
 						CaCert: "testdata/test_cert.pem",
 					},
 				},
@@ -145,7 +146,7 @@ func TestCreateTraceExporter(t *testing.T) {
 			config: Config{
 				GRPCSettings: configgrpc.GRPCSettings{
 					Endpoint: endpoint,
-					TLSConfig: configgrpc.TLSConfig{
+					TLSConfig: configtls.TLSConfig{
 						CaCert: "nosuchfile",
 					},
 				},
