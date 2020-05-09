@@ -87,16 +87,16 @@ func (f *Factory) OCAgentOptions(logger *zap.Logger, ocac *Config) ([]ocagent.Ex
 			}
 		}
 	}
-	if ocac.CertPemFile != "" {
-		creds, err := credentials.NewClientTLSFromFile(ocac.CertPemFile, "")
+	if ocac.TLSConfig.CaCert != "" {
+		creds, err := credentials.NewClientTLSFromFile(ocac.TLSConfig.CaCert, "")
 		if err != nil {
 			return nil, &ocExporterError{
 				code: errUnableToGetTLSCreds,
-				msg:  fmt.Sprintf("OpenCensus exporter unable to read TLS credentials from pem file %q: %v", ocac.CertPemFile, err),
+				msg:  fmt.Sprintf("OpenCensus exporter unable to read TLS credentials from pem file %q: %v", ocac.TLSConfig.CaCert, err),
 			}
 		}
 		opts = append(opts, ocagent.WithTLSCredentials(creds))
-	} else if ocac.UseSecure {
+	} else if ocac.TLSConfig.UseSecure {
 		certPool, err := x509.SystemCertPool()
 		if err != nil {
 			return nil, &ocExporterError{

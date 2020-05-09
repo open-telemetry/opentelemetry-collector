@@ -27,6 +27,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector/testbed/testbed"
 )
@@ -141,16 +142,11 @@ func Scenario10kItemsPerSecond(
 	processors map[string]string,
 ) {
 	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	configFile := createConfigFile(t, sender, receiver, resultDir, processors)
 	defer os.Remove(configFile)
-
-	if configFile == "" {
-		t.Fatal("Cannot create config file")
-	}
+	require.NotEmpty(t, configFile, "Cannot create config file")
 
 	tc := testbed.NewTestCase(t, sender, receiver, testbed.WithConfigFile(configFile))
 	defer tc.Stop()
@@ -252,16 +248,11 @@ func ScenarioTestTraceNoBackend10kSPS(t *testing.T, sender testbed.DataSender, r
 	resourceSpec testbed.ResourceSpec, configuration processorConfig) {
 
 	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	configFile := createConfigFile(t, sender, receiver, resultDir, configuration.Processor)
 	defer os.Remove(configFile)
-
-	if configFile == "" {
-		t.Fatal("Cannot create config file")
-	}
+	require.NotEmpty(t, configFile, "Cannot create config file")
 
 	tc := testbed.NewTestCase(
 		t,

@@ -38,12 +38,14 @@ func TestNew(t *testing.T) {
 			args: args{
 				config: Config{
 					GRPCSettings: configgrpc.GRPCSettings{
-						Headers:             nil,
-						Endpoint:            "foo.bar",
-						Compression:         "",
-						CertPemFile:         "",
-						UseSecure:           false,
-						ServerNameOverride:  "",
+						Headers:     nil,
+						Endpoint:    "foo.bar",
+						Compression: "",
+						TLSConfig: configgrpc.TLSConfig{
+							CaCert:             "",
+							UseSecure:          false,
+							ServerNameOverride: "",
+						},
 						KeepaliveParameters: nil,
 					},
 				},
@@ -54,12 +56,14 @@ func TestNew(t *testing.T) {
 			args: args{
 				config: Config{
 					GRPCSettings: configgrpc.GRPCSettings{
-						Headers:             map[string]string{"extra-header": "header-value"},
-						Endpoint:            "foo.bar",
-						Compression:         "",
-						CertPemFile:         "",
-						UseSecure:           true,
-						ServerNameOverride:  "",
+						Headers:     map[string]string{"extra-header": "header-value"},
+						Endpoint:    "foo.bar",
+						Compression: "",
+						TLSConfig: configgrpc.TLSConfig{
+							CaCert:             "",
+							UseSecure:          true,
+							ServerNameOverride: "",
+						},
 						KeepaliveParameters: nil,
 					},
 				},
@@ -70,12 +74,14 @@ func TestNew(t *testing.T) {
 			args: args{
 				config: Config{
 					GRPCSettings: configgrpc.GRPCSettings{
-						Headers:             nil,
-						Endpoint:            "foo.bar",
-						Compression:         "",
-						CertPemFile:         "",
-						UseSecure:           true,
-						ServerNameOverride:  "",
+						Headers:     nil,
+						Endpoint:    "foo.bar",
+						Compression: "",
+						TLSConfig: configgrpc.TLSConfig{
+							CaCert:             "",
+							UseSecure:          true,
+							ServerNameOverride: "",
+						},
 						KeepaliveParameters: nil,
 					},
 				},
@@ -86,12 +92,14 @@ func TestNew(t *testing.T) {
 			args: args{
 				config: Config{
 					GRPCSettings: configgrpc.GRPCSettings{
-						Headers:             nil,
-						Endpoint:            "foo.bar",
-						Compression:         "",
-						CertPemFile:         "testdata/test_cert.pem",
-						UseSecure:           true,
-						ServerNameOverride:  "",
+						Headers:     nil,
+						Endpoint:    "foo.bar",
+						Compression: "",
+						TLSConfig: configgrpc.TLSConfig{
+							CaCert:             "testdata/test_cert.pem",
+							UseSecure:          true,
+							ServerNameOverride: "",
+						},
 						KeepaliveParameters: nil,
 					},
 				},
@@ -102,12 +110,14 @@ func TestNew(t *testing.T) {
 			args: args{
 				config: Config{
 					GRPCSettings: configgrpc.GRPCSettings{
-						Headers:            nil,
-						Endpoint:           "foo.bar",
-						Compression:        "",
-						CertPemFile:        "testdata/test_cert.pem",
-						UseSecure:          true,
-						ServerNameOverride: "",
+						Headers:     nil,
+						Endpoint:    "foo.bar",
+						Compression: "",
+						TLSConfig: configgrpc.TLSConfig{
+							CaCert:             "testdata/test_cert.pem",
+							UseSecure:          true,
+							ServerNameOverride: "",
+						},
 						KeepaliveParameters: &configgrpc.KeepaliveConfig{
 							Time:                0,
 							Timeout:             0,
@@ -122,12 +132,14 @@ func TestNew(t *testing.T) {
 			args: args{
 				config: Config{
 					GRPCSettings: configgrpc.GRPCSettings{
-						Headers:             nil,
-						Endpoint:            "foo.bar",
-						Compression:         "",
-						CertPemFile:         "testdata/test_cert_missing.pem",
-						UseSecure:           true,
-						ServerNameOverride:  "",
+						Headers:     nil,
+						Endpoint:    "foo.bar",
+						Compression: "",
+						TLSConfig: configgrpc.TLSConfig{
+							CaCert:             "testdata/test_cert_missing.pem",
+							UseSecure:          true,
+							ServerNameOverride: "",
+						},
 						KeepaliveParameters: nil,
 					},
 				},
