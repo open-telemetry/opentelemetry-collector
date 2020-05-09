@@ -15,7 +15,7 @@
 package conventions
 
 // OpenTelemetry Semantic Convention values for Resource attribute names.
-// See: https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/data-resource-semantic-conventions.md
+// See: https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/resource/semantic_conventions/README.md
 const (
 	AttributeServiceName      = "service.name"
 	AttributeServiceNamespace = "service.namespace"
@@ -28,7 +28,7 @@ const (
 	AttributeContainerImage   = "container.image.name"
 	AttributeContainerTag     = "container.image.tag"
 	AttributeFaasName         = "faas.name"
-	AttributeFaasId           = "faas.id"
+	AttributeFaasID           = "faas.id"
 	AttributeFaasVersion      = "faas.version"
 	AttributeFaasInstance     = "faas.instance"
 	AttributeK8sCluster       = "k8s.cluster.name"
@@ -49,7 +49,7 @@ const (
 )
 
 // OpenTelemetry Semantic Convention values for general Span attribute names.
-// See: https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/data-span-general.md
+// See: https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/span-general.md
 const (
 	AttributeComponent    = "component"
 	AttributeNetTransport = "net.transport"
@@ -72,7 +72,7 @@ const (
 )
 
 // OpenTelemetry Semantic Convention attribute names for HTTP related attributes
-// See: https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/data-http.md
+// See: https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/http.md
 const (
 	AttributeHTTPMethod     = "http.method"
 	AttributeHTTPURL        = "http.url"
@@ -91,7 +91,7 @@ const (
 )
 
 // OpenTelemetry Semantic Convention attribute names for database related attributes
-// See: https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/data-database.md
+// See: https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/database.md
 const (
 	AttributeDBType      = "db.type"
 	AttributeDBInstance  = "db.instance"
@@ -101,7 +101,7 @@ const (
 )
 
 // OpenTelemetry Semantic Convention attribute names for gRPC related attributes
-// See: https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/data-rpc.md
+// See: https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/rpc.md
 const (
 	AttributeRPCService              = "rpc.service"
 	EventTypeMessage                 = "message"
@@ -111,4 +111,39 @@ const (
 	AttributeMessageID               = "message.id"
 	AttributeMessageCompressedSize   = "message.compressed_size"
 	AttributeMessageUncompressedSize = "message.uncompressed_size"
+)
+
+// OpenTelemetry Semantic Convention attribute names for FaaS related attributes
+// See: https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/faas.md
+const (
+	AttributeFaaSTrigger            = "faas.trigger"
+	AttributeFaaSExecution          = "faas.execution"
+	AttributeFaaSDocumentCollection = "faas.document.collection"
+	AttributeFaaSDocumentOperation  = "faas.document.operation"
+	AttributeFaaSDocumentTime       = "faas.document.time"
+	AttributeFaaSDocumentName       = "faas.document.name"
+	AttributeFaaSTime               = "faas.time"
+	AttributeFaaSCron               = "faas.cron"
+	FaaSTriggerDataSource           = "datasource"
+	FaaSTriggerHTTP                 = "http"
+	FaaSTriggerPubSub               = "pubsub"
+	FaaSTriggerTimer                = "timer"
+	FaaSTriggerOther                = "other"
+)
+
+// OpenTelemetry Semantic Convention attribute names for messaging system related attributes
+// See: https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/messaging.md
+const (
+	AttributeMessagingSystem                = "messaging.system"
+	AttributeMessagingDestination           = "messaging.destination"
+	AttributeMessagingDestinationKind       = "messaging.destination_kind"
+	AttributeMessagingTempDestination       = "messaging.temp_destination"
+	AttributeMessagingProtocol              = "messaging.protocol"
+	AttributeMessagingProtocolVersion       = "messaging.protocol_version"
+	AttributeMessagingURL                   = "messaging.url"
+	AttributeMessagingMessageID             = "messaging.message_id"
+	AttributeMessagingConversationID        = "messaging.conversation_id"
+	AttributeMessagingPayloadSize           = "messaging.message_payload_size_bytes"
+	AttributeMessagingPayloadCompressedSize = "messaging.message_payload_compressed_size_bytes"
+	AttributeMessagingOperation             = "messaging.operation"
 )

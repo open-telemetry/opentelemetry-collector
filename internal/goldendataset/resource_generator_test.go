@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package golden_dataset
+package goldendataset
 
 import (
 	"testing"
@@ -25,11 +25,11 @@ import (
 func TestGenerateResource(t *testing.T) {
 	resourceIds := []string{ResourceNil, ResourceEmpty, ResourceVMOnPrem, ResourceVMCloud, ResourceK8sOnPrem,
 		ResourceK8sCloud, ResourceFaas}
-	for _, rscId := range resourceIds {
-		rsc := GenerateResource(rscId)
+	for _, rscID := range resourceIds {
+		rsc := GenerateResource(rscID)
 		str := rsc.String()
 		t.Logf("Resource: %s", str)
-		if rscId == ResourceNil {
+		if rscID == ResourceNil {
 			assert.Nil(t, rsc.Attributes)
 		} else {
 			assert.NotNil(t, rsc.Attributes)

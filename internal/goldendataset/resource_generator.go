@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package golden_dataset
+package goldendataset
 
 import (
 	"reflect"
@@ -33,24 +33,24 @@ const (
 	ResourceFaas      = "Faas"
 )
 
-func GenerateResource(rscId string) *otlpresource.Resource {
+func GenerateResource(rscID string) *otlpresource.Resource {
 	var attrs map[string]interface{}
-	if ResourceNil == rscId {
+	if ResourceNil == rscID {
 		attrs = generateNilAttributes()
-	} else if ResourceEmpty == rscId {
+	} else if ResourceEmpty == rscID {
 		attrs = generateEmptyAttributes()
-	} else if ResourceVMOnPrem == rscId {
-		attrs = generateOnpremVmAttributes()
-	} else if ResourceVMCloud == rscId {
-		attrs = generateCloudVmAttributes()
-	} else if ResourceK8sOnPrem == rscId {
+	} else if ResourceVMOnPrem == rscID {
+		attrs = generateOnpremVMAttributes()
+	} else if ResourceVMCloud == rscID {
+		attrs = generateCloudVMAttributes()
+	} else if ResourceK8sOnPrem == rscID {
 		attrs = generateOnpremK8sAttributes()
-	} else if ResourceK8sCloud == rscId {
+	} else if ResourceK8sCloud == rscID {
 		attrs = generateCloudK8sAttributes()
-	} else if ResourceFaas == rscId {
+	} else if ResourceFaas == rscID {
 		attrs = generateFassAttributes()
 	} else {
-		panic("invalid rscId")
+		panic("invalid rscID")
 	}
 	return &otlpresource.Resource{
 		Attributes:             convertMapToAttributeKeyValues(attrs),
@@ -105,7 +105,7 @@ func generateEmptyAttributes() map[string]interface{} {
 	return attrMap
 }
 
-func generateOnpremVmAttributes() map[string]interface{} {
+func generateOnpremVMAttributes() map[string]interface{} {
 	attrMap := make(map[string]interface{})
 	attrMap[conventions.AttributeServiceName] = "customers"
 	attrMap[conventions.AttributeServiceNamespace] = "production"
@@ -119,7 +119,7 @@ func generateOnpremVmAttributes() map[string]interface{} {
 	return attrMap
 }
 
-func generateCloudVmAttributes() map[string]interface{} {
+func generateCloudVMAttributes() map[string]interface{} {
 	attrMap := make(map[string]interface{})
 	attrMap[conventions.AttributeServiceName] = "shoppingcart"
 	attrMap[conventions.AttributeServiceName] = "customers"
@@ -175,7 +175,7 @@ func generateCloudK8sAttributes() map[string]interface{} {
 
 func generateFassAttributes() map[string]interface{} {
 	attrMap := make(map[string]interface{})
-	attrMap[conventions.AttributeFaasId] = "https://us-central1-dist-system-demo.cloudfunctions.net/env-vars-print"
+	attrMap[conventions.AttributeFaasID] = "https://us-central1-dist-system-demo.cloudfunctions.net/env-vars-print"
 	attrMap[conventions.AttributeFaasName] = "env-vars-print"
 	attrMap[conventions.AttributeFaasVersion] = "semver:1.0.0"
 	attrMap[conventions.AttributeCloudProvider] = "gcp"
