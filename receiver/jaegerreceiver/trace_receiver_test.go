@@ -15,17 +15,22 @@
 package jaegerreceiver
 
 import (
+	"bytes"
 	"context"
 	"encoding/binary"
 	"fmt"
 	"net"
+	"net/http"
+	"net/http/httptest"
 	"path"
 	"testing"
 	"time"
 
 	"contrib.go.opencensus.io/exporter/jaeger"
+	"github.com/apache/thrift/lib/go/thrift"
 	"github.com/jaegertracing/jaeger/model"
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
+	tJaeger "github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -34,6 +39,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
+	"github.com/open-telemetry/opentelemetry-collector/client"
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
@@ -51,6 +57,70 @@ func TestTraceSource(t *testing.T) {
 	jr, err := New(jaegerReceiver, &Configuration{}, nil, params)
 	assert.NoError(t, err, "should not have failed to create the Jaeger receiver")
 	require.NotNil(t, jr)
+}
+
+type traceConsumer struct {
+	cb func(context.Context, pdata.Traces)
+}
+
+func (t traceConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+	go t.cb(ctx, td)
+	return nil
+}
+
+func jaegerBatchToHTTPBody(b *tJaeger.Batch) (*http.Request, error) {
+	body, err := thrift.NewTSerializer().Write(b)
+	if err != nil {
+		return nil, err
+	}
+	r := httptest.NewRequest("POST", "/api/traces", bytes.NewReader(body))
+	r.Header.Add("content-type", "application/x-thrift")
+	return r, nil
+}
+
+func TestThriftHTTPBodyDecode(t *testing.T) {
+	jr := jReceiver{}
+	batch := &tJaeger.Batch{
+		Process: tJaeger.NewProcess(),
+		Spans:   []*tJaeger.Span{tJaeger.NewSpan()},
+	}
+	r, err := jaegerBatchToHTTPBody(batch)
+	require.NoError(t, err, "failed to prepare http body")
+
+	gotBatch, hErr := jr.decodeThriftHTTPBody(r)
+	require.Nil(t, hErr, "failed to decode http body")
+	assert.Equal(t, batch, gotBatch)
+}
+
+func TestClientIPDetection(t *testing.T) {
+	ch := make(chan context.Context)
+	jr := jReceiver{
+		nextConsumer: traceConsumer{
+			func(ctx context.Context, _ pdata.Traces) {
+				ch <- ctx
+			},
+		},
+	}
+	batch := &tJaeger.Batch{
+		Process: tJaeger.NewProcess(),
+		Spans:   []*tJaeger.Span{tJaeger.NewSpan()},
+	}
+	r, err := jaegerBatchToHTTPBody(batch)
+	require.NoError(t, err)
+
+	wantClient, ok := client.FromHTTP(r)
+	assert.True(t, ok)
+	jr.HandleThriftHTTPBatch(httptest.NewRecorder(), r)
+
+	select {
+	case ctx := <-ch:
+		gotClient, ok := client.FromContext(ctx)
+		assert.True(t, ok, "must get client back from context")
+		assert.Equal(t, wantClient, gotClient)
+		break
+	case <-time.After(time.Second * 2):
+		t.Error("next consumer did not receive the batch")
+	}
 }
 
 func TestReception(t *testing.T) {
