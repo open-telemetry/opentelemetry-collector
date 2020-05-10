@@ -237,10 +237,12 @@ func ReceiverContext(
 	}
 
 	if useNew {
-		mutators := []tag.Mutator{
-			tag.Upsert(tagKeyReceiver, receiver, tag.WithTTL(tag.TTLNoPropagation)),
-			tag.Upsert(tagKeyTransport, transport, tag.WithTTL(tag.TTLNoPropagation)),
+		mutators := make([]tag.Mutator, 0, 2)
+		mutators = append(mutators, tag.Upsert(tagKeyReceiver, receiver, tag.WithTTL(tag.TTLNoPropagation)))
+		if transport != "" {
+			mutators = append(mutators, tag.Upsert(tagKeyTransport, transport, tag.WithTTL(tag.TTLNoPropagation)))
 		}
+
 		ctx, _ = tag.New(ctx, mutators...)
 	}
 
@@ -278,8 +280,9 @@ func traceReceiveOp(
 		ctx = trace.NewContext(receiverCtx, span)
 	}
 
-	span.AddAttributes(trace.StringAttribute(
-		TransportKey, transport))
+	if transport != "" {
+		span.AddAttributes(trace.StringAttribute(TransportKey, transport))
+	}
 	return ctx
 }
 
