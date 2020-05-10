@@ -120,8 +120,8 @@ func initializeMetricDiskBytes(metric pdata.Metric, ioCounters map[string]disk.I
 
 	idx := 0
 	for device, ioCounter := range ioCounters {
-		initializeDataPoint(idps.At(idx+0), startTime, device, receiveDirectionLabelValue, int64(ioCounter.ReadBytes))
-		initializeDataPoint(idps.At(idx+1), startTime, device, transmitDirectionLabelValue, int64(ioCounter.WriteBytes))
+		initializeDataPoint(idps.At(idx+0), startTime, device, readDirectionLabelValue, int64(ioCounter.ReadBytes))
+		initializeDataPoint(idps.At(idx+1), startTime, device, writeDirectionLabelValue, int64(ioCounter.WriteBytes))
 		idx += 2
 	}
 }
@@ -134,8 +134,8 @@ func initializeMetricDiskOps(metric pdata.Metric, ioCounters map[string]disk.IOC
 
 	idx := 0
 	for device, ioCounter := range ioCounters {
-		initializeDataPoint(idps.At(idx+0), startTime, device, receiveDirectionLabelValue, int64(ioCounter.ReadCount))
-		initializeDataPoint(idps.At(idx+1), startTime, device, transmitDirectionLabelValue, int64(ioCounter.WriteCount))
+		initializeDataPoint(idps.At(idx+0), startTime, device, readDirectionLabelValue, int64(ioCounter.ReadCount))
+		initializeDataPoint(idps.At(idx+1), startTime, device, writeDirectionLabelValue, int64(ioCounter.WriteCount))
 		idx += 2
 	}
 }
@@ -148,8 +148,8 @@ func initializeMetricDiskTime(metric pdata.Metric, ioCounters map[string]disk.IO
 
 	idx := 0
 	for device, ioCounter := range ioCounters {
-		initializeDataPoint(idps.At(idx+0), startTime, device, receiveDirectionLabelValue, int64(ioCounter.ReadTime))
-		initializeDataPoint(idps.At(idx+1), startTime, device, transmitDirectionLabelValue, int64(ioCounter.WriteTime))
+		initializeDataPoint(idps.At(idx+0), startTime, device, readDirectionLabelValue, int64(ioCounter.ReadTime))
+		initializeDataPoint(idps.At(idx+1), startTime, device, writeDirectionLabelValue, int64(ioCounter.WriteTime))
 		idx += 2
 	}
 }

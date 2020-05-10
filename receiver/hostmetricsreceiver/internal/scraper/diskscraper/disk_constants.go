@@ -26,8 +26,8 @@ const (
 )
 
 const (
-	receiveDirectionLabelValue  = "receive"
-	transmitDirectionLabelValue = "transmit"
+	readDirectionLabelValue  = "read"
+	writeDirectionLabelValue = "write"
 )
 
 var metricDiskBytesDescriptor = createMetricDiskBytesDescriptor()
