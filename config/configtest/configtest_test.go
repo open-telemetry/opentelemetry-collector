@@ -12,13 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configtestutils
+package configtest
 
 import (
 	"path"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type TestConfig struct {
@@ -33,15 +34,10 @@ type NestedStruct struct {
 
 func TestCreateViperYamlUnmarshaler(t *testing.T) {
 	testFile := path.Join(".", "testdata", "config.yaml")
-	v, err := CreateViperYamlUnmarshaler(testFile)
-	if err != nil {
-		t.Errorf("Error creating viper: %v", err)
-	}
+	v := NewViperFromYamlFile(t, testFile)
 
 	actualConfigs := map[string]TestConfig{}
-	if err = v.UnmarshalExact(&actualConfigs); err != nil {
-		t.Errorf("Error unmarshaling yaml from test file %v: %v", testFile, err)
-	}
+	require.NoErrorf(t, v.UnmarshalExact(&actualConfigs), "unable to unmarshal yaml from file %v", testFile)
 
 	topLevelValue := "toplevelvalue"
 	nestedValue := "nestedvalue"

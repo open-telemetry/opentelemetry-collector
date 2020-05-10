@@ -12,32 +12,36 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configtestutils
+package configtest
 
 import (
 	"os"
 	"path/filepath"
+	"testing"
 
 	"github.com/spf13/viper"
+	"github.com/stretchr/testify/require"
+
+	"github.com/open-telemetry/opentelemetry-collector/config"
 )
 
-// CreateViperYamlUnmarshaler creates a viper instance that reads the given fileName as yaml config
+// NewViperFromYamlFile creates a viper instance that reads the given fileName as yaml config
 // and can then be used to unmarshal the file contents to objects.
-// Example usage for testing can be found in config_testutils_test.go
-func CreateViperYamlUnmarshaler(fileName string) (*viper.Viper, error) {
+// Example usage for testing can be found in configtest_test.go
+func NewViperFromYamlFile(t *testing.T, fileName string) *viper.Viper {
 	// Open the file for reading.
 	file, err := os.Open(filepath.Clean(fileName))
-	if err != nil {
-		return nil, err
-	}
+	require.NoErrorf(t, err, "unable to open the file %v", fileName)
+	require.NotNil(t, file)
+
+	defer func() {
+		require.NoErrorf(t, file.Close(), "unable to close the file %v", fileName)
+	}()
 
 	// Read yaml config from file
-	v := viper.New()
+	v := config.NewViper()
 	v.SetConfigType("yaml")
-	err = v.ReadConfig(file)
-	if err != nil {
-		return nil, err
-	}
+	require.NoErrorf(t, v.ReadConfig(file), "unable to read the file %v", fileName)
 
-	return v, nil
+	return v
 }

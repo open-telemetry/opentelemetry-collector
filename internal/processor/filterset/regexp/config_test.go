@@ -19,21 +19,17 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-collector/testutils/configtestutils"
+	"github.com/open-telemetry/opentelemetry-collector/config/configtest"
 )
 
 func TestConfig(t *testing.T) {
 	testFile := path.Join(".", "testdata", "config.yaml")
-	v, err := configtestutils.CreateViperYamlUnmarshaler(testFile)
-	if err != nil {
-		t.Errorf("Error configuring viper: %v", err)
-	}
+	v := configtest.NewViperFromYamlFile(t, testFile)
 
 	actualConfigs := map[string]Config{}
-	if err = v.UnmarshalExact(&actualConfigs); err != nil {
-		t.Errorf("Error unmarshaling yaml from test file %v: %v", testFile, err)
-	}
+	require.NoErrorf(t, v.UnmarshalExact(&actualConfigs), "unable to unmarshal yaml from file %v", testFile)
 
 	expectedConfigs := map[string]Config{
 		"regexp/default": {},

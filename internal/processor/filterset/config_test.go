@@ -19,23 +19,18 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
+	"github.com/open-telemetry/opentelemetry-collector/config/configtest"
 	"github.com/open-telemetry/opentelemetry-collector/internal/processor/filterset/regexp"
-	"github.com/open-telemetry/opentelemetry-collector/testutils/configtestutils"
 )
 
 func readTestdataConfigYamls(t *testing.T, filename string) map[string]Config {
 	testFile := path.Join(".", "testdata", filename)
-	v, err := configtestutils.CreateViperYamlUnmarshaler(testFile)
-	if err != nil {
-		t.Errorf("Error configuring viper: %v", err)
-	}
+	v := configtest.NewViperFromYamlFile(t, testFile)
 
 	cfgs := map[string]Config{}
-	if err = v.UnmarshalExact(&cfgs); err != nil {
-		t.Errorf("Error unmarshaling yaml from test file %v: %v", testFile, err)
-	}
-
+	require.NoErrorf(t, v.UnmarshalExact(&cfgs), "unable to unmarshal yaml from file %v", testFile)
 	return cfgs
 }
 
