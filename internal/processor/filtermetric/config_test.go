@@ -19,10 +19,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
+	"github.com/open-telemetry/opentelemetry-collector/config/configtest"
 	"github.com/open-telemetry/opentelemetry-collector/internal/processor/filterset"
 	"github.com/open-telemetry/opentelemetry-collector/internal/processor/filterset/regexp"
-	"github.com/open-telemetry/opentelemetry-collector/testutils/configtestutils"
 )
 
 var (
@@ -47,15 +48,10 @@ func createConfigWithRegexpOptions(filters []string, rCfg *regexp.Config) *Match
 
 func TestConfig(t *testing.T) {
 	testFile := path.Join(".", "testdata", "config.yaml")
-	v, err := configtestutils.CreateViperYamlUnmarshaler(testFile)
-	if err != nil {
-		t.Errorf("Error creating Viper config loader: %v", err)
-	}
+	v := configtest.NewViperFromYamlFile(t, testFile)
 
 	testYamls := map[string]MatchProperties{}
-	if err = v.UnmarshalExact(&testYamls); err != nil {
-		t.Errorf("Error unmarshaling yaml from test file %v: %v", testFile, err)
-	}
+	require.NoErrorf(t, v.UnmarshalExact(&testYamls), "unable to unmarshal yaml from file %v", testFile)
 
 	tests := []struct {
 		name   string
