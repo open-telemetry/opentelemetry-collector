@@ -31,10 +31,7 @@ func appendFileSystemUsedStateDataPoints(idps pdata.Int64DataPointSlice, startId
 const systemSpecificMetricsLen = 1
 
 func appendSystemSpecificMetrics(metrics pdata.MetricSlice, startIdx int, deviceUsages []*deviceUsage) {
-	initializeMetricFileSystemINodesUsed(metrics.At(startIdx), deviceUsages)
-}
-
-func initializeMetricFileSystemINodesUsed(metric pdata.Metric, deviceUsages []*deviceUsage) {
+	metric := metrics.At(startIdx)
 	metricFilesystemINodesUsedDescriptor.CopyTo(metric.MetricDescriptor())
 
 	idps := metric.Int64DataPoints()
