@@ -195,9 +195,8 @@ func (ml *memoryLimiter) readMemStats(ms *runtime.MemStats) {
 		// This indicates misconfiguration. Log it once.
 		if !ml.configMismatchedLogged {
 			ml.configMismatchedLogged = true
-			ml.logger.Warn(typeStr+" is likely incorrectly configured. "+ballastSizeMibKey+
-				" must be set equal to --mem-ballast-size-mib command line option.",
-				zap.String("processor", ml.procName))
+			ml.logger.Warn(typeStr + " is likely incorrectly configured. " + ballastSizeMibKey +
+				" must be set equal to --mem-ballast-size-mib command line option.")
 		}
 	}
 }

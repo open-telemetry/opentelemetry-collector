@@ -174,7 +174,6 @@ func (sp *queuedSpanProcessor) processItemFromQueue(item *queueItem) {
 	if consumererror.IsPermanent(err) {
 		sp.logger.Warn(
 			"Unrecoverable bad data error",
-			zap.String("processor", sp.name),
 			zap.Int("#spans", spanCountStats.GetAllSpansCount()),
 			zap.Error(err))
 
@@ -188,36 +187,31 @@ func (sp *queuedSpanProcessor) processItemFromQueue(item *queueItem) {
 
 	stats.RecordWithTags(context.Background(), processorStatsTags, statFailedSendOps.M(1))
 
-	sp.logger.Warn("Sender failed", zap.String("processor", sp.name), zap.Error(err))
+	sp.logger.Warn("Sender failed", zap.Error(err))
 	if !sp.retryOnProcessingFailure {
 		// throw away the batch
-		sp.logger.Error("Failed to process batch, discarding",
-			zap.String("processor", sp.name), zap.Int("batch-size", allSpansCount))
+		sp.logger.Error("Failed to process batch, discarding", zap.Int("batch-size", allSpansCount))
 		sp.onItemDropped(item, spanCountStats)
 	} else {
 		// TODO: (@pjanotti) do not put it back on the end of the queue, retry with it directly.
 		// This will have the benefit of keeping the batch closer to related ones in time.
 		if !sp.queue.Produce(item) {
-			sp.logger.Error("Failed to process batch and failed to re-enqueue",
-				zap.String("processor", sp.name), zap.Int("batch-size", allSpansCount))
+			sp.logger.Error("Failed to process batch and failed to re-enqueue", zap.Int("batch-size", allSpansCount))
 			sp.onItemDropped(item, spanCountStats)
 		} else {
-			sp.logger.Warn("Failed to process batch, re-enqueued",
-				zap.String("processor", sp.name), zap.Int("batch-size", allSpansCount))
+			sp.logger.Warn("Failed to process batch, re-enqueued", zap.Int("batch-size", allSpansCount))
 		}
 	}
 
 	// back-off for configured delay, but get interrupted when shutting down
 	if sp.backoffDelay > 0 {
-		sp.logger.Warn("Backing off before next attempt",
-			zap.String("processor", sp.name),
-			zap.Duration("backoff_delay", sp.backoffDelay))
+		sp.logger.Warn("Backing off before next attempt", zap.Duration("backoff_delay", sp.backoffDelay))
 		select {
 		case <-sp.stopCh:
-			sp.logger.Info("Interrupted due to shutdown", zap.String("processor", sp.name))
+			sp.logger.Info("Interrupted due to shutdown")
 			break
 		case <-time.After(sp.backoffDelay):
-			sp.logger.Info("Resume processing", zap.String("processor", sp.name))
+			sp.logger.Info("Resume processing")
 			break
 		}
 	}
@@ -231,9 +225,7 @@ func (sp *queuedSpanProcessor) onItemDropped(item *queueItem, spanCountStats *pr
 
 	obsreport.ProcessorTraceDataDropped(item.ctx, spanCountStats.GetAllSpansCount())
 
-	sp.logger.Warn("Span batch dropped",
-		zap.String("processor", sp.name),
-		zap.Int("#spans", spanCountStats.GetAllSpansCount()))
+	sp.logger.Warn("Span batch dropped", zap.Int("#spans", spanCountStats.GetAllSpansCount()))
 }
 
 // Variables related to metrics specific to queued processor.
