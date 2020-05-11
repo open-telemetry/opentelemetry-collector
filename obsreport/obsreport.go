@@ -85,7 +85,8 @@ func Configure(
 	return views
 }
 
-// CountMetricPoints is a helper to count the "amount" of metrics data.
+// CountMetricPoints is a helper to count the "amount" of metrics data. For code using the
+// internal data structure, pdatautil.MetricAndDataPointCount should be used instead
 func CountMetricPoints(md consumerdata.MetricsData) (numTimeSeries int, numPoints int) {
 	for _, metric := range md.Metrics {
 		tss := metric.GetTimeseries()

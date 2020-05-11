@@ -46,6 +46,11 @@ var (
 	errFake = errors.New("errFake")
 )
 
+type receiveTestParams struct {
+	transport string
+	err       error
+}
+
 func TestConfigure(t *testing.T) {
 	type args struct {
 		generateLegacy bool
@@ -106,27 +111,29 @@ func Test_obsreport_ReceiveTraceDataOp(t *testing.T) {
 	defer parentSpan.End()
 
 	receiverCtx := ReceiverContext(parentCtx, receiver, transport, legacyName)
-	errs := []error{nil, errFake}
+	params := []receiveTestParams{
+		{transport, errFake},
+		{"", nil},
+	}
 	rcvdSpans := []int{13, 42}
-	for i, err := range errs {
-		ctx := StartTraceDataReceiveOp(receiverCtx, receiver, transport)
+	for i, param := range params {
+		ctx := StartTraceDataReceiveOp(receiverCtx, receiver, param.transport)
 		assert.NotNil(t, ctx)
 
 		EndTraceDataReceiveOp(
 			ctx,
 			format,
 			rcvdSpans[i],
-			err)
+			param.err)
 	}
 
 	spans := ss.PullAllSpans()
-	require.Equal(t, len(errs), len(spans))
+	require.Equal(t, len(params), len(spans))
 
 	var acceptedSpans, refusedSpans int
 	for i, span := range spans {
 		assert.Equal(t, receiverPrefix+receiver+receiveTraceDataOperationSuffix, span.Name)
-		assert.Equal(t, transport, span.Attributes[TransportKey])
-		switch errs[i] {
+		switch params[i].err {
 		case nil:
 			acceptedSpans += rcvdSpans[i]
 			assert.Equal(t, int64(rcvdSpans[i]), span.Attributes[AcceptedSpansKey])
@@ -136,9 +143,15 @@ func Test_obsreport_ReceiveTraceDataOp(t *testing.T) {
 			refusedSpans += rcvdSpans[i]
 			assert.Equal(t, int64(0), span.Attributes[AcceptedSpansKey])
 			assert.Equal(t, int64(rcvdSpans[i]), span.Attributes[RefusedSpansKey])
-			assert.Equal(t, errs[i].Error(), span.Status.Message)
+			assert.Equal(t, params[i].err.Error(), span.Status.Message)
 		default:
-			t.Fatalf("unexpected error: %v", errs[i])
+			t.Fatalf("unexpected param: %v", params[i])
+		}
+		switch params[i].transport {
+		case "":
+			assert.NotContains(t, span.Attributes, TransportKey)
+		default:
+			assert.Equal(t, params[i].transport, span.Attributes[TransportKey])
 		}
 	}
 
@@ -165,11 +178,14 @@ func Test_obsreport_ReceiveMetricsOp(t *testing.T) {
 	defer parentSpan.End()
 
 	receiverCtx := ReceiverContext(parentCtx, receiver, transport, legacyName)
-	errs := []error{errFake, nil}
+	params := []receiveTestParams{
+		{transport, errFake},
+		{"", nil},
+	}
 	rcvdMetricPts := []int{23, 29}
 	rcvdTimeSeries := []int{2, 3}
-	for i, err := range errs {
-		ctx := StartMetricsReceiveOp(receiverCtx, receiver, transport)
+	for i, param := range params {
+		ctx := StartMetricsReceiveOp(receiverCtx, receiver, param.transport)
 		assert.NotNil(t, ctx)
 
 		EndMetricsReceiveOp(
@@ -177,18 +193,17 @@ func Test_obsreport_ReceiveMetricsOp(t *testing.T) {
 			format,
 			rcvdMetricPts[i],
 			rcvdTimeSeries[i],
-			err)
+			param.err)
 	}
 
 	spans := ss.PullAllSpans()
-	require.Equal(t, len(errs), len(spans))
+	require.Equal(t, len(params), len(spans))
 
 	var receivedTimeSeries, droppedTimeSeries int
 	var acceptedMetricPoints, refusedMetricPoints int
 	for i, span := range spans {
 		assert.Equal(t, receiverPrefix+receiver+receiverMetricsOperationSuffix, span.Name)
-		assert.Equal(t, transport, span.Attributes[TransportKey])
-		switch errs[i] {
+		switch params[i].err {
 		case nil:
 			receivedTimeSeries += rcvdTimeSeries[i]
 			acceptedMetricPoints += rcvdMetricPts[i]
@@ -200,9 +215,15 @@ func Test_obsreport_ReceiveMetricsOp(t *testing.T) {
 			refusedMetricPoints += rcvdMetricPts[i]
 			assert.Equal(t, int64(0), span.Attributes[AcceptedMetricPointsKey])
 			assert.Equal(t, int64(rcvdMetricPts[i]), span.Attributes[RefusedMetricPointsKey])
-			assert.Equal(t, errs[i].Error(), span.Status.Message)
+			assert.Equal(t, params[i].err.Error(), span.Status.Message)
 		default:
-			t.Fatalf("unexpected error: %v", errs[i])
+			t.Fatalf("unexpected param: %v", params[i])
+		}
+		switch params[i].transport {
+		case "":
+			assert.NotContains(t, span.Attributes, TransportKey)
+		default:
+			assert.Equal(t, params[i].transport, span.Attributes[TransportKey])
 		}
 	}
 
