@@ -106,17 +106,29 @@ func (dataType DataType) GetString() string {
 	case MetricsDataType:
 		return MetricsDataTypeStr
 	default:
-		panic("unknown data type")
+		return "custom"
+		// panic("unknown data type")
 	}
 }
 
 // Pipeline defines a single pipeline.
 type Pipeline struct {
+	TypeVal    Type     `mapstructure:"-"`
 	Name       string   `mapstructure:"-"`
 	InputType  DataType `mapstructure:"-"`
 	Receivers  []string `mapstructure:"receivers"`
 	Processors []string `mapstructure:"processors"`
 	Exporters  []string `mapstructure:"exporters"`
+}
+
+// Type gets the pipeline type.
+func (p *Pipeline) Type() Type {
+	return p.TypeVal
+}
+
+// SetType sets the pipeline type.
+func (p *Pipeline) SetType(typeStr Type) {
+	p.TypeVal = typeStr
 }
 
 // Pipelines is a map of names to Pipelines.

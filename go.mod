@@ -16,7 +16,7 @@ require (
 	github.com/go-kit/kit v0.9.0
 	github.com/gogo/googleapis v1.3.0 // indirect
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
-	github.com/golang/protobuf v1.3.5
+	github.com/golang/protobuf v1.4.0
 	github.com/golangci/golangci-lint v1.24.0
 	github.com/google/addlicense v0.0.0-20200301095109-7c013a14f2e2
 	github.com/google/uuid v1.1.1
@@ -61,6 +61,7 @@ require (
 	google.golang.org/api v0.10.0 // indirect
 	google.golang.org/genproto v0.0.0-20200408120641-fbb3ad325eb7
 	google.golang.org/grpc v1.28.1
+	google.golang.org/protobuf v1.22.0
 	gopkg.in/yaml.v2 v2.2.8
 	honnef.co/go/tools v0.0.1-2020.1.3
 )

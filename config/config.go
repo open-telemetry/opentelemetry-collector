@@ -103,6 +103,8 @@ const typeAndNameSeparator = "/"
 // Factories struct holds in a single type all component factories that
 // can be handled by the Config.
 type Factories struct {
+	Pipelines map[configmodels.Type]component.PipelineFactory
+
 	// Receivers maps receiver type names in the config to the respective factory.
 	Receivers map[configmodels.Type]component.ReceiverFactoryBase
 
@@ -538,18 +540,7 @@ func loadPipelines(v *viper.Viper) (configmodels.Pipelines, error) {
 		// Create the config for this pipeline.
 		var pipelineCfg configmodels.Pipeline
 
-		// Set the type.
-		switch typeStr {
-		case configmodels.TracesDataTypeStr:
-			pipelineCfg.InputType = configmodels.TracesDataType
-		case configmodels.MetricsDataTypeStr:
-			pipelineCfg.InputType = configmodels.MetricsDataType
-		default:
-			return nil, &configError{
-				code: errInvalidPipelineType,
-				msg:  fmt.Sprintf("invalid pipeline type %q (must be metrics or traces)", typeStr),
-			}
-		}
+		pipelineCfg.TypeVal = configmodels.Type(typeStr)
 
 		pipelineConfig := ViperSub(pipelinesConfig, key)
 

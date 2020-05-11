@@ -23,11 +23,9 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
+	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/converter"
-	"github.com/open-telemetry/opentelemetry-collector/processor"
 )
 
 var errUnusedReceiver = errors.New("receiver defined but not used by any pipeline")
@@ -86,7 +84,7 @@ type ReceiversBuilder struct {
 	logger         *zap.Logger
 	config         *configmodels.Config
 	builtPipelines BuiltPipelines
-	factories      map[configmodels.Type]component.ReceiverFactoryBase
+	factories      config.Factories
 }
 
 // NewReceiversBuilder creates a new ReceiversBuilder. Call BuildProcessors() on the returned value.
@@ -94,7 +92,7 @@ func NewReceiversBuilder(
 	logger *zap.Logger,
 	config *configmodels.Config,
 	builtPipelines BuiltPipelines,
-	factories map[configmodels.Type]component.ReceiverFactoryBase,
+	factories config.Factories,
 ) *ReceiversBuilder {
 	return &ReceiversBuilder{logger.With(zap.String(kindLogKey, kindLogReceiver)), config, builtPipelines, factories}
 }
@@ -106,7 +104,7 @@ func (rb *ReceiversBuilder) Build() (Receivers, error) {
 	// BuildProcessors receivers based on configuration.
 	for _, cfg := range rb.config.Receivers {
 		logger := rb.logger.With(zap.String(typeLogKey, string(cfg.Type())), zap.String(nameLogKey, cfg.Name()))
-		rcv, err := rb.buildReceiver(logger, cfg)
+		rcv, err := rb.buildReceiverv2(logger, cfg)
 		if err != nil {
 			if err == errUnusedReceiver {
 				rb.logger.Info("Ignoring receiver as it is not used by any pipeline", zap.String("receiver", cfg.Name()))
@@ -130,7 +128,9 @@ func hasReceiver(pipeline *configmodels.Pipeline, receiverName string) bool {
 	return false
 }
 
-type attachedPipelines map[configmodels.DataType][]*builtPipeline
+// type attachedPipelines map[configmodels.DataType][]*builtPipeline
+
+type attachedPipelines map[configmodels.Type][]*builtPipeline
 
 func (rb *ReceiversBuilder) findPipelinesToAttach(config configmodels.Receiver) (attachedPipelines, error) {
 	// A receiver may be attached to multiple pipelines. Pipelines may consume different
@@ -138,11 +138,11 @@ func (rb *ReceiversBuilder) findPipelinesToAttach(config configmodels.Receiver) 
 	// attached to this receiver according to configuration.
 
 	pipelinesToAttach := make(attachedPipelines)
-	pipelinesToAttach[configmodels.TracesDataType] = make([]*builtPipeline, 0)
-	pipelinesToAttach[configmodels.MetricsDataType] = make([]*builtPipeline, 0)
 
 	// Iterate over all pipelines.
 	for _, pipelineCfg := range rb.config.Service.Pipelines {
+		pipelinesToAttach[pipelineCfg.Type()] = make([]*builtPipeline, 0)
+
 		// Get the first processor of the pipeline.
 		pipelineProcessor := rb.builtPipelines[pipelineCfg]
 		if pipelineProcessor == nil {
@@ -153,8 +153,8 @@ func (rb *ReceiversBuilder) findPipelinesToAttach(config configmodels.Receiver) 
 		// Is this receiver attached to the pipeline?
 		if hasReceiver(pipelineCfg, config.Name()) {
 			// Yes, add it to the list of pipelines of corresponding data type.
-			pipelinesToAttach[pipelineCfg.InputType] =
-				append(pipelinesToAttach[pipelineCfg.InputType], pipelineProcessor)
+			pipelinesToAttach[pipelineCfg.Type()] =
+				append(pipelinesToAttach[pipelineCfg.Type()], pipelineProcessor)
 		}
 	}
 
@@ -164,10 +164,10 @@ func (rb *ReceiversBuilder) findPipelinesToAttach(config configmodels.Receiver) 
 func (rb *ReceiversBuilder) attachReceiverToPipelines(
 	logger *zap.Logger,
 	factory component.ReceiverFactoryBase,
-	dataType configmodels.DataType,
 	config configmodels.Receiver,
 	rcv *builtReceiver,
 	builtPipelines []*builtPipeline,
+	pipelineFactory component.PipelineFactory,
 ) error {
 	// There are pipelines of the specified data type that must be attached to
 	// the receiver. Create the receiver of corresponding data type and make
@@ -175,27 +175,17 @@ func (rb *ReceiversBuilder) attachReceiverToPipelines(
 	var err error
 	var createdReceiver component.Receiver
 
-	switch dataType {
-	case configmodels.TracesDataType:
-		// First, create the fan out junction point.
-		junction := buildFanoutTraceConsumer(builtPipelines)
-
-		// Now create the receiver and tell it to send to the junction point.
-		createdReceiver, err = createTraceReceiver(context.Background(), factory, logger, config, junction)
-
-	case configmodels.MetricsDataType:
-		junction := buildFanoutMetricConsumer(builtPipelines)
-		createdReceiver, err = createMetricsReceiver(context.Background(), factory, logger, config, junction)
-	}
-
+	junction := buildFanoutConsumer(builtPipelines, pipelineFactory)
+	createdReceiver, err = pipelineFactory.CreateReceiver(context.Background(), factory, logger, config, junction)
 	if err != nil {
 		if err == configerror.ErrDataTypeIsNotSupported {
 			return fmt.Errorf(
 				"receiver %s does not support %s but it was used in a "+
 					"%s pipeline",
 				config.Name(),
-				dataType.GetString(),
-				dataType.GetString())
+				string(pipelineFactory.Type()),
+				string(pipelineFactory.Type()),
+			)
 		}
 		return fmt.Errorf("cannot create receiver %s: %s", config.Name(), err.Error())
 	}
@@ -220,12 +210,12 @@ func (rb *ReceiversBuilder) attachReceiverToPipelines(
 	}
 	rcv.receiver = createdReceiver
 
-	logger.Info("Receiver is enabled.", zap.String("datatype", dataType.GetString()))
+	logger.Info("Receiver is enabled.", zap.String("pipelineType", string(pipelineFactory.Type())))
 
 	return nil
 }
 
-func (rb *ReceiversBuilder) buildReceiver(logger *zap.Logger, config configmodels.Receiver) (*builtReceiver, error) {
+func (rb *ReceiversBuilder) buildReceiverv2(logger *zap.Logger, config configmodels.Receiver) (*builtReceiver, error) {
 
 	// First find pipelines that must be attached to this receiver.
 	pipelinesToAttach, err := rb.findPipelinesToAttach(config)
@@ -234,7 +224,7 @@ func (rb *ReceiversBuilder) buildReceiver(logger *zap.Logger, config configmodel
 	}
 
 	// Prepare to build the receiver.
-	factory := rb.factories[config.Type()]
+	factory := rb.factories.Receivers[config.Type()]
 	if factory == nil {
 		return nil, fmt.Errorf("receiver factory not found for type: %s", config.Type())
 	}
@@ -243,15 +233,20 @@ func (rb *ReceiversBuilder) buildReceiver(logger *zap.Logger, config configmodel
 	}
 
 	// Now we have list of pipelines broken down by data type. Iterate for each data type.
-	for dataType, pipelines := range pipelinesToAttach {
+	for pipelineType, pipelines := range pipelinesToAttach {
 		if len(pipelines) == 0 {
 			// No pipelines of this data type are attached to this receiver.
 			continue
 		}
 
+		pipelineFactory := rb.factories.Pipelines[pipelineType]
+		if pipelineFactory == nil {
+			return nil, fmt.Errorf("receiver factory not found for type: %s", config.Type())
+		}
+
 		// Attach the corresponding part of the receiver to all pipelines that require
 		// this data type.
-		err := rb.attachReceiverToPipelines(logger, factory, dataType, config, rcv, pipelines)
+		err := rb.attachReceiverToPipelines(logger, factory, config, rcv, pipelines, pipelineFactory)
 		if err != nil {
 			return nil, err
 		}
@@ -264,16 +259,16 @@ func (rb *ReceiversBuilder) buildReceiver(logger *zap.Logger, config configmodel
 	return rcv, nil
 }
 
-func buildFanoutTraceConsumer(pipelines []*builtPipeline) consumer.TraceConsumerBase {
+func buildFanoutConsumer(pipelines []*builtPipeline, factory component.PipelineFactory) component.Consumer {
 	// Optimize for the case when there is only one processor, no need to create junction point.
 	if len(pipelines) == 1 {
-		return pipelines[0].firstTC
+		return pipelines[0].firstConsumer
 	}
 
-	var pipelineConsumers []consumer.TraceConsumerBase
+	var pipelineConsumers []component.Consumer
 	anyPipelineMutatesData := false
 	for _, pipeline := range pipelines {
-		pipelineConsumers = append(pipelineConsumers, pipeline.firstTC)
+		pipelineConsumers = append(pipelineConsumers, pipeline.firstConsumer)
 		anyPipelineMutatesData = anyPipelineMutatesData || pipeline.MutatesConsumedData
 	}
 
@@ -284,108 +279,7 @@ func buildFanoutTraceConsumer(pipelines []*builtPipeline) consumer.TraceConsumer
 		// TODO: if there are more than 2 pipelines only clone data for pipelines that
 		// declare the intent to mutate the data. Pipelines that do not mutate the data
 		// can consume shared data.
-		return processor.CreateTraceCloningFanOutConnector(pipelineConsumers)
+		return factory.CreateCloningFanOutConnector(pipelineConsumers)
 	}
-	return processor.CreateTraceFanOutConnector(pipelineConsumers)
-}
-
-func buildFanoutMetricConsumer(pipelines []*builtPipeline) consumer.MetricsConsumerBase {
-	// Optimize for the case when there is only one processor, no need to create junction point.
-	if len(pipelines) == 1 {
-		return pipelines[0].firstMC
-	}
-
-	var pipelineConsumers []consumer.MetricsConsumerBase
-	anyPipelineMutatesData := false
-	for _, pipeline := range pipelines {
-		pipelineConsumers = append(pipelineConsumers, pipeline.firstMC)
-		anyPipelineMutatesData = anyPipelineMutatesData || pipeline.MutatesConsumedData
-	}
-
-	// Create a junction point that fans out to all pipelines.
-	if anyPipelineMutatesData {
-		// If any pipeline mutates data use a cloning fan out connector
-		// so that it is safe to modify fanned out data.
-		// TODO: if there are more than 2 pipelines only clone data for pipelines that
-		// declare the intent to mutate the data. Pipelines that do not mutate the data
-		// can consume shared data.
-		return processor.CreateMetricsCloningFanOutConnector(pipelineConsumers)
-	}
-	return processor.CreateMetricsFanOutConnector(pipelineConsumers)
-}
-
-// createTraceReceiver is a helper function that creates trace receiver based on the current receiver type
-// and type of the next consumer.
-func createTraceReceiver(
-	ctx context.Context,
-	factoryBase component.ReceiverFactoryBase,
-	logger *zap.Logger,
-	cfg configmodels.Receiver,
-	nextConsumer consumer.TraceConsumerBase,
-) (component.TraceReceiver, error) {
-	if factory, ok := factoryBase.(component.ReceiverFactory); ok {
-		creationParams := component.ReceiverCreateParams{Logger: logger}
-
-		// If both receiver and consumer are of the new type (can manipulate on internal data structure),
-		// use ProcessorFactory.CreateTraceReceiver.
-		if nextConsumer, ok := nextConsumer.(consumer.TraceConsumer); ok {
-			return factory.CreateTraceReceiver(ctx, creationParams, cfg, nextConsumer)
-		}
-
-		// If receiver is of the new type, but downstream consumer is of the old type,
-		// use internalToOCTraceConverter compatibility shim.
-		traceConverter := converter.NewInternalToOCTraceConverter(nextConsumer.(consumer.TraceConsumerOld))
-		return factory.CreateTraceReceiver(ctx, creationParams, cfg, traceConverter)
-	}
-
-	factoryOld := factoryBase.(component.ReceiverFactoryOld)
-
-	// If both receiver and consumer are of the old type (can manipulate on OC traces only),
-	// use Factory.CreateTraceReceiver.
-	if nextConsumer, ok := nextConsumer.(consumer.TraceConsumerOld); ok {
-		return factoryOld.CreateTraceReceiver(ctx, logger, cfg, nextConsumer)
-	}
-
-	// If receiver is of the old type, but downstream consumer is of the new type,
-	// use NewInternalToOCTraceConverter compatibility shim to convert traces from internal format to OC.
-	traceConverter := converter.NewOCToInternalTraceConverter(nextConsumer.(consumer.TraceConsumer))
-	return factoryOld.CreateTraceReceiver(ctx, logger, cfg, traceConverter)
-}
-
-// createMetricsReceiver is a helper function that creates metric receiver based
-// on the current receiver type and type of the next consumer.
-func createMetricsReceiver(
-	ctx context.Context,
-	factoryBase component.ReceiverFactoryBase,
-	logger *zap.Logger,
-	cfg configmodels.Receiver,
-	nextConsumer consumer.MetricsConsumerBase,
-) (component.MetricsReceiver, error) {
-	if factory, ok := factoryBase.(component.ReceiverFactory); ok {
-		creationParams := component.ReceiverCreateParams{Logger: logger}
-
-		// If both receiver and consumer are of the new type (can manipulate on internal data structure),
-		// use ProcessorFactory.CreateMetricsReceiver.
-		if nextConsumer, ok := nextConsumer.(consumer.MetricsConsumer); ok {
-			return factory.CreateMetricsReceiver(ctx, creationParams, cfg, nextConsumer)
-		}
-
-		// If receiver is of the new type, but downstream consumer is of the old type,
-		// use internalToOCMetricsConverter compatibility shim.
-		metricsConverter := converter.NewInternalToOCMetricsConverter(nextConsumer.(consumer.MetricsConsumerOld))
-		return factory.CreateMetricsReceiver(ctx, creationParams, cfg, metricsConverter)
-	}
-
-	factoryOld := factoryBase.(component.ReceiverFactoryOld)
-
-	// If both receiver and consumer are of the old type (can manipulate on OC metrics only),
-	// use Factory.CreateMetricsReceiver.
-	if nextConsumer, ok := nextConsumer.(consumer.MetricsConsumerOld); ok {
-		return factoryOld.CreateMetricsReceiver(logger, cfg, nextConsumer)
-	}
-
-	// If receiver is of the old type, but downstream consumer is of the new type,
-	// use NewInternalToOCMetricsConverter compatibility shim to convert metrics from internal format to OC.
-	metricsConverter := converter.NewOCToInternalMetricsConverter(nextConsumer.(consumer.MetricsConsumer))
-	return factoryOld.CreateMetricsReceiver(logger, cfg, metricsConverter)
+	return factory.CreateFanOutConnector(pipelineConsumers)
 }

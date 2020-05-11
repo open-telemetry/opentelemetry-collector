@@ -44,6 +44,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/vmmetricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/zipkinreceiver"
+
+	"github.com/open-telemetry/opentelemetry-collector/exporter/hwexporter"
+	"github.com/open-telemetry/opentelemetry-collector/pipelines/hwpipeline"
+	"github.com/open-telemetry/opentelemetry-collector/pipelines/tracespipeline"
+	"github.com/open-telemetry/opentelemetry-collector/processor/hwprocessor"
+	"github.com/open-telemetry/opentelemetry-collector/receiver/hwreceiver"
 )
 
 // Components returns the default set of components used by the
@@ -53,6 +59,14 @@ func Components() (
 	error,
 ) {
 	errs := []error{}
+
+	pipelines, err := component.MakePipelinesBuilderMap(
+		&tracespipeline.Factory{},
+		&hwpipeline.Factory{},
+	)
+	if err != nil {
+		errs = append(errs, err)
+	}
 
 	extensions, err := component.MakeExtensionFactoryMap(
 		&healthcheckextension.Factory{},
@@ -71,6 +85,7 @@ func Components() (
 		&otlpreceiver.Factory{},
 		&vmmetricsreceiver.Factory{},
 		hostmetricsreceiver.NewFactory(),
+		&hwreceiver.Factory{},
 	)
 	if err != nil {
 		errs = append(errs, err)
@@ -84,6 +99,7 @@ func Components() (
 		&jaegerexporter.Factory{},
 		&fileexporter.Factory{},
 		&otlpexporter.Factory{},
+		&hwexporter.Factory{},
 	)
 	if err != nil {
 		errs = append(errs, err)
@@ -98,12 +114,14 @@ func Components() (
 		&tailsamplingprocessor.Factory{},
 		&probabilisticsamplerprocessor.Factory{},
 		&spanprocessor.Factory{},
+		&hwprocessor.Factory{},
 	)
 	if err != nil {
 		errs = append(errs, err)
 	}
 
 	factories := config.Factories{
+		Pipelines:  pipelines,
 		Extensions: extensions,
 		Receivers:  receivers,
 		Processors: processors,

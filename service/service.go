@@ -296,22 +296,19 @@ func (app *Application) setupPipelines(ctx context.Context) error {
 	// Pipeline is built backwards, starting from exporters, so that we create objects
 	// which are referenced before objects which reference them.
 
-	// First create exporters.
 	var err error
-	app.builtExporters, err = builder.NewExportersBuilder(app.logger, app.config, app.factories.Exporters).Build()
+	app.builtExporters, err = builder.NewExportersBuilder(app.logger, app.config, app.factories).Build()
 	if err != nil {
 		return errors.Wrap(err, "cannot build builtExporters")
 	}
-
 	app.logger.Info("Starting exporters...")
+
 	err = app.builtExporters.StartAll(ctx, app)
 	if err != nil {
 		return errors.Wrap(err, "cannot start builtExporters")
 	}
 
-	// Create pipelines and their processors and plug exporters to the
-	// end of the pipelines.
-	app.builtPipelines, err = builder.NewPipelinesBuilder(app.logger, app.config, app.builtExporters, app.factories.Processors).Build()
+	app.builtPipelines, err = builder.NewPipelinesBuilder(app.logger, app.config, app.builtExporters, app.factories).Build()
 	if err != nil {
 		return errors.Wrap(err, "cannot build pipelines")
 	}
@@ -323,7 +320,7 @@ func (app *Application) setupPipelines(ctx context.Context) error {
 	}
 
 	// Create receivers and plug them into the start of the pipelines.
-	app.builtReceivers, err = builder.NewReceiversBuilder(app.logger, app.config, app.builtPipelines, app.factories.Receivers).Build()
+	app.builtReceivers, err = builder.NewReceiversBuilder(app.logger, app.config, app.builtPipelines, app.factories).Build()
 	if err != nil {
 		return errors.Wrap(err, "cannot build receivers")
 	}
@@ -335,6 +332,7 @@ func (app *Application) setupPipelines(ctx context.Context) error {
 	}
 
 	return nil
+
 }
 
 func (app *Application) shutdownPipelines(ctx context.Context) error {
