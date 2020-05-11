@@ -23,8 +23,6 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/open-telemetry/opentelemetry-collector/config/configgrpc"
-
 	apacheThrift "github.com/apache/thrift/lib/go/thrift"
 	"github.com/gorilla/mux"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/configmanager"
@@ -47,6 +45,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/client"
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
+	"github.com/open-telemetry/opentelemetry-collector/config/configgrpc"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 	jaegertranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace/jaeger"
