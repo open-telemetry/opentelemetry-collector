@@ -31,6 +31,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal/scraper/diskscraper"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal/scraper/memoryscraper"
+	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal/scraper/networkscraper"
 )
 
 // This file implements Factory for HostMetrics receiver.
@@ -54,6 +55,7 @@ func NewFactory() *Factory {
 			diskscraper.TypeStr:       &diskscraper.Factory{},
 			filesystemscraper.TypeStr: &filesystemscraper.Factory{},
 			memoryscraper.TypeStr:     &memoryscraper.Factory{},
+			networkscraper.TypeStr:    &networkscraper.Factory{},
 		},
 	}
 }

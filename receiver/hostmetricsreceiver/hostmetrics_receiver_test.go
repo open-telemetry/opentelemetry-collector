@@ -31,6 +31,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal/scraper/diskscraper"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal/scraper/memoryscraper"
+	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal/scraper/networkscraper"
 )
 
 var standardMetrics = []string{
@@ -40,6 +41,11 @@ var standardMetrics = []string{
 	"host/disk/ops",
 	"host/disk/time",
 	"host/filesystem/used",
+	"host/network/packets",
+	"host/network/dropped_packets",
+	"host/network/errors",
+	"host/network/bytes",
+	"host/network/tcp_connections",
 }
 
 var systemSpecificMetrics = map[string][]string{
@@ -53,20 +59,25 @@ var systemSpecificMetrics = map[string][]string{
 func TestGatherMetrics_EndToEnd(t *testing.T) {
 	sink := &exportertest.SinkMetricsExporter{}
 
+	configSettings := internal.ConfigSettings{CollectionIntervalValue: 100 * time.Millisecond}
+
 	config := &Config{
 		Scrapers: map[string]internal.Config{
 			cpuscraper.TypeStr: &cpuscraper.Config{
-				ConfigSettings: internal.ConfigSettings{CollectionIntervalValue: 100 * time.Millisecond},
+				ConfigSettings: configSettings,
 				ReportPerCPU:   true,
 			},
 			diskscraper.TypeStr: &diskscraper.Config{
-				ConfigSettings: internal.ConfigSettings{CollectionIntervalValue: 100 * time.Millisecond},
+				ConfigSettings: configSettings,
 			},
 			filesystemscraper.TypeStr: &filesystemscraper.Config{
-				ConfigSettings: internal.ConfigSettings{CollectionIntervalValue: 100 * time.Millisecond},
+				ConfigSettings: configSettings,
 			},
 			memoryscraper.TypeStr: &memoryscraper.Config{
-				ConfigSettings: internal.ConfigSettings{CollectionIntervalValue: 100 * time.Millisecond},
+				ConfigSettings: configSettings,
+			},
+			networkscraper.TypeStr: &networkscraper.Config{
+				ConfigSettings: configSettings,
 			},
 		},
 	}
@@ -76,6 +87,7 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 		diskscraper.TypeStr:       &diskscraper.Factory{},
 		filesystemscraper.TypeStr: &filesystemscraper.Factory{},
 		memoryscraper.TypeStr:     &memoryscraper.Factory{},
+		networkscraper.TypeStr:    &networkscraper.Factory{},
 	}
 
 	receiver, err := NewHostMetricsReceiver(context.Background(), zap.NewNop(), config, factories, sink)
