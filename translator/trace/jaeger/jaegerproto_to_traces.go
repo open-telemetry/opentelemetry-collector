@@ -22,12 +22,15 @@ import (
 	"strconv"
 
 	"github.com/jaegertracing/jaeger/model"
+	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 )
+
+var blankJaegerProtoSpan = new(jaeger.Span)
 
 // ProtoBatchesToInternalTraces converts multiple Jaeger proto batches to internal traces
 func ProtoBatchesToInternalTraces(batches []*model.Batch) pdata.Traces {
