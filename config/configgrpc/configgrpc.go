@@ -185,7 +185,7 @@ func (c TLSConfig) loadCert(caPath string) (*x509.CertPool, error) {
 }
 
 var (
-	// Map of opencensus compression types to grpc registered compression types
+	// Map of opentelemetry compression types to grpc registered compression types
 	grpcCompressionKeyMap = map[string]string{
 		CompressionGzip: gzip.Name,
 	}
