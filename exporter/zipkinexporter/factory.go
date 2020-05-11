@@ -50,7 +50,7 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 }
 
 // CreateTraceExporter creates a trace exporter based on this config.
-func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Exporter) (component.TraceExporterOld, error) {
+func (f *Factory) CreateTraceExporter(_ *zap.Logger, config configmodels.Exporter) (component.TraceExporterOld, error) {
 	zc := config.(*Config)
 
 	if zc.URL == "" {
@@ -58,10 +58,10 @@ func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Ex
 		return nil, errors.New("exporter config requires a non-empty 'url'")
 	}
 
-	return NewTraceExporter(logger, config)
+	return NewTraceExporter(config)
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *Factory) CreateMetricsExporter(logger *zap.Logger, cfg configmodels.Exporter) (component.MetricsExporterOld, error) {
+func (f *Factory) CreateMetricsExporter(_ *zap.Logger, _ configmodels.Exporter) (component.MetricsExporterOld, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }

@@ -19,9 +19,12 @@ import (
 	"strconv"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
-	"go.opencensus.io/trace"
+	"github.com/pkg/errors"
 
+	"github.com/open-telemetry/opentelemetry-collector/internal"
 	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 )
 
@@ -51,6 +54,7 @@ var (
 		"DATA_LOSS",
 		"UNAUTHENTICATED",
 	}
+	errNilSpan = errors.New("expected a non-nil span")
 )
 
 func canonicalCodeString(code int32) string {
@@ -67,13 +71,13 @@ func canonicalCodeString(code int32) string {
 // map (function assumes that this was created by the caller). Per call at most
 // 3 attribute keys can be made redundant.
 func zipkinEndpointFromAttributes(
-	attributes map[string]interface{},
+	attrMap map[string]*tracepb.AttributeValue,
 	serviceName string,
 	endpointType zipkinDirection,
 	redundantKeys map[string]bool,
 ) (endpoint *zipkinmodel.Endpoint) {
 
-	if attributes == nil {
+	if attrMap == nil {
 		return nil
 	}
 
@@ -94,17 +98,17 @@ func zipkinEndpointFromAttributes(
 	var ip net.IP
 	ipv6Selected := false
 
-	if ipv4Str, ok := extractStringAttribute(attributes, ipv4Key); ok {
+	if ipv4Str, ok := extractStringAttribute(attrMap, ipv4Key); ok {
 		ip = net.ParseIP(ipv4Str)
 		redundantKeys[ipv4Key] = true
-	} else if ipv6Str, ok := extractStringAttribute(attributes, ipv6Key); ok {
+	} else if ipv6Str, ok := extractStringAttribute(attrMap, ipv6Key); ok {
 		ip = net.ParseIP(ipv6Str)
 		ipv6Selected = true
 		redundantKeys[ipv6Key] = true
 	}
 
 	var port uint64
-	if portStr, ok := extractStringAttribute(attributes, portKey); ok {
+	if portStr, ok := extractStringAttribute(attrMap, portKey); ok {
 		port, _ = strconv.ParseUint(portStr, 10, 16)
 		redundantKeys[portKey] = true
 	}
@@ -128,67 +132,65 @@ func zipkinEndpointFromAttributes(
 	return zEndpoint
 }
 
-func extractStringAttribute(
-	attributes map[string]interface{},
-	key string,
-) (value string, ok bool) {
-	var i interface{}
-	if i, ok = attributes[key]; ok {
-		value, ok = i.(string)
+func extractStringAttribute(attributes map[string]*tracepb.AttributeValue, key string) (string, bool) {
+	av, ok := attributes[key]
+	if !ok || av == nil || av.Value == nil {
+		return "", false
 	}
 
-	return value, ok
+	if value, ok := av.Value.(*tracepb.AttributeValue_StringValue); ok {
+		return value.StringValue.GetValue(), true
+	}
+
+	return "", false
 }
 
-func convertTraceID(t trace.TraceID) zipkinmodel.TraceID {
-	h, l, _ := tracetranslator.BytesToUInt64TraceID(t[:])
+func convertTraceID(t []byte) zipkinmodel.TraceID {
+	h, l, _ := tracetranslator.BytesToUInt64TraceID(t)
 	return zipkinmodel.TraceID{High: h, Low: l}
 }
 
-func convertSpanID(s trace.SpanID) zipkinmodel.ID {
-	id, _ := tracetranslator.BytesToUInt64SpanID(s[:])
+func convertSpanID(s []byte) zipkinmodel.ID {
+	id, _ := tracetranslator.BytesToUInt64SpanID(s)
 	return zipkinmodel.ID(id)
 }
 
-func spanKind(s *trace.SpanData) zipkinmodel.Kind {
+// spanKind returns the Kind and a boolean indicating if the kind was extracted from the attributes.
+func spanKind(s *tracepb.Span) (zipkinmodel.Kind, bool) {
 	// First try span kinds that are set directly in SpanKind field.
-	switch s.SpanKind {
-	case trace.SpanKindClient:
-		return zipkinmodel.Client
-	case trace.SpanKindServer:
-		return zipkinmodel.Server
+	switch s.Kind {
+	case tracepb.Span_CLIENT:
+		return zipkinmodel.Client, false
+	case tracepb.Span_SERVER:
+		return zipkinmodel.Server, false
 	}
 
 	// SpanKind==SpanKindUnspecified, check if TagSpanKind attribute is set.
 	// This can happen if span kind had no equivalent in OC, so we could represent it in
 	// the SpanKind. In that case we had set a special attribute TagSpanKind in
 	// the span to preserve the span kind. Now we will do a reverse translation.
-	spanKind := s.Attributes[tracetranslator.TagSpanKind]
-	if spanKind != nil {
-		// Yes the attribute is present. Check that it is a string.
-		spanKindStr, ok := spanKind.(string)
-		kind := zipkinmodel.Undetermined
-		if ok {
-			// Check if it is one of the kinds that are defined by conventions.
-			switch tracetranslator.OpenTracingSpanKind(spanKindStr) {
-			case tracetranslator.OpenTracingSpanKindClient:
-				kind = zipkinmodel.Client
-			case tracetranslator.OpenTracingSpanKindServer:
-				kind = zipkinmodel.Server
-			case tracetranslator.OpenTracingSpanKindConsumer:
-				kind = zipkinmodel.Consumer
-			case tracetranslator.OpenTracingSpanKindProducer:
-				kind = zipkinmodel.Producer
-			default:
-				// Unknown kind. Keep the attribute, but return Undetermined to our caller.
-				return zipkinmodel.Undetermined
-			}
-			// The special attribute is no longer needed, delete it.
-			delete(s.Attributes, tracetranslator.TagSpanKind)
-		}
-		return kind
+	if s.Attributes == nil || s.Attributes.AttributeMap == nil {
+		return zipkinmodel.Undetermined, false
 	}
-	return zipkinmodel.Undetermined
+
+	spanKindStr, ok := extractStringAttribute(s.Attributes.AttributeMap, tracetranslator.TagSpanKind)
+	if ok {
+		// Check if it is one of the kinds that are defined by conventions.
+		switch tracetranslator.OpenTracingSpanKind(spanKindStr) {
+		case tracetranslator.OpenTracingSpanKindClient:
+			return zipkinmodel.Client, true
+		case tracetranslator.OpenTracingSpanKindServer:
+			return zipkinmodel.Server, true
+		case tracetranslator.OpenTracingSpanKindConsumer:
+			return zipkinmodel.Consumer, true
+		case tracetranslator.OpenTracingSpanKindProducer:
+			return zipkinmodel.Producer, true
+		default:
+			// Unknown kind. Keep the attribute, but return Undetermined to our caller.
+			return zipkinmodel.Undetermined, false
+		}
+	}
+	return zipkinmodel.Undetermined, false
 }
 
 type zipkinDirection bool
@@ -210,79 +212,73 @@ func serviceNameOrDefault(node *commonpb.Node, defaultServiceName string) string
 	return node.ServiceInfo.Name
 }
 
-func OCSpanDataToZipkin(
+func OCSpanProtoToZipkin(
 	node *commonpb.Node,
-	s *trace.SpanData,
+	resource *resourcepb.Resource,
+	s *tracepb.Span,
 	defaultServiceName string,
-) (zc zipkinmodel.SpanModel) {
-
-	// Per call to zipkinEndpointFromAttributes at most 3 attribute keys can be
-	// made redundant, give a hint when calling make that we expect at most 6
-	// items on the map.
-	redundantKeys := make(map[string]bool, 6)
-	localEndpointServiceName := serviceNameOrDefault(node, defaultServiceName)
-	localEndpoint := zipkinEndpointFromAttributes(
-		s.Attributes, localEndpointServiceName, isLocalEndpoint, redundantKeys)
-
-	remoteServiceName := ""
-	if remoteServiceEntry, ok := s.Attributes[RemoteEndpointServiceName]; ok {
-		if remoteServiceName, ok = remoteServiceEntry.(string); ok {
-			redundantKeys[RemoteEndpointServiceName] = true
-		}
+) (*zipkinmodel.SpanModel, error) {
+	if s == nil {
+		return nil, errNilSpan
 	}
-	remoteEndpoint := zipkinEndpointFromAttributes(
-		s.Attributes, remoteServiceName, isRemoteEndpoint, redundantKeys)
 
-	sc := s.SpanContext
-	z := zipkinmodel.SpanModel{
+	var attrMap map[string]*tracepb.AttributeValue
+	if s.Attributes != nil {
+		attrMap = s.Attributes.AttributeMap
+	}
+
+	// Per call to zipkinEndpointFromAttributes at most 3 attribute keys can be made redundant,
+	// give a hint when calling make that we expect at most 2*3+2 items on the map.
+	redundantKeys := make(map[string]bool, 8)
+	localEndpointServiceName := serviceNameOrDefault(node, defaultServiceName)
+	localEndpoint := zipkinEndpointFromAttributes(attrMap, localEndpointServiceName, isLocalEndpoint, redundantKeys)
+
+	remoteServiceName, okServiceName := extractStringAttribute(attrMap, RemoteEndpointServiceName)
+	if okServiceName {
+		redundantKeys[RemoteEndpointServiceName] = true
+	}
+	remoteEndpoint := zipkinEndpointFromAttributes(attrMap, remoteServiceName, isRemoteEndpoint, redundantKeys)
+
+	sk, spanKindFromAttributes := spanKind(s)
+	if spanKindFromAttributes {
+		redundantKeys[tracetranslator.TagSpanKind] = true
+	}
+	startTime := internal.TimestampToTime(s.StartTime)
+	z := &zipkinmodel.SpanModel{
 		SpanContext: zipkinmodel.SpanContext{
-			TraceID: convertTraceID(sc.TraceID),
-			ID:      convertSpanID(sc.SpanID),
+			TraceID: convertTraceID(s.TraceId),
+			ID:      convertSpanID(s.SpanId),
 			Sampled: &sampledTrue,
 		},
-		Kind:           spanKind(s),
-		Name:           s.Name,
-		Timestamp:      s.StartTime,
+		Kind:           sk,
+		Name:           s.Name.GetValue(),
+		Timestamp:      startTime,
 		Shared:         false,
 		LocalEndpoint:  localEndpoint,
 		RemoteEndpoint: remoteEndpoint,
 	}
 
-	if s.ParentSpanID != (trace.SpanID{}) {
-		id := convertSpanID(s.ParentSpanID)
+	resourceLabelesCount := 0
+	if resource != nil {
+		resourceLabelesCount = len(resource.Labels)
+	}
+	//
+	z.Tags = make(map[string]string, len(attrMap)+2+resourceLabelesCount)
+	resourceToSpanAttributes(resource, z.Tags)
+
+	if s.ParentSpanId != nil {
+		id := convertSpanID(s.ParentSpanId)
 		z.ParentID = &id
 	}
 
-	if s, e := s.StartTime, s.EndTime; !s.IsZero() && !e.IsZero() {
-		z.Duration = e.Sub(s)
+	if endTime := internal.TimestampToTime(s.EndTime); !startTime.IsZero() && !endTime.IsZero() {
+		z.Duration = endTime.Sub(startTime)
 	}
 
 	// construct Tags from s.Attributes and s.Status.
-	if len(s.Attributes) != 0 {
-		m := make(map[string]string, len(s.Attributes)+2)
-		for key, value := range s.Attributes {
-			if redundantKeys[key] {
-				// Already represented by something other than an attribute,
-				// skip it.
-				continue
-			}
-
-			switch v := value.(type) {
-			case string:
-				m[key] = v
-			case bool:
-				if v {
-					m[key] = "true"
-				} else {
-					m[key] = "false"
-				}
-			case int64:
-				m[key] = strconv.FormatInt(v, 10)
-			}
-		}
-		z.Tags = m
-	}
-	if s.Status.Code != 0 || s.Status.Message != "" {
+	attributesToSpanTags(attrMap, redundantKeys, z.Tags)
+	status := s.Status
+	if status != nil && (status.Code != 0 || status.Message != "") {
 		if z.Tags == nil {
 			z.Tags = make(map[string]string, 2)
 		}
@@ -295,29 +291,72 @@ func OCSpanDataToZipkin(
 	}
 
 	// construct Annotations from s.Annotations and s.MessageEvents.
-	if len(s.Annotations) != 0 || len(s.MessageEvents) != 0 {
-		z.Annotations = make([]zipkinmodel.Annotation, 0, len(s.Annotations)+len(s.MessageEvents))
-		for _, a := range s.Annotations {
-			z.Annotations = append(z.Annotations, zipkinmodel.Annotation{
-				Timestamp: a.Time,
-				Value:     a.Message,
-			})
-		}
-		for _, m := range s.MessageEvents {
-			a := zipkinmodel.Annotation{
-				Timestamp: m.Time,
-			}
-			switch m.EventType {
-			case trace.MessageEventTypeSent:
-				a.Value = "SENT"
-			case trace.MessageEventTypeRecv:
-				a.Value = "RECV"
-			default:
-				a.Value = "<?>"
-			}
-			z.Annotations = append(z.Annotations, a)
+	z.Annotations = timeEventsToSpanAnnotations(s.TimeEvents)
+
+	return z, nil
+}
+
+func resourceToSpanAttributes(resource *resourcepb.Resource, tags map[string]string) {
+	if resource != nil {
+		for key, value := range resource.Labels {
+			tags[key] = value
 		}
 	}
+}
 
-	return z
+func timeEventsToSpanAnnotations(timeEvents *tracepb.Span_TimeEvents) []zipkinmodel.Annotation {
+	var annotations []zipkinmodel.Annotation
+	// construct Annotations from s.Annotations and s.MessageEvents.
+	if timeEvents != nil && len(timeEvents.TimeEvent) != 0 {
+		annotations = make([]zipkinmodel.Annotation, 0, len(timeEvents.TimeEvent))
+		for _, te := range timeEvents.TimeEvent {
+			if te == nil || te.Value == nil {
+				continue
+			}
+
+			switch tme := te.Value.(type) {
+			case *tracepb.Span_TimeEvent_Annotation_:
+				annotations = append(annotations, zipkinmodel.Annotation{
+					Timestamp: internal.TimestampToTime(te.Time),
+					Value:     tme.Annotation.Description.GetValue(),
+				})
+			case *tracepb.Span_TimeEvent_MessageEvent_:
+				a := zipkinmodel.Annotation{
+					Timestamp: internal.TimestampToTime(te.Time),
+					Value:     tme.MessageEvent.Type.String(),
+				}
+				annotations = append(annotations, a)
+
+			}
+		}
+	}
+	return annotations
+}
+
+func attributesToSpanTags(attrMap map[string]*tracepb.AttributeValue, redundantKeys map[string]bool, tags map[string]string) {
+	if len(attrMap) == 0 {
+		return
+	}
+	for key, value := range attrMap {
+		if redundantKeys[key] {
+			// Already represented by something other than an attribute,
+			// skip it.
+			continue
+		}
+
+		switch v := value.Value.(type) {
+		case *tracepb.AttributeValue_BoolValue:
+			if v.BoolValue {
+				tags[key] = "true"
+			} else {
+				tags[key] = "false"
+			}
+		case *tracepb.AttributeValue_IntValue:
+			tags[key] = strconv.FormatInt(v.IntValue, 10)
+		case *tracepb.AttributeValue_DoubleValue:
+			tags[key] = strconv.FormatFloat(v.DoubleValue, 'f', -1, 64)
+		case *tracepb.AttributeValue_StringValue:
+			tags[key] = v.StringValue.GetValue()
+		}
+	}
 }

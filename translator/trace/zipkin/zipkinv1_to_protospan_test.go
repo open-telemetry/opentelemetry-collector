@@ -31,7 +31,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
-	"github.com/open-telemetry/opentelemetry-collector/translator/trace/spandata"
 )
 
 func Test_hexIDToOCID(t *testing.T) {
@@ -859,13 +858,9 @@ func TestSpanKindTranslation(t *testing.T) {
 				assert.EqualValues(t, expected, ocSpan.Attributes.AttributeMap[tracetranslator.TagSpanKind])
 			}
 
-			// Translate to OCSpanData.
-			sd, err := spandata.ProtoSpanToOCSpanData(ocSpan, nil)
-			assert.NoError(t, err)
-			assert.EqualValues(t, test.ocKind, sd.SpanKind)
-
 			// Translate to Zipkin V2 (which is used for internal representation by Zipkin exporter).
-			zSpanTranslated := OCSpanDataToZipkin(nil, sd, "")
+			zSpanTranslated, err := OCSpanProtoToZipkin(nil, nil, ocSpan, "")
+			assert.NoError(t, err)
 			assert.EqualValues(t, test.zipkinV2Kind, zSpanTranslated.Kind)
 		})
 	}
