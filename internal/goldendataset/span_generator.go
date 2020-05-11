@@ -16,11 +16,27 @@ package goldendataset
 
 import (
 	"math/rand"
+	"time"
 
 	otlpcommon "github.com/open-telemetry/opentelemetry-proto/gen/go/common/v1"
 	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
+)
+
+const (
+	TraceStateEmpty = "Empty"
+	TraceStateOne   = "One"
+	TraceStateFour  = "Four"
+)
+
+const (
+	SpanKindUnspecified = "Unspecified"
+	SpanKindInternal    = "Internal"
+	SpanKindServer      = "Server"
+	SpanKindClient      = "Client"
+	SpanKindProducer    = "Producer"
+	SpanKindConsumer    = "Consumer"
 )
 
 const (
@@ -42,26 +58,93 @@ const (
 	SpanAttrInternal          = "Internal"
 )
 
-func GenerateSpan(traceID []byte, parentID []byte, spanName string, kind string, spanTypeID string) *otlptrace.Span {
+const (
+	SpanStatusNil                = "Nil"
+	SpanStatusOk                 = "Ok"
+	SpanStatusCancelled          = "Cancelled"
+	SpanStatusUnknownError       = "UnknownError"
+	SpanStatusInvalidArgument    = "InvalidArgument"
+	SpanStatusDeadlineExceeded   = "DeadlineExceeded"
+	SpanStatusNotFound           = "NotFound"
+	SpanStatusAlreadyExists      = "AlreadyExists"
+	SpanStatusPermissionDenied   = "PermissionDenied"
+	SpanStatusResourceExhausted  = "ResourceExhausted"
+	SpanStatusFailedPrecondition = "FailedPrecondition"
+	SpanStatusAborted            = "Aborted"
+	SpanStatusOutOfRange         = "OutOfRange"
+	SpanStatusUnimplemented      = "Unimplemented"
+	SpanStatusInternalError      = "InternalError"
+	SpanStatusUnavailable        = "Unavailable"
+	SpanStatusDataLoss           = "DataLoss"
+	SpanStatusUnauthenticated    = "Unauthenticated"
+)
+
+var statusCodeMap = constructStatusCodeMap()
+var statusMsgMap = constructStatusMessageMap()
+
+func constructStatusCodeMap() map[string]otlptrace.Status_StatusCode {
+	statusMap := make(map[string]otlptrace.Status_StatusCode)
+	statusMap[SpanStatusOk] = otlptrace.Status_Ok
+	statusMap[SpanStatusCancelled] = otlptrace.Status_Cancelled
+	statusMap[SpanStatusUnknownError] = otlptrace.Status_UnknownError
+	statusMap[SpanStatusInvalidArgument] = otlptrace.Status_InvalidArgument
+	statusMap[SpanStatusDeadlineExceeded] = otlptrace.Status_DeadlineExceeded
+	statusMap[SpanStatusNotFound] = otlptrace.Status_NotFound
+	statusMap[SpanStatusAlreadyExists] = otlptrace.Status_AlreadyExists
+	statusMap[SpanStatusPermissionDenied] = otlptrace.Status_PermissionDenied
+	statusMap[SpanStatusResourceExhausted] = otlptrace.Status_ResourceExhausted
+	statusMap[SpanStatusFailedPrecondition] = otlptrace.Status_FailedPrecondition
+	statusMap[SpanStatusAborted] = otlptrace.Status_Aborted
+	statusMap[SpanStatusOutOfRange] = otlptrace.Status_OutOfRange
+	statusMap[SpanStatusUnimplemented] = otlptrace.Status_Unimplemented
+	statusMap[SpanStatusInternalError] = otlptrace.Status_InternalError
+	statusMap[SpanStatusUnavailable] = otlptrace.Status_Unavailable
+	statusMap[SpanStatusDataLoss] = otlptrace.Status_DataLoss
+	statusMap[SpanStatusUnauthenticated] = otlptrace.Status_Unauthenticated
+	return statusMap
+}
+
+func constructStatusMessageMap() map[string]string {
+	statusMap := make(map[string]string)
+	statusMap[SpanStatusOk] = ""
+	statusMap[SpanStatusCancelled] = "Cancellation received"
+	statusMap[SpanStatusUnknownError] = ""
+	statusMap[SpanStatusInvalidArgument] = "parameter is required"
+	statusMap[SpanStatusDeadlineExceeded] = "timed out after 30002 ms"
+	statusMap[SpanStatusNotFound] = "/dragons/RomanianLonghorn not found"
+	statusMap[SpanStatusAlreadyExists] = "/dragons/Drogon already exists"
+	statusMap[SpanStatusPermissionDenied] = "tlannister does not have write permission"
+	statusMap[SpanStatusResourceExhausted] = "ResourceExhausted"
+	statusMap[SpanStatusFailedPrecondition] = "33a64df551425fcc55e4d42a148795d9f25f89d4 has been edited"
+	statusMap[SpanStatusAborted] = ""
+	statusMap[SpanStatusOutOfRange] = "Range Not Satisfiable"
+	statusMap[SpanStatusUnimplemented] = "Unimplemented"
+	statusMap[SpanStatusInternalError] = "java.lang.NullPointerException"
+	statusMap[SpanStatusUnavailable] = "RecommendationService is currently unavailable"
+	statusMap[SpanStatusDataLoss] = ""
+	statusMap[SpanStatusUnauthenticated] = "nstark is unknown user"
+	return statusMap
+}
+
+func GenerateSpan(traceID []byte, tracestate string, parentID []byte, spanName string, kind string, spanTypeID string,
+	statusStr string) *otlptrace.Span {
+	endTime := time.Now().Add(-50 * time.Microsecond)
 	return &otlptrace.Span{
 		TraceId:                traceID,
 		SpanId:                 generateSpanID(),
-		TraceState:             "",
+		TraceState:             generateTraceState(tracestate),
 		ParentSpanId:           parentID,
 		Name:                   spanName,
-		Kind:                   otlptrace.Span_CLIENT,
-		StartTimeUnixNano:      0,
-		EndTimeUnixNano:        0,
+		Kind:                   lookupSpanKind(kind),
+		StartTimeUnixNano:      uint64(endTime.Add(-215 * time.Millisecond).UnixNano()),
+		EndTimeUnixNano:        uint64(endTime.UnixNano()),
 		Attributes:             generateSpanAttributes(spanTypeID),
 		DroppedAttributesCount: 0,
 		Events:                 nil,
 		DroppedEventsCount:     0,
 		Links:                  nil,
 		DroppedLinksCount:      0,
-		Status: &otlptrace.Status{
-			Code:    otlptrace.Status_Ok,
-			Message: "",
-		},
+		Status:                 generateStatus(statusStr),
 	}
 }
 
@@ -72,6 +155,32 @@ func generateSpanID() []byte {
 		panic(err)
 	}
 	return r[:]
+}
+
+func generateTraceState(tracestate string) string {
+	if TraceStateOne == tracestate {
+		return "lasterror=f39cd56cc44274fd5abd07ef1164246d10ce2955"
+	} else if TraceStateFour == tracestate {
+		return "err@ck=80ee5638,rate@ck=1.62,rojo=00f067aa0ba902b7,congo=t61rcWkgMzE"
+	} else {
+		return ""
+	}
+}
+
+func lookupSpanKind(kind string) otlptrace.Span_SpanKind {
+	if SpanKindClient == kind {
+		return otlptrace.Span_CLIENT
+	} else if SpanKindServer == kind {
+		return otlptrace.Span_SERVER
+	} else if SpanKindProducer == kind {
+		return otlptrace.Span_PRODUCER
+	} else if SpanKindConsumer == kind {
+		return otlptrace.Span_CONSUMER
+	} else if SpanKindInternal == kind {
+		return otlptrace.Span_INTERNAL
+	} else {
+		return otlptrace.Span_SPAN_KIND_UNSPECIFIED
+	}
 }
 
 func generateSpanAttributes(spanTypeID string) []*otlpcommon.AttributeKeyValue {
@@ -114,6 +223,16 @@ func generateSpanAttributes(spanTypeID string) []*otlpcommon.AttributeKeyValue {
 	return convertMapToAttributeKeyValues(attrs)
 }
 
+func generateStatus(statusStr string) *otlptrace.Status {
+	if SpanStatusNil == statusStr {
+		return nil
+	}
+	return &otlptrace.Status{
+		Code:    statusCodeMap[statusStr],
+		Message: statusMsgMap[statusStr],
+	}
+}
+
 func generateDatabaseSQLAttributes() map[string]interface{} {
 	attrMap := make(map[string]interface{})
 	attrMap[conventions.AttributeDBType] = "sql"
@@ -123,7 +242,7 @@ func generateDatabaseSQLAttributes() map[string]interface{} {
 	attrMap[conventions.AttributeDBUser] = "invsvc"
 	attrMap[conventions.AttributeDBURL] = "jdbc:postgresql://invdev.cdsr3wfqepqo.us-east-1.rds.amazonaws.com:5432/inventory"
 	attrMap[conventions.AttributeNetPeerIP] = "172.30.2.7"
-	attrMap[conventions.AttributeNetPeerPort] = 5432
+	attrMap[conventions.AttributeNetPeerPort] = int64(5432)
 	attrMap[conventions.AttributeEnduserID] = "unittest"
 	return attrMap
 }
@@ -135,7 +254,7 @@ func generateDatabaseNoSQLAttributes() map[string]interface{} {
 	attrMap[conventions.AttributeDBStatement] = "g.V().hasLabel('postive').has('age', gt(65)).values('geocode')"
 	attrMap[conventions.AttributeDBURL] = "wss://contacttrace.gremlin.cosmos.azure.com:443/"
 	attrMap[conventions.AttributeNetPeerIP] = "10.118.17.63"
-	attrMap[conventions.AttributeNetPeerPort] = 443
+	attrMap[conventions.AttributeNetPeerPort] = int64(443)
 	attrMap[conventions.AttributeEnduserID] = "unittest"
 	return attrMap
 }
@@ -160,7 +279,7 @@ func generateFaaSHTTPAttributes() map[string]interface{} {
 	attrMap[conventions.AttributeHTTPHost] = "api.opentelemetry.io"
 	attrMap[conventions.AttributeHTTPTarget] = "/blog/posts"
 	attrMap[conventions.AttributeHTTPFlavor] = "2"
-	attrMap[conventions.AttributeHTTPStatusCode] = 201
+	attrMap[conventions.AttributeHTTPStatusCode] = int64(201)
 	attrMap[conventions.AttributeHTTPUserAgent] =
 		"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1 Safari/605.1.15"
 	attrMap[conventions.AttributeEnduserID] = "unittest"
@@ -190,7 +309,7 @@ func generateFaaSTimerAttributes() map[string]interface{} {
 func generateFaaSOtherAttributes() map[string]interface{} {
 	attrMap := make(map[string]interface{})
 	attrMap[conventions.AttributeFaaSTrigger] = conventions.FaaSTriggerOther
-	attrMap["processed.count"] = 256
+	attrMap["processed.count"] = int64(256)
 	attrMap["processed.data"] = 14.46
 	attrMap["processed.errors"] = false
 	attrMap[conventions.AttributeEnduserID] = "unittest"
@@ -201,7 +320,7 @@ func generateHTTPClientAttributes() map[string]interface{} {
 	attrMap := make(map[string]interface{})
 	attrMap[conventions.AttributeHTTPMethod] = "GET"
 	attrMap[conventions.AttributeHTTPURL] = "https://opentelemetry.io/registry/"
-	attrMap[conventions.AttributeHTTPStatusCode] = 200
+	attrMap[conventions.AttributeHTTPStatusCode] = int64(200)
 	attrMap[conventions.AttributeHTTPStatusText] = "More Than OK"
 	attrMap[conventions.AttributeEnduserID] = "unittest"
 	return attrMap
@@ -212,10 +331,10 @@ func generateHTTPServerAttributes() map[string]interface{} {
 	attrMap[conventions.AttributeHTTPMethod] = "POST"
 	attrMap[conventions.AttributeHTTPScheme] = "https"
 	attrMap[conventions.AttributeHTTPServerName] = "api22.opentelemetry.io"
-	attrMap[conventions.AttributeNetHostPort] = 443
+	attrMap[conventions.AttributeNetHostPort] = int64(443)
 	attrMap[conventions.AttributeHTTPTarget] = "/blog/posts"
 	attrMap[conventions.AttributeHTTPFlavor] = "2"
-	attrMap[conventions.AttributeHTTPStatusCode] = 201
+	attrMap[conventions.AttributeHTTPStatusCode] = int64(201)
 	attrMap[conventions.AttributeHTTPUserAgent] =
 		"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36"
 	attrMap[conventions.AttributeHTTPRoute] = "/blog/posts"
@@ -230,7 +349,7 @@ func generateMessagingProducerAttributes() map[string]interface{} {
 	attrMap[conventions.AttributeMessagingDestination] = "time.us.east.atlanta"
 	attrMap[conventions.AttributeMessagingDestinationKind] = "topic"
 	attrMap[conventions.AttributeMessagingMessageID] = "AA7C5438-D93A-43C8-9961-55613204648F"
-	attrMap["messaging.sequence"] = 1
+	attrMap["messaging.sequence"] = int64(1)
 	attrMap[conventions.AttributeNetPeerIP] = "10.10.212.33"
 	attrMap[conventions.AttributeEnduserID] = "unittest"
 	return attrMap
@@ -250,7 +369,7 @@ func generateGRPCClientAttributes() map[string]interface{} {
 	attrMap := make(map[string]interface{})
 	attrMap[conventions.AttributeRPCService] = "PullRequestsService"
 	attrMap[conventions.AttributeNetPeerIP] = "2600:1700:1f00:11c0:4de0:c223:a800:4e87"
-	attrMap[conventions.AttributeNetHostPort] = 8443
+	attrMap[conventions.AttributeNetHostPort] = int64(8443)
 	attrMap[conventions.AttributeEnduserID] = "unittest"
 	return attrMap
 }
