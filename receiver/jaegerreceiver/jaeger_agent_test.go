@@ -22,6 +22,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector/config/configgrpc"
+
 	"contrib.go.opencensus.io/exporter/jaeger"
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"github.com/stretchr/testify/assert"
@@ -137,8 +139,10 @@ func TestJaegerHTTP(t *testing.T) {
 
 	port := testutils.GetAvailablePort(t)
 	config := &Configuration{
-		AgentHTTPPort:          int(port),
-		RemoteSamplingEndpoint: addr.String(),
+		AgentHTTPPort: int(port),
+		RemoteSamplingClientSettings: configgrpc.GRPCSettings{
+			Endpoint: addr.String(),
+		},
 	}
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr, err := New(jaegerAgent, config, nil, params)

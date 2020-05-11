@@ -18,6 +18,8 @@ import (
 	"path"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector/config/configgrpc"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -67,9 +69,11 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 			RemoteSampling: &RemoteSamplingConfig{
-				HostEndpoint:  "0.0.0.0:5778",
-				FetchEndpoint: "jaeger-collector:1234",
-				StrategyFile:  "/etc/strategies.json",
+				HostEndpoint: "0.0.0.0:5778",
+				GRPCSettings: configgrpc.GRPCSettings{
+					Endpoint: "jaeger-collector:1234",
+				},
+				StrategyFile: "/etc/strategies.json",
 			},
 		})
 

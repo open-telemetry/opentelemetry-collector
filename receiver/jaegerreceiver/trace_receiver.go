@@ -23,6 +23,8 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/open-telemetry/opentelemetry-collector/config/configgrpc"
+
 	apacheThrift "github.com/apache/thrift/lib/go/thrift"
 	"github.com/gorilla/mux"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/configmanager"
@@ -63,11 +65,11 @@ type Configuration struct {
 	CollectorGRPCPort    int
 	CollectorGRPCOptions []grpc.ServerOption
 
-	AgentCompactThriftPort     int
-	AgentBinaryThriftPort      int
-	AgentHTTPPort              int
-	RemoteSamplingEndpoint     string
-	RemoteSamplingStrategyFile string
+	AgentCompactThriftPort       int
+	AgentBinaryThriftPort        int
+	AgentHTTPPort                int
+	RemoteSamplingClientSettings configgrpc.GRPCSettings
+	RemoteSamplingStrategyFile   string
 }
 
 // Receiver type is used to receive spans that were originally intended to be sent to Jaeger.
@@ -396,10 +398,15 @@ func (jr *jReceiver) startAgent(_ component.Host) error {
 	}
 
 	// Start upstream grpc client before serving sampling endpoints over HTTP
-	if jr.config.RemoteSamplingEndpoint != "" {
-		conn, err := grpc.Dial(jr.config.RemoteSamplingEndpoint, grpc.WithInsecure())
+	if jr.config.RemoteSamplingClientSettings.Endpoint != "" {
+		grpcOpts, err := configgrpc.GrpcSettingsToDialOptions(jr.config.RemoteSamplingClientSettings)
 		if err != nil {
-			jr.logger.Error("Error creating grpc connection to jaeger remote sampling endpoint", zap.String("endpoint", jr.config.RemoteSamplingEndpoint))
+			jr.logger.Error("Error creating grpc dial options for remote sampling endpoint", zap.Error(err))
+			return err
+		}
+		conn, err := grpc.Dial(jr.config.RemoteSamplingClientSettings.Endpoint, grpcOpts...)
+		if err != nil {
+			jr.logger.Error("Error creating grpc connection to jaeger remote sampling endpoint", zap.String("endpoint", jr.config.RemoteSamplingClientSettings.Endpoint))
 			return err
 		}
 
