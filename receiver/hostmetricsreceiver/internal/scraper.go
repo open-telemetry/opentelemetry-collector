@@ -20,20 +20,23 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector/consumer"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 )
 
 // Scraper gathers metrics from the host machine and converts
 // these into internal metrics format.
 type Scraper interface {
-	// Start performs any timely initialization tasks such as
-	// setting up performance counters for initial collection,
-	// and then begins scraping metrics at the configured
-	// collection interval.
-	Start(ctx context.Context) error
-	// Shutdown should clean up any unmanaged resources such as
+	// Initialize performs any timely initialization tasks such as
+	// setting up performance counters for initial collection.
+	Initialize(ctx context.Context, startTime pdata.TimestampUnixNano) error
+	// Close should clean up any unmanaged resources such as
 	// performance counter handles.
-	Shutdown(ctx context.Context) error
+	Close(ctx context.Context) error
+	// ScrapeAndAppendMetrics scrapes relevant metrics and appends them to
+	// the provided metric slice. If errors occur scraping some metrics,
+	// an error should be returned, but successfully scraped metrics should
+	// still be appended to the provided slice.
+	ScrapeAndAppendMetrics(ctx context.Context, metrics pdata.MetricSlice) error
 }
 
 // Factory can create a Scraper.
@@ -46,8 +49,7 @@ type Factory interface {
 	CreateMetricsScraper(
 		ctx context.Context,
 		logger *zap.Logger,
-		cfg Config,
-		consumer consumer.MetricsConsumer) (Scraper, error)
+		cfg Config) (Scraper, error)
 }
 
 // Config is the configuration of a scraper.

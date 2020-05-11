@@ -26,6 +26,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
+	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal/scraper/diskscraper"
+	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper"
+	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal/scraper/memoryscraper"
+	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal/scraper/networkscraper"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -55,11 +59,23 @@ func TestLoadConfig(t *testing.T) {
 				TypeVal: typeStr,
 				NameVal: "hostmetrics/customname",
 			},
-			DefaultCollectionInterval: 10 * time.Second,
+			DefaultCollectionInterval: 1 * time.Minute,
 			Scrapers: map[string]internal.Config{
 				cpuscraper.TypeStr: &cpuscraper.Config{
-					ConfigSettings: internal.ConfigSettings{CollectionIntervalValue: 5 * time.Second},
+					ConfigSettings: internal.ConfigSettings{CollectionIntervalValue: 1 * time.Minute},
 					ReportPerCPU:   true,
+				},
+				diskscraper.TypeStr: &diskscraper.Config{
+					ConfigSettings: internal.ConfigSettings{CollectionIntervalValue: 5 * time.Minute},
+				},
+				filesystemscraper.TypeStr: &filesystemscraper.Config{
+					ConfigSettings: internal.ConfigSettings{CollectionIntervalValue: 5 * time.Minute},
+				},
+				memoryscraper.TypeStr: &memoryscraper.Config{
+					ConfigSettings: internal.ConfigSettings{CollectionIntervalValue: 30 * time.Second},
+				},
+				networkscraper.TypeStr: &networkscraper.Config{
+					ConfigSettings: internal.ConfigSettings{CollectionIntervalValue: 45 * time.Second},
 				},
 			},
 		})

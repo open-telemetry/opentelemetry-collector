@@ -3,11 +3,18 @@ receivers:
     scrapers:
       cpu:
   hostmetrics/customname:
-    default_collection_interval: 10s
+    default_collection_interval: 1m
     scrapers:
       cpu:
-        collection_interval: 5s
         report_per_cpu: true
+      disk:
+        collection_interval: 5m
+      filesystem:
+        collection_interval: 5m
+      memory:
+        collection_interval: 30s
+      network:
+        collection_interval: 45s
 
 processors:
   exampleprocessor:

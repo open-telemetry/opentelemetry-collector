@@ -16,25 +16,18 @@ package filesystemscraper
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/shirou/gopsutil/disk"
 	"go.opencensus.io/trace"
 
 	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
-	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdatautil"
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal"
 )
 
 // Scraper for FileSystem Metrics
 type Scraper struct {
-	config   *Config
-	consumer consumer.MetricsConsumer
-	cancel   context.CancelFunc
+	config *Config
 }
 
 type deviceUsage struct {
@@ -42,63 +35,26 @@ type deviceUsage struct {
 	usage      *disk.UsageStat
 }
 
-// NewFileSystemScraper creates a set of FileSystem related metrics
-func NewFileSystemScraper(ctx context.Context, cfg *Config, consumer consumer.MetricsConsumer) (*Scraper, error) {
-	return &Scraper{config: cfg, consumer: consumer}, nil
+// NewFileSystemScraper creates a FileSystem Scraper
+func NewFileSystemScraper(_ context.Context, cfg *Config) *Scraper {
+	return &Scraper{config: cfg}
 }
 
-// Start
-func (s *Scraper) Start(ctx context.Context) error {
-	ctx, s.cancel = context.WithCancel(ctx)
-
-	go func() {
-		ticker := time.NewTicker(s.config.CollectionInterval())
-		defer ticker.Stop()
-
-		for {
-			select {
-			case <-ticker.C:
-				s.scrapeMetrics(ctx)
-			case <-ctx.Done():
-				return
-			}
-		}
-	}()
-
+// Initialize
+func (s *Scraper) Initialize(_ context.Context, startTime pdata.TimestampUnixNano) error {
 	return nil
 }
 
-// Shutdown
-func (s *Scraper) Shutdown(ctx context.Context) error {
-	s.cancel()
+// Close
+func (s *Scraper) Close(_ context.Context) error {
 	return nil
 }
 
-func (s *Scraper) scrapeMetrics(ctx context.Context) {
-	ctx, span := trace.StartSpan(ctx, "filesystemscraper.scrapeMetrics")
+// ScrapeAndAppendMetrics
+func (s *Scraper) ScrapeAndAppendMetrics(ctx context.Context, metrics pdata.MetricSlice) error {
+	_, span := trace.StartSpan(ctx, "filesystemscraper.ScrapeAndAppendMetrics")
 	defer span.End()
 
-	metricData := data.NewMetricData()
-	metrics := internal.InitializeMetricSlice(metricData)
-
-	err := s.scrapeAndAppendMetrics(metrics)
-	if err != nil {
-		span.SetStatus(trace.Status{Code: trace.StatusCodeDataLoss, Message: fmt.Sprintf("Error(s) when scraping filesystem metrics: %v", err)})
-	}
-
-	if metrics.Len() > 0 {
-		err := s.consumer.ConsumeMetrics(ctx, pdatautil.MetricsFromInternalMetrics(metricData))
-		if err != nil {
-			span.SetStatus(trace.Status{Code: trace.StatusCodeDataLoss, Message: fmt.Sprintf("Unable to process metrics: %v", err)})
-			return
-		}
-	}
-}
-
-// scrapeAndAppendMetrics appends scraped metrics to the provided metric slice.
-// If errors occur scraping some metrics, an error will be returned, but the
-// successfully scraped metrics will still be appended to the provided slice
-func (s *Scraper) scrapeAndAppendMetrics(metrics pdata.MetricSlice) error {
 	// omit logical (virtual) filesystems (not relevant for windows)
 	all := false
 
@@ -120,10 +76,11 @@ func (s *Scraper) scrapeAndAppendMetrics(metrics pdata.MetricSlice) error {
 	}
 
 	if len(usages) > 0 {
-		metrics.Resize(1 + systemSpecificMetricsLen)
+		startIdx := metrics.Len()
+		metrics.Resize(startIdx + 1 + systemSpecificMetricsLen)
 
-		initializeMetricFileSystemUsed(metrics.At(0), usages)
-		appendSystemSpecificMetrics(metrics, 1, usages)
+		initializeMetricFileSystemUsed(metrics.At(startIdx+0), usages)
+		appendSystemSpecificMetrics(metrics, startIdx+1, usages)
 	}
 
 	if len(errors) > 0 {

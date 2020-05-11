@@ -16,92 +16,51 @@ package memoryscraper
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/shirou/gopsutil/mem"
 	"go.opencensus.io/trace"
 
-	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdatautil"
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal"
 )
 
 // Scraper for Memory Metrics
 type Scraper struct {
-	config   *Config
-	consumer consumer.MetricsConsumer
-	cancel   context.CancelFunc
+	config *Config
 }
 
-// NewMemoryScraper creates a set of Memory related metrics
-func NewMemoryScraper(ctx context.Context, cfg *Config, consumer consumer.MetricsConsumer) (*Scraper, error) {
-	return &Scraper{config: cfg, consumer: consumer}, nil
+// NewMemoryScraper creates a Memory Scraper
+func NewMemoryScraper(_ context.Context, cfg *Config) *Scraper {
+	return &Scraper{config: cfg}
 }
 
-// Start
-func (c *Scraper) Start(ctx context.Context) error {
-	ctx, c.cancel = context.WithCancel(ctx)
-
-	go func() {
-		ticker := time.NewTicker(c.config.CollectionInterval())
-		defer ticker.Stop()
-
-		for {
-			select {
-			case <-ticker.C:
-				c.scrapeMetrics(ctx)
-			case <-ctx.Done():
-				return
-			}
-		}
-	}()
-
+// Initialize
+func (s *Scraper) Initialize(_ context.Context, startTime pdata.TimestampUnixNano) error {
 	return nil
 }
 
-// Shutdown
-func (c *Scraper) Shutdown(ctx context.Context) error {
-	c.cancel()
+// Close
+func (s *Scraper) Close(_ context.Context) error {
 	return nil
 }
 
-func (c *Scraper) scrapeMetrics(ctx context.Context) {
-	ctx, span := trace.StartSpan(ctx, "memoryscraper.scrapeMetrics")
+// ScrapeAndAppendMetrics
+func (s *Scraper) ScrapeAndAppendMetrics(ctx context.Context, metrics pdata.MetricSlice) error {
+	_, span := trace.StartSpan(ctx, "memoryscraper.ScrapeAndAppendMetrics")
 	defer span.End()
 
-	metricData := data.NewMetricData()
-	metrics := internal.InitializeMetricSlice(metricData)
-
-	err := c.scrapeAndAppendMetrics(metrics)
-	if err != nil {
-		span.SetStatus(trace.Status{Code: trace.StatusCodeDataLoss, Message: fmt.Sprintf("Error(s) when scraping memory metrics: %v", err)})
-		return
-	}
-
-	if metrics.Len() > 0 {
-		err := c.consumer.ConsumeMetrics(ctx, pdatautil.MetricsFromInternalMetrics(metricData))
-		if err != nil {
-			span.SetStatus(trace.Status{Code: trace.StatusCodeDataLoss, Message: fmt.Sprintf("Unable to process metrics: %v", err)})
-			return
-		}
-	}
-}
-
-func (c *Scraper) scrapeAndAppendMetrics(metrics pdata.MetricSlice) error {
 	memInfo, err := mem.VirtualMemory()
 	if err != nil {
 		return err
 	}
 
-	metric := internal.AddNewMetric(metrics)
-	initializeMetricUsedMemoryFrom(memInfo, metric)
+	startIdx := metrics.Len()
+	metrics.Resize(startIdx + 1)
+	initializeMetricMemoryUsed(metrics.At(startIdx), memInfo)
 	return nil
 }
 
-func initializeMetricUsedMemoryFrom(memInfo *mem.VirtualMemoryStat, metric pdata.Metric) {
+func initializeMetricMemoryUsed(metric pdata.Metric, memInfo *mem.VirtualMemoryStat) {
 	metricMemoryUsedDescriptor.CopyTo(metric.MetricDescriptor())
 
 	idps := metric.Int64DataPoints()

@@ -17,6 +17,7 @@ package hostmetricsreceiver
 import (
 	"context"
 	"runtime"
+	"sort"
 	"testing"
 	"time"
 
@@ -25,6 +26,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
@@ -98,20 +100,24 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 	require.NoError(t, err, "Failed to start metrics receiver: %v", err)
 	defer func() { assert.NoError(t, receiver.Shutdown(context.Background())) }()
 
-	time.Sleep(180 * time.Millisecond)
+	require.Eventually(t, func() bool {
+		got := sink.AllMetrics()
+		if len(got) == 0 {
+			return false
+		}
 
-	got := sink.AllMetrics()
+		assertIncludesAllMetrics(t, got[0])
+		return true
+	}, time.Second, 10*time.Millisecond, "No metrics were collected after 1s")
+}
 
-	// expect a MetricData object for each configured scraper
-	assert.Equal(t, len(config.Scrapers), len(got))
+func assertIncludesAllMetrics(t *testing.T, got pdata.Metrics) {
+	metrics := internal.AssertMetricDataAndGetMetricsSlice(t, got)
 
 	// extract the names of all returned metrics
 	metricNames := make(map[string]bool)
-	for _, metricData := range got {
-		metrics := internal.AssertMetricDataAndGetMetricsSlice(t, metricData)
-		for i := 0; i < metrics.Len(); i++ {
-			metricNames[metrics.At(i).MetricDescriptor().Name()] = true
-		}
+	for i := 0; i < metrics.Len(); i++ {
+		metricNames[metrics.At(i).MetricDescriptor().Name()] = true
 	}
 
 	// the expected list of metrics returned is os dependent
@@ -120,4 +126,95 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 	for _, expected := range expectedMetrics {
 		assert.Contains(t, metricNames, expected)
 	}
+}
+
+func TestGatherMetrics_DifferentScrapeIntervals(t *testing.T) {
+	sink := &exportertest.SinkMetricsExporter{}
+
+	config := &Config{
+		Scrapers: map[string]internal.Config{
+			cpuscraper.TypeStr: &cpuscraper.Config{
+				ConfigSettings: internal.ConfigSettings{CollectionIntervalValue: 6 * time.Millisecond},
+			},
+			memoryscraper.TypeStr: &memoryscraper.Config{
+				ConfigSettings: internal.ConfigSettings{CollectionIntervalValue: 6 * time.Millisecond},
+			},
+			diskscraper.TypeStr: &diskscraper.Config{
+				ConfigSettings: internal.ConfigSettings{CollectionIntervalValue: 7 * time.Millisecond},
+			},
+		},
+	}
+
+	factories := map[string]internal.Factory{
+		cpuscraper.TypeStr:    &cpuscraper.Factory{},
+		memoryscraper.TypeStr: &memoryscraper.Factory{},
+		diskscraper.TypeStr:   &diskscraper.Factory{},
+	}
+
+	receiver, err := NewHostMetricsReceiver(context.Background(), zap.NewNop(), config, factories, sink)
+	require.NoError(t, err, "Failed to create metrics receiver: %v", err)
+
+	err = receiver.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err, "Failed to start metrics receiver: %v", err)
+	defer func() { assert.NoError(t, receiver.Shutdown(context.Background())) }()
+
+	require.Eventually(t, func() bool {
+		got := sink.AllMetrics()
+		// expect two different MetricData objects, one for each unique collection interval value
+		return includesBothExpectedMetrics(t, got)
+	}, time.Second, 10*time.Millisecond, "Did not receive both cpu/memory & disk metrics after 1s")
+}
+
+func includesBothExpectedMetrics(t *testing.T, got []pdata.Metrics) bool {
+	var cpuAndMemoryMetrics, diskSystemMetrics bool
+
+	for _, metricData := range got {
+		metrics := internal.AssertMetricDataAndGetMetricsSlice(t, metricData)
+
+		if isCPUAndMemoryMetrics(metrics) {
+			cpuAndMemoryMetrics = true
+		} else if isDiskMetrics(metrics) {
+			diskSystemMetrics = true
+		}
+
+		if cpuAndMemoryMetrics && diskSystemMetrics {
+			return true
+		}
+	}
+
+	return false
+}
+
+func isCPUAndMemoryMetrics(metrics pdata.MetricSlice) bool {
+	if metrics.Len() != 2 {
+		return false
+	}
+
+	expectedMetricNames := [...]string{
+		"host/cpu/time",
+		"host/memory/used",
+	}
+
+	metricNames := [...]string{
+		metrics.At(0).MetricDescriptor().Name(),
+		metrics.At(1).MetricDescriptor().Name(),
+	}
+
+	sort.Strings(metricNames[:])
+
+	return expectedMetricNames == metricNames
+}
+
+func isDiskMetrics(metrics pdata.MetricSlice) bool {
+	if metrics.Len() != 3 {
+		return false
+	}
+
+	for i := 0; i < metrics.Len(); i++ {
+		if metrics.At(0).MetricDescriptor().Name()[:10] != "host/disk/" {
+			return false
+		}
+	}
+
+	return true
 }
