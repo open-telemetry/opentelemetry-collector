@@ -19,6 +19,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"mime"
 	"net"
 	"net/http"
 	"sync"
@@ -110,6 +112,13 @@ const (
 
 	thriftFormat   = "thrift"
 	protobufFormat = "protobuf"
+)
+
+var (
+	acceptedThriftFormats = map[string]struct{}{
+		"application/x-thrift":                 {},
+		"application/vnd.apache.thrift.binary": {},
+	}
 )
 
 // New creates a TraceReceiver that receives traffic as a Jaeger collector, and
@@ -284,18 +293,6 @@ func consumeTraces(
 	return jbsr, numSpans, consumerError
 }
 
-func (jr *jReceiver) SubmitBatches(batches []*jaeger.Batch, options handler.SubmitBatchOptions) ([]*jaeger.BatchSubmitResponse, error) {
-	ctx := obsreport.ReceiverContext(
-		context.Background(), jr.instanceName, collectorHTTPTransport, collectorReceiverTagValue)
-	ctx = obsreport.StartTraceDataReceiveOp(
-		ctx, jr.instanceName, collectorHTTPTransport)
-
-	jbsr, numSpans, err := consumeTraces(ctx, batches, jr.nextConsumer)
-	obsreport.EndTraceDataReceiveOp(ctx, thriftFormat, numSpans, err)
-
-	return jbsr, err
-}
-
 var _ jaeger.Agent = (*agentHandler)(nil)
 var _ api_v2.CollectorServiceServer = (*jReceiver)(nil)
 var _ configmanager.ClientConfigManager = (*jReceiver)(nil)
@@ -436,6 +433,69 @@ func (jr *jReceiver) buildProcessor(address string, factory apacheThrift.TProtoc
 	return processor, nil
 }
 
+func (jr *jReceiver) decodeThriftHTTPBody(r *http.Request) (*jaeger.Batch, *httpError) {
+	bodyBytes, err := ioutil.ReadAll(r.Body)
+	r.Body.Close()
+	if err != nil {
+		return nil, &httpError{
+			handler.UnableToReadBodyErrFormat,
+			http.StatusInternalServerError,
+		}
+	}
+
+	contentType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
+	if err != nil {
+		return nil, &httpError{
+			fmt.Sprintf("Cannot parse content type: %v", err),
+			http.StatusBadRequest,
+		}
+	}
+	if _, ok := acceptedThriftFormats[contentType]; !ok {
+		return nil, &httpError{
+			fmt.Sprintf("Unsupported content type: %v", contentType),
+			http.StatusBadRequest,
+		}
+	}
+
+	tdes := apacheThrift.NewTDeserializer()
+	batch := &jaeger.Batch{}
+	if err = tdes.Read(batch, bodyBytes); err != nil {
+		return nil, &httpError{
+			fmt.Sprintf(handler.UnableToReadBodyErrFormat, err),
+			http.StatusBadRequest,
+		}
+	}
+	return batch, nil
+}
+
+// HandleThriftHTTPBatch implements Jaeger HTTP Thrift handler.
+func (jr *jReceiver) HandleThriftHTTPBatch(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	if c, ok := client.FromHTTP(r); ok {
+		ctx = client.NewContext(ctx, c)
+	}
+
+	ctx = obsreport.ReceiverContext(
+		ctx, jr.instanceName, collectorHTTPTransport, collectorReceiverTagValue)
+	ctx = obsreport.StartTraceDataReceiveOp(
+		ctx, jr.instanceName, collectorHTTPTransport)
+
+	batch, hErr := jr.decodeThriftHTTPBody(r)
+	if hErr != nil {
+		http.Error(w, hErr.msg, hErr.statusCode)
+		obsreport.EndTraceDataReceiveOp(ctx, thriftFormat, 0, hErr)
+		return
+	}
+
+	_, numSpans, err := consumeTraces(ctx, []*jaeger.Batch{batch}, jr.nextConsumer)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Cannot submit Jaeger batch: %v", err), http.StatusInternalServerError)
+	} else {
+		w.WriteHeader(http.StatusAccepted)
+	}
+	obsreport.EndTraceDataReceiveOp(ctx, thriftFormat, numSpans, err)
+}
+
 func (jr *jReceiver) startCollector(host component.Host) error {
 	if !jr.collectorGRPCEnabled() && !jr.collectorHTTPEnabled() {
 		return nil
@@ -450,8 +510,7 @@ func (jr *jReceiver) startCollector(host component.Host) error {
 		}
 
 		nr := mux.NewRouter()
-		apiHandler := handler.NewAPIHandler(jr)
-		apiHandler.RegisterRoutes(nr)
+		nr.HandleFunc("/api/traces", jr.HandleThriftHTTPBatch).Methods(http.MethodPost)
 		jr.collectorServer = &http.Server{Handler: nr}
 		go func() {
 			_ = jr.collectorServer.Serve(cln)

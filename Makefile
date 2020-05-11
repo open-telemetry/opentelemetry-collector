@@ -41,6 +41,8 @@ endif
 BUILD_X3=-X $(BUILD_INFO_IMPORT_PATH).BuildType=$(BUILD_TYPE)
 BUILD_INFO=-ldflags "${BUILD_X1} ${BUILD_X2} ${BUILD_X3}"
 
+RUN_CONFIG=local/config.yaml
+
 all-srcs:
 	@echo $(ALL_SRC) | tr ' ' '\n' | sort
 
@@ -145,6 +147,10 @@ install-tools:
 .PHONY: otelcol
 otelcol:
 	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/otelcol_$(GOOS)_$(GOARCH) $(BUILD_INFO) ./cmd/otelcol
+
+.PHONY: run
+run:
+	GO111MODULE=on go run --race ./cmd/otelcol/... --config ${RUN_CONFIG}
 
 .PHONY: docker-component # Not intended to be used directly
 docker-component: check-component
