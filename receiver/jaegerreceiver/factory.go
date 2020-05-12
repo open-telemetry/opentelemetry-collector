@@ -179,10 +179,9 @@ func (f *Factory) CreateTraceReceiver(
 	}
 
 	if remoteSamplingConfig != nil {
-		if len(remoteSamplingConfig.FetchEndpoint) == 0 {
-			config.RemoteSamplingEndpoint = defaultGRPCBindEndpoint
-		} else {
-			config.RemoteSamplingEndpoint = remoteSamplingConfig.FetchEndpoint
+		config.RemoteSamplingClientSettings = remoteSamplingConfig.GRPCSettings
+		if len(config.RemoteSamplingClientSettings.Endpoint) == 0 {
+			config.RemoteSamplingClientSettings.Endpoint = defaultGRPCBindEndpoint
 		}
 
 		if len(remoteSamplingConfig.HostEndpoint) == 0 {

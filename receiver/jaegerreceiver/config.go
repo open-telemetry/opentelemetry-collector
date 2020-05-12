@@ -15,6 +15,7 @@
 package jaegerreceiver
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector/config/configgrpc"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/receiver"
 )
@@ -24,9 +25,9 @@ const protocolsFieldName = "protocols"
 
 // RemoteSamplingConfig defines config key for remote sampling fetch endpoint
 type RemoteSamplingConfig struct {
-	HostEndpoint  string `mapstructure:"host_endpoint"`
-	FetchEndpoint string `mapstructure:"fetch_endpoint"`
-	StrategyFile  string `mapstructure:"strategy_file"`
+	HostEndpoint            string `mapstructure:"host_endpoint"`
+	StrategyFile            string `mapstructure:"strategy_file"`
+	configgrpc.GRPCSettings `mapstructure:",squash"`
 }
 
 // Config defines configuration for Jaeger receiver.

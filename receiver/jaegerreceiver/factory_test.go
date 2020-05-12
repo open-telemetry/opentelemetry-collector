@@ -26,6 +26,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
+	"github.com/open-telemetry/opentelemetry-collector/config/configgrpc"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/receiver"
 )
@@ -142,7 +143,7 @@ func TestDefaultAgentRemoteSamplingEndpointAndPort(t *testing.T) {
 	r, err := factory.CreateTraceReceiver(context.Background(), params, cfg, nil)
 
 	assert.NoError(t, err, "create trace receiver should not error")
-	assert.Equal(t, defaultGRPCBindEndpoint, r.(*jReceiver).config.RemoteSamplingEndpoint)
+	assert.Equal(t, defaultGRPCBindEndpoint, r.(*jReceiver).config.RemoteSamplingClientSettings.Endpoint)
 	assert.Equal(t, defaultAgentRemoteSamplingHTTPPort, r.(*jReceiver).config.AgentHTTPPort, "agent http port should be default")
 }
 
@@ -154,13 +155,15 @@ func TestAgentRemoteSamplingEndpoint(t *testing.T) {
 	endpoint := "localhost:1234"
 	rCfg.Protocols[protoThriftCompact], _ = defaultsForProtocol(protoThriftCompact)
 	rCfg.RemoteSampling = &RemoteSamplingConfig{
-		FetchEndpoint: endpoint,
+		GRPCSettings: configgrpc.GRPCSettings{
+			Endpoint: endpoint,
+		},
 	}
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	r, err := factory.CreateTraceReceiver(context.Background(), params, cfg, nil)
 
 	assert.NoError(t, err, "create trace receiver should not error")
-	assert.Equal(t, endpoint, r.(*jReceiver).config.RemoteSamplingEndpoint)
+	assert.Equal(t, endpoint, r.(*jReceiver).config.RemoteSamplingClientSettings.Endpoint)
 	assert.Equal(t, defaultAgentRemoteSamplingHTTPPort, r.(*jReceiver).config.AgentHTTPPort, "agent http port should be default")
 }
 
@@ -263,15 +266,17 @@ func TestRemoteSamplingConfigPropagation(t *testing.T) {
 	strategyFile := "strategies.json"
 	rCfg.Protocols[protoGRPC], _ = defaultsForProtocol(protoGRPC)
 	rCfg.RemoteSampling = &RemoteSamplingConfig{
-		FetchEndpoint: endpoint,
-		HostEndpoint:  fmt.Sprintf("localhost:%d", hostPort),
-		StrategyFile:  strategyFile,
+		GRPCSettings: configgrpc.GRPCSettings{
+			Endpoint: endpoint,
+		},
+		HostEndpoint: fmt.Sprintf("localhost:%d", hostPort),
+		StrategyFile: strategyFile,
 	}
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	r, err := factory.CreateTraceReceiver(context.Background(), params, cfg, nil)
 
 	assert.NoError(t, err, "create trace receiver should not error")
-	assert.Equal(t, endpoint, r.(*jReceiver).config.RemoteSamplingEndpoint)
+	assert.Equal(t, endpoint, r.(*jReceiver).config.RemoteSamplingClientSettings.Endpoint)
 	assert.Equal(t, hostPort, r.(*jReceiver).config.AgentHTTPPort, "agent http port should be configured value")
 	assert.Equal(t, strategyFile, r.(*jReceiver).config.RemoteSamplingStrategyFile)
 }
