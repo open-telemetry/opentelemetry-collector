@@ -63,7 +63,7 @@ func TestTrace10kSPS(t *testing.T) {
 			testbed.NewOCTraceDataSender(testbed.GetAvailablePort(t)),
 			testbed.NewOCDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
-				ExpectedMaxCPU: 30,
+				ExpectedMaxCPU: 39,
 				ExpectedMaxRAM: 60,
 			},
 		},
