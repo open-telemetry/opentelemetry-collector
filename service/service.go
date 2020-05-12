@@ -520,7 +520,7 @@ func (app *Application) getPipelinesSummaryTableData() internal.SummaryPipelines
 	for c, p := range app.builtPipelines {
 		row := internal.SummaryPipelinesTableRowData{
 			FullName:            c.Name,
-			InputType:           c.InputType.GetString(),
+			InputType:           string(c.InputType),
 			MutatesConsumedData: p.MutatesConsumedData,
 			Receivers:           c.Receivers,
 			Processors:          c.Processors,

@@ -35,6 +35,7 @@ type builtPipeline struct {
 	logger  *zap.Logger
 	firstTC consumer.TraceConsumerBase
 	firstMC consumer.MetricsConsumerBase
+	firstLC consumer.LogConsumer
 
 	// MutatesConsumedData is set to true if any processors in the pipeline
 	// can mutate the TraceData or MetricsData input argument.
@@ -126,12 +127,15 @@ func (pb *PipelinesBuilder) buildPipeline(pipelineCfg *configmodels.Pipeline,
 	// First create a consumer junction point that fans out the data to all exporters.
 	var tc consumer.TraceConsumerBase
 	var mc consumer.MetricsConsumerBase
+	var lc consumer.LogConsumer
 
 	switch pipelineCfg.InputType {
 	case configmodels.TracesDataType:
 		tc = pb.buildFanoutExportersTraceConsumer(pipelineCfg.Exporters)
 	case configmodels.MetricsDataType:
 		mc = pb.buildFanoutExportersMetricsConsumer(pipelineCfg.Exporters)
+	case configmodels.LogsDataType:
+		lc = pb.buildFanoutExportersLogConsumer(pipelineCfg.Exporters)
 	}
 
 	mutatesConsumedData := false
@@ -170,6 +174,19 @@ func (pb *PipelinesBuilder) buildPipeline(pipelineCfg *configmodels.Pipeline,
 			}
 			processors[i] = proc
 			mc = proc
+
+		case configmodels.LogsDataType:
+			var proc component.LogProcessor
+			proc, err = createLogProcessor(factory, componentLogger, procCfg, lc)
+			if proc != nil {
+				mutatesConsumedData = mutatesConsumedData || proc.GetCapabilities().MutatesConsumedData
+			}
+			processors[i] = proc
+			lc = proc
+
+		default:
+			return nil, fmt.Errorf("error creating processor %q in pipeline %q, data type %s is not supported",
+				procName, pipelineCfg.Name, pipelineCfg.InputType)
 		}
 
 		if err != nil {
@@ -178,19 +195,20 @@ func (pb *PipelinesBuilder) buildPipeline(pipelineCfg *configmodels.Pipeline,
 		}
 
 		// Check if the factory really created the processor.
-		if tc == nil && mc == nil {
+		if tc == nil && mc == nil && lc == nil {
 			return nil, fmt.Errorf("factory for %q produced a nil processor", procCfg.Name())
 		}
 	}
 
 	pipelineLogger := pb.logger.With(zap.String("pipeline_name", pipelineCfg.Name),
-		zap.String("pipeline_datatype", pipelineCfg.InputType.GetString()))
+		zap.String("pipeline_datatype", string(pipelineCfg.InputType)))
 	pipelineLogger.Info("Pipeline is enabled.")
 
 	bp := &builtPipeline{
 		pipelineLogger,
 		tc,
 		mc,
+		lc,
 		mutatesConsumedData,
 		processors,
 	}
@@ -241,6 +259,25 @@ func (pb *PipelinesBuilder) buildFanoutExportersMetricsConsumer(exporterNames []
 
 	// Create a junction point that fans out to all exporters.
 	return processor.CreateMetricsFanOutConnector(exporters)
+}
+
+func (pb *PipelinesBuilder) buildFanoutExportersLogConsumer(
+	exporterNames []string,
+) consumer.LogConsumer {
+	builtExporters := pb.getBuiltExportersByNames(exporterNames)
+
+	// Optimize for the case when there is only one exporter, no need to create junction point.
+	if len(builtExporters) == 1 {
+		return builtExporters[0].le
+	}
+
+	exporters := make([]consumer.LogConsumer, len(builtExporters))
+	for _, builtExp := range builtExporters {
+		exporters = append(exporters, builtExp.le)
+	}
+
+	// Create a junction point that fans out to all exporters.
+	return processor.NewLogFanOutConnector(exporters)
 }
 
 // createTraceProcessor creates trace processor based on type of the current processor
@@ -317,4 +354,21 @@ func createMetricsProcessor(
 	// use NewInternalToOCMetricsConverter compatibility shim to convert metrics from internal format to OC.
 	metricsConverter := converter.NewOCToInternalMetricsConverter(nextConsumer.(consumer.MetricsConsumer))
 	return factoryOld.CreateMetricsProcessor(logger, metricsConverter, cfg)
+}
+
+// createLogProcessor creates a log processor using given factory and next consumer.
+func createLogProcessor(
+	factoryBase component.ProcessorFactoryBase,
+	logger *zap.Logger,
+	cfg configmodels.Processor,
+	nextConsumer consumer.LogConsumer,
+) (component.LogProcessor, error) {
+	factory, ok := factoryBase.(component.LogProcessorFactory)
+	if !ok {
+		return nil, fmt.Errorf("processor %q does support data type %q",
+			cfg.Name(), configmodels.LogsDataType)
+	}
+	creationParams := component.ProcessorCreateParams{Logger: logger}
+	ctx := context.Background()
+	return factory.CreateLogProcessor(ctx, creationParams, cfg, nextConsumer)
 }

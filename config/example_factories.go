@@ -25,6 +25,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 )
 
 // ExampleReceiver is for testing purposes. We are defining an example config and factory
@@ -60,7 +61,8 @@ func (f *ExampleReceiverFactory) CustomUnmarshaler() component.CustomUnmarshaler
 func (f *ExampleReceiverFactory) CreateDefaultConfig() configmodels.Receiver {
 	return &ExampleReceiver{
 		ReceiverSettings: configmodels.ReceiverSettings{
-			TypeVal:  "examplereceiver",
+			TypeVal:  f.Type(),
+			NameVal:  string(f.Type()),
 			Endpoint: "localhost:1000",
 		},
 		ExtraSetting:     "some string",
@@ -80,7 +82,14 @@ func (f *ExampleReceiverFactory) CreateTraceReceiver(
 		return nil, configerror.ErrDataTypeIsNotSupported
 	}
 
-	// There must be one receiver for both metrics and traces. We maintain a map of
+	receiver := f.createReceiver(cfg)
+	receiver.TraceConsumer = nextConsumer
+
+	return receiver, nil
+}
+
+func (f *ExampleReceiverFactory) createReceiver(cfg configmodels.Receiver) *ExampleReceiverProducer {
+	// There must be one receiver for all data types. We maintain a map of
 	// receivers per config.
 
 	// Check to see if there is already a receiver for this config.
@@ -90,9 +99,8 @@ func (f *ExampleReceiverFactory) CreateTraceReceiver(
 		// Remember the receiver in the map
 		exampleReceivers[cfg] = receiver
 	}
-	receiver.TraceConsumer = nextConsumer
 
-	return receiver, nil
+	return receiver
 }
 
 // CreateMetricsReceiver creates a metrics receiver based on this config.
@@ -105,27 +113,31 @@ func (f *ExampleReceiverFactory) CreateMetricsReceiver(
 		return nil, configerror.ErrDataTypeIsNotSupported
 	}
 
-	// There must be one receiver for both metrics and traces. We maintain a map of
-	// receivers per config.
-
-	// Check to see if there is already a receiver for this config.
-	receiver, ok := exampleReceivers[cfg]
-	if !ok {
-		receiver = &ExampleReceiverProducer{}
-		// Remember the receiver in the map
-		exampleReceivers[cfg] = receiver
-	}
+	receiver := f.createReceiver(cfg)
 	receiver.MetricsConsumer = nextConsumer
+
+	return receiver, nil
+}
+
+func (f *ExampleReceiverFactory) CreateLogReceiver(
+	ctx context.Context,
+	params component.ReceiverCreateParams,
+	cfg configmodels.Receiver,
+	nextConsumer consumer.LogConsumer,
+) (component.LogReceiver, error) {
+	receiver := f.createReceiver(cfg)
+	receiver.LogConsumer = nextConsumer
 
 	return receiver, nil
 }
 
 // ExampleReceiverProducer allows producing traces and metrics for testing purposes.
 type ExampleReceiverProducer struct {
-	TraceConsumer   consumer.TraceConsumerOld
 	Started         bool
 	Stopped         bool
+	TraceConsumer   consumer.TraceConsumerOld
 	MetricsConsumer consumer.MetricsConsumerOld
+	LogConsumer     consumer.LogConsumer
 }
 
 // Start tells the receiver to start its processing.
@@ -199,7 +211,8 @@ func (f *MultiProtoReceiverFactory) CustomUnmarshaler() component.CustomUnmarsha
 // CreateDefaultConfig creates the default configuration for the Receiver.
 func (f *MultiProtoReceiverFactory) CreateDefaultConfig() configmodels.Receiver {
 	return &MultiProtoReceiver{
-		TypeVal: "multireceiver",
+		TypeVal: f.Type(),
+		NameVal: string(f.Type()),
 		Protocols: map[string]MultiProtoReceiverOneCfg{
 			"http": {
 				Endpoint:     "example.com:8888",
@@ -256,7 +269,10 @@ func (f *ExampleExporterFactory) Type() configmodels.Type {
 // CreateDefaultConfig creates the default configuration for the Exporter.
 func (f *ExampleExporterFactory) CreateDefaultConfig() configmodels.Exporter {
 	return &ExampleExporter{
-		ExporterSettings: configmodels.ExporterSettings{TypeVal: f.Type()},
+		ExporterSettings: configmodels.ExporterSettings{
+			TypeVal: f.Type(),
+			NameVal: string(f.Type()),
+		},
 		ExtraSetting:     "some export string",
 		ExtraMapSetting:  nil,
 		ExtraListSetting: nil,
@@ -273,10 +289,19 @@ func (f *ExampleExporterFactory) CreateMetricsExporter(logger *zap.Logger, cfg c
 	return &ExampleExporterConsumer{}, nil
 }
 
+func (f *ExampleExporterFactory) CreateLogExporter(
+	ctx context.Context,
+	params component.ExporterCreateParams,
+	cfg configmodels.Exporter,
+) (component.LogExporter, error) {
+	return &ExampleExporterConsumer{}, nil
+}
+
 // ExampleExporterConsumer stores consumed traces and metrics for testing purposes.
 type ExampleExporterConsumer struct {
 	Traces           []consumerdata.TraceData
 	Metrics          []consumerdata.MetricsData
+	Logs             []data.Logs
 	ExporterStarted  bool
 	ExporterShutdown bool
 }
@@ -301,6 +326,11 @@ func (exp *ExampleExporterConsumer) ConsumeMetricsData(ctx context.Context, md c
 	return nil
 }
 
+func (exp *ExampleExporterConsumer) ConsumeLogs(ctx context.Context, ld data.Logs) error {
+	exp.Logs = append(exp.Logs, ld)
+	return nil
+}
+
 // Name returns the name of the exporter.
 func (exp *ExampleExporterConsumer) Name() string {
 	return "exampleexporter"
@@ -312,9 +342,9 @@ func (exp *ExampleExporterConsumer) Shutdown(context.Context) error {
 	return nil
 }
 
-// ExampleProcessor is for testing purposes. We are defining an example config and factory
+// ExampleProcessorCfg is for testing purposes. We are defining an example config and factory
 // for "exampleprocessor" processor type.
-type ExampleProcessor struct {
+type ExampleProcessorCfg struct {
 	configmodels.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 	ExtraSetting                   string                   `mapstructure:"extra"`
 	ExtraMapSetting                map[string]string        `mapstructure:"extra_map"`
@@ -332,11 +362,14 @@ func (f *ExampleProcessorFactory) Type() configmodels.Type {
 
 // CreateDefaultConfig creates the default configuration for the Processor.
 func (f *ExampleProcessorFactory) CreateDefaultConfig() configmodels.Processor {
-	return &ExampleProcessor{
-		ProcessorSettings: configmodels.ProcessorSettings{},
-		ExtraSetting:      "some export string",
-		ExtraMapSetting:   nil,
-		ExtraListSetting:  nil,
+	return &ExampleProcessorCfg{
+		ProcessorSettings: configmodels.ProcessorSettings{
+			TypeVal: f.Type(),
+			NameVal: string(f.Type()),
+		},
+		ExtraSetting:     "some export string",
+		ExtraMapSetting:  nil,
+		ExtraListSetting: nil,
 	}
 }
 
@@ -356,6 +389,35 @@ func (f *ExampleProcessorFactory) CreateMetricsProcessor(
 	cfg configmodels.Processor,
 ) (component.MetricsProcessorOld, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
+}
+
+func (f *ExampleProcessorFactory) CreateLogProcessor(
+	ctx context.Context,
+	params component.ProcessorCreateParams,
+	cfg configmodels.Processor,
+	nextConsumer consumer.LogConsumer,
+) (component.LogProcessor, error) {
+	return &ExampleProcessor{nextConsumer}, nil
+}
+
+type ExampleProcessor struct {
+	nextConsumer consumer.LogConsumer
+}
+
+func (ep *ExampleProcessor) Start(ctx context.Context, host component.Host) error {
+	return nil
+}
+
+func (ep *ExampleProcessor) Shutdown(ctx context.Context) error {
+	return nil
+}
+
+func (ep *ExampleProcessor) GetCapabilities() component.ProcessorCapabilities {
+	return component.ProcessorCapabilities{MutatesConsumedData: false}
+}
+
+func (ep *ExampleProcessor) ConsumeLogs(ctx context.Context, ld data.Logs) error {
+	return ep.nextConsumer.ConsumeLogs(ctx, ld)
 }
 
 // ExampleExtensionCfg is for testing purposes. We are defining an example config and factory
@@ -387,10 +449,13 @@ func (f *ExampleExtensionFactory) Type() configmodels.Type {
 // CreateDefaultConfig creates the default configuration for the Extension.
 func (f *ExampleExtensionFactory) CreateDefaultConfig() configmodels.Extension {
 	return &ExampleExtensionCfg{
-		ExtensionSettings: configmodels.ExtensionSettings{TypeVal: f.Type()},
-		ExtraSetting:      "extra string setting",
-		ExtraMapSetting:   nil,
-		ExtraListSetting:  nil,
+		ExtensionSettings: configmodels.ExtensionSettings{
+			TypeVal: f.Type(),
+			NameVal: string(f.Type()),
+		},
+		ExtraSetting:     "extra string setting",
+		ExtraMapSetting:  nil,
+		ExtraListSetting: nil,
 	}
 }
 

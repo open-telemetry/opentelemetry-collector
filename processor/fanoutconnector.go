@@ -22,6 +22,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/converter"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
+	"github.com/open-telemetry/opentelemetry-collector/internal/data"
 )
 
 // This file contains implementations of Trace/Metrics connectors
@@ -149,6 +150,26 @@ func (tfc traceFanOutConnector) ConsumeTraces(ctx context.Context, td pdata.Trac
 	var errs []error
 	for _, tc := range tfc {
 		if err := tc.ConsumeTraces(ctx, td); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return componenterror.CombineErrors(errs)
+}
+
+// NewLogFanOutConnector wraps multiple new type  consumers in a single one.
+func NewLogFanOutConnector(lcs []consumer.LogConsumer) consumer.LogConsumer {
+	return LogFanOutConnector(lcs)
+}
+
+type LogFanOutConnector []consumer.LogConsumer
+
+var _ consumer.LogConsumer = (*LogFanOutConnector)(nil)
+
+// Consume exports the span data to all  consumers wrapped by the current one.
+func (fc LogFanOutConnector) ConsumeLogs(ctx context.Context, ld data.Logs) error {
+	var errs []error
+	for _, tc := range fc {
+		if err := tc.ConsumeLogs(ctx, ld); err != nil {
 			errs = append(errs, err)
 		}
 	}

@@ -152,6 +152,10 @@ func (rb *ReceiversBuilder) findPipelinesToAttach(config configmodels.Receiver) 
 
 		// Is this receiver attached to the pipeline?
 		if hasReceiver(pipelineCfg, config.Name()) {
+			if _, exists := pipelinesToAttach[pipelineCfg.InputType]; !exists {
+				pipelinesToAttach[pipelineCfg.InputType] = make([]*builtPipeline, 0)
+			}
+
 			// Yes, add it to the list of pipelines of corresponding data type.
 			pipelinesToAttach[pipelineCfg.InputType] =
 				append(pipelinesToAttach[pipelineCfg.InputType], pipelineProcessor)
@@ -186,6 +190,13 @@ func (rb *ReceiversBuilder) attachReceiverToPipelines(
 	case configmodels.MetricsDataType:
 		junction := buildFanoutMetricConsumer(builtPipelines)
 		createdReceiver, err = createMetricsReceiver(context.Background(), factory, logger, config, junction)
+
+	case configmodels.LogsDataType:
+		junction := buildFanoutLogConsumer(builtPipelines)
+		createdReceiver, err = createLogReceiver(context.Background(), factory, logger, config, junction)
+
+	default:
+		err = configerror.ErrDataTypeIsNotSupported
 	}
 
 	if err != nil {
@@ -194,8 +205,8 @@ func (rb *ReceiversBuilder) attachReceiverToPipelines(
 				"receiver %s does not support %s but it was used in a "+
 					"%s pipeline",
 				config.Name(),
-				dataType.GetString(),
-				dataType.GetString())
+				dataType,
+				dataType)
 		}
 		return fmt.Errorf("cannot create receiver %s: %s", config.Name(), err.Error())
 	}
@@ -220,7 +231,7 @@ func (rb *ReceiversBuilder) attachReceiverToPipelines(
 	}
 	rcv.receiver = createdReceiver
 
-	logger.Info("Receiver is enabled.", zap.String("datatype", dataType.GetString()))
+	logger.Info("Receiver is enabled.", zap.String("datatype", string(dataType)))
 
 	return nil
 }
@@ -314,6 +325,31 @@ func buildFanoutMetricConsumer(pipelines []*builtPipeline) consumer.MetricsConsu
 	return processor.CreateMetricsFanOutConnector(pipelineConsumers)
 }
 
+func buildFanoutLogConsumer(pipelines []*builtPipeline) consumer.LogConsumer {
+	// Optimize for the case when there is only one processor, no need to create junction point.
+	if len(pipelines) == 1 {
+		return pipelines[0].firstLC
+	}
+
+	var pipelineConsumers []consumer.LogConsumer
+	anyPipelineMutatesData := false
+	for _, pipeline := range pipelines {
+		pipelineConsumers = append(pipelineConsumers, pipeline.firstLC)
+		anyPipelineMutatesData = anyPipelineMutatesData || pipeline.MutatesConsumedData
+	}
+
+	// Create a junction point that fans out to all pipelines.
+	if anyPipelineMutatesData {
+		// If any pipeline mutates data use a cloning fan out connector
+		// so that it is safe to modify fanned out data.
+		// TODO: if there are more than 2 pipelines only clone data for pipelines that
+		// declare the intent to mutate the data. Pipelines that do not mutate the data
+		// can consume shared data.
+		return processor.NewLogCloningFanOutConnector(pipelineConsumers)
+	}
+	return processor.NewLogFanOutConnector(pipelineConsumers)
+}
+
 // createTraceReceiver is a helper function that creates trace receiver based on the current receiver type
 // and type of the next consumer.
 func createTraceReceiver(
@@ -388,4 +424,21 @@ func createMetricsReceiver(
 	// use NewInternalToOCMetricsConverter compatibility shim to convert metrics from internal format to OC.
 	metricsConverter := converter.NewOCToInternalMetricsConverter(nextConsumer.(consumer.MetricsConsumer))
 	return factoryOld.CreateMetricsReceiver(logger, cfg, metricsConverter)
+}
+
+// createLogReceiver creates a log receiver using given factory and next consumer.
+func createLogReceiver(
+	ctx context.Context,
+	factoryBase component.ReceiverFactoryBase,
+	logger *zap.Logger,
+	cfg configmodels.Receiver,
+	nextConsumer consumer.LogConsumer,
+) (component.LogReceiver, error) {
+	factory, ok := factoryBase.(component.LogReceiverFactory)
+	if !ok {
+		return nil, fmt.Errorf("receiver %q does support data type %q",
+			cfg.Name(), configmodels.LogsDataType)
+	}
+	creationParams := component.ReceiverCreateParams{Logger: logger}
+	return factory.CreateLogReceiver(ctx, creationParams, cfg, nextConsumer)
 }
