@@ -886,8 +886,8 @@ github.com/opentracing/opentracing-go v1.1.0 h1:pWlfV3Bxv7k65HYwkikxat0+s3pV4bsq
 github.com/opentracing/opentracing-go v1.1.0/go.mod h1:UkNAQd3GIcIGf0SeVgPpRdFStlNbqXla1AfSYxPUl2o=
 github.com/openzipkin/zipkin-go v0.2.1 h1:noL5/5Uf1HpVl3wNsfkZhIKbSWCVi5jgqkONNx8PXcA=
 github.com/openzipkin/zipkin-go v0.2.1/go.mod h1:NaW6tEwdmWMaCDZzg8sh+IBNOxHMPnhQw8ySjnjRyN4=
-github.com/orijtech/prometheus-go-metrics-exporter v0.0.4 h1:AAHKuTu2lX4eMPKV+CRcTug9KdMZ/Ckez7KK+ddEQfM=
-github.com/orijtech/prometheus-go-metrics-exporter v0.0.4/go.mod h1:BiTx/ugZex8LheBk3j53tktWaRdFjV5FCfT2o0P7msE=
+github.com/orijtech/prometheus-go-metrics-exporter v0.0.5 h1:76JFgRIgNDA3pW1fUhmqinU2u5ndHv1gvapDfGG+7/c=
+github.com/orijtech/prometheus-go-metrics-exporter v0.0.5/go.mod h1:BiTx/ugZex8LheBk3j53tktWaRdFjV5FCfT2o0P7msE=
 github.com/ory/dockertest v3.3.5+incompatible/go.mod h1:1vX4m9wsvi00u5bseYwXaSnhNrne+V0E6LAcBILJdPs=
 github.com/ory/dockertest/v3 v3.5.4/go.mod h1:J8ZUbNB2FOhm1cFZW9xBpDsODqsSWcyYgtJYVPcnF70=
 github.com/ory/fosite v0.29.0/go.mod h1:0atSZmXO7CAcs6NPMI/Qtot8tmZYj04Nddoold4S2h0=

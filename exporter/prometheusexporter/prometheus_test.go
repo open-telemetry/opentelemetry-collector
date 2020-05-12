@@ -92,6 +92,7 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 			Name:        "this/one/there(where)",
 			Description: "Extra ones",
 			Unit:        "1",
+			Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
 			LabelKeys: []*metricspb.LabelKey{
 				{Key: "os", Description: "Operating system"},
 				{Key: "arch", Description: "Architecture"},
