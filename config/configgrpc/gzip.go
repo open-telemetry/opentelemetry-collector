@@ -12,4 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package compression
+package configgrpc
+
+import (
+	// import the gzip package with auto-registers the gzip grpc compressor
+	_ "google.golang.org/grpc/encoding/gzip"
+)

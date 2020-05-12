@@ -25,8 +25,6 @@ import (
 	"google.golang.org/grpc/keepalive"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/compression"
-	compressiongrpc "github.com/open-telemetry/opentelemetry-collector/compression/grpc"
 	"github.com/open-telemetry/opentelemetry-collector/config/configgrpc"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 )
@@ -78,7 +76,7 @@ func (f *Factory) OCAgentOptions(logger *zap.Logger, ocac *Config) ([]ocagent.Ex
 	}
 	opts := []ocagent.ExporterOption{ocagent.WithAddress(ocac.Endpoint)}
 	if ocac.Compression != "" {
-		if compressionKey := compressiongrpc.GetGRPCCompressionKey(ocac.Compression); compressionKey != compression.Unsupported {
+		if compressionKey := configgrpc.GetGRPCCompressionKey(ocac.Compression); compressionKey != configgrpc.CompressionUnsupported {
 			opts = append(opts, ocagent.UseCompressor(compressionKey))
 		} else {
 			return nil, &ocExporterError{
