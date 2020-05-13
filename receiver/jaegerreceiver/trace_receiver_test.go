@@ -558,10 +558,10 @@ func TestSamplingStrategiesMutualTLS(t *testing.T) {
 	tlsCfg, err := tlsCfgOpts.LoadTLSConfig()
 	require.NoError(t, err)
 	server, serverAddr := initializeGRPCTestServer(t, func(s *grpc.Server) {
-		ss, err := staticStrategyStore.NewStrategyStore(staticStrategyStore.Options{
+		ss, serr := staticStrategyStore.NewStrategyStore(staticStrategyStore.Options{
 			StrategiesFile: path.Join(".", "testdata", "strategies.json"),
 		}, zap.NewNop())
-		require.NoError(t, err)
+		require.NoError(t, serr)
 		api_v2.RegisterSamplingManagerServer(s, collectorSampling.NewGRPCHandler(ss))
 	}, grpc.Creds(credentials.NewTLS(tlsCfg)))
 	defer server.GracefulStop()
@@ -586,11 +586,11 @@ func TestSamplingStrategiesMutualTLS(t *testing.T) {
 		HostEndpoint: hostEndpoint,
 	}
 	// at least one protocol has to be enabled
-	thriftHttpPort, err := randomAvailablePort()
+	thriftHTTPPort, err := randomAvailablePort()
 	require.NoError(t, err)
 	cfg.Protocols = map[string]*receiver.SecureReceiverSettings{
 		"thrift_http": {ReceiverSettings: configmodels.ReceiverSettings{
-			Endpoint: fmt.Sprintf("localhost:%d", thriftHttpPort),
+			Endpoint: fmt.Sprintf("localhost:%d", thriftHTTPPort),
 		}},
 	}
 	exp, err := factory.CreateTraceReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, exportertest.NewNopTraceExporter())

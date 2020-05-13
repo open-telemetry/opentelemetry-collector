@@ -23,12 +23,11 @@ import (
 
 	"github.com/jaegertracing/jaeger/model"
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
+	tracev1 "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-
-	tracev1 "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configgrpc"
@@ -239,9 +238,9 @@ func TestMutualTLS(t *testing.T) {
 	require.NoError(t, err)
 	requestes := spanHandler.getRequests()
 	assert.Equal(t, 1, len(requestes))
-	jTraceId, err := model.TraceIDFromBytes(traceID)
+	jTraceID, err := model.TraceIDFromBytes(traceID)
 	require.NoError(t, err)
-	assert.Equal(t, jTraceId, requestes[0].GetBatch().Spans[0].TraceID)
+	assert.Equal(t, jTraceID, requestes[0].GetBatch().Spans[0].TraceID)
 }
 
 func initializeGRPCTestServer(t *testing.T, beforeServe func(server *grpc.Server), opts ...grpc.ServerOption) (*grpc.Server, net.Addr) {
