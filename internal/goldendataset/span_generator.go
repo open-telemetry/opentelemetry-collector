@@ -59,6 +59,14 @@ const (
 )
 
 const (
+	SpanChildCountNil   = "Nil"
+	SpanChildCountEmpty = "Empty"
+	SpanChildCountOne   = "One"
+	SpanChildCountTwo   = "Two"
+	SpanChildCountEight = "Eight"
+)
+
+const (
 	SpanStatusNil                = "Nil"
 	SpanStatusOk                 = "Ok"
 	SpanStatusCancelled          = "Cancelled"
@@ -127,7 +135,7 @@ func constructStatusMessageMap() map[string]string {
 }
 
 func GenerateSpan(traceID []byte, tracestate string, parentID []byte, spanName string, kind string, spanTypeID string,
-	statusStr string) *otlptrace.Span {
+	eventCnt string, linkCnt string, statusStr string) *otlptrace.Span {
 	endTime := time.Now().Add(-50 * time.Microsecond)
 	return &otlptrace.Span{
 		TraceId:                traceID,
@@ -140,12 +148,21 @@ func GenerateSpan(traceID []byte, tracestate string, parentID []byte, spanName s
 		EndTimeUnixNano:        uint64(endTime.UnixNano()),
 		Attributes:             generateSpanAttributes(spanTypeID),
 		DroppedAttributesCount: 0,
-		Events:                 nil,
+		Events:                 generateSpanEvents(eventCnt),
 		DroppedEventsCount:     0,
-		Links:                  nil,
+		Links:                  generateSpanLinks(linkCnt),
 		DroppedLinksCount:      0,
 		Status:                 generateStatus(statusStr),
 	}
+}
+
+func generateTraceID() []byte {
+	var r [16]byte
+	_, err := rand.Read(r[:])
+	if err != nil {
+		panic(err)
+	}
+	return r[:]
 }
 
 func generateSpanID() []byte {
@@ -387,4 +404,78 @@ func generateInternalAttributes() map[string]interface{} {
 	attrMap["parameters"] = "account=7310,amount=1817.10"
 	attrMap[conventions.AttributeEnduserID] = "unittest"
 	return attrMap
+}
+
+func generateSpanEvents(eventCnt string) []*otlptrace.Span_Event {
+	if SpanChildCountNil == eventCnt {
+		return nil
+	}
+	listSize := calculateListSize(eventCnt)
+	eventList := make([]*otlptrace.Span_Event, listSize)
+	for i := 0; i < listSize; i++ {
+		eventList[i] = generateSpanEvent(i)
+	}
+	return eventList
+}
+
+func generateSpanLinks(linkCnt string) []*otlptrace.Span_Link {
+	if SpanChildCountNil == linkCnt {
+		return nil
+	}
+	listSize := calculateListSize(linkCnt)
+	linkList := make([]*otlptrace.Span_Link, listSize)
+	for i := 0; i < listSize; i++ {
+		linkList[i] = generateSpanLink(i)
+	}
+	return linkList
+}
+
+func calculateListSize(listCnt string) int {
+	if SpanChildCountOne == listCnt {
+		return 1
+	} else if SpanChildCountTwo == listCnt {
+		return 2
+	} else if SpanChildCountEight == listCnt {
+		return 8
+	} else {
+		return 0
+	}
+}
+
+func generateSpanEvent(index int) *otlptrace.Span_Event {
+	t := time.Now().Add(-75 * time.Microsecond)
+	return &otlptrace.Span_Event{
+		TimeUnixNano:           uint64(t.UnixNano()),
+		Name:                   "message",
+		Attributes:             generateEventAttributes(index),
+		DroppedAttributesCount: 0,
+	}
+}
+
+func generateEventAttributes(index int) []*otlpcommon.AttributeKeyValue {
+	attrMap := make(map[string]interface{})
+	if index%2 == 0 {
+		attrMap[conventions.AttributeMessageType] = "SENT"
+	} else {
+		attrMap[conventions.AttributeMessageType] = "RECEIVED"
+	}
+	attrMap[conventions.AttributeMessageID] = int64(index)
+	attrMap[conventions.AttributeMessageCompressedSize] = int64(17 * index)
+	attrMap[conventions.AttributeMessageUncompressedSize] = int64(24 * index)
+	return convertMapToAttributeKeyValues(attrMap)
+}
+
+func generateSpanLink(index int) *otlptrace.Span_Link {
+	return &otlptrace.Span_Link{
+		TraceId:                generateTraceID(),
+		SpanId:                 generateSpanID(),
+		TraceState:             "",
+		Attributes:             generateLinkAttributes(index),
+		DroppedAttributesCount: 0,
+	}
+}
+
+func generateLinkAttributes(index int) []*otlpcommon.AttributeKeyValue {
+	attrMap := generateMessagingConsumerAttributes()
+	return convertMapToAttributeKeyValues(attrMap)
 }

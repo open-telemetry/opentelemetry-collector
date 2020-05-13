@@ -25,15 +25,35 @@ import (
 func TestGenerateParentSpan(t *testing.T) {
 	traceID := generateTestTraceID()
 	span := GenerateSpan(traceID, "", nil, "/gotest-parent", SpanKindServer,
-		SpanAttrHTTPServer, SpanStatusOk)
+		SpanAttrHTTPServer, SpanChildCountTwo, SpanChildCountOne, SpanStatusOk)
 	assert.Equal(t, traceID, span.TraceId)
 	assert.Nil(t, span.ParentSpanId)
 	assert.Equal(t, 11, len(span.Attributes))
 	assert.Equal(t, otlptrace.Status_Ok, span.Status.Code)
 }
 
+func TestGenerateChildSpan(t *testing.T) {
+	traceID := generateTestTraceID()
+	parentID := generateTestSpanID()
+	span := GenerateSpan(traceID, "", parentID, "get_test_info", SpanKindClient,
+		SpanAttrDatabaseSQL, SpanChildCountEmpty, SpanChildCountNil, SpanStatusOk)
+	assert.Equal(t, traceID, span.TraceId)
+	assert.Equal(t, parentID, span.ParentSpanId)
+	assert.Equal(t, 8, len(span.Attributes))
+	assert.Equal(t, otlptrace.Status_Ok, span.Status.Code)
+}
+
 func generateTestTraceID() []byte {
 	var r [16]byte
+	_, err := rand.Read(r[:])
+	if err != nil {
+		panic(err)
+	}
+	return r[:]
+}
+
+func generateTestSpanID() []byte {
+	var r [8]byte
 	_, err := rand.Read(r[:])
 	if err != nil {
 		panic(err)
