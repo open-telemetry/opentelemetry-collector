@@ -25,6 +25,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
@@ -98,13 +99,13 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 	require.NoError(t, err, "Failed to start metrics receiver: %v", err)
 	defer func() { assert.NoError(t, receiver.Shutdown(context.Background())) }()
 
-	time.Sleep(180 * time.Millisecond)
+	require.Eventually(t, func() bool {
+		got := sink.AllMetrics()
+		return hasAllMetrics(t, got)
+	}, time.Second, 20*time.Millisecond, "Did not receive all expected metrics after 1s")
+}
 
-	got := sink.AllMetrics()
-
-	// expect a MetricData object for each configured scraper
-	assert.Equal(t, len(config.Scrapers), len(got))
-
+func hasAllMetrics(t *testing.T, got []pdata.Metrics) bool {
 	// extract the names of all returned metrics
 	metricNames := make(map[string]bool)
 	for _, metricData := range got {
@@ -116,8 +117,15 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 
 	// the expected list of metrics returned is os dependent
 	expectedMetrics := append(standardMetrics, systemSpecificMetrics[runtime.GOOS]...)
-	assert.Equal(t, len(expectedMetrics), len(metricNames))
-	for _, expected := range expectedMetrics {
-		assert.Contains(t, metricNames, expected)
+	if len(expectedMetrics) != len(metricNames) {
+		return false
 	}
+
+	for _, expected := range expectedMetrics {
+		if _, ok := metricNames[expected]; !ok {
+			return false
+		}
+	}
+
+	return true
 }
