@@ -15,9 +15,9 @@
 package goldendataset
 
 import (
+	"crypto/rand"
 	"encoding/csv"
 	"fmt"
-	"math/rand"
 	"os"
 	"path/filepath"
 	"time"
@@ -187,7 +187,12 @@ func loadPictOutputFile(fileName string) ([][]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer func() {
+		cerr := file.Close()
+		if err == nil {
+			err = cerr
+		}
+	}()
 
 	reader := csv.NewReader(file)
 	reader.Comma = '\t'
