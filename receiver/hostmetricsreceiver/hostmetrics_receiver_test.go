@@ -17,7 +17,6 @@ package hostmetricsreceiver
 import (
 	"context"
 	"runtime"
-	"sort"
 	"testing"
 	"time"
 
@@ -27,6 +26,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdatautil"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
@@ -61,26 +61,14 @@ var systemSpecificMetrics = map[string][]string{
 func TestGatherMetrics_EndToEnd(t *testing.T) {
 	sink := &exportertest.SinkMetricsExporter{}
 
-	configSettings := internal.ConfigSettings{CollectionIntervalValue: 100 * time.Millisecond}
-
 	config := &Config{
+		CollectionInterval: 100 * time.Millisecond,
 		Scrapers: map[string]internal.Config{
-			cpuscraper.TypeStr: &cpuscraper.Config{
-				ConfigSettings: configSettings,
-				ReportPerCPU:   true,
-			},
-			diskscraper.TypeStr: &diskscraper.Config{
-				ConfigSettings: configSettings,
-			},
-			filesystemscraper.TypeStr: &filesystemscraper.Config{
-				ConfigSettings: configSettings,
-			},
-			memoryscraper.TypeStr: &memoryscraper.Config{
-				ConfigSettings: configSettings,
-			},
-			networkscraper.TypeStr: &networkscraper.Config{
-				ConfigSettings: configSettings,
-			},
+			cpuscraper.TypeStr:        &cpuscraper.Config{ReportPerCPU: true},
+			diskscraper.TypeStr:       &diskscraper.Config{},
+			filesystemscraper.TypeStr: &filesystemscraper.Config{},
+			memoryscraper.TypeStr:     &memoryscraper.Config{},
+			networkscraper.TypeStr:    &networkscraper.Config{},
 		},
 	}
 
@@ -92,7 +80,7 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 		networkscraper.TypeStr:    &networkscraper.Factory{},
 	}
 
-	receiver, err := NewHostMetricsReceiver(context.Background(), zap.NewNop(), config, factories, sink)
+	receiver, err := newHostMetricsReceiver(context.Background(), zap.NewNop(), config, factories, sink)
 
 	require.NoError(t, err, "Failed to create metrics receiver: %v", err)
 
@@ -112,7 +100,7 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 }
 
 func assertIncludesAllMetrics(t *testing.T, got pdata.Metrics) {
-	metrics := internal.AssertMetricDataAndGetMetricsSlice(t, got)
+	metrics := assertMetricDataAndGetMetricsSlice(t, got)
 
 	// extract the names of all returned metrics
 	metricNames := make(map[string]bool)
@@ -128,93 +116,16 @@ func assertIncludesAllMetrics(t *testing.T, got pdata.Metrics) {
 	}
 }
 
-func TestGatherMetrics_DifferentScrapeIntervals(t *testing.T) {
-	sink := &exportertest.SinkMetricsExporter{}
+func assertMetricDataAndGetMetricsSlice(t *testing.T, metrics pdata.Metrics) pdata.MetricSlice {
+	md := pdatautil.MetricsToInternalMetrics(metrics)
 
-	config := &Config{
-		Scrapers: map[string]internal.Config{
-			cpuscraper.TypeStr: &cpuscraper.Config{
-				ConfigSettings: internal.ConfigSettings{CollectionIntervalValue: 6 * time.Millisecond},
-			},
-			memoryscraper.TypeStr: &memoryscraper.Config{
-				ConfigSettings: internal.ConfigSettings{CollectionIntervalValue: 6 * time.Millisecond},
-			},
-			diskscraper.TypeStr: &diskscraper.Config{
-				ConfigSettings: internal.ConfigSettings{CollectionIntervalValue: 7 * time.Millisecond},
-			},
-		},
-	}
+	// expect 1 ResourceMetrics object
+	rms := md.ResourceMetrics()
+	assert.Equal(t, 1, rms.Len())
+	rm := rms.At(0)
 
-	factories := map[string]internal.Factory{
-		cpuscraper.TypeStr:    &cpuscraper.Factory{},
-		memoryscraper.TypeStr: &memoryscraper.Factory{},
-		diskscraper.TypeStr:   &diskscraper.Factory{},
-	}
-
-	receiver, err := NewHostMetricsReceiver(context.Background(), zap.NewNop(), config, factories, sink)
-	require.NoError(t, err, "Failed to create metrics receiver: %v", err)
-
-	err = receiver.Start(context.Background(), componenttest.NewNopHost())
-	require.NoError(t, err, "Failed to start metrics receiver: %v", err)
-	defer func() { assert.NoError(t, receiver.Shutdown(context.Background())) }()
-
-	require.Eventually(t, func() bool {
-		got := sink.AllMetrics()
-		// expect two different MetricData objects, one for each unique collection interval value
-		return includesBothExpectedMetrics(t, got)
-	}, time.Second, 10*time.Millisecond, "Did not receive both cpu/memory & disk metrics after 1s")
-}
-
-func includesBothExpectedMetrics(t *testing.T, got []pdata.Metrics) bool {
-	var cpuAndMemoryMetrics, diskSystemMetrics bool
-
-	for _, metricData := range got {
-		metrics := internal.AssertMetricDataAndGetMetricsSlice(t, metricData)
-
-		if isCPUAndMemoryMetrics(metrics) {
-			cpuAndMemoryMetrics = true
-		} else if isDiskMetrics(metrics) {
-			diskSystemMetrics = true
-		}
-
-		if cpuAndMemoryMetrics && diskSystemMetrics {
-			return true
-		}
-	}
-
-	return false
-}
-
-func isCPUAndMemoryMetrics(metrics pdata.MetricSlice) bool {
-	if metrics.Len() != 2 {
-		return false
-	}
-
-	expectedMetricNames := [...]string{
-		"host/cpu/time",
-		"host/memory/used",
-	}
-
-	metricNames := [...]string{
-		metrics.At(0).MetricDescriptor().Name(),
-		metrics.At(1).MetricDescriptor().Name(),
-	}
-
-	sort.Strings(metricNames[:])
-
-	return expectedMetricNames == metricNames
-}
-
-func isDiskMetrics(metrics pdata.MetricSlice) bool {
-	if metrics.Len() != 3 {
-		return false
-	}
-
-	for i := 0; i < metrics.Len(); i++ {
-		if metrics.At(0).MetricDescriptor().Name()[:10] != "host/disk/" {
-			return false
-		}
-	}
-
-	return true
+	// expect 1 InstrumentationLibraryMetrics object
+	ilms := rm.InstrumentationLibraryMetrics()
+	assert.Equal(t, 1, ilms.Len())
+	return ilms.At(0).Metrics()
 }

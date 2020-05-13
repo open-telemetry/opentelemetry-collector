@@ -24,28 +24,28 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 )
 
-// Scraper for Memory Metrics
-type Scraper struct {
+// scraper for Memory Metrics
+type scraper struct {
 	config *Config
 }
 
-// NewMemoryScraper creates a Memory Scraper
-func NewMemoryScraper(_ context.Context, cfg *Config) *Scraper {
-	return &Scraper{config: cfg}
+// newMemoryScraper creates a Memory Scraper
+func newMemoryScraper(_ context.Context, cfg *Config) *scraper {
+	return &scraper{config: cfg}
 }
 
 // Initialize
-func (s *Scraper) Initialize(_ context.Context, startTime pdata.TimestampUnixNano) error {
+func (s *scraper) Initialize(_ context.Context) error {
 	return nil
 }
 
 // Close
-func (s *Scraper) Close(_ context.Context) error {
+func (s *scraper) Close(_ context.Context) error {
 	return nil
 }
 
 // ScrapeAndAppendMetrics
-func (s *Scraper) ScrapeAndAppendMetrics(ctx context.Context, metrics pdata.MetricSlice) error {
+func (s *scraper) ScrapeAndAppendMetrics(ctx context.Context, metrics pdata.MetricSlice) error {
 	_, span := trace.StartSpan(ctx, "memoryscraper.ScrapeAndAppendMetrics")
 	defer span.End()
 

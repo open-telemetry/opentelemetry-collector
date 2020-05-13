@@ -19,6 +19,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/shirou/gopsutil/host"
 	"github.com/shirou/gopsutil/net"
 	"go.opencensus.io/trace"
 
@@ -26,30 +27,35 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 )
 
-// Scraper for Network Metrics
-type Scraper struct {
+// scraper for Network Metrics
+type scraper struct {
 	config    *Config
 	startTime pdata.TimestampUnixNano
 }
 
-// NewNetworkScraper creates a set of Network related metrics
-func NewNetworkScraper(_ context.Context, cfg *Config) *Scraper {
-	return &Scraper{config: cfg}
+// newNetworkScraper creates a set of Network related metrics
+func newNetworkScraper(_ context.Context, cfg *Config) *scraper {
+	return &scraper{config: cfg}
 }
 
 // Initialize
-func (s *Scraper) Initialize(_ context.Context, startTime pdata.TimestampUnixNano) error {
-	s.startTime = startTime
+func (s *scraper) Initialize(_ context.Context) error {
+	bootTime, err := host.BootTime()
+	if err != nil {
+		return err
+	}
+
+	s.startTime = pdata.TimestampUnixNano(bootTime)
 	return nil
 }
 
 // Close
-func (s *Scraper) Close(_ context.Context) error {
+func (s *scraper) Close(_ context.Context) error {
 	return nil
 }
 
 // ScrapeAndAppendMetrics
-func (s *Scraper) ScrapeAndAppendMetrics(ctx context.Context, metrics pdata.MetricSlice) error {
+func (s *scraper) ScrapeAndAppendMetrics(ctx context.Context, metrics pdata.MetricSlice) error {
 	_, span := trace.StartSpan(ctx, "networkscraper.ScrapeAndAppendMetrics")
 	defer span.End()
 

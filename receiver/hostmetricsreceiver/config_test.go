@@ -48,7 +48,7 @@ func TestLoadConfig(t *testing.T) {
 	r0 := cfg.Receivers["hostmetrics"]
 	defaultConfigAllScrapers := factory.CreateDefaultConfig()
 	defaultConfigAllScrapers.(*Config).Scrapers = map[string]internal.Config{
-		cpuscraper.TypeStr: getDefaultConfigWithDefaultCollectionInterval(&cpuscraper.Factory{}),
+		cpuscraper.TypeStr: (&cpuscraper.Factory{}).CreateDefaultConfig(),
 	}
 	assert.Equal(t, r0, defaultConfigAllScrapers)
 
@@ -59,30 +59,13 @@ func TestLoadConfig(t *testing.T) {
 				TypeVal: typeStr,
 				NameVal: "hostmetrics/customname",
 			},
-			DefaultCollectionInterval: 1 * time.Minute,
+			CollectionInterval: 30 * time.Second,
 			Scrapers: map[string]internal.Config{
-				cpuscraper.TypeStr: &cpuscraper.Config{
-					ConfigSettings: internal.ConfigSettings{CollectionIntervalValue: 1 * time.Minute},
-					ReportPerCPU:   true,
-				},
-				diskscraper.TypeStr: &diskscraper.Config{
-					ConfigSettings: internal.ConfigSettings{CollectionIntervalValue: 5 * time.Minute},
-				},
-				filesystemscraper.TypeStr: &filesystemscraper.Config{
-					ConfigSettings: internal.ConfigSettings{CollectionIntervalValue: 5 * time.Minute},
-				},
-				memoryscraper.TypeStr: &memoryscraper.Config{
-					ConfigSettings: internal.ConfigSettings{CollectionIntervalValue: 30 * time.Second},
-				},
-				networkscraper.TypeStr: &networkscraper.Config{
-					ConfigSettings: internal.ConfigSettings{CollectionIntervalValue: 45 * time.Second},
-				},
+				cpuscraper.TypeStr:        &cpuscraper.Config{ReportPerCPU: true},
+				diskscraper.TypeStr:       &diskscraper.Config{},
+				filesystemscraper.TypeStr: &filesystemscraper.Config{},
+				memoryscraper.TypeStr:     &memoryscraper.Config{},
+				networkscraper.TypeStr:    &networkscraper.Config{},
 			},
 		})
-}
-
-func getDefaultConfigWithDefaultCollectionInterval(factory internal.Factory) internal.Config {
-	cfg := factory.CreateDefaultConfig()
-	cfg.SetCollectionInterval(10 * time.Second)
-	return cfg
 }

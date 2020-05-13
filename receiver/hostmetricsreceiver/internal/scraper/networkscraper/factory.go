@@ -45,5 +45,5 @@ func (f *Factory) CreateMetricsScraper(
 	config internal.Config,
 ) (internal.Scraper, error) {
 	cfg := config.(*Config)
-	return NewNetworkScraper(ctx, cfg), nil
+	return newNetworkScraper(ctx, cfg), nil
 }

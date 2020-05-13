@@ -64,8 +64,8 @@ func TestScrapeMetrics_Linux(t *testing.T) {
 }
 
 func createScraperAndValidateScrapedMetrics(t *testing.T, config *Config, assertFn validationFn) {
-	scraper := NewMemoryScraper(context.Background(), config)
-	err := scraper.Initialize(context.Background(), pdata.TimestampUnixNano(0))
+	scraper := newMemoryScraper(context.Background(), config)
+	err := scraper.Initialize(context.Background())
 	require.NoError(t, err, "Failed to initialize memory scraper: %v", err)
 	defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
 

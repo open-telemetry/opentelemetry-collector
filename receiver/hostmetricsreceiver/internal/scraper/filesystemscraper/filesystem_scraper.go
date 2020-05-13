@@ -25,8 +25,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 )
 
-// Scraper for FileSystem Metrics
-type Scraper struct {
+// scraper for FileSystem Metrics
+type scraper struct {
 	config *Config
 }
 
@@ -35,23 +35,23 @@ type deviceUsage struct {
 	usage      *disk.UsageStat
 }
 
-// NewFileSystemScraper creates a FileSystem Scraper
-func NewFileSystemScraper(_ context.Context, cfg *Config) *Scraper {
-	return &Scraper{config: cfg}
+// newFileSystemScraper creates a FileSystem Scraper
+func newFileSystemScraper(_ context.Context, cfg *Config) *scraper {
+	return &scraper{config: cfg}
 }
 
 // Initialize
-func (s *Scraper) Initialize(_ context.Context, startTime pdata.TimestampUnixNano) error {
+func (s *scraper) Initialize(_ context.Context) error {
 	return nil
 }
 
 // Close
-func (s *Scraper) Close(_ context.Context) error {
+func (s *scraper) Close(_ context.Context) error {
 	return nil
 }
 
 // ScrapeAndAppendMetrics
-func (s *Scraper) ScrapeAndAppendMetrics(ctx context.Context, metrics pdata.MetricSlice) error {
+func (s *scraper) ScrapeAndAppendMetrics(ctx context.Context, metrics pdata.MetricSlice) error {
 	_, span := trace.StartSpan(ctx, "filesystemscraper.ScrapeAndAppendMetrics")
 	defer span.End()
 

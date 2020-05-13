@@ -89,8 +89,8 @@ func TestScrapeMetrics_Linux(t *testing.T) {
 }
 
 func createScraperAndValidateScrapedMetrics(t *testing.T, config *Config, assertFn validationFn) {
-	scraper := NewCPUScraper(context.Background(), config)
-	err := scraper.Initialize(context.Background(), pdata.TimestampUnixNano(0))
+	scraper := newCPUScraper(context.Background(), config)
+	err := scraper.Initialize(context.Background())
 	require.NoError(t, err, "Failed to initialize cpu scraper: %v", err)
 	defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
 

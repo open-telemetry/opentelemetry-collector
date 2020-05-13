@@ -16,7 +16,6 @@ package internal
 
 import (
 	"context"
-	"time"
 
 	"go.uber.org/zap"
 
@@ -28,7 +27,7 @@ import (
 type Scraper interface {
 	// Initialize performs any timely initialization tasks such as
 	// setting up performance counters for initial collection.
-	Initialize(ctx context.Context, startTime pdata.TimestampUnixNano) error
+	Initialize(ctx context.Context) error
 	// Close should clean up any unmanaged resources such as
 	// performance counter handles.
 	Close(ctx context.Context) error
@@ -54,23 +53,8 @@ type Factory interface {
 
 // Config is the configuration of a scraper.
 type Config interface {
-	// CollectionInterval returns the interval at which the scraper collects metrics
-	CollectionInterval() time.Duration
-	// SetCollectionInterval sets the interval at which the scraper collects metrics
-	SetCollectionInterval(time.Duration)
 }
 
 // ConfigSettings provides common settings for scraper configuration.
 type ConfigSettings struct {
-	CollectionIntervalValue time.Duration `mapstructure:"collection_interval"`
-}
-
-// CollectionInterval returns the interval at which the scraper collects metrics
-func (c *ConfigSettings) CollectionInterval() time.Duration {
-	return c.CollectionIntervalValue
-}
-
-// SetCollectionInterval sets the interval at which the scraper collects metrics
-func (c *ConfigSettings) SetCollectionInterval(interval time.Duration) {
-	c.CollectionIntervalValue = interval
 }

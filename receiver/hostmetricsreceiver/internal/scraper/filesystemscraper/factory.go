@@ -50,5 +50,5 @@ func (f *Factory) CreateMetricsScraper(
 	config internal.Config,
 ) (internal.Scraper, error) {
 	cfg := config.(*Config)
-	return NewFileSystemScraper(ctx, cfg), nil
+	return newFileSystemScraper(ctx, cfg), nil
 }

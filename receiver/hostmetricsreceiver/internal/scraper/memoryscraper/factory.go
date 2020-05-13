@@ -45,5 +45,5 @@ func (f *Factory) CreateMetricsScraper(
 	config internal.Config,
 ) (internal.Scraper, error) {
 	cfg := config.(*Config)
-	return NewMemoryScraper(ctx, cfg), nil
+	return newMemoryScraper(ctx, cfg), nil
 }

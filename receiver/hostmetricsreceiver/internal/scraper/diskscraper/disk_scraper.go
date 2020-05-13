@@ -19,35 +19,41 @@ import (
 	"time"
 
 	"github.com/shirou/gopsutil/disk"
+	"github.com/shirou/gopsutil/host"
 	"go.opencensus.io/trace"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 )
 
-// Scraper for Disk Metrics
-type Scraper struct {
+// scraper for Disk Metrics
+type scraper struct {
 	config    *Config
 	startTime pdata.TimestampUnixNano
 }
 
-// NewDiskScraper creates a Disk Scraper
-func NewDiskScraper(_ context.Context, cfg *Config) *Scraper {
-	return &Scraper{config: cfg}
+// newDiskScraper creates a Disk Scraper
+func newDiskScraper(_ context.Context, cfg *Config) *scraper {
+	return &scraper{config: cfg}
 }
 
 // Initialize
-func (s *Scraper) Initialize(_ context.Context, startTime pdata.TimestampUnixNano) error {
-	s.startTime = startTime
+func (s *scraper) Initialize(_ context.Context) error {
+	bootTime, err := host.BootTime()
+	if err != nil {
+		return err
+	}
+
+	s.startTime = pdata.TimestampUnixNano(bootTime)
 	return nil
 }
 
 // Close
-func (s *Scraper) Close(_ context.Context) error {
+func (s *scraper) Close(_ context.Context) error {
 	return nil
 }
 
 // ScrapeAndAppendMetrics
-func (s *Scraper) ScrapeAndAppendMetrics(ctx context.Context, metrics pdata.MetricSlice) error {
+func (s *scraper) ScrapeAndAppendMetrics(ctx context.Context, metrics pdata.MetricSlice) error {
 	_, span := trace.StartSpan(ctx, "diskscraper.ScrapeAndAppendMetrics")
 	defer span.End()
 

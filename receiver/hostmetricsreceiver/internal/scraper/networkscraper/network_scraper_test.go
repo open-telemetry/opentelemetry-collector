@@ -54,8 +54,8 @@ func assertNetworkMetricMatchesDescriptorAndHasTransmitAndReceiveDataPoints(t *t
 }
 
 func createScraperAndValidateScrapedMetrics(t *testing.T, config *Config, assertFn validationFn) {
-	scraper := NewNetworkScraper(context.Background(), config)
-	err := scraper.Initialize(context.Background(), pdata.TimestampUnixNano(0))
+	scraper := newNetworkScraper(context.Background(), config)
+	err := scraper.Initialize(context.Background())
 	require.NoError(t, err, "Failed to initialize network scraper: %v", err)
 	defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
 

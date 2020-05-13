@@ -20,28 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdatautil"
 )
-
-func AssertSingleMetricDataAndGetMetricsSlice(t *testing.T, metrics []pdata.Metrics) pdata.MetricSlice {
-	// expect 1 MetricData object
-	assert.Equal(t, 1, len(metrics))
-	return AssertMetricDataAndGetMetricsSlice(t, metrics[0])
-}
-
-func AssertMetricDataAndGetMetricsSlice(t *testing.T, metrics pdata.Metrics) pdata.MetricSlice {
-	md := pdatautil.MetricsToInternalMetrics(metrics)
-
-	// expect 1 ResourceMetrics object
-	rms := md.ResourceMetrics()
-	assert.Equal(t, 1, rms.Len())
-	rm := rms.At(0)
-
-	// expect 1 InstrumentationLibraryMetrics object
-	ilms := rm.InstrumentationLibraryMetrics()
-	assert.Equal(t, 1, ilms.Len())
-	return ilms.At(0).Metrics()
-}
 
 func AssertDescriptorEqual(t *testing.T, expected pdata.MetricDescriptor, actual pdata.MetricDescriptor) {
 	assert.Equal(t, expected.Name(), actual.Name())

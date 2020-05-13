@@ -81,8 +81,8 @@ func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 			return fmt.Errorf("config type not hostmetrics.Config")
 		}
 
-		if cfg.DefaultCollectionInterval <= 0 {
-			return fmt.Errorf("default_collection_interval must be a positive number")
+		if cfg.CollectionInterval <= 0 {
+			return fmt.Errorf("collection_interval must be a positive duration")
 		}
 
 		// dynamically load the individual collector configs based on the key name
@@ -102,15 +102,9 @@ func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 
 			collectorCfg := factory.CreateDefaultConfig()
 			collectorViperSection := config.ViperSub(scrapersViperSection, key)
-			if collectorViperSection != nil {
-				err := collectorViperSection.UnmarshalExact(collectorCfg)
-				if err != nil {
-					return fmt.Errorf("error reading settings for scraper type %q: %v", key, err)
-				}
-			}
-
-			if collectorCfg.CollectionInterval() <= 0 {
-				collectorCfg.SetCollectionInterval(cfg.DefaultCollectionInterval)
+			err := collectorViperSection.UnmarshalExact(collectorCfg)
+			if err != nil {
+				return fmt.Errorf("error reading settings for scraper type %q: %v", key, err)
 			}
 
 			cfg.Scrapers[key] = collectorCfg
@@ -127,7 +121,7 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		DefaultCollectionInterval: 10 * time.Second,
+		CollectionInterval: time.Minute,
 	}
 }
 
@@ -151,7 +145,7 @@ func (f *Factory) CreateMetricsReceiver(
 ) (component.MetricsReceiver, error) {
 	config := cfg.(*Config)
 
-	hmr, err := NewHostMetricsReceiver(ctx, params.Logger, config, f.scraperFactories, consumer)
+	hmr, err := newHostMetricsReceiver(ctx, params.Logger, config, f.scraperFactories, consumer)
 	if err != nil {
 		return nil, err
 	}

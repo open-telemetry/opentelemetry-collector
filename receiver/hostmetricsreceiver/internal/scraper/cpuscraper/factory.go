@@ -35,9 +35,7 @@ type Factory struct {
 
 // CreateDefaultConfig creates the default configuration for the Scraper.
 func (f *Factory) CreateDefaultConfig() internal.Config {
-	return &Config{
-		ReportPerCPU: true,
-	}
+	return &Config{}
 }
 
 // CreateMetricsScraper creates a scraper based on provided config.
@@ -47,5 +45,5 @@ func (f *Factory) CreateMetricsScraper(
 	config internal.Config,
 ) (internal.Scraper, error) {
 	cfg := config.(*Config)
-	return NewCPUScraper(ctx, cfg), nil
+	return newCPUScraper(ctx, cfg), nil
 }
