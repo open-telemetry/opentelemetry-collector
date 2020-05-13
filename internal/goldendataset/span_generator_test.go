@@ -43,6 +43,21 @@ func TestGenerateChildSpan(t *testing.T) {
 	assert.Equal(t, otlptrace.Status_Ok, span.Status.Code)
 }
 
+func TestGenerateSpans(t *testing.T) {
+	count1 := 16
+	spans, nextPos, err := GenerateSpans(count1, 0, "testdata/pict_pairs_spans.txt")
+	assert.Nil(t, err)
+	assert.Equal(t, count1, len(spans))
+	count2 := 256
+	spans, nextPos, err = GenerateSpans(count2, nextPos, "testdata/pict_pairs_spans.txt")
+	assert.Nil(t, err)
+	assert.Equal(t, count2, len(spans))
+	count3 := 118
+	spans, _, err = GenerateSpans(count3, nextPos, "testdata/pict_pairs_spans.txt")
+	assert.Nil(t, err)
+	assert.Equal(t, count3, len(spans))
+}
+
 func generateTestTraceID() []byte {
 	var r [16]byte
 	_, err := rand.Read(r[:])

@@ -15,13 +15,32 @@
 package goldendataset
 
 import (
+	"encoding/csv"
+	"fmt"
 	"math/rand"
+	"os"
+	"path/filepath"
 	"time"
 
 	otlpcommon "github.com/open-telemetry/opentelemetry-proto/gen/go/common/v1"
 	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
+)
+
+const (
+	ColumnParent     = 0
+	ColumnTracestate = 1
+	ColumnKind       = 2
+	ColumnAttributes = 3
+	ColumnEvents     = 4
+	ColumnLinks      = 5
+	ColumnStatus     = 6
+)
+
+const (
+	SpanParentRoot  = "Root"
+	SpanParentChild = "Child"
 )
 
 const (
@@ -132,6 +151,60 @@ func constructStatusMessageMap() map[string]string {
 	statusMap[SpanStatusDataLoss] = ""
 	statusMap[SpanStatusUnauthenticated] = "nstark is unknown user"
 	return statusMap
+}
+
+func GenerateSpans(count int, startPos int, pictFile string) ([]*otlptrace.Span, int, error) {
+	pairsData, err := loadPictOutputFile(pictFile)
+	if err != nil {
+		return nil, 0, err
+	}
+	pairsTotal := len(pairsData)
+	spanList := make([]*otlptrace.Span, count)
+	index := startPos + 1
+	var inputs []string
+	traceID := generateTraceID()
+	parentID := generateSpanID()
+	for i := 0; i < count; i++ {
+		inputs = pairsData[index]
+		if SpanParentRoot == inputs[ColumnParent] {
+			traceID = generateTraceID()
+			parentID = nil
+		}
+		spanName := generateSpanName(inputs[ColumnAttributes], i)
+		spanList[i] = GenerateSpan(traceID, inputs[ColumnTracestate], parentID, spanName, inputs[ColumnKind],
+			inputs[ColumnAttributes], inputs[ColumnEvents], inputs[ColumnLinks], inputs[ColumnStatus])
+		parentID = spanList[i].SpanId
+		index++
+		if index >= pairsTotal {
+			index = 1
+		}
+	}
+	return spanList, index, nil
+}
+
+func loadPictOutputFile(fileName string) ([][]string, error) {
+	file, err := os.Open(filepath.Clean(fileName))
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	reader := csv.NewReader(file)
+	reader.Comma = '\t'
+
+	return reader.ReadAll()
+}
+
+func generateSpanName(spanTypeID string, index int) string {
+	if SpanAttrHTTPClient == spanTypeID {
+		return fmt.Sprintf("/dragons/%d", index)
+	} else if SpanAttrHTTPServer == spanTypeID {
+		return "/dragons/{dragonId}"
+	} else if SpanAttrGRPCClient == spanTypeID || SpanAttrGRPCServer == spanTypeID {
+		return "com.example.PetFoodService/DispenseFeed"
+	} else {
+		return fmt.Sprintf("gotest%d", index)
+	}
 }
 
 func GenerateSpan(traceID []byte, tracestate string, parentID []byte, spanName string, kind string, spanTypeID string,
