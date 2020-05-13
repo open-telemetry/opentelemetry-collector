@@ -78,37 +78,21 @@ type Processor interface {
 type Processors map[string]Processor
 
 // DataType is the data type that is supported for collection. We currently support
-// collecting metrics and traces, this can expand in the future (e.g. logs, events, etc).
-type DataType int
+// collecting metrics, traces and logs, this can expand in the future.
+
+type DataType string
 
 // Currently supported data types. Add new data types here when new types are supported in the future.
 const (
-	_ DataType = iota // skip 0, start types from 1.
-
 	// TracesDataType is the data type tag for traces.
-	TracesDataType
+	TracesDataType DataType = "traces"
 
 	// MetricsDataType is the data type tag for metrics.
-	MetricsDataType
-)
+	MetricsDataType DataType = "metrics"
 
-// Data type strings.
-const (
-	TracesDataTypeStr  = "traces"
-	MetricsDataTypeStr = "metrics"
+	// LogsDataType is the data type tag for logs.
+	LogsDataType DataType = "logs"
 )
-
-// GetString converts data type to string.
-func (dataType DataType) GetString() string {
-	switch dataType {
-	case TracesDataType:
-		return TracesDataTypeStr
-	case MetricsDataType:
-		return MetricsDataTypeStr
-	default:
-		panic("unknown data type")
-	}
-}
 
 // Pipeline defines a single pipeline.
 type Pipeline struct {

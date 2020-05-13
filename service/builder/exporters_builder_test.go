@@ -103,6 +103,70 @@ func TestExportersBuilder_Build(t *testing.T) {
 	// TODO: once we have an exporter that supports metrics data type test it too.
 }
 
+func TestExportersBuilder_BuildLogs(t *testing.T) {
+	factories, err := config.ExampleComponents()
+	assert.Nil(t, err)
+
+	cfg := &configmodels.Config{
+		Exporters: map[string]configmodels.Exporter{
+			"exampleexporter": &config.ExampleExporter{
+				ExporterSettings: configmodels.ExporterSettings{
+					NameVal: "exampleexporter",
+					TypeVal: "exampleexporter",
+				},
+			},
+		},
+
+		Service: configmodels.Service{
+			Pipelines: map[string]*configmodels.Pipeline{
+				"logs": {
+					Name:      "logs",
+					InputType: "logs",
+					Exporters: []string{"exampleexporter"},
+				},
+			},
+		},
+	}
+
+	exporters, err := NewExportersBuilder(zap.NewNop(), cfg, factories.Exporters).Build()
+
+	assert.NoError(t, err)
+	require.NotNil(t, exporters)
+
+	e1 := exporters[cfg.Exporters["exampleexporter"]]
+
+	// Ensure exporter has its fields correctly populated.
+	require.NotNil(t, e1)
+	assert.NotNil(t, e1.le)
+	assert.Nil(t, e1.te)
+	assert.Nil(t, e1.me)
+
+	// Ensure it can be started.
+	err = exporters.StartAll(context.Background(), componenttest.NewNopHost())
+	assert.NoError(t, err)
+
+	// Ensure it can be stopped.
+	err = e1.Shutdown(context.Background())
+	assert.NoError(t, err)
+
+	// Remove the pipeline so that the exporter is not attached to any pipeline.
+	// This should result in creating an exporter that has none of consumption
+	// functions set.
+	delete(cfg.Service.Pipelines, "logs")
+	exporters, err = NewExportersBuilder(zap.NewNop(), cfg, factories.Exporters).Build()
+	assert.NotNil(t, exporters)
+	assert.Nil(t, err)
+
+	e1 = exporters[cfg.Exporters["exampleexporter"]]
+
+	// Ensure exporter has its fields correctly populated, ie Trace Exporter and
+	// Metrics Exporter are nil.
+	require.NotNil(t, e1)
+	assert.Nil(t, e1.te)
+	assert.Nil(t, e1.me)
+	assert.Nil(t, e1.le)
+}
+
 func TestExportersBuilder_StartAll(t *testing.T) {
 	exporters := make(Exporters)
 	expCfg := &configmodels.ExporterSettings{}

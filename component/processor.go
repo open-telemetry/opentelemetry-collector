@@ -37,13 +37,13 @@ type TraceProcessorBase interface {
 	Processor
 }
 
-// TraceProcessorOld composes TraceConsumer with some additional processor-specific functions.
+// TraceProcessorOld is a processor that can consume old-style traces.
 type TraceProcessorOld interface {
 	consumer.TraceConsumerOld
 	TraceProcessorBase
 }
 
-// TraceProcessor composes TraceConsumer with some additional processor-specific functions.
+// TraceProcessor is a processor that can consume traces.
 type TraceProcessor interface {
 	consumer.TraceConsumer
 	TraceProcessorBase
@@ -54,16 +54,22 @@ type MetricsProcessorBase interface {
 	Processor
 }
 
-// MetricsProcessor composes MetricsConsumer with some additional processor-specific functions.
+// MetricsProcessor is a processor that can consume old-style metrics.
 type MetricsProcessorOld interface {
 	consumer.MetricsConsumerOld
 	MetricsProcessorBase
 }
 
-// MetricsProcessor composes MetricsConsumer with some additional processor-specific functions.
+// MetricsProcessor is a processor that can consume metrics.
 type MetricsProcessor interface {
 	consumer.MetricsConsumer
 	MetricsProcessorBase
+}
+
+// LogProcessor is a processor that can consume logs.
+type LogProcessor interface {
+	Processor
+	consumer.LogConsumer
 }
 
 // ProcessorCapabilities describes the capabilities of a Processor.
@@ -130,4 +136,19 @@ type ProcessorFactory interface {
 	// error will be returned instead.
 	CreateMetricsProcessor(ctx context.Context, params ProcessorCreateParams,
 		nextConsumer consumer.MetricsConsumer, cfg configmodels.Processor) (MetricsProcessor, error)
+}
+
+// LogProcessorFactory can create LogProcessor.
+type LogProcessorFactory interface {
+	ProcessorFactoryBase
+
+	// CreateLogProcessor creates a processor based on the config.
+	// If the processor type does not support logs or if the config is not valid
+	// error will be returned instead.
+	CreateLogProcessor(
+		ctx context.Context,
+		params ProcessorCreateParams,
+		cfg configmodels.Processor,
+		nextConsumer consumer.LogConsumer,
+	) (LogProcessor, error)
 }

@@ -38,3 +38,7 @@ service:
     metrics/3:
       receivers: [examplereceiver/3]
       exporters: [exampleexporter/2]
+
+    logs:
+      receivers: [examplereceiver/3]
+      exporters: [exampleexporter/2]

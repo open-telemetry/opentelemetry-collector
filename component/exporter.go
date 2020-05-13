@@ -23,7 +23,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 )
 
-// Exporter defines functions that trace and metric exporters must implement.
+// Exporter defines functions that all exporters must implement.
 type Exporter interface {
 	Component
 }
@@ -33,13 +33,13 @@ type TraceExporterBase interface {
 	Exporter
 }
 
-// TraceExporterOld is a TraceConsumer that is also an Exporter.
+// TraceExporterOld is a TraceExporter that can consume old-style traces.
 type TraceExporterOld interface {
 	consumer.TraceConsumerOld
 	TraceExporterBase
 }
 
-// TraceExporter is an TraceConsumer that is also an Exporter.
+// TraceExporter is a TraceExporter that can consume new-style traces.
 type TraceExporter interface {
 	consumer.TraceConsumer
 	TraceExporterBase
@@ -50,16 +50,22 @@ type MetricsExporterBase interface {
 	Exporter
 }
 
-// MetricsExporterOld is a MetricsConsumer that is also an Exporter.
+// MetricsExporterOld is a TraceExporter that can consume old-style metrics.
 type MetricsExporterOld interface {
 	consumer.MetricsConsumerOld
 	MetricsExporterBase
 }
 
-// MetricsExporter is a MetricsConsumer that is also an Exporter.
+// MetricsExporter is a TraceExporter that can consume new-style metrics.
 type MetricsExporter interface {
 	consumer.MetricsConsumer
 	MetricsExporterBase
+}
+
+// LogExporter is a LogConsumer that is also an Exporter.
+type LogExporter interface {
+	Exporter
+	consumer.LogConsumer
 }
 
 // ExporterFactoryBase defines the common functions for all exporter factories.
@@ -87,7 +93,7 @@ type ExporterFactoryOld interface {
 	CreateMetricsExporter(logger *zap.Logger, cfg configmodels.Exporter) (MetricsExporterOld, error)
 }
 
-// ExporterCreateParams is passed to ExporterFactory.Create* functions.
+// ExporterCreateParams is passed to Create*Exporter functions.
 type ExporterCreateParams struct {
 	// Logger that the factory can use during creation and can pass to the created
 	// component to be used later as well.
@@ -110,4 +116,18 @@ type ExporterFactory interface {
 	// error will be returned instead.
 	CreateMetricsExporter(ctx context.Context, params ExporterCreateParams,
 		cfg configmodels.Exporter) (MetricsExporter, error)
+}
+
+// LogExporterFactory can create a LogExporter.
+type LogExporterFactory interface {
+	ExporterFactoryBase
+
+	// CreateLogExporter creates an exporter based on the config.
+	// If the exporter type does not support logs or if the config is not valid
+	// error will be returned instead.
+	CreateLogExporter(
+		ctx context.Context,
+		params ExporterCreateParams,
+		cfg configmodels.Exporter,
+	) (LogExporter, error)
 }
