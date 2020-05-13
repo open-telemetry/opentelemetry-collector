@@ -19,6 +19,7 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -28,7 +29,9 @@ import (
 
 	"contrib.go.opencensus.io/exporter/jaeger"
 	"github.com/apache/thrift/lib/go/thrift"
+	collectorSampling "github.com/jaegertracing/jaeger/cmd/collector/app/sampling"
 	"github.com/jaegertracing/jaeger/model"
+	staticStrategyStore "github.com/jaegertracing/jaeger/plugin/sampling/strategystore/static"
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	tJaeger "github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
@@ -42,6 +45,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/client"
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
+	"github.com/open-telemetry/opentelemetry-collector/config/configgrpc"
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-collector/receiver"
@@ -535,4 +540,80 @@ func TestSamplingFailsOnBadFile(t *testing.T) {
 	assert.NoError(t, err, "should not have failed to create a new receiver")
 	defer jr.Shutdown(context.Background())
 	assert.Error(t, jr.Start(context.Background(), componenttest.NewNopHost()))
+}
+
+func TestSamplingStrategiesMutualTLS(t *testing.T) {
+	caPath := path.Join(".", "testdata", "ca.crt")
+	serverCertPath := path.Join(".", "testdata", "server.crt")
+	serverKeyPath := path.Join(".", "testdata", "server.key")
+	clientCertPath := path.Join(".", "testdata", "client.crt")
+	clientKeyPath := path.Join(".", "testdata", "client.key")
+
+	// start gRPC server that serves sampling strategies
+	tlsCfgOpts := configgrpc.TLSConfig{
+		CaCert:     caPath,
+		ClientCert: serverCertPath,
+		ClientKey:  serverKeyPath,
+	}
+	tlsCfg, err := tlsCfgOpts.LoadTLSConfig()
+	require.NoError(t, err)
+	server, serverAddr := initializeGRPCTestServer(t, func(s *grpc.Server) {
+		ss, serr := staticStrategyStore.NewStrategyStore(staticStrategyStore.Options{
+			StrategiesFile: path.Join(".", "testdata", "strategies.json"),
+		}, zap.NewNop())
+		require.NoError(t, serr)
+		api_v2.RegisterSamplingManagerServer(s, collectorSampling.NewGRPCHandler(ss))
+	}, grpc.Creds(credentials.NewTLS(tlsCfg)))
+	defer server.GracefulStop()
+
+	// Create sampling strategies receiver
+	port, err := randomAvailablePort()
+	require.NoError(t, err)
+	hostEndpoint := fmt.Sprintf("localhost:%d", port)
+	factory := &Factory{}
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.RemoteSampling = &RemoteSamplingConfig{
+		GRPCSettings: configgrpc.GRPCSettings{
+			TLSConfig: configgrpc.TLSConfig{
+				UseSecure:          true,
+				CaCert:             caPath,
+				ClientCert:         clientCertPath,
+				ClientKey:          clientKeyPath,
+				ServerNameOverride: "localhost",
+			},
+			Endpoint: serverAddr.String(),
+		},
+		HostEndpoint: hostEndpoint,
+	}
+	// at least one protocol has to be enabled
+	thriftHTTPPort, err := randomAvailablePort()
+	require.NoError(t, err)
+	cfg.Protocols = map[string]*receiver.SecureReceiverSettings{
+		"thrift_http": {ReceiverSettings: configmodels.ReceiverSettings{
+			Endpoint: fmt.Sprintf("localhost:%d", thriftHTTPPort),
+		}},
+	}
+	exp, err := factory.CreateTraceReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, exportertest.NewNopTraceExporter())
+	require.NoError(t, err)
+	host := &componenttest.ErrorWaitingHost{}
+	err = exp.Start(context.Background(), host)
+	require.NoError(t, err)
+	defer exp.Shutdown(context.Background())
+	_, err = host.WaitForFatalError(200 * time.Millisecond)
+	require.NoError(t, err)
+
+	resp, err := http.Get(fmt.Sprintf("http://%s?service=bar", hostEndpoint))
+	require.NoError(t, err)
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+	assert.Contains(t, "{\"strategyType\":1,\"rateLimitingSampling\":{\"maxTracesPerSecond\":5}}", string(bodyBytes))
+}
+
+func randomAvailablePort() (int, error) {
+	listener, err := net.Listen("tcp", ":0")
+	if err != nil {
+		return 0, err
+	}
+	defer listener.Close()
+	return listener.Addr().(*net.TCPAddr).Port, nil
 }
