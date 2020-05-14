@@ -52,20 +52,21 @@ func (s *scraper) Close(_ context.Context) error {
 	return nil
 }
 
-// ScrapeAndAppendMetrics
-func (s *scraper) ScrapeAndAppendMetrics(ctx context.Context, metrics pdata.MetricSlice) error {
-	_, span := trace.StartSpan(ctx, "cpuscraper.ScrapeAndAppendMetrics")
+// ScrapeMetrics
+func (s *scraper) ScrapeMetrics(ctx context.Context) (pdata.MetricSlice, error) {
+	_, span := trace.StartSpan(ctx, "cpuscraper.ScrapeMetrics")
 	defer span.End()
+
+	metrics := pdata.NewMetricSlice()
 
 	cpuTimes, err := cpu.Times(s.config.ReportPerCPU)
 	if err != nil {
-		return err
+		return metrics, err
 	}
 
-	startIdx := metrics.Len()
-	metrics.Resize(startIdx + 1)
-	initializeCPUSecondsMetric(metrics.At(startIdx), s.startTime, cpuTimes)
-	return nil
+	metrics.Resize(1)
+	initializeCPUSecondsMetric(metrics.At(0), s.startTime, cpuTimes)
+	return metrics, nil
 }
 
 func initializeCPUSecondsMetric(metric pdata.Metric, startTime pdata.TimestampUnixNano, cpuTimes []cpu.TimesStat) {

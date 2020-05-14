@@ -54,10 +54,12 @@ func (s *scraper) Close(_ context.Context) error {
 	return nil
 }
 
-// ScrapeAndAppendMetrics
-func (s *scraper) ScrapeAndAppendMetrics(ctx context.Context, metrics pdata.MetricSlice) error {
-	_, span := trace.StartSpan(ctx, "networkscraper.ScrapeAndAppendMetrics")
+// ScrapeMetrics
+func (s *scraper) ScrapeMetrics(ctx context.Context) (pdata.MetricSlice, error) {
+	_, span := trace.StartSpan(ctx, "networkscraper.ScrapeMetrics")
 	defer span.End()
+
+	metrics := pdata.NewMetricSlice()
 
 	var errors []error
 
@@ -72,10 +74,10 @@ func (s *scraper) ScrapeAndAppendMetrics(ctx context.Context, metrics pdata.Metr
 	}
 
 	if len(errors) > 0 {
-		return componenterror.CombineErrors(errors)
+		return metrics, componenterror.CombineErrors(errors)
 	}
 
-	return nil
+	return metrics, nil
 }
 
 func scrapeAndAppendNetworkCounterMetrics(metrics pdata.MetricSlice, startTime pdata.TimestampUnixNano) error {

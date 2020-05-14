@@ -44,20 +44,21 @@ func (s *scraper) Close(_ context.Context) error {
 	return nil
 }
 
-// ScrapeAndAppendMetrics
-func (s *scraper) ScrapeAndAppendMetrics(ctx context.Context, metrics pdata.MetricSlice) error {
-	_, span := trace.StartSpan(ctx, "memoryscraper.ScrapeAndAppendMetrics")
+// ScrapeMetrics
+func (s *scraper) ScrapeMetrics(ctx context.Context) (pdata.MetricSlice, error) {
+	_, span := trace.StartSpan(ctx, "memoryscraper.ScrapeMetrics")
 	defer span.End()
+
+	metrics := pdata.NewMetricSlice()
 
 	memInfo, err := mem.VirtualMemory()
 	if err != nil {
-		return err
+		return metrics, err
 	}
 
-	startIdx := metrics.Len()
-	metrics.Resize(startIdx + 1)
-	initializeMetricMemoryUsed(metrics.At(startIdx), memInfo)
-	return nil
+	metrics.Resize(1)
+	initializeMetricMemoryUsed(metrics.At(0), memInfo)
+	return metrics, nil
 }
 
 func initializeMetricMemoryUsed(metric pdata.Metric, memInfo *mem.VirtualMemoryStat) {

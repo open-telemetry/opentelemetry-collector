@@ -50,17 +50,19 @@ func (s *scraper) Close(_ context.Context) error {
 	return nil
 }
 
-// ScrapeAndAppendMetrics
-func (s *scraper) ScrapeAndAppendMetrics(ctx context.Context, metrics pdata.MetricSlice) error {
-	_, span := trace.StartSpan(ctx, "filesystemscraper.ScrapeAndAppendMetrics")
+// ScrapeMetrics
+func (s *scraper) ScrapeMetrics(ctx context.Context) (pdata.MetricSlice, error) {
+	_, span := trace.StartSpan(ctx, "filesystemscraper.ScrapeMetrics")
 	defer span.End()
+
+	metrics := pdata.NewMetricSlice()
 
 	// omit logical (virtual) filesystems (not relevant for windows)
 	all := false
 
 	partitions, err := disk.Partitions(all)
 	if err != nil {
-		return err
+		return metrics, err
 	}
 
 	var errors []error
@@ -76,18 +78,17 @@ func (s *scraper) ScrapeAndAppendMetrics(ctx context.Context, metrics pdata.Metr
 	}
 
 	if len(usages) > 0 {
-		startIdx := metrics.Len()
-		metrics.Resize(startIdx + 1 + systemSpecificMetricsLen)
+		metrics.Resize(1 + systemSpecificMetricsLen)
 
-		initializeMetricFileSystemUsed(metrics.At(startIdx+0), usages)
-		appendSystemSpecificMetrics(metrics, startIdx+1, usages)
+		initializeMetricFileSystemUsed(metrics.At(0), usages)
+		appendSystemSpecificMetrics(metrics, 1, usages)
 	}
 
 	if len(errors) > 0 {
-		return componenterror.CombineErrors(errors)
+		return metrics, componenterror.CombineErrors(errors)
 	}
 
-	return nil
+	return metrics, nil
 }
 
 func initializeMetricFileSystemUsed(metric pdata.Metric, deviceUsages []*deviceUsage) {

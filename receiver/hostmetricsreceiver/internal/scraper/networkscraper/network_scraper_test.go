@@ -59,8 +59,7 @@ func createScraperAndValidateScrapedMetrics(t *testing.T, config *Config, assert
 	require.NoError(t, err, "Failed to initialize network scraper: %v", err)
 	defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
 
-	metrics := pdata.NewMetricSlice()
-	err = scraper.ScrapeAndAppendMetrics(context.Background(), metrics)
+	metrics, err := scraper.ScrapeMetrics(context.Background())
 	require.NoError(t, err, "Failed to scrape metrics: %v", err)
 
 	assertFn(t, metrics)

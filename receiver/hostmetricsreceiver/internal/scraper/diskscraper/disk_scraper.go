@@ -52,22 +52,23 @@ func (s *scraper) Close(_ context.Context) error {
 	return nil
 }
 
-// ScrapeAndAppendMetrics
-func (s *scraper) ScrapeAndAppendMetrics(ctx context.Context, metrics pdata.MetricSlice) error {
-	_, span := trace.StartSpan(ctx, "diskscraper.ScrapeAndAppendMetrics")
+// ScrapeMetrics
+func (s *scraper) ScrapeMetrics(ctx context.Context) (pdata.MetricSlice, error) {
+	_, span := trace.StartSpan(ctx, "diskscraper.ScrapeMetrics")
 	defer span.End()
+
+	metrics := pdata.NewMetricSlice()
 
 	ioCounters, err := disk.IOCounters()
 	if err != nil {
-		return err
+		return metrics, err
 	}
 
-	startIdx := metrics.Len()
-	metrics.Resize(startIdx + 3)
-	initializeMetricDiskBytes(metrics.At(startIdx+0), ioCounters, s.startTime)
-	initializeMetricDiskOps(metrics.At(startIdx+1), ioCounters, s.startTime)
-	initializeMetricDiskTime(metrics.At(startIdx+2), ioCounters, s.startTime)
-	return nil
+	metrics.Resize(3)
+	initializeMetricDiskBytes(metrics.At(0), ioCounters, s.startTime)
+	initializeMetricDiskOps(metrics.At(1), ioCounters, s.startTime)
+	initializeMetricDiskTime(metrics.At(2), ioCounters, s.startTime)
+	return metrics, nil
 }
 
 func initializeMetricDiskBytes(metric pdata.Metric, ioCounters map[string]disk.IOCountersStat, startTime pdata.TimestampUnixNano) {

@@ -31,11 +31,10 @@ type Scraper interface {
 	// Close should clean up any unmanaged resources such as
 	// performance counter handles.
 	Close(ctx context.Context) error
-	// ScrapeAndAppendMetrics scrapes relevant metrics and appends them to
-	// the provided metric slice. If errors occur scraping some metrics,
-	// an error should be returned, but successfully scraped metrics should
-	// still be appended to the provided slice.
-	ScrapeAndAppendMetrics(ctx context.Context, metrics pdata.MetricSlice) error
+	// ScrapeMetrics returns relevant scraped metrics. If errors occur
+	// scraping some metrics, an error should be returned, but any
+	// metrics that were successfully scraped should still be returned.
+	ScrapeMetrics(ctx context.Context) (pdata.MetricSlice, error)
 }
 
 // Factory can create a Scraper.
