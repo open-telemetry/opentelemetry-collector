@@ -17,22 +17,18 @@ package networkscraper
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
-	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal"
 )
 
-type validationFn func(*testing.T, []pdata.Metrics)
+type validationFn func(*testing.T, pdata.MetricSlice)
 
 func TestScrapeMetrics(t *testing.T) {
-	createScraperAndValidateScrapedMetrics(t, &Config{}, func(t *testing.T, got []pdata.Metrics) {
-		metrics := internal.AssertSingleMetricDataAndGetMetricsSlice(t, got)
-
+	createScraperAndValidateScrapedMetrics(t, &Config{}, func(t *testing.T, metrics pdata.MetricSlice) {
 		// expect 5 metrics
 		assert.Equal(t, 5, metrics.Len())
 
@@ -58,24 +54,13 @@ func assertNetworkMetricMatchesDescriptorAndHasTransmitAndReceiveDataPoints(t *t
 }
 
 func createScraperAndValidateScrapedMetrics(t *testing.T, config *Config, assertFn validationFn) {
-	config.SetCollectionInterval(5 * time.Millisecond)
+	scraper := newNetworkScraper(context.Background(), config)
+	err := scraper.Initialize(context.Background())
+	require.NoError(t, err, "Failed to initialize network scraper: %v", err)
+	defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
 
-	sink := &exportertest.SinkMetricsExporter{}
+	metrics, err := scraper.ScrapeMetrics(context.Background())
+	require.NoError(t, err, "Failed to scrape metrics: %v", err)
 
-	scraper, err := NewNetworkScraper(context.Background(), config, sink)
-	require.NoError(t, err, "Failed to create network scraper: %v", err)
-
-	err = scraper.Start(context.Background())
-	require.NoError(t, err, "Failed to start network scraper: %v", err)
-	defer func() { assert.NoError(t, scraper.Shutdown(context.Background())) }()
-
-	require.Eventually(t, func() bool {
-		got := sink.AllMetrics()
-		if len(got) == 0 {
-			return false
-		}
-
-		assertFn(t, got)
-		return true
-	}, time.Second, 2*time.Millisecond, "No metrics were collected")
+	assertFn(t, metrics)
 }

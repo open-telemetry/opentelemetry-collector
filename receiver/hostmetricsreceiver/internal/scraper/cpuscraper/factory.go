@@ -19,7 +19,6 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal"
 )
 
@@ -36,18 +35,15 @@ type Factory struct {
 
 // CreateDefaultConfig creates the default configuration for the Scraper.
 func (f *Factory) CreateDefaultConfig() internal.Config {
-	return &Config{
-		ReportPerCPU: true,
-	}
+	return &Config{}
 }
 
 // CreateMetricsScraper creates a scraper based on provided config.
 func (f *Factory) CreateMetricsScraper(
 	ctx context.Context,
-	logger *zap.Logger,
+	_ *zap.Logger,
 	config internal.Config,
-	consumer consumer.MetricsConsumer,
 ) (internal.Scraper, error) {
 	cfg := config.(*Config)
-	return NewCPUScraper(ctx, cfg, consumer)
+	return newCPUScraper(ctx, cfg), nil
 }

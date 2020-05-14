@@ -16,24 +16,25 @@ package internal
 
 import (
 	"context"
-	"time"
 
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector/consumer"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 )
 
 // Scraper gathers metrics from the host machine and converts
 // these into internal metrics format.
 type Scraper interface {
-	// Start performs any timely initialization tasks such as
-	// setting up performance counters for initial collection,
-	// and then begins scraping metrics at the configured
-	// collection interval.
-	Start(ctx context.Context) error
-	// Shutdown should clean up any unmanaged resources such as
+	// Initialize performs any timely initialization tasks such as
+	// setting up performance counters for initial collection.
+	Initialize(ctx context.Context) error
+	// Close should clean up any unmanaged resources such as
 	// performance counter handles.
-	Shutdown(ctx context.Context) error
+	Close(ctx context.Context) error
+	// ScrapeMetrics returns relevant scraped metrics. If errors occur
+	// scraping some metrics, an error should be returned, but any
+	// metrics that were successfully scraped should still be returned.
+	ScrapeMetrics(ctx context.Context) (pdata.MetricSlice, error)
 }
 
 // Factory can create a Scraper.
@@ -46,29 +47,13 @@ type Factory interface {
 	CreateMetricsScraper(
 		ctx context.Context,
 		logger *zap.Logger,
-		cfg Config,
-		consumer consumer.MetricsConsumer) (Scraper, error)
+		cfg Config) (Scraper, error)
 }
 
 // Config is the configuration of a scraper.
 type Config interface {
-	// CollectionInterval returns the interval at which the scraper collects metrics
-	CollectionInterval() time.Duration
-	// SetCollectionInterval sets the interval at which the scraper collects metrics
-	SetCollectionInterval(time.Duration)
 }
 
 // ConfigSettings provides common settings for scraper configuration.
 type ConfigSettings struct {
-	CollectionIntervalValue time.Duration `mapstructure:"collection_interval"`
-}
-
-// CollectionInterval returns the interval at which the scraper collects metrics
-func (c *ConfigSettings) CollectionInterval() time.Duration {
-	return c.CollectionIntervalValue
-}
-
-// SetCollectionInterval sets the interval at which the scraper collects metrics
-func (c *ConfigSettings) SetCollectionInterval(interval time.Duration) {
-	c.CollectionIntervalValue = interval
 }

@@ -29,11 +29,3 @@ func InitializeMetricSlice(metricData data.MetricData) pdata.MetricSlice {
 	ilm := ilms.At(0)
 	return ilm.Metrics()
 }
-
-// AddNewMetric appends an empty metric to the metric slice, resizing
-// the slice by 1, and returns the new metric.
-func AddNewMetric(metrics pdata.MetricSlice) pdata.Metric {
-	len := metrics.Len()
-	metrics.Resize(len + 1)
-	return metrics.At(len)
-}

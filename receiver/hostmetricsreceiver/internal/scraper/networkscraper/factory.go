@@ -19,7 +19,6 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal"
 )
 
@@ -44,8 +43,7 @@ func (f *Factory) CreateMetricsScraper(
 	ctx context.Context,
 	logger *zap.Logger,
 	config internal.Config,
-	consumer consumer.MetricsConsumer,
 ) (internal.Scraper, error) {
 	cfg := config.(*Config)
-	return NewNetworkScraper(ctx, cfg, consumer)
+	return newNetworkScraper(ctx, cfg), nil
 }

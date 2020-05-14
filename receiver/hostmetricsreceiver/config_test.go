@@ -26,6 +26,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
+	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal/scraper/diskscraper"
+	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper"
+	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal/scraper/memoryscraper"
+	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal/scraper/networkscraper"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -44,7 +48,7 @@ func TestLoadConfig(t *testing.T) {
 	r0 := cfg.Receivers["hostmetrics"]
 	defaultConfigAllScrapers := factory.CreateDefaultConfig()
 	defaultConfigAllScrapers.(*Config).Scrapers = map[string]internal.Config{
-		cpuscraper.TypeStr: getDefaultConfigWithDefaultCollectionInterval(&cpuscraper.Factory{}),
+		cpuscraper.TypeStr: (&cpuscraper.Factory{}).CreateDefaultConfig(),
 	}
 	assert.Equal(t, r0, defaultConfigAllScrapers)
 
@@ -55,18 +59,13 @@ func TestLoadConfig(t *testing.T) {
 				TypeVal: typeStr,
 				NameVal: "hostmetrics/customname",
 			},
-			DefaultCollectionInterval: 10 * time.Second,
+			CollectionInterval: 30 * time.Second,
 			Scrapers: map[string]internal.Config{
-				cpuscraper.TypeStr: &cpuscraper.Config{
-					ConfigSettings: internal.ConfigSettings{CollectionIntervalValue: 5 * time.Second},
-					ReportPerCPU:   true,
-				},
+				cpuscraper.TypeStr:        &cpuscraper.Config{ReportPerCPU: true},
+				diskscraper.TypeStr:       &diskscraper.Config{},
+				filesystemscraper.TypeStr: &filesystemscraper.Config{},
+				memoryscraper.TypeStr:     &memoryscraper.Config{},
+				networkscraper.TypeStr:    &networkscraper.Config{},
 			},
 		})
-}
-
-func getDefaultConfigWithDefaultCollectionInterval(factory internal.Factory) internal.Config {
-	cfg := factory.CreateDefaultConfig()
-	cfg.SetCollectionInterval(10 * time.Second)
-	return cfg
 }

@@ -18,22 +18,18 @@ import (
 	"context"
 	"runtime"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
-	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal"
 )
 
-type validationFn func(*testing.T, []pdata.Metrics)
+type validationFn func(*testing.T, pdata.MetricSlice)
 
 func TestScrapeMetrics(t *testing.T) {
-	createScraperAndValidateScrapedMetrics(t, &Config{}, func(t *testing.T, got []pdata.Metrics) {
-		metrics := internal.AssertSingleMetricDataAndGetMetricsSlice(t, got)
-
+	createScraperAndValidateScrapedMetrics(t, &Config{}, func(t *testing.T, metrics pdata.MetricSlice) {
 		// expect 1 metric
 		assert.Equal(t, 1, metrics.Len())
 
@@ -50,8 +46,9 @@ func TestScrapeMetrics_Linux(t *testing.T) {
 		return
 	}
 
-	createScraperAndValidateScrapedMetrics(t, &Config{}, func(t *testing.T, got []pdata.Metrics) {
-		metrics := internal.AssertSingleMetricDataAndGetMetricsSlice(t, got)
+	createScraperAndValidateScrapedMetrics(t, &Config{}, func(t *testing.T, metrics pdata.MetricSlice) {
+		// expect 1 metric
+		assert.Equal(t, 1, metrics.Len())
 
 		// for memory used metric, expect a datapoint for all 6 state labels
 		hostMemoryUsedMetric := metrics.At(0)
@@ -67,24 +64,13 @@ func TestScrapeMetrics_Linux(t *testing.T) {
 }
 
 func createScraperAndValidateScrapedMetrics(t *testing.T, config *Config, assertFn validationFn) {
-	config.SetCollectionInterval(5 * time.Millisecond)
+	scraper := newMemoryScraper(context.Background(), config)
+	err := scraper.Initialize(context.Background())
+	require.NoError(t, err, "Failed to initialize memory scraper: %v", err)
+	defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
 
-	sink := &exportertest.SinkMetricsExporter{}
+	metrics, err := scraper.ScrapeMetrics(context.Background())
+	require.NoError(t, err, "Failed to scrape metrics: %v", err)
 
-	scraper, err := NewMemoryScraper(context.Background(), config, sink)
-	require.NoError(t, err, "Failed to create memory scraper: %v", err)
-
-	err = scraper.Start(context.Background())
-	require.NoError(t, err, "Failed to start memory scraper: %v", err)
-	defer func() { assert.NoError(t, scraper.Shutdown(context.Background())) }()
-
-	require.Eventually(t, func() bool {
-		got := sink.AllMetrics()
-		if len(got) == 0 {
-			return false
-		}
-
-		assertFn(t, got)
-		return true
-	}, time.Second, 2*time.Millisecond, "No metrics were collected")
+	assertFn(t, metrics)
 }

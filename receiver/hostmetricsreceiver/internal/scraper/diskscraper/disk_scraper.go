@@ -16,100 +16,59 @@ package diskscraper
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/shirou/gopsutil/disk"
 	"github.com/shirou/gopsutil/host"
 	"go.opencensus.io/trace"
 
-	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdatautil"
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal"
 )
 
-// Scraper for Disk Metrics
-type Scraper struct {
+// scraper for Disk Metrics
+type scraper struct {
 	config    *Config
-	consumer  consumer.MetricsConsumer
 	startTime pdata.TimestampUnixNano
-	cancel    context.CancelFunc
 }
 
-// NewDiskScraper creates a set of Disk related metrics
-func NewDiskScraper(ctx context.Context, cfg *Config, consumer consumer.MetricsConsumer) (*Scraper, error) {
-	return &Scraper{config: cfg, consumer: consumer}, nil
+// newDiskScraper creates a Disk Scraper
+func newDiskScraper(_ context.Context, cfg *Config) *scraper {
+	return &scraper{config: cfg}
 }
 
-// Start
-func (s *Scraper) Start(ctx context.Context) error {
-	ctx, s.cancel = context.WithCancel(ctx)
-
+// Initialize
+func (s *scraper) Initialize(_ context.Context) error {
 	bootTime, err := host.BootTime()
 	if err != nil {
 		return err
 	}
 
 	s.startTime = pdata.TimestampUnixNano(bootTime)
-
-	go func() {
-		ticker := time.NewTicker(s.config.CollectionInterval())
-		defer ticker.Stop()
-
-		for {
-			select {
-			case <-ticker.C:
-				s.scrapeMetrics(ctx)
-			case <-ctx.Done():
-				return
-			}
-		}
-	}()
-
 	return nil
 }
 
-// Shutdown
-func (s *Scraper) Shutdown(ctx context.Context) error {
-	s.cancel()
+// Close
+func (s *scraper) Close(_ context.Context) error {
 	return nil
 }
 
-func (s *Scraper) scrapeMetrics(ctx context.Context) {
-	ctx, span := trace.StartSpan(ctx, "diskscraper.scrapeMetrics")
+// ScrapeMetrics
+func (s *scraper) ScrapeMetrics(ctx context.Context) (pdata.MetricSlice, error) {
+	_, span := trace.StartSpan(ctx, "diskscraper.ScrapeMetrics")
 	defer span.End()
 
-	metricData := data.NewMetricData()
-	metrics := internal.InitializeMetricSlice(metricData)
+	metrics := pdata.NewMetricSlice()
 
-	err := s.scrapeAndAppendMetrics(metrics)
-	if err != nil {
-		span.SetStatus(trace.Status{Code: trace.StatusCodeDataLoss, Message: fmt.Sprintf("Error(s) when scraping disk metrics: %v", err)})
-		return
-	}
-
-	if metrics.Len() > 0 {
-		err := s.consumer.ConsumeMetrics(ctx, pdatautil.MetricsFromInternalMetrics(metricData))
-		if err != nil {
-			span.SetStatus(trace.Status{Code: trace.StatusCodeDataLoss, Message: fmt.Sprintf("Unable to process metrics: %v", err)})
-			return
-		}
-	}
-}
-
-func (s *Scraper) scrapeAndAppendMetrics(metrics pdata.MetricSlice) error {
 	ioCounters, err := disk.IOCounters()
 	if err != nil {
-		return err
+		return metrics, err
 	}
 
 	metrics.Resize(3)
 	initializeMetricDiskBytes(metrics.At(0), ioCounters, s.startTime)
 	initializeMetricDiskOps(metrics.At(1), ioCounters, s.startTime)
 	initializeMetricDiskTime(metrics.At(2), ioCounters, s.startTime)
-	return nil
+	return metrics, nil
 }
 
 func initializeMetricDiskBytes(metric pdata.Metric, ioCounters map[string]disk.IOCountersStat, startTime pdata.TimestampUnixNano) {

@@ -22,11 +22,18 @@ import (
 	"go.uber.org/zap"
 )
 
+func TestCreateDefaultConfig(t *testing.T) {
+	factory := &Factory{}
+	cfg := factory.CreateDefaultConfig()
+	assert.IsType(t, &Config{}, cfg)
+	assert.Equal(t, false, cfg.(*Config).ReportPerCPU)
+}
+
 func TestCreateMetricsScraper(t *testing.T) {
 	factory := &Factory{}
 	cfg := &Config{}
 
-	scraper, err := factory.CreateMetricsScraper(context.Background(), zap.NewNop(), cfg, nil)
+	scraper, err := factory.CreateMetricsScraper(context.Background(), zap.NewNop(), cfg)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, scraper)

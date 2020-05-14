@@ -25,6 +25,6 @@ import (
 type Config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`
 
-	DefaultCollectionInterval time.Duration              `mapstructure:"default_collection_interval"`
-	Scrapers                  map[string]internal.Config `mapstructure:"-"`
+	CollectionInterval time.Duration              `mapstructure:"collection_interval"`
+	Scrapers           map[string]internal.Config `mapstructure:"-"`
 }

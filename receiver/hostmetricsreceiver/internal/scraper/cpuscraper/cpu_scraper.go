@@ -16,98 +16,57 @@ package cpuscraper
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/host"
 	"go.opencensus.io/trace"
 
-	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdatautil"
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal"
 )
 
-// Scraper for CPU Metrics
-type Scraper struct {
+// scraper for CPU Metrics
+type scraper struct {
 	config    *Config
-	consumer  consumer.MetricsConsumer
 	startTime pdata.TimestampUnixNano
-	cancel    context.CancelFunc
 }
 
-// NewCPUScraper creates a set of CPU related metrics
-func NewCPUScraper(ctx context.Context, cfg *Config, consumer consumer.MetricsConsumer) (*Scraper, error) {
-	return &Scraper{config: cfg, consumer: consumer}, nil
+// newCPUScraper creates a set of CPU related metrics
+func newCPUScraper(_ context.Context, cfg *Config) *scraper {
+	return &scraper{config: cfg}
 }
 
-// Start
-func (c *Scraper) Start(ctx context.Context) error {
-	ctx, c.cancel = context.WithCancel(ctx)
-
+// Initialize
+func (s *scraper) Initialize(_ context.Context) error {
 	bootTime, err := host.BootTime()
 	if err != nil {
 		return err
 	}
 
-	c.startTime = pdata.TimestampUnixNano(bootTime)
-
-	go func() {
-		ticker := time.NewTicker(c.config.CollectionInterval())
-		defer ticker.Stop()
-
-		for {
-			select {
-			case <-ticker.C:
-				c.scrapeMetrics(ctx)
-			case <-ctx.Done():
-				return
-			}
-		}
-	}()
-
+	s.startTime = pdata.TimestampUnixNano(bootTime)
 	return nil
 }
 
-// Shutdown
-func (c *Scraper) Shutdown(ctx context.Context) error {
-	c.cancel()
+// Close
+func (s *scraper) Close(_ context.Context) error {
 	return nil
 }
 
-func (c *Scraper) scrapeMetrics(ctx context.Context) {
-	ctx, span := trace.StartSpan(ctx, "cpuscraper.scrapeMetrics")
+// ScrapeMetrics
+func (s *scraper) ScrapeMetrics(ctx context.Context) (pdata.MetricSlice, error) {
+	_, span := trace.StartSpan(ctx, "cpuscraper.ScrapeMetrics")
 	defer span.End()
 
-	metricData := data.NewMetricData()
-	metrics := internal.InitializeMetricSlice(metricData)
+	metrics := pdata.NewMetricSlice()
 
-	err := c.scrapeAndAppendMetrics(metrics)
+	cpuTimes, err := cpu.Times(s.config.ReportPerCPU)
 	if err != nil {
-		span.SetStatus(trace.Status{Code: trace.StatusCodeDataLoss, Message: fmt.Sprintf("Error(s) when scraping cpu metrics: %v", err)})
-		return
+		return metrics, err
 	}
 
-	if metrics.Len() > 0 {
-		err := c.consumer.ConsumeMetrics(ctx, pdatautil.MetricsFromInternalMetrics(metricData))
-		if err != nil {
-			span.SetStatus(trace.Status{Code: trace.StatusCodeDataLoss, Message: fmt.Sprintf("Unable to process metrics: %v", err)})
-			return
-		}
-	}
-}
-
-func (c *Scraper) scrapeAndAppendMetrics(metrics pdata.MetricSlice) error {
-	cpuTimes, err := cpu.Times(c.config.ReportPerCPU)
-	if err != nil {
-		return err
-	}
-
-	metric := internal.AddNewMetric(metrics)
-	initializeCPUSecondsMetric(metric, c.startTime, cpuTimes)
-	return nil
+	metrics.Resize(1)
+	initializeCPUSecondsMetric(metrics.At(0), s.startTime, cpuTimes)
+	return metrics, nil
 }
 
 func initializeCPUSecondsMetric(metric pdata.Metric, startTime pdata.TimestampUnixNano, cpuTimes []cpu.TimesStat) {

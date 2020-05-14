@@ -16,7 +16,6 @@ package networkscraper
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"time"
 
@@ -25,89 +24,46 @@ import (
 	"go.opencensus.io/trace"
 
 	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
-	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdatautil"
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal"
 )
 
-// Scraper for Network Metrics
-type Scraper struct {
+// scraper for Network Metrics
+type scraper struct {
 	config    *Config
-	consumer  consumer.MetricsConsumer
 	startTime pdata.TimestampUnixNano
-	cancel    context.CancelFunc
 }
 
-// NewNetworkScraper creates a set of Network related metrics
-func NewNetworkScraper(ctx context.Context, cfg *Config, consumer consumer.MetricsConsumer) (*Scraper, error) {
-	return &Scraper{config: cfg, consumer: consumer}, nil
+// newNetworkScraper creates a set of Network related metrics
+func newNetworkScraper(_ context.Context, cfg *Config) *scraper {
+	return &scraper{config: cfg}
 }
 
-// Start
-func (c *Scraper) Start(ctx context.Context) error {
-	ctx, c.cancel = context.WithCancel(ctx)
-
+// Initialize
+func (s *scraper) Initialize(_ context.Context) error {
 	bootTime, err := host.BootTime()
 	if err != nil {
 		return err
 	}
 
-	c.startTime = pdata.TimestampUnixNano(bootTime)
-
-	go func() {
-		ticker := time.NewTicker(c.config.CollectionInterval())
-		defer ticker.Stop()
-
-		for {
-			select {
-			case <-ticker.C:
-				c.scrapeMetrics(ctx)
-			case <-ctx.Done():
-				return
-			}
-		}
-	}()
-
+	s.startTime = pdata.TimestampUnixNano(bootTime)
 	return nil
 }
 
-// Shutdown
-func (c *Scraper) Shutdown(ctx context.Context) error {
-	c.cancel()
+// Close
+func (s *scraper) Close(_ context.Context) error {
 	return nil
 }
 
-func (c *Scraper) scrapeMetrics(ctx context.Context) {
-	ctx, span := trace.StartSpan(ctx, "networkscraper.scrapeMetrics")
+// ScrapeMetrics
+func (s *scraper) ScrapeMetrics(ctx context.Context) (pdata.MetricSlice, error) {
+	_, span := trace.StartSpan(ctx, "networkscraper.ScrapeMetrics")
 	defer span.End()
 
-	metricData := data.NewMetricData()
-	metrics := internal.InitializeMetricSlice(metricData)
+	metrics := pdata.NewMetricSlice()
 
-	err := c.scrapeAndAppendMetrics(metrics)
-	if err != nil {
-		span.SetStatus(trace.Status{Code: trace.StatusCodeDataLoss, Message: fmt.Sprintf("Error(s) when scraping network metrics: %v", err)})
-		return
-	}
-
-	if metrics.Len() > 0 {
-		err := c.consumer.ConsumeMetrics(ctx, pdatautil.MetricsFromInternalMetrics(metricData))
-		if err != nil {
-			span.SetStatus(trace.Status{Code: trace.StatusCodeDataLoss, Message: fmt.Sprintf("Unable to process metrics: %v", err)})
-			return
-		}
-	}
-}
-
-// scrapeAndAppendMetrics appends scraped metrics to the provided metric slice.
-// If errors occur scraping some metrics, an error will be returned, but the
-// successfully scraped metrics will still be appended to the provided slice
-func (c *Scraper) scrapeAndAppendMetrics(metrics pdata.MetricSlice) error {
 	var errors []error
 
-	err := scrapeAndAppendNetworkCounterMetrics(metrics, c.startTime)
+	err := scrapeAndAppendNetworkCounterMetrics(metrics, s.startTime)
 	if err != nil {
 		errors = append(errors, err)
 	}
@@ -118,10 +74,10 @@ func (c *Scraper) scrapeAndAppendMetrics(metrics pdata.MetricSlice) error {
 	}
 
 	if len(errors) > 0 {
-		return componenterror.CombineErrors(errors)
+		return metrics, componenterror.CombineErrors(errors)
 	}
 
-	return nil
+	return metrics, nil
 }
 
 func scrapeAndAppendNetworkCounterMetrics(metrics pdata.MetricSlice, startTime pdata.TimestampUnixNano) error {
@@ -169,8 +125,9 @@ func scrapeAndAppendNetworkTCPConnectionsMetric(metrics pdata.MetricSlice) error
 
 	connectionStatusCounts := getConnectionStatusCounts(connections)
 
-	metric := internal.AddNewMetric(metrics)
-	initializeNetworkTCPConnectionsMetric(metric, connectionStatusCounts)
+	startIdx := metrics.Len()
+	metrics.Resize(startIdx + 1)
+	initializeNetworkTCPConnectionsMetric(metrics.At(startIdx), connectionStatusCounts)
 	return nil
 }
 
