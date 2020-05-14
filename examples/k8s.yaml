@@ -34,7 +34,7 @@ data:
       pipelines:
         traces:
           receivers: [otlp]
-          processors: [batch, memory_limiter, queued_retry]
+          processors: [memory_limiter, batch, queued_retry]
           exporters: [otlp]
 ---
 apiVersion: apps/v1
@@ -71,8 +71,8 @@ spec:
             cpu: 100m
             memory: 100Mi
         ports:
-        - containerPort: 55680 # Default OpenTelemetry receiver port.
         - containerPort: 55679 # ZPages endpoint.
+        - containerPort: 55680 # Default OpenTelemetry receiver port.
         - containerPort: 8888  # Metrics.
         volumeMounts:
         - name: otel-agent-config-vol
@@ -111,7 +111,6 @@ data:
       zipkin: {}
     processors:
       batch:
-      queued_retry:
       memory_limiter:
         # Same as --mem-ballast-size-mib CLI argument
         ballast_size_mib: 165
@@ -119,6 +118,7 @@ data:
         limit_mib: 400
         # 25% of limit up to 2G
         spike_limit_mib: 100
+      queued_retry:
     extensions:
       health_check: {}
       zpages: {}
@@ -132,11 +132,11 @@ data:
       pipelines:
         traces/1:
           receivers: [otlp, zipkin]
-          processors: [batch, memory_limiter, queued_retry]
+          processors: [memory_limiter, batch, queued_retry]
           exporters: [otlp, zipkin]
         traces/2:
           receivers: [otlp, jaeger]
-          processors: [batch, memory_limiter, queued_retry]
+          processors: [memory_limiter, batch, queued_retry]
           exporters: [jaeger]
 ---
 apiVersion: v1
@@ -200,6 +200,7 @@ spec:
             cpu: 200m
             memory: 400Mi
         ports:
+        - containerPort: 55679 # Default endpoint for ZPages.
         - containerPort: 55680 # Default endpoint for OpenTelemetry receiver.
         - containerPort: 14250 # Default endpoint for Jaeger HTTP receiver.
         - containerPort: 14268 # Default endpoint for Jaeger HTTP receiver.
