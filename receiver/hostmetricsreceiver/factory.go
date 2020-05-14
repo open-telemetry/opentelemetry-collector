@@ -33,6 +33,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/loadscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/memoryscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/networkscraper"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/virtualmemoryscraper"
 )
 
 // This file implements Factory for HostMetrics receiver.
@@ -52,12 +53,13 @@ type Factory struct {
 func NewFactory() *Factory {
 	return &Factory{
 		scraperFactories: map[string]internal.Factory{
-			cpuscraper.TypeStr:        &cpuscraper.Factory{},
-			diskscraper.TypeStr:       &diskscraper.Factory{},
-			loadscraper.TypeStr:       &loadscraper.Factory{},
-			filesystemscraper.TypeStr: &filesystemscraper.Factory{},
-			memoryscraper.TypeStr:     &memoryscraper.Factory{},
-			networkscraper.TypeStr:    &networkscraper.Factory{},
+			cpuscraper.TypeStr:           &cpuscraper.Factory{},
+			diskscraper.TypeStr:          &diskscraper.Factory{},
+			loadscraper.TypeStr:          &loadscraper.Factory{},
+			filesystemscraper.TypeStr:    &filesystemscraper.Factory{},
+			memoryscraper.TypeStr:        &memoryscraper.Factory{},
+			networkscraper.TypeStr:       &networkscraper.Factory{},
+			virtualmemoryscraper.TypeStr: &virtualmemoryscraper.Factory{},
 		},
 	}
 }

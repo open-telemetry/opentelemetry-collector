@@ -39,7 +39,7 @@ func TestStartSampling(t *testing.T) {
 	// override the processor queue length perf counter with a mock
 	// that will ensure a positive value is returned
 	assert.IsType(t, &pdh.PerfCounter{}, samplerInstance.processorQueueLengthCounter)
-	samplerInstance.processorQueueLengthCounter = pdh.NewMockPerfCounter(100)
+	samplerInstance.processorQueueLengthCounter = pdh.NewMockPerfCounter(100.0)
 
 	// second call to startSampling should succeed, but not do anything
 	startSampling(context.Background(), zap.NewNop())
@@ -78,24 +78,25 @@ func assertSamplingUnderway(t *testing.T) {
 }
 
 func TestSampleLoad(t *testing.T) {
-	mockCounter := pdh.NewMockPerfCounter(10, 20, 30, 40, 50)
+	counterReturnValues := []interface{}{10.0, 20.0, 30.0, 40.0, 50.0}
+	mockCounter := pdh.NewMockPerfCounter(counterReturnValues...)
 	samplerInstance = &sampler{processorQueueLengthCounter: mockCounter}
 
-	for i := 0; i < len(mockCounter.ReturnValues); i++ {
+	for i := 0; i < len(counterReturnValues); i++ {
 		samplerInstance.sampleLoad()
 	}
 
-	assert.Equal(t, calcExpectedLoad(mockCounter.ReturnValues, loadAvgFactor1m), samplerInstance.loadAvg1m)
-	assert.Equal(t, calcExpectedLoad(mockCounter.ReturnValues, loadAvgFactor5m), samplerInstance.loadAvg5m)
-	assert.Equal(t, calcExpectedLoad(mockCounter.ReturnValues, loadAvgFactor15m), samplerInstance.loadAvg15m)
+	assert.Equal(t, calcExpectedLoad(counterReturnValues, loadAvgFactor1m), samplerInstance.loadAvg1m)
+	assert.Equal(t, calcExpectedLoad(counterReturnValues, loadAvgFactor5m), samplerInstance.loadAvg5m)
+	assert.Equal(t, calcExpectedLoad(counterReturnValues, loadAvgFactor15m), samplerInstance.loadAvg15m)
 }
 
-func calcExpectedLoad(scrapedValues []float64, loadAvgFactor float64) float64 {
+func calcExpectedLoad(scrapedValues []interface{}, loadAvgFactor float64) float64 {
 	// replicate the calculations that should be performed to determine the exponentially
 	// weighted moving averages based on the specified scraped values
 	var expectedLoad float64
 	for i := 0; i < len(scrapedValues); i++ {
-		expectedLoad = expectedLoad*loadAvgFactor + scrapedValues[i]*(1-loadAvgFactor)
+		expectedLoad = expectedLoad*loadAvgFactor + scrapedValues[i].(float64)*(1-loadAvgFactor)
 	}
 	return expectedLoad
 }

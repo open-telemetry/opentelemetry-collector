@@ -32,8 +32,10 @@ import (
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/diskscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/loadscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/memoryscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/networkscraper"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/virtualmemoryscraper"
 )
 
 var standardMetrics = []string{
@@ -43,6 +45,9 @@ var standardMetrics = []string{
 	"host/disk/ops",
 	"host/disk/time",
 	"host/filesystem/used",
+	"host/load/1m",
+	"host/load/5m",
+	"host/load/15m",
 	"host/network/packets",
 	"host/network/dropped_packets",
 	"host/network/errors",
@@ -56,6 +61,7 @@ var systemSpecificMetrics = map[string][]string{
 	"freebsd": {"host/filesystem/inodes/used"},
 	"openbsd": {"host/filesystem/inodes/used"},
 	"solaris": {"host/filesystem/inodes/used"},
+	"windows": {"host/swap/usage", "host/swap/paging"},
 }
 
 func TestGatherMetrics_EndToEnd(t *testing.T) {
@@ -67,17 +73,24 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 			cpuscraper.TypeStr:        &cpuscraper.Config{ReportPerCPU: true},
 			diskscraper.TypeStr:       &diskscraper.Config{},
 			filesystemscraper.TypeStr: &filesystemscraper.Config{},
+			loadscraper.TypeStr:       &loadscraper.Config{},
 			memoryscraper.TypeStr:     &memoryscraper.Config{},
 			networkscraper.TypeStr:    &networkscraper.Config{},
 		},
 	}
 
+	if runtime.GOOS == "windows" {
+		config.Scrapers[virtualmemoryscraper.TypeStr] = &virtualmemoryscraper.Config{}
+	}
+
 	factories := map[string]internal.Factory{
-		cpuscraper.TypeStr:        &cpuscraper.Factory{},
-		diskscraper.TypeStr:       &diskscraper.Factory{},
-		filesystemscraper.TypeStr: &filesystemscraper.Factory{},
-		memoryscraper.TypeStr:     &memoryscraper.Factory{},
-		networkscraper.TypeStr:    &networkscraper.Factory{},
+		cpuscraper.TypeStr:           &cpuscraper.Factory{},
+		diskscraper.TypeStr:          &diskscraper.Factory{},
+		filesystemscraper.TypeStr:    &filesystemscraper.Factory{},
+		loadscraper.TypeStr:          &loadscraper.Factory{},
+		memoryscraper.TypeStr:        &memoryscraper.Factory{},
+		networkscraper.TypeStr:       &networkscraper.Factory{},
+		virtualmemoryscraper.TypeStr: &virtualmemoryscraper.Factory{},
 	}
 
 	receiver, err := newHostMetricsReceiver(context.Background(), zap.NewNop(), config, factories, sink)
