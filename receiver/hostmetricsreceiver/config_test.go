@@ -24,6 +24,7 @@ import (
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/diskscraper"
@@ -31,6 +32,8 @@ import (
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/loadscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/memoryscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/networkscraper"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/processscraper"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/virtualmemoryscraper"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -62,12 +65,21 @@ func TestLoadConfig(t *testing.T) {
 			},
 			CollectionInterval: 30 * time.Second,
 			Scrapers: map[string]internal.Config{
-				cpuscraper.TypeStr:        &cpuscraper.Config{ReportPerCPU: true},
+				cpuscraper.TypeStr: &cpuscraper.Config{
+					ReportPerCPU: true,
+				},
 				diskscraper.TypeStr:       &diskscraper.Config{},
 				loadscraper.TypeStr:       &loadscraper.Config{},
 				filesystemscraper.TypeStr: &filesystemscraper.Config{},
 				memoryscraper.TypeStr:     &memoryscraper.Config{},
 				networkscraper.TypeStr:    &networkscraper.Config{},
+				processscraper.TypeStr: &processscraper.Config{
+					Include: processscraper.MatchConfig{
+						Names:  []string{"test1", "test2"},
+						Config: filterset.Config{MatchType: "regexp"},
+					},
+				},
+				virtualmemoryscraper.TypeStr: &virtualmemoryscraper.Config{},
 			},
 		})
 }

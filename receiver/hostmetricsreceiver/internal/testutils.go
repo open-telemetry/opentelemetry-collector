@@ -15,6 +15,7 @@
 package internal
 
 import (
+	"sort"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -60,4 +61,41 @@ func AssertInt64MetricLabelDoesNotExist(t *testing.T, metric pdata.Metric, index
 func AssertDoubleMetricLabelDoesNotExist(t *testing.T, metric pdata.Metric, index int, labelName string) {
 	_, ok := metric.DoubleDataPoints().At(index).LabelsMap().Get(labelName)
 	assert.Falsef(t, ok, "Unexpected label %q in metric %q", labelName, metric.MetricDescriptor().Name())
+}
+
+func AssertInt64MetricLabelNonEmptyAtLeastOneDataPoint(t *testing.T, metric pdata.Metric, labelName string) {
+	idps := metric.Int64DataPoints()
+	for i := 0; i < idps.Len(); i++ {
+		value, ok := idps.At(i).LabelsMap().Get(labelName)
+		if ok && value.Value() != "" {
+			return
+		}
+	}
+
+	assert.Failf(t, "Missing label %q for all datapoints in metric %q", labelName, metric.MetricDescriptor().Name())
+}
+
+func AssertInt64MetricLabelHasValuesAllDataPoints(t *testing.T, metric pdata.Metric, labelName string, expectedValues []string) {
+	values := getAllValuesForLabel(t, metric.Int64DataPoints(), labelName)
+
+	sort.Strings(values)
+	sort.Strings(expectedValues)
+
+	assert.Equalf(t, expectedValues, values, "The set of label values for %q did not match the expected values in metric %q", labelName, metric.MetricDescriptor().Name())
+}
+
+func getAllValuesForLabel(t *testing.T, idps pdata.Int64DataPointSlice, labelName string) []string {
+	valuesMap := make(map[string]bool, idps.Len())
+	for i := 0; i < idps.Len(); i++ {
+		value, ok := idps.At(i).LabelsMap().Get(labelName)
+		if ok {
+			valuesMap[value.Value()] = true
+		}
+	}
+
+	values := make([]string, 0, len(valuesMap))
+	for value := range valuesMap {
+		values = append(values, value)
+	}
+	return values
 }

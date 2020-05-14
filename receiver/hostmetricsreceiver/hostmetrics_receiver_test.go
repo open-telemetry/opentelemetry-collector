@@ -35,6 +35,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/loadscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/memoryscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/networkscraper"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/processscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/virtualmemoryscraper"
 )
 
@@ -55,6 +56,9 @@ var standardMetrics = []string{
 	"host/network/tcp_connections",
 	"host/swap/paging",
 	"host/swap/usage",
+	"process/cpu/usage",
+	"process/memory/usage",
+	"process/disk/bytes",
 }
 
 var systemSpecificMetrics = map[string][]string{
@@ -72,6 +76,7 @@ var factories = map[string]internal.Factory{
 	loadscraper.TypeStr:          &loadscraper.Factory{},
 	memoryscraper.TypeStr:        &memoryscraper.Factory{},
 	networkscraper.TypeStr:       &networkscraper.Factory{},
+	processscraper.TypeStr:       &processscraper.Factory{},
 	virtualmemoryscraper.TypeStr: &virtualmemoryscraper.Factory{},
 }
 
@@ -87,6 +92,7 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 			loadscraper.TypeStr:          &loadscraper.Config{},
 			memoryscraper.TypeStr:        &memoryscraper.Config{},
 			networkscraper.TypeStr:       &networkscraper.Config{},
+			processscraper.TypeStr:       &processscraper.Config{},
 			virtualmemoryscraper.TypeStr: &virtualmemoryscraper.Config{},
 		},
 	}
@@ -191,6 +197,11 @@ func Benchmark_ScrapeNetworkMetrics(b *testing.B) {
 	benchmarkScrapeMetrics(b, cfg)
 }
 
+func Benchmark_ScrapeProcessMetrics(b *testing.B) {
+	cfg := &Config{Scrapers: map[string]internal.Config{processscraper.TypeStr: (&processscraper.Factory{}).CreateDefaultConfig()}}
+	benchmarkScrapeMetrics(b, cfg)
+}
+
 func Benchmark_ScrapeVirtualMemoryMetrics(b *testing.B) {
 	cfg := &Config{Scrapers: map[string]internal.Config{virtualmemoryscraper.TypeStr: (&virtualmemoryscraper.Factory{}).CreateDefaultConfig()}}
 	benchmarkScrapeMetrics(b, cfg)
@@ -198,7 +209,6 @@ func Benchmark_ScrapeVirtualMemoryMetrics(b *testing.B) {
 
 func Benchmark_ScrapeDefaultMetrics(b *testing.B) {
 	cfg := &Config{
-		CollectionInterval: 100 * time.Millisecond,
 		Scrapers: map[string]internal.Config{
 			cpuscraper.TypeStr:           (&cpuscraper.Factory{}).CreateDefaultConfig(),
 			diskscraper.TypeStr:          (&diskscraper.Factory{}).CreateDefaultConfig(),
@@ -215,7 +225,6 @@ func Benchmark_ScrapeDefaultMetrics(b *testing.B) {
 
 func Benchmark_ScrapeAllMetrics(b *testing.B) {
 	cfg := &Config{
-		CollectionInterval: 100 * time.Millisecond,
 		Scrapers: map[string]internal.Config{
 			cpuscraper.TypeStr:           &cpuscraper.Config{ReportPerCPU: true},
 			diskscraper.TypeStr:          &diskscraper.Config{},
@@ -223,6 +232,7 @@ func Benchmark_ScrapeAllMetrics(b *testing.B) {
 			loadscraper.TypeStr:          &loadscraper.Config{},
 			memoryscraper.TypeStr:        &memoryscraper.Config{},
 			networkscraper.TypeStr:       &networkscraper.Config{},
+			processscraper.TypeStr:       &processscraper.Config{},
 			virtualmemoryscraper.TypeStr: &virtualmemoryscraper.Config{},
 		},
 	}
