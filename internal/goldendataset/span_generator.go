@@ -280,39 +280,40 @@ func lookupSpanKind(kind string) otlptrace.Span_SpanKind {
 
 func generateSpanAttributes(spanTypeID string) []*otlpcommon.AttributeKeyValue {
 	var attrs map[string]interface{}
-	if SpanAttrNil == spanTypeID {
+	switch spanTypeID {
+	case SpanAttrNil:
 		attrs = nil
-	} else if SpanAttrEmpty == spanTypeID {
+	case SpanAttrEmpty:
 		attrs = make(map[string]interface{})
-	} else if SpanAttrDatabaseSQL == spanTypeID {
+	case SpanAttrDatabaseSQL:
 		attrs = generateDatabaseSQLAttributes()
-	} else if SpanAttrDatabaseNoSQL == spanTypeID {
+	case SpanAttrDatabaseNoSQL:
 		attrs = generateDatabaseNoSQLAttributes()
-	} else if SpanAttrFaaSDatasource == spanTypeID {
+	case SpanAttrFaaSDatasource:
 		attrs = generateFaaSDatasourceAttributes()
-	} else if SpanAttrFaaSHTTP == spanTypeID {
+	case SpanAttrFaaSHTTP:
 		attrs = generateFaaSHTTPAttributes()
-	} else if SpanAttrFaaSPubSub == spanTypeID {
+	case SpanAttrFaaSPubSub:
 		attrs = generateFaaSPubSubAttributes()
-	} else if SpanAttrFaaSTimer == spanTypeID {
+	case SpanAttrFaaSTimer:
 		attrs = generateFaaSTimerAttributes()
-	} else if SpanAttrFaaSOther == spanTypeID {
+	case SpanAttrFaaSOther:
 		attrs = generateFaaSOtherAttributes()
-	} else if SpanAttrHTTPClient == spanTypeID {
+	case SpanAttrHTTPClient:
 		attrs = generateHTTPClientAttributes()
-	} else if SpanAttrHTTPServer == spanTypeID {
+	case SpanAttrHTTPServer:
 		attrs = generateHTTPServerAttributes()
-	} else if SpanAttrMessagingProducer == spanTypeID {
+	case SpanAttrMessagingProducer:
 		attrs = generateMessagingProducerAttributes()
-	} else if SpanAttrMessagingConsumer == spanTypeID {
+	case SpanAttrMessagingConsumer:
 		attrs = generateMessagingConsumerAttributes()
-	} else if SpanAttrGRPCClient == spanTypeID {
+	case SpanAttrGRPCClient:
 		attrs = generateGRPCClientAttributes()
-	} else if SpanAttrGRPCServer == spanTypeID {
+	case SpanAttrGRPCServer:
 		attrs = generateGRPCServerAttributes()
-	} else if SpanAttrInternal == spanTypeID {
+	case SpanAttrInternal:
 		attrs = generateInternalAttributes()
-	} else {
+	default:
 		panic("invalid spanTypeID")
 	}
 	return convertMapToAttributeKeyValues(attrs)

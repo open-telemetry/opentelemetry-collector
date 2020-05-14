@@ -52,9 +52,15 @@ func GenerateResource(rscID string) *otlpresource.Resource {
 	default:
 		panic("invalid rscID")
 	}
+	var dropped uint32
+	if len(attrs) < 10 {
+		dropped = 0
+	} else {
+		dropped = uint32(len(attrs) % 4)
+	}
 	return &otlpresource.Resource{
 		Attributes:             convertMapToAttributeKeyValues(attrs),
-		DroppedAttributesCount: uint32(len(attrs) % 4),
+		DroppedAttributesCount: dropped,
 	}
 }
 

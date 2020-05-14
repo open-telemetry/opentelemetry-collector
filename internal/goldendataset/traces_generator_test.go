@@ -21,7 +21,7 @@ import (
 )
 
 func TestGenerateTraces(t *testing.T) {
-	rscSpans, err := GenerateResourceSpans("testdata/pict_pairs_traces.txt", "testdata/pict_pairs_spans.txt")
+	rscSpans, err := GenerateResourceSpans("testdata/generated_pict_pairs_traces.txt", "testdata/generated_pict_pairs_spans.txt")
 	assert.Nil(t, err)
 	assert.Equal(t, 28, len(rscSpans))
 }
