@@ -15,10 +15,9 @@
 package goldendataset
 
 import (
-	"reflect"
-
 	otlpcommon "github.com/open-telemetry/opentelemetry-proto/gen/go/common/v1"
 	otlpresource "github.com/open-telemetry/opentelemetry-proto/gen/go/resource/v1"
+	"github.com/spf13/cast"
 
 	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 )
@@ -35,21 +34,22 @@ const (
 
 func GenerateResource(rscID string) *otlpresource.Resource {
 	var attrs map[string]interface{}
-	if ResourceNil == rscID {
+	switch rscID {
+	case ResourceNil:
 		attrs = generateNilAttributes()
-	} else if ResourceEmpty == rscID {
+	case ResourceEmpty:
 		attrs = generateEmptyAttributes()
-	} else if ResourceVMOnPrem == rscID {
+	case ResourceVMOnPrem:
 		attrs = generateOnpremVMAttributes()
-	} else if ResourceVMCloud == rscID {
+	case ResourceVMCloud:
 		attrs = generateCloudVMAttributes()
-	} else if ResourceK8sOnPrem == rscID {
+	case ResourceK8sOnPrem:
 		attrs = generateOnpremK8sAttributes()
-	} else if ResourceK8sCloud == rscID {
+	case ResourceK8sCloud:
 		attrs = generateCloudK8sAttributes()
-	} else if ResourceFaas == rscID {
+	case ResourceFaas:
 		attrs = generateFassAttributes()
-	} else {
+	default:
 		panic("invalid rscID")
 	}
 	return &otlpresource.Resource{
@@ -65,35 +65,41 @@ func convertMapToAttributeKeyValues(attrsMap map[string]interface{}) []*otlpcomm
 	attrList := make([]*otlpcommon.AttributeKeyValue, len(attrsMap))
 	index := 0
 	for key, value := range attrsMap {
-		valType := reflect.TypeOf(value)
-		if valType.Kind() == reflect.Int || valType.Kind() == reflect.Int64 {
-			attrList[index] = &otlpcommon.AttributeKeyValue{
-				Key:      key,
-				Type:     otlpcommon.AttributeKeyValue_INT,
-				IntValue: value.(int64),
-			}
-		} else if valType.Kind() == reflect.Float32 || valType.Kind() == reflect.Float64 {
-			attrList[index] = &otlpcommon.AttributeKeyValue{
-				Key:         key,
-				Type:        otlpcommon.AttributeKeyValue_DOUBLE,
-				DoubleValue: value.(float64),
-			}
-		} else if valType.Kind() == reflect.Bool {
-			attrList[index] = &otlpcommon.AttributeKeyValue{
-				Key:       key,
-				Type:      otlpcommon.AttributeKeyValue_BOOL,
-				BoolValue: value.(bool),
-			}
-		} else {
-			attrList[index] = &otlpcommon.AttributeKeyValue{
-				Key:         key,
-				Type:        otlpcommon.AttributeKeyValue_STRING,
-				StringValue: value.(string),
-			}
-		}
+		attrList[index] = constructAttributeKeyValue(key, value)
 		index++
 	}
 	return attrList
+}
+
+func constructAttributeKeyValue(key string, value interface{}) *otlpcommon.AttributeKeyValue {
+	var attr otlpcommon.AttributeKeyValue
+	switch val := value.(type) {
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+		attr = otlpcommon.AttributeKeyValue{
+			Key:      key,
+			Type:     otlpcommon.AttributeKeyValue_INT,
+			IntValue: cast.ToInt64(val),
+		}
+	case float32, float64:
+		attr = otlpcommon.AttributeKeyValue{
+			Key:         key,
+			Type:        otlpcommon.AttributeKeyValue_DOUBLE,
+			DoubleValue: cast.ToFloat64(val),
+		}
+	case bool:
+		attr = otlpcommon.AttributeKeyValue{
+			Key:       key,
+			Type:      otlpcommon.AttributeKeyValue_BOOL,
+			BoolValue: cast.ToBool(val),
+		}
+	default:
+		attr = otlpcommon.AttributeKeyValue{
+			Key:         key,
+			Type:        otlpcommon.AttributeKeyValue_STRING,
+			StringValue: val.(string),
+		}
+	}
+	return &attr
 }
 
 func generateNilAttributes() map[string]interface{} {

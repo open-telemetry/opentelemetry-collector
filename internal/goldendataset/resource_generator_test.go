@@ -27,8 +27,6 @@ func TestGenerateResource(t *testing.T) {
 		ResourceK8sCloud, ResourceFaas}
 	for _, rscID := range resourceIds {
 		rsc := GenerateResource(rscID)
-		str := rsc.String()
-		t.Logf("Resource: %s", str)
 		if rscID == ResourceNil {
 			assert.Nil(t, rsc.Attributes)
 		} else {
