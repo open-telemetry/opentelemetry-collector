@@ -19,7 +19,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 )
 
 // This file implements Factory for CPU scraper.

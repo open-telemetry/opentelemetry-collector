@@ -15,7 +15,7 @@
 package zipkinexporter
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configmodels"
 )
 
 // Config defines configuration settings for the Zipkin exporter.
@@ -29,7 +29,7 @@ type Config struct {
 
 	// Whether resource labels from TraceData are to be included in Span. True by default
 	// This is a temporary flag and will be removed soon,
-	// see https://github.com/open-telemetry/opentelemetry-collector/issues/595
+	// see https://go.opentelemetry.io/collector/issues/595
 	ExportResourceLabels *bool `mapstructure:"export_resource_labels"`
 
 	DefaultServiceName string `mapstructure:"default_service_name"`

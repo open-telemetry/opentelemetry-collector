@@ -20,7 +20,7 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/open-telemetry/opentelemetry-collector/internal/processor/filterset"
+	"go.opentelemetry.io/collector/internal/processor/filterset"
 )
 
 var (

@@ -22,8 +22,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-collector/observability"
-	"github.com/open-telemetry/opentelemetry-collector/observability/observabilitytest"
+	"go.opentelemetry.io/collector/observability"
+	"go.opentelemetry.io/collector/observability/observabilitytest"
 )
 
 const (

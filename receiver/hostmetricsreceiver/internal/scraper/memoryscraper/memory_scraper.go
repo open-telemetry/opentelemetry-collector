@@ -21,7 +21,7 @@ import (
 	"github.com/shirou/gopsutil/mem"
 	"go.opencensus.io/trace"
 
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 // scraper for Memory Metrics

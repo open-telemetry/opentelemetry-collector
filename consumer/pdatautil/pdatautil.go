@@ -22,10 +22,10 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/golang/protobuf/proto"
 
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
-	"github.com/open-telemetry/opentelemetry-collector/translator/internaldata"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/data"
+	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
 // MetricsToMetricsData returns the `[]consumerdata.MetricsData` representation of the `pdata.Metrics`.

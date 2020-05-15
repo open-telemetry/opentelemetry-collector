@@ -18,9 +18,9 @@ package consumer
 import (
 	"context"
 
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/data"
 )
 
 // MetricsConsumerBase defines a common interface for MetricsConsumerOld and MetricsConsumer.

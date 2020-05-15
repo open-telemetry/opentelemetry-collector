@@ -24,11 +24,11 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
-	"github.com/open-telemetry/opentelemetry-collector/internal/data/testdata"
-	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/data"
+	"go.opentelemetry.io/collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/translator/conventions"
 )
 
 func TestMetricsDataToOC(t *testing.T) {

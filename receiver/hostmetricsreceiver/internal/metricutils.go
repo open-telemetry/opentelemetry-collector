@@ -15,8 +15,8 @@
 package internal
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/data"
 )
 
 // Initializes a metric with a metric slice and returns it.

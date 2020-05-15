@@ -17,8 +17,8 @@ package hostmetricsreceiver
 import (
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal"
+	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 )
 
 // Config defines configuration for HostMetrics receiver.

@@ -26,10 +26,10 @@ import (
 	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
-	"github.com/open-telemetry/opentelemetry-collector/internal"
-	"github.com/open-telemetry/opentelemetry-collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal"
+	"go.opentelemetry.io/collector/internal/data/testdata"
 )
 
 func TestOcTraceStateToInternal(t *testing.T) {

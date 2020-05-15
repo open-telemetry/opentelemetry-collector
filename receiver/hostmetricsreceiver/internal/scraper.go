@@ -19,7 +19,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 // Scraper gathers metrics from the host machine and converts

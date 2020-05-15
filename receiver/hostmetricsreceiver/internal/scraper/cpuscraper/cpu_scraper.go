@@ -22,7 +22,7 @@ import (
 	"github.com/shirou/gopsutil/host"
 	"go.opencensus.io/trace"
 
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 // scraper for CPU Metrics

@@ -29,12 +29,12 @@ import (
 	"github.com/soheilhy/cmux"
 	"google.golang.org/grpc"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
-	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/observability"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/otlpreceiver/metrics"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/otlpreceiver/trace"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/observability"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver/metrics"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver/trace"
 )
 
 // Receiver is the type that exposes Trace and Metrics reception.

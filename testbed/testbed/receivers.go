@@ -21,12 +21,12 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/jaegerreceiver"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/opencensusreceiver"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/otlpreceiver"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/zipkinreceiver"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/receiver/jaegerreceiver"
+	"go.opentelemetry.io/collector/receiver/opencensusreceiver"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver"
+	"go.opentelemetry.io/collector/receiver/zipkinreceiver"
 )
 
 // DataReceiver allows to receive traces or metrics. This is an interface that must

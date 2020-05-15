@@ -19,7 +19,7 @@ import (
 
 	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
 
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 var (
