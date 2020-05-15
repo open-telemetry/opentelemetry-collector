@@ -7,6 +7,11 @@ ALL_SRC_NO_TESTBED := $(shell find . -name '*.go' \
                                             -not -path './testbed/*' \
                                             -type f | sort)
 
+# All source code excluding anything under a third_party directory
+ALL_SRC_NO_THIRD_PARTY := $(shell find . -name '*.go' \
+                                                -not -path '*/third_party/*' \
+                                                -type f | sort)
+
 # All source code and documents. Used in spell check.
 ALL_DOC := $(shell find . \( -name "*.md" -o -name "*.yaml" \) \
                                 -type f | sort)
@@ -81,11 +86,11 @@ test-with-cover:
 
 .PHONY: addlicense
 addlicense:
-	$(ADDLICENCESE) -y '' -c 'OpenTelemetry Authors' $(ALL_SRC)
+	$(ADDLICENCESE) -y '' -c 'OpenTelemetry Authors' $(ALL_SRC_NO_THIRD_PARTY)
 
 .PHONY: checklicense
 checklicense:
-	@ADDLICENCESEOUT=`$(ADDLICENCESE) -check $(ALL_SRC) 2>&1`; \
+	@ADDLICENCESEOUT=`$(ADDLICENCESE) -check $(ALL_SRC_NO_THIRD_PARTY) 2>&1`; \
 		if [ "$$ADDLICENCESEOUT" ]; then \
 			echo "$(ADDLICENCESE) FAILED => add License errors:\n"; \
 			echo "$$ADDLICENCESEOUT\n"; \
