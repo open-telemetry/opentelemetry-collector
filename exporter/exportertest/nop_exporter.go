@@ -17,9 +17,9 @@ package exportertest
 import (
 	"context"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 type nopExporterOld struct {

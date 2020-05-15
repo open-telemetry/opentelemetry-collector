@@ -19,7 +19,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configmodels"
 )
 
 // ServiceExtension is the interface for objects hosted by the OpenTelemetry Collector that

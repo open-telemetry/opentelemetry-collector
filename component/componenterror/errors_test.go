@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
+	"go.opentelemetry.io/collector/component/componenterror"
 )
 
 func TestCombineErrors(t *testing.T) {

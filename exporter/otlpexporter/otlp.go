@@ -22,13 +22,13 @@ import (
 	otlpmetrics "github.com/open-telemetry/opentelemetry-proto/gen/go/collector/metrics/v1"
 	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/collector/trace/v1"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdatautil"
-	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/internal/data"
 )
 
 type otlpExporter struct {

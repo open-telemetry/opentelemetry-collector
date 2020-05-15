@@ -18,10 +18,10 @@ import (
 	"context"
 	"errors"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-collector/consumer"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configerror"
+	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/consumer"
 )
 
 const (
@@ -31,7 +31,7 @@ const (
 
 // errMissingRequiredField is returned when a required field in the config
 // is not specified.
-// TODO https://github.com/open-telemetry/opentelemetry-collector/issues/215
+// TODO https://go.opentelemetry.io/collector/issues/215
 //	Move this to the error package that allows for span name and field to be specified.
 var errMissingRequiredField = errors.New("error creating \"span\" processor: either \"from_attributes\" or \"to_attributes\" must be specified in \"name:\"")
 

@@ -21,7 +21,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configmodels"
 )
 
 // LoadConfigFile loads a config from file.

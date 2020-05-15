@@ -27,15 +27,15 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
-	"github.com/open-telemetry/opentelemetry-collector/config"
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	idata "github.com/open-telemetry/opentelemetry-collector/internal/data"
-	"github.com/open-telemetry/opentelemetry-collector/processor/attributesprocessor"
-	"github.com/open-telemetry/opentelemetry-collector/translator/internaldata"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
+	idata "go.opentelemetry.io/collector/internal/data"
+	"go.opentelemetry.io/collector/processor/attributesprocessor"
+	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
 func TestPipelinesBuilder_Build(t *testing.T) {

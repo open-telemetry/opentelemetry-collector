@@ -24,8 +24,8 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
 )
 
 // Marshaler configuration used for marhsaling Protobuf to JSON. Use default config.

@@ -22,13 +22,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/config"
-	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
-	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
-	"github.com/open-telemetry/opentelemetry-collector/config/configgrpc"
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-collector/receiver"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configcheck"
+	"go.opentelemetry.io/collector/config/configerror"
+	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 func TestTypeStr(t *testing.T) {

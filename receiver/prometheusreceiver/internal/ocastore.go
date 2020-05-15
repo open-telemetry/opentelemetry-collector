@@ -26,8 +26,8 @@ import (
 	"github.com/prometheus/prometheus/storage"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
-	"github.com/open-telemetry/opentelemetry-collector/consumer"
+	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/consumer"
 )
 
 const (

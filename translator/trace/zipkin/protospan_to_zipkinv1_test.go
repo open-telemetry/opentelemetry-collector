@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opencensus.io/trace/tracestate"
 
-	"github.com/open-telemetry/opentelemetry-collector/internal"
+	"go.opentelemetry.io/collector/internal"
 )
 
 func TestZipkinEndpointFromNode(t *testing.T) {

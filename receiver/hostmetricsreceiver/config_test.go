@@ -22,14 +22,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-collector/config"
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal/scraper/diskscraper"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal/scraper/memoryscraper"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal/scraper/networkscraper"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/diskscraper"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/memoryscraper"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/networkscraper"
 )
 
 func TestLoadConfig(t *testing.T) {

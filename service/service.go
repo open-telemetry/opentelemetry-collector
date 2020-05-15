@@ -33,15 +33,15 @@ import (
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
-	"github.com/open-telemetry/opentelemetry-collector/config"
-	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-collector/internal/collector/telemetry"
-	"github.com/open-telemetry/opentelemetry-collector/internal/version"
-	"github.com/open-telemetry/opentelemetry-collector/service/builder"
-	"github.com/open-telemetry/opentelemetry-collector/service/internal"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configcheck"
+	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/internal/collector/telemetry"
+	"go.opentelemetry.io/collector/internal/version"
+	"go.opentelemetry.io/collector/service/builder"
+	"go.opentelemetry.io/collector/service/internal"
 )
 
 const (

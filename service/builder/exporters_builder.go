@@ -20,10 +20,10 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
-	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/config/configerror"
+	"go.opentelemetry.io/collector/config/configmodels"
 )
 
 // builtExporter is an exporter that is built based on a config. It can have
@@ -232,7 +232,7 @@ func (eb *ExportersBuilder) buildExporter(
 
 	inputDataTypes := exportersInputDataTypes[config]
 	if inputDataTypes == nil {
-		// TODO  https://github.com/open-telemetry/opentelemetry-collector/issues/294
+		// TODO  https://go.opentelemetry.io/collector/issues/294
 		// Move this validation to config/config.go:validateConfig
 		// No data types where requested for this exporter. This can only happen
 		// if there are no pipelines associated with the exporter.

@@ -17,8 +17,8 @@ package filterset
 import (
 	"fmt"
 
-	"github.com/open-telemetry/opentelemetry-collector/internal/processor/filterset/regexp"
-	"github.com/open-telemetry/opentelemetry-collector/internal/processor/filterset/strict"
+	"go.opentelemetry.io/collector/internal/processor/filterset/regexp"
+	"go.opentelemetry.io/collector/internal/processor/filterset/strict"
 )
 
 // MatchType describes the type of pattern matching a FilterSet uses to filter strings.

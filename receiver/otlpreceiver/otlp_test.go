@@ -39,12 +39,12 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
-	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
-	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
-	"github.com/open-telemetry/opentelemetry-collector/observability/observabilitytest"
-	"github.com/open-telemetry/opentelemetry-collector/testutils"
-	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/observability/observabilitytest"
+	"go.opentelemetry.io/collector/testutils"
+	"go.opentelemetry.io/collector/translator/conventions"
 )
 
 const otlpReceiver = "otlp_receiver_test"

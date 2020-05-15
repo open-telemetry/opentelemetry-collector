@@ -19,7 +19,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 func TestHelper_AttributeValue(t *testing.T) {

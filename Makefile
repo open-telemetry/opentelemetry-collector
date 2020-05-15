@@ -38,7 +38,7 @@ STATIC_CHECK=staticcheck
 BUILD_TYPE?=release
 
 GIT_SHA=$(shell git rev-parse --short HEAD)
-BUILD_INFO_IMPORT_PATH=github.com/open-telemetry/opentelemetry-collector/internal/version
+BUILD_INFO_IMPORT_PATH=go.opentelemetry.io/collector/internal/version
 BUILD_X1=-X $(BUILD_INFO_IMPORT_PATH).GitHash=$(GIT_SHA)
 ifdef VERSION
 BUILD_X2=-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)
@@ -78,7 +78,7 @@ benchmark:
 .PHONY: test-with-cover
 test-with-cover:
 	@echo Verifying that all packages have test files to count in coverage
-	@internal/buildscripts/check-test-files.sh $(subst github.com/open-telemetry/opentelemetry-collector/,./,$(ALL_PKGS_NO_TESTBED))
+	@internal/buildscripts/check-test-files.sh $(subst go.opentelemetry.io/collector/,./,$(ALL_PKGS_NO_TESTBED))
 	@echo pre-compiling tests
 	@time go test -i $(ALL_PKGS_NO_TESTBED)
 	$(GO_ACC) $(ALL_PKGS_NO_TESTBED)
@@ -130,12 +130,12 @@ lint: lint-static-check
 
 .PHONY: impi
 impi:
-	@$(IMPI) --local github.com/open-telemetry/opentelemetry-collector --scheme stdThirdPartyLocal ./...
+	@$(IMPI) --local go.opentelemetry.io/collector --scheme stdThirdPartyLocal ./...
 
 .PHONY: fmt
 fmt:
 	gofmt  -w -s ./
-	goimports -w  -local github.com/open-telemetry/opentelemetry-collector ./
+	goimports -w  -local go.opentelemetry.io/collector ./
 
 .PHONY: install-tools
 install-tools:

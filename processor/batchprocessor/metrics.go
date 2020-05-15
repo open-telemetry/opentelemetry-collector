@@ -19,8 +19,8 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 
-	"github.com/open-telemetry/opentelemetry-collector/obsreport"
-	"github.com/open-telemetry/opentelemetry-collector/processor"
+	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/processor"
 )
 
 var (

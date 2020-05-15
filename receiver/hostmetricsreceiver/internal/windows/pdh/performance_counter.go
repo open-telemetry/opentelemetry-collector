@@ -16,7 +16,7 @@
 
 package pdh
 
-import "github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal/third_party/telegraf/win_perf_counters"
+import "go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/third_party/telegraf/win_perf_counters"
 
 const totalInstanceName = "_Total"
 

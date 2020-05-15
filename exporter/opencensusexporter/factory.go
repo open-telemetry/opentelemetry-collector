@@ -24,9 +24,9 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/config/configgrpc"
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/configmodels"
 )
 
 const (

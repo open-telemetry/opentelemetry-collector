@@ -29,10 +29,10 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/config/configgrpc"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
-	"github.com/open-telemetry/opentelemetry-collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/data/testdata"
 )
 
 func TestNew(t *testing.T) {

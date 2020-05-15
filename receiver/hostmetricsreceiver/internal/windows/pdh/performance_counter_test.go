@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal/third_party/telegraf/win_perf_counters"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/third_party/telegraf/win_perf_counters"
 )
 
 func TestNewPerfCounter_InvalidPath(t *testing.T) {

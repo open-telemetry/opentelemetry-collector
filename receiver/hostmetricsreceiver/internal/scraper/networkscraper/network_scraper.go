@@ -23,8 +23,8 @@ import (
 	"github.com/shirou/gopsutil/net"
 	"go.opencensus.io/trace"
 
-	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
+	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 // scraper for Network Metrics

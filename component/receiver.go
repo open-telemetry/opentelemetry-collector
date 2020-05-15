@@ -20,8 +20,8 @@ import (
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-collector/consumer"
+	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/consumer"
 )
 
 // Receiver defines functions that trace and metric receivers must implement.

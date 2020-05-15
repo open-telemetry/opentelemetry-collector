@@ -19,8 +19,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-collector/internal/data/testdata"
-	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
+	"go.opentelemetry.io/collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/translator/conventions"
 )
 
 func TestServiceNameForResource(t *testing.T) {

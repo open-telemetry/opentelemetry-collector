@@ -19,8 +19,8 @@ package pdh
 import (
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal/third_party/telegraf/win_perf_counters"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/third_party/telegraf/win_perf_counters"
 )
 
 // InitializeMetric initializes the provided metric with

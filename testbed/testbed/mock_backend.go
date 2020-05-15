@@ -22,9 +22,9 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdatautil"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
 )
 
 // MockBackend is a backend that allows receiving the data locally.

@@ -28,7 +28,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/open-telemetry/opentelemetry-collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/configgrpc"
 )
 
 type exporterImp struct {

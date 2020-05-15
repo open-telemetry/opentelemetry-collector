@@ -21,9 +21,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-collector/config/configtest"
-	"github.com/open-telemetry/opentelemetry-collector/internal/processor/filterset"
-	"github.com/open-telemetry/opentelemetry-collector/internal/processor/filterset/regexp"
+	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/internal/processor/filterset"
+	"go.opentelemetry.io/collector/internal/processor/filterset/regexp"
 )
 
 var (

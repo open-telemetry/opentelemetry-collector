@@ -26,12 +26,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
-	"github.com/open-telemetry/opentelemetry-collector/processor"
-	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/processor"
+	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 func TestNewTraceProcessor(t *testing.T) {

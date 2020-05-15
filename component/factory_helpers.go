@@ -17,7 +17,7 @@ package component
 import (
 	"fmt"
 
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configmodels"
 )
 
 // MakeReceiverFactoryMap takes a list of receiver factories and returns a map

@@ -17,7 +17,7 @@ package tailsamplingprocessor
 import (
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configmodels"
 )
 
 // PolicyType indicates the type of sampling policy.

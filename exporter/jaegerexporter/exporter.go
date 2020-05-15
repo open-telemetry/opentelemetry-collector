@@ -21,12 +21,12 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/config/configgrpc"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumererror"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
-	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
-	jaegertranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace/jaeger"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	jaegertranslator "go.opentelemetry.io/collector/translator/trace/jaeger"
 )
 
 // New returns a new Jaeger gRPC exporter.

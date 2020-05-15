@@ -22,12 +22,12 @@ import (
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
-	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdatautil"
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
+	"go.opentelemetry.io/collector/internal/data"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 )
 
 // receiver is the type that scrapes various host metrics.
