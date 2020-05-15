@@ -23,7 +23,7 @@ import (
 )
 
 func TestGenerateResource(t *testing.T) {
-	resourceIds := []string{ResourceNil, ResourceEmpty, ResourceVMOnPrem, ResourceVMCloud, ResourceK8sOnPrem,
+	resourceIds := []PICTInputResource{ResourceNil, ResourceEmpty, ResourceVMOnPrem, ResourceVMCloud, ResourceK8sOnPrem,
 		ResourceK8sCloud, ResourceFaas}
 	for _, rscID := range resourceIds {
 		rsc := GenerateResource(rscID)

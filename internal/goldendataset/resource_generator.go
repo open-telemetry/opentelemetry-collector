@@ -15,24 +15,12 @@
 package goldendataset
 
 import (
-	otlpcommon "github.com/open-telemetry/opentelemetry-proto/gen/go/common/v1"
 	otlpresource "github.com/open-telemetry/opentelemetry-proto/gen/go/resource/v1"
-	"github.com/spf13/cast"
 
 	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 )
 
-const (
-	ResourceNil       = "Nil"
-	ResourceEmpty     = "Empty"
-	ResourceVMOnPrem  = "VMOnPrem"
-	ResourceVMCloud   = "VMCloud"
-	ResourceK8sOnPrem = "K8sOnPrem"
-	ResourceK8sCloud  = "K8sCloud"
-	ResourceFaas      = "Faas"
-)
-
-func GenerateResource(rscID string) *otlpresource.Resource {
+func GenerateResource(rscID PICTInputResource) *otlpresource.Resource {
 	var attrs map[string]interface{}
 	switch rscID {
 	case ResourceNil:
@@ -62,50 +50,6 @@ func GenerateResource(rscID string) *otlpresource.Resource {
 		Attributes:             convertMapToAttributeKeyValues(attrs),
 		DroppedAttributesCount: dropped,
 	}
-}
-
-func convertMapToAttributeKeyValues(attrsMap map[string]interface{}) []*otlpcommon.AttributeKeyValue {
-	if attrsMap == nil {
-		return nil
-	}
-	attrList := make([]*otlpcommon.AttributeKeyValue, len(attrsMap))
-	index := 0
-	for key, value := range attrsMap {
-		attrList[index] = constructAttributeKeyValue(key, value)
-		index++
-	}
-	return attrList
-}
-
-func constructAttributeKeyValue(key string, value interface{}) *otlpcommon.AttributeKeyValue {
-	var attr otlpcommon.AttributeKeyValue
-	switch val := value.(type) {
-	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
-		attr = otlpcommon.AttributeKeyValue{
-			Key:      key,
-			Type:     otlpcommon.AttributeKeyValue_INT,
-			IntValue: cast.ToInt64(val),
-		}
-	case float32, float64:
-		attr = otlpcommon.AttributeKeyValue{
-			Key:         key,
-			Type:        otlpcommon.AttributeKeyValue_DOUBLE,
-			DoubleValue: cast.ToFloat64(val),
-		}
-	case bool:
-		attr = otlpcommon.AttributeKeyValue{
-			Key:       key,
-			Type:      otlpcommon.AttributeKeyValue_BOOL,
-			BoolValue: cast.ToBool(val),
-		}
-	default:
-		attr = otlpcommon.AttributeKeyValue{
-			Key:         key,
-			Type:        otlpcommon.AttributeKeyValue_STRING,
-			StringValue: val.(string),
-		}
-	}
-	return &attr
 }
 
 func generateNilAttributes() map[string]interface{} {

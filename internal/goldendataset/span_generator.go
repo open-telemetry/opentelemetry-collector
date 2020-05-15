@@ -15,11 +15,7 @@
 package goldendataset
 
 import (
-	"crypto/rand"
-	"encoding/csv"
 	"fmt"
-	"os"
-	"path/filepath"
 	"time"
 
 	otlpcommon "github.com/open-telemetry/opentelemetry-proto/gen/go/common/v1"
@@ -28,129 +24,44 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 )
 
-const (
-	ColumnParent     = 0
-	ColumnTracestate = 1
-	ColumnKind       = 2
-	ColumnAttributes = 3
-	ColumnEvents     = 4
-	ColumnLinks      = 5
-	ColumnStatus     = 6
-)
-
-const (
-	SpanParentRoot  = "Root"
-	SpanParentChild = "Child"
-)
-
-const (
-	TraceStateEmpty = "Empty"
-	TraceStateOne   = "One"
-	TraceStateFour  = "Four"
-)
-
-const (
-	SpanKindUnspecified = "Unspecified"
-	SpanKindInternal    = "Internal"
-	SpanKindServer      = "Server"
-	SpanKindClient      = "Client"
-	SpanKindProducer    = "Producer"
-	SpanKindConsumer    = "Consumer"
-)
-
-const (
-	SpanAttrNil               = "Nil"
-	SpanAttrEmpty             = "Empty"
-	SpanAttrDatabaseSQL       = "DatabaseSQL"
-	SpanAttrDatabaseNoSQL     = "DatabaseNoSQL"
-	SpanAttrFaaSDatasource    = "FaaSDatasource"
-	SpanAttrFaaSHTTP          = "FaaSHTTP"
-	SpanAttrFaaSPubSub        = "FaaSPubSub"
-	SpanAttrFaaSTimer         = "FaaSTimer"
-	SpanAttrFaaSOther         = "FaaSOther"
-	SpanAttrHTTPClient        = "HTTPClient"
-	SpanAttrHTTPServer        = "HTTPServer"
-	SpanAttrMessagingProducer = "MessagingProducer"
-	SpanAttrMessagingConsumer = "MessagingConsumer"
-	SpanAttrGRPCClient        = "gRPCClient"
-	SpanAttrGRPCServer        = "gRPCServer"
-	SpanAttrInternal          = "Internal"
-)
-
-const (
-	SpanChildCountNil   = "Nil"
-	SpanChildCountEmpty = "Empty"
-	SpanChildCountOne   = "One"
-	SpanChildCountTwo   = "Two"
-	SpanChildCountEight = "Eight"
-)
-
-const (
-	SpanStatusNil                = "Nil"
-	SpanStatusOk                 = "Ok"
-	SpanStatusCancelled          = "Cancelled"
-	SpanStatusUnknownError       = "UnknownError"
-	SpanStatusInvalidArgument    = "InvalidArgument"
-	SpanStatusDeadlineExceeded   = "DeadlineExceeded"
-	SpanStatusNotFound           = "NotFound"
-	SpanStatusAlreadyExists      = "AlreadyExists"
-	SpanStatusPermissionDenied   = "PermissionDenied"
-	SpanStatusResourceExhausted  = "ResourceExhausted"
-	SpanStatusFailedPrecondition = "FailedPrecondition"
-	SpanStatusAborted            = "Aborted"
-	SpanStatusOutOfRange         = "OutOfRange"
-	SpanStatusUnimplemented      = "Unimplemented"
-	SpanStatusInternalError      = "InternalError"
-	SpanStatusUnavailable        = "Unavailable"
-	SpanStatusDataLoss           = "DataLoss"
-	SpanStatusUnauthenticated    = "Unauthenticated"
-)
-
-var statusCodeMap = constructStatusCodeMap()
-var statusMsgMap = constructStatusMessageMap()
-
-func constructStatusCodeMap() map[string]otlptrace.Status_StatusCode {
-	statusMap := make(map[string]otlptrace.Status_StatusCode)
-	statusMap[SpanStatusOk] = otlptrace.Status_Ok
-	statusMap[SpanStatusCancelled] = otlptrace.Status_Cancelled
-	statusMap[SpanStatusUnknownError] = otlptrace.Status_UnknownError
-	statusMap[SpanStatusInvalidArgument] = otlptrace.Status_InvalidArgument
-	statusMap[SpanStatusDeadlineExceeded] = otlptrace.Status_DeadlineExceeded
-	statusMap[SpanStatusNotFound] = otlptrace.Status_NotFound
-	statusMap[SpanStatusAlreadyExists] = otlptrace.Status_AlreadyExists
-	statusMap[SpanStatusPermissionDenied] = otlptrace.Status_PermissionDenied
-	statusMap[SpanStatusResourceExhausted] = otlptrace.Status_ResourceExhausted
-	statusMap[SpanStatusFailedPrecondition] = otlptrace.Status_FailedPrecondition
-	statusMap[SpanStatusAborted] = otlptrace.Status_Aborted
-	statusMap[SpanStatusOutOfRange] = otlptrace.Status_OutOfRange
-	statusMap[SpanStatusUnimplemented] = otlptrace.Status_Unimplemented
-	statusMap[SpanStatusInternalError] = otlptrace.Status_InternalError
-	statusMap[SpanStatusUnavailable] = otlptrace.Status_Unavailable
-	statusMap[SpanStatusDataLoss] = otlptrace.Status_DataLoss
-	statusMap[SpanStatusUnauthenticated] = otlptrace.Status_Unauthenticated
-	return statusMap
+var statusCodeMap = map[PICTInputStatus]otlptrace.Status_StatusCode{
+	SpanStatusOk:                 otlptrace.Status_Ok,
+	SpanStatusCancelled:          otlptrace.Status_Cancelled,
+	SpanStatusUnknownError:       otlptrace.Status_UnknownError,
+	SpanStatusInvalidArgument:    otlptrace.Status_InvalidArgument,
+	SpanStatusDeadlineExceeded:   otlptrace.Status_DeadlineExceeded,
+	SpanStatusNotFound:           otlptrace.Status_NotFound,
+	SpanStatusAlreadyExists:      otlptrace.Status_AlreadyExists,
+	SpanStatusPermissionDenied:   otlptrace.Status_PermissionDenied,
+	SpanStatusResourceExhausted:  otlptrace.Status_ResourceExhausted,
+	SpanStatusFailedPrecondition: otlptrace.Status_FailedPrecondition,
+	SpanStatusAborted:            otlptrace.Status_Aborted,
+	SpanStatusOutOfRange:         otlptrace.Status_OutOfRange,
+	SpanStatusUnimplemented:      otlptrace.Status_Unimplemented,
+	SpanStatusInternalError:      otlptrace.Status_InternalError,
+	SpanStatusUnavailable:        otlptrace.Status_Unavailable,
+	SpanStatusDataLoss:           otlptrace.Status_DataLoss,
+	SpanStatusUnauthenticated:    otlptrace.Status_Unauthenticated,
 }
 
-func constructStatusMessageMap() map[string]string {
-	statusMap := make(map[string]string)
-	statusMap[SpanStatusOk] = ""
-	statusMap[SpanStatusCancelled] = "Cancellation received"
-	statusMap[SpanStatusUnknownError] = ""
-	statusMap[SpanStatusInvalidArgument] = "parameter is required"
-	statusMap[SpanStatusDeadlineExceeded] = "timed out after 30002 ms"
-	statusMap[SpanStatusNotFound] = "/dragons/RomanianLonghorn not found"
-	statusMap[SpanStatusAlreadyExists] = "/dragons/Drogon already exists"
-	statusMap[SpanStatusPermissionDenied] = "tlannister does not have write permission"
-	statusMap[SpanStatusResourceExhausted] = "ResourceExhausted"
-	statusMap[SpanStatusFailedPrecondition] = "33a64df551425fcc55e4d42a148795d9f25f89d4 has been edited"
-	statusMap[SpanStatusAborted] = ""
-	statusMap[SpanStatusOutOfRange] = "Range Not Satisfiable"
-	statusMap[SpanStatusUnimplemented] = "Unimplemented"
-	statusMap[SpanStatusInternalError] = "java.lang.NullPointerException"
-	statusMap[SpanStatusUnavailable] = "RecommendationService is currently unavailable"
-	statusMap[SpanStatusDataLoss] = ""
-	statusMap[SpanStatusUnauthenticated] = "nstark is unknown user"
-	return statusMap
+var statusMsgMap = map[PICTInputStatus]string{
+	SpanStatusOk:                 "",
+	SpanStatusCancelled:          "Cancellation received",
+	SpanStatusUnknownError:       "",
+	SpanStatusInvalidArgument:    "parameter is required",
+	SpanStatusDeadlineExceeded:   "timed out after 30002 ms",
+	SpanStatusNotFound:           "/dragons/RomanianLonghorn not found",
+	SpanStatusAlreadyExists:      "/dragons/Drogon already exists",
+	SpanStatusPermissionDenied:   "tlannister does not have write permission",
+	SpanStatusResourceExhausted:  "ResourceExhausted",
+	SpanStatusFailedPrecondition: "33a64df551425fcc55e4d42a148795d9f25f89d4 has been edited",
+	SpanStatusAborted:            "",
+	SpanStatusOutOfRange:         "Range Not Satisfiable",
+	SpanStatusUnimplemented:      "Unimplemented",
+	SpanStatusInternalError:      "java.lang.NullPointerException",
+	SpanStatusUnavailable:        "RecommendationService is currently unavailable",
+	SpanStatusDataLoss:           "",
+	SpanStatusUnauthenticated:    "nstark is unknown user",
 }
 
 func GenerateSpans(count int, startPos int, pictFile string) ([]*otlptrace.Span, int, error) {
@@ -162,17 +73,28 @@ func GenerateSpans(count int, startPos int, pictFile string) ([]*otlptrace.Span,
 	spanList := make([]*otlptrace.Span, count)
 	index := startPos + 1
 	var inputs []string
-	traceID := generateTraceID()
-	parentID := generateSpanID()
+	var traceID []byte
+	var parentID []byte
 	for i := 0; i < count; i++ {
 		inputs = pairsData[index]
-		if SpanParentRoot == inputs[ColumnParent] {
+		switch PICTInputParent(inputs[SpansColumnParent]) {
+		case SpanParentRoot:
 			traceID = generateTraceID()
 			parentID = nil
+		case SpanParentChild:
+			// use existing if available
+			if traceID == nil {
+				traceID = generateTraceID()
+			}
+			if parentID == nil {
+				parentID = generateSpanID()
+			}
 		}
-		spanName := generateSpanName(inputs[ColumnAttributes], i)
-		spanList[i] = GenerateSpan(traceID, inputs[ColumnTracestate], parentID, spanName, inputs[ColumnKind],
-			inputs[ColumnAttributes], inputs[ColumnEvents], inputs[ColumnLinks], inputs[ColumnStatus])
+		spanName := generateSpanName(PICTInputAttributes(inputs[SpansColumnAttributes]), i)
+		spanList[i] = GenerateSpan(traceID, PICTInputTracestate(inputs[SpansColumnTracestate]), parentID, spanName,
+			PICTInputKind(inputs[SpansColumnKind]), PICTInputAttributes(inputs[SpansColumnAttributes]),
+			PICTInputSpanChild(inputs[SpansColumnEvents]), PICTInputSpanChild(inputs[SpansColumnLinks]),
+			PICTInputStatus(inputs[SpansColumnStatus]))
 		parentID = spanList[i].SpanId
 		index++
 		if index >= pairsTotal {
@@ -182,25 +104,7 @@ func GenerateSpans(count int, startPos int, pictFile string) ([]*otlptrace.Span,
 	return spanList, index, nil
 }
 
-func loadPictOutputFile(fileName string) ([][]string, error) {
-	file, err := os.Open(filepath.Clean(fileName))
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		cerr := file.Close()
-		if err == nil {
-			err = cerr
-		}
-	}()
-
-	reader := csv.NewReader(file)
-	reader.Comma = '\t'
-
-	return reader.ReadAll()
-}
-
-func generateSpanName(spanTypeID string, index int) string {
+func generateSpanName(spanTypeID PICTInputAttributes, index int) string {
 	if SpanAttrHTTPClient == spanTypeID {
 		return fmt.Sprintf("/dragons/%d", index)
 	} else if SpanAttrHTTPServer == spanTypeID {
@@ -212,8 +116,9 @@ func generateSpanName(spanTypeID string, index int) string {
 	}
 }
 
-func GenerateSpan(traceID []byte, tracestate string, parentID []byte, spanName string, kind string, spanTypeID string,
-	eventCnt string, linkCnt string, statusStr string) *otlptrace.Span {
+func GenerateSpan(traceID []byte, tracestate PICTInputTracestate, parentID []byte, spanName string, kind PICTInputKind,
+	spanTypeID PICTInputAttributes,
+	eventCnt PICTInputSpanChild, linkCnt PICTInputSpanChild, statusStr PICTInputStatus) *otlptrace.Span {
 	endTime := time.Now().Add(-50 * time.Microsecond)
 	return &otlptrace.Span{
 		TraceId:                traceID,
@@ -234,51 +139,39 @@ func GenerateSpan(traceID []byte, tracestate string, parentID []byte, spanName s
 	}
 }
 
-func generateTraceID() []byte {
-	var r [16]byte
-	_, err := rand.Read(r[:])
-	if err != nil {
-		panic(err)
-	}
-	return r[:]
-}
-
-func generateSpanID() []byte {
-	var r [8]byte
-	_, err := rand.Read(r[:])
-	if err != nil {
-		panic(err)
-	}
-	return r[:]
-}
-
-func generateTraceState(tracestate string) string {
-	if TraceStateOne == tracestate {
+func generateTraceState(tracestate PICTInputTracestate) string {
+	switch tracestate {
+	case TraceStateOne:
 		return "lasterror=f39cd56cc44274fd5abd07ef1164246d10ce2955"
-	} else if TraceStateFour == tracestate {
+	case TraceStateFour:
 		return "err@ck=80ee5638,rate@ck=1.62,rojo=00f067aa0ba902b7,congo=t61rcWkgMzE"
-	} else {
+	case TraceStateEmpty:
+		fallthrough
+	default:
 		return ""
 	}
 }
 
-func lookupSpanKind(kind string) otlptrace.Span_SpanKind {
-	if SpanKindClient == kind {
+func lookupSpanKind(kind PICTInputKind) otlptrace.Span_SpanKind {
+	switch kind {
+	case SpanKindClient:
 		return otlptrace.Span_CLIENT
-	} else if SpanKindServer == kind {
+	case SpanKindServer:
 		return otlptrace.Span_SERVER
-	} else if SpanKindProducer == kind {
+	case SpanKindProducer:
 		return otlptrace.Span_PRODUCER
-	} else if SpanKindConsumer == kind {
+	case SpanKindConsumer:
 		return otlptrace.Span_CONSUMER
-	} else if SpanKindInternal == kind {
+	case SpanKindInternal:
 		return otlptrace.Span_INTERNAL
-	} else {
+	case SpanKindUnspecified:
+		fallthrough
+	default:
 		return otlptrace.Span_SPAN_KIND_UNSPECIFIED
 	}
 }
 
-func generateSpanAttributes(spanTypeID string) []*otlpcommon.AttributeKeyValue {
+func generateSpanAttributes(spanTypeID PICTInputAttributes) []*otlpcommon.AttributeKeyValue {
 	var attrs map[string]interface{}
 	switch spanTypeID {
 	case SpanAttrNil:
@@ -319,7 +212,7 @@ func generateSpanAttributes(spanTypeID string) []*otlpcommon.AttributeKeyValue {
 	return convertMapToAttributeKeyValues(attrs)
 }
 
-func generateStatus(statusStr string) *otlptrace.Status {
+func generateStatus(statusStr PICTInputStatus) *otlptrace.Status {
 	if SpanStatusNil == statusStr {
 		return nil
 	}
@@ -485,7 +378,7 @@ func generateInternalAttributes() map[string]interface{} {
 	return attrMap
 }
 
-func generateSpanEvents(eventCnt string) []*otlptrace.Span_Event {
+func generateSpanEvents(eventCnt PICTInputSpanChild) []*otlptrace.Span_Event {
 	if SpanChildCountNil == eventCnt {
 		return nil
 	}
@@ -497,7 +390,7 @@ func generateSpanEvents(eventCnt string) []*otlptrace.Span_Event {
 	return eventList
 }
 
-func generateSpanLinks(linkCnt string) []*otlptrace.Span_Link {
+func generateSpanLinks(linkCnt PICTInputSpanChild) []*otlptrace.Span_Link {
 	if SpanChildCountNil == linkCnt {
 		return nil
 	}
@@ -509,14 +402,17 @@ func generateSpanLinks(linkCnt string) []*otlptrace.Span_Link {
 	return linkList
 }
 
-func calculateListSize(listCnt string) int {
-	if SpanChildCountOne == listCnt {
+func calculateListSize(listCnt PICTInputSpanChild) int {
+	switch listCnt {
+	case SpanChildCountOne:
 		return 1
-	} else if SpanChildCountTwo == listCnt {
+	case SpanChildCountTwo:
 		return 2
-	} else if SpanChildCountEight == listCnt {
+	case SpanChildCountEight:
 		return 8
-	} else {
+	case SpanChildCountEmpty:
+		fallthrough
+	default:
 		return 0
 	}
 }
