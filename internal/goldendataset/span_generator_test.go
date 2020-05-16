@@ -15,7 +15,7 @@
 package goldendataset
 
 import (
-	"math/rand"
+	"crypto/rand"
 	"testing"
 
 	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
@@ -23,9 +23,10 @@ import (
 )
 
 func TestGenerateParentSpan(t *testing.T) {
-	traceID := generateTestTraceID()
+	random := rand.Reader
+	traceID := generateTraceID(random)
 	span := GenerateSpan(traceID, "", nil, "/gotest-parent", SpanKindServer,
-		SpanAttrHTTPServer, SpanChildCountTwo, SpanChildCountOne, SpanStatusOk)
+		SpanAttrHTTPServer, SpanChildCountTwo, SpanChildCountOne, SpanStatusOk, random)
 	assert.Equal(t, traceID, span.TraceId)
 	assert.Nil(t, span.ParentSpanId)
 	assert.Equal(t, 11, len(span.Attributes))
@@ -33,10 +34,11 @@ func TestGenerateParentSpan(t *testing.T) {
 }
 
 func TestGenerateChildSpan(t *testing.T) {
-	traceID := generateTestTraceID()
-	parentID := generateTestSpanID()
+	random := rand.Reader
+	traceID := generateTraceID(random)
+	parentID := generateSpanID(random)
 	span := GenerateSpan(traceID, "", parentID, "get_test_info", SpanKindClient,
-		SpanAttrDatabaseSQL, SpanChildCountEmpty, SpanChildCountNil, SpanStatusOk)
+		SpanAttrDatabaseSQL, SpanChildCountEmpty, SpanChildCountNil, SpanStatusOk, random)
 	assert.Equal(t, traceID, span.TraceId)
 	assert.Equal(t, parentID, span.ParentSpanId)
 	assert.Equal(t, 8, len(span.Attributes))
@@ -44,34 +46,17 @@ func TestGenerateChildSpan(t *testing.T) {
 }
 
 func TestGenerateSpans(t *testing.T) {
+	random := rand.Reader
 	count1 := 16
-	spans, nextPos, err := GenerateSpans(count1, 0, "testdata/generated_pict_pairs_spans.txt")
+	spans, nextPos, err := GenerateSpans(count1, 0, "testdata/generated_pict_pairs_spans.txt", random)
 	assert.Nil(t, err)
 	assert.Equal(t, count1, len(spans))
 	count2 := 256
-	spans, nextPos, err = GenerateSpans(count2, nextPos, "testdata/generated_pict_pairs_spans.txt")
+	spans, nextPos, err = GenerateSpans(count2, nextPos, "testdata/generated_pict_pairs_spans.txt", random)
 	assert.Nil(t, err)
 	assert.Equal(t, count2, len(spans))
 	count3 := 118
-	spans, _, err = GenerateSpans(count3, nextPos, "testdata/generated_pict_pairs_spans.txt")
+	spans, _, err = GenerateSpans(count3, nextPos, "testdata/generated_pict_pairs_spans.txt", random)
 	assert.Nil(t, err)
 	assert.Equal(t, count3, len(spans))
-}
-
-func generateTestTraceID() []byte {
-	var r [16]byte
-	_, err := rand.Read(r[:])
-	if err != nil {
-		panic(err)
-	}
-	return r[:]
-}
-
-func generateTestSpanID() []byte {
-	var r [8]byte
-	_, err := rand.Read(r[:])
-	if err != nil {
-		panic(err)
-	}
-	return r[:]
 }

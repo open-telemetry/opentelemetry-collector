@@ -15,8 +15,8 @@
 package goldendataset
 
 import (
-	"crypto/rand"
 	"encoding/csv"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -86,18 +86,18 @@ func loadPictOutputFile(fileName string) ([][]string, error) {
 	return reader.ReadAll()
 }
 
-func generateTraceID() []byte {
+func generateTraceID(random io.Reader) []byte {
 	var r [16]byte
-	_, err := rand.Read(r[:])
+	_, err := random.Read(r[:])
 	if err != nil {
 		panic(err)
 	}
 	return r[:]
 }
 
-func generateSpanID() []byte {
+func generateSpanID(random io.Reader) []byte {
 	var r [8]byte
-	_, err := rand.Read(r[:])
+	_, err := random.Read(r[:])
 	if err != nil {
 		panic(err)
 	}

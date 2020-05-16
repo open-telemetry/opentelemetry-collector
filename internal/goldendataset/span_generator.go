@@ -16,6 +16,7 @@ package goldendataset
 
 import (
 	"fmt"
+	"io"
 	"time"
 
 	otlpcommon "github.com/open-telemetry/opentelemetry-proto/gen/go/common/v1"
@@ -64,7 +65,7 @@ var statusMsgMap = map[PICTInputStatus]string{
 	SpanStatusUnauthenticated:    "nstark is unknown user",
 }
 
-func GenerateSpans(count int, startPos int, pictFile string) ([]*otlptrace.Span, int, error) {
+func GenerateSpans(count int, startPos int, pictFile string, random io.Reader) ([]*otlptrace.Span, int, error) {
 	pairsData, err := loadPictOutputFile(pictFile)
 	if err != nil {
 		return nil, 0, err
@@ -79,22 +80,22 @@ func GenerateSpans(count int, startPos int, pictFile string) ([]*otlptrace.Span,
 		inputs = pairsData[index]
 		switch PICTInputParent(inputs[SpansColumnParent]) {
 		case SpanParentRoot:
-			traceID = generateTraceID()
+			traceID = generateTraceID(random)
 			parentID = nil
 		case SpanParentChild:
 			// use existing if available
 			if traceID == nil {
-				traceID = generateTraceID()
+				traceID = generateTraceID(random)
 			}
 			if parentID == nil {
-				parentID = generateSpanID()
+				parentID = generateSpanID(random)
 			}
 		}
 		spanName := generateSpanName(PICTInputAttributes(inputs[SpansColumnAttributes]), i)
 		spanList[i] = GenerateSpan(traceID, PICTInputTracestate(inputs[SpansColumnTracestate]), parentID, spanName,
 			PICTInputKind(inputs[SpansColumnKind]), PICTInputAttributes(inputs[SpansColumnAttributes]),
 			PICTInputSpanChild(inputs[SpansColumnEvents]), PICTInputSpanChild(inputs[SpansColumnLinks]),
-			PICTInputStatus(inputs[SpansColumnStatus]))
+			PICTInputStatus(inputs[SpansColumnStatus]), random)
 		parentID = spanList[i].SpanId
 		index++
 		if index >= pairsTotal {
@@ -117,12 +118,12 @@ func generateSpanName(spanTypeID PICTInputAttributes, index int) string {
 }
 
 func GenerateSpan(traceID []byte, tracestate PICTInputTracestate, parentID []byte, spanName string, kind PICTInputKind,
-	spanTypeID PICTInputAttributes,
-	eventCnt PICTInputSpanChild, linkCnt PICTInputSpanChild, statusStr PICTInputStatus) *otlptrace.Span {
+	spanTypeID PICTInputAttributes, eventCnt PICTInputSpanChild, linkCnt PICTInputSpanChild, statusStr PICTInputStatus,
+	random io.Reader) *otlptrace.Span {
 	endTime := time.Now().Add(-50 * time.Microsecond)
 	return &otlptrace.Span{
 		TraceId:                traceID,
-		SpanId:                 generateSpanID(),
+		SpanId:                 generateSpanID(random),
 		TraceState:             generateTraceState(tracestate),
 		ParentSpanId:           parentID,
 		Name:                   spanName,
@@ -133,7 +134,7 @@ func GenerateSpan(traceID []byte, tracestate PICTInputTracestate, parentID []byt
 		DroppedAttributesCount: 0,
 		Events:                 generateSpanEvents(eventCnt),
 		DroppedEventsCount:     0,
-		Links:                  generateSpanLinks(linkCnt),
+		Links:                  generateSpanLinks(linkCnt, random),
 		DroppedLinksCount:      0,
 		Status:                 generateStatus(statusStr),
 	}
@@ -390,14 +391,14 @@ func generateSpanEvents(eventCnt PICTInputSpanChild) []*otlptrace.Span_Event {
 	return eventList
 }
 
-func generateSpanLinks(linkCnt PICTInputSpanChild) []*otlptrace.Span_Link {
+func generateSpanLinks(linkCnt PICTInputSpanChild, random io.Reader) []*otlptrace.Span_Link {
 	if SpanChildCountNil == linkCnt {
 		return nil
 	}
 	listSize := calculateListSize(linkCnt)
 	linkList := make([]*otlptrace.Span_Link, listSize)
 	for i := 0; i < listSize; i++ {
-		linkList[i] = generateSpanLink(i)
+		linkList[i] = generateSpanLink(i, random)
 	}
 	return linkList
 }
@@ -440,10 +441,10 @@ func generateEventAttributes(index int) []*otlpcommon.AttributeKeyValue {
 	return convertMapToAttributeKeyValues(attrMap)
 }
 
-func generateSpanLink(index int) *otlptrace.Span_Link {
+func generateSpanLink(index int, random io.Reader) *otlptrace.Span_Link {
 	return &otlptrace.Span_Link{
-		TraceId:                generateTraceID(),
-		SpanId:                 generateSpanID(),
+		TraceId:                generateTraceID(random),
+		SpanId:                 generateSpanID(random),
 		TraceState:             "",
 		Attributes:             generateLinkAttributes(index),
 		DroppedAttributesCount: 0,
