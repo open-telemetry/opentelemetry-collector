@@ -47,6 +47,11 @@ type ActionKeyValue struct {
 	// The type of the value is inferred from the configuration.
 	Value interface{} `mapstructure:"value"`
 
+	// A regex may be specified in place of a value for INSERT, UPDATE or UPSERT
+	// The keys will be inferred based on the names of the matcher groups provided
+	// And the names will be inferred based on the values of the matcher group
+	Regex string `mapstructure:"regex"`
+
 	// FromAttribute specifies the attribute from the span to use to populate
 	// the value. If the attribute doesn't exist, no action is performed.
 	FromAttribute string `mapstructure:"from_attribute"`
