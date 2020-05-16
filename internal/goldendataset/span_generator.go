@@ -207,8 +207,10 @@ func generateSpanAttributes(spanTypeID PICTInputAttributes) []*otlpcommon.Attrib
 		attrs = generateGRPCServerAttributes()
 	case SpanAttrInternal:
 		attrs = generateInternalAttributes()
+	case SpanAttrMaxCount:
+		attrs = generateMaxCountAttributes()
 	default:
-		panic("invalid spanTypeID")
+		attrs = generateGRPCClientAttributes()
 	}
 	return convertMapToAttributeKeyValues(attrs)
 }
@@ -376,6 +378,44 @@ func generateInternalAttributes() map[string]interface{} {
 	attrMap := make(map[string]interface{})
 	attrMap["parameters"] = "account=7310,amount=1817.10"
 	attrMap[conventions.AttributeEnduserID] = "unittest"
+	return attrMap
+}
+
+func generateMaxCountAttributes() map[string]interface{} {
+	attrMap := make(map[string]interface{})
+	attrMap[conventions.AttributeHTTPMethod] = "POST"
+	attrMap[conventions.AttributeHTTPScheme] = "https"
+	attrMap[conventions.AttributeHTTPHost] = "api.opentelemetry.io"
+	attrMap[conventions.AttributeNetHostName] = "api22.opentelemetry.io"
+	attrMap[conventions.AttributeNetHostIP] = "2600:1700:1f00:11c0:1ced:afa5:fd88:9d48"
+	attrMap[conventions.AttributeNetHostPort] = int64(443)
+	attrMap[conventions.AttributeHTTPTarget] = "/blog/posts"
+	attrMap[conventions.AttributeHTTPFlavor] = "2"
+	attrMap[conventions.AttributeHTTPStatusCode] = int64(201)
+	attrMap[conventions.AttributeHTTPStatusText] = "Created"
+	attrMap[conventions.AttributeHTTPUserAgent] =
+		"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36"
+	attrMap[conventions.AttributeHTTPRoute] = "/blog/posts"
+	attrMap[conventions.AttributeHTTPClientIP] = "2600:1700:1f00:11c0:1ced:afa5:fd77:9d01"
+	attrMap[conventions.AttributeNetPeerIP] = "2600:1700:1f00:11c0:1ced:afa5:fd77:9ddc"
+	attrMap[conventions.AttributeNetPeerPort] = int64(39111)
+	attrMap["ai-sampler.weight"] = float64(0.07)
+	attrMap["ai-sampler.absolute"] = false
+	attrMap["ai-sampler.maxhops"] = int64(6)
+	attrMap["application.create.location"] = "https://api.opentelemetry.io/blog/posts/806673B9-4F4D-4284-9635-3A3E3E3805BE"
+	attrMap["application.svcmap"] = "Blogosphere"
+	attrMap["application.abflags"] = "UIx=false,UI4=true,flow-alt3=false"
+	attrMap["application.thread"] = "proc-pool-14"
+	attrMap["application.session"] = "233CC260-63A8-4ACA-A1C1-8F97AB4A2C01"
+	attrMap["application.persist.size"] = int64(1172184)
+	attrMap["application.queue.size"] = int64(0)
+	attrMap["application.validation.results"] = "Success"
+	attrMap["application.job.id"] = "0E38800B-9C4C-484E-8F2B-C7864D854321"
+	attrMap["application.service.sla"] = float64(0.34)
+	attrMap["application.service.slo"] = float64(0.55)
+	attrMap[conventions.AttributeEnduserID] = "unittest"
+	attrMap[conventions.AttributeEnduserRole] = "poweruser"
+	attrMap[conventions.AttributeEnduserScope] = "email profile administrator"
 	return attrMap
 }
 

@@ -112,6 +112,7 @@ const (
 	SpanAttrGRPCClient        PICTInputAttributes = "gRPCClient"
 	SpanAttrGRPCServer        PICTInputAttributes = "gRPCServer"
 	SpanAttrInternal          PICTInputAttributes = "Internal"
+	SpanAttrMaxCount          PICTInputAttributes = "MaxCount"
 )
 
 type PICTInputSpanChild string

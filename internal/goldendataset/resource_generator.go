@@ -38,7 +38,7 @@ func GenerateResource(rscID PICTInputResource) *otlpresource.Resource {
 	case ResourceFaas:
 		attrs = generateFassAttributes()
 	default:
-		panic("invalid rscID")
+		attrs = generateEmptyAttributes()
 	}
 	var dropped uint32
 	if len(attrs) < 10 {
