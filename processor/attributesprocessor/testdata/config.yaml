@@ -19,6 +19,19 @@ processors:
         from_attribute: "anotherkey"
         action: insert
 
+  # The following example demonstrates using regex to create new attributes based on the value of another attribute.
+  attributes/regex_insert:
+    actions:
+      # The following uses the value from attribute "http.url" to insert new attributes
+      # Given http.url = http://example.com/path?queryParam1=value1,queryParam2=value2 then the following attributes will be inserted:
+      # http_protocol: http
+      # http_domain: example.com
+      # http_path: path
+      # http_query_params=queryParam1=value1,queryParam2=value2
+      - regex: ^(?P<http_protocol>.*):\/\/(?P<http_domain>.*)\/(?P<http_path>.*)(\?|\&)(?P<http_query_params>.*)
+        from_attribute: "http.url"
+        action: insert
+
   # The following demonstrates configuring the processor to only update existing
   # keys in an attribute.
   # Note: `action: update` must be set.

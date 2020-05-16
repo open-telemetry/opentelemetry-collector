@@ -16,6 +16,7 @@ package attributesprocessor
 
 import (
 	"context"
+	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -93,10 +94,14 @@ func TestFactory_validateActionsConfiguration(t *testing.T) {
 		{Key: "two", Value: 123, Action: "INSERT"},
 		{Key: "three", FromAttribute: "two", Action: "upDaTE"},
 		{Key: "five", FromAttribute: "two", Action: "upsert"},
+		{FromAttribute: "two", Regex: "^\\/api\\/v1\\/document\\/(?P<documentId>.*)\\/update$", Action: "Upsert"},
 	}
 	output, err := buildAttributesConfiguration(*oCfg)
 	require.NoError(t, err)
 	av := pdata.NewAttributeValueInt(123)
+	compiledRegex, err := regexp.Compile(`^\/api\/v1\/document\/(?P<documentId>.*)\/update$`)
+	require.NoError(t, err)
+
 	assert.Equal(t, []attributeAction{
 		{Key: "one", Action: DELETE},
 		{Key: "two", Action: INSERT,
@@ -104,6 +109,7 @@ func TestFactory_validateActionsConfiguration(t *testing.T) {
 		},
 		{Key: "three", FromAttribute: "two", Action: UPDATE},
 		{Key: "five", FromAttribute: "two", Action: UPSERT},
+		{FromAttribute: "two", Regex: compiledRegex, AttrNames: []string{"", "documentId"}, Action: UPSERT},
 	}, output)
 
 }
@@ -154,6 +160,41 @@ func TestFactory_validateActionsConfiguration_InvalidConfig(t *testing.T) {
 				{Key: "BothSet", Value: 123, FromAttribute: "aa", Action: UPSERT},
 			},
 			errorString: "error creating \"attributes\" processor due to both fields \"value\" and \"from_attribute\" being set at the 0-th actions of processor \"attributes/error\"",
+		},
+		{
+			name: "both set key and regex",
+			actionLists: []ActionKeyValue{
+				{Key: "Key", Regex: "(?P<operation_website>.*?)$", FromAttribute: "aa", Action: UPSERT},
+			},
+			errorString: "error creating \"attributes\" processor, only one of \"key\" or \"regex\" can be specified at the 0-th actions of processor \"attributes/error\"",
+		},
+		{
+			name: "both set value and regex",
+			actionLists: []ActionKeyValue{
+				{Value: "value", Regex: "(?P<operation_website>.*?)$", FromAttribute: "aa", Action: UPSERT},
+			},
+			errorString: "error creating \"attributes\" processor. Only of field \"value\" or \"regex\" setting must be specified for 0-th action of processor \"attributes/error\"",
+		},
+		{
+			name: "regex and not from attribute",
+			actionLists: []ActionKeyValue{
+				{Regex: "(?P<operation_website>.*?)$", Action: UPSERT},
+			},
+			errorString: "error creating \"attributes\" processor. Field \"regex\" requires a \"from_attribute\" to be set at the 0-th actions of processor \"attributes/error\"",
+		},
+		{
+			name: "invalid regex",
+			actionLists: []ActionKeyValue{
+				{Regex: "(?P<invalid.regex>.*?)$", FromAttribute: "aa", Action: UPSERT},
+			},
+			errorString: "error creating \"attributes\" processor. Field \"regex\" has invalid pattern: \"(?P<invalid.regex>.*?)$\" to be set at the 0-th actions of processor \"attributes/error\"",
+		},
+		{
+			name: "delete with regex",
+			actionLists: []ActionKeyValue{
+				{Regex: "(?P<operation_website>.*?)$", Key: "", Value: 123, Action: DELETE},
+			},
+			errorString: "error creating \"attributes\" processor. Action \"DELETE\" does not use \"value\", \"regex\" or \"from_attribute\" field. These must not be specified for 0-th action of processor \"attributes/error\"",
 		},
 	}
 	factory := Factory{}

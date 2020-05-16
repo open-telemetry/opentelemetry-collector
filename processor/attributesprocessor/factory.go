@@ -17,6 +17,7 @@ package attributesprocessor
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
@@ -101,9 +102,13 @@ func buildAttributesConfiguration(config Config) ([]attributeAction, error) {
 
 	var attributeActions []attributeAction
 	for i, a := range config.Actions {
-		// `key` is a required field
-		if a.Key == "" {
-			return nil, fmt.Errorf("error creating \"attributes\" processor due to missing required field \"key\" at the %d-th actions of processor %q", i, config.Name())
+		// one of `key` or regex must be provided
+		if a.Key == "" && a.Regex == "" {
+			return nil, fmt.Errorf("error creating \"attributes\" processor due to missing required field one of \"key\" or \"regex\" at the %d-th actions of processor %q", i, config.Name())
+		}
+
+		if a.Key != "" && a.Regex != "" {
+			return nil, fmt.Errorf("error creating \"attributes\" processor, only one of \"key\" or \"regex\" can be specified at the %d-th actions of processor %q", i, config.Name())
 		}
 
 		// Convert `action` to lowercase for comparison.
@@ -115,12 +120,22 @@ func buildAttributesConfiguration(config Config) ([]attributeAction, error) {
 
 		switch a.Action {
 		case INSERT, UPDATE, UPSERT:
-			if a.Value == nil && a.FromAttribute == "" {
-				return nil, fmt.Errorf("error creating \"attributes\" processor. Either field \"value\" or \"from_attribute\" setting must be specified for %d-th action of processor %q", i, config.Name())
+			if a.Value != nil && a.Regex != "" {
+				return nil, fmt.Errorf("error creating \"attributes\" processor. Only of field \"value\" or \"regex\" setting must be specified for %d-th action of processor %q", i, config.Name())
 			}
+
+			if a.Value == nil && a.Regex == "" && a.FromAttribute == "" {
+				return nil, fmt.Errorf("error creating \"attributes\" processor. One of fields \"value\", \"regex\" or \"from_attribute\" setting must be specified for %d-th action of processor %q", i, config.Name())
+			}
+
 			if a.Value != nil && a.FromAttribute != "" {
 				return nil, fmt.Errorf("error creating \"attributes\" processor due to both fields \"value\" and \"from_attribute\" being set at the %d-th actions of processor %q", i, config.Name())
 			}
+
+			if a.Regex != "" && a.FromAttribute == "" {
+				return nil, fmt.Errorf("error creating \"attributes\" processor. Field \"regex\" requires a \"from_attribute\" to be set at the %d-th actions of processor %q", i, config.Name())
+			}
+
 			// Convert the raw value from the configuration to the internal trace representation of the value.
 			if a.Value != nil {
 				val, err := filterhelper.NewAttributeValueRaw(a.Value)
@@ -131,9 +146,17 @@ func buildAttributesConfiguration(config Config) ([]attributeAction, error) {
 			} else {
 				action.FromAttribute = a.FromAttribute
 			}
+			if a.Regex != "" {
+				re, err := regexp.Compile(a.Regex)
+				if err != nil {
+					return nil, fmt.Errorf("error creating \"attributes\" processor. Field \"regex\" has invalid pattern: \"%s\" to be set at the %d-th actions of processor %q", a.Regex, i, config.Name())
+				}
+				action.Regex = re
+				action.AttrNames = re.SubexpNames()
+			}
 		case HASH, DELETE:
-			if a.Value != nil || a.FromAttribute != "" {
-				return nil, fmt.Errorf("error creating \"attributes\" processor. Action \"%s\" does not use \"value\" or \"from_attribute\" field. These must not be specified for %d-th action of processor %q", a.Action, i, config.Name())
+			if a.Value != nil || a.FromAttribute != "" || a.Regex != "" {
+				return nil, fmt.Errorf("error creating \"attributes\" processor. Action \"%s\" does not use \"value\", \"regex\" or \"from_attribute\" field. These must not be specified for %d-th action of processor %q", a.Action, i, config.Name())
 			}
 
 		default:
