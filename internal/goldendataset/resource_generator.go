@@ -69,9 +69,9 @@ func generateOnpremVMAttributes() map[string]interface{} {
 	attrMap[conventions.AttributeHostHostname] = "tc-prod9.internal.example.com"
 	attrMap[conventions.AttributeHostName] = "172.18.36.18"
 	attrMap[conventions.AttributeHostImageID] = "661ADFA6-E293-4870-9EFA-1AA052C49F18"
-	attrMap[conventions.AttributeLibraryLanguage] = "java"
-	attrMap[conventions.AttributeLibraryName] = "opentelemetry"
-	attrMap[conventions.AttributeLibraryVersion] = "0.3.0"
+	attrMap[conventions.AttributeTelemetrySDKLanguage] = "java"
+	attrMap[conventions.AttributeTelemetrySDKName] = "opentelemetry"
+	attrMap[conventions.AttributeTelemetrySDKVersion] = "0.3.0"
 	return attrMap
 }
 
@@ -81,9 +81,9 @@ func generateCloudVMAttributes() map[string]interface{} {
 	attrMap[conventions.AttributeServiceName] = "customers"
 	attrMap[conventions.AttributeServiceNamespace] = "production"
 	attrMap[conventions.AttributeServiceVersion] = "semver:0.7.3"
-	attrMap[conventions.AttributeLibraryLanguage] = "java"
-	attrMap[conventions.AttributeLibraryName] = "opentelemetry"
-	attrMap[conventions.AttributeLibraryVersion] = "0.3.0"
+	attrMap[conventions.AttributeTelemetrySDKLanguage] = "java"
+	attrMap[conventions.AttributeTelemetrySDKName] = "opentelemetry"
+	attrMap[conventions.AttributeTelemetrySDKVersion] = "0.3.0"
 	attrMap[conventions.AttributeHostHostname] = "env-check"
 	attrMap[conventions.AttributeHostID] = "57e8add1f79a454bae9fb1f7756a009a"
 	attrMap[conventions.AttributeHostName] = "10.0.0.4"
