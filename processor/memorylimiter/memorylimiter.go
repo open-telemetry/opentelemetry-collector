@@ -24,12 +24,12 @@ import (
 	"go.opencensus.io/stats"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdatautil"
-	"github.com/open-telemetry/opentelemetry-collector/obsreport"
-	"github.com/open-telemetry/opentelemetry-collector/processor"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
+	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/processor"
 )
 
 var (
@@ -195,9 +195,8 @@ func (ml *memoryLimiter) readMemStats(ms *runtime.MemStats) {
 		// This indicates misconfiguration. Log it once.
 		if !ml.configMismatchedLogged {
 			ml.configMismatchedLogged = true
-			ml.logger.Warn(typeStr+" is likely incorrectly configured. "+ballastSizeMibKey+
-				" must be set equal to --mem-ballast-size-mib command line option.",
-				zap.String("processor", ml.procName))
+			ml.logger.Warn(typeStr + " is likely incorrectly configured. " + ballastSizeMibKey +
+				" must be set equal to --mem-ballast-size-mib command line option.")
 		}
 	}
 }

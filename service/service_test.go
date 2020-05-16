@@ -31,11 +31,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/config"
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-collector/service/defaultcomponents"
-	"github.com/open-telemetry/opentelemetry-collector/testutils"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/service/defaultcomponents"
+	"go.opentelemetry.io/collector/testutils"
 )
 
 func TestApplication_Start(t *testing.T) {

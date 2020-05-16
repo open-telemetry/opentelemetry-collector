@@ -21,14 +21,19 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/encoding/gzip"
 	"google.golang.org/grpc/keepalive"
+)
 
-	"github.com/open-telemetry/opentelemetry-collector/compression"
-	compressiongrpc "github.com/open-telemetry/opentelemetry-collector/compression/grpc"
+// Compression gRPC keys for supported compression types within collector
+const (
+	CompressionUnsupported = ""
+	CompressionGzip        = "gzip"
 )
 
 // GRPCSettings defines common settings for a gRPC configuration.
@@ -90,7 +95,7 @@ func GrpcSettingsToDialOptions(settings GRPCSettings) ([]grpc.DialOption, error)
 	opts := []grpc.DialOption{}
 
 	if settings.Compression != "" {
-		if compressionKey := compressiongrpc.GetGRPCCompressionKey(settings.Compression); compressionKey != compression.Unsupported {
+		if compressionKey := GetGRPCCompressionKey(settings.Compression); compressionKey != CompressionUnsupported {
 			opts = append(opts, grpc.WithDefaultCallOptions(grpc.UseCompressor(compressionKey)))
 		} else {
 			return nil, fmt.Errorf("unsupported compression type %q", settings.Compression)
@@ -177,4 +182,21 @@ func (c TLSConfig) loadCert(caPath string) (*x509.CertPool, error) {
 		return nil, fmt.Errorf("failed to parse CA %s", caPath)
 	}
 	return certPool, nil
+}
+
+var (
+	// Map of opentelemetry compression types to grpc registered compression types
+	grpcCompressionKeyMap = map[string]string{
+		CompressionGzip: gzip.Name,
+	}
+)
+
+// GetGRPCCompressionKey returns the grpc registered compression key if the
+// passed in compression key is supported, and CompressionUnsupported otherwise
+func GetGRPCCompressionKey(compressionType string) string {
+	compressionKey := strings.ToLower(compressionType)
+	if encodingKey, ok := grpcCompressionKeyMap[compressionKey]; ok {
+		return encodingKey
+	}
+	return CompressionUnsupported
 }

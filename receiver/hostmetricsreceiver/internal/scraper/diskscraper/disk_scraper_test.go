@@ -17,67 +17,43 @@ package diskscraper
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
-	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 )
 
-type validationFn func(*testing.T, []pdata.Metrics)
+type validationFn func(*testing.T, pdata.MetricSlice)
 
 func TestScrapeMetrics(t *testing.T) {
-	createScraperAndValidateScrapedMetrics(t, &Config{}, func(t *testing.T, got []pdata.Metrics) {
-		metrics := internal.AssertSingleMetricDataAndGetMetricsSlice(t, got)
-
+	createScraperAndValidateScrapedMetrics(t, &Config{}, func(t *testing.T, metrics pdata.MetricSlice) {
 		// expect 3 metrics
 		assert.Equal(t, 3, metrics.Len())
 
-		// for disk byts metric, expect a receive & transmit datapoint for at least one drive
-		hostDiskBytesMetric := metrics.At(0)
-		internal.AssertDescriptorEqual(t, metricDiskBytesDescriptor, hostDiskBytesMetric.MetricDescriptor())
-		assert.GreaterOrEqual(t, hostDiskBytesMetric.Int64DataPoints().Len(), 2)
-		internal.AssertInt64MetricLabelHasValue(t, hostDiskBytesMetric, 0, directionLabelName, receiveDirectionLabelValue)
-		internal.AssertInt64MetricLabelHasValue(t, hostDiskBytesMetric, 1, directionLabelName, transmitDirectionLabelValue)
-
-		// for disk operations metric, expect a receive & transmit datapoint for at least one drive
-		hostDiskOpsMetric := metrics.At(1)
-		internal.AssertDescriptorEqual(t, metricDiskOpsDescriptor, hostDiskOpsMetric.MetricDescriptor())
-		assert.GreaterOrEqual(t, hostDiskOpsMetric.Int64DataPoints().Len(), 2)
-		internal.AssertInt64MetricLabelHasValue(t, hostDiskOpsMetric, 0, directionLabelName, receiveDirectionLabelValue)
-		internal.AssertInt64MetricLabelHasValue(t, hostDiskOpsMetric, 1, directionLabelName, transmitDirectionLabelValue)
-
-		// for disk time metric, expect a receive & transmit datapoint for at least one drive
-		hostDiskTimeMetric := metrics.At(2)
-		internal.AssertDescriptorEqual(t, metricDiskTimeDescriptor, hostDiskTimeMetric.MetricDescriptor())
-		assert.GreaterOrEqual(t, hostDiskTimeMetric.Int64DataPoints().Len(), 2)
-		internal.AssertInt64MetricLabelHasValue(t, hostDiskTimeMetric, 0, directionLabelName, receiveDirectionLabelValue)
-		internal.AssertInt64MetricLabelHasValue(t, hostDiskTimeMetric, 1, directionLabelName, transmitDirectionLabelValue)
+		// for each disk metric, expect a read & write datapoint for at least one drive
+		assertDiskMetricMatchesDescriptorAndHasReadAndWriteDataPoints(t, metrics.At(0), metricDiskBytesDescriptor)
+		assertDiskMetricMatchesDescriptorAndHasReadAndWriteDataPoints(t, metrics.At(1), metricDiskOpsDescriptor)
+		assertDiskMetricMatchesDescriptorAndHasReadAndWriteDataPoints(t, metrics.At(2), metricDiskTimeDescriptor)
 	})
 }
 
+func assertDiskMetricMatchesDescriptorAndHasReadAndWriteDataPoints(t *testing.T, metric pdata.Metric, expectedDescriptor pdata.MetricDescriptor) {
+	internal.AssertDescriptorEqual(t, expectedDescriptor, metric.MetricDescriptor())
+	assert.GreaterOrEqual(t, metric.Int64DataPoints().Len(), 2)
+	internal.AssertInt64MetricLabelHasValue(t, metric, 0, directionLabelName, readDirectionLabelValue)
+	internal.AssertInt64MetricLabelHasValue(t, metric, 1, directionLabelName, writeDirectionLabelValue)
+}
+
 func createScraperAndValidateScrapedMetrics(t *testing.T, config *Config, assertFn validationFn) {
-	config.SetCollectionInterval(5 * time.Millisecond)
+	scraper := newDiskScraper(context.Background(), config)
+	err := scraper.Initialize(context.Background())
+	require.NoError(t, err, "Failed to initialize disk scraper: %v", err)
+	defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
 
-	sink := &exportertest.SinkMetricsExporter{}
+	metrics, err := scraper.ScrapeMetrics(context.Background())
+	require.NoError(t, err, "Failed to scrape metrics: %v", err)
 
-	scraper, err := NewDiskScraper(context.Background(), config, sink)
-	require.NoError(t, err, "Failed to create disk scraper: %v", err)
-
-	err = scraper.Start(context.Background())
-	require.NoError(t, err, "Failed to start disk scraper: %v", err)
-	defer func() { assert.NoError(t, scraper.Shutdown(context.Background())) }()
-
-	require.Eventually(t, func() bool {
-		got := sink.AllMetrics()
-		if len(got) == 0 {
-			return false
-		}
-
-		assertFn(t, got)
-		return true
-	}, time.Second, 2*time.Millisecond, "No metrics were collected")
+	assertFn(t, metrics)
 }

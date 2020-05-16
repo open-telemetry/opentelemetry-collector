@@ -25,15 +25,12 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
-	jaegerproto "github.com/jaegertracing/jaeger/model"
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
-	"github.com/open-telemetry/opentelemetry-collector/translator/trace/jaeger"
-	"github.com/open-telemetry/opentelemetry-collector/translator/trace/spandata"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
+	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 func Test_hexIDToOCID(t *testing.T) {
@@ -861,38 +858,10 @@ func TestSpanKindTranslation(t *testing.T) {
 				assert.EqualValues(t, expected, ocSpan.Attributes.AttributeMap[tracetranslator.TagSpanKind])
 			}
 
-			// Translate to OCSpanData.
-			sd, err := spandata.ProtoSpanToOCSpanData(ocSpan, nil)
-			assert.NoError(t, err)
-			assert.EqualValues(t, test.ocKind, sd.SpanKind)
-
 			// Translate to Zipkin V2 (which is used for internal representation by Zipkin exporter).
-			zSpanTranslated := OCSpanDataToZipkin(nil, sd, "")
+			zSpanTranslated, err := OCSpanProtoToZipkin(nil, nil, ocSpan, "")
+			assert.NoError(t, err)
 			assert.EqualValues(t, test.zipkinV2Kind, zSpanTranslated.Kind)
-
-			// Translate to Jaeger Protobuf and verify that span kind is set as a tag.
-			td := consumerdata.TraceData{Spans: []*tracepb.Span{ocSpan}}
-			jSpansProto, err := jaeger.OCProtoToJaegerProto(td)
-			assert.NoError(t, err)
-			assert.EqualValues(t, jaegerproto.KeyValue{
-				Key:   tracetranslator.TagSpanKind,
-				VType: jaegerproto.ValueType_STRING,
-				VStr:  test.jaegerSpanKind,
-			}, jSpansProto.Spans[0].Tags[0])
-
-			// Translate from Jaeger Proto to OC.
-			td, err = jaeger.ProtoBatchToOCProto(*jSpansProto)
-			assert.NoError(t, err)
-			assert.EqualValues(t, test.ocKind, ocSpan.Kind)
-			if test.ocAttrSpanKind != "" {
-				// This is a special case, verify that TagSpanKind attribute is set.
-				expected := &tracepb.AttributeValue{
-					Value: &tracepb.AttributeValue_StringValue{
-						StringValue: &tracepb.TruncatableString{Value: string(test.ocAttrSpanKind)},
-					},
-				}
-				assert.EqualValues(t, expected, td.Spans[0].Attributes.AttributeMap[tracetranslator.TagSpanKind])
-			}
 		})
 	}
 }

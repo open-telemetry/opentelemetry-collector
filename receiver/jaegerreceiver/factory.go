@@ -26,11 +26,11 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/receiver"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configerror"
+	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 const (
@@ -40,7 +40,7 @@ const (
 	// Protocol values.
 	protoGRPC       = "grpc"
 	protoThriftHTTP = "thrift_http"
-	// Deprecated, see https://github.com/open-telemetry/opentelemetry-collector/issues/267
+	// Deprecated, see https://go.opentelemetry.io/collector/issues/267
 	protoThriftTChannel = "thrift_tchannel"
 	protoThriftBinary   = "thrift_binary"
 	protoThriftCompact  = "thrift_compact"
@@ -179,10 +179,9 @@ func (f *Factory) CreateTraceReceiver(
 	}
 
 	if remoteSamplingConfig != nil {
-		if len(remoteSamplingConfig.FetchEndpoint) == 0 {
-			config.RemoteSamplingEndpoint = defaultGRPCBindEndpoint
-		} else {
-			config.RemoteSamplingEndpoint = remoteSamplingConfig.FetchEndpoint
+		config.RemoteSamplingClientSettings = remoteSamplingConfig.GRPCSettings
+		if len(config.RemoteSamplingClientSettings.Endpoint) == 0 {
+			config.RemoteSamplingClientSettings.Endpoint = defaultGRPCBindEndpoint
 		}
 
 		if len(remoteSamplingConfig.HostEndpoint) == 0 {

@@ -17,7 +17,7 @@ package component
 import (
 	"context"
 
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configmodels"
 )
 
 // Component is either a receiver, exporter, processor or extension.

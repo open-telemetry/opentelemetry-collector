@@ -23,13 +23,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
-	"github.com/open-telemetry/opentelemetry-collector/compression"
-	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
-	"github.com/open-telemetry/opentelemetry-collector/config/configgrpc"
-	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/opencensusreceiver"
-	"github.com/open-telemetry/opentelemetry-collector/testutils"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configcheck"
+	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/receiver/opencensusreceiver"
+	"go.opentelemetry.io/collector/testutils"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -121,7 +120,7 @@ func TestCreateTraceExporter(t *testing.T) {
 			config: Config{
 				GRPCSettings: configgrpc.GRPCSettings{
 					Endpoint:    rcvCfg.Endpoint,
-					Compression: compression.Gzip,
+					Compression: configgrpc.CompressionGzip,
 				},
 			},
 		},

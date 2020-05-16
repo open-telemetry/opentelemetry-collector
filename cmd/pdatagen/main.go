@@ -17,7 +17,7 @@ package main
 import (
 	"os"
 
-	"github.com/open-telemetry/opentelemetry-collector/internal/data_generator/internal"
+	"go.opentelemetry.io/collector/cmd/pdatagen/internal"
 )
 
 func check(e error) {

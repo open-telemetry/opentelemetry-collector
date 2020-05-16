@@ -24,10 +24,10 @@ import (
 	"github.com/prometheus/prometheus/scrape"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/obsreport"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/prometheusreceiver/internal"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver/prometheusreceiver/internal"
 )
 
 // Preceiver is the type that provides Prometheus scraper/receiver functionality.

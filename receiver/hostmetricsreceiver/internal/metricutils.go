@@ -15,8 +15,8 @@
 package internal
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/data"
 )
 
 // Initializes a metric with a metric slice and returns it.
@@ -28,12 +28,4 @@ func InitializeMetricSlice(metricData data.MetricData) pdata.MetricSlice {
 	ilms.Resize(1)
 	ilm := ilms.At(0)
 	return ilm.Metrics()
-}
-
-// AddNewMetric appends an empty metric to the metric slice, resizing
-// the slice by 1, and returns the new metric.
-func AddNewMetric(metrics pdata.MetricSlice) pdata.Metric {
-	len := metrics.Len()
-	metrics.Resize(len + 1)
-	return metrics.At(len)
 }

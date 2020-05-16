@@ -15,7 +15,7 @@
 package diskscraper
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 // disk metric constants
@@ -26,8 +26,8 @@ const (
 )
 
 const (
-	receiveDirectionLabelValue  = "receive"
-	transmitDirectionLabelValue = "transmit"
+	readDirectionLabelValue  = "read"
+	writeDirectionLabelValue = "write"
 )
 
 var metricDiskBytesDescriptor = createMetricDiskBytesDescriptor()

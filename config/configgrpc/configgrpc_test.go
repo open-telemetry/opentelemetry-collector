@@ -230,3 +230,17 @@ func TestOptionsToConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestGetGRPCCompressionKey(t *testing.T) {
+	if GetGRPCCompressionKey("gzip") != CompressionGzip {
+		t.Error("gzip is marked as supported but returned unsupported")
+	}
+
+	if GetGRPCCompressionKey("Gzip") != CompressionGzip {
+		t.Error("Capitalization of CompressionGzip should not matter")
+	}
+
+	if GetGRPCCompressionKey("badType") != CompressionUnsupported {
+		t.Error("badType is not supported but was returned as supported")
+	}
+}

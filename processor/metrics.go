@@ -22,10 +22,10 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
-	"github.com/open-telemetry/opentelemetry-collector/internal/collector/telemetry"
-	"github.com/open-telemetry/opentelemetry-collector/obsreport"
-	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/collector/telemetry"
+	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/translator/conventions"
 )
 
 // Keys and stats for telemetry.

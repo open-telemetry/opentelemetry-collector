@@ -28,12 +28,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 
-	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdatautil"
-	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
-	"github.com/open-telemetry/opentelemetry-collector/observability"
-	"github.com/open-telemetry/opentelemetry-collector/testutils"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
+	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/internal/data"
+	"go.opentelemetry.io/collector/observability"
+	"go.opentelemetry.io/collector/testutils"
 )
 
 var _ collectormetrics.MetricsServiceServer = (*Receiver)(nil)

@@ -18,8 +18,8 @@ import (
 	"context"
 	"sync"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenterror"
 )
 
 // Receiver is the type used to handle metrics from VM metrics.

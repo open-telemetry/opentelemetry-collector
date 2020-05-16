@@ -32,11 +32,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
-	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/processor"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/zipkinreceiver"
-	"github.com/open-telemetry/opentelemetry-collector/testutils"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/receiver/zipkinreceiver"
+	"go.opentelemetry.io/collector/testutils"
 )
 
 // This function tests that Zipkin spans that are received then processed roundtrip
@@ -62,7 +62,7 @@ func TestZipkinExporter_roundtripJSON(t *testing.T) {
 		URL:    cst.URL,
 		Format: "json",
 	}
-	tes, err := NewTraceExporter(zap.NewNop(), config)
+	tes, err := NewTraceExporter(config)
 	assert.NoError(t, err)
 	require.NotNil(t, tes)
 
@@ -290,7 +290,7 @@ func TestZipkinExporter_roundtripProto(t *testing.T) {
 		URL:    cst.URL,
 		Format: "proto",
 	}
-	tes, err := NewTraceExporter(zap.NewNop(), config)
+	tes, err := NewTraceExporter(config)
 	require.NoError(t, err)
 
 	// The test requires the spans from zipkinSpansJSONJavaLibrary to be sent in a single batch, use

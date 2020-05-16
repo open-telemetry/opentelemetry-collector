@@ -19,7 +19,7 @@ package cpuscraper
 import (
 	"github.com/shirou/gopsutil/cpu"
 
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 const cpuStatesLen = 4

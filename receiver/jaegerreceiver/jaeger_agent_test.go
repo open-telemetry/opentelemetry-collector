@@ -29,10 +29,11 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
-	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
-	"github.com/open-telemetry/opentelemetry-collector/testutils"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/testutils"
 )
 
 const jaegerAgent = "jaeger_agent_test"
@@ -110,8 +111,8 @@ func TestJaegerAgentUDP_ThriftBinary_InvalidPort(t *testing.T) {
 	jr.Shutdown(context.Background())
 }
 
-func initializeGRPCTestServer(t *testing.T, beforeServe func(server *grpc.Server)) (*grpc.Server, net.Addr) {
-	server := grpc.NewServer()
+func initializeGRPCTestServer(t *testing.T, beforeServe func(server *grpc.Server), opts ...grpc.ServerOption) (*grpc.Server, net.Addr) {
+	server := grpc.NewServer(opts...)
 	lis, err := net.Listen("tcp", "localhost:0")
 	require.NoError(t, err)
 	beforeServe(server)
@@ -137,8 +138,10 @@ func TestJaegerHTTP(t *testing.T) {
 
 	port := testutils.GetAvailablePort(t)
 	config := &Configuration{
-		AgentHTTPPort:          int(port),
-		RemoteSamplingEndpoint: addr.String(),
+		AgentHTTPPort: int(port),
+		RemoteSamplingClientSettings: configgrpc.GRPCSettings{
+			Endpoint: addr.String(),
+		},
 	}
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr, err := New(jaegerAgent, config, nil, params)

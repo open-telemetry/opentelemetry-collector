@@ -19,9 +19,9 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configerror"
+	"go.opentelemetry.io/collector/config/configmodels"
 )
 
 const (
@@ -50,18 +50,18 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 }
 
 // CreateTraceExporter creates a trace exporter based on this config.
-func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Exporter) (component.TraceExporterOld, error) {
+func (f *Factory) CreateTraceExporter(_ *zap.Logger, config configmodels.Exporter) (component.TraceExporterOld, error) {
 	zc := config.(*Config)
 
 	if zc.URL == "" {
-		// TODO https://github.com/open-telemetry/opentelemetry-collector/issues/215
+		// TODO https://go.opentelemetry.io/collector/issues/215
 		return nil, errors.New("exporter config requires a non-empty 'url'")
 	}
 
-	return NewTraceExporter(logger, config)
+	return NewTraceExporter(config)
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *Factory) CreateMetricsExporter(logger *zap.Logger, cfg configmodels.Exporter) (component.MetricsExporterOld, error) {
+func (f *Factory) CreateMetricsExporter(_ *zap.Logger, _ configmodels.Exporter) (component.MetricsExporterOld, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }

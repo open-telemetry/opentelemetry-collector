@@ -20,16 +20,16 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/config/configgrpc"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdatautil"
-	"github.com/open-telemetry/opentelemetry-collector/exporter/jaegerexporter"
-	"github.com/open-telemetry/opentelemetry-collector/exporter/opencensusexporter"
-	"github.com/open-telemetry/opentelemetry-collector/exporter/otlpexporter"
-	"github.com/open-telemetry/opentelemetry-collector/exporter/zipkinexporter"
-	"github.com/open-telemetry/opentelemetry-collector/internal/data"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
+	"go.opentelemetry.io/collector/exporter/jaegerexporter"
+	"go.opentelemetry.io/collector/exporter/opencensusexporter"
+	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	"go.opentelemetry.io/collector/exporter/zipkinexporter"
+	"go.opentelemetry.io/collector/internal/data"
 )
 
 // DataSender defines the interface that allows sending data. This is an interface
@@ -169,7 +169,7 @@ func (je *JaegerGRPCDataSender) Start() error {
 func (je *JaegerGRPCDataSender) GenConfigYAMLStr() string {
 	// Note that this generates a receiver config for agent.
 	// We only need to enable gRPC protocol because that's what we use in tests.
-	// Due to bug in Jaeger receiver (https://github.com/open-telemetry/opentelemetry-collector/issues/445)
+	// Due to bug in Jaeger receiver (https://go.opentelemetry.io/collector/issues/445)
 	// which makes it impossible to disable protocols that we don't need to receive on we
 	// have to use fake ports for all endpoints except gRPC, otherwise it is
 	// impossible to start the Collector because the standard ports for those protocols

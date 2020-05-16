@@ -28,8 +28,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/trace"
 
-	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
-	"github.com/open-telemetry/opentelemetry-collector/observability/observabilitytest"
+	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/observability/observabilitytest"
 )
 
 // Ensure that if we add a metrics exporter that our target metrics

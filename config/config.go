@@ -28,8 +28,8 @@ import (
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configmodels"
 )
 
 // These are errors that can be returned by Load(). Note that error codes are not part
@@ -539,11 +539,11 @@ func loadPipelines(v *viper.Viper) (configmodels.Pipelines, error) {
 		var pipelineCfg configmodels.Pipeline
 
 		// Set the type.
-		switch typeStr {
-		case configmodels.TracesDataTypeStr:
-			pipelineCfg.InputType = configmodels.TracesDataType
-		case configmodels.MetricsDataTypeStr:
-			pipelineCfg.InputType = configmodels.MetricsDataType
+		pipelineCfg.InputType = configmodels.DataType(typeStr)
+		switch pipelineCfg.InputType {
+		case configmodels.TracesDataType:
+		case configmodels.MetricsDataType:
+		case configmodels.LogsDataType:
 		default:
 			return nil, &configError{
 				code: errInvalidPipelineType,

@@ -82,13 +82,13 @@ Working with the project sources requires the following tools:
 Fork the repo, checkout the upstream repo to your GOPATH by:
 
 ```
-$ GO111MODULE="" go get -d github.com/open-telemetry/opentelemetry-collector
+$ GO111MODULE="" go get -d go.opentelemetry.io/collector
 ```
 
 Add your fork as an origin:
 
 ```shell
-$ cd $(go env GOPATH)/src/github.com/open-telemetry/opentelemetry-collector
+$ cd $(go env GOPATH)/src/go.opentelemetry.io/collector
 $ git remote add fork git@github.com:YOUR_GITHUB_USERNAME/opentelemetry-service.git
 ```
 

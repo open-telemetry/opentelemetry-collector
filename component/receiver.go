@@ -20,8 +20,8 @@ import (
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-collector/consumer"
+	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/consumer"
 )
 
 // Receiver defines functions that trace and metric receivers must implement.
@@ -46,6 +46,13 @@ type TraceReceiver interface {
 // For example it could be Prometheus data source which translates
 // Prometheus metrics into consumerdata.MetricsData.
 type MetricsReceiver interface {
+	Receiver
+}
+
+// A LogReceiver is a "log data"-to-"internal format" converter.
+// Its purpose is to translate data from the wild into internal data format.
+// LogReceiver feeds a consumer.LogConsumer with data.
+type LogReceiver interface {
 	Receiver
 }
 
@@ -116,4 +123,19 @@ type ReceiverFactory interface {
 	// error will be returned instead.
 	CreateMetricsReceiver(ctx context.Context, params ReceiverCreateParams,
 		cfg configmodels.Receiver, nextConsumer consumer.MetricsConsumer) (MetricsReceiver, error)
+}
+
+// LogReceiverFactory can create a LogReceiver.
+type LogReceiverFactory interface {
+	ReceiverFactoryBase
+
+	// CreateLogReceiver creates a log receiver based on this config.
+	// If the receiver type does not support the data type or if the config is not valid
+	// error will be returned instead.
+	CreateLogReceiver(
+		ctx context.Context,
+		params ReceiverCreateParams,
+		cfg configmodels.Receiver,
+		nextConsumer consumer.LogConsumer,
+	) (LogReceiver, error)
 }

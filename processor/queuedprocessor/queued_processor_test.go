@@ -28,14 +28,14 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
-	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumererror"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
-	"github.com/open-telemetry/opentelemetry-collector/internal/collector/telemetry"
-	"github.com/open-telemetry/opentelemetry-collector/internal/data/testdata"
-	"github.com/open-telemetry/opentelemetry-collector/processor"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/collector/telemetry"
+	"go.opentelemetry.io/collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/processor"
 )
 
 func TestQueuedProcessor_noEnqueueOnPermanentError(t *testing.T) {

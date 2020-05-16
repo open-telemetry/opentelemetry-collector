@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector
+module go.opentelemetry.io/collector
 
 go 1.14
 
@@ -22,14 +22,14 @@ require (
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/handlers v1.4.2 // indirect
 	github.com/gorilla/mux v1.7.3
-	github.com/grpc-ecosystem/grpc-gateway v1.11.1
+	github.com/grpc-ecosystem/grpc-gateway v1.14.5
 	github.com/hashicorp/consul/api v1.2.0 // indirect
 	github.com/jaegertracing/jaeger v1.17.0
 	github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024
 	github.com/mjibson/esc v0.2.0
 	github.com/open-telemetry/opentelemetry-proto v0.3.0
 	github.com/openzipkin/zipkin-go v0.2.1
-	github.com/orijtech/prometheus-go-metrics-exporter v0.0.4
+	github.com/orijtech/prometheus-go-metrics-exporter v0.0.5
 	github.com/ory/go-acc v0.2.1
 	github.com/ory/x v0.0.109 // indirect
 	github.com/pavius/impi v0.0.0-20180302134524-c1cbdcb8df2b
@@ -56,11 +56,11 @@ require (
 	go.opencensus.io v0.22.3
 	go.uber.org/zap v1.10.0
 	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e // indirect
-	golang.org/x/sys v0.0.0-20200408040146-ea54a3c99b9b
+	golang.org/x/sys v0.0.0-20200408040146-ea54a3c99b9b // indirect
 	golang.org/x/tools v0.0.0-20200428211428-0c9eba77bc32 // indirect
 	google.golang.org/api v0.10.0 // indirect
 	google.golang.org/genproto v0.0.0-20200408120641-fbb3ad325eb7
-	google.golang.org/grpc v1.28.1
+	google.golang.org/grpc v1.29.1
 	gopkg.in/yaml.v2 v2.2.8
 	honnef.co/go/tools v0.0.1-2020.1.3
 )

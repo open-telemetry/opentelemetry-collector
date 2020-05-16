@@ -12,24 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package grpc
+package configgrpc
 
 import (
-	"testing"
-
-	"github.com/open-telemetry/opentelemetry-collector/compression"
+	// import the gzip package with auto-registers the gzip grpc compressor
+	_ "google.golang.org/grpc/encoding/gzip"
 )
-
-func TestGetGRPCCompressionKey(t *testing.T) {
-	if GetGRPCCompressionKey("gzip") != compression.Gzip {
-		t.Error("gzip is marked as supported but returned unsupported")
-	}
-
-	if GetGRPCCompressionKey("Gzip") != compression.Gzip {
-		t.Error("Capitalization of Gzip should not matter")
-	}
-
-	if GetGRPCCompressionKey("badType") != compression.Unsupported {
-		t.Error("badType is not supported but was returned as supported")
-	}
-}

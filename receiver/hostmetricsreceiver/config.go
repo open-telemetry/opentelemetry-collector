@@ -17,14 +17,14 @@ package hostmetricsreceiver
 import (
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal"
+	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 )
 
 // Config defines configuration for HostMetrics receiver.
 type Config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`
 
-	DefaultCollectionInterval time.Duration              `mapstructure:"default_collection_interval"`
-	Scrapers                  map[string]internal.Config `mapstructure:"-"`
+	CollectionInterval time.Duration              `mapstructure:"collection_interval"`
+	Scrapers           map[string]internal.Config `mapstructure:"-"`
 }

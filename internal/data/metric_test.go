@@ -22,7 +22,7 @@ import (
 	otlpresource "github.com/open-telemetry/opentelemetry-proto/gen/go/resource/v1"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 const (

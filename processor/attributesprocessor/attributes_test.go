@@ -22,12 +22,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
-	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
-	"github.com/open-telemetry/opentelemetry-collector/internal/data/testdata"
-	"github.com/open-telemetry/opentelemetry-collector/internal/processor/filterspan"
-	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/internal/processor/filterspan"
+	"go.opentelemetry.io/collector/translator/conventions"
 )
 
 // Common structure for the

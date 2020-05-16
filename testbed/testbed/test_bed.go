@@ -35,7 +35,7 @@ import (
 	"testing"
 	"text/template"
 
-	"github.com/open-telemetry/opentelemetry-collector/config"
+	"go.opentelemetry.io/collector/config"
 )
 
 // GlobalConfig defines test bed configuration.

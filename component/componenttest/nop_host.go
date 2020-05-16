@@ -15,8 +15,8 @@
 package componenttest
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configmodels"
 )
 
 // NopHost mocks a receiver.ReceiverHost for test purposes.

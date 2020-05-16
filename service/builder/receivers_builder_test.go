@@ -23,15 +23,16 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
-	"github.com/open-telemetry/opentelemetry-collector/config"
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/processor/attributesprocessor"
-	"github.com/open-telemetry/opentelemetry-collector/processor/processortest"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/zipkinreceiver"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
+	idata "go.opentelemetry.io/collector/internal/data"
+	"go.opentelemetry.io/collector/processor/attributesprocessor"
+	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/collector/receiver/zipkinreceiver"
 )
 
 type testCase struct {
@@ -178,6 +179,88 @@ func testReceivers(
 			require.Equal(t, 1, len(metricsConsumer.Metrics))
 			assertEqualMetricsData(t, metricsData, metricsConsumer.Metrics[0])
 		}
+	}
+}
+
+func TestReceiversBuilder_BuildCustom(t *testing.T) {
+	factories := createExampleFactories()
+
+	tests := []struct {
+		dataType   string
+		shouldFail bool
+	}{
+		{
+			dataType:   "logs",
+			shouldFail: false,
+		},
+		{
+			dataType:   "nosuchdatatype",
+			shouldFail: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.dataType, func(t *testing.T) {
+			dataType := test.dataType
+
+			cfg := createExampleConfig(dataType)
+
+			// Build the pipeline
+			allExporters, err := NewExportersBuilder(zap.NewNop(), cfg, factories.Exporters).Build()
+			if test.shouldFail {
+				assert.Error(t, err)
+				return
+			}
+
+			assert.NoError(t, err)
+			pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), cfg, allExporters, factories.Processors).Build()
+			assert.NoError(t, err)
+			receivers, err := NewReceiversBuilder(zap.NewNop(), cfg, pipelineProcessors, factories.Receivers).Build()
+
+			assert.NoError(t, err)
+			require.NotNil(t, receivers)
+
+			receiver := receivers[cfg.Receivers["examplereceiver"]]
+
+			// Ensure receiver has its fields correctly populated.
+			require.NotNil(t, receiver)
+
+			assert.NotNil(t, receiver.receiver)
+
+			// Compose the list of created exporters.
+			exporterNames := []string{"exampleexporter"}
+			var exporters []*builtExporter
+			for _, name := range exporterNames {
+				// Ensure exporter is created.
+				exp := allExporters[cfg.Exporters[name]]
+				require.NotNil(t, exp)
+				exporters = append(exporters, exp)
+			}
+
+			// Send Data via receiver and verify that all exporters of the pipeline receive it.
+
+			// First check that there are no traces in the exporters yet.
+			for _, exporter := range exporters {
+				consumer := exporter.le.(*config.ExampleExporterConsumer)
+				require.Equal(t, len(consumer.Logs), 0)
+			}
+
+			// Send one data.
+			log := idata.Logs{}
+			producer := receiver.receiver.(*config.ExampleReceiverProducer)
+			producer.LogConsumer.ConsumeLogs(context.Background(), log)
+
+			// Now verify received data.
+			for _, name := range exporterNames {
+				// Check that the data is received by exporter.
+				exporter := allExporters[cfg.Exporters[name]]
+
+				// Validate exported data.
+				consumer := exporter.le.(*config.ExampleExporterConsumer)
+				require.Equal(t, 1, len(consumer.Logs))
+				assert.EqualValues(t, log, consumer.Logs[0])
+			}
+		})
 	}
 }
 

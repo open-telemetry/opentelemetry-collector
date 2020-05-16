@@ -15,17 +15,25 @@
 package jaegerreceiver
 
 import (
+	"bytes"
 	"context"
 	"encoding/binary"
 	"fmt"
+	"io/ioutil"
 	"net"
+	"net/http"
+	"net/http/httptest"
 	"path"
 	"testing"
 	"time"
 
 	"contrib.go.opencensus.io/exporter/jaeger"
+	"github.com/apache/thrift/lib/go/thrift"
+	collectorSampling "github.com/jaegertracing/jaeger/cmd/collector/app/sampling"
 	"github.com/jaegertracing/jaeger/model"
+	staticStrategyStore "github.com/jaegertracing/jaeger/plugin/sampling/strategystore/static"
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
+	tJaeger "github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -34,14 +42,17 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
-	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
-	"github.com/open-telemetry/opentelemetry-collector/receiver"
-	"github.com/open-telemetry/opentelemetry-collector/testutils"
-	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
-	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
+	"go.opentelemetry.io/collector/client"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/testutils"
+	"go.opentelemetry.io/collector/translator/conventions"
+	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 const jaegerReceiver = "jaeger_receiver_test"
@@ -51,6 +62,70 @@ func TestTraceSource(t *testing.T) {
 	jr, err := New(jaegerReceiver, &Configuration{}, nil, params)
 	assert.NoError(t, err, "should not have failed to create the Jaeger receiver")
 	require.NotNil(t, jr)
+}
+
+type traceConsumer struct {
+	cb func(context.Context, pdata.Traces)
+}
+
+func (t traceConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+	go t.cb(ctx, td)
+	return nil
+}
+
+func jaegerBatchToHTTPBody(b *tJaeger.Batch) (*http.Request, error) {
+	body, err := thrift.NewTSerializer().Write(b)
+	if err != nil {
+		return nil, err
+	}
+	r := httptest.NewRequest("POST", "/api/traces", bytes.NewReader(body))
+	r.Header.Add("content-type", "application/x-thrift")
+	return r, nil
+}
+
+func TestThriftHTTPBodyDecode(t *testing.T) {
+	jr := jReceiver{}
+	batch := &tJaeger.Batch{
+		Process: tJaeger.NewProcess(),
+		Spans:   []*tJaeger.Span{tJaeger.NewSpan()},
+	}
+	r, err := jaegerBatchToHTTPBody(batch)
+	require.NoError(t, err, "failed to prepare http body")
+
+	gotBatch, hErr := jr.decodeThriftHTTPBody(r)
+	require.Nil(t, hErr, "failed to decode http body")
+	assert.Equal(t, batch, gotBatch)
+}
+
+func TestClientIPDetection(t *testing.T) {
+	ch := make(chan context.Context)
+	jr := jReceiver{
+		nextConsumer: traceConsumer{
+			func(ctx context.Context, _ pdata.Traces) {
+				ch <- ctx
+			},
+		},
+	}
+	batch := &tJaeger.Batch{
+		Process: tJaeger.NewProcess(),
+		Spans:   []*tJaeger.Span{tJaeger.NewSpan()},
+	}
+	r, err := jaegerBatchToHTTPBody(batch)
+	require.NoError(t, err)
+
+	wantClient, ok := client.FromHTTP(r)
+	assert.True(t, ok)
+	jr.HandleThriftHTTPBatch(httptest.NewRecorder(), r)
+
+	select {
+	case ctx := <-ch:
+		gotClient, ok := client.FromContext(ctx)
+		assert.True(t, ok, "must get client back from context")
+		assert.Equal(t, wantClient, gotClient)
+		break
+	case <-time.After(time.Second * 2):
+		t.Error("next consumer did not receive the batch")
+	}
 }
 
 func TestReception(t *testing.T) {
@@ -465,4 +540,80 @@ func TestSamplingFailsOnBadFile(t *testing.T) {
 	assert.NoError(t, err, "should not have failed to create a new receiver")
 	defer jr.Shutdown(context.Background())
 	assert.Error(t, jr.Start(context.Background(), componenttest.NewNopHost()))
+}
+
+func TestSamplingStrategiesMutualTLS(t *testing.T) {
+	caPath := path.Join(".", "testdata", "ca.crt")
+	serverCertPath := path.Join(".", "testdata", "server.crt")
+	serverKeyPath := path.Join(".", "testdata", "server.key")
+	clientCertPath := path.Join(".", "testdata", "client.crt")
+	clientKeyPath := path.Join(".", "testdata", "client.key")
+
+	// start gRPC server that serves sampling strategies
+	tlsCfgOpts := configgrpc.TLSConfig{
+		CaCert:     caPath,
+		ClientCert: serverCertPath,
+		ClientKey:  serverKeyPath,
+	}
+	tlsCfg, err := tlsCfgOpts.LoadTLSConfig()
+	require.NoError(t, err)
+	server, serverAddr := initializeGRPCTestServer(t, func(s *grpc.Server) {
+		ss, serr := staticStrategyStore.NewStrategyStore(staticStrategyStore.Options{
+			StrategiesFile: path.Join(".", "testdata", "strategies.json"),
+		}, zap.NewNop())
+		require.NoError(t, serr)
+		api_v2.RegisterSamplingManagerServer(s, collectorSampling.NewGRPCHandler(ss))
+	}, grpc.Creds(credentials.NewTLS(tlsCfg)))
+	defer server.GracefulStop()
+
+	// Create sampling strategies receiver
+	port, err := randomAvailablePort()
+	require.NoError(t, err)
+	hostEndpoint := fmt.Sprintf("localhost:%d", port)
+	factory := &Factory{}
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.RemoteSampling = &RemoteSamplingConfig{
+		GRPCSettings: configgrpc.GRPCSettings{
+			TLSConfig: configgrpc.TLSConfig{
+				UseSecure:          true,
+				CaCert:             caPath,
+				ClientCert:         clientCertPath,
+				ClientKey:          clientKeyPath,
+				ServerNameOverride: "localhost",
+			},
+			Endpoint: serverAddr.String(),
+		},
+		HostEndpoint: hostEndpoint,
+	}
+	// at least one protocol has to be enabled
+	thriftHTTPPort, err := randomAvailablePort()
+	require.NoError(t, err)
+	cfg.Protocols = map[string]*receiver.SecureReceiverSettings{
+		"thrift_http": {ReceiverSettings: configmodels.ReceiverSettings{
+			Endpoint: fmt.Sprintf("localhost:%d", thriftHTTPPort),
+		}},
+	}
+	exp, err := factory.CreateTraceReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, exportertest.NewNopTraceExporter())
+	require.NoError(t, err)
+	host := &componenttest.ErrorWaitingHost{}
+	err = exp.Start(context.Background(), host)
+	require.NoError(t, err)
+	defer exp.Shutdown(context.Background())
+	_, err = host.WaitForFatalError(200 * time.Millisecond)
+	require.NoError(t, err)
+
+	resp, err := http.Get(fmt.Sprintf("http://%s?service=bar", hostEndpoint))
+	require.NoError(t, err)
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+	assert.Contains(t, "{\"strategyType\":1,\"rateLimitingSampling\":{\"maxTracesPerSecond\":5}}", string(bodyBytes))
+}
+
+func randomAvailablePort() (int, error) {
+	listener, err := net.Listen("tcp", ":0")
+	if err != nil {
+		return 0, err
+	}
+	defer listener.Close()
+	return listener.Addr().(*net.TCPAddr).Port, nil
 }

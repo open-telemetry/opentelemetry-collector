@@ -29,7 +29,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-collector/testbed/testbed"
+	"go.opentelemetry.io/collector/testbed/testbed"
 )
 
 // createConfigFile creates a collector config file that corresponds to the

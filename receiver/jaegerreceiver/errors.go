@@ -12,9 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package grpc
+package jaegerreceiver
 
-import (
-	// import the gzip package with auto-registers the gzip grpc compressor
-	_ "google.golang.org/grpc/encoding/gzip"
-)
+type httpError struct {
+	msg        string
+	statusCode int
+}
+
+func (h httpError) Error() string {
+	return h.msg
+}

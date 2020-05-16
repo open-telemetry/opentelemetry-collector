@@ -27,8 +27,8 @@ import (
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"github.com/pkg/errors"
 
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
+	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 // V1ThriftBatchToOCProto converts Zipkin v1 spans to OC Proto.
@@ -56,7 +56,7 @@ func zipkinV1ThriftToOCSpan(zSpan *zipkincore.Span) (*tracepb.Span, *annotationP
 	}
 
 	// TODO: (@pjanotti) ideally we should error here instead of generating invalid OC proto
-	// however per https://github.com/open-telemetry/opentelemetry-collector/issues/349
+	// however per https://go.opentelemetry.io/collector/issues/349
 	// failures on the receivers in general are silent at this moment, so letting them
 	// proceed for now. We should validate the traceID, spanID and parentID are good with
 	// OC proto requirements.

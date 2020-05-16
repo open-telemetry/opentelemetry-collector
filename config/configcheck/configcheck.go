@@ -24,8 +24,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
-	"github.com/open-telemetry/opentelemetry-collector/config"
+	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/config"
 )
 
 // The regular expression for valid config field tag.

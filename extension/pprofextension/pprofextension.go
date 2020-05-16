@@ -25,7 +25,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
+	"go.opentelemetry.io/collector/component"
 )
 
 type pprofExtension struct {

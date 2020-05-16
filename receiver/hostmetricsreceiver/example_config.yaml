@@ -4,13 +4,14 @@ extensions:
 
 receivers:
   hostmetrics:
-    default_collection_interval: 60s
+    collection_interval: 1m
     scrapers:
       cpu:
-        report_per_cpu: true
+        report_per_cpu: false
       memory:
       disk:
       filesystem:
+      network:
 
 exporters:
   logging:
