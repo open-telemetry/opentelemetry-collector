@@ -17,7 +17,7 @@ package goldendataset
 import (
 	otlpresource "github.com/open-telemetry/opentelemetry-proto/gen/go/resource/v1"
 
-	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
+	"go.opentelemetry.io/collector/translator/conventions"
 )
 
 func GenerateResource(rscID PICTInputResource) *otlpresource.Resource {
