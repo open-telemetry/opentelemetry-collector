@@ -80,7 +80,9 @@ func New(
 	r := &Receiver{
 		ln:          ln,
 		corsOrigins: []string{}, // Disable CORS by default.
-		gatewayMux:  gatewayruntime.NewServeMux(),
+		gatewayMux: gatewayruntime.NewServeMux(
+			gatewayruntime.WithMarshalerOption("application/x-protobuf", &xProtobufMarshaler{}),
+		),
 	}
 
 	for _, opt := range opts {
