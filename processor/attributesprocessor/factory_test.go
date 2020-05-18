@@ -173,7 +173,7 @@ func TestFactory_validateActionsConfiguration_InvalidConfig(t *testing.T) {
 			actionLists: []ActionKeyValue{
 				{Value: "value", Regex: "(?P<operation_website>.*?)$", FromAttribute: "aa", Action: UPSERT},
 			},
-			errorString: "error creating \"attributes\" processor. Only of field \"value\" or \"regex\" setting must be specified for 0-th action of processor \"attributes/error\"",
+			errorString: "error creating \"attributes\" processor due to both fields \"value\" and \"regex\" being set at the 0-th actions of processor \"attributes/error\"",
 		},
 		{
 			name: "regex and not from attribute",
@@ -195,6 +195,20 @@ func TestFactory_validateActionsConfiguration_InvalidConfig(t *testing.T) {
 				{Regex: "(?P<operation_website>.*?)$", Key: "", Value: 123, Action: DELETE},
 			},
 			errorString: "error creating \"attributes\" processor. Action \"DELETE\" does not use \"value\", \"regex\" or \"from_attribute\" field. These must not be specified for 0-th action of processor \"attributes/error\"",
+		},
+		{
+			name: "regex with unnamed capture group",
+			actionLists: []ActionKeyValue{
+				{Regex: "(.*)$", FromAttribute: "aa", Action: UPSERT},
+			},
+			errorString: "error creating \"attributes\" processor. Field \"regex\" contains an unnamed matcher group at the 0-th actions of processor \"attributes/error\"",
+		},
+		{
+			name: "regex with no named capture groups",
+			actionLists: []ActionKeyValue{
+				{Regex: ".*", FromAttribute: "aa", Action: UPSERT},
+			},
+			errorString: "error creating \"attributes\" processor. Field \"regex\" contains no named matcher groups at the 0-th actions of processor \"attributes/error\"",
 		},
 	}
 	factory := Factory{}
