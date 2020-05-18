@@ -1,0 +1,59 @@
+receivers:
+    examplereceiver:
+
+processors:
+    filter/empty:
+        metrics:
+            include:
+                match_type: strict
+    filter/include:
+        metrics:
+            # any names NOT matching filters are excluded from remainder of pipeline
+            include:
+                match_type: strict
+                metric_names:
+                    - hello_world
+                    - hello/world
+    filter/exclude:
+        metrics:
+            # any names matching filters are excluded from remainder of pipeline
+            exclude:
+                match_type: strict
+                metric_names:
+                    - hello_world
+                    - hello/world
+    filter/includeexclude:
+        metrics:
+            # if both include and exclude are specified, include filters are applied first
+            # the following configuration would only allow metrics named "hello/world" to pass through
+            include:
+                match_type: strict
+                metric_names:
+                    - hello_world
+                    - hello/world
+            exclude:
+                match_type: strict
+                metric_names:
+                    - hello_world
+    filter/strictwithconfig:
+        metrics:
+            include:
+                match_type: strict
+                strict:
+                metric_names:
+                    - hello_world
+                    - hello/world
+
+exporters:
+    exampleexporter:
+
+service:
+    pipelines:
+        traces:
+            receivers: [examplereceiver]
+            processors: [filter/empty]
+            exporters: [exampleexporter]
+        metrics:
+            receivers: [examplereceiver]
+            processors: [filter/empty]
+            exporters: [exampleexporter]

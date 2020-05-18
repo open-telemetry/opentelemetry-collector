@@ -1,0 +1,79 @@
+receivers:
+    examplereceiver:
+
+processors:
+    filter:
+    filter/include:
+        # any names NOT matching filters are excluded from remainder of pipeline
+        metrics:
+            include:
+                match_type: regexp
+                metric_names:
+                    # re2 regexp patterns
+                    - prefix/.*
+                    - prefix_.*
+                    - .*/suffix
+                    - .*_suffix
+                    - .*/contains/.*
+                    - .*_contains_.*
+                    - full/name/match
+                    - full_name_match
+    filter/exclude:
+        # any names matching filters are excluded from remainder of pipeline
+        metrics:
+            exclude:
+                match_type: regexp
+                metric_names:
+                    - prefix/.*
+                    - prefix_.*
+                    - .*/suffix
+                    - .*_suffix
+                    - .*/contains/.*
+                    - .*_contains_.*
+                    - full/name/match
+                    - full_name_match
+    filter/unlimitedcache:
+        metrics:
+            include:
+                match_type: regexp
+                regexp:
+                    cacheenabled: true
+                metric_names:
+                    - prefix/.*
+                    - prefix_.*
+                    - .*/suffix
+                    - .*_suffix
+                    - .*/contains/.*
+                    - .*_contains_.*
+                    - full/name/match
+                    - full_name_match
+    filter/limitedcache:
+        metrics:
+            exclude:
+                match_type: regexp
+                metric_names:
+                    - prefix/.*
+                    - prefix_.*
+                    - .*/suffix
+                    - .*_suffix
+                    - .*/contains/.*
+                    - .*_contains_.*
+                    - full/name/match
+                    - full_name_match
+                regexp:
+                    cacheenabled: true
+                    cachemaxnumentries: 10
+
+exporters:
+    exampleexporter:
+
+service:
+    pipelines:
+        traces:
+            receivers: [examplereceiver]
+            processors: [filter]
+            exporters: [exampleexporter]
+        metrics:
+            receivers: [examplereceiver]
+            processors: [filter]
+            exporters: [exampleexporter]

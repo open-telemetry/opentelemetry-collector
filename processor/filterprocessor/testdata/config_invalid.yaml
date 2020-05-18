@@ -1,0 +1,26 @@
+receivers:
+    examplereceiver:
+
+processors:
+    filter/include:
+        # any names NOT matching filters are excluded from remainder of pipeline
+        metrics:
+            include:
+                match_type: regexp
+                metric_names:
+                    # re2 regexp patterns
+                    - (\W|^)stock\stips(\W|$
+
+exporters:
+    exampleexporter:
+
+service:
+    pipelines:
+        traces:
+            receivers: [examplereceiver]
+            processors: [filter/include]
+            exporters: [exampleexporter]
+        metrics:
+            receivers: [examplereceiver]
+            processors: [filter/include]
+            exporters: [exampleexporter]
