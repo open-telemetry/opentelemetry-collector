@@ -133,9 +133,14 @@ func GrpcSettingsToDialOptions(settings GRPCSettings) ([]grpc.DialOption, error)
 
 // LoadTLSConfig loads TLS certificates and returns a tls.Config.
 func (c TLSConfig) LoadTLSConfig() (*tls.Config, error) {
-	certPool, err := c.loadCertPool()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load CA CertPool: %w", err)
+	var err error
+	var certPool *x509.CertPool
+	if len(c.CaCert) != 0 {
+		// setup user specified truststore
+		certPool, err = c.loadCert(c.CaCert)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load CA CertPool: %w", err)
+		}
 	}
 	// #nosec G402
 	tlsCfg := &tls.Config{
@@ -155,20 +160,6 @@ func (c TLSConfig) LoadTLSConfig() (*tls.Config, error) {
 	}
 
 	return tlsCfg, nil
-}
-
-var systemCertPool = x509.SystemCertPool // to allow overriding in unit test
-
-func (c TLSConfig) loadCertPool() (*x509.CertPool, error) {
-	if len(c.CaCert) == 0 { // no truststore given, use SystemCertPool
-		certPool, err := systemCertPool()
-		if err != nil {
-			return nil, fmt.Errorf("failed to load SystemCertPool: %w", err)
-		}
-		return certPool, nil
-	}
-	// setup user specified truststore
-	return c.loadCert(c.CaCert)
 }
 
 func (c TLSConfig) loadCert(caPath string) (*x509.CertPool, error) {
