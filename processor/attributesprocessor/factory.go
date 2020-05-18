@@ -121,7 +121,7 @@ func buildAttributesConfiguration(config Config) ([]attributeAction, error) {
 		switch a.Action {
 		case INSERT, UPDATE, UPSERT:
 			if a.Value != nil && a.Regex != "" {
-				return nil, fmt.Errorf("error creating \"attributes\" processor. Only of field \"value\" or \"regex\" setting must be specified for %d-th action of processor %q", i, config.Name())
+				return nil, fmt.Errorf("error creating \"attributes\" processor due to both fields \"value\" and \"regex\" being set at the %d-th actions of processor %q", i, config.Name())
 			}
 
 			if a.Value == nil && a.Regex == "" && a.FromAttribute == "" {
@@ -151,8 +151,20 @@ func buildAttributesConfiguration(config Config) ([]attributeAction, error) {
 				if err != nil {
 					return nil, fmt.Errorf("error creating \"attributes\" processor. Field \"regex\" has invalid pattern: \"%s\" to be set at the %d-th actions of processor %q", a.Regex, i, config.Name())
 				}
+				attrNames := re.SubexpNames()
+				if len(attrNames) <= 1 {
+					return nil, fmt.Errorf("error creating \"attributes\" processor. Field \"regex\" contains no named matcher groups at the %d-th actions of processor %q", i, config.Name())
+				}
+
+				for subExpIndex := 1; subExpIndex < len(attrNames); subExpIndex++ {
+					if attrNames[subExpIndex] == "" {
+						return nil, fmt.Errorf("error creating \"attributes\" processor. Field \"regex\" contains an unnamed matcher group at the %d-th actions of processor %q", i, config.Name())
+					}
+				}
+
 				action.Regex = re
-				action.AttrNames = re.SubexpNames()
+				action.AttrNames = attrNames
+
 			}
 		case HASH, DELETE:
 			if a.Value != nil || a.FromAttribute != "" || a.Regex != "" {

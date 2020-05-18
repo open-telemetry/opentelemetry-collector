@@ -16,6 +16,7 @@ package attributesprocessor
 
 import (
 	"context"
+	"log"
 	"regexp"
 
 	"go.opentelemetry.io/collector/component"
@@ -47,6 +48,7 @@ type attributeAction struct {
 	Regex *regexp.Regexp
 	// Attribute names extracted from the regexp's subexpressions.
 	AttrNames []string
+	// Number of non empty strings in above array
 
 	// TODO https://go.opentelemetry.io/collector/issues/296
 	// Do benchmark testing between having action be of type string vs integer.
@@ -54,6 +56,11 @@ type attributeAction struct {
 	// and could impact performance.
 	Action         Action
 	AttributeValue *pdata.AttributeValue
+}
+
+type attributeKeyValuePair struct {
+	key   string
+	value pdata.AttributeValue
 }
 
 // newTraceProcessor returns a processor that modifies attributes of a span.
@@ -131,24 +138,24 @@ func (a *attributesProcessor) processSpan(span pdata.Span, serviceName string) {
 			if !found {
 				continue
 			}
-			for key, value := range av {
-				attrs.Insert(key, value)
+			for _, pair := range av {
+				attrs.Insert(pair.key, pair.value)
 			}
 		case UPDATE:
 			av, found := getSourceAttributeValues(action, attrs)
 			if !found {
 				continue
 			}
-			for key, value := range av {
-				attrs.Update(key, value)
+			for _, pair := range av {
+				attrs.Update(pair.key, pair.value)
 			}
 		case UPSERT:
 			av, found := getSourceAttributeValues(action, attrs)
 			if !found {
 				continue
 			}
-			for key, value := range av {
-				attrs.Upsert(key, value)
+			for _, pair := range av {
+				attrs.Upsert(pair.key, pair.value)
 			}
 		case HASH:
 			hashAttribute(action, attrs)
@@ -156,10 +163,10 @@ func (a *attributesProcessor) processSpan(span pdata.Span, serviceName string) {
 	}
 }
 
-func getSourceAttributeValues(action attributeAction, attrs pdata.AttributeMap) (map[string]pdata.AttributeValue, bool) {
+func getSourceAttributeValues(action attributeAction, attrs pdata.AttributeMap) ([]attributeKeyValuePair, bool) {
 	// Set the key with a value from the configuration.
 	if action.AttributeValue != nil {
-		return map[string]pdata.AttributeValue{action.Key: *action.AttributeValue}, true
+		return []attributeKeyValuePair{{key: action.Key, value: *action.AttributeValue}}, true
 	}
 
 	value, found := attrs.Get(action.FromAttribute)
@@ -168,7 +175,7 @@ func getSourceAttributeValues(action attributeAction, attrs pdata.AttributeMap) 
 	}
 
 	if action.Regex == nil {
-		return map[string]pdata.AttributeValue{action.Key: value}, true
+		return []attributeKeyValuePair{{key: action.Key, value: value}}, true
 	}
 
 	// If we have a regex then we need to make sure the value matched and then extract all the key/values
@@ -177,14 +184,15 @@ func getSourceAttributeValues(action attributeAction, attrs pdata.AttributeMap) 
 		return nil, false
 	}
 	if len(matches) != len(action.AttrNames) {
+		log.Printf("Invalid state for attribute processor, expected %d regex matches to be equal to %d known attribute names", len(matches), len(action.AttrNames))
 		return nil, false
 	}
 
-	values := map[string]pdata.AttributeValue{}
-	for index := 0; index < len(matches); index++ {
-		if action.AttrNames[index] != "" {
-			values[action.AttrNames[index]] = pdata.NewAttributeValueString(matches[index])
-		}
+	values := make([]attributeKeyValuePair, len(action.AttrNames)-1)
+
+	// First group will always contain the full string
+	for indexInAttrNames := 1; indexInAttrNames < len(matches); indexInAttrNames++ {
+		values[indexInAttrNames-1] = attributeKeyValuePair{key: action.AttrNames[indexInAttrNames], value: pdata.NewAttributeValueString(matches[indexInAttrNames])}
 	}
 	return values, true
 }
