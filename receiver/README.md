@@ -295,12 +295,6 @@ service:
       receivers: [hostmetrics, hostmetrics/disk]
 ```
 
-### OS Support
-
-The initial implementation of the Host Metrics receiver supports Windows only.
-It's intended that future iterations of this receiver will support the
-collection of identical metrics (where possible) on other operating systems.
-
 ## <a name="opencensus-metrics"></a>OpenCensus Receiver
 
 The OpenCensus receiver supports both traces and metrics. Configuration
