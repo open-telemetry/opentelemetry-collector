@@ -17,7 +17,6 @@ package zipkin
 import (
 	"encoding/binary"
 	"encoding/json"
-	"github.com/google/go-cmp/cmp"
 	"io/ioutil"
 	"math"
 	"reflect"
@@ -26,6 +25,7 @@ import (
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
+	"github.com/stretchr/testify/assert"
 
 	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 )
@@ -91,9 +91,7 @@ func TestV1ThriftToOCProto(t *testing.T) {
 	sortTraceByNodeName(want)
 	sortTraceByNodeName(got)
 
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("Diff mismatch (-want +got):\n%s", diff)
-	}
+	assert.EqualValues(t, want, got)
 }
 
 func BenchmarkV1ThriftToOCProto(b *testing.B) {
