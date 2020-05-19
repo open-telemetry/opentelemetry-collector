@@ -43,6 +43,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/observability/observabilitytest"
 	"go.opentelemetry.io/collector/testutils"
 	"go.opentelemetry.io/collector/translator/conventions"
@@ -189,39 +190,7 @@ func TestProtoHttp(t *testing.T) {
 
 	url := fmt.Sprintf("http://%s/v1/trace", addr)
 
-	wantOtlp := []*otlptrace.ResourceSpans{
-		{
-			Resource: &otlpresource.Resource{
-				Attributes: []*otlpcommon.AttributeKeyValue{
-					{
-						Key:         conventions.AttributeHostHostname,
-						StringValue: "testHost",
-						Type:        otlpcommon.AttributeKeyValue_STRING,
-					},
-				},
-			},
-			InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
-				{
-					Spans: []*otlptrace.Span{
-						{
-							TraceId:           []byte{0x5B, 0x8E, 0xFF, 0xF7, 0x98, 0x3, 0x81, 0x3, 0xD2, 0x69, 0xB6, 0x33, 0x81, 0x3F, 0xC6, 0xC},
-							SpanId:            []byte{0xEE, 0xE1, 0x9B, 0x7E, 0xC3, 0xC1, 0xB1, 0x73},
-							Name:              "testSpan",
-							StartTimeUnixNano: 1544712660000000000,
-							EndTimeUnixNano:   1544712661000000000,
-							Attributes: []*otlpcommon.AttributeKeyValue{
-								{
-									Key:      "attr1",
-									Type:     otlpcommon.AttributeKeyValue_INT,
-									IntValue: 55,
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
+	wantOtlp := pdata.TracesToOtlp(testdata.GenerateTraceDataOneSpan())
 
 	traceProto := collectortrace.ExportTraceServiceRequest{
 		ResourceSpans: wantOtlp,
