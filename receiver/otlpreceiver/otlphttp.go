@@ -15,38 +15,16 @@
 package otlpreceiver
 
 import (
-	"io"
-
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 )
 
 // xProtobufMarshaler is a Marshaler which wraps runtime.ProtoMarshaller
 // and sets ContentType to application/x-protobuf
 type xProtobufMarshaler struct {
-	marshaler runtime.ProtoMarshaller
+	*runtime.ProtoMarshaller
 }
 
 // ContentType always returns "application/x-protobuf".
 func (*xProtobufMarshaler) ContentType() string {
 	return "application/x-protobuf"
-}
-
-// Marshal marshals "value" into Proto
-func (m *xProtobufMarshaler) Marshal(value interface{}) ([]byte, error) {
-	return m.marshaler.Marshal(value)
-}
-
-// Unmarshal unmarshals proto "data" into "value"
-func (m *xProtobufMarshaler) Unmarshal(data []byte, value interface{}) error {
-	return m.marshaler.Unmarshal(data, value)
-}
-
-// NewDecoder returns a Decoder which reads proto stream from "reader".
-func (m *xProtobufMarshaler) NewDecoder(reader io.Reader) runtime.Decoder {
-	return m.marshaler.NewDecoder(reader)
-}
-
-// NewEncoder returns an Encoder which writes proto stream into "writer".
-func (m *xProtobufMarshaler) NewEncoder(writer io.Writer) runtime.Encoder {
-	return m.marshaler.NewEncoder(writer)
 }
