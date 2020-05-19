@@ -20,11 +20,11 @@ import (
 	occommon "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	octrace "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
-	"github.com/open-telemetry/opentelemetry-collector/internal"
-	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
-	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal"
+	"go.opentelemetry.io/collector/translator/conventions"
+	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 // OCToTraceData converts OC data format to Traces.
@@ -139,7 +139,12 @@ func ocSpanToInternal(src *octrace.Span, dest pdata.Span) {
 	dest.SetTraceID(pdata.NewTraceID(src.TraceId))
 	dest.SetSpanID(pdata.NewSpanID(src.SpanId))
 	dest.SetTraceState(ocTraceStateToInternal(src.Tracestate))
-	dest.SetParentSpanID(pdata.NewSpanID(src.ParentSpanId))
+
+	// Empty parentSpanId can be set as a nil value, an zero len slice or an all-zeros slice
+	if hasBytesValue(src.ParentSpanId) {
+		dest.SetParentSpanID(pdata.NewSpanID(src.ParentSpanId))
+	}
+
 	dest.SetName(src.Name.GetValue())
 	dest.SetStartTime(internal.TimestampToUnixNano(src.StartTime))
 	dest.SetEndTime(internal.TimestampToUnixNano(src.EndTime))
@@ -149,6 +154,15 @@ func ocSpanToInternal(src *octrace.Span, dest pdata.Span) {
 	ocEventsToInternal(src.TimeEvents, dest)
 	ocLinksToInternal(src.Links, dest)
 	ocStatusToInternal(src.Status, dest.Status())
+}
+
+func hasBytesValue(s []byte) bool {
+	for _, b := range s {
+		if b != 0 {
+			return true
+		}
+	}
+	return false
 }
 
 func ocStatusToInternal(ocStatus *octrace.Status, dest pdata.SpanStatus) {

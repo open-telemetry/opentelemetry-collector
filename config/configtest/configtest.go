@@ -22,7 +22,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-collector/config"
+	"go.opentelemetry.io/collector/config"
 )
 
 // NewViperFromYamlFile creates a viper instance that reads the given fileName as yaml config

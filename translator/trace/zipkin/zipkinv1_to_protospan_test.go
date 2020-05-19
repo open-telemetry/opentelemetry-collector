@@ -29,8 +29,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
+	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 func Test_hexIDToOCID(t *testing.T) {

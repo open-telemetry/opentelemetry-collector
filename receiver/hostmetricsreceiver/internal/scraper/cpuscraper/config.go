@@ -14,7 +14,7 @@
 
 package cpuscraper
 
-import "github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal"
+import "go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 
 // Config relating to CPU Metric Scraper.
 type Config struct {

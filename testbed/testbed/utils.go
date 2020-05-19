@@ -17,7 +17,7 @@ package testbed
 import (
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector/testutils"
+	"go.opentelemetry.io/collector/testutils"
 )
 
 func GetAvailablePort(t *testing.T) int {

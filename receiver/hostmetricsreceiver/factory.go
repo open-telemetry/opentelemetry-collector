@@ -21,17 +21,18 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/config"
-	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal/scraper/diskscraper"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal/scraper/memoryscraper"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/hostmetricsreceiver/internal/scraper/networkscraper"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configerror"
+	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/diskscraper"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/loadscraper"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/memoryscraper"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/networkscraper"
 )
 
 // This file implements Factory for HostMetrics receiver.
@@ -53,6 +54,7 @@ func NewFactory() *Factory {
 		scraperFactories: map[string]internal.Factory{
 			cpuscraper.TypeStr:        &cpuscraper.Factory{},
 			diskscraper.TypeStr:       &diskscraper.Factory{},
+			loadscraper.TypeStr:       &loadscraper.Factory{},
 			filesystemscraper.TypeStr: &filesystemscraper.Factory{},
 			memoryscraper.TypeStr:     &memoryscraper.Factory{},
 			networkscraper.TypeStr:    &networkscraper.Factory{},
@@ -81,8 +83,8 @@ func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 			return fmt.Errorf("config type not hostmetrics.Config")
 		}
 
-		if cfg.DefaultCollectionInterval <= 0 {
-			return fmt.Errorf("default_collection_interval must be a positive number")
+		if cfg.CollectionInterval <= 0 {
+			return fmt.Errorf("collection_interval must be a positive duration")
 		}
 
 		// dynamically load the individual collector configs based on the key name
@@ -102,15 +104,9 @@ func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 
 			collectorCfg := factory.CreateDefaultConfig()
 			collectorViperSection := config.ViperSub(scrapersViperSection, key)
-			if collectorViperSection != nil {
-				err := collectorViperSection.UnmarshalExact(collectorCfg)
-				if err != nil {
-					return fmt.Errorf("error reading settings for scraper type %q: %v", key, err)
-				}
-			}
-
-			if collectorCfg.CollectionInterval() <= 0 {
-				collectorCfg.SetCollectionInterval(cfg.DefaultCollectionInterval)
+			err := collectorViperSection.UnmarshalExact(collectorCfg)
+			if err != nil {
+				return fmt.Errorf("error reading settings for scraper type %q: %v", key, err)
 			}
 
 			cfg.Scrapers[key] = collectorCfg
@@ -127,7 +123,7 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		DefaultCollectionInterval: 10 * time.Second,
+		CollectionInterval: time.Minute,
 	}
 }
 
@@ -151,7 +147,7 @@ func (f *Factory) CreateMetricsReceiver(
 ) (component.MetricsReceiver, error) {
 	config := cfg.(*Config)
 
-	hmr, err := NewHostMetricsReceiver(ctx, params.Logger, config, f.scraperFactories, consumer)
+	hmr, err := newHostMetricsReceiver(ctx, params.Logger, config, f.scraperFactories, consumer)
 	if err != nil {
 		return nil, err
 	}

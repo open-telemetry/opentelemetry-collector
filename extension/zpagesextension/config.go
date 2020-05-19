@@ -15,7 +15,7 @@
 package zpagesextension
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configmodels"
 )
 
 // Config has the configuration for the extension enabling the zPages extension.

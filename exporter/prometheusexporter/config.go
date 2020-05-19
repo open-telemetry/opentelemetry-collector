@@ -17,7 +17,7 @@ package prometheusexporter
 import (
 	prometheus_golang "github.com/prometheus/client_golang/prometheus"
 
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configmodels"
 )
 
 // Config defines configuration for Prometheus exporter.

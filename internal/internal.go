@@ -19,7 +19,7 @@ import (
 
 	"github.com/golang/protobuf/ptypes/timestamp"
 
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 // TimeToTimestamp converts a time.Time to a timestamp.Timestamp pointer.

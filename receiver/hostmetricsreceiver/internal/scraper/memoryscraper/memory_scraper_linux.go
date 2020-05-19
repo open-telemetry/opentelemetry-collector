@@ -19,7 +19,7 @@ package memoryscraper
 import (
 	"github.com/shirou/gopsutil/mem"
 
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 const memStatesLen = 6

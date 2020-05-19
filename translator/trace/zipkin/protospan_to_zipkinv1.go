@@ -24,8 +24,8 @@ import (
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	"github.com/pkg/errors"
 
-	"github.com/open-telemetry/opentelemetry-collector/internal"
-	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
+	"go.opentelemetry.io/collector/internal"
+	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 const (

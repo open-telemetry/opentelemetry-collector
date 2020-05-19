@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/open-telemetry/opentelemetry-collector/internal/version"
+	"go.opentelemetry.io/collector/internal/version"
 )
 
 const (

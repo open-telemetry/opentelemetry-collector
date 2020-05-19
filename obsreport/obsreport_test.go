@@ -29,8 +29,8 @@ import (
 	"go.opencensus.io/tag"
 	"go.opencensus.io/trace"
 
-	"github.com/open-telemetry/opentelemetry-collector/observability"
-	"github.com/open-telemetry/opentelemetry-collector/observability/observabilitytest"
+	"go.opentelemetry.io/collector/observability"
+	"go.opentelemetry.io/collector/observability/observabilitytest"
 )
 
 const (

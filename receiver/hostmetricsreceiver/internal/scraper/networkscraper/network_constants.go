@@ -15,7 +15,7 @@
 package networkscraper
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 // network metric constants

@@ -9,24 +9,33 @@ metadata:
 data:
   otel-agent-config: |
     receivers:
-      opencensus: {}
+      otlp: {}
     exporters:
-      opencensus:
-        endpoint: "otel-collector.default:55678" # TODO: Update me
+      otlp:
+        endpoint: "otel-collector.default:55680" # TODO: Update me
     processors:
+      batch:
+      memory_limiter:
+        # Same as --mem-ballast-size-mib CLI argument
+        ballast_size_mib: 165
+        # 80% of maximum memory up to 2G
+        limit_mib: 400
+        # 25% of limit up to 2G
+        spike_limit_mib: 100
       queued_retry:
         num_workers: 4
         queue_size: 100
         retry_on_failure: true
     extensions:
+      health_check: {}
       zpages: {}
     service:
-      extensions: [zpages]
+      extensions: [health_check, zpages]
       pipelines:
         traces:
-          receivers: [opencensus]
-          processors: [queued_retry]
-          exporters: [opencensus]
+          receivers: [otlp]
+          processors: [memory_limiter, batch, queued_retry]
+          exporters: [otlp]
 ---
 apiVersion: apps/v1
 kind: DaemonSet
@@ -50,6 +59,8 @@ spec:
       - command:
           - "/otelcol"
           - "--config=/conf/otel-agent-config.yaml"
+          # Memory Ballast size should be max 1/3 to 1/2 of memory.
+          - "--mem-ballast-size-mib=165"
         image: otel/opentelemetry-collector-dev:latest
         name: otel-agent
         resources:
@@ -60,13 +71,20 @@ spec:
             cpu: 100m
             memory: 100Mi
         ports:
-        - containerPort: 55678 # Default Opencensus receiver port.
         - containerPort: 55679 # ZPages endpoint.
-#        - containerPort: 14268 # Default Jaeger HTTP receiver port.
-#        - containerPort: 9411 # Default Zipkin receiver port.
+        - containerPort: 55680 # Default OpenTelemetry receiver port.
+        - containerPort: 8888  # Metrics.
         volumeMounts:
         - name: otel-agent-config-vol
           mountPath: /conf
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 13133 # Health Check extension default port.
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 13133 # Health Check extension default port.
       volumes:
         - configMap:
             name: otel-agent-conf
@@ -85,48 +103,40 @@ metadata:
 data:
   otel-collector-config: |
     receivers:
-      opencensus:
-        # keepalive settings can help load balancing, see receiver/README.md for more info.
-        keepalive:
-          server_parameters:
-            max_connection_age: 120s
-            max_connection_age_grace: 30s
+      otlp: {}
       jaeger:
         protocols:
           grpc:
           thrift_http:
       zipkin: {}
     processors:
-      queued_retry:
-        num_workers: 16
-        queue_size: 10000
-        retry_on_failure: true
       batch:
-        send_batch_size: 1024
-        timeout: 5s
+      memory_limiter:
+        # Same as --mem-ballast-size-mib CLI argument
+        ballast_size_mib: 165
+        # 80% of maximum memory up to 2G
+        limit_mib: 400
+        # 25% of limit up to 2G
+        spike_limit_mib: 100
+      queued_retry:
     extensions:
       health_check: {}
+      zpages: {}
     exporters:
-      opencensus:
-        compression: "gzip"
-        endpoint: "someopencensus.target.com:443" # Replace with a real endpoint.
-        num_workers: 8
-        reconnection_delay: 2s
-        secure: true
       zipkin:
         url: "http://somezipkin.target.com:9411/api/v2/spans" # Replace with a real endpoint.
       jaeger:
-        endpoint: "somejaegergrpc.target.com:55678" # Replace with a real endpoint.
+        endpoint: "somejaegergrpc.target.com:14250" # Replace with a real endpoint.
     service:
-      extensions: [health_check]
+      extensions: [health_check, zpages]
       pipelines:
         traces/1:
-          receivers: [opencensus, zipkin]
-          processors: [batch, queued_retry]
-          exporters: [opencensus, zipkin]
+          receivers: [otlp, zipkin]
+          processors: [memory_limiter, batch, queued_retry]
+          exporters: [otlp, zipkin]
         traces/2:
-          receivers: [opencensus, jaeger]
-          processors: [batch, queued_retry]
+          receivers: [otlp, jaeger]
+          processors: [memory_limiter, batch, queued_retry]
           exporters: [jaeger]
 ---
 apiVersion: v1
@@ -134,14 +144,14 @@ kind: Service
 metadata:
   name: otel-collector
   labels:
-    app: opencensus
+    app: opentelemetry
     component: otel-collector
 spec:
   ports:
-  - name: opencensus # Default endpoint for Opencensus receiver.
-    port: 55678
+  - name: otlp # Default endpoint for OpenTelemetry receiver.
+    port: 55680
     protocol: TCP
-    targetPort: 55678
+    targetPort: 55680
   - name: jaeger-grpc # Default endpoing for Jaeger gRPC receiver
     port: 14250
   - name: jaeger-thrift-http # Default endpoint for Jaeger HTTP receiver.
@@ -170,10 +180,6 @@ spec:
   replicas: 1 #TODO - adjust this to your own requirements
   template:
     metadata:
-      annotations:
-        prometheus.io/path: "/metrics"
-        prometheus.io/port: "8888"
-        prometheus.io/scrape: "true"
       labels:
         app: opentelemetry
         component: otel-collector
@@ -184,9 +190,6 @@ spec:
           - "--config=/conf/otel-collector-config.yaml"
 #           Memory Ballast size should be max 1/3 to 1/2 of memory.
           - "--mem-ballast-size-mib=683"
-        env:
-        - name: GOGC
-          value: "80"
         image: otel/opentelemetry-collector-dev:latest
         name: otel-collector
         resources:
@@ -197,7 +200,8 @@ spec:
             cpu: 200m
             memory: 400Mi
         ports:
-        - containerPort: 55678 # Default endpoint for Opencensus receiver.
+        - containerPort: 55679 # Default endpoint for ZPages.
+        - containerPort: 55680 # Default endpoint for OpenTelemetry receiver.
         - containerPort: 14250 # Default endpoint for Jaeger HTTP receiver.
         - containerPort: 14268 # Default endpoint for Jaeger HTTP receiver.
         - containerPort: 9411 # Default endpoint for Zipkin receiver.

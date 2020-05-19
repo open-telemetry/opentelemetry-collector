@@ -15,8 +15,6 @@
 package configgrpc
 
 import (
-	"crypto/x509"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -46,7 +44,7 @@ func TestInvalidPemFile(t *testing.T) {
 		err      string
 	}{
 		{
-			err: "open /doesnt/exist: no such file or directory",
+			err: "^open /doesnt/exist:",
 			settings: GRPCSettings{
 				Headers:     nil,
 				Endpoint:    "",
@@ -60,7 +58,7 @@ func TestInvalidPemFile(t *testing.T) {
 			},
 		},
 		{
-			err: "failed to load TLS config: failed to load CA CertPool: failed to load CA /doesnt/exist: open /doesnt/exist: no such file or directory",
+			err: "^failed to load TLS config: failed to load CA CertPool: failed to load CA /doesnt/exist:",
 			settings: GRPCSettings{
 				Headers:     nil,
 				Endpoint:    "",
@@ -74,7 +72,7 @@ func TestInvalidPemFile(t *testing.T) {
 			},
 		},
 		{
-			err: "failed to load TLS config: for client auth via TLS, either both client certificate and key must be supplied, or neither",
+			err: "^failed to load TLS config: for client auth via TLS, either both client certificate and key must be supplied, or neither$",
 			settings: GRPCSettings{
 				Headers:     nil,
 				Endpoint:    "",
@@ -91,7 +89,7 @@ func TestInvalidPemFile(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.err, func(t *testing.T) {
 			_, err := GrpcSettingsToDialOptions(test.settings)
-			assert.EqualError(t, err, test.err)
+			assert.Regexp(t, test.err, err)
 		})
 	}
 }
@@ -117,18 +115,11 @@ func TestOptionsToConfig(t *testing.T) {
 	tests := []struct {
 		name        string
 		options     TLSConfig
-		fakeSysPool bool
 		expectError string
 	}{
 		{
 			name:    "should load system CA",
 			options: TLSConfig{CaCert: ""},
-		},
-		{
-			name:        "should fail with fake system CA",
-			fakeSysPool: true,
-			options:     TLSConfig{CaCert: ""},
-			expectError: "fake system pool",
 		},
 		{
 			name:    "should load custom CA",
@@ -210,15 +201,6 @@ func TestOptionsToConfig(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			if test.fakeSysPool {
-				saveSystemCertPool := systemCertPool
-				systemCertPool = func() (*x509.CertPool, error) {
-					return nil, fmt.Errorf("fake system pool")
-				}
-				defer func() {
-					systemCertPool = saveSystemCertPool
-				}()
-			}
 			cfg, err := test.options.LoadTLSConfig()
 			if test.expectError != "" {
 				require.Error(t, err)

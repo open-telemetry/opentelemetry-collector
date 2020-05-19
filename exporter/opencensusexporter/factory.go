@@ -15,7 +15,6 @@
 package opencensusexporter
 
 import (
-	"crypto/x509"
 	"fmt"
 
 	"contrib.go.opencensus.io/exporter/ocagent"
@@ -24,9 +23,9 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/config/configgrpc"
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/configmodels"
 )
 
 const (
@@ -95,16 +94,13 @@ func (f *Factory) OCAgentOptions(logger *zap.Logger, ocac *Config) ([]ocagent.Ex
 		}
 		opts = append(opts, ocagent.WithTLSCredentials(creds))
 	} else if ocac.TLSConfig.UseSecure {
-		certPool, err := x509.SystemCertPool()
+		tlsConf, err := ocac.TLSConfig.LoadTLSConfig()
 		if err != nil {
-			return nil, &ocExporterError{
-				code: errUnableToGetTLSCreds,
-				msg: fmt.Sprintf(
-					"OpenCensus exporter unable to read certificates from system pool: %v", err),
-			}
+			return nil, fmt.Errorf("OpenCensus exporter failed to load TLS config: %w", err)
 		}
-		creds := credentials.NewClientTLSFromCert(certPool, "")
+		creds := credentials.NewTLS(tlsConf)
 		opts = append(opts, ocagent.WithTLSCredentials(creds))
+
 	} else {
 		opts = append(opts, ocagent.WithInsecure())
 	}

@@ -23,7 +23,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
+	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 func TestBatcherNew(t *testing.T) {

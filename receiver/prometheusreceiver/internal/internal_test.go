@@ -21,7 +21,7 @@ import (
 	"github.com/prometheus/prometheus/scrape"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
 )
 
 // test helpers

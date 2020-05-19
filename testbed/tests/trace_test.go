@@ -31,10 +31,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
-	"github.com/open-telemetry/opentelemetry-collector/testbed/testbed"
-	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
-	"github.com/open-telemetry/opentelemetry-collector/translator/internaldata"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/testbed/testbed"
+	"go.opentelemetry.io/collector/translator/conventions"
+	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
 // TestMain is used to initiate setup, execution and tear down of testbed.

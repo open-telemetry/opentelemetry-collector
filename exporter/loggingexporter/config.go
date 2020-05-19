@@ -15,7 +15,7 @@
 package loggingexporter
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configmodels"
 )
 
 // Config defines configuration for logging exporter.

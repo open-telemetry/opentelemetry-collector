@@ -26,10 +26,10 @@ import (
 	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
-	"github.com/open-telemetry/opentelemetry-collector/internal"
-	"github.com/open-telemetry/opentelemetry-collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal"
+	"go.opentelemetry.io/collector/internal/data/testdata"
 )
 
 func TestOcTraceStateToInternal(t *testing.T) {
@@ -246,6 +246,10 @@ func TestOcToInternal(t *testing.T) {
 		Status: &octrace.Status{Message: "status-cancelled", Code: 1},
 	}
 
+	// TODO: Create another unit test fully covering ocSpanToInternal
+	ocSpanZeroedParentID := proto.Clone(ocSpan1).(*octrace.Span)
+	ocSpanZeroedParentID.ParentSpanId = []byte{0, 0, 0, 0, 0, 0, 0, 0}
+
 	ocSpan2 := &octrace.Span{
 		Name:      &octrace.TruncatableString{Value: "operationB"},
 		StartTime: startTime,
@@ -335,6 +339,16 @@ func TestOcToInternal(t *testing.T) {
 		},
 
 		{
+			name: "one-span-zeroed-parent-id",
+			td:   testdata.GenerateTraceDataOneSpan(),
+			oc: consumerdata.TraceData{
+				Node:     ocNode,
+				Resource: ocResource1,
+				Spans:    []*octrace.Span{ocSpanZeroedParentID},
+			},
+		},
+
+		{
 			name: "one-span-one-nil",
 			td:   testdata.GenerateTraceDataOneSpan(),
 			oc: consumerdata.TraceData{
@@ -375,13 +389,14 @@ func TestOcToInternal(t *testing.T) {
 		},
 	}
 
-	// Extra test:
+	// Extra tests:
 	//	* "two-spans-and-separate-in-the-middle"
+	//	* "one-span-zeroed-parent-id"
 	// Missing tests (impossible to generate):
 	//  * GenerateTraceDataOneEmptyOneNilResourceSpans
 	//	* GenerateTraceDataOneEmptyInstrumentationLibrary
 	//	* GenerateTraceDataOneEmptyOneNilInstrumentationLibrary
-	assert.EqualValues(t, testdata.NumTraceTests-2, len(tests))
+	assert.EqualValues(t, testdata.NumTraceTests-1, len(tests))
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

@@ -20,7 +20,7 @@ package tests
 import (
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector/testbed/testbed"
+	"go.opentelemetry.io/collector/testbed/testbed"
 )
 
 func TestMetricNoBackend10kDPSOpenCensus(t *testing.T) {

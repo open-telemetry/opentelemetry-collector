@@ -20,7 +20,7 @@ import (
 
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 
-	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
+	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 func statusCodeFromHTTPTag(tag *jaeger.Tag) *int32 {

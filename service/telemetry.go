@@ -25,13 +25,13 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector/internal/collector/telemetry"
-	"github.com/open-telemetry/opentelemetry-collector/obsreport"
-	"github.com/open-telemetry/opentelemetry-collector/processor"
-	"github.com/open-telemetry/opentelemetry-collector/processor/batchprocessor"
-	"github.com/open-telemetry/opentelemetry-collector/processor/queuedprocessor"
-	"github.com/open-telemetry/opentelemetry-collector/processor/samplingprocessor/tailsamplingprocessor"
-	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
+	"go.opentelemetry.io/collector/internal/collector/telemetry"
+	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/batchprocessor"
+	"go.opentelemetry.io/collector/processor/queuedprocessor"
+	"go.opentelemetry.io/collector/processor/samplingprocessor/tailsamplingprocessor"
+	"go.opentelemetry.io/collector/translator/conventions"
 )
 
 var (

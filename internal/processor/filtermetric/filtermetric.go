@@ -17,7 +17,7 @@ package filtermetric
 import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 
-	"github.com/open-telemetry/opentelemetry-collector/internal/processor/filterset"
+	"go.opentelemetry.io/collector/internal/processor/filterset"
 )
 
 // Matcher matches metrics by metric properties against prespecified values for each property.

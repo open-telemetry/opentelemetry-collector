@@ -21,12 +21,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
-	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
-	"github.com/open-telemetry/opentelemetry-collector/internal/processor/filterspan"
-	"github.com/open-telemetry/opentelemetry-collector/processor"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/processor/filterspan"
+	"go.opentelemetry.io/collector/processor"
 )
 
 type spanProcessor struct {
@@ -152,7 +152,7 @@ func (sp *spanProcessor) processFromAttributes(span pdata.Span) {
 	// Note: There was a separate proposal for creating the string.
 	// With benchmarking, strings.Builder is faster than the proposal.
 	// For full context, refer to this PR comment:
-	// https://github.com/open-telemetry/opentelemetry-collector/pull/301#discussion_r318357678
+	// https://go.opentelemetry.io/collector/pull/301#discussion_r318357678
 	var sb strings.Builder
 	for i, key := range sp.config.Rename.FromAttributes {
 		attr, found := attrs.Get(key)

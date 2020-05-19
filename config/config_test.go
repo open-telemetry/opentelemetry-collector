@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configmodels"
 )
 
 func TestDecodeConfig(t *testing.T) {
@@ -100,7 +100,7 @@ func TestDecodeConfig(t *testing.T) {
 	assert.Equal(t, 1, len(config.Processors), "Incorrect processors count")
 
 	assert.Equal(t,
-		&ExampleProcessor{
+		&ExampleProcessorCfg{
 			ProcessorSettings: configmodels.ProcessorSettings{
 				TypeVal: "exampleprocessor",
 				NameVal: "exampleprocessor",
@@ -258,7 +258,7 @@ func TestSimpleConfig(t *testing.T) {
 		assert.Equalf(t, 1, len(config.Processors), "TEST[%s]", test.name)
 
 		assert.Equalf(t,
-			&ExampleProcessor{
+			&ExampleProcessorCfg{
 				ProcessorSettings: configmodels.ProcessorSettings{
 					TypeVal: "exampleprocessor",
 					NameVal: "exampleprocessor",

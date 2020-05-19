@@ -25,7 +25,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/open-telemetry/opentelemetry-collector/testbed/testbed"
+	"go.opentelemetry.io/collector/testbed/testbed"
 )
 
 func TestIdleMode(t *testing.T) {

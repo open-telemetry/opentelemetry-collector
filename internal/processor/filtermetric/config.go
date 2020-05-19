@@ -15,7 +15,7 @@
 package filtermetric
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector/internal/processor/filterset"
+	"go.opentelemetry.io/collector/internal/processor/filterset"
 )
 
 // MatchProperties specifies the set of properties in a metric to match against and the

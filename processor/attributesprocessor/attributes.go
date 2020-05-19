@@ -17,12 +17,12 @@ package attributesprocessor
 import (
 	"context"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
-	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
-	"github.com/open-telemetry/opentelemetry-collector/internal/processor/filterspan"
-	"github.com/open-telemetry/opentelemetry-collector/processor"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/processor/filterspan"
+	"go.opentelemetry.io/collector/processor"
 )
 
 type attributesProcessor struct {
@@ -42,7 +42,7 @@ type attributesConfig struct {
 type attributeAction struct {
 	Key           string
 	FromAttribute string
-	// TODO https://github.com/open-telemetry/opentelemetry-collector/issues/296
+	// TODO https://go.opentelemetry.io/collector/issues/296
 	// Do benchmark testing between having action be of type string vs integer.
 	// The reason is attributes processor will most likely be commonly used
 	// and could impact performance.
@@ -113,7 +113,7 @@ func (a *attributesProcessor) processSpan(span pdata.Span, serviceName string) {
 
 	attrs := span.Attributes()
 	for _, action := range a.config.actions {
-		// TODO https://github.com/open-telemetry/opentelemetry-collector/issues/296
+		// TODO https://go.opentelemetry.io/collector/issues/296
 		// Do benchmark testing between having action be of type string vs integer.
 		// The reason is attributes processor will most likely be commonly used
 		// and could impact performance.

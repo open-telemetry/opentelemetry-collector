@@ -20,7 +20,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	"github.com/open-telemetry/opentelemetry-collector/internal/version"
+	"go.opentelemetry.io/collector/internal/version"
 )
 
 const (
