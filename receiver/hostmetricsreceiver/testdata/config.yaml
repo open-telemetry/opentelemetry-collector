@@ -8,6 +8,7 @@ receivers:
       cpu:
         report_per_cpu: true
       disk:
+      load:
       filesystem:
       memory:
       network:
