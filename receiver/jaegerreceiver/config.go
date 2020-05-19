@@ -25,9 +25,9 @@ const protocolsFieldName = "protocols"
 
 // RemoteSamplingConfig defines config key for remote sampling fetch endpoint
 type RemoteSamplingConfig struct {
-	HostEndpoint            string `mapstructure:"host_endpoint"`
-	StrategyFile            string `mapstructure:"strategy_file"`
-	configgrpc.GRPCSettings `mapstructure:",squash"`
+	HostEndpoint                  string `mapstructure:"host_endpoint"`
+	StrategyFile                  string `mapstructure:"strategy_file"`
+	configgrpc.GRPCClientSettings `mapstructure:",squash"`
 }
 
 // Config defines configuration for Jaeger receiver.

@@ -155,7 +155,7 @@ func TestAgentRemoteSamplingEndpoint(t *testing.T) {
 	endpoint := "localhost:1234"
 	rCfg.Protocols[protoThriftCompact], _ = defaultsForProtocol(protoThriftCompact)
 	rCfg.RemoteSampling = &RemoteSamplingConfig{
-		GRPCSettings: configgrpc.GRPCSettings{
+		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: endpoint,
 		},
 	}
@@ -266,7 +266,7 @@ func TestRemoteSamplingConfigPropagation(t *testing.T) {
 	strategyFile := "strategies.json"
 	rCfg.Protocols[protoGRPC], _ = defaultsForProtocol(protoGRPC)
 	rCfg.RemoteSampling = &RemoteSamplingConfig{
-		GRPCSettings: configgrpc.GRPCSettings{
+		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: endpoint,
 		},
 		HostEndpoint: fmt.Sprintf("localhost:%d", hostPort),

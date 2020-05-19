@@ -16,11 +16,7 @@
 package configgrpc
 
 import (
-	"crypto/tls"
-	"crypto/x509"
 	"fmt"
-	"io/ioutil"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -28,6 +24,8 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/encoding/gzip"
 	"google.golang.org/grpc/keepalive"
+
+	"go.opentelemetry.io/collector/config/configtls"
 )
 
 // Compression gRPC keys for supported compression types within collector
@@ -36,8 +34,8 @@ const (
 	CompressionGzip        = "gzip"
 )
 
-// GRPCSettings defines common settings for a gRPC configuration.
-type GRPCSettings struct {
+// GRPCClientSettings defines common settings for a gRPC client configuration.
+type GRPCClientSettings struct {
 	// The headers associated with gRPC requests.
 	Headers map[string]string `mapstructure:"headers"`
 
@@ -51,7 +49,7 @@ type GRPCSettings struct {
 	Compression string `mapstructure:"compression"`
 
 	// TLSConfig struct exposes TLS client configuration.
-	TLSConfig TLSConfig `mapstructure:",squash"`
+	TLSConfig configtls.TLSClientConfig `mapstructure:",squash"`
 
 	// The keepalive parameters for client gRPC. See grpc.WithKeepaliveParams
 	// (https://godoc.org/google.golang.org/grpc#WithKeepaliveParams).
@@ -62,26 +60,6 @@ type GRPCSettings struct {
 	WaitForReady bool `mapstructure:"wait_for_ready"`
 }
 
-// TLSConfig exposes client TLS configuration.
-type TLSConfig struct {
-	// Root CA certificate file for TLS credentials of gRPC client. Should
-	// only be used if `secure` is set to true.
-	CaCert string `mapstructure:"cert_pem_file"`
-
-	// Client certificate file for TLS credentials of gRPC client.
-	ClientCert string `mapstructure:"client_cert_pem_file"`
-
-	// Client key file for TLS credentials of gRPC client.
-	ClientKey string `mapstructure:"client_cert_key_file"`
-
-	// Whether to enable client transport security for the exporter's gRPC
-	// connection. See https://godoc.org/google.golang.org/grpc#WithInsecure.
-	UseSecure bool `mapstructure:"secure"`
-
-	// Authority to check against when doing TLS verification
-	ServerNameOverride string `mapstructure:"server_name_override"`
-}
-
 // KeepaliveConfig exposes the keepalive.ClientParameters to be used by the exporter.
 // Refer to the original data-structure for the meaning of each parameter.
 type KeepaliveConfig struct {
@@ -90,8 +68,8 @@ type KeepaliveConfig struct {
 	PermitWithoutStream bool          `mapstructure:"permit_without_stream,omitempty"`
 }
 
-// GrpcSettingsToDialOptions maps configgrpc.GRPCSettings to a slice of dial options for gRPC
-func GrpcSettingsToDialOptions(settings GRPCSettings) ([]grpc.DialOption, error) {
+// GrpcSettingsToDialOptions maps configgrpc.GRPCClientSettings to a slice of dial options for gRPC
+func GrpcSettingsToDialOptions(settings GRPCClientSettings) ([]grpc.DialOption, error) {
 	opts := []grpc.DialOption{}
 
 	if settings.Compression != "" {
@@ -102,13 +80,13 @@ func GrpcSettingsToDialOptions(settings GRPCSettings) ([]grpc.DialOption, error)
 		}
 	}
 
-	if settings.TLSConfig.CaCert != "" && !settings.TLSConfig.UseSecure {
-		creds, err := credentials.NewClientTLSFromFile(settings.TLSConfig.CaCert, settings.TLSConfig.ServerNameOverride)
+	if settings.TLSConfig.CAFile != "" && settings.TLSConfig.UseInsecure {
+		creds, err := credentials.NewClientTLSFromFile(settings.TLSConfig.CAFile, settings.TLSConfig.ServerName)
 		if err != nil {
 			return nil, err
 		}
 		opts = append(opts, grpc.WithTransportCredentials(creds))
-	} else if settings.TLSConfig.UseSecure {
+	} else if !settings.TLSConfig.UseInsecure {
 		tlsConf, err := settings.TLSConfig.LoadTLSConfig()
 		if err != nil {
 			return nil, fmt.Errorf("failed to load TLS config: %w", err)
@@ -129,59 +107,6 @@ func GrpcSettingsToDialOptions(settings GRPCSettings) ([]grpc.DialOption, error)
 	}
 
 	return opts, nil
-}
-
-// LoadTLSConfig loads TLS certificates and returns a tls.Config.
-func (c TLSConfig) LoadTLSConfig() (*tls.Config, error) {
-	certPool, err := c.loadCertPool()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load CA CertPool: %w", err)
-	}
-	// #nosec G402
-	tlsCfg := &tls.Config{
-		RootCAs:    certPool,
-		ServerName: c.ServerNameOverride,
-	}
-
-	if (c.ClientCert == "" && c.ClientKey != "") || (c.ClientCert != "" && c.ClientKey == "") {
-		return nil, fmt.Errorf("for client auth via TLS, either both client certificate and key must be supplied, or neither")
-	}
-	if c.ClientCert != "" && c.ClientKey != "" {
-		tlsCert, err := tls.LoadX509KeyPair(filepath.Clean(c.ClientCert), filepath.Clean(c.ClientKey))
-		if err != nil {
-			return nil, fmt.Errorf("failed to load server TLS cert and key: %w", err)
-		}
-		tlsCfg.Certificates = append(tlsCfg.Certificates, tlsCert)
-	}
-
-	return tlsCfg, nil
-}
-
-var systemCertPool = x509.SystemCertPool // to allow overriding in unit test
-
-func (c TLSConfig) loadCertPool() (*x509.CertPool, error) {
-	if len(c.CaCert) == 0 { // no truststore given, use SystemCertPool
-		certPool, err := systemCertPool()
-		if err != nil {
-			return nil, fmt.Errorf("failed to load SystemCertPool: %w", err)
-		}
-		return certPool, nil
-	}
-	// setup user specified truststore
-	return c.loadCert(c.CaCert)
-}
-
-func (c TLSConfig) loadCert(caPath string) (*x509.CertPool, error) {
-	caPEM, err := ioutil.ReadFile(filepath.Clean(caPath))
-	if err != nil {
-		return nil, fmt.Errorf("failed to load CA %s: %w", caPath, err)
-	}
-
-	certPool := x509.NewCertPool()
-	if !certPool.AppendCertsFromPEM(caPEM) {
-		return nil, fmt.Errorf("failed to parse CA %s", caPath)
-	}
-	return certPool, nil
 }
 
 var (

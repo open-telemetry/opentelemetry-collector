@@ -43,7 +43,7 @@ func TestLoadConfig(t *testing.T) {
 	// Endpoint doesn't have a default value so set it directly.
 	defaultCfg := factory.CreateDefaultConfig().(*Config)
 	defaultCfg.Endpoint = "some.target:55678"
-	defaultCfg.GRPCSettings.Endpoint = defaultCfg.Endpoint
+	defaultCfg.GRPCClientSettings.Endpoint = defaultCfg.Endpoint
 	assert.Equal(t, defaultCfg, e0)
 
 	e1 := cfg.Exporters["jaeger/2"]
