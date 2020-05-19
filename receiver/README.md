@@ -8,12 +8,14 @@ The format of the traces and metrics supported are receiver specific.
 
 Supported trace receivers (sorted alphabetically):
 - [Jaeger Receiver](#jaeger)
-- [OpenCensus Receiver](#opencensus)
+- [OpenCensus Receiver](#opencensus-traces)
+- [OpenTelemetry Receiver](#otlp-traces)
 - [Zipkin Receiver](#zipkin)
 
 Supported metric receivers (sorted alphabetically):
 - [Host Metrics Receiver](#hostmetrics)
-- [OpenCensus Receiver](#opencensus)
+- [OpenCensus Receiver](#opencensus-metrics)
+- [OpenTelemetry Receiver](#otlp-metrics)
 - [Prometheus Receiver](#prometheus)
 - [VM Metrics Receiver](#vmmetrics)
 
@@ -97,29 +99,30 @@ receivers:
 ```
 
 ### Remote Sampling
-The Jaeger receiver also supports fetching sampling configuration from a remote collector.
-It works by proxying client requests for remote sampling configuration to the configured collector.
+The Jaeger receiver also supports fetching sampling configuration from a remote
+collector. It works by proxying client requests for remote sampling
+configuration to the configured collector.
 
-+---------------+                   +--------------+              +-----------------+
-|               |       get         |              |    proxy     |                 |
-|    client     +---  sampling ---->+    agent     +------------->+    collector    |
-|               |     strategy      |              |              |                 |
-+---------------+                   +--------------+              +-----------------+
+        +------------+                   +-----------+              +---------------+
+        |            |       get         |           |    proxy     |               |
+        |   client   +---  sampling ---->+   agent   +------------->+   collector   |
+        |            |     strategy      |           |              |               |
+        +------------+                   +-----------+              +---------------+
 
-Remote sample proxying can be enabled by specifying the following lines in the jaeger receiver config:
+Remote sample proxying can be enabled by specifying the following lines in the
+jaeger receiver config:
 
 ```yaml
 receivers:
   jaeger:
     protocols:
       grpc:
-      .
-      .
     remote_sampling:
       fetch_endpoint: "jaeger-collector:1234"
-``` 
+```
 
-Remote sampling can also be directly served by the collector by providing a sampling json file:
+Remote sampling can also be directly served by the collector by providing a
+sampling json file:
 
 ```yaml
 receivers:
@@ -128,9 +131,10 @@ receivers:
       grpc:
     remote_sampling:
       strategy_file: "/etc/strategy.json"
-``` 
+```
 
-Note: gRPC must be enabled for this to work as Jaeger serves its remote sampling strategies over gRPC.
+Note: gRPC must be enabled for this to work as Jaeger serves its remote
+sampling strategies over gRPC.
 
 ## <a name="opencensus-traces"></a>OpenCensus Receiver
 
@@ -184,6 +188,60 @@ receivers:
     - https://*.example.com
 ```
 
+## <a name="otlp-traces"></a>OpenTelemetry Receiver
+
+This is the default receiver for the OpenTelemetry project.
+
+To get started, all that is required to enable the OpenTelemetry receiver is to
+include it in the receiver definitions. This will enable the default values as
+specified [here](otlpreceiver/factory.go).
+The following is an example:
+```yaml
+receivers:
+  otlp:
+```
+
+The full list of settings exposed for this receiver are documented [here](otlpreceiver/config.go)
+with detailed sample configurations [here](otlpreceiver/testdata/config.yaml).
+
+### Communicating over TLS
+This receiver supports communication using Transport Layer Security (TLS). TLS
+can be configured by specifying a `tls_credentials` object in the receiver
+configuration for receivers that support it.
+```yaml
+receivers:
+  otlp:
+    tls_credentials:
+      key_file: /key.pem # path to private key
+      cert_file: /cert.pem # path to certificate
+```
+
+### Writing with HTTP/JSON
+The OpenTelemetry receiver can receive trace export calls via HTTP/JSON in
+addition to gRPC. The HTTP/JSON address is the same as gRPC as the protocol is
+recognized and processed accordingly. Note the format needs to be [protobuf
+JSON
+serialization](https://developers.google.com/protocol-buffers/docs/proto3#json).
+
+IMPORTANT: bytes fields are encoded as base64 strings.
+
+To write traces with HTTP/JSON, `POST` to
+`[address]/v1/trace`.
+
+The HTTP/JSON endpoint can also optionally configure
+[CORS](https://fetch.spec.whatwg.org/#cors-protocol), which is enabled by
+specifying a list of allowed CORS origins in the `cors_allowed_origins` field:
+
+```yaml
+receivers:
+  otlp:
+    endpoint: "localhost:55680"
+    cors_allowed_origins:
+    - http://test.com
+    # Origins can have wildcards with *, use * by itself to match any origin.
+    - https://*.example.com
+```
+
 ## <a name="zipkin"></a>Zipkin Receiver
 
 This receiver receives spans from [Zipkin](https://zipkin.io/) (V1 and V2).
@@ -202,10 +260,56 @@ with detailed sample configurations [here](zipkinreceiver/testdata/config.yaml).
 
 # <a name="metric-receivers"></a>Metric Receivers
 
+## <a name="hostmetrics"></a>Host Metrics Receiver
+
+The Host Metrics receiver generates metrics about the host system. This is
+intended to be used when the collector is deployed as an agent.
+
+The categories of metrics scraped can be configured under the `scrapers` key.
+For example:
+
+```yaml
+hostmetrics:
+  collection_interval: 1m
+  scrapers:
+    cpu:
+    memory:
+    disk:
+```
+
+If you would like to scrape some metrics at a different frequency than others,
+you can configure multiple `hostmetrics` receivers with different
+`collection_interval values`. For example:
+
+```yaml
+receivers:
+  hostmetrics:
+    collection_interval: 30s
+    scrapers:
+      cpu:
+      memory:
+
+  hostmetrics/disk:
+    collection_interval: 1m
+    scrapers:
+      disk:
+      filesystem:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [hostmetrics, hostmetrics/disk]
+```
+
 ## <a name="opencensus-metrics"></a>OpenCensus Receiver
 
 The OpenCensus receiver supports both traces and metrics. Configuration
 information can be found under the trace section [here](#opencensus-traces).
+
+## <a name="otlp-metrics"></a>OpenTelemetry Receiver
+
+The OpenTelemetry receiver supports both traces and metrics. Configuration
+information can be found under the trace section [here](#otlp-traces).
 
 ## <a name="prometheus"></a>Prometheus Receiver
 
