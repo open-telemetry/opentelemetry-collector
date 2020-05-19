@@ -15,8 +15,6 @@
 package configtls
 
 import (
-	"crypto/x509"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -33,12 +31,6 @@ func TestOptionsToConfig(t *testing.T) {
 		{
 			name:    "should load system CA",
 			options: TLSConfig{CAFile: ""},
-		},
-		{
-			name:        "should fail with fake system CA",
-			fakeSysPool: true,
-			options:     TLSConfig{CAFile: ""},
-			expectError: "fake system pool",
 		},
 		{
 			name:    "should load custom CA",
@@ -120,15 +112,6 @@ func TestOptionsToConfig(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			if test.fakeSysPool {
-				saveSystemCertPool := systemCertPool
-				systemCertPool = func() (*x509.CertPool, error) {
-					return nil, fmt.Errorf("fake system pool")
-				}
-				defer func() {
-					systemCertPool = saveSystemCertPool
-				}()
-			}
 			cfg, err := test.options.LoadTLSConfig()
 			if test.expectError != "" {
 				require.Error(t, err)

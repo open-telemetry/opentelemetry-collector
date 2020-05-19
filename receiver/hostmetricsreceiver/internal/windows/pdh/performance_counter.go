@@ -20,6 +20,13 @@ import "go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/thir
 
 const totalInstanceName = "_Total"
 
+type PerfCounterScraper interface {
+	// ScrapeData collects a measurement and returns the value(s).
+	ScrapeData() ([]win_perf_counters.CounterValue, error)
+	// Close all counters/handles related to the query and free all associated memory.
+	Close() error
+}
+
 type PerfCounter struct {
 	query  win_perf_counters.PerformanceQuery
 	handle win_perf_counters.PDH_HCOUNTER
@@ -56,12 +63,12 @@ func NewPerfCounter(counterPath string, collectOnStartup bool) (*PerfCounter, er
 	return counter, nil
 }
 
-// Close all counters/handles related to the query and free all associated memory.
+// Close
 func (pc *PerfCounter) Close() error {
 	return pc.query.Close()
 }
 
-// ScrapeData collects a measurement and returns the value(s).
+// ScrapeData
 func (pc *PerfCounter) ScrapeData() ([]win_perf_counters.CounterValue, error) {
 	err := pc.query.CollectData()
 	if err != nil {

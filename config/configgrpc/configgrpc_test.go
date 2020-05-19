@@ -40,7 +40,7 @@ func TestInvalidPemFile(t *testing.T) {
 		err      string
 	}{
 		{
-			err: "open /doesnt/exist: no such file or directory",
+			err: "^open /doesnt/exist:",
 			settings: GRPCClientSettings{
 				Headers:     nil,
 				Endpoint:    "",
@@ -56,7 +56,7 @@ func TestInvalidPemFile(t *testing.T) {
 			},
 		},
 		{
-			err: "failed to load TLS config: failed to load CA CertPool: failed to load CA /doesnt/exist: open /doesnt/exist: no such file or directory",
+			err: "^failed to load TLS config: failed to load CA CertPool: failed to load CA /doesnt/exist:",
 			settings: GRPCClientSettings{
 				Headers:     nil,
 				Endpoint:    "",
@@ -72,7 +72,7 @@ func TestInvalidPemFile(t *testing.T) {
 			},
 		},
 		{
-			err: "failed to load TLS config: for auth via TLS, either both certificate and key must be supplied, or neither",
+			err: "^failed to load TLS config: for auth via TLS, either both certificate and key must be supplied, or neither",
 			settings: GRPCClientSettings{
 				Headers:     nil,
 				Endpoint:    "",
@@ -91,7 +91,7 @@ func TestInvalidPemFile(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.err, func(t *testing.T) {
 			_, err := GrpcSettingsToDialOptions(test.settings)
-			assert.EqualError(t, err, test.err)
+			assert.Regexp(t, test.err, err)
 		})
 	}
 }
