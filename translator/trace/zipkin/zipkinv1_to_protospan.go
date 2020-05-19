@@ -340,6 +340,11 @@ func parseZipkinV1Annotations(annotations []*annotation) *annotationParseResult 
 			res.LateAnnotationTime = ts
 		}
 
+		if annotationHasSpanKind {
+			// If this annotation is for the send/receive timestamps, no need to create the annotation
+			continue
+		}
+
 		timeEvent := &tracepb.Span_TimeEvent{
 			Time: ts,
 			// More economically we could use a tracepb.Span_TimeEvent_Message, however, it will mean the loss of some information.

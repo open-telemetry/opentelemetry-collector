@@ -17,6 +17,7 @@ package zipkin
 import (
 	"encoding/binary"
 	"encoding/json"
+	"github.com/google/go-cmp/cmp"
 	"io/ioutil"
 	"math"
 	"reflect"
@@ -90,8 +91,8 @@ func TestV1ThriftToOCProto(t *testing.T) {
 	sortTraceByNodeName(want)
 	sortTraceByNodeName(got)
 
-	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("got different data than want")
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("Diff mismatch (-want +got):\n%s", diff)
 	}
 }
 
