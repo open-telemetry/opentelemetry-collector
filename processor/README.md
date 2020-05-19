@@ -262,9 +262,10 @@ any data drops such as sampling.
 Please refer to [config.go](batchprocessor/config.go) for the config spec.
 
 The following configuration options can be modified:
-- `send_batch_size` (default = 8192): Number of spans after which a batch will
+- `send_batch_size` (default = 8192): Number of spans after which a batch will 
+be sent.
 - `timeout` (default = 200ms): Time duration after which a batch will be sent
-regardless of size
+regardless of size.
 
 Examples:
 
