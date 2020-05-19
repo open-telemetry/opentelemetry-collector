@@ -66,9 +66,9 @@ func TestNew(t *testing.T) {
 			args: args{
 				config: Config{
 					GRPCClientSettings: configgrpc.GRPCClientSettings{
-						Headers:     map[string]string{"extra-header": "header-value"},
-						Endpoint:    "foo.bar",
-						Compression: "",
+						Headers:             map[string]string{"extra-header": "header-value"},
+						Endpoint:            "foo.bar",
+						Compression:         "",
 						KeepaliveParameters: nil,
 					},
 				},
