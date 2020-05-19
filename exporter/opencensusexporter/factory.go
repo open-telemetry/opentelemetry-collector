@@ -94,7 +94,7 @@ func (f *Factory) OCAgentOptions(logger *zap.Logger, ocac *Config) ([]ocagent.Ex
 			}
 		}
 		opts = append(opts, ocagent.WithTLSCredentials(creds))
-	} else if ocac.TLSConfig.UseInsecure {
+	} else if !ocac.TLSConfig.UseInsecure {
 		tlsConf, err := ocac.TLSConfig.LoadTLSConfig()
 		if err != nil {
 			return nil, fmt.Errorf("OpenCensus exporter failed to load TLS config: %w", err)
