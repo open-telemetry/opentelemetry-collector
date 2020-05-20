@@ -371,10 +371,9 @@ func TestStartWithoutConsumersShouldFail(t *testing.T) {
 func tempSocketName(t *testing.T) string {
 	tmpfile, err := ioutil.TempFile("", "sock")
 	require.NoError(t, err)
+	require.NoError(t, tmpfile.Close())
 	socket := tmpfile.Name()
-	err = os.Remove(socket)
-	require.NoError(t, err)
-
+	require.NoError(t, os.Remove(socket))
 	return socket
 }
 

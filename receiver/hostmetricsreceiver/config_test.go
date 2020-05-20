@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/diskscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/loadscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/memoryscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/networkscraper"
 )
@@ -63,6 +64,7 @@ func TestLoadConfig(t *testing.T) {
 			Scrapers: map[string]internal.Config{
 				cpuscraper.TypeStr:        &cpuscraper.Config{ReportPerCPU: true},
 				diskscraper.TypeStr:       &diskscraper.Config{},
+				loadscraper.TypeStr:       &loadscraper.Config{},
 				filesystemscraper.TypeStr: &filesystemscraper.Config{},
 				memoryscraper.TypeStr:     &memoryscraper.Config{},
 				networkscraper.TypeStr:    &networkscraper.Config{},

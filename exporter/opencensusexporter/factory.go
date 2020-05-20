@@ -15,7 +15,6 @@
 package opencensusexporter
 
 import (
-	"crypto/x509"
 	"fmt"
 
 	"contrib.go.opencensus.io/exporter/ocagent"
@@ -95,16 +94,13 @@ func (f *Factory) OCAgentOptions(logger *zap.Logger, ocac *Config) ([]ocagent.Ex
 		}
 		opts = append(opts, ocagent.WithTLSCredentials(creds))
 	} else if ocac.TLSConfig.UseSecure {
-		certPool, err := x509.SystemCertPool()
+		tlsConf, err := ocac.TLSConfig.LoadTLSConfig()
 		if err != nil {
-			return nil, &ocExporterError{
-				code: errUnableToGetTLSCreds,
-				msg: fmt.Sprintf(
-					"OpenCensus exporter unable to read certificates from system pool: %v", err),
-			}
+			return nil, fmt.Errorf("OpenCensus exporter failed to load TLS config: %w", err)
 		}
-		creds := credentials.NewClientTLSFromCert(certPool, "")
+		creds := credentials.NewTLS(tlsConf)
 		opts = append(opts, ocagent.WithTLSCredentials(creds))
+
 	} else {
 		opts = append(opts, ocagent.WithInsecure())
 	}
