@@ -135,7 +135,7 @@ data:
         traces/1:
           receivers: [otlp, zipkin]
           processors: [memory_limiter, batch, queued_retry]
-          exporters: [otlp, zipkin]
+          exporters: [zipkin]
         traces/2:
           receivers: [otlp, jaeger]
           processors: [memory_limiter, batch, queued_retry]
