@@ -7,6 +7,7 @@ receivers:
 exporters:
   opencensus:
     endpoint: "localhost:56565"
+    insecure: true
 
 processors:
   queued_retry:
