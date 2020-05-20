@@ -131,7 +131,7 @@ func mergeResource(to, from *resourcepb.Resource) *resourcepb.Resource {
 	}
 	if from.Labels != nil {
 		if to.Labels == nil {
-			to.Labels = map[string]string{}
+			to.Labels = make(map[string]string, len(from.Labels))
 		}
 
 		for k, v := range from.Labels {
