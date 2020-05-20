@@ -65,6 +65,16 @@ var statusMsgMap = map[PICTInputStatus]string{
 	SpanStatusUnauthenticated:    "nstark is unknown user",
 }
 
+//GenerateSpans generates a slice of OTLP Span objects with the number of spans specified by the count input
+//parameter. The startPos parameter specifies the line in the PICT tool-generated, test parameter
+//combination records file specified by the pictFile parameter to start reading from. When the end record
+//is reached it loops back to the first record. The random parameter injects the random number generator
+//to use in generating IDs and other random values. Using a random number generator with the same seed value
+//enables reproducible tests.
+//
+//The return values are the slice with the generated spans, the starting position for the next generation
+//run and the error which caused the spans generation to fail. If err is not nil, the spans slice will
+//have nil values.
 func GenerateSpans(count int, startPos int, pictFile string, random io.Reader) ([]*otlptrace.Span, int, error) {
 	pairsData, err := loadPictOutputFile(pictFile)
 	if err != nil {
@@ -77,6 +87,9 @@ func GenerateSpans(count int, startPos int, pictFile string, random io.Reader) (
 	var traceID []byte
 	var parentID []byte
 	for i := 0; i < count; i++ {
+		if index >= pairsTotal {
+			index = 1
+		}
 		inputs = pairsData[index]
 		switch PICTInputParent(inputs[SpansColumnParent]) {
 		case SpanParentRoot:
@@ -98,9 +111,6 @@ func GenerateSpans(count int, startPos int, pictFile string, random io.Reader) (
 			PICTInputStatus(inputs[SpansColumnStatus]), random)
 		parentID = spanList[i].SpanId
 		index++
-		if index >= pairsTotal {
-			index = 1
-		}
 	}
 	return spanList, index, nil
 }
@@ -117,6 +127,19 @@ func generateSpanName(spanTypeID PICTInputAttributes, index int) string {
 	}
 }
 
+//GenerateSpan generates a single OTLP Span based on the input values provided. They are:
+//  traceID - the trace ID to use, should not be nil
+//  tracestate - the type of tracestate value to generate from the PICT Tracestate parameter enumerated values
+//  parentID - the parent span ID or nil if it is a root span
+//  spanName - the span name, should not be blank
+//  kind - the span kind as one of the PICT Kind parameter enumerated values
+//  spanTypeID - the category of attribute values to attach as one of the PICT Attribute parameter enumerated values
+//  eventCnt - the type of events to generate and attach to the span as one of the PICT Events parameter values
+//  linkCnt - the type of links to generate and attach to the span as one of the PICT Links parameter values
+//  statusStr - the value of OTLP Status to generate and attach to the span as one of the PICT Status parameter values
+//  random - the random number generator to use in generating ID values
+//
+//The generated span is returned.
 func GenerateSpan(traceID []byte, tracestate PICTInputTracestate, parentID []byte, spanName string, kind PICTInputKind,
 	spanTypeID PICTInputAttributes, eventCnt PICTInputSpanChild, linkCnt PICTInputSpanChild, statusStr PICTInputStatus,
 	random io.Reader) *otlptrace.Span {

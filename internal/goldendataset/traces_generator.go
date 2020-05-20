@@ -22,6 +22,11 @@ import (
 	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
 )
 
+//GenerateResourceSpans generates a slice of OTLP ResourceSpans objects based on the PICT-generated pairwise
+//parameters defined in the parameters file specified by the tracePairsFile parameter. The pairs to generate
+//spans for for defined in the file specified by the spanPairsFile parameter. The random parameter injects the
+//random number generator to use in generating IDs and other random values.
+//The slice of ResourceSpans are returned. If an err is returned, the slice elements will be nil.
 func GenerateResourceSpans(tracePairsFile string, spanPairsFile string,
 	random io.Reader) ([]*otlptrace.ResourceSpans, error) {
 	pairsData, err := loadPictOutputFile(tracePairsFile)
@@ -45,6 +50,14 @@ func GenerateResourceSpans(tracePairsFile string, spanPairsFile string,
 	return spans, err
 }
 
+//GenerateResourceSpan generates a single OTLP ResourceSpans populated based on the provided inputs. They are:
+//  rscID - the type of representative attributes to populate the Resource with as a PICT Resource parameter value
+//  instrLib - the category of OTLP InstrumentationLibrary to generate as a PICT InstrumentationLibrary parameter value
+//  spansSize - the category of spans slice size to generate as a PICT Spans parameter value
+//  spanPairsFile - the file with the PICT-generated parameter combinations to generate spans for
+//  random - the random number generator to use in generating ID values
+//
+//The generated resource spans. If err is not nil, some or all of the resource spans fields will be nil.
 func GenerateResourceSpan(rscID PICTInputResource, instrLib PICTInputInstrumentationLibrary, spansSize PICTInputSpans,
 	spanPairsFile string, random io.Reader) (*otlptrace.ResourceSpans, error) {
 	libSpans, err := generateLibrarySpansArray(instrLib, spansSize, spanPairsFile, random)
