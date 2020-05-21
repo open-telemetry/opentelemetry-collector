@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtls"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -47,7 +48,7 @@ func TestLoadConfig(t *testing.T) {
 				NameVal: "opencensus/2",
 				TypeVal: "opencensus",
 			},
-			GRPCSettings: configgrpc.GRPCSettings{
+			GRPCClientSettings: configgrpc.GRPCClientSettings{
 				Headers: map[string]string{
 					"can you have a . here?": "F0000000-0000-0000-0000-000000000000",
 					"header1":                "234",
@@ -55,9 +56,11 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Endpoint:    "1.2.3.4:1234",
 				Compression: "on",
-				TLSConfig: configgrpc.TLSConfig{
-					CaCert:    "/var/lib/mycert.pem",
-					UseSecure: true,
+				TLSSetting: configtls.TLSClientSetting{
+					TLSSetting: configtls.TLSSetting{
+						CAFile: "/var/lib/mycert.pem",
+					},
+					Insecure: false,
 				},
 				KeepaliveParameters: &configgrpc.KeepaliveConfig{
 					Time:                20,

@@ -47,6 +47,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/receiver"
@@ -550,10 +551,10 @@ func TestSamplingStrategiesMutualTLS(t *testing.T) {
 	clientKeyPath := path.Join(".", "testdata", "client.key")
 
 	// start gRPC server that serves sampling strategies
-	tlsCfgOpts := configgrpc.TLSConfig{
-		CaCert:     caPath,
-		ClientCert: serverCertPath,
-		ClientKey:  serverKeyPath,
+	tlsCfgOpts := configtls.TLSSetting{
+		CAFile:   caPath,
+		CertFile: serverCertPath,
+		KeyFile:  serverKeyPath,
 	}
 	tlsCfg, err := tlsCfgOpts.LoadTLSConfig()
 	require.NoError(t, err)
@@ -573,13 +574,15 @@ func TestSamplingStrategiesMutualTLS(t *testing.T) {
 	factory := &Factory{}
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.RemoteSampling = &RemoteSamplingConfig{
-		GRPCSettings: configgrpc.GRPCSettings{
-			TLSConfig: configgrpc.TLSConfig{
-				UseSecure:          true,
-				CaCert:             caPath,
-				ClientCert:         clientCertPath,
-				ClientKey:          clientKeyPath,
-				ServerNameOverride: "localhost",
+		GRPCClientSettings: configgrpc.GRPCClientSettings{
+			TLSSetting: configtls.TLSClientSetting{
+				TLSSetting: configtls.TLSSetting{
+					CAFile:   caPath,
+					CertFile: clientCertPath,
+					KeyFile:  clientKeyPath,
+				},
+				Insecure:   false,
+				ServerName: "localhost",
 			},
 			Endpoint: serverAddr.String(),
 		},

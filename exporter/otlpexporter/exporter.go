@@ -58,12 +58,12 @@ func newExporter(config *Config) (*exporterImp, error) {
 	e.config = config
 
 	var err error
-	e.dialOpts, err = configgrpc.GrpcSettingsToDialOptions(e.config.GRPCSettings)
+	e.dialOpts, err = configgrpc.GrpcSettingsToDialOptions(e.config.GRPCClientSettings)
 	if err != nil {
 		return nil, err
 	}
 
-	if e.grpcClientConn, err = grpc.Dial(e.config.GRPCSettings.Endpoint, e.dialOpts...); err != nil {
+	if e.grpcClientConn, err = grpc.Dial(e.config.GRPCClientSettings.Endpoint, e.dialOpts...); err != nil {
 		return nil, err
 	}
 	e.traceExporter = otlptracecol.NewTraceServiceClient(e.grpcClientConn)

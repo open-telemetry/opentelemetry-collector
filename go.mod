@@ -63,4 +63,5 @@ require (
 	google.golang.org/grpc v1.29.1
 	gopkg.in/yaml.v2 v2.2.8
 	honnef.co/go/tools v0.0.1-2020.1.3
+	k8s.io/client-go v12.0.0+incompatible // indirect
 )

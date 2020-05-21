@@ -69,7 +69,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 			RemoteSampling: &RemoteSamplingConfig{
 				HostEndpoint: "0.0.0.0:5778",
-				GRPCSettings: configgrpc.GRPCSettings{
+				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint: "jaeger-collector:1234",
 				},
 				StrategyFile: "/etc/strategies.json",

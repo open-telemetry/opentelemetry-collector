@@ -25,6 +25,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configtls"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -43,7 +44,10 @@ func TestLoadConfig(t *testing.T) {
 	// Endpoint doesn't have a default value so set it directly.
 	defaultCfg := factory.CreateDefaultConfig().(*Config)
 	defaultCfg.Endpoint = "some.target:55678"
-	defaultCfg.GRPCSettings.Endpoint = defaultCfg.Endpoint
+	defaultCfg.GRPCClientSettings.Endpoint = defaultCfg.Endpoint
+	defaultCfg.GRPCClientSettings.TLSSetting = configtls.TLSClientSetting{
+		Insecure: true,
+	}
 	assert.Equal(t, defaultCfg, e0)
 
 	e1 := cfg.Exporters["jaeger/2"]
