@@ -85,17 +85,17 @@ func (f *Factory) OCAgentOptions(logger *zap.Logger, ocac *Config) ([]ocagent.Ex
 			}
 		}
 	}
-	if ocac.TLSConfig.CAFile != "" {
-		creds, err := credentials.NewClientTLSFromFile(ocac.TLSConfig.CAFile, "")
+	if ocac.TLSSetting.CAFile != "" {
+		creds, err := credentials.NewClientTLSFromFile(ocac.TLSSetting.CAFile, "")
 		if err != nil {
 			return nil, &ocExporterError{
 				code: errUnableToGetTLSCreds,
-				msg:  fmt.Sprintf("OpenCensus exporter unable to read TLS credentials from pem file %q: %v", ocac.TLSConfig.CAFile, err),
+				msg:  fmt.Sprintf("OpenCensus exporter unable to read TLS credentials from pem file %q: %v", ocac.TLSSetting.CAFile, err),
 			}
 		}
 		opts = append(opts, ocagent.WithTLSCredentials(creds))
-	} else if !ocac.TLSConfig.UseInsecure {
-		tlsConf, err := ocac.TLSConfig.LoadTLSConfig()
+	} else if !ocac.TLSSetting.Insecure {
+		tlsConf, err := ocac.TLSSetting.LoadTLSConfig()
 		if err != nil {
 			return nil, fmt.Errorf("OpenCensus exporter failed to load TLS config: %w", err)
 		}

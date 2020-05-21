@@ -53,8 +53,8 @@ func TestNew(t *testing.T) {
 						Headers:     nil,
 						Endpoint:    "foo.bar",
 						Compression: "",
-						TLSConfig: configtls.TLSClientConfig{
-							UseInsecure: true,
+						TLSSetting: configtls.TLSClientSetting{
+							Insecure: true,
 						},
 						KeepaliveParameters: nil,
 					},
@@ -95,11 +95,11 @@ func TestNew(t *testing.T) {
 						Headers:     nil,
 						Endpoint:    "foo.bar",
 						Compression: "",
-						TLSConfig: configtls.TLSClientConfig{
-							TLSConfig: configtls.TLSConfig{
+						TLSSetting: configtls.TLSClientSetting{
+							TLSSetting: configtls.TLSSetting{
 								CAFile: "testdata/test_cert.pem",
 							},
-							UseInsecure: false,
+							Insecure: false,
 						},
 						KeepaliveParameters: nil,
 					},
@@ -114,12 +114,12 @@ func TestNew(t *testing.T) {
 						Headers:     nil,
 						Endpoint:    "foo.bar",
 						Compression: "",
-						TLSConfig: configtls.TLSClientConfig{
-							TLSConfig: configtls.TLSConfig{
+						TLSSetting: configtls.TLSClientSetting{
+							TLSSetting: configtls.TLSSetting{
 								CAFile: "testdata/test_cert.pem",
 							},
-							UseInsecure: false,
-							ServerName:  "",
+							Insecure:   false,
+							ServerName: "",
 						},
 						KeepaliveParameters: &configgrpc.KeepaliveConfig{
 							Time:                0,
@@ -138,11 +138,11 @@ func TestNew(t *testing.T) {
 						Headers:     nil,
 						Endpoint:    "foo.bar",
 						Compression: "",
-						TLSConfig: configtls.TLSClientConfig{
-							TLSConfig: configtls.TLSConfig{
+						TLSSetting: configtls.TLSClientSetting{
+							TLSSetting: configtls.TLSSetting{
 								CAFile: "testdata/test_cert_missing.pem",
 							},
-							UseInsecure: false,
+							Insecure: false,
 						},
 						KeepaliveParameters: nil,
 					},
@@ -190,12 +190,10 @@ func TestMutualTLS(t *testing.T) {
 	clientKeyPath := path.Join(".", "testdata", "client.key")
 
 	// start gRPC Jaeger server
-	tlsCfgOpts := configtls.TLSClientConfig{
-		TLSConfig: configtls.TLSConfig{
-			CAFile:   caPath,
-			CertFile: serverCertPath,
-			KeyFile:  serverKeyPath,
-		},
+	tlsCfgOpts := configtls.TLSSetting{
+		CAFile:   caPath,
+		CertFile: serverCertPath,
+		KeyFile:  serverKeyPath,
 	}
 	tlsCfg, err := tlsCfgOpts.LoadTLSConfig()
 	require.NoError(t, err)
@@ -210,14 +208,14 @@ func TestMutualTLS(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
 		Endpoint: serverAddr.String(),
-		TLSConfig: configtls.TLSClientConfig{
-			TLSConfig: configtls.TLSConfig{
+		TLSSetting: configtls.TLSClientSetting{
+			TLSSetting: configtls.TLSSetting{
 				CAFile:   caPath,
 				CertFile: clientCertPath,
 				KeyFile:  clientKeyPath,
 			},
-			UseInsecure: false,
-			ServerName:  "localhost",
+			Insecure:   false,
+			ServerName: "localhost",
 		},
 	}
 	exporter, err := factory.CreateTraceExporter(context.Background(), component.ExporterCreateParams{}, cfg)

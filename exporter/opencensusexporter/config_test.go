@@ -56,11 +56,11 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Endpoint:    "1.2.3.4:1234",
 				Compression: "on",
-				TLSConfig: configtls.TLSClientConfig{
-					TLSConfig: configtls.TLSConfig{
+				TLSSetting: configtls.TLSClientSetting{
+					TLSSetting: configtls.TLSSetting{
 						CAFile: "/var/lib/mycert.pem",
 					},
-					UseInsecure: false,
+					Insecure: false,
 				},
 				KeepaliveParameters: &configgrpc.KeepaliveConfig{
 					Time:                20,

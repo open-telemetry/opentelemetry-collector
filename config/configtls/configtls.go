@@ -20,12 +20,15 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
-// TLSConfig exposes the common client and server TLS configurations.
+// TLSSetting exposes the common client and server TLS configurations.
 // Note: Since there isn't anything specific to a server connection. Components
-// with server connections should use TLSConfig.
-type TLSConfig struct {
+// with server connections should use TLSSetting.
+type TLSSetting struct {
 	// Path to the CA cert. For a client this verifies the server certificate.
 	// For a server this verifies client certificates. If empty uses system root CA.
 	// (optional)
@@ -36,25 +39,33 @@ type TLSConfig struct {
 	KeyFile string `mapstructure:"key_file"`
 }
 
-// TLSClientConfig contains TLS configurations that are specific to client
+// TLSClientSetting contains TLS configurations that are specific to client
 // connections in addition to the common configurations. This should be used by
 // components configuring TLS client connections.
-type TLSClientConfig struct {
-	TLSConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+type TLSClientSetting struct {
+	TLSSetting `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
-	// These are config options specific to client connections
+	// These are config options specific to client connections.
+
 	// In gRPC when set to true, this is used to disable the client transport security.
 	// See https://godoc.org/google.golang.org/grpc#WithInsecure.
 	// In HTTP, this disables verifying the server's certificate chain and host name
-	// (InsecureSkipVerify in the tls Config).
-	// This is only used for client connections. (optional, default false)
-	UseInsecure bool `mapstructure:"insecure"`
-	// ServerName requested by client for virtual hosting. (optional)
+	// (InsecureSkipVerify in the tls Config). Please refer to
+	// https://godoc.org/crypto/tls#Config for more information.
+	// (optional, default false)
+	// TODO(ccaraman): With further research InsecureSkipVerify is a valid option
+	// for gRPC connections. Add that ability to the TLSClientSettings in a subsequent
+	// pr.
+	Insecure bool `mapstructure:"insecure"`
+	// ServerName requested by client for virtual hosting.
+	// This sets the ServerName in the TLSConfig. Please refer to
+	// https://godoc.org/crypto/tls#Config for more information. (optional)
 	ServerName string `mapstructure:"server_name_override"`
 }
 
 // LoadTLSConfig loads TLS certificates and returns a tls.Config.
-func (c TLSConfig) LoadTLSConfig() (*tls.Config, error) {
+// This will set the RootCAs and Certificates of a tls.Config.
+func (c TLSSetting) LoadTLSConfig() (*tls.Config, error) {
 	// There is no need to load the System Certs for RootCAs because
 	// if the value is nil, it will default to checking against th System Certs.
 	var err error
@@ -85,7 +96,7 @@ func (c TLSConfig) LoadTLSConfig() (*tls.Config, error) {
 	return tlsCfg, nil
 }
 
-func (c TLSConfig) loadCert(caPath string) (*x509.CertPool, error) {
+func (c TLSSetting) loadCert(caPath string) (*x509.CertPool, error) {
 	caPEM, err := ioutil.ReadFile(filepath.Clean(caPath))
 	if err != nil {
 		return nil, fmt.Errorf("failed to load CA %s: %w", caPath, err)
@@ -98,13 +109,16 @@ func (c TLSConfig) loadCert(caPath string) (*x509.CertPool, error) {
 	return certPool, nil
 }
 
-func (c TLSClientConfig) LoadTLSConfig() (*tls.Config, error) {
-	tlsConfig, err := c.TLSConfig.LoadTLSConfig()
-	if err != nil {
-		return nil, err
+func (c TLSClientSetting) LoadGRPCTLSCredentials() (grpc.DialOption, error) {
+	if c.Insecure && c.CAFile == "" {
+		return grpc.WithInsecure(), nil
 	}
-	// Server name is a config option only for Client connections.
-	tlsConfig.ServerName = c.ServerName
 
-	return tlsConfig, nil
+	tlsConf, err := c.TLSSetting.LoadTLSConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load TLS config: %w", err)
+	}
+	tlsConf.ServerName = c.ServerName
+	creds := credentials.NewTLS(tlsConf)
+	return grpc.WithTransportCredentials(creds), nil
 }

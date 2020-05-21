@@ -85,8 +85,8 @@ func TestSendTraceData(t *testing.T) {
 	config := Config{
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: ln.Addr().String(),
-			TLSConfig: configtls.TLSClientConfig{
-				UseInsecure: true,
+			TLSSetting: configtls.TLSClientSetting{
+				Insecure: true,
 			},
 		},
 	}
@@ -148,8 +148,8 @@ func TestSendTraceDataServerDownAndUp(t *testing.T) {
 	config := Config{
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: ln.Addr().String(),
-			TLSConfig: configtls.TLSClientConfig{
-				UseInsecure: true,
+			TLSSetting: configtls.TLSClientSetting{
+				Insecure: true,
 			},
 		},
 	}
@@ -207,8 +207,8 @@ func TestSendTraceDataServerStartWhileRequest(t *testing.T) {
 	config := Config{
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: ln.Addr().String(),
-			TLSConfig: configtls.TLSClientConfig{
-				UseInsecure: true,
+			TLSSetting: configtls.TLSClientSetting{
+				Insecure: true,
 			},
 		},
 	}

@@ -70,8 +70,8 @@ func TestCreateTraceExporter(t *testing.T) {
 			config: Config{
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint: endpoint,
-					TLSConfig: configtls.TLSClientConfig{
-						UseInsecure: false,
+					TLSSetting: configtls.TLSClientSetting{
+						Insecure: false,
 					},
 				},
 			},
@@ -134,8 +134,8 @@ func TestCreateTraceExporter(t *testing.T) {
 			config: Config{
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint: endpoint,
-					TLSConfig: configtls.TLSClientConfig{
-						TLSConfig: configtls.TLSConfig{
+					TLSSetting: configtls.TLSClientSetting{
+						TLSSetting: configtls.TLSSetting{
 							CAFile: "testdata/test_cert.pem",
 						},
 					},
@@ -147,8 +147,8 @@ func TestCreateTraceExporter(t *testing.T) {
 			config: Config{
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint: endpoint,
-					TLSConfig: configtls.TLSClientConfig{
-						TLSConfig: configtls.TLSConfig{
+					TLSSetting: configtls.TLSClientSetting{
+						TLSSetting: configtls.TLSSetting{
 							CAFile: "nosuchfile",
 						},
 					},

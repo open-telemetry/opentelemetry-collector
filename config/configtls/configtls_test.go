@@ -24,31 +24,31 @@ import (
 func TestOptionsToConfig(t *testing.T) {
 	tests := []struct {
 		name        string
-		options     TLSConfig
+		options     TLSSetting
 		fakeSysPool bool
 		expectError string
 	}{
 		{
 			name:    "should load system CA",
-			options: TLSConfig{CAFile: ""},
+			options: TLSSetting{CAFile: ""},
 		},
 		{
 			name:    "should load custom CA",
-			options: TLSConfig{CAFile: "testdata/testCA.pem"},
+			options: TLSSetting{CAFile: "testdata/testCA.pem"},
 		},
 		{
 			name:        "should fail with invalid CA file path",
-			options:     TLSConfig{CAFile: "testdata/not/valid"},
+			options:     TLSSetting{CAFile: "testdata/not/valid"},
 			expectError: "failed to load CA",
 		},
 		{
 			name:        "should fail with invalid CA file content",
-			options:     TLSConfig{CAFile: "testdata/testCA-bad.txt"},
+			options:     TLSSetting{CAFile: "testdata/testCA-bad.txt"},
 			expectError: "failed to parse CA",
 		},
 		{
 			name: "should load valid TLS  settings",
-			options: TLSConfig{
+			options: TLSSetting{
 				CAFile:   "testdata/testCA.pem",
 				CertFile: "testdata/test-cert.pem",
 				KeyFile:  "testdata/test-key.pem",
@@ -56,7 +56,7 @@ func TestOptionsToConfig(t *testing.T) {
 		},
 		{
 			name: "should fail with missing TLS KeyFile",
-			options: TLSConfig{
+			options: TLSSetting{
 				CAFile:   "testdata/testCA.pem",
 				CertFile: "testdata/test-cert.pem",
 			},
@@ -64,7 +64,7 @@ func TestOptionsToConfig(t *testing.T) {
 		},
 		{
 			name: "should fail with invalid TLS KeyFile",
-			options: TLSConfig{
+			options: TLSSetting{
 				CAFile:   "testdata/testCA.pem",
 				CertFile: "testdata/test-cert.pem",
 				KeyFile:  "testdata/not/valid",
@@ -73,7 +73,7 @@ func TestOptionsToConfig(t *testing.T) {
 		},
 		{
 			name: "should fail with missing TLS Cert",
-			options: TLSConfig{
+			options: TLSSetting{
 				CAFile:  "testdata/testCA.pem",
 				KeyFile: "testdata/test-key.pem",
 			},
@@ -81,7 +81,7 @@ func TestOptionsToConfig(t *testing.T) {
 		},
 		{
 			name: "should fail with invalid TLS Cert",
-			options: TLSConfig{
+			options: TLSSetting{
 				CAFile:   "testdata/testCA.pem",
 				CertFile: "testdata/not/valid",
 				KeyFile:  "testdata/test-key.pem",
@@ -90,21 +90,21 @@ func TestOptionsToConfig(t *testing.T) {
 		},
 		{
 			name: "should fail with invalid TLS CA",
-			options: TLSConfig{
+			options: TLSSetting{
 				CAFile: "testdata/not/valid",
 			},
 			expectError: "failed to load CA",
 		},
 		{
 			name: "should fail with invalid CA pool",
-			options: TLSConfig{
+			options: TLSSetting{
 				CAFile: "testdata/testCA-bad.txt",
 			},
 			expectError: "failed to parse CA",
 		},
 		{
 			name: "should pass with valid CA pool",
-			options: TLSConfig{
+			options: TLSSetting{
 				CAFile: "testdata/testCA.pem",
 			},
 		},

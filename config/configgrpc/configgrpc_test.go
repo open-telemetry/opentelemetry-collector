@@ -40,33 +40,17 @@ func TestInvalidPemFile(t *testing.T) {
 		err      string
 	}{
 		{
-			err: "^open /doesnt/exist:",
-			settings: GRPCClientSettings{
-				Headers:     nil,
-				Endpoint:    "",
-				Compression: "",
-				TLSConfig: configtls.TLSClientConfig{
-					TLSConfig: configtls.TLSConfig{
-						CAFile: "/doesnt/exist",
-					},
-					UseInsecure: true,
-					ServerName:  "",
-				},
-				KeepaliveParameters: nil,
-			},
-		},
-		{
 			err: "^failed to load TLS config: failed to load CA CertPool: failed to load CA /doesnt/exist:",
 			settings: GRPCClientSettings{
 				Headers:     nil,
 				Endpoint:    "",
 				Compression: "",
-				TLSConfig: configtls.TLSClientConfig{
-					TLSConfig: configtls.TLSConfig{
+				TLSSetting: configtls.TLSClientSetting{
+					TLSSetting: configtls.TLSSetting{
 						CAFile: "/doesnt/exist",
 					},
-					UseInsecure: false,
-					ServerName:  "",
+					Insecure:   false,
+					ServerName: "",
 				},
 				KeepaliveParameters: nil,
 			},
@@ -77,12 +61,12 @@ func TestInvalidPemFile(t *testing.T) {
 				Headers:     nil,
 				Endpoint:    "",
 				Compression: "",
-				TLSConfig: configtls.TLSClientConfig{
-					TLSConfig: configtls.TLSConfig{
+				TLSSetting: configtls.TLSClientSetting{
+					TLSSetting: configtls.TLSSetting{
 						CertFile: "/doesnt/exist",
 					},
-					UseInsecure: false,
-					ServerName:  "",
+					Insecure:   false,
+					ServerName: "",
 				},
 				KeepaliveParameters: nil,
 			},
@@ -101,7 +85,7 @@ func TestUseSecure(t *testing.T) {
 		Headers:             nil,
 		Endpoint:            "",
 		Compression:         "",
-		TLSConfig:           configtls.TLSClientConfig{},
+		TLSSetting:          configtls.TLSClientSetting{},
 		KeepaliveParameters: nil,
 	})
 

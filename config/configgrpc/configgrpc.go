@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/encoding/gzip"
 	"google.golang.org/grpc/keepalive"
 
@@ -48,8 +47,8 @@ type GRPCClientSettings struct {
 	// collector. Currently the only supported mode is `gzip`.
 	Compression string `mapstructure:"compression"`
 
-	// TLSConfig struct exposes TLS client configuration.
-	TLSConfig configtls.TLSClientConfig `mapstructure:",squash"`
+	// TLSSetting struct exposes TLS client configuration.
+	TLSSetting configtls.TLSClientSetting `mapstructure:",squash"`
 
 	// The keepalive parameters for client gRPC. See grpc.WithKeepaliveParams
 	// (https://godoc.org/google.golang.org/grpc#WithKeepaliveParams).
@@ -80,22 +79,11 @@ func GrpcSettingsToDialOptions(settings GRPCClientSettings) ([]grpc.DialOption, 
 		}
 	}
 
-	if settings.TLSConfig.CAFile != "" && settings.TLSConfig.UseInsecure {
-		creds, err := credentials.NewClientTLSFromFile(settings.TLSConfig.CAFile, settings.TLSConfig.ServerName)
-		if err != nil {
-			return nil, err
-		}
-		opts = append(opts, grpc.WithTransportCredentials(creds))
-	} else if !settings.TLSConfig.UseInsecure {
-		tlsConf, err := settings.TLSConfig.LoadTLSConfig()
-		if err != nil {
-			return nil, fmt.Errorf("failed to load TLS config: %w", err)
-		}
-		creds := credentials.NewTLS(tlsConf)
-		opts = append(opts, grpc.WithTransportCredentials(creds))
-	} else {
-		opts = append(opts, grpc.WithInsecure())
+	tlsDialOption, err := settings.TLSSetting.LoadGRPCTLSCredentials()
+	if err != nil {
+		return nil, err
 	}
+	opts = append(opts, tlsDialOption)
 
 	if settings.KeepaliveParameters != nil {
 		keepAliveOption := grpc.WithKeepaliveParams(keepalive.ClientParameters{

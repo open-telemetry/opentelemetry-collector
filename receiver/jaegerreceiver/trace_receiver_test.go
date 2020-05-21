@@ -551,7 +551,7 @@ func TestSamplingStrategiesMutualTLS(t *testing.T) {
 	clientKeyPath := path.Join(".", "testdata", "client.key")
 
 	// start gRPC server that serves sampling strategies
-	tlsCfgOpts := configtls.TLSConfig{
+	tlsCfgOpts := configtls.TLSSetting{
 		CAFile:   caPath,
 		CertFile: serverCertPath,
 		KeyFile:  serverKeyPath,
@@ -575,14 +575,14 @@ func TestSamplingStrategiesMutualTLS(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.RemoteSampling = &RemoteSamplingConfig{
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
-			TLSConfig: configtls.TLSClientConfig{
-				TLSConfig: configtls.TLSConfig{
+			TLSSetting: configtls.TLSClientSetting{
+				TLSSetting: configtls.TLSSetting{
 					CAFile:   caPath,
 					CertFile: clientCertPath,
 					KeyFile:  clientKeyPath,
 				},
-				UseInsecure: false,
-				ServerName:  "localhost",
+				Insecure:   false,
+				ServerName: "localhost",
 			},
 			Endpoint: serverAddr.String(),
 		},

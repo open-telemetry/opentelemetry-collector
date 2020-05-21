@@ -151,8 +151,8 @@ func (je *JaegerGRPCDataSender) Start() error {
 		// Use standard endpoint for Jaeger.
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: fmt.Sprintf("localhost:%d", je.Port),
-			TLSConfig: configtls.TLSClientConfig{
-				UseInsecure: true,
+			TLSSetting: configtls.TLSClientSetting{
+				Insecure: true,
 			},
 		},
 	}
@@ -217,8 +217,8 @@ func (ote *OCTraceDataSender) Start() error {
 	cfg := &opencensusexporter.Config{
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: fmt.Sprintf("localhost:%d", ote.Port),
-			TLSConfig: configtls.TLSClientConfig{
-				UseInsecure: true,
+			TLSSetting: configtls.TLSClientSetting{
+				Insecure: true,
 			},
 		},
 	}
@@ -264,8 +264,8 @@ func (ome *OCMetricsDataSender) Start() error {
 	cfg := &opencensusexporter.Config{
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: fmt.Sprintf("localhost:%d", ome.port),
-			TLSConfig: configtls.TLSClientConfig{
-				UseInsecure: true,
+			TLSSetting: configtls.TLSClientSetting{
+				Insecure: true,
 			},
 		},
 	}
@@ -321,8 +321,8 @@ func (ote *OTLPTraceDataSender) Start() error {
 	cfg := &otlpexporter.Config{
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: fmt.Sprintf("localhost:%d", ote.Port),
-			TLSConfig: configtls.TLSClientConfig{
-				UseInsecure: true,
+			TLSSetting: configtls.TLSClientSetting{
+				Insecure: true,
 			},
 		},
 	}
@@ -369,8 +369,8 @@ func (ome *OTLPMetricsDataSender) Start() error {
 	cfg := &otlpexporter.Config{
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: fmt.Sprintf("localhost:%d", ome.port),
-			TLSConfig: configtls.TLSClientConfig{
-				UseInsecure: true,
+			TLSSetting: configtls.TLSClientSetting{
+				Insecure: true,
 			},
 		},
 	}

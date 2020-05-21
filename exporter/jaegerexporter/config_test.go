@@ -45,8 +45,8 @@ func TestLoadConfig(t *testing.T) {
 	defaultCfg := factory.CreateDefaultConfig().(*Config)
 	defaultCfg.Endpoint = "some.target:55678"
 	defaultCfg.GRPCClientSettings.Endpoint = defaultCfg.Endpoint
-	defaultCfg.GRPCClientSettings.TLSConfig = configtls.TLSClientConfig{
-		UseInsecure: true,
+	defaultCfg.GRPCClientSettings.TLSSetting = configtls.TLSClientSetting{
+		Insecure: true,
 	}
 	assert.Equal(t, defaultCfg, e0)
 

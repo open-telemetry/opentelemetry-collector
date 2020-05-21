@@ -142,8 +142,8 @@ func TestJaegerHTTP(t *testing.T) {
 		AgentHTTPPort: int(port),
 		RemoteSamplingClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: addr.String(),
-			TLSConfig: configtls.TLSClientConfig{
-				UseInsecure: true,
+			TLSSetting: configtls.TLSClientSetting{
+				Insecure: true,
 			},
 		},
 	}
