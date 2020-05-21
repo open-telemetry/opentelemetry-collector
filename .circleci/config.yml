@@ -37,9 +37,6 @@ commands:
       - restore_cache: # restores saved cache if no changes are detected since last run
           keys:
             - cimg-go-pkg-mod-<<parameters.os>>-{{ checksum "go.sum" }}
-      - persist_to_workspace:
-          root: ~/
-          paths: go/pkg/mod
 
   publish_docker_images:
     parameters:
@@ -119,6 +116,7 @@ workflows:
             - test
             - gosec
             - coverage
+            - windows-test
           filters:
             branches:
               ignore: /.*/
@@ -131,6 +129,7 @@ workflows:
             - test
             - gosec
             - coverage
+            - windows-test
           filters:
             branches:
               only: master
