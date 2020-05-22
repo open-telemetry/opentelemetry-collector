@@ -106,7 +106,8 @@ func (or *OCDataReceiver) GenConfigYAMLStr() string {
 	// Note that this generates an exporter config for agent.
 	return fmt.Sprintf(`
   opencensus:
-    endpoint: "localhost:%d"`, or.Port)
+    endpoint: "localhost:%d"
+    insecure: true`, or.Port)
 }
 
 func (or *OCDataReceiver) ProtocolName() string {
@@ -151,7 +152,8 @@ func (jr *JaegerDataReceiver) GenConfigYAMLStr() string {
 	// Note that this generates an exporter config for agent.
 	return fmt.Sprintf(`
   jaeger:
-    endpoint: "localhost:%d"`, jr.Port)
+    endpoint: "localhost:%d"
+    insecure: true`, jr.Port)
 }
 
 func (jr *JaegerDataReceiver) ProtocolName() string {
@@ -194,7 +196,8 @@ func (or *OTLPDataReceiver) GenConfigYAMLStr() string {
 	// Note that this generates an exporter config for agent.
 	return fmt.Sprintf(`
   otlp:
-    endpoint: "localhost:%d"`, or.Port)
+    endpoint: "localhost:%d"
+    insecure: true`, or.Port)
 }
 
 func (or *OTLPDataReceiver) ProtocolName() string {

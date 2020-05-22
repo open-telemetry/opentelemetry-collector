@@ -7,6 +7,7 @@ processors:
 exporters:
   jaeger:
     endpoint: "some.target:55678"
+    insecure: true
   jaeger/2:
     endpoint: "a.new.target:1234"
 

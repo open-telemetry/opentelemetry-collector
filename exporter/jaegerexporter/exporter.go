@@ -34,12 +34,12 @@ import (
 // The collectorEndpoint should be of the form "hostname:14250" (a gRPC target).
 func New(config *Config) (component.TraceExporter, error) {
 
-	opts, err := configgrpc.GrpcSettingsToDialOptions(config.GRPCSettings)
+	opts, err := configgrpc.GrpcSettingsToDialOptions(config.GRPCClientSettings)
 	if err != nil {
 		return nil, err
 	}
 
-	client, err := grpc.Dial(config.GRPCSettings.Endpoint, opts...)
+	client, err := grpc.Dial(config.GRPCClientSettings.Endpoint, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +47,7 @@ func New(config *Config) (component.TraceExporter, error) {
 	collectorServiceClient := jaegerproto.NewCollectorServiceClient(client)
 	s := &protoGRPCSender{
 		client:       collectorServiceClient,
-		metadata:     metadata.New(config.GRPCSettings.Headers),
+		metadata:     metadata.New(config.GRPCClientSettings.Headers),
 		waitForReady: config.WaitForReady,
 	}
 

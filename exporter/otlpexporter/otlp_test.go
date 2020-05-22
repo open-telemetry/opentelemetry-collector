@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/observability"
@@ -82,8 +83,11 @@ func TestSendTraceData(t *testing.T) {
 
 	// Start an OTLP exporter and point to the receiver.
 	config := Config{
-		GRPCSettings: configgrpc.GRPCSettings{
+		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: ln.Addr().String(),
+			TLSSetting: configtls.TLSClientSetting{
+				Insecure: true,
+			},
 		},
 	}
 
@@ -142,8 +146,11 @@ func TestSendTraceDataServerDownAndUp(t *testing.T) {
 
 	// Start an OTLP exporter and point to the receiver.
 	config := Config{
-		GRPCSettings: configgrpc.GRPCSettings{
+		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: ln.Addr().String(),
+			TLSSetting: configtls.TLSClientSetting{
+				Insecure: true,
+			},
 		},
 	}
 
@@ -198,8 +205,11 @@ func TestSendTraceDataServerStartWhileRequest(t *testing.T) {
 
 	// Start an OTLP exporter and point to the receiver.
 	config := Config{
-		GRPCSettings: configgrpc.GRPCSettings{
+		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: ln.Addr().String(),
+			TLSSetting: configtls.TLSClientSetting{
+				Insecure: true,
+			},
 		},
 	}
 
