@@ -25,7 +25,6 @@ func TestOptionsToConfig(t *testing.T) {
 	tests := []struct {
 		name        string
 		options     TLSSetting
-		fakeSysPool bool
 		expectError string
 	}{
 		{
@@ -122,4 +121,13 @@ func TestOptionsToConfig(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestTLSSetting_LoadgRPCTLSServerCredentialsError(t *testing.T) {
+	tlsSetting := TLSSetting{
+		CertFile: "doesnt/exist",
+		KeyFile:  "doesnt/exist",
+	}
+	_, err := tlsSetting.LoadgRPCTLSServerCredentials()
+	assert.Error(t, err)
 }

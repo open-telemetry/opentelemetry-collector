@@ -138,3 +138,21 @@ func TestLoadConfig(t *testing.T) {
 			Transport: "unix",
 		})
 }
+
+func TestBuildOptions_TLSCredentials(t *testing.T) {
+	cfg := Config{
+		ReceiverSettings: configmodels.ReceiverSettings{
+			NameVal: "IncorrectTLS",
+		},
+		TLSCredentials: &configtls.TLSSetting{
+			CertFile: "willfail",
+		},
+	}
+	_, err := cfg.buildOptions()
+	assert.EqualError(t, err, "error initializing OpenCensus receiver \"IncorrectTLS\" TLS Credentials: failed to load TLS config: for auth via TLS, either both certificate and key must be supplied, or neither")
+
+	cfg.TLSCredentials = &configtls.TLSSetting{}
+	opt, err := cfg.buildOptions()
+	assert.NoError(t, err)
+	assert.NotNil(t, opt)
+}
