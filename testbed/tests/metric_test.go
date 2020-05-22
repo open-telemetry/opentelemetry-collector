@@ -18,14 +18,8 @@ package tests
 // coded in this file or use scenarios from perf_scenarios.go.
 
 import (
-	"os"
-	"path"
-	"path/filepath"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/testbed/testbed"
 )
 
@@ -84,70 +78,4 @@ func TestMetric10kDPS(t *testing.T) {
 		})
 	}
 
-}
-
-func TestMetricResourceProcessor(t *testing.T) {
-	sender := testbed.NewOTLPMetricDataSender(testbed.GetAvailablePort(t))
-	receiver := testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t))
-
-	tests := getResourceProcessorTestCases(t)
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			resultDir, err := filepath.Abs(path.Join("results", t.Name()))
-			require.NoError(t, err)
-
-			processors := map[string]string{
-				"resource": test.resourceProcessorConfig,
-			}
-			configFile := createConfigFile(t, sender, receiver, resultDir, processors)
-			defer os.Remove(configFile)
-
-			require.NotEmpty(t, configFile, "Cannot create config file")
-
-			tc := testbed.NewTestCase(t, sender, receiver, testbed.WithConfigFile(configFile))
-			defer tc.Stop()
-
-			tc.StartBackend()
-			tc.StartAgent()
-			defer tc.StopAgent()
-
-			tc.EnableRecording()
-
-			sender.Start()
-
-			// Clear previously received metrics.
-			tc.MockBackend.ClearReceivedItems()
-			startCounter := tc.MockBackend.DataItemsReceived()
-
-			sender, ok := tc.Sender.(testbed.MetricDataSender)
-			require.True(t, ok, "unsupported metric sender")
-
-			err = sender.SendMetrics(test.mockedConsumedMetricData)
-			require.NoError(t, err, "failed to send metrics", err)
-
-			// We bypass the load generator in this test, but make sure to increment the
-			// counter since it is used in final reports.
-			tc.LoadGenerator.IncDataItemsSent()
-
-			tc.WaitFor(func() bool { return tc.MockBackend.DataItemsReceived() == startCounter+1 },
-				"datapoints received")
-
-			// Assert Resources
-			m := tc.MockBackend.ReceivedMetrics[0]
-			rm := pdatautil.MetricsToInternalMetrics(m).ResourceMetrics()
-			require.Equal(t, 1, rm.Len())
-
-			// If a resource is not expected to be returned by the processor, return.
-			if test.isNilResource {
-				require.True(t, rm.At(0).Resource().IsNil())
-				return
-			}
-
-			require.Equal(t,
-				attributesToMap(test.expectedMetricData.ResourceMetrics().At(0).Resource().Attributes()),
-				attributesToMap(rm.At(0).Resource().Attributes()),
-			)
-		})
-	}
 }
