@@ -130,6 +130,10 @@ func mergeResource(to, from *resourcepb.Resource) *resourcepb.Resource {
 		to.Type = from.Type
 	}
 	if from.Labels != nil {
+		if to.Labels == nil {
+			to.Labels = make(map[string]string, len(from.Labels))
+		}
+
 		for k, v := range from.Labels {
 			to.Labels[k] = v
 		}

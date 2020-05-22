@@ -22,6 +22,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
@@ -148,8 +149,11 @@ func NewJaegerGRPCDataSender(port int) *JaegerGRPCDataSender {
 func (je *JaegerGRPCDataSender) Start() error {
 	cfg := &jaegerexporter.Config{
 		// Use standard endpoint for Jaeger.
-		GRPCSettings: configgrpc.GRPCSettings{
+		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: fmt.Sprintf("localhost:%d", je.Port),
+			TLSSetting: configtls.TLSClientSetting{
+				Insecure: true,
+			},
 		},
 	}
 
@@ -211,8 +215,11 @@ func NewOCTraceDataSender(port int) *OCTraceDataSender {
 
 func (ote *OCTraceDataSender) Start() error {
 	cfg := &opencensusexporter.Config{
-		GRPCSettings: configgrpc.GRPCSettings{
+		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: fmt.Sprintf("localhost:%d", ote.Port),
+			TLSSetting: configtls.TLSClientSetting{
+				Insecure: true,
+			},
 		},
 	}
 
@@ -255,8 +262,11 @@ func NewOCMetricDataSender(port int) *OCMetricsDataSender {
 
 func (ome *OCMetricsDataSender) Start() error {
 	cfg := &opencensusexporter.Config{
-		GRPCSettings: configgrpc.GRPCSettings{
+		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: fmt.Sprintf("localhost:%d", ome.port),
+			TLSSetting: configtls.TLSClientSetting{
+				Insecure: true,
+			},
 		},
 	}
 
@@ -309,8 +319,11 @@ func NewOTLPTraceDataSender(port int) *OTLPTraceDataSender {
 
 func (ote *OTLPTraceDataSender) Start() error {
 	cfg := &otlpexporter.Config{
-		GRPCSettings: configgrpc.GRPCSettings{
+		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: fmt.Sprintf("localhost:%d", ote.Port),
+			TLSSetting: configtls.TLSClientSetting{
+				Insecure: true,
+			},
 		},
 	}
 
@@ -354,8 +367,11 @@ func NewOTLPMetricDataSender(port int) *OTLPMetricsDataSender {
 
 func (ome *OTLPMetricsDataSender) Start() error {
 	cfg := &otlpexporter.Config{
-		GRPCSettings: configgrpc.GRPCSettings{
+		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: fmt.Sprintf("localhost:%d", ome.port),
+			TLSSetting: configtls.TLSClientSetting{
+				Insecure: true,
+			},
 		},
 	}
 

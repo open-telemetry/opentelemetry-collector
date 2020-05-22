@@ -69,7 +69,7 @@ type Configuration struct {
 	AgentCompactThriftPort       int
 	AgentBinaryThriftPort        int
 	AgentHTTPPort                int
-	RemoteSamplingClientSettings configgrpc.GRPCSettings
+	RemoteSamplingClientSettings configgrpc.GRPCClientSettings
 	RemoteSamplingStrategyFile   string
 }
 

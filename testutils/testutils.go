@@ -80,16 +80,25 @@ func WaitForPort(t *testing.T, port uint16) error {
 	totalDuration := 5 * time.Second
 	wait := 100 * time.Millisecond
 	address := fmt.Sprintf("localhost:%d", port)
-	for i := totalDuration; i > 0; i -= wait {
-		conn, err := net.Dial("tcp", address)
 
-		if err == nil && conn != nil {
-			conn.Close()
-			return nil
+	ticker := time.NewTicker(wait)
+	defer ticker.Stop()
+
+	timeout := time.After(totalDuration)
+
+	for {
+		select {
+		case <-ticker.C:
+			conn, err := net.Dial("tcp", address)
+			if err == nil && conn != nil {
+				conn.Close()
+				return nil
+			}
+
+		case <-timeout:
+			return fmt.Errorf("failed to wait for port %d", port)
 		}
-		time.Sleep(wait)
 	}
-	return fmt.Errorf("failed to wait for port %d", port)
 }
 
 // HostPortFromAddr extracts host and port from a network address

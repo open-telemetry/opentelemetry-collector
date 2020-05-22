@@ -43,7 +43,7 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		GRPCSettings: configgrpc.GRPCSettings{
+		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Headers: map[string]string{},
 		},
 	}

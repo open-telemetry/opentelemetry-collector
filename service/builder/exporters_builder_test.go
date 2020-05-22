@@ -43,7 +43,7 @@ func TestExportersBuilder_Build(t *testing.T) {
 					NameVal: "opencensus",
 					TypeVal: "opencensus",
 				},
-				GRPCSettings: configgrpc.GRPCSettings{
+				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint: "0.0.0.0:12345",
 				},
 			},

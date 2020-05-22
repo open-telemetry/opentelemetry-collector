@@ -18,20 +18,16 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/config/configtls"
 )
 
 func TestBasicGrpcSettings(t *testing.T) {
 
-	_, err := GrpcSettingsToDialOptions(GRPCSettings{
-		Headers:     nil,
-		Endpoint:    "",
-		Compression: "",
-		TLSConfig: TLSConfig{
-			CaCert:             "",
-			UseSecure:          false,
-			ServerNameOverride: "",
-		},
+	_, err := GrpcSettingsToDialOptions(GRPCClientSettings{
+		Headers:             nil,
+		Endpoint:            "",
+		Compression:         "",
 		KeepaliveParameters: nil,
 	})
 
@@ -40,47 +36,37 @@ func TestBasicGrpcSettings(t *testing.T) {
 
 func TestInvalidPemFile(t *testing.T) {
 	tests := []struct {
-		settings GRPCSettings
+		settings GRPCClientSettings
 		err      string
 	}{
 		{
-			err: "^open /doesnt/exist:",
-			settings: GRPCSettings{
-				Headers:     nil,
-				Endpoint:    "",
-				Compression: "",
-				TLSConfig: TLSConfig{
-					CaCert:             "/doesnt/exist",
-					UseSecure:          false,
-					ServerNameOverride: "",
-				},
-				KeepaliveParameters: nil,
-			},
-		},
-		{
 			err: "^failed to load TLS config: failed to load CA CertPool: failed to load CA /doesnt/exist:",
-			settings: GRPCSettings{
+			settings: GRPCClientSettings{
 				Headers:     nil,
 				Endpoint:    "",
 				Compression: "",
-				TLSConfig: TLSConfig{
-					CaCert:             "/doesnt/exist",
-					UseSecure:          true,
-					ServerNameOverride: "",
+				TLSSetting: configtls.TLSClientSetting{
+					TLSSetting: configtls.TLSSetting{
+						CAFile: "/doesnt/exist",
+					},
+					Insecure:   false,
+					ServerName: "",
 				},
 				KeepaliveParameters: nil,
 			},
 		},
 		{
-			err: "^failed to load TLS config: for client auth via TLS, either both client certificate and key must be supplied, or neither$",
-			settings: GRPCSettings{
+			err: "^failed to load TLS config: for auth via TLS, either both certificate and key must be supplied, or neither",
+			settings: GRPCClientSettings{
 				Headers:     nil,
 				Endpoint:    "",
 				Compression: "",
-				TLSConfig: TLSConfig{
-					ClientCert:         "/doesnt/exist",
-					UseSecure:          true,
-					ServerNameOverride: "",
+				TLSSetting: configtls.TLSClientSetting{
+					TLSSetting: configtls.TLSSetting{
+						CertFile: "/doesnt/exist",
+					},
+					Insecure:   false,
+					ServerName: "",
 				},
 				KeepaliveParameters: nil,
 			},
@@ -95,122 +81,16 @@ func TestInvalidPemFile(t *testing.T) {
 }
 
 func TestUseSecure(t *testing.T) {
-	dialOpts, err := GrpcSettingsToDialOptions(GRPCSettings{
-		Headers:     nil,
-		Endpoint:    "",
-		Compression: "",
-		TLSConfig: TLSConfig{
-			CaCert:             "",
-			UseSecure:          true,
-			ServerNameOverride: "",
-		},
+	dialOpts, err := GrpcSettingsToDialOptions(GRPCClientSettings{
+		Headers:             nil,
+		Endpoint:            "",
+		Compression:         "",
+		TLSSetting:          configtls.TLSClientSetting{},
 		KeepaliveParameters: nil,
 	})
 
 	assert.NoError(t, err)
 	assert.Equal(t, len(dialOpts), 1)
-}
-
-func TestOptionsToConfig(t *testing.T) {
-	tests := []struct {
-		name        string
-		options     TLSConfig
-		expectError string
-	}{
-		{
-			name:    "should load system CA",
-			options: TLSConfig{CaCert: ""},
-		},
-		{
-			name:    "should load custom CA",
-			options: TLSConfig{CaCert: "testdata/testCA.pem"},
-		},
-		{
-			name:        "should fail with invalid CA file path",
-			options:     TLSConfig{CaCert: "testdata/not/valid"},
-			expectError: "failed to load CA",
-		},
-		{
-			name:        "should fail with invalid CA file content",
-			options:     TLSConfig{CaCert: "testdata/testCA-bad.txt"},
-			expectError: "failed to parse CA",
-		},
-		{
-			name: "should load valid TLS Client settings",
-			options: TLSConfig{
-				CaCert:     "testdata/testCA.pem",
-				ClientCert: "testdata/test-cert.pem",
-				ClientKey:  "testdata/test-key.pem",
-			},
-		},
-		{
-			name: "should fail with missing TLS Client Key",
-			options: TLSConfig{
-				CaCert:     "testdata/testCA.pem",
-				ClientCert: "testdata/test-cert.pem",
-			},
-			expectError: "both client certificate and key must be supplied",
-		},
-		{
-			name: "should fail with invalid TLS Client Key",
-			options: TLSConfig{
-				CaCert:     "testdata/testCA.pem",
-				ClientCert: "testdata/test-cert.pem",
-				ClientKey:  "testdata/not/valid",
-			},
-			expectError: "failed to load server TLS cert and key",
-		},
-		{
-			name: "should fail with missing TLS Client Cert",
-			options: TLSConfig{
-				CaCert:    "testdata/testCA.pem",
-				ClientKey: "testdata/test-key.pem",
-			},
-			expectError: "both client certificate and key must be supplied",
-		},
-		{
-			name: "should fail with invalid TLS Client Cert",
-			options: TLSConfig{
-				CaCert:     "testdata/testCA.pem",
-				ClientCert: "testdata/not/valid",
-				ClientKey:  "testdata/test-key.pem",
-			},
-			expectError: "failed to load server TLS cert and key",
-		},
-		{
-			name: "should fail with invalid TLS Client CA",
-			options: TLSConfig{
-				CaCert: "testdata/not/valid",
-			},
-			expectError: "failed to load CA",
-		},
-		{
-			name: "should fail with invalid Client CA pool",
-			options: TLSConfig{
-				CaCert: "testdata/testCA-bad.txt",
-			},
-			expectError: "failed to parse CA",
-		},
-		{
-			name: "should pass with valid Client CA pool",
-			options: TLSConfig{
-				CaCert: "testdata/testCA.pem",
-			},
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			cfg, err := test.options.LoadTLSConfig()
-			if test.expectError != "" {
-				require.Error(t, err)
-				assert.Contains(t, err.Error(), test.expectError)
-			} else {
-				require.NoError(t, err)
-				assert.NotNil(t, cfg)
-			}
-		})
-	}
 }
 
 func TestGetGRPCCompressionKey(t *testing.T) {

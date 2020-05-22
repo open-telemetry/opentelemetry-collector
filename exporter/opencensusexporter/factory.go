@@ -49,7 +49,7 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		GRPCSettings: configgrpc.GRPCSettings{
+		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Headers: map[string]string{},
 		},
 	}
@@ -73,6 +73,7 @@ func (f *Factory) OCAgentOptions(logger *zap.Logger, ocac *Config) ([]ocagent.Ex
 			msg:  "OpenCensus exporter config requires an Endpoint",
 		}
 	}
+	// TODO(ccaraman): Clean up this usage of gRPC settings apart of PR to address issue #933.
 	opts := []ocagent.ExporterOption{ocagent.WithAddress(ocac.Endpoint)}
 	if ocac.Compression != "" {
 		if compressionKey := configgrpc.GetGRPCCompressionKey(ocac.Compression); compressionKey != configgrpc.CompressionUnsupported {
@@ -84,23 +85,22 @@ func (f *Factory) OCAgentOptions(logger *zap.Logger, ocac *Config) ([]ocagent.Ex
 			}
 		}
 	}
-	if ocac.TLSConfig.CaCert != "" {
-		creds, err := credentials.NewClientTLSFromFile(ocac.TLSConfig.CaCert, "")
+	if ocac.TLSSetting.CAFile != "" {
+		creds, err := credentials.NewClientTLSFromFile(ocac.TLSSetting.CAFile, "")
 		if err != nil {
 			return nil, &ocExporterError{
 				code: errUnableToGetTLSCreds,
-				msg:  fmt.Sprintf("OpenCensus exporter unable to read TLS credentials from pem file %q: %v", ocac.TLSConfig.CaCert, err),
+				msg:  fmt.Sprintf("OpenCensus exporter unable to read TLS credentials from pem file %q: %v", ocac.TLSSetting.CAFile, err),
 			}
 		}
 		opts = append(opts, ocagent.WithTLSCredentials(creds))
-	} else if ocac.TLSConfig.UseSecure {
-		tlsConf, err := ocac.TLSConfig.LoadTLSConfig()
+	} else if !ocac.TLSSetting.Insecure {
+		tlsConf, err := ocac.TLSSetting.LoadTLSConfig()
 		if err != nil {
 			return nil, fmt.Errorf("OpenCensus exporter failed to load TLS config: %w", err)
 		}
 		creds := credentials.NewTLS(tlsConf)
 		opts = append(opts, ocagent.WithTLSCredentials(creds))
-
 	} else {
 		opts = append(opts, ocagent.WithInsecure())
 	}

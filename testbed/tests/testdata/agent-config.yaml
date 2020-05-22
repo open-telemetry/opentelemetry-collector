@@ -9,6 +9,7 @@ receivers:
 exporters:
   opencensus:
     endpoint: "localhost:56565"
+    insecure: true
   logging:
     loglevel: info
 

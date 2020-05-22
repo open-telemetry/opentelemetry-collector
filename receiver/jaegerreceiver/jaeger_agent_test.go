@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/testutils"
 )
@@ -139,8 +140,11 @@ func TestJaegerHTTP(t *testing.T) {
 	port := testutils.GetAvailablePort(t)
 	config := &Configuration{
 		AgentHTTPPort: int(port),
-		RemoteSamplingClientSettings: configgrpc.GRPCSettings{
+		RemoteSamplingClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: addr.String(),
+			TLSSetting: configtls.TLSClientSetting{
+				Insecure: true,
+			},
 		},
 	}
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}

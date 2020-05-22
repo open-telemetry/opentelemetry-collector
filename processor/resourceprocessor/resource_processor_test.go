@@ -129,6 +129,22 @@ func TestResourceProcessor(t *testing.T) {
 			sourceResource:      nil,
 			wantResource:        nil,
 		},
+		{
+			name:                "Consumed resource with nil labels",
+			config:              cfgWithEmptyResourceType,
+			mutatesConsumedData: true,
+			sourceResource: &resourcepb.Resource{
+				Type: "original-type",
+			},
+			wantResource: &resourcepb.Resource{
+				Type: "original-type",
+				Labels: map[string]string{
+					"cloud.zone":       "zone-1",
+					"k8s.cluster.name": "k8s-cluster",
+					"host.name":        "k8s-node",
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {

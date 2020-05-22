@@ -15,7 +15,9 @@
 package zipkin
 
 import (
+	"fmt"
 	"math"
+	"strconv"
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 
@@ -69,7 +71,10 @@ func (m *statusMapper) ocStatus() *tracepb.Status {
 func (m *statusMapper) fromAttribute(key string, attrib *tracepb.AttributeValue) bool {
 	switch key {
 	case tracetranslator.TagZipkinCensusCode:
-		m.fromCensus.codePtr = attribToStatusCode(attrib)
+		code, err := attribToStatusCode(attrib)
+		if err == nil {
+			m.fromCensus.codePtr = &code
+		}
 		return true
 
 	case tracetranslator.TagZipkinCensusMsg:
@@ -77,7 +82,10 @@ func (m *statusMapper) fromAttribute(key string, attrib *tracepb.AttributeValue)
 		return true
 
 	case tracetranslator.TagStatusCode:
-		m.fromStatus.codePtr = attribToStatusCode(attrib)
+		code, err := attribToStatusCode(attrib)
+		if err == nil {
+			m.fromStatus.codePtr = &code
+		}
 		return true
 
 	case tracetranslator.TagStatusMsg:
@@ -85,10 +93,10 @@ func (m *statusMapper) fromAttribute(key string, attrib *tracepb.AttributeValue)
 		return true
 
 	case tracetranslator.TagHTTPStatusCode:
-		codePtr := attribToStatusCode(attrib)
-		if codePtr != nil {
-			*codePtr = tracetranslator.OCStatusCodeFromHTTP(*codePtr)
-			m.fromHTTP.codePtr = codePtr
+		httpCode, err := attribToStatusCode(attrib)
+		if err == nil {
+			code := tracetranslator.OCStatusCodeFromHTTP(httpCode)
+			m.fromHTTP.codePtr = &code
 		}
 
 	case tracetranslator.TagHTTPStatusMsg:
@@ -97,14 +105,29 @@ func (m *statusMapper) fromAttribute(key string, attrib *tracepb.AttributeValue)
 	return false
 }
 
-// attribToStatusCode maps an integer attribute value to a status code (int32).
-// The function return nil if the value is not an integer or an integer larger than what
-// can fit in an int32
-func attribToStatusCode(v *tracepb.AttributeValue) *int32 {
-	i := v.GetIntValue()
-	if i <= math.MaxInt32 {
-		j := int32(i)
-		return &j
+// attribToStatusCode maps an integer or string attribute value to a status code.
+// The function return nil if the value is of another type or cannot be converted to an int32 value.
+func attribToStatusCode(attr *tracepb.AttributeValue) (int32, error) {
+	if attr == nil {
+		return 0, fmt.Errorf("nil attribute")
 	}
-	return nil
+
+	switch val := attr.Value.(type) {
+	case *tracepb.AttributeValue_IntValue:
+		return toInt32(int(val.IntValue))
+	case *tracepb.AttributeValue_StringValue:
+		i, err := strconv.Atoi(val.StringValue.GetValue())
+		if err != nil {
+			return 0, err
+		}
+		return toInt32(i)
+	}
+	return 0, fmt.Errorf("invalid attribute type")
+}
+
+func toInt32(i int) (int32, error) {
+	if i <= math.MaxInt32 && i >= math.MinInt32 {
+		return int32(i), nil
+	}
+	return 0, fmt.Errorf("outside of the int32 range")
 }

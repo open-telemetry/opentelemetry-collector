@@ -13,6 +13,7 @@ data:
     exporters:
       otlp:
         endpoint: "otel-collector.default:55680" # TODO: Update me
+        insecure: true
     processors:
       batch:
       memory_limiter:
@@ -22,6 +23,7 @@ data:
         limit_mib: 400
         # 25% of limit up to 2G
         spike_limit_mib: 100
+        check_interval: 5s
       queued_retry:
         num_workers: 4
         queue_size: 100
@@ -118,6 +120,7 @@ data:
         limit_mib: 400
         # 25% of limit up to 2G
         spike_limit_mib: 100
+        check_interval: 5s
       queued_retry:
     extensions:
       health_check: {}
@@ -127,13 +130,14 @@ data:
         url: "http://somezipkin.target.com:9411/api/v2/spans" # Replace with a real endpoint.
       jaeger:
         endpoint: "somejaegergrpc.target.com:14250" # Replace with a real endpoint.
+        insecure: true
     service:
       extensions: [health_check, zpages]
       pipelines:
         traces/1:
           receivers: [otlp, zipkin]
           processors: [memory_limiter, batch, queued_retry]
-          exporters: [otlp, zipkin]
+          exporters: [zipkin]
         traces/2:
           receivers: [otlp, jaeger]
           processors: [memory_limiter, batch, queued_retry]
