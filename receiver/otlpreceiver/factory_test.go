@@ -28,7 +28,6 @@ import (
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/testutils"
 )
 
@@ -72,22 +71,18 @@ func TestCreateTraceReceiver(t *testing.T) {
 		{
 			name: "default",
 			cfg: &Config{
-				SecureReceiverSettings: receiver.SecureReceiverSettings{
-					ReceiverSettings: defaultReceiverSettings,
-					TLSCredentials:   nil,
-				},
-				Transport: "tcp",
+				ReceiverSettings: defaultReceiverSettings,
+				TLSCredentials:   nil,
+				Transport:        "tcp",
 			},
 		},
 		{
 			name: "invalid_port",
 			cfg: &Config{
-				SecureReceiverSettings: receiver.SecureReceiverSettings{
-					ReceiverSettings: configmodels.ReceiverSettings{
-						TypeVal:  typeStr,
-						NameVal:  typeStr,
-						Endpoint: "localhost:112233",
-					},
+				ReceiverSettings: configmodels.ReceiverSettings{
+					TypeVal:  typeStr,
+					NameVal:  typeStr,
+					Endpoint: "localhost:112233",
 				},
 				Transport: "tcp",
 			},
@@ -96,9 +91,7 @@ func TestCreateTraceReceiver(t *testing.T) {
 		{
 			name: "max-msg-size-and-concurrent-connections",
 			cfg: &Config{
-				SecureReceiverSettings: receiver.SecureReceiverSettings{
-					ReceiverSettings: defaultReceiverSettings,
-				},
+				ReceiverSettings:     defaultReceiverSettings,
 				Transport:            "tcp",
 				MaxRecvMsgSizeMiB:    32,
 				MaxConcurrentStreams: 16,
@@ -139,21 +132,17 @@ func TestCreateMetricReceiver(t *testing.T) {
 		{
 			name: "default",
 			cfg: &Config{
-				SecureReceiverSettings: receiver.SecureReceiverSettings{
-					ReceiverSettings: defaultReceiverSettings,
-				},
-				Transport: "tcp",
+				ReceiverSettings: defaultReceiverSettings,
+				Transport:        "tcp",
 			},
 		},
 		{
 			name: "invalid_address",
 			cfg: &Config{
-				SecureReceiverSettings: receiver.SecureReceiverSettings{
-					ReceiverSettings: configmodels.ReceiverSettings{
-						TypeVal:  typeStr,
-						NameVal:  typeStr,
-						Endpoint: "327.0.0.1:1122",
-					},
+				ReceiverSettings: configmodels.ReceiverSettings{
+					TypeVal:  typeStr,
+					NameVal:  typeStr,
+					Endpoint: "327.0.0.1:1122",
 				},
 				Transport: "tcp",
 			},
@@ -162,10 +151,8 @@ func TestCreateMetricReceiver(t *testing.T) {
 		{
 			name: "keepalive",
 			cfg: &Config{
-				SecureReceiverSettings: receiver.SecureReceiverSettings{
-					ReceiverSettings: defaultReceiverSettings,
-				},
-				Transport: "tcp",
+				ReceiverSettings: defaultReceiverSettings,
+				Transport:        "tcp",
 				Keepalive: &serverParametersAndEnforcementPolicy{
 					ServerParameters: &keepaliveServerParameters{
 						MaxConnectionAge: 60 * time.Second,

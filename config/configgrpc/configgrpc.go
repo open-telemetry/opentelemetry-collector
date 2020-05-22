@@ -79,7 +79,7 @@ func GrpcSettingsToDialOptions(settings GRPCClientSettings) ([]grpc.DialOption, 
 		}
 	}
 
-	tlsDialOption, err := settings.TLSSetting.LoadGRPCTLSCredentials()
+	tlsDialOption, err := settings.TLSSetting.LoadgRPCTLSClientCredentials()
 	if err != nil {
 		return nil, err
 	}

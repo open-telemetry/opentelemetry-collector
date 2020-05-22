@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/config/configtls"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -45,7 +45,7 @@ func TestLoadConfig(t *testing.T) {
 		&Config{
 			TypeVal: typeStr,
 			NameVal: "jaeger/customname",
-			Protocols: map[string]*receiver.SecureReceiverSettings{
+			Protocols: map[string]*SecureSetting{
 				"grpc": {
 					ReceiverSettings: configmodels.ReceiverSettings{
 						Endpoint: "localhost:9876",
@@ -81,7 +81,7 @@ func TestLoadConfig(t *testing.T) {
 		&Config{
 			TypeVal: typeStr,
 			NameVal: "jaeger/defaults",
-			Protocols: map[string]*receiver.SecureReceiverSettings{
+			Protocols: map[string]*SecureSetting{
 				"grpc": {
 					ReceiverSettings: configmodels.ReceiverSettings{
 						Endpoint: defaultGRPCBindEndpoint,
@@ -110,7 +110,7 @@ func TestLoadConfig(t *testing.T) {
 		&Config{
 			TypeVal: typeStr,
 			NameVal: "jaeger/mixed",
-			Protocols: map[string]*receiver.SecureReceiverSettings{
+			Protocols: map[string]*SecureSetting{
 				"grpc": {
 					ReceiverSettings: configmodels.ReceiverSettings{
 						Endpoint: "localhost:9876",
@@ -130,12 +130,12 @@ func TestLoadConfig(t *testing.T) {
 		&Config{
 			TypeVal: typeStr,
 			NameVal: "jaeger/tls",
-			Protocols: map[string]*receiver.SecureReceiverSettings{
+			Protocols: map[string]*SecureSetting{
 				"grpc": {
 					ReceiverSettings: configmodels.ReceiverSettings{
 						Endpoint: "localhost:9876",
 					},
-					TLSCredentials: &receiver.TLSCredentials{
+					TLSCredentials: &configtls.TLSSetting{
 						CertFile: "/test.crt",
 						KeyFile:  "/test.key",
 					},
