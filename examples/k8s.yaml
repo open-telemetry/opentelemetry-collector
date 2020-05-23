@@ -23,6 +23,7 @@ data:
         limit_mib: 400
         # 25% of limit up to 2G
         spike_limit_mib: 100
+        check_interval: 5s
       queued_retry:
         num_workers: 4
         queue_size: 100
@@ -119,6 +120,7 @@ data:
         limit_mib: 400
         # 25% of limit up to 2G
         spike_limit_mib: 100
+        check_interval: 5s
       queued_retry:
     extensions:
       health_check: {}
@@ -135,7 +137,7 @@ data:
         traces/1:
           receivers: [otlp, zipkin]
           processors: [memory_limiter, batch, queued_retry]
-          exporters: [otlp, zipkin]
+          exporters: [zipkin]
         traces/2:
           receivers: [otlp, jaeger]
           processors: [memory_limiter, batch, queued_retry]
