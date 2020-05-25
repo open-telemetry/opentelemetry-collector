@@ -38,7 +38,7 @@ func TestScrapeMetrics_Errors(t *testing.T) {
 
 	testCases := []testCase{
 		{
-			name:          "readsPerSecCounterError",
+			name:          "pageFileError",
 			pageFileError: errors.New("err1"),
 			expectedError: "err1",
 		},
@@ -54,7 +54,7 @@ func TestScrapeMetrics_Errors(t *testing.T) {
 			expectedError:                      "err3",
 		},
 		{
-			name:                              "writesPerSecCounterError",
+			name:                              "multipleErrors",
 			pageFileError:                     errors.New("err1"),
 			pageReadsPerSecCounterReturnValue: errors.New("err2"),
 			expectedError:                     "[err1; err2]",

@@ -16,7 +16,6 @@ package virtualmemoryscraper
 
 import (
 	"context"
-	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -34,12 +33,6 @@ func TestCreateMetricsScraper(t *testing.T) {
 	cfg := &Config{}
 
 	scraper, err := factory.CreateMetricsScraper(context.Background(), zap.NewNop(), cfg)
-
-	if runtime.GOOS == "windows" {
-		assert.NoError(t, err)
-		assert.NotNil(t, scraper)
-	} else {
-		assert.Error(t, err)
-		assert.Nil(t, scraper)
-	}
+	assert.NoError(t, err)
+	assert.NotNil(t, scraper)
 }

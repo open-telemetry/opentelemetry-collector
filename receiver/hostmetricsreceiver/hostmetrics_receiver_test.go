@@ -53,15 +53,16 @@ var standardMetrics = []string{
 	"host/network/errors",
 	"host/network/bytes",
 	"host/network/tcp_connections",
+	"host/swap/paging",
+	"host/swap/usage",
 }
 
 var systemSpecificMetrics = map[string][]string{
-	"linux":   {"host/filesystem/inodes/used"},
-	"darwin":  {"host/filesystem/inodes/used"},
-	"freebsd": {"host/filesystem/inodes/used"},
-	"openbsd": {"host/filesystem/inodes/used"},
-	"solaris": {"host/filesystem/inodes/used"},
-	"windows": {"host/swap/usage", "host/swap/paging"},
+	"linux":   {"host/filesystem/inodes/used", "host/swap/page_faults"},
+	"darwin":  {"host/filesystem/inodes/used", "host/swap/page_faults"},
+	"freebsd": {"host/filesystem/inodes/used", "host/swap/page_faults"},
+	"openbsd": {"host/filesystem/inodes/used", "host/swap/page_faults"},
+	"solaris": {"host/filesystem/inodes/used", "host/swap/page_faults"},
 }
 
 func TestGatherMetrics_EndToEnd(t *testing.T) {
@@ -70,17 +71,14 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 	config := &Config{
 		CollectionInterval: 100 * time.Millisecond,
 		Scrapers: map[string]internal.Config{
-			cpuscraper.TypeStr:        &cpuscraper.Config{ReportPerCPU: true},
-			diskscraper.TypeStr:       &diskscraper.Config{},
-			filesystemscraper.TypeStr: &filesystemscraper.Config{},
-			loadscraper.TypeStr:       &loadscraper.Config{},
-			memoryscraper.TypeStr:     &memoryscraper.Config{},
-			networkscraper.TypeStr:    &networkscraper.Config{},
+			cpuscraper.TypeStr:           &cpuscraper.Config{ReportPerCPU: true},
+			diskscraper.TypeStr:          &diskscraper.Config{},
+			filesystemscraper.TypeStr:    &filesystemscraper.Config{},
+			loadscraper.TypeStr:          &loadscraper.Config{},
+			memoryscraper.TypeStr:        &memoryscraper.Config{},
+			networkscraper.TypeStr:       &networkscraper.Config{},
+			virtualmemoryscraper.TypeStr: &virtualmemoryscraper.Config{},
 		},
-	}
-
-	if runtime.GOOS == "windows" {
-		config.Scrapers[virtualmemoryscraper.TypeStr] = &virtualmemoryscraper.Config{}
 	}
 
 	factories := map[string]internal.Factory{

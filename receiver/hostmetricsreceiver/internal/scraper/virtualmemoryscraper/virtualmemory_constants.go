@@ -21,18 +21,22 @@ import (
 // virtual memory metric constants
 
 const (
+	deviceLabelName    = "device"
 	directionLabelName = "direction"
-	pageFileLabelName  = "pagefile"
 	stateLabelName     = "state"
 	typeLabelName      = "type"
 )
 
 const (
-	majorTypeLabelValue    = "major"
+	majorTypeLabelValue = "major"
+	minorTypeLabelValue = "minor"
+
 	inDirectionLabelValue  = "page_in"
 	outDirectionLabelValue = "page_out"
-	usedLabelValue         = "used"
-	freeLabelValue         = "free"
+
+	cachedLabelValue = "cached"
+	freeLabelValue   = "free"
+	usedLabelValue   = "used"
 )
 
 var metricSwapUsageDescriptor = createMetricSwapUsageDescriptor()
@@ -54,6 +58,18 @@ func createMetricPagingDescriptor() pdata.MetricDescriptor {
 	descriptor.InitEmpty()
 	descriptor.SetName("host/swap/paging")
 	descriptor.SetDescription("The number of paging operations.")
+	descriptor.SetUnit("1")
+	descriptor.SetType(pdata.MetricTypeCounterInt64)
+	return descriptor
+}
+
+var metricPageFaultsDescriptor = createMetricPageFaultsDescriptor()
+
+func createMetricPageFaultsDescriptor() pdata.MetricDescriptor {
+	descriptor := pdata.NewMetricDescriptor()
+	descriptor.InitEmpty()
+	descriptor.SetName("host/swap/page_faults")
+	descriptor.SetDescription("The number of page faults.")
 	descriptor.SetUnit("1")
 	descriptor.SetType(pdata.MetricTypeCounterInt64)
 	return descriptor

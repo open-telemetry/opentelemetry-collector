@@ -114,6 +114,8 @@ func (s *scraper) ScrapeMetrics(ctx context.Context) (pdata.MetricSlice, error) 
 	return metrics, nil
 }
 
+var getPageFileStats = getPageFileStatsInternal
+
 func (s *scraper) scrapeAndAppendSwapUsageMetric(metrics pdata.MetricSlice) error {
 	pageFiles, err := getPageFileStats()
 	if err != nil {
@@ -140,9 +142,9 @@ func initializeSwapUsageMetric(metric pdata.Metric, pageFiles []*pageFileData) {
 	}
 }
 
-func initializeSwapUsageDataPoint(dataPoint pdata.Int64DataPoint, pageFileLabel string, stateLabel string, value int64) {
+func initializeSwapUsageDataPoint(dataPoint pdata.Int64DataPoint, deviceLabel string, stateLabel string, value int64) {
 	labelsMap := dataPoint.LabelsMap()
-	labelsMap.Insert(pageFileLabelName, pageFileLabel)
+	labelsMap.Insert(deviceLabelName, deviceLabel)
 	labelsMap.Insert(stateLabelName, stateLabel)
 	dataPoint.SetTimestamp(pdata.TimestampUnixNano(uint64(time.Now().UnixNano())))
 	dataPoint.SetValue(value)

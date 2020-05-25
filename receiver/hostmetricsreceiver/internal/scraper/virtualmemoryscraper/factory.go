@@ -16,8 +16,6 @@ package virtualmemoryscraper
 
 import (
 	"context"
-	"errors"
-	"runtime"
 
 	"go.uber.org/zap"
 
@@ -46,10 +44,6 @@ func (f *Factory) CreateMetricsScraper(
 	logger *zap.Logger,
 	config internal.Config,
 ) (internal.Scraper, error) {
-	if runtime.GOOS != "windows" {
-		return nil, errors.New("the virtual memory scraper is currently only supported on windows")
-	}
-
 	cfg := config.(*Config)
 	return newVirtualMemoryScraper(ctx, cfg), nil
 }
