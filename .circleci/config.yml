@@ -15,31 +15,20 @@ commands:
           at: ~/
 
   save_module_cache:
-    parameters:
-      os:
-        type: string
-        default: "linux"
     steps:
       - save_cache:
-          key: cimg-go-pkg-mod-<<parameters.os>>-{{ checksum "go.sum" }}
+          key: cimg-go-pkg-mod-{{ arch }}-{{ checksum "go.sum" }}
           paths:
-            - "/home/circleci/go/pkg/mod"
+            - ~/go/pkg/mod
 
   restore_module_cache:
-    parameters:
-      os:
-        type: string
-        default: "linux"
     steps:
       - run:
           name: create modules dir
           command: mkdir -p ~/go/pkg/mod
       - restore_cache: # restores saved cache if no changes are detected since last run
           keys:
-            - cimg-go-pkg-mod-<<parameters.os>>-{{ checksum "go.sum" }}
-      - persist_to_workspace:
-          root: ~/
-          paths: go/pkg/mod
+            - cimg-go-pkg-mod-{{ arch }}-{{ checksum "go.sum" }}
 
   publish_docker_images:
     parameters:
@@ -68,11 +57,11 @@ workflows:
   version: 2
   build-and-test:
     jobs:
-      - setup-and-lint:
+      - windows-test:
           filters:
             tags:
               only: /^v([0-9])+.([0-9])+.([0-9])+.*/
-      - windows-test:
+      - setup-and-lint:
           filters:
             tags:
               only: /^v([0-9])+.([0-9])+.([0-9])+.*/
@@ -119,6 +108,7 @@ workflows:
             - test
             - gosec
             - coverage
+            - windows-test
           filters:
             branches:
               ignore: /.*/
@@ -131,6 +121,7 @@ workflows:
             - test
             - gosec
             - coverage
+            - windows-test
           filters:
             branches:
               only: master
@@ -142,10 +133,13 @@ jobs:
     executor: golang
     steps:
       - checkout
-      - restore_module_cache
       - persist_to_workspace:
           root: ~/
           paths: project
+      - restore_module_cache
+      - persist_to_workspace:
+          root: ~/
+          paths: go/pkg/mod
       - run:
           name: Install tools
           command: make install-tools
@@ -254,17 +248,17 @@ jobs:
     executor:
       name: win/default
       shell: powershell.exe
+    environment:
+      GOPATH=~/go
     steps:
       - checkout
-      - restore_module_cache:
-          os: "windows"
+      - restore_module_cache
       - run:
           name: Upgrade golang
-          shell: powershell.exe
-          command: choco upgrade golang --version=1.14.3
+          command: |
+            choco upgrade golang --version=1.14.3
+            refreshenv
       - run:
           name: Unit tests
-          shell: powershell.exe
           command: go test ./...
-      - save_module_cache:
-          os: "windows"
+      - save_module_cache
