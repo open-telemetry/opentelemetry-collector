@@ -35,7 +35,7 @@ type receiver struct {
 	config   *Config
 	scrapers []internal.Scraper
 	consumer consumer.MetricsConsumer
-	cancel   context.CancelFunc
+	done     chan struct{}
 }
 
 // newHostMetricsReceiver creates a host metrics scraper.
@@ -73,11 +73,11 @@ func newHostMetricsReceiver(
 // Start initializes the underlying scrapers and begins scraping
 // host metrics based on the OS platform.
 func (hmr *receiver) Start(ctx context.Context, host component.Host) error {
-	ctx, hmr.cancel = context.WithCancel(ctx)
+	hmr.done = make(chan struct{})
 
 	go func() {
 		hmr.initializeScrapers(ctx, host)
-		hmr.startScrapers(ctx)
+		hmr.startScrapers()
 	}()
 
 	return nil
@@ -85,7 +85,7 @@ func (hmr *receiver) Start(ctx context.Context, host component.Host) error {
 
 // Shutdown terminates all tickers and stops the underlying scrapers.
 func (hmr *receiver) Shutdown(ctx context.Context) error {
-	hmr.cancel()
+	close(hmr.done)
 	return hmr.closeScrapers(ctx)
 }
 
@@ -99,7 +99,7 @@ func (hmr *receiver) initializeScrapers(ctx context.Context, host component.Host
 	}
 }
 
-func (hmr *receiver) startScrapers(ctx context.Context) {
+func (hmr *receiver) startScrapers() {
 	go func() {
 		ticker := time.NewTicker(hmr.config.CollectionInterval)
 		defer ticker.Stop()
@@ -108,7 +108,7 @@ func (hmr *receiver) startScrapers(ctx context.Context) {
 			select {
 			case <-ticker.C:
 				hmr.ScrapeMetrics(context.Background(), hmr.scrapers)
-			case <-ctx.Done():
+			case <-hmr.done:
 				return
 			}
 		}
