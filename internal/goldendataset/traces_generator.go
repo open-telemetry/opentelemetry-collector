@@ -39,9 +39,12 @@ func GenerateResourceSpans(tracePairsFile string, spanPairsFile string,
 		if index == 0 {
 			continue
 		}
-		rscSpan, spanErr := GenerateResourceSpan(PICTInputResource(values[TracesColumnResource]),
-			PICTInputInstrumentationLibrary(values[TracesColumnInstrumentationLibrary]),
-			PICTInputSpans(values[TracesColumnSpans]), spanPairsFile, random)
+		tracingInputs := &PICTTracingInputs{
+			Resource:               PICTInputResource(values[TracesColumnResource]),
+			InstrumentationLibrary: PICTInputInstrumentationLibrary(values[TracesColumnInstrumentationLibrary]),
+			Spans:                  PICTInputSpans(values[TracesColumnSpans]),
+		}
+		rscSpan, spanErr := GenerateResourceSpan(tracingInputs, spanPairsFile, random)
 		if spanErr != nil {
 			err = spanErr
 		}
@@ -51,26 +54,24 @@ func GenerateResourceSpans(tracePairsFile string, spanPairsFile string,
 }
 
 //GenerateResourceSpan generates a single OTLP ResourceSpans populated based on the provided inputs. They are:
-//  rscID - the type of representative attributes to populate the Resource with as a PICT Resource parameter value
-//  instrLib - the category of OTLP InstrumentationLibrary to generate as a PICT InstrumentationLibrary parameter value
-//  spansSize - the category of spans slice size to generate as a PICT Spans parameter value
+//  tracingInputs - the pairwise combination of field value variations for this ResourceSpans
 //  spanPairsFile - the file with the PICT-generated parameter combinations to generate spans for
 //  random - the random number generator to use in generating ID values
 //
 //The generated resource spans. If err is not nil, some or all of the resource spans fields will be nil.
-func GenerateResourceSpan(rscID PICTInputResource, instrLib PICTInputInstrumentationLibrary, spansSize PICTInputSpans,
-	spanPairsFile string, random io.Reader) (*otlptrace.ResourceSpans, error) {
-	libSpans, err := generateLibrarySpansArray(instrLib, spansSize, spanPairsFile, random)
+func GenerateResourceSpan(tracingInputs *PICTTracingInputs, spanPairsFile string,
+	random io.Reader) (*otlptrace.ResourceSpans, error) {
+	libSpans, err := generateLibrarySpansArray(tracingInputs, spanPairsFile, random)
 	return &otlptrace.ResourceSpans{
-		Resource:                    GenerateResource(rscID),
+		Resource:                    GenerateResource(tracingInputs.Resource),
 		InstrumentationLibrarySpans: libSpans,
 	}, err
 }
 
-func generateLibrarySpansArray(instrLib PICTInputInstrumentationLibrary, spansSize PICTInputSpans,
-	spanPairsFile string, random io.Reader) ([]*otlptrace.InstrumentationLibrarySpans, error) {
+func generateLibrarySpansArray(tracingInputs *PICTTracingInputs, spanPairsFile string,
+	random io.Reader) ([]*otlptrace.InstrumentationLibrarySpans, error) {
 	var count int
-	switch instrLib {
+	switch tracingInputs.InstrumentationLibrary {
 	case LibraryNone:
 		count = 1
 	case LibraryOne:
@@ -81,19 +82,19 @@ func generateLibrarySpansArray(instrLib PICTInputInstrumentationLibrary, spansSi
 	var err error
 	libSpans := make([]*otlptrace.InstrumentationLibrarySpans, count)
 	for i := 0; i < count; i++ {
-		libSpans[i], err = generateLibrarySpans(instrLib, spansSize, i, spanPairsFile, random)
+		libSpans[i], err = generateLibrarySpans(tracingInputs, i, spanPairsFile, random)
 	}
 	return libSpans, err
 }
 
-func generateLibrarySpans(instrLib PICTInputInstrumentationLibrary, spansSize PICTInputSpans, index int,
-	spanPairsFile string, random io.Reader) (*otlptrace.InstrumentationLibrarySpans, error) {
+func generateLibrarySpans(tracingInputs *PICTTracingInputs, index int, spanPairsFile string,
+	random io.Reader) (*otlptrace.InstrumentationLibrarySpans, error) {
 	spanCaseCount, err := countTotalSpanCases(spanPairsFile)
 	if err != nil {
 		return nil, err
 	}
 	var spans []*otlptrace.Span
-	switch spansSize {
+	switch tracingInputs.Spans {
 	case LibrarySpansNone:
 		spans = make([]*otlptrace.Span, 0)
 	case LibrarySpansOne:
@@ -106,7 +107,7 @@ func generateLibrarySpans(instrLib PICTInputInstrumentationLibrary, spansSize PI
 		spans, _, err = GenerateSpans(16, 0, spanPairsFile, random)
 	}
 	return &otlptrace.InstrumentationLibrarySpans{
-		InstrumentationLibrary: generateInstrumentationLibrary(instrLib, index),
+		InstrumentationLibrary: generateInstrumentationLibrary(tracingInputs.InstrumentationLibrary, index),
 		Spans:                  spans,
 	}, err
 }

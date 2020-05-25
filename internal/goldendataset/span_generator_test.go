@@ -25,8 +25,16 @@ import (
 func TestGenerateParentSpan(t *testing.T) {
 	random := rand.Reader
 	traceID := generateTraceID(random)
-	span := GenerateSpan(traceID, "", nil, "/gotest-parent", SpanKindServer,
-		SpanAttrHTTPServer, SpanChildCountTwo, SpanChildCountOne, SpanStatusOk, random)
+	spanInputs := &PICTSpanInputs{
+		Parent:     SpanParentRoot,
+		Tracestate: TraceStateEmpty,
+		Kind:       SpanKindServer,
+		Attributes: SpanAttrHTTPServer,
+		Events:     SpanChildCountTwo,
+		Links:      SpanChildCountOne,
+		Status:     SpanStatusOk,
+	}
+	span := GenerateSpan(traceID, nil, "/gotest-parent", spanInputs, random)
 	assert.Equal(t, traceID, span.TraceId)
 	assert.Nil(t, span.ParentSpanId)
 	assert.Equal(t, 11, len(span.Attributes))
@@ -37,8 +45,16 @@ func TestGenerateChildSpan(t *testing.T) {
 	random := rand.Reader
 	traceID := generateTraceID(random)
 	parentID := generateSpanID(random)
-	span := GenerateSpan(traceID, "", parentID, "get_test_info", SpanKindClient,
-		SpanAttrDatabaseSQL, SpanChildCountEmpty, SpanChildCountNil, SpanStatusOk, random)
+	spanInputs := &PICTSpanInputs{
+		Parent:     SpanParentChild,
+		Tracestate: TraceStateEmpty,
+		Kind:       SpanKindClient,
+		Attributes: SpanAttrDatabaseSQL,
+		Events:     SpanChildCountEmpty,
+		Links:      SpanChildCountNil,
+		Status:     SpanStatusOk,
+	}
+	span := GenerateSpan(traceID, parentID, "get_test_info", spanInputs, random)
 	assert.Equal(t, traceID, span.TraceId)
 	assert.Equal(t, parentID, span.ParentSpanId)
 	assert.Equal(t, 8, len(span.Attributes))

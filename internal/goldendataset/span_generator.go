@@ -84,6 +84,7 @@ func GenerateSpans(count int, startPos int, pictFile string, random io.Reader) (
 	spanList := make([]*otlptrace.Span, count)
 	index := startPos + 1
 	var inputs []string
+	var spanInputs *PICTSpanInputs
 	var traceID []byte
 	var parentID []byte
 	for i := 0; i < count; i++ {
@@ -91,7 +92,16 @@ func GenerateSpans(count int, startPos int, pictFile string, random io.Reader) (
 			index = 1
 		}
 		inputs = pairsData[index]
-		switch PICTInputParent(inputs[SpansColumnParent]) {
+		spanInputs = &PICTSpanInputs{
+			Parent:     PICTInputParent(inputs[SpansColumnParent]),
+			Tracestate: PICTInputTracestate(inputs[SpansColumnTracestate]),
+			Kind:       PICTInputKind(inputs[SpansColumnKind]),
+			Attributes: PICTInputAttributes(inputs[SpansColumnAttributes]),
+			Events:     PICTInputSpanChild(inputs[SpansColumnEvents]),
+			Links:      PICTInputSpanChild(inputs[SpansColumnLinks]),
+			Status:     PICTInputStatus(inputs[SpansColumnStatus]),
+		}
+		switch spanInputs.Parent {
 		case SpanParentRoot:
 			traceID = generateTraceID(random)
 			parentID = nil
@@ -104,11 +114,8 @@ func GenerateSpans(count int, startPos int, pictFile string, random io.Reader) (
 				parentID = generateSpanID(random)
 			}
 		}
-		spanName := generateSpanName(PICTInputAttributes(inputs[SpansColumnAttributes]), i)
-		spanList[i] = GenerateSpan(traceID, PICTInputTracestate(inputs[SpansColumnTracestate]), parentID, spanName,
-			PICTInputKind(inputs[SpansColumnKind]), PICTInputAttributes(inputs[SpansColumnAttributes]),
-			PICTInputSpanChild(inputs[SpansColumnEvents]), PICTInputSpanChild(inputs[SpansColumnLinks]),
-			PICTInputStatus(inputs[SpansColumnStatus]), random)
+		spanName := generateSpanName(spanInputs.Attributes, i)
+		spanList[i] = GenerateSpan(traceID, parentID, spanName, spanInputs, random)
 		parentID = spanList[i].SpanId
 		index++
 	}
@@ -129,37 +136,31 @@ func generateSpanName(spanTypeID PICTInputAttributes, index int) string {
 
 //GenerateSpan generates a single OTLP Span based on the input values provided. They are:
 //  traceID - the trace ID to use, should not be nil
-//  tracestate - the type of tracestate value to generate from the PICT Tracestate parameter enumerated values
 //  parentID - the parent span ID or nil if it is a root span
 //  spanName - the span name, should not be blank
-//  kind - the span kind as one of the PICT Kind parameter enumerated values
-//  spanTypeID - the category of attribute values to attach as one of the PICT Attribute parameter enumerated values
-//  eventCnt - the type of events to generate and attach to the span as one of the PICT Events parameter values
-//  linkCnt - the type of links to generate and attach to the span as one of the PICT Links parameter values
-//  statusStr - the value of OTLP Status to generate and attach to the span as one of the PICT Status parameter values
+//  spanInputs - the pairwise combination of field value variations for this span
 //  random - the random number generator to use in generating ID values
 //
 //The generated span is returned.
-func GenerateSpan(traceID []byte, tracestate PICTInputTracestate, parentID []byte, spanName string, kind PICTInputKind,
-	spanTypeID PICTInputAttributes, eventCnt PICTInputSpanChild, linkCnt PICTInputSpanChild, statusStr PICTInputStatus,
+func GenerateSpan(traceID []byte, parentID []byte, spanName string, spanInputs *PICTSpanInputs,
 	random io.Reader) *otlptrace.Span {
 	endTime := time.Now().Add(-50 * time.Microsecond)
 	return &otlptrace.Span{
 		TraceId:                traceID,
 		SpanId:                 generateSpanID(random),
-		TraceState:             generateTraceState(tracestate),
+		TraceState:             generateTraceState(spanInputs.Tracestate),
 		ParentSpanId:           parentID,
 		Name:                   spanName,
-		Kind:                   lookupSpanKind(kind),
+		Kind:                   lookupSpanKind(spanInputs.Kind),
 		StartTimeUnixNano:      uint64(endTime.Add(-215 * time.Millisecond).UnixNano()),
 		EndTimeUnixNano:        uint64(endTime.UnixNano()),
-		Attributes:             generateSpanAttributes(spanTypeID),
+		Attributes:             generateSpanAttributes(spanInputs.Attributes),
 		DroppedAttributesCount: 0,
-		Events:                 generateSpanEvents(eventCnt),
+		Events:                 generateSpanEvents(spanInputs.Events),
 		DroppedEventsCount:     0,
-		Links:                  generateSpanLinks(linkCnt, random),
+		Links:                  generateSpanLinks(spanInputs.Links, random),
 		DroppedLinksCount:      0,
-		Status:                 generateStatus(statusStr),
+		Status:                 generateStatus(spanInputs.Status),
 	}
 }
 

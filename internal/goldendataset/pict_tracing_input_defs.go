@@ -55,6 +55,16 @@ const (
 	LibrarySpansAll     PICTInputSpans = "All"
 )
 
+// PICTTracingInputs defines one pairwise combination of ResourceSpans variations
+type PICTTracingInputs struct {
+	// Specifies the category of attributes to populate the Resource field with
+	Resource PICTInputResource
+	// Specifies the number and library categories to populte the InstrumentationLibrarySpans field with
+	InstrumentationLibrary PICTInputInstrumentationLibrary
+	// Specifies the relative number of spans to populate the InstrumentationLibrarySpans' Spans field with
+	Spans PICTInputSpans
+}
+
 //// Start of PICT inputs for generating golden dataset Spans (pict_input_spans.txt) ////
 
 // Input columns in pict_input_spans.txt
@@ -154,3 +164,21 @@ const (
 	SpanStatusDataLoss           PICTInputStatus = "DataLoss"
 	SpanStatusUnauthenticated    PICTInputStatus = "Unauthenticated"
 )
+
+// PICTSpanInputs defines one pairwise combination of Span variations
+type PICTSpanInputs struct {
+	// Specifies whether the ParentSpanId field should be populated or not
+	Parent PICTInputParent
+	// Specifies the category of contents to populate the TraceState field with
+	Tracestate PICTInputTracestate
+	// Specifies the value to populate the Kind field with
+	Kind PICTInputKind
+	// Specifies the category of values to populate the Attributes field with
+	Attributes PICTInputAttributes
+	// Specifies the category of contents to populate the Events field with
+	Events PICTInputSpanChild
+	// Specifies the category of contents to populate the Links field with
+	Links PICTInputSpanChild
+	// Specifies the value to populate the Status field with
+	Status PICTInputStatus
+}
