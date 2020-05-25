@@ -84,9 +84,13 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 
 	require.NoError(t, err, "Failed to create metrics receiver: %v", err)
 
-	err = receiver.Start(context.Background(), componenttest.NewNopHost())
+	ctx, cancelFn := context.WithCancel(context.Background())
+	err = receiver.Start(ctx, componenttest.NewNopHost())
 	require.NoError(t, err, "Failed to start metrics receiver: %v", err)
 	defer func() { assert.NoError(t, receiver.Shutdown(context.Background())) }()
+
+	// canceling the context provided to Start should not cancel any async processes initiated by the receiver
+	cancelFn()
 
 	require.Eventually(t, func() bool {
 		got := sink.AllMetrics()
