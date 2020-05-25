@@ -107,7 +107,7 @@ func generateLibrarySpans(tracingInputs *PICTTracingInputs, index int, spanPairs
 		spans, _, err = GenerateSpans(16, 0, spanPairsFile, random)
 	}
 	return &otlptrace.InstrumentationLibrarySpans{
-		InstrumentationLibrary: generateInstrumentationLibrary(tracingInputs.InstrumentationLibrary, index),
+		InstrumentationLibrary: generateInstrumentationLibrary(tracingInputs, index),
 		Spans:                  spans,
 	}, err
 }
@@ -121,12 +121,13 @@ func countTotalSpanCases(spanPairsFile string) (int, error) {
 	return count, err
 }
 
-func generateInstrumentationLibrary(instrLib PICTInputInstrumentationLibrary,
+func generateInstrumentationLibrary(tracingInputs *PICTTracingInputs,
 	index int) *otlpcommon.InstrumentationLibrary {
-	if LibraryNone == instrLib {
+	if LibraryNone == tracingInputs.InstrumentationLibrary {
 		return nil
 	}
-	nameStr := fmt.Sprintf("OtelTestLib-%d", index)
+	nameStr := fmt.Sprintf("%s-%s-%s-%d", tracingInputs.Resource, tracingInputs.InstrumentationLibrary,
+		tracingInputs.Spans, index)
 	verStr := "semver:1.1.7"
 	if index > 0 {
 		verStr = ""

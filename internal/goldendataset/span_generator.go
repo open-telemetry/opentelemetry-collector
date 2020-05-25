@@ -114,7 +114,7 @@ func GenerateSpans(count int, startPos int, pictFile string, random io.Reader) (
 				parentID = generateSpanID(random)
 			}
 		}
-		spanName := generateSpanName(spanInputs.Attributes, i)
+		spanName := generateSpanName(spanInputs)
 		spanList[i] = GenerateSpan(traceID, parentID, spanName, spanInputs, random)
 		parentID = spanList[i].SpanId
 		index++
@@ -122,16 +122,9 @@ func GenerateSpans(count int, startPos int, pictFile string, random io.Reader) (
 	return spanList, index, nil
 }
 
-func generateSpanName(spanTypeID PICTInputAttributes, index int) string {
-	if SpanAttrHTTPClient == spanTypeID {
-		return fmt.Sprintf("/dragons/%d", index)
-	} else if SpanAttrHTTPServer == spanTypeID {
-		return "/dragons/{dragonId}"
-	} else if SpanAttrGRPCClient == spanTypeID || SpanAttrGRPCServer == spanTypeID {
-		return "com.example.PetFoodService/DispenseFeed"
-	} else {
-		return fmt.Sprintf("gotest%d", index)
-	}
+func generateSpanName(spanInputs *PICTSpanInputs) string {
+	return fmt.Sprintf("/%s/%s/%s/%s/%s/%s/%s", spanInputs.Parent, spanInputs.Tracestate, spanInputs.Kind,
+		spanInputs.Attributes, spanInputs.Events, spanInputs.Links, spanInputs.Status)
 }
 
 //GenerateSpan generates a single OTLP Span based on the input values provided. They are:
