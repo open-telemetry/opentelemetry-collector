@@ -79,7 +79,7 @@ func internalResourceToOC(resource pdata.Resource) (*occommon.Node, *ocresource.
 				ocNode.Identifier = &occommon.ProcessIdentifier{}
 			}
 			ocNode.Identifier.Pid = uint32(pid)
-		case conventions.AttributeLibraryVersion:
+		case conventions.AttributeTelemetrySDKVersion:
 			if ocNode.LibraryInfo == nil {
 				ocNode.LibraryInfo = &occommon.LibraryInfo{}
 			}
@@ -89,7 +89,7 @@ func internalResourceToOC(resource pdata.Resource) (*occommon.Node, *ocresource.
 				ocNode.LibraryInfo = &occommon.LibraryInfo{}
 			}
 			ocNode.LibraryInfo.ExporterVersion = val
-		case conventions.AttributeLibraryLanguage:
+		case conventions.AttributeTelemetrySDKLanguage:
 			if code, ok := occommon.LibraryInfo_Language_value[val]; ok {
 				if ocNode.LibraryInfo == nil {
 					ocNode.LibraryInfo = &occommon.LibraryInfo{}

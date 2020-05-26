@@ -90,13 +90,13 @@ func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Reso
 		}
 		if ocNode.LibraryInfo != nil {
 			if ocNode.LibraryInfo.CoreLibraryVersion != "" {
-				attrs.UpsertString(conventions.AttributeLibraryVersion, ocNode.LibraryInfo.CoreLibraryVersion)
+				attrs.UpsertString(conventions.AttributeTelemetrySDKVersion, ocNode.LibraryInfo.CoreLibraryVersion)
 			}
 			if ocNode.LibraryInfo.ExporterVersion != "" {
 				attrs.UpsertString(conventions.OCAttributeExporterVersion, ocNode.LibraryInfo.ExporterVersion)
 			}
 			if ocNode.LibraryInfo.Language != occommon.LibraryInfo_LANGUAGE_UNSPECIFIED {
-				attrs.UpsertString(conventions.AttributeLibraryLanguage, ocNode.LibraryInfo.Language.String())
+				attrs.UpsertString(conventions.AttributeTelemetrySDKLanguage, ocNode.LibraryInfo.Language.String())
 			}
 		}
 	}
