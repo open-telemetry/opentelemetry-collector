@@ -109,7 +109,7 @@ func (rb *ReceiversBuilder) Build() (Receivers, error) {
 		rcv, err := rb.buildReceiver(logger, cfg)
 		if err != nil {
 			if err == errUnusedReceiver {
-				rb.logger.Info("Ignoring receiver as it is not used by any pipeline", zap.String("receiver", cfg.Name()))
+				logger.Info("Ignoring receiver as it is not used by any pipeline", zap.String("receiver", cfg.Name()))
 				continue
 			}
 			return nil, err
