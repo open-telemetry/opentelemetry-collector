@@ -199,7 +199,7 @@ func loadExtensions(v *viper.Viper, factories map[configmodels.Type]component.Ex
 	// Iterate over extensions and create a config for each.
 	for key := range keyMap {
 		// Decode the key into type and fullName components.
-		entity, err := configmodels.NewEntityName(key)
+		entity, err := configmodels.ParseEntityName(key)
 		if err != nil {
 			return nil, &configError{
 				code: errInvalidTypeAndNameKey,
@@ -315,7 +315,7 @@ func loadReceivers(v *viper.Viper, factories map[configmodels.Type]component.Rec
 	// Iterate over input map and create a config for each.
 	for key := range keyMap {
 		// Decode the key into type and fullName components.
-		entity, err := configmodels.NewEntityName(key)
+		entity, err := configmodels.ParseEntityName(key)
 		if err != nil {
 			return nil, &configError{
 				code: errInvalidTypeAndNameKey,
@@ -365,7 +365,7 @@ func loadExporters(v *viper.Viper, factories map[configmodels.Type]component.Exp
 	// Iterate over exporters and create a config for each.
 	for key := range keyMap {
 		// Decode the key into type and fullName components.
-		entity, err := configmodels.NewEntityName(key)
+		entity, err := configmodels.ParseEntityName(key)
 		if err != nil {
 			return nil, &configError{
 				code: errInvalidTypeAndNameKey,
@@ -426,7 +426,7 @@ func loadProcessors(v *viper.Viper, factories map[configmodels.Type]component.Pr
 	// Iterate over processors and create a config for each.
 	for key := range keyMap {
 		// Decode the key into type and fullName components.
-		entity, err := configmodels.NewEntityName(key)
+		entity, err := configmodels.ParseEntityName(key)
 		if err != nil {
 			return nil, &configError{
 				code: errInvalidTypeAndNameKey,

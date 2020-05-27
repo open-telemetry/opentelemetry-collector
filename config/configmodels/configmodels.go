@@ -53,15 +53,30 @@ type Type string
 
 // EntityName is a component type and an optional name.
 type EntityName struct {
-	Type Type
-	Name string
+	Type     Type
+	Name     string
+	fullName string
 }
 
-// NewEntityName decodes a key in type[/name] format into Type and Name.
+func NewEntityName(typeStr Type, name string) EntityName {
+	var fullName string
+	if name == "" {
+		fullName = string(typeStr)
+	} else {
+		fullName = string(typeStr) + typeAndNameSeparator + name
+	}
+	return EntityName{
+		Type:     typeStr,
+		Name:     name,
+		fullName: fullName,
+	}
+}
+
+// ParseEntityName decodes a key in type[/name] format into Type and Name.
 // Type and Name components have spaces trimmed.
 // The "type" part must be present, the forward slash and "name" are optional. typeStr
 // will be non-empty if err is nil.
-func NewEntityName(key string) (entity EntityName, err error) {
+func ParseEntityName(key string) (entity EntityName, err error) {
 	items := strings.SplitN(key, typeAndNameSeparator, 2)
 	var typeStr Type
 
@@ -86,18 +101,14 @@ func NewEntityName(key string) (entity EntityName, err error) {
 		nameSuffix = ""
 	}
 
-	return EntityName{
-		Type: typeStr,
-		Name: nameSuffix,
-	}, nil
+	return NewEntityName(
+		typeStr,
+		nameSuffix,
+	), nil
 }
 
 func (e EntityName) String() string {
-	if e.Name == "" {
-		return string(e.Type)
-	} else {
-		return string(e.Type) + typeAndNameSeparator + e.Name
-	}
+	return e.fullName
 }
 
 // NamedEntity is a configuration entity that has a type and a name.

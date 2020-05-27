@@ -74,9 +74,7 @@ func (npf *NopProcessorFactory) Type() configmodels.Type {
 // CreateDefaultConfig creates the default configuration for the Processor.
 func (npf *NopProcessorFactory) CreateDefaultConfig() configmodels.Processor {
 	return &configmodels.ProcessorSettings{
-		EntityName: configmodels.EntityName{
-			Type: npf.Type(),
-		},
+		EntityName: configmodels.NewEntityName(npf.Type(), ""),
 	}
 }
 
