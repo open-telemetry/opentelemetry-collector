@@ -127,7 +127,7 @@ are checked before the `exclude` properties.
       match_type: {strict, regexp}
 
       # regexp is an optional configuration section for match_type regexp.
-      {regexp}: 
+      regexp: 
         # < see "Match Configuration" below >
 
       # services specify an array of items to match the service name against.
@@ -157,7 +157,7 @@ Some `match_type` values have additional configuration options that can be speci
 
 ```yaml
 # regexp is an optional configuration section for match_type regexp.
-{regexp}: 
+regexp: 
   # cacheenabled determines whether match results are LRU cached to make subsequent matches faster.
   # Cache size is unlimited unless cachemaxnumentries is also specified.
   cacheenabled: <bool>
