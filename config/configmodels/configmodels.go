@@ -17,6 +17,14 @@
 // Config (the top-level structure), Receivers, Exporters, Processors, Pipelines.
 package configmodels
 
+import (
+	"errors"
+	"strings"
+)
+
+// typeAndNameSeparator is the separator that is used between type and name in type/name composite keys.
+const typeAndNameSeparator = "/"
+
 /*
 Receivers, Exporters and Processors typically have common configuration settings, however
 sometimes specific implementations will have extra configuration settings.
@@ -43,12 +51,59 @@ type Config struct {
 // Type is the component type as it is used in the config.
 type Type string
 
+// EntityName is a component type and an optional name.
+type EntityName struct {
+	Type Type
+	Name string
+}
+
+// NewEntityName decodes a key in type[/name] format into Type and Name.
+// Type and Name components have spaces trimmed.
+// The "type" part must be present, the forward slash and "name" are optional. typeStr
+// will be non-empty if err is nil.
+func NewEntityName(key string) (entity EntityName, err error) {
+	items := strings.SplitN(key, typeAndNameSeparator, 2)
+	var typeStr Type
+
+	if len(items) >= 1 {
+		typeStr = Type(strings.TrimSpace(items[0]))
+	}
+
+	if len(items) == 0 || typeStr == "" {
+		err = errors.New("type/name key must have the type part")
+		return
+	}
+
+	var nameSuffix string
+	if len(items) > 1 {
+		// "name" part is present.
+		nameSuffix = strings.TrimSpace(items[1])
+		if nameSuffix == "" {
+			err = errors.New("name part must be specified after " + typeAndNameSeparator + " in type/name key")
+			return
+		}
+	} else {
+		nameSuffix = ""
+	}
+
+	return EntityName{
+		Type: typeStr,
+		Name: nameSuffix,
+	}, nil
+}
+
+func (e EntityName) String() string {
+	if e.Name == "" {
+		return string(e.Type)
+	} else {
+		return string(e.Type) + typeAndNameSeparator + e.Name
+	}
+}
+
 // NamedEntity is a configuration entity that has a type and a name.
 type NamedEntity interface {
-	Type() Type
-	SetType(typeStr Type)
-	Name() string
-	SetName(name string)
+	Name() EntityName
+	SetName(name EntityName)
 }
 
 // Receiver is the configuration of a receiver. Specific receivers must implement this
@@ -132,87 +187,54 @@ type Service struct {
 // ReceiverSettings defines common settings for a single-protocol receiver configuration.
 // Specific receivers can embed this struct and extend it with more fields if needed.
 type ReceiverSettings struct {
-	TypeVal Type   `mapstructure:"-"`
-	NameVal string `mapstructure:"-"`
+	EntityName EntityName `mapstructure:"-"`
 	// Endpoint configures the endpoint in the format 'address:port' for the receiver.
 	// The default value is set by the receiver populating the struct.
 	Endpoint string `mapstructure:"endpoint"`
 }
 
 // Name gets the receiver name.
-func (rs *ReceiverSettings) Name() string {
-	return rs.NameVal
+func (rs *ReceiverSettings) Name() EntityName {
+	return rs.EntityName
 }
 
 // SetName sets the receiver name.
-func (rs *ReceiverSettings) SetName(name string) {
-	rs.NameVal = name
-}
-
-// Type sets the receiver type.
-func (rs *ReceiverSettings) Type() Type {
-	return rs.TypeVal
-}
-
-// SetType sets the receiver type.
-func (rs *ReceiverSettings) SetType(typeStr Type) {
-	rs.TypeVal = typeStr
+func (rs *ReceiverSettings) SetName(name EntityName) {
+	rs.EntityName = name
 }
 
 // ExporterSettings defines common settings for an exporter configuration.
 // Specific exporters can embed this struct and extend it with more fields if needed.
 type ExporterSettings struct {
-	TypeVal Type   `mapstructure:"-"`
-	NameVal string `mapstructure:"-"`
+	EntityName EntityName `mapstructure:"-"`
 }
 
 var _ Exporter = (*ExporterSettings)(nil)
 
 // Name gets the exporter name.
-func (es *ExporterSettings) Name() string {
-	return es.NameVal
+func (es *ExporterSettings) Name() EntityName {
+	return es.EntityName
 }
 
 // SetName sets the exporter name.
-func (es *ExporterSettings) SetName(name string) {
-	es.NameVal = name
-}
-
-// Type sets the exporter type.
-func (es *ExporterSettings) Type() Type {
-	return es.TypeVal
-}
-
-// SetType sets the exporter type.
-func (es *ExporterSettings) SetType(typeStr Type) {
-	es.TypeVal = typeStr
+func (es *ExporterSettings) SetName(name EntityName) {
+	es.EntityName = name
 }
 
 // ProcessorSettings defines common settings for a processor configuration.
 // Specific processors can embed this struct and extend it with more fields if needed.
 type ProcessorSettings struct {
-	TypeVal Type   `mapstructure:"-"`
-	NameVal string `mapstructure:"-"`
+	EntityName EntityName `mapstructure:"-"`
 }
 
 // Name gets the processor name.
-func (proc *ProcessorSettings) Name() string {
-	return proc.NameVal
+func (proc *ProcessorSettings) Name() EntityName {
+	return proc.EntityName
 }
 
 // SetName sets the processor name.
-func (proc *ProcessorSettings) SetName(name string) {
-	proc.NameVal = name
-}
-
-// Type sets the processor type.
-func (proc *ProcessorSettings) Type() Type {
-	return proc.TypeVal
-}
-
-// SetType sets the processor type.
-func (proc *ProcessorSettings) SetType(typeStr Type) {
-	proc.TypeVal = typeStr
+func (proc *ProcessorSettings) SetName(name EntityName) {
+	proc.EntityName = name
 }
 
 var _ Processor = (*ProcessorSettings)(nil)
@@ -220,28 +242,17 @@ var _ Processor = (*ProcessorSettings)(nil)
 // ExtensionSettings defines common settings for a service extension configuration.
 // Specific extensions can embed this struct and extend it with more fields if needed.
 type ExtensionSettings struct {
-	TypeVal Type   `mapstructure:"-"`
-	NameVal string `mapstructure:"-"`
+	EntityName EntityName `mapstructure:"-"`
 }
 
 // Name gets the extension name.
-func (ext *ExtensionSettings) Name() string {
-	return ext.NameVal
+func (ext *ExtensionSettings) Name() EntityName {
+	return ext.EntityName
 }
 
 // SetName sets the extension name.
-func (ext *ExtensionSettings) SetName(name string) {
-	ext.NameVal = name
-}
-
-// Type sets the extension type.
-func (ext *ExtensionSettings) Type() Type {
-	return ext.TypeVal
-}
-
-// SetType sets the extension type.
-func (ext *ExtensionSettings) SetType(typeStr Type) {
-	ext.TypeVal = typeStr
+func (ext *ExtensionSettings) SetName(name EntityName) {
+	ext.EntityName = name
 }
 
 var _ Extension = (*ExtensionSettings)(nil)
