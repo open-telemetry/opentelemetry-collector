@@ -180,6 +180,12 @@ func (app *Application) ReportFatalError(err error) {
 	app.asyncErrorChannel <- err
 }
 
+// GetLogger returns logger used by the Application.
+// The logger is initialized after application start.
+func (app *Application) GetLogger() *zap.Logger {
+	return app.logger
+}
+
 func (app *Application) GetFactory(kind component.Kind, componentType configmodels.Type) component.Factory {
 	switch kind {
 	case component.KindReceiver:

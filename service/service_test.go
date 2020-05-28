@@ -64,6 +64,7 @@ func TestApplication_Start(t *testing.T) {
 	<-app.readyChan
 
 	require.True(t, isAppAvailable(t, "http://localhost:13133"))
+	assert.Equal(t, app.logger, app.GetLogger())
 
 	assertMetricsPrefix(t, testPrefix, metricsPort)
 
