@@ -32,8 +32,10 @@ import (
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/diskscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/loadscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/memoryscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/networkscraper"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/virtualmemoryscraper"
 )
 
 var standardMetrics = []string{
@@ -43,19 +45,24 @@ var standardMetrics = []string{
 	"host/disk/ops",
 	"host/disk/time",
 	"host/filesystem/used",
+	"host/load/1m",
+	"host/load/5m",
+	"host/load/15m",
 	"host/network/packets",
 	"host/network/dropped_packets",
 	"host/network/errors",
 	"host/network/bytes",
 	"host/network/tcp_connections",
+	"host/swap/paging",
+	"host/swap/usage",
 }
 
 var systemSpecificMetrics = map[string][]string{
-	"linux":   {"host/filesystem/inodes/used"},
-	"darwin":  {"host/filesystem/inodes/used"},
-	"freebsd": {"host/filesystem/inodes/used"},
-	"openbsd": {"host/filesystem/inodes/used"},
-	"solaris": {"host/filesystem/inodes/used"},
+	"linux":   {"host/filesystem/inodes/used", "host/swap/page_faults"},
+	"darwin":  {"host/filesystem/inodes/used", "host/swap/page_faults"},
+	"freebsd": {"host/filesystem/inodes/used", "host/swap/page_faults"},
+	"openbsd": {"host/filesystem/inodes/used", "host/swap/page_faults"},
+	"solaris": {"host/filesystem/inodes/used", "host/swap/page_faults"},
 }
 
 func TestGatherMetrics_EndToEnd(t *testing.T) {
@@ -64,20 +71,24 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 	config := &Config{
 		CollectionInterval: 100 * time.Millisecond,
 		Scrapers: map[string]internal.Config{
-			cpuscraper.TypeStr:        &cpuscraper.Config{ReportPerCPU: true},
-			diskscraper.TypeStr:       &diskscraper.Config{},
-			filesystemscraper.TypeStr: &filesystemscraper.Config{},
-			memoryscraper.TypeStr:     &memoryscraper.Config{},
-			networkscraper.TypeStr:    &networkscraper.Config{},
+			cpuscraper.TypeStr:           &cpuscraper.Config{ReportPerCPU: true},
+			diskscraper.TypeStr:          &diskscraper.Config{},
+			filesystemscraper.TypeStr:    &filesystemscraper.Config{},
+			loadscraper.TypeStr:          &loadscraper.Config{},
+			memoryscraper.TypeStr:        &memoryscraper.Config{},
+			networkscraper.TypeStr:       &networkscraper.Config{},
+			virtualmemoryscraper.TypeStr: &virtualmemoryscraper.Config{},
 		},
 	}
 
 	factories := map[string]internal.Factory{
-		cpuscraper.TypeStr:        &cpuscraper.Factory{},
-		diskscraper.TypeStr:       &diskscraper.Factory{},
-		filesystemscraper.TypeStr: &filesystemscraper.Factory{},
-		memoryscraper.TypeStr:     &memoryscraper.Factory{},
-		networkscraper.TypeStr:    &networkscraper.Factory{},
+		cpuscraper.TypeStr:           &cpuscraper.Factory{},
+		diskscraper.TypeStr:          &diskscraper.Factory{},
+		filesystemscraper.TypeStr:    &filesystemscraper.Factory{},
+		loadscraper.TypeStr:          &loadscraper.Factory{},
+		memoryscraper.TypeStr:        &memoryscraper.Factory{},
+		networkscraper.TypeStr:       &networkscraper.Factory{},
+		virtualmemoryscraper.TypeStr: &virtualmemoryscraper.Factory{},
 	}
 
 	receiver, err := newHostMetricsReceiver(context.Background(), zap.NewNop(), config, factories, sink)
