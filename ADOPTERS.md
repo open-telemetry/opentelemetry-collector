@@ -7,3 +7,4 @@ to add or remove organizations.
 * [AppDirect](https://www.appdirect.com/)
 * [Shopify](https://www.shopify.com/)
 * [Splunk](https://www.splunk.com/)
+* [Wandera](https://www.wandera.com/)
