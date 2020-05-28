@@ -406,7 +406,6 @@ func (app *Application) execute(ctx context.Context, factory ConfigFactory) erro
 		zap.Int("NumCPU", runtime.NumCPU()),
 	)
 	app.stateChannel <- Starting
-	fmt.Println("after send")
 
 	// Set memory ballast
 	ballast, ballastSizeBytes := app.createMemoryBallast()
