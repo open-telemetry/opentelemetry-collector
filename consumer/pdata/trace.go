@@ -17,8 +17,9 @@ package pdata
 import (
 	"encoding/hex"
 
-	"github.com/golang/protobuf/proto"
-	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
+	"github.com/gogo/protobuf/proto"
+
+	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
 )
 
 // This file defines in-memory data structures to represent traces (spans).

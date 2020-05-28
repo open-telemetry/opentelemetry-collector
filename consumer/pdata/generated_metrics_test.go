@@ -20,8 +20,9 @@ package pdata
 import (
 	"testing"
 
-	otlpmetrics "github.com/open-telemetry/opentelemetry-proto/gen/go/metrics/v1"
 	"github.com/stretchr/testify/assert"
+
+	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 )
 
 func TestResourceMetricsSlice(t *testing.T) {

@@ -18,8 +18,9 @@ import (
 	"testing"
 
 	"github.com/golang/protobuf/proto"
-	otlpresource "github.com/open-telemetry/opentelemetry-proto/gen/go/resource/v1"
 	"github.com/stretchr/testify/assert"
+
+	otlpresource "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
 )
 
 func TestGenerateResource(t *testing.T) {

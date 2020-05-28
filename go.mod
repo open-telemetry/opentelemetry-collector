@@ -15,6 +15,7 @@ require (
 	github.com/client9/misspell v0.3.4
 	github.com/go-kit/kit v0.9.0
 	github.com/gogo/googleapis v1.3.0 // indirect
+	github.com/gogo/protobuf v1.3.1
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
 	github.com/golang/protobuf v1.3.5
 	github.com/golangci/golangci-lint v1.24.0
@@ -55,7 +56,7 @@ require (
 	github.com/uber/tchannel-go v1.10.0 // indirect
 	go.opencensus.io v0.22.3
 	go.uber.org/zap v1.10.0
-	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e // indirect
+	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e
 	golang.org/x/sys v0.0.0-20200408040146-ea54a3c99b9b
 	golang.org/x/tools v0.0.0-20200428211428-0c9eba77bc32 // indirect
 	google.golang.org/api v0.10.0 // indirect
@@ -63,7 +64,4 @@ require (
 	google.golang.org/grpc v1.29.1
 	gopkg.in/yaml.v2 v2.2.8
 	honnef.co/go/tools v0.0.1-2020.1.3
-	// Keep pinned to this version instead of v12.0.0+incompatible unless dependency changes
-	// because it breaks `go list` and tooling that uses it.
-	k8s.io/client-go v0.0.0-20190620085101-78d2af792bab // indirect
 )

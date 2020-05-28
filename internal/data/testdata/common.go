@@ -15,7 +15,7 @@
 package testdata
 
 import (
-	otlpcommon "github.com/open-telemetry/opentelemetry-proto/gen/go/common/v1"
+	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 )

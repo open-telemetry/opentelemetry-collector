@@ -15,8 +15,7 @@
 package goldendataset
 
 import (
-	otlpresource "github.com/open-telemetry/opentelemetry-proto/gen/go/resource/v1"
-
+	otlpresource "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
