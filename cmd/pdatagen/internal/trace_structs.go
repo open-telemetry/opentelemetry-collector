@@ -132,7 +132,7 @@ var span = &messageStruct{
 			testVal:         "uint32(17)",
 		},
 		&messageField{
-			fieldMame:       "Status",
+			fieldName:       "Status",
 			originFieldName: "Status",
 			returnMessage:   spanStatus,
 		},

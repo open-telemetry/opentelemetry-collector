@@ -100,7 +100,7 @@ var metric = &messageStruct{
 	originFullName: "otlpmetrics.Metric",
 	fields: []baseField{
 		&messageField{
-			fieldMame:       "MetricDescriptor",
+			fieldName:       "MetricDescriptor",
 			originFieldName: "MetricDescriptor",
 			returnMessage:   metricDescriptor,
 		},
@@ -229,7 +229,7 @@ var histogramBucket = &messageStruct{
 	fields: []baseField{
 		countField,
 		&messageField{
-			fieldMame:       "Exemplar",
+			fieldName:       "Exemplar",
 			originFieldName: "Exemplar",
 			returnMessage:   histogramBucketExemplar,
 		},
