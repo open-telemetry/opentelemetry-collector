@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 // Component is either a receiver, exporter, processor or extension.
@@ -79,6 +80,10 @@ type Host interface {
 	// thus we may have an instance of the exporter for multiple data types.
 	// This is an experimental function that may change or even be removed completely.
 	GetExporters() map[configmodels.DataType]map[configmodels.Exporter]Exporter
+
+	// Return the resource information that was automatically detected as being associated
+	// with this host based on the configured resource detectors.
+	GetResource() pdata.Resource
 }
 
 // Factory interface must be implemented by all component factories.

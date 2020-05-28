@@ -19,6 +19,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 // ErrorWaitingHost mocks an component.Host for test purposes.
@@ -67,4 +68,8 @@ func (ews *ErrorWaitingHost) GetExtensions() map[configmodels.Extension]componen
 
 func (ews *ErrorWaitingHost) GetExporters() map[configmodels.DataType]map[configmodels.Exporter]component.Exporter {
 	return nil
+}
+
+func (ews *ErrorWaitingHost) GetResource() pdata.Resource {
+	return pdata.NewResource()
 }

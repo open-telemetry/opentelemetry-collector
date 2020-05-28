@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/internal/version"
 	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/defaultcomponents"
+	"go.opentelemetry.io/collector/service/resourcedetection"
 )
 
 func main() {
@@ -41,7 +42,9 @@ func main() {
 		GitHash:  version.GitHash,
 	}
 
-	svc, err := service.New(service.Parameters{ApplicationStartInfo: info, Factories: factories})
+	rp := resourcedetection.NewResourceProvider()
+
+	svc, err := service.New(service.Parameters{ApplicationStartInfo: info, Factories: factories, ResourceProvider: rp})
 	handleErr("Failed to construct the application", err)
 
 	err = svc.Start()

@@ -38,10 +38,13 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/internal/collector/telemetry"
 	"go.opentelemetry.io/collector/internal/version"
 	"go.opentelemetry.io/collector/service/builder"
 	"go.opentelemetry.io/collector/service/internal"
+	"go.opentelemetry.io/collector/service/resourcedetection"
 )
 
 const (
@@ -76,6 +79,7 @@ type Application struct {
 	builtPipelines  builder.BuiltPipelines
 	builtExtensions builder.Extensions
 	stateChannel    chan State
+	resource        pdata.Resource
 
 	factories config.Factories
 	config    *configmodels.Config
@@ -114,6 +118,8 @@ type Parameters struct {
 	Factories config.Factories
 	// ApplicationStartInfo provides application start information.
 	ApplicationStartInfo ApplicationStartInfo
+	// ResourceProvider with which to get the resource associated with the host application.
+	ResourceProvider *resourcedetection.ResourceProvider
 	// ConfigFactory that creates the configuration.
 	// If it is not provided the default factory (FileLoaderConfigFactory) is used.
 	// The default factory loads the configuration specified as a command line flag.
@@ -145,6 +151,12 @@ func New(params Parameters) (*Application, error) {
 		factories:    params.Factories,
 		stateChannel: make(chan State, Closed+1),
 	}
+
+	resource, err := params.ResourceProvider.DetectResource(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	app.resource = pdatautil.SdkResourceToInternalResource(resource)
 
 	factory := params.ConfigFactory
 	if factory == nil {
@@ -220,6 +232,10 @@ func (app *Application) GetExtensions() map[configmodels.Extension]component.Ser
 
 func (app *Application) GetExporters() map[configmodels.DataType]map[configmodels.Exporter]component.Exporter {
 	return app.builtExporters.ToMapByDataType()
+}
+
+func (app *Application) GetResource() pdata.Resource {
+	return app.resource
 }
 
 func (app *Application) RegisterZPages(mux *http.ServeMux, pathPrefix string) {

@@ -55,6 +55,7 @@ require (
 	github.com/uber/jaeger-lib v2.2.0+incompatible
 	github.com/uber/tchannel-go v1.10.0 // indirect
 	go.opencensus.io v0.22.3
+	go.opentelemetry.io/otel v0.6.0
 	go.uber.org/zap v1.10.0
 	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e
 	golang.org/x/sys v0.0.0-20200408040146-ea54a3c99b9b

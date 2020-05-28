@@ -21,6 +21,7 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/golang/protobuf/proto"
+	"go.opentelemetry.io/otel/sdk/resource"
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -147,4 +148,21 @@ func TimeseriesAndPointCount(md consumerdata.MetricsData) (int, int) {
 		}
 	}
 	return numTimeSeries, numPoints
+}
+
+// SdkResourceToInternalResource returns the `pdata.Resource` representation of the Otel SDK `resource.Resource`.
+func SdkResourceToInternalResource(sdkRes *resource.Resource) pdata.Resource {
+	res := pdata.NewResource()
+	res.InitEmpty()
+	attr := res.Attributes()
+	attr.InitEmptyWithCapacity(sdkRes.Len())
+
+	// TODO implement more thoughtfully & test
+	sdkAttrIter := sdkRes.Iter()
+	for sdkAttrIter.Next() {
+		sdkAttr := sdkAttrIter.Attribute()
+		attr.Insert(string(sdkAttr.Key), pdata.NewAttributeValueString(sdkAttr.Value.AsString()))
+	}
+
+	return res
 }

@@ -17,6 +17,7 @@ package componenttest
 import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 // NopHost mocks a receiver.ReceiverHost for test purposes.
@@ -49,4 +50,8 @@ func (nh *NopHost) GetExtensions() map[configmodels.Extension]component.ServiceE
 
 func (nh *NopHost) GetExporters() map[configmodels.DataType]map[configmodels.Exporter]component.Exporter {
 	return nil
+}
+
+func (nh *NopHost) GetResource() pdata.Resource {
+	return pdata.NewResource()
 }

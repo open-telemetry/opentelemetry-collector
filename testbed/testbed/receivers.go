@@ -23,6 +23,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/jaegerreceiver"
 	"go.opentelemetry.io/collector/receiver/opencensusreceiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
@@ -68,6 +69,10 @@ func (mb *DataReceiverBase) GetExtensions() map[configmodels.Extension]component
 
 func (mb *DataReceiverBase) GetExporters() map[configmodels.DataType]map[configmodels.Exporter]component.Exporter {
 	return nil
+}
+
+func (mb *DataReceiverBase) GetResource() pdata.Resource {
+	return pdata.NewResource()
 }
 
 // OCDataReceiver implements OpenCensus format receiver.
