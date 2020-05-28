@@ -61,7 +61,11 @@ func TestApplication_Start(t *testing.T) {
 		assert.NoError(t, app.Start())
 	}()
 
-	<-app.readyChan
+	for state := range app.GetStateChannel() {
+		if state == Running {
+			break
+		}
+	}
 
 	require.True(t, isAppAvailable(t, "http://localhost:13133"))
 	assert.Equal(t, app.logger, app.GetLogger())
@@ -352,7 +356,11 @@ func TestApplication_GetExtensions(t *testing.T) {
 		assert.NoError(t, app.Start())
 	}()
 
-	<-app.readyChan
+	for state := range app.GetStateChannel() {
+		if state == Running {
+			break
+		}
+	}
 
 	// Verify GetExensions(). The results must match what we have in testdata/otelcol-config.yaml.
 
@@ -380,7 +388,11 @@ func TestApplication_GetExporters(t *testing.T) {
 		assert.NoError(t, app.Start())
 	}()
 
-	<-app.readyChan
+	for state := range app.GetStateChannel() {
+		if state == Running {
+			break
+		}
+	}
 
 	// Verify GetExporters().
 
