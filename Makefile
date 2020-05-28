@@ -1,26 +1,18 @@
-# More exclusions can be added similar with: -not -path './testbed/*'
+# All source code excluding any third party code and excluding the testbed.
+# This is the code that we want to run tests for and lint, staticcheck, etc.
 ALL_SRC := $(shell find . -name '*.go' \
-                                -type f | sort)
+							-not -path './testbed/*' \
+							-not -path '*/third_party/*' \
+							-not -path '*/internal/data/opentelemetry-proto/*' \
+							-not -path '*/internal/data/opentelemetry-proto-gen/*' \
+							-type f | sort)
 
-# More exclusions can be added similar with: -not -path './testbed/*'
-ALL_SRC_NO_TESTBED := $(shell find . -name '*.go' \
-                                            -not -path './testbed/*' \
-                                            -type f | sort)
-
-# All source code excluding anything under a third_party directory
-ALL_SRC_NO_THIRD_PARTY := $(shell find . -name '*.go' \
-                                                -not -path '*/third_party/*' \
-                                                -type f | sort)
+# ALL_PKGS is the list of all packages where ALL_SRC files reside.
+ALL_PKGS := $(shell go list $(sort $(dir $(ALL_SRC))))
 
 # All source code and documents. Used in spell check.
 ALL_DOC := $(shell find . \( -name "*.md" -o -name "*.yaml" \) \
                                 -type f | sort)
-
-# ALL_PKGS is used with 'go test'
-ALL_PKGS:= $(shell go list $(sort $(dir $(ALL_SRC))))
-
-# ALL_PKGS_NO_TESTBED is used with 'go cover'
-ALL_PKGS_NO_TESTBED := $(shell go list $(sort $(dir $(ALL_SRC_NO_TESTBED))))
 
 GOTEST_OPT?= -race -timeout 180s
 GO_ACC=go-acc
@@ -73,24 +65,24 @@ test:
 
 .PHONY: benchmark
 benchmark:
-	$(GOTEST) -bench=. -run=notests $(ALL_PKGS_NO_TESTBED)
+	$(GOTEST) -bench=. -run=notests $(ALL_PKGS)
 
 .PHONY: test-with-cover
 test-with-cover:
 	@echo Verifying that all packages have test files to count in coverage
-	@internal/buildscripts/check-test-files.sh $(subst go.opentelemetry.io/collector/,./,$(ALL_PKGS_NO_TESTBED))
+	@internal/buildscripts/check-test-files.sh $(subst go.opentelemetry.io/collector/,./,$(ALL_PKGS))
 	@echo pre-compiling tests
-	@time go test -i $(ALL_PKGS_NO_TESTBED)
-	$(GO_ACC) $(ALL_PKGS_NO_TESTBED)
+	@time go test -i $(ALL_PKGS)
+	$(GO_ACC) $(ALL_PKGS)
 	go tool cover -html=coverage.txt -o coverage.html
 
 .PHONY: addlicense
 addlicense:
-	$(ADDLICENCESE) -c 'The OpenTelemetry Authors' $(ALL_SRC_NO_THIRD_PARTY)
+	$(ADDLICENCESE) -c 'The OpenTelemetry Authors' $(ALL_SRC)
 
 .PHONY: checklicense
 checklicense:
-	@ADDLICENCESEOUT=`$(ADDLICENCESE) -check $(ALL_SRC_NO_THIRD_PARTY) 2>&1`; \
+	@ADDLICENCESEOUT=`$(ADDLICENCESE) -check $(ALL_SRC) 2>&1`; \
 		if [ "$$ADDLICENCESEOUT" ]; then \
 			echo "$(ADDLICENCESE) FAILED => add License errors:\n"; \
 			echo "$$ADDLICENCESEOUT\n"; \
@@ -111,11 +103,11 @@ misspell-correction:
 .PHONY: lint-gosec
 lint-gosec:
 	# TODO: Consider to use gosec from golangci-lint
-	$(GOSEC) -quiet -exclude=G104 ./...
+	$(GOSEC) -quiet -exclude=G104 $(ALL_PKGS)
 
 .PHONY: lint-static-check
 lint-static-check:
-	@STATIC_CHECK_OUT=`$(STATIC_CHECK) ./... 2>&1`; \
+	@STATIC_CHECK_OUT=`$(STATIC_CHECK) $(ALL_PKGS) 2>&1`; \
 		if [ "$$STATIC_CHECK_OUT" ]; then \
 			echo "$(STATIC_CHECK) FAILED => static check errors:\n"; \
 			echo "$$STATIC_CHECK_OUT\n"; \
@@ -130,7 +122,7 @@ lint: lint-static-check
 
 .PHONY: impi
 impi:
-	@$(IMPI) --local go.opentelemetry.io/collector --scheme stdThirdPartyLocal ./...
+	@$(IMPI) --local go.opentelemetry.io/collector --scheme stdThirdPartyLocal --skip internal/data/opentelemetry-proto ./...
 
 .PHONY: fmt
 fmt:
@@ -195,3 +187,63 @@ binaries-linux_arm64:
 .PHONY: binaries-windows_amd64
 binaries-windows_amd64:
 	GOOS=windows GOARCH=amd64 $(MAKE) binaries
+
+# Definitions for ProtoBuf generation.
+
+# The source directory for OTLP ProtoBufs.
+OPENTELEMETRY_PROTO_SRC_DIR=internal/data/opentelemetry-proto
+
+# Find all .proto files.
+OPENTELEMETRY_PROTO_FILES := $(subst $(OPENTELEMETRY_PROTO_SRC_DIR)/,,$(wildcard $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/*/v1/*.proto $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/collector/*/v1/*.proto))
+
+# Target directory to write generated files to.
+PROTO_TARGET_GEN_DIR=internal/data/opentelemetry-proto-gen
+
+# Go package name to use for generated files.
+PROTO_PACKAGE=go.opentelemetry.io/collector/$(PROTO_TARGET_GEN_DIR)
+
+# Intermediate directory used during generation.
+PROTO_INTERMEDIATE_DIR=internal/data/tempprotodir
+
+# Function to execute a command. Note the empty line before endef to make sure each command
+# gets executed separately instead of concatenated with previous one.
+# Accepts command to execute as first parameter.
+define exec-command
+$(1)
+
+endef
+
+# Generate OTLP Protobuf Go files. This will place generated files in PROTO_TARGET_GEN_DIR.
+genproto:
+	git submodule update --init
+	# Call a sub-make to ensure OPENTELEMETRY_PROTO_FILES is populated after the submodule
+	# files are present.
+	$(MAKE) genproto_sub
+
+genproto_sub:
+	@echo Generating code for the following files:
+	@$(foreach file,$(OPENTELEMETRY_PROTO_FILES),$(call exec-command,echo $(file)))
+
+	@echo Copy .proto file to intermediate directory.
+	mkdir -p $(PROTO_INTERMEDIATE_DIR)
+	cp -R $(OPENTELEMETRY_PROTO_SRC_DIR)/* $(PROTO_INTERMEDIATE_DIR)
+
+	@echo Modify them in the intermediate directory.
+	$(foreach file,$(OPENTELEMETRY_PROTO_FILES),$(call exec-command,sed 's+github.com/open-telemetry/opentelemetry-proto/gen/go/+go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/+g' $(OPENTELEMETRY_PROTO_SRC_DIR)/$(file) > $(PROTO_INTERMEDIATE_DIR)/$(file)))
+
+	@echo Generate Go code from .proto files in intermediate directory.
+	$(foreach file,$(OPENTELEMETRY_PROTO_FILES),$(call exec-command,docker run --rm -v $(PWD)/$(PROTO_INTERMEDIATE_DIR):$(PWD)/$(PROTO_INTERMEDIATE_DIR) -w $(PWD)/$(PROTO_INTERMEDIATE_DIR) znly/protoc --gogofaster_out=plugins=grpc:./ -I./ $(file)))
+
+	@echo Generate gRPC gateway code.
+	cd $(PROTO_INTERMEDIATE_DIR) && protoc --grpc-gateway_out=logtostderr=true,grpc_api_configuration=opentelemetry/proto/collector/trace/v1/trace_service_http.yaml:./ opentelemetry/proto/collector/trace/v1/trace_service.proto
+	cd $(PROTO_INTERMEDIATE_DIR) && protoc --grpc-gateway_out=logtostderr=true,grpc_api_configuration=opentelemetry/proto/collector/metrics/v1/metrics_service_http.yaml:./ opentelemetry/proto/collector/metrics/v1/metrics_service.proto
+
+	@echo Move generated code to target directory.
+	mkdir -p $(PROTO_TARGET_GEN_DIR)
+	cp -R $(PROTO_INTERMEDIATE_DIR)/$(PROTO_PACKAGE)/* $(PROTO_TARGET_GEN_DIR)/
+
+	@echo Delete intermediate directory.
+	@rm -rf $(PROTO_INTERMEDIATE_DIR)
+
+	@rm -rf $(OPENTELEMETRY_PROTO_SRC_DIR)/*
+	@rm -rf $(OPENTELEMETRY_PROTO_SRC_DIR)/.* > /dev/null 2>&1 || true

@@ -17,7 +17,7 @@ package testdata
 import (
 	"time"
 
-	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
+	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 )

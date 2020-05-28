@@ -15,7 +15,7 @@
 package pdata
 
 import (
-	otlpmetrics "github.com/open-telemetry/opentelemetry-proto/gen/go/metrics/v1"
+	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 )
 
 type MetricType otlpmetrics.MetricDescriptor_Type

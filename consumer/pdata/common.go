@@ -21,7 +21,7 @@ import (
 	"sort"
 	"time"
 
-	otlpcommon "github.com/open-telemetry/opentelemetry-proto/gen/go/common/v1"
+	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 )
 
 // TimestampUnixNano is a time specified as UNIX Epoch time in nanoseconds since

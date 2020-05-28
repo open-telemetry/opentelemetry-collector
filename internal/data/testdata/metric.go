@@ -17,7 +17,7 @@ package testdata
 import (
 	"time"
 
-	otlpmetrics "github.com/open-telemetry/opentelemetry-proto/gen/go/metrics/v1"
+	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/data"

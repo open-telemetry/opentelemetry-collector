@@ -21,13 +21,13 @@ import (
 	"path/filepath"
 	"testing"
 
-	v1 "github.com/open-telemetry/opentelemetry-proto/gen/go/common/v1"
-	otlpmetrics "github.com/open-telemetry/opentelemetry-proto/gen/go/metrics/v1"
-	otlpresource "github.com/open-telemetry/opentelemetry-proto/gen/go/resource/v1"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/internal/data"
+	v1 "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
+	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
+	otlpresource "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
 	"go.opentelemetry.io/collector/testbed/testbed"
 )
 
