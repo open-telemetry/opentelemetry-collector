@@ -76,11 +76,12 @@ type keepaliveEnforcementPolicy struct {
 	PermitWithoutStream bool          `mapstructure:"permit_without_stream,omitempty"`
 }
 
-func (rOpts *Config) buildOptions() (opts []Option, err error) {
+func (rOpts *Config) buildOptions() ([]Option, error) {
+	var opts []Option
 	if rOpts.TLSCredentials != nil {
-		tlsCredsOptions, er := rOpts.TLSCredentials.LoadgRPCTLSServerCredentials()
-		if er != nil {
-			return nil, fmt.Errorf("error initializing OpenCensus receiver %q TLS Credentials: %v", rOpts.NameVal, er)
+		tlsCredsOptions, err := rOpts.TLSCredentials.LoadgRPCTLSServerCredentials()
+		if err != nil {
+			return nil, fmt.Errorf("error initializing OpenCensus receiver %q TLS Credentials: %v", rOpts.NameVal, err)
 		}
 		opts = append(opts, WithGRPCServerOptions(tlsCredsOptions))
 	}
@@ -94,7 +95,7 @@ func (rOpts *Config) buildOptions() (opts []Option, err error) {
 		opts = append(opts, WithGRPCServerOptions(grpcServerOptions...))
 	}
 
-	return opts, err
+	return opts, nil
 }
 
 func (rOpts *Config) grpcServerOptions() []grpc.ServerOption {

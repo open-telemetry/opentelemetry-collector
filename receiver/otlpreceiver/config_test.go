@@ -148,7 +148,7 @@ func TestBuildOptions_TLSCredentials(t *testing.T) {
 		},
 	}
 	_, err := cfg.buildOptions()
-	assert.EqualError(t, err, "error initializing OTLP receiver \"IncorrectTLS\" TLS Credentials: failed to load TLS config: for auth via TLS, either both certificate and key must be supplied, or neither")
+	assert.EqualError(t, err, `error initializing OTLP receiver "IncorrectTLS" TLS Credentials: failed to load TLS config: for auth via TLS, either both certificate and key must be supplied, or neither`)
 
 	cfg.TLSCredentials = &configtls.TLSSetting{}
 	opt, err := cfg.buildOptions()
