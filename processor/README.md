@@ -126,6 +126,10 @@ are checked before the `exclude` properties.
       # This is a required field.
       match_type: {strict, regexp}
 
+      # regexp is an optional configuration section for match_type regexp.
+      regexp: 
+        # < see "Match Configuration" below >
+
       # services specify an array of items to match the service name against.
       # A match occurs if the span service name matches at least of the items.
       # This is an optional field.
@@ -145,6 +149,20 @@ are checked before the `exclude` properties.
           # Value specifies the exact value to match against.
           # If not specified, a match occurs if the key is present in the attributes.
           value: {value}
+```
+
+#### Match Configuration
+
+Some `match_type` values have additional configuration options that can be specified. The `match_type` value is the name of the configuration section. These sections are optional.
+
+```yaml
+# regexp is an optional configuration section for match_type regexp.
+regexp: 
+  # cacheenabled determines whether match results are LRU cached to make subsequent matches faster.
+  # Cache size is unlimited unless cachemaxnumentries is also specified.
+  cacheenabled: <bool>
+  # cachemaxnumentries is the max number of entries of the LRU cache; ignored if cacheenabled is false.
+  cachemaxnumentries: <int>
 ```
 
 ## <a name="recommended-processors"></a>Recommended Processors

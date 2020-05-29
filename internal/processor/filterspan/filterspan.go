@@ -17,10 +17,10 @@ package filterspan
 import (
 	"errors"
 	"fmt"
-	"regexp"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filterhelper"
+	"go.opentelemetry.io/collector/internal/processor/filterset"
 )
 
 var (
@@ -28,9 +28,6 @@ var (
 	errAtLeastOneMatchFieldNeeded = errors.New(
 		`error creating processor. At least one ` +
 			`of "services", "span_names" or "attributes" field must be specified"`)
-
-	errInvalidMatchType = fmt.Errorf(
-		`match_type must be either %q or %q`, MatchTypeStrict, MatchTypeRegexp)
 )
 
 // TODO: Modify Matcher to invoke both the include and exclude properties so
@@ -41,33 +38,19 @@ type Matcher interface {
 	MatchSpan(span pdata.Span, serviceName string) bool
 }
 
-type attributesMatcher []attributeMatcher
-
-// strictPropertiesMatcher allows matching a span against a "strict" match type
-// configuration.
-type strictPropertiesMatcher struct {
+// propertiesMatcher allows matching a span against various span properties.
+type propertiesMatcher struct {
 	// Service names to compare to.
-	Services []string
+	serviceFilters filterset.FilterSet
 
 	// Span names to compare to.
-	SpanNames []string
+	nameFilters filterset.FilterSet
 
 	// The attribute values are stored in the internal format.
 	Attributes attributesMatcher
 }
 
-// regexpPropertiesMatcher allows matching a span against a "regexp" match type
-// configuration.
-type regexpPropertiesMatcher struct {
-	// Precompiled service name regexp-es.
-	Services []*regexp.Regexp
-
-	// Precompiled span name regexp-es.
-	SpanNames []*regexp.Regexp
-
-	// The attribute values are stored in the internal format.
-	Attributes attributesMatcher
-}
+type attributesMatcher []attributeMatcher
 
 // attributeMatcher is a attribute key/value pair to match to.
 type attributeMatcher struct {
@@ -76,88 +59,61 @@ type attributeMatcher struct {
 	AttributeValue *pdata.AttributeValue
 }
 
-func NewMatcher(config *MatchProperties) (Matcher, error) {
-	if config == nil {
+// NewMatcher creates a span Matcher that matches based on the given MatchProperties.
+func NewMatcher(mp *MatchProperties) (Matcher, error) {
+	if mp == nil {
 		return nil, nil
 	}
 
-	if len(config.Services) == 0 && len(config.SpanNames) == 0 && len(config.Attributes) == 0 {
+	if len(mp.Services) == 0 && len(mp.SpanNames) == 0 && len(mp.Attributes) == 0 {
 		return nil, errAtLeastOneMatchFieldNeeded
 	}
 
-	var properties Matcher
 	var err error
-	switch config.MatchType {
-	case MatchTypeStrict:
-		properties, err = newStrictPropertiesMatcher(config)
-	case MatchTypeRegexp:
-		properties, err = newRegexpPropertiesMatcher(config)
-	default:
-		return nil, errInvalidMatchType
-	}
-	if err != nil {
-		return nil, err
+
+	var am attributesMatcher
+	if len(mp.Attributes) > 0 {
+		am, err = newAttributesMatcher(mp)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	return properties, nil
+	var serviceFS filterset.FilterSet = nil
+	if len(mp.Services) > 0 {
+		serviceFS, err = filterset.CreateFilterSet(mp.Services, &mp.Config)
+		if err != nil {
+			return nil, fmt.Errorf("error creating service name filters: %v", err)
+		}
+	}
+
+	var nameFS filterset.FilterSet = nil
+	if len(mp.SpanNames) > 0 {
+		nameFS, err = filterset.CreateFilterSet(mp.SpanNames, &mp.Config)
+		if err != nil {
+			return nil, fmt.Errorf("error creating span name filters: %v", err)
+		}
+	}
+
+	return &propertiesMatcher{
+		serviceFilters: serviceFS,
+		nameFilters:    nameFS,
+		Attributes:     am,
+	}, nil
 }
 
-func newStrictPropertiesMatcher(config *MatchProperties) (*strictPropertiesMatcher, error) {
-	properties := &strictPropertiesMatcher{
-		Services:  config.Services,
-		SpanNames: config.SpanNames,
-	}
-
-	var err error
-	properties.Attributes, err = newAttributesMatcher(config)
-	if err != nil {
-		return nil, err
-	}
-
-	return properties, nil
-}
-
-func newRegexpPropertiesMatcher(config *MatchProperties) (*regexpPropertiesMatcher, error) {
-	properties := &regexpPropertiesMatcher{}
-
-	// Precompile Services regexp patterns.
-	for _, pattern := range config.Services {
-		g, err := regexp.Compile(pattern)
-		if err != nil {
-			return nil, fmt.Errorf(
-				"error creating processor. %s is not a valid service name regexp pattern",
-				pattern,
-			)
-		}
-		properties.Services = append(properties.Services, g)
-	}
-
-	// Precompile SpanNames regexp patterns.
-	for _, pattern := range config.SpanNames {
-		g, err := regexp.Compile(pattern)
-		if err != nil {
-			return nil, fmt.Errorf(
-				"error creating processor. %s is not a valid span name regexp pattern",
-				pattern,
-			)
-		}
-		properties.SpanNames = append(properties.SpanNames, g)
-	}
-
-	if len(config.Attributes) > 0 {
+func newAttributesMatcher(mp *MatchProperties) (attributesMatcher, error) {
+	// attribute matching is only supported with strict matching
+	if mp.Config.MatchType != filterset.Strict {
 		return nil, fmt.Errorf(
 			"%s=%s is not supported for %q",
-			MatchTypeFieldName, MatchTypeRegexp, AttributesFieldName,
+			MatchTypeFieldName, filterset.Regexp, AttributesFieldName,
 		)
 	}
 
-	return properties, nil
-}
-
-func newAttributesMatcher(config *MatchProperties) (attributesMatcher, error) {
-	// Convert attribute values from config representation to in-memory representation.
+	// Convert attribute values from mp representation to in-memory representation.
 	var rawAttributes []attributeMatcher
-	for _, attribute := range config.Attributes {
+	for _, attribute := range mp.Attributes {
 
 		if attribute.Key == "" {
 			return nil, errors.New("error creating processor. Can't have empty key in the list of attributes")
@@ -186,80 +142,14 @@ func newAttributesMatcher(config *MatchProperties) (attributesMatcher, error) {
 // At least one of services, span names or attributes must be specified. It is supported
 // to have more than one of these specified, and all specified must evaluate
 // to true for a match to occur.
-func (mp *strictPropertiesMatcher) MatchSpan(span pdata.Span, serviceName string) bool {
-	if len(mp.Services) > 0 {
-		// Verify service name matches at least one of the items.
-		matched := false
-		for _, item := range mp.Services {
-			if item == serviceName {
-				matched = true
-				break
-			}
-		}
-		if !matched {
-			return false
-		}
+func (mp *propertiesMatcher) MatchSpan(span pdata.Span, serviceName string) bool {
+	// If a set of properties was not in the mp, all spans are considered to match on that property
+	if mp.serviceFilters != nil && !mp.serviceFilters.Matches(serviceName) {
+		return false
 	}
 
-	if len(mp.SpanNames) > 0 {
-		// SpanNames condition is specified. Check if span name matches the condition.
-		spanName := span.Name()
-
-		// Verify span name matches at least one of the items.
-		matched := false
-		for _, item := range mp.SpanNames {
-			if item == spanName {
-				matched = true
-				break
-			}
-		}
-		if !matched {
-			return false
-		}
-	}
-
-	// Service name and span name matched. Now match attributes.
-	return mp.Attributes.match(span)
-}
-
-// MatchSpan matches a span and service to a set of properties.
-// There are 3 sets of properties to match against.
-// The service name is checked first, if specified. Then span names are matched, if specified.
-// The attributes are checked last, if specified.
-// At least one of services, span names or attributes must be specified. It is supported
-// to have more than one of these specified, and all specified must evaluate
-// to true for a match to occur.
-func (mp *regexpPropertiesMatcher) MatchSpan(span pdata.Span, serviceName string) bool {
-
-	if len(mp.Services) > 0 {
-		// Verify service name matches at least one of the regexp patterns.
-		matched := false
-		for _, re := range mp.Services {
-			if re.MatchString(serviceName) {
-				matched = true
-				break
-			}
-		}
-		if !matched {
-			return false
-		}
-	}
-
-	if len(mp.SpanNames) > 0 {
-		// SpanNames condition is specified. Check if span name matches the condition.
-		spanName := span.Name()
-
-		// Verify span name matches at least one of the regexp patterns.
-		matched := false
-		for _, re := range mp.SpanNames {
-			if re.MatchString(spanName) {
-				matched = true
-				break
-			}
-		}
-		if !matched {
-			return false
-		}
+	if mp.nameFilters != nil && !mp.nameFilters.Matches(span.Name()) {
+		return false
 	}
 
 	// Service name and span name matched. Now match attributes.

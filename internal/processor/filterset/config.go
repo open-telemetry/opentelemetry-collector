@@ -31,6 +31,10 @@ const (
 	Strict MatchType = "strict"
 )
 
+var (
+	validMatchTypes = []MatchType{Regexp, Strict}
+)
+
 // Config configures the matching behavior of a FilterSet.
 type Config struct {
 	MatchType    MatchType      `mapstructure:"match_type"`
@@ -46,6 +50,6 @@ func CreateFilterSet(filters []string, cfg *Config) (FilterSet, error) {
 		// Strict FilterSets do not have any extra configuration options, so call the constructor directly.
 		return strict.NewStrictFilterSet(filters)
 	default:
-		return nil, fmt.Errorf("unrecognized filter type: %v", cfg.MatchType)
+		return nil, fmt.Errorf("unrecognized match_type: '%v', valid types are: %v", cfg.MatchType, validMatchTypes)
 	}
 }
