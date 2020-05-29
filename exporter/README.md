@@ -60,10 +60,10 @@ https://github.com/grpc/grpc/blob/master/doc/naming.md
 The following settings can be optionally configured:
 
 - `cert_pem_file`: certificate file for TLS credentials of gRPC client. Should
-only be used if `secure` is set to true.
+only be used if `insecure` is set to false.
 - `keepalive`: keepalive parameters for client gRPC. See
 [grpc.WithKeepaliveParams()](https://godoc.org/google.golang.org/grpc#WithKeepaliveParams).
-- `secure`: whether to enable client transport security for the exporter's gRPC
+- `insecure`: whether to disable client transport security for the exporter's gRPC
 connection. See [grpc.WithInsecure()](https://godoc.org/google.golang.org/grpc#WithInsecure).
 - `server_name_override`: If set to a non empty string, it will override the virtual host name 
 of authority (e.g. :authority header field) in requests (typically used for testing).
