@@ -58,7 +58,7 @@ type sampler struct {
 	lock                        sync.RWMutex
 }
 
-func startSampling(ctx context.Context, logger *zap.Logger) error {
+func startSampling(_ context.Context, logger *zap.Logger) error {
 	startupLock.Lock()
 	defer startupLock.Unlock()
 
@@ -69,19 +69,29 @@ func startSampling(ctx context.Context, logger *zap.Logger) error {
 		return nil
 	}
 
-	processorQueueLengthCounter, err := pdh.NewPerfCounter(processorQueueLengthPath, false)
+	var err error
+	samplerInstance, err = newSampler(logger)
 	if err != nil {
 		return err
 	}
 
-	samplerInstance = &sampler{
+	samplerInstance.startSamplingTicker()
+	return nil
+}
+
+func newSampler(logger *zap.Logger) (*sampler, error) {
+	processorQueueLengthCounter, err := pdh.NewPerfCounter(processorQueueLengthPath, false)
+	if err != nil {
+		return nil, err
+	}
+
+	sampler := &sampler{
 		logger:                      logger,
 		processorQueueLengthCounter: processorQueueLengthCounter,
 		done:                        make(chan struct{}),
 	}
 
-	samplerInstance.startSamplingTicker()
-	return nil
+	return sampler, nil
 }
 
 func (sw *sampler) startSamplingTicker() {
@@ -103,7 +113,7 @@ func (sw *sampler) startSamplingTicker() {
 func (sw *sampler) sampleLoad() {
 	counterValues, err := sw.processorQueueLengthCounter.ScrapeData()
 	if err != nil {
-		sw.logger.Error("Failed to measure processor queue length", zap.Error(err))
+		sw.logger.Error("Load Scraper: failed to measure processor queue length", zap.Error(err))
 		return
 	}
 

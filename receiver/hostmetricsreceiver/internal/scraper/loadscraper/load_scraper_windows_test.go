@@ -100,3 +100,12 @@ func calcExpectedLoad(scrapedValues []interface{}, loadAvgFactor float64) float6
 	}
 	return expectedLoad
 }
+
+func Benchmark_SampleLoad(b *testing.B) {
+	s, _ := newSampler(zap.NewNop())
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		s.sampleLoad()
+	}
+}
