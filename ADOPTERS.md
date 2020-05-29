@@ -8,3 +8,4 @@ to add or remove organizations.
 * [OrderMyGear](https://www.ordermygear.com/)
 * [Shopify](https://www.shopify.com/)
 * [Splunk](https://www.splunk.com/)
+* [Wandera](https://www.wandera.com/)
