@@ -26,9 +26,30 @@ import "opentelemetry/proto/resource/v1/resource.proto";
 
 option go_package = "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1";
 
+// Service that can be used to push logs between one Application instrumented with
+// OpenTelemetry and an collector, or between an collector and a central collector (in this
+// case logs are sent/received to/from multiple Applications).
+service LogService {
+    // For performance reasons, it is recommended to keep this RPC
+    // alive for the entire life of the application.
+    rpc Export(ExportLogServiceRequest) returns (ExportLogServiceResponse) {}
+}
+
+message ExportLogServiceRequest {
+    // An array of ResourceLogs.
+    // For data coming from a single resource this array will typically contain one
+    // element. Intermediary nodes (such as OpenTelemetry Collector) that receive
+    // data from multiple origins typically batch the data before forwarding further and
+    // in that case this array will contain multiple elements.
+    repeated ResourceLogs resource_logs = 1;
+}
+
+message ExportLogServiceResponse {
+}
+
 // A collection of logs from a Resource.
 message ResourceLogs {
-    // The resource for the spans in this message.
+    // The resource for the logs in this message.
     // If this field is not set then no resource info is known.
     opentelemetry.proto.resource.v1.Resource resource = 1;
 
