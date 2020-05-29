@@ -17,6 +17,10 @@
 
 package testbed
 
+import (
+	"go.opentelemetry.io/collector/consumer/consumermock"
+)
+
 // TestCaseOption defines a TestCase option.
 type TestCaseOption struct {
 	option func(t *TestCase)
@@ -38,5 +42,12 @@ func WithSkipResults() TestCaseOption {
 func WithConfigFile(file string) TestCaseOption {
 	return TestCaseOption{func(t *TestCase) {
 		t.agentConfigFile = file
+	}}
+}
+
+// WithRecording allows a custom configuration file for TestCase.
+func WithRecording() TestCaseOption {
+	return TestCaseOption{func(t *TestCase) {
+		t.Recorder = &consumermock.InMemoryRecorder{}
 	}}
 }

@@ -304,8 +304,8 @@ func verifySingleSpan(
 ) {
 
 	// Clear previously received traces.
-	tc.MockBackend.ClearReceivedItems()
-	startCounter := tc.MockBackend.DataItemsReceived()
+	tc.Recorder.ClearReceivedItems()
+	startCounter := tc.Recorder.DataItemsReceived()
 
 	// Send one span.
 	td := pdata.NewTraces()
@@ -333,12 +333,12 @@ func verifySingleSpan(
 	tc.LoadGenerator.IncDataItemsSent()
 
 	// Wait until span is received.
-	tc.WaitFor(func() bool { return tc.MockBackend.DataItemsReceived() == startCounter+1 },
+	tc.WaitFor(func() bool { return tc.Recorder.DataItemsReceived() == startCounter+1 },
 		"span received")
 
 	// Verify received span.
 	count := 0
-	for _, td := range tc.MockBackend.ReceivedTraces {
+	for _, td := range tc.Recorder.Traces() {
 		rs := td.ResourceSpans()
 		for i := 0; i < rs.Len(); i++ {
 			ils := rs.At(i).InstrumentationLibrarySpans()
@@ -351,7 +351,7 @@ func verifySingleSpan(
 			}
 		}
 	}
-	for _, td := range tc.MockBackend.ReceivedTracesOld {
+	for _, td := range tc.Recorder.TracesOld() {
 		for _, span := range td.Spans {
 			verifyReceivedOld(span)
 			count++
@@ -409,14 +409,13 @@ func TestTraceAttributesProcessor(t *testing.T) {
 
 			require.NotEmpty(t, configFile, "Cannot create config file")
 
-			tc := testbed.NewTestCase(t, test.sender, test.receiver, testbed.WithConfigFile(configFile))
+			tc := testbed.NewTestCase(t, test.sender, test.receiver, testbed.WithConfigFile(configFile),
+				testbed.WithRecording())
 			defer tc.Stop()
 
 			tc.StartBackend()
 			tc.StartAgent()
 			defer tc.StopAgent()
-
-			tc.EnableRecording()
 
 			test.sender.Start()
 

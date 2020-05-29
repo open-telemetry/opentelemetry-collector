@@ -26,6 +26,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/consumer/consumermock"
 )
 
 // TestCase defines a running test case.
@@ -54,6 +56,7 @@ type TestCase struct {
 	Receiver DataReceiver
 
 	LoadGenerator *LoadGenerator
+	Recorder      consumermock.Recorder
 	MockBackend   *MockBackend
 
 	startTime time.Time
@@ -107,6 +110,10 @@ func NewTestCase(
 		opt.Apply(&tc)
 	}
 
+	if tc.Recorder == nil {
+		tc.Recorder = consumermock.NilRecorder
+	}
+
 	// Prepare directory for results.
 	tc.resultDir, err = filepath.Abs(path.Join("results", t.Name()))
 	require.NoErrorf(t, err, "Cannot resolve %s", t.Name())
@@ -132,7 +139,7 @@ func NewTestCase(
 	tc.LoadGenerator, err = NewLoadGenerator(sender)
 	require.NoError(t, err, "Cannot create generator")
 
-	tc.MockBackend = NewMockBackend(tc.composeTestResultFileName("backend.log"), receiver)
+	tc.MockBackend = NewMockBackend(tc.composeTestResultFileName("backend.log"), receiver, tc.Recorder)
 
 	go tc.logStats()
 
@@ -225,11 +232,6 @@ func (tc *TestCase) StopBackend() {
 	tc.MockBackend.Stop()
 }
 
-// EnableRecording enables recording of all data received by MockBackend.
-func (tc *TestCase) EnableRecording() {
-	tc.MockBackend.EnableRecording()
-}
-
 // AgentMemoryInfo returns raw memory info struct about the agent
 // as returned by github.com/shirou/gopsutil/process
 func (tc *TestCase) AgentMemoryInfo() (uint32, uint32, error) {
@@ -271,7 +273,7 @@ func (tc *TestCase) Stop() {
 	results.Add(tc.t.Name(), &TestResult{
 		testName:          testName,
 		result:            result,
-		receivedSpanCount: tc.MockBackend.DataItemsReceived(),
+		receivedSpanCount: tc.Recorder.DataItemsReceived(),
 		sentSpanCount:     tc.LoadGenerator.DataItemsSent(),
 		duration:          time.Since(tc.startTime),
 		cpuPercentageAvg:  rc.CPUPercentAvg,
@@ -292,7 +294,7 @@ func (tc *TestCase) ValidateData() {
 	default:
 	}
 
-	if assert.EqualValues(tc.t, tc.LoadGenerator.DataItemsSent(), tc.MockBackend.DataItemsReceived(),
+	if assert.EqualValues(tc.t, tc.LoadGenerator.DataItemsSent(), tc.Recorder.DataItemsReceived(),
 		"Received and sent counters do not match.") {
 		log.Printf("Sent and received data matches.")
 	}
@@ -376,5 +378,5 @@ func (tc *TestCase) logStatsOnce() {
 	log.Printf("%s, %s, %s",
 		tc.agentProc.GetResourceConsumption(),
 		tc.LoadGenerator.GetStats(),
-		tc.MockBackend.GetStats())
+		tc.Recorder.GetStats())
 }

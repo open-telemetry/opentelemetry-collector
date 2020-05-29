@@ -23,6 +23,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/consumer/consumermock"
 	"go.opentelemetry.io/collector/receiver/jaegerreceiver"
 	"go.opentelemetry.io/collector/receiver/opencensusreceiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
@@ -35,7 +36,7 @@ import (
 // from Collector and the corresponding entity in the Collector that sends this data is
 // an exporter.
 type DataReceiver interface {
-	Start(tc *MockTraceConsumer, mc *MockMetricConsumer) error
+	Start(rec consumermock.Recorder) error
 	Stop()
 
 	// Generate a config string to place in exporter part of collector config
@@ -87,10 +88,10 @@ func NewOCDataReceiver(port int) *OCDataReceiver {
 	return &OCDataReceiver{DataReceiverBase: DataReceiverBase{Port: port}}
 }
 
-func (or *OCDataReceiver) Start(tc *MockTraceConsumer, mc *MockMetricConsumer) error {
+func (or *OCDataReceiver) Start(rec consumermock.Recorder) error {
 	addr := fmt.Sprintf("localhost:%d", or.Port)
 	var err error
-	or.receiver, err = opencensusreceiver.New("opencensus", "tcp", addr, tc, mc)
+	or.receiver, err = opencensusreceiver.New("opencensus", "tcp", addr, rec, rec)
 	if err != nil {
 		return err
 	}
@@ -126,13 +127,13 @@ func NewJaegerDataReceiver(port int) *JaegerDataReceiver {
 	return &JaegerDataReceiver{DataReceiverBase: DataReceiverBase{Port: port}}
 }
 
-func (jr *JaegerDataReceiver) Start(tc *MockTraceConsumer, mc *MockMetricConsumer) error {
+func (jr *JaegerDataReceiver) Start(rec consumermock.Recorder) error {
 	jaegerCfg := jaegerreceiver.Configuration{
 		CollectorGRPCPort: jr.Port,
 	}
 	var err error
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr.receiver, err = jaegerreceiver.New("jaeger", &jaegerCfg, tc, params)
+	jr.receiver, err = jaegerreceiver.New("jaeger", &jaegerCfg, rec, params)
 	if err != nil {
 		return err
 	}
@@ -177,10 +178,10 @@ func NewOTLPDataReceiver(port int) *OTLPDataReceiver {
 	return &OTLPDataReceiver{DataReceiverBase: DataReceiverBase{Port: port}}
 }
 
-func (or *OTLPDataReceiver) Start(tc *MockTraceConsumer, mc *MockMetricConsumer) error {
+func (or *OTLPDataReceiver) Start(rec consumermock.Recorder) error {
 	addr := fmt.Sprintf("localhost:%d", or.Port)
 	var err error
-	or.receiver, err = otlpreceiver.New("otlp", "tcp", addr, tc, mc)
+	or.receiver, err = otlpreceiver.New("otlp", "tcp", addr, rec, rec)
 	if err != nil {
 		return err
 	}
@@ -216,10 +217,10 @@ func NewZipkinDataReceiver(port int) *ZipkinDataReceiver {
 	return &ZipkinDataReceiver{DataReceiverBase: DataReceiverBase{Port: port}}
 }
 
-func (zr *ZipkinDataReceiver) Start(tc *MockTraceConsumer, mc *MockMetricConsumer) error {
+func (zr *ZipkinDataReceiver) Start(rec consumermock.Recorder) error {
 	var err error
 	address := fmt.Sprintf("localhost:%d", zr.Port)
-	zr.receiver, err = zipkinreceiver.New("zipkin", address, tc)
+	zr.receiver, err = zipkinreceiver.New("zipkin", address, rec)
 
 	if err != nil {
 		return err

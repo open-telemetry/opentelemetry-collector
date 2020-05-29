@@ -290,20 +290,18 @@ func TestMetricResourceProcessor(t *testing.T) {
 
 			require.NotEmpty(t, configFile, "Cannot create config file")
 
-			tc := testbed.NewTestCase(t, sender, receiver, testbed.WithConfigFile(configFile))
+			tc := testbed.NewTestCase(t, sender, receiver, testbed.WithConfigFile(configFile), testbed.WithRecording())
 			defer tc.Stop()
 
 			tc.StartBackend()
 			tc.StartAgent()
 			defer tc.StopAgent()
 
-			tc.EnableRecording()
-
 			sender.Start()
 
 			// Clear previously received metrics.
-			tc.MockBackend.ClearReceivedItems()
-			startCounter := tc.MockBackend.DataItemsReceived()
+			tc.Recorder.ClearReceivedItems()
+			startCounter := tc.Recorder.DataItemsReceived()
 
 			sender, ok := tc.Sender.(testbed.MetricDataSender)
 			require.True(t, ok, "unsupported metric sender")
@@ -315,11 +313,11 @@ func TestMetricResourceProcessor(t *testing.T) {
 			// counter since it is used in final reports.
 			tc.LoadGenerator.IncDataItemsSent()
 
-			tc.WaitFor(func() bool { return tc.MockBackend.DataItemsReceived() == startCounter+1 },
+			tc.WaitFor(func() bool { return tc.Recorder.DataItemsReceived() == startCounter+1 },
 				"datapoints received")
 
 			// Assert Resources
-			m := tc.MockBackend.ReceivedMetrics[0]
+			m := tc.Recorder.Metrics()[0]
 			rm := pdatautil.MetricsToInternalMetrics(m).ResourceMetrics()
 			require.Equal(t, 1, rm.Len())
 

@@ -164,7 +164,7 @@ func Scenario10kItemsPerSecond(
 
 	tc.StopLoad()
 
-	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() == tc.MockBackend.DataItemsReceived() },
+	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() == tc.Recorder.DataItemsReceived() },
 		"all data items received")
 
 	tc.StopAgent()
@@ -224,7 +224,7 @@ func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, opts 
 			tc.Sleep(tc.Duration)
 			tc.StopLoad()
 
-			tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() == tc.MockBackend.DataItemsReceived() },
+			tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() == tc.Recorder.DataItemsReceived() },
 				"all spans received")
 
 			tc.StopAgent()
