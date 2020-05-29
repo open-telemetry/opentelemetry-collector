@@ -290,7 +290,8 @@ func TestMetricResourceProcessor(t *testing.T) {
 
 			require.NotEmpty(t, configFile, "Cannot create config file")
 
-			tc := testbed.NewTestCase(t, sender, receiver, testbed.WithConfigFile(configFile))
+			tc := testbed.NewTestCase(t, sender, receiver, performanceResultsSummary,
+				testbed.WithConfigFile(configFile))
 			defer tc.Stop()
 
 			tc.StartBackend()

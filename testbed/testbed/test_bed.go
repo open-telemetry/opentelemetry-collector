@@ -117,7 +117,7 @@ func LoadConfig() error {
 	return nil
 }
 
-func Start() error {
+func Start(resultsSummary TestResultsSummary) error {
 	// Load the test bed config first.
 	err := LoadConfig()
 
@@ -134,20 +134,20 @@ func Start() error {
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
-	results.Init(dir)
+	resultsSummary.Init(dir)
 
 	return err
 }
 
-func SaveResults() {
-	results.Save()
+func SaveResults(resultsSummary TestResultsSummary) {
+	resultsSummary.Save()
 }
 
 // DoTestMain is intended to be run from TestMain somewhere in the test suit.
 // This enables the testbed.
-func DoTestMain(m *testing.M) {
+func DoTestMain(m *testing.M, resultsSummary TestResultsSummary) {
 	// Load the test bed config first.
-	err := Start()
+	err := Start(resultsSummary)
 
 	if err == ErrSkipTests {
 		// Test bed config is not loaded because the tests are globally skipped.
@@ -156,7 +156,7 @@ func DoTestMain(m *testing.M) {
 
 	res := m.Run()
 
-	SaveResults()
+	SaveResults(resultsSummary)
 
 	// Now run all tests.
 	os.Exit(res)

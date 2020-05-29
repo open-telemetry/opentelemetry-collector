@@ -70,6 +70,8 @@ type TestCase struct {
 	doneSignal chan struct{}
 
 	errorCause string
+
+	resultsSummary TestResultsSummary
 }
 
 const mibibyte = 1024 * 1024
@@ -80,6 +82,7 @@ func NewTestCase(
 	t *testing.T,
 	sender DataSender,
 	receiver DataReceiver,
+	resultsSummary TestResultsSummary,
 	opts ...TestCaseOption,
 ) *TestCase {
 	tc := TestCase{}
@@ -90,6 +93,7 @@ func NewTestCase(
 	tc.startTime = time.Now()
 	tc.Sender = sender
 	tc.Receiver = receiver
+	tc.resultsSummary = resultsSummary
 
 	// Get requested test case duration from env variable.
 	duration := os.Getenv(testcaseDurationVar)
@@ -268,7 +272,7 @@ func (tc *TestCase) Stop() {
 	// Remove "Test" prefix from test name.
 	testName := tc.t.Name()[4:]
 
-	results.Add(tc.t.Name(), &TestResult{
+	tc.resultsSummary.Add(tc.t.Name(), &PerformanceTestResult{
 		testName:          testName,
 		result:            result,
 		receivedSpanCount: tc.MockBackend.DataItemsReceived(),

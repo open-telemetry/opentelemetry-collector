@@ -32,6 +32,8 @@ import (
 	"go.opentelemetry.io/collector/testbed/testbed"
 )
 
+var performanceResultsSummary testbed.TestResultsSummary = &testbed.PerformanceResults{}
+
 // createConfigFile creates a collector config file that corresponds to the
 // sender and receiver used in the test and returns the config file name.
 func createConfigFile(
@@ -148,7 +150,7 @@ func Scenario10kItemsPerSecond(
 	defer os.Remove(configFile)
 	require.NotEmpty(t, configFile, "Cannot create config file")
 
-	tc := testbed.NewTestCase(t, sender, receiver, testbed.WithConfigFile(configFile))
+	tc := testbed.NewTestCase(t, sender, receiver, performanceResultsSummary, testbed.WithConfigFile(configFile))
 	defer tc.Stop()
 
 	tc.SetResourceLimits(resourceSpec)
@@ -199,6 +201,7 @@ func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, opts 
 				t,
 				testbed.NewJaegerGRPCDataSender(testbed.DefaultJaegerPort),
 				testbed.NewOCDataReceiver(testbed.DefaultOCPort),
+				performanceResultsSummary,
 				opts...,
 			)
 			defer tc.Stop()
@@ -258,6 +261,7 @@ func ScenarioTestTraceNoBackend10kSPS(t *testing.T, sender testbed.DataSender, r
 		t,
 		sender,
 		receiver,
+		performanceResultsSummary,
 		testbed.WithConfigFile(configFile),
 	)
 

@@ -39,7 +39,7 @@ import (
 
 // TestMain is used to initiate setup, execution and tear down of testbed.
 func TestMain(m *testing.M) {
-	testbed.DoTestMain(m)
+	testbed.DoTestMain(m, performanceResultsSummary)
 }
 
 func TestTrace10kSPS(t *testing.T) {
@@ -409,7 +409,8 @@ func TestTraceAttributesProcessor(t *testing.T) {
 
 			require.NotEmpty(t, configFile, "Cannot create config file")
 
-			tc := testbed.NewTestCase(t, test.sender, test.receiver, testbed.WithConfigFile(configFile))
+			tc := testbed.NewTestCase(t, test.sender, test.receiver, performanceResultsSummary,
+				testbed.WithConfigFile(configFile))
 			defer tc.Stop()
 
 			tc.StartBackend()

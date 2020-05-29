@@ -33,6 +33,7 @@ func TestIdleMode(t *testing.T) {
 		t,
 		testbed.NewJaegerGRPCDataSender(testbed.DefaultJaegerPort),
 		testbed.NewOCDataReceiver(testbed.DefaultOCPort),
+		performanceResultsSummary,
 	)
 	defer tc.Stop()
 
@@ -57,6 +58,7 @@ func TestBallastMemory(t *testing.T) {
 			t,
 			testbed.NewJaegerGRPCDataSender(testbed.DefaultJaegerPort),
 			testbed.NewOCDataReceiver(testbed.DefaultOCPort),
+			performanceResultsSummary,
 			testbed.WithSkipResults(),
 		)
 		tc.SetResourceLimits(testbed.ResourceSpec{ExpectedMaxRAM: test.maxRSS})
