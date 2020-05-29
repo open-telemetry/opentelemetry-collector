@@ -64,7 +64,7 @@ var attributeMap = &sliceStruct{
 var attributeKeyValue = &messageStruct{}
 
 var instrumentationLibraryField = &messageField{
-	fieldMame:       "InstrumentationLibrary",
+	fieldName:       "InstrumentationLibrary",
 	originFieldName: "InstrumentationLibrary",
 	returnMessage:   instrumentationLibrary,
 }

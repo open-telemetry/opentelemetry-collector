@@ -151,7 +151,7 @@ func (sf *sliceField) generateCopyToValue(sb *strings.Builder) {
 var _ baseField = (*sliceField)(nil)
 
 type messageField struct {
-	fieldMame       string
+	fieldName       string
 	originFieldName string
 	returnMessage   *messageStruct
 }
@@ -162,9 +162,9 @@ func (mf *messageField) generateAccessors(ms *messageStruct, sb *strings.Builder
 		case "structName":
 			return ms.structName
 		case "fieldName":
-			return mf.fieldMame
+			return mf.fieldName
 		case "lowerFieldName":
-			return strings.ToLower(mf.fieldMame)
+			return strings.ToLower(mf.fieldName)
 		case "returnType":
 			return mf.returnMessage.structName
 		case "structOriginFullName":
@@ -183,7 +183,7 @@ func (mf *messageField) generateAccessorsTest(ms *messageStruct, sb *strings.Bui
 		case "structName":
 			return ms.structName
 		case "fieldName":
-			return mf.fieldMame
+			return mf.fieldName
 		case "returnType":
 			return mf.returnMessage.structName
 		default:
@@ -193,12 +193,12 @@ func (mf *messageField) generateAccessorsTest(ms *messageStruct, sb *strings.Bui
 }
 
 func (mf *messageField) generateSetWithTestValue(sb *strings.Builder) {
-	sb.WriteString("\ttv." + mf.fieldMame + "().InitEmpty()\n")
-	sb.WriteString("\tfillTest" + mf.returnMessage.structName + "(tv." + mf.fieldMame + "())")
+	sb.WriteString("\ttv." + mf.fieldName + "().InitEmpty()\n")
+	sb.WriteString("\tfillTest" + mf.returnMessage.structName + "(tv." + mf.fieldName + "())")
 }
 
 func (mf *messageField) generateCopyToValue(sb *strings.Builder) {
-	sb.WriteString("\tms." + mf.fieldMame + "().CopyTo(dest." + mf.fieldMame + "())")
+	sb.WriteString("\tms." + mf.fieldName + "().CopyTo(dest." + mf.fieldName + "())")
 }
 
 var _ baseField = (*messageField)(nil)

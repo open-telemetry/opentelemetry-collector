@@ -5,6 +5,7 @@ ALL_SRC := $(shell find . -name '*.go' \
 							-not -path '*/third_party/*' \
 							-not -path '*/internal/data/opentelemetry-proto/*' \
 							-not -path '*/internal/data/opentelemetry-proto-gen/*' \
+							-not -path '*/internal/data/logsproto/*' \
 							-type f | sort)
 
 # ALL_PKGS is the list of all packages where ALL_SRC files reside.
@@ -122,7 +123,7 @@ lint: lint-static-check
 
 .PHONY: impi
 impi:
-	@$(IMPI) --local go.opentelemetry.io/collector --scheme stdThirdPartyLocal --skip internal/data/opentelemetry-proto ./...
+	@$(IMPI) --local go.opentelemetry.io/collector --scheme stdThirdPartyLocal --skip internal/data/opentelemetry-proto --skip internal/data/logsproto ./...
 
 .PHONY: fmt
 fmt:
@@ -196,6 +197,12 @@ OPENTELEMETRY_PROTO_SRC_DIR=internal/data/opentelemetry-proto
 # Find all .proto files.
 OPENTELEMETRY_PROTO_FILES := $(subst $(OPENTELEMETRY_PROTO_SRC_DIR)/,,$(wildcard $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/*/v1/*.proto $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/collector/*/v1/*.proto))
 
+# The source directory for experimental Log ProtoBufs.
+LOGS_PROTO_SRC_DIR=internal/data/logsproto
+
+# Find Log .proto files.
+LOGS_PROTO_FILES := $(subst $(LOGS_PROTO_SRC_DIR)/,,$(wildcard $(LOGS_PROTO_SRC_DIR)/*/v1/*.proto $(LOGS_PROTO_SRC_DIR)/collector/*/v1/*.proto))
+
 # Target directory to write generated files to.
 PROTO_TARGET_GEN_DIR=internal/data/opentelemetry-proto-gen
 
@@ -231,6 +238,14 @@ genproto_sub:
 	@echo Modify them in the intermediate directory.
 	$(foreach file,$(OPENTELEMETRY_PROTO_FILES),$(call exec-command,sed 's+github.com/open-telemetry/opentelemetry-proto/gen/go/+go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/+g' $(OPENTELEMETRY_PROTO_SRC_DIR)/$(file) > $(PROTO_INTERMEDIATE_DIR)/$(file)))
 
+	@echo Generate Go code from Logs .proto files in intermediate directory.
+	$(foreach file,$(LOGS_PROTO_FILES),$(call exec-command,docker run --rm -v $(PWD)/$(LOGS_PROTO_SRC_DIR):$(PWD)/$(LOGS_PROTO_SRC_DIR) -v $(PWD)/$(PROTO_INTERMEDIATE_DIR):$(PWD)/$(PROTO_INTERMEDIATE_DIR) -w $(PWD)/$(LOGS_PROTO_SRC_DIR) znly/protoc --gogofaster_out=plugins=grpc:./ -I./ -I$(PWD)/$(PROTO_INTERMEDIATE_DIR) $(file)))
+
+	@echo Move generated code to target directory.
+	mkdir -p $(PROTO_TARGET_GEN_DIR)
+	cp -R $(LOGS_PROTO_SRC_DIR)/$(PROTO_PACKAGE)/* $(PROTO_TARGET_GEN_DIR)/
+	rm -rf $(LOGS_PROTO_SRC_DIR)/go.opentelemetry.io
+
 	@echo Generate Go code from .proto files in intermediate directory.
 	$(foreach file,$(OPENTELEMETRY_PROTO_FILES),$(call exec-command,docker run --rm -v $(PWD)/$(PROTO_INTERMEDIATE_DIR):$(PWD)/$(PROTO_INTERMEDIATE_DIR) -w $(PWD)/$(PROTO_INTERMEDIATE_DIR) znly/protoc --gogofaster_out=plugins=grpc:./ -I./ $(file)))
 
@@ -247,3 +262,8 @@ genproto_sub:
 
 	@rm -rf $(OPENTELEMETRY_PROTO_SRC_DIR)/*
 	@rm -rf $(OPENTELEMETRY_PROTO_SRC_DIR)/.* > /dev/null 2>&1 || true
+
+# Generate structs, functions and tests for pdata package. Must be used after any changes
+# to proto and after running `make genproto`
+genpdata:
+	go run cmd/pdatagen/main.go
