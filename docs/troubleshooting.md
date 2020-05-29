@@ -35,7 +35,7 @@ The Collector may exit/restart if it is not
 or configured properly, for example a queue size configured higher than
 available memory. In most cases, restarts are due to memory
 pressure. To mitigate this, we recommend you configure the
-[memory_limiter](https://github.com/open-telemetry/opentelemetry-collector/tree/master/processor#memory-limiter)
+[memory_limiter](https://github.com/open-telemetry/opentelemetry-collector/blob/master/processor/memorylimiter/README.md)
 processor.
 
 Note: restarts may be due to resource limits configured on the Collector.
@@ -48,7 +48,7 @@ Data may be dropped for a variety of reasons, but most commonly because of an:
 - Exporter destination unavailable or accepting the data too slowly.
 
 To mitigate drops, it is highly recommended to configure the
-[queued_retry](https://github.com/open-telemetry/opentelemetry-collector/tree/master/processor#queued-retry)
+[queued_retry](https://github.com/open-telemetry/opentelemetry-collector/blob/master/processor/queuedprocessor/README.md)
 processor.
 
 ### Receiving data not working
