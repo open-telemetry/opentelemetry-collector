@@ -50,6 +50,21 @@ const (
 	extensionzPath = "extensionz"
 )
 
+// State defines Application's state.
+type State int
+
+const (
+	Starting State = iota
+	Running
+	Closing
+	Closed
+)
+
+// GetStateChannel returns state channel of the application.
+func (app *Application) GetStateChannel() chan State {
+	return app.stateChannel
+}
+
 // Application represents a collector application
 type Application struct {
 	info            ApplicationStartInfo
@@ -60,14 +75,13 @@ type Application struct {
 	builtReceivers  builder.Receivers
 	builtPipelines  builder.BuiltPipelines
 	builtExtensions builder.Extensions
+	stateChannel    chan State
 
 	factories config.Factories
 	config    *configmodels.Config
 
 	// stopTestChan is used to terminate the application in end to end tests.
 	stopTestChan chan struct{}
-	// readyChan is used in tests to indicate that the application is ready.
-	readyChan chan struct{}
 
 	// asyncErrorChannel is used to signal a fatal error from any component.
 	asyncErrorChannel chan error
@@ -126,10 +140,10 @@ func FileLoaderConfigFactory(v *viper.Viper, factories config.Factories) (*confi
 // New creates and returns a new instance of Application.
 func New(params Parameters) (*Application, error) {
 	app := &Application{
-		info:      params.ApplicationStartInfo,
-		v:         config.NewViper(),
-		readyChan: make(chan struct{}),
-		factories: params.Factories,
+		info:         params.ApplicationStartInfo,
+		v:            config.NewViper(),
+		factories:    params.Factories,
+		stateChannel: make(chan State, Closed+1),
 	}
 
 	factory := params.ConfigFactory
@@ -245,8 +259,8 @@ func (app *Application) runAndWaitForShutdownEvent() {
 	// set the channel to stop testing.
 	app.stopTestChan = make(chan struct{})
 	// notify tests that it is ready.
-	close(app.readyChan)
 
+	app.stateChannel <- Running
 	select {
 	case err := <-app.asyncErrorChannel:
 		app.logger.Error("Asynchronous error received, terminating process", zap.Error(err))
@@ -255,6 +269,7 @@ func (app *Application) runAndWaitForShutdownEvent() {
 	case <-app.stopTestChan:
 		app.logger.Info("Received stop test request")
 	}
+	app.stateChannel <- Closing
 }
 
 func (app *Application) setupConfigurationComponents(ctx context.Context, factory ConfigFactory) error {
@@ -390,6 +405,7 @@ func (app *Application) execute(ctx context.Context, factory ConfigFactory) erro
 		zap.String("GitHash", app.info.GitHash),
 		zap.Int("NumCPU", runtime.NumCPU()),
 	)
+	app.stateChannel <- Starting
 
 	// Set memory ballast
 	ballast, ballastSizeBytes := app.createMemoryBallast()
@@ -440,6 +456,8 @@ func (app *Application) execute(ctx context.Context, factory ConfigFactory) erro
 	AppTelemetry.shutdown()
 
 	app.logger.Info("Shutdown complete.")
+	app.stateChannel <- Closed
+	close(app.stateChannel)
 
 	if len(errs) != 0 {
 		return componenterror.CombineErrors(errs)
