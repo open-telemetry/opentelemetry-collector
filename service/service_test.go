@@ -61,12 +61,8 @@ func TestApplication_Start(t *testing.T) {
 		assert.NoError(t, app.Start())
 	}()
 
-	for state := range app.GetStateChannel() {
-		if state == Running {
-			break
-		}
-	}
-
+	assert.Equal(t, Starting, <-app.GetStateChannel())
+	assert.Equal(t, Running, <-app.GetStateChannel())
 	require.True(t, isAppAvailable(t, "http://localhost:13133"))
 	assert.Equal(t, app.logger, app.GetLogger())
 
@@ -74,6 +70,8 @@ func TestApplication_Start(t *testing.T) {
 
 	close(app.stopTestChan)
 	<-appDone
+	assert.Equal(t, Closing, <-app.GetStateChannel())
+	assert.Equal(t, Closed, <-app.GetStateChannel())
 }
 
 // isAppAvailable checks if the healthcheck server at the given endpoint is
@@ -356,11 +354,8 @@ func TestApplication_GetExtensions(t *testing.T) {
 		assert.NoError(t, app.Start())
 	}()
 
-	for state := range app.GetStateChannel() {
-		if state == Running {
-			break
-		}
-	}
+	assert.Equal(t, Starting, <-app.GetStateChannel())
+	assert.Equal(t, Running, <-app.GetStateChannel())
 
 	// Verify GetExensions(). The results must match what we have in testdata/otelcol-config.yaml.
 
@@ -388,11 +383,8 @@ func TestApplication_GetExporters(t *testing.T) {
 		assert.NoError(t, app.Start())
 	}()
 
-	for state := range app.GetStateChannel() {
-		if state == Running {
-			break
-		}
-	}
+	assert.Equal(t, Starting, <-app.GetStateChannel())
+	assert.Equal(t, Running, <-app.GetStateChannel())
 
 	// Verify GetExporters().
 

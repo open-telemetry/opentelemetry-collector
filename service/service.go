@@ -56,7 +56,7 @@ type State int
 const (
 	Starting State = iota
 	Running
-	ClosingDown
+	Closing
 	Closed
 )
 
@@ -251,7 +251,6 @@ func (app *Application) setupTelemetry(ballastSizeBytes uint64) error {
 // runAndWaitForShutdownEvent waits for one of the shutdown events that can happen.
 func (app *Application) runAndWaitForShutdownEvent() {
 	app.logger.Info("Everything is ready. Begin running and processing data.")
-	app.stateChannel <- Running
 
 	// Plug SIGTERM signal into a channel.
 	signalsChannel := make(chan os.Signal, 1)
@@ -261,6 +260,7 @@ func (app *Application) runAndWaitForShutdownEvent() {
 	app.stopTestChan = make(chan struct{})
 	// notify tests that it is ready.
 
+	app.stateChannel <- Running
 	select {
 	case err := <-app.asyncErrorChannel:
 		app.logger.Error("Asynchronous error received, terminating process", zap.Error(err))
@@ -269,7 +269,7 @@ func (app *Application) runAndWaitForShutdownEvent() {
 	case <-app.stopTestChan:
 		app.logger.Info("Received stop test request")
 	}
-	app.stateChannel <- ClosingDown
+	app.stateChannel <- Closing
 }
 
 func (app *Application) setupConfigurationComponents(ctx context.Context, factory ConfigFactory) error {
