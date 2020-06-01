@@ -26,6 +26,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
+	"go.opentelemetry.io/collector/internal/data"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 )
 
@@ -34,7 +36,7 @@ func TestBatchProcessorSpansDelivered(t *testing.T) {
 	cfg := generateDefaultConfig()
 	cfg.SendBatchSize = 128
 	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
-	batcher := newBatchProcessor(creationParams, sender, cfg)
+	batcher := newBatchTracesProcessor(creationParams, sender, cfg)
 	requestCount := 1000
 	spansPerRequest := 100
 	waitForCn := sender.waitFor(requestCount*spansPerRequest, 5*time.Second)
@@ -73,7 +75,7 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 	cfg.SendBatchSize = uint32(sendBatchSize)
 	cfg.Timeout = 500 * time.Millisecond
 	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
-	batcher := newBatchProcessor(creationParams, sender, cfg)
+	batcher := newBatchTracesProcessor(creationParams, sender, cfg)
 	requestCount := 100
 	spansPerRequest := 5
 	waitForCn := sender.waitFor(requestCount*spansPerRequest, time.Second)
@@ -125,7 +127,7 @@ func TestBatchProcessorSentByTimeout(t *testing.T) {
 
 	start := time.Now()
 
-	batcher := newBatchProcessor(creationParams, sender, cfg)
+	batcher := newBatchTracesProcessor(creationParams, sender, cfg)
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		td := testdata.GenerateTraceDataManySpansSameResource(spansPerRequest)
 		go batcher.ConsumeTraces(context.Background(), td)
@@ -209,10 +211,6 @@ func (ts *testSender) waitFor(spans int, timeout time.Duration) chan error {
 
 						spans := ils.Spans()
 						for k := 0; k < spans.Len(); k++ {
-							if ils.IsNil() {
-								continue
-							}
-
 							span := spans.At(k)
 							ts.spansReceivedByName[spans.At(k).Name()] = span
 						}
@@ -228,4 +226,208 @@ func (ts *testSender) waitFor(spans int, timeout time.Duration) chan error {
 		}
 	}()
 	return errorCn
+}
+
+type testMetricsSender struct {
+	reqChan               chan pdata.Metrics
+	metricsReceived       int
+	metricsDataReceiver   []data.MetricData
+	metricsReceivedByName map[string]pdata.Metric
+	mtx                   sync.RWMutex
+}
+
+func newTestMetricsSender() *testMetricsSender {
+	return &testMetricsSender{
+		reqChan:               make(chan pdata.Metrics, 100),
+		metricsDataReceiver:   make([]data.MetricData, 0),
+		metricsReceivedByName: make(map[string]pdata.Metric),
+	}
+}
+
+func (tms *testMetricsSender) ConsumeMetrics(_ context.Context, md pdata.Metrics) error {
+	tms.reqChan <- md
+	return nil
+}
+
+func (tms *testMetricsSender) waitFor(metrics int, timeout time.Duration) chan error {
+	errorCn := make(chan error)
+	go func() {
+		for {
+			select {
+			case md := <-tms.reqChan:
+				tms.mtx.Lock()
+				im := pdatautil.MetricsToInternalMetrics(md)
+				tms.metricsDataReceiver = append(tms.metricsDataReceiver, im)
+				tms.metricsReceived = tms.metricsReceived + im.MetricCount()
+
+				rms := im.ResourceMetrics()
+				for i := 0; i < rms.Len(); i++ {
+					rm := rms.At(i)
+					if rm.IsNil() {
+						continue
+					}
+					ilms := rm.InstrumentationLibraryMetrics()
+					for j := 0; j < ilms.Len(); j++ {
+						ilm := ilms.At(j)
+						if ilm.IsNil() {
+							continue
+						}
+						metrics := ilm.Metrics()
+						for k := 0; k < metrics.Len(); k++ {
+							metric := metrics.At(k)
+							tms.metricsReceivedByName[metric.MetricDescriptor().Name()] = metric
+						}
+					}
+				}
+				tms.mtx.Unlock()
+				if tms.metricsReceived == metrics {
+					errorCn <- nil
+				}
+			case <-time.After(timeout):
+				errorCn <- fmt.Errorf("timed out waiting for metrics")
+			}
+		}
+	}()
+	return errorCn
+}
+
+func getTestMetricName(requestNum, index int) string {
+	return fmt.Sprintf("test-metric-int-%d-%d", requestNum, index)
+}
+
+func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
+	// Instantiate the batch processor with low config values to test data
+	// gets sent through the processor.
+	cfg := Config{
+		Timeout:       100 * time.Millisecond,
+		SendBatchSize: 50,
+	}
+
+	requestCount := 100
+	metricsPerRequest := 5
+	// Instantiate upstream component to receive data after the batch processor.
+	tms := newTestMetricsSender()
+
+	createParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
+	batcher := newBatchMetricsProcessor(createParams, tms, &cfg)
+	waitForCn := tms.waitFor(requestCount*metricsPerRequest, time.Second)
+	metricDataSlice := make([]data.MetricData, 0, requestCount)
+
+	start := time.Now()
+	for requestNum := 0; requestNum < requestCount; requestNum++ {
+		md := testdata.GenerateMetricDataManyMetricsSameResource(metricsPerRequest)
+		metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+		for metricIndex := 0; metricIndex < metricsPerRequest; metricIndex++ {
+			metrics.At(metricIndex).MetricDescriptor().SetName(getTestMetricName(requestNum, metricIndex))
+		}
+		metricDataSlice = append(metricDataSlice, md.Clone())
+		pd := pdatautil.MetricsFromInternalMetrics(md)
+		go batcher.ConsumeMetrics(context.Background(), pd)
+	}
+	err := <-waitForCn
+	if err != nil {
+		t.Errorf("faild to wait for sender %s", err)
+	}
+
+	elapsed := time.Since(start)
+	require.LessOrEqual(t, elapsed.Nanoseconds(), cfg.Timeout.Nanoseconds())
+
+	tms.mtx.RLock()
+
+	require.Equal(t, requestCount*metricsPerRequest, tms.metricsReceived)
+	for requestNum := 0; requestNum < requestCount; requestNum++ {
+		metrics := metricDataSlice[requestNum].ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+		for metricIndex := 0; metricIndex < metricsPerRequest; metricIndex++ {
+			require.EqualValues(t,
+				metrics.At(metricIndex),
+				tms.metricsReceivedByName[getTestMetricName(requestNum, metricIndex)])
+		}
+	}
+}
+
+func TestBatchMetricProcessor_BatchSize(t *testing.T) {
+	// Instantiate the batch processor with low config values to test data
+	// gets sent through the processor.
+	cfg := Config{
+		Timeout:       100 * time.Millisecond,
+		SendBatchSize: 50,
+	}
+
+	requestCount := 100
+	metricsPerRequest := 5
+	// Instantiate upstream component to receive data after the batch processor.
+	tms := newTestMetricsSender()
+
+	createParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
+	batcher := newBatchMetricsProcessor(createParams, tms, &cfg)
+	waitForCn := tms.waitFor(requestCount*metricsPerRequest, time.Second)
+	start := time.Now()
+	for requestNum := 0; requestNum < requestCount; requestNum++ {
+		md := testdata.GenerateMetricDataManyMetricsSameResource(metricsPerRequest)
+		pd := pdatautil.MetricsFromInternalMetrics(md)
+		go batcher.ConsumeMetrics(context.Background(), pd)
+	}
+	err := <-waitForCn
+	if err != nil {
+		t.Errorf("faild to wait for sender %s", err)
+	}
+
+	elapsed := time.Since(start)
+	require.LessOrEqual(t, elapsed.Nanoseconds(), cfg.Timeout.Nanoseconds())
+
+	tms.mtx.RLock()
+
+	expectedBatchesNum := requestCount * metricsPerRequest / int(cfg.SendBatchSize)
+	expectedBatchingFactor := int(cfg.SendBatchSize) / metricsPerRequest
+
+	require.Equal(t, requestCount*metricsPerRequest, tms.metricsReceived)
+	require.Equal(t, expectedBatchesNum, len(tms.metricsDataReceiver))
+	for _, md := range tms.metricsDataReceiver {
+		require.Equal(t, expectedBatchingFactor, md.ResourceMetrics().Len())
+		for i := 0; i < expectedBatchingFactor; i++ {
+			require.Equal(t, metricsPerRequest, md.ResourceMetrics().At(i).InstrumentationLibraryMetrics().At(0).Metrics().Len())
+		}
+	}
+}
+
+func TestBatchMetricsProcessor_Timeout(t *testing.T) {
+	cfg := Config{
+		Timeout:       100 * time.Millisecond,
+		SendBatchSize: 100,
+	}
+	requestCount := 5
+	metricsPerRequest := 10
+	// Instantiate upstream component to receive data after the batch processor.
+	tms := newTestMetricsSender()
+
+	createParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
+	batcher := newBatchMetricsProcessor(createParams, tms, &cfg)
+	waitForCn := tms.waitFor(requestCount*metricsPerRequest, time.Second)
+	start := time.Now()
+	for requestNum := 0; requestNum < requestCount; requestNum++ {
+		md := testdata.GenerateMetricDataManyMetricsSameResource(metricsPerRequest)
+		pd := pdatautil.MetricsFromInternalMetrics(md)
+		go batcher.ConsumeMetrics(context.Background(), pd)
+	}
+	err := <-waitForCn
+	if err != nil {
+		t.Errorf("faild to wait for sender %s", err)
+	}
+
+	elapsed := time.Since(start)
+	require.LessOrEqual(t, cfg.Timeout.Nanoseconds(), elapsed.Nanoseconds())
+
+	tms.mtx.RLock()
+
+	expectedBatchesNum := 1
+	expectedBatchingFactor := 5
+
+	require.Equal(t, requestCount*metricsPerRequest, tms.metricsReceived)
+	require.Equal(t, expectedBatchesNum, len(tms.metricsDataReceiver))
+	for _, md := range tms.metricsDataReceiver {
+		require.Equal(t, expectedBatchingFactor, md.ResourceMetrics().Len())
+		for i := 0; i < expectedBatchingFactor; i++ {
+			require.Equal(t, metricsPerRequest, md.ResourceMetrics().At(i).InstrumentationLibraryMetrics().At(0).Metrics().Len())
+		}
+	}
 }

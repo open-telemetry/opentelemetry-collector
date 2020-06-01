@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 )
@@ -54,7 +53,7 @@ func (f *Factory) CreateTraceProcessor(
 	c configmodels.Processor,
 ) (component.TraceProcessor, error) {
 	cfg := c.(*Config)
-	return newBatchProcessor(params, nextConsumer, cfg), nil
+	return newBatchTracesProcessor(params, nextConsumer, cfg), nil
 }
 
 // CreateMetricsProcessor creates a metrics processor based on this config.
@@ -62,9 +61,10 @@ func (f *Factory) CreateMetricsProcessor(
 	ctx context.Context,
 	params component.ProcessorCreateParams,
 	nextConsumer consumer.MetricsConsumer,
-	cfg configmodels.Processor,
+	c configmodels.Processor,
 ) (component.MetricsProcessor, error) {
-	return nil, configerror.ErrDataTypeIsNotSupported
+	cfg := c.(*Config)
+	return newBatchMetricsProcessor(params, nextConsumer, cfg), nil
 }
 
 func generateDefaultConfig() *Config {
