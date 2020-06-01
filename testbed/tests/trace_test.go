@@ -317,8 +317,8 @@ func verifySingleSpan(
 	td.ResourceSpans().At(0).InstrumentationLibrarySpans().Resize(1)
 	spans := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans()
 	spans.Resize(1)
-	spans.At(0).SetTraceID(testbed.GenerateTraceID(1))
-	spans.At(0).SetSpanID(testbed.GenerateSpanID(1))
+	spans.At(0).SetTraceID(testbed.GenerateSequentialTraceID(1))
+	spans.At(0).SetSpanID(testbed.GenerateSequentialSpanID(1))
 	spans.At(0).SetName(spanName)
 
 	if sender, ok := tc.Sender.(testbed.TraceDataSender); ok {
