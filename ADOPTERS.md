@@ -5,6 +5,7 @@ environments** to receive and export trace and metric telemetry data. Please sen
 to add or remove organizations.
 
 * [AppDirect](https://www.appdirect.com/)
+* [Google Cloud](https://cloud.google.com/)
 * [OrderMyGear](https://www.ordermygear.com/)
 * [Shopify](https://www.shopify.com/)
 * [Splunk](https://www.splunk.com/)
