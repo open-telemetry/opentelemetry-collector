@@ -105,7 +105,7 @@ func TestScrapeMetrics_GetProcessesError(t *testing.T) {
 	scraper, err := newProcessScraper(&Config{})
 	require.NoError(t, err, "Failed to create process scraper: %v", err)
 
-	scraper.getProcessHandles = func() ([]processHandle, error) { return nil, errors.New("err1") }
+	scraper.getProcessHandles = func() (processHandles, error) { return nil, errors.New("err1") }
 
 	err = scraper.Initialize(context.Background())
 	require.NoError(t, err, "Failed to initialize process scraper: %v", err)
@@ -116,12 +116,24 @@ func TestScrapeMetrics_GetProcessesError(t *testing.T) {
 	assert.Equal(t, 0, metrics.Len())
 }
 
-type processHandleMock struct {
-	mock.Mock
+type processHandlesMock struct {
+	handles []*processHandleMock
 }
 
-func (p *processHandleMock) GetPid() int32 {
+func (p *processHandlesMock) Pid(index int) int32 {
 	return 1
+}
+
+func (p *processHandlesMock) At(index int) processHandle {
+	return p.handles[index]
+}
+
+func (p *processHandlesMock) Len() int {
+	return len(p.handles)
+}
+
+type processHandleMock struct {
+	mock.Mock
 }
 
 func (p *processHandleMock) Name() (ret string, err error) {
@@ -235,15 +247,17 @@ func TestScrapeMetrics_Filtered(t *testing.T) {
 			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
 			defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
 
-			processHandles := make([]processHandle, 0, len(test.names))
+			handles := make([]*processHandleMock, 0, len(test.names))
 			for _, name := range test.names {
 				handleMock := newDefaultHandleMock()
 				handleMock.On("Name").Return(name, nil)
 				handleMock.On("Exe").Return(name, nil)
-				processHandles = append(processHandles, handleMock)
+				handles = append(handles, handleMock)
 			}
 
-			scraper.getProcessHandles = func() ([]processHandle, error) { return processHandles, nil }
+			scraper.getProcessHandles = func() (processHandles, error) {
+				return &processHandlesMock{handles: handles}, nil
+			}
 
 			metrics, err := scraper.ScrapeMetrics(context.Background())
 			require.NoError(t, err)
@@ -336,7 +350,9 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			handleMock.On("MemoryInfo").Return(&process.MemoryInfoStat{}, test.memoryInfoError)
 			handleMock.On("IOCounters").Return(&process.IOCountersStat{}, test.ioCountersError)
 
-			scraper.getProcessHandles = func() ([]processHandle, error) { return []processHandle{handleMock}, nil }
+			scraper.getProcessHandles = func() (processHandles, error) {
+				return &processHandlesMock{handles: []*processHandleMock{handleMock}}, nil
+			}
 
 			metrics, err := scraper.ScrapeMetrics(context.Background())
 			assert.EqualError(t, err, test.expectedError)

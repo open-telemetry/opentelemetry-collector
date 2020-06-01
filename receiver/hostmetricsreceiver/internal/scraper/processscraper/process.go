@@ -19,8 +19,13 @@ import (
 	"github.com/shirou/gopsutil/process"
 )
 
+type processHandles interface {
+	Pid(index int) int32
+	At(index int) processHandle
+	Len() int
+}
+
 type processHandle interface {
-	GetPid() int32
 	Name() (string, error)
 	Exe() (string, error)
 	Username() (string, error)
@@ -30,23 +35,27 @@ type processHandle interface {
 	IOCounters() (*process.IOCountersStat, error)
 }
 
-type gopsProcessHandle struct {
-	*process.Process
+type gopsProcessHandles struct {
+	handles []*process.Process
 }
 
-func (p *gopsProcessHandle) GetPid() int32 {
-	return p.Pid
+func (p *gopsProcessHandles) Pid(index int) int32 {
+	return p.handles[index].Pid
 }
 
-func getProcessHandlesInternal() ([]processHandle, error) {
+func (p *gopsProcessHandles) At(index int) processHandle {
+	return p.handles[index]
+}
+
+func (p *gopsProcessHandles) Len() int {
+	return len(p.handles)
+}
+
+func getProcessHandlesInternal() (processHandles, error) {
 	processes, err := process.Processes()
 	if err != nil {
 		return nil, err
 	}
 
-	processAccessors := make([]processHandle, len(processes))
-	for i, proc := range processes {
-		processAccessors[i] = &gopsProcessHandle{proc}
-	}
-	return processAccessors, nil
+	return &gopsProcessHandles{handles: processes}, nil
 }

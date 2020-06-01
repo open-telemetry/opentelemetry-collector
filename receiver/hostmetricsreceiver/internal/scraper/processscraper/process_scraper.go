@@ -38,7 +38,7 @@ type scraper struct {
 	includeFS filterset.FilterSet
 	excludeFS filterset.FilterSet
 
-	getProcessHandles func() ([]processHandle, error)
+	getProcessHandles func() (processHandles, error)
 }
 
 type processMetadata struct {
@@ -116,18 +116,15 @@ func (s *scraper) ScrapeMetrics(ctx context.Context) (pdata.MetricSlice, error) 
 		errors = append(errors, err)
 	}
 
-	err = scrapeAndAppendCPUUsageMetric(metrics, s.startTime, processes)
-	if err != nil {
+	if err = scrapeAndAppendCPUUsageMetric(metrics, s.startTime, processes); err != nil {
 		errors = append(errors, err)
 	}
 
-	err = scrapeAndAppendMemoryUsageMetric(metrics, s.startTime, processes)
-	if err != nil {
+	if err = scrapeAndAppendMemoryUsageMetric(metrics, s.startTime, processes); err != nil {
 		errors = append(errors, err)
 	}
 
-	err = scrapeAndAppendDiskBytesMetric(metrics, s.startTime, processes)
-	if err != nil {
+	if err = scrapeAndAppendDiskBytesMetric(metrics, s.startTime, processes); err != nil {
 		errors = append(errors, err)
 	}
 
@@ -149,11 +146,13 @@ func (s *scraper) getProcesses() ([]*processMetadata, error) {
 	}
 
 	var errors []error
-	metadata := make([]*processMetadata, 0, len(handles))
-	for _, handle := range handles {
+	metadata := make([]*processMetadata, 0, handles.Len())
+	for i := 0; i < handles.Len(); i++ {
+		pid := handles.Pid(i)
+		handle := handles.At(i)
 		name, err := getProcessName(handle)
 		if err != nil {
-			errors = append(errors, fmt.Errorf("error reading process name for pid %v: %v", handle.GetPid(), err))
+			errors = append(errors, fmt.Errorf("error reading process name for pid %v: %v", pid, err))
 			continue
 		}
 
@@ -164,7 +163,7 @@ func (s *scraper) getProcesses() ([]*processMetadata, error) {
 		}
 
 		md := &processMetadata{}
-		err = initializeProcessMetadata(md, handle, name)
+		err = initializeProcessMetadata(md, pid, name, handle)
 		if err != nil {
 			errors = append(errors, err)
 		}
@@ -193,8 +192,8 @@ func getProcessName(proc processHandle) (string, error) {
 	return filepath.Base(exe), nil
 }
 
-func initializeProcessMetadata(metadata *processMetadata, handle processHandle, name string) error {
-	metadata.pid = handle.GetPid()
+func initializeProcessMetadata(metadata *processMetadata, pid int32, name string, handle processHandle) error {
+	metadata.pid = pid
 	metadata.name = name
 	metadata.handle = handle
 

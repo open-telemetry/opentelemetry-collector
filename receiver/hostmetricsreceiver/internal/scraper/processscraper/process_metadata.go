@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-// process metric constants
+// labels
 
 const (
 	cmdlineLabelName   = "command_line"
@@ -28,16 +28,22 @@ const (
 	usernameLabelName  = "username"
 )
 
+// direction label values
+
 const (
 	readDirectionLabelValue  = "read"
 	writeDirectionLabelValue = "write"
 )
+
+// state label values
 
 const (
 	userStateLabelValue   = "user"
 	systemStateLabelValue = "system"
 	waitStateLabelValue   = "wait"
 )
+
+// descriptors
 
 var metricCPUUsageDescriptor = createMetricCPUUsageDescriptor()
 
