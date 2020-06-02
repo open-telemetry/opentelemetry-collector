@@ -25,6 +25,7 @@ import (
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
+	"github.com/stretchr/testify/assert"
 
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
@@ -90,9 +91,7 @@ func TestV1ThriftToOCProto(t *testing.T) {
 	sortTraceByNodeName(want)
 	sortTraceByNodeName(got)
 
-	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("got different data than want")
-	}
+	assert.EqualValues(t, want, got)
 }
 
 func BenchmarkV1ThriftToOCProto(b *testing.B) {
