@@ -37,7 +37,7 @@ import (
 //
 // Batches are sent out with any of the following conditions:
 // - batch size reaches cfg.SendBatchSize
-// - cfg.Timeout is elapsed since the timestamp when the previous batchTraces was sent out.
+// - cfg.Timeout is elapsed since the timestamp when the previous batch was sent out.
 type batchProcessor struct {
 	name   string
 	logger *zap.Logger
@@ -206,22 +206,17 @@ func (bp *batchMetricProcessor) startProcessingCycle() {
 			bp.batchMetrics.add(md)
 			if bp.batchMetrics.getItemCount() >= bp.sendBatchSize {
 				bp.timer.Stop()
-				bp.sendMetricsItems(statBatchSizeTriggerSend)
+				bp.sendItems(statBatchSizeTriggerSend)
 				bp.resetTimer()
 			}
 		case <-bp.timer.C:
 			if bp.batchMetrics.hasData() {
-				bp.sendMetricsItems(statTimeoutTriggerSend)
+				bp.sendItems(statTimeoutTriggerSend)
 			}
 			bp.resetTimer()
 		case <-bp.done:
 			if bp.batchMetrics.hasData() {
-				// TODO: Set a timeout on sendTraces or
-				// make it cancellable using the context that Shutdown gets as a parameter
-				bp.sendMetricsItems(statTimeoutTriggerSend)
-			}
-			if bp.batchMetrics.hasData() {
-				bp.sendMetricsItems(statTimeoutTriggerSend)
+				bp.sendItems(statTimeoutTriggerSend)
 			}
 			return
 		}
@@ -231,7 +226,7 @@ func (bp *batchMetricProcessor) startProcessingCycle() {
 func (bp *batchMetricProcessor) resetTimer() {
 	bp.timer.Reset(bp.timeout)
 }
-func (bp *batchMetricProcessor) sendMetricsItems(measure *stats.Int64Measure) {
+func (bp *batchMetricProcessor) sendItems(measure *stats.Int64Measure) {
 	// Add that it came from the metrics pipeline
 	statsTags := []tag.Mutator{tag.Insert(processor.TagProcessorNameKey, bp.name)}
 	_ = stats.RecordWithTags(context.Background(), statsTags, measure.M(1))
@@ -278,7 +273,6 @@ func (b *batchTraces) hasData() bool {
 
 // resets the current batchTraces structure with zero values
 func (b *batchTraces) reset() {
-
 	// TODO: Use b.resourceSpansCount to preset capacity of b.traceData.ResourceSpans
 	// once internal data API provides such functionality
 	b.traceData = pdata.NewTraces()
