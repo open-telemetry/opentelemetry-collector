@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/config/configtls"
 )
 
 func TestTypeStr(t *testing.T) {
@@ -80,16 +80,13 @@ func TestCreateTLSGPRCEndpoint(t *testing.T) {
 	rCfg := cfg.(*Config)
 
 	rCfg.Protocols[protoGRPC], _ = defaultsForProtocol(protoGRPC)
-	rCfg.Protocols[protoGRPC].TLSCredentials = &receiver.TLSCredentials{}
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	_, err := factory.CreateTraceReceiver(context.Background(), params, cfg, nil)
-	assert.Error(t, err, "tls-enabled receiver creation with no credentials must fail")
-
-	rCfg.Protocols[protoGRPC].TLSCredentials = &receiver.TLSCredentials{
+	rCfg.Protocols[protoGRPC].TLSCredentials = &configtls.TLSSetting{
 		CertFile: "./testdata/certificate.pem",
 		KeyFile:  "./testdata/key.pem",
 	}
-	_, err = factory.CreateTraceReceiver(context.Background(), params, cfg, nil)
+	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+
+	_, err := factory.CreateTraceReceiver(context.Background(), params, cfg, nil)
 	assert.NoError(t, err, "tls-enabled receiver creation failed")
 }
 
@@ -172,7 +169,7 @@ func TestCreateNoPort(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
-	rCfg.Protocols[protoThriftHTTP] = &receiver.SecureReceiverSettings{
+	rCfg.Protocols[protoThriftHTTP] = &SecureSetting{
 		ReceiverSettings: configmodels.ReceiverSettings{
 			Endpoint: "localhost:",
 		},
@@ -187,7 +184,7 @@ func TestCreateLargePort(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
-	rCfg.Protocols[protoThriftHTTP] = &receiver.SecureReceiverSettings{
+	rCfg.Protocols[protoThriftHTTP] = &SecureSetting{
 		ReceiverSettings: configmodels.ReceiverSettings{
 			Endpoint: "localhost:65536",
 		},
@@ -202,7 +199,7 @@ func TestCreateInvalidHost(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
-	rCfg.Protocols[protoGRPC] = &receiver.SecureReceiverSettings{
+	rCfg.Protocols[protoGRPC] = &SecureSetting{
 		ReceiverSettings: configmodels.ReceiverSettings{
 			Endpoint: "1234",
 		},
@@ -217,7 +214,7 @@ func TestCreateNoProtocols(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
-	rCfg.Protocols = make(map[string]*receiver.SecureReceiverSettings)
+	rCfg.Protocols = make(map[string]*SecureSetting)
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	_, err := factory.CreateTraceReceiver(context.Background(), params, cfg, nil)
@@ -229,7 +226,7 @@ func TestThriftBinaryBadPort(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
-	rCfg.Protocols[protoThriftBinary] = &receiver.SecureReceiverSettings{
+	rCfg.Protocols[protoThriftBinary] = &SecureSetting{
 		ReceiverSettings: configmodels.ReceiverSettings{
 			Endpoint: "localhost:65536",
 		},
@@ -245,7 +242,7 @@ func TestThriftCompactBadPort(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
-	rCfg.Protocols[protoThriftCompact] = &receiver.SecureReceiverSettings{
+	rCfg.Protocols[protoThriftCompact] = &SecureSetting{
 		ReceiverSettings: configmodels.ReceiverSettings{
 			Endpoint: "localhost:65536",
 		},

@@ -21,12 +21,17 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 
-	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtls"
 )
 
 // Config defines configuration for OTLP receiver.
 type Config struct {
-	receiver.SecureReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	configmodels.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+
+	// Configures the receiver to use TLS.
+	// The default value is nil, which will cause the receiver to not use TLS.
+	TLSCredentials *configtls.TLSSetting `mapstructure:"tls_credentials, omitempty"`
 
 	// Transport to use: one of tcp or unix, defaults to tcp
 	Transport string `mapstructure:"transport"`
@@ -72,13 +77,14 @@ type keepaliveEnforcementPolicy struct {
 	PermitWithoutStream bool          `mapstructure:"permit_without_stream,omitempty"`
 }
 
-func (rOpts *Config) buildOptions() (opts []Option, err error) {
-	tlsCredsOption, hasTLSCreds, err := ToOTLPReceiverServerOption(rOpts.TLSCredentials)
-	if err != nil {
-		return opts, fmt.Errorf("error initializing OTLP receiver %q TLS Credentials: %v", rOpts.NameVal, err)
-	}
-	if hasTLSCreds {
-		opts = append(opts, tlsCredsOption)
+func (rOpts *Config) buildOptions() ([]Option, error) {
+	var opts []Option
+	if rOpts.TLSCredentials != nil {
+		tlsCredsOptions, err := rOpts.TLSCredentials.LoadgRPCTLSServerCredentials()
+		if err != nil {
+			return nil, fmt.Errorf("error initializing OTLP receiver %q TLS Credentials: %v", rOpts.NameVal, err)
+		}
+		opts = append(opts, WithGRPCServerOptions(tlsCredsOptions))
 	}
 	if len(rOpts.CorsOrigins) > 0 {
 		opts = append(opts, WithCorsOrigins(rOpts.CorsOrigins))
@@ -89,7 +95,7 @@ func (rOpts *Config) buildOptions() (opts []Option, err error) {
 		opts = append(opts, WithGRPCServerOptions(grpcServerOptions...))
 	}
 
-	return opts, err
+	return opts, nil
 }
 
 func (rOpts *Config) grpcServerOptions() []grpc.ServerOption {
@@ -129,17 +135,4 @@ func (rOpts *Config) grpcServerOptions() []grpc.ServerOption {
 	}
 
 	return grpcServerOptions
-}
-
-// ToOTLPReceiverServerOption checks if the TLS credentials
-// in the form of a certificate file and a key file. If they aren't,
-// it will return otlpreceiver.WithNoopOption() and a nil error.
-// Otherwise, it will try to retrieve gRPC transport credentials from the file combinations,
-// and create a option, along with any errors encountered while retrieving the credentials.
-func ToOTLPReceiverServerOption(tlsCreds *receiver.TLSCredentials) (opt Option, ok bool, err error) {
-	gRPCCredsOpt, err := tlsCreds.ToGrpcServerOption()
-	if err != nil {
-		return nil, false, err
-	}
-	return WithGRPCServerOptions(gRPCCredsOpt), true, nil
 }

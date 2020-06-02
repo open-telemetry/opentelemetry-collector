@@ -50,7 +50,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
-	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/testutils"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
@@ -254,12 +253,12 @@ func TestGRPCReception(t *testing.T) {
 func TestGRPCReceptionWithTLS(t *testing.T) {
 	// prepare
 	grpcServerOptions := []grpc.ServerOption{}
-	tlsCreds := receiver.TLSCredentials{
+	tlsCreds := configtls.TLSSetting{
 		CertFile: path.Join(".", "testdata", "certificate.pem"),
 		KeyFile:  path.Join(".", "testdata", "key.pem"),
 	}
 
-	tlsOption, _ := tlsCreds.ToGrpcServerOption()
+	tlsOption, _ := tlsCreds.LoadgRPCTLSServerCredentials()
 
 	grpcServerOptions = append(grpcServerOptions, tlsOption)
 
@@ -591,7 +590,7 @@ func TestSamplingStrategiesMutualTLS(t *testing.T) {
 	// at least one protocol has to be enabled
 	thriftHTTPPort, err := randomAvailablePort()
 	require.NoError(t, err)
-	cfg.Protocols = map[string]*receiver.SecureReceiverSettings{
+	cfg.Protocols = map[string]*SecureSetting{
 		"thrift_http": {ReceiverSettings: configmodels.ReceiverSettings{
 			Endpoint: fmt.Sprintf("localhost:%d", thriftHTTPPort),
 		}},

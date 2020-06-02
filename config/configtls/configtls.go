@@ -109,7 +109,7 @@ func (c TLSSetting) loadCert(caPath string) (*x509.CertPool, error) {
 	return certPool, nil
 }
 
-func (c TLSClientSetting) LoadGRPCTLSCredentials() (grpc.DialOption, error) {
+func (c TLSClientSetting) LoadgRPCTLSClientCredentials() (grpc.DialOption, error) {
 	if c.Insecure && c.CAFile == "" {
 		return grpc.WithInsecure(), nil
 	}
@@ -121,4 +121,13 @@ func (c TLSClientSetting) LoadGRPCTLSCredentials() (grpc.DialOption, error) {
 	tlsConf.ServerName = c.ServerName
 	creds := credentials.NewTLS(tlsConf)
 	return grpc.WithTransportCredentials(creds), nil
+}
+
+func (c TLSSetting) LoadgRPCTLSServerCredentials() (grpc.ServerOption, error) {
+	tlsConf, err := c.LoadTLSConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load TLS config: %w", err)
+	}
+	creds := credentials.NewTLS(tlsConf)
+	return grpc.Creds(creds), nil
 }
