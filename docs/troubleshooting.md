@@ -14,15 +14,15 @@ to the `otelcol` process. See `--help` for more details.
 - [Local exporters](https://github.com/open-telemetry/opentelemetry-collector/tree/master/exporter#local-exporters)
 can be configured to inspect the data being processed by the Collector.
 
-- The [health_check](https://github.com/open-telemetry/opentelemetry-collector/blob/master/extension/README.md#health_check)
+- The [health_check](https://github.com/open-telemetry/opentelemetry-collector/tree/master/extension/healthcheckextension/README.md)
 extension, which by default is on port `13133`, can be used to ensure
 the Collector is functioning properly.
 
-- The [zpages](https://github.com/open-telemetry/opentelemetry-collector/blob/master/extension/README.md#zpages)
+- The [zpages](https://github.com/open-telemetry/opentelemetry-collector/tree/master/extension/zpagesextension/README.md)
 extension, which by default is on port `55679`, can be used to check
 receivers and exporters trace operations via `/debug/tracez`.
 
-- The [pprof](https://github.com/open-telemetry/opentelemetry-collector/blob/master/extension/README.md#pprof)
+- The [pprof](https://github.com/open-telemetry/opentelemetry-collector/tree/master/extension/pprofextension/README.md)
 extension, which by default is on port `1777`, allows you to profile the
 Collector as it runs.
 
