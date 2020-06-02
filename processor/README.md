@@ -268,9 +268,10 @@ examples on using the processor.
 
 ## <a name="batch"></a>Batch Processor
 
-The batch processor accepts spans and places them into batches. Batching helps 
-better compress the data and reduce the number of outgoing connections required 
-to transmit the data. This processor supports both size and time based batching.
+The batch processor accepts spans or metrics and places them into batches.
+Batching helps better compress the data and reduce the number of outgoing 
+connections required to transmit the data. This processor supports both size and
+time based batching.
 
 It is highly recommended to configure the batch processor on every collector.
 The batch processor should be defined in the pipeline after the memory_limiter
@@ -280,8 +281,8 @@ any data drops such as sampling.
 Please refer to [config.go](batchprocessor/config.go) for the config spec.
 
 The following configuration options can be modified:
-- `send_batch_size` (default = 8192): Number of spans after which a batch will 
-be sent.
+- `send_batch_size` (default = 8192): Number of spans or metrics after which a
+batch will be sent.
 - `timeout` (default = 200ms): Time duration after which a batch will be sent
 regardless of size.
 
