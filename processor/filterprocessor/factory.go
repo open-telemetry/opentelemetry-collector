@@ -15,6 +15,8 @@
 package filterprocessor
 
 import (
+	"context"
+
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -48,11 +50,12 @@ func (f Factory) CreateDefaultConfig() configmodels.Processor {
 }
 
 // CreateTraceProcessor creates a trace processor based on this config.
-func (f Factory) CreateTraceProcessor(
-	logger *zap.Logger,
-	nextConsumer consumer.TraceConsumerOld,
-	c configmodels.Processor,
-) (component.TraceProcessorOld, error) {
+func (f *Factory) CreateTraceProcessor(
+	ctx context.Context,
+	params component.ProcessorCreateParams,
+	nextConsumer consumer.TraceConsumer,
+	cfg configmodels.Processor,
+) (component.TraceProcessor, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 

@@ -15,6 +15,7 @@
 package filterprocessor
 
 import (
+	"context"
 	"fmt"
 	"path"
 	"testing"
@@ -22,6 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -66,7 +68,10 @@ func TestCreateProcessors(t *testing.T) {
 
 		for name, cfg := range config.Processors {
 			t.Run(fmt.Sprintf("%s/%s", test.configName, name), func(t *testing.T) {
-				tp, tErr := factory.CreateTraceProcessor(zap.NewNop(), nil, cfg)
+				factory := &Factory{}
+				creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
+
+				tp, tErr := factory.CreateTraceProcessor(context.Background(), creationParams, nil, cfg)
 				// Not implemented error
 				assert.NotNil(t, tErr)
 				assert.Nil(t, tp)

@@ -29,6 +29,15 @@ import (
 	ptest "go.opentelemetry.io/collector/processor/processortest"
 )
 
+type metricNameTest struct {
+	name  string
+	cfg   *Config
+	inc   *filtermetric.MatchProperties
+	exc   *filtermetric.MatchProperties
+	inMN  []string // input Metric names
+	outMN []string // output Metric names
+}
+
 var (
 	validFilters = []string{
 		"prefix/.*",
@@ -40,15 +49,8 @@ var (
 		"full/name/match",
 		"full_name_match",
 	}
-)
 
-func createFilterProcessorConfig(matchType filterset.MatchType, inc []string, exc []string) *Config {
-	return &Config{}
-
-}
-
-func TestFilterMetricProcessor(t *testing.T) {
-	inMetricNames := []string{
+	inMetricNames = []string{
 		"full_name_match",
 		"not_exact_string_match",
 		"prefix/test/match",
@@ -65,21 +67,14 @@ func TestFilterMetricProcessor(t *testing.T) {
 		"not_exact_string_match",
 	}
 
-	regexpMetricsFilterProperties := &filtermetric.MatchProperties{
+	regexpMetricsFilterProperties = &filtermetric.MatchProperties{
 		Config: filterset.Config{
 			MatchType: filterset.Regexp,
 		},
 		MetricNames: validFilters,
 	}
 
-	tests := []struct {
-		name  string
-		cfg   *Config
-		inc   *filtermetric.MatchProperties
-		exc   *filtermetric.MatchProperties
-		inMN  []string // input Metric names
-		outMN []string // output Metric names
-	}{
+	standardTests = []metricNameTest{
 		{
 			name: "includeFilter",
 			inc:  regexpMetricsFilterProperties,
@@ -152,8 +147,15 @@ func TestFilterMetricProcessor(t *testing.T) {
 			outMN: inMetricNames,
 		},
 	}
+)
 
-	for _, test := range tests {
+func createFilterProcessorConfig(matchType filterset.MatchType, inc []string, exc []string) *Config {
+	return &Config{}
+
+}
+
+func TestFilterMetricProcessor(t *testing.T) {
+	for _, test := range standardTests {
 		t.Run(test.name, func(t *testing.T) {
 			// next stores the results of the filter metric processor
 			next := &ptest.CachingMetricsConsumer{}
@@ -190,6 +192,76 @@ func TestFilterMetricProcessor(t *testing.T) {
 			for idx, out := range next.Data.Metrics {
 				assert.Equal(t, test.outMN[idx], out.MetricDescriptor.Name)
 			}
+		})
+	}
+}
+
+func BenchmarkFilter_MetricNames(b *testing.B) {
+	// runs 1000 metrics through a filterprocessor with both include and exclude filters.
+	stressTest := metricNameTest{
+		name: "includeAndExcludeFilter1000Metrics",
+		inc:  regexpMetricsFilterProperties,
+		exc: &filtermetric.MatchProperties{
+			Config: filterset.Config{
+				MatchType: filterset.Strict,
+			},
+			MetricNames: []string{
+				"prefix_test_match",
+				"test_contains_match",
+			},
+		},
+		outMN: []string{
+			"full_name_match",
+			"prefix/test/match",
+			// "prefix_test_match", excluded by exclude filter
+			"prefixprefix/test/match",
+			"test/match/suffix",
+			"test_match_suffix",
+			"test/match/suffixsuffix",
+			"test/contains/match",
+			// "test_contains_match", excluded by exclude filter
+			"full/name/match",
+			"full_name_match",
+		},
+	}
+
+	for len(stressTest.inMN) < 1000 {
+		stressTest.inMN = append(stressTest.inMN, inMetricNames...)
+	}
+
+	benchmarkTests := append(standardTests, stressTest)
+
+	for _, test := range benchmarkTests {
+		// next stores the results of the filter metric processor
+		next := &ptest.CachingMetricsConsumer{}
+		cfg := &Config{
+			ProcessorSettings: configmodels.ProcessorSettings{
+				TypeVal: typeStr,
+				NameVal: typeStr,
+			},
+			Metrics: MetricFilters{
+				Include: test.inc,
+				Exclude: test.exc,
+			},
+		}
+		fmp, err := newFilterMetricProcessor(next, cfg)
+		assert.NotNil(b, fmp)
+		assert.Nil(b, err)
+
+		md := consumerdata.MetricsData{
+			Metrics: make([]*metricspb.Metric, len(test.inMN)),
+		}
+
+		for idx, in := range test.inMN {
+			md.Metrics[idx] = &metricspb.Metric{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name: in,
+				},
+			}
+		}
+
+		b.Run(test.name, func(b *testing.B) {
+			assert.NoError(b, fmp.ConsumeMetricsData(context.Background(), md))
 		})
 	}
 }
