@@ -65,6 +65,7 @@ func TestCreateProcessors(t *testing.T) {
 		factory := &Factory{}
 		factories.Processors[typeStr] = factory
 		config, err := config.LoadConfigFile(t, path.Join(".", "testdata", test.configName), factories)
+		assert.Nil(t, err)
 
 		for name, cfg := range config.Processors {
 			t.Run(fmt.Sprintf("%s/%s", test.configName, name), func(t *testing.T) {
