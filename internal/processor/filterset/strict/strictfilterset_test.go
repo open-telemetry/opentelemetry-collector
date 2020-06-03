@@ -43,7 +43,7 @@ func TestNewStrictFilterSet(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			fs, err := NewStrictFilterSet(test.filters)
+			fs, err := NewFilterSet(test.filters)
 			assert.Equal(t, test.success, fs != nil)
 			assert.Equal(t, test.success, err == nil)
 		})
@@ -51,7 +51,7 @@ func TestNewStrictFilterSet(t *testing.T) {
 }
 
 func TestStrictMatches(t *testing.T) {
-	fs, err := NewStrictFilterSet(validStrictFilters)
+	fs, err := NewFilterSet(validStrictFilters)
 	assert.NotNil(t, fs)
 	assert.NoError(t, err)
 

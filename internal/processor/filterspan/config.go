@@ -88,9 +88,6 @@ type MatchProperties struct {
 	Attributes []Attribute `mapstructure:"attributes"`
 }
 
-// MatchTypeFieldName is the mapstructure field name for MatchProperties.MatchType field.
-const MatchTypeFieldName = "match_type"
-
 // MatchTypeFieldName is the mapstructure field name for MatchProperties.Attributes field.
 const AttributesFieldName = "attributes"
 
