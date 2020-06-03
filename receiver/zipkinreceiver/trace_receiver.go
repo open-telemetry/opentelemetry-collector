@@ -390,6 +390,7 @@ func zipkinSpanToTraceSpan(zs *zipkinmodel.SpanModel) (*tracepb.Span, *commonpb.
 	}
 
 	node := nodeFromZipkinEndpoints(zs, pbs)
+	zipkin.SetTimestampsIfUnset(pbs)
 
 	return pbs, node
 }
