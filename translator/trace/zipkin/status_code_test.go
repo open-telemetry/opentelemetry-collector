@@ -161,8 +161,8 @@ func TestStatusCodeMapperCases(t *testing.T) {
 		},
 
 		{
-			name:     "oc: description only, use unknown code",
-			expected: &tracepb.Status{Code: 2, Message: "a description"},
+			name:     "oc: description only, status ok",
+			expected: &tracepb.Status{Code: 0, Message: "a description"},
 			attributes: map[string]string{
 				"opencensus.status_description": "a description",
 			},
@@ -181,10 +181,34 @@ func TestStatusCodeMapperCases(t *testing.T) {
 		},
 
 		{
-			name:     "error only",
-			expected: nil,
+			name:     "error only: string description",
+			expected: &tracepb.Status{Code: 2},
 			attributes: map[string]string{
 				"error": "a description",
+			},
+		},
+
+		{
+			name:     "error only: true",
+			expected: &tracepb.Status{Code: 2},
+			attributes: map[string]string{
+				"error": "true",
+			},
+		},
+
+		{
+			name:     "error only: false",
+			expected: &tracepb.Status{Code: 2},
+			attributes: map[string]string{
+				"error": "false",
+			},
+		},
+
+		{
+			name:     "error only: 1",
+			expected: &tracepb.Status{Code: 2},
+			attributes: map[string]string{
+				"error": "1",
 			},
 		},
 	}
