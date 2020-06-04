@@ -21,20 +21,21 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/internal/processor/filtermetric"
 )
 
 type filterMetricProcessor struct {
 	cfg     *Config
-	next    consumer.MetricsConsumerOld
+	next    consumer.MetricsConsumer
 	include *filtermetric.Matcher
 	exclude *filtermetric.Matcher
 }
 
-var _ component.MetricsProcessorOld = (*filterMetricProcessor)(nil)
+var _ component.MetricsProcessor = (*filterMetricProcessor)(nil)
 
-func newFilterMetricProcessor(next consumer.MetricsConsumerOld, cfg *Config) (*filterMetricProcessor, error) {
+func newFilterMetricProcessor(next consumer.MetricsConsumer, cfg *Config) (*filterMetricProcessor, error) {
 	inc, err := createMatcher(cfg.Metrics.Include)
 	if err != nil {
 		return nil, err
@@ -73,34 +74,36 @@ func (fmp *filterMetricProcessor) GetCapabilities() component.ProcessorCapabilit
 }
 
 // Start is invoked during service startup.
-func (*filterMetricProcessor) Start(ctx context.Context, host component.Host) error {
+func (*filterMetricProcessor) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
 // Shutdown is invoked during service shutdown.
-func (*filterMetricProcessor) Shutdown(ctx context.Context) error {
+func (*filterMetricProcessor) Shutdown(_ context.Context) error {
 	return nil
 }
 
 // ConsumeMetricsData implements the MetricsProcessor interface
-func (fmp *filterMetricProcessor) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
-	return fmp.next.ConsumeMetricsData(ctx, consumerdata.MetricsData{
-		Node:     md.Node,
-		Resource: md.Resource,
-		Metrics:  fmp.filterMetrics(md.Metrics),
-	})
+func (fmp *filterMetricProcessor) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
+	return fmp.next.ConsumeMetrics(ctx, fmp.filterMetrics(md))
 }
 
 // filterMetrics filters the given spans based off the filterMetricProcessor's filters.
-func (fmp *filterMetricProcessor) filterMetrics(metrics []*metricspb.Metric) []*metricspb.Metric {
-	keep := make([]*metricspb.Metric, 0, len(metrics))
-	for _, m := range metrics {
-		if fmp.shouldKeepMetric(m) {
-			keep = append(keep, m)
+func (fmp *filterMetricProcessor) filterMetrics(md pdata.Metrics) pdata.Metrics {
+	mds := pdatautil.MetricsToMetricsData(md)
+	for i := range mds {
+		if len(mds[i].Metrics) == 0 {
+			continue
 		}
+		keep := make([]*metricspb.Metric, 0, len(mds[i].Metrics))
+		for _, m := range mds[i].Metrics {
+			if fmp.shouldKeepMetric(m) {
+				keep = append(keep, m)
+			}
+		}
+		mds[i].Metrics = keep
 	}
-
-	return keep
+	return pdatautil.MetricsFromMetricsData(mds)
 }
 
 // shouldKeepMetric determines whether a metric should be kept based off the filterMetricProcessor's filters.
