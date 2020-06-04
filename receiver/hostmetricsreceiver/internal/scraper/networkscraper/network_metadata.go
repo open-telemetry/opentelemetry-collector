@@ -25,10 +25,14 @@ const (
 	stateLabelName     = "state"
 )
 
+// direction label values
+
 const (
 	receiveDirectionLabelValue  = "receive"
 	transmitDirectionLabelValue = "transmit"
 )
+
+// descriptors
 
 var metricNetworkPacketsDescriptor = createMetricNetworkPacketsDescriptor()
 

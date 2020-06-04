@@ -18,18 +18,22 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-// filesystem metric constants
+// labels
 
 const (
 	deviceLabelName = "device"
 	stateLabelName  = "state"
 )
 
+// state label values
+
 const (
 	freeLabelValue     = "free"
-	usedLabelValue     = "used"
 	reservedLabelValue = "reserved"
+	usedLabelValue     = "used"
 )
+
+// descriptors
 
 var metricFilesystemUsedDescriptor = createMetricFilesystemUsedDescriptor()
 

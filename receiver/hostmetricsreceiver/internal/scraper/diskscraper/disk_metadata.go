@@ -18,17 +18,21 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-// disk metric constants
+// labels
 
 const (
 	deviceLabelName    = "device"
 	directionLabelName = "direction"
 )
 
+// direction label values
+
 const (
 	readDirectionLabelValue  = "read"
 	writeDirectionLabelValue = "write"
 )
+
+// descriptors
 
 var metricDiskBytesDescriptor = createMetricDiskBytesDescriptor()
 

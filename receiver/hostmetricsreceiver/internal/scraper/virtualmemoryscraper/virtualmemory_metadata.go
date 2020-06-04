@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-// virtual memory metric constants
+// labels
 
 const (
 	deviceLabelName    = "device"
@@ -27,16 +27,26 @@ const (
 	typeLabelName      = "type"
 )
 
-const (
-	majorTypeLabelValue = "major"
-	minorTypeLabelValue = "minor"
+// direction label values
 
+const (
 	inDirectionLabelValue  = "page_in"
 	outDirectionLabelValue = "page_out"
+)
 
+// state label values
+
+const (
 	cachedLabelValue = "cached"
 	freeLabelValue   = "free"
 	usedLabelValue   = "used"
+)
+
+// type label values
+
+const (
+	majorTypeLabelValue = "major"
+	minorTypeLabelValue = "minor"
 )
 
 var metricSwapUsageDescriptor = createMetricSwapUsageDescriptor()
