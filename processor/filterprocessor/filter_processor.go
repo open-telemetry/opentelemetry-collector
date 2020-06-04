@@ -93,7 +93,7 @@ func (fmp *filterMetricProcessor) ConsumeMetricsData(ctx context.Context, md con
 
 // filterMetrics filters the given spans based off the filterMetricProcessor's filters.
 func (fmp *filterMetricProcessor) filterMetrics(metrics []*metricspb.Metric) []*metricspb.Metric {
-	keep := []*metricspb.Metric{}
+	keep := make([]*metricspb.Metric, 0, len(metrics))
 	for _, m := range metrics {
 		if fmp.shouldKeepMetric(m) {
 			keep = append(keep, m)
