@@ -12,38 +12,37 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cpuscraper
+package memoryscraper
 
 import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-// cpu metric constants
+// labels
+
+const stateLabelName = "state"
+
+// state label values
 
 const (
-	stateLabelName = "state"
-	cpuLabelName   = "cpu"
+	bufferedStateLabelValue          = "buffered"
+	cachedStateLabelValue            = "cached"
+	freeStateLabelValue              = "free"
+	slabReclaimableStateLabelValue   = "slab_reclaimable"
+	slabUnreclaimableStateLabelValue = "slab_unreclaimable"
+	usedStateLabelValue              = "used"
 )
 
-const (
-	userStateLabelValue      = "user"
-	systemStateLabelValue    = "system"
-	idleStateLabelValue      = "idle"
-	interruptStateLabelValue = "interrupt"
-	niceStateLabelValue      = "nice"
-	softIRQStateLabelValue   = "softirq"
-	stealStateLabelValue     = "steal"
-	waitStateLabelValue      = "wait"
-)
+// descriptors
 
-var metricCPUSecondsDescriptor = createMetricCPUSecondsDescriptor()
+var metricMemoryUsedDescriptor = createMetricMemoryUsedDescriptor()
 
-func createMetricCPUSecondsDescriptor() pdata.MetricDescriptor {
+func createMetricMemoryUsedDescriptor() pdata.MetricDescriptor {
 	descriptor := pdata.NewMetricDescriptor()
 	descriptor.InitEmpty()
-	descriptor.SetName("host/cpu/time")
-	descriptor.SetDescription("Total CPU ticks or jiffies broken down by different states")
-	descriptor.SetUnit("1")
-	descriptor.SetType(pdata.MetricTypeCounterInt64)
+	descriptor.SetName("host/memory/used")
+	descriptor.SetDescription("Bytes of memory in use.")
+	descriptor.SetUnit("bytes")
+	descriptor.SetType(pdata.MetricTypeGaugeInt64)
 	return descriptor
 }
