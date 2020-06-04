@@ -57,12 +57,12 @@ func (pr *Preceiver) Start(ctx context.Context, host component.Host) error {
 		ctx := context.Background()
 		c, cancel := context.WithCancel(ctx)
 		pr.cancel = cancel
-		c = obsreport.ReceiverContext(c, pr.cfg.Name(), "http", pr.cfg.Name())
+		c = obsreport.ReceiverContext(c, pr.cfg.Name().String(), "http", pr.cfg.Name().String())
 		var jobsMap *internal.JobsMap
 		if !pr.cfg.UseStartTimeMetric {
 			jobsMap = internal.NewJobsMap(time.Duration(2 * time.Minute))
 		}
-		app := internal.NewOcaStore(c, pr.consumer, pr.logger, jobsMap, pr.cfg.UseStartTimeMetric, pr.cfg.Name())
+		app := internal.NewOcaStore(c, pr.consumer, pr.logger, jobsMap, pr.cfg.UseStartTimeMetric, pr.cfg.Name().String())
 		// need to use a logger with the gokitLog interface
 		l := internal.NewZapToGokitLogAdapter(pr.logger)
 		scrapeManager := scrape.NewManager(l, app)

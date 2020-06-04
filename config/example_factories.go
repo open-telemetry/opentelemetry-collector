@@ -168,24 +168,15 @@ type MultiProtoReceiver struct {
 
 var _ configmodels.Receiver = (*MultiProtoReceiver)(nil)
 
-// Name gets the exporter name.
-func (rs *MultiProtoReceiver) Name() string {
-	return rs.NameVal
-}
-
 // SetName sets the receiver name.
-func (rs *MultiProtoReceiver) SetName(name string) {
-	rs.NameVal = name
+func (rs *MultiProtoReceiver) SetName(name configmodels.EntityName) {
+	rs.TypeVal = name.Type()
+	rs.NameVal = name.Name()
 }
 
-// Type sets the receiver type.
-func (rs *MultiProtoReceiver) Type() configmodels.Type {
-	return rs.TypeVal
-}
-
-// SetType sets the receiver type.
-func (rs *MultiProtoReceiver) SetType(typeStr configmodels.Type) {
-	rs.TypeVal = typeStr
+// Return receiver name.
+func (rs *MultiProtoReceiver) Name() configmodels.EntityName {
+	return configmodels.NewEntityName(rs.TypeVal, rs.NameVal)
 }
 
 // MultiProtoReceiverOneCfg is multi proto receiver config.

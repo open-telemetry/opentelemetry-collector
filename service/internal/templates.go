@@ -19,6 +19,8 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+
+	"go.opentelemetry.io/collector/config/configmodels"
 )
 
 var (
@@ -69,7 +71,7 @@ type SummaryExtensionsTableData struct {
 
 // SummaryExtensionsTableData contains data for one row in extensions summary table template.
 type SummaryExtensionsTableRowData struct {
-	FullName string
+	FullName configmodels.EntityName
 	Enabled  bool
 }
 
@@ -89,12 +91,12 @@ type SummaryPipelinesTableData struct {
 
 // SummaryPipelinesTableRowData contains data for one row in pipelines summary table template.
 type SummaryPipelinesTableRowData struct {
-	FullName            string
+	FullName            configmodels.EntityName
 	InputType           string
 	MutatesConsumedData bool
-	Receivers           []string
-	Processors          []string
-	Exporters           []string
+	Receivers           []configmodels.EntityName
+	Processors          []configmodels.EntityName
+	Exporters           []configmodels.EntityName
 }
 
 // WriteHTMLSummaryTable writes the summary table for one component type (receivers, processors, exporters).

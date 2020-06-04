@@ -37,7 +37,7 @@ func TestDecodeConfig(t *testing.T) {
 
 	// Verify extensions.
 	assert.Equal(t, 3, len(config.Extensions))
-	assert.Equal(t, "some string", config.Extensions["exampleextension/1"].(*ExampleExtensionCfg).ExtraSetting)
+	assert.Equal(t, "some string", config.Extensions[configmodels.MustParseEntityName("exampleextension/1")].(*ExampleExtensionCfg).ExtraSetting)
 
 	// Verify service.
 	assert.Equal(t, 2, len(config.Service.Extensions))
@@ -56,7 +56,7 @@ func TestDecodeConfig(t *testing.T) {
 			},
 			ExtraSetting: "some string",
 		},
-		config.Receivers["examplereceiver"],
+		config.Receivers[configmodels.MustParseEntityName("examplereceiver")],
 		"Did not load receiver config correctly")
 
 	assert.Equal(t,
@@ -68,7 +68,7 @@ func TestDecodeConfig(t *testing.T) {
 			},
 			ExtraSetting: "some string",
 		},
-		config.Receivers["examplereceiver/myreceiver"],
+		config.Receivers[configmodels.MustParseEntityName("examplereceiver/myreceiver")],
 		"Did not load receiver config correctly")
 
 	// Verify exporters
@@ -82,7 +82,7 @@ func TestDecodeConfig(t *testing.T) {
 			},
 			ExtraSetting: "some export string",
 		},
-		config.Exporters["exampleexporter"],
+		config.Exporters[configmodels.MustParseEntityName("exampleexporter")],
 		"Did not load exporter config correctly")
 
 	assert.Equal(t,
@@ -93,7 +93,7 @@ func TestDecodeConfig(t *testing.T) {
 			},
 			ExtraSetting: "some export string 2",
 		},
-		config.Exporters["exampleexporter/myexporter"],
+		config.Exporters[configmodels.MustParseEntityName("exampleexporter/myexporter")],
 		"Did not load exporter config correctly")
 
 	// Verify Processors
@@ -107,7 +107,7 @@ func TestDecodeConfig(t *testing.T) {
 			},
 			ExtraSetting: "some export string",
 		},
-		config.Processors["exampleprocessor"],
+		config.Processors[configmodels.MustParseEntityName("exampleprocessor")],
 		"Did not load processor config correctly")
 
 	// Verify Pipelines
@@ -115,11 +115,11 @@ func TestDecodeConfig(t *testing.T) {
 
 	assert.Equal(t,
 		&configmodels.Pipeline{
-			Name:       "traces",
+			Name:       configmodels.MustParseEntityName("traces"),
 			InputType:  configmodels.TracesDataType,
-			Receivers:  []string{"examplereceiver"},
-			Processors: []string{"exampleprocessor"},
-			Exporters:  []string{"exampleexporter"},
+			Receivers:  []configmodels.EntityName{configmodels.MustParseEntityName("examplereceiver")},
+			Processors: []configmodels.EntityName{configmodels.MustParseEntityName("exampleprocessor")},
+			Exporters:  []configmodels.EntityName{configmodels.MustParseEntityName("exampleexporter")},
 		},
 		config.Service.Pipelines["traces"],
 		"Did not load pipeline config correctly")
@@ -213,7 +213,7 @@ func TestSimpleConfig(t *testing.T) {
 				ExtraMapSetting:  map[string]string{"ext-1": extensionExtraMapValue + "_1", "ext-2": extensionExtraMapValue + "_2"},
 				ExtraListSetting: []string{extensionExtraListElement + "_1", extensionExtraListElement + "_2"},
 			},
-			config.Extensions["exampleextension"],
+			config.Extensions[configmodels.MustParseEntityName("exampleextension")],
 			"TEST[%s] Did not load extension config correctly", test.name)
 
 		// Verify service.
@@ -234,7 +234,7 @@ func TestSimpleConfig(t *testing.T) {
 				ExtraMapSetting:  map[string]string{"recv.1": receiverExtraMapValue + "_1", "recv.2": receiverExtraMapValue + "_2"},
 				ExtraListSetting: []string{receiverExtraListElement + "_1", receiverExtraListElement + "_2"},
 			},
-			config.Receivers["examplereceiver"],
+			config.Receivers[configmodels.MustParseEntityName("examplereceiver")],
 			"TEST[%s] Did not load receiver config correctly", test.name)
 
 		// Verify exporters
@@ -251,7 +251,7 @@ func TestSimpleConfig(t *testing.T) {
 				ExtraMapSetting:  map[string]string{"exp_1": exporterExtraMapValue + "_1", "exp_2": exporterExtraMapValue + "_2"},
 				ExtraListSetting: []string{exporterExtraListElement + "_1", exporterExtraListElement + "_2"},
 			},
-			config.Exporters["exampleexporter"],
+			config.Exporters[configmodels.MustParseEntityName("exampleexporter")],
 			"TEST[%s] Did not load exporter config correctly", test.name)
 
 		// Verify Processors
@@ -267,7 +267,7 @@ func TestSimpleConfig(t *testing.T) {
 				ExtraMapSetting:  map[string]string{"proc_1": processorExtraMapValue + "_1", "proc_2": processorExtraMapValue + "_2"},
 				ExtraListSetting: []string{processorExtraListElement + "_1", processorExtraListElement + "_2"},
 			},
-			config.Processors["exampleprocessor"],
+			config.Processors[configmodels.MustParseEntityName("exampleprocessor")],
 			"TEST[%s] Did not load processor config correctly", test.name)
 
 		// Verify Pipelines
@@ -275,13 +275,13 @@ func TestSimpleConfig(t *testing.T) {
 
 		assert.Equalf(t,
 			&configmodels.Pipeline{
-				Name:       "traces",
+				Name:       configmodels.MustParseEntityName("traces"),
 				InputType:  configmodels.TracesDataType,
-				Receivers:  []string{"examplereceiver"},
-				Processors: []string{"exampleprocessor"},
-				Exporters:  []string{"exampleexporter"},
+				Receivers:  []configmodels.EntityName{configmodels.MustParseEntityName("examplereceiver")},
+				Processors: []configmodels.EntityName{configmodels.MustParseEntityName("exampleprocessor")},
+				Exporters:  []configmodels.EntityName{configmodels.MustParseEntityName("exampleexporter")},
 			},
-			config.Service.Pipelines["traces"],
+			config.Service.Pipelines[configmodels.MustParseEntityName("traces")],
 			"TEST[%s] Did not load pipeline config correctly", test.name)
 	}
 }
@@ -314,7 +314,7 @@ func TestDecodeConfig_MultiProto(t *testing.T) {
 				},
 			},
 		},
-		config.Receivers["multireceiver"],
+		config.Receivers[configmodels.MustParseEntityName("multireceiver")],
 		"Did not load receiver config correctly")
 
 	assert.Equal(t,
@@ -332,7 +332,7 @@ func TestDecodeConfig_MultiProto(t *testing.T) {
 				},
 			},
 		},
-		config.Receivers["multireceiver/myreceiver"],
+		config.Receivers[configmodels.MustParseEntityName("multireceiver/myreceiver")],
 		"Did not load receiver config correctly")
 }
 

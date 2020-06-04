@@ -108,7 +108,7 @@ func newMemoryLimiter(
 		ballastSize:     ballastSize,
 		ticker:          time.NewTicker(cfg.CheckInterval),
 		readMemStatsFn:  runtime.ReadMemStats,
-		procName:        cfg.Name(),
+		procName:        cfg.Name().String(),
 		logger:          logger,
 	}
 

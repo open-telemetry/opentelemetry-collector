@@ -34,7 +34,7 @@ type traceDataPusher func(ctx context.Context, td pdata.Traces) (droppedSpans in
 
 // traceExporterOld implements the exporter with additional helper options.
 type traceExporterOld struct {
-	exporterFullName string
+	exporterFullName configmodels.EntityName
 	dataPusher       traceDataPusherOld
 	shutdown         Shutdown
 }
@@ -44,7 +44,7 @@ func (te *traceExporterOld) Start(_ context.Context, _ component.Host) error {
 }
 
 func (te *traceExporterOld) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
-	exporterCtx := obsreport.ExporterContext(ctx, te.exporterFullName)
+	exporterCtx := obsreport.ExporterContext(ctx, te.exporterFullName.String())
 	_, err := te.dataPusher(exporterCtx, td)
 	return err
 }
@@ -89,9 +89,9 @@ func NewTraceExporterOld(
 
 // withObservability wraps the current pusher into a function that records
 // the observability signals during the pusher execution.
-func (p traceDataPusherOld) withObservability(exporterName string) traceDataPusherOld {
+func (p traceDataPusherOld) withObservability(exporterName configmodels.EntityName) traceDataPusherOld {
 	return func(ctx context.Context, td consumerdata.TraceData) (int, error) {
-		ctx = obsreport.StartTraceDataExportOp(ctx, exporterName)
+		ctx = obsreport.StartTraceDataExportOp(ctx, exporterName.String())
 		// Forward the data to the next consumer (this pusher is the next).
 		droppedSpans, err := p(ctx, td)
 
@@ -105,7 +105,7 @@ func (p traceDataPusherOld) withObservability(exporterName string) traceDataPush
 }
 
 type traceExporter struct {
-	exporterFullName string
+	exporterFullName configmodels.EntityName
 	dataPusher       traceDataPusher
 	shutdown         Shutdown
 }
@@ -118,7 +118,7 @@ func (te *traceExporter) ConsumeTraces(
 	ctx context.Context,
 	td pdata.Traces,
 ) error {
-	exporterCtx := obsreport.ExporterContext(ctx, te.exporterFullName)
+	exporterCtx := obsreport.ExporterContext(ctx, te.exporterFullName.String())
 	_, err := te.dataPusher(exporterCtx, td)
 	return err
 }
@@ -162,9 +162,9 @@ func NewTraceExporter(
 
 // withObservability wraps the current pusher into a function that records
 // the observability signals during the pusher execution.
-func (p traceDataPusher) withObservability(exporterName string) traceDataPusher {
+func (p traceDataPusher) withObservability(exporterName configmodels.EntityName) traceDataPusher {
 	return func(ctx context.Context, td pdata.Traces) (int, error) {
-		ctx = obsreport.StartTraceDataExportOp(ctx, exporterName)
+		ctx = obsreport.StartTraceDataExportOp(ctx, exporterName.String())
 		// Forward the data to the next consumer (this pusher is the next).
 		droppedSpans, err := p(ctx, td)
 

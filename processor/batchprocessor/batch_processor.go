@@ -74,7 +74,7 @@ var _ consumer.MetricsConsumer = (*batchMetricProcessor)(nil)
 func newBatchTracesProcessor(params component.ProcessorCreateParams, trace consumer.TraceConsumer, cfg *Config) *batchTraceProcessor {
 	p := &batchTraceProcessor{
 		batchProcessor: batchProcessor{
-			name:   cfg.Name(),
+			name:   cfg.Name().String(),
 			logger: params.Logger,
 
 			sendBatchSize: cfg.SendBatchSize,
@@ -96,7 +96,7 @@ func newBatchTracesProcessor(params component.ProcessorCreateParams, trace consu
 func newBatchMetricsProcessor(params component.ProcessorCreateParams, metrics consumer.MetricsConsumer, cfg *Config) *batchMetricProcessor {
 	p := &batchMetricProcessor{
 		batchProcessor: batchProcessor{
-			name:   cfg.Name(),
+			name:   cfg.Name().String(),
 			logger: params.Logger,
 
 			sendBatchSize: cfg.SendBatchSize,

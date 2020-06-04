@@ -46,13 +46,8 @@ type Config struct {
 }
 
 // Name gets the receiver name.
-func (rs *Config) Name() string {
-	return rs.NameVal
-}
-
-// SetName sets the receiver name.
-func (rs *Config) SetName(name string) {
-	rs.NameVal = name
+func (rs *Config) Name() configmodels.EntityName {
+	return configmodels.NewEntityName(rs.TypeVal, rs.NameVal)
 }
 
 // Type sets the receiver type.
@@ -60,7 +55,8 @@ func (rs *Config) Type() configmodels.Type {
 	return rs.TypeVal
 }
 
-// SetType sets the receiver type.
-func (rs *Config) SetType(typeStr configmodels.Type) {
-	rs.TypeVal = typeStr
+// SetEntityName sets the processor name and type.
+func (rs *Config) SetName(name configmodels.EntityName) {
+	rs.TypeVal = name.Type()
+	rs.NameVal = name.Name()
 }

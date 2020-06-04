@@ -30,7 +30,7 @@ import (
 type PushMetricsDataOld func(ctx context.Context, td consumerdata.MetricsData) (droppedTimeSeries int, err error)
 
 type metricsExporterOld struct {
-	exporterFullName string
+	exporterFullName configmodels.EntityName
 	pushMetricsData  PushMetricsDataOld
 	shutdown         Shutdown
 }
@@ -40,7 +40,7 @@ func (me *metricsExporterOld) Start(ctx context.Context, host component.Host) er
 }
 
 func (me *metricsExporterOld) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
-	exporterCtx := obsreport.ExporterContext(ctx, me.exporterFullName)
+	exporterCtx := obsreport.ExporterContext(ctx, me.exporterFullName.String())
 	_, err := me.pushMetricsData(exporterCtx, md)
 	return err
 }
@@ -78,9 +78,9 @@ func NewMetricsExporterOld(config configmodels.Exporter, pushMetricsData PushMet
 	}, nil
 }
 
-func pushMetricsWithObservabilityOld(next PushMetricsDataOld, exporterName string) PushMetricsDataOld {
+func pushMetricsWithObservabilityOld(next PushMetricsDataOld, exporterName configmodels.EntityName) PushMetricsDataOld {
 	return func(ctx context.Context, md consumerdata.MetricsData) (int, error) {
-		ctx = obsreport.StartMetricsExportOp(ctx, exporterName)
+		ctx = obsreport.StartMetricsExportOp(ctx, exporterName.String())
 		numDroppedTimeSeries, err := next(ctx, md)
 
 		// TODO: this is not ideal: it should come from the next function itself.
@@ -107,7 +107,7 @@ func NumTimeSeries(md consumerdata.MetricsData) int {
 type PushMetricsData func(ctx context.Context, md pdata.Metrics) (droppedTimeSeries int, err error)
 
 type metricsExporter struct {
-	exporterFullName string
+	exporterFullName configmodels.EntityName
 	pushMetricsData  PushMetricsData
 	shutdown         Shutdown
 }
@@ -117,7 +117,7 @@ func (me *metricsExporter) Start(ctx context.Context, host component.Host) error
 }
 
 func (me *metricsExporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
-	exporterCtx := obsreport.ExporterContext(ctx, me.exporterFullName)
+	exporterCtx := obsreport.ExporterContext(ctx, me.exporterFullName.String())
 	_, err := me.pushMetricsData(exporterCtx, md)
 	return err
 }
@@ -155,9 +155,9 @@ func NewMetricsExporter(config configmodels.Exporter, pushMetricsData PushMetric
 	}, nil
 }
 
-func pushMetricsWithObservability(next PushMetricsData, exporterName string) PushMetricsData {
+func pushMetricsWithObservability(next PushMetricsData, exporterName configmodels.EntityName) PushMetricsData {
 	return func(ctx context.Context, md pdata.Metrics) (int, error) {
-		ctx = obsreport.StartMetricsExportOp(ctx, exporterName)
+		ctx = obsreport.StartMetricsExportOp(ctx, exporterName.String())
 		numDroppedMetrics, err := next(ctx, md)
 
 		// TODO: this is not ideal: it should come from the next function itself.

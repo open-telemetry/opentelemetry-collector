@@ -106,7 +106,7 @@ func (f *Factory) createReceiver(cfg configmodels.Receiver) (*Receiver, error) {
 
 		// We don't have a receiver, so create one.
 		receiver, err = New(
-			rCfg.Name(), rCfg.Transport, rCfg.Endpoint, nil, nil, opts...)
+			rCfg.Name().String(), rCfg.Transport, rCfg.Endpoint, nil, nil, opts...)
 		if err != nil {
 			return nil, err
 		}

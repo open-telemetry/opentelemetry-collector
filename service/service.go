@@ -554,7 +554,7 @@ func (app *Application) getPipelinesSummaryTableData() internal.SummaryPipelines
 	}
 
 	sort.Slice(data.Rows, func(i, j int) bool {
-		return data.Rows[i].FullName < data.Rows[j].FullName
+		return data.Rows[i].FullName.String() < data.Rows[j].FullName.String()
 	})
 	return data
 }
@@ -571,7 +571,7 @@ func (app *Application) getExtensionsSummaryTableData() internal.SummaryExtensio
 	}
 
 	sort.Slice(data.Rows, func(i, j int) bool {
-		return data.Rows[i].FullName < data.Rows[j].FullName
+		return data.Rows[i].FullName.String() < data.Rows[j].FullName.String()
 	})
 	return data
 }

@@ -216,7 +216,7 @@ func (f *Factory) CreateTraceReceiver(
 	}
 
 	// Create the receiver.
-	return New(rCfg.Name(), &config, nextConsumer, params)
+	return New(rCfg.Name().String(), &config, nextConsumer, params)
 }
 
 // CreateMetricsReceiver creates a metrics receiver based on provided config.

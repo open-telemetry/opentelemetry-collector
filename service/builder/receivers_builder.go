@@ -105,11 +105,11 @@ func (rb *ReceiversBuilder) Build() (Receivers, error) {
 
 	// BuildProcessors receivers based on configuration.
 	for _, cfg := range rb.config.Receivers {
-		logger := rb.logger.With(zap.String(typeLogKey, string(cfg.Type())), zap.String(nameLogKey, cfg.Name()))
+		logger := rb.logger.With(zap.Stringer(typeLogKey, cfg.Name().Type()), zap.Stringer(nameLogKey, cfg.Name()))
 		rcv, err := rb.buildReceiver(logger, cfg)
 		if err != nil {
 			if err == errUnusedReceiver {
-				logger.Info("Ignoring receiver as it is not used by any pipeline", zap.String("receiver", cfg.Name()))
+				logger.Info("Ignoring receiver as it is not used by any pipeline", zap.Stringer("receiver", cfg.Name()))
 				continue
 			}
 			return nil, err
@@ -121,7 +121,7 @@ func (rb *ReceiversBuilder) Build() (Receivers, error) {
 }
 
 // hasReceiver returns true if the pipeline is attached to specified receiver.
-func hasReceiver(pipeline *configmodels.Pipeline, receiverName string) bool {
+func hasReceiver(pipeline *configmodels.Pipeline, receiverName configmodels.EntityName) bool {
 	for _, name := range pipeline.Receivers {
 		if name == receiverName {
 			return true
@@ -245,9 +245,9 @@ func (rb *ReceiversBuilder) buildReceiver(logger *zap.Logger, config configmodel
 	}
 
 	// Prepare to build the receiver.
-	factory := rb.factories[config.Type()]
+	factory := rb.factories[config.Name().Type()]
 	if factory == nil {
-		return nil, fmt.Errorf("receiver factory not found for type: %s", config.Type())
+		return nil, fmt.Errorf("receiver factory not found for type: %s", config.Name().Type())
 	}
 	rcv := &builtReceiver{
 		logger: logger,

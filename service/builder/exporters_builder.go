@@ -171,7 +171,7 @@ func (eb *ExportersBuilder) Build() (Exporters, error) {
 
 	// BuildExporters exporters based on configuration and required input data types.
 	for _, cfg := range eb.config.Exporters {
-		componentLogger := eb.logger.With(zap.String(typeLogKey, string(cfg.Type())), zap.String(nameLogKey, cfg.Name()))
+		componentLogger := eb.logger.With(zap.Stringer(typeLogKey, cfg.Name().Type()), zap.Stringer(nameLogKey, cfg.Name()))
 		exp, err := eb.buildExporter(componentLogger, cfg, exporterInputDataTypes)
 		if err != nil {
 			return nil, err
@@ -221,9 +221,9 @@ func (eb *ExportersBuilder) buildExporter(
 	config configmodels.Exporter,
 	exportersInputDataTypes exportersRequiredDataTypes,
 ) (*builtExporter, error) {
-	factory := eb.factories[config.Type()]
+	factory := eb.factories[config.Name().Type()]
 	if factory == nil {
-		return nil, fmt.Errorf("exporter factory not found for type: %s", config.Type())
+		return nil, fmt.Errorf("exporter factory not found for type: %s", config.Name().Type())
 	}
 
 	exporter := &builtExporter{
@@ -299,7 +299,7 @@ func (eb *ExportersBuilder) buildExporter(
 		}
 	}
 
-	eb.logger.Info("Exporter is enabled.", zap.String("exporter", config.Name()))
+	eb.logger.Info("Exporter is enabled.", zap.Stringer("exporter", config.Name()))
 
 	return exporter, nil
 }

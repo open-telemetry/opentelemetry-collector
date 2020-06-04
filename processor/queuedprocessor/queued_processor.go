@@ -61,7 +61,7 @@ func newQueuedSpanProcessor(
 ) *queuedSpanProcessor {
 	boundedQueue := queue.NewBoundedQueue(cfg.QueueSize, func(item interface{}) {})
 	return &queuedSpanProcessor{
-		name:                     cfg.Name(),
+		name:                     cfg.Name().String(),
 		queue:                    boundedQueue,
 		logger:                   params.Logger,
 		numWorkers:               cfg.NumWorkers,
