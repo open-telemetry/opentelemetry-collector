@@ -46,8 +46,10 @@ var (
 	errFake = errors.New("errFake")
 
 	// Names used by the metrics and labels are hard coded here in order to avoid
-	// inadvertent changes: at this point changing metric names and labeles should
+	// inadvertent changes: at this point changing metric names and labels should
 	// be treated as a breaking changing and requires a good justification.
+	// Changes to metric names or labels can break alerting, dashboards, etc
+	// that are used to monitor the Collector in production deployments.
 	// DO NOT SWITCH THE VARIABLES BELOW TO SIMILAR ONES DEFINED ON THE PACKAGE.
 	receiverTag, _  = tag.NewKey("receiver")
 	transportTag, _ = tag.NewKey("transport")
