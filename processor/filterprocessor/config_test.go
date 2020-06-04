@@ -111,17 +111,6 @@ func TestLoadingConfigStrict(t *testing.T) {
 					},
 				},
 			},
-		}, {
-			filterName: "filter/strictwithconfig",
-			expCfg: &Config{
-				ProcessorSettings: configmodels.ProcessorSettings{
-					NameVal: "filter/strictwithconfig",
-					TypeVal: typeStr,
-				},
-				Metrics: MetricFilters{
-					Include: testDataMetricProperties,
-				},
-			},
 		},
 	}
 

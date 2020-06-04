@@ -35,14 +35,6 @@ processors:
                 match_type: strict
                 metric_names:
                     - hello_world
-    filter/strictwithconfig:
-        metrics:
-            include:
-                match_type: strict
-                strict:
-                metric_names:
-                    - hello_world
-                    - hello/world
 
 exporters:
     exampleexporter:

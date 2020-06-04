@@ -29,6 +29,13 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 )
 
+func TestType(t *testing.T) {
+	factory := Factory{}
+	pType := factory.Type()
+
+	assert.Equal(t, pType, configmodels.Type("filter"))
+}
+
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()

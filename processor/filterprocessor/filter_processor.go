@@ -26,11 +26,10 @@ import (
 )
 
 type filterMetricProcessor struct {
-	cfg          *Config
-	capabilities component.ProcessorCapabilities
-	next         consumer.MetricsConsumerOld
-	include      *filtermetric.Matcher
-	exclude      *filtermetric.Matcher
+	cfg     *Config
+	next    consumer.MetricsConsumerOld
+	include *filtermetric.Matcher
+	exclude *filtermetric.Matcher
 }
 
 var _ component.MetricsProcessorOld = (*filterMetricProcessor)(nil)
@@ -47,11 +46,10 @@ func newFilterMetricProcessor(next consumer.MetricsConsumerOld, cfg *Config) (*f
 	}
 
 	return &filterMetricProcessor{
-		cfg:          cfg,
-		capabilities: component.ProcessorCapabilities{MutatesConsumedData: false},
-		next:         next,
-		include:      inc,
-		exclude:      exc,
+		cfg:     cfg,
+		next:    next,
+		include: inc,
+		exclude: exc,
 	}, nil
 }
 
@@ -71,7 +69,7 @@ func createMatcher(mp *filtermetric.MatchProperties) (*filtermetric.Matcher, err
 
 // GetCapabilities returns the Capabilities assocciated with the resource processor.
 func (fmp *filterMetricProcessor) GetCapabilities() component.ProcessorCapabilities {
-	return fmp.capabilities
+	return component.ProcessorCapabilities{MutatesConsumedData: false}
 }
 
 // Start is invoked during service startup.

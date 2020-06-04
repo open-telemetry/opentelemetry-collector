@@ -167,6 +167,11 @@ func TestFilterMetricProcessor(t *testing.T) {
 			assert.NotNil(t, fmp)
 			assert.Nil(t, err)
 
+			caps := fmp.GetCapabilities()
+			assert.Equal(t, false, caps.MutatesConsumedData)
+			ctx := context.Background()
+			assert.NoError(t, fmp.Start(ctx, nil))
+
 			md := consumerdata.MetricsData{
 				Metrics: make([]*metricspb.Metric, len(test.inMN)),
 			}
@@ -187,6 +192,8 @@ func TestFilterMetricProcessor(t *testing.T) {
 			for idx, out := range gotMetrics {
 				assert.Equal(t, test.outMN[idx], out.MetricDescriptor.Name)
 			}
+
+			assert.NoError(t, fmp.Shutdown(ctx))
 		})
 	}
 }
