@@ -35,6 +35,7 @@ import (
 	"go.opentelemetry.io/collector/extension/zpagesextension"
 	"go.opentelemetry.io/collector/processor/attributesprocessor"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
+	"go.opentelemetry.io/collector/processor/filterprocessor"
 	"go.opentelemetry.io/collector/processor/memorylimiter"
 	"go.opentelemetry.io/collector/processor/queuedprocessor"
 	"go.opentelemetry.io/collector/processor/resourceprocessor"
@@ -74,6 +75,7 @@ func TestDefaultComponents(t *testing.T) {
 		"tail_sampling":         &tailsamplingprocessor.Factory{},
 		"probabilistic_sampler": &probabilisticsamplerprocessor.Factory{},
 		"span":                  &spanprocessor.Factory{},
+		"filter":                &filterprocessor.Factory{},
 	}
 	expectedExporters := map[configmodels.Type]component.ExporterFactoryBase{
 		"opencensus": &opencensusexporter.Factory{},
