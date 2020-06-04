@@ -107,7 +107,7 @@ func newAttributesMatcher(mp *MatchProperties) (attributesMatcher, error) {
 	if mp.Config.MatchType != filterset.Strict {
 		return nil, fmt.Errorf(
 			"%s=%s is not supported for %q",
-			MatchTypeFieldName, filterset.Regexp, AttributesFieldName,
+			filterset.MatchTypeFieldName, filterset.Regexp, AttributesFieldName,
 		)
 	}
 

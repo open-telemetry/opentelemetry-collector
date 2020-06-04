@@ -29,6 +29,8 @@ const (
 	Regexp MatchType = "regexp"
 	// Strict is the FilterType for filtering by exact string matches.
 	Strict MatchType = "strict"
+	// MatchTypeFieldName is the mapstructure field name for MatchType field.
+	MatchTypeFieldName = "match_type"
 )
 
 var (
@@ -45,11 +47,11 @@ type Config struct {
 func CreateFilterSet(filters []string, cfg *Config) (FilterSet, error) {
 	switch cfg.MatchType {
 	case Regexp:
-		return regexp.CreateRegexpFilterSet(filters, cfg.RegexpConfig)
+		return regexp.NewFilterSet(filters, cfg.RegexpConfig)
 	case Strict:
 		// Strict FilterSets do not have any extra configuration options, so call the constructor directly.
-		return strict.NewStrictFilterSet(filters)
+		return strict.NewFilterSet(filters)
 	default:
-		return nil, fmt.Errorf("unrecognized match_type: '%v', valid types are: %v", cfg.MatchType, validMatchTypes)
+		return nil, fmt.Errorf("unrecognized %v: '%v', valid types are: %v", MatchTypeFieldName, cfg.MatchType, validMatchTypes)
 	}
 }

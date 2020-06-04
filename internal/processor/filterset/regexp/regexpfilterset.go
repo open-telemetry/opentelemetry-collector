@@ -15,7 +15,6 @@
 package regexp
 
 import (
-	"flag"
 	"regexp"
 
 	"github.com/golang/groupcache/lru"
@@ -23,25 +22,26 @@ import (
 
 // FilterSet encapsulates a set of filters and caches match results.
 // Filters are re2 regex strings.
-// FilterSet is exported for convenience, but has unexported fields and should be constructed through NewRegexpFilterSet.
+// FilterSet is exported for convenience, but has unexported fields and should be constructed through NewFilterSet.
 //
 // FilterSet satisfies the FilterSet interface from
 // "go.opentelemetry.io/collector/internal/processor/filterset"
 type FilterSet struct {
-	regexes      map[string]*regexp.Regexp
+	regexes      []*regexp.Regexp
 	cacheEnabled bool
 	cache        *lru.Cache
 }
 
-// NewRegexpFilterSet constructs a FilterSet of re2 regex strings.
+// NewFilterSet constructs a FilterSet of re2 regex strings.
 // If any of the given filters fail to compile into re2, an error is returned.
-func NewRegexpFilterSet(filters []string, opts ...Option) (*FilterSet, error) {
+func NewFilterSet(filters []string, cfg *Config) (*FilterSet, error) {
 	fs := &FilterSet{
-		regexes: map[string]*regexp.Regexp{},
+		regexes: make([]*regexp.Regexp, 0, len(filters)),
 	}
 
-	for _, o := range opts {
-		o(fs)
+	if cfg != nil && cfg.CacheEnabled {
+		fs.cacheEnabled = true
+		fs.cache = lru.New(cfg.CacheMaxNumEntries)
 	}
 
 	if err := fs.addFilters(filters); err != nil {
@@ -78,8 +78,9 @@ func (rfs *FilterSet) Matches(toMatch string) bool {
 // addFilters compiles all the given filters and stores them as regexes.
 // All regexes are automatically anchored to enforce full string matches.
 func (rfs *FilterSet) addFilters(filters []string) error {
+	dedup := make(map[string]struct{}, len(filters))
 	for _, f := range filters {
-		if _, ok := rfs.regexes[flag.CommandLine.Name()]; ok {
+		if _, ok := dedup[f]; ok {
 			continue
 		}
 
@@ -87,7 +88,8 @@ func (rfs *FilterSet) addFilters(filters []string) error {
 		if err != nil {
 			return err
 		}
-		rfs.regexes[f] = re
+		rfs.regexes = append(rfs.regexes, re)
+		dedup[f] = struct{}{}
 	}
 
 	return nil

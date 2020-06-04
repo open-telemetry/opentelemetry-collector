@@ -59,7 +59,7 @@ func TestNewRegexpFilterSet(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			fs, err := NewRegexpFilterSet(test.filters)
+			fs, err := NewFilterSet(test.filters, nil)
 			assert.Equal(t, test.success, fs != nil)
 			assert.Equal(t, test.success, err == nil)
 
@@ -72,7 +72,7 @@ func TestNewRegexpFilterSet(t *testing.T) {
 }
 
 func TestRegexpMatches(t *testing.T) {
-	fs, err := NewRegexpFilterSet(validRegexpFilters)
+	fs, err := NewFilterSet(validRegexpFilters, &Config{})
 	assert.NotNil(t, fs)
 	assert.NoError(t, err)
 	assert.False(t, fs.cacheEnabled)
@@ -110,9 +110,24 @@ func TestRegexpMatches(t *testing.T) {
 	}
 }
 
+func TestRegexpDeDup(t *testing.T) {
+	dupRegexpFilters := []string{
+		"prefix/.*",
+		"prefix/.*",
+	}
+	fs, err := NewFilterSet(dupRegexpFilters, &Config{})
+	assert.NotNil(t, fs)
+	assert.NoError(t, err)
+	assert.False(t, fs.cacheEnabled)
+	assert.EqualValues(t, 1, len(fs.regexes))
+}
+
 func TestRegexpMatchesCaches(t *testing.T) {
 	// 0 means unlimited cache
-	fs, err := NewRegexpFilterSet(validRegexpFilters, WithCache(0))
+	fs, err := NewFilterSet(validRegexpFilters, &Config{
+		CacheEnabled:       true,
+		CacheMaxNumEntries: 0,
+	})
 	assert.NotNil(t, fs)
 	assert.NoError(t, err)
 	assert.True(t, fs.cacheEnabled)
@@ -158,7 +173,10 @@ func TestRegexpMatchesCaches(t *testing.T) {
 
 func TestWithCacheSize(t *testing.T) {
 	size := 3
-	fs, err := NewRegexpFilterSet(validRegexpFilters, WithCache(size))
+	fs, err := NewFilterSet(validRegexpFilters, &Config{
+		CacheEnabled:       true,
+		CacheMaxNumEntries: size,
+	})
 	assert.NotNil(t, fs)
 	assert.NoError(t, err)
 
