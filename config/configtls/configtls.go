@@ -77,23 +77,24 @@ func (c TLSSetting) LoadTLSConfig() (*tls.Config, error) {
 			return nil, fmt.Errorf("failed to load CA CertPool: %w", err)
 		}
 	}
-	// #nosec G402
-	tlsCfg := &tls.Config{
-		RootCAs: certPool,
-	}
 
 	if (c.CertFile == "" && c.KeyFile != "") || (c.CertFile != "" && c.KeyFile == "") {
 		return nil, fmt.Errorf("for auth via TLS, either both certificate and key must be supplied, or neither")
 	}
+
+	var certificates []tls.Certificate
 	if c.CertFile != "" && c.KeyFile != "" {
 		tlsCert, err := tls.LoadX509KeyPair(filepath.Clean(c.CertFile), filepath.Clean(c.KeyFile))
 		if err != nil {
 			return nil, fmt.Errorf("failed to load TLS cert and key: %w", err)
 		}
-		tlsCfg.Certificates = append(tlsCfg.Certificates, tlsCert)
+		certificates = append(certificates, tlsCert)
 	}
 
-	return tlsCfg, nil
+	return &tls.Config{
+		RootCAs:      certPool,
+		Certificates: certificates,
+	}, nil
 }
 
 func (c TLSSetting) loadCert(caPath string) (*x509.CertPool, error) {
