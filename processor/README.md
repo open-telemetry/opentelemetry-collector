@@ -228,7 +228,7 @@ for more information.
 
 ## <a name="attributes"></a>Attributes Processor
 
-Supported data sources: spans
+Supported pipeline types: traces
 
 The attributes processor modifies attributes of a span. Please refer to
 [config.go](attributesprocessor/config.go) for the config spec.
@@ -314,7 +314,7 @@ examples on using the processor.
 
 ## <a name="batch"></a>Batch Processor
 
-Supported data sources: metrics, spans
+Supported pipeline types: metric, traces
 
 The batch processor accepts spans or metrics and places them into batches.
 Batching helps better compress the data and reduce the number of outgoing
@@ -349,13 +349,13 @@ examples on using the processor.
 
 ## <a name="filter"></a>Filter Processor
 
-Supported data sources: metrics
+Supported pipeline types: metrics
 
 The filter processor can be configured to include or exclude metrics based on
 metric name. Please refer to [config.go](filterprocessor/config.go) for the
 config spec.
 
-It takes a data source, of which only `metrics` is supported, followed by an
+It takes a pipeline type, of which only `metrics` is supported, followed by an
 action:
 - `include`: Any names NOT matching filters are excluded from remainder of pipeline
 - `exclude`: Any names matching filters are excluded from remainder of pipeline
@@ -389,7 +389,7 @@ examples on using the processor.
 
 ## <a name="memory-limiter"></a>Memory Limiter Processor
 
-Supported data sources: metrics, spans
+Supported pipeline types: metrics, traces
 
 The memory_limiter processor is used to prevent out of memory situations on
 the collector. Given that the amount and type of data a collector processes is
@@ -457,7 +457,7 @@ examples on using the processor.
 
 ## <a name="queued-retry"></a>Queued Retry Processor
 
-Supported data sources: spans
+Supported pipeline types: traces
 
 The queued_retry processor uses a bounded queue to relay batches from the receiver
 or previous processor to the next processor. Received data is enqueued immediately
@@ -506,7 +506,7 @@ examples on using the processor.
 
 ## <a name="resource"></a>Resource Processor
 
-Supported data sources: spans
+Supported pipeline types: traces
 
 The resource processor can be used to override a resource.
 Please refer to [config.go](resourceprocessor/config.go) for the config spec.
@@ -535,7 +535,7 @@ examples on using the processor.
 
 ## <a name="sampling"></a>Sampling Processor
 
-Supported data sources: spans
+Supported pipeline types: traces
 
 The sampling processor supports sampling spans. A couple of sampling processors
 are provided today and it is straight forward to add others.
@@ -631,7 +631,7 @@ examples on using the processor.
 
 ## <a name="span"></a>Span Processor
 
-Supported data sources: spans
+Supported pipeline types: traces
 
 The span processor modifies either the span name or attributes of a span based
 on the span name. Please refer to
