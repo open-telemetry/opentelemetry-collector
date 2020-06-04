@@ -28,7 +28,6 @@ import (
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -43,30 +42,10 @@ import (
 	"go.opentelemetry.io/collector/exporter/zipkinexporter"
 	"go.opentelemetry.io/collector/internal"
 	"go.opentelemetry.io/collector/testutils"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.opentelemetry.io/collector/translator/trace/zipkin"
 )
 
 const zipkinReceiver = "zipkin_receiver_test"
-
-func TestShortIDSpanConversion(t *testing.T) {
-	shortID, _ := zipkinmodel.TraceIDFromHex("0102030405060708")
-	assert.Equal(t, uint64(0), shortID.High, "wanted 64bit traceID, so TraceID.High must be zero")
-
-	zc := zipkinmodel.SpanContext{
-		TraceID: shortID,
-		ID:      zipkinmodel.ID(shortID.Low),
-	}
-	zs := zipkinmodel.SpanModel{
-		SpanContext: zc,
-	}
-
-	ocSpan, _ := zipkinSpanToTraceSpan(&zs)
-	require.Len(t, ocSpan.TraceId, 16, "incorrect OC proto trace id length")
-
-	want := []byte{0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8}
-	assert.Equal(t, want, ocSpan.TraceId)
-}
 
 func TestNew(t *testing.T) {
 	type args struct {
@@ -387,55 +366,6 @@ func TestStartTraceReception(t *testing.T) {
 			assert.Equal(t, tt.wantErr, err != nil)
 			if !tt.wantErr {
 				require.Nil(t, zr.Shutdown(context.Background()))
-			}
-		})
-	}
-}
-
-func TestSpanKindTranslation(t *testing.T) {
-	tests := []struct {
-		zipkinKind zipkinmodel.Kind
-		ocKind     tracepb.Span_SpanKind
-		otKind     tracetranslator.OpenTracingSpanKind
-	}{
-		{
-			zipkinKind: zipkinmodel.Client,
-			ocKind:     tracepb.Span_CLIENT,
-			otKind:     "",
-		},
-		{
-			zipkinKind: zipkinmodel.Server,
-			ocKind:     tracepb.Span_SERVER,
-			otKind:     "",
-		},
-		{
-			zipkinKind: zipkinmodel.Producer,
-			ocKind:     tracepb.Span_SPAN_KIND_UNSPECIFIED,
-			otKind:     tracetranslator.OpenTracingSpanKindProducer,
-		},
-		{
-			zipkinKind: zipkinmodel.Consumer,
-			ocKind:     tracepb.Span_SPAN_KIND_UNSPECIFIED,
-			otKind:     tracetranslator.OpenTracingSpanKindConsumer,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(string(tt.zipkinKind), func(t *testing.T) {
-			zs := &zipkinmodel.SpanModel{
-				SpanContext: zipkinmodel.SpanContext{
-					TraceID: zipkinmodel.TraceID{Low: 123},
-					ID:      456,
-				},
-				Kind: tt.zipkinKind,
-			}
-			ocSpan, _ := zipkinSpanToTraceSpan(zs)
-			assert.EqualValues(t, tt.ocKind, ocSpan.Kind)
-			if tt.otKind != "" {
-				otSpanKind := ocSpan.Attributes.AttributeMap[tracetranslator.TagSpanKind]
-				assert.EqualValues(t, tt.otKind, otSpanKind.GetStringValue().Value)
-			} else {
-				assert.True(t, ocSpan.Attributes == nil)
 			}
 		})
 	}

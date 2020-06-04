@@ -212,15 +212,8 @@ func zipkinV1BinAnnotationsToOCAttributes(binAnnotations []*binaryAnnotation) (a
 		if binAnnotation.Endpoint != nil && binAnnotation.Endpoint.ServiceName != "" {
 			fallbackServiceName = binAnnotation.Endpoint.ServiceName
 		}
-		pbAttrib := &tracepb.AttributeValue{}
-		if iValue, err := strconv.ParseInt(binAnnotation.Value, 10, 64); err == nil {
-			pbAttrib.Value = &tracepb.AttributeValue_IntValue{IntValue: iValue}
-		} else if bValue, err := strconv.ParseBool(binAnnotation.Value); err == nil {
-			pbAttrib.Value = &tracepb.AttributeValue_BoolValue{BoolValue: bValue}
-		} else {
-			// For now all else go to string
-			pbAttrib.Value = &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: binAnnotation.Value}}
-		}
+
+		pbAttrib := parseAnnotationValue(binAnnotation.Value)
 
 		key := binAnnotation.Key
 
@@ -252,6 +245,21 @@ func zipkinV1BinAnnotationsToOCAttributes(binAnnotations []*binaryAnnotation) (a
 	}
 
 	return attributes, status, fallbackServiceName
+}
+
+func parseAnnotationValue(value string) *tracepb.AttributeValue {
+	pbAttrib := &tracepb.AttributeValue{}
+
+	if iValue, err := strconv.ParseInt(value, 10, 64); err == nil {
+		pbAttrib.Value = &tracepb.AttributeValue_IntValue{IntValue: iValue}
+	} else if bValue, err := strconv.ParseBool(value); err == nil {
+		pbAttrib.Value = &tracepb.AttributeValue_BoolValue{BoolValue: bValue}
+	} else {
+		// For now all else go to string
+		pbAttrib.Value = &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: value}}
+	}
+
+	return pbAttrib
 }
 
 // annotationParseResult stores the results of examining the original annotations,

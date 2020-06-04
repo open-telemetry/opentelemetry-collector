@@ -25,13 +25,14 @@ const (
 
 	TagSpanKind = "span.kind"
 
-	TagStatusCode       = "status.code"
-	TagStatusMsg        = "status.message"
-	TagError            = "error"
-	TagHTTPStatusCode   = "http.status_code"
-	TagHTTPStatusMsg    = "http.status_message"
-	TagZipkinCensusCode = "census.status_code"
-	TagZipkinCensusMsg  = "census.status_description"
+	TagStatusCode          = "status.code"
+	TagStatusMsg           = "status.message"
+	TagError               = "error"
+	TagHTTPStatusCode      = "http.status_code"
+	TagHTTPStatusMsg       = "http.status_message"
+	TagZipkinCensusCode    = "census.status_code"
+	TagZipkinCensusMsg     = "census.status_description"
+	TagZipkinOpenCensusMsg = "opencensus.status_description"
 )
 
 // OpenTracingSpanKind are possible values for TagSpanKind and match the OpenTracing

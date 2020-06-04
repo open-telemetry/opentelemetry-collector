@@ -45,6 +45,13 @@ type statusMapper struct {
 // and finally fallback on code extracted and translated from "http.status_code"
 // ocStatus must be called after all tags/attributes are processed with the `fromAttribute` method.
 func (m *statusMapper) ocStatus() *tracepb.Status {
+
+	noKnownCode := m.fromCensus.codePtr == nil && m.fromHTTP.codePtr == nil && m.fromStatus.codePtr == nil
+	if noKnownCode && m.fromCensus.message != "" {
+		unknown := int32(2)
+		m.fromCensus.codePtr = &unknown
+	}
+
 	var s status
 	switch {
 	case m.fromCensus.codePtr != nil:
@@ -77,7 +84,13 @@ func (m *statusMapper) fromAttribute(key string, attrib *tracepb.AttributeValue)
 		}
 		return true
 
-	case tracetranslator.TagZipkinCensusMsg:
+	case tracetranslator.TagError:
+		codePtr := extractStatusFromError(attrib)
+		if codePtr != nil {
+			m.fromCensus.codePtr = codePtr
+		}
+
+	case tracetranslator.TagZipkinCensusMsg, tracetranslator.TagZipkinOpenCensusMsg:
 		m.fromCensus.message = attrib.GetStringValue().GetValue()
 		return true
 
@@ -130,4 +143,39 @@ func toInt32(i int) (int32, error) {
 		return int32(i), nil
 	}
 	return 0, fmt.Errorf("outside of the int32 range")
+}
+
+func extractStatusFromError(attrib *tracepb.AttributeValue) *int32 {
+	// The status is stored with the "error" key
+	// See https://github.com/census-instrumentation/opencensus-go/blob/1eb9a13c7dd02141e065a665f6bf5c99a090a16a/exporter/zipkin/zipkin.go#L160-L165
+	canonicalCodeStr := attrib.GetStringValue().GetValue()
+	if canonicalCodeStr == "" {
+		return nil
+	}
+	code, set := canonicalCodesMap[canonicalCodeStr]
+	if set {
+		return &code
+	}
+	return nil
+}
+
+var canonicalCodesMap = map[string]int32{
+	// https://github.com/googleapis/googleapis/blob/bee79fbe03254a35db125dc6d2f1e9b752b390fe/google/rpc/code.proto#L33-L186
+	"OK":                  0,
+	"CANCELLED":           1,
+	"UNKNOWN":             2,
+	"INVALID_ARGUMENT":    3,
+	"DEADLINE_EXCEEDED":   4,
+	"NOT_FOUND":           5,
+	"ALREADY_EXISTS":      6,
+	"PERMISSION_DENIED":   7,
+	"RESOURCE_EXHAUSTED":  8,
+	"FAILED_PRECONDITION": 9,
+	"ABORTED":             10,
+	"OUT_OF_RANGE":        11,
+	"UNIMPLEMENTED":       12,
+	"INTERNAL":            13,
+	"UNAVAILABLE":         14,
+	"DATA_LOSS":           15,
+	"UNAUTHENTICATED":     16,
 }
