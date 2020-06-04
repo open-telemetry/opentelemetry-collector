@@ -109,7 +109,7 @@ Note: If both `include` and `exclude` are specified, the `include` properties
 are checked before the `exclude` properties.
 
 ```yaml
-{filter}:
+filter:
     # include and/or exclude can be specified. However, the include properties
     # are always checked before the exclude properties.
     {include, exclude}:
@@ -355,7 +355,8 @@ The filter processor can be configured to include or exclude metrics based on
 metric name. Please refer to [config.go](filterprocessor/config.go) for the
 config spec.
 
-It takes an action:
+It takes a data source, of which only `metrics` is supported, followed by an
+action:
 - `include`: Any names NOT matching filters are excluded from remainder of pipeline
 - `exclude`: Any names matching filters are excluded from remainder of pipeline
 
@@ -369,7 +370,7 @@ Examples:
 
 ```yaml
 processors:
-  filter/include:
+  filter/1:
     metrics:
       include:
         match_type: regexp
