@@ -4,8 +4,6 @@ Generally, a processor pre-processes data before it is exported (e.g.
 modify attributes or sample) or helps ensure that data makes it through a
 pipeline successfully (e.g. batch/retry).
 
-**IMPORTANT: All processors only work with trace receivers/exporters today.**
-
 Some important aspects of pipelines and processors to be aware of:
 - [Data Ownership](#data-ownership)
 - [Exclusive Ownership](#exclusive-ownership)
@@ -16,6 +14,7 @@ Some important aspects of pipelines and processors to be aware of:
 Supported processors (sorted alphabetically):
 - [Attributes Processor](#attributes)
 - [Batch Processor](#batch)
+- [Filter Processor](#filter)
 - [Memory Limiter Processor](#memory-limiter)
 - [Queued Retry Processor](#queued-retry)
 - [Resource Processor](#resource)
@@ -99,15 +98,58 @@ data cloning described in Exclusive Ownership section.
 The order processors are specified in a pipeline is important as this is the
 order in which each processor is applied to traces and metrics.
 
+### Include/Exclude Metrics
+
+The [filter processor](#filter) exposes the option to provide a set of
+metric names to match against to determine if the metric should be
+included or excluded from the processor. To configure this option, under
+`include` and/or `exclude` both `match_type` and `metrics_names` are required.
+
+Note: If both `include` and `exclude` are specified, the `include` properties
+are checked before the `exclude` properties.
+
+```yaml
+filter:
+    # include and/or exclude can be specified. However, the include properties
+    # are always checked before the exclude properties.
+    {include, exclude}:
+      # match_type controls how items matching is done.
+      # Possible values are "regexp" or "strict".
+      # This is a required field.
+      match_type: {strict, regexp}
+
+      # regexp is an optional configuration section for match_type regexp.
+      regexp:
+        # < see "Match Configuration" below >
+
+      # metric_names specify an array of items to match the metric name against.
+      # This is a required field.
+      metric_name: [<item1>, ..., <itemN>]
+```
+
+#### Match Configuration
+
+Some `match_type` values have additional configuration options that can be
+specified. The `match_type` value is the name of the configuration section.
+These sections are optional.
+
+```yaml
+# regexp is an optional configuration section for match_type regexp.
+regexp:
+  # cacheenabled determines whether match results are LRU cached to make subsequent matches faster.
+  # Cache size is unlimited unless cachemaxnumentries is also specified.
+  cacheenabled: <bool>
+  # cachemaxnumentries is the max number of entries of the LRU cache; ignored if cacheenabled is false.
+  cachemaxnumentries: <int>
+```
+
 ### Include/Exclude Spans
 
 The [attribute processor](#attributes) and the [span processor](#span) expose
 the option to provide a set of properties of a span to match against to determine
-if the span should be included or excluded from the processor. By default, all
-spans are processed by the processor.
-
-To configure this option, under `include` and/or `exclude`:
-- at least one of `services`, `span_names` or `attributes` is required.
+if the span should be included or excluded from the processor. To configure
+this option, under `include` and/or `exclude` at least `match_type` and one of
+`services`, `span_names` or `attributes` is required.
 
 Note: If both `include` and `exclude` are specified, the `include` properties
 are checked before the `exclude` properties.
@@ -153,11 +195,13 @@ are checked before the `exclude` properties.
 
 #### Match Configuration
 
-Some `match_type` values have additional configuration options that can be specified. The `match_type` value is the name of the configuration section. These sections are optional.
+Some `match_type` values have additional configuration options that can be
+specified. The `match_type` value is the name of the configuration section.
+These sections are optional.
 
 ```yaml
 # regexp is an optional configuration section for match_type regexp.
-regexp: 
+regexp:
   # cacheenabled determines whether match results are LRU cached to make subsequent matches faster.
   # Cache size is unlimited unless cachemaxnumentries is also specified.
   cacheenabled: <bool>
@@ -183,6 +227,8 @@ for more information.
 # Processors
 
 ## <a name="attributes"></a>Attributes Processor
+
+Supported pipeline types: traces
 
 The attributes processor modifies attributes of a span. Please refer to
 [config.go](attributesprocessor/config.go) for the config spec.
@@ -235,7 +281,7 @@ For the `hash` action,
 ```yaml
 # Key specifies the attribute to act upon.
 - key: <key>
-  action: hash 
+  action: hash
 ```
 
 The list of actions can be composed to create rich scenarios, such as
@@ -258,7 +304,7 @@ processors:
         value: 2245
       - key: account_password
         action: delete
-      - key: account_email 
+      - key: account_email
         action: hash
 
 ```
@@ -268,13 +314,15 @@ examples on using the processor.
 
 ## <a name="batch"></a>Batch Processor
 
+Supported pipeline types: metric, traces
+
 The batch processor accepts spans or metrics and places them into batches.
-Batching helps better compress the data and reduce the number of outgoing 
+Batching helps better compress the data and reduce the number of outgoing
 connections required to transmit the data. This processor supports both size and
 time based batching.
 
 It is highly recommended to configure the batch processor on every collector.
-The batch processor should be defined in the pipeline after the memory_limiter
+The batch processor should be defined in the pipeline after the `memory_limiter`
 as well as any sampling processors. This is because batching should happen after
 any data drops such as sampling.
 
@@ -299,8 +347,49 @@ processors:
 Refer to [config.yaml](batchprocessor/testdata/config.yaml) for detailed
 examples on using the processor.
 
+## <a name="filter"></a>Filter Processor
+
+Supported pipeline types: metrics
+
+The filter processor can be configured to include or exclude metrics based on
+metric name. Please refer to [config.go](filterprocessor/config.go) for the
+config spec.
+
+It takes a pipeline type, of which only `metrics` is supported, followed by an
+action:
+- `include`: Any names NOT matching filters are excluded from remainder of pipeline
+- `exclude`: Any names matching filters are excluded from remainder of pipeline
+
+For the actions the following parameters are required:
+ - `match_type`: strict|regexp
+ - `metric_names`: list of strings or re2 regex patterns
+
+More details can found at [include/exclude metrics](#includeexclude-metrics).
+
+Examples:
+
+```yaml
+processors:
+  filter/1:
+    metrics:
+      include:
+        match_type: regexp
+        metric_names:
+        - prefix/.*
+        - prefix_.*
+      exclude:
+        match_type: strict
+        metric_names:
+        - hello_world
+        - hello/world
+```
+
+Refer to [config.yaml](filterprocessor/testdata/config.yaml) for detailed
+examples on using the processor.
 
 ## <a name="memory-limiter"></a>Memory Limiter Processor
+
+Supported pipeline types: metrics, traces
 
 The memory_limiter processor is used to prevent out of memory situations on
 the collector. Given that the amount and type of data a collector processes is
@@ -368,6 +457,8 @@ examples on using the processor.
 
 ## <a name="queued-retry"></a>Queued Retry Processor
 
+Supported pipeline types: traces
+
 The queued_retry processor uses a bounded queue to relay batches from the receiver
 or previous processor to the next processor. Received data is enqueued immediately
 if the queue is not full. At the same time, the processor has one or more workers
@@ -415,6 +506,8 @@ examples on using the processor.
 
 ## <a name="resource"></a>Resource Processor
 
+Supported pipeline types: traces
+
 The resource processor can be used to override a resource.
 Please refer to [config.go](resourceprocessor/config.go) for the config spec.
 
@@ -441,6 +534,8 @@ examples on using the processor.
 
 
 ## <a name="sampling"></a>Sampling Processor
+
+Supported pipeline types: traces
 
 The sampling processor supports sampling spans. A couple of sampling processors
 are provided today and it is straight forward to add others.
@@ -535,6 +630,8 @@ Refer to [config.yaml](samplingprocessor/probabilisticprocessor/testdata/config.
 examples on using the processor.
 
 ## <a name="span"></a>Span Processor
+
+Supported pipeline types: traces
 
 The span processor modifies either the span name or attributes of a span based
 on the span name. Please refer to
