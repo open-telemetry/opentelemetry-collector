@@ -31,6 +31,10 @@ const (
 	MetricTypeSummary             = MetricType(otlpmetrics.MetricDescriptor_SUMMARY)
 )
 
+func (mt MetricType) String() string {
+	return otlpmetrics.MetricDescriptor_Type(mt).String()
+}
+
 // InternalNewMetricsResourceSlice is a helper
 func InternalNewMetricsResourceSlice(orig *[]*otlpmetrics.ResourceMetrics) ResourceMetricsSlice {
 	return newResourceMetricsSlice(orig)
