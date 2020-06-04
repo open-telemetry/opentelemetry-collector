@@ -7,7 +7,7 @@ Supported trace exporters (sorted alphabetically):
 
 - [Jaeger](#jaeger)
 - [OpenCensus](#opencensus-traces)
-- [OTLP](#otlp)
+- [OTLP](#otlp-traces)
 - [Zipkin](#zipkin)
 
 Supported metric exporters (sorted alphabetically):
