@@ -40,7 +40,7 @@ receivers:
   # <receiver type>/<name>:
   examplereceiver/settings:
     # <setting two>: <value two>
-    endpoint: localhost:9211
+    endpoint: 0.0.0.0:9211
 ```
 
 A receiver instance is referenced by its full name in other parts of the config,
@@ -95,7 +95,7 @@ receivers:
         tls_credentials:
           key_file: /key.pem # path to private key
           cert_file: /cert.pem # path to certificate
-        endpoint: "localhost:9876"
+        endpoint: "0.0.0.0:9876"
 ```
 
 ### Remote Sampling
@@ -181,7 +181,7 @@ specifying a list of allowed CORS origins in the `cors_allowed_origins` field:
 ```yaml
 receivers:
   opencensus:
-    endpoint: "localhost:55678"
+    endpoint: "0.0.0.0:55678"
     cors_allowed_origins:
     - http://test.com
     # Origins can have wildcards with *, use * by itself to match any origin.
@@ -235,7 +235,7 @@ specifying a list of allowed CORS origins in the `cors_allowed_origins` field:
 ```yaml
 receivers:
   otlp:
-    endpoint: "localhost:55680"
+    endpoint: "0.0.0.0:55680"
     cors_allowed_origins:
     - http://test.com
     # Origins can have wildcards with *, use * by itself to match any origin.
@@ -336,12 +336,12 @@ receivers:
           - job_name: 'opencensus_service'
             scrape_interval: 5s
             static_configs:
-              - targets: ['localhost:8889']
+              - targets: ['0.0.0.0:8889']
 
           - job_name: 'jdbc_apps'
             scrape_interval: 3s
             static_configs:
-              - targets: ['localhost:9777']
+              - targets: ['0.0.0.0:9777']
 ```
 
 ### Include Filter
@@ -359,8 +359,8 @@ of the metrics from the targets will be dropped.
 receivers:
     prometheus:
       include_filter: {
-        "localhost:9777" : [http/server/server_latency, custom_metric1],
-        "localhost:9778" : [http/client/roundtrip_latency],
+        "0.0.0.0:9777" : [http/server/server_latency, custom_metric1],
+        "0.0.0.0:9778" : [http/client/roundtrip_latency],
       }
       config:
         scrape_configs:

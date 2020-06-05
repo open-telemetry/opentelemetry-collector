@@ -110,7 +110,7 @@ Example:
 ```yaml
 exporters:
   opencensus:
-    endpoint: localhost:14250
+    endpoint: 0.0.0.0:14250
     reconnection_delay: 60s
     secure: false
 ```
@@ -147,7 +147,7 @@ Example:
 ```yaml
 exporters:
   otlp:
-    endpoint: localhost:14250
+    endpoint: 0.0.0.0:14250
     reconnection_delay: 60s
     secure: false
 ```

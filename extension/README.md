@@ -51,9 +51,8 @@ investigate issues with the service.
 
 The following settings are required:
 
-- `endpoint` (default = localhost:1777): The endpoint in which the pprof will
-be listening to. Use localhost:<port> to make it available only locally, or
-":<port>" to make it available on all network interfaces.
+- `endpoint` (default = 0.0.0.0:1777): The endpoint in which the pprof will
+be listening to.
 - `block_profile_fraction` (default = 0): Fraction of blocking events that
 are profiled. A value <= 0 disables profiling. See
 https://golang.org/pkg/runtime/#SetBlockProfileRate for details.
@@ -83,9 +82,8 @@ All core exporters and receivers provide some zPage instrumentation.
 
 The following settings are required:
 
-- `endpoint` (default = localhost:55679): Specifies the HTTP endpoint that serves
-zPages. Use localhost:<port> to make it available only locally, or ":<port>" to
-make it available on all network interfaces.
+- `endpoint` (default = 0.0.0.0:55679): Specifies the HTTP endpoint that serves
+zPages.
 
 Example:
 ```yaml

@@ -45,7 +45,7 @@ Receivers typically listen on a network port and receive telemetry data. Usually
 ```yaml
 receivers:
   opencensus:
-    endpoint: "localhost:55678"
+    endpoint: "0.0.0.0:55678"
 
 service:
   pipelines:
@@ -78,7 +78,7 @@ exporters:
   opencensus/1:
     endpoint: "example.com:14250"
   opencensus/2:
-    endpoint: "localhost:14250"
+    endpoint: "0.0.0.0:14250"
 ```
 
 Usually an exporter gets the data from one pipeline, however it is possible to configure multiple pipelines to send data to the same exporter, e.g.:
@@ -88,7 +88,7 @@ exporters:
   jaeger:
     protocols:
       grpc:
-        endpoint: "localhost:14250"
+        endpoint: "0.0.0.0:14250"
 
 service:
   pipelines:

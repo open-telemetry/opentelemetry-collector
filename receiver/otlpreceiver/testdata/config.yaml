@@ -7,8 +7,8 @@ receivers:
   # This configuration is of type 'otlp' and has the name 'customname' with a full name of 'otlp/customname'
   # ('<type>/<name>'. To reference this configuration in a pipeline, use the full name `otlp/customname`.
   otlp/customname:
-    # The receiver will listen on endpoint: "0.0.0.0:9090".
-    endpoint: 0.0.0.0:9090
+    # The receiver will listen on endpoint: "localhost:9090".
+    endpoint: localhost:9090
   # The following entry configures all of the keep alive settings. These settings are used to configure the receiver.
   otlp/keepalive:
     keepalive:
