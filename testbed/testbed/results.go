@@ -60,7 +60,10 @@ func (r *PerformanceResults) Init(resultsDir string) {
 	r.perTestResults = []*PerformanceTestResult{}
 
 	// Create resultsSummary file
-	var err error
+	err := createDirectoryIfNeeded(resultsDir)
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
 	r.resultsFile, err = os.Create(path.Join(r.resultsDir, "TESTRESULTS.md"))
 	if err != nil {
 		log.Fatalf(err.Error())
@@ -132,7 +135,10 @@ func (r *CorrectnessResults) Init(resultsDir string) {
 	r.perTestResults = []*CorrectnessTestResult{}
 
 	// Create resultsSummary file
-	var err error
+	err := createDirectoryIfNeeded(resultsDir)
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
 	r.resultsFile, err = os.Create(path.Join(r.resultsDir, "CORRECTNESSRESULTS.md"))
 	if err != nil {
 		log.Fatalf(err.Error())
@@ -175,4 +181,23 @@ func (r *CorrectnessResults) Save() {
 	_, _ = io.WriteString(r.resultsFile,
 		fmt.Sprintf("\nTotal duration: %.0fs\n", r.totalDuration.Seconds()))
 	r.resultsFile.Close()
+}
+
+func createDirectoryIfNeeded(resultsDir string) error {
+	dirPresent, err := exists(resultsDir)
+	if !dirPresent {
+		os.MkdirAll(resultsDir, os.ModePerm)
+	}
+	return err
+}
+
+func exists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return true, err
 }
