@@ -15,6 +15,7 @@
 package testbed
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/spf13/viper"
@@ -96,7 +97,16 @@ func (ipp *InProcessPipeline) Start(args StartParams) (string, error) {
 		}
 	}()
 
-	ipp.svc.SubscribeReadyChannel()
+	for state := range ipp.svc.GetStateChannel() {
+		switch state {
+		case service.Starting:
+			// NoOp
+		case service.Running:
+			return DefaultHost, err
+		default:
+			err = fmt.Errorf("unable to start, otelcol state is %d", state)
+		}
+	}
 	return "", err
 }
 

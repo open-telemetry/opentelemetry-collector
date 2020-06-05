@@ -59,9 +59,9 @@ service:
 	assert.Equal(t, "", cfgFilename)
 	assert.NotNil(t, runner.config)
 	args := StartParams{}
+	defer runner.Stop()
 	endpoint, startErr := runner.Start(args)
 	assert.NoError(t, startErr)
-	assert.Equal(t, "", endpoint)
+	assert.Equal(t, DefaultHost, endpoint)
 	assert.NotNil(t, runner.svc)
-	runner.Stop()
 }

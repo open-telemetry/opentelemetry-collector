@@ -228,10 +228,6 @@ func (app *Application) RegisterZPages(mux *http.ServeMux, pathPrefix string) {
 	mux.HandleFunc(path.Join(pathPrefix, extensionzPath), app.handleExtensionzRequest)
 }
 
-func (app *Application) SubscribeReadyChannel() {
-	<-app.readyChan
-}
-
 func (app *Application) SignalTestComplete() {
 	close(app.stopTestChan)
 }
