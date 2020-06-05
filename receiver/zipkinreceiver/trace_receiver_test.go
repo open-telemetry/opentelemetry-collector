@@ -427,7 +427,8 @@ func TestSpanKindTranslation(t *testing.T) {
 					TraceID: zipkinmodel.TraceID{Low: 123},
 					ID:      456,
 				},
-				Kind: tt.zipkinKind,
+				Kind:      tt.zipkinKind,
+				Timestamp: time.Now(),
 			}
 			ocSpan, _ := zipkinSpanToTraceSpan(zs)
 			assert.EqualValues(t, tt.ocKind, ocSpan.Kind)

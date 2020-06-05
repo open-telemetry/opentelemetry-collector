@@ -494,5 +494,16 @@ func SetTimestampsIfUnset(span *tracepb.Span) {
 		now := internal.TimeToTimestamp(time.Now())
 		span.StartTime = now
 		span.EndTime = now
+
+		if span.Attributes == nil {
+			span.Attributes = &tracepb.Span_Attributes{}
+		}
+		if span.Attributes.AttributeMap == nil {
+			span.Attributes.AttributeMap = make(map[string]*tracepb.AttributeValue, 1)
+		}
+		span.Attributes.AttributeMap[StartTimeAbsent] = &tracepb.AttributeValue{
+			Value: &tracepb.AttributeValue_BoolValue{
+				BoolValue: true,
+			}}
 	}
 }
