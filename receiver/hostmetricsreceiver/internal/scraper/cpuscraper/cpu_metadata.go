@@ -45,9 +45,9 @@ var metricCPUSecondsDescriptor = createMetricCPUSecondsDescriptor()
 func createMetricCPUSecondsDescriptor() pdata.MetricDescriptor {
 	descriptor := pdata.NewMetricDescriptor()
 	descriptor.InitEmpty()
-	descriptor.SetName("host/cpu/time")
-	descriptor.SetDescription("Total CPU ticks or jiffies broken down by different states")
-	descriptor.SetUnit("1")
-	descriptor.SetType(pdata.MetricTypeCounterInt64)
+	descriptor.SetName("host/cpu/usage")
+	descriptor.SetDescription("Total CPU seconds broken down by different states.")
+	descriptor.SetUnit("s")
+	descriptor.SetType(pdata.MetricTypeCounterDouble)
 	return descriptor
 }

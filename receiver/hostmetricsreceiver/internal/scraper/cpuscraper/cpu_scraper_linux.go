@@ -24,13 +24,13 @@ import (
 
 const cpuStatesLen = 8
 
-func appendCPUStateTimes(idps pdata.Int64DataPointSlice, startIdx int, startTime pdata.TimestampUnixNano, cpuTime cpu.TimesStat) {
-	initializeCPUSecondsDataPoint(idps.At(startIdx+0), startTime, cpuTime.CPU, userStateLabelValue, int64(cpuTime.User))
-	initializeCPUSecondsDataPoint(idps.At(startIdx+1), startTime, cpuTime.CPU, systemStateLabelValue, int64(cpuTime.System))
-	initializeCPUSecondsDataPoint(idps.At(startIdx+2), startTime, cpuTime.CPU, idleStateLabelValue, int64(cpuTime.Idle))
-	initializeCPUSecondsDataPoint(idps.At(startIdx+3), startTime, cpuTime.CPU, interruptStateLabelValue, int64(cpuTime.Irq))
-	initializeCPUSecondsDataPoint(idps.At(startIdx+4), startTime, cpuTime.CPU, niceStateLabelValue, int64(cpuTime.Nice))
-	initializeCPUSecondsDataPoint(idps.At(startIdx+5), startTime, cpuTime.CPU, softIRQStateLabelValue, int64(cpuTime.Softirq))
-	initializeCPUSecondsDataPoint(idps.At(startIdx+6), startTime, cpuTime.CPU, stealStateLabelValue, int64(cpuTime.Steal))
-	initializeCPUSecondsDataPoint(idps.At(startIdx+7), startTime, cpuTime.CPU, waitStateLabelValue, int64(cpuTime.Iowait))
+func appendCPUStateTimes(ddps pdata.DoubleDataPointSlice, startIdx int, startTime pdata.TimestampUnixNano, cpuTime cpu.TimesStat) {
+	initializeCPUSecondsDataPoint(ddps.At(startIdx+0), startTime, cpuTime.CPU, userStateLabelValue, cpuTime.User)
+	initializeCPUSecondsDataPoint(ddps.At(startIdx+1), startTime, cpuTime.CPU, systemStateLabelValue, cpuTime.System)
+	initializeCPUSecondsDataPoint(ddps.At(startIdx+2), startTime, cpuTime.CPU, idleStateLabelValue, cpuTime.Idle)
+	initializeCPUSecondsDataPoint(ddps.At(startIdx+3), startTime, cpuTime.CPU, interruptStateLabelValue, cpuTime.Irq)
+	initializeCPUSecondsDataPoint(ddps.At(startIdx+4), startTime, cpuTime.CPU, niceStateLabelValue, cpuTime.Nice)
+	initializeCPUSecondsDataPoint(ddps.At(startIdx+5), startTime, cpuTime.CPU, softIRQStateLabelValue, cpuTime.Softirq)
+	initializeCPUSecondsDataPoint(ddps.At(startIdx+6), startTime, cpuTime.CPU, stealStateLabelValue, cpuTime.Steal)
+	initializeCPUSecondsDataPoint(ddps.At(startIdx+7), startTime, cpuTime.CPU, waitStateLabelValue, cpuTime.Iowait)
 }
