@@ -63,7 +63,8 @@ func AssertDoubleMetricLabelDoesNotExist(t *testing.T, metric pdata.Metric, inde
 	assert.Falsef(t, ok, "Unexpected label %q in metric %q", labelName, metric.MetricDescriptor().Name())
 }
 
-func AssertInt64MetricLabelNonEmptyAtLeastOneDataPoint(t *testing.T, metric pdata.Metric, labelName string) {
+// AssertInt64MetricLabelNotEmpty asserts that there is at least one data point with a non empty value for the provided label name
+func AssertInt64MetricLabelNotEmpty(t *testing.T, metric pdata.Metric, labelName string) {
 	idps := metric.Int64DataPoints()
 	for i := 0; i < idps.Len(); i++ {
 		value, ok := idps.At(i).LabelsMap().Get(labelName)
@@ -72,29 +73,65 @@ func AssertInt64MetricLabelNonEmptyAtLeastOneDataPoint(t *testing.T, metric pdat
 		}
 	}
 
-	assert.Failf(t, "Missing label %q for all datapoints in metric %q", labelName, metric.MetricDescriptor().Name())
+	assert.Failf(t, "Missing label", "Missing label %q for all datapoints in metric %q", labelName, metric.MetricDescriptor().Name())
 }
 
-func AssertInt64MetricLabelHasValuesAllDataPoints(t *testing.T, metric pdata.Metric, labelName string, expectedValues []string) {
-	values := getAllValuesForLabel(t, metric.Int64DataPoints(), labelName)
-
-	sort.Strings(values)
-	sort.Strings(expectedValues)
-
-	assert.Equalf(t, expectedValues, values, "The set of label values for %q did not match the expected values in metric %q", labelName, metric.MetricDescriptor().Name())
-}
-
-func getAllValuesForLabel(t *testing.T, idps pdata.Int64DataPointSlice, labelName string) []string {
-	valuesMap := make(map[string]bool, idps.Len())
-	for i := 0; i < idps.Len(); i++ {
-		value, ok := idps.At(i).LabelsMap().Get(labelName)
-		if ok {
-			valuesMap[value.Value()] = true
+// AssertDoubleMetricLabelNotEmpty asserts that there is at least one data point with a non empty value for the provided label name
+func AssertDoubleMetricLabelNotEmpty(t *testing.T, metric pdata.Metric, labelName string) {
+	ddps := metric.DoubleDataPoints()
+	for i := 0; i < ddps.Len(); i++ {
+		value, ok := ddps.At(i).LabelsMap().Get(labelName)
+		if ok && value.Value() != "" {
+			return
 		}
 	}
 
-	values := make([]string, 0, len(valuesMap))
-	for value := range valuesMap {
+	assert.Failf(t, "Missing label", "Missing label %q for all datapoints in metric %q", labelName, metric.MetricDescriptor().Name())
+}
+
+// AssertInt64MetricHasLabelValues asserts that the distinct set of all label values for the provided label name matches the provided slice
+func AssertInt64MetricHasLabelValues(t *testing.T, metric pdata.Metric, labelName string, expectedValues []string) {
+	values := int64DistinctLabelValues(metric.Int64DataPoints(), labelName)
+
+	sort.Strings(values)
+	sort.Strings(expectedValues)
+	assert.Equalf(t, expectedValues, values, "The set of label values for %q did not match the expected values in metric %q", labelName, metric.MetricDescriptor().Name())
+}
+
+// AssertDoubleMetricHasLabelValues asserts that the distinct set of all label values for the provided label name matches the provided slice
+func AssertDoubleMetricHasLabelValues(t *testing.T, metric pdata.Metric, labelName string, expectedValues []string) {
+	values := doubleDistinctLabelValues(metric.DoubleDataPoints(), labelName)
+
+	sort.Strings(values)
+	sort.Strings(expectedValues)
+	assert.Equalf(t, expectedValues, values, "The set of label values for %q did not match the expected values in metric %q", labelName, metric.MetricDescriptor().Name())
+}
+
+func int64DistinctLabelValues(idps pdata.Int64DataPointSlice, labelName string) []string {
+	valuesMap := make(map[string]struct{}, idps.Len())
+	for i := 0; i < idps.Len(); i++ {
+		value, ok := idps.At(i).LabelsMap().Get(labelName)
+		if ok {
+			valuesMap[value.Value()] = struct{}{}
+		}
+	}
+	return keysSlice(valuesMap)
+}
+
+func doubleDistinctLabelValues(ddps pdata.DoubleDataPointSlice, labelName string) []string {
+	valuesMap := make(map[string]struct{}, ddps.Len())
+	for i := 0; i < ddps.Len(); i++ {
+		value, ok := ddps.At(i).LabelsMap().Get(labelName)
+		if ok {
+			valuesMap[value.Value()] = struct{}{}
+		}
+	}
+	return keysSlice(valuesMap)
+}
+
+func keysSlice(mp map[string]struct{}) []string {
+	values := make([]string, 0, len(mp))
+	for value := range mp {
 		values = append(values, value)
 	}
 	return values

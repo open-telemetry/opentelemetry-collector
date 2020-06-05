@@ -19,6 +19,9 @@ import (
 	"github.com/shirou/gopsutil/process"
 )
 
+// These interfaces & struct provide a wrapper around []*process.Process
+// to support testing
+
 type processHandles interface {
 	Pid(index int) int32
 	At(index int) processHandle

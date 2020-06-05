@@ -57,38 +57,47 @@ func TestScrapeMetrics(t *testing.T) {
 	// expect 3 metrics
 	assert.Equal(t, 3, metrics.Len())
 
-	assertCPUUageMetricValid(t, metrics.At(0))
+	assertCPUUsageMetricValid(t, metrics.At(0))
 	assertMemoryUsageMetricValid(t, metrics.At(1))
 	assertDiskBytesMetricValid(t, metrics.At(2))
 }
 
-func assertCPUUageMetricValid(t *testing.T, cpuUsageMetric pdata.Metric) {
+func assertCPUUsageMetricValid(t *testing.T, cpuUsageMetric pdata.Metric) {
 	internal.AssertDescriptorEqual(t, metricCPUUsageDescriptor, cpuUsageMetric.MetricDescriptor())
-	assertMetricHasProcessLabels(t, cpuUsageMetric)
-	internal.AssertInt64MetricLabelHasValue(t, cpuUsageMetric, 0, stateLabelName, userStateLabelValue)
-	internal.AssertInt64MetricLabelHasValue(t, cpuUsageMetric, 1, stateLabelName, systemStateLabelValue)
+	assertDoubleMetricHasProcessLabels(t, cpuUsageMetric)
+	internal.AssertDoubleMetricLabelHasValue(t, cpuUsageMetric, 0, stateLabelName, userStateLabelValue)
+	internal.AssertDoubleMetricLabelHasValue(t, cpuUsageMetric, 1, stateLabelName, systemStateLabelValue)
 	if runtime.GOOS == "linux" {
-		internal.AssertInt64MetricLabelHasValue(t, cpuUsageMetric, 2, stateLabelName, waitStateLabelValue)
+		internal.AssertDoubleMetricLabelHasValue(t, cpuUsageMetric, 2, stateLabelName, waitStateLabelValue)
 	}
 }
 
 func assertMemoryUsageMetricValid(t *testing.T, memoryUsageMetric pdata.Metric) {
 	internal.AssertDescriptorEqual(t, metricMemoryUsageDescriptor, memoryUsageMetric.MetricDescriptor())
-	assertMetricHasProcessLabels(t, memoryUsageMetric)
+	assertInt64MetricHasProcessLabels(t, memoryUsageMetric)
 }
 
 func assertDiskBytesMetricValid(t *testing.T, diskBytesMetric pdata.Metric) {
 	internal.AssertDescriptorEqual(t, metricDiskBytesDescriptor, diskBytesMetric.MetricDescriptor())
-	assertMetricHasProcessLabels(t, diskBytesMetric)
+	assertInt64MetricHasProcessLabels(t, diskBytesMetric)
 	internal.AssertInt64MetricLabelHasValue(t, diskBytesMetric, 0, directionLabelName, readDirectionLabelValue)
 	internal.AssertInt64MetricLabelHasValue(t, diskBytesMetric, 1, directionLabelName, writeDirectionLabelValue)
 }
 
-func assertMetricHasProcessLabels(t *testing.T, metric pdata.Metric) {
+func assertInt64MetricHasProcessLabels(t *testing.T, metric pdata.Metric) {
 	assert.GreaterOrEqual(t, metric.Int64DataPoints().Len(), 1)
-	internal.AssertInt64MetricLabelNonEmptyAtLeastOneDataPoint(t, metric, processLabelName)
-	internal.AssertInt64MetricLabelNonEmptyAtLeastOneDataPoint(t, metric, usernameLabelName)
-	internal.AssertInt64MetricLabelNonEmptyAtLeastOneDataPoint(t, metric, cmdlineLabelName)
+	internal.AssertInt64MetricLabelNotEmpty(t, metric, pidLabelName)
+	internal.AssertInt64MetricLabelNotEmpty(t, metric, processLabelName)
+	internal.AssertInt64MetricLabelNotEmpty(t, metric, usernameLabelName)
+	internal.AssertInt64MetricLabelNotEmpty(t, metric, cmdlineLabelName)
+}
+
+func assertDoubleMetricHasProcessLabels(t *testing.T, metric pdata.Metric) {
+	assert.GreaterOrEqual(t, metric.DoubleDataPoints().Len(), 1)
+	internal.AssertDoubleMetricLabelNotEmpty(t, metric, pidLabelName)
+	internal.AssertDoubleMetricLabelNotEmpty(t, metric, processLabelName)
+	internal.AssertDoubleMetricLabelNotEmpty(t, metric, usernameLabelName)
+	internal.AssertDoubleMetricLabelNotEmpty(t, metric, cmdlineLabelName)
 }
 
 func TestScrapeMetrics_NewError(t *testing.T) {
@@ -269,7 +278,14 @@ func TestScrapeMetrics_Filtered(t *testing.T) {
 			}
 
 			for i := 0; i < metrics.Len(); i++ {
-				internal.AssertInt64MetricLabelHasValuesAllDataPoints(t, metrics.At(i), processLabelName, test.expectedNames)
+				switch metricType := metrics.At(i).MetricDescriptor().Type(); metricType {
+				case pdata.MetricTypeCounterInt64, pdata.MetricTypeGaugeInt64:
+					internal.AssertInt64MetricHasLabelValues(t, metrics.At(i), processLabelName, test.expectedNames)
+				case pdata.MetricTypeCounterDouble, pdata.MetricTypeGaugeDouble:
+					internal.AssertDoubleMetricHasLabelValues(t, metrics.At(i), processLabelName, test.expectedNames)
+				default:
+					assert.Failf(t, "Unexpected metric type returned", "Metric Type: %v", metricType)
+				}
 			}
 		})
 	}

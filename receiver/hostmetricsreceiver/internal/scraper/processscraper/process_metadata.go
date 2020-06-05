@@ -23,6 +23,7 @@ import (
 const (
 	cmdlineLabelName   = "command_line"
 	directionLabelName = "direction"
+	pidLabelName       = "pid"
 	processLabelName   = "process"
 	stateLabelName     = "state"
 	usernameLabelName  = "username"
@@ -53,7 +54,7 @@ func createMetricCPUUsageDescriptor() pdata.MetricDescriptor {
 	descriptor.SetName("process/cpu/usage")
 	descriptor.SetDescription("Total CPU seconds broken down by different states.")
 	descriptor.SetUnit("s")
-	descriptor.SetType(pdata.MetricTypeCounterInt64)
+	descriptor.SetType(pdata.MetricTypeCounterDouble)
 	return descriptor
 }
 

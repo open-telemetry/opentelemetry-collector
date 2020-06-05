@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"time"
 
 	"github.com/shirou/gopsutil/cpu"
@@ -50,17 +51,17 @@ type processMetadata struct {
 }
 
 type processTimes struct {
-	*processMetadata
+	processMetadata
 	times *cpu.TimesStat
 }
 
 type processMemoryInfo struct {
-	*processMetadata
+	processMetadata
 	memoryInfo *process.MemoryInfoStat
 }
 
 type processIoCounters struct {
-	*processMetadata
+	processMetadata
 	ioCounters *process.IOCountersStat
 }
 
@@ -139,14 +140,14 @@ func (s *scraper) ScrapeMetrics(ctx context.Context) (pdata.MetricSlice, error) 
 // for all currently running processes. If errors occur obtaining
 // information for some processes, an error will be returned, but any
 // processes that were successfully obtained will still be returned.
-func (s *scraper) getProcesses() ([]*processMetadata, error) {
+func (s *scraper) getProcesses() ([]processMetadata, error) {
 	handles, err := s.getProcessHandles()
 	if err != nil {
 		return nil, err
 	}
 
 	var errors []error
-	metadata := make([]*processMetadata, 0, handles.Len())
+	metadata := make([]processMetadata, 0, handles.Len())
 	for i := 0; i < handles.Len(); i++ {
 		pid := handles.Pid(i)
 		handle := handles.At(i)
@@ -162,10 +163,20 @@ func (s *scraper) getProcesses() ([]*processMetadata, error) {
 			continue
 		}
 
-		md := &processMetadata{}
-		err = initializeProcessMetadata(md, pid, name, handle)
+		md := processMetadata{
+			pid:    pid,
+			name:   name,
+			handle: handle,
+		}
+
+		md.username, err = handle.Username()
 		if err != nil {
-			errors = append(errors, err)
+			errors = append(errors, fmt.Errorf("error reading process username for process %q (pid %v): %v", name, pid, err))
+		}
+
+		md.cmdline, err = handle.Cmdline()
+		if err != nil {
+			errors = append(errors, fmt.Errorf("error reading process cmdline for process %q (pid %v): %v", name, pid, err))
 		}
 
 		metadata = append(metadata, md)
@@ -192,34 +203,7 @@ func getProcessName(proc processHandle) (string, error) {
 	return filepath.Base(exe), nil
 }
 
-func initializeProcessMetadata(metadata *processMetadata, pid int32, name string, handle processHandle) error {
-	metadata.pid = pid
-	metadata.name = name
-	metadata.handle = handle
-
-	var errors []error
-	var err error
-
-	metadata.username, err = handle.Username()
-	if err != nil {
-		errors = append(errors, fmt.Errorf("error reading process username for process %q (pid %v): %v", metadata.name, metadata.pid, err))
-		metadata.username = ""
-	}
-
-	metadata.cmdline, err = handle.Cmdline()
-	if err != nil {
-		errors = append(errors, fmt.Errorf("error reading process cmdline for process %q (pid %v): %v", metadata.name, metadata.pid, err))
-		metadata.cmdline = ""
-	}
-
-	if len(errors) > 0 {
-		return componenterror.CombineErrors(errors)
-	}
-
-	return nil
-}
-
-func scrapeAndAppendCPUUsageMetric(metrics pdata.MetricSlice, startTime pdata.TimestampUnixNano, processes []*processMetadata) error {
+func scrapeAndAppendCPUUsageMetric(metrics pdata.MetricSlice, startTime pdata.TimestampUnixNano, processes []processMetadata) error {
 	cpuTimes := make([]*processTimes, 0, len(processes))
 
 	var errors []error
@@ -248,14 +232,14 @@ func scrapeAndAppendCPUUsageMetric(metrics pdata.MetricSlice, startTime pdata.Ti
 func initializeCPUUsageMetric(metric pdata.Metric, startTime pdata.TimestampUnixNano, cpuTimes []*processTimes) {
 	metricCPUUsageDescriptor.CopyTo(metric.MetricDescriptor())
 
-	idps := metric.Int64DataPoints()
-	idps.Resize(len(cpuTimes) * cpuStatesLen)
+	ddps := metric.DoubleDataPoints()
+	ddps.Resize(len(cpuTimes) * cpuStatesLen)
 	for i, times := range cpuTimes {
-		appendCPUStateTimes(idps, i*cpuStatesLen, startTime, times.processMetadata, times.times)
+		appendCPUStateTimes(ddps, i*cpuStatesLen, startTime, times.processMetadata, times.times)
 	}
 }
 
-func scrapeAndAppendMemoryUsageMetric(metrics pdata.MetricSlice, startTime pdata.TimestampUnixNano, processes []*processMetadata) error {
+func scrapeAndAppendMemoryUsageMetric(metrics pdata.MetricSlice, startTime pdata.TimestampUnixNano, processes []processMetadata) error {
 	memoryInfos := make([]*processMemoryInfo, 0, len(processes))
 
 	var errors []error
@@ -287,11 +271,11 @@ func initializeMemoryUsageMetric(metric pdata.Metric, startTime pdata.TimestampU
 	idps := metric.Int64DataPoints()
 	idps.Resize(len(memoryInfo))
 	for i, mem := range memoryInfo {
-		initializeProcessDataPoint(idps.At(i), startTime, mem.processMetadata, int64(mem.memoryInfo.RSS))
+		initializeProcessInt64DataPoint(idps.At(i), startTime, mem.processMetadata, int64(mem.memoryInfo.RSS))
 	}
 }
 
-func scrapeAndAppendDiskBytesMetric(metrics pdata.MetricSlice, startTime pdata.TimestampUnixNano, processes []*processMetadata) error {
+func scrapeAndAppendDiskBytesMetric(metrics pdata.MetricSlice, startTime pdata.TimestampUnixNano, processes []processMetadata) error {
 	ioCounters := make([]*processIoCounters, 0, len(processes))
 
 	var errors []error
@@ -325,15 +309,28 @@ func initializeDiskBytesMetric(metric pdata.Metric, startTime pdata.TimestampUni
 
 	idx := 0
 	for _, io := range ioCounters {
-		initializeProcessDataPoint(idps.At(idx+0), startTime, io.processMetadata, int64(io.ioCounters.ReadBytes), directionLabelName, readDirectionLabelValue)
-		initializeProcessDataPoint(idps.At(idx+1), startTime, io.processMetadata, int64(io.ioCounters.WriteBytes), directionLabelName, writeDirectionLabelValue)
+		initializeProcessInt64DataPoint(idps.At(idx+0), startTime, io.processMetadata, int64(io.ioCounters.ReadBytes), directionLabelName, readDirectionLabelValue)
+		initializeProcessInt64DataPoint(idps.At(idx+1), startTime, io.processMetadata, int64(io.ioCounters.WriteBytes), directionLabelName, writeDirectionLabelValue)
 		idx += 2
 	}
 }
 
-func initializeProcessDataPoint(dataPoint pdata.Int64DataPoint, startTime pdata.TimestampUnixNano, metadata *processMetadata, value int64, additionalLabels ...string) {
-	labelsMap := dataPoint.LabelsMap()
+func initializeProcessInt64DataPoint(dataPoint pdata.Int64DataPoint, startTime pdata.TimestampUnixNano, metadata processMetadata, value int64, additionalLabels ...string) {
+	initializeProcessLabels(dataPoint.LabelsMap(), metadata, additionalLabels...)
+	dataPoint.SetStartTime(startTime)
+	dataPoint.SetTimestamp(pdata.TimestampUnixNano(uint64(time.Now().UnixNano())))
+	dataPoint.SetValue(value)
+}
 
+func initializeProcessDoubleDataPoint(dataPoint pdata.DoubleDataPoint, startTime pdata.TimestampUnixNano, metadata processMetadata, value float64, additionalLabels ...string) {
+	initializeProcessLabels(dataPoint.LabelsMap(), metadata, additionalLabels...)
+	dataPoint.SetStartTime(startTime)
+	dataPoint.SetTimestamp(pdata.TimestampUnixNano(uint64(time.Now().UnixNano())))
+	dataPoint.SetValue(value)
+}
+
+func initializeProcessLabels(labelsMap pdata.StringMap, metadata processMetadata, additionalLabels ...string) {
+	labelsMap.Insert(pidLabelName, strconv.FormatInt(int64(metadata.pid), 10))
 	labelsMap.Insert(processLabelName, metadata.name)
 	if metadata.username != "" {
 		labelsMap.Insert(usernameLabelName, metadata.username)
@@ -345,8 +342,4 @@ func initializeProcessDataPoint(dataPoint pdata.Int64DataPoint, startTime pdata.
 	for i := 0; i < len(additionalLabels); i += 2 {
 		labelsMap.Insert(additionalLabels[i], additionalLabels[i+1])
 	}
-
-	dataPoint.SetStartTime(startTime)
-	dataPoint.SetTimestamp(pdata.TimestampUnixNano(uint64(time.Now().UnixNano())))
-	dataPoint.SetValue(value)
 }
