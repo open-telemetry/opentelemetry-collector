@@ -15,7 +15,6 @@
 package defaultcomponents
 
 import (
-	"fmt"
 	"go/parser"
 	"go/token"
 	"os"
@@ -26,11 +25,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var componentsTypes = map[string]bool{
-	"extension": true,
-	"receiver":  true,
-	"processor": true,
-	"exporter":  true,
+// Import importPrefixesToCheck to check for readmes.
+var importPrefixesToCheck = []string{
+	"go.opentelemetry.io/collector/extension",
+	"go.opentelemetry.io/collector/receiver",
+	"go.opentelemetry.io/collector/processor",
+	"go.opentelemetry.io/collector/exporter",
 }
 
 const (
@@ -62,19 +62,13 @@ func TestComponentDocs(t *testing.T) {
 	projectPath := filepath.Join(wd, "../../")
 
 	for _, i := range f.Imports {
-		parsedImport := strings.Split(i.Path.Value, "/")
-		if isComponentImport(parsedImport) {
-			// Remove go.opentelemetry.io/collector prefix from imports
-			relativeComponentPath := strings.Replace(
-				i.Path.Value,
-				fmt.Sprintf("%s/%s", parsedImport[0], parsedImport[1]),
-				"", 1,
-			)
+		importPath := strings.Trim(i.Path.Value, `"`)
 
-			readmePath := filepath.Join(projectPath, strings.Trim(relativeComponentPath, `"`), readme)
-
+		if isComponentImport(importPath) {
+			relativeComponentPath := strings.Replace(importPath, "go.opentelemetry.io/collector/", "", 1)
+			readmePath := filepath.Join(projectPath, relativeComponentPath, readme)
 			_, err := os.Stat(readmePath)
-			require.NoError(t, err, "README does not exist, add one")
+			require.NoError(t, err, "README does not exist at %s, add one", readmePath)
 		}
 	}
 }
@@ -82,19 +76,17 @@ func TestComponentDocs(t *testing.T) {
 // isComponentImport returns true if the import corresponds to
 // a Otel component, i.e. an extension, exporter, processor or
 // a receiver.
-func isComponentImport(parsedImport []string) bool {
+func isComponentImport(importStr string) bool {
 	// Imports representative of components are of the following types
 	// "go.opentelemetry.io/collector/processor/samplingprocessor/probabilisticsamplerprocessor"
 	// "go.opentelemetry.io/collector/processor/batchprocessor"
 	// where these imports can be of exporters, extensions, receivers or
 	// processors.
-	if len(parsedImport) < 4 || len(parsedImport) > 5 {
-		return false
+	for _, prefix := range importPrefixesToCheck {
+		if strings.HasPrefix(importStr, prefix) {
+			return true
+		}
 	}
 
-	if !componentsTypes[parsedImport[2]] {
-		return false
-	}
-
-	return true
+	return false
 }
