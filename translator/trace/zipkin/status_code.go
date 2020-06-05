@@ -69,7 +69,9 @@ func (m *statusMapper) ocStatus() *tracepb.Status {
 			s = m.fromHTTP
 		}
 
-		s.codePtr = m.fromErrorTag.codePtr
+		if s.codePtr == nil {
+			s.codePtr = m.fromErrorTag.codePtr
+		}
 	}
 
 	if s.codePtr != nil || s.message != "" {
@@ -161,7 +163,7 @@ func extractStatusFromError(attrib *tracepb.AttributeValue) *int32 {
 	case *tracepb.AttributeValue_StringValue:
 		canonicalCodeStr := val.StringValue.GetValue()
 		if canonicalCodeStr == "" {
-			return &unknown
+			return nil
 		}
 		code, set := canonicalCodesMap[canonicalCodeStr]
 		if set {
