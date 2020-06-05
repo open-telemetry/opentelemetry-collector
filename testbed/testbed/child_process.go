@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -107,7 +108,7 @@ type childProcess struct {
 	ramMiBMax uint32
 }
 
-type startParams struct {
+type StartParams struct {
 	name         string
 	logFilePath  string
 	cmd          string
@@ -122,6 +123,28 @@ type ResourceConsumption struct {
 	RAMMiBMax     uint32
 }
 
+func (cp *childProcess) PrepareConfig(configStr string) (string, error) {
+	file, err := ioutil.TempFile("", "agent*.yaml")
+	if err != nil {
+		log.Printf("%s", err)
+		return "", err
+	}
+
+	defer func() {
+		errClose := file.Close()
+		if errClose != nil {
+			log.Printf("%s", errClose)
+		}
+	}()
+
+	if _, err = file.WriteString(configStr); err != nil {
+		log.Printf("%s", err)
+		return "", err
+	}
+
+	return file.Name(), nil
+}
+
 // start a child process.
 //
 // Parameters:
@@ -130,7 +153,7 @@ type ResourceConsumption struct {
 // the process to.
 // cmd is the executable to run.
 // cmdArgs is the command line arguments to pass to the process.
-func (cp *childProcess) start(params startParams) error {
+func (cp *childProcess) Start(params StartParams) (string, error) {
 
 	cp.name = params.name
 	cp.doneSignal = make(chan struct{})
@@ -141,7 +164,7 @@ func (cp *childProcess) start(params startParams) error {
 	// Prepare log file
 	logFile, err := os.Create(params.logFilePath)
 	if err != nil {
-		return fmt.Errorf("cannot create %s: %s", params.logFilePath, err.Error())
+		return "", fmt.Errorf("cannot create %s: %s", params.logFilePath, err.Error())
 	}
 	log.Printf("Writing %s log to %s", cp.name, params.logFilePath)
 
@@ -152,16 +175,16 @@ func (cp *childProcess) start(params startParams) error {
 	// Capture standard output and standard error.
 	stdoutIn, err := cp.cmd.StdoutPipe()
 	if err != nil {
-		return fmt.Errorf("cannot capture stdout of %s: %s", params.cmd, err.Error())
+		return "", fmt.Errorf("cannot capture stdout of %s: %s", params.cmd, err.Error())
 	}
 	stderrIn, err := cp.cmd.StderrPipe()
 	if err != nil {
-		return fmt.Errorf("cannot capture stderr of %s: %s", params.cmd, err.Error())
+		return "", fmt.Errorf("cannot capture stderr of %s: %s", params.cmd, err.Error())
 	}
 
 	// Start the process.
 	if err := cp.cmd.Start(); err != nil {
-		return fmt.Errorf("cannot start executable at %s: %s", params.cmd, err.Error())
+		return "", fmt.Errorf("cannot start executable at %s: %s", params.cmd, err.Error())
 	}
 
 	cp.startTime = time.Now()
@@ -182,10 +205,13 @@ func (cp *childProcess) start(params startParams) error {
 		cp.outputWG.Done()
 	}()
 
-	return nil
+	return DefaultHost, nil
 }
 
-func (cp *childProcess) stop() {
+func (cp *childProcess) Stop() (bool, error) {
+	if !cp.isStarted || cp.isStopped {
+		return false, nil
+	}
 	cp.stopOnce.Do(func() {
 
 		if !cp.isStarted {
@@ -244,6 +270,7 @@ func (cp *childProcess) stop() {
 			log.Printf("%s execution failed: %s", cp.name, err.Error())
 		}
 	})
+	return true, nil
 }
 
 func (cp *childProcess) watchResourceConsumption() error {
@@ -280,7 +307,7 @@ func (cp *childProcess) watchResourceConsumption() error {
 			cp.fetchCPUUsage()
 
 			if err := cp.checkAllowedResourceUsage(); err != nil {
-				cp.stop()
+				cp.Stop()
 				return err
 			}
 

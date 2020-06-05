@@ -32,12 +32,12 @@ func TestGeneratorAndBackend(t *testing.T) {
 		{
 			"Jaeger-JaegerGRPC",
 			NewJaegerDataReceiver(port),
-			NewJaegerGRPCDataSender(port),
+			NewJaegerGRPCDataSender(DefaultHost, port),
 		},
 		{
 			"Zipkin-Zipkin",
 			NewZipkinDataReceiver(port),
-			NewZipkinDataSender(port),
+			NewZipkinDataSender(DefaultHost, port),
 		},
 	}
 

@@ -51,7 +51,7 @@ func TestTrace10kSPS(t *testing.T) {
 	}{
 		{
 			"JaegerGRPC",
-			testbed.NewJaegerGRPCDataSender(testbed.GetAvailablePort(t)),
+			testbed.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
 			testbed.NewJaegerDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 40,
@@ -60,7 +60,7 @@ func TestTrace10kSPS(t *testing.T) {
 		},
 		{
 			"OpenCensus",
-			testbed.NewOCTraceDataSender(testbed.GetAvailablePort(t)),
+			testbed.NewOCTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
 			testbed.NewOCDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 39,
@@ -69,7 +69,7 @@ func TestTrace10kSPS(t *testing.T) {
 		},
 		{
 			"OTLP",
-			testbed.NewOTLPTraceDataSender(testbed.GetAvailablePort(t)),
+			testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
 			testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 20,
@@ -78,7 +78,7 @@ func TestTrace10kSPS(t *testing.T) {
 		},
 		{
 			"Zipkin",
-			testbed.NewZipkinDataSender(testbed.GetAvailablePort(t)),
+			testbed.NewZipkinDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
 			testbed.NewZipkinDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 60,
@@ -149,7 +149,7 @@ func TestTraceNoBackend10kSPS(t *testing.T) {
 	}{
 		{
 			"JaegerGRPC",
-			testbed.NewJaegerGRPCDataSender(testbed.DefaultJaegerPort),
+			testbed.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.DefaultJaegerPort),
 			testbed.NewOCDataReceiver(testbed.DefaultOCPort),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 60,
@@ -159,7 +159,7 @@ func TestTraceNoBackend10kSPS(t *testing.T) {
 		},
 		{
 			"Zipkin",
-			testbed.NewZipkinDataSender(testbed.DefaultZipkinAddressPort),
+			testbed.NewZipkinDataSender(testbed.DefaultHost, testbed.DefaultZipkinAddressPort),
 			testbed.NewOCDataReceiver(testbed.DefaultOCPort),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 80,
@@ -368,12 +368,12 @@ func TestTraceAttributesProcessor(t *testing.T) {
 	}{
 		{
 			"JaegerGRPC",
-			testbed.NewJaegerGRPCDataSender(testbed.GetAvailablePort(t)),
+			testbed.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
 			testbed.NewJaegerDataReceiver(testbed.GetAvailablePort(t)),
 		},
 		{
 			"OTLP",
-			testbed.NewOTLPTraceDataSender(testbed.GetAvailablePort(t)),
+			testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
 			testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
 		},
 	}

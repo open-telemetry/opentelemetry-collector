@@ -173,7 +173,7 @@ func (tc *TestCase) StartAgent(args ...string) {
 	args = append(args, tc.agentConfigFile)
 	logFileName := tc.composeTestResultFileName("agent.log")
 
-	err := tc.agentProc.start(startParams{
+	_, err := tc.agentProc.Start(StartParams{
 		name:         "Agent",
 		logFilePath:  logFileName,
 		cmd:          testBedConfig.Agent,
@@ -205,7 +205,7 @@ func (tc *TestCase) StartAgent(args ...string) {
 
 // StopAgent stops agent process.
 func (tc *TestCase) StopAgent() {
-	tc.agentProc.stop()
+	tc.agentProc.Stop()
 }
 
 // StartLoad starts the load generator and redirects its standard output and standard error

@@ -26,7 +26,7 @@ import (
 func TestMetricNoBackend10kDPSOpenCensus(t *testing.T) {
 	tc := testbed.NewTestCase(
 		t,
-		testbed.NewOCMetricDataSender(55678),
+		testbed.NewOCMetricDataSender(testbed.DefaultHost, 55678),
 		testbed.NewOCDataReceiver(testbed.DefaultOCPort),
 		performanceResultsSummary,
 	)
@@ -49,7 +49,7 @@ func TestMetric10kDPS(t *testing.T) {
 	}{
 		{
 			"OpenCensus",
-			testbed.NewOCMetricDataSender(testbed.GetAvailablePort(t)),
+			testbed.NewOCMetricDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
 			testbed.NewOCDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 50,
@@ -58,7 +58,7 @@ func TestMetric10kDPS(t *testing.T) {
 		},
 		{
 			"OTLP",
-			testbed.NewOTLPMetricDataSender(testbed.GetAvailablePort(t)),
+			testbed.NewOTLPMetricDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
 			testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 50,

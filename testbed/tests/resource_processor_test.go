@@ -272,7 +272,7 @@ func getMetricDataFromJSON(t *testing.T, rmString string) data.MetricData {
 }
 
 func TestMetricResourceProcessor(t *testing.T) {
-	sender := testbed.NewOTLPMetricDataSender(testbed.GetAvailablePort(t))
+	sender := testbed.NewOTLPMetricDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
 	receiver := testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t))
 
 	tests := getResourceProcessorTestCases(t)
