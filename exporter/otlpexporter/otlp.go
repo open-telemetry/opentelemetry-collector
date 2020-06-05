@@ -19,9 +19,6 @@ import (
 	"fmt"
 	"sync"
 
-	otlpmetrics "github.com/open-telemetry/opentelemetry-proto/gen/go/collector/metrics/v1"
-	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/collector/trace/v1"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -29,6 +26,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/internal/data"
+	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/metrics/v1"
+	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
 )
 
 type otlpExporter struct {

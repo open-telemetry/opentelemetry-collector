@@ -20,10 +20,6 @@ import (
 	"net"
 	"testing"
 
-	collectormetrics "github.com/open-telemetry/opentelemetry-proto/gen/go/collector/metrics/v1"
-	otlpcommon "github.com/open-telemetry/opentelemetry-proto/gen/go/common/v1"
-	otlpmetrics "github.com/open-telemetry/opentelemetry-proto/gen/go/metrics/v1"
-	otlpresource "github.com/open-telemetry/opentelemetry-proto/gen/go/resource/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
@@ -32,6 +28,10 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/data"
+	collectormetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/metrics/v1"
+	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
+	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
+	otlpresource "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
 	"go.opentelemetry.io/collector/observability"
 	"go.opentelemetry.io/collector/testutils"
 )

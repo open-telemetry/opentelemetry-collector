@@ -17,7 +17,7 @@ package testdata
 import (
 	"time"
 
-	otlpmetrics "github.com/open-telemetry/opentelemetry-proto/gen/go/metrics/v1"
+	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/data"
@@ -562,4 +562,14 @@ func generateOtlpMetricDescriptor(name string, ty pdata.MetricType) *otlpmetrics
 		Type:        otlpmetrics.MetricDescriptor_Type(ty),
 		Labels:      nil,
 	}
+}
+
+func GenerateMetricDataManyMetricsSameResource(metricsCount int) data.MetricData {
+	md := GenerateMetricDataOneEmptyInstrumentationLibrary()
+	rs0ilm0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
+	rs0ilm0.Metrics().Resize(metricsCount)
+	for i:=0; i < metricsCount; i++ {
+		initCounterIntMetric(rs0ilm0.Metrics().At(i))
+	}
+	return md
 }

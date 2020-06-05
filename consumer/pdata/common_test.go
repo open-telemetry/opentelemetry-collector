@@ -19,8 +19,9 @@ import (
 	"strconv"
 	"testing"
 
-	otlpcommon "github.com/open-telemetry/opentelemetry-proto/gen/go/common/v1"
 	"github.com/stretchr/testify/assert"
+
+	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 )
 
 func TestAttributeValue(t *testing.T) {

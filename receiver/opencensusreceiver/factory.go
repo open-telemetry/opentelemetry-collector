@@ -22,7 +22,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/receiver"
 )
 
 const (
@@ -47,13 +46,10 @@ func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 // CreateDefaultConfig creates the default configuration for receiver.
 func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 	return &Config{
-		SecureReceiverSettings: receiver.SecureReceiverSettings{
-			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal:  typeStr,
-				NameVal:  typeStr,
-				Endpoint: "localhost:55678",
-				// Disable: false - This receiver is enabled by default.
-			},
+		ReceiverSettings: configmodels.ReceiverSettings{
+			TypeVal:  typeStr,
+			NameVal:  typeStr,
+			Endpoint: "localhost:55678",
 		},
 		Transport: "tcp",
 	}

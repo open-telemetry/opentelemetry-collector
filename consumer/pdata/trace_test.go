@@ -17,8 +17,12 @@ package pdata
 import (
 	"testing"
 
-	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
+	gogoproto "github.com/gogo/protobuf/proto"
+	goproto "github.com/golang/protobuf/proto"
+	otlptrace_goproto "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
 	"github.com/stretchr/testify/assert"
+
+	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
 )
 
 func TestSpanCount(t *testing.T) {
@@ -77,4 +81,37 @@ func TestToFromOtlp(t *testing.T) {
 	assert.EqualValues(t, otlp, TracesToOtlp(td))
 	// More tests in ./tracedata/trace_test.go. Cannot have them here because of
 	// circular dependency.
+}
+
+func TestResourceSpansWireCompatibility(t *testing.T) {
+	// This test verifies that OTLP ProtoBufs generated using goproto lib in
+	// opentelemetry-proto repository OTLP ProtoBufs generated using gogoproto lib in
+	// this repository are wire compatible.
+
+	// Generate ResourceSpans as pdata struct.
+	pdataRS := generateTestResourceSpans()
+
+	// Marshal its underlying ProtoBuf to wire.
+	wire1, err := gogoproto.Marshal(*pdataRS.orig)
+	assert.NoError(t, err)
+	assert.NotNil(t, wire1)
+
+	// Unmarshal from the wire to OTLP Protobuf in goproto's representation.
+	var goprotoRS otlptrace_goproto.ResourceSpans
+	err = goproto.Unmarshal(wire1, &goprotoRS)
+	assert.NoError(t, err)
+
+	// Marshal to the wire again.
+	wire2, err := goproto.Marshal(&goprotoRS)
+	assert.NoError(t, err)
+	assert.NotNil(t, wire2)
+
+	// Unmarshal from the wire into gogoproto's representation.
+	var gogoprotoRS2 otlptrace.ResourceSpans
+	err = gogoproto.Unmarshal(wire1, &gogoprotoRS2)
+	assert.NoError(t, err)
+
+	// Now compare that the original and final ProtoBuf messages are the same.
+	// This proves that goproto and gogoproto marshaling/unmarshaling are wire compatible.
+	assert.True(t, gogoproto.Equal(*pdataRS.orig, &gogoprotoRS2))
 }

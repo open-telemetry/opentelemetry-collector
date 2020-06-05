@@ -44,6 +44,17 @@ const (
 
 var (
 	errFake = errors.New("errFake")
+
+	// Names used by the metrics and labels are hard coded here in order to avoid
+	// inadvertent changes: at this point changing metric names and labels should
+	// be treated as a breaking changing and requires a good justification.
+	// Changes to metric names or labels can break alerting, dashboards, etc
+	// that are used to monitor the Collector in production deployments.
+	// DO NOT SWITCH THE VARIABLES BELOW TO SIMILAR ONES DEFINED ON THE PACKAGE.
+	receiverTag, _  = tag.NewKey("receiver")
+	transportTag, _ = tag.NewKey("transport")
+	exporterTag, _  = tag.NewKey("exporter")
+	processorTag, _ = tag.NewKey("processor")
 )
 
 type receiveTestParams struct {
@@ -579,20 +590,20 @@ func checkValueForSumView(t *testing.T, vName string, wantTags []tag.Tag, value 
 
 func receiverViewTags(receiver, transport string) []tag.Tag {
 	return []tag.Tag{
-		{Key: tagKeyReceiver, Value: receiver},
-		{Key: tagKeyTransport, Value: transport},
+		{Key: receiverTag, Value: receiver},
+		{Key: transportTag, Value: transport},
 	}
 }
 
 func exporterViewTags(exporter string) []tag.Tag {
 	return []tag.Tag{
-		{Key: tagKeyExporter, Value: exporter},
+		{Key: exporterTag, Value: exporter},
 	}
 }
 
 func processorViewTags(processor string) []tag.Tag {
 	return []tag.Tag{
-		{Key: tagKeyProcessor, Value: processor},
+		{Key: processorTag, Value: processor},
 	}
 }
 

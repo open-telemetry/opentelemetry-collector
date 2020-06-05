@@ -30,7 +30,6 @@ import (
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/receiver"
 )
 
 const (
@@ -104,7 +103,7 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 	return &Config{
 		TypeVal:   typeStr,
 		NameVal:   typeStr,
-		Protocols: map[string]*receiver.SecureReceiverSettings{},
+		Protocols: map[string]*SecureSetting{},
 	}
 }
 
@@ -141,7 +140,7 @@ func (f *Factory) CreateTraceReceiver(
 		}
 
 		if protoGRPC.TLSCredentials != nil {
-			option, err := protoGRPC.TLSCredentials.ToGrpcServerOption()
+			option, err := protoGRPC.TLSCredentials.LoadgRPCTLSServerCredentials()
 			if err != nil {
 				return nil, fmt.Errorf("failed to configure TLS: %v", err)
 			}
@@ -248,7 +247,7 @@ func extractPortFromEndpoint(endpoint string) (int, error) {
 }
 
 // returns a default value for a protocol name.  this really just boils down to the endpoint
-func defaultsForProtocol(proto string) (*receiver.SecureReceiverSettings, error) {
+func defaultsForProtocol(proto string) (*SecureSetting, error) {
 	var defaultEndpoint string
 
 	switch proto {
@@ -264,7 +263,7 @@ func defaultsForProtocol(proto string) (*receiver.SecureReceiverSettings, error)
 		return nil, fmt.Errorf("unknown Jaeger protocol %s", proto)
 	}
 
-	return &receiver.SecureReceiverSettings{
+	return &SecureSetting{
 		ReceiverSettings: configmodels.ReceiverSettings{
 			Endpoint: defaultEndpoint,
 		},

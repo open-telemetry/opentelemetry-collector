@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-// load metric constants
+// descriptors
 
 var metric1MLoadDescriptor = createMetric1MLoadDescriptor()
 

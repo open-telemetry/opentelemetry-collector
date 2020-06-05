@@ -12,20 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package regexp
-
-import (
-	"github.com/golang/groupcache/lru"
-)
-
-// Option is the type for regexp filtering options that can be passed to NewRegexpFilterSet.
-type Option func(*FilterSet)
-
-// WithCache enables an LRU cache that stores the previous results of calls to Matches.
-// The cache's max number of entries is set to maxNumEntries. Passing a value of 0 results in an unlimited cache size.
-func WithCache(maxNumEntries int) Option {
-	return func(rfs *FilterSet) {
-		rfs.cacheEnabled = true
-		rfs.cache = lru.New(maxNumEntries)
-	}
-}
+// Package receiver contains implementations of Receiver components.
+//
+// To implement a custom receiver you will need to implement component.ReceiverFactory
+// interface and component.Receiver interface.
+//
+// To make the custom receiver part of the Collector build the factory must be added
+// to defaultcomponents.Components() function.
+package receiver

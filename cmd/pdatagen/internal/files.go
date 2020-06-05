@@ -41,6 +41,7 @@ var AllFiles = []*File{
 	metricsFile,
 	resourceFile,
 	traceFile,
+	logFile,
 }
 
 // File represents the struct for one generated file.

@@ -1,10 +1,10 @@
-// Copyright The OpenTelemetry Authors
+// Copyright 2020, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,7 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package strict
+package virtualmemoryscraper
 
-// Option is the type for strict filtering options that can be passed to NewStrictFilterSet.
-type Option func(*FilterSet)
+import "go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
+
+// Config relating to VirtualMemory Metric Scraper.
+type Config struct {
+	internal.ConfigSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+}

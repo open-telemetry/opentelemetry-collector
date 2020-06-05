@@ -17,7 +17,7 @@ package internal
 var commonFile = &File{
 	Name: "common",
 	imports: []string{
-		`otlpcommon "github.com/open-telemetry/opentelemetry-proto/gen/go/common/v1"`,
+		`otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"`,
 	},
 	testImports: []string{
 		`"testing"`,
@@ -64,7 +64,7 @@ var attributeMap = &sliceStruct{
 var attributeKeyValue = &messageStruct{}
 
 var instrumentationLibraryField = &messageField{
-	fieldMame:       "InstrumentationLibrary",
+	fieldName:       "InstrumentationLibrary",
 	originFieldName: "InstrumentationLibrary",
 	returnMessage:   instrumentationLibrary,
 }

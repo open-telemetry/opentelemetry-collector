@@ -18,10 +18,10 @@ import (
 	"fmt"
 
 	"github.com/jaegertracing/jaeger/model"
-	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal"
+	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )

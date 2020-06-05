@@ -17,13 +17,14 @@ package internal
 var metricsFile = &File{
 	Name: "metrics",
 	imports: []string{
-		`otlpmetrics "github.com/open-telemetry/opentelemetry-proto/gen/go/metrics/v1"`,
+		`otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"`,
 	},
 	testImports: []string{
 		`"testing"`,
 		``,
-		`otlpmetrics "github.com/open-telemetry/opentelemetry-proto/gen/go/metrics/v1"`,
 		`"github.com/stretchr/testify/assert"`,
+		``,
+		`otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"`,
 	},
 	structs: []baseStruct{
 		resourceMetricsSlice,
@@ -99,7 +100,7 @@ var metric = &messageStruct{
 	originFullName: "otlpmetrics.Metric",
 	fields: []baseField{
 		&messageField{
-			fieldMame:       "MetricDescriptor",
+			fieldName:       "MetricDescriptor",
 			originFieldName: "MetricDescriptor",
 			returnMessage:   metricDescriptor,
 		},
@@ -228,7 +229,7 @@ var histogramBucket = &messageStruct{
 	fields: []baseField{
 		countField,
 		&messageField{
-			fieldMame:       "Exemplar",
+			fieldName:       "Exemplar",
 			originFieldName: "Exemplar",
 			returnMessage:   histogramBucketExemplar,
 		},

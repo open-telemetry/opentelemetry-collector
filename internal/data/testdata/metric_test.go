@@ -17,8 +17,8 @@ package testdata
 import (
 	"testing"
 
-	otlpmetrics "github.com/open-telemetry/opentelemetry-proto/gen/go/metrics/v1"
 	"github.com/stretchr/testify/assert"
+	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 
 	"go.opentelemetry.io/collector/internal/data"
 )
@@ -136,4 +136,10 @@ func TestToFromOtlpMetricsWithNils(t *testing.T) {
 	assert.EqualValues(t, 2, ilss.Metrics().Len())
 	assert.False(t, ilss.Metrics().At(0).IsNil())
 	assert.True(t, ilss.Metrics().At(1).IsNil())
+}
+
+func TestGenerateMetricDataManyMetricsSameResource(t *testing.T) {
+	md := GenerateMetricDataManyMetricsSameResource(100)
+	assert.EqualValues(t, 1, md.ResourceMetrics().Len())
+	assert.EqualValues(t, 100, md.MetricCount())
 }

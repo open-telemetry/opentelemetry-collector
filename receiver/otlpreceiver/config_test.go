@@ -24,7 +24,7 @@ import (
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/config/configtls"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -46,12 +46,10 @@ func TestLoadConfig(t *testing.T) {
 	r1 := cfg.Receivers["otlp/customname"].(*Config)
 	assert.Equal(t, r1,
 		&Config{
-			SecureReceiverSettings: receiver.SecureReceiverSettings{
-				ReceiverSettings: configmodels.ReceiverSettings{
-					TypeVal:  typeStr,
-					NameVal:  "otlp/customname",
-					Endpoint: "0.0.0.0:9090",
-				},
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal:  typeStr,
+				NameVal:  "otlp/customname",
+				Endpoint: "0.0.0.0:9090",
 			},
 			Transport: "tcp",
 		})
@@ -59,15 +57,13 @@ func TestLoadConfig(t *testing.T) {
 	r2 := cfg.Receivers["otlp/keepalive"].(*Config)
 	assert.Equal(t, r2,
 		&Config{
-			SecureReceiverSettings: receiver.SecureReceiverSettings{
-				ReceiverSettings: configmodels.ReceiverSettings{
-					TypeVal:  typeStr,
-					NameVal:  "otlp/keepalive",
-					Endpoint: "localhost:55680",
-				},
-				TLSCredentials: nil,
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal:  typeStr,
+				NameVal:  "otlp/keepalive",
+				Endpoint: "localhost:55680",
 			},
-			Transport: "tcp",
+			TLSCredentials: nil,
+			Transport:      "tcp",
 			Keepalive: &serverParametersAndEnforcementPolicy{
 				ServerParameters: &keepaliveServerParameters{
 					MaxConnectionIdle:     11 * time.Second,
@@ -86,12 +82,10 @@ func TestLoadConfig(t *testing.T) {
 	r3 := cfg.Receivers["otlp/msg-size-conc-connect-max-idle"].(*Config)
 	assert.Equal(t, r3,
 		&Config{
-			SecureReceiverSettings: receiver.SecureReceiverSettings{
-				ReceiverSettings: configmodels.ReceiverSettings{
-					TypeVal:  typeStr,
-					NameVal:  "otlp/msg-size-conc-connect-max-idle",
-					Endpoint: "localhost:55680",
-				},
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal:  typeStr,
+				NameVal:  "otlp/msg-size-conc-connect-max-idle",
+				Endpoint: "localhost:55680",
 			},
 			Transport:            "tcp",
 			MaxRecvMsgSizeMiB:    32,
@@ -108,16 +102,14 @@ func TestLoadConfig(t *testing.T) {
 	r4 := cfg.Receivers["otlp/tlscredentials"].(*Config)
 	assert.Equal(t, r4,
 		&Config{
-			SecureReceiverSettings: receiver.SecureReceiverSettings{
-				ReceiverSettings: configmodels.ReceiverSettings{
-					TypeVal:  typeStr,
-					NameVal:  "otlp/tlscredentials",
-					Endpoint: "localhost:55680",
-				},
-				TLSCredentials: &receiver.TLSCredentials{
-					CertFile: "test.crt",
-					KeyFile:  "test.key",
-				},
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal:  typeStr,
+				NameVal:  "otlp/tlscredentials",
+				Endpoint: "localhost:55680",
+			},
+			TLSCredentials: &configtls.TLSSetting{
+				CertFile: "test.crt",
+				KeyFile:  "test.key",
 			},
 			Transport: "tcp",
 		})
@@ -125,12 +117,10 @@ func TestLoadConfig(t *testing.T) {
 	r5 := cfg.Receivers["otlp/cors"].(*Config)
 	assert.Equal(t, r5,
 		&Config{
-			SecureReceiverSettings: receiver.SecureReceiverSettings{
-				ReceiverSettings: configmodels.ReceiverSettings{
-					TypeVal:  typeStr,
-					NameVal:  "otlp/cors",
-					Endpoint: "localhost:55680",
-				},
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal:  typeStr,
+				NameVal:  "otlp/cors",
+				Endpoint: "localhost:55680",
 			},
 			Transport:   "tcp",
 			CorsOrigins: []string{"https://*.test.com", "https://test.com"},
@@ -139,13 +129,29 @@ func TestLoadConfig(t *testing.T) {
 	r6 := cfg.Receivers["otlp/uds"].(*Config)
 	assert.Equal(t, r6,
 		&Config{
-			SecureReceiverSettings: receiver.SecureReceiverSettings{
-				ReceiverSettings: configmodels.ReceiverSettings{
-					TypeVal:  typeStr,
-					NameVal:  "otlp/uds",
-					Endpoint: "/tmp/otlp.sock",
-				},
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal:  typeStr,
+				NameVal:  "otlp/uds",
+				Endpoint: "/tmp/otlp.sock",
 			},
 			Transport: "unix",
 		})
+}
+
+func TestBuildOptions_TLSCredentials(t *testing.T) {
+	cfg := Config{
+		ReceiverSettings: configmodels.ReceiverSettings{
+			NameVal: "IncorrectTLS",
+		},
+		TLSCredentials: &configtls.TLSSetting{
+			CertFile: "willfail",
+		},
+	}
+	_, err := cfg.buildOptions()
+	assert.EqualError(t, err, `error initializing OTLP receiver "IncorrectTLS" TLS Credentials: failed to load TLS config: for auth via TLS, either both certificate and key must be supplied, or neither`)
+
+	cfg.TLSCredentials = &configtls.TLSSetting{}
+	opt, err := cfg.buildOptions()
+	assert.NoError(t, err)
+	assert.NotNil(t, opt)
 }

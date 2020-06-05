@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/internal/processor/filterspan"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
@@ -687,14 +688,14 @@ func TestAttributes_FilterSpans(t *testing.T) {
 		{Key: "attribute1", Action: INSERT, Value: 123},
 	}
 	oCfg.Include = &filterspan.MatchProperties{
-		Services:  []string{"svcA", "svcB.*"},
-		MatchType: filterspan.MatchTypeRegexp,
+		Services: []string{"svcA", "svcB.*"},
+		Config:   *createConfig(filterset.Regexp),
 	}
 	oCfg.Exclude = &filterspan.MatchProperties{
 		Attributes: []filterspan.Attribute{
 			{Key: "NoModification", Value: true},
 		},
-		MatchType: filterspan.MatchTypeStrict,
+		Config: *createConfig(filterset.Strict),
 	}
 	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, exportertest.NewNopTraceExporter(), cfg)
 	require.Nil(t, err)
@@ -758,11 +759,11 @@ func TestAttributes_FilterSpansByNameStrict(t *testing.T) {
 	}
 	oCfg.Include = &filterspan.MatchProperties{
 		SpanNames: []string{"apply", "dont_apply"},
-		MatchType: filterspan.MatchTypeStrict,
+		Config:    *createConfig(filterset.Strict),
 	}
 	oCfg.Exclude = &filterspan.MatchProperties{
 		SpanNames: []string{"dont_apply"},
-		MatchType: filterspan.MatchTypeStrict,
+		Config:    *createConfig(filterset.Strict),
 	}
 	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, exportertest.NewNopTraceExporter(), cfg)
 	require.Nil(t, err)
@@ -826,11 +827,11 @@ func TestAttributes_FilterSpansByNameRegexp(t *testing.T) {
 	}
 	oCfg.Include = &filterspan.MatchProperties{
 		SpanNames: []string{"^apply.*"},
-		MatchType: filterspan.MatchTypeRegexp,
+		Config:    *createConfig(filterset.Regexp),
 	}
 	oCfg.Exclude = &filterspan.MatchProperties{
 		SpanNames: []string{".*dont_apply$"},
-		MatchType: filterspan.MatchTypeRegexp,
+		Config:    *createConfig(filterset.Regexp),
 	}
 	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, exportertest.NewNopTraceExporter(), cfg)
 	require.Nil(t, err)
@@ -951,5 +952,11 @@ func BenchmarkAttributes_FilterSpansByName(b *testing.B) {
 		// Ensure that the modified `td` has the attributes sorted:
 		sortAttributes(td)
 		require.Equal(b, generateTraceData(tt.serviceName, tt.name, tt.expectedAttributes), td)
+	}
+}
+
+func createConfig(matchType filterset.MatchType) *filterset.Config {
+	return &filterset.Config{
+		MatchType: matchType,
 	}
 }

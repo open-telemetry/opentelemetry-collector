@@ -34,7 +34,6 @@ import (
 	staticStrategyStore "github.com/jaegertracing/jaeger/plugin/sampling/strategystore/static"
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	tJaeger "github.com/jaegertracing/jaeger/thrift-gen/jaeger"
-	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/trace"
@@ -50,7 +49,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/receiver"
+	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
 	"go.opentelemetry.io/collector/testutils"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
@@ -254,12 +253,12 @@ func TestGRPCReception(t *testing.T) {
 func TestGRPCReceptionWithTLS(t *testing.T) {
 	// prepare
 	grpcServerOptions := []grpc.ServerOption{}
-	tlsCreds := receiver.TLSCredentials{
+	tlsCreds := configtls.TLSSetting{
 		CertFile: path.Join(".", "testdata", "certificate.pem"),
 		KeyFile:  path.Join(".", "testdata", "key.pem"),
 	}
 
-	tlsOption, _ := tlsCreds.ToGrpcServerOption()
+	tlsOption, _ := tlsCreds.LoadgRPCTLSServerCredentials()
 
 	grpcServerOptions = append(grpcServerOptions, tlsOption)
 
@@ -591,7 +590,7 @@ func TestSamplingStrategiesMutualTLS(t *testing.T) {
 	// at least one protocol has to be enabled
 	thriftHTTPPort, err := randomAvailablePort()
 	require.NoError(t, err)
-	cfg.Protocols = map[string]*receiver.SecureReceiverSettings{
+	cfg.Protocols = map[string]*SecureSetting{
 		"thrift_http": {ReceiverSettings: configmodels.ReceiverSettings{
 			Endpoint: fmt.Sprintf("localhost:%d", thriftHTTPPort),
 		}},

@@ -23,6 +23,7 @@ import (
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/internal/processor/filterspan"
 )
 
@@ -104,8 +105,8 @@ func TestLoadingConifg(t *testing.T) {
 		},
 		MatchConfig: filterspan.MatchConfig{
 			Exclude: &filterspan.MatchProperties{
-				MatchType: filterspan.MatchTypeStrict,
-				Services:  []string{"svcA", "svcB"},
+				Config:   *createConfig(filterset.Strict),
+				Services: []string{"svcA", "svcB"},
 				Attributes: []filterspan.Attribute{
 					{Key: "env", Value: "dev"},
 					{Key: "test_request"},
@@ -126,8 +127,8 @@ func TestLoadingConifg(t *testing.T) {
 		},
 		MatchConfig: filterspan.MatchConfig{
 			Include: &filterspan.MatchProperties{
-				MatchType: filterspan.MatchTypeRegexp,
-				Services:  []string{"auth.*", "login.*"},
+				Config:   *createConfig(filterset.Regexp),
+				Services: []string{"auth.*", "login.*"},
 			},
 		},
 		Actions: []ActionKeyValue{
@@ -144,11 +145,11 @@ func TestLoadingConifg(t *testing.T) {
 		},
 		MatchConfig: filterspan.MatchConfig{
 			Include: &filterspan.MatchProperties{
-				MatchType: filterspan.MatchTypeStrict,
-				Services:  []string{"svcA", "svcB"},
+				Config:   *createConfig(filterset.Strict),
+				Services: []string{"svcA", "svcB"},
 			},
 			Exclude: &filterspan.MatchProperties{
-				MatchType: filterspan.MatchTypeStrict,
+				Config: *createConfig(filterset.Strict),
 				Attributes: []filterspan.Attribute{
 					{Key: "redact_trace", Value: false},
 				},
@@ -196,11 +197,11 @@ func TestLoadingConifg(t *testing.T) {
 		},
 		MatchConfig: filterspan.MatchConfig{
 			Include: &filterspan.MatchProperties{
-				MatchType: filterspan.MatchTypeRegexp,
-				Services:  []string{"auth.*"},
+				Config:   *createConfig(filterset.Regexp),
+				Services: []string{"auth.*"},
 			},
 			Exclude: &filterspan.MatchProperties{
-				MatchType: filterspan.MatchTypeRegexp,
+				Config:    *createConfig(filterset.Regexp),
 				SpanNames: []string{"login.*"},
 			},
 		},

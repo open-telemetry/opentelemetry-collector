@@ -582,38 +582,7 @@ var ocBatchesFromZipkinV1 = []consumerdata.TraceData{
 				Kind:         tracepb.Span_CLIENT,
 				StartTime:    &timestamp.Timestamp{Seconds: 1544805927, Nanos: 446743000},
 				EndTime:      &timestamp.Timestamp{Seconds: 1544805927, Nanos: 459699000},
-				TimeEvents: &tracepb.Span_TimeEvents{
-					TimeEvent: []*tracepb.Span_TimeEvent{
-						{
-							Time: &timestamp.Timestamp{Seconds: 1544805927, Nanos: 446743000},
-							Value: &tracepb.Span_TimeEvent_Annotation_{
-								Annotation: &tracepb.Span_TimeEvent_Annotation{
-									Attributes: &tracepb.Span_Attributes{
-										AttributeMap: map[string]*tracepb.AttributeValue{
-											"cs": {
-												Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "front-proxy"}},
-											},
-										},
-									},
-								},
-							},
-						},
-						{
-							Time: &timestamp.Timestamp{Seconds: 1544805927, Nanos: 460510000},
-							Value: &tracepb.Span_TimeEvent_Annotation_{
-								Annotation: &tracepb.Span_TimeEvent_Annotation{
-									Attributes: &tracepb.Span_Attributes{
-										AttributeMap: map[string]*tracepb.AttributeValue{
-											"cr": {
-												Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "front-proxy"}},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
+				TimeEvents:   nil,
 			},
 		},
 	},
@@ -631,38 +600,7 @@ var ocBatchesFromZipkinV1 = []consumerdata.TraceData{
 				Kind:         tracepb.Span_SERVER,
 				StartTime:    &timestamp.Timestamp{Seconds: 1544805927, Nanos: 448081000},
 				EndTime:      &timestamp.Timestamp{Seconds: 1544805927, Nanos: 460102000},
-				TimeEvents: &tracepb.Span_TimeEvents{
-					TimeEvent: []*tracepb.Span_TimeEvent{
-						{
-							Time: &timestamp.Timestamp{Seconds: 1544805927, Nanos: 448081000},
-							Value: &tracepb.Span_TimeEvent_Annotation_{
-								Annotation: &tracepb.Span_TimeEvent_Annotation{
-									Attributes: &tracepb.Span_Attributes{
-										AttributeMap: map[string]*tracepb.AttributeValue{
-											"sr": {
-												Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "service1"}},
-											},
-										},
-									},
-								},
-							},
-						},
-						{
-							Time: &timestamp.Timestamp{Seconds: 1544805927, Nanos: 460102000},
-							Value: &tracepb.Span_TimeEvent_Annotation_{
-								Annotation: &tracepb.Span_TimeEvent_Annotation{
-									Attributes: &tracepb.Span_Attributes{
-										AttributeMap: map[string]*tracepb.AttributeValue{
-											"ss": {
-												Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "service1"}},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
+				TimeEvents:   nil,
 			},
 			{
 				TraceId:      []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0e, 0xd2, 0xe6, 0x3c, 0xbe, 0x71, 0xf5, 0xa8},
@@ -672,38 +610,7 @@ var ocBatchesFromZipkinV1 = []consumerdata.TraceData{
 				Kind:         tracepb.Span_CLIENT,
 				StartTime:    &timestamp.Timestamp{Seconds: 1544805927, Nanos: 453923000},
 				EndTime:      &timestamp.Timestamp{Seconds: 1544805927, Nanos: 457663000},
-				TimeEvents: &tracepb.Span_TimeEvents{
-					TimeEvent: []*tracepb.Span_TimeEvent{
-						{
-							Time: &timestamp.Timestamp{Seconds: 1544805927, Nanos: 453923000},
-							Value: &tracepb.Span_TimeEvent_Annotation_{
-								Annotation: &tracepb.Span_TimeEvent_Annotation{
-									Attributes: &tracepb.Span_Attributes{
-										AttributeMap: map[string]*tracepb.AttributeValue{
-											"cs": {
-												Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "service1"}},
-											},
-										},
-									},
-								},
-							},
-						},
-						{
-							Time: &timestamp.Timestamp{Seconds: 1544805927, Nanos: 457717000},
-							Value: &tracepb.Span_TimeEvent_Annotation_{
-								Annotation: &tracepb.Span_TimeEvent_Annotation{
-									Attributes: &tracepb.Span_Attributes{
-										AttributeMap: map[string]*tracepb.AttributeValue{
-											"cr": {
-												Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "service1"}},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
+				TimeEvents:   nil,
 			},
 		},
 	},
@@ -737,38 +644,7 @@ var ocBatchesFromZipkinV1 = []consumerdata.TraceData{
 						},
 					},
 				},
-				TimeEvents: &tracepb.Span_TimeEvents{
-					TimeEvent: []*tracepb.Span_TimeEvent{
-						{
-							Time: &timestamp.Timestamp{Seconds: 1544805927, Nanos: 454487000},
-							Value: &tracepb.Span_TimeEvent_Annotation_{
-								Annotation: &tracepb.Span_TimeEvent_Annotation{
-									Attributes: &tracepb.Span_Attributes{
-										AttributeMap: map[string]*tracepb.AttributeValue{
-											"sr": {
-												Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "service2"}},
-											},
-										},
-									},
-								},
-							},
-						},
-						{
-							Time: &timestamp.Timestamp{Seconds: 1544805927, Nanos: 457320000},
-							Value: &tracepb.Span_TimeEvent_Annotation_{
-								Annotation: &tracepb.Span_TimeEvent_Annotation{
-									Attributes: &tracepb.Span_Attributes{
-										AttributeMap: map[string]*tracepb.AttributeValue{
-											"ss": {
-												Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "service2"}},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
+				TimeEvents: nil,
 			},
 		},
 	},

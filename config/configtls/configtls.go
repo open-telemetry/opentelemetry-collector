@@ -77,23 +77,24 @@ func (c TLSSetting) LoadTLSConfig() (*tls.Config, error) {
 			return nil, fmt.Errorf("failed to load CA CertPool: %w", err)
 		}
 	}
-	// #nosec G402
-	tlsCfg := &tls.Config{
-		RootCAs: certPool,
-	}
 
 	if (c.CertFile == "" && c.KeyFile != "") || (c.CertFile != "" && c.KeyFile == "") {
 		return nil, fmt.Errorf("for auth via TLS, either both certificate and key must be supplied, or neither")
 	}
+
+	var certificates []tls.Certificate
 	if c.CertFile != "" && c.KeyFile != "" {
 		tlsCert, err := tls.LoadX509KeyPair(filepath.Clean(c.CertFile), filepath.Clean(c.KeyFile))
 		if err != nil {
 			return nil, fmt.Errorf("failed to load TLS cert and key: %w", err)
 		}
-		tlsCfg.Certificates = append(tlsCfg.Certificates, tlsCert)
+		certificates = append(certificates, tlsCert)
 	}
 
-	return tlsCfg, nil
+	return &tls.Config{
+		RootCAs:      certPool,
+		Certificates: certificates,
+	}, nil
 }
 
 func (c TLSSetting) loadCert(caPath string) (*x509.CertPool, error) {
@@ -109,7 +110,7 @@ func (c TLSSetting) loadCert(caPath string) (*x509.CertPool, error) {
 	return certPool, nil
 }
 
-func (c TLSClientSetting) LoadGRPCTLSCredentials() (grpc.DialOption, error) {
+func (c TLSClientSetting) LoadgRPCTLSClientCredentials() (grpc.DialOption, error) {
 	if c.Insecure && c.CAFile == "" {
 		return grpc.WithInsecure(), nil
 	}
@@ -121,4 +122,13 @@ func (c TLSClientSetting) LoadGRPCTLSCredentials() (grpc.DialOption, error) {
 	tlsConf.ServerName = c.ServerName
 	creds := credentials.NewTLS(tlsConf)
 	return grpc.WithTransportCredentials(creds), nil
+}
+
+func (c TLSSetting) LoadgRPCTLSServerCredentials() (grpc.ServerOption, error) {
+	tlsConf, err := c.LoadTLSConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load TLS config: %w", err)
+	}
+	creds := credentials.NewTLS(tlsConf)
+	return grpc.Creds(creds), nil
 }

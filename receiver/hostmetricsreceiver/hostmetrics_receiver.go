@@ -107,7 +107,7 @@ func (hmr *receiver) startScrapers() {
 		for {
 			select {
 			case <-ticker.C:
-				hmr.ScrapeMetrics(context.Background(), hmr.scrapers)
+				hmr.scrapeMetrics(context.Background())
 			case <-hmr.done:
 				return
 			}
@@ -115,7 +115,7 @@ func (hmr *receiver) startScrapers() {
 	}()
 }
 
-func (hmr *receiver) ScrapeMetrics(ctx context.Context, scrapers []internal.Scraper) {
+func (hmr *receiver) scrapeMetrics(ctx context.Context) {
 	ctx, span := trace.StartSpan(ctx, "hostmetricsreceiver.ScrapeMetrics")
 	defer span.End()
 
@@ -123,7 +123,7 @@ func (hmr *receiver) ScrapeMetrics(ctx context.Context, scrapers []internal.Scra
 	metrics := internal.InitializeMetricSlice(metricData)
 
 	var errors []error
-	for _, scraper := range scrapers {
+	for _, scraper := range hmr.scrapers {
 		scraperMetrics, err := scraper.ScrapeMetrics(ctx)
 		if err != nil {
 			errors = append(errors, err)
