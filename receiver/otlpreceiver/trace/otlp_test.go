@@ -26,8 +26,9 @@ import (
 	"google.golang.org/grpc"
 
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumermock"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+
 	collectortrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
 	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	otlpresource "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
@@ -41,7 +42,7 @@ var _ collectortrace.TraceServiceServer = (*Receiver)(nil)
 func TestExport(t *testing.T) {
 	// given
 
-	traceSink := new(exportertest.SinkTraceExporter)
+	traceSink := &consumermock.Trace{}
 
 	_, port, doneFn := otlpReceiverOnGRPCServer(t, traceSink)
 	defer doneFn()
@@ -129,9 +130,9 @@ func TestExport(t *testing.T) {
 
 	// assert
 
-	require.Equal(t, 1, len(traceSink.AllTraces()), "unexpected length: %v", len(traceSink.AllTraces()))
+	require.Equal(t, 1, len(traceSink.Traces()), "unexpected length: %v", len(traceSink.Traces()))
 
-	assert.EqualValues(t, traceData, traceSink.AllTraces()[0])
+	assert.EqualValues(t, traceData, traceSink.Traces()[0])
 }
 
 func makeTraceServiceClient(port int) (collectortrace.TraceServiceClient, func(), error) {

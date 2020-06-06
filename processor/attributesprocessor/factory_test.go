@@ -25,8 +25,9 @@ import (
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/consumer/consumermock"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+
 )
 
 func TestFactory_Type(t *testing.T) {
@@ -55,7 +56,7 @@ func TestFactory_CreateTraceProcessor(t *testing.T) {
 	}
 
 	tp, err := factory.CreateTraceProcessor(
-		context.Background(), component.ProcessorCreateParams{}, exportertest.NewNopTraceExporter(), cfg)
+		context.Background(), component.ProcessorCreateParams{}, consumermock.Nil, cfg)
 	assert.NotNil(t, tp)
 	assert.NoError(t, err)
 
@@ -68,7 +69,7 @@ func TestFactory_CreateTraceProcessor(t *testing.T) {
 		{Action: DELETE},
 	}
 	tp, err = factory.CreateTraceProcessor(
-		context.Background(), component.ProcessorCreateParams{}, exportertest.NewNopTraceExporter(), cfg)
+		context.Background(), component.ProcessorCreateParams{}, consumermock.Nil, cfg)
 	assert.Nil(t, tp)
 	assert.NotNil(t, err)
 }

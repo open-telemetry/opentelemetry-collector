@@ -24,8 +24,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/consumer/consumermock"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+
 	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/internal/processor/filterspan"
@@ -40,7 +41,7 @@ func TestNewTraceProcessor(t *testing.T) {
 	require.Error(t, componenterror.ErrNilNextConsumer, err)
 	require.Nil(t, tp)
 
-	tp, err = newSpanProcessor(exportertest.NewNopTraceExporter(), *oCfg)
+	tp, err = newSpanProcessor(consumermock.Nil, *oCfg)
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 }
@@ -156,7 +157,7 @@ func TestSpanProcessor_NilEmptyData(t *testing.T) {
 	oCfg.Rename.FromAttributes = []string{"key"}
 
 	tp, err := factory.CreateTraceProcessor(
-		context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, exportertest.NewNopTraceExporter(), oCfg)
+		context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, consumermock.Nil, oCfg)
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 	for i := range testCases {
@@ -261,7 +262,7 @@ func TestSpanProcessor_Values(t *testing.T) {
 	oCfg.Rename.FromAttributes = []string{"key1"}
 
 	tp, err := factory.CreateTraceProcessor(
-		context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, exportertest.NewNopTraceExporter(), oCfg)
+		context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, consumermock.Nil, oCfg)
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 	for _, tc := range testCases {
@@ -338,7 +339,7 @@ func TestSpanProcessor_MissingKeys(t *testing.T) {
 	oCfg.Rename.Separator = "::"
 
 	tp, err := factory.CreateTraceProcessor(
-		context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, exportertest.NewNopTraceExporter(), oCfg)
+		context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, consumermock.Nil, oCfg)
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 	for _, tc := range testCases {
@@ -357,7 +358,7 @@ func TestSpanProcessor_Separator(t *testing.T) {
 	oCfg.Rename.Separator = "::"
 
 	tp, err := factory.CreateTraceProcessor(
-		context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, exportertest.NewNopTraceExporter(), oCfg)
+		context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, consumermock.Nil, oCfg)
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
@@ -387,7 +388,7 @@ func TestSpanProcessor_NoSeparatorMultipleKeys(t *testing.T) {
 	oCfg.Rename.Separator = ""
 
 	tp, err := factory.CreateTraceProcessor(
-		context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, exportertest.NewNopTraceExporter(), oCfg)
+		context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, consumermock.Nil, oCfg)
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
@@ -418,7 +419,7 @@ func TestSpanProcessor_SeparatorMultipleKeys(t *testing.T) {
 	oCfg.Rename.Separator = "::"
 
 	tp, err := factory.CreateTraceProcessor(
-		context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, exportertest.NewNopTraceExporter(), oCfg)
+		context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, consumermock.Nil, oCfg)
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
@@ -454,7 +455,7 @@ func TestSpanProcessor_NilName(t *testing.T) {
 	oCfg.Rename.Separator = "::"
 
 	tp, err := factory.CreateTraceProcessor(
-		context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, exportertest.NewNopTraceExporter(), oCfg)
+		context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, consumermock.Nil, oCfg)
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
@@ -552,7 +553,7 @@ func TestSpanProcessor_ToAttributes(t *testing.T) {
 		oCfg.Rename.ToAttributes.Rules = tc.rules
 		oCfg.Rename.ToAttributes.BreakAfterMatch = tc.breakAfterMatch
 		tp, err := factory.CreateTraceProcessor(
-			context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, exportertest.NewNopTraceExporter(), oCfg)
+			context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, consumermock.Nil, oCfg)
 		require.Nil(t, err)
 		require.NotNil(t, tp)
 
@@ -620,7 +621,7 @@ func TestSpanProcessor_skipSpan(t *testing.T) {
 		Rules: []string{`(?P<operation_website>.*?)$`},
 	}
 	tp, err := factory.CreateTraceProcessor(
-		context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, exportertest.NewNopTraceExporter(), oCfg)
+		context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, consumermock.Nil, oCfg)
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 

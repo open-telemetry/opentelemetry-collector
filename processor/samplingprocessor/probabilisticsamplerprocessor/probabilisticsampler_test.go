@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/consumer/consumermock"
 	"go.opentelemetry.io/collector/processor"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
@@ -48,23 +48,23 @@ func TestNewTraceProcessor(t *testing.T) {
 		},
 		{
 			name:         "happy_path",
-			nextConsumer: &exportertest.SinkTraceExporterOld{},
+			nextConsumer: &consumermock.Trace{},
 			cfg: Config{
 				SamplingPercentage: 15.5,
 			},
 			want: &tracesamplerprocessor{
-				nextConsumer: &exportertest.SinkTraceExporterOld{},
+				nextConsumer: &consumermock.Trace{},
 			},
 		},
 		{
 			name:         "happy_path_hash_seed",
-			nextConsumer: &exportertest.SinkTraceExporterOld{},
+			nextConsumer: &consumermock.Trace{},
 			cfg: Config{
 				SamplingPercentage: 13.33,
 				HashSeed:           4321,
 			},
 			want: &tracesamplerprocessor{
-				nextConsumer: &exportertest.SinkTraceExporterOld{},
+				nextConsumer: &consumermock.Trace{},
 				hashSeed:     4321,
 			},
 		},
@@ -146,7 +146,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 	const testSvcName = "test-svc"
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sink := &exportertest.SinkTraceExporterOld{}
+			sink := &consumermock.Trace{}
 			tsp, err := newTraceProcessor(sink, tt.cfg)
 			if err != nil {
 				t.Errorf("error when creating tracesamplerprocessor: %v", err)
@@ -158,7 +158,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 					return
 				}
 			}
-			_, sampled := assertSampledData(t, sink.AllTraces(), testSvcName)
+			_, sampled := assertSampledData(t, sink.TracesOld(), testSvcName)
 			actualPercentageSamplingPercentage := float32(sampled) / float32(tt.numBatches*tt.numTracesPerBatch) * 100.0
 			delta := math.Abs(float64(actualPercentageSamplingPercentage - tt.cfg.SamplingPercentage))
 			if delta > tt.acceptableDelta {
@@ -274,14 +274,14 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sink := &exportertest.SinkTraceExporterOld{}
+			sink := &consumermock.Trace{}
 			tsp, err := newTraceProcessor(sink, tt.cfg)
 			require.NoError(t, err)
 
 			err = tsp.ConsumeTraceData(context.Background(), tt.td)
 			require.NoError(t, err)
 
-			sampledData := sink.AllTraces()
+			sampledData := sink.TracesOld()
 			require.Equal(t, 1, len(sampledData))
 			assert.Equal(t, tt.sampled, len(sampledData[0].Spans) == 1)
 		})

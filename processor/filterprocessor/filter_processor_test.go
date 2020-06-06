@@ -24,7 +24,7 @@ import (
 
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	etest "go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/consumer/consumermock"
 	"go.opentelemetry.io/collector/internal/processor/filtermetric"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 )
@@ -152,7 +152,7 @@ func TestFilterMetricProcessor(t *testing.T) {
 	for _, test := range standardTests {
 		t.Run(test.name, func(t *testing.T) {
 			// next stores the results of the filter metric processor
-			next := &etest.SinkMetricsExporterOld{}
+			next := &consumermock.Metric{}
 			cfg := &Config{
 				ProcessorSettings: configmodels.ProcessorSettings{
 					TypeVal: typeStr,
@@ -187,7 +187,7 @@ func TestFilterMetricProcessor(t *testing.T) {
 			cErr := fmp.ConsumeMetricsData(context.Background(), md)
 			assert.Nil(t, cErr)
 
-			gotMetrics := next.AllMetrics()[0].Metrics
+			gotMetrics := next.MetricsOld()[0].Metrics
 			require.Equal(t, len(test.outMN), len(gotMetrics))
 			for idx, out := range gotMetrics {
 				assert.Equal(t, test.outMN[idx], out.MetricDescriptor.Name)
@@ -235,7 +235,7 @@ func BenchmarkFilter_MetricNames(b *testing.B) {
 
 	for _, test := range benchmarkTests {
 		// next stores the results of the filter metric processor
-		next := &etest.SinkMetricsExporterOld{}
+		next := &consumermock.Metric{}
 		cfg := &Config{
 			ProcessorSettings: configmodels.ProcessorSettings{
 				TypeVal: typeStr,

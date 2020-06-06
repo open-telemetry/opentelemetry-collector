@@ -27,7 +27,9 @@ import (
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/consumer/consumermock"
+
+
 )
 
 func TestFactory_Type(t *testing.T) {
@@ -54,7 +56,7 @@ func TestFactory_CreateTraceProcessor(t *testing.T) {
 	// Name.FromAttributes field needs to be set for the configuration to be valid.
 	oCfg.Rename.FromAttributes = []string{"test-key"}
 	tp, err := factory.CreateTraceProcessor(
-		context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, exportertest.NewNopTraceExporter(), oCfg)
+		context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, consumermock.Nil, oCfg)
 
 	require.Nil(t, err)
 	assert.NotNil(t, tp)
@@ -92,7 +94,7 @@ func TestFactory_CreateTraceProcessor_InvalidConfig(t *testing.T) {
 			cfg.Rename = test.cfg
 
 			tp, err := factory.CreateTraceProcessor(
-				context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, exportertest.NewNopTraceExporter(), cfg)
+				context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, consumermock.Nil, cfg)
 			require.Nil(t, tp)
 			assert.EqualValues(t, err, test.err)
 		})

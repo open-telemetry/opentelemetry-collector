@@ -33,7 +33,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+
+	"go.opentelemetry.io/collector/consumer/consumermock"
 	"go.opentelemetry.io/collector/testutils"
 )
 
@@ -183,7 +184,7 @@ func TestJaegerHTTP(t *testing.T) {
 
 func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *Configuration) {
 	// 1. Create the Jaeger receiver aka "server"
-	sink := new(exportertest.SinkTraceExporter)
+	sink := &consumermock.Trace{}
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr, err := New(jaegerAgent, receiverConfig, sink, params)
 	assert.NoError(t, err, "Failed to create new Jaeger Receiver")
@@ -227,7 +228,7 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *Configu
 		<-time.After(60 * time.Millisecond)
 	}
 
-	gotTraces := sink.AllTraces()
+	gotTraces := sink.Traces()
 	assert.Equal(t, 1, len(gotTraces))
 
 	want := expectedTraceData(now, nowPlus10min, nowPlus10min2sec)

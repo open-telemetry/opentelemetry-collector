@@ -28,7 +28,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/trace"
 
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/consumer/consumermock"
 	"go.opentelemetry.io/collector/observability/observabilitytest"
 )
 
@@ -43,7 +43,7 @@ func TestEnsureRecordedMetrics(t *testing.T) {
 	doneFn := observabilitytest.SetupRecordedMetricsTest()
 	defer doneFn()
 
-	_, port, doneReceiverFn := ocReceiverOnGRPCServer(t, exportertest.NewNopTraceExporterOld())
+	_, port, doneReceiverFn := ocReceiverOnGRPCServer(t, consumermock.Nil)
 	defer doneReceiverFn()
 
 	n := 20
@@ -67,7 +67,7 @@ func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
 	doneFn := observabilitytest.SetupRecordedMetricsTest()
 	defer doneFn()
 
-	_, port, doneFn := ocReceiverOnGRPCServer(t, exportertest.NewNopTraceExporterOld())
+	_, port, doneFn := ocReceiverOnGRPCServer(t, consumermock.Nil)
 	defer doneFn()
 
 	n := 20
@@ -100,7 +100,7 @@ func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
 	trace.RegisterExporter(ocSpansSaver)
 	defer trace.UnregisterExporter(ocSpansSaver)
 
-	_, port, doneFn := ocReceiverOnGRPCServer(t, exportertest.NewNopTraceExporterOld())
+	_, port, doneFn := ocReceiverOnGRPCServer(t, consumermock.Nil)
 	defer doneFn()
 
 	traceSvcClient, traceSvcDoneFn, err := makeTraceServiceClient(port)

@@ -25,7 +25,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/consumer/consumermock"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -44,11 +44,11 @@ func TestCreateProcessor(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	// This processor can't be created with the default config.
-	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, exportertest.NewNopTraceExporter(), cfg)
+	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, consumermock.Nil, cfg)
 	assert.Nil(t, tp)
 	assert.Error(t, err, "created processor with invalid settings")
 
-	mp, err := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, exportertest.NewNopMetricsExporter(), cfg)
+	mp, err := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, consumermock.Nil, cfg)
 	assert.Nil(t, mp)
 	assert.Error(t, err, "created processor with invalid settings")
 
@@ -59,12 +59,12 @@ func TestCreateProcessor(t *testing.T) {
 	pCfg.BallastSizeMiB = 2048
 	pCfg.CheckInterval = 100 * time.Millisecond
 
-	tp, err = factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, exportertest.NewNopTraceExporter(), cfg)
+	tp, err = factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, consumermock.Nil, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, tp)
 	assert.NoError(t, tp.Shutdown(context.Background()))
 
-	mp, err = factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, exportertest.NewNopMetricsExporter(), cfg)
+	mp, err = factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, consumermock.Nil, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, mp)
 	assert.NoError(t, mp.Shutdown(context.Background()))

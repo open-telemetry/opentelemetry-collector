@@ -39,7 +39,9 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/consumer/consumermock"
+
+
 )
 
 var logger = zap.NewNop()
@@ -1034,7 +1036,7 @@ func testEndToEnd(t *testing.T, targets []*testData, useStartTimeMetric bool) {
 	require.Nilf(t, err, "Failed to create Promtheus config: %v", err)
 	defer mp.Close()
 
-	cms := new(exportertest.SinkMetricsExporterOld)
+	cms := &consumermock.Metric{}
 	rcvr := newPrometheusReceiver(logger, &Config{PrometheusConfig: cfg, UseStartTimeMetric: useStartTimeMetric}, cms)
 
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()), "Failed to invoke Start: %v", err)
@@ -1042,7 +1044,7 @@ func testEndToEnd(t *testing.T, targets []*testData, useStartTimeMetric bool) {
 
 	// wait for all provided data to be scraped
 	mp.wg.Wait()
-	metrics := cms.AllMetrics()
+	metrics := cms.MetricsOld()
 
 	// split and store results by target name
 	results := make(map[string][]consumerdata.MetricsData)

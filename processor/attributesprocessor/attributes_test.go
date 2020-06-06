@@ -23,8 +23,9 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/consumermock"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+
 	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/internal/processor/filterspan"
@@ -143,7 +144,7 @@ func TestSpanProcessor_NilEmptyData(t *testing.T) {
 	}
 
 	tp, err := factory.CreateTraceProcessor(
-		context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, exportertest.NewNopTraceExporter(), oCfg)
+		context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, consumermock.Nil, oCfg)
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 	for i := range testCases {
@@ -195,7 +196,7 @@ func TestAttributes_InsertValue(t *testing.T) {
 		{Key: "attribute1", Action: INSERT, Value: 123},
 	}
 
-	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, exportertest.NewNopTraceExporter(), cfg)
+	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, consumermock.Nil, cfg)
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
@@ -254,7 +255,7 @@ func TestAttributes_InsertFromAttribute(t *testing.T) {
 		{Key: "string key", Action: INSERT, FromAttribute: "anotherkey"},
 	}
 
-	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, exportertest.NewNopTraceExporter(), cfg)
+	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, consumermock.Nil, cfg)
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
@@ -300,7 +301,7 @@ func TestAttributes_UpdateValue(t *testing.T) {
 		{Key: "db.secret", Action: UPDATE, Value: "redacted"},
 	}
 
-	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, exportertest.NewNopTraceExporter(), cfg)
+	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, consumermock.Nil, cfg)
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
@@ -359,7 +360,7 @@ func TestAttributes_UpdateFromAttribute(t *testing.T) {
 		{Key: "boo", Action: UPDATE, FromAttribute: "foo"},
 	}
 
-	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, exportertest.NewNopTraceExporter(), cfg)
+	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, consumermock.Nil, cfg)
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
@@ -409,7 +410,7 @@ func TestAttributes_UpsertValue(t *testing.T) {
 		{Key: "region", Action: UPSERT, Value: "planet-earth"},
 	}
 
-	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, exportertest.NewNopTraceExporter(), cfg)
+	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, consumermock.Nil, cfg)
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
@@ -473,7 +474,7 @@ func TestAttributes_UpsertFromAttribute(t *testing.T) {
 		{Key: "new_user_key", Action: UPSERT, FromAttribute: "user_key"},
 	}
 
-	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, exportertest.NewNopTraceExporter(), cfg)
+	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, consumermock.Nil, cfg)
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
@@ -520,7 +521,7 @@ func TestAttributes_Delete(t *testing.T) {
 		{Key: "duplicate_key", Action: DELETE},
 	}
 
-	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, exportertest.NewNopTraceExporter(), cfg)
+	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, consumermock.Nil, cfg)
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
@@ -539,7 +540,7 @@ func TestAttributes_FromAttributeNoChange(t *testing.T) {
 		{Key: "boo", Action: UPSERT, FromAttribute: "boo"},
 	}
 
-	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, exportertest.NewNopTraceExporter(), cfg)
+	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, consumermock.Nil, cfg)
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 	traceData := generateTraceData(
@@ -633,7 +634,7 @@ func TestAttributes_Ordering(t *testing.T) {
 		{Key: "operation", Action: DELETE},
 	}
 
-	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, exportertest.NewNopTraceExporter(), cfg)
+	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, consumermock.Nil, cfg)
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
@@ -697,7 +698,7 @@ func TestAttributes_FilterSpans(t *testing.T) {
 		},
 		Config: *createConfig(filterset.Strict),
 	}
-	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, exportertest.NewNopTraceExporter(), cfg)
+	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, consumermock.Nil, cfg)
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
@@ -765,7 +766,7 @@ func TestAttributes_FilterSpansByNameStrict(t *testing.T) {
 		SpanNames: []string{"dont_apply"},
 		Config:    *createConfig(filterset.Strict),
 	}
-	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, exportertest.NewNopTraceExporter(), cfg)
+	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, consumermock.Nil, cfg)
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
@@ -833,7 +834,7 @@ func TestAttributes_FilterSpansByNameRegexp(t *testing.T) {
 		SpanNames: []string{".*dont_apply$"},
 		Config:    *createConfig(filterset.Regexp),
 	}
-	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, exportertest.NewNopTraceExporter(), cfg)
+	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, consumermock.Nil, cfg)
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
@@ -892,7 +893,7 @@ func TestAttributes_Hash(t *testing.T) {
 		{Key: "user.authenticated", Action: HASH},
 	}
 
-	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, exportertest.NewNopTraceExporter(), cfg)
+	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, consumermock.Nil, cfg)
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
@@ -936,7 +937,7 @@ func BenchmarkAttributes_FilterSpansByName(b *testing.B) {
 	oCfg.Include = &filterspan.MatchProperties{
 		SpanNames: []string{"^apply.*"},
 	}
-	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, exportertest.NewNopTraceExporter(), cfg)
+	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, consumermock.Nil, cfg)
 	require.Nil(b, err)
 	require.NotNil(b, tp)
 

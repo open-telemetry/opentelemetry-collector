@@ -24,9 +24,10 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumermock"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+
 	"go.opentelemetry.io/collector/internal/data"
 )
 
@@ -37,7 +38,7 @@ func TestNew(t *testing.T) {
 		memoryLimitMiB      uint32
 		memorySpikeLimitMiB uint32
 	}
-	sink := new(exportertest.SinkTraceExporter)
+	sink := &consumermock.Trace{}
 	tests := []struct {
 		name    string
 		args    args
@@ -103,7 +104,7 @@ func TestNew(t *testing.T) {
 // check expected side effects.
 func TestMetricsMemoryPressureResponse(t *testing.T) {
 	var currentMemAlloc uint64
-	sink := new(exportertest.SinkMetricsExporter)
+	sink := &consumermock.Metric{}
 	ml := &memoryLimiter{
 		metricsConsumer: sink,
 		memAllocLimit:   1024,
@@ -160,7 +161,7 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 // check expected side effects.
 func TestTraceMemoryPressureResponse(t *testing.T) {
 	var currentMemAlloc uint64
-	sink := new(exportertest.SinkTraceExporter)
+	sink := &consumermock.Trace{}
 	ml := &memoryLimiter{
 		traceConsumer: sink,
 		memAllocLimit: 1024,

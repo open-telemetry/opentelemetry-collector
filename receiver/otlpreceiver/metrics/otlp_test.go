@@ -25,8 +25,9 @@ import (
 	"google.golang.org/grpc"
 
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumermock"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+
 	"go.opentelemetry.io/collector/internal/data"
 	collectormetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/metrics/v1"
 	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
@@ -41,7 +42,7 @@ var _ collectormetrics.MetricsServiceServer = (*Receiver)(nil)
 func TestExport(t *testing.T) {
 	// given
 
-	metricSink := new(exportertest.SinkMetricsExporter)
+	metricSink := &consumermock.Metric{}
 
 	_, port, doneFn := otlpReceiverOnGRPCServer(t, metricSink)
 	defer doneFn()
@@ -124,10 +125,10 @@ func TestExport(t *testing.T) {
 
 	// assert
 
-	require.Equal(t, 1, len(metricSink.AllMetrics()),
-		"unexpected length: %v", len(metricSink.AllMetrics()))
+	require.Equal(t, 1, len(metricSink.Metrics()),
+		"unexpected length: %v", len(metricSink.Metrics()))
 
-	assert.EqualValues(t, metricData, pdatautil.MetricsToInternalMetrics(metricSink.AllMetrics()[0]))
+	assert.EqualValues(t, metricData, pdatautil.MetricsToInternalMetrics(metricSink.Metrics()[0]))
 }
 
 func makeMetricsServiceClient(port int) (collectormetrics.MetricsServiceClient, func(), error) {

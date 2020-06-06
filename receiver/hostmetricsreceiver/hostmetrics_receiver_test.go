@@ -25,9 +25,9 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/consumer/consumermock"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/diskscraper"
@@ -76,7 +76,7 @@ var factories = map[string]internal.Factory{
 }
 
 func TestGatherMetrics_EndToEnd(t *testing.T) {
-	sink := &exportertest.SinkMetricsExporter{}
+	sink := &consumermock.Metric{}
 
 	config := &Config{
 		CollectionInterval: 100 * time.Millisecond,
@@ -104,7 +104,7 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 	cancelFn()
 
 	require.Eventually(t, func() bool {
-		got := sink.AllMetrics()
+		got := sink.Metrics()
 		if len(got) == 0 {
 			return false
 		}
@@ -146,7 +146,7 @@ func assertMetricDataAndGetMetricsSlice(t *testing.T, metrics pdata.Metrics) pda
 }
 
 func benchmarkScrapeMetrics(b *testing.B, cfg *Config) {
-	sink := &exportertest.SinkMetricsExporter{}
+	sink := &consumermock.Metric{}
 
 	receiver, _ := newHostMetricsReceiver(context.Background(), zap.NewNop(), cfg, factories, sink)
 	receiver.initializeScrapers(context.Background(), componenttest.NewNopHost())
@@ -156,7 +156,7 @@ func benchmarkScrapeMetrics(b *testing.B, cfg *Config) {
 		receiver.scrapeMetrics(context.Background())
 	}
 
-	if len(sink.AllMetrics()) == 0 {
+	if len(sink.Metrics()) == 0 {
 		b.Fail()
 	}
 }

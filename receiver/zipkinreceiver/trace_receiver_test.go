@@ -39,7 +39,8 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+
+	"go.opentelemetry.io/collector/consumer/consumermock"
 	"go.opentelemetry.io/collector/exporter/zipkinexporter"
 	"go.opentelemetry.io/collector/internal"
 	"go.opentelemetry.io/collector/testutils"
@@ -86,7 +87,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "happy path",
 			args: args{
-				nextConsumer: exportertest.NewNopTraceExporterOld(),
+				nextConsumer: consumermock.Nil,
 			},
 		},
 	}
@@ -109,7 +110,7 @@ func TestZipkinReceiverPortAlreadyInUse(t *testing.T) {
 	defer l.Close()
 	_, portStr, err := net.SplitHostPort(l.Addr().String())
 	require.NoError(t, err, "failed to split listener address: %v", err)
-	traceReceiver, err := New(zipkinReceiver, "localhost:"+portStr, exportertest.NewNopTraceExporterOld())
+	traceReceiver, err := New(zipkinReceiver, "localhost:"+portStr, consumermock.Nil)
 	require.NoError(t, err, "Failed to create receiver: %v", err)
 	err = traceReceiver.Start(context.Background(), componenttest.NewNopHost())
 	if err == nil {
@@ -119,7 +120,7 @@ func TestZipkinReceiverPortAlreadyInUse(t *testing.T) {
 }
 
 func TestCustomHTTPServer(t *testing.T) {
-	zr, err := New(zipkinReceiver, "localhost:9411", exportertest.NewNopTraceExporterOld())
+	zr, err := New(zipkinReceiver, "localhost:9411", consumermock.Nil)
 	require.NoError(t, err, "Failed to create receiver: %v", err)
 
 	server := &http.Server{}
@@ -227,7 +228,7 @@ func TestConversionRoundtrip(t *testing.T) {
   }
 }]`)
 
-	zi := &ZipkinReceiver{nextConsumer: exportertest.NewNopTraceExporterOld()}
+	zi := &ZipkinReceiver{nextConsumer: consumermock.Nil}
 	ereqs, err := zi.v2ToTraceSpans(receiverInputJSON, nil)
 	require.NoError(t, err)
 
@@ -378,7 +379,7 @@ func TestStartTraceReception(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sink := new(exportertest.SinkTraceExporterOld)
+			sink := &consumermock.Trace{}
 			zr, err := New(zipkinReceiver, "localhost:0", sink)
 			require.Nil(t, err)
 			require.NotNil(t, zr)

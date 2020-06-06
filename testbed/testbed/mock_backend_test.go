@@ -19,6 +19,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/consumer/consumermock"
 )
 
 func TestGeneratorAndBackend(t *testing.T) {
@@ -43,9 +45,10 @@ func TestGeneratorAndBackend(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			mb := NewMockBackend("mockbackend.log", test.receiver)
+			recorder := &consumermock.InMemoryRecorder{}
+			mb := NewMockBackend("mockbackend.log", test.receiver, recorder)
 
-			assert.EqualValues(t, 0, mb.DataItemsReceived())
+			assert.EqualValues(t, 0, recorder.DataItemsReceived())
 
 			err := mb.Start()
 			require.NoError(t, err, "Cannot start backend")
@@ -66,7 +69,7 @@ func TestGeneratorAndBackend(t *testing.T) {
 			lg.Stop()
 
 			// The backend should receive everything generated.
-			assert.Equal(t, lg.DataItemsSent(), mb.DataItemsReceived())
+			assert.Equal(t, lg.DataItemsSent(), recorder.DataItemsReceived())
 		})
 	}
 }

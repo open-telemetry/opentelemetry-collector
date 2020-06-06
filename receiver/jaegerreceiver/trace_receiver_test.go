@@ -47,8 +47,9 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/consumer/consumermock"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+
 	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
 	"go.opentelemetry.io/collector/testutils"
 	"go.opentelemetry.io/collector/translator/conventions"
@@ -133,7 +134,7 @@ func TestReception(t *testing.T) {
 	config := &Configuration{
 		CollectorHTTPPort: 14268, // that's the only one used by this test
 	}
-	sink := new(exportertest.SinkTraceExporter)
+	sink := &consumermock.Trace{}
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr, err := New(jaegerReceiver, config, sink, params)
@@ -170,7 +171,7 @@ func TestReception(t *testing.T) {
 	}
 	jexp.Flush()
 
-	gotTraces := sink.AllTraces()
+	gotTraces := sink.Traces()
 	assert.Equal(t, 1, len(gotTraces))
 	want := expectedTraceData(now, nowPlus10min, nowPlus10min2sec)
 
@@ -181,7 +182,7 @@ func TestPortsNotOpen(t *testing.T) {
 	// an empty config should result in no open ports
 	config := &Configuration{}
 
-	sink := new(exportertest.SinkTraceExporter)
+	sink := &consumermock.Trace{}
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr, err := New(jaegerReceiver, config, sink, params)
@@ -211,7 +212,7 @@ func TestGRPCReception(t *testing.T) {
 	config := &Configuration{
 		CollectorGRPCPort: 14250, // that's the only one used by this test
 	}
-	sink := new(exportertest.SinkTraceExporter)
+	sink := &consumermock.Trace{}
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr, err := New(jaegerReceiver, config, sink, params)
@@ -241,7 +242,7 @@ func TestGRPCReception(t *testing.T) {
 	assert.NoError(t, err, "should not have failed to post spans")
 	assert.NotNil(t, resp, "response should not have been nil")
 
-	gotTraces := sink.AllTraces()
+	gotTraces := sink.Traces()
 	assert.Equal(t, 1, len(gotTraces))
 	want := expectedTraceData(now, nowPlus10min, nowPlus10min2sec)
 
@@ -267,7 +268,7 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 		CollectorGRPCPort:    int(port),
 		CollectorGRPCOptions: grpcServerOptions,
 	}
-	sink := new(exportertest.SinkTraceExporter)
+	sink := &consumermock.Trace{}
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr, err := New(jaegerReceiver, config, sink, params)
@@ -299,7 +300,7 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 	assert.NoError(t, err, "should not have failed to post spans")
 	assert.NotNil(t, resp, "response should not have been nil")
 
-	gotTraces := sink.AllTraces()
+	gotTraces := sink.Traces()
 	assert.Equal(t, 1, len(gotTraces))
 	want := expectedTraceData(now, nowPlus10min, nowPlus10min2sec)
 
@@ -450,7 +451,7 @@ func TestSampling(t *testing.T) {
 		CollectorGRPCPort:          int(port),
 		RemoteSamplingStrategyFile: "testdata/strategies.json",
 	}
-	sink := new(exportertest.SinkTraceExporter)
+	sink := &consumermock.Trace{}
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr, err := New(jaegerReceiver, config, sink, params)
@@ -503,7 +504,7 @@ func TestSamplingFailsOnNotConfigured(t *testing.T) {
 	config := &Configuration{
 		CollectorGRPCPort: int(port),
 	}
-	sink := new(exportertest.SinkTraceExporter)
+	sink := &consumermock.Trace{}
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr, err := New(jaegerReceiver, config, sink, params)
@@ -533,7 +534,7 @@ func TestSamplingFailsOnBadFile(t *testing.T) {
 		CollectorGRPCPort:          int(port),
 		RemoteSamplingStrategyFile: "does-not-exist",
 	}
-	sink := new(exportertest.SinkTraceExporter)
+	sink := &consumermock.Trace{}
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr, err := New(jaegerReceiver, config, sink, params)
@@ -595,7 +596,7 @@ func TestSamplingStrategiesMutualTLS(t *testing.T) {
 			Endpoint: fmt.Sprintf("localhost:%d", thriftHTTPPort),
 		}},
 	}
-	exp, err := factory.CreateTraceReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, exportertest.NewNopTraceExporter())
+	exp, err := factory.CreateTraceReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, consumermock.Nil)
 	require.NoError(t, err)
 	host := &componenttest.ErrorWaitingHost{}
 	err = exp.Start(context.Background(), host)

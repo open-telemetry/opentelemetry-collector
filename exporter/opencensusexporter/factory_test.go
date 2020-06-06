@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/consumer/consumermock"
 	"go.opentelemetry.io/collector/receiver/opencensusreceiver"
 	"go.opentelemetry.io/collector/testutils"
 )
@@ -63,7 +63,7 @@ func TestCreateTraceExporter(t *testing.T) {
 		context.Background(),
 		zap.NewNop(),
 		rcvCfg,
-		new(exportertest.SinkTraceExporterOld))
+		&consumermock.Trace{})
 	require.NotNil(t, rcv)
 	require.Nil(t, err)
 	require.Nil(t, rcv.Start(context.Background(), componenttest.NewNopHost()))

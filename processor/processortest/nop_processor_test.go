@@ -23,11 +23,11 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/consumer/consumermock"
 )
 
 func TestNopTraceProcessorNoErrors(t *testing.T) {
-	sink := new(exportertest.SinkTraceExporterOld)
+	sink := &consumermock.Trace{}
 	ntp := NewNopTraceProcessor(sink)
 	want := consumerdata.TraceData{
 		Spans: make([]*tracepb.Span, 7),
@@ -35,12 +35,12 @@ func TestNopTraceProcessorNoErrors(t *testing.T) {
 
 	assert.NoError(t, ntp.ConsumeTraceData(context.Background(), want))
 
-	got := sink.AllTraces()[0]
+	got := sink.TracesOld()[0]
 	assert.Equal(t, want, got)
 }
 
 func TestNopMetricsProcessorNoErrors(t *testing.T) {
-	sink := new(exportertest.SinkMetricsExporterOld)
+	sink := &consumermock.Metric{}
 	nmp := NewNopMetricsProcessor(sink)
 	want := consumerdata.MetricsData{
 		Metrics: make([]*metricspb.Metric, 7),
@@ -48,7 +48,7 @@ func TestNopMetricsProcessorNoErrors(t *testing.T) {
 
 	assert.NoError(t, nmp.ConsumeMetricsData(context.Background(), want))
 
-	got := sink.AllMetrics()[0]
+	got := sink.MetricsOld()[0]
 	assert.Equal(t, want, got)
 }
 
@@ -58,14 +58,14 @@ func TestNopProcessorFactory(t *testing.T) {
 
 	tp, err := f.CreateTraceProcessor(
 		zap.NewNop(),
-		new(exportertest.SinkTraceExporterOld),
+		&consumermock.Trace{},
 		cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, tp)
 
 	mp, err := f.CreateMetricsProcessor(
 		zap.NewNop(),
-		new(exportertest.SinkMetricsExporterOld),
+		&consumermock.Metric{},
 		cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, mp)

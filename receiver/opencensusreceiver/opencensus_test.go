@@ -44,7 +44,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/consumer/consumermock"
 	"go.opentelemetry.io/collector/internal"
 	"go.opentelemetry.io/collector/observability/observabilitytest"
 	"go.opentelemetry.io/collector/testutils"
@@ -57,7 +57,7 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 	addr := testutils.GetAvailableLocalAddress(t)
 
 	// Set the buffer count to 1 to make it flush the test span immediately.
-	sink := new(exportertest.SinkTraceExporterOld)
+	sink := &consumermock.Trace{}
 	ocr, err := New(ocReceiver, "tcp", addr, sink, nil)
 	require.NoError(t, err, "Failed to create trace receiver: %v", err)
 
@@ -120,7 +120,7 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 		t.Errorf("Got unexpected response from trace grpc-gateway: %v", respStr)
 	}
 
-	got := sink.AllTraces()
+	got := sink.TracesOld()
 
 	want := []consumerdata.TraceData{
 		{
@@ -155,7 +155,7 @@ func TestTraceGrpcGatewayCors_endToEnd(t *testing.T) {
 	addr := testutils.GetAvailableLocalAddress(t)
 	corsOrigins := []string{"allowed-*.com"}
 
-	sink := new(exportertest.SinkTraceExporterOld)
+	sink := &consumermock.Trace{}
 	ocr, err := New(ocReceiver, "tcp", addr, sink, nil, WithCorsOrigins(corsOrigins))
 	require.NoError(t, err, "Failed to create trace receiver: %v", err)
 	defer ocr.Shutdown(context.Background())
@@ -180,7 +180,7 @@ func TestMetricsGrpcGatewayCors_endToEnd(t *testing.T) {
 	addr := testutils.GetAvailableLocalAddress(t)
 	corsOrigins := []string{"allowed-*.com"}
 
-	sink := new(exportertest.SinkMetricsExporterOld)
+	sink := &consumermock.Metric{}
 	ocr, err := New(ocReceiver, "tcp", addr, nil, sink, WithCorsOrigins(corsOrigins))
 	require.NoError(t, err, "Failed to create metrics receiver: %v", err)
 	defer ocr.Shutdown(context.Background())
@@ -208,7 +208,7 @@ func TestAcceptAllGRPCProtoAffiliatedContentTypes(t *testing.T) {
 	t.Skip("Currently a flaky test as we need a way to flush all written traces")
 
 	addr := testutils.GetAvailableLocalAddress(t)
-	cbts := new(exportertest.SinkTraceExporterOld)
+	cbts := &consumermock.Trace{}
 	ocr, err := New(ocReceiver, "tcp", addr, cbts, nil)
 	require.NoError(t, err, "Failed to create trace receiver: %v", err)
 
@@ -236,7 +236,7 @@ func TestAcceptAllGRPCProtoAffiliatedContentTypes(t *testing.T) {
 
 	// Before we exit we have to verify that we got exactly 4 TraceService requests.
 	wantLen := len(protoAffiliatedContentSubTypes) + len(protoAffiliatedContentTypes)
-	gotReqs := cbts.AllTraces()
+	gotReqs := cbts.TracesOld()
 	if len(gotReqs) != wantLen {
 		t.Errorf("Receiver ExportTraceServiceRequest length mismatch:: Got %d Want %d", len(gotReqs), wantLen)
 	}
@@ -351,7 +351,7 @@ func TestNewPortAlreadyUsed(t *testing.T) {
 
 func TestMultipleStopReceptionShouldNotError(t *testing.T) {
 	addr := testutils.GetAvailableLocalAddress(t)
-	r, err := New(ocReceiver, "tcp", addr, new(exportertest.SinkTraceExporterOld), new(exportertest.SinkMetricsExporterOld))
+	r, err := New(ocReceiver, "tcp", addr, consumermock.Nil, consumermock.Nil)
 	require.NoError(t, err)
 	require.NotNil(t, r)
 
@@ -379,7 +379,7 @@ func tempSocketName(t *testing.T) string {
 
 func TestReceiveOnUnixDomainSocket_endToEnd(t *testing.T) {
 	socketName := tempSocketName(t)
-	cbts := new(exportertest.SinkTraceExporterOld)
+	cbts := &consumermock.Trace{}
 	r, err := New(ocReceiver, "unix", socketName, cbts, nil)
 	require.NoError(t, err)
 	require.NotNil(t, r)

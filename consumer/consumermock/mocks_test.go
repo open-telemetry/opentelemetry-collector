@@ -1,17 +1,19 @@
-// Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-package exportertest
+/*
+ * Copyright The OpenTelemetry Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package consumermock
 
 import (
 	"context"
@@ -29,7 +31,7 @@ import (
 )
 
 func TestSinkTraceExporterOld(t *testing.T) {
-	sink := new(SinkTraceExporterOld)
+	sink := Trace{}
 	td := consumerdata.TraceData{
 		Spans: make([]*tracepb.Span, 7),
 	}
@@ -39,12 +41,12 @@ func TestSinkTraceExporterOld(t *testing.T) {
 		require.Nil(t, err)
 		want = append(want, td)
 	}
-	got := sink.AllTraces()
+	got := sink.TracesOld()
 	assert.Equal(t, want, got)
 }
 
 func TestSinkTraceExporter(t *testing.T) {
-	sink := new(SinkTraceExporter)
+	sink := Trace{}
 	td := testdata.GenerateTraceDataOneSpan()
 	want := make([]pdata.Traces, 0, 7)
 	for i := 0; i < 7; i++ {
@@ -52,12 +54,12 @@ func TestSinkTraceExporter(t *testing.T) {
 		require.Nil(t, err)
 		want = append(want, td)
 	}
-	got := sink.AllTraces()
+	got := sink.Traces()
 	assert.Equal(t, want, got)
 }
 
 func TestSinkMetricsExporterOld(t *testing.T) {
-	sink := new(SinkMetricsExporterOld)
+	sink := Metric{}
 	md := consumerdata.MetricsData{
 		Metrics: make([]*metricspb.Metric, 7),
 	}
@@ -67,12 +69,12 @@ func TestSinkMetricsExporterOld(t *testing.T) {
 		require.Nil(t, err)
 		want = append(want, md)
 	}
-	got := sink.AllMetrics()
+	got := sink.MetricsOld()
 	assert.Equal(t, want, got)
 }
 
 func TestSinkMetricsExporter(t *testing.T) {
-	sink := new(SinkMetricsExporter)
+	sink := Metric{}
 	md := testdata.GenerateMetricDataOneMetric()
 	want := make([]pdata.Metrics, 0, 7)
 	for i := 0; i < 7; i++ {
@@ -80,6 +82,6 @@ func TestSinkMetricsExporter(t *testing.T) {
 		require.Nil(t, err)
 		want = append(want, pdatautil.MetricsFromInternalMetrics(md))
 	}
-	got := sink.AllMetrics()
+	got := sink.Metrics()
 	assert.Equal(t, want, got)
 }

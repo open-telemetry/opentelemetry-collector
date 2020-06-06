@@ -20,21 +20,21 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"go.opentelemetry.io/collector/consumer/consumermock"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
 func TestNewInternalToOCTraceConverter(t *testing.T) {
 	td := testdata.GenerateTraceDataTwoSpansSameResourceOneDifferent()
-	traceExporterOld := new(exportertest.SinkTraceExporterOld)
+	traceExporterOld := &consumermock.Trace{}
 	converter := NewInternalToOCTraceConverter(traceExporterOld)
 
 	err := converter.ConsumeTraces(context.Background(), td)
 	assert.NoError(t, err)
 
-	ocTraces := traceExporterOld.AllTraces()
+	ocTraces := traceExporterOld.TracesOld()
 	assert.Equal(t, len(ocTraces), 2)
 	assert.EqualValues(t, ocTraces, internaldata.TraceDataToOC(td))
 
@@ -45,13 +45,13 @@ func TestNewInternalToOCTraceConverter(t *testing.T) {
 
 func TestNewInternalToOCMetricsConverter(t *testing.T) {
 	md := testdata.GenerateMetricDataOneMetric()
-	metricsExporterOld := new(exportertest.SinkMetricsExporterOld)
+	metricsExporterOld := &consumermock.Metric{}
 	converter := NewInternalToOCMetricsConverter(metricsExporterOld)
 
 	err := converter.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md))
 	assert.NoError(t, err)
 
-	ocMetrics := metricsExporterOld.AllMetrics()
+	ocMetrics := metricsExporterOld.MetricsOld()
 	assert.Equal(t, len(ocMetrics), 1)
 	assert.EqualValues(t, ocMetrics, internaldata.MetricDataToOC(md))
 
@@ -63,7 +63,7 @@ func TestNewInternalToOCMetricsConverter(t *testing.T) {
 func TestNewOCTraceToInternalTraceConverter(t *testing.T) {
 	td := testdata.GenerateTraceDataOneSpan()
 	ocTraceData := internaldata.TraceDataToOC(td)[0]
-	traceExporter := new(exportertest.SinkTraceExporter)
+	traceExporter := &consumermock.Trace{}
 	converter := NewOCToInternalTraceConverter(traceExporter)
 
 	err := converter.ConsumeTraceData(context.Background(), ocTraceData)
@@ -71,7 +71,7 @@ func TestNewOCTraceToInternalTraceConverter(t *testing.T) {
 	err = converter.ConsumeTraceData(context.Background(), ocTraceData)
 	assert.NoError(t, err)
 
-	ocTraces := traceExporter.AllTraces()
+	ocTraces := traceExporter.Traces()
 	assert.Equal(t, len(ocTraces), 2)
 	assert.EqualValues(t, ocTraces[0], td)
 
@@ -83,7 +83,7 @@ func TestNewOCTraceToInternalTraceConverter(t *testing.T) {
 func TestNewOCToInternalMetricsConverter(t *testing.T) {
 	md := testdata.GenerateMetricDataOneMetric()
 	ocMetricData := internaldata.MetricDataToOC(md)[0]
-	metricsExporter := new(exportertest.SinkMetricsExporter)
+	metricsExporter := &consumermock.Metric{}
 	converter := NewOCToInternalMetricsConverter(metricsExporter)
 
 	err := converter.ConsumeMetricsData(context.Background(), ocMetricData)
@@ -91,7 +91,7 @@ func TestNewOCToInternalMetricsConverter(t *testing.T) {
 	err = converter.ConsumeMetricsData(context.Background(), ocMetricData)
 	assert.NoError(t, err)
 
-	ocMetrics := metricsExporter.AllMetrics()
+	ocMetrics := metricsExporter.Metrics()
 	assert.Equal(t, len(ocMetrics), 2)
 	assert.EqualValues(t, pdatautil.MetricsToInternalMetrics(ocMetrics[0]), md)
 	assert.EqualValues(t, pdatautil.MetricsToInternalMetrics(ocMetrics[1]), md)
