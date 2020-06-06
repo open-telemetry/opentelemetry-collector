@@ -65,7 +65,7 @@ func startSampling(_ context.Context, logger *zap.Logger) error {
 	// startSampling may be called multiple times if multiple scrapers are
 	// initialized - but we only want to initialize a single load sampler
 	scraperCount++
-	if samplerInstance != nil {
+	if scraperCount > 1 {
 		return nil
 	}
 
@@ -137,10 +137,7 @@ func stopSampling(_ context.Context) error {
 	}
 
 	close(samplerInstance.done)
-
-	err := samplerInstance.processorQueueLengthCounter.Close()
-	samplerInstance = nil
-	return err
+	return samplerInstance.processorQueueLengthCounter.Close()
 }
 
 func getSampledLoadAverages() (*load.AvgStat, error) {

@@ -17,6 +17,7 @@
 package pdh
 
 import (
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/third_party/telegraf/win_perf_counters"
@@ -26,6 +27,7 @@ type MockPerfCounter struct {
 	returnValues []interface{}
 
 	timesCalled int
+	closed      bool
 }
 
 // NewMockPerfCounter creates a MockPerfCounter that returns the supplied
@@ -40,6 +42,11 @@ func NewMockPerfCounter(valuesToBeReturned ...interface{}) *MockPerfCounter {
 
 // Close
 func (pc *MockPerfCounter) Close() error {
+	if pc.closed {
+		return errors.New("attempted to call close more than once")
+	}
+
+	pc.closed = true
 	return nil
 }
 

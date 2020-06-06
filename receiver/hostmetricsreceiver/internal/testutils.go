@@ -36,12 +36,28 @@ func AssertInt64MetricLabelHasValue(t *testing.T, metric pdata.Metric, index int
 	assert.Equal(t, expectedVal, val.Value())
 }
 
+func AssertDoubleMetricLabelHasValue(t *testing.T, metric pdata.Metric, index int, labelName string, expectedVal string) {
+	val, ok := metric.DoubleDataPoints().At(index).LabelsMap().Get(labelName)
+	assert.Truef(t, ok, "Missing label %q in metric %q", labelName, metric.MetricDescriptor().Name())
+	assert.Equal(t, expectedVal, val.Value())
+}
+
 func AssertInt64MetricLabelExists(t *testing.T, metric pdata.Metric, index int, labelName string) {
 	_, ok := metric.Int64DataPoints().At(index).LabelsMap().Get(labelName)
 	assert.Truef(t, ok, "Missing label %q in metric %q", labelName, metric.MetricDescriptor().Name())
 }
 
+func AssertDoubleMetricLabelExists(t *testing.T, metric pdata.Metric, index int, labelName string) {
+	_, ok := metric.DoubleDataPoints().At(index).LabelsMap().Get(labelName)
+	assert.Truef(t, ok, "Missing label %q in metric %q", labelName, metric.MetricDescriptor().Name())
+}
+
 func AssertInt64MetricLabelDoesNotExist(t *testing.T, metric pdata.Metric, index int, labelName string) {
 	_, ok := metric.Int64DataPoints().At(index).LabelsMap().Get(labelName)
+	assert.Falsef(t, ok, "Unexpected label %q in metric %q", labelName, metric.MetricDescriptor().Name())
+}
+
+func AssertDoubleMetricLabelDoesNotExist(t *testing.T, metric pdata.Metric, index int, labelName string) {
+	_, ok := metric.DoubleDataPoints().At(index).LabelsMap().Get(labelName)
 	assert.Falsef(t, ok, "Unexpected label %q in metric %q", labelName, metric.MetricDescriptor().Name())
 }
