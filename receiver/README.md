@@ -53,3 +53,4 @@ must be unique. For the example above:
 All receivers expose a setting to disable it, by default receivers are enabled.
 At least one receiver must be enabled per [pipeline](docs/pipelines.md) to be a
 valid configuration.
+
