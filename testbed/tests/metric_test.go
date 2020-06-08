@@ -24,10 +24,14 @@ import (
 )
 
 func TestMetricNoBackend10kDPSOpenCensus(t *testing.T) {
+	options := testbed.LoadOptions{DataItemsPerSecond: 10000, ItemsPerBatch: 10}
+	dataProvider := testbed.NewPerfTestDataProvider(options)
 	tc := testbed.NewTestCase(
 		t,
+		dataProvider,
 		testbed.NewOCMetricDataSender(testbed.DefaultHost, 55678),
 		testbed.NewOCDataReceiver(testbed.DefaultOCPort),
+		&testbed.ChildProcess{},
 		performanceResultsSummary,
 	)
 	defer tc.Stop()

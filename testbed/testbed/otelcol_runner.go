@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/shirou/gopsutil/process"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -32,6 +33,10 @@ type OtelcolRunner interface {
 	PrepareConfig(configStr string) (string, error)
 	Start(args StartParams) (string, error)
 	Stop() (bool, error)
+	WatchResourceConsumption() error
+	GetProcessMon() *process.Process
+	GetTotalConsumption() *ResourceConsumption
+	GetResourceConsumption() string
 }
 
 type InProcessPipeline struct {
@@ -114,6 +119,27 @@ func (ipp *InProcessPipeline) Stop() (bool, error) {
 	ipp.svc.SignalTestComplete()
 	<-ipp.appDone
 	return true, nil
+}
+
+func (ipp *InProcessPipeline) WatchResourceConsumption() error {
+	return nil
+}
+
+func (ipp *InProcessPipeline) GetProcessMon() *process.Process {
+	return nil
+}
+
+func (ipp *InProcessPipeline) GetTotalConsumption() *ResourceConsumption {
+	return &ResourceConsumption{
+		CPUPercentAvg: 0,
+		CPUPercentMax: 0,
+		RAMMiBAvg:     0,
+		RAMMiBMax:     0,
+	}
+}
+
+func (ipp *InProcessPipeline) GetResourceConsumption() string {
+	return ""
 }
 
 func configureLogger() (*zap.Logger, error) {

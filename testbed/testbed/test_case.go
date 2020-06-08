@@ -48,7 +48,7 @@ type TestCase struct {
 	resourceSpec ResourceSpec
 
 	// Agent process.
-	agentProc childProcess
+	agentProc OtelcolRunner
 
 	Sender   DataSender
 	Receiver DataReceiver
@@ -80,8 +80,10 @@ const testcaseDurationVar = "TESTCASE_DURATION"
 // NewTestCase creates a new TestCase. It expects agent-config.yaml in the specified directory.
 func NewTestCase(
 	t *testing.T,
+	dataProvider DataProvider,
 	sender DataSender,
 	receiver DataReceiver,
+	agentProc OtelcolRunner,
 	resultsSummary TestResultsSummary,
 	opts ...TestCaseOption,
 ) *TestCase {
@@ -93,6 +95,7 @@ func NewTestCase(
 	tc.startTime = time.Now()
 	tc.Sender = sender
 	tc.Receiver = receiver
+	tc.agentProc = agentProc
 	tc.resultsSummary = resultsSummary
 
 	// Get requested test case duration from env variable.
@@ -133,7 +136,7 @@ func NewTestCase(
 	tc.agentConfigFile, err = filepath.Abs(configFile)
 	require.NoError(t, err, "Cannot resolve filename")
 
-	tc.LoadGenerator, err = NewLoadGenerator(sender)
+	tc.LoadGenerator, err = NewLoadGenerator(dataProvider, sender)
 	require.NoError(t, err, "Cannot create generator")
 
 	tc.MockBackend = NewMockBackend(tc.composeTestResultFileName("backend.log"), receiver)
@@ -188,7 +191,7 @@ func (tc *TestCase) StartAgent(args ...string) {
 
 	// Start watching resource consumption.
 	go func() {
-		err := tc.agentProc.watchResourceConsumption()
+		err := tc.agentProc.WatchResourceConsumption()
 		if err != nil {
 			tc.indicateError(err)
 		}
@@ -237,7 +240,7 @@ func (tc *TestCase) EnableRecording() {
 // AgentMemoryInfo returns raw memory info struct about the agent
 // as returned by github.com/shirou/gopsutil/process
 func (tc *TestCase) AgentMemoryInfo() (uint32, uint32, error) {
-	stat, err := tc.agentProc.processMon.MemoryInfo()
+	stat, err := tc.agentProc.GetProcessMon().MemoryInfo()
 	if err != nil {
 		return 0, 0, err
 	}

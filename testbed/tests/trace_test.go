@@ -409,8 +409,17 @@ func TestTraceAttributesProcessor(t *testing.T) {
 
 			require.NotEmpty(t, configFile, "Cannot create config file")
 
-			tc := testbed.NewTestCase(t, test.sender, test.receiver, performanceResultsSummary,
-				testbed.WithConfigFile(configFile))
+			options := testbed.LoadOptions{DataItemsPerSecond: 10000, ItemsPerBatch: 10}
+			dataProvider := testbed.NewPerfTestDataProvider(options)
+			tc := testbed.NewTestCase(
+				t,
+				dataProvider,
+				test.sender,
+				test.receiver,
+				&testbed.ChildProcess{},
+				performanceResultsSummary,
+				testbed.WithConfigFile(configFile),
+			)
 			defer tc.Stop()
 
 			tc.StartBackend()

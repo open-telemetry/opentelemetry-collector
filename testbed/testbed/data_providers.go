@@ -36,6 +36,7 @@ import (
 )
 
 type DataProvider interface {
+	SetLoadGeneratorCounters(batchesGenerated *uint64, dataItemsGenerated *uint64)
 	GenerateTraces() pdata.Traces
 	GenerateTracesOld() []*tracepb.Span
 	GenerateMetrics() data.MetricData
@@ -43,29 +44,31 @@ type DataProvider interface {
 }
 
 type PerfTestDataProvider struct {
-	options       LoadOptions
-	batchesSent   *uint64
-	dataItemsSent *uint64
+	options            LoadOptions
+	batchesGenerated   *uint64
+	dataItemsGenerated *uint64
 }
 
-func NewPerfTestDataProvider(options LoadOptions, batchesSent *uint64,
-	dataItemsSent *uint64) *PerfTestDataProvider {
+func NewPerfTestDataProvider(options LoadOptions) *PerfTestDataProvider {
 	return &PerfTestDataProvider{
-		options:       options,
-		batchesSent:   batchesSent,
-		dataItemsSent: dataItemsSent,
+		options: options,
 	}
+}
+
+func (dp *PerfTestDataProvider) SetLoadGeneratorCounters(batchesGenerated *uint64, dataItemsGenerated *uint64) {
+	dp.batchesGenerated = batchesGenerated
+	dp.dataItemsGenerated = dataItemsGenerated
 }
 
 func (dp *PerfTestDataProvider) GenerateTracesOld() []*tracepb.Span {
 
 	var spans []*tracepb.Span
-	traceID := atomic.AddUint64(dp.batchesSent, 1)
+	traceID := atomic.AddUint64(dp.batchesGenerated, 1)
 	for i := 0; i < dp.options.ItemsPerBatch; i++ {
 
 		startTime := time.Now()
 
-		spanID := atomic.AddUint64(dp.dataItemsSent, 1)
+		spanID := atomic.AddUint64(dp.dataItemsGenerated, 1)
 
 		// Create a span.
 		span := &tracepb.Span{
@@ -108,13 +111,13 @@ func (dp *PerfTestDataProvider) GenerateTraces() pdata.Traces {
 	spans := ilss.At(0).Spans()
 	spans.Resize(dp.options.ItemsPerBatch)
 
-	traceID := atomic.AddUint64(dp.batchesSent, 1)
+	traceID := atomic.AddUint64(dp.batchesGenerated, 1)
 	for i := 0; i < dp.options.ItemsPerBatch; i++ {
 
 		startTime := time.Now()
 		endTime := startTime.Add(time.Duration(time.Millisecond))
 
-		spanID := atomic.AddUint64(dp.dataItemsSent, 1)
+		spanID := atomic.AddUint64(dp.dataItemsGenerated, 1)
 
 		span := spans.At(i)
 
@@ -174,7 +177,7 @@ func (dp *PerfTestDataProvider) GenerateMetricsOld() []*metricspb.Metric {
 			Resource: resource,
 		}
 
-		batchIndex := atomic.AddUint64(dp.batchesSent, 1)
+		batchIndex := atomic.AddUint64(dp.batchesGenerated, 1)
 
 		// Generate data points for the metric. We generate timeseries each containing
 		// a single data points. This is the most typical payload composition since
@@ -183,7 +186,7 @@ func (dp *PerfTestDataProvider) GenerateMetricsOld() []*metricspb.Metric {
 			timeseries := &metricspb.TimeSeries{}
 
 			startTime := time.Now()
-			value := atomic.AddUint64(dp.dataItemsSent, 1)
+			value := atomic.AddUint64(dp.dataItemsGenerated, 1)
 
 			// Create a data point.
 			point := &metricspb.Point{
@@ -230,14 +233,14 @@ func (dp *PerfTestDataProvider) GenerateMetrics() data.MetricData {
 		metricDescriptor.SetDescription("Load Generator Counter #" + strconv.Itoa(i))
 		metricDescriptor.SetType(pdata.MetricTypeGaugeInt64)
 
-		batchIndex := atomic.AddUint64(dp.batchesSent, 1)
+		batchIndex := atomic.AddUint64(dp.batchesGenerated, 1)
 
 		// Generate data points for the metric.
 		metric.Int64DataPoints().Resize(dataPointsPerMetric)
 		for j := 0; j < dataPointsPerMetric; j++ {
 			dataPoint := metric.Int64DataPoints().At(j)
 			dataPoint.SetStartTime(pdata.TimestampUnixNano(uint64(time.Now().UnixNano())))
-			value := atomic.AddUint64(dp.dataItemsSent, 1)
+			value := atomic.AddUint64(dp.dataItemsGenerated, 1)
 			dataPoint.SetValue(int64(value))
 			dataPoint.LabelsMap().InitFromMap(map[string]string{
 				"item_index":  "item_" + strconv.Itoa(j),
@@ -272,6 +275,10 @@ func NewGoldenDataProvider(tracePairsFile string, spanPairsFile string, randomSe
 		spanPairsFile:  spanPairsFile,
 		random:         io.Reader(rand.New(rand.NewSource(randomSeed))),
 	}
+}
+
+func (dp *GoldenDataProvider) SetLoadGeneratorCounters(batchesGenerated *uint64, dataItemsGenerated *uint64) {
+	// NoOp
 }
 
 func (dp *GoldenDataProvider) GenerateTraces() pdata.Traces {

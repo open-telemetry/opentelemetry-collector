@@ -146,21 +146,31 @@ func Scenario10kItemsPerSecond(
 	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
 	require.NoError(t, err)
 
+	options := testbed.LoadOptions{
+		DataItemsPerSecond: 10000,
+		ItemsPerBatch:      100,
+	}
 	configFile := createConfigFile(t, sender, receiver, resultDir, processors)
 	defer os.Remove(configFile)
 	require.NotEmpty(t, configFile, "Cannot create config file")
 
-	tc := testbed.NewTestCase(t, sender, receiver, performanceResultsSummary, testbed.WithConfigFile(configFile))
+	dataProvider := testbed.NewPerfTestDataProvider(options)
+	tc := testbed.NewTestCase(
+		t,
+		dataProvider,
+		sender,
+		receiver,
+		&testbed.ChildProcess{},
+		performanceResultsSummary,
+		testbed.WithConfigFile(configFile),
+	)
 	defer tc.Stop()
 
 	tc.SetResourceLimits(resourceSpec)
 	tc.StartBackend()
 	tc.StartAgent()
 
-	tc.StartLoad(testbed.LoadOptions{
-		DataItemsPerSecond: 10000,
-		ItemsPerBatch:      100,
-	})
+	tc.StartLoad(options)
 
 	tc.Sleep(tc.Duration)
 
@@ -195,12 +205,16 @@ func genRandByteString(len int) string {
 func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, opts ...testbed.TestCaseOption) {
 	for i := range tests {
 		test := tests[i]
+		options := constructLoadOptions(test)
+
 		t.Run(fmt.Sprintf("%d*%dbytes", test.attrCount, test.attrSizeByte), func(t *testing.T) {
 
 			tc := testbed.NewTestCase(
 				t,
+				testbed.NewPerfTestDataProvider(options),
 				testbed.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.DefaultJaegerPort),
 				testbed.NewOCDataReceiver(testbed.DefaultOCPort),
+				&testbed.ChildProcess{},
 				performanceResultsSummary,
 				opts...,
 			)
@@ -213,15 +227,6 @@ func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, opts 
 
 			tc.StartBackend()
 			tc.StartAgent(args...)
-
-			options := testbed.LoadOptions{DataItemsPerSecond: 1000}
-			options.Attributes = make(map[string]string)
-
-			// Generate attributes.
-			for i := 0; i < test.attrCount; i++ {
-				attrName := genRandByteString(rand.Intn(199) + 1)
-				options.Attributes[attrName] = genRandByteString(rand.Intn(test.attrSizeByte*2-1) + 1)
-			}
 
 			tc.StartLoad(options)
 			tc.Sleep(tc.Duration)
@@ -253,14 +258,18 @@ func ScenarioTestTraceNoBackend10kSPS(t *testing.T, sender testbed.DataSender, r
 	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
 	require.NoError(t, err)
 
+	options := testbed.LoadOptions{DataItemsPerSecond: 10000, ItemsPerBatch: 10}
 	configFile := createConfigFile(t, sender, receiver, resultDir, configuration.Processor)
 	defer os.Remove(configFile)
 	require.NotEmpty(t, configFile, "Cannot create config file")
 
+	dataProvider := testbed.NewPerfTestDataProvider(options)
 	tc := testbed.NewTestCase(
 		t,
+		dataProvider,
 		sender,
 		receiver,
+		&testbed.ChildProcess{},
 		performanceResultsSummary,
 		testbed.WithConfigFile(configFile),
 	)
@@ -270,10 +279,22 @@ func ScenarioTestTraceNoBackend10kSPS(t *testing.T, sender testbed.DataSender, r
 	tc.SetResourceLimits(resourceSpec)
 
 	tc.StartAgent()
-	tc.StartLoad(testbed.LoadOptions{DataItemsPerSecond: 10000, ItemsPerBatch: 10})
+	tc.StartLoad(options)
 
 	tc.Sleep(tc.Duration)
 
 	rss, _, _ := tc.AgentMemoryInfo()
 	assert.True(t, rss > configuration.ExpectedMinFinalRAM)
+}
+
+func constructLoadOptions(test TestCase) testbed.LoadOptions {
+	options := testbed.LoadOptions{DataItemsPerSecond: 1000}
+	options.Attributes = make(map[string]string)
+
+	// Generate attributes.
+	for i := 0; i < test.attrCount; i++ {
+		attrName := genRandByteString(rand.Intn(199) + 1)
+		options.Attributes[attrName] = genRandByteString(rand.Intn(test.attrSizeByte*2-1) + 1)
+	}
+	return options
 }

@@ -56,9 +56,9 @@ func (rs *ResourceSpec) isSpecified() bool {
 	return rs != nil && (rs.ExpectedMaxCPU != 0 || rs.ExpectedMaxRAM != 0)
 }
 
-// childProcess is a child process that can be monitored and the output
+// ChildProcess is a child process that can be monitored and the output
 // of which will be written to a log file.
-type childProcess struct {
+type ChildProcess struct {
 	// Descriptive name of the process
 	name string
 
@@ -123,7 +123,7 @@ type ResourceConsumption struct {
 	RAMMiBMax     uint32
 }
 
-func (cp *childProcess) PrepareConfig(configStr string) (string, error) {
+func (cp *ChildProcess) PrepareConfig(configStr string) (string, error) {
 	file, err := ioutil.TempFile("", "agent*.yaml")
 	if err != nil {
 		log.Printf("%s", err)
@@ -153,7 +153,7 @@ func (cp *childProcess) PrepareConfig(configStr string) (string, error) {
 // the process to.
 // cmd is the executable to run.
 // cmdArgs is the command line arguments to pass to the process.
-func (cp *childProcess) Start(params StartParams) (string, error) {
+func (cp *ChildProcess) Start(params StartParams) (string, error) {
 
 	cp.name = params.name
 	cp.doneSignal = make(chan struct{})
@@ -208,7 +208,7 @@ func (cp *childProcess) Start(params StartParams) (string, error) {
 	return DefaultHost, nil
 }
 
-func (cp *childProcess) Stop() (bool, error) {
+func (cp *ChildProcess) Stop() (bool, error) {
 	if !cp.isStarted || cp.isStopped {
 		return false, nil
 	}
@@ -273,7 +273,7 @@ func (cp *childProcess) Stop() (bool, error) {
 	return true, nil
 }
 
-func (cp *childProcess) watchResourceConsumption() error {
+func (cp *ChildProcess) WatchResourceConsumption() error {
 	if !cp.resourceSpec.isSpecified() {
 		// Resource monitoring is not enabled.
 		return nil
@@ -318,7 +318,11 @@ func (cp *childProcess) watchResourceConsumption() error {
 	}
 }
 
-func (cp *childProcess) fetchRAMUsage() {
+func (cp *ChildProcess) GetProcessMon() *process.Process {
+	return cp.processMon
+}
+
+func (cp *ChildProcess) fetchRAMUsage() {
 	// Get process memory and CPU times
 	mi, err := cp.processMon.MemoryInfo()
 	if err != nil {
@@ -341,7 +345,7 @@ func (cp *childProcess) fetchRAMUsage() {
 	atomic.StoreUint32(&cp.ramMiBCur, ramMiBCur)
 }
 
-func (cp *childProcess) fetchCPUUsage() {
+func (cp *ChildProcess) fetchCPUUsage() {
 	times, err := cp.processMon.Times()
 	if err != nil {
 		log.Printf("cannot get process times for %d: %s",
@@ -370,7 +374,7 @@ func (cp *childProcess) fetchCPUUsage() {
 	atomic.StoreUint32(&cp.cpuPercentX1000Cur, curCPUPercentageX1000)
 }
 
-func (cp *childProcess) checkAllowedResourceUsage() error {
+func (cp *ChildProcess) checkAllowedResourceUsage() error {
 	// Check if current CPU usage exceeds expected.
 	var errMsg string
 	if cp.resourceSpec.ExpectedMaxCPU != 0 && cp.cpuPercentX1000Cur/1000 > cp.resourceSpec.ExpectedMaxCPU {
@@ -394,7 +398,7 @@ func (cp *childProcess) checkAllowedResourceUsage() error {
 }
 
 // GetResourceConsumption returns resource consumption as a string
-func (cp *childProcess) GetResourceConsumption() string {
+func (cp *ChildProcess) GetResourceConsumption() string {
 	if !cp.resourceSpec.isSpecified() {
 		// Monitoring is not enabled.
 		return ""
@@ -408,7 +412,7 @@ func (cp *childProcess) GetResourceConsumption() string {
 }
 
 // GetTotalConsumption returns total resource consumption since start of process
-func (cp *childProcess) GetTotalConsumption() *ResourceConsumption {
+func (cp *ChildProcess) GetTotalConsumption() *ResourceConsumption {
 	rc := &ResourceConsumption{}
 
 	if cp.processMon != nil {

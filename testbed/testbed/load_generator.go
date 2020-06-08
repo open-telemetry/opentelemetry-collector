@@ -63,14 +63,15 @@ type LoadOptions struct {
 }
 
 // NewLoadGenerator creates a load generator that sends data using specified sender.
-func NewLoadGenerator(sender DataSender) (*LoadGenerator, error) {
+func NewLoadGenerator(dataProvider DataProvider, sender DataSender) (*LoadGenerator, error) {
 	if sender == nil {
 		return nil, fmt.Errorf("cannot create load generator without DataSender")
 	}
 
 	lg := &LoadGenerator{
-		stopSignal: make(chan struct{}),
-		sender:     sender,
+		stopSignal:   make(chan struct{}),
+		sender:       sender,
+		dataProvider: dataProvider,
 	}
 
 	return lg, nil
@@ -135,7 +136,7 @@ func (lg *LoadGenerator) generate() {
 		return
 	}
 
-	lg.dataProvider = NewPerfTestDataProvider(lg.options, &lg.batchesSent, &lg.dataItemsSent)
+	lg.dataProvider.SetLoadGeneratorCounters(&lg.batchesSent, &lg.dataItemsSent)
 
 	err := lg.sender.Start()
 	if err != nil {
