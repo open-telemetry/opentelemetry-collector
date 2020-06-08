@@ -23,8 +23,6 @@ import (
 	"testing"
 	"time"
 
-	"go.opentelemetry.io/collector/internal"
-
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
@@ -33,6 +31,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/internal"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
