@@ -15,27 +15,18 @@
 package defaultcomponents
 
 import (
-	"go/parser"
-	"go/token"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/component/componenttest"
 )
 
-// Import importPrefixesToCheck to check for readmes.
-var importPrefixesToCheck = []string{
-	"go.opentelemetry.io/collector/extension",
-	"go.opentelemetry.io/collector/receiver",
-	"go.opentelemetry.io/collector/processor",
-	"go.opentelemetry.io/collector/exporter",
-}
-
 const (
-	defaultComponents = "defaults.go"
-	readme            = "README.md"
+	relativeDefaultComponentsPath = "service/defaultcomponents/defaults.go"
+	projectGoModule               = "go.opentelemetry.io/collector"
 )
 
 // TestComponentDocs verifies existence of READMEs for components specified as
@@ -46,47 +37,15 @@ const (
 // of components that require documentation.
 func TestComponentDocs(t *testing.T) {
 	wd, err := os.Getwd()
-	require.NoError(t, err, "failed to get working directory")
-
-	defaultComponentsFilePath := filepath.Join(wd, defaultComponents)
-	_, err = os.Stat(defaultComponentsFilePath)
-	require.NoError(t, err, "failed to load file %s", defaultComponentsFilePath)
-
-	fset := token.NewFileSet()
-	f, err := parser.ParseFile(fset, defaultComponentsFilePath, nil, parser.ImportsOnly)
-	if err != nil {
-		t.Errorf("failed to load imports: %v", err)
-	}
+	require.NoError(t, err, "failed to get working directory: %v")
 
 	// Absolute path to the project root directory
 	projectPath := filepath.Join(wd, "../../")
 
-	for _, i := range f.Imports {
-		importPath := strings.Trim(i.Path.Value, `"`)
-
-		if isComponentImport(importPath) {
-			relativeComponentPath := strings.Replace(importPath, "go.opentelemetry.io/collector/", "", 1)
-			readmePath := filepath.Join(projectPath, relativeComponentPath, readme)
-			_, err := os.Stat(readmePath)
-			require.NoError(t, err, "README does not exist at %s, add one", readmePath)
-		}
-	}
-}
-
-// isComponentImport returns true if the import corresponds to
-// a Otel component, i.e. an extension, exporter, processor or
-// a receiver.
-func isComponentImport(importStr string) bool {
-	// Imports representative of components are of the following types
-	// "go.opentelemetry.io/collector/processor/samplingprocessor/probabilisticsamplerprocessor"
-	// "go.opentelemetry.io/collector/processor/batchprocessor"
-	// where these imports can be of exporters, extensions, receivers or
-	// processors.
-	for _, prefix := range importPrefixesToCheck {
-		if strings.HasPrefix(importStr, prefix) {
-			return true
-		}
-	}
-
-	return false
+	err = componenttest.VerifyComponentDocumentation(
+		projectPath,
+		relativeDefaultComponentsPath,
+		projectGoModule,
+	)
+	require.NoError(t, err)
 }
