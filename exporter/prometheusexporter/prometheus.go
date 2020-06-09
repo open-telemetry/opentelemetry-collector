@@ -22,9 +22,9 @@ import (
 	// TODO: once this repository has been transferred to the
 	// official census-ecosystem location, update this import path.
 
+	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/orijtech/prometheus-go-metrics-exporter"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
