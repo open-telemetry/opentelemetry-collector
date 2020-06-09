@@ -38,6 +38,8 @@ var (
 	mExporterDroppedSpans       = stats.Int64("otelcol/exporter/dropped_spans", "Counts the number of spans dropped by the exporter", "1")
 	mExporterReceivedTimeSeries = stats.Int64("otelcol/exporter/received_timeseries", "Counts the number of timeseries received by the exporter", "1")
 	mExporterDroppedTimeSeries  = stats.Int64("otelcol/exporter/dropped_timeseries", "Counts the number of timeseries received by the exporter", "1")
+	mExporterReceivedLogRecords = stats.Int64("otelcol/exporter/received_logs", "Counts the number of log records received by the exporter", "1")
+	mExporterDroppedLogRecords  = stats.Int64("otelcol/exporter/dropped_logs", "Counts the number of log records dropped by the exporter", "1")
 )
 
 // TagKeyReceiver defines tag key for Receiver.
@@ -118,6 +120,24 @@ var ViewExporterDroppedTimeSeries = &view.View{
 	TagKeys:     []tag.Key{TagKeyReceiver, TagKeyExporter},
 }
 
+// ViewExporterReceivedLogRecords defines the view for the exporter received logs metric.
+var ViewExporterReceivedLogRecords = &view.View{
+	Name:        mExporterReceivedLogRecords.Name(),
+	Description: mExporterReceivedLogRecords.Description(),
+	Measure:     mExporterReceivedLogRecords,
+	Aggregation: view.Sum(),
+	TagKeys:     []tag.Key{TagKeyReceiver, TagKeyExporter},
+}
+
+// ViewExporterDroppedLogRecords defines the view for the exporter dropped logs metric.
+var ViewExporterDroppedLogRecords = &view.View{
+	Name:        mExporterDroppedLogRecords.Name(),
+	Description: mExporterDroppedLogRecords.Description(),
+	Measure:     mExporterDroppedLogRecords,
+	Aggregation: view.Sum(),
+	TagKeys:     []tag.Key{TagKeyReceiver, TagKeyExporter},
+}
+
 // AllViews has the views for the metrics provided by the agent.
 var AllViews = []*view.View{
 	ViewReceiverReceivedSpans,
@@ -126,6 +146,8 @@ var AllViews = []*view.View{
 	ViewReceiverDroppedTimeSeries,
 	ViewExporterReceivedSpans,
 	ViewExporterDroppedSpans,
+	ViewExporterReceivedLogRecords,
+	ViewExporterDroppedLogRecords,
 	ViewExporterReceivedTimeSeries,
 	ViewExporterDroppedTimeSeries,
 }
@@ -168,6 +190,12 @@ func RecordMetricsForTraceExporter(ctx context.Context, receivedSpans int, dropp
 // Use it with a context.Context generated using ContextWithExporterName().
 func RecordMetricsForMetricsExporter(ctx context.Context, receivedTimeSeries int, droppedTimeSeries int) {
 	stats.Record(ctx, mExporterReceivedTimeSeries.M(int64(receivedTimeSeries)), mExporterDroppedTimeSeries.M(int64(droppedTimeSeries)))
+}
+
+// RecordMetricsForLogsExporter records the number of timeseries received and dropped by the exporter.
+// Use it with a context.Context generated using ContextWithExporterName().
+func RecordMetricsForLogsExporter(ctx context.Context, receivedLogs int, droppedLogs int) {
+	stats.Record(ctx, mExporterReceivedLogRecords.M(int64(receivedLogs)), mExporterDroppedLogRecords.M(int64(droppedLogs)))
 }
 
 // GRPCServerWithObservabilityEnabled creates a gRPC server that at a bare minimum has

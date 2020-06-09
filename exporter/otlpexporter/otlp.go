@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/internal/data"
 	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/metrics/v1"
 	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
+	otlplogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
 )
 
 type otlpExporter struct {
@@ -90,6 +91,28 @@ func NewMetricsExporter(
 	oexp, err := exporterhelper.NewMetricsExporter(
 		config,
 		oce.pushMetricsData,
+		exporterhelper.WithShutdown(oce.Shutdown),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return oexp, nil
+}
+
+// NewLogExporter creates an OTLP log exporter.
+func NewLogExporter(
+	_ context.Context,
+	_ component.ExporterCreateParams,
+	config configmodels.Exporter,
+) (component.LogExporter, error) {
+	oce, err := createOTLPExporter(config)
+	if err != nil {
+		return nil, err
+	}
+	oexp, err := exporterhelper.NewLogsExporter(
+		config,
+		oce.pushLogData,
 		exporterhelper.WithShutdown(oce.Shutdown),
 	)
 	if err != nil {
@@ -209,6 +232,30 @@ func (oce *otlpExporter) pushMetricsData(ctx context.Context, md pdata.Metrics) 
 	oce.exporters <- exporter
 	if err != nil {
 		return imd.MetricCount(), err
+	}
+	return 0, nil
+}
+
+func (oce *otlpExporter) pushLogData(ctx context.Context, logs data.Logs) (int, error) {
+	// Get first available exporter.
+	exporter, ok := <-oce.exporters
+	if !ok {
+		err := &exporterError{
+			code: errAlreadyStopped,
+			msg:  "OpenTelemetry exporter was already stopped.",
+		}
+		return logs.LogRecordCount(), err
+	}
+
+	request := &otlplogs.ExportLogServiceRequest{
+		ResourceLogs: data.LogsToProto(logs),
+	}
+	err := exporter.exportLogs(ctx, request)
+
+	// Return the exporter to the pool.
+	oce.exporters <- exporter
+	if err != nil {
+		return logs.LogRecordCount(), err
 	}
 	return 0, nil
 }
