@@ -15,8 +15,12 @@
 package componenttest
 
 import (
+	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestIsComponentImport(t *testing.T) {
@@ -108,10 +112,46 @@ func TestVerifyComponentDocumentation(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Invalid files",
+			name: "Invalid project path",
 			args: args{
 				projectPath:                   "invalid/project",
 				relativeDefaultComponentsPath: "invalid/file",
+				projectGoModule:               "go.opentelemetry.io/collector",
+			},
+			wantErr: true,
+		},
+		{
+			name: "Valid files",
+			args: args{
+				projectPath:                   getProjectPath(t),
+				relativeDefaultComponentsPath: "service/defaultcomponents/defaults.go",
+				projectGoModule:               "go.opentelemetry.io/collector",
+			},
+			wantErr: false,
+		},
+		{
+			name: "Invalid files",
+			args: args{
+				projectPath:                   getProjectPath(t),
+				relativeDefaultComponentsPath: "service/defaultcomponents/invalid.go",
+				projectGoModule:               "go.opentelemetry.io/collector",
+			},
+			wantErr: true,
+		},
+		{
+			name: "Invalid imports",
+			args: args{
+				projectPath:                   getProjectPath(t),
+				relativeDefaultComponentsPath: "component/componenttest/testdata/invalid_go.txt",
+				projectGoModule:               "go.opentelemetry.io/collector",
+			},
+			wantErr: true,
+		},
+		{
+			name: "README does not exist",
+			args: args{
+				projectPath:                   getProjectPath(t),
+				relativeDefaultComponentsPath: "component/componenttest/testdata/valid_go.txt",
 				projectGoModule:               "go.opentelemetry.io/collector",
 			},
 			wantErr: true,
@@ -124,4 +164,14 @@ func TestVerifyComponentDocumentation(t *testing.T) {
 			}
 		})
 	}
+}
+
+func getProjectPath(t *testing.T) string {
+	wd, err := os.Getwd()
+	require.NoError(t, err, "failed to get working directory: %v")
+
+	// Absolute path to the project root directory
+	projectPath := filepath.Join(wd, "../../")
+
+	return projectPath
 }
