@@ -72,16 +72,16 @@ func (s *scraper) ScrapeMetrics(ctx context.Context) (pdata.MetricSlice, error) 
 func initializeCPUSecondsMetric(metric pdata.Metric, startTime pdata.TimestampUnixNano, cpuTimes []cpu.TimesStat) {
 	metricCPUSecondsDescriptor.CopyTo(metric.MetricDescriptor())
 
-	idps := metric.Int64DataPoints()
-	idps.Resize(len(cpuTimes) * cpuStatesLen)
+	ddps := metric.DoubleDataPoints()
+	ddps.Resize(len(cpuTimes) * cpuStatesLen)
 	for i, cpuTime := range cpuTimes {
-		appendCPUStateTimes(idps, i*cpuStatesLen, startTime, cpuTime)
+		appendCPUStateTimes(ddps, i*cpuStatesLen, startTime, cpuTime)
 	}
 }
 
 const gopsCPUTotal string = "cpu-total"
 
-func initializeCPUSecondsDataPoint(dataPoint pdata.Int64DataPoint, startTime pdata.TimestampUnixNano, cpuLabel string, stateLabel string, value int64) {
+func initializeCPUSecondsDataPoint(dataPoint pdata.DoubleDataPoint, startTime pdata.TimestampUnixNano, cpuLabel string, stateLabel string, value float64) {
 	labelsMap := dataPoint.LabelsMap()
 	// ignore cpu label if reporting "total" cpu usage
 	if cpuLabel != gopsCPUTotal {

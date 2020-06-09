@@ -63,7 +63,7 @@ func TestStartSampling(t *testing.T) {
 	// second call to stopSampling should close perf counter, stop
 	// sampling, and clean up the sampler
 	stopSampling(context.Background())
-	assert.Nil(t, samplerInstance)
+	assertSamplingStopped(t)
 }
 
 func assertSamplingUnderway(t *testing.T) {
@@ -74,6 +74,18 @@ func assertSamplingUnderway(t *testing.T) {
 	case <-samplerInstance.done:
 		assert.Fail(t, "Load scraper sampling done channel unexpectedly closed")
 	default:
+	}
+}
+
+func assertSamplingStopped(t *testing.T) {
+	// validate perf counter was closed by trying to close again
+	err := samplerInstance.processorQueueLengthCounter.Close()
+	assert.EqualError(t, err, "attempted to call close more than once")
+
+	select {
+	case <-samplerInstance.done:
+	default:
+		assert.Fail(t, "Load scraper sampling done channel not closed")
 	}
 }
 

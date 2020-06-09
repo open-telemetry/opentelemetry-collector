@@ -1,8 +1,13 @@
-# Prometheus Receiver Design Spec
+# Prometheus Receiver
 
-## Design Goal
+- [Design Spec](#design-spec)
+- [Configuration](#configuration)
 
-### Provide a seamless onboarding experience for users who are already familiar with Prometheus scrape config
+## Design Spec
+
+### Design Goal
+
+#### Provide a seamless onboarding experience for users who are already familiar with Prometheus scrape config
 
 Prometheus has a very powerful config system for user to config how Prometheus can scrape the metrics data from any 
 application which expose a Prometheus format metrics endpoint. It provides very useful features like filtering unwanted 
@@ -11,13 +16,13 @@ scraper's source code as a library to achieve this goal. Overall the idea was gr
 implementation has a lot of glitches, it cannot be fixed by small patches. This new Prometheus receiver is going to 
 follow the same idea of leveraging Prometheus sourcecode, with a proper implementation. 
 
-### Map Prometheus metrics to the corresponding OpenTelemetry metrics properly
+#### Map Prometheus metrics to the corresponding OpenTelemetry metrics properly
 
 Prometheus receiver shall be able to map Prometheus metrics to OpenTelemetry's proto based metrics, it shall respect the 
 original metric name, value, timestamp, as well as tags. It doesn't need to provide one-to-one mapping, since supported 
 metric types are different from the two systems.  However, it shall not drop data.
 
-### Parity between Prometheus and OpenTelemetry Prometheus exporter
+#### Parity between Prometheus and OpenTelemetry Prometheus exporter
 
 Prometheus itself can also used as an exporter, that it can expose the metrics it scrape from other system with its own 
 metrics endpoint, so is OpenTelemetry service. We shall be able to retain parity from the following two setups: 
@@ -26,7 +31,7 @@ metrics endpoint, so is OpenTelemetry service. We shall be able to retain parity
 2. app -> otelcol-with-prometheus-receiver -> otelcol-prometheus-exporter-metrics-endpoint
 
 
-## Prometheus Text Format Overview
+### Prometheus Text Format Overview
 
 Prometheus text format is a line orient format.  For each non-empty line, which not begins with #, is a metric data 
 point with includes a metric name and its value, which is of float64 type, as well as some optional data such as tags 
@@ -35,7 +40,7 @@ or metadata, which including type hints and units that are usually indicating th
 or a group of new metrics. More details of Prometheus text format can be found from its 
 [official document](https://prometheus.io/docs/instrumenting/exposition_formats/#text-based-format). 
 
-### Metric types
+#### Metric types
 Based on this document, Prometheus supports the following 5 types of metrics: 
 * Counter 
 * Gauge 
@@ -54,7 +59,7 @@ More details can be found from the
 [prometheus text parser source code]( https://github.com/prometheus/prometheus/blob/master/pkg/textparse/interface.go#L82)
 
 
-### Metric Grouping
+#### Metric Grouping
 
 Other than metric types, the type hint comment and metric grouping are also important to know in order to parse Prometheus
 text metrics properly. From any Prometheus metrics endpoints, metrics are usually grouped together by starting with a 
@@ -74,13 +79,13 @@ The above example was taken from an cadvisor metric endpoint, the type hint tell
 same metric name. For each individual metric within this group, they share the same set of tag keys, with unique value sets.
 
 
-## Prometheus Metric Scraper Anatomy 
+### Prometheus Metric Scraper Anatomy 
 
 The metrics scraper is a component which is used to scrape remote Prometheus metric endpoints, it is also the component 
 which Prometheus receiver is based on. It's important to understand how it works in order to implement the receiver
 properly. 
 
-### Major components of Prometheus Scape package
+#### Major components of Prometheus Scape package
 
 - **[ScapeManager](https://github.com/prometheus/prometheus/blob/v2.9.2/scrape/manager.go):** 
 the component which loads the scrape_config, and manage the scraping tasks
@@ -108,7 +113,7 @@ also the interface we need to implement to provide a customized storage appender
 the actual scrape pipeline which performs the main scraping and ingestion logic.
 
 
-### Prometheus ScrapeLoop workflow explained
+#### Prometheus ScrapeLoop workflow explained
 Each scraping cycle is trigger by an configured interval, its workflow is as shown in the flowchart below:
 
 ![ScrapeLoop Flowchart](scrapeloop-flowchart.png)
@@ -123,9 +128,9 @@ It basically does the following things in turn:
   6. report task status
   
   
-## Implementing Prometheus storage.Appender with metrics sink
+### Implementing Prometheus storage.Appender with metrics sink
 
-### The storage.Appender interface
+#### The storage.Appender interface
 As discussed in the previous section, the storage.Appender is the most important piece of components for us to implement so as to bring the two worlds together. 
 It has a very simple interface which is defined below:
 ```go
@@ -161,7 +166,7 @@ This reference number might make sense to databases which has unique key as numb
 necessary, thus we can always return 0 ref number from the `Add` method to skip this caching mechanism.
 
 
-### Challenges and solutions
+#### Challenges and solutions
 Even though the definition of this interface is very simple, however, to implement it properly is a bit challenging, given that
 every time the Add/AddFast method is called, it only provides the information about the current data point, the context of what metric group
 this data point belonging to is not provided, we have to keep track of it internally within the appender.  And this is not the whole story,
@@ -205,10 +210,10 @@ the timestamp, then for any subsequent data of the same metric, use the cached t
 However, metrics can come and go, or the remote server can restart at any given time, the receiver also needs to take care of issues such as a new value is 
 smaller than the previous seen value, by considering it as a metrics with new StartTime.
 
-## Prometheus Metric to OpenTelemetry Metric Proto Mapping
+### Prometheus Metric to OpenTelemetry Metric Proto Mapping
 
 
-### Target as Node
+#### Target as Node
 The Target of Prometheus is defined by the scrape_config, it has the information like `hostname` of the remote service,
 and a user defined `job name` which can be used as the service name. These two piece of information makes it a great fit
 to map it into the `Node` proto of the OpenTelemetry MetricsData type, as shown below: 
@@ -225,7 +230,7 @@ The scrape page as whole also can be fit into the above `MetricsData` data struc
 can be stored with the `Metrics` array. We will explain the mappings of individual metirc types in the following couple sections
 
 
-### Metric Value Mapping
+#### Metric Value Mapping
  In OpenTelemetry, metrics value types can be either `int64` or `float64`, while in Prometheus the value can be safely assumed it's always `float64` based on the 
 [Prometheus Text Format Document](https://prometheus.io/docs/instrumenting/exposition_formats/#text-format-details) as quoted below:
 
@@ -234,7 +239,7 @@ can be stored with the `Metrics` array. We will explain the mappings of individu
 It will make sense for us to stick with this data type as much as possible across all metrics types
 
 
-### Counter
+#### Counter
 Counter as described in the [Prometheus Metric Types Document](https://prometheus.io/docs/concepts/metric_types/#counter), 
 > is a cumulative metric that represents a single monotonically increasing counter whose value can only increase or be 
 > reset to zero on restart
@@ -290,7 +295,7 @@ metrics := []*metricspb.Metric{
 *Note: `startTimestamp` is the timestamp cached from the first scrape, `currentTimestamp` is the timestamp of the current scrape*
 
 
-### Gauge
+#### Gauge
 Gauge, as described in the [Prometheus Metric Types Document](https://prometheus.io/docs/concepts/metric_types/#guage),
 > is a metric that represents a single numerical value that can arbitrarily go up and down
 
@@ -335,7 +340,7 @@ metrics := []*metricspb.Metric{
 ```
 
 
-### Histogram
+#### Histogram
 Histogram is a complex data type, in Prometheus, it uses multiple data points to represent a single histogram. Its 
 description can be found from: [Prometheus Histogram](https://prometheus.io/docs/concepts/metric_types/#histogram).
 
@@ -439,11 +444,11 @@ OpenTelemetry does not use `+inf` as bound, one needs to remove it to generate t
 Other than that, the `SumOfSquaredDeviation`, which is required by OpenTelemetry format for histogram, is not provided by 
 Prometheus. We have to set this value to `0` instead.
 
-### Gaugehistogram
+#### Gaugehistogram
 
 This is an undocumented data type, that's not currently supported.
 
-### Summary
+#### Summary
 
 Same as histogram, summary is also a complex metric type which is represent by multiple data points. A detailed 
 description can be found from [Prometheus Summary](https://prometheus.io/docs/concepts/metric_types/#summary)
@@ -521,6 +526,64 @@ provided by Prometheus, and `nil` will be used for these values.
 Other than that, in some Prometheus client implementations, such as the Python version, Summary is allowed to have no quantiles, in which
 case the receiver will produce an OpenTelemetry Summary with Snapshot set to `nil`.
 
-### Others
+#### Others
 
-For any other Prometheus metrics types, they will be transformed into the OpenTelemetry [Gauge](#gague) type
+For any other Prometheus metrics types, they will be transformed into the OpenTelemetry [Gauge](#gague) type.
+
+## Configuration
+
+This receiver is a drop-in replacement for getting Prometheus to scrape your
+services. Just like you would write in a YAML configuration file before
+starting Prometheus, such as with:
+```shell
+prometheus --config.file=prom.yaml
+```
+
+You can copy and paste that same configuration under section
+```yaml
+receivers:
+  prometheus:
+    config:
+```
+
+For example:
+```yaml
+receivers:
+    prometheus:
+      config:
+        scrape_configs:
+          - job_name: 'opencensus_service'
+            scrape_interval: 5s
+            static_configs:
+              - targets: ['localhost:8889']
+          - job_name: 'jdbc_apps'
+            scrape_interval: 3s
+            static_configs:
+              - targets: ['localhost:9777']
+```
+
+### Include Filter
+Include Filter provides ability to filter scraping metrics per target. If a
+filter is specified for a target then only those metrics which exactly matches
+one of the metrics specified in the `Include Filter` list will be scraped. Rest
+of the metrics from the targets will be dropped.
+
+#### Syntax
+* Endpoint should be double quoted.
+* Metrics should be specified in form of a list.
+
+#### Example
+```yaml
+receivers:
+    prometheus:
+      include_filter: {
+        "localhost:9777" : [http/server/server_latency, custom_metric1],
+        "localhost:9778" : [http/client/roundtrip_latency],
+      }
+      config:
+        scrape_configs:
+          ...
+```
+
+The full list of settings exposed for this receiver are documented [here](prometheusreceiver/config.go)
+with detailed sample configurations [here](prometheusreceiver/testdata/config.yaml).
