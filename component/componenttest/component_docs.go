@@ -86,7 +86,7 @@ var componentTypes = []string{"extension", "receiver", "processor", "exporter"}
 func getImportPrefixesToCheck(module string) []string {
 	out := make([]string, len(componentTypes))
 	for i, typ := range componentTypes {
-		out[i] = fmt.Sprintf("%s/%s", module, typ)
+		out[i] = fmt.Sprintf("%s/%s", strings.TrimRight(module, "/"), typ)
 	}
 	return out
 }
