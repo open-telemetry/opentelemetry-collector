@@ -74,7 +74,7 @@ func (m *statusMapper) ocStatus() *tracepb.Status {
 		}
 	}
 
-	if s.codePtr != nil || s.message != "" {
+	if s.codePtr != nil {
 		code := int32(0)
 		if s.codePtr != nil {
 			code = *s.codePtr
