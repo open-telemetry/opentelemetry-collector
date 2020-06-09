@@ -46,8 +46,7 @@ func (pe *prometheusExporter) Start(_ context.Context, _ component.Host) error {
 func (pe *prometheusExporter) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
 	merged := make(map[string]*metricspb.Metric)
 	for _, metric := range md.Metrics {
-		key := metricSignature(metric)
-		merged[key] = merge(merged[key], metric)
+		merge(merged, metric)
 	}
 	for _, metric := range merged {
 		_ = pe.exporter.ExportMetric(ctx, md.Node, md.Resource, metric)
@@ -55,15 +54,14 @@ func (pe *prometheusExporter) ConsumeMetricsData(ctx context.Context, md consume
 	return nil
 }
 
-func merge(a, b *metricspb.Metric) *metricspb.Metric {
-	if a == nil {
-		return b
+func merge(m map[string]*metricspb.Metric, metric *metricspb.Metric) {
+	key := metricSignature(metric)
+	current, ok := m[key]
+	if !ok {
+		m[key] = metric
+		return
 	}
-	if b == nil {
-		return a
-	}
-	a.Timeseries = append(a.Timeseries, b.Timeseries...)
-	return a
+	current.Timeseries = append(current.Timeseries, metric.Timeseries...)
 }
 
 // Unique identifier of a given promtheus metric
