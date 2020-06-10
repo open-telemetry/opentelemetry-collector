@@ -244,6 +244,121 @@ func TestProtoBatchToInternalTraces(t *testing.T) {
 	}
 }
 
+func TestSetInternalSpanStatus(t *testing.T) {
+
+	okStatus := pdata.NewSpanStatus()
+	okStatus.InitEmpty()
+	okStatus.SetCode(pdata.StatusCode(otlptrace.Status_Ok))
+
+	unknownStatus := pdata.NewSpanStatus()
+	unknownStatus.InitEmpty()
+	unknownStatus.SetCode(pdata.StatusCode(otlptrace.Status_UnknownError))
+
+	canceledStatus := pdata.NewSpanStatus()
+	canceledStatus.InitEmpty()
+	canceledStatus.SetCode(pdata.StatusCode(otlptrace.Status_Cancelled))
+
+	invalidStatusWithMessage := pdata.NewSpanStatus()
+	invalidStatusWithMessage.InitEmpty()
+	invalidStatusWithMessage.SetCode(pdata.StatusCode(otlptrace.Status_InvalidArgument))
+	invalidStatusWithMessage.SetMessage("Error: Invalid argument")
+
+	notFoundStatus := pdata.NewSpanStatus()
+	notFoundStatus.InitEmpty()
+	notFoundStatus.SetCode(pdata.StatusCode(otlptrace.Status_NotFound))
+
+	notFoundStatusWithMessage := pdata.NewSpanStatus()
+	notFoundStatusWithMessage.InitEmpty()
+	notFoundStatusWithMessage.SetCode(pdata.StatusCode(otlptrace.Status_NotFound))
+	notFoundStatusWithMessage.SetMessage("HTTP 404: Not Found")
+
+	tests := []struct {
+		name             string
+		attrs            pdata.AttributeMap
+		status           pdata.SpanStatus
+		attrsModifiedLen int // Length of attributes map after dropping converted fields
+	}{
+		{
+			name:             "No tags set -> OK status",
+			attrs:            pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{}),
+			status:           okStatus,
+			attrsModifiedLen: 0,
+		},
+		{
+			name: "error tag set -> Unknown status",
+			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+				tracetranslator.TagError: pdata.NewAttributeValueBool(true),
+			}),
+			status:           unknownStatus,
+			attrsModifiedLen: 0,
+		},
+		{
+			name: "status.code is set as int",
+			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+				tracetranslator.TagStatusCode: pdata.NewAttributeValueInt(1),
+			}),
+			status:           canceledStatus,
+			attrsModifiedLen: 0,
+		},
+		{
+			name: "status.code, status.message and error tags are set",
+			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+				tracetranslator.TagError:      pdata.NewAttributeValueBool(true),
+				tracetranslator.TagStatusCode: pdata.NewAttributeValueInt(3),
+				tracetranslator.TagStatusMsg:  pdata.NewAttributeValueString("Error: Invalid argument"),
+			}),
+			status:           invalidStatusWithMessage,
+			attrsModifiedLen: 0,
+		},
+		{
+			name: "http.status_code tag is set as string",
+			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+				tracetranslator.TagHTTPStatusCode: pdata.NewAttributeValueString("404"),
+			}),
+			status:           notFoundStatus,
+			attrsModifiedLen: 1,
+		},
+		{
+			name: "http.status_code, http.status_message and error tags are set",
+			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+				tracetranslator.TagError:          pdata.NewAttributeValueBool(true),
+				tracetranslator.TagHTTPStatusCode: pdata.NewAttributeValueInt(404),
+				tracetranslator.TagHTTPStatusMsg:  pdata.NewAttributeValueString("HTTP 404: Not Found"),
+			}),
+			status:           notFoundStatusWithMessage,
+			attrsModifiedLen: 2,
+		},
+		{
+			name: "status.code has precedence over http.status_code.",
+			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+				tracetranslator.TagStatusCode:     pdata.NewAttributeValueInt(1),
+				tracetranslator.TagHTTPStatusCode: pdata.NewAttributeValueInt(500),
+				tracetranslator.TagHTTPStatusMsg:  pdata.NewAttributeValueString("Server Error"),
+			}),
+			status:           canceledStatus,
+			attrsModifiedLen: 2,
+		},
+		{
+			name: "Ignore http.status_code == 200 if error set to true.",
+			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+				tracetranslator.TagError:          pdata.NewAttributeValueBool(true),
+				tracetranslator.TagHTTPStatusCode: pdata.NewAttributeValueInt(200),
+			}),
+			status:           unknownStatus,
+			attrsModifiedLen: 1,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			status := pdata.NewSpanStatus()
+			setInternalSpanStatus(test.attrs, status)
+			assert.EqualValues(t, test.status, status)
+			assert.Equal(t, test.attrsModifiedLen, test.attrs.Len())
+		})
+	}
+}
+
 func TestProtoBatchesToInternalTraces(t *testing.T) {
 	batches := []*model.Batch{
 		{
