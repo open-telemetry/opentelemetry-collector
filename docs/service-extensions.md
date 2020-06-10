@@ -52,11 +52,11 @@ extensions:
   health_check:
     port: 13133
   pprof:
-    endpoint: "0.0.0.0:1777"
+    endpoint: "localhost:1777"
     block_profile_fraction: 0
     mutex_profile_fraction: 0
   zpages:
-   endpoint: "0.0.0.0:55679"
+   endpoint: "localhost:55679"
 
 # The service lists extensions not directly related to data pipelines, but used
 # by the service.
