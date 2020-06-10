@@ -185,9 +185,7 @@ func TestSingleJSONV1BatchToOCProto(t *testing.T) {
 	sortTraceByNodeName(want)
 	sortTraceByNodeName(got)
 
-	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("Unsuccessful conversion\nGot:\n\t%v\nWant:\n\t%v", got, want)
-	}
+	assert.EqualValues(t, got, want)
 }
 
 func TestMultipleJSONV1BatchesToOCProto(t *testing.T) {
@@ -234,9 +232,7 @@ func TestMultipleJSONV1BatchesToOCProto(t *testing.T) {
 	sortTraceByNodeName(want)
 	sortTraceByNodeName(got)
 
-	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("Unsuccessful conversion\nGot:\n\t%v\nWant:\n\t%v", got, want)
-	}
+	assert.EqualValues(t, got, want)
 }
 
 func sortTraceByNodeName(trace []consumerdata.TraceData) {
@@ -600,7 +596,18 @@ var ocBatchesFromZipkinV1 = []consumerdata.TraceData{
 				Kind:         tracepb.Span_SERVER,
 				StartTime:    &timestamp.Timestamp{Seconds: 1544805927, Nanos: 448081000},
 				EndTime:      &timestamp.Timestamp{Seconds: 1544805927, Nanos: 460102000},
-				TimeEvents:   nil,
+				TimeEvents: &tracepb.Span_TimeEvents{
+					TimeEvent: []*tracepb.Span_TimeEvent{
+						{
+							Time: &timestamp.Timestamp{Seconds: 1544805927, Nanos: 450000000},
+							Value: &tracepb.Span_TimeEvent_Annotation_{
+								Annotation: &tracepb.Span_TimeEvent_Annotation{
+									Description: &tracepb.TruncatableString{Value: "custom time event"},
+								},
+							},
+						},
+					},
+				},
 			},
 			{
 				TraceId:      []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0e, 0xd2, 0xe6, 0x3c, 0xbe, 0x71, 0xf5, 0xa8},

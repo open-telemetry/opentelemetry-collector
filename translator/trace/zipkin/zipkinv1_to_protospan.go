@@ -359,17 +359,7 @@ func parseZipkinV1Annotations(annotations []*annotation) *annotationParseResult 
 			// Using the more expensive annotation until/if something cheaper is needed.
 			Value: &tracepb.Span_TimeEvent_Annotation_{
 				Annotation: &tracepb.Span_TimeEvent_Annotation{
-					Attributes: &tracepb.Span_Attributes{
-						AttributeMap: map[string]*tracepb.AttributeValue{
-							currAnnotation.Value: {
-								Value: &tracepb.AttributeValue_StringValue{
-									StringValue: &tracepb.TruncatableString{
-										Value: endpointName,
-									},
-								},
-							},
-						},
-					},
+					Description: &tracepb.TruncatableString{Value: currAnnotation.Value},
 				},
 			},
 		}
