@@ -15,19 +15,13 @@
 */
 package v1
 
-import (
-	fmt "fmt"
+import proto "github.com/gogo/protobuf/proto"
+import fmt "fmt"
+import math "math"
+import opentelemetry_proto_common_v1 "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
+import opentelemetry_proto_resource_v1 "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
 
-	proto "github.com/gogo/protobuf/proto"
-
-	math "math"
-
-	opentelemetry_proto_common_v1 "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
-
-	opentelemetry_proto_resource_v1 "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
-
-	io "io"
-)
+import io "io"
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -194,12 +188,10 @@ type InstrumentationLibrarySpans struct {
 	Spans []*Span `protobuf:"bytes,2,rep,name=spans" json:"spans,omitempty"`
 }
 
-func (m *InstrumentationLibrarySpans) Reset()         { *m = InstrumentationLibrarySpans{} }
-func (m *InstrumentationLibrarySpans) String() string { return proto.CompactTextString(m) }
-func (*InstrumentationLibrarySpans) ProtoMessage()    {}
-func (*InstrumentationLibrarySpans) Descriptor() ([]byte, []int) {
-	return fileDescriptorTrace, []int{1}
-}
+func (m *InstrumentationLibrarySpans) Reset()                    { *m = InstrumentationLibrarySpans{} }
+func (m *InstrumentationLibrarySpans) String() string            { return proto.CompactTextString(m) }
+func (*InstrumentationLibrarySpans) ProtoMessage()               {}
+func (*InstrumentationLibrarySpans) Descriptor() ([]byte, []int) { return fileDescriptorTrace, []int{1} }
 
 func (m *InstrumentationLibrarySpans) GetInstrumentationLibrary() *opentelemetry_proto_common_v1.InstrumentationLibrary {
 	if m != nil {

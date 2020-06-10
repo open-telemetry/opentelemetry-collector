@@ -15,23 +15,18 @@
 */
 package v1
 
+import proto "github.com/gogo/protobuf/proto"
+import fmt "fmt"
+import math "math"
+import opentelemetry_proto_common_v1 "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
+import opentelemetry_proto_resource_v1 "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
+
 import (
-	fmt "fmt"
-
-	proto "github.com/gogo/protobuf/proto"
-
-	math "math"
-
-	opentelemetry_proto_common_v1 "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
-
-	opentelemetry_proto_resource_v1 "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
-
 	context "golang.org/x/net/context"
-
 	grpc "google.golang.org/grpc"
-
-	io "io"
 )
+
+import io "io"
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal

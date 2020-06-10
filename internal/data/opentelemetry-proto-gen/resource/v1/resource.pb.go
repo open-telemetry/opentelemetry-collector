@@ -12,17 +12,12 @@
 */
 package v1
 
-import (
-	fmt "fmt"
+import proto "github.com/gogo/protobuf/proto"
+import fmt "fmt"
+import math "math"
+import opentelemetry_proto_common_v1 "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 
-	proto "github.com/gogo/protobuf/proto"
-
-	math "math"
-
-	opentelemetry_proto_common_v1 "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
-
-	io "io"
-)
+import io "io"
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
