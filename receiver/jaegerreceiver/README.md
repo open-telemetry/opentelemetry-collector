@@ -37,7 +37,7 @@ receivers:
         tls_credentials:
           key_file: /key.pem # path to private key
           cert_file: /cert.pem # path to certificate
-        endpoint: "localhost:9876"
+        endpoint: "0.0.0.0:9876"
 ```
 
 ## Remote Sampling

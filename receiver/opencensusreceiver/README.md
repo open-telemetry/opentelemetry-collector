@@ -43,7 +43,7 @@ specifying a list of allowed CORS origins in the `cors_allowed_origins` field:
 ```yaml
 receivers:
   opencensus:
-    endpoint: "localhost:55678"
+    endpoint: "0.0.0.0:55678"
     cors_allowed_origins:
     - http://test.com
     # Origins can have wildcards with *, use * by itself to match any origin.
