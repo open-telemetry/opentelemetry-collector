@@ -555,11 +555,11 @@ receivers:
           - job_name: 'opencensus_service'
             scrape_interval: 5s
             static_configs:
-              - targets: ['localhost:8889']
+              - targets: ['0.0.0.0:8889']
           - job_name: 'jdbc_apps'
             scrape_interval: 3s
             static_configs:
-              - targets: ['localhost:9777']
+              - targets: ['0.0.0.0:9777']
 ```
 
 ### Include Filter
@@ -577,8 +577,8 @@ of the metrics from the targets will be dropped.
 receivers:
     prometheus:
       include_filter: {
-        "localhost:9777" : [http/server/server_latency, custom_metric1],
-        "localhost:9778" : [http/client/roundtrip_latency],
+        "0.0.0.0:9777" : [http/server/server_latency, custom_metric1],
+        "0.0.0.0:9778" : [http/client/roundtrip_latency],
       }
       config:
         scrape_configs:

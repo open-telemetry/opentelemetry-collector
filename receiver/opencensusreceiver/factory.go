@@ -49,7 +49,7 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 		ReceiverSettings: configmodels.ReceiverSettings{
 			TypeVal:  typeStr,
 			NameVal:  typeStr,
-			Endpoint: "localhost:55678",
+			Endpoint: "0.0.0.0:55678",
 		},
 		Transport: "tcp",
 	}

@@ -60,7 +60,7 @@ func TestLoadConfig(t *testing.T) {
 			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal:  typeStr,
 				NameVal:  "opencensus/keepalive",
-				Endpoint: "localhost:55678",
+				Endpoint: "0.0.0.0:55678",
 			},
 			TLSCredentials: nil,
 			Transport:      "tcp",
@@ -85,7 +85,7 @@ func TestLoadConfig(t *testing.T) {
 			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal:  typeStr,
 				NameVal:  "opencensus/msg-size-conc-connect-max-idle",
-				Endpoint: "localhost:55678",
+				Endpoint: "0.0.0.0:55678",
 			},
 
 			Transport:            "tcp",
@@ -106,7 +106,7 @@ func TestLoadConfig(t *testing.T) {
 			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal:  typeStr,
 				NameVal:  "opencensus/tlscredentials",
-				Endpoint: "localhost:55678",
+				Endpoint: "0.0.0.0:55678",
 			},
 			TLSCredentials: &configtls.TLSSetting{
 				CertFile: "test.crt",
@@ -121,7 +121,7 @@ func TestLoadConfig(t *testing.T) {
 			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal:  typeStr,
 				NameVal:  "opencensus/cors",
-				Endpoint: "localhost:55678",
+				Endpoint: "0.0.0.0:55678",
 			},
 			Transport:   "tcp",
 			CorsOrigins: []string{"https://*.test.com", "https://test.com"},
