@@ -54,6 +54,8 @@ func (pe *prometheusExporter) ConsumeMetricsData(ctx context.Context, md consume
 	return nil
 }
 
+// The underlying exporter overwrites timeseries when there are conflicting metric signatures.
+// Therefore, we need to merge timeseries that share a metric signature into a single metric before sending.
 func merge(m map[string]*metricspb.Metric, metric *metricspb.Metric) {
 	key := metricSignature(metric)
 	current, ok := m[key]
