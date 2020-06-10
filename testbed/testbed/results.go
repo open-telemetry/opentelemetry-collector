@@ -33,8 +33,8 @@ type TestResultsSummary interface {
 	Save()
 }
 
-//var resultsSummary = &PerformanceResults{}
-
+//PerformanceResults implements the TestResultsSummary interface with fields suitable for reporting
+//performance test results.
 type PerformanceResults struct {
 	resultsDir     string
 	resultsFile    *os.File
@@ -42,6 +42,7 @@ type PerformanceResults struct {
 	totalDuration  time.Duration
 }
 
+//PerformanceTestResult reports the results of a single performance test.
 type PerformanceTestResult struct {
 	testName          string
 	result            string
@@ -86,7 +87,10 @@ func (r *PerformanceResults) Save() {
 
 // Add results for one test.
 func (r *PerformanceResults) Add(testName string, result interface{}) {
-	testResult := result.(*PerformanceTestResult)
+	testResult, ok := result.(*PerformanceTestResult)
+	if !ok {
+		return
+	}
 	_, _ = io.WriteString(r.resultsFile,
 		fmt.Sprintf("%-40s|%-6s|%7.0fs|%8.1f|%8.1f|%11d|%11d|%10d|%14d|%s\n",
 			testResult.testName,
@@ -104,6 +108,8 @@ func (r *PerformanceResults) Add(testName string, result interface{}) {
 	r.totalDuration = r.totalDuration + testResult.duration
 }
 
+//CorrectnessResults implements the TestResultsSummary interface with fields suitable for reporting data translation
+//correctness test results.
 type CorrectnessResults struct {
 	resultsDir             string
 	resultsFile            *os.File
@@ -112,6 +118,7 @@ type CorrectnessResults struct {
 	totalDuration          time.Duration
 }
 
+//CorrectnessTestResult reports the results of a single correctness test.
 type CorrectnessTestResult struct {
 	testName              string
 	result                string
@@ -153,7 +160,10 @@ func (r *CorrectnessResults) Init(resultsDir string) {
 }
 
 func (r *CorrectnessResults) Add(testName string, result interface{}) {
-	testResult := result.(*CorrectnessTestResult)
+	testResult, ok := result.(*CorrectnessTestResult)
+	if !ok {
+		return
+	}
 	failuresStr := ""
 	for _, af := range testResult.assertionFailures {
 		failuresStr = fmt.Sprintf("%s; %s:%s:%s:%s:%s", failuresStr, af.typeName, af.dataComboName,

@@ -45,7 +45,7 @@ func TestMain(m *testing.M) {
 	testbed.DoTestMain(m, correctnessResults)
 }
 
-func TestDefaultComponentCombos(t *testing.T) {
+func TestDefaultTracingComponentCombos(t *testing.T) {
 	tests, err := loadPictOutputPipelineDefs("testdata/generated_pict_pairs_traces_pipeline.txt")
 	assert.NoError(t, err)
 	processors := map[string]string{
@@ -54,15 +54,15 @@ func TestDefaultComponentCombos(t *testing.T) {
 `,
 	}
 	for _, test := range tests {
-		test.testName = test.receiver + "2" + test.exporter
+		test.testName = fmt.Sprintf("%s-%s", test.receiver, test.exporter)
 		test.dataSender = constructSender(t, test.receiver)
-		test.dataReceiver = constructReceiver(t, test.receiver)
+		test.dataReceiver = constructReceiver(t, test.exporter)
 		test.resourceSpec = testbed.ResourceSpec{
 			ExpectedMaxCPU: 60,
 			ExpectedMaxRAM: 80,
 		}
 		t.Run(test.testName, func(t *testing.T) {
-			testWithGoldenDataset(t, test.dataSender, test.dataReceiver, test.resourceSpec, processors)
+			testWithTracingGoldenDataset(t, test.dataSender, test.dataReceiver, test.resourceSpec, processors)
 		})
 	}
 }
@@ -129,7 +129,7 @@ func loadPictOutputPipelineDefs(fileName string) ([]PipelineDef, error) {
 	return defs, err
 }
 
-func testWithGoldenDataset(
+func testWithTracingGoldenDataset(
 	t *testing.T,
 	sender testbed.DataSender,
 	receiver testbed.DataReceiver,
@@ -146,7 +146,7 @@ func testWithGoldenDataset(
 	factories, err := defaultcomponents.Components()
 	assert.NoError(t, err)
 	runner := testbed.NewInProcessPipeline(factories)
-	config := createConfigFile(t, sender, receiver, resultDir, processors)
+	config := createConfigYaml(t, sender, receiver, resultDir, processors)
 	_, cfgErr := runner.PrepareConfig(config)
 	assert.NoError(t, cfgErr)
 	tc := testbed.NewTestCase(
@@ -164,8 +164,8 @@ func testWithGoldenDataset(
 	tc.StartAgent()
 
 	tc.StartLoad(testbed.LoadOptions{
-		DataItemsPerSecond: 10000,
-		ItemsPerBatch:      100,
+		DataItemsPerSecond: 1024,
+		ItemsPerBatch:      1,
 	})
 
 	tc.Sleep(tc.Duration)
@@ -180,7 +180,7 @@ func testWithGoldenDataset(
 	tc.ValidateData()
 }
 
-func createConfigFile(t *testing.T, sender testbed.DataSender, receiver testbed.DataReceiver, resultDir string,
+func createConfigYaml(t *testing.T, sender testbed.DataSender, receiver testbed.DataReceiver, resultDir string,
 	processors map[string]string) string {
 
 	// Prepare extra processor config section and comma-separated list of extra processor

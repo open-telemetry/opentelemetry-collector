@@ -56,8 +56,8 @@ func (rs *ResourceSpec) isSpecified() bool {
 	return rs != nil && (rs.ExpectedMaxCPU != 0 || rs.ExpectedMaxRAM != 0)
 }
 
-// ChildProcess is a child process that can be monitored and the output
-// of which will be written to a log file.
+// ChildProcess implements the OtelcolRunner interface as a child process on the same machine executing
+//the test. The process can be monitored and the output of which will be written to a log file.
 type ChildProcess struct {
 	// Descriptive name of the process
 	name string

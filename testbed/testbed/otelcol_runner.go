@@ -29,24 +29,40 @@ import (
 	"go.opentelemetry.io/collector/service"
 )
 
+//OtelcolRunner defines the interface for configuring, starting and stopping one or more instances of
+//otelcol which will be the subject of testing being executed.
 type OtelcolRunner interface {
+	//PrepareConfig stores the provided YAML-based otelcol configuration file in the format needed by the otelcol
+	//instance(s) this runner manages. If successful, it returns the value for the --config command line parameter.
 	PrepareConfig(configStr string) (string, error)
+	//Starts the otelcol instance(s) if not already running which is the subject of the test to be run.
+	//It returns the host:port of the data receiver to post test data to.
 	Start(args StartParams) (string, error)
+	//Stops the otelcol instance(s) which are the subject of the test just run if applicable. Returns whether
+	//the instance was actually stopped or not.
 	Stop() (bool, error)
+	//WatchResourceConsumption toggles on the monitoring of resource consumpution by the otelcol instance under test.
 	WatchResourceConsumption() error
+	//GetProcessMon returns the Process being used to monitor resource consumption.
 	GetProcessMon() *process.Process
+	//GetTotalConsumption returns the data collected by the process monitor.
 	GetTotalConsumption() *ResourceConsumption
+	//GetResourceConsumption returns the data collected by the process monitor as a display string.
 	GetResourceConsumption() string
 }
 
+//InProcessPipeline implements the OtelcolRunner interfaces running a single otelcol as a go routine within the
+//same process as the test executor.
 type InProcessPipeline struct {
 	logger    *zap.Logger
 	factories config.Factories
 	config    *configmodels.Config
 	svc       *service.Application
 	appDone   chan struct{}
+	stopped   bool
 }
 
+//NewInProcessPipeline crewtes a new InProcessPipeline using the supplied component factories.
 func NewInProcessPipeline(factories config.Factories) *InProcessPipeline {
 	return &InProcessPipeline{
 		factories: factories,
@@ -116,7 +132,10 @@ func (ipp *InProcessPipeline) Start(args StartParams) (string, error) {
 }
 
 func (ipp *InProcessPipeline) Stop() (bool, error) {
-	ipp.svc.SignalTestComplete()
+	if !ipp.stopped {
+		ipp.stopped = true
+		ipp.svc.SignalTestComplete()
+	}
 	<-ipp.appDone
 	return true, nil
 }

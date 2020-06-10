@@ -35,20 +35,31 @@ import (
 	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
+//DataProvider defines the interface for generators of test data used to drive various end-to-end tests.
 type DataProvider interface {
+	//SetLoadGeneratorCounters supplies pointers to LoadGenerator counters.
+	//The data provider implementation should increment these as it generates data.
 	SetLoadGeneratorCounters(batchesGenerated *uint64, dataItemsGenerated *uint64)
+	//GenerateTraces returns an internal Traces instance with an OTLP ResourceSpans slice populated with test data.
 	GenerateTraces() pdata.Traces
+	//GenerateTracesOld returns a slice of OpenCensus Span instances populated with test data.
 	GenerateTracesOld() []*tracepb.Span
+	//GenerateMetrics returns an internal MetricData instance with an OTLP ResourceMetrics slice of test data.
 	GenerateMetrics() data.MetricData
+	//GenerateMetricsOld returns a slice of OpenCensus Metric instances populated with test data.
 	GenerateMetricsOld() []*metricspb.Metric
 }
 
+//PerfTestDataProvider in an implementation of the DataProvider for use in performance tests.
+//Tracing IDs are based on the incremented batch and data items counters.
 type PerfTestDataProvider struct {
 	options            LoadOptions
 	batchesGenerated   *uint64
 	dataItemsGenerated *uint64
 }
 
+//NewPerfTestDataProvider creates an instance of PerfTestDataProvider which generates test data based on the sizes
+//specified in the supplied LoadOptions.
 func NewPerfTestDataProvider(options LoadOptions) *PerfTestDataProvider {
 	return &PerfTestDataProvider{
 		options: options,
@@ -263,12 +274,21 @@ func timeToTimestamp(t time.Time) *timestamp.Timestamp {
 	}
 }
 
+//GoldenDataProvider is an implementation of DataProvider for use in correctness tests.
+//Provided data from the "Golden" dataset generated using pairwise combinatorial testing techniques.
 type GoldenDataProvider struct {
-	tracePairsFile string
-	spanPairsFile  string
-	random         io.Reader
+	tracePairsFile     string
+	spanPairsFile      string
+	random             io.Reader
+	batchesGenerated   *uint64
+	dataItemsGenerated *uint64
+	resourceSpans      []*otlptrace.ResourceSpans
+	spansIndex         int
 }
 
+//NewGoldenDataProvider creates a new instance of GoldenDataProvider which generates test data based
+//on the pairwise combinations specified in the tracePairsFile and spanPairsFile input variables.
+//The supplied randomSeed is used to initialize the random number generator used in generating tracing IDs.
 func NewGoldenDataProvider(tracePairsFile string, spanPairsFile string, randomSeed int64) *GoldenDataProvider {
 	return &GoldenDataProvider{
 		tracePairsFile: tracePairsFile,
@@ -278,15 +298,31 @@ func NewGoldenDataProvider(tracePairsFile string, spanPairsFile string, randomSe
 }
 
 func (dp *GoldenDataProvider) SetLoadGeneratorCounters(batchesGenerated *uint64, dataItemsGenerated *uint64) {
-	// NoOp
+	dp.batchesGenerated = batchesGenerated
+	dp.dataItemsGenerated = dataItemsGenerated
 }
 
 func (dp *GoldenDataProvider) GenerateTraces() pdata.Traces {
-	resourceSpans, err := goldendataset.GenerateResourceSpans(dp.tracePairsFile, dp.spanPairsFile, dp.random)
-	if err != nil {
-		log.Printf("cannot generate traces: %s", err)
-		resourceSpans = make([]*otlptrace.ResourceSpans, 0)
+	if dp.resourceSpans == nil {
+		var err error
+		dp.resourceSpans, err = goldendataset.GenerateResourceSpans(dp.tracePairsFile, dp.spanPairsFile, dp.random)
+		if err != nil {
+			log.Printf("cannot generate traces: %s", err)
+			dp.resourceSpans = make([]*otlptrace.ResourceSpans, 0)
+		}
 	}
+	atomic.AddUint64(dp.batchesGenerated, 1)
+	if dp.spansIndex >= len(dp.resourceSpans) {
+		return pdata.TracesFromOtlp(make([]*otlptrace.ResourceSpans, 0))
+	}
+	resourceSpans := make([]*otlptrace.ResourceSpans, 1)
+	resourceSpans[0] = dp.resourceSpans[dp.spansIndex]
+	dp.spansIndex++
+	spanCount := uint64(0)
+	for _, libSpans := range resourceSpans[0].InstrumentationLibrarySpans {
+		spanCount += uint64(len(libSpans.Spans))
+	}
+	atomic.AddUint64(dp.dataItemsGenerated, spanCount)
 	return pdata.TracesFromOtlp(resourceSpans)
 }
 

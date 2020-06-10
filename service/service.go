@@ -229,6 +229,11 @@ func (app *Application) RegisterZPages(mux *http.ServeMux, pathPrefix string) {
 }
 
 func (app *Application) SignalTestComplete() {
+	defer func() {
+		if r := recover(); r != nil {
+			app.logger.Info("stopTestChan already closed")
+		}
+	}()
 	close(app.stopTestChan)
 }
 
