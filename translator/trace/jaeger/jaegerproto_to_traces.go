@@ -208,42 +208,39 @@ func jTagsToInternalAttributes(tags []model.KeyValue, dest pdata.AttributeMap) {
 func setInternalSpanStatus(attrs pdata.AttributeMap, dest pdata.SpanStatus) {
 	dest.InitEmpty()
 
-	var codeSet bool
-	if codeAttr, ok := attrs.Get(tracetranslator.TagStatusCode); ok {
-		code, err := getStatusCodeFromAttr(codeAttr)
-		if err == nil {
-			codeSet = true
-			dest.SetCode(code)
-			attrs.Delete(tracetranslator.TagStatusCode)
-		}
-	} else if errorVal, ok := attrs.Get(tracetranslator.TagError); ok {
+	statusCode := pdata.StatusCode(otlptrace.Status_Ok)
+
+	if errorVal, ok := attrs.Get(tracetranslator.TagError); ok {
 		if errorVal.BoolVal() {
-			dest.SetCode(pdata.StatusCode(otlptrace.Status_UnknownError))
-			codeSet = true
+			statusCode = pdata.StatusCode(otlptrace.Status_UnknownError)
+			attrs.Delete(tracetranslator.TagError)
 		}
 	}
 
-	if codeSet {
+	if codeAttr, ok := attrs.Get(tracetranslator.TagStatusCode); ok {
+		if code, err := getStatusCodeFromAttr(codeAttr); err == nil {
+			statusCode = code
+			attrs.Delete(tracetranslator.TagStatusCode)
+		}
 		if msgAttr, ok := attrs.Get(tracetranslator.TagStatusMsg); ok {
 			dest.SetMessage(msgAttr.StringVal())
 			attrs.Delete(tracetranslator.TagStatusMsg)
 		}
-		attrs.Delete(tracetranslator.TagError)
-	} else {
-		httpCodeAttr, ok := attrs.Get(tracetranslator.TagHTTPStatusCode)
-		if ok {
-			code, err := getStatusCodeFromHTTPStatusAttr(httpCodeAttr)
-			if err == nil {
-				dest.SetCode(code)
+	} else if httpCodeAttr, ok := attrs.Get(tracetranslator.TagHTTPStatusCode); ok {
+		if code, err := getStatusCodeFromHTTPStatusAttr(httpCodeAttr); err == nil {
+
+			// Do not set status code to OK in case it was set to Unknown based on "error" tag
+			if code != pdata.StatusCode(otlptrace.Status_Ok) {
+				statusCode = code
 			}
-		} else {
-			dest.SetCode(pdata.StatusCode(otlptrace.Status_Ok))
-		}
-		if msgAttr, ok := attrs.Get(tracetranslator.TagHTTPStatusMsg); ok {
-			dest.SetMessage(msgAttr.StringVal())
+
+			if msgAttr, ok := attrs.Get(tracetranslator.TagHTTPStatusMsg); ok {
+				dest.SetMessage(msgAttr.StringVal())
+			}
 		}
 	}
 
+	dest.SetCode(statusCode)
 }
 
 func getStatusCodeFromAttr(attrVal pdata.AttributeValue) (pdata.StatusCode, error) {
