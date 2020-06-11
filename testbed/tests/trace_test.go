@@ -417,6 +417,7 @@ func TestTraceAttributesProcessor(t *testing.T) {
 				test.sender,
 				test.receiver,
 				&testbed.ChildProcess{},
+				&testbed.PerfTestValidator{},
 				performanceResultsSummary,
 				testbed.WithConfigFile(configFile),
 			)

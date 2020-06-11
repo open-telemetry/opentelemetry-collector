@@ -37,6 +37,7 @@ func TestIdleMode(t *testing.T) {
 		testbed.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.DefaultJaegerPort),
 		testbed.NewOCDataReceiver(testbed.DefaultOCPort),
 		&testbed.ChildProcess{},
+		&testbed.PerfTestValidator{},
 		performanceResultsSummary,
 	)
 	defer tc.Stop()
@@ -66,6 +67,7 @@ func TestBallastMemory(t *testing.T) {
 			testbed.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.DefaultJaegerPort),
 			testbed.NewOCDataReceiver(testbed.DefaultOCPort),
 			&testbed.ChildProcess{},
+			&testbed.PerfTestValidator{},
 			performanceResultsSummary,
 			testbed.WithSkipResults(),
 		)

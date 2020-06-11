@@ -174,7 +174,10 @@ func (lg *LoadGenerator) generate() {
 func (lg *LoadGenerator) generateTrace() {
 	traceSender := lg.sender.(TraceDataSender)
 
-	traceData := lg.dataProvider.GenerateTraces()
+	traceData, done := lg.dataProvider.GenerateTraces()
+	if done {
+		return
+	}
 
 	err := traceSender.SendSpans(traceData)
 	if err == nil {
@@ -188,8 +191,12 @@ func (lg *LoadGenerator) generateTrace() {
 func (lg *LoadGenerator) generateTraceOld() {
 	traceSender := lg.sender.(TraceDataSenderOld)
 
+	spans, done := lg.dataProvider.GenerateTracesOld()
+	if done {
+		return
+	}
 	traceData := consumerdata.TraceData{
-		Spans: lg.dataProvider.GenerateTracesOld(),
+		Spans: spans,
 	}
 
 	err := traceSender.SendSpans(traceData)
@@ -204,7 +211,10 @@ func (lg *LoadGenerator) generateTraceOld() {
 func (lg *LoadGenerator) generateMetrics() {
 	metricSender := lg.sender.(MetricDataSender)
 
-	metricData := lg.dataProvider.GenerateMetrics()
+	metricData, done := lg.dataProvider.GenerateMetrics()
+	if done {
+		return
+	}
 
 	err := metricSender.SendMetrics(metricData)
 	if err == nil {
@@ -221,9 +231,13 @@ func (lg *LoadGenerator) generateMetricsOld() {
 	resource := &resourcepb.Resource{
 		Labels: lg.options.Attributes,
 	}
+	metrics, done := lg.dataProvider.GenerateMetricsOld()
+	if done {
+		return
+	}
 	metricData := consumerdata.MetricsData{
 		Resource: resource,
-		Metrics:  lg.dataProvider.GenerateMetricsOld(),
+		Metrics:  metrics,
 	}
 
 	err := metricSender.SendMetrics(metricData)

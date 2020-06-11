@@ -161,6 +161,7 @@ func Scenario10kItemsPerSecond(
 		sender,
 		receiver,
 		&testbed.ChildProcess{},
+		&testbed.PerfTestValidator{},
 		performanceResultsSummary,
 		testbed.WithConfigFile(configFile),
 	)
@@ -215,6 +216,7 @@ func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, opts 
 				testbed.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.DefaultJaegerPort),
 				testbed.NewOCDataReceiver(testbed.DefaultOCPort),
 				&testbed.ChildProcess{},
+				&testbed.PerfTestValidator{},
 				performanceResultsSummary,
 				opts...,
 			)
@@ -270,6 +272,7 @@ func ScenarioTestTraceNoBackend10kSPS(t *testing.T, sender testbed.DataSender, r
 		sender,
 		receiver,
 		&testbed.ChildProcess{},
+		&testbed.PerfTestValidator{},
 		performanceResultsSummary,
 		testbed.WithConfigFile(configFile),
 	)

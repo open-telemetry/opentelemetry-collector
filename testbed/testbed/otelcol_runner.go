@@ -108,6 +108,7 @@ func (ipp *InProcessPipeline) Start(args StartParams) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	ipp.svc.Command().SetArgs(args.cmdArgs)
 
 	ipp.appDone = make(chan struct{})
 	go func() {

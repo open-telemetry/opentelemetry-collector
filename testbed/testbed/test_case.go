@@ -24,7 +24,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -55,6 +54,7 @@ type TestCase struct {
 
 	LoadGenerator *LoadGenerator
 	MockBackend   *MockBackend
+	validator     TestCaseValidator
 
 	startTime time.Time
 
@@ -84,6 +84,7 @@ func NewTestCase(
 	sender DataSender,
 	receiver DataReceiver,
 	agentProc OtelcolRunner,
+	validator TestCaseValidator,
 	resultsSummary TestResultsSummary,
 	opts ...TestCaseOption,
 ) *TestCase {
@@ -96,6 +97,7 @@ func NewTestCase(
 	tc.Sender = sender
 	tc.Receiver = receiver
 	tc.agentProc = agentProc
+	tc.validator = validator
 	tc.resultsSummary = resultsSummary
 
 	// Get requested test case duration from env variable.
@@ -262,31 +264,7 @@ func (tc *TestCase) Stop() {
 	}
 
 	// Report test results
-
-	rc := tc.agentProc.GetTotalConsumption()
-
-	var result string
-	if tc.t.Failed() {
-		result = "FAIL"
-	} else {
-		result = "PASS"
-	}
-
-	// Remove "Test" prefix from test name.
-	testName := tc.t.Name()[4:]
-
-	tc.resultsSummary.Add(tc.t.Name(), &PerformanceTestResult{
-		testName:          testName,
-		result:            result,
-		receivedSpanCount: tc.MockBackend.DataItemsReceived(),
-		sentSpanCount:     tc.LoadGenerator.DataItemsSent(),
-		duration:          time.Since(tc.startTime),
-		cpuPercentageAvg:  rc.CPUPercentAvg,
-		cpuPercentageMax:  rc.CPUPercentMax,
-		ramMibAvg:         rc.RAMMiBAvg,
-		ramMibMax:         rc.RAMMiBMax,
-		errorCause:        tc.errorCause,
-	})
+	tc.validator.RecordResults(tc)
 }
 
 // ValidateData validates data by comparing the number of items sent by load generator
@@ -299,10 +277,7 @@ func (tc *TestCase) ValidateData() {
 	default:
 	}
 
-	if assert.EqualValues(tc.t, tc.LoadGenerator.DataItemsSent(), tc.MockBackend.DataItemsReceived(),
-		"Received and sent counters do not match.") {
-		log.Printf("Sent and received data matches.")
-	}
+	tc.validator.Validate(tc)
 }
 
 // Sleep for specified duration or until error is signaled.

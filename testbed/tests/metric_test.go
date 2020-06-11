@@ -32,6 +32,7 @@ func TestMetricNoBackend10kDPSOpenCensus(t *testing.T) {
 		testbed.NewOCMetricDataSender(testbed.DefaultHost, 55678),
 		testbed.NewOCDataReceiver(testbed.DefaultOCPort),
 		&testbed.ChildProcess{},
+		&testbed.PerfTestValidator{},
 		performanceResultsSummary,
 	)
 	defer tc.Stop()

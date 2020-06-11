@@ -41,13 +41,13 @@ type DataProvider interface {
 	//The data provider implementation should increment these as it generates data.
 	SetLoadGeneratorCounters(batchesGenerated *uint64, dataItemsGenerated *uint64)
 	//GenerateTraces returns an internal Traces instance with an OTLP ResourceSpans slice populated with test data.
-	GenerateTraces() pdata.Traces
+	GenerateTraces() (pdata.Traces, bool)
 	//GenerateTracesOld returns a slice of OpenCensus Span instances populated with test data.
-	GenerateTracesOld() []*tracepb.Span
+	GenerateTracesOld() ([]*tracepb.Span, bool)
 	//GenerateMetrics returns an internal MetricData instance with an OTLP ResourceMetrics slice of test data.
-	GenerateMetrics() data.MetricData
+	GenerateMetrics() (data.MetricData, bool)
 	//GenerateMetricsOld returns a slice of OpenCensus Metric instances populated with test data.
-	GenerateMetricsOld() []*metricspb.Metric
+	GenerateMetricsOld() ([]*metricspb.Metric, bool)
 }
 
 //PerfTestDataProvider in an implementation of the DataProvider for use in performance tests.
@@ -71,7 +71,7 @@ func (dp *PerfTestDataProvider) SetLoadGeneratorCounters(batchesGenerated *uint6
 	dp.dataItemsGenerated = dataItemsGenerated
 }
 
-func (dp *PerfTestDataProvider) GenerateTracesOld() []*tracepb.Span {
+func (dp *PerfTestDataProvider) GenerateTracesOld() ([]*tracepb.Span, bool) {
 
 	var spans []*tracepb.Span
 	traceID := atomic.AddUint64(dp.batchesGenerated, 1)
@@ -110,10 +110,10 @@ func (dp *PerfTestDataProvider) GenerateTracesOld() []*tracepb.Span {
 
 		spans = append(spans, span)
 	}
-	return spans
+	return spans, false
 }
 
-func (dp *PerfTestDataProvider) GenerateTraces() pdata.Traces {
+func (dp *PerfTestDataProvider) GenerateTraces() (pdata.Traces, bool) {
 
 	traceData := pdata.NewTraces()
 	traceData.ResourceSpans().Resize(1)
@@ -147,7 +147,7 @@ func (dp *PerfTestDataProvider) GenerateTraces() pdata.Traces {
 		span.SetStartTime(pdata.TimestampUnixNano(uint64(startTime.UnixNano())))
 		span.SetEndTime(pdata.TimestampUnixNano(uint64(endTime.UnixNano())))
 	}
-	return traceData
+	return traceData, false
 }
 
 func GenerateSequentialTraceID(id uint64) []byte {
@@ -162,7 +162,7 @@ func GenerateSequentialSpanID(id uint64) []byte {
 	return spanID[:]
 }
 
-func (dp *PerfTestDataProvider) GenerateMetricsOld() []*metricspb.Metric {
+func (dp *PerfTestDataProvider) GenerateMetricsOld() ([]*metricspb.Metric, bool) {
 
 	resource := &resourcepb.Resource{
 		Labels: dp.options.Attributes,
@@ -215,10 +215,10 @@ func (dp *PerfTestDataProvider) GenerateMetricsOld() []*metricspb.Metric {
 
 		metrics = append(metrics, metric)
 	}
-	return metrics
+	return metrics, false
 }
 
-func (dp *PerfTestDataProvider) GenerateMetrics() data.MetricData {
+func (dp *PerfTestDataProvider) GenerateMetrics() (data.MetricData, bool) {
 
 	// Generate 7 data points per metric.
 	const dataPointsPerMetric = 7
@@ -259,7 +259,7 @@ func (dp *PerfTestDataProvider) GenerateMetrics() data.MetricData {
 			})
 		}
 	}
-	return metricData
+	return metricData, false
 }
 
 // timeToTimestamp converts a time.Time to a timestamp.Timestamp pointer.
@@ -302,7 +302,7 @@ func (dp *GoldenDataProvider) SetLoadGeneratorCounters(batchesGenerated *uint64,
 	dp.dataItemsGenerated = dataItemsGenerated
 }
 
-func (dp *GoldenDataProvider) GenerateTraces() pdata.Traces {
+func (dp *GoldenDataProvider) GenerateTraces() (pdata.Traces, bool) {
 	if dp.resourceSpans == nil {
 		var err error
 		dp.resourceSpans, err = goldendataset.GenerateResourceSpans(dp.tracePairsFile, dp.spanPairsFile, dp.random)
@@ -313,7 +313,7 @@ func (dp *GoldenDataProvider) GenerateTraces() pdata.Traces {
 	}
 	atomic.AddUint64(dp.batchesGenerated, 1)
 	if dp.spansIndex >= len(dp.resourceSpans) {
-		return pdata.TracesFromOtlp(make([]*otlptrace.ResourceSpans, 0))
+		return pdata.TracesFromOtlp(make([]*otlptrace.ResourceSpans, 0)), true
 	}
 	resourceSpans := make([]*otlptrace.ResourceSpans, 1)
 	resourceSpans[0] = dp.resourceSpans[dp.spansIndex]
@@ -323,23 +323,23 @@ func (dp *GoldenDataProvider) GenerateTraces() pdata.Traces {
 		spanCount += uint64(len(libSpans.Spans))
 	}
 	atomic.AddUint64(dp.dataItemsGenerated, spanCount)
-	return pdata.TracesFromOtlp(resourceSpans)
+	return pdata.TracesFromOtlp(resourceSpans), false
 }
 
-func (dp *GoldenDataProvider) GenerateTracesOld() []*tracepb.Span {
-	traces := dp.GenerateTraces()
+func (dp *GoldenDataProvider) GenerateTracesOld() ([]*tracepb.Span, bool) {
+	traces, done := dp.GenerateTraces()
 	spans := make([]*tracepb.Span, 0, traces.SpanCount())
 	traceDatas := internaldata.TraceDataToOC(traces)
 	for _, traceData := range traceDatas {
 		spans = append(spans, traceData.Spans...)
 	}
-	return spans
+	return spans, done
 }
 
-func (dp *GoldenDataProvider) GenerateMetrics() data.MetricData {
-	return data.MetricData{}
+func (dp *GoldenDataProvider) GenerateMetrics() (data.MetricData, bool) {
+	return data.MetricData{}, true
 }
 
-func (dp *GoldenDataProvider) GenerateMetricsOld() []*metricspb.Metric {
-	return make([]*metricspb.Metric, 0)
+func (dp *GoldenDataProvider) GenerateMetricsOld() ([]*metricspb.Metric, bool) {
+	return make([]*metricspb.Metric, 0), true
 }

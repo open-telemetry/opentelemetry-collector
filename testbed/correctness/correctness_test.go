@@ -155,13 +155,14 @@ func testWithTracingGoldenDataset(
 		sender,
 		receiver,
 		runner,
+		&testbed.CorrectTestValidator{},
 		correctnessResults,
 	)
 	defer tc.Stop()
 
 	tc.SetResourceLimits(resourceSpec)
 	tc.StartBackend()
-	tc.StartAgent()
+	tc.StartAgent("--metrics-level=NONE")
 
 	tc.StartLoad(testbed.LoadOptions{
 		DataItemsPerSecond: 1024,
@@ -206,11 +207,9 @@ processors:
   %s
 
 extensions:
-  pprof:
-    save_to_file: %v/cpu.prof
 
 service:
-  extensions: [pprof]
+  extensions:
   pipelines:
     traces:
       receivers: [%v]
@@ -223,7 +222,6 @@ service:
 		sender.GenConfigYAMLStr(),
 		receiver.GenConfigYAMLStr(),
 		processorsSections,
-		resultDir,
 		sender.ProtocolName(),
 		processorsList,
 		receiver.ProtocolName(),

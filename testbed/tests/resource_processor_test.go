@@ -298,6 +298,7 @@ func TestMetricResourceProcessor(t *testing.T) {
 				sender,
 				receiver,
 				&testbed.ChildProcess{},
+				&testbed.PerfTestValidator{},
 				performanceResultsSummary,
 				testbed.WithConfigFile(configFile),
 			)
