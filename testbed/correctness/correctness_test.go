@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -51,6 +52,7 @@ func TestDefaultTracingComponentCombos(t *testing.T) {
 	processors := map[string]string{
 		"batch": `
   batch:
+    send_batch_size: 1024
 `,
 	}
 	for _, test := range tests {
@@ -169,12 +171,13 @@ func testWithTracingGoldenDataset(
 		ItemsPerBatch:      1,
 	})
 
-	tc.Sleep(tc.Duration)
+	duration := time.Second
+	tc.Sleep(duration)
 
 	tc.StopLoad()
 
-	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() == tc.MockBackend.DataItemsReceived() },
-		"all data items received")
+	tc.WaitForN(func() bool { return tc.LoadGenerator.DataItemsSent() == tc.MockBackend.DataItemsReceived() },
+		duration, "all data items received")
 
 	tc.StopAgent()
 
