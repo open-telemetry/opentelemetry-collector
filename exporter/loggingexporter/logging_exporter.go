@@ -210,6 +210,8 @@ func (s *loggingExporter) pushMetricsData(
 			}
 		}
 	}
+	s.logger.Debug(buf.str.String())
+
 	return 0, nil
 }
 
