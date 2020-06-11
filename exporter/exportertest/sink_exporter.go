@@ -19,6 +19,7 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
@@ -234,13 +235,15 @@ func (sme *SinkMetricsExporter) Shutdown(context.Context) error {
 	return nil
 }
 
-// SinkLogExporter acts as a metrics receiver for use in tests.
+// SinkLogExporter acts as a logs receiver for use in tests.
 type SinkLogExporter struct {
 	consumeLogError error // to be returned by ConsumeLog, if set
 	mu              sync.Mutex
 	logs            []data.Logs
 	logRecordsCount int
 }
+
+var _ consumer.LogConsumer = new(SinkLogExporter)
 
 // SetConsumeLogError sets an error that will be returned by ConsumeLog
 func (sle *SinkLogExporter) SetConsumeLogError(err error) {
@@ -285,6 +288,14 @@ func (sle *SinkLogExporter) LogRecordsCount() int {
 	sle.mu.Lock()
 	defer sle.mu.Unlock()
 	return sle.logRecordsCount
+}
+
+// Reset deletes any existing logs.
+func (sle *SinkLogExporter) Reset() {
+	sle.mu.Lock()
+	defer sle.mu.Unlock()
+
+	sle.logs = nil
 }
 
 // Shutdown stops the exporter and is invoked during shutdown.
