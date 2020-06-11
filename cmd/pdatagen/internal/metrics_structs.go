@@ -155,7 +155,6 @@ var metricDescriptor = &messageStruct{
 			defaultVal:      "MetricTypeUnspecified",
 			testVal:         "MetricTypeGaugeInt64",
 		},
-		labelsField,
 	},
 }
 

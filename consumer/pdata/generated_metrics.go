@@ -689,13 +689,6 @@ func (ms MetricDescriptor) SetType(v MetricType) {
 	(*ms.orig).Type = otlpmetrics.MetricDescriptor_Type(v)
 }
 
-// LabelsMap returns the Labels associated with this MetricDescriptor.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
-func (ms MetricDescriptor) LabelsMap() StringMap {
-	return newStringMap(&(*ms.orig).Labels)
-}
-
 // CopyTo copies all properties from the current struct to the dest.
 func (ms MetricDescriptor) CopyTo(dest MetricDescriptor) {
 	if ms.IsNil() {
@@ -709,7 +702,6 @@ func (ms MetricDescriptor) CopyTo(dest MetricDescriptor) {
 	dest.SetDescription(ms.Description())
 	dest.SetUnit(ms.Unit())
 	dest.SetType(ms.Type())
-	ms.LabelsMap().CopyTo(dest.LabelsMap())
 }
 
 // Int64DataPointSlice logically represents a slice of Int64DataPoint.

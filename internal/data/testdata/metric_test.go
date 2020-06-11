@@ -83,11 +83,6 @@ func generateAllMetricsTestCases() []traceMetricsCase {
 			otlp: generateMetricOtlpOneMetricNoLabels(),
 		},
 		{
-			name: "one-metric-labels-in-descriptor",
-			td:   GenerateMetricDataOneMetricLabelsInDescriptor(),
-			otlp: generateMetricOtlpOneMetricLabelsInDescriptor(),
-		},
-		{
 			name: "one-metric-one-nil-point",
 			td:   GenerateMetricDataOneMetricOneNilPoint(),
 			otlp: generateMetricOtlpOneMetricOneNilPoint(),

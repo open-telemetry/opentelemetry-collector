@@ -502,19 +502,10 @@ func TestMetricDescriptor_Unit(t *testing.T) {
 func TestMetricDescriptor_Type(t *testing.T) {
 	ms := NewMetricDescriptor()
 	ms.InitEmpty()
-	assert.EqualValues(t, MetricTypeUnspecified, ms.Type())
-	testValType := MetricTypeGaugeInt64
+	assert.EqualValues(t, MetricTypeInvalid, ms.Type())
+	testValType := MetricTypeInt64
 	ms.SetType(testValType)
 	assert.EqualValues(t, testValType, ms.Type())
-}
-
-func TestMetricDescriptor_LabelsMap(t *testing.T) {
-	ms := NewMetricDescriptor()
-	ms.InitEmpty()
-	assert.EqualValues(t, NewStringMap(), ms.LabelsMap())
-	fillTestStringMap(ms.LabelsMap())
-	testValLabelsMap := generateTestStringMap()
-	assert.EqualValues(t, testValLabelsMap, ms.LabelsMap())
 }
 
 func TestInt64DataPointSlice(t *testing.T) {
@@ -1573,8 +1564,7 @@ func fillTestMetricDescriptor(tv MetricDescriptor) {
 	tv.SetName("test_name")
 	tv.SetDescription("test_description")
 	tv.SetUnit("1")
-	tv.SetType(MetricTypeGaugeInt64)
-	fillTestStringMap(tv.LabelsMap())
+	tv.SetType(MetricTypeInt64)
 }
 
 func generateTestInt64DataPointSlice() Int64DataPointSlice {
