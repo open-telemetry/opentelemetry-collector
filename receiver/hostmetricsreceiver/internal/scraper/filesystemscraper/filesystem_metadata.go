@@ -43,7 +43,7 @@ func createMetricFilesystemUsedDescriptor() pdata.MetricDescriptor {
 	descriptor.SetName("host/filesystem/used")
 	descriptor.SetDescription("Filesystem bytes used.")
 	descriptor.SetUnit("bytes")
-	descriptor.SetType(pdata.MetricTypeGaugeInt64)
+	descriptor.SetType(pdata.MetricTypeInt64)
 	return descriptor
 }
 
@@ -55,6 +55,6 @@ func createMetricFilesystemINodesUsedDescriptor() pdata.MetricDescriptor {
 	descriptor.SetName("host/filesystem/inodes/used")
 	descriptor.SetDescription("FileSystem operations count.")
 	descriptor.SetUnit("1")
-	descriptor.SetType(pdata.MetricTypeGaugeInt64)
+	descriptor.SetType(pdata.MetricTypeInt64)
 	return descriptor
 }

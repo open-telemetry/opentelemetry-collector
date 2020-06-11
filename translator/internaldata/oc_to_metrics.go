@@ -171,19 +171,17 @@ func descriptorToInternal(ocDescriptor *ocmetrics.MetricDescriptor, descriptor p
 func descriptorTypeToInternal(t ocmetrics.MetricDescriptor_Type) pdata.MetricType {
 	switch t {
 	case ocmetrics.MetricDescriptor_UNSPECIFIED:
-		return pdata.MetricTypeUnspecified
+		return pdata.MetricTypeInvalid
 	case ocmetrics.MetricDescriptor_GAUGE_INT64:
-		return pdata.MetricTypeGaugeInt64
+		return pdata.MetricTypeInt64
 	case ocmetrics.MetricDescriptor_GAUGE_DOUBLE:
-		return pdata.MetricTypeGaugeDouble
-	case ocmetrics.MetricDescriptor_GAUGE_DISTRIBUTION:
-		return pdata.MetricTypeGaugeHistogram
+		return pdata.MetricTypeDouble
 	case ocmetrics.MetricDescriptor_CUMULATIVE_INT64:
-		return pdata.MetricTypeCounterInt64
+		return pdata.MetricTypeMonotonicInt64
 	case ocmetrics.MetricDescriptor_CUMULATIVE_DOUBLE:
-		return pdata.MetricTypeCounterDouble
+		return pdata.MetricTypeMonotonicDouble
 	case ocmetrics.MetricDescriptor_CUMULATIVE_DISTRIBUTION:
-		return pdata.MetricTypeCumulativeHistogram
+		return pdata.MetricTypeHistogram
 	case ocmetrics.MetricDescriptor_SUMMARY:
 		return pdata.MetricTypeSummary
 	default:

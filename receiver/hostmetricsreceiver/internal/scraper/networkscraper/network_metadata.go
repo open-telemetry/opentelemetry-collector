@@ -42,7 +42,7 @@ func createMetricNetworkPacketsDescriptor() pdata.MetricDescriptor {
 	descriptor.SetName("host/network/packets")
 	descriptor.SetDescription("The number of packets transferred.")
 	descriptor.SetUnit("1")
-	descriptor.SetType(pdata.MetricTypeCounterInt64)
+	descriptor.SetType(pdata.MetricTypeMonotonicInt64)
 	return descriptor
 }
 
@@ -54,7 +54,7 @@ func createMetricNetworkDroppedPacketsDescriptor() pdata.MetricDescriptor {
 	descriptor.SetName("host/network/dropped_packets")
 	descriptor.SetDescription("The number of packets dropped.")
 	descriptor.SetUnit("1")
-	descriptor.SetType(pdata.MetricTypeCounterInt64)
+	descriptor.SetType(pdata.MetricTypeMonotonicInt64)
 	return descriptor
 }
 
@@ -66,7 +66,7 @@ func createMetricNetworkErrorsDescriptor() pdata.MetricDescriptor {
 	descriptor.SetName("host/network/errors")
 	descriptor.SetDescription("The number of errors encountered")
 	descriptor.SetUnit("1")
-	descriptor.SetType(pdata.MetricTypeCounterInt64)
+	descriptor.SetType(pdata.MetricTypeMonotonicInt64)
 	return descriptor
 }
 
@@ -78,7 +78,7 @@ func createMetricNetworkBytesDescriptor() pdata.MetricDescriptor {
 	descriptor.SetName("host/network/bytes")
 	descriptor.SetDescription("The number of bytes transmitted and received")
 	descriptor.SetUnit("bytes")
-	descriptor.SetType(pdata.MetricTypeCounterInt64)
+	descriptor.SetType(pdata.MetricTypeMonotonicInt64)
 	return descriptor
 }
 
@@ -90,6 +90,6 @@ func createMetricNetworkTCPConnectionDescriptor() pdata.MetricDescriptor {
 	descriptor.SetName("host/network/tcp_connections")
 	descriptor.SetDescription("The number of tcp connections")
 	descriptor.SetUnit("bytes")
-	descriptor.SetType(pdata.MetricTypeGaugeInt64)
+	descriptor.SetType(pdata.MetricTypeInt64)
 	return descriptor
 }

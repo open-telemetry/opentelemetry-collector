@@ -48,6 +48,6 @@ func createMetricCPUSecondsDescriptor() pdata.MetricDescriptor {
 	descriptor.SetName("host/cpu/usage")
 	descriptor.SetDescription("Total CPU seconds broken down by different states.")
 	descriptor.SetUnit("s")
-	descriptor.SetType(pdata.MetricTypeCounterDouble)
+	descriptor.SetType(pdata.MetricTypeMonotonicDouble)
 	return descriptor
 }

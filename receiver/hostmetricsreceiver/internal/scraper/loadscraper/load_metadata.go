@@ -28,7 +28,7 @@ func createMetric1MLoadDescriptor() pdata.MetricDescriptor {
 	descriptor.SetName("host/load/1m")
 	descriptor.SetDescription("Average CPU Load over 1 minute.")
 	descriptor.SetUnit("1")
-	descriptor.SetType(pdata.MetricTypeGaugeDouble)
+	descriptor.SetType(pdata.MetricTypeDouble)
 	return descriptor
 }
 
@@ -40,7 +40,7 @@ func createMetric5MLoadDescriptor() pdata.MetricDescriptor {
 	descriptor.SetName("host/load/5m")
 	descriptor.SetDescription("Average CPU Load over 5 minutes.")
 	descriptor.SetUnit("1")
-	descriptor.SetType(pdata.MetricTypeGaugeDouble)
+	descriptor.SetType(pdata.MetricTypeDouble)
 	return descriptor
 }
 
@@ -52,6 +52,6 @@ func createMetric15MLoadDescriptor() pdata.MetricDescriptor {
 	descriptor.SetName("host/load/15m")
 	descriptor.SetDescription("Average CPU Load over 15 minutes.")
 	descriptor.SetUnit("1")
-	descriptor.SetType(pdata.MetricTypeGaugeDouble)
+	descriptor.SetType(pdata.MetricTypeDouble)
 	return descriptor
 }

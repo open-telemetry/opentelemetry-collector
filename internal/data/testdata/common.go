@@ -191,19 +191,6 @@ func generateOtlpMetricLabelValue2() []*otlpcommon.StringKeyValue {
 	}
 }
 
-func initMetricLabels3(dest pdata.StringMap) {
-	dest.InitFromMap(map[string]string{TestLabelKey3: TestLabelValue3})
-}
-
-func generateOtlpMetricLabels3() []*otlpcommon.StringKeyValue {
-	return []*otlpcommon.StringKeyValue{
-		{
-			Key:   TestLabelKey3,
-			Value: TestLabelValue3,
-		},
-	}
-}
-
 func initMetricAttachment(dest pdata.StringMap) {
 	dest.InitFromMap(map[string]string{TestAttachmentKey: TestAttachmentValue})
 }
