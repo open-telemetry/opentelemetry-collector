@@ -15,11 +15,13 @@
 package fileexporter
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
 )
 
@@ -43,5 +45,16 @@ func TestCreateTraceExporter(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	_, err := factory.CreateTraceExporter(zap.NewNop(), cfg)
+	assert.Error(t, err)
+}
+
+func TestCreateLogsExporter(t *testing.T) {
+	factory := &Factory{}
+	cfg := factory.CreateDefaultConfig()
+
+	_, err := factory.CreateLogExporter(
+		context.Background(),
+		component.ExporterCreateParams{Logger: zap.NewNop()},
+		cfg)
 	assert.Error(t, err)
 }
