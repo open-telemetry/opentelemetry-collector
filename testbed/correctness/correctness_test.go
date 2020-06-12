@@ -148,6 +148,7 @@ func testWithTracingGoldenDataset(
 	factories, err := defaultcomponents.Components()
 	assert.NoError(t, err)
 	runner := testbed.NewInProcessPipeline(factories)
+	validator := testbed.NewCorrectTestValidator(dataProvider)
 	config := createConfigYaml(t, sender, receiver, resultDir, processors)
 	_, cfgErr := runner.PrepareConfig(config)
 	assert.NoError(t, cfgErr)
@@ -157,12 +158,13 @@ func testWithTracingGoldenDataset(
 		sender,
 		receiver,
 		runner,
-		&testbed.CorrectTestValidator{},
+		validator,
 		correctnessResults,
 	)
 	defer tc.Stop()
 
 	tc.SetResourceLimits(resourceSpec)
+	tc.EnableRecording()
 	tc.StartBackend()
 	tc.StartAgent("--metrics-level=NONE")
 

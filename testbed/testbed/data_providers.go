@@ -16,6 +16,8 @@ package testbed
 
 import (
 	"encoding/binary"
+	"encoding/hex"
+	"fmt"
 	"io"
 	"log"
 	"math/rand"
@@ -48,6 +50,8 @@ type DataProvider interface {
 	GenerateMetrics() (data.MetricData, bool)
 	//GenerateMetricsOld returns a slice of OpenCensus Metric instances populated with test data.
 	GenerateMetricsOld() ([]*metricspb.Metric, bool)
+	//GetGeneratedSpan returns the generated Span matching the provided traceId and spanId or else nil if no match found.
+	GetGeneratedSpan(traceID []byte, spanID []byte) *otlptrace.Span
 }
 
 //PerfTestDataProvider in an implementation of the DataProvider for use in performance tests.
@@ -262,6 +266,11 @@ func (dp *PerfTestDataProvider) GenerateMetrics() (data.MetricData, bool) {
 	return metricData, false
 }
 
+func (dp *PerfTestDataProvider) GetGeneratedSpan(traceID []byte, spanID []byte) *otlptrace.Span {
+	// function not supported for this data provider
+	return nil
+}
+
 // timeToTimestamp converts a time.Time to a timestamp.Timestamp pointer.
 func timeToTimestamp(t time.Time) *timestamp.Timestamp {
 	if t.IsZero() {
@@ -284,6 +293,7 @@ type GoldenDataProvider struct {
 	dataItemsGenerated *uint64
 	resourceSpans      []*otlptrace.ResourceSpans
 	spansIndex         int
+	spansMap           map[string]*otlptrace.Span
 }
 
 //NewGoldenDataProvider creates a new instance of GoldenDataProvider which generates test data based
@@ -342,4 +352,29 @@ func (dp *GoldenDataProvider) GenerateMetrics() (data.MetricData, bool) {
 
 func (dp *GoldenDataProvider) GenerateMetricsOld() ([]*metricspb.Metric, bool) {
 	return make([]*metricspb.Metric, 0), true
+}
+
+func (dp *GoldenDataProvider) GetGeneratedSpan(traceID []byte, spanID []byte) *otlptrace.Span {
+	if dp.spansMap == nil {
+		dp.spansMap = populateSpansMap(dp.resourceSpans)
+	}
+	key := traceIDAndSpanIDToString(traceID, spanID)
+	return dp.spansMap[key]
+}
+
+func populateSpansMap(resourceSpansList []*otlptrace.ResourceSpans) map[string]*otlptrace.Span {
+	spansMap := make(map[string]*otlptrace.Span)
+	for _, resourceSpans := range resourceSpansList {
+		for _, libSpans := range resourceSpans.InstrumentationLibrarySpans {
+			for _, span := range libSpans.Spans {
+				key := traceIDAndSpanIDToString(span.TraceId, span.SpanId)
+				spansMap[key] = span
+			}
+		}
+	}
+	return spansMap
+}
+
+func traceIDAndSpanIDToString(traceID []byte, spanID []byte) string {
+	return fmt.Sprintf("%s-%s", hex.EncodeToString(traceID), hex.EncodeToString(spanID))
 }

@@ -15,10 +15,15 @@
 package testbed
 
 import (
+	"encoding/hex"
 	"log"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+
+	"go.opentelemetry.io/collector/consumer/pdata"
+	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
+	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
 //TestCaseValidator defines the interface for validating and reporting test results.
@@ -69,13 +74,33 @@ func (v *PerfTestValidator) RecordResults(tc *TestCase) {
 
 //CorrectTestValidator implements TestCaseValidator for test suites using CorrectnessResults for summarizing results.
 type CorrectTestValidator struct {
+	dataProvider      DataProvider
+	assertionFailures []*AssertionFailure
+}
+
+func NewCorrectTestValidator(provider DataProvider) *CorrectTestValidator {
+	return &CorrectTestValidator{
+		dataProvider:      provider,
+		assertionFailures: make([]*AssertionFailure, 0),
+	}
 }
 
 func (v *CorrectTestValidator) Validate(tc *TestCase) {
 	if assert.EqualValues(tc.t, tc.LoadGenerator.DataItemsSent(), tc.MockBackend.DataItemsReceived(),
 		"Received and sent counters do not match.") {
-		log.Printf("Sent and received data matches.")
+		log.Printf("Sent and received data counters match.")
 	}
+	if len(tc.MockBackend.ReceivedTraces) > 0 {
+		v.assertSentRecdTracingDataEqual(tc.MockBackend.ReceivedTraces)
+	}
+	if len(tc.MockBackend.ReceivedTracesOld) > 0 {
+		tracesList := make([]pdata.Traces, 0, len(tc.MockBackend.ReceivedTracesOld))
+		for _, td := range tc.MockBackend.ReceivedTracesOld {
+			tracesList = append(tracesList, internaldata.OCToTraceData(td))
+		}
+		v.assertSentRecdTracingDataEqual(tracesList)
+	}
+	assert.EqualValues(tc.t, 0, len(v.assertionFailures), "There are span data mismatches.")
 }
 
 func (v *CorrectTestValidator) RecordResults(tc *TestCase) {
@@ -94,7 +119,145 @@ func (v *CorrectTestValidator) RecordResults(tc *TestCase) {
 		duration:              time.Since(tc.startTime),
 		receivedSpanCount:     tc.MockBackend.DataItemsReceived(),
 		sentSpanCount:         tc.LoadGenerator.DataItemsSent(),
-		assertionFailureCount: 0,
-		assertionFailures:     make([]*AssertionFailure, 0),
+		assertionFailureCount: uint64(len(v.assertionFailures)),
+		assertionFailures:     v.assertionFailures,
 	})
+}
+
+func (v *CorrectTestValidator) assertSentRecdTracingDataEqual(tracesList []pdata.Traces) {
+	for _, td := range tracesList {
+		resourceSpansList := pdata.TracesToOtlp(td)
+		for _, rs := range resourceSpansList {
+			for _, ils := range rs.InstrumentationLibrarySpans {
+				for _, recdSpan := range ils.Spans {
+					sentSpan := v.dataProvider.GetGeneratedSpan(recdSpan.TraceId, recdSpan.SpanId)
+					v.diffSpan(sentSpan, recdSpan)
+				}
+			}
+		}
+
+	}
+}
+
+func (v *CorrectTestValidator) diffSpan(sentSpan *otlptrace.Span, recdSpan *otlptrace.Span) {
+	if sentSpan == nil {
+		af := &AssertionFailure{
+			typeName:      "Span",
+			dataComboName: recdSpan.Name,
+		}
+		v.assertionFailures = append(v.assertionFailures, af)
+		return
+	}
+	if hex.EncodeToString(sentSpan.TraceId) != hex.EncodeToString(recdSpan.TraceId) {
+		af := &AssertionFailure{
+			typeName:      "Span",
+			dataComboName: sentSpan.Name,
+			fieldPath:     "TraceId",
+			expectedValue: hex.EncodeToString(sentSpan.TraceId),
+			actualValue:   hex.EncodeToString(recdSpan.TraceId),
+		}
+		v.assertionFailures = append(v.assertionFailures, af)
+	}
+	if hex.EncodeToString(sentSpan.SpanId) != hex.EncodeToString(recdSpan.SpanId) {
+		af := &AssertionFailure{
+			typeName:      "Span",
+			dataComboName: sentSpan.Name,
+			fieldPath:     "SpanId",
+			expectedValue: hex.EncodeToString(sentSpan.SpanId),
+			actualValue:   hex.EncodeToString(recdSpan.SpanId),
+		}
+		v.assertionFailures = append(v.assertionFailures, af)
+	}
+	if hex.EncodeToString(sentSpan.ParentSpanId) != hex.EncodeToString(recdSpan.ParentSpanId) {
+		af := &AssertionFailure{
+			typeName:      "Span",
+			dataComboName: sentSpan.Name,
+			fieldPath:     "ParentSpanId",
+			expectedValue: hex.EncodeToString(sentSpan.ParentSpanId),
+			actualValue:   hex.EncodeToString(recdSpan.ParentSpanId),
+		}
+		v.assertionFailures = append(v.assertionFailures, af)
+	}
+	if sentSpan.Name != recdSpan.Name {
+		af := &AssertionFailure{
+			typeName:      "Span",
+			dataComboName: sentSpan.Name,
+			fieldPath:     "Name",
+			expectedValue: sentSpan.Name,
+			actualValue:   recdSpan.Name,
+		}
+		v.assertionFailures = append(v.assertionFailures, af)
+	}
+	if sentSpan.Kind != recdSpan.Kind {
+		af := &AssertionFailure{
+			typeName:      "Span",
+			dataComboName: sentSpan.Name,
+			fieldPath:     "Kind",
+			expectedValue: sentSpan.Kind,
+			actualValue:   recdSpan.Kind,
+		}
+		v.assertionFailures = append(v.assertionFailures, af)
+	}
+	if sentSpan.StartTimeUnixNano != recdSpan.StartTimeUnixNano {
+		af := &AssertionFailure{
+			typeName:      "Span",
+			dataComboName: sentSpan.Name,
+			fieldPath:     "StartTimeUnixNano",
+			expectedValue: sentSpan.StartTimeUnixNano,
+			actualValue:   recdSpan.StartTimeUnixNano,
+		}
+		v.assertionFailures = append(v.assertionFailures, af)
+	}
+	if sentSpan.EndTimeUnixNano != recdSpan.EndTimeUnixNano {
+		af := &AssertionFailure{
+			typeName:      "Span",
+			dataComboName: sentSpan.Name,
+			fieldPath:     "StartTimeUnixNano",
+			expectedValue: sentSpan.EndTimeUnixNano,
+			actualValue:   recdSpan.EndTimeUnixNano,
+		}
+		v.assertionFailures = append(v.assertionFailures, af)
+	}
+	if len(sentSpan.Attributes) != len(recdSpan.Attributes) {
+		af := &AssertionFailure{
+			typeName:      "Span",
+			dataComboName: sentSpan.Name,
+			fieldPath:     "Attributes",
+			expectedValue: len(sentSpan.Attributes),
+			actualValue:   len(recdSpan.Attributes),
+		}
+		v.assertionFailures = append(v.assertionFailures, af)
+	}
+	if len(sentSpan.Events) != len(recdSpan.Events) {
+		af := &AssertionFailure{
+			typeName:      "Span",
+			dataComboName: sentSpan.Name,
+			fieldPath:     "Events",
+			expectedValue: len(sentSpan.Events),
+			actualValue:   len(recdSpan.Events),
+		}
+		v.assertionFailures = append(v.assertionFailures, af)
+	}
+	if len(sentSpan.Links) != len(recdSpan.Links) {
+		af := &AssertionFailure{
+			typeName:      "Span",
+			dataComboName: sentSpan.Name,
+			fieldPath:     "Links",
+			expectedValue: len(sentSpan.Links),
+			actualValue:   len(recdSpan.Links),
+		}
+		v.assertionFailures = append(v.assertionFailures, af)
+	}
+	if sentSpan.Status != nil && recdSpan.Status != nil {
+		if sentSpan.Status.Code != recdSpan.Status.Code {
+			af := &AssertionFailure{
+				typeName:      "Span",
+				dataComboName: sentSpan.Name,
+				fieldPath:     "Status.Code",
+				expectedValue: sentSpan.Status.Code,
+				actualValue:   recdSpan.Status.Code,
+			}
+			v.assertionFailures = append(v.assertionFailures, af)
+		}
+	}
 }
