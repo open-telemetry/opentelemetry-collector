@@ -49,6 +49,11 @@ func (r *Results) Init(resultsDir string) {
 	r.resultsDir = resultsDir
 	r.perTestResults = []*TestResult{}
 
+	// Create results directory if it does not exist
+	if _, err := os.Stat(r.resultsDir); os.IsNotExist(err) {
+		os.Mkdir(r.resultsDir, os.FileMode(0755))
+	}
+
 	// Create results file
 	var err error
 	r.resultsFile, err = os.Create(path.Join(r.resultsDir, "TESTRESULTS.md"))
