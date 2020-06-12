@@ -57,7 +57,7 @@ func createMetricSwapUsageDescriptor() pdata.MetricDescriptor {
 	descriptor.SetName("host/swap/usage")
 	descriptor.SetDescription("Swap (unix) or pagefile (windows) usage.")
 	descriptor.SetUnit("pages")
-	descriptor.SetType(pdata.MetricTypeGaugeInt64)
+	descriptor.SetType(pdata.MetricTypeInt64)
 	return descriptor
 }
 
@@ -69,7 +69,7 @@ func createMetricPagingDescriptor() pdata.MetricDescriptor {
 	descriptor.SetName("host/swap/paging")
 	descriptor.SetDescription("The number of paging operations.")
 	descriptor.SetUnit("1")
-	descriptor.SetType(pdata.MetricTypeCounterInt64)
+	descriptor.SetType(pdata.MetricTypeMonotonicInt64)
 	return descriptor
 }
 
@@ -81,6 +81,6 @@ func createMetricPageFaultsDescriptor() pdata.MetricDescriptor {
 	descriptor.SetName("host/swap/page_faults")
 	descriptor.SetDescription("The number of page faults.")
 	descriptor.SetUnit("1")
-	descriptor.SetType(pdata.MetricTypeCounterInt64)
+	descriptor.SetType(pdata.MetricTypeMonotonicInt64)
 	return descriptor
 }

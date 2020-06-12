@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
 	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 
 	"go.opentelemetry.io/collector/internal/data"
@@ -80,11 +81,6 @@ func generateAllMetricsTestCases() []traceMetricsCase {
 			name: "one-metric-no-labels",
 			td:   GenerateMetricDataOneMetricNoLabels(),
 			otlp: generateMetricOtlpOneMetricNoLabels(),
-		},
-		{
-			name: "one-metric-labels-in-descriptor",
-			td:   GenerateMetricDataOneMetricLabelsInDescriptor(),
-			otlp: generateMetricOtlpOneMetricLabelsInDescriptor(),
 		},
 		{
 			name: "one-metric-one-nil-point",

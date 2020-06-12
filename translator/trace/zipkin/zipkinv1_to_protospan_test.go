@@ -21,6 +21,7 @@ import (
 	"sort"
 	"strconv"
 	"testing"
+	"time"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
@@ -30,6 +31,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/internal"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
@@ -247,14 +249,15 @@ func sortTraceByNodeName(trace []consumerdata.TraceData) {
 
 func TestZipkinAnnotationsToOCStatus(t *testing.T) {
 	type test struct {
+		name           string
 		haveTags       []*binaryAnnotation
 		wantAttributes *tracepb.Span_Attributes
 		wantStatus     *tracepb.Status
 	}
 
 	cases := []test{
-		// only status.code tag
 		{
+			name: "only status.code tag",
 			haveTags: []*binaryAnnotation{{
 				Key:   "status.code",
 				Value: "13",
@@ -264,8 +267,9 @@ func TestZipkinAnnotationsToOCStatus(t *testing.T) {
 				Code: 13,
 			},
 		},
-		// only status.message tag
+
 		{
+			name: "only status.message tag",
 			haveTags: []*binaryAnnotation{{
 				Key:   "status.message",
 				Value: "Forbidden",
@@ -273,8 +277,9 @@ func TestZipkinAnnotationsToOCStatus(t *testing.T) {
 			wantAttributes: nil,
 			wantStatus:     nil,
 		},
-		// both status.code and status.message
+
 		{
+			name: "both status.code and status.message",
 			haveTags: []*binaryAnnotation{
 				{
 					Key:   "status.code",
@@ -292,8 +297,8 @@ func TestZipkinAnnotationsToOCStatus(t *testing.T) {
 			},
 		},
 
-		// http status.code
 		{
+			name: "http status.code",
 			haveTags: []*binaryAnnotation{
 				{
 					Key:   "http.status_code",
@@ -324,8 +329,8 @@ func TestZipkinAnnotationsToOCStatus(t *testing.T) {
 			},
 		},
 
-		// http and oc
 		{
+			name: "http and oc",
 			haveTags: []*binaryAnnotation{
 				{
 					Key:   "http.status_code",
@@ -364,8 +369,8 @@ func TestZipkinAnnotationsToOCStatus(t *testing.T) {
 			},
 		},
 
-		// http and only oc code
 		{
+			name: "http and only oc code",
 			haveTags: []*binaryAnnotation{
 				{
 					Key:   "http.status_code",
@@ -398,8 +403,9 @@ func TestZipkinAnnotationsToOCStatus(t *testing.T) {
 				Code: 14,
 			},
 		},
-		// http and only oc message
+
 		{
+			name: "http and only oc message",
 			haveTags: []*binaryAnnotation{
 				{
 					Key:   "http.status_code",
@@ -434,8 +440,8 @@ func TestZipkinAnnotationsToOCStatus(t *testing.T) {
 			},
 		},
 
-		// census tags
 		{
+			name: "census tags",
 			haveTags: []*binaryAnnotation{
 				{
 					Key:   "census.status_code",
@@ -453,8 +459,8 @@ func TestZipkinAnnotationsToOCStatus(t *testing.T) {
 			},
 		},
 
-		// census tags priority over others
 		{
+			name: "census tags priority over others",
 			haveTags: []*binaryAnnotation{
 				{
 					Key:   "census.status_code",
@@ -506,31 +512,77 @@ func TestZipkinAnnotationsToOCStatus(t *testing.T) {
 	fakeSpanID := "0000000000000001"
 
 	for i, c := range cases {
-		zSpans := []*zipkinV1Span{{
-			ID:                fakeSpanID,
-			TraceID:           fakeTraceID,
-			BinaryAnnotations: c.haveTags,
-		}}
-		zBytes, err := json.Marshal(zSpans)
-		if err != nil {
-			t.Errorf("#%d: Unexpected error: %v", i, err)
-			continue
-		}
-		gb, err := V1JSONBatchToOCProto(zBytes)
-		if err != nil {
-			t.Errorf("#%d: Unexpected error: %v", i, err)
-			continue
-		}
-		gs := gb[0].Spans[0]
+		t.Run(c.name, func(t *testing.T) {
+			zSpans := []*zipkinV1Span{{
+				ID:                fakeSpanID,
+				TraceID:           fakeTraceID,
+				BinaryAnnotations: c.haveTags,
+				Timestamp:         1,
+			}}
+			zBytes, err := json.Marshal(zSpans)
+			if err != nil {
+				t.Errorf("#%d: Unexpected error: %v", i, err)
+				return
+			}
+			gb, err := V1JSONBatchToOCProto(zBytes)
+			if err != nil {
+				t.Errorf("#%d: Unexpected error: %v", i, err)
+				return
+			}
+			gs := gb[0].Spans[0]
 
-		if !reflect.DeepEqual(gs.Attributes, c.wantAttributes) {
-			t.Fatalf("Unsuccessful conversion\nGot:\n\t%v\nWant:\n\t%v", gs.Attributes, c.wantAttributes)
-		}
+			if !reflect.DeepEqual(gs.Attributes, c.wantAttributes) {
+				t.Fatalf("Unsuccessful conversion\nGot:\n\t%v\nWant:\n\t%v", gs.Attributes, c.wantAttributes)
+			}
 
-		if !reflect.DeepEqual(gs.Status, c.wantStatus) {
-			t.Fatalf("Unsuccessful conversion: %d\nGot:\n\t%v\nWant:\n\t%v", i, gs.Status, c.wantStatus)
-		}
+			if !reflect.DeepEqual(gs.Status, c.wantStatus) {
+				t.Fatalf("Unsuccessful conversion: %d\nGot:\n\t%v\nWant:\n\t%v", i, gs.Status, c.wantStatus)
+			}
+		})
 	}
+}
+
+func TestSpanWithoutTimestampGetsTag(t *testing.T) {
+	fakeTraceID := "00000000000000010000000000000002"
+	fakeSpanID := "0000000000000001"
+	zSpans := []*zipkinV1Span{
+		{
+			ID:        fakeSpanID,
+			TraceID:   fakeTraceID,
+			Timestamp: 0, // no timestamp field
+		},
+	}
+	zBytes, err := json.Marshal(zSpans)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+		return
+	}
+
+	testStart := time.Now()
+
+	gb, err := V1JSONBatchToOCProto(zBytes)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+		return
+	}
+
+	gs := gb[0].Spans[0]
+	assert.NotNil(t, gs.StartTime)
+	assert.NotNil(t, gs.EndTime)
+
+	assert.True(t, internal.TimestampToTime(gs.StartTime).Sub(testStart) >= 0)
+
+	wantAttributes := &tracepb.Span_Attributes{
+		AttributeMap: map[string]*tracepb.AttributeValue{
+			StartTimeAbsent: {
+				Value: &tracepb.AttributeValue_BoolValue{
+					BoolValue: true,
+				},
+			},
+		},
+	}
+
+	assert.EqualValues(t, gs.Attributes, wantAttributes)
 }
 
 func TestJSONHTTPToGRPCStatusCode(t *testing.T) {

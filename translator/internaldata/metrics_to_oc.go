@@ -98,7 +98,7 @@ func metricToOC(metric pdata.Metric) *ocmetrics.Metric {
 }
 
 func collectLabelKeys(metric pdata.Metric) *labelKeys {
-	// NOTE: Intrenal data structure and OpenCensus have different representations of labels:
+	// NOTE: Internal data structure and OpenCensus have different representations of labels:
 	// - OC has a single "global" ordered list of label keys per metric in the MetricDescriptor;
 	// then, every data point has an ordered list of label values matching the key index.
 	// - Internally labels are stored independently as key-value storage for each point.
@@ -113,10 +113,6 @@ func collectLabelKeys(metric pdata.Metric) *labelKeys {
 
 	// First, collect a set of all labels present in the metric
 	keySet := make(map[string]struct{})
-	md := metric.MetricDescriptor()
-	if !md.IsNil() {
-		addLabelKeys(keySet, md.LabelsMap())
-	}
 	ips := metric.Int64DataPoints()
 	for i := 0; i < ips.Len(); i++ {
 		ip := ips.At(i)
@@ -206,19 +202,17 @@ func descriptorToOC(descriptor pdata.MetricDescriptor, labelKeys *labelKeys) *oc
 
 func descriptorTypeToOC(t pdata.MetricType) ocmetrics.MetricDescriptor_Type {
 	switch t {
-	case pdata.MetricTypeUnspecified:
+	case pdata.MetricTypeInvalid:
 		return ocmetrics.MetricDescriptor_UNSPECIFIED
-	case pdata.MetricTypeGaugeInt64:
+	case pdata.MetricTypeInt64:
 		return ocmetrics.MetricDescriptor_GAUGE_INT64
-	case pdata.MetricTypeGaugeDouble:
+	case pdata.MetricTypeDouble:
 		return ocmetrics.MetricDescriptor_GAUGE_DOUBLE
-	case pdata.MetricTypeGaugeHistogram:
-		return ocmetrics.MetricDescriptor_GAUGE_DISTRIBUTION
-	case pdata.MetricTypeCounterInt64:
+	case pdata.MetricTypeMonotonicInt64:
 		return ocmetrics.MetricDescriptor_CUMULATIVE_INT64
-	case pdata.MetricTypeCounterDouble:
+	case pdata.MetricTypeMonotonicDouble:
 		return ocmetrics.MetricDescriptor_CUMULATIVE_DOUBLE
-	case pdata.MetricTypeCumulativeHistogram:
+	case pdata.MetricTypeHistogram:
 		return ocmetrics.MetricDescriptor_CUMULATIVE_DISTRIBUTION
 	case pdata.MetricTypeSummary:
 		return ocmetrics.MetricDescriptor_SUMMARY
@@ -430,21 +424,6 @@ func labelValuesToOC(md pdata.MetricDescriptor, labels pdata.StringMap, labelKey
 	labelValues := make([]*ocmetrics.LabelValue, len(labelKeys.keys))
 	for i := 0; i < len(labelKeys.keys); i++ {
 		labelValues[i] = &labelValuesOrig[i]
-	}
-
-	// Visit all defined labels in the MetricDescriptor and override defaults with actual values
-	if !md.IsNil() {
-		// TODO: Pre-construct the labelValuesOrig and labelValues with the metrics from the descriptor and copy them
-		//  instead of starting from new slices.
-		md.LabelsMap().ForEach(func(k string, v pdata.StringValue) {
-			// Find the appropriate label value that we need to update
-			keyIndex := labelKeys.keyIndices[k]
-			labelValue := labelValues[keyIndex]
-
-			// Update label value
-			labelValue.Value = v.Value()
-			labelValue.HasValue = true
-		})
 	}
 
 	// Visit all defined labels in the point and override defaults with actual values

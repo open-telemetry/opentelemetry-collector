@@ -21,14 +21,13 @@ import (
 type MetricType otlpmetrics.MetricDescriptor_Type
 
 const (
-	MetricTypeUnspecified         = MetricType(otlpmetrics.MetricDescriptor_UNSPECIFIED)
-	MetricTypeGaugeInt64          = MetricType(otlpmetrics.MetricDescriptor_GAUGE_INT64)
-	MetricTypeGaugeDouble         = MetricType(otlpmetrics.MetricDescriptor_GAUGE_DOUBLE)
-	MetricTypeGaugeHistogram      = MetricType(otlpmetrics.MetricDescriptor_GAUGE_HISTOGRAM)
-	MetricTypeCounterInt64        = MetricType(otlpmetrics.MetricDescriptor_COUNTER_INT64)
-	MetricTypeCounterDouble       = MetricType(otlpmetrics.MetricDescriptor_COUNTER_DOUBLE)
-	MetricTypeCumulativeHistogram = MetricType(otlpmetrics.MetricDescriptor_CUMULATIVE_HISTOGRAM)
-	MetricTypeSummary             = MetricType(otlpmetrics.MetricDescriptor_SUMMARY)
+	MetricTypeInvalid         = MetricType(otlpmetrics.MetricDescriptor_INVALID_TYPE)
+	MetricTypeInt64           = MetricType(otlpmetrics.MetricDescriptor_INT64)
+	MetricTypeDouble          = MetricType(otlpmetrics.MetricDescriptor_DOUBLE)
+	MetricTypeMonotonicInt64  = MetricType(otlpmetrics.MetricDescriptor_MONOTONIC_INT64)
+	MetricTypeMonotonicDouble = MetricType(otlpmetrics.MetricDescriptor_MONOTONIC_DOUBLE)
+	MetricTypeHistogram       = MetricType(otlpmetrics.MetricDescriptor_HISTOGRAM)
+	MetricTypeSummary         = MetricType(otlpmetrics.MetricDescriptor_SUMMARY)
 )
 
 func (mt MetricType) String() string {

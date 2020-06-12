@@ -196,8 +196,7 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	assert.EqualValues(t, "my_metric_int", metricInt.MetricDescriptor().Name())
 	assert.EqualValues(t, "My metric", metricInt.MetricDescriptor().Description())
 	assert.EqualValues(t, "ms", metricInt.MetricDescriptor().Unit())
-	assert.EqualValues(t, pdata.MetricTypeCounterInt64, metricInt.MetricDescriptor().Type())
-	assert.EqualValues(t, pdata.NewStringMap(), metricInt.MetricDescriptor().LabelsMap())
+	assert.EqualValues(t, pdata.MetricTypeMonotonicInt64, metricInt.MetricDescriptor().Type())
 	int64DataPoints := metricInt.Int64DataPoints()
 	assert.EqualValues(t, 2, int64DataPoints.Len())
 	// First point
@@ -216,7 +215,7 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	assert.EqualValues(t, "my_metric_double", metricDouble.MetricDescriptor().Name())
 	assert.EqualValues(t, "My metric", metricDouble.MetricDescriptor().Description())
 	assert.EqualValues(t, "ms", metricDouble.MetricDescriptor().Unit())
-	assert.EqualValues(t, pdata.MetricTypeCounterDouble, metricDouble.MetricDescriptor().Type())
+	assert.EqualValues(t, pdata.MetricTypeMonotonicDouble, metricDouble.MetricDescriptor().Type())
 	doubleDataPoints := metricDouble.DoubleDataPoints()
 	assert.EqualValues(t, 2, doubleDataPoints.Len())
 	// First point
@@ -235,7 +234,7 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	assert.EqualValues(t, "my_metric_histogram", metricHistogram.MetricDescriptor().Name())
 	assert.EqualValues(t, "My metric", metricHistogram.MetricDescriptor().Description())
 	assert.EqualValues(t, "ms", metricHistogram.MetricDescriptor().Unit())
-	assert.EqualValues(t, pdata.MetricTypeCumulativeHistogram, metricHistogram.MetricDescriptor().Type())
+	assert.EqualValues(t, pdata.MetricTypeHistogram, metricHistogram.MetricDescriptor().Type())
 	histogramDataPoints := metricHistogram.HistogramDataPoints()
 	assert.EqualValues(t, 2, histogramDataPoints.Len())
 	// First point
@@ -335,10 +334,8 @@ func TestOtlpToFromInternalIntPointsMutating(t *testing.T) {
 	assert.EqualValues(t, "My new metric", metric.MetricDescriptor().Description())
 	metric.MetricDescriptor().SetUnit("1")
 	assert.EqualValues(t, "1", metric.MetricDescriptor().Unit())
-	metric.MetricDescriptor().SetType(pdata.MetricTypeGaugeInt64)
-	assert.EqualValues(t, pdata.MetricTypeGaugeInt64, metric.MetricDescriptor().Type())
-	metric.MetricDescriptor().LabelsMap().Insert("k", "v")
-	assert.EqualValues(t, newLabels, metric.MetricDescriptor().LabelsMap())
+	metric.MetricDescriptor().SetType(pdata.MetricTypeInt64)
+	assert.EqualValues(t, pdata.MetricTypeInt64, metric.MetricDescriptor().Type())
 	// Mutate DataPoints
 	assert.EqualValues(t, 2, metric.Int64DataPoints().Len())
 	metric.Int64DataPoints().Resize(1)
@@ -367,13 +364,7 @@ func TestOtlpToFromInternalIntPointsMutating(t *testing.T) {
 								Name:        "new_my_metric_int",
 								Description: "My new metric",
 								Unit:        "1",
-								Type:        otlpmetrics.MetricDescriptor_GAUGE_INT64,
-								Labels: []*otlpcommon.StringKeyValue{
-									{
-										Key:   "k",
-										Value: "v",
-									},
-								},
+								Type:        otlpmetrics.MetricDescriptor_INT64,
 							},
 							Int64DataPoints: []*otlpmetrics.Int64DataPoint{
 								{
@@ -419,10 +410,8 @@ func TestOtlpToFromInternalDoublePointsMutating(t *testing.T) {
 	assert.EqualValues(t, "My new metric", metric.MetricDescriptor().Description())
 	metric.MetricDescriptor().SetUnit("1")
 	assert.EqualValues(t, "1", metric.MetricDescriptor().Unit())
-	metric.MetricDescriptor().SetType(pdata.MetricTypeGaugeDouble)
-	assert.EqualValues(t, pdata.MetricTypeGaugeDouble, metric.MetricDescriptor().Type())
-	metric.MetricDescriptor().LabelsMap().Insert("k", "v")
-	assert.EqualValues(t, newLabels, metric.MetricDescriptor().LabelsMap())
+	metric.MetricDescriptor().SetType(pdata.MetricTypeDouble)
+	assert.EqualValues(t, pdata.MetricTypeDouble, metric.MetricDescriptor().Type())
 	// Mutate DataPoints
 	assert.EqualValues(t, 2, metric.DoubleDataPoints().Len())
 	metric.DoubleDataPoints().Resize(1)
@@ -451,13 +440,7 @@ func TestOtlpToFromInternalDoublePointsMutating(t *testing.T) {
 								Name:        "new_my_metric_double",
 								Description: "My new metric",
 								Unit:        "1",
-								Type:        otlpmetrics.MetricDescriptor_GAUGE_DOUBLE,
-								Labels: []*otlpcommon.StringKeyValue{
-									{
-										Key:   "k",
-										Value: "v",
-									},
-								},
+								Type:        otlpmetrics.MetricDescriptor_DOUBLE,
 							},
 							DoubleDataPoints: []*otlpmetrics.DoubleDataPoint{
 								{
@@ -503,10 +486,8 @@ func TestOtlpToFromInternalHistogramPointsMutating(t *testing.T) {
 	assert.EqualValues(t, "My new metric", metric.MetricDescriptor().Description())
 	metric.MetricDescriptor().SetUnit("1")
 	assert.EqualValues(t, "1", metric.MetricDescriptor().Unit())
-	metric.MetricDescriptor().SetType(pdata.MetricTypeGaugeHistogram)
-	assert.EqualValues(t, pdata.MetricTypeGaugeHistogram, metric.MetricDescriptor().Type())
-	metric.MetricDescriptor().LabelsMap().Insert("k", "v")
-	assert.EqualValues(t, newLabels, metric.MetricDescriptor().LabelsMap())
+	metric.MetricDescriptor().SetType(pdata.MetricTypeHistogram)
+	assert.EqualValues(t, pdata.MetricTypeHistogram, metric.MetricDescriptor().Type())
 	// Mutate DataPoints
 	assert.EqualValues(t, 2, metric.HistogramDataPoints().Len())
 	metric.HistogramDataPoints().Resize(1)
@@ -550,13 +531,7 @@ func TestOtlpToFromInternalHistogramPointsMutating(t *testing.T) {
 								Name:        "new_my_metric_histogram",
 								Description: "My new metric",
 								Unit:        "1",
-								Type:        otlpmetrics.MetricDescriptor_GAUGE_HISTOGRAM,
-								Labels: []*otlpcommon.StringKeyValue{
-									{
-										Key:   "k",
-										Value: "v",
-									},
-								},
+								Type:        otlpmetrics.MetricDescriptor_HISTOGRAM,
 							},
 							HistogramDataPoints: []*otlpmetrics.HistogramDataPoint{
 								{
@@ -619,8 +594,6 @@ func TestOtlpToFromInternalSummaryPointsMutating(t *testing.T) {
 	assert.EqualValues(t, "My new metric", metric.MetricDescriptor().Description())
 	metric.MetricDescriptor().SetUnit("1")
 	assert.EqualValues(t, "1", metric.MetricDescriptor().Unit())
-	metric.MetricDescriptor().LabelsMap().Insert("k", "v")
-	assert.EqualValues(t, newLabels, metric.MetricDescriptor().LabelsMap())
 	// Mutate DataPoints
 	assert.EqualValues(t, 2, metric.SummaryDataPoints().Len())
 	metric.SummaryDataPoints().Resize(1)
@@ -657,12 +630,6 @@ func TestOtlpToFromInternalSummaryPointsMutating(t *testing.T) {
 								Description: "My new metric",
 								Unit:        "1",
 								Type:        otlpmetrics.MetricDescriptor_SUMMARY,
-								Labels: []*otlpcommon.StringKeyValue{
-									{
-										Key:   "k",
-										Value: "v",
-									},
-								},
 							},
 							SummaryDataPoints: []*otlpmetrics.SummaryDataPoint{
 								{
@@ -819,7 +786,7 @@ func generateTestProtoIntMetric() *otlpmetrics.Metric {
 			Name:        "my_metric_int",
 			Description: "My metric",
 			Unit:        "ms",
-			Type:        otlpmetrics.MetricDescriptor_COUNTER_INT64,
+			Type:        otlpmetrics.MetricDescriptor_MONOTONIC_INT64,
 		},
 		Int64DataPoints: []*otlpmetrics.Int64DataPoint{
 			{
@@ -853,7 +820,7 @@ func generateTestProtoDoubleMetric() *otlpmetrics.Metric {
 			Name:        "my_metric_double",
 			Description: "My metric",
 			Unit:        "ms",
-			Type:        otlpmetrics.MetricDescriptor_COUNTER_DOUBLE,
+			Type:        otlpmetrics.MetricDescriptor_MONOTONIC_DOUBLE,
 		},
 		DoubleDataPoints: []*otlpmetrics.DoubleDataPoint{
 			{
@@ -888,7 +855,7 @@ func generateTestProtoHistogramMetric() *otlpmetrics.Metric {
 			Name:        "my_metric_histogram",
 			Description: "My metric",
 			Unit:        "ms",
-			Type:        otlpmetrics.MetricDescriptor_CUMULATIVE_HISTOGRAM,
+			Type:        otlpmetrics.MetricDescriptor_HISTOGRAM,
 		},
 		HistogramDataPoints: []*otlpmetrics.HistogramDataPoint{
 			{

@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"time"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
@@ -27,6 +28,7 @@ import (
 	"github.com/pkg/errors"
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/internal"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
@@ -175,6 +177,7 @@ func zipkinV1ToOCSpan(zSpan *zipkinV1Span) (*tracepb.Span, *annotationParseResul
 	}
 
 	setSpanKind(ocSpan, parsedAnnotations.Kind, parsedAnnotations.ExtendedKind)
+	SetTimestampsIfUnset(ocSpan)
 
 	return ocSpan, parsedAnnotations, nil
 }
@@ -480,4 +483,26 @@ func (ep *endpoint) createAttributeMap() map[string]string {
 		attributeMap["port"] = strconv.Itoa(int(ep.Port))
 	}
 	return attributeMap
+}
+
+func SetTimestampsIfUnset(span *tracepb.Span) {
+	// zipkin allows timestamp to be unset, but opentelemetry-collector expects it to have a value.
+	// If this is unset, the conversion from open census to the internal trace format breaks
+	// what should be an identity transformation oc -> internal -> oc
+	if span.StartTime == nil {
+		now := internal.TimeToTimestamp(time.Now())
+		span.StartTime = now
+		span.EndTime = now
+
+		if span.Attributes == nil {
+			span.Attributes = &tracepb.Span_Attributes{}
+		}
+		if span.Attributes.AttributeMap == nil {
+			span.Attributes.AttributeMap = make(map[string]*tracepb.AttributeValue, 1)
+		}
+		span.Attributes.AttributeMap[StartTimeAbsent] = &tracepb.AttributeValue{
+			Value: &tracepb.AttributeValue_BoolValue{
+				BoolValue: true,
+			}}
+	}
 }

@@ -43,6 +43,6 @@ func createMetricMemoryUsedDescriptor() pdata.MetricDescriptor {
 	descriptor.SetName("host/memory/used")
 	descriptor.SetDescription("Bytes of memory in use.")
 	descriptor.SetUnit("bytes")
-	descriptor.SetType(pdata.MetricTypeGaugeInt64)
+	descriptor.SetType(pdata.MetricTypeInt64)
 	return descriptor
 }

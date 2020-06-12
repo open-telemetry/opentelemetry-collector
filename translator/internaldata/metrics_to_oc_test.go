@@ -138,14 +138,6 @@ func TestMetricsDataToOC(t *testing.T) {
 		},
 
 		{
-			name:     "one-metric-labels-in-descriptor",
-			internal: testdata.GenerateMetricDataOneMetricLabelsInDescriptor(),
-			oc: []consumerdata.MetricsData{
-				generateOCTestDataMetricsInDescriptor(),
-			},
-		},
-
-		{
 			name:     "all-types-no-data-points",
 			internal: testdata.GenerateMetricDataAllTypesNoDataPoints(),
 			oc: []consumerdata.MetricsData{
