@@ -242,7 +242,7 @@ func (dp *PerfTestDataProvider) GenerateMetrics() (data.MetricData, bool) {
 		metricDescriptor.InitEmpty()
 		metricDescriptor.SetName("load_generator_" + strconv.Itoa(i))
 		metricDescriptor.SetDescription("Load Generator Counter #" + strconv.Itoa(i))
-		metricDescriptor.SetType(pdata.MetricTypeGaugeInt64)
+		metricDescriptor.SetType(pdata.MetricTypeInt64)
 
 		batchIndex := atomic.AddUint64(dp.batchesGenerated, 1)
 
