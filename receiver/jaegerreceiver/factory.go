@@ -45,11 +45,11 @@ const (
 	protoThriftCompact  = "thrift_compact"
 
 	// Default endpoints to bind to.
-	defaultGRPCBindEndpoint = "localhost:14250"
-	defaultHTTPBindEndpoint = "localhost:14268"
+	defaultGRPCBindEndpoint = "0.0.0.0:14250"
+	defaultHTTPBindEndpoint = "0.0.0.0:14268"
 
-	defaultThriftCompactBindEndpoint   = "localhost:6831"
-	defaultThriftBinaryBindEndpoint    = "localhost:6832"
+	defaultThriftCompactBindEndpoint   = "0.0.0.0:6831"
+	defaultThriftBinaryBindEndpoint    = "0.0.0.0:6832"
 	defaultAgentRemoteSamplingHTTPPort = 5778
 )
 

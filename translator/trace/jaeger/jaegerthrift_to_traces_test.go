@@ -155,6 +155,7 @@ func generateThriftSpan() *jaeger.Span {
 	eventAttrVal := "event-with-attr"
 	statusCode := int64(tracetranslator.OCCancelled)
 	statusMsg := "status-cancelled"
+	kind := string(tracetranslator.OpenTracingSpanKindClient)
 
 	return &jaeger.Span{
 		TraceIdHigh:   int64(binary.BigEndian.Uint64([]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8})),
@@ -196,6 +197,11 @@ func generateThriftSpan() *jaeger.Span {
 				VType: jaeger.TagType_STRING,
 				VStr:  &statusMsg,
 			},
+			{
+				Key:   tracetranslator.TagSpanKind,
+				VType: jaeger.TagType_STRING,
+				VStr:  &kind,
+			},
 		},
 	}
 }
@@ -204,6 +210,7 @@ func generateThriftChildSpan() *jaeger.Span {
 	spanStartTs := unixNanoToMicroseconds(testSpanStartTimestamp)
 	spanEndTs := unixNanoToMicroseconds(testSpanEndTimestamp)
 	notFoundAttrVal := int64(404)
+	kind := string(tracetranslator.OpenTracingSpanKindServer)
 
 	return &jaeger.Span{
 		TraceIdHigh:   int64(binary.BigEndian.Uint64([]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8})),
@@ -219,6 +226,11 @@ func generateThriftChildSpan() *jaeger.Span {
 				VType: jaeger.TagType_LONG,
 				VLong: &notFoundAttrVal,
 			},
+			{
+				Key:   tracetranslator.TagSpanKind,
+				VType: jaeger.TagType_STRING,
+				VStr:  &kind,
+			},
 		},
 	}
 }
@@ -226,6 +238,8 @@ func generateThriftChildSpan() *jaeger.Span {
 func generateThriftFollowerSpan() *jaeger.Span {
 	statusCode := int64(tracetranslator.OCOK)
 	statusMsg := "status-ok"
+	kind := string(tracetranslator.OpenTracingSpanKindConsumer)
+
 	return &jaeger.Span{
 		TraceIdHigh:   int64(binary.BigEndian.Uint64([]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8})),
 		TraceIdLow:    int64(binary.BigEndian.Uint64([]byte{0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80})),
@@ -243,6 +257,11 @@ func generateThriftFollowerSpan() *jaeger.Span {
 				Key:   tracetranslator.TagStatusMsg,
 				VType: jaeger.TagType_STRING,
 				VStr:  &statusMsg,
+			},
+			{
+				Key:   tracetranslator.TagSpanKind,
+				VType: jaeger.TagType_STRING,
+				VStr:  &kind,
 			},
 		},
 		References: []*jaeger.SpanRef{

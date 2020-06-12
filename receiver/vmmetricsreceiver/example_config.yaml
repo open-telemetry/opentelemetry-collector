@@ -10,4 +10,4 @@ zpages:
 exporters:
   prometheus:
     namespace: "vmmetrics_test"
-    address: "localhost:8888"
+    address: "0.0.0.0:8888"

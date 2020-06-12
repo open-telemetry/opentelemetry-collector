@@ -568,7 +568,7 @@ func GenerateMetricDataManyMetricsSameResource(metricsCount int) data.MetricData
 	md := GenerateMetricDataOneEmptyInstrumentationLibrary()
 	rs0ilm0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
 	rs0ilm0.Metrics().Resize(metricsCount)
-	for i:=0; i < metricsCount; i++ {
+	for i := 0; i < metricsCount; i++ {
 		initCounterIntMetric(rs0ilm0.Metrics().At(i))
 	}
 	return md

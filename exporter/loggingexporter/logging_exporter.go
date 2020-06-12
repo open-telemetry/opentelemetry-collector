@@ -62,6 +62,18 @@ func (b *logDataBuffer) logInstrumentationLibrary(il pdata.InstrumentationLibrar
 		il.Version())
 }
 
+func (b *logDataBuffer) logMetricDescriptor(md pdata.MetricDescriptor) {
+	if md.IsNil() {
+		return
+	}
+
+	b.logEntry("Descriptor:")
+	b.logEntry("     -> Name: %s", md.Name())
+	b.logEntry("     -> Description: %s", md.Description())
+	b.logEntry("     -> Unit: %s", md.Unit())
+	b.logEntry("     -> Type: %s", md.Type().String())
+}
+
 func attributeValueToString(av pdata.AttributeValue) string {
 	switch av.Type() {
 	case pdata.AttributeValueSTRING:
@@ -191,7 +203,10 @@ func (s *loggingExporter) pushMetricsData(
 					buf.logEntry("* Nil Metric")
 					continue
 				}
-				// TODO: Add logging for the rest of the metric properties: descriptor, points.
+
+				buf.logMetricDescriptor(metric.MetricDescriptor())
+
+				// TODO: Add logging for the rest of the metric properties: points.
 			}
 		}
 	}

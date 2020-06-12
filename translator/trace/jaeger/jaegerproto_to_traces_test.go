@@ -307,6 +307,7 @@ func generateTraceDataOneSpanNoResource() pdata.Traces {
 	span.SetDroppedEventsCount(0)
 	span.SetStartTime(testSpanStartTimestamp)
 	span.SetEndTime(testSpanEndTimestamp)
+	span.SetKind(pdata.SpanKindCLIENT)
 	span.Events().At(0).SetTimestamp(testSpanEventTimestamp)
 	span.Events().At(0).SetDroppedAttributesCount(0)
 	span.Events().At(0).Attributes().InitFromMap(map[string]pdata.AttributeValue{
@@ -353,6 +354,11 @@ func generateProtoSpan() *model.Span {
 		},
 		Tags: []model.KeyValue{
 			{
+				Key:   tracetranslator.TagSpanKind,
+				VType: model.ValueType_STRING,
+				VStr:  string(tracetranslator.OpenTracingSpanKindClient),
+			},
+			{
 				Key:    tracetranslator.TagStatusCode,
 				VType:  model.ValueType_INT64,
 				VInt64: tracetranslator.OCCancelled,
@@ -380,6 +386,7 @@ func generateTraceDataTwoSpansChildParent() pdata.Traces {
 	span.SetName("operationB")
 	span.SetSpanID([]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18})
 	span.SetParentSpanID(spans.At(0).SpanID())
+	span.SetKind(pdata.SpanKindSERVER)
 	span.SetTraceID(spans.At(0).TraceID())
 	span.SetStartTime(spans.At(0).StartTime())
 	span.SetEndTime(spans.At(0).EndTime())
@@ -409,6 +416,11 @@ func generateProtoChildSpan() *model.Span {
 				VType:  model.ValueType_INT64,
 				VInt64: 404,
 			},
+			{
+				Key:   tracetranslator.TagSpanKind,
+				VType: model.ValueType_STRING,
+				VStr:  string(tracetranslator.OpenTracingSpanKindServer),
+			},
 		},
 		References: []model.SpanRef{
 			{
@@ -431,6 +443,7 @@ func generateTraceDataTwoSpansWithFollower() pdata.Traces {
 	span.SetTraceID(spans.At(0).TraceID())
 	span.SetStartTime(spans.At(0).EndTime())
 	span.SetEndTime(spans.At(0).EndTime() + 1000000)
+	span.SetKind(pdata.SpanKindCONSUMER)
 	span.Status().InitEmpty()
 	span.Status().SetCode(pdata.StatusCode(otlptrace.Status_Ok))
 	span.Status().SetMessage("status-ok")
@@ -452,6 +465,11 @@ func generateProtoFollowerSpan() *model.Span {
 		StartTime:     testSpanEndTime,
 		Duration:      time.Duration(time.Millisecond),
 		Tags: []model.KeyValue{
+			{
+				Key:   tracetranslator.TagSpanKind,
+				VType: model.ValueType_STRING,
+				VStr:  string(tracetranslator.OpenTracingSpanKindConsumer),
+			},
 			{
 				Key:    tracetranslator.TagStatusCode,
 				VType:  model.ValueType_INT64,

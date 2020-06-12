@@ -39,7 +39,7 @@ import (
 )
 
 var standardMetrics = []string{
-	"host/cpu/time",
+	"host/cpu/usage",
 	"host/memory/used",
 	"host/disk/bytes",
 	"host/disk/ops",

@@ -3,9 +3,9 @@ Extensions provide capabilities on top of the primary functionality of the colle
 Generally, extensions are used for implementing components that can be added to the Collector, but which do not require direct access to telemetry data and are not part of the pipelines (like receivers, processors or exporters). Example extensions are: Health Check extension that responds to health check requests or PProf extension that allows fetching Collector's performance profile.
 
 Supported service extensions (sorted alphabetically):
-- [Health Check](#health_check)
-- [Performance Profiler](#pprof)
-- [zPages](#zpages)
+- [Health Check](healthcheckextension/README.md)
+- [Performance Profiler](pprofextension/README.md)
+- [zPages](zpagesextension/README.md)
 
 The [contributors repository](https://github.com/open-telemetry/opentelemetry-service-contrib)
  may have more extensions that can be added to custom builds of the Collector.
@@ -52,8 +52,7 @@ investigate issues with the service.
 The following settings are required:
 
 - `endpoint` (default = localhost:1777): The endpoint in which the pprof will
-be listening to. Use localhost:<port> to make it available only locally, or
-":<port>" to make it available on all network interfaces.
+be listening to.
 - `block_profile_fraction` (default = 0): Fraction of blocking events that
 are profiled. A value <= 0 disables profiling. See
 https://golang.org/pkg/runtime/#SetBlockProfileRate for details.
@@ -84,8 +83,7 @@ All core exporters and receivers provide some zPage instrumentation.
 The following settings are required:
 
 - `endpoint` (default = localhost:55679): Specifies the HTTP endpoint that serves
-zPages. Use localhost:<port> to make it available only locally, or ":<port>" to
-make it available on all network interfaces.
+zPages.
 
 Example:
 ```yaml

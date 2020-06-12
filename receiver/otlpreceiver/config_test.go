@@ -49,7 +49,7 @@ func TestLoadConfig(t *testing.T) {
 			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal:  typeStr,
 				NameVal:  "otlp/customname",
-				Endpoint: "0.0.0.0:9090",
+				Endpoint: "localhost:9090",
 			},
 			Transport: "tcp",
 		})
@@ -60,7 +60,7 @@ func TestLoadConfig(t *testing.T) {
 			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal:  typeStr,
 				NameVal:  "otlp/keepalive",
-				Endpoint: "localhost:55680",
+				Endpoint: "0.0.0.0:55680",
 			},
 			TLSCredentials: nil,
 			Transport:      "tcp",
@@ -85,7 +85,7 @@ func TestLoadConfig(t *testing.T) {
 			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal:  typeStr,
 				NameVal:  "otlp/msg-size-conc-connect-max-idle",
-				Endpoint: "localhost:55680",
+				Endpoint: "0.0.0.0:55680",
 			},
 			Transport:            "tcp",
 			MaxRecvMsgSizeMiB:    32,
@@ -105,7 +105,7 @@ func TestLoadConfig(t *testing.T) {
 			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal:  typeStr,
 				NameVal:  "otlp/tlscredentials",
-				Endpoint: "localhost:55680",
+				Endpoint: "0.0.0.0:55680",
 			},
 			TLSCredentials: &configtls.TLSSetting{
 				CertFile: "test.crt",
@@ -120,7 +120,7 @@ func TestLoadConfig(t *testing.T) {
 			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal:  typeStr,
 				NameVal:  "otlp/cors",
-				Endpoint: "localhost:55680",
+				Endpoint: "0.0.0.0:55680",
 			},
 			Transport:   "tcp",
 			CorsOrigins: []string{"https://*.test.com", "https://test.com"},

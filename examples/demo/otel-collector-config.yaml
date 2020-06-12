@@ -16,6 +16,7 @@ exporters:
 
   jaeger:
     endpoint: jaeger-all-in-one:14250
+    insecure: true
 
 # Alternatively, use jaeger_thrift_http with the settings below. In this case
 # update the list of exporters on the traces pipeline.
