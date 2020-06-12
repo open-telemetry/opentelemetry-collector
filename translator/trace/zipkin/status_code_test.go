@@ -169,6 +169,14 @@ func TestStatusCodeMapperCases(t *testing.T) {
 		},
 
 		{
+			name:     "oc: empty error tag",
+			expected: nil,
+			attributes: map[string]string{
+				"error": "",
+			},
+		},
+
+		{
 			name:     "oc: description only, no status",
 			expected: nil,
 			attributes: map[string]string{
