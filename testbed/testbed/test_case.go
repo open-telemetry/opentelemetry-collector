@@ -359,7 +359,7 @@ func (tc *TestCase) indicateError(err error) {
 }
 
 func (tc *TestCase) logStats() {
-	t := time.NewTicker(1 * time.Second)
+	t := time.NewTicker(tc.resourceSpec.ResourceCheckPeriod)
 	defer t.Stop()
 
 	for {
