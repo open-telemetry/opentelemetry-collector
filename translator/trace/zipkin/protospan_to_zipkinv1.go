@@ -17,6 +17,7 @@ package zipkin
 import (
 	"net"
 	"strconv"
+	"time"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
@@ -243,7 +244,13 @@ func OCSpanProtoToZipkin(
 	if spanKindFromAttributes {
 		redundantKeys[tracetranslator.TagSpanKind] = true
 	}
+
 	startTime := internal.TimestampToTime(s.StartTime)
+	if _, ok := attrMap[StartTimeAbsent]; ok {
+		redundantKeys[StartTimeAbsent] = true
+		startTime = time.Time{}
+	}
+
 	z := &zipkinmodel.SpanModel{
 		SpanContext: zipkinmodel.SpanContext{
 			TraceID: convertTraceID(s.TraceId),

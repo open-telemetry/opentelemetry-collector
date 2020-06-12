@@ -77,7 +77,7 @@ func TestExport(t *testing.T) {
 								Name:        "mymetric",
 								Description: "My metric",
 								Unit:        "ms",
-								Type:        otlpmetrics.MetricDescriptor_COUNTER_INT64,
+								Type:        otlpmetrics.MetricDescriptor_MONOTONIC_INT64,
 							},
 							Int64DataPoints: []*otlpmetrics.Int64DataPoint{
 								{

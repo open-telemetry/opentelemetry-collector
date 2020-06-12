@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"testing"
+	"time"
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
@@ -81,7 +82,8 @@ func TestV2SpanKindTranslation(t *testing.T) {
 					TraceID: zipkinmodel.TraceID{Low: 123},
 					ID:      456,
 				},
-				Kind: tt.zipkinKind,
+				Kind:      tt.zipkinKind,
+				Timestamp: time.Now(),
 			}
 			ocSpan, _ := zipkinSpanToTraceSpan(zs)
 			assert.EqualValues(t, tt.ocKind, ocSpan.Kind)

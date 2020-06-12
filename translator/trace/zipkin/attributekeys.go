@@ -25,4 +25,5 @@ const (
 	RemoteEndpointIPv6        = "zipkin.remoteEndpoint.ipv6"
 	RemoteEndpointPort        = "zipkin.remoteEndpoint.port"
 	RemoteEndpointServiceName = "zipkin.remoteEndpoint.serviceName"
+	StartTimeAbsent           = "otel.zipkin.absentField.startTime"
 )

@@ -80,14 +80,6 @@ func generateOCTestDataNoPoints() consumerdata.MetricsData {
 			},
 			{
 				MetricDescriptor: &ocmetrics.MetricDescriptor{
-					Name:        "gauge-histogram",
-					Description: "",
-					Unit:        "1",
-					Type:        ocmetrics.MetricDescriptor_GAUGE_DISTRIBUTION,
-				},
-			},
-			{
-				MetricDescriptor: &ocmetrics.MetricDescriptor{
 					Name:        "cumulative-histogram",
 					Description: "",
 					Unit:        "1",
@@ -111,27 +103,6 @@ func generateOCTestDataNoLabels() consumerdata.MetricsData {
 	m.MetricDescriptor.LabelKeys = nil
 	m.Timeseries[0].LabelValues = nil
 	m.Timeseries[1].LabelValues = nil
-	return consumerdata.MetricsData{
-		Node: &occommon.Node{},
-		Resource: &ocresource.Resource{
-			Labels: map[string]string{"resource-attr": "resource-attr-val-1"},
-		},
-		Metrics: []*ocmetrics.Metric{m},
-	}
-}
-
-func generateOCTestDataMetricsInDescriptor() consumerdata.MetricsData {
-	m := generateOCTestMetricInt()
-	m.MetricDescriptor.LabelKeys = append(m.MetricDescriptor.LabelKeys, &ocmetrics.LabelKey{Key: testdata.TestLabelKey3})
-	m.Timeseries[0].LabelValues = append(m.Timeseries[0].LabelValues, &ocmetrics.LabelValue{
-		Value:    testdata.TestLabelValue3,
-		HasValue: true,
-	})
-	m.Timeseries[1].LabelValues = append(m.Timeseries[1].LabelValues, &ocmetrics.LabelValue{
-		Value:    testdata.TestLabelValue3,
-		HasValue: true,
-	})
-
 	return consumerdata.MetricsData{
 		Node: &occommon.Node{},
 		Resource: &ocresource.Resource{

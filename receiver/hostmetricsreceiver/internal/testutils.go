@@ -27,7 +27,6 @@ func AssertDescriptorEqual(t *testing.T, expected pdata.MetricDescriptor, actual
 	assert.Equal(t, expected.Description(), actual.Description())
 	assert.Equal(t, expected.Unit(), actual.Unit())
 	assert.Equal(t, expected.Type(), actual.Type())
-	assert.EqualValues(t, expected.LabelsMap().Sort(), actual.LabelsMap().Sort())
 }
 
 func AssertInt64MetricLabelHasValue(t *testing.T, metric pdata.Metric, index int, labelName string, expectedVal string) {

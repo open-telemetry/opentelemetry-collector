@@ -123,7 +123,7 @@ func (ze *zipkinExporter) PushTraceData(_ context.Context, td consumerdata.Trace
 
 	body, err := ze.serializer.Serialize(tbatch)
 	if err != nil {
-		return len(td.Spans), err
+		return len(td.Spans), consumererror.Permanent(err)
 	}
 
 	req, err := http.NewRequest("POST", ze.url, bytes.NewReader(body))

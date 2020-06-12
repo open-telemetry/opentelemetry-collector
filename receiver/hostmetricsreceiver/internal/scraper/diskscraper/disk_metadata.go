@@ -42,7 +42,7 @@ func createMetricDiskBytesDescriptor() pdata.MetricDescriptor {
 	descriptor.SetName("host/disk/bytes")
 	descriptor.SetDescription("Disk bytes transferred.")
 	descriptor.SetUnit("bytes")
-	descriptor.SetType(pdata.MetricTypeCounterInt64)
+	descriptor.SetType(pdata.MetricTypeMonotonicInt64)
 	return descriptor
 }
 
@@ -54,7 +54,7 @@ func createMetricDiskOpsDescriptor() pdata.MetricDescriptor {
 	descriptor.SetName("host/disk/ops")
 	descriptor.SetDescription("Disk operations count.")
 	descriptor.SetUnit("1")
-	descriptor.SetType(pdata.MetricTypeCounterInt64)
+	descriptor.SetType(pdata.MetricTypeMonotonicInt64)
 	return descriptor
 }
 
@@ -66,6 +66,6 @@ func createMetricDiskTimeDescriptor() pdata.MetricDescriptor {
 	descriptor.SetName("host/disk/time")
 	descriptor.SetDescription("Time spent in disk operations.")
 	descriptor.SetUnit("ms")
-	descriptor.SetType(pdata.MetricTypeGaugeInt64)
+	descriptor.SetType(pdata.MetricTypeInt64)
 	return descriptor
 }
