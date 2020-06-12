@@ -755,7 +755,7 @@ func expandStringValues(value interface{}) interface{} {
 	default:
 		return v
 	case string:
-		return os.ExpandEnv(v)
+		return expandEnv(v)
 	case []interface{}:
 		nslice := make([]interface{}, 0, len(v))
 		for _, vint := range v {
@@ -769,6 +769,19 @@ func expandStringValues(value interface{}) interface{} {
 		}
 		return nmap
 	}
+}
+
+func expandEnv(s string) string {
+	return os.Expand(s, func(str string) string {
+		// This allows escaping environment variable substitution via $$, e.g.
+		// - $FOO will be substituted with env var FOO
+		// - $$FOO will be replaced with $FOO
+		// - $$$FOO will be replaced with $ + substituted env var FOO
+		if str == "$" {
+			return "$"
+		}
+		return os.Getenv(str)
+	})
 }
 
 // Copied from the Viper but changed to use the same delimiter.
