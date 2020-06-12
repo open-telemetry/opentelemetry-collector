@@ -188,7 +188,7 @@ func lookupSpanKind(kind PICTInputKind) otlptrace.Span_SpanKind {
 	}
 }
 
-func generateSpanAttributes(spanTypeID PICTInputAttributes) []*otlpcommon.AttributeKeyValue {
+func generateSpanAttributes(spanTypeID PICTInputAttributes) []*otlpcommon.KeyValue {
 	var attrs map[string]interface{}
 	switch spanTypeID {
 	case SpanAttrNil:
@@ -484,7 +484,7 @@ func generateSpanEvent(index int) *otlptrace.Span_Event {
 	}
 }
 
-func generateEventAttributes(index int) []*otlpcommon.AttributeKeyValue {
+func generateEventAttributes(index int) []*otlpcommon.KeyValue {
 	attrMap := make(map[string]interface{})
 	if index%2 == 0 {
 		attrMap[conventions.AttributeMessageType] = "SENT"
@@ -507,7 +507,7 @@ func generateSpanLink(index int, random io.Reader) *otlptrace.Span_Link {
 	}
 }
 
-func generateLinkAttributes(index int) []*otlpcommon.AttributeKeyValue {
+func generateLinkAttributes(index int) []*otlpcommon.KeyValue {
 	attrMap := generateMessagingConsumerAttributes()
 	return convertMapToAttributeKeyValues(attrMap)
 }

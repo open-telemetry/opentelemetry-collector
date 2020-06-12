@@ -763,11 +763,10 @@ func BenchmarkOtlpToFromInternal_SummaryPoints_MutateOneLabel(b *testing.B) {
 
 func generateTestProtoResource() *otlpresource.Resource {
 	return &otlpresource.Resource{
-		Attributes: []*otlpcommon.AttributeKeyValue{
+		Attributes: []*otlpcommon.KeyValue{
 			{
-				Key:         "string",
-				Type:        otlpcommon.AttributeKeyValue_STRING,
-				StringValue: "string-resource",
+				Key:   "string",
+				Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "string-resource"}},
 			},
 		},
 	}

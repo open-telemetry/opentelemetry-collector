@@ -18,6 +18,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log"
+	"reflect"
 	"sort"
 	"time"
 
@@ -418,25 +419,21 @@ func (v *CorrectnessTestValidator) diffSpanStatus(sentSpan *otlptrace.Span, recd
 	}
 }
 
-func (v *CorrectnessTestValidator) diffAttributesSlice(spanName string, recdAttrs []*otlpcommon.AttributeKeyValue,
-	sentAttrs []*otlpcommon.AttributeKeyValue, fmtStr string) {
+func (v *CorrectnessTestValidator) diffAttributesSlice(spanName string, recdAttrs []*otlpcommon.KeyValue,
+	sentAttrs []*otlpcommon.KeyValue, fmtStr string) {
 	recdAttrsMap := convertAttributesSliceToMap(recdAttrs)
 	for _, sentAttr := range sentAttrs {
 		recdAttr, ok := recdAttrsMap[sentAttr.Key]
 		if ok {
-			matchingVals := false
-			if sentAttr.Type == recdAttr.Type {
-				sentVal := retrieveAttributeValue(sentAttr)
-				recdVal := retrieveAttributeValue(recdAttr)
-				matchingVals = sentVal == recdVal
-			}
-			if !matchingVals {
+			sentVal := retrieveAttributeValue(sentAttr)
+			recdVal := retrieveAttributeValue(recdAttr)
+			if !reflect.DeepEqual(sentVal, recdVal) {
 				af := &AssertionFailure{
 					typeName:      "Span",
 					dataComboName: spanName,
 					fieldPath:     fmt.Sprintf(fmtStr, sentAttr.Key),
-					expectedValue: retrieveAttributeValue(sentAttr),
-					actualValue:   retrieveAttributeValue(recdAttr),
+					expectedValue: sentVal,
+					actualValue:   recdVal,
 				}
 				v.assertionFailures = append(v.assertionFailures, af)
 			}
@@ -453,25 +450,33 @@ func (v *CorrectnessTestValidator) diffAttributesSlice(spanName string, recdAttr
 	}
 }
 
-func convertAttributesSliceToMap(attributes []*otlpcommon.AttributeKeyValue) map[string]*otlpcommon.AttributeKeyValue {
-	attrMap := make(map[string]*otlpcommon.AttributeKeyValue)
+func convertAttributesSliceToMap(attributes []*otlpcommon.KeyValue) map[string]*otlpcommon.KeyValue {
+	attrMap := make(map[string]*otlpcommon.KeyValue)
 	for _, attr := range attributes {
 		attrMap[attr.Key] = attr
 	}
 	return attrMap
 }
 
-func retrieveAttributeValue(attribute *otlpcommon.AttributeKeyValue) interface{} {
+func retrieveAttributeValue(attribute *otlpcommon.KeyValue) interface{} {
+	if attribute.Value == nil || attribute.Value.Value == nil {
+		return nil
+	}
+
 	var attrVal interface{}
-	switch attribute.Type {
-	case otlpcommon.AttributeKeyValue_STRING:
-		attrVal = attribute.StringValue
-	case otlpcommon.AttributeKeyValue_INT:
-		attrVal = attribute.IntValue
-	case otlpcommon.AttributeKeyValue_DOUBLE:
-		attrVal = attribute.DoubleValue
-	case otlpcommon.AttributeKeyValue_BOOL:
-		attrVal = attribute.BoolValue
+	switch val := attribute.Value.Value.(type) {
+	case *otlpcommon.AnyValue_StringValue:
+		attrVal = val.StringValue
+	case *otlpcommon.AnyValue_IntValue:
+		attrVal = val.IntValue
+	case *otlpcommon.AnyValue_DoubleValue:
+		attrVal = val.DoubleValue
+	case *otlpcommon.AnyValue_BoolValue:
+		attrVal = val.BoolValue
+	case *otlpcommon.AnyValue_ArrayValue:
+		attrVal = val.ArrayValue
+	case *otlpcommon.AnyValue_KvlistValue:
+		attrVal = val.KvlistValue
 	default:
 		attrVal = nil
 	}

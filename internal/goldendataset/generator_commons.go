@@ -25,11 +25,11 @@ import (
 	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 )
 
-func convertMapToAttributeKeyValues(attrsMap map[string]interface{}) []*otlpcommon.AttributeKeyValue {
+func convertMapToAttributeKeyValues(attrsMap map[string]interface{}) []*otlpcommon.KeyValue {
 	if attrsMap == nil {
 		return nil
 	}
-	attrList := make([]*otlpcommon.AttributeKeyValue, len(attrsMap))
+	attrList := make([]*otlpcommon.KeyValue, len(attrsMap))
 	index := 0
 	for key, value := range attrsMap {
 		attrList[index] = constructAttributeKeyValue(key, value)
@@ -38,32 +38,28 @@ func convertMapToAttributeKeyValues(attrsMap map[string]interface{}) []*otlpcomm
 	return attrList
 }
 
-func constructAttributeKeyValue(key string, value interface{}) *otlpcommon.AttributeKeyValue {
-	var attr otlpcommon.AttributeKeyValue
+func constructAttributeKeyValue(key string, value interface{}) *otlpcommon.KeyValue {
+	var attr otlpcommon.KeyValue
 	switch val := value.(type) {
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
-		attr = otlpcommon.AttributeKeyValue{
-			Key:      key,
-			Type:     otlpcommon.AttributeKeyValue_INT,
-			IntValue: cast.ToInt64(val),
+		attr = otlpcommon.KeyValue{
+			Key:   key,
+			Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_IntValue{IntValue: cast.ToInt64(val)}},
 		}
 	case float32, float64:
-		attr = otlpcommon.AttributeKeyValue{
-			Key:         key,
-			Type:        otlpcommon.AttributeKeyValue_DOUBLE,
-			DoubleValue: cast.ToFloat64(val),
+		attr = otlpcommon.KeyValue{
+			Key:   key,
+			Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_DoubleValue{DoubleValue: cast.ToFloat64(val)}},
 		}
 	case bool:
-		attr = otlpcommon.AttributeKeyValue{
-			Key:       key,
-			Type:      otlpcommon.AttributeKeyValue_BOOL,
-			BoolValue: cast.ToBool(val),
+		attr = otlpcommon.KeyValue{
+			Key:   key,
+			Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_BoolValue{BoolValue: cast.ToBool(val)}},
 		}
 	default:
-		attr = otlpcommon.AttributeKeyValue{
-			Key:         key,
-			Type:        otlpcommon.AttributeKeyValue_STRING,
-			StringValue: val.(string),
+		attr = otlpcommon.KeyValue{
+			Key:   key,
+			Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: val.(string)}},
 		}
 	}
 	return &attr

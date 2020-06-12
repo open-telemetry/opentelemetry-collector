@@ -21,7 +21,7 @@ import (
 	otlplogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	opentelemetry_proto_common_v1 "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
+	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 )
 
 var (
@@ -250,16 +250,14 @@ func generateOtlpLogOne() *otlplogs.LogRecord {
 		Body:                   "This is a log message",
 		SpanId:                 []byte{0x01, 0x02, 0x04, 0x08},
 		TraceId:                []byte{0x08, 0x04, 0x02, 0x01},
-		Attributes: []*opentelemetry_proto_common_v1.AttributeKeyValue{
+		Attributes: []*otlpcommon.KeyValue{
 			{
-				Key:         "app",
-				Type:        opentelemetry_proto_common_v1.AttributeKeyValue_STRING,
-				StringValue: "server",
+				Key:   "app",
+				Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "server"}},
 			},
 			{
-				Key:      "instance_num",
-				Type:     opentelemetry_proto_common_v1.AttributeKeyValue_INT,
-				IntValue: 1,
+				Key:   "instance_num",
+				Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_IntValue{IntValue: 1}},
 			},
 		},
 	}
@@ -287,14 +285,14 @@ func generateOtlpLogTwo() *otlplogs.LogRecord {
 		SeverityNumber:         otlplogs.SeverityNumber_INFO,
 		SeverityText:           "Info",
 		Body:                   "something happened",
-		Attributes: []*opentelemetry_proto_common_v1.AttributeKeyValue{
+		Attributes: []*otlpcommon.KeyValue{
 			{
-				Key:         "customer",
-				StringValue: "acme",
+				Key:   "customer",
+				Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "acme"}},
 			},
 			{
-				Key:         "env",
-				StringValue: "dev",
+				Key:   "env",
+				Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "dev"}},
 			},
 		},
 	}

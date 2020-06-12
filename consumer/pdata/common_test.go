@@ -15,11 +15,13 @@
 package pdata
 
 import (
+	"encoding/json"
 	"math/rand"
 	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 )
@@ -41,6 +43,9 @@ func TestAttributeValue(t *testing.T) {
 	assert.EqualValues(t, AttributeValueBOOL, v.Type())
 	assert.EqualValues(t, true, v.BoolVal())
 
+	v = NewAttributeValueNull()
+	assert.EqualValues(t, AttributeValueNULL, v.Type())
+
 	v.SetStringVal("abc")
 	assert.EqualValues(t, AttributeValueSTRING, v.Type())
 	assert.EqualValues(t, "abc", v.StringVal())
@@ -56,6 +61,214 @@ func TestAttributeValue(t *testing.T) {
 	v.SetBoolVal(true)
 	assert.EqualValues(t, AttributeValueBOOL, v.Type())
 	assert.EqualValues(t, true, v.BoolVal())
+}
+
+func fromVal(v interface{}) AttributeValue {
+	switch val := v.(type) {
+	case string:
+		return NewAttributeValueString(val)
+	case int:
+		return NewAttributeValueInt(int64(val))
+	case float64:
+		return NewAttributeValueDouble(val)
+	case map[string]interface{}:
+		return fromMap(val)
+	}
+	return NewAttributeValueNull()
+}
+
+func fromMap(v map[string]interface{}) AttributeValue {
+	m := NewAttributeMap()
+	for k, v := range v {
+		m.Insert(k, fromVal(v))
+	}
+	m.Sort()
+	av := NewAttributeValueMap()
+	av.SetMapVal(m)
+	return av
+}
+
+func fromJSON(jsonStr string) AttributeValue {
+	var src map[string]interface{}
+	err := json.Unmarshal([]byte(jsonStr), &src)
+	if err != nil {
+		panic("Invalid input jsonStr:" + jsonStr)
+	}
+	return fromMap(src)
+}
+
+func assertMapJSON(t *testing.T, expectedJSON string, actualMap AttributeValue) {
+	assert.EqualValues(t, fromJSON(expectedJSON).MapVal(), actualMap.MapVal().Sort())
+}
+
+func TestAttributeValueMap(t *testing.T) {
+	m1 := NewAttributeValueMap()
+	assert.EqualValues(t, fromJSON(`{}`), m1)
+	assert.EqualValues(t, AttributeValueMAP, m1.Type())
+	assert.EqualValues(t, NewAttributeMap(), m1.MapVal())
+	assert.EqualValues(t, 0, m1.MapVal().Len())
+
+	m1.MapVal().InsertDouble("double_key", 123)
+	assertMapJSON(t, `{"double_key":123}`, m1)
+	assert.EqualValues(t, 1, m1.MapVal().Len())
+
+	v, exists := m1.MapVal().Get("double_key")
+	require.True(t, exists)
+	assert.EqualValues(t, AttributeValueDOUBLE, v.Type())
+	assert.EqualValues(t, 123, v.DoubleVal())
+
+	// Create a second map.
+	m2 := NewAttributeValueMap()
+	assertMapJSON(t, `{}`, m2)
+	assert.EqualValues(t, 0, m2.MapVal().Len())
+
+	// Modify the source map that was inserted.
+	m2.MapVal().UpsertString("key_in_child", "somestr")
+	assertMapJSON(t, `{"key_in_child": "somestr"}`, m2)
+	assert.EqualValues(t, 1, m2.MapVal().Len())
+
+	// Insert the second map as a child. This should perform a deep copy.
+	m1.MapVal().Insert("child_map", m2)
+	assertMapJSON(t, `{"double_key":123, "child_map": {"key_in_child": "somestr"}}`, m1)
+	assert.EqualValues(t, 2, m1.MapVal().Len())
+
+	// Check that the map was correctly copied.
+	childMap, exists := m1.MapVal().Get("child_map")
+	require.True(t, exists)
+	assert.EqualValues(t, AttributeValueMAP, childMap.Type())
+	assert.EqualValues(t, 1, childMap.MapVal().Len())
+
+	v, exists = childMap.MapVal().Get("key_in_child")
+	require.True(t, exists)
+	assert.EqualValues(t, AttributeValueSTRING, v.Type())
+	assert.EqualValues(t, "somestr", v.StringVal())
+
+	// Modify the source map m2 that was inserted into m1.
+	m2.MapVal().UpdateString("key_in_child", "somestr2")
+	assertMapJSON(t, `{"key_in_child": "somestr2"}`, m2)
+	assert.EqualValues(t, 1, m2.MapVal().Len())
+
+	// The child map inside m1 should not be modified.
+	assertMapJSON(t, `{"double_key":123, "child_map": {"key_in_child": "somestr"}}`, m1)
+	childMap, exists = m1.MapVal().Get("child_map")
+	require.True(t, exists)
+	v, exists = childMap.MapVal().Get("key_in_child")
+	require.True(t, exists)
+	assert.EqualValues(t, AttributeValueSTRING, v.Type())
+	assert.EqualValues(t, "somestr", v.StringVal())
+
+	// Now modify the inserted map (not the source)
+	childMap.MapVal().UpdateString("key_in_child", "somestr3")
+	assertMapJSON(t, `{"double_key":123, "child_map": {"key_in_child": "somestr3"}}`, m1)
+	assert.EqualValues(t, 1, childMap.MapVal().Len())
+
+	v, exists = childMap.MapVal().Get("key_in_child")
+	require.True(t, exists)
+	assert.EqualValues(t, AttributeValueSTRING, v.Type())
+	assert.EqualValues(t, "somestr3", v.StringVal())
+
+	// The source child map should not be modified.
+	v, exists = m2.MapVal().Get("key_in_child")
+	require.True(t, exists)
+	assert.EqualValues(t, AttributeValueSTRING, v.Type())
+	assert.EqualValues(t, "somestr2", v.StringVal())
+
+	deleted := m1.MapVal().Delete("double_key")
+	assert.True(t, deleted)
+	assertMapJSON(t, `{"child_map": {"key_in_child": "somestr3"}}`, m1)
+	assert.EqualValues(t, 1, m1.MapVal().Len())
+	_, exists = m1.MapVal().Get("double_key")
+	assert.False(t, exists)
+
+	deleted = m1.MapVal().Delete("child_map")
+	assert.True(t, deleted)
+	assert.EqualValues(t, 0, m1.MapVal().Len())
+	_, exists = m1.MapVal().Get("child_map")
+	assert.False(t, exists)
+
+	// Test nil KvlistValue case for MapVal() func.
+	orig := &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_KvlistValue{KvlistValue: nil}}
+	m1 = AttributeValue{orig: &orig}
+	assert.EqualValues(t, NewAttributeMap(), m1.MapVal())
+}
+
+func createNilOrigSetAttributeValue() AttributeValue {
+	var orig *otlpcommon.AnyValue
+	return AttributeValue{orig: &orig}
+}
+
+func TestNilOrigSetAttributeValue(t *testing.T) {
+	av := createNilOrigSetAttributeValue()
+	av.SetStringVal("abc")
+	assert.EqualValues(t, "abc", av.StringVal())
+
+	av = createNilOrigSetAttributeValue()
+	av.SetIntVal(123)
+	assert.EqualValues(t, 123, av.IntVal())
+
+	av = createNilOrigSetAttributeValue()
+	av.SetBoolVal(true)
+	assert.EqualValues(t, true, av.BoolVal())
+
+	av = createNilOrigSetAttributeValue()
+	av.SetDoubleVal(1.23)
+	assert.EqualValues(t, 1.23, av.DoubleVal())
+
+	av = createNilOrigSetAttributeValue()
+	av.SetMapVal(NewAttributeMap())
+	assert.EqualValues(t, NewAttributeMap(), av.MapVal())
+
+	// Test nil KvlistValue case for MapVal() func.
+	orig := &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_KvlistValue{KvlistValue: nil}}
+	av = AttributeValue{orig: &orig}
+	av.SetMapVal(NewAttributeMap())
+	assert.EqualValues(t, NewAttributeMap(), av.MapVal())
+}
+
+func TestAttributeValueEqual(t *testing.T) {
+	av1 := createNilOrigSetAttributeValue()
+	av2 := createNilOrigSetAttributeValue()
+	assert.True(t, av1.Equal(av2))
+
+	av2 = NewAttributeValueString("abc")
+	assert.False(t, av1.Equal(av2))
+	assert.False(t, av2.Equal(av1))
+
+	av1 = NewAttributeValueString("abc")
+	assert.True(t, av1.Equal(av2))
+
+	av2 = NewAttributeValueString("edf")
+	assert.False(t, av1.Equal(av2))
+
+	av2 = NewAttributeValueInt(123)
+	assert.False(t, av1.Equal(av2))
+	assert.False(t, av2.Equal(av1))
+
+	av1 = NewAttributeValueInt(234)
+	assert.False(t, av1.Equal(av2))
+
+	av1 = NewAttributeValueInt(123)
+	assert.True(t, av1.Equal(av2))
+
+	av2 = NewAttributeValueDouble(123)
+	assert.False(t, av1.Equal(av2))
+	assert.False(t, av2.Equal(av1))
+
+	av1 = NewAttributeValueDouble(234)
+	assert.False(t, av1.Equal(av2))
+
+	av1 = NewAttributeValueDouble(123)
+	assert.True(t, av1.Equal(av2))
+
+	av2 = NewAttributeValueBool(true)
+	assert.False(t, av1.Equal(av2))
+	assert.False(t, av2.Equal(av1))
+
+	av1 = NewAttributeValueBool(true)
+	assert.True(t, av1.Equal(av2))
+
+	av1 = NewAttributeValueBool(false)
+	assert.False(t, av1.Equal(av2))
 }
 
 func TestNewAttributeValueSlice(t *testing.T) {
@@ -84,6 +297,10 @@ func TestNilAttributeMap(t *testing.T) {
 	insertMapString := NewAttributeMap()
 	insertMapString.InsertString("k", "v")
 	assert.EqualValues(t, generateTestAttributeMap(), insertMapString)
+
+	insertMapNull := NewAttributeMap()
+	insertMapNull.InsertNull("k")
+	assert.EqualValues(t, generateTestNullAttributeMap(), insertMapNull)
 
 	insertMapInt := NewAttributeMap()
 	insertMapInt.InsertInt("k", 123)
@@ -146,120 +363,159 @@ func TestNilAttributeMap(t *testing.T) {
 }
 
 func TestAttributeMapWithNilValues(t *testing.T) {
-	origWithNil := []*otlpcommon.AttributeKeyValue{
+	origWithNil := []*otlpcommon.KeyValue{
 		nil,
 		{
-			Key:         "test_key",
-			Type:        otlpcommon.AttributeKeyValue_STRING,
-			StringValue: "test_value",
+			Key:   "test_key",
+			Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "test_value"}},
 		},
 		nil,
+		{
+			Key:   "test_key2",
+			Value: nil,
+		},
+		nil,
+		{
+			Key:   "test_key3",
+			Value: &otlpcommon.AnyValue{Value: nil},
+		},
 	}
 	sm := AttributeMap{
 		orig: &origWithNil,
 	}
 	val, exist := sm.Get("test_key")
 	assert.True(t, exist)
+	assert.EqualValues(t, AttributeValueSTRING, val.Type())
 	assert.EqualValues(t, "test_value", val.StringVal())
+
+	val, exist = sm.Get("test_key2")
+	assert.True(t, exist)
+	assert.EqualValues(t, AttributeValueNULL, val.Type())
+	assert.EqualValues(t, "", val.StringVal())
+
+	val, exist = sm.Get("test_key3")
+	assert.True(t, exist)
+	assert.EqualValues(t, AttributeValueNULL, val.Type())
+	assert.EqualValues(t, "", val.StringVal())
 
 	sm.Insert("other_key", NewAttributeValueString("other_value"))
 	val, exist = sm.Get("other_key")
 	assert.True(t, exist)
+	assert.EqualValues(t, AttributeValueSTRING, val.Type())
 	assert.EqualValues(t, "other_value", val.StringVal())
 
 	sm.InsertString("other_key_string", "other_value")
 	val, exist = sm.Get("other_key")
 	assert.True(t, exist)
+	assert.EqualValues(t, AttributeValueSTRING, val.Type())
 	assert.EqualValues(t, "other_value", val.StringVal())
 
 	sm.InsertInt("other_key_int", 123)
 	val, exist = sm.Get("other_key_int")
 	assert.True(t, exist)
+	assert.EqualValues(t, AttributeValueINT, val.Type())
 	assert.EqualValues(t, 123, val.IntVal())
 
 	sm.InsertDouble("other_key_double", 1.23)
 	val, exist = sm.Get("other_key_double")
 	assert.True(t, exist)
+	assert.EqualValues(t, AttributeValueDOUBLE, val.Type())
 	assert.EqualValues(t, 1.23, val.DoubleVal())
 
 	sm.InsertBool("other_key_bool", true)
 	val, exist = sm.Get("other_key_bool")
 	assert.True(t, exist)
+	assert.EqualValues(t, AttributeValueBOOL, val.Type())
 	assert.EqualValues(t, true, val.BoolVal())
 
 	sm.Update("other_key", NewAttributeValueString("yet_another_value"))
 	val, exist = sm.Get("other_key")
 	assert.True(t, exist)
+	assert.EqualValues(t, AttributeValueSTRING, val.Type())
 	assert.EqualValues(t, "yet_another_value", val.StringVal())
 
 	sm.UpdateString("other_key_string", "yet_another_value")
 	val, exist = sm.Get("other_key_string")
 	assert.True(t, exist)
+	assert.EqualValues(t, AttributeValueSTRING, val.Type())
 	assert.EqualValues(t, "yet_another_value", val.StringVal())
 
 	sm.UpdateInt("other_key_int", 456)
 	val, exist = sm.Get("other_key_int")
 	assert.True(t, exist)
+	assert.EqualValues(t, AttributeValueINT, val.Type())
 	assert.EqualValues(t, 456, val.IntVal())
 
 	sm.UpdateDouble("other_key_double", 4.56)
 	val, exist = sm.Get("other_key_double")
 	assert.True(t, exist)
+	assert.EqualValues(t, AttributeValueDOUBLE, val.Type())
 	assert.EqualValues(t, 4.56, val.DoubleVal())
 
 	sm.UpdateBool("other_key_bool", false)
 	val, exist = sm.Get("other_key_bool")
 	assert.True(t, exist)
+	assert.EqualValues(t, AttributeValueBOOL, val.Type())
 	assert.EqualValues(t, false, val.BoolVal())
 
 	sm.Upsert("other_key", NewAttributeValueString("other_value"))
 	val, exist = sm.Get("other_key")
 	assert.True(t, exist)
+	assert.EqualValues(t, AttributeValueSTRING, val.Type())
 	assert.EqualValues(t, "other_value", val.StringVal())
 
 	sm.UpsertString("other_key_string", "other_value")
 	val, exist = sm.Get("other_key")
 	assert.True(t, exist)
+	assert.EqualValues(t, AttributeValueSTRING, val.Type())
 	assert.EqualValues(t, "other_value", val.StringVal())
 
 	sm.UpsertInt("other_key_int", 123)
 	val, exist = sm.Get("other_key_int")
 	assert.True(t, exist)
+	assert.EqualValues(t, AttributeValueINT, val.Type())
 	assert.EqualValues(t, 123, val.IntVal())
 
 	sm.UpsertDouble("other_key_double", 1.23)
 	val, exist = sm.Get("other_key_double")
 	assert.True(t, exist)
+	assert.EqualValues(t, AttributeValueDOUBLE, val.Type())
 	assert.EqualValues(t, 1.23, val.DoubleVal())
 
 	sm.UpsertBool("other_key_bool", true)
 	val, exist = sm.Get("other_key_bool")
 	assert.True(t, exist)
+	assert.EqualValues(t, AttributeValueBOOL, val.Type())
 	assert.EqualValues(t, true, val.BoolVal())
 
 	sm.Upsert("yet_another_key", NewAttributeValueString("yet_another_value"))
 	val, exist = sm.Get("yet_another_key")
 	assert.True(t, exist)
+	assert.EqualValues(t, AttributeValueSTRING, val.Type())
 	assert.EqualValues(t, "yet_another_value", val.StringVal())
 
 	sm.UpsertString("yet_another_key_string", "yet_another_value")
 	val, exist = sm.Get("yet_another_key_string")
 	assert.True(t, exist)
+	assert.EqualValues(t, AttributeValueSTRING, val.Type())
 	assert.EqualValues(t, "yet_another_value", val.StringVal())
 
 	sm.UpsertInt("yet_another_key_int", 456)
 	val, exist = sm.Get("yet_another_key_int")
 	assert.True(t, exist)
+	assert.EqualValues(t, AttributeValueINT, val.Type())
 	assert.EqualValues(t, 456, val.IntVal())
 
 	sm.UpsertDouble("yet_another_key_double", 4.56)
 	val, exist = sm.Get("yet_another_key_double")
 	assert.True(t, exist)
+	assert.EqualValues(t, AttributeValueDOUBLE, val.Type())
 	assert.EqualValues(t, 4.56, val.DoubleVal())
 
 	sm.UpsertBool("yet_another_key_bool", false)
 	val, exist = sm.Get("yet_another_key_bool")
 	assert.True(t, exist)
+	assert.EqualValues(t, AttributeValueBOOL, val.Type())
 	assert.EqualValues(t, false, val.BoolVal())
 
 	assert.True(t, sm.Delete("other_key"))
@@ -278,7 +534,18 @@ func TestAttributeMapWithNilValues(t *testing.T) {
 	// Test that the initial key is still there.
 	val, exist = sm.Get("test_key")
 	assert.True(t, exist)
+	assert.EqualValues(t, AttributeValueSTRING, val.Type())
 	assert.EqualValues(t, "test_value", val.StringVal())
+
+	val, exist = sm.Get("test_key2")
+	assert.True(t, exist)
+	assert.EqualValues(t, AttributeValueNULL, val.Type())
+	assert.EqualValues(t, "", val.StringVal())
+
+	val, exist = sm.Get("test_key3")
+	assert.True(t, exist)
+	assert.EqualValues(t, AttributeValueNULL, val.Type())
+	assert.EqualValues(t, "", val.StringVal())
 
 	// Test Sort
 	assert.EqualValues(t, AttributeMap{orig: &origWithNil}, sm.Sort())
@@ -297,9 +564,10 @@ func TestAttributeMap_ForEach(t *testing.T) {
 		"k_int":    NewAttributeValueInt(123),
 		"k_double": NewAttributeValueDouble(1.23),
 		"k_bool":   NewAttributeValueBool(true),
+		"k_null":   NewAttributeValueNull(),
 	}
 	am := NewAttributeMap().InitFromMap(rawMap)
-	assert.EqualValues(t, 4, am.Len())
+	assert.EqualValues(t, 5, am.Len())
 
 	am.ForEach(func(k string, v AttributeValue) {
 		assert.True(t, v.Equal(rawMap[k]))
@@ -314,8 +582,10 @@ func TestAttributeMap_ForEach_WithNils(t *testing.T) {
 		"k_int":    NewAttributeValueInt(123),
 		"k_double": NewAttributeValueDouble(1.23),
 		"k_bool":   NewAttributeValueBool(true),
+		"k_null":   NewAttributeValueNull(),
+		"k_null2":  NewAttributeValueNull(),
 	}
-	rawOrigWithNil := []*otlpcommon.AttributeKeyValue{
+	rawOrigWithNil := []*otlpcommon.KeyValue{
 		nil,
 		newAttributeKeyValueString("k_string", "123"),
 		nil,
@@ -325,11 +595,15 @@ func TestAttributeMap_ForEach_WithNils(t *testing.T) {
 		nil,
 		newAttributeKeyValueBool("k_bool", true),
 		nil,
+		newAttributeKeyValueNull("k_null"),
+		nil,
+		{Key: "k_null2", Value: nil},
+		nil,
 	}
 	am := AttributeMap{
 		orig: &rawOrigWithNil,
 	}
-	assert.EqualValues(t, 9, am.Len())
+	assert.EqualValues(t, 13, am.Len())
 
 	am.ForEach(func(k string, v AttributeValue) {
 		assert.True(t, v.Equal(rawMap[k]))
@@ -347,12 +621,14 @@ func TestAttributeMap_InitFromMap(t *testing.T) {
 		"k_int":    NewAttributeValueInt(123),
 		"k_double": NewAttributeValueDouble(1.23),
 		"k_bool":   NewAttributeValueBool(true),
+		"k_null":   NewAttributeValueNull(),
 	}
-	rawOrig := []*otlpcommon.AttributeKeyValue{
+	rawOrig := []*otlpcommon.KeyValue{
 		newAttributeKeyValueString("k_string", "123"),
 		newAttributeKeyValueInt("k_int", 123),
 		newAttributeKeyValueDouble("k_double", 1.23),
 		newAttributeKeyValueBool("k_bool", true),
+		newAttributeKeyValueNull("k_null"),
 	}
 	am = NewAttributeMap().InitFromMap(rawMap)
 	assert.EqualValues(t, AttributeMap{orig: &rawOrig}.Sort(), am.Sort())
@@ -371,6 +647,74 @@ func TestAttributeMap_CopyTo(t *testing.T) {
 	// Test CopyTo same size slice
 	generateTestAttributeMap().CopyTo(dest)
 	assert.EqualValues(t, generateTestAttributeMap(), dest)
+
+	// Test CopyTo with a nil Value in the destination
+	(*dest.orig)[0].Value = nil
+	generateTestAttributeMap().CopyTo(dest)
+	assert.EqualValues(t, generateTestAttributeMap(), dest)
+}
+
+func TestAttributeValue_copyTo(t *testing.T) {
+	av := createNilOrigSetAttributeValue()
+	destVal := otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_IntValue{}}
+	av.copyTo(&destVal)
+	assert.EqualValues(t, nil, destVal.Value)
+}
+
+func TestAttributeMap_UpdateWithNilValues(t *testing.T) {
+	origWithNil := []*otlpcommon.KeyValue{
+		nil,
+		{
+			Key:   "test_key",
+			Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "test_value"}},
+		},
+		nil,
+		{
+			Key:   "test_key2",
+			Value: nil,
+		},
+		nil,
+		{
+			Key:   "test_key3",
+			Value: &otlpcommon.AnyValue{Value: nil},
+		},
+	}
+	sm := AttributeMap{
+		orig: &origWithNil,
+	}
+
+	av, exists := sm.Get("test_key")
+	assert.True(t, exists)
+	assert.EqualValues(t, AttributeValueSTRING, av.Type())
+	assert.EqualValues(t, "test_value", av.StringVal())
+	av.SetIntVal(123)
+
+	av2, exists := sm.Get("test_key")
+	assert.True(t, exists)
+	assert.EqualValues(t, AttributeValueINT, av2.Type())
+	assert.EqualValues(t, 123, av2.IntVal())
+
+	av, exists = sm.Get("test_key2")
+	assert.True(t, exists)
+	assert.EqualValues(t, AttributeValueNULL, av.Type())
+	assert.EqualValues(t, "", av.StringVal())
+	av.SetIntVal(123)
+
+	av2, exists = sm.Get("test_key2")
+	assert.True(t, exists)
+	assert.EqualValues(t, AttributeValueINT, av2.Type())
+	assert.EqualValues(t, 123, av2.IntVal())
+
+	av, exists = sm.Get("test_key3")
+	assert.True(t, exists)
+	assert.EqualValues(t, AttributeValueNULL, av.Type())
+	assert.EqualValues(t, "", av.StringVal())
+	av.SetBoolVal(true)
+
+	av2, exists = sm.Get("test_key3")
+	assert.True(t, exists)
+	assert.EqualValues(t, AttributeValueBOOL, av2.Type())
+	assert.EqualValues(t, true, av2.BoolVal())
 }
 
 func TestNilStringMap(t *testing.T) {
@@ -605,7 +949,7 @@ func BenchmarkAttributeValue_CopyTo(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		c.CopyTo(av)
+		c.copyTo(*av.orig)
 	}
 	if av.IntVal() != 123 {
 		b.Fail()
@@ -626,11 +970,11 @@ func BenchmarkAttributeValue_SetIntVal(b *testing.B) {
 
 func BenchmarkAttributeMap_ForEach(b *testing.B) {
 	const numElements = 20
-	rawOrigWithNil := make([]*otlpcommon.AttributeKeyValue, 2*numElements)
+	rawOrigWithNil := make([]*otlpcommon.KeyValue, 2*numElements)
 	for i := 0; i < numElements; i++ {
-		rawOrigWithNil[i*2] = &otlpcommon.AttributeKeyValue{
-			Key:         "k" + strconv.Itoa(i),
-			StringValue: "v" + strconv.Itoa(i),
+		rawOrigWithNil[i*2] = &otlpcommon.KeyValue{
+			Key:   "k" + strconv.Itoa(i),
+			Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "v" + strconv.Itoa(i)}},
 		}
 	}
 	am := AttributeMap{
@@ -741,6 +1085,13 @@ func fillTestAttributeMap(dest AttributeMap) {
 	})
 }
 
+func generateTestNullAttributeMap() AttributeMap {
+	am := NewAttributeMap()
+	am.InitFromMap(map[string]AttributeValue{
+		"k": NewAttributeValueNull(),
+	})
+	return am
+}
 func generateTestIntAttributeMap() AttributeMap {
 	am := NewAttributeMap()
 	am.InitFromMap(map[string]AttributeValue{

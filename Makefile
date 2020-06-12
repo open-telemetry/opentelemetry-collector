@@ -253,7 +253,7 @@ genproto_sub:
 	$(foreach file,$(OPENTELEMETRY_PROTO_FILES),$(call exec-command,sed 's+github.com/open-telemetry/opentelemetry-proto/gen/go/+go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/+g' $(OPENTELEMETRY_PROTO_SRC_DIR)/$(file) > $(PROTO_INTERMEDIATE_DIR)/$(file)))
 
 	@echo Generate Go code from Logs .proto files in intermediate directory.
-	$(foreach file,$(LOGS_PROTO_FILES),$(call exec-command,docker run --rm -v $(PWD)/$(LOGS_PROTO_SRC_DIR):$(PWD)/$(LOGS_PROTO_SRC_DIR) -v $(PWD)/$(PROTO_INTERMEDIATE_DIR):$(PWD)/$(PROTO_INTERMEDIATE_DIR) -w $(PWD)/$(LOGS_PROTO_SRC_DIR) znly/protoc --gogofaster_out=plugins=grpc:./ -I./ -I$(PWD)/$(PROTO_INTERMEDIATE_DIR) $(file)))
+	$(foreach file,$(LOGS_PROTO_FILES),$(call exec-command,cd $(LOGS_PROTO_SRC_DIR) && protoc --gogofaster_out=plugins=grpc:./ -I./ -I$(PWD)/$(PROTO_INTERMEDIATE_DIR) $(file)))
 
 	@echo Move generated code to target directory.
 	mkdir -p $(PROTO_TARGET_GEN_DIR)
@@ -261,7 +261,7 @@ genproto_sub:
 	rm -rf $(LOGS_PROTO_SRC_DIR)/go.opentelemetry.io
 
 	@echo Generate Go code from .proto files in intermediate directory.
-	$(foreach file,$(OPENTELEMETRY_PROTO_FILES),$(call exec-command,docker run --rm -v $(PWD)/$(PROTO_INTERMEDIATE_DIR):$(PWD)/$(PROTO_INTERMEDIATE_DIR) -w $(PWD)/$(PROTO_INTERMEDIATE_DIR) znly/protoc --gogofaster_out=plugins=grpc:./ -I./ $(file)))
+	$(foreach file,$(OPENTELEMETRY_PROTO_FILES),$(call exec-command,cd $(PROTO_INTERMEDIATE_DIR) && protoc --gogofaster_out=plugins=grpc:./ -I./ $(file)))
 
 	@echo Generate gRPC gateway code.
 	cd $(PROTO_INTERMEDIATE_DIR) && protoc --grpc-gateway_out=logtostderr=true,grpc_api_configuration=opentelemetry/proto/collector/trace/v1/trace_service_http.yaml:./ opentelemetry/proto/collector/trace/v1/trace_service.proto

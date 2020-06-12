@@ -58,10 +58,10 @@ func TestExport(t *testing.T) {
 	resourceMetrics := []*otlpmetrics.ResourceMetrics{
 		{
 			Resource: &otlpresource.Resource{
-				Attributes: []*otlpcommon.AttributeKeyValue{
+				Attributes: []*otlpcommon.KeyValue{
 					{
-						Key:         "key1",
-						StringValue: "value1",
+						Key:   "key1",
+						Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value1"}},
 					},
 				},
 			},

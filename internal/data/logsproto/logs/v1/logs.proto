@@ -135,6 +135,6 @@ message LogRecord {
     string body = 8;
 
     // Additional attributes that describe the specific event occurrence. Optional.
-    repeated opentelemetry.proto.common.v1.AttributeKeyValue attributes = 9;
+    repeated opentelemetry.proto.common.v1.KeyValue attributes = 9;
     uint32 dropped_attributes_count = 10;
 }
