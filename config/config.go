@@ -617,7 +617,7 @@ func validateServiceExtensions(cfg *configmodels.Config) error {
 		if cfg.Extensions[ref] == nil {
 			return &configError{
 				code: errExtensionNotExists,
-				msg:  fmt.Sprintf("service references extension %q which does not exists", ref),
+				msg:  fmt.Sprintf("service references extension %q which does not exist", ref),
 			}
 		}
 	}
@@ -670,7 +670,7 @@ func validatePipelineReceivers(cfg *configmodels.Config, pipeline *configmodels.
 		if cfg.Receivers[ref] == nil {
 			return &configError{
 				code: errPipelineReceiverNotExists,
-				msg:  fmt.Sprintf("pipeline %q references receiver %q which does not exists", pipeline.Name, ref),
+				msg:  fmt.Sprintf("pipeline %q references receiver %q which does not exist", pipeline.Name, ref),
 			}
 		}
 	}
@@ -692,7 +692,7 @@ func validatePipelineExporters(cfg *configmodels.Config, pipeline *configmodels.
 		if cfg.Exporters[ref] == nil {
 			return &configError{
 				code: errPipelineExporterNotExists,
-				msg:  fmt.Sprintf("pipeline %q references exporter %q which does not exists", pipeline.Name, ref),
+				msg:  fmt.Sprintf("pipeline %q references exporter %q which does not exist", pipeline.Name, ref),
 			}
 		}
 	}
@@ -711,7 +711,7 @@ func validatePipelineProcessors(cfg *configmodels.Config, pipeline *configmodels
 		if cfg.Processors[ref] == nil {
 			return &configError{
 				code: errPipelineProcessorNotExists,
-				msg:  fmt.Sprintf("pipeline %q references processor %s which does not exists", pipeline.Name, ref),
+				msg:  fmt.Sprintf("pipeline %q references processor %s which does not exist", pipeline.Name, ref),
 			}
 		}
 	}
