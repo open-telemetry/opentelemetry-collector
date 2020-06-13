@@ -16,7 +16,11 @@ package zipkinreceiver
 
 import (
 	"bytes"
+	"compress/gzip"
+	"compress/zlib"
 	"context"
+	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
@@ -28,6 +32,8 @@ import (
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	zipkin2 "github.com/jaegertracing/jaeger/model/converter/thrift/zipkin"
+	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -369,4 +375,204 @@ func TestStartTraceReception(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestReceiverContentTypes(t *testing.T) {
+	tests := []struct {
+		endpoint string
+		content  string
+		encoding string
+		bodyFn   func() ([]byte, error)
+	}{
+		{
+			endpoint: "/api/v1/spans",
+			content:  "application/json",
+			encoding: "gzip",
+			bodyFn: func() ([]byte, error) {
+				return ioutil.ReadFile("../../translator/trace/zipkin/testdata/zipkin_v1_single_batch.json")
+			},
+		},
+
+		{
+			endpoint: "/api/v1/spans",
+			content:  "application/x-thrift",
+			encoding: "gzip",
+			bodyFn: func() ([]byte, error) {
+				return thriftExample(), nil
+			},
+		},
+
+		{
+			endpoint: "/api/v2/spans",
+			content:  "application/json",
+			encoding: "gzip",
+			bodyFn: func() ([]byte, error) {
+				return ioutil.ReadFile("../../translator/trace/zipkin/testdata/zipkin_v2_single.json")
+			},
+		},
+
+		{
+			endpoint: "/api/v2/spans",
+			content:  "application/json",
+			encoding: "zlib",
+			bodyFn: func() ([]byte, error) {
+				return ioutil.ReadFile("../../translator/trace/zipkin/testdata/zipkin_v2_single.json")
+			},
+		},
+
+		{
+			endpoint: "/api/v2/spans",
+			content:  "application/json",
+			encoding: "",
+			bodyFn: func() ([]byte, error) {
+				return ioutil.ReadFile("../../translator/trace/zipkin/testdata/zipkin_v2_single.json")
+			},
+		},
+	}
+
+	for _, test := range tests {
+		name := fmt.Sprintf("%v %v %v", test.endpoint, test.content, test.encoding)
+		t.Run(name, func(t *testing.T) {
+			body, err := test.bodyFn()
+			require.NoError(t, err, "Failed to generate test body: %v", err)
+
+			var requestBody *bytes.Buffer
+			switch test.encoding {
+			case "":
+				requestBody = bytes.NewBuffer(body)
+			case "zlib":
+				requestBody, err = compressZlib(body)
+			case "gzip":
+				requestBody, err = compressGzip(body)
+			}
+			require.NoError(t, err)
+
+			r := httptest.NewRequest("POST", test.endpoint, requestBody)
+			r.Header.Add("content-type", test.content)
+			r.Header.Add("content-encoding", test.encoding)
+
+			next := &zipkinMockTraceConsumer{
+				ch: make(chan consumerdata.TraceData, 10),
+			}
+			zr, err := New(zipkinReceiver, "", next)
+			require.NoError(t, err)
+
+			req := httptest.NewRecorder()
+			zr.ServeHTTP(req, r)
+
+			select {
+			case td := <-next.ch:
+				require.NotNil(t, td)
+				require.Equal(t, 202, req.Code)
+				break
+			case <-time.After(time.Second * 2):
+				t.Error("next consumer did not receive the batch")
+				break
+			}
+		})
+	}
+}
+
+func TestReceiverInvalidContentType(t *testing.T) {
+	body := `{ invalid json `
+
+	r := httptest.NewRequest("POST", "/api/v2/spans",
+		bytes.NewBuffer([]byte(body)))
+	r.Header.Add("content-type", "application/json")
+
+	next := &zipkinMockTraceConsumer{
+		ch: make(chan consumerdata.TraceData, 10),
+	}
+	zr, err := New(zipkinReceiver, "", next)
+	require.NoError(t, err)
+
+	req := httptest.NewRecorder()
+	zr.ServeHTTP(req, r)
+
+	require.Equal(t, 400, req.Code)
+	require.Equal(t, "invalid character 'i' looking for beginning of object key string\n", req.Body.String())
+}
+
+func TestReceiverConsumerError(t *testing.T) {
+	body, err := ioutil.ReadFile("../../translator/trace/zipkin/testdata/zipkin_v2_single.json")
+	require.NoError(t, err)
+
+	r := httptest.NewRequest("POST", "/api/v2/spans",
+		bytes.NewBuffer([]byte(body)))
+	r.Header.Add("content-type", "application/json")
+
+	next := &zipkinMockTraceConsumer{
+		ch:  make(chan consumerdata.TraceData, 10),
+		err: errors.New("consumer error"),
+	}
+	zr, err := New(zipkinReceiver, "", next)
+	require.NoError(t, err)
+
+	req := httptest.NewRecorder()
+	zr.ServeHTTP(req, r)
+
+	require.Equal(t, 500, req.Code)
+	require.Equal(t, "\"Internal Server Error\"", req.Body.String())
+}
+
+func thriftExample() []byte {
+	now := time.Now().Unix()
+	zSpans := []*zipkincore.Span{
+		{
+			TraceID: 1,
+			Name:    "test",
+			ID:      2,
+			BinaryAnnotations: []*zipkincore.BinaryAnnotation{
+				{
+					Key:   "http.path",
+					Value: []byte("/"),
+				},
+			},
+			Timestamp: &now,
+		},
+	}
+
+	return zipkin2.SerializeThrift(zSpans)
+}
+
+func compressGzip(body []byte) (*bytes.Buffer, error) {
+	var buf bytes.Buffer
+	zw := gzip.NewWriter(&buf)
+
+	_, err := zw.Write(body)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := zw.Close(); err != nil {
+		return nil, err
+	}
+
+	return &buf, nil
+}
+
+func compressZlib(body []byte) (*bytes.Buffer, error) {
+	var buf bytes.Buffer
+	zw := zlib.NewWriter(&buf)
+
+	_, err := zw.Write(body)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := zw.Close(); err != nil {
+		return nil, err
+	}
+
+	return &buf, nil
+}
+
+type zipkinMockTraceConsumer struct {
+	ch  chan consumerdata.TraceData
+	err error
+}
+
+func (m *zipkinMockTraceConsumer) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
+	m.ch <- td
+	return m.err
 }
