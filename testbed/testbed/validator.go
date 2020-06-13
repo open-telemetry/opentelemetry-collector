@@ -168,6 +168,16 @@ func (v *CorrectTestValidator) diffSpan(sentSpan *otlptrace.Span, recdSpan *otlp
 		}
 		v.assertionFailures = append(v.assertionFailures, af)
 	}
+	if sentSpan.TraceState != recdSpan.TraceState {
+		af := &AssertionFailure{
+			typeName:      "Span",
+			dataComboName: sentSpan.Name,
+			fieldPath:     "TraceState",
+			expectedValue: sentSpan.TraceState,
+			actualValue:   recdSpan.TraceState,
+		}
+		v.assertionFailures = append(v.assertionFailures, af)
+	}
 	if hex.EncodeToString(sentSpan.ParentSpanId) != hex.EncodeToString(recdSpan.ParentSpanId) {
 		af := &AssertionFailure{
 			typeName:      "Span",
@@ -228,6 +238,16 @@ func (v *CorrectTestValidator) diffSpan(sentSpan *otlptrace.Span, recdSpan *otlp
 		}
 		v.assertionFailures = append(v.assertionFailures, af)
 	}
+	if sentSpan.DroppedAttributesCount != recdSpan.DroppedAttributesCount {
+		af := &AssertionFailure{
+			typeName:      "Span",
+			dataComboName: sentSpan.Name,
+			fieldPath:     "DroppedAttributesCount",
+			expectedValue: sentSpan.DroppedAttributesCount,
+			actualValue:   recdSpan.DroppedAttributesCount,
+		}
+		v.assertionFailures = append(v.assertionFailures, af)
+	}
 	if len(sentSpan.Events) != len(recdSpan.Events) {
 		af := &AssertionFailure{
 			typeName:      "Span",
@@ -238,6 +258,16 @@ func (v *CorrectTestValidator) diffSpan(sentSpan *otlptrace.Span, recdSpan *otlp
 		}
 		v.assertionFailures = append(v.assertionFailures, af)
 	}
+	if sentSpan.DroppedEventsCount != recdSpan.DroppedEventsCount {
+		af := &AssertionFailure{
+			typeName:      "Span",
+			dataComboName: sentSpan.Name,
+			fieldPath:     "DroppedEventsCount",
+			expectedValue: sentSpan.DroppedEventsCount,
+			actualValue:   recdSpan.DroppedEventsCount,
+		}
+		v.assertionFailures = append(v.assertionFailures, af)
+	}
 	if len(sentSpan.Links) != len(recdSpan.Links) {
 		af := &AssertionFailure{
 			typeName:      "Span",
@@ -245,6 +275,16 @@ func (v *CorrectTestValidator) diffSpan(sentSpan *otlptrace.Span, recdSpan *otlp
 			fieldPath:     "Links",
 			expectedValue: len(sentSpan.Links),
 			actualValue:   len(recdSpan.Links),
+		}
+		v.assertionFailures = append(v.assertionFailures, af)
+	}
+	if sentSpan.DroppedLinksCount != recdSpan.DroppedLinksCount {
+		af := &AssertionFailure{
+			typeName:      "Span",
+			dataComboName: sentSpan.Name,
+			fieldPath:     "DroppedLinksCount",
+			expectedValue: sentSpan.DroppedLinksCount,
+			actualValue:   recdSpan.DroppedLinksCount,
 		}
 		v.assertionFailures = append(v.assertionFailures, af)
 	}
@@ -259,5 +299,14 @@ func (v *CorrectTestValidator) diffSpan(sentSpan *otlptrace.Span, recdSpan *otlp
 			}
 			v.assertionFailures = append(v.assertionFailures, af)
 		}
+	} else if (sentSpan.Status != nil && recdSpan.Status == nil) || (sentSpan.Status == nil && recdSpan.Status != nil) {
+		af := &AssertionFailure{
+			typeName:      "Span",
+			dataComboName: sentSpan.Name,
+			fieldPath:     "Status",
+			expectedValue: sentSpan.Status,
+			actualValue:   recdSpan.Status,
+		}
+		v.assertionFailures = append(v.assertionFailures, af)
 	}
 }

@@ -135,6 +135,11 @@ type AssertionFailure struct {
 	fieldPath     string
 	expectedValue interface{}
 	actualValue   interface{}
+	sumCount      int
+}
+
+func (af AssertionFailure) String() string {
+	return fmt.Sprintf("%s/%s e=%#v a=%#v ", af.dataComboName, af.fieldPath, af.expectedValue, af.actualValue)
 }
 
 func (r *CorrectnessResults) Init(resultsDir string) {
@@ -164,10 +169,11 @@ func (r *CorrectnessResults) Add(testName string, result interface{}) {
 	if !ok {
 		return
 	}
+	consolidated := consolidaateAssertionFailures(testResult.assertionFailures)
 	failuresStr := ""
-	for _, af := range testResult.assertionFailures {
-		failuresStr = fmt.Sprintf("%s; %s:%s:%s:%s:%s", failuresStr, af.typeName, af.dataComboName,
-			af.fieldPath, af.expectedValue, af.actualValue)
+	for _, af := range consolidated {
+		failuresStr = fmt.Sprintf("%s%s,%#v!=%#v,count=%d; ", failuresStr, af.fieldPath, af.expectedValue,
+			af.actualValue, af.sumCount)
 	}
 	_, _ = io.WriteString(r.resultsFile,
 		fmt.Sprintf("%-40s|%-6s|%7.0fs|%10d|%14d|%13d|%s\n",
@@ -210,4 +216,23 @@ func exists(path string) (bool, error) {
 		return false, nil
 	}
 	return true, err
+}
+
+func consolidaateAssertionFailures(failures []*AssertionFailure) map[string]*AssertionFailure {
+	afMap := make(map[string]*AssertionFailure)
+	for _, f := range failures {
+		summary := afMap[f.fieldPath]
+		if summary == nil {
+			summary = &AssertionFailure{
+				typeName:      f.typeName,
+				dataComboName: f.dataComboName + "...",
+				fieldPath:     f.fieldPath,
+				expectedValue: f.expectedValue,
+				actualValue:   f.actualValue,
+			}
+			afMap[f.fieldPath] = summary
+		}
+		summary.sumCount++
+	}
+	return afMap
 }
