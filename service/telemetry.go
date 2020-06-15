@@ -36,11 +36,17 @@ import (
 
 var (
 	// AppTelemetry is application's own telemetry.
-	AppTelemetry = &appTelemetry{}
+	AppTelemetry appTelemetryExporter = &appTelemetry{}
 )
 
+type appTelemetryExporter interface {
+	init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) error
+	shutdown() error
+}
+
 type appTelemetry struct {
-	views []*view.View
+	views  []*view.View
+	server *http.Server
 }
 
 func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) error {
@@ -100,10 +106,16 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 		zap.String(conventions.AttributeServiceInstance, instanceID),
 	)
 
+	mux := http.NewServeMux()
+	mux.Handle("/metrics", pe)
+
+	tel.server = &http.Server{
+		Addr:    metricsAddr,
+		Handler: mux,
+	}
+
 	go func() {
-		mux := http.NewServeMux()
-		mux.Handle("/metrics", pe)
-		serveErr := http.ListenAndServe(metricsAddr, mux)
+		serveErr := tel.server.ListenAndServe()
 		if serveErr != nil && serveErr != http.ErrServerClosed {
 			asyncErrorChannel <- serveErr
 		}
@@ -112,8 +124,14 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 	return nil
 }
 
-func (tel *appTelemetry) shutdown() {
+func (tel *appTelemetry) shutdown() error {
 	view.Unregister(tel.views...)
+
+	if tel.server != nil {
+		return tel.server.Close()
+	}
+
+	return nil
 }
 
 func sanitizePrometheusKey(str string) string {

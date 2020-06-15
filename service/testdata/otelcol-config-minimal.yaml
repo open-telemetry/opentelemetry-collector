@@ -1,0 +1,13 @@
+receivers:
+  otlp:
+
+exporters:
+  otlp:
+    endpoint: "locahost:14250"
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      exporters: [otlp]
+
