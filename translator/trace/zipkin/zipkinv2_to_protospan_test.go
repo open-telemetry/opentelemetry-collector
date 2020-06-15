@@ -17,6 +17,7 @@ package zipkin
 import (
 	"encoding/json"
 	"io/ioutil"
+	"net"
 	"testing"
 	"time"
 
@@ -145,4 +146,63 @@ func TestV2ParsesTags(t *testing.T) {
 		Code: tracetranslator.OCInternal,
 	}
 	assert.EqualValues(t, expectedStatus, span.Status)
+}
+
+func TestZipkinTagsToTraceAttributesDropTag(t *testing.T) {
+	tags := map[string]string{
+		"status.code":    "13",
+		"status.message": "a message",
+		"http.path":      "/api",
+	}
+
+	attrs, status := zipkinTagsToTraceAttributes(tags, zipkinmodel.Client)
+
+	var expected = &tracepb.Span_Attributes{
+		AttributeMap: map[string]*tracepb.AttributeValue{
+			"http.path": {Value: &tracepb.AttributeValue_StringValue{
+				StringValue: &tracepb.TruncatableString{Value: "/api"},
+			}},
+		},
+	}
+	assert.EqualValues(t, expected, attrs)
+	assert.EqualValues(t, status, &tracepb.Status{Code: 13, Message: "a message"})
+}
+
+func TestNodeFromZipkinEndpointsSetsAttributeOnNode(t *testing.T) {
+	zc := zipkinmodel.SpanContext{
+		TraceID: zipkinmodel.TraceID{
+			High: 0x0001020304050607,
+			Low:  0x08090A0B0C0D0E0F},
+		ID: zipkinmodel.ID(uint64(0xF1F2F3F4F5F6F7F8)),
+	}
+	zs := &zipkinmodel.SpanModel{
+		SpanContext: zc,
+		LocalEndpoint: &zipkinmodel.Endpoint{
+			ServiceName: "my-service",
+			IPv4:        net.IPv4(1, 2, 3, 4),
+		},
+	}
+
+	pbs := &tracepb.Span{}
+	_ = nodeFromZipkinEndpoints(zs, pbs)
+
+	var expected = &tracepb.Span_Attributes{
+		AttributeMap: map[string]*tracepb.AttributeValue{
+			"ipv4": {Value: &tracepb.AttributeValue_StringValue{
+				StringValue: &tracepb.TruncatableString{Value: "1.2.3.4"},
+			}},
+		},
+	}
+
+	assert.EqualValues(t, expected, pbs.Attributes)
+}
+
+func TestV2ParsesTagsHandleNil(t *testing.T) {
+	zs := []*zipkinmodel.SpanModel{
+		nil,
+	}
+
+	reqs, err := V2BatchToOCProto(zs)
+	assert.Nil(t, err)
+	assert.EqualValues(t, 0, len(reqs))
 }
