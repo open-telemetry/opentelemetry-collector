@@ -17,6 +17,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"strconv"
 	"testing"
 	"time"
@@ -35,10 +36,14 @@ import (
 )
 
 type mockFile struct {
-	buf bytes.Buffer
+	buf    bytes.Buffer
+	maxLen int
 }
 
 func (mf *mockFile) Write(p []byte) (n int, err error) {
+	if mf.maxLen != 0 && len(p)+mf.buf.Len() > mf.maxLen {
+		return 0, errors.New("buffer would be filled by write")
+	}
 	return mf.buf.Write(p)
 }
 
@@ -250,4 +255,85 @@ func TestFileLogsExporterNoErrors(t *testing.T) {
 				},
 			},
 		}, j)
+}
+
+func TestFileLogsExporterErrors(t *testing.T) {
+
+	now := time.Now()
+	ld := []*logspb.ResourceLogs{
+		{
+			Resource: &otresourcepb.Resource{
+				Attributes: []*otlpcommon.AttributeKeyValue{
+					{
+						Key:         "attr1",
+						Type:        otlpcommon.AttributeKeyValue_STRING,
+						StringValue: "value1",
+					},
+				},
+			},
+			Logs: []*logspb.LogRecord{
+				{
+					TimestampUnixNano: uint64(now.UnixNano()),
+					ShortName:         "logA",
+				},
+				{
+					TimestampUnixNano: uint64(now.UnixNano()),
+					ShortName:         "logB",
+				},
+			},
+		},
+		{
+			Resource: &otresourcepb.Resource{
+				Attributes: []*otlpcommon.AttributeKeyValue{
+					{
+						Key:         "attr2",
+						Type:        otlpcommon.AttributeKeyValue_STRING,
+						StringValue: "value2",
+					},
+				},
+			},
+			Logs: []*logspb.LogRecord{
+				{
+					TimestampUnixNano: uint64(now.UnixNano()),
+					ShortName:         "logC",
+				},
+			},
+		},
+	}
+
+	cases := []struct {
+		Name   string
+		MaxLen int
+	}{
+		{
+			Name:   "opening",
+			MaxLen: 1,
+		},
+		{
+			Name:   "resource",
+			MaxLen: 16,
+		},
+		{
+			Name:   "log_start",
+			MaxLen: 78,
+		},
+		{
+			Name:   "logs",
+			MaxLen: 128,
+		},
+	}
+
+	for i := range cases {
+		maxLen := cases[i].MaxLen
+		t.Run(cases[i].Name, func(t *testing.T) {
+			mf := &mockFile{
+				maxLen: maxLen,
+			}
+			exporter := &Exporter{file: mf}
+			require.NotNil(t, exporter)
+
+			assert.Error(t, exporter.ConsumeLogs(context.Background(), data.LogsFromProto(ld)))
+			assert.NoError(t, exporter.Shutdown(context.Background()))
+		})
+	}
 }
