@@ -38,6 +38,11 @@ const (
 	SentMetricPointsKey = "sent_metric_points"
 	// Key used to track metric points that failed to be sent by exporters.
 	FailedToSendMetricPointsKey = "send_failed_metric_points"
+
+	// Key used to track logs sent by exporters.
+	SentLogRecordsKey = "sent_log_records"
+	// Key used to track logs that failed to be sent by exporters.
+	FailedToSendLogRecordsKey = "send_failed_log_records"
 )
 
 var (
@@ -46,6 +51,7 @@ var (
 	exporterPrefix                 = ExporterKey + nameSep
 	exportTraceDataOperationSuffix = nameSep + "TraceDataExported"
 	exportMetricsOperationSuffix   = nameSep + "MetricsExported"
+	exportLogsOperationSuffix      = nameSep + "LogRecordsExported"
 
 	// Exporter metrics. Any count of data items below is in the final format
 	// that they were sent, reasoning: reconciliation is easier if measurements
@@ -67,6 +73,14 @@ var (
 	mExporterFailedToSendMetricPoints = stats.Int64(
 		exporterPrefix+FailedToSendMetricPointsKey,
 		"Number of metric points in failed attempts to send to destination.",
+		stats.UnitDimensionless)
+	mExporterSentLogRecords = stats.Int64(
+		exporterPrefix+SentLogRecordsKey,
+		"Number of log record successfully sent to destination.",
+		stats.UnitDimensionless)
+	mExporterFailedToSendLogRecords = stats.Int64(
+		exporterPrefix+FailedToSendLogRecordsKey,
+		"Number of log records in failed attempts to send to destination.",
 		stats.UnitDimensionless)
 )
 
@@ -139,6 +153,40 @@ func EndMetricsExportOp(
 	)
 }
 
+// StartLogsExportOp is called at the start of an Export operation.
+// The returned context should be used in other calls to the obsreport functions
+// dealing with the same export operation.
+func StartLogsExportOp(
+	operationCtx context.Context,
+	exporter string,
+) context.Context {
+	return traceExportDataOp(
+		operationCtx,
+		exporter,
+		exportLogsOperationSuffix)
+}
+
+// EndLogsExportOp completes the export operation that was started with
+// StartLogsExportOp.
+func EndLogsExportOp(
+	exporterCtx context.Context,
+	numExportedLogs int,
+	numDroppedLogs int, // TODO: For legacy measurements, to be removed in the future.
+	err error,
+) {
+	if useLegacy {
+		observability.RecordMetricsForLogsExporter(
+			exporterCtx, numExportedLogs, numDroppedLogs)
+	}
+
+	endExportOp(
+		exporterCtx,
+		numExportedLogs,
+		err,
+		configmodels.LogsDataType,
+	)
+}
+
 // ExporterContext adds the keys used when recording observability metrics to
 // the given context returning the newly created context. This context should
 // be used in related calls to the obsreport functions so metrics are properly
@@ -194,6 +242,11 @@ func endExportOp(
 		case configmodels.MetricsDataType:
 			sentMeasure = mExporterSentMetricPoints
 			failedToSendMeasure = mExporterFailedToSendMetricPoints
+		case configmodels.LogsDataType:
+			sentMeasure = mExporterSentLogRecords
+			failedToSendMeasure = mExporterFailedToSendLogRecords
+		default:
+			panic("unknown data type for internal metrics")
 		}
 
 		stats.Record(
@@ -213,6 +266,9 @@ func endExportOp(
 		case configmodels.MetricsDataType:
 			sentItemsKey = SentMetricPointsKey
 			failedToSendItemsKey = FailedToSendMetricPointsKey
+		case configmodels.LogsDataType:
+			sentItemsKey = SentLogRecordsKey
+			failedToSendItemsKey = FailedToSendLogRecordsKey
 		}
 
 		span.AddAttributes(

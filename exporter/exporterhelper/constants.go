@@ -25,4 +25,6 @@ var (
 	errNilPushTraceData = errors.New("nil traceDataPusher")
 	// errNilPushMetricsData is returned when a nil pushMetricsData is given.
 	errNilPushMetricsData = errors.New("nil pushMetricsData")
+	// errNilPushLogsData is returned when a nil pushLogsData is given.
+	errNilPushLogsData = errors.New("nil pushLogsData")
 )

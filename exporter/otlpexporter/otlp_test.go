@@ -32,19 +32,20 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	otlptracecol "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
+	otlplogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/observability"
 	"go.opentelemetry.io/collector/testutils"
 )
 
-type mockReceiver struct {
+type mockTraceReceiver struct {
 	srv            *grpc.Server
 	requestCount   int32
 	totalSpanCount int32
 	lastRequest    *otlptracecol.ExportTraceServiceRequest
 }
 
-func (r *mockReceiver) Export(
+func (r *mockTraceReceiver) Export(
 	ctx context.Context,
 	req *otlptracecol.ExportTraceServiceRequest,
 ) (*otlptracecol.ExportTraceServiceResponse, error) {
@@ -60,8 +61,8 @@ func (r *mockReceiver) Export(
 	return &otlptracecol.ExportTraceServiceResponse{}, nil
 }
 
-func otlpReceiverOnGRPCServer(ln net.Listener) *mockReceiver {
-	rcv := &mockReceiver{}
+func otlpTraceReceiverOnGRPCServer(ln net.Listener) *mockTraceReceiver {
+	rcv := &mockTraceReceiver{}
 
 	// Now run it as a gRPC server
 	rcv.srv = observability.GRPCServerWithObservabilityEnabled()
@@ -73,11 +74,42 @@ func otlpReceiverOnGRPCServer(ln net.Listener) *mockReceiver {
 	return rcv
 }
 
+type mockLogsReceiver struct {
+	srv                 *grpc.Server
+	requestCount        int32
+	totalLogRecordCount int32
+	lastRequest         *otlplogs.ExportLogServiceRequest
+}
+
+func (r *mockLogsReceiver) Export(ctx context.Context, req *otlplogs.ExportLogServiceRequest) (*otlplogs.ExportLogServiceResponse, error) {
+	atomic.AddInt32(&r.requestCount, 1)
+	recordCount := 0
+	for _, rs := range req.ResourceLogs {
+		recordCount += len(rs.Logs)
+	}
+	atomic.AddInt32(&r.totalLogRecordCount, int32(recordCount))
+	r.lastRequest = req
+	return &otlplogs.ExportLogServiceResponse{}, nil
+}
+
+func otlpLogsReceiverOnGRPCServer(ln net.Listener) *mockLogsReceiver {
+	rcv := &mockLogsReceiver{}
+
+	// Now run it as a gRPC server
+	rcv.srv = observability.GRPCServerWithObservabilityEnabled()
+	otlplogs.RegisterLogServiceServer(rcv.srv, rcv)
+	go func() {
+		_ = rcv.srv.Serve(ln)
+	}()
+
+	return rcv
+}
+
 func TestSendTraceData(t *testing.T) {
 	// Start an OTLP-compatible receiver.
 	ln, err := net.Listen("tcp", "localhost:")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
-	rcv := otlpReceiverOnGRPCServer(ln)
+	rcv := otlpTraceReceiverOnGRPCServer(ln)
 	// Also closes the connection.
 	defer rcv.srv.GracefulStop()
 
@@ -237,7 +269,7 @@ func TestSendTraceDataServerStartWhileRequest(t *testing.T) {
 	}()
 
 	time.Sleep(2 * time.Second)
-	rcv := otlpReceiverOnGRPCServer(ln)
+	rcv := otlpTraceReceiverOnGRPCServer(ln)
 	defer rcv.srv.GracefulStop()
 	// Wait until one of the conditions below triggers.
 	select {
@@ -250,7 +282,7 @@ func TestSendTraceDataServerStartWhileRequest(t *testing.T) {
 }
 
 func startServerAndMakeRequest(t *testing.T, exp component.TraceExporter, td pdata.Traces, ln net.Listener) {
-	rcv := otlpReceiverOnGRPCServer(ln)
+	rcv := otlpTraceReceiverOnGRPCServer(ln)
 	defer rcv.srv.GracefulStop()
 	// Ensure that initially there is no data in the receiver.
 	assert.EqualValues(t, 0, rcv.requestCount)
@@ -271,5 +303,71 @@ func startServerAndMakeRequest(t *testing.T, exp component.TraceExporter, td pda
 
 	// Verify received span.
 	assert.EqualValues(t, 2, rcv.totalSpanCount)
+	assert.EqualValues(t, expectedOTLPReq, rcv.lastRequest)
+}
+
+func TestSendLogData(t *testing.T) {
+	// Start an OTLP-compatible receiver.
+	ln, err := net.Listen("tcp", "localhost:")
+	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
+	rcv := otlpLogsReceiverOnGRPCServer(ln)
+	// Also closes the connection.
+	defer rcv.srv.GracefulStop()
+
+	// Start an OTLP exporter and point to the receiver.
+	config := Config{
+		GRPCClientSettings: configgrpc.GRPCClientSettings{
+			Endpoint: ln.Addr().String(),
+			TLSSetting: configtls.TLSClientSetting{
+				Insecure: true,
+			},
+		},
+	}
+
+	factory := &Factory{}
+	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
+	exp, err := factory.CreateLogExporter(context.Background(), creationParams, &config)
+	require.NoError(t, err)
+	require.NotNil(t, exp)
+	defer func() {
+		assert.NoError(t, exp.Shutdown(context.Background()))
+	}()
+
+	host := componenttest.NewNopHost()
+
+	assert.NoError(t, exp.Start(context.Background(), host))
+
+	// Ensure that initially there is no data in the receiver.
+	assert.EqualValues(t, 0, rcv.requestCount)
+
+	// Send empty request.
+	td := testdata.GenerateLogDataEmpty()
+	assert.NoError(t, exp.ConsumeLogs(context.Background(), td))
+
+	// Wait until it is received.
+	testutils.WaitFor(t, func() bool {
+		return atomic.LoadInt32(&rcv.requestCount) > 0
+	}, "receive a request")
+
+	// Ensure it was received empty.
+	assert.EqualValues(t, 0, rcv.totalLogRecordCount)
+
+	// A request with 2 log entries.
+	td = testdata.GenerateLogDataTwoLogsSameResource()
+
+	expectedOTLPReq := &otlplogs.ExportLogServiceRequest{
+		ResourceLogs: testdata.GenerateLogOtlpSameResourceTwoLogs(),
+	}
+
+	err = exp.ConsumeLogs(context.Background(), td)
+	assert.NoError(t, err)
+
+	// Wait until it is received.
+	testutils.WaitFor(t, func() bool {
+		return atomic.LoadInt32(&rcv.requestCount) > 1
+	}, "receive a request")
+
+	// Verify received span.
+	assert.EqualValues(t, 2, rcv.totalLogRecordCount)
 	assert.EqualValues(t, expectedOTLPReq, rcv.lastRequest)
 }

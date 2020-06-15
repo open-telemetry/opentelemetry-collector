@@ -180,3 +180,14 @@ func TestCreateTraceExporter(t *testing.T) {
 		})
 	}
 }
+
+func TestCreateLogsExporter(t *testing.T) {
+	factory := Factory{}
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.GRPCClientSettings.Endpoint = testutils.GetAvailableLocalAddress(t)
+
+	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
+	oexp, err := factory.CreateLogExporter(context.Background(), creationParams, cfg)
+	require.Nil(t, err)
+	require.NotNil(t, oexp)
+}
