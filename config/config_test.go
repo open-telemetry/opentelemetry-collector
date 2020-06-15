@@ -339,6 +339,14 @@ func TestEscapedEnvVars(t *testing.T) {
 				"recv.2": "$" + receiverExtraMapValue,
 				// $$$$ -> two escaped $
 				"recv.3": "$$RECEIVERS_EXAMPLERECEIVER_EXTRA_MAP_RECV_VALUE_3",
+				// escaped $ in the middle
+				"recv.4": "some${RECEIVERS_EXAMPLERECEIVER_EXTRA_MAP_RECV_VALUE_4}text",
+				// $$$$ -> two escaped $
+				"recv.5": "${ONE}${TWO}",
+				// trailing escaped $
+				"recv.6": "text$",
+				// escaped $ alone
+				"recv.7": "$",
 			},
 			ExtraListSetting: []string{"$RECEIVERS_EXAMPLERECEIVER_EXTRA_LIST_VALUE_1", "$RECEIVERS_EXAMPLERECEIVER_EXTRA_LIST_VALUE_2"},
 		},
