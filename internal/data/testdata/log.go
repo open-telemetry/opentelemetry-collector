@@ -206,16 +206,6 @@ func GenerateLogDataTwoLogsSameResourceOneDifferent() data.Logs {
 	return ld
 }
 
-func GenerateLogDataManyLogsSameResource(logsCount int) data.Logs {
-	ld := GenerateLogDataOneEmptyLogs()
-	rs0 := ld.ResourceLogs().At(0)
-	rs0.Logs().Resize(logsCount)
-	for i := 0; i < logsCount; i++ {
-		fillLogOne(rs0.Logs().At(i))
-	}
-	return ld
-}
-
 func generateLogOtlpTwoLogsSameResourceOneDifferent() []*otlplogs.ResourceLogs {
 	return []*otlplogs.ResourceLogs{
 		{
@@ -240,10 +230,12 @@ func fillLogOne(log pdata.LogRecord) {
 	log.SetDroppedAttributesCount(1)
 	log.SetSeverityNumber(otlplogs.SeverityNumber_INFO)
 	log.SetSeverityText("Info")
+	log.SetSpanID([]byte{0x01, 0x02, 0x04, 0x08})
+	log.SetTraceID([]byte{0x08, 0x04, 0x02, 0x01})
 
 	attrs := log.Attributes()
 	attrs.InsertString("app", "server")
-	attrs.InsertString("env", "prod")
+	attrs.InsertInt("instance_num", 1)
 
 	log.SetBody("This is a log message")
 }
@@ -256,14 +248,18 @@ func generateOtlpLogOne() *otlplogs.LogRecord {
 		SeverityNumber:         otlplogs.SeverityNumber_INFO,
 		SeverityText:           "Info",
 		Body:                   "This is a log message",
+		SpanId:                 []byte{0x01, 0x02, 0x04, 0x08},
+		TraceId:                []byte{0x08, 0x04, 0x02, 0x01},
 		Attributes: []*opentelemetry_proto_common_v1.AttributeKeyValue{
 			{
 				Key:         "app",
+				Type:        opentelemetry_proto_common_v1.AttributeKeyValue_STRING,
 				StringValue: "server",
 			},
 			{
-				Key:         "env",
-				StringValue: "prod",
+				Key:      "instance_num",
+				Type:     opentelemetry_proto_common_v1.AttributeKeyValue_INT,
+				IntValue: 1,
 			},
 		},
 	}

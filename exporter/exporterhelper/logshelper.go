@@ -49,7 +49,6 @@ func (me *logsExporter) Shutdown(ctx context.Context) error {
 }
 
 // NewLogsExporter creates an LogsExporter that can record logs and can wrap every request with a Span.
-// If no options are passed it just adds the exporter format as a tag in the Context.
 // TODO: Add support for retries.
 func NewLogsExporter(config configmodels.Exporter, pushLogsData PushLogsData, options ...ExporterOption) (component.LogExporter, error) {
 	if config == nil {

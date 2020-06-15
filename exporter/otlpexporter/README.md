@@ -1,12 +1,12 @@
 # OTLP Exporter
 
-Exports traces, metrics and/or logs to another Collector via gRPC using OTLP format.
+Exports traces and/or metrics to another Collector via gRPC using OTLP format.
 
 The following settings are required:
 
-- `endpoint`: target to which the exporter is going to send traces, metrics, or
-  logs, using the gRPC protocol. The valid syntax is described at
-  https://github.com/grpc/grpc/blob/master/doc/naming.md.
+- `endpoint`: target to which the exporter is going to send traces or metrics,
+using the gRPC protocol. The valid syntax is described at
+https://github.com/grpc/grpc/blob/master/doc/naming.md.
 
 The following settings can be optionally configured:
 

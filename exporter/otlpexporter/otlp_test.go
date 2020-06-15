@@ -340,7 +340,7 @@ func TestSendLogData(t *testing.T) {
 	// Ensure that initially there is no data in the receiver.
 	assert.EqualValues(t, 0, rcv.requestCount)
 
-	// Send empty trace.
+	// Send empty request.
 	td := testdata.GenerateLogDataEmpty()
 	assert.NoError(t, exp.ConsumeLogs(context.Background(), td))
 
@@ -352,7 +352,7 @@ func TestSendLogData(t *testing.T) {
 	// Ensure it was received empty.
 	assert.EqualValues(t, 0, rcv.totalLogRecordCount)
 
-	// A trace with 2 spans.
+	// A request with 2 log entries.
 	td = testdata.GenerateLogDataTwoLogsSameResource()
 
 	expectedOTLPReq := &otlplogs.ExportLogServiceRequest{
