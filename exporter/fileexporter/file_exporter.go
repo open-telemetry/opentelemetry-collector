@@ -26,6 +26,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/internal/data"
 )
 
 // Marshaler configuration used for marhsaling Protobuf to JSON. Use default config.
@@ -36,6 +37,10 @@ type jsonWriter struct {
 	firstFieldDone     bool
 	firstArrayItemDone bool
 	writer             io.Writer
+}
+
+func (jw *jsonWriter) Reset() {
+	jw.firstFieldDone = false
 }
 
 // Begin writing JSON. Call first.
@@ -193,6 +198,43 @@ func (e *Exporter) ConsumeMetricsData(ctx context.Context, md consumerdata.Metri
 				return err
 			}
 		}
+	}
+	return nil
+}
+
+func (e *Exporter) ConsumeLogs(ctx context.Context, ld data.Logs) error {
+	// Ensure only one write operation happens at a time.
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
+
+	// Prepare to write JSON object.
+	jw := &jsonWriter{writer: e.file}
+
+	logsProto := data.LogsToProto(ld)
+
+	for _, rl := range logsProto {
+		if err := jw.Begin(); err != nil {
+			return err
+		}
+		err := jw.MarshalObject("resource", rl.Resource)
+		if err != nil {
+			return err
+		}
+
+		if err := jw.BeginMarshalArray("logs"); err != nil {
+			return err
+		}
+
+		for _, log := range rl.Logs {
+			if log != nil {
+				if err := jw.MarshalArrayItem(log); err != nil {
+					return err
+				}
+			}
+		}
+		jw.EndMarshalArray()
+		jw.End()
+		jw.Reset()
 	}
 	return nil
 }

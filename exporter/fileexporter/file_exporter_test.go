@@ -17,7 +17,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
+	"strconv"
 	"testing"
+	"time"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
@@ -26,13 +29,21 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/internal/data"
+	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
+	logspb "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
+	otresourcepb "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
 )
 
 type mockFile struct {
-	buf bytes.Buffer
+	buf    bytes.Buffer
+	maxLen int
 }
 
 func (mf *mockFile) Write(p []byte) (n int, err error) {
+	if mf.maxLen != 0 && len(p)+mf.buf.Len() > mf.maxLen {
+		return 0, errors.New("buffer would be filled by write")
+	}
 	return mf.buf.Write(p)
 }
 
@@ -148,4 +159,181 @@ func TestFileMetricsExporterNoErrors(t *testing.T) {
 				},
 			},
 		})
+}
+
+func TestFileLogsExporterNoErrors(t *testing.T) {
+	mf := &mockFile{}
+	exporter := &Exporter{file: mf}
+	require.NotNil(t, exporter)
+
+	now := time.Now()
+	ld := []*logspb.ResourceLogs{
+		{
+			Resource: &otresourcepb.Resource{
+				Attributes: []*otlpcommon.AttributeKeyValue{
+					{
+						Key:         "attr1",
+						Type:        otlpcommon.AttributeKeyValue_STRING,
+						StringValue: "value1",
+					},
+				},
+			},
+			Logs: []*logspb.LogRecord{
+				{
+					TimestampUnixNano: uint64(now.UnixNano()),
+					ShortName:         "logA",
+				},
+				{
+					TimestampUnixNano: uint64(now.UnixNano()),
+					ShortName:         "logB",
+				},
+			},
+		},
+		{
+			Resource: &otresourcepb.Resource{
+				Attributes: []*otlpcommon.AttributeKeyValue{
+					{
+						Key:         "attr2",
+						Type:        otlpcommon.AttributeKeyValue_STRING,
+						StringValue: "value2",
+					},
+				},
+			},
+			Logs: []*logspb.LogRecord{
+				{
+					TimestampUnixNano: uint64(now.UnixNano()),
+					ShortName:         "logC",
+				},
+			},
+		},
+	}
+	assert.NoError(t, exporter.ConsumeLogs(context.Background(), data.LogsFromProto(ld)))
+	assert.NoError(t, exporter.Shutdown(context.Background()))
+
+	decoder := json.NewDecoder(&mf.buf)
+	var j map[string]interface{}
+	assert.NoError(t, decoder.Decode(&j))
+
+	assert.EqualValues(t,
+		map[string]interface{}{
+			"resource": map[string]interface{}{
+				"attributes": []interface{}{
+					map[string]interface{}{
+						"key":         "attr1",
+						"stringValue": "value1",
+					},
+				},
+			},
+			"logs": []interface{}{
+				map[string]interface{}{
+					"timestampUnixNano": strconv.Itoa(int(now.UnixNano())),
+					"shortName":         "logA",
+				},
+				map[string]interface{}{
+					"timestampUnixNano": strconv.Itoa(int(now.UnixNano())),
+					"shortName":         "logB",
+				},
+			},
+		}, j)
+
+	require.NoError(t, decoder.Decode(&j))
+
+	assert.EqualValues(t,
+		map[string]interface{}{
+			"resource": map[string]interface{}{
+				"attributes": []interface{}{
+					map[string]interface{}{
+						"key":         "attr2",
+						"stringValue": "value2",
+					},
+				},
+			},
+			"logs": []interface{}{
+				map[string]interface{}{
+					"timestampUnixNano": strconv.Itoa(int(now.UnixNano())),
+					"shortName":         "logC",
+				},
+			},
+		}, j)
+}
+
+func TestFileLogsExporterErrors(t *testing.T) {
+
+	now := time.Now()
+	ld := []*logspb.ResourceLogs{
+		{
+			Resource: &otresourcepb.Resource{
+				Attributes: []*otlpcommon.AttributeKeyValue{
+					{
+						Key:         "attr1",
+						Type:        otlpcommon.AttributeKeyValue_STRING,
+						StringValue: "value1",
+					},
+				},
+			},
+			Logs: []*logspb.LogRecord{
+				{
+					TimestampUnixNano: uint64(now.UnixNano()),
+					ShortName:         "logA",
+				},
+				{
+					TimestampUnixNano: uint64(now.UnixNano()),
+					ShortName:         "logB",
+				},
+			},
+		},
+		{
+			Resource: &otresourcepb.Resource{
+				Attributes: []*otlpcommon.AttributeKeyValue{
+					{
+						Key:         "attr2",
+						Type:        otlpcommon.AttributeKeyValue_STRING,
+						StringValue: "value2",
+					},
+				},
+			},
+			Logs: []*logspb.LogRecord{
+				{
+					TimestampUnixNano: uint64(now.UnixNano()),
+					ShortName:         "logC",
+				},
+			},
+		},
+	}
+
+	cases := []struct {
+		Name   string
+		MaxLen int
+	}{
+		{
+			Name:   "opening",
+			MaxLen: 1,
+		},
+		{
+			Name:   "resource",
+			MaxLen: 16,
+		},
+		{
+			Name:   "log_start",
+			MaxLen: 78,
+		},
+		{
+			Name:   "logs",
+			MaxLen: 128,
+		},
+	}
+
+	for i := range cases {
+		maxLen := cases[i].MaxLen
+		t.Run(cases[i].Name, func(t *testing.T) {
+			mf := &mockFile{
+				maxLen: maxLen,
+			}
+			exporter := &Exporter{file: mf}
+			require.NotNil(t, exporter)
+
+			assert.Error(t, exporter.ConsumeLogs(context.Background(), data.LogsFromProto(ld)))
+			assert.NoError(t, exporter.Shutdown(context.Background()))
+		})
+	}
 }

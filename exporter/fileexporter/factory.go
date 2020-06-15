@@ -15,6 +15,7 @@
 package fileexporter
 
 import (
+	"context"
 	"os"
 
 	"go.uber.org/zap"
@@ -57,11 +58,22 @@ func (f *Factory) CreateMetricsExporter(logger *zap.Logger, config configmodels.
 	return f.createExporter(config)
 }
 
+// CreateLogExporter creates a log exporter based on this config.
+func (f *Factory) CreateLogExporter(
+	ctx context.Context,
+	params component.ExporterCreateParams,
+	cfg configmodels.Exporter,
+) (component.LogExporter, error) {
+	return f.createExporter(cfg)
+}
+
+var _ component.LogExporterFactory = (*Factory)(nil)
+
 func (f *Factory) createExporter(config configmodels.Exporter) (*Exporter, error) {
 	cfg := config.(*Config)
 
-	// There must be one exporter for both metrics and traces. We maintain a map of
-	// exporters per config.
+	// There must be one exporter for metrics, traces, and logs. We maintain a
+	// map of exporters per config.
 
 	// Check to see if there is already a exporter for this config.
 	exporter, ok := exporters[cfg]
