@@ -26,15 +26,15 @@ import (
 	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
-//TestCaseValidator defines the interface for validating and reporting test results.
+// TestCaseValidator defines the interface for validating and reporting test results.
 type TestCaseValidator interface {
-	//Validate executes validation routines and test assertions.
+	// Validate executes validation routines and test assertions.
 	Validate(tc *TestCase)
-	//RecordResults updates the TestResultsSummary for the test suite with results of a single test.
+	// RecordResults updates the TestResultsSummary for the test suite with results of a single test.
 	RecordResults(tc *TestCase)
 }
 
-//PerfTestValidator implements TestCaseValidator for test suites using PerformanceResults for summarizing results.
+// PerfTestValidator implements TestCaseValidator for test suites using PerformanceResults for summarizing results.
 type PerfTestValidator struct {
 }
 
@@ -72,20 +72,20 @@ func (v *PerfTestValidator) RecordResults(tc *TestCase) {
 	})
 }
 
-//CorrectTestValidator implements TestCaseValidator for test suites using CorrectnessResults for summarizing results.
-type CorrectTestValidator struct {
+// CorrectnessTestValidator implements TestCaseValidator for test suites using CorrectnessResults for summarizing results.
+type CorrectnessTestValidator struct {
 	dataProvider      DataProvider
 	assertionFailures []*AssertionFailure
 }
 
-func NewCorrectTestValidator(provider DataProvider) *CorrectTestValidator {
-	return &CorrectTestValidator{
+func NewCorrectTestValidator(provider DataProvider) *CorrectnessTestValidator {
+	return &CorrectnessTestValidator{
 		dataProvider:      provider,
 		assertionFailures: make([]*AssertionFailure, 0),
 	}
 }
 
-func (v *CorrectTestValidator) Validate(tc *TestCase) {
+func (v *CorrectnessTestValidator) Validate(tc *TestCase) {
 	if assert.EqualValues(tc.t, tc.LoadGenerator.DataItemsSent(), tc.MockBackend.DataItemsReceived(),
 		"Received and sent counters do not match.") {
 		log.Printf("Sent and received data counters match.")
@@ -104,7 +104,7 @@ func (v *CorrectTestValidator) Validate(tc *TestCase) {
 	//assert.EqualValues(tc.t, 0, len(v.assertionFailures), "There are span data mismatches.")
 }
 
-func (v *CorrectTestValidator) RecordResults(tc *TestCase) {
+func (v *CorrectnessTestValidator) RecordResults(tc *TestCase) {
 	var result string
 	if tc.t.Failed() {
 		result = "FAIL"
@@ -125,7 +125,7 @@ func (v *CorrectTestValidator) RecordResults(tc *TestCase) {
 	})
 }
 
-func (v *CorrectTestValidator) assertSentRecdTracingDataEqual(tracesList []pdata.Traces) {
+func (v *CorrectnessTestValidator) assertSentRecdTracingDataEqual(tracesList []pdata.Traces) {
 	for _, td := range tracesList {
 		resourceSpansList := pdata.TracesToOtlp(td)
 		for _, rs := range resourceSpansList {
@@ -140,7 +140,7 @@ func (v *CorrectTestValidator) assertSentRecdTracingDataEqual(tracesList []pdata
 	}
 }
 
-func (v *CorrectTestValidator) diffSpan(sentSpan *otlptrace.Span, recdSpan *otlptrace.Span) {
+func (v *CorrectnessTestValidator) diffSpan(sentSpan *otlptrace.Span, recdSpan *otlptrace.Span) {
 	if sentSpan == nil {
 		af := &AssertionFailure{
 			typeName:      "Span",

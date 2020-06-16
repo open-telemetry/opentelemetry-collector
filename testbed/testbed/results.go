@@ -33,8 +33,8 @@ type TestResultsSummary interface {
 	Save()
 }
 
-//PerformanceResults implements the TestResultsSummary interface with fields suitable for reporting
-//performance test results.
+// PerformanceResults implements the TestResultsSummary interface with fields suitable for reporting
+// performance test results.
 type PerformanceResults struct {
 	resultsDir     string
 	resultsFile    *os.File
@@ -42,7 +42,7 @@ type PerformanceResults struct {
 	totalDuration  time.Duration
 }
 
-//PerformanceTestResult reports the results of a single performance test.
+// PerformanceTestResult reports the results of a single performance test.
 type PerformanceTestResult struct {
 	testName          string
 	result            string
@@ -61,10 +61,8 @@ func (r *PerformanceResults) Init(resultsDir string) {
 	r.perTestResults = []*PerformanceTestResult{}
 
 	// Create resultsSummary file
-	err := createDirectoryIfNeeded(resultsDir)
-	if err != nil {
-		log.Fatalf(err.Error())
-	}
+	os.MkdirAll(resultsDir, os.FileMode(0755))
+	var err error
 	r.resultsFile, err = os.Create(path.Join(r.resultsDir, "TESTRESULTS.md"))
 	if err != nil {
 		log.Fatalf(err.Error())
@@ -108,8 +106,8 @@ func (r *PerformanceResults) Add(testName string, result interface{}) {
 	r.totalDuration = r.totalDuration + testResult.duration
 }
 
-//CorrectnessResults implements the TestResultsSummary interface with fields suitable for reporting data translation
-//correctness test results.
+// CorrectnessResults implements the TestResultsSummary interface with fields suitable for reporting data translation
+// correctness test results.
 type CorrectnessResults struct {
 	resultsDir             string
 	resultsFile            *os.File
@@ -118,7 +116,7 @@ type CorrectnessResults struct {
 	totalDuration          time.Duration
 }
 
-//CorrectnessTestResult reports the results of a single correctness test.
+// CorrectnessTestResult reports the results of a single correctness test.
 type CorrectnessTestResult struct {
 	testName              string
 	result                string
@@ -147,10 +145,8 @@ func (r *CorrectnessResults) Init(resultsDir string) {
 	r.perTestResults = []*CorrectnessTestResult{}
 
 	// Create resultsSummary file
-	err := createDirectoryIfNeeded(resultsDir)
-	if err != nil {
-		log.Fatalf(err.Error())
-	}
+	os.MkdirAll(resultsDir, os.FileMode(0755))
+	var err error
 	r.resultsFile, err = os.Create(path.Join(r.resultsDir, "CORRECTNESSRESULTS.md"))
 	if err != nil {
 		log.Fatalf(err.Error())
@@ -169,7 +165,7 @@ func (r *CorrectnessResults) Add(testName string, result interface{}) {
 	if !ok {
 		return
 	}
-	consolidated := consolidaateAssertionFailures(testResult.assertionFailures)
+	consolidated := consolidateAssertionFailures(testResult.assertionFailures)
 	failuresStr := ""
 	for _, af := range consolidated {
 		failuresStr = fmt.Sprintf("%s%s,%#v!=%#v,count=%d; ", failuresStr, af.fieldPath, af.expectedValue,
@@ -199,14 +195,6 @@ func (r *CorrectnessResults) Save() {
 	r.resultsFile.Close()
 }
 
-func createDirectoryIfNeeded(resultsDir string) error {
-	dirPresent, err := exists(resultsDir)
-	if !dirPresent {
-		os.MkdirAll(resultsDir, os.ModePerm)
-	}
-	return err
-}
-
 func exists(path string) (bool, error) {
 	_, err := os.Stat(path)
 	if err == nil {
@@ -218,7 +206,7 @@ func exists(path string) (bool, error) {
 	return true, err
 }
 
-func consolidaateAssertionFailures(failures []*AssertionFailure) map[string]*AssertionFailure {
+func consolidateAssertionFailures(failures []*AssertionFailure) map[string]*AssertionFailure {
 	afMap := make(map[string]*AssertionFailure)
 	for _, f := range failures {
 		summary := afMap[f.fieldPath]

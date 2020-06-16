@@ -123,11 +123,12 @@ type ResourceConsumption struct {
 	RAMMiBMax     uint32
 }
 
-func (cp *ChildProcess) PrepareConfig(configStr string) (string, error) {
-	file, err := ioutil.TempFile("", "agent*.yaml")
+func (cp *ChildProcess) PrepareConfig(configStr string) (configFileName string, err error) {
+	var file *os.File
+	file, err = ioutil.TempFile("", "agent*.yaml")
 	if err != nil {
 		log.Printf("%s", err)
-		return "", err
+		return configFileName, err
 	}
 
 	defer func() {
@@ -139,10 +140,10 @@ func (cp *ChildProcess) PrepareConfig(configStr string) (string, error) {
 
 	if _, err = file.WriteString(configStr); err != nil {
 		log.Printf("%s", err)
-		return "", err
+		return configFileName, err
 	}
-
-	return file.Name(), nil
+	configFileName = file.Name()
+	return configFileName, err
 }
 
 // start a child process.
@@ -153,7 +154,7 @@ func (cp *ChildProcess) PrepareConfig(configStr string) (string, error) {
 // the process to.
 // cmd is the executable to run.
 // cmdArgs is the command line arguments to pass to the process.
-func (cp *ChildProcess) Start(params StartParams) (string, error) {
+func (cp *ChildProcess) Start(params StartParams) (receiverAddr string, err error) {
 
 	cp.name = params.name
 	cp.doneSignal = make(chan struct{})
@@ -162,9 +163,10 @@ func (cp *ChildProcess) Start(params StartParams) (string, error) {
 	log.Printf("Starting %s (%s)", cp.name, params.cmd)
 
 	// Prepare log file
-	logFile, err := os.Create(params.logFilePath)
+	var logFile *os.File
+	logFile, err = os.Create(params.logFilePath)
 	if err != nil {
-		return "", fmt.Errorf("cannot create %s: %s", params.logFilePath, err.Error())
+		return receiverAddr, fmt.Errorf("cannot create %s: %s", params.logFilePath, err.Error())
 	}
 	log.Printf("Writing %s log to %s", cp.name, params.logFilePath)
 
@@ -175,16 +177,16 @@ func (cp *ChildProcess) Start(params StartParams) (string, error) {
 	// Capture standard output and standard error.
 	stdoutIn, err := cp.cmd.StdoutPipe()
 	if err != nil {
-		return "", fmt.Errorf("cannot capture stdout of %s: %s", params.cmd, err.Error())
+		return receiverAddr, fmt.Errorf("cannot capture stdout of %s: %s", params.cmd, err.Error())
 	}
 	stderrIn, err := cp.cmd.StderrPipe()
 	if err != nil {
-		return "", fmt.Errorf("cannot capture stderr of %s: %s", params.cmd, err.Error())
+		return receiverAddr, fmt.Errorf("cannot capture stderr of %s: %s", params.cmd, err.Error())
 	}
 
 	// Start the process.
-	if err := cp.cmd.Start(); err != nil {
-		return "", fmt.Errorf("cannot start executable at %s: %s", params.cmd, err.Error())
+	if err = cp.cmd.Start(); err != nil {
+		return receiverAddr, fmt.Errorf("cannot start executable at %s: %s", params.cmd, err.Error())
 	}
 
 	cp.startTime = time.Now()
@@ -205,10 +207,11 @@ func (cp *ChildProcess) Start(params StartParams) (string, error) {
 		cp.outputWG.Done()
 	}()
 
-	return DefaultHost, nil
+	receiverAddr = fmt.Sprintf("%s:%d", DefaultHost, 0)
+	return receiverAddr, err
 }
 
-func (cp *ChildProcess) Stop() (bool, error) {
+func (cp *ChildProcess) Stop() (stopped bool, err error) {
 	if !cp.isStarted || cp.isStopped {
 		return false, nil
 	}
@@ -227,7 +230,7 @@ func (cp *ChildProcess) Stop() (bool, error) {
 		close(cp.doneSignal)
 
 		// Gracefully signal process to stop.
-		if err := cp.cmd.Process.Signal(syscall.SIGTERM); err != nil {
+		if err = cp.cmd.Process.Signal(syscall.SIGTERM); err != nil {
 			log.Printf("Cannot send SIGTEM: %s", err.Error())
 		}
 
@@ -243,7 +246,7 @@ func (cp *ChildProcess) Stop() (bool, error) {
 				// Time is out. Kill the process.
 				log.Printf("%s pid=%d is not responding to SIGTERM. Sending SIGKILL to kill forcedly.",
 					cp.name, cp.cmd.Process.Pid)
-				if err := cp.cmd.Process.Signal(syscall.SIGKILL); err != nil {
+				if err = cp.cmd.Process.Signal(syscall.SIGKILL); err != nil {
 					log.Printf("Cannot send SIGKILL: %s", err.Error())
 				}
 			case <-finished:
@@ -255,7 +258,7 @@ func (cp *ChildProcess) Stop() (bool, error) {
 		cp.outputWG.Wait()
 
 		// Wait for process to terminate
-		err := cp.cmd.Wait()
+		err = cp.cmd.Wait()
 
 		// Let goroutine know process is finished.
 		close(finished)
@@ -270,7 +273,8 @@ func (cp *ChildProcess) Stop() (bool, error) {
 			log.Printf("%s execution failed: %s", cp.name, err.Error())
 		}
 	})
-	return true, nil
+	stopped = true
+	return stopped, err
 }
 
 func (cp *ChildProcess) WatchResourceConsumption() error {

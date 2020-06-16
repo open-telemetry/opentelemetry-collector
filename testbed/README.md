@@ -35,7 +35,7 @@ interfaces the `NewTestCase` function takes as parameters.
   * `InProcessCollector` - Implementation of `OtelcolRunner` runs a single otelcol as a go routine within the same process as the test executor.
 * `TestCaseValidator` - Validates and reports on test results.
   * `PerfTestValidator` - Implementation of `TestCaseValidator` for test suites using `PerformanceResults` for summarizing results.
-  * `CorrectTestValidator` - Implementation of `TestCaseValidator` for test suites using `CorrectnessResults` for summarizing results.
+  * `CorrectnessTestValidator` - Implementation of `TestCaseValidator` for test suites using `CorrectnessResults` for summarizing results.
 * `TestResultsSummary` - Records itemized test case results plus a summary of one category of testing.
   * `PerformanceResults` - Implementation of `TestResultsSummary` with fields suitable for reporting performance test results.
   * `CorrectnessResults` - Implementation of `TestResultsSummary` with fields suitable for reporting data translation correctness test results.

@@ -26,7 +26,9 @@ import (
 func TestNewInProcessPipeline(t *testing.T) {
 	factories, err := defaultcomponents.Components()
 	assert.NoError(t, err)
-	runner := NewInProcessCollector(factories)
+	sender := NewOTLPTraceDataSender(DefaultHost, GetAvailablePort(t))
+	receiver := NewOTLPDataReceiver(DefaultOTLPPort)
+	runner := NewInProcessCollector(factories, sender.Port)
 
 	format := `
 receivers:%v
@@ -45,8 +47,6 @@ service:
       processors: [batch, queued_retry]
       exporters: [%v]
 `
-	sender := NewOTLPTraceDataSender(DefaultHost, GetAvailablePort(t))
-	receiver := NewOTLPDataReceiver(DefaultOTLPPort)
 	config := fmt.Sprintf(
 		format,
 		sender.GenConfigYAMLStr(),
@@ -62,6 +62,7 @@ service:
 	defer runner.Stop()
 	endpoint, startErr := runner.Start(args)
 	assert.NoError(t, startErr)
-	assert.Equal(t, DefaultHost, endpoint)
+	receiverAddr := fmt.Sprintf("%s:%d", DefaultHost, sender.Port)
+	assert.Equal(t, receiverAddr, endpoint)
 	assert.NotNil(t, runner.svc)
 }
