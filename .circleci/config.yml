@@ -193,7 +193,14 @@ jobs:
       - attach_to_workspace
       - run:
           name: Unit tests
-          command: make test
+          command: |
+               mkdir -p unit-test-results/junit
+               trap "go-junit-report  -set-exit-code < unit-test-results/go-unit-tests.out > unit-test-results/junit/results.xml" EXIT
+               make test | tee unit-test-results/go-unit-tests.out
+      - store_artifacts:
+          path: unit-test-results
+      - store_test_results:
+          path: unit-test-results/junit
       - save_module_cache
 
   gosec:

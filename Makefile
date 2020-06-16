@@ -15,7 +15,7 @@ ALL_PKGS := $(shell go list $(sort $(dir $(ALL_SRC))))
 ALL_DOC := $(shell find . \( -name "*.md" -o -name "*.yaml" \) \
                                 -type f | sort)
 
-GOTEST_OPT?= -race -timeout 180s
+GOTEST_OPT?= -v -race -timeout 180s
 GO_ACC=go-acc
 GOTEST=go test
 GOOS=$(shell go env GOOS)
