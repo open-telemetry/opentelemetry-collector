@@ -16,8 +16,10 @@ package prometheusexporter
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"testing"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
@@ -87,57 +89,104 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 
 	assert.NotNil(t, consumer)
 
-	var metric1 = &metricspb.Metric{
-		MetricDescriptor: &metricspb.MetricDescriptor{
-			Name:        "this/one/there(where)",
-			Description: "Extra ones",
-			Unit:        "1",
-			Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
-			LabelKeys: []*metricspb.LabelKey{
-				{Key: "os", Description: "Operating system"},
-				{Key: "arch", Description: "Architecture"},
+	for delta := 0; delta <= 20; delta += 10 {
+		consumer.ConsumeMetricsData(context.Background(), consumerdata.MetricsData{Metrics: metricBuilder(int64(delta))})
+
+		res, err := http.Get("http://localhost:7777/metrics")
+		if err != nil {
+			t.Fatalf("Failed to perform a scrape: %v", err)
+		}
+		if g, w := res.StatusCode, 200; g != w {
+			t.Errorf("Mismatched HTTP response status code: Got: %d Want: %d", g, w)
+		}
+		blob, _ := ioutil.ReadAll(res.Body)
+		_ = res.Body.Close()
+		want := []string{
+			`# HELP test_this_one_there_where_ Extra ones`,
+			`# TYPE test_this_one_there_where_ counter`,
+			fmt.Sprintf(`test_this_one_there_where_{arch="x86",code="one",foo="bar",os="windows"} %v`, 99+delta),
+			fmt.Sprintf(`test_this_one_there_where_{arch="x86",code="one",foo="bar",os="linux"} %v`, 100+delta),
+		}
+
+		for _, w := range want {
+			if !strings.Contains(string(blob), w) {
+				t.Errorf("Missing %v from response:\n%v", w, string(blob))
+			}
+		}
+	}
+}
+
+func metricBuilder(delta int64) []*metricspb.Metric {
+	return []*metricspb.Metric{
+		{
+			MetricDescriptor: &metricspb.MetricDescriptor{
+				Name:        "this/one/there(where)",
+				Description: "Extra ones",
+				Unit:        "1",
+				Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
+				LabelKeys: []*metricspb.LabelKey{
+					{Key: "os", Description: "Operating system"},
+					{Key: "arch", Description: "Architecture"},
+				},
 			},
-		},
-		Timeseries: []*metricspb.TimeSeries{
-			{
-				StartTimestamp: &timestamp.Timestamp{
-					Seconds: 1543160298,
-					Nanos:   100000090,
-				},
-				LabelValues: []*metricspb.LabelValue{
-					{Value: "windows"},
-					{Value: "x86"},
-				},
-				Points: []*metricspb.Point{
-					{
-						Timestamp: &timestamp.Timestamp{
-							Seconds: 1543160298,
-							Nanos:   100000997,
-						},
-						Value: &metricspb.Point_Int64Value{
-							Int64Value: 99,
+			Timeseries: []*metricspb.TimeSeries{
+				{
+					StartTimestamp: &timestamp.Timestamp{
+						Seconds: 1543160298,
+						Nanos:   100000090,
+					},
+					LabelValues: []*metricspb.LabelValue{
+						{Value: "windows"},
+						{Value: "x86"},
+					},
+					Points: []*metricspb.Point{
+						{
+							Timestamp: &timestamp.Timestamp{
+								Seconds: 1543160298,
+								Nanos:   100000997,
+							},
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: 99 + delta,
+							},
 						},
 					},
 				},
 			},
 		},
-	}
-	consumer.ConsumeMetricsData(context.Background(), consumerdata.MetricsData{Metrics: []*metricspb.Metric{metric1}})
-
-	res, err := http.Get("http://localhost:7777/metrics")
-	if err != nil {
-		t.Fatalf("Failed to perform a scrape: %v", err)
-	}
-	if g, w := res.StatusCode, 200; g != w {
-		t.Errorf("Mismatched HTTP response status code: Got: %d Want: %d", g, w)
-	}
-	blob, _ := ioutil.ReadAll(res.Body)
-	_ = res.Body.Close()
-	want := `# HELP test_this_one_there_where_ Extra ones
-# TYPE test_this_one_there_where_ counter
-test_this_one_there_where_{arch="x86",code="one",foo="bar",os="windows"} 99
-`
-	if got := string(blob); got != want {
-		t.Errorf("Response mismatch\nGot:\n%s\n\nWant:\n%s", got, want)
+		{
+			MetricDescriptor: &metricspb.MetricDescriptor{
+				Name:        "this/one/there(where)",
+				Description: "Extra ones",
+				Unit:        "1",
+				Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
+				LabelKeys: []*metricspb.LabelKey{
+					{Key: "os", Description: "Operating system"},
+					{Key: "arch", Description: "Architecture"},
+				},
+			},
+			Timeseries: []*metricspb.TimeSeries{
+				{
+					StartTimestamp: &timestamp.Timestamp{
+						Seconds: 1543160298,
+						Nanos:   100000090,
+					},
+					LabelValues: []*metricspb.LabelValue{
+						{Value: "linux"},
+						{Value: "x86"},
+					},
+					Points: []*metricspb.Point{
+						{
+							Timestamp: &timestamp.Timestamp{
+								Seconds: 1543160298,
+								Nanos:   100000997,
+							},
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: 100 + delta,
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 }
