@@ -24,6 +24,7 @@ import (
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -46,6 +47,7 @@ type exporterImp struct {
 	metricExporter otlpmetriccol.MetricsServiceClient
 	logExporter    otlplogcol.LogServiceClient
 	grpcClientConn *grpc.ClientConn
+	metadata       metadata.MD
 }
 
 var (
@@ -71,7 +73,7 @@ func newExporter(config *Config) (*exporterImp, error) {
 	e.traceExporter = otlptracecol.NewTraceServiceClient(e.grpcClientConn)
 	e.metricExporter = otlpmetriccol.NewMetricsServiceClient(e.grpcClientConn)
 	e.logExporter = otlplogcol.NewLogServiceClient(e.grpcClientConn)
-
+	e.metadata = metadata.New(config.GRPCClientSettings.Headers)
 	return e, nil
 }
 
@@ -94,6 +96,10 @@ func (e *exporterImp) exportRequest(ctx context.Context, perform func(ctx contex
 	// Spend max 15 mins on this operation. This is just a reasonable number that
 	// gives plenty of time for typical quick transient errors to resolve.
 	expBackoff.MaxElapsedTime = time.Minute * 15
+
+	if e.metadata.Len() > 0 {
+		ctx = metadata.NewOutgoingContext(ctx, e.metadata)
+	}
 
 	for {
 		// Send to server.

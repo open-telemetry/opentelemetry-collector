@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -43,6 +44,7 @@ type mockTraceReceiver struct {
 	requestCount   int32
 	totalSpanCount int32
 	lastRequest    *otlptracecol.ExportTraceServiceRequest
+	metadata       metadata.MD
 }
 
 func (r *mockTraceReceiver) Export(
@@ -58,6 +60,7 @@ func (r *mockTraceReceiver) Export(
 	}
 	atomic.AddInt32(&r.totalSpanCount, int32(spanCount))
 	r.lastRequest = req
+	r.metadata, _ = metadata.FromIncomingContext(ctx)
 	return &otlptracecol.ExportTraceServiceResponse{}, nil
 }
 
@@ -120,6 +123,9 @@ func TestSendTraceData(t *testing.T) {
 			TLSSetting: configtls.TLSClientSetting{
 				Insecure: true,
 			},
+			Headers: map[string]string{
+				"header": "header-value",
+			},
 		},
 	}
 
@@ -166,9 +172,13 @@ func TestSendTraceData(t *testing.T) {
 		return atomic.LoadInt32(&rcv.requestCount) > 1
 	}, "receive a request")
 
+	expectedHeader := []string{"header-value"}
+
 	// Verify received span.
 	assert.EqualValues(t, 2, rcv.totalSpanCount)
 	assert.EqualValues(t, expectedOTLPReq, rcv.lastRequest)
+
+	require.EqualValues(t, rcv.metadata.Get("header"), expectedHeader)
 }
 
 func TestSendTraceDataServerDownAndUp(t *testing.T) {
