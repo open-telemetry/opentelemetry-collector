@@ -1,12 +1,10 @@
 receivers:
   opencensus:
-    endpoint: 0.0.0.0:55678
   zipkin:
     endpoint: :9411
   jaeger:
     protocols:
       thrift_http:
-        endpoint: "0.0.0.0:14268"
 
 
 exporters:

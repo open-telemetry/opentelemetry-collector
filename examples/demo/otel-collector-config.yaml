@@ -1,6 +1,5 @@
 receivers:
   opencensus:
-    endpoint: 0.0.0.0:55678
 
 exporters:
   prometheus:
@@ -45,4 +44,3 @@ service:
     metrics:
       receivers: [opencensus]
       exporters: [logging,prometheus]
-
