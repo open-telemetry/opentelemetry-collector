@@ -800,3 +800,27 @@ func TestSpanKindTranslation(t *testing.T) {
 		})
 	}
 }
+
+func TestZipkinV1ToOCSpanInvalidTraceId(t *testing.T) {
+	zSpan := &zipkinV1Span{
+		TraceID: "abc",
+		ID:      "0123456789123456",
+		Annotations: []*annotation{
+			{Value: "cr"},
+		},
+	}
+	_, _, err := zipkinV1ToOCSpan(zSpan)
+	assert.EqualError(t, err, "zipkinV1 span traceId: hex traceId span has wrong length (expected 16 or 32)")
+}
+
+func TestZipkinV1ToOCSpanInvalidSpanId(t *testing.T) {
+	zSpan := &zipkinV1Span{
+		TraceID: "1234567890123456",
+		ID:      "abc",
+		Annotations: []*annotation{
+			{Value: "cr"},
+		},
+	}
+	_, _, err := zipkinV1ToOCSpan(zSpan)
+	assert.EqualError(t, err, "zipkinV1 span id: hex Id has wrong length (expected 16)")
+}
