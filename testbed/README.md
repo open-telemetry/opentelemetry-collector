@@ -7,11 +7,11 @@ maximum load stress tests.
 ## Usage
 
 For each type of tests that should have a summary report create a new directory and then a test suite function
-which utilizes `*testing.M`. This method should delegate all functionality to `testbed.DoTestMain` supplying
+which utilizes `*testing.M`. This function should delegate all functionality to `testbed.DoTestMain` supplying
 a global instance of `testbed.TestResultsSummary` to it.
 
-Each test case within the suite should create a `testbed.TestCase` supply implementations of each of the various
-interfaces the `ewTestCase` takes as parameters.
+Each test case within the suite should create a `testbed.TestCase` and supply implementations of each of the various
+interfaces the `NewTestCase` function takes as parameters.
 
 ## Pluggable Test Components
 
@@ -30,9 +30,9 @@ interfaces the `ewTestCase` takes as parameters.
   * `JaegerDataReceiver` - Implementation of `DataReceiver` which receives data from `jaeger` exporter.
   * `OTLPDataReceiver` - Implementation of `DataReceiver` which receives data from `otlp` exporter.
   * `ZipkinDataReceiver` - Implementation of `DataReceiver` which receives data from `zipkin` exporter.
-* `OtelcolRunner` - Configures, startS and stops one or more instances of otelcol which will be the subject of testing being executed.
+* `OtelcolRunner` - Configures, starts and stops one or more instances of otelcol which will be the subject of testing being executed.
   * `ChildProcess` - Implementation of `OtelcolRunner` runs a single otelcol as a child process on the same machine as the test executor.
-  * `InProcessPipeline` - Implementation of `OtelcolRunner` runs a single otelcol as a go routine within the same process as the test executor.
+  * `InProcessCollector` - Implementation of `OtelcolRunner` runs a single otelcol as a go routine within the same process as the test executor.
 * `TestCaseValidator` - Validates and reports on test results.
   * `PerfTestValidator` - Implementation of `TestCaseValidator` for test suites using `PerformanceResults` for summarizing results.
   * `CorrectTestValidator` - Implementation of `TestCaseValidator` for test suites using `CorrectnessResults` for summarizing results.

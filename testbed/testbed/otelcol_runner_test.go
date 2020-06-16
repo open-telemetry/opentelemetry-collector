@@ -26,7 +26,7 @@ import (
 func TestNewInProcessPipeline(t *testing.T) {
 	factories, err := defaultcomponents.Components()
 	assert.NoError(t, err)
-	runner := NewInProcessPipeline(factories)
+	runner := NewInProcessCollector(factories)
 
 	format := `
 receivers:%v

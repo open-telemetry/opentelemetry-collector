@@ -51,9 +51,9 @@ type OtelcolRunner interface {
 	GetResourceConsumption() string
 }
 
-//InProcessPipeline implements the OtelcolRunner interfaces running a single otelcol as a go routine within the
+//InProcessCollector implements the OtelcolRunner interfaces running a single otelcol as a go routine within the
 //same process as the test executor.
-type InProcessPipeline struct {
+type InProcessCollector struct {
 	logger    *zap.Logger
 	factories config.Factories
 	config    *configmodels.Config
@@ -62,14 +62,14 @@ type InProcessPipeline struct {
 	stopped   bool
 }
 
-//NewInProcessPipeline crewtes a new InProcessPipeline using the supplied component factories.
-func NewInProcessPipeline(factories config.Factories) *InProcessPipeline {
-	return &InProcessPipeline{
+//NewInProcessCollector crewtes a new InProcessCollector using the supplied component factories.
+func NewInProcessCollector(factories config.Factories) *InProcessCollector {
+	return &InProcessCollector{
 		factories: factories,
 	}
 }
 
-func (ipp *InProcessPipeline) PrepareConfig(configStr string) (string, error) {
+func (ipp *InProcessCollector) PrepareConfig(configStr string) (string, error) {
 	logger, err := configureLogger()
 	if err != nil {
 		return "", err
@@ -90,7 +90,7 @@ func (ipp *InProcessPipeline) PrepareConfig(configStr string) (string, error) {
 	return "", nil
 }
 
-func (ipp *InProcessPipeline) Start(args StartParams) (string, error) {
+func (ipp *InProcessCollector) Start(args StartParams) (string, error) {
 	params := service.Parameters{
 		ApplicationStartInfo: service.ApplicationStartInfo{
 			ExeName:  "otelcol",
@@ -132,7 +132,7 @@ func (ipp *InProcessPipeline) Start(args StartParams) (string, error) {
 	return "", err
 }
 
-func (ipp *InProcessPipeline) Stop() (bool, error) {
+func (ipp *InProcessCollector) Stop() (bool, error) {
 	if !ipp.stopped {
 		ipp.stopped = true
 		ipp.svc.SignalTestComplete()
@@ -141,15 +141,15 @@ func (ipp *InProcessPipeline) Stop() (bool, error) {
 	return true, nil
 }
 
-func (ipp *InProcessPipeline) WatchResourceConsumption() error {
+func (ipp *InProcessCollector) WatchResourceConsumption() error {
 	return nil
 }
 
-func (ipp *InProcessPipeline) GetProcessMon() *process.Process {
+func (ipp *InProcessCollector) GetProcessMon() *process.Process {
 	return nil
 }
 
-func (ipp *InProcessPipeline) GetTotalConsumption() *ResourceConsumption {
+func (ipp *InProcessCollector) GetTotalConsumption() *ResourceConsumption {
 	return &ResourceConsumption{
 		CPUPercentAvg: 0,
 		CPUPercentMax: 0,
@@ -158,7 +158,7 @@ func (ipp *InProcessPipeline) GetTotalConsumption() *ResourceConsumption {
 	}
 }
 
-func (ipp *InProcessPipeline) GetResourceConsumption() string {
+func (ipp *InProcessCollector) GetResourceConsumption() string {
 	return ""
 }
 

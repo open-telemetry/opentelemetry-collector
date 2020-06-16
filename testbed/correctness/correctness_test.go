@@ -147,7 +147,7 @@ func testWithTracingGoldenDataset(
 		161803)
 	factories, err := defaultcomponents.Components()
 	assert.NoError(t, err)
-	runner := testbed.NewInProcessPipeline(factories)
+	runner := testbed.NewInProcessCollector(factories)
 	validator := testbed.NewCorrectTestValidator(dataProvider)
 	config := createConfigYaml(t, sender, receiver, resultDir, processors)
 	_, cfgErr := runner.PrepareConfig(config)

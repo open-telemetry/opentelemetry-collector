@@ -267,8 +267,8 @@ func (tc *TestCase) Stop() {
 	tc.validator.RecordResults(tc)
 }
 
-// ValidateData validates data by comparing the number of items sent by load generator
-// and number of items received by mock backend.
+// ValidateData validates data received by mock backend against what was generated and sent to the collector
+// instance(s) under test by the LoadGenerator.
 func (tc *TestCase) ValidateData() {
 	select {
 	case <-tc.ErrorSignal:
