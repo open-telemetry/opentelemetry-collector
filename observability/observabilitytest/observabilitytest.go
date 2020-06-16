@@ -68,6 +68,22 @@ func CheckValueViewExporterDroppedTimeSeries(receiverName string, exporterTagNam
 		wantsTagsForExporterView(receiverName, exporterTagName), int64(value))
 }
 
+// CheckValueViewExporterReceivedLogRecords checks that for the current exported value in the ViewExporterReceivedLogRecords
+// for {TagKeyReceiver: receiverName, TagKeyExporter: exporterTagName} is equal to "value".
+// When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
+func CheckValueViewExporterReceivedLogRecords(receiverName string, exporterTagName string, value int) error {
+	return checkValueForView(observability.ViewExporterReceivedLogRecords.Name,
+		wantsTagsForExporterView(receiverName, exporterTagName), int64(value))
+}
+
+// CheckValueViewExporterDroppedLogRecords checks that for the current exported value in the ViewExporterDroppedLogRecords
+// for {TagKeyReceiver: receiverName} is equal to "value".
+// In tests that this function is called it is required to also call SetupRecordedMetricsTest as first thing.
+func CheckValueViewExporterDroppedLogRecords(receiverName string, exporterTagName string, value int) error {
+	return checkValueForView(observability.ViewExporterDroppedLogRecords.Name,
+		wantsTagsForExporterView(receiverName, exporterTagName), int64(value))
+}
+
 // CheckValueViewReceiverReceivedSpans checks that for the current exported value in the ViewReceiverReceivedSpans
 // for {TagKeyReceiver: receiverName, TagKeyExporter: exporterTagName} is equal to "value".
 // In tests that this function is called it is required to also call SetupRecordedMetricsTest as first thing.

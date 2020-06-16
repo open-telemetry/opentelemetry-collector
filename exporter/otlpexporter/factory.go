@@ -66,3 +66,12 @@ func (f *Factory) CreateMetricsExporter(
 ) (component.MetricsExporter, error) {
 	return NewMetricsExporter(ctx, params, cfg)
 }
+
+// CreateLogExporter creates a log exporter based on this config.
+func (f *Factory) CreateLogExporter(
+	ctx context.Context,
+	params component.ExporterCreateParams,
+	cfg configmodels.Exporter,
+) (component.LogExporter, error) {
+	return NewLogExporter(ctx, params, cfg)
+}

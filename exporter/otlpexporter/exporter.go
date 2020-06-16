@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	otlpmetriccol "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/metrics/v1"
 	otlptracecol "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
+	otlplogcol "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
 )
 
 type exporterImp struct {
@@ -43,6 +44,7 @@ type exporterImp struct {
 	// gRPC clients and connection.
 	traceExporter  otlptracecol.TraceServiceClient
 	metricExporter otlpmetriccol.MetricsServiceClient
+	logExporter    otlplogcol.LogServiceClient
 	grpcClientConn *grpc.ClientConn
 }
 
@@ -68,6 +70,7 @@ func newExporter(config *Config) (*exporterImp, error) {
 	}
 	e.traceExporter = otlptracecol.NewTraceServiceClient(e.grpcClientConn)
 	e.metricExporter = otlpmetriccol.NewMetricsServiceClient(e.grpcClientConn)
+	e.logExporter = otlplogcol.NewLogServiceClient(e.grpcClientConn)
 
 	return e, nil
 }
@@ -153,6 +156,13 @@ func (e *exporterImp) exportTrace(ctx context.Context, request *otlptracecol.Exp
 func (e *exporterImp) exportMetrics(ctx context.Context, request *otlpmetriccol.ExportMetricsServiceRequest) error {
 	return e.exportRequest(ctx, func(ctx context.Context) error {
 		_, err := e.metricExporter.Export(ctx, request, grpc.WaitForReady(e.config.WaitForReady))
+		return err
+	})
+}
+
+func (e *exporterImp) exportLogs(ctx context.Context, request *otlplogcol.ExportLogServiceRequest) error {
+	return e.exportRequest(ctx, func(ctx context.Context) error {
+		_, err := e.logExporter.Export(ctx, request, grpc.WaitForReady(e.config.WaitForReady))
 		return err
 	})
 }
