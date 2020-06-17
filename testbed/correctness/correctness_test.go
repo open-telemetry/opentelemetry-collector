@@ -59,10 +59,6 @@ func TestDefaultTracingComponentCombos(t *testing.T) {
 		test.testName = fmt.Sprintf("%s-%s", test.receiver, test.exporter)
 		test.dataSender = constructSender(t, test.receiver)
 		test.dataReceiver = constructReceiver(t, test.exporter)
-		test.resourceSpec = testbed.ResourceSpec{
-			ExpectedMaxCPU: 60,
-			ExpectedMaxRAM: 80,
-		}
 		t.Run(test.testName, func(t *testing.T) {
 			testWithTracingGoldenDataset(t, test.dataSender, test.dataReceiver, test.resourceSpec, processors)
 		})
