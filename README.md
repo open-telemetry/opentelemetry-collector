@@ -62,10 +62,10 @@ Objectives:
 Approvers ([@open-telemetry/collector-approvers](https://github.com/orgs/open-telemetry/teams/collector-approvers)):
 
 - [Owais Lone](https://github.com/owais), Splunk
-- [Rahul Patel](https://github.com/rghetia), Google
 - [Steve Flanders](https://github.com/flands), Splunk
-- [Yang Song](https://github.com/songy23), Google
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
+- [Nail Islamov](https://github.com/nilebox), Google
+- [James Bebbington](https://github.com/james-bebbington), Google
 
 Maintainers ([@open-telemetry/collector-maintainers](https://github.com/orgs/open-telemetry/teams/collector-maintainers)):
 
