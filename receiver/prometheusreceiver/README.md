@@ -585,5 +585,5 @@ receivers:
           ...
 ```
 
-The full list of settings exposed for this receiver are documented [here](prometheusreceiver/config.go)
-with detailed sample configurations [here](prometheusreceiver/testdata/config.yaml).
+The full list of settings exposed for this receiver are documented [here](./config.go)
+with detailed sample configurations [here](./testdata/config.yaml).
