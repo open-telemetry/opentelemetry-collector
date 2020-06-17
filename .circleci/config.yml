@@ -127,6 +127,10 @@ workflows:
               only: master
             tags:
               ignore: /.*/
+      - check-links:
+          filters:
+            tags:
+              only: /^v([0-9])+.([0-9])+.([0-9])+.*/
 
 jobs:
   setup-and-lint:
@@ -269,3 +273,14 @@ jobs:
           name: Unit tests
           command: go test ./...
       - save_module_cache
+
+  check-links:
+    docker:
+      - image: circleci/node:9.10
+    steps:
+      - checkout
+      - run:
+          name: Check links in markdown docs
+          command: |
+            sudo npm install -g markdown-link-check
+            bash .circleci/check-links/check-links.sh
