@@ -128,16 +128,6 @@ func NewTestCase(
 		tc.resourceSpec.ResourceCheckPeriod = tc.Duration
 	}
 
-	configFile := tc.agentConfigFile
-	if configFile == "" {
-		// Use the default config file.
-		configFile = path.Join("testdata", "agent-config.yaml")
-	}
-
-	// Ensure that the config file is an absolute path.
-	tc.agentConfigFile, err = filepath.Abs(configFile)
-	require.NoError(t, err, "Cannot resolve filename")
-
 	tc.LoadGenerator, err = NewLoadGenerator(dataProvider, sender)
 	require.NoError(t, err, "Cannot create generator")
 
@@ -174,8 +164,10 @@ func (tc *TestCase) SetResourceLimits(resourceSpec ResourceSpec) {
 // StartAgent starts the agent and redirects its standard output and standard error
 // to "agent.log" file located in the test directory.
 func (tc *TestCase) StartAgent(args ...string) {
-	args = append(args, "--config")
-	args = append(args, tc.agentConfigFile)
+	if tc.agentConfigFile != "" {
+		args = append(args, "--config")
+		args = append(args, tc.agentConfigFile)
+	}
 	logFileName := tc.composeTestResultFileName("agent.log")
 
 	_, err := tc.agentProc.Start(StartParams{

@@ -16,7 +16,6 @@ package tests
 
 import (
 	"encoding/json"
-	"os"
 	"path"
 	"path/filepath"
 	"testing"
@@ -282,13 +281,14 @@ func TestMetricResourceProcessor(t *testing.T) {
 			resultDir, err := filepath.Abs(path.Join("results", t.Name()))
 			require.NoError(t, err)
 
+			agentProc := &testbed.ChildProcess{}
 			processors := map[string]string{
 				"resource": test.resourceProcessorConfig,
 			}
-			configFile := createConfigFile(t, sender, receiver, resultDir, processors)
-			defer os.Remove(configFile)
-
-			require.NotEmpty(t, configFile, "Cannot create config file")
+			configStr := createConfigYaml(t, sender, receiver, resultDir, processors)
+			configCleanup, err := agentProc.PrepareConfig(configStr)
+			require.NoError(t, err)
+			defer configCleanup()
 
 			options := testbed.LoadOptions{DataItemsPerSecond: 10000, ItemsPerBatch: 10}
 			dataProvider := testbed.NewPerfTestDataProvider(options)
@@ -297,10 +297,9 @@ func TestMetricResourceProcessor(t *testing.T) {
 				dataProvider,
 				sender,
 				receiver,
-				&testbed.ChildProcess{},
+				agentProc,
 				&testbed.PerfTestValidator{},
 				performanceResultsSummary,
-				testbed.WithConfigFile(configFile),
 			)
 			defer tc.Stop()
 

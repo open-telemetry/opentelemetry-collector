@@ -33,8 +33,9 @@ import (
 // otelcol which will be the subject of testing being executed.
 type OtelcolRunner interface {
 	// PrepareConfig stores the provided YAML-based otelcol configuration file in the format needed by the otelcol
-	// instance(s) this runner manages. If successful, it returns the value for the --config command line parameter.
-	PrepareConfig(configStr string) (configFileName string, err error)
+	// instance(s) this runner manages. If successful, it returns the cleanup config function to be executed after
+	// the test is executed.
+	PrepareConfig(configStr string) (configCleanup func(), err error)
 	// Starts the otelcol instance(s) if not already running which is the subject of the test to be run.
 	// It returns the host:port of the data receiver to post test data to.
 	Start(args StartParams) (receiverAddr string, err error)
@@ -71,11 +72,14 @@ func NewInProcessCollector(factories config.Factories, receiverPort int) *InProc
 	}
 }
 
-func (ipp *InProcessCollector) PrepareConfig(configStr string) (configFileName string, err error) {
+func (ipp *InProcessCollector) PrepareConfig(configStr string) (configCleanup func(), err error) {
+	configCleanup = func() {
+		// NoOp
+	}
 	var logger *zap.Logger
 	logger, err = configureLogger()
 	if err != nil {
-		return configFileName, err
+		return configCleanup, err
 	}
 	ipp.logger = logger
 	v := viper.NewWithOptions(viper.KeyDelimiter("::"))
@@ -83,14 +87,14 @@ func (ipp *InProcessCollector) PrepareConfig(configStr string) (configFileName s
 	v.ReadConfig(strings.NewReader(configStr))
 	cfg, err := config.Load(v, ipp.factories)
 	if err != nil {
-		return configFileName, err
+		return configCleanup, err
 	}
 	err = config.ValidateConfig(cfg, zap.NewNop())
 	if err != nil {
-		return configFileName, err
+		return configCleanup, err
 	}
 	ipp.config = cfg
-	return configFileName, err
+	return configCleanup, err
 }
 
 func (ipp *InProcessCollector) Start(args StartParams) (receiverAddr string, err error) {

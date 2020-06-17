@@ -146,8 +146,9 @@ func testWithTracingGoldenDataset(
 	runner := testbed.NewInProcessCollector(factories, sender.GetCollectorPort())
 	validator := testbed.NewCorrectTestValidator(dataProvider)
 	config := createConfigYaml(t, sender, receiver, resultDir, processors)
-	_, cfgErr := runner.PrepareConfig(config)
+	configCleanup, cfgErr := runner.PrepareConfig(config)
 	assert.NoError(t, cfgErr)
+	defer configCleanup()
 	tc := testbed.NewTestCase(
 		t,
 		dataProvider,

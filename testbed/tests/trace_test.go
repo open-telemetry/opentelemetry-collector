@@ -22,7 +22,6 @@ package tests
 
 import (
 	"fmt"
-	"os"
 	"path"
 	"path/filepath"
 	"testing"
@@ -404,10 +403,11 @@ func TestTraceAttributesProcessor(t *testing.T) {
 `,
 			}
 
-			configFile := createConfigFile(t, test.sender, test.receiver, resultDir, processors)
-			defer os.Remove(configFile)
-
-			require.NotEmpty(t, configFile, "Cannot create config file")
+			agentProc := &testbed.ChildProcess{}
+			configStr := createConfigYaml(t, test.sender, test.receiver, resultDir, processors)
+			configCleanup, err := agentProc.PrepareConfig(configStr)
+			require.NoError(t, err)
+			defer configCleanup()
 
 			options := testbed.LoadOptions{DataItemsPerSecond: 10000, ItemsPerBatch: 10}
 			dataProvider := testbed.NewPerfTestDataProvider(options)
@@ -416,10 +416,9 @@ func TestTraceAttributesProcessor(t *testing.T) {
 				dataProvider,
 				test.sender,
 				test.receiver,
-				&testbed.ChildProcess{},
+				agentProc,
 				&testbed.PerfTestValidator{},
 				performanceResultsSummary,
-				testbed.WithConfigFile(configFile),
 			)
 			defer tc.Stop()
 

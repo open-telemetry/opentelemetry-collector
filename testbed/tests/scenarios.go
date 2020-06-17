@@ -19,9 +19,7 @@ package tests
 
 import (
 	"fmt"
-	"io/ioutil"
 	"math/rand"
-	"os"
 	"path"
 	"path/filepath"
 	"testing"
@@ -34,9 +32,9 @@ import (
 
 var performanceResultsSummary testbed.TestResultsSummary = &testbed.PerformanceResults{}
 
-// createConfigFile creates a collector config file that corresponds to the
+// createConfigYaml creates a collector config file that corresponds to the
 // sender and receiver used in the test and returns the config file name.
-func createConfigFile(
+func createConfigYaml(
 	t *testing.T,
 	sender testbed.DataSender, // Sender to send test data.
 	receiver testbed.DataReceiver, // Receiver to receive test data.
@@ -100,7 +98,7 @@ service:
 `
 
 	// Put corresponding elements into the config template to generate the final config.
-	config := fmt.Sprintf(
+	return fmt.Sprintf(
 		format,
 		sender.GenConfigYAMLStr(),
 		receiver.GenConfigYAMLStr(),
@@ -111,28 +109,6 @@ service:
 		processorsList,
 		receiver.ProtocolName(),
 	)
-
-	// Write the config string to a temporary file.
-	file, err := ioutil.TempFile("", "agent*.yaml")
-	if err != nil {
-		t.Error(err)
-		return ""
-	}
-
-	defer func() {
-		errClose := file.Close()
-		if errClose != nil {
-			t.Error(err)
-		}
-	}()
-
-	if _, err = file.WriteString(config); err != nil {
-		t.Error(err)
-		return ""
-	}
-
-	// Return config file name.
-	return file.Name()
 }
 
 // Run 10k data items/sec test using specified sender and receiver protocols.
@@ -150,9 +126,11 @@ func Scenario10kItemsPerSecond(
 		DataItemsPerSecond: 10000,
 		ItemsPerBatch:      100,
 	}
-	configFile := createConfigFile(t, sender, receiver, resultDir, processors)
-	defer os.Remove(configFile)
-	require.NotEmpty(t, configFile, "Cannot create config file")
+	agentProc := &testbed.ChildProcess{}
+	configStr := createConfigYaml(t, sender, receiver, resultDir, processors)
+	configCleanup, err := agentProc.PrepareConfig(configStr)
+	require.NoError(t, err)
+	defer configCleanup()
 
 	dataProvider := testbed.NewPerfTestDataProvider(options)
 	tc := testbed.NewTestCase(
@@ -160,10 +138,9 @@ func Scenario10kItemsPerSecond(
 		dataProvider,
 		sender,
 		receiver,
-		&testbed.ChildProcess{},
+		agentProc,
 		&testbed.PerfTestValidator{},
 		performanceResultsSummary,
-		testbed.WithConfigFile(configFile),
 	)
 	defer tc.Stop()
 
@@ -261,9 +238,11 @@ func ScenarioTestTraceNoBackend10kSPS(t *testing.T, sender testbed.DataSender, r
 	require.NoError(t, err)
 
 	options := testbed.LoadOptions{DataItemsPerSecond: 10000, ItemsPerBatch: 10}
-	configFile := createConfigFile(t, sender, receiver, resultDir, configuration.Processor)
-	defer os.Remove(configFile)
-	require.NotEmpty(t, configFile, "Cannot create config file")
+	agentProc := &testbed.ChildProcess{}
+	configStr := createConfigYaml(t, sender, receiver, resultDir, configuration.Processor)
+	configCleanup, err := agentProc.PrepareConfig(configStr)
+	require.NoError(t, err)
+	defer configCleanup()
 
 	dataProvider := testbed.NewPerfTestDataProvider(options)
 	tc := testbed.NewTestCase(
@@ -271,10 +250,9 @@ func ScenarioTestTraceNoBackend10kSPS(t *testing.T, sender testbed.DataSender, r
 		dataProvider,
 		sender,
 		receiver,
-		&testbed.ChildProcess{},
+		agentProc,
 		&testbed.PerfTestValidator{},
 		performanceResultsSummary,
-		testbed.WithConfigFile(configFile),
 	)
 
 	defer tc.Stop()

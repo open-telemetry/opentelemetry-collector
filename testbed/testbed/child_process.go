@@ -22,6 +22,8 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path"
+	"path/filepath"
 	"sync"
 	"sync/atomic"
 	"syscall"
@@ -61,6 +63,9 @@ func (rs *ResourceSpec) isSpecified() bool {
 type ChildProcess struct {
 	// Descriptive name of the process
 	name string
+
+	// Config file name
+	configFileName string
 
 	// Command to execute
 	cmd *exec.Cmd
@@ -123,12 +128,15 @@ type ResourceConsumption struct {
 	RAMMiBMax     uint32
 }
 
-func (cp *ChildProcess) PrepareConfig(configStr string) (configFileName string, err error) {
+func (cp *ChildProcess) PrepareConfig(configStr string) (configCleanup func(), err error) {
+	configCleanup = func() {
+		// NoOp
+	}
 	var file *os.File
 	file, err = ioutil.TempFile("", "agent*.yaml")
 	if err != nil {
 		log.Printf("%s", err)
-		return configFileName, err
+		return configCleanup, err
 	}
 
 	defer func() {
@@ -140,10 +148,13 @@ func (cp *ChildProcess) PrepareConfig(configStr string) (configFileName string, 
 
 	if _, err = file.WriteString(configStr); err != nil {
 		log.Printf("%s", err)
-		return configFileName, err
+		return configCleanup, err
 	}
-	configFileName = file.Name()
-	return configFileName, err
+	cp.configFileName = file.Name()
+	configCleanup = func() {
+		os.Remove(cp.configFileName)
+	}
+	return configCleanup, err
 }
 
 // start a child process.
@@ -172,7 +183,19 @@ func (cp *ChildProcess) Start(params StartParams) (receiverAddr string, err erro
 
 	// Prepare to start the process.
 	// #nosec
-	cp.cmd = exec.Command(params.cmd, params.cmdArgs...)
+	args := params.cmdArgs
+	if !containsConfig(args) {
+		if cp.configFileName == "" {
+			configFile := path.Join("testdata", "agent-config.yaml")
+			cp.configFileName, err = filepath.Abs(configFile)
+			if err != nil {
+				return receiverAddr, err
+			}
+		}
+		args = append(args, "--config")
+		args = append(args, cp.configFileName)
+	}
+	cp.cmd = exec.Command(params.cmd, args...)
 
 	// Capture standard output and standard error.
 	stdoutIn, err := cp.cmd.StdoutPipe()
@@ -437,4 +460,13 @@ func (cp *ChildProcess) GetTotalConsumption() *ResourceConsumption {
 	}
 
 	return rc
+}
+
+func containsConfig(s []string) bool {
+	for _, a := range s {
+		if a == "--config" {
+			return true
+		}
+	}
+	return false
 }

@@ -54,9 +54,10 @@ service:
 		sender.ProtocolName(),
 		receiver.ProtocolName(),
 	)
-	cfgFilename, cfgErr := runner.PrepareConfig(config)
+	configCleanup, cfgErr := runner.PrepareConfig(config)
+	defer configCleanup()
 	assert.NoError(t, cfgErr)
-	assert.Equal(t, "", cfgFilename)
+	assert.NotNil(t, configCleanup)
 	assert.NotNil(t, runner.config)
 	args := StartParams{}
 	defer runner.Stop()
