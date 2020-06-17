@@ -53,6 +53,17 @@ commands:
             docker push otel/<< parameters.repo >>:<< parameters.tag >>
             docker push otel/<< parameters.repo >>:latest
 
+  github_issue_generator:
+    steps:
+      - when:
+          condition:
+            equal: [master, << pipeline.git.branch >>]
+          steps:
+            - run:
+                name: GitHub Issue generator
+                command: go run .circleci/reportgenerator/main.go
+                when: on_fail
+
 workflows:
   version: 2
   build-and-test:
@@ -186,6 +197,7 @@ jobs:
           path: testbed/tests/results
       - store_test_results:
           path: testbed/tests/results/junit
+      - github_issue_generator
 
   test:
     executor: golang
@@ -202,6 +214,7 @@ jobs:
       - store_test_results:
           path: unit-test-results/junit
       - save_module_cache
+      - github_issue_generator
 
   gosec:
     executor: golang
@@ -269,3 +282,4 @@ jobs:
           name: Unit tests
           command: go test ./...
       - save_module_cache
+      - github_issue_generator
