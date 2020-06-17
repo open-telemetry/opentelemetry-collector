@@ -163,6 +163,18 @@ ifndef COMPONENT
 	$(error COMPONENT variable was not defined)
 endif
 
+.PHONY: add-tag
+add-tag:
+	@[ "${TAG}" ] || ( echo ">> env var TAG is not set"; exit 1 )
+	@echo "Adding tag ${TAG}"
+	@git tag -a ${TAG} -s -m "Version ${TAG}"
+
+.PHONY: delete-tag
+delete-tag:
+	@[ "${TAG}" ] || ( echo ">> env var TAG is not set"; exit 1 )
+	@echo "Deleting tag ${TAG}"
+	@git tag -d ${TAG}
+
 .PHONY: docker-otelcol
 docker-otelcol:
 	COMPONENT=otelcol $(MAKE) docker-component
