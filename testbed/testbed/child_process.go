@@ -18,9 +18,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
+	"path"
+	"path/filepath"
 	"sync"
 	"sync/atomic"
 	"syscall"
@@ -55,11 +58,14 @@ func (rs *ResourceSpec) isSpecified() bool {
 	return rs != nil && (rs.ExpectedMaxCPU != 0 || rs.ExpectedMaxRAM != 0)
 }
 
-// childProcess is a child process that can be monitored and the output
-// of which will be written to a log file.
-type childProcess struct {
+// ChildProcess implements the OtelcolRunner interface as a child process on the same machine executing
+//the test. The process can be monitored and the output of which will be written to a log file.
+type ChildProcess struct {
 	// Descriptive name of the process
 	name string
+
+	// Config file name
+	configFileName string
 
 	// Command to execute
 	cmd *exec.Cmd
@@ -107,7 +113,7 @@ type childProcess struct {
 	ramMiBMax uint32
 }
 
-type startParams struct {
+type StartParams struct {
 	name         string
 	logFilePath  string
 	cmd          string
@@ -122,6 +128,35 @@ type ResourceConsumption struct {
 	RAMMiBMax     uint32
 }
 
+func (cp *ChildProcess) PrepareConfig(configStr string) (configCleanup func(), err error) {
+	configCleanup = func() {
+		// NoOp
+	}
+	var file *os.File
+	file, err = ioutil.TempFile("", "agent*.yaml")
+	if err != nil {
+		log.Printf("%s", err)
+		return configCleanup, err
+	}
+
+	defer func() {
+		errClose := file.Close()
+		if errClose != nil {
+			log.Printf("%s", errClose)
+		}
+	}()
+
+	if _, err = file.WriteString(configStr); err != nil {
+		log.Printf("%s", err)
+		return configCleanup, err
+	}
+	cp.configFileName = file.Name()
+	configCleanup = func() {
+		os.Remove(cp.configFileName)
+	}
+	return configCleanup, err
+}
+
 // start a child process.
 //
 // Parameters:
@@ -130,7 +165,7 @@ type ResourceConsumption struct {
 // the process to.
 // cmd is the executable to run.
 // cmdArgs is the command line arguments to pass to the process.
-func (cp *childProcess) start(params startParams) error {
+func (cp *ChildProcess) Start(params StartParams) (receiverAddr string, err error) {
 
 	cp.name = params.name
 	cp.doneSignal = make(chan struct{})
@@ -139,29 +174,42 @@ func (cp *childProcess) start(params startParams) error {
 	log.Printf("Starting %s (%s)", cp.name, params.cmd)
 
 	// Prepare log file
-	logFile, err := os.Create(params.logFilePath)
+	var logFile *os.File
+	logFile, err = os.Create(params.logFilePath)
 	if err != nil {
-		return fmt.Errorf("cannot create %s: %s", params.logFilePath, err.Error())
+		return receiverAddr, fmt.Errorf("cannot create %s: %s", params.logFilePath, err.Error())
 	}
 	log.Printf("Writing %s log to %s", cp.name, params.logFilePath)
 
 	// Prepare to start the process.
 	// #nosec
-	cp.cmd = exec.Command(params.cmd, params.cmdArgs...)
+	args := params.cmdArgs
+	if !containsConfig(args) {
+		if cp.configFileName == "" {
+			configFile := path.Join("testdata", "agent-config.yaml")
+			cp.configFileName, err = filepath.Abs(configFile)
+			if err != nil {
+				return receiverAddr, err
+			}
+		}
+		args = append(args, "--config")
+		args = append(args, cp.configFileName)
+	}
+	cp.cmd = exec.Command(params.cmd, args...)
 
 	// Capture standard output and standard error.
 	stdoutIn, err := cp.cmd.StdoutPipe()
 	if err != nil {
-		return fmt.Errorf("cannot capture stdout of %s: %s", params.cmd, err.Error())
+		return receiverAddr, fmt.Errorf("cannot capture stdout of %s: %s", params.cmd, err.Error())
 	}
 	stderrIn, err := cp.cmd.StderrPipe()
 	if err != nil {
-		return fmt.Errorf("cannot capture stderr of %s: %s", params.cmd, err.Error())
+		return receiverAddr, fmt.Errorf("cannot capture stderr of %s: %s", params.cmd, err.Error())
 	}
 
 	// Start the process.
-	if err := cp.cmd.Start(); err != nil {
-		return fmt.Errorf("cannot start executable at %s: %s", params.cmd, err.Error())
+	if err = cp.cmd.Start(); err != nil {
+		return receiverAddr, fmt.Errorf("cannot start executable at %s: %s", params.cmd, err.Error())
 	}
 
 	cp.startTime = time.Now()
@@ -182,10 +230,14 @@ func (cp *childProcess) start(params startParams) error {
 		cp.outputWG.Done()
 	}()
 
-	return nil
+	receiverAddr = fmt.Sprintf("%s:%d", DefaultHost, 0)
+	return receiverAddr, err
 }
 
-func (cp *childProcess) stop() {
+func (cp *ChildProcess) Stop() (stopped bool, err error) {
+	if !cp.isStarted || cp.isStopped {
+		return false, nil
+	}
 	cp.stopOnce.Do(func() {
 
 		if !cp.isStarted {
@@ -201,7 +253,7 @@ func (cp *childProcess) stop() {
 		close(cp.doneSignal)
 
 		// Gracefully signal process to stop.
-		if err := cp.cmd.Process.Signal(syscall.SIGTERM); err != nil {
+		if err = cp.cmd.Process.Signal(syscall.SIGTERM); err != nil {
 			log.Printf("Cannot send SIGTEM: %s", err.Error())
 		}
 
@@ -217,7 +269,7 @@ func (cp *childProcess) stop() {
 				// Time is out. Kill the process.
 				log.Printf("%s pid=%d is not responding to SIGTERM. Sending SIGKILL to kill forcedly.",
 					cp.name, cp.cmd.Process.Pid)
-				if err := cp.cmd.Process.Signal(syscall.SIGKILL); err != nil {
+				if err = cp.cmd.Process.Signal(syscall.SIGKILL); err != nil {
 					log.Printf("Cannot send SIGKILL: %s", err.Error())
 				}
 			case <-finished:
@@ -229,7 +281,7 @@ func (cp *childProcess) stop() {
 		cp.outputWG.Wait()
 
 		// Wait for process to terminate
-		err := cp.cmd.Wait()
+		err = cp.cmd.Wait()
 
 		// Let goroutine know process is finished.
 		close(finished)
@@ -244,9 +296,11 @@ func (cp *childProcess) stop() {
 			log.Printf("%s execution failed: %s", cp.name, err.Error())
 		}
 	})
+	stopped = true
+	return stopped, err
 }
 
-func (cp *childProcess) watchResourceConsumption() error {
+func (cp *ChildProcess) WatchResourceConsumption() error {
 	if !cp.resourceSpec.isSpecified() {
 		// Resource monitoring is not enabled.
 		return nil
@@ -280,7 +334,7 @@ func (cp *childProcess) watchResourceConsumption() error {
 			cp.fetchCPUUsage()
 
 			if err := cp.checkAllowedResourceUsage(); err != nil {
-				cp.stop()
+				cp.Stop()
 				return err
 			}
 
@@ -291,7 +345,11 @@ func (cp *childProcess) watchResourceConsumption() error {
 	}
 }
 
-func (cp *childProcess) fetchRAMUsage() {
+func (cp *ChildProcess) GetProcessMon() *process.Process {
+	return cp.processMon
+}
+
+func (cp *ChildProcess) fetchRAMUsage() {
 	// Get process memory and CPU times
 	mi, err := cp.processMon.MemoryInfo()
 	if err != nil {
@@ -314,7 +372,7 @@ func (cp *childProcess) fetchRAMUsage() {
 	atomic.StoreUint32(&cp.ramMiBCur, ramMiBCur)
 }
 
-func (cp *childProcess) fetchCPUUsage() {
+func (cp *ChildProcess) fetchCPUUsage() {
 	times, err := cp.processMon.Times()
 	if err != nil {
 		log.Printf("cannot get process times for %d: %s",
@@ -343,7 +401,7 @@ func (cp *childProcess) fetchCPUUsage() {
 	atomic.StoreUint32(&cp.cpuPercentX1000Cur, curCPUPercentageX1000)
 }
 
-func (cp *childProcess) checkAllowedResourceUsage() error {
+func (cp *ChildProcess) checkAllowedResourceUsage() error {
 	// Check if current CPU usage exceeds expected.
 	var errMsg string
 	if cp.resourceSpec.ExpectedMaxCPU != 0 && cp.cpuPercentX1000Cur/1000 > cp.resourceSpec.ExpectedMaxCPU {
@@ -367,7 +425,7 @@ func (cp *childProcess) checkAllowedResourceUsage() error {
 }
 
 // GetResourceConsumption returns resource consumption as a string
-func (cp *childProcess) GetResourceConsumption() string {
+func (cp *ChildProcess) GetResourceConsumption() string {
 	if !cp.resourceSpec.isSpecified() {
 		// Monitoring is not enabled.
 		return ""
@@ -381,7 +439,7 @@ func (cp *childProcess) GetResourceConsumption() string {
 }
 
 // GetTotalConsumption returns total resource consumption since start of process
-func (cp *childProcess) GetTotalConsumption() *ResourceConsumption {
+func (cp *ChildProcess) GetTotalConsumption() *ResourceConsumption {
 	rc := &ResourceConsumption{}
 
 	if cp.processMon != nil {
@@ -402,4 +460,13 @@ func (cp *childProcess) GetTotalConsumption() *ResourceConsumption {
 	}
 
 	return rc
+}
+
+func containsConfig(s []string) bool {
+	for _, a := range s {
+		if a == "--config" {
+			return true
+		}
+	}
+	return false
 }

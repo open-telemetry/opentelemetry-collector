@@ -16,7 +16,6 @@ package tests
 
 import (
 	"encoding/json"
-	"os"
 	"path"
 	"path/filepath"
 	"testing"
@@ -272,7 +271,7 @@ func getMetricDataFromJSON(t *testing.T, rmString string) data.MetricData {
 }
 
 func TestMetricResourceProcessor(t *testing.T) {
-	sender := testbed.NewOTLPMetricDataSender(testbed.GetAvailablePort(t))
+	sender := testbed.NewOTLPMetricDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
 	receiver := testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t))
 
 	tests := getResourceProcessorTestCases(t)
@@ -282,15 +281,26 @@ func TestMetricResourceProcessor(t *testing.T) {
 			resultDir, err := filepath.Abs(path.Join("results", t.Name()))
 			require.NoError(t, err)
 
+			agentProc := &testbed.ChildProcess{}
 			processors := map[string]string{
 				"resource": test.resourceProcessorConfig,
 			}
-			configFile := createConfigFile(t, sender, receiver, resultDir, processors)
-			defer os.Remove(configFile)
+			configStr := createConfigYaml(t, sender, receiver, resultDir, processors)
+			configCleanup, err := agentProc.PrepareConfig(configStr)
+			require.NoError(t, err)
+			defer configCleanup()
 
-			require.NotEmpty(t, configFile, "Cannot create config file")
-
-			tc := testbed.NewTestCase(t, sender, receiver, testbed.WithConfigFile(configFile))
+			options := testbed.LoadOptions{DataItemsPerSecond: 10000, ItemsPerBatch: 10}
+			dataProvider := testbed.NewPerfTestDataProvider(options)
+			tc := testbed.NewTestCase(
+				t,
+				dataProvider,
+				sender,
+				receiver,
+				agentProc,
+				&testbed.PerfTestValidator{},
+				performanceResultsSummary,
+			)
 			defer tc.Stop()
 
 			tc.StartBackend()

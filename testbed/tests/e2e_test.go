@@ -29,10 +29,16 @@ import (
 )
 
 func TestIdleMode(t *testing.T) {
+	options := testbed.LoadOptions{DataItemsPerSecond: 10000, ItemsPerBatch: 10}
+	dataProvider := testbed.NewPerfTestDataProvider(options)
 	tc := testbed.NewTestCase(
 		t,
-		testbed.NewJaegerGRPCDataSender(testbed.DefaultJaegerPort),
+		dataProvider,
+		testbed.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.DefaultJaegerPort),
 		testbed.NewOCDataReceiver(testbed.DefaultOCPort),
+		&testbed.ChildProcess{},
+		&testbed.PerfTestValidator{},
+		performanceResultsSummary,
 	)
 	defer tc.Stop()
 
@@ -52,11 +58,17 @@ func TestBallastMemory(t *testing.T) {
 		{1000, 100},
 	}
 
+	options := testbed.LoadOptions{DataItemsPerSecond: 10000, ItemsPerBatch: 10}
+	dataProvider := testbed.NewPerfTestDataProvider(options)
 	for _, test := range tests {
 		tc := testbed.NewTestCase(
 			t,
-			testbed.NewJaegerGRPCDataSender(testbed.DefaultJaegerPort),
+			dataProvider,
+			testbed.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.DefaultJaegerPort),
 			testbed.NewOCDataReceiver(testbed.DefaultOCPort),
+			&testbed.ChildProcess{},
+			&testbed.PerfTestValidator{},
+			performanceResultsSummary,
 			testbed.WithSkipResults(),
 		)
 		tc.SetResourceLimits(testbed.ResourceSpec{ExpectedMaxRAM: test.maxRSS})

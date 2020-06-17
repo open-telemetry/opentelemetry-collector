@@ -22,7 +22,6 @@ package tests
 
 import (
 	"fmt"
-	"os"
 	"path"
 	"path/filepath"
 	"testing"
@@ -39,7 +38,7 @@ import (
 
 // TestMain is used to initiate setup, execution and tear down of testbed.
 func TestMain(m *testing.M) {
-	testbed.DoTestMain(m)
+	testbed.DoTestMain(m, performanceResultsSummary)
 }
 
 func TestTrace10kSPS(t *testing.T) {
@@ -51,7 +50,7 @@ func TestTrace10kSPS(t *testing.T) {
 	}{
 		{
 			"JaegerGRPC",
-			testbed.NewJaegerGRPCDataSender(testbed.GetAvailablePort(t)),
+			testbed.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
 			testbed.NewJaegerDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 40,
@@ -60,7 +59,7 @@ func TestTrace10kSPS(t *testing.T) {
 		},
 		{
 			"OpenCensus",
-			testbed.NewOCTraceDataSender(testbed.GetAvailablePort(t)),
+			testbed.NewOCTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
 			testbed.NewOCDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 39,
@@ -69,7 +68,7 @@ func TestTrace10kSPS(t *testing.T) {
 		},
 		{
 			"OTLP",
-			testbed.NewOTLPTraceDataSender(testbed.GetAvailablePort(t)),
+			testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
 			testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 20,
@@ -78,7 +77,7 @@ func TestTrace10kSPS(t *testing.T) {
 		},
 		{
 			"Zipkin",
-			testbed.NewZipkinDataSender(testbed.GetAvailablePort(t)),
+			testbed.NewZipkinDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
 			testbed.NewZipkinDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 80,
@@ -149,7 +148,7 @@ func TestTraceNoBackend10kSPS(t *testing.T) {
 	}{
 		{
 			"JaegerGRPC",
-			testbed.NewJaegerGRPCDataSender(testbed.DefaultJaegerPort),
+			testbed.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.DefaultJaegerPort),
 			testbed.NewOCDataReceiver(testbed.DefaultOCPort),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 60,
@@ -159,7 +158,7 @@ func TestTraceNoBackend10kSPS(t *testing.T) {
 		},
 		{
 			"Zipkin",
-			testbed.NewZipkinDataSender(testbed.DefaultZipkinAddressPort),
+			testbed.NewZipkinDataSender(testbed.DefaultHost, testbed.DefaultZipkinAddressPort),
 			testbed.NewOCDataReceiver(testbed.DefaultOCPort),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 120,
@@ -317,8 +316,8 @@ func verifySingleSpan(
 	td.ResourceSpans().At(0).InstrumentationLibrarySpans().Resize(1)
 	spans := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans()
 	spans.Resize(1)
-	spans.At(0).SetTraceID(testbed.GenerateTraceID(1))
-	spans.At(0).SetSpanID(testbed.GenerateSpanID(1))
+	spans.At(0).SetTraceID(testbed.GenerateSequentialTraceID(1))
+	spans.At(0).SetSpanID(testbed.GenerateSequentialSpanID(1))
 	spans.At(0).SetName(spanName)
 
 	if sender, ok := tc.Sender.(testbed.TraceDataSender); ok {
@@ -368,12 +367,12 @@ func TestTraceAttributesProcessor(t *testing.T) {
 	}{
 		{
 			"JaegerGRPC",
-			testbed.NewJaegerGRPCDataSender(testbed.GetAvailablePort(t)),
+			testbed.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
 			testbed.NewJaegerDataReceiver(testbed.GetAvailablePort(t)),
 		},
 		{
 			"OTLP",
-			testbed.NewOTLPTraceDataSender(testbed.GetAvailablePort(t)),
+			testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
 			testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
 		},
 	}
@@ -404,12 +403,23 @@ func TestTraceAttributesProcessor(t *testing.T) {
 `,
 			}
 
-			configFile := createConfigFile(t, test.sender, test.receiver, resultDir, processors)
-			defer os.Remove(configFile)
+			agentProc := &testbed.ChildProcess{}
+			configStr := createConfigYaml(t, test.sender, test.receiver, resultDir, processors)
+			configCleanup, err := agentProc.PrepareConfig(configStr)
+			require.NoError(t, err)
+			defer configCleanup()
 
-			require.NotEmpty(t, configFile, "Cannot create config file")
-
-			tc := testbed.NewTestCase(t, test.sender, test.receiver, testbed.WithConfigFile(configFile))
+			options := testbed.LoadOptions{DataItemsPerSecond: 10000, ItemsPerBatch: 10}
+			dataProvider := testbed.NewPerfTestDataProvider(options)
+			tc := testbed.NewTestCase(
+				t,
+				dataProvider,
+				test.sender,
+				test.receiver,
+				agentProc,
+				&testbed.PerfTestValidator{},
+				performanceResultsSummary,
+			)
 			defer tc.Stop()
 
 			tc.StartBackend()

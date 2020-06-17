@@ -54,11 +54,13 @@ all: checklicense impi lint misspell test otelcol
 
 .PHONY: testbed-runtests
 testbed-runtests: otelcol
+	cd ./testbed/correctness && ./runtests.sh
 	cd ./testbed/tests && ./runtests.sh
 
 .PHONY: testbed-listtests
 testbed-listtests:
-	TESTBED_CONFIG=local.yaml $(GOTEST) -v ./testbed/tests --test.list '.*'|head -n -1
+	TESTBED_CONFIG=inprocess.yaml $(GOTEST) -v ./testbed/correctness --test.list '.*'|head -n 10
+	TESTBED_CONFIG=local.yaml $(GOTEST) -v ./testbed/tests --test.list '.*'|head -n 20
 
 .PHONY: test
 test:

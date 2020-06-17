@@ -34,6 +34,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/internal/version"
 	"go.opentelemetry.io/collector/service/defaultcomponents"
 	"go.opentelemetry.io/collector/testutils"
 )
@@ -69,6 +70,47 @@ func TestApplication_Start(t *testing.T) {
 	assertMetricsPrefix(t, testPrefix, metricsPort)
 
 	close(app.stopTestChan)
+	<-appDone
+	assert.Equal(t, Closing, <-app.GetStateChannel())
+	assert.Equal(t, Closed, <-app.GetStateChannel())
+}
+
+func TestApplication_StartAsGoRoutine(t *testing.T) {
+	factories, err := defaultcomponents.Components()
+	require.NoError(t, err)
+
+	params := Parameters{
+		ApplicationStartInfo: ApplicationStartInfo{
+			ExeName:  "otelcol",
+			LongName: "InProcess Collector",
+			Version:  version.Version,
+			GitHash:  version.GitHash,
+		},
+		ConfigFactory: func(v *viper.Viper, factories config.Factories) (*configmodels.Config, error) {
+			return constructMimumalOpConfig(t, factories), nil
+		},
+		Factories: factories,
+	}
+	app, err := New(params)
+	require.NoError(t, err)
+	app.Command().SetArgs([]string{
+		"--metrics-level=NONE",
+	})
+
+	appDone := make(chan struct{})
+	go func() {
+		defer close(appDone)
+		appErr := app.Start()
+		if appErr != nil {
+			err = appErr
+		}
+	}()
+
+	assert.Equal(t, Starting, <-app.GetStateChannel())
+	assert.Equal(t, Running, <-app.GetStateChannel())
+
+	app.SignalTestComplete()
+	app.SignalTestComplete()
 	<-appDone
 	assert.Equal(t, Closing, <-app.GetStateChannel())
 	assert.Equal(t, Closed, <-app.GetStateChannel())
@@ -411,4 +453,33 @@ func TestApplication_GetExporters(t *testing.T) {
 	// Stop the Application.
 	close(app.stopTestChan)
 	<-appDone
+}
+
+func constructMimumalOpConfig(t *testing.T, factories config.Factories) *configmodels.Config {
+	configStr := `
+receivers:
+  otlp:
+exporters:
+  logging:
+processors:
+  batch:
+
+extensions:
+
+service:
+  extensions:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [logging]
+`
+	v := viper.NewWithOptions(viper.KeyDelimiter("::"))
+	v.SetConfigType("yaml")
+	v.ReadConfig(strings.NewReader(configStr))
+	cfg, err := config.Load(v, factories)
+	assert.NoError(t, err)
+	err = config.ValidateConfig(cfg, zap.NewNop())
+	assert.NoError(t, err)
+	return cfg
 }

@@ -24,10 +24,16 @@ import (
 )
 
 func TestMetricNoBackend10kDPSOpenCensus(t *testing.T) {
+	options := testbed.LoadOptions{DataItemsPerSecond: 10000, ItemsPerBatch: 10}
+	dataProvider := testbed.NewPerfTestDataProvider(options)
 	tc := testbed.NewTestCase(
 		t,
-		testbed.NewOCMetricDataSender(55678),
+		dataProvider,
+		testbed.NewOCMetricDataSender(testbed.DefaultHost, 55678),
 		testbed.NewOCDataReceiver(testbed.DefaultOCPort),
+		&testbed.ChildProcess{},
+		&testbed.PerfTestValidator{},
+		performanceResultsSummary,
 	)
 	defer tc.Stop()
 
@@ -48,7 +54,7 @@ func TestMetric10kDPS(t *testing.T) {
 	}{
 		{
 			"OpenCensus",
-			testbed.NewOCMetricDataSender(testbed.GetAvailablePort(t)),
+			testbed.NewOCMetricDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
 			testbed.NewOCDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 70,
@@ -57,7 +63,7 @@ func TestMetric10kDPS(t *testing.T) {
 		},
 		{
 			"OTLP",
-			testbed.NewOTLPMetricDataSender(testbed.GetAvailablePort(t)),
+			testbed.NewOTLPMetricDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
 			testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 50,

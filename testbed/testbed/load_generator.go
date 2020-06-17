@@ -15,27 +15,22 @@
 package testbed
 
 import (
-	"encoding/binary"
 	"fmt"
 	"log"
-	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/data"
 )
 
 // LoadGenerator is a simple load generator.
 type LoadGenerator struct {
 	sender DataSender
+
+	dataProvider DataProvider
 
 	// Number of batches of data items sent.
 	batchesSent uint64
@@ -68,14 +63,15 @@ type LoadOptions struct {
 }
 
 // NewLoadGenerator creates a load generator that sends data using specified sender.
-func NewLoadGenerator(sender DataSender) (*LoadGenerator, error) {
+func NewLoadGenerator(dataProvider DataProvider, sender DataSender) (*LoadGenerator, error) {
 	if sender == nil {
 		return nil, fmt.Errorf("cannot create load generator without DataSender")
 	}
 
 	lg := &LoadGenerator{
-		stopSignal: make(chan struct{}),
-		sender:     sender,
+		stopSignal:   make(chan struct{}),
+		sender:       sender,
+		dataProvider: dataProvider,
 	}
 
 	return lg, nil
@@ -140,6 +136,8 @@ func (lg *LoadGenerator) generate() {
 		return
 	}
 
+	lg.dataProvider.SetLoadGeneratorCounters(&lg.batchesSent, &lg.dataItemsSent)
+
 	err := lg.sender.Start()
 	if err != nil {
 		log.Printf("Cannot start sender: %v", err)
@@ -173,48 +171,30 @@ func (lg *LoadGenerator) generate() {
 	lg.sender.Flush()
 }
 
-func (lg *LoadGenerator) generateTraceOld() {
+func (lg *LoadGenerator) generateTrace() {
+	traceSender := lg.sender.(TraceDataSender)
 
-	traceSender := lg.sender.(TraceDataSenderOld)
-
-	var spans []*tracepb.Span
-	traceID := atomic.AddUint64(&lg.batchesSent, 1)
-	for i := 0; i < lg.options.ItemsPerBatch; i++ {
-
-		startTime := time.Now()
-
-		spanID := atomic.AddUint64(&lg.dataItemsSent, 1)
-
-		// Create a span.
-		span := &tracepb.Span{
-			TraceId: GenerateTraceID(traceID),
-			SpanId:  GenerateSpanID(spanID),
-			Name:    &tracepb.TruncatableString{Value: "load-generator-span"},
-			Kind:    tracepb.Span_CLIENT,
-			Attributes: &tracepb.Span_Attributes{
-				AttributeMap: map[string]*tracepb.AttributeValue{
-					"load_generator.span_seq_num": {
-						Value: &tracepb.AttributeValue_IntValue{IntValue: int64(spanID)},
-					},
-					"load_generator.trace_seq_num": {
-						Value: &tracepb.AttributeValue_IntValue{IntValue: int64(traceID)},
-					},
-				},
-			},
-			StartTime: timeToTimestamp(startTime),
-			EndTime:   timeToTimestamp(startTime.Add(time.Duration(time.Millisecond))),
-		}
-
-		// Append attributes.
-		for k, v := range lg.options.Attributes {
-			span.Attributes.AttributeMap[k] = &tracepb.AttributeValue{
-				Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: v}},
-			}
-		}
-
-		spans = append(spans, span)
+	traceData, done := lg.dataProvider.GenerateTraces()
+	if done {
+		return
 	}
 
+	err := traceSender.SendSpans(traceData)
+	if err == nil {
+		lg.prevErr = nil
+	} else if lg.prevErr == nil || lg.prevErr.Error() != err.Error() {
+		lg.prevErr = err
+		log.Printf("Cannot send traces: %v", err)
+	}
+}
+
+func (lg *LoadGenerator) generateTraceOld() {
+	traceSender := lg.sender.(TraceDataSenderOld)
+
+	spans, done := lg.dataProvider.GenerateTracesOld()
+	if done {
+		return
+	}
 	traceData := consumerdata.TraceData{
 		Spans: spans,
 	}
@@ -228,118 +208,33 @@ func (lg *LoadGenerator) generateTraceOld() {
 	}
 }
 
-func (lg *LoadGenerator) generateTrace() {
-	traceSender := lg.sender.(TraceDataSender)
+func (lg *LoadGenerator) generateMetrics() {
+	metricSender := lg.sender.(MetricDataSender)
 
-	traceData := pdata.NewTraces()
-	traceData.ResourceSpans().Resize(1)
-	ilss := traceData.ResourceSpans().At(0).InstrumentationLibrarySpans()
-	ilss.Resize(1)
-	spans := ilss.At(0).Spans()
-	spans.Resize(lg.options.ItemsPerBatch)
-
-	traceID := atomic.AddUint64(&lg.batchesSent, 1)
-	for i := 0; i < lg.options.ItemsPerBatch; i++ {
-
-		startTime := time.Now()
-		endTime := startTime.Add(time.Duration(time.Millisecond))
-
-		spanID := atomic.AddUint64(&lg.dataItemsSent, 1)
-
-		span := spans.At(i)
-
-		// Create a span.
-		span.SetTraceID(GenerateTraceID(traceID))
-		span.SetSpanID(GenerateSpanID(spanID))
-		span.SetName("load-generator-span")
-		span.SetKind(pdata.SpanKindCLIENT)
-		attrs := span.Attributes()
-		attrs.UpsertInt("load_generator.span_seq_num", int64(spanID))
-		attrs.UpsertInt("load_generator.trace_seq_num", int64(traceID))
-		// Additional attributes.
-		for k, v := range lg.options.Attributes {
-			attrs.UpsertString(k, v)
-		}
-		span.SetStartTime(pdata.TimestampUnixNano(uint64(startTime.UnixNano())))
-		span.SetEndTime(pdata.TimestampUnixNano(uint64(endTime.UnixNano())))
+	metricData, done := lg.dataProvider.GenerateMetrics()
+	if done {
+		return
 	}
 
-	err := traceSender.SendSpans(traceData)
+	err := metricSender.SendMetrics(metricData)
 	if err == nil {
 		lg.prevErr = nil
 	} else if lg.prevErr == nil || lg.prevErr.Error() != err.Error() {
 		lg.prevErr = err
-		log.Printf("Cannot send traces: %v", err)
+		log.Printf("Cannot send metrics: %v", err)
 	}
-}
-func GenerateTraceID(id uint64) []byte {
-	var traceID [16]byte
-	binary.PutUvarint(traceID[:], id)
-	return traceID[:]
-}
-
-func GenerateSpanID(id uint64) []byte {
-	var spanID [8]byte
-	binary.PutUvarint(spanID[:], id)
-	return spanID[:]
 }
 
 func (lg *LoadGenerator) generateMetricsOld() {
-
 	metricSender := lg.sender.(MetricDataSenderOld)
 
 	resource := &resourcepb.Resource{
 		Labels: lg.options.Attributes,
 	}
-
-	// Generate 7 data points per metric.
-	const dataPointsPerMetric = 7
-
-	var metrics []*metricspb.Metric
-	for i := 0; i < lg.options.ItemsPerBatch; i++ {
-
-		metric := &metricspb.Metric{
-			MetricDescriptor: &metricspb.MetricDescriptor{
-				Name:        "load_generator_" + strconv.Itoa(i),
-				Description: "Load Generator Counter #" + strconv.Itoa(i),
-				Unit:        "",
-				Type:        metricspb.MetricDescriptor_GAUGE_INT64,
-				LabelKeys: []*metricspb.LabelKey{
-					{Key: "item_index"},
-					{Key: "batch_index"},
-				},
-			},
-			Resource: resource,
-		}
-
-		batchIndex := atomic.AddUint64(&lg.batchesSent, 1)
-
-		// Generate data points for the metric. We generate timeseries each containing
-		// a single data points. This is the most typical payload composition since
-		// monitoring libraries typically generated one data point at a time.
-		for j := 0; j < dataPointsPerMetric; j++ {
-			timeseries := &metricspb.TimeSeries{}
-
-			startTime := time.Now()
-			value := atomic.AddUint64(&lg.dataItemsSent, 1)
-
-			// Create a data point.
-			point := &metricspb.Point{
-				Timestamp: timeToTimestamp(startTime),
-				Value:     &metricspb.Point_Int64Value{Int64Value: int64(value)},
-			}
-			timeseries.Points = append(timeseries.Points, point)
-			timeseries.LabelValues = []*metricspb.LabelValue{
-				{Value: "item_" + strconv.Itoa(j)},
-				{Value: "batch_" + strconv.Itoa(int(batchIndex))},
-			}
-
-			metric.Timeseries = append(metric.Timeseries, timeseries)
-		}
-
-		metrics = append(metrics, metric)
+	metrics, done := lg.dataProvider.GenerateMetricsOld()
+	if done {
+		return
 	}
-
 	metricData := consumerdata.MetricsData{
 		Resource: resource,
 		Metrics:  metrics,
@@ -351,71 +246,5 @@ func (lg *LoadGenerator) generateMetricsOld() {
 	} else if lg.prevErr == nil || lg.prevErr.Error() != err.Error() {
 		lg.prevErr = err
 		log.Printf("Cannot send metrics: %v", err)
-	}
-}
-
-func (lg *LoadGenerator) generateMetrics() {
-
-	metricSender := lg.sender.(MetricDataSender)
-
-	// Generate 7 data points per metric.
-	const dataPointsPerMetric = 7
-
-	metricData := data.NewMetricData()
-	metricData.ResourceMetrics().Resize(1)
-	metricData.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Resize(1)
-	if lg.options.Attributes != nil {
-		attrs := metricData.ResourceMetrics().At(0).Resource().Attributes()
-		attrs.InitEmptyWithCapacity(len(lg.options.Attributes))
-		for k, v := range lg.options.Attributes {
-			attrs.UpsertString(k, v)
-		}
-	}
-	metrics := metricData.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
-	metrics.Resize(lg.options.ItemsPerBatch)
-
-	for i := 0; i < lg.options.ItemsPerBatch; i++ {
-		metric := metrics.At(i)
-		metricDescriptor := metric.MetricDescriptor()
-		metricDescriptor.InitEmpty()
-		metricDescriptor.SetName("load_generator_" + strconv.Itoa(i))
-		metricDescriptor.SetDescription("Load Generator Counter #" + strconv.Itoa(i))
-		metricDescriptor.SetType(pdata.MetricTypeInt64)
-
-		batchIndex := atomic.AddUint64(&lg.batchesSent, 1)
-
-		// Generate data points for the metric.
-		metric.Int64DataPoints().Resize(dataPointsPerMetric)
-		for j := 0; j < dataPointsPerMetric; j++ {
-			dataPoint := metric.Int64DataPoints().At(j)
-			dataPoint.SetStartTime(pdata.TimestampUnixNano(uint64(time.Now().UnixNano())))
-			value := atomic.AddUint64(&lg.dataItemsSent, 1)
-			dataPoint.SetValue(int64(value))
-			dataPoint.LabelsMap().InitFromMap(map[string]string{
-				"item_index":  "item_" + strconv.Itoa(j),
-				"batch_index": "batch_" + strconv.Itoa(int(batchIndex)),
-			})
-		}
-	}
-
-	err := metricSender.SendMetrics(metricData)
-
-	if err == nil {
-		lg.prevErr = nil
-	} else if lg.prevErr == nil || lg.prevErr.Error() != err.Error() {
-		lg.prevErr = err
-		log.Printf("Cannot send metrics: %v", err)
-	}
-}
-
-// timeToTimestamp converts a time.Time to a timestamp.Timestamp pointer.
-func timeToTimestamp(t time.Time) *timestamp.Timestamp {
-	if t.IsZero() {
-		return nil
-	}
-	nanoTime := t.UnixNano()
-	return &timestamp.Timestamp{
-		Seconds: nanoTime / 1e9,
-		Nanos:   int32(nanoTime % 1e9),
 	}
 }

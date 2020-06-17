@@ -32,12 +32,12 @@ func TestGeneratorAndBackend(t *testing.T) {
 		{
 			"Jaeger-JaegerGRPC",
 			NewJaegerDataReceiver(port),
-			NewJaegerGRPCDataSender(port),
+			NewJaegerGRPCDataSender(DefaultHost, port),
 		},
 		{
 			"Zipkin-Zipkin",
 			NewZipkinDataReceiver(port),
-			NewZipkinDataSender(port),
+			NewZipkinDataSender(DefaultHost, port),
 		},
 	}
 
@@ -52,7 +52,9 @@ func TestGeneratorAndBackend(t *testing.T) {
 
 			defer mb.Stop()
 
-			lg, err := NewLoadGenerator(test.sender)
+			options := LoadOptions{DataItemsPerSecond: 10000, ItemsPerBatch: 10}
+			dataProvider := NewPerfTestDataProvider(options)
+			lg, err := NewLoadGenerator(dataProvider, test.sender)
 			require.NoError(t, err, "Cannot start load generator")
 
 			assert.EqualValues(t, 0, lg.dataItemsSent)

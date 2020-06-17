@@ -24,7 +24,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -48,13 +47,14 @@ type TestCase struct {
 	resourceSpec ResourceSpec
 
 	// Agent process.
-	agentProc childProcess
+	agentProc OtelcolRunner
 
 	Sender   DataSender
 	Receiver DataReceiver
 
 	LoadGenerator *LoadGenerator
 	MockBackend   *MockBackend
+	validator     TestCaseValidator
 
 	startTime time.Time
 
@@ -70,6 +70,8 @@ type TestCase struct {
 	doneSignal chan struct{}
 
 	errorCause string
+
+	resultsSummary TestResultsSummary
 }
 
 const mibibyte = 1024 * 1024
@@ -78,8 +80,12 @@ const testcaseDurationVar = "TESTCASE_DURATION"
 // NewTestCase creates a new TestCase. It expects agent-config.yaml in the specified directory.
 func NewTestCase(
 	t *testing.T,
+	dataProvider DataProvider,
 	sender DataSender,
 	receiver DataReceiver,
+	agentProc OtelcolRunner,
+	validator TestCaseValidator,
+	resultsSummary TestResultsSummary,
 	opts ...TestCaseOption,
 ) *TestCase {
 	tc := TestCase{}
@@ -90,6 +96,9 @@ func NewTestCase(
 	tc.startTime = time.Now()
 	tc.Sender = sender
 	tc.Receiver = receiver
+	tc.agentProc = agentProc
+	tc.validator = validator
+	tc.resultsSummary = resultsSummary
 
 	// Get requested test case duration from env variable.
 	duration := os.Getenv(testcaseDurationVar)
@@ -119,17 +128,7 @@ func NewTestCase(
 		tc.resourceSpec.ResourceCheckPeriod = tc.Duration
 	}
 
-	configFile := tc.agentConfigFile
-	if configFile == "" {
-		// Use the default config file.
-		configFile = path.Join("testdata", "agent-config.yaml")
-	}
-
-	// Ensure that the config file is an absolute path.
-	tc.agentConfigFile, err = filepath.Abs(configFile)
-	require.NoError(t, err, "Cannot resolve filename")
-
-	tc.LoadGenerator, err = NewLoadGenerator(sender)
+	tc.LoadGenerator, err = NewLoadGenerator(dataProvider, sender)
 	require.NoError(t, err, "Cannot create generator")
 
 	tc.MockBackend = NewMockBackend(tc.composeTestResultFileName("backend.log"), receiver)
@@ -165,11 +164,13 @@ func (tc *TestCase) SetResourceLimits(resourceSpec ResourceSpec) {
 // StartAgent starts the agent and redirects its standard output and standard error
 // to "agent.log" file located in the test directory.
 func (tc *TestCase) StartAgent(args ...string) {
-	args = append(args, "--config")
-	args = append(args, tc.agentConfigFile)
+	if tc.agentConfigFile != "" {
+		args = append(args, "--config")
+		args = append(args, tc.agentConfigFile)
+	}
 	logFileName := tc.composeTestResultFileName("agent.log")
 
-	err := tc.agentProc.start(startParams{
+	_, err := tc.agentProc.Start(StartParams{
 		name:         "Agent",
 		logFilePath:  logFileName,
 		cmd:          testBedConfig.Agent,
@@ -184,7 +185,7 @@ func (tc *TestCase) StartAgent(args ...string) {
 
 	// Start watching resource consumption.
 	go func() {
-		err := tc.agentProc.watchResourceConsumption()
+		err := tc.agentProc.WatchResourceConsumption()
 		if err != nil {
 			tc.indicateError(err)
 		}
@@ -201,7 +202,7 @@ func (tc *TestCase) StartAgent(args ...string) {
 
 // StopAgent stops agent process.
 func (tc *TestCase) StopAgent() {
-	tc.agentProc.stop()
+	tc.agentProc.Stop()
 }
 
 // StartLoad starts the load generator and redirects its standard output and standard error
@@ -233,7 +234,7 @@ func (tc *TestCase) EnableRecording() {
 // AgentMemoryInfo returns raw memory info struct about the agent
 // as returned by github.com/shirou/gopsutil/process
 func (tc *TestCase) AgentMemoryInfo() (uint32, uint32, error) {
-	stat, err := tc.agentProc.processMon.MemoryInfo()
+	stat, err := tc.agentProc.GetProcessMon().MemoryInfo()
 	if err != nil {
 		return 0, 0, err
 	}
@@ -255,35 +256,11 @@ func (tc *TestCase) Stop() {
 	}
 
 	// Report test results
-
-	rc := tc.agentProc.GetTotalConsumption()
-
-	var result string
-	if tc.t.Failed() {
-		result = "FAIL"
-	} else {
-		result = "PASS"
-	}
-
-	// Remove "Test" prefix from test name.
-	testName := tc.t.Name()[4:]
-
-	results.Add(tc.t.Name(), &TestResult{
-		testName:          testName,
-		result:            result,
-		receivedSpanCount: tc.MockBackend.DataItemsReceived(),
-		sentSpanCount:     tc.LoadGenerator.DataItemsSent(),
-		duration:          time.Since(tc.startTime),
-		cpuPercentageAvg:  rc.CPUPercentAvg,
-		cpuPercentageMax:  rc.CPUPercentMax,
-		ramMibAvg:         rc.RAMMiBAvg,
-		ramMibMax:         rc.RAMMiBMax,
-		errorCause:        tc.errorCause,
-	})
+	tc.validator.RecordResults(tc)
 }
 
-// ValidateData validates data by comparing the number of items sent by load generator
-// and number of items received by mock backend.
+// ValidateData validates data received by mock backend against what was generated and sent to the collector
+// instance(s) under test by the LoadGenerator.
 func (tc *TestCase) ValidateData() {
 	select {
 	case <-tc.ErrorSignal:
@@ -292,10 +269,7 @@ func (tc *TestCase) ValidateData() {
 	default:
 	}
 
-	if assert.EqualValues(tc.t, tc.LoadGenerator.DataItemsSent(), tc.MockBackend.DataItemsReceived(),
-		"Received and sent counters do not match.") {
-		log.Printf("Sent and received data matches.")
-	}
+	tc.validator.Validate(tc)
 }
 
 // Sleep for specified duration or until error is signaled.
