@@ -46,7 +46,7 @@ func TestMain(m *testing.M) {
 	testbed.DoTestMain(m, correctnessResults)
 }
 
-func TestDefaultTracingComponentCombos(t *testing.T) {
+func TestTracingGoldenData(t *testing.T) {
 	tests, err := loadPictOutputPipelineDefs("testdata/generated_pict_pairs_traces_pipeline.txt")
 	assert.NoError(t, err)
 	processors := map[string]string{
