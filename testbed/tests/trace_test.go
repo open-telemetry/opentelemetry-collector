@@ -81,7 +81,7 @@ func TestTrace10kSPS(t *testing.T) {
 			testbed.NewZipkinDataSender(testbed.GetAvailablePort(t)),
 			testbed.NewZipkinDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
-				ExpectedMaxCPU: 60,
+				ExpectedMaxCPU: 80,
 				ExpectedMaxRAM: 60,
 			},
 		},
@@ -162,7 +162,7 @@ func TestTraceNoBackend10kSPS(t *testing.T) {
 			testbed.NewZipkinDataSender(testbed.DefaultZipkinAddressPort),
 			testbed.NewOCDataReceiver(testbed.DefaultOCPort),
 			testbed.ResourceSpec{
-				ExpectedMaxCPU: 80,
+				ExpectedMaxCPU: 120,
 				ExpectedMaxRAM: 198,
 			},
 			processorsConfig,
